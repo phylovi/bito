@@ -1,5 +1,12 @@
+#include "sbn.h"
+#include "sbn.hpp"
+
 extern "C" {
-unsigned int Factorial(unsigned int number) {
-  return number <= 1 ? number : Factorial(number - 1) * number;
-}
+MyClass* newMyClass() { return new MyClass(); }
+
+void MyClass_int_set(MyClass* v, int i) { v->int_set(i); }
+
+int MyClass_int_get(MyClass* v) { return v->int_get(); }
+
+void deleteMyClass(MyClass* v) { delete v; }
 }
