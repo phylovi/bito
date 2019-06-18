@@ -59,6 +59,20 @@ class Node {
     return count;
   }
 
+  void PreOrder(void f(Node*)) {
+    f(this);
+    for (auto child : children_) {
+      child->PreOrder(f);
+    }
+  }
+
+  void PostOrder(void f(Node*)) {
+    for (auto child : children_) {
+      child->PostOrder(f);
+    }
+    f(this);
+  }
+
   // Class methods
   static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
   static NodePtr Join(NodePtr left, NodePtr right, int id) {
@@ -85,6 +99,12 @@ TEST_CASE("Trying out Node") {
   // Node::Join(l1, l2, 0);
 
   REQUIRE(t->LeafCount() == 2);
+
+  auto print_pos = [](Node* t) {
+    std::cout << "I'm at " << t->GetId() << std::endl;
+  };
+  t->PreOrder(print_pos);
+  t->PostOrder(print_pos);
 }
 
 #endif
