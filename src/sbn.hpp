@@ -11,4 +11,18 @@ class MyClass {
   int int_get();
 };
 
+
+class Node {
+ private:
+  int id;
+
+ public:
+  void int_set(int i);
+
+  int int_get();
+};
+
+
+
+
 #endif
