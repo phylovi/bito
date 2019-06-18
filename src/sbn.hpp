@@ -1,6 +1,9 @@
 #ifndef __SBN_HPP
 #define __SBN_HPP
 
+#include <memory>
+#include <vector>
+
 class MyClass {
  private:
   int m_i;
@@ -13,13 +16,24 @@ class MyClass {
 
 
 class Node {
+
+ typedef std::shared_ptr<Node> NodePtr;
+ typedef std::vector<NodePtr> NodePtrVec;
+
  private:
-  int id;
+  NodePtrVec children_;
+  int id_;
+
 
  public:
-  void int_set(int i);
+  Node(NodePtrVec children, int id) : children_(children), id_(id) {}
 
-  int int_get();
+  Node(NodePtr left, NodePtr right, int id) {
+    children_ = {left, right};
+    id_ = id;
+  }
+
+  int get_id() { return id_; }
 };
 
 
