@@ -1,5 +1,5 @@
-#ifndef __MYCLASS_H
-#define __MYCLASS_H
+#ifndef __SBN_HPP
+#define __SBN_HPP
 
 class MyClass {
  private:
