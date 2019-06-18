@@ -21,6 +21,7 @@ class MyClass {
 // Class for a tree.
 // Has nodes with unsigned integer ids.
 // These ids have to increase as we go towards the root.
+// TODO we don't check to make sure that the ids are different.
 class Node {
   typedef std::shared_ptr<Node> NodePtr;
   typedef std::vector<NodePtr> NodePtrVec;
@@ -86,14 +87,10 @@ class Node {
 
 
 TEST_CASE("Trying out Node") {
-  auto l0 = Node::Leaf(0);
-  auto l1 = Node::Leaf(1);
-  auto t = Node::Join(l0, l1, 2);
+  auto t =
+      Node::Join(Node::Join(Node::Leaf(0), Node::Leaf(1), 3), Node::Leaf(2), 4);
 
-  // Should fail.
-  // Node::Join(l1, l2, 0);
-
-  REQUIRE(t->LeafCount() == 2);
+  REQUIRE(t->LeafCount() == 3);
 
   auto print_pos = [](Node* t) {
     std::cout << "I'm at " << t->GetId() << std::endl;
