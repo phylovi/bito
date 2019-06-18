@@ -27,24 +27,15 @@ class Node {
   NodePtrVec children_;
   int id_;
 
+  // Make copy constructors private to eliminate copying.
+  Node(const Node&);
+  Node& operator=(const Node&);
+
 
  public:
   Node(int id) : children_({}), id_(id) {}
-
   Node(NodePtrVec children, int id) : children_(children), id_(id) {}
-
-  Node(Node & left, Node & right, int id) {
-    auto leftptr = std::make_shared<Node>(left);
-    auto rightptr = std::make_shared<Node>(right);
-    children_ = {leftptr, rightptr};
-    id_ = id;
-  }
-
-  Node(NodePtr left, NodePtr right, int id) {
-    children_ = {left, right};
-    id_ = id;
-  }
-
+  Node(NodePtr left, NodePtr right, int id) : Node({left, right}, id) {}
   ~Node() { std::cout << "Destroying node " << id_ << std::endl; }
 
   int get_id() { return id_; }
@@ -54,12 +45,10 @@ class Node {
     if (is_leaf()) {
       return 1;
     }
-
     int count = 0;
     for (auto child : children_) {
       count += child->n_leaves();
     }
-
     return count;
   }
 };
