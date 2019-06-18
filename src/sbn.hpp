@@ -28,7 +28,16 @@ class Node {
 
 
  public:
+  Node(int id) : children_({}), id_(id) {}
+
   Node(NodePtrVec children, int id) : children_(children), id_(id) {}
+
+  Node(Node & left, Node & right, int id) {
+    auto leftptr = std::make_shared<Node>(left);
+    auto rightptr = std::make_shared<Node>(right);
+    children_ = {leftptr, rightptr};
+    id_ = id;
+  }
 
   Node(NodePtr left, NodePtr right, int id) {
     children_ = {left, right};
@@ -39,8 +48,11 @@ class Node {
 };
 
 
-TEST_CASE("testing the factorial function") {
-    CHECK(1 == 1);
+TEST_CASE("Trying out Node") {
+    Node l1(1);
+    CHECK(l1.get_id() == 1);
+
+    Node(l1, l1, 5);
 }
 
 #endif
