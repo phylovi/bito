@@ -6,3 +6,4 @@ int MyClass::int_get() { return m_i; }
 
 
 
+

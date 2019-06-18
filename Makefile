@@ -1,5 +1,5 @@
 default:
-	scons && ./_build/test/test
+	scons && ./_build/test/doctest
 
 format:
 	clang-format -i -style=file src/* test/test.c

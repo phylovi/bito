@@ -1,6 +1,8 @@
 #ifndef __SBN_HPP
 #define __SBN_HPP
 
+#include "doctest.h"
+
 #include <memory>
 #include <vector>
 
@@ -37,6 +39,8 @@ class Node {
 };
 
 
-
+TEST_CASE("testing the factorial function") {
+    CHECK(1 == 1);
+}
 
 #endif
