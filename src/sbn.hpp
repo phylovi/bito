@@ -18,14 +18,17 @@ class MyClass {
 };
 
 
+// Class for a tree.
+// Has nodes with unsigned integer ids.
+// These ids have to increase as we go towards the root.
 class Node {
-
- typedef std::shared_ptr<Node> NodePtr;
- typedef std::vector<NodePtr> NodePtrVec;
+  typedef std::shared_ptr<Node> NodePtr;
+  typedef std::vector<NodePtr> NodePtrVec;
 
  private:
   NodePtrVec children_;
-  int id_;
+  // TODO: "NodeId" type rather than unsigned int?
+  unsigned int id_;
 
   // Make copy constructors private to eliminate copying.
   Node(const Node&);
@@ -33,33 +36,55 @@ class Node {
 
 
  public:
-  Node(int id) : children_({}), id_(id) {}
-  Node(NodePtrVec children, int id) : children_(children), id_(id) {}
-  Node(NodePtr left, NodePtr right, int id) : Node({left, right}, id) {}
+  Node(unsigned int id) : children_({}), id_(id) {}
+  Node(NodePtrVec children, unsigned int id) : children_(children), id_(id) {
+    REQUIRE_MESSAGE(MaxChildIdx(children) < id,
+                    "Nodes must have a larger index than their children.");
+  }
+  Node(NodePtr left, NodePtr right, unsigned int id)
+      : Node({left, right}, id) {}
   ~Node() { std::cout << "Destroying node " << id_ << std::endl; }
 
-  int get_id() { return id_; }
-  bool is_leaf() { return children_.empty(); }
+  unsigned int GetId() { return id_; }
+  bool IsLeaf() { return children_.empty(); }
 
-  int n_leaves() {
-    if (is_leaf()) {
+  int LeafCount() {
+    if (IsLeaf()) {
       return 1;
     }
     int count = 0;
     for (auto child : children_) {
-      count += child->n_leaves();
+      count += child->LeafCount();
     }
     return count;
+  }
+
+  // Class methods
+  static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
+  static NodePtr Join(NodePtr left, NodePtr right, int id) {
+    return std::make_shared<Node>(left, right, id);
+  };
+
+  static unsigned int MaxChildIdx(NodePtrVec children) {
+    REQUIRE(~children.empty());
+    unsigned int result = 0;
+    for (auto child : children) {
+      result = std::max(child->GetId(), result);
+    }
+    return result;
   }
 };
 
 
 TEST_CASE("Trying out Node") {
-  auto l1 = std::make_shared<Node>(1);
-  auto l2 = std::make_shared<Node>(2);
-  auto t = std::make_shared<Node>(l1, l2, 3);
+  auto l0 = Node::Leaf(0);
+  auto l1 = Node::Leaf(1);
+  auto t = Node::Join(l0, l1, 2);
 
-  CHECK(t->n_leaves() == 2);
+  // Should fail.
+  // Node::Join(l1, l2, 0);
+
+  REQUIRE(t->LeafCount() == 2);
 }
 
 #endif

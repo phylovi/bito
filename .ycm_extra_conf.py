@@ -1,5 +1,5 @@
 def Settings( **kwargs ):
   return {
-    'flags': [ '-x', 'c++', '-Wall', '-Wextra', '-Werror' ],
+    'flags': [ '-x', 'c++', '-Wall', '-Wextra', '-Werror', '-Wconversion' ],
   }
 

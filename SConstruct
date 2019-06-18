@@ -1,4 +1,4 @@
-env = Environment(CPPPATH=['include', 'src'])
+env = Environment(CPPPATH=['include', 'src'], CPPFLAGS=['-Wall', '-Wextra', '-Werror', '-Wconversion'])
 
 env.VariantDir('_build', 'src')
 env.Library('sbn', ['_build/libsbn.cpp', '_build/sbn.cpp'])
