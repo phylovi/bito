@@ -3,6 +3,7 @@
 
 #include "doctest.h"
 
+#include <iostream>
 #include <memory>
 #include <vector>
 
@@ -44,6 +45,8 @@ class Node {
     id_ = id;
   }
 
+  ~Node() { std::cout << "Destroying node " << id_ << std::endl; }
+
   int get_id() { return id_; }
   bool is_leaf() { return children_.empty(); }
 
@@ -64,9 +67,8 @@ class Node {
 
 TEST_CASE("Trying out Node") {
     Node l1(1);
-    CHECK(l1.get_id() == 1);
-
-    Node t(l1, l1, 5);
+    Node l2(2);
+    Node t(l1, l2, 3);
 
     CHECK(t.n_leaves() == 2);
 }
