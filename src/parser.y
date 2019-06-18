@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
+int yylex();
+int yyparse();
+
 void yyerror(const char *str)
 {
         fprintf(stderr,"error: %s\n",str);
@@ -12,38 +15,43 @@ int yywrap()
         return 1;
 }
 
-main()
+int main()
 {
         yyparse();
 }
 
 %}
 
-%token NUMBER TOKHEAT STATE TOKTARGET TOKTEMPERATURE
+%token O_PAREN COMMA C_PAREN SEMICOLON LABEL
 
 %%
 
-commands: /* empty */
-        | commands command
-        ;
+tree: /* empty */ {
+  printf("\tEmpty tree\n");
+}
+| node SEMICOLON
+;
 
-command:
-        heat_switch
-        |
-        target_set
-        ;
+node: leaf {
+  printf("\tfound a leaf\n");
+}
+| inner_node {
+  printf("\tfound a inner node\n");
+}
+;
 
-heat_switch:
-        TOKHEAT STATE
-        {
-                printf("\tHeat turned on or off\n");
-        }
-        ;
+inner_node: O_PAREN nodelist C_PAREN {
+  printf("\tGoing in a level\n");
+}
+;
 
-target_set:
-        TOKTARGET TOKTEMPERATURE NUMBER
-        {
-                printf("\tTemperature set\n");
-        }
-        ;
+nodelist: node {
+  printf("\tThe last entry\n");
+}
+| nodelist COMMA node {
+  printf("\tChugging along\n");
+}
+;
 
+leaf: LABEL
+;
