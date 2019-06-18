@@ -45,6 +45,20 @@ class Node {
   }
 
   int get_id() { return id_; }
+  bool is_leaf() { return children_.empty(); }
+
+  int n_leaves() {
+    if (is_leaf()) {
+      return 1;
+    }
+
+    int count = 0;
+    for (auto child : children_) {
+      count += child->n_leaves();
+    }
+
+    return count;
+  }
 };
 
 
@@ -52,7 +66,9 @@ TEST_CASE("Trying out Node") {
     Node l1(1);
     CHECK(l1.get_id() == 1);
 
-    Node(l1, l1, 5);
+    Node t(l1, l1, 5);
+
+    CHECK(t.n_leaves() == 2);
 }
 
 #endif
