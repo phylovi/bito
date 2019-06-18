@@ -48,29 +48,24 @@ class Node {
   unsigned int GetId() { return id_; }
   bool IsLeaf() { return children_.empty(); }
 
-  int LeafCount() {
-    if (IsLeaf()) {
-      return 1;
-    }
-    int count = 0;
-    for (auto child : children_) {
-      count += child->LeafCount();
-    }
-    return count;
-  }
-
-  void PreOrder(void f(Node*)) {
+  void PreOrder(std::function<void(Node*)> f) {
     f(this);
     for (auto child : children_) {
       child->PreOrder(f);
     }
   }
 
-  void PostOrder(void f(Node*)) {
+  void PostOrder(std::function<void(Node*)> f) {
     for (auto child : children_) {
       child->PostOrder(f);
     }
     f(this);
+  }
+
+  unsigned int LeafCount() {
+    unsigned int count = 0;
+    PreOrder([&count](Node* node) { count += node->IsLeaf(); });
+    return count;
   }
 
   // Class methods
@@ -78,9 +73,9 @@ class Node {
   static NodePtr Join(NodePtr left, NodePtr right, int id) {
     return std::make_shared<Node>(left, right, id);
   };
-
   static unsigned int MaxChildIdx(NodePtrVec children) {
     REQUIRE(~children.empty());
+    // 0 is the smallest value for an unsigned integer.
     unsigned int result = 0;
     for (auto child : children) {
       result = std::max(child->GetId(), result);
@@ -105,6 +100,7 @@ TEST_CASE("Trying out Node") {
   };
   t->PreOrder(print_pos);
   t->PostOrder(print_pos);
+
 }
 
 #endif
