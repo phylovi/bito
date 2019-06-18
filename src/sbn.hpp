@@ -66,11 +66,11 @@ class Node {
 
 
 TEST_CASE("Trying out Node") {
-    Node l1(1);
-    Node l2(2);
-    Node t(l1, l2, 3);
+  auto l1 = std::make_shared<Node>(1);
+  auto l2 = std::make_shared<Node>(2);
+  auto t = std::make_shared<Node>(l1, l2, 3);
 
-    CHECK(t.n_leaves() == 2);
+  CHECK(t->n_leaves() == 2);
 }
 
 #endif
