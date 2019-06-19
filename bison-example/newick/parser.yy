@@ -33,36 +33,56 @@
 
 %token
   END  0  "end of file"
-  ASSIGN  ":="
-  PLUS    "+"
-  LPAREN  "("
-  RPAREN  ")"
+  COMMA      ","
+  SEMICOLON  ";"
+  LPAREN     "("
+  RPAREN     ")"
 ;
 
 %token <std::string> IDENTIFIER "identifier"
 %token <int> NUMBER "number"
-%type  <int> exp
+%type  <int> node
+%type  <int> inner_node
+%type  <int> node_list
 
 %printer { yyo << $$; } <*>;
 
 %%
 // Grammar rules: how to construct each nonterminal symbol from its parts.
 
-%start unit;
-unit: assignments exp  { drv.result = $2; };
+%start tree;
+tree: node SEMICOLON { drv.result = $1; };
 
-assignments:
-  %empty                 {}
-| assignments assignment {};
+node:
+  IDENTIFIER {
+    $$ = 1;
+}
+| inner_node
 
-assignment:
-  "identifier" ":=" exp { drv.taxa[$1] = $3; };
+inner_node:
+  LPAREN node_list RPAREN {
+    $$ = $2;
+  }
 
-exp:
-  "number"
-| "identifier"  { $$ = drv.taxa[$1]; }
-| exp "+" exp   { std::cout << "hi\n";  $$ = $1 + $3; }
-| "(" exp ")"   { $$ = $2; }
+node_list:
+  node
+  | node_list COMMA node {
+    $$ = $1 + $3;
+}
+
+
+// assignments:
+//   %empty                 {}
+// | assignments assignment {};
+//
+// assignment:
+//   "identifier" ":=" exp { drv.taxa[$1] = $3; };
+//
+// exp:
+//   "number"
+// | "identifier"  { $$ = drv.taxa[$1]; }
+// | exp "+" exp   { std::cout << "hi\n";  $$ = $1 + $3; }
+// | "(" exp ")"   { $$ = $2; }
 
 %%
 // Epilogue: arbitrary C++.

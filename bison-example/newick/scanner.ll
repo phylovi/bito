@@ -55,10 +55,10 @@ BLANK [ \t\r]
 {BLANK}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 
-"+"        return yy::parser::make_PLUS   (loc);
-"("        return yy::parser::make_LPAREN (loc);
-")"        return yy::parser::make_RPAREN (loc);
-":="       return yy::parser::make_ASSIGN (loc);
+","        return yy::parser::make_COMMA     (loc);
+";"        return yy::parser::make_SEMICOLON (loc);
+"("        return yy::parser::make_LPAREN    (loc);
+")"        return yy::parser::make_RPAREN    (loc);
 
 {INT}      return make_NUMBER (yytext, loc);
 {ID}       return yy::parser::make_IDENTIFIER (yytext, loc);
