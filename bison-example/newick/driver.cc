@@ -17,7 +17,6 @@ int driver::parse_file(const std::string &f) {
   int return_code;
 
   fname = f;
-  location.initialize(&fname);
   yy::parser parserObject(*this);
   parserObject.set_debug_level(trace_parsing);
 
@@ -28,8 +27,10 @@ int driver::parse_file(const std::string &f) {
   return false;
   }
   std::string str;
+  unsigned int line_number = 1;
   while (std::getline(in, str))
   {
+  location.initialize(nullptr, line_number);
   // Line contains string of length > 0 then save it in vector
   if(str.size() > 0) {
     this->scan_string(str);
@@ -43,8 +44,8 @@ int driver::parse_file(const std::string &f) {
       std::cout << x.first << " => " << x.second << '\n';
     }
     clear();
-    location.step();
     }
+  line_number++;
   }
   in.close();
   return return_code;
