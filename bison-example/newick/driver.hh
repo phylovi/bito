@@ -19,12 +19,16 @@ class driver {
   int result;
   int id_counter;
 
+  void clear();
+
   // Run the parser on file F.  Return 0 on success.
   int parse(const std::string& f);
   // The name of the file being parsed.
   std::string file;
   // Whether to generate parser debug traces.
   bool trace_parsing;
+  int parse_string(const std::string& s);
+  void scan_string(const std::string &s);
 
   // Handling the scanner.
   void scan_begin();

@@ -101,3 +101,9 @@ driver::scan_end ()
 {
   fclose (yyin);
 }
+
+void
+driver::scan_string(const std::string &s) {
+  yy_flex_debug = trace_scanning;
+  yy_scan_string(s.c_str());
+}
