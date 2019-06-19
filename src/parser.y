@@ -22,14 +22,19 @@ int main()
 
 %}
 
-%token O_PAREN COMMA C_PAREN SEMICOLON LABEL
+%token O_PAREN COLON COMMA C_PAREN SEMICOLON
+%token LABEL
+/* %token <sval> LABEL */
 
 %%
 
 tree: /* empty */ {
   printf("\tEmpty tree\n");
+YYACCEPT;
 }
-| node SEMICOLON
+| node SEMICOLON {
+YYACCEPT;
+}
 ;
 
 node: leaf {
@@ -53,5 +58,6 @@ nodelist: node {
 }
 ;
 
-leaf: LABEL
+leaf: LABEL {
+}
 ;
