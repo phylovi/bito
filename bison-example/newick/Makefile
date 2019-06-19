@@ -6,6 +6,7 @@ BISON = bison
 CXX = g++
 FLEX = flex
 XSLTPROC = xsltproc
+CXXFLAGS = -g
 
 all: $(BASE)
 
