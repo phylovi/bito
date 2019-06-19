@@ -15,7 +15,7 @@ for (auto& x: drv.taxa) {
 
 drv.clear();
 
-result = drv.parse_string("(('ddddddddddddddddd',x2),x3);");
+result = drv.parse_string("(('ddddddddddddddddd',x2),(x3,x4));");
 
 std::cout << drv.result << '\n';
 for (auto& x: drv.taxa) {
