@@ -21,31 +21,29 @@ int driver::parse_file(const std::string &f) {
   parserObject.set_debug_level(trace_parsing);
 
   std::ifstream in(fname.c_str());
-  if(!in)
-  {
-  std::cerr << "Cannot open the File : "<<fname<<std::endl;
-  return false;
+  if (!in) {
+    std::cerr << "Cannot open the File : " << fname << std::endl;
+    return false;
   }
   std::string str;
   unsigned int line_number = 1;
-  while (std::getline(in, str))
-  {
-  location.initialize(nullptr, line_number);
-  // Line contains string of length > 0 then save it in vector
-  if(str.size() > 0) {
-    this->scan_string(str);
-    return_code = parserObject();
-    if(return_code != 0) {
-      std::cout << "problem parsing!\n";
-      break;
+  while (std::getline(in, str)) {
+    location.initialize(nullptr, line_number);
+    // Line contains string of length > 0 then save it in vector
+    if (str.size() > 0) {
+      this->scan_string(str);
+      return_code = parserObject();
+      if (return_code != 0) {
+        std::cout << "problem parsing!\n";
+        break;
       }
-    std::cout << result << '\n';
-    for (auto& x: taxa) {
-      std::cout << x.first << " => " << x.second << '\n';
+      std::cout << result << '\n';
+      for (auto &x : taxa) {
+        std::cout << x.first << " => " << x.second << '\n';
+      }
+      clear();
     }
-    clear();
-    }
-  line_number++;
+    line_number++;
   }
   in.close();
   return return_code;

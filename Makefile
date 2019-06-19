@@ -1,5 +1,5 @@
 default:
-	scons && ./_build/newick_parser ex.nwk
+	scons && ./_build/newick_parser _ignore/ex.nwk
 	#scons && ./_build/test/doctest
 
 format:

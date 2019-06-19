@@ -97,7 +97,6 @@ TEST_CASE("Trying out Node") {
   };
   t->PreOrder(print_pos);
   t->PostOrder(print_pos);
-
 }
 
 #endif
