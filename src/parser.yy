@@ -1,9 +1,8 @@
+%require "3.2"
+%language "c++"
 %{
 #include <stdio.h>
 #include <string.h>
-
-int yylex();
-int yyparse();
 
 void yyerror(const char *str)
 {
