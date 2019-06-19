@@ -35,9 +35,10 @@
   make_NUMBER (const std::string &s, const yy::parser::location_type& loc);
 %}
 
-TAXON    [[:graph:]]{-}[();,:'\[\]]+
-INT      [0-9]+
-BLANK    [ \t\r]
+TAXON         [[:graph:]]{-}[();,:'\[\]]+
+QUOTED_TAXON  ('[^']*')+
+INT           [0-9]+
+BLANK         [ \t\r]
 
 %{
   // Code run each time a pattern is matched.
@@ -55,18 +56,19 @@ BLANK    [ \t\r]
 {BLANK}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 
-","        return yy::parser::make_COMMA     (loc);
-";"        return yy::parser::make_SEMICOLON (loc);
-"("        return yy::parser::make_LPAREN    (loc);
-")"        return yy::parser::make_RPAREN    (loc);
+","                  return yy::parser::make_COMMA     (loc);
+";"                  return yy::parser::make_SEMICOLON (loc);
+"("                  return yy::parser::make_LPAREN    (loc);
+")"                  return yy::parser::make_RPAREN    (loc);
 
-{INT}      return make_NUMBER (yytext, loc);
-{TAXON}    return yy::parser::make_TAXON (yytext, loc);
-.          {
-             throw yy::parser::syntax_error
-               (loc, "invalid character: " + std::string(yytext));
+{INT}                return make_NUMBER (yytext, loc);
+{TAXON}              return yy::parser::make_TAXON (yytext, loc);
+{QUOTED_TAXON}       return yy::parser::make_QUOTED_TAXON (yytext, loc);
+.                    {
+                       throw yy::parser::syntax_error
+                         (loc, "invalid character: " + std::string(yytext));
 }
-<<EOF>>    return yy::parser::make_END (loc);
+<<EOF>>              return yy::parser::make_END (loc);
 
 %%
 /* *** Section: user code. It's just regular C++. */

@@ -40,8 +40,10 @@
 ;
 
 %token <std::string> TAXON "taxon"
+%token <std::string> QUOTED_TAXON "quoted_taxon"
 %token <int> NUMBER "number"
 %type  <int> node
+%type  <std::string> leaf
 %type  <int> inner_node
 %type  <int> node_list
 
@@ -58,13 +60,20 @@ tree:
   };
 
 node:
-  "taxon" {
+  leaf {
     $$ = 1;
     drv.taxa[$1] = drv.id_counter;
     drv.id_counter++;
-
   }
 | inner_node
+
+leaf:
+  "taxon" {
+    $$ = $1;
+  }
+| "quoted_taxon" {
+    $$ = $1;
+  }
 
 inner_node:
   "(" node_list ")" {
