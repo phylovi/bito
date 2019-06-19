@@ -2,8 +2,7 @@
 #include "parser.hh"
 
 driver::driver() : trace_parsing(false), trace_scanning(false) {
-  variables["one"] = 1;
-  variables["two"] = 2;
+  // you can put any initialization code here
 }
 
 int driver::parse(const std::string &f) {

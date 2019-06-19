@@ -14,7 +14,7 @@ class driver {
  public:
   driver();
 
-  std::map<std::string, int> variables;
+  std::map<std::string, int> taxa;
 
   int result;
 

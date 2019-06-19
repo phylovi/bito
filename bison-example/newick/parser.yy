@@ -47,11 +47,11 @@ assignments:
 | assignments assignment {};
 
 assignment:
-  "identifier" ":=" exp { drv.variables[$1] = $3; };
+  "identifier" ":=" exp { drv.taxa[$1] = $3; };
 
 exp:
   "number"
-| "identifier"  { $$ = drv.variables[$1]; }
+| "identifier"  { $$ = drv.taxa[$1]; }
 | exp "+" exp   { std::cout << "hi\n";  $$ = $1 + $3; }
 | "(" exp ")"   { $$ = $2; }
 %%
