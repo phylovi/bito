@@ -43,6 +43,7 @@ int driver::parse_file(const std::string &f) {
       std::cout << x.first << " => " << x.second << '\n';
     }
     clear();
+    location.step();
     }
   }
   in.close();

@@ -25,13 +25,15 @@ class driver {
   int parse_file(const std::string& fname);
   // The name of the file being parsed.
   std::string fname;
+
   // Whether to generate parser debug traces.
   bool trace_parsing;
-  int parse_string(const std::string& s);
-  void scan_string(const std::string &s);
-
   // Whether to generate scanner debug traces.
   bool trace_scanning;
+
+  int parse_string(const std::string& s);
+  void scan_string(const std::string& s);
+
   // The token's location used by the scanner.
   yy::location location;
 };
