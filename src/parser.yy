@@ -1,62 +1,97 @@
-%require "3.2"
-%language "c++"
-%{
-#include <stdio.h>
-#include <string.h>
+/* *** Section: prologue and Bison declarations.
+  The prologue is broken up into %code blocks, with an optional qualifier
+  to describe where it should go in the resulting source file. */
 
-void yyerror(const char *str)
-{
-        fprintf(stderr,"error: %s\n",str);
+%skeleton "lalr1.cc" /* -*- C++ -*- */
+%require "3.4"
+%defines
+
+%define api.token.constructor
+%define api.value.type variant
+%define parse.assert
+
+%code requires {
+  # include <string>
+  class driver;
 }
 
-int yywrap()
-{
-        return 1;
+// The parsing context.
+%param { driver& drv }
+
+%locations
+
+%define parse.trace
+%define parse.error verbose
+
+%code {
+# include "driver.hpp"
 }
 
-int main()
-{
-        yyparse();
-}
+%define api.token.prefix {TOK_}
 
-%}
+// Bison declarations: the names, types, and precedence, of symbols.
 
-%token O_PAREN COLON COMMA C_PAREN SEMICOLON
-%token LABEL
-/* %token <sval> LABEL */
+%token
+  END  0  "end of file"
+  COMMA      ","
+  SEMICOLON  ";"
+  LPAREN     "("
+  RPAREN     ")"
+;
+
+%token <std::string> TAXON "taxon"
+%token <std::string> QUOTED_TAXON "quoted_taxon"
+%token <int> NUMBER "number"
+%type  <int> node
+%type  <std::string> leaf
+%type  <int> inner_node
+%type  <int> node_list
+
+%printer { yyo << $$; } <*>;
 
 %%
+// Grammar rules: how to construct each nonterminal symbol from its parts.
 
-tree: /* empty */ {
-  printf("\tEmpty tree\n");
-YYACCEPT;
-}
-| node SEMICOLON {
-YYACCEPT;
-}
-;
+%start tree;
+tree:
+  node ";" {
+    drv.result = $1;
+    drv.id_counter = 0; // Reset id_counter to zero.
+  };
 
-node: leaf {
-  printf("\tfound a leaf\n");
-}
-| inner_node {
-  printf("\tfound a inner node\n");
-}
-;
+node:
+  leaf {
+    $$ = 1;
+    drv.taxa[$1] = drv.id_counter;
+    drv.id_counter++;
+  }
+| inner_node
 
-inner_node: O_PAREN nodelist C_PAREN {
-  printf("\tGoing in a level\n");
-}
-;
+leaf:
+  "taxon" {
+    $$ = $1;
+  }
+| "quoted_taxon" {
+    $$ = $1;
+  }
 
-nodelist: node {
-  printf("\tThe last entry\n");
-}
-| nodelist COMMA node {
-  printf("\tChugging along\n");
-}
-;
+inner_node:
+  "(" node_list ")" {
+    $$ = $2;
+    drv.id_counter++;
+  }
 
-leaf: LABEL {
+node_list:
+  node
+  | node_list "," node {
+    $$ = $1 + $3;
+  }
+
+%%
+// Epilogue: arbitrary C++.
+
+void
+yy::parser::error (const location_type& l, const std::string& m)
+{
+  std::cerr << l << ": " << m << '\n';
 }
-;
