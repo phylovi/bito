@@ -35,9 +35,9 @@
   make_NUMBER (const std::string &s, const yy::parser::location_type& loc);
 %}
 
-ID    [a-zA-Z][a-zA-Z_0-9]*
-INT   [0-9]+
-BLANK [ \t\r]
+TAXON    [[:graph:]]{-}[();,:'\[\]]+
+INT      [0-9]+
+BLANK    [ \t\r]
 
 %{
   // Code run each time a pattern is matched.
@@ -61,7 +61,7 @@ BLANK [ \t\r]
 ")"        return yy::parser::make_RPAREN    (loc);
 
 {INT}      return make_NUMBER (yytext, loc);
-{ID}       return yy::parser::make_IDENTIFIER (yytext, loc);
+{TAXON}    return yy::parser::make_TAXON (yytext, loc);
 .          {
              throw yy::parser::syntax_error
                (loc, "invalid character: " + std::string(yytext));

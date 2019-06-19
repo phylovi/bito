@@ -39,7 +39,7 @@
   RPAREN     ")"
 ;
 
-%token <std::string> IDENTIFIER "identifier"
+%token <std::string> TAXON "taxon"
 %token <int> NUMBER "number"
 %type  <int> node
 %type  <int> inner_node
@@ -58,7 +58,7 @@ tree:
   };
 
 node:
-  "identifier" {
+  "taxon" {
     $$ = 1;
     drv.taxa[$1] = drv.id_counter;
     drv.id_counter++;
