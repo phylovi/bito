@@ -14,7 +14,7 @@ void driver::clear() {
 }
 
 int driver::parse_file(const std::string &f) {
-  int result;
+  int return_code;
 
   fname = f;
   location.initialize(&fname);
@@ -33,15 +33,20 @@ int driver::parse_file(const std::string &f) {
   // Line contains string of length > 0 then save it in vector
   if(str.size() > 0) {
     this->scan_string(str);
-    result = parserObject();
-    if(result != 0) {
+    return_code = parserObject();
+    if(return_code != 0) {
       std::cout << "problem parsing!\n";
       break;
       }
+    std::cout << result << '\n';
+    for (auto& x: taxa) {
+      std::cout << x.first << " => " << x.second << '\n';
+    }
+    clear();
     }
   }
   in.close();
-  return result;
+  return return_code;
 }
 
 int driver::parse_string(const std::string &s) {

@@ -30,11 +30,6 @@ class driver {
   int parse_string(const std::string& s);
   void scan_string(const std::string &s);
 
-  // TODO delete these
-  // Handling the scanner.
-  void scan_begin();
-  void scan_end();
-
   // Whether to generate scanner debug traces.
   bool trace_scanning;
   // The token's location used by the scanner.
