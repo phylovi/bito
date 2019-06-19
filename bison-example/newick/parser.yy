@@ -1,3 +1,7 @@
+/* *** Section: prologue and Bison declarations.
+  The prologue is broken up into %code blocks, with an optional qualifier
+  to describe where it should go in the resulting source file. */
+
 %skeleton "lalr1.cc" /* -*- C++ -*- */
 %require "3.4"
 %defines
@@ -24,6 +28,9 @@
 }
 
 %define api.token.prefix {TOK_}
+
+// Bison declarations: the names, types, and precedence, of symbols.
+
 %token
   END  0  "end of file"
   ASSIGN  ":="
@@ -39,6 +46,8 @@
 %printer { yyo << $$; } <*>;
 
 %%
+// Grammar rules: how to construct each nonterminal symbol from its parts.
+
 %start unit;
 unit: assignments exp  { drv.result = $2; };
 
@@ -54,7 +63,9 @@ exp:
 | "identifier"  { $$ = drv.taxa[$1]; }
 | exp "+" exp   { std::cout << "hi\n";  $$ = $1 + $3; }
 | "(" exp ")"   { $$ = $2; }
+
 %%
+// Epilogue: arbitrary C++.
 
 void
 yy::parser::error (const location_type& l, const std::string& m)
