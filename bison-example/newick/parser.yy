@@ -51,22 +51,22 @@
 // Grammar rules: how to construct each nonterminal symbol from its parts.
 
 %start tree;
-tree: node SEMICOLON { drv.result = $1; };
+tree: node ";" { drv.result = $1; };
 
 node:
-  IDENTIFIER {
+  "identifier" {
     $$ = 1;
 }
 | inner_node
 
 inner_node:
-  LPAREN node_list RPAREN {
+  "(" node_list ")" {
     $$ = $2;
   }
 
 node_list:
   node
-  | node_list COMMA node {
+  | node_list "," node {
     $$ = $1 + $3;
 }
 
