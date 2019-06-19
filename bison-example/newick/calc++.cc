@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
       drv.trace_scanning = true;
     else if (!drv.parse(argv[i])) {
       std::cout << drv.result << '\n';
-      for (std::pair<const std::string, int>& x: drv.taxa) {
+      for (auto& x: drv.taxa) {
           std::cout << x.first << " => " << x.second << '\n';
       }
     }
