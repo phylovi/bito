@@ -17,6 +17,7 @@ class driver {
   std::map<std::string, int> taxa;
 
   int result;
+  int id_counter;
 
   // Run the parser on file F.  Return 0 on success.
   int parse(const std::string& f);

@@ -9,8 +9,12 @@ int main(int argc, char *argv[]) {
       drv.trace_parsing = true;
     else if (argv[i] == std::string("-s"))
       drv.trace_scanning = true;
-    else if (!drv.parse(argv[i]))
+    else if (!drv.parse(argv[i])) {
       std::cout << drv.result << '\n';
+      for (std::pair<const std::string, int>& x: drv.taxa) {
+          std::cout << x.first << " => " << x.second << '\n';
+      }
+    }
     else
       res = 1;
   return res;

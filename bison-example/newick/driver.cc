@@ -2,7 +2,7 @@
 #include "parser.hh"
 
 driver::driver() : trace_parsing(false), trace_scanning(false) {
-  // you can put any initialization code here
+  id_counter = 0;
 }
 
 int driver::parse(const std::string &f) {

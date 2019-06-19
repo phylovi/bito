@@ -51,38 +51,32 @@
 // Grammar rules: how to construct each nonterminal symbol from its parts.
 
 %start tree;
-tree: node ";" { drv.result = $1; };
+tree:
+  node ";" {
+    drv.result = $1;
+    drv.id_counter = 0; // Reset id_counter to zero.
+  };
 
 node:
   "identifier" {
     $$ = 1;
-}
+    drv.taxa[$1] = drv.id_counter;
+    drv.id_counter++;
+
+  }
 | inner_node
 
 inner_node:
   "(" node_list ")" {
     $$ = $2;
+    drv.id_counter++;
   }
 
 node_list:
   node
   | node_list "," node {
     $$ = $1 + $3;
-}
-
-
-// assignments:
-//   %empty                 {}
-// | assignments assignment {};
-//
-// assignment:
-//   "identifier" ":=" exp { drv.taxa[$1] = $3; };
-//
-// exp:
-//   "number"
-// | "identifier"  { $$ = drv.taxa[$1]; }
-// | exp "+" exp   { std::cout << "hi\n";  $$ = $1 + $3; }
-// | "(" exp ")"   { $$ = $2; }
+  }
 
 %%
 // Epilogue: arbitrary C++.
