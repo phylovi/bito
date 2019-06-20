@@ -65,15 +65,22 @@ tree:
 
 node:
   leaf {
+    int leaf_id;
     if (drv.first_tree) {
       // This is our first tree, so we're going to initialize the taxon set.
       drv.taxa[$1] = drv.next_id;
+      $$ = Node::Leaf(drv.next_id);
     }
     else {
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa.
-      std::cout << drv.taxa[$1] << std::endl;
+      auto leaf_id = drv.taxa.find($1);
+      if(leaf_id == drv.taxa.end()) { // leaf $1 not found in taxa
+        std::cout << "Taxon '" << $1 << "' did not appear in the first tree.\n";
+        std::cout << "We only parse lists of trees on the same taxa.\n";
+        abort();
+      }
+      $$ = Node::Leaf(leaf_id->second);
     }
-    $$ = Node::Leaf(drv.next_id);
     drv.next_id++;
   }
 | inner_node
