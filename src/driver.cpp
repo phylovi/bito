@@ -53,7 +53,6 @@ Node::NodePtr Driver::ParseString(yy::parser &parser_instance,
   return latest_tree_;
 }
 
-
 Node::NodePtr Driver::ParseString(const std::string &str) {
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);

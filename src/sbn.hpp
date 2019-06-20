@@ -129,6 +129,9 @@ class Node {
   static NodePtr Join(NodePtrVec children) {
     return std::make_shared<Node>(children);
   };
+  static NodePtr Join(NodePtr left, NodePtr right) {
+    return Join(std::vector<NodePtr>({left, right}));
+  }
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
