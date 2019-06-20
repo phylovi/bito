@@ -46,10 +46,12 @@
 // //                    "%code requires" blocks.
 #line 13 "src/parser.yy"
 
+  // This code gets inserted into the parser header file.
   #include <string>
+  #include "sbn.hpp"
   class driver;
 
-#line 53 "src/parser.hpp"
+#line 55 "src/parser.hpp"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -164,7 +166,7 @@
 #endif
 
 namespace yy {
-#line 168 "src/parser.hpp"
+#line 170 "src/parser.hpp"
 
 
 
@@ -368,16 +370,21 @@ namespace yy {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
-      // "number"
+      // tree
       // node
       // inner_node
+      char dummy1[sizeof (Node::NodePtr)];
+
       // node_list
-      char dummy1[sizeof (int)];
+      char dummy2[sizeof (Node::NodePtrVecPtr)];
+
+      // "number"
+      char dummy3[sizeof (int)];
 
       // "taxon"
       // "quoted_taxon"
       // leaf
-      char dummy2[sizeof (std::string)];
+      char dummy4[sizeof (std::string)];
     };
 
     /// The size of the largest semantic type.
@@ -487,6 +494,32 @@ namespace yy {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Node::NodePtr&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Node::NodePtr& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Node::NodePtrVecPtr&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Node::NodePtrVecPtr& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, int&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -535,10 +568,17 @@ namespace yy {
         // Type destructor.
 switch (yytype)
     {
-      case 9: // "number"
+      case 11: // tree
       case 12: // node
       case 14: // inner_node
+        value.template destroy< Node::NodePtr > ();
+        break;
+
       case 15: // node_list
+        value.template destroy< Node::NodePtrVecPtr > ();
+        break;
+
+      case 9: // "number"
         value.template destroy< int > ();
         break;
 
@@ -1197,10 +1237,17 @@ switch (yytype)
   {
     switch (this->type_get ())
     {
-      case 9: // "number"
+      case 11: // tree
       case 12: // node
       case 14: // inner_node
+        value.move< Node::NodePtr > (std::move (that.value));
+        break;
+
       case 15: // node_list
+        value.move< Node::NodePtrVecPtr > (std::move (that.value));
+        break;
+
+      case 9: // "number"
         value.move< int > (std::move (that.value));
         break;
 
@@ -1225,10 +1272,17 @@ switch (yytype)
   {
     switch (this->type_get ())
     {
-      case 9: // "number"
+      case 11: // tree
       case 12: // node
       case 14: // inner_node
+        value.copy< Node::NodePtr > (YY_MOVE (that.value));
+        break;
+
       case 15: // node_list
+        value.copy< Node::NodePtrVecPtr > (YY_MOVE (that.value));
+        break;
+
+      case 9: // "number"
         value.copy< int > (YY_MOVE (that.value));
         break;
 
@@ -1260,10 +1314,17 @@ switch (yytype)
     super_type::move (s);
     switch (this->type_get ())
     {
-      case 9: // "number"
+      case 11: // tree
       case 12: // node
       case 14: // inner_node
+        value.move< Node::NodePtr > (YY_MOVE (s.value));
+        break;
+
       case 15: // node_list
+        value.move< Node::NodePtrVecPtr > (YY_MOVE (s.value));
+        break;
+
+      case 9: // "number"
         value.move< int > (YY_MOVE (s.value));
         break;
 
@@ -1343,7 +1404,7 @@ switch (yytype)
   }
 
 } // yy
-#line 1347 "src/parser.hpp"
+#line 1408 "src/parser.hpp"
 
 
 

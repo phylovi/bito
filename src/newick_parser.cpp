@@ -9,9 +9,7 @@ int main(int argc, char *argv[]) {
       drv.trace_parsing = true;
     else if (argv[i] == std::string("-s"))
       drv.trace_scanning = true;
-    else if (!drv.parse_file(argv[i])) {
-      std::cout << drv.result << '\n';
-    } else
-      res = 1;
+    else
+      drv.parse_file(argv[i]);
   return res;
 }

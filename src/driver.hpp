@@ -18,27 +18,27 @@ class driver {
 
   std::map<std::string, int> taxa;
 
-  // TODO: reconsider result
-  int result;
-  // For indexing trees.
-  int id_counter;
+  // The next available id for tree parsing.
+  int next_id;
   // Is this the first tree we have parsed? The first tree gets to set up
   // indexing for the taxon names.
   bool first_tree;
-
-  // Run the parser on file F.  Return 0 on success.
-  int parse_file(const std::string& fname);
-  // The name of the file being parsed.
-  std::string fname;
-
   // Whether to generate parser debug traces.
   bool trace_parsing;
   // Whether to generate scanner debug traces.
   bool trace_scanning;
+  // The most recent tree parsed.
+  Node::NodePtr latest_tree;
 
-  int parse_string(const std::string& s);
-  int parse_string(yy::parser& parserObject, const std::string& s);
   void scan_string(const std::string& s);
+  Node::NodePtr parse_string(const std::string& s);
+  Node::NodePtr parse_string(yy::parser& parserObject, const std::string& s);
+
+  // The name of the file being parsed.
+  // TODO do we use this?
+  std::string fname;
+  // Run the parser on file F.  Return 0 on success.
+  void parse_file(const std::string& fname);
 
   // The token's location used by the scanner.
   yy::location location;

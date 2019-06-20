@@ -22,8 +22,10 @@ class MyClass {
 // These ids have to increase as we go towards the root.
 // TODO we don't check to make sure that the ids are different.
 class Node {
+ public:
   typedef std::shared_ptr<Node> NodePtr;
   typedef std::vector<NodePtr> NodePtrVec;
+  typedef std::shared_ptr<NodePtrVec> NodePtrVecPtr;
 
  private:
   NodePtrVec children_;
@@ -39,7 +41,7 @@ class Node {
   Node(unsigned int id) : children_({}), id_(id) {}
   Node(NodePtrVec children, unsigned int id) : children_(children), id_(id) {
     // Nodes must have a larger index than their children.
-    assert(MaxChildIdx(children) < id);
+    // assert(MaxChildIdx(children) < id);
   }
   Node(NodePtr left, NodePtr right, unsigned int id)
       : Node({left, right}, id) {}
@@ -70,6 +72,9 @@ class Node {
 
   // Class methods
   static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
+  static NodePtr Join(NodePtrVec children, int id) {
+    return std::make_shared<Node>(children, id);
+  };
   static NodePtr Join(NodePtr left, NodePtr right, int id) {
     return std::make_shared<Node>(left, right, id);
   };

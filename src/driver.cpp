@@ -1,18 +1,21 @@
 #include "driver.hpp"
 #include "parser.hpp"
+#include "sbn.hpp"
 
 #include <fstream>
 #include <iostream>
 
 driver::driver()
-    : id_counter(0),
+    : next_id(0),
       first_tree(false),
       trace_parsing(false),
-      trace_scanning(false) {}
+      trace_scanning(false),
+      latest_tree(nullptr) {}
 
 
-int driver::parse_file(const std::string &f) {
-  int return_code;
+// TODO return the trees
+void driver::parse_file(const std::string &f) {
+  Node::NodePtr treePtr;
 
   fname = f;
   yy::parser parserObject(*this);
@@ -20,8 +23,9 @@ int driver::parse_file(const std::string &f) {
 
   std::ifstream in(fname.c_str());
   if (!in) {
+    // TODO do we want to raise an exception?
     std::cerr << "Cannot open the File : " << fname << std::endl;
-    return false;
+    return;
   }
   std::string str;
   unsigned int line_number = 1;
@@ -29,12 +33,7 @@ int driver::parse_file(const std::string &f) {
     location.initialize(nullptr, line_number);
     // Line contains string of length > 0 then save it in vector
     if (str.size() > 0) {
-      return_code = parse_string(parserObject, str);
-      if (return_code != 0) {
-        std::cout << "problem parsing!\n";
-        break;
-      }
-      std::cout << result << '\n';
+      treePtr = parse_string(parserObject, str);
       for (auto &x : taxa) {
         std::cout << x.first << " => " << x.second << '\n';
       }
@@ -42,20 +41,22 @@ int driver::parse_file(const std::string &f) {
     line_number++;
   }
   in.close();
-  return return_code;
 }
 
 
 // Parse a string with an existing parser object.
-int driver::parse_string(yy::parser &parserObject, const std::string &str) {
+Node::NodePtr driver::parse_string(yy::parser &parserObject,
+                                   const std::string &str) {
   this->scan_string(str);
-  int res = parserObject();
-  return res;
+  int return_code = parserObject();
+  // TODO
+  assert(return_code == 0);
+  return latest_tree;
 }
 
 
 // Make a parser and then parse a string for a one-off parsing.
-int driver::parse_string(const std::string &str) {
+Node::NodePtr driver::parse_string(const std::string &str) {
   yy::parser parserObject(*this);
   parserObject.set_debug_level(trace_parsing);
   return parse_string(parserObject, str);

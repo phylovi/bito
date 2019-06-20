@@ -11,7 +11,9 @@
 %define parse.assert
 
 %code requires {
+  // This code gets inserted into the parser header file.
   #include <string>
+  #include "sbn.hpp"
   class driver;
 }
 
@@ -25,7 +27,6 @@
 
 %code {
 #include "driver.hpp"
-#include "sbn.hpp"
 }
 
 %define api.token.prefix {TOK_}
@@ -43,10 +44,11 @@
 %token <std::string> TAXON "taxon"
 %token <std::string> QUOTED_TAXON "quoted_taxon"
 %token <int> NUMBER "number"
-%type  <int> node
+%type  <Node::NodePtr> node
 %type  <std::string> leaf
-%type  <int> inner_node
-%type  <int> node_list
+%type  <Node::NodePtr> inner_node
+%type  <Node::NodePtrVecPtr> node_list
+%type  <Node::NodePtr> tree
 
 %printer { yyo << $$; } <*>;
 
@@ -56,23 +58,23 @@
 %start tree;
 tree:
   node ";" {
-    drv.result = $1;
-    drv.id_counter = 0; // Reset id_counter to zero.
+    drv.latest_tree = $1;
+    drv.next_id = 0;
     drv.first_tree = false;
   };
 
 node:
   leaf {
-    $$ = 1;
     if (drv.first_tree) {
       // This is our first tree, so we're going to initialize the taxon set.
-      drv.taxa[$1] = drv.id_counter;
+      drv.taxa[$1] = drv.next_id;
     }
     else {
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa.
       std::cout << drv.taxa[$1] << std::endl;
     }
-    drv.id_counter++;
+    drv.next_id++;
+    $$ = Node::Leaf(drv.next_id);
   }
 | inner_node
 
@@ -86,14 +88,18 @@ leaf:
 
 inner_node:
   "(" node_list ")" {
-    $$ = $2;
-    drv.id_counter++;
+    $$ = Node::Join(*$2, drv.next_id);
+    drv.next_id++;
   }
 
 node_list:
-  node
-  | node_list "," node {
-    $$ = $1 + $3;
+  node {
+    $$ = std::make_shared<Node::NodePtrVec>();
+    $$->push_back($1);
+  }
+| node_list "," node {
+    $1->push_back($3);
+    $$ = $1;
   }
 
 %%
