@@ -14,6 +14,6 @@ TEST_CASE("Trying out Node") {
   std::cout << "\nPostOrder\n";
   t->PostOrder(print_pos);
 
-  // std::cout t->
+  REQUIRE(std::vector<unsigned int>({2, 1, 0, 1, 2}) == t->MaxLeafTrace());
 }
 

@@ -122,7 +122,7 @@ class Node {
 
 
   std::vector<unsigned int> MaxLeafTrace() {
-    std::vector<unsigned int> trace(2 * this->MaxLeafID());
+    std::vector<unsigned int> trace;
     PreOrder([&trace](Node* node) { trace.push_back(node->MaxLeafID()); });
     return trace;
   }
