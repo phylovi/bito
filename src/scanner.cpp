@@ -540,7 +540,7 @@ int yy_flex_debug = 1;
 
 static yyconst flex_int16_t yy_rule_linenum[11] =
     {   0,
-       56,   57,   59,   60,   61,   62,   64,   65,   66,   67
+       57,   58,   60,   61,   62,   63,   65,   66,   67,   68
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -879,7 +879,8 @@ YY_DECL
   // Code run each time yylex is called.
   loc.step ();
 
-#line 883 "src/scanner.cpp"
+
+#line 884 "src/scanner.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -957,69 +958,69 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 56 "src/scanner.ll"
+#line 57 "src/scanner.ll"
 loc.step ();
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 57 "src/scanner.ll"
+#line 58 "src/scanner.ll"
 loc.lines (yyleng); loc.step ();
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 59 "src/scanner.ll"
+#line 60 "src/scanner.ll"
 return yy::parser::make_COMMA     (loc);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 60 "src/scanner.ll"
+#line 61 "src/scanner.ll"
 return yy::parser::make_SEMICOLON (loc);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 61 "src/scanner.ll"
+#line 62 "src/scanner.ll"
 return yy::parser::make_LPAREN    (loc);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 62 "src/scanner.ll"
+#line 63 "src/scanner.ll"
 return yy::parser::make_RPAREN    (loc);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 64 "src/scanner.ll"
+#line 65 "src/scanner.ll"
 return make_NUMBER (yytext, loc);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 65 "src/scanner.ll"
+#line 66 "src/scanner.ll"
 return yy::parser::make_TAXON (yytext, loc);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 66 "src/scanner.ll"
+#line 67 "src/scanner.ll"
 return yy::parser::make_QUOTED_TAXON (yytext, loc);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 67 "src/scanner.ll"
+#line 68 "src/scanner.ll"
 {
                        throw yy::parser::syntax_error
                          (loc, "invalid character: " + std::string(yytext));
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 71 "src/scanner.ll"
+#line 72 "src/scanner.ll"
 return yy::parser::make_END (loc);
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 73 "src/scanner.ll"
+#line 74 "src/scanner.ll"
 ECHO;
 	YY_BREAK
-#line 1023 "src/scanner.cpp"
+#line 1024 "src/scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2122,7 +2123,7 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 73 "src/scanner.ll"
+#line 74 "src/scanner.ll"
 
 
 /* *** Section: user code. It's just regular C++. */
@@ -2138,8 +2139,8 @@ make_NUMBER (const std::string &s, const yy::parser::location_type& loc)
 }
 
 void
-Driver::scan_string(const std::string &s) {
+Driver::ScanString(const std::string &str) {
   yy_flex_debug = trace_scanning_;
-  yy_scan_string(s.c_str());
+  yy_scan_string(str.c_str());
 }
 

@@ -10,6 +10,6 @@ int main(int argc, char *argv[]) {
     else if (argv[i] == std::string("-s"))
       drv.trace_scanning_ = true;
     else
-      drv.parse_file(argv[i]);
+      drv.ParseFile(argv[i]);
   return res;
 }

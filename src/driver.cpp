@@ -16,11 +16,11 @@ Driver::Driver()
 
 
 // TODO return the trees
-void Driver::parse_file(const std::string &fname) {
+void Driver::ParseFile(const std::string &fname) {
   Node::NodePtr treePtr;
 
-  yy::parser parserObject(*this);
-  parserObject.set_debug_level(trace_parsing_);
+  yy::parser parser_instance(*this);
+  parser_instance.set_debug_level(trace_parsing_);
 
   std::ifstream in(fname.c_str());
   if (!in) {
@@ -35,7 +35,7 @@ void Driver::parse_file(const std::string &fname) {
     // Line contains string of length > 0 then save it in vector
     if (str.size() > 0) {
       std::cout << str << std::endl;
-      treePtr = parse_string(parserObject, str);
+      treePtr = ParseString(parser_instance, str);
       std::cout << treePtr->ToNewick() << std::endl;
       //  for (auto &x : taxa) {
       //    std::cout << x.first << " => " << x.second << '\n';
@@ -47,23 +47,20 @@ void Driver::parse_file(const std::string &fname) {
   in.close();
 }
 
-
-// Parse a string with an existing parser object.
-Node::NodePtr Driver::parse_string(yy::parser &parserObject,
-                                   const std::string &str) {
-  this->scan_string(str);
-  int return_code = parserObject();
+Node::NodePtr Driver::ParseString(yy::parser &parser_instance,
+                                  const std::string &str) {
+  this->ScanString(str);
+  int return_code = parser_instance();
   // TODO
   assert(return_code == 0);
   return latest_tree_;
 }
 
 
-// Make a parser and then parse a string for a one-off parsing.
-Node::NodePtr Driver::parse_string(const std::string &str) {
-  yy::parser parserObject(*this);
-  parserObject.set_debug_level(trace_parsing_);
-  return parse_string(parserObject, str);
+Node::NodePtr Driver::ParseString(const std::string &str) {
+  yy::parser parser_instance(*this);
+  parser_instance.set_debug_level(trace_parsing_);
+  return ParseString(parser_instance, str);
 }
 
 // Note that a number of Driver methods are implemented in scanner.ll.

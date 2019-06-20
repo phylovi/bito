@@ -16,8 +16,6 @@ class Driver {
  public:
   Driver();
 
-  std::map<std::string, int> taxa;
-
   // The next available id for parsing the first tree.
   int next_id_;
   // Is this the first tree we have parsed? The first tree gets to set up
@@ -29,15 +27,20 @@ class Driver {
   bool trace_scanning_;
   // The most recent tree parsed.
   Node::NodePtr latest_tree_;
-
-  void scan_string(const std::string& s);
-  Node::NodePtr parse_string(const std::string& s);
-  Node::NodePtr parse_string(yy::parser& parserObject, const std::string& s);
-
-  // Run the parser on file F.  Return 0 on success.
-  void parse_file(const std::string& fname);
-
-  // The token's location used by the scanner.
+  // Map from taxon names to their numerical identifiers.
+  std::map<std::string, int> taxa_;
+  // The token's location, used by the scanner to give good debug info.
   yy::location location;
+
+  // Scan a string with flex.
+  void ScanString(const std::string& str);
+  // Parse a string with an existing parser object.
+  Node::NodePtr ParseString(yy::parser& parser_instance,
+                            const std::string& str);
+  // Make a parser and then parse a string for a one-off parsing.
+  Node::NodePtr ParseString(const std::string& s);
+  // Run the parser on a file.
+  void ParseFile(const std::string& fname);
+
 };
 #endif  // ! DRIVER_HH
