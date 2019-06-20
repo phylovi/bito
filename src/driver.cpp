@@ -33,7 +33,9 @@ void driver::parse_file(const std::string &f) {
     location.initialize(nullptr, line_number);
     // Line contains string of length > 0 then save it in vector
     if (str.size() > 0) {
+      std::cout << str << std::endl;
       treePtr = parse_string(parserObject, str);
+      std::cout << treePtr->ToNewick() << std::endl;
       for (auto &x : taxa) {
         std::cout << x.first << " => " << x.second << '\n';
       }

@@ -64,6 +64,20 @@ class Node {
     f(this);
   }
 
+  std::string ToNewick() {
+    if (IsLeaf()) {
+      return std::to_string(id_);
+    }
+    std::string str = "(";
+    for (auto child : children_) {
+      str.append(child->ToNewick());
+      str.append(",");
+      }
+      str.append(")");
+    str.append(std::to_string(id_));
+    return str;
+  }
+
   unsigned int LeafCount() {
     unsigned int count = 0;
     PreOrder([&count](Node* node) { count += node->IsLeaf(); });
