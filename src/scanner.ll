@@ -53,6 +53,7 @@ BLANK         [ \t\r]
   // Code run each time yylex is called.
   loc.step ();
 %}
+
 {BLANK}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 
