@@ -101,11 +101,30 @@ class Node {
     f(this);
   }
 
-  // no longer needed, but a nice demo of PreOrder.
-  unsigned int LeafCount() {
-    unsigned int count = 0;
-    PreOrder([&count](Node* node) { count += node->IsLeaf(); });
-    return count;
+  // void LevelOrder(std::function<void(Node*)> f) {
+  //   for (auto child : children_) {
+  //     child->PostOrder(f);
+  //   }
+  //   f(this);
+  // }
+
+  //     def _iter_descendants_levelorder(self, is_leaf_fn=None):
+  //         """
+  //         Iterate over all desdecendant nodes.
+  //         """
+  //         tovisit = deque([self])
+  //         while len(tovisit)>0:
+  //             node = tovisit.popleft()
+  //             yield node
+  //             if not is_leaf_fn or not is_leaf_fn(node):
+  //                 tovisit.extend(node.children)
+  //
+
+
+  std::vector<unsigned int> MaxLeafTrace() {
+    std::vector<unsigned int> trace(2 * this->MaxLeafID());
+    PreOrder([&trace](Node* node) { trace.push_back(node->MaxLeafID()); });
+    return trace;
   }
 
   std::string ToNewick() {
@@ -135,17 +154,5 @@ class Node {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("Trying out Node") {
-  auto t =
-      Node::Join(Node::Join(Node::Leaf(0), Node::Leaf(1), 3), Node::Leaf(2), 4);
-
-  REQUIRE(t->LeafCount() == 3);
-
-  auto print_pos = [](Node* t) {
-    std::cout << "I'm at " << t->GetId() << std::endl;
-  };
-  t->PreOrder(print_pos);
-  t->PostOrder(print_pos);
-}
 #endif
 #endif

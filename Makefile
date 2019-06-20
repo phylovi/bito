@@ -1,6 +1,6 @@
 default:
 	make bison && scons && ./_build/newick_parser _ignore/ex.nwk | paste _ignore/ex.nwk -
-	./_build/test/doctest
+	./_build/doctest
 
 bison: src/parser.yy src/scanner.ll
 	bison -o src/parser.cpp --defines=src/parser.hpp src/parser.yy
