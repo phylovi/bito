@@ -58,12 +58,20 @@ tree:
   node ";" {
     drv.result = $1;
     drv.id_counter = 0; // Reset id_counter to zero.
+    drv.first_tree = false;
   };
 
 node:
   leaf {
     $$ = 1;
-    drv.taxa[$1] = drv.id_counter;
+    if (drv.first_tree) {
+      // This is our first tree, so we're going to initialize the taxon set.
+      drv.taxa[$1] = drv.id_counter;
+    }
+    else {
+      // This is not our first tree, so we're going to get taxon numberings from drv.taxa.
+      std::cout << drv.taxa[$1] << std::endl;
+    }
     drv.id_counter++;
   }
 | inner_node

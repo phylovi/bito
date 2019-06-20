@@ -4,14 +4,12 @@
 #include <fstream>
 #include <iostream>
 
-driver::driver() : trace_parsing(false), trace_scanning(false) {
-  id_counter = 0;
-}
+driver::driver()
+    : id_counter(0),
+      first_tree(false),
+      trace_parsing(false),
+      trace_scanning(false) {}
 
-void driver::clear() {
-  id_counter = 0;
-  taxa.clear();
-}
 
 int driver::parse_file(const std::string &f) {
   int return_code;
@@ -31,8 +29,7 @@ int driver::parse_file(const std::string &f) {
     location.initialize(nullptr, line_number);
     // Line contains string of length > 0 then save it in vector
     if (str.size() > 0) {
-      this->scan_string(str);
-      return_code = parserObject();
+      return_code = parse_string(parserObject, str);
       if (return_code != 0) {
         std::cout << "problem parsing!\n";
         break;
@@ -41,7 +38,6 @@ int driver::parse_file(const std::string &f) {
       for (auto &x : taxa) {
         std::cout << x.first << " => " << x.second << '\n';
       }
-      clear();
     }
     line_number++;
   }
@@ -49,12 +45,20 @@ int driver::parse_file(const std::string &f) {
   return return_code;
 }
 
-int driver::parse_string(const std::string &s) {
-  yy::parser parserObject(*this);
-  parserObject.set_debug_level(trace_parsing);
-  this->scan_string(s);
+
+// Parse a string with an existing parser object.
+int driver::parse_string(yy::parser &parserObject, const std::string &str) {
+  this->scan_string(str);
   int res = parserObject();
   return res;
+}
+
+
+// Make a parser and then parse a string for a one-off parsing.
+int driver::parse_string(const std::string &str) {
+  yy::parser parserObject(*this);
+  parserObject.set_debug_level(trace_parsing);
+  return parse_string(parserObject, str);
 }
 
 // Note that a number of driver methods are implemented in scanner.ll.

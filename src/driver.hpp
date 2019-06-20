@@ -9,17 +9,22 @@
 // ... and declare it for the parser's sake.
 YY_DECL;
 
-// Conducting the whole scanning and parsing of Calc++.
+// Conducting the scanning and parsing of trees.
+// Note that this class is only for parsing a collection of trees on the same
+// taxon set.
 class driver {
  public:
   driver();
 
   std::map<std::string, int> taxa;
 
+  // TODO: reconsider result
   int result;
+  // For indexing trees.
   int id_counter;
-
-  void clear();
+  // Is this the first tree we have parsed? The first tree gets to set up
+  // indexing for the taxon names.
+  bool first_tree;
 
   // Run the parser on file F.  Return 0 on success.
   int parse_file(const std::string& fname);
@@ -32,6 +37,7 @@ class driver {
   bool trace_scanning;
 
   int parse_string(const std::string& s);
+  int parse_string(yy::parser& parserObject, const std::string& s);
   void scan_string(const std::string& s);
 
   // The token's location used by the scanner.
