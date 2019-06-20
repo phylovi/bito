@@ -30,14 +30,15 @@
 %option noyywrap nounput noinput batch debug
 
 %{
-  // A number symbol corresponding to the value in S.
   yy::parser::symbol_type
-  make_NUMBER (const std::string &s, const yy::parser::location_type& loc);
+  make_FLOAT (const std::string &str, const yy::parser::location_type& loc);
+  // Note below allow everything for floats in the regex, but just fail at the
+  // stof step below in make_FLOAT.
 %}
 
 TAXON         [[:graph:]]{-}[();,:'\[\]]+
+FLOAT         [[:graph:]]{-}[();,:'\[\]]+
 QUOTED_TAXON  ('[^']*')+
-INT           [0-9]+
 BLANK         [ \t\r]
 
 %{
@@ -57,14 +58,13 @@ BLANK         [ \t\r]
 {BLANK}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 
-","                  return yy::parser::make_COMMA     (loc);
-";"                  return yy::parser::make_SEMICOLON (loc);
-"("                  return yy::parser::make_LPAREN    (loc);
-")"                  return yy::parser::make_RPAREN    (loc);
-
-{INT}                return make_NUMBER (yytext, loc);
-{TAXON}              return yy::parser::make_TAXON (yytext, loc);
-{QUOTED_TAXON}       return yy::parser::make_QUOTED_TAXON (yytext, loc);
+","                  return yy::parser::make_COMMA(loc);
+";"                  return yy::parser::make_SEMICOLON(loc);
+"("                  return yy::parser::make_LPAREN(loc);
+")"                  return yy::parser::make_RPAREN(loc);
+{FLOAT}              return make_FLOAT(yytext, loc);
+{TAXON}              return yy::parser::make_TAXON(yytext, loc);
+{QUOTED_TAXON}       return yy::parser::make_QUOTED_TAXON(yytext, loc);
 .                    {
                        throw yy::parser::syntax_error
                          (loc, "invalid character: " + std::string(yytext));
@@ -75,13 +75,17 @@ BLANK         [ \t\r]
 /* *** Section: user code. It's just regular C++. */
 
 yy::parser::symbol_type
-make_NUMBER (const std::string &s, const yy::parser::location_type& loc)
+make_FLOAT (const std::string &str, const yy::parser::location_type& loc)
 {
-  errno = 0;
-  long n = std::strtol (s.c_str(), NULL, 10);
-  if (! (INT_MIN <= n && n <= INT_MAX && errno != ERANGE))
-    throw yy::parser::syntax_error (loc, "integer is out of range: " + s);
-  return yy::parser::make_NUMBER ((int) n, loc);
+  float f;
+  try {
+    f = std::stof(str);
+  } catch (...) {
+    std::cerr << "Float conversion failed on '" << str << "'\n'";
+    abort();
+  }
+
+  return yy::parser::make_FLOAT (f, loc);
 }
 
 void

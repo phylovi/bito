@@ -43,8 +43,9 @@
 
 %token <std::string> TAXON "taxon"
 %token <std::string> QUOTED_TAXON "quoted_taxon"
-%token <int> NUMBER "number"
+%token <float> FLOAT "float"
 %type  <Node::NodePtr> node
+%type  <Node::NodePtr> fancy_node
 %type  <std::string> leaf
 %type  <Node::NodePtr> inner_node
 %type  <Node::NodePtrVecPtr> node_list
@@ -57,10 +58,17 @@
 
 %start tree;
 tree:
-  node ";" {
+  fancy_node ";" {
     drv.latest_tree_ = $1;
     drv.first_tree_ = false;
   };
+
+fancy_node:
+  node
+| node ":" "float" {
+  // Dropping the branch length for now.
+  $$ = $1;
+}
 
 node:
   leaf {
@@ -99,11 +107,11 @@ inner_node:
   }
 
 node_list:
-  node {
+  fancy_node {
     $$ = std::make_shared<Node::NodePtrVec>();
     $$->push_back($1);
   }
-| node_list "," node {
+| node_list "," fancy_node {
     $1->push_back($3);
     $$ = $1;
   }

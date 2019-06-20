@@ -458,11 +458,10 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static yyconst flex_int16_t yy_accept[22] =
+static yyconst flex_int16_t yy_accept[20] =
     {   0,
-        0,    0,   12,   10,    1,    2,    8,   10,    5,    6,
-        3,    7,    4,    1,    2,    8,    0,    9,    7,    0,
-        0
+        0,    0,   12,   10,    1,    2,    7,   10,    5,    6,
+        3,    4,    1,    2,    7,    0,    9,    0,    0
     } ;
 
 static yyconst YY_CHAR yy_ec[256] =
@@ -471,8 +470,8 @@ static yyconst YY_CHAR yy_ec[256] =
         1,    1,    2,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    2,    4,    4,    4,    4,    4,    4,    5,    6,
-        7,    4,    4,    8,    4,    4,    4,    9,    9,    9,
-        9,    9,    9,    9,    9,    9,    9,    1,   10,    4,
+        7,    4,    4,    8,    4,    4,    4,    4,    4,    4,
+        4,    4,    4,    4,    4,    4,    4,    1,    9,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
@@ -497,39 +496,37 @@ static yyconst YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static yyconst YY_CHAR yy_meta[11] =
+static yyconst YY_CHAR yy_meta[10] =
     {   0,
-        1,    1,    1,    2,    1,    1,    1,    1,    2,    1
+        1,    1,    1,    1,    1,    1,    1,    1,    1
     } ;
 
-static yyconst flex_uint16_t yy_base[24] =
+static yyconst flex_uint16_t yy_base[21] =
     {   0,
-        0,    0,   23,   24,   20,   18,    0,   15,   24,   24,
-       24,   10,   24,   16,   14,    0,   11,   10,    0,    9,
-       24,   11,   10
+        0,    0,   21,   22,   18,   16,   14,   12,   22,   22,
+       22,   22,   14,   12,   10,    8,    7,    6,   22,    9
     } ;
 
-static yyconst flex_int16_t yy_def[24] =
+static yyconst flex_int16_t yy_def[21] =
     {   0,
-       21,    1,   21,   21,   21,   21,   22,   23,   21,   21,
-       21,   22,   21,   21,   21,   22,   23,   21,   12,   23,
-        0,   21,   21
+       19,    1,   19,   19,   19,   19,   19,   20,   19,   19,
+       19,   19,   19,   19,   19,   20,   19,   20,    0,   19
     } ;
 
-static yyconst flex_uint16_t yy_nxt[35] =
+static yyconst flex_uint16_t yy_nxt[32] =
     {   0,
-        4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
-       17,   17,   16,   18,   20,   18,   15,   14,   19,   18,
-       15,   14,   21,    3,   21,   21,   21,   21,   21,   21,
-       21,   21,   21,   21
+        4,    5,    6,    7,    8,    9,   10,   11,   12,   16,
+       17,   18,   17,   15,   14,   13,   17,   15,   14,   13,
+       19,    3,   19,   19,   19,   19,   19,   19,   19,   19,
+       19
     } ;
 
-static yyconst flex_int16_t yy_chk[35] =
+static yyconst flex_int16_t yy_chk[32] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-       23,   23,   22,   20,   18,   17,   15,   14,   12,    8,
-        6,    5,    3,   21,   21,   21,   21,   21,   21,   21,
-       21,   21,   21,   21
+        1,    1,    1,    1,    1,    1,    1,    1,    1,   20,
+       18,   17,   16,   15,   14,   13,    8,    7,    6,    5,
+        3,   19,   19,   19,   19,   19,   19,   19,   19,   19,
+       19
     } ;
 
 static yy_state_type yy_last_accepting_state;
@@ -540,7 +537,7 @@ int yy_flex_debug = 1;
 
 static yyconst flex_int16_t yy_rule_linenum[11] =
     {   0,
-       57,   58,   60,   61,   62,   63,   65,   66,   67,   68
+       58,   59,   61,   62,   63,   64,   65,   66,   67,   68
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -581,13 +578,14 @@ char *yytext;
 #endif
 #define YY_NO_INPUT 1
 #line 33 "src/scanner.ll"
-  // A number symbol corresponding to the value in S.
   yy::parser::symbol_type
-  make_NUMBER (const std::string &s, const yy::parser::location_type& loc);
-#line 44 "src/scanner.ll"
+  make_FLOAT (const std::string &str, const yy::parser::location_type& loc);
+  // Note below allow everything for floats in the regex, but just fail at the
+  // stof step below in make_FLOAT.
+#line 45 "src/scanner.ll"
   // Code run each time a pattern is matched.
   # define YY_USER_ACTION  loc.columns (yyleng);
-#line 591 "src/scanner.cpp"
+#line 589 "src/scanner.cpp"
 
 #define INITIAL 0
 
@@ -870,7 +868,7 @@ YY_DECL
 
 	{
 /* %% [7.0] user's declarations go here */
-#line 48 "src/scanner.ll"
+#line 49 "src/scanner.ll"
 
 
 /* *** Section: rules. */
@@ -880,7 +878,7 @@ YY_DECL
   loc.step ();
 
 
-#line 884 "src/scanner.cpp"
+#line 882 "src/scanner.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -909,13 +907,13 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 22 )
+				if ( yy_current_state >= 20 )
 					yy_c = yy_meta[(unsigned int) yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + (flex_int16_t) yy_c];
 			++yy_cp;
 			}
-		while ( yy_current_state != 21 );
+		while ( yy_current_state != 19 );
 		yy_cp = (yy_last_accepting_cpos);
 		yy_current_state = (yy_last_accepting_state);
 
@@ -958,50 +956,50 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 57 "src/scanner.ll"
+#line 58 "src/scanner.ll"
 loc.step ();
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 58 "src/scanner.ll"
+#line 59 "src/scanner.ll"
 loc.lines (yyleng); loc.step ();
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 60 "src/scanner.ll"
-return yy::parser::make_COMMA     (loc);
+#line 61 "src/scanner.ll"
+return yy::parser::make_COMMA(loc);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 61 "src/scanner.ll"
-return yy::parser::make_SEMICOLON (loc);
+#line 62 "src/scanner.ll"
+return yy::parser::make_SEMICOLON(loc);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 62 "src/scanner.ll"
-return yy::parser::make_LPAREN    (loc);
+#line 63 "src/scanner.ll"
+return yy::parser::make_LPAREN(loc);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 63 "src/scanner.ll"
-return yy::parser::make_RPAREN    (loc);
+#line 64 "src/scanner.ll"
+return yy::parser::make_RPAREN(loc);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
 #line 65 "src/scanner.ll"
-return make_NUMBER (yytext, loc);
+return make_FLOAT(yytext, loc);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
 #line 66 "src/scanner.ll"
-return yy::parser::make_TAXON (yytext, loc);
+return yy::parser::make_TAXON(yytext, loc);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
 #line 67 "src/scanner.ll"
-return yy::parser::make_QUOTED_TAXON (yytext, loc);
+return yy::parser::make_QUOTED_TAXON(yytext, loc);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
@@ -1020,7 +1018,7 @@ YY_RULE_SETUP
 #line 74 "src/scanner.ll"
 ECHO;
 	YY_BREAK
-#line 1024 "src/scanner.cpp"
+#line 1022 "src/scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1337,7 +1335,7 @@ static int yy_get_next_buffer (void)
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 22 )
+			if ( yy_current_state >= 20 )
 				yy_c = yy_meta[(unsigned int) yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + (flex_int16_t) yy_c];
@@ -1370,11 +1368,11 @@ static int yy_get_next_buffer (void)
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 22 )
+		if ( yy_current_state >= 20 )
 			yy_c = yy_meta[(unsigned int) yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (flex_int16_t) yy_c];
-	yy_is_jam = (yy_current_state == 21);
+	yy_is_jam = (yy_current_state == 19);
 
 		return yy_is_jam ? 0 : yy_current_state;
 }
@@ -2129,13 +2127,17 @@ void yyfree (void * ptr )
 /* *** Section: user code. It's just regular C++. */
 
 yy::parser::symbol_type
-make_NUMBER (const std::string &s, const yy::parser::location_type& loc)
+make_FLOAT (const std::string &str, const yy::parser::location_type& loc)
 {
-  errno = 0;
-  long n = std::strtol (s.c_str(), NULL, 10);
-  if (! (INT_MIN <= n && n <= INT_MAX && errno != ERANGE))
-    throw yy::parser::syntax_error (loc, "integer is out of range: " + s);
-  return yy::parser::make_NUMBER ((int) n, loc);
+  float f;
+  try {
+    f = std::stof(str);
+  } catch (...) {
+    std::cerr << "Float conversion failed on '" << str << "'\n'";
+    abort();
+  }
+
+  return yy::parser::make_FLOAT (f, loc);
 }
 
 void

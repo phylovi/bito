@@ -371,6 +371,7 @@ namespace yy {
     union union_type
     {
       // tree
+      // fancy_node
       // node
       // inner_node
       char dummy1[sizeof (Node::NodePtr)];
@@ -378,8 +379,8 @@ namespace yy {
       // node_list
       char dummy2[sizeof (Node::NodePtrVecPtr)];
 
-      // "number"
-      char dummy3[sizeof (int)];
+      // "float"
+      char dummy3[sizeof (float)];
 
       // "taxon"
       // "quoted_taxon"
@@ -439,7 +440,7 @@ namespace yy {
         TOK_RPAREN = 261,
         TOK_TAXON = 262,
         TOK_QUOTED_TAXON = 263,
-        TOK_NUMBER = 264
+        TOK_FLOAT = 264
       };
     };
 
@@ -520,13 +521,13 @@ namespace yy {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, int&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, float&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const int& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const float& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -568,23 +569,24 @@ namespace yy {
         // Type destructor.
 switch (yytype)
     {
-      case 11: // tree
-      case 12: // node
-      case 14: // inner_node
+      case 12: // tree
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.template destroy< Node::NodePtr > ();
         break;
 
-      case 15: // node_list
+      case 17: // node_list
         value.template destroy< Node::NodePtrVecPtr > ();
         break;
 
-      case 9: // "number"
-        value.template destroy< int > ();
+      case 9: // "float"
+        value.template destroy< float > ();
         break;
 
       case 7: // "taxon"
       case 8: // "quoted_taxon"
-      case 13: // leaf
+      case 15: // leaf
         value.template destroy< std::string > ();
         break;
 
@@ -667,26 +669,26 @@ switch (yytype)
       symbol_type (int tok, location_type l)
         : super_type(token_type (tok), std::move (l))
       {
-        YYASSERT (tok == token::TOK_END || tok == token::TOK_COMMA || tok == token::TOK_SEMICOLON || tok == token::TOK_LPAREN || tok == token::TOK_RPAREN);
+        YYASSERT (tok == token::TOK_END || tok == token::TOK_COMMA || tok == token::TOK_SEMICOLON || tok == token::TOK_LPAREN || tok == token::TOK_RPAREN || tok == 265);
       }
 #else
       symbol_type (int tok, const location_type& l)
         : super_type(token_type (tok), l)
       {
-        YYASSERT (tok == token::TOK_END || tok == token::TOK_COMMA || tok == token::TOK_SEMICOLON || tok == token::TOK_LPAREN || tok == token::TOK_RPAREN);
+        YYASSERT (tok == token::TOK_END || tok == token::TOK_COMMA || tok == token::TOK_SEMICOLON || tok == token::TOK_LPAREN || tok == token::TOK_RPAREN || tok == 265);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
-      symbol_type (int tok, int v, location_type l)
+      symbol_type (int tok, float v, location_type l)
         : super_type(token_type (tok), std::move (v), std::move (l))
       {
-        YYASSERT (tok == token::TOK_NUMBER);
+        YYASSERT (tok == token::TOK_FLOAT);
       }
 #else
-      symbol_type (int tok, const int& v, const location_type& l)
+      symbol_type (int tok, const float& v, const location_type& l)
         : super_type(token_type (tok), v, l)
       {
-        YYASSERT (tok == token::TOK_NUMBER);
+        YYASSERT (tok == token::TOK_FLOAT);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -847,16 +849,16 @@ switch (yytype)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_NUMBER (int v, location_type l)
+      make_FLOAT (float v, location_type l)
       {
-        return symbol_type (token::TOK_NUMBER, std::move (v), std::move (l));
+        return symbol_type (token::TOK_FLOAT, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_NUMBER (const int& v, const location_type& l)
+      make_FLOAT (const float& v, const location_type& l)
       {
-        return symbol_type (token::TOK_NUMBER, v, l);
+        return symbol_type (token::TOK_FLOAT, v, l);
       }
 #endif
 
@@ -1165,12 +1167,12 @@ switch (yytype)
     enum
     {
       yyeof_ = 0,
-      yylast_ = 11,     ///< Last index in yytable_.
-      yynnts_ = 6,  ///< Number of nonterminal symbols.
-      yyfinal_ = 10, ///< Termination state number.
+      yylast_ = 13,     ///< Last index in yytable_.
+      yynnts_ = 7,  ///< Number of nonterminal symbols.
+      yyfinal_ = 11, ///< Termination state number.
       yyterror_ = 1,
       yyerrcode_ = 256,
-      yyntokens_ = 10  ///< Number of tokens.
+      yyntokens_ = 11  ///< Number of tokens.
     };
 
 
@@ -1214,9 +1216,9 @@ switch (yytype)
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9
+       5,     6,     7,     8,     9,    10
     };
-    const unsigned user_token_number_max_ = 264;
+    const unsigned user_token_number_max_ = 265;
     const token_number_type undef_token_ = 2;
 
     if (static_cast<int> (t) <= yyeof_)
@@ -1237,23 +1239,24 @@ switch (yytype)
   {
     switch (this->type_get ())
     {
-      case 11: // tree
-      case 12: // node
-      case 14: // inner_node
+      case 12: // tree
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.move< Node::NodePtr > (std::move (that.value));
         break;
 
-      case 15: // node_list
+      case 17: // node_list
         value.move< Node::NodePtrVecPtr > (std::move (that.value));
         break;
 
-      case 9: // "number"
-        value.move< int > (std::move (that.value));
+      case 9: // "float"
+        value.move< float > (std::move (that.value));
         break;
 
       case 7: // "taxon"
       case 8: // "quoted_taxon"
-      case 13: // leaf
+      case 15: // leaf
         value.move< std::string > (std::move (that.value));
         break;
 
@@ -1272,23 +1275,24 @@ switch (yytype)
   {
     switch (this->type_get ())
     {
-      case 11: // tree
-      case 12: // node
-      case 14: // inner_node
+      case 12: // tree
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.copy< Node::NodePtr > (YY_MOVE (that.value));
         break;
 
-      case 15: // node_list
+      case 17: // node_list
         value.copy< Node::NodePtrVecPtr > (YY_MOVE (that.value));
         break;
 
-      case 9: // "number"
-        value.copy< int > (YY_MOVE (that.value));
+      case 9: // "float"
+        value.copy< float > (YY_MOVE (that.value));
         break;
 
       case 7: // "taxon"
       case 8: // "quoted_taxon"
-      case 13: // leaf
+      case 15: // leaf
         value.copy< std::string > (YY_MOVE (that.value));
         break;
 
@@ -1314,23 +1318,24 @@ switch (yytype)
     super_type::move (s);
     switch (this->type_get ())
     {
-      case 11: // tree
-      case 12: // node
-      case 14: // inner_node
+      case 12: // tree
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.move< Node::NodePtr > (YY_MOVE (s.value));
         break;
 
-      case 15: // node_list
+      case 17: // node_list
         value.move< Node::NodePtrVecPtr > (YY_MOVE (s.value));
         break;
 
-      case 9: // "number"
-        value.move< int > (YY_MOVE (s.value));
+      case 9: // "float"
+        value.move< float > (YY_MOVE (s.value));
         break;
 
       case 7: // "taxon"
       case 8: // "quoted_taxon"
-      case 13: // leaf
+      case 15: // leaf
         value.move< std::string > (YY_MOVE (s.value));
         break;
 
@@ -1398,13 +1403,14 @@ switch (yytype)
     const unsigned short
     yytoken_number_[] =
     {
-       0,   256,   257,   258,   259,   260,   261,   262,   263,   264
+       0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
+     265
     };
     return token_type (yytoken_number_[type]);
   }
 
 } // yy
-#line 1408 "src/parser.hpp"
+#line 1414 "src/parser.hpp"
 
 
 
