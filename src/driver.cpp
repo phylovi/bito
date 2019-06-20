@@ -1,9 +1,11 @@
 #include "driver.hpp"
-#include "parser.hpp"
-#include "sbn.hpp"
 
 #include <fstream>
 #include <iostream>
+
+#include "parser.hpp"
+#include "sbn.hpp"
+
 
 driver::driver()
     : next_id(0),
@@ -35,9 +37,10 @@ void driver::parse_file(const std::string &fname) {
       std::cout << str << std::endl;
       treePtr = parse_string(parserObject, str);
       std::cout << treePtr->ToNewick() << std::endl;
-      for (auto &x : taxa) {
-        std::cout << x.first << " => " << x.second << '\n';
-      }
+      //  for (auto &x : taxa) {
+      //    std::cout << x.first << " => " << x.second << '\n';
+      //  }
+      std::cout << std::endl;
     }
     line_number++;
   }
