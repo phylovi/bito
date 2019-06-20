@@ -14,10 +14,9 @@ driver::driver()
 
 
 // TODO return the trees
-void driver::parse_file(const std::string &f) {
+void driver::parse_file(const std::string &fname) {
   Node::NodePtr treePtr;
 
-  fname = f;
   yy::parser parserObject(*this);
   parserObject.set_debug_level(trace_parsing);
 

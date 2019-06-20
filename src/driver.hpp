@@ -34,9 +34,6 @@ class driver {
   Node::NodePtr parse_string(const std::string& s);
   Node::NodePtr parse_string(yy::parser& parserObject, const std::string& s);
 
-  // The name of the file being parsed.
-  // TODO do we use this?
-  std::string fname;
   // Run the parser on file F.  Return 0 on success.
   void parse_file(const std::string& fname);
 
