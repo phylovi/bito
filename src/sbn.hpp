@@ -112,13 +112,15 @@ class Node {
       return std::to_string(MaxLeafID());
     }
     std::string str = "(";
-    for (auto child : children_) {
-      str.append(child->ToNewick());
-      str.append(",");
+    for (auto iter = children_.begin(); iter != children_.end(); iter++) {
+      if (iter != children_.begin()) {
+        str.append(",");
       }
-      str.append(")");
-      str.append(TagString());
-      return str;
+      str.append((*iter)->ToNewick());
+    }
+    str.append(")");
+    str.append(TagString());
+    return str;
   }
 
   unsigned int LeafCount() {
