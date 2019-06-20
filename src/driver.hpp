@@ -30,7 +30,7 @@ class Driver {
   // Map from taxon names to their numerical identifiers.
   std::map<std::string, int> taxa_;
   // The token's location, used by the scanner to give good debug info.
-  yy::location location;
+  yy::location location_;
 
   // Scan a string with flex.
   void ScanString(const std::string& str);
@@ -40,7 +40,6 @@ class Driver {
   // Make a parser and then parse a string for a one-off parsing.
   Node::NodePtr ParseString(const std::string& s);
   // Run the parser on a file.
-  void ParseFile(const std::string& fname);
-
+  Node::NodePtrVecPtr ParseFile(const std::string& fname);
 };
 #endif  // ! DRIVER_HH

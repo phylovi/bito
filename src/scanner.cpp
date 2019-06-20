@@ -875,7 +875,7 @@ YY_DECL
 
 /* *** Section: rules. */
   // A handy shortcut to the location held by the driver.
-  yy::location& loc = drv.location;
+  yy::location& loc = drv.location_;
   // Code run each time yylex is called.
   loc.step ();
 
