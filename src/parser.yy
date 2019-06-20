@@ -20,8 +20,8 @@
 // The parsing context.
 %param { Driver& drv }
 
+// Enable location tracking for the parser.
 %locations
-
 %define parse.trace
 %define parse.error verbose
 

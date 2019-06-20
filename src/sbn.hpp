@@ -1,6 +1,4 @@
 // TODO
-// how to format comments so they show in ycm?
-// make parser and driver Google style compliant
 // document tag
 // add branch lengths
 
@@ -29,10 +27,6 @@ class MyClass {
 };
 
 
-// Class for a tree.
-// Has nodes with unsigned integer ids.
-// These ids have to increase as we go towards the root.
-// TODO we don't check to make sure that the ids are different.
 class Node {
  public:
   typedef std::shared_ptr<Node> NodePtr;
@@ -47,7 +41,6 @@ class Node {
   // Make copy constructors private to eliminate copying.
   Node(const Node&);
   Node& operator=(const Node&);
-
 
  public:
   Node(unsigned int leaf_id)
@@ -73,14 +66,13 @@ class Node {
                 }
                 return (difference < 0);
               });
+    max_leaf_id_ = children_.back()->MaxLeafID();
     leaf_count_ = 0;
-    max_leaf_id_ = 0;
     for (auto child : children_) {
       leaf_count_ += child->LeafCount();
     }
     // Children are sorted by their max_leaf_id, so we can get the max by
     // looking at the last element.
-    max_leaf_id_ = children_.back()->MaxLeafID();
   }
   ~Node() {
     // std::cout << "Destroying node " << TagString() << std::endl;
@@ -89,6 +81,7 @@ class Node {
   unsigned int MaxLeafID() const { return max_leaf_id_; }
   unsigned int LeafCount() const { return leaf_count_; }
   bool IsLeaf() { return children_.empty(); }
+
   std::string TagString() {
     return "<" + std::to_string(max_leaf_id_) + "," +
            std::to_string(leaf_count_) + ">";
@@ -108,9 +101,16 @@ class Node {
     f(this);
   }
 
+  // no longer needed, but a nice demo of PreOrder.
+  unsigned int LeafCount() {
+    unsigned int count = 0;
+    PreOrder([&count](Node* node) { count += node->IsLeaf(); });
+    return count;
+  }
+
   std::string ToNewick() {
     if (IsLeaf()) {
-      return std::to_string(MaxLeafID());
+      return TagString();
     }
     std::string str = "(";
     for (auto iter = children_.begin(); iter != children_.end(); iter++) {
@@ -122,12 +122,6 @@ class Node {
     str.append(")");
     str.append(TagString());
     return str;
-  }
-
-  unsigned int LeafCount() {
-    unsigned int count = 0;
-    PreOrder([&count](Node* node) { count += node->IsLeaf(); });
-    return count;
   }
 
   // Class methods
