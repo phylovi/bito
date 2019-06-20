@@ -36,14 +36,14 @@
 %token
   END  0  "end of file"
   COMMA      ","
+  COLON      ":"
   SEMICOLON  ";"
   LPAREN     "("
   RPAREN     ")"
 ;
 
-%token <std::string> TAXON "taxon"
-%token <std::string> QUOTED_TAXON "quoted_taxon"
-%token <float> FLOAT "float"
+%token <std::string> LABEL "label"
+%token <std::string> QUOTED "quoted"
 %type  <Node::NodePtr> node
 %type  <Node::NodePtr> fancy_node
 %type  <std::string> leaf
@@ -65,9 +65,18 @@ tree:
 
 fancy_node:
   node
-| node ":" "float" {
-  // Dropping the branch length for now.
+| node ":" "label" {
   $$ = $1;
+
+  float branch_length;
+  try {
+    branch_length = std::stof($3);
+  } catch (...) {
+    std::cerr << "Float conversion failed on branch length '" << $3 << "'\n'";
+    abort();
+  }
+
+  // Do something with branch_length...
 }
 
 node:
@@ -93,10 +102,10 @@ node:
 | inner_node
 
 leaf:
-  "taxon" {
+  "label" {
     $$ = $1;
   }
-| "quoted_taxon" {
+| "quoted" {
     $$ = $1;
   }
 

@@ -458,10 +458,10 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static yyconst flex_int16_t yy_accept[20] =
+static yyconst flex_int16_t yy_accept[21] =
     {   0,
-        0,    0,   12,   10,    1,    2,    7,   10,    5,    6,
-        3,    4,    1,    2,    7,    0,    9,    0,    0
+        0,    0,   12,   10,    1,    2,    8,   10,    6,    7,
+        3,    4,    5,    1,    2,    8,    0,    9,    0,    0
     } ;
 
 static yyconst YY_CHAR yy_ec[256] =
@@ -471,7 +471,7 @@ static yyconst YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    2,    4,    4,    4,    4,    4,    4,    5,    6,
         7,    4,    4,    8,    4,    4,    4,    4,    4,    4,
-        4,    4,    4,    4,    4,    4,    4,    1,    9,    4,
+        4,    4,    4,    4,    4,    4,    4,    9,   10,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
@@ -496,37 +496,39 @@ static yyconst YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static yyconst YY_CHAR yy_meta[10] =
+static yyconst YY_CHAR yy_meta[11] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    1
+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1
     } ;
 
-static yyconst flex_uint16_t yy_base[21] =
+static yyconst flex_uint16_t yy_base[22] =
     {   0,
-        0,    0,   21,   22,   18,   16,   14,   12,   22,   22,
-       22,   22,   14,   12,   10,    8,    7,    6,   22,    9
+        0,    0,   22,   23,   19,   17,   15,   13,   23,   23,
+       23,   23,   23,   15,   13,   11,    9,    8,    7,   23,
+       10
     } ;
 
-static yyconst flex_int16_t yy_def[21] =
+static yyconst flex_int16_t yy_def[22] =
     {   0,
-       19,    1,   19,   19,   19,   19,   19,   20,   19,   19,
-       19,   19,   19,   19,   19,   20,   19,   20,    0,   19
+       20,    1,   20,   20,   20,   20,   20,   21,   20,   20,
+       20,   20,   20,   20,   20,   20,   21,   20,   21,    0,
+       20
     } ;
 
-static yyconst flex_uint16_t yy_nxt[32] =
+static yyconst flex_uint16_t yy_nxt[34] =
     {   0,
-        4,    5,    6,    7,    8,    9,   10,   11,   12,   16,
-       17,   18,   17,   15,   14,   13,   17,   15,   14,   13,
-       19,    3,   19,   19,   19,   19,   19,   19,   19,   19,
-       19
+        4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
+       17,   18,   19,   18,   16,   15,   14,   18,   16,   15,
+       14,   20,    3,   20,   20,   20,   20,   20,   20,   20,
+       20,   20,   20
     } ;
 
-static yyconst flex_int16_t yy_chk[32] =
+static yyconst flex_int16_t yy_chk[34] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,   20,
-       18,   17,   16,   15,   14,   13,    8,    7,    6,    5,
-        3,   19,   19,   19,   19,   19,   19,   19,   19,   19,
-       19
+        1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
+       21,   19,   18,   17,   16,   15,   14,    8,    7,    6,
+        5,    3,   20,   20,   20,   20,   20,   20,   20,   20,
+       20,   20,   20
     } ;
 
 static yy_state_type yy_last_accepting_state;
@@ -537,7 +539,7 @@ int yy_flex_debug = 1;
 
 static yyconst flex_int16_t yy_rule_linenum[11] =
     {   0,
-       58,   59,   61,   62,   63,   64,   65,   66,   67,   68
+       50,   51,   53,   54,   55,   56,   57,   58,   59,   60
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -577,15 +579,10 @@ char *yytext;
 #error "We require flex version > 2.6."
 #endif
 #define YY_NO_INPUT 1
-#line 33 "src/scanner.ll"
-  yy::parser::symbol_type
-  make_FLOAT (const std::string &str, const yy::parser::location_type& loc);
-  // Note below allow everything for floats in the regex, but just fail at the
-  // stof step below in make_FLOAT.
-#line 45 "src/scanner.ll"
+#line 37 "src/scanner.ll"
   // Code run each time a pattern is matched.
   # define YY_USER_ACTION  loc.columns (yyleng);
-#line 589 "src/scanner.cpp"
+#line 586 "src/scanner.cpp"
 
 #define INITIAL 0
 
@@ -868,7 +865,7 @@ YY_DECL
 
 	{
 /* %% [7.0] user's declarations go here */
-#line 49 "src/scanner.ll"
+#line 41 "src/scanner.ll"
 
 
 /* *** Section: rules. */
@@ -878,7 +875,7 @@ YY_DECL
   loc.step ();
 
 
-#line 882 "src/scanner.cpp"
+#line 879 "src/scanner.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -907,13 +904,13 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 20 )
+				if ( yy_current_state >= 21 )
 					yy_c = yy_meta[(unsigned int) yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + (flex_int16_t) yy_c];
 			++yy_cp;
 			}
-		while ( yy_current_state != 19 );
+		while ( yy_current_state != 20 );
 		yy_cp = (yy_last_accepting_cpos);
 		yy_current_state = (yy_last_accepting_state);
 
@@ -956,69 +953,69 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 58 "src/scanner.ll"
+#line 50 "src/scanner.ll"
 loc.step ();
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 59 "src/scanner.ll"
+#line 51 "src/scanner.ll"
 loc.lines (yyleng); loc.step ();
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 61 "src/scanner.ll"
+#line 53 "src/scanner.ll"
 return yy::parser::make_COMMA(loc);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 62 "src/scanner.ll"
-return yy::parser::make_SEMICOLON(loc);
+#line 54 "src/scanner.ll"
+return yy::parser::make_COLON(loc);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 63 "src/scanner.ll"
-return yy::parser::make_LPAREN(loc);
+#line 55 "src/scanner.ll"
+return yy::parser::make_SEMICOLON(loc);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 64 "src/scanner.ll"
-return yy::parser::make_RPAREN(loc);
+#line 56 "src/scanner.ll"
+return yy::parser::make_LPAREN(loc);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 65 "src/scanner.ll"
-return make_FLOAT(yytext, loc);
+#line 57 "src/scanner.ll"
+return yy::parser::make_RPAREN(loc);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 66 "src/scanner.ll"
-return yy::parser::make_TAXON(yytext, loc);
+#line 58 "src/scanner.ll"
+return yy::parser::make_LABEL(yytext, loc);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 67 "src/scanner.ll"
-return yy::parser::make_QUOTED_TAXON(yytext, loc);
+#line 59 "src/scanner.ll"
+return yy::parser::make_QUOTED(yytext, loc);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 68 "src/scanner.ll"
+#line 60 "src/scanner.ll"
 {
-                       throw yy::parser::syntax_error
-                         (loc, "invalid character: " + std::string(yytext));
+            throw yy::parser::syntax_error
+              (loc, "invalid character: " + std::string(yytext));
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 72 "src/scanner.ll"
+#line 64 "src/scanner.ll"
 return yy::parser::make_END (loc);
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 74 "src/scanner.ll"
+#line 66 "src/scanner.ll"
 ECHO;
 	YY_BREAK
-#line 1022 "src/scanner.cpp"
+#line 1019 "src/scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1335,7 +1332,7 @@ static int yy_get_next_buffer (void)
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 20 )
+			if ( yy_current_state >= 21 )
 				yy_c = yy_meta[(unsigned int) yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + (flex_int16_t) yy_c];
@@ -1368,11 +1365,11 @@ static int yy_get_next_buffer (void)
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 20 )
+		if ( yy_current_state >= 21 )
 			yy_c = yy_meta[(unsigned int) yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + (flex_int16_t) yy_c];
-	yy_is_jam = (yy_current_state == 19);
+	yy_is_jam = (yy_current_state == 20);
 
 		return yy_is_jam ? 0 : yy_current_state;
 }
@@ -2121,24 +2118,10 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 74 "src/scanner.ll"
+#line 66 "src/scanner.ll"
 
 
 /* *** Section: user code. It's just regular C++. */
-
-yy::parser::symbol_type
-make_FLOAT (const std::string &str, const yy::parser::location_type& loc)
-{
-  float f;
-  try {
-    f = std::stof(str);
-  } catch (...) {
-    std::cerr << "Float conversion failed on '" << str << "'\n'";
-    abort();
-  }
-
-  return yy::parser::make_FLOAT (f, loc);
-}
 
 void
 Driver::ScanString(const std::string &str) {

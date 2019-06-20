@@ -29,16 +29,8 @@
 
 %option noyywrap nounput noinput batch debug
 
-%{
-  yy::parser::symbol_type
-  make_FLOAT (const std::string &str, const yy::parser::location_type& loc);
-  // Note below allow everything for floats in the regex, but just fail at the
-  // stof step below in make_FLOAT.
-%}
-
-TAXON         [[:graph:]]{-}[();,:'\[\]]+
-FLOAT         [[:graph:]]{-}[();,:'\[\]]+
-QUOTED_TAXON  ('[^']*')+
+LABEL         [[:graph:]]{-}[();,:'\[\]]+
+QUOTED        ('[^']*')+
 BLANK         [ \t\r]
 
 %{
@@ -58,35 +50,21 @@ BLANK         [ \t\r]
 {BLANK}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 
-","                  return yy::parser::make_COMMA(loc);
-";"                  return yy::parser::make_SEMICOLON(loc);
-"("                  return yy::parser::make_LPAREN(loc);
-")"                  return yy::parser::make_RPAREN(loc);
-{FLOAT}              return make_FLOAT(yytext, loc);
-{TAXON}              return yy::parser::make_TAXON(yytext, loc);
-{QUOTED_TAXON}       return yy::parser::make_QUOTED_TAXON(yytext, loc);
-.                    {
-                       throw yy::parser::syntax_error
-                         (loc, "invalid character: " + std::string(yytext));
+","       return yy::parser::make_COMMA(loc);
+":"       return yy::parser::make_COLON(loc);
+";"       return yy::parser::make_SEMICOLON(loc);
+"("       return yy::parser::make_LPAREN(loc);
+")"       return yy::parser::make_RPAREN(loc);
+{LABEL}   return yy::parser::make_LABEL(yytext, loc);
+{QUOTED}  return yy::parser::make_QUOTED(yytext, loc);
+.         {
+            throw yy::parser::syntax_error
+              (loc, "invalid character: " + std::string(yytext));
 }
-<<EOF>>              return yy::parser::make_END (loc);
+<<EOF>>   return yy::parser::make_END (loc);
 
 %%
 /* *** Section: user code. It's just regular C++. */
-
-yy::parser::symbol_type
-make_FLOAT (const std::string &str, const yy::parser::location_type& loc)
-{
-  float f;
-  try {
-    f = std::stof(str);
-  } catch (...) {
-    std::cerr << "Float conversion failed on '" << str << "'\n'";
-    abort();
-  }
-
-  return yy::parser::make_FLOAT (f, loc);
-}
 
 void
 Driver::ScanString(const std::string &str) {
