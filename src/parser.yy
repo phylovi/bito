@@ -68,20 +68,17 @@ fancy_node:
 | node ":" "label" {
   $$ = $1;
 
-  float branch_length;
   try {
-    branch_length = std::stof($3);
+    // Eventually do something with this float...
+    std::stof($3);
   } catch (...) {
     std::cerr << "Float conversion failed on branch length '" << $3 << "'\n'";
     abort();
   }
-
-  // Do something with branch_length...
 }
 
 node:
   leaf {
-    int leaf_id;
     if (drv.first_tree_) {
       // This is our first tree, so we're going to initialize the taxon set.
       drv.taxa_[$1] = drv.next_id_;
