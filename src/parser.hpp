@@ -49,7 +49,7 @@
   // This code gets inserted into the parser header file.
   #include <string>
   #include "sbn.hpp"
-  class driver;
+  class Driver;
 
 #line 55 "src/parser.hpp"
 
@@ -705,7 +705,7 @@ switch (yytype)
     };
 
     /// Build a parser object.
-    parser (driver& drv_yyarg);
+    parser (Driver& drv_yyarg);
     virtual ~parser ();
 
     /// Parse.  An alias for parse ().
@@ -1175,7 +1175,7 @@ switch (yytype)
 
 
     // User arguments.
-    driver& drv;
+    Driver& drv;
   };
 
   inline

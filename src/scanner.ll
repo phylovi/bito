@@ -84,7 +84,7 @@ make_NUMBER (const std::string &s, const yy::parser::location_type& loc)
 }
 
 void
-driver::scan_string(const std::string &s) {
-  yy_flex_debug = trace_scanning;
+Driver::scan_string(const std::string &s) {
+  yy_flex_debug = trace_scanning_;
   yy_scan_string(s.c_str());
 }

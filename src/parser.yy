@@ -14,11 +14,11 @@
   // This code gets inserted into the parser header file.
   #include <string>
   #include "sbn.hpp"
-  class driver;
+  class Driver;
 }
 
 // The parsing context.
-%param { driver& drv }
+%param { Driver& drv }
 
 %locations
 
@@ -58,18 +58,18 @@
 %start tree;
 tree:
   node ";" {
-    drv.latest_tree = $1;
-    drv.first_tree = false;
+    drv.latest_tree_ = $1;
+    drv.first_tree_ = false;
   };
 
 node:
   leaf {
     int leaf_id;
-    if (drv.first_tree) {
+    if (drv.first_tree_) {
       // This is our first tree, so we're going to initialize the taxon set.
-      drv.taxa[$1] = drv.next_id;
-      $$ = Node::Leaf(drv.next_id);
-    drv.next_id++;
+      drv.taxa[$1] = drv.next_id_;
+      $$ = Node::Leaf(drv.next_id_);
+    drv.next_id_++;
     }
     else {
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa.

@@ -184,7 +184,7 @@ namespace yy {
 
 
   /// Build a parser object.
-  parser::parser (driver& drv_yyarg)
+  parser::parser (Driver& drv_yyarg)
     :
 #if YYDEBUG
       yydebug_ (false),
@@ -682,8 +682,8 @@ namespace yy {
   case 2:
 #line 60 "src/parser.yy"
     {
-    drv.latest_tree = yystack_[1].value.as < Node::NodePtr > ();
-    drv.first_tree = false;
+    drv.latest_tree_ = yystack_[1].value.as < Node::NodePtr > ();
+    drv.first_tree_ = false;
   }
 #line 689 "src/parser.cpp"
     break;
@@ -692,11 +692,11 @@ namespace yy {
 #line 66 "src/parser.yy"
     {
     int leaf_id;
-    if (drv.first_tree) {
+    if (drv.first_tree_) {
       // This is our first tree, so we're going to initialize the taxon set.
-      drv.taxa[yystack_[0].value.as < std::string > ()] = drv.next_id;
-      yylhs.value.as < Node::NodePtr > () = Node::Leaf(drv.next_id);
-    drv.next_id++;
+      drv.taxa[yystack_[0].value.as < std::string > ()] = drv.next_id_;
+      yylhs.value.as < Node::NodePtr > () = Node::Leaf(drv.next_id_);
+    drv.next_id_++;
     }
     else {
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa.

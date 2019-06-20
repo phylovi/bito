@@ -3,12 +3,12 @@
 
 int main(int argc, char *argv[]) {
   int res = 0;
-  driver drv;
+  Driver drv;
   for (int i = 1; i < argc; ++i)
     if (argv[i] == std::string("-p"))
-      drv.trace_parsing = true;
+      drv.trace_parsing_ = true;
     else if (argv[i] == std::string("-s"))
-      drv.trace_scanning = true;
+      drv.trace_scanning_ = true;
     else
       drv.parse_file(argv[i]);
   return res;
