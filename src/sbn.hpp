@@ -1,8 +1,7 @@
 #ifndef __SBN_HPP
 #define __SBN_HPP
 
-#include "doctest.h"
-
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -39,8 +38,8 @@ class Node {
  public:
   Node(unsigned int id) : children_({}), id_(id) {}
   Node(NodePtrVec children, unsigned int id) : children_(children), id_(id) {
-    REQUIRE_MESSAGE(MaxChildIdx(children) < id,
-                    "Nodes must have a larger index than their children.");
+    // Nodes must have a larger index than their children.
+    assert(MaxChildIdx(children) < id);
   }
   Node(NodePtr left, NodePtr right, unsigned int id)
       : Node({left, right}, id) {}
@@ -75,7 +74,7 @@ class Node {
     return std::make_shared<Node>(left, right, id);
   };
   static unsigned int MaxChildIdx(NodePtrVec children) {
-    REQUIRE(~children.empty());
+    assert(~children.empty());
     // 0 is the smallest value for an unsigned integer.
     unsigned int result = 0;
     for (auto child : children) {
@@ -85,7 +84,7 @@ class Node {
   }
 };
 
-
+#ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Trying out Node") {
   auto t =
       Node::Join(Node::Join(Node::Leaf(0), Node::Leaf(1), 3), Node::Leaf(2), 4);
@@ -98,5 +97,5 @@ TEST_CASE("Trying out Node") {
   t->PreOrder(print_pos);
   t->PostOrder(print_pos);
 }
-
+#endif
 #endif

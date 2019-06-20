@@ -34,15 +34,19 @@
 // are private implementation details.  Do not rely on them.
 
 
+
+
+
 #include "parser.hpp"
 
 
 // Unqualified %code blocks.
-#line 26 "parser.yy"
+#line 26 "src/parser.yy"
 
-# include "driver.hh"
+#include "driver.hpp"
+#include "sbn.hpp"
 
-#line 49 "parser.cpp"
+#line 50 "src/parser.cpp"
 
 
 #ifndef YY_
@@ -136,7 +140,7 @@
 #define YYRECOVERING()  (!!yyerrstatus_)
 
 namespace yy {
-#line 143 "parser.cpp"
+#line 144 "src/parser.cpp"
 
 
   /* Return YYSTR after stripping away unnecessary quotes and
@@ -354,45 +358,45 @@ namespace yy {
     switch (yytype)
     {
       case 7: // "taxon"
-#line 50 "parser.yy"
+#line 51 "src/parser.yy"
         { yyo << yysym.value.template as < std::string > (); }
-#line 363 "parser.cpp"
+#line 364 "src/parser.cpp"
         break;
 
       case 8: // "quoted_taxon"
-#line 50 "parser.yy"
+#line 51 "src/parser.yy"
         { yyo << yysym.value.template as < std::string > (); }
-#line 369 "parser.cpp"
+#line 370 "src/parser.cpp"
         break;
 
       case 9: // "number"
-#line 50 "parser.yy"
+#line 51 "src/parser.yy"
         { yyo << yysym.value.template as < int > (); }
-#line 375 "parser.cpp"
+#line 376 "src/parser.cpp"
         break;
 
       case 12: // node
-#line 50 "parser.yy"
+#line 51 "src/parser.yy"
         { yyo << yysym.value.template as < int > (); }
-#line 381 "parser.cpp"
+#line 382 "src/parser.cpp"
         break;
 
       case 13: // leaf
-#line 50 "parser.yy"
+#line 51 "src/parser.yy"
         { yyo << yysym.value.template as < std::string > (); }
-#line 387 "parser.cpp"
+#line 388 "src/parser.cpp"
         break;
 
       case 14: // inner_node
-#line 50 "parser.yy"
+#line 51 "src/parser.yy"
         { yyo << yysym.value.template as < int > (); }
-#line 393 "parser.cpp"
+#line 394 "src/parser.cpp"
         break;
 
       case 15: // node_list
-#line 50 "parser.yy"
+#line 51 "src/parser.yy"
         { yyo << yysym.value.template as < int > (); }
-#line 399 "parser.cpp"
+#line 400 "src/parser.cpp"
         break;
 
       default:
@@ -643,71 +647,71 @@ namespace yy {
           switch (yyn)
             {
   case 2:
-#line 57 "parser.yy"
+#line 58 "src/parser.yy"
     {
     drv.result = yystack_[1].value.as < int > ();
     drv.id_counter = 0; // Reset id_counter to zero.
   }
-#line 655 "parser.cpp"
+#line 656 "src/parser.cpp"
     break;
 
   case 3:
-#line 63 "parser.yy"
+#line 64 "src/parser.yy"
     {
     yylhs.value.as < int > () = 1;
     drv.taxa[yystack_[0].value.as < std::string > ()] = drv.id_counter;
     drv.id_counter++;
   }
-#line 665 "parser.cpp"
+#line 666 "src/parser.cpp"
     break;
 
   case 4:
-#line 68 "parser.yy"
+#line 69 "src/parser.yy"
     { yylhs.value.as < int > () = yystack_[0].value.as < int > (); }
-#line 671 "parser.cpp"
+#line 672 "src/parser.cpp"
     break;
 
   case 5:
-#line 71 "parser.yy"
+#line 72 "src/parser.yy"
     {
     yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
   }
-#line 679 "parser.cpp"
+#line 680 "src/parser.cpp"
     break;
 
   case 6:
-#line 74 "parser.yy"
+#line 75 "src/parser.yy"
     {
     yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
   }
-#line 687 "parser.cpp"
+#line 688 "src/parser.cpp"
     break;
 
   case 7:
-#line 79 "parser.yy"
+#line 80 "src/parser.yy"
     {
     yylhs.value.as < int > () = yystack_[1].value.as < int > ();
     drv.id_counter++;
   }
-#line 696 "parser.cpp"
+#line 697 "src/parser.cpp"
     break;
 
   case 8:
-#line 85 "parser.yy"
+#line 86 "src/parser.yy"
     { yylhs.value.as < int > () = yystack_[0].value.as < int > (); }
-#line 702 "parser.cpp"
+#line 703 "src/parser.cpp"
     break;
 
   case 9:
-#line 86 "parser.yy"
+#line 87 "src/parser.yy"
     {
     yylhs.value.as < int > () = yystack_[2].value.as < int > () + yystack_[0].value.as < int > ();
   }
-#line 710 "parser.cpp"
+#line 711 "src/parser.cpp"
     break;
 
 
-#line 714 "parser.cpp"
+#line 715 "src/parser.cpp"
 
             default:
               break;
@@ -1057,7 +1061,7 @@ namespace yy {
   const unsigned char
   parser::yyrline_[] =
   {
-       0,    57,    57,    63,    68,    71,    74,    79,    85,    86
+       0,    58,    58,    64,    69,    72,    75,    80,    86,    87
   };
 
   // Print the state stack on the debug stream.
@@ -1091,9 +1095,9 @@ namespace yy {
 
 
 } // yy
-#line 1098 "parser.cpp"
+#line 1099 "src/parser.cpp"
 
-#line 90 "parser.yy"
+#line 91 "src/parser.yy"
 
 // Epilogue: arbitrary C++.
 

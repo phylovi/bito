@@ -11,7 +11,7 @@
 %define parse.assert
 
 %code requires {
-  # include <string>
+  #include <string>
   class driver;
 }
 
@@ -24,7 +24,8 @@
 %define parse.error verbose
 
 %code {
-# include "driver.hpp"
+#include "driver.hpp"
+#include "sbn.hpp"
 }
 
 %define api.token.prefix {TOK_}
