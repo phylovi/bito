@@ -7,7 +7,7 @@
 
 driver::driver()
     : next_id(0),
-      first_tree(false),
+      first_tree(true),
       trace_parsing(false),
       trace_scanning(false),
       latest_tree(nullptr) {}

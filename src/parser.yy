@@ -73,8 +73,8 @@ node:
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa.
       std::cout << drv.taxa[$1] << std::endl;
     }
-    drv.next_id++;
     $$ = Node::Leaf(drv.next_id);
+    drv.next_id++;
   }
 | inner_node
 

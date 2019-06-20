@@ -700,8 +700,8 @@ namespace yy {
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa.
       std::cout << drv.taxa[yystack_[0].value.as < std::string > ()] << std::endl;
     }
-    drv.next_id++;
     yylhs.value.as < Node::NodePtr > () = Node::Leaf(drv.next_id);
+    drv.next_id++;
   }
 #line 707 "src/parser.cpp"
     break;
