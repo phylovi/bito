@@ -59,7 +59,6 @@
 tree:
   node ";" {
     drv.latest_tree = $1;
-    drv.next_id = 0;
     drv.first_tree = false;
   };
 
@@ -70,6 +69,7 @@ node:
       // This is our first tree, so we're going to initialize the taxon set.
       drv.taxa[$1] = drv.next_id;
       $$ = Node::Leaf(drv.next_id);
+    drv.next_id++;
     }
     else {
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa.
@@ -81,7 +81,6 @@ node:
       }
       $$ = Node::Leaf(leaf_id->second);
     }
-    drv.next_id++;
   }
 | inner_node
 
@@ -96,8 +95,7 @@ leaf:
 inner_node:
   "(" node_list ")" {
   // TODO think more about this dereferencing of a shared pointer.
-    $$ = Node::Join(*$2, drv.next_id);
-    drv.next_id++;
+    $$ = Node::Join(*$2);
   }
 
 node_list:

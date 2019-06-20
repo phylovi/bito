@@ -1,7 +1,12 @@
 // TODO
-// look through abort-- how to handle?
 // how to format comments so they show in ycm?
 // make parser and driver Google style compliant
+// document tag
+
+// To discuss:
+// look through abort-- how to handle?
+// unique_ptr? Are we copying things in parsing?
+// "NodeId" type rather than unsigned int?
 
 #ifndef __SBN_HPP
 #define __SBN_HPP
@@ -35,8 +40,8 @@ class Node {
 
  private:
   NodePtrVec children_;
-  // TODO: "NodeId" type rather than unsigned int?
-  unsigned int id_;
+  unsigned int max_leaf_id_;
+  unsigned int leaf_count_;
 
   // Make copy constructors private to eliminate copying.
   Node(const Node&);
@@ -44,23 +49,49 @@ class Node {
 
 
  public:
-  Node(unsigned int id) : children_({}), id_(id) {}
-  Node(NodePtrVec children, unsigned int id) : children_(children), id_(id) {
-    GrumpyNodePtrVecSort(children);
-    // Nodes must have a larger index than their children.
-    assert(MaxChildIdx(children) < id);
+  Node(unsigned int leaf_id)
+      : children_({}), max_leaf_id_(leaf_id), leaf_count_(1) {}
+  // TODO here we are doing a copy of children?
+  Node(NodePtrVec children) {
+    children_ = children;
+    if (children_.empty()) {
+      // This constructor is for internal nodes, so we can't allow children to
+      // be empty.
+      abort();
+    }
+    // Order the children by their max leaf ids.
+    std::sort(children_.begin(), children_.end(),
+              [](const auto& lhs, const auto& rhs) {
+                int difference = lhs->MaxLeafID() - rhs->MaxLeafID();
+                // Children should have non-overlapping leaf sets, so there
+                // should not be ties.
+                if (difference == 0) {
+                  std::cout << "Tie observed between " << lhs->ToNewick()
+                            << " and " << rhs->ToNewick() << std::endl;
+                  abort();
+                }
+                return (difference < 0);
+              });
+    leaf_count_ = 0;
+    max_leaf_id_ = 0;
+    for (auto child : children_) {
+      leaf_count_ += child->LeafCount();
+    }
+    // Children are sorted by their max_leaf_id, so we can get the max by
+    // looking at the last element.
+    max_leaf_id_ = children_.back()->MaxLeafID();
   }
-  Node(NodePtr left, NodePtr right, unsigned int id)
-      : Node({left, right}, id) {}
-  ~Node() { std::cout << "Destroying node " << id_ << std::endl; }
+  ~Node() {
+    // std::cout << "Destroying node " << TagString() << std::endl;
+  }
 
-  unsigned int GetId() const { return id_; }
+  unsigned int MaxLeafID() const { return max_leaf_id_; }
+  unsigned int LeafCount() const { return leaf_count_; }
   bool IsLeaf() { return children_.empty(); }
-
-  bool operator<(const Node& other) const {
-    return this->GetId() < other.GetId();
+  std::string TagString() {
+    return "<" + std::to_string(max_leaf_id_) + "," +
+           std::to_string(leaf_count_) + ">";
   }
-
 
   void PreOrder(std::function<void(Node*)> f) {
     f(this);
@@ -78,7 +109,7 @@ class Node {
 
   std::string ToNewick() {
     if (IsLeaf()) {
-      return std::to_string(id_);
+      return std::to_string(MaxLeafID());
     }
     std::string str = "(";
     for (auto child : children_) {
@@ -86,8 +117,8 @@ class Node {
       str.append(",");
       }
       str.append(")");
-    str.append(std::to_string(id_));
-    return str;
+      str.append(TagString());
+      return str;
   }
 
   unsigned int LeafCount() {
@@ -98,34 +129,9 @@ class Node {
 
   // Class methods
   static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
-  static NodePtr Join(NodePtrVec children, int id) {
-    return std::make_shared<Node>(children, id);
+  static NodePtr Join(NodePtrVec children) {
+    return std::make_shared<Node>(children);
   };
-  static NodePtr Join(NodePtr left, NodePtr right, int id) {
-    return std::make_shared<Node>(left, right, id);
-  };
-  static unsigned int MaxChildIdx(NodePtrVec children) {
-    assert(~children.empty());
-    // 0 is the smallest value for an unsigned integer.
-    unsigned int result = 0;
-    for (auto child : children) {
-      result = std::max(child->GetId(), result);
-    }
-    return result;
-  }
-  // Grumpy because it doesn't allow ties.
-  static void GrumpyNodePtrVecSort(NodePtrVec children) {
-    std::sort(children.begin(), children.end(),
-              [](const auto& lhs, const auto& rhs) {
-                auto difference = lhs->GetId() - rhs->GetId();
-                if (difference == 0) {
-                  std::cout << "Tie observed between " << lhs->ToNewick()
-                            << " and " << rhs->ToNewick() << std::endl;
-                  abort();
-                }
-                return difference;
-              });
-  }
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
