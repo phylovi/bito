@@ -95,6 +95,7 @@ leaf:
 
 inner_node:
   "(" node_list ")" {
+  // TODO think more about this dereferencing of a shared pointer.
     $$ = Node::Join(*$2, drv.next_id);
     drv.next_id++;
   }

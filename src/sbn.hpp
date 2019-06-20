@@ -1,6 +1,12 @@
+// TODO
+// look through abort-- how to handle?
+// how to format comments so they show in ycm?
+// make parser and driver Google style compliant
+
 #ifndef __SBN_HPP
 #define __SBN_HPP
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <memory>
@@ -40,15 +46,21 @@ class Node {
  public:
   Node(unsigned int id) : children_({}), id_(id) {}
   Node(NodePtrVec children, unsigned int id) : children_(children), id_(id) {
+    GrumpyNodePtrVecSort(children);
     // Nodes must have a larger index than their children.
-    // assert(MaxChildIdx(children) < id);
+    assert(MaxChildIdx(children) < id);
   }
   Node(NodePtr left, NodePtr right, unsigned int id)
       : Node({left, right}, id) {}
   ~Node() { std::cout << "Destroying node " << id_ << std::endl; }
 
-  unsigned int GetId() { return id_; }
+  unsigned int GetId() const { return id_; }
   bool IsLeaf() { return children_.empty(); }
+
+  bool operator<(const Node& other) const {
+    return this->GetId() < other.GetId();
+  }
+
 
   void PreOrder(std::function<void(Node*)> f) {
     f(this);
@@ -100,6 +112,19 @@ class Node {
       result = std::max(child->GetId(), result);
     }
     return result;
+  }
+  // Grumpy because it doesn't allow ties.
+  static void GrumpyNodePtrVecSort(NodePtrVec children) {
+    std::sort(children.begin(), children.end(),
+              [](const auto& lhs, const auto& rhs) {
+                auto difference = lhs->GetId() - rhs->GetId();
+                if (difference == 0) {
+                  std::cout << "Tie observed between " << lhs->ToNewick()
+                            << " and " << rhs->ToNewick() << std::endl;
+                  abort();
+                }
+                return difference;
+              });
   }
 };
 

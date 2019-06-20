@@ -738,32 +738,33 @@ namespace yy {
   case 7:
 #line 97 "src/parser.yy"
     {
+  // TODO think more about this dereferencing of a shared pointer.
     yylhs.value.as < Node::NodePtr > () = Node::Join(*yystack_[1].value.as < Node::NodePtrVecPtr > (), drv.next_id);
     drv.next_id++;
   }
-#line 745 "src/parser.cpp"
+#line 746 "src/parser.cpp"
     break;
 
   case 8:
-#line 103 "src/parser.yy"
+#line 104 "src/parser.yy"
     {
     yylhs.value.as < Node::NodePtrVecPtr > () = std::make_shared<Node::NodePtrVec>();
     yylhs.value.as < Node::NodePtrVecPtr > ()->push_back(yystack_[0].value.as < Node::NodePtr > ());
   }
-#line 754 "src/parser.cpp"
+#line 755 "src/parser.cpp"
     break;
 
   case 9:
-#line 107 "src/parser.yy"
+#line 108 "src/parser.yy"
     {
     yystack_[2].value.as < Node::NodePtrVecPtr > ()->push_back(yystack_[0].value.as < Node::NodePtr > ());
     yylhs.value.as < Node::NodePtrVecPtr > () = yystack_[2].value.as < Node::NodePtrVecPtr > ();
   }
-#line 763 "src/parser.cpp"
+#line 764 "src/parser.cpp"
     break;
 
 
-#line 767 "src/parser.cpp"
+#line 768 "src/parser.cpp"
 
             default:
               break;
@@ -1113,7 +1114,7 @@ namespace yy {
   const unsigned char
   parser::yyrline_[] =
   {
-       0,    60,    60,    67,    86,    89,    92,    97,   103,   107
+       0,    60,    60,    67,    86,    89,    92,    97,   104,   108
   };
 
   // Print the state stack on the debug stream.
@@ -1147,9 +1148,9 @@ namespace yy {
 
 
 } // yy
-#line 1151 "src/parser.cpp"
+#line 1152 "src/parser.cpp"
 
-#line 112 "src/parser.yy"
+#line 113 "src/parser.yy"
 
 // Epilogue: arbitrary C++.
 
