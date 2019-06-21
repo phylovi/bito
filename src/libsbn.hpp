@@ -1,6 +1,6 @@
 
 #include "driver.hpp"
-#include "sbn.hpp"
+#include "tree.hpp"
 
 class SBNInstance {
  public:

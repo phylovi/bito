@@ -13,7 +13,7 @@
 %code requires {
   // This code gets inserted into the parser header file.
   #include <string>
-  #include "sbn.hpp"
+  #include "tree.hpp"
   class Driver;
 }
 

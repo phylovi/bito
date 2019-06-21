@@ -5,7 +5,7 @@
 #include <memory>
 
 #include "parser.hpp"
-#include "sbn.hpp"
+#include "tree.hpp"
 
 
 Driver::Driver()

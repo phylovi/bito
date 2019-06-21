@@ -18,9 +18,9 @@ clean:
 	rm -rf _build
 
 edit:
-	vim -O2 src/sbn.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/parser.yy src/scanner.ll src/newick_parser.cpp test/prep/doctest.py
+	vim -O2 src/tree.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/parser.yy src/scanner.ll src/newick_parser.cpp test/prep/doctest.py
 
 lint:
-	cpplint src/sbn.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/newick_parser.cpp
+	cpplint src/tree.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/newick_parser.cpp
 
 .PHONY: bison prep format clean edit lint

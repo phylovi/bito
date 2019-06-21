@@ -11,7 +11,7 @@ preamble = """\
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 #include "driver.hpp"
-#include "sbn.hpp"
+#include "tree.hpp"
 
 TEST_CASE("Node") {
 

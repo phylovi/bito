@@ -7,8 +7,8 @@
 // unique_ptr? Are we copying things in parsing?
 // "NodeId" type rather than unsigned int?
 
-#ifndef SRC_SBN_HPP_
-#define SRC_SBN_HPP_
+#ifndef SRC_TREE_HPP_
+#define SRC_TREE_HPP_
 
 #include <algorithm>
 #include <cassert>
@@ -137,4 +137,4 @@ class Node {
   }
 };
 
-#endif  // SRC_SBN_HPP_
+#endif  // SRC_TREE_HPP_
