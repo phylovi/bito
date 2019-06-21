@@ -1,10 +1,14 @@
+#include "libsbn.hpp"
 #include "sbn.h"
-#include "sbn.hpp"
 
 extern "C" {
-Node* sbn_newNode() { return new Node(0); }
+SBNInstance* sbn_NewInstance() { return new SBNInstance; }
+void sbn_DeleteInstance(SBNInstance* inst) { delete inst; }
 
-unsigned int sbn_MaxLeafID(Node* n) { return n->MaxLeafID(); }
+void sbn_ParseFile(SBNInstance* inst, const char* fname) {
+  std::string cpp_fname(fname);
+  inst->ParseFile(cpp_fname);
+}
 
-void sbn_deleteNode(Node* n) { delete n; }
+void sbn_PrintStatus(SBNInstance* inst) { inst->PrintStatus(); }
 }

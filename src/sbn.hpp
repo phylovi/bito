@@ -49,8 +49,8 @@ class Node {
                 // Children should have non-overlapping leaf sets, so there
                 // should not be ties.
                 if (difference == 0) {
-                  std::cout << "Tie observed between " << lhs->ToNewick()
-                            << " and " << rhs->ToNewick() << std::endl;
+                  std::cout << "Tie observed between " << lhs->Newick()
+                            << " and " << rhs->Newick() << std::endl;
                   abort();
                 }
                 return (difference < 0);
@@ -72,8 +72,7 @@ class Node {
   bool IsLeaf() { return children_.empty(); }
 
   std::string TagString() {
-    return "<" + std::to_string(max_leaf_id_) + "," +
-           std::to_string(leaf_count_) + ">";
+    return std::to_string(max_leaf_id_) + "_" + std::to_string(leaf_count_);
   }
 
   void PreOrder(std::function<void(Node*)> f) {
@@ -116,7 +115,9 @@ class Node {
     return trace;
   }
 
-  std::string ToNewick() {
+  std::string Newick() { return NewickAux() + ";"; }
+
+  std::string NewickAux() {
     if (IsLeaf()) {
       return TagString();
     }
@@ -125,7 +126,7 @@ class Node {
       if (iter != children_.begin()) {
         str.append(",");
       }
-      str.append((*iter)->ToNewick());
+      str.append((*iter)->NewickAux());
     }
     str.append(")");
     str.append(TagString());
@@ -142,6 +143,4 @@ class Node {
   }
 };
 
-#ifdef DOCTEST_LIBRARY_INCLUDED
-#endif
 #endif

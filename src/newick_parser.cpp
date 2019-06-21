@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
       auto trees = drv.ParseFile(argv[i]);
       if (print_trees) {
         for (auto tree : *trees) {
-          std::cout << tree->ToNewick() << std::endl;
+          std::cout << tree->Newick() << std::endl;
         }
       } else {
         std::cout << "Parsed " << trees->size() << " trees.\n";
