@@ -2,10 +2,12 @@
 #include "munit.h"
 #include "sbn.h"
 
-int main(int argc, char** argv) {
-  struct MyClass* c = newMyClass();
-  MyClass_int_set(c, 3);
-  munit_assert_int(MyClass_int_get(c), ==, 3);
-  deleteMyClass(c);
-  printf("Tests pass\n");
+int main() {
+  struct SBNInstance* inst = sbn_NewInstance();
+  sbn_PrintStatus(inst);
+  sbn_ParseFile(inst, "data/four_taxon.tre");
+  sbn_PrintStatus(inst);
+  // munit_assert_int(sbn_MaxLeafID(n), ==, 0);
+  sbn_DeleteInstance(inst);
+  printf("Successfully deleted instance.\n");
 }

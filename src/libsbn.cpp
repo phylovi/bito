@@ -1,12 +1,18 @@
+#include "libsbn.hpp"
+
+#include <string>
+
 #include "sbn.h"
-#include "sbn.hpp"
+
 
 extern "C" {
-MyClass* newMyClass() { return new MyClass(); }
+SBNInstance* sbn_NewInstance() { return new SBNInstance; }
+void sbn_DeleteInstance(SBNInstance* inst) { delete inst; }
 
-void MyClass_int_set(MyClass* v, int i) { v->int_set(i); }
+void sbn_ParseFile(SBNInstance* inst, const char* fname) {
+  std::string cpp_fname(fname);
+  inst->ParseFile(cpp_fname);
+}
 
-int MyClass_int_get(MyClass* v) { return v->int_get(); }
-
-void deleteMyClass(MyClass* v) { delete v; }
+void sbn_PrintStatus(SBNInstance* inst) { inst->PrintStatus(); }
 }

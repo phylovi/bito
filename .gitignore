@@ -30,5 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Custom
 .sconsign.dblite
 _build
+_ignore
