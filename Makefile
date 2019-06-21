@@ -1,7 +1,7 @@
 default:
 	make bison && scons
-	# ./_build/newick_parser _ignore/ex.nwk | paste _ignore/ex.nwk -
-	#./_build/doctest
+	./_build/newick_parser data/four_taxon.tre | paste data/four_taxon.tre -
+	./_build/doctest
 	./_build/test/test
 
 bison: src/parser.yy src/scanner.ll
@@ -10,6 +10,10 @@ bison: src/parser.yy src/scanner.ll
 
 format:
 	clang-format -i -style=file src/* test/test.c
+
+
+prep:
+	python test/prep/doctest.py
 
 clean:
 	rm -rf _build

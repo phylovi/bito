@@ -13,3 +13,4 @@ C-interface library implementing subsplit Bayes networks for phylogenetic poster
 
 * If you just want to build the library and binaries, use `scons`.
 * If you have modified the lexer and parser, and want to re. This assumes that you have installed Bison > 2.6.
+* If you want to run the test preparation scripts, you need ete3. (`conda install -c etetoolkit ete3`)
