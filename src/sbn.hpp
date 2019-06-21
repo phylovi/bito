@@ -1,4 +1,4 @@
-// TODO
+// TODO(erick)
 // document tag
 // add branch lengths
 
@@ -7,13 +7,14 @@
 // unique_ptr? Are we copying things in parsing?
 // "NodeId" type rather than unsigned int?
 
-#ifndef __SBN_HPP
-#define __SBN_HPP
+#ifndef SRC_SBN_HPP_
+#define SRC_SBN_HPP_
 
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <memory>
+#include <string>
 #include <vector>
 
 class Node {
@@ -32,10 +33,9 @@ class Node {
   Node& operator=(const Node&);
 
  public:
-  Node(unsigned int leaf_id)
+  explicit Node(unsigned int leaf_id)
       : children_({}), max_leaf_id_(leaf_id), leaf_count_(1) {}
-  // TODO here we are doing a copy of children?
-  Node(NodePtrVec children) {
+  explicit Node(NodePtrVec children) {
     children_ = children;
     if (children_.empty()) {
       // This constructor is for internal nodes, so we can't allow children to
@@ -137,10 +137,10 @@ class Node {
   static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
   static NodePtr Join(NodePtrVec children) {
     return std::make_shared<Node>(children);
-  };
+  }
   static NodePtr Join(NodePtr left, NodePtr right) {
     return Join(std::vector<NodePtr>({left, right}));
   }
 };
 
-#endif
+#endif  // SRC_SBN_HPP_

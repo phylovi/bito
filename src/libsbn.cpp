@@ -1,5 +1,9 @@
 #include "libsbn.hpp"
+
+#include <string>
+
 #include "sbn.h"
+
 
 extern "C" {
 SBNInstance* sbn_NewInstance() { return new SBNInstance; }

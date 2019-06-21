@@ -108,7 +108,8 @@ leaf:
 
 inner_node:
   "(" node_list ")" {
-  // TODO think more about this dereferencing of a shared pointer.
+  // TODO think more about this dereferencing of a shared pointer. I think that this gets return value optimized because
+  // $2 goes out of scope, but...
     $$ = Node::Join(*$2);
   }
 

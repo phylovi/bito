@@ -746,32 +746,33 @@ namespace yy {
   case 9:
 #line 110 "src/parser.yy"
     {
-  // TODO think more about this dereferencing of a shared pointer.
+  // TODO think more about this dereferencing of a shared pointer. I think that this gets return value optimized because
+  // $2 goes out of scope, but...
     yylhs.value.as < Node::NodePtr > () = Node::Join(*yystack_[1].value.as < Node::NodePtrVecPtr > ());
   }
-#line 753 "src/parser.cpp"
+#line 754 "src/parser.cpp"
     break;
 
   case 10:
-#line 116 "src/parser.yy"
+#line 117 "src/parser.yy"
     {
     yylhs.value.as < Node::NodePtrVecPtr > () = std::make_shared<Node::NodePtrVec>();
     yylhs.value.as < Node::NodePtrVecPtr > ()->push_back(yystack_[0].value.as < Node::NodePtr > ());
   }
-#line 762 "src/parser.cpp"
+#line 763 "src/parser.cpp"
     break;
 
   case 11:
-#line 120 "src/parser.yy"
+#line 121 "src/parser.yy"
     {
     yystack_[2].value.as < Node::NodePtrVecPtr > ()->push_back(yystack_[0].value.as < Node::NodePtr > ());
     yylhs.value.as < Node::NodePtrVecPtr > () = yystack_[2].value.as < Node::NodePtrVecPtr > ();
   }
-#line 771 "src/parser.cpp"
+#line 772 "src/parser.cpp"
     break;
 
 
-#line 775 "src/parser.cpp"
+#line 776 "src/parser.cpp"
 
             default:
               break;
@@ -1124,7 +1125,7 @@ namespace yy {
   parser::yyrline_[] =
   {
        0,    61,    61,    67,    68,    81,    99,   102,   105,   110,
-     116,   120
+     117,   121
   };
 
   // Print the state stack on the debug stream.
@@ -1158,9 +1159,9 @@ namespace yy {
 
 
 } // yy
-#line 1162 "src/parser.cpp"
+#line 1163 "src/parser.cpp"
 
-#line 125 "src/parser.yy"
+#line 126 "src/parser.yy"
 
 // Epilogue: arbitrary C++.
 

@@ -1,5 +1,5 @@
-#ifndef DRIVER_HH
-#define DRIVER_HH
+#ifndef SRC_DRIVER_HPP_
+#define SRC_DRIVER_HPP_
 #include <map>
 #include <string>
 #include "parser.hpp"
@@ -35,11 +35,11 @@ class Driver {
   // Scan a string with flex.
   void ScanString(const std::string& str);
   // Parse a string with an existing parser object.
-  Node::NodePtr ParseString(yy::parser& parser_instance,
+  Node::NodePtr ParseString(yy::parser* parser_instance,
                             const std::string& str);
   // Make a parser and then parse a string for a one-off parsing.
   Node::NodePtr ParseString(const std::string& s);
   // Run the parser on a file.
   Node::NodePtrVecPtr ParseFile(const std::string& fname);
 };
-#endif  // ! DRIVER_HH
+#endif  // SRC_DRIVER_HPP_

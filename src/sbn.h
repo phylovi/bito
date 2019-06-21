@@ -1,5 +1,5 @@
-#ifndef __MYWRAPPER_H
-#define __MYWRAPPER_H
+#ifndef SRC_SBN_H_
+#define SRC_SBN_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,5 +15,4 @@ void sbn_DeleteInstance(SBNInstance* inst);
 #ifdef __cplusplus
 }
 #endif
-#endif
-
+#endif  // SRC_SBN_H_

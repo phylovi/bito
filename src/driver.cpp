@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <memory>
 
 #include "parser.hpp"
 #include "sbn.hpp"
@@ -23,7 +24,6 @@ Node::NodePtrVecPtr Driver::ParseFile(const std::string &fname) {
 
   std::ifstream in(fname.c_str());
   if (!in) {
-    // TODO do we want to raise an exception?
     std::cerr << "Cannot open the File : " << fname << std::endl;
     abort();
   }
@@ -36,7 +36,7 @@ Node::NodePtrVecPtr Driver::ParseFile(const std::string &fname) {
     location_.initialize(nullptr, line_number);
     line_number++;
     if (line.size() > 0) {
-      tree = ParseString(parser_instance, line);
+      tree = ParseString(&parser_instance, line);
       trees->push_back(tree);
     }
   }
@@ -44,19 +44,20 @@ Node::NodePtrVecPtr Driver::ParseFile(const std::string &fname) {
   return trees;
 }
 
-Node::NodePtr Driver::ParseString(yy::parser &parser_instance,
+Node::NodePtr Driver::ParseString(yy::parser *parser_instance,
                                   const std::string &str) {
   this->ScanString(str);
-  int return_code = parser_instance();
-  // TODO
-  assert(return_code == 0);
+  int return_code = (*parser_instance)();
+  if (return_code != 0) {
+    abort();
+  }
   return latest_tree_;
 }
 
 Node::NodePtr Driver::ParseString(const std::string &str) {
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);
-  return ParseString(parser_instance, str);
+  return ParseString(&parser_instance, str);
 }
 
 // Note that a number of Driver methods are implemented in scanner.ll.
