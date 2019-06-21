@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <deque>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -89,25 +90,18 @@ class Node {
     f(this);
   }
 
-  // void LevelOrder(std::function<void(Node*)> f) {
-  //   for (auto child : children_) {
-  //     child->PostOrder(f);
-  //   }
-  //   f(this);
-  // }
+  void LevelOrder(std::function<void(Node*)> f) {
+    std::deque<Node*> to_visit = {this};
+    while (to_visit.size()) {
+      auto n = to_visit.front();
+      f(n);
+      to_visit.pop_front();
 
-  //     def _iter_descendants_levelorder(self, is_leaf_fn=None):
-  //         """
-  //         Iterate over all desdecendant nodes.
-  //         """
-  //         tovisit = deque([self])
-  //         while len(tovisit)>0:
-  //             node = tovisit.popleft()
-  //             yield node
-  //             if not is_leaf_fn or not is_leaf_fn(node):
-  //                 tovisit.extend(node.children)
-  //
-
+      for (auto child : n->children_) {
+        to_visit.push_back(child.get());
+      }
+    }
+  }
 
   std::vector<unsigned int> MaxLeafTrace() {
     std::vector<unsigned int> trace;

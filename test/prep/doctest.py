@@ -28,10 +28,11 @@ fp.write('");\n')
 
 traversal_translator = {
    "preorder": "PreOrder",
-   "postorder": "PostOrder"
+   "postorder": "PostOrder",
+   "levelorder": "LevelOrder",
 }
 
-for traversal_type in ["preorder", "postorder"]: # "levelorder"]:
+for traversal_type in ["preorder", "postorder", "levelorder"]:
    fp.write("\n// " + traversal_type + ":\n")
    fp.write(f"t->{traversal_translator[traversal_type]}")
    fp.write("([&trace](Node* node) { trace.push_back(node->TagString()); });\n")
