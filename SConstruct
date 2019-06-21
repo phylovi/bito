@@ -1,6 +1,6 @@
 import os
 
-env = Environment(ENV=os.environ, CPPPATH=['include', 'src'], CPPFLAGS=['-Wall', '-Wextra', '-Wconversion'])
+env = Environment(ENV=os.environ, CPPPATH=['include', 'src'], CPPFLAGS=['-Wall', '-Wextra', '-Wconversion', '-std=c++14'])
 
 env.VariantDir('_build', 'src')
 env.VariantDir('_build/test', 'test')
