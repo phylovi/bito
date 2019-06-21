@@ -16,17 +16,6 @@
 #include <memory>
 #include <vector>
 
-class MyClass {
- private:
-  int m_i;
-
- public:
-  void int_set(int i);
-
-  int int_get();
-};
-
-
 class Node {
  public:
   typedef std::shared_ptr<Node> NodePtr;

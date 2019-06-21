@@ -3,9 +3,8 @@
 #include "sbn.h"
 
 int main(int argc, char** argv) {
-  struct MyClass* c = newMyClass();
-  MyClass_int_set(c, 3);
-  munit_assert_int(MyClass_int_get(c), ==, 3);
-  deleteMyClass(c);
+  struct Node* n = sbn_newNode();
+  munit_assert_int(sbn_MaxLeafID(n), ==, 0);
+  sbn_deleteNode(n);
   printf("Tests pass\n");
 }

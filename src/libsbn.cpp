@@ -2,11 +2,9 @@
 #include "sbn.hpp"
 
 extern "C" {
-MyClass* newMyClass() { return new MyClass(); }
+Node* sbn_newNode() { return new Node(0); }
 
-void MyClass_int_set(MyClass* v, int i) { v->int_set(i); }
+unsigned int sbn_MaxLeafID(Node* n) { return n->MaxLeafID(); }
 
-int MyClass_int_get(MyClass* v) { return v->int_get(); }
-
-void deleteMyClass(MyClass* v) { delete v; }
+void sbn_deleteNode(Node* n) { delete n; }
 }

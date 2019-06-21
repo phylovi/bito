@@ -5,15 +5,11 @@
 extern "C" {
 #endif
 
-typedef struct MyClass MyClass;
+typedef struct Node Node;
 
-MyClass* newMyClass();
-
-void MyClass_int_set(MyClass* v, int i);
-
-int MyClass_int_get(MyClass* v);
-
-void deleteMyClass(MyClass* v);
+Node* sbn_newNode();
+unsigned int sbn_MaxLeafID(Node* n);
+void sbn_deleteNode(Node* n);
 
 #ifdef __cplusplus
 }
