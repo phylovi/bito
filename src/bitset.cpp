@@ -1,13 +1,13 @@
 #include "bitset.hpp"
-#include <iostream>
-#include <ostream>
-#include <sstream>
+#include <cassert>
 #include "doctest.h"
 
 
-Bitset::Bitset(void) : num_set_bits(0) {}
+Bitset::Bitset(void) {}
 
-Bitset::Bitset(size_t n, bool def) : value_(n, def), num_set_bits(0) {}
+Bitset::Bitset(std::vector<bool> value) : value_(value) {}
+
+Bitset::Bitset(size_t n, bool initial_value) : value_(n, initial_value) {}
 
 Bitset::Bitset(std::string str) : Bitset(str.length()) {
   for (size_t i = 0; i < value_.size(); i++) {
@@ -24,196 +24,121 @@ Bitset::Bitset(std::string str) : Bitset(str.length()) {
 
 bool Bitset::operator[](size_t i) const { return value_[i]; }
 
+void Bitset::set(size_t i) {
+  assert(i < value_.size());
+  value_[i] = true;
+}
 
-bool Bitset::operator==(const Bitset& x) const { return x.value_ == value_; }
+void Bitset::reset(size_t i) {
+  assert(i < value_.size());
+  value_[i] = false;
+}
 
-bool Bitset::operator!=(const Bitset& x) const {
-  return operator==(x) == false;
+size_t Bitset::size(void) const { return value_.size(); }
+
+bool Bitset::operator==(const Bitset& other) const {
+  return value_ == other.value_;
+}
+bool Bitset::operator!=(const Bitset& other) const {
+  return value_ != other.value_;
+}
+bool Bitset::operator<(const Bitset& other) const {
+  return value_ < other.value_;
+}
+bool Bitset::operator<=(const Bitset& other) const {
+  return value_ <= other.value_;
+}
+bool Bitset::operator>(const Bitset& other) const {
+  return value_ > other.value_;
+}
+bool Bitset::operator>=(const Bitset& other) const {
+  return value_ >= other.value_;
+}
+
+Bitset Bitset::operator&(const Bitset& x) const {
+  if (value_.size() != x.size()) {
+    throw "Cannot and Bitsets of unequal size";
   }
-
-  bool Bitset::operator<(const Bitset& x) const { return x.value_ < value_; }
-
-  bool Bitset::operator<=(const Bitset& x) const { return x.value_ <= value_; }
-
-  bool Bitset::operator>(const Bitset& x) const { return x.value_ > value_; }
-
-  /** Greater than or equals to comparison */
-  bool Bitset::operator>=(const Bitset& x) const { return x.value_ < value_; }
-
-  /** Bitwise and */
-  Bitset Bitset::operator&(const Bitset& x) const {
-    if (x.value_.size() != value_.size()) {
-      throw "Cannot and Bitsets of unequal size";
-      abort();
+  Bitset r(value_.size());
+  for (size_t i = 0; i < value_.size(); i++) {
+    if (value_[i] && x.value_[i]) {
+      r.set(i);
     }
-    Bitset r(value_.size());
-    for (size_t i = 0; i < value_.size(); i++) {
-      if (value_[i] && x.value_[i]) {
-        r.set(i);
-      }
+  }
+  return r;
+}
+
+// Bitwise or
+Bitset Bitset::operator|(const Bitset& x) const {
+  if (value_.size() != x.size()) {
+    throw "Cannot or Bitsets of unequal sizes";
+  }
+  Bitset r(value_.size());
+  for (size_t i = 0; i < value_.size(); i++) {
+    if (value_[i] || x.value_[i]) {
+      r.set(i);
     }
-    return r;
   }
+  return r;
+}
 
-  /** Bitwise or */
-  Bitset Bitset::operator|(const Bitset& x) const {
-    if (x.value_.size() != value_.size()) {
-      throw "Cannot or Bitsets of unequal sizes";
+// Bitwise xor
+Bitset Bitset::operator^(const Bitset& x) const {
+  if (value_.size() != x.size()) {
+    throw "Cannot xor Bitsets of unequal size";
+  }
+  Bitset r(value_.size());
+  for (size_t i = 0; i < value_.size(); i++) {
+    if (value_[i] != x.value_[i]) {
+      r.set(i);
     }
-    Bitset r(value_.size());
-    for (size_t i = 0; i < value_.size(); i++) {
-      if (value_[i] || x.value_[i]) {
-        r.set(i);
-      }
-    }
-    return r;
   }
+  return r;
+}
 
-  /** Bitwise xor */
-  Bitset Bitset::operator^(const Bitset& x) const {
-    if (x.value_.size() != value_.size()) {
-      throw "Cannot xor Bitsets of unequal size";
-    }
-    Bitset r(value_.size());
-    for (size_t i = 0; i < value_.size(); i++) {
-      if (value_[i] != x.value_[i]) {
-        r.set(i);
-      }
-    }
-    return r;
+// Unary not
+Bitset Bitset::operator~() const {
+  Bitset r(value_);
+  r.value_.flip();
+  return r;
+}
+
+std::string Bitset::ToString() {
+  std::string str = "[";
+  for (size_t i = 0; i < value_.size(); ++i) {
+    str += (value_[i] ? '1' : '0');
   }
-
-  /** Unary not */
-  Bitset& Bitset::operator~() {
-    for (size_t i = 0; i < value_.size(); i++) {
-      value_[i] = !value_[i];
-    }
-
-    num_set_bits = value_.size() - num_set_bits;
-
-    return *this;
-  }
-
-  /** Bitwise and assignment */
-  Bitset& Bitset::operator&=(const Bitset& x) {
-    if (x.value_.size() != value_.size()) {
-      throw "Cannot and Bitsets of unequal size";
-    }
-
-    *this = *this & x;
-
-    return *this;
-  }
-
-  /** Bitwise or assignment */
-  Bitset& Bitset::operator|=(const Bitset& x) {
-    if (x.value_.size() != value_.size()) {
-      throw "Cannot or Bitsets of unequal size";
-    }
-
-    *this = *this | x;
-
-    return *this;
-  }
+  str += ']';
+  return str;
+}
 
 
-  void Bitset::clear(void) {
-    // reset the bitset
-    value_ = std::vector<bool>(value_.size(), false);
-    num_set_bits = 0;
-  }
+TEST_CASE("Bitset") {
+  auto a = Bitset("1100");
 
-  bool Bitset::empty(void) const { return value_.empty(); }
+  CHECK(a[2] == false);
+  CHECK(a[1] == true);
 
-  void Bitset::flip(size_t i) {
-    value_[i] = (value_[i] == false);
-    if (value_[i])
-      num_set_bits++;
-    else
-      num_set_bits--;
-  }
+  auto build_up = Bitset(4);
+  build_up.set(1);
+  build_up.set(3);
+  CHECK(build_up == Bitset("0101"));
 
-  void Bitset::flip() {
-    for (size_t i = 0; i < value_.size(); i++) {
-      value_[i] = (value_[i] == false);
-    }
-    // TODO: test
-    num_set_bits = value_.size() - num_set_bits;
-  }
+  auto strip_down = Bitset(4, true);
+  strip_down.reset(0);
+  strip_down.reset(2);
+  CHECK(build_up == Bitset("0101"));
 
-  size_t Bitset::getFirstSetBit(void) const {
-    size_t index = 0;
-    while (index < value_.size() && value_[index] == false) {
-      ++index;
-    }
+  CHECK(a.size() == 4);
 
-    return index;
-  }
+  CHECK(Bitset("1100") == Bitset("1100"));
+  CHECK(Bitset("1100") != Bitset("0100"));
+  CHECK(Bitset("0100") < Bitset("0110"));
+  CHECK(Bitset("0100") < Bitset("0110"));
+  CHECK(Bitset("0010") < Bitset("0100"));
 
-  size_t Bitset::getNumberSetBits(void) const {
-    // get the internal value_
-    return num_set_bits;
-  }
-
-
-  bool Bitset::isSet(size_t i) const {
-    // get the internal value_
-    return value_[i];
-  }
-
-  void Bitset::resize(size_t size) { value_.resize(size); }
-
-  void Bitset::set(size_t i) {
-    if (i >= value_.size()) {
-      std::ostringstream ss;
-      ss << i;
-      throw("Index " + ss.str() +
-            " out of bounds in bitset. This will likely cause "
-            "unexpected behavior.");
-    }
-
-    if (value_[i] == false) {
-      ++num_set_bits;
-    }
-
-    // set the internal value_
-    value_[i] = true;
-  }
-
-
-  size_t Bitset::size(void) const {
-    // get the size from the actual bitset
-    return value_.size();
-  }
-
-
-  void Bitset::unset(size_t i) {
-    // TODO(erick): no bounds checking for this one?
-    if (value_[i] == true) {
-      --num_set_bits;
-    }
-
-    value_[i] = false;
-  }
-
-
-  std::ostream& operator<<(std::ostream& o, const Bitset& x) {
-    o << "[";
-    for (size_t i = 0; i < x.size(); ++i) {
-      o << (x.isSet(i) ? "1" : "0");
-    }
-    o << "]";
-
-    return o;
-  }
-
-
-  TEST_CASE("Bitset") {
-    auto y = Bitset("1100");
-    auto z = Bitset("1010");
-    CHECK((y | z) == Bitset("1110"));
-
-    auto p = std::pair<Bitset, Bitset>(y, z);
-    std::cout << p.first << p.second << std::endl;
-    CHECK((p.first | p.second) == Bitset("1110"));
-  }
+  CHECK((Bitset("1100") & Bitset("1010")) == Bitset("1000"));
+  CHECK((Bitset("1100") | Bitset("1010")) == Bitset("1110"));
+  CHECK((Bitset("1100") ^ Bitset("1010")) == Bitset("0110"));
+  CHECK(~Bitset("1010") == Bitset("0101"));
+}

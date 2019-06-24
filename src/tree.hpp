@@ -3,7 +3,7 @@
 // add branch lengths
 
 // To discuss:
-// look through abort-- how to handle?
+// look through abort-- how to handle? also look for cassert
 // unique_ptr? Are we copying things in parsing?
 // "NodeId" type rather than unsigned int?
 
