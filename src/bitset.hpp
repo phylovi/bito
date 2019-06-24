@@ -16,8 +16,9 @@
  */
 class Bitset {
  public:
-  Bitset(void);                        //!< Constructor requires character type
-  Bitset(size_t n, bool def = false);  //!< Constructor requires character type
+  Bitset(void);
+  Bitset(size_t n, bool def = false);
+  Bitset(std::string);
   virtual ~Bitset(void) {}
 
   bool operator[](size_t i) const;
