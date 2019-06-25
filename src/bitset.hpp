@@ -16,6 +16,7 @@ class Bitset {
   void set(size_t i);
   void reset(size_t i);
   size_t size(void) const;
+  size_t hash(void) const;
 
   bool operator==(const Bitset &bs) const;
   bool operator!=(const Bitset &bs) const;

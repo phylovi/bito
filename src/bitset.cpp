@@ -1,5 +1,6 @@
 #include "bitset.hpp"
 #include <cassert>
+#include <unordered_map>
 #include "doctest.h"
 
 
@@ -35,6 +36,9 @@ void Bitset::reset(size_t i) {
 }
 
 size_t Bitset::size(void) const { return value_.size(); }
+size_t Bitset::hash(void) const {
+  return std::hash<std::vector<bool>>{}(value_);
+}
 
 bool Bitset::operator==(const Bitset& other) const {
   return value_ == other.value_;
@@ -112,6 +116,15 @@ std::string Bitset::ToString() {
   return str;
 }
 
+// This is how we inject a hash routine into the std namespace so that we can
+// use it as a key for an unordered_map.
+// https://en.cppreference.com/w/cpp/container/unordered_map
+namespace std {
+template <>
+struct hash<Bitset> {
+  size_t operator()(Bitset const& x) const noexcept { return x.hash(); }
+};
+}
 
 TEST_CASE("Bitset") {
   auto a = Bitset("1100");
