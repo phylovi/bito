@@ -1,7 +1,11 @@
 
+#include <pybind11/numpy.h>
+#include <pybind11/pybind11.h>
 #include <unordered_map>
 #include "driver.hpp"
 #include "tree.hpp"
+
+namespace py = pybind11;
 
 struct SBNInstance {
   std::string name_;
@@ -24,4 +28,9 @@ struct SBNInstance {
       std::cout << "No trees loaded.\n";
     }
   }
+
+  static void f(py::array_t<double> array) {
+    py::buffer_info buf = array.request();
+    std::cout << buf.ndim << std::endl;
+  };
 };

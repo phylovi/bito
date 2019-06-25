@@ -1,3 +1,4 @@
+import numpy as np
 import sbn
 
 def test_instance():
@@ -8,3 +9,5 @@ def test_instance():
     inst.init_indexer()
     print(inst.indexer)
     assert inst.indexer[4] == 2
+    sbn.f(np.array([3,4]))
+
