@@ -1,10 +1,10 @@
 #include <pybind11/pybind11.h>
-//#include "sbn.h"
+#include "sbn.h"
 
 
 int add(int i, int j) {
-  // struct SBNInstance* inst = sbn_NewInstance();
-  // sbn_PrintStatus(inst);
+  struct SBNInstance* inst = sbn_NewInstance();
+  sbn_PrintStatus(inst);
   return i + j;
 }
 
