@@ -56,16 +56,13 @@ class Node {
                 }
                 return (difference < 0);
               });
+    // Children are sorted by their max_leaf_id, so we can get the max by
+    // looking at the last element.
     max_leaf_id_ = children_.back()->MaxLeafID();
     leaf_count_ = 0;
     for (auto child : children_) {
       leaf_count_ += child->LeafCount();
     }
-    // Children are sorted by their max_leaf_id, so we can get the max by
-    // looking at the last element.
-  }
-  ~Node() {
-    // std::cout << "Destroying node " << TagString() << std::endl;
   }
 
   unsigned int MaxLeafID() const { return max_leaf_id_; }

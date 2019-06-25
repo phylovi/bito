@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include "driver.hpp"
 
@@ -12,7 +13,24 @@ int main(int argc, char *argv[]) {
     } else if (argv[i] == std::string("-q")) {
       print_trees = false;
     } else {
+      auto now = std::chrono::high_resolution_clock::now;
+      auto t_start = now();
       auto trees = drv.ParseFile(argv[i]);
+      auto t_parse = now();
+
+      for (auto tree : *trees) {
+        std::vector<unsigned int> leaves(tree->MaxLeafID());
+        tree->PreOrder([&leaves](Node* node) {
+          if (node->IsLeaf()) leaves.push_back(node->MaxLeafID());
+        });
+      }
+      auto t_traverse = now();
+      auto get_duration = [](auto t) {
+        return std::chrono::duration<double>(t).count();
+      };
+      std::cout << "Parse time: " << get_duration(t_parse - t_start)
+                << "\nTraverse time: " << get_duration(t_traverse - t_parse)
+                << std::endl;
       if (print_trees) {
         for (auto tree : *trees) {
           std::cout << tree->Newick() << std::endl;
