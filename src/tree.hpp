@@ -15,7 +15,6 @@
 #include <deque>
 #include <iostream>
 #include <memory>
-#include <stack>
 #include <string>
 #include <vector>
 
