@@ -2,6 +2,9 @@
 #include <cassert>
 #include "doctest.h"
 
+// A rewrite of the RbBitSet class from RevBayes by Sebastian Hoehna and Andy
+// Magee.
+
 
 Bitset::Bitset(std::vector<bool> value) : value_(value) {}
 
