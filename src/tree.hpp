@@ -15,6 +15,7 @@
 #include <deque>
 #include <iostream>
 #include <memory>
+#include <stack>
 #include <string>
 #include <vector>
 
@@ -56,16 +57,13 @@ class Node {
                 }
                 return (difference < 0);
               });
+    // Children are sorted by their max_leaf_id, so we can get the max by
+    // looking at the last element.
     max_leaf_id_ = children_.back()->MaxLeafID();
     leaf_count_ = 0;
     for (auto child : children_) {
       leaf_count_ += child->LeafCount();
     }
-    // Children are sorted by their max_leaf_id, so we can get the max by
-    // looking at the last element.
-  }
-  ~Node() {
-    // std::cout << "Destroying node " << TagString() << std::endl;
   }
 
   unsigned int MaxLeafID() const { return max_leaf_id_; }
@@ -102,6 +100,27 @@ class Node {
       }
     }
   }
+
+  void tail_recursive_preorder_rec(
+      std::function<void(Node*)> f,
+      std::shared_ptr<std::stack<Node*>> to_visit) {
+    if (!to_visit->empty()) {
+      auto n = to_visit->top();
+      f(n);
+      to_visit->pop();
+      for (auto child : n->children_) {
+        to_visit->push(child.get());
+    }
+    tail_recursive_preorder_rec(f, to_visit);
+  }
+  }
+
+  void tail_recursive_preorder(std::function<void(Node*)> f) {
+    auto to_visit = std::make_shared<std::stack<Node*>>();
+    to_visit->push(this);
+    tail_recursive_preorder_rec(f, to_visit);
+  }
+
 
   std::vector<unsigned int> MaxLeafTrace() {
     std::vector<unsigned int> trace;
