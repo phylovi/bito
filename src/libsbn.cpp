@@ -1,7 +1,5 @@
 #include "libsbn.hpp"
-
 #include <string>
-
 #include "sbn.h"
 
 
