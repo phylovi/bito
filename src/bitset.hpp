@@ -6,11 +6,9 @@
 
 class Bitset {
  public:
-  Bitset(void);
-  Bitset(std::vector<bool> value);
-  Bitset(size_t n, bool initial_value = false);
-  Bitset(std::string);
-  virtual ~Bitset(void){};
+  explicit Bitset(std::vector<bool> value);
+  explicit Bitset(size_t n, bool initial_value = false);
+  explicit Bitset(std::string);
 
   bool operator[](size_t i) const;
   void set(size_t i);
@@ -35,9 +33,7 @@ class Bitset {
 
  private:
   std::vector<bool> value_;
+};
 
 
-    };
-
-
-#endif  // SRC_TREE_HPP_
+#endif  // SRC_BITSET_HPP_

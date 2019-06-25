@@ -1,10 +1,7 @@
 #include "bitset.hpp"
 #include <cassert>
-#include <unordered_map>
 #include "doctest.h"
 
-
-Bitset::Bitset(void) {}
 
 Bitset::Bitset(std::vector<bool> value) : value_(value) {}
 
@@ -129,38 +126,38 @@ struct hash<Bitset> {
 TEST_CASE("Bitset") {
   auto a = Bitset("1100");
 
-  CHECK(a[2] == false);
-  CHECK(a[1] == true);
+  CHECK_EQ(a[2], false);
+  CHECK_EQ(a[1], true);
 
   auto build_up = Bitset(4);
   build_up.set(1);
   build_up.set(3);
-  CHECK(build_up == Bitset("0101"));
+  CHECK_EQ(build_up, Bitset("0101"));
 
   auto strip_down = Bitset(4, true);
   strip_down.reset(0);
   strip_down.reset(2);
-  CHECK(build_up == Bitset("0101"));
+  CHECK_EQ(build_up, Bitset("0101"));
 
-  CHECK(a.size() == 4);
+  CHECK_EQ(a.size(), 4);
 
-  CHECK(Bitset("1100") == Bitset("1100"));
-  CHECK(Bitset("1100") != Bitset("0100"));
+  CHECK_EQ(Bitset("1100"), Bitset("1100"));
+  CHECK_NE(Bitset("1100"), Bitset("0100"));
 
-  CHECK(Bitset("0100") < Bitset("0110"));
-  CHECK(Bitset("0100") < Bitset("0110"));
-  CHECK(Bitset("0010") < Bitset("0100"));
-  CHECK(Bitset("0010") <= Bitset("0100"));
-  CHECK(Bitset("1100") <= Bitset("1100"));
+  CHECK_LT(Bitset("0100"), Bitset("0110"));
+  CHECK_LT(Bitset("0100"), Bitset("0110"));
+  CHECK_LT(Bitset("0010"), Bitset("0100"));
+  CHECK_LE(Bitset("0010"), Bitset("0100"));
+  CHECK_LE(Bitset("1100"), Bitset("1100"));
 
-  CHECK(Bitset("0110") > Bitset("0100"));
-  CHECK(Bitset("0110") > Bitset("0100"));
-  CHECK(Bitset("0100") > Bitset("0010"));
-  CHECK(Bitset("0100") >= Bitset("0010"));
-  CHECK(Bitset("1100") >= Bitset("1100"));
+  CHECK_GT(Bitset("0110"), Bitset("0100"));
+  CHECK_GT(Bitset("0110"), Bitset("0100"));
+  CHECK_GT(Bitset("0100"), Bitset("0010"));
+  CHECK_GE(Bitset("0100"), Bitset("0010"));
+  CHECK_GE(Bitset("1100"), Bitset("1100"));
 
-  CHECK((Bitset("1100") & Bitset("1010")) == Bitset("1000"));
-  CHECK((Bitset("1100") | Bitset("1010")) == Bitset("1110"));
-  CHECK((Bitset("1100") ^ Bitset("1010")) == Bitset("0110"));
-  CHECK(~Bitset("1010") == Bitset("0101"));
+  CHECK_EQ((Bitset("1100") & Bitset("1010")), Bitset("1000"));
+  CHECK_EQ((Bitset("1100") | Bitset("1010")), Bitset("1110"));
+  CHECK_EQ((Bitset("1100") ^ Bitset("1010")), Bitset("0110"));
+  CHECK_EQ(~Bitset("1010"), Bitset("0101"));
 }
