@@ -146,9 +146,18 @@ TEST_CASE("Bitset") {
 
   CHECK(Bitset("1100") == Bitset("1100"));
   CHECK(Bitset("1100") != Bitset("0100"));
+
   CHECK(Bitset("0100") < Bitset("0110"));
   CHECK(Bitset("0100") < Bitset("0110"));
   CHECK(Bitset("0010") < Bitset("0100"));
+  CHECK(Bitset("0010") <= Bitset("0100"));
+  CHECK(Bitset("1100") <= Bitset("1100"));
+
+  CHECK(Bitset("0110") > Bitset("0100"));
+  CHECK(Bitset("0110") > Bitset("0100"));
+  CHECK(Bitset("0100") > Bitset("0010"));
+  CHECK(Bitset("0100") >= Bitset("0010"));
+  CHECK(Bitset("1100") >= Bitset("1100"));
 
   CHECK((Bitset("1100") & Bitset("1010")) == Bitset("1000"));
   CHECK((Bitset("1100") | Bitset("1010")) == Bitset("1110"));
