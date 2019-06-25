@@ -2,7 +2,7 @@ import os
 
 env = Environment(
     ENV=os.environ,
-    CPPPATH=['include', 'src', '/home/ematsen/miniconda3/envs/libsbn/include/libhmsbeagle-1'],
+    CPPPATH=['include', 'src'], # , '/home/ematsen/miniconda3/envs/libsbn/include/libhmsbeagle-1'],
     CCFLAGS=['-O3', '-Wall', '-Wextra', '-Wconversion'],
     CXXFLAGS=['-std=c++14'])
 
