@@ -101,24 +101,6 @@ class Node {
     }
   }
 
-  void tail_recursive_preorder(std::function<void(Node*)> f) {
-    auto to_visit = std::stack<Node*>();
-    to_visit.push(this);
-    std::function<void(void)> aux = [&to_visit, &f, &aux]() {
-      if (!to_visit.empty()) {
-        auto n = to_visit.top();
-        f(n);
-        to_visit.pop();
-        for (auto child : n->children_) {
-          to_visit.push(child.get());
-        }
-        aux();
-      }
-    };
-    aux();
-  }
-
-
   std::vector<unsigned int> MaxLeafTrace() {
     std::vector<unsigned int> trace;
     PreOrder([&trace](Node* node) { trace.push_back(node->MaxLeafID()); });
