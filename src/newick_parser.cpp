@@ -20,8 +20,7 @@ int main(int argc, char *argv[]) {
 
       for (auto tree : *trees) {
         std::vector<unsigned int> leaves(tree->MaxLeafID());
-        // tree->PreOrder([&leaves](Node* node) {
-        tree->tail_recursive_preorder([&leaves](Node* node) {
+        tree->PreOrder([&leaves](Node* node) {
           if (node->IsLeaf()) leaves.push_back(node->MaxLeafID());
         });
       }

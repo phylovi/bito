@@ -101,24 +101,21 @@ class Node {
     }
   }
 
-  void tail_recursive_preorder_rec(
-      std::function<void(Node*)> f,
-      std::shared_ptr<std::stack<Node*>> to_visit) {
-    if (!to_visit->empty()) {
-      auto n = to_visit->top();
-      f(n);
-      to_visit->pop();
-      for (auto child : n->children_) {
-        to_visit->push(child.get());
-    }
-    tail_recursive_preorder_rec(f, to_visit);
-  }
-  }
-
   void tail_recursive_preorder(std::function<void(Node*)> f) {
-    auto to_visit = std::make_shared<std::stack<Node*>>();
-    to_visit->push(this);
-    tail_recursive_preorder_rec(f, to_visit);
+    auto to_visit = std::stack<Node*>();
+    to_visit.push(this);
+    std::function<void(void)> aux = [&to_visit, &f, &aux]() {
+      if (!to_visit.empty()) {
+        auto n = to_visit.top();
+        f(n);
+        to_visit.pop();
+        for (auto child : n->children_) {
+          to_visit.push(child.get());
+        }
+        aux();
+      }
+    };
+    aux();
   }
 
 
