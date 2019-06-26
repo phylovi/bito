@@ -14,6 +14,7 @@ C-interface library implementing subsplit Bayes networks for phylogenetic poster
 
 * scons
 * pybind11
+* pytest
 * beagle (`conda install -c bioconda beagle-lib`)
 
 
