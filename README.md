@@ -4,13 +4,22 @@ C-interface library implementing subsplit Bayes networks for phylogenetic poster
 
 ## Dependencies
 
-* scons
+### System
+
 * compiler that can handle C++14
 * flex (it should install the `libfl` library)
+
+
+### Suggest installing with conda
+
+* scons
+* pybind11
+* pytest
+* beagle (`conda install -c bioconda beagle-lib`)
 
 
 ## Building
 
 * If you just want to build the library and binaries, use `scons`.
-* If you have modified the lexer and parser, and want to re. This assumes that you have installed Bison > 2.6.
+* If you have modified the lexer and parser, and want to recompile, you can use `make`. This assumes that you have installed Bison > 2.6.
 * If you want to run the test preparation scripts, you need ete3. (`conda install -c etetoolkit ete3`)

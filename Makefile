@@ -2,7 +2,7 @@ default:
 	make bison && make prep && scons
 	./_build/newick_parser data/four_taxon.tre | paste data/four_taxon.tre -
 	./_build/doctest
-	./_build/test/test
+	pytest -s
 
 bison: src/parser.yy src/scanner.ll
 	bison -o src/parser.cpp --defines=src/parser.hpp src/parser.yy

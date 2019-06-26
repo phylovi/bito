@@ -1,18 +1,17 @@
 #include "libsbn.hpp"
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
 
-#include <string>
+namespace py = pybind11;
 
-#include "sbn.h"
-
-
-extern "C" {
-SBNInstance* sbn_NewInstance() { return new SBNInstance; }
-void sbn_DeleteInstance(SBNInstance* inst) { delete inst; }
-
-void sbn_ParseFile(SBNInstance* inst, const char* fname) {
-  std::string cpp_fname(fname);
-  inst->ParseFile(cpp_fname);
-}
-
-void sbn_PrintStatus(SBNInstance* inst) { inst->PrintStatus(); }
+PYBIND11_MODULE(sbn, m) {
+  m.doc() = "libsbn bindings";
+  py::class_<SBNInstance>(m, "instance")
+      .def(py::init<const std::string &>())
+      .def_readwrite("indexer", &SBNInstance::indexer_)
+      .def("tree_count", &SBNInstance::TreeCount)
+      .def("parse_file", &SBNInstance::ParseFile)
+      .def("init_indexer", &SBNInstance::InitIndexer)
+      .def("print_status", &SBNInstance::PrintStatus);
+  m.def("f", &SBNInstance::f, "test");
 }
