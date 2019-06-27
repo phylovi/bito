@@ -7,6 +7,6 @@ def test_instance():
     inst.print_status()
     assert inst.tree_count() == 5
     sbn.f(np.array([3,4]))
-    # m = sbn.make_tag_to_bitset_map(inst.trees[0])
-    # print(m)
+    m = inst.g()
+    print(m)
 

@@ -114,11 +114,10 @@ size_t Bitset::Hash(void) const {
 }
 
 std::string Bitset::ToString() {
-  std::string str = "[";
+  std::string str;
   for (size_t i = 0; i < value_.size(); ++i) {
     str += (value_[i] ? '1' : '0');
   }
-  str += ']';
   return str;
 }
 

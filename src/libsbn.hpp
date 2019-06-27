@@ -1,4 +1,3 @@
-
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <unordered_map>
@@ -13,7 +12,6 @@ struct SBNInstance {
   Driver driver_;
   Node::NodePtrVecPtr trees_;
   std::unordered_map<int, int> indexer_;
-  // TagToBitsetMap tag_to_bitset_;
 
   SBNInstance(const std::string &name) : name_(name) {}
 
@@ -29,6 +27,17 @@ struct SBNInstance {
     }
   }
 
+  std::unordered_map<uint64_t, std::string> g() {
+    assert(trees_->size() > 0);
+    TagToBitsetMap m = MakeTagToBitsetMap(trees_->at(0));
+    std::unordered_map<uint64_t, std::string> m_str;
+    m = MakeTagToBitsetMap(trees_->at(0));
+    for (auto iter = m.begin(); iter != m.end(); ++iter) {
+      m_str[iter->first] = iter->second.ToString();
+    }
+    return m_str;
+  }
+
   static void f(py::array_t<double> array) {
     py::buffer_info buf = array.request();
     std::cout << "You passed a " << buf.ndim << " dim array" << std::endl;
@@ -36,5 +45,5 @@ struct SBNInstance {
     for (auto idx = 0; idx < buf.shape[0]; idx++) {
       std::cout << ptr[idx] << std::endl;
     }
-  };
+    };
 };
