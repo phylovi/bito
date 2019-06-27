@@ -18,6 +18,8 @@
 #include <string>
 #include <vector>
 
+#include "intpack.hpp"
+
 class Node {
  public:
   typedef std::shared_ptr<Node> NodePtr;
