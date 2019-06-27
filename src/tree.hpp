@@ -1,12 +1,7 @@
 // TODO(erick)
-// document tag
 // add branch lengths
 // make everything const
 
-// To discuss:
-// look through abort-- how to handle? also look for cassert
-// unique_ptr? Are we copying things in parsing?
-// "NodeId" type rather than unsigned int?
 
 #ifndef SRC_TREE_HPP_
 #define SRC_TREE_HPP_

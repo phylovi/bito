@@ -1,6 +1,5 @@
 #include "bitset.hpp"
 #include <cassert>
-#include "doctest.h"
 
 // A rewrite of the RbBitSet class from RevBayes by Sebastian Hoehna.
 // In general, I'm trying to follow the interface of std::bitset.
@@ -136,6 +135,7 @@ struct hash<Bitset> {
 };
 }
 
+#ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Bitset") {
   auto a = Bitset("1100");
 
@@ -174,3 +174,4 @@ TEST_CASE("Bitset") {
   CHECK_EQ((Bitset("1100") ^ Bitset("1010")), Bitset("0110"));
   CHECK_EQ(~Bitset("1010"), Bitset("0101"));
 }
+#endif  // DOCTEST_LIBRARY_INCLUDED
