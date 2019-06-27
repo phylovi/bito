@@ -28,20 +28,25 @@ TagToBitsetMap MakeTagToBitsetMap(Node::NodePtr t) {
   return m;
 }
 
+
+void PrintTagToBitsetMap(TagToBitsetMap m) {
+  for (auto iter = m.begin(); iter != m.end(); ++iter) {
+    std::cout << StringOfPackedInt(iter->first) << " "
+              << iter->second.ToString() << std::endl;
+  }
+}
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("Build") {
   Driver driver;
 
-  auto t = driver.ParseString("(0,1);");
+  auto t = driver.ParseString("((0,1),2);");
 
   auto m = MakeTagToBitsetMap(t);
 
   std::cout << t->Newick() << std::endl;
-  for (auto iter = m.begin(); iter != m.end(); ++iter) {
-    std::cout << StringOfPackedInt(iter->first) << " "
-              << iter->second.ToString() << std::endl;
-  }
+  PrintTagToBitsetMap(m);
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
