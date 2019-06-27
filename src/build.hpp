@@ -28,7 +28,6 @@ TagToBitsetMap MakeTagToBitsetMap(Node::NodePtr t) {
   return m;
 }
 
-
 void PrintTagToBitsetMap(TagToBitsetMap m) {
   for (auto iter = m.begin(); iter != m.end(); ++iter) {
     std::cout << StringOfPackedInt(iter->first) << " "
@@ -41,7 +40,7 @@ void PrintTagToBitsetMap(TagToBitsetMap m) {
 TEST_CASE("Build") {
   Driver driver;
 
-  auto t = driver.ParseString("((0,1),2);");
+  auto t = driver.ParseString("((0,1),(2,(3,4)));");
 
   auto m = MakeTagToBitsetMap(t);
 

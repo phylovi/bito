@@ -21,6 +21,8 @@ Bitset::Bitset(std::string str) : Bitset(str.length()) {
 
 bool Bitset::operator[](size_t i) const { return value_[i]; }
 
+size_t Bitset::size(void) const { return value_.size(); }
+
 void Bitset::set(size_t i, bool value) {
   assert(i < value_.size());
   value_[i] = value;
@@ -31,10 +33,7 @@ void Bitset::reset(size_t i) {
   value_[i] = false;
 }
 
-size_t Bitset::size(void) const { return value_.size(); }
-size_t Bitset::hash(void) const {
-  return std::hash<std::vector<bool>>{}(value_);
-}
+void Bitset::flip() { value_.flip(); }
 
 bool Bitset::operator==(const Bitset& other) const {
   return value_ == other.value_;
@@ -108,6 +107,11 @@ void Bitset::operator|=(const Bitset& other) {
   }
 }
 
+
+size_t Bitset::Hash(void) const {
+  return std::hash<std::vector<bool>>{}(value_);
+}
+
 std::string Bitset::ToString() {
   std::string str = "[";
   for (size_t i = 0; i < value_.size(); ++i) {
@@ -117,13 +121,20 @@ std::string Bitset::ToString() {
   return str;
 }
 
+void Bitset::Minorize() {
+  assert(value_.size() > 0);
+  if (value_[0]) {
+    value_.flip();
+  }
+}
+
 // This is how we inject a hash routine into the std namespace so that we can
 // use it as a key for an unordered_map.
 // https://en.cppreference.com/w/cpp/container/unordered_map
 namespace std {
 template <>
 struct hash<Bitset> {
-  size_t operator()(Bitset const& x) const noexcept { return x.hash(); }
-};
-}
+  size_t operator()(Bitset const& x) const noexcept { return x.Hash(); }
+  };
+  }
 

@@ -14,28 +14,32 @@ class Bitset {
   explicit Bitset(std::string);
 
   bool operator[](size_t i) const;
+  size_t size(void) const;
+
   void set(size_t i, bool value = true);
   void reset(size_t i);
-  size_t size(void) const;
-  size_t hash(void) const;
+  void flip();
 
-  bool operator==(const Bitset &bs) const;
-  bool operator!=(const Bitset &bs) const;
-  bool operator<(const Bitset &bs) const;
-  bool operator<=(const Bitset &bs) const;
-  bool operator>(const Bitset &bs) const;
-  bool operator>=(const Bitset &bs) const;
+  bool operator==(const Bitset &x) const;
+  bool operator!=(const Bitset &x) const;
+  bool operator<(const Bitset &x) const;
+  bool operator<=(const Bitset &x) const;
+  bool operator>(const Bitset &x) const;
+  bool operator>=(const Bitset &x) const;
 
-  Bitset operator&(const Bitset &bs) const;
-  Bitset operator|(const Bitset &bs) const;
-  Bitset operator^(const Bitset &bs) const;
+  Bitset operator&(const Bitset &x) const;
+  Bitset operator|(const Bitset &x) const;
+  Bitset operator^(const Bitset &x) const;
   Bitset operator~() const;
 
   void operator&=(const Bitset &other);
   void operator|=(const Bitset &other);
 
+  // These methods aren't in the bitset interface, so they get our usual
+  // convention.
+  size_t Hash(void) const;
   std::string ToString();
-
+  void Minorize();
 
  private:
   std::vector<bool> value_;
@@ -81,6 +85,11 @@ TEST_CASE("Bitset") {
   CHECK_EQ(~Bitset("1010"), Bitset("0101"));
 
   a &= Bitset("0110");
+  CHECK_EQ(a, Bitset("0100"));
+
+  a.Minorize();
+  CHECK_EQ(a, Bitset("0100"));
+  a.Minorize();
   CHECK_EQ(a, Bitset("0100"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
