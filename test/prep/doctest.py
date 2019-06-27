@@ -10,6 +10,7 @@ t = ete3.Tree('((((0_1,1_1)1_2,(2_1,3_1)3_2)3_4,4_1)4_5,((5_1,(6_1,7_1)7_2)7_3,(
 preamble = """\
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
+#include "bitset.hpp"
 #include "driver.hpp"
 #include "intpack.hpp"
 #include "tree.hpp"

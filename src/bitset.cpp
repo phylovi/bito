@@ -1,9 +1,6 @@
 #include "bitset.hpp"
 #include <cassert>
 
-// A rewrite of the RbBitSet class from RevBayes by Sebastian Hoehna.
-// In general, I'm trying to follow the interface of std::bitset.
-
 
 Bitset::Bitset(std::vector<bool> value) : value_(value) {}
 
@@ -59,9 +56,7 @@ bool Bitset::operator>=(const Bitset& other) const {
 }
 
 Bitset Bitset::operator&(const Bitset& x) const {
-  if (value_.size() != x.size()) {
-    throw "Cannot and Bitsets of unequal size";
-  }
+  assert(value_.size() == x.size());
   Bitset r(value_.size());
   for (size_t i = 0; i < value_.size(); i++) {
     if (value_[i] && x.value_[i]) {
@@ -71,19 +66,8 @@ Bitset Bitset::operator&(const Bitset& x) const {
   return r;
 }
 
-void Bitset::AndWith(Bitset& x, const Bitset& and_with_this) {
-  if (x.size() != and_with_this.size()) {
-    throw "Cannot and Bitsets of unequal size";
-  }
-  for (size_t i = 0; i < x.size(); i++) {
-    x.set(i, x[i] && and_with_this[i]);
-    }
-}
-
 Bitset Bitset::operator|(const Bitset& x) const {
-  if (value_.size() != x.size()) {
-    throw "Cannot or Bitsets of unequal sizes";
-  }
+  assert(value_.size() == x.size());
   Bitset r(value_.size());
   for (size_t i = 0; i < value_.size(); i++) {
     if (value_[i] || x.value_[i]) {
@@ -94,9 +78,7 @@ Bitset Bitset::operator|(const Bitset& x) const {
 }
 
 Bitset Bitset::operator^(const Bitset& x) const {
-  if (value_.size() != x.size()) {
-    throw "Cannot xor Bitsets of unequal size";
-  }
+  assert(value_.size() == x.size());
   Bitset r(value_.size());
   for (size_t i = 0; i < value_.size(); i++) {
     if (value_[i] != x.value_[i]) {
@@ -113,12 +95,17 @@ Bitset Bitset::operator~() const {
 }
 
 void Bitset::operator&=(const Bitset& other) {
-  if (value_.size() != other.size()) {
-    throw "Cannot and Bitsets of unequal size";
-  }
+  assert(value_.size() == other.size());
   for (size_t i = 0; i < value_.size(); i++) {
     value_[i] = value_[i] && other[i];
     }
+}
+
+void Bitset::operator|=(const Bitset& other) {
+  assert(value_.size() == other.size());
+  for (size_t i = 0; i < value_.size(); i++) {
+    value_[i] = value_[i] || other[i];
+  }
 }
 
 std::string Bitset::ToString() {
@@ -140,46 +127,3 @@ struct hash<Bitset> {
 };
 }
 
-#ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("Bitset") {
-  auto a = Bitset("1100");
-
-  CHECK_EQ(a[2], false);
-  CHECK_EQ(a[1], true);
-
-  auto build_up = Bitset(4);
-  build_up.set(1);
-  build_up.set(3);
-  CHECK_EQ(build_up, Bitset("0101"));
-
-  auto strip_down = Bitset(4, true);
-  strip_down.reset(0);
-  strip_down.reset(2);
-  CHECK_EQ(build_up, Bitset("0101"));
-
-  CHECK_EQ(a.size(), 4);
-
-  CHECK_EQ(Bitset("1100"), Bitset("1100"));
-  CHECK_NE(Bitset("1100"), Bitset("0100"));
-
-  CHECK_LT(Bitset("0100"), Bitset("0110"));
-  CHECK_LT(Bitset("0100"), Bitset("0110"));
-  CHECK_LT(Bitset("0010"), Bitset("0100"));
-  CHECK_LE(Bitset("0010"), Bitset("0100"));
-  CHECK_LE(Bitset("1100"), Bitset("1100"));
-
-  CHECK_GT(Bitset("0110"), Bitset("0100"));
-  CHECK_GT(Bitset("0110"), Bitset("0100"));
-  CHECK_GT(Bitset("0100"), Bitset("0010"));
-  CHECK_GE(Bitset("0100"), Bitset("0010"));
-  CHECK_GE(Bitset("1100"), Bitset("1100"));
-
-  CHECK_EQ((Bitset("1100") & Bitset("1010")), Bitset("1000"));
-  CHECK_EQ((Bitset("1100") | Bitset("1010")), Bitset("1110"));
-  CHECK_EQ((Bitset("1100") ^ Bitset("1010")), Bitset("0110"));
-  CHECK_EQ(~Bitset("1010"), Bitset("0101"));
-
-  a &= Bitset("0110");
-  CHECK_EQ(a, Bitset("1110"));
-}
-#endif  // DOCTEST_LIBRARY_INCLUDED

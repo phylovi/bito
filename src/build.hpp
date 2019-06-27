@@ -15,7 +15,7 @@ TagToBitsetMap MakeTagToBitsetMap(Node::NodePtr t) {
   t->PreOrder([&m, leaf_count](Node* n) {
     Bitset x((size_t)leaf_count);
     for (auto child : n->Children()) {
-      Bitset::AndWith(x, m.at(child->Tag()));
+      x |= m.at(child->Tag());
       assert(m.insert(std::make_pair(n->Tag(), x)).second);
     }
   });

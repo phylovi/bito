@@ -1,5 +1,6 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
+#include "bitset.hpp"
 #include "driver.hpp"
 #include "intpack.hpp"
 #include "tree.hpp"
