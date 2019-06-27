@@ -106,24 +106,25 @@ class Node {
   }
 
   std::string Newick() {
-    std::function<std::string(Node*)> Aux;
-    Aux = [&Aux](Node* n) {
+    std::function<std::string(NodePtr)> Aux;
+    Aux = [&Aux](NodePtr n) {
       if (n->IsLeaf()) {
         return n->TagString();
       }
       std::string str = "(";
       for (auto iter = n->Children().begin(); iter != n->Children().end();
-           iter++) {
+           ++iter) {
         if (iter != n->Children().begin()) {
           str.append(",");
         }
-        str.append(Aux((*iter).get()));
+        str.append(Aux(*iter));
       }
       str.append(")");
       str.append(n->TagString());
       return str;
     };
-    return Aux(this) + ";";
+    std::shared_ptr<Node> this_shared(this);
+    return Aux(this_shared) + ";";
   }
 
   // Class methods
