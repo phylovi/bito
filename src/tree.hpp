@@ -79,6 +79,21 @@ class Node {
     }
   }
 
+  void NPSPreOrderAux(std::function<void(Node*, Node*, Node*)> f) {
+    if (!IsLeaf()) {
+      assert(children_.size() == 2);
+      f(children_[0].get(), this, children_[1].get());
+      children_[0]->NPSPreOrderAux(f);
+      f(children_[1].get(), this, children_[0].get());
+      children_[1]->NPSPreOrderAux(f);
+    }
+  }
+  void NPSPreOrder(std::function<void(Node*, Node*, Node*)> f) {
+    for (auto child : children_) {
+      child->NPSPreOrderAux(f);
+    }
+  }
+
   void PostOrder(std::function<void(Node*)> f) {
     for (auto child : children_) {
       child->PostOrder(f);
@@ -105,33 +120,26 @@ class Node {
     return trace;
   }
 
-  std::string Newick() {
-    std::function<std::string(NodePtr)> Aux;
-    Aux = [&Aux](NodePtr n) {
-      if (n->IsLeaf()) {
-        return n->TagString();
+  std::string Newick() { return NewickAux() + ";"; }
+
+  std::string NewickAux() {
+    if (IsLeaf()) {
+      return TagString();
+    }
+    std::string str = "(";
+    for (auto iter = children_.begin(); iter != children_.end(); iter++) {
+      if (iter != children_.begin()) {
+        str.append(",");
       }
-      std::string str = "(";
-      for (auto iter = n->Children().begin(); iter != n->Children().end();
-           ++iter) {
-        if (iter != n->Children().begin()) {
-          str.append(",");
-        }
-        str.append(Aux(*iter));
-      }
-      str.append(")");
-      str.append(n->TagString());
-      return str;
-    };
-    std::shared_ptr<Node> this_shared(this);
-    return Aux(this_shared) + ";";
+      str.append((*iter)->NewickAux());
+    }
+    str.append(")");
+    str.append(TagString());
+    return str;
   }
 
   // Class methods
-  static NodePtr
-  Leaf(int id) {
-    return std::make_shared<Node>(id);
-  }
+  static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
   static NodePtr Join(NodePtrVec children) {
     return std::make_shared<Node>(children);
   }
@@ -139,5 +147,18 @@ class Node {
     return Join(std::vector<NodePtr>({left, right}));
   }
 };
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("Node header") {
+  auto t = Node::Join(
+      std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
+                                  Node::Join(Node::Leaf(2), Node::Leaf(3))}));
+
+  t->NPSPreOrder([](Node* node, Node* parent, Node* sister) {
+    std::cout << node->TagString() << ", " << parent->TagString() << ", "
+              << sister->TagString() << std::endl;
+  });
+}
+#endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_TREE_HPP_

@@ -1,11 +1,16 @@
 #include <cassert>
+#include <set>
 #include <unordered_map>
+#include <unordered_set>
 #include "bitset.hpp"
 #include "driver.hpp"
 #include "tree.hpp"
 
 typedef std::unordered_map<uint64_t, Bitset> TagToBitsetMap;
-// typedef std::unordered_map<Bitset, std::pair<int, int>> ParamIndexer;
+typedef std::unordered_set<Bitset> BitsetSet;
+// typedef std::unordered_set<Bitset, std::hash<Bitset>, std::equal_to<Bitset>>
+// BitsetSet;
+typedef std::unordered_map<Bitset, int> ParamIndexer;
 
 // Using insert and at avoids needing to make a default constructor.
 // https://stackoverflow.com/questions/17172080/insert-vs-emplace-vs-operator-in-c-map
@@ -33,6 +38,23 @@ void PrintTagToBitsetMap(TagToBitsetMap m) {
     std::cout << StringOfPackedInt(iter->first) << " "
               << iter->second.ToString() << std::endl;
   }
+}
+
+BitsetSet RootsplitSet(Node::NodePtr t) {
+  BitsetSet s;
+  // ParamIndexer indexer;
+  auto m = MakeTagToBitsetMap(t);
+
+  auto Aux = [&s, &m](Node* n) {
+    const Bitset x = m.at(n->Tag());
+    s.insert(x);
+    // indexer.insert(std::make_pair(x, 1));
+  };
+
+  for (auto child : t->Children()) {
+    child->PreOrder(Aux);
+  }
+  return s;
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

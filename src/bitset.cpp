@@ -135,6 +135,12 @@ namespace std {
 template <>
 struct hash<Bitset> {
   size_t operator()(Bitset const& x) const noexcept { return x.Hash(); }
-  };
+};
+template <>
+struct equal_to<Bitset> {
+  bool operator()(const Bitset& lhs, const Bitset& rhs) const {
+    return lhs == rhs;
   }
+};
+}
 
