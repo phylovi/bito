@@ -1,6 +1,7 @@
 // TODO(erick)
 // document tag
 // add branch lengths
+// make everything const
 
 // To discuss:
 // look through abort-- how to handle? also look for cassert
@@ -17,7 +18,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-
 #include "intpack.hpp"
 
 class Node {
@@ -28,8 +28,9 @@ class Node {
 
  private:
   NodePtrVec children_;
-  unsigned int max_leaf_id_;
-  unsigned int leaf_count_;
+  // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
+  // of the leaves below this node, and (2) the number of leaves below the node.
+  uint64_t tag_;
 
   // Make copy constructors private to eliminate copying.
   Node(const Node&);
@@ -37,7 +38,7 @@ class Node {
 
  public:
   explicit Node(unsigned int leaf_id)
-      : children_({}), max_leaf_id_(leaf_id), leaf_count_(1) {}
+      : children_({}), tag_(PackInts(leaf_id, 1)) {}
   explicit Node(NodePtrVec children) {
     children_ = children;
     if (children_.empty()) {
@@ -60,19 +61,23 @@ class Node {
               });
     // Children are sorted by their max_leaf_id, so we can get the max by
     // looking at the last element.
-    max_leaf_id_ = children_.back()->MaxLeafID();
-    leaf_count_ = 0;
+    uint32_t max_leaf_id = children_.back()->MaxLeafID();
+    uint32_t leaf_count = 0;
     for (auto child : children_) {
-      leaf_count_ += child->LeafCount();
+      leaf_count += child->LeafCount();
     }
+    tag_ = PackInts(max_leaf_id, leaf_count);
   }
 
-  unsigned int MaxLeafID() const { return max_leaf_id_; }
-  unsigned int LeafCount() const { return leaf_count_; }
+  uint64_t Tag() { return tag_; };
+  uint32_t MaxLeafID() const { return UnpackFirstInt(tag_); }
+  uint32_t LeafCount() const { return UnpackSecondInt(tag_); }
   bool IsLeaf() { return children_.empty(); }
+  NodePtrVec Children() const { return children_; }
 
   std::string TagString() {
-    return std::to_string(max_leaf_id_) + "_" + std::to_string(leaf_count_);
+    return std::to_string(this->MaxLeafID()) + "_" +
+           std::to_string(this->LeafCount());
   }
 
   void PreOrder(std::function<void(Node*)> f) {
