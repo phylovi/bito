@@ -107,6 +107,7 @@ void Bitset::operator|=(const Bitset& other) {
   }
 }
 
+// These methods aren't in the bitset interface.
 
 size_t Bitset::Hash(void) const {
   return std::hash<std::vector<bool>>{}(value_);

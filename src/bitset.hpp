@@ -87,6 +87,8 @@ TEST_CASE("Bitset") {
   a &= Bitset("0110");
   CHECK_EQ(a, Bitset("0100"));
 
+  a.flip();
+  CHECK_EQ(a, Bitset("1011"));
   a.Minorize();
   CHECK_EQ(a, Bitset("0100"));
   a.Minorize();
