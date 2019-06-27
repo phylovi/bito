@@ -11,7 +11,7 @@ class Bitset {
   explicit Bitset(std::string);
 
   bool operator[](size_t i) const;
-  void set(size_t i);
+  void set(size_t i, bool value = true);
   void reset(size_t i);
   size_t size(void) const;
   size_t hash(void) const;
@@ -29,6 +29,8 @@ class Bitset {
   Bitset operator~() const;
 
   std::string ToString();
+
+  static void AndWith(Bitset &x, const Bitset &and_with_this);
 
 
  private:

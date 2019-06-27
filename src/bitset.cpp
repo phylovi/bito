@@ -2,8 +2,8 @@
 #include <cassert>
 #include "doctest.h"
 
-// A rewrite of the RbBitSet class from RevBayes by Sebastian Hoehna and Andy
-// Magee.
+// A rewrite of the RbBitSet class from RevBayes by Sebastian Hoehna.
+// In general, I'm trying to follow the interface of std::bitset.
 
 
 Bitset::Bitset(std::vector<bool> value) : value_(value) {}
@@ -25,9 +25,9 @@ Bitset::Bitset(std::string str) : Bitset(str.length()) {
 
 bool Bitset::operator[](size_t i) const { return value_[i]; }
 
-void Bitset::set(size_t i) {
+void Bitset::set(size_t i, bool value) {
   assert(i < value_.size());
-  value_[i] = true;
+  value_[i] = value;
 }
 
 void Bitset::reset(size_t i) {
@@ -70,6 +70,16 @@ Bitset Bitset::operator&(const Bitset& x) const {
     }
   }
   return r;
+}
+
+// Let x be the and of x and and_with_this.
+void Bitset::AndWith(Bitset& x, const Bitset& and_with_this) {
+  if (x.size() != and_with_this.size()) {
+    throw "Cannot and Bitsets of unequal size";
+  }
+  for (size_t i = 0; i < x.size(); i++) {
+    x.set(i, x[i] && and_with_this[i]);
+    }
 }
 
 // Bitwise or

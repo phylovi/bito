@@ -2,6 +2,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <unordered_map>
+#include "build.hpp"
 #include "driver.hpp"
 #include "tree.hpp"
 
@@ -12,13 +13,12 @@ struct SBNInstance {
   Driver driver_;
   Node::NodePtrVecPtr trees_;
   std::unordered_map<int, int> indexer_;
+  // TagToBitsetMap tag_to_bitset_;
 
   SBNInstance(const std::string &name) : name_(name) {}
 
   unsigned long TreeCount() { return trees_->size(); }
   void ParseFile(std::string fname) { trees_ = driver_.ParseFile(fname); }
-
-  void InitIndexer() { indexer_[4] = 2; }
 
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
