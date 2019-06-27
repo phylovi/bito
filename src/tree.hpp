@@ -105,26 +105,32 @@ class Node {
     return trace;
   }
 
-  std::string Newick() { return NewickAux() + ";"; }
-
-  std::string NewickAux() {
-    if (IsLeaf()) {
-      return TagString();
-    }
-    std::string str = "(";
-    for (auto iter = children_.begin(); iter != children_.end(); iter++) {
-      if (iter != children_.begin()) {
-        str.append(",");
+  std::string Newick() {
+    std::function<std::string(Node*)> Aux;
+    Aux = [&Aux](Node* n) {
+      if (n->IsLeaf()) {
+        return n->TagString();
       }
-      str.append((*iter)->NewickAux());
-    }
-    str.append(")");
-    str.append(TagString());
-    return str;
+      std::string str = "(";
+      for (auto iter = n->Children().begin(); iter != n->Children().end();
+           iter++) {
+        if (iter != n->Children().begin()) {
+          str.append(",");
+        }
+        str.append(Aux((*iter).get()));
+      }
+      str.append(")");
+      str.append(n->TagString());
+      return str;
+    };
+    return Aux(this) + ";";
   }
 
   // Class methods
-  static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
+  static NodePtr
+  Leaf(int id) {
+    return std::make_shared<Node>(id);
+  }
   static NodePtr Join(NodePtrVec children) {
     return std::make_shared<Node>(children);
   }
