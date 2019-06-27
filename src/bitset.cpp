@@ -71,7 +71,6 @@ Bitset Bitset::operator&(const Bitset& x) const {
   return r;
 }
 
-// Let x be the and of x and and_with_this.
 void Bitset::AndWith(Bitset& x, const Bitset& and_with_this) {
   if (x.size() != and_with_this.size()) {
     throw "Cannot and Bitsets of unequal size";
@@ -81,7 +80,6 @@ void Bitset::AndWith(Bitset& x, const Bitset& and_with_this) {
     }
 }
 
-// Bitwise or
 Bitset Bitset::operator|(const Bitset& x) const {
   if (value_.size() != x.size()) {
     throw "Cannot or Bitsets of unequal sizes";
@@ -95,7 +93,6 @@ Bitset Bitset::operator|(const Bitset& x) const {
   return r;
 }
 
-// Bitwise xor
 Bitset Bitset::operator^(const Bitset& x) const {
   if (value_.size() != x.size()) {
     throw "Cannot xor Bitsets of unequal size";
@@ -109,11 +106,19 @@ Bitset Bitset::operator^(const Bitset& x) const {
   return r;
 }
 
-// Unary not
 Bitset Bitset::operator~() const {
   Bitset r(value_);
   r.value_.flip();
   return r;
+}
+
+void Bitset::operator&=(const Bitset& other) {
+  if (value_.size() != other.size()) {
+    throw "Cannot and Bitsets of unequal size";
+  }
+  for (size_t i = 0; i < value_.size(); i++) {
+    value_[i] = value_[i] && other[i];
+    }
 }
 
 std::string Bitset::ToString() {
@@ -173,5 +178,8 @@ TEST_CASE("Bitset") {
   CHECK_EQ((Bitset("1100") | Bitset("1010")), Bitset("1110"));
   CHECK_EQ((Bitset("1100") ^ Bitset("1010")), Bitset("0110"));
   CHECK_EQ(~Bitset("1010"), Bitset("0101"));
+
+  a &= Bitset("0110");
+  CHECK_EQ(a, Bitset("1110"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

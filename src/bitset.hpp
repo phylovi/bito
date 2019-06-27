@@ -28,6 +28,8 @@ class Bitset {
   Bitset operator^(const Bitset &bs) const;
   Bitset operator~() const;
 
+  void operator&=(const Bitset &other);
+
   std::string ToString();
 
   static void AndWith(Bitset &x, const Bitset &and_with_this);

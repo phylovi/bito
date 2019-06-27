@@ -7,6 +7,7 @@ typedef std::unordered_map<uint64_t, Bitset> TagToBitsetMap;
 // typedef std::unordered_map<Bitset, std::pair<int, int>> ParamIndexer;
 
 // Using insert and at avoids needing to make a default constructor.
+// https://stackoverflow.com/questions/17172080/insert-vs-emplace-vs-operator-in-c-map
 
 TagToBitsetMap MakeTagToBitsetMap(Node::NodePtr t) {
   TagToBitsetMap m;
