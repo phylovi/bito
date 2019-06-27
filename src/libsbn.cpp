@@ -1,7 +1,6 @@
 #include "libsbn.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-// #include "build.hpp"
 
 namespace py = pybind11;
 
@@ -16,7 +15,7 @@ PYBIND11_MODULE(sbn, m) {
       //.def_readonly("trees", &SBNInstance::trees_)
       .def("tree_count", &SBNInstance::TreeCount)
       .def("parse_file", &SBNInstance::ParseFile)
-      .def("print_status", &SBNInstance::PrintStatus);
-  //.def("make_tag_to_bitset_map", &MakeTagToBitsetMap);
+      .def("print_status", &SBNInstance::PrintStatus)
+      .def("make_tag_to_bitset_map", &MakeTagToBitsetMap);
   m.def("f", &SBNInstance::f, "test");
 }

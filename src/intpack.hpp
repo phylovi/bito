@@ -2,6 +2,7 @@
 #define SRC_INTPACK_HPP_
 
 #include <cstdint>
+#include <string>
 
 inline uint64_t PackInts(uint32_t a, uint32_t b) {
   return (uint64_t)((((uint64_t)a) << 32) + (uint64_t)b);
@@ -13,6 +14,11 @@ inline uint32_t UnpackFirstInt(uint64_t x) {
 
 inline uint32_t UnpackSecondInt(uint64_t x) {
   return (uint32_t)(((uint64_t)x) & 0xffffffff);
+}
+
+inline std::string StringOfPackedInt(uint64_t x) {
+  return (std::to_string(UnpackFirstInt(x)) + "_" +
+          std::to_string(UnpackSecondInt(x)));
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

@@ -70,10 +70,7 @@ class Node {
   bool IsLeaf() { return children_.empty(); }
   NodePtrVec Children() const { return children_; }
 
-  std::string TagString() {
-    return std::to_string(this->MaxLeafID()) + "_" +
-           std::to_string(this->LeafCount());
-  }
+  std::string TagString() { return StringOfPackedInt(this->tag_); }
 
   void PreOrder(std::function<void(Node*)> f) {
     f(this);

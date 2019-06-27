@@ -1,6 +1,7 @@
 #include <cassert>
 #include <unordered_map>
 #include "bitset.hpp"
+#include "driver.hpp"
 #include "tree.hpp"
 
 typedef std::unordered_map<uint64_t, Bitset> TagToBitsetMap;
@@ -12,12 +13,35 @@ typedef std::unordered_map<uint64_t, Bitset> TagToBitsetMap;
 TagToBitsetMap MakeTagToBitsetMap(Node::NodePtr t) {
   TagToBitsetMap m;
   auto leaf_count = t->LeafCount();
-  t->PreOrder([&m, leaf_count](Node* n) {
+  t->PostOrder([&m, leaf_count](Node* n) {
     Bitset x((size_t)leaf_count);
-    for (auto child : n->Children()) {
-      x |= m.at(child->Tag());
-      assert(m.insert(std::make_pair(n->Tag(), x)).second);
+    if (n->IsLeaf()) {
+      x.set(n->MaxLeafID());
+    } else {
+      // Take the union of the children below.
+      for (auto child : n->Children()) {
+        x |= m.at(child->Tag());
+      }
     }
+    assert(m.insert(std::make_pair(n->Tag(), x)).second);
   });
   return m;
 }
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+
+TEST_CASE("Build") {
+  Driver driver;
+
+  auto t = driver.ParseString("(0,1);");
+
+  auto m = MakeTagToBitsetMap(t);
+
+  std::cout << t->Newick() << std::endl;
+  for (auto iter = m.begin(); iter != m.end(); ++iter) {
+    std::cout << StringOfPackedInt(iter->first) << " "
+              << iter->second.ToString() << std::endl;
+  }
+}
+
+#endif  // DOCTEST_LIBRARY_INCLUDED
