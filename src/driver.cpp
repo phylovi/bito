@@ -16,7 +16,7 @@ Driver::Driver()
       latest_tree_(nullptr) {}
 
 
-Node::NodePtrVecPtr Driver::ParseFile(const std::string &fname) {
+Node::NodePtrCounterPtr Driver::ParseFile(const std::string &fname) {
   Node::NodePtr tree;
   yy::parser parser_instance(*this);
 
@@ -29,7 +29,7 @@ Node::NodePtrVecPtr Driver::ParseFile(const std::string &fname) {
   }
   std::string line;
   unsigned int line_number = 1;
-  auto trees = std::make_shared<Node::NodePtrVec>();
+  auto trees = std::make_shared<Node::NodePtrCounter>();
   while (std::getline(in, line)) {
     // Set the Bison location line number properly so we get useful error
     // messages.
@@ -37,7 +37,13 @@ Node::NodePtrVecPtr Driver::ParseFile(const std::string &fname) {
     line_number++;
     if (line.size() > 0) {
       tree = ParseString(&parser_instance, line);
-      trees->push_back(tree);
+      // C++20 use contains
+      auto search = trees->find(tree);
+      if (search == trees->end()) {
+        assert(trees->insert(std::make_pair(tree, 1)).second);
+      } else {
+        search->second++;
+      }
     }
   }
   in.close();

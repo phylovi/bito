@@ -13,6 +13,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "intpack.hpp"
 
@@ -21,6 +22,8 @@ class Node {
   typedef std::shared_ptr<Node> NodePtr;
   typedef std::vector<NodePtr> NodePtrVec;
   typedef std::shared_ptr<NodePtrVec> NodePtrVecPtr;
+  typedef std::unordered_map<NodePtr, unsigned int> NodePtrCounter;
+  typedef std::shared_ptr<NodePtrCounter> NodePtrCounterPtr;
 
  private:
   NodePtrVec children_;
@@ -81,7 +84,6 @@ class Node {
   NodePtrVec Children() const { return children_; }
 
   bool operator==(const Node& other) {
-    std::cout << "at node " << this->Hash() << std::endl;
     if (this->Hash() != other.Hash()) {
       return false;
     }
