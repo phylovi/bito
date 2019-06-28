@@ -7,10 +7,9 @@
 #include "tree.hpp"
 
 typedef std::unordered_map<uint64_t, Bitset> TagToBitsetMap;
-typedef std::unordered_set<std::string> BitsetSet;
-// typedef std::unordered_set<Bitset, std::hash<Bitset>, std::equal_to<Bitset>>
-// BitsetSet;
-typedef std::unordered_map<Bitset, int> ParamIndexer;
+typedef std::unordered_set<Bitset> BitsetSet;
+typedef std::unordered_map<Bitset, int> BitsetIndexer;
+typedef std::unordered_map<Bitset, float> BitsetFloatMap;
 
 // Using insert and at avoids needing to make a default constructor.
 // https://stackoverflow.com/questions/17172080/insert-vs-emplace-vs-operator-in-c-map
@@ -40,21 +39,19 @@ void PrintTagToBitsetMap(TagToBitsetMap m) {
   }
 }
 
-BitsetSet RootsplitSet(Node::NodePtr t) {
-  BitsetSet s;
-  // ParamIndexer indexer;
-  auto m = MakeTagToBitsetMap(t);
+BitsetFloatMap RootsplitFrequencyOf(Node::NodePtr t) {
+  BitsetFloatMap rootsplit_frequency;
+  auto tag_to_bitset = MakeTagToBitsetMap(t);
 
-  auto Aux = [&s, &m](Node* n) {
-    Bitset x = m.at(n->Tag());
-    s.insert(x.ToString());
-    // indexer.insert(std::make_pair(x, 1));
+  auto Aux = [&rootsplit_frequency, &tag_to_bitset](Node* n) {
+    // TODO actually add frequency
+    rootsplit_frequency.insert(std::make_pair(tag_to_bitset.at(n->Tag()), 1.));
   };
 
   for (auto child : t->Children()) {
     child->PreOrder(Aux);
   }
-  return s;
+  return rootsplit_frequency;
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

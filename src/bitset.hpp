@@ -45,6 +45,22 @@ class Bitset {
   std::vector<bool> value_;
 };
 
+// This is how we inject a hash routine and a custom comparator into the std
+// namespace so that we can use unordered_map and unordered_set.
+// https://en.cppreference.com/w/cpp/container/unordered_map
+namespace std {
+template <>
+struct hash<Bitset> {
+  size_t operator()(const Bitset &x) const { return x.Hash(); }
+};
+template <>
+struct equal_to<Bitset> {
+  bool operator()(const Bitset &lhs, const Bitset &rhs) const {
+    return lhs == rhs;
+  }
+};
+}
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Bitset") {
   auto a = Bitset("1100");

@@ -128,19 +128,4 @@ void Bitset::Minorize() {
   }
 }
 
-// This is how we inject a hash routine into the std namespace so that we can
-// use it as a key for an unordered_map.
-// https://en.cppreference.com/w/cpp/container/unordered_map
-namespace std {
-template <>
-struct hash<Bitset> {
-  size_t operator()(Bitset const& x) const noexcept { return x.Hash(); }
-};
-template <>
-struct equal_to<Bitset> {
-  bool operator()(const Bitset& lhs, const Bitset& rhs) const {
-    return lhs == rhs;
-  }
-};
-}
 
