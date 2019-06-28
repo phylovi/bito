@@ -6,6 +6,7 @@
 #ifndef SRC_TREE_HPP_
 #define SRC_TREE_HPP_
 
+#include <limits.h>
 #include <algorithm>
 #include <cassert>
 #include <deque>
@@ -26,6 +27,7 @@ class Node {
   // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
   // of the leaves below this node, and (2) the number of leaves below the node.
   uint64_t tag_;
+  size_t hash_;
 
   // Make copy constructors private to eliminate copying.
   Node(const Node&);
@@ -33,7 +35,7 @@ class Node {
 
  public:
   explicit Node(unsigned int leaf_id)
-      : children_({}), tag_(PackInts(leaf_id, 1)) {}
+      : children_({}), tag_(PackInts(leaf_id, 1)), hash_(SOHash(leaf_id)) {}
   explicit Node(NodePtrVec children) {
     children_ = children;
     if (children_.empty()) {
@@ -58,15 +60,22 @@ class Node {
     // looking at the last element.
     uint32_t max_leaf_id = children_.back()->MaxLeafID();
     uint32_t leaf_count = 0;
+    hash_ = 0;
     for (auto child : children_) {
       leaf_count += child->LeafCount();
+      hash_ ^= child->Hash();
     }
     tag_ = PackInts(max_leaf_id, leaf_count);
+    // Bit rotation is necessary because if we only XOR then we can get
+    // collisions when identical tips are in different
+    // ordered subtrees (an example is in below doctest).
+    hash_ = SORotate(hash_, 1);
   }
 
   uint64_t Tag() { return tag_; };
   uint32_t MaxLeafID() const { return UnpackFirstInt(tag_); }
   uint32_t LeafCount() const { return UnpackSecondInt(tag_); }
+  size_t Hash() const { return hash_; }
   bool IsLeaf() { return children_.empty(); }
   NodePtrVec Children() const { return children_; }
 
@@ -114,12 +123,6 @@ class Node {
     }
   }
 
-  std::vector<unsigned int> MaxLeafTrace() {
-    std::vector<unsigned int> trace;
-    PreOrder([&trace](Node* node) { trace.push_back(node->MaxLeafID()); });
-    return trace;
-  }
-
   std::string Newick() { return NewickAux() + ";"; }
 
   std::string NewickAux() {
@@ -138,6 +141,7 @@ class Node {
     return str;
   }
 
+
   // Class methods
   static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
   static NodePtr Join(NodePtrVec children) {
@@ -146,19 +150,56 @@ class Node {
   static NodePtr Join(NodePtr left, NodePtr right) {
     return Join(std::vector<NodePtr>({left, right}));
   }
+
+  // A "cryptographic" hash function from Stack Overflow.
+  // https://stackoverflow.com/a/12996028/467327
+  static inline unsigned int SOHash(unsigned int x) {
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = (x >> 16) ^ x;
+    return x;
+  }
+
+  // Bit rotation from Stack Overflow.
+  // c is the amount by which we rotate.
+  // https://stackoverflow.com/a/776523/467327
+  static inline size_t SORotate(size_t n, unsigned int c) {
+    const unsigned int mask =
+        (CHAR_BIT * sizeof(n) - 1);  // assumes width is a power of 2.
+    // assert ( (c<=mask) &&"rotate by type width or more");
+    c &= mask;
+    return (n << c) | (n >> ((-c) & mask));
+  }
 };
+
+namespace std {
+template <>
+struct hash<Node::NodePtr> {
+  size_t operator()(const Node::NodePtr& n) const { return n->Hash(); }
+};
+}
+
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Node header") {
-  auto t = Node::Join(
+  auto t1 = Node::Join(
       std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
                                   Node::Join(Node::Leaf(2), Node::Leaf(3))}));
+  auto t2 = Node::Join(
+      std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(2),
+                                  Node::Join(Node::Leaf(1), Node::Leaf(3))}));
 
   // TODO add real test for NPSPreorder
-  t->NPSPreOrder([](Node* node, Node* parent, Node* sister) {
+  t1->NPSPreOrder([](Node* node, Node* parent, Node* sister) {
     std::cout << node->TagString() << ", " << parent->TagString() << ", "
               << sister->TagString() << std::endl;
   });
+
+  // This is actually a non-trivial test, which shows why we need bit rotation.
+  CHECK_NE(t1->Hash(), t2->Hash());
+
+  // TODO use bucket count to check efficiency of hashing code
+  // https://en.cppreference.com/w/cpp/container/unordered_map/bucket_count
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
