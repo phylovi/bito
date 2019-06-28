@@ -40,9 +40,9 @@ struct SBNInstance {
 
   std::unordered_map<uint64_t, std::string> g() {
     assert(trees_->size() > 0);
-    TagToBitsetMap m = MakeTagToBitsetMap(trees_->at(0));
+    TagBitsetMap m = TagBitsetMapOf(trees_->at(0));
     std::unordered_map<uint64_t, std::string> m_str;
-    m = MakeTagToBitsetMap(trees_->at(0));
+    m = TagBitsetMapOf(trees_->at(0));
     for (auto iter = m.begin(); iter != m.end(); ++iter) {
       m_str[iter->first] = iter->second.ToString();
     }

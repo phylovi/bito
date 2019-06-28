@@ -6,7 +6,7 @@
 #include "driver.hpp"
 #include "tree.hpp"
 
-typedef std::unordered_map<uint64_t, Bitset> TagToBitsetMap;
+typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
 typedef std::unordered_set<Bitset> BitsetSet;
 typedef std::unordered_map<Bitset, int> BitsetIndexer;
 typedef std::unordered_map<Bitset, float> BitsetFloatMap;
@@ -14,8 +14,8 @@ typedef std::unordered_map<Bitset, float> BitsetFloatMap;
 // Using insert and at avoids needing to make a default constructor.
 // https://stackoverflow.com/questions/17172080/insert-vs-emplace-vs-operator-in-c-map
 
-TagToBitsetMap MakeTagToBitsetMap(Node::NodePtr t) {
-  TagToBitsetMap m;
+TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
+  TagBitsetMap m;
   auto leaf_count = t->LeafCount();
   t->PostOrder([&m, leaf_count](Node* n) {
     Bitset x((size_t)leaf_count);
@@ -32,7 +32,7 @@ TagToBitsetMap MakeTagToBitsetMap(Node::NodePtr t) {
   return m;
 }
 
-void PrintTagToBitsetMap(TagToBitsetMap m) {
+void PrintTagBitsetMap(TagBitsetMap m) {
   for (auto iter = m.begin(); iter != m.end(); ++iter) {
     std::cout << StringOfPackedInt(iter->first) << " "
               << iter->second.ToString() << std::endl;
@@ -41,7 +41,7 @@ void PrintTagToBitsetMap(TagToBitsetMap m) {
 
 BitsetFloatMap RootsplitFrequencyOf(Node::NodePtr t) {
   BitsetFloatMap rootsplit_frequency;
-  auto tag_to_bitset = MakeTagToBitsetMap(t);
+  auto tag_to_bitset = TagBitsetMapOf(t);
 
   auto Aux = [&rootsplit_frequency, &tag_to_bitset](Node* n) {
     // TODO actually add frequency
@@ -61,10 +61,10 @@ TEST_CASE("Build") {
 
   auto t = driver.ParseString("((0,1),(2,(3,4)));");
 
-  auto m = MakeTagToBitsetMap(t);
+  auto m = TagBitsetMapOf(t);
 
   std::cout << t->Newick() << std::endl;
-  PrintTagToBitsetMap(m);
+  PrintTagBitsetMap(m);
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
