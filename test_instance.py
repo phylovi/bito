@@ -9,4 +9,4 @@ def test_instance():
     sbn.f(np.array([3,4]))
     m = inst.g()
     print(m)
-
+    print(inst.rootsplits())

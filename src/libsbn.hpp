@@ -38,6 +38,11 @@ struct SBNInstance {
     return m_str;
   }
 
+  std::unordered_set<std::string> Rootsplits() {
+    assert(trees_->size() > 0);
+    return RootsplitSet(trees_->at(0));
+  }
+
   static void f(py::array_t<double> array) {
     py::buffer_info buf = array.request();
     std::cout << "You passed a " << buf.ndim << " dim array" << std::endl;

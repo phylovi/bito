@@ -7,7 +7,7 @@
 #include "tree.hpp"
 
 typedef std::unordered_map<uint64_t, Bitset> TagToBitsetMap;
-typedef std::unordered_set<Bitset> BitsetSet;
+typedef std::unordered_set<std::string> BitsetSet;
 // typedef std::unordered_set<Bitset, std::hash<Bitset>, std::equal_to<Bitset>>
 // BitsetSet;
 typedef std::unordered_map<Bitset, int> ParamIndexer;
@@ -46,8 +46,8 @@ BitsetSet RootsplitSet(Node::NodePtr t) {
   auto m = MakeTagToBitsetMap(t);
 
   auto Aux = [&s, &m](Node* n) {
-    const Bitset x = m.at(n->Tag());
-    s.insert(x);
+    Bitset x = m.at(n->Tag());
+    s.insert(x.ToString());
     // indexer.insert(std::make_pair(x, 1));
   };
 

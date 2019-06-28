@@ -38,7 +38,7 @@ class Bitset {
   // These methods aren't in the bitset interface, so they get our usual
   // convention.
   size_t Hash(void) const;
-  std::string ToString();
+  std::string ToString() const;
   void Minorize();
 
  private:

@@ -113,7 +113,7 @@ size_t Bitset::Hash(void) const {
   return std::hash<std::vector<bool>>{}(value_);
 }
 
-std::string Bitset::ToString() {
+std::string Bitset::ToString() const {
   std::string str;
   for (size_t i = 0; i < value_.size(); ++i) {
     str += (value_[i] ? '1' : '0');
