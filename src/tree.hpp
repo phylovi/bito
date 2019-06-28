@@ -1,11 +1,7 @@
 // TODO(erick)
-// document tag
 // add branch lengths
+// make everything const
 
-// To discuss:
-// look through abort-- how to handle? also look for cassert
-// unique_ptr? Are we copying things in parsing?
-// "NodeId" type rather than unsigned int?
 
 #ifndef SRC_TREE_HPP_
 #define SRC_TREE_HPP_
@@ -17,6 +13,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "intpack.hpp"
 
 class Node {
  public:
@@ -26,8 +23,9 @@ class Node {
 
  private:
   NodePtrVec children_;
-  unsigned int max_leaf_id_;
-  unsigned int leaf_count_;
+  // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
+  // of the leaves below this node, and (2) the number of leaves below the node.
+  uint64_t tag_;
 
   // Make copy constructors private to eliminate copying.
   Node(const Node&);
@@ -35,7 +33,7 @@ class Node {
 
  public:
   explicit Node(unsigned int leaf_id)
-      : children_({}), max_leaf_id_(leaf_id), leaf_count_(1) {}
+      : children_({}), tag_(PackInts(leaf_id, 1)) {}
   explicit Node(NodePtrVec children) {
     children_ = children;
     if (children_.empty()) {
@@ -58,25 +56,41 @@ class Node {
               });
     // Children are sorted by their max_leaf_id, so we can get the max by
     // looking at the last element.
-    max_leaf_id_ = children_.back()->MaxLeafID();
-    leaf_count_ = 0;
+    uint32_t max_leaf_id = children_.back()->MaxLeafID();
+    uint32_t leaf_count = 0;
     for (auto child : children_) {
-      leaf_count_ += child->LeafCount();
+      leaf_count += child->LeafCount();
     }
+    tag_ = PackInts(max_leaf_id, leaf_count);
   }
 
-  unsigned int MaxLeafID() const { return max_leaf_id_; }
-  unsigned int LeafCount() const { return leaf_count_; }
+  uint64_t Tag() { return tag_; };
+  uint32_t MaxLeafID() const { return UnpackFirstInt(tag_); }
+  uint32_t LeafCount() const { return UnpackSecondInt(tag_); }
   bool IsLeaf() { return children_.empty(); }
+  NodePtrVec Children() const { return children_; }
 
-  std::string TagString() {
-    return std::to_string(max_leaf_id_) + "_" + std::to_string(leaf_count_);
-  }
+  std::string TagString() { return StringOfPackedInt(this->tag_); }
 
   void PreOrder(std::function<void(Node*)> f) {
     f(this);
     for (auto child : children_) {
       child->PreOrder(f);
+    }
+  }
+
+  void NPSPreOrderAux(std::function<void(Node*, Node*, Node*)> f) {
+    if (!IsLeaf()) {
+      assert(children_.size() == 2);
+      f(children_[0].get(), this, children_[1].get());
+      children_[0]->NPSPreOrderAux(f);
+      f(children_[1].get(), this, children_[0].get());
+      children_[1]->NPSPreOrderAux(f);
+    }
+  }
+  void NPSPreOrder(std::function<void(Node*, Node*, Node*)> f) {
+    for (auto child : children_) {
+      child->NPSPreOrderAux(f);
     }
   }
 
@@ -133,5 +147,19 @@ class Node {
     return Join(std::vector<NodePtr>({left, right}));
   }
 };
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("Node header") {
+  auto t = Node::Join(
+      std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
+                                  Node::Join(Node::Leaf(2), Node::Leaf(3))}));
+
+  // TODO add real test for NPSPreorder
+  t->NPSPreOrder([](Node* node, Node* parent, Node* sister) {
+    std::cout << node->TagString() << ", " << parent->TagString() << ", "
+              << sister->TagString() << std::endl;
+  });
+}
+#endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_TREE_HPP_

@@ -1,11 +1,22 @@
-
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <unordered_map>
+#include "build.hpp"
 #include "driver.hpp"
 #include "tree.hpp"
 
 namespace py = pybind11;
+
+typedef std::unordered_map<std::string, float> StringFloatMap;
+
+StringFloatMap StringFloatMapOf(BitsetFloatMap m) {
+  StringFloatMap m_str;
+  for (auto iter = m.begin(); iter != m.end(); ++iter) {
+    m_str[iter->first.ToString()] = iter->second;
+  }
+  return m_str;
+}
+
 
 struct SBNInstance {
   std::string name_;
@@ -18,8 +29,6 @@ struct SBNInstance {
   unsigned long TreeCount() { return trees_->size(); }
   void ParseFile(std::string fname) { trees_ = driver_.ParseFile(fname); }
 
-  void InitIndexer() { indexer_[4] = 2; }
-
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
     if (trees_) {
@@ -29,6 +38,11 @@ struct SBNInstance {
     }
   }
 
+  StringFloatMap Rootsplits() {
+    assert(trees_->size() > 0);
+    return StringFloatMapOf(RootsplitFrequencyOf(trees_->at(0)));
+  }
+
   static void f(py::array_t<double> array) {
     py::buffer_info buf = array.request();
     std::cout << "You passed a " << buf.ndim << " dim array" << std::endl;
@@ -36,5 +50,5 @@ struct SBNInstance {
     for (auto idx = 0; idx < buf.shape[0]; idx++) {
       std::cout << ptr[idx] << std::endl;
     }
-  };
+    };
 };

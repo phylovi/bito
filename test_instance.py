@@ -6,8 +6,5 @@ def test_instance():
     inst.parse_file('data/four_taxon.tre')
     inst.print_status()
     assert inst.tree_count() == 5
-    inst.init_indexer()
-    print(inst.indexer)
-    assert inst.indexer[4] == 2
     sbn.f(np.array([3,4]))
-
+    print(inst.rootsplits())

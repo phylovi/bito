@@ -1,9 +1,5 @@
 #include "bitset.hpp"
 #include <cassert>
-#include "doctest.h"
-
-// A rewrite of the RbBitSet class from RevBayes by Sebastian Hoehna and Andy
-// Magee.
 
 
 Bitset::Bitset(std::vector<bool> value) : value_(value) {}
@@ -25,9 +21,11 @@ Bitset::Bitset(std::string str) : Bitset(str.length()) {
 
 bool Bitset::operator[](size_t i) const { return value_[i]; }
 
-void Bitset::set(size_t i) {
+size_t Bitset::size(void) const { return value_.size(); }
+
+void Bitset::set(size_t i, bool value) {
   assert(i < value_.size());
-  value_[i] = true;
+  value_[i] = value;
 }
 
 void Bitset::reset(size_t i) {
@@ -35,10 +33,7 @@ void Bitset::reset(size_t i) {
   value_[i] = false;
 }
 
-size_t Bitset::size(void) const { return value_.size(); }
-size_t Bitset::hash(void) const {
-  return std::hash<std::vector<bool>>{}(value_);
-}
+void Bitset::flip() { value_.flip(); }
 
 bool Bitset::operator==(const Bitset& other) const {
   return value_ == other.value_;
@@ -60,9 +55,7 @@ bool Bitset::operator>=(const Bitset& other) const {
 }
 
 Bitset Bitset::operator&(const Bitset& x) const {
-  if (value_.size() != x.size()) {
-    throw "Cannot and Bitsets of unequal size";
-  }
+  assert(value_.size() == x.size());
   Bitset r(value_.size());
   for (size_t i = 0; i < value_.size(); i++) {
     if (value_[i] && x.value_[i]) {
@@ -72,11 +65,8 @@ Bitset Bitset::operator&(const Bitset& x) const {
   return r;
 }
 
-// Bitwise or
 Bitset Bitset::operator|(const Bitset& x) const {
-  if (value_.size() != x.size()) {
-    throw "Cannot or Bitsets of unequal sizes";
-  }
+  assert(value_.size() == x.size());
   Bitset r(value_.size());
   for (size_t i = 0; i < value_.size(); i++) {
     if (value_[i] || x.value_[i]) {
@@ -86,11 +76,8 @@ Bitset Bitset::operator|(const Bitset& x) const {
   return r;
 }
 
-// Bitwise xor
 Bitset Bitset::operator^(const Bitset& x) const {
-  if (value_.size() != x.size()) {
-    throw "Cannot xor Bitsets of unequal size";
-  }
+  assert(value_.size() == x.size());
   Bitset r(value_.size());
   for (size_t i = 0; i < value_.size(); i++) {
     if (value_[i] != x.value_[i]) {
@@ -100,67 +87,45 @@ Bitset Bitset::operator^(const Bitset& x) const {
   return r;
 }
 
-// Unary not
 Bitset Bitset::operator~() const {
   Bitset r(value_);
   r.value_.flip();
   return r;
 }
 
-std::string Bitset::ToString() {
-  std::string str = "[";
+void Bitset::operator&=(const Bitset& other) {
+  assert(value_.size() == other.size());
+  for (size_t i = 0; i < value_.size(); i++) {
+    value_[i] = value_[i] && other[i];
+    }
+}
+
+void Bitset::operator|=(const Bitset& other) {
+  assert(value_.size() == other.size());
+  for (size_t i = 0; i < value_.size(); i++) {
+    value_[i] = value_[i] || other[i];
+  }
+}
+
+// These methods aren't in the bitset interface.
+
+size_t Bitset::Hash(void) const {
+  return std::hash<std::vector<bool>>{}(value_);
+}
+
+std::string Bitset::ToString() const {
+  std::string str;
   for (size_t i = 0; i < value_.size(); ++i) {
     str += (value_[i] ? '1' : '0');
   }
-  str += ']';
   return str;
 }
 
-// This is how we inject a hash routine into the std namespace so that we can
-// use it as a key for an unordered_map.
-// https://en.cppreference.com/w/cpp/container/unordered_map
-namespace std {
-template <>
-struct hash<Bitset> {
-  size_t operator()(Bitset const& x) const noexcept { return x.hash(); }
-};
+void Bitset::Minorize() {
+  assert(value_.size() > 0);
+  if (value_[0]) {
+    value_.flip();
+  }
 }
 
-TEST_CASE("Bitset") {
-  auto a = Bitset("1100");
 
-  CHECK_EQ(a[2], false);
-  CHECK_EQ(a[1], true);
-
-  auto build_up = Bitset(4);
-  build_up.set(1);
-  build_up.set(3);
-  CHECK_EQ(build_up, Bitset("0101"));
-
-  auto strip_down = Bitset(4, true);
-  strip_down.reset(0);
-  strip_down.reset(2);
-  CHECK_EQ(build_up, Bitset("0101"));
-
-  CHECK_EQ(a.size(), 4);
-
-  CHECK_EQ(Bitset("1100"), Bitset("1100"));
-  CHECK_NE(Bitset("1100"), Bitset("0100"));
-
-  CHECK_LT(Bitset("0100"), Bitset("0110"));
-  CHECK_LT(Bitset("0100"), Bitset("0110"));
-  CHECK_LT(Bitset("0010"), Bitset("0100"));
-  CHECK_LE(Bitset("0010"), Bitset("0100"));
-  CHECK_LE(Bitset("1100"), Bitset("1100"));
-
-  CHECK_GT(Bitset("0110"), Bitset("0100"));
-  CHECK_GT(Bitset("0110"), Bitset("0100"));
-  CHECK_GT(Bitset("0100"), Bitset("0010"));
-  CHECK_GE(Bitset("0100"), Bitset("0010"));
-  CHECK_GE(Bitset("1100"), Bitset("1100"));
-
-  CHECK_EQ((Bitset("1100") & Bitset("1010")), Bitset("1000"));
-  CHECK_EQ((Bitset("1100") | Bitset("1010")), Bitset("1110"));
-  CHECK_EQ((Bitset("1100") ^ Bitset("1010")), Bitset("0110"));
-  CHECK_EQ(~Bitset("1010"), Bitset("0101"));
-}
