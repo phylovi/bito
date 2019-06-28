@@ -21,7 +21,7 @@ StringFloatMap StringFloatMapOf(BitsetFloatMap m) {
 struct SBNInstance {
   std::string name_;
   Driver driver_;
-  Node::NodePtrVecPtr trees_;
+  Node::NodePtrCounterPtr trees_;
   std::unordered_map<int, int> indexer_;
 
   SBNInstance(const std::string &name) : name_(name) {}
@@ -40,7 +40,7 @@ struct SBNInstance {
 
   StringFloatMap Rootsplits() {
     assert(trees_->size() > 0);
-    return StringFloatMapOf(RootsplitFrequencyOf(trees_->at(0)));
+    return StringFloatMapOf(RootsplitFrequencyOf(trees_->begin()->first));
   }
 
   static void f(py::array_t<double> array) {

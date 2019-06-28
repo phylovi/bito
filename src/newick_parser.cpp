@@ -21,7 +21,8 @@ int main(int argc, char *argv[]) {
       auto trees = drv.ParseFile(argv[i]);
       auto t_parse = now();
 
-      for (auto tree : *trees) {
+      for (auto iter : *trees) {
+        auto tree = iter.first;
         std::vector<unsigned int> leaves(tree->MaxLeafID());
         tree->PreOrder([&leaves](Node* node) {
           if (node->IsLeaf()) leaves.push_back(node->MaxLeafID());
@@ -37,8 +38,9 @@ int main(int argc, char *argv[]) {
                   << std::endl;
       }
       if (print_trees) {
-        for (auto tree : *trees) {
-          std::cout << tree->Newick() << std::endl;
+        for (auto iter : *trees) {
+          std::cout << iter.first->Newick() << "\t"
+                    << std::to_string(iter.second) << std::endl;
         }
       } else {
         std::cout << "Parsed " << trees->size() << " trees.\n";

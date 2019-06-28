@@ -40,6 +40,6 @@ class Driver {
   // Make a parser and then parse a string for a one-off parsing.
   Node::NodePtr ParseString(const std::string& s);
   // Run the parser on a file.
-  Node::NodePtrVecPtr ParseFile(const std::string& fname);
+  Node::NodePtrCounterPtr ParseFile(const std::string& fname);
 };
 #endif  // SRC_DRIVER_HPP_
