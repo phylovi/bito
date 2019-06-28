@@ -36,6 +36,8 @@ int main(int argc, char *argv[]) {
         std::cout << "Parse time: " << get_duration(t_parse - t_start)
                   << "\nTraverse time: " << get_duration(t_traverse - t_parse)
                   << std::endl;
+        std::cout << "Number of buckets: " << trees->bucket_count()
+                  << std::endl;
       }
       if (print_trees) {
         for (auto iter : *trees) {

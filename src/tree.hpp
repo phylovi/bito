@@ -221,8 +221,8 @@ TEST_CASE("Node header") {
       std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
                                   Node::Join(Node::Leaf(2), Node::Leaf(3))}));
   auto t1_twin = Node::Join(
-      std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
-                                  Node::Join(Node::Leaf(2), Node::Leaf(3))}));
+      std::vector<Node::NodePtr>({Node::Leaf(1), Node::Leaf(0),
+                                  Node::Join(Node::Leaf(3), Node::Leaf(2))}));
   auto t2 = Node::Join(
       std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(2),
                                   Node::Join(Node::Leaf(1), Node::Leaf(3))}));
@@ -236,9 +236,6 @@ TEST_CASE("Node header") {
   // This is actually a non-trivial test (see note in Node constructor above),
   // which shows why we need bit rotation.
   CHECK_NE(t1->Hash(), t2->Hash());
-
-  // TODO use bucket count to check efficiency of hashing code
-  // https://en.cppreference.com/w/cpp/container/unordered_map/bucket_count
 
   CHECK_EQ(t1, t1_twin);
   CHECK_NE(t1, t2);
