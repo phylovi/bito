@@ -73,13 +73,29 @@ class Node {
   }
 
   uint64_t Tag() { return tag_; };
+  std::string TagString() { return StringOfPackedInt(this->tag_); }
   uint32_t MaxLeafID() const { return UnpackFirstInt(tag_); }
   uint32_t LeafCount() const { return UnpackSecondInt(tag_); }
   size_t Hash() const { return hash_; }
   bool IsLeaf() { return children_.empty(); }
   NodePtrVec Children() const { return children_; }
 
-  std::string TagString() { return StringOfPackedInt(this->tag_); }
+  bool operator==(const Node& other) {
+    std::cout << "at node " << this->Hash() << std::endl;
+    if (this->Hash() != other.Hash()) {
+      return false;
+    }
+    size_t child_count = this->Children().size();
+    if (child_count != other.Children().size()) {
+      return false;
+    }
+    for (size_t i = 0; i < child_count; i++) {
+      if (!(*children_[i] == *other.Children()[i])) {
+        return false;
+      }
+    }
+    return true;
+  }
 
   void PreOrder(std::function<void(Node*)> f) {
     f(this);
@@ -172,10 +188,25 @@ class Node {
   }
 };
 
+// Compare NodePtrs by their Nodes.
+inline bool operator==(const Node::NodePtr& lhs, const Node::NodePtr& rhs) {
+  return *lhs == *rhs;
+}
+
+inline bool operator!=(const Node::NodePtr& lhs, const Node::NodePtr& rhs) {
+  return !(lhs == rhs);
+}
+
 namespace std {
 template <>
 struct hash<Node::NodePtr> {
   size_t operator()(const Node::NodePtr& n) const { return n->Hash(); }
+};
+template <>
+struct equal_to<Node::NodePtr> {
+  bool operator()(const Node::NodePtr& lhs, const Node::NodePtr& rhs) const {
+    return lhs == rhs;
+  }
 };
 }
 
@@ -183,6 +214,9 @@ struct hash<Node::NodePtr> {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Node header") {
   auto t1 = Node::Join(
+      std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
+                                  Node::Join(Node::Leaf(2), Node::Leaf(3))}));
+  auto t1_twin = Node::Join(
       std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
                                   Node::Join(Node::Leaf(2), Node::Leaf(3))}));
   auto t2 = Node::Join(
@@ -195,11 +229,15 @@ TEST_CASE("Node header") {
               << sister->TagString() << std::endl;
   });
 
-  // This is actually a non-trivial test, which shows why we need bit rotation.
+  // This is actually a non-trivial test (see note in Node constructor above),
+  // which shows why we need bit rotation.
   CHECK_NE(t1->Hash(), t2->Hash());
 
   // TODO use bucket count to check efficiency of hashing code
   // https://en.cppreference.com/w/cpp/container/unordered_map/bucket_count
+
+  CHECK_EQ(t1, t1_twin);
+  CHECK_NE(t1, t2);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
