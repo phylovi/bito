@@ -37,7 +37,6 @@ Node::NodePtrCounterPtr Driver::ParseFile(const std::string &fname) {
     line_number++;
     if (line.size() > 0) {
       tree = ParseString(&parser_instance, line);
-      // C++20 use contains
       auto search = trees->find(tree);
       if (search == trees->end()) {
         assert(trees->insert(std::make_pair(tree, 1)).second);

@@ -169,7 +169,9 @@ class Node {
     return Join(std::vector<NodePtr>({left, right}));
   }
 
-  // A "cryptographic" hash function from Stack Overflow.
+  // A "cryptographic" hash function from Stack Overflow (the std::hash function
+  // appears to leave unsigned ints as they are, which doesn't work for our
+  // application).
   // https://stackoverflow.com/a/12996028/467327
   static inline unsigned int SOHash(unsigned int x) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
