@@ -64,6 +64,7 @@ TEST_CASE("Build") {
   auto m = TagBitsetMapOf(t);
 
   std::cout << t->Newick() << std::endl;
+  // TODO Add an actual test.
   PrintTagBitsetMap(m);
 }
 

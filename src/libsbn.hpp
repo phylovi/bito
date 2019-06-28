@@ -38,17 +38,6 @@ struct SBNInstance {
     }
   }
 
-  std::unordered_map<uint64_t, std::string> g() {
-    assert(trees_->size() > 0);
-    TagBitsetMap m = TagBitsetMapOf(trees_->at(0));
-    std::unordered_map<uint64_t, std::string> m_str;
-    m = TagBitsetMapOf(trees_->at(0));
-    for (auto iter = m.begin(); iter != m.end(); ++iter) {
-      m_str[iter->first] = iter->second.ToString();
-    }
-    return m_str;
-  }
-
   StringFloatMap Rootsplits() {
     assert(trees_->size() > 0);
     return StringFloatMapOf(RootsplitFrequencyOf(trees_->at(0)));

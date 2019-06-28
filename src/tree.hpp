@@ -154,6 +154,7 @@ TEST_CASE("Node header") {
       std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
                                   Node::Join(Node::Leaf(2), Node::Leaf(3))}));
 
+  // TODO add real test for NPSPreorder
   t->NPSPreOrder([](Node* node, Node* parent, Node* sister) {
     std::cout << node->TagString() << ", " << parent->TagString() << ", "
               << sister->TagString() << std::endl;
