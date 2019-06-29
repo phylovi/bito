@@ -9,11 +9,12 @@
 typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
 typedef std::unordered_set<Bitset> BitsetSet;
 typedef std::unordered_map<Bitset, int> BitsetIndexer;
-typedef std::unordered_map<Bitset, float> BitsetFloatMap;
+typedef std::unordered_map<Bitset, uint32_t> BitsetUInt32Map;
 
 // Using insert and at avoids needing to make a default constructor.
 // https://stackoverflow.com/questions/17172080/insert-vs-emplace-vs-operator-in-c-map
 
+// TODO do we want optional minor here?
 TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
   TagBitsetMap m;
   auto leaf_count = t->LeafCount();
@@ -39,19 +40,26 @@ void PrintTagBitsetMap(TagBitsetMap m) {
   }
 }
 
-BitsetFloatMap RootsplitFrequencyOf(Node::NodePtr t) {
-  BitsetFloatMap rootsplit_frequency;
-  auto tag_to_bitset = TagBitsetMapOf(t);
-
-  auto Aux = [&rootsplit_frequency, &tag_to_bitset](Node* n) {
-    // TODO actually add frequency
-    rootsplit_frequency.insert(std::make_pair(tag_to_bitset.at(n->Tag()), 1.));
-  };
-
-  for (auto child : t->Children()) {
-    child->PreOrder(Aux);
+BitsetUInt32Map RootsplitCounterOf(Node::NodePtrCounterPtr trees) {
+  BitsetUInt32Map rootsplit_counter;
+  for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
+    auto tree = iter->first;
+    auto tag_to_bitset = TagBitsetMapOf(tree);
+    auto Aux = [&rootsplit_counter, &tag_to_bitset, &iter](Node* n) {
+      auto rootsplit = tag_to_bitset.at(n->Tag());
+      auto search = rootsplit_counter.find(rootsplit);
+      if (search == rootsplit_counter.end()) {
+        assert(rootsplit_counter.insert(std::make_pair(rootsplit, iter->second))
+                   .second);
+      } else {
+        search->second += iter->second;
+      }
+    };
+    for (auto child : tree->Children()) {
+      child->PreOrder(Aux);
+    }
   }
-  return rootsplit_frequency;
+  return rootsplit_counter;
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -60,7 +68,6 @@ TEST_CASE("Build") {
   Driver driver;
 
   auto t = driver.ParseString("((0,1),(2,(3,4)));");
-
   auto m = TagBitsetMapOf(t);
 
   std::cout << t->Newick() << std::endl;

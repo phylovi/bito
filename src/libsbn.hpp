@@ -9,10 +9,10 @@ namespace py = pybind11;
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
 
-StringFloatMap StringFloatMapOf(BitsetFloatMap m) {
+StringFloatMap StringFloatMapOf(BitsetUInt32Map m) {
   StringFloatMap m_str;
   for (auto iter = m.begin(); iter != m.end(); ++iter) {
-    m_str[iter->first.ToString()] = iter->second;
+    m_str[iter->first.ToString()] = static_cast<float>(iter->second);
   }
   return m_str;
 }
@@ -39,8 +39,7 @@ struct SBNInstance {
   }
 
   StringFloatMap Rootsplits() {
-    assert(trees_->size() > 0);
-    return StringFloatMapOf(RootsplitFrequencyOf(trees_->begin()->first));
+    return StringFloatMapOf(RootsplitCounterOf(trees_));
   }
 
   static void f(py::array_t<double> array) {
