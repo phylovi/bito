@@ -6,13 +6,15 @@
 #include <unordered_map>
 #include <unordered_set>
 #include "bitset.hpp"
+#include "default_dict.hpp"
 #include "driver.hpp"
 #include "tree.hpp"
 
 typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
 typedef std::unordered_set<Bitset> BitsetSet;
 typedef std::unordered_map<Bitset, int> BitsetIndexer;
-typedef std::unordered_map<Bitset, uint32_t> BitsetUInt32Map;
+// TODO rename?
+typedef DefaultDict<Bitset, uint32_t> BitsetUInt32Map;
 
 // Using insert and at avoids needing to make a default constructor.
 // https://stackoverflow.com/questions/17172080/insert-vs-emplace-vs-operator-in-c-map
@@ -44,19 +46,14 @@ void PrintTagBitsetMap(TagBitsetMap m) {
 }
 
 BitsetUInt32Map RootsplitCounterOf(Node::NodePtrCounterPtr trees) {
-  BitsetUInt32Map rootsplit_counter;
+  BitsetUInt32Map rootsplit_counter(0);
   for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
     auto tree = iter->first;
+    auto count = iter->second;
     auto tag_to_bitset = TagBitsetMapOf(tree);
-    auto Aux = [&rootsplit_counter, &tag_to_bitset, &iter](Node* n) {
+    auto Aux = [&rootsplit_counter, &tag_to_bitset, &count](Node* n) {
       auto rootsplit = tag_to_bitset.at(n->Tag());
-      auto search = rootsplit_counter.find(rootsplit);
-      if (search == rootsplit_counter.end()) {
-        assert(rootsplit_counter.insert(std::make_pair(rootsplit, iter->second))
-                   .second);
-      } else {
-        search->second += iter->second;
-      }
+      rootsplit_counter.increment(rootsplit, count);
     };
     for (auto child : tree->Children()) {
       child->PreOrder(Aux);
