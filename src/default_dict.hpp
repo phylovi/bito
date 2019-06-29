@@ -38,7 +38,8 @@ class DefaultDict : private std::unordered_map<Key, T> {
   void increment(const Key &key, const T &value) {
     auto search = this->find(key);
     if (search == this->end()) {
-      assert(this->insert(std::make_pair(key, value)).second);
+      // std::pair doesn't make a copy, in contrast to std::make_pair.
+      assert(this->insert(std::pair<Key, T>(key, value)).second);
     } else {
       search->second += value;
     }

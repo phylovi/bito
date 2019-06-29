@@ -13,6 +13,13 @@ class Bitset {
   explicit Bitset(size_t n, bool initial_value = false);
   explicit Bitset(std::string);
 
+  // // Eliminate copy constructors.
+  // Bitset(const Bitset &) = delete;
+  // Bitset &operator=(const Bitset &) = delete;
+  // // Keep move constructor. This is necessary because if we fiddle with copy
+  // // constructors it drops the default copy constructor too.
+  // Bitset(Bitset &&) = default;
+
   bool operator[](size_t i) const;
   size_t size(void) const;
 
@@ -43,6 +50,7 @@ class Bitset {
 
  private:
   std::vector<bool> value_;
+
 };
 
 // This is how we inject a hash routine and a custom comparator into the std
@@ -63,17 +71,17 @@ struct equal_to<Bitset> {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Bitset") {
-  auto a = Bitset("1100");
+  Bitset a("1100");
 
   CHECK_EQ(a[2], false);
   CHECK_EQ(a[1], true);
 
-  auto build_up = Bitset(4);
+  Bitset build_up(4);
   build_up.set(1);
   build_up.set(3);
   CHECK_EQ(build_up, Bitset("0101"));
 
-  auto strip_down = Bitset(4, true);
+  Bitset strip_down(4, true);
   strip_down.reset(0);
   strip_down.reset(2);
   CHECK_EQ(build_up, Bitset("0101"));

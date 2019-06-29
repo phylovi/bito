@@ -33,7 +33,7 @@ TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
         x |= m.at(child->Tag());
       }
     }
-    assert(m.insert(std::make_pair(n->Tag(), x)).second);
+    assert(m.insert(std::make_pair(n->Tag(), std::move(x))).second);
   });
   return m;
 }
@@ -52,8 +52,7 @@ BitsetUInt32Map RootsplitCounterOf(Node::NodePtrCounterPtr trees) {
     auto count = iter->second;
     auto tag_to_bitset = TagBitsetMapOf(tree);
     auto Aux = [&rootsplit_counter, &tag_to_bitset, &count](Node* n) {
-      auto rootsplit = tag_to_bitset.at(n->Tag());
-      rootsplit_counter.increment(rootsplit, count);
+      rootsplit_counter.increment(tag_to_bitset.at(n->Tag()), count);
     };
     for (auto child : tree->Children()) {
       child->PreOrder(Aux);
