@@ -62,6 +62,21 @@ BitsetUInt32Map RootsplitCounterOf(Node::NodePtrCounterPtr trees) {
   return rootsplit_counter;
 }
 
+BitsetUInt32Map SupportsOf(Node::NodePtrCounterPtr trees) {
+  BitsetUInt32Map rootsplit_counter(0);
+  for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
+    auto tree = iter->first;
+    auto count = iter->second;
+    auto tag_to_bitset = TagBitsetMapOf(tree);
+    tree->NPSPreOrder([&rootsplit_counter, &tag_to_bitset, &count](
+        Node* n, Node*, Node*, bool) {
+      rootsplit_counter.increment(tag_to_bitset.at(n->Tag()), count);
+    });
+  }
+  return rootsplit_counter;
+}
+
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("Build") {

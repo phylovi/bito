@@ -106,18 +106,24 @@ class Node {
     }
   }
 
-  void NPSPreOrderAux(std::function<void(Node*, Node*, Node*)> f) {
+  // Specialized tree traversal for the standard representation of "unrooted"
+  // trees, that have a trifurcation at the root.
+  // Does not apply f to root node.
+  // Node, Parent, Sister, parent_is_root
+  void NPSPreOrderAux(std::function<void(Node*, Node*, Node*, bool)> f,
+                      bool parent_is_root) {
     if (!IsLeaf()) {
       assert(children_.size() == 2);
-      f(children_[0].get(), this, children_[1].get());
-      children_[0]->NPSPreOrderAux(f);
-      f(children_[1].get(), this, children_[0].get());
-      children_[1]->NPSPreOrderAux(f);
+      f(children_[0].get(), this, children_[1].get(), parent_is_root);
+      children_[0]->NPSPreOrderAux(f, false);
+      f(children_[1].get(), this, children_[0].get(), parent_is_root);
+      children_[1]->NPSPreOrderAux(f, false);
     }
   }
-  void NPSPreOrder(std::function<void(Node*, Node*, Node*)> f) {
+  void NPSPreOrder(std::function<void(Node*, Node*, Node*, bool)> f) {
+    assert(children_.size() == 3);
     for (auto child : children_) {
-      child->NPSPreOrderAux(f);
+      child->NPSPreOrderAux(f, true);
     }
   }
 
@@ -226,12 +232,16 @@ TEST_CASE("Node header") {
   auto t2 = Node::Join(
       std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(2),
                                   Node::Join(Node::Leaf(1), Node::Leaf(3))}));
+  auto t3 = Node::Join(std::vector<Node::NodePtr>(
+      {Node::Leaf(0), Node::Leaf(1),
+       Node::Join(Node::Leaf(2), Node::Join(Node::Leaf(3), Node::Leaf(4)))}));
 
   // TODO add real test for NPSPreorder
-  t1->NPSPreOrder([](Node* node, Node* parent, Node* sister) {
-    std::cout << node->TagString() << ", " << parent->TagString() << ", "
-              << sister->TagString() << std::endl;
-  });
+  t3->NPSPreOrder(
+      [](Node* node, Node* parent, Node* sister, bool parent_is_root) {
+        std::cout << node->TagString() << ", " << parent->TagString() << ", "
+                  << sister->TagString() << " " << parent_is_root << std::endl;
+      });
 
   // This is actually a non-trivial test (see note in Node constructor above),
   // which shows why we need bit rotation.
