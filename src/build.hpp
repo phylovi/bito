@@ -1,3 +1,6 @@
+#ifndef SRC_BUILD_HPP_
+#define SRC_BUILD_HPP_
+
 #include <cassert>
 #include <set>
 #include <unordered_map>
@@ -76,3 +79,5 @@ TEST_CASE("Build") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
+
+#endif  // SRC_BUILD_HPP_
