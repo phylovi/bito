@@ -188,7 +188,6 @@ class Node {
         });
   }
 
-
   void PostOrder(std::function<void(Node*)> f) {
     for (auto child : children_) {
       child->PostOrder(f);
@@ -298,12 +297,14 @@ TEST_CASE("Node header") {
       {Node::Leaf(0), Node::Leaf(1),
        Node::Join(Node::Leaf(2), Node::Join(Node::Leaf(3), Node::Leaf(4)))}));
 
-  // TODO add real test for NPSPreorder
-  t3->NPSPreOrder(
-      [](Node* node, Node* parent, Node* sister, bool parent_is_root) {
-        std::cout << node->TagString() << ", " << parent->TagString() << ", "
-                  << sister->TagString() << " " << parent_is_root << std::endl;
-      });
+  // TODO add real test for TriplePreorder
+  std::cout << "TriplePreOrder" << std::endl;
+  std::cout << t3->Newick() << std::endl;
+  auto print_triple = [](Node* parent, Node* sister, Node* node) {
+    std::cout << parent->TagString() << ", " << sister->TagString() << ", "
+              << node->TagString() << " " << std::endl;
+  };
+  t3->TriplePreOrder(print_triple, print_triple);
 
   // This is actually a non-trivial test (see note in Node constructor above),
   // which shows why we need bit rotation.
