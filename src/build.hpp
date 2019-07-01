@@ -82,17 +82,16 @@ BitsetUInt32Map SupportsOf(Node::NodePtrCounterPtr trees) {
     auto count = iter->second;
     auto tag_to_bitset = TagBitsetMapOf(tree);
     auto leaf_count = tree->LeafCount();
-    // TODO unsplit vs split conflicts with "split"...
     tree->PCSSPreOrder([&subsplit_support, &tag_to_bitset, &count, &leaf_count](
-        Node* parent_unsplit_node, bool parent_unsplit_direction,
-        Node* parent_split_node, bool parent_split_direction,  //
-        Node* child0_node, bool child0_direction,              //
+        Node* parent_uncut_node, bool parent_uncut_direction,
+        Node* parent_split_node, bool parent_cut_direction,  //
+        Node* child0_node, bool child0_direction,            //
         Node* child1_node, bool child1_direction) {
       Bitset bitset(3 * leaf_count, false);
-      bitset.CopyFrom(tag_to_bitset.at(parent_unsplit_node->Tag()), 0,
-                      leaf_count, parent_unsplit_direction);
+      bitset.CopyFrom(tag_to_bitset.at(parent_uncut_node->Tag()), 0, leaf_count,
+                      parent_uncut_direction);
       bitset.CopyFrom(tag_to_bitset.at(parent_split_node->Tag()), leaf_count,
-                      2 * leaf_count, parent_split_direction);
+                      2 * leaf_count, parent_cut_direction);
       auto child0_bitset = tag_to_bitset.at(child0_node->Tag());
       if (child0_direction) child0_bitset.flip();
       auto child1_bitset = tag_to_bitset.at(child1_node->Tag());
