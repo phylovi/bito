@@ -47,6 +47,7 @@ class Bitset {
   size_t Hash(void) const;
   std::string ToString() const;
   void Minorize();
+  void CopyFrom(const Bitset &other, size_t begin, size_t end, bool flip);
 
  private:
   std::vector<bool> value_;

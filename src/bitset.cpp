@@ -128,4 +128,20 @@ void Bitset::Minorize() {
   }
 }
 
+// Copy from begin to end-1, inclusive.
+// Flip says if we should flip the bits in the process of copying.
+void Bitset::CopyFrom(const Bitset& other, size_t begin, size_t end,
+                      bool flip) {
+  auto len = end - begin;
+  assert(other.size() == len);
+  if (flip) {
+    for (size_t i = 0; i < len; i++) {
+      value_[i + begin] = ~other[i];
+    }
+  } else {
+    for (size_t i = 0; i < len; i++) {
+      value_[i + begin] = other[i];
+    }
+  }
+}
 

@@ -75,6 +75,36 @@ BitsetUInt32Map RootsplitCounterOf(Node::NodePtrCounterPtr trees) {
 //   return rootsplit_counter;
 // }
 
+BitsetUInt32Map SupportsOf(Node::NodePtrCounterPtr trees) {
+  BitsetUInt32Map subsplit_support(0);
+  for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
+    auto tree = iter->first;
+    auto count = iter->second;
+    auto tag_to_bitset = TagBitsetMapOf(tree);
+    auto leaf_count = tree->LeafCount();
+    // TODO unsplit vs split conflicts with "split"...
+    tree->PCSSPreOrder([&subsplit_support, &tag_to_bitset, &count, &leaf_count](
+        Node* parent_unsplit_node, bool parent_unsplit_direction,
+        Node* parent_split_node, bool parent_split_direction,  //
+        Node* child0_node, bool child0_direction,              //
+        Node* child1_node, bool child1_direction) {
+      Bitset bitset(3 * leaf_count, false);
+      bitset.CopyFrom(tag_to_bitset.at(parent_unsplit_node->Tag()), 0,
+                      leaf_count, parent_unsplit_direction);
+      bitset.CopyFrom(tag_to_bitset.at(parent_split_node->Tag()), leaf_count,
+                      2 * leaf_count, parent_split_direction);
+      auto child0_bitset = tag_to_bitset.at(child0_node->Tag());
+      if (child0_direction) child0_bitset.flip();
+      auto child1_bitset = tag_to_bitset.at(child1_node->Tag());
+      if (child1_direction) child1_bitset.flip();
+      bitset.CopyFrom(
+          std::min(child0_bitset, child1_bitset), 2 * leaf_count,
+          3 * leaf_count, false);
+      subsplit_support.increment(bitset, count);
+    });
+  }
+  return subsplit_support;
+}
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
