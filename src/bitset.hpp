@@ -50,7 +50,6 @@ class Bitset {
 
  private:
   std::vector<bool> value_;
-
 };
 
 // This is how we inject a hash routine and a custom comparator into the std

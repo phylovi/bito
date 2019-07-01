@@ -24,6 +24,9 @@ class Node {
   typedef std::shared_ptr<NodePtrVec> NodePtrVecPtr;
   typedef std::unordered_map<NodePtr, unsigned int> NodePtrCounter;
   typedef std::shared_ptr<NodePtrCounter> NodePtrCounterPtr;
+  typedef std::function<void(Node*, bool, Node*, bool, Node*, bool, Node*,
+                             bool)>
+      ParentChildSubsplitFun;
 
  private:
   NodePtrVec children_;
@@ -106,26 +109,85 @@ class Node {
     }
   }
 
-  // Specialized tree traversal for the standard representation of "unrooted"
-  // trees, that have a trifurcation at the root.
-  // Does not apply f to root node.
-  // Node, Parent, Sister, parent_is_root
-  void NPSPreOrderAux(std::function<void(Node*, Node*, Node*, bool)> f,
-                      bool parent_is_root) {
+  // Iterate f through (parent, sister, node) for internal nodes.
+  void TriplePreOrderInternal(std::function<void(Node*, Node*, Node*)> f) {
     if (!IsLeaf()) {
       assert(children_.size() == 2);
-      f(children_[0].get(), this, children_[1].get(), parent_is_root);
-      children_[0]->NPSPreOrderAux(f, false);
-      f(children_[1].get(), this, children_[0].get(), parent_is_root);
-      children_[1]->NPSPreOrderAux(f, false);
+      f(this, children_[1].get(), children_[0].get());
+      children_[0]->TriplePreOrderInternal(f);
+      f(this, children_[0].get(), children_[1].get());
+      children_[1]->TriplePreOrderInternal(f);
     }
   }
-  void NPSPreOrder(std::function<void(Node*, Node*, Node*, bool)> f) {
+
+  // Traversal for rooted pairs in an unrooted subtree in its traditional rooted
+  // representation.
+  // We take in two functions, each of which take three edges.
+  // At the root we cycle through the descendant edges: 012, 120, and 201.
+  // At the internal nodes we cycle through triples of (parent, sister, node).
+  void TriplePreOrder(std::function<void(Node*, Node*, Node*)> f_root,
+                      std::function<void(Node*, Node*, Node*)> f_internal) {
     assert(children_.size() == 3);
+    f_root(children_[0].get(), children_[1].get(), children_[2].get());
+    f_root(children_[1].get(), children_[2].get(), children_[0].get());
+    f_root(children_[2].get(), children_[0].get(), children_[1].get());
     for (auto child : children_) {
-      child->NPSPreOrderAux(f, true);
+      child->TriplePreOrderInternal(f_internal);
     }
   }
+
+  // PCSS stands for ParentChildSubsplit. We recur over all parent-child
+  // subsplit pairs.
+  // The signature of f is as four pairs, each pair describing the edge and then
+  // the direction in which the subsplit is going. The bool answers if it's the
+  // reverse direction: true means that it goes up the tree.
+  // The arguments are: the first component of the parent subsplit, then the
+  // second component of the parent subsplit, then the two components of the
+  // child subsplit (which break apart the second component of the parent
+  // subsplit).
+  // Note that we have node2 be the one that has children below to preserve this
+  // sort of order.
+  void PCSSPreOrder(ParentChildSubsplitFun f) {
+    this->TriplePreOrder(
+        // f_root
+        [&f](Node* node0, Node* node1, Node* node2) {
+          if (!node2->IsLeaf()) {
+            assert(node2->Children().size() == 2);
+            auto child0 = node2->Children()[0].get();
+            auto child1 = node2->Children()[1].get();
+            // Virtual root in node1.
+            f(node0, false, node2, false, child0, false, child1, false);
+            // Virtual root in node0.
+            f(node1, false, node2, false, child0, false, child1, false);
+            // Virtual root on node2's edge.
+            // Here (node2, true) doesn't get broken apart.
+            f(node2, true, node2, false, child0, false, child1, false);
+            // Virtual root in child1.
+            f(child0, false, node2, true, node0, false, node1, false);
+            // Virtual root in child0.
+            f(child1, false, node2, true, node0, false, node1, false);
+          }
+        },
+        // f_internal
+        [&f](Node* parent, Node* sister, Node* node) {
+          if (!node->IsLeaf()) {
+            assert(node->Children().size() == 2);
+            auto child0 = node->Children()[0].get();
+            auto child1 = node->Children()[1].get();
+            // Virtual root up the tree.
+            f(sister, false, node, false, child0, false, child1, false);
+            // Virtual root in sister.
+            f(parent, true, node, false, child0, false, child1, false);
+            // Virtual root on node's edge.
+            f(node, true, node, false, child0, false, child1, false);
+            // Virtual root in child1.
+            f(child0, false, node, true, sister, false, parent, true);
+            // Virtual root in child0.
+            f(child1, false, node, true, sister, false, parent, true);
+          }
+        });
+  }
+
 
   void PostOrder(std::function<void(Node*)> f) {
     for (auto child : children_) {
