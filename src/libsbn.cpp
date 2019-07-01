@@ -16,6 +16,6 @@ PYBIND11_MODULE(sbn, m) {
       .def("tree_count", &SBNInstance::TreeCount)
       .def("parse_file", &SBNInstance::ParseFile)
       .def("print_status", &SBNInstance::PrintStatus)
-      .def("rootsplits", &SBNInstance::Rootsplits);
+      .def("supports", &SBNInstance::Supports);
   m.def("f", &SBNInstance::f, "test");
 }

@@ -8,4 +8,4 @@ def test_instance():
     # There are 5 input trees, but 2 pairs are identical.
     assert inst.tree_count() == 3
     sbn.f(np.array([3,4]))
-    print(inst.rootsplits())
+    print(inst.supports())

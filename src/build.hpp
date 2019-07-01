@@ -82,6 +82,8 @@ BitsetUInt32Map SupportsOf(Node::NodePtrCounterPtr trees) {
     auto count = iter->second;
     auto tag_to_bitset = TagBitsetMapOf(tree);
     auto leaf_count = tree->LeafCount();
+    // TODO make a more informative error message when people don't put in a
+    // bifurcating tree with a trifurcation at the root.
     tree->PCSSPreOrder([&subsplit_support, &tag_to_bitset, &count, &leaf_count](
         Node* parent_uncut_node, bool parent_uncut_direction,
         Node* parent_split_node, bool parent_cut_direction,  //

@@ -8,6 +8,7 @@
 namespace py = pybind11;
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
+typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
 
 StringFloatMap StringFloatMapOf(BitsetUInt32Map m) {
   StringFloatMap m_str;
@@ -17,6 +18,13 @@ StringFloatMap StringFloatMapOf(BitsetUInt32Map m) {
   return m_str;
 }
 
+StringUInt32Map StringUInt32MapOf(BitsetUInt32Map m) {
+  StringUInt32Map m_str;
+  for (auto iter = m.begin(); iter != m.end(); ++iter) {
+    m_str[iter->first.ToPCSSString()] = iter->second;
+  }
+  return m_str;
+}
 
 struct SBNInstance {
   std::string name_;
@@ -38,9 +46,7 @@ struct SBNInstance {
     }
   }
 
-  StringFloatMap Rootsplits() {
-    return StringFloatMapOf(RootsplitCounterOf(trees_));
-  }
+  StringUInt32Map Supports() { return StringUInt32MapOf(SupportsOf(trees_)); }
 
   static void f(py::array_t<double> array) {
     py::buffer_info buf = array.request();

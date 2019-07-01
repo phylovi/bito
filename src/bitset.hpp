@@ -46,6 +46,7 @@ class Bitset {
   // convention.
   size_t Hash(void) const;
   std::string ToString() const;
+  std::string ToPCSSString() const;
   void Minorize();
   void CopyFrom(const Bitset &other, size_t begin, size_t end, bool flip);
 

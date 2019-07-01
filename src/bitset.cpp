@@ -121,6 +121,21 @@ std::string Bitset::ToString() const {
   return str;
 }
 
+std::string Bitset::ToPCSSString() const {
+  // PCSS Bitsets must be a multiple of 3 in length.
+  assert(size() % 3 == 0);
+  size_t chunk_size = size() / 3;
+  std::string str;
+  for (size_t i = 0; i < value_.size(); ++i) {
+    str += (value_[i] ? '1' : '0');
+    if ((i + 1) % chunk_size == 0 && i + 1 < value_.size()) {
+      // The next item will start a new chunk, so add a separator.
+      str += '|';
+    }
+  }
+  return str;
+}
+
 void Bitset::Minorize() {
   assert(value_.size() > 0);
   if (value_[0]) {
