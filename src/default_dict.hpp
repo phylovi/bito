@@ -4,15 +4,13 @@
 #include <iostream>
 #include <unordered_map>
 
-// A special class for
-//
-// Inheriting from STL containers is frowned upon.
-// However, private inheritance mitigates the problems, in particular it's not
-// possible to have a pointer to the base class.
+// Inheriting from STL containers is frowned upon, but we do it here!
+// We could definitely implement using containment rather than inheritance if we
+// wanted.
+// Private inheritance mitigates the stated problems in our case, in particular
+// it's not possible to have a pointer to the base class.
 // https://stackoverflow.com/a/19355666/467327
 // https://stackoverflow.com/a/2035044/467327
-// I would have just had a polymorphic function to do things, but we need to
-// store a default value.
 
 template <class Key, class T>
 class DefaultDict : private std::unordered_map<Key, T> {
