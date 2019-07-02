@@ -190,10 +190,10 @@ class Node {
             f(parent, true, node, false, child0, false, child1, false);
             // Virtual root on node's edge, with subsplit pointing down.
             f(node, true, node, false, child0, false, child1, false);
-            // Virtual root in child1.
-            f(child0, false, node, true, sister, false, parent, true);
             // Virtual root in child0.
             f(child1, false, node, true, sister, false, parent, true);
+            // Virtual root in child1.
+            f(child0, false, node, true, sister, false, parent, true);
           }
         });
   }
