@@ -58,6 +58,7 @@ class Node {
                 if (difference == 0) {
                   std::cout << "Tie observed between " << lhs->Newick()
                             << " and " << rhs->Newick() << std::endl;
+                  std::cout << "Do you have a taxon name repeated?\n";
                   abort();
                 }
                 return (difference < 0);

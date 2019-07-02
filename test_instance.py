@@ -10,6 +10,6 @@ def test_instance():
     supports = inst.supports()
     supports_list = list(supports.keys())
     supports_list.sort()
-    with open('/home/ematsen/erick-support.txt', 'w') as fp:
+    with open('_build/erick-support.txt', 'w') as fp:
         for support in supports_list:
             fp.write(support+'\n')
