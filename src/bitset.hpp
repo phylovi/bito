@@ -13,6 +13,7 @@ class Bitset {
   explicit Bitset(size_t n, bool initial_value = false);
   explicit Bitset(std::string);
 
+  Bitset copy();
   // // Eliminate copy constructors.
   // Bitset(const Bitset &) = delete;
   // Bitset &operator=(const Bitset &) = delete;

@@ -24,9 +24,15 @@ class Node {
   typedef std::shared_ptr<NodePtrVec> NodePtrVecPtr;
   typedef std::unordered_map<NodePtr, unsigned int> NodePtrCounter;
   typedef std::shared_ptr<NodePtrCounter> NodePtrCounterPtr;
+
+  // This is the type of functions that are used in the PCSS recursion
+  // functions. The signature is in 4 parts, each of which describes the
+  // position in the tree and then the direction: false means down the tree
+  // structure and true means up. The 4 parts are the uncut parent, the cut
+  // parent, child 0, and child 1.
   typedef std::function<void(Node*, bool, Node*, bool, Node*, bool, Node*,
                              bool)>
-      ParentChildSubsplitFun;
+      PCSSFun;
 
  private:
   NodePtrVec children_;
@@ -110,7 +116,8 @@ class Node {
     }
   }
 
-  // Iterate f through (parent, sister, node) for internal nodes.
+  // Iterate f through (parent, sister, node) for internal nodes using a
+  // preorder traversal.
   void TriplePreOrderInternal(std::function<void(Node*, Node*, Node*)> f) {
     if (!IsLeaf()) {
       assert(children_.size() == 2);
@@ -125,14 +132,13 @@ class Node {
   // representation.
   // We take in two functions, f_root, and f_internal, each of which take three
   // edges.
-  // Assume that f_root is symmetric in its last two arguments.
+  // We assume that f_root is symmetric in its last two arguments so that
+  // f_root's signature actually looks like f_root(node0, {node1, node2}).
   // We apply f_root to the descendant edges like so: 012, 120, and 201. Because
   // f_root is symmetric in the last two arguments, we are going to get all of
   // the distinct calls of f.
-  // Perhaps a better way to explain:
-  // f_root actually looks like f_root(node0, {node1, node2}).
-  // With this call structure we get all calls.
-  // At the internal nodes we cycle through triples of (parent, sister, node).
+  // At the internal nodes we cycle through triples of (parent, sister, node)
+  // for f_internal.
   void TriplePreOrder(std::function<void(Node*, Node*, Node*)> f_root,
                       std::function<void(Node*, Node*, Node*)> f_internal) {
     assert(children_.size() == 3);
@@ -144,18 +150,9 @@ class Node {
     }
   }
 
-  // PCSS stands for ParentChildSubsplit. We recur over all parent-child
-  // subsplit pairs.
-  // The signature of f is as four pairs, each pair describing the edge and then
-  // the direction in which the subsplit is going. The bool answers if it's the
-  // reverse direction: true means that it goes up the tree.
-  // The arguments are: the first component of the parent subsplit, then the
-  // second component of the parent subsplit, then the two components of the
-  // child subsplit (which break apart the second component of the parent
-  // subsplit).
-  // Note that we have node2 be the one that has children below to preserve this
-  // sort of order.
-  void PCSSPreOrder(ParentChildSubsplitFun f) {
+  // See the typedef of PCSSFun to understand the argument type to this
+  // function.
+  void PCSSPreOrder(PCSSFun f) {
     this->TriplePreOrder(
         // f_root
         [&f](Node* node0, Node* node1, Node* node2) {
@@ -291,7 +288,6 @@ struct equal_to<Node::NodePtr> {
   }
 };
 }
-
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Node header") {

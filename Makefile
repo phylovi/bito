@@ -3,7 +3,6 @@ default:
 	./_build/newick_parser data/four_taxon.tre | paste data/four_taxon.tre -
 	./_build/doctest
 	pytest -s
-	diff _build/erick-support.txt /home/ematsen/cheng-support.txt && echo "SUPPORTS IDENTICAL"
 
 bison: src/parser.yy src/scanner.ll
 	bison -o src/parser.cpp --defines=src/parser.hpp src/parser.yy

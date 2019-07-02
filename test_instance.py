@@ -7,9 +7,13 @@ def test_instance():
     inst.print_status()
     # assert inst.tree_count() == 3
     sbn.f(np.array([3,4]))
-    supports = inst.supports()
-    supports_list = list(supports.keys())
-    supports_list.sort()
-    with open('_build/erick-support.txt', 'w') as fp:
-        for support in supports_list:
-            fp.write(support+'\n')
+    rootsplit_support = inst.rootsplit_support()
+    subsplit_support = inst.subsplit_support()
+
+    with open('_build/support.txt', 'w') as fp:
+        for support in [rootsplit_support, subsplit_support]:
+            support_list = list(support.keys())
+            support_list.sort()
+            for support in support_list:
+                fp.write(support+'\n')
+            fp.write('\n')

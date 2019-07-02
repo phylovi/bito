@@ -21,7 +21,7 @@ StringFloatMap StringFloatMapOf(BitsetUInt32Map m) {
 StringUInt32Map StringUInt32MapOf(BitsetUInt32Map m) {
   StringUInt32Map m_str;
   for (auto iter = m.begin(); iter != m.end(); ++iter) {
-    m_str[iter->first.PCSSToString()] = iter->second;
+    m_str[iter->first.ToString()] = iter->second;
   }
   return m_str;
 }
@@ -46,7 +46,12 @@ struct SBNInstance {
     }
   }
 
-  StringUInt32Map Supports() { return StringUInt32MapOf(SupportsOf(trees_)); }
+  StringUInt32Map RootsplitSupport() {
+    return StringUInt32MapOf(RootsplitSupportOf(trees_));
+  }
+  StringUInt32Map SubsplitSupport() {
+    return StringUInt32MapOf(SubsplitSupportOf(trees_));
+  }
 
   static void f(py::array_t<double> array) {
     py::buffer_info buf = array.request();

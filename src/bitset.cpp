@@ -19,6 +19,9 @@ Bitset::Bitset(std::string str) : Bitset(str.length()) {
   }
 }
 
+// Put here in anticipation of turning off copy constructor.
+Bitset Bitset::copy() { return Bitset(this->value_); }
+
 bool Bitset::operator[](size_t i) const { return value_[i]; }
 
 size_t Bitset::size(void) const { return value_.size(); }
