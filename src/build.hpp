@@ -86,13 +86,13 @@ BitsetUInt32Map SupportsOf(Node::NodePtrCounterPtr trees) {
     // bifurcating tree with a trifurcation at the root.
     tree->PCSSPreOrder([&subsplit_support, &tag_to_bitset, &count, &leaf_count](
         Node* parent_uncut_node, bool parent_uncut_direction,
-        Node* parent_split_node, bool parent_cut_direction,  //
-        Node* child0_node, bool child0_direction,            //
+        Node* parent_cut_node, bool parent_cut_direction,  //
+        Node* child0_node, bool child0_direction,          //
         Node* child1_node, bool child1_direction) {
       Bitset bitset(3 * leaf_count, false);
       bitset.CopyFrom(tag_to_bitset.at(parent_uncut_node->Tag()), 0,
                       parent_uncut_direction);
-      bitset.CopyFrom(tag_to_bitset.at(parent_split_node->Tag()), leaf_count,
+      bitset.CopyFrom(tag_to_bitset.at(parent_cut_node->Tag()), leaf_count,
                       parent_cut_direction);
       auto child0_bitset = tag_to_bitset.at(child0_node->Tag());
       if (child0_direction) child0_bitset.flip();
@@ -100,7 +100,7 @@ BitsetUInt32Map SupportsOf(Node::NodePtrCounterPtr trees) {
       if (child1_direction) child1_bitset.flip();
       bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
                       false);
-      subsplit_support.increment(bitset, count);
+      subsplit_support.increment(std::move(bitset), count);
     });
   }
   return subsplit_support;
@@ -117,6 +117,13 @@ TEST_CASE("Build") {
   std::cout << t->Newick() << std::endl;
   // TODO Add an actual test.
   PrintTagBitsetMap(m);
+
+  driver.Clear();
+  auto trees = driver.ParseFile("data/four_taxon.tre");
+  auto support = SupportsOf(trees);
+  for (auto iter = support.begin(); iter != support.end(); ++iter) {
+    CHECK(iter->first.PCSSIsValid());
+  }
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

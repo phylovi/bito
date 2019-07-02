@@ -15,6 +15,13 @@ Driver::Driver()
       trace_scanning_(false),
       latest_tree_(nullptr) {}
 
+void Driver::Clear() {
+  next_id_ = 0;
+  first_tree_ = true;
+  trace_parsing_ = false;
+  trace_scanning_ = false;
+  latest_tree_ = nullptr;
+}
 
 Node::NodePtrCounterPtr Driver::ParseFile(const std::string &fname) {
   Node::NodePtr tree;

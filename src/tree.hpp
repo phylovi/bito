@@ -158,10 +158,9 @@ class Node {
     this->TriplePreOrder(
         // f_root
         [&f](Node* node0, Node* node1, Node* node2) {
-          if (node2->IsLeaf()) {
-            // Virtual root on node2's edge.
-            f(node2, false, node2, true, node0, false, node1, false);
-          } else {
+          // Virtual root on node2's edge, with subsplit pointing up.
+          f(node2, false, node2, true, node0, false, node1, false);
+          if (!node2->IsLeaf()) {
             assert(node2->Children().size() == 2);
             auto child0 = node2->Children()[0].get();
             auto child1 = node2->Children()[1].get();
@@ -171,20 +170,17 @@ class Node {
             f(node1, false, node2, false, child0, false, child1, false);
             // Virtual root on node2's edge, with subsplit pointing down.
             f(node2, true, node2, false, child0, false, child1, false);
-            // Virtual root on node2's edge, with subsplit pointing up.
-            f(node2, false, node2, true, node0, false, node0, false);
-            // Virtual root in child1.
-            f(child0, false, node2, true, node0, false, node1, false);
             // Virtual root in child0.
             f(child1, false, node2, true, node0, false, node1, false);
+            // Virtual root in child1.
+            f(child0, false, node2, true, node0, false, node1, false);
           }
         },
         // f_internal
         [&f](Node* parent, Node* sister, Node* node) {
-          if (node->IsLeaf()) {
-            // Virtual root on node's edge.
-            f(node, false, node, true, parent, true, sister, false);
-          } else {
+          // Virtual root on node's edge, with subsplit pointing up.
+          f(node, false, node, true, parent, true, sister, false);
+          if (!node->IsLeaf()) {
             assert(node->Children().size() == 2);
             auto child0 = node->Children()[0].get();
             auto child1 = node->Children()[1].get();
@@ -192,7 +188,7 @@ class Node {
             f(sister, false, node, false, child0, false, child1, false);
             // Virtual root in sister.
             f(parent, true, node, false, child0, false, child1, false);
-            // Virtual root on node's edge.
+            // Virtual root on node's edge, with subsplit pointing down.
             f(node, true, node, false, child0, false, child1, false);
             // Virtual root in child1.
             f(child0, false, node, true, sister, false, parent, true);

@@ -32,6 +32,8 @@ class Driver {
   // The token's location, used by the scanner to give good debug info.
   yy::location location_;
 
+  // Clear out stored state.
+  void Clear();
   // Scan a string with flex.
   void ScanString(const std::string& str);
   // Parse a string with an existing parser object.

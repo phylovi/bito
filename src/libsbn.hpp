@@ -21,7 +21,7 @@ StringFloatMap StringFloatMapOf(BitsetUInt32Map m) {
 StringUInt32Map StringUInt32MapOf(BitsetUInt32Map m) {
   StringUInt32Map m_str;
   for (auto iter = m.begin(); iter != m.end(); ++iter) {
-    m_str[iter->first.ToPCSSString()] = iter->second;
+    m_str[iter->first.PCSSToString()] = iter->second;
   }
   return m_str;
 }
