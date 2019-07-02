@@ -40,7 +40,7 @@ struct SBNInstance {
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
     if (trees_) {
-      std::cout << trees_->size() << " trees loaded.\n";
+      std::cout << trees_->size() << " unique tree topologies loaded.\n";
     } else {
       std::cout << "No trees loaded.\n";
     }

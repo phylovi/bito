@@ -48,7 +48,7 @@ class Bitset {
   std::string ToString() const;
   std::string ToPCSSString() const;
   void Minorize();
-  void CopyFrom(const Bitset &other, size_t begin, size_t end, bool flip);
+  void CopyFrom(const Bitset &other, size_t begin, bool flip);
 
  private:
   std::vector<bool> value_;
@@ -118,6 +118,15 @@ TEST_CASE("Bitset") {
   CHECK_EQ(a, Bitset("0100"));
   a.Minorize();
   CHECK_EQ(a, Bitset("0100"));
+
+  a.CopyFrom(Bitset("10"), 0, false);
+  CHECK_EQ(a, Bitset("1000"));
+  a.CopyFrom(Bitset("10"), 0, true);
+  CHECK_EQ(a, Bitset("0100"));
+  a.CopyFrom(Bitset("10"), 2, false);
+  CHECK_EQ(a, Bitset("0110"));
+  a.CopyFrom(Bitset("10"), 2, true);
+  CHECK_EQ(a, Bitset("0101"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

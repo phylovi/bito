@@ -122,8 +122,15 @@ class Node {
 
   // Traversal for rooted pairs in an unrooted subtree in its traditional rooted
   // representation.
-  // We take in two functions, each of which take three edges.
-  // At the root we cycle through the descendant edges: 012, 120, and 201.
+  // We take in two functions, f_root, and f_internal, each of which take three
+  // edges.
+  // Assume that f_root is symmetric in its last two arguments.
+  // We apply f_root to the descendant edges like so: 012, 120, and 201. Because
+  // f_root is symmetric in the last two arguments, we are going to get all of
+  // the distinct calls of f.
+  // Perhaps a better way to explain:
+  // f_root actually looks like f_root(node0, {node1, node2}).
+  // With this call structure we get all calls.
   // At the internal nodes we cycle through triples of (parent, sister, node).
   void TriplePreOrder(std::function<void(Node*, Node*, Node*)> f_root,
                       std::function<void(Node*, Node*, Node*)> f_internal) {
@@ -151,7 +158,10 @@ class Node {
     this->TriplePreOrder(
         // f_root
         [&f](Node* node0, Node* node1, Node* node2) {
-          if (!node2->IsLeaf()) {
+          if (node2->IsLeaf()) {
+            // Virtual root on node2's edge.
+            f(node2, false, node2, true, node0, false, node1, false);
+          } else {
             assert(node2->Children().size() == 2);
             auto child0 = node2->Children()[0].get();
             auto child1 = node2->Children()[1].get();
@@ -159,9 +169,10 @@ class Node {
             f(node0, false, node2, false, child0, false, child1, false);
             // Virtual root in node0.
             f(node1, false, node2, false, child0, false, child1, false);
-            // Virtual root on node2's edge.
-            // Here (node2, true) doesn't get broken apart.
+            // Virtual root on node2's edge, with subsplit pointing down.
             f(node2, true, node2, false, child0, false, child1, false);
+            // Virtual root on node2's edge, with subsplit pointing up.
+            f(node2, false, node2, true, node0, false, node0, false);
             // Virtual root in child1.
             f(child0, false, node2, true, node0, false, node1, false);
             // Virtual root in child0.
@@ -170,7 +181,10 @@ class Node {
         },
         // f_internal
         [&f](Node* parent, Node* sister, Node* node) {
-          if (!node->IsLeaf()) {
+          if (node->IsLeaf()) {
+            // Virtual root on node's edge.
+            f(node, false, node, true, parent, true, sister, false);
+          } else {
             assert(node->Children().size() == 2);
             auto child0 = node->Children()[0].get();
             auto child1 = node->Children()[1].get();
