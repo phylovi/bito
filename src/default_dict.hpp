@@ -35,6 +35,8 @@ class DefaultDict : private std::unordered_map<Key, T> {
     return std::unordered_map<Key, T>::at(key);
   }
 
+  bool contains(const Key &key) { return (this->find(key) != this->end()); }
+
   // TODO add a version that takes a rvalue reference so we can move things in.
   void increment(const Key &key, const T &value) {
     auto search = this->find(key);

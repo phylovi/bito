@@ -119,10 +119,18 @@ TEST_CASE("Build") {
   PrintTagBitsetMap(m);
 
   driver.Clear();
-  auto trees = driver.ParseFile("data/four_taxon.tre");
+  auto trees = driver.ParseFile("data/many_rootings.tre");
   auto support = SupportsOf(trees);
+  // Get the support of the first tree in trees.
+  auto single_tree = std::make_shared<Node::NodePtrCounter>();
+  single_tree->insert(std::make_pair(trees->begin()->first, 1));
+  auto single_support = SupportsOf(single_tree);
+  // many_rootings has many (unrooted) rootings of the same tree.
+  // Here we check to make sure that every support across the various rootings
+  // is in the SBN support for the single tree.
   for (auto iter = support.begin(); iter != support.end(); ++iter) {
     CHECK(iter->first.PCSSIsValid());
+    CHECK(single_support.contains(iter->first));
   }
 }
 
