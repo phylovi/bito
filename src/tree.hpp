@@ -25,6 +25,15 @@ class Node {
   typedef std::unordered_map<NodePtr, unsigned int> NodePtrCounter;
   typedef std::shared_ptr<NodePtrCounter> NodePtrCounterPtr;
 
+  // This is the type of functions that are used in the PCSS recursion
+  // functions. The signature is in 4 parts, each of which describes the
+  // position in the tree and then the direction: false means down the tree
+  // structure and true means up. The 4 parts are the uncut parent, the cut
+  // parent, child 0, and child 1.
+  typedef std::function<void(Node*, bool, Node*, bool, Node*, bool, Node*,
+                             bool)>
+      PCSSFun;
+
  private:
   NodePtrVec children_;
   // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
@@ -55,6 +64,7 @@ class Node {
                 if (difference == 0) {
                   std::cout << "Tie observed between " << lhs->Newick()
                             << " and " << rhs->Newick() << std::endl;
+                  std::cout << "Do you have a taxon name repeated?\n";
                   abort();
                 }
                 return (difference < 0);
@@ -106,19 +116,84 @@ class Node {
     }
   }
 
-  void NPSPreOrderAux(std::function<void(Node*, Node*, Node*)> f) {
+  // Iterate f through (parent, sister, node) for internal nodes using a
+  // preorder traversal.
+  void TriplePreOrderInternal(std::function<void(Node*, Node*, Node*)> f) {
     if (!IsLeaf()) {
       assert(children_.size() == 2);
-      f(children_[0].get(), this, children_[1].get());
-      children_[0]->NPSPreOrderAux(f);
-      f(children_[1].get(), this, children_[0].get());
-      children_[1]->NPSPreOrderAux(f);
+      f(this, children_[1].get(), children_[0].get());
+      children_[0]->TriplePreOrderInternal(f);
+      f(this, children_[0].get(), children_[1].get());
+      children_[1]->TriplePreOrderInternal(f);
     }
   }
-  void NPSPreOrder(std::function<void(Node*, Node*, Node*)> f) {
+
+  // Traversal for rooted pairs in an unrooted subtree in its traditional rooted
+  // representation.
+  // We take in two functions, f_root, and f_internal, each of which take three
+  // edges.
+  // We assume that f_root is symmetric in its last two arguments so that
+  // f_root's signature actually looks like f_root(node0, {node1, node2}).
+  // We apply f_root to the descendant edges like so: 012, 120, and 201. Because
+  // f_root is symmetric in the last two arguments, we are going to get all of
+  // the distinct calls of f.
+  // At the internal nodes we cycle through triples of (parent, sister, node)
+  // for f_internal.
+  void TriplePreOrder(std::function<void(Node*, Node*, Node*)> f_root,
+                      std::function<void(Node*, Node*, Node*)> f_internal) {
+    assert(children_.size() == 3);
+    f_root(children_[0].get(), children_[1].get(), children_[2].get());
+    f_root(children_[1].get(), children_[2].get(), children_[0].get());
+    f_root(children_[2].get(), children_[0].get(), children_[1].get());
     for (auto child : children_) {
-      child->NPSPreOrderAux(f);
+      child->TriplePreOrderInternal(f_internal);
     }
+  }
+
+  // See the typedef of PCSSFun to understand the argument type to this
+  // function.
+  void PCSSPreOrder(PCSSFun f) {
+    this->TriplePreOrder(
+        // f_root
+        [&f](Node* node0, Node* node1, Node* node2) {
+          // Virtual root on node2's edge, with subsplit pointing up.
+          f(node2, false, node2, true, node0, false, node1, false);
+          if (!node2->IsLeaf()) {
+            assert(node2->Children().size() == 2);
+            auto child0 = node2->Children()[0].get();
+            auto child1 = node2->Children()[1].get();
+            // Virtual root in node1.
+            f(node0, false, node2, false, child0, false, child1, false);
+            // Virtual root in node0.
+            f(node1, false, node2, false, child0, false, child1, false);
+            // Virtual root on node2's edge, with subsplit pointing down.
+            f(node2, true, node2, false, child0, false, child1, false);
+            // Virtual root in child0.
+            f(child1, false, node2, true, node0, false, node1, false);
+            // Virtual root in child1.
+            f(child0, false, node2, true, node0, false, node1, false);
+          }
+        },
+        // f_internal
+        [&f](Node* parent, Node* sister, Node* node) {
+          // Virtual root on node's edge, with subsplit pointing up.
+          f(node, false, node, true, parent, true, sister, false);
+          if (!node->IsLeaf()) {
+            assert(node->Children().size() == 2);
+            auto child0 = node->Children()[0].get();
+            auto child1 = node->Children()[1].get();
+            // Virtual root up the tree.
+            f(sister, false, node, false, child0, false, child1, false);
+            // Virtual root in sister.
+            f(parent, true, node, false, child0, false, child1, false);
+            // Virtual root on node's edge, with subsplit pointing down.
+            f(node, true, node, false, child0, false, child1, false);
+            // Virtual root in child0.
+            f(child1, false, node, true, sister, false, parent, true);
+            // Virtual root in child1.
+            f(child0, false, node, true, sister, false, parent, true);
+          }
+        });
   }
 
   void PostOrder(std::function<void(Node*)> f) {
@@ -214,31 +289,33 @@ struct equal_to<Node::NodePtr> {
 };
 }
 
-
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Node header") {
   auto t1 = Node::Join(
       std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
                                   Node::Join(Node::Leaf(2), Node::Leaf(3))}));
   auto t1_twin = Node::Join(
-      std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
-                                  Node::Join(Node::Leaf(2), Node::Leaf(3))}));
+      std::vector<Node::NodePtr>({Node::Leaf(1), Node::Leaf(0),
+                                  Node::Join(Node::Leaf(3), Node::Leaf(2))}));
   auto t2 = Node::Join(
       std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(2),
                                   Node::Join(Node::Leaf(1), Node::Leaf(3))}));
+  auto t3 = Node::Join(std::vector<Node::NodePtr>(
+      {Node::Leaf(0), Node::Leaf(1),
+       Node::Join(Node::Leaf(2), Node::Join(Node::Leaf(3), Node::Leaf(4)))}));
 
-  // TODO add real test for NPSPreorder
-  t1->NPSPreOrder([](Node* node, Node* parent, Node* sister) {
-    std::cout << node->TagString() << ", " << parent->TagString() << ", "
-              << sister->TagString() << std::endl;
-  });
+  // TODO add real test for TriplePreorder
+  std::cout << "TriplePreOrder" << std::endl;
+  std::cout << t3->Newick() << std::endl;
+  auto print_triple = [](Node* parent, Node* sister, Node* node) {
+    std::cout << parent->TagString() << ", " << sister->TagString() << ", "
+              << node->TagString() << " " << std::endl;
+  };
+  t3->TriplePreOrder(print_triple, print_triple);
 
   // This is actually a non-trivial test (see note in Node constructor above),
   // which shows why we need bit rotation.
   CHECK_NE(t1->Hash(), t2->Hash());
-
-  // TODO use bucket count to check efficiency of hashing code
-  // https://en.cppreference.com/w/cpp/container/unordered_map/bucket_count
 
   CHECK_EQ(t1, t1_twin);
   CHECK_NE(t1, t2);

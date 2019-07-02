@@ -13,6 +13,7 @@ preamble = """\
 
 #include "bitset.hpp"
 #include "build.hpp"
+#include "default_dict.hpp"
 #include "driver.hpp"
 #include "intpack.hpp"
 #include "tree.hpp"

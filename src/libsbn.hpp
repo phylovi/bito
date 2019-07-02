@@ -8,15 +8,23 @@
 namespace py = pybind11;
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
+typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
 
-StringFloatMap StringFloatMapOf(BitsetFloatMap m) {
+StringFloatMap StringFloatMapOf(BitsetUInt32Map m) {
   StringFloatMap m_str;
+  for (auto iter = m.begin(); iter != m.end(); ++iter) {
+    m_str[iter->first.ToString()] = static_cast<float>(iter->second);
+  }
+  return m_str;
+}
+
+StringUInt32Map StringUInt32MapOf(BitsetUInt32Map m) {
+  StringUInt32Map m_str;
   for (auto iter = m.begin(); iter != m.end(); ++iter) {
     m_str[iter->first.ToString()] = iter->second;
   }
   return m_str;
 }
-
 
 struct SBNInstance {
   std::string name_;
@@ -32,15 +40,17 @@ struct SBNInstance {
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
     if (trees_) {
-      std::cout << trees_->size() << " trees loaded.\n";
+      std::cout << trees_->size() << " unique tree topologies loaded.\n";
     } else {
       std::cout << "No trees loaded.\n";
     }
   }
 
-  StringFloatMap Rootsplits() {
-    assert(trees_->size() > 0);
-    return StringFloatMapOf(RootsplitFrequencyOf(trees_->begin()->first));
+  StringUInt32Map RootsplitSupport() {
+    return StringUInt32MapOf(RootsplitSupportOf(trees_));
+  }
+  StringUInt32Map SubsplitSupport() {
+    return StringUInt32MapOf(SubsplitSupportOf(trees_));
   }
 
   static void f(py::array_t<double> array) {
