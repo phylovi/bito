@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cassert>
 #include <deque>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
