@@ -1,6 +1,6 @@
 # libsbn
 
-https://travis-ci.org/matsengrp/libsbn.svg?branch=master
+![Travis CI status](https://travis-ci.org/matsengrp/libsbn.svg?branch=master)
 
 ## Dependencies
 
