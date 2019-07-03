@@ -1,6 +1,5 @@
 default:
-	make bison && make prep && scons
-	./_build/newick_parser data/four_taxon.tre | paste data/four_taxon.tre -
+	scons
 	./_build/doctest
 	pytest -s
 
@@ -18,9 +17,9 @@ clean:
 	rm -rf _build
 
 edit:
-	vim -O2 src/tree.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/parser.yy src/scanner.ll src/newick_parser.cpp test/prep/doctest.py
+	vim -O2 src/tree.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/parser.yy src/scanner.ll test/prep/doctest.py
 
 lint:
-	cpplint src/tree.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/newick_parser.cpp src/bitset.cpp src/bitset.hpp
+	cpplint src/tree.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/bitset.cpp src/bitset.hpp
 
 .PHONY: bison prep format clean edit lint
