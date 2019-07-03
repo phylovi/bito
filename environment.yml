@@ -5,6 +5,7 @@ channels:
 dependencies:
   - flex
   - make
+  - numpy
   - pybind11
   - pytest
   - scons
