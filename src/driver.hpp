@@ -29,7 +29,7 @@ class Driver {
   // Whether to generate scanner debug traces.
   bool trace_scanning_;
   // The most recent tree parsed.
-  Node::NodePtr latest_tree_;
+  Tree::TreePtr latest_tree_;
   // Map from taxon names to their numerical identifiers.
   std::map<std::string, int> taxa_;
   // The token's location, used by the scanner to give good debug info.
@@ -42,11 +42,11 @@ class Driver {
   // Scan a string with flex.
   void ScanString(const std::string& str);
   // Parse a string with an existing parser object.
-  Node::NodePtr ParseString(yy::parser* parser_instance,
+  Tree::TreePtr ParseString(yy::parser* parser_instance,
                             const std::string& str);
   // Make a parser and then parse a string for a one-off parsing.
-  Node::NodePtr ParseString(const std::string& s);
+  Tree::TreePtr ParseString(const std::string& s);
   // Run the parser on a file.
-  Node::NodePtrCounterPtr ParseFile(const std::string& fname);
+  Tree::TreePtrCounterPtr ParseFile(const std::string& fname);
 };
 #endif  // SRC_DRIVER_HPP_

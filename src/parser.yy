@@ -54,7 +54,7 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 %type  <std::string> leaf
 %type  <Node::NodePtr> inner_node
 %type  <Node::NodePtrVecPtr> node_list
-%type  <Node::NodePtr> tree
+%type  <Tree::TreePtr> tree
 
 %printer { yyo << $$; } <*>;
 
@@ -64,9 +64,7 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 %start tree;
 tree:
   fancy_node ";" {
-    auto t = std::make_shared<Tree>($1, drv.branch_lengths_);
-    //Tree t($1, drv.branch_lengths_);
-    drv.latest_tree_ = $1;
+    drv.latest_tree_ = std::make_shared<Tree>($1, drv.branch_lengths_);
     drv.first_tree_ = false;
     drv.branch_lengths_.clear();
   };

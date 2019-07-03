@@ -37,7 +37,7 @@ StringUInt32Map StringUInt32MapOf(BitsetUInt32Map m) {
 struct SBNInstance {
   std::string name_;
   Driver driver_;
-  Node::NodePtrCounterPtr trees_;
+  Tree::TreePtrCounterPtr trees_;
   std::unordered_map<int, int> indexer_;
 
   explicit SBNInstance(const std::string &name) : name_(name) {}

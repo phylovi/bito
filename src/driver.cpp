@@ -28,8 +28,8 @@ void Driver::Clear() {
   branch_lengths_.clear();
 }
 
-Node::NodePtrCounterPtr Driver::ParseFile(const std::string &fname) {
-  Node::NodePtr tree;
+Tree::TreePtrCounterPtr Driver::ParseFile(const std::string &fname) {
+  Tree::TreePtr tree;
   yy::parser parser_instance(*this);
 
   parser_instance.set_debug_level(trace_parsing_);
@@ -41,7 +41,7 @@ Node::NodePtrCounterPtr Driver::ParseFile(const std::string &fname) {
   }
   std::string line;
   unsigned int line_number = 1;
-  auto trees = std::make_shared<Node::NodePtrCounter>();
+  auto trees = std::make_shared<Tree::TreePtrCounter>();
   while (std::getline(in, line)) {
     // Set the Bison location line number properly so we get useful error
     // messages.
@@ -61,7 +61,7 @@ Node::NodePtrCounterPtr Driver::ParseFile(const std::string &fname) {
   return trees;
 }
 
-Node::NodePtr Driver::ParseString(yy::parser *parser_instance,
+Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,
                                   const std::string &str) {
   this->ScanString(str);
   int return_code = (*parser_instance)();
@@ -71,7 +71,7 @@ Node::NodePtr Driver::ParseString(yy::parser *parser_instance,
   return latest_tree_;
 }
 
-Node::NodePtr Driver::ParseString(const std::string &str) {
+Tree::TreePtr Driver::ParseString(const std::string &str) {
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);
   return ParseString(&parser_instance, str);

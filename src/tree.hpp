@@ -14,9 +14,16 @@ class Tree {
  public:
   typedef std::shared_ptr<Tree> TreePtr;
   typedef std::unordered_map<uint64_t, double> BranchLengthMap;
+  typedef std::unordered_map<TreePtr, unsigned int> TreePtrCounter;
+  typedef std::shared_ptr<TreePtrCounter> TreePtrCounterPtr;
 
   explicit Tree(Node::NodePtr root, BranchLengthMap branch_lengths)
       : root_(root), branch_lengths_(branch_lengths) {}
+
+  const Node::NodePtr Root() const { return root_; }
+  uint32_t LeafCount() const { return root_->LeafCount(); }
+  // TODO(ematsen)
+  std::string Newick() const { return root_->Newick(); }
 
  private:
   Node::NodePtr root_;
