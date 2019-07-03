@@ -1,4 +1,8 @@
-/* *** Section: prologue and Bison declarations.
+/*
+Copyright 2019 Matsen group.
+libsbn is free software under the GPLv3; see LICENSE file for details.
+
+*** Section: prologue and Bison declarations.
   The prologue is broken up into %code blocks, with an optional qualifier
   to describe where it should go in the resulting source file. */
 

@@ -19,7 +19,7 @@ conda activate libsbn
 
 Just use `make` to build and run tests.
 
-* If you have modified the lexer and parser, use `make bison`. This assumes that you have installed Bison > 2.6.
+* If you have modified the lexer and parser, use `make bison`. This assumes that you have installed Bison > 2.6 (`conda install -c conda-forge bison`).
 * If you want to run the test preparation scripts, use `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
 
 

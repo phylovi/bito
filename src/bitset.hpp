@@ -1,6 +1,11 @@
+// Copyright 2019 Matsen group.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 #ifndef SRC_BITSET_HPP_
 #define SRC_BITSET_HPP_
 
+#include <algorithm>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -73,7 +78,7 @@ struct equal_to<Bitset> {
     return lhs == rhs;
   }
 };
-}
+}  // namespace std
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Bitset") {
