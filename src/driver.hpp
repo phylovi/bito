@@ -1,3 +1,6 @@
+// Copyright 2019 Matsen group.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 #ifndef SRC_DRIVER_HPP_
 #define SRC_DRIVER_HPP_
 #include <map>

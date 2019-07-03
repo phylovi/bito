@@ -1,8 +1,12 @@
+// Copyright 2019 Matsen group.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 #include "driver.hpp"
 
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <utility>
 
 #include "parser.hpp"
 #include "tree.hpp"

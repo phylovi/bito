@@ -1,3 +1,6 @@
+// Copyright 2019 Matsen group.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 #include "bitset.hpp"
 #include <cassert>
 
@@ -175,8 +178,8 @@ void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
     assert(size() % 3 == 0);
     assert(i < 3);
     size_t chunk_size = size() / 3;
-    std::vector<bool> new_value(value_.begin() + long(i * chunk_size),
-                                value_.begin() + long((i + 1) * chunk_size));
+    std::vector<bool> new_value(value_.begin() + int32_t(i * chunk_size),
+                                value_.begin() + int32_t((i + 1) * chunk_size));
     return Bitset(new_value);
   }
 

@@ -1,10 +1,16 @@
+// Copyright 2019 Matsen group.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 #ifndef SRC_BUILD_HPP_
 #define SRC_BUILD_HPP_
 
+#include <algorithm>
 #include <cassert>
+#include <memory>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include "bitset.hpp"
 #include "default_dict.hpp"
 #include "driver.hpp"
@@ -68,8 +74,8 @@ BitsetUInt32Map SubsplitSupportOf(Node::NodePtrCounterPtr trees) {
     auto count = iter->second;
     auto tag_to_bitset = TagBitsetMapOf(tree);
     auto leaf_count = tree->LeafCount();
-    // TODO make a more informative error message when people don't put in a
-    // bifurcating tree with a trifurcation at the root.
+    // TODO(ematsen) make a more informative error message when people don't put
+    // in a bifurcating tree with a trifurcation at the root.
     tree->PCSSPreOrder([&subsplit_support, &tag_to_bitset, &count, &leaf_count](
         Node* uncut_parent_node, bool uncut_parent_direction,
         Node* cut_parent_node, bool cut_parent_direction,  //
@@ -101,7 +107,7 @@ TEST_CASE("Build") {
   auto m = TagBitsetMapOf(t);
 
   std::cout << t->Newick() << std::endl;
-  // TODO Add an actual test.
+  // TODO(ematsen) Add an actual test.
   PrintTagBitsetMap(m);
 
   driver.Clear();

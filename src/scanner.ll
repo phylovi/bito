@@ -1,5 +1,9 @@
-%{ /* -*- C++ -*- */
-/* *** Section: definitions. */
+%{
+/*
+Copyright 2019 Matsen group.
+libsbn is free software under the GPLv3; see LICENSE file for details.
+
+*** Section: definitions. */
 # include <cerrno>
 # include <climits>
 # include <cstdlib>

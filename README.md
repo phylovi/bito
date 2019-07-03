@@ -19,14 +19,14 @@ conda activate libsbn
 
 Just use `make` to build and run tests.
 
-* If you have modified the lexer and parser, use `make bison`. This assumes that you have installed Bison > 2.6.
+* If you have modified the lexer and parser, use `make bison`. This assumes that you have installed Bison > 2.6 (`conda install -c conda-forge bison`).
 * If you want to run the test preparation scripts, use `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
 
 
 ## Terminology
 
 PCSS stands for parent-child subsplit.
-They are represented as bitsets in three "chunks", which are sub-bit-sets.
+They are represented as bitsets in three equal-sized "chunks", which are sub-bit-sets.
 For example, `100011001` is composed of the chunks `100`, `011` and `001`.
 If the taxa are x0, x1, and x2 then this means the parent subsplit is (A, BC), and the child subsplit is (B,C).
 

@@ -1,5 +1,13 @@
+// Copyright 2019 Matsen group.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
+
+#ifndef SRC_LIBSBN_HPP_
+#define SRC_LIBSBN_HPP_
+
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <string>
 #include <unordered_map>
 #include "build.hpp"
 #include "driver.hpp"
@@ -32,9 +40,9 @@ struct SBNInstance {
   Node::NodePtrCounterPtr trees_;
   std::unordered_map<int, int> indexer_;
 
-  SBNInstance(const std::string &name) : name_(name) {}
+  explicit SBNInstance(const std::string &name) : name_(name) {}
 
-  unsigned long TreeCount() { return trees_->size(); }
+  size_t TreeCount() { return trees_->size(); }
   void ParseFile(std::string fname) { trees_ = driver_.ParseFile(fname); }
 
   void PrintStatus() {
@@ -60,5 +68,7 @@ struct SBNInstance {
     for (auto idx = 0; idx < buf.shape[0]; idx++) {
       std::cout << ptr[idx] << std::endl;
     }
-    };
+  }
 };
+
+#endif  // SRC_LIBSBN_HPP_

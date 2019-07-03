@@ -1,8 +1,12 @@
+// Copyright 2019 Matsen group.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 #ifndef SRC_DEFAULT_DICT_HPP_
 #define SRC_DEFAULT_DICT_HPP_
 
 #include <iostream>
 #include <unordered_map>
+#include <utility>
 
 // Inheriting from STL containers is frowned upon, but we do it here!
 // We could definitely implement using containment rather than inheritance if we
@@ -18,7 +22,7 @@ class DefaultDict : private std::unordered_map<Key, T> {
   const T default_value_;
 
  public:
-  explicit DefaultDict(T default_value) : default_value_(default_value){};
+  explicit DefaultDict(T default_value) : default_value_(default_value) {}
 
   // Inherit some functions as-is.
   using std::unordered_map<Key, T>::size;
@@ -35,7 +39,8 @@ class DefaultDict : private std::unordered_map<Key, T> {
 
   bool contains(const Key &key) { return (this->find(key) != this->end()); }
 
-  // TODO add a version that takes a rvalue reference so we can move things in.
+  // TODO(ematsen) add a version that takes a rvalue reference so we can move
+  // things in.
   void increment(const Key &key, const T &value) {
     auto search = this->find(key);
     if (search == this->end()) {
@@ -44,7 +49,7 @@ class DefaultDict : private std::unordered_map<Key, T> {
     } else {
       search->second += value;
     }
-  };
+  }
 
   void print() {
     std::cout << "Default value: " << default_value_ << std::endl;
@@ -61,7 +66,7 @@ TEST_CASE("DefaultDict") {
   auto d = DefaultDict<int, int>(0);
   d.increment(0, 5);
   d.increment(0, 2);
-  CHECK(d.at(0) == 7);
+  CHECK_EQ(d.at(0), 7);
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

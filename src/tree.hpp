@@ -1,3 +1,6 @@
+// Copyright 2019 Matsen group.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 // TODO(erick)
 // add branch lengths
 // make everything const
@@ -86,7 +89,7 @@ class Node {
     hash_ = SORotate(hash_, 1);
   }
 
-  uint64_t Tag() { return tag_; };
+  uint64_t Tag() { return tag_; }
   std::string TagString() { return StringOfPackedInt(this->tag_); }
   uint32_t MaxLeafID() const { return UnpackFirstInt(tag_); }
   uint32_t LeafCount() const { return UnpackSecondInt(tag_); }
@@ -288,7 +291,7 @@ struct equal_to<Node::NodePtr> {
     return lhs == rhs;
   }
 };
-}
+}  // namespace std
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Node header") {
@@ -305,7 +308,7 @@ TEST_CASE("Node header") {
       {Node::Leaf(0), Node::Leaf(1),
        Node::Join(Node::Leaf(2), Node::Join(Node::Leaf(3), Node::Leaf(4)))}));
 
-  // TODO add real test for TriplePreorder
+  // TODO(ematsen) add real test for TriplePreorder
   std::cout << "TriplePreOrder" << std::endl;
   std::cout << t3->Newick() << std::endl;
   auto print_triple = [](Node* parent, Node* sister, Node* node) {

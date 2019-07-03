@@ -20,6 +20,6 @@ edit:
 	vim -O2 src/tree.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/parser.yy src/scanner.ll test/prep/doctest.py
 
 lint:
-	cpplint src/tree.hpp src/libsbn.cpp src/sbn.h src/driver.cpp src/driver.hpp src/bitset.cpp src/bitset.hpp
+	cpplint src/bitset.cpp src/bitset.hpp src/build.hpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.hpp
 
 .PHONY: bison prep format clean edit lint
