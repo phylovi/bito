@@ -33,7 +33,7 @@ class Driver {
   // Map from taxon names to their numerical identifiers.
   std::map<std::string, int> taxa_;
   // The token's location, used by the scanner to give good debug info.
-  std::map<uint64_t, double> branch_lengths_;
+  Tree::BranchLengthMap branch_lengths_;
   // The token's location, used by the scanner to give good debug info.
   yy::location location_;
 

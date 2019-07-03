@@ -64,6 +64,8 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 %start tree;
 tree:
   fancy_node ";" {
+    auto t = std::make_shared<Tree>($1, drv.branch_lengths_);
+    //Tree t($1, drv.branch_lengths_);
     drv.latest_tree_ = $1;
     drv.first_tree_ = false;
     drv.branch_lengths_.clear();
