@@ -25,6 +25,7 @@ void Driver::Clear() {
   trace_parsing_ = false;
   trace_scanning_ = false;
   latest_tree_ = nullptr;
+  branch_lengths_.clear();
 }
 
 Node::NodePtrCounterPtr Driver::ParseFile(const std::string &fname) {

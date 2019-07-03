@@ -47,11 +47,12 @@
 #line 17 "src/parser.yy"
 
   // This code gets inserted into the parser header file.
+  #include <cassert>
   #include <string>
   #include "tree.hpp"
   class Driver;
 
-#line 55 "src/parser.hpp"
+#line 56 "src/parser.hpp"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -166,7 +167,7 @@
 #endif
 
 namespace yy {
-#line 170 "src/parser.hpp"
+#line 171 "src/parser.hpp"
 
 
 
@@ -1364,7 +1365,7 @@ switch (yytype)
   }
 
 } // yy
-#line 1368 "src/parser.hpp"
+#line 1369 "src/parser.hpp"
 
 
 
