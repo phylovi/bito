@@ -14,7 +14,6 @@ env = Environment(
     )
 
 sources = [
-    '_build/libsbn.cpp',
     '_build/bitset.cpp',
     '_build/driver.cpp',
     '_build/parser.cpp',
@@ -23,5 +22,8 @@ sources = [
 
 env.VariantDir('_build', 'src')
 
-env.SharedLibrary("sbn"+os.popen("python3-config --extension-suffix").read().rstrip(), ['_build/libsbn.cpp', '_build/driver.cpp', '_build/parser.cpp', '_build/scanner.cpp', '_build/bitset.cpp'], SHLIBPREFIX='')
-doctest = env.Program(['_build/doctest.cpp', '_build/driver.cpp', '_build/parser.cpp', '_build/scanner.cpp', '_build/bitset.cpp'])
+env.SharedLibrary(
+    "sbn"+os.popen("python3-config --extension-suffix").read().rstrip(),
+    ['_build/libsbn.cpp'] + sources,
+    SHLIBPREFIX='')
+doctest = env.Program(['_build/doctest.cpp'] + sources)
