@@ -1,5 +1,7 @@
 # libsbn
 
+[![Travis CI status](https://travis-ci.org/matsengrp/libsbn.svg?branch=master)](https://travis-ci.org/matsengrp/libsbn)
+
 ## Dependencies
 
 To install dependencies, use the associated conda environment file:
@@ -21,6 +23,19 @@ Just use `make` to build and run tests.
 
 * If you have modified the lexer and parser, use `make bison`. This assumes that you have installed Bison > 2.6 (`conda install -c conda-forge bison`).
 * If you want to run the test preparation scripts, use `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
+
+
+## Contributing
+We use [Git flow](https://guides.github.com/introduction/flow/) as follows:
+
+* Code changes start by raising an issue proposing the changes, which often leads to a discussion
+* Make a branch associated with the issue named with the issue number and a description, such as `4-efficiency-improvements` for a branch associated with issue #4 about efficiency improvements
+* If you have another branch to push for the same issue (perhaps a fresh, alternate start), you can just name them consecutively `4-1-blah`, `4-2-etc`, and so on
+* Push code to that branch
+* Once the code is ready to merge, open a [pull request](https://help.github.com/articles/using-pull-requests/)
+* Code review on GitHub
+* [Squash and merge](https://help.github.com/en/articles/merging-a-pull-request), [closing the issue via the squash and merge commit message](https://help.github.com/articles/closing-issues-via-commit-messages/)
+* Delete branch
 
 
 ## Terminology
