@@ -124,6 +124,7 @@ std::string Bitset::ToString() const {
   return str;
 }
 
+// Are any of the bits 1?
 bool Bitset::Any() const {
   for (size_t i = 0; i < value_.size(); ++i) {
     if (value_[i]) {
@@ -141,9 +142,7 @@ void Bitset::Minorize() {
 }
 
 // Copy all of the bits from another bitset into this bitset, starting at
-// begin.
-// from begin to end-1, inclusive.
-// Flip says if we should flip the bits in the process of copying.
+// begin, and optionally flipping the bits as they get copied.
 void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
   assert(begin + other.size() <= size());
   if (flip) {
@@ -182,7 +181,6 @@ void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
   }
 
   bool Bitset::PCSSIsValid() const {
-    // PCSS Bitsets must be a multiple of 3 in length.
     if (size() % 3 != 0) return false;
     Bitset uncut_parent = PCSSChunk(0);
     Bitset cut_parent = PCSSChunk(1);
@@ -191,7 +189,6 @@ void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
     if ((uncut_parent & cut_parent).Any()) {
       return false;
     }
-    // TODO(erick) operator precedence of ~?
     // The child should split the cut_parent, so the taxa of child should be a
     // subset of those of cut_parent.
     if ((child & (~cut_parent)).Any()) {
