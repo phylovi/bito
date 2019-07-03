@@ -49,4 +49,16 @@ class Driver {
   // Run the parser on a file.
   Tree::TreePtrCounterPtr ParseFile(const std::string& fname);
 };
+
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+
+TEST_CASE("Driver") {
+  Driver driver;
+
+  auto t = driver.ParseString("((a:1.,b:2.),c:3.);");
+}
+#endif  // DOCTEST_LIBRARY_INCLUDED
+
+
 #endif  // SRC_DRIVER_HPP_
