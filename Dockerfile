@@ -1,6 +1,8 @@
 FROM continuumio/anaconda3
 
 RUN conda install -y -c anaconda pybind11 scons make flex
+RUN conda install -y gxx_linux-64
+
 
 COPY . /libsbn
 WORKDIR /libsbn
