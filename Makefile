@@ -11,7 +11,7 @@ prep:
 	python test/prep/doctest.py
 
 format:
-	clang-format -i -style=file src/* test/test.c
+	clang-format -i -style=file src/*
 
 clean:
 	rm -rf _build

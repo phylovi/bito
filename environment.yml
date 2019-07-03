@@ -1,0 +1,10 @@
+name: libsbn
+channels:
+  - anaconda
+  - defaults
+dependencies:
+  - flex
+  - make
+  - pybind11
+  - pytest
+  - scons
