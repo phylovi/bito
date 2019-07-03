@@ -1,5 +1,7 @@
 # libsbn
 
+https://travis-ci.org/matsengrp/libsbn.svg?branch=master
+
 ## Dependencies
 
 To install dependencies, use the associated conda environment file:
