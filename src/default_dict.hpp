@@ -34,9 +34,7 @@ class DefaultDict : private std::unordered_map<Key, T> {
     if (search == this->end()) {
       return default_value_;
     }
-    // TODO(ematsen) can't we just return search->first and search->second so we
-    // don't have to do another lookup?
-    return std::unordered_map<Key, T>::at(key);
+    return search->second;
   }
 
   bool contains(const Key &key) { return (this->find(key) != this->end()); }
@@ -66,9 +64,11 @@ class DefaultDict : private std::unordered_map<Key, T> {
 
 TEST_CASE("DefaultDict") {
   auto d = DefaultDict<int, int>(0);
-  d.increment(0, 5);
-  d.increment(0, 2);
-  CHECK_EQ(d.at(0), 7);
+  CHECK_EQ(d.at(4), 0);
+  d.increment(4, 5);
+  CHECK_EQ(d.at(4), 5);
+  d.increment(4, 2);
+  CHECK_EQ(d.at(4), 7);
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
