@@ -60,9 +60,17 @@ class Driver {
 TEST_CASE("Driver") {
   Driver driver;
 
-  auto collection = driver.ParseString("((a:1.,b:2.),c:3.);");
-  std::cout << collection->FirstTree()->Newick(collection->TagTaxonMap())
-            << std::endl;
+  std::vector<std::string> newicks = {
+      "(a,b,c,d);",
+      "((b,a),c);",
+      "((a:1.1,b:2):0.4,c:3):0;",
+      "(x,(a:1.1,(b:2,(quack:0.1,duck))),c:3):1.1;",
+  };
+  for (auto newick : newicks) {
+    auto collection = driver.ParseString(newick);
+    CHECK_EQ(newick,
+             collection->FirstTree()->Newick(collection->TagTaxonMap()));
+  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
