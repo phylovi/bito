@@ -4,6 +4,7 @@ import sbn
 def test_instance():
     inst = sbn.instance('charlie')
     inst.parse_file('data/five_taxon.tre')
+    inst.read_fasta('data/hello.fasta')
     inst.print_status()
     # assert inst.tree_count() == 3
     sbn.f(np.array([3,4]))
