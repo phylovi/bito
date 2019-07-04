@@ -5,6 +5,7 @@
 #define SRC_DRIVER_HPP_
 #include <map>
 #include <string>
+#include <vector>
 #include "parser.hpp"
 #include "tree_collection.hpp"
 #include "typedefs.hpp"
@@ -51,7 +52,7 @@ class Driver {
   // Run the parser on a file.
   TreeCollection::TreeCollectionPtr ParseFile(const std::string& fname);
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
-  std::unordered_map<uint64_t, std::string> TagTaxonMap();
+  TagStringMap TagTaxonMap();
 };
 
 

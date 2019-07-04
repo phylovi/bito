@@ -4,6 +4,8 @@
 #ifndef SRC_TREE_HPP_
 #define SRC_TREE_HPP_
 
+#include <memory>
+#include <string>
 #include <unordered_map>
 #include "node.hpp"
 #include "typedefs.hpp"
