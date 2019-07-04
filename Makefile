@@ -17,6 +17,6 @@ clean:
 	rm -rf _build
 
 lint:
-	cpplint src/bitset.cpp src/bitset.hpp src/build.hpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.hpp src/node.hpp src/tree_collection.hpp
+	cpplint src/bitset.cpp src/bitset.hpp src/build.hpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.hpp src/node.hpp src/tree_collection.hpp src/alignment.hpp
 
 .PHONY: bison prep format clean edit lint

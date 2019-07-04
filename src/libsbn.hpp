@@ -58,6 +58,7 @@ struct SBNInstance {
     } else {
       std::cout << "No trees loaded.\n";
     }
+    std::cout << alignment_.Data().size() << " sequences loaded.\n";
   }
 
   StringUInt32Map RootsplitSupport() {

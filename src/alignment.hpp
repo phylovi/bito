@@ -16,7 +16,7 @@
 // mutable state.
 class Alignment {
  public:
-  explicit Alignment() {}
+  Alignment() {}
   explicit Alignment(StringStringMap data) : data_(data) {}
 
   StringStringMap Data() const { return data_; }
