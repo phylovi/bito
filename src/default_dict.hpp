@@ -73,5 +73,4 @@ TEST_CASE("DefaultDict") {
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-
 #endif  // SRC_DEFAULT_DICT_HPP_

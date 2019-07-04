@@ -75,5 +75,4 @@ TEST_CASE("Driver") {
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-
 #endif  // SRC_DRIVER_HPP_
