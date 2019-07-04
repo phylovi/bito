@@ -5,7 +5,10 @@
 #define SRC_DRIVER_HPP_
 #include <map>
 #include <string>
+#include <vector>
 #include "parser.hpp"
+#include "tree_collection.hpp"
+#include "typedefs.hpp"
 
 // Give Flex the prototype of yylex we want ...
 #define YY_DECL yy::parser::symbol_type yylex(Driver& drv)
@@ -29,9 +32,11 @@ class Driver {
   // Whether to generate scanner debug traces.
   bool trace_scanning_;
   // The most recent tree parsed.
-  Node::NodePtr latest_tree_;
+  Tree::TreePtr latest_tree_;
   // Map from taxon names to their numerical identifiers.
   std::map<std::string, int> taxa_;
+  // The token's location, used by the scanner to give good debug info.
+  TagDoubleMap branch_lengths_;
   // The token's location, used by the scanner to give good debug info.
   yy::location location_;
 
@@ -40,11 +45,34 @@ class Driver {
   // Scan a string with flex.
   void ScanString(const std::string& str);
   // Parse a string with an existing parser object.
-  Node::NodePtr ParseString(yy::parser* parser_instance,
+  Tree::TreePtr ParseString(yy::parser* parser_instance,
                             const std::string& str);
   // Make a parser and then parse a string for a one-off parsing.
-  Node::NodePtr ParseString(const std::string& s);
+  TreeCollection::TreeCollectionPtr ParseString(const std::string& s);
   // Run the parser on a file.
-  Node::NodePtrCounterPtr ParseFile(const std::string& fname);
+  TreeCollection::TreeCollectionPtr ParseFile(const std::string& fname);
+  // Make the map from the edge tags of the tree to the taxon names from taxa_.
+  TagStringMap TagTaxonMap();
 };
+
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+
+TEST_CASE("Driver") {
+  Driver driver;
+
+  std::vector<std::string> newicks = {
+      "(a,b,c,d);",
+      "((b,a),c);",
+      "((a:1.1,b:2):0.4,c:3):0;",
+      "(x,(a:1.1,(b:2,(quack:0.1,duck))),c:3):1.1;",
+  };
+  for (auto newick : newicks) {
+    auto collection = driver.ParseString(newick);
+    CHECK_EQ(newick,
+             collection->FirstTree()->Newick(collection->TagTaxonMap()));
+  }
+}
+#endif  // DOCTEST_LIBRARY_INCLUDED
+
 #endif  // SRC_DRIVER_HPP_

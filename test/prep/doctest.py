@@ -13,7 +13,7 @@ preamble = """\
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
-
+#include <string>
 #include "bitset.hpp"
 #include "build.hpp"
 #include "default_dict.hpp"
@@ -34,7 +34,7 @@ fp.write(preamble)
 
 fp.write('auto t = driver.ParseString("')
 fp.write(t.write(format=9))
-fp.write('");\n')
+fp.write('")->FirstTree();\n')
 
 traversal_translator = {
    "preorder": "PreOrder",
@@ -44,13 +44,13 @@ traversal_translator = {
 
 for traversal_type in ["preorder", "postorder", "levelorder"]:
    fp.write("\n// " + traversal_type + ":\n")
-   fp.write(f"t->{traversal_translator[traversal_type]}")
+   fp.write(f"t->Root()->{traversal_translator[traversal_type]}")
    fp.write("([&trace](Node* node) { trace.push_back(node->TagString()); });\n")
    fp.write("CHECK(std::vector<std::string>({")
    fp.write(",".join(['"'+node.name+'"' for node in t.traverse(traversal_type)]))
    fp.write("}) == trace);\n")
    fp.write("trace.clear();\n")
 
-fp.write("\n}\n")
+fp.write("}\n")
 
 fp.close()

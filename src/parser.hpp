@@ -47,11 +47,12 @@
 #line 17 "src/parser.yy"
 
   // This code gets inserted into the parser header file.
+  #include <cassert>
   #include <string>
   #include "tree.hpp"
   class Driver;
 
-#line 55 "src/parser.hpp"
+#line 56 "src/parser.hpp"
 
 # include <cassert>
 # include <cstdlib> // std::abort
@@ -166,7 +167,7 @@
 #endif
 
 namespace yy {
-#line 170 "src/parser.hpp"
+#line 171 "src/parser.hpp"
 
 
 
@@ -370,7 +371,6 @@ namespace yy {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
-      // tree
       // fancy_node
       // node
       // inner_node
@@ -379,10 +379,13 @@ namespace yy {
       // node_list
       char dummy2[sizeof (Node::NodePtrVecPtr)];
 
+      // tree
+      char dummy3[sizeof (Tree::TreePtr)];
+
       // "label"
       // "quoted"
       // leaf
-      char dummy3[sizeof (std::string)];
+      char dummy4[sizeof (std::string)];
     };
 
     /// The size of the largest semantic type.
@@ -518,6 +521,19 @@ namespace yy {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, Tree::TreePtr&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const Tree::TreePtr& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::string&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -553,7 +569,6 @@ namespace yy {
         // Type destructor.
 switch (yytype)
     {
-      case 11: // tree
       case 12: // fancy_node
       case 13: // node
       case 15: // inner_node
@@ -562,6 +577,10 @@ switch (yytype)
 
       case 16: // node_list
         value.template destroy< Node::NodePtrVecPtr > ();
+        break;
+
+      case 11: // tree
+        value.template destroy< Tree::TreePtr > ();
         break;
 
       case 8: // "label"
@@ -1206,7 +1225,6 @@ switch (yytype)
   {
     switch (this->type_get ())
     {
-      case 11: // tree
       case 12: // fancy_node
       case 13: // node
       case 15: // inner_node
@@ -1215,6 +1233,10 @@ switch (yytype)
 
       case 16: // node_list
         value.move< Node::NodePtrVecPtr > (std::move (that.value));
+        break;
+
+      case 11: // tree
+        value.move< Tree::TreePtr > (std::move (that.value));
         break;
 
       case 8: // "label"
@@ -1238,7 +1260,6 @@ switch (yytype)
   {
     switch (this->type_get ())
     {
-      case 11: // tree
       case 12: // fancy_node
       case 13: // node
       case 15: // inner_node
@@ -1247,6 +1268,10 @@ switch (yytype)
 
       case 16: // node_list
         value.copy< Node::NodePtrVecPtr > (YY_MOVE (that.value));
+        break;
+
+      case 11: // tree
+        value.copy< Tree::TreePtr > (YY_MOVE (that.value));
         break;
 
       case 8: // "label"
@@ -1277,7 +1302,6 @@ switch (yytype)
     super_type::move (s);
     switch (this->type_get ())
     {
-      case 11: // tree
       case 12: // fancy_node
       case 13: // node
       case 15: // inner_node
@@ -1286,6 +1310,10 @@ switch (yytype)
 
       case 16: // node_list
         value.move< Node::NodePtrVecPtr > (YY_MOVE (s.value));
+        break;
+
+      case 11: // tree
+        value.move< Tree::TreePtr > (YY_MOVE (s.value));
         break;
 
       case 8: // "label"
@@ -1364,7 +1392,7 @@ switch (yytype)
   }
 
 } // yy
-#line 1368 "src/parser.hpp"
+#line 1396 "src/parser.hpp"
 
 
 

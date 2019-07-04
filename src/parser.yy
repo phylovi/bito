@@ -16,6 +16,7 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 
 %code requires {
   // This code gets inserted into the parser header file.
+  #include <cassert>
   #include <string>
   #include "tree.hpp"
   class Driver;
@@ -53,7 +54,7 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 %type  <std::string> leaf
 %type  <Node::NodePtr> inner_node
 %type  <Node::NodePtrVecPtr> node_list
-%type  <Node::NodePtr> tree
+%type  <Tree::TreePtr> tree
 
 %printer { yyo << $$; } <*>;
 
@@ -63,8 +64,9 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 %start tree;
 tree:
   fancy_node ";" {
-    drv.latest_tree_ = $1;
+    drv.latest_tree_ = std::make_shared<Tree>($1, drv.branch_lengths_);
     drv.first_tree_ = false;
+    drv.branch_lengths_.clear();
   };
 
 fancy_node:
@@ -73,8 +75,8 @@ fancy_node:
   $$ = $1;
 
   try {
-    // Eventually do something with this float...
-    std::stof($3);
+      assert(drv.branch_lengths_.insert(
+        std::pair<int64_t, double>($1->Tag(), std::stof($3))).second);
   } catch (...) {
     std::cerr << "Float conversion failed on branch length '" << $3 << "'\n'";
     abort();

@@ -49,34 +49,35 @@ void PrintTagBitsetMap(TagBitsetMap m) {
   }
 }
 
-BitsetUInt32Map RootsplitSupportOf(Node::NodePtrCounterPtr trees) {
+BitsetUInt32Map RootsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
   BitsetUInt32Map rootsplit_counter(0);
   for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
     auto tree = iter->first;
     auto count = iter->second;
-    auto tag_to_bitset = TagBitsetMapOf(tree);
+    auto tag_to_bitset = TagBitsetMapOf(tree->Root());
     auto Aux = [&rootsplit_counter, &tag_to_bitset, &count](Node* n) {
       auto split = tag_to_bitset.at(n->Tag()).copy();
       split.Minorize();
       rootsplit_counter.increment(std::move(split), count);
     };
-    for (auto child : tree->Children()) {
+    for (auto child : tree->Root()->Children()) {
       child->PreOrder(Aux);
     }
   }
   return rootsplit_counter;
 }
 
-BitsetUInt32Map SubsplitSupportOf(Node::NodePtrCounterPtr trees) {
+BitsetUInt32Map SubsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
   BitsetUInt32Map subsplit_support(0);
   for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
     auto tree = iter->first;
     auto count = iter->second;
-    auto tag_to_bitset = TagBitsetMapOf(tree);
+    auto tag_to_bitset = TagBitsetMapOf(tree->Root());
     auto leaf_count = tree->LeafCount();
     // TODO(ematsen) make a more informative error message when people don't put
     // in a bifurcating tree with a trifurcation at the root.
-    tree->PCSSPreOrder([&subsplit_support, &tag_to_bitset, &count, &leaf_count](
+    tree->Root()->PCSSPreOrder([&subsplit_support, &tag_to_bitset, &count,
+                                &leaf_count](
         Node* uncut_parent_node, bool uncut_parent_direction,
         Node* cut_parent_node, bool cut_parent_direction,  //
         Node* child0_node, bool child0_direction,          //
@@ -103,18 +104,10 @@ BitsetUInt32Map SubsplitSupportOf(Node::NodePtrCounterPtr trees) {
 TEST_CASE("Build") {
   Driver driver;
 
-  auto t = driver.ParseString("((0,1),(2,(3,4)));");
-  auto m = TagBitsetMapOf(t);
-
-  std::cout << t->Newick() << std::endl;
-  // TODO(ematsen) Add an actual test.
-  PrintTagBitsetMap(m);
-
-  driver.Clear();
-  auto trees = driver.ParseFile("data/many_rootings.tre");
+  auto trees = driver.ParseFile("data/many_rootings.tre")->Trees();
   auto support = SubsplitSupportOf(trees);
   // Get the support of the first tree in trees.
-  auto single_tree = std::make_shared<Node::NodePtrCounter>();
+  auto single_tree = std::make_shared<TreeCollection::TreePtrCounter>();
   single_tree->insert(std::make_pair(trees->begin()->first, 1));
   auto single_support = SubsplitSupportOf(single_tree);
   // many_rootings has many (unrooted) rootings of the same tree.

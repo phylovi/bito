@@ -37,28 +37,30 @@ StringUInt32Map StringUInt32MapOf(BitsetUInt32Map m) {
 struct SBNInstance {
   std::string name_;
   Driver driver_;
-  Node::NodePtrCounterPtr trees_;
+  TreeCollection::TreeCollectionPtr tree_collection_;
   std::unordered_map<int, int> indexer_;
 
   explicit SBNInstance(const std::string &name) : name_(name) {}
 
-  size_t TreeCount() { return trees_->size(); }
-  void ParseFile(std::string fname) { trees_ = driver_.ParseFile(fname); }
+  size_t TreeCount() { return tree_collection_->TreeCount(); }
+  void ParseFile(std::string fname) {
+    tree_collection_ = driver_.ParseFile(fname);
+  }
 
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
-    if (trees_) {
-      std::cout << trees_->size() << " unique tree topologies loaded.\n";
+    if (tree_collection_) {
+      std::cout << TreeCount() << " unique tree topologies loaded.\n";
     } else {
       std::cout << "No trees loaded.\n";
     }
   }
 
   StringUInt32Map RootsplitSupport() {
-    return StringUInt32MapOf(RootsplitSupportOf(trees_));
+    return StringUInt32MapOf(RootsplitSupportOf(tree_collection_->Trees()));
   }
   StringUInt32Map SubsplitSupport() {
-    return StringUInt32MapOf(SubsplitSupportOf(trees_));
+    return StringUInt32MapOf(SubsplitSupportOf(tree_collection_->Trees()));
   }
 
   static void f(py::array_t<double> array) {
