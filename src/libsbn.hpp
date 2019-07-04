@@ -1,7 +1,6 @@
 // Copyright 2019 Matsen group.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
-
 #ifndef SRC_LIBSBN_HPP_
 #define SRC_LIBSBN_HPP_
 
@@ -10,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include "alignment.hpp"
+#include "beagle.h"
 #include "build.hpp"
 #include "driver.hpp"
 #include "tree.hpp"

@@ -1,8 +1,10 @@
 name: libsbn
 channels:
   - anaconda
+  - bioconda
   - defaults
 dependencies:
+  - beagle-lib
   - flex
   - make
   - numpy

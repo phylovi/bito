@@ -1,5 +1,7 @@
 # libsbn
 
+_This package is not yet useful. We're working hard to make it useful._
+
 [![Travis CI status](https://travis-ci.org/matsengrp/libsbn.svg?branch=master)](https://travis-ci.org/matsengrp/libsbn)
 
 ## Dependencies
