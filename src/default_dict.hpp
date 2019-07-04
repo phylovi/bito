@@ -34,6 +34,8 @@ class DefaultDict : private std::unordered_map<Key, T> {
     if (search == this->end()) {
       return default_value_;
     }
+    // TODO(ematsen) can't we just return search->first and search->second so we
+    // don't have to do another lookup?
     return std::unordered_map<Key, T>::at(key);
   }
 

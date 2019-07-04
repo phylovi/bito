@@ -11,6 +11,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -214,30 +215,44 @@ class Node {
     }
   }
 
-  std::string Newick(  // TagDoubleMapOption branch_lengths = std::nullopt,
-      const TagStringMapOption& node_labels = std::nullopt) {
-    return NewickAux(node_labels) + ";";
+  std::string Newick(const TagDoubleMapOption& branch_lengths = std::nullopt,
+                     const TagStringMapOption& node_labels = std::nullopt) {
+    return NewickAux(branch_lengths, node_labels) + ";";
   }
 
-  std::string NewickAux(  // TagDoubleMapOption branch_lengths,
-      TagStringMapOption node_labels) {
+  std::string NewickAux(const TagDoubleMapOption& branch_lengths,
+                        const TagStringMapOption& node_labels) {
+    std::string str;
     if (IsLeaf()) {
       if (node_labels) {
-        return (*node_labels).at(Tag());
+        str.assign((*node_labels).at(Tag()));
       } else {
-        return TagString();
+        str.assign(TagString());
+      }
+    } else {
+      str.assign("(");
+      for (auto iter = children_.begin(); iter != children_.end(); iter++) {
+        if (iter != children_.begin()) {
+          str.append(",");
+        }
+        str.append((*iter)->NewickAux(branch_lengths, node_labels));
+      }
+      str.append(")");
+      if (!node_labels) {
+        // If node_labels are not included then we figure that the discrete
+        // structure of the tree is of interest. Thus we write out the tags as
+        // internal nodes of the tree.
+        str.append(TagString());
       }
     }
-    std::string str = "(";
-    for (auto iter = children_.begin(); iter != children_.end(); iter++) {
-      if (iter != children_.begin()) {
-        str.append(",");
+    if (branch_lengths) {
+      auto search = (*branch_lengths).find(Tag());
+      if (search != (*branch_lengths).end()) {
+        // ostringstream is the way to get scientific notation using the STL.
+        std::ostringstream str_stream;
+        str_stream << search->second;
+        str.append(":" + str_stream.str());
       }
-      str.append((*iter)->NewickAux(node_labels));
-    }
-    str.append(")");
-    if (!node_labels) {
-      str.append(TagString());
     }
     return str;
   }
