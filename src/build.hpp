@@ -49,7 +49,7 @@ void PrintTagBitsetMap(TagBitsetMap m) {
   }
 }
 
-BitsetUInt32Map RootsplitSupportOf(Tree::TreePtrCounterPtr trees) {
+BitsetUInt32Map RootsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
   BitsetUInt32Map rootsplit_counter(0);
   for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
     auto tree = iter->first;
@@ -67,7 +67,7 @@ BitsetUInt32Map RootsplitSupportOf(Tree::TreePtrCounterPtr trees) {
   return rootsplit_counter;
 }
 
-BitsetUInt32Map SubsplitSupportOf(Tree::TreePtrCounterPtr trees) {
+BitsetUInt32Map SubsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
   BitsetUInt32Map subsplit_support(0);
   for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
     auto tree = iter->first;
@@ -104,18 +104,10 @@ BitsetUInt32Map SubsplitSupportOf(Tree::TreePtrCounterPtr trees) {
 TEST_CASE("Build") {
   Driver driver;
 
-  auto t = driver.ParseString("((0,1),(2,(3,4)));");
-  auto m = TagBitsetMapOf(t->Root());
-
-  std::cout << t->Newick() << std::endl;
-  // TODO(ematsen) Add an actual test.
-  PrintTagBitsetMap(m);
-
-  driver.Clear();
-  auto trees = driver.ParseFile("data/many_rootings.tre");
+  auto trees = driver.ParseFile("data/many_rootings.tre")->Trees();
   auto support = SubsplitSupportOf(trees);
   // Get the support of the first tree in trees.
-  auto single_tree = std::make_shared<Tree::TreePtrCounter>();
+  auto single_tree = std::make_shared<TreeCollection::TreePtrCounter>();
   single_tree->insert(std::make_pair(trees->begin()->first, 1));
   auto single_support = SubsplitSupportOf(single_tree);
   // many_rootings has many (unrooted) rootings of the same tree.

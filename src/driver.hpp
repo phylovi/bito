@@ -6,6 +6,7 @@
 #include <map>
 #include <string>
 #include "parser.hpp"
+#include "tree_collection.hpp"
 
 // Give Flex the prototype of yylex we want ...
 #define YY_DECL yy::parser::symbol_type yylex(Driver& drv)
@@ -45,9 +46,11 @@ class Driver {
   Tree::TreePtr ParseString(yy::parser* parser_instance,
                             const std::string& str);
   // Make a parser and then parse a string for a one-off parsing.
-  Tree::TreePtr ParseString(const std::string& s);
+  TreeCollection::TreeCollectionPtr ParseString(const std::string& s);
   // Run the parser on a file.
-  Tree::TreePtrCounterPtr ParseFile(const std::string& fname);
+  TreeCollection::TreeCollectionPtr ParseFile(const std::string& fname);
+  // Make the map from the edge tags of the tree to the taxon names from taxa_.
+  std::unordered_map<uint64_t, std::string> TagTaxonMap();
 };
 
 

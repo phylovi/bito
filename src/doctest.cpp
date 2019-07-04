@@ -18,7 +18,7 @@ TEST_CASE("Node") {
 Driver driver;
 
 std::vector<std::string> trace;
-auto t = driver.ParseString("((((0_1,1_1),(2_1,3_1)),4_1),((5_1,(6_1,7_1)),(8_1,9_1)));");
+auto t = driver.ParseString("((((0_1,1_1),(2_1,3_1)),4_1),((5_1,(6_1,7_1)),(8_1,9_1)));")->FirstTree();
 
 // preorder:
 t->Root()->PreOrder([&trace](Node* node) { trace.push_back(node->TagString()); });

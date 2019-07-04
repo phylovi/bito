@@ -26,7 +26,20 @@ Just use `make` to build and run tests.
 
 
 ## Contributing
-We use [Git flow](https://guides.github.com/introduction/flow/) as follows:
+
+### Style
+
+We will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.
+I use [cpplint](https://github.com/cpplint/cpplint) to check some aspects of this.
+
+
+### Formatting
+
+Code gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html).
+See the Makefile for the invocation.
+
+
+### [Git flow](https://guides.github.com/introduction/flow/)
 
 * Code changes start by raising an issue proposing the changes, which often leads to a discussion
 * Make a branch associated with the issue named with the issue number and a description, such as `4-efficiency-improvements` for a branch associated with issue #4 about efficiency improvements

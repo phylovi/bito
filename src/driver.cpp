@@ -28,7 +28,7 @@ void Driver::Clear() {
   branch_lengths_.clear();
 }
 
-Tree::TreePtrCounterPtr Driver::ParseFile(const std::string &fname) {
+TreeCollection::TreeCollectionPtr Driver::ParseFile(const std::string &fname) {
   Tree::TreePtr tree;
   yy::parser parser_instance(*this);
 
@@ -41,7 +41,7 @@ Tree::TreePtrCounterPtr Driver::ParseFile(const std::string &fname) {
   }
   std::string line;
   unsigned int line_number = 1;
-  auto trees = std::make_shared<Tree::TreePtrCounter>();
+  auto trees = std::make_shared<TreeCollection::TreePtrCounter>();
   while (std::getline(in, line)) {
     // Set the Bison location line number properly so we get useful error
     // messages.
@@ -58,7 +58,7 @@ Tree::TreePtrCounterPtr Driver::ParseFile(const std::string &fname) {
     }
   }
   in.close();
-  return trees;
+  return std::make_shared<TreeCollection>(trees, this->TagTaxonMap());
 }
 
 Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,
@@ -71,10 +71,22 @@ Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,
   return latest_tree_;
 }
 
-Tree::TreePtr Driver::ParseString(const std::string &str) {
+TreeCollection::TreeCollectionPtr Driver::ParseString(const std::string &str) {
+  Clear();
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);
-  return ParseString(&parser_instance, str);
+  auto trees = std::make_shared<TreeCollection::TreePtrCounter>();
+  auto tree = ParseString(&parser_instance, str);
+  assert(trees->insert(std::make_pair(tree, 1)).second);
+  return std::make_shared<TreeCollection>(trees, this->TagTaxonMap());
+}
+
+TreeCollection::TagStringMap Driver::TagTaxonMap() {
+  std::unordered_map<uint64_t, std::string> m;
+  for (auto iter = taxa_.begin(); iter != taxa_.end(); ++iter) {
+    m[static_cast<uint64_t>(iter->second)] = iter->first;
+  }
+  return m;
 }
 
 // Note that a number of Driver methods are implemented in scanner.ll.
