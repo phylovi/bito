@@ -9,6 +9,7 @@
 #include <pybind11/pybind11.h>
 #include <string>
 #include <unordered_map>
+#include "alignment.hpp"
 #include "build.hpp"
 #include "driver.hpp"
 #include "tree.hpp"
@@ -38,14 +39,17 @@ struct SBNInstance {
   std::string name_;
   Driver driver_;
   TreeCollection::TreeCollectionPtr tree_collection_;
-  std::unordered_map<int, int> indexer_;
+  Alignment alignment_;
 
   explicit SBNInstance(const std::string &name) : name_(name) {}
 
   size_t TreeCount() { return tree_collection_->TreeCount(); }
+
   void ParseFile(std::string fname) {
     tree_collection_ = driver_.ParseFile(fname);
   }
+
+  void ReadFasta(std::string fname) { alignment_.ReadFasta(fname); }
 
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
