@@ -13,7 +13,7 @@ preamble = """\
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
-
+#include <string>
 #include "bitset.hpp"
 #include "build.hpp"
 #include "default_dict.hpp"
@@ -51,6 +51,6 @@ for traversal_type in ["preorder", "postorder", "levelorder"]:
    fp.write("}) == trace);\n")
    fp.write("trace.clear();\n")
 
-fp.write("\n}\n")
+fp.write("}\n")
 
 fp.close()

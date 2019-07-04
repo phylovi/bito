@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <vector>
 #include "intpack.hpp"
+#include "typedefs.hpp"
 
 class Node {
  public:
@@ -213,21 +214,31 @@ class Node {
     }
   }
 
-  std::string Newick() { return NewickAux() + ";"; }
+  std::string Newick(  // TagDoubleMapOption branch_lengths = std::nullopt,
+      const TagStringMapOption& node_labels = std::nullopt) {
+    return NewickAux(node_labels) + ";";
+  }
 
-  std::string NewickAux() {
+  std::string NewickAux(  // TagDoubleMapOption branch_lengths,
+      TagStringMapOption node_labels) {
     if (IsLeaf()) {
-      return TagString();
+      if (node_labels) {
+        return (*node_labels).at(Tag());
+      } else {
+        return TagString();
+      }
     }
     std::string str = "(";
     for (auto iter = children_.begin(); iter != children_.end(); iter++) {
       if (iter != children_.begin()) {
         str.append(",");
       }
-      str.append((*iter)->NewickAux());
+      str.append((*iter)->NewickAux(node_labels));
     }
     str.append(")");
-    str.append(TagString());
+    if (!node_labels) {
+      str.append(TagString());
+    }
     return str;
   }
 

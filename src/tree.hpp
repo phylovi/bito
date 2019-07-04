@@ -6,23 +6,24 @@
 
 #include <unordered_map>
 #include "node.hpp"
+#include "typedefs.hpp"
 
 class Tree {
  public:
   typedef std::shared_ptr<Tree> TreePtr;
-  typedef std::unordered_map<uint64_t, double> BranchLengthMap;
 
-  explicit Tree(Node::NodePtr root, BranchLengthMap branch_lengths)
+  explicit Tree(Node::NodePtr root, TagDoubleMap branch_lengths)
       : root_(root), branch_lengths_(branch_lengths) {}
 
   const Node::NodePtr Root() const { return root_; }
   uint32_t LeafCount() const { return Root()->LeafCount(); }
-  // TODO(ematsen)
-  std::string Newick() const { return Root()->Newick(); }
+  std::string Newick(TagStringMapOption node_labels = std::nullopt) const {
+    return Root()->Newick(node_labels);
+  }
 
  private:
   Node::NodePtr root_;
-  BranchLengthMap branch_lengths_;
+  TagDoubleMap branch_lengths_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

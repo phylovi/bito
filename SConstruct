@@ -8,7 +8,7 @@ env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()], # , '/home/ematsen/miniconda3/envs/libsbn/include/libhmsbeagle-1'],
     CCFLAGS=['-O3', '-Wall', '-Wextra', '-Wconversion'],
-    CXXFLAGS=['-std=c++14', '-fPIC', '-shared'],
+    CXXFLAGS=['-std=c++17', '-fPIC', '-shared'],
     CC = os.environ['CC'],
     CXX = os.environ['CXX']
     )

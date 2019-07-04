@@ -27,10 +27,16 @@ Just use `make` to build and run tests.
 
 ## Contributing
 
+libsbn is written in C++17.
+
 ### Style
 
 We will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.
 I use [cpplint](https://github.com/cpplint/cpplint) to check some aspects of this.
+
+Notes:
+
+* Always use curly braces for the body of conditionals and loops, even if they are one line.
 
 
 ### Formatting

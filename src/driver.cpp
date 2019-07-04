@@ -2,15 +2,11 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "driver.hpp"
-
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <utility>
-
 #include "parser.hpp"
-#include "tree.hpp"
-
 
 Driver::Driver()
     : next_id_(0),
@@ -81,10 +77,11 @@ TreeCollection::TreeCollectionPtr Driver::ParseString(const std::string &str) {
   return std::make_shared<TreeCollection>(trees, this->TagTaxonMap());
 }
 
-TreeCollection::TagStringMap Driver::TagTaxonMap() {
-  std::unordered_map<uint64_t, std::string> m;
+TagStringMap Driver::TagTaxonMap() {
+  TagStringMap m;
   for (auto iter = taxa_.begin(); iter != taxa_.end(); ++iter) {
-    m[static_cast<uint64_t>(iter->second)] = iter->first;
+    // These are leaves, so the number of leaves below is 1.
+    m[PackInts(iter->second, 1)] = iter->first;
   }
   return m;
 }

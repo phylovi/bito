@@ -7,6 +7,7 @@
 #include <string>
 #include "parser.hpp"
 #include "tree_collection.hpp"
+#include "typedefs.hpp"
 
 // Give Flex the prototype of yylex we want ...
 #define YY_DECL yy::parser::symbol_type yylex(Driver& drv)
@@ -34,7 +35,7 @@ class Driver {
   // Map from taxon names to their numerical identifiers.
   std::map<std::string, int> taxa_;
   // The token's location, used by the scanner to give good debug info.
-  Tree::BranchLengthMap branch_lengths_;
+  TagDoubleMap branch_lengths_;
   // The token's location, used by the scanner to give good debug info.
   yy::location location_;
 
@@ -59,7 +60,9 @@ class Driver {
 TEST_CASE("Driver") {
   Driver driver;
 
-  auto t = driver.ParseString("((a:1.,b:2.),c:3.);");
+  auto collection = driver.ParseString("((a:1.,b:2.),c:3.);");
+  std::cout << collection->FirstTree()->Newick(collection->TagTaxonMap())
+            << std::endl;
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
