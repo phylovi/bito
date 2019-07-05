@@ -9,7 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include "alignment.hpp"
-#include "beagle.h"
+#include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
 #include "tree.hpp"
@@ -40,6 +40,7 @@ struct SBNInstance {
   Driver driver_;
   TreeCollection::TreeCollectionPtr tree_collection_;
   Alignment alignment_;
+  CharIntMap symbol_table_ = GetSymbolTable();
 
   explicit SBNInstance(const std::string &name) : name_(name) {}
 

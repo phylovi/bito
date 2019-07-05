@@ -37,15 +37,13 @@ def find_conda_pkg_dir_containing(glob_str):
 beagle_pkg = find_conda_pkg_dir_containing("/pkgs/beagle-lib*/")
 beagle_lib = beagle_pkg + 'lib'
 beagle_include = beagle_pkg + 'include/libhmsbeagle-1'
-beagle_include_extra = beagle_include + '/libhmsbeagle'
 
-for path in [beagle_lib, beagle_include, beagle_include_extra]:
+for path in [beagle_lib, beagle_include]:
     if not os.path.isdir(path):
         sys.exit("Couldn't find:\n"+path)
 
 env.Append(LIBPATH = beagle_lib)
 env.Append(CPPPATH = beagle_include)
-env.Append(CPPPATH = beagle_include_extra)
 
 sources = [
     '_build/bitset.cpp',

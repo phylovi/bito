@@ -21,6 +21,19 @@ class Alignment {
 
   StringStringMap Data() const { return data_; }
 
+  bool IsValid() const {
+    if (data_.size() == 0) {
+      return false;
+    }
+    size_t length = data_.begin()->second.size();
+    for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
+      if (length != iter->second.size()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   // An edited version of
   // https://stackoverflow.com/questions/35251635/fasta-reader-written-in-c
   // which seems like it was originally taken from
@@ -33,7 +46,6 @@ class Alignment {
         assert(data.insert({taxon, sequence}).second);
       }
     };
-
     std::ifstream input(fname);
     if (!input.good()) {
       std::cerr << "Could not open '" << fname << "'\n";
@@ -52,6 +64,10 @@ class Alignment {
     }
     // Insert the last taxon, sequence pair.
     insert(taxon, sequence);
+    if (!IsValid()) {
+      std::cerr << "Sequences of the alignment are not all the same length.\n";
+      abort();
+    }
   }
 
  private:
