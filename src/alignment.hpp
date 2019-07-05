@@ -20,6 +20,11 @@ class Alignment {
   explicit Alignment(StringStringMap data) : data_(data) {}
 
   StringStringMap Data() const { return data_; }
+  size_t SequenceCount() { return data_.size(); }
+  size_t Length() {
+    assert(SequenceCount() > 0);
+    return data_.begin()->second.size();
+  }
 
   bool IsValid() const {
     if (data_.size() == 0) {

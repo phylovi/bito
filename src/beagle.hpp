@@ -7,6 +7,7 @@
 #include "libhmsbeagle/beagle.h"
 #include "typedefs.hpp"
 
+// DNA assumption here.
 CharIntMap GetSymbolTable() {
   CharIntMap table({{'A', 0},
                     {'C', 1},
