@@ -40,7 +40,7 @@ struct SBNInstance {
   Driver driver_;
   TreeCollection::TreeCollectionPtr tree_collection_;
   Alignment alignment_;
-  CharIntMap symbol_table_ = GetSymbolTable();
+  CharIntMap symbol_table_ = beagle::GetSymbolTable();
   int beagle_instance_ = -1;
 
   explicit SBNInstance(const std::string &name) : name_(name) {
@@ -96,8 +96,8 @@ struct SBNInstance {
     }
     BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
 
-    beagle_instance_ =
-        CreateInstance(int(tip_count), int(alignment_.Length()), return_info);
+    beagle_instance_ = beagle::CreateInstance(
+        int(tip_count), int(alignment_.Length()), return_info);
 
     delete return_info;
   }

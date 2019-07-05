@@ -7,6 +7,8 @@
 #include "libhmsbeagle/beagle.h"
 #include "typedefs.hpp"
 
+namespace beagle {
+
 // DNA assumption here.
 CharIntMap GetSymbolTable() {
   CharIntMap table({{'A', 0},
@@ -60,5 +62,6 @@ CharIntMap GetSymbolTable() {
         scale_buffer_count, allowed_resources, resource_count, preference_flags,
         requirement_flags, return_info);
   }
+  }  // namespace beagle
 
 #endif  // SRC_BEAGLE_HPP_
