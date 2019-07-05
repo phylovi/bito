@@ -57,5 +57,8 @@ env.VariantDir('_build', 'src')
 env.SharedLibrary(
     "sbn"+os.popen("python3-config --extension-suffix").read().rstrip(),
     ['_build/libsbn.cpp'] + sources,
-    SHLIBPREFIX='')
-doctest = env.Program(['_build/doctest.cpp'] + sources)
+    SHLIBPREFIX='',
+    LIBS=['hmsbeagle'])
+doctest = env.Program(
+    ['_build/doctest.cpp'] + sources,
+    LIBS=['hmsbeagle'])
