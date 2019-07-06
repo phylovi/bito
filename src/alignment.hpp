@@ -39,6 +39,16 @@ class Alignment {
     return true;
   }
 
+  std::string at(const std::string &taxon) const {
+    auto search = data_.find(taxon);
+    if (search != data_.end()) {
+      return search->second;
+    } else {
+      std::cerr << "Taxon '" << search->first << "' not found in alignment.\n";
+      abort();
+    }
+  }
+
   // An edited version of
   // https://stackoverflow.com/questions/35251635/fasta-reader-written-in-c
   // which seems like it was originally taken from
@@ -73,10 +83,10 @@ class Alignment {
       std::cerr << "Sequences of the alignment are not all the same length.\n";
       abort();
     }
-  }
+    }
 
- private:
-  StringStringMap data_;
+   private:
+    StringStringMap data_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

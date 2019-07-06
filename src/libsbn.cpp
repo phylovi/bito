@@ -18,10 +18,12 @@ PYBIND11_MODULE(sbn, m) {
       .def(py::init<const std::string &>())
       // .def_readonly("trees", &SBNInstance::trees_)
       .def("tree_count", &SBNInstance::TreeCount)
-      .def("parse_file", &SBNInstance::ParseFile)
+      .def("read_newick", &SBNInstance::ReadNewick)
       .def("read_fasta", &SBNInstance::ReadFasta)
       .def("print_status", &SBNInstance::PrintStatus)
       .def("rootsplit_support", &SBNInstance::RootsplitSupport)
-      .def("subsplit_support", &SBNInstance::SubsplitSupport);
+      .def("subsplit_support", &SBNInstance::SubsplitSupport)
+      .def("beagle_create", &SBNInstance::BeagleCreate)
+      .def("prepare_beagle_instance", &SBNInstance::PrepareBeagleInstance);
   m.def("f", &SBNInstance::f, "test");
 }

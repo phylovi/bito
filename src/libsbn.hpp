@@ -50,7 +50,8 @@ struct SBNInstance {
 
   size_t TreeCount() { return tree_collection_->TreeCount(); }
 
-  void ParseFile(std::string fname) {
+  void ReadNewick(std::string fname) {
+    driver_.Clear();
     tree_collection_ = driver_.ParseFile(fname);
   }
 
@@ -100,6 +101,11 @@ struct SBNInstance {
         int(tip_count), int(alignment_.Length()), return_info);
 
     delete return_info;
+  }
+
+  void PrepareBeagleInstance() {
+    beagle::SetTipStates(beagle_instance_, tree_collection_->TagTaxonMap(),
+                         alignment_, symbol_table_);
   }
 
   static void f(py::array_t<double> array) {
