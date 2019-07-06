@@ -33,6 +33,9 @@ libsbn is written in C++17.
 
 ### Style
 
+* Prefer a functional style: returning variables versus modifying them in place. Because of return value optimization, this doesn't have a performance penalty.
+* RAII. No "new."
+
 We will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.
 I use [cpplint](https://github.com/cpplint/cpplint) to check some aspects of this.
 
@@ -45,6 +48,14 @@ Notes:
 
 Code gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html).
 See the Makefile for the invocation.
+
+
+### Tests
+
+Add a test for every new feature.
+
+* For C++, use [doctest](https://github.com/onqtam/doctest)
+* For Python, use [pytest](https://docs.pytest.org/en/latest/)
 
 
 ### [Git flow](https://guides.github.com/introduction/flow/)

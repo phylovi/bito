@@ -4,6 +4,7 @@
 #ifndef SRC_BEAGLE_HPP_
 #define SRC_BEAGLE_HPP_
 
+#include <string>
 #include "libhmsbeagle/beagle.h"
 #include "typedefs.hpp"
 
@@ -21,6 +22,21 @@ CharIntMap GetSymbolTable() {
                     {'t', 3},
                     {'-', 4}});
   return table;
+  }
+
+  SymbolVector SymbolVectorOf(const std::string &str,
+                              const CharIntMap &symbol_table) {
+    SymbolVector v(str.size());
+    for (size_t i = 0; i < str.size(); i++) {
+      auto search = symbol_table.find(str[i]);
+      if (search != symbol_table.end()) {
+        v[i] = search->second;
+    } else {
+      std::cerr << "Symbol '" << search->first << "' not known.\n";
+      abort();
+    }
+    }
+    return v;
   }
 
   int CreateInstance(int tip_count, int alignment_length,
@@ -64,4 +80,13 @@ CharIntMap GetSymbolTable() {
   }
   }  // namespace beagle
 
+#ifdef DOCTEST_LIBRARY_INCLUDED
+  TEST_CASE("Beagle") {
+    CharIntMap symbol_table = beagle::GetSymbolTable();
+    SymbolVector symbol_vector =
+        beagle::SymbolVectorOf("-tgcaTGCA", symbol_table);
+    SymbolVector correct_symbol_vector = {4, 3, 2, 1, 0, 3, 2, 1, 0};
+    CHECK_EQ(symbol_vector, correct_symbol_vector);
+  }
+#endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_BEAGLE_HPP_
