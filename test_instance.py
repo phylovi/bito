@@ -21,4 +21,4 @@ def test_instance():
     inst.read_newick('data/hello.nwk')
     inst.read_fasta('data/hello.fasta')
     inst.beagle_create()
-    inst.prepare_beagle_instance()
+#    inst.prepare_beagle_instance()

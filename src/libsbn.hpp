@@ -90,7 +90,7 @@ struct SBNInstance {
       abort();
     }
     int tip_count = tree_collection_->FirstTree()->LeafCount();
-    if (tip_count != int(alignment_.SequenceCount())) {
+    if (tip_count != static_cast<int>(alignment_.SequenceCount())) {
       std::cerr << "The number of tree tips doesn't match the alignment "
                    "sequence count!\n";
       abort();
@@ -98,8 +98,10 @@ struct SBNInstance {
     BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
 
     beagle_instance_ = beagle::CreateInstance(
-        int(tip_count), int(alignment_.Length()), return_info);
+        static_cast<int>(tip_count), static_cast<int>(alignment_.Length()),
+        return_info);
 
+    // TODO do something with return_info?
     delete return_info;
   }
 
