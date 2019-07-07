@@ -46,7 +46,9 @@ struct SBNInstance {
   explicit SBNInstance(const std::string &name) : name_(name) {
   }
 
-  ~SBNInstance() {}
+  ~SBNInstance() {
+    // TODO add BEAGLE destructor.
+  }
 
   size_t TreeCount() { return tree_collection_->TreeCount(); }
 
@@ -108,6 +110,9 @@ struct SBNInstance {
   void PrepareBeagleInstance() {
     beagle::SetTipStates(beagle_instance_, tree_collection_->TagTaxonMap(),
                          alignment_, symbol_table_);
+
+    std::vector<double> pattern_weights(alignment_.Length(), 1.);
+    beagleSetPatternWeights(beagle_instance_, pattern_weights.data());
   }
 
   static void f(py::array_t<double> array) {
