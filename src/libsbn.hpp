@@ -142,6 +142,10 @@ struct SBNInstance {
                                 eval.data());
   }
 
+  void TreeLikelihood(Tree::TreePtr tree) {
+    BeagleOperation op = {3, BEAGLE_OP_NONE, BEAGLE_OP_NONE, 0, 0, 1, 1};
+  }
+
   static void f(py::array_t<double> array) {
     py::buffer_info buf = array.request();
     std::cout << "You passed a " << buf.ndim << " dim array" << std::endl;
@@ -160,6 +164,7 @@ TEST_CASE("libsbn") {
   inst.BeagleCreate();
   inst.PrepareBeagleInstance();
   inst.SetJCModel();
+  inst.TreeLikelihood(inst.tree_collection_->FirstTree());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
