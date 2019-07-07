@@ -113,6 +113,30 @@ struct SBNInstance {
 
     std::vector<double> pattern_weights(alignment_.Length(), 1.);
     beagleSetPatternWeights(beagle_instance_, pattern_weights.data());
+
+    // Use uniform rates and weights.
+    const double weights[1] = {1.0};
+    const double rates[1] = {1.0};
+    beagleSetCategoryWeights(beagle_instance_, 0, weights);
+    beagleSetCategoryRates(beagle_instance_, rates);
+  }
+
+  void JCModel() {
+    std::vector<double> freqs(4, 0.25);
+    beagleSetStateFrequencies(beagle_instance_, 0, freqs.data());
+
+    // an eigen decomposition for the JC69 model
+    double evec[4 * 4] = {1.0, 2.0, 0.0, 0.5,  1.0, -2.0, 0.5,  0.0,
+                          1.0, 2.0, 0.0, -0.5, 1.0, -2.0, -0.5, 0.0};
+
+    double ivec[4 * 4] = {0.25, 0.25, 0.25, 0.25, 0.125, -0.125, 0.125, -0.125,
+                          0.0,  1.0,  0.0,  -1.0, 1.0,   0.0,    -1.0,  0.0};
+
+    double eval[4] = {0.0, -1.3333333333333333, -1.3333333333333333,
+                      -1.3333333333333333};
+
+    // set the Eigen decomposition
+    beagleSetEigenDecomposition(beagle_instance_, 0, evec, ivec, eval);
   }
 
   static void f(py::array_t<double> array) {
