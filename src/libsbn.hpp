@@ -118,4 +118,14 @@ struct SBNInstance {
   }
 };
 
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("libsbn") {
+  SBNInstance inst("charlie");
+  inst.ReadNewick("data/hello.nwk");
+  inst.ReadFasta("data/hello.fasta");
+  inst.BeagleCreate();
+  inst.PrepareBeagleInstance();
+}
+#endif  // DOCTEST_LIBRARY_INCLUDED
+
 #endif  // SRC_LIBSBN_HPP_

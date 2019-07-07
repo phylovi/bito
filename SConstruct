@@ -11,7 +11,7 @@ if 'CC' not in os.environ or 'CXX' not in os.environ:
 env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
-    CCFLAGS=['-O3', '-Wall', '-Wextra', '-Wconversion'],
+    CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion'],
     CXXFLAGS=['-std=c++17', '-fPIC', '-shared'],
     CC = os.environ['CC'],
     CXX = os.environ['CXX']

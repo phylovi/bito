@@ -9,6 +9,7 @@ bison: src/parser.yy src/scanner.ll
 
 prep:
 	python test/prep/doctest.py
+	clang-format -i -style=file src/doctest.cpp
 
 format:
 	clang-format -i -style=file src/*
