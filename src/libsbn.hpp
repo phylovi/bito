@@ -143,6 +143,29 @@ struct SBNInstance {
   }
 
   void TreeLikelihood(Tree::TreePtr tree) {
+    int next_internal_index = tree->LeafCount();
+    std::vector<int> node_indices;
+    std::vector<double> branch_lengths;
+    tree->Root()->PostOrder([&tree, &next_internal_index, &node_indices,
+                             &branch_lengths](Node *node) {
+      if (node->IsLeaf()) {
+        node_indices.push_back(node->MaxLeafID());
+        branch_lengths.push_back(tree->BranchLength(node));
+      } else {
+        node_indices.push_back(next_internal_index);
+        branch_lengths.push_back(tree->BranchLength(node));
+        next_internal_index++;
+      }
+    });
+
+    beagleUpdateTransitionMatrices(beagle_instance_,     // instance
+                                   0,                    // eigenIndex
+                                   node_indices.data(),  // probabilityIndices
+                                   NULL,  // firstDerivativeIndices
+                                   NULL,  // secondDervativeIndices
+                                   branch_lengths.data(),   // edgeLengths
+                                   branch_lengths.size());  // count
+
     BeagleOperation op = {3, BEAGLE_OP_NONE, BEAGLE_OP_NONE, 0, 0, 1, 1};
   }
 

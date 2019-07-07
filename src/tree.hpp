@@ -22,6 +22,16 @@ class Tree {
   std::string Newick(TagStringMapOption node_labels = std::nullopt) const {
     return Root()->Newick(branch_lengths_, node_labels);
   }
+  double BranchLength(Node* node) const {
+    auto search = branch_lengths_.find(node->Tag());
+    if (search != branch_lengths_.end()) {
+      return search->second;
+    } else {
+      std::cerr << "Branch length not found for node tagged '"
+                << node->TagString() << "'.\n";
+      abort();
+    }
+  }
 
  private:
   Node::NodePtr root_;
