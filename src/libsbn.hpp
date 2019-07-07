@@ -8,6 +8,7 @@
 #include <pybind11/pybind11.h>
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include "alignment.hpp"
 #include "beagle.hpp"
 #include "build.hpp"
@@ -47,7 +48,7 @@ struct SBNInstance {
   }
 
   ~SBNInstance() {
-    // TODO add BEAGLE destructor.
+    // TODO(erick) add BEAGLE destructor.
   }
 
   size_t TreeCount() { return tree_collection_->TreeCount(); }
@@ -103,7 +104,7 @@ struct SBNInstance {
         static_cast<int>(tip_count), static_cast<int>(alignment_.Length()),
         return_info);
 
-    // TODO do something with return_info?
+    // TODO(erick) do something with return_info?
     delete return_info;
   }
 
