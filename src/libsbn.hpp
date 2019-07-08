@@ -146,27 +146,44 @@ struct SBNInstance {
     int next_internal_index = tree->LeafCount();
     std::vector<int> node_indices;
     std::vector<double> branch_lengths;
-    tree->Root()->PostOrder([&tree, &next_internal_index, &node_indices,
-                             &branch_lengths](Node *node) {
-      if (node->IsLeaf()) {
-        node_indices.push_back(node->MaxLeafID());
-        branch_lengths.push_back(tree->BranchLength(node));
-      } else {
-        node_indices.push_back(next_internal_index);
-        branch_lengths.push_back(tree->BranchLength(node));
-        next_internal_index++;
-      }
-    });
+    std::vector<BeagleOperation> operations;
+    tree->Root()->PostOrder(
+        [&tree, &next_internal_index, &node_indices, &branch_lengths,
+         &operations](Node *node, const std::vector<int> &below_indices) {
+          if (node->IsLeaf()) {
+            auto leaf_id = node->MaxLeafID();
+            node_indices.push_back(leaf_id);
+            branch_lengths.push_back(tree->BranchLength(node));
+            return int(leaf_id);
+          }
+          // else
+          int this_index = next_internal_index;
+          node_indices.push_back(this_index);
+          branch_lengths.push_back(tree->BranchLength(node));
+          assert(below_indices.size() == 2);
+          BeagleOperation op = {
+              this_index,                          // dest
+              BEAGLE_OP_NONE,   BEAGLE_OP_NONE,    // src and dest scaling
+              below_indices[0], below_indices[0],  // src1 and matrix1
+              below_indices[1], below_indices[1]   // src2 and matrix2
+          };
+          operations.push_back(op);
+          next_internal_index++;
+          return this_index;
+        });
 
-    beagleUpdateTransitionMatrices(beagle_instance_,     // instance
-                                   0,                    // eigenIndex
-                                   node_indices.data(),  // probabilityIndices
+    beagleUpdateTransitionMatrices(beagle_instance_,
+                                   0,  // eigenIndex
+                                   node_indices.data(),
                                    NULL,  // firstDerivativeIndices
                                    NULL,  // secondDervativeIndices
-                                   branch_lengths.data(),   // edgeLengths
-                                   branch_lengths.size());  // count
+                                   branch_lengths.data(),
+                                   int(branch_lengths.size()));
 
-    BeagleOperation op = {3, BEAGLE_OP_NONE, BEAGLE_OP_NONE, 0, 0, 1, 1};
+    beagleUpdatePartials(beagle_instance_,
+                         operations.data(),  // eigenIndex
+                         int(operations.size()),
+                         BEAGLE_OP_NONE);  // cumulative scale index
   }
 
   static void f(py::array_t<double> array) {

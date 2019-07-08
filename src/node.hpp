@@ -202,6 +202,14 @@ class Node {
     f(this);
   }
 
+  int PostOrder(std::function<int(Node*, const std::vector<int>&)> f) {
+    std::vector<int> v;
+    for (auto child : children_) {
+      v.push_back(child->PostOrder(f));
+    }
+    return f(this, v);
+  }
+
   void LevelOrder(std::function<void(Node*)> f) {
     std::deque<Node*> to_visit = {this};
     while (to_visit.size()) {
