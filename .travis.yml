@@ -7,4 +7,5 @@ before_install:
   - docker pull matsengrp/libsbn
 
 script:
-  - docker run -v ${PWD}:/libsbn -t matsengrp/libsbn /bin/bash -c "ls ${PWD} && ls /libsbn && conda run -n libsbn make -C /libsbn"
+  - ls ${PWD}
+  - docker run -v ${PWD}:/libsbn -t matsengrp/libsbn /bin/bash -c "ls /libsbn && conda run -n libsbn make -C /libsbn"
