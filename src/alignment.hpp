@@ -102,4 +102,3 @@ TEST_CASE("Alignment") {
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_ALIGNMENT_HPP_
-

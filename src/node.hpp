@@ -256,7 +256,6 @@ class Node {
     return str;
   }
 
-
   // Class methods
   static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
   static NodePtr Join(NodePtrVec children) {

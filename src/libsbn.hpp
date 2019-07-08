@@ -48,8 +48,7 @@ struct SBNInstance {
   explicit SBNInstance(const std::string &name)
       : name_(name),
         symbol_table_(beagle::GetSymbolTable()),
-        beagle_instance_(-1)
-  {}
+        beagle_instance_(-1) {}
 
   ~SBNInstance() { assert(beagleFinalizeInstance(beagle_instance_) == 0); }
 
