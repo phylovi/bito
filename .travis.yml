@@ -9,7 +9,7 @@ before_install:
 install:
   - git clone https://github.com/$TRAVIS_REPO_SLUG.git $TRAVIS_REPO_SLUG
   - cd $TRAVIS_REPO_SLUG
-  - git checkout -qf $TRAVIS_COMMIT
+  - git checkout -qf $TRAVIS_BRANCH
 
 script:
   - docker run -v ${PWD}/libsbn:/libsbn -t matsengrp/libsbn /bin/bash -c "ls /libsbn && conda run -n libsbn make -C /libsbn"
