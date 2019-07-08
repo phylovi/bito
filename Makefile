@@ -1,4 +1,5 @@
 default:
+	git log -n 1
 	scons
 	./_build/doctest
 	pytest -s
