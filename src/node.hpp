@@ -33,17 +33,6 @@ class Node {
                              bool, const Node*, bool)>
       PCSSFun;
 
- private:
-  NodePtrVec children_;
-  // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
-  // of the leaves below this node, and (2) the number of leaves below the node.
-  uint64_t tag_;
-  size_t hash_;
-
-  // Make copy constructors private to eliminate copying.
-  Node(const Node&);
-  Node& operator=(const Node&);
-
  public:
   explicit Node(unsigned int leaf_id)
       : children_({}), tag_(PackInts(leaf_id, 1)), hash_(SOHash(leaf_id)) {}
@@ -298,6 +287,17 @@ class Node {
     c &= mask;
     return (n << c) | (n >> ((-c) & mask));
   }
+
+ private:
+  NodePtrVec children_;
+  // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
+  // of the leaves below this node, and (2) the number of leaves below the node.
+  uint64_t tag_;
+  size_t hash_;
+
+  // Make copy constructors private to eliminate copying.
+  Node(const Node&);
+  Node& operator=(const Node&);
 };
 
 // Compare NodePtrs by their Nodes.

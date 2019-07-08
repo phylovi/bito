@@ -193,7 +193,7 @@ struct SBNInstance {
   static void f(py::array_t<double> array) {
     py::buffer_info buf = array.request();
     std::cout << "You passed a " << buf.ndim << " dim array" << std::endl;
-    double *ptr = (double *)buf.ptr;
+    double *ptr = reinterpret_cast<double *>(buf.ptr);
     for (auto idx = 0; idx < buf.shape[0]; idx++) {
       std::cout << ptr[idx] << std::endl;
     }

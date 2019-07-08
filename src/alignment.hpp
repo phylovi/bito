@@ -84,10 +84,10 @@ class Alignment {
       std::cerr << "Sequences of the alignment are not all the same length.\n";
       abort();
     }
-    }
+  }
 
-   private:
-    StringStringMap data_;
+ private:
+  StringStringMap data_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
