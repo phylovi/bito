@@ -12,4 +12,4 @@ install:
   - git checkout -qf $TRAVIS_BRANCH
 
 script:
-  - docker run -v matsengrp/libsbn:/libsbn -t matsengrp/libsbn /bin/bash -c "ls matsengrp/libsbn && ls /libsbn && conda run -n libsbn make -C /libsbn"
+  - docker run -v ${PWD}/matsengrp/libsbn:/libsbn -t matsengrp/libsbn /bin/bash -c "ls matsengrp/libsbn && ls /libsbn && conda run -n libsbn make -C /libsbn"
