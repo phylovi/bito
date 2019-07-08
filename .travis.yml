@@ -3,8 +3,5 @@ language: minimal
 services:
   - docker
 
-before_install:
-  - docker pull matsengrp/libsbn
-
 script:
-  - docker run -t matsengrp/libsbn /bin/bash -c "conda run -n libsbn make"
+  - docker run -v ${PWD}:/libsbn -t matsengrp/libsbn /bin/bash -c "conda run -n libsbn make -C /libsbn"

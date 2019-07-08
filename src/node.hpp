@@ -29,20 +29,9 @@ class Node {
   // position in the tree and then the direction: false means down the tree
   // structure and true means up. The 4 parts are the uncut parent, the cut
   // parent, child 0, and child 1.
-  typedef std::function<void(Node*, bool, Node*, bool, Node*, bool, Node*,
-                             bool)>
+  typedef std::function<void(const Node*, bool, const Node*, bool, const Node*,
+                             bool, const Node*, bool)>
       PCSSFun;
-
- private:
-  NodePtrVec children_;
-  // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
-  // of the leaves below this node, and (2) the number of leaves below the node.
-  uint64_t tag_;
-  size_t hash_;
-
-  // Make copy constructors private to eliminate copying.
-  Node(const Node&);
-  Node& operator=(const Node&);
 
  public:
   explicit Node(unsigned int leaf_id)
@@ -84,12 +73,12 @@ class Node {
     hash_ = SORotate(hash_, 1);
   }
 
-  uint64_t Tag() { return tag_; }
-  std::string TagString() { return StringOfPackedInt(this->tag_); }
+  uint64_t Tag() const { return tag_; }
+  std::string TagString() const { return StringOfPackedInt(this->tag_); }
   uint32_t MaxLeafID() const { return UnpackFirstInt(tag_); }
   uint32_t LeafCount() const { return UnpackSecondInt(tag_); }
   size_t Hash() const { return hash_; }
-  bool IsLeaf() { return children_.empty(); }
+  bool IsLeaf() const { return children_.empty(); }
   NodePtrVec Children() const { return children_; }
 
   bool operator==(const Node& other) {
@@ -108,7 +97,7 @@ class Node {
     return true;
   }
 
-  void PreOrder(std::function<void(Node*)> f) {
+  void PreOrder(std::function<void(const Node*)> f) {
     f(this);
     for (auto child : children_) {
       child->PreOrder(f);
@@ -117,7 +106,8 @@ class Node {
 
   // Iterate f through (parent, sister, node) for internal nodes using a
   // preorder traversal.
-  void TriplePreOrderInternal(std::function<void(Node*, Node*, Node*)> f) {
+  void TriplePreOrderInternal(
+      std::function<void(const Node*, const Node*, const Node*)> f) {
     if (!IsLeaf()) {
       assert(children_.size() == 2);
       f(this, children_[1].get(), children_[0].get());
@@ -138,8 +128,9 @@ class Node {
   // the distinct calls of f.
   // At the internal nodes we cycle through triples of (parent, sister, node)
   // for f_internal.
-  void TriplePreOrder(std::function<void(Node*, Node*, Node*)> f_root,
-                      std::function<void(Node*, Node*, Node*)> f_internal) {
+  void TriplePreOrder(
+      std::function<void(const Node*, const Node*, const Node*)> f_root,
+      std::function<void(const Node*, const Node*, const Node*)> f_internal) {
     assert(children_.size() == 3);
     f_root(children_[0].get(), children_[1].get(), children_[2].get());
     f_root(children_[1].get(), children_[2].get(), children_[0].get());
@@ -154,7 +145,7 @@ class Node {
   void PCSSPreOrder(PCSSFun f) {
     this->TriplePreOrder(
         // f_root
-        [&f](Node* node0, Node* node1, Node* node2) {
+        [&f](const Node* node0, const Node* node1, const Node* node2) {
           // Virtual root on node2's edge, with subsplit pointing up.
           f(node2, false, node2, true, node0, false, node1, false);
           if (!node2->IsLeaf()) {
@@ -174,7 +165,7 @@ class Node {
           }
         },
         // f_internal
-        [&f](Node* parent, Node* sister, Node* node) {
+        [&f](const Node* parent, const Node* sister, const Node* node) {
           // Virtual root on node's edge, with subsplit pointing up.
           f(node, false, node, true, parent, true, sister, false);
           if (!node->IsLeaf()) {
@@ -195,14 +186,22 @@ class Node {
         });
   }
 
-  void PostOrder(std::function<void(Node*)> f) {
+  void PostOrder(std::function<void(const Node*)> f) {
     for (auto child : children_) {
       child->PostOrder(f);
     }
     f(this);
   }
 
-  void LevelOrder(std::function<void(Node*)> f) {
+  int PostOrder(std::function<int(const Node*, const std::vector<int>&)> f) {
+    std::vector<int> v;
+    for (auto child : children_) {
+      v.push_back(child->PostOrder(f));
+    }
+    return f(this, v);
+  }
+
+  void LevelOrder(std::function<void(const Node*)> f) {
     std::deque<Node*> to_visit = {this};
     while (to_visit.size()) {
       auto n = to_visit.front();
@@ -257,7 +256,6 @@ class Node {
     return str;
   }
 
-
   // Class methods
   static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
   static NodePtr Join(NodePtrVec children) {
@@ -288,6 +286,17 @@ class Node {
     c &= mask;
     return (n << c) | (n >> ((-c) & mask));
   }
+
+ private:
+  NodePtrVec children_;
+  // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
+  // of the leaves below this node, and (2) the number of leaves below the node.
+  uint64_t tag_;
+  size_t hash_;
+
+  // Make copy constructors private to eliminate copying.
+  Node(const Node&);
+  Node& operator=(const Node&);
 };
 
 // Compare NodePtrs by their Nodes.
@@ -330,7 +339,8 @@ TEST_CASE("Node header") {
   // TODO(ematsen) add real test for TriplePreorder
   std::cout << "TriplePreOrder" << std::endl;
   std::cout << t3->Newick() << std::endl;
-  auto print_triple = [](Node* parent, Node* sister, Node* node) {
+  auto print_triple = [](const Node* parent, const Node* sister,
+                         const Node* node) {
     std::cout << parent->TagString() << ", " << sister->TagString() << ", "
               << node->TagString() << " " << std::endl;
   };

@@ -20,6 +20,35 @@ class Alignment {
   explicit Alignment(StringStringMap data) : data_(data) {}
 
   StringStringMap Data() const { return data_; }
+  size_t SequenceCount() const { return data_.size(); }
+  size_t Length() const {
+    assert(SequenceCount() > 0);
+    return data_.begin()->second.size();
+  }
+
+  // Is the alignment non-empty and do all sequences have the same length?
+  bool IsValid() const {
+    if (data_.size() == 0) {
+      return false;
+    }
+    size_t length = data_.begin()->second.size();
+    for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
+      if (length != iter->second.size()) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  std::string at(const std::string &taxon) const {
+    auto search = data_.find(taxon);
+    if (search != data_.end()) {
+      return search->second;
+    } else {
+      std::cerr << "Taxon '" << search->first << "' not found in alignment.\n";
+      abort();
+    }
+  }
 
   // An edited version of
   // https://stackoverflow.com/questions/35251635/fasta-reader-written-in-c
@@ -33,7 +62,6 @@ class Alignment {
         assert(data.insert({taxon, sequence}).second);
       }
     };
-
     std::ifstream input(fname);
     if (!input.good()) {
       std::cerr << "Could not open '" << fname << "'\n";
@@ -52,6 +80,10 @@ class Alignment {
     }
     // Insert the last taxon, sequence pair.
     insert(taxon, sequence);
+    if (!IsValid()) {
+      std::cerr << "Sequences of the alignment are not all the same length.\n";
+      abort();
+    }
   }
 
  private:
@@ -70,4 +102,3 @@ TEST_CASE("Alignment") {
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_ALIGNMENT_HPP_
-

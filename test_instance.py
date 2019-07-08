@@ -3,8 +3,7 @@ import sbn
 
 def test_instance():
     inst = sbn.instance('charlie')
-    inst.parse_file('data/five_taxon.tre')
-    inst.read_fasta('data/hello.fasta')
+    inst.read_newick_file('data/five_taxon.tre')
     inst.print_status()
     # assert inst.tree_count() == 3
     sbn.f(np.array([3,4]))
@@ -18,3 +17,8 @@ def test_instance():
             for support in support_list:
                 fp.write(support+'\n')
             fp.write('\n')
+
+    inst.read_newick_file('data/hello.nwk')
+    inst.read_fasta_file('data/hello.fasta')
+    inst.beagle_create()
+#    inst.prepare_beagle_instance()

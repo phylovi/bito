@@ -12,7 +12,7 @@ preamble = """\
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "doctest.h"
+#include <doctest.h>
 #include <string>
 #include "libsbn.hpp"
 
@@ -40,7 +40,7 @@ traversal_translator = {
 for traversal_type in ["preorder", "postorder", "levelorder"]:
    fp.write("\n// " + traversal_type + ":\n")
    fp.write(f"t->Root()->{traversal_translator[traversal_type]}")
-   fp.write("([&trace](Node* node) { trace.push_back(node->TagString()); });\n")
+   fp.write("([&trace](const Node* node) { trace.push_back(node->TagString()); });\n")
    fp.write("CHECK(std::vector<std::string>({")
    fp.write(",".join(['"'+node.name+'"' for node in t.traverse(traversal_type)]))
    fp.write("}) == trace);\n")

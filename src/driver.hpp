@@ -55,7 +55,6 @@ class Driver {
   TagStringMap TagTaxonMap();
 };
 
-
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("Driver") {

@@ -1,5 +1,7 @@
 # libsbn
 
+_This package is not yet useful. We're working hard to make it useful._
+
 [![Travis CI status](https://travis-ci.org/matsengrp/libsbn.svg?branch=master)](https://travis-ci.org/matsengrp/libsbn)
 
 ## Dependencies
@@ -31,8 +33,28 @@ libsbn is written in C++17.
 
 ### Style
 
-We will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.
-I use [cpplint](https://github.com/cpplint/cpplint) to check some aspects of this.
+We want the code to be:
+
+1. correct, so we write tests
+1. efficient in an algorithmic sense, so we consider algorithms carefully
+1. clear to read and understand, so we write code with readers in mind and use code standards
+1. fast, so we do profiling to find and eliminate bottlenecks
+1. robust, so we use immutable data structures and safe C++ practices
+1. simple and beautiful, so we keep the code as DRY as we can without letting it get convoluted or over-technical
+
+Also:
+
+* Prefer a functional style: returning variables versus modifying them in place. Because of return value optimization, this doesn't have a performance penalty.
+* [RAII](https://en.cppreference.com/w/cpp/language/raii). No `new`.
+* Don't use classic/raw pointers except as const parameters to functions.
+* Prefer [variable names and simple coding practices](https://blog.codinghorror.com/coding-without-comments/) to code comments.
+  If that means having long identifier names, that's fine!
+  If you can't make the code use and operation inherently obvious, please write documentation.
+* Prefer GitHub issues to TODO comments in code.
+
+The [C++ core guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) are the authority for how to write C++, and we will follow them.
+For issues not covered by these guidelines (especially naming conventions), we will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.
+We use [cpplint](https://github.com/cpplint/cpplint) to check some aspects of this.
 
 Notes:
 
@@ -43,6 +65,14 @@ Notes:
 
 Code gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html).
 See the Makefile for the invocation.
+
+
+### Tests
+
+Add a test for every new feature.
+
+* For C++, use [doctest](https://github.com/onqtam/doctest)
+* For Python, use [pytest](https://docs.pytest.org/en/latest/)
 
 
 ### [Git flow](https://guides.github.com/introduction/flow/)
