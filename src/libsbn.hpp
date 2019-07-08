@@ -142,7 +142,7 @@ struct SBNInstance {
                                 eval.data());
   }
 
-  void TreeLikelihood(Tree::TreePtr tree) {
+  double TreeLogLikelihood(Tree::TreePtr tree) {
     int next_internal_index = tree->LeafCount();
     std::vector<int> node_indices;
     std::vector<double> branch_lengths;
@@ -171,7 +171,6 @@ struct SBNInstance {
           next_internal_index++;
           return this_index;
         });
-
     beagleUpdateTransitionMatrices(beagle_instance_,
                                    0,  // eigenIndex
                                    node_indices.data(),
@@ -179,11 +178,21 @@ struct SBNInstance {
                                    NULL,  // secondDervativeIndices
                                    branch_lengths.data(),
                                    int(branch_lengths.size()));
-
     beagleUpdatePartials(beagle_instance_,
                          operations.data(),  // eigenIndex
                          int(operations.size()),
                          BEAGLE_OP_NONE);  // cumulative scale index
+    double log_like = 0;
+    std::vector<int> root_index = {node_indices.back()};
+    std::vector<int> category_weight_index = {0};
+    std::vector<int> state_frequency_index = {0};
+    std::vector<int> cumulative_scale_index = {BEAGLE_OP_NONE};
+    int count = 1;
+    beagleCalculateRootLogLikelihoods(
+        beagle_instance_, root_index.data(), category_weight_index.data(),
+        state_frequency_index.data(), cumulative_scale_index.data(), count,
+        &log_like);
+    return log_like;
   }
 
   static void f(py::array_t<double> array) {
@@ -204,7 +213,8 @@ TEST_CASE("libsbn") {
   inst.BeagleCreate();
   inst.PrepareBeagleInstance();
   inst.SetJCModel();
-  inst.TreeLikelihood(inst.tree_collection_->FirstTree());
+  CHECK(inst.TreeLogLikelihood(inst.tree_collection_->FirstTree()) ==
+        doctest::Approx(-84.852358));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
