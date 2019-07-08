@@ -143,7 +143,7 @@ struct SBNInstance {
     std::vector<BeagleOperation> operations;
     tree->Root()->PostOrder(
         [&tree, &next_internal_index, &node_indices, &branch_lengths,
-         &operations](Node *node, const std::vector<int> &below_indices) {
+         &operations](const Node *node, const std::vector<int> &below_indices) {
           if (node->IsLeaf()) {
             auto leaf_id = node->MaxLeafID();
             node_indices.push_back(leaf_id);

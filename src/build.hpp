@@ -27,7 +27,7 @@ typedef DefaultDict<Bitset, uint32_t> BitsetUInt32Map;
 TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
   TagBitsetMap m;
   auto leaf_count = t->LeafCount();
-  t->PostOrder([&m, leaf_count](Node* n) {
+  t->PostOrder([&m, leaf_count](const Node* n) {
     Bitset x((size_t)leaf_count);
     if (n->IsLeaf()) {
       x.set(n->MaxLeafID());
@@ -55,7 +55,7 @@ BitsetUInt32Map RootsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
     auto tree = iter->first;
     auto count = iter->second;
     auto tag_to_bitset = TagBitsetMapOf(tree->Root());
-    auto Aux = [&rootsplit_counter, &tag_to_bitset, &count](Node* n) {
+    auto Aux = [&rootsplit_counter, &tag_to_bitset, &count](const Node* n) {
       auto split = tag_to_bitset.at(n->Tag()).copy();
       split.Minorize();
       rootsplit_counter.increment(std::move(split), count);
@@ -76,25 +76,25 @@ BitsetUInt32Map SubsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
     auto leaf_count = tree->LeafCount();
     // TODO(ematsen) make a more informative error message when people don't put
     // in a bifurcating tree with a trifurcation at the root.
-    tree->Root()->PCSSPreOrder([&subsplit_support, &tag_to_bitset, &count,
-                                &leaf_count](
-        Node* uncut_parent_node, bool uncut_parent_direction,
-        Node* cut_parent_node, bool cut_parent_direction,  //
-        Node* child0_node, bool child0_direction,          //
-        Node* child1_node, bool child1_direction) {
-      Bitset bitset(3 * leaf_count, false);
-      bitset.CopyFrom(tag_to_bitset.at(uncut_parent_node->Tag()), 0,
-                      uncut_parent_direction);
-      bitset.CopyFrom(tag_to_bitset.at(cut_parent_node->Tag()), leaf_count,
-                      cut_parent_direction);
-      auto child0_bitset = tag_to_bitset.at(child0_node->Tag());
-      if (child0_direction) child0_bitset.flip();
-      auto child1_bitset = tag_to_bitset.at(child1_node->Tag());
-      if (child1_direction) child1_bitset.flip();
-      bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
-                      false);
-      subsplit_support.increment(std::move(bitset), count);
-    });
+    tree->Root()->PCSSPreOrder(
+        [&subsplit_support, &tag_to_bitset, &count, &leaf_count](
+            const Node* uncut_parent_node, bool uncut_parent_direction,
+            const Node* cut_parent_node, bool cut_parent_direction,  //
+            const Node* child0_node, bool child0_direction,          //
+            const Node* child1_node, bool child1_direction) {
+          Bitset bitset(3 * leaf_count, false);
+          bitset.CopyFrom(tag_to_bitset.at(uncut_parent_node->Tag()), 0,
+                          uncut_parent_direction);
+          bitset.CopyFrom(tag_to_bitset.at(cut_parent_node->Tag()), leaf_count,
+                          cut_parent_direction);
+          auto child0_bitset = tag_to_bitset.at(child0_node->Tag());
+          if (child0_direction) child0_bitset.flip();
+          auto child1_bitset = tag_to_bitset.at(child1_node->Tag());
+          if (child1_direction) child1_bitset.flip();
+          bitset.CopyFrom(std::min(child0_bitset, child1_bitset),
+                          2 * leaf_count, false);
+          subsplit_support.increment(std::move(bitset), count);
+        });
   }
   return subsplit_support;
 }

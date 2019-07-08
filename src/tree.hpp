@@ -22,7 +22,7 @@ class Tree {
   std::string Newick(TagStringMapOption node_labels = std::nullopt) const {
     return Root()->Newick(branch_lengths_, node_labels);
   }
-  double BranchLength(Node* node) const {
+  double BranchLength(const Node* node) const {
     auto search = branch_lengths_.find(node->Tag());
     if (search != branch_lengths_.end()) {
       return search->second;
