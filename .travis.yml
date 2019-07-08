@@ -6,10 +6,5 @@ services:
 before_install:
   - docker pull matsengrp/libsbn
 
-install:
-  - git clone https://github.com/$TRAVIS_REPO_SLUG.git $TRAVIS_REPO_SLUG
-  - cd $TRAVIS_REPO_SLUG
-  - git checkout -qf $TRAVIS_BRANCH
-
 script:
-  - docker run -v ${PWD}/matsengrp/libsbn:/libsbn -t matsengrp/libsbn /bin/bash -c "ls ${PWD}/matsengrp/libsbn && ls /libsbn && conda run -n libsbn make -C /libsbn"
+  - docker run -v ${PWD}:/libsbn -t matsengrp/libsbn /bin/bash -c "ls ${PWD} && ls /libsbn && conda run -n libsbn make -C /libsbn"
