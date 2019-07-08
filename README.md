@@ -35,6 +35,7 @@ libsbn is written in C++17.
 
 * Prefer a functional style: returning variables versus modifying them in place. Because of return value optimization, this doesn't have a performance penalty.
 * [RAII](https://en.cppreference.com/w/cpp/language/raii). No "new."
+* Don't use classic/raw pointers except as const parameters to functions.
 
 We will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.
 I use [cpplint](https://github.com/cpplint/cpplint) to check some aspects of this.

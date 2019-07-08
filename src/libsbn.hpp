@@ -148,7 +148,7 @@ struct SBNInstance {
             auto leaf_id = node->MaxLeafID();
             node_indices.push_back(leaf_id);
             branch_lengths.push_back(tree->BranchLength(node));
-            return int(leaf_id);
+            return static_cast<int>(leaf_id);
           }
           // else
           int this_index = next_internal_index;
@@ -171,10 +171,10 @@ struct SBNInstance {
                                    NULL,  // firstDerivativeIndices
                                    NULL,  // secondDervativeIndices
                                    branch_lengths.data(),
-                                   int(branch_lengths.size()));
+                                   static_cast<int>(branch_lengths.size()));
     beagleUpdatePartials(beagle_instance_,
                          operations.data(),  // eigenIndex
-                         int(operations.size()),
+                         static_cast<int>(operations.size()),
                          BEAGLE_OP_NONE);  // cumulative scale index
     double log_like = 0;
     std::vector<int> root_index = {node_indices.back()};
