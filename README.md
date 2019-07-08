@@ -33,6 +33,17 @@ libsbn is written in C++17.
 
 ### Style
 
+We want the code to be:
+
+1. correct, so we write tests
+1. efficient in an algorithmic sense, so we consider algorithms carefully
+1. clear to read and understand, so we write code with readers in mind and use code standards
+1. fast, so we do profiling to find and eliminate bottlenecks
+1. robust, so we use immutable data structures and safe C++ practices
+1. simple and beautiful, so we keep the code as DRY as we can without letting it get convoluted or over-technical
+
+Specifically:
+
 * Prefer a functional style: returning variables versus modifying them in place. Because of return value optimization, this doesn't have a performance penalty.
 * [RAII](https://en.cppreference.com/w/cpp/language/raii). No "new."
 * Don't use classic/raw pointers except as const parameters to functions.
