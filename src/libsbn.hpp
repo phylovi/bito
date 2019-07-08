@@ -48,11 +48,11 @@ struct SBNInstance {
   explicit SBNInstance(const std::string &name) : name_(name) {
   }
 
-  ~SBNInstance() {
-    // TODO(erick) add BEAGLE destructor.
-  }
+  ~SBNInstance() { assert(beagleFinalizeInstance(beagle_instance_) == 0); }
 
-  size_t TreeCount() { return tree_collection_->TreeCount(); }
+  size_t TreeCount() {
+    return tree_collection_->TreeCount();
+  }
 
   void ReadNewick(std::string fname) {
     driver_.Clear();
@@ -106,7 +106,7 @@ struct SBNInstance {
         return_info);
 
     // TODO(erick) do something with return_info?
-    delete return_info;
+    // TODO(erick) free return_info?
   }
 
   void PrepareBeagleInstance() {
