@@ -33,10 +33,10 @@ CharIntMap GetSymbolTable() {
       auto search = symbol_table.find(str[i]);
       if (search != symbol_table.end()) {
         v[i] = search->second;
-    } else {
-      std::cerr << "Symbol '" << search->first << "' not known.\n";
-      abort();
-    }
+      } else {
+        std::cerr << "Symbol '" << search->first << "' not known.\n";
+        abort();
+      }
     }
     return v;
   }

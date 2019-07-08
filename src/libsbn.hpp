@@ -100,11 +100,9 @@ struct SBNInstance {
       abort();
     }
     BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
-
     beagle_instance_ = beagle::CreateInstance(
         static_cast<int>(tip_count), static_cast<int>(alignment_.Length()),
         return_info);
-
     // TODO(erick) do something with return_info?
     // TODO(erick) free return_info?
   }
@@ -112,10 +110,8 @@ struct SBNInstance {
   void PrepareBeagleInstance() {
     beagle::SetTipStates(beagle_instance_, tree_collection_->TagTaxonMap(),
                          alignment_, symbol_table_);
-
     std::vector<double> pattern_weights(alignment_.Length(), 1.);
     beagleSetPatternWeights(beagle_instance_, pattern_weights.data());
-
     // Use uniform rates and weights.
     const double weights[1] = {1.0};
     const double rates[1] = {1.0};
@@ -126,7 +122,6 @@ struct SBNInstance {
   void SetJCModel() {
     std::vector<double> freqs(4, 0.25);
     beagleSetStateFrequencies(beagle_instance_, 0, freqs.data());
-
     // an eigen decomposition for the JC69 model
     std::vector<double> evec = {1.0, 2.0, 0.0, 0.5,  1.0, -2.0, 0.5,  0.0,
                                 1.0, 2.0, 0.0, -0.5, 1.0, -2.0, -0.5, 0.0};
@@ -137,8 +132,6 @@ struct SBNInstance {
 
     std::vector<double> eval = {0.0, -1.3333333333333333, -1.3333333333333333,
                                 -1.3333333333333333};
-
-    // set the Eigen decomposition
     beagleSetEigenDecomposition(beagle_instance_, 0, evec.data(), ivec.data(),
                                 eval.data());
   }
