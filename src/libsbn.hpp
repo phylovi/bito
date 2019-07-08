@@ -6,6 +6,7 @@
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <cmath>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -213,8 +214,9 @@ TEST_CASE("libsbn") {
   inst.BeagleCreate();
   inst.PrepareBeagleInstance();
   inst.SetJCModel();
-  CHECK(inst.TreeLogLikelihood(inst.tree_collection_->FirstTree()) ==
-        doctest::Approx(-84.852358));
+  CHECK_LT(abs(inst.TreeLogLikelihood(inst.tree_collection_->FirstTree()) -
+               -84.852358),
+           0.000001);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
