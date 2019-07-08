@@ -11,7 +11,7 @@ if 'CC' not in os.environ or 'CXX' not in os.environ:
 env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
-    CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion'],
+    CCFLAGS=['-O3', '-Wall', '-Wextra', '-Wconversion'],
     CXXFLAGS=['-std=c++17', '-fPIC', '-shared'],
     CC = os.environ['CC'],
     CXX = os.environ['CXX']
@@ -32,7 +32,6 @@ def find_conda_pkg_dir_containing(glob_str):
        if g:
            return g[0]
    sys.exit("I can't find the package directory containing "+glob_str)
-
 
 beagle_pkg = find_conda_pkg_dir_containing("/pkgs/beagle-lib*/")
 beagle_lib = beagle_pkg + 'lib'

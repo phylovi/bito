@@ -32,7 +32,7 @@ class TreeCollection {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-// TODO
+// TODO(erick) add tests for tree_collection
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_TREE_COLLECTION_HPP_

@@ -42,24 +42,25 @@ struct SBNInstance {
   Driver driver_;
   TreeCollection::TreeCollectionPtr tree_collection_;
   Alignment alignment_;
-  CharIntMap symbol_table_ = beagle::GetSymbolTable();
-  int beagle_instance_ = -1;
+  CharIntMap symbol_table_;
+  int beagle_instance_;
 
-  explicit SBNInstance(const std::string &name) : name_(name) {
-  }
+  explicit SBNInstance(const std::string &name)
+      : name_(name),
+        symbol_table_(beagle::GetSymbolTable()),
+        beagle_instance_(-1)
+  {}
 
   ~SBNInstance() { assert(beagleFinalizeInstance(beagle_instance_) == 0); }
 
-  size_t TreeCount() {
-    return tree_collection_->TreeCount();
-  }
+  size_t TreeCount() const { return tree_collection_->TreeCount(); }
 
-  void ReadNewick(std::string fname) {
+  void ReadNewickFile(std::string fname) {
     driver_.Clear();
     tree_collection_ = driver_.ParseFile(fname);
   }
 
-  void ReadFasta(std::string fname) { alignment_.ReadFasta(fname); }
+  void ReadFastaFile(std::string fname) { alignment_.ReadFasta(fname); }
 
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
@@ -202,8 +203,8 @@ struct SBNInstance {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("libsbn") {
   SBNInstance inst("charlie");
-  inst.ReadNewick("data/hello.nwk");
-  inst.ReadFasta("data/hello.fasta");
+  inst.ReadNewickFile("data/hello.nwk");
+  inst.ReadFastaFile("data/hello.fasta");
   inst.BeagleCreate();
   inst.PrepareBeagleInstance();
   inst.SetJCModel();
@@ -212,5 +213,4 @@ TEST_CASE("libsbn") {
            0.000001);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
 #endif  // SRC_LIBSBN_HPP_

@@ -20,12 +20,13 @@ class Alignment {
   explicit Alignment(StringStringMap data) : data_(data) {}
 
   StringStringMap Data() const { return data_; }
-  size_t SequenceCount() { return data_.size(); }
-  size_t Length() {
+  size_t SequenceCount() const { return data_.size(); }
+  size_t Length() const {
     assert(SequenceCount() > 0);
     return data_.begin()->second.size();
   }
 
+  // Is the alignment non-empty and do all sequences have the same length?
   bool IsValid() const {
     if (data_.size() == 0) {
       return false;

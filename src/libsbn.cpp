@@ -8,18 +8,13 @@
 
 namespace py = pybind11;
 
-// PYBIND11_MAKE_OPAQUE(Node::NodePtr);
-// PYBIND11_MAKE_OPAQUE(Node::NodePtrVec);
-// PYBIND11_MAKE_OPAQUE(Node::NodePtrVecPtr);
-
 PYBIND11_MODULE(sbn, m) {
   m.doc() = "libsbn bindings";
   py::class_<SBNInstance>(m, "instance")
       .def(py::init<const std::string &>())
-      // .def_readonly("trees", &SBNInstance::trees_)
       .def("tree_count", &SBNInstance::TreeCount)
-      .def("read_newick", &SBNInstance::ReadNewick)
-      .def("read_fasta", &SBNInstance::ReadFasta)
+      .def("read_newick_file", &SBNInstance::ReadNewickFile)
+      .def("read_fasta_file", &SBNInstance::ReadFastaFile)
       .def("print_status", &SBNInstance::PrintStatus)
       .def("rootsplit_support", &SBNInstance::RootsplitSupport)
       .def("subsplit_support", &SBNInstance::SubsplitSupport)
