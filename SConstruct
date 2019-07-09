@@ -39,7 +39,10 @@ env.Append(LIBPATH = beagle_lib)
 env.Append(CPPPATH = beagle_include)
 
 if platform.system() == 'Darwin':
-    os.environ['DYLD_LIBRARY_PATH'] += ':'+beagle_lib
+    if 'DYLD_LIBRARY_PATH' in os.environ:
+        os.environ['DYLD_LIBRARY_PATH'] += ':'+beagle_lib
+    else:
+        os.environ['DYLD_LIBRARY_PATH'] = beagle_lib
     env.Append(LINKFLAGS = ['-undefined', 'dynamic_lookup'])
 elif platform.system() == 'Linux':
     env['CC'] = os.environ['CC']
