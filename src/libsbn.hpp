@@ -137,14 +137,13 @@ struct SBNInstance {
   }
 
   double TreeLogLikelihood(Tree::TreePtr tree) {
-    int next_internal_index = tree->LeafCount();
+    int next_internal_index = static_cast<int>(tree->LeafCount());
     std::vector<int> node_indices;
     std::vector<double> branch_lengths;
     std::vector<BeagleOperation> operations;
     tree->Root()->PostOrder(
         [&tree, &next_internal_index, &node_indices, &branch_lengths,
-         &operations](const Node::Node *node,
-                      const std::vector<int> &below_indices) {
+         &operations](const Node *node, const std::vector<int> &below_indices) {
           if (node->IsLeaf()) {
             int leaf_id = static_cast<int>(node->MaxLeafID());
             node_indices.push_back(leaf_id);
