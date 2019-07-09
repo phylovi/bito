@@ -23,13 +23,13 @@ conda activate libsbn
 
 Just use `make` to build and run tests.
 
-* If you have modified the lexer and parser, use `make bison`. This assumes that you have installed Bison > 2.6 (`conda install -c conda-forge bison`).
+* If you have modified the lexer and parser, use `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
 * If you want to run the test preparation scripts, use `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
 
 
 ## Contributing
 
-libsbn is written in C++17.
+libsbn is written in C++14.
 
 ### Style
 
@@ -40,25 +40,24 @@ We want the code to be:
 1. clear to read and understand, so we write code with readers in mind and use code standards
 1. fast, so we do profiling to find and eliminate bottlenecks
 1. robust, so we use immutable data structures and safe C++ practices
-1. simple and beautiful, so we keep the code as DRY as we can without letting it get convoluted or over-technical
+1. simple and beautiful, so we keep the code as minimal and DRY as we can without letting it get convoluted or over-technical
 
-Also:
+Also let's:
 
 * Prefer a functional style: returning variables versus modifying them in place. Because of return value optimization, this doesn't have a performance penalty.
 * [RAII](https://en.cppreference.com/w/cpp/language/raii). No `new`.
-* Don't use classic/raw pointers except as const parameters to functions.
+* Avoid classic/raw pointers except as const parameters to functions.
 * Prefer [variable names and simple coding practices](https://blog.codinghorror.com/coding-without-comments/) to code comments.
   If that means having long identifier names, that's fine!
   If you can't make the code use and operation inherently obvious, please write documentation.
 * Prefer GitHub issues to TODO comments in code.
+* Always use curly braces for the body of conditionals and loops, even if they are one line.
 
 The [C++ core guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) are the authority for how to write C++, and we will follow them.
 For issues not covered by these guidelines (especially naming conventions), we will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.
 We use [cpplint](https://github.com/cpplint/cpplint) to check some aspects of this.
 
-Notes:
-
-* Always use curly braces for the body of conditionals and loops, even if they are one line.
+There are certainly violations of these guidelines in the code, so fix them when you see them!
 
 
 ### Formatting
