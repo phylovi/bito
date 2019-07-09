@@ -1,5 +1,6 @@
 import glob
 import os
+import platform
 import pybind11
 import re
 import sys
@@ -11,9 +12,7 @@ env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
     CCFLAGS=['-O3', '-Wall', '-Wextra', '-Wconversion'],
-    CXXFLAGS=['-std=c++14', '-fPIC', '-shared'],
-    CC = os.environ['CC'],
-    CXX = os.environ['CXX']
+    CXXFLAGS=['-std=c++14', '-fPIC', '-shared']
     )
 
 conda_env_dir = env['ENV']['CONDA_PREFIX']
@@ -39,15 +38,22 @@ for path in [beagle_lib, beagle_include]:
 env.Append(LIBPATH = beagle_lib)
 env.Append(CPPPATH = beagle_include)
 
+if platform.system() == 'Darwin':
+    os.environ['DYLD_LIBRARY_PATH'] += ':'+beagle_lib
+    env.Append(LINKFLAGS = ['-undefined', 'dynamic_lookup'])
+elif platform.system() == 'Linux':
+    env['CC'] = os.environ['CC']
+    env['CXX'] = os.environ['CXX']
+else:
+    sys.exit("Sorry, we don't support "+platform.system()+".")
+
+env.VariantDir('_build', 'src')
 sources = [
     '_build/bitset.cpp',
     '_build/driver.cpp',
     '_build/parser.cpp',
     '_build/scanner.cpp'
 ]
-
-env.VariantDir('_build', 'src')
-
 env.SharedLibrary(
     "sbn"+os.popen("python3-config --extension-suffix").read().rstrip(),
     ['_build/libsbn.cpp'] + sources,
