@@ -15,8 +15,8 @@ conda activate libsbn
 
 **However, you also need to install platform-specific compiler packages as follows.**
 
-* if you are on linux, use `conda install -y gxx_linux-64`
-* if you are on OS X, use `conda install -y clangxx_osx-64`
+* if you are on linux, you can use `conda install -y gxx_linux-64`
+* if you are on OS X, you'll need to install compiler tools.
 
 
 ## Building

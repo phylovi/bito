@@ -45,8 +45,9 @@ if platform.system() == 'Darwin':
         os.environ['DYLD_LIBRARY_PATH'] = beagle_lib
     env.Append(LINKFLAGS = ['-undefined', 'dynamic_lookup'])
 elif platform.system() == 'Linux':
-    env['CC'] = os.environ['CC']
-    env['CXX'] = os.environ['CXX']
+    for variable in ['CC', 'CXX']:
+        if variable in os.environ:
+            env[variable] = os.environ[variable]
 else:
     sys.exit("Sorry, we don't support "+platform.system()+".")
 
