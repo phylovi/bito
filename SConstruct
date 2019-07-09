@@ -13,7 +13,9 @@ env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
     CCFLAGS=['-O3'],
-    CXXFLAGS=['-std=c++14']
+    CXXFLAGS=['-std=c++14'],
+    CC = os.environ['CC'],
+    CXX = os.environ['CXX']
     )
 
 conda_env_dir = env['ENV']['CONDA_PREFIX']
@@ -42,11 +44,11 @@ if platform.system() == 'Darwin':
         os.environ['DYLD_LIBRARY_PATH'] += ':'+beagle_lib
     else:
         os.environ['DYLD_LIBRARY_PATH'] = beagle_lib
+    # Hack from https://github.com/conda-forge/mpi-feedstock/issues/4#issuecomment-463115240
+    os.environ['CONDA_BUILD_SYSROOT'] = '/'
     env.Append(LINKFLAGS = ['-undefined', 'dynamic_lookup'])
 elif platform.system() == 'Linux':
-    for variable in ['CC', 'CXX']:
-        if variable in os.environ:
-            env[variable] = os.environ[variable]
+    pass
 else:
     sys.exit("Sorry, we don't support "+platform.system()+".")
 
