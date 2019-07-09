@@ -3,7 +3,6 @@ import os
 import pybind11
 import re
 import sys
-from conda.cli.python_api import Commands, run_command
 
 if 'CC' not in os.environ or 'CXX' not in os.environ:
     sys.exit("Need to have compilers defined by $CC and $CXX shell variables. This is done by conda.")
@@ -17,13 +16,9 @@ env = Environment(
     CXX = os.environ['CXX']
     )
 
-for s in run_command(Commands.INFO)[0].split('\n'):
-    match = re.search('.*active env location : (.*)', s)
-    if match:
-        break
-if not match:
-    sys.exit("Could not find active env location.")
-conda_env_dir = match.group(1)
+conda_env_dir = env['ENV']['CONDA_PREFIX']
+if not conda_env_dir:
+    sys.exit("$CONDA_PREFIX is not set. This SConstruct is meant to be run in the libsbn conda environment.")
 conda_base_dir = re.search('(.*)/envs/.*', conda_env_dir).group(1)
 
 def find_conda_pkg_dir_containing(glob_str):
