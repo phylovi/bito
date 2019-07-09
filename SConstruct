@@ -5,9 +5,6 @@ import pybind11
 import re
 import sys
 
-if 'CC' not in os.environ or 'CXX' not in os.environ:
-    sys.exit("Need to have compilers defined by $CC and $CXX shell variables. This is done by conda.")
-
 env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
