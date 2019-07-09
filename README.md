@@ -2,6 +2,7 @@
 
 _This package is not yet useful. We're working hard to make it useful._
 
+[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/matsengrp/libsbn.svg)](https://cloud.docker.com/u/matsengrp/repository/docker/matsengrp/libsbn/general) &nbsp;
 [![Travis CI status](https://travis-ci.org/matsengrp/libsbn.svg?branch=master)](https://travis-ci.org/matsengrp/libsbn)
 
 ## Dependencies
