@@ -1,9 +1,13 @@
-import glob
 import os
+import sys
+
+if 'CONDA_PREFIX' not in os.environ:
+    sys.exit("\nThis SConstruct is meant to be run in the libsbn conda environment; see README for installation process.")
+
+import glob
 import platform
 import pybind11
 import re
-import sys
 
 env = Environment(
     ENV=os.environ,
@@ -13,8 +17,6 @@ env = Environment(
     )
 
 conda_env_dir = env['ENV']['CONDA_PREFIX']
-if not conda_env_dir:
-    sys.exit("$CONDA_PREFIX is not set. This SConstruct is meant to be run in the libsbn conda environment.")
 conda_base_dir = re.search('(.*)/envs/.*', conda_env_dir).group(1)
 
 def find_conda_pkg_dir_containing(glob_str):
