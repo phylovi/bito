@@ -5,7 +5,6 @@ channels:
   - defaults
 dependencies:
   - beagle-lib
-  - conda
   - flex
   - make
   - numpy
