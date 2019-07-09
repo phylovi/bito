@@ -40,12 +40,13 @@ env.Append(LIBPATH = beagle_lib)
 env.Append(CPPPATH = beagle_include)
 
 if platform.system() == 'Darwin':
-    if 'DYLD_LIBRARY_PATH' in os.environ:
-        os.environ['DYLD_LIBRARY_PATH'] += ':'+beagle_lib
-    else:
-        os.environ['DYLD_LIBRARY_PATH'] = beagle_lib
-    # Hack from https://github.com/conda-forge/mpi-feedstock/issues/4#issuecomment-463115240
-    os.environ['CONDA_BUILD_SYSROOT'] = '/'
+    conda_vars_dir =conda_env_dir+'/etc/conda'
+    os.makedirs(conda_vars_dir+'/activate.d', exist_ok=True)
+    with open(conda_vars_dir+'/activate.d/vars.sh', 'w') as fp:
+        fp.write('export DYLD_LIBRARY_PATH='+beagle_lib+'\n')
+    os.makedirs(conda_vars_dir+'/deactivate.d', exist_ok=True)
+    with open(conda_vars_dir+'/deactivate.d/vars.sh', 'w') as fp:
+        fp.write('unset DYLD_LIBRARY_PATH\n')
     env.Append(LINKFLAGS = ['-undefined', 'dynamic_lookup'])
 elif platform.system() == 'Linux':
     pass
