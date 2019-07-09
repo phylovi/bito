@@ -524,7 +524,7 @@ int yy_flex_debug = 1;
 
 static const flex_int16_t yy_rule_linenum[11] =
     {   0,
-       55,   56,   58,   59,   60,   61,   62,   63,   64,   65
+       53,   54,   56,   57,   58,   59,   60,   61,   62,   63
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -557,9 +557,7 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 #endif
 
 // Of course, when compiling C as C++, expect warnings about NULL.
-#if defined __clang__
-# pragma clang diagnostic ignored "-Wzero-as-null-pointer-constant"
-#elif defined __GNUC__ && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
+#if defined __GNUC__ && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
 # pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
 #endif
 
@@ -567,13 +565,13 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 #if FLEX_VERSION < 206
 #error "We require flex version > 2.6."
 #endif
-#line 570 "src/scanner.cpp"
+#line 568 "src/scanner.cpp"
 #define YY_NO_INPUT 1
-#line 41 "src/scanner.ll"
+#line 39 "src/scanner.ll"
   // Code run each time a pattern is matched.
   # define YY_USER_ACTION  loc.columns (yyleng);
-#line 575 "src/scanner.cpp"
-#line 576 "src/scanner.cpp"
+#line 573 "src/scanner.cpp"
+#line 574 "src/scanner.cpp"
 
 #define INITIAL 0
 
@@ -851,10 +849,10 @@ YY_DECL
 
 	{
 /* %% [7.0] user's declarations go here */
-#line 45 "src/scanner.ll"
+#line 43 "src/scanner.ll"
 
 
-#line 48 "src/scanner.ll"
+#line 46 "src/scanner.ll"
 /* *** Section: rules. */
   // A handy shortcut to the location held by the driver.
   yy::location& loc = drv.location_;
@@ -862,7 +860,7 @@ YY_DECL
   loc.step ();
 
 
-#line 865 "src/scanner.cpp"
+#line 863 "src/scanner.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -940,69 +938,69 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 55 "src/scanner.ll"
+#line 53 "src/scanner.ll"
 loc.step ();
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 56 "src/scanner.ll"
+#line 54 "src/scanner.ll"
 loc.lines (yyleng); loc.step ();
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 58 "src/scanner.ll"
+#line 56 "src/scanner.ll"
 return yy::parser::make_COMMA(loc);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 59 "src/scanner.ll"
+#line 57 "src/scanner.ll"
 return yy::parser::make_COLON(loc);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 60 "src/scanner.ll"
+#line 58 "src/scanner.ll"
 return yy::parser::make_SEMICOLON(loc);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 61 "src/scanner.ll"
+#line 59 "src/scanner.ll"
 return yy::parser::make_LPAREN(loc);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 62 "src/scanner.ll"
+#line 60 "src/scanner.ll"
 return yy::parser::make_RPAREN(loc);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 63 "src/scanner.ll"
+#line 61 "src/scanner.ll"
 return yy::parser::make_LABEL(yytext, loc);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 64 "src/scanner.ll"
+#line 62 "src/scanner.ll"
 return yy::parser::make_QUOTED(yytext, loc);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 65 "src/scanner.ll"
+#line 63 "src/scanner.ll"
 {
             throw yy::parser::syntax_error
               (loc, "invalid character: " + std::string(yytext));
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 69 "src/scanner.ll"
+#line 67 "src/scanner.ll"
 return yy::parser::make_END (loc);
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 71 "src/scanner.ll"
+#line 69 "src/scanner.ll"
 ECHO;
 	YY_BREAK
-#line 1005 "src/scanner.cpp"
+#line 1003 "src/scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2107,7 +2105,7 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 71 "src/scanner.ll"
+#line 69 "src/scanner.ll"
 
 /* *** Section: user code. It's just regular C++. */
 
