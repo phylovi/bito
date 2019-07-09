@@ -93,7 +93,8 @@ struct SBNInstance {
                    "to calculate phylogenetic likelihoods.\n";
       abort();
     }
-    int tip_count = tree_collection_->FirstTree()->LeafCount();
+    int tip_count =
+        static_cast<int>(tree_collection_->FirstTree()->LeafCount());
     if (tip_count != static_cast<int>(alignment_.SequenceCount())) {
       std::cerr << "The number of tree tips doesn't match the alignment "
                    "sequence count!\n";
@@ -101,8 +102,7 @@ struct SBNInstance {
     }
     BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
     beagle_instance_ = beagle::CreateInstance(
-        static_cast<int>(tip_count), static_cast<int>(alignment_.Length()),
-        return_info);
+        tip_count, static_cast<int>(alignment_.Length()), return_info);
     // TODO(erick) do something with return_info?
     // TODO(erick) free return_info?
   }
@@ -143,12 +143,13 @@ struct SBNInstance {
     std::vector<BeagleOperation> operations;
     tree->Root()->PostOrder(
         [&tree, &next_internal_index, &node_indices, &branch_lengths,
-         &operations](const Node *node, const std::vector<int> &below_indices) {
+         &operations](const Node::Node *node,
+                      const std::vector<int> &below_indices) {
           if (node->IsLeaf()) {
-            auto leaf_id = node->MaxLeafID();
+            int leaf_id = static_cast<int>(node->MaxLeafID());
             node_indices.push_back(leaf_id);
             branch_lengths.push_back(tree->BranchLength(node));
-            return static_cast<int>(leaf_id);
+            return leaf_id;
           }
           // else
           int this_index = next_internal_index;
