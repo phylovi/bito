@@ -3,6 +3,8 @@ import sys
 
 if 'CONDA_PREFIX' not in os.environ:
     sys.exit("\nThis SConstruct is meant to be run in the libsbn conda environment; see README for installation process.")
+if 'CC' not in os.environ:
+    sys.exit("\nDid you install compilers using conda? See README for installation process.")
 
 import glob
 import platform

@@ -16,13 +16,16 @@ conda activate libsbn
 
 **However, you also need to install platform-specific compiler packages as follows.**
 
-* if you are on linux, you can use `conda install -y gxx_linux-64`
-* if you are on OS X, you'll need to install compiler tools.
+* if you are on linux, use `conda install -y gxx_linux-64`
+* if you are on OS X, use `conda install -y clangxx_osx-64`
 
 
 ## Building
 
 `make` will build and run tests.
+
+On OS X the build process will also modify the conda environment to point `DYLD_LIBRARY_PATH` to where BEAGLE is installed.
+If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.
 
 * (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
 * (Optional) If you modify the test preparation scripts, call `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
