@@ -19,7 +19,8 @@ class Tree {
 
   const Node::NodePtr Root() const { return root_; }
   uint32_t LeafCount() const { return Root()->LeafCount(); }
-  std::string Newick(TagStringMapOption node_labels = std::nullopt) const {
+  std::string Newick(
+      TagStringMapOption node_labels = std::experimental::nullopt) const {
     return Root()->Newick(branch_lengths_, node_labels);
   }
   double BranchLength(const Node* node) const {

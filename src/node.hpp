@@ -214,8 +214,9 @@ class Node {
     }
   }
 
-  std::string Newick(const TagDoubleMapOption& branch_lengths = std::nullopt,
-                     const TagStringMapOption& node_labels = std::nullopt) {
+  std::string Newick(
+      const TagDoubleMapOption& branch_lengths = std::experimental::nullopt,
+      const TagStringMapOption& node_labels = std::experimental::nullopt) {
     return NewickAux(branch_lengths, node_labels) + ";";
   }
 

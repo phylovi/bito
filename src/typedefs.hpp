@@ -4,17 +4,19 @@
 #ifndef SRC_TYPEDEFS_HPP_
 #define SRC_TYPEDEFS_HPP_
 
-#include <optional>
 #include <unordered_map>
+#include <vector>
+#include "optional.hpp"
 
 // Put typedefs that are built of STL types here.
 typedef uint64_t Tag;
 typedef std::vector<int> SymbolVector;
 typedef std::unordered_map<Tag, double> TagDoubleMap;
-typedef std::optional<TagDoubleMap> TagDoubleMapOption;
 typedef std::unordered_map<Tag, std::string> TagStringMap;
-typedef std::optional<TagStringMap> TagStringMapOption;
 typedef std::unordered_map<std::string, std::string> StringStringMap;
 typedef std::unordered_map<char, int> CharIntMap;
+// This will be STL in C++17 but we include the above header to fake it.
+typedef std::experimental::optional<TagDoubleMap> TagDoubleMapOption;
+typedef std::experimental::optional<TagStringMap> TagStringMapOption;
 
 #endif  // SRC_TYPEDEFS_HPP_

@@ -29,7 +29,7 @@ Just use `make` to build and run tests.
 
 ## Contributing
 
-libsbn is written in C++17.
+libsbn is written in C++14.
 
 ### Style
 
