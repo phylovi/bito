@@ -46,7 +46,8 @@ class Node {
     // Order the children by their max leaf ids.
     std::sort(children_.begin(), children_.end(),
               [](const auto& lhs, const auto& rhs) {
-                int difference = lhs->MaxLeafID() - rhs->MaxLeafID();
+                int difference =
+                    static_cast<int>(lhs->MaxLeafID()) - rhs->MaxLeafID();
                 // Children should have non-overlapping leaf sets, so there
                 // should not be ties.
                 if (difference == 0) {
