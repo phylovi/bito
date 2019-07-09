@@ -46,16 +46,15 @@ class Node {
     // Order the children by their max leaf ids.
     std::sort(children_.begin(), children_.end(),
               [](const auto& lhs, const auto& rhs) {
-                int difference = lhs->MaxLeafID() - rhs->MaxLeafID();
-                // Children should have non-overlapping leaf sets, so there
-                // should not be ties.
-                if (difference == 0) {
+                if (lhs->MaxLeafID() == rhs->MaxLeafID()) {
+                  // Children should have non-overlapping leaf sets, so there
+                  // should not be ties.
                   std::cout << "Tie observed between " << lhs->Newick()
                             << " and " << rhs->Newick() << std::endl;
                   std::cout << "Do you have a taxon name repeated?\n";
                   abort();
                 }
-                return (difference < 0);
+                return (lhs->MaxLeafID() < rhs->MaxLeafID());
               });
     // Children are sorted by their max_leaf_id, so we can get the max by
     // looking at the last element.

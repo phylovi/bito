@@ -2,6 +2,7 @@
 
 _This package is not yet useful. We're working hard to make it useful._
 
+[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/matsengrp/libsbn.svg)](https://cloud.docker.com/u/matsengrp/repository/docker/matsengrp/libsbn/general) &nbsp;
 [![Travis CI status](https://travis-ci.org/matsengrp/libsbn.svg?branch=master)](https://travis-ci.org/matsengrp/libsbn)
 
 ## Dependencies
@@ -21,10 +22,13 @@ conda activate libsbn
 
 ## Building
 
-Just use `make` to build and run tests.
+`make` will build and run tests.
 
-* If you have modified the lexer and parser, use `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
-* If you want to run the test preparation scripts, use `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
+On OS X the build process will also modify the conda environment to point `DYLD_LIBRARY_PATH` to where BEAGLE is installed.
+If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.
+
+* (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
+* (Optional) If you modify the test preparation scripts, call `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
 
 
 ## Contributing

@@ -1,29 +1,26 @@
-import glob
 import os
+import sys
+
+if 'CONDA_PREFIX' not in os.environ:
+    sys.exit("\nThis SConstruct is meant to be run in the libsbn conda environment; see README for installation process.")
+if 'CC' not in os.environ:
+    sys.exit("\nDid you install compilers using conda? See README for installation process.")
+
+import glob
+import platform
 import pybind11
 import re
-import sys
-from conda.cli.python_api import Commands, run_command
-
-if 'CC' not in os.environ or 'CXX' not in os.environ:
-    sys.exit("Need to have compilers defined by $CC and $CXX shell variables. This is done by conda.")
 
 env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
-    CCFLAGS=['-O3', '-Wall', '-Wextra', '-Wconversion'],
-    CXXFLAGS=['-std=c++14', '-fPIC', '-shared'],
+    CCFLAGS=['-O3'],
+    CXXFLAGS=['-std=c++14'],
     CC = os.environ['CC'],
     CXX = os.environ['CXX']
     )
 
-for s in run_command(Commands.INFO)[0].split('\n'):
-    match = re.search('.*active env location : (.*)', s)
-    if match:
-        break
-if not match:
-    sys.exit("Could not find active env location.")
-conda_env_dir = match.group(1)
+conda_env_dir = env['ENV']['CONDA_PREFIX']
 conda_base_dir = re.search('(.*)/envs/.*', conda_env_dir).group(1)
 
 def find_conda_pkg_dir_containing(glob_str):
@@ -44,15 +41,27 @@ for path in [beagle_lib, beagle_include]:
 env.Append(LIBPATH = beagle_lib)
 env.Append(CPPPATH = beagle_include)
 
+if platform.system() == 'Darwin':
+    conda_vars_dir =conda_env_dir+'/etc/conda'
+    os.makedirs(conda_vars_dir+'/activate.d', exist_ok=True)
+    with open(conda_vars_dir+'/activate.d/vars.sh', 'w') as fp:
+        fp.write('export DYLD_LIBRARY_PATH='+beagle_lib+'\n')
+    os.makedirs(conda_vars_dir+'/deactivate.d', exist_ok=True)
+    with open(conda_vars_dir+'/deactivate.d/vars.sh', 'w') as fp:
+        fp.write('unset DYLD_LIBRARY_PATH\n')
+    env.Append(LINKFLAGS = ['-undefined', 'dynamic_lookup'])
+elif platform.system() == 'Linux':
+    pass
+else:
+    sys.exit("Sorry, we don't support "+platform.system()+".")
+
+env.VariantDir('_build', 'src')
 sources = [
     '_build/bitset.cpp',
     '_build/driver.cpp',
     '_build/parser.cpp',
     '_build/scanner.cpp'
 ]
-
-env.VariantDir('_build', 'src')
-
 env.SharedLibrary(
     "sbn"+os.popen("python3-config --extension-suffix").read().rstrip(),
     ['_build/libsbn.cpp'] + sources,

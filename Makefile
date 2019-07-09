@@ -1,3 +1,5 @@
+our_files = src/bitset.cpp src/bitset.hpp src/build.hpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.hpp src/node.hpp src/tree_collection.hpp src/alignment.hpp
+
 default:
 	scons
 	./_build/doctest
@@ -12,16 +14,14 @@ prep:
 	clang-format -i -style=file src/doctest.cpp
 
 format:
-	clang-format -i -style=file src/*
+	clang-format -i -style=file $(our_files)
 
 clean:
 	rm -rf _build
 
 # We follow C++ core guidelines by allowing passing by non-const reference.
 lint:
-	cpplint \
-	  --filter=-runtime/references \
-	  src/bitset.cpp src/bitset.hpp src/build.hpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.hpp src/node.hpp src/tree_collection.hpp src/alignment.hpp \
+	cpplint --filter=-runtime/references $(our_files) \
 		&& echo "LINTING PASS"
 
 .PHONY: bison prep format clean edit lint
