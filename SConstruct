@@ -8,8 +8,8 @@ import sys
 env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
-    CCFLAGS=['-O3', '-Wall', '-Wextra', '-Wconversion'],
-    CXXFLAGS=['-std=c++14', '-fPIC', '-shared']
+    CCFLAGS=['-O3'],
+    CXXFLAGS=['-std=c++14']
     )
 
 conda_env_dir = env['ENV']['CONDA_PREFIX']
