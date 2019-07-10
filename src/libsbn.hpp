@@ -39,7 +39,6 @@ StringUInt32Map StringUInt32MapOf(BitsetUInt32Map m) {
 
 struct SBNInstance {
   std::string name_;
-  Driver driver_;
   TreeCollection::TreeCollectionPtr tree_collection_;
   Alignment alignment_;
   CharIntMap symbol_table_;
@@ -55,8 +54,8 @@ struct SBNInstance {
   size_t TreeCount() const { return tree_collection_->TreeCount(); }
 
   void ReadNewickFile(std::string fname) {
-    driver_.Clear();
-    tree_collection_ = driver_.ParseFile(fname);
+    Driver driver;
+    tree_collection_ = driver.ParseFile(fname);
   }
 
   void ReadFastaFile(std::string fname) { alignment_.ReadFasta(fname); }
@@ -65,7 +64,7 @@ struct SBNInstance {
     std::cout << "Status for instance '" << name_ << "':\n";
     if (tree_collection_) {
       std::cout << TreeCount() << " unique tree topologies loaded on "
-                << tree_collection_->TagTaxonMap().size() << " leaves.\n";
+                << tree_collection_->TaxonCount() << " leaves.\n";
     } else {
       std::cout << "No trees loaded.\n";
     }
