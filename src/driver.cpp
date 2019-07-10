@@ -21,6 +21,7 @@ void Driver::Clear() {
   trace_parsing_ = false;
   trace_scanning_ = false;
   latest_tree_ = nullptr;
+  taxa_.clear();
   branch_lengths_.clear();
 }
 

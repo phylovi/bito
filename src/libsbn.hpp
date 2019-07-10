@@ -64,7 +64,8 @@ struct SBNInstance {
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
     if (tree_collection_) {
-      std::cout << TreeCount() << " unique tree topologies loaded.\n";
+      std::cout << TreeCount() << " unique tree topologies loaded on "
+                << tree_collection_->TagTaxonMap().size() << " leaves.\n";
     } else {
       std::cout << "No trees loaded.\n";
     }
@@ -189,6 +190,14 @@ struct SBNInstance {
     return log_like;
   }
 
+  std::vector<double> TreeLogLikelihoods() {
+    std::vector<double> llv;
+    for (auto iter : *tree_collection_->Trees()) {
+      llv.push_back(TreeLogLikelihood(iter.first));
+    }
+    return llv;
+  }
+
   static void f(py::array_t<double> array) {
     py::buffer_info buf = array.request();
     std::cout << "You passed a " << buf.ndim << " dim array" << std::endl;
@@ -202,7 +211,10 @@ struct SBNInstance {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("libsbn") {
   SBNInstance inst("charlie");
+  inst.ReadNewickFile("data/five_taxon.nwk");
+  inst.PrintStatus();
   inst.ReadNewickFile("data/hello.nwk");
+  inst.PrintStatus();
   inst.ReadFastaFile("data/hello.fasta");
   inst.BeagleCreate();
   inst.PrepareBeagleInstance();

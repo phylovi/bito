@@ -34,7 +34,7 @@ class Node {
       PCSSFun;
 
  public:
-  explicit Node(unsigned int leaf_id)
+  explicit Node(uint32_t leaf_id)
       : children_({}), tag_(PackInts(leaf_id, 1)), hash_(SOHash(leaf_id)) {}
   explicit Node(NodePtrVec children) {
     children_ = children;
@@ -257,7 +257,7 @@ class Node {
   }
 
   // Class methods
-  static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
+  static NodePtr Leaf(uint32_t id) { return std::make_shared<Node>(id); }
   static NodePtr Join(NodePtrVec children) {
     return std::make_shared<Node>(children);
   }
@@ -266,10 +266,10 @@ class Node {
   }
 
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
-  // appears to leave unsigned ints as they are, which doesn't work for our
+  // appears to leave uint32_ts as they are, which doesn't work for our
   // application).
   // https://stackoverflow.com/a/12996028/467327
-  static inline unsigned int SOHash(unsigned int x) {
+  static inline uint32_t SOHash(uint32_t x) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = (x >> 16) ^ x;
@@ -279,8 +279,8 @@ class Node {
   // Bit rotation from Stack Overflow.
   // c is the amount by which we rotate.
   // https://stackoverflow.com/a/776523/467327
-  static inline size_t SORotate(size_t n, unsigned int c) {
-    const unsigned int mask =
+  static inline size_t SORotate(size_t n, uint32_t c) {
+    const uint32_t mask =
         (CHAR_BIT * sizeof(n) - 1);  // assumes width is a power of 2.
     // assert ( (c<=mask) &&"rotate by type width or more");
     c &= mask;
