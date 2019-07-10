@@ -66,7 +66,7 @@ TEST_CASE("Driver") {
       "((a:1.1,b:2):0.4,c:3):0;",
       "(x,(a:1.1,(b:2,(quack:0.1,duck))),c:3):1.1;",
   };
-  for (auto newick : newicks) {
+  for (const auto& newick : newicks) {
     auto collection = driver.ParseString(newick);
     CHECK_EQ(newick,
              collection->FirstTree()->Newick(collection->TagTaxonMap()));

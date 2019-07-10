@@ -192,7 +192,7 @@ struct SBNInstance {
 
   std::vector<double> TreeLogLikelihoods() {
     std::vector<double> llv;
-    for (auto iter : *tree_collection_->Trees()) {
+    for (const auto &iter : *tree_collection_->Trees()) {
       llv.push_back(TreeLogLikelihood(iter.first));
     }
     return llv;

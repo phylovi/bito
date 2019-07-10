@@ -53,7 +53,7 @@ class DefaultDict : private std::unordered_map<Key, T> {
 
   void print() {
     std::cout << "Default value: " << default_value_ << std::endl;
-    for (const auto iter : *this) {
+    for (const auto &iter : *this) {
       std::cout << std::to_string(iter.first) << " "
                 << std::to_string(iter.second) << std::endl;
     }

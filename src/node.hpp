@@ -61,7 +61,7 @@ class Node {
     uint32_t max_leaf_id = children_.back()->MaxLeafID();
     uint32_t leaf_count = 0;
     hash_ = 0;
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       leaf_count += child->LeafCount();
       hash_ ^= child->Hash();
     }
@@ -98,7 +98,7 @@ class Node {
 
   void PreOrder(std::function<void(const Node*)> f) {
     f(this);
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       child->PreOrder(f);
     }
   }
@@ -134,7 +134,7 @@ class Node {
     f_root(children_[0].get(), children_[1].get(), children_[2].get());
     f_root(children_[1].get(), children_[2].get(), children_[0].get());
     f_root(children_[2].get(), children_[0].get(), children_[1].get());
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       child->TriplePreOrderInternal(f_internal);
     }
   }
@@ -186,7 +186,7 @@ class Node {
   }
 
   void PostOrder(std::function<void(const Node*)> f) {
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       child->PostOrder(f);
     }
     f(this);
@@ -194,7 +194,7 @@ class Node {
 
   int PostOrder(std::function<int(const Node*, const std::vector<int>&)> f) {
     std::vector<int> v;
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       v.push_back(child->PostOrder(f));
     }
     return f(this, v);
@@ -207,7 +207,7 @@ class Node {
       f(n);
       to_visit.pop_front();
 
-      for (auto child : n->children_) {
+      for (const auto& child : n->children_) {
         to_visit.push_back(child.get());
       }
     }

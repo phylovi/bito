@@ -33,7 +33,7 @@ TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
       x.set(n->MaxLeafID());
     } else {
       // Take the union of the children below.
-      for (auto child : n->Children()) {
+      for (const auto& child : n->Children()) {
         x |= m.at(child->Tag());
       }
     }
@@ -43,7 +43,7 @@ TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
 }
 
 void PrintTagBitsetMap(TagBitsetMap m) {
-  for (auto& iter : m) {
+  for (const auto& iter : m) {
     std::cout << StringOfPackedInt(iter.first) << " " << iter.second.ToString()
               << std::endl;
   }
@@ -51,7 +51,7 @@ void PrintTagBitsetMap(TagBitsetMap m) {
 
 BitsetUInt32Map RootsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
   BitsetUInt32Map rootsplit_counter(0);
-  for (auto& iter : *trees) {
+  for (const auto& iter : *trees) {
     auto tree = iter.first;
     auto count = iter.second;
     auto tag_to_bitset = TagBitsetMapOf(tree->Root());
@@ -60,7 +60,7 @@ BitsetUInt32Map RootsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
       split.Minorize();
       rootsplit_counter.increment(std::move(split), count);
     };
-    for (auto child : tree->Root()->Children()) {
+    for (const auto& child : tree->Root()->Children()) {
       child->PreOrder(Aux);
     }
   }
@@ -69,7 +69,7 @@ BitsetUInt32Map RootsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
 
 BitsetUInt32Map SubsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
   BitsetUInt32Map subsplit_support(0);
-  for (auto iter : *trees) {
+  for (const auto& iter : *trees) {
     auto tree = iter.first;
     auto count = iter.second;
     auto tag_to_bitset = TagBitsetMapOf(tree->Root());
