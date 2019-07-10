@@ -45,7 +45,7 @@ class Alignment {
     if (search != data_.end()) {
       return search->second;
     } else {
-      std::cerr << "Taxon '" << search->first << "' not found in alignment.\n";
+      std::cerr << "Taxon '" << taxon << "' not found in alignment.\n";
       abort();
     }
   }

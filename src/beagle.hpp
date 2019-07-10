@@ -34,7 +34,7 @@ SymbolVector SymbolVectorOf(const std::string &str,
     if (search != symbol_table.end()) {
       v[i] = search->second;
     } else {
-      std::cerr << "Symbol '" << search->first << "' not known.\n";
+      std::cerr << "Symbol '" << str[i] << "' not known.\n";
       abort();
     }
   }
