@@ -83,10 +83,10 @@ int CreateInstance(int tip_count, int alignment_length,
 
 void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
                   const Alignment &alignment, const CharIntMap &symbol_table) {
-  for (auto iter = tag_taxon_map.begin(); iter != tag_taxon_map.end(); ++iter) {
-    int taxon_number = static_cast<int>(UnpackFirstInt(iter->first));
+  for (const auto &iter : tag_taxon_map) {
+    int taxon_number = static_cast<int>(UnpackFirstInt(iter.first));
     SymbolVector symbols =
-        SymbolVectorOf(alignment.at(iter->second), symbol_table);
+        SymbolVectorOf(alignment.at(iter.second), symbol_table);
     beagleSetTipStates(beagle_instance, taxon_number, symbols.data());
   }
 }

@@ -32,8 +32,8 @@ class Alignment {
       return false;
     }
     size_t length = data_.begin()->second.size();
-    for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
-      if (length != iter->second.size()) {
+    for (const auto &iter : data_) {
+      if (length != iter.second.size()) {
         return false;
       }
     }

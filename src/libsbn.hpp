@@ -23,16 +23,16 @@ typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
 
 StringFloatMap StringFloatMapOf(BitsetUInt32Map m) {
   StringFloatMap m_str;
-  for (auto iter = m.begin(); iter != m.end(); ++iter) {
-    m_str[iter->first.ToString()] = static_cast<float>(iter->second);
+  for (const auto &iter : m) {
+    m_str[iter.first.ToString()] = static_cast<float>(iter.second);
   }
   return m_str;
 }
 
 StringUInt32Map StringUInt32MapOf(BitsetUInt32Map m) {
   StringUInt32Map m_str;
-  for (auto iter = m.begin(); iter != m.end(); ++iter) {
-    m_str[iter->first.ToString()] = iter->second;
+  for (const auto &iter : m) {
+    m_str[iter.first.ToString()] = iter.second;
   }
   return m_str;
 }

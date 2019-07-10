@@ -80,9 +80,9 @@ TreeCollection::TreeCollectionPtr Driver::ParseString(const std::string &str) {
 
 TagStringMap Driver::TagTaxonMap() {
   TagStringMap m;
-  for (auto iter = taxa_.begin(); iter != taxa_.end(); ++iter) {
+  for (const auto &iter : taxa_) {
     // These are leaves, so the number of leaves below is 1.
-    m[PackInts(iter->second, 1)] = iter->first;
+    m[PackInts(iter.second, 1)] = iter.first;
   }
   return m;
 }
