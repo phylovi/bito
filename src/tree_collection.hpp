@@ -21,6 +21,7 @@ class TreeCollection {
   size_t TreeCount() { return trees_->size(); }
   TreePtrCounterPtr Trees() const { return trees_; }
   TagStringMap TagTaxonMap() const { return tag_taxon_map_; }
+  size_t TaxonCount() const { return tag_taxon_map_.size(); }
   Tree::TreePtr FirstTree() const {
     assert(trees_->size() > 0);
     return trees_->begin()->first;
