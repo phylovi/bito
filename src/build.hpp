@@ -33,7 +33,7 @@ TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
       x.set(n->MaxLeafID());
     } else {
       // Take the union of the children below.
-      for (auto child : n->Children()) {
+      for (const auto& child : n->Children()) {
         x |= m.at(child->Tag());
       }
     }
@@ -43,24 +43,24 @@ TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
 }
 
 void PrintTagBitsetMap(TagBitsetMap m) {
-  for (auto iter = m.begin(); iter != m.end(); ++iter) {
-    std::cout << StringOfPackedInt(iter->first) << " "
-              << iter->second.ToString() << std::endl;
+  for (const auto& iter : m) {
+    std::cout << StringOfPackedInt(iter.first) << " " << iter.second.ToString()
+              << std::endl;
   }
 }
 
 BitsetUInt32Map RootsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
   BitsetUInt32Map rootsplit_counter(0);
-  for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
-    auto tree = iter->first;
-    auto count = iter->second;
+  for (const auto& iter : *trees) {
+    auto tree = iter.first;
+    auto count = iter.second;
     auto tag_to_bitset = TagBitsetMapOf(tree->Root());
     auto Aux = [&rootsplit_counter, &tag_to_bitset, &count](const Node* n) {
       auto split = tag_to_bitset.at(n->Tag()).copy();
       split.Minorize();
       rootsplit_counter.increment(std::move(split), count);
     };
-    for (auto child : tree->Root()->Children()) {
+    for (const auto& child : tree->Root()->Children()) {
       child->PreOrder(Aux);
     }
   }
@@ -69,9 +69,9 @@ BitsetUInt32Map RootsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
 
 BitsetUInt32Map SubsplitSupportOf(TreeCollection::TreePtrCounterPtr trees) {
   BitsetUInt32Map subsplit_support(0);
-  for (auto iter = trees->begin(); iter != trees->end(); ++iter) {
-    auto tree = iter->first;
-    auto count = iter->second;
+  for (const auto& iter : *trees) {
+    auto tree = iter.first;
+    auto count = iter.second;
     auto tag_to_bitset = TagBitsetMapOf(tree->Root());
     auto leaf_count = tree->LeafCount();
     // TODO(ematsen) make a more informative error message when people don't put
@@ -113,9 +113,9 @@ TEST_CASE("Build") {
   // many_rootings has many (unrooted) rootings of the same tree.
   // Here we check to make sure that every support across the various rootings
   // is in the SBN support for the single tree.
-  for (auto iter = support.begin(); iter != support.end(); ++iter) {
-    CHECK(iter->first.PCSSIsValid());
-    CHECK(single_support.contains(iter->first));
+  for (const auto& iter : support) {
+    CHECK(iter.first.PCSSIsValid());
+    CHECK(single_support.contains(iter.first));
   }
 }
 

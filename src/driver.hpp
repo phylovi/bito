@@ -23,7 +23,7 @@ class Driver {
   Driver();
 
   // The next available id for parsing the first tree.
-  int next_id_;
+  uint32_t next_id_;
   // Is this the first tree we have parsed? The first tree gets to set up
   // indexing for the taxon names.
   bool first_tree_;
@@ -34,7 +34,7 @@ class Driver {
   // The most recent tree parsed.
   Tree::TreePtr latest_tree_;
   // Map from taxon names to their numerical identifiers.
-  std::map<std::string, int> taxa_;
+  std::map<std::string, uint32_t> taxa_;
   // The token's location, used by the scanner to give good debug info.
   TagDoubleMap branch_lengths_;
   // The token's location, used by the scanner to give good debug info.
@@ -66,7 +66,7 @@ TEST_CASE("Driver") {
       "((a:1.1,b:2):0.4,c:3):0;",
       "(x,(a:1.1,(b:2,(quack:0.1,duck))),c:3):1.1;",
   };
-  for (auto newick : newicks) {
+  for (const auto& newick : newicks) {
     auto collection = driver.ParseString(newick);
     CHECK_EQ(newick,
              collection->FirstTree()->Newick(collection->TagTaxonMap()));

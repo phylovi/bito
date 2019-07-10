@@ -19,6 +19,8 @@ PYBIND11_MODULE(sbn, m) {
       .def("rootsplit_support", &SBNInstance::RootsplitSupport)
       .def("subsplit_support", &SBNInstance::SubsplitSupport)
       .def("beagle_create", &SBNInstance::BeagleCreate)
-      .def("prepare_beagle_instance", &SBNInstance::PrepareBeagleInstance);
+      .def("prepare_beagle_instance", &SBNInstance::PrepareBeagleInstance)
+      .def("set_JC_model", &SBNInstance::SetJCModel)
+      .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods);
   m.def("f", &SBNInstance::f, "test");
 }

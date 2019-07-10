@@ -32,8 +32,8 @@ class Alignment {
       return false;
     }
     size_t length = data_.begin()->second.size();
-    for (auto iter = data_.begin(); iter != data_.end(); ++iter) {
-      if (length != iter->second.size()) {
+    for (const auto &iter : data_) {
+      if (length != iter.second.size()) {
         return false;
       }
     }
@@ -45,7 +45,7 @@ class Alignment {
     if (search != data_.end()) {
       return search->second;
     } else {
-      std::cerr << "Taxon '" << search->first << "' not found in alignment.\n";
+      std::cerr << "Taxon '" << taxon << "' not found in alignment.\n";
       abort();
     }
   }

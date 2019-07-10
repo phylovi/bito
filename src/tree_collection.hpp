@@ -12,7 +12,7 @@
 class TreeCollection {
  public:
   typedef std::shared_ptr<TreeCollection> TreeCollectionPtr;
-  typedef std::unordered_map<Tree::TreePtr, unsigned int> TreePtrCounter;
+  typedef std::unordered_map<Tree::TreePtr, uint32_t> TreePtrCounter;
   typedef std::shared_ptr<TreePtrCounter> TreePtrCounterPtr;
 
   explicit TreeCollection(TreePtrCounterPtr trees, TagStringMap tag_taxon_map)

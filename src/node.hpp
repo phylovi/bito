@@ -34,7 +34,7 @@ class Node {
       PCSSFun;
 
  public:
-  explicit Node(unsigned int leaf_id)
+  explicit Node(uint32_t leaf_id)
       : children_({}), tag_(PackInts(leaf_id, 1)), hash_(SOHash(leaf_id)) {}
   explicit Node(NodePtrVec children) {
     children_ = children;
@@ -61,7 +61,7 @@ class Node {
     uint32_t max_leaf_id = children_.back()->MaxLeafID();
     uint32_t leaf_count = 0;
     hash_ = 0;
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       leaf_count += child->LeafCount();
       hash_ ^= child->Hash();
     }
@@ -98,7 +98,7 @@ class Node {
 
   void PreOrder(std::function<void(const Node*)> f) {
     f(this);
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       child->PreOrder(f);
     }
   }
@@ -134,7 +134,7 @@ class Node {
     f_root(children_[0].get(), children_[1].get(), children_[2].get());
     f_root(children_[1].get(), children_[2].get(), children_[0].get());
     f_root(children_[2].get(), children_[0].get(), children_[1].get());
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       child->TriplePreOrderInternal(f_internal);
     }
   }
@@ -186,7 +186,7 @@ class Node {
   }
 
   void PostOrder(std::function<void(const Node*)> f) {
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       child->PostOrder(f);
     }
     f(this);
@@ -194,7 +194,7 @@ class Node {
 
   int PostOrder(std::function<int(const Node*, const std::vector<int>&)> f) {
     std::vector<int> v;
-    for (auto child : children_) {
+    for (const auto& child : children_) {
       v.push_back(child->PostOrder(f));
     }
     return f(this, v);
@@ -207,7 +207,7 @@ class Node {
       f(n);
       to_visit.pop_front();
 
-      for (auto child : n->children_) {
+      for (const auto& child : n->children_) {
         to_visit.push_back(child.get());
       }
     }
@@ -257,7 +257,7 @@ class Node {
   }
 
   // Class methods
-  static NodePtr Leaf(int id) { return std::make_shared<Node>(id); }
+  static NodePtr Leaf(uint32_t id) { return std::make_shared<Node>(id); }
   static NodePtr Join(NodePtrVec children) {
     return std::make_shared<Node>(children);
   }
@@ -266,10 +266,10 @@ class Node {
   }
 
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
-  // appears to leave unsigned ints as they are, which doesn't work for our
+  // appears to leave uint32_ts as they are, which doesn't work for our
   // application).
   // https://stackoverflow.com/a/12996028/467327
-  static inline unsigned int SOHash(unsigned int x) {
+  static inline uint32_t SOHash(uint32_t x) {
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = ((x >> 16) ^ x) * 0x45d9f3b;
     x = (x >> 16) ^ x;
@@ -279,8 +279,8 @@ class Node {
   // Bit rotation from Stack Overflow.
   // c is the amount by which we rotate.
   // https://stackoverflow.com/a/776523/467327
-  static inline size_t SORotate(size_t n, unsigned int c) {
-    const unsigned int mask =
+  static inline size_t SORotate(size_t n, uint32_t c) {
+    const uint32_t mask =
         (CHAR_BIT * sizeof(n) - 1);  // assumes width is a power of 2.
     // assert ( (c<=mask) &&"rotate by type width or more");
     c &= mask;
