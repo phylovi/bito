@@ -136,11 +136,10 @@ struct SBNInstance {
                                 eval.data());
   }
 
-  double TreeLogLikelihood(Tree::TreePtr tree) {
-    int next_internal_index = static_cast<int>(tree->LeafCount());
-    std::vector<int> node_indices;
-    std::vector<double> branch_lengths;
-    std::vector<BeagleOperation> operations;
+  void LikelihoodTraversal(const Tree::TreePtr &tree, int &next_internal_index,
+                           std::vector<int> &node_indices,
+                           std::vector<double> &branch_lengths,
+                           std::vector<BeagleOperation> &operations) {
     tree->Root()->PostOrder(
         [&tree, &next_internal_index, &node_indices, &branch_lengths,
          &operations](const Node *node, const std::vector<int> &below_indices) {
@@ -165,6 +164,15 @@ struct SBNInstance {
           next_internal_index++;
           return this_index;
         });
+  }
+
+  double TreeLogLikelihood(Tree::TreePtr tree) {
+    int next_internal_index = static_cast<int>(tree->LeafCount());
+    std::vector<int> node_indices;
+    std::vector<double> branch_lengths;
+    std::vector<BeagleOperation> operations;
+    LikelihoodTraversal(tree, next_internal_index, node_indices, branch_lengths,
+                        operations);
     beagleUpdateTransitionMatrices(beagle_instance_,
                                    0,  // eigenIndex
                                    node_indices.data(),
