@@ -136,11 +136,11 @@ struct SBNInstance {
                                 eval.data());
   }
 
-  void LikelihoodTraversal(const Tree::TreePtr &tree, int &next_internal_index,
-                           std::vector<int> &node_indices,
-                           std::vector<double> &branch_lengths,
-                           std::vector<BeagleOperation> &operations) {
-    tree->Root()->PostOrder(
+  int LikelihoodTraversal(const Tree::TreePtr &tree, int &next_internal_index,
+                          std::vector<int> &node_indices,
+                          std::vector<double> &branch_lengths,
+                          std::vector<BeagleOperation> &operations) {
+    return tree->Root()->PostOrder(
         [&tree, &next_internal_index, &node_indices, &branch_lengths,
          &operations](const Node *node, const std::vector<int> &below_indices) {
           if (node->IsLeaf()) {
@@ -171,29 +171,66 @@ struct SBNInstance {
     std::vector<int> node_indices;
     std::vector<double> branch_lengths;
     std::vector<BeagleOperation> operations;
-    LikelihoodTraversal(tree, next_internal_index, node_indices, branch_lengths,
-                        operations);
-    beagleUpdateTransitionMatrices(beagle_instance_,
-                                   0,  // eigenIndex
-                                   node_indices.data(),
-                                   NULL,  // firstDerivativeIndices
-                                   NULL,  // secondDervativeIndices
-                                   branch_lengths.data(),
-                                   static_cast<int>(branch_lengths.size()));
-    beagleUpdatePartials(beagle_instance_,
-                         operations.data(),  // eigenIndex
-                         static_cast<int>(operations.size()),
-                         BEAGLE_OP_NONE);  // cumulative scale index
+    int beagle_instance = this->beagle_instance_;
     double log_like = 0;
-    std::vector<int> root_index = {node_indices.back()};
     std::vector<int> category_weight_index = {0};
     std::vector<int> state_frequency_index = {0};
     std::vector<int> cumulative_scale_index = {BEAGLE_OP_NONE};
-    int count = 1;
-    beagleCalculateRootLogLikelihoods(
-        beagle_instance_, root_index.data(), category_weight_index.data(),
-        state_frequency_index.data(), cumulative_scale_index.data(), count,
-        &log_like);
+    int partials_buffer_count = 1;
+    auto BeagleUpdate =
+        [&beagle_instance, &node_indices, &branch_lengths, &operations]() {
+          beagleUpdateTransitionMatrices(
+              beagle_instance,
+              0,  // eigenIndex
+              node_indices.data(),
+              NULL,  // first derivative matrices
+              NULL,  // second derivative matrices
+              branch_lengths.data(), static_cast<int>(branch_lengths.size()));
+          beagleUpdatePartials(beagle_instance,
+                               operations.data(),  // eigenIndex
+                               static_cast<int>(operations.size()),
+                               BEAGLE_OP_NONE);  // cumulative scale index
+        };
+    if (tree->Children().size() == 2) {
+      LikelihoodTraversal(tree, next_internal_index, node_indices,
+                          branch_lengths, operations);
+      BeagleUpdate();
+      std::vector<int> root_index = {node_indices.back()};
+      beagleCalculateRootLogLikelihoods(
+          beagle_instance, root_index.data(), category_weight_index.data(),
+          state_frequency_index.data(), cumulative_scale_index.data(),
+          partials_buffer_count, &log_like);
+    } else if (tree->Children().size() == 3) {
+      //     /|\
+      //    / | \
+      //   0  1  2
+      auto tree0 =
+          std::make_shared<Tree>(tree->Children()[0], tree->BranchLengths());
+      int child_index = LikelihoodTraversal(
+          tree0, next_internal_index, node_indices, branch_lengths, operations);
+      auto root12 = Node::Join(tree->Children()[1], tree->Children()[2]);
+      auto tree12 = std::make_shared<Tree>(root12, tree->BranchLengths());
+      int parent_index =
+          LikelihoodTraversal(tree12, next_internal_index, node_indices,
+                              branch_lengths, operations);
+      beagleCalculateEdgeLogLikelihoods(
+          beagle_instance,
+          &parent_index,  // index of parent partialsBuffers
+          &child_index,   // index of child partialsBuffers
+          &child_index,   // transition probability matrices for this edge
+          NULL,           // first derivative matrices
+          NULL,           // second derivative matrices
+          category_weight_index.data(), state_frequency_index.data(),
+          cumulative_scale_index.data(), partials_buffer_count, &log_like,
+          NULL,  // destination for first derivative
+          NULL   // destination for second derivative
+      );
+
+    } else {
+      std::cerr
+          << "Input tree is not bifurcating or trifurcating at the root.\n";
+      abort();
+    }
     return log_like;
   }
 
