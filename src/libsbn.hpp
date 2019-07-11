@@ -201,25 +201,30 @@ struct SBNInstance {
           state_frequency_index.data(), cumulative_scale_index.data(),
           partials_buffer_count, &log_like);
     } else if (tree->Children().size() == 3) {
-      //     /|\
-      //    / | \
+      //     /|\     we make a rooted tree
+      //    / | \    with 1 and 2 together
       //   0  1  2
       auto tree0 =
           std::make_shared<Tree>(tree->Children()[0], tree->BranchLengths());
-      int child_index = LikelihoodTraversal(
-          tree0, next_internal_index, node_indices, branch_lengths, operations);
+      std::vector<int> child_index = {
+          LikelihoodTraversal(tree0, next_internal_index, node_indices,
+                              branch_lengths, operations)};
       auto root12 = Node::Join(tree->Children()[1], tree->Children()[2]);
-      auto tree12 = std::make_shared<Tree>(root12, tree->BranchLengths());
-      int parent_index =
+      auto branch_length_map = tree->BranchLengths();
+      // Here we insert a fake branch length of 0 for the root12 tree.
+      assert(
+          branch_length_map.insert(std::make_pair(root12->Tag(), 0.)).second);
+      auto tree12 = std::make_shared<Tree>(root12, branch_length_map);
+      std::vector<int> parent_index = {
           LikelihoodTraversal(tree12, next_internal_index, node_indices,
-                              branch_lengths, operations);
+                              branch_lengths, operations)};
       beagleCalculateEdgeLogLikelihoods(
           beagle_instance,
-          &parent_index,  // index of parent partialsBuffers
-          &child_index,   // index of child partialsBuffers
-          &child_index,   // transition probability matrices for this edge
-          NULL,           // first derivative matrices
-          NULL,           // second derivative matrices
+          parent_index.data(),  // indices of parent partialsBuffers
+          child_index.data(),   // indices of child partialsBuffers
+          child_index.data(),   // transition probability matrices for this edge
+          NULL,                 // first derivative matrices
+          NULL,                 // second derivative matrices
           category_weight_index.data(), state_frequency_index.data(),
           cumulative_scale_index.data(), partials_buffer_count, &log_like,
           NULL,  // destination for first derivative
