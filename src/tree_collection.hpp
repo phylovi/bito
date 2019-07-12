@@ -6,6 +6,8 @@
 
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 #include "tree.hpp"
 
 class TreeCollection {
@@ -20,6 +22,7 @@ class TreeCollection {
       }
     }
   }
+
   TreeCollection(Tree::TreePtrVector trees, TagStringMap tag_taxon_map)
       : trees_(trees), tag_taxon_map_(tag_taxon_map) {
     auto taxon_count = tag_taxon_map.size();
