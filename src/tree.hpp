@@ -36,6 +36,20 @@ class Tree {
       abort();
     }
   }
+  static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology) {
+    TagDoubleMap branch_lengths;
+    topology->PreOrder([&branch_lengths](const Node* node) {
+      assert(branch_lengths.insert({node->Tag(), 1.}).second);
+    });
+    return std::make_shared<Tree>(topology, branch_lengths);
+  }
+  static TreePtrVector ExampleTrees() {
+    TreePtrVector v;
+    for (const auto& topology : Node::ExampleTopologies()) {
+      v.push_back(UnitBranchLengthTreeOf(topology));
+    }
+    return v;
+  }
 
  private:
   Node::NodePtr root_;

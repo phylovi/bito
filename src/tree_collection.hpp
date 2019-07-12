@@ -12,10 +12,20 @@ class TreeCollection {
  public:
   typedef std::shared_ptr<TreeCollection> TreeCollectionPtr;
 
+  explicit TreeCollection(Tree::TreePtrVector trees) : trees_(trees) {
+    if (trees.size() > 0) {
+      auto leaf_count = trees[0]->LeafCount();
+      for (const auto &tree : trees) {
+        assert(tree->LeafCount() == leaf_count);
+      }
+    }
+  }
   TreeCollection(Tree::TreePtrVector trees, TagStringMap tag_taxon_map)
       : trees_(trees), tag_taxon_map_(tag_taxon_map) {
-    // TODO(erick) assert that the number of leaves in the trees is equal to
-    // that in tag_taxon_map
+    auto taxon_count = tag_taxon_map.size();
+    for (const auto &tree : trees) {
+      assert(tree->LeafCount() == taxon_count);
+    }
   }
 
   size_t TreeCount() { return trees_.size(); }
@@ -50,7 +60,16 @@ class TreeCollection {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-
+TEST_CASE("TopologyCounter") {
+  TreeCollection collection(Tree::ExampleTrees());
+  auto counter = collection.TopologyCounter();
+  std::vector<uint32_t> v;
+  for (const auto &iter : counter) {
+    v.push_back(iter.second);
+  }
+  std::vector<uint32_t> v_correct = {1, 3};
+  CHECK_EQ(v, v_correct);
+}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_TREE_COLLECTION_HPP_

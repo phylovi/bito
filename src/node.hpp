@@ -288,22 +288,13 @@ class Node {
     return (n << c) | (n >> ((-c) & mask));
   }
 
-  static NodePtrVec ExampleNodeTrees() {
+  static NodePtrVec ExampleTopologies() {
     NodePtrVec v = {
-        Node::Join(std::vector<Node::NodePtr>(
-            {Node::Leaf(0), Node::Leaf(1),
-             Node::Join(Node::Leaf(2), Node::Leaf(3))})),
+        Join(std::vector<NodePtr>({Leaf(0), Leaf(1), Join(Leaf(2), Leaf(3))})),
         // This is the same tree again.
-        Node::Join(std::vector<Node::NodePtr>(
-            {Node::Leaf(1), Node::Leaf(0),
-             Node::Join(Node::Leaf(3), Node::Leaf(2))})),
-        Node::Join(std::vector<Node::NodePtr>(
-            {Node::Leaf(0), Node::Leaf(2),
-             Node::Join(Node::Leaf(1), Node::Leaf(3))})),
-        Node::Join(std::vector<Node::NodePtr>(
-            {Node::Leaf(0), Node::Leaf(1),
-             Node::Join(Node::Leaf(2),
-                        Node::Join(Node::Leaf(3), Node::Leaf(4)))}))};
+        Join(std::vector<NodePtr>({Leaf(1), Leaf(0), Join(Leaf(3), Leaf(2))})),
+        Join(std::vector<NodePtr>({Leaf(0), Leaf(2), Join(Leaf(1), Leaf(3))})),
+        Join(std::vector<NodePtr>({Leaf(0), Leaf(1), Join(Leaf(2), Leaf(3))}))};
     return v;
   }
 
@@ -343,7 +334,7 @@ struct equal_to<Node::NodePtr> {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Node header") {
-  Node::NodePtrVec examples = Node::ExampleNodeTrees();
+  Node::NodePtrVec examples = Node::ExampleTopologies();
   Node::NodePtr t1 = examples[0];
   Node::NodePtr t1_twin = examples[1];
   Node::NodePtr t2 = examples[2];
