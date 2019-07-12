@@ -6,29 +6,33 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include "tree.hpp"
 
 class TreeCollection {
  public:
   typedef std::shared_ptr<TreeCollection> TreeCollectionPtr;
-  typedef std::unordered_map<Tree::TreePtr, uint32_t> TreePtrCounter;
-  typedef std::shared_ptr<TreePtrCounter> TreePtrCounterPtr;
 
-  explicit TreeCollection(TreePtrCounterPtr trees, TagStringMap tag_taxon_map)
-      : trees_(trees), tag_taxon_map_(tag_taxon_map) {}
+  TreeCollection(Tree::TreePtrVector trees, TagStringMap tag_taxon_map)
+      : trees_(trees), tag_taxon_map_(tag_taxon_map) {
+    // TODO(erick) assert that the number of leaves in the trees is equal to
+    // that in tag_taxon_map
+  }
 
-  size_t TreeCount() { return trees_->size(); }
-  TreePtrCounterPtr Trees() const { return trees_; }
-  TagStringMap TagTaxonMap() const { return tag_taxon_map_; }
+  size_t TreeCount() { return trees_.size(); }
+  const Tree::TreePtrVector &Trees() const { return trees_; }
+  const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
   size_t TaxonCount() const { return tag_taxon_map_.size(); }
-  Tree::TreePtr FirstTree() const {
-    assert(trees_->size() > 0);
-    return trees_->begin()->first;
+  std::string Newick() const {
+    std::string str;
+    for (const auto &tree : trees_) {
+      str.append(tree->Newick(tag_taxon_map_));
+      str.push_back('\n');
+    }
+    return str;
   }
 
  private:
-  TreePtrCounterPtr trees_;
+  Tree::TreePtrVector trees_;
   TagStringMap tag_taxon_map_;
 };
 

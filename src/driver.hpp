@@ -68,8 +68,7 @@ TEST_CASE("Driver") {
   };
   for (const auto& newick : newicks) {
     auto collection = driver.ParseString(newick);
-    CHECK_EQ(newick,
-             collection->FirstTree()->Newick(collection->TagTaxonMap()));
+    CHECK_EQ(newick, collection->Trees()[0]->Newick(collection->TagTaxonMap()));
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

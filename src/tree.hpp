@@ -13,6 +13,7 @@
 class Tree {
  public:
   typedef std::shared_ptr<Tree> TreePtr;
+  typedef std::vector<TreePtr> TreePtrVector;
 
   explicit Tree(Node::NodePtr root, TagDoubleMap branch_lengths)
       : root_(root), branch_lengths_(branch_lengths) {}
