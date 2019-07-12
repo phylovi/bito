@@ -31,13 +31,26 @@ class TreeCollection {
     return str;
   }
 
+  Node::TopologyCounter TopologyCounter() {
+    Node::TopologyCounter counter;
+    for (const auto &tree : trees_) {
+      auto search = counter.find(tree->Root());
+      if (search == counter.end()) {
+        assert(counter.insert(std::make_pair(tree->Root(), 1)).second);
+      } else {
+        search->second++;
+      }
+    }
+    return counter;
+  }
+
  private:
   Tree::TreePtrVector trees_;
   TagStringMap tag_taxon_map_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-// TODO(erick) add tests for tree_collection
+
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_TREE_COLLECTION_HPP_
