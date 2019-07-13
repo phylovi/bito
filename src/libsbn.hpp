@@ -139,7 +139,7 @@ struct SBNInstance {
     std::vector<int> node_indices;
     std::vector<double> branch_lengths;
     std::vector<BeagleOperation> operations;
-    tree->Root()->PostOrder(
+    tree->Topology()->PostOrder(
         [&tree, &next_internal_index, &node_indices, &branch_lengths,
          &operations](const Node *node, const std::vector<int> &below_indices) {
           if (node->IsLeaf()) {

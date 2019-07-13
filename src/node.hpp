@@ -266,6 +266,20 @@ class Node {
     return Join(std::vector<NodePtr>({left, right}));
   }
 
+  static NodePtrVec ExampleTopologies() {
+    NodePtrVec v = {
+        // 0: (0,1,(2,3))
+        Join(std::vector<NodePtr>({Leaf(0), Leaf(1), Join(Leaf(2), Leaf(3))})),
+        // 1; (0,1,(2,3)) again
+        Join(std::vector<NodePtr>({Leaf(1), Leaf(0), Join(Leaf(3), Leaf(2))})),
+        // 2: (0,2,(1,3))
+        Join(std::vector<NodePtr>({Leaf(0), Leaf(2), Join(Leaf(1), Leaf(3))})),
+        // 3: (0,(1,(2,3)))
+        Join(std::vector<NodePtr>(
+            {Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
+    return v;
+  }
+
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
   // appears to leave uint32_ts as they are, which doesn't work for our
   // application).
@@ -286,16 +300,6 @@ class Node {
     // assert ( (c<=mask) &&"rotate by type width or more");
     c &= mask;
     return (n << c) | (n >> ((-c) & mask));
-  }
-
-  static NodePtrVec ExampleTopologies() {
-    NodePtrVec v = {
-        Join(std::vector<NodePtr>({Leaf(0), Leaf(1), Join(Leaf(2), Leaf(3))})),
-        // This is the same tree again.
-        Join(std::vector<NodePtr>({Leaf(1), Leaf(0), Join(Leaf(3), Leaf(2))})),
-        Join(std::vector<NodePtr>({Leaf(0), Leaf(2), Join(Leaf(1), Leaf(3))})),
-        Join(std::vector<NodePtr>({Leaf(0), Leaf(1), Join(Leaf(2), Leaf(3))}))};
-    return v;
   }
 
  private:
@@ -341,13 +345,13 @@ TEST_CASE("Node header") {
   Node::NodePtr t3 = examples[3];
   // TODO(ematsen) add real test for TriplePreorder
   std::cout << "TriplePreOrder" << std::endl;
-  std::cout << t3->Newick() << std::endl;
+  std::cout << t2->Newick() << std::endl;
   auto print_triple = [](const Node* parent, const Node* sister,
                          const Node* node) {
     std::cout << parent->TagString() << ", " << sister->TagString() << ", "
               << node->TagString() << " " << std::endl;
   };
-  t3->TriplePreOrder(print_triple, print_triple);
+  t2->TriplePreOrder(print_triple, print_triple);
 
   // This is actually a non-trivial test (see note in Node constructor above),
   // which shows why we need bit rotation.

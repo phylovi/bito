@@ -16,17 +16,17 @@ class Tree {
   typedef std::shared_ptr<Tree> TreePtr;
   typedef std::vector<TreePtr> TreePtrVector;
 
-  explicit Tree(Node::NodePtr root, TagDoubleMap branch_lengths)
-      : root_(root), branch_lengths_(branch_lengths) {}
+  explicit Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
+      : topology_(topology), branch_lengths_(branch_lengths) {}
 
-  const Node::NodePtr Root() const { return root_; }
+  const Node::NodePtr Topology() const { return topology_; }
   const TagDoubleMap BranchLengths() const { return branch_lengths_; }
-  uint32_t LeafCount() const { return Root()->LeafCount(); }
-  Node::NodePtrVec Children() const { return Root()->Children(); }
+  uint32_t LeafCount() const { return Topology()->LeafCount(); }
+  Node::NodePtrVec Children() const { return Topology()->Children(); }
 
   std::string Newick(
       TagStringMapOption node_labels = std::experimental::nullopt) const {
-    return Root()->Newick(branch_lengths_, node_labels);
+    return Topology()->Newick(branch_lengths_, node_labels);
   }
 
   double BranchLength(const Node* node) const {
@@ -38,6 +38,23 @@ class Tree {
                 << node->TagString() << "'.\n";
       abort();
     }
+  }
+  //
+  // Remove trifurcation at the root and make it a bifurcation.
+  // Given (s0:b0, s1:b1, s2:b3), we get (s0:b0, (s1:b1, s2:b2):0):0.
+  TreePtr Detrifurcate() {
+    if (Children().size() != 3) {
+      std::cerr << "Detrifurcate given a non-trifurcating tree.\n";
+      abort();
+    }
+    auto branch_lengths = BranchLengths();
+    auto root12 = Node::Join(Children()[1], Children()[2]);
+    assert(branch_lengths.insert({root12->Tag(), 0.}).second);
+    auto rerooted_topology = Node::Join(Children()[0], root12);
+    if (branch_lengths.find(rerooted_topology->Tag()) == branch_lengths.end()) {
+      assert(branch_lengths.insert({rerooted_topology->Tag(), 0.}).second);
+    }
+    return std::make_shared<Tree>(rerooted_topology, branch_lengths);
   }
 
   static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology) {
@@ -57,10 +74,14 @@ class Tree {
   }
 
  private:
-  Node::NodePtr root_;
+  Node::NodePtr topology_;
   TagDoubleMap branch_lengths_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("Tree") {
+  auto trees = Tree::ExampleTrees();
+  CHECK_EQ(trees[0]->Detrifurcate()->Topology(), trees[3]->Topology());
+}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_TREE_HPP_
