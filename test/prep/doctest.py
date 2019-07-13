@@ -39,7 +39,7 @@ traversal_translator = {
 
 for traversal_type in ["preorder", "postorder", "levelorder"]:
    fp.write("\n// " + traversal_type + ":\n")
-   fp.write(f"t->Root()->{traversal_translator[traversal_type]}")
+   fp.write(f"t->Topology()->{traversal_translator[traversal_type]}")
    fp.write("([&trace](const Node* node) { trace.push_back(node->TagString()); });\n")
    fp.write("CHECK(std::vector<std::string>({")
    fp.write(",".join(['"'+node.name+'"' for node in t.traverse(traversal_type)]))

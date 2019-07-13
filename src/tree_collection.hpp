@@ -47,9 +47,9 @@ class TreeCollection {
   Node::TopologyCounter TopologyCounter() {
     Node::TopologyCounter counter;
     for (const auto &tree : trees_) {
-      auto search = counter.find(tree->Root());
+      auto search = counter.find(tree->Topology());
       if (search == counter.end()) {
-        assert(counter.insert({tree->Root(), 1}).second);
+        assert(counter.insert({tree->Topology(), 1}).second);
       } else {
         search->second++;
       }
@@ -70,7 +70,7 @@ TEST_CASE("TopologyCounter") {
   for (const auto &iter : counter) {
     v.push_back(iter.second);
   }
-  std::vector<uint32_t> v_correct = {1, 3};
+  std::vector<uint32_t> v_correct = {1, 2, 1};
   CHECK_EQ(v, v_correct);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

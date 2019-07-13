@@ -8,9 +8,12 @@
 #include "alignment.hpp"
 #include "intpack.hpp"
 #include "libhmsbeagle/beagle.h"
+#include "tree_collection.hpp"
 #include "typedefs.hpp"
 
 namespace beagle {
+
+typedef int BeagleInstance;
 
 // DNA assumption here.
 CharIntMap GetSymbolTable() {
@@ -81,6 +84,22 @@ int CreateInstance(int tip_count, int alignment_length,
       requirement_flags, return_info);
 }
 
+BeagleInstance CreateInstance(
+    const TreeCollection::TreeCollectionPtr &tree_collection,
+    const Alignment &alignment) {
+  int tip_count = static_cast<int>(tree_collection->TaxonCount());
+  if (tip_count != static_cast<int>(alignment.SequenceCount())) {
+    std::cerr << "The number of tree tips doesn't match the alignment "
+                 "sequence count!\n";
+    abort();
+  }
+  BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
+  return CreateInstance(tip_count, static_cast<int>(alignment.Length()),
+                        return_info);
+  // TODO(erick) do something with return_info?
+  // TODO(erick) free return_info?
+}
+
 void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
                   const Alignment &alignment, const CharIntMap &symbol_table) {
   for (const auto &iter : tag_taxon_map) {
@@ -90,6 +109,116 @@ void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
     beagleSetTipStates(beagle_instance, taxon_number, symbols.data());
   }
 }
+
+void PrepareBeagleInstance(
+    const BeagleInstance beagle_instance,
+    const TreeCollection::TreeCollectionPtr &tree_collection,
+    const Alignment &alignment, const CharIntMap &symbol_table) {
+  SetTipStates(beagle_instance, tree_collection->TagTaxonMap(), alignment,
+               symbol_table);
+  std::vector<double> pattern_weights(alignment.Length(), 1.);
+  beagleSetPatternWeights(beagle_instance, pattern_weights.data());
+  // Use uniform rates and weights.
+  const double weights[1] = {1.0};
+  const double rates[1] = {1.0};
+  beagleSetCategoryWeights(beagle_instance, 0, weights);
+  beagleSetCategoryRates(beagle_instance, rates);
+}
+
+void SetJCModel(BeagleInstance beagle_instance) {
+  std::vector<double> freqs(4, 0.25);
+  beagleSetStateFrequencies(beagle_instance, 0, freqs.data());
+  // an eigen decomposition for the JC69 model
+  std::vector<double> evec = {1.0, 2.0, 0.0, 0.5,  1.0, -2.0, 0.5,  0.0,
+                              1.0, 2.0, 0.0, -0.5, 1.0, -2.0, -0.5, 0.0};
+
+  std::vector<double> ivec = {0.25,  0.25,   0.25, 0.25, 0.125, -0.125,
+                              0.125, -0.125, 0.0,  1.0,  0.0,   -1.0,
+                              1.0,   0.0,    -1.0, 0.0};
+
+  std::vector<double> eval = {0.0, -1.3333333333333333, -1.3333333333333333,
+                              -1.3333333333333333};
+  beagleSetEigenDecomposition(beagle_instance, 0, evec.data(), ivec.data(),
+                              eval.data());
+}
+
+double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
+                                    BeagleInstance beagle_instance) {
+  int next_internal_index = static_cast<int>(tree->LeafCount());
+  std::vector<int> node_indices;
+  std::vector<double> branch_lengths;
+  std::vector<BeagleOperation> operations;
+  tree->Topology()->PostOrder(
+      [&tree, &next_internal_index, &node_indices, &branch_lengths,
+       &operations](const Node *node, const std::vector<int> &below_indices) {
+        if (node->IsLeaf()) {
+          int leaf_id = static_cast<int>(node->MaxLeafID());
+          node_indices.push_back(leaf_id);
+          branch_lengths.push_back(tree->BranchLength(node));
+          return leaf_id;
+        }
+        // else
+        int this_index = next_internal_index;
+        node_indices.push_back(this_index);
+        branch_lengths.push_back(tree->BranchLength(node));
+        assert(below_indices.size() == 2);
+        BeagleOperation op = {
+            this_index,                          // dest
+            BEAGLE_OP_NONE,   BEAGLE_OP_NONE,    // src and dest scaling
+            below_indices[0], below_indices[0],  // src1 and matrix1
+            below_indices[1], below_indices[1]   // src2 and matrix2
+        };
+        operations.push_back(op);
+        next_internal_index++;
+        return this_index;
+      });
+  beagleUpdateTransitionMatrices(beagle_instance,
+                                 0,  // eigenIndex
+                                 node_indices.data(),
+                                 NULL,  // firstDerivativeIndices
+                                 NULL,  // secondDervativeIndices
+                                 branch_lengths.data(),
+                                 static_cast<int>(branch_lengths.size()));
+  beagleUpdatePartials(beagle_instance,
+                       operations.data(),  // eigenIndex
+                       static_cast<int>(operations.size()),
+                       BEAGLE_OP_NONE);  // cumulative scale index
+  double log_like = 0;
+  std::vector<int> root_index = {node_indices.back()};
+  std::vector<int> category_weight_index = {0};
+  std::vector<int> state_frequency_index = {0};
+  std::vector<int> cumulative_scale_index = {BEAGLE_OP_NONE};
+  int count = 1;
+  beagleCalculateRootLogLikelihoods(
+      beagle_instance, root_index.data(), category_weight_index.data(),
+      state_frequency_index.data(), cumulative_scale_index.data(), count,
+      &log_like);
+  return log_like;
+}
+
+double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance) {
+  if (tree->Children().size() == 2) {
+    return BifurcatingTreeLogLikelihood(tree, beagle_instance);
+  }
+  // else
+  if (tree->Children().size() == 3) {
+    return BifurcatingTreeLogLikelihood(tree->Detrifurcate(), beagle_instance);
+  }
+  // else
+  std::cerr << "Tree likelihood calculations should be done on a tree with a "
+               "bifurcation or a trifurcation at the root.";
+  abort();
+}
+
+std::vector<double> TreeLogLikelihoods(
+    BeagleInstance beagle_instance,
+    TreeCollection::TreeCollectionPtr tree_collection) {
+  std::vector<double> llv;
+  for (const auto &tree : tree_collection->Trees()) {
+    llv.push_back(TreeLogLikelihood(tree, beagle_instance));
+  }
+  return llv;
+  }
 
 }  // namespace beagle
 

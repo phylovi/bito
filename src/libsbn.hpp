@@ -9,6 +9,7 @@
 #include <cmath>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "alignment.hpp"
 #include "beagle.hpp"
@@ -42,7 +43,7 @@ struct SBNInstance {
   TreeCollection::TreeCollectionPtr tree_collection_;
   Alignment alignment_;
   CharIntMap symbol_table_;
-  int beagle_instance_;
+  beagle::BeagleInstance beagle_instance_;
 
   explicit SBNInstance(const std::string &name)
       : name_(name),
@@ -92,107 +93,23 @@ struct SBNInstance {
                    "to calculate phylogenetic likelihoods.\n";
       abort();
     }
-    int tip_count = static_cast<int>(tree_collection_->TaxonCount());
-    if (tip_count != static_cast<int>(alignment_.SequenceCount())) {
-      std::cerr << "The number of tree tips doesn't match the alignment "
-                   "sequence count!\n";
-      abort();
-    }
-    BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
-    beagle_instance_ = beagle::CreateInstance(
-        tip_count, static_cast<int>(alignment_.Length()), return_info);
-    // TODO(erick) do something with return_info?
-    // TODO(erick) free return_info?
+    beagle_instance_ = beagle::CreateInstance(tree_collection_, alignment_);
   }
 
   void PrepareBeagleInstance() {
-    beagle::SetTipStates(beagle_instance_, tree_collection_->TagTaxonMap(),
-                         alignment_, symbol_table_);
-    std::vector<double> pattern_weights(alignment_.Length(), 1.);
-    beagleSetPatternWeights(beagle_instance_, pattern_weights.data());
-    // Use uniform rates and weights.
-    const double weights[1] = {1.0};
-    const double rates[1] = {1.0};
-    beagleSetCategoryWeights(beagle_instance_, 0, weights);
-    beagleSetCategoryRates(beagle_instance_, rates);
+    assert(beagle_instance_ != -1);
+    beagle::PrepareBeagleInstance(beagle_instance_, tree_collection_,
+                                  alignment_, symbol_table_);
   }
 
   void SetJCModel() {
-    std::vector<double> freqs(4, 0.25);
-    beagleSetStateFrequencies(beagle_instance_, 0, freqs.data());
-    // an eigen decomposition for the JC69 model
-    std::vector<double> evec = {1.0, 2.0, 0.0, 0.5,  1.0, -2.0, 0.5,  0.0,
-                                1.0, 2.0, 0.0, -0.5, 1.0, -2.0, -0.5, 0.0};
-
-    std::vector<double> ivec = {0.25,  0.25,   0.25, 0.25, 0.125, -0.125,
-                                0.125, -0.125, 0.0,  1.0,  0.0,   -1.0,
-                                1.0,   0.0,    -1.0, 0.0};
-
-    std::vector<double> eval = {0.0, -1.3333333333333333, -1.3333333333333333,
-                                -1.3333333333333333};
-    beagleSetEigenDecomposition(beagle_instance_, 0, evec.data(), ivec.data(),
-                                eval.data());
-  }
-
-  double TreeLogLikelihood(Tree::TreePtr tree) {
-    int next_internal_index = static_cast<int>(tree->LeafCount());
-    std::vector<int> node_indices;
-    std::vector<double> branch_lengths;
-    std::vector<BeagleOperation> operations;
-    tree->Root()->PostOrder(
-        [&tree, &next_internal_index, &node_indices, &branch_lengths,
-         &operations](const Node *node, const std::vector<int> &below_indices) {
-          if (node->IsLeaf()) {
-            int leaf_id = static_cast<int>(node->MaxLeafID());
-            node_indices.push_back(leaf_id);
-            branch_lengths.push_back(tree->BranchLength(node));
-            return leaf_id;
-          }
-          // else
-          int this_index = next_internal_index;
-          node_indices.push_back(this_index);
-          branch_lengths.push_back(tree->BranchLength(node));
-          assert(below_indices.size() == 2);
-          BeagleOperation op = {
-              this_index,                          // dest
-              BEAGLE_OP_NONE,   BEAGLE_OP_NONE,    // src and dest scaling
-              below_indices[0], below_indices[0],  // src1 and matrix1
-              below_indices[1], below_indices[1]   // src2 and matrix2
-          };
-          operations.push_back(op);
-          next_internal_index++;
-          return this_index;
-        });
-    beagleUpdateTransitionMatrices(beagle_instance_,
-                                   0,  // eigenIndex
-                                   node_indices.data(),
-                                   NULL,  // firstDerivativeIndices
-                                   NULL,  // secondDervativeIndices
-                                   branch_lengths.data(),
-                                   static_cast<int>(branch_lengths.size()));
-    beagleUpdatePartials(beagle_instance_,
-                         operations.data(),  // eigenIndex
-                         static_cast<int>(operations.size()),
-                         BEAGLE_OP_NONE);  // cumulative scale index
-    double log_like = 0;
-    std::vector<int> root_index = {node_indices.back()};
-    std::vector<int> category_weight_index = {0};
-    std::vector<int> state_frequency_index = {0};
-    std::vector<int> cumulative_scale_index = {BEAGLE_OP_NONE};
-    int count = 1;
-    beagleCalculateRootLogLikelihoods(
-        beagle_instance_, root_index.data(), category_weight_index.data(),
-        state_frequency_index.data(), cumulative_scale_index.data(), count,
-        &log_like);
-    return log_like;
+    assert(beagle_instance_ != -1);
+    beagle::SetJCModel(beagle_instance_);
   }
 
   std::vector<double> TreeLogLikelihoods() {
-    std::vector<double> llv;
-    for (const auto &tree : tree_collection_->Trees()) {
-      llv.push_back(TreeLogLikelihood(tree));
-    }
-    return llv;
+    assert(beagle_instance_ != -1);
+    return beagle::TreeLogLikelihoods(beagle_instance_, tree_collection_);
   }
 
   static void f(py::array_t<double> array) {
@@ -217,9 +134,9 @@ TEST_CASE("libsbn") {
   inst.BeagleCreate();
   inst.PrepareBeagleInstance();
   inst.SetJCModel();
-  CHECK_LT(abs(inst.TreeLogLikelihood(inst.tree_collection_->Trees()[0]) -
-               -84.852358),
-           0.000001);
+  for (auto ll : inst.TreeLogLikelihoods()) {
+    CHECK_LT(abs(ll - -84.852358), 0.000001);
+  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
