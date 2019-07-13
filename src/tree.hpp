@@ -39,7 +39,7 @@ class Tree {
       abort();
     }
   }
-  //
+
   // Remove trifurcation at the root and make it a bifurcation.
   // Given (s0:b0, s1:b1, s2:b3), we get (s0:b0, (s1:b1, s2:b2):0):0.
   TreePtr Detrifurcate() {
