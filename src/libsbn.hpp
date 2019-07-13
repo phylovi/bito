@@ -92,34 +92,21 @@ struct SBNInstance {
                    "to calculate phylogenetic likelihoods.\n";
       abort();
     }
-    int tip_count = static_cast<int>(tree_collection_->TaxonCount());
-    if (tip_count != static_cast<int>(alignment_.SequenceCount())) {
-      std::cerr << "The number of tree tips doesn't match the alignment "
-                   "sequence count!\n";
-      abort();
-    }
-    BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
-    beagle_instance_ = beagle::CreateInstance(
-        tip_count, static_cast<int>(alignment_.Length()), return_info);
-    // TODO(erick) do something with return_info?
-    // TODO(erick) free return_info?
-  }
-
-  void PrepareBeagleInstance() {
-    beagle::SetTipStates(beagle_instance_, tree_collection_->TagTaxonMap(),
-                         alignment_, symbol_table_);
-    std::vector<double> pattern_weights(alignment_.Length(), 1.);
-    beagleSetPatternWeights(beagle_instance_, pattern_weights.data());
-    // Use uniform rates and weights.
-    const double weights[1] = {1.0};
-    const double rates[1] = {1.0};
-    beagleSetCategoryWeights(beagle_instance_, 0, weights);
-    beagleSetCategoryRates(beagle_instance_, rates);
+    beagle_instance_ = beagle::CreateInstance(tree_collection_, alignment_);
   }
 
   // Wrappers for beagle functions.
-  void SetJCModel() { beagle::SetJCModel(beagle_instance_); }
+  void PrepareBeagleInstance() {
+    assert(beagle_instance_ != -1);
+    beagle::PrepareBeagleInstance(beagle_instance_, tree_collection_,
+                                  alignment_, symbol_table_);
+  }
+  void SetJCModel() {
+    assert(beagle_instance_ != -1);
+    beagle::SetJCModel(beagle_instance_);
+  }
   std::vector<double> TreeLogLikelihoods() {
+    assert(beagle_instance_ != -1);
     return beagle::TreeLogLikelihoods(beagle_instance_, tree_collection_);
   }
 

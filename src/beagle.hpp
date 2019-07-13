@@ -84,6 +84,47 @@ int CreateInstance(int tip_count, int alignment_length,
       requirement_flags, return_info);
 }
 
+BeagleInstance CreateInstance(
+    const TreeCollection::TreeCollectionPtr &tree_collection,
+    const Alignment &alignment) {
+  int tip_count = static_cast<int>(tree_collection->TaxonCount());
+  if (tip_count != static_cast<int>(alignment.SequenceCount())) {
+    std::cerr << "The number of tree tips doesn't match the alignment "
+                 "sequence count!\n";
+    abort();
+  }
+  BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
+  return CreateInstance(tip_count, static_cast<int>(alignment.Length()),
+                        return_info);
+  // TODO(erick) do something with return_info?
+  // TODO(erick) free return_info?
+}
+
+void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
+                  const Alignment &alignment, const CharIntMap &symbol_table) {
+  for (const auto &iter : tag_taxon_map) {
+    int taxon_number = static_cast<int>(UnpackFirstInt(iter.first));
+    SymbolVector symbols =
+        SymbolVectorOf(alignment.at(iter.second), symbol_table);
+    beagleSetTipStates(beagle_instance, taxon_number, symbols.data());
+  }
+}
+
+void PrepareBeagleInstance(
+    const BeagleInstance beagle_instance,
+    const TreeCollection::TreeCollectionPtr &tree_collection,
+    const Alignment &alignment, const CharIntMap &symbol_table) {
+  SetTipStates(beagle_instance, tree_collection->TagTaxonMap(), alignment,
+               symbol_table);
+  std::vector<double> pattern_weights(alignment.Length(), 1.);
+  beagleSetPatternWeights(beagle_instance, pattern_weights.data());
+  // Use uniform rates and weights.
+  const double weights[1] = {1.0};
+  const double rates[1] = {1.0};
+  beagleSetCategoryWeights(beagle_instance, 0, weights);
+  beagleSetCategoryRates(beagle_instance, rates);
+}
+
 void SetJCModel(BeagleInstance beagle_instance) {
   std::vector<double> freqs(4, 0.25);
   beagleSetStateFrequencies(beagle_instance, 0, freqs.data());
@@ -101,15 +142,6 @@ void SetJCModel(BeagleInstance beagle_instance) {
                               eval.data());
 }
 
-void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
-                  const Alignment &alignment, const CharIntMap &symbol_table) {
-  for (const auto &iter : tag_taxon_map) {
-    int taxon_number = static_cast<int>(UnpackFirstInt(iter.first));
-    SymbolVector symbols =
-        SymbolVectorOf(alignment.at(iter.second), symbol_table);
-    beagleSetTipStates(beagle_instance, taxon_number, symbols.data());
-  }
-}
 
 double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance) {
   int next_internal_index = static_cast<int>(tree->LeafCount());
