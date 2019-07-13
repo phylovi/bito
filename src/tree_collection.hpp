@@ -49,7 +49,7 @@ class TreeCollection {
     for (const auto &tree : trees_) {
       auto search = counter.find(tree->Root());
       if (search == counter.end()) {
-        assert(counter.insert(std::make_pair(tree->Root(), 1)).second);
+        assert(counter.insert({tree->Root(), 1}).second);
       } else {
         search->second++;
       }
