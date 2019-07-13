@@ -142,8 +142,8 @@ void SetJCModel(BeagleInstance beagle_instance) {
                               eval.data());
 }
 
-
-double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance) {
+double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
+                                    BeagleInstance beagle_instance) {
   int next_internal_index = static_cast<int>(tree->LeafCount());
   std::vector<int> node_indices;
   std::vector<double> branch_lengths;
@@ -196,6 +196,20 @@ double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance) {
   return log_like;
 }
 
+double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance) {
+  if (tree->Children().size() == 2) {
+    return BifurcatingTreeLogLikelihood(tree, beagle_instance);
+  }
+  // else
+  if (tree->Children().size() == 3) {
+    return BifurcatingTreeLogLikelihood(tree->Detrifurcate(), beagle_instance);
+  }
+  // else
+  std::cerr << "Tree likelihood calculations should be done on a tree with a "
+               "bifurcation or a trifurcation at the root.";
+  abort();
+}
+
 std::vector<double> TreeLogLikelihoods(
     BeagleInstance beagle_instance,
     TreeCollection::TreeCollectionPtr tree_collection) {
@@ -204,7 +218,7 @@ std::vector<double> TreeLogLikelihoods(
     llv.push_back(TreeLogLikelihood(tree, beagle_instance));
   }
   return llv;
-}
+  }
 
 }  // namespace beagle
 
