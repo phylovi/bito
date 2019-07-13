@@ -9,6 +9,7 @@
 #include <cmath>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "alignment.hpp"
 #include "beagle.hpp"
@@ -95,16 +96,17 @@ struct SBNInstance {
     beagle_instance_ = beagle::CreateInstance(tree_collection_, alignment_);
   }
 
-  // Wrappers for beagle functions.
   void PrepareBeagleInstance() {
     assert(beagle_instance_ != -1);
     beagle::PrepareBeagleInstance(beagle_instance_, tree_collection_,
                                   alignment_, symbol_table_);
   }
+
   void SetJCModel() {
     assert(beagle_instance_ != -1);
     beagle::SetJCModel(beagle_instance_);
   }
+
   std::vector<double> TreeLogLikelihoods() {
     assert(beagle_instance_ != -1);
     return beagle::TreeLogLikelihoods(beagle_instance_, tree_collection_);
@@ -132,10 +134,9 @@ TEST_CASE("libsbn") {
   inst.BeagleCreate();
   inst.PrepareBeagleInstance();
   inst.SetJCModel();
-  CHECK_LT(abs(beagle::TreeLogLikelihood(inst.tree_collection_->Trees()[0],
-                                         inst.beagle_instance_) -
-               -84.852358),
-           0.000001);
+  for (auto ll : inst.TreeLogLikelihoods()) {
+    CHECK_LT(abs(ll - -84.852358), 0.000001);
+  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
