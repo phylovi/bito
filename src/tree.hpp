@@ -23,10 +23,12 @@ class Tree {
   const TagDoubleMap BranchLengths() const { return branch_lengths_; }
   uint32_t LeafCount() const { return Root()->LeafCount(); }
   Node::NodePtrVec Children() const { return Root()->Children(); }
+
   std::string Newick(
       TagStringMapOption node_labels = std::experimental::nullopt) const {
     return Root()->Newick(branch_lengths_, node_labels);
   }
+
   double BranchLength(const Node* node) const {
     auto search = branch_lengths_.find(node->Tag());
     if (search != branch_lengths_.end()) {
@@ -37,6 +39,7 @@ class Tree {
       abort();
     }
   }
+
   static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology) {
     TagDoubleMap branch_lengths;
     topology->PreOrder([&branch_lengths](const Node* node) {
@@ -44,6 +47,7 @@ class Tree {
     });
     return std::make_shared<Tree>(topology, branch_lengths);
   }
+
   static TreePtrVector ExampleTrees() {
     TreePtrVector v;
     for (const auto& topology : Node::ExampleTopologies()) {
@@ -59,5 +63,4 @@ class Tree {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
 #endif  // SRC_TREE_HPP_
