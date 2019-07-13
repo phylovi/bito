@@ -71,14 +71,10 @@ struct SBNInstance {
     std::cout << alignment_.Data().size() << " sequences loaded.\n";
   }
 
-  StringUInt32Map RootsplitSupport() {
-    return StringUInt32MapOf(
-        RootsplitSupportOf(tree_collection_->TopologyCounter()));
-  }
-
-  StringUInt32Map SubsplitSupport() {
-    return StringUInt32MapOf(
-        SubsplitSupportOf(tree_collection_->TopologyCounter()));
+  std::pair<StringUInt32Map, StringUInt32Map> SplitSupports() {
+    auto counter = tree_collection_->TopologyCounter();
+    return {StringUInt32MapOf(RootsplitSupportOf(counter)),
+            StringUInt32MapOf(SubsplitSupportOf(counter))};
   }
 
   void BeagleCreate() {
