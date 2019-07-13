@@ -23,6 +23,7 @@ class Node {
   typedef std::shared_ptr<Node> NodePtr;
   typedef std::vector<NodePtr> NodePtrVec;
   typedef std::shared_ptr<NodePtrVec> NodePtrVecPtr;
+  typedef std::unordered_map<NodePtr, uint32_t> TopologyCounter;
 
   // This is the type of functions that are used in the PCSS recursion
   // functions. The signature is in 4 parts, each of which describes the
@@ -287,6 +288,16 @@ class Node {
     return (n << c) | (n >> ((-c) & mask));
   }
 
+  static NodePtrVec ExampleTopologies() {
+    NodePtrVec v = {
+        Join(std::vector<NodePtr>({Leaf(0), Leaf(1), Join(Leaf(2), Leaf(3))})),
+        // This is the same tree again.
+        Join(std::vector<NodePtr>({Leaf(1), Leaf(0), Join(Leaf(3), Leaf(2))})),
+        Join(std::vector<NodePtr>({Leaf(0), Leaf(2), Join(Leaf(1), Leaf(3))})),
+        Join(std::vector<NodePtr>({Leaf(0), Leaf(1), Join(Leaf(2), Leaf(3))}))};
+    return v;
+  }
+
  private:
   NodePtrVec children_;
   // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
@@ -323,19 +334,11 @@ struct equal_to<Node::NodePtr> {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Node header") {
-  auto t1 = Node::Join(
-      std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(1),
-                                  Node::Join(Node::Leaf(2), Node::Leaf(3))}));
-  auto t1_twin = Node::Join(
-      std::vector<Node::NodePtr>({Node::Leaf(1), Node::Leaf(0),
-                                  Node::Join(Node::Leaf(3), Node::Leaf(2))}));
-  auto t2 = Node::Join(
-      std::vector<Node::NodePtr>({Node::Leaf(0), Node::Leaf(2),
-                                  Node::Join(Node::Leaf(1), Node::Leaf(3))}));
-  auto t3 = Node::Join(std::vector<Node::NodePtr>(
-      {Node::Leaf(0), Node::Leaf(1),
-       Node::Join(Node::Leaf(2), Node::Join(Node::Leaf(3), Node::Leaf(4)))}));
-
+  Node::NodePtrVec examples = Node::ExampleTopologies();
+  Node::NodePtr t1 = examples[0];
+  Node::NodePtr t1_twin = examples[1];
+  Node::NodePtr t2 = examples[2];
+  Node::NodePtr t3 = examples[3];
   // TODO(ematsen) add real test for TriplePreorder
   std::cout << "TriplePreOrder" << std::endl;
   std::cout << t3->Newick() << std::endl;

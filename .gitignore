@@ -36,3 +36,4 @@
 _build
 _ignore
 __pycache__
+.pytest_cache

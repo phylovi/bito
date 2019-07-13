@@ -6,34 +6,73 @@
 
 #include <memory>
 #include <string>
-#include <unordered_map>
+#include <utility>
+#include <vector>
 #include "tree.hpp"
 
 class TreeCollection {
  public:
   typedef std::shared_ptr<TreeCollection> TreeCollectionPtr;
-  typedef std::unordered_map<Tree::TreePtr, uint32_t> TreePtrCounter;
-  typedef std::shared_ptr<TreePtrCounter> TreePtrCounterPtr;
 
-  explicit TreeCollection(TreePtrCounterPtr trees, TagStringMap tag_taxon_map)
-      : trees_(trees), tag_taxon_map_(tag_taxon_map) {}
+  explicit TreeCollection(Tree::TreePtrVector trees) : trees_(trees) {
+    if (trees.size() > 0) {
+      auto leaf_count = trees[0]->LeafCount();
+      for (const auto &tree : trees) {
+        assert(tree->LeafCount() == leaf_count);
+      }
+    }
+  }
 
-  size_t TreeCount() { return trees_->size(); }
-  TreePtrCounterPtr Trees() const { return trees_; }
-  TagStringMap TagTaxonMap() const { return tag_taxon_map_; }
+  TreeCollection(Tree::TreePtrVector trees, TagStringMap tag_taxon_map)
+      : trees_(trees), tag_taxon_map_(tag_taxon_map) {
+    auto taxon_count = tag_taxon_map.size();
+    for (const auto &tree : trees) {
+      assert(tree->LeafCount() == taxon_count);
+    }
+  }
+
+  size_t TreeCount() { return trees_.size(); }
+  const Tree::TreePtrVector &Trees() const { return trees_; }
+  const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
   size_t TaxonCount() const { return tag_taxon_map_.size(); }
-  Tree::TreePtr FirstTree() const {
-    assert(trees_->size() > 0);
-    return trees_->begin()->first;
+  std::string Newick() const {
+    std::string str;
+    for (const auto &tree : trees_) {
+      str.append(tree->Newick(tag_taxon_map_));
+      str.push_back('\n');
+    }
+    return str;
+  }
+
+  Node::TopologyCounter TopologyCounter() {
+    Node::TopologyCounter counter;
+    for (const auto &tree : trees_) {
+      auto search = counter.find(tree->Root());
+      if (search == counter.end()) {
+        assert(counter.insert({tree->Root(), 1}).second);
+      } else {
+        search->second++;
+      }
+    }
+    return counter;
   }
 
  private:
-  TreePtrCounterPtr trees_;
+  Tree::TreePtrVector trees_;
   TagStringMap tag_taxon_map_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-// TODO(erick) add tests for tree_collection
+TEST_CASE("TopologyCounter") {
+  TreeCollection collection(Tree::ExampleTrees());
+  auto counter = collection.TopologyCounter();
+  std::vector<uint32_t> v;
+  for (const auto &iter : counter) {
+    v.push_back(iter.second);
+  }
+  std::vector<uint32_t> v_correct = {1, 3};
+  CHECK_EQ(v, v_correct);
+}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_TREE_COLLECTION_HPP_

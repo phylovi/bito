@@ -38,24 +38,19 @@ TreeCollection::TreeCollectionPtr Driver::ParseFile(const std::string &fname) {
   }
   std::string line;
   unsigned int line_number = 1;
-  auto trees = std::make_shared<TreeCollection::TreePtrCounter>();
+  Tree::TreePtrVector trees;
   while (std::getline(in, line)) {
     // Set the Bison location line number properly so we get useful error
     // messages.
     location_.initialize(nullptr, line_number);
     line_number++;
     if (line.size() > 0) {
-      tree = ParseString(&parser_instance, line);
-      auto search = trees->find(tree);
-      if (search == trees->end()) {
-        assert(trees->insert(std::make_pair(tree, 1)).second);
-      } else {
-        search->second++;
-      }
+      trees.push_back(ParseString(&parser_instance, line));
     }
   }
   in.close();
-  return std::make_shared<TreeCollection>(trees, this->TagTaxonMap());
+  return std::make_shared<TreeCollection>(std::move(trees),
+                                          this->TagTaxonMap());
 }
 
 Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,
@@ -72,9 +67,7 @@ TreeCollection::TreeCollectionPtr Driver::ParseString(const std::string &str) {
   Clear();
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);
-  auto trees = std::make_shared<TreeCollection::TreePtrCounter>();
-  auto tree = ParseString(&parser_instance, str);
-  assert(trees->insert(std::make_pair(tree, 1)).second);
+  Tree::TreePtrVector trees = {ParseString(&parser_instance, str)};
   return std::make_shared<TreeCollection>(trees, this->TagTaxonMap());
 }
 
