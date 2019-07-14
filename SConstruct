@@ -15,7 +15,7 @@ env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
     # CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion'],
-    CCFLAGS=['-O3'],
+    CCFLAGS=['-O3', '-pthread'],
     CXXFLAGS=['-std=c++14'],
     CC = os.environ['CC'],
     CXX = os.environ['CXX']
@@ -67,7 +67,7 @@ env.SharedLibrary(
     "sbn"+os.popen("python3-config --extension-suffix").read().rstrip(),
     ['_build/libsbn.cpp'] + sources,
     SHLIBPREFIX='',
-    LIBS=['hmsbeagle'])
+    LIBS=['hmsbeagle', 'pthread'])
 doctest = env.Program(
     ['_build/doctest.cpp'] + sources,
-    LIBS=['hmsbeagle'])
+    LIBS=['hmsbeagle', 'pthread'])

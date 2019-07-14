@@ -14,6 +14,7 @@
 #include "alignment.hpp"
 #include "beagle.hpp"
 #include "build.hpp"
+#include "dispatch.hpp"
 #include "driver.hpp"
 #include "tree.hpp"
 
