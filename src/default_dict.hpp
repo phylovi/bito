@@ -39,13 +39,10 @@ class DefaultDict : private std::unordered_map<Key, T> {
 
   bool contains(const Key &key) { return (this->find(key) != this->end()); }
 
-  // TODO(ematsen) add a version that takes a rvalue reference so we can move
-  // things in.
   void increment(const Key &key, const T &value) {
     auto search = this->find(key);
     if (search == this->end()) {
-      // std::pair doesn't make a copy, in contrast to std::make_pair.
-      assert(this->insert(std::pair<Key, T>(key, value)).second);
+      assert(this->insert({key, value}).second);
     } else {
       search->second += value;
     }

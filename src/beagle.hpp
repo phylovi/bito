@@ -94,10 +94,9 @@ BeagleInstance CreateInstance(
     abort();
   }
   BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
+  // Not worrying about freeing this return_info.
   return CreateInstance(tip_count, static_cast<int>(alignment.Length()),
                         return_info);
-  // TODO(erick) do something with return_info?
-  // TODO(erick) free return_info?
 }
 
 void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
