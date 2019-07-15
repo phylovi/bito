@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include "prettyprint.hpp"
 #include "tree.hpp"
 
 class TreeCollection {
@@ -100,6 +101,8 @@ TEST_CASE("TopologyCounter") {
     v.push_back(iter.second);
   }
   std::vector<uint32_t> v_correct = {1, 2, 1};
+  std::cout << "v :" << v << std::endl;
+  std::cout << "v_correct :" << v_correct << std::endl;
   CHECK_EQ(v, v_correct);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
