@@ -14,8 +14,8 @@
 #include "alignment.hpp"
 #include "beagle.hpp"
 #include "build.hpp"
-#include "dispatch.hpp"
 #include "driver.hpp"
+#include "task_processor.hpp"
 #include "tree.hpp"
 
 namespace py = pybind11;
