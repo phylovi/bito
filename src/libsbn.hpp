@@ -141,10 +141,8 @@ struct SBNInstance {
 TEST_CASE("libsbn") {
   SBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon.nwk");
-  inst.PrintStatus();
+  // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/hello.nwk");
-  std::cout << inst.tree_collection_->Newick();
-  inst.PrintStatus();
   inst.ReadFastaFile("data/hello.fasta");
   inst.AddBeagleInstances(2);
   for (auto ll : inst.TreeLogLikelihoods()) {
