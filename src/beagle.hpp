@@ -84,19 +84,11 @@ int CreateInstance(int tip_count, int alignment_length,
       requirement_flags, return_info);
 }
 
-BeagleInstance CreateInstance(
-    const TreeCollection::TreeCollectionPtr &tree_collection,
-    const Alignment &alignment) {
-  int tip_count = static_cast<int>(tree_collection->TaxonCount());
-  if (tip_count != static_cast<int>(alignment.SequenceCount())) {
-    std::cerr << "The number of tree tips doesn't match the alignment "
-                 "sequence count!\n";
-    abort();
-  }
+BeagleInstance CreateInstance(const Alignment &alignment) {
   BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
   // Not worrying about freeing this return_info.
-  return CreateInstance(tip_count, static_cast<int>(alignment.Length()),
-                        return_info);
+  return CreateInstance(static_cast<int>(alignment.SequenceCount()),
+                        static_cast<int>(alignment.Length()), return_info);
 }
 
 void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
@@ -113,6 +105,11 @@ void PrepareBeagleInstance(
     const BeagleInstance beagle_instance,
     const TreeCollection::TreeCollectionPtr &tree_collection,
     const Alignment &alignment, const CharIntMap &symbol_table) {
+  if (tree_collection->TaxonCount() != alignment.SequenceCount()) {
+    std::cerr << "The number of tree tips doesn't match the alignment "
+                 "sequence count!\n";
+    abort();
+  }
   SetTipStates(beagle_instance, tree_collection->TagTaxonMap(), alignment,
                symbol_table);
   std::vector<double> pattern_weights(alignment.Length(), 1.);
@@ -212,12 +209,12 @@ double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance) {
 std::vector<double> TreeLogLikelihoods(
     BeagleInstance beagle_instance,
     TreeCollection::TreeCollectionPtr tree_collection) {
-  std::vector<double> llv;
+  std::vector<double> results;
   for (const auto &tree : tree_collection->Trees()) {
-    llv.push_back(TreeLogLikelihood(tree, beagle_instance));
+    results.push_back(TreeLogLikelihood(tree, beagle_instance));
   }
-  return llv;
-  }
+  return results;
+}
 
 }  // namespace beagle
 

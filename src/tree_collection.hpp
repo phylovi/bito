@@ -34,6 +34,7 @@ class TreeCollection {
 
   size_t TreeCount() const { return trees_.size(); }
   const Tree::TreePtrVector &Trees() const { return trees_; }
+  const Tree::TreePtr &GetTree(size_t i) const { return trees_.at(i); }
   const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
   size_t TaxonCount() const { return tag_taxon_map_.size(); }
 

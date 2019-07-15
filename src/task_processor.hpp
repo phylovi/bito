@@ -13,6 +13,10 @@
 // begins right away in the constructor. You can just let the TaskProcessor go
 // out of scope, or explicitly call the Wait method for it to complete.
 //
+// Note that we don't make any effort to ensure safety. For example, there is
+// nothing keeping you from having abundant data races if your Executors have
+// non-independent state.
+//
 // The fact that Executors are needed to run Tasks is what requires some design
 // like this-- we can't just use something like a C++17 parallel for loop.
 

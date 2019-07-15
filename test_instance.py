@@ -19,7 +19,5 @@ def test_instance():
 
     inst.read_newick_file('data/hello.nwk')
     inst.read_fasta_file('data/hello.fasta')
-    inst.beagle_create()
-    inst.prepare_beagle_instance()
-    inst.set_JC_model()
+    inst.add_beagle_instances(2)
     print(inst.tree_log_likelihoods())

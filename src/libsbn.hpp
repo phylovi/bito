@@ -7,6 +7,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <cmath>
+#include <queue>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -44,14 +45,16 @@ struct SBNInstance {
   TreeCollection::TreeCollectionPtr tree_collection_;
   Alignment alignment_;
   CharIntMap symbol_table_;
-  beagle::BeagleInstance beagle_instance_;
+  std::vector<beagle::BeagleInstance> beagle_instances_;
 
   explicit SBNInstance(const std::string &name)
-      : name_(name),
-        symbol_table_(beagle::GetSymbolTable()),
-        beagle_instance_(-1) {}
+      : name_(name), symbol_table_(beagle::GetSymbolTable()) {}
 
-  ~SBNInstance() { assert(beagleFinalizeInstance(beagle_instance_) == 0); }
+  ~SBNInstance() {
+    for (const auto &beagle_instance : beagle_instances_) {
+      assert(beagleFinalizeInstance(beagle_instance) == 0);
+    }
+  }
 
   size_t TreeCount() const { return tree_collection_->TreeCount(); }
 
@@ -79,9 +82,10 @@ struct SBNInstance {
             StringUInt32MapOf(SubsplitSupportOf(counter))};
   }
 
-  void BeagleCreate() {
-    if (beagle_instance_ != -1) {
-      std::cerr << "BEAGLE Instance already exists and needs to be freed.\n";
+  void AddBeagleInstances(int instance_count) {
+    if (alignment_.SequenceCount() == 0) {
+      std::cerr << "Load an alignment into your SBNInstance on which you wish "
+                   "to calculate phylogenetic likelihoods.\n";
       abort();
     }
     if (TreeCount() == 0) {
@@ -89,28 +93,38 @@ struct SBNInstance {
                    "calculate phylogenetic likelihoods.\n";
       abort();
     }
-    if (alignment_.SequenceCount() == 0) {
-      std::cerr << "Load an alignment into your SBNInstance on which you wish "
-                   "to calculate phylogenetic likelihoods.\n";
-      abort();
+    for (auto i = 0; i < instance_count; i++) {
+      auto beagle_instance = beagle::CreateInstance(alignment_);
+      beagle::SetJCModel(beagle_instance);
+      beagle_instances_.push_back(beagle_instance);
+      beagle::PrepareBeagleInstance(beagle_instance, tree_collection_,
+                                    alignment_, symbol_table_);
     }
-    beagle_instance_ = beagle::CreateInstance(tree_collection_, alignment_);
-  }
-
-  void PrepareBeagleInstance() {
-    assert(beagle_instance_ != -1);
-    beagle::PrepareBeagleInstance(beagle_instance_, tree_collection_,
-                                  alignment_, symbol_table_);
-  }
-
-  void SetJCModel() {
-    assert(beagle_instance_ != -1);
-    beagle::SetJCModel(beagle_instance_);
   }
 
   std::vector<double> TreeLogLikelihoods() {
-    assert(beagle_instance_ != -1);
-    return beagle::TreeLogLikelihoods(beagle_instance_, tree_collection_);
+    if (beagle_instances_.size() == 0) {
+      std::cerr << "Please add some BEAGLE instances that can be used for "
+                   "computation.\n";
+      abort();
+    }
+    std::vector<double> results(tree_collection_->TreeCount());
+    std::queue<beagle::BeagleInstance> instance_queue;
+    for (auto instance : beagle_instances_) {
+      instance_queue.push(instance);
+    }
+    std::queue<size_t> tree_number_queue;
+    for (size_t i = 0; i < tree_collection_->TreeCount(); i++) {
+      tree_number_queue.push(i);
+    }
+    TaskProcessor<beagle::BeagleInstance, size_t> task_processor(
+        instance_queue, tree_number_queue,
+        [&results, &tree_collection = tree_collection_ ](
+            beagle::BeagleInstance beagle_instance, size_t tree_number) {
+          results[tree_number] = beagle::TreeLogLikelihood(
+              tree_collection->GetTree(tree_number), beagle_instance);
+        });
+    return results;
   }
 
   static void f(py::array_t<double> array) {
@@ -132,9 +146,7 @@ TEST_CASE("libsbn") {
   std::cout << inst.tree_collection_->Newick();
   inst.PrintStatus();
   inst.ReadFastaFile("data/hello.fasta");
-  inst.BeagleCreate();
-  inst.PrepareBeagleInstance();
-  inst.SetJCModel();
+  inst.AddBeagleInstances(2);
   for (auto ll : inst.TreeLogLikelihoods()) {
     CHECK_LT(abs(ll - -84.852358), 0.000001);
   }
