@@ -75,8 +75,8 @@ See the Makefile for the invocation.
 
 Add a test for every new feature.
 
-* For C++, use [doctest](https://github.com/onqtam/doctest)
-* For Python, use [pytest](https://docs.pytest.org/en/latest/)
+* For C++, we use [doctest](https://github.com/onqtam/doctest).
+* For Python, we use [pytest](https://docs.pytest.org/en/latest/).
 
 
 ### [Git flow](https://guides.github.com/introduction/flow/)
