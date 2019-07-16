@@ -75,11 +75,12 @@ TEST_CASE("Driver") {
     CHECK_EQ(newick, collection->Trees()[0]->Newick(collection->TagTaxonMap()));
   }
   driver.Clear();
-  auto nexus_collection = driver.ParseNexusFile("data/DS1.subsampled.t");
+  auto nexus_collection = driver.ParseNexusFile("data/DS1.subsampled_10.t");
   CHECK_EQ(nexus_collection->TreeCount(), 10);
   driver.Clear();
-  auto newick_collection = driver.ParseNewickFile("data/DS1.subsampled.t.nwk");
-  CHECK(nexus_collection == newick_collection);
+  auto newick_collection =
+      driver.ParseNewickFile("data/DS1.subsampled_10.t.nwk");
+  CHECK_EQ(nexus_collection, newick_collection);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

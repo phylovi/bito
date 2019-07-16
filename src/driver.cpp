@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <regex>
+#include <unordered_map>
 #include <utility>
 #include "parser.hpp"
 
@@ -120,7 +121,6 @@ TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
       }
       assert(translated_taxon_map.insert({iter.first, search->second}).second);
     }
-    // TODO can we do a move constructor here?
     return std::make_shared<TreeCollection>(pre_translation->Trees(),
                                             translated_taxon_map);
   } catch (const std::exception &exception) {
