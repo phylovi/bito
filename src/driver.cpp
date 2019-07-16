@@ -86,11 +86,15 @@ TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
       throw std::runtime_error("Missing translate block.");
     }
     std::getline(in, line);
-    std::regex translate_item_regex("^\\s*(\\d*)\\s(.*),$");
+    std::regex translate_item_regex("^\\s*(\\d+)\\s([^,]*)[,;]$");
     std::smatch match;
     while (std::regex_match(line, match, translate_item_regex)) {
       std::cout << match[1].str() << std::endl;
       std::cout << match[2].str() << std::endl;
+      // Semicolon marks the end of the translate block.
+      if (match[3].str() == ";") {
+        break;
+      }
       std::getline(in, line);
       if (in.eof()) {
         throw std::runtime_error(
