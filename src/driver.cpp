@@ -25,17 +25,11 @@ void Driver::Clear() {
   branch_lengths_.clear();
 }
 
-TreeCollection::TreeCollectionPtr Driver::ParseFile(const std::string &fname) {
-  Tree::TreePtr tree;
+TreeCollection::TreeCollectionPtr Driver::ParseNewick(std::ifstream &in) {
   yy::parser parser_instance(*this);
 
   parser_instance.set_debug_level(trace_parsing_);
 
-  std::ifstream in(fname.c_str());
-  if (!in) {
-    std::cerr << "Cannot open the File : " << fname << std::endl;
-    abort();
-  }
   std::string line;
   unsigned int line_number = 1;
   Tree::TreePtrVector trees;
@@ -51,6 +45,15 @@ TreeCollection::TreeCollectionPtr Driver::ParseFile(const std::string &fname) {
   in.close();
   return std::make_shared<TreeCollection>(std::move(trees),
                                           this->TagTaxonMap());
+}
+
+TreeCollection::TreeCollectionPtr Driver::ParseFile(const std::string &fname) {
+  std::ifstream in(fname.c_str());
+  if (!in) {
+    std::cerr << "Cannot open the File : " << fname << std::endl;
+    abort();
+  }
+  return ParseNewick(in);
 }
 
 Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,

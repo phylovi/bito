@@ -49,7 +49,9 @@ class Driver {
                             const std::string& str);
   // Make a parser and then parse a string for a one-off parsing.
   TreeCollection::TreeCollectionPtr ParseString(const std::string& s);
-  // Run the parser on a file.
+  // Run the parser on a Newick stream.
+  TreeCollection::TreeCollectionPtr ParseNewick(std::ifstream& in);
+  // Run the parser on a Newick file.
   TreeCollection::TreeCollectionPtr ParseFile(const std::string& fname);
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
   TagStringMap TagTaxonMap();
