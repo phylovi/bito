@@ -92,26 +92,42 @@ TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
     std::getline(in, line);
     std::regex translate_item_regex("^\\s*(\\d+)\\s([^,]*)[,;]$");
     std::smatch match;
+    auto previous_position = in.tellg();
+    std::unordered_map<std::string, std::string> translator;
     while (std::regex_match(line, match, translate_item_regex)) {
-      std::cout << match[1].str() << std::endl;
-      std::cout << match[2].str() << std::endl;
+      assert(translator.insert({match[1].str(), match[2].str()}).second);
       // Semicolon marks the end of the translate block.
       if (match[3].str() == ";") {
         break;
       }
+      previous_position = in.tellg();
       std::getline(in, line);
       if (in.eof()) {
         throw std::runtime_error(
             "Encountered EOF while parsing translate block.");
       }
     }
-    std::cout << line << std::endl;
+    // Back up one line to hit the first tree.
+    in.seekg(previous_position);
+    // Now we make a new TagTaxonMap to replace the one with numbers in place of
+    // taxon names.
+    auto pre_translation = ParseNewick(in);
+    TagStringMap translated_taxon_map;
+    for (const auto &iter : pre_translation->TagTaxonMap()) {
+      auto search = translator.find(iter.second);
+      if (search == translator.end()) {
+        throw std::runtime_error("Couldn't find a translation table entry.");
+      }
+      assert(translated_taxon_map.insert({iter.first, search->second}).second);
+    }
+    // TODO can we do a move constructor here?
+    return std::make_shared<TreeCollection>(pre_translation->Trees(),
+                                            translated_taxon_map);
   } catch (const std::exception &exception) {
     std::cerr << "Problem parsing '" << fname << "':\n";
     std::cerr << exception.what() << std::endl;
     abort();
   }
-  return ParseNewick(in);
 }
 
 Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,

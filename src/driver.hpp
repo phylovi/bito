@@ -74,10 +74,10 @@ TEST_CASE("Driver") {
     auto collection = driver.ParseString(newick);
     CHECK_EQ(newick, collection->Trees()[0]->Newick(collection->TagTaxonMap()));
   }
-  //  driver.Clear();
-  //  auto collection = driver.ParseNexusFile("data/bad.t");
   driver.Clear();
   auto collection = driver.ParseNexusFile("data/DS1.subsampled.t");
+  CHECK_EQ(collection->TreeCount(), 10);
+  std::cout << collection->Newick();
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
