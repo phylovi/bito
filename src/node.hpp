@@ -35,10 +35,12 @@ class Node {
   typedef std::unordered_map<NodePtr, uint32_t> TopologyCounter;
 
   // This is the type of functions that are used in the PCSS recursion
-  // functions. The signature is in 4 parts, each of which describes the
-  // position in the tree and then the direction: false means down the tree
-  // structure and true means up. The 4 parts are the uncut parent, the cut
-  // parent, child 0, and child 1.
+  // functions. Please see the README for definitions of the (un)cut parent.
+  //
+  // The signature is in 4 parts, each of which describes the
+  // position in the tree and then the direction. The 4 parts are the uncut
+  // parent, the cut parent, child 0, and child 1. False means down the tree
+  // structure and true means up.
   typedef std::function<void(const Node*, bool, const Node*, bool, const Node*,
                              bool, const Node*, bool)>
       PCSSFun;
