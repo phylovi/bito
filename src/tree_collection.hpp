@@ -8,7 +8,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-#include "prettyprint.hpp"
 #include "tree.hpp"
 
 class TreeCollection {
