@@ -34,6 +34,7 @@ class TreeCollection {
 
   size_t TreeCount() const { return trees_.size(); }
   const Tree::TreePtrVector &Trees() const { return trees_; }
+  const Tree::TreePtr &GetTree(size_t i) const { return trees_.at(i); }
   const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
   size_t TaxonCount() const { return tag_taxon_map_.size(); }
 
@@ -98,7 +99,7 @@ TEST_CASE("TopologyCounter") {
   for (const auto &iter : counter) {
     v.push_back(iter.second);
   }
-  std::vector<uint32_t> v_correct = {1, 2, 1};
+  std::vector<uint32_t> v_correct({1, 2, 1});
   CHECK_EQ(v, v_correct);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

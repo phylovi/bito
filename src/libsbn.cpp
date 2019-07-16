@@ -14,12 +14,11 @@ PYBIND11_MODULE(sbn, m) {
       .def(py::init<const std::string &>())
       .def("tree_count", &SBNInstance::TreeCount)
       .def("read_newick_file", &SBNInstance::ReadNewickFile)
+      .def("read_nexus_file", &SBNInstance::ReadNexusFile)
       .def("read_fasta_file", &SBNInstance::ReadFastaFile)
       .def("print_status", &SBNInstance::PrintStatus)
       .def("split_supports", &SBNInstance::SplitSupports)
-      .def("beagle_create", &SBNInstance::BeagleCreate)
-      .def("prepare_beagle_instance", &SBNInstance::PrepareBeagleInstance)
-      .def("set_JC_model", &SBNInstance::SetJCModel)
+      .def("make_beagle_instances", &SBNInstance::MakeBeagleInstances)
       .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods);
   m.def("f", &SBNInstance::f, "test");
 }

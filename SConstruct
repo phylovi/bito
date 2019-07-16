@@ -14,8 +14,8 @@ import re
 env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
-    # CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion'],
-    CCFLAGS=['-O3'],
+    # CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion', '-pthread'],
+    CCFLAGS=['-O3', '-pthread'],
     CXXFLAGS=['-std=c++14'],
     CC = os.environ['CC'],
     CXX = os.environ['CXX']
@@ -70,4 +70,4 @@ env.SharedLibrary(
     LIBS=['hmsbeagle'])
 doctest = env.Program(
     ['_build/doctest.cpp'] + sources,
-    LIBS=['hmsbeagle'])
+    LIBS=['hmsbeagle', 'pthread'])

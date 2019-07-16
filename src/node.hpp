@@ -361,5 +361,4 @@ TEST_CASE("Node header") {
   CHECK_NE(t1, t2);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
 #endif  // SRC_NODE_HPP_
