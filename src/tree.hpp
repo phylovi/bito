@@ -24,6 +24,11 @@ class Tree {
   uint32_t LeafCount() const { return Topology()->LeafCount(); }
   Node::NodePtrVec Children() const { return Topology()->Children(); }
 
+  bool operator==(const Tree& other) {
+    return (this->Topology() == other.Topology()) &&
+           (this->BranchLengths() == other.BranchLengths());
+  }
+
   std::string Newick(
       TagStringMapOption node_labels = std::experimental::nullopt) const {
     return Topology()->Newick(branch_lengths_, node_labels);
@@ -77,6 +82,15 @@ class Tree {
   Node::NodePtr topology_;
   TagDoubleMap branch_lengths_;
 };
+
+// Compare TreePtrs by their Trees.
+inline bool operator==(const Tree::TreePtr& lhs, const Tree::TreePtr& rhs) {
+  return *lhs == *rhs;
+}
+
+inline bool operator!=(const Tree::TreePtr& lhs, const Tree::TreePtr& rhs) {
+  return !(lhs == rhs);
+}
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Tree") {
