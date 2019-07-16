@@ -50,7 +50,10 @@ struct SBNInstance {
   explicit SBNInstance(const std::string &name)
       : name_(name), symbol_table_(beagle::GetSymbolTable()) {}
 
-  ~SBNInstance() {
+  ~SBNInstance() { FinalizeBeagleInstances(); }
+
+  // Finalize means to release memory.
+  void FinalizeBeagleInstances() {
     for (const auto &beagle_instance : beagle_instances_) {
       assert(beagleFinalizeInstance(beagle_instance) == 0);
     }
@@ -61,6 +64,11 @@ struct SBNInstance {
   void ReadNewickFile(std::string fname) {
     Driver driver;
     tree_collection_ = driver.ParseNewickFile(fname);
+  }
+
+  void ReadNexusFile(std::string fname) {
+    Driver driver;
+    tree_collection_ = driver.ParseNexusFile(fname);
   }
 
   void ReadFastaFile(std::string fname) { alignment_.ReadFasta(fname); }
@@ -82,7 +90,9 @@ struct SBNInstance {
             StringUInt32MapOf(SubsplitSupportOf(counter))};
   }
 
-  void AddBeagleInstances(int instance_count) {
+  void MakeBeagleInstances(int instance_count) {
+    // Start by clearing out any existing instances.
+    FinalizeBeagleInstances();
     if (alignment_.SequenceCount() == 0) {
       std::cerr << "Load an alignment into your SBNInstance on which you wish "
                    "to calculate phylogenetic likelihoods.\n";
@@ -144,9 +154,21 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
-  inst.AddBeagleInstances(2);
+  inst.MakeBeagleInstances(2);
   for (auto ll : inst.TreeLogLikelihoods()) {
     CHECK_LT(abs(ll - -84.852358), 0.000001);
+  }
+  inst.ReadNexusFile("data/DS1.subsampled_10.t");
+  inst.ReadFastaFile("data/DS1.fasta");
+  inst.MakeBeagleInstances(2);
+  auto likelihoods = inst.TreeLogLikelihoods();
+  std::vector<double> pybeagle_likelihoods = {
+      -14582.995273982739, -6911.294207416366, -6916.880235529542,
+      -6904.016888831189,  -6915.055570693576, -6915.50496696512,
+      -6910.958836661867,  -6909.02639968063,  -6912.967861935749,
+      -6910.7871105783515};
+  for (size_t i = 0; i < likelihoods.size(); i++) {
+    CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.000001);
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

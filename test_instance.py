@@ -17,7 +17,7 @@ def test_instance():
                 fp.write(support+'\n')
             fp.write('\n')
 
-    inst.read_newick_file('data/hello.nwk')
-    inst.read_fasta_file('data/hello.fasta')
+    inst.read_nexus_file('data/DS1.subsampled_10.t')
+    inst.read_fasta_file('data/DS1.fasta')
     inst.add_beagle_instances(2)
     print(inst.tree_log_likelihoods())
