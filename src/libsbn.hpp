@@ -56,7 +56,7 @@ struct SBNInstance {
 
   void ReadNewickFile(std::string fname) {
     Driver driver;
-    tree_collection_ = driver.ParseFile(fname);
+    tree_collection_ = driver.ParseNewickFile(fname);
   }
 
   void ReadFastaFile(std::string fname) { alignment_.ReadFasta(fname); }

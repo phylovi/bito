@@ -47,7 +47,8 @@ TreeCollection::TreeCollectionPtr Driver::ParseNewick(std::ifstream &in) {
                                           this->TagTaxonMap());
 }
 
-TreeCollection::TreeCollectionPtr Driver::ParseFile(const std::string &fname) {
+TreeCollection::TreeCollectionPtr Driver::ParseNewickFile(
+    const std::string &fname) {
   std::ifstream in(fname.c_str());
   if (!in) {
     std::cerr << "Cannot open the File : " << fname << std::endl;

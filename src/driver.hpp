@@ -52,7 +52,7 @@ class Driver {
   // Run the parser on a Newick stream.
   TreeCollection::TreeCollectionPtr ParseNewick(std::ifstream& in);
   // Run the parser on a Newick file.
-  TreeCollection::TreeCollectionPtr ParseFile(const std::string& fname);
+  TreeCollection::TreeCollectionPtr ParseNewickFile(const std::string& fname);
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
   TagStringMap TagTaxonMap();
 };
