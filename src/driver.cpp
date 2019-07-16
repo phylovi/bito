@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <regex>
 #include <utility>
 #include "parser.hpp"
 
@@ -52,6 +53,54 @@ TreeCollection::TreeCollectionPtr Driver::ParseNewickFile(
   std::ifstream in(fname.c_str());
   if (!in) {
     std::cerr << "Cannot open the File : " << fname << std::endl;
+    abort();
+  }
+  return ParseNewick(in);
+}
+
+TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
+    const std::string &fname) {
+  std::ifstream in(fname.c_str());
+  try {
+    if (!in) {
+      throw std::runtime_error("Cannot open file.");
+    }
+
+    std::string line;
+    std::getline(in, line);
+    if (line != "#NEXUS") {
+      throw std::runtime_error(
+          "Putative Nexus file doesn't begin with #NEXUS.");
+    }
+    do {
+      if (in.eof()) {
+        throw std::runtime_error(
+            "Finished reading and couldn't find 'begin trees;'");
+        abort();
+      }
+      std::getline(in, line);
+    } while (line != "begin trees;");
+    std::getline(in, line);
+    std::regex translate_start("^\\s*translate");
+    if (!std::regex_match(line, translate_start)) {
+      throw std::runtime_error("Missing translate block.");
+    }
+    std::getline(in, line);
+    std::regex translate_item_regex("^\\s*(\\d*)\\s(.*),$");
+    std::smatch match;
+    while (std::regex_match(line, match, translate_item_regex)) {
+      std::cout << match[1].str() << std::endl;
+      std::cout << match[2].str() << std::endl;
+      std::getline(in, line);
+      if (in.eof()) {
+        throw std::runtime_error(
+            "Encountered EOF while parsing translate block.");
+      }
+    }
+    std::cout << line << std::endl;
+  } catch (const std::exception &exception) {
+    std::cerr << "Problem parsing '" << fname << "':\n";
+    std::cerr << exception.what() << std::endl;
     abort();
   }
   return ParseNewick(in);

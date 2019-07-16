@@ -53,6 +53,8 @@ class Driver {
   TreeCollection::TreeCollectionPtr ParseNewick(std::ifstream& in);
   // Run the parser on a Newick file.
   TreeCollection::TreeCollectionPtr ParseNewickFile(const std::string& fname);
+  // Run the parser on a Nexus file.
+  TreeCollection::TreeCollectionPtr ParseNexusFile(const std::string& fname);
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
   TagStringMap TagTaxonMap();
 };
@@ -72,6 +74,10 @@ TEST_CASE("Driver") {
     auto collection = driver.ParseString(newick);
     CHECK_EQ(newick, collection->Trees()[0]->Newick(collection->TagTaxonMap()));
   }
+  //  driver.Clear();
+  //  auto collection = driver.ParseNexusFile("data/bad.t");
+  driver.Clear();
+  auto collection = driver.ParseNexusFile("data/DS1.subsampled.t");
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
