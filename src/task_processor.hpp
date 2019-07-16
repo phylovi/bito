@@ -9,9 +9,11 @@
 // available. We want to run the Tasks in parallel on as many threads as we have
 // Executors.
 //
-// For this, build queues of Executors and Work, then make a TaskProcessor. Work
-// begins right away in the constructor. You can just let the TaskProcessor go
-// out of scope, or explicitly call the Wait method for it to complete.
+// For this, build queues of Executors and Work, then make a TaskProcessor out
+// of them that does the work as specified in the queues. Work begins right away
+// in the constructor. To get the work to complete, you can just let the
+// TaskProcessor go out of scope, or explicitly call the Wait method for it to
+// complete.
 //
 // Note that we don't make any effort to ensure safety. For example, there is
 // nothing keeping you from having abundant data races if your Executors have
@@ -43,7 +45,7 @@ class TaskProcessor {
         threads_(executor_queue.size()) {
     // Make as many threads as there are executors.
     for (size_t i = 0; i < threads_.size(); i++) {
-      threads_[i] = std::thread(&TaskProcessor::dispatch_thread_handler, this);
+      threads_[i] = std::thread(&TaskProcessor::thread_handler, this);
     }
   }
 
@@ -68,7 +70,7 @@ class TaskProcessor {
   std::mutex lock_;
   std::condition_variable condition_variable_;
 
-  void dispatch_thread_handler(void) {
+  void thread_handler(void) {
     std::unique_lock<std::mutex> lock(lock_);
     while (work_queue_.size()) {
       // Wait until we have an executor available. This right here is the key of

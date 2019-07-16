@@ -163,11 +163,11 @@ TEST_CASE("libsbn") {
   inst.ReadFastaFile("data/DS1.fasta");
   inst.MakeBeagleInstances(2);
   auto likelihoods = inst.TreeLogLikelihoods();
-  std::vector<double> pybeagle_likelihoods = {
-      -14582.995273982739, -6911.294207416366, -6916.880235529542,
-      -6904.016888831189,  -6915.055570693576, -6915.50496696512,
-      -6910.958836661867,  -6909.02639968063,  -6912.967861935749,
-      -6910.7871105783515};
+  std::vector<double> pybeagle_likelihoods(
+      {-14582.995273982739, -6911.294207416366, -6916.880235529542,
+       -6904.016888831189, -6915.055570693576, -6915.50496696512,
+       -6910.958836661867, -6909.02639968063, -6912.967861935749,
+       -6910.7871105783515});
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }

@@ -99,9 +99,7 @@ TEST_CASE("TopologyCounter") {
   for (const auto &iter : counter) {
     v.push_back(iter.second);
   }
-  std::vector<uint32_t> v_correct = {1, 2, 1};
-  std::cout << "v :" << v << std::endl;
-  std::cout << "v_correct :" << v_correct << std::endl;
+  std::vector<uint32_t> v_correct({1, 2, 1});
   CHECK_EQ(v, v_correct);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
