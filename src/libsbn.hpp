@@ -57,6 +57,7 @@ struct SBNInstance {
     for (const auto &beagle_instance : beagle_instances_) {
       assert(beagleFinalizeInstance(beagle_instance) == 0);
     }
+    beagle_instances_.clear();
   }
 
   size_t TreeCount() const { return tree_collection_->TreeCount(); }
@@ -168,7 +169,7 @@ TEST_CASE("libsbn") {
       -6910.958836661867,  -6909.02639968063,  -6912.967861935749,
       -6910.7871105783515};
   for (size_t i = 0; i < likelihoods.size(); i++) {
-    CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.000001);
+    CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

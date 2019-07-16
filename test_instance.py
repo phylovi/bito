@@ -19,5 +19,5 @@ def test_instance():
 
     inst.read_nexus_file('data/DS1.subsampled_10.t')
     inst.read_fasta_file('data/DS1.fasta')
-    inst.add_beagle_instances(2)
+    inst.make_beagle_instances(2)
     print(inst.tree_log_likelihoods())
