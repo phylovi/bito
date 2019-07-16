@@ -14,7 +14,8 @@ class TreeCollection {
  public:
   typedef std::shared_ptr<TreeCollection> TreeCollectionPtr;
 
-  explicit TreeCollection(Tree::TreePtrVector trees) : trees_(trees) {
+  explicit TreeCollection(Tree::TreePtrVector trees)
+      : trees_(std::move(trees)) {
     if (trees.size() > 0) {
       auto leaf_count = trees[0]->LeafCount();
       for (const auto &tree : trees) {
@@ -24,17 +25,33 @@ class TreeCollection {
   }
 
   TreeCollection(Tree::TreePtrVector trees, TagStringMap tag_taxon_map)
-      : trees_(trees), tag_taxon_map_(tag_taxon_map) {
+      : trees_(std::move(trees)), tag_taxon_map_(std::move(tag_taxon_map)) {
     auto taxon_count = tag_taxon_map.size();
     for (const auto &tree : trees) {
       assert(tree->LeafCount() == taxon_count);
     }
   }
 
-  size_t TreeCount() { return trees_.size(); }
+  size_t TreeCount() const { return trees_.size(); }
   const Tree::TreePtrVector &Trees() const { return trees_; }
   const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
   size_t TaxonCount() const { return tag_taxon_map_.size(); }
+
+  bool operator==(const TreeCollection &other) {
+    if (this->TagTaxonMap() != other.TagTaxonMap()) {
+      return false;
+    }
+    if (TreeCount() != other.TreeCount()) {
+      return false;
+    }
+    for (size_t i = 0; i < TreeCount(); i++) {
+      if (this->Trees()[i] != other.Trees()[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   std::string Newick() const {
     std::string str;
     for (const auto &tree : trees_) {
@@ -61,6 +78,17 @@ class TreeCollection {
   Tree::TreePtrVector trees_;
   TagStringMap tag_taxon_map_;
 };
+
+// Compare TreeCollectionPtrs by their TreeCollections.
+inline bool operator==(const TreeCollection::TreeCollectionPtr &lhs,
+                       const TreeCollection::TreeCollectionPtr &rhs) {
+  return *lhs == *rhs;
+}
+
+inline bool operator!=(const TreeCollection::TreeCollectionPtr &lhs,
+                       const TreeCollection::TreeCollectionPtr &rhs) {
+  return !(lhs == rhs);
+}
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TopologyCounter") {

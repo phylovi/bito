@@ -49,8 +49,12 @@ class Driver {
                             const std::string& str);
   // Make a parser and then parse a string for a one-off parsing.
   TreeCollection::TreeCollectionPtr ParseString(const std::string& s);
-  // Run the parser on a file.
-  TreeCollection::TreeCollectionPtr ParseFile(const std::string& fname);
+  // Run the parser on a Newick stream.
+  TreeCollection::TreeCollectionPtr ParseNewick(std::ifstream& in);
+  // Run the parser on a Newick file.
+  TreeCollection::TreeCollectionPtr ParseNewickFile(const std::string& fname);
+  // Run the parser on a Nexus file.
+  TreeCollection::TreeCollectionPtr ParseNexusFile(const std::string& fname);
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
   TagStringMap TagTaxonMap();
 };
@@ -70,6 +74,13 @@ TEST_CASE("Driver") {
     auto collection = driver.ParseString(newick);
     CHECK_EQ(newick, collection->Trees()[0]->Newick(collection->TagTaxonMap()));
   }
+  driver.Clear();
+  auto nexus_collection = driver.ParseNexusFile("data/DS1.subsampled_10.t");
+  CHECK_EQ(nexus_collection->TreeCount(), 10);
+  driver.Clear();
+  auto newick_collection =
+      driver.ParseNewickFile("data/DS1.subsampled_10.t.nwk");
+  CHECK_EQ(nexus_collection, newick_collection);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
