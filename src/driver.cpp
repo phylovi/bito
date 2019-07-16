@@ -26,6 +26,7 @@ void Driver::Clear() {
   branch_lengths_.clear();
 }
 
+// This parser will allow anything before the first '('.
 TreeCollection::TreeCollectionPtr Driver::ParseNewick(std::ifstream &in) {
   yy::parser parser_instance(*this);
 
@@ -39,7 +40,10 @@ TreeCollection::TreeCollectionPtr Driver::ParseNewick(std::ifstream &in) {
     // messages.
     location_.initialize(nullptr, line_number);
     line_number++;
-    if (line.size() > 0) {
+    auto tree_start = line.find_first_of("(");
+    if (line.size() > 0 && tree_start != std::string::npos) {
+      // Erase any characters before the first '('.
+      line.erase(0, tree_start);
       trees.push_back(ParseString(&parser_instance, line));
     }
   }
