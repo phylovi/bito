@@ -37,7 +37,7 @@ TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
         x |= m.at(child->Tag());
       }
     }
-    assert(m.insert(std::make_pair(n->Tag(), std::move(x))).second);
+    assert(m.insert({n->Tag(), std::move(x)}).second);
   });
   return m;
 }
