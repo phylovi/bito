@@ -81,7 +81,6 @@ TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
       if (in.eof()) {
         throw std::runtime_error(
             "Finished reading and couldn't find 'begin trees;'");
-        abort();
       }
       std::getline(in, line);
     } while (line != "begin trees;");
