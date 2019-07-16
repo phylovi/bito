@@ -121,8 +121,8 @@ TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
       }
       assert(translated_taxon_map.insert({iter.first, search->second}).second);
     }
-    return std::make_shared<TreeCollection>(pre_translation->Trees(),
-                                            translated_taxon_map);
+    return std::make_shared<TreeCollection>(std::move(pre_translation->Trees()),
+                                            std::move(translated_taxon_map));
   } catch (const std::exception &exception) {
     std::cerr << "\nProblem parsing '" << fname << "':\n";
     std::cerr << exception.what() << std::endl;

@@ -14,7 +14,8 @@ class TreeCollection {
  public:
   typedef std::shared_ptr<TreeCollection> TreeCollectionPtr;
 
-  explicit TreeCollection(Tree::TreePtrVector trees) : trees_(trees) {
+  explicit TreeCollection(Tree::TreePtrVector trees)
+      : trees_(std::move(trees)) {
     if (trees.size() > 0) {
       auto leaf_count = trees[0]->LeafCount();
       for (const auto &tree : trees) {
@@ -24,7 +25,7 @@ class TreeCollection {
   }
 
   TreeCollection(Tree::TreePtrVector trees, TagStringMap tag_taxon_map)
-      : trees_(trees), tag_taxon_map_(tag_taxon_map) {
+      : trees_(std::move(trees)), tag_taxon_map_(std::move(tag_taxon_map)) {
     auto taxon_count = tag_taxon_map.size();
     for (const auto &tree : trees) {
       assert(tree->LeafCount() == taxon_count);
