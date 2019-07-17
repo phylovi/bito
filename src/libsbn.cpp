@@ -4,6 +4,7 @@
 #include "libsbn.hpp"
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <random>
 #include <string>
 
 namespace py = pybind11;
@@ -22,8 +23,26 @@ class Matrix {
   double *m_data;
 };
 
-Matrix make_matrix() {
-  Matrix x(4, 3);
+class Vector {
+ public:
+  Vector(size_t size) : m_size(size) { m_data = new double[size]; }
+  double *data() { return m_data; }
+  size_t size() const { return m_size; }
+
+ private:
+  size_t m_size;
+  double *m_data;
+};
+
+Vector make_vector() {
+  std::random_device
+      rd;  // Will be used to obtain a seed for the random number engine
+  std::mt19937 gen(rd());  // Standard mersenne_twister_engine seeded with rd()
+  std::uniform_real_distribution<> dis(0., 1.);
+  Vector x(1000);
+  for (size_t i = 0; i < x.size(); i++) {
+    x.data()[i] = dis(gen);
+  }
   return x;
 }
 
@@ -54,7 +73,19 @@ PYBIND11_MODULE(sbn, m) {
             {sizeof(double) * m.rows(), /* Strides (in bytes) for each index */
              sizeof(double)});
       });
-  m.def("make_matrix", &make_matrix, "test");
+  py::class_<Vector>(m, "Vector", py::buffer_protocol())
+      .def_buffer([](Vector &v) -> py::buffer_info {
+        return py::buffer_info(
+            v.data(),                                /* Pointer to buffer */
+            sizeof(double),                          /* Size of one scalar */
+            py::format_descriptor<double>::format(), /* Python
+                                                       struct-style format
+                                                       descriptor */
+            1,                                       /* Number of dimensions */
+            {v.size()},                              /* Buffer dimensions */
+            {sizeof(double)});
+      });
+  m.def("make_vector", &make_vector, "test");
   m.def("get00", &get00, "test");
 }
 

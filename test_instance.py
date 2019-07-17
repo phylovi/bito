@@ -1,6 +1,8 @@
 import numpy as np
 import sbn
 
+import timeit
+
 def test_instance():
     inst = sbn.instance('charlie')
     inst.read_newick_file('data/five_taxon.nwk')
@@ -22,10 +24,18 @@ def test_instance():
     inst.make_beagle_instances(2)
     print(inst.tree_log_likelihoods())
 
-    m = sbn.make_matrix()
-    a = np.array(m, copy=False)
-    print("\nBefore setting")
-    print(sbn.get00(m))
-    a[0,0] = 3.14159000000
-    print("After setting")
-    print(sbn.get00(m))
+    v1_c = sbn.make_vector()
+    v2_c = sbn.make_vector()
+    v3_c = sbn.make_vector()
+    a1_c = np.array(v1_c, copy=False)
+    a2_c = np.array(v2_c, copy=False)
+    a3_c = np.array(v2_c, copy=False)
+
+    a3_c = a1_c + a2_c
+
+    a1 = np.random.uniform(len(a1_c))
+    a2 = np.random.uniform(len(a1_c))
+    a3 = np.random.uniform(len(a1_c))
+
+    a3 = a1 + a2
+
