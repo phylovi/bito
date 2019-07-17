@@ -1,7 +1,7 @@
 // Copyright 2019 Matsen group.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// The Node class is how we express rooted or unrooted bifurcating topologies.
+// The Node class is how we express tree topologies.
 //
 // Nodes are immutable after construction except for the index. The index is
 // provided for applications where it is useful to have the edges numbered with
@@ -95,7 +95,6 @@ class Node {
   bool IsLeaf() const { return children_.empty(); }
   NodePtrVec Children() const { return children_; }
 
-  void AssertIndex() {}
   bool operator==(const Node& other) {
     if (this->Hash() != other.Hash()) {
       return false;
