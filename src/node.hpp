@@ -57,8 +57,7 @@ class Node {
   explicit Node(NodePtrVec children, size_t index)
       : children_(children), index_(index) {
     if (children_.empty()) {
-      // This constructor is for internal nodes, so we can't allow children to
-      // be empty.
+      std::cerr << "Called internal node constructor with no children.\n";
       abort();
     }
     // Order the children by their max leaf ids.
@@ -209,14 +208,6 @@ class Node {
       child->PostOrder(f);
     }
     f(this);
-  }
-
-  int PostOrder(std::function<int(const Node*, const std::vector<int>&)> f) {
-    std::vector<int> v;
-    for (const auto& child : children_) {
-      v.push_back(child->PostOrder(f));
-    }
-    return f(this, v);
   }
 
   void LevelOrder(std::function<void(const Node*)> f) {

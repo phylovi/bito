@@ -95,12 +95,15 @@ inline bool operator!=(const TreeCollection::TreeCollectionPtr &lhs,
 TEST_CASE("TopologyCounter") {
   TreeCollection collection(Tree::ExampleTrees());
   auto counter = collection.TopologyCounter();
-  std::vector<uint32_t> v;
+  std::unordered_map<std::string, uint32_t> counted;
   for (const auto &iter : counter) {
-    v.push_back(iter.second);
+    assert(counted.insert({iter.first->Newick(), iter.second}).second);
   }
-  std::vector<uint32_t> v_correct({1, 2, 1});
-  CHECK_EQ(v, v_correct);
+  std::unordered_map<std::string, uint32_t> counted_correct(
+      {{"(0_1,1_1,(2_1,3_1)3_2)3_4;", 2},
+       {"(0_1,2_1,(1_1,3_1)3_2)3_4;", 1},
+       {"(0_1,(1_1,(2_1,3_1)3_2)3_3)3_4;", 1}});
+  CHECK_EQ(counted, counted_correct);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
