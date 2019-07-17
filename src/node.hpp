@@ -114,7 +114,7 @@ class Node {
     return true;
   }
 
-  void PreOrder(std::function<void(const Node*)> f) {
+  void PreOrder(std::function<void(const Node*)> f) const {
     f(this);
     for (const auto& child : children_) {
       child->PreOrder(f);
@@ -124,7 +124,7 @@ class Node {
   // Iterate f through (parent, sister, node) for internal nodes using a
   // preorder traversal.
   void TriplePreOrderInternal(
-      std::function<void(const Node*, const Node*, const Node*)> f) {
+      std::function<void(const Node*, const Node*, const Node*)> f) const {
     if (!IsLeaf()) {
       assert(children_.size() == 2);
       f(this, children_[1].get(), children_[0].get());
@@ -147,7 +147,8 @@ class Node {
   // for f_internal.
   void TriplePreOrder(
       std::function<void(const Node*, const Node*, const Node*)> f_root,
-      std::function<void(const Node*, const Node*, const Node*)> f_internal) {
+      std::function<void(const Node*, const Node*, const Node*)> f_internal)
+      const {
     assert(children_.size() == 3);
     f_root(children_[0].get(), children_[1].get(), children_[2].get());
     f_root(children_[1].get(), children_[2].get(), children_[0].get());
@@ -159,7 +160,7 @@ class Node {
 
   // See the typedef of PCSSFun to understand the argument type to this
   // function.
-  void PCSSPreOrder(PCSSFun f) {
+  void PCSSPreOrder(PCSSFun f) const {
     this->TriplePreOrder(
         // f_root
         [&f](const Node* node0, const Node* node1, const Node* node2) {
@@ -203,15 +204,15 @@ class Node {
         });
   }
 
-  void PostOrder(std::function<void(const Node*)> f) {
+  void PostOrder(std::function<void(const Node*)> f) const {
     for (const auto& child : children_) {
       child->PostOrder(f);
     }
     f(this);
   }
 
-  void LevelOrder(std::function<void(const Node*)> f) {
-    std::deque<Node*> to_visit = {this};
+  void LevelOrder(std::function<void(const Node*)> f) const {
+    std::deque<const Node*> to_visit = {this};
     while (to_visit.size()) {
       auto n = to_visit.front();
       f(n);
@@ -246,12 +247,13 @@ class Node {
 
   std::string Newick(
       const DoubleVectorOption& branch_lengths = std::experimental::nullopt,
-      const TagStringMapOption& node_labels = std::experimental::nullopt) {
+      const TagStringMapOption& node_labels =
+          std::experimental::nullopt) const {
     return NewickAux(branch_lengths, node_labels) + ";";
   }
 
   std::string NewickAux(const DoubleVectorOption& branch_lengths,
-                        const TagStringMapOption& node_labels) {
+                        const TagStringMapOption& node_labels) const {
     std::string str;
     if (IsLeaf()) {
       if (node_labels) {
@@ -295,7 +297,7 @@ class Node {
   }
 
   static NodePtrVec ExampleTopologies() {
-    NodePtrVec v = {
+    NodePtrVec topologies = {
         // 0: (0,1,(2,3))
         Join(std::vector<NodePtr>({Leaf(0), Leaf(1), Join(Leaf(2), Leaf(3))})),
         // 1; (0,1,(2,3)) again
@@ -305,7 +307,10 @@ class Node {
         // 3: (0,(1,(2,3)))
         Join(std::vector<NodePtr>(
             {Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
-    return v;
+    for (auto& topology : topologies) {
+      topology->Reindex();
+    }
+    return topologies;
   }
 
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
