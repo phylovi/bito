@@ -10,6 +10,9 @@
 // up the tree, we must make a second reindexing pass through the tree, which
 // must mutate state. However, this reindexing pass is itself deterministic, so
 // doing it a second time will always give the same result.
+//
+// In summary, call Reindex after building your tree if you need to use the
+// index, and you haven't assigned it carefully along the way.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
@@ -228,6 +231,10 @@ class Node {
     }
   }
 
+  // This function assigns indices to the nodes of the topology: the leaves get
+  // their indices (which are contiguously numbered from 0 through the leaf
+  // count -1) and the rest get ordered according to a postorder traversal. Thus
+  // the root always has index equal to the number of nodes in the tree.
   TagSizeMap Reindex() {
     TagSizeMap tag_index_map;
     size_t next_index = 1 + MaxLeafID();
