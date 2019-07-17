@@ -235,19 +235,19 @@ class Node {
   // their indices (which are contiguously numbered from 0 through the leaf
   // count -1) and the rest get ordered according to a postorder traversal. Thus
   // the root always has index equal to the number of nodes in the tree.
+  //
+  // This function returns a map that maps the tags to their indices.
   TagSizeMap Reindex() {
     TagSizeMap tag_index_map;
     size_t next_index = 1 + MaxLeafID();
     MutablePostOrder([&tag_index_map, &next_index](Node* node) {
-      size_t our_index;
       if (node->IsLeaf()) {
-        our_index = node->MaxLeafID();
+        node->index_ = node->MaxLeafID();
       } else {
-        our_index = next_index;
+        node->index_ = next_index;
         next_index++;
       }
-      node->index_ = our_index;
-      assert(tag_index_map.insert({node->Tag(), our_index}).second);
+      assert(tag_index_map.insert({node->Tag(), node->index_}).second);
     });
     return tag_index_map;
   }
