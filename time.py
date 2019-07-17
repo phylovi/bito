@@ -11,9 +11,9 @@ a3_c = np.array(v3_c, copy=False)
 
 print("pybind11 version: ", timeit.timeit("a3_c = a1_c + a2_c", globals=globals()))
 
-a1 = np.random.uniform(len(a1_c))
-a2 = np.random.uniform(len(a1_c))
-a3 = np.random.uniform(len(a1_c))
+a1 = np.random.uniform(size=len(a1_c))
+a2 = np.random.uniform(size=len(a1_c))
+a3 = np.random.uniform(size=len(a1_c))
 
 print("numpy version: ", timeit.timeit("a3 = a1 + a2", globals=globals()))
 
