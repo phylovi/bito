@@ -16,6 +16,7 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
+#include "prettyprint.hpp"
 #include "task_processor.hpp"
 #include "tree.hpp"
 
@@ -46,7 +47,7 @@ struct SBNInstance {
   Alignment alignment_;
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
-  std::vector<double> sbn_probabilities_;
+  std::vector<double> sbn_probs_;
 
   explicit SBNInstance(const std::string &name)
       : name_(name), symbol_table_(beagle::GetSymbolTable()) {}
@@ -90,6 +91,21 @@ struct SBNInstance {
     auto counter = tree_collection_->TopologyCounter();
     return {StringUInt32MapOf(RootsplitSupportOf(counter)),
             StringUInt32MapOf(SubsplitSupportOf(counter))};
+  }
+
+  void BuildIndexer() {
+    // TODO do things here.
+    sbn_probs_ = std::vector<double>(5);
+  }
+
+  // TODO replace with something interesting.
+  double SBNTotalProb() {
+    double total = 0;
+    std::cout << sbn_probs_ << std::endl;
+    for (const auto &prob : sbn_probs_) {
+      total += prob;
+    }
+    return total;
   }
 
   void MakeBeagleInstances(int instance_count) {

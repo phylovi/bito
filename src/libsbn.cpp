@@ -10,15 +10,19 @@
 namespace py = pybind11;
 
 std::vector<double> make_vector() {
-  std::random_device
-      rd;  // Will be used to obtain a seed for the random number engine
-  std::mt19937 gen(rd());  // Standard mersenne_twister_engine seeded with rd()
-  std::uniform_real_distribution<> dis(0., 1.);
-  std::vector<double> x(1000);
+  std::vector<double> x(5);
   for (size_t i = 0; i < x.size(); i++) {
-    x[i] = dis(gen);
+    x[i] = 0;
   }
   return x;
+}
+
+double total_vector(std::vector<double> v) {
+  double total = 0;
+  for (const auto &x : v) {
+    total += x;
+  }
+  return total;
 }
 
 PYBIND11_MODULE(sbn, m) {
@@ -32,7 +36,10 @@ PYBIND11_MODULE(sbn, m) {
       .def("print_status", &SBNInstance::PrintStatus)
       .def("split_supports", &SBNInstance::SplitSupports)
       .def("make_beagle_instances", &SBNInstance::MakeBeagleInstances)
-      .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods);
+      .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods)
+      .def("build_indexer", &SBNInstance::BuildIndexer)
+      .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
+      .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);
   py::class_<std::vector<double>>(m, "vector_double", py::buffer_protocol())
       .def_buffer([](std::vector<double> &v) -> py::buffer_info {
         return py::buffer_info(
@@ -46,4 +53,5 @@ PYBIND11_MODULE(sbn, m) {
             {sizeof(double)});
       });
   m.def("make_vector", &make_vector, "test");
+  m.def("total_vector", &total_vector, "test");
 }

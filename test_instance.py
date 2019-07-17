@@ -21,9 +21,12 @@ def test_instance():
     inst.make_beagle_instances(2)
     print(inst.tree_log_likelihoods())
 
-    v1_c = sbn.make_vector()
-    v2_c = sbn.make_vector()
-    v3_c = sbn.make_vector()
-    a1_c = np.array(v1_c, copy=False)
-    a2_c = np.array(v2_c, copy=False)
-    a3_c = np.array(v2_c, copy=False)
+    c_v = sbn.make_vector()
+    v = np.array(c_v, copy=False)
+    v[3] = 666
+    print(sbn.total_vector(v))
+
+    inst.build_indexer()
+    sbn_probs = np.array(inst.sbn_probs, copy=False)
+    sbn_probs[3] = 0.4
+    print(inst.sbn_total_prob())
