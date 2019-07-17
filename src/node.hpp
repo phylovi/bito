@@ -121,17 +121,34 @@ class Node {
     }
   }
 
-  // Iterate f through (parent, sister, node) for internal nodes using a
+  // Iterate f through (parent, sister, node) for bifurcating trees using a
   // preorder traversal.
-  void TriplePreOrderInternal(
+  void TriplePreOrderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const {
     if (!IsLeaf()) {
       assert(children_.size() == 2);
       f(this, children_[1].get(), children_[0].get());
-      children_[0]->TriplePreOrderInternal(f);
       f(this, children_[0].get(), children_[1].get());
-      children_[1]->TriplePreOrderInternal(f);
+      children_[0]->TriplePreOrderBifurcating(f);
+      children_[1]->TriplePreOrderBifurcating(f);
     }
+  }
+
+  // This function maps functions on triplets of indices to functions on
+  // triplets of nodes by getting their indices.
+  static std::function<void(const Node*, const Node*, const Node*)> const
+  TripletIndexInfix(std::function<void(int, int, int)> f) {
+    return [&f](const Node* node0, const Node* node1, const Node* node2) {
+      f(static_cast<int>(node0->Index()), static_cast<int>(node1->Index()),
+        static_cast<int>(node2->Index()));
+    };
+  }
+
+  // Iterate f through (parent index, sister index, node index) for bifurcating
+  // trees using a preorder traversal.
+  void TripleIndexPreOrderBifurcating(
+      std::function<void(int, int, int)> f) const {
+    TriplePreOrderBifurcating(TripletIndexInfix(f));
   }
 
   // Traversal for rooted pairs in an unrooted subtree in its traditional rooted
@@ -154,7 +171,7 @@ class Node {
     f_root(children_[1].get(), children_[2].get(), children_[0].get());
     f_root(children_[2].get(), children_[0].get(), children_[1].get());
     for (const auto& child : children_) {
-      child->TriplePreOrderInternal(f_internal);
+      child->TriplePreOrderBifurcating(f_internal);
     }
   }
 
@@ -425,6 +442,17 @@ TEST_CASE("Node header") {
 
   CHECK_EQ(t1, t1_twin);
   CHECK_NE(t1, t2);
+
+  std::cout << "\nTripleIndexPreOrderBifurcating demo on (0,(1,(2,3))) \n";
+  int root_index = t3->Index();
+  t3->TripleIndexPreOrderBifurcating(
+      [&root_index](int parent_index, int sister_index, int node_index) {
+        if (root_index == parent_index) {
+          std::cout << "parent is the root\n";
+        }
+        std::cout << "parent: " << parent_index << " sister: " << sister_index
+                  << " node: " << node_index << std::endl;
+      });
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_
