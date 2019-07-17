@@ -1,5 +1,14 @@
 // Copyright 2019 Matsen group.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// The Node class is how we express topologies.
+// It is immutable after construction except for the index. The index is
+// provided for applications where it is useful to have the edges numbered with
+// a contiguous set of integers, where the leaf edges have the smallest such
+// integers. Because this integer assignment cannot be known as we are building
+// up the tree, we must make a second reindexing pass through the tree, which
+// must mutate state. However, this reindexing pass is itself deterministic, so
+// doing it a second time will always give the same result.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
@@ -36,8 +45,11 @@ class Node {
 
  public:
   explicit Node(uint32_t leaf_id)
-      : children_({}), tag_(PackInts(leaf_id, 1)), hash_(SOHash(leaf_id)) {}
-  explicit Node(NodePtrVec children) {
+      : children_({}),
+        index_(SIZE_MAX),
+        tag_(PackInts(leaf_id, 1)),
+        hash_(SOHash(leaf_id)) {}
+  explicit Node(NodePtrVec children) : index_(SIZE_MAX) {
     children_ = children;
     if (children_.empty()) {
       // This constructor is for internal nodes, so we can't allow children to
@@ -73,6 +85,7 @@ class Node {
     hash_ = SORotate(hash_, 1);
   }
 
+  size_t Index() const { return index_; }
   uint64_t Tag() const { return tag_; }
   std::string TagString() const { return StringOfPackedInt(this->tag_); }
   uint32_t MaxLeafID() const { return UnpackFirstInt(tag_); }
@@ -214,6 +227,23 @@ class Node {
     }
   }
 
+  TagSizeMap Reindex() {
+    TagSizeMap tag_index_map;
+    size_t next_index = 1 + MaxLeafID();
+    MutablePostOrder([&tag_index_map, &next_index](Node* node) {
+      size_t our_index;
+      if (node->IsLeaf()) {
+        our_index = node->MaxLeafID();
+      } else {
+        our_index = next_index;
+        next_index++;
+      }
+      node->index_ = our_index;
+      assert(tag_index_map.insert({node->Tag(), our_index}).second);
+    });
+    return tag_index_map;
+  }
+
   std::string Newick(
       const TagDoubleMapOption& branch_lengths = std::experimental::nullopt,
       const TagStringMapOption& node_labels = std::experimental::nullopt) {
@@ -304,6 +334,8 @@ class Node {
 
  private:
   NodePtrVec children_;
+  // See beginning of file for notes about the index.
+  size_t index_;
   // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
   // of the leaves below this node, and (2) the number of leaves below the node.
   uint64_t tag_;
@@ -312,6 +344,14 @@ class Node {
   // Make copy constructors private to eliminate copying.
   Node(const Node&);
   Node& operator=(const Node&);
+
+  // This is a private PostOrder that can change the Node.
+  void MutablePostOrder(std::function<void(Node*)> f) {
+    for (const auto& child : children_) {
+      child->MutablePostOrder(f);
+    }
+    f(this);
+  }
 };
 
 // Compare NodePtrs by their Nodes.
