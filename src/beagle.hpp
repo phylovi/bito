@@ -142,21 +142,16 @@ void SetJCModel(BeagleInstance beagle_instance) {
 double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
                                     BeagleInstance beagle_instance) {
   std::vector<BeagleOperation> operations;
-  tree->Topology()->PostOrder([&operations](const Node *node) {
-    if (!node->IsLeaf()) {
-      assert(node->Children().size() == 2);
-      int dest = static_cast<int>(node->Index());
-      int child0_index = static_cast<int>(node->Children()[0]->Index());
-      int child1_index = static_cast<int>(node->Children()[1]->Index());
-      BeagleOperation op = {
-          dest,                            // dest
-          BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
-          child0_index,   child0_index,    // src1 and matrix1
-          child1_index,   child1_index     // src2 and matrix2
-      };
-      operations.push_back(op);
-    }
-  });
+  tree->Topology()->BinaryIndexPostOrder(
+      [&operations](int node_index, int child0_index, int child1_index) {
+        BeagleOperation op = {
+            node_index,                      // dest
+            BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
+            child0_index,   child0_index,    // src1 and matrix1
+            child1_index,   child1_index     // src2 and matrix2
+        };
+        operations.push_back(op);
+      });
   auto branch_count = tree->BranchLengths().size();
   std::vector<int> node_indices(branch_count);
   std::iota(node_indices.begin(), node_indices.end(), 0);

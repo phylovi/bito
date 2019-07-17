@@ -224,6 +224,29 @@ class Node {
     }
   }
 
+  // This function maps functions on (node_index, child0_index, child1_index) to
+  // thier corresponding functions on nodes. It only works for binary trees.
+  static std::function<void(const Node*)> const BinaryIndexInfix(
+      std::function<void(int, int, int)> f) {
+    return [&f](const Node* node) {
+      if (!node->IsLeaf()) {
+        assert(node->Children().size() == 2);
+        f(static_cast<int>(node->Index()),
+          static_cast<int>(node->Children()[0]->Index()),
+          static_cast<int>(node->Children()[1]->Index()));
+      }
+    };
+  }
+
+  // These two functions take functions accepting triples of (node_index,
+  // child0_index, child1_index) and apply them according to various traversals.
+  void BinaryIndexPreOrder(const std::function<void(int, int, int)> f) const {
+    PreOrder(BinaryIndexInfix(f));
+  }
+  void BinaryIndexPostOrder(const std::function<void(int, int, int)> f) const {
+    PostOrder(BinaryIndexInfix(f));
+  }
+
   // This function assigns indices to the nodes of the topology: the leaves get
   // their indices (which are contiguously numbered from 0 through the leaf
   // count -1) and the rest get ordered according to a postorder traversal. Thus
