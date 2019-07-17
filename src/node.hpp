@@ -46,11 +46,11 @@ class Node {
  public:
   explicit Node(uint32_t leaf_id)
       : children_({}),
-        index_(SIZE_MAX),
+        index_(leaf_id),
         tag_(PackInts(leaf_id, 1)),
         hash_(SOHash(leaf_id)) {}
-  explicit Node(NodePtrVec children) : index_(SIZE_MAX) {
-    children_ = children;
+  explicit Node(NodePtrVec children, size_t index)
+      : children_(children), index_(index) {
     if (children_.empty()) {
       // This constructor is for internal nodes, so we can't allow children to
       // be empty.
@@ -245,12 +245,12 @@ class Node {
   }
 
   std::string Newick(
-      const TagDoubleMapOption& branch_lengths = std::experimental::nullopt,
+      const DoubleVectorOption& branch_lengths = std::experimental::nullopt,
       const TagStringMapOption& node_labels = std::experimental::nullopt) {
     return NewickAux(branch_lengths, node_labels) + ";";
   }
 
-  std::string NewickAux(const TagDoubleMapOption& branch_lengths,
+  std::string NewickAux(const DoubleVectorOption& branch_lengths,
                         const TagStringMapOption& node_labels) {
     std::string str;
     if (IsLeaf()) {
@@ -276,24 +276,22 @@ class Node {
       }
     }
     if (branch_lengths) {
-      auto search = (*branch_lengths).find(Tag());
-      if (search != (*branch_lengths).end()) {
-        // ostringstream is the way to get scientific notation using the STL.
-        std::ostringstream str_stream;
-        str_stream << search->second;
-        str.append(":" + str_stream.str());
-      }
+      assert(Index() < (*branch_lengths).size());
+      // ostringstream is the way to get scientific notation using the STL.
+      std::ostringstream str_stream;
+      str_stream << (*branch_lengths)[Index()];
+      str.append(":" + str_stream.str());
     }
     return str;
   }
 
   // Class methods
   static NodePtr Leaf(uint32_t id) { return std::make_shared<Node>(id); }
-  static NodePtr Join(NodePtrVec children) {
-    return std::make_shared<Node>(children);
+  static NodePtr Join(NodePtrVec children, size_t index = SIZE_MAX) {
+    return std::make_shared<Node>(children, index);
   }
-  static NodePtr Join(NodePtr left, NodePtr right) {
-    return Join(std::vector<NodePtr>({left, right}));
+  static NodePtr Join(NodePtr left, NodePtr right, size_t index = SIZE_MAX) {
+    return Join(std::vector<NodePtr>({left, right}), index);
   }
 
   static NodePtrVec ExampleTopologies() {

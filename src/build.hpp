@@ -105,7 +105,7 @@ BitsetUInt32Map SubsplitSupportOf(const Node::TopologyCounter& topologies) {
 TEST_CASE("Build") {
   Driver driver;
 
-  const auto& trees = driver.ParseNewickFile("data/many_rootings.tre");
+  const auto& trees = driver.ParseNewickFile("data/many_rootings.nwk");
   auto counter = trees->TopologyCounter();
   auto support = SubsplitSupportOf(counter);
   // Get the support of the first tree in trees.
