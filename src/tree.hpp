@@ -21,7 +21,7 @@ class Tree {
   explicit Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
       : topology_(topology) {
     auto tag_index_map = topology->Reindex();
-    branch_lengths_.resize(topology->Index());
+    branch_lengths_ = std::vector<double>(topology->Index() + 1);
     for (const auto& iter : tag_index_map) {
       auto tag = iter.first;
       auto index = iter.second;
@@ -36,7 +36,7 @@ class Tree {
   }
   explicit Tree(Node::NodePtr topology, BranchLengthVector branch_lengths)
       : topology_(topology), branch_lengths_(branch_lengths) {
-    assert(topology->Index() == branch_lengths.size());
+    assert(topology->Index() + 1 == branch_lengths.size());
   }
 
   const Node::NodePtr Topology() const { return topology_; }
@@ -79,7 +79,7 @@ class Tree {
 
   static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology) {
     topology->Reindex();
-    BranchLengthVector branch_lengths(topology->Index());
+    BranchLengthVector branch_lengths(1 + topology->Index());
     topology->PreOrder([&branch_lengths](const Node* node) {
       branch_lengths[node->Index()] = 1.;
     });
