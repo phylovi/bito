@@ -1,8 +1,6 @@
 import numpy as np
 import sbn
 
-import timeit
-
 def test_instance():
     inst = sbn.instance('charlie')
     inst.read_newick_file('data/five_taxon.nwk')

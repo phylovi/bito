@@ -46,6 +46,7 @@ struct SBNInstance {
   Alignment alignment_;
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
+  std::vector<double> sbn_probabilities_;
 
   explicit SBNInstance(const std::string &name)
       : name_(name), symbol_table_(beagle::GetSymbolTable()) {}

@@ -9,29 +9,17 @@
 
 namespace py = pybind11;
 
-class Vector {
- public:
-  Vector(size_t size) : m_size(size) { m_data = new double[size]; }
-  double *data() { return m_data; }
-  size_t size() const { return m_size; }
-
- private:
-  size_t m_size;
-  double *m_data;
-};
-
-Vector make_vector() {
+std::vector<double> make_vector() {
   std::random_device
       rd;  // Will be used to obtain a seed for the random number engine
   std::mt19937 gen(rd());  // Standard mersenne_twister_engine seeded with rd()
   std::uniform_real_distribution<> dis(0., 1.);
-  Vector x(1000);
+  std::vector<double> x(1000);
   for (size_t i = 0; i < x.size(); i++) {
-    x.data()[i] = dis(gen);
+    x[i] = dis(gen);
   }
   return x;
 }
-
 
 PYBIND11_MODULE(sbn, m) {
   m.doc() = "libsbn bindings";
@@ -45,9 +33,8 @@ PYBIND11_MODULE(sbn, m) {
       .def("split_supports", &SBNInstance::SplitSupports)
       .def("make_beagle_instances", &SBNInstance::MakeBeagleInstances)
       .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods);
-  m.def("f", &SBNInstance::f, "test");
-  py::class_<Vector>(m, "Vector", py::buffer_protocol())
-      .def_buffer([](Vector &v) -> py::buffer_info {
+  py::class_<std::vector<double>>(m, "vector_double", py::buffer_protocol())
+      .def_buffer([](std::vector<double> &v) -> py::buffer_info {
         return py::buffer_info(
             v.data(),                                /* Pointer to buffer */
             sizeof(double),                          /* Size of one scalar */
@@ -60,4 +47,3 @@ PYBIND11_MODULE(sbn, m) {
       });
   m.def("make_vector", &make_vector, "test");
 }
-
