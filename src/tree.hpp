@@ -17,14 +17,16 @@ class Tree {
   typedef std::vector<TreePtr> TreePtrVector;
   typedef std::vector<double> BranchLengthVector;
 
-  // Note: any missing branch lengths are set to zero.
+  // This constructor takes a map of tags to branch lengths; this map gets
+  // turned into a branch length vector. It reindexes the topology. Note: any
+  // missing branch lengths are set to zero.
   explicit Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
       : topology_(topology) {
     auto tag_index_map = topology->Reindex();
     branch_lengths_ = std::vector<double>(topology->Index() + 1);
     for (const auto& iter : tag_index_map) {
-      auto tag = iter.first;
-      auto index = iter.second;
+      auto& tag = iter.first;
+      auto& index = iter.second;
       auto search = branch_lengths.find(tag);
       if (search != branch_lengths.end()) {
         assert(index < branch_lengths_.size());
@@ -61,7 +63,7 @@ class Tree {
   }
 
   // Remove trifurcation at the root and make it a bifurcation.
-  // Given (s0:b0, s1:b1, s2:b3):b4, we get (s0:b0, (s1:b1, s2:b2):0):0.
+  // Given (s0:b0, s1:b1, s2:b2):b4, we get (s0:b0, (s1:b1, s2:b2):0):0.
   // Note that we zero out the root branch length.
   TreePtr Detrifurcate() {
     if (Children().size() != 3) {

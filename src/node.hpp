@@ -12,7 +12,8 @@
 // doing it a second time will always give the same result.
 //
 // In summary, call Reindex after building your tree if you need to use the
-// index, and you haven't assigned it carefully along the way.
+// index. Note that Tree construction calls Reindex, if you are manually
+// manipulating the topology make you do manipulations with that in mind.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
