@@ -21,3 +21,11 @@ def test_instance():
     inst.read_fasta_file('data/DS1.fasta')
     inst.make_beagle_instances(2)
     print(inst.tree_log_likelihoods())
+
+    m = sbn.make_matrix()
+    a = np.array(m, copy=False)
+    print("\nBefore setting")
+    print(sbn.get00(m))
+    a[0,0] = 3.14159000000
+    print("After setting")
+    print(sbn.get00(m))
