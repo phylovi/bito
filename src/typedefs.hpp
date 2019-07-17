@@ -12,11 +12,12 @@
 typedef uint64_t Tag;
 typedef std::vector<int> SymbolVector;
 typedef std::unordered_map<Tag, double> TagDoubleMap;
+typedef std::unordered_map<Tag, size_t> TagSizeMap;
 typedef std::unordered_map<Tag, std::string> TagStringMap;
 typedef std::unordered_map<std::string, std::string> StringStringMap;
 typedef std::unordered_map<char, int> CharIntMap;
 // This will be STL in C++17 but we include the above header to fake it.
-typedef std::experimental::optional<TagDoubleMap> TagDoubleMapOption;
+typedef std::experimental::optional<std::vector<double>> DoubleVectorOption;
 typedef std::experimental::optional<TagStringMap> TagStringMapOption;
 
 #endif  // SRC_TYPEDEFS_HPP_

@@ -1,5 +1,19 @@
 // Copyright 2019 Matsen group.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// The Node class is how we express tree topologies.
+//
+// Nodes are immutable after construction except for the index. The index is
+// provided for applications where it is useful to have the edges numbered with
+// a contiguous set of integers, where the leaf edges have the smallest such
+// integers. Because this integer assignment cannot be known as we are building
+// up the tree, we must make a second reindexing pass through the tree, which
+// must mutate state. However, this reindexing pass is itself deterministic, so
+// doing it a second time will always give the same result.
+//
+// In summary, call Reindex after building your tree if you need to use the
+// index. Note that Tree construction calls Reindex, if you are manually
+// manipulating the topology make you do manipulations with that in mind.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
@@ -36,12 +50,14 @@ class Node {
 
  public:
   explicit Node(uint32_t leaf_id)
-      : children_({}), tag_(PackInts(leaf_id, 1)), hash_(SOHash(leaf_id)) {}
-  explicit Node(NodePtrVec children) {
-    children_ = children;
+      : children_({}),
+        index_(leaf_id),
+        tag_(PackInts(leaf_id, 1)),
+        hash_(SOHash(leaf_id)) {}
+  explicit Node(NodePtrVec children, size_t index)
+      : children_(children), index_(index) {
     if (children_.empty()) {
-      // This constructor is for internal nodes, so we can't allow children to
-      // be empty.
+      std::cerr << "Called internal node constructor with no children.\n";
       abort();
     }
     // Order the children by their max leaf ids.
@@ -73,6 +89,7 @@ class Node {
     hash_ = SORotate(hash_, 1);
   }
 
+  size_t Index() const { return index_; }
   uint64_t Tag() const { return tag_; }
   std::string TagString() const { return StringOfPackedInt(this->tag_); }
   uint32_t MaxLeafID() const { return UnpackFirstInt(tag_); }
@@ -97,7 +114,7 @@ class Node {
     return true;
   }
 
-  void PreOrder(std::function<void(const Node*)> f) {
+  void PreOrder(std::function<void(const Node*)> f) const {
     f(this);
     for (const auto& child : children_) {
       child->PreOrder(f);
@@ -107,7 +124,7 @@ class Node {
   // Iterate f through (parent, sister, node) for internal nodes using a
   // preorder traversal.
   void TriplePreOrderInternal(
-      std::function<void(const Node*, const Node*, const Node*)> f) {
+      std::function<void(const Node*, const Node*, const Node*)> f) const {
     if (!IsLeaf()) {
       assert(children_.size() == 2);
       f(this, children_[1].get(), children_[0].get());
@@ -130,7 +147,8 @@ class Node {
   // for f_internal.
   void TriplePreOrder(
       std::function<void(const Node*, const Node*, const Node*)> f_root,
-      std::function<void(const Node*, const Node*, const Node*)> f_internal) {
+      std::function<void(const Node*, const Node*, const Node*)> f_internal)
+      const {
     assert(children_.size() == 3);
     f_root(children_[0].get(), children_[1].get(), children_[2].get());
     f_root(children_[1].get(), children_[2].get(), children_[0].get());
@@ -142,7 +160,7 @@ class Node {
 
   // See the typedef of PCSSFun to understand the argument type to this
   // function.
-  void PCSSPreOrder(PCSSFun f) {
+  void PCSSPreOrder(PCSSFun f) const {
     this->TriplePreOrder(
         // f_root
         [&f](const Node* node0, const Node* node1, const Node* node2) {
@@ -186,23 +204,15 @@ class Node {
         });
   }
 
-  void PostOrder(std::function<void(const Node*)> f) {
+  void PostOrder(std::function<void(const Node*)> f) const {
     for (const auto& child : children_) {
       child->PostOrder(f);
     }
     f(this);
   }
 
-  int PostOrder(std::function<int(const Node*, const std::vector<int>&)> f) {
-    std::vector<int> v;
-    for (const auto& child : children_) {
-      v.push_back(child->PostOrder(f));
-    }
-    return f(this, v);
-  }
-
-  void LevelOrder(std::function<void(const Node*)> f) {
-    std::deque<Node*> to_visit = {this};
+  void LevelOrder(std::function<void(const Node*)> f) const {
+    std::deque<const Node*> to_visit = {this};
     while (to_visit.size()) {
       auto n = to_visit.front();
       f(n);
@@ -214,14 +224,36 @@ class Node {
     }
   }
 
+  // This function assigns indices to the nodes of the topology: the leaves get
+  // their indices (which are contiguously numbered from 0 through the leaf
+  // count -1) and the rest get ordered according to a postorder traversal. Thus
+  // the root always has index equal to the number of nodes in the tree.
+  //
+  // This function returns a map that maps the tags to their indices.
+  TagSizeMap Reindex() {
+    TagSizeMap tag_index_map;
+    size_t next_index = 1 + MaxLeafID();
+    MutablePostOrder([&tag_index_map, &next_index](Node* node) {
+      if (node->IsLeaf()) {
+        node->index_ = node->MaxLeafID();
+      } else {
+        node->index_ = next_index;
+        next_index++;
+      }
+      assert(tag_index_map.insert({node->Tag(), node->index_}).second);
+    });
+    return tag_index_map;
+  }
+
   std::string Newick(
-      const TagDoubleMapOption& branch_lengths = std::experimental::nullopt,
-      const TagStringMapOption& node_labels = std::experimental::nullopt) {
+      const DoubleVectorOption& branch_lengths = std::experimental::nullopt,
+      const TagStringMapOption& node_labels =
+          std::experimental::nullopt) const {
     return NewickAux(branch_lengths, node_labels) + ";";
   }
 
-  std::string NewickAux(const TagDoubleMapOption& branch_lengths,
-                        const TagStringMapOption& node_labels) {
+  std::string NewickAux(const DoubleVectorOption& branch_lengths,
+                        const TagStringMapOption& node_labels) const {
     std::string str;
     if (IsLeaf()) {
       if (node_labels) {
@@ -246,28 +278,26 @@ class Node {
       }
     }
     if (branch_lengths) {
-      auto search = (*branch_lengths).find(Tag());
-      if (search != (*branch_lengths).end()) {
-        // ostringstream is the way to get scientific notation using the STL.
-        std::ostringstream str_stream;
-        str_stream << search->second;
-        str.append(":" + str_stream.str());
-      }
+      assert(Index() < (*branch_lengths).size());
+      // ostringstream is the way to get scientific notation using the STL.
+      std::ostringstream str_stream;
+      str_stream << (*branch_lengths)[Index()];
+      str.append(":" + str_stream.str());
     }
     return str;
   }
 
   // Class methods
   static NodePtr Leaf(uint32_t id) { return std::make_shared<Node>(id); }
-  static NodePtr Join(NodePtrVec children) {
-    return std::make_shared<Node>(children);
+  static NodePtr Join(NodePtrVec children, size_t index = SIZE_MAX) {
+    return std::make_shared<Node>(children, index);
   }
-  static NodePtr Join(NodePtr left, NodePtr right) {
-    return Join(std::vector<NodePtr>({left, right}));
+  static NodePtr Join(NodePtr left, NodePtr right, size_t index = SIZE_MAX) {
+    return Join(std::vector<NodePtr>({left, right}), index);
   }
 
   static NodePtrVec ExampleTopologies() {
-    NodePtrVec v = {
+    NodePtrVec topologies = {
         // 0: (0,1,(2,3))
         Join(std::vector<NodePtr>({Leaf(0), Leaf(1), Join(Leaf(2), Leaf(3))})),
         // 1; (0,1,(2,3)) again
@@ -277,7 +307,10 @@ class Node {
         // 3: (0,(1,(2,3)))
         Join(std::vector<NodePtr>(
             {Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
-    return v;
+    for (auto& topology : topologies) {
+      topology->Reindex();
+    }
+    return topologies;
   }
 
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
@@ -304,6 +337,8 @@ class Node {
 
  private:
   NodePtrVec children_;
+  // See beginning of file for notes about the index.
+  size_t index_;
   // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
   // of the leaves below this node, and (2) the number of leaves below the node.
   uint64_t tag_;
@@ -312,6 +347,14 @@ class Node {
   // Make copy constructors private to eliminate copying.
   Node(const Node&);
   Node& operator=(const Node&);
+
+  // This is a private PostOrder that can change the Node.
+  void MutablePostOrder(std::function<void(Node*)> f) {
+    for (const auto& child : children_) {
+      child->MutablePostOrder(f);
+    }
+    f(this);
+  }
 };
 
 // Compare NodePtrs by their Nodes.

@@ -65,10 +65,10 @@ TEST_CASE("Driver") {
   Driver driver;
 
   std::vector<std::string> newicks = {
-      "(a,b,c,d);",
-      "((b,a),c);",
+      "(a:0,b:0,c:0,d:0):0;",
+      "((b:0,a:0):0,c:0):0;",
       "((a:1.1,b:2):0.4,c:3):0;",
-      "(x,(a:1.1,(b:2,(quack:0.1,duck))),c:3):1.1;",
+      "(x:0,(a:1.1,(b:2,(quack:0.1,duck:0):0):0):0,c:3):1.1;",
   };
   for (const auto& newick : newicks) {
     auto collection = driver.ParseString(newick);

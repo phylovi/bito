@@ -131,9 +131,12 @@ TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
 
 Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,
                                   const std::string &str) {
+  // Scan the string using the lexer into hidden state.
   this->ScanString(str);
+  // Parse the scanned string.
   int return_code = (*parser_instance)();
   if (return_code != 0) {
+    std::cout << "Parser had nonzero return value.\n";
     abort();
   }
   return latest_tree_;

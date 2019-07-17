@@ -4,6 +4,7 @@
 #ifndef SRC_BEAGLE_HPP_
 #define SRC_BEAGLE_HPP_
 
+#include <numeric>
 #include <string>
 #include "alignment.hpp"
 #include "intpack.hpp"
@@ -140,41 +141,32 @@ void SetJCModel(BeagleInstance beagle_instance) {
 
 double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
                                     BeagleInstance beagle_instance) {
-  int next_internal_index = static_cast<int>(tree->LeafCount());
-  std::vector<int> node_indices;
-  std::vector<double> branch_lengths;
   std::vector<BeagleOperation> operations;
-  tree->Topology()->PostOrder(
-      [&tree, &next_internal_index, &node_indices, &branch_lengths,
-       &operations](const Node *node, const std::vector<int> &below_indices) {
-        if (node->IsLeaf()) {
-          int leaf_id = static_cast<int>(node->MaxLeafID());
-          node_indices.push_back(leaf_id);
-          branch_lengths.push_back(tree->BranchLength(node));
-          return leaf_id;
-        }
-        // else
-        int this_index = next_internal_index;
-        node_indices.push_back(this_index);
-        branch_lengths.push_back(tree->BranchLength(node));
-        assert(below_indices.size() == 2);
-        BeagleOperation op = {
-            this_index,                          // dest
-            BEAGLE_OP_NONE,   BEAGLE_OP_NONE,    // src and dest scaling
-            below_indices[0], below_indices[0],  // src1 and matrix1
-            below_indices[1], below_indices[1]   // src2 and matrix2
-        };
-        operations.push_back(op);
-        next_internal_index++;
-        return this_index;
-      });
+  tree->Topology()->PostOrder([&operations](const Node *node) {
+    if (!node->IsLeaf()) {
+      assert(node->Children().size() == 2);
+      int dest = static_cast<int>(node->Index());
+      int child0_index = static_cast<int>(node->Children()[0]->Index());
+      int child1_index = static_cast<int>(node->Children()[1]->Index());
+      BeagleOperation op = {
+          dest,                            // dest
+          BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
+          child0_index,   child0_index,    // src1 and matrix1
+          child1_index,   child1_index     // src2 and matrix2
+      };
+      operations.push_back(op);
+    }
+  });
+  auto branch_count = tree->BranchLengths().size();
+  std::vector<int> node_indices(branch_count);
+  std::iota(node_indices.begin(), node_indices.end(), 0);
   beagleUpdateTransitionMatrices(beagle_instance,
                                  0,  // eigenIndex
                                  node_indices.data(),
                                  NULL,  // firstDerivativeIndices
                                  NULL,  // secondDervativeIndices
-                                 branch_lengths.data(),
-                                 static_cast<int>(branch_lengths.size()));
+                                 tree->BranchLengths().data(),
+                                 static_cast<int>(branch_count));
   beagleUpdatePartials(beagle_instance,
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),

@@ -15,14 +15,37 @@ class Tree {
  public:
   typedef std::shared_ptr<Tree> TreePtr;
   typedef std::vector<TreePtr> TreePtrVector;
+  typedef std::vector<double> BranchLengthVector;
 
+  // This constructor takes a map of tags to branch lengths; this map gets
+  // turned into a branch length vector. It reindexes the topology. Note: any
+  // missing branch lengths are set to zero.
   explicit Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
-      : topology_(topology), branch_lengths_(branch_lengths) {}
+      : topology_(topology) {
+    auto tag_index_map = topology->Reindex();
+    branch_lengths_ = std::vector<double>(topology->Index() + 1);
+    for (const auto& iter : tag_index_map) {
+      auto& tag = iter.first;
+      auto& index = iter.second;
+      auto search = branch_lengths.find(tag);
+      if (search != branch_lengths.end()) {
+        assert(index < branch_lengths_.size());
+        branch_lengths_[index] = search->second;
+      } else {
+        branch_lengths_[index] = 0.;
+      }
+    }
+  }
+  explicit Tree(Node::NodePtr topology, BranchLengthVector branch_lengths)
+      : topology_(topology), branch_lengths_(branch_lengths) {
+    assert(topology->Index() + 1 == branch_lengths.size());
+  }
 
   const Node::NodePtr Topology() const { return topology_; }
-  const TagDoubleMap BranchLengths() const { return branch_lengths_; }
+  const BranchLengthVector BranchLengths() const { return branch_lengths_; }
   uint32_t LeafCount() const { return Topology()->LeafCount(); }
   Node::NodePtrVec Children() const { return Topology()->Children(); }
+  size_t Index() const { return Topology()->Index(); }
 
   bool operator==(const Tree& other) {
     return (this->Topology() == other.Topology()) &&
@@ -35,37 +58,32 @@ class Tree {
   }
 
   double BranchLength(const Node* node) const {
-    auto search = branch_lengths_.find(node->Tag());
-    if (search != branch_lengths_.end()) {
-      return search->second;
-    } else {
-      std::cerr << "Branch length not found for node tagged '"
-                << node->TagString() << "'.\n";
-      abort();
-    }
+    assert(node->Index() < branch_lengths_.size());
+    return branch_lengths_[node->Index()];
   }
 
   // Remove trifurcation at the root and make it a bifurcation.
-  // Given (s0:b0, s1:b1, s2:b3), we get (s0:b0, (s1:b1, s2:b2):0):0.
+  // Given (s0:b0, s1:b1, s2:b2):b4, we get (s0:b0, (s1:b1, s2:b2):0):0.
+  // Note that we zero out the root branch length.
   TreePtr Detrifurcate() {
     if (Children().size() != 3) {
       std::cerr << "Detrifurcate given a non-trifurcating tree.\n";
       abort();
     }
     auto branch_lengths = BranchLengths();
-    auto root12 = Node::Join(Children()[1], Children()[2]);
-    assert(branch_lengths.insert({root12->Tag(), 0.}).second);
-    auto rerooted_topology = Node::Join(Children()[0], root12);
-    if (branch_lengths.find(rerooted_topology->Tag()) == branch_lengths.end()) {
-      assert(branch_lengths.insert({rerooted_topology->Tag(), 0.}).second);
-    }
+    auto our_index = Index();
+    auto root12 = Node::Join(Children()[1], Children()[2], our_index);
+    branch_lengths[our_index] = 0.;
+    auto rerooted_topology = Node::Join(Children()[0], root12, our_index + 1);
+    branch_lengths.push_back(0.);
     return std::make_shared<Tree>(rerooted_topology, branch_lengths);
   }
 
   static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology) {
-    TagDoubleMap branch_lengths;
+    topology->Reindex();
+    BranchLengthVector branch_lengths(1 + topology->Index());
     topology->PreOrder([&branch_lengths](const Node* node) {
-      assert(branch_lengths.insert({node->Tag(), 1.}).second);
+      branch_lengths[node->Index()] = 1.;
     });
     return std::make_shared<Tree>(topology, branch_lengths);
   }
@@ -80,7 +98,7 @@ class Tree {
 
  private:
   Node::NodePtr topology_;
-  TagDoubleMap branch_lengths_;
+  BranchLengthVector branch_lengths_;
 };
 
 // Compare TreePtrs by their Trees.
