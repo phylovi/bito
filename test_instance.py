@@ -7,8 +7,7 @@ def test_instance():
     inst = sbn.instance('charlie')
     inst.read_newick_file('data/five_taxon.nwk')
     inst.print_status()
-    # assert inst.tree_count() == 3
-    sbn.f(np.array([3,4]))
+    assert inst.tree_count() == 4
     [rootsplit_support, subsplit_support] = inst.split_supports()
 
     with open('_build/support.txt', 'w') as fp:
@@ -30,12 +29,3 @@ def test_instance():
     a1_c = np.array(v1_c, copy=False)
     a2_c = np.array(v2_c, copy=False)
     a3_c = np.array(v2_c, copy=False)
-
-    a3_c = a1_c + a2_c
-
-    a1 = np.random.uniform(len(a1_c))
-    a2 = np.random.uniform(len(a1_c))
-    a3 = np.random.uniform(len(a1_c))
-
-    a3 = a1 + a2
-
