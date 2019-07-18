@@ -128,8 +128,8 @@ class Node {
     if (!IsLeaf()) {
       assert(children_.size() == 2);
       f(this, children_[1].get(), children_[0].get());
-      f(this, children_[0].get(), children_[1].get());
       children_[0]->TriplePreOrderBifurcating(f);
+      f(this, children_[0].get(), children_[1].get());
       children_[1]->TriplePreOrderBifurcating(f);
     }
   }
@@ -346,7 +346,10 @@ class Node {
         Join(std::vector<NodePtr>({Leaf(0), Leaf(2), Join(Leaf(1), Leaf(3))})),
         // 3: (0,(1,(2,3)))
         Join(std::vector<NodePtr>(
-            {Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
+            {Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))})),
+        // 4: ((0,1),(2,3)))
+        Join(std::vector<NodePtr>(
+            {Join(Leaf(0), Leaf(1)), Join(Leaf(2), Leaf(3))}))};
     for (auto& topology : topologies) {
       topology->Reindex();
     }
@@ -426,6 +429,7 @@ TEST_CASE("Node header") {
   Node::NodePtr t1_twin = examples[1];
   Node::NodePtr t2 = examples[2];
   Node::NodePtr t3 = examples[3];
+  Node::NodePtr t4 = examples[4];
   // TODO(ematsen) add real test for TriplePreorder
   std::cout << "TriplePreOrder" << std::endl;
   std::cout << t2->Newick() << std::endl;
@@ -436,23 +440,21 @@ TEST_CASE("Node header") {
   };
   t2->TriplePreOrder(print_triple, print_triple);
 
+  std::vector<std::tuple<size_t, size_t, size_t>> trace;
+  t4->TripleIndexPreOrderBifurcating(
+      [&trace](size_t parent_index, size_t sister_index, size_t node_index) {
+        trace.emplace_back(parent_index, sister_index, node_index);
+      });
+  std::vector<std::tuple<size_t, size_t, size_t>> correct_trace(
+      {{6, 5, 4}, {4, 1, 0}, {4, 0, 1}, {6, 4, 5}, {5, 3, 2}, {5, 2, 3}});
+  CHECK_EQ(trace, correct_trace);
+
   // This is actually a non-trivial test (see note in Node constructor above),
   // which shows why we need bit rotation.
   CHECK_NE(t1->Hash(), t2->Hash());
 
   CHECK_EQ(t1, t1_twin);
   CHECK_NE(t1, t2);
-
-  std::cout << "\nTripleIndexPreOrderBifurcating demo on (0,(1,(2,3))) \n";
-  int root_index = t3->Index();
-  t3->TripleIndexPreOrderBifurcating(
-      [&root_index](int parent_index, int sister_index, int node_index) {
-        if (root_index == parent_index) {
-          std::cout << "parent is the root\n";
-        }
-        std::cout << "parent: " << parent_index << " sister: " << sister_index
-                  << " node: " << node_index << std::endl;
-      });
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_

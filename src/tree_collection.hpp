@@ -102,7 +102,8 @@ TEST_CASE("TopologyCounter") {
   std::unordered_map<std::string, uint32_t> counted_correct(
       {{"(0_1,1_1,(2_1,3_1)3_2)3_4;", 2},
        {"(0_1,2_1,(1_1,3_1)3_2)3_4;", 1},
-       {"(0_1,(1_1,(2_1,3_1)3_2)3_3)3_4;", 1}});
+       {"(0_1,(1_1,(2_1,3_1)3_2)3_3)3_4;", 1},
+       {"((0_1,1_1)1_2,(2_1,3_1)3_2)3_4;", 1}});
   CHECK_EQ(counted, counted_correct);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
