@@ -26,7 +26,6 @@ BitsetUInt32Dict PCSSCounterOf(const Node::TopologyCounter& topologies);
 
 TEST_CASE("Build") {
   Driver driver;
-
   const auto& trees = driver.ParseNewickFile("data/many_rootings.nwk");
   auto counter = trees->TopologyCounter();
   auto support = PCSSCounterOf(counter);
