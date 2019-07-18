@@ -13,7 +13,6 @@ size_t Alignment::Length() const {
   return data_.begin()->second.size();
 }
 
-// Is the alignment non-empty and do all sequences have the same length?
 bool Alignment::IsValid() const {
   if (data_.size() == 0) {
     return false;
