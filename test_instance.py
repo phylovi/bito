@@ -1,6 +1,7 @@
 import numpy as np
 import sbn
 
+
 def test_instance():
     inst = sbn.instance('charlie')
     inst.read_newick_file('data/five_taxon.nwk')
@@ -22,11 +23,10 @@ def test_instance():
             support_list = list(support.keys())
             support_list.sort()
             for support in support_list:
-                fp.write(support+'\n')
+                fp.write(support + '\n')
             fp.write('\n')
 
     inst.read_nexus_file('data/DS1.subsampled_10.t')
     inst.read_fasta_file('data/DS1.fasta')
     inst.make_beagle_instances(2)
     print(np.array(inst.tree_log_likelihoods()))
-
