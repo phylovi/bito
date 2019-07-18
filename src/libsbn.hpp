@@ -8,6 +8,7 @@
 #include <pybind11/pybind11.h>
 #include <cmath>
 #include <queue>
+#include <random>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -48,10 +49,14 @@ struct SBNInstance {
   BitsetUInt32PairMap range_indexer_;
   // The first index after the rootsplit block.
   size_t rootsplit_index_end_;
+  std::random_device random_device_;
+  std::mt19937 random_generator_;
 
   // ** Initialization, destruction, and status
   explicit SBNInstance(const std::string &name)
-      : name_(name), symbol_table_(beagle::GetSymbolTable()) {}
+      : name_(name),
+        symbol_table_(beagle::GetSymbolTable()),
+        random_generator_(random_device_()) {}
 
   ~SBNInstance() { FinalizeBeagleInstances(); }
 
@@ -120,11 +125,18 @@ struct SBNInstance {
         index++;
       }
     }
-    sbn_probs_ = std::vector<double>(indexer_.size());
+    sbn_probs_ = std::vector<double>(indexer_.size(), 1.);
     for (const auto &iter : indexer_) {
       assert(reverse_indexer_.insert({iter.second, iter.first}).second);
     }
   }
+
+  //  uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) {
+  //    std::discrete_distribution<> distribution(
+  //        sbn_probs_.begin() + range.first, sbn_probs_.begin() +
+  //        range.second);
+  //    return distribution(random_generator_);
+  //  }
 
   // TODO(erick) replace with something interesting.
   double SBNTotalProb() {
