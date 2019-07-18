@@ -42,7 +42,7 @@ PYBIND11_MODULE(sbn, m) {
       .def("make_beagle_instances", &SBNInstance::MakeBeagleInstances)
       .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
-      .def("get_indexer", &SBNInstance::GetIndexer)
+      .def("get_indexers", &SBNInstance::GetIndexers)
       .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
       // Member Variables
       .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);

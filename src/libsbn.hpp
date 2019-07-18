@@ -9,6 +9,7 @@
 #include <cmath>
 #include <queue>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -23,6 +24,8 @@ namespace py = pybind11;
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
 typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
+typedef std::unordered_map<std::string, std::pair<uint32_t, uint32_t>>
+    StringUInt32PairMap;
 
 template <typename T>
 StringUInt32Map StringUInt32MapOf(T m) {
@@ -134,7 +137,17 @@ struct SBNInstance {
 
   // ** I/O
 
-  StringUInt32Map GetIndexer() { return StringUInt32MapOf(indexer_); }
+  std::tuple<StringUInt32Map, StringUInt32PairMap> GetIndexers() {
+    auto indexer_str = StringUInt32MapOf(indexer_);
+    StringUInt32PairMap range_indexer_str;
+    for (const auto &iter : range_indexer_) {
+      assert(range_indexer_str.insert({iter.first.ToString(), iter.second})
+                 .second);
+    }
+    assert(range_indexer_str.insert({"rootsplit", {0, rootsplit_index_end_}})
+               .second);
+    return std::tie(indexer_str, range_indexer_str);
+  }
 
   // This function is really just for testing-- it recomputes from scratch.
   std::pair<StringUInt32Map, StringUInt32Map> SplitCounters() {

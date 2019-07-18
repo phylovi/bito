@@ -9,7 +9,9 @@ def test_instance():
     assert inst.tree_count() == 4
     inst.process_loaded_trees()
 
-    print(inst.get_indexer())
+    [indexer, range_indexer] = inst.get_indexers()
+    print(indexer)
+    print(range_indexer)
 
     sbn_probs = np.array(inst.sbn_probs, copy=False)
     sbn_probs[3] = 3.14159265359
