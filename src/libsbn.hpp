@@ -46,6 +46,7 @@ struct SBNInstance {
   Alignment alignment_;
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
+  std::vector<double> sbn_probs_;
 
   explicit SBNInstance(const std::string &name)
       : name_(name), symbol_table_(beagle::GetSymbolTable()) {}
@@ -89,6 +90,20 @@ struct SBNInstance {
     auto counter = tree_collection_->TopologyCounter();
     return {StringUInt32MapOf(RootsplitSupportOf(counter)),
             StringUInt32MapOf(SubsplitSupportOf(counter))};
+  }
+
+  void BuildIndexer() {
+    // TODO(erick) do things here.
+    sbn_probs_ = std::vector<double>(5);
+  }
+
+  // TODO(erick) replace with something interesting.
+  double SBNTotalProb() {
+    double total = 0;
+    for (const auto &prob : sbn_probs_) {
+      total += prob;
+    }
+    return total;
   }
 
   void MakeBeagleInstances(int instance_count) {
@@ -136,15 +151,6 @@ struct SBNInstance {
               tree_collection->GetTree(tree_number), beagle_instance);
         });
     return results;
-  }
-
-  static void f(py::array_t<double> array) {
-    py::buffer_info buf = array.request();
-    std::cout << "You passed a " << buf.ndim << " dim array" << std::endl;
-    double *ptr = reinterpret_cast<double *>(buf.ptr);
-    for (auto idx = 0; idx < buf.shape[0]; idx++) {
-      std::cout << ptr[idx] << std::endl;
-    }
   }
 };
 

@@ -5,8 +5,7 @@ def test_instance():
     inst = sbn.instance('charlie')
     inst.read_newick_file('data/five_taxon.nwk')
     inst.print_status()
-    # assert inst.tree_count() == 3
-    sbn.f(np.array([3,4]))
+    assert inst.tree_count() == 4
     [rootsplit_support, subsplit_support] = inst.split_supports()
 
     with open('_build/support.txt', 'w') as fp:
@@ -21,3 +20,9 @@ def test_instance():
     inst.read_fasta_file('data/DS1.fasta')
     inst.make_beagle_instances(2)
     print(inst.tree_log_likelihoods())
+
+    inst.build_indexer()
+    sbn_probs = np.array(inst.sbn_probs, copy=False)
+    sbn_probs[3] = 3.14159265359
+    print(sbn_probs)
+    print(inst.sbn_total_prob())
