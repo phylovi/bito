@@ -21,7 +21,9 @@ def test_instance():
     inst.make_beagle_instances(2)
     print(inst.tree_log_likelihoods())
 
-    inst.build_indexer()
+    inst.build_indexers()
+    print(inst.get_rootsplit_indexer())
+
     sbn_probs = np.array(inst.sbn_probs, copy=False)
     sbn_probs[3] = 3.14159265359
     print(sbn_probs)

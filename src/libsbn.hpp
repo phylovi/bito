@@ -24,20 +24,24 @@ namespace py = pybind11;
 typedef std::unordered_map<std::string, float> StringFloatMap;
 typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
 
-StringFloatMap StringFloatMapOf(BitsetUInt32Map m) {
-  StringFloatMap m_str;
-  for (const auto &iter : m) {
-    m_str[iter.first.ToString()] = static_cast<float>(iter.second);
-  }
-  return m_str;
-}
-
-StringUInt32Map StringUInt32MapOf(BitsetUInt32Map m) {
+template <typename T>
+StringUInt32Map StringUInt32MapOf(T m) {
   StringUInt32Map m_str;
   for (const auto &iter : m) {
     m_str[iter.first.ToString()] = iter.second;
   }
   return m_str;
+}
+
+template <typename T>
+BitsetUInt32Map BitsetIndexerOf(T supports) {
+  BitsetUInt32Map indexer;
+  uint32_t index = 0;
+  for (const auto &iter : supports) {
+    indexer[iter.first] = index;
+    index++;
+  }
+  return indexer;
 }
 
 struct SBNInstance {
@@ -47,7 +51,10 @@ struct SBNInstance {
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
   std::vector<double> sbn_probs_;
+  BitsetUInt32Map rootsplit_indexer_;
+  BitsetUInt32Map pcss_indexer_;
 
+  // ** Initialization, destruction, and status
   explicit SBNInstance(const std::string &name)
       : name_(name), symbol_table_(beagle::GetSymbolTable()) {}
 
@@ -62,6 +69,49 @@ struct SBNInstance {
   }
 
   size_t TreeCount() const { return tree_collection_->TreeCount(); }
+  void PrintStatus() {
+    std::cout << "Status for instance '" << name_ << "':\n";
+    if (tree_collection_) {
+      std::cout << TreeCount() << " unique tree topologies loaded on "
+                << tree_collection_->TaxonCount() << " leaves.\n";
+    } else {
+      std::cout << "No trees loaded.\n";
+    }
+    std::cout << alignment_.Data().size() << " sequences loaded.\n";
+  }
+
+  // ** Building SBN-related items
+
+  void BuildIndexers() {
+    auto counter = tree_collection_->TopologyCounter();
+
+    rootsplit_indexer_ = BitsetIndexerOf(RootsplitSupportOf(counter));
+    pcss_indexer_ = BitsetIndexerOf(PCSSSupportOf(counter));
+    sbn_probs_ = std::vector<double>(rootsplit_indexer_.size());
+  }
+
+  // TODO(erick) replace with something interesting.
+  double SBNTotalProb() {
+    double total = 0;
+    for (const auto &prob : sbn_probs_) {
+      total += prob;
+    }
+    return total;
+  }
+
+  // ** I/O
+
+  StringUInt32Map GetRootsplitIndexer() {
+    return StringUInt32MapOf(rootsplit_indexer_);
+  }
+
+  StringUInt32Map GetPCSSIndexer() { return StringUInt32MapOf(pcss_indexer_); }
+
+  std::pair<StringUInt32Map, StringUInt32Map> SplitSupports() {
+    auto counter = tree_collection_->TopologyCounter();
+    return {StringUInt32MapOf(RootsplitSupportOf(counter)),
+            StringUInt32MapOf(PCSSSupportOf(counter))};
+  }
 
   void ReadNewickFile(std::string fname) {
     Driver driver;
@@ -75,36 +125,7 @@ struct SBNInstance {
 
   void ReadFastaFile(std::string fname) { alignment_.ReadFasta(fname); }
 
-  void PrintStatus() {
-    std::cout << "Status for instance '" << name_ << "':\n";
-    if (tree_collection_) {
-      std::cout << TreeCount() << " unique tree topologies loaded on "
-                << tree_collection_->TaxonCount() << " leaves.\n";
-    } else {
-      std::cout << "No trees loaded.\n";
-    }
-    std::cout << alignment_.Data().size() << " sequences loaded.\n";
-  }
-
-  std::pair<StringUInt32Map, StringUInt32Map> SplitSupports() {
-    auto counter = tree_collection_->TopologyCounter();
-    return {StringUInt32MapOf(RootsplitSupportOf(counter)),
-            StringUInt32MapOf(SubsplitSupportOf(counter))};
-  }
-
-  void BuildIndexer() {
-    // TODO(erick) do things here.
-    sbn_probs_ = std::vector<double>(5);
-  }
-
-  // TODO(erick) replace with something interesting.
-  double SBNTotalProb() {
-    double total = 0;
-    for (const auto &prob : sbn_probs_) {
-      total += prob;
-    }
-    return total;
-  }
+  // ** Phylogenetic likelihood
 
   void MakeBeagleInstances(int instance_count) {
     // Start by clearing out any existing instances.

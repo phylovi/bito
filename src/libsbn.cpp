@@ -41,7 +41,9 @@ PYBIND11_MODULE(sbn, m) {
       .def("split_supports", &SBNInstance::SplitSupports)
       .def("make_beagle_instances", &SBNInstance::MakeBeagleInstances)
       .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods)
-      .def("build_indexer", &SBNInstance::BuildIndexer)
+      .def("build_indexers", &SBNInstance::BuildIndexers)
+      .def("get_rootsplit_indexer", &SBNInstance::GetRootsplitIndexer)
+      .def("get_pcss_indexer", &SBNInstance::GetPCSSIndexer)
       .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
       // Member Variables
       .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);
