@@ -58,10 +58,16 @@ else:
 
 env.VariantDir('_build', 'src')
 sources = [
+    '_build/alignment.cpp',
+    '_build/beagle.cpp',
     '_build/bitset.cpp',
+    '_build/build.cpp',
     '_build/driver.cpp',
+    '_build/node.cpp',
     '_build/parser.cpp',
-    '_build/scanner.cpp'
+    '_build/scanner.cpp',
+    '_build/tree.cpp',
+    '_build/tree_collection.cpp'
 ]
 env.SharedLibrary(
     "sbn"+os.popen("python3-config --extension-suffix").read().rstrip(),

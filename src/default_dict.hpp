@@ -4,6 +4,7 @@
 #ifndef SRC_DEFAULT_DICT_HPP_
 #define SRC_DEFAULT_DICT_HPP_
 
+#include <cassert>
 #include <iostream>
 #include <unordered_map>
 #include <utility>
