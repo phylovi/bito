@@ -4,6 +4,8 @@
 #ifndef SRC_BEAGLE_HPP_
 #define SRC_BEAGLE_HPP_
 
+#include <string>
+#include <vector>
 #include "alignment.hpp"
 #include "intpack.hpp"
 #include "libhmsbeagle/beagle.h"

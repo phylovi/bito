@@ -5,6 +5,7 @@
 #include <iostream>
 #include <numeric>
 #include <string>
+#include <vector>
 
 namespace beagle {
 
@@ -65,7 +66,7 @@ int CreateInstance(int tip_count, int alignment_length,
   int resource_count = 0;
   // Bit-flags indicating preferred implementation charactertistics, see
   // BeagleFlags (input)
-  long preference_flags = 0;
+  int64_t preference_flags = 0;
   // Bit-flags indicating required implementation characteristics, see
   // BeagleFlags (input)
   int requirement_flags = 0;

@@ -4,6 +4,7 @@
 #ifndef SRC_ALIGNMENT_HPP_
 #define SRC_ALIGNMENT_HPP_
 
+#include <string>
 #include "typedefs.hpp"
 
 // The mutable nature of this class is a little ugly.

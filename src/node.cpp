@@ -18,7 +18,7 @@ Node::Node(uint32_t leaf_id)
     : children_({}),
       index_(leaf_id),
       tag_(PackInts(leaf_id, 1)),
-      hash_(SOHash(leaf_id)){};
+      hash_(SOHash(leaf_id)) {}
 
 Node::Node(NodePtrVec children, size_t index)
     : children_(children), index_(index) {
@@ -53,7 +53,7 @@ Node::Node(NodePtrVec children, size_t index)
   // collisions when identical tips are in different
   // ordered subtrees (an example is in below doctest).
   hash_ = SORotate(hash_, 1);
-};
+}
 
 bool Node::operator==(const Node& other) {
   if (this->Hash() != other.Hash()) {
