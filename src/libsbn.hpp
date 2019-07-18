@@ -41,6 +41,7 @@ struct SBNInstance {
   std::vector<beagle::BeagleInstance> beagle_instances_;
   std::vector<double> sbn_probs_;
   BitsetUInt32Map indexer_;
+  UInt32BitsetMap reverse_indexer_;
   BitsetUInt32PairMap range_indexer_;
   // The first index after the rootsplit block.
   size_t rootsplit_index_end_;
@@ -77,6 +78,7 @@ struct SBNInstance {
     uint32_t index = 0;
     auto counter = tree_collection_->TopologyCounter();
     indexer_.clear();
+    reverse_indexer_.clear();
     range_indexer_.clear();
     // Start by adding the rootsplits.
     for (const auto &iter : RootsplitCounterOf(counter)) {
@@ -86,6 +88,7 @@ struct SBNInstance {
     rootsplit_index_end_ = index;
     // Now we make a map that maps parent subsplit to the collection of PCSSs
     // that contain it.
+    // TODO think about move and make consistent below
     BitsetBitsetVectorMap parent_to_pcss_vector_map;
     for (const auto &iter : PCSSCounterOf(counter)) {
       const auto &pcss = iter.first;
@@ -115,6 +118,9 @@ struct SBNInstance {
       }
     }
     sbn_probs_ = std::vector<double>(indexer_.size());
+    for (const auto &iter : indexer_) {
+      assert(reverse_indexer_.insert({iter.second, iter.first}).second);
+    }
   }
 
   // TODO(erick) replace with something interesting.
