@@ -16,7 +16,6 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
-#include "prettyprint.hpp"
 #include "task_processor.hpp"
 #include "tree.hpp"
 
@@ -94,11 +93,11 @@ struct SBNInstance {
   }
 
   void BuildIndexer() {
-    // TODO do things here.
+    // TODO(erick) do things here.
     sbn_probs_ = std::vector<double>(5);
   }
 
-  // TODO replace with something interesting.
+  // TODO(erick) replace with something interesting.
   double SBNTotalProb() {
     double total = 0;
     for (const auto &prob : sbn_probs_) {

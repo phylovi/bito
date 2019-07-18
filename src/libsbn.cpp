@@ -16,8 +16,8 @@ PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
 PYBIND11_MODULE(sbn, m) {
   m.doc() = "libsbn bindings";
-  // Second, we expose vector<double> as a buffer object so that we can use them
-  // as numpy arrays in place with np.array(v, copy=False). See
+  // Second, we expose vector<double> as a buffer object so that we can use it
+  // as an in-place numpy array with np.array(v, copy=False). See
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
   py::class_<std::vector<double>>(m, "vector_double", py::buffer_protocol())
       .def_buffer([](std::vector<double> &v) -> py::buffer_info {
