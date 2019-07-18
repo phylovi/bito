@@ -33,17 +33,6 @@ StringUInt32Map StringUInt32MapOf(T m) {
   return m_str;
 }
 
-template <typename T>
-BitsetUInt32Map BitsetIndexerOf(T supports) {
-  BitsetUInt32Map indexer;
-  uint32_t index = 0;
-  for (const auto &iter : supports) {
-    indexer[iter.first] = index;
-    index++;
-  }
-  return indexer;
-}
-
 struct SBNInstance {
   std::string name_;
   TreeCollection::TreeCollectionPtr tree_collection_;
@@ -51,8 +40,10 @@ struct SBNInstance {
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
   std::vector<double> sbn_probs_;
-  BitsetUInt32Map rootsplit_indexer_;
-  BitsetUInt32Map pcss_indexer_;
+  BitsetUInt32Map indexer_;
+  BitsetUInt32PairMap range_indexer_;
+  // The first index after the rootsplit block.
+  size_t rootsplit_index_end_;
 
   // ** Initialization, destruction, and status
   explicit SBNInstance(const std::string &name)
@@ -83,10 +74,34 @@ struct SBNInstance {
   // ** Building SBN-related items
 
   void ProcessLoadedTrees() {
+    uint32_t index = 0;
     auto counter = tree_collection_->TopologyCounter();
-    rootsplit_indexer_ = BitsetIndexerOf(RootsplitCounterOf(counter));
-    pcss_indexer_ = BitsetIndexerOf(PCSSCounterOf(counter));
-    sbn_probs_ = std::vector<double>(rootsplit_indexer_.size());
+    indexer_.clear();
+    range_indexer_.clear();
+    // Start by adding the rootsplits.
+    for (const auto &iter : RootsplitCounterOf(counter)) {
+      indexer_[iter.first] = index;
+      index++;
+    }
+    rootsplit_index_end_ = index;
+    // Now we process the PCSSs.
+    BitsetBitsetVectorMap parent_to_pcss_map;
+    for (const auto &iter : PCSSCounterOf(counter)) {
+      const auto &pcss = iter.first;
+      auto parent = pcss.PCSSParent();
+      auto search = parent_to_pcss_map.find(parent);
+      if (search == parent_to_pcss_map.end()) {
+        std::vector<Bitset> pcss_singleton({pcss});
+        assert(parent_to_pcss_map
+                   .insert({std::move(parent), std::move(pcss_singleton)})
+                   .second);
+      } else {
+        search->second.push_back(std::move(pcss));
+      }
+    }
+
+    // sbn_probs_ = std::vector<double>(rootsplit_indexer_.size());
+    sbn_probs_ = std::vector<double>(5);
   }
 
   // TODO(erick) replace with something interesting.
@@ -100,11 +115,7 @@ struct SBNInstance {
 
   // ** I/O
 
-  StringUInt32Map GetRootsplitIndexer() {
-    return StringUInt32MapOf(rootsplit_indexer_);
-  }
-
-  StringUInt32Map GetPCSSIndexer() { return StringUInt32MapOf(pcss_indexer_); }
+  StringUInt32Map GetIndexer() { return StringUInt32MapOf(indexer_); }
 
   // This function is really just for testing-- it recomputes from scratch.
   std::pair<StringUInt32Map, StringUInt32Map> SplitCounters() {

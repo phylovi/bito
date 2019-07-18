@@ -15,6 +15,10 @@ typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
 typedef std::unordered_map<Bitset, int> BitsetIndexer;
 typedef DefaultDict<Bitset, uint32_t> BitsetUInt32Dict;
 typedef std::unordered_map<Bitset, uint32_t> BitsetUInt32Map;
+typedef std::unordered_map<Bitset, std::pair<uint32_t, uint32_t>>
+    BitsetUInt32PairMap;
+typedef std::unordered_map<Bitset, Bitset> BitsetBitsetMap;
+typedef std::unordered_map<Bitset, std::vector<Bitset>> BitsetBitsetVectorMap;
 
 TagBitsetMap TagBitsetMapOf(Node::NodePtr t);
 void PrintTagBitsetMap(TagBitsetMap m);

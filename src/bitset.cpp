@@ -182,6 +182,14 @@ Bitset Bitset::PCSSChunk(size_t i) const {
   return Bitset(new_value);
 }
 
+Bitset Bitset::PCSSParent() const {
+  assert(size() % 3 == 0);
+  size_t chunk_size = size() / 3;
+  std::vector<bool> new_value(value_.begin(),
+                              value_.begin() + int32_t(2 * chunk_size));
+  return Bitset(new_value);
+}
+
 bool Bitset::PCSSIsValid() const {
   if (size() % 3 != 0) return false;
   Bitset uncut_parent = PCSSChunk(0);

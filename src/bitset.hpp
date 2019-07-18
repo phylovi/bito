@@ -59,6 +59,7 @@ class Bitset {
   std::string PCSSToString() const;
   bool PCSSIsValid() const;
   Bitset PCSSChunk(size_t i) const;
+  Bitset PCSSParent() const;
 
  private:
   std::vector<bool> value_;
