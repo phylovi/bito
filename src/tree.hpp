@@ -4,6 +4,7 @@
 #ifndef SRC_TREE_HPP_
 #define SRC_TREE_HPP_
 
+#include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
