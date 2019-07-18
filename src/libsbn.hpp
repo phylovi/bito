@@ -131,12 +131,13 @@ struct SBNInstance {
     }
   }
 
-  //  uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) {
-  //    std::discrete_distribution<> distribution(
-  //        sbn_probs_.begin() + range.first, sbn_probs_.begin() +
-  //        range.second);
-  //    return distribution(random_generator_);
-  //  }
+  uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) {
+    assert(range.first < range.second);
+    assert(range.second <= sbn_probs_.size());
+    std::discrete_distribution<> distribution(
+        sbn_probs_.begin() + range.first, sbn_probs_.begin() + range.second);
+    return static_cast<uint32_t>(distribution(random_generator_));
+  }
 
   // TODO(erick) replace with something interesting.
   double SBNTotalProb() {
@@ -252,6 +253,10 @@ TEST_CASE("libsbn") {
        -6910.7871105783515});
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
+  }
+  inst.ProcessLoadedTrees();
+  for (auto i = 0; i < 200; i++) {
+    std::cout << inst.SampleIndex(std::pair<uint32_t, uint32_t>(0, 20)) << " ";
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
