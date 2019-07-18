@@ -30,9 +30,7 @@ void Driver::Clear() {
 // This parser will allow anything before the first '('.
 TreeCollection::TreeCollectionPtr Driver::ParseNewick(std::ifstream &in) {
   yy::parser parser_instance(*this);
-
   parser_instance.set_debug_level(trace_parsing_);
-
   std::string line;
   unsigned int line_number = 1;
   Tree::TreePtrVector trees;
@@ -70,7 +68,6 @@ TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
     if (!in) {
       throw std::runtime_error("Cannot open file.");
     }
-
     std::string line;
     std::getline(in, line);
     if (line != "#NEXUS") {

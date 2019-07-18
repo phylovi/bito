@@ -19,6 +19,7 @@ Node::Node(uint32_t leaf_id)
       index_(leaf_id),
       tag_(PackInts(leaf_id, 1)),
       hash_(SOHash(leaf_id)){};
+
 Node::Node(NodePtrVec children, size_t index)
     : children_(children), index_(index) {
   if (children_.empty()) {
