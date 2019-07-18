@@ -153,15 +153,6 @@ struct SBNInstance {
         });
     return results;
   }
-
-  //  pybind11::array GetSBNProbs() {
-  //    std::vector<double> *v = &sbn_probs_;
-  //    auto capsule = py::capsule(
-  //        &v, [](void *v) { delete reinterpret_cast<std::vector<double> *>(v);
-  //        });
-  //    return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
-  //                     capsule);
-  //  }
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

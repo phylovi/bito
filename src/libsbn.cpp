@@ -9,84 +9,31 @@
 
 namespace py = pybind11;
 
-// class Vector {
-//  public:
-//   Vector(size_t size) : m_size(size) { m_data = new double[size]; }
-//   double *data() { return m_data; }
-//   size_t size() const { return m_size; }
-//
-//  private:
-//   size_t m_size;
-//   double *m_data;
-// };
-
-class Vector : public std::vector<double> {
- public:
-  Vector(size_t size) : std::vector<double>(size){};
-};
-
-Vector MakeVector() {
-  Vector x(5);
-  for (size_t i = 0; i < x.size(); i++) {
-    x.data()[i] = 0;
-  }
-  return x;
-}
-
-std::vector<double> make_vector() {
-  std::vector<double> x(5);
-  for (size_t i = 0; i < x.size(); i++) {
-    x[i] = 0;
-  }
-  return x;
-}
-
-double total_vector(std::vector<double> v) {
-  double total = 0;
-  for (const auto &x : v) {
-    total += x;
-  }
-  return total;
-}
-
-double TotalVector(Vector v) {
-  double total = 0;
-  for (size_t i = 0; i < v.size(); i++) {
-    total += v.data()[i];
-  }
-  return total;
-}
-
-auto NewSchool() {
-  auto v = new std::vector<int>(5);
-  auto capsule = py::capsule(
-      v, [](void *v) { delete reinterpret_cast<std::vector<int> *>(v); });
-  return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
-                   capsule);
-}
-
-// auto GetSBNProbs(SBNInstance inst) {
-//   auto v = inst.sbn_probs_;
-//   auto capsule = py::capsule(
-//       &v, [](void *v) { delete reinterpret_cast<std::vector<double> *>(v);
-//       });
-//   return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
-//                    capsule);
-// }
-
-pybind11::array WrapVector(std::vector<double> *v) {
-  auto capsule = py::capsule(
-      &v, [](void *v) { delete reinterpret_cast<std::vector<double> *>(v); });
-  return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
-                   capsule);
-}
-
+// In order to make vector<double>s available to numpy, we take two steps.
+// First, we make them opaque to pybind11, so that it doesn't do its default
+// conversion of STL types.
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
 PYBIND11_MODULE(sbn, m) {
   m.doc() = "libsbn bindings";
+  // Second, we expose vector<double> as a buffer object so that we can use them
+  // as numpy arrays in place with np.array(v, copy=False). See
+  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
+  py::class_<std::vector<double>>(m, "vector_double", py::buffer_protocol())
+      .def_buffer([](std::vector<double> &v) -> py::buffer_info {
+        return py::buffer_info(
+            v.data(),                                 // Pointer to buffer
+            sizeof(double),                           // Size of one scalar
+            py::format_descriptor<double>::format(),  // See docs
+            1,                                        // Number of dimensions
+            {v.size()},                               // Buffer dimensions
+            {sizeof(double)});                        // Stride
+      });
+  // Now we set things up our SBNInstance class.
   py::class_<SBNInstance>(m, "instance")
+      // Constructors
       .def(py::init<const std::string &>())
+      // Methods
       .def("tree_count", &SBNInstance::TreeCount)
       .def("read_newick_file", &SBNInstance::ReadNewickFile)
       .def("read_nexus_file", &SBNInstance::ReadNexusFile)
@@ -97,36 +44,6 @@ PYBIND11_MODULE(sbn, m) {
       .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods)
       .def("build_indexer", &SBNInstance::BuildIndexer)
       .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
-      //    .def("get_sbn_probs", &SBNInstance::GetSBNProbs)
+      // Member Variables
       .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);
-  py::class_<Vector>(m, "Vector", py::buffer_protocol())
-      .def_buffer([](Vector &v) -> py::buffer_info {
-        return py::buffer_info(
-            v.data(),                                /* Pointer to buffer */
-            sizeof(double),                          /* Size of one scalar */
-            py::format_descriptor<double>::format(), /* Python
-                                                       struct-style format
-                                                       descriptor */
-            1,                                       /* Number of dimensions */
-            {v.size()},                              /* Buffer dimensions */
-            {sizeof(double)});
-      });
-  py::class_<std::vector<double>>(m, "vector_double", py::buffer_protocol())
-      .def_buffer([](std::vector<double> &v) -> py::buffer_info {
-        return py::buffer_info(
-            v.data(),                                /* Pointer to buffer */
-            sizeof(double),                          /* Size of one scalar */
-            py::format_descriptor<double>::format(), /* Python
-                                                       struct-style format
-                                                       descriptor */
-            1,                                       /* Number of dimensions */
-            {v.size()},                              /* Buffer dimensions */
-            {sizeof(double)});
-      });
-  m.def("make_vector", &make_vector, "test");
-  m.def("MakeVector", &MakeVector, "test");
-  m.def("total_vector", &total_vector, "test");
-  m.def("TotalVector", &TotalVector, "test");
-  m.def("NewSchool", &NewSchool, "test");
-  //  m.def("get_sbn_probs", &GetSBNProbs, "test");
 }
