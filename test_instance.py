@@ -24,7 +24,7 @@ def test_instance():
     c_v = sbn.make_vector()
     v = np.array(c_v, copy=False)
     v[3] = 666
-    print(sbn.total_vector(v))
+    print(sbn.total_vector(c_v))
 
     inst.build_indexer()
     sbn_probs = np.array(inst.sbn_probs, copy=False)
