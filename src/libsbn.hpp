@@ -84,24 +84,37 @@ struct SBNInstance {
       index++;
     }
     rootsplit_index_end_ = index;
-    // Now we process the PCSSs.
-    BitsetBitsetVectorMap parent_to_pcss_map;
+    // Now we make a map that maps parent subsplit to the collection of PCSSs
+    // that contain it.
+    BitsetBitsetVectorMap parent_to_pcss_vector_map;
     for (const auto &iter : PCSSCounterOf(counter)) {
       const auto &pcss = iter.first;
       auto parent = pcss.PCSSParent();
-      auto search = parent_to_pcss_map.find(parent);
-      if (search == parent_to_pcss_map.end()) {
+      auto search = parent_to_pcss_vector_map.find(parent);
+      if (search == parent_to_pcss_vector_map.end()) {
         std::vector<Bitset> pcss_singleton({pcss});
-        assert(parent_to_pcss_map
+        assert(parent_to_pcss_vector_map
                    .insert({std::move(parent), std::move(pcss_singleton)})
                    .second);
       } else {
         search->second.push_back(std::move(pcss));
       }
     }
-
-    // sbn_probs_ = std::vector<double>(rootsplit_indexer_.size());
-    sbn_probs_ = std::vector<double>(5);
+    for (auto iter : parent_to_pcss_vector_map) {
+      auto parent = iter.first;
+      auto pcss_vector = iter.second;
+      // The range indexer maps the parent to the range of values used by that
+      // parent.
+      assert(
+          range_indexer_.insert({parent, {index, index + pcss_vector.size()}})
+              .second);
+      // We insert the corresponding PCSSs into the indexer.
+      for (const auto &pcss : pcss_vector) {
+        assert(indexer_.insert({pcss, index}).second);
+        index++;
+      }
+    }
+    sbn_probs_ = std::vector<double>(indexer_.size());
   }
 
   // TODO(erick) replace with something interesting.
