@@ -26,7 +26,19 @@ def test_instance():
     v[3] = 666
     print(sbn.total_vector(c_v))
 
-    inst.build_indexer()
-    sbn_probs = np.array(inst.sbn_probs, copy=False)
-    sbn_probs[3] = 0.4
-    print(inst.sbn_total_prob())
+    c_V = sbn.MakeVector()
+    V = np.array(c_V, copy=False)
+    V[3] = 666
+    print(sbn.TotalVector(c_V))
+
+    c_n = sbn.NewSchool()
+    n = np.array(c_n, copy=False)
+    n[3] = 666
+    print(c_n)
+    # print(sbn.TotalNewSchool(c_n))
+
+
+    # inst.build_indexer()
+    # sbn_probs = np.array(sbn.get_sbn_probs(inst), copy=False)
+    # sbn_probs[3] = 0.4
+    # print(inst.sbn_total_prob())
