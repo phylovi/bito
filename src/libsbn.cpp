@@ -61,14 +61,14 @@ auto NewSchool() {
 }
 
 auto GetSBNProbs(SBNInstance inst) {
-  auto v = &inst.sbn_probs_;
+  auto v = inst.sbn_probs_;
   auto capsule = py::capsule(
       &v, [](void *v) { delete reinterpret_cast<std::vector<double> *>(v); });
   return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
                    capsule);
 }
 
-auto WrapVector(std::vector<double> *v) {
+pybind11::array WrapVector(std::vector<double> *v) {
   auto capsule = py::capsule(
       &v, [](void *v) { delete reinterpret_cast<std::vector<double> *>(v); });
   return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
@@ -89,6 +89,7 @@ PYBIND11_MODULE(sbn, m) {
       .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods)
       .def("build_indexer", &SBNInstance::BuildIndexer)
       .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
+      .def("get_sbn_probs", &SBNInstance::GetSBNProbs)
       .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);
   py::class_<Vector>(m, "Vector", py::buffer_protocol())
       .def_buffer([](Vector &v) -> py::buffer_info {
