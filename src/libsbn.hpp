@@ -82,11 +82,10 @@ struct SBNInstance {
 
   // ** Building SBN-related items
 
-  void BuildIndexers() {
+  void ProcessLoadedTrees() {
     auto counter = tree_collection_->TopologyCounter();
-
-    rootsplit_indexer_ = BitsetIndexerOf(RootsplitSupportOf(counter));
-    pcss_indexer_ = BitsetIndexerOf(PCSSSupportOf(counter));
+    rootsplit_indexer_ = BitsetIndexerOf(RootsplitCounterOf(counter));
+    pcss_indexer_ = BitsetIndexerOf(PCSSCounterOf(counter));
     sbn_probs_ = std::vector<double>(rootsplit_indexer_.size());
   }
 
@@ -107,10 +106,11 @@ struct SBNInstance {
 
   StringUInt32Map GetPCSSIndexer() { return StringUInt32MapOf(pcss_indexer_); }
 
-  std::pair<StringUInt32Map, StringUInt32Map> SplitSupports() {
+  // This function is really just for testing-- it recomputes from scratch.
+  std::pair<StringUInt32Map, StringUInt32Map> SplitCounters() {
     auto counter = tree_collection_->TopologyCounter();
-    return {StringUInt32MapOf(RootsplitSupportOf(counter)),
-            StringUInt32MapOf(PCSSSupportOf(counter))};
+    return {StringUInt32MapOf(RootsplitCounterOf(counter)),
+            StringUInt32MapOf(PCSSCounterOf(counter))};
   }
 
   void ReadNewickFile(std::string fname) {
