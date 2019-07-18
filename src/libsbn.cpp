@@ -9,15 +9,20 @@
 
 namespace py = pybind11;
 
-class Vector {
- public:
-  Vector(size_t size) : m_size(size) { m_data = new double[size]; }
-  double *data() { return m_data; }
-  size_t size() const { return m_size; }
+// class Vector {
+//  public:
+//   Vector(size_t size) : m_size(size) { m_data = new double[size]; }
+//   double *data() { return m_data; }
+//   size_t size() const { return m_size; }
+//
+//  private:
+//   size_t m_size;
+//   double *m_data;
+// };
 
- private:
-  size_t m_size;
-  double *m_data;
+class Vector : public std::vector<double> {
+ public:
+  Vector(size_t size) : std::vector<double>(size){};
 };
 
 Vector MakeVector() {
