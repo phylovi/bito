@@ -19,7 +19,8 @@
 typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
 typedef std::unordered_set<Bitset> BitsetSet;
 typedef std::unordered_map<Bitset, int> BitsetIndexer;
-typedef DefaultDict<Bitset, uint32_t> BitsetUInt32Map;
+typedef DefaultDict<Bitset, uint32_t> BitsetUInt32Dict;
+typedef std::unordered_map<Bitset, uint32_t> BitsetUInt32Map;
 
 // Using insert and at avoids needing to make a default constructor.
 // https://stackoverflow.com/questions/17172080/insert-vs-emplace-vs-operator-in-c-map
@@ -49,8 +50,8 @@ void PrintTagBitsetMap(TagBitsetMap m) {
   }
 }
 
-BitsetUInt32Map RootsplitSupportOf(const Node::TopologyCounter& topologies) {
-  BitsetUInt32Map rootsplit_counter(0);
+BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies) {
+  BitsetUInt32Dict rootsplit_counter(0);
   for (const auto& iter : topologies) {
     auto topology = iter.first;
     auto count = iter.second;
@@ -67,8 +68,8 @@ BitsetUInt32Map RootsplitSupportOf(const Node::TopologyCounter& topologies) {
   return rootsplit_counter;
 }
 
-BitsetUInt32Map SubsplitSupportOf(const Node::TopologyCounter& topologies) {
-  BitsetUInt32Map subsplit_support(0);
+BitsetUInt32Dict PCSSCounterOf(const Node::TopologyCounter& topologies) {
+  BitsetUInt32Dict subsplit_support(0);
   for (const auto& iter : topologies) {
     auto topology = iter.first;
     auto count = iter.second;
@@ -107,11 +108,11 @@ TEST_CASE("Build") {
 
   const auto& trees = driver.ParseNewickFile("data/many_rootings.nwk");
   auto counter = trees->TopologyCounter();
-  auto support = SubsplitSupportOf(counter);
+  auto support = PCSSCounterOf(counter);
   // Get the support of the first tree in trees.
   Node::TopologyCounter single_topology;
   single_topology.insert({counter.begin()->first, 1});
-  auto single_support = SubsplitSupportOf(single_topology);
+  auto single_support = PCSSCounterOf(single_topology);
   // many_rootings has many (unrooted) rootings of the same tree.
   // Here we check to make sure that every support across the various rootings
   // is in the SBN support for the single tree.

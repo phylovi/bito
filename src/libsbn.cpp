@@ -38,10 +38,12 @@ PYBIND11_MODULE(sbn, m) {
       .def("read_nexus_file", &SBNInstance::ReadNexusFile)
       .def("read_fasta_file", &SBNInstance::ReadFastaFile)
       .def("print_status", &SBNInstance::PrintStatus)
-      .def("split_supports", &SBNInstance::SplitSupports)
+      .def("split_counters", &SBNInstance::SplitCounters)
       .def("make_beagle_instances", &SBNInstance::MakeBeagleInstances)
       .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods)
-      .def("build_indexer", &SBNInstance::BuildIndexer)
+      .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
+      .def("get_rootsplit_indexer", &SBNInstance::GetRootsplitIndexer)
+      .def("get_pcss_indexer", &SBNInstance::GetPCSSIndexer)
       .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
       // Member Variables
       .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);
