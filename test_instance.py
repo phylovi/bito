@@ -39,7 +39,10 @@ def test_instance():
     # print(sbn.TotalNewSchool(c_n))
 
 
+    print("adsfafdf")
     inst.build_indexer()
+    sbn_probs = np.array(inst.sbn_probs, copy=False)
 #    sbn_probs = inst.get_sbn_probs()
-    # sbn_probs[3] = 0.4
-    # print(inst.sbn_total_prob())
+    sbn_probs[3] = 0.433
+    print(sbn_probs)
+    print(inst.sbn_total_prob())

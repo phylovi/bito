@@ -47,7 +47,7 @@ struct SBNInstance {
   Alignment alignment_;
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
-  std::vector<double> *sbn_probs_;
+  std::vector<double> sbn_probs_;
 
   explicit SBNInstance(const std::string &name)
       : name_(name), symbol_table_(beagle::GetSymbolTable()) {}
@@ -95,14 +95,13 @@ struct SBNInstance {
 
   void BuildIndexer() {
     // TODO do things here.
-    sbn_probs_ = new std::vector<double>(5);
+    sbn_probs_ = std::vector<double>(5);
   }
 
   // TODO replace with something interesting.
   double SBNTotalProb() {
     double total = 0;
-    std::cout << sbn_probs_ << std::endl;
-    for (const auto &prob : *sbn_probs_) {
+    for (const auto &prob : sbn_probs_) {
       total += prob;
     }
     return total;
@@ -155,13 +154,14 @@ struct SBNInstance {
     return results;
   }
 
-  pybind11::array GetSBNProbs() {
-    std::vector<double> *v = sbn_probs_;
-    auto capsule = py::capsule(
-        &v, [](void *v) { delete reinterpret_cast<std::vector<double> *>(v); });
-    return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
-                     capsule);
-  }
+  //  pybind11::array GetSBNProbs() {
+  //    std::vector<double> *v = &sbn_probs_;
+  //    auto capsule = py::capsule(
+  //        &v, [](void *v) { delete reinterpret_cast<std::vector<double> *>(v);
+  //        });
+  //    return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
+  //                     capsule);
+  //  }
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

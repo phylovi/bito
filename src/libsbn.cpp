@@ -65,13 +65,14 @@ auto NewSchool() {
                    capsule);
 }
 
-auto GetSBNProbs(SBNInstance inst) {
-  auto v = inst.sbn_probs_;
-  auto capsule = py::capsule(
-      &v, [](void *v) { delete reinterpret_cast<std::vector<double> *>(v); });
-  return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
-                   capsule);
-}
+// auto GetSBNProbs(SBNInstance inst) {
+//   auto v = inst.sbn_probs_;
+//   auto capsule = py::capsule(
+//       &v, [](void *v) { delete reinterpret_cast<std::vector<double> *>(v);
+//       });
+//   return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
+//                    capsule);
+// }
 
 pybind11::array WrapVector(std::vector<double> *v) {
   auto capsule = py::capsule(
@@ -79,6 +80,8 @@ pybind11::array WrapVector(std::vector<double> *v) {
   return py::array(static_cast<pybind11::ssize_t>(v->size()), v->data(),
                    capsule);
 }
+
+PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
 PYBIND11_MODULE(sbn, m) {
   m.doc() = "libsbn bindings";
@@ -94,7 +97,7 @@ PYBIND11_MODULE(sbn, m) {
       .def("tree_log_likelihoods", &SBNInstance::TreeLogLikelihoods)
       .def("build_indexer", &SBNInstance::BuildIndexer)
       .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
-      .def("get_sbn_probs", &SBNInstance::GetSBNProbs)
+      //    .def("get_sbn_probs", &SBNInstance::GetSBNProbs)
       .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);
   py::class_<Vector>(m, "Vector", py::buffer_protocol())
       .def_buffer([](Vector &v) -> py::buffer_info {
@@ -125,5 +128,5 @@ PYBIND11_MODULE(sbn, m) {
   m.def("total_vector", &total_vector, "test");
   m.def("TotalVector", &TotalVector, "test");
   m.def("NewSchool", &NewSchool, "test");
-  m.def("get_sbn_probs", &GetSBNProbs, "test");
+  //  m.def("get_sbn_probs", &GetSBNProbs, "test");
 }
