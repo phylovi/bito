@@ -64,8 +64,10 @@ class Bitset {
   Bitset SplitChunk(size_t i) const;
   std::string PCSSToString() const;
   bool PCSSIsValid() const;
+  size_t PCSSChunkSize() const;
   Bitset PCSSChunk(size_t i) const;
   Bitset PCSSParent() const;
+  Bitset PCSSChild() const;
 
  private:
   std::vector<bool> value_;
@@ -158,6 +160,9 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("000111").PCSSIsValid(), false);
   CHECK_EQ(Bitset("100100").PCSSIsValid(), false);
   CHECK_EQ(Bitset("100011001").PCSSIsValid(), true);
+
+  CHECK_EQ(Bitset("100011001").PCSSParent(), Bitset("100011"));
+  CHECK_EQ(Bitset("100011001").PCSSChild(), Bitset("010001"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

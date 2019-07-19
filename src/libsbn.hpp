@@ -46,6 +46,7 @@ struct SBNInstance {
   std::vector<double> sbn_probs_;
   BitsetUInt32Map indexer_;
   UInt32BitsetMap reverse_indexer_;
+  UInt32BitsetMap index_to_child_;
   BitsetUInt32PairMap range_indexer_;
   // The first index after the rootsplit block.
   size_t rootsplit_index_end_;
@@ -86,6 +87,7 @@ struct SBNInstance {
     indexer_.clear();
     reverse_indexer_.clear();
     range_indexer_.clear();
+    index_to_child_.clear();
     // Start by adding the rootsplits.
     for (const auto &iter : RootsplitCounterOf(counter)) {
       indexer_[iter.first] = index;
@@ -126,6 +128,8 @@ struct SBNInstance {
     sbn_probs_ = std::vector<double>(indexer_.size(), 1.);
     for (const auto &iter : indexer_) {
       assert(reverse_indexer_.insert({iter.second, iter.first}).second);
+      assert(reverse_indexer_.insert({iter.second, iter.first.PCSSChild()})
+                 .second);
     }
   }
 
@@ -154,7 +158,7 @@ struct SBNInstance {
         return Node::Leaf(*singleton_option);
       }  // else
       auto child_split =
-          reverse_indexer_.at(SampleIndex(range_indexer_.at(split)));
+          index_to_child_.at(SampleIndex(range_indexer_.at(split)));
       return SampleTree(child_split);
     };
     std::cout << parent_split.ToString() << std::endl;
@@ -269,8 +273,8 @@ TEST_CASE("libsbn") {
   for (auto ll : inst.TreeLogLikelihoods()) {
     CHECK_LT(abs(ll - -84.852358), 0.000001);
   }
-  inst.ProcessLoadedTrees();
-  auto tree = inst.SampleTree();
+  // inst.ProcessLoadedTrees();
+  // auto tree = inst.SampleTree();
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");

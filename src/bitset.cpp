@@ -215,20 +215,34 @@ std::string Bitset::PCSSToString() const {
   return str;
 }
 
-Bitset Bitset::PCSSChunk(size_t i) const {
+size_t Bitset::PCSSChunkSize() const {
   assert(size() % 3 == 0);
-  assert(i < 3);
-  size_t chunk_size = size() / 3;
+  return size() / 3;
+}
+
+Bitset Bitset::PCSSChunk(size_t i) const {
+  size_t chunk_size = PCSSChunkSize();
   std::vector<bool> new_value(value_.begin() + int32_t(i * chunk_size),
                               value_.begin() + int32_t((i + 1) * chunk_size));
   return Bitset(new_value);
 }
 
 Bitset Bitset::PCSSParent() const {
-  assert(size() % 3 == 0);
-  size_t chunk_size = size() / 3;
+  size_t chunk_size = PCSSChunkSize();
   std::vector<bool> new_value(value_.begin(),
                               value_.begin() + int32_t(2 * chunk_size));
+  return Bitset(new_value);
+}
+
+Bitset Bitset::PCSSChild() const {
+  size_t chunk_size = PCSSChunkSize();
+  std::vector<bool> new_value(value_.begin() + int32_t(chunk_size),
+                              value_.begin() + int32_t(3 * chunk_size));
+  for (size_t i = 0; i < chunk_size; i++) {
+    // If A is the child clade, and B is one half of the child split, take the
+    // things that are in A but not in B.
+    new_value[i] = new_value[i] && !(new_value[i + chunk_size]);
+  }
   return Bitset(new_value);
 }
 
