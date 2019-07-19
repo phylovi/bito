@@ -200,10 +200,9 @@ Bitset Bitset::SplitChunk(size_t i) const {
   return Bitset(new_value);
 }
 
-std::string Bitset::PCSSToString() const {
-  // PCSS Bitsets must be a multiple of 3 in length.
-  assert(size() % 3 == 0);
-  size_t chunk_size = size() / 3;
+std::string Bitset::ToStringChunked(size_t chunk_count) const {
+  assert(size() % chunk_count == 0);
+  size_t chunk_size = size() / chunk_count;
   std::string str;
   for (size_t i = 0; i < value_.size(); ++i) {
     str += (value_[i] ? '1' : '0');
@@ -214,6 +213,9 @@ std::string Bitset::PCSSToString() const {
   }
   return str;
 }
+
+std::string Bitset::SubsplitToString() const { return ToStringChunked(2); }
+std::string Bitset::PCSSToString() const { return ToStringChunked(3); }
 
 size_t Bitset::PCSSChunkSize() const {
   assert(size() % 3 == 0);

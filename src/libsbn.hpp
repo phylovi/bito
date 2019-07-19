@@ -18,6 +18,7 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
+#include "prettyprint.hpp"
 #include "task_processor.hpp"
 #include "tree.hpp"
 
@@ -27,6 +28,7 @@ typedef std::unordered_map<std::string, float> StringFloatMap;
 typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
 typedef std::unordered_map<std::string, std::pair<uint32_t, uint32_t>>
     StringUInt32PairMap;
+typedef std::unordered_map<uint32_t, std::string> UInt32StringMap;
 
 template <typename T>
 StringUInt32Map StringUInt32MapOf(T m) {
@@ -122,14 +124,14 @@ struct SBNInstance {
       // We insert the corresponding PCSSs into the indexer.
       for (const auto &pcss : pcss_vector) {
         assert(indexer_.insert({pcss, index}).second);
+        assert(index_to_child_.insert({index, pcss.PCSSChild()}).second);
         index++;
       }
     }
     sbn_probs_ = std::vector<double>(indexer_.size(), 1.);
+    // TODO do we need reverse_indexer_?
     for (const auto &iter : indexer_) {
       assert(reverse_indexer_.insert({iter.second, iter.first}).second);
-      assert(reverse_indexer_.insert({iter.second, iter.first.PCSSChild()})
-                 .second);
     }
   }
 
@@ -148,22 +150,31 @@ struct SBNInstance {
     auto rootsplit_index =
         SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
     const Bitset &rootsplit = reverse_indexer_.at(rootsplit_index);
-    return SampleTree(rootsplit);
+    Bitset root_subsplit(2 * rootsplit.size());
+    // TODO We should do both orderings of these things.
+    // Here we expand the rootsplit out from its original compact format to one
+    // in which we have the two sides of the split juxtaposed, with 1
+    // meaning presence.
+    root_subsplit.CopyFrom(rootsplit, 0, false);
+    root_subsplit.CopyFrom(rootsplit, rootsplit.size(), true);
+    return SampleTree(root_subsplit);
   }
 
-  Node::NodePtr SampleTree(const Bitset &parent_split) const {
-    auto process_split = [this](const Bitset &split) {
-      auto singleton_option = split.SplitChunk(1).SingletonOption();
+  // The input to this function is a subsplit of length 2n.
+  Node::NodePtr SampleTree(const Bitset &parent_subsplit) const {
+    auto process_subsplit = [this](const Bitset &parent) {
+      std::cout << parent.SubsplitToString() << std::endl;
+      auto singleton_option = parent.SplitChunk(1).SingletonOption();
       if (singleton_option) {
         return Node::Leaf(*singleton_option);
       }  // else
-      auto child_split =
-          index_to_child_.at(SampleIndex(range_indexer_.at(split)));
-      return SampleTree(child_split);
+      auto child_index = SampleIndex(range_indexer_.at(parent));
+      std::cout << child_index << std::endl;
+      auto child_subsplit = index_to_child_.at(child_index);
+      return SampleTree(child_subsplit);
     };
-    std::cout << parent_split.ToString() << std::endl;
-    return Node::Join(process_split(parent_split),
-                      process_split(parent_split.SisterExchange()));
+    return Node::Join(process_subsplit(parent_subsplit),
+                      process_subsplit(parent_subsplit.SisterExchange()));
   }
 
   // TODO(erick) replace with something interesting.
@@ -177,7 +188,8 @@ struct SBNInstance {
 
   // ** I/O
 
-  std::tuple<StringUInt32Map, StringUInt32PairMap> GetIndexers() {
+  std::tuple<StringUInt32Map, StringUInt32PairMap, UInt32StringMap>
+  GetIndexers() {
     auto indexer_str = StringUInt32MapOf(indexer_);
     StringUInt32PairMap range_indexer_str;
     for (const auto &iter : range_indexer_) {
@@ -186,7 +198,12 @@ struct SBNInstance {
     }
     assert(range_indexer_str.insert({"rootsplit", {0, rootsplit_index_end_}})
                .second);
-    return std::tie(indexer_str, range_indexer_str);
+    UInt32StringMap index_to_child_str;
+    for (const auto &iter : index_to_child_) {
+      assert(index_to_child_str.insert({iter.first, iter.second.ToString()})
+                 .second);
+    }
+    return std::tie(indexer_str, range_indexer_str, index_to_child_str);
   }
 
   // This function is really just for testing-- it recomputes from scratch.
@@ -265,15 +282,16 @@ std::mt19937 SBNInstance::random_generator_(SBNInstance::random_device_());
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("libsbn") {
   SBNInstance inst("charlie");
-  inst.ReadNewickFile("data/five_taxon.nwk");
-  // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
   inst.MakeBeagleInstances(2);
   for (auto ll : inst.TreeLogLikelihoods()) {
     CHECK_LT(abs(ll - -84.852358), 0.000001);
   }
-  // inst.ProcessLoadedTrees();
+  // Reading one file after another checks that we've cleared out state.
+  inst.ReadNewickFile("data/five_taxon.nwk");
+  inst.ProcessLoadedTrees();
+  std::cout << inst.GetIndexers() << std::endl;
   // auto tree = inst.SampleTree();
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");

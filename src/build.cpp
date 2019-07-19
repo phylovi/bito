@@ -63,8 +63,11 @@ BitsetUInt32Dict PCSSCounterOf(const Node::TopologyCounter& topologies) {
     auto count = iter.second;
     auto tag_to_bitset = TagBitsetMapOf(topology);
     auto leaf_count = topology->LeafCount();
-    // TODO(ematsen) make a more informative error message when people don't
-    // put in a bifurcating tree with a trifurcation at the root.
+    if (topology->Children().size() != 3) {
+      std::cerr << "PCSSCounterOf was expecting a tree with a trifurcation at "
+                   "the root!";
+      abort();
+    }
     topology->PCSSPreOrder(
         [&subsplit_support, &tag_to_bitset, &count, &leaf_count](
             const Node* uncut_parent_node, bool uncut_parent_direction,
@@ -73,10 +76,13 @@ BitsetUInt32Dict PCSSCounterOf(const Node::TopologyCounter& topologies) {
             const Node* child0_node, bool child0_direction,  //
             const Node* child1_node, bool child1_direction) {
           Bitset bitset(3 * leaf_count, false);
+          // The first chunk is for the uncut parent.
           bitset.CopyFrom(tag_to_bitset.at(uncut_parent_node->Tag()), 0,
                           uncut_parent_direction);
+          // The second chunk is for the cut parent.
           bitset.CopyFrom(tag_to_bitset.at(cut_parent_node->Tag()), leaf_count,
                           cut_parent_direction);
+          // The third chunk is the min of the two children.
           auto child0_bitset = tag_to_bitset.at(child0_node->Tag());
           if (child0_direction) child0_bitset.flip();
           auto child1_bitset = tag_to_bitset.at(child1_node->Tag());
