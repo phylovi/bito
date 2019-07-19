@@ -56,6 +56,8 @@ class Bitset {
   bool Any() const;
   void Minorize();
   void CopyFrom(const Bitset &other, size_t begin, bool flip);
+  // If the bitset only has one bit on, then we return the location of that bit.
+  // Otherwise, return nullopt.
   std::experimental::optional<uint32_t> SingletonOption() const;
 
   Bitset SisterExchange() const;

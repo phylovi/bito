@@ -49,14 +49,12 @@ struct SBNInstance {
   BitsetUInt32PairMap range_indexer_;
   // The first index after the rootsplit block.
   size_t rootsplit_index_end_;
-  std::random_device random_device_;
-  std::mt19937 random_generator_;
+  static std::random_device random_device_;
+  static std::mt19937 random_generator_;
 
   // ** Initialization, destruction, and status
   explicit SBNInstance(const std::string &name)
-      : name_(name),
-        symbol_table_(beagle::GetSymbolTable()),
-        random_generator_(random_device_()) {}
+      : name_(name), symbol_table_(beagle::GetSymbolTable()) {}
 
   ~SBNInstance() { FinalizeBeagleInstances(); }
 
@@ -140,6 +138,8 @@ struct SBNInstance {
   }
 
   // TODO rootsplit naming.
+  // This function samples a tree by first sampling the rootsplit, and then
+  // calling the recursive form of SampleTree.
   Node::NodePtr SampleTree() const {
     auto rootsplit_index =
         SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
@@ -152,11 +152,12 @@ struct SBNInstance {
       auto singleton_option = split.SplitChunk(1).SingletonOption();
       if (singleton_option) {
         return Node::Leaf(*singleton_option);
-      }
+      }  // else
       auto child_split =
           reverse_indexer_.at(SampleIndex(range_indexer_.at(split)));
       return SampleTree(child_split);
     };
+    std::cout << parent_split.ToString() << std::endl;
     return Node::Join(process_split(parent_split),
                       process_split(parent_split.SisterExchange()));
   }
@@ -253,6 +254,10 @@ struct SBNInstance {
   }
 };
 
+// Here we initialize our static random number generator.
+std::random_device SBNInstance::random_device_;
+std::mt19937 SBNInstance::random_generator_(SBNInstance::random_device_());
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("libsbn") {
   SBNInstance inst("charlie");
@@ -264,6 +269,9 @@ TEST_CASE("libsbn") {
   for (auto ll : inst.TreeLogLikelihoods()) {
     CHECK_LT(abs(ll - -84.852358), 0.000001);
   }
+  inst.ProcessLoadedTrees();
+  auto tree = inst.SampleTree();
+
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
   inst.MakeBeagleInstances(2);
@@ -276,7 +284,6 @@ TEST_CASE("libsbn") {
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
-  inst.ProcessLoadedTrees();
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_

@@ -158,6 +158,48 @@ void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
   }
 }
 
+std::experimental::optional<uint32_t> Bitset::SingletonOption() const {
+  bool found_already = false;
+  uint32_t found_index;
+  for (uint32_t i = 0; i < size(); i++) {
+    if (value_[i]) {
+      if (found_already) {
+        // We previously found an index, so this isn't a singleton.
+        return std::experimental::nullopt;
+      }  // else
+      found_already = true;
+      found_index = i;
+    }
+  }
+  if (found_already) {
+    return found_index;
+  }  // else
+  return std::experimental::nullopt;
+}
+
+// ** SBN-related functions
+
+// TODO comment
+Bitset Bitset::SisterExchange() const {
+  assert(size() % 2 == 0);
+  Bitset exchanged(size());
+  size_t chunk_size = size() / 2;
+  for (size_t i = 0; i < chunk_size; i++) {
+    exchanged.set(i, value_[i + chunk_size]);
+    exchanged.set(i + chunk_size, value_[i]);
+  }
+  return exchanged;
+}
+
+Bitset Bitset::SplitChunk(size_t i) const {
+  assert(size() % 2 == 0);
+  assert(i < 2);
+  size_t chunk_size = size() / 2;
+  std::vector<bool> new_value(value_.begin() + int32_t(i * chunk_size),
+                              value_.begin() + int32_t((i + 1) * chunk_size));
+  return Bitset(new_value);
+}
+
 std::string Bitset::PCSSToString() const {
   // PCSS Bitsets must be a multiple of 3 in length.
   assert(size() % 3 == 0);
