@@ -8,6 +8,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include "optional.hpp"
 
 // A rewrite of the RbBitSet class from RevBayes by Sebastian Hoehna.
 // In general, I'm trying to follow the interface of std::bitset.
@@ -55,7 +56,10 @@ class Bitset {
   bool Any() const;
   void Minorize();
   void CopyFrom(const Bitset &other, size_t begin, bool flip);
+  std::experimental::optional<uint32_t> SingletonOption() const;
 
+  Bitset SisterExchange() const;
+  Bitset SplitChunk(size_t i) const;
   std::string PCSSToString() const;
   bool PCSSIsValid() const;
   Bitset PCSSChunk(size_t i) const;

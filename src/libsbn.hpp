@@ -131,12 +131,34 @@ struct SBNInstance {
     }
   }
 
-  uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) {
+  uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) const {
     assert(range.first < range.second);
     assert(range.second <= sbn_probs_.size());
     std::discrete_distribution<> distribution(
         sbn_probs_.begin() + range.first, sbn_probs_.begin() + range.second);
     return static_cast<uint32_t>(distribution(random_generator_));
+  }
+
+  // TODO rootsplit naming.
+  Node::NodePtr SampleTree() const {
+    auto rootsplit_index =
+        SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
+    const Bitset &rootsplit = reverse_indexer_.at(rootsplit_index);
+    return SampleTree(rootsplit);
+  }
+
+  Node::NodePtr SampleTree(const Bitset &parent_split) const {
+    auto process_split = [this](const Bitset &split) {
+      auto singleton_option = split.SplitChunk(1).SingletonOption();
+      if (singleton_option) {
+        return Node::Leaf(*singleton_option);
+      }
+      auto child_split =
+          reverse_indexer_.at(SampleIndex(range_indexer_.at(split)));
+      return SampleTree(child_split);
+    };
+    return Node::Join(process_split(parent_split),
+                      process_split(parent_split.SisterExchange()));
   }
 
   // TODO(erick) replace with something interesting.
@@ -255,9 +277,6 @@ TEST_CASE("libsbn") {
     CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
   inst.ProcessLoadedTrees();
-  for (auto i = 0; i < 200; i++) {
-    std::cout << inst.SampleIndex(std::pair<uint32_t, uint32_t>(0, 20)) << " ";
-  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
