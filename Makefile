@@ -1,4 +1,4 @@
-our_files = src/bitset.cpp src/bitset.hpp src/build.hpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.hpp src/node.hpp src/tree_collection.hpp src/alignment.hpp src/task_processor.hpp
+our_files = src/bitset.cpp src/bitset.hpp src/build.hpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.hpp src/node.hpp src/tree_collection.hpp src/alignment.hpp src/task_processor.hpp src/beagle.hpp
 
 default:
 	scons

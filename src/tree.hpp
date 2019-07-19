@@ -79,6 +79,16 @@ class Tree {
     return std::make_shared<Tree>(rerooted_topology, branch_lengths);
   }
 
+  // For unrooted, the node with index 1 below the root should have 0 branch length. if not
+  // its value is added to its sibling and set to 0
+  void ForceZeroBranchLength() {
+    size_t fixed_node_index = Children()[1]->Index();
+    size_t root_child_index = Children()[0]->Index();
+    branch_lengths_[root_child_index] =
+        branch_lengths_[root_child_index] + branch_lengths_[fixed_node_index];
+    branch_lengths_[fixed_node_index] = 0.0;
+  }
+
   static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology) {
     topology->Reindex();
     BranchLengthVector branch_lengths(1 + topology->Index());
