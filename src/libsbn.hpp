@@ -304,6 +304,10 @@ TEST_CASE("libsbn") {
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
+  inst.ProcessLoadedTrees();
+  for (int i = 0; i < 10; i++) {
+    std::cout << inst.SampleTopology()->Newick() << std::endl;
+  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
