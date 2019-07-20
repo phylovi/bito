@@ -154,18 +154,20 @@ struct SBNInstance {
   }
 
   // This function samples a tree by first sampling the rootsplit, and then
-  // calling the recursive form of SampleTree.
-  Node::NodePtr SampleTree() const {
+  // calling the recursive form of SampleTopology.
+  Node::NodePtr SampleTopology() const {
     // Start by sampling a rootsplit.
     uint32_t rootsplit_index =
         SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
     const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
     // The addition below turns the rootsplit into a subsplit.
-    return SampleTree(rootsplit + ~rootsplit);
+    auto topology = SampleTopology(rootsplit + ~rootsplit);
+    topology->Reindex();
+    return topology;
   }
 
   // The input to this function is a parent subsplit (of length 2n).
-  Node::NodePtr SampleTree(const Bitset &parent_subsplit) const {
+  Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const {
     auto process_subsplit = [this](const Bitset &parent) {
       auto singleton_option = parent.SplitChunk(1).SingletonOption();
       if (singleton_option) {
@@ -173,7 +175,7 @@ struct SBNInstance {
       }  // else
       auto child_index = SampleIndex(parent_to_range_.at(parent));
       auto child_subsplit = index_to_child_.at(child_index);
-      return SampleTree(child_subsplit);
+      return SampleTopology(child_subsplit);
     };
     return Node::Join(process_subsplit(parent_subsplit),
                       process_subsplit(parent_subsplit.SisterExchange()));
@@ -287,7 +289,7 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
-  auto tree = inst.SampleTree();
+  auto tree = inst.SampleTopology();
   std::cout << tree->Newick() << std::endl;
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
