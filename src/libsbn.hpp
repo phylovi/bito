@@ -174,8 +174,7 @@ struct SBNInstance {
         return Node::Leaf(*singleton_option);
       }  // else
       auto child_index = SampleIndex(parent_to_range_.at(parent));
-      auto child_subsplit = index_to_child_.at(child_index);
-      return SampleTopology(child_subsplit);
+      return SampleTopology(index_to_child_.at(child_index));
     };
     return Node::Join(process_subsplit(parent_subsplit),
                       process_subsplit(parent_subsplit.RotateSubsplit()));

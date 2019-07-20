@@ -17,7 +17,6 @@ def test_instance():
     # print(sbn_probs)
     # print(inst.sbn_total_prob())
 
-
     def convert_dict_to_int(d):
         return {k:int(v) for k, v in d.items()}
 
