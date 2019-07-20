@@ -18,7 +18,6 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
-#include "prettyprint.hpp"
 #include "task_processor.hpp"
 #include "tree.hpp"
 
@@ -107,10 +106,12 @@ struct SBNInstance {
   void ProcessLoadedTrees() {
     uint32_t index = 0;
     auto counter = tree_collection_->TopologyCounter();
+    // See above for the definitions of these members.
+    sbn_probs_.clear();
     indexer_.clear();
-    rootsplits_.clear();
-    parent_to_range_.clear();
     index_to_child_.clear();
+    parent_to_range_.clear();
+    rootsplits_.clear();
     // Start by adding the rootsplits.
     for (const auto &iter : RootsplitCounterOf(counter)) {
       assert(indexer_.insert({iter.first, index}).second);
@@ -118,15 +119,13 @@ struct SBNInstance {
       index++;
     }
     rootsplit_index_end_ = index;
+    // Now add the PCSSs.
     for (auto iter : PCSSCounterOf(counter)) {
       auto parent = iter.first;
       auto child_counter = iter.second;
-      // The range indexer maps the parent to the range of values used by that
-      // parent.
       assert(parent_to_range_
                  .insert({parent, {index, index + child_counter.size()}})
                  .second);
-      // We insert the corresponding PCSSs into the indexer.
       for (const auto &child_iter : child_counter) {
         const auto &child = child_iter.first;
         assert(indexer_.insert({parent + child, index}).second);
