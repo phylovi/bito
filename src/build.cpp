@@ -83,9 +83,13 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
                           focal_direction);
           // Now we build the child bitset.
           auto child0 = tag_to_bitset.at(child0_node->Tag());
-          if (child0_direction) child0.flip();
+          if (child0_direction) {
+            child0.flip();
+          }
           auto child1 = tag_to_bitset.at(child1_node->Tag());
-          if (child1_direction) child1.flip();
+          if (child1_direction) {
+            child1.flip();
+          }
           auto child = std::min(child0, child1);
           // Insert the parent-child pair into the map.
           auto search = pcss_dict.find(parent);

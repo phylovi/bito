@@ -31,22 +31,7 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("Build") {
-  Driver driver;
-  const auto& trees = driver.ParseNewickFile("data/many_rootings.nwk");
-  auto counter = trees->TopologyCounter();
-  auto support = PCSSCounterOf(counter);
-  // Get the support of the first tree in trees.
-  Node::TopologyCounter single_topology;
-  single_topology.insert({counter.begin()->first, 1});
-  //  auto single_support = PCSSCounterOf(single_topology);
-  //  // many_rootings has many (unrooted) rootings of the same tree.
-  //  // Here we check to make sure that every support across the various
-  //  rootings
-  //  // is in the SBN support for the single tree.
-  //  for (const auto& iter : support) {
-  //    CHECK(iter.first.PCSSIsValid());
-  //    CHECK(single_support.contains(iter.first));
-  //  }
+  // Tests comparing to vbpi appear in Python test code.
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
