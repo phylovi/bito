@@ -11,6 +11,7 @@
 #include "driver.hpp"
 #include "tree.hpp"
 
+typedef std::vector<Bitset> BitsetVector;
 typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
 typedef std::unordered_map<Bitset, int> BitsetIndexer;
 typedef DefaultDict<Bitset, uint32_t> BitsetUInt32Dict;

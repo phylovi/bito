@@ -58,7 +58,7 @@ struct SBNInstance {
   std::vector<beagle::BeagleInstance> beagle_instances_;
   std::vector<double> sbn_probs_;
   BitsetUInt32Map indexer_;
-  UInt32BitsetMap reverse_indexer_;
+  BitsetVector rootsplits_;
   UInt32BitsetMap index_to_child_;
   BitsetUInt32PairMap range_indexer_;
   // The first index after the rootsplit block.
@@ -98,13 +98,13 @@ struct SBNInstance {
     uint32_t index = 0;
     auto counter = tree_collection_->TopologyCounter();
     indexer_.clear();
-    reverse_indexer_.clear();
+    rootsplits_.clear();
     range_indexer_.clear();
     index_to_child_.clear();
     // Start by adding the rootsplits.
     for (const auto &iter : RootsplitCounterOf(counter)) {
       assert(indexer_.insert({iter.first, index}).second);
-      assert(reverse_indexer_.insert({index, iter.first}).second);
+      rootsplits_.push_back(iter.first);
       index++;
     }
     rootsplit_index_end_ = index;
@@ -126,12 +126,10 @@ struct SBNInstance {
       }
     }
     sbn_probs_ = std::vector<double>(index, 1.);
-    //    // TODO do we need reverse_indexer_?
-    //    for (const auto &iter : indexer_) {
-    //      assert(reverse_indexer_.insert({iter.second, iter.first}).second);
-    //    }
   }
 
+  // Sample an integer index in [range.first, range.second) according to
+  // sbn_probs_.
   uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) const {
     assert(range.first < range.second);
     assert(range.second <= sbn_probs_.size());
@@ -145,15 +143,13 @@ struct SBNInstance {
     return result;
   }
 
-  // TODO rootsplit naming.
   // This function samples a tree by first sampling the rootsplit, and then
   // calling the recursive form of SampleTree.
   Node::NodePtr SampleTree() const {
     // Start by sampling a rootsplit.
     uint32_t rootsplit_index =
         SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
-    std::cout << "rootsplit_index.at\n";
-    const Bitset &rootsplit = reverse_indexer_.at(rootsplit_index);
+    const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
     // Next expand the rootsplit out from its original compact format to one
     // in which we have the two sides of the split juxtaposed, with 1
     // meaning presence.
@@ -166,17 +162,11 @@ struct SBNInstance {
   // The input to this function is a subsplit of length 2n.
   Node::NodePtr SampleTree(const Bitset &parent_subsplit) const {
     auto process_subsplit = [this](const Bitset &parent) {
-      std::cout << parent.SubsplitToString() << std::endl;
       auto singleton_option = parent.SplitChunk(1).SingletonOption();
       if (singleton_option) {
         return Node::Leaf(*singleton_option);
       }  // else
-      std::cout << "range_indexer_.at\n";
       auto child_index = SampleIndex(range_indexer_.at(parent));
-      std::cout << range_indexer_.at(parent) << std::endl;
-      std::cout << child_index << std::endl;
-      std::cout << parent.SubsplitToString() << std::endl;
-      std::cout << "index_to_child_.at\n";
       auto child_subsplit = index_to_child_.at(child_index);
       return SampleTree(child_subsplit);
     };
@@ -298,7 +288,6 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
-  std::cout << inst.GetIndexers() << std::endl;
   auto tree = inst.SampleTree();
   std::cout << tree->Newick() << std::endl;
 
