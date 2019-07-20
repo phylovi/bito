@@ -160,13 +160,8 @@ struct SBNInstance {
     uint32_t rootsplit_index =
         SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
     const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
-    // Next expand the rootsplit out from its original compact format to one
-    // in which we have the two sides of the split juxtaposed, with 1
-    // meaning presence.
-    Bitset root_subsplit(2 * rootsplit.size());
-    root_subsplit.CopyFrom(rootsplit, 0, false);
-    root_subsplit.CopyFrom(rootsplit, rootsplit.size(), true);
-    return SampleTree(root_subsplit);
+    // The addition below turns the rootsplit into a subsplit.
+    return SampleTree(rootsplit + ~rootsplit);
   }
 
   // The input to this function is a parent subsplit (of length 2n).
@@ -195,22 +190,16 @@ struct SBNInstance {
 
   // ** I/O
 
-  std::tuple<StringUInt32Map, StringUInt32PairMap, UInt32StringMap>
-  GetIndexers() {
+  std::tuple<StringUInt32Map, StringUInt32PairMap> GetIndexers() {
     auto indexer_str = StringUInt32MapOf(indexer_);
-    StringUInt32PairMap range_indexer_str;
+    StringUInt32PairMap parent_to_range_str;
     for (const auto &iter : parent_to_range_) {
-      assert(range_indexer_str.insert({iter.first.ToString(), iter.second})
+      assert(parent_to_range_str.insert({iter.first.ToString(), iter.second})
                  .second);
     }
-    assert(range_indexer_str.insert({"rootsplit", {0, rootsplit_index_end_}})
+    assert(parent_to_range_str.insert({"rootsplit", {0, rootsplit_index_end_}})
                .second);
-    UInt32StringMap index_to_child_str;
-    for (const auto &iter : index_to_child_) {
-      assert(index_to_child_str.insert({iter.first, iter.second.ToString()})
-                 .second);
-    }
-    return std::tie(indexer_str, range_indexer_str, index_to_child_str);
+    return std::tie(indexer_str, parent_to_range_str);
   }
 
   // This function is really just for testing-- it recomputes from scratch.

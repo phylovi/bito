@@ -10,7 +10,7 @@ def test_instance():
     assert inst.tree_count() == 4
     inst.process_loaded_trees()
 
-#    [indexer, range_indexer, index_to_child_str] = inst.get_indexers()
+    [indexer, range_indexer] = inst.get_indexers()
 #    print(indexer)
 #    print(range_indexer)
 #
