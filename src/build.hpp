@@ -19,8 +19,6 @@ typedef std::unordered_map<uint32_t, Bitset> UInt32BitsetMap;
 typedef std::unordered_map<Bitset, uint32_t> BitsetUInt32Map;
 typedef std::unordered_map<Bitset, std::pair<uint32_t, uint32_t>>
     BitsetUInt32PairMap;
-typedef std::unordered_map<Bitset, Bitset> BitsetBitsetMap;
-typedef std::unordered_map<Bitset, std::vector<Bitset>> BitsetBitsetVectorMap;
 
 typedef std::unordered_map<Bitset, DefaultDict<Bitset, uint32_t>> PCSSDict;
 

@@ -75,9 +75,9 @@ class Bitset {
   size_t PCSSChunkSize() const;
   Bitset PCSSChunk(size_t i) const;
   Bitset PCSSParent() const;
-  Bitset PCSSChild() const;
+  Bitset PCSSChildSubsplit() const;
 
-  // Static methods
+  // ** Static methods
   // Make the full subsplit out of the parent subsplit, whose second half is
   // split by child_half.
   static Bitset ChildSubsplit(const Bitset &parent_subsplit,
@@ -179,8 +179,8 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("100011001").PCSSIsValid(), true);
 
   CHECK_EQ(Bitset("100011001").PCSSParent(), Bitset("100011"));
-  CHECK_EQ(Bitset("100011001").PCSSChild(), Bitset("010001"));
-  CHECK_EQ(Bitset("100001110001").PCSSChild(), Bitset("01100001"));
+  CHECK_EQ(Bitset("100011001").PCSSChildSubsplit(), Bitset("010001"));
+  CHECK_EQ(Bitset("100001110001").PCSSChildSubsplit(), Bitset("01100001"));
 
   // parent clade is 1110, child is 0100, so child subsplit is 1010|0100.
   CHECK_EQ(Bitset::ChildSubsplit(Bitset("00011110"), Bitset("0100")),
