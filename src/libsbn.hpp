@@ -52,17 +52,27 @@ StringPCSSMap StringPCSSMapOf(PCSSDict d) {
 
 struct SBNInstance {
   std::string name_;
+  // Things that get loaded in.
   TreeCollection::TreeCollectionPtr tree_collection_;
   Alignment alignment_;
+  // Beagly bits.
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
+  // A vector that contains all of the SBN-related probabilities.
   std::vector<double> sbn_probs_;
+  // A map that indexes these probabilities: rootsplits are at the beginning,
+  // and PCSS bitsets are at the end.
   BitsetUInt32Map indexer_;
-  BitsetVector rootsplits_;
+  // A map going from the index of a PCSS to its child.
   UInt32BitsetMap index_to_child_;
+  // A map going from a parent subsplit to the range of indices in sbn_probs_
+  // with its children.
   BitsetUInt32PairMap parent_to_range_;
-  // The first index after the rootsplit block.
+  // The collection of rootsplits, with the same indexing as in the indexer_.
+  BitsetVector rootsplits_;
+  // The first index after the rootsplit block in sbn_probs_.
   size_t rootsplit_index_end_;
+  // Random bits.
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
 
