@@ -60,7 +60,7 @@ struct SBNInstance {
   BitsetUInt32Map indexer_;
   BitsetVector rootsplits_;
   UInt32BitsetMap index_to_child_;
-  BitsetUInt32PairMap range_indexer_;
+  BitsetUInt32PairMap parent_to_range_;
   // The first index after the rootsplit block.
   size_t rootsplit_index_end_;
   static std::random_device random_device_;
@@ -99,7 +99,7 @@ struct SBNInstance {
     auto counter = tree_collection_->TopologyCounter();
     indexer_.clear();
     rootsplits_.clear();
-    range_indexer_.clear();
+    parent_to_range_.clear();
     index_to_child_.clear();
     // Start by adding the rootsplits.
     for (const auto &iter : RootsplitCounterOf(counter)) {
@@ -113,15 +113,16 @@ struct SBNInstance {
       auto child_counter = iter.second;
       // The range indexer maps the parent to the range of values used by that
       // parent.
-      assert(
-          range_indexer_.insert({parent, {index, index + child_counter.size()}})
-              .second);
+      assert(parent_to_range_
+                 .insert({parent, {index, index + child_counter.size()}})
+                 .second);
       // We insert the corresponding PCSSs into the indexer.
       for (const auto &child_iter : child_counter) {
-        // assert(indexer_.insert({pcss, index}).second);
-        Bitset child_subsplit = Bitset::ChildSubsplit(parent, child_iter.first);
-        assert(
-            index_to_child_.insert({index, std::move(child_subsplit)}).second);
+        const auto &child = child_iter.first;
+        assert(indexer_.insert({parent + child, index}).second);
+        assert(index_to_child_
+                   .insert({index, Bitset::ChildSubsplit(parent, child)})
+                   .second);
         index++;
       }
     }
@@ -159,14 +160,14 @@ struct SBNInstance {
     return SampleTree(root_subsplit);
   }
 
-  // The input to this function is a subsplit of length 2n.
+  // The input to this function is a parent subsplit (of length 2n).
   Node::NodePtr SampleTree(const Bitset &parent_subsplit) const {
     auto process_subsplit = [this](const Bitset &parent) {
       auto singleton_option = parent.SplitChunk(1).SingletonOption();
       if (singleton_option) {
         return Node::Leaf(*singleton_option);
       }  // else
-      auto child_index = SampleIndex(range_indexer_.at(parent));
+      auto child_index = SampleIndex(parent_to_range_.at(parent));
       auto child_subsplit = index_to_child_.at(child_index);
       return SampleTree(child_subsplit);
     };
@@ -189,7 +190,7 @@ struct SBNInstance {
   GetIndexers() {
     auto indexer_str = StringUInt32MapOf(indexer_);
     StringUInt32PairMap range_indexer_str;
-    for (const auto &iter : range_indexer_) {
+    for (const auto &iter : parent_to_range_) {
       assert(range_indexer_str.insert({iter.first.ToString(), iter.second})
                  .second);
     }

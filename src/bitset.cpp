@@ -98,6 +98,13 @@ Bitset Bitset::operator~() const {
   return r;
 }
 
+Bitset Bitset::operator+(const Bitset& other) const {
+  Bitset sum(value_.size() + other.size());
+  sum.CopyFrom(*this, 0, false);
+  sum.CopyFrom(other, value_.size(), false);
+  return sum;
+}
+
 void Bitset::operator&=(const Bitset& other) {
   assert(value_.size() == other.size());
   for (size_t i = 0; i < value_.size(); i++) {

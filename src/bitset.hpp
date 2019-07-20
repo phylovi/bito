@@ -45,6 +45,7 @@ class Bitset {
   Bitset operator|(const Bitset &x) const;
   Bitset operator^(const Bitset &x) const;
   Bitset operator~() const;
+  Bitset operator+(const Bitset &x) const;
 
   void operator&=(const Bitset &other);
   void operator|=(const Bitset &other);
@@ -135,6 +136,7 @@ TEST_CASE("Bitset") {
   CHECK_EQ((Bitset("1100") | Bitset("1010")), Bitset("1110"));
   CHECK_EQ((Bitset("1100") ^ Bitset("1010")), Bitset("0110"));
   CHECK_EQ(~Bitset("1010"), Bitset("0101"));
+  CHECK_EQ(Bitset("101") + Bitset("011"), Bitset("101011"));
   CHECK_EQ(std::min(Bitset("1100"), Bitset("1010")), Bitset("1010"));
 
   a &= Bitset("0110");
