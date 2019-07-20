@@ -34,6 +34,10 @@ void SetJCModel(BeagleInstance beagle_instance);
 
 double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
                                     BeagleInstance beagle_instance);
+
+std::vector<double> BifurcatingTreeBranchGradients(
+    Tree::TreePtr tree, BeagleInstance beagle_instance);
+
 double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance);
 std::vector<double> TreeLogLikelihoods(
     BeagleInstance beagle_instance,

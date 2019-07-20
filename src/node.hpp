@@ -87,6 +87,19 @@ class Node {
   void PostOrder(std::function<void(const Node*)> f) const;
   void LevelOrder(std::function<void(const Node*)> f) const;
 
+  //	static std::function<void(const Node*)> const Node::BinaryIndexInfix;
+  // These two functions take functions accepting triples of (node_index,
+  // child0_index, child1_index) and apply them according to various traversals.
+  void BinaryIndexPreOrder(const std::function<void(int, int, int)> f) const;
+  void BinaryIndexPostOrder(const std::function<void(int, int, int)> f) const;
+
+  // Iterate f through (parent, sister, node) for bifurcating trees using a
+  // preorder traversal.
+  void TriplePreOrderBifurcating(
+      std::function<void(const Node*, const Node*, const Node*)> f) const;
+  void TripleIndexPreOrderBifurcating(
+      std::function<void(int, int, int)> f) const;
+
   // This function assigns indices to the nodes of the topology: the leaves get
   // their indices (which are contiguously numbered from 0 through the leaf
   // count -1) and the rest get ordered according to a postorder traversal. Thus

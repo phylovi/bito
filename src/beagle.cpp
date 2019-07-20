@@ -41,7 +41,9 @@ SymbolVector SymbolVectorOf(const std::string &str,
 int CreateInstance(int tip_count, int alignment_length,
                    BeagleInstanceDetails *return_info) {
   // Number of partial buffers to create (input) -- internal node count
-  int partials_buffer_count = tip_count - 1;
+  // tip_count-1 for lower partials (internal nodes only)
+  // 2*tip_count - 2 for upper partials (every node except the root)
+  int partials_buffer_count = 3 * tip_count - 3;
   // Number of compact state representation buffers to create -- for use with
   // setTipStates (input) */
   int compact_buffer_count = tip_count;
@@ -52,8 +54,8 @@ int CreateInstance(int tip_count, int alignment_length,
   int pattern_count = alignment_length;
   // Number of eigen-decomposition buffers to allocate (input)
   int eigen_buffer_count = 1;
-  // Number of transition matrix buffers (input) -- one per edge
-  int matrix_buffer_count = 2 * tip_count - 1;
+  // Number of transition matrix buffers (input) -- two per edge
+  int matrix_buffer_count = 2 * (2 * tip_count - 1);
   // Number of rate categories
   int category_count = 1;
   // Number of scaling buffers -- can be zero if scaling is not needed
@@ -130,6 +132,136 @@ void SetJCModel(BeagleInstance beagle_instance) {
                               -1.3333333333333333};
   beagleSetEigenDecomposition(beagle_instance, 0, evec.data(), ivec.data(),
                               eval.data());
+}
+
+/**
+ * Compute first derivative of the log likelihood with respect to each branch
+ * length.
+ *
+ * param tree
+ * param beagle_instance
+ * return vector of first derivatives indexed by node index
+ */
+std::vector<double> BifurcatingTreeBranchGradients(
+    Tree::TreePtr atree, BeagleInstance beagle_instance) {
+  Tree::TreePtr tree = atree;
+  if (atree->Children().size() == 3) {
+    tree = atree->Detrifurcate();
+  }
+  size_t fixed_node_index = tree->Topology()->Children()[1]->Index();
+  size_t root_child_index = tree->Topology()->Children()[0]->Index();
+  tree->SlideRootPosition();
+
+  int branch_count = static_cast<int>(tree->BranchLengths().size());
+  std::vector<BeagleOperation> operations;
+
+  std::vector<int> node_indices(branch_count);
+  std::iota(node_indices.begin(), node_indices.end(), 0);
+
+  std::vector<int> gradient_indices(branch_count);
+  std::iota(gradient_indices.begin(), gradient_indices.end(), branch_count);
+
+  // Calculate lower partials
+  tree->Topology()->BinaryIndexPostOrder(
+      [&operations](int node_index, int child0_index, int child1_index) {
+        BeagleOperation op = {
+            node_index,                      // dest
+            BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
+            child0_index,   child0_index,    // src1 and matrix1
+            child1_index,   child1_index     // src2 and matrix2
+        };
+        operations.push_back(op);
+      });
+
+  // Calculate upper partials
+  tree->Topology()->TripleIndexPreOrderBifurcating(
+      [&](int parent_index, int sister_index, int node_index) {
+
+        if (node_index != root_child_index && node_index != fixed_node_index) {
+          int upper_partial_index;
+          int upper_matrix_index;
+          if (parent_index == root_child_index) {
+            upper_matrix_index = static_cast<int>(root_child_index);
+            upper_partial_index = static_cast<int>(fixed_node_index);
+          } else if (parent_index == fixed_node_index) {
+            upper_matrix_index = static_cast<int>(root_child_index);
+            upper_partial_index = static_cast<int>(root_child_index);
+          } else {
+            upper_partial_index = parent_index + branch_count;
+            upper_matrix_index = parent_index;
+          }
+          BeagleOperation op = {node_index + branch_count,
+                                BEAGLE_OP_NONE,
+                                BEAGLE_OP_NONE,
+                                upper_partial_index,
+                                upper_matrix_index,
+                                sister_index,
+                                sister_index};
+          operations.push_back(op);
+        }
+      });
+
+  beagleUpdateTransitionMatrices(
+      beagle_instance,
+      0,  // eigenIndex
+      node_indices.data(),
+      gradient_indices.data(),  // firstDerivativeIndices
+      NULL,                     // secondDervativeIndices
+      tree->BranchLengths().data(), branch_count);
+  beagleUpdatePartials(beagle_instance,
+                       operations.data(),  // eigenIndex
+                       static_cast<int>(operations.size()),
+                       BEAGLE_OP_NONE);  // cumulative scale index
+
+  std::vector<int> category_weight_index = {0};
+  std::vector<int> state_frequency_index = {0};
+  std::vector<int> cumulative_scale_index = {BEAGLE_OP_NONE};
+  int count = 1;
+  std::vector<int> upper_partials_index = {0};
+  std::vector<int> node_partial_indices = {0};
+  std::vector<int> node_mat_indices = {0};
+  std::vector<int> node_deriv_index = {0};
+  std::vector<double> derivatives(branch_count, 0);
+
+  tree->Topology()->TripleIndexPreOrderBifurcating(
+      [&](int parent_index, int sister_index, int node_index) {
+        if (node_index != fixed_node_index) {
+          double dlogLp;
+          double log_like = 0;
+          upper_partials_index[0] = node_index + branch_count;
+          node_partial_indices[0] = node_index;
+          node_mat_indices[0] = node_index;
+          node_deriv_index[0] = node_index + branch_count;
+          if (node_index == root_child_index) {
+            upper_partials_index[0] = sister_index;
+          }
+          // parent partial Buffers cannot be a taxon in
+          // beagleCalculateEdgeLogLikelihoods
+          if (node_partial_indices[0] > upper_partials_index[0]) {
+            int temp = node_partial_indices[0];
+            node_partial_indices[0] = upper_partials_index[0];
+            upper_partials_index[0] = temp;
+          }
+          beagleCalculateEdgeLogLikelihoods(
+              beagle_instance,              // instance number
+              upper_partials_index.data(),  // indices of parent partialsBuffers
+              node_partial_indices.data(),  // indices of child partialsBuffers
+              node_mat_indices.data(),      // transition probability matrices
+              node_deriv_index.data(),      // first derivative matrices
+              NULL,                         // second derivative matrices
+              category_weight_index.data(),   // pattern weights
+              state_frequency_index.data(),   // state frequencies
+              cumulative_scale_index.data(),  // scale Factors
+              count,                          // Number of partialsBuffer
+              &log_like,                      // destination for log likelihood
+              &dlogLp,  // destination for first derivative  # derivative code
+              NULL      // destination for second derivative
+              );
+          derivatives[node_index] = dlogLp;
+        }
+      });
+
+  return derivatives;
 }
 
 double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
