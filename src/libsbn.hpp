@@ -103,45 +103,29 @@ struct SBNInstance {
     index_to_child_.clear();
     // Start by adding the rootsplits.
     for (const auto &iter : RootsplitCounterOf(counter)) {
-      indexer_[iter.first] = index;
+      assert(indexer_.insert({iter.first, index}).second);
+      assert(reverse_indexer_.insert({index, iter.first}).second);
       index++;
     }
     rootsplit_index_end_ = index;
-    // Now we make a map that maps parent subsplit to the collection of PCSSs
-    // that contain it.
-    // TODO think about move and make consistent below
-    //    BitsetBitsetVectorMap parent_to_pcss_vector_map;
-    //    for (const auto &iter : PCSSCounterOf(counter)) {
-    //      const auto &pcss = iter.first;
-    //      auto parent = pcss.PCSSParent();
-    //      auto search = parent_to_pcss_vector_map.find(parent);
-    //      if (search == parent_to_pcss_vector_map.end()) {
-    //        std::vector<Bitset> pcss_singleton({pcss});
-    //        assert(parent_to_pcss_vector_map
-    //                   .insert({std::move(parent), std::move(pcss_singleton)})
-    //                   .second);
-    //      } else {
-    //        search->second.push_back(std::move(pcss));
-    //      }
-    //    }
-    //    for (auto iter : parent_to_pcss_vector_map) {
-    //      auto parent = iter.first;
-    //      auto pcss_vector = iter.second;
-    //      // The range indexer maps the parent to the range of values used by
-    //      that
-    //      // parent.
-    //      assert(
-    //          range_indexer_.insert({parent, {index, index +
-    //          pcss_vector.size()}})
-    //              .second);
-    //      // We insert the corresponding PCSSs into the indexer.
-    //      for (const auto &pcss : pcss_vector) {
-    //        assert(indexer_.insert({pcss, index}).second);
-    //        assert(index_to_child_.insert({index, pcss.PCSSChild()}).second);
-    //        index++;
-    //      }
-    //    }
-    //    sbn_probs_ = std::vector<double>(indexer_.size(), 1.);
+    for (auto iter : PCSSCounterOf(counter)) {
+      auto parent = iter.first;
+      auto child_counter = iter.second;
+      // The range indexer maps the parent to the range of values used by that
+      // parent.
+      assert(
+          range_indexer_.insert({parent, {index, index + child_counter.size()}})
+              .second);
+      // We insert the corresponding PCSSs into the indexer.
+      for (const auto &child_iter : child_counter) {
+        // assert(indexer_.insert({pcss, index}).second);
+        Bitset child_subsplit = Bitset::ChildSubsplit(parent, child_iter.first);
+        assert(
+            index_to_child_.insert({index, std::move(child_subsplit)}).second);
+        index++;
+      }
+    }
+    sbn_probs_ = std::vector<double>(index, 1.);
     //    // TODO do we need reverse_indexer_?
     //    for (const auto &iter : indexer_) {
     //      assert(reverse_indexer_.insert({iter.second, iter.first}).second);
@@ -160,14 +144,14 @@ struct SBNInstance {
   // This function samples a tree by first sampling the rootsplit, and then
   // calling the recursive form of SampleTree.
   Node::NodePtr SampleTree() const {
-    auto rootsplit_index =
+    // Start by sampling a rootsplit.
+    uint32_t rootsplit_index =
         SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
     const Bitset &rootsplit = reverse_indexer_.at(rootsplit_index);
-    Bitset root_subsplit(2 * rootsplit.size());
-    // TODO We should do both orderings of these things.
-    // Here we expand the rootsplit out from its original compact format to one
+    // Next expand the rootsplit out from its original compact format to one
     // in which we have the two sides of the split juxtaposed, with 1
     // meaning presence.
+    Bitset root_subsplit(2 * rootsplit.size());
     root_subsplit.CopyFrom(rootsplit, 0, false);
     root_subsplit.CopyFrom(rootsplit, rootsplit.size(), true);
     return SampleTree(root_subsplit);
@@ -305,7 +289,7 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   std::cout << inst.GetIndexers() << std::endl;
-  // auto tree = inst.SampleTree();
+  auto tree = inst.SampleTree();
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");

@@ -71,6 +71,12 @@ class Bitset {
   Bitset PCSSParent() const;
   Bitset PCSSChild() const;
 
+  // Static methods
+  // Make the full subsplit out of the parent subsplit, whose second half is
+  // split by child_half.
+  static Bitset ChildSubsplit(const Bitset &parent_subsplit,
+                              const Bitset &child_half);
+
  private:
   std::vector<bool> value_;
 };
@@ -168,6 +174,9 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("100011001").PCSSParent(), Bitset("100011"));
   CHECK_EQ(Bitset("100011001").PCSSChild(), Bitset("010001"));
   CHECK_EQ(Bitset("100001110001").PCSSChild(), Bitset("01100001"));
+
+  CHECK_EQ(Bitset::ChildSubsplit(Bitset("00011110"), Bitset("0100")),
+           Bitset("1010"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

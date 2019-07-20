@@ -268,3 +268,15 @@ bool Bitset::PCSSIsValid() const {
   }
   return true;
 }
+
+Bitset Bitset::ChildSubsplit(const Bitset& parent_subsplit,
+                             const Bitset& child_half) {
+  size_t taxon_count = child_half.size();
+  Bitset result(2 * taxon_count);
+  assert(result.size() == parent_subsplit.size());
+  for (size_t i = 0; i < taxon_count; i++) {
+    result.set(i, parent_subsplit[taxon_count + i] ^ child_half[i]);
+    result.set(i + taxon_count, child_half[i]);
+  }
+  return result;
+}
