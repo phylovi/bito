@@ -178,7 +178,7 @@ struct SBNInstance {
       return SampleTopology(child_subsplit);
     };
     return Node::Join(process_subsplit(parent_subsplit),
-                      process_subsplit(parent_subsplit.SisterExchange()));
+                      process_subsplit(parent_subsplit.RotateSubsplit()));
   }
 
   // TODO(erick) replace with something interesting.

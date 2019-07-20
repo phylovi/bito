@@ -61,10 +61,15 @@ class Bitset {
   // Otherwise, return nullopt.
   std::experimental::optional<uint32_t> SingletonOption() const;
 
-  Bitset SisterExchange() const;
+  // These methods require the bitset to be a split bitset of even length.
+  // Flip the order of the two sides of a subsplit.
+  Bitset RotateSubsplit() const;
+  // Get the ith chunk of the subsplit.
   Bitset SplitChunk(size_t i) const;
   std::string ToStringChunked(size_t chunk_count) const;
   std::string SubsplitToString() const;
+  // These functions require the bitset to be a PCSS bitset of length a multiple
+  // of 3.
   std::string PCSSToString() const;
   bool PCSSIsValid() const;
   size_t PCSSChunkSize() const;
@@ -166,7 +171,7 @@ TEST_CASE("Bitset") {
   CHECK_EQ(p.PCSSChunk(1), Bitset("01"));
   CHECK_EQ(p.PCSSChunk(2), Bitset("11"));
 
-  CHECK_EQ(Bitset("10011100").SisterExchange(), Bitset("11001001"));
+  CHECK_EQ(Bitset("10011100").RotateSubsplit(), Bitset("11001001"));
 
   CHECK_EQ(Bitset("011101").PCSSIsValid(), false);
   CHECK_EQ(Bitset("000111").PCSSIsValid(), false);

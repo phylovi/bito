@@ -165,6 +165,7 @@ void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
   }
 }
 
+// If a single bit is true, return its index. Return nullopt in all other cases.
 std::experimental::optional<uint32_t> Bitset::SingletonOption() const {
   bool found_already = false;
   uint32_t found_index;
@@ -186,8 +187,8 @@ std::experimental::optional<uint32_t> Bitset::SingletonOption() const {
 
 // ** SBN-related functions
 
-// TODO comment
-Bitset Bitset::SisterExchange() const {
+// Exchange the order of the two sides of a subsplit.
+Bitset Bitset::RotateSubsplit() const {
   assert(size() % 2 == 0);
   Bitset exchanged(size());
   size_t chunk_size = size() / 2;
