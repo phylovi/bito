@@ -175,8 +175,9 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("100011001").PCSSChild(), Bitset("010001"));
   CHECK_EQ(Bitset("100001110001").PCSSChild(), Bitset("01100001"));
 
+  // parent clade is 1110, child is 0100, so child subsplit is 1010|0100.
   CHECK_EQ(Bitset::ChildSubsplit(Bitset("00011110"), Bitset("0100")),
-           Bitset("1010"));
+           Bitset("10100100"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
