@@ -137,7 +137,12 @@ struct SBNInstance {
     assert(range.second <= sbn_probs_.size());
     std::discrete_distribution<> distribution(
         sbn_probs_.begin() + range.first, sbn_probs_.begin() + range.second);
-    return static_cast<uint32_t>(distribution(random_generator_));
+    // We have to add on range.first because we have taken a slice of the full
+    // array, and the sampler treats the beginning of this slice as zero.
+    auto result =
+        range.first + static_cast<uint32_t>(distribution(random_generator_));
+    assert(result < range.second);
+    return result;
   }
 
   // TODO rootsplit naming.
@@ -147,6 +152,7 @@ struct SBNInstance {
     // Start by sampling a rootsplit.
     uint32_t rootsplit_index =
         SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
+    std::cout << "rootsplit_index.at\n";
     const Bitset &rootsplit = reverse_indexer_.at(rootsplit_index);
     // Next expand the rootsplit out from its original compact format to one
     // in which we have the two sides of the split juxtaposed, with 1
@@ -165,8 +171,12 @@ struct SBNInstance {
       if (singleton_option) {
         return Node::Leaf(*singleton_option);
       }  // else
+      std::cout << "range_indexer_.at\n";
       auto child_index = SampleIndex(range_indexer_.at(parent));
+      std::cout << range_indexer_.at(parent) << std::endl;
       std::cout << child_index << std::endl;
+      std::cout << parent.SubsplitToString() << std::endl;
+      std::cout << "index_to_child_.at\n";
       auto child_subsplit = index_to_child_.at(child_index);
       return SampleTree(child_subsplit);
     };
@@ -290,6 +300,7 @@ TEST_CASE("libsbn") {
   inst.ProcessLoadedTrees();
   std::cout << inst.GetIndexers() << std::endl;
   auto tree = inst.SampleTree();
+  std::cout << tree->Newick() << std::endl;
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
