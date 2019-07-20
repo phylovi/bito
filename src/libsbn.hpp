@@ -120,9 +120,9 @@ struct SBNInstance {
     }
     rootsplit_index_end_ = index;
     // Now add the PCSSs.
-    for (auto iter : PCSSCounterOf(counter)) {
-      auto parent = iter.first;
-      auto child_counter = iter.second;
+    for (const auto &iter : PCSSCounterOf(counter)) {
+      const auto &parent = iter.first;
+      const auto &child_counter = iter.second;
       assert(parent_to_range_
                  .insert({parent, {index, index + child_counter.size()}})
                  .second);
