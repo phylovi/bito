@@ -29,8 +29,7 @@ def test_instance():
         vbpi_rootsplit_supp_dict = convert_dict_to_int(supports["rootsplit_supp_dict"])
         vbpi_subsplit_supp_dict = {ss:convert_dict_to_int(d) for ss, d in supports["subsplit_supp_dict"].items()}
     assert rootsplit_support == vbpi_rootsplit_supp_dict
-    print(json.dumps(subsplit_support, sort_keys=True))
-    print(json.dumps(vbpi_subsplit_supp_dict, sort_keys=True))
+    assert subsplit_support == vbpi_subsplit_supp_dict
 
 #    inst.read_nexus_file('data/DS1.subsampled_10.t')
 #    inst.read_fasta_file('data/DS1.fasta')

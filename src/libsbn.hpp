@@ -29,6 +29,9 @@ typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
 typedef std::unordered_map<std::string, std::pair<uint32_t, uint32_t>>
     StringUInt32PairMap;
 typedef std::unordered_map<uint32_t, std::string> UInt32StringMap;
+typedef std::unordered_map<std::string,
+                           std::unordered_map<std::string, uint32_t>>
+    StringPCSSMap;
 
 template <typename T>
 StringUInt32Map StringUInt32MapOf(T m) {
@@ -37,6 +40,14 @@ StringUInt32Map StringUInt32MapOf(T m) {
     m_str[iter.first.ToString()] = iter.second;
   }
   return m_str;
+}
+
+StringPCSSMap StringPCSSMapOf(PCSSDict d) {
+  StringPCSSMap d_str;
+  for (const auto &iter : d) {
+    d_str[iter.first.ToString()] = StringUInt32MapOf(iter.second);
+  }
+  return d_str;
 }
 
 struct SBNInstance {
@@ -99,40 +110,42 @@ struct SBNInstance {
     // Now we make a map that maps parent subsplit to the collection of PCSSs
     // that contain it.
     // TODO think about move and make consistent below
-    BitsetBitsetVectorMap parent_to_pcss_vector_map;
-    for (const auto &iter : PCSSCounterOf(counter)) {
-      const auto &pcss = iter.first;
-      auto parent = pcss.PCSSParent();
-      auto search = parent_to_pcss_vector_map.find(parent);
-      if (search == parent_to_pcss_vector_map.end()) {
-        std::vector<Bitset> pcss_singleton({pcss});
-        assert(parent_to_pcss_vector_map
-                   .insert({std::move(parent), std::move(pcss_singleton)})
-                   .second);
-      } else {
-        search->second.push_back(std::move(pcss));
-      }
-    }
-    for (auto iter : parent_to_pcss_vector_map) {
-      auto parent = iter.first;
-      auto pcss_vector = iter.second;
-      // The range indexer maps the parent to the range of values used by that
-      // parent.
-      assert(
-          range_indexer_.insert({parent, {index, index + pcss_vector.size()}})
-              .second);
-      // We insert the corresponding PCSSs into the indexer.
-      for (const auto &pcss : pcss_vector) {
-        assert(indexer_.insert({pcss, index}).second);
-        assert(index_to_child_.insert({index, pcss.PCSSChild()}).second);
-        index++;
-      }
-    }
-    sbn_probs_ = std::vector<double>(indexer_.size(), 1.);
-    // TODO do we need reverse_indexer_?
-    for (const auto &iter : indexer_) {
-      assert(reverse_indexer_.insert({iter.second, iter.first}).second);
-    }
+    //    BitsetBitsetVectorMap parent_to_pcss_vector_map;
+    //    for (const auto &iter : PCSSCounterOf(counter)) {
+    //      const auto &pcss = iter.first;
+    //      auto parent = pcss.PCSSParent();
+    //      auto search = parent_to_pcss_vector_map.find(parent);
+    //      if (search == parent_to_pcss_vector_map.end()) {
+    //        std::vector<Bitset> pcss_singleton({pcss});
+    //        assert(parent_to_pcss_vector_map
+    //                   .insert({std::move(parent), std::move(pcss_singleton)})
+    //                   .second);
+    //      } else {
+    //        search->second.push_back(std::move(pcss));
+    //      }
+    //    }
+    //    for (auto iter : parent_to_pcss_vector_map) {
+    //      auto parent = iter.first;
+    //      auto pcss_vector = iter.second;
+    //      // The range indexer maps the parent to the range of values used by
+    //      that
+    //      // parent.
+    //      assert(
+    //          range_indexer_.insert({parent, {index, index +
+    //          pcss_vector.size()}})
+    //              .second);
+    //      // We insert the corresponding PCSSs into the indexer.
+    //      for (const auto &pcss : pcss_vector) {
+    //        assert(indexer_.insert({pcss, index}).second);
+    //        assert(index_to_child_.insert({index, pcss.PCSSChild()}).second);
+    //        index++;
+    //      }
+    //    }
+    //    sbn_probs_ = std::vector<double>(indexer_.size(), 1.);
+    //    // TODO do we need reverse_indexer_?
+    //    for (const auto &iter : indexer_) {
+    //      assert(reverse_indexer_.insert({iter.second, iter.first}).second);
+    //    }
   }
 
   uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) const {
@@ -207,10 +220,10 @@ struct SBNInstance {
   }
 
   // This function is really just for testing-- it recomputes from scratch.
-  std::pair<StringUInt32Map, StringUInt32Map> SplitCounters() {
+  std::pair<StringUInt32Map, StringPCSSMap> SplitCounters() {
     auto counter = tree_collection_->TopologyCounter();
     return {StringUInt32MapOf(RootsplitCounterOf(counter)),
-            StringUInt32MapOf(PCSSCounterOf(counter))};
+            StringPCSSMapOf(PCSSCounterOf(counter))};
   }
 
   void ReadNewickFile(std::string fname) {
