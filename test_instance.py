@@ -21,9 +21,11 @@ def test_instance():
     def convert_dict_to_int(d):
         return {k: int(v) for k, v in d.items()}
 
+    inst.read_nexus_file('data/DS1.subsampled_10.t')
+    inst.process_loaded_trees()
     [rootsplit_support, subsplit_support] = inst.split_counters()
-    # with open('data/DS1.subsampled_10.t_support.json') as fp:
-    with open('data/five_taxon_support.json') as fp:
+    with open('data/DS1.subsampled_10.t_support.json') as fp:
+    # with open('data/five_taxon_support.json') as fp:
         supports = json.load(fp)
         vbpi_rootsplit_supp_dict = convert_dict_to_int(
             supports["rootsplit_supp_dict"])
@@ -34,7 +36,6 @@ def test_instance():
     assert rootsplit_support == vbpi_rootsplit_supp_dict
     assert subsplit_support == vbpi_subsplit_supp_dict
 
-    inst.read_nexus_file('data/DS1.subsampled_10.t')
     inst.read_fasta_file('data/DS1.fasta')
     inst.make_beagle_instances(2)
     print(np.array(inst.log_likelihoods()))

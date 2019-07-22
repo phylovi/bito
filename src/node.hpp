@@ -55,8 +55,8 @@ class Node {
   size_t Index() const { return index_; }
   uint64_t Tag() const { return tag_; }
   std::string TagString() const { return StringOfPackedInt(this->tag_); }
-  uint32_t MaxLeafID() const { return UnpackFirstInt(tag_); }
-  uint32_t LeafCount() const { return UnpackSecondInt(tag_); }
+  uint32_t MaxLeafID() const { return MaxLeafIDOfTag(tag_); }
+  uint32_t LeafCount() const { return LeafCountOfTag(tag_); }
   size_t Hash() const { return hash_; }
   bool IsLeaf() const { return children_.empty(); }
   NodePtrVec Children() const { return children_; }
@@ -120,6 +120,12 @@ class Node {
                         bool show_tags) const;
 
   // ** Class methods
+  static inline uint32_t MaxLeafIDOfTag(uint64_t tag){
+    return UnpackFirstInt(tag);
+  };
+  static inline uint32_t LeafCountOfTag(uint64_t tag) {
+    return UnpackSecondInt(tag);
+  };
   static NodePtr Leaf(uint32_t id);
   static NodePtr Join(NodePtrVec children, size_t index = SIZE_MAX);
   static NodePtr Join(NodePtr left, NodePtr right, size_t index = SIZE_MAX);

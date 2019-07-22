@@ -31,6 +31,8 @@ class TreeCollection {
 
   Node::TopologyCounter TopologyCounter();
 
+  std::vector<std::string> TaxonNames();
+
  private:
   Tree::TreePtrVector trees_;
   TagStringMap tag_taxon_map_;

@@ -89,7 +89,7 @@ BeagleInstance CreateInstance(const Alignment &alignment) {
 void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
                   const Alignment &alignment, const CharIntMap &symbol_table) {
   for (const auto &iter : tag_taxon_map) {
-    int taxon_number = static_cast<int>(UnpackFirstInt(iter.first));
+    int taxon_number = static_cast<int>(Node::MaxLeafIDOfTag(iter.first));
     SymbolVector symbols =
         SymbolVectorOf(alignment.at(iter.second), symbol_table);
     beagleSetTipStates(beagle_instance, taxon_number, symbols.data());
