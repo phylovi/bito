@@ -6,8 +6,8 @@
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <algorithm>
 #include <cmath>
-#include <queue>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -16,7 +16,6 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
-#include "task_processor.hpp"
 #include "tree.hpp"
 
 namespace py = pybind11;

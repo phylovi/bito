@@ -236,7 +236,6 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
   // Calculate upper partials
   tree->Topology()->TripleIndexPreOrderBifurcating(
       [&](int parent_index, int sister_index, int node_index) {
-
         if (node_index != root_child_index && node_index != fixed_node_index) {
           int upper_partial_index;
           int upper_matrix_index;
@@ -316,8 +315,7 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
               count,                          // Number of partialsBuffer
               &log_like,                      // destination for log likelihood
               &dlogLp,  // destination for first derivative  # derivative code
-              NULL      // destination for second derivative
-          );
+              NULL);    // destination for second derivative
           derivatives[static_cast<size_t>(node_index)] = dlogLp;
         }
       });

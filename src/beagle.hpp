@@ -36,10 +36,9 @@ void PrepareBeagleInstance(
 void SetJCModel(BeagleInstance beagle_instance);
 
 template <typename T>
-std::vector<T> Parallelize(
-    std::function<T(BeagleInstance, Tree::TreePtr)> f,
-    std::vector<BeagleInstance> beagle_instances,
-    TreeCollection::TreeCollectionPtr tree_collection) {
+std::vector<T> Parallelize(std::function<T(BeagleInstance, Tree::TreePtr)> f,
+                           std::vector<BeagleInstance> beagle_instances,
+                           TreeCollection::TreeCollectionPtr tree_collection) {
   if (beagle_instances.size() == 0) {
     std::cerr << "Please add some BEAGLE instances that can be used for "
                  "computation.\n";
