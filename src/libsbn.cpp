@@ -62,5 +62,6 @@ PYBIND11_MODULE(sbn, m) {
       .def("get_indexers", &SBNInstance::GetIndexers)
       .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
       // Member Variables
-      .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);
+      .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_)
+      .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
 }

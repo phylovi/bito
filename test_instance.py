@@ -43,12 +43,13 @@ def test_instance():
     gradients = [np.array(gradient) for gradient in inst.branch_gradients()]
     print(gradients[-1])
 
-#    t = sbn.Tree.of_index_vector([5, 5, 4, 5, 5])
-    t = sbn.Tree.of_index_vector([6, 5, 4, 4, 5, 6])
+    t = sbn.Tree.of_index_vector([3, 3, 3])
     branch_lengths = np.array(t, copy=False)
-    branch_lengths[0] = 3.14159265359
-
-    tree_collection = sbn.TreeCollection.singleton(t)
+    branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.])
+    tree_collection = sbn.TreeCollection.singleton(t, "mars saturn jupiter".split())
     print(tree_collection.newick())
+
+    inst.read_fasta_file('data/hello.fasta')
+    #inst.tree_collection = tree_collection
 
 

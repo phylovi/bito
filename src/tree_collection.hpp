@@ -33,9 +33,17 @@ class TreeCollection {
 
   std::vector<std::string> TaxonNames();
 
-  static TreeCollection Singleton(Tree tree) {
+  static TreeCollection Singleton(Tree tree,
+                                  std::vector<std::string> taxon_labels) {
     std::vector<Tree::TreePtr> single_tree({std::make_shared<Tree>(tree)});
-    return TreeCollection(single_tree);
+    TagStringMap taxon_map;
+    for (size_t index = 0; index < taxon_labels.size(); index++) {
+      assert(taxon_map
+                 .insert({PackInts(static_cast<uint32_t>(index), 1),
+                          taxon_labels[index]})
+                 .second);
+    }
+    return TreeCollection(single_tree, taxon_map);
   }
 
  private:
