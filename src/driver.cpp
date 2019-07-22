@@ -28,7 +28,7 @@ void Driver::Clear() {
 }
 
 // This parser will allow anything before the first '('.
-TreeCollection::TreeCollectionPtr Driver::ParseNewick(std::ifstream &in) {
+TreeCollection Driver::ParseNewick(std::ifstream &in) {
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);
   std::string line;
@@ -47,12 +47,10 @@ TreeCollection::TreeCollectionPtr Driver::ParseNewick(std::ifstream &in) {
     }
   }
   in.close();
-  return std::make_shared<TreeCollection>(std::move(trees),
-                                          this->TagTaxonMap());
+  return TreeCollection(std::move(trees), this->TagTaxonMap());
 }
 
-TreeCollection::TreeCollectionPtr Driver::ParseNewickFile(
-    const std::string &fname) {
+TreeCollection Driver::ParseNewickFile(const std::string &fname) {
   std::ifstream in(fname.c_str());
   if (!in) {
     std::cerr << "Cannot open the File : " << fname << std::endl;
@@ -61,8 +59,7 @@ TreeCollection::TreeCollectionPtr Driver::ParseNewickFile(
   return ParseNewick(in);
 }
 
-TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
-    const std::string &fname) {
+TreeCollection Driver::ParseNexusFile(const std::string &fname) {
   std::ifstream in(fname.c_str());
   try {
     if (!in) {
@@ -110,15 +107,15 @@ TreeCollection::TreeCollectionPtr Driver::ParseNexusFile(
     // taxon names.
     auto pre_translation = ParseNewick(in);
     TagStringMap translated_taxon_map;
-    for (const auto &iter : pre_translation->TagTaxonMap()) {
+    for (const auto &iter : pre_translation.TagTaxonMap()) {
       auto search = translator.find(iter.second);
       if (search == translator.end()) {
         throw std::runtime_error("Couldn't find a translation table entry.");
       }
       assert(translated_taxon_map.insert({iter.first, search->second}).second);
     }
-    return std::make_shared<TreeCollection>(std::move(pre_translation->Trees()),
-                                            std::move(translated_taxon_map));
+    return TreeCollection(std::move(pre_translation.Trees()),
+                          std::move(translated_taxon_map));
   } catch (const std::exception &exception) {
     std::cerr << "\nProblem parsing '" << fname << "':\n";
     std::cerr << exception.what() << std::endl;
@@ -139,12 +136,12 @@ Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,
   return latest_tree_;
 }
 
-TreeCollection::TreeCollectionPtr Driver::ParseString(const std::string &str) {
+TreeCollection Driver::ParseString(const std::string &str) {
   Clear();
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);
   Tree::TreePtrVector trees = {ParseString(&parser_instance, str)};
-  return std::make_shared<TreeCollection>(trees, this->TagTaxonMap());
+  return TreeCollection(trees, this->TagTaxonMap());
 }
 
 TagStringMap Driver::TagTaxonMap() {

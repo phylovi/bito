@@ -96,16 +96,16 @@ void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
   }
 }
 
-void PrepareBeagleInstance(
-    const BeagleInstance beagle_instance,
-    const TreeCollection::TreeCollectionPtr &tree_collection,
-    const Alignment &alignment, const CharIntMap &symbol_table) {
-  if (tree_collection->TaxonCount() != alignment.SequenceCount()) {
+void PrepareBeagleInstance(const BeagleInstance beagle_instance,
+                           const TreeCollection &tree_collection,
+                           const Alignment &alignment,
+                           const CharIntMap &symbol_table) {
+  if (tree_collection.TaxonCount() != alignment.SequenceCount()) {
     std::cerr << "The number of tree tips doesn't match the alignment "
                  "sequence count!\n";
     abort();
   }
-  SetTipStates(beagle_instance, tree_collection->TagTaxonMap(), alignment,
+  SetTipStates(beagle_instance, tree_collection.TagTaxonMap(), alignment,
                symbol_table);
   std::vector<double> pattern_weights(alignment.Length(), 1.);
   beagleSetPatternWeights(beagle_instance, pattern_weights.data());
@@ -191,9 +191,8 @@ double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree) {
   return log_like;
 }
 
-std::vector<double> LogLikelihoods(
-    std::vector<BeagleInstance> beagle_instances,
-    TreeCollection::TreeCollectionPtr tree_collection) {
+std::vector<double> LogLikelihoods(std::vector<BeagleInstance> beagle_instances,
+                                   const TreeCollection &tree_collection) {
   return Parallelize<double>(LogLikelihood, beagle_instances, tree_collection);
 }
 
@@ -325,7 +324,7 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
 
 std::vector<std::vector<double>> BranchGradients(
     std::vector<BeagleInstance> beagle_instances,
-    TreeCollection::TreeCollectionPtr tree_collection) {
+    const TreeCollection &tree_collection) {
   return Parallelize<std::vector<double>>(BranchGradient, beagle_instances,
                                           tree_collection);
 }

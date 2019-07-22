@@ -45,11 +45,14 @@ def test_instance():
 
     t = sbn.Tree.of_index_vector([3, 3, 3])
     branch_lengths = np.array(t, copy=False)
-    branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.])
-    tree_collection = sbn.TreeCollection.singleton(t, "mars saturn jupiter".split())
-    print(tree_collection.newick())
+    inst.tree_collection = sbn.TreeCollection.singleton(t, "mars saturn jupiter".split())
 
     inst.read_fasta_file('data/hello.fasta')
-    #inst.tree_collection = tree_collection
-
+    inst.make_beagle_instances(2)
+    inst.print_status()
+    print(inst.tree_collection.newick())
+    print(np.array(inst.log_likelihoods()))
+    branch_lengths[0] = 0.2
+    print(inst.tree_collection.newick())
+    print(np.array(inst.log_likelihoods()))
 

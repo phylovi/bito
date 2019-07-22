@@ -9,6 +9,8 @@
 #include <vector>
 #include "tree.hpp"
 
+TreeCollection::TreeCollection() : trees_(0){};
+
 TreeCollection::TreeCollection(Tree::TreePtrVector trees)
     : trees_(std::move(trees)) {
   if (trees.size() > 0) {
@@ -28,7 +30,7 @@ TreeCollection::TreeCollection(Tree::TreePtrVector trees,
   }
 }
 
-bool TreeCollection::operator==(const TreeCollection &other) {
+bool TreeCollection::operator==(const TreeCollection &other) const {
   if (this->TagTaxonMap() != other.TagTaxonMap()) {
     return false;
   }

@@ -29,7 +29,7 @@ fp.write(preamble)
 
 fp.write('auto t = driver.ParseString("')
 fp.write(t.write(format=9))
-fp.write('")->Trees()[0];\n')
+fp.write('").Trees()[0];\n')
 
 traversal_translator = {
    "preorder": "PreOrder",

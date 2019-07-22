@@ -51,7 +51,7 @@ StringPCSSMap StringPCSSMapOf(PCSSDict d) {
 struct SBNInstance {
   std::string name_;
   // Things that get loaded in.
-  TreeCollection::TreeCollectionPtr tree_collection_;
+  TreeCollection tree_collection_;
   Alignment alignment_;
   // Beagly bits.
   CharIntMap symbol_table_;
@@ -95,12 +95,12 @@ struct SBNInstance {
     beagle_site_count_ = 0;
   }
 
-  size_t TreeCount() const { return tree_collection_->TreeCount(); }
+  size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
-    if (tree_collection_) {
+    if (tree_collection_.TreeCount()) {
       std::cout << TreeCount() << " unique tree topologies loaded on "
-                << tree_collection_->TaxonCount() << " leaves.\n";
+                << tree_collection_.TaxonCount() << " leaves.\n";
     } else {
       std::cout << "No trees loaded.\n";
     }
@@ -111,7 +111,7 @@ struct SBNInstance {
 
   void ProcessLoadedTrees() {
     uint32_t index = 0;
-    auto counter = tree_collection_->TopologyCounter();
+    auto counter = tree_collection_.TopologyCounter();
     // See above for the definitions of these members.
     sbn_probs_.clear();
     indexer_.clear();
@@ -211,7 +211,7 @@ struct SBNInstance {
 
   // This function is really just for testing-- it recomputes from scratch.
   std::pair<StringUInt32Map, StringPCSSMap> SplitCounters() {
-    auto counter = tree_collection_->TopologyCounter();
+    auto counter = tree_collection_.TopologyCounter();
     return {StringUInt32MapOf(RootsplitCounterOf(counter)),
             StringPCSSMapOf(PCSSCounterOf(counter))};
   }

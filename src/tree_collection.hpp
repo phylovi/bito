@@ -13,10 +13,9 @@
 
 class TreeCollection {
  public:
-  typedef std::shared_ptr<TreeCollection> TreeCollectionPtr;
-
   explicit TreeCollection(Tree::TreePtrVector trees);
 
+  TreeCollection();
   TreeCollection(Tree::TreePtrVector trees, TagStringMap tag_taxon_map);
 
   size_t TreeCount() const { return trees_.size(); }
@@ -25,7 +24,7 @@ class TreeCollection {
   const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
   size_t TaxonCount() const { return tag_taxon_map_.size(); }
 
-  bool operator==(const TreeCollection &other);
+  bool operator==(const TreeCollection &other) const;
 
   std::string Newick() const;
 
@@ -51,16 +50,16 @@ class TreeCollection {
   TagStringMap tag_taxon_map_;
 };
 
-// Compare TreeCollectionPtrs by their TreeCollections.
-inline bool operator==(const TreeCollection::TreeCollectionPtr &lhs,
-                       const TreeCollection::TreeCollectionPtr &rhs) {
-  return *lhs == *rhs;
-}
-
-inline bool operator!=(const TreeCollection::TreeCollectionPtr &lhs,
-                       const TreeCollection::TreeCollectionPtr &rhs) {
-  return !(lhs == rhs);
-}
+// // Compare TreeCollectionPtrs by their TreeCollections.
+// inline bool operator==(const TreeCollection::TreeCollectionPtr &lhs,
+//                        const TreeCollection::TreeCollectionPtr &rhs) {
+//   return *lhs == *rhs;
+// }
+//
+// inline bool operator!=(const TreeCollection::TreeCollectionPtr &lhs,
+//                        const TreeCollection::TreeCollectionPtr &rhs) {
+//   return !(lhs == rhs);
+// }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TopologyCounter") {
