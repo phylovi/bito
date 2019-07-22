@@ -167,6 +167,8 @@ TEST_CASE("Bitset") {
   CHECK_EQ(a, Bitset("0101"));
 
   auto p = Bitset("000111");
+  CHECK_EQ(p.SplitChunk(0), Bitset("000"));
+  CHECK_EQ(p.SplitChunk(1), Bitset("111"));
   CHECK_EQ(p.PCSSChunk(0), Bitset("00"));
   CHECK_EQ(p.PCSSChunk(1), Bitset("01"));
   CHECK_EQ(p.PCSSChunk(2), Bitset("11"));
