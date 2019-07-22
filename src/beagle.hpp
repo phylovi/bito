@@ -71,6 +71,9 @@ std::vector<double> LogLikelihoods(
 
 std::vector<double> BranchGradient(BeagleInstance beagle_instance,
                                    Tree::TreePtr tree);
+std::vector<std::vector<double>> BranchGradients(
+    std::vector<BeagleInstance> beagle_instances,
+    TreeCollection::TreeCollectionPtr tree_collection);
 
 }  // namespace beagle
 

@@ -41,6 +41,7 @@ PYBIND11_MODULE(sbn, m) {
       .def("split_counters", &SBNInstance::SplitCounters)
       .def("make_beagle_instances", &SBNInstance::MakeBeagleInstances)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
+      .def("branch_gradients", &SBNInstance::BranchGradients)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_rootsplit_indexer", &SBNInstance::GetRootsplitIndexer)
       .def("get_pcss_indexer", &SBNInstance::GetPCSSIndexer)

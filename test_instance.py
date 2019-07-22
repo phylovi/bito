@@ -30,3 +30,5 @@ def test_instance():
     inst.read_fasta_file('data/DS1.fasta')
     inst.make_beagle_instances(2)
     print(np.array(inst.log_likelihoods()))
+    gradients = [np.array(gradient) for gradient in inst.branch_gradients()]
+    print(gradients[-1])

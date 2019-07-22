@@ -149,38 +149,12 @@ struct SBNInstance {
     }
   }
 
-  std::queue<size_t> CreateTreeNumberQueue() {
-    std::queue<size_t> tree_number_queue;
-    for (size_t i = 0; i < tree_collection_->TreeCount(); i++) {
-      tree_number_queue.push(i);
-    }
-    return tree_number_queue;
-  }
-
   std::vector<double> LogLikelihoods() {
     return beagle::LogLikelihoods(beagle_instances_, tree_collection_);
   }
 
   std::vector<std::vector<double>> BranchGradients() {
-    if (beagle_instances_.size() == 0) {
-      std::cerr << "Please add some BEAGLE instances that can be used for "
-                   "computation.\n";
-      abort();
-    }
-    std::vector<std::vector<double>> results(tree_collection_->TreeCount());
-    std::queue<beagle::BeagleInstance> instance_queue;
-    for (auto instance : beagle_instances_) {
-      instance_queue.push(instance);
-    }
-    std::queue<size_t> tree_number_queue = CreateTreeNumberQueue();
-    TaskProcessor<beagle::BeagleInstance, size_t> task_processor(
-        instance_queue, tree_number_queue,
-        [&results, &tree_collection = tree_collection_ ](
-            beagle::BeagleInstance beagle_instance, size_t tree_number) {
-          results[tree_number] = beagle::BranchGradient(
-              beagle_instance, tree_collection->GetTree(tree_number));
-        });
-    return results;
+    return beagle::BranchGradients(beagle_instances_, tree_collection_);
   }
 };
 

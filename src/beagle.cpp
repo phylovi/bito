@@ -325,4 +325,11 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
   return derivatives;
 }
 
+std::vector<std::vector<double>> BranchGradients(
+    std::vector<BeagleInstance> beagle_instances,
+    TreeCollection::TreeCollectionPtr tree_collection) {
+  return Parallelize<std::vector<double>>(BranchGradient, beagle_instances,
+                                          tree_collection);
+}
+
 }  // namespace beagle
