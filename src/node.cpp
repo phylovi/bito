@@ -78,8 +78,26 @@ void Node::PreOrder(std::function<void(const Node*)> f) const {
   }
 }
 
-// Iterate f through (parent, sister, node) for bifurcating trees using a
-// preorder traversal.
+void Node::PostOrder(std::function<void(const Node*)> f) const {
+  for (const auto& child : children_) {
+    child->PostOrder(f);
+  }
+  f(this);
+}
+
+void Node::LevelOrder(std::function<void(const Node*)> f) const {
+  std::deque<const Node*> to_visit = {this};
+  while (to_visit.size()) {
+    auto n = to_visit.front();
+    f(n);
+    to_visit.pop_front();
+
+    for (const auto& child : n->children_) {
+      to_visit.push_back(child.get());
+    }
+  }
+}
+
 void Node::TriplePreOrderBifurcating(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
   if (!IsLeaf()) {
@@ -91,8 +109,6 @@ void Node::TriplePreOrderBifurcating(
   }
 }
 
-// This function maps functions on triplets of indices to functions on
-// triplets of nodes by getting their indices.
 static std::function<void(const Node*, const Node*, const Node*)> const
 TripletIndexInfix(std::function<void(int, int, int)> f) {
   return [&f](const Node* node0, const Node* node1, const Node* node2) {
@@ -101,15 +117,11 @@ TripletIndexInfix(std::function<void(int, int, int)> f) {
   };
 }
 
-// Iterate f through (parent index, sister index, node index) for bifurcating
-// trees using a preorder traversal.
 void Node::TripleIndexPreOrderBifurcating(
     std::function<void(int, int, int)> f) const {
   TriplePreOrderBifurcating(TripletIndexInfix(f));
 }
 
-// This function maps functions on (node_index, child0_index, child1_index) to
-// thier corresponding functions on nodes. It only works for binary trees.
 static std::function<void(const Node*)> const BinaryIndexInfix(
     std::function<void(int, int, int)> f) {
   return [&f](const Node* node) {
@@ -122,41 +134,16 @@ static std::function<void(const Node*)> const BinaryIndexInfix(
   };
 }
 
-// These two functions take functions accepting triples of (node_index,
-// child0_index, child1_index) and apply them according to various traversals.
 void Node::BinaryIndexPreOrder(
     const std::function<void(int, int, int)> f) const {
   PreOrder(BinaryIndexInfix(f));
 }
+
 void Node::BinaryIndexPostOrder(
     const std::function<void(int, int, int)> f) const {
   PostOrder(BinaryIndexInfix(f));
 }
 
-// Iterate f through (parent, sister, node) for internal nodes using a
-// preorder traversal.
-void Node::TriplePreOrderInternal(
-    std::function<void(const Node*, const Node*, const Node*)> f) const {
-  if (!IsLeaf()) {
-    assert(children_.size() == 2);
-    f(this, children_[1].get(), children_[0].get());
-    children_[0]->TriplePreOrderInternal(f);
-    f(this, children_[0].get(), children_[1].get());
-    children_[1]->TriplePreOrderInternal(f);
-  }
-}
-
-// Traversal for rooted pairs in an unrooted subtree in its traditional rooted
-// representation.
-// We take in two functions, f_root, and f_internal, each of which take three
-// edges.
-// We assume that f_root is symmetric in its last two arguments so that
-// f_root's signature actually looks like f_root(node0, {node1, node2}).
-// We apply f_root to the descendant edges like so: 012, 120, and 201. Because
-// f_root is symmetric in the last two arguments, we are going to get all of
-// the distinct calls of f.
-// At the internal nodes we cycle through triples of (parent, sister, node)
-// for f_internal.
 void Node::TriplePreOrder(
     std::function<void(const Node*, const Node*, const Node*)> f_root,
     std::function<void(const Node*, const Node*, const Node*)> f_internal)
@@ -170,8 +157,20 @@ void Node::TriplePreOrder(
   }
 }
 
+void Node::TriplePreOrderInternal(
+    std::function<void(const Node*, const Node*, const Node*)> f) const {
+  if (!IsLeaf()) {
+    assert(children_.size() == 2);
+    f(this, children_[1].get(), children_[0].get());
+    children_[0]->TriplePreOrderInternal(f);
+    f(this, children_[0].get(), children_[1].get());
+    children_[1]->TriplePreOrderInternal(f);
+  }
+}
+
 // See the typedef of PCSSFun to understand the argument type to this
-// function.
+// function, and `doc/pcss.svg` for a diagram that will greatly help you
+// understand the implementation.
 void Node::PCSSPreOrder(PCSSFun f) const {
   this->TriplePreOrder(
       // f_root
@@ -214,26 +213,6 @@ void Node::PCSSPreOrder(PCSSFun f) const {
           f(child0, false, node, true, sister, false, parent, true);
         }
       });
-}
-
-void Node::PostOrder(std::function<void(const Node*)> f) const {
-  for (const auto& child : children_) {
-    child->PostOrder(f);
-  }
-  f(this);
-}
-
-void Node::LevelOrder(std::function<void(const Node*)> f) const {
-  std::deque<const Node*> to_visit = {this};
-  while (to_visit.size()) {
-    auto n = to_visit.front();
-    f(n);
-    to_visit.pop_front();
-
-    for (const auto& child : n->children_) {
-      to_visit.push_back(child.get());
-    }
-  }
 }
 
 // This function assigns indices to the nodes of the topology: the leaves get

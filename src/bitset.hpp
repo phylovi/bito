@@ -10,8 +10,11 @@
 #include <vector>
 #include "optional.hpp"
 
-// A rewrite of the RbBitSet class from RevBayes by Sebastian Hoehna.
-// In general, I'm trying to follow the interface of std::bitset.
+// This file started life as the RbBitSet class from RevBayes by Sebastian
+// Hoehna. In general, I'm trying to follow the interface of std::bitset, though
+// this class goes way beyond what std::bitset offers.
+// Note that we can't use std::bitset because we don't know the size of the
+// bitsets at compile time.
 
 class Bitset {
  public:
@@ -61,15 +64,27 @@ class Bitset {
   // Otherwise, return nullopt.
   std::experimental::optional<uint32_t> SingletonOption() const;
 
-  // These methods require the bitset to be a split bitset of even length.
+  // These methods require the bitset to be a "subsplit bitset" of even length,
+  // consisting of two equal sized "chunks" representing the two sides of the
+  // subsplit.
+  //
   // Flip the order of the two sides of a subsplit.
   Bitset RotateSubsplit() const;
   // Get the ith chunk of the subsplit.
   Bitset SplitChunk(size_t i) const;
   std::string ToStringChunked(size_t chunk_count) const;
   std::string SubsplitToString() const;
-  // These functions require the bitset to be a PCSS bitset of length a multiple
-  // of 3.
+
+  // These functions require the bitset to be a "PCSS bitset" with three
+  // equal-sized "chunks".
+  // The first chunk represents the sister clade, the second the focal clade,
+  // and the third chunk describes the children. The children are well defined
+  // relative to the cut parent: the other part of the subsplit is the cut
+  // parent setminus the child.
+  // For example, `100011001` is composed of the chunks `100`, `011` and `001`.
+  // If the taxa are x0, x1, and x2 then this means the parent subsplit is (A,
+  // BC), and the child subsplit is (B,C). See the unit tests at the bottom for
+  // more examples.
   std::string PCSSToString() const;
   bool PCSSIsValid() const;
   size_t PCSSChunkSize() const;
@@ -187,6 +202,8 @@ TEST_CASE("Bitset") {
   // parent clade is 1110, child is 0100, so child subsplit is 1010|0100.
   CHECK_EQ(Bitset::ChildSubsplit(Bitset("00011110"), Bitset("0100")),
            Bitset("10100100"));
+  CHECK_EQ(Bitset::ChildSubsplit(Bitset("00011110"), Bitset("1010")),
+           Bitset("01001010"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

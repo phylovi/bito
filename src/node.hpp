@@ -35,10 +35,15 @@ class Node {
   typedef std::unordered_map<NodePtr, uint32_t> TopologyCounter;
 
   // This is the type of functions that are used in the PCSS recursion
-  // functions. The signature is in 4 parts, each of which describes the
-  // position in the tree and then the direction: false means down the tree
-  // structure and true means up. The 4 parts are the uncut parent, the cut
-  // parent, child 0, and child 1.
+  // functions.
+  //
+  // The signature is in 4 parts, each of which describes the
+  // position in the tree and then the direction. The 4 parts are the sister
+  // clade, the focal clade, child 0, and child 1. False means down the tree
+  // structure and true means up.
+  // See `doc/pcss.svg` for a diagram of the PCSS traversal. In that file,
+  // the first tree shows the terminology, and the subsequent trees show the
+  // calls to f_root and f_internal.
   typedef std::function<void(const Node*, bool, const Node*, bool, const Node*,
                              bool, const Node*, bool)>
       PCSSFun;
@@ -59,11 +64,21 @@ class Node {
   bool operator==(const Node& other);
 
   void PreOrder(std::function<void(const Node*)> f) const;
+  void PostOrder(std::function<void(const Node*)> f) const;
+  void LevelOrder(std::function<void(const Node*)> f) const;
 
-  // Iterate f through (parent, sister, node) for internal nodes using a
+  // Iterate f through (parent, sister, node) for bifurcating trees using a
   // preorder traversal.
-  void TriplePreOrderInternal(
+  void TriplePreOrderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const;
+  // As above, but getting indices rather than nodes themselves.
+  void TripleIndexPreOrderBifurcating(
+      std::function<void(int, int, int)> f) const;
+
+  // These two functions take functions accepting triples of (node_index,
+  // child0_index, child1_index) and apply them according to various traversals.
+  void BinaryIndexPreOrder(const std::function<void(int, int, int)> f) const;
+  void BinaryIndexPostOrder(const std::function<void(int, int, int)> f) const;
 
   // Traversal for rooted pairs in an unrooted subtree in its traditional rooted
   // representation.
@@ -80,31 +95,19 @@ class Node {
       std::function<void(const Node*, const Node*, const Node*)> f_root,
       std::function<void(const Node*, const Node*, const Node*)> f_internal)
       const;
+  // This one is just the part of the above that's run for the internal nodes.
+  void TriplePreOrderInternal(
+      std::function<void(const Node*, const Node*, const Node*)> f) const;
 
   // See the typedef of PCSSFun to understand the argument type to this
   // function.
   void PCSSPreOrder(PCSSFun f) const;
-  void PostOrder(std::function<void(const Node*)> f) const;
-  void LevelOrder(std::function<void(const Node*)> f) const;
-
-  // These two functions take functions accepting triples of (node_index,
-  // child0_index, child1_index) and apply them according to various traversals.
-  void BinaryIndexPreOrder(const std::function<void(int, int, int)> f) const;
-  void BinaryIndexPostOrder(const std::function<void(int, int, int)> f) const;
-
-  // Iterate f through (parent, sister, node) for bifurcating trees using a
-  // preorder traversal.
-  void TriplePreOrderBifurcating(
-      std::function<void(const Node*, const Node*, const Node*)> f) const;
-  void TripleIndexPreOrderBifurcating(
-      std::function<void(int, int, int)> f) const;
 
   // This function assigns indices to the nodes of the topology: the leaves get
   // their indices (which are contiguously numbered from 0 through the leaf
-  // count -1) and the rest get ordered according to a postorder traversal. Thus
-  // the root always has index equal to the number of nodes in the tree.
-  //
-  // This function returns a map that maps the tags to their indices.
+  // count minus 1) and the rest get ordered according to a postorder traversal.
+  // Thus the root always has index equal to the number of nodes in the tree.
+  // It returns a map that maps the tags to their indices.
   TagSizeMap Reindex();
 
   std::string Newick(

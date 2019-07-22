@@ -93,11 +93,6 @@ Add a test for every new feature.
 
 ## Terminology
 
-PCSS stands for parent-child subsplit.
-They are represented as bitsets in three equal-sized "chunks", which are sub-bit-sets.
-For example, `100011001` is composed of the chunks `100`, `011` and `001`.
-If the taxa are x0, x1, and x2 then this means the parent subsplit is (A, BC), and the child subsplit is (B,C).
-
-* The first chunk is called the "uncut parent" because it is not further split apart by the child subsplit.
-* The second chunk is called the "cut parent" because it is further split apart by the child subsplit.
-* The third chunk is called the "child," and it's well defined relative to the cut parent: the other part of the subsplit is the cut parent setminus the child.
+* PCSS stands for parent-child subsplit.
+  It's a general concept rather than a specific implementation of the concept.
+  For example, see the documentation of PCSSFun (in `node.hpp`) and PCSS Bitsets (in `bitset.hpp`) for two different ways of using this concept.
