@@ -179,7 +179,6 @@ struct SBNInstance {
     return results;
   }
 
-
   std::vector<std::vector<double>> BranchGradients() {
     if (beagle_instances_.size() == 0) {
       std::cerr << "Please add some BEAGLE instances that can be used for "

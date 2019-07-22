@@ -152,18 +152,20 @@ Tree::TreePtr PrepareTreeForLikelihood(Tree::TreePtr tree) {
 std::vector<double> BranchGradients(BeagleInstance beagle_instance,
                                     Tree::TreePtr tree) {
   tree = PrepareTreeForLikelihood(tree);
-  size_t fixed_node_index = tree->Topology()->Children()[1]->Index();
-  size_t root_child_index = tree->Topology()->Children()[0]->Index();
   tree->SlideRootPosition();
 
-  int branch_count = static_cast<int>(tree->BranchLengths().size());
   std::vector<BeagleOperation> operations;
 
-  std::vector<int> node_indices(branch_count);
+  std::vector<int> node_indices(tree->BranchLengths().size());
   std::iota(node_indices.begin(), node_indices.end(), 0);
 
-  std::vector<int> gradient_indices(branch_count);
-  std::iota(gradient_indices.begin(), gradient_indices.end(), branch_count);
+  std::vector<int> gradient_indices(tree->BranchLengths().size());
+  std::iota(gradient_indices.begin(), gradient_indices.end(),
+            tree->BranchLengths().size());
+
+  int branch_count = static_cast<int>(tree->BranchLengths().size());
+  int fixed_node_index = tree->Topology()->Children()[1]->Index();
+  int root_child_index = tree->Topology()->Children()[0]->Index();
 
   // Calculate lower partials
   tree->Topology()->BinaryIndexPostOrder(
