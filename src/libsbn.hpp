@@ -302,6 +302,7 @@ TEST_CASE("libsbn") {
       888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
   for (size_t i = 0; i < gradients.size(); i++) {
     CHECK_LT(abs(gradients[i] - physher_gradients[i]), 0.0001);
+  }
 
   inst.ProcessLoadedTrees();
   for (int i = 0; i < 10; i++) {
