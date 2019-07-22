@@ -12,7 +12,7 @@
 #include "node.hpp"
 #include "typedefs.hpp"
 
-class Tree : public std::enable_shared_from_this<Tree> {
+class Tree {
  public:
   typedef std::shared_ptr<Tree> TreePtr;
   typedef std::vector<TreePtr> TreePtrVector;
@@ -33,8 +33,8 @@ class Tree : public std::enable_shared_from_this<Tree> {
 
   bool operator==(const Tree& other);
 
-  std::string Newick(
-      TagStringMapOption node_labels = std::experimental::nullopt) const;
+  std::string Newick() const { return Newick(std::experimental::nullopt); }
+  std::string Newick(TagStringMapOption node_labels) const;
 
   double BranchLength(const Node* node) const;
 
@@ -47,7 +47,7 @@ class Tree : public std::enable_shared_from_this<Tree> {
   // (s1:b1, s2:b2):0):0. Note that we zero out the root branch length.
   TreePtr Detrifurcate();
   static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology);
-  static TreePtr OfIndexVector(std::vector<size_t> indices);
+  static Tree OfIndexVector(std::vector<size_t> indices);
   static TreePtrVector ExampleTrees();
 
   // We make branch lengths public so we can muck with them in Python.

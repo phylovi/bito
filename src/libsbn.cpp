@@ -29,9 +29,18 @@ PYBIND11_MODULE(sbn, m) {
             {sizeof(double)});                        // Stride
       });
   // Expose trees.
-  py::class_<Tree>(m, "Tree")
-      .def_readwrite("branch_lengths", &Tree::branch_lengths_)
-      .def_static("of_index_vector", &Tree::OfIndexVector);
+  py::class_<Tree>(m, "Tree", py::buffer_protocol())
+      .def_static("of_index_vector", &Tree::OfIndexVector)
+      .def_buffer([](Tree &tree) -> py::buffer_info {
+        return py::buffer_info(
+            tree.branch_lengths_.data(),              // Pointer to buffer
+            sizeof(double),                           // Size of one scalar
+            py::format_descriptor<double>::format(),  // See docs
+            1,                                        // Number of dimensions
+            {tree.branch_lengths_.size()},            // Buffer dimensions
+            {sizeof(double)});                        // Stride
+      });
+
   // Now we set things up our SBNInstance class.
   py::class_<SBNInstance>(m, "instance")
       // Constructors

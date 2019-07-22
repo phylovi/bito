@@ -69,10 +69,10 @@ Tree::TreePtr Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   return std::make_shared<Tree>(topology, branch_lengths);
 }
 
-Tree::TreePtr Tree::OfIndexVector(std::vector<size_t> indices) {
+Tree Tree::OfIndexVector(std::vector<size_t> indices) {
   auto topology = Node::OfIndexVector(indices);
   std::vector<double> branch_lengths(topology->Index() + 1, 1.);
-  return std::make_shared<Tree>(topology, std::move(branch_lengths));
+  return Tree(topology, std::move(branch_lengths));
 }
 
 Tree::TreePtrVector Tree::ExampleTrees() {
