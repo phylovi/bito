@@ -282,6 +282,14 @@ struct SBNInstance {
     CheckBeagleDimensions();
     return beagle::BranchGradients(beagle_instances_, tree_collection_);
   }
+
+  std::vector<Tree> Trees() {
+    std::vector<Tree> trees;
+    for(int i = 0; i < TreeCount(); i++){
+      trees.push_back(*tree_collection_->GetTree(i));
+    }
+    return trees;
+  }
 };
 
 // Here we initialize our static random number generator.
