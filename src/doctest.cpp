@@ -2,7 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include "doctest.h"
+#include <doctest.h>
 #include <string>
 #include "libsbn.hpp"
 
