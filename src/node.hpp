@@ -67,15 +67,11 @@ class Node {
   void PostOrder(std::function<void(const Node*)> f) const;
   void LevelOrder(std::function<void(const Node*)> f) const;
 
-  // Iterate f through (parent, sister, node) for internal nodes using a
-  // preorder traversal.
-  void TriplePreOrderInternal(
-      std::function<void(const Node*, const Node*, const Node*)> f) const;
-
   // Iterate f through (parent, sister, node) for bifurcating trees using a
   // preorder traversal.
   void TriplePreOrderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const;
+  // As above, but getting indices rather than nodes themselves.
   void TripleIndexPreOrderBifurcating(
       std::function<void(int, int, int)> f) const;
 
@@ -99,6 +95,9 @@ class Node {
       std::function<void(const Node*, const Node*, const Node*)> f_root,
       std::function<void(const Node*, const Node*, const Node*)> f_internal)
       const;
+  // This one is just the part of the above that's run for the internal nodes.
+  void TriplePreOrderInternal(
+      std::function<void(const Node*, const Node*, const Node*)> f) const;
 
   // See the typedef of PCSSFun to understand the argument type to this
   // function.
