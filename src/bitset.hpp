@@ -8,6 +8,7 @@
 #include <functional>
 #include <string>
 #include <vector>
+#include "optional.hpp"
 
 // A rewrite of the RbBitSet class from RevBayes by Sebastian Hoehna.
 // In general, I'm trying to follow the interface of std::bitset.
@@ -44,6 +45,7 @@ class Bitset {
   Bitset operator|(const Bitset &x) const;
   Bitset operator^(const Bitset &x) const;
   Bitset operator~() const;
+  Bitset operator+(const Bitset &x) const;
 
   void operator&=(const Bitset &other);
   void operator|=(const Bitset &other);
@@ -55,10 +57,31 @@ class Bitset {
   bool Any() const;
   void Minorize();
   void CopyFrom(const Bitset &other, size_t begin, bool flip);
+  // If the bitset only has one bit on, then we return the location of that bit.
+  // Otherwise, return nullopt.
+  std::experimental::optional<uint32_t> SingletonOption() const;
 
+  // These methods require the bitset to be a split bitset of even length.
+  // Flip the order of the two sides of a subsplit.
+  Bitset RotateSubsplit() const;
+  // Get the ith chunk of the subsplit.
+  Bitset SplitChunk(size_t i) const;
+  std::string ToStringChunked(size_t chunk_count) const;
+  std::string SubsplitToString() const;
+  // These functions require the bitset to be a PCSS bitset of length a multiple
+  // of 3.
   std::string PCSSToString() const;
   bool PCSSIsValid() const;
+  size_t PCSSChunkSize() const;
   Bitset PCSSChunk(size_t i) const;
+  Bitset PCSSParent() const;
+  Bitset PCSSChildSubsplit() const;
+
+  // ** Static methods
+  // Make the full subsplit out of the parent subsplit, whose second half is
+  // split by child_half.
+  static Bitset ChildSubsplit(const Bitset &parent_subsplit,
+                              const Bitset &child_half);
 
  private:
   std::vector<bool> value_;
@@ -118,6 +141,7 @@ TEST_CASE("Bitset") {
   CHECK_EQ((Bitset("1100") | Bitset("1010")), Bitset("1110"));
   CHECK_EQ((Bitset("1100") ^ Bitset("1010")), Bitset("0110"));
   CHECK_EQ(~Bitset("1010"), Bitset("0101"));
+  CHECK_EQ(Bitset("101") + Bitset("011"), Bitset("101011"));
   CHECK_EQ(std::min(Bitset("1100"), Bitset("1010")), Bitset("1010"));
 
   a &= Bitset("0110");
@@ -143,14 +167,26 @@ TEST_CASE("Bitset") {
   CHECK_EQ(a, Bitset("0101"));
 
   auto p = Bitset("000111");
+  CHECK_EQ(p.SplitChunk(0), Bitset("000"));
+  CHECK_EQ(p.SplitChunk(1), Bitset("111"));
   CHECK_EQ(p.PCSSChunk(0), Bitset("00"));
   CHECK_EQ(p.PCSSChunk(1), Bitset("01"));
   CHECK_EQ(p.PCSSChunk(2), Bitset("11"));
+
+  CHECK_EQ(Bitset("10011100").RotateSubsplit(), Bitset("11001001"));
 
   CHECK_EQ(Bitset("011101").PCSSIsValid(), false);
   CHECK_EQ(Bitset("000111").PCSSIsValid(), false);
   CHECK_EQ(Bitset("100100").PCSSIsValid(), false);
   CHECK_EQ(Bitset("100011001").PCSSIsValid(), true);
+
+  CHECK_EQ(Bitset("100011001").PCSSParent(), Bitset("100011"));
+  CHECK_EQ(Bitset("100011001").PCSSChildSubsplit(), Bitset("010001"));
+  CHECK_EQ(Bitset("100001110001").PCSSChildSubsplit(), Bitset("01100001"));
+
+  // parent clade is 1110, child is 0100, so child subsplit is 1010|0100.
+  CHECK_EQ(Bitset::ChildSubsplit(Bitset("00011110"), Bitset("0100")),
+           Bitset("10100100"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

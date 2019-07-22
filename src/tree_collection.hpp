@@ -53,7 +53,11 @@ TEST_CASE("TopologyCounter") {
   auto counter = collection.TopologyCounter();
   std::unordered_map<std::string, uint32_t> counted;
   for (const auto &iter : counter) {
-    assert(counted.insert({iter.first->Newick(), iter.second}).second);
+    assert(counted
+               .insert({iter.first->Newick(std::experimental::nullopt,
+                                           std::experimental::nullopt, true),
+                        iter.second})
+               .second);
   }
   std::unordered_map<std::string, uint32_t> counted_correct(
       {{"(0_1,1_1,(2_1,3_1)3_2)3_4;", 2},

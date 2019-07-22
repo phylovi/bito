@@ -81,10 +81,9 @@ int CreateInstance(int tip_count, int alignment_length,
 }
 
 BeagleInstance CreateInstance(const Alignment &alignment) {
-  BeagleInstanceDetails *return_info = new BeagleInstanceDetails();
-  // Not worrying about freeing this return_info.
+  BeagleInstanceDetails return_info;
   return CreateInstance(static_cast<int>(alignment.SequenceCount()),
-                        static_cast<int>(alignment.Length()), return_info);
+                        static_cast<int>(alignment.Length()), &return_info);
 }
 
 void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,

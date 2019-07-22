@@ -258,18 +258,22 @@ TagSizeMap Node::Reindex() {
 }
 
 std::string Node::Newick(const DoubleVectorOption& branch_lengths,
-                         const TagStringMapOption& node_labels) const {
-  return NewickAux(branch_lengths, node_labels) + ";";
+                         const TagStringMapOption& node_labels,
+                         bool show_tags) const {
+  return NewickAux(branch_lengths, node_labels, show_tags) + ";";
 }
 
 std::string Node::NewickAux(const DoubleVectorOption& branch_lengths,
-                            const TagStringMapOption& node_labels) const {
+                            const TagStringMapOption& node_labels,
+                            bool show_tags) const {
   std::string str;
   if (IsLeaf()) {
     if (node_labels) {
       str.assign((*node_labels).at(Tag()));
-    } else {
+    } else if (show_tags) {
       str.assign(TagString());
+    } else {
+      str.assign(std::to_string(MaxLeafID()));
     }
   } else {
     str.assign("(");
@@ -277,13 +281,10 @@ std::string Node::NewickAux(const DoubleVectorOption& branch_lengths,
       if (iter != children_.begin()) {
         str.append(",");
       }
-      str.append((*iter)->NewickAux(branch_lengths, node_labels));
+      str.append((*iter)->NewickAux(branch_lengths, node_labels, show_tags));
     }
     str.append(")");
-    if (!node_labels) {
-      // If node_labels are not included then we figure that the discrete
-      // structure of the tree is of interest. Thus we write out the tags as
-      // internal nodes of the tree.
+    if (show_tags) {
       str.append(TagString());
     }
   }

@@ -1,3 +1,4 @@
+import json
 import numpy as np
 import sbn
 
@@ -9,22 +10,29 @@ def test_instance():
     assert inst.tree_count() == 4
     inst.process_loaded_trees()
 
-    print(inst.get_rootsplit_indexer())
-    print(inst.get_pcss_indexer())
+    [indexer, range_indexer] = inst.get_indexers()
 
     sbn_probs = np.array(inst.sbn_probs, copy=False)
     sbn_probs[3] = 3.14159265359
-    print(sbn_probs)
-    print(inst.sbn_total_prob())
+
+    # print(sbn_probs)
+    # print(inst.sbn_total_prob())
+
+    def convert_dict_to_int(d):
+        return {k: int(v) for k, v in d.items()}
 
     [rootsplit_support, subsplit_support] = inst.split_counters()
-    with open('_build/support.txt', 'w') as fp:
-        for support in [rootsplit_support, subsplit_support]:
-            support_list = list(support.keys())
-            support_list.sort()
-            for support in support_list:
-                fp.write(support + '\n')
-            fp.write('\n')
+    # with open('data/DS1.subsampled_10.t_support.json') as fp:
+    with open('data/five_taxon_support.json') as fp:
+        supports = json.load(fp)
+        vbpi_rootsplit_supp_dict = convert_dict_to_int(
+            supports["rootsplit_supp_dict"])
+        vbpi_subsplit_supp_dict = {
+            ss: convert_dict_to_int(d)
+            for ss, d in supports["subsplit_supp_dict"].items()
+        }
+    assert rootsplit_support == vbpi_rootsplit_supp_dict
+    assert subsplit_support == vbpi_subsplit_supp_dict
 
     inst.read_nexus_file('data/DS1.subsampled_10.t')
     inst.read_fasta_file('data/DS1.fasta')

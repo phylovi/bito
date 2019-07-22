@@ -109,10 +109,12 @@ class Node {
 
   std::string Newick(
       const DoubleVectorOption& branch_lengths = std::experimental::nullopt,
-      const TagStringMapOption& node_labels = std::experimental::nullopt) const;
+      const TagStringMapOption& node_labels = std::experimental::nullopt,
+      bool show_tags = false) const;
 
   std::string NewickAux(const DoubleVectorOption& branch_lengths,
-                        const TagStringMapOption& node_labels) const;
+                        const TagStringMapOption& node_labels,
+                        bool show_tags) const;
 
   // ** Class methods
   static NodePtr Leaf(uint32_t id);

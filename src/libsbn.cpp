@@ -43,8 +43,7 @@ PYBIND11_MODULE(sbn, m) {
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
       .def("branch_gradients", &SBNInstance::BranchGradients)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
-      .def("get_rootsplit_indexer", &SBNInstance::GetRootsplitIndexer)
-      .def("get_pcss_indexer", &SBNInstance::GetPCSSIndexer)
+      .def("get_indexers", &SBNInstance::GetIndexers)
       .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
       // Member Variables
       .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);

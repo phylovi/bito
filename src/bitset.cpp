@@ -98,6 +98,13 @@ Bitset Bitset::operator~() const {
   return r;
 }
 
+Bitset Bitset::operator+(const Bitset& other) const {
+  Bitset sum(value_.size() + other.size());
+  sum.CopyFrom(*this, 0, false);
+  sum.CopyFrom(other, value_.size(), false);
+  return sum;
+}
+
 void Bitset::operator&=(const Bitset& other) {
   assert(value_.size() == other.size());
   for (size_t i = 0; i < value_.size(); i++) {
@@ -158,10 +165,50 @@ void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
   }
 }
 
-std::string Bitset::PCSSToString() const {
-  // PCSS Bitsets must be a multiple of 3 in length.
-  assert(size() % 3 == 0);
-  size_t chunk_size = size() / 3;
+std::experimental::optional<uint32_t> Bitset::SingletonOption() const {
+  bool found_already = false;
+  uint32_t found_index;
+  for (uint32_t i = 0; i < size(); i++) {
+    if (value_[i]) {
+      if (found_already) {
+        // We previously found an index, so this isn't a singleton.
+        return std::experimental::nullopt;
+      }  // else
+      found_already = true;
+      found_index = i;
+    }
+  }
+  if (found_already) {
+    return found_index;
+  }  // else
+  return std::experimental::nullopt;
+}
+
+// ** SBN-related functions
+
+Bitset Bitset::RotateSubsplit() const {
+  assert(size() % 2 == 0);
+  Bitset exchanged(size());
+  size_t chunk_size = size() / 2;
+  for (size_t i = 0; i < chunk_size; i++) {
+    exchanged.set(i, value_[i + chunk_size]);
+    exchanged.set(i + chunk_size, value_[i]);
+  }
+  return exchanged;
+}
+
+Bitset Bitset::SplitChunk(size_t i) const {
+  assert(size() % 2 == 0);
+  assert(i < 2);
+  size_t chunk_size = size() / 2;
+  std::vector<bool> new_value(value_.begin() + int32_t(i * chunk_size),
+                              value_.begin() + int32_t((i + 1) * chunk_size));
+  return Bitset(new_value);
+}
+
+std::string Bitset::ToStringChunked(size_t chunk_count) const {
+  assert(size() % chunk_count == 0);
+  size_t chunk_size = size() / chunk_count;
   std::string str;
   for (size_t i = 0; i < value_.size(); ++i) {
     str += (value_[i] ? '1' : '0');
@@ -173,12 +220,37 @@ std::string Bitset::PCSSToString() const {
   return str;
 }
 
-Bitset Bitset::PCSSChunk(size_t i) const {
+std::string Bitset::SubsplitToString() const { return ToStringChunked(2); }
+std::string Bitset::PCSSToString() const { return ToStringChunked(3); }
+
+size_t Bitset::PCSSChunkSize() const {
   assert(size() % 3 == 0);
-  assert(i < 3);
-  size_t chunk_size = size() / 3;
+  return size() / 3;
+}
+
+Bitset Bitset::PCSSChunk(size_t i) const {
+  size_t chunk_size = PCSSChunkSize();
   std::vector<bool> new_value(value_.begin() + int32_t(i * chunk_size),
                               value_.begin() + int32_t((i + 1) * chunk_size));
+  return Bitset(new_value);
+}
+
+Bitset Bitset::PCSSParent() const {
+  size_t chunk_size = PCSSChunkSize();
+  std::vector<bool> new_value(value_.begin(),
+                              value_.begin() + int32_t(2 * chunk_size));
+  return Bitset(new_value);
+}
+
+Bitset Bitset::PCSSChildSubsplit() const {
+  size_t chunk_size = PCSSChunkSize();
+  std::vector<bool> new_value(value_.begin() + int32_t(chunk_size),
+                              value_.begin() + int32_t(3 * chunk_size));
+  for (size_t i = 0; i < chunk_size; i++) {
+    // If A is the child clade, and B is one half of the child split, take the
+    // things that are in A but not in B.
+    new_value[i] = new_value[i] && !(new_value[i + chunk_size]);
+  }
   return Bitset(new_value);
 }
 
@@ -201,4 +273,16 @@ bool Bitset::PCSSIsValid() const {
     return false;
   }
   return true;
+}
+
+Bitset Bitset::ChildSubsplit(const Bitset& parent_subsplit,
+                             const Bitset& child_half) {
+  size_t taxon_count = child_half.size();
+  Bitset result(2 * taxon_count);
+  assert(result.size() == parent_subsplit.size());
+  for (size_t i = 0; i < taxon_count; i++) {
+    result.set(i, parent_subsplit[taxon_count + i] ^ child_half[i]);
+    result.set(i + taxon_count, child_half[i]);
+  }
+  return result;
 }
