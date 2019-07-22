@@ -78,6 +78,26 @@ void Node::PreOrder(std::function<void(const Node*)> f) const {
   }
 }
 
+void Node::PostOrder(std::function<void(const Node*)> f) const {
+  for (const auto& child : children_) {
+    child->PostOrder(f);
+  }
+  f(this);
+}
+
+void Node::LevelOrder(std::function<void(const Node*)> f) const {
+  std::deque<const Node*> to_visit = {this};
+  while (to_visit.size()) {
+    auto n = to_visit.front();
+    f(n);
+    to_visit.pop_front();
+
+    for (const auto& child : n->children_) {
+      to_visit.push_back(child.get());
+    }
+  }
+}
+
 // Iterate f through (parent, sister, node) for bifurcating trees using a
 // preorder traversal.
 void Node::TriplePreOrderBifurcating(
@@ -122,19 +142,16 @@ static std::function<void(const Node*)> const BinaryIndexInfix(
   };
 }
 
-// These two functions take functions accepting triples of (node_index,
-// child0_index, child1_index) and apply them according to various traversals.
 void Node::BinaryIndexPreOrder(
     const std::function<void(int, int, int)> f) const {
   PreOrder(BinaryIndexInfix(f));
 }
+
 void Node::BinaryIndexPostOrder(
     const std::function<void(int, int, int)> f) const {
   PostOrder(BinaryIndexInfix(f));
 }
 
-// Iterate f through (parent, sister, node) for internal nodes using a
-// preorder traversal.
 void Node::TriplePreOrderInternal(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
   if (!IsLeaf()) {
@@ -214,26 +231,6 @@ void Node::PCSSPreOrder(PCSSFun f) const {
           f(child0, false, node, true, sister, false, parent, true);
         }
       });
-}
-
-void Node::PostOrder(std::function<void(const Node*)> f) const {
-  for (const auto& child : children_) {
-    child->PostOrder(f);
-  }
-  f(this);
-}
-
-void Node::LevelOrder(std::function<void(const Node*)> f) const {
-  std::deque<const Node*> to_visit = {this};
-  while (to_visit.size()) {
-    auto n = to_visit.front();
-    f(n);
-    to_visit.pop_front();
-
-    for (const auto& child : n->children_) {
-      to_visit.push_back(child.get());
-    }
-  }
 }
 
 // This function assigns indices to the nodes of the topology: the leaves get
