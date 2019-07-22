@@ -149,8 +149,8 @@ Tree::TreePtr PrepareTreeForLikelihood(Tree::TreePtr tree) {
 
 // Compute first derivative of the log likelihood with respect to each branch
 // length, as a vector of first derivatives indexed by node index.
-std::vector<double> BranchGradients(Tree::TreePtr tree,
-                                    BeagleInstance beagle_instance) {
+std::vector<double> BranchGradients(BeagleInstance beagle_instance,
+                                    Tree::TreePtr tree) {
   tree = PrepareTreeForLikelihood(tree);
   size_t fixed_node_index = tree->Topology()->Children()[1]->Index();
   size_t root_child_index = tree->Topology()->Children()[0]->Index();
@@ -268,7 +268,7 @@ std::vector<double> BranchGradients(Tree::TreePtr tree,
   return derivatives;
 }
 
-double LogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance) {
+double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree) {
   tree = PrepareTreeForLikelihood(tree);
   std::vector<BeagleOperation> operations;
   tree->Topology()->PostOrder([&operations](const Node *node) {
@@ -318,8 +318,15 @@ std::vector<double> LogLikelihoods(
     TreeCollection::TreeCollectionPtr tree_collection) {
   std::vector<double> results;
   for (const auto &tree : tree_collection->Trees()) {
-    results.push_back(LogLikelihood(tree, beagle_instance));
+    results.push_back(LogLikelihood(beagle_instance, tree));
   }
+
+  // std::vector<double> LogLikelihoods(
+  //     std::vector<BeagleInstance> beagle_instances,
+  //     TreeCollection::TreeCollectionPtr tree_collection) {
+  //   return Parallelize(LogLikelihood, beagle_instances, tree_collection);
+  // }
+
   return results;
 }
 

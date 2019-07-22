@@ -36,16 +36,16 @@ void PrepareBeagleInstance(
 void SetJCModel(BeagleInstance beagle_instance);
 
 template <typename T>
-T Parallelize(std::function<T(Tree::TreePtr, beagle::BeagleInstance)> f,
-              TreeCollection::TreeCollectionPtr tree_collection,
-              std::vector<beagle::BeagleInstance> beagle_instances) {
+std::vector<T> Parallelize(std::function<T(BeagleInstance, Tree::TreePtr)> f,
+                           std::vector<BeagleInstance> beagle_instances,
+                           TreeCollection::TreeCollectionPtr tree_collection) {
   if (beagle_instances.size() == 0) {
     std::cerr << "Please add some BEAGLE instances that can be used for "
                  "computation.\n";
     abort();
   }
-  std::vector<double> results(tree_collection->TreeCount());
-  std::queue<beagle::BeagleInstance> instance_queue;
+  std::vector<T> results(tree_collection->TreeCount());
+  std::queue<BeagleInstance> instance_queue;
   for (auto instance : beagle_instances) {
     instance_queue.push(instance);
   }
@@ -53,25 +53,23 @@ T Parallelize(std::function<T(Tree::TreePtr, beagle::BeagleInstance)> f,
   for (size_t i = 0; i < tree_collection->TreeCount(); i++) {
     tree_number_queue.push(i);
   }
-  TaskProcessor<beagle::BeagleInstance, size_t> task_processor(
+  TaskProcessor<BeagleInstance, size_t> task_processor(
       instance_queue, tree_number_queue,
-      [&results, &tree_collection, &f](beagle::BeagleInstance beagle_instance,
+      [&results, &tree_collection, &f](BeagleInstance beagle_instance,
                                        size_t tree_number) {
         results[tree_number] =
-            f(tree_collection->GetTree(tree_number), beagle_instance);
+            f(beagle_instance, tree_collection->GetTree(tree_number));
       });
   return results;
 }
 
-double LogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance);
-
-std::vector<double> BranchGradients(Tree::TreePtr tree,
-                                    BeagleInstance beagle_instance);
-
-double LogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance);
+double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree);
 std::vector<double> LogLikelihoods(
-    BeagleInstance beagle_instance,
+    std::vector<BeagleInstance> beagle_instances,
     TreeCollection::TreeCollectionPtr tree_collection);
+
+std::vector<double> BranchGradients(BeagleInstance beagle_instance,
+                                    Tree::TreePtr tree);
 
 }  // namespace beagle
 
@@ -82,6 +80,8 @@ TEST_CASE("Beagle") {
       beagle::SymbolVectorOf("-tgcaTGCA", symbol_table);
   SymbolVector correct_symbol_vector = {4, 3, 2, 1, 0, 3, 2, 1, 0};
   CHECK_EQ(symbol_vector, correct_symbol_vector);
+
+  // The real tests are in libsbn.hpp, where we have access to tree parsing.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_BEAGLE_HPP_

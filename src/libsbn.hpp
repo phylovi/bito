@@ -174,7 +174,7 @@ struct SBNInstance {
         [&results, &tree_collection = tree_collection_ ](
             beagle::BeagleInstance beagle_instance, size_t tree_number) {
           results[tree_number] = beagle::LogLikelihood(
-              tree_collection->GetTree(tree_number), beagle_instance);
+              beagle_instance, tree_collection->GetTree(tree_number));
         });
     return results;
   }
@@ -197,7 +197,7 @@ struct SBNInstance {
         [&results, &tree_collection = tree_collection_ ](
             beagle::BeagleInstance beagle_instance, size_t tree_number) {
           results[tree_number] = beagle::BranchGradients(
-              tree_collection->GetTree(tree_number), beagle_instance);
+              beagle_instance, tree_collection->GetTree(tree_number));
         });
     return results;
   }
