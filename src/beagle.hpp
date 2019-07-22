@@ -4,11 +4,14 @@
 #ifndef SRC_BEAGLE_HPP_
 #define SRC_BEAGLE_HPP_
 
+#include <functional>
+#include <queue>
 #include <string>
 #include <vector>
 #include "alignment.hpp"
 #include "intpack.hpp"
 #include "libhmsbeagle/beagle.h"
+#include "task_processor.hpp"
 #include "tree_collection.hpp"
 #include "typedefs.hpp"
 
@@ -31,6 +34,34 @@ void PrepareBeagleInstance(
     const TreeCollection::TreeCollectionPtr &tree_collection,
     const Alignment &alignment, const CharIntMap &symbol_table);
 void SetJCModel(BeagleInstance beagle_instance);
+
+template <typename T>
+T Parallelize(std::function<T(Tree::TreePtr, beagle::BeagleInstance)> f,
+              TreeCollection::TreeCollectionPtr tree_collection,
+              std::vector<beagle::BeagleInstance> beagle_instances) {
+  if (beagle_instances.size() == 0) {
+    std::cerr << "Please add some BEAGLE instances that can be used for "
+                 "computation.\n";
+    abort();
+  }
+  std::vector<double> results(tree_collection->TreeCount());
+  std::queue<beagle::BeagleInstance> instance_queue;
+  for (auto instance : beagle_instances) {
+    instance_queue.push(instance);
+  }
+  std::queue<size_t> tree_number_queue;
+  for (size_t i = 0; i < tree_collection->TreeCount(); i++) {
+    tree_number_queue.push(i);
+  }
+  TaskProcessor<beagle::BeagleInstance, size_t> task_processor(
+      instance_queue, tree_number_queue,
+      [&results, &tree_collection, &f](beagle::BeagleInstance beagle_instance,
+                                       size_t tree_number) {
+        results[tree_number] =
+            f(tree_collection->GetTree(tree_number), beagle_instance);
+      });
+  return results;
+}
 
 double LogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance);
 
