@@ -29,4 +29,4 @@ def test_instance():
     inst.read_nexus_file('data/DS1.subsampled_10.t')
     inst.read_fasta_file('data/DS1.fasta')
     inst.make_beagle_instances(2)
-    print(np.array(inst.tree_log_likelihoods()))
+    print(np.array(inst.log_likelihoods()))

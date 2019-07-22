@@ -157,26 +157,8 @@ struct SBNInstance {
     return tree_number_queue;
   }
 
-  std::vector<double> TreeLogLikelihoods() {
-    if (beagle_instances_.size() == 0) {
-      std::cerr << "Please add some BEAGLE instances that can be used for "
-                   "computation.\n";
-      abort();
-    }
-    std::vector<double> results(tree_collection_->TreeCount());
-    std::queue<beagle::BeagleInstance> instance_queue;
-    for (auto instance : beagle_instances_) {
-      instance_queue.push(instance);
-    }
-    std::queue<size_t> tree_number_queue = CreateTreeNumberQueue();
-    TaskProcessor<beagle::BeagleInstance, size_t> task_processor(
-        instance_queue, tree_number_queue,
-        [&results, &tree_collection = tree_collection_ ](
-            beagle::BeagleInstance beagle_instance, size_t tree_number) {
-          results[tree_number] = beagle::LogLikelihood(
-              beagle_instance, tree_collection->GetTree(tree_number));
-        });
-    return results;
+  std::vector<double> LogLikelihoods() {
+    return beagle::LogLikelihoods(beagle_instances_, tree_collection_);
   }
 
   std::vector<std::vector<double>> BranchGradients() {
@@ -210,13 +192,13 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
   inst.MakeBeagleInstances(2);
-  for (auto ll : inst.TreeLogLikelihoods()) {
+  for (auto ll : inst.LogLikelihoods()) {
     CHECK_LT(abs(ll - -84.852358), 0.000001);
   }
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
   inst.MakeBeagleInstances(2);
-  auto likelihoods = inst.TreeLogLikelihoods();
+  auto likelihoods = inst.LogLikelihoods();
   std::vector<double> pybeagle_likelihoods(
       {-14582.995273982739, -6911.294207416366, -6916.880235529542,
        -6904.016888831189, -6915.055570693576, -6915.50496696512,
