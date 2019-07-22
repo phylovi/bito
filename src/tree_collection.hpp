@@ -33,6 +33,11 @@ class TreeCollection {
 
   std::vector<std::string> TaxonNames();
 
+  static TreeCollection Singleton(Tree tree) {
+    std::vector<Tree::TreePtr> single_tree({std::make_shared<Tree>(tree)});
+    return TreeCollection(single_tree);
+  }
+
  private:
   Tree::TreePtrVector trees_;
   TagStringMap tag_taxon_map_;

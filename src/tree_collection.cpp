@@ -46,7 +46,11 @@ bool TreeCollection::operator==(const TreeCollection &other) {
 std::string TreeCollection::Newick() const {
   std::string str;
   for (const auto &tree : trees_) {
-    str.append(tree->Newick(tag_taxon_map_));
+    if (tag_taxon_map_.size()) {
+      str.append(tree->Newick(tag_taxon_map_));
+    } else {
+      str.append(tree->Newick());
+    }
     str.push_back('\n');
   }
   return str;

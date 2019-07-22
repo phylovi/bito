@@ -28,7 +28,7 @@ PYBIND11_MODULE(sbn, m) {
             {v.size()},                               // Buffer dimensions
             {sizeof(double)});                        // Stride
       });
-  // Expose trees.
+  // Tree
   py::class_<Tree>(m, "Tree", py::buffer_protocol())
       .def_static("of_index_vector", &Tree::OfIndexVector)
       .def_buffer([](Tree &tree) -> py::buffer_info {
@@ -40,7 +40,10 @@ PYBIND11_MODULE(sbn, m) {
             {tree.branch_lengths_.size()},            // Buffer dimensions
             {sizeof(double)});                        // Stride
       });
-
+  // TreeCollection
+  py::class_<TreeCollection>(m, "TreeCollection")
+      .def("newick", &TreeCollection::Newick)
+      .def_static("singleton", &TreeCollection::Singleton);
   // Now we set things up our SBNInstance class.
   py::class_<SBNInstance>(m, "instance")
       // Constructors

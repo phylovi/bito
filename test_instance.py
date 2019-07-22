@@ -47,6 +47,8 @@ def test_instance():
     t = sbn.Tree.of_index_vector([6, 5, 4, 4, 5, 6])
     branch_lengths = np.array(t, copy=False)
     branch_lengths[0] = 3.14159265359
-#    print(t.newick())
+
+    tree_collection = sbn.TreeCollection.singleton(t)
+    print(tree_collection.newick())
 
 
