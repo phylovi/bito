@@ -38,6 +38,8 @@ class Tree {
 
   double BranchLength(const Node* node) const;
 
+  // Take a bifurcating tree and move the root position so that the left hand
+  // branch has zero branch length. Modifies tree in place.
   void SlideRootPosition();
 
   // Returns a new version of this tree without a trifurcation at the root,

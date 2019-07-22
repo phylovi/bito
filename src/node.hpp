@@ -87,7 +87,6 @@ class Node {
   void PostOrder(std::function<void(const Node*)> f) const;
   void LevelOrder(std::function<void(const Node*)> f) const;
 
-  //	static std::function<void(const Node*)> const Node::BinaryIndexInfix;
   // These two functions take functions accepting triples of (node_index,
   // child0_index, child1_index) and apply them according to various traversals.
   void BinaryIndexPreOrder(const std::function<void(int, int, int)> f) const;
