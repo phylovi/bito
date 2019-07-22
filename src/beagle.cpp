@@ -315,20 +315,10 @@ double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree) {
   return log_like;
 }
 
-// std::vector<double> LogLikelihoods(
-//     BeagleInstance beagle_instance,
-//     TreeCollection::TreeCollectionPtr tree_collection) {
-//   std::vector<double> results;
-//   for (const auto &tree : tree_collection->Trees()) {
-//     results.push_back(LogLikelihood(beagle_instance, tree));
-//   }
-// return results;
-// }
-
 std::vector<double> LogLikelihoods(
     std::vector<BeagleInstance> beagle_instances,
     TreeCollection::TreeCollectionPtr tree_collection) {
-  return Parallelize(LogLikelihood, beagle_instances, tree_collection);
+  return Parallelize<double>(LogLikelihood, beagle_instances, tree_collection);
 }
 
 
