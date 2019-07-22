@@ -188,7 +188,8 @@ void Node::TriplePreOrder(
 }
 
 // See the typedef of PCSSFun to understand the argument type to this
-// function.
+// function, and `doc/pcss.svg` for a diagram that will greatly help you
+// understand the implementation.
 void Node::PCSSPreOrder(PCSSFun f) const {
   this->TriplePreOrder(
       // f_root
