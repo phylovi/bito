@@ -149,6 +149,14 @@ struct SBNInstance {
     }
   }
 
+  std::queue<size_t> CreateTreeNumberQueue() {
+    std::queue<size_t> tree_number_queue;
+    for (size_t i = 0; i < tree_collection_->TreeCount(); i++) {
+      tree_number_queue.push(i);
+    }
+    return tree_number_queue;
+  }
+
   std::vector<double> TreeLogLikelihoods() {
     if (beagle_instances_.size() == 0) {
       std::cerr << "Please add some BEAGLE instances that can be used for "
@@ -165,19 +173,12 @@ struct SBNInstance {
         instance_queue, tree_number_queue,
         [&results, &tree_collection = tree_collection_ ](
             beagle::BeagleInstance beagle_instance, size_t tree_number) {
-          results[tree_number] = beagle::TreeLogLikelihood(
+          results[tree_number] = beagle::LogLikelihood(
               tree_collection->GetTree(tree_number), beagle_instance);
         });
     return results;
   }
 
-  std::queue<size_t> CreateTreeNumberQueue() {
-    std::queue<size_t> tree_number_queue;
-    for (size_t i = 0; i < tree_collection_->TreeCount(); i++) {
-      tree_number_queue.push(i);
-    }
-    return tree_number_queue;
-  }
 
   std::vector<std::vector<double>> BranchGradients() {
     if (beagle_instances_.size() == 0) {
@@ -195,7 +196,7 @@ struct SBNInstance {
         instance_queue, tree_number_queue,
         [&results, &tree_collection = tree_collection_ ](
             beagle::BeagleInstance beagle_instance, size_t tree_number) {
-          results[tree_number] = beagle::BifurcatingTreeBranchGradients(
+          results[tree_number] = beagle::BranchGradients(
               tree_collection->GetTree(tree_number), beagle_instance);
         });
     return results;
@@ -226,11 +227,11 @@ TEST_CASE("libsbn") {
     CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
 
-  // test only the last one
+  // Test only the last one.
   auto gradients = inst.BranchGradients().back();
   std::sort(gradients.begin(), gradients.end());
-  // zeros are for the root and one of the descent of the root
-  std::vector<double> physher_grads = {
+  // Zeros are for the root and one of the descendants of the root.
+  std::vector<double> physher_gradients = {
       -904.18956, -607.70500, -562.36274, -553.63315, -542.26058, -539.64210,
       -463.36511, -445.32555, -414.27197, -412.84218, -399.15359, -342.68038,
       -306.23644, -277.05392, -258.73681, -175.07391, -171.59627, -168.57646,
@@ -241,7 +242,7 @@ TEST_CASE("libsbn") {
       450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
       888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
   for (size_t i = 0; i < gradients.size(); i++) {
-    CHECK_LT(abs(gradients[i] - physher_grads[i]), 0.0001);
+    CHECK_LT(abs(gradients[i] - physher_gradients[i]), 0.0001);
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

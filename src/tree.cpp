@@ -46,14 +46,11 @@ double Tree::BranchLength(const Node* node) const {
   return branch_lengths_[node->Index()];
 }
 
-// Remove trifurcation at the root and make it a bifurcation.
-// Given (s0:b0, s1:b1, s2:b2):b4, we get (s0:b0, (s1:b1, s2:b2):0):0.
-// Note that we zero out the root branch length.
 Tree::TreePtr Tree::Detrifurcate() {
   if (Children().size() != 3) {
     std::cerr << "Detrifurcate given a non-trifurcating tree.\n";
     abort();
-  }
+  }  // else
   auto branch_lengths = BranchLengths();
   auto our_index = Index();
   auto root12 = Node::Join(Children()[1], Children()[2], our_index);

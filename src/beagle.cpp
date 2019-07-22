@@ -41,7 +41,7 @@ SymbolVector SymbolVectorOf(const std::string &str,
 int CreateInstance(int tip_count, int alignment_length,
                    BeagleInstanceDetails *return_info) {
   // Number of partial buffers to create (input) -- internal node count
-  // tip_count-1 for lower partials (internal nodes only)
+  // tip_count - 1 for lower partials (internal nodes only)
   // 2*tip_count - 2 for upper partials (every node except the root)
   int partials_buffer_count = 3 * tip_count - 3;
   // Number of compact state representation buffers to create -- for use with
@@ -134,20 +134,24 @@ void SetJCModel(BeagleInstance beagle_instance) {
                               eval.data());
 }
 
-/**
- * Compute first derivative of the log likelihood with respect to each branch
- * length.
- *
- * param tree
- * param beagle_instance
- * return vector of first derivatives indexed by node index
- */
-std::vector<double> BifurcatingTreeBranchGradients(
-    Tree::TreePtr atree, BeagleInstance beagle_instance) {
-  Tree::TreePtr tree = atree;
-  if (atree->Children().size() == 3) {
-    tree = atree->Detrifurcate();
+Tree::TreePtr PrepareTreeForLikelihood(Tree::TreePtr tree) {
+  if (tree->Children().size() == 3) {
+    return tree->Detrifurcate();
+  }  // else
+  if (tree->Children().size() == 2) {
+    return tree;
   }
+  // else
+  std::cerr << "Tree likelihood calculations should be done on a tree with a "
+               "bifurcation or a trifurcation at the root.";
+  abort();
+}
+
+// Compute first derivative of the log likelihood with respect to each branch
+// length, as a vector of first derivatives indexed by node index.
+std::vector<double> BranchGradients(Tree::TreePtr tree,
+                                    BeagleInstance beagle_instance) {
+  tree = PrepareTreeForLikelihood(tree);
   size_t fixed_node_index = tree->Topology()->Children()[1]->Index();
   size_t root_child_index = tree->Topology()->Children()[0]->Index();
   tree->SlideRootPosition();
@@ -264,8 +268,8 @@ std::vector<double> BifurcatingTreeBranchGradients(
   return derivatives;
 }
 
-double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
-                                    BeagleInstance beagle_instance) {
+double LogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance) {
+  tree = PrepareTreeForLikelihood(tree);
   std::vector<BeagleOperation> operations;
   tree->Topology()->PostOrder([&operations](const Node *node) {
     if (!node->IsLeaf()) {
@@ -309,26 +313,12 @@ double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
   return log_like;
 }
 
-double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance) {
-  if (tree->Children().size() == 2) {
-    return BifurcatingTreeLogLikelihood(tree, beagle_instance);
-  }
-  // else
-  if (tree->Children().size() == 3) {
-    return BifurcatingTreeLogLikelihood(tree->Detrifurcate(), beagle_instance);
-  }
-  // else
-  std::cerr << "Tree likelihood calculations should be done on a tree with a "
-               "bifurcation or a trifurcation at the root.";
-  abort();
-}
-
-std::vector<double> TreeLogLikelihoods(
+std::vector<double> LogLikelihoods(
     BeagleInstance beagle_instance,
     TreeCollection::TreeCollectionPtr tree_collection) {
   std::vector<double> results;
   for (const auto &tree : tree_collection->Trees()) {
-    results.push_back(TreeLogLikelihood(tree, beagle_instance));
+    results.push_back(LogLikelihood(tree, beagle_instance));
   }
   return results;
 }

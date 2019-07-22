@@ -32,16 +32,16 @@ void PrepareBeagleInstance(
     const Alignment &alignment, const CharIntMap &symbol_table);
 void SetJCModel(BeagleInstance beagle_instance);
 
-double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
+double LogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance);
+
+std::vector<double> BranchGradients(Tree::TreePtr tree,
                                     BeagleInstance beagle_instance);
 
-std::vector<double> BifurcatingTreeBranchGradients(
-    Tree::TreePtr tree, BeagleInstance beagle_instance);
-
-double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance);
-std::vector<double> TreeLogLikelihoods(
+double LogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance);
+std::vector<double> LogLikelihoods(
     BeagleInstance beagle_instance,
     TreeCollection::TreeCollectionPtr tree_collection);
+
 }  // namespace beagle
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
