@@ -38,9 +38,13 @@ class Tree {
 
   double BranchLength(const Node* node) const;
 
-  // Remove trifurcation at the root and make it a bifurcation.
-  // Given (s0:b0, s1:b1, s2:b2):b4, we get (s0:b0, (s1:b1, s2:b2):0):0.
-  // Note that we zero out the root branch length.
+  // Take a bifurcating tree and move the root position so that the left hand
+  // branch has zero branch length. Modifies tree in place.
+  void SlideRootPosition();
+
+  // Returns a new version of this tree without a trifurcation at the root,
+  // making it a bifurcation. Given (s0:b0, s1:b1, s2:b2):b4, we get (s0:b0,
+  // (s1:b1, s2:b2):0):0. Note that we zero out the root branch length.
   TreePtr Detrifurcate();
   static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology);
   static TreePtrVector ExampleTrees();
@@ -62,7 +66,10 @@ inline bool operator!=(const Tree::TreePtr& lhs, const Tree::TreePtr& rhs) {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Tree") {
   auto trees = Tree::ExampleTrees();
+  auto original_newick = trees[0]->Newick();
   CHECK_EQ(trees[0]->Detrifurcate()->Topology(), trees[3]->Topology());
+  // Shows that Detrifurcate doesn't change the original tree.
+  CHECK_EQ(original_newick, trees[0]->Newick());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_TREE_HPP_

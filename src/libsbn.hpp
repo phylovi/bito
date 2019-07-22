@@ -6,8 +6,8 @@
 
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
+#include <algorithm>
 #include <cmath>
-#include <queue>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -16,7 +16,6 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
-#include "task_processor.hpp"
 #include "tree.hpp"
 
 namespace py = pybind11;
@@ -149,29 +148,12 @@ struct SBNInstance {
     }
   }
 
-  std::vector<double> TreeLogLikelihoods() {
-    if (beagle_instances_.size() == 0) {
-      std::cerr << "Please add some BEAGLE instances that can be used for "
-                   "computation.\n";
-      abort();
-    }
-    std::vector<double> results(tree_collection_->TreeCount());
-    std::queue<beagle::BeagleInstance> instance_queue;
-    for (auto instance : beagle_instances_) {
-      instance_queue.push(instance);
-    }
-    std::queue<size_t> tree_number_queue;
-    for (size_t i = 0; i < tree_collection_->TreeCount(); i++) {
-      tree_number_queue.push(i);
-    }
-    TaskProcessor<beagle::BeagleInstance, size_t> task_processor(
-        instance_queue, tree_number_queue,
-        [&results, &tree_collection = tree_collection_ ](
-            beagle::BeagleInstance beagle_instance, size_t tree_number) {
-          results[tree_number] = beagle::TreeLogLikelihood(
-              tree_collection->GetTree(tree_number), beagle_instance);
-        });
-    return results;
+  std::vector<double> LogLikelihoods() {
+    return beagle::LogLikelihoods(beagle_instances_, tree_collection_);
+  }
+
+  std::vector<std::vector<double>> BranchGradients() {
+    return beagle::BranchGradients(beagle_instances_, tree_collection_);
   }
 };
 
@@ -183,13 +165,13 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
   inst.MakeBeagleInstances(2);
-  for (auto ll : inst.TreeLogLikelihoods()) {
+  for (auto ll : inst.LogLikelihoods()) {
     CHECK_LT(abs(ll - -84.852358), 0.000001);
   }
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
   inst.MakeBeagleInstances(2);
-  auto likelihoods = inst.TreeLogLikelihoods();
+  auto likelihoods = inst.LogLikelihoods();
   std::vector<double> pybeagle_likelihoods(
       {-14582.995273982739, -6911.294207416366, -6916.880235529542,
        -6904.016888831189, -6915.055570693576, -6915.50496696512,
@@ -197,6 +179,24 @@ TEST_CASE("libsbn") {
        -6910.7871105783515});
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
+  }
+
+  // Test only the last one.
+  auto gradients = inst.BranchGradients().back();
+  std::sort(gradients.begin(), gradients.end());
+  // Zeros are for the root and one of the descendants of the root.
+  std::vector<double> physher_gradients = {
+      -904.18956, -607.70500, -562.36274, -553.63315, -542.26058, -539.64210,
+      -463.36511, -445.32555, -414.27197, -412.84218, -399.15359, -342.68038,
+      -306.23644, -277.05392, -258.73681, -175.07391, -171.59627, -168.57646,
+      -150.57623, -145.38176, -115.15798, -94.86412,  -83.02880,  -80.09165,
+      -69.00574,  -51.93337,  0.00000,    0.00000,    16.17497,   20.47784,
+      58.06984,   131.18998,  137.10799,  225.73617,  233.92172,  253.49785,
+      255.52967,  259.90378,  394.00504,  394.96619,  396.98933,  429.83873,
+      450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
+      888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
+  for (size_t i = 0; i < gradients.size(); i++) {
+    CHECK_LT(abs(gradients[i] - physher_gradients[i]), 0.0001);
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

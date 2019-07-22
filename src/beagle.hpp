@@ -4,11 +4,14 @@
 #ifndef SRC_BEAGLE_HPP_
 #define SRC_BEAGLE_HPP_
 
+#include <functional>
+#include <queue>
 #include <string>
 #include <vector>
 #include "alignment.hpp"
 #include "intpack.hpp"
 #include "libhmsbeagle/beagle.h"
+#include "task_processor.hpp"
 #include "tree_collection.hpp"
 #include "typedefs.hpp"
 
@@ -32,12 +35,45 @@ void PrepareBeagleInstance(
     const Alignment &alignment, const CharIntMap &symbol_table);
 void SetJCModel(BeagleInstance beagle_instance);
 
-double BifurcatingTreeLogLikelihood(Tree::TreePtr tree,
-                                    BeagleInstance beagle_instance);
-double TreeLogLikelihood(Tree::TreePtr tree, BeagleInstance beagle_instance);
-std::vector<double> TreeLogLikelihoods(
-    BeagleInstance beagle_instance,
+template <typename T>
+std::vector<T> Parallelize(std::function<T(BeagleInstance, Tree::TreePtr)> f,
+                           std::vector<BeagleInstance> beagle_instances,
+                           TreeCollection::TreeCollectionPtr tree_collection) {
+  if (beagle_instances.size() == 0) {
+    std::cerr << "Please add some BEAGLE instances that can be used for "
+                 "computation.\n";
+    abort();
+  }
+  std::vector<T> results(tree_collection->TreeCount());
+  std::queue<BeagleInstance> instance_queue;
+  for (auto instance : beagle_instances) {
+    instance_queue.push(instance);
+  }
+  std::queue<size_t> tree_number_queue;
+  for (size_t i = 0; i < tree_collection->TreeCount(); i++) {
+    tree_number_queue.push(i);
+  }
+  TaskProcessor<BeagleInstance, size_t> task_processor(
+      instance_queue, tree_number_queue,
+      [&results, &tree_collection, &f](BeagleInstance beagle_instance,
+                                       size_t tree_number) {
+        results[tree_number] =
+            f(beagle_instance, tree_collection->GetTree(tree_number));
+      });
+  return results;
+}
+
+double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree);
+std::vector<double> LogLikelihoods(
+    std::vector<BeagleInstance> beagle_instances,
     TreeCollection::TreeCollectionPtr tree_collection);
+
+std::vector<double> BranchGradient(BeagleInstance beagle_instance,
+                                   Tree::TreePtr tree);
+std::vector<std::vector<double>> BranchGradients(
+    std::vector<BeagleInstance> beagle_instances,
+    TreeCollection::TreeCollectionPtr tree_collection);
+
 }  // namespace beagle
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -47,6 +83,8 @@ TEST_CASE("Beagle") {
       beagle::SymbolVectorOf("-tgcaTGCA", symbol_table);
   SymbolVector correct_symbol_vector = {4, 3, 2, 1, 0, 3, 2, 1, 0};
   CHECK_EQ(symbol_vector, correct_symbol_vector);
+
+  // The real tests are in libsbn.hpp, where we have access to tree parsing.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_BEAGLE_HPP_

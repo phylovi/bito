@@ -78,6 +78,61 @@ void Node::PreOrder(std::function<void(const Node*)> f) const {
   }
 }
 
+// Iterate f through (parent, sister, node) for bifurcating trees using a
+// preorder traversal.
+void Node::TriplePreOrderBifurcating(
+    std::function<void(const Node*, const Node*, const Node*)> f) const {
+  if (!IsLeaf()) {
+    assert(children_.size() == 2);
+    f(this, children_[1].get(), children_[0].get());
+    children_[0]->TriplePreOrderBifurcating(f);
+    f(this, children_[0].get(), children_[1].get());
+    children_[1]->TriplePreOrderBifurcating(f);
+  }
+}
+
+// This function maps functions on triplets of indices to functions on
+// triplets of nodes by getting their indices.
+static std::function<void(const Node*, const Node*, const Node*)> const
+TripletIndexInfix(std::function<void(int, int, int)> f) {
+  return [&f](const Node* node0, const Node* node1, const Node* node2) {
+    f(static_cast<int>(node0->Index()), static_cast<int>(node1->Index()),
+      static_cast<int>(node2->Index()));
+  };
+}
+
+// Iterate f through (parent index, sister index, node index) for bifurcating
+// trees using a preorder traversal.
+void Node::TripleIndexPreOrderBifurcating(
+    std::function<void(int, int, int)> f) const {
+  TriplePreOrderBifurcating(TripletIndexInfix(f));
+}
+
+// This function maps functions on (node_index, child0_index, child1_index) to
+// thier corresponding functions on nodes. It only works for binary trees.
+static std::function<void(const Node*)> const BinaryIndexInfix(
+    std::function<void(int, int, int)> f) {
+  return [&f](const Node* node) {
+    if (!node->IsLeaf()) {
+      assert(node->Children().size() == 2);
+      f(static_cast<int>(node->Index()),
+        static_cast<int>(node->Children()[0]->Index()),
+        static_cast<int>(node->Children()[1]->Index()));
+    }
+  };
+}
+
+// These two functions take functions accepting triples of (node_index,
+// child0_index, child1_index) and apply them according to various traversals.
+void Node::BinaryIndexPreOrder(
+    const std::function<void(int, int, int)> f) const {
+  PreOrder(BinaryIndexInfix(f));
+}
+void Node::BinaryIndexPostOrder(
+    const std::function<void(int, int, int)> f) const {
+  PostOrder(BinaryIndexInfix(f));
+}
+
 // Iterate f through (parent, sister, node) for internal nodes using a
 // preorder traversal.
 void Node::TriplePreOrderInternal(
