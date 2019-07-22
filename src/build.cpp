@@ -68,40 +68,40 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
                    "the root!";
       abort();
     }
-    topology->PCSSPreOrder(
-        [&pcss_dict, &tag_to_bitset, &count, &leaf_count](
-            const Node* sister_node, bool sister_direction,
-            const Node* focal_node, bool focal_direction,    //
-            const Node* child0_node, bool child0_direction,  //
-            const Node* child1_node, bool child1_direction) {
-          Bitset parent(2 * leaf_count, false);
-          // The first chunk is for the sister node.
-          parent.CopyFrom(tag_to_bitset.at(sister_node->Tag()), 0,
-                          sister_direction);
-          // The second chunk is for the focal node.
-          parent.CopyFrom(tag_to_bitset.at(focal_node->Tag()), leaf_count,
-                          focal_direction);
-          // Now we build the child bitset.
-          auto child0 = tag_to_bitset.at(child0_node->Tag());
-          if (child0_direction) {
-            child0.flip();
-          }
-          auto child1 = tag_to_bitset.at(child1_node->Tag());
-          if (child1_direction) {
-            child1.flip();
-          }
-          auto child = std::min(child0, child1);
-          // Insert the parent-child pair into the map.
-          auto search = pcss_dict.find(parent);
-          if (search == pcss_dict.end()) {
-            // The first time we have seen this parent.
-            BitsetUInt32Dict child_singleton(0);
-            child_singleton.increment(std::move(child), count);
-            assert(pcss_dict.insert({parent, child_singleton}).second);
-          } else {
-            search->second.increment(std::move(child), count);
-          }
-        });
+    topology->PCSSPreOrder([&pcss_dict, &tag_to_bitset, &count, &leaf_count](
+                               const Node* sister_node, bool sister_direction,
+                               const Node* focal_node, bool focal_direction,  //
+                               const Node* child0_node,
+                               bool child0_direction,  //
+                               const Node* child1_node, bool child1_direction) {
+      Bitset parent(2 * leaf_count, false);
+      // The first chunk is for the sister node.
+      parent.CopyFrom(tag_to_bitset.at(sister_node->Tag()), 0,
+                      sister_direction);
+      // The second chunk is for the focal node.
+      parent.CopyFrom(tag_to_bitset.at(focal_node->Tag()), leaf_count,
+                      focal_direction);
+      // Now we build the child bitset.
+      auto child0 = tag_to_bitset.at(child0_node->Tag());
+      if (child0_direction) {
+        child0.flip();
+      }
+      auto child1 = tag_to_bitset.at(child1_node->Tag());
+      if (child1_direction) {
+        child1.flip();
+      }
+      auto child = std::min(child0, child1);
+      // Insert the parent-child pair into the map.
+      auto search = pcss_dict.find(parent);
+      if (search == pcss_dict.end()) {
+        // The first time we have seen this parent.
+        BitsetUInt32Dict child_singleton(0);
+        child_singleton.increment(std::move(child), count);
+        assert(pcss_dict.insert({parent, child_singleton}).second);
+      } else {
+        search->second.increment(std::move(child), count);
+      }
+    });
   }
   return pcss_dict;
 }

@@ -6,6 +6,7 @@
 
 #include <unordered_map>
 #include <utility>
+#include <vector>
 #include "bitset.hpp"
 #include "default_dict.hpp"
 #include "driver.hpp"

@@ -14,18 +14,23 @@ def test_instance():
 
     sbn_probs = np.array(inst.sbn_probs, copy=False)
     sbn_probs[3] = 3.14159265359
+
     # print(sbn_probs)
     # print(inst.sbn_total_prob())
 
     def convert_dict_to_int(d):
-        return {k:int(v) for k, v in d.items()}
+        return {k: int(v) for k, v in d.items()}
 
     [rootsplit_support, subsplit_support] = inst.split_counters()
     # with open('data/DS1.subsampled_10.t_support.json') as fp:
     with open('data/five_taxon_support.json') as fp:
         supports = json.load(fp)
-        vbpi_rootsplit_supp_dict = convert_dict_to_int(supports["rootsplit_supp_dict"])
-        vbpi_subsplit_supp_dict = {ss:convert_dict_to_int(d) for ss, d in supports["subsplit_supp_dict"].items()}
+        vbpi_rootsplit_supp_dict = convert_dict_to_int(
+            supports["rootsplit_supp_dict"])
+        vbpi_subsplit_supp_dict = {
+            ss: convert_dict_to_int(d)
+            for ss, d in supports["subsplit_supp_dict"].items()
+        }
     assert rootsplit_support == vbpi_rootsplit_supp_dict
     assert subsplit_support == vbpi_subsplit_supp_dict
 
