@@ -12,7 +12,7 @@
 #include "node.hpp"
 #include "typedefs.hpp"
 
-class Tree {
+class Tree : public std::enable_shared_from_this<Tree> {
  public:
   typedef std::shared_ptr<Tree> TreePtr;
   typedef std::vector<TreePtr> TreePtrVector;
@@ -47,11 +47,15 @@ class Tree {
   // (s1:b1, s2:b2):0):0. Note that we zero out the root branch length.
   TreePtr Detrifurcate();
   static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology);
+  static TreePtr OfIndexVector(std::vector<size_t> indices);
   static TreePtrVector ExampleTrees();
+
+  // We make branch lengths public so we can muck with them in Python.
+  BranchLengthVector branch_lengths_;
 
  private:
   Node::NodePtr topology_;
-  BranchLengthVector branch_lengths_;
+
 };
 
 // Compare TreePtrs by their Trees.

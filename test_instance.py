@@ -42,3 +42,6 @@ def test_instance():
     print(np.array(inst.log_likelihoods()))
     gradients = [np.array(gradient) for gradient in inst.branch_gradients()]
     print(gradients[-1])
+
+#    t = sbn.Tree.of_index_vector([5, 5, 4, 5, 5])
+    t = sbn.Tree.of_index_vector([6, 5, 4, 4, 5, 6])

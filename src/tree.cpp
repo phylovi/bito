@@ -28,7 +28,7 @@ Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
 }
 
 Tree::Tree(Node::NodePtr topology, BranchLengthVector branch_lengths)
-    : topology_(topology), branch_lengths_(branch_lengths) {
+    : branch_lengths_(branch_lengths), topology_(topology) {
   assert(topology->Index() + 1 == branch_lengths.size());
 }
 
@@ -67,6 +67,12 @@ Tree::TreePtr Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
     branch_lengths[node->Index()] = 1.;
   });
   return std::make_shared<Tree>(topology, branch_lengths);
+}
+
+Tree::TreePtr Tree::OfIndexVector(std::vector<size_t> indices) {
+  auto topology = Node::OfIndexVector(indices);
+  std::vector<double> branch_lengths(topology->Index() + 1, 1.);
+  return std::make_shared<Tree>(topology, std::move(branch_lengths));
 }
 
 Tree::TreePtrVector Tree::ExampleTrees() {
