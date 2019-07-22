@@ -177,7 +177,7 @@ struct SBNInstance {
         instance_queue, tree_number_queue,
         [&results, &tree_collection = tree_collection_ ](
             beagle::BeagleInstance beagle_instance, size_t tree_number) {
-          results[tree_number] = beagle::BranchGradients(
+          results[tree_number] = beagle::BranchGradient(
               beagle_instance, tree_collection->GetTree(tree_number));
         });
     return results;

@@ -147,10 +147,61 @@ Tree::TreePtr PrepareTreeForLikelihood(Tree::TreePtr tree) {
   abort();
 }
 
+double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree) {
+  tree = PrepareTreeForLikelihood(tree);
+  std::vector<BeagleOperation> operations;
+  tree->Topology()->PostOrder([&operations](const Node *node) {
+    if (!node->IsLeaf()) {
+      assert(node->Children().size() == 2);
+      int dest = static_cast<int>(node->Index());
+      int child0_index = static_cast<int>(node->Children()[0]->Index());
+      int child1_index = static_cast<int>(node->Children()[1]->Index());
+      BeagleOperation op = {
+          dest,                            // dest
+          BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
+          child0_index,   child0_index,    // src1 and matrix1
+          child1_index,   child1_index     // src2 and matrix2
+      };
+      operations.push_back(op);
+    }
+  });
+  auto branch_count = tree->BranchLengths().size();
+  std::vector<int> node_indices(branch_count);
+  std::iota(node_indices.begin(), node_indices.end(), 0);
+  beagleUpdateTransitionMatrices(beagle_instance,
+                                 0,  // eigenIndex
+                                 node_indices.data(),
+                                 NULL,  // firstDerivativeIndices
+                                 NULL,  // secondDervativeIndices
+                                 tree->BranchLengths().data(),
+                                 static_cast<int>(branch_count));
+  beagleUpdatePartials(beagle_instance,
+                       operations.data(),  // eigenIndex
+                       static_cast<int>(operations.size()),
+                       BEAGLE_OP_NONE);  // cumulative scale index
+  double log_like = 0;
+  std::vector<int> root_index = {node_indices.back()};
+  std::vector<int> category_weight_index = {0};
+  std::vector<int> state_frequency_index = {0};
+  std::vector<int> cumulative_scale_index = {BEAGLE_OP_NONE};
+  int count = 1;
+  beagleCalculateRootLogLikelihoods(
+      beagle_instance, root_index.data(), category_weight_index.data(),
+      state_frequency_index.data(), cumulative_scale_index.data(), count,
+      &log_like);
+  return log_like;
+}
+
+std::vector<double> LogLikelihoods(
+    std::vector<BeagleInstance> beagle_instances,
+    TreeCollection::TreeCollectionPtr tree_collection) {
+  return Parallelize<double>(LogLikelihood, beagle_instances, tree_collection);
+}
+
 // Compute first derivative of the log likelihood with respect to each branch
 // length, as a vector of first derivatives indexed by node index.
-std::vector<double> BranchGradients(BeagleInstance beagle_instance,
-                                    Tree::TreePtr tree) {
+std::vector<double> BranchGradient(BeagleInstance beagle_instance,
+                                   Tree::TreePtr tree) {
   tree = PrepareTreeForLikelihood(tree);
   tree->SlideRootPosition();
 
@@ -272,57 +323,6 @@ std::vector<double> BranchGradients(BeagleInstance beagle_instance,
       });
 
   return derivatives;
-}
-
-double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree) {
-  tree = PrepareTreeForLikelihood(tree);
-  std::vector<BeagleOperation> operations;
-  tree->Topology()->PostOrder([&operations](const Node *node) {
-    if (!node->IsLeaf()) {
-      assert(node->Children().size() == 2);
-      int dest = static_cast<int>(node->Index());
-      int child0_index = static_cast<int>(node->Children()[0]->Index());
-      int child1_index = static_cast<int>(node->Children()[1]->Index());
-      BeagleOperation op = {
-          dest,                            // dest
-          BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
-          child0_index,   child0_index,    // src1 and matrix1
-          child1_index,   child1_index     // src2 and matrix2
-      };
-      operations.push_back(op);
-    }
-  });
-  auto branch_count = tree->BranchLengths().size();
-  std::vector<int> node_indices(branch_count);
-  std::iota(node_indices.begin(), node_indices.end(), 0);
-  beagleUpdateTransitionMatrices(beagle_instance,
-                                 0,  // eigenIndex
-                                 node_indices.data(),
-                                 NULL,  // firstDerivativeIndices
-                                 NULL,  // secondDervativeIndices
-                                 tree->BranchLengths().data(),
-                                 static_cast<int>(branch_count));
-  beagleUpdatePartials(beagle_instance,
-                       operations.data(),  // eigenIndex
-                       static_cast<int>(operations.size()),
-                       BEAGLE_OP_NONE);  // cumulative scale index
-  double log_like = 0;
-  std::vector<int> root_index = {node_indices.back()};
-  std::vector<int> category_weight_index = {0};
-  std::vector<int> state_frequency_index = {0};
-  std::vector<int> cumulative_scale_index = {BEAGLE_OP_NONE};
-  int count = 1;
-  beagleCalculateRootLogLikelihoods(
-      beagle_instance, root_index.data(), category_weight_index.data(),
-      state_frequency_index.data(), cumulative_scale_index.data(), count,
-      &log_like);
-  return log_like;
-}
-
-std::vector<double> LogLikelihoods(
-    std::vector<BeagleInstance> beagle_instances,
-    TreeCollection::TreeCollectionPtr tree_collection) {
-  return Parallelize<double>(LogLikelihood, beagle_instances, tree_collection);
 }
 
 }  // namespace beagle
