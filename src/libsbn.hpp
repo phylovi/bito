@@ -56,6 +56,8 @@ struct SBNInstance {
   // Beagly bits.
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
+  size_t beagle_leaf_count_;
+  size_t beagle_site_count_;
   // A vector that contains all of the SBN-related probabilities.
   std::vector<double> sbn_probs_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
@@ -76,7 +78,10 @@ struct SBNInstance {
 
   // ** Initialization, destruction, and status
   explicit SBNInstance(const std::string &name)
-      : name_(name), symbol_table_(beagle::GetSymbolTable()) {}
+      : name_(name),
+        symbol_table_(beagle::GetSymbolTable()),
+        beagle_leaf_count_(0),
+        beagle_site_count_(0) {}
 
   ~SBNInstance() { FinalizeBeagleInstances(); }
 
@@ -86,6 +91,8 @@ struct SBNInstance {
       assert(beagleFinalizeInstance(beagle_instance) == 0);
     }
     beagle_instances_.clear();
+    beagle_leaf_count_ = 0;
+    beagle_site_count_ = 0;
   }
 
   size_t TreeCount() const { return tree_collection_->TreeCount(); }
@@ -223,9 +230,7 @@ struct SBNInstance {
 
   // ** Phylogenetic likelihood
 
-  void MakeBeagleInstances(int instance_count) {
-    // Start by clearing out any existing instances.
-    FinalizeBeagleInstances();
+  void CheckDataLoaded() {
     if (alignment_.SequenceCount() == 0) {
       std::cerr << "Load an alignment into your SBNInstance on which you wish "
                    "to calculate phylogenetic likelihoods.\n";
@@ -236,6 +241,29 @@ struct SBNInstance {
                    "calculate phylogenetic likelihoods.\n";
       abort();
     }
+  }
+
+  void CheckBeagleDimensions() {
+    CheckDataLoaded();
+    if (beagle_instances_.size() == 0) {
+      std::cerr << "Call MakeBeagleInstances to make some instances for "
+                   "likelihood computation.\n";
+      abort();
+    }
+    if (alignment_.SequenceCount() != beagle_leaf_count_ ||
+        alignment_.Length() != beagle_site_count_) {
+      std::cerr << "Alignment dimensions for current BEAGLE instances do not "
+                   "match current alignment. Call MakeBeagleInstances again.\n";
+      abort();
+    }
+  }
+
+  void MakeBeagleInstances(int instance_count) {
+    // Start by clearing out any existing instances.
+    FinalizeBeagleInstances();
+    CheckDataLoaded();
+    beagle_leaf_count_ = alignment_.SequenceCount();
+    beagle_site_count_ = alignment_.Length();
     for (auto i = 0; i < instance_count; i++) {
       auto beagle_instance = beagle::CreateInstance(alignment_);
       beagle::SetJCModel(beagle_instance);
@@ -246,10 +274,12 @@ struct SBNInstance {
   }
 
   std::vector<double> LogLikelihoods() {
+    CheckBeagleDimensions();
     return beagle::LogLikelihoods(beagle_instances_, tree_collection_);
   }
 
   std::vector<std::vector<double>> BranchGradients() {
+    CheckBeagleDimensions();
     return beagle::BranchGradients(beagle_instances_, tree_collection_);
   }
 };

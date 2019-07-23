@@ -64,3 +64,13 @@ Node::TopologyCounter TreeCollection::TopologyCounter() {
   }
   return counter;
 }
+
+std::vector<std::string> TreeCollection::TaxonNames() {
+  std::vector<std::string> names(tag_taxon_map_.size());
+  for (const auto &iter : tag_taxon_map_) {
+    size_t id = Node::MaxLeafIDOfTag(iter.first);
+    assert(id < names.size());
+    names[id] = iter.second;
+  }
+  return names;
+}
