@@ -43,10 +43,9 @@ def test_instance():
     gradients = [np.array(gradient) for gradient in inst.branch_gradients()]
     print(gradients[-1])
 
-    inst.tree_collection = sbn.TreeCollection.singleton(
+    inst.tree_collection = sbn.TreeCollection(
         [sbn.Tree.of_index_vector([3, 3, 3])],
-        "mars saturn jupiter".split())
-
+        ["mars", "saturn", "jupiter"])
     inst.read_fasta_file('data/hello.fasta')
     inst.make_beagle_instances(2)
     branch_lengths = np.array(inst.tree_collection.trees[0], copy=False);
@@ -56,8 +55,4 @@ def test_instance():
     branch_lengths[0] = 0.2
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
-
-    sbn.TreeCollection(
-        [sbn.Tree.of_index_vector([3, 3, 3])])
-
 

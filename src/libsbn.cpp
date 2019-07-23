@@ -42,11 +42,12 @@ PYBIND11_MODULE(sbn, m) {
       });
   // TreeCollection
   py::class_<TreeCollection>(m, "TreeCollection")
-      .def(py::init<const Tree::TreeVector &>())
+      .def(py::init<Tree::TreeVector>())
+      .def(py::init<Tree::TreeVector, TagStringMap>())
+      .def(py::init<Tree::TreeVector, const std::vector<std::string> &>())
       .def("newick", &TreeCollection::Newick)
-      .def_static("singleton", &TreeCollection::Singleton)
       .def_readwrite("trees", &TreeCollection::trees_);
-  // Now we set things up our SBNInstance class.
+  // SBNInstance
   py::class_<SBNInstance>(m, "instance")
       // Constructors
       .def(py::init<const std::string &>())

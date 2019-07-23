@@ -17,6 +17,8 @@ class TreeCollection {
 
   TreeCollection();
   TreeCollection(Tree::TreeVector trees, TagStringMap tag_taxon_map);
+  TreeCollection(Tree::TreeVector trees,
+                 const std::vector<std::string> &taxon_labels);
 
   size_t TreeCount() const { return trees_.size(); }
   const Tree::TreeVector &Trees() const { return trees_; }
@@ -29,20 +31,8 @@ class TreeCollection {
   std::string Newick() const;
 
   Node::TopologyCounter TopologyCounter();
-
   std::vector<std::string> TaxonNames();
-
-  static TreeCollection Singleton(Tree::TreeVector trees,
-                                  std::vector<std::string> taxon_labels) {
-    TagStringMap taxon_map;
-    for (size_t index = 0; index < taxon_labels.size(); index++) {
-      assert(taxon_map
-                 .insert({PackInts(static_cast<uint32_t>(index), 1),
-                          taxon_labels[index]})
-                 .second);
-    }
-    return TreeCollection(trees, taxon_map);
-  }
+  static TagStringMap TagStringMapOf(std::vector<std::string> taxon_labels);
 
   Tree::TreeVector trees_;
 

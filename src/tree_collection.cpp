@@ -30,6 +30,11 @@ TreeCollection::TreeCollection(Tree::TreeVector trees,
   }
 }
 
+TreeCollection::TreeCollection(Tree::TreeVector trees,
+                               const std::vector<std::string> &taxon_labels)
+    : TreeCollection::TreeCollection(
+          trees, TreeCollection::TagStringMapOf(taxon_labels)) {}
+
 bool TreeCollection::operator==(const TreeCollection &other) const {
   if (this->TagTaxonMap() != other.TagTaxonMap()) {
     return false;
@@ -79,4 +84,16 @@ std::vector<std::string> TreeCollection::TaxonNames() {
     names[id] = iter.second;
   }
   return names;
+}
+
+TagStringMap TreeCollection::TagStringMapOf(
+    std::vector<std::string> taxon_labels) {
+  TagStringMap taxon_map;
+  for (size_t index = 0; index < taxon_labels.size(); index++) {
+    assert(taxon_map
+               .insert({PackInts(static_cast<uint32_t>(index), 1),
+                        taxon_labels[index]})
+               .second);
+  }
+  return taxon_map;
 }
