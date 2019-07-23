@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 #include "parser.hpp"
-#include "prettyprint.hpp"
 #include "tree_collection.hpp"
 #include "typedefs.hpp"
 
@@ -77,7 +76,6 @@ TEST_CASE("Driver") {
   }
   driver.Clear();
   auto nexus_collection = driver.ParseNexusFile("data/DS1.subsampled_10.t");
-  std::cout << nexus_collection->TaxonNames() << std::endl;
   CHECK_EQ(nexus_collection->TreeCount(), 10);
   driver.Clear();
   auto newick_collection =
