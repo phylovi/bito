@@ -12,6 +12,7 @@ namespace py = pybind11;
 // First, we make them opaque to pybind11, so that it doesn't do its default
 // conversion of STL types.
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
+PYBIND11_MAKE_OPAQUE(Tree);
 
 PYBIND11_MODULE(sbn, m) {
   m.doc() = "libsbn bindings";
@@ -43,7 +44,9 @@ PYBIND11_MODULE(sbn, m) {
   // TreeCollection
   py::class_<TreeCollection>(m, "TreeCollection")
       .def("newick", &TreeCollection::Newick)
-      .def_static("singleton", &TreeCollection::Singleton);
+      .def_static("singleton", &TreeCollection::Singleton)
+      .def("get_tree", &TreeCollection::GetTree)
+      .def_readwrite("trees", &TreeCollection::trees_);
   // Now we set things up our SBNInstance class.
   py::class_<SBNInstance>(m, "instance")
       // Constructors
