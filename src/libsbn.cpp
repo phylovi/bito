@@ -31,15 +31,7 @@ PYBIND11_MODULE(sbn, m) {
   // Tree
   py::class_<Tree>(m, "Tree", py::buffer_protocol())
       .def_static("of_index_vector", &Tree::OfIndexVector)
-      .def_buffer([](Tree &tree) -> py::buffer_info {
-        return py::buffer_info(
-            tree.branch_lengths_.data(),              // Pointer to buffer
-            sizeof(double),                           // Size of one scalar
-            py::format_descriptor<double>::format(),  // See docs
-            1,                                        // Number of dimensions
-            {tree.branch_lengths_.size()},            // Buffer dimensions
-            {sizeof(double)});                        // Stride
-      });
+      .def_readwrite("branch_lengths", &Tree::branch_lengths_);
   // TreeCollection
   py::class_<TreeCollection>(m, "TreeCollection")
       .def(py::init<Tree::TreeVector>())

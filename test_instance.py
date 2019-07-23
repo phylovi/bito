@@ -48,7 +48,7 @@ def test_instance():
         ["mars", "saturn", "jupiter"])
     inst.read_fasta_file('data/hello.fasta')
     inst.make_beagle_instances(2)
-    branch_lengths = np.array(inst.tree_collection.trees[0], copy=False);
+    branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False);
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.])
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
