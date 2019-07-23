@@ -17,7 +17,7 @@ class Tree {
   typedef std::vector<Tree> TreeVector;
   typedef std::vector<double> BranchLengthVector;
 
-  explicit Tree() {}
+  Tree() {}
 
   // This constructor takes a map of tags to branch lengths; this map gets
   // turned into a branch length vector. It reindexes the topology. Note: any
