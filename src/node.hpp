@@ -120,6 +120,8 @@ class Node {
                         const TagStringMapOption& node_labels,
                         bool show_tags) const;
 
+  std::vector<size_t> IndexVector();
+
   // ** Class methods
   static inline uint32_t MaxLeafIDOfTag(uint64_t tag){
     return UnpackFirstInt(tag);
@@ -221,6 +223,10 @@ TEST_CASE("Node") {
   // Bifurcating tree.
   Node::NodePtr t3_alt = Node::OfIndexVector({6, 5, 4, 4, 5, 6});
   CHECK_EQ(t3, t3_alt);
+
+  for (const auto& topology : examples) {
+    CHECK_EQ(topology, Node::OfIndexVector(topology->IndexVector()));
+  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_

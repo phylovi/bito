@@ -277,6 +277,22 @@ std::string Node::NewickAux(const DoubleVectorOption& branch_lengths,
   return str;
 }
 
+std::vector<size_t> Node::IndexVector() {
+  std::vector<size_t> indices(Index());
+  PostOrder([&indices](const Node* node) {
+    if (!node->IsLeaf()) {
+      for (const auto& child : node->Children()) {
+        if (child->Index() >= indices.size()) {
+          std::cerr << "Problematic indices in IndexVector.\n";
+          abort();
+        }
+        indices[child->Index()] = node->Index();
+      }
+    }
+  });
+  return indices;
+}
+
 // Class methods
 Node::NodePtr Node::Leaf(uint32_t id) { return std::make_shared<Node>(id); }
 Node::NodePtr Node::Join(NodePtrVec children, size_t index) {

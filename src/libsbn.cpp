@@ -30,6 +30,7 @@ PYBIND11_MODULE(sbn, m) {
       });
   // Tree
   py::class_<Tree>(m, "Tree", py::buffer_protocol())
+      .def("index_vector", &Tree::IndexVector)
       .def_static("of_index_vector", &Tree::OfIndexVector)
       .def_readwrite("branch_lengths", &Tree::branch_lengths_);
   // TreeCollection

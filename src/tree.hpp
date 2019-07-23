@@ -31,6 +31,7 @@ class Tree {
   uint32_t LeafCount() const { return Topology()->LeafCount(); }
   Node::NodePtrVec Children() const { return Topology()->Children(); }
   size_t Index() const { return Topology()->Index(); }
+  std::vector<size_t> IndexVector() { return Topology()->IndexVector(); }
 
   bool operator==(const Tree& other) const;
 
