@@ -282,7 +282,6 @@ struct SBNInstance {
     CheckBeagleDimensions();
     return beagle::BranchGradients(beagle_instances_, tree_collection_);
   }
-
 };
 
 // Here we initialize our static random number generator.

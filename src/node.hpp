@@ -123,12 +123,12 @@ class Node {
   std::vector<size_t> IndexVector();
 
   // ** Class methods
-  static inline uint32_t MaxLeafIDOfTag(uint64_t tag){
+  static inline uint32_t MaxLeafIDOfTag(uint64_t tag) {
     return UnpackFirstInt(tag);
-  };
+  }
   static inline uint32_t LeafCountOfTag(uint64_t tag) {
     return UnpackSecondInt(tag);
-  };
+  }
   static NodePtr Leaf(uint32_t id);
   static NodePtr Join(NodePtrVec children, size_t index = SIZE_MAX);
   static NodePtr Join(NodePtr left, NodePtr right, size_t index = SIZE_MAX);

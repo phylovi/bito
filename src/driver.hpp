@@ -4,6 +4,7 @@
 #ifndef SRC_DRIVER_HPP_
 #define SRC_DRIVER_HPP_
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include "parser.hpp"

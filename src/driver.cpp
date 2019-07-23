@@ -132,7 +132,6 @@ Tree Driver::ParseString(yy::parser *parser_instance, const std::string &str) {
     std::cout << "Parser had nonzero return value.\n";
     abort();
   }
-  // TODO test std::move here
   return *latest_tree_;
 }
 

@@ -9,7 +9,7 @@
 #include <vector>
 #include "tree.hpp"
 
-TreeCollection::TreeCollection() : trees_(0){};
+TreeCollection::TreeCollection() {}
 
 TreeCollection::TreeCollection(Tree::TreeVector trees)
     : trees_(std::move(trees)) {

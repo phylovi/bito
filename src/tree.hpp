@@ -17,7 +17,7 @@ class Tree {
   typedef std::vector<Tree> TreeVector;
   typedef std::vector<double> BranchLengthVector;
 
-  explicit Tree() : branch_lengths_(0), topology_(nullptr){};
+  explicit Tree() {}
 
   // This constructor takes a map of tags to branch lengths; this map gets
   // turned into a branch length vector. It reindexes the topology. Note: any
@@ -57,7 +57,6 @@ class Tree {
 
  private:
   Node::NodePtr topology_;
-
 };
 
 inline bool operator!=(const Tree& lhs, const Tree& rhs) {
