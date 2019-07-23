@@ -33,7 +33,7 @@ TreeCollection Driver::ParseNewick(std::ifstream &in) {
   parser_instance.set_debug_level(trace_parsing_);
   std::string line;
   unsigned int line_number = 1;
-  Tree::TreePtrVector trees;
+  Tree::TreeVector trees;
   while (std::getline(in, line)) {
     // Set the Bison location line number properly so we get useful error
     // messages.
@@ -123,8 +123,7 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
   }
 }
 
-Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,
-                                  const std::string &str) {
+Tree Driver::ParseString(yy::parser *parser_instance, const std::string &str) {
   // Scan the string using the lexer into hidden state.
   this->ScanString(str);
   // Parse the scanned string.
@@ -133,14 +132,15 @@ Tree::TreePtr Driver::ParseString(yy::parser *parser_instance,
     std::cout << "Parser had nonzero return value.\n";
     abort();
   }
-  return latest_tree_;
+  // TODO test std::move here
+  return *latest_tree_;
 }
 
 TreeCollection Driver::ParseString(const std::string &str) {
   Clear();
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);
-  Tree::TreePtrVector trees = {ParseString(&parser_instance, str)};
+  Tree::TreeVector trees = {ParseString(&parser_instance, str)};
   return TreeCollection(trees, this->TagTaxonMap());
 }
 

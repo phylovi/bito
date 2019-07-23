@@ -11,22 +11,22 @@
 
 TreeCollection::TreeCollection() : trees_(0){};
 
-TreeCollection::TreeCollection(Tree::TreePtrVector trees)
+TreeCollection::TreeCollection(Tree::TreeVector trees)
     : trees_(std::move(trees)) {
   if (trees.size() > 0) {
-    auto leaf_count = trees[0]->LeafCount();
+    auto leaf_count = trees[0].LeafCount();
     for (const auto &tree : trees) {
-      assert(tree->LeafCount() == leaf_count);
+      assert(tree.LeafCount() == leaf_count);
     }
   }
 }
 
-TreeCollection::TreeCollection(Tree::TreePtrVector trees,
+TreeCollection::TreeCollection(Tree::TreeVector trees,
                                TagStringMap tag_taxon_map)
     : trees_(std::move(trees)), tag_taxon_map_(std::move(tag_taxon_map)) {
   auto taxon_count = tag_taxon_map.size();
   for (const auto &tree : trees) {
-    assert(tree->LeafCount() == taxon_count);
+    assert(tree.LeafCount() == taxon_count);
   }
 }
 
@@ -38,7 +38,7 @@ bool TreeCollection::operator==(const TreeCollection &other) const {
     return false;
   }
   for (size_t i = 0; i < TreeCount(); i++) {
-    if (this->Trees()[i] != other.Trees()[i]) {
+    if (this->GetTree(i) != other.GetTree(i)) {
       return false;
     }
   }
@@ -49,9 +49,9 @@ std::string TreeCollection::Newick() const {
   std::string str;
   for (const auto &tree : trees_) {
     if (tag_taxon_map_.size()) {
-      str.append(tree->Newick(tag_taxon_map_));
+      str.append(tree.Newick(tag_taxon_map_));
     } else {
-      str.append(tree->Newick());
+      str.append(tree.Newick());
     }
     str.push_back('\n');
   }
@@ -61,9 +61,9 @@ std::string TreeCollection::Newick() const {
 Node::TopologyCounter TreeCollection::TopologyCounter() {
   Node::TopologyCounter counter;
   for (const auto &tree : trees_) {
-    auto search = counter.find(tree->Topology());
+    auto search = counter.find(tree.Topology());
     if (search == counter.end()) {
-      assert(counter.insert({tree->Topology(), 1}).second);
+      assert(counter.insert({tree.Topology(), 1}).second);
     } else {
       search->second++;
     }

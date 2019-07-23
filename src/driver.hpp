@@ -32,7 +32,7 @@ class Driver {
   // Whether to generate scanner debug traces.
   bool trace_scanning_;
   // The most recent tree parsed.
-  Tree::TreePtr latest_tree_;
+  std::shared_ptr<Tree> latest_tree_;
   // Map from taxon names to their numerical identifiers.
   std::map<std::string, uint32_t> taxa_;
   // The token's location, used by the scanner to give good debug info.
@@ -45,8 +45,7 @@ class Driver {
   // Scan a string with flex.
   void ScanString(const std::string& str);
   // Parse a string with an existing parser object.
-  Tree::TreePtr ParseString(yy::parser* parser_instance,
-                            const std::string& str);
+  Tree ParseString(yy::parser* parser_instance, const std::string& str);
   // Make a parser and then parse a string for a one-off parsing.
   TreeCollection ParseString(const std::string& s);
   // Run the parser on a Newick stream.
@@ -72,7 +71,7 @@ TEST_CASE("Driver") {
   };
   for (const auto& newick : newicks) {
     auto collection = driver.ParseString(newick);
-    CHECK_EQ(newick, collection.Trees()[0]->Newick(collection.TagTaxonMap()));
+    CHECK_EQ(newick, collection.Trees()[0].Newick(collection.TagTaxonMap()));
   }
   driver.Clear();
   auto nexus_collection = driver.ParseNexusFile("data/DS1.subsampled_10.t");

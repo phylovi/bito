@@ -14,9 +14,10 @@
 
 class Tree {
  public:
-  typedef std::shared_ptr<Tree> TreePtr;
-  typedef std::vector<TreePtr> TreePtrVector;
+  typedef std::vector<Tree> TreeVector;
   typedef std::vector<double> BranchLengthVector;
+
+  explicit Tree() : branch_lengths_(0), topology_(nullptr){};
 
   // This constructor takes a map of tags to branch lengths; this map gets
   // turned into a branch length vector. It reindexes the topology. Note: any
@@ -31,7 +32,7 @@ class Tree {
   Node::NodePtrVec Children() const { return Topology()->Children(); }
   size_t Index() const { return Topology()->Index(); }
 
-  bool operator==(const Tree& other);
+  bool operator==(const Tree& other) const;
 
   std::string Newick() const { return Newick(std::experimental::nullopt); }
   std::string Newick(TagStringMapOption node_labels) const;
@@ -45,10 +46,10 @@ class Tree {
   // Returns a new version of this tree without a trifurcation at the root,
   // making it a bifurcation. Given (s0:b0, s1:b1, s2:b2):b4, we get (s0:b0,
   // (s1:b1, s2:b2):0):0. Note that we zero out the root branch length.
-  TreePtr Detrifurcate();
-  static TreePtr UnitBranchLengthTreeOf(Node::NodePtr topology);
+  Tree Detrifurcate() const;
+  static Tree UnitBranchLengthTreeOf(Node::NodePtr topology);
   static Tree OfIndexVector(std::vector<size_t> indices);
-  static TreePtrVector ExampleTrees();
+  static TreeVector ExampleTrees();
 
   // We make branch lengths public so we can muck with them in Python.
   BranchLengthVector branch_lengths_;
@@ -58,22 +59,17 @@ class Tree {
 
 };
 
-// Compare TreePtrs by their Trees.
-inline bool operator==(const Tree::TreePtr& lhs, const Tree::TreePtr& rhs) {
-  return *lhs == *rhs;
-}
-
-inline bool operator!=(const Tree::TreePtr& lhs, const Tree::TreePtr& rhs) {
+inline bool operator!=(const Tree& lhs, const Tree& rhs) {
   return !(lhs == rhs);
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Tree") {
   auto trees = Tree::ExampleTrees();
-  auto original_newick = trees[0]->Newick();
-  CHECK_EQ(trees[0]->Detrifurcate()->Topology(), trees[3]->Topology());
+  auto original_newick = trees[0].Newick();
+  CHECK_EQ(trees[0].Detrifurcate().Topology(), trees[3].Topology());
   // Shows that Detrifurcate doesn't change the original tree.
-  CHECK_EQ(original_newick, trees[0]->Newick());
+  CHECK_EQ(original_newick, trees[0].Newick());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_TREE_HPP_

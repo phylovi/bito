@@ -54,7 +54,7 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 %type  <std::string> leaf
 %type  <Node::NodePtr> inner_node
 %type  <Node::NodePtrVecPtr> node_list
-%type  <Tree::TreePtr> tree
+%type  <std::shared_ptr<Tree>> tree
 
 %printer { yyo << $$; } <*>;
 

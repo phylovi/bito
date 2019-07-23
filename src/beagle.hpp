@@ -36,7 +36,7 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
 void SetJCModel(BeagleInstance beagle_instance);
 
 template <typename T>
-std::vector<T> Parallelize(std::function<T(BeagleInstance, Tree::TreePtr)> f,
+std::vector<T> Parallelize(std::function<T(BeagleInstance, const Tree &)> f,
                            std::vector<BeagleInstance> beagle_instances,
                            const TreeCollection &tree_collection) {
   if (beagle_instances.size() == 0) {
@@ -63,12 +63,12 @@ std::vector<T> Parallelize(std::function<T(BeagleInstance, Tree::TreePtr)> f,
   return results;
 }
 
-double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree);
+double LogLikelihood(BeagleInstance beagle_instance, const Tree &tree);
 std::vector<double> LogLikelihoods(std::vector<BeagleInstance> beagle_instances,
                                    const TreeCollection &tree_collection);
 
 std::vector<double> BranchGradient(BeagleInstance beagle_instance,
-                                   Tree::TreePtr tree);
+                                   const Tree &tree);
 std::vector<std::vector<double>> BranchGradients(
     std::vector<BeagleInstance> beagle_instances,
     const TreeCollection &tree_collection);

@@ -13,14 +13,14 @@
 
 class TreeCollection {
  public:
-  explicit TreeCollection(Tree::TreePtrVector trees);
+  explicit TreeCollection(Tree::TreeVector trees);
 
   TreeCollection();
-  TreeCollection(Tree::TreePtrVector trees, TagStringMap tag_taxon_map);
+  TreeCollection(Tree::TreeVector trees, TagStringMap tag_taxon_map);
 
   size_t TreeCount() const { return trees_.size(); }
-  const Tree::TreePtrVector &Trees() const { return trees_; }
-  const Tree::TreePtr &GetTree(size_t i) const { return trees_.at(i); }
+  const Tree::TreeVector &Trees() const { return trees_; }
+  const Tree &GetTree(size_t i) const { return trees_.at(i); }
   const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
   size_t TaxonCount() const { return tag_taxon_map_.size(); }
 
@@ -34,7 +34,7 @@ class TreeCollection {
 
   static TreeCollection Singleton(Tree tree,
                                   std::vector<std::string> taxon_labels) {
-    std::vector<Tree::TreePtr> single_tree({std::make_shared<Tree>(tree)});
+    std::vector<Tree> single_tree({tree});
     TagStringMap taxon_map;
     for (size_t index = 0; index < taxon_labels.size(); index++) {
       assert(taxon_map
@@ -45,21 +45,11 @@ class TreeCollection {
     return TreeCollection(single_tree, taxon_map);
   }
 
+  Tree::TreeVector trees_;
+
  private:
-  Tree::TreePtrVector trees_;
   TagStringMap tag_taxon_map_;
 };
-
-// // Compare TreeCollectionPtrs by their TreeCollections.
-// inline bool operator==(const TreeCollection::TreeCollectionPtr &lhs,
-//                        const TreeCollection::TreeCollectionPtr &rhs) {
-//   return *lhs == *rhs;
-// }
-//
-// inline bool operator!=(const TreeCollection::TreeCollectionPtr &lhs,
-//                        const TreeCollection::TreeCollectionPtr &rhs) {
-//   return !(lhs == rhs);
-// }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TopologyCounter") {
