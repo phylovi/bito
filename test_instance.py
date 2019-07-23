@@ -49,8 +49,6 @@ def test_instance():
 
     inst.read_fasta_file('data/hello.fasta')
     inst.make_beagle_instances(2)
-    inst.print_status()
-    trees = inst.tree_collection
     branch_lengths = np.array(inst.tree_collection.trees[0], copy=False);
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.])
     print(inst.tree_collection.newick())
@@ -58,4 +56,3 @@ def test_instance():
     branch_lengths[0] = 0.2
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
-
