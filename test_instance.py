@@ -44,7 +44,7 @@ def test_instance():
     print(gradients[-1])
 
     inst.tree_collection = sbn.TreeCollection.singleton(
-        sbn.Tree.of_index_vector([3, 3, 3]),
+        [sbn.Tree.of_index_vector([3, 3, 3])],
         "mars saturn jupiter".split())
 
     inst.read_fasta_file('data/hello.fasta')
@@ -56,3 +56,8 @@ def test_instance():
     branch_lengths[0] = 0.2
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
+
+    sbn.TreeCollection(
+        [sbn.Tree.of_index_vector([3, 3, 3])])
+
+

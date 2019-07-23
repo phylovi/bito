@@ -42,6 +42,7 @@ PYBIND11_MODULE(sbn, m) {
       });
   // TreeCollection
   py::class_<TreeCollection>(m, "TreeCollection")
+      .def(py::init<const Tree::TreeVector &>())
       .def("newick", &TreeCollection::Newick)
       .def_static("singleton", &TreeCollection::Singleton)
       .def_readwrite("trees", &TreeCollection::trees_);

@@ -32,9 +32,8 @@ class TreeCollection {
 
   std::vector<std::string> TaxonNames();
 
-  static TreeCollection Singleton(Tree tree,
+  static TreeCollection Singleton(Tree::TreeVector trees,
                                   std::vector<std::string> taxon_labels) {
-    std::vector<Tree> single_tree({tree});
     TagStringMap taxon_map;
     for (size_t index = 0; index < taxon_labels.size(); index++) {
       assert(taxon_map
@@ -42,7 +41,7 @@ class TreeCollection {
                           taxon_labels[index]})
                  .second);
     }
-    return TreeCollection(single_tree, taxon_map);
+    return TreeCollection(trees, taxon_map);
   }
 
   Tree::TreeVector trees_;
