@@ -51,11 +51,11 @@ def test_instance():
     inst.make_beagle_instances(2)
     inst.print_status()
     trees = inst.tree_collection
-    print(dict(trees))
-    # branch_lengths = np.array(inst.tree_collection.trees[0], copy=False);
+    branch_lengths = np.array(inst.tree_collection.trees[0], copy=False);
+    branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.])
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
-    # branch_lengths[0] = 0.2
+    branch_lengths[0] = 0.2
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
 
