@@ -84,7 +84,7 @@ TEST_CASE("Driver") {
   auto five_taxon = driver.ParseNewickFile("data/five_taxon.nwk");
   std::vector<std::string> correct_five_taxon_names(
       {"x0", "x1", "x2", "x3", "x4"});
-  CHECK_EQ(five_taxon->TaxonNames(), correct_five_taxon_names);
+  CHECK_EQ(five_taxon.TaxonNames(), correct_five_taxon_names);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
