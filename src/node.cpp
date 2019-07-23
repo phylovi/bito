@@ -314,6 +314,8 @@ Node::NodePtr Node::OfIndexVector(std::vector<size_t> indices) {
       assert(downward_indices.insert({parent_index, std::move(child_indices)})
                  .second);
     } else {
+      // We've seen the parent before, so append the child to the parent's
+      // vector of descendants.
       search->second.push_back(child_index);
     }
   }
