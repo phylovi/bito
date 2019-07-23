@@ -277,6 +277,22 @@ std::string Node::NewickAux(const DoubleVectorOption& branch_lengths,
   return str;
 }
 
+std::vector<size_t> Node::IndexVector() {
+  std::vector<size_t> indices(Index());
+  PostOrder([&indices](const Node* node) {
+    if (!node->IsLeaf()) {
+      for (const auto& child : node->Children()) {
+        if (child->Index() >= indices.size()) {
+          std::cerr << "Problematic indices in IndexVector.\n";
+          abort();
+        }
+        indices[child->Index()] = node->Index();
+      }
+    }
+  });
+  return indices;
+}
+
 // Class methods
 Node::NodePtr Node::Leaf(uint32_t id) { return std::make_shared<Node>(id); }
 Node::NodePtr Node::Join(NodePtrVec children, size_t index) {
@@ -284,6 +300,45 @@ Node::NodePtr Node::Join(NodePtrVec children, size_t index) {
 }
 Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t index) {
   return Join(std::vector<NodePtr>({left, right}), index);
+}
+
+Node::NodePtr Node::OfIndexVector(std::vector<size_t> indices) {
+  // We will fill this map with the indices of the descendants.
+  std::unordered_map<size_t, std::vector<size_t>> downward_indices;
+  for (size_t child_index = 0; child_index < indices.size(); child_index++) {
+    const auto& parent_index = indices[child_index];
+    auto search = downward_indices.find(parent_index);
+    if (search == downward_indices.end()) {
+      // The first time we have seen this parent.
+      std::vector<size_t> child_indices({child_index});
+      assert(downward_indices.insert({parent_index, std::move(child_indices)})
+                 .second);
+    } else {
+      // We've seen the parent before, so append the child to the parent's
+      // vector of descendants.
+      search->second.push_back(child_index);
+    }
+  }
+  std::function<NodePtr(size_t)> build_tree =
+      [&build_tree, &downward_indices](size_t current_index) {
+        auto search = downward_indices.find(current_index);
+        if (search == downward_indices.end()) {
+          // We assume that anything not in the map is a leaf, because leaves
+          // don't have any children.
+          return Leaf(static_cast<uint32_t>(current_index));
+        } else {
+          const auto& children_indices = search->second;
+          std::vector<NodePtr> children;
+          for (const auto& child_index : children_indices) {
+            children.push_back(build_tree(child_index));
+          }
+          return Join(children, current_index);
+        }
+      };
+  // We assume that the maximum index of the tree is the length of the input
+  // index array. That makes sense because the root does not have a parent, so
+  // is the first "missing" entry in the input index array.
+  return build_tree(indices.size());
 }
 
 Node::NodePtrVec Node::ExampleTopologies() {
@@ -324,29 +379,3 @@ void Node::MutablePostOrder(std::function<void(Node*)> f) {
   }
   f(this);
 }
-
-#ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("Node header") {
-  Node::NodePtrVec examples = Node::ExampleTopologies();
-  Node::NodePtr t1 = examples[0];
-  Node::NodePtr t1_twin = examples[1];
-  Node::NodePtr t2 = examples[2];
-  Node::NodePtr t3 = examples[3];
-  // TODO(ematsen) add real test for TriplePreorder
-  std::cout << "TriplePreOrder" << std::endl;
-  std::cout << t2->Newick() << std::endl;
-  auto print_triple = [](const Node* parent, const Node* sister,
-                         const Node* node) {
-    std::cout << parent->TagString() << ", " << sister->TagString() << ", "
-              << node->TagString() << " " << std::endl;
-  };
-  t2->TriplePreOrder(print_triple, print_triple);
-
-  // This is actually a non-trivial test (see note in Node constructor above),
-  // which shows why we need bit rotation.
-  CHECK_NE(t1->Hash(), t2->Hash());
-
-  CHECK_EQ(t1, t1_twin);
-  CHECK_NE(t1, t2);
-}
-#endif  // DOCTEST_LIBRARY_INCLUDED

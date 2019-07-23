@@ -23,6 +23,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "intpack.hpp"
 #include "typedefs.hpp"
@@ -119,17 +120,27 @@ class Node {
                         const TagStringMapOption& node_labels,
                         bool show_tags) const;
 
+  std::vector<size_t> IndexVector();
+
   // ** Class methods
-  static inline uint32_t MaxLeafIDOfTag(uint64_t tag){
+  static inline uint32_t MaxLeafIDOfTag(uint64_t tag) {
     return UnpackFirstInt(tag);
-  };
+  }
   static inline uint32_t LeafCountOfTag(uint64_t tag) {
     return UnpackSecondInt(tag);
-  };
+  }
   static NodePtr Leaf(uint32_t id);
   static NodePtr Join(NodePtrVec children, size_t index = SIZE_MAX);
   static NodePtr Join(NodePtr left, NodePtr right, size_t index = SIZE_MAX);
+  // Build a tree given a vector of indices, such that each index describes the
+  // index of its parent. We assume that the indices are contiguous, and that
+  // the root has the largest index.
+  static NodePtr OfIndexVector(std::vector<size_t> indices);
 
+  // 0: (0,1,(2,3))
+  // 1; (0,1,(2,3)) again
+  // 2: (0,2,(1,3))
+  // 3: (0,(1,(2,3)))
   static NodePtrVec ExampleTopologies();
 
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
@@ -183,7 +194,7 @@ struct equal_to<Node::NodePtr> {
 }  // namespace std
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("Node header") {
+TEST_CASE("Node") {
   Node::NodePtrVec examples = Node::ExampleTopologies();
   Node::NodePtr t1 = examples[0];
   Node::NodePtr t1_twin = examples[1];
@@ -205,6 +216,17 @@ TEST_CASE("Node header") {
 
   CHECK_EQ(t1, t1_twin);
   CHECK_NE(t1, t2);
+
+  // Tree with trifurcation at the root.
+  Node::NodePtr t1_alt = Node::OfIndexVector({5, 5, 4, 4, 5});
+  CHECK_EQ(t1, t1_alt);
+  // Bifurcating tree.
+  Node::NodePtr t3_alt = Node::OfIndexVector({6, 5, 4, 4, 5, 6});
+  CHECK_EQ(t3, t3_alt);
+
+  for (const auto& topology : examples) {
+    CHECK_EQ(topology, Node::OfIndexVector(topology->IndexVector()));
+  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_

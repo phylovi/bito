@@ -28,7 +28,19 @@ PYBIND11_MODULE(sbn, m) {
             {v.size()},                               // Buffer dimensions
             {sizeof(double)});                        // Stride
       });
-  // Now we set things up our SBNInstance class.
+  // Tree
+  py::class_<Tree>(m, "Tree", py::buffer_protocol())
+      .def("index_vector", &Tree::IndexVector)
+      .def_static("of_index_vector", &Tree::OfIndexVector)
+      .def_readwrite("branch_lengths", &Tree::branch_lengths_);
+  // TreeCollection
+  py::class_<TreeCollection>(m, "TreeCollection")
+      .def(py::init<Tree::TreeVector>())
+      .def(py::init<Tree::TreeVector, TagStringMap>())
+      .def(py::init<Tree::TreeVector, const std::vector<std::string> &>())
+      .def("newick", &TreeCollection::Newick)
+      .def_readwrite("trees", &TreeCollection::trees_);
+  // SBNInstance
   py::class_<SBNInstance>(m, "instance")
       // Constructors
       .def(py::init<const std::string &>())
@@ -46,5 +58,6 @@ PYBIND11_MODULE(sbn, m) {
       .def("get_indexers", &SBNInstance::GetIndexers)
       .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
       // Member Variables
-      .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_);
+      .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_)
+      .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
 }

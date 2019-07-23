@@ -259,7 +259,7 @@ namespace yy {
         break;
 
       case 11: // tree
-        value.YY_MOVE_OR_COPY< Tree::TreePtr > (YY_MOVE (that.value));
+        value.YY_MOVE_OR_COPY< std::shared_ptr<Tree> > (YY_MOVE (that.value));
         break;
 
       case 8: // "label"
@@ -294,7 +294,7 @@ namespace yy {
         break;
 
       case 11: // tree
-        value.move< Tree::TreePtr > (YY_MOVE (that.value));
+        value.move< std::shared_ptr<Tree> > (YY_MOVE (that.value));
         break;
 
       case 8: // "label"
@@ -329,7 +329,7 @@ namespace yy {
         break;
 
       case 11: // tree
-        value.move< Tree::TreePtr > (that.value);
+        value.move< std::shared_ptr<Tree> > (that.value);
         break;
 
       case 8: // "label"
@@ -391,7 +391,7 @@ namespace yy {
 
       case 11: // tree
 #line 59 "src/parser.yy"
-        { yyo << yysym.value.template as < Tree::TreePtr > (); }
+        { yyo << yysym.value.template as < std::shared_ptr<Tree> > (); }
 #line 396 "src/parser.cpp"
         break;
 
@@ -650,7 +650,7 @@ namespace yy {
         break;
 
       case 11: // tree
-        yylhs.value.emplace< Tree::TreePtr > ();
+        yylhs.value.emplace< std::shared_ptr<Tree> > ();
         break;
 
       case 8: // "label"

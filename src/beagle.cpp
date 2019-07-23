@@ -96,16 +96,16 @@ void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
   }
 }
 
-void PrepareBeagleInstance(
-    const BeagleInstance beagle_instance,
-    const TreeCollection::TreeCollectionPtr &tree_collection,
-    const Alignment &alignment, const CharIntMap &symbol_table) {
-  if (tree_collection->TaxonCount() != alignment.SequenceCount()) {
+void PrepareBeagleInstance(const BeagleInstance beagle_instance,
+                           const TreeCollection &tree_collection,
+                           const Alignment &alignment,
+                           const CharIntMap &symbol_table) {
+  if (tree_collection.TaxonCount() != alignment.SequenceCount()) {
     std::cerr << "The number of tree tips doesn't match the alignment "
                  "sequence count!\n";
     abort();
   }
-  SetTipStates(beagle_instance, tree_collection->TagTaxonMap(), alignment,
+  SetTipStates(beagle_instance, tree_collection.TagTaxonMap(), alignment,
                symbol_table);
   std::vector<double> pattern_weights(alignment.Length(), 1.);
   beagleSetPatternWeights(beagle_instance, pattern_weights.data());
@@ -133,11 +133,11 @@ void SetJCModel(BeagleInstance beagle_instance) {
                               eval.data());
 }
 
-Tree::TreePtr PrepareTreeForLikelihood(Tree::TreePtr tree) {
-  if (tree->Children().size() == 3) {
-    return tree->Detrifurcate();
+Tree PrepareTreeForLikelihood(const Tree &tree) {
+  if (tree.Children().size() == 3) {
+    return tree.Detrifurcate();
   }  // else
-  if (tree->Children().size() == 2) {
+  if (tree.Children().size() == 2) {
     return tree;
   }
   // else
@@ -146,10 +146,10 @@ Tree::TreePtr PrepareTreeForLikelihood(Tree::TreePtr tree) {
   abort();
 }
 
-double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree) {
-  tree = PrepareTreeForLikelihood(tree);
+double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree) {
+  auto tree = PrepareTreeForLikelihood(in_tree);
   std::vector<BeagleOperation> operations;
-  tree->Topology()->PostOrder([&operations](const Node *node) {
+  tree.Topology()->PostOrder([&operations](const Node *node) {
     if (!node->IsLeaf()) {
       assert(node->Children().size() == 2);
       int dest = static_cast<int>(node->Index());
@@ -164,7 +164,7 @@ double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree) {
       operations.push_back(op);
     }
   });
-  auto branch_count = tree->BranchLengths().size();
+  auto branch_count = tree.BranchLengths().size();
   std::vector<int> node_indices(branch_count);
   std::iota(node_indices.begin(), node_indices.end(), 0);
   beagleUpdateTransitionMatrices(beagle_instance,
@@ -172,7 +172,7 @@ double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree) {
                                  node_indices.data(),
                                  NULL,  // firstDerivativeIndices
                                  NULL,  // secondDervativeIndices
-                                 tree->BranchLengths().data(),
+                                 tree.BranchLengths().data(),
                                  static_cast<int>(branch_count));
   beagleUpdatePartials(beagle_instance,
                        operations.data(),  // eigenIndex
@@ -191,37 +191,36 @@ double LogLikelihood(BeagleInstance beagle_instance, Tree::TreePtr tree) {
   return log_like;
 }
 
-std::vector<double> LogLikelihoods(
-    std::vector<BeagleInstance> beagle_instances,
-    TreeCollection::TreeCollectionPtr tree_collection) {
+std::vector<double> LogLikelihoods(std::vector<BeagleInstance> beagle_instances,
+                                   const TreeCollection &tree_collection) {
   return Parallelize<double>(LogLikelihood, beagle_instances, tree_collection);
 }
 
 // Compute first derivative of the log likelihood with respect to each branch
 // length, as a vector of first derivatives indexed by node index.
 std::vector<double> BranchGradient(BeagleInstance beagle_instance,
-                                   Tree::TreePtr tree) {
-  tree = PrepareTreeForLikelihood(tree);
-  tree->SlideRootPosition();
+                                   const Tree &in_tree) {
+  auto tree = PrepareTreeForLikelihood(in_tree);
+  tree.SlideRootPosition();
 
   std::vector<BeagleOperation> operations;
 
-  size_t branch_count = tree->BranchLengths().size();
+  size_t branch_count = tree.BranchLengths().size();
   std::vector<int> node_indices(branch_count);
   std::iota(node_indices.begin(), node_indices.end(), 0);
 
   std::vector<int> gradient_indices(branch_count);
   std::iota(gradient_indices.begin(), gradient_indices.end(),
-            tree->BranchLengths().size());
+            tree.BranchLengths().size());
 
   int int_branch_count = static_cast<int>(branch_count);
   int fixed_node_index =
-      static_cast<int>(tree->Topology()->Children()[1]->Index());
+      static_cast<int>(tree.Topology()->Children()[1]->Index());
   int root_child_index =
-      static_cast<int>(tree->Topology()->Children()[0]->Index());
+      static_cast<int>(tree.Topology()->Children()[0]->Index());
 
   // Calculate lower partials
-  tree->Topology()->BinaryIndexPostOrder(
+  tree.Topology()->BinaryIndexPostOrder(
       [&operations](int node_index, int child0_index, int child1_index) {
         BeagleOperation op = {
             node_index,                      // dest
@@ -233,7 +232,7 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
       });
 
   // Calculate upper partials
-  tree->Topology()->TripleIndexPreOrderBifurcating(
+  tree.Topology()->TripleIndexPreOrderBifurcating(
       [&operations, &root_child_index, &int_branch_count, &fixed_node_index](
           int parent_index, int sister_index, int node_index) {
         if (node_index != root_child_index && node_index != fixed_node_index) {
@@ -266,7 +265,7 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
       node_indices.data(),
       gradient_indices.data(),  // firstDerivativeIndices
       NULL,                     // secondDervativeIndices
-      tree->BranchLengths().data(), int_branch_count);
+      tree.BranchLengths().data(), int_branch_count);
   beagleUpdatePartials(beagle_instance,
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),
@@ -283,7 +282,7 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
   std::vector<double> derivatives(branch_count, 0);
 
   // Actually compute gradient.
-  tree->Topology()->TripleIndexPreOrderBifurcating(
+  tree.Topology()->TripleIndexPreOrderBifurcating(
       [&](int, int sister_index, int node_index) {
         if (node_index != fixed_node_index) {
           double dlogLp;
@@ -325,7 +324,7 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
 
 std::vector<std::vector<double>> BranchGradients(
     std::vector<BeagleInstance> beagle_instances,
-    TreeCollection::TreeCollectionPtr tree_collection) {
+    const TreeCollection &tree_collection) {
   return Parallelize<std::vector<double>>(BranchGradient, beagle_instances,
                                           tree_collection);
 }

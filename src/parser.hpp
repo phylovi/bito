@@ -380,7 +380,7 @@ namespace yy {
       char dummy2[sizeof (Node::NodePtrVecPtr)];
 
       // tree
-      char dummy3[sizeof (Tree::TreePtr)];
+      char dummy3[sizeof (std::shared_ptr<Tree>)];
 
       // "label"
       // "quoted"
@@ -521,13 +521,13 @@ namespace yy {
       {}
 #endif
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, Tree::TreePtr&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, std::shared_ptr<Tree>&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const Tree::TreePtr& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const std::shared_ptr<Tree>& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -580,7 +580,7 @@ switch (yytype)
         break;
 
       case 11: // tree
-        value.template destroy< Tree::TreePtr > ();
+        value.template destroy< std::shared_ptr<Tree> > ();
         break;
 
       case 8: // "label"
@@ -1236,7 +1236,7 @@ switch (yytype)
         break;
 
       case 11: // tree
-        value.move< Tree::TreePtr > (std::move (that.value));
+        value.move< std::shared_ptr<Tree> > (std::move (that.value));
         break;
 
       case 8: // "label"
@@ -1271,7 +1271,7 @@ switch (yytype)
         break;
 
       case 11: // tree
-        value.copy< Tree::TreePtr > (YY_MOVE (that.value));
+        value.copy< std::shared_ptr<Tree> > (YY_MOVE (that.value));
         break;
 
       case 8: // "label"
@@ -1313,7 +1313,7 @@ switch (yytype)
         break;
 
       case 11: // tree
-        value.move< Tree::TreePtr > (YY_MOVE (s.value));
+        value.move< std::shared_ptr<Tree> > (YY_MOVE (s.value));
         break;
 
       case 8: // "label"

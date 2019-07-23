@@ -4,6 +4,7 @@
 #ifndef SRC_DRIVER_HPP_
 #define SRC_DRIVER_HPP_
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include "parser.hpp"
@@ -32,7 +33,7 @@ class Driver {
   // Whether to generate scanner debug traces.
   bool trace_scanning_;
   // The most recent tree parsed.
-  Tree::TreePtr latest_tree_;
+  std::shared_ptr<Tree> latest_tree_;
   // Map from taxon names to their numerical identifiers.
   std::map<std::string, uint32_t> taxa_;
   // The token's location, used by the scanner to give good debug info.
@@ -45,16 +46,15 @@ class Driver {
   // Scan a string with flex.
   void ScanString(const std::string& str);
   // Parse a string with an existing parser object.
-  Tree::TreePtr ParseString(yy::parser* parser_instance,
-                            const std::string& str);
+  Tree ParseString(yy::parser* parser_instance, const std::string& str);
   // Make a parser and then parse a string for a one-off parsing.
-  TreeCollection::TreeCollectionPtr ParseString(const std::string& s);
+  TreeCollection ParseString(const std::string& s);
   // Run the parser on a Newick stream.
-  TreeCollection::TreeCollectionPtr ParseNewick(std::ifstream& in);
+  TreeCollection ParseNewick(std::ifstream& in);
   // Run the parser on a Newick file.
-  TreeCollection::TreeCollectionPtr ParseNewickFile(const std::string& fname);
+  TreeCollection ParseNewickFile(const std::string& fname);
   // Run the parser on a Nexus file.
-  TreeCollection::TreeCollectionPtr ParseNexusFile(const std::string& fname);
+  TreeCollection ParseNexusFile(const std::string& fname);
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
   TagStringMap TagTaxonMap();
 };
@@ -72,11 +72,11 @@ TEST_CASE("Driver") {
   };
   for (const auto& newick : newicks) {
     auto collection = driver.ParseString(newick);
-    CHECK_EQ(newick, collection->Trees()[0]->Newick(collection->TagTaxonMap()));
+    CHECK_EQ(newick, collection.Trees()[0].Newick(collection.TagTaxonMap()));
   }
   driver.Clear();
   auto nexus_collection = driver.ParseNexusFile("data/DS1.subsampled_10.t");
-  CHECK_EQ(nexus_collection->TreeCount(), 10);
+  CHECK_EQ(nexus_collection.TreeCount(), 10);
   driver.Clear();
   auto newick_collection =
       driver.ParseNewickFile("data/DS1.subsampled_10.t.nwk");
@@ -85,7 +85,7 @@ TEST_CASE("Driver") {
   auto five_taxon = driver.ParseNewickFile("data/five_taxon.nwk");
   std::vector<std::string> correct_five_taxon_names(
       {"x0", "x1", "x2", "x3", "x4"});
-  CHECK_EQ(five_taxon->TaxonNames(), correct_five_taxon_names);
+  CHECK_EQ(five_taxon.TaxonNames(), correct_five_taxon_names);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

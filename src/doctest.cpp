@@ -16,10 +16,10 @@ TEST_CASE("Node") {
   auto t = driver
                .ParseString(
                    "((((0_1,1_1),(2_1,3_1)),4_1),((5_1,(6_1,7_1)),(8_1,9_1)));")
-               ->Trees()[0];
+               .Trees()[0];
 
   // preorder:
-  t->Topology()->PreOrder(
+  t.Topology()->PreOrder(
       [&trace](const Node* node) { trace.push_back(node->TagString()); });
   CHECK(std::vector<std::string>({"9_10", "4_5", "3_4", "1_2", "0_1", "1_1",
                                   "3_2", "2_1", "3_1", "4_1", "9_5", "7_3",
@@ -28,7 +28,7 @@ TEST_CASE("Node") {
   trace.clear();
 
   // postorder:
-  t->Topology()->PostOrder(
+  t.Topology()->PostOrder(
       [&trace](const Node* node) { trace.push_back(node->TagString()); });
   CHECK(
       std::vector<std::string>({"0_1", "1_1", "1_2", "2_1", "3_1", "3_2", "3_4",
@@ -37,7 +37,7 @@ TEST_CASE("Node") {
   trace.clear();
 
   // levelorder:
-  t->Topology()->LevelOrder(
+  t.Topology()->LevelOrder(
       [&trace](const Node* node) { trace.push_back(node->TagString()); });
   CHECK(std::vector<std::string>({"9_10", "4_5", "9_5", "3_4", "4_1", "7_3",
                                   "9_2", "1_2", "3_2", "5_1", "7_2", "8_1",

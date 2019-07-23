@@ -20,6 +20,7 @@ def test_instance():
 
     def convert_dict_to_int(d):
         return {k: int(v) for k, v in d.items()}
+
     inst.read_nexus_file('data/DS1.subsampled_10.t')
     inst.process_loaded_trees()
     [rootsplit_support, subsplit_support] = inst.split_counters()
@@ -42,3 +43,16 @@ def test_instance():
     print(np.array(inst.log_likelihoods()))
     gradients = [np.array(gradient) for gradient in inst.branch_gradients()]
     print(gradients[-1])
+
+    inst.tree_collection = sbn.TreeCollection(
+        [sbn.Tree.of_index_vector([3, 3, 3])], ["mars", "saturn", "jupiter"])
+    inst.read_fasta_file('data/hello.fasta')
+    inst.make_beagle_instances(2)
+    branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths,
+                              copy=False)
+    branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.])
+    print(inst.tree_collection.newick())
+    print(np.array(inst.log_likelihoods()))
+    branch_lengths[0] = 0.2
+    print(inst.tree_collection.newick())
+    print(np.array(inst.log_likelihoods()))

@@ -2,12 +2,13 @@ name: libsbn
 channels:
   - anaconda
   - bioconda
+  - conda-forge
   - defaults
 dependencies:
   - beagle-lib
   - flex
   - make
   - numpy
-  - pybind11
+  - pybind11 >=2.3.0
   - pytest
   - scons

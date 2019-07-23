@@ -6,6 +6,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "node.hpp"
 #include "typedefs.hpp"
@@ -28,11 +29,11 @@ Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
 }
 
 Tree::Tree(Node::NodePtr topology, BranchLengthVector branch_lengths)
-    : topology_(topology), branch_lengths_(branch_lengths) {
+    : branch_lengths_(branch_lengths), topology_(topology) {
   assert(topology->Index() + 1 == branch_lengths.size());
 }
 
-bool Tree::operator==(const Tree& other) {
+bool Tree::operator==(const Tree& other) const {
   return (this->Topology() == other.Topology()) &&
          (this->BranchLengths() == other.BranchLengths());
 }
@@ -46,7 +47,7 @@ double Tree::BranchLength(const Node* node) const {
   return branch_lengths_[node->Index()];
 }
 
-Tree::TreePtr Tree::Detrifurcate() {
+Tree Tree::Detrifurcate() const {
   if (Children().size() != 3) {
     std::cerr << "Detrifurcate given a non-trifurcating tree.\n";
     abort();
@@ -57,20 +58,26 @@ Tree::TreePtr Tree::Detrifurcate() {
   branch_lengths[our_index] = 0.;
   auto rerooted_topology = Node::Join(Children()[0], root12, our_index + 1);
   branch_lengths.push_back(0.);
-  return std::make_shared<Tree>(rerooted_topology, branch_lengths);
+  return Tree(rerooted_topology, branch_lengths);
 }
 
-Tree::TreePtr Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
+Tree Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   topology->Reindex();
   BranchLengthVector branch_lengths(1 + topology->Index());
   topology->PreOrder([&branch_lengths](const Node* node) {
     branch_lengths[node->Index()] = 1.;
   });
-  return std::make_shared<Tree>(topology, branch_lengths);
+  return Tree(topology, branch_lengths);
 }
 
-Tree::TreePtrVector Tree::ExampleTrees() {
-  TreePtrVector v;
+Tree Tree::OfIndexVector(std::vector<size_t> indices) {
+  auto topology = Node::OfIndexVector(indices);
+  std::vector<double> branch_lengths(topology->Index() + 1, 1.);
+  return Tree(topology, std::move(branch_lengths));
+}
+
+Tree::TreeVector Tree::ExampleTrees() {
+  TreeVector v;
   for (const auto& topology : Node::ExampleTopologies()) {
     v.push_back(UnitBranchLengthTreeOf(topology));
   }
