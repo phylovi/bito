@@ -30,8 +30,8 @@ TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
 }
 
 // Make a map from Tags to the bitset representing the indices below the Tag.
-TagBitsetMap TagIndexSetMapOf(Node::NodePtr topology) {
-  TagBitsetMap map;
+SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology) {
+  SizeBitsetMap map;
   auto index_count = topology->Index() + 1;
   topology->PostOrder([&map, index_count](const Node* node) {
     Bitset bitset(static_cast<size_t>(index_count));
@@ -43,18 +43,11 @@ TagBitsetMap TagIndexSetMapOf(Node::NodePtr topology) {
     bitset.set(node->Index());
     // Take the union of the children below.
     for (const auto& child : node->Children()) {
-      bitset |= map.at(child->Tag());
+      bitset |= map.at(child->Index());
     }
-    assert(map.insert({node->Tag(), std::move(bitset)}).second);
+    assert(map.insert({node->Index(), std::move(bitset)}).second);
   });
   return map;
-}
-
-void PrintTagBitsetMap(TagBitsetMap map) {
-  for (const auto& iter : map) {
-    std::cout << StringOfPackedInt(iter.first) << " " << iter.second.ToString()
-              << std::endl;
-  }
 }
 
 BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies) {

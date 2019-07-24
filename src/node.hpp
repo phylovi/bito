@@ -120,6 +120,9 @@ class Node {
       const TagStringMapOption& node_labels = std::experimental::nullopt,
       bool show_tags = false) const;
 
+  // Construct a vector such that the ith entry is the index of the index-i
+  // node's parent. We assume that the indices are contiguous, and that
+  // the root has the largest index.
   std::vector<size_t> ParentIndexVector();
 
   // ** Class methods
