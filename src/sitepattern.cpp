@@ -1,0 +1,71 @@
+//
+//  sitepattern.cpp
+//  libsbn
+//
+//  Created by Mathieu Fourment on 23/7/19.
+//  Copyright © 2019 University of Technology Sydney. All rights reserved.
+//
+
+#include "sitepattern.hpp"
+
+#include "intpack.hpp"
+
+// DNA assumption here.
+CharIntMap GetSymbolTable() {
+  CharIntMap table({{'A', 0},
+                    {'C', 1},
+                    {'G', 2},
+                    {'T', 3},
+                    {'a', 0},
+                    {'c', 1},
+                    {'g', 2},
+                    {'t', 3},
+                    {'-', 4}});
+  return table;
+}
+
+struct VectorHasher {
+  int operator()(const std::vector<int> &values) const {
+    int hash = values[0];
+    for (int i = 1; i < values.size(); i++) {
+      hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+    }
+    return hash;
+  }
+};
+
+void SitePattern::Compress() {
+  CharIntMap symbol_table = GetSymbolTable();
+  size_t sequence_length = alignment_.Length();
+  std::unordered_map<SymbolVector, double, VectorHasher> patterns;
+
+  // build an unordered map of patterns
+  for (int i = 0; i < sequence_length; i++) {
+    SymbolVector pattern(alignment_.SequenceCount());
+    for (auto it = tag_taxon_map_.cbegin(); it != tag_taxon_map_.cend(); ++it) {
+      int taxon_number = static_cast<int>(UnpackFirstInt(it->first));
+      pattern[taxon_number] = symbol_table.at(alignment_.at(it->second)[i]);
+    }
+    if (patterns.find(pattern) == patterns.end()) {
+      patterns.insert(std::make_pair(pattern, 1));
+    } else
+      patterns[pattern]++;
+  }
+
+  // add tip states to beagle
+  for (auto iter_tag_taxon = tag_taxon_map_.cbegin();
+       iter_tag_taxon != tag_taxon_map_.cend(); ++iter_tag_taxon) {
+    SymbolVector compressed_sequence;
+    int taxon_number = static_cast<int>(UnpackFirstInt(iter_tag_taxon->first));
+    for (auto iter_patterns = patterns.cbegin();
+         iter_patterns != patterns.cend(); ++iter_patterns) {
+      compressed_sequence.push_back(iter_patterns->first[taxon_number]);
+    }
+    patterns_[taxon_number] = compressed_sequence;
+  }
+
+  // add site weights to beagle
+  for (auto it = patterns.cbegin(); it != patterns.cend(); ++it) {
+    weights_.push_back(it->second);
+  }
+}

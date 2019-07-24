@@ -264,12 +264,13 @@ struct SBNInstance {
     CheckDataLoaded();
     beagle_leaf_count_ = alignment_.SequenceCount();
     beagle_site_count_ = alignment_.Length();
+    SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
     for (auto i = 0; i < instance_count; i++) {
-      auto beagle_instance = beagle::CreateInstance(alignment_);
+      auto beagle_instance = beagle::CreateInstance(site_pattern);
       beagle::SetJCModel(beagle_instance);
       beagle_instances_.push_back(beagle_instance);
       beagle::PrepareBeagleInstance(beagle_instance, tree_collection_,
-                                    alignment_, symbol_table_);
+                                    site_pattern);
     }
   }
 
@@ -278,8 +279,7 @@ struct SBNInstance {
     return beagle::LogLikelihoods(beagle_instances_, tree_collection_);
   }
 
-  std::vector<std::vector<double>> BranchGradients() {
-    CheckBeagleDimensions();
+  std::vector<std::pair<double, std::vector<double>>> BranchGradients() {
     return beagle::BranchGradients(beagle_instances_, tree_collection_);
   }
 };
@@ -316,9 +316,16 @@ TEST_CASE("libsbn") {
     CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
 
-  // Test only the last one.
-  auto gradients = inst.BranchGradients().back();
-  std::sort(gradients.begin(), gradients.end());
+  auto gradients = inst.BranchGradients();
+  // Test the log likelihoods
+  for (size_t i = 0; i < likelihoods.size(); i++) {
+    CHECK_LT(abs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
+    std::cout << gradients[i].first << " " << pybeagle_likelihoods[i]
+              << std::endl;
+  }
+  // Test the gradients for the last tree
+  auto last = gradients.back();
+  std::sort(last.second.begin(), last.second.end());
   // Zeros are for the root and one of the descendants of the root.
   std::vector<double> physher_gradients = {
       -904.18956, -607.70500, -562.36274, -553.63315, -542.26058, -539.64210,
@@ -330,8 +337,8 @@ TEST_CASE("libsbn") {
       255.52967,  259.90378,  394.00504,  394.96619,  396.98933,  429.83873,
       450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
       888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
-  for (size_t i = 0; i < gradients.size(); i++) {
-    CHECK_LT(abs(gradients[i] - physher_gradients[i]), 0.0001);
+  for (size_t i = 0; i < last.second.size(); i++) {
+    CHECK_LT(abs(last.second[i] - physher_gradients[i]), 0.0001);
   }
 
   inst.ProcessLoadedTrees();

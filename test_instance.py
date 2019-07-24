@@ -41,8 +41,10 @@ def test_instance():
     inst.read_fasta_file('data/DS1.fasta')
     inst.make_beagle_instances(2)
     print(np.array(inst.log_likelihoods()))
-    gradients = [np.array(gradient) for gradient in inst.branch_gradients()]
-    print(gradients[-1])
+
+    log_likelihoods, gradients = zip(*inst.branch_gradients())
+    print(np.array(log_likelihoods))
+    print(np.array(gradients[-1]))
 
     inst.tree_collection = sbn.TreeCollection(
         [sbn.Tree.of_index_vector([3, 3, 3])], ["mars", "saturn", "jupiter"])

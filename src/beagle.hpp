@@ -11,6 +11,7 @@
 #include "alignment.hpp"
 #include "intpack.hpp"
 #include "libhmsbeagle/beagle.h"
+#include "sitepattern.hpp"
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
 #include "typedefs.hpp"
@@ -25,14 +26,12 @@ SymbolVector SymbolVectorOf(const std::string &str,
 
 int CreateInstance(int tip_count, int alignment_length,
                    BeagleInstanceDetails *return_info);
-BeagleInstance CreateInstance(const Alignment &alignment);
+BeagleInstance CreateInstance(const SitePattern &site_pattern);
 
-void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
-                  const Alignment &alignment, const CharIntMap &symbol_table);
 void PrepareBeagleInstance(const BeagleInstance beagle_instance,
                            const TreeCollection &tree_collection,
-                           const Alignment &alignment,
-                           const CharIntMap &symbol_table);
+                           const SitePattern &site_pattern);
+
 void SetJCModel(BeagleInstance beagle_instance);
 
 template <typename T>
@@ -67,9 +66,9 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &tree);
 std::vector<double> LogLikelihoods(std::vector<BeagleInstance> beagle_instances,
                                    const TreeCollection &tree_collection);
 
-std::vector<double> BranchGradient(BeagleInstance beagle_instance,
-                                   const Tree &tree);
-std::vector<std::vector<double>> BranchGradients(
+std::pair<double, std::vector<double>> BranchGradient(
+    BeagleInstance beagle_instance, const Tree &tree);
+std::vector<std::pair<double, std::vector<double>>> BranchGradients(
     std::vector<BeagleInstance> beagle_instances,
     const TreeCollection &tree_collection);
 
