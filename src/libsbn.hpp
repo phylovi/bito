@@ -213,15 +213,13 @@ struct SBNInstance {
   // single virtual rooting of the tree, and gives the indices of sbn_probs_
   // corresponding to PCSSs that are present in the given topology.
   SizeVectorVector IndexerRepresentationOfTopology(Node::NodePtr topology) {
-    auto index_index_set_map = IndexIndexSetMapOf(topology);
     auto tag_to_leafset = TagLeafSetMapOf(topology);
     auto edge_count = topology->Index() + 1;
     auto leaf_count = topology->LeafCount();
     SizeVectorVector result(edge_count);
 
     topology->PCSSPreOrder([
-          &indexer_ = this->indexer_, &index_index_set_map, &tag_to_leafset,
-          &leaf_count, &result
+          &indexer_ = this->indexer_, &tag_to_leafset, &leaf_count, &result
     ](const Node *sister_node, bool sister_direction, const Node *focal_node,
       bool focal_direction,  //
       const Node *child0_node,
@@ -241,12 +239,8 @@ struct SBNInstance {
                       false);
       auto indexer_position = indexer_.at(bitset);
       const auto &focal_index = focal_node->Index();
-      // which_edges_below is a bitset such that the 1s represent edges below
-      // the current one.
-      const auto &which_edges_below = index_index_set_map.at(focal_index);
-      assert(which_edges_below.size() == result.size());
       if (sister_node == focal_node) {
-        // Bidirectional edge situation.
+        // We are in the bidirectional edge situation.
         assert(focal_index < result.size());
         // Rooting at the present edge will indeed lead to the given PCSS.
         result[focal_index].push_back(indexer_position);
@@ -375,8 +369,10 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
-  // auto tree = inst.SampleTopology();
-  // std::cout << tree->Newick() << std::endl;
+  auto topology = inst.SampleTopology();
+  std::cout << "indexer of: " << topology->Newick() << std::endl;
+  auto x = inst.IndexerRepresentationOfTopology(topology);
+  std::cout << x << std::endl;
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
@@ -416,11 +412,6 @@ TEST_CASE("libsbn") {
     CHECK_LT(abs(last.second[i] - physher_gradients[i]), 0.0001);
   }
 
-  inst.ProcessLoadedTrees();
-  auto topology = inst.SampleTopology();
-  std::cout << topology->Newick() << std::endl;
-  auto x = inst.IndexerRepresentationOfTopology(topology);
-  std::cout << x << std::endl;
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
