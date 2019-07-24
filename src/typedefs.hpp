@@ -11,7 +11,8 @@
 // Put typedefs that are built of STL types here.
 typedef uint64_t Tag;
 typedef std::vector<int> SymbolVector;
-typedef std::vector<std::vector<size_t>> SizeVectorVector;
+typedef std::vector<size_t> SizeVector;
+typedef std::vector<SizeVector> SizeVectorVector;
 typedef std::unordered_map<Tag, double> TagDoubleMap;
 typedef std::unordered_map<Tag, size_t> TagSizeMap;
 typedef std::unordered_map<Tag, std::string> TagStringMap;

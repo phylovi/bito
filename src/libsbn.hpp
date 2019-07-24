@@ -222,18 +222,17 @@ struct SBNInstance {
     }
   }
 
-  // TODO change to const Node*
   // This function returns a vector of vectors. Each vector corresponds to a
   // single virtual rooting of the tree, and gives the indices of sbn_probs_
   // corresponding to PCSSs that are present in the given topology.
-  SizeVectorVector IndexerRepresentationOfTopology(Node::NodePtr topology) {
+  std::pair<SizeVector, SizeVectorVector> IndexerRepresentationOfTopology(
+      Node::NodePtr topology) {
     auto tag_to_leafset = TagLeafSetMapOf(topology);
-    auto edge_count = topology->Index() + 1;
     auto leaf_count = topology->LeafCount();
-    SizeVectorVector result(edge_count);
-
+    SizeVectorVector pcss_result(topology->Index());
+    // First the hard part: the pcss_result.
     topology->PCSSPreOrder([
-          &indexer_ = this->indexer_, &tag_to_leafset, &leaf_count, &result
+          &indexer_ = this->indexer_, &tag_to_leafset, &leaf_count, &pcss_result
     ](const Node *sister_node, bool sister_direction, const Node *focal_node,
       bool focal_direction,  //
       const Node *child0_node,
@@ -256,9 +255,9 @@ struct SBNInstance {
       const auto &focal_index = focal_node->Index();
       if (sister_node == focal_node) {
         // We are in the bidirectional edge situation.
-        assert(focal_index < result.size());
+        assert(focal_index < pcss_result.size());
         // Rooting at the present edge will indeed lead to the given PCSS.
-        result[focal_index].push_back(indexer_position);
+        pcss_result[focal_index].push_back(indexer_position);
       } else {
         // The only time the virtual root clade should be nullptr should be when
         // sister_node == focal_node, but we check anyhow.
@@ -266,17 +265,26 @@ struct SBNInstance {
         // Virtual-rooting on every edge in the sister will also lead to this
         // PCSS, because then the root will be "above" the PCSS.
         virtual_root_clade->ConditionalPreOrder(
-            [&result, &indexer_position, &sister_node,
+            [&pcss_result, &indexer_position, &sister_node,
              &focal_node](const Node *node) {
               if (node == sister_node || node == focal_node) {
                 return false;
               }
-              result[node->Index()].push_back(indexer_position);
+              pcss_result[node->Index()].push_back(indexer_position);
               return true;
             });
       }
     });
-    return result;
+    // Second, the rootsplits.
+    SizeVector rootsplit_result(topology->Index() + 1);
+    topology->PreOrder([
+      &rootsplit_result, &tag_to_leafset, &indexer = this->indexer_
+    ](const Node *node) {
+      Bitset rootsplit = tag_to_leafset.at(node->Tag());
+      rootsplit.Minorize();
+      rootsplit_result[node->Index()] = indexer.at(rootsplit);
+    });
+  return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
   }
 
   // TODO(erick) replace with something interesting.
@@ -393,13 +401,20 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
-  inst.PrintSupports();
-  auto topology = inst.SampleTopology();
-  std::cout << "indexer of: " << topology->Newick([](const Node *node) {
-    return std::to_string(node->Index());
-  }) << std::endl;
-  auto x = inst.IndexerRepresentationOfTopology(topology);
-  std::cout << x << std::endl;
+  auto indexer_test_topology =
+      // (2,(1,3)5,(0,4)6)7
+      Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
+  auto representation =
+      inst.IndexerRepresentationOfTopology(indexer_test_topology);
+  std::cout << representation;
+  //  SizeVectorVector correct_representation({{54, 31, 15},
+  //                                           {21, 13, 22},
+  //                                           {74, 42, 61},
+  //                                           {21, 12, 63},
+  //                                           {27, 31, 57},
+  //                                           {21, 75, 76},
+  //                                           {70, 73, 31}});
+  //  CHECK_EQ(representation, correct_representation);
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
@@ -438,7 +453,6 @@ TEST_CASE("libsbn") {
   for (size_t i = 0; i < last.second.size(); i++) {
     CHECK_LT(abs(last.second[i] - physher_gradients[i]), 0.0001);
   }
-
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
