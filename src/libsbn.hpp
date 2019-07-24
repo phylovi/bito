@@ -64,16 +64,16 @@ struct SBNInstance {
   std::vector<double> sbn_probs_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
   // and PCSS bitsets are at the end.
+  // The collection of rootsplits, with the same indexing as in the indexer_.
+  BitsetVector rootsplits_;
+  // The first index after the rootsplit block in sbn_probs_.
+  size_t rootsplit_index_end_;
   BitsetUInt32Map indexer_;
   // A map going from the index of a PCSS to its child.
   UInt32BitsetMap index_to_child_;
   // A map going from a parent subsplit to the range of indices in sbn_probs_
   // with its children.
   BitsetUInt32PairMap parent_to_range_;
-  // The collection of rootsplits, with the same indexing as in the indexer_.
-  BitsetVector rootsplits_;
-  // The first index after the rootsplit block in sbn_probs_.
-  size_t rootsplit_index_end_;
   // Random bits.
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
@@ -116,10 +116,10 @@ struct SBNInstance {
     auto counter = tree_collection_.TopologyCounter();
     // See above for the definitions of these members.
     sbn_probs_.clear();
+    rootsplits_.clear();
     indexer_.clear();
     index_to_child_.clear();
     parent_to_range_.clear();
-    rootsplits_.clear();
     // Start by adding the rootsplits.
     for (const auto &iter : RootsplitCounterOf(counter)) {
       assert(indexer_.insert({iter.first, index}).second);
@@ -144,6 +144,19 @@ struct SBNInstance {
       }
     }
     sbn_probs_ = std::vector<double>(index, 1.);
+  }
+
+  void PrintSupports() {
+    std::vector<std::string> to_print(indexer_.size());
+    for (size_t i = 0; i < rootsplits_.size(); i++) {
+      to_print[i] = rootsplits_[i].SubsplitToString();
+    }
+    for (const auto &iter : indexer_) {
+      to_print[iter.second] = iter.first.PCSSToString();
+    }
+    for (size_t i = 0; i < to_print.size(); i++) {
+      std::cout << i << "\t" << to_print[i] << std::endl;
+    }
   }
 
   // Sample an integer index in [range.first, range.second) according to
@@ -369,6 +382,7 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
+  inst.PrintSupports();
   auto topology = inst.SampleTopology();
   std::cout << "indexer of: " << topology->Newick() << std::endl;
   auto x = inst.IndexerRepresentationOfTopology(topology);
