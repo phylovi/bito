@@ -317,8 +317,6 @@ Node::NodePtr Node::Deroot() {
               << Newick() << std::endl;
     abort();
   }
-  const auto& child0 = children_[0];
-  const auto& child1 = children_[1];
   auto deroot = [](const NodePtr other_child, const NodePtr has_descendants) {
     // Make a vector copy by passing a vector in.
     NodePtrVec children(has_descendants->Children());
@@ -326,10 +324,10 @@ Node::NodePtr Node::Deroot() {
     // has_descendants' index is now available.
     return Join(children, has_descendants->Index());
   };
-  if (child1->LeafCount() == 1) {
-    return deroot(child1, child0);
+  if (children_[1]->LeafCount() == 1) {
+    return deroot(children_[1], children_[0]);
   }  // else
-  return deroot(child0, child1);
+  return deroot(children_[0], children_[1]);
 }
 
 // Class methods
