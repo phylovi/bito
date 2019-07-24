@@ -265,9 +265,14 @@ struct SBNInstance {
         assert(virtual_root_clade != nullptr);
         // Virtual-rooting on every edge in the sister will also lead to this
         // PCSS, because then the root will be "above" the PCSS.
-        virtual_root_clade->PostOrder(
-            [&result, &indexer_position](const Node *node) {
+        virtual_root_clade->ConditionalPreOrder(
+            [&result, &indexer_position, &sister_node,
+             &focal_node](const Node *node) {
+              if (node == sister_node || node == focal_node) {
+                return false;
+              }
               result[node->Index()].push_back(indexer_position);
+              return true;
             });
       }
     });

@@ -78,6 +78,14 @@ void Node::PreOrder(std::function<void(const Node*)> f) const {
   }
 }
 
+void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
+  if (f(this)) {
+    for (const auto& child : children_) {
+      child->ConditionalPreOrder(f);
+    }
+  }
+}
+
 void Node::PostOrder(std::function<void(const Node*)> f) const {
   for (const auto& child : children_) {
     child->PostOrder(f);

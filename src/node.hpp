@@ -68,6 +68,8 @@ class Node {
   bool operator==(const Node& other);
 
   void PreOrder(std::function<void(const Node*)> f) const;
+  // ConditionalPreOrder continues to recur as long as f returns true.
+  void ConditionalPreOrder(std::function<bool(const Node*)> f) const;
   void PostOrder(std::function<void(const Node*)> f) const;
   void LevelOrder(std::function<void(const Node*)> f) const;
 
