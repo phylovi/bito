@@ -148,11 +148,12 @@ struct SBNInstance {
 
   void PrintSupports() {
     std::vector<std::string> to_print(indexer_.size());
-    for (size_t i = 0; i < rootsplits_.size(); i++) {
-      to_print[i] = rootsplits_[i].SubsplitToString();
-    }
     for (const auto &iter : indexer_) {
-      to_print[iter.second] = iter.first.PCSSToString();
+      if (iter.second < rootsplit_index_end_) {
+        to_print[iter.second] = iter.first.ToString();
+      } else {
+        to_print[iter.second] = iter.first.PCSSToString();
+      }
     }
     for (size_t i = 0; i < to_print.size(); i++) {
       std::cout << i << "\t" << to_print[i] << std::endl;
@@ -384,7 +385,9 @@ TEST_CASE("libsbn") {
   inst.ProcessLoadedTrees();
   inst.PrintSupports();
   auto topology = inst.SampleTopology();
-  std::cout << "indexer of: " << topology->Newick() << std::endl;
+  std::cout << "indexer of: " << topology->Newick([](const Node *node) {
+    return std::to_string(node->Index());
+  }) << std::endl;
   auto x = inst.IndexerRepresentationOfTopology(topology);
   std::cout << x << std::endl;
 

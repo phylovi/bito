@@ -3,6 +3,7 @@
 
 #include "bitset.hpp"
 #include <cassert>
+#include <iostream>
 
 Bitset::Bitset(std::vector<bool> value) : value_(value) {}
 
