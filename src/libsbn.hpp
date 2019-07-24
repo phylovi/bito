@@ -30,6 +30,7 @@ typedef std::unordered_map<uint32_t, std::string> UInt32StringMap;
 typedef std::unordered_map<std::string,
                            std::unordered_map<std::string, uint32_t>>
     StringPCSSMap;
+typedef std::vector<uint32_t> PCSSIndexVector;
 
 template <typename T>
 StringUInt32Map StringUInt32MapOf(T m) {
@@ -50,7 +51,7 @@ StringPCSSMap StringPCSSMapOf(PCSSDict d) {
 
 struct SBNInstance {
   std::string name_;
-  // Things that get loaded in.
+  // Things that get loaded in or sampled from SBNs.
   TreeCollection tree_collection_;
   Alignment alignment_;
   // Beagly bits.
@@ -184,6 +185,26 @@ struct SBNInstance {
     };
     return Node::Join(process_subsplit(parent_subsplit),
                       process_subsplit(parent_subsplit.RotateSubsplit()));
+  }
+
+  void CheckSBNMapsAvailable() {
+    if (!indexer_.size() || !index_to_child_.size() ||
+        parent_to_range_.size() || !rootsplits_.size()) {
+      std::cout << "Please call ProcessLoadedTrees to prepare your SBN maps.\n";
+      abort();
+    }
+  }
+
+  void SampleTrees(size_t count) {
+    CheckSBNMapsAvailable();
+    auto leaf_count = rootsplits_[0].size();
+    auto edge_count = 2 * static_cast<int>(leaf_count) - 1;
+    tree_collection_.trees_.clear();
+    for (size_t i = 0; i < count; i++) {
+      std::vector<double> branch_lengths(static_cast<size_t>(edge_count));
+      tree_collection_.trees_.emplace_back(
+          Tree(SampleTopology(), std::move(branch_lengths)));
+    }
   }
 
   // TODO(erick) replace with something interesting.
