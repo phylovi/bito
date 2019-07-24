@@ -33,9 +33,27 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("Build") {
-  auto topologies = Node::ExampleTopologies();
+  auto topology3 = Node::ExampleTopologies()[3];
 
-  PrintTagBitsetMap(TagIndexSetMapOf(topologies[3]));
+  for (auto topology : Node::ExampleTopologies()) {
+    std::cout << topology->Newick([](const Node* node) {
+      return std::to_string(node->Index());
+    }) << std::endl;
+  }
+
+  std::cout << topology3->Newick([](const Node* node) {
+    return std::to_string(node->Index());
+  }) << std::endl;
+
+  PrintTagBitsetMap(TagIndexSetMapOf(topology3));
+
+  // 3_3 0111110
+  // 3_4 1111111
+  // 1_1 0100000
+  // 0_1 1000000
+  // 2_1 0010000
+  // 3_1 0001000
+  // 3_2 0011100
 
   // Tests comparing to vbpi appear in Python test code.
 }

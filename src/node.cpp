@@ -291,13 +291,13 @@ std::string Node::Newick(const DoubleVectorOption& branch_lengths,
       branch_lengths);
 }
 
-std::vector<size_t> Node::IndexVector() {
+std::vector<size_t> Node::ParentIndexVector() {
   std::vector<size_t> indices(Index());
   PostOrder([&indices](const Node* node) {
     if (!node->IsLeaf()) {
       for (const auto& child : node->Children()) {
         if (child->Index() >= indices.size()) {
-          std::cerr << "Problematic indices in IndexVector.\n";
+          std::cerr << "Problematic indices in ParentIndexVector.\n";
           abort();
         }
         indices[child->Index()] = node->Index();
@@ -316,7 +316,7 @@ Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t index) {
   return Join(std::vector<NodePtr>({left, right}), index);
 }
 
-Node::NodePtr Node::OfIndexVector(std::vector<size_t> indices) {
+Node::NodePtr Node::OfParentIndexVector(std::vector<size_t> indices) {
   // We will fill this map with the indices of the descendants.
   std::unordered_map<size_t, std::vector<size_t>> downward_indices;
   for (size_t child_index = 0; child_index < indices.size(); child_index++) {

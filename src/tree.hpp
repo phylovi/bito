@@ -32,7 +32,9 @@ class Tree {
   uint32_t LeafCount() const { return Topology()->LeafCount(); }
   Node::NodePtrVec Children() const { return Topology()->Children(); }
   size_t Index() const { return Topology()->Index(); }
-  std::vector<size_t> IndexVector() { return Topology()->IndexVector(); }
+  std::vector<size_t> ParentIndexVector() {
+    return Topology()->ParentIndexVector();
+  }
 
   bool operator==(const Tree& other) const;
 
@@ -50,7 +52,7 @@ class Tree {
   // (s1:b1, s2:b2):0):0. Note that we zero out the root branch length.
   Tree Detrifurcate() const;
   static Tree UnitBranchLengthTreeOf(Node::NodePtr topology);
-  static Tree OfIndexVector(std::vector<size_t> indices);
+  static Tree OfParentIndexVector(std::vector<size_t> indices);
   static TreeVector ExampleTrees();
 
   // We make branch lengths public so we can muck with them in Python.

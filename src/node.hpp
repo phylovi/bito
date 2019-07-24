@@ -120,7 +120,7 @@ class Node {
       const TagStringMapOption& node_labels = std::experimental::nullopt,
       bool show_tags = false) const;
 
-  std::vector<size_t> IndexVector();
+  std::vector<size_t> ParentIndexVector();
 
   // ** Class methods
   static inline uint32_t MaxLeafIDOfTag(uint64_t tag) {
@@ -135,12 +135,14 @@ class Node {
   // Build a tree given a vector of indices, such that each index describes the
   // index of its parent. We assume that the indices are contiguous, and that
   // the root has the largest index.
-  static NodePtr OfIndexVector(std::vector<size_t> indices);
+  static NodePtr OfParentIndexVector(std::vector<size_t> indices);
 
-  // 0: (0,1,(2,3))
-  // 1; (0,1,(2,3)) again
-  // 2: (0,2,(1,3))
-  // 3: (0,(1,(2,3)))
+  //     topology           with internal node indices
+  //     --------           --------------------------
+  // 0: (0,1,(2,3))         (0,1,(2,3)4)5;
+  // 1; (0,1,(2,3)) again   (0,1,(2,3)4)5;
+  // 2: (0,2,(1,3))         (0,2,(1,3)4)5;
+  // 3: (0,(1,(2,3)))       (0,(1,(2,3)4)5)6;
   static NodePtrVec ExampleTopologies();
 
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
@@ -221,14 +223,15 @@ TEST_CASE("Node") {
   CHECK_NE(t1, t2);
 
   // Tree with trifurcation at the root.
-  Node::NodePtr t1_alt = Node::OfIndexVector({5, 5, 4, 4, 5});
+  Node::NodePtr t1_alt = Node::OfParentIndexVector({5, 5, 4, 4, 5});
   CHECK_EQ(t1, t1_alt);
   // Bifurcating tree.
-  Node::NodePtr t3_alt = Node::OfIndexVector({6, 5, 4, 4, 5, 6});
+  Node::NodePtr t3_alt = Node::OfParentIndexVector({6, 5, 4, 4, 5, 6});
   CHECK_EQ(t3, t3_alt);
 
   for (const auto& topology : examples) {
-    CHECK_EQ(topology, Node::OfIndexVector(topology->IndexVector()));
+    CHECK_EQ(topology,
+             Node::OfParentIndexVector(topology->ParentIndexVector()));
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
