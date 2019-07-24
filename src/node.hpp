@@ -14,6 +14,8 @@
 // In summary, call Reindex after building your tree if you need to use the
 // index. Note that Tree construction calls Reindex, if you are manually
 // manipulating the topology make you do manipulations with that in mind.
+//
+// Equality is in terms of tree topologies. Indices don't matter.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
@@ -124,6 +126,8 @@ class Node {
   // node's parent. We assume that the indices are contiguous, and that
   // the root has the largest index.
   std::vector<size_t> ParentIndexVector();
+
+  NodePtr Deroot();
 
   // ** Class methods
   static inline uint32_t MaxLeafIDOfTag(uint64_t tag) {
@@ -236,6 +240,16 @@ TEST_CASE("Node") {
     CHECK_EQ(topology,
              Node::OfParentIndexVector(topology->ParentIndexVector()));
   }
+
+  std::cout << t1->Newick() << std::endl;
+  std::cout << t3->Newick() << std::endl;
+  std::cout << t3->Deroot()->Newick() << std::endl;
+  // Check Deroot when we deroot on the right.
+  CHECK_EQ(t1, t3->Deroot());
+  // Check Deroot when we deroot on the left.
+  CHECK_EQ(Node::OfParentIndexVector({3, 3, 3}),
+           // tree ((0,1)3,2)4
+           Node::OfParentIndexVector({3, 3, 4, 4})->Deroot());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_

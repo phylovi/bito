@@ -307,6 +307,31 @@ std::vector<size_t> Node::ParentIndexVector() {
   return indices;
 }
 
+Node::NodePtr Node::Deroot() {
+  if (LeafCount() < 3) {
+    std::cerr << "Can't deroot a tree with fewer than 3 leaves.\n";
+    abort();
+  }
+  if (Children().size() != 2) {
+    std::cerr << "Can't deroot a non-bifurcating tree.\nProblem tree:"
+              << Newick() << std::endl;
+    abort();
+  }
+  const auto& child0 = children_[0];
+  const auto& child1 = children_[1];
+  auto deroot = [](const NodePtr other_child, const NodePtr has_descendants) {
+    // Make a vector copy by passing a vector in.
+    NodePtrVec children(has_descendants->Children());
+    children.push_back(other_child);
+    // has_descendants' index is now available.
+    return Join(children, has_descendants->Index());
+  };
+  if (child1->LeafCount() == 1) {
+    return deroot(child1, child0);
+  }  // else
+  return deroot(child0, child1);
+}
+
 // Class methods
 Node::NodePtr Node::Leaf(uint32_t id) { return std::make_shared<Node>(id); }
 Node::NodePtr Node::Join(NodePtrVec children, size_t index) {

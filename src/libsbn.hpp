@@ -168,7 +168,7 @@ struct SBNInstance {
         SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
     const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
     // The addition below turns the rootsplit into a subsplit.
-    auto topology = SampleTopology(rootsplit + ~rootsplit);
+    auto topology = SampleTopology(rootsplit + ~rootsplit)->Deroot();
     topology->Reindex();
     return topology;
   }
@@ -205,6 +205,42 @@ struct SBNInstance {
       tree_collection_.trees_.emplace_back(
           Tree(SampleTopology(), std::move(branch_lengths)));
     }
+  }
+
+  // TODO change to const Node*
+  SizeVectorVector IndexerRepresentationOfTopology(Node::NodePtr topology) {
+    auto index_index_set_map = IndexIndexSetMapOf(topology);
+    auto tag_to_leafset = TagLeafSetMapOf(topology);
+    auto edge_count = topology->Index();
+    auto leaf_count = topology->MaxLeafID();
+    SizeVectorVector result(edge_count);
+
+    topology->PCSSPreOrder([
+          &indexer_ = this->indexer_, &index_index_set_map, &tag_to_leafset,
+          &leaf_count
+    ](const Node *sister_node, bool sister_direction, const Node *focal_node,
+      bool focal_direction,  //
+      const Node *child0_node,
+      bool child0_direction,  //
+      const Node *child1_node, bool child1_direction) {
+      const auto &current_index = focal_node->Index();
+
+      Bitset bitset(3 * leaf_count, false);
+      bitset.CopyFrom(tag_to_leafset.at(sister_node->Tag()), 0,
+                      sister_direction);
+      bitset.CopyFrom(tag_to_leafset.at(focal_node->Tag()), leaf_count,
+                      focal_direction);
+      auto child0_bitset = tag_to_leafset.at(child0_node->Tag());
+      if (child0_direction) child0_bitset.flip();
+      auto child1_bitset = tag_to_leafset.at(child1_node->Tag());
+      if (child1_direction) child1_bitset.flip();
+      bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
+                      false);
+      std::cout << indexer_.at(bitset) << " ";
+
+    });
+
+    return result;
   }
 
   // TODO(erick) replace with something interesting.
@@ -321,8 +357,8 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
-  auto tree = inst.SampleTopology();
-  std::cout << tree->Newick() << std::endl;
+  // auto tree = inst.SampleTopology();
+  // std::cout << tree->Newick() << std::endl;
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
@@ -363,9 +399,9 @@ TEST_CASE("libsbn") {
   }
 
   inst.ProcessLoadedTrees();
-  for (int i = 0; i < 10; i++) {
-    std::cout << inst.SampleTopology()->Newick() << std::endl;
-  }
+  //  auto topology = inst.SampleTopology();
+  //  std::cout << topology->Newick() << std::endl;
+  //  auto x = inst.IndexerRepresentationOfTopology(topology);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
