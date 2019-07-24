@@ -85,7 +85,9 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
                                const Node* focal_node, bool focal_direction,  //
                                const Node* child0_node,
                                bool child0_direction,  //
-                               const Node* child1_node, bool child1_direction) {
+                               const Node* child1_node, bool child1_direction,
+                               const Node*  // ignore the other clade
+                           ) {
       Bitset parent(2 * leaf_count, false);
       // The first chunk is for the sister node.
       parent.CopyFrom(tag_to_leafset.at(sister_node->Tag()), 0,

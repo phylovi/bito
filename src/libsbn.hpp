@@ -238,7 +238,8 @@ struct SBNInstance {
       bool focal_direction,  //
       const Node *child0_node,
       bool child0_direction,  //
-      const Node *child1_node, bool child1_direction) {
+      const Node *child1_node, bool child1_direction,
+      const Node *virtual_root_clade) {
       // Start by making the bitset representation of this PCSS.
       Bitset bitset(3 * leaf_count, false);
       bitset.CopyFrom(tag_to_leafset.at(sister_node->Tag()), 0,
@@ -259,11 +260,15 @@ struct SBNInstance {
         // Rooting at the present edge will indeed lead to the given PCSS.
         result[focal_index].push_back(indexer_position);
       } else {
+        // The only time the virtual root clade should be nullptr should be when
+        // sister_node == focal_node, but we check anyhow.
+        assert(virtual_root_clade != nullptr);
         // Virtual-rooting on every edge in the sister will also lead to this
         // PCSS, because then the root will be "above" the PCSS.
-        sister_node->PostOrder([&result, &indexer_position](const Node *node) {
-          result[node->Index()].push_back(indexer_position);
-        });
+        virtual_root_clade->PostOrder(
+            [&result, &indexer_position](const Node *node) {
+              result[node->Index()].push_back(indexer_position);
+            });
       }
     });
     return result;

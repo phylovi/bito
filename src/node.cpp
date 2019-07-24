@@ -176,41 +176,41 @@ void Node::PCSSPreOrder(PCSSFun f) const {
       // f_root
       [&f](const Node* node0, const Node* node1, const Node* node2) {
         // Virtual root on node2's edge, with subsplit pointing up.
-        f(node2, false, node2, true, node0, false, node1, false);
+        f(node2, false, node2, true, node0, false, node1, false, nullptr);
         if (!node2->IsLeaf()) {
           assert(node2->Children().size() == 2);
           auto child0 = node2->Children()[0].get();
           auto child1 = node2->Children()[1].get();
           // Virtual root in node1.
-          f(node0, false, node2, false, child0, false, child1, false);
+          f(node0, false, node2, false, child0, false, child1, false, node1);
           // Virtual root in node0.
-          f(node1, false, node2, false, child0, false, child1, false);
+          f(node1, false, node2, false, child0, false, child1, false, node0);
           // Virtual root on node2's edge, with subsplit pointing down.
-          f(node2, true, node2, false, child0, false, child1, false);
+          f(node2, true, node2, false, child0, false, child1, false, nullptr);
           // Virtual root in child0.
-          f(child1, false, node2, true, node0, false, node1, false);
+          f(child1, false, node2, true, node0, false, node1, false, child0);
           // Virtual root in child1.
-          f(child0, false, node2, true, node0, false, node1, false);
+          f(child0, false, node2, true, node0, false, node1, false, child1);
         }
       },
       // f_internal
-      [&f](const Node* parent, const Node* sister, const Node* node) {
+      [&f, this](const Node* parent, const Node* sister, const Node* node) {
         // Virtual root on node's edge, with subsplit pointing up.
-        f(node, false, node, true, parent, true, sister, false);
+        f(node, false, node, true, parent, true, sister, false, nullptr);
         if (!node->IsLeaf()) {
           assert(node->Children().size() == 2);
           auto child0 = node->Children()[0].get();
           auto child1 = node->Children()[1].get();
           // Virtual root up the tree.
-          f(sister, false, node, false, child0, false, child1, false);
+          f(sister, false, node, false, child0, false, child1, false, this);
           // Virtual root in sister.
-          f(parent, true, node, false, child0, false, child1, false);
+          f(parent, true, node, false, child0, false, child1, false, sister);
           // Virtual root on node's edge, with subsplit pointing down.
-          f(node, true, node, false, child0, false, child1, false);
+          f(node, true, node, false, child0, false, child1, false, nullptr);
           // Virtual root in child0.
-          f(child1, false, node, true, sister, false, parent, true);
+          f(child1, false, node, true, sister, false, parent, true, child0);
           // Virtual root in child1.
-          f(child0, false, node, true, sister, false, parent, true);
+          f(child0, false, node, true, sister, false, parent, true, child1);
         }
       });
 }

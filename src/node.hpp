@@ -42,13 +42,14 @@ class Node {
   //
   // The signature is in 4 parts, each of which describes the
   // position in the tree and then the direction. The 4 parts are the sister
+  // TODO
   // clade, the focal clade, child 0, and child 1. False means down the tree
   // structure and true means up.
   // See `doc/pcss.svg` for a diagram of the PCSS traversal. In that file,
   // the first tree shows the terminology, and the subsequent trees show the
   // calls to f_root and f_internal.
   typedef std::function<void(const Node*, bool, const Node*, bool, const Node*,
-                             bool, const Node*, bool)>
+                             bool, const Node*, bool, const Node*)>
       PCSSFun;
 
  public:
