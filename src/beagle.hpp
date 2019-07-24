@@ -11,7 +11,7 @@
 #include "alignment.hpp"
 #include "intpack.hpp"
 #include "libhmsbeagle/beagle.h"
-#include "sitepattern.hpp"
+#include "site_pattern.hpp"
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
 #include "typedefs.hpp"

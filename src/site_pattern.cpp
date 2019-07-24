@@ -1,12 +1,8 @@
-//
-//  sitepattern.cpp
-//  libsbn
-//
 //  Created by Mathieu Fourment on 23/7/19.
 //  Copyright © 2019 University of Technology Sydney. All rights reserved.
-//
+// libsbn is free software under the GPLv3; see LICENSE file for details.
 
-#include "sitepattern.hpp"
+#include "site_pattern.hpp"
 
 #include "intpack.hpp"
 
@@ -27,7 +23,7 @@ CharIntMap GetSymbolTable() {
 struct VectorHasher {
   int operator()(const std::vector<int> &values) const {
     int hash = values[0];
-    for (int i = 1; i < values.size(); i++) {
+    for (size_t i = 1; i < values.size(); i++) {
       hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);
     }
     return hash;
@@ -39,20 +35,21 @@ void SitePattern::Compress() {
   size_t sequence_length = alignment_.Length();
   std::unordered_map<SymbolVector, double, VectorHasher> patterns;
 
-  // build an unordered map of patterns
-  for (int i = 0; i < sequence_length; i++) {
+  // Build an unordered map of patterns.
+  for (size_t i = 0; i < sequence_length; i++) {
     SymbolVector pattern(alignment_.SequenceCount());
     for (auto it = tag_taxon_map_.cbegin(); it != tag_taxon_map_.cend(); ++it) {
       int taxon_number = static_cast<int>(UnpackFirstInt(it->first));
       pattern[taxon_number] = symbol_table.at(alignment_.at(it->second)[i]);
     }
     if (patterns.find(pattern) == patterns.end()) {
+      // TODO for Erick: insert sugar?
       patterns.insert(std::make_pair(pattern, 1));
     } else
       patterns[pattern]++;
   }
 
-  // add tip states to beagle
+  // Add tip states to beagle.
   for (auto iter_tag_taxon = tag_taxon_map_.cbegin();
        iter_tag_taxon != tag_taxon_map_.cend(); ++iter_tag_taxon) {
     SymbolVector compressed_sequence;

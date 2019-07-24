@@ -1,13 +1,9 @@
-//
-//  sitepattern.hpp
-//  libsbn
-//
-//  Created by Mathieu Fourment on 23/7/19.
-//  Copyright © 2019 University of Technology Sydney. All rights reserved.
-//
+// Created by Mathieu Fourment on 23/7/19.
+// Copyright © 2019 University of Technology Sydney. All rights reserved.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef sitepattern_hpp
-#define sitepattern_hpp
+#ifndef SRC_SITE_PATTERN_HPP_
+#define SRC_SITE_PATTERN_HPP_
 
 #include "alignment.hpp"
 #include "typedefs.hpp"
@@ -37,4 +33,4 @@ class SitePattern {
   std::vector<SymbolVector> patterns_;
   std::vector<double> weights_;
 };
-#endif /* sitepattern_hpp */
+#endif  // SRC_SITE_PATTERN_HPP_
