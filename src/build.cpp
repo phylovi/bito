@@ -10,29 +10,48 @@
 #include <unordered_set>
 #include <utility>
 
-// Using insert and at avoids needing to make a default constructor.
-// https://stackoverflow.com/questions/17172080/insert-vs-emplace-vs-operator-in-c-map
-
-TagBitsetMap TagBitsetMapOf(Node::NodePtr t) {
-  TagBitsetMap m;
-  auto leaf_count = t->LeafCount();
-  t->PostOrder([&m, leaf_count](const Node* n) {
-    Bitset x((size_t)leaf_count);
-    if (n->IsLeaf()) {
-      x.set(n->MaxLeafID());
+// Make a map from Tags to the bitset representing the leaves below the Tag.
+TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
+  TagBitsetMap map;
+  auto leaf_count = topology->LeafCount();
+  topology->PostOrder([&map, leaf_count](const Node* node) {
+    Bitset bitset((size_t)leaf_count);
+    if (node->IsLeaf()) {
+      bitset.set(node->MaxLeafID());
     } else {
       // Take the union of the children below.
-      for (const auto& child : n->Children()) {
-        x |= m.at(child->Tag());
+      for (const auto& child : node->Children()) {
+        bitset |= map.at(child->Tag());
       }
     }
-    assert(m.insert({n->Tag(), std::move(x)}).second);
+    assert(map.insert({node->Tag(), std::move(bitset)}).second);
   });
-  return m;
+  return map;
 }
 
-void PrintTagBitsetMap(TagBitsetMap m) {
-  for (const auto& iter : m) {
+// Make a map from Tags to the bitset representing the indices below the Tag.
+TagBitsetMap TagIndexSetMapOf(Node::NodePtr topology) {
+  TagBitsetMap map;
+  auto index_count = topology->Index();
+  topology->PostOrder([&map, index_count](const Node* node) {
+    Bitset bitset(static_cast<size_t>(index_count));
+    // Set the bit for the index of the current edge.
+    bitset.set(node->Index());
+    // Take the union of the children below.
+    for (const auto& child : node->Children()) {
+      bitset |= map.at(child->Tag());
+      if (node->Index() >= index_count) {
+        std::cerr << "Malformed indices in TagIndexsetMapOf.\n";
+        abort();
+      }
+    }
+    assert(map.insert({node->Tag(), std::move(bitset)}).second);
+  });
+  return map;
+}
+
+void PrintTagBitsetMap(TagBitsetMap map) {
+  for (const auto& iter : map) {
     std::cout << StringOfPackedInt(iter.first) << " " << iter.second.ToString()
               << std::endl;
   }
@@ -43,9 +62,9 @@ BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies) {
   for (const auto& iter : topologies) {
     auto topology = iter.first;
     auto count = iter.second;
-    auto tag_to_bitset = TagBitsetMapOf(topology);
-    auto Aux = [&rootsplit_counter, &tag_to_bitset, &count](const Node* n) {
-      auto split = tag_to_bitset.at(n->Tag()).copy();
+    auto tag_to_leafset = TagLeafSetMapOf(topology);
+    auto Aux = [&rootsplit_counter, &tag_to_leafset, &count](const Node* n) {
+      auto split = tag_to_leafset.at(n->Tag()).copy();
       split.Minorize();
       rootsplit_counter.increment(std::move(split), count);
     };
@@ -61,14 +80,14 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
   for (const auto& iter : topologies) {
     auto topology = iter.first;
     auto count = iter.second;
-    auto tag_to_bitset = TagBitsetMapOf(topology);
+    auto tag_to_leafset = TagLeafSetMapOf(topology);
     auto leaf_count = topology->LeafCount();
     if (topology->Children().size() != 3) {
       std::cerr << "PCSSCounterOf was expecting a tree with a trifurcation at "
                    "the root!";
       abort();
     }
-    topology->PCSSPreOrder([&pcss_dict, &tag_to_bitset, &count, &leaf_count](
+    topology->PCSSPreOrder([&pcss_dict, &tag_to_leafset, &count, &leaf_count](
                                const Node* sister_node, bool sister_direction,
                                const Node* focal_node, bool focal_direction,  //
                                const Node* child0_node,
@@ -76,17 +95,17 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
                                const Node* child1_node, bool child1_direction) {
       Bitset parent(2 * leaf_count, false);
       // The first chunk is for the sister node.
-      parent.CopyFrom(tag_to_bitset.at(sister_node->Tag()), 0,
+      parent.CopyFrom(tag_to_leafset.at(sister_node->Tag()), 0,
                       sister_direction);
       // The second chunk is for the focal node.
-      parent.CopyFrom(tag_to_bitset.at(focal_node->Tag()), leaf_count,
+      parent.CopyFrom(tag_to_leafset.at(focal_node->Tag()), leaf_count,
                       focal_direction);
       // Now we build the child bitset.
-      auto child0 = tag_to_bitset.at(child0_node->Tag());
+      auto child0 = tag_to_leafset.at(child0_node->Tag());
       if (child0_direction) {
         child0.flip();
       }
-      auto child1 = tag_to_bitset.at(child1_node->Tag());
+      auto child1 = tag_to_leafset.at(child1_node->Tag());
       if (child1_direction) {
         child1.flip();
       }
