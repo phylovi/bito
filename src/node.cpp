@@ -236,36 +236,27 @@ TagSizeMap Node::Reindex() {
   return tag_index_map;
 }
 
-std::string Node::Newick(const DoubleVectorOption& branch_lengths,
-                         const TagStringMapOption& node_labels,
-                         bool show_tags) const {
-  return NewickAux(branch_lengths, node_labels, show_tags) + ";";
+std::string Node::Newick(std::function<std::string(const Node*)> node_labeler,
+                         const DoubleVectorOption& branch_lengths) const {
+  return NewickAux(node_labeler, branch_lengths) + ";";
 }
 
-std::string Node::NewickAux(const DoubleVectorOption& branch_lengths,
-                            const TagStringMapOption& node_labels,
-                            bool show_tags) const {
+std::string Node::NewickAux(
+    std::function<std::string(const Node*)> node_labeler,
+    const DoubleVectorOption& branch_lengths) const {
   std::string str;
   if (IsLeaf()) {
-    if (node_labels) {
-      str.assign((*node_labels).at(Tag()));
-    } else if (show_tags) {
-      str.assign(TagString());
-    } else {
-      str.assign(std::to_string(MaxLeafID()));
-    }
+    str.assign(node_labeler(this));
   } else {
     str.assign("(");
     for (auto iter = children_.begin(); iter != children_.end(); iter++) {
       if (iter != children_.begin()) {
         str.append(",");
       }
-      str.append((*iter)->NewickAux(branch_lengths, node_labels, show_tags));
+      str.append((*iter)->NewickAux(node_labeler, branch_lengths));
     }
     str.append(")");
-    if (show_tags) {
-      str.append(TagString());
-    }
+    str.append(node_labeler(this));
   }
   if (branch_lengths) {
     assert(Index() < (*branch_lengths).size());
@@ -275,6 +266,29 @@ std::string Node::NewickAux(const DoubleVectorOption& branch_lengths,
     str.append(":" + str_stream.str());
   }
   return str;
+}
+
+std::string Node::Newick(const DoubleVectorOption& branch_lengths,
+                         const TagStringMapOption& node_labels,
+                         bool show_tags) const {
+  return Newick(
+      [&node_labels, &show_tags](const Node* node) {
+        if (node->IsLeaf()) {
+          if (node_labels) {
+            return (*node_labels).at(node->Tag());
+          } else if (show_tags) {
+            return node->TagString();
+          } else {
+            return std::to_string(node->MaxLeafID());
+          }
+        } else {
+          if (show_tags) {
+            return node->TagString();
+          }
+        }
+        return std::string("");
+      },
+      branch_lengths);
 }
 
 std::vector<size_t> Node::IndexVector() {

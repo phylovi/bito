@@ -32,18 +32,18 @@ TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
 // Make a map from Tags to the bitset representing the indices below the Tag.
 TagBitsetMap TagIndexSetMapOf(Node::NodePtr topology) {
   TagBitsetMap map;
-  auto index_count = topology->Index();
+  auto index_count = topology->Index() + 1;
   topology->PostOrder([&map, index_count](const Node* node) {
     Bitset bitset(static_cast<size_t>(index_count));
+    if (node->Index() >= index_count) {
+      std::cerr << "Malformed indices in TagIndexsetMapOf.\n";
+      abort();
+    }
     // Set the bit for the index of the current edge.
     bitset.set(node->Index());
     // Take the union of the children below.
     for (const auto& child : node->Children()) {
       bitset |= map.at(child->Tag());
-      if (node->Index() >= index_count) {
-        std::cerr << "Malformed indices in TagIndexsetMapOf.\n";
-        abort();
-      }
     }
     assert(map.insert({node->Tag(), std::move(bitset)}).second);
   });

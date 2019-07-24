@@ -111,14 +111,14 @@ class Node {
   // It returns a map that maps the tags to their indices.
   TagSizeMap Reindex();
 
+  std::string Newick(std::function<std::string(const Node*)> node_labeler,
+                     const DoubleVectorOption& branch_lengths =
+                         std::experimental::nullopt) const;
+
   std::string Newick(
       const DoubleVectorOption& branch_lengths = std::experimental::nullopt,
       const TagStringMapOption& node_labels = std::experimental::nullopt,
       bool show_tags = false) const;
-
-  std::string NewickAux(const DoubleVectorOption& branch_lengths,
-                        const TagStringMapOption& node_labels,
-                        bool show_tags) const;
 
   std::vector<size_t> IndexVector();
 
@@ -169,6 +169,9 @@ class Node {
 
   // This is a private PostOrder that can change the Node.
   void MutablePostOrder(std::function<void(Node*)> f);
+
+  std::string NewickAux(std::function<std::string(const Node*)> node_labeler,
+                        const DoubleVectorOption& branch_lengths) const;
 };
 
 // Compare NodePtrs by their Nodes.

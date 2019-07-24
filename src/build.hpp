@@ -23,8 +23,9 @@ typedef std::unordered_map<Bitset, std::pair<uint32_t, uint32_t>>
 
 typedef std::unordered_map<Bitset, DefaultDict<Bitset, uint32_t>> PCSSDict;
 
-TagBitsetMap TagBitsetMapOf(Node::NodePtr t);
-void PrintTagBitsetMap(TagBitsetMap m);
+TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology);
+TagBitsetMap TagIndexSetMapOf(Node::NodePtr topology);
+void PrintTagBitsetMap(TagBitsetMap map);
 
 BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
@@ -32,6 +33,10 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("Build") {
+  auto topologies = Node::ExampleTopologies();
+
+  PrintTagBitsetMap(TagIndexSetMapOf(topologies[3]));
+
   // Tests comparing to vbpi appear in Python test code.
 }
 
