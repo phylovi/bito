@@ -1,4 +1,4 @@
-our_files = src/beagle.cpp src/beagle.hpp src/bitset.cpp src/bitset.hpp src/build.hpp src/build.cpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.cpp src/tree.hpp src/node.hpp src/node.cpp src/tree_collection.cpp src/tree_collection.hpp src/alignment.cpp src/alignment.hpp src/task_processor.hpp src/beagle.hpp src/beagle.cpp
+our_files = src/beagle.cpp src/beagle.hpp src/bitset.cpp src/bitset.hpp src/build.hpp src/build.cpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.cpp src/tree.hpp src/node.hpp src/node.cpp src/tree_collection.cpp src/tree_collection.hpp src/alignment.cpp src/alignment.hpp src/task_processor.hpp src/beagle.hpp src/beagle.cpp src/site_pattern.hpp src/site_pattern.cpp
 
 default:
 	scons

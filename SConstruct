@@ -66,6 +66,7 @@ sources = [
     '_build/node.cpp',
     '_build/parser.cpp',
     '_build/scanner.cpp',
+    '_build/site_pattern.cpp',
     '_build/tree.cpp',
     '_build/tree_collection.cpp'
 ]

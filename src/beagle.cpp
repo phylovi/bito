@@ -5,6 +5,7 @@
 #include <iostream>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace beagle {
@@ -80,38 +81,31 @@ int CreateInstance(int tip_count, int alignment_length,
       requirement_flags, return_info);
 }
 
-BeagleInstance CreateInstance(const Alignment &alignment) {
+BeagleInstance CreateInstance(const SitePattern &site_pattern) {
   BeagleInstanceDetails return_info;
-  return CreateInstance(static_cast<int>(alignment.SequenceCount()),
-                        static_cast<int>(alignment.Length()), &return_info);
-}
-
-void SetTipStates(int beagle_instance, const TagStringMap &tag_taxon_map,
-                  const Alignment &alignment, const CharIntMap &symbol_table) {
-  for (const auto &iter : tag_taxon_map) {
-    int taxon_number = static_cast<int>(Node::MaxLeafIDOfTag(iter.first));
-    SymbolVector symbols =
-        SymbolVectorOf(alignment.at(iter.second), symbol_table);
-    beagleSetTipStates(beagle_instance, taxon_number, symbols.data());
-  }
+  return CreateInstance(static_cast<int>(site_pattern.SequenceCount()),
+                        static_cast<int>(site_pattern.PatternCount()),
+                        &return_info);
 }
 
 void PrepareBeagleInstance(const BeagleInstance beagle_instance,
                            const TreeCollection &tree_collection,
-                           const Alignment &alignment,
-                           const CharIntMap &symbol_table) {
-  if (tree_collection.TaxonCount() != alignment.SequenceCount()) {
+                           const SitePattern &site_pattern) {
+  if (tree_collection.TaxonCount() != site_pattern.SequenceCount()) {
     std::cerr << "The number of tree tips doesn't match the alignment "
                  "sequence count!\n";
     abort();
   }
-  SetTipStates(beagle_instance, tree_collection.TagTaxonMap(), alignment,
-               symbol_table);
-  std::vector<double> pattern_weights(alignment.Length(), 1.);
-  beagleSetPatternWeights(beagle_instance, pattern_weights.data());
   // Use uniform rates and weights.
   const double weights[1] = {1.0};
   const double rates[1] = {1.0};
+  const std::vector<SymbolVector> patterns = site_pattern.GetPatterns();
+  int taxon_number = 0;
+  for (const auto &pattern : site_pattern.GetPatterns()) {
+    beagleSetTipStates(beagle_instance, taxon_number++, pattern.data());
+  }
+
+  beagleSetPatternWeights(beagle_instance, site_pattern.GetWeights().data());
   beagleSetCategoryWeights(beagle_instance, 0, weights);
   beagleSetCategoryRates(beagle_instance, rates);
 }
@@ -198,8 +192,8 @@ std::vector<double> LogLikelihoods(std::vector<BeagleInstance> beagle_instances,
 
 // Compute first derivative of the log likelihood with respect to each branch
 // length, as a vector of first derivatives indexed by node index.
-std::vector<double> BranchGradient(BeagleInstance beagle_instance,
-                                   const Tree &in_tree) {
+std::pair<double, std::vector<double>> BranchGradient(
+    BeagleInstance beagle_instance, const Tree &in_tree) {
   auto tree = PrepareTreeForLikelihood(in_tree);
   tree.SlideRootPosition();
 
@@ -281,12 +275,13 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
   std::vector<int> node_deriv_index = {0};
   std::vector<double> derivatives(branch_count, 0);
 
+  double log_like = 0;
+
   // Actually compute gradient.
   tree.Topology()->TripleIndexPreOrderBifurcating(
       [&](int, int sister_index, int node_index) {
         if (node_index != fixed_node_index) {
           double dlogLp;
-          double log_like = 0;
           upper_partials_index[0] = node_index + int_branch_count;
           node_partial_indices[0] = node_index;
           node_mat_indices[0] = node_index;
@@ -319,14 +314,15 @@ std::vector<double> BranchGradient(BeagleInstance beagle_instance,
         }
       });
 
-  return derivatives;
+  return std::make_pair(log_like, derivatives);
 }
 
-std::vector<std::vector<double>> BranchGradients(
+std::vector<std::pair<double, std::vector<double>>> BranchGradients(
     std::vector<BeagleInstance> beagle_instances,
+
     const TreeCollection &tree_collection) {
-  return Parallelize<std::vector<double>>(BranchGradient, beagle_instances,
-                                          tree_collection);
+  return Parallelize<std::pair<double, std::vector<double>>>(
+      BranchGradient, beagle_instances, tree_collection);
 }
 
 }  // namespace beagle
