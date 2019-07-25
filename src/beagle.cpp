@@ -5,6 +5,7 @@
 #include <iostream>
 #include <numeric>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace beagle {

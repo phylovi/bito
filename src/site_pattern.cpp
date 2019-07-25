@@ -3,6 +3,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "site_pattern.hpp"
+#include <unordered_map>
+#include <utility>
+#include <vector>
 #include "intpack.hpp"
 
 // DNA assumption here.
@@ -42,10 +45,11 @@ void SitePattern::Compress() {
       pattern[taxon_number] = symbol_table.at(alignment_.at(iter.second)[i]);
     }
     if (patterns.find(pattern) == patterns.end()) {
-      // TODO for Erick: insert sugar? Or convert to DefaultDict.
+      // TODO(Erick): insert sugar? Or convert to DefaultDict.
       patterns.insert(std::make_pair(pattern, 1));
-    } else
+    } else {
       patterns[pattern]++;
+    }
   }
 
   // Collect the site patterns per taxon.

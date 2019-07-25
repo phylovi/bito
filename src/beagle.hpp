@@ -7,6 +7,7 @@
 #include <functional>
 #include <queue>
 #include <string>
+#include <utility>
 #include <vector>
 #include "alignment.hpp"
 #include "intpack.hpp"

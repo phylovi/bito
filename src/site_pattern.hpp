@@ -5,6 +5,7 @@
 #ifndef SRC_SITE_PATTERN_HPP_
 #define SRC_SITE_PATTERN_HPP_
 
+#include <vector>
 #include "alignment.hpp"
 #include "typedefs.hpp"
 
