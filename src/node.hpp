@@ -214,19 +214,23 @@ struct equal_to<Node::NodePtr> {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Node") {
   Node::NodePtrVec examples = Node::ExampleTopologies();
-  Node::NodePtr t1 = examples[0];
-  Node::NodePtr t1_twin = examples[1];
-  Node::NodePtr t2 = examples[2];
-  Node::NodePtr t3 = examples[3];
+  Node::NodePtr t1 = examples[0];       // 0: (0,1,(2,3))
+  Node::NodePtr t1_twin = examples[1];  // 1; (0,1,(2,3)) again
+  Node::NodePtr t2 = examples[2];       // 2: (0,2,(1,3))
+  Node::NodePtr t3 = examples[3];       // 3: (0,(1,(2,3)))
   // TODO(ematsen) add real test for TriplePreorder
-  //  std::cout << "TriplePreOrder" << std::endl;
-  //  std::cout << t2->Newick() << std::endl;
-  //  auto print_triple = [](const Node* parent, const Node* sister,
-  //                         const Node* node) {
-  //    std::cout << parent->TagString() << ", " << sister->TagString() << ", "
-  //              << node->TagString() << " " << std::endl;
-  //  };
-  //  t2->TriplePreOrder(print_triple, print_triple);
+  std::vector<std::string> triples;
+  auto collect_triple = [&triples](const Node* parent, const Node* sister,
+                                   const Node* node) {
+    triples.push_back(parent->TagString() + ", " + sister->TagString() + ", " +
+                      node->TagString());
+  };
+  t2->TriplePreOrder(collect_triple, collect_triple);
+  // t2 with tags: (0_1,2_1,(1_1,3_1)3_2)
+  std::vector<std::string> correct_triples({"0_1, 2_1, 3_2", "2_1, 3_2, 0_1",
+                                            "3_2, 0_1, 2_1", "3_2, 3_1, 1_1",
+                                            "3_2, 1_1, 3_1"});
+  CHECK_EQ(triples, correct_triples);
 
   // This is actually a non-trivial test (see note in Node constructor above),
   // which shows why we need bit rotation.
