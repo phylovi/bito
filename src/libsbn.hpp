@@ -317,13 +317,13 @@ TEST_CASE("libsbn") {
   }
 
   auto gradients = inst.BranchGradients();
-  // Test the log likelihoods
+  // Test the log likelihoods.
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(abs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
     std::cout << gradients[i].first << " " << pybeagle_likelihoods[i]
               << std::endl;
   }
-  // Test the gradients for the last tree
+  // Test the gradients for the last tree.
   auto last = gradients.back();
   std::sort(last.second.begin(), last.second.end());
   // Zeros are for the root and one of the descendants of the root.
