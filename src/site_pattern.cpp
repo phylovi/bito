@@ -3,7 +3,6 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "site_pattern.hpp"
-
 #include "intpack.hpp"
 
 // DNA assumption here.
@@ -24,7 +23,7 @@ struct VectorHasher {
   int operator()(const std::vector<int> &values) const {
     int hash = values[0];
     for (size_t i = 1; i < values.size(); i++) {
-      hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+      hash ^= values[i] + 0x9e3779b + (hash << 6) + (hash >> 2);
     }
     return hash;
   }
@@ -39,7 +38,7 @@ void SitePattern::Compress() {
   for (size_t i = 0; i < sequence_length; i++) {
     SymbolVector pattern(alignment_.SequenceCount());
     for (auto it = tag_taxon_map_.cbegin(); it != tag_taxon_map_.cend(); ++it) {
-      int taxon_number = static_cast<int>(UnpackFirstInt(it->first));
+      size_t taxon_number = static_cast<size_t>(UnpackFirstInt(it->first));
       pattern[taxon_number] = symbol_table.at(alignment_.at(it->second)[i]);
     }
     if (patterns.find(pattern) == patterns.end()) {
@@ -53,7 +52,8 @@ void SitePattern::Compress() {
   for (auto iter_tag_taxon = tag_taxon_map_.cbegin();
        iter_tag_taxon != tag_taxon_map_.cend(); ++iter_tag_taxon) {
     SymbolVector compressed_sequence;
-    int taxon_number = static_cast<int>(UnpackFirstInt(iter_tag_taxon->first));
+    size_t taxon_number =
+        static_cast<size_t>(UnpackFirstInt(iter_tag_taxon->first));
     for (auto iter_patterns = patterns.cbegin();
          iter_patterns != patterns.cend(); ++iter_patterns) {
       compressed_sequence.push_back(iter_patterns->first[taxon_number]);
