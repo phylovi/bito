@@ -145,7 +145,8 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
   });
   // Next, the pcss_result.
   SizeVectorVector pcss_result(topology->Index());
-  topology->PCSSPreOrder([&indexer, &tag_to_leafset, &leaf_count, &pcss_result](
+  topology->PCSSPreOrder([&indexer, &tag_to_leafset, &leaf_count, &pcss_result,
+                          &topology](
                              const Node* sister_node, bool sister_direction,
                              const Node* focal_node,
                              bool focal_direction,  //
@@ -178,8 +179,8 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
       // Virtual-rooting on every edge in the sister will also lead to this
       // PCSS, because then the root will be "above" the PCSS.
       virtual_root_clade->ConditionalPreOrder([&pcss_result, &indexer_position,
-                                               &sister_node,
-                                               &focal_node](const Node* node) {
+                                               &sister_node, &focal_node,
+                                               &topology](const Node* node) {
         if (node == sister_node || node == focal_node) {
           // Don't enter the sister or focal clades. This is only
           // activated in the second case on the bottom row of pcss.svg:
@@ -187,11 +188,15 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
           // but nothing else.
           return false;
         }  // else
-        pcss_result[node->Index()].push_back(indexer_position);
+        // Add all of the edges of the virtual rooting clade, except for the
+        // root of the topology.
+        if (node != topology.get()) {
+          assert(node->Index() < pcss_result.size());
+          pcss_result[node->Index()].push_back(indexer_position);
+        }
         return true;
       });
     }
   });
   return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
 }
-

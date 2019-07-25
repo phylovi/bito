@@ -219,14 +219,14 @@ TEST_CASE("Node") {
   Node::NodePtr t2 = examples[2];
   Node::NodePtr t3 = examples[3];
   // TODO(ematsen) add real test for TriplePreorder
-  std::cout << "TriplePreOrder" << std::endl;
-  std::cout << t2->Newick() << std::endl;
-  auto print_triple = [](const Node* parent, const Node* sister,
-                         const Node* node) {
-    std::cout << parent->TagString() << ", " << sister->TagString() << ", "
-              << node->TagString() << " " << std::endl;
-  };
-  t2->TriplePreOrder(print_triple, print_triple);
+  //  std::cout << "TriplePreOrder" << std::endl;
+  //  std::cout << t2->Newick() << std::endl;
+  //  auto print_triple = [](const Node* parent, const Node* sister,
+  //                         const Node* node) {
+  //    std::cout << parent->TagString() << ", " << sister->TagString() << ", "
+  //              << node->TagString() << " " << std::endl;
+  //  };
+  //  t2->TriplePreOrder(print_triple, print_triple);
 
   // This is actually a non-trivial test (see note in Node constructor above),
   // which shows why we need bit rotation.
@@ -247,9 +247,6 @@ TEST_CASE("Node") {
              Node::OfParentIndexVector(topology->ParentIndexVector()));
   }
 
-  std::cout << t1->Newick() << std::endl;
-  std::cout << t3->Newick() << std::endl;
-  std::cout << t3->Deroot()->Newick() << std::endl;
   // Check Deroot when we deroot on the right.
   CHECK_EQ(t1, t3->Deroot());
   // Check Deroot when we deroot on the left.

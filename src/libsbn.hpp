@@ -336,12 +336,10 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   // See https://github.com/matsengrp/libsbn/issues/74 to understand this test.
-  auto indexer_test_topology =
+  auto indexer_test_topology_1 =
       // (2,(1,3)5,(0,4)6)7
       Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
-  auto representation =
-      IndexerRepresentationOf(inst.indexer_, indexer_test_topology);
-  IndexerRepresentation correct_representation(
+  IndexerRepresentation correct_representation_1(
       {{8, 0, 3, 5, 10, 4, 11},  // The rootsplit indices.
        {{54, 31, 15},            // The PCSS indices.
         {21, 13, 22},
@@ -350,12 +348,14 @@ TEST_CASE("libsbn") {
         {27, 31, 57},
         {21, 75, 76},
         {70, 73, 31}}});
-  CHECK_EQ(representation, correct_representation);
+  CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1),
+           correct_representation_1);
+  auto indexer_test_topology_2 =
+      // (((0,1)5,2)6,3,4)7;
+      Node::OfParentIndexVector({5, 5, 6, 7, 7, 6, 7});
+  IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2);
   inst.SampleTrees(2);
-  // inst.GetIndexerRepresentations();
-  auto topology = inst.SampleTopology();
-  std::cout << topology->Newick() << std::endl;
-  IndexerRepresentationOf(inst.indexer_, topology);
+  inst.GetIndexerRepresentations();
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
@@ -392,7 +392,7 @@ TEST_CASE("libsbn") {
       450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
       888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
   for (size_t i = 0; i < last.second.size(); i++) {
-    CHECK_LT(abs(last.second[i] - physher_gradients[i]), 0.0001);
+    CHECK_LT(fabs(last.second[i] - physher_gradients[i]), 0.0001);
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
