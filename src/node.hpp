@@ -14,6 +14,8 @@
 // In summary, call Reindex after building your tree if you need to use the
 // index. Note that Tree construction calls Reindex, if you are manually
 // manipulating the topology make you do manipulations with that in mind.
+//
+// Equality is in terms of tree topologies. Indices don't matter.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
@@ -36,17 +38,21 @@ class Node {
   typedef std::unordered_map<NodePtr, uint32_t> TopologyCounter;
 
   // This is the type of functions that are used in the PCSS recursion
-  // functions.
+  // functions. See `doc/pcss.svg` for a diagram of the PCSS traversal. In that
+  // file, the first tree shows the terminology, and the subsequent trees show
+  // the calls to f_root and f_internal.
   //
-  // The signature is in 4 parts, each of which describes the
-  // position in the tree and then the direction. The 4 parts are the sister
-  // clade, the focal clade, child 0, and child 1. False means down the tree
-  // structure and true means up.
-  // See `doc/pcss.svg` for a diagram of the PCSS traversal. In that file,
-  // the first tree shows the terminology, and the subsequent trees show the
-  // calls to f_root and f_internal.
+  // The signature is in 5 parts. The first 4 describe the position in the tree
+  // and then the direction: the sister clade, the focal clade, child 0, and
+  // child 1. False means down the tree structure and true means up. The 5th
+  // part is the top of the virtual root clade, namely the clade containing the
+  // virtual root (shown in gray in the diagram). Caution: in the case where the
+  // virtual root clade is above the subsplit, the "virtual root clade" will be
+  // the entire tree. There's nothing else we can do without rerooting the tree.
+  // It's not too hard to exclude the undesired bits with a conditional tree
+  // traversal. See IndexerRepresentationOfTopology for an example.
   typedef std::function<void(const Node*, bool, const Node*, bool, const Node*,
-                             bool, const Node*, bool)>
+                             bool, const Node*, bool, const Node*)>
       PCSSFun;
 
  public:
@@ -65,6 +71,8 @@ class Node {
   bool operator==(const Node& other);
 
   void PreOrder(std::function<void(const Node*)> f) const;
+  // ConditionalPreOrder continues to recur as long as f returns true.
+  void ConditionalPreOrder(std::function<bool(const Node*)> f) const;
   void PostOrder(std::function<void(const Node*)> f) const;
   void LevelOrder(std::function<void(const Node*)> f) const;
 
@@ -111,16 +119,21 @@ class Node {
   // It returns a map that maps the tags to their indices.
   TagSizeMap Reindex();
 
+  std::string Newick(std::function<std::string(const Node*)> node_labeler,
+                     const DoubleVectorOption& branch_lengths =
+                         std::experimental::nullopt) const;
+
   std::string Newick(
       const DoubleVectorOption& branch_lengths = std::experimental::nullopt,
       const TagStringMapOption& node_labels = std::experimental::nullopt,
       bool show_tags = false) const;
 
-  std::string NewickAux(const DoubleVectorOption& branch_lengths,
-                        const TagStringMapOption& node_labels,
-                        bool show_tags) const;
+  // Construct a vector such that the ith entry is the index of the index-i
+  // node's parent. We assume that the indices are contiguous, and that
+  // the root has the largest index.
+  std::vector<size_t> ParentIndexVector();
 
-  std::vector<size_t> IndexVector();
+  NodePtr Deroot();
 
   // ** Class methods
   static inline uint32_t MaxLeafIDOfTag(uint64_t tag) {
@@ -135,12 +148,14 @@ class Node {
   // Build a tree given a vector of indices, such that each index describes the
   // index of its parent. We assume that the indices are contiguous, and that
   // the root has the largest index.
-  static NodePtr OfIndexVector(std::vector<size_t> indices);
+  static NodePtr OfParentIndexVector(std::vector<size_t> indices);
 
-  // 0: (0,1,(2,3))
-  // 1; (0,1,(2,3)) again
-  // 2: (0,2,(1,3))
-  // 3: (0,(1,(2,3)))
+  //     topology           with internal node indices
+  //     --------           --------------------------
+  // 0: (0,1,(2,3))         (0,1,(2,3)4)5;
+  // 1; (0,1,(2,3)) again   (0,1,(2,3)4)5;
+  // 2: (0,2,(1,3))         (0,2,(1,3)4)5;
+  // 3: (0,(1,(2,3)))       (0,(1,(2,3)4)5)6;
   static NodePtrVec ExampleTopologies();
 
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
@@ -169,6 +184,9 @@ class Node {
 
   // This is a private PostOrder that can change the Node.
   void MutablePostOrder(std::function<void(Node*)> f);
+
+  std::string NewickAux(std::function<std::string(const Node*)> node_labeler,
+                        const DoubleVectorOption& branch_lengths) const;
 };
 
 // Compare NodePtrs by their Nodes.
@@ -196,19 +214,23 @@ struct equal_to<Node::NodePtr> {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Node") {
   Node::NodePtrVec examples = Node::ExampleTopologies();
-  Node::NodePtr t1 = examples[0];
-  Node::NodePtr t1_twin = examples[1];
-  Node::NodePtr t2 = examples[2];
-  Node::NodePtr t3 = examples[3];
+  Node::NodePtr t1 = examples[0];       // 0: (0,1,(2,3))
+  Node::NodePtr t1_twin = examples[1];  // 1; (0,1,(2,3)) again
+  Node::NodePtr t2 = examples[2];       // 2: (0,2,(1,3))
+  Node::NodePtr t3 = examples[3];       // 3: (0,(1,(2,3)))
   // TODO(ematsen) add real test for TriplePreorder
-  std::cout << "TriplePreOrder" << std::endl;
-  std::cout << t2->Newick() << std::endl;
-  auto print_triple = [](const Node* parent, const Node* sister,
-                         const Node* node) {
-    std::cout << parent->TagString() << ", " << sister->TagString() << ", "
-              << node->TagString() << " " << std::endl;
+  std::vector<std::string> triples;
+  auto collect_triple = [&triples](const Node* parent, const Node* sister,
+                                   const Node* node) {
+    triples.push_back(parent->TagString() + ", " + sister->TagString() + ", " +
+                      node->TagString());
   };
-  t2->TriplePreOrder(print_triple, print_triple);
+  t2->TriplePreOrder(collect_triple, collect_triple);
+  // t2 with tags: (0_1,2_1,(1_1,3_1)3_2)
+  std::vector<std::string> correct_triples({"0_1, 2_1, 3_2", "2_1, 3_2, 0_1",
+                                            "3_2, 0_1, 2_1", "3_2, 3_1, 1_1",
+                                            "3_2, 1_1, 3_1"});
+  CHECK_EQ(triples, correct_triples);
 
   // This is actually a non-trivial test (see note in Node constructor above),
   // which shows why we need bit rotation.
@@ -218,15 +240,23 @@ TEST_CASE("Node") {
   CHECK_NE(t1, t2);
 
   // Tree with trifurcation at the root.
-  Node::NodePtr t1_alt = Node::OfIndexVector({5, 5, 4, 4, 5});
+  Node::NodePtr t1_alt = Node::OfParentIndexVector({5, 5, 4, 4, 5});
   CHECK_EQ(t1, t1_alt);
   // Bifurcating tree.
-  Node::NodePtr t3_alt = Node::OfIndexVector({6, 5, 4, 4, 5, 6});
+  Node::NodePtr t3_alt = Node::OfParentIndexVector({6, 5, 4, 4, 5, 6});
   CHECK_EQ(t3, t3_alt);
 
   for (const auto& topology : examples) {
-    CHECK_EQ(topology, Node::OfIndexVector(topology->IndexVector()));
+    CHECK_EQ(topology,
+             Node::OfParentIndexVector(topology->ParentIndexVector()));
   }
+
+  // Check Deroot when we deroot on the right.
+  CHECK_EQ(t1, t3->Deroot());
+  // Check Deroot when we deroot on the left.
+  CHECK_EQ(Node::OfParentIndexVector({3, 3, 3}),
+           // tree ((0,1)3,2)4
+           Node::OfParentIndexVector({3, 3, 4, 4})->Deroot());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_

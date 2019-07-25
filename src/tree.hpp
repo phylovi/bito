@@ -19,19 +19,22 @@ class Tree {
 
   Tree() {}
 
+  // This is the primary constructor.
+  explicit Tree(Node::NodePtr topology, BranchLengthVector branch_lengths);
+
   // This constructor takes a map of tags to branch lengths; this map gets
   // turned into a branch length vector. It reindexes the topology. Note: any
   // missing branch lengths are set to zero.
   explicit Tree(Node::NodePtr topology, TagDoubleMap branch_lengths);
-
-  explicit Tree(Node::NodePtr topology, BranchLengthVector branch_lengths);
 
   const Node::NodePtr Topology() const { return topology_; }
   const BranchLengthVector BranchLengths() const { return branch_lengths_; }
   uint32_t LeafCount() const { return Topology()->LeafCount(); }
   Node::NodePtrVec Children() const { return Topology()->Children(); }
   size_t Index() const { return Topology()->Index(); }
-  std::vector<size_t> IndexVector() { return Topology()->IndexVector(); }
+  std::vector<size_t> ParentIndexVector() {
+    return Topology()->ParentIndexVector();
+  }
 
   bool operator==(const Tree& other) const;
 
@@ -49,7 +52,7 @@ class Tree {
   // (s1:b1, s2:b2):0):0. Note that we zero out the root branch length.
   Tree Detrifurcate() const;
   static Tree UnitBranchLengthTreeOf(Node::NodePtr topology);
-  static Tree OfIndexVector(std::vector<size_t> indices);
+  static Tree OfParentIndexVector(std::vector<size_t> indices);
   static TreeVector ExampleTrees();
 
   // We make branch lengths public so we can muck with them in Python.

@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "libsbn.hpp"
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
@@ -15,8 +16,8 @@ PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
 PYBIND11_MODULE(sbn, m) {
   m.doc() = "libsbn bindings";
-  // Second, we expose vector<double> as a buffer object so that we can use it
-  // as an in-place numpy array with np.array(v, copy=False). See
+  // Second, we expose them as buffer objects so that we can use them
+  // as in-place numpy arrays with np.array(v, copy=False). See
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
   py::class_<std::vector<double>>(m, "vector_double", py::buffer_protocol())
       .def_buffer([](std::vector<double> &v) -> py::buffer_info {
@@ -30,8 +31,8 @@ PYBIND11_MODULE(sbn, m) {
       });
   // Tree
   py::class_<Tree>(m, "Tree", py::buffer_protocol())
-      .def("index_vector", &Tree::IndexVector)
-      .def_static("of_index_vector", &Tree::OfIndexVector)
+      .def("parent_index_vector", &Tree::ParentIndexVector)
+      .def_static("of_parent_index_vector", &Tree::OfParentIndexVector)
       .def_readwrite("branch_lengths", &Tree::branch_lengths_);
   // TreeCollection
   py::class_<TreeCollection>(m, "TreeCollection")
@@ -56,8 +57,10 @@ PYBIND11_MODULE(sbn, m) {
       .def("branch_gradients", &SBNInstance::BranchGradients)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_indexers", &SBNInstance::GetIndexers)
-      .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
+      .def("sample_trees", &SBNInstance::SampleTrees)
+      .def("get_indexer_representations",
+           &SBNInstance::GetIndexerRepresentations)
       // Member Variables
-      .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_)
+      .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
       .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
 }

@@ -4,8 +4,6 @@
 #ifndef SRC_LIBSBN_HPP_
 #define SRC_LIBSBN_HPP_
 
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -20,8 +18,6 @@
 #include "driver.hpp"
 #include "tree.hpp"
 
-namespace py = pybind11;
-
 typedef std::unordered_map<std::string, float> StringFloatMap;
 typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
 typedef std::unordered_map<std::string, std::pair<uint32_t, uint32_t>>
@@ -30,6 +26,7 @@ typedef std::unordered_map<uint32_t, std::string> UInt32StringMap;
 typedef std::unordered_map<std::string,
                            std::unordered_map<std::string, uint32_t>>
     StringPCSSMap;
+typedef std::vector<uint32_t> PCSSIndexVector;
 
 template <typename T>
 StringUInt32Map StringUInt32MapOf(T m) {
@@ -50,7 +47,7 @@ StringPCSSMap StringPCSSMapOf(PCSSDict d) {
 
 struct SBNInstance {
   std::string name_;
-  // Things that get loaded in.
+  // Things that get loaded in or sampled from SBNs.
   TreeCollection tree_collection_;
   Alignment alignment_;
   // Beagly bits.
@@ -59,19 +56,19 @@ struct SBNInstance {
   size_t beagle_leaf_count_;
   size_t beagle_site_count_;
   // A vector that contains all of the SBN-related probabilities.
-  std::vector<double> sbn_probs_;
+  std::vector<double> sbn_parameters_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
   // and PCSS bitsets are at the end.
+  // The collection of rootsplits, with the same indexing as in the indexer_.
+  BitsetVector rootsplits_;
+  // The first index after the rootsplit block in sbn_parameters_.
+  size_t rootsplit_index_end_;
   BitsetUInt32Map indexer_;
   // A map going from the index of a PCSS to its child.
   UInt32BitsetMap index_to_child_;
-  // A map going from a parent subsplit to the range of indices in sbn_probs_
-  // with its children.
+  // A map going from a parent subsplit to the range of indices in
+  // sbn_parameters_ with its children.
   BitsetUInt32PairMap parent_to_range_;
-  // The collection of rootsplits, with the same indexing as in the indexer_.
-  BitsetVector rootsplits_;
-  // The first index after the rootsplit block in sbn_probs_.
-  size_t rootsplit_index_end_;
   // Random bits.
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
@@ -113,11 +110,11 @@ struct SBNInstance {
     uint32_t index = 0;
     auto counter = tree_collection_.TopologyCounter();
     // See above for the definitions of these members.
-    sbn_probs_.clear();
+    sbn_parameters_.clear();
+    rootsplits_.clear();
     indexer_.clear();
     index_to_child_.clear();
     parent_to_range_.clear();
-    rootsplits_.clear();
     // Start by adding the rootsplits.
     for (const auto &iter : RootsplitCounterOf(counter)) {
       assert(indexer_.insert({iter.first, index}).second);
@@ -141,16 +138,31 @@ struct SBNInstance {
         index++;
       }
     }
-    sbn_probs_ = std::vector<double>(index, 1.);
+    sbn_parameters_ = std::vector<double>(index, 1.);
+  }
+
+  void PrintSupports() {
+    std::vector<std::string> to_print(indexer_.size());
+    for (const auto &iter : indexer_) {
+      if (iter.second < rootsplit_index_end_) {
+        to_print[iter.second] = iter.first.ToString();
+      } else {
+        to_print[iter.second] = iter.first.PCSSToString();
+      }
+    }
+    for (size_t i = 0; i < to_print.size(); i++) {
+      std::cout << i << "\t" << to_print[i] << std::endl;
+    }
   }
 
   // Sample an integer index in [range.first, range.second) according to
-  // sbn_probs_.
+  // sbn_parameters_.
   uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) const {
     assert(range.first < range.second);
-    assert(range.second <= sbn_probs_.size());
+    assert(range.second <= sbn_parameters_.size());
     std::discrete_distribution<> distribution(
-        sbn_probs_.begin() + range.first, sbn_probs_.begin() + range.second);
+        sbn_parameters_.begin() + range.first,
+        sbn_parameters_.begin() + range.second);
     // We have to add on range.first because we have taken a slice of the full
     // array, and the sampler treats the beginning of this slice as zero.
     auto result =
@@ -167,7 +179,7 @@ struct SBNInstance {
         SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
     const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
     // The addition below turns the rootsplit into a subsplit.
-    auto topology = SampleTopology(rootsplit + ~rootsplit);
+    auto topology = SampleTopology(rootsplit + ~rootsplit)->Deroot();
     topology->Reindex();
     return topology;
   }
@@ -186,13 +198,36 @@ struct SBNInstance {
                       process_subsplit(parent_subsplit.RotateSubsplit()));
   }
 
-  // TODO(erick) replace with something interesting.
-  double SBNTotalProb() {
-    double total = 0;
-    for (const auto &prob : sbn_probs_) {
-      total += prob;
+  void CheckSBNMapsAvailable() {
+    if (!indexer_.size() || !index_to_child_.size() ||
+        !parent_to_range_.size() || !rootsplits_.size()) {
+      std::cout << "Please call ProcessLoadedTrees to prepare your SBN maps.\n";
+      abort();
     }
-    return total;
+  }
+
+  void SampleTrees(size_t count) {
+    CheckSBNMapsAvailable();
+    auto leaf_count = rootsplits_[0].size();
+    // 2n-2 because trees are unrooted.
+    auto edge_count = 2 * static_cast<int>(leaf_count) - 2;
+    tree_collection_.trees_.clear();
+    for (size_t i = 0; i < count; i++) {
+      std::vector<double> branch_lengths(static_cast<size_t>(edge_count));
+      tree_collection_.trees_.emplace_back(
+          Tree(SampleTopology(), std::move(branch_lengths)));
+    }
+  }
+
+  std::vector<IndexerRepresentation> GetIndexerRepresentations() {
+    std::vector<IndexerRepresentation> representations;
+    representations.reserve(tree_collection_.trees_.size());
+    for (const auto &tree : tree_collection_.trees_) {
+      IndexerRepresentationOf(indexer_, tree.Topology());
+      representations.push_back(
+          IndexerRepresentationOf(indexer_, tree.Topology()));
+    }
+    return representations;
   }
 
   // ** I/O
@@ -295,13 +330,42 @@ TEST_CASE("libsbn") {
   inst.ReadFastaFile("data/hello.fasta");
   inst.MakeBeagleInstances(2);
   for (auto ll : inst.LogLikelihoods()) {
-    CHECK_LT(abs(ll - -84.852358), 0.000001);
+    CHECK_LT(fabs(ll - -84.852358), 0.000001);
   }
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
-  auto tree = inst.SampleTopology();
-  std::cout << tree->Newick() << std::endl;
+  // See https://github.com/matsengrp/libsbn/issues/74 to understand this test.
+  auto indexer_test_topology_1 =
+      // (2,(1,3)5,(0,4)6)7
+      Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
+  IndexerRepresentation correct_representation_1(
+      {{8, 0, 3, 5, 10, 4, 11},  // The rootsplit indices.
+       {{54, 31, 15},            // The PCSS indices.
+        {21, 13, 22},
+        {74, 42, 61},
+        {21, 12, 63},
+        {27, 31, 57},
+        {21, 75, 76},
+        {70, 73, 31}}});
+  CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1),
+           correct_representation_1);
+  auto indexer_test_topology_2 =
+      // (((0,1)5,2)6,3,4)7;
+      Node::OfParentIndexVector({5, 5, 6, 7, 7, 6, 7});
+  IndexerRepresentation correct_representation_2(
+      {{8, 0, 3, 5, 10, 6, 1},  // The rootsplit indices.
+       {{50, 36, 16},           // The PCSS indices.
+        {50, 49, 23},
+        {39, 34, 44},
+        {29, 65, 72},
+        {59, 41, 72},
+        {50, 47, 51},
+        {40, 30, 72}}});
+  CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2),
+           correct_representation_2);
+  inst.SampleTrees(2);
+  inst.GetIndexerRepresentations();
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
@@ -313,7 +377,7 @@ TEST_CASE("libsbn") {
        -6910.958836661867, -6909.02639968063, -6912.967861935749,
        -6910.7871105783515});
   for (size_t i = 0; i < likelihoods.size(); i++) {
-    CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
+    CHECK_LT(fabs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
 
   auto gradients = inst.BranchGradients();
@@ -338,12 +402,7 @@ TEST_CASE("libsbn") {
       450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
       888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
   for (size_t i = 0; i < last.second.size(); i++) {
-    CHECK_LT(abs(last.second[i] - physher_gradients[i]), 0.0001);
-  }
-
-  inst.ProcessLoadedTrees();
-  for (int i = 0; i < 10; i++) {
-    std::cout << inst.SampleTopology()->Newick() << std::endl;
+    CHECK_LT(fabs(last.second[i] - physher_gradients[i]), 0.0001);
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

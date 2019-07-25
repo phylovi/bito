@@ -70,8 +70,8 @@ Tree Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   return Tree(topology, branch_lengths);
 }
 
-Tree Tree::OfIndexVector(std::vector<size_t> indices) {
-  auto topology = Node::OfIndexVector(indices);
+Tree Tree::OfParentIndexVector(std::vector<size_t> indices) {
+  auto topology = Node::OfParentIndexVector(indices);
   std::vector<double> branch_lengths(topology->Index() + 1, 1.);
   return Tree(topology, std::move(branch_lengths));
 }

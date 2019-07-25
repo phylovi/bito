@@ -6,21 +6,20 @@ import sbn
 def test_instance():
     inst = sbn.instance('charlie')
     inst.read_newick_file('data/five_taxon.nwk')
-    inst.print_status()
     assert inst.tree_count() == 4
     inst.process_loaded_trees()
 
+    # Showing off tree sampling.
     [indexer, range_indexer] = inst.get_indexers()
+    sbn_parameters = np.array(inst.sbn_parameters, copy=False)
+    sbn_parameters[0] = 0.2
+    # Note that this puts the trees into the instance object, replacing the trees loaded from the file.
+    inst.sample_trees(2)
+    inst.get_indexer_representations()
 
-    sbn_probs = np.array(inst.sbn_probs, copy=False)
-    sbn_probs[3] = 3.14159265359
-
-    # print(sbn_probs)
-    # print(inst.sbn_total_prob())
-
+    # Checking split supports
     def convert_dict_to_int(d):
         return {k: int(v) for k, v in d.items()}
-
     inst.read_nexus_file('data/DS1.subsampled_10.t')
     inst.process_loaded_trees()
     [rootsplit_support, subsplit_support] = inst.split_counters()
@@ -47,7 +46,8 @@ def test_instance():
     print(np.array(gradients[-1]))
 
     inst.tree_collection = sbn.TreeCollection(
-        [sbn.Tree.of_index_vector([3, 3, 3])], ["mars", "saturn", "jupiter"])
+        [sbn.Tree.of_parent_index_vector([3, 3, 3])],
+        ["mars", "saturn", "jupiter"])
     inst.read_fasta_file('data/hello.fasta')
     inst.make_beagle_instances(2)
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths,

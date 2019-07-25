@@ -78,6 +78,14 @@ void Node::PreOrder(std::function<void(const Node*)> f) const {
   }
 }
 
+void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
+  if (f(this)) {
+    for (const auto& child : children_) {
+      child->ConditionalPreOrder(f);
+    }
+  }
+}
+
 void Node::PostOrder(std::function<void(const Node*)> f) const {
   for (const auto& child : children_) {
     child->PostOrder(f);
@@ -176,41 +184,41 @@ void Node::PCSSPreOrder(PCSSFun f) const {
       // f_root
       [&f](const Node* node0, const Node* node1, const Node* node2) {
         // Virtual root on node2's edge, with subsplit pointing up.
-        f(node2, false, node2, true, node0, false, node1, false);
+        f(node2, false, node2, true, node0, false, node1, false, nullptr);
         if (!node2->IsLeaf()) {
           assert(node2->Children().size() == 2);
           auto child0 = node2->Children()[0].get();
           auto child1 = node2->Children()[1].get();
           // Virtual root in node1.
-          f(node0, false, node2, false, child0, false, child1, false);
+          f(node0, false, node2, false, child0, false, child1, false, node1);
           // Virtual root in node0.
-          f(node1, false, node2, false, child0, false, child1, false);
+          f(node1, false, node2, false, child0, false, child1, false, node0);
           // Virtual root on node2's edge, with subsplit pointing down.
-          f(node2, true, node2, false, child0, false, child1, false);
+          f(node2, true, node2, false, child0, false, child1, false, nullptr);
           // Virtual root in child0.
-          f(child1, false, node2, true, node0, false, node1, false);
+          f(child1, false, node2, true, node0, false, node1, false, child0);
           // Virtual root in child1.
-          f(child0, false, node2, true, node0, false, node1, false);
+          f(child0, false, node2, true, node0, false, node1, false, child1);
         }
       },
       // f_internal
-      [&f](const Node* parent, const Node* sister, const Node* node) {
+      [&f, this](const Node* parent, const Node* sister, const Node* node) {
         // Virtual root on node's edge, with subsplit pointing up.
-        f(node, false, node, true, parent, true, sister, false);
+        f(node, false, node, true, parent, true, sister, false, nullptr);
         if (!node->IsLeaf()) {
           assert(node->Children().size() == 2);
           auto child0 = node->Children()[0].get();
           auto child1 = node->Children()[1].get();
           // Virtual root up the tree.
-          f(sister, false, node, false, child0, false, child1, false);
+          f(sister, false, node, false, child0, false, child1, false, this);
           // Virtual root in sister.
-          f(parent, true, node, false, child0, false, child1, false);
+          f(parent, true, node, false, child0, false, child1, false, sister);
           // Virtual root on node's edge, with subsplit pointing down.
-          f(node, true, node, false, child0, false, child1, false);
+          f(node, true, node, false, child0, false, child1, false, nullptr);
           // Virtual root in child0.
-          f(child1, false, node, true, sister, false, parent, true);
+          f(child1, false, node, true, sister, false, parent, true, child0);
           // Virtual root in child1.
-          f(child0, false, node, true, sister, false, parent, true);
+          f(child0, false, node, true, sister, false, parent, true, child1);
         }
       });
 }
@@ -236,36 +244,27 @@ TagSizeMap Node::Reindex() {
   return tag_index_map;
 }
 
-std::string Node::Newick(const DoubleVectorOption& branch_lengths,
-                         const TagStringMapOption& node_labels,
-                         bool show_tags) const {
-  return NewickAux(branch_lengths, node_labels, show_tags) + ";";
+std::string Node::Newick(std::function<std::string(const Node*)> node_labeler,
+                         const DoubleVectorOption& branch_lengths) const {
+  return NewickAux(node_labeler, branch_lengths) + ";";
 }
 
-std::string Node::NewickAux(const DoubleVectorOption& branch_lengths,
-                            const TagStringMapOption& node_labels,
-                            bool show_tags) const {
+std::string Node::NewickAux(
+    std::function<std::string(const Node*)> node_labeler,
+    const DoubleVectorOption& branch_lengths) const {
   std::string str;
   if (IsLeaf()) {
-    if (node_labels) {
-      str.assign((*node_labels).at(Tag()));
-    } else if (show_tags) {
-      str.assign(TagString());
-    } else {
-      str.assign(std::to_string(MaxLeafID()));
-    }
+    str.assign(node_labeler(this));
   } else {
     str.assign("(");
     for (auto iter = children_.begin(); iter != children_.end(); iter++) {
       if (iter != children_.begin()) {
         str.append(",");
       }
-      str.append((*iter)->NewickAux(branch_lengths, node_labels, show_tags));
+      str.append((*iter)->NewickAux(node_labeler, branch_lengths));
     }
     str.append(")");
-    if (show_tags) {
-      str.append(TagString());
-    }
+    str.append(node_labeler(this));
   }
   if (branch_lengths) {
     assert(Index() < (*branch_lengths).size());
@@ -277,13 +276,36 @@ std::string Node::NewickAux(const DoubleVectorOption& branch_lengths,
   return str;
 }
 
-std::vector<size_t> Node::IndexVector() {
+std::string Node::Newick(const DoubleVectorOption& branch_lengths,
+                         const TagStringMapOption& node_labels,
+                         bool show_tags) const {
+  return Newick(
+      [&node_labels, &show_tags](const Node* node) {
+        if (node->IsLeaf()) {
+          if (node_labels) {
+            return (*node_labels).at(node->Tag());
+          } else if (show_tags) {
+            return node->TagString();
+          } else {
+            return std::to_string(node->MaxLeafID());
+          }
+        } else {
+          if (show_tags) {
+            return node->TagString();
+          }
+        }
+        return std::string("");
+      },
+      branch_lengths);
+}
+
+std::vector<size_t> Node::ParentIndexVector() {
   std::vector<size_t> indices(Index());
   PostOrder([&indices](const Node* node) {
     if (!node->IsLeaf()) {
       for (const auto& child : node->Children()) {
         if (child->Index() >= indices.size()) {
-          std::cerr << "Problematic indices in IndexVector.\n";
+          std::cerr << "Problematic indices in ParentIndexVector.\n";
           abort();
         }
         indices[child->Index()] = node->Index();
@@ -291,6 +313,29 @@ std::vector<size_t> Node::IndexVector() {
     }
   });
   return indices;
+}
+
+Node::NodePtr Node::Deroot() {
+  if (LeafCount() < 3) {
+    std::cerr << "Can't deroot a tree with fewer than 3 leaves.\n";
+    abort();
+  }
+  if (Children().size() != 2) {
+    std::cerr << "Can't deroot a non-bifurcating tree.\nProblem tree:"
+              << Newick() << std::endl;
+    abort();
+  }
+  auto deroot = [](const NodePtr other_child, const NodePtr has_descendants) {
+    // Make a vector copy by passing a vector in.
+    NodePtrVec children(has_descendants->Children());
+    children.push_back(other_child);
+    // has_descendants' index is now available.
+    return Join(children, has_descendants->Index());
+  };
+  if (children_[1]->LeafCount() == 1) {
+    return deroot(children_[1], children_[0]);
+  }  // else
+  return deroot(children_[0], children_[1]);
 }
 
 // Class methods
@@ -302,7 +347,7 @@ Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t index) {
   return Join(std::vector<NodePtr>({left, right}), index);
 }
 
-Node::NodePtr Node::OfIndexVector(std::vector<size_t> indices) {
+Node::NodePtr Node::OfParentIndexVector(std::vector<size_t> indices) {
   // We will fill this map with the indices of the descendants.
   std::unordered_map<size_t, std::vector<size_t>> downward_indices;
   for (size_t child_index = 0; child_index < indices.size(); child_index++) {
