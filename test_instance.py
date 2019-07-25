@@ -13,8 +13,9 @@ def test_instance():
     [indexer, range_indexer] = inst.get_indexers()
     sbn_parameters = np.array(inst.sbn_parameters, copy=False)
     sbn_parameters[0] = 0.2
+    # Note that this puts the trees into the instance object, replacing the trees loaded from the file.
     inst.sample_trees(2)
-    print(inst.get_indexer_representations())
+    inst.get_indexer_representations()
 
     # Checking split supports
     def convert_dict_to_int(d):
@@ -44,16 +45,16 @@ def test_instance():
     print(np.array(log_likelihoods))
     print(np.array(gradients[-1]))
 
-    # inst.tree_collection = sbn.TreeCollection(
-    #     [sbn.Tree.of_parent_index_vector([3, 3, 3])],
-    #     ["mars", "saturn", "jupiter"])
-    # inst.read_fasta_file('data/hello.fasta')
-    # inst.make_beagle_instances(2)
-    # branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths,
-    #                           copy=False)
-    # branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.])
-    # print(inst.tree_collection.newick())
-    # print(np.array(inst.log_likelihoods()))
-    # branch_lengths[0] = 0.2
-    # print(inst.tree_collection.newick())
-    # print(np.array(inst.log_likelihoods()))
+    inst.tree_collection = sbn.TreeCollection(
+        [sbn.Tree.of_parent_index_vector([3, 3, 3])],
+        ["mars", "saturn", "jupiter"])
+    inst.read_fasta_file('data/hello.fasta')
+    inst.make_beagle_instances(2)
+    branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths,
+                              copy=False)
+    branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.])
+    print(inst.tree_collection.newick())
+    print(np.array(inst.log_likelihoods()))
+    branch_lengths[0] = 0.2
+    print(inst.tree_collection.newick())
+    print(np.array(inst.log_likelihoods()))

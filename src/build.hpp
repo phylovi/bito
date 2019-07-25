@@ -31,6 +31,14 @@ void PrintTagBitsetMap(TagBitsetMap map);
 
 BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
+// This function gives information about the splits and PCSSs of a given
+// topology with respect to the current indexing data structures.
+// Specifically, it returns a pair (rootsplit_result, pcss_result).
+// Each of these vectors are indexed by virtual rootings of the tree.
+// rootsplit_result simply gives the indices of the rootsplits that appear for
+// those various virtual rootings. pcss_result is a vector of vectors, giving
+// the indices of sbn_probs_ corresponding to PCSSs that are present in the
+// given topology.
 IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer_,
                                               const Node::NodePtr& topology);
 
@@ -53,6 +61,7 @@ TEST_CASE("Build") {
   }
 
   // Tests comparing to vbpi appear in Python test code.
+  // Tests of IndexerRepresentationOf in libsbn.hpp.
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

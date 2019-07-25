@@ -14,8 +14,8 @@ import re
 env = Environment(
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
-    CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion', '-pthread'],
-    # CCFLAGS=['-O3', '-pthread'],
+    # CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion', '-pthread'],
+    CCFLAGS=['-O3', '-pthread'],
     CXXFLAGS=['-std=c++14'],
     CC = os.environ['CC'],
     CXX = os.environ['CXX']

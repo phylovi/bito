@@ -224,8 +224,8 @@ struct SBNInstance {
     representations.reserve(tree_collection_.trees_.size());
     for (const auto &tree : tree_collection_.trees_) {
       IndexerRepresentationOf(indexer_, tree.Topology());
-      //      representations.push_back(
-      //          IndexerRepresentationOf(indexer_, tree.Topology()));
+      representations.push_back(
+          IndexerRepresentationOf(indexer_, tree.Topology()));
     }
     return representations;
   }

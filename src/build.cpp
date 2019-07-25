@@ -86,7 +86,7 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
                                const Node* child0_node,
                                bool child0_direction,  //
                                const Node* child1_node, bool child1_direction,
-                               const Node*  // ignore the other clade
+                               const Node*  // ignore virtual root clade
                            ) {
       Bitset parent(2 * leaf_count, false);
       // The first chunk is for the sister node.
@@ -120,14 +120,6 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
   return pcss_dict;
 }
 
-// This function gives information about the splits and PCSSs of a given
-// topology with respect to the current indexing data structures.
-// Specifically, it returns a pair (rootsplit_result, pcss_result).
-// Each of these vectors are indexed by virtual rootings of the tree.
-// rootsplit_result simply gives the indices of the rootsplits that appear for
-// those various virtual rootings. pcss_result is a vector of vectors, giving
-// the indices of sbn_probs_ corresponding to PCSSs that are present in the
-// given topology.
 IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
                                               const Node::NodePtr& topology) {
   auto tag_to_leafset = TagLeafSetMapOf(topology);

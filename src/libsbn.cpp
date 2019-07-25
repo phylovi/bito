@@ -13,8 +13,6 @@ namespace py = pybind11;
 // First, we make them opaque to pybind11, so that it doesn't do its default
 // conversion of STL types.
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
-// Same for vector<size_t>.
-PYBIND11_MAKE_OPAQUE(std::vector<size_t>);
 
 PYBIND11_MODULE(sbn, m) {
   m.doc() = "libsbn bindings";
@@ -30,16 +28,6 @@ PYBIND11_MODULE(sbn, m) {
             1,                                        // Number of dimensions
             {v.size()},                               // Buffer dimensions
             {sizeof(double)});                        // Stride
-      });
-  py::class_<std::vector<size_t>>(m, "vector_size_t", py::buffer_protocol())
-      .def_buffer([](std::vector<size_t> &v) -> py::buffer_info {
-        return py::buffer_info(
-            v.data(),                                 // Pointer to buffer
-            sizeof(size_t),                           // Size of one scalar
-            py::format_descriptor<size_t>::format(),  // See docs
-            1,                                        // Number of dimensions
-            {v.size()},                               // Buffer dimensions
-            {sizeof(size_t)});                        // Stride
       });
   // Tree
   py::class_<Tree>(m, "Tree", py::buffer_protocol())
