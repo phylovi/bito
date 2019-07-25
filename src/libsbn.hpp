@@ -4,8 +4,6 @@
 #ifndef SRC_LIBSBN_HPP_
 #define SRC_LIBSBN_HPP_
 
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
 #include <algorithm>
 #include <cmath>
 #include <random>
@@ -19,8 +17,6 @@
 #include "build.hpp"
 #include "driver.hpp"
 #include "tree.hpp"
-
-namespace py = pybind11;
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
 typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
@@ -227,8 +223,9 @@ struct SBNInstance {
     std::vector<IndexerRepresentation> representations;
     representations.reserve(tree_collection_.trees_.size());
     for (const auto &tree : tree_collection_.trees_) {
-      representations.push_back(
-          IndexerRepresentationOf(indexer_, tree.Topology()));
+      IndexerRepresentationOf(indexer_, tree.Topology());
+      //      representations.push_back(
+      //          IndexerRepresentationOf(indexer_, tree.Topology()));
     }
     return representations;
   }
@@ -333,7 +330,7 @@ TEST_CASE("libsbn") {
   inst.ReadFastaFile("data/hello.fasta");
   inst.MakeBeagleInstances(2);
   for (auto ll : inst.LogLikelihoods()) {
-    CHECK_LT(abs(ll - -84.852358), 0.000001);
+    CHECK_LT(fabs(ll - -84.852358), 0.000001);
   }
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
@@ -354,6 +351,11 @@ TEST_CASE("libsbn") {
         {21, 75, 76},
         {70, 73, 31}}});
   CHECK_EQ(representation, correct_representation);
+  inst.SampleTrees(2);
+  // inst.GetIndexerRepresentations();
+  auto topology = inst.SampleTopology();
+  std::cout << topology->Newick() << std::endl;
+  IndexerRepresentationOf(inst.indexer_, topology);
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
@@ -365,7 +367,7 @@ TEST_CASE("libsbn") {
        -6910.958836661867, -6909.02639968063, -6912.967861935749,
        -6910.7871105783515});
   for (size_t i = 0; i < likelihoods.size(); i++) {
-    CHECK_LT(abs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
+    CHECK_LT(fabs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
 
   auto gradients = inst.BranchGradients();

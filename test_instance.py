@@ -14,7 +14,7 @@ def test_instance():
     sbn_parameters = np.array(inst.sbn_parameters, copy=False)
     sbn_parameters[0] = 0.2
     inst.sample_trees(2)
-    #print(inst.get_indexer_representations())
+    print(inst.get_indexer_representations())
 
     # Checking split supports
     def convert_dict_to_int(d):

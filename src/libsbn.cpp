@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "libsbn.hpp"
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
@@ -12,11 +13,13 @@ namespace py = pybind11;
 // First, we make them opaque to pybind11, so that it doesn't do its default
 // conversion of STL types.
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
+// Same for vector<size_t>.
+PYBIND11_MAKE_OPAQUE(std::vector<size_t>);
 
 PYBIND11_MODULE(sbn, m) {
   m.doc() = "libsbn bindings";
-  // Second, we expose vector<double> as a buffer object so that we can use it
-  // as an in-place numpy array with np.array(v, copy=False). See
+  // Second, we expose them as buffer objects so that we can use them
+  // as in-place numpy arrays with np.array(v, copy=False). See
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
   py::class_<std::vector<double>>(m, "vector_double", py::buffer_protocol())
       .def_buffer([](std::vector<double> &v) -> py::buffer_info {
@@ -27,6 +30,16 @@ PYBIND11_MODULE(sbn, m) {
             1,                                        // Number of dimensions
             {v.size()},                               // Buffer dimensions
             {sizeof(double)});                        // Stride
+      });
+  py::class_<std::vector<size_t>>(m, "vector_size_t", py::buffer_protocol())
+      .def_buffer([](std::vector<size_t> &v) -> py::buffer_info {
+        return py::buffer_info(
+            v.data(),                                 // Pointer to buffer
+            sizeof(size_t),                           // Size of one scalar
+            py::format_descriptor<size_t>::format(),  // See docs
+            1,                                        // Number of dimensions
+            {v.size()},                               // Buffer dimensions
+            {sizeof(size_t)});                        // Stride
       });
   // Tree
   py::class_<Tree>(m, "Tree", py::buffer_protocol())

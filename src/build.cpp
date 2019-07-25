@@ -140,7 +140,6 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
     if (node != topology.get()) {
       Bitset rootsplit = tag_to_leafset.at(node->Tag());
       rootsplit.Minorize();
-      std::cout << rootsplit.ToString() << std::endl;
       rootsplit_result[node->Index()] = indexer.at(rootsplit);
     }
   });
