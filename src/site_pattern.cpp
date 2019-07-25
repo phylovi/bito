@@ -37,32 +37,30 @@ void SitePattern::Compress() {
   // Build an unordered map of patterns.
   for (size_t i = 0; i < sequence_length; i++) {
     SymbolVector pattern(alignment_.SequenceCount());
-    for (auto it = tag_taxon_map_.cbegin(); it != tag_taxon_map_.cend(); ++it) {
-      size_t taxon_number = static_cast<size_t>(UnpackFirstInt(it->first));
-      pattern[taxon_number] = symbol_table.at(alignment_.at(it->second)[i]);
+    for (const auto &iter : tag_taxon_map_) {
+      size_t taxon_number = static_cast<size_t>(UnpackFirstInt(iter.first));
+      pattern[taxon_number] = symbol_table.at(alignment_.at(iter.second)[i]);
     }
     if (patterns.find(pattern) == patterns.end()) {
-      // TODO for Erick: insert sugar?
+      // TODO for Erick: insert sugar? Or convert to DefaultDict.
       patterns.insert(std::make_pair(pattern, 1));
     } else
       patterns[pattern]++;
   }
 
-  // Add tip states to beagle.
-  for (auto iter_tag_taxon = tag_taxon_map_.cbegin();
-       iter_tag_taxon != tag_taxon_map_.cend(); ++iter_tag_taxon) {
+  // Collect the site patterns per taxon.
+  for (const auto &iter_tag_taxon : tag_taxon_map_) {
     SymbolVector compressed_sequence;
     size_t taxon_number =
-        static_cast<size_t>(UnpackFirstInt(iter_tag_taxon->first));
-    for (auto iter_patterns = patterns.cbegin();
-         iter_patterns != patterns.cend(); ++iter_patterns) {
-      compressed_sequence.push_back(iter_patterns->first[taxon_number]);
+        static_cast<size_t>(UnpackFirstInt(iter_tag_taxon.first));
+    for (const auto &iter_patterns : patterns) {
+      compressed_sequence.push_back(iter_patterns.first[taxon_number]);
     }
     patterns_[taxon_number] = compressed_sequence;
   }
 
-  // add site weights to beagle
-  for (auto it = patterns.cbegin(); it != patterns.cend(); ++it) {
-    weights_.push_back(it->second);
+  // Collect the site weights.
+  for (const auto &iter : patterns) {
+    weights_.push_back(iter.second);
   }
 }

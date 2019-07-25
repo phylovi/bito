@@ -18,19 +18,17 @@ class SitePattern {
   }
 
   const std::vector<SymbolVector>& GetPatterns() const { return patterns_; }
-
   size_t PatternCount() const { return patterns_.at(0).size(); }
-
   size_t SequenceCount() const { return patterns_.size(); }
-
   const std::vector<double>& GetWeights() const { return weights_; }
 
  private:
-  void Compress();
-
   Alignment alignment_;
   TagStringMap tag_taxon_map_;
   std::vector<SymbolVector> patterns_;
   std::vector<double> weights_;
+
+  void Compress();
 };
+
 #endif  // SRC_SITE_PATTERN_HPP_
