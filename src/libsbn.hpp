@@ -353,7 +353,17 @@ TEST_CASE("libsbn") {
   auto indexer_test_topology_2 =
       // (((0,1)5,2)6,3,4)7;
       Node::OfParentIndexVector({5, 5, 6, 7, 7, 6, 7});
-  IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2);
+  IndexerRepresentation correct_representation_2(
+      {{8, 0, 3, 5, 10, 6, 1},  // The rootsplit indices.
+       {{50, 36, 16},           // The PCSS indices.
+        {50, 49, 23},
+        {39, 34, 44},
+        {29, 65, 72},
+        {59, 41, 72},
+        {50, 47, 51},
+        {40, 30, 72}}});
+  CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2),
+           correct_representation_2);
   inst.SampleTrees(2);
   inst.GetIndexerRepresentations();
 
