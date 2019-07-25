@@ -119,3 +119,80 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
   }
   return pcss_dict;
 }
+
+// This function gives information about the splits and PCSSs of a given
+// topology with respect to the current indexing data structures.
+// Specifically, it returns a pair (rootsplit_result, pcss_result).
+// Each of these vectors are indexed by virtual rootings of the tree.
+// rootsplit_result simply gives the indices of the rootsplits that appear for
+// those various virtual rootings. pcss_result is a vector of vectors, giving
+// the indices of sbn_probs_ corresponding to PCSSs that are present in the
+// given topology.
+IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
+                                              const Node::NodePtr& topology) {
+  auto tag_to_leafset = TagLeafSetMapOf(topology);
+  auto leaf_count = topology->LeafCount();
+  // First, the rootsplits.
+  SizeVector rootsplit_result(topology->Index());
+  topology->PreOrder([&topology, &rootsplit_result, &tag_to_leafset,
+                      &indexer](const Node* node) {
+    // Skip the root.
+    if (node != topology.get()) {
+      Bitset rootsplit = tag_to_leafset.at(node->Tag());
+      rootsplit.Minorize();
+      std::cout << rootsplit.ToString() << std::endl;
+      rootsplit_result[node->Index()] = indexer.at(rootsplit);
+    }
+  });
+  // Next, the pcss_result.
+  SizeVectorVector pcss_result(topology->Index());
+  topology->PCSSPreOrder([&indexer, &tag_to_leafset, &leaf_count, &pcss_result](
+                             const Node* sister_node, bool sister_direction,
+                             const Node* focal_node,
+                             bool focal_direction,  //
+                             const Node* child0_node,
+                             bool child0_direction,  //
+                             const Node* child1_node, bool child1_direction,
+                             const Node* virtual_root_clade) {
+    // Start by making the bitset representation of this PCSS.
+    Bitset bitset(3 * leaf_count, false);
+    bitset.CopyFrom(tag_to_leafset.at(sister_node->Tag()), 0, sister_direction);
+    bitset.CopyFrom(tag_to_leafset.at(focal_node->Tag()), leaf_count,
+                    focal_direction);
+    auto child0_bitset = tag_to_leafset.at(child0_node->Tag());
+    if (child0_direction) child0_bitset.flip();
+    auto child1_bitset = tag_to_leafset.at(child1_node->Tag());
+    if (child1_direction) child1_bitset.flip();
+    bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
+                    false);
+    auto indexer_position = indexer.at(bitset);
+    const auto& focal_index = focal_node->Index();
+    if (sister_node == focal_node) {
+      // We are in the bidirectional edge situation.
+      assert(focal_index < pcss_result.size());
+      // Rooting at the present edge will indeed lead to the given PCSS.
+      pcss_result[focal_index].push_back(indexer_position);
+    } else {
+      // The only time the virtual root clade should be nullptr should be when
+      // sister_node == focal_node, but we check anyhow.
+      assert(virtual_root_clade != nullptr);
+      // Virtual-rooting on every edge in the sister will also lead to this
+      // PCSS, because then the root will be "above" the PCSS.
+      virtual_root_clade->ConditionalPreOrder([&pcss_result, &indexer_position,
+                                               &sister_node,
+                                               &focal_node](const Node* node) {
+        if (node == sister_node || node == focal_node) {
+          // Don't enter the sister or focal clades. This is only
+          // activated in the second case on the bottom row of pcss.svg:
+          // we want to add everything in the clade above the focal node,
+          // but nothing else.
+          return false;
+        }  // else
+        pcss_result[node->Index()].push_back(indexer_position);
+        return true;
+      });
+    }
+  });
+  return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
+}
+

@@ -21,6 +21,7 @@ typedef std::unordered_map<uint32_t, Bitset> UInt32BitsetMap;
 typedef std::unordered_map<Bitset, uint32_t> BitsetUInt32Map;
 typedef std::unordered_map<Bitset, std::pair<uint32_t, uint32_t>>
     BitsetUInt32PairMap;
+typedef std::pair<SizeVector, SizeVectorVector> IndexerRepresentation;
 
 typedef std::unordered_map<Bitset, DefaultDict<Bitset, uint32_t>> PCSSDict;
 
@@ -30,6 +31,8 @@ void PrintTagBitsetMap(TagBitsetMap map);
 
 BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
+IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer_,
+                                              const Node::NodePtr& topology);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 

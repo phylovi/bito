@@ -6,21 +6,19 @@ import sbn
 def test_instance():
     inst = sbn.instance('charlie')
     inst.read_newick_file('data/five_taxon.nwk')
-    inst.print_status()
     assert inst.tree_count() == 4
     inst.process_loaded_trees()
 
+    # Showing off tree sampling.
     [indexer, range_indexer] = inst.get_indexers()
+    sbn_parameters = np.array(inst.sbn_parameters, copy=False)
+    sbn_parameters[0] = 0.2
+    inst.sample_trees(2)
+    #print(inst.get_indexer_representations())
 
-    sbn_probs = np.array(inst.sbn_probs, copy=False)
-    sbn_probs[3] = 3.14159265359
-
-    # print(sbn_probs)
-    # print(inst.sbn_total_prob())
-
+    # Checking split supports
     def convert_dict_to_int(d):
         return {k: int(v) for k, v in d.items()}
-
     inst.read_nexus_file('data/DS1.subsampled_10.t')
     inst.process_loaded_trees()
     [rootsplit_support, subsplit_support] = inst.split_counters()

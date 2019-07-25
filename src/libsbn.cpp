@@ -56,8 +56,10 @@ PYBIND11_MODULE(sbn, m) {
       .def("branch_gradients", &SBNInstance::BranchGradients)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_indexers", &SBNInstance::GetIndexers)
-      .def("sbn_total_prob", &SBNInstance::SBNTotalProb)
+      .def("sample_trees", &SBNInstance::SampleTrees)
+      .def("get_indexer_representations",
+           &SBNInstance::GetIndexerRepresentations)
       // Member Variables
-      .def_readwrite("sbn_probs", &SBNInstance::sbn_probs_)
+      .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
       .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
 }

@@ -18,7 +18,6 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
-#include "prettyprint.hpp"
 #include "tree.hpp"
 
 namespace py = pybind11;
@@ -61,18 +60,18 @@ struct SBNInstance {
   size_t beagle_leaf_count_;
   size_t beagle_site_count_;
   // A vector that contains all of the SBN-related probabilities.
-  std::vector<double> sbn_probs_;
+  std::vector<double> sbn_parameters_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
   // and PCSS bitsets are at the end.
   // The collection of rootsplits, with the same indexing as in the indexer_.
   BitsetVector rootsplits_;
-  // The first index after the rootsplit block in sbn_probs_.
+  // The first index after the rootsplit block in sbn_parameters_.
   size_t rootsplit_index_end_;
   BitsetUInt32Map indexer_;
   // A map going from the index of a PCSS to its child.
   UInt32BitsetMap index_to_child_;
-  // A map going from a parent subsplit to the range of indices in sbn_probs_
-  // with its children.
+  // A map going from a parent subsplit to the range of indices in
+  // sbn_parameters_ with its children.
   BitsetUInt32PairMap parent_to_range_;
   // Random bits.
   static std::random_device random_device_;
@@ -115,7 +114,7 @@ struct SBNInstance {
     uint32_t index = 0;
     auto counter = tree_collection_.TopologyCounter();
     // See above for the definitions of these members.
-    sbn_probs_.clear();
+    sbn_parameters_.clear();
     rootsplits_.clear();
     indexer_.clear();
     index_to_child_.clear();
@@ -143,7 +142,7 @@ struct SBNInstance {
         index++;
       }
     }
-    sbn_probs_ = std::vector<double>(index, 1.);
+    sbn_parameters_ = std::vector<double>(index, 1.);
   }
 
   void PrintSupports() {
@@ -161,12 +160,13 @@ struct SBNInstance {
   }
 
   // Sample an integer index in [range.first, range.second) according to
-  // sbn_probs_.
+  // sbn_parameters_.
   uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) const {
     assert(range.first < range.second);
-    assert(range.second <= sbn_probs_.size());
+    assert(range.second <= sbn_parameters_.size());
     std::discrete_distribution<> distribution(
-        sbn_probs_.begin() + range.first, sbn_probs_.begin() + range.second);
+        sbn_parameters_.begin() + range.first,
+        sbn_parameters_.begin() + range.second);
     // We have to add on range.first because we have taken a slice of the full
     // array, and the sampler treats the beginning of this slice as zero.
     auto result =
@@ -204,7 +204,7 @@ struct SBNInstance {
 
   void CheckSBNMapsAvailable() {
     if (!indexer_.size() || !index_to_child_.size() ||
-        parent_to_range_.size() || !rootsplits_.size()) {
+        !parent_to_range_.size() || !rootsplits_.size()) {
       std::cout << "Please call ProcessLoadedTrees to prepare your SBN maps.\n";
       abort();
     }
@@ -213,7 +213,8 @@ struct SBNInstance {
   void SampleTrees(size_t count) {
     CheckSBNMapsAvailable();
     auto leaf_count = rootsplits_[0].size();
-    auto edge_count = 2 * static_cast<int>(leaf_count) - 1;
+    // 2n-2 because trees are unrooted.
+    auto edge_count = 2 * static_cast<int>(leaf_count) - 2;
     tree_collection_.trees_.clear();
     for (size_t i = 0; i < count; i++) {
       std::vector<double> branch_lengths(static_cast<size_t>(edge_count));
@@ -222,92 +223,14 @@ struct SBNInstance {
     }
   }
 
-  // This function gives information about the splits and PCSSs of a given
-  // topology with respect to the current indexing data structures.
-  // Specifically, it returns a pair (rootsplit_result, pcss_result).
-  // Each of these vectors are indexed by virtual rootings of the tree.
-  // rootsplit_result simply gives the indices of the rootsplits that appear for
-  // those various virtual rootings. pcss_result is a vector of vectors, giving
-  // the indices of sbn_probs_ corresponding to PCSSs that are present in the
-  // given topology.
-  std::pair<SizeVector, SizeVectorVector> IndexerRepresentationOfTopology(
-      Node::NodePtr topology) {
-    auto tag_to_leafset = TagLeafSetMapOf(topology);
-    auto leaf_count = topology->LeafCount();
-    // First, the rootsplits.
-    SizeVector rootsplit_result(topology->Index());
-    topology->PreOrder([
-      &topology, &rootsplit_result, &tag_to_leafset, &indexer = this->indexer_
-    ](const Node *node) {
-      // Skip the root.
-      if (node != topology.get()) {
-        Bitset rootsplit = tag_to_leafset.at(node->Tag());
-        rootsplit.Minorize();
-        std::cout << rootsplit.ToString() << std::endl;
-        rootsplit_result[node->Index()] = indexer.at(rootsplit);
-      }
-    });
-    // Next, the pcss_result.
-    SizeVectorVector pcss_result(topology->Index());
-    topology->PCSSPreOrder([
-          &indexer_ = this->indexer_, &tag_to_leafset, &leaf_count, &pcss_result
-    ](const Node *sister_node, bool sister_direction, const Node *focal_node,
-      bool focal_direction,  //
-      const Node *child0_node,
-      bool child0_direction,  //
-      const Node *child1_node, bool child1_direction,
-      const Node *virtual_root_clade) {
-      // Start by making the bitset representation of this PCSS.
-      Bitset bitset(3 * leaf_count, false);
-      bitset.CopyFrom(tag_to_leafset.at(sister_node->Tag()), 0,
-                      sister_direction);
-      bitset.CopyFrom(tag_to_leafset.at(focal_node->Tag()), leaf_count,
-                      focal_direction);
-      auto child0_bitset = tag_to_leafset.at(child0_node->Tag());
-      if (child0_direction) child0_bitset.flip();
-      auto child1_bitset = tag_to_leafset.at(child1_node->Tag());
-      if (child1_direction) child1_bitset.flip();
-      bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
-                      false);
-      auto indexer_position = indexer_.at(bitset);
-      const auto &focal_index = focal_node->Index();
-      if (sister_node == focal_node) {
-        // We are in the bidirectional edge situation.
-        assert(focal_index < pcss_result.size());
-        // Rooting at the present edge will indeed lead to the given PCSS.
-        pcss_result[focal_index].push_back(indexer_position);
-      } else {
-        // The only time the virtual root clade should be nullptr should be when
-        // sister_node == focal_node, but we check anyhow.
-        assert(virtual_root_clade != nullptr);
-        // Virtual-rooting on every edge in the sister will also lead to this
-        // PCSS, because then the root will be "above" the PCSS.
-        virtual_root_clade->ConditionalPreOrder(
-            [&pcss_result, &indexer_position, &sister_node,
-             &focal_node](const Node *node) {
-              if (node == sister_node || node == focal_node) {
-                // Don't enter the sister or focal clades. This is only
-                // activated in the second case on the bottom row of pcss.svg:
-                // we want to add everything in the clade above the focal node,
-                // but nothing else.
-                return false;
-              }  // else
-              pcss_result[node->Index()].push_back(indexer_position);
-              return true;
-            });
-      }
-    });
-    return std::pair<SizeVector, SizeVectorVector>(rootsplit_result,
-                                                   pcss_result);
-  }
-
-  // TODO(erick) replace with something interesting.
-  double SBNTotalProb() {
-    double total = 0;
-    for (const auto &prob : sbn_probs_) {
-      total += prob;
+  std::vector<IndexerRepresentation> GetIndexerRepresentations() {
+    std::vector<IndexerRepresentation> representations;
+    representations.reserve(tree_collection_.trees_.size());
+    for (const auto &tree : tree_collection_.trees_) {
+      representations.push_back(
+          IndexerRepresentationOf(indexer_, tree.Topology()));
     }
-    return total;
+    return representations;
   }
 
   // ** I/O
@@ -420,8 +343,8 @@ TEST_CASE("libsbn") {
       // (2,(1,3)5,(0,4)6)7
       Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
   auto representation =
-      inst.IndexerRepresentationOfTopology(indexer_test_topology);
-  std::pair<SizeVector, SizeVectorVector> correct_representation(
+      IndexerRepresentationOf(inst.indexer_, indexer_test_topology);
+  IndexerRepresentation correct_representation(
       {{8, 0, 3, 5, 10, 4, 11},  // The rootsplit indices.
        {{54, 31, 15},            // The PCSS indices.
         {21, 13, 22},
