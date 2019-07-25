@@ -38,16 +38,19 @@ class Node {
   typedef std::unordered_map<NodePtr, uint32_t> TopologyCounter;
 
   // This is the type of functions that are used in the PCSS recursion
-  // functions.
+  // functions. See `doc/pcss.svg` for a diagram of the PCSS traversal. In that
+  // file, the first tree shows the terminology, and the subsequent trees show
+  // the calls to f_root and f_internal.
   //
-  // The signature is in 4 parts, each of which describes the
-  // position in the tree and then the direction. The 4 parts are the sister
-  // TODO
-  // clade, the focal clade, child 0, and child 1. False means down the tree
-  // structure and true means up.
-  // See `doc/pcss.svg` for a diagram of the PCSS traversal. In that file,
-  // the first tree shows the terminology, and the subsequent trees show the
-  // calls to f_root and f_internal.
+  // The signature is in 5 parts. The first 4 describe the position in the tree
+  // and then the direction: the sister clade, the focal clade, child 0, and
+  // child 1. False means down the tree structure and true means up. The 5th
+  // part is the top of the virtual root clade, namely the clade containing the
+  // virtual root (shown in gray in the diagram). Caution: in the case where the
+  // virtual root clade is above the subsplit, the "virtual root clade" will be
+  // the entire tree. There's nothing else we can do without rerooting the tree.
+  // It's not too hard to exclude the undesired bits with a conditional tree
+  // traversal. See IndexerRepresentationOfTopology for an example.
   typedef std::function<void(const Node*, bool, const Node*, bool, const Node*,
                              bool, const Node*, bool, const Node*)>
       PCSSFun;
