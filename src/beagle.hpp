@@ -36,9 +36,10 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
 void SetJCModel(BeagleInstance beagle_instance);
 
 template <typename T>
-std::vector<T> Parallelize(std::function<T(BeagleInstance, const Tree &)> f,
-                           std::vector<BeagleInstance> beagle_instances,
-                           const TreeCollection &tree_collection) {
+std::vector<T> Parallelize(
+    std::function<T(BeagleInstance, const Tree &, bool rescaling)> f,
+    std::vector<BeagleInstance> beagle_instances,
+    const TreeCollection &tree_collection, bool rescaling) {
   if (beagle_instances.size() == 0) {
     std::cerr << "Please add some BEAGLE instances that can be used for "
                  "computation.\n";
@@ -55,23 +56,25 @@ std::vector<T> Parallelize(std::function<T(BeagleInstance, const Tree &)> f,
   }
   TaskProcessor<BeagleInstance, size_t> task_processor(
       instance_queue, tree_number_queue,
-      [&results, &tree_collection, &f](BeagleInstance beagle_instance,
-                                       size_t tree_number) {
+      [&results, &tree_collection, &f, &rescaling](
+          BeagleInstance beagle_instance, size_t tree_number) {
         results[tree_number] =
-            f(beagle_instance, tree_collection.GetTree(tree_number));
+            f(beagle_instance, tree_collection.GetTree(tree_number), rescaling);
       });
   return results;
 }
 
-double LogLikelihood(BeagleInstance beagle_instance, const Tree &tree);
+double LogLikelihood(BeagleInstance beagle_instance, const Tree &tree,
+                     bool rescaling);
 std::vector<double> LogLikelihoods(std::vector<BeagleInstance> beagle_instances,
-                                   const TreeCollection &tree_collection);
+                                   const TreeCollection &tree_collection,
+                                   bool rescaling);
 
 std::pair<double, std::vector<double>> BranchGradient(
-    BeagleInstance beagle_instance, const Tree &tree);
+    BeagleInstance beagle_instance, const Tree &tree, bool rescaling);
 std::vector<std::pair<double, std::vector<double>>> BranchGradients(
     std::vector<BeagleInstance> beagle_instances,
-    const TreeCollection &tree_collection);
+    const TreeCollection &tree_collection, bool rescaling);
 
 }  // namespace beagle
 
