@@ -346,6 +346,8 @@ TEST_CASE("libsbn") {
   auto indexer_test_topology_1 =
       // (2,(1,3)5,(0,4)6)7
       Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
+  std::cout << indexer_test_topology_1->Newick(
+      [](const Node *node) { return std::to_string(node->Index()); });
   IndexerRepresentation correct_representation_1(
       {{8, 0, 3, 5, 10, 4, 11},  // The rootsplit indices.
        {{54, 31, 15},            // The PCSS indices.
