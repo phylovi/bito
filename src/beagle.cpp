@@ -60,7 +60,8 @@ int CreateInstance(int tip_count, int alignment_length,
   int matrix_buffer_count = 2 * (2 * tip_count - 1);
   // Number of rate categories
   int category_count = 1;
-  // Number of scaling buffers -- can be zero if scaling is not needed
+  // TODO explain why we need one more than the number of buffers.
+  // Number of scaling buffers --
   int scale_buffer_count = partials_buffer_count + 1;
   // List of potential resources on which this instance is allowed (input,
   // NULL implies no restriction
@@ -73,9 +74,7 @@ int CreateInstance(int tip_count, int alignment_length,
   int64_t preference_flags = 0;
   // Bit-flags indicating required implementation characteristics, see
   // BeagleFlags (input)
-  int requirement_flags = 0;
-  requirement_flags |= BEAGLE_FLAG_SCALING_MANUAL;
-  // requirement_flags |= BEAGLE_FLAG_SCALERS_LOG;
+  int requirement_flags = BEAGLE_FLAG_SCALING_MANUAL;
 
   return beagleCreateInstance(
       tip_count, partials_buffer_count, compact_buffer_count, state_count,
@@ -147,12 +146,12 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
                      bool rescaling) {
   beagleResetScaleFactors(beagle_instance, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
-  std::vector<BeagleOperation> operations;
   auto node_count = tree.BranchLengths().size();
-  int taxa_count = static_cast<int>((node_count + 1) / 2);
+  int int_taxon_count = static_cast<int>(tree.LeafCount());
+  std::vector<BeagleOperation> operations;
 
   tree.Topology()->PostOrder(
-      [&operations, taxa_count, rescaling](const Node *node) {
+      [&operations, int_taxon_count, rescaling](const Node *node) {
         if (!node->IsLeaf()) {
           assert(node->Children().size() == 2);
           int dest = static_cast<int>(node->Index());
@@ -165,7 +164,12 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
               child1_index,   child1_index     // src2 and matrix2
           };
           if (rescaling) {
-            op.destinationScaleWrite = dest - taxa_count + 1;
+            // We don't need scaling buffers for the leaves.
+            // Thus the scaling buffers are indexed by the edge number minus the
+            // number of leaves.
+            // @MF So indexers are indexed starting at 1? Can you explain a
+            // little somewhere?
+            op.destinationScaleWrite = dest - int_taxon_count + 1;
           }
           operations.push_back(op);
         }
@@ -179,18 +183,22 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
                                  NULL,  // secondDervativeIndices
                                  tree.BranchLengths().data(),
                                  static_cast<int>(node_count - 1));
-  int cumululative_index = BEAGLE_OP_NONE;
-  if (rescaling) cumululative_index = 0;
 
+  // This is the index number of scaleBuffer to store accumulated factors.
+  int cumululative_index = rescaling ? 0 : BEAGLE_OP_NONE;
   beagleUpdatePartials(beagle_instance,
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),
                        cumululative_index);  // cumulative scale index
+
   double log_like = 0;
   std::vector<int> root_index = {static_cast<int>(tree.Index())};
   std::vector<int> category_weight_index = {0};
   std::vector<int> state_frequency_index = {0};
   std::vector<int> cumulative_scale_index = {cumululative_index};
+  // @MF I didn't document this very well the first time around. Can you help me
+  // understand? The beagle docs say: Number of partialsBuffer to integrate
+  // (input)
   int count = 1;
   beagleCalculateRootLogLikelihoods(
       beagle_instance, root_index.data(), category_weight_index.data(),
@@ -214,27 +222,26 @@ std::pair<double, std::vector<double>> BranchGradient(
   auto tree = PrepareTreeForLikelihood(in_tree);
   tree.SlideRootPosition();
 
-  std::vector<BeagleOperation> operations;
-
   size_t node_count = tree.BranchLengths().size();
-  int taxa_count = static_cast<int>((node_count + 1) / 2);
-  int internal_count = static_cast<int>(taxa_count - 1);
+  int int_node_count = static_cast<int>(node_count);
+  int int_taxon_count = static_cast<int>(tree.LeafCount());
+  int internal_count = int_taxon_count - 1;
   std::vector<int> node_indices(node_count - 1);
   std::iota(node_indices.begin(), node_indices.end(), 0);
-
   std::vector<int> gradient_indices(node_count - 1);
   std::iota(gradient_indices.begin(), gradient_indices.end(), node_count);
+  std::vector<BeagleOperation> operations;
 
-  int int_node_count = static_cast<int>(node_count);
-  int int_internal_count = static_cast<int>(internal_count);
   int fixed_node_index =
       static_cast<int>(tree.Topology()->Children()[1]->Index());
   int root_child_index =
       static_cast<int>(tree.Topology()->Children()[0]->Index());
 
   // Calculate lower partials
-  tree.Topology()->BinaryIndexPostOrder([&operations, taxa_count, rescaling](
-      int node_index, int child0_index, int child1_index) {
+  tree.Topology()->BinaryIndexPostOrder([&operations, int_taxon_count,
+                                         rescaling](int node_index,
+                                                    int child0_index,
+                                                    int child1_index) {
     BeagleOperation op = {
         node_index,                      // dest
         BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
@@ -242,15 +249,15 @@ std::pair<double, std::vector<double>> BranchGradient(
         child1_index,   child1_index     // src2 and matrix2
     };
     if (rescaling) {
-      op.destinationScaleWrite = node_index - taxa_count + 1;
+      op.destinationScaleWrite = node_index - int_taxon_count + 1;
     }
     operations.push_back(op);
   });
 
   // Calculate upper partials
   tree.Topology()->TripleIndexPreOrderBifurcating(
-      [&operations, &root_child_index, &fixed_node_index, taxa_count, rescaling,
-       int_internal_count,
+      [&operations, &root_child_index, &fixed_node_index, rescaling,
+       internal_count,
        int_node_count](int parent_index, int sister_index, int node_index) {
         if (node_index != root_child_index && node_index != fixed_node_index) {
           int upper_partial_index;
@@ -272,13 +279,13 @@ std::pair<double, std::vector<double>> BranchGradient(
                                 upper_matrix_index,
                                 sister_index,
                                 sister_index};
-
-          // Scalers are indexes differently for upper conditional likelihood
-          // It still starts from 1 but they are shifted by the number of
-          // internal nodes because of the lower conditional likelihoods
-          // In this case taxa have scalers
+          // Scalers are indexed differently for the upper conditional
+          // likelihood. They start at the number of internal nodes + 1 because
+          // of the lower conditional likelihoods. Also, in this case the leaves
+          // have scalers.
           if (rescaling) {
-            op.destinationScaleWrite = node_index + 1 + int_internal_count;
+            // @MF: Why don't we need to set destinationScaleRead?
+            op.destinationScaleWrite = node_index + 1 + internal_count;
           }
           operations.push_back(op);
         }
@@ -299,25 +306,20 @@ std::pair<double, std::vector<double>> BranchGradient(
 
   std::vector<int> category_weight_index = {0};
   std::vector<int> state_frequency_index = {0};
-  std::vector<int> cumulative_scale_index = {BEAGLE_OP_NONE};
+  std::vector<int> cumulative_scale_index = {rescaling ? 0 : BEAGLE_OP_NONE};
   int count = 1;
   std::vector<int> upper_partials_index = {0};
   std::vector<int> node_partial_indices = {0};
   std::vector<int> node_mat_indices = {0};
   std::vector<int> node_deriv_index = {0};
   std::vector<double> derivatives(node_count, 0);
-
-  if (rescaling) {
-    cumulative_scale_index[0] = 0;
-  }
-
   double log_like = 0;
 
   SizeVectorVector indices_above = tree.Topology()->IndicesAbove();
   for (auto &indices : indices_above) {
-    // reverse vector so we have indexes from index_node to root
+    // Reverse vector so we have indices from index_node to root.
     std::reverse(indices.begin(), indices.end());
-    // remove the root scalers
+    // Remove the root scalers.
     indices.pop_back();
   }
 
@@ -346,16 +348,19 @@ std::pair<double, std::vector<double>> BranchGradient(
       if (rescaling) {
         scaler_indices.clear();
         beagleResetScaleFactors(beagle_instance, cumulative_scale_index[0]);
-        scaler_indices.resize(int_internal_count - 1);
+        scaler_indices.resize(static_cast<size_t>(internal_count - 1));
         std::iota(scaler_indices.begin(), scaler_indices.end(), 1);
 
-        // replace lower scaler index with upper scaler index for nodes between
-        // node_index and root
-        size_t child = node_index;
-        for (auto upper : indices_above[node_index]) {
-          scaler_indices[upper - taxa_count] =
-              static_cast<int>(child) + int_internal_count + 1;
-          child = upper;
+        // Replace lower scaler index with upper scaler index for nodes between
+        // node_index and root.
+        int child = node_index;
+        for (size_t upper : indices_above[static_cast<size_t>(node_index)]) {
+          int int_upper = static_cast<int>(upper);
+          int scaler_indices_index = int_upper - int_taxon_count;
+          assert(scaler_indices_index >= 0);
+          scaler_indices[static_cast<size_t>(scaler_indices_index)] =
+              child + internal_count + 1;
+          child = int_upper;
         }
 
         beagleAccumulateScaleFactors(beagle_instance, scaler_indices.data(),
