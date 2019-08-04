@@ -16,6 +16,7 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
+#include "prettyprint.hpp"
 #include "tree.hpp"
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
