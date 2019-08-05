@@ -72,13 +72,15 @@ struct SBNInstance {
   // Random bits.
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
+  bool rescaling_;
 
   // ** Initialization, destruction, and status
   explicit SBNInstance(const std::string &name)
       : name_(name),
         symbol_table_(beagle::GetSymbolTable()),
         beagle_leaf_count_(0),
-        beagle_site_count_(0) {}
+        beagle_site_count_(0),
+        rescaling_{false} {}
 
   ~SBNInstance() { FinalizeBeagleInstances(); }
 
@@ -91,6 +93,8 @@ struct SBNInstance {
     beagle_leaf_count_ = 0;
     beagle_site_count_ = 0;
   }
+
+  void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus() {
@@ -311,11 +315,13 @@ struct SBNInstance {
 
   std::vector<double> LogLikelihoods() {
     CheckBeagleDimensions();
-    return beagle::LogLikelihoods(beagle_instances_, tree_collection_);
+    return beagle::LogLikelihoods(beagle_instances_, tree_collection_,
+                                  rescaling_);
   }
 
   std::vector<std::pair<double, std::vector<double>>> BranchGradients() {
-    return beagle::BranchGradients(beagle_instances_, tree_collection_);
+    return beagle::BranchGradients(beagle_instances_, tree_collection_,
+                                   rescaling_);
   }
 };
 
@@ -383,7 +389,7 @@ TEST_CASE("libsbn") {
   auto gradients = inst.BranchGradients();
   // Test the log likelihoods.
   for (size_t i = 0; i < likelihoods.size(); i++) {
-    CHECK_LT(abs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
+    CHECK_LT(fabs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
     std::cout << gradients[i].first << " " << pybeagle_likelihoods[i]
               << std::endl;
   }
@@ -403,6 +409,27 @@ TEST_CASE("libsbn") {
       888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
   for (size_t i = 0; i < last.second.size(); i++) {
     CHECK_LT(fabs(last.second[i] - physher_gradients[i]), 0.0001);
+  }
+
+  // Test rescaling
+  inst.SetRescaling(true);
+  auto likelihoods_rescaling = inst.LogLikelihoods();
+  // Likelihoods from LogLikelihoods()
+  for (size_t i = 0; i < likelihoods_rescaling.size(); i++) {
+    CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
+  }
+  // Likelihoods from BranchGradients()
+  inst.MakeBeagleInstances(1);
+  auto gradients_rescaling = inst.BranchGradients();
+  for (size_t i = 0; i < gradients_rescaling.size(); i++) {
+    CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]),
+             0.00011);
+  }
+  // Gradients
+  auto last_rescaling = gradients_rescaling.back();
+  std::sort(last_rescaling.second.begin(), last_rescaling.second.end());
+  for (size_t i = 0; i < last_rescaling.second.size(); i++) {
+    CHECK_LT(fabs(last_rescaling.second[i] - physher_gradients[i]), 0.0001);
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

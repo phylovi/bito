@@ -424,3 +424,27 @@ void Node::MutablePostOrder(std::function<void(Node*)> f) {
   }
   f(this);
 }
+
+void Node::PrePostOrder(std::function<void(const Node*)> pre,
+                        std::function<void(const Node*)> post) const {
+  pre(this);
+  for (const auto& child : children_) {
+    child->PrePostOrder(pre, post);
+  }
+  post(this);
+}
+
+SizeVectorVector Node::IndicesAbove() {
+  SizeVectorVector indices_above(Index() + 1);
+  SizeVector mutable_indices;
+  PrePostOrder(
+      [&indices_above, &mutable_indices](const Node* node) {
+        // Store the current set of indices above.
+        indices_above[node->Index()] = SizeVector(mutable_indices);
+        // As we travel down the tree, the current node will be above.
+        mutable_indices.push_back(node->Index());
+      },
+      // Going back up the tree, so remove the current node's index.
+      [&mutable_indices](const Node*) { mutable_indices.pop_back(); });
+  return indices_above;
+}
