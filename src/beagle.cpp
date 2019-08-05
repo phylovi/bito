@@ -42,7 +42,7 @@ SymbolVector SymbolVectorOf(const std::string &str,
 
 int CreateInstance(int tip_count, int alignment_length,
                    BeagleInstanceDetails *return_info) {
-  // Number of partial buffers to create (input) -- internal node count
+  // Number of partial buffers to create (input) --
   // tip_count - 1 for lower partials (internal nodes only)
   // 2*tip_count - 2 for upper partials (every node except the root)
   int partials_buffer_count = 3 * tip_count - 3;
@@ -60,8 +60,8 @@ int CreateInstance(int tip_count, int alignment_length,
   int matrix_buffer_count = 2 * (2 * tip_count - 1);
   // Number of rate categories
   int category_count = 1;
-  // TODO explain why we need one more than the number of buffers.
-  // Number of scaling buffers --
+  // Number of scaling buffers -- 1 buffer per partial buffer and 1 more
+  // for accumulating scale factors
   int scale_buffer_count = partials_buffer_count + 1;
   // List of potential resources on which this instance is allowed (input,
   // NULL implies no restriction
@@ -167,8 +167,7 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
             // We don't need scaling buffers for the leaves.
             // Thus the scaling buffers are indexed by the edge number minus the
             // number of leaves.
-            // @MF So indexers are indexed starting at 1? Can you explain a
-            // little somewhere?
+            // Index 0 is reserved for accumulating sum of log scalers
             op.destinationScaleWrite = dest - int_taxon_count + 1;
           }
           operations.push_back(op);
@@ -242,17 +241,17 @@ std::pair<double, std::vector<double>> BranchGradient(
                                          rescaling](int node_index,
                                                     int child0_index,
                                                     int child1_index) {
-    BeagleOperation op = {
-        node_index,                      // dest
-        BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
-        child0_index,   child0_index,    // src1 and matrix1
-        child1_index,   child1_index     // src2 and matrix2
-    };
-    if (rescaling) {
-      op.destinationScaleWrite = node_index - int_taxon_count + 1;
-    }
-    operations.push_back(op);
-  });
+        BeagleOperation op = {
+            node_index,                      // dest
+            BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
+            child0_index,   child0_index,    // src1 and matrix1
+            child1_index,   child1_index     // src2 and matrix2
+        };
+        if (rescaling) {
+          op.destinationScaleWrite = node_index - int_taxon_count + 1;
+        }
+        operations.push_back(op);
+      });
 
   // Calculate upper partials
   tree.Topology()->TripleIndexPreOrderBifurcating(
@@ -284,7 +283,8 @@ std::pair<double, std::vector<double>> BranchGradient(
           // of the lower conditional likelihoods. Also, in this case the leaves
           // have scalers.
           if (rescaling) {
-            // @MF: Why don't we need to set destinationScaleRead?
+            // Scaling factors are recomputed every time so we don't read them
+            // using destinationScaleRead.
             op.destinationScaleWrite = node_index + 1 + internal_count;
           }
           operations.push_back(op);
@@ -340,9 +340,7 @@ std::pair<double, std::vector<double>> BranchGradient(
       // parent partial Buffers cannot be a taxon in
       // beagleCalculateEdgeLogLikelihoods
       if (node_partial_indices[0] > upper_partials_index[0]) {
-        int temp = node_partial_indices[0];
-        node_partial_indices[0] = upper_partials_index[0];
-        upper_partials_index[0] = temp;
+        std::swap(node_partial_indices, upper_partials_index);
       }
 
       if (rescaling) {
