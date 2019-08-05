@@ -5,6 +5,7 @@
 #define SRC_TYPEDEFS_HPP_
 
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "optional.hpp"
 
@@ -21,5 +22,8 @@ typedef std::unordered_map<char, int> CharIntMap;
 // This will be STL in C++17 but we include the above header to fake it.
 typedef std::experimental::optional<std::vector<double>> DoubleVectorOption;
 typedef std::experimental::optional<TagStringMap> TagStringMapOption;
+typedef std::vector<std::string> StringVector;
+typedef std::unordered_set<std::string> StringSet;
+typedef std::vector<StringSet> StringSetVector;
 
 #endif  // SRC_TYPEDEFS_HPP_

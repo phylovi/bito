@@ -234,6 +234,43 @@ struct SBNInstance {
     return representations;
   }
 
+  // Get the indexer, but reversed and with bitsets appropriately converted to
+  // strings.
+  StringVector StringReversedIndexer() {
+    std::vector<std::string> reversed_indexer(indexer_.size());
+    for (const auto &iter : indexer_) {
+      if (iter.second < rootsplit_index_end_) {
+        reversed_indexer[iter.second] = iter.first.ToString();
+      } else {
+        reversed_indexer[iter.second] = iter.first.PCSSToString();
+      }
+    }
+    return reversed_indexer;
+  }
+
+  // Turn an IndexerRepresentation into a string representation of the underying
+  // bitsets. This is really just so that we can make a test of indexer
+  // representations.
+  std::pair<StringSet, StringSetVector> StringIndexerRepresentationOf(
+      IndexerRepresentation indexer_representation) {
+    auto reversed_indexer = StringReversedIndexer();
+    auto rootsplit_indices = indexer_representation.first;
+    auto pcss_index_vector = indexer_representation.second;
+    StringSet rootsplit_string_set;
+    for (auto index : rootsplit_indices) {
+      assert(rootsplit_string_set.insert(reversed_indexer[index]).second);
+    }
+    StringSetVector pcss_string_sets;
+    for (const auto &pcss_indices : pcss_index_vector) {
+      StringSet pcss_string_set;
+      for (auto index : pcss_indices) {
+        assert(pcss_string_set.insert(reversed_indexer[index]).second);
+      }
+      pcss_string_sets.push_back(std::move(pcss_string_set));
+    }
+    return {rootsplit_string_set, pcss_string_sets};
+  }
+
   // ** I/O
 
   std::tuple<StringUInt32Map, StringUInt32PairMap> GetIndexers() {
@@ -341,34 +378,39 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
-  // See https://github.com/matsengrp/libsbn/issues/74 to understand this test.
+  // (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
   auto indexer_test_topology_1 =
-      // (2,(1,3)5,(0,4)6)7
       Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
-  IndexerRepresentation correct_representation_1(
-      {{8, 0, 3, 5, 10, 4, 11},  // The rootsplit indices.
-       {{54, 31, 15},            // The PCSS indices.
-        {21, 13, 22},
-        {74, 42, 61},
-        {21, 12, 63},
-        {27, 31, 57},
-        {21, 75, 76},
-        {70, 73, 31}}});
-  CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1),
+  std::pair<StringSet, StringSetVector> correct_representation_1(
+      // The rootsplits.
+      {"01110", "01000", "01010", "01111", "00010", "00100", "00001"},
+      // The PCSSs for each of the possible virtual rootings.
+      // For example, this first one is for rooting at the edge leading to leaf
+      // 0.
+      {{"10000|01111|00001", "00001|01110|00100", "00100|01010|00010"},
+       {"01000|10111|00010", "00100|10001|00001", "00010|10101|00100"},
+       {"10001|01010|00010", "01010|10001|00001", "00100|11011|01010"},
+       {"00010|11101|01000", "00100|10001|00001", "01000|10101|00100"},
+       {"00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
+       {"10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
+       {"00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
+  CHECK_EQ(inst.StringIndexerRepresentationOf(
+               IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1)),
            correct_representation_1);
+  // (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
   auto indexer_test_topology_2 =
-      // (((0,1)5,2)6,3,4)7;
       Node::OfParentIndexVector({5, 5, 6, 7, 7, 6, 7});
-  IndexerRepresentation correct_representation_2(
-      {{8, 0, 3, 5, 10, 6, 1},  // The rootsplit indices.
-       {{50, 36, 16},           // The PCSS indices.
-        {50, 49, 23},
-        {39, 34, 44},
-        {29, 65, 72},
-        {59, 41, 72},
-        {50, 47, 51},
-        {40, 30, 72}}});
-  CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2),
+  std::pair<StringSet, StringSetVector> correct_representation_2(
+      {"01000", "01111", "00011", "00010", "00111", "00100", "00001"},
+      {{"10000|01111|00111", "00100|00011|00001", "01000|00111|00011"},
+       {"01000|10111|00111", "00100|00011|00001", "10000|00111|00011"},
+       {"00100|11011|00011", "11000|00011|00001", "00011|11000|01000"},
+       {"00100|11000|01000", "00001|11100|00100", "00010|11101|00001"},
+       {"00100|11000|01000", "00001|11110|00010", "00010|11100|00100"},
+       {"00111|11000|01000", "00100|00011|00001", "11000|00111|00011"},
+       {"00100|11000|01000", "11100|00011|00001", "00011|11100|00100"}});
+  CHECK_EQ(inst.StringIndexerRepresentationOf(
+               IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2)),
            correct_representation_2);
   inst.SampleTrees(2);
   inst.GetIndexerRepresentations();
@@ -390,8 +432,6 @@ TEST_CASE("libsbn") {
   // Test the log likelihoods.
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(fabs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
-    std::cout << gradients[i].first << " " << pybeagle_likelihoods[i]
-              << std::endl;
   }
   // Test the gradients for the last tree.
   auto last = gradients.back();

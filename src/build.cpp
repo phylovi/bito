@@ -36,7 +36,7 @@ SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology) {
   topology->PostOrder([&map, index_count](const Node* node) {
     Bitset bitset(static_cast<size_t>(index_count));
     if (node->Index() >= index_count) {
-      std::cerr << "Malformed indices in TagIndexsetMapOf.\n";
+      std::cerr << "Malformed indices in IndexIndexSetMapOf.\n";
       abort();
     }
     // Set the bit for the index of the current edge.
