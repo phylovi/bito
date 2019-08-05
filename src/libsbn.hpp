@@ -94,7 +94,7 @@ struct SBNInstance {
     beagle_site_count_ = 0;
   }
 
-  void EnableRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
+  void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus() {
@@ -411,21 +411,16 @@ TEST_CASE("libsbn") {
     CHECK_LT(fabs(last.second[i] - physher_gradients[i]), 0.0001);
   }
 
-  /****************
-   * Test rescaling
-   */
-  inst.EnableRescaling(true);
+  // Test rescaling
+  inst.SetRescaling(true);
   auto likelihoods_rescaling = inst.LogLikelihoods();
   // Likelihoods from LogLikelihoods()
   for (size_t i = 0; i < likelihoods_rescaling.size(); i++) {
     CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
   }
-
   // Likelihoods from BranchGradients()
   inst.MakeBeagleInstances(1);
   auto gradients_rescaling = inst.BranchGradients();
-  std::cout << pybeagle_likelihoods.size() << " " << gradients_rescaling.size()
-            << std::endl;
   for (size_t i = 0; i < gradients_rescaling.size(); i++) {
     CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]),
              0.00011);

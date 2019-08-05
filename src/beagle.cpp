@@ -2,12 +2,12 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "beagle.hpp"
+#include <algorithm>
 #include <iostream>
 #include <numeric>
 #include <string>
 #include <utility>
 #include <vector>
-#include <algorithm>
 
 namespace beagle {
 
@@ -42,7 +42,7 @@ SymbolVector SymbolVectorOf(const std::string &str,
 
 int CreateInstance(int tip_count, int alignment_length,
                    BeagleInstanceDetails *return_info) {
-  // Number of partial buffers to create (input) --
+  // Number of partial buffers to create (input):
   // tip_count - 1 for lower partials (internal nodes only)
   // 2*tip_count - 2 for upper partials (every node except the root)
   int partials_buffer_count = 3 * tip_count - 3;
@@ -61,7 +61,7 @@ int CreateInstance(int tip_count, int alignment_length,
   // Number of rate categories
   int category_count = 1;
   // Number of scaling buffers -- 1 buffer per partial buffer and 1 more
-  // for accumulating scale factors
+  // for accumulating scale factors in position 0.
   int scale_buffer_count = partials_buffer_count + 1;
   // List of potential resources on which this instance is allowed (input,
   // NULL implies no restriction
@@ -149,7 +149,6 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
   auto node_count = tree.BranchLengths().size();
   int int_taxon_count = static_cast<int>(tree.LeafCount());
   std::vector<BeagleOperation> operations;
-
   tree.Topology()->PostOrder(
       [&operations, int_taxon_count, rescaling](const Node *node) {
         if (!node->IsLeaf()) {
@@ -165,9 +164,9 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
           };
           if (rescaling) {
             // We don't need scaling buffers for the leaves.
+            // Index 0 is reserved for accumulating the sum of log scalers.
             // Thus the scaling buffers are indexed by the edge number minus the
-            // number of leaves.
-            // Index 0 is reserved for accumulating sum of log scalers
+            // number of leaves + 1.
             op.destinationScaleWrite = dest - int_taxon_count + 1;
           }
           operations.push_back(op);
@@ -195,14 +194,15 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
   std::vector<int> category_weight_index = {0};
   std::vector<int> state_frequency_index = {0};
   std::vector<int> cumulative_scale_index = {cumululative_index};
-  // @MF I didn't document this very well the first time around. Can you help me
-  // understand? The beagle docs say: Number of partialsBuffer to integrate
-  // (input)
-  int count = 1;
+  // We're not exacty sure what this argument is for.
+  // The beagle docs say: Number of partialsBuffer to integrate (input)
+  // In the BEASTs it's hardcoded to 1 and in MrBayes it appears to be for
+  // covarion models.
+  int mysterious_count = 1;
   beagleCalculateRootLogLikelihoods(
       beagle_instance, root_index.data(), category_weight_index.data(),
-      state_frequency_index.data(), cumulative_scale_index.data(), count,
-      &log_like);
+      state_frequency_index.data(), cumulative_scale_index.data(),
+      mysterious_count, &log_like);
   return log_like;
 }
 
@@ -237,10 +237,9 @@ std::pair<double, std::vector<double>> BranchGradient(
       static_cast<int>(tree.Topology()->Children()[0]->Index());
 
   // Calculate lower partials
-  tree.Topology()->BinaryIndexPostOrder([&operations, int_taxon_count,
-                                         rescaling](int node_index,
-                                                    int child0_index,
-                                                    int child1_index) {
+  tree.Topology()->BinaryIndexPostOrder(
+      [&operations, int_taxon_count, rescaling](
+          int node_index, int child0_index, int child1_index) {
         BeagleOperation op = {
             node_index,                      // dest
             BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
@@ -307,12 +306,12 @@ std::pair<double, std::vector<double>> BranchGradient(
   std::vector<int> category_weight_index = {0};
   std::vector<int> state_frequency_index = {0};
   std::vector<int> cumulative_scale_index = {rescaling ? 0 : BEAGLE_OP_NONE};
-  int count = 1;
+  int mysterious_count = 1;
   std::vector<int> upper_partials_index = {0};
   std::vector<int> node_partial_indices = {0};
   std::vector<int> node_mat_indices = {0};
   std::vector<int> node_deriv_index = {0};
-  std::vector<double> derivatives(node_count, 0);
+  std::vector<double> gradient(node_count, 0);
   double log_like = 0;
 
   SizeVectorVector indices_above = tree.Topology()->IndicesAbove();
@@ -332,7 +331,6 @@ std::pair<double, std::vector<double>> BranchGradient(
       node_partial_indices[0] = node_index;
       node_mat_indices[0] = node_index;
       node_deriv_index[0] = node_index + int_node_count;
-      std::vector<int> scaler_indices;
 
       if (node_index == root_child_index) {
         upper_partials_index[0] = sister_index;
@@ -344,11 +342,10 @@ std::pair<double, std::vector<double>> BranchGradient(
       }
 
       if (rescaling) {
-        scaler_indices.clear();
         beagleResetScaleFactors(beagle_instance, cumulative_scale_index[0]);
-        scaler_indices.resize(static_cast<size_t>(internal_count - 1));
+        std::vector<int> scaler_indices(
+            static_cast<size_t>(internal_count - 1));
         std::iota(scaler_indices.begin(), scaler_indices.end(), 1);
-
         // Replace lower scaler index with upper scaler index for nodes between
         // node_index and root.
         int child = node_index;
@@ -360,7 +357,6 @@ std::pair<double, std::vector<double>> BranchGradient(
               child + internal_count + 1;
           child = int_upper;
         }
-
         beagleAccumulateScaleFactors(beagle_instance, scaler_indices.data(),
                                      static_cast<int>(scaler_indices.size()),
                                      cumulative_scale_index[0]);
@@ -376,15 +372,15 @@ std::pair<double, std::vector<double>> BranchGradient(
           category_weight_index.data(),   // pattern weights
           state_frequency_index.data(),   // state frequencies
           cumulative_scale_index.data(),  // scale Factors
-          count,                          // Number of partialsBuffer
+          mysterious_count,               // Number of partialsBuffer
           &log_like,                      // destination for log likelihood
-          &dlogLp,  // destination for first derivative  # derivative code
-          NULL);    // destination for second derivative
-      derivatives[static_cast<size_t>(node_index)] = dlogLp;
+          &dlogLp,                        // destination for first derivative
+          NULL);                          // destination for second derivative
+      gradient[static_cast<size_t>(node_index)] = dlogLp;
     }
   });
 
-  return std::make_pair(log_like, derivatives);
+  return {log_like, gradient};
 }
 
 std::vector<std::pair<double, std::vector<double>>> BranchGradients(

@@ -439,9 +439,12 @@ SizeVectorVector Node::IndicesAbove() {
   SizeVector mutable_indices;
   PrePostOrder(
       [&indices_above, &mutable_indices](const Node* node) {
+        // Store the current set of indices above.
         indices_above[node->Index()] = SizeVector(mutable_indices);
+        // As we travel down the tree, the current node will be above.
         mutable_indices.push_back(node->Index());
       },
+      // Going back up the tree, so remove the current node's index.
       [&mutable_indices](const Node*) { mutable_indices.pop_back(); });
   return indices_above;
 }

@@ -70,15 +70,15 @@ class Node {
 
   bool operator==(const Node& other);
 
-  void PrePostOrder(std::function<void(const Node*)> pre,
-                    std::function<void(const Node*)> post) const;
-  SizeVectorVector IndicesAbove();
-
   void PreOrder(std::function<void(const Node*)> f) const;
   // ConditionalPreOrder continues to recur as long as f returns true.
   void ConditionalPreOrder(std::function<bool(const Node*)> f) const;
   void PostOrder(std::function<void(const Node*)> f) const;
   void LevelOrder(std::function<void(const Node*)> f) const;
+  // Apply the pre function before recurring down the tree, and then apply the
+  // post function as we are recurring back up the tree.
+  void PrePostOrder(std::function<void(const Node*)> pre,
+                    std::function<void(const Node*)> post) const;
 
   // Iterate f through (parent, sister, node) for bifurcating trees using a
   // preorder traversal.
@@ -122,6 +122,10 @@ class Node {
   // Thus the root always has index equal to the number of nodes in the tree.
   // It returns a map that maps the tags to their indices.
   TagSizeMap Reindex();
+
+  // Return a vector such that the ith component describes the indices for nodes
+  // above the current node.
+  SizeVectorVector IndicesAbove();
 
   std::string Newick(std::function<std::string(const Node*)> node_labeler,
                      const DoubleVectorOption& branch_lengths =
