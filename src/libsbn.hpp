@@ -382,36 +382,32 @@ TEST_CASE("libsbn") {
   auto indexer_test_topology_1 =
       // (2,(1,3)5,(0,4)6)7
       Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
-  std::cout << indexer_test_topology_1->Newick(
-      [](const Node *node) { return std::to_string(node->Index()); });
-  IndexerRepresentation correct_representation_1(
-      {{8, 0, 3, 5, 10, 4, 11},  // The rootsplit indices.
-       {{54, 31, 15},            // The PCSS indices.
-        {21, 13, 22},
-        {74, 42, 61},
-        {21, 12, 63},
-        {27, 31, 57},
-        {21, 75, 76},
-        {70, 73, 31}}});
-  std::cout << inst.StringIndexerRepresentationOf(correct_representation_1)
-            << std::endl;
-  CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1),
+  std::pair<StringSet, StringSetVector> correct_representation_1(
+      {"01110", "01000", "01010", "01111", "00010", "00100", "00001"},
+      {{"10000|01111|00001", "00001|01110|00100", "00100|01010|00010"},
+       {"01000|10111|00010", "00100|10001|00001", "00010|10101|00100"},
+       {"10001|01010|00010", "01010|10001|00001", "00100|11011|01010"},
+       {"00010|11101|01000", "00100|10001|00001", "01000|10101|00100"},
+       {"00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
+       {"10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
+       {"00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
+  CHECK_EQ(inst.StringIndexerRepresentationOf(
+               IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1)),
            correct_representation_1);
   auto indexer_test_topology_2 =
       // (((0,1)5,2)6,3,4)7;
       Node::OfParentIndexVector({5, 5, 6, 7, 7, 6, 7});
-  IndexerRepresentation correct_representation_2(
-      {{8, 0, 3, 5, 10, 6, 1},  // The rootsplit indices.
-       {{50, 36, 16},           // The PCSS indices.
-        {50, 49, 23},
-        {39, 34, 44},
-        {29, 65, 72},
-        {59, 41, 72},
-        {50, 47, 51},
-        {40, 30, 72}}});
-  std::cout << inst.StringIndexerRepresentationOf(correct_representation_2)
-            << std::endl;
-  CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2),
+  std::pair<StringSet, StringSetVector> correct_representation_2(
+      {"01000", "01111", "00011", "00010", "00111", "00100", "00001"},
+      {{"10000|01111|00111", "00100|00011|00001", "01000|00111|00011"},
+       {"01000|10111|00111", "00100|00011|00001", "10000|00111|00011"},
+       {"00100|11011|00011", "11000|00011|00001", "00011|11000|01000"},
+       {"00100|11000|01000", "00001|11100|00100", "00010|11101|00001"},
+       {"00100|11000|01000", "00001|11110|00010", "00010|11100|00100"},
+       {"00111|11000|01000", "00100|00011|00001", "11000|00111|00011"},
+       {"00100|11000|01000", "11100|00011|00001", "00011|11100|00100"}});
+  CHECK_EQ(inst.StringIndexerRepresentationOf(
+               IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2)),
            correct_representation_2);
   inst.SampleTrees(2);
   inst.GetIndexerRepresentations();
