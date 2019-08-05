@@ -378,8 +378,8 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
+  // (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
   auto indexer_test_topology_1 =
-      // (2,(1,3),(0,4)), or (2,(1,3)5,(0,4)6)7
       Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
   std::pair<StringSet, StringSetVector> correct_representation_1(
       // The rootsplits.
@@ -397,8 +397,8 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.StringIndexerRepresentationOf(
                IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1)),
            correct_representation_1);
+  // (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
   auto indexer_test_topology_2 =
-      // (((0,1)5,2)6,3,4)7;
       Node::OfParentIndexVector({5, 5, 6, 7, 7, 6, 7});
   std::pair<StringSet, StringSetVector> correct_representation_2(
       {"01000", "01111", "00011", "00010", "00111", "00100", "00001"},
