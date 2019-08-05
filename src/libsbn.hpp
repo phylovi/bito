@@ -16,7 +16,6 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
-#include "prettyprint.hpp"
 #include "tree.hpp"
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
@@ -250,7 +249,8 @@ struct SBNInstance {
   }
 
   // Turn an IndexerRepresentation into a string representation of the underying
-  // bitsets.
+  // bitsets. This is really just so that we can make a test of indexer
+  // representations.
   std::pair<StringSet, StringSetVector> StringIndexerRepresentationOf(
       IndexerRepresentation indexer_representation) {
     auto reversed_indexer = StringReversedIndexer();
@@ -258,13 +258,13 @@ struct SBNInstance {
     auto pcss_index_vector = indexer_representation.second;
     StringSet rootsplit_string_set;
     for (auto index : rootsplit_indices) {
-      rootsplit_string_set.insert(reversed_indexer[index]);
+      assert(rootsplit_string_set.insert(reversed_indexer[index]).second);
     }
     StringSetVector pcss_string_sets;
     for (const auto &pcss_indices : pcss_index_vector) {
       StringSet pcss_string_set;
       for (auto index : pcss_indices) {
-        pcss_string_set.insert(reversed_indexer[index]);
+        assert(pcss_string_set.insert(reversed_indexer[index]).second);
       }
       pcss_string_sets.push_back(std::move(pcss_string_set));
     }
@@ -378,12 +378,15 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
-  // See https://github.com/matsengrp/libsbn/issues/74 to understand this test.
   auto indexer_test_topology_1 =
-      // (2,(1,3)5,(0,4)6)7
+      // (2,(1,3),(0,4)), or (2,(1,3)5,(0,4)6)7
       Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
   std::pair<StringSet, StringSetVector> correct_representation_1(
+      // The rootsplits.
       {"01110", "01000", "01010", "01111", "00010", "00100", "00001"},
+      // The PCSSs for each of the possible virtual rootings.
+      // For example, this first one is for rooting at the edge leading to leaf
+      // 0.
       {{"10000|01111|00001", "00001|01110|00100", "00100|01010|00010"},
        {"01000|10111|00010", "00100|10001|00001", "00010|10101|00100"},
        {"10001|01010|00010", "01010|10001|00001", "00100|11011|01010"},
