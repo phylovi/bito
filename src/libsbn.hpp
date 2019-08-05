@@ -235,6 +235,42 @@ struct SBNInstance {
     return representations;
   }
 
+  // Get the indexer, but reversed and with bitsets appropriately converted to
+  // strings.
+  StringVector StringReversedIndexer() {
+    std::vector<std::string> reversed_indexer(indexer_.size());
+    for (const auto &iter : indexer_) {
+      if (iter.second < rootsplit_index_end_) {
+        reversed_indexer[iter.second] = iter.first.ToString();
+      } else {
+        reversed_indexer[iter.second] = iter.first.PCSSToString();
+      }
+    }
+    return reversed_indexer;
+  }
+
+  // Turn an IndexerRepresentation into a string representation of the underying
+  // bitsets.
+  std::pair<StringSet, StringSetVector> StringIndexerRepresentationOf(
+      IndexerRepresentation indexer_representation) {
+    auto reversed_indexer = StringReversedIndexer();
+    auto rootsplit_indices = indexer_representation.first;
+    auto pcss_index_vector = indexer_representation.second;
+    StringSet rootsplit_string_set;
+    for (auto index : rootsplit_indices) {
+      rootsplit_string_set.insert(reversed_indexer[index]);
+    }
+    StringSetVector pcss_string_sets;
+    for (const auto &pcss_indices : pcss_index_vector) {
+      StringSet pcss_string_set;
+      for (auto index : pcss_indices) {
+        pcss_string_set.insert(reversed_indexer[index]);
+      }
+      pcss_string_sets.push_back(std::move(pcss_string_set));
+    }
+    return {rootsplit_string_set, pcss_string_sets};
+  }
+
   // ** I/O
 
   std::tuple<StringUInt32Map, StringUInt32PairMap> GetIndexers() {
@@ -357,6 +393,8 @@ TEST_CASE("libsbn") {
         {27, 31, 57},
         {21, 75, 76},
         {70, 73, 31}}});
+  std::cout << inst.StringIndexerRepresentationOf(correct_representation_1)
+            << std::endl;
   CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1),
            correct_representation_1);
   auto indexer_test_topology_2 =
@@ -371,6 +409,8 @@ TEST_CASE("libsbn") {
         {59, 41, 72},
         {50, 47, 51},
         {40, 30, 72}}});
+  std::cout << inst.StringIndexerRepresentationOf(correct_representation_2)
+            << std::endl;
   CHECK_EQ(IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2),
            correct_representation_2);
   inst.SampleTrees(2);

@@ -27,7 +27,6 @@ typedef std::unordered_map<Bitset, DefaultDict<Bitset, uint32_t>> PCSSDict;
 
 TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology);
 SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology);
-void PrintTagBitsetMap(TagBitsetMap map);
 
 BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
