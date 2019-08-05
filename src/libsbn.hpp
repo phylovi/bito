@@ -432,8 +432,6 @@ TEST_CASE("libsbn") {
   // Test the log likelihoods.
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(fabs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
-    std::cout << gradients[i].first << " " << pybeagle_likelihoods[i]
-              << std::endl;
   }
   // Test the gradients for the last tree.
   auto last = gradients.back();
