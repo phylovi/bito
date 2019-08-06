@@ -7,7 +7,7 @@
 
 #include <vector>
 #include "alignment.hpp"
-#include "typedefs.hpp"
+#include "sugar.hpp"
 
 class SitePattern {
  public:

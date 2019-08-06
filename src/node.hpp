@@ -28,7 +28,7 @@
 #include <utility>
 #include <vector>
 #include "intpack.hpp"
-#include "typedefs.hpp"
+#include "sugar.hpp"
 
 class Node {
  public:

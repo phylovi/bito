@@ -3,6 +3,7 @@
 
 #include "beagle.hpp"
 #include <algorithm>
+#include <cassert>
 #include <iostream>
 #include <numeric>
 #include <string>
