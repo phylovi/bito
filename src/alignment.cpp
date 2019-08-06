@@ -2,7 +2,6 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "alignment.hpp"
-#include <cassert>
 #include <fstream>
 #include <iostream>
 #include <memory>
