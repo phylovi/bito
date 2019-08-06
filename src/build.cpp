@@ -35,10 +35,8 @@ SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology) {
   auto index_count = topology->Index() + 1;
   topology->PostOrder([&map, index_count](const Node* node) {
     Bitset bitset(static_cast<size_t>(index_count));
-    if (node->Index() >= index_count) {
-      std::cerr << "Malformed indices in IndexIndexSetMapOf.\n";
-      abort();
-    }
+    Assert(node->Index() < index_count,
+           "Malformed indices in IndexIndexSetMapOf.");
     // Set the bit for the index of the current edge.
     bitset.set(node->Index());
     // Take the union of the children below.
@@ -75,11 +73,9 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
     auto count = iter.second;
     auto tag_to_leafset = TagLeafSetMapOf(topology);
     auto leaf_count = topology->LeafCount();
-    if (topology->Children().size() != 3) {
-      std::cerr << "PCSSCounterOf was expecting a tree with a trifurcation at "
-                   "the root!";
-      abort();
-    }
+    Assert(
+        topology->Children().size() == 3,
+        "PCSSCounterOf was expecting a tree with a trifurcation at the root!");
     topology->PCSSPreOrder([&pcss_dict, &tag_to_leafset, &count, &leaf_count](
                                const Node* sister_node, bool sister_direction,
                                const Node* focal_node, bool focal_direction,  //
@@ -161,13 +157,13 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
     const auto& focal_index = focal_node->Index();
     if (sister_node == focal_node) {
       // We are in the bidirectional edge situation.
-      assert(focal_index < pcss_result.size());
+      Assert(focal_index < pcss_result.size(), "focal_index out of range.");
       // Rooting at the present edge will indeed lead to the given PCSS.
       pcss_result[focal_index].push_back(indexer_position);
     } else {
       // The only time the virtual root clade should be nullptr should be when
       // sister_node == focal_node, but we check anyhow.
-      assert(virtual_root_clade != nullptr);
+      Assert(virtual_root_clade != nullptr, "virtual_root_clade is null.");
       // Virtual-rooting on every edge in the virtual rooting clade will also
       // lead to this PCSS, because then the root will be "above" the PCSS.
       virtual_root_clade->ConditionalPreOrder([&pcss_result, &indexer_position,
@@ -183,7 +179,8 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
         // Add all of the edges of the virtual rooting clade, except for the
         // root of the topology.
         if (node != topology.get()) {
-          assert(node->Index() < pcss_result.size());
+          Assert(node->Index() < pcss_result.size(),
+                 "node's root Index is out of range.");
           pcss_result[node->Index()].push_back(indexer_position);
         }
         return true;

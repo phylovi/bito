@@ -33,8 +33,7 @@ SymbolVector SymbolVectorOf(const std::string &str,
     if (search != symbol_table.end()) {
       v[i] = search->second;
     } else {
-      std::cerr << "Symbol '" << str[i] << "' not known.\n";
-      abort();
+      Failwith("Symbol '" + std::to_string(str[i]) + "' not known.\n");
     }
   }
   return v;
@@ -94,9 +93,8 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
                            const TreeCollection &tree_collection,
                            const SitePattern &site_pattern) {
   if (tree_collection.TaxonCount() != site_pattern.SequenceCount()) {
-    std::cerr << "The number of tree tips doesn't match the alignment "
-                 "sequence count!\n";
-    abort();
+    Failwith(
+        "The number of tree tips doesn't match the alignment sequence count.");
   }
   // Use uniform rates and weights.
   const double weights[1] = {1.0};
@@ -137,9 +135,9 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
     return tree;
   }
   // else
-  std::cerr << "Tree likelihood calculations should be done on a tree with a "
-               "bifurcation or a trifurcation at the root.";
-  abort();
+  Failwith(
+      "Tree likelihood calculations should be done on a tree with a "
+      "bifurcation or a trifurcation at the root.");
 }
 
 double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
@@ -152,7 +150,8 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
   tree.Topology()->PostOrder(
       [&operations, int_taxon_count, rescaling](const Node *node) {
         if (!node->IsLeaf()) {
-          assert(node->Children().size() == 2);
+          Assert(node->Children().size() == 2,
+                 "Tree isn't bifurcating in LogLikelihood.");
           int dest = static_cast<int>(node->Index());
           int child0_index = static_cast<int>(node->Children()[0]->Index());
           int child1_index = static_cast<int>(node->Children()[1]->Index());
@@ -352,7 +351,8 @@ std::pair<double, std::vector<double>> BranchGradient(
         for (size_t upper : indices_above[static_cast<size_t>(node_index)]) {
           int int_upper = static_cast<int>(upper);
           int scaler_indices_index = int_upper - int_taxon_count;
-          assert(scaler_indices_index >= 0);
+          Assert(scaler_indices_index >= 0,
+                 "int_upper must be >= taxon count.");
           scaler_indices[static_cast<size_t>(scaler_indices_index)] =
               child + internal_count + 1;
           child = int_upper;

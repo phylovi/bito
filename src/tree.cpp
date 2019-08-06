@@ -21,7 +21,8 @@ Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
     auto& index = iter.second;
     auto search = branch_lengths.find(tag);
     if (search != branch_lengths.end()) {
-      assert(index < branch_lengths_.size());
+      Assert(index < branch_lengths_.size(),
+             "branch_lengths of insufficient size in Tree::Tree.");
       branch_lengths_[index] = search->second;
     } else {
       branch_lengths_[index] = 0.;
@@ -31,7 +32,9 @@ Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
 
 Tree::Tree(Node::NodePtr topology, BranchLengthVector branch_lengths)
     : branch_lengths_(branch_lengths), topology_(topology) {
-  assert(topology->Index() + 1 == branch_lengths.size());
+  Assert(topology->Index() + 1 == branch_lengths.size(),
+         "Root index is too large relative to the branch_lengths size in "
+         "Tree::Tree.");
 }
 
 bool Tree::operator==(const Tree& other) const {
@@ -44,15 +47,14 @@ std::string Tree::Newick(TagStringMapOption node_labels) const {
 }
 
 double Tree::BranchLength(const Node* node) const {
-  assert(node->Index() < branch_lengths_.size());
+  Assert(node->Index() < branch_lengths_.size(),
+         "Requested index is out of range in Tree::BranchLength.");
   return branch_lengths_[node->Index()];
 }
 
 Tree Tree::Detrifurcate() const {
-  if (Children().size() != 3) {
-    std::cerr << "Detrifurcate given a non-trifurcating tree.\n";
-    abort();
-  }  // else
+  Assert(Children().size() == 3,
+         "Tree::Detrifurcate given a non-trifurcating tree.");
   auto branch_lengths = BranchLengths();
   auto our_index = Index();
   auto root12 = Node::Join(Children()[1], Children()[2], our_index);

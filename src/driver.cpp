@@ -1,6 +1,9 @@
 // Copyright 2019 Matsen group.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
+// Based on
+// https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parsing-Driver.html#Calc_002b_002b-Parsing-Driver
+
 #include "driver.hpp"
 #include <fstream>
 #include <iostream>
@@ -53,8 +56,7 @@ TreeCollection Driver::ParseNewick(std::ifstream &in) {
 TreeCollection Driver::ParseNewickFile(const std::string &fname) {
   std::ifstream in(fname.c_str());
   if (!in) {
-    std::cerr << "Cannot open the File : " << fname << std::endl;
-    abort();
+    Failwith("Cannot open the File : " + fname);
   }
   return ParseNewick(in);
 }
@@ -117,9 +119,7 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     return TreeCollection(std::move(pre_translation.Trees()),
                           std::move(translated_taxon_map));
   } catch (const std::exception &exception) {
-    std::cerr << "\nProblem parsing '" << fname << "':\n";
-    std::cerr << exception.what() << std::endl;
-    abort();
+    Failwith("Problem parsing '" + fname + "':\n" + exception.what());
   }
 }
 
@@ -128,10 +128,7 @@ Tree Driver::ParseString(yy::parser *parser_instance, const std::string &str) {
   this->ScanString(str);
   // Parse the scanned string.
   int return_code = (*parser_instance)();
-  if (return_code != 0) {
-    std::cout << "Parser had nonzero return value.\n";
-    abort();
-  }
+  Assert(return_code == 0, "Parser had nonzero return value.");
   return *latest_tree_;
 }
 

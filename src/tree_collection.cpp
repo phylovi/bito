@@ -17,7 +17,8 @@ TreeCollection::TreeCollection(Tree::TreeVector trees)
   if (trees.size() > 0) {
     auto leaf_count = trees[0].LeafCount();
     for (const auto &tree : trees) {
-      assert(tree.LeafCount() == leaf_count);
+      Assert(tree.LeafCount() == leaf_count,
+             "Trees must all have the same number of tips in TreeCollection.");
     }
   }
 }
@@ -27,7 +28,9 @@ TreeCollection::TreeCollection(Tree::TreeVector trees,
     : trees_(std::move(trees)), tag_taxon_map_(std::move(tag_taxon_map)) {
   auto taxon_count = tag_taxon_map.size();
   for (const auto &tree : trees) {
-    assert(tree.LeafCount() == taxon_count);
+    Assert(tree.LeafCount() == taxon_count,
+           "Tree leaf count doesn't match the size of tag_taxon_map in "
+           "TreeCollection::TreeCollection.");
   }
 }
 
@@ -81,7 +84,8 @@ std::vector<std::string> TreeCollection::TaxonNames() {
   std::vector<std::string> names(tag_taxon_map_.size());
   for (const auto &iter : tag_taxon_map_) {
     size_t id = Node::MaxLeafIDOfTag(iter.first);
-    assert(id < names.size());
+    Assert(id < names.size(),
+           "Leaf ID is out of range in TreeCollection::TaxonNames.");
     names[id] = iter.second;
   }
   return names;

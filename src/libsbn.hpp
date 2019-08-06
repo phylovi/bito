@@ -88,7 +88,8 @@ struct SBNInstance {
   // Finalize means to release memory.
   void FinalizeBeagleInstances() {
     for (const auto &beagle_instance : beagle_instances_) {
-      assert(beagleFinalizeInstance(beagle_instance) == 0);
+      Assert(beagleFinalizeInstance(beagle_instance) == 0,
+             "beagleFinalizeInstance gave nonzero return value!");
     }
     beagle_instances_.clear();
     beagle_leaf_count_ = 0;
@@ -161,8 +162,8 @@ struct SBNInstance {
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
   uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) const {
-    assert(range.first < range.second);
-    assert(range.second <= sbn_parameters_.size());
+    Assert(range.first < range.second && range.second <= sbn_parameters_.size(),
+           "SampleIndex given an invalid range.");
     std::discrete_distribution<> distribution(
         sbn_parameters_.begin() + range.first,
         sbn_parameters_.begin() + range.second);
@@ -170,7 +171,7 @@ struct SBNInstance {
     // array, and the sampler treats the beginning of this slice as zero.
     auto result =
         range.first + static_cast<uint32_t>(distribution(random_generator_));
-    assert(result < range.second);
+    Assert(result < range.second, "SampleIndex sampled a value out of range.");
     return result;
   }
 
@@ -204,8 +205,7 @@ struct SBNInstance {
   void CheckSBNMapsAvailable() {
     if (!indexer_.size() || !index_to_child_.size() ||
         !parent_to_range_.size() || !rootsplits_.size()) {
-      std::cout << "Please call ProcessLoadedTrees to prepare your SBN maps.\n";
-      abort();
+      Failwith("Please call ProcessLoadedTrees to prepare your SBN maps.");
     }
   }
 
@@ -306,29 +306,29 @@ struct SBNInstance {
 
   void CheckDataLoaded() {
     if (alignment_.SequenceCount() == 0) {
-      std::cerr << "Load an alignment into your SBNInstance on which you wish "
-                   "to calculate phylogenetic likelihoods.\n";
-      abort();
+      Failwith(
+          "Load an alignment into your SBNInstance on which you wish to "
+          "calculate phylogenetic likelihoods.");
     }
     if (TreeCount() == 0) {
-      std::cerr << "Load some trees into your SBNInstance on which you wish to "
-                   "calculate phylogenetic likelihoods.\n";
-      abort();
+      Failwith(
+          "Load some trees into your SBNInstance on which you wish to "
+          "calculate phylogenetic likelihoods.");
     }
   }
 
   void CheckBeagleDimensions() {
     CheckDataLoaded();
     if (beagle_instances_.size() == 0) {
-      std::cerr << "Call MakeBeagleInstances to make some instances for "
-                   "likelihood computation.\n";
-      abort();
+      Failwith(
+          "Call MakeBeagleInstances to make some instances for likelihood "
+          "computation.");
     }
     if (alignment_.SequenceCount() != beagle_leaf_count_ ||
         alignment_.Length() != beagle_site_count_) {
-      std::cerr << "Alignment dimensions for current BEAGLE instances do not "
-                   "match current alignment. Call MakeBeagleInstances again.\n";
-      abort();
+      Failwith(
+          "Alignment dimensions for current BEAGLE instances do not "
+          "match current alignment. Call MakeBeagleInstances again.");
     }
   }
 

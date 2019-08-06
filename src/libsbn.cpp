@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "libsbn.hpp"
+#include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -63,4 +64,9 @@ PYBIND11_MODULE(sbn, m) {
       // Member Variables
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
       .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
+  // If you want to be sure to get all of the stdout and cerr messages, put your
+  // Python code in a context like so:
+  // `with sbn.ostream_redirect(stdout=True, stderr=True):`
+  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
+  py::add_ostream_redirect(m, "ostream_redirect");
 }

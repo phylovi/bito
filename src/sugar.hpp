@@ -28,25 +28,49 @@ typedef std::vector<std::string> StringVector;
 typedef std::unordered_set<std::string> StringSet;
 typedef std::vector<StringSet> StringSetVector;
 
-// Here we use bad style by defining a macro. This is in preparation for when we
-// can use something nicer in a future C++.
-#define Assert(status, message) assert(status &&message)
-inline void Failwith(const std::string &message) {
-  std::cerr << message << std::endl;
-  abort();
-}
+// We implement problems in terms of exceptions. That means that they work great
+// in Jupyter notebooks.
+//
+// This macro always evaluates the argument. We use a macro for the stupid
+// reason that then the assert can go away upon using NDEBUG.
+#ifdef NDEBUG
+#define Assert(to_evaluate, message) ((void)(to_evaluate));
+#else
+#define Assert(to_evaluate, message) \
+  ({                                 \
+    if (!(to_evaluate)) {            \
+      Failwith(message);             \
+    }                                \
+  })
+#endif
+// Use Failwith generally when it's a problem with input data versus a problem
+// with program logic. This is just a convention if we need to refactor later.
+// As you can see Assert is implemented in terms of Failwith.
+//
+// Here we use a macro to avoid "control may reach end of non-void function"
+// errors. We shouldn't have to return when we throw an exception.
+#define Failwith(message)                         \
+  ({                                              \
+    std::string str_message(message);             \
+    str_message.append(" (");                     \
+    str_message.append(__FILE__);                 \
+    str_message.append(":");                      \
+    str_message.append(std::to_string(__LINE__)); \
+    str_message.append(" in ");                   \
+    str_message.append(__func__);                 \
+    str_message.append(")");                      \
+    throw std::runtime_error(str_message);        \
+  })
 
 template <class Key, class T, class Hash>
 constexpr void SafeInsert(std::unordered_map<Key, T, Hash> &map, const Key &k,
                           const T &v) {
-  auto status = map.insert({k, v}).second;
-  Assert(status, "Failed map insertion!");
+  Assert(map.insert({k, v}).second, "Failed map insertion!");
 }
 
 template <class Key, class Hash>
 constexpr void SafeInsert(std::unordered_set<Key, Hash> &set, const Key &k) {
-  auto status = set.insert(k).second;
-  Assert(status, "Failed set insertion!");
+  Assert(set.insert(k).second, "Failed set insertion!");
 }
 
 #endif  // SRC_SUGAR_HPP_
