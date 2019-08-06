@@ -426,8 +426,6 @@ TEST_CASE("libsbn") {
     CHECK_LT(fabs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
 
-  Assert(false, "asdfads");
-
   auto gradients = inst.BranchGradients();
   // Test the log likelihoods.
   for (size_t i = 0; i < likelihoods.size(); i++) {

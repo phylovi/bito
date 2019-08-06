@@ -48,15 +48,18 @@ typedef std::vector<StringSet> StringSetVector;
 // As you can see Assert is implemented in terms of Failwith.
 //
 // Here we use a macro to avoid "control may reach end of non-void function"
-// errors. We shouldn't have to return when we `abort()`.
-#define STRINGIFY(x) #x
-#define __AT__ __FILE__ ":" STRINGIFY(__LINE__)
-#define Failwith(message)                                              \
-  ({                                                                   \
-    std::string str_message(message);                                  \
-    str_message.append("(in " + std::to_string(__FILE__) + ", line "); \
-    str_message.append(std::to_string(__LINE__) + ")");                \
-    throw std::runtime_error(str_message);                             \
+// errors. We shouldn't have to return when we throw an exception.
+#define Failwith(message)                         \
+  ({                                              \
+    std::string str_message(message);             \
+    str_message.append(" (");                     \
+    str_message.append(__FILE__);                 \
+    str_message.append(":");                      \
+    str_message.append(std::to_string(__LINE__)); \
+    str_message.append(" in ");                   \
+    str_message.append(__func__);                 \
+    str_message.append(")");                      \
+    throw std::runtime_error(str_message);        \
   })
 
 template <class Key, class T, class Hash>
