@@ -701,18 +701,17 @@ namespace yy {
   yylhs.value.as < Node::NodePtr > () = yystack_[2].value.as < Node::NodePtr > ();
 
   try {
-      assert(drv.branch_lengths_.insert(
-        std::pair<int64_t, double>(yystack_[2].value.as < Node::NodePtr > ()->Tag(), std::stof(yystack_[0].value.as < std::string > ()))).second);
+      SafeInsert(drv.branch_lengths_, yystack_[2].value.as < Node::NodePtr > ()->Tag(), std::stod(yystack_[0].value.as < std::string > ()));
   } catch (...) {
     std::cerr << "Float conversion failed on branch length '" << yystack_[0].value.as < std::string > () << "'\n'";
     abort();
   }
 }
-#line 712 "src/parser.cpp"
+#line 711 "src/parser.cpp"
     break;
 
   case 5:
-#line 87 "src/parser.yy"
+#line 86 "src/parser.yy"
     {
     if (drv.first_tree_) {
       // This is our first tree, so we're going to initialize the taxon set.
@@ -731,59 +730,59 @@ namespace yy {
       yylhs.value.as < Node::NodePtr > () = Node::Leaf(leaf_id->second);
     }
   }
-#line 735 "src/parser.cpp"
+#line 734 "src/parser.cpp"
     break;
 
   case 6:
-#line 105 "src/parser.yy"
+#line 104 "src/parser.yy"
     { yylhs.value.as < Node::NodePtr > () = yystack_[0].value.as < Node::NodePtr > (); }
-#line 741 "src/parser.cpp"
+#line 740 "src/parser.cpp"
     break;
 
   case 7:
-#line 108 "src/parser.yy"
+#line 107 "src/parser.yy"
     {
     yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
   }
-#line 749 "src/parser.cpp"
+#line 748 "src/parser.cpp"
     break;
 
   case 8:
-#line 111 "src/parser.yy"
+#line 110 "src/parser.yy"
     {
     yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
   }
-#line 757 "src/parser.cpp"
+#line 756 "src/parser.cpp"
     break;
 
   case 9:
-#line 116 "src/parser.yy"
+#line 115 "src/parser.yy"
     {
     yylhs.value.as < Node::NodePtr > () = Node::Join(std::move(*yystack_[1].value.as < Node::NodePtrVecPtr > ()));
   }
-#line 765 "src/parser.cpp"
+#line 764 "src/parser.cpp"
     break;
 
   case 10:
-#line 121 "src/parser.yy"
+#line 120 "src/parser.yy"
     {
     yylhs.value.as < Node::NodePtrVecPtr > () = std::make_shared<Node::NodePtrVec>();
     yylhs.value.as < Node::NodePtrVecPtr > ()->push_back(yystack_[0].value.as < Node::NodePtr > ());
   }
-#line 774 "src/parser.cpp"
+#line 773 "src/parser.cpp"
     break;
 
   case 11:
-#line 125 "src/parser.yy"
+#line 124 "src/parser.yy"
     {
     yystack_[2].value.as < Node::NodePtrVecPtr > ()->push_back(yystack_[0].value.as < Node::NodePtr > ());
     yylhs.value.as < Node::NodePtrVecPtr > () = yystack_[2].value.as < Node::NodePtrVecPtr > ();
   }
-#line 783 "src/parser.cpp"
+#line 782 "src/parser.cpp"
     break;
 
 
-#line 787 "src/parser.cpp"
+#line 786 "src/parser.cpp"
 
             default:
               break;
@@ -1135,8 +1134,8 @@ namespace yy {
   const unsigned char
   parser::yyrline_[] =
   {
-       0,    66,    66,    73,    74,    87,   105,   108,   111,   116,
-     121,   125
+       0,    66,    66,    73,    74,    86,   104,   107,   110,   115,
+     120,   124
   };
 
   // Print the state stack on the debug stream.
@@ -1170,9 +1169,9 @@ namespace yy {
 
 
 } // yy
-#line 1174 "src/parser.cpp"
+#line 1173 "src/parser.cpp"
 
-#line 130 "src/parser.yy"
+#line 129 "src/parser.yy"
 
 // Epilogue: arbitrary C++.
 

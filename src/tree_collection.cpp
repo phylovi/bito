@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "sugar.hpp"
 #include "tree.hpp"
 
 TreeCollection::TreeCollection() {}
@@ -68,7 +69,7 @@ Node::TopologyCounter TreeCollection::TopologyCounter() {
   for (const auto &tree : trees_) {
     auto search = counter.find(tree.Topology());
     if (search == counter.end()) {
-      assert(counter.insert({tree.Topology(), 1}).second);
+      SafeInsert(counter, tree.Topology(), static_cast<uint32_t>(1));
     } else {
       search->second++;
     }
@@ -90,10 +91,8 @@ TagStringMap TreeCollection::TagStringMapOf(
     std::vector<std::string> taxon_labels) {
   TagStringMap taxon_map;
   for (size_t index = 0; index < taxon_labels.size(); index++) {
-    assert(taxon_map
-               .insert({PackInts(static_cast<uint32_t>(index), 1),
-                        taxon_labels[index]})
-               .second);
+    SafeInsert(taxon_map, PackInts(static_cast<uint32_t>(index), 1),
+               taxon_labels[index]);
   }
   return taxon_map;
 }

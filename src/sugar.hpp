@@ -4,7 +4,9 @@
 #ifndef SRC_SUGAR_HPP_
 #define SRC_SUGAR_HPP_
 
+#include <cassert>
 #include <experimental/optional>
+#include <iostream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -25,5 +27,26 @@ typedef std::experimental::optional<TagStringMap> TagStringMapOption;
 typedef std::vector<std::string> StringVector;
 typedef std::unordered_set<std::string> StringSet;
 typedef std::vector<StringSet> StringSetVector;
+
+// Here we use bad style by defining a macro. This is in preparation for when we
+// can use something nicer in a future C++.
+#define Assert(status, message) assert(status &&message)
+inline void Failwith(const std::string &message) {
+  std::cerr << message << std::endl;
+  abort();
+}
+
+template <class Key, class T, class Hash>
+constexpr void SafeInsert(std::unordered_map<Key, T, Hash> &map, const Key &k,
+                          const T &v) {
+  auto status = map.insert({k, v}).second;
+  Assert(status, "Failed map insertion!");
+}
+
+template <class Key, class Hash>
+constexpr void SafeInsert(std::unordered_set<Key, Hash> &set, const Key &k) {
+  auto status = set.insert(k).second;
+  Assert(status, "Failed set insertion!");
+}
 
 #endif  // SRC_SUGAR_HPP_

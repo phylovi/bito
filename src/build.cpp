@@ -24,7 +24,7 @@ TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
         bitset |= map.at(child->Tag());
       }
     }
-    assert(map.insert({node->Tag(), std::move(bitset)}).second);
+    SafeInsert(map, node->Tag(), std::move(bitset));
   });
   return map;
 }
@@ -45,7 +45,7 @@ SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology) {
     for (const auto& child : node->Children()) {
       bitset |= map.at(child->Index());
     }
-    assert(map.insert({node->Index(), std::move(bitset)}).second);
+    SafeInsert(map, node->Index(), std::move(bitset));
   });
   return map;
 }
@@ -111,7 +111,7 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
         // The first time we have seen this parent.
         BitsetUInt32Dict child_singleton(0);
         child_singleton.increment(std::move(child), count);
-        assert(pcss_dict.insert({parent, child_singleton}).second);
+        SafeInsert(pcss_dict, parent, child_singleton);
       } else {
         search->second.increment(std::move(child), count);
       }

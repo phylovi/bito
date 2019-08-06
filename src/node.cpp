@@ -239,7 +239,7 @@ TagSizeMap Node::Reindex() {
       node->index_ = next_index;
       next_index++;
     }
-    assert(tag_index_map.insert({node->Tag(), node->index_}).second);
+    SafeInsert(tag_index_map, node->Tag(), node->index_);
   });
   return tag_index_map;
 }
@@ -356,8 +356,7 @@ Node::NodePtr Node::OfParentIndexVector(std::vector<size_t> indices) {
     if (search == downward_indices.end()) {
       // The first time we have seen this parent.
       std::vector<size_t> child_indices({child_index});
-      assert(downward_indices.insert({parent_index, std::move(child_indices)})
-                 .second);
+      SafeInsert(downward_indices, parent_index, std::move(child_indices));
     } else {
       // We've seen the parent before, so append the child to the parent's
       // vector of descendants.

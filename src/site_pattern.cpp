@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 #include "intpack.hpp"
+#include "sugar.hpp"
 
 // DNA assumption here.
 CharIntMap GetSymbolTable() {
@@ -45,8 +46,7 @@ void SitePattern::Compress() {
       pattern[taxon_number] = symbol_table.at(alignment_.at(iter.second)[i]);
     }
     if (patterns.find(pattern) == patterns.end()) {
-      // TODO(Erick): insert sugar? Or convert to DefaultDict.
-      patterns.insert(std::make_pair(pattern, 1));
+      SafeInsert(patterns, pattern, 1.);
     } else {
       patterns[pattern]++;
     }

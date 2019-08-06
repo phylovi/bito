@@ -89,7 +89,7 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     auto previous_position = in.tellg();
     std::unordered_map<std::string, std::string> translator;
     while (std::regex_match(line, match, translate_item_regex)) {
-      assert(translator.insert({match[1].str(), match[2].str()}).second);
+      SafeInsert(translator, match[1].str(), match[2].str());
       // Semicolon marks the end of the translate block.
       if (match[3].str() == ";") {
         break;
@@ -112,7 +112,7 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
       if (search == translator.end()) {
         throw std::runtime_error("Couldn't find a translation table entry.");
       }
-      assert(translated_taxon_map.insert({iter.first, search->second}).second);
+      SafeInsert(translated_taxon_map, iter.first, search->second);
     }
     return TreeCollection(std::move(pre_translation.Trees()),
                           std::move(translated_taxon_map));
