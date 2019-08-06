@@ -45,7 +45,7 @@ void Alignment::ReadFasta(std::string fname) {
   data.clear();
   auto insert = [&data](std::string taxon, std::string sequence) {
     if (!taxon.empty()) {
-      assert(data.insert({taxon, sequence}).second);
+      SafeInsert(data, taxon, sequence);
     }
   };
   std::ifstream input(fname);

@@ -16,6 +16,7 @@
 #include "beagle.hpp"
 #include "build.hpp"
 #include "driver.hpp"
+#include "sugar.hpp"
 #include "tree.hpp"
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
@@ -121,7 +122,7 @@ struct SBNInstance {
     parent_to_range_.clear();
     // Start by adding the rootsplits.
     for (const auto &iter : RootsplitCounterOf(counter)) {
-      assert(indexer_.insert({iter.first, index}).second);
+      SafeInsert(indexer_, iter.first, index);
       rootsplits_.push_back(iter.first);
       index++;
     }
@@ -130,15 +131,13 @@ struct SBNInstance {
     for (const auto &iter : PCSSCounterOf(counter)) {
       const auto &parent = iter.first;
       const auto &child_counter = iter.second;
-      assert(parent_to_range_
-                 .insert({parent, {index, index + child_counter.size()}})
-                 .second);
+      SafeInsert(parent_to_range_, parent,
+                 {index, index + child_counter.size()});
       for (const auto &child_iter : child_counter) {
         const auto &child = child_iter.first;
-        assert(indexer_.insert({parent + child, index}).second);
-        assert(index_to_child_
-                   .insert({index, Bitset::ChildSubsplit(parent, child)})
-                   .second);
+        SafeInsert(indexer_, parent + child, index);
+        SafeInsert(index_to_child_, index,
+                   Bitset::ChildSubsplit(parent, child));
         index++;
       }
     }
@@ -258,13 +257,13 @@ struct SBNInstance {
     auto pcss_index_vector = indexer_representation.second;
     StringSet rootsplit_string_set;
     for (auto index : rootsplit_indices) {
-      assert(rootsplit_string_set.insert(reversed_indexer[index]).second);
+      SafeInsert(rootsplit_string_set, reversed_indexer[index]);
     }
     StringSetVector pcss_string_sets;
     for (const auto &pcss_indices : pcss_index_vector) {
       StringSet pcss_string_set;
       for (auto index : pcss_indices) {
-        assert(pcss_string_set.insert(reversed_indexer[index]).second);
+        SafeInsert(pcss_string_set, reversed_indexer[index]);
       }
       pcss_string_sets.push_back(std::move(pcss_string_set));
     }
@@ -277,11 +276,10 @@ struct SBNInstance {
     auto indexer_str = StringUInt32MapOf(indexer_);
     StringUInt32PairMap parent_to_range_str;
     for (const auto &iter : parent_to_range_) {
-      assert(parent_to_range_str.insert({iter.first.ToString(), iter.second})
-                 .second);
+      SafeInsert(parent_to_range_str, iter.first.ToString(), iter.second);
     }
-    assert(parent_to_range_str.insert({"rootsplit", {0, rootsplit_index_end_}})
-               .second);
+    std::string rootsplit("rootsplit");
+    SafeInsert(parent_to_range_str, rootsplit, {0, rootsplit_index_end_});
     return std::tie(indexer_str, parent_to_range_str);
   }
 

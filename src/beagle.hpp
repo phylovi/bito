@@ -13,9 +13,9 @@
 #include "intpack.hpp"
 #include "libhmsbeagle/beagle.h"
 #include "site_pattern.hpp"
+#include "sugar.hpp"
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
-#include "typedefs.hpp"
 
 namespace beagle {
 

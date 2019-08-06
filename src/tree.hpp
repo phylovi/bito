@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <vector>
 #include "node.hpp"
-#include "typedefs.hpp"
+#include "sugar.hpp"
 
 class Tree {
  public:

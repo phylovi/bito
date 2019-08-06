@@ -8,8 +8,8 @@
 #include <string>
 #include <vector>
 #include "parser.hpp"
+#include "sugar.hpp"
 #include "tree_collection.hpp"
-#include "typedefs.hpp"
 
 // Give Flex the prototype of yylex we want ...
 #define YY_DECL yy::parser::symbol_type yylex(Driver& drv)

@@ -16,8 +16,8 @@ libsbn is free software under the GPLv3; see LICENSE file for details.
 
 %code requires {
   // This code gets inserted into the parser header file.
-  #include <cassert>
   #include <string>
+  #include "sugar.hpp"
   #include "tree.hpp"
   class Driver;
 }
@@ -75,8 +75,7 @@ fancy_node:
   $$ = $1;
 
   try {
-      assert(drv.branch_lengths_.insert(
-        std::pair<int64_t, double>($1->Tag(), std::stof($3))).second);
+      SafeInsert(drv.branch_lengths_, $1->Tag(), std::stod($3));
   } catch (...) {
     std::cerr << "Float conversion failed on branch length '" << $3 << "'\n'";
     abort();

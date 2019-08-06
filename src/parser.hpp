@@ -47,8 +47,8 @@
 #line 17 "src/parser.yy"
 
   // This code gets inserted into the parser header file.
-  #include <cassert>
   #include <string>
+  #include "sugar.hpp"
   #include "tree.hpp"
   class Driver;
 

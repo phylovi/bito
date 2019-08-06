@@ -5,10 +5,10 @@
 #define SRC_BITSET_HPP_
 
 #include <algorithm>
+#include <experimental/optional>
 #include <functional>
 #include <string>
 #include <vector>
-#include "optional.hpp"
 
 // This file started life as the RbBitSet class from RevBayes by Sebastian
 // Hoehna. In general, I'm trying to follow the interface of std::bitset, though

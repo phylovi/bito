@@ -5,7 +5,7 @@
 #define SRC_ALIGNMENT_HPP_
 
 #include <string>
-#include "typedefs.hpp"
+#include "sugar.hpp"
 
 // The mutable nature of this class is a little ugly.
 // However, its only purpose is to sit in a libsbn Instance, which is all about

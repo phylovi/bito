@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "tree.hpp"
+#include <cassert>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -9,7 +10,7 @@
 #include <utility>
 #include <vector>
 #include "node.hpp"
-#include "typedefs.hpp"
+#include "sugar.hpp"
 
 Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
     : topology_(topology) {
