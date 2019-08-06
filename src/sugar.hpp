@@ -39,11 +39,7 @@ typedef std::vector<StringSet> StringSetVector;
 // with program logic.
 // Here we use a macro to avoid "control may reach end of non-void function"
 // errors. We shouldn't have to return when we `abort()`.
-#define Failwith(message)              \
-  ({                                   \
-    std::cerr << message << std::endl; \
-    abort();                           \
-  })
+#define Failwith(message) ({ throw std::runtime_error(message); })
 
 template <class Key, class T, class Hash>
 constexpr void SafeInsert(std::unordered_map<Key, T, Hash> &map, const Key &k,
