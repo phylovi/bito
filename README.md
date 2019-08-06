@@ -94,3 +94,11 @@ Add a test for every new feature.
 * PCSS stands for parent-child subsplit.
   It's a general concept rather than a specific implementation of the concept.
   For example, see the documentation of PCSSFun (in `node.hpp`) and PCSS Bitsets (in `bitset.hpp`) for two different ways of using this concept.
+
+
+## Contributors
+
+* Erick Matsen ([@matsen](https://github.com/matsen)): maintainer
+* Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
+* Mathieu Fourment ([@4ment](https://github.com/4ment)): design, BEAGLE gradients and scaling
+* Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
