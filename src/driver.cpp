@@ -119,7 +119,7 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     return TreeCollection(std::move(pre_translation.Trees()),
                           std::move(translated_taxon_map));
   } catch (const std::exception &exception) {
-    Failwith("\nProblem parsing '" + fname + "':\n" + exception.what());
+    Failwith("Problem parsing '" + fname + "':\n" + exception.what());
   }
 }
 
