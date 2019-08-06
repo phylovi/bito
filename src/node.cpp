@@ -109,7 +109,8 @@ void Node::LevelOrder(std::function<void(const Node*)> f) const {
 void Node::TriplePreOrderBifurcating(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
   if (!IsLeaf()) {
-    assert(children_.size() == 2);
+    Assert(children_.size() == 2,
+           "TripleIndexPreOrderBifurcating expects a bifurcating tree.");
     f(this, children_[1].get(), children_[0].get());
     children_[0]->TriplePreOrderBifurcating(f);
     f(this, children_[0].get(), children_[1].get());
@@ -134,7 +135,8 @@ static std::function<void(const Node*)> const BinaryIndexInfix(
     std::function<void(int, int, int)> f) {
   return [&f](const Node* node) {
     if (!node->IsLeaf()) {
-      assert(node->Children().size() == 2);
+      Assert(node->Children().size() == 2,
+             "BinaryIndexInfix expects a bifurcating tree.");
       f(static_cast<int>(node->Index()),
         static_cast<int>(node->Children()[0]->Index()),
         static_cast<int>(node->Children()[1]->Index()));
@@ -156,7 +158,8 @@ void Node::TriplePreOrder(
     std::function<void(const Node*, const Node*, const Node*)> f_root,
     std::function<void(const Node*, const Node*, const Node*)> f_internal)
     const {
-  assert(children_.size() == 3);
+  Assert(children_.size() == 3,
+         "TriplePreOrder expects a tree with a trifurcation at the root.");
   f_root(children_[0].get(), children_[1].get(), children_[2].get());
   f_root(children_[1].get(), children_[2].get(), children_[0].get());
   f_root(children_[2].get(), children_[0].get(), children_[1].get());
@@ -168,7 +171,8 @@ void Node::TriplePreOrder(
 void Node::TriplePreOrderInternal(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
   if (!IsLeaf()) {
-    assert(children_.size() == 2);
+    Assert(children_.size() == 2,
+           "TriplePreOrderInternal expects a bifurcating tree.");
     f(this, children_[1].get(), children_[0].get());
     children_[0]->TriplePreOrderInternal(f);
     f(this, children_[0].get(), children_[1].get());
@@ -186,7 +190,8 @@ void Node::PCSSPreOrder(PCSSFun f) const {
         // Virtual root on node2's edge, with subsplit pointing up.
         f(node2, false, node2, true, node0, false, node1, false, nullptr);
         if (!node2->IsLeaf()) {
-          assert(node2->Children().size() == 2);
+          Assert(node2->Children().size() == 2,
+                 "PCSSPreOrder expects a bifurcating tree.");
           auto child0 = node2->Children()[0].get();
           auto child1 = node2->Children()[1].get();
           // Virtual root in node1.
@@ -206,7 +211,8 @@ void Node::PCSSPreOrder(PCSSFun f) const {
         // Virtual root on node's edge, with subsplit pointing up.
         f(node, false, node, true, parent, true, sister, false, nullptr);
         if (!node->IsLeaf()) {
-          assert(node->Children().size() == 2);
+          Assert(node->Children().size() == 2,
+                 "PCSSPreOrder expects a bifurcating tree.");
           auto child0 = node->Children()[0].get();
           auto child1 = node->Children()[1].get();
           // Virtual root up the tree.
@@ -267,7 +273,8 @@ std::string Node::NewickAux(
     str.append(node_labeler(this));
   }
   if (branch_lengths) {
-    assert(Index() < (*branch_lengths).size());
+    Assert(Index() < (*branch_lengths).size(),
+           "branch_lengths vector is of insufficient length in NewickAux.");
     // ostringstream is the way to get scientific notation using the STL.
     std::ostringstream str_stream;
     str_stream << (*branch_lengths)[Index()];

@@ -9,7 +9,8 @@
 #include <unordered_map>
 
 size_t Alignment::Length() const {
-  assert(SequenceCount() > 0);
+  Assert(SequenceCount() > 0,
+         "Must have sequences in an alignment to ask for a Length.");
   return data_.begin()->second.size();
 }
 

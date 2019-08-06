@@ -1,7 +1,7 @@
 # libsbn
 
-[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/matsengrp/libsbn.svg)](https://cloud.docker.com/u/matsengrp/repository/docker/matsengrp/libsbn/general) &nbsp;
-[![Travis CI status](https://travis-ci.org/matsengrp/libsbn.svg?branch=master)](https://travis-ci.org/matsengrp/libsbn)
+[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/phylovi/libsbn.svg)](https://cloud.docker.com/u/phylovi/repository/docker/phylovi/libsbn/general) &nbsp;
+[![Travis CI status](https://travis-ci.org/phylovi/libsbn.svg?branch=master)](https://travis-ci.org/phylovi/libsbn)
 
 ## Dependencies
 

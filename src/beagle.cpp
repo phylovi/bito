@@ -152,7 +152,8 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
   tree.Topology()->PostOrder(
       [&operations, int_taxon_count, rescaling](const Node *node) {
         if (!node->IsLeaf()) {
-          assert(node->Children().size() == 2);
+          Assert(node->Children().size() == 2,
+                 "Tree isn't bifurcating in LogLikelihood.");
           int dest = static_cast<int>(node->Index());
           int child0_index = static_cast<int>(node->Children()[0]->Index());
           int child1_index = static_cast<int>(node->Children()[1]->Index());
@@ -352,7 +353,8 @@ std::pair<double, std::vector<double>> BranchGradient(
         for (size_t upper : indices_above[static_cast<size_t>(node_index)]) {
           int int_upper = static_cast<int>(upper);
           int scaler_indices_index = int_upper - int_taxon_count;
-          assert(scaler_indices_index >= 0);
+          Assert(scaler_indices_index >= 0,
+                 "int_upper must be >= taxon count.");
           scaler_indices[static_cast<size_t>(scaler_indices_index)] =
               child + internal_count + 1;
           child = int_upper;

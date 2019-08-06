@@ -3,6 +3,7 @@
 
 #include "bitset.hpp"
 #include <cassert>
+#include "sugar.hpp"
 
 Bitset::Bitset(std::vector<bool> value) : value_(value) {}
 
@@ -29,12 +30,12 @@ bool Bitset::operator[](size_t i) const { return value_[i]; }
 size_t Bitset::size(void) const { return value_.size(); }
 
 void Bitset::set(size_t i, bool value) {
-  assert(i < value_.size());
+  Assert(i < value_.size(), "i out of range in Bitset::set.");
   value_[i] = value;
 }
 
 void Bitset::reset(size_t i) {
-  assert(i < value_.size());
+  Assert(i < value_.size(), "i out of range in Bitset::reset.");
   value_[i] = false;
 }
 
@@ -59,33 +60,33 @@ bool Bitset::operator>=(const Bitset& other) const {
   return value_ >= other.value_;
 }
 
-Bitset Bitset::operator&(const Bitset& x) const {
-  assert(value_.size() == x.size());
+Bitset Bitset::operator&(const Bitset& other) const {
+  Assert(value_.size() == other.size(), "Size mismatch in Bitset::operator&.");
   Bitset r(value_.size());
   for (size_t i = 0; i < value_.size(); i++) {
-    if (value_[i] && x.value_[i]) {
+    if (value_[i] && other.value_[i]) {
       r.set(i);
     }
   }
   return r;
 }
 
-Bitset Bitset::operator|(const Bitset& x) const {
-  assert(value_.size() == x.size());
+Bitset Bitset::operator|(const Bitset& other) const {
+  Assert(value_.size() == other.size(), "Size mismatch in Bitset::operator|.");
   Bitset r(value_.size());
   for (size_t i = 0; i < value_.size(); i++) {
-    if (value_[i] || x.value_[i]) {
+    if (value_[i] || other.value_[i]) {
       r.set(i);
     }
   }
   return r;
 }
 
-Bitset Bitset::operator^(const Bitset& x) const {
-  assert(value_.size() == x.size());
+Bitset Bitset::operator^(const Bitset& other) const {
+  Assert(value_.size() == other.size(), "Size mismatch in Bitset::operator^.");
   Bitset r(value_.size());
   for (size_t i = 0; i < value_.size(); i++) {
-    if (value_[i] != x.value_[i]) {
+    if (value_[i] != other.value_[i]) {
       r.set(i);
     }
   }
@@ -106,14 +107,14 @@ Bitset Bitset::operator+(const Bitset& other) const {
 }
 
 void Bitset::operator&=(const Bitset& other) {
-  assert(value_.size() == other.size());
+  Assert(value_.size() == other.size(), "Size mismatch in Bitset::operator&=.");
   for (size_t i = 0; i < value_.size(); i++) {
     value_[i] = value_[i] && other[i];
   }
 }
 
 void Bitset::operator|=(const Bitset& other) {
-  assert(value_.size() == other.size());
+  Assert(value_.size() == other.size(), "Size mismatch in Bitset::operator|=.");
   for (size_t i = 0; i < value_.size(); i++) {
     value_[i] = value_[i] || other[i];
   }
@@ -144,7 +145,7 @@ bool Bitset::Any() const {
 }
 
 void Bitset::Minorize() {
-  assert(value_.size() > 0);
+  Assert(value_.size() > 0, "Can't Bitset::Minorize an empty bitset.");
   if (value_[0]) {
     value_.flip();
   }
@@ -153,7 +154,7 @@ void Bitset::Minorize() {
 // Copy all of the bits from another bitset into this bitset, starting at
 // begin, and optionally flipping the bits as they get copied.
 void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
-  assert(begin + other.size() <= size());
+  Assert(begin + other.size() <= size(), "Can't fit copy in Bitset::CopyFrom.");
   if (flip) {
     for (size_t i = 0; i < other.size(); i++) {
       value_[i + begin] = !other[i];
@@ -187,7 +188,8 @@ std::experimental::optional<uint32_t> Bitset::SingletonOption() const {
 // ** SBN-related functions
 
 Bitset Bitset::RotateSubsplit() const {
-  assert(size() % 2 == 0);
+  Assert(size() % 2 == 0,
+         "Bitset::RotateSubsplit requires an even-size bitset.");
   Bitset exchanged(size());
   size_t chunk_size = size() / 2;
   for (size_t i = 0; i < chunk_size; i++) {
@@ -198,8 +200,8 @@ Bitset Bitset::RotateSubsplit() const {
 }
 
 Bitset Bitset::SplitChunk(size_t i) const {
-  assert(size() % 2 == 0);
-  assert(i < 2);
+  Assert(size() % 2 == 0, "Bitset::SplitChunk requires an even-size bitset.");
+  Assert(i < 2, "Bitset::SplitChunk only allows 2 chunks.");
   size_t chunk_size = size() / 2;
   std::vector<bool> new_value(value_.begin() + int32_t(i * chunk_size),
                               value_.begin() + int32_t((i + 1) * chunk_size));
@@ -207,7 +209,8 @@ Bitset Bitset::SplitChunk(size_t i) const {
 }
 
 std::string Bitset::ToStringChunked(size_t chunk_count) const {
-  assert(size() % chunk_count == 0);
+  Assert(size() % chunk_count == 0,
+         "Size isn't a multiple of chunk_count in Bitset::ToStringChunked.");
   size_t chunk_size = size() / chunk_count;
   std::string str;
   for (size_t i = 0; i < value_.size(); ++i) {
@@ -224,7 +227,7 @@ std::string Bitset::SubsplitToString() const { return ToStringChunked(2); }
 std::string Bitset::PCSSToString() const { return ToStringChunked(3); }
 
 size_t Bitset::PCSSChunkSize() const {
-  assert(size() % 3 == 0);
+  Assert(size() % 3 == 0, "Size isn't 0 mod 3 in Bitset::PCSSChunkSize.");
   return size() / 3;
 }
 
@@ -279,7 +282,8 @@ Bitset Bitset::ChildSubsplit(const Bitset& parent_subsplit,
                              const Bitset& child_half) {
   size_t taxon_count = child_half.size();
   Bitset result(2 * taxon_count);
-  assert(result.size() == parent_subsplit.size());
+  Assert(result.size() == parent_subsplit.size(),
+         "Size mismatch in Bitset::ChildSubsplit.");
   for (size_t i = 0; i < taxon_count; i++) {
     result.set(i, parent_subsplit[taxon_count + i] ^ child_half[i]);
     result.set(i + taxon_count, child_half[i]);

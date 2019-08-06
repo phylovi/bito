@@ -88,7 +88,8 @@ struct SBNInstance {
   // Finalize means to release memory.
   void FinalizeBeagleInstances() {
     for (const auto &beagle_instance : beagle_instances_) {
-      assert(beagleFinalizeInstance(beagle_instance) == 0);
+      Assert(beagleFinalizeInstance(beagle_instance) == 0,
+             "beagleFinalizeInstance gave nonzero return value!");
     }
     beagle_instances_.clear();
     beagle_leaf_count_ = 0;
@@ -161,8 +162,8 @@ struct SBNInstance {
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
   uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) const {
-    assert(range.first < range.second);
-    assert(range.second <= sbn_parameters_.size());
+    Assert(range.first < range.second && range.second <= sbn_parameters_.size(),
+           "SampleIndex given an invalid range.");
     std::discrete_distribution<> distribution(
         sbn_parameters_.begin() + range.first,
         sbn_parameters_.begin() + range.second);
@@ -170,7 +171,7 @@ struct SBNInstance {
     // array, and the sampler treats the beginning of this slice as zero.
     auto result =
         range.first + static_cast<uint32_t>(distribution(random_generator_));
-    assert(result < range.second);
+    Assert(result < range.second, "SampleIndex sampled a value out of range.");
     return result;
   }
 
