@@ -35,10 +35,8 @@ SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology) {
   auto index_count = topology->Index() + 1;
   topology->PostOrder([&map, index_count](const Node* node) {
     Bitset bitset(static_cast<size_t>(index_count));
-    if (node->Index() >= index_count) {
-      std::cerr << "Malformed indices in IndexIndexSetMapOf.\n";
-      abort();
-    }
+    Assert(node->Index() < index_count,
+           "Malformed indices in IndexIndexSetMapOf.");
     // Set the bit for the index of the current edge.
     bitset.set(node->Index());
     // Take the union of the children below.
@@ -75,11 +73,9 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
     auto count = iter.second;
     auto tag_to_leafset = TagLeafSetMapOf(topology);
     auto leaf_count = topology->LeafCount();
-    if (topology->Children().size() != 3) {
-      std::cerr << "PCSSCounterOf was expecting a tree with a trifurcation at "
-                   "the root!";
-      abort();
-    }
+    Assert(
+        topology->Children().size() == 3,
+        "PCSSCounterOf was expecting a tree with a trifurcation at the root!");
     topology->PCSSPreOrder([&pcss_dict, &tag_to_leafset, &count, &leaf_count](
                                const Node* sister_node, bool sister_direction,
                                const Node* focal_node, bool focal_direction,  //

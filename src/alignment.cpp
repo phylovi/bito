@@ -32,8 +32,7 @@ std::string Alignment::at(const std::string &taxon) const {
   if (search != data_.end()) {
     return search->second;
   } else {
-    std::cerr << "Taxon '" << taxon << "' not found in alignment.\n";
-    abort();
+    Failwith("Taxon '" + taxon + "' not found in alignment.");
   }
 }
 
@@ -51,8 +50,7 @@ void Alignment::ReadFasta(std::string fname) {
   };
   std::ifstream input(fname);
   if (!input.good()) {
-    std::cerr << "Could not open '" << fname << "'\n";
-    abort();
+    Failwith("Could not open '" + fname + "'");
   }
   std::string line, taxon, sequence;
   while (std::getline(input, line)) {
@@ -68,7 +66,6 @@ void Alignment::ReadFasta(std::string fname) {
   // Insert the last taxon, sequence pair.
   insert(taxon, sequence);
   if (!IsValid()) {
-    std::cerr << "Sequences of the alignment are not all the same length.\n";
-    abort();
+    Failwith("Sequences of the alignment are not all the same length.");
   }
 }

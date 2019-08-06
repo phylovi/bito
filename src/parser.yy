@@ -2,6 +2,11 @@
 Copyright 2019 Matsen group.
 libsbn is free software under the GPLv3; see LICENSE file for details.
 
+Based on
+https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parser.html#Calc_002b_002b-Parser
+and
+https://github.com/tjunier/newick_utils/blob/master/src/newick_parser.y
+
 *** Section: prologue and Bison declarations.
   The prologue is broken up into %code blocks, with an optional qualifier
   to describe where it should go in the resulting source file. */
@@ -77,8 +82,7 @@ fancy_node:
   try {
       SafeInsert(drv.branch_lengths_, $1->Tag(), std::stod($3));
   } catch (...) {
-    std::cerr << "Float conversion failed on branch length '" << $3 << "'\n'";
-    abort();
+    Failwith("Float conversion failed on branch length '" + $3 +"'");
   }
 }
 
@@ -94,9 +98,8 @@ node:
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa_.
       auto leaf_id = drv.taxa_.find($1);
       if(leaf_id == drv.taxa_.end()) { // leaf $1 not found in taxa_
-        std::cout << "Taxon '" << $1 << "' did not appear in the first tree.\n";
-        std::cout << "We only parse lists of trees on the same taxa.\n";
-        abort();
+        Failwith("Taxon '" + $1 + "' did not appear in the first tree.\n" +
+         "We only parse lists of trees on the same taxa.");
       }
       $$ = Node::Leaf(leaf_id->second);
     }

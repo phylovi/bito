@@ -41,9 +41,8 @@ std::vector<T> Parallelize(
     std::vector<BeagleInstance> beagle_instances,
     const TreeCollection &tree_collection, bool rescaling) {
   if (beagle_instances.size() == 0) {
-    std::cerr << "Please add some BEAGLE instances that can be used for "
-                 "computation.\n";
-    abort();
+    Failwith(
+        "Please add some BEAGLE instances that can be used for computation.");
   }
   std::vector<T> results(tree_collection.TreeCount());
   std::queue<BeagleInstance> instance_queue;

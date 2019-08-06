@@ -35,10 +35,15 @@ typedef std::vector<StringSet> StringSetVector;
 #else
 #define Assert(to_evaluate, message) assert(to_evaluate &&message);
 #endif
-inline void Failwith(const std::string &message) {
-  std::cerr << message << std::endl;
-  abort();
-}
+// Use Failwith generally when it's a problem with input data versus a problem
+// with program logic.
+// Here we use a macro to avoid "control may reach end of non-void function"
+// errors. We shouldn't have to return when we `abort()`.
+#define Failwith(message)              \
+  ({                                   \
+    std::cerr << message << std::endl; \
+    abort();                           \
+  })
 
 template <class Key, class T, class Hash>
 constexpr void SafeInsert(std::unordered_map<Key, T, Hash> &map, const Key &k,

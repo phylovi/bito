@@ -22,23 +22,19 @@ Node::Node(uint32_t leaf_id)
 
 Node::Node(NodePtrVec children, size_t index)
     : children_(children), index_(index) {
-  if (children_.empty()) {
-    std::cerr << "Called internal node constructor with no children.\n";
-    abort();
-  }
+  Assert(!children_.empty(),
+         "Called internal Node constructor with no children.");
   // Order the children by their max leaf ids.
-  std::sort(children_.begin(), children_.end(),
-            [](const auto& lhs, const auto& rhs) {
-              if (lhs->MaxLeafID() == rhs->MaxLeafID()) {
-                // Children should have non-overlapping leaf sets, so there
-                // should not be ties.
-                std::cout << "Tie observed between " << lhs->Newick() << " and "
-                          << rhs->Newick() << std::endl;
-                std::cout << "Do you have a taxon name repeated?\n";
-                abort();
-              }
-              return (lhs->MaxLeafID() < rhs->MaxLeafID());
-            });
+  std::sort(
+      children_.begin(), children_.end(), [](const auto& lhs, const auto& rhs) {
+        if (lhs->MaxLeafID() == rhs->MaxLeafID()) {
+          // Children should have non-overlapping leaf sets, so there
+          // should not be ties.
+          Failwith("Tie observed between " + lhs->Newick() + " and " +
+                   rhs->Newick() + "\n" + "Do you have a taxon name repeated?");
+        }
+        return lhs->MaxLeafID() < rhs->MaxLeafID();
+      });
   // Children are sorted by their max_leaf_id, so we can get the max by
   // looking at the last element.
   uint32_t max_leaf_id = children_.back()->MaxLeafID();
@@ -311,10 +307,8 @@ std::vector<size_t> Node::ParentIndexVector() {
   PostOrder([&indices](const Node* node) {
     if (!node->IsLeaf()) {
       for (const auto& child : node->Children()) {
-        if (child->Index() >= indices.size()) {
-          std::cerr << "Problematic indices in ParentIndexVector.\n";
-          abort();
-        }
+        Assert(child->Index() < indices.size(),
+               "Problematic indices in ParentIndexVector.");
         indices[child->Index()] = node->Index();
       }
     }
@@ -323,15 +317,8 @@ std::vector<size_t> Node::ParentIndexVector() {
 }
 
 Node::NodePtr Node::Deroot() {
-  if (LeafCount() < 3) {
-    std::cerr << "Can't deroot a tree with fewer than 3 leaves.\n";
-    abort();
-  }
-  if (Children().size() != 2) {
-    std::cerr << "Can't deroot a non-bifurcating tree.\nProblem tree:"
-              << Newick() << std::endl;
-    abort();
-  }
+  Assert(LeafCount() >= 3, "Node::Deroot expects a tree with at least 3 tips.");
+  Assert(Children().size() == 2, "Can't deroot a non-bifurcating tree.");
   auto deroot = [](const NodePtr other_child, const NodePtr has_descendants) {
     // Make a vector copy by passing a vector in.
     NodePtrVec children(has_descendants->Children());

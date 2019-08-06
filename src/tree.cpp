@@ -53,10 +53,8 @@ double Tree::BranchLength(const Node* node) const {
 }
 
 Tree Tree::Detrifurcate() const {
-  if (Children().size() != 3) {
-    std::cerr << "Detrifurcate given a non-trifurcating tree.\n";
-    abort();
-  }  // else
+  Assert(Children().size() == 3,
+         "Tree::Detrifurcate given a non-trifurcating tree.");
   auto branch_lengths = BranchLengths();
   auto our_index = Index();
   auto root12 = Node::Join(Children()[1], Children()[2], our_index);

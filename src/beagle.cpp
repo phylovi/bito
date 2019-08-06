@@ -33,8 +33,7 @@ SymbolVector SymbolVectorOf(const std::string &str,
     if (search != symbol_table.end()) {
       v[i] = search->second;
     } else {
-      std::cerr << "Symbol '" << str[i] << "' not known.\n";
-      abort();
+      Failwith("Symbol '" + std::to_string(str[i]) + "' not known.\n");
     }
   }
   return v;
@@ -94,9 +93,8 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
                            const TreeCollection &tree_collection,
                            const SitePattern &site_pattern) {
   if (tree_collection.TaxonCount() != site_pattern.SequenceCount()) {
-    std::cerr << "The number of tree tips doesn't match the alignment "
-                 "sequence count!\n";
-    abort();
+    Failwith(
+        "The number of tree tips doesn't match the alignment sequence count.");
   }
   // Use uniform rates and weights.
   const double weights[1] = {1.0};
@@ -137,9 +135,9 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
     return tree;
   }
   // else
-  std::cerr << "Tree likelihood calculations should be done on a tree with a "
-               "bifurcation or a trifurcation at the root.";
-  abort();
+  Failwith(
+      "Tree likelihood calculations should be done on a tree with a "
+      "bifurcation or a trifurcation at the root.");
 }
 
 double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,

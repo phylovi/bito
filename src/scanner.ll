@@ -3,6 +3,11 @@
 Copyright 2019 Matsen group.
 libsbn is free software under the GPLv3; see LICENSE file for details.
 
+Based on
+https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Scanner.html#Calc_002b_002b-Scanner
+and
+https://github.com/tjunier/newick_utils/blob/master/src/newick_scanner.l
+
 *** Section: definitions. */
 # include <cerrno>
 # include <climits>

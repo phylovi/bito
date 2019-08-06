@@ -205,8 +205,7 @@ struct SBNInstance {
   void CheckSBNMapsAvailable() {
     if (!indexer_.size() || !index_to_child_.size() ||
         !parent_to_range_.size() || !rootsplits_.size()) {
-      std::cout << "Please call ProcessLoadedTrees to prepare your SBN maps.\n";
-      abort();
+      Failwith("Please call ProcessLoadedTrees to prepare your SBN maps.");
     }
   }
 
@@ -307,29 +306,29 @@ struct SBNInstance {
 
   void CheckDataLoaded() {
     if (alignment_.SequenceCount() == 0) {
-      std::cerr << "Load an alignment into your SBNInstance on which you wish "
-                   "to calculate phylogenetic likelihoods.\n";
-      abort();
+      Failwith(
+          "Load an alignment into your SBNInstance on which you wish to "
+          "calculate phylogenetic likelihoods.");
     }
     if (TreeCount() == 0) {
-      std::cerr << "Load some trees into your SBNInstance on which you wish to "
-                   "calculate phylogenetic likelihoods.\n";
-      abort();
+      Failwith(
+          "Load some trees into your SBNInstance on which you wish to "
+          "calculate phylogenetic likelihoods.");
     }
   }
 
   void CheckBeagleDimensions() {
     CheckDataLoaded();
     if (beagle_instances_.size() == 0) {
-      std::cerr << "Call MakeBeagleInstances to make some instances for "
-                   "likelihood computation.\n";
-      abort();
+      Failwith(
+          "Call MakeBeagleInstances to make some instances for likelihood "
+          "computation.");
     }
     if (alignment_.SequenceCount() != beagle_leaf_count_ ||
         alignment_.Length() != beagle_site_count_) {
-      std::cerr << "Alignment dimensions for current BEAGLE instances do not "
-                   "match current alignment. Call MakeBeagleInstances again.\n";
-      abort();
+      Failwith(
+          "Alignment dimensions for current BEAGLE instances do not "
+          "match current alignment. Call MakeBeagleInstances again.");
     }
   }
 
