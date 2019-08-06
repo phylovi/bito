@@ -538,7 +538,7 @@ char *yytext;
 #line 1 "src/scanner.ll"
 #line 2 "src/scanner.ll"
 /*
-Copyright 2019 Matsen group.
+Copyright 2019 libsbn project contributors.
 libsbn is free software under the GPLv3; see LICENSE file for details.
 
 Based on
