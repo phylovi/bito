@@ -9,7 +9,7 @@
 #include <unordered_map>
 #include <utility>
 
-// Inheriting from STL containers is frowned upon, but we do it here!
+// Inheriting from STL containers is frowned upon, but we do it here for fun!
 // We could definitely implement using containment rather than inheritance if we
 // wanted.
 // Private inheritance mitigates the stated problems in our case, in particular
@@ -43,7 +43,7 @@ class DefaultDict : private std::unordered_map<Key, T> {
   void increment(const Key &key, const T &value) {
     auto search = this->find(key);
     if (search == this->end()) {
-      assert(this->insert({key, value}).second);
+      SafeInsert(*this, key, value);
     } else {
       search->second += value;
     }
