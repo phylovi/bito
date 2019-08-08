@@ -29,22 +29,21 @@ TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
   return map;
 }
 
-// Make a map from Tags to the bitset representing the indices below the Tag.
-SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology) {
+// Make a map from Tags to the bitset representing the ids below the Tag.
+SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology) {
   SizeBitsetMap map;
-  auto id_count = topology->Index() + 1;
+  auto id_count = topology->Id() + 1;
   topology->PostOrder([&map, id_count](const Node* node) {
     Bitset bitset(static_cast<size_t>(id_count));
-    Assert(node->Index() < id_count,
-           // TODO grep indices
-           "Malformed ids in IndexIndexSetMapOf.");
+    Assert(node->Id() < id_count,
+           "Malformed ids in IdIdSetMapOf.");
     // Set the bit for the id of the current edge.
-    bitset.set(node->Index());
+    bitset.set(node->Id());
     // Take the union of the children below.
     for (const auto& child : node->Children()) {
-      bitset |= map.at(child->Index());
+      bitset |= map.at(child->Id());
     }
-    SafeInsert(map, node->Index(), std::move(bitset));
+    SafeInsert(map, node->Id(), std::move(bitset));
   });
   return map;
 }
@@ -122,18 +121,18 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
   auto tag_to_leafset = TagLeafSetMapOf(topology);
   auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
-  SizeVector rootsplit_result(topology->Index());
+  SizeVector rootsplit_result(topology->Id());
   topology->PreOrder([&topology, &rootsplit_result, &tag_to_leafset,
                       &indexer](const Node* node) {
     // Skip the root.
     if (node != topology.get()) {
       Bitset rootsplit = tag_to_leafset.at(node->Tag());
       rootsplit.Minorize();
-      rootsplit_result[node->Index()] = indexer.at(rootsplit);
+      rootsplit_result[node->Id()] = indexer.at(rootsplit);
     }
   });
   // Next, the pcss_result.
-  SizeVectorVector pcss_result(topology->Index());
+  SizeVectorVector pcss_result(topology->Id());
   topology->PCSSPreOrder([&indexer, &tag_to_leafset, &leaf_count, &pcss_result,
                           &topology](
                              const Node* sister_node, bool sister_direction,
@@ -155,7 +154,7 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
     bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
                     false);
     auto indexer_position = indexer.at(bitset);
-    const auto& focal_index = focal_node->Index();
+    const auto& focal_index = focal_node->Id();
     if (sister_node == focal_node) {
       // We are in the bidirectional edge situation.
       Assert(focal_index < pcss_result.size(), "focal_index out of range.");
@@ -180,9 +179,9 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
         // Add all of the edges of the virtual rooting clade, except for the
         // root of the topology.
         if (node != topology.get()) {
-          Assert(node->Index() < pcss_result.size(),
-                 "node's root Index is out of range.");
-          pcss_result[node->Index()].push_back(indexer_position);
+          Assert(node->Id() < pcss_result.size(),
+                 "node's root Id is out of range.");
+          pcss_result[node->Id()].push_back(indexer_position);
         }
         return true;
       });

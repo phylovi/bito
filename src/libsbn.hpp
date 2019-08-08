@@ -377,8 +377,7 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   // (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
-  auto indexer_test_topology_1 =
-      Node::OfParentIndexVector({6, 5, 7, 5, 6, 7, 7});
+  auto indexer_test_topology_1 = Node::OfParentIdVector({6, 5, 7, 5, 6, 7, 7});
   std::pair<StringSet, StringSetVector> correct_representation_1(
       // The rootsplits.
       {"01110", "01000", "01010", "01111", "00010", "00100", "00001"},
@@ -396,8 +395,7 @@ TEST_CASE("libsbn") {
                IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1)),
            correct_representation_1);
   // (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
-  auto indexer_test_topology_2 =
-      Node::OfParentIndexVector({5, 5, 6, 7, 7, 6, 7});
+  auto indexer_test_topology_2 = Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 7});
   std::pair<StringSet, StringSetVector> correct_representation_2(
       {"01000", "01111", "00011", "00010", "00111", "00100", "00001"},
       {{"10000|01111|00111", "00100|00011|00001", "01000|00111|00011"},

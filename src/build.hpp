@@ -26,7 +26,7 @@ typedef std::pair<SizeVector, SizeVectorVector> IndexerRepresentation;
 typedef std::unordered_map<Bitset, DefaultDict<Bitset, uint32_t>> PCSSDict;
 
 TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology);
-SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology);
+SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
 
 BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
@@ -36,7 +36,7 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 // Each of these vectors are indexed by virtual rootings of the tree.
 // rootsplit_result simply gives the indices of the rootsplits that appear for
 // those various virtual rootings. pcss_result is a vector of vectors, giving
-// the indices of sbn_probs_ corresponding to PCSSs that are present in the
+// the indices of sbn_parameters_ corresponding to PCSSs that are present in the
 // given topology.
 IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer_,
                                               const Node::NodePtr& topology);
@@ -55,7 +55,7 @@ TEST_CASE("Build") {
                                           {3, Bitset("000100")},
                                           {4, Bitset("001110")}});
 
-  for (const auto& iter : IndexIndexSetMapOf(topology0)) {
+  for (const auto& iter : IdIdSetMapOf(topology0)) {
     CHECK_EQ(correct_id_id_set_map.at(iter.first), iter.second);
   }
 

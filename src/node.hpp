@@ -15,7 +15,7 @@
 // node ids. Note that Tree construction calls Reid, if you are manually
 // manipulating the topology make you do manipulations with that in mind.
 //
-// Equality is in terms of tree topologies. Indices don't matter.
+// Equality is in terms of tree topologies. Ids don't matter.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
@@ -59,7 +59,7 @@ class Node {
   explicit Node(uint32_t leaf_id);
   explicit Node(NodePtrVec children, size_t id);
 
-  size_t Index() const { return id_; }
+  size_t Id() const { return id_; }
   uint64_t Tag() const { return tag_; }
   std::string TagString() const { return StringOfPackedInt(this->tag_); }
   uint32_t MaxLeafID() const { return MaxLeafIDOfTag(tag_); }
@@ -85,13 +85,12 @@ class Node {
   void TriplePreOrderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const;
   // As above, but getting indices rather than nodes themselves.
-  void TripleIndexPreOrderBifurcating(
-      std::function<void(int, int, int)> f) const;
+  void TripleIdPreOrderBifurcating(std::function<void(int, int, int)> f) const;
 
   // These two functions take functions accepting triples of (node_id,
   // child0_id, child1_id) and apply them according to various traversals.
-  void BinaryIndexPreOrder(const std::function<void(int, int, int)> f) const;
-  void BinaryIndexPostOrder(const std::function<void(int, int, int)> f) const;
+  void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
+  void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
 
   // Traversal for rooted pairs in an unrooted subtree in its traditional rooted
   // representation.
@@ -125,7 +124,7 @@ class Node {
 
   // Return a vector such that the ith component describes the indices for nodes
   // above the current node.
-  SizeVectorVector IndicesAbove();
+  SizeVectorVector IdsAbove();
 
   std::string Newick(std::function<std::string(const Node*)> node_labeler,
                      const DoubleVectorOption& branch_lengths =
@@ -139,7 +138,7 @@ class Node {
   // Construct a vector such that the ith entry is the id of the parent of the
   // node having id i. We assume that the indices are contiguous, and that the
   // root has the largest id.
-  std::vector<size_t> ParentIndexVector();
+  std::vector<size_t> ParentIdVector();
 
   NodePtr Deroot();
 
@@ -156,7 +155,7 @@ class Node {
   // Build a tree given a vector of indices, such that each entry gives the
   // id of its parent. We assume that the indices are contiguous, and that
   // the root has the largest id.
-  static NodePtr OfParentIndexVector(std::vector<size_t> indices);
+  static NodePtr OfParentIdVector(std::vector<size_t> indices);
 
   //     topology           with internal node indices
   //     --------           --------------------------
@@ -248,23 +247,22 @@ TEST_CASE("Node") {
   CHECK_NE(t1, t2);
 
   // Tree with trifurcation at the root.
-  Node::NodePtr t1_alt = Node::OfParentIndexVector({5, 5, 4, 4, 5});
+  Node::NodePtr t1_alt = Node::OfParentIdVector({5, 5, 4, 4, 5});
   CHECK_EQ(t1, t1_alt);
   // Bifurcating tree.
-  Node::NodePtr t3_alt = Node::OfParentIndexVector({6, 5, 4, 4, 5, 6});
+  Node::NodePtr t3_alt = Node::OfParentIdVector({6, 5, 4, 4, 5, 6});
   CHECK_EQ(t3, t3_alt);
 
   for (const auto& topology : examples) {
-    CHECK_EQ(topology,
-             Node::OfParentIndexVector(topology->ParentIndexVector()));
+    CHECK_EQ(topology, Node::OfParentIdVector(topology->ParentIdVector()));
   }
 
   // Check Deroot when we deroot on the right.
   CHECK_EQ(t1, t3->Deroot());
   // Check Deroot when we deroot on the left.
-  CHECK_EQ(Node::OfParentIndexVector({3, 3, 3}),
+  CHECK_EQ(Node::OfParentIdVector({3, 3, 3}),
            // tree ((0,1)3,2)4
-           Node::OfParentIndexVector({3, 3, 4, 4})->Deroot());
+           Node::OfParentIdVector({3, 3, 4, 4})->Deroot());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_
