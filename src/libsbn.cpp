@@ -33,7 +33,7 @@ PYBIND11_MODULE(sbn, m) {
   // Tree
   py::class_<Tree>(m, "Tree", py::buffer_protocol())
       .def("parent_index_vector", &Tree::ParentIndexVector)
-      .def_static("of_parent_index_vector", &Tree::OfParentIndexVector)
+      .def_static("of_parent_id_vector", &Tree::OfParentIndexVector)
       .def_readwrite("branch_lengths", &Tree::branch_lengths_);
   // TreeCollection
   py::class_<TreeCollection>(m, "TreeCollection")

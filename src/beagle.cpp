@@ -153,13 +153,13 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
           Assert(node->Children().size() == 2,
                  "Tree isn't bifurcating in LogLikelihood.");
           int dest = static_cast<int>(node->Index());
-          int child0_index = static_cast<int>(node->Children()[0]->Index());
-          int child1_index = static_cast<int>(node->Children()[1]->Index());
+          int child0_id = static_cast<int>(node->Children()[0]->Index());
+          int child1_id = static_cast<int>(node->Children()[1]->Index());
           BeagleOperation op = {
               dest,                            // dest
               BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
-              child0_index,   child0_index,    // src1 and matrix1
-              child1_index,   child1_index     // src2 and matrix2
+              child0_id,      child0_id,       // src1 and matrix1
+              child1_id,      child1_id        // src2 and matrix2
           };
           if (rescaling) {
             // We don't need scaling buffers for the leaves.
@@ -181,7 +181,7 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
                                  tree.BranchLengths().data(),
                                  static_cast<int>(node_count - 1));
 
-  // This is the index number of scaleBuffer to store accumulated factors.
+  // This is the entry of scaleBuffer in which we store accumulated factors.
   int cumululative_index = rescaling ? 0 : BEAGLE_OP_NONE;
   beagleUpdatePartials(beagle_instance,
                        operations.data(),  // eigenIndex
@@ -189,7 +189,7 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
                        cumululative_index);  // cumulative scale index
 
   double log_like = 0;
-  std::vector<int> root_index = {static_cast<int>(tree.Index())};
+  std::vector<int> root_id = {static_cast<int>(tree.Index())};
   std::vector<int> category_weight_index = {0};
   std::vector<int> state_frequency_index = {0};
   std::vector<int> cumulative_scale_index = {cumululative_index};
@@ -199,7 +199,7 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
   // covarion models.
   int mysterious_count = 1;
   beagleCalculateRootLogLikelihoods(
-      beagle_instance, root_index.data(), category_weight_index.data(),
+      beagle_instance, root_id.data(), category_weight_index.data(),
       state_frequency_index.data(), cumulative_scale_index.data(),
       mysterious_count, &log_like);
   return log_like;
@@ -213,7 +213,7 @@ std::vector<double> LogLikelihoods(std::vector<BeagleInstance> beagle_instances,
 }
 
 // Compute first derivative of the log likelihood with respect to each branch
-// length, as a vector of first derivatives indexed by node index.
+// length, as a vector of first derivatives indexed by node id.
 std::pair<double, std::vector<double>> BranchGradient(
     BeagleInstance beagle_instance, const Tree &in_tree, bool rescaling) {
   beagleResetScaleFactors(beagle_instance, 0);
@@ -230,52 +230,49 @@ std::pair<double, std::vector<double>> BranchGradient(
   std::iota(gradient_indices.begin(), gradient_indices.end(), node_count);
   std::vector<BeagleOperation> operations;
 
-  int fixed_node_index =
-      static_cast<int>(tree.Topology()->Children()[1]->Index());
-  int root_child_index =
-      static_cast<int>(tree.Topology()->Children()[0]->Index());
+  int fixed_node_id = static_cast<int>(tree.Topology()->Children()[1]->Index());
+  int root_child_id = static_cast<int>(tree.Topology()->Children()[0]->Index());
 
   // Calculate lower partials
   tree.Topology()->BinaryIndexPostOrder(
-      [&operations, int_taxon_count, rescaling](
-          int node_index, int child0_index, int child1_index) {
+      [&operations, int_taxon_count, rescaling](int node_id, int child0_id,
+                                                int child1_id) {
         BeagleOperation op = {
-            node_index,                      // dest
+            node_id,                         // dest
             BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
-            child0_index,   child0_index,    // src1 and matrix1
-            child1_index,   child1_index     // src2 and matrix2
+            child0_id,      child0_id,       // src1 and matrix1
+            child1_id,      child1_id        // src2 and matrix2
         };
         if (rescaling) {
-          op.destinationScaleWrite = node_index - int_taxon_count + 1;
+          op.destinationScaleWrite = node_id - int_taxon_count + 1;
         }
         operations.push_back(op);
       });
 
   // Calculate upper partials
   tree.Topology()->TripleIndexPreOrderBifurcating(
-      [&operations, &root_child_index, &fixed_node_index, rescaling,
-       internal_count,
-       int_node_count](int parent_index, int sister_index, int node_index) {
-        if (node_index != root_child_index && node_index != fixed_node_index) {
+      [&operations, &root_child_id, &fixed_node_id, rescaling, internal_count,
+       int_node_count](int parent_id, int sister_id, int node_id) {
+        if (node_id != root_child_id && node_id != fixed_node_id) {
           int upper_partial_index;
           int upper_matrix_index;
-          if (parent_index == root_child_index) {
-            upper_matrix_index = static_cast<int>(root_child_index);
-            upper_partial_index = static_cast<int>(fixed_node_index);
-          } else if (parent_index == fixed_node_index) {
-            upper_matrix_index = static_cast<int>(root_child_index);
-            upper_partial_index = static_cast<int>(root_child_index);
+          if (parent_id == root_child_id) {
+            upper_matrix_index = static_cast<int>(root_child_id);
+            upper_partial_index = static_cast<int>(fixed_node_id);
+          } else if (parent_id == fixed_node_id) {
+            upper_matrix_index = static_cast<int>(root_child_id);
+            upper_partial_index = static_cast<int>(root_child_id);
           } else {
-            upper_partial_index = parent_index + int_node_count;
-            upper_matrix_index = parent_index;
+            upper_partial_index = parent_id + int_node_count;
+            upper_matrix_index = parent_id;
           }
-          BeagleOperation op = {node_index + int_node_count,
+          BeagleOperation op = {node_id + int_node_count,
                                 BEAGLE_OP_NONE,
                                 BEAGLE_OP_NONE,
                                 upper_partial_index,
                                 upper_matrix_index,
-                                sister_index,
-                                sister_index};
+                                sister_id,
+                                sister_id};
           // Scalers are indexed differently for the upper conditional
           // likelihood. They start at the number of internal nodes + 1 because
           // of the lower conditional likelihoods. Also, in this case the leaves
@@ -283,7 +280,7 @@ std::pair<double, std::vector<double>> BranchGradient(
           if (rescaling) {
             // Scaling factors are recomputed every time so we don't read them
             // using destinationScaleRead.
-            op.destinationScaleWrite = node_index + 1 + internal_count;
+            op.destinationScaleWrite = node_id + 1 + internal_count;
           }
           operations.push_back(op);
         }
@@ -315,24 +312,24 @@ std::pair<double, std::vector<double>> BranchGradient(
 
   SizeVectorVector indices_above = tree.Topology()->IndicesAbove();
   for (auto &indices : indices_above) {
-    // Reverse vector so we have indices from index_node to root.
+    // Reverse vector so we have indices from node to root.
     std::reverse(indices.begin(), indices.end());
     // Remove the root scalers.
     indices.pop_back();
   }
 
   // Actually compute gradient.
-  tree.Topology()->TripleIndexPreOrderBifurcating([&](int, int sister_index,
-                                                      int node_index) {
-    if (node_index != fixed_node_index) {
+  tree.Topology()->TripleIndexPreOrderBifurcating([&](int, int sister_id,
+                                                      int node_id) {
+    if (node_id != fixed_node_id) {
       double dlogLp;
-      upper_partials_index[0] = node_index + int_node_count;
-      node_partial_indices[0] = node_index;
-      node_mat_indices[0] = node_index;
-      node_deriv_index[0] = node_index + int_node_count;
+      upper_partials_index[0] = node_id + int_node_count;
+      node_partial_indices[0] = node_id;
+      node_mat_indices[0] = node_id;
+      node_deriv_index[0] = node_id + int_node_count;
 
-      if (node_index == root_child_index) {
-        upper_partials_index[0] = sister_index;
+      if (node_id == root_child_id) {
+        upper_partials_index[0] = sister_id;
       }
       // parent partial Buffers cannot be a taxon in
       // beagleCalculateEdgeLogLikelihoods
@@ -347,8 +344,8 @@ std::pair<double, std::vector<double>> BranchGradient(
         std::iota(scaler_indices.begin(), scaler_indices.end(), 1);
         // Replace lower scaler index with upper scaler index for nodes between
         // node_index and root.
-        int child = node_index;
-        for (size_t upper : indices_above[static_cast<size_t>(node_index)]) {
+        int child = node_id;
+        for (size_t upper : indices_above[static_cast<size_t>(node_id)]) {
           int int_upper = static_cast<int>(upper);
           int scaler_indices_index = int_upper - int_taxon_count;
           Assert(scaler_indices_index >= 0,
@@ -376,7 +373,7 @@ std::pair<double, std::vector<double>> BranchGradient(
           &log_like,                      // destination for log likelihood
           &dlogLp,                        // destination for first derivative
           NULL);                          // destination for second derivative
-      gradient[static_cast<size_t>(node_index)] = dlogLp;
+      gradient[static_cast<size_t>(node_id)] = dlogLp;
     }
   });
 

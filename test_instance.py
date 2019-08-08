@@ -46,7 +46,7 @@ def test_instance():
     print(np.array(gradients[-1]))
 
     inst.tree_collection = sbn.TreeCollection(
-        [sbn.Tree.of_parent_index_vector([3, 3, 3])],
+        [sbn.Tree.of_parent_id_vector([3, 3, 3])],
         ["mars", "saturn", "jupiter"])
     inst.read_fasta_file('data/hello.fasta')
     inst.make_beagle_instances(2)

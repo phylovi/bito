@@ -16,12 +16,11 @@
 
 Node::Node(uint32_t leaf_id)
     : children_({}),
-      index_(leaf_id),
+      id_(leaf_id),
       tag_(PackInts(leaf_id, 1)),
       hash_(SOHash(leaf_id)) {}
 
-Node::Node(NodePtrVec children, size_t index)
-    : children_(children), index_(index) {
+Node::Node(NodePtrVec children, size_t id) : children_(children), id_(id) {
   Assert(!children_.empty(),
          "Called internal Node constructor with no children.");
   // Order the children by their max leaf ids.
@@ -228,22 +227,22 @@ void Node::PCSSPreOrder(PCSSFun f) const {
 // This function assigns indices to the nodes of the topology: the leaves get
 // their indices (which are contiguously numbered from 0 through the leaf
 // count -1) and the rest get ordered according to a postorder traversal. Thus
-// the root always has index equal to the number of nodes in the tree.
+// the root always has id equal to the number of nodes in the tree.
 //
 // This function returns a map that maps the tags to their indices.
-TagSizeMap Node::Reindex() {
-  TagSizeMap tag_index_map;
-  size_t next_index = 1 + MaxLeafID();
-  MutablePostOrder([&tag_index_map, &next_index](Node* node) {
+TagSizeMap Node::Reid() {
+  TagSizeMap tag_id_map;
+  size_t next_id = 1 + MaxLeafID();
+  MutablePostOrder([&tag_id_map, &next_id](Node* node) {
     if (node->IsLeaf()) {
-      node->index_ = node->MaxLeafID();
+      node->id_ = node->MaxLeafID();
     } else {
-      node->index_ = next_index;
-      next_index++;
+      node->id_ = next_id;
+      next_id++;
     }
-    SafeInsert(tag_index_map, node->Tag(), node->index_);
+    SafeInsert(tag_id_map, node->Tag(), node->id_);
   });
-  return tag_index_map;
+  return tag_id_map;
 }
 
 std::string Node::Newick(std::function<std::string(const Node*)> node_labeler,
@@ -323,7 +322,7 @@ Node::NodePtr Node::Deroot() {
     // Make a vector copy by passing a vector in.
     NodePtrVec children(has_descendants->Children());
     children.push_back(other_child);
-    // has_descendants' index is now available.
+    // has_descendants' id is now available.
     return Join(children, has_descendants->Index());
   };
   if (children_[1]->LeafCount() == 1) {
@@ -334,48 +333,48 @@ Node::NodePtr Node::Deroot() {
 
 // Class methods
 Node::NodePtr Node::Leaf(uint32_t id) { return std::make_shared<Node>(id); }
-Node::NodePtr Node::Join(NodePtrVec children, size_t index) {
-  return std::make_shared<Node>(children, index);
+Node::NodePtr Node::Join(NodePtrVec children, size_t id) {
+  return std::make_shared<Node>(children, id);
 }
-Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t index) {
-  return Join(std::vector<NodePtr>({left, right}), index);
+Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t id) {
+  return Join(std::vector<NodePtr>({left, right}), id);
 }
 
 Node::NodePtr Node::OfParentIndexVector(std::vector<size_t> indices) {
   // We will fill this map with the indices of the descendants.
   std::unordered_map<size_t, std::vector<size_t>> downward_indices;
-  for (size_t child_index = 0; child_index < indices.size(); child_index++) {
-    const auto& parent_index = indices[child_index];
-    auto search = downward_indices.find(parent_index);
+  for (size_t child_id = 0; child_id < indices.size(); child_id++) {
+    const auto& parent_id = indices[child_id];
+    auto search = downward_indices.find(parent_id);
     if (search == downward_indices.end()) {
       // The first time we have seen this parent.
-      std::vector<size_t> child_indices({child_index});
-      SafeInsert(downward_indices, parent_index, std::move(child_indices));
+      std::vector<size_t> child_indices({child_id});
+      SafeInsert(downward_indices, parent_id, std::move(child_indices));
     } else {
       // We've seen the parent before, so append the child to the parent's
       // vector of descendants.
-      search->second.push_back(child_index);
+      search->second.push_back(child_id);
     }
   }
   std::function<NodePtr(size_t)> build_tree =
-      [&build_tree, &downward_indices](size_t current_index) {
-        auto search = downward_indices.find(current_index);
+      [&build_tree, &downward_indices](size_t current_id) {
+        auto search = downward_indices.find(current_id);
         if (search == downward_indices.end()) {
           // We assume that anything not in the map is a leaf, because leaves
           // don't have any children.
-          return Leaf(static_cast<uint32_t>(current_index));
+          return Leaf(static_cast<uint32_t>(current_id));
         } else {
           const auto& children_indices = search->second;
           std::vector<NodePtr> children;
-          for (const auto& child_index : children_indices) {
-            children.push_back(build_tree(child_index));
+          for (const auto& child_id : children_indices) {
+            children.push_back(build_tree(child_id));
           }
-          return Join(children, current_index);
+          return Join(children, current_id);
         }
       };
-  // We assume that the maximum index of the tree is the length of the input
-  // index array. That makes sense because the root does not have a parent, so
-  // is the first "missing" entry in the input index array.
+  // We assume that the maximum id of the tree is the length of the input
+  // id array. That makes sense because the root does not have a parent, so
+  // is the first "missing" entry in the input id array.
   return build_tree(indices.size());
 }
 
@@ -391,7 +390,7 @@ Node::NodePtrVec Node::ExampleTopologies() {
       Join(std::vector<NodePtr>(
           {Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
   for (auto& topology : topologies) {
-    topology->Reindex();
+    topology->Reid();
   }
   return topologies;
 }
@@ -437,7 +436,7 @@ SizeVectorVector Node::IndicesAbove() {
         // As we travel down the tree, the current node will be above.
         mutable_indices.push_back(node->Index());
       },
-      // Going back up the tree, so remove the current node's index.
+      // Going back up the tree, so remove the current node's id.
       [&mutable_indices](const Node*) { mutable_indices.pop_back(); });
   return indices_above;
 }

@@ -184,7 +184,7 @@ struct SBNInstance {
     const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
     // The addition below turns the rootsplit into a subsplit.
     auto topology = SampleTopology(rootsplit + ~rootsplit)->Deroot();
-    topology->Reindex();
+    topology->Reid();
     return topology;
   }
 
