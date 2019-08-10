@@ -98,7 +98,7 @@ Add a test for every new feature.
 
 ## Contributors
 
-* Erick Matsen ([@matsen](https://github.com/matsen)): maintainer
+* Erick Matsen ([@matsen](https://github.com/matsen)): coding, design, maintenance
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
-* Mathieu Fourment ([@4ment](https://github.com/4ment)): design, BEAGLE gradients and scaling
+* Mathieu Fourment ([@4ment](https://github.com/4ment)): design, site pattern compression, BEAGLE gradients and scaling
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design

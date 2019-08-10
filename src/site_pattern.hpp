@@ -1,5 +1,4 @@
-// Created by Mathieu Fourment on 23/7/19.
-// Copyright © 2019 University of Technology Sydney. All rights reserved.
+// Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #ifndef SRC_SITE_PATTERN_HPP_

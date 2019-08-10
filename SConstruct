@@ -63,6 +63,7 @@ sources = [
     '_build/bitset.cpp',
     '_build/build.cpp',
     '_build/driver.cpp',
+    '_build/libsbn.cpp',
     '_build/node.cpp',
     '_build/parser.cpp',
     '_build/scanner.cpp',
@@ -72,7 +73,7 @@ sources = [
 ]
 env.SharedLibrary(
     "sbn"+os.popen("python3-config --extension-suffix").read().rstrip(),
-    ['_build/libsbn.cpp'] + sources,
+    ['_build/pylibsbn.cpp'] + sources,
     SHLIBPREFIX='',
     LIBS=['hmsbeagle'])
 doctest = env.Program(
