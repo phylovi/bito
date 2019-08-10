@@ -6,7 +6,7 @@
 StringPCSSMap StringPCSSMapOf(PCSSDict d) {
   StringPCSSMap d_str;
   for (const auto &iter : d) {
-    d_str[iter.first.ToString()] = StringUInt32MapOf(iter.second.Map());
+    d_str[iter.first.ToString()] = StringifyMap(iter.second.Map());
   }
   return d_str;
 }
@@ -195,20 +195,17 @@ void SBNInstance::FinalizeBeagleInstances() {
   // ** I/O
 
   std::tuple<StringUInt32Map, StringUInt32PairMap> SBNInstance::GetIndexers() {
-    auto indexer_str = StringUInt32MapOf(indexer_);
-    StringUInt32PairMap parent_to_range_str;
-    for (const auto &iter : parent_to_range_) {
-      SafeInsert(parent_to_range_str, iter.first.ToString(), iter.second);
-    }
+    auto str_indexer = StringifyMap(indexer_);
+    auto str_parent_to_range = StringifyMap(parent_to_range_);
     std::string rootsplit("rootsplit");
-    SafeInsert(parent_to_range_str, rootsplit, {0, rootsplit_index_end_});
-    return std::tie(indexer_str, parent_to_range_str);
+    SafeInsert(str_parent_to_range, rootsplit, {0, rootsplit_index_end_});
+    return {str_indexer, str_parent_to_range};
   }
 
   // This function is really just for testing-- it recomputes from scratch.
   std::pair<StringUInt32Map, StringPCSSMap> SBNInstance::SplitCounters() {
     auto counter = tree_collection_.TopologyCounter();
-    return {StringUInt32MapOf(RootsplitCounterOf(counter).Map()),
+    return {StringifyMap(RootsplitCounterOf(counter).Map()),
             StringPCSSMapOf(PCSSCounterOf(counter))};
   }
 

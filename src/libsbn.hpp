@@ -29,10 +29,11 @@ typedef std::unordered_map<std::string,
     StringPCSSMap;
 typedef std::vector<uint32_t> PCSSIndexVector;
 
-// TODO generalize to a stringify
+// Turn a <Key, T> map into a <std::string, T> map for any Key type that has a
+// ToString method.
 template <class Key, class T>
-StringUInt32Map StringUInt32MapOf(std::unordered_map<Key, T> m) {
-  StringUInt32Map m_str;
+std::unordered_map<std::string, T> StringifyMap(std::unordered_map<Key, T> m) {
+  std::unordered_map<std::string, T> m_str;
   for (const auto &iter : m) {
     m_str[iter.first.ToString()] = iter.second;
   }
