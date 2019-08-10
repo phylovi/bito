@@ -44,7 +44,7 @@ StringPCSSMap StringPCSSMapOf(PCSSDict d);
 
 struct SBNInstance {
   std::string name_;
-  // Things that get loaded in or sampled from SBNs.
+  // Trees get loaded in from a file or sampled from SBNs.
   TreeCollection tree_collection_;
   Alignment alignment_;
   // Beagly bits.

@@ -20,6 +20,8 @@ class DefaultDict {
 
   size_t size() const { return map_.size(); }
   std::unordered_map<Key, T> Map() const { return map_; }
+  // TODO
+  // std::iterator<std::pair<Key, T>> begin() const { return map_.begin(); }
 
   T at(const Key &key) {
     auto search = map_.find(key);
