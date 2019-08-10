@@ -30,8 +30,8 @@ typedef std::unordered_map<std::string,
 typedef std::vector<uint32_t> PCSSIndexVector;
 
 // TODO generalize to a stringify
-template <typename T>
-StringUInt32Map StringUInt32MapOf(T m) {
+template <class Key, class T>
+StringUInt32Map StringUInt32MapOf(std::unordered_map<Key, T> m) {
   StringUInt32Map m_str;
   for (const auto &iter : m) {
     m_str[iter.first.ToString()] = iter.second;
@@ -113,8 +113,8 @@ struct SBNInstance {
   void SampleTrees(size_t count);
 
   // Get indexer representations of the trees in tree_collection_.
-  // See the typedef of IndexerRepresentation for an explanation of what these
-  // are.
+  // See the header documentation of IndexerRepresentationOf for an explanation
+  // of what these are.
   std::vector<IndexerRepresentation> GetIndexerRepresentations();
 
   // Get the indexer, but reversed and with bitsets appropriately converted to
