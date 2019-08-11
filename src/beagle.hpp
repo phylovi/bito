@@ -54,7 +54,7 @@ std::vector<T> Parallelize(
     tree_number_queue.push(i);
   }
   TaskProcessor<BeagleInstance, size_t> task_processor(
-      instance_queue, tree_number_queue,
+      std::move(instance_queue), std::move(tree_number_queue),
       [&results, &tree_collection, &f, &rescaling](
           BeagleInstance beagle_instance, size_t tree_number) {
         results[tree_number] =

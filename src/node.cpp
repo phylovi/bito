@@ -50,7 +50,7 @@ Node::Node(NodePtrVec children, size_t id) : children_(children), id_(id) {
   hash_ = SORotate(hash_, 1);
 }
 
-bool Node::operator==(const Node& other) {
+bool Node::operator==(const Node& other) const {
   if (this->Hash() != other.Hash()) {
     return false;
   }
@@ -300,7 +300,7 @@ std::string Node::Newick(const DoubleVectorOption& branch_lengths,
       branch_lengths);
 }
 
-std::vector<size_t> Node::ParentIdVector() {
+std::vector<size_t> Node::ParentIdVector() const {
   std::vector<size_t> ids(Id());
   PostOrder([&ids](const Node* node) {
     if (!node->IsLeaf()) {
@@ -424,7 +424,7 @@ void Node::PrePostOrder(std::function<void(const Node*)> pre,
   post(this);
 }
 
-SizeVectorVector Node::IdsAbove() {
+SizeVectorVector Node::IdsAbove() const {
   SizeVectorVector ids_above(Id() + 1);
   SizeVector mutable_ids;
   PrePostOrder(

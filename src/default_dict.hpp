@@ -11,10 +11,6 @@
 
 template <class Key, class T>
 class DefaultDict {
- private:
-  const T default_value_;
-  std::unordered_map<Key, T> map_;
-
  public:
   explicit DefaultDict(T default_value) : default_value_(default_value) {}
 
@@ -31,7 +27,7 @@ class DefaultDict {
     return search->second;
   }
 
-  bool contains(const Key &key) { return (map_.find(key) != map_.end()); }
+  bool contains(const Key &key) const { return (map_.find(key) != map_.end()); }
 
   void increment(const Key &key, const T &value) {
     auto search = map_.find(key);
@@ -42,13 +38,17 @@ class DefaultDict {
     }
   }
 
-  void print() {
+  void print() const {
     std::cout << "Default value: " << default_value_ << std::endl;
     for (const auto &iter : map_) {
       std::cout << std::to_string(iter.first) << " "
                 << std::to_string(iter.second) << std::endl;
     }
   }
+
+ private:
+  const T default_value_;
+  std::unordered_map<Key, T> map_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

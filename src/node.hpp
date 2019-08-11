@@ -68,7 +68,7 @@ class Node {
   bool IsLeaf() const { return children_.empty(); }
   NodePtrVec Children() const { return children_; }
 
-  bool operator==(const Node& other);
+  bool operator==(const Node& other) const;
 
   void PreOrder(std::function<void(const Node*)> f) const;
   // ConditionalPreOrder continues to recur as long as f returns true.
@@ -124,7 +124,7 @@ class Node {
 
   // Return a vector such that the ith component describes the indices for nodes
   // above the current node.
-  SizeVectorVector IdsAbove();
+  SizeVectorVector IdsAbove() const;
 
   std::string Newick(std::function<std::string(const Node*)> node_labeler,
                      const DoubleVectorOption& branch_lengths =
@@ -138,11 +138,11 @@ class Node {
   // Construct a vector such that the ith entry is the id of the parent of the
   // node having id i. We assume that the indices are contiguous, and that the
   // root has the largest id.
-  std::vector<size_t> ParentIdVector();
+  std::vector<size_t> ParentIdVector() const;
 
   NodePtr Deroot();
 
-  // ** Class methods
+  // ** Static methods
   static inline uint32_t MaxLeafIDOfTag(uint64_t tag) {
     return UnpackFirstInt(tag);
   }
