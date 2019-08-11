@@ -32,7 +32,9 @@ class Tree {
   uint32_t LeafCount() const { return Topology()->LeafCount(); }
   Node::NodePtrVec Children() const { return Topology()->Children(); }
   size_t Id() const { return Topology()->Id(); }
-  std::vector<size_t> ParentIdVector() { return Topology()->ParentIdVector(); }
+  std::vector<size_t> ParentIdVector() const {
+    return Topology()->ParentIdVector();
+  }
 
   bool operator==(const Tree& other) const;
 
@@ -49,6 +51,7 @@ class Tree {
   // making it a bifurcation. Given (s0:b0, s1:b1, s2:b2):b4, we get (s0:b0,
   // (s1:b1, s2:b2):0):0. Note that we zero out the root branch length.
   Tree Detrifurcate() const;
+
   static Tree UnitBranchLengthTreeOf(Node::NodePtr topology);
   static Tree OfParentIdVector(std::vector<size_t> indices);
   static TreeVector ExampleTrees();
