@@ -22,14 +22,6 @@ class Bitset {
   explicit Bitset(size_t n, bool initial_value = false);
   explicit Bitset(std::string);
 
-  Bitset copy();
-  // // Eliminate copy constructors.
-  // Bitset(const Bitset &) = delete;
-  // Bitset &operator=(const Bitset &) = delete;
-  // // Keep move constructor. This is necessary because if we fiddle with copy
-  // // constructors it drops the default copy constructor too.
-  // Bitset(Bitset &&) = default;
-
   bool operator[](size_t i) const;
   size_t size(void) const;
 
@@ -133,7 +125,7 @@ TEST_CASE("Bitset") {
   Bitset strip_down(4, true);
   strip_down.reset(0);
   strip_down.reset(2);
-  CHECK_EQ(build_up, Bitset("0101"));
+  CHECK_EQ(strip_down, Bitset("0101"));
 
   CHECK_EQ(a.size(), 4);
 

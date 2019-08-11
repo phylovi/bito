@@ -55,7 +55,7 @@ BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies) {
     auto count = iter.second;
     auto tag_to_leafset = TagLeafSetMapOf(topology);
     auto Aux = [&rootsplit_counter, &tag_to_leafset, &count](const Node* n) {
-      auto split = tag_to_leafset.at(n->Tag()).copy();
+      auto split = tag_to_leafset.at(n->Tag());
       split.Minorize();
       rootsplit_counter.increment(std::move(split), count);
     };
