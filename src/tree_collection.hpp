@@ -31,9 +31,11 @@ class TreeCollection {
 
   std::string Newick() const;
 
-  Node::TopologyCounter TopologyCounter();
-  std::vector<std::string> TaxonNames();
-  static TagStringMap TagStringMapOf(std::vector<std::string> taxon_labels);
+  Node::TopologyCounter TopologyCounter() const;
+  std::vector<std::string> TaxonNames() const;
+
+  static TagStringMap TagStringMapOf(
+      const std::vector<std::string> taxon_labels);
 
   Tree::TreeVector trees_;
 

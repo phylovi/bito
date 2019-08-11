@@ -116,25 +116,25 @@ struct SBNInstance {
   // Get indexer representations of the trees in tree_collection_.
   // See the header documentation of IndexerRepresentationOf for an explanation
   // of what these are.
-  std::vector<IndexerRepresentation> GetIndexerRepresentations();
+  std::vector<IndexerRepresentation> GetIndexerRepresentations() const;
 
   // Get the indexer, but reversed and with bitsets appropriately converted to
   // strings.
-  StringVector StringReversedIndexer();
+  StringVector StringReversedIndexer() const;
 
   // Turn an IndexerRepresentation into a string representation of the underying
   // bitsets. This is really just so that we can make a test of indexer
   // representations.
   std::pair<StringSet, StringSetVector> StringIndexerRepresentationOf(
-      IndexerRepresentation indexer_representation);
+      IndexerRepresentation indexer_representation) const;
 
   // ** I/O
 
   // Return indexer_ and parent_to_range_ converted into string-keyed maps.
-  std::tuple<StringUInt32Map, StringUInt32PairMap> GetIndexers();
+  std::tuple<StringUInt32Map, StringUInt32PairMap> GetIndexers() const;
 
   // This function is really just for testing-- it recomputes counters scratch.
-  std::pair<StringUInt32Map, StringPCSSMap> SplitCounters();
+  std::pair<StringUInt32Map, StringPCSSMap> SplitCounters() const;
 
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
@@ -142,20 +142,20 @@ struct SBNInstance {
 
   // ** Phylogenetic likelihood
 
-  void CheckSequencesAndTreesLoaded();
+  void CheckSequencesAndTreesLoaded() const;
 
   // Make sure that BEAGLE's idea of the sequence count and length match what we
   // have loaded.
-  void CheckBeagleDimensions();
+  void CheckBeagleDimensions() const;
 
   // Make the specified number of BEAGLE instances are appropriate for the
   // loaded data. Likelihood calculation will be run in parallel across the
   // specified number of instances.
   void MakeBeagleInstances(int instance_count);
 
-  std::vector<double> LogLikelihoods();
+  std::vector<double> LogLikelihoods() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).
-  std::vector<std::pair<double, std::vector<double>>> BranchGradients();
+  std::vector<std::pair<double, std::vector<double>>> BranchGradients() const;
 };
 
 

@@ -143,7 +143,8 @@ void SBNInstance::FinalizeBeagleInstances() {
     }
   }
 
-  std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations() {
+  std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
+      const {
     std::vector<IndexerRepresentation> representations;
     representations.reserve(tree_collection_.trees_.size());
     for (const auto &tree : tree_collection_.trees_) {
@@ -156,7 +157,7 @@ void SBNInstance::FinalizeBeagleInstances() {
 
   // Get the indexer, but reversed and with bitsets appropriately converted to
   // strings.
-  StringVector SBNInstance::StringReversedIndexer() {
+  StringVector SBNInstance::StringReversedIndexer() const {
     std::vector<std::string> reversed_indexer(indexer_.size());
     for (const auto &iter : indexer_) {
       if (iter.second < rootsplit_index_end_) {
@@ -173,7 +174,7 @@ void SBNInstance::FinalizeBeagleInstances() {
   // representations.
   std::pair<StringSet, StringSetVector>
   SBNInstance::StringIndexerRepresentationOf(
-      IndexerRepresentation indexer_representation) {
+      IndexerRepresentation indexer_representation) const {
     auto reversed_indexer = StringReversedIndexer();
     auto rootsplit_indices = indexer_representation.first;
     auto pcss_index_vector = indexer_representation.second;
@@ -194,7 +195,8 @@ void SBNInstance::FinalizeBeagleInstances() {
 
   // ** I/O
 
-  std::tuple<StringUInt32Map, StringUInt32PairMap> SBNInstance::GetIndexers() {
+  std::tuple<StringUInt32Map, StringUInt32PairMap> SBNInstance::GetIndexers()
+      const {
     auto str_indexer = StringifyMap(indexer_);
     auto str_parent_to_range = StringifyMap(parent_to_range_);
     std::string rootsplit("rootsplit");
@@ -203,7 +205,7 @@ void SBNInstance::FinalizeBeagleInstances() {
   }
 
   // This function is really just for testing-- it recomputes from scratch.
-  std::pair<StringUInt32Map, StringPCSSMap> SBNInstance::SplitCounters() {
+  std::pair<StringUInt32Map, StringPCSSMap> SBNInstance::SplitCounters() const {
     auto counter = tree_collection_.TopologyCounter();
     return {StringifyMap(RootsplitCounterOf(counter).Map()),
             StringPCSSMapOf(PCSSCounterOf(counter))};
@@ -225,7 +227,7 @@ void SBNInstance::FinalizeBeagleInstances() {
 
   // ** Phylogenetic likelihood
 
-  void SBNInstance::CheckSequencesAndTreesLoaded() {
+  void SBNInstance::CheckSequencesAndTreesLoaded() const {
     if (alignment_.SequenceCount() == 0) {
       Failwith(
           "Load an alignment into your SBNInstance on which you wish to "
@@ -238,7 +240,7 @@ void SBNInstance::FinalizeBeagleInstances() {
     }
   }
 
-  void SBNInstance::CheckBeagleDimensions() {
+  void SBNInstance::CheckBeagleDimensions() const {
     CheckSequencesAndTreesLoaded();
     if (beagle_instances_.size() == 0) {
       Failwith(
@@ -269,14 +271,14 @@ void SBNInstance::FinalizeBeagleInstances() {
     }
   }
 
-  std::vector<double> SBNInstance::LogLikelihoods() {
+  std::vector<double> SBNInstance::LogLikelihoods() const {
     CheckBeagleDimensions();
     return beagle::LogLikelihoods(beagle_instances_, tree_collection_,
                                   rescaling_);
   }
 
   std::vector<std::pair<double, std::vector<double>>>
-  SBNInstance::BranchGradients() {
+  SBNInstance::BranchGradients() const {
     return beagle::BranchGradients(beagle_instances_, tree_collection_,
                                    rescaling_);
   }
