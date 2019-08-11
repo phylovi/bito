@@ -40,9 +40,8 @@ std::string Alignment::at(const std::string &taxon) const {
 // https://stackoverflow.com/questions/35251635/fasta-reader-written-in-c
 // which seems like it was originally taken from
 // http://rosettacode.org/wiki/FASTA_format#C.2B.2B
-void Alignment::ReadFasta(std::string fname) {
-  StringStringMap &data = this->data_;
-  data.clear();
+Alignment Alignment::ReadFasta(std::string fname) {
+  StringStringMap data;
   auto insert = [&data](std::string taxon, std::string sequence) {
     if (!taxon.empty()) {
       SafeInsert(data, taxon, sequence);
@@ -65,7 +64,9 @@ void Alignment::ReadFasta(std::string fname) {
   }
   // Insert the last taxon, sequence pair.
   insert(taxon, sequence);
-  if (!IsValid()) {
+  Alignment alignment(data);
+  if (!alignment.IsValid()) {
     Failwith("Sequences of the alignment are not all the same length.");
   }
+  return alignment;
 }

@@ -220,7 +220,7 @@ void SBNInstance::FinalizeBeagleInstances() {
   }
 
   void SBNInstance::ReadFastaFile(std::string fname) {
-    alignment_.ReadFasta(fname);
+    alignment_ = Alignment::ReadFasta(fname);
   }
 
   // ** Phylogenetic likelihood

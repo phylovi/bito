@@ -1,12 +1,12 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
-#include "libsbn.hpp"
 #include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
+#include "libsbn.hpp"
 
 namespace py = pybind11;
 
