@@ -34,8 +34,7 @@ SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology) {
   auto id_count = topology->Id() + 1;
   topology->PostOrder([&map, id_count](const Node* node) {
     Bitset bitset(static_cast<size_t>(id_count));
-    Assert(node->Id() < id_count,
-           "Malformed ids in IdIdSetMapOf.");
+    Assert(node->Id() < id_count, "Malformed ids in IdIdSetMapOf.");
     // Set the bit for the id of the current edge.
     bitset.set(node->Id());
     // Take the union of the children below.

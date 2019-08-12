@@ -20,6 +20,7 @@ def test_instance():
     # Checking split supports
     def convert_dict_to_int(d):
         return {k: int(v) for k, v in d.items()}
+
     inst.read_nexus_file('data/DS1.subsampled_10.t')
     inst.process_loaded_trees()
     [rootsplit_support, subsplit_support] = inst.split_counters()

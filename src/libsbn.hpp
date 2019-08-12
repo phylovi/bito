@@ -158,7 +158,6 @@ struct SBNInstance {
   std::vector<std::pair<double, std::vector<double>>> BranchGradients() const;
 };
 
-
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("libsbn") {
   SBNInstance inst("charlie");

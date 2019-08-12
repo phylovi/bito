@@ -21,7 +21,7 @@ class Alignment {
 
   // Is the alignment non-empty and do all sequences have the same length?
   bool IsValid() const;
-  std::string at(const std::string &taxon) const;
+  std::string at(const std::string& taxon) const;
 
   static Alignment ReadFasta(std::string fname);
 
