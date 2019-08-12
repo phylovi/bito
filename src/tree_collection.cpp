@@ -67,7 +67,7 @@ std::string TreeCollection::Newick() const {
   return str;
 }
 
-Node::TopologyCounter TreeCollection::TopologyCounter() {
+Node::TopologyCounter TreeCollection::TopologyCounter() const {
   Node::TopologyCounter counter;
   for (const auto &tree : trees_) {
     auto search = counter.find(tree.Topology());
@@ -80,7 +80,7 @@ Node::TopologyCounter TreeCollection::TopologyCounter() {
   return counter;
 }
 
-std::vector<std::string> TreeCollection::TaxonNames() {
+std::vector<std::string> TreeCollection::TaxonNames() const {
   std::vector<std::string> names(tag_taxon_map_.size());
   for (const auto &iter : tag_taxon_map_) {
     size_t id = Node::MaxLeafIDOfTag(iter.first);
@@ -92,7 +92,7 @@ std::vector<std::string> TreeCollection::TaxonNames() {
 }
 
 TagStringMap TreeCollection::TagStringMapOf(
-    std::vector<std::string> taxon_labels) {
+    const std::vector<std::string> taxon_labels) {
   TagStringMap taxon_map;
   for (size_t index = 0; index < taxon_labels.size(); index++) {
     SafeInsert(taxon_map, PackInts(static_cast<uint32_t>(index), 1),

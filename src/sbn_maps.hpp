@@ -1,8 +1,8 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_BUILD_HPP_
-#define SRC_BUILD_HPP_
+#ifndef SRC_SBN_MAPS_HPP_
+#define SRC_SBN_MAPS_HPP_
 
 #include <unordered_map>
 #include <utility>
@@ -26,7 +26,7 @@ typedef std::pair<SizeVector, SizeVectorVector> IndexerRepresentation;
 typedef std::unordered_map<Bitset, DefaultDict<Bitset, uint32_t>> PCSSDict;
 
 TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology);
-SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology);
+SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
 
 BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
@@ -36,18 +36,18 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 // Each of these vectors are indexed by virtual rootings of the tree.
 // rootsplit_result simply gives the indices of the rootsplits that appear for
 // those various virtual rootings. pcss_result is a vector of vectors, giving
-// the indices of sbn_probs_ corresponding to PCSSs that are present in the
+// the indices of sbn_parameters_ corresponding to PCSSs that are present in the
 // given topology.
 IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer_,
                                               const Node::NodePtr& topology);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
-TEST_CASE("Build") {
+TEST_CASE("SBNMaps") {
   auto topology0 = Node::ExampleTopologies()[0];
 
   // (0,1,(2,3)4)5;
-  auto correct_index_index_set_map =
+  auto correct_id_id_set_map =
       std::unordered_map<size_t, Bitset>({{5, Bitset("111111")},
                                           {1, Bitset("010000")},
                                           {0, Bitset("100000")},
@@ -55,8 +55,8 @@ TEST_CASE("Build") {
                                           {3, Bitset("000100")},
                                           {4, Bitset("001110")}});
 
-  for (const auto& iter : IndexIndexSetMapOf(topology0)) {
-    CHECK_EQ(correct_index_index_set_map.at(iter.first), iter.second);
+  for (const auto& iter : IdIdSetMapOf(topology0)) {
+    CHECK_EQ(correct_id_id_set_map.at(iter.first), iter.second);
   }
 
   // Tests comparing to vbpi appear in Python test code.
@@ -64,4 +64,4 @@ TEST_CASE("Build") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_BUILD_HPP_
+#endif  // SRC_SBN_MAPS_HPP_

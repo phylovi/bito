@@ -23,7 +23,7 @@ class Tree {
   explicit Tree(Node::NodePtr topology, BranchLengthVector branch_lengths);
 
   // This constructor takes a map of tags to branch lengths; this map gets
-  // turned into a branch length vector. It reindexes the topology. Note: any
+  // turned into a branch length vector. It re-ids the topology. Note: any
   // missing branch lengths are set to zero.
   explicit Tree(Node::NodePtr topology, TagDoubleMap branch_lengths);
 
@@ -31,9 +31,9 @@ class Tree {
   const BranchLengthVector BranchLengths() const { return branch_lengths_; }
   uint32_t LeafCount() const { return Topology()->LeafCount(); }
   Node::NodePtrVec Children() const { return Topology()->Children(); }
-  size_t Index() const { return Topology()->Index(); }
-  std::vector<size_t> ParentIndexVector() {
-    return Topology()->ParentIndexVector();
+  size_t Id() const { return Topology()->Id(); }
+  std::vector<size_t> ParentIdVector() const {
+    return Topology()->ParentIdVector();
   }
 
   bool operator==(const Tree& other) const;
@@ -51,8 +51,9 @@ class Tree {
   // making it a bifurcation. Given (s0:b0, s1:b1, s2:b2):b4, we get (s0:b0,
   // (s1:b1, s2:b2):0):0. Note that we zero out the root branch length.
   Tree Detrifurcate() const;
+
   static Tree UnitBranchLengthTreeOf(Node::NodePtr topology);
-  static Tree OfParentIndexVector(std::vector<size_t> indices);
+  static Tree OfParentIdVector(std::vector<size_t> indices);
   static TreeVector ExampleTrees();
 
   // We make branch lengths public so we can muck with them in Python.

@@ -2,7 +2,6 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "bitset.hpp"
-#include <cassert>
 #include "sugar.hpp"
 
 Bitset::Bitset(std::vector<bool> value) : value_(value) {}
@@ -21,9 +20,6 @@ Bitset::Bitset(std::string str) : Bitset(str.length()) {
     }
   }
 }
-
-// Put here in anticipation of turning off copy constructor.
-Bitset Bitset::copy() { return Bitset(this->value_); }
 
 bool Bitset::operator[](size_t i) const { return value_[i]; }
 

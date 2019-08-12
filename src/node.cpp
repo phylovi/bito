@@ -4,7 +4,6 @@
 #include "node.hpp"
 #include <limits.h>
 #include <algorithm>
-#include <cassert>
 #include <deque>
 #include <functional>
 #include <iostream>
@@ -14,14 +13,20 @@
 #include <unordered_map>
 #include <vector>
 
+// We assume that the sizes of things related to trees are smaller than
+// UINT32_MAX and so use that as our fundamental type. Because we use the STL,
+// we use size_t as well, the size of which is implementation-dependent. Here we
+// make sure that size_t is big enough (I know this is a little silly because
+// size_t is quite big on 64 bit systems, but still...).
+static_assert(UINT32_MAX <= SIZE_MAX, "size_t is too small.");
+
 Node::Node(uint32_t leaf_id)
     : children_({}),
-      index_(leaf_id),
+      id_(leaf_id),
       tag_(PackInts(leaf_id, 1)),
       hash_(SOHash(leaf_id)) {}
 
-Node::Node(NodePtrVec children, size_t index)
-    : children_(children), index_(index) {
+Node::Node(NodePtrVec children, size_t id) : children_(children), id_(id) {
   Assert(!children_.empty(),
          "Called internal Node constructor with no children.");
   // Order the children by their max leaf ids.
@@ -51,7 +56,7 @@ Node::Node(NodePtrVec children, size_t index)
   hash_ = SORotate(hash_, 1);
 }
 
-bool Node::operator==(const Node& other) {
+bool Node::operator==(const Node& other) const {
   if (this->Hash() != other.Hash()) {
     return false;
   }
@@ -106,7 +111,7 @@ void Node::TriplePreOrderBifurcating(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
   if (!IsLeaf()) {
     Assert(children_.size() == 2,
-           "TripleIndexPreOrderBifurcating expects a bifurcating tree.");
+           "TripleIdPreOrderBifurcating expects a bifurcating tree.");
     f(this, children_[1].get(), children_[0].get());
     children_[0]->TriplePreOrderBifurcating(f);
     f(this, children_[0].get(), children_[1].get());
@@ -115,39 +120,37 @@ void Node::TriplePreOrderBifurcating(
 }
 
 static std::function<void(const Node*, const Node*, const Node*)> const
-TripletIndexInfix(std::function<void(int, int, int)> f) {
+TripletIdInfix(std::function<void(int, int, int)> f) {
   return [&f](const Node* node0, const Node* node1, const Node* node2) {
-    f(static_cast<int>(node0->Index()), static_cast<int>(node1->Index()),
-      static_cast<int>(node2->Index()));
+    f(static_cast<int>(node0->Id()), static_cast<int>(node1->Id()),
+      static_cast<int>(node2->Id()));
   };
 }
 
-void Node::TripleIndexPreOrderBifurcating(
+void Node::TripleIdPreOrderBifurcating(
     std::function<void(int, int, int)> f) const {
-  TriplePreOrderBifurcating(TripletIndexInfix(f));
+  TriplePreOrderBifurcating(TripletIdInfix(f));
 }
 
-static std::function<void(const Node*)> const BinaryIndexInfix(
+static std::function<void(const Node*)> const BinaryIdInfix(
     std::function<void(int, int, int)> f) {
   return [&f](const Node* node) {
     if (!node->IsLeaf()) {
       Assert(node->Children().size() == 2,
-             "BinaryIndexInfix expects a bifurcating tree.");
-      f(static_cast<int>(node->Index()),
-        static_cast<int>(node->Children()[0]->Index()),
-        static_cast<int>(node->Children()[1]->Index()));
+             "BinaryIdInfix expects a bifurcating tree.");
+      f(static_cast<int>(node->Id()),
+        static_cast<int>(node->Children()[0]->Id()),
+        static_cast<int>(node->Children()[1]->Id()));
     }
   };
 }
 
-void Node::BinaryIndexPreOrder(
-    const std::function<void(int, int, int)> f) const {
-  PreOrder(BinaryIndexInfix(f));
+void Node::BinaryIdPreOrder(const std::function<void(int, int, int)> f) const {
+  PreOrder(BinaryIdInfix(f));
 }
 
-void Node::BinaryIndexPostOrder(
-    const std::function<void(int, int, int)> f) const {
-  PostOrder(BinaryIndexInfix(f));
+void Node::BinaryIdPostOrder(const std::function<void(int, int, int)> f) const {
+  PostOrder(BinaryIdInfix(f));
 }
 
 void Node::TriplePreOrder(
@@ -225,25 +228,26 @@ void Node::PCSSPreOrder(PCSSFun f) const {
       });
 }
 
-// This function assigns indices to the nodes of the topology: the leaves get
-// their indices (which are contiguously numbered from 0 through the leaf
-// count -1) and the rest get ordered according to a postorder traversal. Thus
-// the root always has index equal to the number of nodes in the tree.
+// This function assigns ids to the nodes of the topology: the leaves get
+// their fixed ids (which we assume are contiguously numbered from 0 through the
+// leaf count -1) and the rest get ordered according to a postorder traversal.
+// Thus if the tree is bifurcating the root always has id equal to the number of
+// nodes in the tree.
 //
-// This function returns a map that maps the tags to their indices.
-TagSizeMap Node::Reindex() {
-  TagSizeMap tag_index_map;
-  size_t next_index = 1 + MaxLeafID();
-  MutablePostOrder([&tag_index_map, &next_index](Node* node) {
+// This function returns a map that maps the tags to their ids.
+TagSizeMap Node::Reid() {
+  TagSizeMap tag_id_map;
+  size_t next_id = 1 + MaxLeafID();
+  MutablePostOrder([&tag_id_map, &next_id](Node* node) {
     if (node->IsLeaf()) {
-      node->index_ = node->MaxLeafID();
+      node->id_ = node->MaxLeafID();
     } else {
-      node->index_ = next_index;
-      next_index++;
+      node->id_ = next_id;
+      next_id++;
     }
-    SafeInsert(tag_index_map, node->Tag(), node->index_);
+    SafeInsert(tag_id_map, node->Tag(), node->id_);
   });
-  return tag_index_map;
+  return tag_id_map;
 }
 
 std::string Node::Newick(std::function<std::string(const Node*)> node_labeler,
@@ -269,11 +273,11 @@ std::string Node::NewickAux(
     str.append(node_labeler(this));
   }
   if (branch_lengths) {
-    Assert(Index() < (*branch_lengths).size(),
+    Assert(Id() < (*branch_lengths).size(),
            "branch_lengths vector is of insufficient length in NewickAux.");
     // ostringstream is the way to get scientific notation using the STL.
     std::ostringstream str_stream;
-    str_stream << (*branch_lengths)[Index()];
+    str_stream << (*branch_lengths)[Id()];
     str.append(":" + str_stream.str());
   }
   return str;
@@ -302,18 +306,17 @@ std::string Node::Newick(const DoubleVectorOption& branch_lengths,
       branch_lengths);
 }
 
-std::vector<size_t> Node::ParentIndexVector() {
-  std::vector<size_t> indices(Index());
-  PostOrder([&indices](const Node* node) {
+std::vector<size_t> Node::ParentIdVector() const {
+  std::vector<size_t> ids(Id());
+  PostOrder([&ids](const Node* node) {
     if (!node->IsLeaf()) {
       for (const auto& child : node->Children()) {
-        Assert(child->Index() < indices.size(),
-               "Problematic indices in ParentIndexVector.");
-        indices[child->Index()] = node->Index();
+        Assert(child->Id() < ids.size(), "Problematic ids in ParentIdVector.");
+        ids[child->Id()] = node->Id();
       }
     }
   });
-  return indices;
+  return ids;
 }
 
 Node::NodePtr Node::Deroot() {
@@ -323,8 +326,8 @@ Node::NodePtr Node::Deroot() {
     // Make a vector copy by passing a vector in.
     NodePtrVec children(has_descendants->Children());
     children.push_back(other_child);
-    // has_descendants' index is now available.
-    return Join(children, has_descendants->Index());
+    // has_descendants' id is now available.
+    return Join(children, has_descendants->Id());
   };
   if (children_[1]->LeafCount() == 1) {
     return deroot(children_[1], children_[0]);
@@ -334,49 +337,49 @@ Node::NodePtr Node::Deroot() {
 
 // Class methods
 Node::NodePtr Node::Leaf(uint32_t id) { return std::make_shared<Node>(id); }
-Node::NodePtr Node::Join(NodePtrVec children, size_t index) {
-  return std::make_shared<Node>(children, index);
+Node::NodePtr Node::Join(NodePtrVec children, size_t id) {
+  return std::make_shared<Node>(children, id);
 }
-Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t index) {
-  return Join(std::vector<NodePtr>({left, right}), index);
+Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t id) {
+  return Join(std::vector<NodePtr>({left, right}), id);
 }
 
-Node::NodePtr Node::OfParentIndexVector(std::vector<size_t> indices) {
-  // We will fill this map with the indices of the descendants.
-  std::unordered_map<size_t, std::vector<size_t>> downward_indices;
-  for (size_t child_index = 0; child_index < indices.size(); child_index++) {
-    const auto& parent_index = indices[child_index];
-    auto search = downward_indices.find(parent_index);
-    if (search == downward_indices.end()) {
+Node::NodePtr Node::OfParentIdVector(std::vector<size_t> ids) {
+  // We will fill this map with the ids of the descendants.
+  std::unordered_map<size_t, std::vector<size_t>> downward_ids;
+  for (size_t child_id = 0; child_id < ids.size(); child_id++) {
+    const auto& parent_id = ids[child_id];
+    auto search = downward_ids.find(parent_id);
+    if (search == downward_ids.end()) {
       // The first time we have seen this parent.
-      std::vector<size_t> child_indices({child_index});
-      SafeInsert(downward_indices, parent_index, std::move(child_indices));
+      std::vector<size_t> child_ids({child_id});
+      SafeInsert(downward_ids, parent_id, std::move(child_ids));
     } else {
       // We've seen the parent before, so append the child to the parent's
       // vector of descendants.
-      search->second.push_back(child_index);
+      search->second.push_back(child_id);
     }
   }
   std::function<NodePtr(size_t)> build_tree =
-      [&build_tree, &downward_indices](size_t current_index) {
-        auto search = downward_indices.find(current_index);
-        if (search == downward_indices.end()) {
+      [&build_tree, &downward_ids](size_t current_id) {
+        auto search = downward_ids.find(current_id);
+        if (search == downward_ids.end()) {
           // We assume that anything not in the map is a leaf, because leaves
           // don't have any children.
-          return Leaf(static_cast<uint32_t>(current_index));
+          return Leaf(static_cast<uint32_t>(current_id));
         } else {
-          const auto& children_indices = search->second;
+          const auto& children_ids = search->second;
           std::vector<NodePtr> children;
-          for (const auto& child_index : children_indices) {
-            children.push_back(build_tree(child_index));
+          for (const auto& child_id : children_ids) {
+            children.push_back(build_tree(child_id));
           }
-          return Join(children, current_index);
+          return Join(children, current_id);
         }
       };
-  // We assume that the maximum index of the tree is the length of the input
-  // index array. That makes sense because the root does not have a parent, so
-  // is the first "missing" entry in the input index array.
-  return build_tree(indices.size());
+  // We assume that the maximum id of the tree is the length of the input
+  // id array. That makes sense because the root does not have a parent, so
+  // is the first "missing" entry in the input id array.
+  return build_tree(ids.size());
 }
 
 Node::NodePtrVec Node::ExampleTopologies() {
@@ -391,7 +394,7 @@ Node::NodePtrVec Node::ExampleTopologies() {
       Join(std::vector<NodePtr>(
           {Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
   for (auto& topology : topologies) {
-    topology->Reindex();
+    topology->Reid();
   }
   return topologies;
 }
@@ -427,17 +430,17 @@ void Node::PrePostOrder(std::function<void(const Node*)> pre,
   post(this);
 }
 
-SizeVectorVector Node::IndicesAbove() {
-  SizeVectorVector indices_above(Index() + 1);
-  SizeVector mutable_indices;
+SizeVectorVector Node::IdsAbove() const {
+  SizeVectorVector ids_above(Id() + 1);
+  SizeVector mutable_ids;
   PrePostOrder(
-      [&indices_above, &mutable_indices](const Node* node) {
-        // Store the current set of indices above.
-        indices_above[node->Index()] = SizeVector(mutable_indices);
+      [&ids_above, &mutable_ids](const Node* node) {
+        // Store the current set of ids above.
+        ids_above[node->Id()] = SizeVector(mutable_ids);
         // As we travel down the tree, the current node will be above.
-        mutable_indices.push_back(node->Index());
+        mutable_ids.push_back(node->Id());
       },
-      // Going back up the tree, so remove the current node's index.
-      [&mutable_indices](const Node*) { mutable_indices.pop_back(); });
-  return indices_above;
+      // Going back up the tree, so remove the current node's id.
+      [&mutable_ids](const Node*) { mutable_ids.pop_back(); });
+  return ids_above;
 }

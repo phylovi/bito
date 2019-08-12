@@ -4,58 +4,58 @@
 #ifndef SRC_DEFAULT_DICT_HPP_
 #define SRC_DEFAULT_DICT_HPP_
 
-#include <cassert>
 #include <iostream>
 #include <unordered_map>
 #include <utility>
 
-// Inheriting from STL containers is frowned upon, but we do it here for fun!
-// We could definitely implement using containment rather than inheritance if we
-// wanted.
-// Private inheritance mitigates the stated problems in our case, in particular
-// it's not possible to have a pointer to the base class.
-// https://stackoverflow.com/a/19355666/467327
-// https://stackoverflow.com/a/2035044/467327
-
 template <class Key, class T>
-class DefaultDict : private std::unordered_map<Key, T> {
- private:
-  const T default_value_;
-
+class DefaultDict {
  public:
+  typedef typename std::unordered_map<Key, T>::iterator iterator;
+  typedef typename std::unordered_map<Key, T>::const_iterator const_iterator;
+
   explicit DefaultDict(T default_value) : default_value_(default_value) {}
 
-  // Inherit some functions as-is.
-  using std::unordered_map<Key, T>::size;
-  using std::unordered_map<Key, T>::begin;
-  using std::unordered_map<Key, T>::end;
+  size_t size() const { return map_.size(); }
+  iterator begin() { return map_.begin(); }
+  iterator end() { return map_.end(); }
+  // Range-based for loops use const begin rather than cbegin.
+  // https://stackoverflow.com/a/45732500/467327
+  const_iterator begin() const { return map_.begin(); }
+  const_iterator end() const { return map_.end(); }
+
+  std::unordered_map<Key, T> Map() const { return map_; }
 
   T at(const Key &key) {
-    auto search = this->find(key);
-    if (search == this->end()) {
+    auto search = map_.find(key);
+    if (search == map_.end()) {
       return default_value_;
     }
     return search->second;
   }
 
-  bool contains(const Key &key) { return (this->find(key) != this->end()); }
+  bool contains(const Key &key) const { return (map_.find(key) != map_.end()); }
 
   void increment(const Key &key, const T &value) {
-    auto search = this->find(key);
-    if (search == this->end()) {
-      SafeInsert(*this, key, value);
+    auto search = map_.find(key);
+    if (search == map_.end()) {
+      SafeInsert(map_, key, value);
     } else {
       search->second += value;
     }
   }
 
-  void print() {
+  void print() const {
     std::cout << "Default value: " << default_value_ << std::endl;
-    for (const auto &iter : *this) {
+    for (const auto &iter : map_) {
       std::cout << std::to_string(iter.first) << " "
                 << std::to_string(iter.second) << std::endl;
     }
   }
+
+ private:
+  const T default_value_;
+  std::unordered_map<Key, T> map_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

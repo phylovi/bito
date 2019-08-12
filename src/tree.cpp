@@ -2,7 +2,6 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "tree.hpp"
-#include <cassert>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -14,26 +13,26 @@
 
 Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
     : topology_(topology) {
-  auto tag_index_map = topology->Reindex();
-  branch_lengths_ = std::vector<double>(topology->Index() + 1);
-  for (const auto& iter : tag_index_map) {
+  auto tag_id_map = topology->Reid();
+  branch_lengths_ = std::vector<double>(topology->Id() + 1);
+  for (const auto& iter : tag_id_map) {
     auto& tag = iter.first;
-    auto& index = iter.second;
+    auto& id = iter.second;
     auto search = branch_lengths.find(tag);
     if (search != branch_lengths.end()) {
-      Assert(index < branch_lengths_.size(),
+      Assert(id < branch_lengths_.size(),
              "branch_lengths of insufficient size in Tree::Tree.");
-      branch_lengths_[index] = search->second;
+      branch_lengths_[id] = search->second;
     } else {
-      branch_lengths_[index] = 0.;
+      branch_lengths_[id] = 0.;
     }
   }
 }
 
 Tree::Tree(Node::NodePtr topology, BranchLengthVector branch_lengths)
     : branch_lengths_(branch_lengths), topology_(topology) {
-  Assert(topology->Index() + 1 == branch_lengths.size(),
-         "Root index is too large relative to the branch_lengths size in "
+  Assert(topology->Id() + 1 == branch_lengths.size(),
+         "Root id is too large relative to the branch_lengths size in "
          "Tree::Tree.");
 }
 
@@ -47,35 +46,34 @@ std::string Tree::Newick(TagStringMapOption node_labels) const {
 }
 
 double Tree::BranchLength(const Node* node) const {
-  Assert(node->Index() < branch_lengths_.size(),
-         "Requested index is out of range in Tree::BranchLength.");
-  return branch_lengths_[node->Index()];
+  Assert(node->Id() < branch_lengths_.size(),
+         "Requested id is out of range in Tree::BranchLength.");
+  return branch_lengths_[node->Id()];
 }
 
 Tree Tree::Detrifurcate() const {
   Assert(Children().size() == 3,
          "Tree::Detrifurcate given a non-trifurcating tree.");
   auto branch_lengths = BranchLengths();
-  auto our_index = Index();
-  auto root12 = Node::Join(Children()[1], Children()[2], our_index);
-  branch_lengths[our_index] = 0.;
-  auto rerooted_topology = Node::Join(Children()[0], root12, our_index + 1);
+  auto our_id = Id();
+  auto root12 = Node::Join(Children()[1], Children()[2], our_id);
+  branch_lengths[our_id] = 0.;
+  auto rerooted_topology = Node::Join(Children()[0], root12, our_id + 1);
   branch_lengths.push_back(0.);
   return Tree(rerooted_topology, branch_lengths);
 }
 
 Tree Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
-  topology->Reindex();
-  BranchLengthVector branch_lengths(1 + topology->Index());
-  topology->PreOrder([&branch_lengths](const Node* node) {
-    branch_lengths[node->Index()] = 1.;
-  });
+  topology->Reid();
+  BranchLengthVector branch_lengths(1 + topology->Id());
+  topology->PreOrder(
+      [&branch_lengths](const Node* node) { branch_lengths[node->Id()] = 1.; });
   return Tree(topology, branch_lengths);
 }
 
-Tree Tree::OfParentIndexVector(std::vector<size_t> indices) {
-  auto topology = Node::OfParentIndexVector(indices);
-  std::vector<double> branch_lengths(topology->Index() + 1, 1.);
+Tree Tree::OfParentIdVector(std::vector<size_t> ids) {
+  auto topology = Node::OfParentIdVector(ids);
+  std::vector<double> branch_lengths(topology->Id() + 1, 1.);
   return Tree(topology, std::move(branch_lengths));
 }
 
@@ -88,9 +86,9 @@ Tree::TreeVector Tree::ExampleTrees() {
 }
 
 void Tree::SlideRootPosition() {
-  size_t fixed_node_index = Children()[1]->Index();
-  size_t root_child_index = Children()[0]->Index();
-  branch_lengths_[root_child_index] =
-      branch_lengths_[root_child_index] + branch_lengths_[fixed_node_index];
-  branch_lengths_[fixed_node_index] = 0.0;
+  size_t fixed_node_id = Children()[1]->Id();
+  size_t root_child_id = Children()[0]->Id();
+  branch_lengths_[root_child_id] =
+      branch_lengths_[root_child_id] + branch_lengths_[fixed_node_id];
+  branch_lengths_[fixed_node_id] = 0.0;
 }

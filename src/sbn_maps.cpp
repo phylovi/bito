@@ -1,9 +1,8 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
-#include "build.hpp"
+#include "sbn_maps.hpp"
 #include <algorithm>
-#include <cassert>
 #include <memory>
 #include <set>
 #include <unordered_map>
@@ -29,21 +28,20 @@ TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
   return map;
 }
 
-// Make a map from Tags to the bitset representing the indices below the Tag.
-SizeBitsetMap IndexIndexSetMapOf(Node::NodePtr topology) {
+// Make a map from Tags to the bitset representing the ids below the Tag.
+SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology) {
   SizeBitsetMap map;
-  auto index_count = topology->Index() + 1;
-  topology->PostOrder([&map, index_count](const Node* node) {
-    Bitset bitset(static_cast<size_t>(index_count));
-    Assert(node->Index() < index_count,
-           "Malformed indices in IndexIndexSetMapOf.");
-    // Set the bit for the index of the current edge.
-    bitset.set(node->Index());
+  auto id_count = topology->Id() + 1;
+  topology->PostOrder([&map, id_count](const Node* node) {
+    Bitset bitset(static_cast<size_t>(id_count));
+    Assert(node->Id() < id_count, "Malformed ids in IdIdSetMapOf.");
+    // Set the bit for the id of the current edge.
+    bitset.set(node->Id());
     // Take the union of the children below.
     for (const auto& child : node->Children()) {
-      bitset |= map.at(child->Index());
+      bitset |= map.at(child->Id());
     }
-    SafeInsert(map, node->Index(), std::move(bitset));
+    SafeInsert(map, node->Id(), std::move(bitset));
   });
   return map;
 }
@@ -55,7 +53,7 @@ BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies) {
     auto count = iter.second;
     auto tag_to_leafset = TagLeafSetMapOf(topology);
     auto Aux = [&rootsplit_counter, &tag_to_leafset, &count](const Node* n) {
-      auto split = tag_to_leafset.at(n->Tag()).copy();
+      auto split = tag_to_leafset.at(n->Tag());
       split.Minorize();
       rootsplit_counter.increment(std::move(split), count);
     };
@@ -121,18 +119,18 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
   auto tag_to_leafset = TagLeafSetMapOf(topology);
   auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
-  SizeVector rootsplit_result(topology->Index());
+  SizeVector rootsplit_result(topology->Id());
   topology->PreOrder([&topology, &rootsplit_result, &tag_to_leafset,
                       &indexer](const Node* node) {
     // Skip the root.
     if (node != topology.get()) {
       Bitset rootsplit = tag_to_leafset.at(node->Tag());
       rootsplit.Minorize();
-      rootsplit_result[node->Index()] = indexer.at(rootsplit);
+      rootsplit_result[node->Id()] = indexer.at(rootsplit);
     }
   });
   // Next, the pcss_result.
-  SizeVectorVector pcss_result(topology->Index());
+  SizeVectorVector pcss_result(topology->Id());
   topology->PCSSPreOrder([&indexer, &tag_to_leafset, &leaf_count, &pcss_result,
                           &topology](
                              const Node* sister_node, bool sister_direction,
@@ -154,7 +152,7 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
     bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
                     false);
     auto indexer_position = indexer.at(bitset);
-    const auto& focal_index = focal_node->Index();
+    const auto& focal_index = focal_node->Id();
     if (sister_node == focal_node) {
       // We are in the bidirectional edge situation.
       Assert(focal_index < pcss_result.size(), "focal_index out of range.");
@@ -179,9 +177,9 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
         // Add all of the edges of the virtual rooting clade, except for the
         // root of the topology.
         if (node != topology.get()) {
-          Assert(node->Index() < pcss_result.size(),
-                 "node's root Index is out of range.");
-          pcss_result[node->Index()].push_back(indexer_position);
+          Assert(node->Id() < pcss_result.size(),
+                 "node's root Id is out of range.");
+          pcss_result[node->Id()].push_back(indexer_position);
         }
         return true;
       });

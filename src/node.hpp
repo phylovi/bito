@@ -3,19 +3,19 @@
 //
 // The Node class is how we express tree topologies.
 //
-// Nodes are immutable after construction except for the index. The index is
+// Nodes are immutable after construction except for the id_. The id_ is
 // provided for applications where it is useful to have the edges numbered with
 // a contiguous set of integers, where the leaf edges have the smallest such
 // integers. Because this integer assignment cannot be known as we are building
-// up the tree, we must make a second reindexing pass through the tree, which
-// must mutate state. However, this reindexing pass is itself deterministic, so
-// doing it a second time will always give the same result.
+// up the tree, we must make a second pass through the tree, which must mutate
+// state. However, this re-id-ing pass is itself deterministic, so doing it a
+// second time will always give the same result.
 //
-// In summary, call Reindex after building your tree if you need to use the
-// index. Note that Tree construction calls Reindex, if you are manually
+// In summary, call Reid after building your tree if you need to use internal
+// node ids. Note that Tree construction calls Reid, if you are manually
 // manipulating the topology make you do manipulations with that in mind.
 //
-// Equality is in terms of tree topologies. Indices don't matter.
+// Equality is in terms of tree topologies. Ids don't matter.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
@@ -57,9 +57,9 @@ class Node {
 
  public:
   explicit Node(uint32_t leaf_id);
-  explicit Node(NodePtrVec children, size_t index);
+  explicit Node(NodePtrVec children, size_t id);
 
-  size_t Index() const { return index_; }
+  size_t Id() const { return id_; }
   uint64_t Tag() const { return tag_; }
   std::string TagString() const { return StringOfPackedInt(this->tag_); }
   uint32_t MaxLeafID() const { return MaxLeafIDOfTag(tag_); }
@@ -68,7 +68,7 @@ class Node {
   bool IsLeaf() const { return children_.empty(); }
   NodePtrVec Children() const { return children_; }
 
-  bool operator==(const Node& other);
+  bool operator==(const Node& other) const;
 
   void PreOrder(std::function<void(const Node*)> f) const;
   // ConditionalPreOrder continues to recur as long as f returns true.
@@ -85,13 +85,12 @@ class Node {
   void TriplePreOrderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const;
   // As above, but getting indices rather than nodes themselves.
-  void TripleIndexPreOrderBifurcating(
-      std::function<void(int, int, int)> f) const;
+  void TripleIdPreOrderBifurcating(std::function<void(int, int, int)> f) const;
 
-  // These two functions take functions accepting triples of (node_index,
-  // child0_index, child1_index) and apply them according to various traversals.
-  void BinaryIndexPreOrder(const std::function<void(int, int, int)> f) const;
-  void BinaryIndexPostOrder(const std::function<void(int, int, int)> f) const;
+  // These two functions take functions accepting triples of (node_id,
+  // child0_id, child1_id) and apply them according to various traversals.
+  void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
+  void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
 
   // Traversal for rooted pairs in an unrooted subtree in its traditional rooted
   // representation.
@@ -119,13 +118,13 @@ class Node {
   // This function assigns indices to the nodes of the topology: the leaves get
   // their indices (which are contiguously numbered from 0 through the leaf
   // count minus 1) and the rest get ordered according to a postorder traversal.
-  // Thus the root always has index equal to the number of nodes in the tree.
+  // Thus the root always has id equal to the number of nodes in the tree.
   // It returns a map that maps the tags to their indices.
-  TagSizeMap Reindex();
+  TagSizeMap Reid();
 
   // Return a vector such that the ith component describes the indices for nodes
   // above the current node.
-  SizeVectorVector IndicesAbove();
+  SizeVectorVector IdsAbove() const;
 
   std::string Newick(std::function<std::string(const Node*)> node_labeler,
                      const DoubleVectorOption& branch_lengths =
@@ -136,14 +135,14 @@ class Node {
       const TagStringMapOption& node_labels = std::experimental::nullopt,
       bool show_tags = false) const;
 
-  // Construct a vector such that the ith entry is the index of the index-i
-  // node's parent. We assume that the indices are contiguous, and that
-  // the root has the largest index.
-  std::vector<size_t> ParentIndexVector();
+  // Construct a vector such that the ith entry is the id of the parent of the
+  // node having id i. We assume that the indices are contiguous, and that the
+  // root has the largest id.
+  std::vector<size_t> ParentIdVector() const;
 
   NodePtr Deroot();
 
-  // ** Class methods
+  // ** Static methods
   static inline uint32_t MaxLeafIDOfTag(uint64_t tag) {
     return UnpackFirstInt(tag);
   }
@@ -151,12 +150,12 @@ class Node {
     return UnpackSecondInt(tag);
   }
   static NodePtr Leaf(uint32_t id);
-  static NodePtr Join(NodePtrVec children, size_t index = SIZE_MAX);
-  static NodePtr Join(NodePtr left, NodePtr right, size_t index = SIZE_MAX);
-  // Build a tree given a vector of indices, such that each index describes the
-  // index of its parent. We assume that the indices are contiguous, and that
-  // the root has the largest index.
-  static NodePtr OfParentIndexVector(std::vector<size_t> indices);
+  static NodePtr Join(NodePtrVec children, size_t id = SIZE_MAX);
+  static NodePtr Join(NodePtr left, NodePtr right, size_t id = SIZE_MAX);
+  // Build a tree given a vector of indices, such that each entry gives the
+  // id of its parent. We assume that the indices are contiguous, and that
+  // the root has the largest id.
+  static NodePtr OfParentIdVector(std::vector<size_t> indices);
 
   //     topology           with internal node indices
   //     --------           --------------------------
@@ -179,8 +178,8 @@ class Node {
 
  private:
   NodePtrVec children_;
-  // See beginning of file for notes about the index.
-  size_t index_;
+  // See beginning of file for notes about the id.
+  size_t id_;
   // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
   // of the leaves below this node, and (2) the number of leaves below the node.
   uint64_t tag_;
@@ -248,23 +247,22 @@ TEST_CASE("Node") {
   CHECK_NE(t1, t2);
 
   // Tree with trifurcation at the root.
-  Node::NodePtr t1_alt = Node::OfParentIndexVector({5, 5, 4, 4, 5});
+  Node::NodePtr t1_alt = Node::OfParentIdVector({5, 5, 4, 4, 5});
   CHECK_EQ(t1, t1_alt);
   // Bifurcating tree.
-  Node::NodePtr t3_alt = Node::OfParentIndexVector({6, 5, 4, 4, 5, 6});
+  Node::NodePtr t3_alt = Node::OfParentIdVector({6, 5, 4, 4, 5, 6});
   CHECK_EQ(t3, t3_alt);
 
   for (const auto& topology : examples) {
-    CHECK_EQ(topology,
-             Node::OfParentIndexVector(topology->ParentIndexVector()));
+    CHECK_EQ(topology, Node::OfParentIdVector(topology->ParentIdVector()));
   }
 
   // Check Deroot when we deroot on the right.
   CHECK_EQ(t1, t3->Deroot());
   // Check Deroot when we deroot on the left.
-  CHECK_EQ(Node::OfParentIndexVector({3, 3, 3}),
+  CHECK_EQ(Node::OfParentIdVector({3, 3, 3}),
            // tree ((0,1)3,2)4
-           Node::OfParentIndexVector({3, 3, 4, 4})->Deroot());
+           Node::OfParentIdVector({3, 3, 4, 4})->Deroot());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_
