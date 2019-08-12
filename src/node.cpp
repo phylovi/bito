@@ -13,6 +13,13 @@
 #include <unordered_map>
 #include <vector>
 
+// We assume that the sizes of things related to trees are smaller than
+// UINT32_MAX and so use that as our fundamental type. Because we use the STL,
+// we use size_t as well, the size of which is implementation-dependent. Here we
+// make sure that size_t is big enough (I know this is a little silly because
+// size_t is quite big on 64 bit systems, but still...).
+static_assert(UINT32_MAX <= SIZE_MAX, "size_t is too small.");
+
 Node::Node(uint32_t leaf_id)
     : children_({}),
       id_(leaf_id),
