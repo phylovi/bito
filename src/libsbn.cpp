@@ -44,7 +44,7 @@ void SBNInstance::FinalizeBeagleInstances() {
     index_to_child_.clear();
     parent_to_range_.clear();
     // Start by adding the rootsplits.
-    for (const auto &iter : RootsplitCounterOf(counter).Map()) {
+    for (const auto &iter : RootsplitCounterOf(counter)) {
       SafeInsert(indexer_, iter.first, index);
       rootsplits_.push_back(iter.first);
       index++;
@@ -56,7 +56,7 @@ void SBNInstance::FinalizeBeagleInstances() {
       const auto &child_counter = iter.second;
       SafeInsert(parent_to_range_, parent,
                  {index, index + child_counter.size()});
-      for (const auto &child_iter : child_counter.Map()) {
+      for (const auto &child_iter : child_counter) {
         const auto &child = child_iter.first;
         SafeInsert(indexer_, parent + child, index);
         SafeInsert(index_to_child_, index,

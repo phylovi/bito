@@ -2,7 +2,6 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "tree.hpp"
-#include <cassert>
 #include <iostream>
 #include <memory>
 #include <string>

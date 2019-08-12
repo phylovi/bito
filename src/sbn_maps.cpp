@@ -3,7 +3,6 @@
 
 #include "sbn_maps.hpp"
 #include <algorithm>
-#include <cassert>
 #include <memory>
 #include <set>
 #include <unordered_map>

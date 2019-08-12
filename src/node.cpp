@@ -4,7 +4,6 @@
 #include "node.hpp"
 #include <limits.h>
 #include <algorithm>
-#include <cassert>
 #include <deque>
 #include <functional>
 #include <iostream>

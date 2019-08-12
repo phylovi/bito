@@ -43,7 +43,7 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer_,
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
-TEST_CASE("Build") {
+TEST_CASE("SBNMaps") {
   auto topology0 = Node::ExampleTopologies()[0];
 
   // (0,1,(2,3)4)5;

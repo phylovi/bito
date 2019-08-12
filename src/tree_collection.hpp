@@ -4,7 +4,6 @@
 #ifndef SRC_TREE_COLLECTION_HPP_
 #define SRC_TREE_COLLECTION_HPP_
 
-#include <cassert>
 #include <memory>
 #include <string>
 #include <unordered_map>

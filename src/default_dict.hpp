@@ -4,7 +4,6 @@
 #ifndef SRC_DEFAULT_DICT_HPP_
 #define SRC_DEFAULT_DICT_HPP_
 
-#include <cassert>
 #include <iostream>
 #include <unordered_map>
 #include <utility>
@@ -12,12 +11,20 @@
 template <class Key, class T>
 class DefaultDict {
  public:
+  typedef typename std::unordered_map<Key, T>::iterator iterator;
+  typedef typename std::unordered_map<Key, T>::const_iterator const_iterator;
+
   explicit DefaultDict(T default_value) : default_value_(default_value) {}
 
   size_t size() const { return map_.size(); }
+  iterator begin() { return map_.begin(); }
+  iterator end() { return map_.end(); }
+  // Range-based for loops use const begin rather than cbegin.
+  // https://stackoverflow.com/a/45732500/467327
+  const_iterator begin() const { return map_.begin(); }
+  const_iterator end() const { return map_.end(); }
+
   std::unordered_map<Key, T> Map() const { return map_; }
-  // TODO
-  // std::iterator<std::pair<Key, T>> begin() const { return map_.begin(); }
 
   T at(const Key &key) {
     auto search = map_.find(key);
