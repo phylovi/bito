@@ -14,8 +14,8 @@
 #include <vector>
 #include "alignment.hpp"
 #include "beagle.hpp"
-#include "build.hpp"
 #include "driver.hpp"
+#include "sbn_maps.hpp"
 #include "sugar.hpp"
 #include "tree.hpp"
 

@@ -1,8 +1,8 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_BUILD_HPP_
-#define SRC_BUILD_HPP_
+#ifndef SRC_SBN_MAPS_HPP_
+#define SRC_SBN_MAPS_HPP_
 
 #include <unordered_map>
 #include <utility>
@@ -64,4 +64,4 @@ TEST_CASE("Build") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_BUILD_HPP_
+#endif  // SRC_SBN_MAPS_HPP_

@@ -4,11 +4,15 @@
 #ifndef SRC_BITSET_HPP_
 #define SRC_BITSET_HPP_
 
-#include <algorithm>
+// Turn off clang formatting so that it keeps this order, which is the one
+// preferred by cpplint.
+// clang-format off
 #include <experimental/optional>
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <vector>
+// clang-format on
 
 // This file started life as the RbBitSet class from RevBayes by Sebastian
 // Hoehna. In general, I'm trying to follow the interface of std::bitset, though
