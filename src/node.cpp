@@ -160,11 +160,11 @@ void Node::TriplePreOrder(
   Assert(children_.size() == 3,
          "TriplePreOrder expects a tree with a trifurcation at the root.");
   f_root(children_[0].get(), children_[1].get(), children_[2].get());
+  children_[0]->TriplePreOrderInternal(f_internal);
   f_root(children_[1].get(), children_[2].get(), children_[0].get());
+  children_[1]->TriplePreOrderInternal(f_internal);
   f_root(children_[2].get(), children_[0].get(), children_[1].get());
-  for (const auto& child : children_) {
-    child->TriplePreOrderInternal(f_internal);
-  }
+  children_[2]->TriplePreOrderInternal(f_internal);
 }
 
 void Node::TriplePreOrderInternal(
