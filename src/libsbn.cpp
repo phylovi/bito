@@ -109,7 +109,7 @@ Node::NodePtr SBNInstance::SampleTopology() const {
   const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
   // The addition below turns the rootsplit into a subsplit.
   auto topology = SampleTopology(rootsplit + ~rootsplit)->Deroot();
-  topology->Reid();
+  topology->Polish();
   return topology;
 }
 

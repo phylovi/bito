@@ -13,7 +13,7 @@
 
 Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
     : topology_(topology) {
-  auto tag_id_map = topology->Reid();
+  auto tag_id_map = topology->Polish();
   branch_lengths_ = std::vector<double>(topology->Id() + 1);
   for (const auto& iter : tag_id_map) {
     auto& tag = iter.first;
@@ -64,7 +64,7 @@ Tree Tree::Detrifurcate() const {
 }
 
 Tree Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
-  topology->Reid();
+  topology->Polish();
   BranchLengthVector branch_lengths(1 + topology->Id());
   topology->PreOrder(
       [&branch_lengths](const Node* node) { branch_lengths[node->Id()] = 1.; });

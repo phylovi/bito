@@ -20,13 +20,15 @@
 // size_t is quite big on 64 bit systems, but still...).
 static_assert(UINT32_MAX <= SIZE_MAX, "size_t is too small.");
 
-Node::Node(uint32_t leaf_id)
+Node::Node(uint32_t leaf_id, Bitset leaves)
     : children_({}),
       id_(leaf_id),
+      leaves_(std::move(leaves)),
       tag_(PackInts(leaf_id, 1)),
       hash_(SOHash(leaf_id)) {}
 
-Node::Node(NodePtrVec children, size_t id) : children_(children), id_(id) {
+Node::Node(NodePtrVec children, size_t id, Bitset leaves)
+    : children_(children), id_(id), leaves_(leaves) {
   Assert(!children_.empty(),
          "Called internal Node constructor with no children.");
   // Order the children by their max leaf ids.
@@ -235,7 +237,7 @@ void Node::PCSSPreOrder(PCSSFun f) const {
 // nodes in the tree.
 //
 // This function returns a map that maps the tags to their ids.
-TagSizeMap Node::Reid() {
+TagSizeMap Node::Polish() {
   TagSizeMap tag_id_map;
   size_t next_id = 1 + MaxLeafID();
   MutablePostOrder([&tag_id_map, &next_id](Node* node) {
@@ -336,9 +338,16 @@ Node::NodePtr Node::Deroot() {
 }
 
 // Class methods
-Node::NodePtr Node::Leaf(uint32_t id) { return std::make_shared<Node>(id); }
+Node::NodePtr Node::Leaf(uint32_t id, Bitset leaves) {
+  return std::make_shared<Node>(id, leaves);
+}
 Node::NodePtr Node::Join(NodePtrVec children, size_t id) {
-  return std::make_shared<Node>(children, id);
+  Assert(children.size() > 0, "Need children in Node::Join.");
+  Bitset leaves(children[0]->Leaves());
+  for (size_t i = 1; i < children.size(); i++) {
+    leaves |= children[i]->Leaves();
+  }
+  return std::make_shared<Node>(children, id, leaves);
 }
 Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t id) {
   return Join(std::vector<NodePtr>({left, right}), id);
@@ -360,22 +369,27 @@ Node::NodePtr Node::OfParentIdVector(std::vector<size_t> ids) {
       search->second.push_back(child_id);
     }
   }
-  std::function<NodePtr(size_t)> build_tree =
-      [&build_tree, &downward_ids](size_t current_id) {
-        auto search = downward_ids.find(current_id);
-        if (search == downward_ids.end()) {
-          // We assume that anything not in the map is a leaf, because leaves
-          // don't have any children.
-          return Leaf(static_cast<uint32_t>(current_id));
-        } else {
-          const auto& children_ids = search->second;
-          std::vector<NodePtr> children;
-          for (const auto& child_id : children_ids) {
-            children.push_back(build_tree(child_id));
-          }
-          return Join(children, current_id);
-        }
-      };
+  // The leaf count is equal to the first non-leaf index, i.e. a parent index.
+  size_t leaf_count = *std::min_element(ids.begin(), ids.end());
+  std::function<NodePtr(size_t)> build_tree = [&build_tree, &downward_ids,
+                                               leaf_count](size_t current_id) {
+    auto search = downward_ids.find(current_id);
+    if (search == downward_ids.end()) {
+      // We assume that anything not in the map is a leaf, because leaves
+      // don't have any children.
+      Bitset leaves(leaf_count);
+      Assert(current_id < leaf_count,
+             "Leaf id too big in Node::OfParentIdVector.");
+      return Leaf(static_cast<uint32_t>(current_id), leaves);
+    } else {
+      const auto& children_ids = search->second;
+      std::vector<NodePtr> children;
+      for (const auto& child_id : children_ids) {
+        children.push_back(build_tree(child_id));
+      }
+      return Join(children, current_id);
+    }
+  };
   // We assume that the maximum id of the tree is the length of the input
   // id array. That makes sense because the root does not have a parent, so
   // is the first "missing" entry in the input id array.
@@ -394,7 +408,7 @@ Node::NodePtrVec Node::ExampleTopologies() {
       Join(std::vector<NodePtr>(
           {Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
   for (auto& topology : topologies) {
-    topology->Reid();
+    topology->Polish();
   }
   return topologies;
 }
