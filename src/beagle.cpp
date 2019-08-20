@@ -252,7 +252,7 @@ std::pair<double, std::vector<double>> BranchGradient(
   // Calculate upper partials
   tree.Topology()->TripleIdPreOrderBifurcating(
       [&operations, &root_child_id, &fixed_node_id, rescaling, internal_count,
-       int_node_count](int parent_id, int sister_id, int node_id) {
+       int_node_count](int node_id, int sister_id, int parent_id) {
         if (node_id != root_child_id && node_id != fixed_node_id) {
           int upper_partial_index;
           int upper_matrix_index;
@@ -319,8 +319,8 @@ std::pair<double, std::vector<double>> BranchGradient(
   }
 
   // Actually compute gradient.
-  tree.Topology()->TripleIdPreOrderBifurcating([&](int, int sister_id,
-                                                   int node_id) {
+  tree.Topology()->TripleIdPreOrderBifurcating([&](int node_id, int sister_id,
+                                                   int) {
     if (node_id != fixed_node_id) {
       double dlogLp;
       upper_partials_index[0] = node_id + int_node_count;
