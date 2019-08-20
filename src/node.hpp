@@ -26,7 +26,7 @@
 // manually manipulating the topology make you do manipulations with that in
 // mind.
 //
-// Equality is in terms of tree topologies. Ids don't matter.
+// Equality is in terms of tree topologies. These mutable members don't matter.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
