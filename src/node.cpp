@@ -341,7 +341,7 @@ Node::NodePtr Node::Deroot() {
 }
 
 Bitset Node::LeavesOf(const Node::NodePtrVec& children) {
-  Assert(children.size() > 0, "Need children in Node::Join.");
+  Assert(children.size() > 0, "Need children in Node::LeavesOf.");
   Bitset leaves(children[0]->Leaves());
   for (size_t i = 1; i < children.size(); i++) {
     leaves |= children[i]->Leaves();
