@@ -13,7 +13,6 @@
 #include "tree.hpp"
 
 typedef std::vector<Bitset> BitsetVector;
-typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
 typedef std::unordered_map<size_t, Bitset> SizeBitsetMap;
 typedef std::unordered_map<Bitset, int> BitsetIndexer;
 typedef DefaultDict<Bitset, uint32_t> BitsetUInt32Dict;
@@ -25,7 +24,6 @@ typedef std::pair<SizeVector, SizeVectorVector> IndexerRepresentation;
 
 typedef std::unordered_map<Bitset, DefaultDict<Bitset, uint32_t>> PCSSDict;
 
-TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology);
 SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
 
 BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies);

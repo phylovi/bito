@@ -3,19 +3,30 @@
 //
 // The Node class is how we express tree topologies.
 //
-// Nodes are immutable after construction except for the id_. The id_ is
-// provided for applications where it is useful to have the edges numbered with
-// a contiguous set of integers, where the leaf edges have the smallest such
-// integers. Because this integer assignment cannot be known as we are building
-// up the tree, we must make a second pass through the tree, which must mutate
-// state. However, this re-id-ing pass is itself deterministic, so doing it a
-// second time will always give the same result.
+// Nodes are immutable after construction except for the id_ and the leaves_.
+// The id_ is provided for applications where it is useful to have the edges
+// numbered with a contiguous set of integers. The leaves get
+// their indices (which are contiguously numbered from 0 through the leaf
+// count minus 1) and the rest get ordered according to a postorder traversal.
+// Thus the root always has id equal to the number of nodes in the tree.
 //
-// In summary, call Reid after building your tree if you need to use internal
-// node ids. Note that Tree construction calls Reid, if you are manually
-// manipulating the topology make you do manipulations with that in mind.
+// Because this integer assignment cannot be known as we
+// are building up the tree, we must make a second pass through the tree, which
+// must mutate state. However, this re-id-ing pass is itself deterministic, so
+// doing it a second time will always give the same result.
 //
-// Equality is in terms of tree topologies. Ids don't matter.
+// leaves_ is a bitset indicating the set of leaves below. Similarly it needs to
+// be calculated on a second pass, because we don't even know the size of the
+// bitset as the tree is being built.
+//
+// Both of these features are prepared using the Polish method.
+//
+// In summary, call Polish after building your tree if you need to use internal
+// node ids or leaf sets. Note that Tree construction calls Polish, if you are
+// manually manipulating the topology make you do manipulations with that in
+// mind.
+//
+// Equality is in terms of tree topologies. These mutable members don't matter.
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
@@ -27,6 +38,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "bitset.hpp"
 #include "intpack.hpp"
 #include "sugar.hpp"
 
@@ -56,17 +68,18 @@ class Node {
       PCSSFun;
 
  public:
-  explicit Node(uint32_t leaf_id);
-  explicit Node(NodePtrVec children, size_t id);
+  explicit Node(uint32_t leaf_id, Bitset leaves);
+  explicit Node(NodePtrVec children, size_t id, Bitset leaves);
 
   size_t Id() const { return id_; }
   uint64_t Tag() const { return tag_; }
+  const Bitset& Leaves() const { return leaves_; }
   std::string TagString() const { return StringOfPackedInt(this->tag_); }
   uint32_t MaxLeafID() const { return MaxLeafIDOfTag(tag_); }
   uint32_t LeafCount() const { return LeafCountOfTag(tag_); }
   size_t Hash() const { return hash_; }
   bool IsLeaf() const { return children_.empty(); }
-  NodePtrVec Children() const { return children_; }
+  const NodePtrVec& Children() const { return children_; }
 
   bool operator==(const Node& other) const;
 
@@ -115,12 +128,10 @@ class Node {
   // function.
   void PCSSPreOrder(PCSSFun f) const;
 
-  // This function assigns indices to the nodes of the topology: the leaves get
-  // their indices (which are contiguously numbered from 0 through the leaf
-  // count minus 1) and the rest get ordered according to a postorder traversal.
-  // Thus the root always has id equal to the number of nodes in the tree.
-  // It returns a map that maps the tags to their indices.
-  TagSizeMap Reid();
+  // This function prepares the id_ and leaves_ member variables as described at
+  // the start of this document. It returns a map that maps the tags to their
+  // indices. It's the verb, not the nationality.
+  TagSizeMap Polish();
 
   // Return a vector such that the ith component describes the indices for nodes
   // above the current node.
@@ -149,7 +160,9 @@ class Node {
   static inline uint32_t LeafCountOfTag(uint64_t tag) {
     return UnpackSecondInt(tag);
   }
-  static NodePtr Leaf(uint32_t id);
+  static NodePtr Leaf(uint32_t id, Bitset leaves = Bitset(0));
+  // Join builds a Node with the given descendants, or-ing the leaves_ of the
+  // descendants.
   static NodePtr Join(NodePtrVec children, size_t id = SIZE_MAX);
   static NodePtr Join(NodePtr left, NodePtr right, size_t id = SIZE_MAX);
   // Build a tree given a vector of indices, such that each entry gives the
@@ -178,8 +191,9 @@ class Node {
 
  private:
   NodePtrVec children_;
-  // See beginning of file for notes about the id.
+  // See beginning of file for notes about the id and the leaves.
   size_t id_;
+  Bitset leaves_;
   // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
   // of the leaves below this node, and (2) the number of leaves below the node.
   uint64_t tag_;
@@ -194,6 +208,10 @@ class Node {
 
   std::string NewickAux(std::function<std::string(const Node*)> node_labeler,
                         const DoubleVectorOption& branch_lengths) const;
+
+  // Make a leaf bitset by or-ing the leaf bitsets of the provided children.
+  // Private just to avoid polluting the public interface.
+  static Bitset LeavesOf(const NodePtrVec& children);
 };
 
 // Compare NodePtrs by their Nodes.
@@ -219,13 +237,35 @@ struct equal_to<Node::NodePtr> {
 }  // namespace std
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+
+typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
+
+// Make a map from Tags to the bitset representing the leaves below the Tag.
+// Just used for testing now.
+TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
+  TagBitsetMap map;
+  auto leaf_count = topology->LeafCount();
+  topology->PostOrder([&map, leaf_count](const Node* node) {
+    Bitset bitset((size_t)leaf_count);
+    if (node->IsLeaf()) {
+      bitset.set(node->MaxLeafID());
+    } else {
+      // Take the union of the children below.
+      for (const auto& child : node->Children()) {
+        bitset |= map.at(child->Tag());
+      }
+    }
+    SafeInsert(map, node->Tag(), std::move(bitset));
+  });
+  return map;
+}
+
 TEST_CASE("Node") {
   Node::NodePtrVec examples = Node::ExampleTopologies();
   Node::NodePtr t1 = examples[0];       // 0: (0,1,(2,3))
   Node::NodePtr t1_twin = examples[1];  // 1; (0,1,(2,3)) again
   Node::NodePtr t2 = examples[2];       // 2: (0,2,(1,3))
   Node::NodePtr t3 = examples[3];       // 3: (0,(1,(2,3)))
-  // TODO(ematsen) add real test for TriplePreorder
   std::vector<std::string> triples;
   auto collect_triple = [&triples](const Node* parent, const Node* sister,
                                    const Node* node) {
@@ -255,6 +295,10 @@ TEST_CASE("Node") {
 
   for (const auto& topology : examples) {
     CHECK_EQ(topology, Node::OfParentIdVector(topology->ParentIdVector()));
+    auto tag_leaf_set_map = TagLeafSetMapOf(topology);
+    topology->PreOrder([&tag_leaf_set_map](const Node* node) {
+      CHECK_EQ(node->Leaves(), tag_leaf_set_map.at(node->Tag()));
+    });
   }
 
   // Check Deroot when we deroot on the right.
