@@ -82,7 +82,7 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
         // The first time we have seen this parent.
         BitsetUInt32Dict child_singleton(0);
         child_singleton.increment(std::move(child), count);
-        SafeInsert(pcss_dict, parent, child_singleton);
+        SafeInsert(pcss_dict, std::move(parent), child_singleton);
       } else {
         search->second.increment(std::move(child), count);
       }
@@ -160,4 +160,10 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
     }
   });
   return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
+}
+
+SizeVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
+                               const Node::NodePtr& topology) {
+  auto out = IndexerRepresentationOf(indexer, topology);
+  return out.first;
 }
