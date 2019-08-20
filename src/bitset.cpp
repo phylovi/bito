@@ -274,6 +274,13 @@ bool Bitset::PCSSIsValid() const {
   return true;
 }
 
+Bitset Bitset::Singleton(size_t n, size_t which_on) {
+  Assert(which_on < n, "which_on too big in Bitset::Singleton.");
+  Bitset singleton(n);
+  singleton.set(which_on);
+  return singleton;
+}
+
 Bitset Bitset::ChildSubsplit(const Bitset& parent_subsplit,
                              const Bitset& child_half) {
   size_t taxon_count = child_half.size();

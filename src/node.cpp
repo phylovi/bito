@@ -239,13 +239,21 @@ void Node::PCSSPreOrder(PCSSFun f) const {
 // This function returns a map that maps the tags to their ids.
 TagSizeMap Node::Polish() {
   TagSizeMap tag_id_map;
-  size_t next_id = 1 + MaxLeafID();
-  MutablePostOrder([&tag_id_map, &next_id](Node* node) {
+  const size_t leaf_count = MaxLeafID() + 1;
+  size_t next_id = leaf_count;
+  MutablePostOrder([&tag_id_map, &next_id, &leaf_count](Node* node) {
     if (node->IsLeaf()) {
       node->id_ = node->MaxLeafID();
+      node->leaves_ = Bitset::Singleton(leaf_count, node->id_);
     } else {
       node->id_ = next_id;
       next_id++;
+      const auto& children = node->Children();
+      Bitset leaves(children[0]->Leaves());
+      for (size_t i = 1; i < children.size(); i++) {
+        leaves |= children[i]->Leaves();
+      }
+      node->leaves_ = leaves;
     }
     SafeInsert(tag_id_map, node->Tag(), node->id_);
   });
@@ -369,7 +377,8 @@ Node::NodePtr Node::OfParentIdVector(std::vector<size_t> ids) {
       search->second.push_back(child_id);
     }
   }
-  // The leaf count is equal to the first non-leaf index, i.e. a parent index.
+  // The leaf count is equal to the smallest non-leaf index, i.e. a parent
+  // index.
   size_t leaf_count = *std::min_element(ids.begin(), ids.end());
   std::function<NodePtr(size_t)> build_tree = [&build_tree, &downward_ids,
                                                leaf_count](size_t current_id) {
@@ -377,10 +386,8 @@ Node::NodePtr Node::OfParentIdVector(std::vector<size_t> ids) {
     if (search == downward_ids.end()) {
       // We assume that anything not in the map is a leaf, because leaves
       // don't have any children.
-      Bitset leaves(leaf_count);
-      Assert(current_id < leaf_count,
-             "Leaf id too big in Node::OfParentIdVector.");
-      return Leaf(static_cast<uint32_t>(current_id), leaves);
+      return Leaf(static_cast<uint32_t>(current_id),
+                  Bitset::Singleton(leaf_count, current_id));
     } else {
       const auto& children_ids = search->second;
       std::vector<NodePtr> children;

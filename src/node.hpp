@@ -79,6 +79,7 @@ class Node {
   uint32_t LeafCount() const { return LeafCountOfTag(tag_); }
   size_t Hash() const { return hash_; }
   bool IsLeaf() const { return children_.empty(); }
+  // TODO try this out as a const &?
   NodePtrVec Children() const { return children_; }
 
   bool operator==(const Node& other) const;
@@ -233,13 +234,35 @@ struct equal_to<Node::NodePtr> {
 }  // namespace std
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+
+typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
+
+// Make a map from Tags to the bitset representing the leaves below the Tag.
+// Just used for testing now.
+TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
+  TagBitsetMap map;
+  auto leaf_count = topology->LeafCount();
+  topology->PostOrder([&map, leaf_count](const Node* node) {
+    Bitset bitset((size_t)leaf_count);
+    if (node->IsLeaf()) {
+      bitset.set(node->MaxLeafID());
+    } else {
+      // Take the union of the children below.
+      for (const auto& child : node->Children()) {
+        bitset |= map.at(child->Tag());
+      }
+    }
+    SafeInsert(map, node->Tag(), std::move(bitset));
+  });
+  return map;
+}
+
 TEST_CASE("Node") {
   Node::NodePtrVec examples = Node::ExampleTopologies();
   Node::NodePtr t1 = examples[0];       // 0: (0,1,(2,3))
   Node::NodePtr t1_twin = examples[1];  // 1; (0,1,(2,3)) again
   Node::NodePtr t2 = examples[2];       // 2: (0,2,(1,3))
   Node::NodePtr t3 = examples[3];       // 3: (0,(1,(2,3)))
-  // TODO(ematsen) add real test for TriplePreorder
   std::vector<std::string> triples;
   auto collect_triple = [&triples](const Node* parent, const Node* sister,
                                    const Node* node) {
@@ -269,6 +292,10 @@ TEST_CASE("Node") {
 
   for (const auto& topology : examples) {
     CHECK_EQ(topology, Node::OfParentIdVector(topology->ParentIdVector()));
+    auto tag_leaf_set_map = TagLeafSetMapOf(topology);
+    topology->PreOrder([&tag_leaf_set_map](const Node* node) {
+      CHECK_EQ(node->Leaves(), tag_leaf_set_map.at(node->Tag()));
+    });
   }
 
   // Check Deroot when we deroot on the right.

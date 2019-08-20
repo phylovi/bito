@@ -9,24 +9,6 @@
 #include <unordered_set>
 #include <utility>
 
-// Make a map from Tags to the bitset representing the leaves below the Tag.
-TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
-  TagBitsetMap map;
-  auto leaf_count = topology->LeafCount();
-  topology->PostOrder([&map, leaf_count](const Node* node) {
-    Bitset bitset((size_t)leaf_count);
-    if (node->IsLeaf()) {
-      bitset.set(node->MaxLeafID());
-    } else {
-      // Take the union of the children below.
-      for (const auto& child : node->Children()) {
-        bitset |= map.at(child->Tag());
-      }
-    }
-    SafeInsert(map, node->Tag(), std::move(bitset));
-  });
-  return map;
-}
 
 // Make a map from Tags to the bitset representing the ids below the Tag.
 SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology) {
@@ -51,9 +33,8 @@ BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies) {
   for (const auto& iter : topologies) {
     auto topology = iter.first;
     auto count = iter.second;
-    auto tag_to_leafset = TagLeafSetMapOf(topology);
-    auto Aux = [&rootsplit_counter, &tag_to_leafset, &count](const Node* n) {
-      auto split = tag_to_leafset.at(n->Tag());
+    auto Aux = [&rootsplit_counter, &count](const Node* n) {
+      auto split = n->Leaves();
       split.Minorize();
       rootsplit_counter.increment(std::move(split), count);
     };
@@ -69,12 +50,11 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
   for (const auto& iter : topologies) {
     auto topology = iter.first;
     auto count = iter.second;
-    auto tag_to_leafset = TagLeafSetMapOf(topology);
     auto leaf_count = topology->LeafCount();
     Assert(
         topology->Children().size() == 3,
         "PCSSCounterOf was expecting a tree with a trifurcation at the root!");
-    topology->PCSSPreOrder([&pcss_dict, &tag_to_leafset, &count, &leaf_count](
+    topology->PCSSPreOrder([&pcss_dict, &count, &leaf_count](
                                const Node* sister_node, bool sister_direction,
                                const Node* focal_node, bool focal_direction,  //
                                const Node* child0_node,
@@ -84,17 +64,15 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
                            ) {
       Bitset parent(2 * leaf_count, false);
       // The first chunk is for the sister node.
-      parent.CopyFrom(tag_to_leafset.at(sister_node->Tag()), 0,
-                      sister_direction);
+      parent.CopyFrom(sister_node->Leaves(), 0, sister_direction);
       // The second chunk is for the focal node.
-      parent.CopyFrom(tag_to_leafset.at(focal_node->Tag()), leaf_count,
-                      focal_direction);
+      parent.CopyFrom(focal_node->Leaves(), leaf_count, focal_direction);
       // Now we build the child bitset.
-      auto child0 = tag_to_leafset.at(child0_node->Tag());
+      auto child0 = child0_node->Leaves();
       if (child0_direction) {
         child0.flip();
       }
-      auto child1 = tag_to_leafset.at(child1_node->Tag());
+      auto child1 = child1_node->Leaves();
       if (child1_direction) {
         child1.flip();
       }
@@ -116,23 +94,21 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
 
 IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
                                               const Node::NodePtr& topology) {
-  auto tag_to_leafset = TagLeafSetMapOf(topology);
   auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
   SizeVector rootsplit_result(topology->Id());
-  topology->PreOrder([&topology, &rootsplit_result, &tag_to_leafset,
-                      &indexer](const Node* node) {
-    // Skip the root.
-    if (node != topology.get()) {
-      Bitset rootsplit = tag_to_leafset.at(node->Tag());
-      rootsplit.Minorize();
-      rootsplit_result[node->Id()] = indexer.at(rootsplit);
-    }
-  });
+  topology->PreOrder(
+      [&topology, &rootsplit_result, &indexer](const Node* node) {
+        // Skip the root.
+        if (node != topology.get()) {
+          Bitset rootsplit = node->Leaves();
+          rootsplit.Minorize();
+          rootsplit_result[node->Id()] = indexer.at(rootsplit);
+        }
+      });
   // Next, the pcss_result.
   SizeVectorVector pcss_result(topology->Id());
-  topology->PCSSPreOrder([&indexer, &tag_to_leafset, &leaf_count, &pcss_result,
-                          &topology](
+  topology->PCSSPreOrder([&indexer, &leaf_count, &pcss_result, &topology](
                              const Node* sister_node, bool sister_direction,
                              const Node* focal_node,
                              bool focal_direction,  //
@@ -142,12 +118,11 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
                              const Node* virtual_root_clade) {
     // Start by making the bitset representation of this PCSS.
     Bitset bitset(3 * leaf_count, false);
-    bitset.CopyFrom(tag_to_leafset.at(sister_node->Tag()), 0, sister_direction);
-    bitset.CopyFrom(tag_to_leafset.at(focal_node->Tag()), leaf_count,
-                    focal_direction);
-    auto child0_bitset = tag_to_leafset.at(child0_node->Tag());
+    bitset.CopyFrom(sister_node->Leaves(), 0, sister_direction);
+    bitset.CopyFrom(focal_node->Leaves(), leaf_count, focal_direction);
+    auto child0_bitset = child0_node->Leaves();
     if (child0_direction) child0_bitset.flip();
-    auto child1_bitset = tag_to_leafset.at(child1_node->Tag());
+    auto child1_bitset = child1_node->Leaves();
     if (child1_direction) child1_bitset.flip();
     bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
                     false);
