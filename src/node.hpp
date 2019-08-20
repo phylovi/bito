@@ -209,6 +209,10 @@ class Node {
 
   std::string NewickAux(std::function<std::string(const Node*)> node_labeler,
                         const DoubleVectorOption& branch_lengths) const;
+
+  // Make a leaf bitset by or-ing the leaf bitsets of the provided children.
+  // Private just to avoid polluting the public interface.
+  static Bitset LeavesOf(const NodePtrVec& children);
 };
 
 // Compare NodePtrs by their Nodes.

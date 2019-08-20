@@ -248,12 +248,7 @@ TagSizeMap Node::Polish() {
     } else {
       node->id_ = next_id;
       next_id++;
-      const auto& children = node->Children();
-      Bitset leaves(children[0]->Leaves());
-      for (size_t i = 1; i < children.size(); i++) {
-        leaves |= children[i]->Leaves();
-      }
-      node->leaves_ = leaves;
+      node->leaves_ = Node::LeavesOf(node->Children());
     }
     SafeInsert(tag_id_map, node->Tag(), node->id_);
   });
@@ -345,17 +340,21 @@ Node::NodePtr Node::Deroot() {
   return deroot(children_[0], children_[1]);
 }
 
-// Class methods
-Node::NodePtr Node::Leaf(uint32_t id, Bitset leaves) {
-  return std::make_shared<Node>(id, leaves);
-}
-Node::NodePtr Node::Join(NodePtrVec children, size_t id) {
+Bitset Node::LeavesOf(const Node::NodePtrVec& children) {
   Assert(children.size() > 0, "Need children in Node::Join.");
   Bitset leaves(children[0]->Leaves());
   for (size_t i = 1; i < children.size(); i++) {
     leaves |= children[i]->Leaves();
   }
-  return std::make_shared<Node>(children, id, leaves);
+  return leaves;
+}
+
+// Class methods
+Node::NodePtr Node::Leaf(uint32_t id, Bitset leaves) {
+  return std::make_shared<Node>(id, leaves);
+}
+Node::NodePtr Node::Join(NodePtrVec children, size_t id) {
+  return std::make_shared<Node>(children, id, Node::LeavesOf(children));
 }
 Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t id) {
   return Join(std::vector<NodePtr>({left, right}), id);
