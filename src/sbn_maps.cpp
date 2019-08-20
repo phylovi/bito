@@ -93,7 +93,7 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
 
 IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
                                               const Node::NodePtr& topology) {
-  auto leaf_count = topology->LeafCount();
+  const auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
   SizeVector rootsplit_result(topology->Id());
   topology->PreOrder(
@@ -164,6 +164,40 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
 
 SizeVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
                                const Node::NodePtr& topology) {
-  auto out = IndexerRepresentationOf(indexer, topology);
-  return out.first;
+  SizeVector psp_result_down(topology->Id());
+  SizeVector psp_result_up(topology->Id());
+  const auto leaf_count = topology->LeafCount();
+  Bitset bitset(3 * leaf_count, false);
+  auto set_bitset_for_psp = [&bitset, leaf_count](const Node* node,
+                                                  const Node* sister,
+                                                  const Node* parent) {
+    bitset.Zero();
+    bitset.CopyFrom(parent->Leaves(), 0, true);
+    bitset.CopyFrom(parent->Leaves(), leaf_count, false);
+    bitset.CopyFrom(std::min(node->Leaves(), sister->Leaves()), 2 * leaf_count,
+                    false);
+
+  };
+  topology->TriplePreOrder(
+      // f_root
+      [&psp_result_up, &indexer, &leaf_count, &bitset](
+          const Node* node0, const Node* node1, const Node* node2) {
+        bitset.Zero();
+        bitset.CopyFrom(node0->Leaves(), 0, true);
+        bitset.CopyFrom(node0->Leaves(), leaf_count, false);
+        bitset.CopyFrom(std::min(node1->Leaves(), node2->Leaves()),
+                        2 * leaf_count, false);
+        psp_result_up[node0->Id()] = indexer.at(bitset);
+      },
+      // f_internal
+      [&psp_result_down, &indexer, &leaf_count, &bitset](
+          const Node* node, const Node* sister, const Node* parent) {
+        bitset.Zero();
+        bitset.CopyFrom(parent->Leaves(), 0, true);
+        bitset.CopyFrom(parent->Leaves(), leaf_count, false);
+        bitset.CopyFrom(std::min(node->Leaves(), sister->Leaves()),
+                        2 * leaf_count, false);
+        psp_result_down[parent->Id()] = indexer.at(bitset);
+      });
+  return psp_result_down;
 }
