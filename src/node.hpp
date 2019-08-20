@@ -79,8 +79,7 @@ class Node {
   uint32_t LeafCount() const { return LeafCountOfTag(tag_); }
   size_t Hash() const { return hash_; }
   bool IsLeaf() const { return children_.empty(); }
-  // TODO try this out as a const &?
-  NodePtrVec Children() const { return children_; }
+  const NodePtrVec& Children() const { return children_; }
 
   bool operator==(const Node& other) const;
 
