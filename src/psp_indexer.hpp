@@ -3,7 +3,7 @@
 
 // This is a class implementing the an indexing scheme for the Primary Subsplit
 // Pair branch length parameterization.
-// See Zhang & Matsen ICLR 2018 for details.
+// See the 2018 ICLR paper for details.
 
 #ifndef SRC_PSP_INDEXER_HPP_
 #define SRC_PSP_INDEXER_HPP_
