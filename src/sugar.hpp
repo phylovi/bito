@@ -25,6 +25,7 @@ typedef std::unordered_map<char, int> CharIntMap;
 typedef std::experimental::optional<std::vector<double>> DoubleVectorOption;
 typedef std::experimental::optional<TagStringMap> TagStringMapOption;
 typedef std::vector<std::string> StringVector;
+typedef std::vector<StringVector> StringVectorVector;
 typedef std::unordered_set<std::string> StringSet;
 typedef std::vector<StringSet> StringSetVector;
 typedef std::unordered_map<std::string, size_t> StringSizeMap;

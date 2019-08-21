@@ -190,6 +190,13 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.StringIndexerRepresentationOf(
                IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1)),
            correct_representation_1);
+  auto correct_psp_representation_1 = StringVectorVector(
+      {{"01111|00001", "10111|00010", "11011|01010", "11101|01000",
+        "11110|01110", "10101|00100", "01110|00100"},
+       {"", "", "", "", "", "01010|00010", "10001|00001"}});
+  CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_1),
+           correct_psp_representation_1);
+
   // (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
   auto indexer_test_topology_2 = Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 7});
   std::pair<StringSet, StringSetVector> correct_representation_2(
@@ -204,10 +211,16 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.StringIndexerRepresentationOf(
                IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2)),
            correct_representation_2);
+  auto correct_psp_representation_2 = StringVectorVector(
+      {{"01111|00111", "10111|00111", "11011|00011", "11101|00001",
+        "11110|00010", "00111|00011", "00011|00001"},
+       {"", "", "", "", "", "11000|01000", "11100|00100"}});
+  CHECK_EQ(inst.StringIndexerRepresentationOf(
+               IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2)),
+           correct_representation_2);
+
   inst.SampleTrees(2);
   inst.GetIndexerRepresentations();
-  std::cout << inst.psp_indexer_.RepresentationOf(indexer_test_topology_1)
-            << std::endl;
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");

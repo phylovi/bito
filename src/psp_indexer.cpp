@@ -26,6 +26,20 @@ PSPIndexer::PSPIndexer(BitsetVector rootsplits, BitsetSizeMap in_indexer) {
   first_empty_index_ = index;
 };
 
+StringVector PSPIndexer::ToStringVector() const {
+  std::vector<std::string> reversed_indexer(indexer_.size() + 1);
+  for (const auto& iter : indexer_) {
+    if (iter.second < after_rootsplits_index_) {
+      reversed_indexer[iter.second] = iter.first.ToString();
+    } else {
+      reversed_indexer[iter.second] = iter.first.SubsplitToString();
+    }
+  }
+  // Add an extra at the end for the split that doesn't exist.
+  reversed_indexer[indexer_.size()] = "";
+  return reversed_indexer;
+}
+
 SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) {
   Assert(first_empty_index_ > 0, "This PSPIndexer is uninitialized.");
   SizeVector psp_result_down(topology->Id(), first_empty_index_);
@@ -44,24 +58,35 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) {
     bitset.CopyFrom(std::min(z1_bitset, z2->Leaves()), leaf_count, false);
     return indexer.at(bitset);
   };
-  std::cout << topology->Newick() << std::endl;
   topology->TriplePreOrder(
       // f_root
       [&psp_result_up, &psp_index](const Node* node0, const Node* node1,
                                    const Node* node2) {
-        // std::cout << node0->Id() << ", true\n";
         psp_result_up[node0->Id()] =
             psp_index(node1->Leaves(), node2, node0, true);
       },
       // f_internal
       [&psp_result_up, &psp_result_down, &psp_index](
           const Node* node, const Node* sister, const Node* parent) {
-        // std::cout << parent->Id() << ", false\n";
-        // std::cout << node->Id() << ", true\n";
         psp_result_up[node->Id()] =
             psp_index(~parent->Leaves(), sister, node, true);
         psp_result_down[parent->Id()] =
             psp_index(node->Leaves(), sister, parent, false);
       });
   return {psp_result_up, psp_result_down};
+}
+
+StringVectorVector PSPIndexer::StringRepresentationOf(
+    const Node::NodePtr& topology) {
+  StringVector reversed_indexer = ToStringVector();
+  StringVectorVector result;
+
+  for (const auto& partial_representation : RepresentationOf(topology)) {
+    StringVector str_partial_representation;
+    for (const auto& index : partial_representation) {
+      str_partial_representation.push_back(reversed_indexer.at(index));
+    }
+    result.push_back(std::move(str_partial_representation));
+  }
+  return result;
 }

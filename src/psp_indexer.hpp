@@ -28,7 +28,16 @@ class PSPIndexer {
     return {{"after_rootsplits_index", after_rootsplits_index_},
             {"first_empty_index", first_empty_index_}};
   }
+
+  // Reverse the indexer to a vector of strings.
+  // We add in another extra empty string at the end for "not found."
+  StringVector ToStringVector() const;
+
+  // Get the PSP representation of a given topology.
   SizeVectorVector RepresentationOf(const Node::NodePtr& topology);
+  // Get the string version of the representation.
+  // Inefficiently implemented, so for testing only.
+  StringVectorVector StringRepresentationOf(const Node::NodePtr& topology);
 
  private:
   BitsetSizeMap indexer_;
