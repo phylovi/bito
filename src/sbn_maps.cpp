@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
-#include "prettyprint.hpp"
 
 // Make a map from Tags to the bitset representing the ids below the Tag.
 SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology) {

@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "prettyprint.hpp"
 
 // Put typedefs that are built of STL types here.
 typedef uint64_t Tag;
