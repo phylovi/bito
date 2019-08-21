@@ -130,7 +130,15 @@ std::string Bitset::ToString() const {
   return str;
 }
 
-// Are any of the bits 1?
+bool Bitset::All() const {
+  for (size_t i = 0; i < value_.size(); ++i) {
+    if (!value_[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool Bitset::Any() const {
   for (size_t i = 0; i < value_.size(); ++i) {
     if (value_[i]) {
@@ -241,6 +249,13 @@ Bitset Bitset::PCSSParent() const {
   return Bitset(new_value);
 }
 
+Bitset Bitset::PCSSWithoutParent() const {
+  size_t chunk_size = PCSSChunkSize();
+  std::vector<bool> new_value(value_.begin() + int32_t(chunk_size),
+                              value_.end());
+  return Bitset(new_value);
+}
+
 Bitset Bitset::PCSSChildSubsplit() const {
   size_t chunk_size = PCSSChunkSize();
   std::vector<bool> new_value(value_.begin() + int32_t(chunk_size),
@@ -272,6 +287,13 @@ bool Bitset::PCSSIsValid() const {
     return false;
   }
   return true;
+}
+
+bool Bitset::PCSSIsRootsplit() const {
+  Assert(size() % 3 == 0, "Size isn't 0 mod 3 in Bitset::PCSSIsRootsplit.");
+
+  auto total = PCSSChunk(0) | PCSSChunk(1);
+  return total.All();
 }
 
 Bitset Bitset::Singleton(size_t n, size_t which_on) {

@@ -43,8 +43,8 @@ typedef std::vector<StringSet> StringSetVector;
     }                                \
   })
 #endif
-// Use Failwith generally when it's a problem with input data versus a problem
-// with program logic. This is just a convention if we need to refactor later.
+// Use Failwith when it's a problem with input data versus a problem
+// with program logic. That way we can turn off Assert if we want to.
 // As you can see Assert is implemented in terms of Failwith.
 //
 // Here we use a macro to avoid "control may reach end of non-void function"

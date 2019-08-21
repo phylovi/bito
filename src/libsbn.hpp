@@ -16,6 +16,7 @@
 #include "beagle.hpp"
 #include "driver.hpp"
 #include "prettyprint.hpp"
+#include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
 #include "sugar.hpp"
 #include "tree.hpp"

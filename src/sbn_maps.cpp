@@ -183,7 +183,7 @@ SizeVectorVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
     // Set Z in the middle location.
     bitset.CopyFrom(z->Leaves(), leaf_count, up);
     bitset.CopyFrom(std::min(z1_bitset, z2->Leaves()), 2 * leaf_count, false);
-    std::cout << bitset.PCSSToString() << std::endl;
+    // std::cout << bitset.PCSSToString() << std::endl;
     return indexer.at(bitset);
   };
   std::cout << topology->Newick() << std::endl;
@@ -191,15 +191,15 @@ SizeVectorVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
       // f_root
       [&psp_result_up, &psp_index](const Node* node0, const Node* node1,
                                    const Node* node2) {
-        std::cout << node0->Id() << ", true\n";
+        // std::cout << node0->Id() << ", true\n";
         psp_result_up[node0->Id()] =
             psp_index(node1->Leaves(), node2, node0, true);
       },
       // f_internal
       [&psp_result_up, &psp_result_down, &psp_index](
           const Node* node, const Node* sister, const Node* parent) {
-        std::cout << parent->Id() << ", false\n";
-        std::cout << node->Id() << ", true\n";
+        // std::cout << parent->Id() << ", false\n";
+        // std::cout << node->Id() << ", true\n";
         psp_result_up[node->Id()] =
             psp_index(~parent->Leaves(), sister, node, true);
         psp_result_down[parent->Id()] =

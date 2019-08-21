@@ -54,6 +54,9 @@ class Bitset {
   void Zero();
   size_t Hash() const;
   std::string ToString() const;
+  // Are all of the bits 1?
+  bool All() const;
+  // Are any of the bits 1?
   bool Any() const;
   void Minorize();
   void CopyFrom(const Bitset &other, size_t begin, bool flip);
@@ -84,9 +87,16 @@ class Bitset {
   // more examples.
   std::string PCSSToString() const;
   bool PCSSIsValid() const;
+  // Do the sister and focal clades union to the whole taxon set?
+  bool PCSSIsRootsplit() const;
   size_t PCSSChunkSize() const;
   Bitset PCSSChunk(size_t i) const;
+  // Get the first 2/3rds of the PCSS.
   Bitset PCSSParent() const;
+  // Get the second 2/3rds of the PCSS.
+  Bitset PCSSWithoutParent() const;
+  // Get the representation of the child subsplit in the simple form of a pair
+  // of membership indicators, concatenated together into one bitset.
   Bitset PCSSChildSubsplit() const;
 
   // ** Static methods
@@ -161,6 +171,8 @@ TEST_CASE("Bitset") {
   a &= Bitset("0110");
   CHECK_EQ(a, Bitset("0100"));
 
+  CHECK_EQ(a.All(), false);
+  CHECK_EQ(Bitset(4, true).All(), true);
   CHECK_EQ(a.Any(), true);
   CHECK_EQ(Bitset(4, false).Any(), false);
 
@@ -195,6 +207,7 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("100011001").PCSSIsValid(), true);
 
   CHECK_EQ(Bitset("100011001").PCSSParent(), Bitset("100011"));
+  CHECK_EQ(Bitset("100011001").PCSSWithoutParent(), Bitset("011001"));
   CHECK_EQ(Bitset("100011001").PCSSChildSubsplit(), Bitset("010001"));
   CHECK_EQ(Bitset("100001110001").PCSSChildSubsplit(), Bitset("01100001"));
 
