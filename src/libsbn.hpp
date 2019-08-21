@@ -22,14 +22,12 @@
 #include "tree.hpp"
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
-typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
-typedef std::unordered_map<std::string, std::pair<uint32_t, uint32_t>>
-    StringUInt32PairMap;
-typedef std::unordered_map<uint32_t, std::string> UInt32StringMap;
-typedef std::unordered_map<std::string,
-                           std::unordered_map<std::string, uint32_t>>
+typedef std::unordered_map<std::string, std::pair<size_t, size_t>>
+    StringSizePairMap;
+typedef std::unordered_map<size_t, std::string> SizeStringMap;
+typedef std::unordered_map<std::string, std::unordered_map<std::string, size_t>>
     StringPCSSMap;
-typedef std::vector<uint32_t> PCSSIndexVector;
+typedef std::vector<size_t> PCSSIndexVector;
 
 // Turn a <Key, T> map into a <std::string, T> map for any Key type that has a
 // ToString method.
@@ -63,12 +61,15 @@ struct SBNInstance {
   // The first index after the rootsplit block in sbn_parameters_.
   // TODO we can drop this one because it's in rootsplits_.
   size_t rootsplit_index_end_;
-  BitsetUInt32Map indexer_;
+  BitsetSizeMap indexer_;
   // A map going from the index of a PCSS to its child.
-  UInt32BitsetMap index_to_child_;
+  SizeBitsetMap index_to_child_;
   // A map going from a parent subsplit to the range of indices in
   // sbn_parameters_ with its children.
-  BitsetUInt32PairMap parent_to_range_;
+  BitsetSizePairMap parent_to_range_;
+  // The Primary Split Pair indexer.
+  PSPIndexer psp_indexer_;
+
   // Random bits.
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
@@ -105,7 +106,7 @@ struct SBNInstance {
 
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
-  uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) const;
+  size_t SampleIndex(std::pair<size_t, size_t> range) const;
 
   // This function samples a tree by first sampling the rootsplit, and then
   // calling the recursive form of SampleTopology (see next function)..
@@ -134,10 +135,10 @@ struct SBNInstance {
   // ** I/O
 
   // Return indexer_ and parent_to_range_ converted into string-keyed maps.
-  std::tuple<StringUInt32Map, StringUInt32PairMap> GetIndexers() const;
+  std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
 
   // This function is really just for testing-- it recomputes counters scratch.
-  std::pair<StringUInt32Map, StringPCSSMap> SplitCounters() const;
+  std::pair<StringSizeMap, StringPCSSMap> SplitCounters() const;
 
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
@@ -207,9 +208,7 @@ TEST_CASE("libsbn") {
            correct_representation_2);
   inst.SampleTrees(2);
   inst.GetIndexerRepresentations();
-
-  PSPIndexer psp_indexer(inst.rootsplits_, inst.indexer_);
-  std::cout << psp_indexer.RepresentationOf(indexer_test_topology_1)
+  std::cout << inst.psp_indexer_.RepresentationOf(indexer_test_topology_1)
             << std::endl;
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");

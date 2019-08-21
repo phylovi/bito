@@ -4,12 +4,15 @@
 #include "psp_indexer.hpp"
 #include "sugar.hpp"
 
-PSPIndexer::PSPIndexer(BitsetVector rootsplits, BitsetUInt32Map in_indexer) {
-  uint32_t index = 0;
+PSPIndexer::PSPIndexer(BitsetVector rootsplits, BitsetSizeMap in_indexer) {
+  size_t index = 0;
+  // First the rootsplits.
   for (const auto& rootsplit : rootsplits) {
     SafeInsert(indexer_, rootsplit, index);
     index++;
   }
+  after_rootsplits_index_ = index;
+  // Now onto the PCSSs.
   for (const auto& iter : in_indexer) {
     const auto& pcss = iter.first;
     // The first condition allows us to skip the rootsplits. We only want the
@@ -20,11 +23,13 @@ PSPIndexer::PSPIndexer(BitsetVector rootsplits, BitsetUInt32Map in_indexer) {
       index++;
     }
   }
+  first_empty_index_ = index;
 };
 
 SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) {
-  SizeVector psp_result_down(topology->Id(), SIZE_MAX);
-  SizeVector psp_result_up(topology->Id(), SIZE_MAX);
+  Assert(first_empty_index_ > 0, "This PSPIndexer is uninitialized.");
+  SizeVector psp_result_down(topology->Id(), first_empty_index_);
+  SizeVector psp_result_up(topology->Id(), first_empty_index_);
   const auto leaf_count = topology->LeafCount();
   Bitset bitset(2 * leaf_count);
   // Here we use the terminology in the 2018 ICLR paper (screenshotted in
@@ -37,7 +42,6 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) {
     // Set Z in the middle location.
     bitset.CopyFrom(z->Leaves(), 0, up);
     bitset.CopyFrom(std::min(z1_bitset, z2->Leaves()), leaf_count, false);
-    // std::cout << bitset.PCSSToString() << std::endl;
     return indexer.at(bitset);
   };
   std::cout << topology->Newick() << std::endl;

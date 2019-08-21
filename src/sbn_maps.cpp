@@ -28,8 +28,8 @@ SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology) {
   return map;
 }
 
-BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies) {
-  BitsetUInt32Dict rootsplit_counter(0);
+BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies) {
+  BitsetSizeDict rootsplit_counter(0);
   for (const auto& iter : topologies) {
     auto topology = iter.first;
     auto count = iter.second;
@@ -81,7 +81,7 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
       auto search = pcss_dict.find(parent);
       if (search == pcss_dict.end()) {
         // The first time we have seen this parent.
-        BitsetUInt32Dict child_singleton(0);
+        BitsetSizeDict child_singleton(0);
         child_singleton.increment(std::move(child), count);
         SafeInsert(pcss_dict, std::move(parent), child_singleton);
       } else {
@@ -92,7 +92,7 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
   return pcss_dict;
 }
 
-IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
+IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
                                               const Node::NodePtr& topology) {
   const auto leaf_count = topology->LeafCount();
   // First, the rootsplits.

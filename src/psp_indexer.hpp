@@ -14,16 +14,26 @@
 #include <utility>
 #include <vector>
 #include "sbn_maps.hpp"
+#include "sugar.hpp"
 #include "tree.hpp"
 
 class PSPIndexer {
  public:
-  PSPIndexer(BitsetVector rootsplits, BitsetUInt32Map in_indexer);
+  PSPIndexer() : first_empty_index_(0){};
+  PSPIndexer(BitsetVector rootsplits, BitsetSizeMap in_indexer);
 
+  size_t AfterRootsplitsIndex() const { return after_rootsplits_index_; }
+  size_t FirstEmptyIndex() const { return first_empty_index_; }
+  StringSizeMap Details() const {
+    return {{"after_rootsplits_index", after_rootsplits_index_},
+            {"first_empty_index", first_empty_index_}};
+  }
   SizeVectorVector RepresentationOf(const Node::NodePtr& topology);
 
  private:
-  BitsetUInt32Map indexer_;
+  BitsetSizeMap indexer_;
+  size_t after_rootsplits_index_;
+  size_t first_empty_index_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

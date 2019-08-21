@@ -67,7 +67,6 @@ Also let's:
   If you can't make the code use and operation inherently obvious, please write documentation.
 * Prefer GitHub issues to TODO comments in code.
 * Always use curly braces for the body of conditionals and loops, even if they are one line.
-* Prefer types of known size, such as `uint32_t`, to types that can vary across architectures.
 
 The [C++ core guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) are the authority for how to write C++, and we will follow them.
 For issues not covered by these guidelines (especially naming conventions), we will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.
