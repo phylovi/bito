@@ -39,8 +39,8 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer_,
                                               const Node::NodePtr& topology);
 
-SizeVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
-                               const Node::NodePtr& topology);
+SizeVectorVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
+                                     const Node::NodePtr& topology);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 

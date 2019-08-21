@@ -162,42 +162,42 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
   return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
 }
 
-SizeVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
-                               const Node::NodePtr& topology) {
+SizeVectorVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
+                                     const Node::NodePtr& topology) {
   SizeVector psp_result_down(topology->Id());
   SizeVector psp_result_up(topology->Id());
   const auto leaf_count = topology->LeafCount();
   Bitset bitset(3 * leaf_count, false);
-  auto set_bitset_for_psp = [&bitset, leaf_count](const Node* node,
-                                                  const Node* sister,
-                                                  const Node* parent) {
+  // Here we use the terminology in the 2018 ICLR paper (screenshotted in
+  // https://github.com/phylovi/libsbn/issues/95) looking at the right-hand case
+  // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
+  // we use analogous notation, but for the corresponding edges of the tree.
+  auto set_bitset_for_psp = [&bitset, leaf_count](
+                                const Node* z1, const Node* z2, const Node* z) {
     bitset.Zero();
-    bitset.CopyFrom(parent->Leaves(), 0, true);
-    bitset.CopyFrom(parent->Leaves(), leaf_count, false);
-    bitset.CopyFrom(std::min(node->Leaves(), sister->Leaves()), 2 * leaf_count,
+    // This is the complement of Z, namely W. (PSPs always have the parent split
+    // being a root split.)
+    bitset.CopyFrom(z->Leaves(), 0, true);
+    // Set Z in the middle location.
+    bitset.CopyFrom(z->Leaves(), leaf_count, false);
+    bitset.CopyFrom(std::min(z1->Leaves(), z2->Leaves()), 2 * leaf_count,
                     false);
-
   };
   topology->TriplePreOrder(
       // f_root
-      [&psp_result_up, &indexer, &leaf_count, &bitset](
+      [&psp_result_up, &indexer, &bitset, &set_bitset_for_psp](
           const Node* node0, const Node* node1, const Node* node2) {
-        bitset.Zero();
-        bitset.CopyFrom(node0->Leaves(), 0, true);
-        bitset.CopyFrom(node0->Leaves(), leaf_count, false);
-        bitset.CopyFrom(std::min(node1->Leaves(), node2->Leaves()),
-                        2 * leaf_count, false);
+        set_bitset_for_psp(node1, node2, node0);
         psp_result_up[node0->Id()] = indexer.at(bitset);
       },
       // f_internal
-      [&psp_result_down, &indexer, &leaf_count, &bitset](
-          const Node* node, const Node* sister, const Node* parent) {
-        bitset.Zero();
-        bitset.CopyFrom(parent->Leaves(), 0, true);
-        bitset.CopyFrom(parent->Leaves(), leaf_count, false);
-        bitset.CopyFrom(std::min(node->Leaves(), sister->Leaves()),
-                        2 * leaf_count, false);
+      [&psp_result_up, &psp_result_down, &indexer, &bitset,
+       &set_bitset_for_psp](const Node* node, const Node* sister,
+                            const Node* parent) {
+        set_bitset_for_psp(node, sister, parent);
         psp_result_down[parent->Id()] = indexer.at(bitset);
+        set_bitset_for_psp(parent, sister, node);
+        psp_result_up[node->Id()] = indexer.at(bitset);
       });
-  return psp_result_down;
+  return {psp_result_up, psp_result_down};
 }
