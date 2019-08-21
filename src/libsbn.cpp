@@ -35,7 +35,7 @@ void SBNInstance::PrintStatus() {
 // ** Building SBN-related items
 
 void SBNInstance::ProcessLoadedTrees() {
-  uint32_t index = 0;
+  size_t index = 0;
   auto counter = tree_collection_.TopologyCounter();
   // See above for the definitions of these members.
   sbn_parameters_.clear();
@@ -49,7 +49,6 @@ void SBNInstance::ProcessLoadedTrees() {
     rootsplits_.push_back(iter.first);
     index++;
   }
-  rootsplit_index_end_ = index;
   // Now add the PCSSs.
   for (const auto &iter : PCSSCounterOf(counter)) {
     const auto &parent = iter.first;
@@ -63,6 +62,7 @@ void SBNInstance::ProcessLoadedTrees() {
     }
   }
   sbn_parameters_ = std::vector<double>(index, 1.);
+  psp_indexer_ = PSPIndexer(rootsplits_, indexer_);
 }
 
 void SBNInstance::CheckSBNMapsAvailable() {
@@ -75,7 +75,7 @@ void SBNInstance::CheckSBNMapsAvailable() {
 void SBNInstance::PrintSupports() {
   std::vector<std::string> to_print(indexer_.size());
   for (const auto &iter : indexer_) {
-    if (iter.second < rootsplit_index_end_) {
+    if (iter.second < rootsplits_.size()) {
       to_print[iter.second] = iter.first.ToString();
     } else {
       to_print[iter.second] = iter.first.PCSSToString();
@@ -86,16 +86,17 @@ void SBNInstance::PrintSupports() {
   }
 }
 
-uint32_t SBNInstance::SampleIndex(std::pair<uint32_t, uint32_t> range) const {
+size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
   Assert(range.first < range.second && range.second <= sbn_parameters_.size(),
          "SampleIndex given an invalid range.");
   std::discrete_distribution<> distribution(
-      sbn_parameters_.begin() + range.first,
-      sbn_parameters_.begin() + range.second);
+      // Lordy, these integer types.
+      sbn_parameters_.begin() + static_cast<ptrdiff_t>(range.first),
+      sbn_parameters_.begin() + static_cast<ptrdiff_t>(range.second));
   // We have to add on range.first because we have taken a slice of the full
   // array, and the sampler treats the beginning of this slice as zero.
   auto result =
-      range.first + static_cast<uint32_t>(distribution(random_generator_));
+      range.first + static_cast<size_t>(distribution(random_generator_));
   Assert(result < range.second, "SampleIndex sampled a value out of range.");
   return result;
 }
@@ -104,8 +105,8 @@ uint32_t SBNInstance::SampleIndex(std::pair<uint32_t, uint32_t> range) const {
 // calling the recursive form of SampleTopology.
 Node::NodePtr SBNInstance::SampleTopology() const {
   // Start by sampling a rootsplit.
-  uint32_t rootsplit_index =
-      SampleIndex(std::pair<uint32_t, uint32_t>(0, rootsplit_index_end_));
+  size_t rootsplit_index =
+      SampleIndex(std::pair<size_t, size_t>(0, rootsplits_.size()));
   const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
   // The addition below turns the rootsplit into a subsplit.
   auto topology = SampleTopology(rootsplit + ~rootsplit)->Deroot();
@@ -145,9 +146,18 @@ std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
   std::vector<IndexerRepresentation> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
-    IndexerRepresentationOf(indexer_, tree.Topology());
     representations.push_back(
         IndexerRepresentationOf(indexer_, tree.Topology()));
+  }
+  return representations;
+}
+
+std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations()
+    const {
+  std::vector<SizeVectorVector> representations;
+  representations.reserve(tree_collection_.trees_.size());
+  for (const auto &tree : tree_collection_.trees_) {
+    representations.push_back(psp_indexer_.RepresentationOf(tree.Topology()));
   }
   return representations;
 }
@@ -157,7 +167,7 @@ std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
 StringVector SBNInstance::StringReversedIndexer() const {
   std::vector<std::string> reversed_indexer(indexer_.size());
   for (const auto &iter : indexer_) {
-    if (iter.second < rootsplit_index_end_) {
+    if (iter.second < rootsplits_.size()) {
       reversed_indexer[iter.second] = iter.first.ToString();
     } else {
       reversed_indexer[iter.second] = iter.first.PCSSToString();
@@ -192,17 +202,16 @@ SBNInstance::StringIndexerRepresentationOf(
 
 // ** I/O
 
-std::tuple<StringUInt32Map, StringUInt32PairMap> SBNInstance::GetIndexers()
-    const {
+std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
   auto str_indexer = StringifyMap(indexer_);
   auto str_parent_to_range = StringifyMap(parent_to_range_);
   std::string rootsplit("rootsplit");
-  SafeInsert(str_parent_to_range, rootsplit, {0, rootsplit_index_end_});
+  SafeInsert(str_parent_to_range, rootsplit, {0, rootsplits_.size()});
   return {str_indexer, str_parent_to_range};
 }
 
 // This function is really just for testing-- it recomputes from scratch.
-std::pair<StringUInt32Map, StringPCSSMap> SBNInstance::SplitCounters() const {
+std::pair<StringSizeMap, StringPCSSMap> SBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();
   return {StringifyMap(RootsplitCounterOf(counter).Map()),
           StringPCSSMapOf(PCSSCounterOf(counter))};

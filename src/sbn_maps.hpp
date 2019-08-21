@@ -14,19 +14,16 @@
 
 typedef std::vector<Bitset> BitsetVector;
 typedef std::unordered_map<size_t, Bitset> SizeBitsetMap;
-typedef std::unordered_map<Bitset, int> BitsetIndexer;
-typedef DefaultDict<Bitset, uint32_t> BitsetUInt32Dict;
-typedef std::unordered_map<uint32_t, Bitset> UInt32BitsetMap;
-typedef std::unordered_map<Bitset, uint32_t> BitsetUInt32Map;
-typedef std::unordered_map<Bitset, std::pair<uint32_t, uint32_t>>
-    BitsetUInt32PairMap;
+typedef std::unordered_map<Bitset, size_t> BitsetSizeMap;
+typedef std::unordered_map<Bitset, std::pair<size_t, size_t>> BitsetSizePairMap;
+typedef DefaultDict<Bitset, size_t> BitsetSizeDict;
 typedef std::pair<SizeVector, SizeVectorVector> IndexerRepresentation;
 
-typedef std::unordered_map<Bitset, DefaultDict<Bitset, uint32_t>> PCSSDict;
+typedef std::unordered_map<Bitset, DefaultDict<Bitset, size_t>> PCSSDict;
 
 SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
 
-BitsetUInt32Dict RootsplitCounterOf(const Node::TopologyCounter& topologies);
+BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 // This function gives information about the splits and PCSSs of a given
 // topology with respect to the current indexing data structures.
@@ -36,8 +33,11 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 // those various virtual rootings. pcss_result is a vector of vectors, giving
 // the indices of sbn_parameters_ corresponding to PCSSs that are present in the
 // given topology.
-IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer_,
+IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer_,
                                               const Node::NodePtr& topology);
+
+SizeVectorVector PSPRepresentationOf(const BitsetSizeMap& indexer,
+                                     const Node::NodePtr& topology);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 

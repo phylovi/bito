@@ -15,19 +15,18 @@
 #include "alignment.hpp"
 #include "beagle.hpp"
 #include "driver.hpp"
+#include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
 #include "sugar.hpp"
 #include "tree.hpp"
 
 typedef std::unordered_map<std::string, float> StringFloatMap;
-typedef std::unordered_map<std::string, uint32_t> StringUInt32Map;
-typedef std::unordered_map<std::string, std::pair<uint32_t, uint32_t>>
-    StringUInt32PairMap;
-typedef std::unordered_map<uint32_t, std::string> UInt32StringMap;
-typedef std::unordered_map<std::string,
-                           std::unordered_map<std::string, uint32_t>>
+typedef std::unordered_map<std::string, std::pair<size_t, size_t>>
+    StringSizePairMap;
+typedef std::unordered_map<size_t, std::string> SizeStringMap;
+typedef std::unordered_map<std::string, std::unordered_map<std::string, size_t>>
     StringPCSSMap;
-typedef std::vector<uint32_t> PCSSIndexVector;
+typedef std::vector<size_t> PCSSIndexVector;
 
 // Turn a <Key, T> map into a <std::string, T> map for any Key type that has a
 // ToString method.
@@ -59,13 +58,15 @@ struct SBNInstance {
   // The collection of rootsplits, with the same indexing as in the indexer_.
   BitsetVector rootsplits_;
   // The first index after the rootsplit block in sbn_parameters_.
-  size_t rootsplit_index_end_;
-  BitsetUInt32Map indexer_;
+  BitsetSizeMap indexer_;
   // A map going from the index of a PCSS to its child.
-  UInt32BitsetMap index_to_child_;
+  SizeBitsetMap index_to_child_;
   // A map going from a parent subsplit to the range of indices in
   // sbn_parameters_ with its children.
-  BitsetUInt32PairMap parent_to_range_;
+  BitsetSizePairMap parent_to_range_;
+  // The Primary Split Pair indexer.
+  PSPIndexer psp_indexer_;
+
   // Random bits.
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
@@ -102,7 +103,7 @@ struct SBNInstance {
 
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
-  uint32_t SampleIndex(std::pair<uint32_t, uint32_t> range) const;
+  size_t SampleIndex(std::pair<size_t, size_t> range) const;
 
   // This function samples a tree by first sampling the rootsplit, and then
   // calling the recursive form of SampleTopology (see next function)..
@@ -118,6 +119,9 @@ struct SBNInstance {
   // of what these are.
   std::vector<IndexerRepresentation> GetIndexerRepresentations() const;
 
+  // Get PSP indexer representations of the trees in tree_collection_.
+  std::vector<SizeVectorVector> GetPSPIndexerRepresentations() const;
+
   // Get the indexer, but reversed and with bitsets appropriately converted to
   // strings.
   StringVector StringReversedIndexer() const;
@@ -131,10 +135,10 @@ struct SBNInstance {
   // ** I/O
 
   // Return indexer_ and parent_to_range_ converted into string-keyed maps.
-  std::tuple<StringUInt32Map, StringUInt32PairMap> GetIndexers() const;
+  std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
 
   // This function is really just for testing-- it recomputes counters scratch.
-  std::pair<StringUInt32Map, StringPCSSMap> SplitCounters() const;
+  std::pair<StringSizeMap, StringPCSSMap> SplitCounters() const;
 
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
@@ -188,6 +192,14 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.StringIndexerRepresentationOf(
                IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1)),
            correct_representation_1);
+  auto correct_psp_representation_1 = StringVectorVector(
+      {{"01111", "01000", "00100", "00010", "00001", "01010", "01110"},
+       {"", "", "", "", "", "01010|00010", "10001|00001"},
+       {"01111|00001", "10111|00010", "11011|01010", "11101|01000",
+        "11110|01110", "10101|00100", "01110|00100"}});
+  CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_1),
+           correct_psp_representation_1);
+
   // (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
   auto indexer_test_topology_2 = Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 7});
   std::pair<StringSet, StringSetVector> correct_representation_2(
@@ -202,6 +214,14 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.StringIndexerRepresentationOf(
                IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2)),
            correct_representation_2);
+  auto correct_psp_representation_2 = StringVectorVector(
+      {{"01111", "01000", "00100", "00010", "00001", "00111", "00011"},
+       {"", "", "", "", "", "11000|01000", "11100|00100"},
+       {"01111|00111", "10111|00111", "11011|00011", "11101|00001",
+        "11110|00010", "00111|00011", "00011|00001"}});
+  CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_2),
+           correct_psp_representation_2);
+
   inst.SampleTrees(2);
   inst.GetIndexerRepresentations();
 

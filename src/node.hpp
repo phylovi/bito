@@ -93,7 +93,7 @@ class Node {
   void PrePostOrder(std::function<void(const Node*)> pre,
                     std::function<void(const Node*)> post) const;
 
-  // Iterate f through (parent, sister, node) for bifurcating trees using a
+  // Iterate f through (node, sister, parent) for bifurcating trees using a
   // preorder traversal.
   void TriplePreOrderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const;
@@ -114,7 +114,7 @@ class Node {
   // We apply f_root to the descendant edges like so: 012, 120, and 201. Because
   // f_root is symmetric in the last two arguments, we are going to get all of
   // the distinct calls of f.
-  // At the internal nodes we cycle through triples of (parent, sister, node)
+  // At the internal nodes we cycle through triples of (node, sister, parent)
   // for f_internal.
   void TriplePreOrder(
       std::function<void(const Node*, const Node*, const Node*)> f_root,
@@ -267,16 +267,16 @@ TEST_CASE("Node") {
   Node::NodePtr t2 = examples[2];       // 2: (0,2,(1,3))
   Node::NodePtr t3 = examples[3];       // 3: (0,(1,(2,3)))
   std::vector<std::string> triples;
-  auto collect_triple = [&triples](const Node* parent, const Node* sister,
-                                   const Node* node) {
-    triples.push_back(parent->TagString() + ", " + sister->TagString() + ", " +
-                      node->TagString());
+  auto collect_triple = [&triples](const Node* node, const Node* sister,
+                                   const Node* parent) {
+    triples.push_back(node->TagString() + ", " + sister->TagString() + ", " +
+                      parent->TagString());
   };
   t2->TriplePreOrder(collect_triple, collect_triple);
   // t2 with tags: (0_1,2_1,(1_1,3_1)3_2)
   std::vector<std::string> correct_triples({"0_1, 2_1, 3_2", "2_1, 3_2, 0_1",
-                                            "3_2, 0_1, 2_1", "3_2, 3_1, 1_1",
-                                            "3_2, 1_1, 3_1"});
+                                            "3_2, 0_1, 2_1", "1_1, 3_1, 3_2",
+                                            "3_1, 1_1, 3_2"});
   CHECK_EQ(triples, correct_triples);
 
   // This is actually a non-trivial test (see note in Node constructor above),

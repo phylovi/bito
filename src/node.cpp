@@ -114,9 +114,9 @@ void Node::TriplePreOrderBifurcating(
   if (!IsLeaf()) {
     Assert(children_.size() == 2,
            "TripleIdPreOrderBifurcating expects a bifurcating tree.");
-    f(this, children_[1].get(), children_[0].get());
+    f(children_[0].get(), children_[1].get(), this);
     children_[0]->TriplePreOrderBifurcating(f);
-    f(this, children_[0].get(), children_[1].get());
+    f(children_[1].get(), children_[0].get(), this);
     children_[1]->TriplePreOrderBifurcating(f);
   }
 }
@@ -174,9 +174,9 @@ void Node::TriplePreOrderInternal(
   if (!IsLeaf()) {
     Assert(children_.size() == 2,
            "TriplePreOrderInternal expects a bifurcating tree.");
-    f(this, children_[1].get(), children_[0].get());
+    f(children_[0].get(), children_[1].get(), this);
     children_[0]->TriplePreOrderInternal(f);
-    f(this, children_[0].get(), children_[1].get());
+    f(children_[1].get(), children_[0].get(), this);
     children_[1]->TriplePreOrderInternal(f);
   }
 }
@@ -208,7 +208,7 @@ void Node::PCSSPreOrder(PCSSFun f) const {
         }
       },
       // f_internal
-      [&f, this](const Node* parent, const Node* sister, const Node* node) {
+      [&f, this](const Node* node, const Node* sister, const Node* parent) {
         // Virtual root on node's edge, with subsplit pointing up.
         f(node, false, node, true, parent, true, sister, false, nullptr);
         if (!node->IsLeaf()) {

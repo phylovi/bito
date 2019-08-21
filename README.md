@@ -3,6 +3,9 @@
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/phylovi/libsbn.svg)](https://cloud.docker.com/u/phylovi/repository/docker/phylovi/libsbn/general) &nbsp;
 [![Travis CI status](https://travis-ci.org/phylovi/libsbn.svg?branch=master)](https://travis-ci.org/phylovi/libsbn)
 
+We are building a Python-interface C++ library so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let libsbn handle the tree structure and likelihood computations for you.
+
+
 ## Dependencies
 
 To install dependencies, use the associated conda environment file:
@@ -27,6 +30,16 @@ If you get an error about missing BEAGLE, just `conda activate libsbn` again and
 
 * (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
 * (Optional) If you modify the test preparation scripts, call `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
+
+
+## Understanding
+
+The following two papers will explain what this repository is about:
+
+* Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf). Also see [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
+* Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_).
+
+In the off chance that you are citing this library, don't forget to cite the [BEAGLE paper](http://dx.doi.org/10.1093/sysbio/syz020) too, as we use BEAGLE!
 
 
 ## Contributing
@@ -54,7 +67,6 @@ Also let's:
   If you can't make the code use and operation inherently obvious, please write documentation.
 * Prefer GitHub issues to TODO comments in code.
 * Always use curly braces for the body of conditionals and loops, even if they are one line.
-* Prefer types of known size, such as `uint32_t`, to types that can vary across architectures.
 
 The [C++ core guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) are the authority for how to write C++, and we will follow them.
 For issues not covered by these guidelines (especially naming conventions), we will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.

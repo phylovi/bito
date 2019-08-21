@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "prettyprint.hpp"
 
 // Put typedefs that are built of STL types here.
 typedef uint64_t Tag;
@@ -25,8 +26,10 @@ typedef std::unordered_map<char, int> CharIntMap;
 typedef std::experimental::optional<std::vector<double>> DoubleVectorOption;
 typedef std::experimental::optional<TagStringMap> TagStringMapOption;
 typedef std::vector<std::string> StringVector;
+typedef std::vector<StringVector> StringVectorVector;
 typedef std::unordered_set<std::string> StringSet;
 typedef std::vector<StringSet> StringSetVector;
+typedef std::unordered_map<std::string, size_t> StringSizeMap;
 
 // We implement problems in terms of exceptions. That means that they work great
 // in Jupyter notebooks.
@@ -43,8 +46,8 @@ typedef std::vector<StringSet> StringSetVector;
     }                                \
   })
 #endif
-// Use Failwith generally when it's a problem with input data versus a problem
-// with program logic. This is just a convention if we need to refactor later.
+// Use Failwith when it's a problem with input data versus a problem
+// with program logic. That way we can turn off Assert if we want to.
 // As you can see Assert is implemented in terms of Failwith.
 //
 // Here we use a macro to avoid "control may reach end of non-void function"

@@ -65,6 +65,7 @@ sources = [
     '_build/libsbn.cpp',
     '_build/node.cpp',
     '_build/parser.cpp',
+    '_build/psp_indexer.cpp',
     '_build/sbn_maps.cpp',
     '_build/scanner.cpp',
     '_build/site_pattern.cpp',

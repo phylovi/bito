@@ -15,7 +15,13 @@ def test_instance():
     sbn_parameters[0] = 0.2
     # Note that this puts the trees into the instance object, replacing the trees loaded from the file.
     inst.sample_trees(2)
-    inst.get_indexer_representations()
+    print("\nSBN indexing:")
+    print(inst.get_indexer_representations())
+    print("\nPSP indexing:")
+    print(inst.get_psp_indexer_representations())
+    print("\nPSP details:")
+    print(inst.psp_indexer.details())
+    print()
 
     # Checking split supports
     def convert_dict_to_int(d):
