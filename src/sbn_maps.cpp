@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include "prettyprint.hpp"
 
 // Make a map from Tags to the bitset representing the ids below the Tag.
 SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology) {
@@ -172,29 +173,37 @@ SizeVectorVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
   // https://github.com/phylovi/libsbn/issues/95) looking at the right-hand case
   // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
   // we use analogous notation, but for the corresponding edges of the tree.
-  auto psp_index = [&bitset, &leaf_count, &indexer](
-                       const Node* z1, const Node* z2, const Node* z) {
+  auto psp_index = [&bitset, &leaf_count, &indexer](const Bitset& z1_bitset,
+                                                    const Node* z2,
+                                                    const Node* z, bool up) {
     bitset.Zero();
     // This is the complement of Z, namely W. (PSPs always have the parent split
     // being a root split.)
-    bitset.CopyFrom(z->Leaves(), 0, true);
+    bitset.CopyFrom(z->Leaves(), 0, !up);
     // Set Z in the middle location.
-    bitset.CopyFrom(z->Leaves(), leaf_count, false);
-    bitset.CopyFrom(std::min(z1->Leaves(), z2->Leaves()), 2 * leaf_count,
-                    false);
+    bitset.CopyFrom(z->Leaves(), leaf_count, up);
+    bitset.CopyFrom(std::min(z1_bitset, z2->Leaves()), 2 * leaf_count, false);
+    std::cout << bitset.PCSSToString() << std::endl;
     return indexer.at(bitset);
   };
+  std::cout << topology->Newick() << std::endl;
   topology->TriplePreOrder(
       // f_root
       [&psp_result_up, &psp_index](const Node* node0, const Node* node1,
                                    const Node* node2) {
-        psp_result_up[node0->Id()] = psp_index(node1, node2, node0);
+        std::cout << node0->Id() << ", true\n";
+        psp_result_up[node0->Id()] =
+            psp_index(node1->Leaves(), node2, node0, true);
       },
       // f_internal
       [&psp_result_up, &psp_result_down, &psp_index](
           const Node* node, const Node* sister, const Node* parent) {
-        psp_result_down[parent->Id()] = psp_index(node, sister, parent);
-        psp_result_up[node->Id()] = psp_index(parent, sister, node);
+        std::cout << parent->Id() << ", false\n";
+        psp_result_down[parent->Id()] =
+            psp_index(node->Leaves(), sister, parent, false);
+        std::cout << node->Id() << ", true\n";
+        psp_result_up[node->Id()] =
+            psp_index(~parent->Leaves(), sister, node, true);
       });
   return {psp_result_up, psp_result_down};
 }

@@ -15,6 +15,7 @@
 #include "alignment.hpp"
 #include "beagle.hpp"
 #include "driver.hpp"
+#include "prettyprint.hpp"
 #include "sbn_maps.hpp"
 #include "sugar.hpp"
 #include "tree.hpp"
@@ -204,6 +205,9 @@ TEST_CASE("libsbn") {
            correct_representation_2);
   inst.SampleTrees(2);
   inst.GetIndexerRepresentations();
+
+  std::cout << PSPRepresentationOf(inst.indexer_, indexer_test_topology_1)
+            << std::endl;
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
