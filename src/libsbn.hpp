@@ -120,6 +120,9 @@ struct SBNInstance {
   // of what these are.
   std::vector<IndexerRepresentation> GetIndexerRepresentations() const;
 
+  // Get PSP indexer representations of the trees in tree_collection_.
+  std::vector<SizeVectorVector> GetPSPIndexerRepresentations() const;
+
   // Get the indexer, but reversed and with bitsets appropriately converted to
   // strings.
   StringVector StringReversedIndexer() const;

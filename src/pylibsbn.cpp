@@ -42,6 +42,8 @@ PYBIND11_MODULE(sbn, m) {
       .def(py::init<Tree::TreeVector, const std::vector<std::string> &>())
       .def("newick", &TreeCollection::Newick)
       .def_readwrite("trees", &TreeCollection::trees_);
+  // PSPIndexer
+  py::class_<PSPIndexer>(m, "PSPIndexer").def("details", &PSPIndexer::Details);
   // SBNInstance
   py::class_<SBNInstance>(m, "instance")
       // Constructors
@@ -61,7 +63,10 @@ PYBIND11_MODULE(sbn, m) {
       .def("sample_trees", &SBNInstance::SampleTrees)
       .def("get_indexer_representations",
            &SBNInstance::GetIndexerRepresentations)
+      .def("get_psp_indexer_representations",
+           &SBNInstance::GetPSPIndexerRepresentations)
       // Member Variables
+      .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
       .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
   // If you want to be sure to get all of the stdout and cerr messages, put your

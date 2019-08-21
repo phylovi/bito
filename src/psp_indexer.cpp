@@ -41,7 +41,8 @@ StringVector PSPIndexer::ToStringVector() const {
   return reversed_indexer;
 }
 
-SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) {
+SizeVectorVector PSPIndexer::RepresentationOf(
+    const Node::NodePtr& topology) const {
   Assert(first_empty_index_ > 0, "This PSPIndexer is uninitialized.");
   SizeVector psp_result_down(topology->Id(), first_empty_index_);
   SizeVector psp_result_up(topology->Id(), first_empty_index_);
@@ -78,7 +79,7 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) {
 }
 
 StringVectorVector PSPIndexer::StringRepresentationOf(
-    const Node::NodePtr& topology) {
+    const Node::NodePtr& topology) const {
   StringVector reversed_indexer = ToStringVector();
   StringVectorVector result;
 

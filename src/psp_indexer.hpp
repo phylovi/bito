@@ -34,10 +34,11 @@ class PSPIndexer {
   StringVector ToStringVector() const;
 
   // Get the PSP representation of a given topology.
-  SizeVectorVector RepresentationOf(const Node::NodePtr& topology);
+  SizeVectorVector RepresentationOf(const Node::NodePtr& topology) const;
   // Get the string version of the representation.
   // Inefficiently implemented, so for testing only.
-  StringVectorVector StringRepresentationOf(const Node::NodePtr& topology);
+  StringVectorVector StringRepresentationOf(
+      const Node::NodePtr& topology) const;
 
  private:
   BitsetSizeMap indexer_;

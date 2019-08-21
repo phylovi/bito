@@ -146,9 +146,18 @@ std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
   std::vector<IndexerRepresentation> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
-    IndexerRepresentationOf(indexer_, tree.Topology());
     representations.push_back(
         IndexerRepresentationOf(indexer_, tree.Topology()));
+  }
+  return representations;
+}
+
+std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations()
+    const {
+  std::vector<SizeVectorVector> representations;
+  representations.reserve(tree_collection_.trees_.size());
+  for (const auto &tree : tree_collection_.trees_) {
+    representations.push_back(psp_indexer_.RepresentationOf(tree.Topology()));
   }
   return representations;
 }
