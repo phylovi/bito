@@ -49,7 +49,6 @@ void SBNInstance::ProcessLoadedTrees() {
     rootsplits_.push_back(iter.first);
     index++;
   }
-  rootsplit_index_end_ = index;
   // Now add the PCSSs.
   for (const auto &iter : PCSSCounterOf(counter)) {
     const auto &parent = iter.first;
@@ -76,7 +75,7 @@ void SBNInstance::CheckSBNMapsAvailable() {
 void SBNInstance::PrintSupports() {
   std::vector<std::string> to_print(indexer_.size());
   for (const auto &iter : indexer_) {
-    if (iter.second < rootsplit_index_end_) {
+    if (iter.second < rootsplits_.size()) {
       to_print[iter.second] = iter.first.ToString();
     } else {
       to_print[iter.second] = iter.first.PCSSToString();
@@ -107,7 +106,7 @@ size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
 Node::NodePtr SBNInstance::SampleTopology() const {
   // Start by sampling a rootsplit.
   size_t rootsplit_index =
-      SampleIndex(std::pair<size_t, size_t>(0, rootsplit_index_end_));
+      SampleIndex(std::pair<size_t, size_t>(0, rootsplits_.size()));
   const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
   // The addition below turns the rootsplit into a subsplit.
   auto topology = SampleTopology(rootsplit + ~rootsplit)->Deroot();
@@ -159,7 +158,7 @@ std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
 StringVector SBNInstance::StringReversedIndexer() const {
   std::vector<std::string> reversed_indexer(indexer_.size());
   for (const auto &iter : indexer_) {
-    if (iter.second < rootsplit_index_end_) {
+    if (iter.second < rootsplits_.size()) {
       reversed_indexer[iter.second] = iter.first.ToString();
     } else {
       reversed_indexer[iter.second] = iter.first.PCSSToString();
@@ -198,7 +197,7 @@ std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
   auto str_indexer = StringifyMap(indexer_);
   auto str_parent_to_range = StringifyMap(parent_to_range_);
   std::string rootsplit("rootsplit");
-  SafeInsert(str_parent_to_range, rootsplit, {0, rootsplit_index_end_});
+  SafeInsert(str_parent_to_range, rootsplit, {0, rootsplits_.size()});
   return {str_indexer, str_parent_to_range};
 }
 

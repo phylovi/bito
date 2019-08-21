@@ -59,8 +59,6 @@ struct SBNInstance {
   // The collection of rootsplits, with the same indexing as in the indexer_.
   BitsetVector rootsplits_;
   // The first index after the rootsplit block in sbn_parameters_.
-  // TODO we can drop this one because it's in rootsplits_.
-  size_t rootsplit_index_end_;
   BitsetSizeMap indexer_;
   // A map going from the index of a PCSS to its child.
   SizeBitsetMap index_to_child_;
