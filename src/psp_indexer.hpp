@@ -25,8 +25,13 @@ class PSPIndexer {
   size_t AfterRootsplitsIndex() const { return after_rootsplits_index_; }
   size_t FirstEmptyIndex() const { return first_empty_index_; }
   StringSizeMap Details() const {
-    return {{"after_rootsplits_index", after_rootsplits_index_},
-            {"first_empty_index", first_empty_index_}};
+    return {
+        {"after_rootsplits_index", after_rootsplits_index_},
+        {"first_empty_index", first_empty_index_},
+        {"rootsplit_position", 0},
+        {"subsplit_down_position", 1},
+        {"subsplit_up_position", 2},
+    };
   }
 
   // Reverse the indexer to a vector of strings.
