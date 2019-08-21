@@ -1,6 +1,10 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
+// This is a class implementing the an indexing scheme for the Primary Subsplit
+// Pair branch length parameterization.
+// See Zhang & Matsen ICLR 2018 for details.
+
 #ifndef SRC_PSP_INDEXER_HPP_
 #define SRC_PSP_INDEXER_HPP_
 

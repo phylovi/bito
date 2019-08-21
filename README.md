@@ -29,6 +29,27 @@ If you get an error about missing BEAGLE, just `conda activate libsbn` again and
 * (Optional) If you modify the test preparation scripts, call `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
 
 
+## Understanding
+
+The following two papers will explain what this repository is about:
+
+* Zhang & Matsen IV. (2018). Generalizing Tree Probability Estimation via Bayesian Networks. _NeurIPS_ [PDF](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf) [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html)
+* Zhang & Matsen IV. (2018). Variational Bayesian Phylogenetic Inference.  _ICLR_ [PDF](https://openreview.net/pdf?id=SJVmjjR9FX_)
+
+We are building a Python-interface C++ library for this work so that you can express interesting parts of your phylogenetic model in TensorFlow/PyTorch/whatever and let libsbn handle the tree structure and likelihood computations for you.
+
+In the off chance that you are citing this library, don't forget to cite the [BEAGLE paper](http://dx.doi.org/10.1093/sysbio/syz020) too, as we use BEAGLE!
+
+
+# Future
+
+<br>
+
+<ul>
+<li class="fragment">
+Build an efficient implementation in a flexible modeling package enabling the diversity of phylogenetic models researchers use
+<
+
 ## Contributing
 
 libsbn is written in C++14.
