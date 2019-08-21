@@ -33,8 +33,8 @@ If you get an error about missing BEAGLE, just `conda activate libsbn` again and
 
 The following two papers will explain what this repository is about:
 
-* Zhang & Matsen IV. (2018). Generalizing Tree Probability Estimation via Bayesian Networks. _NeurIPS_ [PDF](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf) [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html)
-* Zhang & Matsen IV. (2018). Variational Bayesian Phylogenetic Inference.  _ICLR_ [PDF](https://openreview.net/pdf?id=SJVmjjR9FX_)
+* Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf). [Blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
+* Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_).
 
 We are building a Python-interface C++ library for this work so that you can express interesting parts of your phylogenetic model in TensorFlow/PyTorch/whatever and let libsbn handle the tree structure and likelihood computations for you.
 
