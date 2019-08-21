@@ -3,6 +3,9 @@
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/phylovi/libsbn.svg)](https://cloud.docker.com/u/phylovi/repository/docker/phylovi/libsbn/general) &nbsp;
 [![Travis CI status](https://travis-ci.org/phylovi/libsbn.svg?branch=master)](https://travis-ci.org/phylovi/libsbn)
 
+We are building a Python-interface C++ library so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let libsbn handle the tree structure and likelihood computations for you.
+
+
 ## Dependencies
 
 To install dependencies, use the associated conda environment file:
@@ -35,8 +38,6 @@ The following two papers will explain what this repository is about:
 
 * Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf). Also see [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
 * Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_).
-
-We are building a Python-interface C++ library for this work so that you can express interesting parts of your phylogenetic model in TensorFlow/PyTorch/whatever and let libsbn handle the tree structure and likelihood computations for you.
 
 In the off chance that you are citing this library, don't forget to cite the [BEAGLE paper](http://dx.doi.org/10.1093/sysbio/syz020) too, as we use BEAGLE!
 
