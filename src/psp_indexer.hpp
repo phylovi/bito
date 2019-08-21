@@ -19,7 +19,7 @@
 
 class PSPIndexer {
  public:
-  PSPIndexer() : first_empty_index_(0) {}
+  PSPIndexer() : after_rootsplits_index_(0), first_empty_index_(0) {}
   PSPIndexer(BitsetVector rootsplits, BitsetSizeMap in_indexer);
 
   size_t AfterRootsplitsIndex() const { return after_rootsplits_index_; }
