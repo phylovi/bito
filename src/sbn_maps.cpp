@@ -172,8 +172,8 @@ SizeVectorVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
   // https://github.com/phylovi/libsbn/issues/95) looking at the right-hand case
   // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
   // we use analogous notation, but for the corresponding edges of the tree.
-  auto set_bitset_for_psp = [&bitset, leaf_count](
-                                const Node* z1, const Node* z2, const Node* z) {
+  auto psp_index = [&bitset, &leaf_count, &indexer](
+                       const Node* z1, const Node* z2, const Node* z) {
     bitset.Zero();
     // This is the complement of Z, namely W. (PSPs always have the parent split
     // being a root split.)
@@ -182,22 +182,19 @@ SizeVectorVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
     bitset.CopyFrom(z->Leaves(), leaf_count, false);
     bitset.CopyFrom(std::min(z1->Leaves(), z2->Leaves()), 2 * leaf_count,
                     false);
+    return indexer.at(bitset);
   };
   topology->TriplePreOrder(
       // f_root
-      [&psp_result_up, &indexer, &bitset, &set_bitset_for_psp](
-          const Node* node0, const Node* node1, const Node* node2) {
-        set_bitset_for_psp(node1, node2, node0);
-        psp_result_up[node0->Id()] = indexer.at(bitset);
+      [&psp_result_up, &psp_index](const Node* node0, const Node* node1,
+                                   const Node* node2) {
+        psp_result_up[node0->Id()] = psp_index(node1, node2, node0);
       },
       // f_internal
-      [&psp_result_up, &psp_result_down, &indexer, &bitset,
-       &set_bitset_for_psp](const Node* node, const Node* sister,
-                            const Node* parent) {
-        set_bitset_for_psp(node, sister, parent);
-        psp_result_down[parent->Id()] = indexer.at(bitset);
-        set_bitset_for_psp(parent, sister, node);
-        psp_result_up[node->Id()] = indexer.at(bitset);
+      [&psp_result_up, &psp_result_down, &psp_index](
+          const Node* node, const Node* sister, const Node* parent) {
+        psp_result_down[parent->Id()] = psp_index(node, sister, parent);
+        psp_result_up[node->Id()] = psp_index(parent, sister, node);
       });
   return {psp_result_up, psp_result_down};
 }
