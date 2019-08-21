@@ -61,6 +61,7 @@ struct SBNInstance {
   // The collection of rootsplits, with the same indexing as in the indexer_.
   BitsetVector rootsplits_;
   // The first index after the rootsplit block in sbn_parameters_.
+  // TODO we can drop this one because it's in rootsplits_.
   size_t rootsplit_index_end_;
   BitsetUInt32Map indexer_;
   // A map going from the index of a PCSS to its child.
@@ -207,7 +208,8 @@ TEST_CASE("libsbn") {
   inst.SampleTrees(2);
   inst.GetIndexerRepresentations();
 
-  std::cout << PSPRepresentationOf(inst.indexer_, indexer_test_topology_1)
+  PSPIndexer psp_indexer(inst.rootsplits_, inst.indexer_);
+  std::cout << psp_indexer.RepresentationOf(indexer_test_topology_1)
             << std::endl;
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
