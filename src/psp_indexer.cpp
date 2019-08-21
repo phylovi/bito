@@ -60,13 +60,13 @@ SizeVectorVector PSPIndexer::RepresentationOf(
   // Here we use the terminology in the 2018 ICLR paper (screenshotted in
   // https://github.com/phylovi/libsbn/issues/95) looking at the right-hand case
   // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
-  // we use analogous notation, but for the corresponding edges of the tree.
+  // we use analogous notation.
   auto psp_index = [&psp_bitset, &leaf_count, &indexer = this->indexer_ ](
-      const Bitset& z1_bitset, const Node* z2, const Node* z, bool up) {
+      const Bitset& z1, const Bitset& z2, const Bitset& z) {
     psp_bitset.Zero();
     // Set Z in the middle location.
-    psp_bitset.CopyFrom(z->Leaves(), 0, up);
-    psp_bitset.CopyFrom(std::min(z1_bitset, z2->Leaves()), leaf_count, false);
+    psp_bitset.CopyFrom(z, 0, false);
+    psp_bitset.CopyFrom(std::min(z1, z2), leaf_count, false);
     return indexer.at(psp_bitset);
   };
   topology->TriplePreOrder(
@@ -75,16 +75,16 @@ SizeVectorVector PSPIndexer::RepresentationOf(
           const Node* node0, const Node* node1, const Node* node2) {
         rootsplit_result[node0->Id()] = rootsplit_index(node0);
         psp_result_up[node0->Id()] =
-            psp_index(node1->Leaves(), node2, node0, true);
+            psp_index(node1->Leaves(), node2->Leaves(), ~node0->Leaves());
       },
       // f_internal
       [&rootsplit_result, &psp_result_up, &psp_result_down, &rootsplit_index,
        &psp_index](const Node* node, const Node* sister, const Node* parent) {
         rootsplit_result[node->Id()] = rootsplit_index(node);
         psp_result_up[node->Id()] =
-            psp_index(~parent->Leaves(), sister, node, true);
+            psp_index(~parent->Leaves(), sister->Leaves(), ~node->Leaves());
         psp_result_down[parent->Id()] =
-            psp_index(node->Leaves(), sister, parent, false);
+            psp_index(node->Leaves(), sister->Leaves(), parent->Leaves());
       });
   return {rootsplit_result, psp_result_down, psp_result_up};
 }
