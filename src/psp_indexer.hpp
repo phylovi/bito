@@ -24,10 +24,14 @@ class PSPIndexer {
 
   size_t AfterRootsplitsIndex() const { return after_rootsplits_index_; }
   size_t FirstEmptyIndex() const { return first_empty_index_; }
+  // These are just some things that we may want to know about the indexer.
   StringSizeMap Details() const {
     return {
         {"after_rootsplits_index", after_rootsplits_index_},
         {"first_empty_index", first_empty_index_},
+        // This is the "official" definition of a PSP indexer representation of
+        // a tree. It's a vector of vectors, the order of entries of the outer
+        // vector is laid out as follows.
         {"rootsplit_position", 0},
         {"subsplit_down_position", 1},
         {"subsplit_up_position", 2},
