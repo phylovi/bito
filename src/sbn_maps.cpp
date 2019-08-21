@@ -165,8 +165,8 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetUInt32Map& indexer,
 
 SizeVectorVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
                                      const Node::NodePtr& topology) {
-  SizeVector psp_result_down(topology->Id());
-  SizeVector psp_result_up(topology->Id());
+  SizeVector psp_result_down(topology->Id(), SIZE_MAX);
+  SizeVector psp_result_up(topology->Id(), SIZE_MAX);
   const auto leaf_count = topology->LeafCount();
   Bitset bitset(3 * leaf_count, false);
   // Here we use the terminology in the 2018 ICLR paper (screenshotted in
@@ -199,11 +199,11 @@ SizeVectorVector PSPRepresentationOf(const BitsetUInt32Map& indexer,
       [&psp_result_up, &psp_result_down, &psp_index](
           const Node* node, const Node* sister, const Node* parent) {
         std::cout << parent->Id() << ", false\n";
-        psp_result_down[parent->Id()] =
-            psp_index(node->Leaves(), sister, parent, false);
         std::cout << node->Id() << ", true\n";
         psp_result_up[node->Id()] =
             psp_index(~parent->Leaves(), sister, node, true);
+        psp_result_down[parent->Id()] =
+            psp_index(node->Leaves(), sister, parent, false);
       });
   return {psp_result_up, psp_result_down};
 }
