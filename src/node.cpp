@@ -176,19 +176,6 @@ void Node::LevelOrder(std::function<void(const Node*)> f) const {
   }
 }
 
-// Recursive
-void Node::TriplePreOrderBifurcating(
-    std::function<void(const Node*, const Node*, const Node*)> f) const {
-  if (!IsLeaf()) {
-    Assert(children_.size() == 2,
-           "TripleIdPreOrderBifurcating expects a bifurcating tree.");
-    f(children_[0].get(), children_[1].get(), this);
-    children_[0]->TriplePreOrderBifurcating(f);
-    f(children_[1].get(), children_[0].get(), this);
-    children_[1]->TriplePreOrderBifurcating(f);
-  }
-}
-
 static std::function<void(const Node*, const Node*, const Node*)> const
 TripletIdInfix(std::function<void(int, int, int)> f) {
   return [&f](const Node* node0, const Node* node1, const Node* node2) {
@@ -230,14 +217,14 @@ void Node::TriplePreOrder(
   Assert(children_.size() == 3,
          "TriplePreOrder expects a tree with a trifurcation at the root.");
   f_root(children_[0].get(), children_[1].get(), children_[2].get());
-  children_[0]->TriplePreOrderInternal(f_internal);
+  children_[0]->TriplePreOrderBifurcating(f_internal);
   f_root(children_[1].get(), children_[2].get(), children_[0].get());
-  children_[1]->TriplePreOrderInternal(f_internal);
+  children_[1]->TriplePreOrderBifurcating(f_internal);
   f_root(children_[2].get(), children_[0].get(), children_[1].get());
-  children_[2]->TriplePreOrderInternal(f_internal);
+  children_[2]->TriplePreOrderBifurcating(f_internal);
 }
 
-void Node::TriplePreOrderInternal(
+void Node::TriplePreOrderBifurcating(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
   std::stack<std::pair<const Node*, bool>> stack;
   stack.push({this, false});
@@ -249,7 +236,7 @@ void Node::TriplePreOrderInternal(
     if (!node->IsLeaf()) {
       const auto& children = node->Children();
       Assert(children.size() == 2,
-             "TriplePreOrderInternal expects a bifurcating tree.");
+             "TriplePreOrderBifurcating expects a bifurcating tree.");
       if (visited) {
         f(children[1].get(), children[0].get(), node);
         stack.push({children[1].get(), false});

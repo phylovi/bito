@@ -93,20 +93,6 @@ class Node {
   void PrePostOrder(std::function<void(const Node*)> pre,
                     std::function<void(const Node*)> post) const;
 
-  // Iterate f through (node, sister, parent) for bifurcating trees using a
-  // preorder traversal.
-  void TriplePreOrderBifurcating(
-      std::function<void(const Node*, const Node*, const Node*)> f) const;
-  // As above, but getting indices rather than nodes themselves.
-  void TripleIdPreOrderBifurcating(std::function<void(int, int, int)> f) const;
-
-  // These two functions take functions accepting triples of (node_id,
-  // child0_id, child1_id) and apply them according to various traversals.
-  void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
-  void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
-
-  // Traversal for rooted pairs in an unrooted subtree in its traditional rooted
-  // representation.
   // We take in two functions, f_root, and f_internal, each of which take three
   // edges.
   // We assume that f_root is symmetric in its last two arguments so that
@@ -120,9 +106,17 @@ class Node {
       std::function<void(const Node*, const Node*, const Node*)> f_root,
       std::function<void(const Node*, const Node*, const Node*)> f_internal)
       const;
-  // This one is just the part of the above that's run for the internal nodes.
-  void TriplePreOrderInternal(
+  // Iterate f through (node, sister, parent) for bifurcating trees using a
+  // preorder traversal.
+  void TriplePreOrderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const;
+  // As above, but getting indices rather than nodes themselves.
+  void TripleIdPreOrderBifurcating(std::function<void(int, int, int)> f) const;
+
+  // These two functions take functions accepting triples of (node_id,
+  // child0_id, child1_id) and apply them according to various traversals.
+  void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
+  void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
 
   // See the typedef of PCSSFun to understand the argument type to this
   // function.
