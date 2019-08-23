@@ -90,11 +90,18 @@ void Node::PreOrder(std::function<void(const Node*)> f) const {
   }
 }
 
-// Recursive
 void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
-  if (f(this)) {
-    for (const auto& child : children_) {
-      child->ConditionalPreOrder(f);
+  std::stack<const Node*> stack;
+  stack.push(this);
+  const Node* node;
+  while (stack.size()) {
+    node = stack.top();
+    stack.pop();
+    if (f(node)) {
+      const auto& children = node->Children();
+      for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
+        stack.push((*iter).get());
+      }
     }
   }
 }
