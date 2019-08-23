@@ -1,4 +1,3 @@
-#include <stack>
 #include "libsbn.hpp"
 
 auto now = std::chrono::high_resolution_clock::now;
