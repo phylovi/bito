@@ -178,6 +178,9 @@ class Node {
   // 3: (0,(1,(2,3)))       (0,(1,(2,3)4)5)6;
   static NodePtrVec ExampleTopologies();
 
+  // A maximally-unbalanced "ladder" tree with n tips.
+  static NodePtr Ladder(uint32_t leaf_count);
+
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
   // appears to leave uint32_ts as they are, which doesn't work for our
   // application).
@@ -307,6 +310,8 @@ TEST_CASE("Node") {
   CHECK_EQ(Node::OfParentIdVector({3, 3, 3}),
            // tree ((0,1)3,2)4
            Node::OfParentIdVector({3, 3, 4, 4})->Deroot());
+
+  CHECK_EQ(Node::OfParentIdVector({4, 4, 5, 6, 5, 6}), Node::Ladder(4));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_

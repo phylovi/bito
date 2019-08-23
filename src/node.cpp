@@ -419,6 +419,14 @@ Node::NodePtrVec Node::ExampleTopologies() {
   return topologies;
 }
 
+Node::NodePtr Node::Ladder(uint32_t leaf_count) {
+  Assert(leaf_count > 0, "leaf_count should be positive in Node::Ladder.");
+  if (leaf_count == 1) {
+    return Leaf(0);
+  }  // else
+  return Join(Ladder(leaf_count - 1), Leaf(leaf_count - 1));
+}
+
 inline uint32_t Node::SOHash(uint32_t x) {
   x = ((x >> 16) ^ x) * 0x45d9f3b;
   x = ((x >> 16) ^ x) * 0x45d9f3b;
