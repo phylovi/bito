@@ -114,3 +114,9 @@ Add a test for every new feature.
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Mathieu Fourment ([@4ment](https://github.com/4ment)): design, site pattern compression, BEAGLE gradients and scaling
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
+
+
+## Acknowledgements
+
+* Jaime Huerta-Cepas: several tree traversal functions are copied from [ete3](https://github.com/etetoolkit/ete)
+* Thomas Junier: parts of the parser are copied from [newick\_utils](https://github.com/tjunier/newick_utils)

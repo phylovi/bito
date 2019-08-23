@@ -9,6 +9,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <stack>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -75,12 +76,21 @@ bool Node::operator==(const Node& other) const {
 }
 
 void Node::PreOrder(std::function<void(const Node*)> f) const {
-  f(this);
-  for (const auto& child : children_) {
-    child->PreOrder(f);
+  std::stack<const Node*> to_visit;
+  to_visit.push(this);
+  const Node* node;
+  while (to_visit.size()) {
+    node = to_visit.top();
+    to_visit.pop();
+    f(node);
+    const auto& children = node->Children();
+    for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
+      to_visit.push((*iter).get());
+    }
   }
 }
 
+// Recursive
 void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
   if (f(this)) {
     for (const auto& child : children_) {
@@ -89,6 +99,7 @@ void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
   }
 }
 
+// Recursive
 void Node::PostOrder(std::function<void(const Node*)> f) const {
   for (const auto& child : children_) {
     child->PostOrder(f);
@@ -102,13 +113,13 @@ void Node::LevelOrder(std::function<void(const Node*)> f) const {
     auto n = to_visit.front();
     to_visit.pop_front();
     f(n);
-
     for (const auto& child : n->children_) {
       to_visit.push_back(child.get());
     }
   }
 }
 
+// Recursive
 void Node::TriplePreOrderBifurcating(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
   if (!IsLeaf()) {
@@ -155,6 +166,7 @@ void Node::BinaryIdPostOrder(const std::function<void(int, int, int)> f) const {
   PostOrder(BinaryIdInfix(f));
 }
 
+// Recursive
 void Node::TriplePreOrder(
     std::function<void(const Node*, const Node*, const Node*)> f_root,
     std::function<void(const Node*, const Node*, const Node*)> f_internal)
@@ -169,6 +181,7 @@ void Node::TriplePreOrder(
   children_[2]->TriplePreOrderInternal(f_internal);
 }
 
+// Recursive
 void Node::TriplePreOrderInternal(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
   if (!IsLeaf()) {
@@ -445,6 +458,7 @@ inline size_t Node::SORotate(size_t n, uint32_t c) {
   return (n << c) | (n >> ((-c) & mask));
 }
 
+// Recursive
 void Node::MutablePostOrder(std::function<void(Node*)> f) {
   for (const auto& child : children_) {
     child->MutablePostOrder(f);
@@ -452,6 +466,7 @@ void Node::MutablePostOrder(std::function<void(Node*)> f) {
   f(this);
 }
 
+// Recursive
 void Node::PrePostOrder(std::function<void(const Node*)> pre,
                         std::function<void(const Node*)> post) const {
   pre(this);
