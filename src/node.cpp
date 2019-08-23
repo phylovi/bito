@@ -99,7 +99,39 @@ void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
   }
 }
 
+void Node::MutablePostOrder(std::function<void(Node*)> f) {
+  // The stack records the nodes and whether they have been visited or not.
+  std::stack<std::pair<Node*, bool>> stack;
+  stack.push({this, false});
+  Node* node;
+  bool visited;
+  while (stack.size()) {
+    std::tie(node, visited) = stack.top();
+    stack.pop();
+    if (visited) {
+      // If we've already visited this node then we are on our way back.
+      f(node);
+    } else {
+      // If not then we need to push ourself back on the stack (noting that
+      // we've been visited)...
+      stack.push({node, true});
+      // And all of our children, which have not.
+      const auto& children = node->Children();
+      for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
+        stack.push({(*iter).get(), false});
+      }
+    }
+  }
+}
+
 void Node::PostOrder(std::function<void(const Node*)> f) const {
+  // https://stackoverflow.com/a/56603436/467327
+  Node* mutable_this = const_cast<Node*>(this);
+  mutable_this->MutablePostOrder(f);
+}
+
+void Node::PrePostOrder(std::function<void(const Node*)> pre,
+                        std::function<void(const Node*)> post) const {
   // The stack records the nodes and whether they have been visited or not.
   std::stack<std::pair<const Node*, bool>> stack;
   stack.push({this, false});
@@ -110,8 +142,9 @@ void Node::PostOrder(std::function<void(const Node*)> f) const {
     stack.pop();
     if (visited) {
       // If we've already visited this node then we are on our way back.
-      f(node);
+      post(node);
     } else {
+      pre(node);
       // If not then we need to push ourself back on the stack (noting that
       // we've been visited)...
       stack.push({node, true});
@@ -261,10 +294,10 @@ void Node::PCSSPreOrder(PCSSFun f) const {
 }
 
 // This function assigns ids to the nodes of the topology: the leaves get
-// their fixed ids (which we assume are contiguously numbered from 0 through the
-// leaf count -1) and the rest get ordered according to a postorder traversal.
-// Thus if the tree is bifurcating the root always has id equal to the number of
-// nodes in the tree.
+// their fixed ids (which we assume are contiguously numbered from 0 through
+// the leaf count -1) and the rest get ordered according to a postorder
+// traversal. Thus if the tree is bifurcating the root always has id equal to
+// the number of nodes in the tree.
 //
 // This function returns a map that maps the tags to their ids.
 TagSizeMap Node::Polish() {
@@ -473,24 +506,6 @@ inline size_t Node::SORotate(size_t n, uint32_t c) {
   // assert ( (c<=mask) &&"rotate by type width or more");
   c &= mask;
   return (n << c) | (n >> ((-c) & mask));
-}
-
-// Recursive
-void Node::MutablePostOrder(std::function<void(Node*)> f) {
-  for (const auto& child : children_) {
-    child->MutablePostOrder(f);
-  }
-  f(this);
-}
-
-// Recursive
-void Node::PrePostOrder(std::function<void(const Node*)> pre,
-                        std::function<void(const Node*)> post) const {
-  pre(this);
-  for (const auto& child : children_) {
-    child->PrePostOrder(pre, post);
-  }
-  post(this);
 }
 
 SizeVectorVector Node::IdsAbove() const {
