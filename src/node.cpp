@@ -100,8 +100,8 @@ void Node::LevelOrder(std::function<void(const Node*)> f) const {
   std::deque<const Node*> to_visit = {this};
   while (to_visit.size()) {
     auto n = to_visit.front();
-    f(n);
     to_visit.pop_front();
+    f(n);
 
     for (const auto& child : n->children_) {
       to_visit.push_back(child.get());
