@@ -19,7 +19,8 @@ int main() {
 
   auto t_start = now();
   for (int i = 0; i < 100; i++) {
-    topology->PreOrder([&ids](const Node* node) { ids.push_back(node->Id()); });
+    topology->PostOrder(
+        [&ids](const Node* node) { ids.push_back(node->Id()); });
 
     // topology->PreOrder([&ids](const Node* node) { ids.push_back(node->Id());
     // });

@@ -76,16 +76,16 @@ bool Node::operator==(const Node& other) const {
 }
 
 void Node::PreOrder(std::function<void(const Node*)> f) const {
-  std::stack<const Node*> to_visit;
-  to_visit.push(this);
+  std::stack<const Node*> stack;
+  stack.push(this);
   const Node* node;
-  while (to_visit.size()) {
-    node = to_visit.top();
-    to_visit.pop();
+  while (stack.size()) {
+    node = stack.top();
+    stack.pop();
     f(node);
     const auto& children = node->Children();
     for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
-      to_visit.push((*iter).get());
+      stack.push((*iter).get());
     }
   }
 }
@@ -99,22 +99,39 @@ void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
   }
 }
 
-// Recursive
 void Node::PostOrder(std::function<void(const Node*)> f) const {
-  for (const auto& child : children_) {
-    child->PostOrder(f);
+  // The stack records the nodes and whether they have been visited or not.
+  std::stack<std::pair<const Node*, bool>> stack;
+  stack.push({this, false});
+  const Node* node;
+  bool visited;
+  while (stack.size()) {
+    std::tie(node, visited) = stack.top();
+    stack.pop();
+    if (visited) {
+      // If we've already visited this node then we are on our way back.
+      f(node);
+    } else {
+      // If not then we need to push ourself back on the stack (noting that
+      // we've been visited)...
+      stack.push({node, true});
+      // And all of our children, which have not.
+      const auto& children = node->Children();
+      for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
+        stack.push({(*iter).get(), false});
+      }
+    }
   }
-  f(this);
 }
 
 void Node::LevelOrder(std::function<void(const Node*)> f) const {
-  std::deque<const Node*> to_visit = {this};
-  while (to_visit.size()) {
-    auto n = to_visit.front();
-    to_visit.pop_front();
+  std::deque<const Node*> deque = {this};
+  while (deque.size()) {
+    auto n = deque.front();
+    deque.pop_front();
     f(n);
     for (const auto& child : n->children_) {
-      to_visit.push_back(child.get());
+      deque.push_back(child.get());
     }
   }
 }
