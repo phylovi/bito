@@ -488,8 +488,7 @@ Node::NodePtr Node::Ladder(uint32_t leaf_count) {
   for (uint32_t i = 1; i < leaf_count; i++) {
     node = Join(Leaf(i), node);
   }
-  // TODO reinstate
-  // node->Polish();
+  node->Polish();
   return node;
 }
 
