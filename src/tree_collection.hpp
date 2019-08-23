@@ -43,7 +43,7 @@ class TreeCollection {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("TopologyCounter") {
+TEST_CASE("TreeCollection") {
   TreeCollection collection(Tree::ExampleTrees());
   auto counter = collection.TopologyCounter();
   std::unordered_map<std::string, uint32_t> counted;

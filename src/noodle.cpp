@@ -16,12 +16,11 @@ int main() {
   ids.reserve(1 + 2 * leaf_count);
 
   auto t_start = now();
-  for (int i = 0; i < 1000; i++) {
+  for (int i = 0; i < 100; i++) {
     ids.clear();
     topology->PreOrder([&ids](const Node* node) { ids.push_back(node->Id()); });
   }
 
   std::chrono::duration<double> duration = now() - t_start;
   std::cout << "time: " << duration.count() << " seconds\n";
-
 }

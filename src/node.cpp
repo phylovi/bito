@@ -223,7 +223,6 @@ void Node::BinaryIdPostOrder(const std::function<void(int, int, int)> f) const {
   PostOrder(BinaryIdInfix(f));
 }
 
-// Recursive
 void Node::TriplePreOrder(
     std::function<void(const Node*, const Node*, const Node*)> f_root,
     std::function<void(const Node*, const Node*, const Node*)> f_internal)
@@ -238,16 +237,28 @@ void Node::TriplePreOrder(
   children_[2]->TriplePreOrderInternal(f_internal);
 }
 
-// Recursive
 void Node::TriplePreOrderInternal(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
-  if (!IsLeaf()) {
-    Assert(children_.size() == 2,
-           "TriplePreOrderInternal expects a bifurcating tree.");
-    f(children_[0].get(), children_[1].get(), this);
-    children_[0]->TriplePreOrderInternal(f);
-    f(children_[1].get(), children_[0].get(), this);
-    children_[1]->TriplePreOrderInternal(f);
+  std::stack<std::pair<const Node*, bool>> stack;
+  stack.push({this, false});
+  const Node* node;
+  bool visited;
+  while (stack.size()) {
+    std::tie(node, visited) = stack.top();
+    stack.pop();
+    if (!node->IsLeaf()) {
+      const auto& children = node->Children();
+      Assert(children.size() == 2,
+             "TriplePreOrderInternal expects a bifurcating tree.");
+      if (visited) {
+        f(children[1].get(), children[0].get(), node);
+        stack.push({children[1].get(), false});
+      } else {
+        f(children[0].get(), children[1].get(), node);
+        stack.push({node, true});
+        stack.push({children[0].get(), false});
+      }
+    }
   }
 }
 

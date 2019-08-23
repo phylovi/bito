@@ -269,17 +269,21 @@ TEST_CASE("Node") {
   Node::NodePtr t1_twin = examples[1];  // 1; (0,1,(2,3)) again
   Node::NodePtr t2 = examples[2];       // 2: (0,2,(1,3))
   Node::NodePtr t3 = examples[3];       // 3: (0,(1,(2,3)))
+  // ((((0,1)7,2)8,(3,4)9)10,5,6)11;
+  Node::NodePtr t4 =
+      Node::OfParentIdVector({7, 7, 8, 9, 9, 11, 11, 8, 10, 10, 11});
+
   std::vector<std::string> triples;
   auto collect_triple = [&triples](const Node* node, const Node* sister,
                                    const Node* parent) {
-    triples.push_back(node->TagString() + ", " + sister->TagString() + ", " +
-                      parent->TagString());
+    triples.push_back(std::to_string(node->Id()) + ", " +
+                      std::to_string(sister->Id()) + ", " +
+                      std::to_string(parent->Id()));
   };
-  t2->TriplePreOrder(collect_triple, collect_triple);
-  // t2 with tags: (0_1,2_1,(1_1,3_1)3_2)
-  std::vector<std::string> correct_triples({"0_1, 2_1, 3_2", "2_1, 3_2, 0_1",
-                                            "3_2, 0_1, 2_1", "1_1, 3_1, 3_2",
-                                            "3_1, 1_1, 3_2"});
+  t4->TriplePreOrder(collect_triple, collect_triple);
+  std::vector<std::string> correct_triples(
+      {"10, 5, 6", "8, 9, 10", "7, 2, 8", "0, 1, 7", "1, 0, 7", "2, 7, 8",
+       "9, 8, 10", "3, 4, 9", "4, 3, 9", "5, 6, 10", "6, 10, 5"});
   CHECK_EQ(triples, correct_triples);
 
   // This is actually a non-trivial test (see note in Node constructor above),
