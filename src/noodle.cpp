@@ -1,3 +1,4 @@
+#include <stack>
 #include "libsbn.hpp"
 
 auto now = std::chrono::high_resolution_clock::now;
@@ -7,15 +8,17 @@ auto now = std::chrono::high_resolution_clock::now;
 // gprof2dot -f callgrind callgrind.out.16763 | dot -Tpng -o ~/output.png
 
 void PreOrder(Node::NodePtr topology, std::function<void(const Node*)> f) {
-  std::deque<const Node*> to_visit = {topology.get()};
+  std::stack<const Node*> to_visit;
+  to_visit.push(topology.get());
+  const Node* node;
   while (to_visit.size()) {
-    auto n = to_visit.front();
-    to_visit.pop_front();
-    f(n);
+    node = to_visit.top();
+    to_visit.pop();
+    f(node);
 
-    const auto& children = n->Children();
+    const auto& children = node->Children();
     for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
-      to_visit.push_front((*iter).get());
+      to_visit.push((*iter).get());
     }
   }
 }
