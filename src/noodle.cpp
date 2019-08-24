@@ -1,5 +1,7 @@
 #include "libsbn.hpp"
 
+// This is just a place to muck around, and check out performance.
+
 auto now = std::chrono::high_resolution_clock::now;
 
 // To valgrind (you can pip install gprof2dot):

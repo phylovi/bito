@@ -226,26 +226,36 @@ void Node::TriplePreOrder(
 
 void Node::TriplePreOrderBifurcating(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
+  if (IsLeaf()) {
+    return;
+  }  // else
   std::stack<std::pair<const Node*, bool>> stack;
   stack.push({this, false});
   const Node* node;
   bool visited;
   while (stack.size()) {
+    // Here we visit each node twice, once for each orientation.
     std::tie(node, visited) = stack.top();
     stack.pop();
-    if (!node->IsLeaf()) {
       const auto& children = node->Children();
       Assert(children.size() == 2,
              "TriplePreOrderBifurcating expects a bifurcating tree.");
       if (visited) {
+        // We've already visited this node once, so do the second orientation.
         f(children[1].get(), children[0].get(), node);
-        stack.push({children[1].get(), false});
+        // Then traverse the right child.
+        if (!children[1]->IsLeaf()) {
+          stack.push({children[1].get(), false});
+        }
       } else {
         f(children[0].get(), children[1].get(), node);
+        // We are visiting this node for the first time.
         stack.push({node, true});
-        stack.push({children[0].get(), false});
+        // Then traverse the left child.
+        if (!children[0]->IsLeaf()) {
+          stack.push({children[0].get(), false});
+        }
       }
-    }
   }
 }
 
