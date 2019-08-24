@@ -4,6 +4,7 @@ default:
 	scons
 	./_build/doctest
 	pytest -s
+	./_build/noodle
 
 bison: src/parser.yy src/scanner.ll
 	bison -o src/parser.cpp --defines=src/parser.hpp src/parser.yy

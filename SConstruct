@@ -80,3 +80,6 @@ env.SharedLibrary(
 doctest = env.Program(
     ['_build/doctest.cpp'] + sources,
     LIBS=['hmsbeagle', 'pthread'])
+noodle = env.Program(
+    ['_build/noodle.cpp'] + sources,
+    LIBS=['hmsbeagle', 'pthread'])

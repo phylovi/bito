@@ -9,6 +9,7 @@
 #include <iostream>
 #include <memory>
 #include <sstream>
+#include <stack>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -75,49 +76,103 @@ bool Node::operator==(const Node& other) const {
 }
 
 void Node::PreOrder(std::function<void(const Node*)> f) const {
-  f(this);
-  for (const auto& child : children_) {
-    child->PreOrder(f);
+  std::stack<const Node*> stack;
+  stack.push(this);
+  const Node* node;
+  while (stack.size()) {
+    node = stack.top();
+    stack.pop();
+    f(node);
+    const auto& children = node->Children();
+    for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
+      stack.push((*iter).get());
+    }
   }
 }
 
 void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
-  if (f(this)) {
-    for (const auto& child : children_) {
-      child->ConditionalPreOrder(f);
+  std::stack<const Node*> stack;
+  stack.push(this);
+  const Node* node;
+  while (stack.size()) {
+    node = stack.top();
+    stack.pop();
+    if (f(node)) {
+      const auto& children = node->Children();
+      for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
+        stack.push((*iter).get());
+      }
+    }
+  }
+}
+
+void Node::MutablePostOrder(std::function<void(Node*)> f) {
+  // The stack records the nodes and whether they have been visited or not.
+  std::stack<std::pair<Node*, bool>> stack;
+  stack.push({this, false});
+  Node* node;
+  bool visited;
+  while (stack.size()) {
+    std::tie(node, visited) = stack.top();
+    stack.pop();
+    if (visited) {
+      // If we've already visited this node then we are on our way back.
+      f(node);
+    } else {
+      // If not then we need to push ourself back on the stack (noting that
+      // we've been visited)...
+      stack.push({node, true});
+      // And all of our children, which have not.
+      const auto& children = node->Children();
+      for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
+        stack.push({(*iter).get(), false});
+      }
     }
   }
 }
 
 void Node::PostOrder(std::function<void(const Node*)> f) const {
-  for (const auto& child : children_) {
-    child->PostOrder(f);
-  }
-  f(this);
+  // https://stackoverflow.com/a/56603436/467327
+  Node* mutable_this = const_cast<Node*>(this);
+  mutable_this->MutablePostOrder(f);
 }
 
-void Node::LevelOrder(std::function<void(const Node*)> f) const {
-  std::deque<const Node*> to_visit = {this};
-  while (to_visit.size()) {
-    auto n = to_visit.front();
-    f(n);
-    to_visit.pop_front();
-
-    for (const auto& child : n->children_) {
-      to_visit.push_back(child.get());
+void Node::PrePostOrder(std::function<void(const Node*)> pre,
+                        std::function<void(const Node*)> post) const {
+  // The stack records the nodes and whether they have been visited or not.
+  std::stack<std::pair<const Node*, bool>> stack;
+  stack.push({this, false});
+  const Node* node;
+  bool visited;
+  while (stack.size()) {
+    std::tie(node, visited) = stack.top();
+    stack.pop();
+    if (visited) {
+      // If we've already visited this node then we are on our way back.
+      post(node);
+    } else {
+      pre(node);
+      // If not then we need to push ourself back on the stack (noting that
+      // we've been visited)...
+      stack.push({node, true});
+      // And all of our children, which have not.
+      const auto& children = node->Children();
+      for (auto iter = children.rbegin(); iter != children.rend(); ++iter) {
+        stack.push({(*iter).get(), false});
+      }
     }
   }
 }
 
-void Node::TriplePreOrderBifurcating(
-    std::function<void(const Node*, const Node*, const Node*)> f) const {
-  if (!IsLeaf()) {
-    Assert(children_.size() == 2,
-           "TripleIdPreOrderBifurcating expects a bifurcating tree.");
-    f(children_[0].get(), children_[1].get(), this);
-    children_[0]->TriplePreOrderBifurcating(f);
-    f(children_[1].get(), children_[0].get(), this);
-    children_[1]->TriplePreOrderBifurcating(f);
+void Node::LevelOrder(std::function<void(const Node*)> f) const {
+  std::deque<const Node*> deque = {this};
+  while (deque.size()) {
+    auto n = deque.front();
+    deque.pop_front();
+    f(n);
+    for (const auto& child : n->children_) {
+      deque.push_back(child.get());
+    }
   }
 }
 
@@ -162,22 +217,47 @@ void Node::TriplePreOrder(
   Assert(children_.size() == 3,
          "TriplePreOrder expects a tree with a trifurcation at the root.");
   f_root(children_[0].get(), children_[1].get(), children_[2].get());
-  children_[0]->TriplePreOrderInternal(f_internal);
+  children_[0]->TriplePreOrderBifurcating(f_internal);
   f_root(children_[1].get(), children_[2].get(), children_[0].get());
-  children_[1]->TriplePreOrderInternal(f_internal);
+  children_[1]->TriplePreOrderBifurcating(f_internal);
   f_root(children_[2].get(), children_[0].get(), children_[1].get());
-  children_[2]->TriplePreOrderInternal(f_internal);
+  children_[2]->TriplePreOrderBifurcating(f_internal);
 }
 
-void Node::TriplePreOrderInternal(
+void Node::TriplePreOrderBifurcating(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
-  if (!IsLeaf()) {
-    Assert(children_.size() == 2,
-           "TriplePreOrderInternal expects a bifurcating tree.");
-    f(children_[0].get(), children_[1].get(), this);
-    children_[0]->TriplePreOrderInternal(f);
-    f(children_[1].get(), children_[0].get(), this);
-    children_[1]->TriplePreOrderInternal(f);
+  if (IsLeaf()) {
+    return;
+  }  // else
+  std::stack<std::pair<const Node*, bool>> stack;
+  stack.push({this, false});
+  const Node* node;
+  bool visited;
+  while (stack.size()) {
+    // Here we visit each node twice, once for each orientation.
+    std::tie(node, visited) = stack.top();
+    stack.pop();
+    const auto& children = node->Children();
+    Assert(children.size() == 2,
+           "TriplePreOrderBifurcating expects a bifurcating tree.");
+    if (visited) {
+      // We've already visited this node once, so do the second orientation.
+      f(children[1].get(), children[0].get(), node);
+      // Next traverse the right child.
+      if (!children[1]->IsLeaf()) {
+        stack.push({children[1].get(), false});
+      }
+    } else {
+      // We are visiting this node for the first time.
+      // Apply f in the first orientation.
+      f(children[0].get(), children[1].get(), node);
+      // Then set it up so it gets executed in the second orientation...
+      stack.push({node, true});
+      // ... after first traversing the left child.
+      if (!children[0]->IsLeaf()) {
+        stack.push({children[0].get(), false});
+      }
+    }
   }
 }
 
@@ -231,10 +311,10 @@ void Node::PCSSPreOrder(PCSSFun f) const {
 }
 
 // This function assigns ids to the nodes of the topology: the leaves get
-// their fixed ids (which we assume are contiguously numbered from 0 through the
-// leaf count -1) and the rest get ordered according to a postorder traversal.
-// Thus if the tree is bifurcating the root always has id equal to the number of
-// nodes in the tree.
+// their fixed ids (which we assume are contiguously numbered from 0 through
+// the leaf count -1) and the rest get ordered according to a postorder
+// traversal. Thus if the tree is bifurcating the root always has id equal to
+// the number of nodes in the tree.
 //
 // This function returns a map that maps the tags to their ids.
 TagSizeMap Node::Polish() {
@@ -419,6 +499,16 @@ Node::NodePtrVec Node::ExampleTopologies() {
   return topologies;
 }
 
+Node::NodePtr Node::Ladder(uint32_t leaf_count) {
+  Assert(leaf_count > 0, "leaf_count should be positive in Node::Ladder.");
+  NodePtr node = Leaf(0);
+  for (uint32_t i = 1; i < leaf_count; i++) {
+    node = Join(Leaf(i), node);
+  }
+  node->Polish();
+  return node;
+}
+
 inline uint32_t Node::SOHash(uint32_t x) {
   x = ((x >> 16) ^ x) * 0x45d9f3b;
   x = ((x >> 16) ^ x) * 0x45d9f3b;
@@ -432,22 +522,6 @@ inline size_t Node::SORotate(size_t n, uint32_t c) {
   // assert ( (c<=mask) &&"rotate by type width or more");
   c &= mask;
   return (n << c) | (n >> ((-c) & mask));
-}
-
-void Node::MutablePostOrder(std::function<void(Node*)> f) {
-  for (const auto& child : children_) {
-    child->MutablePostOrder(f);
-  }
-  f(this);
-}
-
-void Node::PrePostOrder(std::function<void(const Node*)> pre,
-                        std::function<void(const Node*)> post) const {
-  pre(this);
-  for (const auto& child : children_) {
-    child->PrePostOrder(pre, post);
-  }
-  post(this);
 }
 
 SizeVectorVector Node::IdsAbove() const {

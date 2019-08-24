@@ -93,20 +93,6 @@ class Node {
   void PrePostOrder(std::function<void(const Node*)> pre,
                     std::function<void(const Node*)> post) const;
 
-  // Iterate f through (node, sister, parent) for bifurcating trees using a
-  // preorder traversal.
-  void TriplePreOrderBifurcating(
-      std::function<void(const Node*, const Node*, const Node*)> f) const;
-  // As above, but getting indices rather than nodes themselves.
-  void TripleIdPreOrderBifurcating(std::function<void(int, int, int)> f) const;
-
-  // These two functions take functions accepting triples of (node_id,
-  // child0_id, child1_id) and apply them according to various traversals.
-  void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
-  void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
-
-  // Traversal for rooted pairs in an unrooted subtree in its traditional rooted
-  // representation.
   // We take in two functions, f_root, and f_internal, each of which take three
   // edges.
   // We assume that f_root is symmetric in its last two arguments so that
@@ -120,9 +106,17 @@ class Node {
       std::function<void(const Node*, const Node*, const Node*)> f_root,
       std::function<void(const Node*, const Node*, const Node*)> f_internal)
       const;
-  // This one is just the part of the above that's run for the internal nodes.
-  void TriplePreOrderInternal(
+  // Iterate f through (node, sister, parent) for bifurcating trees using a
+  // preorder traversal.
+  void TriplePreOrderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const;
+  // As above, but getting indices rather than nodes themselves.
+  void TripleIdPreOrderBifurcating(std::function<void(int, int, int)> f) const;
+
+  // These two functions take functions accepting triples of (node_id,
+  // child0_id, child1_id) and apply them according to various traversals.
+  void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
+  void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
 
   // See the typedef of PCSSFun to understand the argument type to this
   // function.
@@ -177,6 +171,9 @@ class Node {
   // 2: (0,2,(1,3))         (0,2,(1,3)4)5;
   // 3: (0,(1,(2,3)))       (0,(1,(2,3)4)5)6;
   static NodePtrVec ExampleTopologies();
+
+  // Make a maximally-unbalanced "ladder" tree.
+  static NodePtr Ladder(uint32_t leaf_count);
 
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
   // appears to leave uint32_ts as they are, which doesn't work for our
@@ -266,17 +263,21 @@ TEST_CASE("Node") {
   Node::NodePtr t1_twin = examples[1];  // 1; (0,1,(2,3)) again
   Node::NodePtr t2 = examples[2];       // 2: (0,2,(1,3))
   Node::NodePtr t3 = examples[3];       // 3: (0,(1,(2,3)))
+  // ((((0,1)7,2)8,(3,4)9)10,5,6)11;
+  Node::NodePtr t4 =
+      Node::OfParentIdVector({7, 7, 8, 9, 9, 11, 11, 8, 10, 10, 11});
+
   std::vector<std::string> triples;
   auto collect_triple = [&triples](const Node* node, const Node* sister,
                                    const Node* parent) {
-    triples.push_back(node->TagString() + ", " + sister->TagString() + ", " +
-                      parent->TagString());
+    triples.push_back(std::to_string(node->Id()) + ", " +
+                      std::to_string(sister->Id()) + ", " +
+                      std::to_string(parent->Id()));
   };
-  t2->TriplePreOrder(collect_triple, collect_triple);
-  // t2 with tags: (0_1,2_1,(1_1,3_1)3_2)
-  std::vector<std::string> correct_triples({"0_1, 2_1, 3_2", "2_1, 3_2, 0_1",
-                                            "3_2, 0_1, 2_1", "1_1, 3_1, 3_2",
-                                            "3_1, 1_1, 3_2"});
+  t4->TriplePreOrder(collect_triple, collect_triple);
+  std::vector<std::string> correct_triples(
+      {"10, 5, 6", "8, 9, 10", "7, 2, 8", "0, 1, 7", "1, 0, 7", "2, 7, 8",
+       "9, 8, 10", "3, 4, 9", "4, 3, 9", "5, 6, 10", "6, 10, 5"});
   CHECK_EQ(triples, correct_triples);
 
   // This is actually a non-trivial test (see note in Node constructor above),
@@ -307,6 +308,8 @@ TEST_CASE("Node") {
   CHECK_EQ(Node::OfParentIdVector({3, 3, 3}),
            // tree ((0,1)3,2)4
            Node::OfParentIdVector({3, 3, 4, 4})->Deroot());
+
+  CHECK_EQ(Node::OfParentIdVector({4, 4, 5, 6, 5, 6}), Node::Ladder(4));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_
