@@ -248,10 +248,12 @@ void Node::TriplePreOrderBifurcating(
         stack.push({children[1].get(), false});
       }
     } else {
-      f(children[0].get(), children[1].get(), node);
       // We are visiting this node for the first time.
+      // Apply f in the first orientation.
+      f(children[0].get(), children[1].get(), node);
+      // Then set it up so it gets executed in the second orientation...
       stack.push({node, true});
-      // Next traverse the left child.
+      // ... after first traversing the left child.
       if (!children[0]->IsLeaf()) {
         stack.push({children[0].get(), false});
       }
