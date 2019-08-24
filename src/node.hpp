@@ -172,7 +172,7 @@ class Node {
   // 3: (0,(1,(2,3)))       (0,(1,(2,3)4)5)6;
   static NodePtrVec ExampleTopologies();
 
-  // A maximally-unbalanced "ladder" tree with n tips.
+  // Make a maximally-unbalanced "ladder" tree.
   static NodePtr Ladder(uint32_t leaf_count);
 
   // A "cryptographic" hash function from Stack Overflow (the std::hash function
