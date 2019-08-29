@@ -33,6 +33,7 @@ class Normal(object):
         Thus, x is an array that is samples on axis 0 and branches on
         axis 1.
         """
+        assert(x.ndim == 2)
         ratio = self._internal_ratio(x, mu, sigma)
         return np.sum(
             -0.5 * np.log(2 * np.pi) - 0.5 * np.log(sigma ** 2) - 0.5 * ratio, axis=1
@@ -60,9 +61,6 @@ class Normal(object):
         # would have made it.
         std_x = (x - mu) / sigma
         return np.ones(mu.shape), std_x
-
-    def internal_ratio(self, x, mu, sigma):
-        return self._internal_ratio(x, mu, sigma)
 
     def _internal_ratio(self, x, mu, sigma):
         """(x - mu)**2 / sigma**2
