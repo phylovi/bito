@@ -16,15 +16,14 @@ class Normal(object):
         self.dim = dim
 
     def sample(self, mu, sigma, n_particles=1):
-        """mu and sigma should be dim-dimensional."""
+        """Sample from the normal.
+
+        mu and sigma should be dim-dimensional."""
         assert len(mu) == self.dim
         assert len(sigma) == self.dim
-        if n_particles > 1:
-            return np.random.normal(
-                loc=mu, scale=np.abs(sigma), size=(n_particles, self.dim)
-            )
-        else:
-            return np.random.normal(loc=mu, scale=np.abs(sigma))
+        return np.random.normal(
+            loc=mu, scale=np.abs(sigma), size=(n_particles, self.dim)
+        )
 
     def log_prob(self, x, mu, sigma):
         """Given an ensemble of dim-dimensional samples, calculate the joint
@@ -33,7 +32,7 @@ class Normal(object):
         Thus, x is an array that is samples on axis 0 and branches on
         axis 1.
         """
-        assert(x.ndim == 2)
+        assert x.ndim == 2
         ratio = self._internal_ratio(x, mu, sigma)
         return np.sum(
             -0.5 * np.log(2 * np.pi) - 0.5 * np.log(sigma ** 2) - 0.5 * ratio, axis=1
@@ -50,8 +49,9 @@ class Normal(object):
         return ratio / (x - mu), -1.0 / sigma * (1.0 - ratio)
 
     def reparam_grad(self, x, mu, sigma):
-        """The gradient component from the reparametrization trick. In the
-        reparametrization trick for the normal distribution, our normal
+        """The gradient component from the reparametrization trick.
+
+        In the reparametrization trick for the normal distribution, our normal
         variate is mu + sigma * epsilon. Here we take the derivative of that
         with respect to mu and sigma.
         """
