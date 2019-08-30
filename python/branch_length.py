@@ -18,7 +18,7 @@ def softmax(arrA):
         return np.ones(arrA.shape) / len(arrA)
 
 
-def like_weights(q_distribution, phylo_log_like, x, loc, shape):
+def like_weights(q_distribution, phylo_log_like, x, loc, shape, clip):
     """The gradient with respect to the parameters of the variational
     distribution using the reparametrization trick.
 
@@ -29,6 +29,8 @@ def like_weights(q_distribution, phylo_log_like, x, loc, shape):
     # to take the branch length derivative then do the chain rule. The product of these
     # first two terms are that.
     log_prob_ratio = phylo_log_like - q_distribution.log_prob(x, loc, shape)
+    if clip:
+        log_prob_ratio = np.clip(log_prob_ratio, -clip, clip)
     return softmax(log_prob_ratio)
 
 
