@@ -49,8 +49,5 @@ def param_grad(q_distribution, weights, phylo_gradient, x, loc, shape):
     d_q_loc, d_q_shape = q_distribution.log_prob_param_grad(x, loc, shape)
     d_loc = d_log_prob_ratio * d_reparam_loc - d_q_loc
     d_shape = d_log_prob_ratio * d_reparam_shape - d_q_shape
-
-    def reweight(a):
-        return np.dot(np.array([weights]), a)[0]
-
+    reweight = lambda a: np.dot(np.array([weights]), a)[0]
     return reweight(d_loc), reweight(d_shape)
