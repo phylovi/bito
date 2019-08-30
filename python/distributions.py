@@ -41,7 +41,7 @@ class Normal(object):
 
     def log_prob_grad(self, x, mu, sigma):
         """The gradient of log_prob."""
-        return (x - mu) / sigma ** 2
+        return (mu - x) / sigma ** 2
 
     def log_prob_param_grad(self, x, mu, sigma):
         """The derivative of a the log of distribution with respect to its
@@ -51,8 +51,7 @@ class Normal(object):
 
     def reparam_grad(self, x, mu, sigma):
         """The gradient component from the reparametrization trick. In the
-        reparametrization trick for the normal distribution, our normal.
-
+        reparametrization trick for the normal distribution, our normal
         variate is mu + sigma * epsilon. Here we take the derivative of that
         with respect to mu and sigma.
         """
