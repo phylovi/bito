@@ -1,4 +1,34 @@
 import numpy as np
+import scipy.stats as stats
+
+
+class Gamma(object):
+    """Gamma distribution.
+
+    The given dimension is laid out on axis 1, which in our application
+    is across branches of a tree.
+
+    pdf(x; alpha, beta, x > 0) = x**(alpha - 1) exp(-x beta) / Z
+    Z = Gamma(alpha) beta**(-alpha)
+    """
+
+    def __init__(self, dim):
+        self.dim = dim
+
+    def log_prob(self, x, alpha, beta):
+        """Given an ensemble of dim-dimensional samples, calculate the joint
+        probability (across dim) for each one.
+
+        Input x is an array that is samples on axis 0 and branches on
+        axis 1. The output is a 1-d array of dimension equal to the
+        number of samples.
+        """
+        assert x.ndim == 2
+        return np.sum(stats.gamma.logpdf(x, alpha, scale=(1 / beta)), axis=1)
+
+    def log_prob_grad(self, x, alpha, beta):
+        """The gradient of log_prob."""
+        return (alpha - 1) / x - beta
 
 
 class Normal(object):
