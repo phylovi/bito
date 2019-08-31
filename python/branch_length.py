@@ -19,15 +19,10 @@ def softmax(arrA):
 
 
 def like_weights(q_distribution, phylo_log_like, x, loc, shape, clip):
-    """The gradient with respect to the parameters of the variational
-    distribution using the reparametrization trick.
+    """The weights \tilde w used in the gradient calculation.
 
-    See (7) of the 2018 ICLR paper.
+    See just before (6) in the 2018 ICLR paper.
     """
-    # Recall that the branch lengths are parameterized in terms of the variational
-    # parameters (epsilon is considered fixed) so when we take their derivative we need
-    # to take the branch length derivative then do the chain rule. The product of these
-    # first two terms are that.
     log_prob_ratio = phylo_log_like - q_distribution.log_prob(x, loc, shape)
     if clip:
         log_prob_ratio = np.clip(log_prob_ratio, -clip, clip)
@@ -36,20 +31,23 @@ def like_weights(q_distribution, phylo_log_like, x, loc, shape, clip):
 
 def param_grad(q_distribution, weights, phylo_gradient, x, loc, shape):
     """The gradient with respect to the parameters of the variational
-    distribution using the reparametrization trick. See (7) of the 2018 ICLR
-    paper.
+    distribution using the reparametrization trick.
 
-    TODO: This explodes if x == loc.
+    See (7) of the 2018 ICLR paper.
     """
     # Recall that the branch lengths are parameterized in terms of the variational
     # parameters (epsilon is considered fixed) so when we take their derivative we need
-    # to take the branch length derivative then do the chain rule. The product of these
-    # first two terms are that.
+    # to take the branch length derivative:
     d_log_prob_ratio = phylo_gradient - q_distribution.log_prob_grad(x, loc, shape)
+    # ... and then the reparametrization derivative due to the chain rule.
     d_reparam_loc, d_reparam_shape = q_distribution.reparam_grad(x, loc, shape)
     # This is the derivative with respect to the variational parametrization itself.
     d_q_loc, d_q_shape = q_distribution.log_prob_param_grad(x, loc, shape)
+    # Here are the full derivatives, where the first term is the derivative WRT
+    # parameters in the reparameterization trick and the second is WRT the actual
+    # variational parameterization.
     d_loc = d_log_prob_ratio * d_reparam_loc - d_q_loc
     d_shape = d_log_prob_ratio * d_reparam_shape - d_q_shape
-    reweight = lambda a: np.dot(np.array([weights]), a)[0]
-    return reweight(d_loc), reweight(d_shape)
+    # Our multiple samples are laid out on axis 0, so this multiplication on the left
+    # reweights them.
+    return np.matmul(weights, d_loc), np.matmul(weights, d_shape)

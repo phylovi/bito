@@ -18,7 +18,8 @@ class Normal(object):
     def sample(self, mu, sigma, n_particles=1):
         """Sample from the normal.
 
-        mu and sigma should be dim-dimensional."""
+        mu and sigma should be dim-dimensional.
+        """
         assert len(mu) == self.dim
         assert len(sigma) == self.dim
         return np.random.normal(
@@ -29,8 +30,9 @@ class Normal(object):
         """Given an ensemble of dim-dimensional samples, calculate the joint
         probability (across dim) for each one.
 
-        Thus, x is an array that is samples on axis 0 and branches on
-        axis 1.
+        Input x is an array that is samples on axis 0 and branches on
+        axis 1. The output is a 1-d array of dimension equal to the
+        number of samples.
         """
         assert x.ndim == 2
         ratio = self._internal_ratio(x, mu, sigma)
@@ -55,16 +57,16 @@ class Normal(object):
         variate is mu + sigma * epsilon. Here we take the derivative of that
         with respect to mu and sigma.
         """
-        # std_x is epsilon. We translate from x to the epsilon that would have
-        # made it. std_x is epsilon. We translate from x to the epsilon that
-        # would have made it.
-        std_x = (x - mu) / sigma
-        return np.ones(mu.shape), std_x
+        # We translate from x to the epsilon that would have made it.
+        epsilon = (x - mu) / sigma
+        return np.ones(mu.shape), epsilon
 
     def _internal_ratio(self, x, mu, sigma):
         """(x - mu)**2 / sigma**2
 
         Cheng used
         ratio = np.exp(np.log((x - mu) ** 2) - np.log(sigma ** 2))
+        for numerical stability, though this makes problems when
+        x and mu are identical in one of their entries.
         """
         return (x - mu) ** 2 / sigma ** 2
