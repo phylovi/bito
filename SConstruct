@@ -1,5 +1,11 @@
 import os
 import sys
+import pytoml as toml
+import enscons, enscons.cpyext
+
+metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
+
+full_tag = enscons.get_abi3_tag()
 
 if 'CONDA_PREFIX' not in os.environ:
     sys.exit("\nThis SConstruct is meant to be run in the libsbn conda environment; see README for installation process.")
@@ -12,6 +18,9 @@ import pybind11
 import re
 
 env = Environment(
+    tools=["default", "packaging", enscons.generate, enscons.cpyext.generate],
+    PACKAGE_METADATA=metadata,
+    WHEEL_TAG=full_tag,
     ENV=os.environ,
     CPPPATH=['include', 'src', pybind11.get_include()],
     # CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion', '-pthread'],
@@ -72,7 +81,7 @@ sources = [
     '_build/tree.cpp',
     '_build/tree_collection.cpp'
 ]
-env.SharedLibrary(
+extension = env.SharedLibrary(
     "sbn"+os.popen("python3-config --extension-suffix").read().rstrip(),
     ['_build/pylibsbn.cpp'] + sources,
     SHLIBPREFIX='',
@@ -83,3 +92,11 @@ doctest = env.Program(
 noodle = env.Program(
     ['_build/noodle.cpp'] + sources,
     LIBS=['hmsbeagle', 'pthread'])
+
+py_source = (
+)
+
+platlib = env.Whl("platlib", py_source + extension, root="")
+whl = env.WhlFile(source=platlib)
+
+env.Default(whl)
