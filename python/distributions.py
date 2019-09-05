@@ -53,7 +53,7 @@ class LogNormal(object):
         assert len(mu) == self.dim
         assert len(sigma) == self.dim
         return np.random.lognormal(
-            loc=mu, scale=np.abs(sigma), size=(n_particles, self.dim)
+            mean=mu, sigma=np.abs(sigma), size=(n_particles, self.dim)
         )
 
     def log_prob(self, x, mu, sigma):
