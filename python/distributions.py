@@ -31,6 +31,24 @@ class Gamma(object):
         return (alpha - 1) / x - beta
 
 
+class ExpGamma(object):
+    """Distribution of an X whose exp is Gamma distributed.
+
+    TODO details if kept.
+    """
+
+    def __init__(self, dim):
+        self.dim = dim
+
+    def log_prob(self, x, alpha, beta):
+        return np.sum(stats.gamma.logpdf(np.exp(x), alpha, scale=(1 / beta)), axis=1)
+
+    def log_prob_grad(self, x, alpha, beta):
+        """The gradient of log_prob."""
+        exp_x = np.exp(x)
+        return ((alpha - 1) / exp_x - beta) * exp_x
+
+
 class Normal(object):
     """This class implements a multidimensional normal distribution such that
     each dimension has a mu and a sigma.
