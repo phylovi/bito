@@ -1,21 +1,19 @@
-import os
-import sys
-import pytoml as toml
 import enscons, enscons.cpyext
-
-metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
-
-full_tag = enscons.get_abi3_tag()
+import glob
+import os
+import platform
+import pybind11
+import pytoml as toml
+import re
+import sys
 
 if 'CONDA_PREFIX' not in os.environ:
     sys.exit("\nThis SConstruct is meant to be run in the libsbn conda environment; see README for installation process.")
 if 'CC' not in os.environ:
     sys.exit("\nDid you install compilers using conda? See README for installation process.")
 
-import glob
-import platform
-import pybind11
-import re
+metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
+full_tag = enscons.get_abi3_tag()
 
 env = Environment(
     tools=["default", "packaging", enscons.generate, enscons.cpyext.generate],
@@ -98,5 +96,7 @@ py_source = (
 
 platlib = env.Whl("platlib", py_source + extension, root="")
 whl = env.WhlFile(source=platlib)
+print("\nPython wheel built. To install, execute:")
+print(f"pip install {whl[0]}\n")
 
 env.Default(whl)

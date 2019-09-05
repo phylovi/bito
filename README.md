@@ -25,6 +25,8 @@ conda activate libsbn
 
 `make` will build and run tests.
 
+If you want to use the module from Python, use `pip install` on the wheel generated in the `build` directory.
+
 On OS X the build process will also modify the conda environment to point `DYLD_LIBRARY_PATH` to where BEAGLE is installed.
 If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.
 
