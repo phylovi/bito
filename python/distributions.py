@@ -32,7 +32,7 @@ class Gamma(object):
 
 
 class LogNormal(object):
-    """This class implements a multidimensional normal distribution such that
+    """This class implements a multidimensional log normal distribution such that
     each dimension has a mu and a sigma.
 
     The given dimension is laid out on axis 1, which in our application
@@ -46,7 +46,7 @@ class LogNormal(object):
         self.dim = dim
 
     def sample(self, mu, sigma, n_particles=1):
-        """Sample from the normal.
+        """Sample from the log normal.
 
         mu and sigma should be dim-dimensional.
         """
@@ -88,7 +88,7 @@ class LogNormal(object):
         with respect to mu and sigma.
         """
         # We translate from x to the epsilon that would have made it.
-        epsilon = (x - mu) / sigma
+        epsilon = (np.log(x) - mu) / sigma
         return x, x * epsilon
 
     def _internal_ratio(self, x, mu, sigma):

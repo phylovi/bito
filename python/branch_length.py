@@ -26,7 +26,7 @@ def like_weights(q_distribution, phylo_log_likelihoods, x, loc, shape, clip):
     """
     log_prob_ratio = phylo_log_likelihoods - q_distribution.log_prob(x, loc, shape)
     # if clip:
-    #    log_prob_ratio = np.clip(log_prob_ratio, -clip, clip)
+    #     log_prob_ratio = np.clip(log_prob_ratio, -clip, clip)
     return sp.special.softmax(log_prob_ratio)
 
 
@@ -54,5 +54,5 @@ def param_grad(q_distribution, weights, phylo_gradient, x, loc, shape):
     d_shape = d_log_prob_ratio * d_reparam_shape - d_q_shape
     # Our multiple samples are laid out on axis 0, so this multiplication on the left
     # reweights them.
-    weights = np.ones(weights.shape) / len(weights)
+    #weights = np.ones(weights.shape) / len(weights)
     return np.matmul(weights, d_loc), np.matmul(weights, d_shape)
