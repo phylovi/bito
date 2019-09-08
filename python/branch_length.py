@@ -19,15 +19,24 @@ def softmax(arrA):
         return np.ones(arrA.shape) / len(arrA)
 
 
-def like_weights(q_distribution, phylo_log_likelihoods, x, loc, shape, clip):
+def like_weights(q_distribution, phylo_log_likelihoods, x, loc, shape):
     """The weights \tilde w used in the gradient calculation.
 
     See just before (6) in the 2018 ICLR paper.
     """
     log_prob_ratio = phylo_log_likelihoods - q_distribution.log_prob(x, loc, shape)
-    #if clip:
-    #    log_prob_ratio = np.clip(log_prob_ratio, -clip, clip)
-    return sp.special.softmax(log_prob_ratio)
+    # return sp.special.softmax(log_prob_ratio)
+    return softmax(log_prob_ratio)
+
+
+def apply_weights(weights, d_matrix):
+    """
+    Just to check use of matrix multiplication.
+    """
+    out = np.zeros(d_matrix.shape[1])
+    for i in range(len(weights)):
+        out += weights[i] * d_matrix[i,]
+    return out
 
 
 def param_grad(q_distribution, weights, phylo_gradient, x, loc, shape):
@@ -51,5 +60,6 @@ def param_grad(q_distribution, weights, phylo_gradient, x, loc, shape):
     d_shape = d_log_prob_ratio * d_reparam_shape - d_q_shape
     # Our multiple samples are laid out on axis 0, so this multiplication on the left
     # reweights them.
-    weights = np.ones(weights.shape)/len(weights)
-    return np.matmul(weights, d_loc), np.matmul(weights, d_shape)
+    # weights = np.ones(weights.shape)/len(weights)
+    # return np.matmul(weights, d_loc), np.matmul(weights, d_shape)
+    return apply_weights(weights, d_loc), apply_weights(weights, d_shape)
