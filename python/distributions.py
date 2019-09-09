@@ -24,9 +24,10 @@ def validate_dimensions(distribution, params, x=None):
         assert (
             x.ndim == 2
         ), "x should be laid out with samples on axis 0 and variables on axis 1."
-        assert (
-            distribution.dim == x.shape[1]
-        ), "x needs to have number of columns equal to the dimension of this distribution."
+        assert distribution.dim == x.shape[1], (
+            f"x needs to have number of columns ({x.shape[1]}) equal to "
+            f"the dimension of this distribution ({distribution.dim})."
+        )
 
 
 class Gamma(object):
