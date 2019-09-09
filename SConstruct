@@ -28,6 +28,11 @@ env = Environment(
     CXX = os.environ['CXX']
     )
 
+# Sometimes conda installs the pybind11 headers inside a pythonXXX directory, so we get
+# them here.
+for d in glob.glob(pybind11.get_include() + "/python*/"):
+    env.Append(CPPPATH = d)
+
 conda_env_dir = env['ENV']['CONDA_PREFIX']
 conda_base_dir = re.search('(.*)/envs/.*', conda_env_dir).group(1)
 
