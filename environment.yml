@@ -13,5 +13,6 @@ dependencies:
   - pybind11 >=2.3.0
   - pytest
   - scons
+  - tensorflow
   - pip:
       - enscons
