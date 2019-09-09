@@ -8,15 +8,17 @@ import tensorflow_probability as tfp
 
 tf.enable_eager_execution()
 
+def detensor_pair(pair):
+    return pair[0][0,0], pair[1][0,0]
 
 def test_distribution_gradients():
     x = 0.3
     x_arr = np.array([[x]])
 
     # Test for Gamma
-    alpha = 0.55
-    beta = 0.6
-    params = tf.constant([x, alpha, beta])
+    alpha = np.array([0.55])
+    beta = np.array([0.6])
+    params = tf.constant([x, alpha[0], beta[0]])
     with tf.GradientTape() as g:
         g.watch(params)
         tf_distribution = tfp.distributions.Gamma(
@@ -26,12 +28,12 @@ def test_distribution_gradients():
     gradient = g.gradient(y, params).numpy()
     g = distributions.Gamma(1)
     assert y.numpy() == approx(g.log_prob(x_arr, alpha, beta)[0])
-    assert gradient[0] == approx(g.log_prob_grad(x, alpha, beta))
+    assert gradient[0] == approx(g.log_prob_grad(x_arr, alpha, beta))
 
     # Test for Normal
-    loc = 0.55
-    shape = 0.6
-    params = tf.constant([x, loc, shape])
+    loc = np.array([0.55])
+    shape = np.array([0.6])
+    params = tf.constant([x, loc[0], shape[0]])
     with tf.GradientTape() as g:
         g.watch(params)
         tf_distribution = tfp.distributions.Normal(loc=params[1], scale=params[2])
@@ -40,12 +42,12 @@ def test_distribution_gradients():
     d = distributions.Normal(1)
     assert y.numpy() == approx(d.log_prob(x_arr, loc, shape)[0])
     assert gradient[0] == approx(d.log_prob_grad(x_arr, loc, shape))
-    assert (gradient[1], gradient[2]) == approx(d.log_prob_param_grad(x, loc, shape))
+    assert (gradient[1], gradient[2]) == approx(detensor_pair(d.log_prob_param_grad(x_arr, loc, shape)))
 
     # Test for LogNormal
-    loc = 0.55
-    shape = 0.6
-    params = tf.constant([x, loc, shape])
+    loc = np.array([0.55])
+    shape = np.array([0.6])
+    params = tf.constant([x, loc[0], shape[0]])
     with tf.GradientTape() as g:
         g.watch(params)
         tf_distribution = tfp.distributions.LogNormal(loc=params[1], scale=params[2])
@@ -54,7 +56,7 @@ def test_distribution_gradients():
     d = distributions.LogNormal(1)
     assert y.numpy() == approx(d.log_prob(x_arr, loc, shape)[0])
     assert gradient[0] == approx(d.log_prob_grad(x_arr, loc, shape))
-    assert (gradient[1], gradient[2]) == approx(d.log_prob_param_grad(x, loc, shape))
+    assert (gradient[1], gradient[2]) == approx(detensor_pair(d.log_prob_param_grad(x_arr, loc, shape)))
 
 
 def test_log_ratio_gradient():
@@ -82,7 +84,7 @@ def test_log_ratio_gradient():
                 / tfp.distributions.Normal(loc=mu, scale=sigma).prob(tf_x)
             )
         )
-        x = np.array([tf_x.numpy()]).transpose()
+        x_arr = np.array([tf_x.numpy()]).transpose()
         tf_gradient = [grad.numpy() for grad in g.gradient(y, [mu, sigma])]
     # Distribution we wish to approximate.
     d = distributions.Normal(1)
@@ -100,6 +102,6 @@ def test_log_ratio_gradient():
         return branch_length.param_grad(
             q, weights, d.log_prob_grad(x, true_loc, true_shape), x, loc, shape
         )
-    loc_grad, shape_grad = complete_grad(x, loc, shape)
+    loc_grad, shape_grad = complete_grad(x_arr, loc, shape)
     assert tf_gradient[0] == approx(loc_grad, rel=1e-5)
     assert tf_gradient[1] == approx(shape_grad, rel=1e-5)

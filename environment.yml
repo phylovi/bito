@@ -14,5 +14,6 @@ dependencies:
   - pytest
   - scons
   - tensorflow
+  - tensorflow-probability
   - pip:
       - enscons
