@@ -54,17 +54,20 @@ for path in [beagle_lib, beagle_include]:
 env.Append(LIBPATH = beagle_lib)
 env.Append(CPPPATH = beagle_include)
 
-if platform.system() == 'Darwin':
+def set_library_path(ld_variable_name):
     conda_vars_dir =conda_env_dir+'/etc/conda'
     os.makedirs(conda_vars_dir+'/activate.d', exist_ok=True)
     with open(conda_vars_dir+'/activate.d/vars.sh', 'w') as fp:
-        fp.write('export DYLD_LIBRARY_PATH='+beagle_lib+'\n')
+        fp.write(f'export {ld_variable_name}='+beagle_lib+'\n')
     os.makedirs(conda_vars_dir+'/deactivate.d', exist_ok=True)
     with open(conda_vars_dir+'/deactivate.d/vars.sh', 'w') as fp:
-        fp.write('unset DYLD_LIBRARY_PATH\n')
+        fp.write(f'unset {ld_variable_name}\n')
+
+if platform.system() == 'Darwin':
+    set_library_path('DYLD_LIBRARY_PATH')
     env.Append(LINKFLAGS = ['-undefined', 'dynamic_lookup'])
 elif platform.system() == 'Linux':
-    pass
+    set_library_path('LD_LIBRARY_PATH')
 else:
     sys.exit("Sorry, we don't support "+platform.system()+".")
 
