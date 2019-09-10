@@ -106,3 +106,52 @@ def test_log_ratio_gradient():
     assert tf_gradient[0] == approx(loc_grad, rel=1e-5)
     assert tf_gradient[1] == approx(shape_grad, rel=1e-5)
 
+
+
+def test_log_ratio_gradient2():
+    """
+    Here we test our like_weights and param_grad using TF.
+    """
+    true_loc_val = -2.0
+    true_shape_val = 1.4
+    true_distribution = tfp.distributions.LogNormal(loc=true_loc_val, scale=true_shape_val)
+    # A variety of epsilons.
+    epsilon = tf.constant([-0.1, 0.14, -0.51, -2.0, 1.8])
+    with tf.GradientTape() as g:
+        loc = tf.constant(1.1)
+        scale = tf.constant(1.0)
+        g.watch(loc)
+        g.watch(scale)
+        tf_x = tf.math.exp(loc + scale * epsilon)
+        # This is the log of the full sum of ratios as in the equation just before (7)
+        # in the 2018 ICLR paper.
+        y = tf.math.log(
+            # In principle we should have a 1/K term here, but it disappears in the log
+            # grad.
+            tf.math.reduce_sum(
+                true_distribution.prob(tf_x)
+                / tfp.distributions.LogNormal(loc=loc, scale=scale).prob(tf_x)
+            )
+        )
+        x_arr = np.array([tf_x.numpy()]).transpose()
+        tf_gradient = [grad.numpy() for grad in g.gradient(y, [loc, scale])]
+    # Distribution we wish to approximate.
+    d = distributions.LogNormal(1)
+    true_loc = np.array([true_loc_val])
+    true_shape = np.array([true_shape_val])
+    # Variational distribution
+    q = distributions.LogNormal(1)
+    loc = np.array([1.1])
+    shape = np.array([1.0])
+    # Here's the gradient as per (7) in the 2018 ICLR paper.
+    def complete_grad(x, loc, shape):
+        weights = branch_length.like_weights(
+            q, d.log_prob(x, true_loc, true_shape), x, loc, shape, None
+        )
+        return branch_length.param_grad(
+            q, weights, d.log_prob_grad(x, true_loc, true_shape), x, loc, shape
+        )
+    loc_grad, shape_grad = complete_grad(x_arr, loc, shape)
+    assert tf_gradient[0] == approx(loc_grad, rel=1e-5)
+    assert tf_gradient[1] == approx(shape_grad, rel=1e-5)
+
