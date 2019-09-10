@@ -69,11 +69,11 @@ def test_log_ratio_gradient():
     # A variety of epsilons.
     epsilon = tf.constant([-0.1, 0.14, -0.51, -2.0, 1.8])
     with tf.GradientTape() as g:
-        mu = tf.constant(1.1)
-        sigma = tf.constant(1.0)
-        g.watch(mu)
-        g.watch(sigma)
-        tf_x = mu + sigma * epsilon
+        loc = tf.constant(1.1)
+        scale = tf.constant(1.0)
+        g.watch(loc)
+        g.watch(scale)
+        tf_x = loc + scale * epsilon
         # This is the log of the full sum of ratios as in the equation just before (7)
         # in the 2018 ICLR paper.
         y = tf.math.log(
@@ -81,11 +81,11 @@ def test_log_ratio_gradient():
             # grad.
             tf.math.reduce_sum(
                 true_normal.prob(tf_x)
-                / tfp.distributions.Normal(loc=mu, scale=sigma).prob(tf_x)
+                / tfp.distributions.Normal(loc=loc, scale=scale).prob(tf_x)
             )
         )
         x_arr = np.array([tf_x.numpy()]).transpose()
-        tf_gradient = [grad.numpy() for grad in g.gradient(y, [mu, sigma])]
+        tf_gradient = [grad.numpy() for grad in g.gradient(y, [loc, scale])]
     # Distribution we wish to approximate.
     d = distributions.Normal(1)
     true_loc = np.array([true_loc_val])
@@ -105,3 +105,4 @@ def test_log_ratio_gradient():
     loc_grad, shape_grad = complete_grad(x_arr, loc, shape)
     assert tf_gradient[0] == approx(loc_grad, rel=1e-5)
     assert tf_gradient[1] == approx(shape_grad, rel=1e-5)
+
