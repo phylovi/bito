@@ -8,8 +8,10 @@ import tensorflow_probability as tfp
 
 tf.enable_eager_execution()
 
+
 def detensor_pair(pair):
-    return pair[0][0,0], pair[1][0,0]
+    return pair[0][0, 0], pair[1][0, 0]
+
 
 def test_distribution_gradients():
     x = 0.3
@@ -42,7 +44,9 @@ def test_distribution_gradients():
     d = distributions.Normal(1)
     assert y.numpy() == approx(d.log_prob(x_arr, loc, shape)[0])
     assert gradient[0] == approx(d.log_prob_grad(x_arr, loc, shape))
-    assert (gradient[1], gradient[2]) == approx(detensor_pair(d.log_prob_param_grad(x_arr, loc, shape)))
+    assert (gradient[1], gradient[2]) == approx(
+        detensor_pair(d.log_prob_param_grad(x_arr, loc, shape))
+    )
 
     # Test for LogNormal
     loc = np.array([0.55])
@@ -56,13 +60,14 @@ def test_distribution_gradients():
     d = distributions.LogNormal(1)
     assert y.numpy() == approx(d.log_prob(x_arr, loc, shape)[0])
     assert gradient[0] == approx(d.log_prob_grad(x_arr, loc, shape))
-    assert (gradient[1], gradient[2]) == approx(detensor_pair(d.log_prob_param_grad(x_arr, loc, shape)))
+    assert (gradient[1], gradient[2]) == approx(
+        detensor_pair(d.log_prob_param_grad(x_arr, loc, shape))
+    )
 
 
-def test_log_ratio_gradient():
-    """
-    Here we test our like_weights and param_grad using TF.
-    """
+def test_log_ratio_gradient_normal():
+    """Here we test our like_weights and param_grad using TF for approximating
+    a normal with a normal."""
     true_loc_val = -2.0
     true_shape_val = 1.4
     true_normal = tfp.distributions.Normal(loc=true_loc_val, scale=true_shape_val)
@@ -94,6 +99,7 @@ def test_log_ratio_gradient():
     q = distributions.Normal(1)
     loc = np.array([1.1])
     shape = np.array([1.0])
+
     # Here's the gradient as per (7) in the 2018 ICLR paper.
     def complete_grad(x, loc, shape):
         weights = branch_length.like_weights(
@@ -102,19 +108,20 @@ def test_log_ratio_gradient():
         return branch_length.param_grad(
             q, weights, d.log_prob_grad(x, true_loc, true_shape), x, loc, shape
         )
+
     loc_grad, shape_grad = complete_grad(x_arr, loc, shape)
     assert tf_gradient[0] == approx(loc_grad, rel=1e-5)
     assert tf_gradient[1] == approx(shape_grad, rel=1e-5)
 
 
-
-def test_log_ratio_gradient2():
-    """
-    Here we test our like_weights and param_grad using TF.
-    """
-    true_loc_val = -2.0
-    true_shape_val = 1.4
-    true_distribution = tfp.distributions.LogNormal(loc=true_loc_val, scale=true_shape_val)
+def test_log_ratio_gradient_gamma():
+    """Here we test our like_weights and param_grad using TF approximating a
+    lognormal with a gamma."""
+    true_alpha_val = 2.0
+    true_beta_val = 1.3
+    true_distribution = tfp.distributions.Gamma(
+        concentration=true_alpha_val, rate=true_beta_val
+    )
     # A variety of epsilons.
     epsilon = tf.constant([-0.1, 0.14, -0.51, -2.0, 1.8])
     with tf.GradientTape() as g:
@@ -136,22 +143,23 @@ def test_log_ratio_gradient2():
         x_arr = np.array([tf_x.numpy()]).transpose()
         tf_gradient = [grad.numpy() for grad in g.gradient(y, [loc, scale])]
     # Distribution we wish to approximate.
-    d = distributions.LogNormal(1)
-    true_loc = np.array([true_loc_val])
-    true_shape = np.array([true_shape_val])
+    d = distributions.Gamma(1)
+    true_alpha = np.array([true_alpha_val])
+    true_beta = np.array([true_beta_val])
     # Variational distribution
     q = distributions.LogNormal(1)
-    loc = np.array([1.1])
-    shape = np.array([1.0])
+    alpha = np.array([1.1])
+    beta = np.array([1.0])
+
     # Here's the gradient as per (7) in the 2018 ICLR paper.
-    def complete_grad(x, loc, shape):
+    def complete_grad(x, alpha, beta):
         weights = branch_length.like_weights(
-            q, d.log_prob(x, true_loc, true_shape), x, loc, shape, None
+            q, d.log_prob(x, true_alpha, true_beta), x, alpha, beta, None
         )
         return branch_length.param_grad(
-            q, weights, d.log_prob_grad(x, true_loc, true_shape), x, loc, shape
+            q, weights, d.log_prob_grad(x, true_alpha, true_beta), x, alpha, beta
         )
-    loc_grad, shape_grad = complete_grad(x_arr, loc, shape)
-    assert tf_gradient[0] == approx(loc_grad, rel=1e-5)
-    assert tf_gradient[1] == approx(shape_grad, rel=1e-5)
 
+    alpha_grad, beta_grad = complete_grad(x_arr, alpha, beta)
+    assert tf_gradient[0] == approx(alpha_grad, rel=1e-5)
+    assert tf_gradient[1] == approx(beta_grad, rel=1e-5)
