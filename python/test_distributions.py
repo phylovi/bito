@@ -148,18 +148,18 @@ def test_log_ratio_gradient_gamma():
     true_beta = np.array([true_beta_val])
     # Variational distribution
     q = distributions.LogNormal(1)
-    alpha = np.array([1.1])
-    beta = np.array([1.0])
+    loc = np.array([1.1])
+    scale = np.array([1.0])
 
     # Here's the gradient as per (7) in the 2018 ICLR paper.
-    def complete_grad(x, alpha, beta):
+    def complete_grad(x, loc, scale):
         weights = branch_length.like_weights(
-            q, d.log_prob(x, true_alpha, true_beta), x, alpha, beta, None
+            q, d.log_prob(x, true_alpha, true_beta), x, loc, scale, None
         )
         return branch_length.param_grad(
-            q, weights, d.log_prob_grad(x, true_alpha, true_beta), x, alpha, beta
+            q, weights, d.log_prob_grad(x, true_alpha, true_beta), x, loc, scale
         )
 
-    alpha_grad, beta_grad = complete_grad(x_arr, alpha, beta)
+    alpha_grad, beta_grad = complete_grad(x_arr, loc, scale)
     assert tf_gradient[0] == approx(alpha_grad, rel=1e-5)
     assert tf_gradient[1] == approx(beta_grad, rel=1e-5)
