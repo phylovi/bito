@@ -118,15 +118,17 @@ def test_log_ratio_gradient_gamma():
     """Here we test our like_weights and param_grad using TF approximating a
     lognormal with a gamma."""
     true_alpha_val = 2.0
-    true_beta_val = 1.3
+    true_beta_val = 5.0
+    loc_val = -1.6
+    scale_val = 1.1
     true_distribution = tfp.distributions.Gamma(
         concentration=true_alpha_val, rate=true_beta_val
     )
     # A variety of epsilons.
-    epsilon = tf.constant([-0.1, 0.14, -0.51, -2.0, 1.8])
+    epsilon = tf.constant(np.random.normal(0., 1., 100).astype(np.float32))
     with tf.GradientTape() as g:
-        loc = tf.constant(1.1)
-        scale = tf.constant(1.0)
+        loc = tf.constant(loc_val)
+        scale = tf.constant(scale_val)
         g.watch(loc)
         g.watch(scale)
         tf_x = tf.math.exp(loc + scale * epsilon)
@@ -142,14 +144,15 @@ def test_log_ratio_gradient_gamma():
         )
         x_arr = np.array([tf_x.numpy()]).transpose()
         tf_gradient = [grad.numpy() for grad in g.gradient(y, [loc, scale])]
+
     # Distribution we wish to approximate.
     d = distributions.Gamma(1)
     true_alpha = np.array([true_alpha_val])
     true_beta = np.array([true_beta_val])
     # Variational distribution
     q = distributions.LogNormal(1)
-    loc = np.array([1.1])
-    scale = np.array([1.0])
+    loc = np.array([loc_val])
+    scale = np.array([scale_val])
 
     # Here's the gradient as per (7) in the 2018 ICLR paper.
     def complete_grad(x, loc, scale):
@@ -160,6 +163,6 @@ def test_log_ratio_gradient_gamma():
             q, weights, d.log_prob_grad(x, true_alpha, true_beta), x, loc, scale
         )
 
-    alpha_grad, beta_grad = complete_grad(x_arr, loc, scale)
-    assert tf_gradient[0] == approx(alpha_grad, rel=1e-5)
-    assert tf_gradient[1] == approx(beta_grad, rel=1e-5)
+    loc_grad, scale_grad = complete_grad(x_arr, loc, scale)
+    assert tf_gradient[0] == approx(loc_grad, rel=1e-5)
+    assert tf_gradient[1] == approx(scale_grad, rel=1e-5)
