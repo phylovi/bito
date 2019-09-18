@@ -7,8 +7,11 @@ channels:
 dependencies:
   - beagle-lib
   - flex
+  - jupyter
   - make
+  - matplotlib
   - numpy
+  - pandas
   - pip
   - pybind11 >=2.3.0
   - pytest
@@ -17,3 +20,5 @@ dependencies:
   - tensorflow-probability
   - pip:
       - enscons
+      - tf-nightly-2.0-preview
+      - tfp-nightly
