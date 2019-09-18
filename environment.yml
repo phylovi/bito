@@ -16,9 +16,10 @@ dependencies:
   - pybind11 >=2.3.0
   - pytest
   - scons
-  - tensorflow
-  - tensorflow-probability
   - pip:
+      - black
+      - docformatter
       - enscons
+      - flake8
       - tf-nightly-2.0-preview
       - tfp-nightly
