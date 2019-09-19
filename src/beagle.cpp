@@ -454,13 +454,20 @@ std::pair<double, std::vector<double>> NewBranchGradient(
     operations.push_back(op);
   });
 
-  beagleUpdateTransitionMatrices(
-      beagle_instance,
-      0,  // eigenIndex
-      node_indices.data(),
-      derivative_matrix_indices.data(),  // firstDerivativeIndices
-      NULL,                              // secondDervativeIndices
-      tree.BranchLengths().data(), int_node_count - 1);
+  beagleUpdateTransitionMatrices(beagle_instance,
+                                 0,  // eigenIndex
+                                 node_indices.data(),
+                                 NULL,  // firstDerivativeIndices
+                                 NULL,  // secondDervativeIndices
+                                 tree.BranchLengths().data(),
+                                 int_node_count - 1);
+
+  // JC69 Q matrix
+  std::vector<double> Q(16, 1.0 / 3.0);
+  Q[0] = Q[5] = Q[10] = Q[15] = -1.0;
+  for (int index : derivative_matrix_indices) {
+    beagleSetDifferentialMatrix(beagle_instance, index, Q.data());
+  }
 
   beagleUpdatePartials(beagle_instance, operations.data(),
                        static_cast<int>(operations.size()),
