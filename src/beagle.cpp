@@ -43,8 +43,8 @@ int CreateInstance(int tip_count, int alignment_length,
                    BeagleInstanceDetails *return_info) {
   // Number of partial buffers to create (input):
   // tip_count - 1 for lower partials (internal nodes only)
-  // 2*tip_count - 2 for upper partials (every node except the root)
-  int partials_buffer_count = 3 * tip_count - 3;
+  // 2*tip_count - 1 for upper partials (every node)
+  int partials_buffer_count = 3 * tip_count - 2;
   // Number of compact state representation buffers to create -- for use with
   // setTipStates (input) */
   int compact_buffer_count = tip_count;
@@ -104,10 +104,23 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
   for (const auto &pattern : site_pattern.GetPatterns()) {
     beagleSetTipStates(beagle_instance, taxon_number++, pattern.data());
   }
-
+  // In case we want to use tip partials instead of tip states
+  //	for (int i = 0; i < site_pattern.GetPatterns().size(); i++) {
+  //		beagleSetTipPartials(beagle_instance, i,
+  // site_pattern.GetPartials(i).data());
+  //	}
   beagleSetPatternWeights(beagle_instance, site_pattern.GetWeights().data());
   beagleSetCategoryWeights(beagle_instance, 0, weights);
   beagleSetCategoryRates(beagle_instance, rates);
+
+  // Set the preorder partials of root node (state frequencies)
+  // For JC69 the frequencies are fixed but for other models the code below will
+  // have to move where preorder partials are calculated
+  std::vector<double> state_frequencies(site_pattern.PatternCount() * 4, 0.25);
+  int int_node_count = static_cast<int>(2 * site_pattern.SequenceCount() - 1);
+  int root_id = static_cast<int>(tree_collection.GetTree(0).Id());
+  beagleSetPartials(beagle_instance, root_id + int_node_count,
+                    state_frequencies.data());
 }
 
 void SetJCModel(BeagleInstance beagle_instance) {
@@ -237,17 +250,17 @@ std::pair<double, std::vector<double>> BranchGradient(
   tree.Topology()->BinaryIdPostOrder(
       [&operations, int_taxon_count, rescaling](int node_id, int child0_id,
                                                 int child1_id) {
-        BeagleOperation op = {
-            node_id,                         // dest
-            BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
-            child0_id,      child0_id,       // src1 and matrix1
-            child1_id,      child1_id        // src2 and matrix2
-        };
-        if (rescaling) {
-          op.destinationScaleWrite = node_id - int_taxon_count + 1;
-        }
-        operations.push_back(op);
-      });
+    BeagleOperation op = {
+        node_id,                         // dest
+        BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
+        child0_id,      child0_id,       // src1 and matrix1
+        child1_id,      child1_id        // src2 and matrix2
+    };
+    if (rescaling) {
+      op.destinationScaleWrite = node_id - int_taxon_count + 1;
+    }
+    operations.push_back(op);
+  });
 
   // Calculate upper partials
   tree.Topology()->TripleIdPreOrderBifurcating(
@@ -386,6 +399,112 @@ std::vector<std::pair<double, std::vector<double>>> BranchGradients(
     const TreeCollection &tree_collection, bool rescaling) {
   return Parallelize<std::pair<double, std::vector<double>>>(
       BranchGradient, beagle_instances, tree_collection, rescaling);
+}
+
+/// Compute first derivative of the log likelihood with respect to each branch
+// length, as a vector of first derivatives indexed by node id.
+std::pair<double, std::vector<double>> NewBranchGradient(
+    BeagleInstance beagle_instance, const Tree &in_tree, bool rescaling) {
+  beagleResetScaleFactors(beagle_instance, 0);
+  auto tree = PrepareTreeForLikelihood(in_tree);
+  //  tree.SlideRootPosition();
+
+  size_t node_count = tree.BranchLengths().size();
+
+  int int_node_count = static_cast<int>(node_count);
+  int int_taxon_count = static_cast<int>(tree.LeafCount());
+  int internal_count = int_taxon_count - 1;
+  std::vector<int> node_indices(node_count - 1);
+  std::iota(node_indices.begin(), node_indices.end(), 0);
+  std::vector<int> derivative_matrix_indices(int_node_count - 1);
+  std::iota(derivative_matrix_indices.begin(), derivative_matrix_indices.end(),
+            node_count - 1);
+  std::vector<BeagleOperation> operations;
+  std::vector<BeagleOperation> pre_operations;
+
+  int root_id = static_cast<int>(tree.Topology()->Id());
+
+  // Calculate post-order partials
+  tree.Topology()->BinaryIdPostOrder([&operations, int_taxon_count, rescaling](
+      int node_id, int child0_id, int child1_id) {
+    BeagleOperation op = {
+        node_id,                         // dest
+        BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
+        child0_id,      child0_id,       // src1 and matrix1
+        child1_id,      child1_id        // src2 and matrix2
+    };
+    if (rescaling) {
+      op.destinationScaleWrite = node_id - int_taxon_count + 1;
+    }
+    operations.push_back(op);
+  });
+
+  beagleUpdateTransitionMatrices(
+      beagle_instance,
+      0,  // eigenIndex
+      node_indices.data(),
+      derivative_matrix_indices.data(),  // firstDerivativeIndices
+      NULL,                              // secondDervativeIndices
+      tree.BranchLengths().data(), int_node_count - 1);
+
+  beagleUpdatePartials(beagle_instance, operations.data(),
+                       static_cast<int>(operations.size()),
+                       BEAGLE_OP_NONE);  // cumulative scale index
+
+  // Calculate pre-order partials
+  // TODO: Set root pre-order partials equal to root state frequencies
+	
+  tree.Topology()->TripleIdPreOrderBifurcating([&pre_operations, &root_id,
+                                                &int_node_count, &rescaling,
+                                                &internal_count](
+      int node_id, int sister_id, int parent_id) {
+    if (node_id != root_id) {
+      BeagleOperation op = {
+          node_id + int_node_count,  // dest pre-order partial of current node
+          BEAGLE_OP_NONE,
+          BEAGLE_OP_NONE,
+          parent_id + int_node_count,  // pre-order partial parent
+          node_id,                     // matrices of current node
+          sister_id,                   // post-order partial of sibling
+          sister_id                    // matrices of sibling
+      };
+      // Scalers are indexed differently for the upper conditional
+      // likelihood. They start at the number of internal nodes + 1 because
+      // of the lower conditional likelihoods. Also, in this case the leaves
+      // have scalers.
+      if (rescaling) {
+        // Scaling factors are recomputed every time so we don't read them
+        // using destinationScaleRead.
+        op.destinationScaleWrite = node_id + 1 + internal_count;
+      }
+      pre_operations.push_back(op);
+    }
+  });
+
+  beagleUpdatePrePartials(beagle_instance, pre_operations.data(),
+                          static_cast<int>(pre_operations.size()),
+                          BEAGLE_OP_NONE);  // cumulative scale index
+
+  std::vector<double> gradient(node_count, 0);
+  std::vector<int> category_weight_index = {0};
+  std::vector<int> post_buffer_indices(int_node_count - 1);
+  std::vector<int> pre_buffer_indices(int_node_count - 1);
+  std::iota(post_buffer_indices.begin(), post_buffer_indices.end(), 0);
+  std::iota(pre_buffer_indices.begin(), pre_buffer_indices.end(),
+            int_node_count);
+
+  beagleCalculateEdgeDerivatives(
+      beagle_instance,
+      post_buffer_indices.data(),        // list of post order buffer indices
+      pre_buffer_indices.data(),         // list of pre order buffer indices
+      derivative_matrix_indices.data(),  // differential Q matrix indices
+      category_weight_index.data(),      // category weights indices
+      int_node_count - 1,                // number of edges
+      NULL,                              // derivative-per-site output array
+      gradient.data(),  // sum of derivatives across sites output array
+      NULL);            // sum of squared derivatives output array
+
+  return {0, gradient};
 }
 
 }  // namespace beagle

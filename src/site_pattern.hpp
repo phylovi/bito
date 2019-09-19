@@ -16,7 +16,7 @@ class SitePattern {
     patterns_.resize(alignment.SequenceCount());
     Compress();
   }
-
+  const std::vector<double> GetPartials(size_t sequence_index) const;
   const std::vector<SymbolVector>& GetPatterns() const { return patterns_; }
   size_t PatternCount() const { return patterns_.at(0).size(); }
   size_t SequenceCount() const { return patterns_.size(); }
