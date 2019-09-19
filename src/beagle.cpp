@@ -41,13 +41,15 @@ SymbolVector SymbolVectorOf(const std::string &str,
 
 int CreateInstance(int tip_count, int alignment_length,
                    BeagleInstanceDetails *return_info) {
+  bool use_tip_states = false;
   // Number of partial buffers to create (input):
   // tip_count - 1 for lower partials (internal nodes only)
   // 2*tip_count - 1 for upper partials (every node)
   int partials_buffer_count = 3 * tip_count - 2;
+  if (!use_tip_states) partials_buffer_count += tip_count;
   // Number of compact state representation buffers to create -- for use with
   // setTipStates (input) */
-  int compact_buffer_count = tip_count;
+  int compact_buffer_count = (use_tip_states ? tip_count : 0);
   // DNA assumption here.
   int state_count = 4;
   // Number of site patterns to be handled by the instance (input) -- not
@@ -100,15 +102,19 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
   const double weights[1] = {1.0};
   const double rates[1] = {1.0};
   const std::vector<SymbolVector> patterns = site_pattern.GetPatterns();
-  int taxon_number = 0;
-  for (const auto &pattern : site_pattern.GetPatterns()) {
-    beagleSetTipStates(beagle_instance, taxon_number++, pattern.data());
+  bool use_tip_states = false;
+  if (use_tip_states) {
+    int taxon_number = 0;
+    for (const auto &pattern : site_pattern.GetPatterns()) {
+      beagleSetTipStates(beagle_instance, taxon_number++, pattern.data());
+    }
+  } else {
+    // In case we want to use tip partials instead of tip states
+    for (int i = 0; i < site_pattern.GetPatterns().size(); i++) {
+      beagleSetTipPartials(beagle_instance, i,
+                           site_pattern.GetPartials(i).data());
+    }
   }
-  // In case we want to use tip partials instead of tip states
-  //	for (int i = 0; i < site_pattern.GetPatterns().size(); i++) {
-  //		beagleSetTipPartials(beagle_instance, i,
-  // site_pattern.GetPartials(i).data());
-  //	}
   beagleSetPatternWeights(beagle_instance, site_pattern.GetWeights().data());
   beagleSetCategoryWeights(beagle_instance, 0, weights);
   beagleSetCategoryRates(beagle_instance, rates);
@@ -118,7 +124,8 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
   // have to move where preorder partials are calculated
   std::vector<double> state_frequencies(site_pattern.PatternCount() * 4, 0.25);
   int int_node_count = static_cast<int>(2 * site_pattern.SequenceCount() - 1);
-  int root_id = static_cast<int>(tree_collection.GetTree(0).Id());
+  int root_id = static_cast<int>(tree_collection.GetTree(0).Id()) +
+                1;  // + because trees are detrifurcated
   beagleSetPartials(beagle_instance, root_id + int_node_count,
                     state_frequencies.data());
 }
@@ -401,13 +408,21 @@ std::vector<std::pair<double, std::vector<double>>> BranchGradients(
       BranchGradient, beagle_instances, tree_collection, rescaling);
 }
 
+std::vector<std::pair<double, std::vector<double>>> NewBranchGradients(
+    std::vector<BeagleInstance> beagle_instances,
+
+    const TreeCollection &tree_collection, bool rescaling) {
+  return Parallelize<std::pair<double, std::vector<double>>>(
+      NewBranchGradient, beagle_instances, tree_collection, rescaling);
+}
+
 /// Compute first derivative of the log likelihood with respect to each branch
 // length, as a vector of first derivatives indexed by node id.
 std::pair<double, std::vector<double>> NewBranchGradient(
     BeagleInstance beagle_instance, const Tree &in_tree, bool rescaling) {
   beagleResetScaleFactors(beagle_instance, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
-  //  tree.SlideRootPosition();
+  tree.SlideRootPosition();
 
   size_t node_count = tree.BranchLengths().size();
 
@@ -453,7 +468,7 @@ std::pair<double, std::vector<double>> NewBranchGradient(
 
   // Calculate pre-order partials
   // TODO: Set root pre-order partials equal to root state frequencies
-	
+
   tree.Topology()->TripleIdPreOrderBifurcating([&pre_operations, &root_id,
                                                 &int_node_count, &rescaling,
                                                 &internal_count](

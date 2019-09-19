@@ -160,6 +160,9 @@ struct SBNInstance {
   std::vector<double> LogLikelihoods() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients() const;
+
+  std::vector<std::pair<double, std::vector<double>>> NewBranchGradients()
+      const;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

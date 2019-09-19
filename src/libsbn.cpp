@@ -289,6 +289,12 @@ SBNInstance::BranchGradients() const {
                                  rescaling_);
 }
 
+std::vector<std::pair<double, std::vector<double>>>
+SBNInstance::NewBranchGradients() const {
+  return beagle::NewBranchGradients(beagle_instances_, tree_collection_,
+                                    rescaling_);
+}
+
 // Here we initialize our static random number generator.
 std::random_device SBNInstance::random_device_;
 std::mt19937 SBNInstance::random_generator_(SBNInstance::random_device_());

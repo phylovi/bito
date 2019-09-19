@@ -41,7 +41,7 @@ const std::vector<double> SitePattern::GetPartials(
       partials[i * state_count + patterns_[sequence_index][i]] = 1.0;
     } else {
       for (int j = 0; j < state_count; j++) {
-        partials[i * state_count + patterns_[sequence_index][j]] = 1.0;
+        partials[i * state_count + j] = 1.0;
       }
     }
   }

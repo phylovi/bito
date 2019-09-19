@@ -77,6 +77,9 @@ std::vector<std::pair<double, std::vector<double>>> BranchGradients(
 
 std::pair<double, std::vector<double>> NewBranchGradient(
     BeagleInstance beagle_instance, const Tree &tree, bool rescaling);
+std::vector<std::pair<double, std::vector<double>>> NewBranchGradients(
+    std::vector<BeagleInstance> beagle_instances,
+    const TreeCollection &tree_collection, bool rescaling);
 
 }  // namespace beagle
 
