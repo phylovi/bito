@@ -3,13 +3,13 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 
+import optimizers
+
 import tensorflow.compat.v2 as tf
 import tensorflow_probability as tfp
 
 tf.enable_v2_behavior()
 tfd = tfp.distributions
-
-import optimizers
 
 
 class TFContinuousParameterModel:
@@ -85,10 +85,17 @@ class TFContinuousParameterModel:
 
     def elbo_gradient_using_current_sample(self, grad_log_p_x):
         assert self.grad_x is not None
-        assert np.allclose(
+        if not np.allclose(
             self._chain_rule(grad_log_p_x, self.grad_x),
             self._slow_chain_rule(grad_log_p_x, self.grad_x),
-        )
+        ):
+            print("chain rule isn't close")
+            print(grad_log_p_x)
+            print(self.grad_x)
+            print(
+                self._chain_rule(grad_log_p_x, self.grad_x)
+                - self._slow_chain_rule(grad_log_p_x, self.grad_x)
+            )
         unnormalized_result = (
             self._chain_rule(grad_log_p_x, self.grad_x) - self.grad_log_sum_q
         )
@@ -126,7 +133,9 @@ class TFContinuousParameterModel:
         )
 
     def plot(self, target_log_like, max_x=0.5):
-        f, axarr = plt.subplots(self.branch_count, sharex=True)
+        f, axarr = plt.subplots(
+            self.branch_count, sharex=True, figsize=(8, 1.5 * self.branch_count)
+        )
         for which_branch in range(self.branch_count):
-            self.plot_1d(axarr[which_branch], target_log_like, which_branch, max_x=0.5)
+            self.plot_1d(axarr[which_branch], target_log_like, which_branch, max_x)
         plt.tight_layout()
