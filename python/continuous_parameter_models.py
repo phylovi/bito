@@ -20,6 +20,8 @@ class TFContinuousParameterModel:
     optimize using SGD variants.
 
     Samples are laid out as particles x variables, which we will call z-shape.
+
+    * log_p is the target probability.
     """
 
     def __init__(
@@ -35,10 +37,10 @@ class TFContinuousParameterModel:
         self.particle_count = particle_count
         self.step_size = step_size
         # The current stored sample.
-        self.x = None
-        # The gradient of x with respect to the parameters of q.
-        self.grad_x = None
-        # The stochastic gradient of log sum q for x.
+        self.z = None
+        # The gradient of z with respect to the parameters of q.
+        self.grad_z = None
+        # The stochastic gradient of log sum q for z.
         self.grad_log_sum_q = None
 
     @property
@@ -52,100 +54,94 @@ class TFContinuousParameterModel:
     def mode_match(self, branch_lengths):
         """Some crazy heuristics for mode matching with the given branch
         lengths."""
+        log_branch_lengths = np.log(np.clip(branch_lengths, 1e-6, None))
         if self.name == "LogNormal":
-            self.param_matrix[:, 1] = -0.1 * np.log(branch_lengths)
-            self.param_matrix[:, 0] = np.square(self.param_matrix[:, 1]) + np.log(
-                branch_lengths
+            self.param_matrix[:, 1] = -0.1 * log_branch_lengths
+            self.param_matrix[:, 0] = (
+                np.square(self.param_matrix[:, 1]) + log_branch_lengths
             )
         elif self.name == "Gamma":
-            self.param_matrix[:, 1] = -60.0 * np.log(branch_lengths)
+            self.param_matrix[:, 1] = -60.0 * log_branch_lengths
             self.param_matrix[:, 0] = 1 + branch_lengths * self.param_matrix[:, 1]
         else:
             print("Mode matching not implemented for " + self.name)
 
     def set_step_size(self):
-        self.step_size = np.average(self.param_matrix) / 100
+        self.step_size = np.average(np.abs(self.param_matrix)) / 100
 
     def sample_and_prep_gradients(self):
         with tf.GradientTape(persistent=True) as g:
             tf_params = tf.constant(self.param_matrix, dtype=tf.float32)
             g.watch(tf_params)
             q_distribution = self.q_factory(tf_params)
-            tf_x = q_distribution.sample(self.particle_count)
-            q_term = tf.math.reduce_sum(tf.math.log(q_distribution.prob(tf_x)))
-        self.x = tf_x.numpy()
+            tf_z = q_distribution.sample(self.particle_count)
+            q_term = tf.math.reduce_sum(tf.math.log(q_distribution.prob(tf_z)))
+        self.z = tf_z.numpy()
         # The Jacobian is laid out as particles x edges x edges x params.
-        self.grad_x = np.sum(g.jacobian(tf_x, tf_params).numpy(), axis=2)
+        self.grad_z = np.sum(g.jacobian(tf_z, tf_params).numpy(), axis=2)
         self.grad_log_sum_q = g.gradient(q_term, tf_params).numpy()
         del g  # Should happen anyway but being explicit to remember.
-        return self.x
+        return self.z
 
     def clear_sample(self):
-        self.x = None
-        self.grad_x = None
+        self.z = None
+        self.grad_z = None
         self.grad_log_sum_q = None
 
     def elbo_estimate(self, log_p, particle_count=None):
         """A naive Monte Carlo estimate of the ELBO.
 
-        log_p must take an argument of x-shape.
+        log_p must take an argument of z-shape.
         """
         if particle_count is None:
             particle_count = self.particle_count
         q_distribution = self.q_factory(self.param_matrix)
-        x = q_distribution.sample(particle_count)
+        z = q_distribution.sample(particle_count)
         return (
-            np.sum(log_p(x) - np.sum(q_distribution.log_prob(x), axis=1))
+            np.sum(log_p(z) - np.sum(q_distribution.log_prob(z), axis=1))
         ) / particle_count
 
     @staticmethod
-    def _chain_rule(grad_log_p_x, grad_x):
+    def _chain_rule(grad_log_p_z, grad_z):
         return (
-            np.tensordot(grad_log_p_x.transpose(), grad_x, axes=1)
+            np.tensordot(grad_log_p_z.transpose(), grad_z, axes=1)
             .diagonal()
             .transpose()
         )
 
     @staticmethod
-    def _slow_chain_rule(grad_log_p_x, grad_x):
-        particle_count, variable_count, param_count = grad_x.shape
+    def _slow_chain_rule(grad_log_p_z, grad_z):
+        particle_count, variable_count, param_count = grad_z.shape
         result = np.zeros((variable_count, param_count))
         for variable in range(variable_count):
             for param in range(param_count):
                 for particle in range(particle_count):
                     result[variable, param] += (
-                        grad_log_p_x[particle, variable]
-                        * grad_x[particle, variable, param]
+                        grad_log_p_z[particle, variable]
+                        * grad_z[particle, variable, param]
                     )
         return result
 
-    def linspace_one_variable(self, variable, min_x, max_x, num=50, default=0.1):
-        """Fill a num x variable_count array with default, except for the
-        variable column, which gets filled with a linspace."""
-        a = np.full((num, self.variable_count), default)
-        a[:, variable] = np.linspace(min_x, max_x, num)
-        return a
-
-    def elbo_gradient_using_current_sample(self, grad_log_p_x):
-        assert self.grad_x is not None
+    def elbo_gradient_using_current_sample(self, grad_log_p_z):
+        assert self.grad_z is not None
         if not np.allclose(
-            self._chain_rule(grad_log_p_x, self.grad_x),
-            self._slow_chain_rule(grad_log_p_x, self.grad_x),
+            self._chain_rule(grad_log_p_z, self.grad_z),
+            self._slow_chain_rule(grad_log_p_z, self.grad_z),
         ):
             print("chain rule isn't close")
-            print(grad_log_p_x)
-            print(self.grad_x)
+            print(grad_log_p_z)
+            print(self.grad_z)
             print(
-                self._chain_rule(grad_log_p_x, self.grad_x)
-                - self._slow_chain_rule(grad_log_p_x, self.grad_x)
+                self._chain_rule(grad_log_p_z, self.grad_z)
+                - self._slow_chain_rule(grad_log_p_z, self.grad_z)
             )
         unnormalized_result = (
-            self._chain_rule(grad_log_p_x, self.grad_x) - self.grad_log_sum_q
+            self._chain_rule(grad_log_p_z, self.grad_z) - self.grad_log_sum_q
         )
         return unnormalized_result / self.particle_count
 
-    def gradient_step(self, grad_log_p_x, history=None):
-        grad = self.elbo_gradient_using_current_sample(grad_log_p_x)
+    def gradient_step(self, grad_log_p_z, history=None):
+        grad = self.elbo_gradient_using_current_sample(grad_log_p_z)
         update_dict = self.optimizer.adam(
             {"params": self.step_size}, {"params": self.param_matrix}, {"params": grad}
         )
@@ -154,15 +150,21 @@ class TFContinuousParameterModel:
         if history is not None:
             history.append(self.param_matrix.copy())
 
-    # TODO target_log_like rename
-    def plot_1d(self, ax, target_log_like, which_variable, max_x=0.5):
+    def _linspace_one_variable(self, variable, min_x, max_x, num=50, default=0.1):
+        """Fill a num x variable_count array with default, except for the
+        variable column, which gets filled with a linspace."""
+        a = np.full((num, self.variable_count), default)
+        a[:, variable] = np.linspace(min_x, max_x, num)
+        return a
+
+    def plot_1d(self, ax, log_p, which_variable, max_x=0.5):
         min_x = max_x / 100
-        x_vals = self.linspace_one_variable(which_variable, min_x, max_x, 100)
+        x_vals = self._linspace_one_variable(which_variable, min_x, max_x, 100)
         q_distribution = self.q_factory(self.param_matrix)
         df = pd.DataFrame(
             {
                 "x": x_vals[:, which_variable],
-                "target": sp.special.softmax(target_log_like(x_vals)),
+                "target": sp.special.softmax(log_p(x_vals)),
                 "fit": sp.special.softmax(
                     q_distribution.log_prob(x_vals).numpy()[:, which_variable]
                 ),
@@ -178,10 +180,10 @@ class TFContinuousParameterModel:
             + str(self.param_matrix[which_variable, :]),
         )
 
-    def plot(self, target_log_like, max_x=0.5):
+    def plot(self, log_p, max_x=0.5):
         f, axarr = plt.subplots(
             self.variable_count, sharex=True, figsize=(8, 1.5 * self.variable_count)
         )
         for which_variable in range(self.variable_count):
-            self.plot_1d(axarr[which_variable], target_log_like, which_variable, max_x)
+            self.plot_1d(axarr[which_variable], log_p, which_variable, max_x)
         plt.tight_layout()
