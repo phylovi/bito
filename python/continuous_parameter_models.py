@@ -50,8 +50,8 @@ class TFContinuousParameterModel:
         return self.param_matrix.shape[1]
 
     def mode_match(self, branch_lengths):
-       """Some crazy heuristics for mode matching with the given branch
-       lengths."""
+        """Some crazy heuristics for mode matching with the given branch
+        lengths."""
         if self.name == "LogNormal":
             self.param_matrix[:, 1] = -0.1 * np.log(branch_lengths)
             self.param_matrix[:, 0] = np.square(self.param_matrix[:, 1]) + np.log(
@@ -64,7 +64,7 @@ class TFContinuousParameterModel:
             print("Mode matching not implemented for " + self.name)
 
     def set_step_size(self):
-        self.step_size = np.average(m.param_matrix) / 100
+        self.step_size = np.average(self.param_matrix) / 100
 
     def sample_and_prep_gradients(self):
         with tf.GradientTape(persistent=True) as g:
@@ -185,4 +185,3 @@ class TFContinuousParameterModel:
         for which_variable in range(self.variable_count):
             self.plot_1d(axarr[which_variable], target_log_like, which_variable, max_x)
         plt.tight_layout()
-error: cannot format -: Cannot parse: 56:0:         if self.name == "LogNormal":
