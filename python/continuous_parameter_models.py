@@ -13,12 +13,24 @@ tfd = tfp.distributions
 
 
 class TFContinuousParameterModel:
+    """An object to model a collection of variables with a given q
+    distribution.
+
+    Each of these variables uses a number of parameters which we
+    optimize using SGD variants.
+
+    Samples are laid out as particles x variables, which we will call z-shape.
+    """
+
     def __init__(
-        self, q_factory, initial_params, branch_count, particle_count, step_size=0.01
+        self, q_factory, initial_params, variable_count, particle_count, step_size=0.01
     ):
         assert initial_params.ndim == 1
         self.q_factory = q_factory
-        self.param_matrix = np.full((branch_count, len(initial_params)), initial_params)
+        self.name = self.q_factory(np.array([initial_params])).name
+        self.param_matrix = np.full(
+            (variable_count, len(initial_params)), initial_params
+        )
         self.optimizer = optimizers.SGD_Server({"params": self.param_matrix.shape})
         self.particle_count = particle_count
         self.step_size = step_size
@@ -30,14 +42,31 @@ class TFContinuousParameterModel:
         self.grad_log_sum_q = None
 
     @property
-    def branch_count(self):
+    def variable_count(self):
         return self.param_matrix.shape[0]
 
     @property
     def param_count(self):
         return self.param_matrix.shape[1]
 
-    def sample(self):
+    def mode_match(self, branch_lengths):
+       """Some crazy heuristics for mode matching with the given branch
+       lengths."""
+        if self.name == "LogNormal":
+            self.param_matrix[:, 1] = -0.1 * np.log(branch_lengths)
+            self.param_matrix[:, 0] = np.square(self.param_matrix[:, 1]) + np.log(
+                branch_lengths
+            )
+        elif self.name == "Gamma":
+            self.param_matrix[:, 1] = -60.0 * np.log(branch_lengths)
+            self.param_matrix[:, 0] = 1 + branch_lengths * self.param_matrix[:, 1]
+        else:
+            print("Mode matching not implemented for " + self.name)
+
+    def set_step_size(self):
+        self.step_size = np.average(m.param_matrix) / 100
+
+    def sample_and_prep_gradients(self):
         with tf.GradientTape(persistent=True) as g:
             tf_params = tf.constant(self.param_matrix, dtype=tf.float32)
             g.watch(tf_params)
@@ -56,6 +85,19 @@ class TFContinuousParameterModel:
         self.grad_x = None
         self.grad_log_sum_q = None
 
+    def elbo_estimate(self, log_p, particle_count=None):
+        """A naive Monte Carlo estimate of the ELBO.
+
+        log_p must take an argument of x-shape.
+        """
+        if particle_count is None:
+            particle_count = self.particle_count
+        q_distribution = self.q_factory(self.param_matrix)
+        x = q_distribution.sample(particle_count)
+        return (
+            np.sum(log_p(x) - np.sum(q_distribution.log_prob(x), axis=1))
+        ) / particle_count
+
     @staticmethod
     def _chain_rule(grad_log_p_x, grad_x):
         return (
@@ -66,21 +108,22 @@ class TFContinuousParameterModel:
 
     @staticmethod
     def _slow_chain_rule(grad_log_p_x, grad_x):
-        particle_count, branch_count, param_count = grad_x.shape
-        result = np.zeros((branch_count, param_count))
-        for branch in range(branch_count):
+        particle_count, variable_count, param_count = grad_x.shape
+        result = np.zeros((variable_count, param_count))
+        for variable in range(variable_count):
             for param in range(param_count):
                 for particle in range(particle_count):
-                    result[branch, param] += (
-                        grad_log_p_x[particle, branch] * grad_x[particle, branch, param]
+                    result[variable, param] += (
+                        grad_log_p_x[particle, variable]
+                        * grad_x[particle, variable, param]
                     )
         return result
 
-    def linspace_one_branch(self, branch, min_x, max_x, num=50, default=0.1):
-        """Fill a num x branch_count array with default, except for the branch
-        column, which gets filled with a linspace."""
-        a = np.full((num, self.branch_count), default)
-        a[:, branch] = np.linspace(min_x, max_x, num)
+    def linspace_one_variable(self, variable, min_x, max_x, num=50, default=0.1):
+        """Fill a num x variable_count array with default, except for the
+        variable column, which gets filled with a linspace."""
+        a = np.full((num, self.variable_count), default)
+        a[:, variable] = np.linspace(min_x, max_x, num)
         return a
 
     def elbo_gradient_using_current_sample(self, grad_log_p_x):
@@ -111,16 +154,17 @@ class TFContinuousParameterModel:
         if history is not None:
             history.append(self.param_matrix.copy())
 
-    def plot_1d(self, ax, target_log_like, which_branch, max_x=0.5):
+    # TODO target_log_like rename
+    def plot_1d(self, ax, target_log_like, which_variable, max_x=0.5):
         min_x = max_x / 100
-        x_vals = self.linspace_one_branch(which_branch, min_x, max_x, 100)
+        x_vals = self.linspace_one_variable(which_variable, min_x, max_x, 100)
         q_distribution = self.q_factory(self.param_matrix)
         df = pd.DataFrame(
             {
-                "x": x_vals[:, which_branch],
+                "x": x_vals[:, which_variable],
                 "target": sp.special.softmax(target_log_like(x_vals)),
                 "fit": sp.special.softmax(
-                    q_distribution.log_prob(x_vals).numpy()[:, which_branch]
+                    q_distribution.log_prob(x_vals).numpy()[:, which_variable]
                 ),
             }
         )
@@ -129,13 +173,16 @@ class TFContinuousParameterModel:
             x="x",
             y=["target", "fit"],
             kind="line",
-            title=q_distribution._name + " " + str(self.param_matrix[which_branch, :]),
+            title=q_distribution._name
+            + " "
+            + str(self.param_matrix[which_variable, :]),
         )
 
     def plot(self, target_log_like, max_x=0.5):
         f, axarr = plt.subplots(
-            self.branch_count, sharex=True, figsize=(8, 1.5 * self.branch_count)
+            self.variable_count, sharex=True, figsize=(8, 1.5 * self.variable_count)
         )
-        for which_branch in range(self.branch_count):
-            self.plot_1d(axarr[which_branch], target_log_like, which_branch, max_x)
+        for which_variable in range(self.variable_count):
+            self.plot_1d(axarr[which_variable], target_log_like, which_variable, max_x)
         plt.tight_layout()
+error: cannot format -: Cannot parse: 56:0:         if self.name == "LogNormal":
