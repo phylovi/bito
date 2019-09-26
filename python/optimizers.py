@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 
 class SGD_Server(object):
@@ -126,3 +127,58 @@ class SGD_Server(object):
                 + (1.0 - self.gamma) * update_dict[var] ** 2
             )
         return update_dict
+
+
+class AdaptiveStepsizeOptimizer:
+    def __init__(self, model):
+        self.model = model
+        self.trace = []
+        self.step_number = 0
+        self.window_size = 5
+        self.step_size = model.suggested_step_size()
+        self.stepsize_increasing_rate = 1.2
+        self.stepsize_decreasing_rate = 1 - 1e-2
+        # The amount by which we drop the stepsize after realizing that it's gotten too
+        # big.
+        self.stepsize_drop_from_peak = 2
+        self.stepsize_increasing = True
+        self.best_elbo = -np.inf
+        self.best_param_matrix = np.zeros(model.param_matrix.shape)
+        self.optimizer = SGD_Server({"params": model.param_matrix.shape})
+
+    def turn_around(self):
+        """Triggered when the stepsize has gotten too big or a gradient step
+        fails, restoring the previously best seen parameters."""
+        np.copyto(self.model.param_matrix, self.best_param_matrix)
+        self.step_size /= self.stepsize_drop_from_peak
+        self.stepsize_increasing = False
+
+    def gradient_step(self, target_log_like, grad_target_log_like):
+        # Are we starting to decrease our objective function?
+        if self.stepsize_increasing and self.step_number >= 2 * self.window_size:
+            last_epoch = self.trace[-self.window_size :]
+            prev_epoch = self.trace[-2 * self.window_size : -self.window_size]
+            if np.mean(last_epoch) < np.mean(prev_epoch):
+                self.turn_around()
+        # Perform gradient step.
+        if self.stepsize_increasing:
+            self.step_size *= self.stepsize_increasing_rate
+        else:
+            self.step_size *= self.stepsize_decreasing_rate
+        self.model.sample_and_prep_gradients()
+        if not self.model.gradient_step(
+            self.optimizer, self.step_size, grad_target_log_like(self.model.z)
+        ):
+            self.turn_around()  # Gradient step failed.
+        self.trace.append(self.model.elbo_estimate(target_log_like, particle_count=500))
+        if self.trace[-1] > self.best_elbo:
+            self.best_elbo = self.trace[-1]
+            np.copyto(self.best_param_matrix, self.model.param_matrix)
+        self.step_number += 1
+
+    def gradient_steps(self, target_log_like, grad_target_log_like, step_count):
+        for _ in range(step_count):
+            self.gradient_step(target_log_like, grad_target_log_like)
+
+    def plot_trace(self):
+        return pd.Series(self.trace).plot.line()

@@ -3,8 +3,6 @@ import numpy as np
 import pandas as pd
 import scipy as sp
 
-import optimizers
-
 import tensorflow.compat.v2 as tf
 import tensorflow_probability as tfp
 
@@ -24,21 +22,14 @@ class TFContinuousParameterModel:
     * log_p is the target probability.
     """
 
-    def __init__(
-        self, q_factory, initial_params, variable_count, particle_count, step_size=None
-    ):
+    def __init__(self, q_factory, initial_params, variable_count, particle_count):
         assert initial_params.ndim == 1
         self.q_factory = q_factory
         self.name = self.q_factory(np.array([initial_params])).name
         self.param_matrix = np.full(
             (variable_count, len(initial_params)), initial_params
         )
-        self.optimizer = optimizers.SGD_Server({"params": self.param_matrix.shape})
         self.particle_count = particle_count
-        if step_size is None:
-            self.step_size = np.abs(initial_params)/100.
-        else:
-            self.step_size = step_size
         # The current stored sample.
         self.z = None
         # The gradient of z with respect to the parameters of q.
@@ -69,8 +60,8 @@ class TFContinuousParameterModel:
         else:
             print("Mode matching not implemented for " + self.name)
 
-    def set_step_size(self):
-        self.step_size = np.average(np.abs(self.param_matrix), axis=0) / 100
+    def suggested_step_size(self):
+        return np.average(np.abs(self.param_matrix), axis=0) / 100
 
     def sample_and_prep_gradients(self):
         with tf.GradientTape(persistent=True) as g:
@@ -143,16 +134,14 @@ class TFContinuousParameterModel:
         )
         return unnormalized_result / self.particle_count
 
-    def gradient_step(self, grad_log_p_z, history=None):
-        """
-        Return if the gradient step was successful.
-        """
+    def gradient_step(self, optimizer, step_size, grad_log_p_z, history=None):
+        """Return if the gradient step was successful."""
         grad = self.elbo_gradient_using_current_sample(grad_log_p_z)
         if not np.isfinite(np.array([grad])).all():
             self.clear_sample()
             return False
-        update_dict = self.optimizer.adam(
-            {"params": self.step_size}, {"params": self.param_matrix}, {"params": grad}
+        update_dict = optimizer.adam(
+            {"params": step_size}, {"params": self.param_matrix}, {"params": grad}
         )
         self.param_matrix += update_dict["params"]
         self.clear_sample()
