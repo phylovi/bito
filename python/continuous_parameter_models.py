@@ -10,6 +10,38 @@ tf.enable_v2_behavior()
 tfd = tfp.distributions
 
 
+def exponential_factory(params):
+    return tfd.Exponential(rate=params[:, 0])
+
+
+def gamma_factory(params):
+    return tfd.Gamma(concentration=params[:, 0], rate=params[:, 1])
+
+
+def inverse_gamma_factory(params):
+    return tfd.InverseGamma(concentration=params[:, 0], scale=params[:, 1])
+
+
+def lognormal_factory(params):
+    return tfd.LogNormal(loc=params[:, 0], scale=params[:, 1])
+
+
+def truncated_lognormal_factory(params):
+    exp_shift = tfp.bijectors.Chain(
+        [
+            tfp.bijectors.AffineScalar(shift=-tf.math.exp(params[:, 2])),
+            tfp.bijectors.Exp(),
+        ]
+    )
+    return tfd.TransformedDistribution(
+        distribution=tfd.TruncatedNormal(
+            loc=params[:, 0], scale=params[:, 1], low=params[:, 2], high=999
+        ),
+        bijector=exp_shift,
+        name="TruncatedLogNormal",
+    )
+
+
 class TFContinuousParameterModel:
     """An object to model a collection of variables with a given q
     distribution.
@@ -54,6 +86,12 @@ class TFContinuousParameterModel:
             self.param_matrix[:, 0] = (
                 np.square(self.param_matrix[:, 1]) + log_branch_lengths
             )
+        elif self.name == "TruncatedLogNormal":
+            self.param_matrix[:, 1] = -0.1 * log_branch_lengths
+            self.param_matrix[:, 0] = (
+                np.square(self.param_matrix[:, 1]) + log_branch_lengths
+            )
+            self.param_matrix[:, 2] = -5
         elif self.name == "Gamma":
             self.param_matrix[:, 1] = -60.0 * log_branch_lengths
             self.param_matrix[:, 0] = 1 + branch_lengths * self.param_matrix[:, 1]
