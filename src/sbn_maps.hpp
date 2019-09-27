@@ -25,6 +25,10 @@ SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
 
 BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
+// This function returns a vector indexed by the edges of the tree and
+// containing the corresponding split index as indexed by the indexer.
+SizeVector SplitIndicesOf(const BitsetSizeMap& indexer,
+                          const Node::NodePtr& topology);
 // This function gives information about the splits and PCSSs of a given
 // topology with respect to the current indexing data structures.
 // Specifically, it returns a pair (rootsplit_result, pcss_result).
@@ -33,11 +37,17 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 // those various virtual rootings. pcss_result is a vector of vectors, giving
 // the indices of sbn_parameters_ corresponding to PCSSs that are present in the
 // given topology.
-IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer_,
+IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
                                               const Node::NodePtr& topology);
 
 SizeVectorVector PSPRepresentationOf(const BitsetSizeMap& indexer,
                                      const Node::NodePtr& topology);
+
+// Return ragged a vector of vectors such that the ith vector is the collection
+// of branch lengths in the tree collection for the ith split.
+DoubleVectorVector BranchLengthsBySplitx(const BitsetSizeMap& indexer,
+                                         size_t split_count,
+                                         const TreeCollection& tree_collection);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 

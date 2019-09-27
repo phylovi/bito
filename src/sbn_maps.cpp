@@ -91,20 +91,25 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
   return pcss_dict;
 }
 
+SizeVector SplitIndicesOf(const BitsetSizeMap& indexer,
+                          const Node::NodePtr& topology) {
+  SizeVector split_result(topology->Id());
+  topology->PreOrder([&topology, &split_result, &indexer](const Node* node) {
+    // Skip the root.
+    if (node != topology.get()) {
+      Bitset rootsplit = node->Leaves();
+      rootsplit.Minorize();
+      split_result[node->Id()] = indexer.at(rootsplit);
+    }
+  });
+  return split_result;
+}
+
 IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
                                               const Node::NodePtr& topology) {
   const auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
-  SizeVector rootsplit_result(topology->Id());
-  topology->PreOrder(
-      [&topology, &rootsplit_result, &indexer](const Node* node) {
-        // Skip the root.
-        if (node != topology.get()) {
-          Bitset rootsplit = node->Leaves();
-          rootsplit.Minorize();
-          rootsplit_result[node->Id()] = indexer.at(rootsplit);
-        }
-      });
+  SizeVector rootsplit_result = SplitIndicesOf(indexer, topology);
   // Next, the pcss_result.
   SizeVectorVector pcss_result(topology->Id());
   topology->PCSSPreOrder([&indexer, &leaf_count, &pcss_result, &topology](
@@ -160,4 +165,23 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
     }
   });
   return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
+}
+
+DoubleVectorVector BranchLengthsBySplitx(
+    const BitsetSizeMap& indexer, size_t split_count,
+    const TreeCollection& tree_collection) {
+  DoubleVectorVector result(split_count);
+
+  auto tree_count = tree_collection.TreeCount();
+  for (size_t tree_index = 0; tree_index < tree_count; tree_index++) {
+    const auto& tree = tree_collection.GetTree(tree_index);
+    auto split_indices = SplitIndicesOf(indexer, tree.Topology());
+    for (size_t edge_index = 0; edge_index < split_indices.size();
+         edge_index++) {
+      result[split_indices[edge_index]].push_back(
+          tree.BranchLengths()[edge_index]);
+    }
+  }
+
+  return result;
 }

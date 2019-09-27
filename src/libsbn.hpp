@@ -132,6 +132,9 @@ struct SBNInstance {
   std::pair<StringSet, StringSetVector> StringIndexerRepresentationOf(
       IndexerRepresentation indexer_representation) const;
 
+  // TODO make const
+  DoubleVectorVector BranchLengthsBySplit();
+
   // ** I/O
 
   // Return indexer_ and parent_to_range_ converted into string-keyed maps.
