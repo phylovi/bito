@@ -41,11 +41,10 @@ SizeVector SplitIndicesOf(const BitsetSizeMap& indexer,
 IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
                                               const Node::NodePtr& topology);
 
-SizeVectorVector PSPRepresentationOf(const BitsetSizeMap& indexer,
-                                     const Node::NodePtr& topology);
-
 // Return ragged a vector of vectors such that the ith vector is the collection
 // of branch lengths in the tree collection for the ith split.
+// TODO I think this is set up wrong and we want to use a PSP indexer instead of
+// an indexer.
 DoubleVectorVector BranchLengthsBySplit(const BitsetSizeMap& indexer,
                                         size_t split_count,
                                         const TreeCollection& tree_collection);
