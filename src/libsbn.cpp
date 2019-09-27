@@ -200,7 +200,7 @@ SBNInstance::StringIndexerRepresentationOf(
   return {rootsplit_string_set, pcss_string_sets};
 }
 
-DoubleVectorVector SBNInstance::BranchLengthsBySplit() {
+DoubleVectorVector SBNInstance::BranchLengthsBySplit() const {
   return SBNMaps::BranchLengthsBySplit(indexer_, rootsplits_.size(),
                                        tree_collection_);
 };

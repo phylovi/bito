@@ -65,6 +65,7 @@ PYBIND11_MODULE(sbn, m) {
            &SBNInstance::GetIndexerRepresentations)
       .def("get_psp_indexer_representations",
            &SBNInstance::GetPSPIndexerRepresentations)
+      .def("branch_lengths_by_split", &SBNInstance::BranchLengthsBySplit)
       // Member Variables
       .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
