@@ -44,13 +44,13 @@ void SBNInstance::ProcessLoadedTrees() {
   index_to_child_.clear();
   parent_to_range_.clear();
   // Start by adding the rootsplits.
-  for (const auto &iter : RootsplitCounterOf(counter)) {
+  for (const auto &iter : SBNMaps::RootsplitCounterOf(counter)) {
     SafeInsert(indexer_, iter.first, index);
     rootsplits_.push_back(iter.first);
     index++;
   }
   // Now add the PCSSs.
-  for (const auto &iter : PCSSCounterOf(counter)) {
+  for (const auto &iter : SBNMaps::PCSSCounterOf(counter)) {
     const auto &parent = iter.first;
     const auto &child_counter = iter.second;
     SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
@@ -147,7 +147,7 @@ std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
     representations.push_back(
-        IndexerRepresentationOf(indexer_, tree.Topology()));
+        SBNMaps::IndexerRepresentationOf(indexer_, tree.Topology()));
   }
   return representations;
 }
@@ -201,7 +201,8 @@ SBNInstance::StringIndexerRepresentationOf(
 }
 
 DoubleVectorVector SBNInstance::BranchLengthsBySplit() {
-  return BranchLengthsBySplitx(indexer_, rootsplits_.size(), tree_collection_);
+  return SBNMaps::BranchLengthsBySplit(indexer_, rootsplits_.size(),
+                                       tree_collection_);
 };
 
 // ** I/O
@@ -217,8 +218,8 @@ std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
 // This function is really just for testing-- it recomputes from scratch.
 std::pair<StringSizeMap, StringPCSSMap> SBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();
-  return {StringifyMap(RootsplitCounterOf(counter).Map()),
-          StringPCSSMapOf(PCSSCounterOf(counter))};
+  return {StringifyMap(SBNMaps::RootsplitCounterOf(counter).Map()),
+          StringPCSSMapOf(SBNMaps::PCSSCounterOf(counter))};
 }
 
 void SBNInstance::ReadNewickFile(std::string fname) {

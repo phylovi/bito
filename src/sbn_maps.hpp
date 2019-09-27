@@ -21,6 +21,7 @@ typedef std::pair<SizeVector, SizeVectorVector> IndexerRepresentation;
 
 typedef std::unordered_map<Bitset, DefaultDict<Bitset, size_t>> PCSSDict;
 
+namespace SBNMaps {
 SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
 
 BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
@@ -45,9 +46,10 @@ SizeVectorVector PSPRepresentationOf(const BitsetSizeMap& indexer,
 
 // Return ragged a vector of vectors such that the ith vector is the collection
 // of branch lengths in the tree collection for the ith split.
-DoubleVectorVector BranchLengthsBySplitx(const BitsetSizeMap& indexer,
-                                         size_t split_count,
-                                         const TreeCollection& tree_collection);
+DoubleVectorVector BranchLengthsBySplit(const BitsetSizeMap& indexer,
+                                        size_t split_count,
+                                        const TreeCollection& tree_collection);
+}  // namespace SBNMaps
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
@@ -63,7 +65,7 @@ TEST_CASE("SBNMaps") {
                                           {3, Bitset("000100")},
                                           {4, Bitset("001110")}});
 
-  for (const auto& iter : IdIdSetMapOf(topology0)) {
+  for (const auto& iter : SBNMaps::IdIdSetMapOf(topology0)) {
     CHECK_EQ(correct_id_id_set_map.at(iter.first), iter.second);
   }
 

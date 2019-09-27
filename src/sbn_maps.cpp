@@ -10,7 +10,7 @@
 #include <utility>
 
 // Make a map from Tags to the bitset representing the ids below the Tag.
-SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology) {
+SizeBitsetMap SBNMaps::IdIdSetMapOf(Node::NodePtr topology) {
   SizeBitsetMap map;
   auto id_count = topology->Id() + 1;
   topology->PostOrder([&map, id_count](const Node* node) {
@@ -27,7 +27,8 @@ SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology) {
   return map;
 }
 
-BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies) {
+BitsetSizeDict SBNMaps::RootsplitCounterOf(
+    const Node::TopologyCounter& topologies) {
   BitsetSizeDict rootsplit_counter(0);
   for (const auto& iter : topologies) {
     auto topology = iter.first;
@@ -44,7 +45,7 @@ BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies) {
   return rootsplit_counter;
 }
 
-PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
+PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
   PCSSDict pcss_dict;
   for (const auto& iter : topologies) {
     auto topology = iter.first;
@@ -91,8 +92,8 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) {
   return pcss_dict;
 }
 
-SizeVector SplitIndicesOf(const BitsetSizeMap& indexer,
-                          const Node::NodePtr& topology) {
+SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
+                                   const Node::NodePtr& topology) {
   SizeVector split_result(topology->Id());
   topology->PreOrder([&topology, &split_result, &indexer](const Node* node) {
     // Skip the root.
@@ -105,11 +106,11 @@ SizeVector SplitIndicesOf(const BitsetSizeMap& indexer,
   return split_result;
 }
 
-IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                              const Node::NodePtr& topology) {
+IndexerRepresentation SBNMaps::IndexerRepresentationOf(
+    const BitsetSizeMap& indexer, const Node::NodePtr& topology) {
   const auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
-  SizeVector rootsplit_result = SplitIndicesOf(indexer, topology);
+  SizeVector rootsplit_result = SBNMaps::SplitIndicesOf(indexer, topology);
   // Next, the pcss_result.
   SizeVectorVector pcss_result(topology->Id());
   topology->PCSSPreOrder([&indexer, &leaf_count, &pcss_result, &topology](
@@ -167,7 +168,7 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
   return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
 }
 
-DoubleVectorVector BranchLengthsBySplitx(
+DoubleVectorVector SBNMaps::BranchLengthsBySplit(
     const BitsetSizeMap& indexer, size_t split_count,
     const TreeCollection& tree_collection) {
   DoubleVectorVector result(split_count);
@@ -175,7 +176,7 @@ DoubleVectorVector BranchLengthsBySplitx(
   auto tree_count = tree_collection.TreeCount();
   for (size_t tree_index = 0; tree_index < tree_count; tree_index++) {
     const auto& tree = tree_collection.GetTree(tree_index);
-    auto split_indices = SplitIndicesOf(indexer, tree.Topology());
+    auto split_indices = SBNMaps::SplitIndicesOf(indexer, tree.Topology());
     for (size_t edge_index = 0; edge_index < split_indices.size();
          edge_index++) {
       result[split_indices[edge_index]].push_back(
