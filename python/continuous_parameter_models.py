@@ -77,24 +77,24 @@ class TFContinuousParameterModel:
     def param_count(self):
         return self.param_matrix.shape[1]
 
-    def mode_match(self, branch_lengths):
+    def mode_match(self, modes):
         """Some crazy heuristics for mode matching with the given branch
         lengths."""
-        log_branch_lengths = np.log(np.clip(branch_lengths, 1e-6, None))
+        log_modes = np.log(np.clip(modes, 1e-6, None))
         if self.name == "LogNormal":
-            self.param_matrix[:, 1] = -0.1 * log_branch_lengths
+            self.param_matrix[:, 1] = -0.1 * log_modes
             self.param_matrix[:, 0] = (
-                np.square(self.param_matrix[:, 1]) + log_branch_lengths
+                np.square(self.param_matrix[:, 1]) + log_modes
             )
         elif self.name == "TruncatedLogNormal":
-            self.param_matrix[:, 1] = -0.1 * log_branch_lengths
+            self.param_matrix[:, 1] = -0.1 * log_modes
             self.param_matrix[:, 0] = (
-                np.square(self.param_matrix[:, 1]) + log_branch_lengths
+                np.square(self.param_matrix[:, 1]) + log_modes
             )
             self.param_matrix[:, 2] = -5
         elif self.name == "Gamma":
-            self.param_matrix[:, 1] = -60.0 * log_branch_lengths
-            self.param_matrix[:, 0] = 1 + branch_lengths * self.param_matrix[:, 1]
+            self.param_matrix[:, 1] = -60.0 * log_modes
+            self.param_matrix[:, 0] = 1 + modes * self.param_matrix[:, 1]
         else:
             print("Mode matching not implemented for " + self.name)
 

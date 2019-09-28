@@ -118,6 +118,5 @@ DoubleVectorVector PSPIndexer::BranchLengthsBySplit(
       result[split_indices[edge_index]].push_back(branch_lengths[edge_index]);
     }
   }
-
   return result;
 }
