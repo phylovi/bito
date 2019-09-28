@@ -194,14 +194,13 @@ class TFContinuousParameterModel:
         a[:, variable] = np.linspace(min_x, max_x, num)
         return a
 
-    def plot_1d(self, ax, log_p, which_variable, max_x=0.5):
+    def plot_1d(self, ax, which_variable, max_x=0.5):
         min_x = max_x / 100
         x_vals = self._linspace_one_variable(which_variable, min_x, max_x, 100)
         q_distribution = self.q_factory(self.param_matrix)
         df = pd.DataFrame(
             {
                 "x": x_vals[:, which_variable],
-                "target": sp.special.softmax(log_p(x_vals)),
                 "fit": sp.special.softmax(
                     q_distribution.log_prob(x_vals).numpy()[:, which_variable]
                 ),
@@ -210,17 +209,17 @@ class TFContinuousParameterModel:
         return df.plot(
             ax=ax,
             x="x",
-            y=["target", "fit"],
+            y="fit",
             kind="line",
             title=q_distribution._name
             + " "
             + str(self.param_matrix[which_variable, :]),
         )
 
-    def plot(self, log_p, max_x=0.5):
+    def plot(self, max_x=0.5):
         f, axarr = plt.subplots(
             self.variable_count, sharex=True, figsize=(8, 1.5 * self.variable_count)
         )
         for which_variable in range(self.variable_count):
-            self.plot_1d(axarr[which_variable], log_p, which_variable, max_x)
+            self.plot_1d(axarr[which_variable], which_variable, max_x)
         plt.tight_layout()
