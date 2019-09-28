@@ -168,21 +168,3 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(
   return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
 }
 
-DoubleVectorVector SBNMaps::BranchLengthsBySplit(
-    const BitsetSizeMap& indexer, size_t split_count,
-    const TreeCollection& tree_collection) {
-  DoubleVectorVector result(split_count);
-
-  auto tree_count = tree_collection.TreeCount();
-  for (size_t tree_index = 0; tree_index < tree_count; tree_index++) {
-    const auto& tree = tree_collection.GetTree(tree_index);
-    auto split_indices = SBNMaps::SplitIndicesOf(indexer, tree.Topology());
-    for (size_t edge_index = 0; edge_index < split_indices.size();
-         edge_index++) {
-      result[split_indices[edge_index]].push_back(
-          tree.BranchLengths()[edge_index]);
-    }
-  }
-
-  return result;
-}

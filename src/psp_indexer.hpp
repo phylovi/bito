@@ -49,6 +49,11 @@ class PSPIndexer {
   StringVectorVector StringRepresentationOf(
       const Node::NodePtr& topology) const;
 
+  // Return ragged a vector of vectors such that the ith vector is the
+  // collection of branch lengths in the tree collection for the ith split.
+  DoubleVectorVector BranchLengthsBySplit(
+      const TreeCollection& tree_collection) const;
+
  private:
   BitsetSizeMap indexer_;
   size_t after_rootsplits_index_;

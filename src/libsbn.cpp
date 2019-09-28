@@ -201,8 +201,7 @@ SBNInstance::StringIndexerRepresentationOf(
 }
 
 DoubleVectorVector SBNInstance::BranchLengthsBySplit() const {
-  return SBNMaps::BranchLengthsBySplit(indexer_, rootsplits_.size(),
-                                       tree_collection_);
+  return psp_indexer_.BranchLengthsBySplit(tree_collection_);
 };
 
 // ** I/O
