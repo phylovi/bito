@@ -21,6 +21,13 @@ conda activate libsbn
 * if you are on OS X, use `conda install -y clangxx_osx-64`
 
 
+libsbn depends on a development branch of BEAGLE. To install this, build the conda recipe and install the local version:
+
+```
+conda build beagle-recipe
+conda install --use-local beagle-lib
+```
+
 ## Building
 
 `make` will build and run tests.
