@@ -14,11 +14,7 @@ def exponential_factory(params):
 
 
 def gamma_factory(params):
-    return tfd.Gamma(concentration=params[:, 0], rate=params[:, 1])
-
-
-def inverse_gamma_factory(params):
-    return tfd.InverseGamma(concentration=params[:, 0], scale=params[:, 1])
+    return tfd.Gamma(concentration=tf.exp(params[:, 0]), rate=tf.exp(params[:, 1]))
 
 
 def lognormal_factory(params):

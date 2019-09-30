@@ -140,7 +140,7 @@ class AdaptiveStepsizeOptimizer:
         self.stepsize_decreasing_rate = 1 - 1e-2
         # The amount by which we drop the stepsize after realizing that it's gotten too
         # big.
-        self.stepsize_drop_from_peak = 2
+        self.stepsize_drop_from_peak = 4
         self.stepsize_increasing = True
         self.best_elbo = -np.inf
         self.best_param_matrix = np.zeros(model.param_matrix.shape)
@@ -169,6 +169,8 @@ class AdaptiveStepsizeOptimizer:
         if not self.model.gradient_step(
             self.optimizer, self.step_size, grad_target_log_like(self.model.z)
         ):
+            print("nan in gradient")
+            print(self.step_size)
             self.turn_around()  # Gradient step failed.
         self.trace.append(self.model.elbo_estimate(target_log_like, particle_count=500))
         if self.trace[-1] > self.best_elbo:
