@@ -83,14 +83,10 @@ class TFContinuousParameterModel:
         log_modes = np.log(np.clip(modes, 1e-6, None))
         if self.name == "LogNormal":
             self.param_matrix[:, 1] = -0.1 * log_modes
-            self.param_matrix[:, 0] = (
-                np.square(self.param_matrix[:, 1]) + log_modes
-            )
+            self.param_matrix[:, 0] = np.square(self.param_matrix[:, 1]) + log_modes
         elif self.name == "TruncatedLogNormal":
             self.param_matrix[:, 1] = -0.1 * log_modes
-            self.param_matrix[:, 0] = (
-                np.square(self.param_matrix[:, 1]) + log_modes
-            )
+            self.param_matrix[:, 0] = np.square(self.param_matrix[:, 1]) + log_modes
             self.param_matrix[:, 2] = -5
         elif self.name == "Gamma":
             self.param_matrix[:, 1] = -60.0 * log_modes
@@ -217,9 +213,48 @@ class TFContinuousParameterModel:
         )
 
     def plot(self, max_x=0.5):
-        f, axarr = plt.subplots(
+        fig, axarr = plt.subplots(
             self.variable_count, sharex=True, figsize=(8, 1.5 * self.variable_count)
         )
         for which_variable in range(self.variable_count):
             self.plot_1d(axarr[which_variable], which_variable, max_x)
         plt.tight_layout()
+        return fig, axarr
+
+    def plot_data(self, num=50, max_x=0.5):
+        min_x = max_x / 100
+        x_vals = np.zeros((num, self.variable_count))
+        for variable in range(self.variable_count):
+            x_vals[:, variable] = np.linspace(min_x, max_x, num)
+        q_distribution = self.q_factory(self.param_matrix)
+        df = pd.DataFrame(
+            np.apply_along_axis(
+                sp.special.softmax, 0, q_distribution.log_prob(x_vals).numpy()
+            )
+        )
+        df["x"] = np.linspace(min_x, max_x, num)
+        return df.melt(id_vars="x")
+
+
+#    def plot_data_1d(self, which_variable, max_x=0.5):
+#        min_x = max_x / 100
+#        x_vals = self._linspace_one_variable(which_variable, min_x, max_x, 100)
+#        q_distribution = self.q_factory(self.param_matrix)
+#        df = pd.DataFrame(
+#            {
+#                "variable": which_variable,
+#                "x": x_vals[:, which_variable],
+#                "fit": sp.special.softmax(
+#                    q_distribution.log_prob(x_vals).numpy()[:, which_variable]
+#                ),
+#            }
+#        )
+#        return df
+#
+#    def plot_data(self, max_x=0.5):
+#        return pd.concat(
+#            [
+#                self.plot_data_1d(which_variable, max_x)
+#                for which_variable in range(self.variable_count)
+#            ]
+#        )
