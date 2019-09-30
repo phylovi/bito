@@ -179,6 +179,3 @@ class AdaptiveStepsizeOptimizer:
     def gradient_steps(self, target_log_like, grad_target_log_like, step_count):
         for _ in range(step_count):
             self.gradient_step(target_log_like, grad_target_log_like)
-
-    def plot_trace(self):
-        return pd.Series(self.trace).plot.line()

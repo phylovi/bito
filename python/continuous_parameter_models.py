@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -97,6 +96,10 @@ class TFContinuousParameterModel:
     def suggested_step_size(self):
         return np.average(np.abs(self.param_matrix), axis=0) / 100
 
+    def sample(self, particle_count):
+        q_distribution = self.q_factory(self.param_matrix)
+        return q_distribution.sample(particle_count).numpy()
+
     def sample_and_prep_gradients(self):
         with tf.GradientTape(persistent=True) as g:
             tf_params = tf.constant(self.param_matrix, dtype=tf.float32)
@@ -183,78 +186,17 @@ class TFContinuousParameterModel:
             history.append(self.param_matrix.copy())
         return True
 
-    def _linspace_one_variable(self, variable, min_x, max_x, num=50, default=0.1):
-        """Fill a num x variable_count array with default, except for the
-        variable column, which gets filled with a linspace."""
-        a = np.full((num, self.variable_count), default)
-        a[:, variable] = np.linspace(min_x, max_x, num)
-        return a
-
-    def plot_1d(self, ax, which_variable, max_x=0.5):
+    def likelihoods_on_grid(self, num=50, max_x=0.5):
         min_x = max_x / 100
-        x_vals = self._linspace_one_variable(which_variable, min_x, max_x, 100)
-        q_distribution = self.q_factory(self.param_matrix)
-        df = pd.DataFrame(
-            {
-                "x": x_vals[:, which_variable],
-                "fit": sp.special.softmax(
-                    q_distribution.log_prob(x_vals).numpy()[:, which_variable]
-                ),
-            }
-        )
-        return df.plot(
-            ax=ax,
-            x="x",
-            y="fit",
-            kind="line",
-            title=q_distribution._name
-            + " "
-            + str(self.param_matrix[which_variable, :]),
-        )
-
-    def plot(self, max_x=0.5):
-        fig, axarr = plt.subplots(
-            self.variable_count, sharex=True, figsize=(8, 1.5 * self.variable_count)
-        )
-        for which_variable in range(self.variable_count):
-            self.plot_1d(axarr[which_variable], which_variable, max_x)
-        plt.tight_layout()
-        return fig, axarr
-
-    def plot_data(self, num=50, max_x=0.5):
-        min_x = max_x / 100
-        x_vals = np.zeros((num, self.variable_count))
+        z = np.zeros((num, self.variable_count))
+        x_vals = np.linspace(min_x, max_x, num)
         for variable in range(self.variable_count):
-            x_vals[:, variable] = np.linspace(min_x, max_x, num)
+            z[:, variable] = x_vals
         q_distribution = self.q_factory(self.param_matrix)
         df = pd.DataFrame(
             np.apply_along_axis(
-                sp.special.softmax, 0, q_distribution.log_prob(x_vals).numpy()
+                sp.special.softmax, 0, q_distribution.log_prob(z).numpy()
             )
         )
-        df["x"] = np.linspace(min_x, max_x, num)
+        df["x"] = x_vals
         return df.melt(id_vars="x")
-
-
-#    def plot_data_1d(self, which_variable, max_x=0.5):
-#        min_x = max_x / 100
-#        x_vals = self._linspace_one_variable(which_variable, min_x, max_x, 100)
-#        q_distribution = self.q_factory(self.param_matrix)
-#        df = pd.DataFrame(
-#            {
-#                "variable": which_variable,
-#                "x": x_vals[:, which_variable],
-#                "fit": sp.special.softmax(
-#                    q_distribution.log_prob(x_vals).numpy()[:, which_variable]
-#                ),
-#            }
-#        )
-#        return df
-#
-#    def plot_data(self, max_x=0.5):
-#        return pd.concat(
-#            [
-#                self.plot_data_1d(which_variable, max_x)
-#                for which_variable in range(self.variable_count)
-#            ]
-#        )
