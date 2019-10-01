@@ -15,7 +15,7 @@ namespace py = pybind11;
 // conversion of STL types.
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
-PYBIND11_MODULE(sbn, m) {
+PYBIND11_MODULE(libsbn, m) {
   m.doc() = "libsbn bindings";
   // Second, we expose them as buffer objects so that we can use them
   // as in-place numpy arrays with np.array(v, copy=False). See
@@ -72,7 +72,7 @@ PYBIND11_MODULE(sbn, m) {
       .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
-  // `with sbn.ostream_redirect(stdout=True, stderr=True):`
+  // `with libsbn.ostream_redirect(stdout=True, stderr=True):`
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
   py::add_ostream_redirect(m, "ostream_redirect");
 }

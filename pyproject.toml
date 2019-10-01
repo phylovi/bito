@@ -3,7 +3,7 @@ requires = ["pytoml>=0.1", "enscons>=0.23"]
 build-backend = "enscons.api"
 
 [tool.enscons]
-name = "sbn"
+name = "libsbn"
 version = "0.1"
 description = "Python-interface C++ library implementing subsplit Bayes networks for Bayesian phylogenetics."
 classifiers = []
@@ -14,7 +14,7 @@ url = "https://github.com/phylovi/libsbn/"
 license = "GPL v3"
 install_requires = ["setuptools", "wheel"]
 tests_require = ["pytest"]
-packages = ["sbn"]
+packages = ["libsbn", "sbn"]
 description_file="README.md"
 
 [tool.enscons.extras_require]

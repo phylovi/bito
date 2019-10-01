@@ -88,7 +88,7 @@ sources = [
     '_build/tree_collection.cpp'
 ]
 extension = env.SharedLibrary(
-    "sbn"+os.popen("python3-config --extension-suffix").read().rstrip(),
+    "libsbn"+os.popen("python3-config --extension-suffix").read().rstrip(),
     ['_build/pylibsbn.cpp'] + sources,
     SHLIBPREFIX='',
     LIBS=['hmsbeagle'])

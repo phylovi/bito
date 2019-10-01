@@ -1,10 +1,10 @@
 import json
 import numpy as np
-import sbn
+import libsbn
 
 
 def test_instance():
-    inst = sbn.instance('charlie')
+    inst = libsbn.instance('charlie')
     inst.read_newick_file('data/five_taxon.nwk')
     assert inst.tree_count() == 4
     inst.process_loaded_trees()
@@ -52,8 +52,8 @@ def test_instance():
     print(np.array(log_likelihoods))
     print(np.array(gradients[-1]))
 
-    inst.tree_collection = sbn.TreeCollection(
-        [sbn.Tree.of_parent_id_vector([3, 3, 3])],
+    inst.tree_collection = libsbn.TreeCollection(
+        [libsbn.Tree.of_parent_id_vector([3, 3, 3])],
         ["mars", "saturn", "jupiter"])
     inst.read_fasta_file('data/hello.fasta')
     inst.make_beagle_instances(2)
