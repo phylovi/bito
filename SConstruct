@@ -107,4 +107,4 @@ whl = env.WhlFile(source=platlib)
 print("\nPython wheel built. To install, execute:")
 print(f"pip install {whl[0]}\n")
 
-env.Default(whl)
+env.Default(doctest, whl)

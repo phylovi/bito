@@ -8,11 +8,11 @@ fp = open('src/doctest.cpp', 'w')
 t = ete3.Tree('((((0_1,1_1)1_2,(2_1,3_1)3_2)3_4,4_1)4_5,((5_1,(6_1,7_1)7_2)7_3,(8_1,9_1)9_2)9_5)9_10;', format=1)
 
 preamble = """\
-// Copyright 2019 Matsen group.
+// Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-#include <doctest.h>
+#include "doctest.h"
 #include <string>
 #include "libsbn.hpp"
 

@@ -21,10 +21,6 @@ namespace beagle {
 
 typedef int BeagleInstance;
 
-CharIntMap GetSymbolTable();
-SymbolVector SymbolVectorOf(const std::string &str,
-                            const CharIntMap &symbol_table);
-
 int CreateInstance(int tip_count, int alignment_length,
                    BeagleInstanceDetails *return_info);
 BeagleInstance CreateInstance(const SitePattern &site_pattern);
@@ -77,15 +73,6 @@ std::vector<std::pair<double, std::vector<double>>> BranchGradients(
 
 }  // namespace beagle
 
-#ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("Beagle") {
-  CharIntMap symbol_table = beagle::GetSymbolTable();
-  SymbolVector symbol_vector =
-      beagle::SymbolVectorOf("-tgcaTGCA", symbol_table);
-  SymbolVector correct_symbol_vector = {4, 3, 2, 1, 0, 3, 2, 1, 0};
-  CHECK_EQ(symbol_vector, correct_symbol_vector);
+// The tests are in libsbn.hpp, where we have access to tree parsing.
 
-  // The real tests are in libsbn.hpp, where we have access to tree parsing.
-}
-#endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_BEAGLE_HPP_

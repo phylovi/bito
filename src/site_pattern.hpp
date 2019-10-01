@@ -17,6 +17,10 @@ class SitePattern {
     Compress();
   }
 
+  static CharIntMap GetSymbolTable();
+  static SymbolVector SymbolVectorOf(const std::string& str,
+                                     const CharIntMap& symbol_table);
+
   const std::vector<SymbolVector>& GetPatterns() const { return patterns_; }
   size_t PatternCount() const { return patterns_.at(0).size(); }
   size_t SequenceCount() const { return patterns_.size(); }
@@ -29,6 +33,17 @@ class SitePattern {
   std::vector<double> weights_;
 
   void Compress();
+  static void FailwithUnknownSymbol(char c);
 };
 
+#ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("SitePattern") {
+  CharIntMap symbol_table = SitePattern::GetSymbolTable();
+  SymbolVector symbol_vector =
+      SitePattern::SymbolVectorOf("-tgcaTGCA?", symbol_table);
+  SymbolVector correct_symbol_vector = {4, 3, 2, 1, 0, 3, 2, 1, 0, 4};
+  CHECK_EQ(symbol_vector, correct_symbol_vector);
+
+}
+#endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_SITE_PATTERN_HPP_
