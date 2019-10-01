@@ -169,15 +169,16 @@ class AdaptiveStepsizeOptimizer:
         if not self.model.gradient_step(
             self.optimizer, self.step_size, grad_target_log_like(self.model.z)
         ):
-            print("nan in gradient")
-            print(self.step_size)
             self.turn_around()  # Gradient step failed.
         self.trace.append(self.model.elbo_estimate(target_log_like, particle_count=500))
         if self.trace[-1] > self.best_elbo:
             self.best_elbo = self.trace[-1]
             np.copyto(self.best_param_matrix, self.model.param_matrix)
         self.step_number += 1
+        return np.isfinite(self.trace[-1])
 
     def gradient_steps(self, target_log_like, grad_target_log_like, step_count):
         for _ in range(step_count):
-            self.gradient_step(target_log_like, grad_target_log_like)
+            if not self.gradient_step(target_log_like, grad_target_log_like):
+                print("ELBO is not finite. Stopping.")
+                return

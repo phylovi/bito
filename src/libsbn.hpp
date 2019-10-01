@@ -132,7 +132,10 @@ struct SBNInstance {
   std::pair<StringSet, StringSetVector> StringIndexerRepresentationOf(
       IndexerRepresentation indexer_representation) const;
 
-  DoubleVectorVector BranchLengthsBySplit() const;
+  // Return a ragged vector of vectors such that the ith vector is the
+  // collection of branch lengths in the current tree collection for the ith
+  // split.
+  DoubleVectorVector SplitLengths() const;
 
   // ** I/O
 

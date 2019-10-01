@@ -200,8 +200,11 @@ SBNInstance::StringIndexerRepresentationOf(
   return {rootsplit_string_set, pcss_string_sets};
 }
 
-DoubleVectorVector SBNInstance::BranchLengthsBySplit() const {
-  return psp_indexer_.BranchLengthsBySplit(tree_collection_);
+// Return a ragged vector of vectors such that the ith vector is the
+// collection of branch lengths in our current tree collection for the ith
+// split.
+DoubleVectorVector SBNInstance::SplitLengths() const {
+  return psp_indexer_.SplitLengths(tree_collection_);
 };
 
 // ** I/O

@@ -76,16 +76,19 @@ class TFContinuousParameterModel:
         """Some crazy heuristics for mode matching with the given branch
         lengths."""
         log_modes = np.log(np.clip(modes, 1e-6, None))
+        biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1-1e-6))
+        # TODO do we want to have the lognormal variance be in log space? Or do we want
+        # to clip it?
         if self.name == "LogNormal":
-            self.param_matrix[:, 1] = -0.1 * log_modes
+            self.param_matrix[:, 1] = -0.1 * biclipped_log_modes
             self.param_matrix[:, 0] = np.square(self.param_matrix[:, 1]) + log_modes
         elif self.name == "TruncatedLogNormal":
-            self.param_matrix[:, 1] = -0.1 * log_modes
+            self.param_matrix[:, 1] = -0.1 * biclipped_log_modes
             self.param_matrix[:, 0] = np.square(self.param_matrix[:, 1]) + log_modes
             self.param_matrix[:, 2] = -5
         elif self.name == "Gamma":
-            self.param_matrix[:, 1] = -60.0 * log_modes
-            self.param_matrix[:, 0] = 1 + modes * self.param_matrix[:, 1]
+            self.param_matrix[:, 1] = np.log(-60.0 * biclipped_log_modes)
+            self.param_matrix[:, 0] = np.log(1 + modes * self.param_matrix[:, 1])
         else:
             print("Mode matching not implemented for " + self.name)
 
@@ -155,9 +158,7 @@ class TFContinuousParameterModel:
             self._chain_rule(grad_log_p_z, self.grad_z),
             self._slow_chain_rule(grad_log_p_z, self.grad_z),
         ):
-            print("chain rule isn't close")
-            print(grad_log_p_z)
-            print(self.grad_z)
+            print("Warning: chain rule isn't close. Here's the difference:")
             print(
                 self._chain_rule(grad_log_p_z, self.grad_z)
                 - self._slow_chain_rule(grad_log_p_z, self.grad_z)
