@@ -162,8 +162,6 @@ std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations()
   return representations;
 }
 
-// Get the indexer, but reversed and with bitsets appropriately converted to
-// strings.
 StringVector SBNInstance::StringReversedIndexer() const {
   std::vector<std::string> reversed_indexer(indexer_.size());
   for (const auto &iter : indexer_) {
@@ -176,9 +174,6 @@ StringVector SBNInstance::StringReversedIndexer() const {
   return reversed_indexer;
 }
 
-// Turn an IndexerRepresentation into a string representation of the underying
-// bitsets. This is really just so that we can make a test of indexer
-// representations.
 std::pair<StringSet, StringSetVector>
 SBNInstance::StringIndexerRepresentationOf(
     IndexerRepresentation indexer_representation) const {
@@ -200,9 +195,6 @@ SBNInstance::StringIndexerRepresentationOf(
   return {rootsplit_string_set, pcss_string_sets};
 }
 
-// Return a ragged vector of vectors such that the ith vector is the
-// collection of branch lengths in our current tree collection for the ith
-// split.
 DoubleVectorVector SBNInstance::SplitLengths() const {
   return psp_indexer_.SplitLengths(tree_collection_);
 }
