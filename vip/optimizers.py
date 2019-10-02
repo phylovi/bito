@@ -156,7 +156,7 @@ class AdaptiveStepsizeOptimizer:
     def gradient_step(self, target_log_like, grad_target_log_like):
         # Are we starting to decrease our objective function?
         if self.stepsize_increasing and self.step_number >= 2 * self.window_size:
-            last_epoch = self.trace[-self.window_size:]
+            last_epoch = self.trace[-self.window_size :]
             prev_epoch = self.trace[-2 * self.window_size : -self.window_size]
             if np.mean(last_epoch) < np.mean(prev_epoch):
                 self.turn_around()

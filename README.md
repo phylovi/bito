@@ -77,8 +77,8 @@ There are certainly violations of these guidelines in the code, so fix them when
 
 ### Formatting
 
-Code gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html).
-See the Makefile for the invocation.
+C++ gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html), and Python gets formatted using [Black](https://black.readthedocs.io/en/stable/).
+See the Makefile for the invocations.
 
 
 ### Tests

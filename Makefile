@@ -16,6 +16,7 @@ prep:
 	clang-format -i -style=file src/doctest.cpp
 
 format:
+	black vip/*py test/*py SConstruct
 	clang-format -i -style=file $(our_files)
 
 clean:
