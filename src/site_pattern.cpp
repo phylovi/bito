@@ -26,21 +26,21 @@ CharIntMap SitePattern::GetSymbolTable() {
   return table;
 }
 
-void SitePattern::FailwithUnknownSymbol(char c) {
-  char error[50];
-  std::snprintf(error, sizeof(error), "Symbol '%c' not known.", c);
-  Failwith(error);
+int SitePattern::SymbolTableAt(const CharIntMap &symbol_table, char c) {
+  auto search = symbol_table.find(c);
+  if (search == symbol_table.end()) {
+    char error[50];
+    std::snprintf(error, sizeof(error), "Symbol '%c' not known.", c);
+    Failwith(error);
+  }
+  return search->second;
 }
 
-SymbolVector SitePattern::SymbolVectorOf(const std::string &str,
-                                         const CharIntMap &symbol_table) {
+SymbolVector SitePattern::SymbolVectorOf(const CharIntMap &symbol_table,
+                                         const std::string &str) {
   SymbolVector v(str.size());
   for (size_t i = 0; i < str.size(); i++) {
-    auto search = symbol_table.find(str[i]);
-    if (search == symbol_table.end()) {
-      FailwithUnknownSymbol(str[i]);
-    }
-    v[i] = search->second;
+    v[i] = SymbolTableAt(symbol_table, str[i]);
   }
   return v;
 }
@@ -66,11 +66,7 @@ void SitePattern::Compress() {
     for (const auto &iter : tag_taxon_map_) {
       size_t taxon_number = static_cast<size_t>(UnpackFirstInt(iter.first));
       auto symbol_to_find = alignment_.at(iter.second)[pos];
-      auto search = symbol_table.find(symbol_to_find);
-      if (search == symbol_table.end()) {
-        FailwithUnknownSymbol(symbol_to_find);
-      }
-      pattern[taxon_number] = search->second;
+      pattern[taxon_number] = SymbolTableAt(symbol_table, symbol_to_find);
     }
     if (patterns.find(pattern) == patterns.end()) {
       SafeInsert(patterns, pattern, 1.);
