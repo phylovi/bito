@@ -167,4 +167,3 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(
   });
   return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
 }
-

@@ -17,7 +17,6 @@ prep:
 
 format:
 	clang-format -i -style=file $(our_files)
-	yapf -i test_instance.py
 
 clean:
 	rm -rf _build
