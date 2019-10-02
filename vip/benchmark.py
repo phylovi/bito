@@ -1,4 +1,3 @@
-import click
 import os
 
 import numpy as np
@@ -13,9 +12,10 @@ import vip.optimizers
 tf.enable_v2_behavior()
 tfd = tfp.distributions
 
+
 # Documentation is in the CLI.
 # `*` forces everything after to be keyword-only.
-def fixed(data_path, *, step_count, particle_count):
+def fixed(data_path, *, model_name, step_count, particle_count):
     data_path = os.path.normpath(data_path)
     data_id = os.path.basename(data_path)
     mcmc_nexus_path = os.path.join(data_path, data_id + "_out.t")
@@ -101,18 +101,9 @@ def fixed(data_path, *, step_count, particle_count):
         """The unnormalized phylogenetic posterior with an Exp(10) prior."""
         return grad_phylo_log_like(x_arr) + grad_log_exp_prior(x_arr)
 
-    m = models.TFContinuousParameterModel(
-        models.lognormal_factory, np.array([-2.0, 0.5]), len(branch_lengths), 100
+    m = models.of_name(
+        model_name, variable_count=len(branch_lengths), particle_count=particle_count
     )
-    # m = TFContinuousParameterModel(
-    #     models.gamma_factory, np.array([1.3, 3.0]), len(branch_lengths), 100
-    # )
-    # m = TFContinuousParameterModel(
-    #     models.truncated_lognormal_factory,
-    #     np.array([-1.0, 0.5, 0.1]),
-    #     len(branch_lengths),
-    #     100,
-    # )
     m.mode_match(last_sampled_split_lengths)
     m.elbo_estimate(phylo_log_upost, particle_count=1000)
 

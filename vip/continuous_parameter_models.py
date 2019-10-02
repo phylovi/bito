@@ -76,7 +76,7 @@ class TFContinuousParameterModel:
         """Some crazy heuristics for mode matching with the given branch
         lengths."""
         log_modes = np.log(np.clip(modes, 1e-6, None))
-        biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1-1e-6))
+        biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1 - 1e-6))
         # TODO do we want to have the lognormal variance be in log space? Or do we want
         # to clip it?
         if self.name == "LogNormal":
@@ -197,3 +197,18 @@ class TFContinuousParameterModel:
         )
         df["x"] = x_vals
         return df.melt(id_vars="x")
+
+
+def of_name(name, *, variable_count, particle_count):
+    choices = {
+        "lognormal": [lognormal_factory, [-2.0, 0.5]],
+        "truncated_lognormal": [truncated_lognormal_factory, [-1.0, 0.5, 0.1]],
+        "gamma": [gamma_factory, [1.3, 3.0]],
+    }
+    if name in choices:
+        choice = choices[name]
+    else:
+        raise Exception(f"Model {name} not known.")
+    return TFContinuousParameterModel(
+        choice[0], np.array(choice[1]), variable_count, particle_count
+    )
