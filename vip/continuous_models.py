@@ -38,8 +38,8 @@ def truncated_lognormal_factory(params):
 
 
 class TFContinuousModel:
-    """An object to model a collection of variables with a given distribution
-    type via TensorFlow.
+    """An object to model a collection of variables with a given continuous
+    distribution type via TensorFlow.
 
     Each of these variables uses a number of parameters which we
     optimize using SGD variants.
