@@ -2,8 +2,9 @@ our_files = src/beagle.cpp src/beagle.hpp src/bitset.cpp src/bitset.hpp src/sbn_
 
 default:
 	scons
+	pip install -U dist/libsbn-*.whl
 	./_build/doctest
-	pytest -s
+	pytest
 	./_build/noodle
 
 bison: src/parser.yy src/scanner.ll

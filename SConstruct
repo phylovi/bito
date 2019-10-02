@@ -104,7 +104,7 @@ py_source = Glob("vip/*.py")
 # "platlib" is Python-packaging-speak for a platform-specific library (not pure Python).
 platlib = env.Whl("platlib", py_source + extension, root="")
 whl = env.WhlFile(source=platlib)
-print("\nPython wheel built. To install, execute:")
+print("\nTo install python wheel, execute:")
 print(f"pip install -U {whl[0]}\n")
 
-env.Default(doctest, whl)
+env.Default(doctest, whl, noodle)
