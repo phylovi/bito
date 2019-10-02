@@ -21,8 +21,10 @@ dependencies:
       - docformatter
       - enscons
       - flake8
+      - simplegeneric
       - tensorflow
       - tensorflow-probability
+      - tzlocal
   - jupyter
   - r-cowplot
   - rpy2
