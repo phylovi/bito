@@ -77,7 +77,7 @@ There are certainly violations of these guidelines in the code, so fix them when
 
 ### Formatting
 
-C++ gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html), and Python gets formatted using [Black](https://black.readthedocs.io/en/stable/).
+C++ gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html), and Python gets formatted using [Black](https://black.readthedocs.io/en/stable/) and [docformatter](https://pypi.org/project/docformatter/).
 See the Makefile for the invocations.
 
 

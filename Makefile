@@ -17,6 +17,7 @@ prep:
 
 format:
 	black vip/*py test/*py SConstruct
+	docformatter --in-place vip/*py test/*py
 	clang-format -i -style=file $(our_files)
 
 clean:

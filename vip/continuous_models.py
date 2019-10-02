@@ -37,25 +37,24 @@ def truncated_lognormal_factory(params):
     )
 
 
-class TFContinuousParameterModel:
-    """An object to model a collection of variables with a given q
-    distribution.
+class TFContinuousModel:
+    """An object to model a collection of variables with a given distribution
+    type via TensorFlow.
 
     Each of these variables uses a number of parameters which we
     optimize using SGD variants.
 
     Samples are laid out as particles x variables, which we will call z-shape.
 
-    * log_p is the target probability.
+    * p is the target probability.
+    * q is the distribution that we're fitting to p.
     """
 
     def __init__(self, q_factory, initial_params, variable_count, particle_count):
         assert initial_params.ndim == 1
         self.q_factory = q_factory
         self.name = self.q_factory(np.array([initial_params])).name
-        self.param_matrix = np.full(
-            (variable_count, len(initial_params)), initial_params
-        )
+        self.q_params = np.full((variable_count, len(initial_params)), initial_params)
         self.particle_count = particle_count
         # The current stored sample.
         self.z = None
@@ -66,11 +65,11 @@ class TFContinuousParameterModel:
 
     @property
     def variable_count(self):
-        return self.param_matrix.shape[0]
+        return self.q_params.shape[0]
 
     @property
     def param_count(self):
-        return self.param_matrix.shape[1]
+        return self.q_params.shape[1]
 
     def mode_match(self, modes):
         """Some crazy heuristics for mode matching with the given branch
@@ -80,28 +79,30 @@ class TFContinuousParameterModel:
         # TODO do we want to have the lognormal variance be in log space? Or do we want
         # to clip it?
         if self.name == "LogNormal":
-            self.param_matrix[:, 1] = -0.1 * biclipped_log_modes
-            self.param_matrix[:, 0] = np.square(self.param_matrix[:, 1]) + log_modes
+            self.q_params[:, 1] = -0.1 * biclipped_log_modes
+            self.q_params[:, 0] = np.square(self.q_params[:, 1]) + log_modes
         elif self.name == "TruncatedLogNormal":
-            self.param_matrix[:, 1] = -0.1 * biclipped_log_modes
-            self.param_matrix[:, 0] = np.square(self.param_matrix[:, 1]) + log_modes
-            self.param_matrix[:, 2] = -5
+            self.q_params[:, 1] = -0.1 * biclipped_log_modes
+            self.q_params[:, 0] = np.square(self.q_params[:, 1]) + log_modes
+            self.q_params[:, 2] = -5
         elif self.name == "Gamma":
-            self.param_matrix[:, 1] = np.log(-60.0 * biclipped_log_modes)
-            self.param_matrix[:, 0] = np.log(1 + modes * self.param_matrix[:, 1])
+            self.q_params[:, 1] = np.log(-60.0 * biclipped_log_modes)
+            self.q_params[:, 0] = np.log(1 + modes * self.q_params[:, 1])
         else:
             print("Mode matching not implemented for " + self.name)
 
     def suggested_step_size(self):
-        return np.average(np.abs(self.param_matrix), axis=0) / 100
+        return np.average(np.abs(self.q_params), axis=0) / 100
 
     def sample(self, particle_count):
-        q_distribution = self.q_factory(self.param_matrix)
+        q_distribution = self.q_factory(self.q_params)
         return q_distribution.sample(particle_count).numpy()
 
     def sample_and_prep_gradients(self):
+        """Take a sample from q and prepare a gradient of the sample and of log
+        q with respect to the parameters of q."""
         with tf.GradientTape(persistent=True) as g:
-            tf_params = tf.constant(self.param_matrix, dtype=tf.float32)
+            tf_params = tf.constant(self.q_params, dtype=tf.float32)
             g.watch(tf_params)
             q_distribution = self.q_factory(tf_params)
             tf_z = q_distribution.sample(self.particle_count)
@@ -125,7 +126,7 @@ class TFContinuousParameterModel:
         """
         if particle_count is None:
             particle_count = self.particle_count
-        q_distribution = self.q_factory(self.param_matrix)
+        q_distribution = self.q_factory(self.q_params)
         z = q_distribution.sample(particle_count)
         return (
             np.sum(log_p(z) - np.sum(q_distribution.log_prob(z), axis=1))
@@ -154,6 +155,10 @@ class TFContinuousParameterModel:
 
     def elbo_gradient_using_current_sample(self, grad_log_p_z):
         assert self.grad_z is not None
+        if not np.all(np.isfinite(grad_log_p_z)):
+            raise Exception(
+                "Infinite gradient given to elbo_gradient_using_current_sample."
+            )
         if not np.allclose(
             self._chain_rule(grad_log_p_z, self.grad_z),
             self._slow_chain_rule(grad_log_p_z, self.grad_z),
@@ -169,18 +174,18 @@ class TFContinuousParameterModel:
         return unnormalized_result / self.particle_count
 
     def gradient_step(self, optimizer, step_size, grad_log_p_z, history=None):
-        """Return if the gradient step was successful."""
+        """Return True if the gradient step was successful."""
         grad = self.elbo_gradient_using_current_sample(grad_log_p_z)
         if not np.isfinite(np.array([grad])).all():
             self.clear_sample()
             return False
         update_dict = optimizer.adam(
-            {"params": step_size}, {"params": self.param_matrix}, {"params": grad}
+            {"params": step_size}, {"params": self.q_params}, {"params": grad}
         )
-        self.param_matrix += update_dict["params"]
+        self.q_params += update_dict["params"]
         self.clear_sample()
         if history is not None:
-            history.append(self.param_matrix.copy())
+            history.append(self.q_params.copy())
         return True
 
     def likelihoods_on_grid(self, num=50, max_x=0.5):
@@ -189,7 +194,7 @@ class TFContinuousParameterModel:
         x_vals = np.linspace(min_x, max_x, num)
         for variable in range(self.variable_count):
             z[:, variable] = x_vals
-        q_distribution = self.q_factory(self.param_matrix)
+        q_distribution = self.q_factory(self.q_params)
         df = pd.DataFrame(
             np.apply_along_axis(
                 sp.special.softmax, 0, q_distribution.log_prob(z).numpy()
@@ -209,6 +214,6 @@ def of_name(name, *, variable_count, particle_count):
         choice = choices[name]
     else:
         raise Exception(f"Model {name} not known.")
-    return TFContinuousParameterModel(
+    return TFContinuousModel(
         choice[0], np.array(choice[1]), variable_count, particle_count
     )

@@ -143,13 +143,13 @@ class AdaptiveStepsizeOptimizer:
         self.stepsize_drop_from_peak = 4
         self.stepsize_increasing = True
         self.best_elbo = -np.inf
-        self.best_param_matrix = np.zeros(model.param_matrix.shape)
-        self.optimizer = SGD_Server({"params": model.param_matrix.shape})
+        self.best_q_params = np.zeros(model.q_params.shape)
+        self.optimizer = SGD_Server({"params": model.q_params.shape})
 
     def turn_around(self):
         """Triggered when the stepsize has gotten too big or a gradient step
         fails, restoring the previously best seen parameters."""
-        np.copyto(self.model.param_matrix, self.best_param_matrix)
+        np.copyto(self.model.q_params, self.best_q_params)
         self.step_size /= self.stepsize_drop_from_peak
         self.stepsize_increasing = False
 
@@ -173,7 +173,7 @@ class AdaptiveStepsizeOptimizer:
         self.trace.append(self.model.elbo_estimate(target_log_like, particle_count=500))
         if self.trace[-1] > self.best_elbo:
             self.best_elbo = self.trace[-1]
-            np.copyto(self.best_param_matrix, self.model.param_matrix)
+            np.copyto(self.best_q_params, self.model.q_params)
         self.step_number += 1
         return np.isfinite(self.trace[-1])
 
