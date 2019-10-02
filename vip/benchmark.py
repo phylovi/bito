@@ -1,3 +1,4 @@
+import click
 import os
 
 import numpy as np
@@ -17,8 +18,8 @@ tfd = tfp.distributions
 def fixed(data_path, *, step_count, particle_count):
     data_path = os.path.normpath(data_path)
     data_id = os.path.basename(data_path)
-    mcmc_nexus_path = os.path.join(data_path, data_id+"_out.t")
-    fasta_path = os.path.join(data_path, data_id+".fasta")
+    mcmc_nexus_path = os.path.join(data_path, data_id + "_out.t")
+    fasta_path = os.path.join(data_path, data_id + ".fasta")
     burn_in_fraction = 0.1
 
     inst = libsbn.instance("charlie")

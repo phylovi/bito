@@ -1,5 +1,5 @@
+import click
 import numpy as np
-import pandas as pd
 
 
 class SGD_Server(object):
@@ -156,7 +156,7 @@ class AdaptiveStepsizeOptimizer:
     def gradient_step(self, target_log_like, grad_target_log_like):
         # Are we starting to decrease our objective function?
         if self.stepsize_increasing and self.step_number >= 2 * self.window_size:
-            last_epoch = self.trace[-self.window_size :]
+            last_epoch = self.trace[-self.window_size:]
             prev_epoch = self.trace[-2 * self.window_size : -self.window_size]
             if np.mean(last_epoch) < np.mean(prev_epoch):
                 self.turn_around()
@@ -178,7 +178,7 @@ class AdaptiveStepsizeOptimizer:
         return np.isfinite(self.trace[-1])
 
     def gradient_steps(self, target_log_like, grad_target_log_like, step_count):
-        for _ in range(step_count):
-            if not self.gradient_step(target_log_like, grad_target_log_like):
-                print("ELBO is not finite. Stopping.")
-                return
+        with click.progressbar(range(step_count), label="Gradient descent") as bar:
+            for step in bar:
+                if not self.gradient_step(target_log_like, grad_target_log_like):
+                    raise Exception("ELBO is not finite. Stopping.")
