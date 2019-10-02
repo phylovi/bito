@@ -205,7 +205,7 @@ SBNInstance::StringIndexerRepresentationOf(
 // split.
 DoubleVectorVector SBNInstance::SplitLengths() const {
   return psp_indexer_.SplitLengths(tree_collection_);
-};
+}
 
 // ** I/O
 

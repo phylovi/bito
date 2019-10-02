@@ -4,6 +4,7 @@
 #ifndef SRC_SITE_PATTERN_HPP_
 #define SRC_SITE_PATTERN_HPP_
 
+#include <string>
 #include <vector>
 #include "alignment.hpp"
 #include "sugar.hpp"
@@ -43,7 +44,6 @@ TEST_CASE("SitePattern") {
       SitePattern::SymbolVectorOf("-tgcaTGCA?", symbol_table);
   SymbolVector correct_symbol_vector = {4, 3, 2, 1, 0, 3, 2, 1, 0, 4};
   CHECK_EQ(symbol_vector, correct_symbol_vector);
-
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_SITE_PATTERN_HPP_

@@ -3,6 +3,7 @@
 
 #include "site_pattern.hpp"
 #include <cstdio>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -27,7 +28,7 @@ CharIntMap SitePattern::GetSymbolTable() {
 
 void SitePattern::FailwithUnknownSymbol(char c) {
   char error[50];
-  std::sprintf(error, "Symbol '%c' not known.", c);
+  std::snprintf(error, sizeof(error), "Symbol '%c' not known.", c);
   Failwith(error);
 }
 
