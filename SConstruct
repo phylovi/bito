@@ -99,12 +99,12 @@ noodle = env.Program(
     ['_build/noodle.cpp'] + sources,
     LIBS=['hmsbeagle', 'pthread'])
 
-py_source = (
-)
+py_source = Glob("vip/*.py")
 
+# "platlib" is Python-packaging-speak for a platform-specific library (not pure Python).
 platlib = env.Whl("platlib", py_source + extension, root="")
 whl = env.WhlFile(source=platlib)
 print("\nPython wheel built. To install, execute:")
-print(f"pip install {whl[0]}\n")
+print(f"pip install -U {whl[0]}\n")
 
 env.Default(doctest, whl)

@@ -14,8 +14,11 @@ url = "https://github.com/phylovi/libsbn/"
 license = "GPL v3"
 install_requires = ["setuptools", "wheel"]
 tests_require = ["pytest"]
-packages = ["libsbn", "sbn"]
+packages = ["libsbn", "vip"]
 description_file="README.md"
+
+[tool.enscons.entry_points]
+console_scripts = ["vip = vip.cli:cli"]
 
 [tool.enscons.extras_require]
 test = ["pytest"]
