@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pandas as pd
 import tensorflow.compat.v2 as tf
@@ -10,11 +12,13 @@ import vip.optimizers
 tf.enable_v2_behavior()
 tfd = tfp.distributions
 
-
-def fixed():
-    # We assume that this MCMC was done on a single tree topology.
-    mcmc_nexus_path = "../_ignore/mb/DS1/DS1_out.t"
-    fasta_path = "../data/DS1.fasta"
+# Documentation is in the CLI.
+# `*` forces everything after to be keyword-only.
+def fixed(data_path, *, step_count, particle_count):
+    data_path = os.path.normpath(data_path)
+    data_id = os.path.basename(data_path)
+    mcmc_nexus_path = os.path.join(data_path, data_id+"_out.t")
+    fasta_path = os.path.join(data_path, data_id+".fasta")
     burn_in_fraction = 0.1
 
     inst = libsbn.instance("charlie")
@@ -112,7 +116,7 @@ def fixed():
     m.elbo_estimate(phylo_log_upost, particle_count=1000)
 
     opt = vip.optimizers.AdaptiveStepsizeOptimizer(m)
-    opt.gradient_steps(phylo_log_upost, grad_phylo_log_upost, 10)
+    opt.gradient_steps(phylo_log_upost, grad_phylo_log_upost, step_count)
     opt_trace = pd.DataFrame({"elbo": opt.trace}).reset_index()
 
     fit_sample = pd.DataFrame(m.sample(len(mb_split_lengths)))
