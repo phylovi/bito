@@ -36,8 +36,8 @@ If you get an error about missing BEAGLE, just `conda activate libsbn` again and
 
 The following two papers will explain what this repository is about:
 
-* Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf). Also see [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
-* Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_).
+* Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf); [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
+* Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_); [blog post](https://matsen.fredhutch.org/general/2019/08/24/vbpi.html).
 
 In the off chance that you are citing this library, don't forget to cite the [BEAGLE paper](http://dx.doi.org/10.1093/sysbio/syz020) too, as we use BEAGLE!
 
