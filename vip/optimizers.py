@@ -129,13 +129,12 @@ class SGD_Server(object):
         return update_dict
 
 
-class SimpleOptimizer:
+class BaseOptimizer:
     def __init__(self, model):
         self.model = model
         self.trace = []
         self.step_number = 0
         self.step_size = model.suggested_step_size()
-        self.stepsize_decreasing_rate = 1 - 1e-2
         self.optimizer = SGD_Server({"params": model.q_params.shape})
 
     def _simple_gradient_step(self, grad_log_p_z, history=None):
@@ -157,6 +156,12 @@ class SimpleOptimizer:
         if history is not None:
             history.append(self.model.q_params.copy())
         return True
+
+
+class SimpleOptimizer(BaseOptimizer):
+    def __init__(self, model):
+        super().__init__(model)
+        self.stepsize_decreasing_rate = 1 - 1e-2
 
     def gradient_step(self, target_log_like, grad_target_log_like):
         self.model.sample_and_prep_gradients()
@@ -173,16 +178,13 @@ class SimpleOptimizer:
                 self.gradient_step(target_log_like, grad_target_log_like)
 
 
-class BumpStepsizeOptimizer:
+class BumpStepsizeOptimizer(SimpleOptimizer):
     """An optimizer that increases the stepsize until it's too big, then
     decreases it."""
 
     def __init__(self, model):
-        self.model = model
-        self.trace = []
-        self.step_number = 0
+        super().__init__(model)
         self.window_size = 5
-        self.step_size = model.suggested_step_size()
         self.stepsize_increasing_rate = 1.2
         self.stepsize_decreasing_rate = 1 - 1e-2
         # The amount by which we drop the stepsize after realizing that it's gotten too
@@ -191,7 +193,6 @@ class BumpStepsizeOptimizer:
         self.stepsize_increasing = True
         self.best_elbo = -np.inf
         self.best_q_params = np.zeros(model.q_params.shape)
-        self.optimizer = SGD_Server({"params": model.q_params.shape})
 
     def _turn_around(self):
         """Triggered when the stepsize has gotten too big or a gradient step
@@ -199,26 +200,6 @@ class BumpStepsizeOptimizer:
         np.copyto(self.model.q_params, self.best_q_params)
         self.step_size /= self.stepsize_drop_from_peak
         self.stepsize_increasing = False
-
-    def _simple_gradient_step(self, grad_log_p_z, history=None):
-        """Just take a simple gradient step.
-
-        Return True if the gradient step was successful.
-        """
-        grad = self.model.elbo_gradient_using_current_sample(grad_log_p_z)
-        if not np.isfinite(np.array([grad])).all():
-            self.model.clear_sample()
-            return False
-        update_dict = self.optimizer.adam(
-            {"params": self.step_size},
-            {"params": self.model.q_params},
-            {"params": grad},
-        )
-        self.model.q_params += update_dict["params"]
-        self.model.clear_sample()
-        if history is not None:
-            history.append(self.model.q_params.copy())
-        return True
 
     def gradient_step(self, target_log_like, grad_target_log_like):
         # Are we starting to decrease our objective function?
