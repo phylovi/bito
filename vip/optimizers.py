@@ -153,6 +153,26 @@ class AdaptiveStepsizeOptimizer:
         self.step_size /= self.stepsize_drop_from_peak
         self.stepsize_increasing = False
 
+    def simple_gradient_step(self, grad_log_p_z, history=None):
+        """Just take a simple gradient step.
+
+        Return True if the gradient step was successful.
+        """
+        grad = self.model.elbo_gradient_using_current_sample(grad_log_p_z)
+        if not np.isfinite(np.array([grad])).all():
+            self.model.clear_sample()
+            return False
+        update_dict = self.optimizer.adam(
+            {"params": self.step_size},
+            {"params": self.model.q_params},
+            {"params": grad},
+        )
+        self.model.q_params += update_dict["params"]
+        self.model.clear_sample()
+        if history is not None:
+            history.append(self.model.q_params.copy())
+        return True
+
     def gradient_step(self, target_log_like, grad_target_log_like):
         # Are we starting to decrease our objective function?
         if self.stepsize_increasing and self.step_number >= 2 * self.window_size:
@@ -166,9 +186,7 @@ class AdaptiveStepsizeOptimizer:
         else:
             self.step_size *= self.stepsize_decreasing_rate
         self.model.sample_and_prep_gradients()
-        if not self.model.gradient_step(
-            self.optimizer, self.step_size, grad_target_log_like(self.model.z)
-        ):
+        if not self.simple_gradient_step(grad_target_log_like(self.model.z)):
             self.turn_around()  # Gradient step failed.
         self.trace.append(self.model.elbo_estimate(target_log_like, particle_count=500))
         if self.trace[-1] > self.best_elbo:

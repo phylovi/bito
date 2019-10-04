@@ -1,3 +1,4 @@
+import abc
 import numpy as np
 import pandas as pd
 import scipy as sp
@@ -37,7 +38,23 @@ def truncated_lognormal_factory(params):
     )
 
 
-class TFContinuousModel:
+class ContinuousModel(abc.ABC):
+    """An abstract base class for Continuous Models.
+
+    This doesn't appear to be easily enforceable in Python, but we want
+    the ContinuousModel to have a q_params attribute.
+    """
+
+    @abc.abstractmethod
+    def mode_match(self, modes):
+        pass
+
+    @abc.abstractmethod
+    def sample_and_prep_gradients(self):
+        pass
+
+
+class TFContinuousModel(ContinuousModel):
     """An object to model a collection of variables with a given continuous
     distribution type via TensorFlow.
 
@@ -172,21 +189,6 @@ class TFContinuousModel:
             self._chain_rule(grad_log_p_z, self.grad_z) - self.grad_log_sum_q
         )
         return unnormalized_result / self.particle_count
-
-    def gradient_step(self, optimizer, step_size, grad_log_p_z, history=None):
-        """Return True if the gradient step was successful."""
-        grad = self.elbo_gradient_using_current_sample(grad_log_p_z)
-        if not np.isfinite(np.array([grad])).all():
-            self.clear_sample()
-            return False
-        update_dict = optimizer.adam(
-            {"params": step_size}, {"params": self.q_params}, {"params": grad}
-        )
-        self.q_params += update_dict["params"]
-        self.clear_sample()
-        if history is not None:
-            history.append(self.q_params.copy())
-        return True
 
     def likelihoods_on_grid(self, num=50, max_x=0.5):
         min_x = max_x / 100
