@@ -1,7 +1,5 @@
 import abc
 import numpy as np
-import pandas as pd
-import scipy as sp
 
 import tensorflow.compat.v2 as tf
 import tensorflow_probability as tfp
@@ -40,19 +38,54 @@ def truncated_lognormal_factory(params):
 
 class ContinuousModel(abc.ABC):
     """An abstract base class for Continuous Models.
-
-    This doesn't appear to be easily enforceable in Python, but we want
-    the ContinuousModel to have a q_params attribute.
     """
+    def __init__(self, initial_params, variable_count, particle_count):
+        assert initial_params.ndim == 1
+        self.q_params = np.full((variable_count, len(initial_params)), initial_params)
+        self.particle_count = particle_count
+        # The current stored sample.
+        self.z = None
+        # The gradient of z with respect to the parameters of q.
+        self.grad_z = None
+        # The stochastic gradient of log sum q for z.
+        self.grad_log_sum_q = None
+
+    def clear_sample(self):
+        self.z = None
+        self.grad_z = None
+        self.grad_log_sum_q = None
+
+    @property
+    def variable_count(self):
+        return self.q_params.shape[0]
+
+    @property
+    def param_count(self):
+        return self.q_params.shape[1]
 
     @abc.abstractmethod
     def mode_match(self, modes):
         pass
 
     @abc.abstractmethod
+    def suggested_step_size(self):
+        pass
+
+    @abc.abstractmethod
+    def sample(self, particle_count):
+        pass
+
+    @abc.abstractmethod
     def sample_and_prep_gradients(self):
         pass
 
+    @abc.abstractmethod
+    def elbo_estimate(self, log_p, particle_count=None):
+        pass
+
+    @abc.abstractmethod
+    def elbo_gradient_using_current_sample(self, grad_log_p_z):
+        pass
 
 class TFContinuousModel(ContinuousModel):
     """An object to model a collection of variables with a given continuous
@@ -68,25 +101,10 @@ class TFContinuousModel(ContinuousModel):
     """
 
     def __init__(self, q_factory, initial_params, variable_count, particle_count):
+        super().__init__(initial_params, variable_count, particle_count)
         assert initial_params.ndim == 1
         self.q_factory = q_factory
         self.name = self.q_factory(np.array([initial_params])).name
-        self.q_params = np.full((variable_count, len(initial_params)), initial_params)
-        self.particle_count = particle_count
-        # The current stored sample.
-        self.z = None
-        # The gradient of z with respect to the parameters of q.
-        self.grad_z = None
-        # The stochastic gradient of log sum q for z.
-        self.grad_log_sum_q = None
-
-    @property
-    def variable_count(self):
-        return self.q_params.shape[0]
-
-    @property
-    def param_count(self):
-        return self.q_params.shape[1]
 
     def mode_match(self, modes):
         """Some crazy heuristics for mode matching with the given branch
@@ -130,11 +148,6 @@ class TFContinuousModel(ContinuousModel):
         self.grad_log_sum_q = g.gradient(q_term, tf_params).numpy()
         del g  # Should happen anyway but being explicit to remember.
         return self.z
-
-    def clear_sample(self):
-        self.z = None
-        self.grad_z = None
-        self.grad_log_sum_q = None
 
     def elbo_estimate(self, log_p, particle_count=None):
         """A naive Monte Carlo estimate of the ELBO.
