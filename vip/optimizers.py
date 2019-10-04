@@ -129,6 +129,50 @@ class SGD_Server(object):
         return update_dict
 
 
+class SimpleOptimizer:
+    def __init__(self, model):
+        self.model = model
+        self.trace = []
+        self.step_number = 0
+        self.step_size = model.suggested_step_size()
+        self.stepsize_decreasing_rate = 1 - 1e-2
+        self.optimizer = SGD_Server({"params": model.q_params.shape})
+
+    def _simple_gradient_step(self, grad_log_p_z, history=None):
+        """Just take a simple gradient step.
+
+        Return True if the gradient step was successful.
+        """
+        grad = self.model.elbo_gradient_using_current_sample(grad_log_p_z)
+        if not np.isfinite(np.array([grad])).all():
+            self.model.clear_sample()
+            return False
+        update_dict = self.optimizer.adam(
+            {"params": self.step_size},
+            {"params": self.model.q_params},
+            {"params": grad},
+        )
+        self.model.q_params += update_dict["params"]
+        self.model.clear_sample()
+        if history is not None:
+            history.append(self.model.q_params.copy())
+        return True
+
+    def gradient_step(self, target_log_like, grad_target_log_like):
+        self.model.sample_and_prep_gradients()
+        if self._simple_gradient_step(grad_target_log_like(self.model.z)):
+            self.step_size *= self.stepsize_decreasing_rate
+        else:
+            self.step_size /= 2
+        self.step_number += 1
+        return True
+
+    def gradient_steps(self, target_log_like, grad_target_log_like, step_count):
+        with click.progressbar(range(step_count), label="Gradient descent") as bar:
+            for step in bar:
+                self.gradient_step(target_log_like, grad_target_log_like)
+
+
 class BumpStepsizeOptimizer:
     """An optimizer that increases the stepsize until it's too big, then
     decreases it."""
@@ -206,9 +250,7 @@ class BumpStepsizeOptimizer:
 
 
 def of_name(name, model):
-    choices = {
-        "bump": BumpStepsizeOptimizer,
-    }
+    choices = {"simple": SimpleOptimizer, "bump": BumpStepsizeOptimizer}
     if name in choices:
         choice = choices[name]
     else:

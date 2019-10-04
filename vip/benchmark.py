@@ -15,12 +15,13 @@ tfd = tfp.distributions
 
 # Documentation is in the CLI.
 # `*` forces everything after to be keyword-only.
-def fixed(data_path, *, model_name, step_count, particle_count):
+def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
     data_path = os.path.normpath(data_path)
     data_id = os.path.basename(data_path)
     mcmc_nexus_path = os.path.join(data_path, data_id + "_out.t")
     fasta_path = os.path.join(data_path, data_id + ".fasta")
     burn_in_fraction = 0.1
+    particle_count_for_final_elbo_estimate = 2000
 
     inst = libsbn.instance("charlie")
 
@@ -114,7 +115,6 @@ def fixed(data_path, *, model_name, step_count, particle_count):
         model_name, variable_count=len(branch_lengths), particle_count=particle_count
     )
     model.mode_match(last_sampled_split_lengths)
-    model.elbo_estimate(phylo_log_upost, particle_count=1000)
 
     opt = vip.optimizers.of_name("bump", model)
     opt.gradient_steps(phylo_log_upost, grad_phylo_log_upost, step_count)
@@ -128,5 +128,8 @@ def fixed(data_path, *, model_name, step_count, particle_count):
         [fit_sample.melt(id_vars="type"), mcmc_split_lengths.melt(id_vars="type")]
     )
     fitting_results["variable"] = fitting_results["variable"].astype(str)
+    final_elbo = model.elbo_estimate(
+        phylo_log_upost, particle_count=particle_count_for_final_elbo_estimate
+    )
 
-    return opt_trace, fitting_results
+    return final_elbo, opt_trace, fitting_results
