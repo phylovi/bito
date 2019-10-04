@@ -1,4 +1,5 @@
 import os
+import timeit
 
 import numpy as np
 import pandas as pd
@@ -115,9 +116,10 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
         model_name, variable_count=len(branch_lengths), particle_count=particle_count
     )
     model.mode_match(last_sampled_split_lengths)
-
     opt = vip.optimizers.of_name("bump", model)
+    start_time = timeit.default_timer()
     opt.gradient_steps(phylo_log_upost, grad_phylo_log_upost, step_count)
+    gradient_time = timeit.default_timer() - start_time
     opt_trace = pd.DataFrame({"elbo": opt.trace}).reset_index()
 
     fit_sample = pd.DataFrame(model.sample(len(mcmc_split_lengths)))
@@ -132,4 +134,6 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
         phylo_log_upost, particle_count=particle_count_for_final_elbo_estimate
     )
 
-    return final_elbo, opt_trace, fitting_results
+    run_details = {"gradient_time": gradient_time, "final_elbo": final_elbo}
+
+    return run_details, opt_trace, fitting_results

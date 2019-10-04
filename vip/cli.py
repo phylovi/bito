@@ -54,7 +54,7 @@ def benchmark(model, optimizer, step_count, particle_count, out_prefix, data_pat
     print("Starting validation:")
     pprint.pprint(locals())
 
-    final_elbo, opt_trace, fitting_results = vip.benchmark.fixed(
+    run_details, opt_trace, fitting_results = vip.benchmark.fixed(
         data_path,
         model_name=model,
         optimizer_name=optimizer,
@@ -64,4 +64,4 @@ def benchmark(model, optimizer, step_count, particle_count, out_prefix, data_pat
     if out_prefix is not None:
         opt_trace.to_csv(out_prefix + "_opt_trace.csv")
         fitting_results.to_csv(out_prefix + "_fitting_results.csv")
-    print(f"Final ELBO: {final_elbo}")
+    pprint.pprint(run_details)
