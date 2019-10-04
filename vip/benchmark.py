@@ -116,7 +116,7 @@ def fixed(data_path, *, model_name, step_count, particle_count):
     model.mode_match(last_sampled_split_lengths)
     model.elbo_estimate(phylo_log_upost, particle_count=1000)
 
-    opt = vip.optimizers.AdaptiveStepsizeOptimizer(model)
+    opt = vip.optimizers.of_name("bump", model)
     opt.gradient_steps(phylo_log_upost, grad_phylo_log_upost, step_count)
     opt_trace = pd.DataFrame({"elbo": opt.trace}).reset_index()
 

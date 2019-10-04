@@ -129,7 +129,10 @@ class SGD_Server(object):
         return update_dict
 
 
-class AdaptiveStepsizeOptimizer:
+class BumpStepsizeOptimizer:
+    """An optimizer that increases the stepsize until it's too big, then
+    decreases it."""
+
     def __init__(self, model):
         self.model = model
         self.trace = []
@@ -146,14 +149,14 @@ class AdaptiveStepsizeOptimizer:
         self.best_q_params = np.zeros(model.q_params.shape)
         self.optimizer = SGD_Server({"params": model.q_params.shape})
 
-    def turn_around(self):
+    def _turn_around(self):
         """Triggered when the stepsize has gotten too big or a gradient step
         fails, restoring the previously best seen parameters."""
         np.copyto(self.model.q_params, self.best_q_params)
         self.step_size /= self.stepsize_drop_from_peak
         self.stepsize_increasing = False
 
-    def simple_gradient_step(self, grad_log_p_z, history=None):
+    def _simple_gradient_step(self, grad_log_p_z, history=None):
         """Just take a simple gradient step.
 
         Return True if the gradient step was successful.
@@ -179,15 +182,15 @@ class AdaptiveStepsizeOptimizer:
             last_epoch = self.trace[-self.window_size :]
             prev_epoch = self.trace[-2 * self.window_size : -self.window_size]
             if np.mean(last_epoch) < np.mean(prev_epoch):
-                self.turn_around()
+                self._turn_around()
         # Perform gradient step.
         if self.stepsize_increasing:
             self.step_size *= self.stepsize_increasing_rate
         else:
             self.step_size *= self.stepsize_decreasing_rate
         self.model.sample_and_prep_gradients()
-        if not self.simple_gradient_step(grad_target_log_like(self.model.z)):
-            self.turn_around()  # Gradient step failed.
+        if not self._simple_gradient_step(grad_target_log_like(self.model.z)):
+            self._turn_around()  # Gradient step failed.
         self.trace.append(self.model.elbo_estimate(target_log_like, particle_count=500))
         if self.trace[-1] > self.best_elbo:
             self.best_elbo = self.trace[-1]
@@ -200,3 +203,14 @@ class AdaptiveStepsizeOptimizer:
             for step in bar:
                 if not self.gradient_step(target_log_like, grad_target_log_like):
                     raise Exception("ELBO is not finite. Stopping.")
+
+
+def of_name(name, model):
+    choices = {
+        "bump": BumpStepsizeOptimizer,
+    }
+    if name in choices:
+        choice = choices[name]
+    else:
+        raise Exception(f"Optimizer {name} not known.")
+    return choice(model)
