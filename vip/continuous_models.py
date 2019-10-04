@@ -170,40 +170,26 @@ class TFContinuousModel(ContinuousModel):
                     )
         return result
 
-    def elbo_gradient_using_current_sample(self, grad_log_p_z):
+    def elbo_gradient_using_current_sample(self, grad_log_p_z, test_chain_rule=False):
         assert self.grad_z is not None
         if not np.all(np.isfinite(grad_log_p_z)):
             raise Exception(
                 "Infinite gradient given to elbo_gradient_using_current_sample."
             )
-        if not np.allclose(
-            self._chain_rule(grad_log_p_z, self.grad_z),
-            self._slow_chain_rule(grad_log_p_z, self.grad_z),
-        ):
-            print("Warning: chain rule isn't close. Here's the difference:")
-            print(
-                self._chain_rule(grad_log_p_z, self.grad_z)
-                - self._slow_chain_rule(grad_log_p_z, self.grad_z)
-            )
+        if test_chain_rule:
+            if not np.allclose(
+                self._chain_rule(grad_log_p_z, self.grad_z),
+                self._slow_chain_rule(grad_log_p_z, self.grad_z),
+            ):
+                print("Warning: chain rule isn't close. Here's the difference:")
+                print(
+                    self._chain_rule(grad_log_p_z, self.grad_z)
+                    - self._slow_chain_rule(grad_log_p_z, self.grad_z)
+                )
         unnormalized_result = (
             self._chain_rule(grad_log_p_z, self.grad_z) - self.grad_log_sum_q
         )
         return unnormalized_result / self.particle_count
-
-    def likelihoods_on_grid(self, num=50, max_x=0.5):
-        min_x = max_x / 100
-        z = np.zeros((num, self.variable_count))
-        x_vals = np.linspace(min_x, max_x, num)
-        for variable in range(self.variable_count):
-            z[:, variable] = x_vals
-        q_distribution = self.q_factory(self.q_params)
-        df = pd.DataFrame(
-            np.apply_along_axis(
-                sp.special.softmax, 0, q_distribution.log_prob(z).numpy()
-            )
-        )
-        df["x"] = x_vals
-        return df.melt(id_vars="x")
 
 
 def of_name(name, *, variable_count, particle_count):
