@@ -172,8 +172,8 @@ class LogNormalModel(ContinuousModel):
         # ratio = np.exp(np.log((np.log(np.log(z)-mu)**2) - np.log(sigma**2))
         # TODO explain summation
         ratio = (np.log(z) - self.mu) ** 2 / self.sigma ** 2
-        return -0.5 * np.sum(
-            (np.log(2 * np.pi) + np.log(self.sigma ** 2)) - 0.5 * ratio, axis=1
+        return -0.5 * (
+            np.log(2 * np.pi) + np.sum((np.log(self.sigma ** 2)) - 0.5 * ratio, axis=1)
         )
 
     def sample_and_prep_gradients(self):
