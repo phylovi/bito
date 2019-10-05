@@ -11,7 +11,9 @@ def cli():
 @cli.command()
 @click.option(
     "--model",
-    type=click.Choice(["gamma", "lognormal", "truncated_lognormal"]),
+    type=click.Choice(
+        ["lognormal", "tf_lognormal", "tf_truncated_lognormal", "tf_gamma"]
+    ),
     default="lognormal",
     show_default=True,
 )

@@ -127,7 +127,7 @@ class ContinuousModel(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def sample(self, particle_count):
+    def sample(self, particle_count, log_prob=False):
         pass
 
     @abc.abstractmethod
@@ -155,20 +155,20 @@ class LogNormalModel(ContinuousModel):
         biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1 - 1e-6))
         # TODO do we want to have the lognormal variance be in log space? Or do we want
         # to clip it?
-        self.sigma = -0.1 * biclipped_log_modes
-        self.mu = np.square(self.sigma) + log_modes
+        self.q_params[:, 1] = -0.1 * biclipped_log_modes
+        self.q_params[:, 0] = np.square(self.sigma) + log_modes
 
-    def sample(self, log_prob=False):
+    def sample(self, particle_count, log_prob=False):
         z = np.random.lognormal(
-            self.mu, self.sigma, (self.particle_count, self.variable_count)
+            self.mu, self.sigma, (particle_count, self.variable_count)
         )
         if log_prob:
-            return z
-        else:
             return z, self.log_prob(z)
+        else:
+            return z
 
     def log_prob(self, z):
-        # TODO use fancy version
+        # Here's the fancy stable version.
         # ratio = np.exp(np.log((np.log(np.log(z)-mu)**2) - np.log(sigma**2))
         # TODO explain summation
         ratio = (np.log(z) - self.mu) ** 2 / self.sigma ** 2
@@ -177,17 +177,15 @@ class LogNormalModel(ContinuousModel):
         )
 
     def sample_and_prep_gradients(self):
-        self.z = self.sample()
-        mu = self.q_params[:, 0]
-        sigma = self.q_params[:, 1]
-        epsilon = (np.log(self.z) - mu) / sigma
+        self.z = self.sample(self.particle_count)
+        epsilon = (np.log(self.z) - self.mu) / self.sigma
         self.grad_z = np.empty((self.particle_count, self.variable_count, 2))
         self.grad_z[:, :, 0] = self.z
         self.grad_z[:, :, 1] = self.z * epsilon
         self.grad_sum_log_q = np.empty((self.variable_count, 2))
         self.grad_sum_log_q[:, 0] = -1.0 * self.particle_count
         self.grad_sum_log_q[:, 1] = (
-            -np.sum(epsilon, axis=0) - self.particle_count / sigma
+            -np.sum(epsilon, axis=0) - self.particle_count / self.sigma
         )
 
 
@@ -255,15 +253,18 @@ class TFContinuousModel(ContinuousModel):
 
 
 def of_name(name, *, variable_count, particle_count):
-    choices = {
-        "lognormal": [lognormal_factory, [-2.0, 0.5]],
-        "truncated_lognormal": [truncated_lognormal_factory, [-1.0, 0.5, 0.1]],
-        "gamma": [gamma_factory, [1.3, 3.0]],
-    }
-    if name in choices:
-        choice = choices[name]
-    else:
-        raise Exception(f"Model {name} not known.")
-    return TFContinuousModel(
-        choice[0], np.array(choice[1]), variable_count, particle_count
-    )
+    def build_tf_model(q_factory, initial_params):
+        return TFContinuousModel(
+            q_factory, np.array(initial_params), variable_count, particle_count
+        )
+
+    if name == "lognormal":
+        return LogNormalModel(np.array([-2.0, 0.5]), variable_count, particle_count)
+    if name == "tf_lognormal":
+        return build_tf_model(lognormal_factory, [-2.0, 0.5])
+    if name == "tf_truncated_lognormal":
+        return build_tf_model(truncated_lognormal_factory, [-1.0, 0.5, 0.1])
+    if name == "tf_gamma":
+        return build_tf_model(gamma_factory, [1.3, 3.0])
+
+    raise Exception(f"Model {name} not known.")
