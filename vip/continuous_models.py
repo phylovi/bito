@@ -38,7 +38,11 @@ def truncated_lognormal_factory(params):
 
 class ContinuousModel(abc.ABC):
     """An abstract base class for Continuous Models.
+
+    Samples are laid out as particles x variables, which we will call
+    z-shape.
     """
+
     def __init__(self, initial_params, variable_count, particle_count):
         assert initial_params.ndim == 1
         self.q_params = np.full((variable_count, len(initial_params)), initial_params)
@@ -48,12 +52,15 @@ class ContinuousModel(abc.ABC):
         # The gradient of z with respect to the parameters of q.
         self.grad_z = None
         # The stochastic gradient of log sum q for z.
-        self.grad_log_sum_q = None
+        self.grad_sum_log_q = None
 
     def clear_sample(self):
         self.z = None
         self.grad_z = None
-        self.grad_log_sum_q = None
+        self.grad_sum_log_q = None
+
+    def suggested_step_size(self):
+        return np.average(np.abs(self.q_params), axis=0) / 100
 
     @property
     def variable_count(self):
@@ -65,10 +72,6 @@ class ContinuousModel(abc.ABC):
 
     @abc.abstractmethod
     def mode_match(self, modes):
-        pass
-
-    @abc.abstractmethod
-    def suggested_step_size(self):
         pass
 
     @abc.abstractmethod
@@ -87,24 +90,11 @@ class ContinuousModel(abc.ABC):
     def elbo_gradient_using_current_sample(self, grad_log_p_z):
         pass
 
-class TFContinuousModel(ContinuousModel):
-    """An object to model a collection of variables with a given continuous
-    distribution type via TensorFlow.
 
-    Each of these variables uses a number of parameters which we
-    optimize using SGD variants.
-
-    Samples are laid out as particles x variables, which we will call z-shape.
-
-    * p is the target probability.
-    * q is the distribution that we're fitting to p.
-    """
-
-    def __init__(self, q_factory, initial_params, variable_count, particle_count):
+class LogNormalModel(ContinuousModel):
+    def __init__(self, initial_params, variable_count, particle_count):
         super().__init__(initial_params, variable_count, particle_count)
-        assert initial_params.ndim == 1
-        self.q_factory = q_factory
-        self.name = self.q_factory(np.array([initial_params])).name
+        self.name = "LogNormal"
 
     def mode_match(self, modes):
         """Some crazy heuristics for mode matching with the given branch
@@ -113,21 +103,74 @@ class TFContinuousModel(ContinuousModel):
         biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1 - 1e-6))
         # TODO do we want to have the lognormal variance be in log space? Or do we want
         # to clip it?
-        if self.name == "LogNormal":
+        self.q_params[:, 1] = -0.1 * biclipped_log_modes
+        self.q_params[:, 0] = np.square(self.q_params[:, 1]) + log_modes
+
+    def sample(self):
+        return np.random.lognormal(
+            self.q_params[:, 0],
+            self.q_params[:, 1],
+            (self.particle_count, self.variable_count),
+        )
+
+    def sample_and_prep_gradients(self):
+        self.z = self.sample()
+        mu = self.q_params[:, 0]
+        sigma = self.q_params[:, 1]
+        epsilon = (np.log(self.z) - mu) / sigma
+        self.grad_z = np.empty((self.particle_count, self.variable_count, 2))
+        self.grad_z[:, :, 0] = self.z
+        self.grad_z[:, :, 1] = self.z * epsilon
+        self.grad_sum_log_q = np.empty((self.variable_count, 2))
+        self.grad_sum_log_q[:, 0] = -1.0 * self.particle_count
+        self.grad_sum_log_q[:, 1] = (
+            -np.sum(epsilon, axis=0) - self.particle_count / sigma
+        )
+
+    def elbo_estimate(self, log_p, particle_count=None):
+        pass
+
+    def elbo_gradient_using_current_sample(self, grad_log_p_z):
+        pass
+
+
+class TFContinuousModel(ContinuousModel):
+    """An object to model a collection of variables with a given continuous
+    distribution type via TensorFlow.
+
+    Each of these variables uses a number of parameters which we
+    optimize using SGD variants.
+
+    See ContinuousModel for more information.
+
+    * p is the target probability.
+    * q is the distribution that we're fitting to p.
+    """
+
+    def __init__(self, q_factory, initial_params, variable_count, particle_count):
+        super().__init__(initial_params, variable_count, particle_count)
+        self.q_factory = q_factory
+        self.name = "TF" + self.q_factory(np.array([initial_params])).name
+
+    def mode_match(self, modes):
+        """Some crazy heuristics for mode matching with the given branch
+        lengths."""
+        log_modes = np.log(np.clip(modes, 1e-6, None))
+        biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1 - 1e-6))
+        # TODO do we want to have the lognormal variance be in log space? Or do we want
+        # to clip it?
+        if self.name == "TFLogNormal":
             self.q_params[:, 1] = -0.1 * biclipped_log_modes
             self.q_params[:, 0] = np.square(self.q_params[:, 1]) + log_modes
-        elif self.name == "TruncatedLogNormal":
+        elif self.name == "TFTruncatedLogNormal":
             self.q_params[:, 1] = -0.1 * biclipped_log_modes
             self.q_params[:, 0] = np.square(self.q_params[:, 1]) + log_modes
             self.q_params[:, 2] = -5
-        elif self.name == "Gamma":
+        elif self.name == "TFGamma":
             self.q_params[:, 1] = np.log(-60.0 * biclipped_log_modes)
             self.q_params[:, 0] = np.log(1 + modes * self.q_params[:, 1])
         else:
             print("Mode matching not implemented for " + self.name)
-
-    def suggested_step_size(self):
-        return np.average(np.abs(self.q_params), axis=0) / 100
 
     def sample(self, particle_count):
         q_distribution = self.q_factory(self.q_params)
@@ -141,26 +184,13 @@ class TFContinuousModel(ContinuousModel):
             g.watch(tf_params)
             q_distribution = self.q_factory(tf_params)
             tf_z = q_distribution.sample(self.particle_count)
-            q_term = tf.math.reduce_sum(tf.math.log(q_distribution.prob(tf_z)))
+            q_term = tf.math.reduce_sum(q_distribution.log_prob(tf_z))
         self.z = tf_z.numpy()
         # The Jacobian is laid out as particles x edges x edges x params.
         self.grad_z = np.sum(g.jacobian(tf_z, tf_params).numpy(), axis=2)
-        self.grad_log_sum_q = g.gradient(q_term, tf_params).numpy()
+        self.grad_sum_log_q = g.gradient(q_term, tf_params).numpy()
         del g  # Should happen anyway but being explicit to remember.
         return self.z
-
-    def elbo_estimate(self, log_p, particle_count=None):
-        """A naive Monte Carlo estimate of the ELBO.
-
-        log_p must take an argument of z-shape.
-        """
-        if particle_count is None:
-            particle_count = self.particle_count
-        q_distribution = self.q_factory(self.q_params)
-        z = q_distribution.sample(particle_count)
-        return (
-            np.sum(log_p(z) - np.sum(q_distribution.log_prob(z), axis=1))
-        ) / particle_count
 
     @staticmethod
     def _chain_rule(grad_log_p_z, grad_z):
@@ -200,9 +230,22 @@ class TFContinuousModel(ContinuousModel):
                     - self._slow_chain_rule(grad_log_p_z, self.grad_z)
                 )
         unnormalized_result = (
-            self._chain_rule(grad_log_p_z, self.grad_z) - self.grad_log_sum_q
+            self._chain_rule(grad_log_p_z, self.grad_z) - self.grad_sum_log_q
         )
         return unnormalized_result / self.particle_count
+
+    def elbo_estimate(self, log_p, particle_count=None):
+        """A naive Monte Carlo estimate of the ELBO.
+
+        log_p must take an argument of z-shape.
+        """
+        if particle_count is None:
+            particle_count = self.particle_count
+        q_distribution = self.q_factory(self.q_params)
+        z = q_distribution.sample(particle_count)
+        return (
+            np.sum(log_p(z) - np.sum(q_distribution.log_prob(z), axis=1))
+        ) / particle_count
 
 
 def of_name(name, *, variable_count, particle_count):
