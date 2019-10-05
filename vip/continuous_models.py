@@ -62,6 +62,16 @@ class ContinuousModel(abc.ABC):
     def suggested_step_size(self):
         return np.average(np.abs(self.q_params), axis=0) / 100
 
+    def elbo_estimate(self, log_p, particle_count=None):
+        """A naive Monte Carlo estimate of the ELBO.
+
+        log_p must take an argument of z-shape.
+        """
+        if particle_count is None:
+            particle_count = self.particle_count
+        z, log_prob = self.sample(particle_count, log_prob=True)
+        return (np.sum(log_p(z) - log_prob)) / particle_count
+
     @property
     def variable_count(self):
         return self.q_params.shape[0]
@@ -83,10 +93,6 @@ class ContinuousModel(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def elbo_estimate(self, log_p, particle_count=None):
-        pass
-
-    @abc.abstractmethod
     def elbo_gradient_using_current_sample(self, grad_log_p_z):
         pass
 
@@ -96,6 +102,14 @@ class LogNormalModel(ContinuousModel):
         super().__init__(initial_params, variable_count, particle_count)
         self.name = "LogNormal"
 
+    @property
+    def mu(self):
+        return self.q_params[:, 0]
+
+    @property
+    def sigma(self):
+        return self.q_params[:, 1]
+
     def mode_match(self, modes):
         """Some crazy heuristics for mode matching with the given branch
         lengths."""
@@ -103,14 +117,25 @@ class LogNormalModel(ContinuousModel):
         biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1 - 1e-6))
         # TODO do we want to have the lognormal variance be in log space? Or do we want
         # to clip it?
-        self.q_params[:, 1] = -0.1 * biclipped_log_modes
-        self.q_params[:, 0] = np.square(self.q_params[:, 1]) + log_modes
+        self.sigma = -0.1 * biclipped_log_modes
+        self.mu = np.square(self.sigma) + log_modes
 
-    def sample(self):
-        return np.random.lognormal(
-            self.q_params[:, 0],
-            self.q_params[:, 1],
-            (self.particle_count, self.variable_count),
+    def sample(self, log_prob=False):
+        z = np.random.lognormal(
+            self.mu, self.sigma, (self.particle_count, self.variable_count)
+        )
+        if log_prob:
+            return z
+        else:
+            return z, self.log_prob(z)
+
+    def log_prob(self, z):
+        # TODO use fancy version
+        # ratio = np.exp(np.log((np.log(np.log(z)-mu)**2) - np.log(sigma**2))
+        # TODO explain summation
+        ratio = (np.log(z) - self.mu) ** 2 / self.sigma ** 2
+        return -0.5 * np.sum(
+            (np.log(2 * np.pi) + np.log(self.sigma ** 2)) - 0.5 * ratio, axis=1
         )
 
     def sample_and_prep_gradients(self):
@@ -126,9 +151,6 @@ class LogNormalModel(ContinuousModel):
         self.grad_sum_log_q[:, 1] = (
             -np.sum(epsilon, axis=0) - self.particle_count / sigma
         )
-
-    def elbo_estimate(self, log_p, particle_count=None):
-        pass
 
     def elbo_gradient_using_current_sample(self, grad_log_p_z):
         pass
@@ -172,9 +194,13 @@ class TFContinuousModel(ContinuousModel):
         else:
             print("Mode matching not implemented for " + self.name)
 
-    def sample(self, particle_count):
+    def sample(self, particle_count, log_prob=False):
         q_distribution = self.q_factory(self.q_params)
-        return q_distribution.sample(particle_count).numpy()
+        z = q_distribution.sample(particle_count).numpy()
+        if log_prob:
+            return z, np.sum(q_distribution.log_prob(z), axis=1)
+        else:
+            return z
 
     def sample_and_prep_gradients(self):
         """Take a sample from q and prepare a gradient of the sample and of log
@@ -233,19 +259,6 @@ class TFContinuousModel(ContinuousModel):
             self._chain_rule(grad_log_p_z, self.grad_z) - self.grad_sum_log_q
         )
         return unnormalized_result / self.particle_count
-
-    def elbo_estimate(self, log_p, particle_count=None):
-        """A naive Monte Carlo estimate of the ELBO.
-
-        log_p must take an argument of z-shape.
-        """
-        if particle_count is None:
-            particle_count = self.particle_count
-        q_distribution = self.q_factory(self.q_params)
-        z = q_distribution.sample(particle_count)
-        return (
-            np.sum(log_p(z) - np.sum(q_distribution.log_prob(z), axis=1))
-        ) / particle_count
 
 
 def of_name(name, *, variable_count, particle_count):
