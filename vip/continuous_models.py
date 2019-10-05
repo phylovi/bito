@@ -72,6 +72,48 @@ class ContinuousModel(abc.ABC):
         z, log_prob = self.sample(particle_count, log_prob=True)
         return (np.sum(log_p(z) - log_prob)) / particle_count
 
+    @staticmethod
+    def _chain_rule(grad_log_p_z, grad_z):
+        return (
+            np.tensordot(grad_log_p_z.transpose(), grad_z, axes=1)
+            .diagonal()
+            .transpose()
+        )
+
+    @staticmethod
+    def _slow_chain_rule(grad_log_p_z, grad_z):
+        particle_count, variable_count, param_count = grad_z.shape
+        result = np.zeros((variable_count, param_count))
+        for variable in range(variable_count):
+            for param in range(param_count):
+                for particle in range(particle_count):
+                    result[variable, param] += (
+                        grad_log_p_z[particle, variable]
+                        * grad_z[particle, variable, param]
+                    )
+        return result
+
+    def elbo_gradient_using_current_sample(self, grad_log_p_z, test_chain_rule=False):
+        assert self.grad_z is not None
+        if not np.all(np.isfinite(grad_log_p_z)):
+            raise Exception(
+                "Infinite gradient given to elbo_gradient_using_current_sample."
+            )
+        if test_chain_rule:
+            if not np.allclose(
+                self._chain_rule(grad_log_p_z, self.grad_z),
+                self._slow_chain_rule(grad_log_p_z, self.grad_z),
+            ):
+                print("Warning: chain rule isn't close. Here's the difference:")
+                print(
+                    self._chain_rule(grad_log_p_z, self.grad_z)
+                    - self._slow_chain_rule(grad_log_p_z, self.grad_z)
+                )
+        unnormalized_result = (
+            self._chain_rule(grad_log_p_z, self.grad_z) - self.grad_sum_log_q
+        )
+        return unnormalized_result / self.particle_count
+
     @property
     def variable_count(self):
         return self.q_params.shape[0]
@@ -90,10 +132,6 @@ class ContinuousModel(abc.ABC):
 
     @abc.abstractmethod
     def sample_and_prep_gradients(self):
-        pass
-
-    @abc.abstractmethod
-    def elbo_gradient_using_current_sample(self, grad_log_p_z):
         pass
 
 
@@ -151,9 +189,6 @@ class LogNormalModel(ContinuousModel):
         self.grad_sum_log_q[:, 1] = (
             -np.sum(epsilon, axis=0) - self.particle_count / sigma
         )
-
-    def elbo_gradient_using_current_sample(self, grad_log_p_z):
-        pass
 
 
 class TFContinuousModel(ContinuousModel):
@@ -217,48 +252,6 @@ class TFContinuousModel(ContinuousModel):
         self.grad_sum_log_q = g.gradient(q_term, tf_params).numpy()
         del g  # Should happen anyway but being explicit to remember.
         return self.z
-
-    @staticmethod
-    def _chain_rule(grad_log_p_z, grad_z):
-        return (
-            np.tensordot(grad_log_p_z.transpose(), grad_z, axes=1)
-            .diagonal()
-            .transpose()
-        )
-
-    @staticmethod
-    def _slow_chain_rule(grad_log_p_z, grad_z):
-        particle_count, variable_count, param_count = grad_z.shape
-        result = np.zeros((variable_count, param_count))
-        for variable in range(variable_count):
-            for param in range(param_count):
-                for particle in range(particle_count):
-                    result[variable, param] += (
-                        grad_log_p_z[particle, variable]
-                        * grad_z[particle, variable, param]
-                    )
-        return result
-
-    def elbo_gradient_using_current_sample(self, grad_log_p_z, test_chain_rule=False):
-        assert self.grad_z is not None
-        if not np.all(np.isfinite(grad_log_p_z)):
-            raise Exception(
-                "Infinite gradient given to elbo_gradient_using_current_sample."
-            )
-        if test_chain_rule:
-            if not np.allclose(
-                self._chain_rule(grad_log_p_z, self.grad_z),
-                self._slow_chain_rule(grad_log_p_z, self.grad_z),
-            ):
-                print("Warning: chain rule isn't close. Here's the difference:")
-                print(
-                    self._chain_rule(grad_log_p_z, self.grad_z)
-                    - self._slow_chain_rule(grad_log_p_z, self.grad_z)
-                )
-        unnormalized_result = (
-            self._chain_rule(grad_log_p_z, self.grad_z) - self.grad_sum_log_q
-        )
-        return unnormalized_result / self.particle_count
 
 
 def of_name(name, *, variable_count, particle_count):
