@@ -8,39 +8,14 @@ tf.enable_v2_behavior()
 tfd = tfp.distributions
 
 
-def exponential_factory(params):
-    return tfd.Exponential(rate=params[:, 0])
-
-
-def gamma_factory(params):
-    return tfd.Gamma(concentration=tf.exp(params[:, 0]), rate=tf.exp(params[:, 1]))
-
-
-def lognormal_factory(params):
-    return tfd.LogNormal(loc=params[:, 0], scale=params[:, 1])
-
-
-def truncated_lognormal_factory(params):
-    exp_shift = tfp.bijectors.Chain(
-        [
-            tfp.bijectors.AffineScalar(shift=-tf.math.exp(params[:, 2])),
-            tfp.bijectors.Exp(),
-        ]
-    )
-    return tfd.TransformedDistribution(
-        distribution=tfd.TruncatedNormal(
-            loc=params[:, 0], scale=params[:, 1], low=params[:, 2], high=999
-        ),
-        bijector=exp_shift,
-        name="TruncatedLogNormal",
-    )
-
-
 class ContinuousModel(abc.ABC):
     """An abstract base class for Continuous Models.
 
     Samples are laid out as particles x variables, which we will call
     z-shape.
+
+    * p is the target probability.
+    * q is the distribution that we're fitting to p.
     """
 
     def __init__(self, initial_params, variable_count, particle_count):
@@ -53,6 +28,14 @@ class ContinuousModel(abc.ABC):
         self.grad_z = None
         # The stochastic gradient of log sum q for z.
         self.grad_sum_log_q = None
+
+    @property
+    def variable_count(self):
+        return self.q_params.shape[0]
+
+    @property
+    def param_count(self):
+        return self.q_params.shape[1]
 
     def clear_sample(self):
         self.z = None
@@ -114,14 +97,6 @@ class ContinuousModel(abc.ABC):
         )
         return unnormalized_result / self.particle_count
 
-    @property
-    def variable_count(self):
-        return self.q_params.shape[0]
-
-    @property
-    def param_count(self):
-        return self.q_params.shape[1]
-
     @abc.abstractmethod
     def mode_match(self, modes):
         pass
@@ -136,6 +111,8 @@ class ContinuousModel(abc.ABC):
 
 
 class LogNormalModel(ContinuousModel):
+    """A log-normal model with hand-computed gradients."""
+
     def __init__(self, initial_params, variable_count, particle_count):
         super().__init__(initial_params, variable_count, particle_count)
         self.name = "LogNormal"
@@ -189,23 +166,48 @@ class LogNormalModel(ContinuousModel):
         self.grad_z[:, :, 0] = self.z
         self.grad_z[:, :, 1] = self.z * epsilon
         self.grad_sum_log_q = np.empty((self.variable_count, 2))
+        # To get the gradients below, recall that log z is mu+sigma*epsilon in the
+        # reparametrization trick. If we substitute that into the log density of the
+        # normal distribution and take the derivatives we get this.
         self.grad_sum_log_q[:, 0] = -1.0 * self.particle_count
         self.grad_sum_log_q[:, 1] = (
             -np.sum(epsilon, axis=0) - self.particle_count / self.sigma
         )
 
 
+def exponential_factory(params):
+    return tfd.Exponential(rate=params[:, 0])
+
+
+def gamma_factory(params):
+    return tfd.Gamma(concentration=tf.exp(params[:, 0]), rate=tf.exp(params[:, 1]))
+
+
+def lognormal_factory(params):
+    return tfd.LogNormal(loc=params[:, 0], scale=params[:, 1])
+
+
+def truncated_lognormal_factory(params):
+    exp_shift = tfp.bijectors.Chain(
+        [
+            tfp.bijectors.AffineScalar(shift=-tf.math.exp(params[:, 2])),
+            tfp.bijectors.Exp(),
+        ]
+    )
+    return tfd.TransformedDistribution(
+        distribution=tfd.TruncatedNormal(
+            loc=params[:, 0], scale=params[:, 1], low=params[:, 2], high=999
+        ),
+        bijector=exp_shift,
+        name="TruncatedLogNormal",
+    )
+
+
 class TFContinuousModel(ContinuousModel):
     """An object to model a collection of variables with a given continuous
     distribution type via TensorFlow.
 
-    Each of these variables uses a number of parameters which we
-    optimize using SGD variants.
-
     See ContinuousModel for more information.
-
-    * p is the target probability.
-    * q is the distribution that we're fitting to p.
     """
 
     def __init__(self, q_factory, initial_params, variable_count, particle_count):
