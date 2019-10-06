@@ -168,13 +168,19 @@ class LogNormalModel(ContinuousModel):
             return z
 
     def log_prob(self, z):
+        """Return a log probability for each of the particles given in z."""
+        log_z = np.log(z)
         # Here's the fancy stable version.
         # ratio = np.exp(np.log((np.log(np.log(z)-mu)**2) - np.log(sigma**2))
-        # TODO explain summation
-        ratio = (np.log(z) - self.mu) ** 2 / self.sigma ** 2
-        return -0.5 * (
-            np.log(2 * np.pi) + np.sum((np.log(self.sigma ** 2)) - 0.5 * ratio, axis=1)
+        ratio = (log_z - self.mu) ** 2 / (2 * self.sigma ** 2)
+        # Below we're summing over axis 1, which is the variable axis.
+        result = (
+            -0.5 * np.log(2 * np.pi)
+            - np.sum(log_z, axis=1)
+            - np.sum(np.log(self.sigma))
+            - np.sum(ratio, axis=1)
         )
+        return result
 
     def sample_and_prep_gradients(self):
         self.z = self.sample(self.particle_count)
