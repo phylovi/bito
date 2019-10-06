@@ -178,7 +178,7 @@ class SimpleOptimizer(BaseOptimizer):
                 self.gradient_step(target_log_like, grad_target_log_like)
 
 
-class BumpStepsizeOptimizer(SimpleOptimizer):
+class BumpStepsizeOptimizer(BaseOptimizer):
     """An optimizer that increases the stepsize until it's too big, then
     decreases it."""
 

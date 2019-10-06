@@ -116,7 +116,7 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
         model_name, variable_count=len(branch_lengths), particle_count=particle_count
     )
     model.mode_match(last_sampled_split_lengths)
-    opt = vip.optimizers.of_name("bump", model)
+    opt = vip.optimizers.of_name(optimizer_name, model)
     start_time = timeit.default_timer()
     opt.gradient_steps(phylo_log_upost, grad_phylo_log_upost, step_count)
     gradient_time = timeit.default_timer() - start_time
