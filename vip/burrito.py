@@ -6,9 +6,7 @@ import vip.optimizers
 
 
 class Burrito:
-    """
-    A class to wrap an instance and relevant model data.
-    """
+    """A class to wrap an instance and relevant model data."""
 
     def __init__(
         self,
@@ -29,8 +27,28 @@ class Burrito:
         # Set up tree likelihood calculation.
         self.inst.read_fasta_file(fasta_path)
         self.inst.make_beagle_instances(1)
-        # This is a "fake" tree sample because there is only one tree in the
-        # support of the SBN, but it's the easiest way to get the tree back.
+        # It's important to do tree sampling here so that self.branch_lengths
+        # etc gets set up.
+        self.sample_tree()
+
+        model = vip.continuous_models.of_name(
+            model_name,
+            variable_count=len(self.branch_lengths),
+            particle_count=particle_count,
+        )
+        self.opt = vip.optimizers.of_name(optimizer_name, model)
+
+    @staticmethod
+    def log_exp_prior(x, rate=10):
+        return np.log(rate) - np.sum(rate * x, axis=1)
+
+    @staticmethod
+    def grad_log_exp_prior(x, rate=10):
+        return -rate
+
+    def sample_tree(self):
+        """Sample a tree, then set up branch length vector and the translation
+        from splits to branches and back again."""
         self.inst.sample_trees(1)
         tree = self.inst.tree_collection.trees[0]
         branch_lengths_extended = np.array(tree.branch_lengths, copy=False)
@@ -52,21 +70,6 @@ class Burrito:
         self.split_to_branch = np.empty_like(self.branch_to_split)
         for branch in range(len(self.branch_to_split)):
             self.split_to_branch[self.branch_to_split[branch]] = branch
-
-        model = vip.continuous_models.of_name(
-            model_name,
-            variable_count=len(self.branch_lengths),
-            particle_count=particle_count,
-        )
-        self.opt = vip.optimizers.of_name(optimizer_name, model)
-
-    @staticmethod
-    def log_exp_prior(x, rate=10):
-        return np.log(rate) - np.sum(rate * x, axis=1)
-
-    @staticmethod
-    def grad_log_exp_prior(x, rate=10):
-        return -rate
 
     def translate_branches_to_splits(self, branch_vector):
         """The ith entry of the array returned by this function is the entry of
