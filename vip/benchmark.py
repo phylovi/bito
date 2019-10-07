@@ -38,14 +38,14 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
     )
     last_sampled_split_lengths = mcmc_split_lengths.iloc[-1].to_numpy()
     mcmc_split_lengths["total"] = mcmc_split_lengths.sum(axis=1)
-    burro.opt.model.mode_match(last_sampled_split_lengths)
+    burro.opt.scalar_model.mode_match(last_sampled_split_lengths)
 
     start_time = timeit.default_timer()
     burro.gradient_steps(step_count)
     gradient_time = timeit.default_timer() - start_time
     opt_trace = pd.DataFrame({"elbo": burro.opt.trace}).reset_index()
 
-    fit_sample = pd.DataFrame(burro.opt.model.sample(len(mcmc_split_lengths)))
+    fit_sample = pd.DataFrame(burro.opt.scalar_model.sample(len(mcmc_split_lengths)))
     fit_sample["total"] = fit_sample.sum(axis=1)
     fit_sample["type"] = "vb"
     mcmc_split_lengths["type"] = "mcmc"
@@ -53,7 +53,7 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
         [fit_sample.melt(id_vars="type"), mcmc_split_lengths.melt(id_vars="type")]
     )
     fitting_results["variable"] = fitting_results["variable"].astype(str)
-    final_elbo = burro.opt.model.elbo_estimate(
+    final_elbo = burro.opt.scalar_model.elbo_estimate(
         burro.phylo_log_upost, particle_count=particle_count_for_final_elbo_estimate
     )
 

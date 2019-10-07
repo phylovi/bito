@@ -31,12 +31,12 @@ class Burrito:
         # etc gets set up.
         self.sample_topology()
 
-        model = vip.continuous_models.of_name(
+        scalar_model = vip.continuous_models.of_name(
             model_name,
             variable_count=len(self.branch_lengths),
             particle_count=particle_count,
         )
-        self.opt = vip.optimizers.of_name(optimizer_name, model)
+        self.opt = vip.optimizers.of_name(optimizer_name, scalar_model)
 
     @staticmethod
     def log_exp_prior(x, rate=10):
