@@ -29,7 +29,7 @@ class Burrito:
         self.inst.make_beagle_instances(1)
         # It's important to do tree sampling here so that self.branch_lengths
         # etc gets set up.
-        self.sample_tree()
+        self.sample_topology()
 
         model = vip.continuous_models.of_name(
             model_name,
@@ -46,7 +46,7 @@ class Burrito:
     def grad_log_exp_prior(x, rate=10):
         return -rate
 
-    def sample_tree(self):
+    def sample_topology(self):
         """Sample a tree, then set up branch length vector and the translation
         from splits to branches and back again."""
         self.inst.sample_trees(1)
