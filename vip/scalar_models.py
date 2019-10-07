@@ -8,8 +8,8 @@ tf.enable_v2_behavior()
 tfd = tfp.distributions
 
 
-class ContinuousModel(abc.ABC):
-    """An abstract base class for Continuous Models.
+class ScalarModel(abc.ABC):
+    """An abstract base class for Scalar Models.
 
     Samples are laid out as particles x variables, which we will call
     z-shape.
@@ -112,7 +112,7 @@ class ContinuousModel(abc.ABC):
         pass
 
 
-class LogNormalModel(ContinuousModel):
+class LogNormalModel(ScalarModel):
     """A log-normal model with hand-computed gradients."""
 
     def __init__(self, initial_params, variable_count, particle_count):
@@ -205,11 +205,11 @@ def truncated_lognormal_factory(params):
     )
 
 
-class TFContinuousModel(ContinuousModel):
-    """An object to model a collection of variables with a given continuous
+class TFScalarModel(ScalarModel):
+    """An object to model a collection of scalar variables with a given
     distribution type via TensorFlow.
 
-    See ContinuousModel for more information.
+    See ScalarModel for more information.
     """
 
     def __init__(self, q_factory, initial_params, variable_count, particle_count):
@@ -264,7 +264,7 @@ class TFContinuousModel(ContinuousModel):
 
 def of_name(name, *, variable_count, particle_count):
     def build_tf_model(q_factory, initial_params):
-        return TFContinuousModel(
+        return TFScalarModel(
             q_factory, np.array(initial_params), variable_count, particle_count
         )
 

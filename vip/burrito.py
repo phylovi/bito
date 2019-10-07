@@ -1,7 +1,7 @@
 import numpy as np
 
 import libsbn
-import vip.continuous_models
+import vip.scalar_models
 import vip.optimizers
 
 
@@ -31,7 +31,7 @@ class Burrito:
         # etc gets set up.
         self.sample_topology()
 
-        scalar_model = vip.continuous_models.of_name(
+        scalar_model = vip.scalar_models.of_name(
             model_name,
             variable_count=len(self.branch_lengths),
             particle_count=particle_count,
