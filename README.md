@@ -3,7 +3,7 @@
 [![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/phylovi/libsbn.svg)](https://cloud.docker.com/u/phylovi/repository/docker/phylovi/libsbn/general) &nbsp;
 [![Travis CI status](https://travis-ci.org/phylovi/libsbn.svg?branch=master)](https://travis-ci.org/phylovi/libsbn)
 
-We are building a Python-interface C++ library so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let libsbn handle the tree structure and likelihood computations for you.
+We are building a Python-interface C++ library for phylogenetic variational inference so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let libsbn handle the tree structure and likelihood computations for you.
 
 
 ## Dependencies
@@ -20,10 +20,17 @@ conda activate libsbn
 * if you are on linux, use `conda install -y gxx_linux-64`
 * if you are on OS X, use `conda install -y clangxx_osx-64`
 
+The packages in `environment-extras.yml` are not required, but they are handy.
+To install them as well, call:
+
+```
+conda env update -n libsbn -f environment-extras.yml
+```
+
 
 ## Building
 
-`make` will build and run tests.
+`make` will build, run tests, and install the Python packages.
 
 On OS X the build process will also modify the conda environment to point `DYLD_LIBRARY_PATH` to where BEAGLE is installed.
 If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.
@@ -36,8 +43,8 @@ If you get an error about missing BEAGLE, just `conda activate libsbn` again and
 
 The following two papers will explain what this repository is about:
 
-* Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf). Also see [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
-* Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_).
+* Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
+* Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2019/08/24/vbpi.html).
 
 In the off chance that you are citing this library, don't forget to cite the [BEAGLE paper](http://dx.doi.org/10.1093/sysbio/syz020) too, as we use BEAGLE!
 
@@ -77,8 +84,8 @@ There are certainly violations of these guidelines in the code, so fix them when
 
 ### Formatting
 
-Code gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html).
-See the Makefile for the invocation.
+C++ gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html), and Python gets formatted using [Black](https://black.readthedocs.io/en/stable/) and [docformatter](https://pypi.org/project/docformatter/).
+See the Makefile for the invocations.
 
 
 ### Tests

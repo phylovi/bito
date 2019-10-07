@@ -9,6 +9,17 @@ dependencies:
   - flex
   - make
   - numpy
+  - pandas
+  - pip
   - pybind11 >=2.3.0
   - pytest
   - scons
+  - scipy
+  - pip:
+      - black
+      - click
+      - docformatter
+      - enscons
+      - flake8
+      - tensorflow
+      - tensorflow-probability

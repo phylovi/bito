@@ -38,3 +38,8 @@ _ignore
 __pycache__
 .pytest_cache
 .ipynb_checkpoints
+
+# Python packaging
+build/
+dist/
+pip-wheel-metadata/

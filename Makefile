@@ -2,8 +2,9 @@ our_files = src/beagle.cpp src/beagle.hpp src/bitset.cpp src/bitset.hpp src/sbn_
 
 default:
 	scons
+	pip install -U dist/libsbn-*.whl
 	./_build/doctest
-	pytest -s
+	pytest
 	./_build/noodle
 
 bison: src/parser.yy src/scanner.ll
@@ -15,8 +16,9 @@ prep:
 	clang-format -i -style=file src/doctest.cpp
 
 format:
+	black vip/*py test/*py SConstruct
+	docformatter --in-place vip/*py test/*py
 	clang-format -i -style=file $(our_files)
-	yapf -i test_instance.py
 
 clean:
 	rm -rf _build

@@ -17,6 +17,7 @@ typedef uint64_t Tag;
 typedef std::vector<int> SymbolVector;
 typedef std::vector<size_t> SizeVector;
 typedef std::vector<SizeVector> SizeVectorVector;
+using DoubleVectorVector = std::vector<std::vector<double>>;
 typedef std::unordered_map<Tag, double> TagDoubleMap;
 typedef std::unordered_map<Tag, size_t> TagSizeMap;
 typedef std::unordered_map<Tag, std::string> TagStringMap;

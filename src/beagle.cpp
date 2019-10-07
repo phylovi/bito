@@ -11,34 +11,6 @@
 
 namespace beagle {
 
-// DNA assumption here.
-CharIntMap GetSymbolTable() {
-  CharIntMap table({{'A', 0},
-                    {'C', 1},
-                    {'G', 2},
-                    {'T', 3},
-                    {'a', 0},
-                    {'c', 1},
-                    {'g', 2},
-                    {'t', 3},
-                    {'-', 4}});
-  return table;
-}
-
-SymbolVector SymbolVectorOf(const std::string &str,
-                            const CharIntMap &symbol_table) {
-  SymbolVector v(str.size());
-  for (size_t i = 0; i < str.size(); i++) {
-    auto search = symbol_table.find(str[i]);
-    if (search != symbol_table.end()) {
-      v[i] = search->second;
-    } else {
-      Failwith("Symbol '" + std::to_string(str[i]) + "' not known.\n");
-    }
-  }
-  return v;
-}
-
 int CreateInstance(int tip_count, int alignment_length,
                    BeagleInstanceDetails *return_info) {
   // Number of partial buffers to create (input):

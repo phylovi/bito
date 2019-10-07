@@ -103,3 +103,20 @@ StringVectorVector PSPIndexer::StringRepresentationOf(
   }
   return result;
 }
+
+DoubleVectorVector PSPIndexer::SplitLengths(
+    const TreeCollection& tree_collection) const {
+  DoubleVectorVector result(after_rootsplits_index_);
+  auto tree_count = tree_collection.TreeCount();
+  for (size_t tree_index = 0; tree_index < tree_count; tree_index++) {
+    const auto& tree = tree_collection.GetTree(tree_index);
+    // The 0th part of the PSP representation is the rootsplit vector.
+    auto split_indices = RepresentationOf(tree.Topology())[0];
+    const auto branch_lengths = tree.BranchLengths();
+    for (size_t edge_index = 0; edge_index < split_indices.size();
+         edge_index++) {
+      result[split_indices[edge_index]].push_back(branch_lengths[edge_index]);
+    }
+  }
+  return result;
+}

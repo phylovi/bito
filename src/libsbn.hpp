@@ -75,7 +75,7 @@ struct SBNInstance {
   // ** Initialization, destruction, and status
   explicit SBNInstance(const std::string &name)
       : name_(name),
-        symbol_table_(beagle::GetSymbolTable()),
+        symbol_table_(SitePattern::GetSymbolTable()),
         beagle_leaf_count_(0),
         beagle_site_count_(0),
         rescaling_{false} {}
@@ -131,6 +131,11 @@ struct SBNInstance {
   // representations.
   std::pair<StringSet, StringSetVector> StringIndexerRepresentationOf(
       IndexerRepresentation indexer_representation) const;
+
+  // Return a ragged vector of vectors such that the ith vector is the
+  // collection of branch lengths in the current tree collection for the ith
+  // split.
+  DoubleVectorVector SplitLengths() const;
 
   // ** I/O
 
@@ -189,8 +194,8 @@ TEST_CASE("libsbn") {
        {"00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
        {"10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
        {"00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
-  CHECK_EQ(inst.StringIndexerRepresentationOf(
-               IndexerRepresentationOf(inst.indexer_, indexer_test_topology_1)),
+  CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
+               inst.indexer_, indexer_test_topology_1)),
            correct_representation_1);
   auto correct_psp_representation_1 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "01010", "01110"},
@@ -211,8 +216,8 @@ TEST_CASE("libsbn") {
        {"00100|11000|01000", "00001|11110|00010", "00010|11100|00100"},
        {"00111|11000|01000", "00100|00011|00001", "11000|00111|00011"},
        {"00100|11000|01000", "11100|00011|00001", "00011|11100|00100"}});
-  CHECK_EQ(inst.StringIndexerRepresentationOf(
-               IndexerRepresentationOf(inst.indexer_, indexer_test_topology_2)),
+  CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
+               inst.indexer_, indexer_test_topology_2)),
            correct_representation_2);
   auto correct_psp_representation_2 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "00111", "00011"},

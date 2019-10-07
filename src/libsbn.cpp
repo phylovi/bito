@@ -44,13 +44,13 @@ void SBNInstance::ProcessLoadedTrees() {
   index_to_child_.clear();
   parent_to_range_.clear();
   // Start by adding the rootsplits.
-  for (const auto &iter : RootsplitCounterOf(counter)) {
+  for (const auto &iter : SBNMaps::RootsplitCounterOf(counter)) {
     SafeInsert(indexer_, iter.first, index);
     rootsplits_.push_back(iter.first);
     index++;
   }
   // Now add the PCSSs.
-  for (const auto &iter : PCSSCounterOf(counter)) {
+  for (const auto &iter : SBNMaps::PCSSCounterOf(counter)) {
     const auto &parent = iter.first;
     const auto &child_counter = iter.second;
     SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
@@ -147,7 +147,7 @@ std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
     representations.push_back(
-        IndexerRepresentationOf(indexer_, tree.Topology()));
+        SBNMaps::IndexerRepresentationOf(indexer_, tree.Topology()));
   }
   return representations;
 }
@@ -162,8 +162,6 @@ std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations()
   return representations;
 }
 
-// Get the indexer, but reversed and with bitsets appropriately converted to
-// strings.
 StringVector SBNInstance::StringReversedIndexer() const {
   std::vector<std::string> reversed_indexer(indexer_.size());
   for (const auto &iter : indexer_) {
@@ -176,9 +174,6 @@ StringVector SBNInstance::StringReversedIndexer() const {
   return reversed_indexer;
 }
 
-// Turn an IndexerRepresentation into a string representation of the underying
-// bitsets. This is really just so that we can make a test of indexer
-// representations.
 std::pair<StringSet, StringSetVector>
 SBNInstance::StringIndexerRepresentationOf(
     IndexerRepresentation indexer_representation) const {
@@ -200,6 +195,10 @@ SBNInstance::StringIndexerRepresentationOf(
   return {rootsplit_string_set, pcss_string_sets};
 }
 
+DoubleVectorVector SBNInstance::SplitLengths() const {
+  return psp_indexer_.SplitLengths(tree_collection_);
+}
+
 // ** I/O
 
 std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
@@ -213,8 +212,8 @@ std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
 // This function is really just for testing-- it recomputes from scratch.
 std::pair<StringSizeMap, StringPCSSMap> SBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();
-  return {StringifyMap(RootsplitCounterOf(counter).Map()),
-          StringPCSSMapOf(PCSSCounterOf(counter))};
+  return {StringifyMap(SBNMaps::RootsplitCounterOf(counter).Map()),
+          StringPCSSMapOf(SBNMaps::PCSSCounterOf(counter))};
 }
 
 void SBNInstance::ReadNewickFile(std::string fname) {

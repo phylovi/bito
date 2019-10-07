@@ -2,6 +2,8 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "site_pattern.hpp"
+#include <cstdio>
+#include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -9,7 +11,7 @@
 #include "sugar.hpp"
 
 // DNA assumption here.
-CharIntMap GetSymbolTable() {
+CharIntMap SitePattern::GetSymbolTable() {
   CharIntMap table({{'A', 0},
                     {'C', 1},
                     {'G', 2},
@@ -18,11 +20,32 @@ CharIntMap GetSymbolTable() {
                     {'c', 1},
                     {'g', 2},
                     {'t', 3},
-                    {'-', 4}});
+                    {'-', 4},
+                    {'N', 4},
+                    {'?', 4}});
   return table;
 }
 
-struct VectorHasher {
+int SitePattern::SymbolTableAt(const CharIntMap &symbol_table, char c) {
+  auto search = symbol_table.find(c);
+  if (search == symbol_table.end()) {
+    char error[50];
+    std::snprintf(error, sizeof(error), "Symbol '%c' not known.", c);
+    Failwith(error);
+  }
+  return search->second;
+}
+
+SymbolVector SitePattern::SymbolVectorOf(const CharIntMap &symbol_table,
+                                         const std::string &str) {
+  SymbolVector v(str.size());
+  for (size_t i = 0; i < str.size(); i++) {
+    v[i] = SymbolTableAt(symbol_table, str[i]);
+  }
+  return v;
+}
+
+struct IntVectorHasher {
   int operator()(const std::vector<int> &values) const {
     int hash = values[0];
     for (size_t i = 1; i < values.size(); i++) {
@@ -35,14 +58,15 @@ struct VectorHasher {
 void SitePattern::Compress() {
   CharIntMap symbol_table = GetSymbolTable();
   size_t sequence_length = alignment_.Length();
-  std::unordered_map<SymbolVector, double, VectorHasher> patterns;
+  std::unordered_map<SymbolVector, double, IntVectorHasher> patterns;
 
   // Build an unordered map of patterns.
-  for (size_t i = 0; i < sequence_length; i++) {
+  for (size_t pos = 0; pos < sequence_length; pos++) {
     SymbolVector pattern(alignment_.SequenceCount());
     for (const auto &iter : tag_taxon_map_) {
       size_t taxon_number = static_cast<size_t>(UnpackFirstInt(iter.first));
-      pattern[taxon_number] = symbol_table.at(alignment_.at(iter.second)[i]);
+      auto symbol_to_find = alignment_.at(iter.second)[pos];
+      pattern[taxon_number] = SymbolTableAt(symbol_table, symbol_to_find);
     }
     if (patterns.find(pattern) == patterns.end()) {
       SafeInsert(patterns, pattern, 1.);

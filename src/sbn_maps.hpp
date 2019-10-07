@@ -21,10 +21,15 @@ typedef std::pair<SizeVector, SizeVectorVector> IndexerRepresentation;
 
 typedef std::unordered_map<Bitset, DefaultDict<Bitset, size_t>> PCSSDict;
 
+namespace SBNMaps {
 SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
 
 BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
+// This function returns a vector indexed by the edges of the tree and
+// containing the corresponding split index as indexed by the indexer.
+SizeVector SplitIndicesOf(const BitsetSizeMap& indexer,
+                          const Node::NodePtr& topology);
 // This function gives information about the splits and PCSSs of a given
 // topology with respect to the current indexing data structures.
 // Specifically, it returns a pair (rootsplit_result, pcss_result).
@@ -33,11 +38,9 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 // those various virtual rootings. pcss_result is a vector of vectors, giving
 // the indices of sbn_parameters_ corresponding to PCSSs that are present in the
 // given topology.
-IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer_,
+IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
                                               const Node::NodePtr& topology);
-
-SizeVectorVector PSPRepresentationOf(const BitsetSizeMap& indexer,
-                                     const Node::NodePtr& topology);
+}  // namespace SBNMaps
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
@@ -53,7 +56,7 @@ TEST_CASE("SBNMaps") {
                                           {3, Bitset("000100")},
                                           {4, Bitset("001110")}});
 
-  for (const auto& iter : IdIdSetMapOf(topology0)) {
+  for (const auto& iter : SBNMaps::IdIdSetMapOf(topology0)) {
     CHECK_EQ(correct_id_id_set_map.at(iter.first), iter.second);
   }
 
