@@ -1,0 +1,13 @@
+name: libsbn
+channels:
+  - anaconda
+  - bioconda
+  - conda-forge
+  - defaults
+  - etetoolkit
+dependencies:
+  - ete3
+  - jupyter
+  - mrbayes
+  - r-cowplot
+  - rpy2 >=3.1.0

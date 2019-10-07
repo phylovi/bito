@@ -23,6 +23,3 @@ dependencies:
       - flake8
       - tensorflow
       - tensorflow-probability
-  - jupyter
-  - r-cowplot
-  - rpy2 >=3.1.0

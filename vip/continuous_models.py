@@ -16,6 +16,8 @@ class ContinuousModel(abc.ABC):
 
     * p is the target probability.
     * q is the distribution that we're fitting to p.
+
+    * grad_z is laid out as (particle, variable, parameter)
     """
 
     def __init__(self, initial_params, variable_count, particle_count):
