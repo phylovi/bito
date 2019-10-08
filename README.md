@@ -20,7 +20,7 @@ conda activate libsbn
 * if you are on linux, use `conda install -y gxx_linux-64`
 * if you are on OS X, use `conda install -y clangxx_osx-64`
 
-The packages in `environment-extras.yml` are not required, but they are handy.
+The packages in `environment-extras.yml` are not required to use the package or the command-line interface, but they are required to run the notebooks.
 To install them as well, call:
 
 ```
