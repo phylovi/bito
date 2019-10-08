@@ -1,4 +1,3 @@
-import click
 import numpy as np
 import vip.sgd_server
 from vip.sbn_model import SBNModel
