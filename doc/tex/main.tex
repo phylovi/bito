@@ -1,0 +1,64 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+% \usepackage{lineno}
+% \linenumbers
+
+\newcommand{\median}{\operatorname{median}}
+
+\title{libsbn notes}
+\author{Erick}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Abstract here.
+\end{abstract}
+
+
+\section*{Inference}
+
+We want to maximize the ELBO
+
+\[
+L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}\log\left(\frac{p(\bm{Y}|\tau, \bm{\theta}) p(\tau, \bm{\theta})}{q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}\right) \leq \log p(\bm{Y}).
+\]
+
+In general, let $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ be the reparametrization function.
+
+\[
+L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
+    q_{\bm{\phi}}(\tau,\bm{\epsilon})}
+    \log\left(\frac{p(\bm{Y}|\tau,g_{\bm{\psi}}(\bm{\epsilon}|\tau))p(\tau, g_{\bm{\psi}}(\bm{\epsilon}|\tau))}{q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau)}\right).
+\]
+
+Taking the derivative of the numerator of this expression with respect to a $\psi_i$ gives
+
+\[
+    \sum_b \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
+    \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
+\]
+
+
+We will assume that $q_\psi(\bm\theta | \tau)$ factors as a product of terms across edges of the tree.
+
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=0.35\textwidth]{figures/subsplit.pdf}
+% \caption{\
+% A subsplit structure.
+% }
+% \label{fig:subsplit}
+% \end{figure}
+
+
+\bibliographystyle{plain}
+\bibliography{main}
+
+\end{document}
