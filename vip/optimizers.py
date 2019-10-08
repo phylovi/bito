@@ -51,11 +51,6 @@ class SimpleOptimizer(BaseOptimizer):
         self.step_number += 1
         return True
 
-    def gradient_steps(self, target_log_like, grad_target_log_like, step_count):
-        with click.progressbar(range(step_count), label="Gradient descent") as bar:
-            for step in bar:
-                self.gradient_step(target_log_like, grad_target_log_like)
-
 
 class BumpStepsizeOptimizer(BaseOptimizer):
     """An optimizer that increases the stepsize until it's too big, then
@@ -103,12 +98,6 @@ class BumpStepsizeOptimizer(BaseOptimizer):
             np.copyto(self.best_q_params, self.scalar_model.q_params)
         self.step_number += 1
         return np.isfinite(self.trace[-1])
-
-    def gradient_steps(self, target_log_like, grad_target_log_like, step_count):
-        with click.progressbar(range(step_count), label="Gradient descent") as bar:
-            for step in bar:
-                if not self.gradient_step(target_log_like, grad_target_log_like):
-                    raise Exception("ELBO is not finite. Stopping.")
 
 
 def of_name(name, sbn_model: SBNModel, scalar_model: ScalarModel):

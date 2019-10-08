@@ -1,3 +1,4 @@
+import click
 import numpy as np
 
 import libsbn
@@ -123,6 +124,10 @@ class Burrito:
         )
 
     def gradient_steps(self, step_count):
-        self.opt.gradient_steps(
-            self.phylo_log_upost, self.grad_phylo_log_upost, step_count
-        )
+        with click.progressbar(range(step_count), label="Gradient descent") as bar:
+            for step in bar:
+                # TODO self.sample_topology()
+                if not self.opt.gradient_step(
+                    self.phylo_log_upost, self.grad_phylo_log_upost
+                ):
+                    raise Exception("ELBO is not finite. Stopping.")
