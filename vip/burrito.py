@@ -6,7 +6,12 @@ import vip.optimizers
 
 
 class Burrito:
-    """A class to wrap an instance and relevant model data."""
+    """A class to wrap an instance and relevant model data.
+
+    The current division of labor is that the optimizer handles everything after we have
+    sampled a topology, while the burrito can sample topologies and then ask the
+    optimizer to update model parameters accordingly.
+    """
 
     def __init__(
         self,
@@ -31,12 +36,13 @@ class Burrito:
         # etc gets set up.
         self.sample_topology()
 
+        sbn_model = vip.sbn_model.SBNModel(self.inst)
         scalar_model = vip.scalar_models.of_name(
             model_name,
             variable_count=len(self.branch_lengths),
             particle_count=particle_count,
         )
-        self.opt = vip.optimizers.of_name(optimizer_name, scalar_model)
+        self.opt = vip.optimizers.of_name(optimizer_name, sbn_model, scalar_model)
 
     @staticmethod
     def log_exp_prior(x, rate=10):

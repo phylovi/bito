@@ -1,10 +1,13 @@
 import click
 import numpy as np
 import vip.sgd_server
+from vip.sbn_model import SBNModel
+from vip.scalar_models import ScalarModel
 
 
 class BaseOptimizer:
-    def __init__(self, scalar_model):
+    def __init__(self, sbn_model: SBNModel, scalar_model: ScalarModel):
+        self.sbn_model = sbn_model
         self.scalar_model = scalar_model
         self.trace = []
         self.step_number = 0
@@ -35,8 +38,8 @@ class BaseOptimizer:
 
 
 class SimpleOptimizer(BaseOptimizer):
-    def __init__(self, scalar_model):
-        super().__init__(scalar_model)
+    def __init__(self, sbn_model: SBNModel, scalar_model: ScalarModel):
+        super().__init__(sbn_model, scalar_model)
         self.stepsize_decreasing_rate = 1 - 1e-2
 
     def gradient_step(self, target_log_like, grad_target_log_like):
@@ -58,8 +61,8 @@ class BumpStepsizeOptimizer(BaseOptimizer):
     """An optimizer that increases the stepsize until it's too big, then
     decreases it."""
 
-    def __init__(self, scalar_model):
-        super().__init__(scalar_model)
+    def __init__(self, sbn_model: SBNModel, scalar_model: ScalarModel):
+        super().__init__(sbn_model, scalar_model)
         self.window_size = 5
         self.stepsize_increasing_rate = 1.2
         self.stepsize_decreasing_rate = 1 - 1e-2
@@ -108,10 +111,10 @@ class BumpStepsizeOptimizer(BaseOptimizer):
                     raise Exception("ELBO is not finite. Stopping.")
 
 
-def of_name(name, scalar_model):
+def of_name(name, sbn_model: SBNModel, scalar_model: ScalarModel):
     choices = {"simple": SimpleOptimizer, "bump": BumpStepsizeOptimizer}
     if name in choices:
         choice = choices[name]
     else:
         raise Exception(f"Optimizer {name} not known.")
-    return choice(scalar_model)
+    return choice(sbn_model, scalar_model)
