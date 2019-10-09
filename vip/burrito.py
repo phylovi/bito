@@ -47,7 +47,7 @@ class Burrito:
 
     @staticmethod
     def log_exp_prior(x, rate=10):
-        return np.log(rate) - np.sum(rate * x, axis=1)
+        return np.log(rate) * x.shape[1] - rate * np.sum(x, axis=1)
 
     @staticmethod
     def grad_log_exp_prior(x, rate=10):
