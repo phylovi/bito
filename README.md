@@ -20,6 +20,13 @@ conda activate libsbn
 * if you are on linux, use `conda install -y gxx_linux-64`
 * if you are on OS X, use `conda install -y clangxx_osx-64`
 
+libsbn depends on a development branch of BEAGLE. To install this, build the conda recipe and install the local version:
+
+```
+conda build beagle-recipe
+conda install --use-local beagle-lib
+```
+
 The packages in `environment-extras.yml` are not required to use the package or the command-line interface, but they are required to run the notebooks.
 To install them as well, call:
 
