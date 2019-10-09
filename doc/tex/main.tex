@@ -5,8 +5,7 @@
 \usepackage{amssymb}
 \usepackage{graphicx}
 \usepackage[hidelinks]{hyperref}
-% \usepackage{lineno}
-% \linenumbers
+\usepackage{bm}
 
 \newcommand{\median}{\operatorname{median}}
 
@@ -14,28 +13,36 @@
 \author{Erick}
 
 \begin{document}
-\maketitle
-
-\begin{abstract}
-Abstract here.
-\end{abstract}
+%\maketitle
 
 
 \section*{Inference}
 
-We want to maximize the ELBO
-
+\subsection*{Setup}
+We want to maximize the ELBO of our variational parameterization $q$
 \[
 L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}\log\left(\frac{p(\bm{Y}|\tau, \bm{\theta}) p(\tau, \bm{\theta})}{q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}\right) \leq \log p(\bm{Y}).
 \]
-
-In general, let $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ be the reparametrization function.
+over $\phi$ and $\psi$.
+The discrete part of the variational distribution is given by an SBN distribution $q_\phi$, while $\q_\psi$ is the scalar density.
+We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_\psi$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some normal variates $\epsilon$.
+We will use component-wise notation $\theta_b = g_{\bm{b, \psi}}(\bm{\epsilon}|\tau)$ for branch $b$ of the topology $\tau$.
 
 \[
 L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
     q_{\bm{\phi}}(\tau,\bm{\epsilon})}
-    \log\left(\frac{p(\bm{Y}|\tau,g_{\bm{\psi}}(\bm{\epsilon}|\tau))p(\tau, g_{\bm{\psi}}(\bm{\epsilon}|\tau))}{q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau)}\right).
+    \log\left(
+        \frac
+        {p(\bm{Y}|\tau,g_{\bm{\psi}}(\bm{\epsilon}|\tau))p(\tau, g_{\bm{\psi}}(\bm{\epsilon}|\tau))}
+        {q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau)}
+    \right).
 \]
+
+\subsection*{Gradient with respect to SBN parameters $\phi$}
+
+TODO
+
+\subsection*{Gradient with respect to scalar model parameters $\psi$}
 
 Taking the derivative of the numerator of this expression with respect to a $\psi_i$ gives
 
@@ -49,7 +56,7 @@ Taking the derivative of the numerator of this expression with respect to a $\ps
     \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
 \]
 Given that $p(\tau, \bm\theta) = p(\tau) p(\bm\theta | \tau)$ this simplifies to
-\[
+\begin{equation}
     \sum_b
     \left(
         \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
@@ -57,7 +64,8 @@ Given that $p(\tau, \bm\theta) = p(\tau) p(\bm\theta | \tau)$ this simplifies to
         \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
     \right)
     \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
-\]
+    \label{eq:dPdPsi}
+\end{equation}
 The left hand term of the sum is the standard log phylogenetic gradient, while the right hand term is the derivative of the log branch length prior with respect to a specific branch.
 
 In the case where the branch length prior $p(\bm\theta | \tau)$ is a product of terms $\prod_b p_b(\theta_b)$ this becomes very simple:
@@ -66,8 +74,70 @@ In the case where the branch length prior $p(\bm\theta | \tau)$ is a product of 
     \frac{\partial \log p_b(\bm\theta_b)}{\partial \theta_b}.
 \]
 
-We will assume that $q_\psi(\bm\theta | \tau)$ factors as a product of terms across edges of the tree.
+For the denominator we only need to worry about the $q_\psi$ term.
+We will assume that $q_\psi(\bm\theta | \tau)$ factors as a product of terms across branches of the topology, so
+\[
+    - \log q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau) =
+    - \sum_b \log q_{b, \bm{\psi}}(g_{b, \bm{\psi}}(\bm{\epsilon}|\tau)|\tau).
+\]
+Taking the derivative with respect to a $\psi_i$ gives
 
+\begin{equation}
+    - \sum_b
+    \left[
+        \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \psi_i} +
+        \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \theta_b}
+        \frac{\partial g_{b, \bm{\psi}}(\bm{\epsilon}|\tau)}{\partial \psi_i}
+    \right]
+    \label{eq:dQdPsi}
+\end{equation}
+
+So, taking the total of \eqref{eq:dPdPsi} and \eqref{eq:dQdPsi} we get the derivative of $L(\phi, \psi)$ with respect to $\psi_i$ being the sum over $b$ of:
+\begin{equation*}
+        \left(
+            \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
+            +
+            \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
+            -
+            \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \theta_b}
+        \right)
+        \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
+        - \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \psi_i}.
+\end{equation*}
+
+\paragraph{Split-based parametrization:}
+First consider the split-based parametrization given in the ``simple independent approximation'' section of the 2018 ICLR paper.
+If we use $b / \tau$ to mean the split given by branch $b$ of topology $\tau$, then the parametrization is
+\[
+q_{b, \bm{\psi}}(\theta_b | \tau) := q_{b / \tau}(\theta_b)
+\qquad
+g_{b,\psi}(\epsilon | \tau) := g_{b / \tau,\psi}(\epsilon)
+\]
+for some collection of functions $q_{\varsigma, \psi}(\theta)$ with corresponding $g_{\varsigma,\psi}(\epsilon)$ over splits $\varsigma$.
+
+Let's think about the $\partial g_{b,\psi}(\epsilon | \tau) / \partial \psi_i$ term: the derivative of the $b$th branch length of topology $\tau$ with respect to the variational parameter $\psi_i$.
+
+
+\subsubsection*{Families of scalar variational distributions}
+\paragraph{Log-normal:}
+If $q$ is log-normal with location $\mu$ and scale $\sigma$,
+\[
+\log q_{\varsigma, \psi}(\theta) := c - \log \theta - \log \sigma - \frac{(\log \theta - \mu)^2}{2 \sigma^2}.
+\]
+for a constant $c$.
+Now, taking $\theta = \mu_\varsigma + \sigma_\varsigma \epsilon$ this collapses to
+\[
+\log q_{\varsigma, \psi}(\theta) := c - \log \theta - \log \sigma - \frac{1}{2}.
+\]
+% \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \theta_b}
+If $g$ is log-normal,
+$g_{\varsigma,\psi}(\epsilon) := \exp(\mu_\varsigma + \sigma_\varsigma \epsilon)$
+so
+\begin{equation}
+    \frac{\partial g_{\varsigma,\psi}(\epsilon)}{\partial \mu_\varsigma} = g_{\varsigma,\psi}(\epsilon)
+    \qquad
+    \frac{\partial g_{\varsigma,\psi}(\epsilon)}{\partial \sigma_\varsigma} = g_{\varsigma,\psi}(\epsilon) \cdot \epsilon
+\end{equation}
 
 % \begin{figure}[h]
 % \centering
@@ -78,6 +148,7 @@ We will assume that $q_\psi(\bm\theta | \tau)$ factors as a product of terms acr
 % \label{fig:subsplit}
 % \end{figure}
 
+\nocite{vbpi}
 
 \bibliographystyle{plain}
 \bibliography{main}
