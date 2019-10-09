@@ -16,9 +16,7 @@
 %\maketitle
 
 
-\section*{Inference}
-
-\subsection*{Setup}
+\section*{Setup}
 We want to maximize the ELBO of our variational parameterization $q$
 \[
 L(\bm{\phi},{\bm{\psi}}) := \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}\log\left(\frac{p(\bm{Y}|\tau, \bm{\theta}) p(\tau, \bm{\theta})}{q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}\right) \leq \log p(\bm{Y}).
@@ -39,11 +37,11 @@ L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
 \label{eq:L}
 \end{equation}
 
-\subsection*{Gradient with respect to SBN parameters $\phi$}
+\section*{Gradient with respect to SBN parameters $\phi$}
 
 TODO
 
-\subsection*{Gradient with respect to scalar model parameters $\psi$}
+\section*{Gradient with respect to scalar model parameters $\psi$}
 
 Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i$ gives
 
@@ -83,17 +81,7 @@ We will assume that $q_\psi(\bm\theta | \tau)$ factors as a product of terms acr
     - \sum_b \log q_{b, \bm{\psi}}(g_{b, \bm{\psi}}(\bm{\epsilon}|\tau)|\tau).
 \]
 
-\begin{equation}
-    - \sum_b
-    \left[
-        \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \psi_i} +
-        \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \theta_b}
-        \frac{\partial g_{b, \bm{\psi}}(\bm{\epsilon}|\tau)}{\partial \psi_i}
-    \right]
-    \label{eq:dQdPsi}
-\end{equation}
-
-So, taking the total of \eqref{eq:dPdPsi} and \eqref{eq:dQdPsi} we get the derivative of $L(\phi, \psi)$ with respect to $\psi_i$ being the sum over $b$ of:
+So, using \eqref{eq:dPdPsi} we get the derivative of $L(\phi, \psi)$ with respect to $\psi_i$ being the sum over $b$ of:
 \begin{equation*}
     \left(
         \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
@@ -104,7 +92,7 @@ So, taking the total of \eqref{eq:dPdPsi} and \eqref{eq:dQdPsi} we get the deriv
     - \frac{\log q_{b, \psi}(g_{b, \psi}(\epsilon|\tau)|\tau)}{\partial \psi_i}.
 \end{equation*}
 
-\paragraph{Split-based parametrization:}
+\subsubsection*{Split-based parametrization:}
 First consider the split-based parametrization given in the ``simple independent approximation'' section of the 2018 ICLR paper.
 If we use $b / \tau$ to mean the split given by branch $b$ of topology $\tau$, then the parametrization is
 \[
@@ -114,11 +102,9 @@ g_{b,\psi}(\epsilon | \tau) := g_{b / \tau,\psi}(\epsilon)
 \]
 for some collection of functions $q_{\varsigma, \psi}(\theta)$ with corresponding $g_{\varsigma,\psi}(\epsilon)$ over splits $\varsigma$.
 
-Let's think about the $\partial g_{b,\psi}(\epsilon | \tau) / \partial \psi_i$ term: the derivative of the $b$th branch length of topology $\tau$ with respect to the variational parameter $\psi_i$.
 
-
-\subsubsection*{Families of scalar variational distributions}
-\paragraph{Log-normal:}
+\subsection*{Families of scalar variational distributions}
+\subsubsection*{Log-normal:}
 If $q$ is log-normal with location $\mu$ and scale $\sigma$,
 \[
 \log q_{\varsigma, \psi}(\theta) := c - \log \theta - \log \sigma_\varsigma - \frac{(\log \theta - \mu_\varsigma)^2}{2 \sigma_\varsigma^2}.
@@ -142,7 +128,7 @@ Also,
 \begin{equation}
     \frac{\partial g_{\varsigma,\psi}(\epsilon)}{\partial \mu_\varsigma} = g_{\varsigma,\psi}(\epsilon)
     \qquad
-    \frac{\partial g_{\varsigma,\psi}(\epsilon)}{\partial \sigma_\varsigma} = g_{\varsigma,\psi}(\epsilon) \cdot \epsilon
+    \frac{\partial g_{\varsigma,\psi}(\epsilon)}{\partial \sigma_\varsigma} = g_{\varsigma,\psi}(\epsilon) \cdot \epsilon \, .
 \end{equation}
 
 % \begin{figure}[h]
