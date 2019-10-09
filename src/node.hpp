@@ -133,11 +133,11 @@ class Node {
 
   std::string Newick(std::function<std::string(const Node*)> node_labeler,
                      const DoubleVectorOption& branch_lengths =
-                         std::experimental::nullopt) const;
+                         std::nullopt) const;
 
   std::string Newick(
-      const DoubleVectorOption& branch_lengths = std::experimental::nullopt,
-      const TagStringMapOption& node_labels = std::experimental::nullopt,
+      const DoubleVectorOption& branch_lengths = std::nullopt,
+      const TagStringMapOption& node_labels = std::nullopt,
       bool show_tags = false) const;
 
   // Construct a vector such that the ith entry is the id of the parent of the
