@@ -40,10 +40,31 @@ L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
 Taking the derivative of the numerator of this expression with respect to a $\psi_i$ gives
 
 \[
-    \sum_b \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
+    \sum_b
+    \left(
+        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
+        +
+        \frac{\partial \log p(\tau, \bm\theta)}{\partial \theta_b}
+    \right)
     \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
 \]
+Given that $p(\tau, \bm\theta) = p(\tau) p(\bm\theta | \tau)$ this simplifies to
+\[
+    \sum_b
+    \left(
+        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
+        +
+        \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
+    \right)
+    \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
+\]
+The left hand term of the sum is the standard log phylogenetic gradient, while the right hand term is the derivative of the log branch length prior with respect to a specific branch.
 
+In the case where the branch length prior $p(\bm\theta | \tau)$ is a product of terms $\prod_b p_b(\theta_b)$ this becomes very simple:
+\[
+    \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b} =
+    \frac{\partial \log p_b(\bm\theta_b)}{\partial \theta_b}.
+\]
 
 We will assume that $q_\psi(\bm\theta | \tau)$ factors as a product of terms across edges of the tree.
 
