@@ -21,14 +21,14 @@
 \subsection*{Setup}
 We want to maximize the ELBO of our variational parameterization $q$
 \[
-L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}\log\left(\frac{p(\bm{Y}|\tau, \bm{\theta}) p(\tau, \bm{\theta})}{q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}\right) \leq \log p(\bm{Y}).
+L(\bm{\phi},{\bm{\psi}}) := \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}\log\left(\frac{p(\bm{Y}|\tau, \bm{\theta}) p(\tau, \bm{\theta})}{q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}\right) \leq \log p(\bm{Y}).
 \]
 over $\phi$ and $\psi$.
-The discrete part of the variational distribution is given by an SBN distribution $q_\phi$, while $\q_\psi$ is the scalar density.
-We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_\psi$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some normal variates $\epsilon$.
-We will use component-wise notation $\theta_b = g_{\bm{b, \psi}}(\bm{\epsilon}|\tau)$ for branch $b$ of the topology $\tau$.
-
-\[
+The discrete part of the variational distribution is given by an SBN distribution $q_\bm\phi$, while $q_\bm\psi$ is the scalar density.
+We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_\bm\psi$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some normal variates $\bm\epsilon$.
+We will use component-wise notation $\theta_b = g_{b, \psi}(\epsilon|\tau)$ for branch $b$ of the topology $\tau$.
+So, applying the reparametrization trick we get
+\begin{equation}
 L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
     q_{\bm{\phi}}(\tau,\bm{\epsilon})}
     \log\left(
@@ -36,7 +36,8 @@ L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
         {p(\bm{Y}|\tau,g_{\bm{\psi}}(\bm{\epsilon}|\tau))p(\tau, g_{\bm{\psi}}(\bm{\epsilon}|\tau))}
         {q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau)}
     \right).
-\]
+\label{eq:L}
+\end{equation}
 
 \subsection*{Gradient with respect to SBN parameters $\phi$}
 
@@ -44,9 +45,9 @@ TODO
 
 \subsection*{Gradient with respect to scalar model parameters $\psi$}
 
-Taking the derivative of the numerator of this expression with respect to a $\psi_i$ gives
+Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i$ gives
 
-\[
+\begin{equation}
     \sum_b
     \left(
         \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
@@ -54,7 +55,8 @@ Taking the derivative of the numerator of this expression with respect to a $\ps
         \frac{\partial \log p(\tau, \bm\theta)}{\partial \theta_b}
     \right)
     \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
-\]
+    \label{eq:dLdPsi}
+\end{equation}
 Given that $p(\tau, \bm\theta) = p(\tau) p(\bm\theta | \tau)$ this simplifies to
 \begin{equation}
     \sum_b
@@ -80,7 +82,6 @@ We will assume that $q_\psi(\bm\theta | \tau)$ factors as a product of terms acr
     - \log q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau) =
     - \sum_b \log q_{b, \bm{\psi}}(g_{b, \bm{\psi}}(\bm{\epsilon}|\tau)|\tau).
 \]
-Taking the derivative with respect to a $\psi_i$ gives
 
 \begin{equation}
     - \sum_b
@@ -94,15 +95,13 @@ Taking the derivative with respect to a $\psi_i$ gives
 
 So, taking the total of \eqref{eq:dPdPsi} and \eqref{eq:dQdPsi} we get the derivative of $L(\phi, \psi)$ with respect to $\psi_i$ being the sum over $b$ of:
 \begin{equation*}
-        \left(
-            \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
-            +
-            \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
-            -
-            \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \theta_b}
-        \right)
-        \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
-        - \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \psi_i}.
+    \left(
+        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
+        +
+        \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
+    \right)
+    \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
+    - \frac{\log q_{b, \psi}(g_{b, \psi}(\epsilon|\tau)|\tau)}{\partial \psi_i}.
 \end{equation*}
 
 \paragraph{Split-based parametrization:}
@@ -122,17 +121,24 @@ Let's think about the $\partial g_{b,\psi}(\epsilon | \tau) / \partial \psi_i$ t
 \paragraph{Log-normal:}
 If $q$ is log-normal with location $\mu$ and scale $\sigma$,
 \[
-\log q_{\varsigma, \psi}(\theta) := c - \log \theta - \log \sigma - \frac{(\log \theta - \mu)^2}{2 \sigma^2}.
+\log q_{\varsigma, \psi}(\theta) := c - \log \theta - \log \sigma_\varsigma - \frac{(\log \theta - \mu_\varsigma)^2}{2 \sigma_\varsigma^2}.
 \]
 for a constant $c$.
-Now, taking $\theta = \mu_\varsigma + \sigma_\varsigma \epsilon$ this collapses to
-\[
-\log q_{\varsigma, \psi}(\theta) := c - \log \theta - \log \sigma - \frac{1}{2}.
-\]
-% \frac{\partial \log q_{b, \bm{\psi}}(\theta_b | \tau)}{\partial \theta_b}
-If $g$ is log-normal,
-$g_{\varsigma,\psi}(\epsilon) := \exp(\mu_\varsigma + \sigma_\varsigma \epsilon)$
-so
+Because taking $g_{\varsigma,\psi}(\epsilon) := \exp(\mu_\varsigma + \sigma_\varsigma \epsilon)$,
+\begin{align*}
+\log q_{\varsigma, \psi}(g_{\varsigma,\psi}(\epsilon))
+& := c - (\mu_\varsigma + \sigma_\varsigma \epsilon)
+    - \log \sigma_\varsigma
+    - \frac{(\mu_\varsigma + \sigma_\varsigma \epsilon - \mu_\varsigma)^2}{2 \sigma_\varsigma^2} \\
+ & := c - \mu_\varsigma - \sigma_\varsigma \epsilon - \log \sigma_\varsigma - \frac{1}{2}
+\end{align*}
+Thus,
+\begin{equation}
+    \frac{\partial \log q_{\varsigma, \psi}(g_{\varsigma,\psi}(\epsilon))}{\partial \mu_\varsigma} = -1
+    \qquad
+    \frac{\partial \log q_{\varsigma, \psi}(g_{\varsigma,\psi}(\epsilon))}{\partial \mu_\varsigma} = -\epsilon - \frac{1}{\sigma_\varsigma}.
+\end{equation}
+Also,
 \begin{equation}
     \frac{\partial g_{\varsigma,\psi}(\epsilon)}{\partial \mu_\varsigma} = g_{\varsigma,\psi}(\epsilon)
     \qquad
