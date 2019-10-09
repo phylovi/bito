@@ -170,14 +170,14 @@ void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
   }
 }
 
-std::experimental::optional<uint32_t> Bitset::SingletonOption() const {
+std::optional<uint32_t> Bitset::SingletonOption() const {
   bool found_already = false;
   uint32_t found_index;
   for (uint32_t i = 0; i < size(); i++) {
     if (value_[i]) {
       if (found_already) {
         // We previously found an index, so this isn't a singleton.
-        return std::experimental::nullopt;
+        return std::nullopt;
       }  // else
       found_already = true;
       found_index = i;
@@ -186,7 +186,7 @@ std::experimental::optional<uint32_t> Bitset::SingletonOption() const {
   if (found_already) {
     return found_index;
   }  // else
-  return std::experimental::nullopt;
+  return std::nullopt;
 }
 
 // ** SBN-related functions
