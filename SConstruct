@@ -44,7 +44,7 @@ conda_base_dir = re.search("(.*)/envs/.*", conda_env_dir).group(1)
 
 
 def find_conda_pkg_dir_containing(glob_str):
-    for possible_location in [conda_base_dir, conda_env_dir]:
+    for possible_location in [conda_env_dir, conda_base_dir]:
         g = glob.glob(possible_location + glob_str)
         if g:
             return g[0]
