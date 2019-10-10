@@ -23,7 +23,12 @@
 \section*{Setup}
 We want to maximize the ELBO of our variational parameterization $q$
 \[
-L(\bm{\phi},{\bm{\psi}}) := \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}\log\left(\frac{p(\bm{Y}|\tau, \bm{\theta}) p(\tau, \bm{\theta})}{q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}\right) \leq \log p(\bm{Y}).
+L(\bm{\phi},{\bm{\psi}}) :=
+\mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}
+\log\left(
+    \frac{p(\bm{Y}, \tau, \bm{\theta})}
+    {q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}
+\right) \leq \log p(\bm{Y}).
 \]
 over $\phi$ and $\psi$.
 The discrete part of the variational distribution is given by an SBN distribution $q_{\bm\phi}$, while $q_{\bm\psi}$ is the scalar density.
@@ -36,7 +41,7 @@ L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
     q_{\bm{\phi}}(\tau,\bm{\epsilon})}
     \log\left(
         \frac
-        {p(\bm{Y}|\tau,g_{\bm{\psi}}(\bm{\epsilon}|\tau))p(\tau, g_{\bm{\psi}}(\bm{\epsilon}|\tau))}
+        {p(\bm{Y},\tau,g_{\bm{\psi}}(\bm{\epsilon}|\tau))}
         {q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau)}
     \right).
 \label{eq:L}
@@ -48,28 +53,27 @@ TODO
 
 \section*{Gradient with respect to scalar model parameters $\psi$}
 
+This section concerns taking the derivative of \eqref{eq:L} with respect to a $\psi_i$.
 Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i$ gives
-
 \begin{equation}
     \sum_b
-    \left(
-        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
-        +
-        \frac{\partial \log p(\tau, \bm\theta)}{\partial \theta_b}
-    \right)
+    \frac{\partial \log p(\bm{Y} , \tau, \bm\theta)}{\partial \theta_b} \,
     \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}
     \label{eq:dLdPsi}
 \end{equation}
-Given that $p(\tau, \bm\theta) = p(\tau) p(\bm\theta | \tau)$ this simplifies to
+
+For the left hand side, we have
+\[
+p(\bm{Y},\tau,\bm\theta) =
+p(\bm{Y}|\tau,\bm\theta) \, p(\bm\theta | \tau) \, p(\tau).
+\]
+So
 \begin{equation}
-    \sum_b
-    \left(
-        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
-        +
-        \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
-    \right)
-    \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}
-    \label{eq:dPdPsi}
+\frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b} =
+\frac{\partial \log p(\bm{Y} | \tau, \bm\theta)}{\partial \theta_b}
++
+\frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
+\label{eq:dPdPsi}
 \end{equation}
 The left hand term of the sum is the standard log phylogenetic gradient, while the right hand term is the derivative of the log branch length prior with respect to a specific branch.
 
@@ -77,6 +81,11 @@ In the case where the branch length prior $p(\bm\theta | \tau)$ is a product of 
 \[
     \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b} =
     \frac{\partial \log p_b(\theta_b)}{\partial \theta_b}.
+\]
+
+To keep things compact, though, we'll assume that this is all understood and will stick with the unexpanded form of the unnormalized posterior
+\[
+    \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}.
 \]
 
 For the denominator we only need to worry about the $q_{\bm\psi}$ term.
@@ -88,14 +97,11 @@ We will assume that $q_{\bm\psi}(\bm\theta | \tau)$ factors as a product of term
 
 So, using \eqref{eq:dPdPsi} we get the derivative of $L(\bm\phi, \bm\psi)$ with respect to $\psi_i$ being the sum over $b$ of:
 \begin{equation*}
-    \left(
-        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
-        +
-        \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
-    \right)
+    \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}
     \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}
     - \frac{\log q_{b, \bm\psi}(g_{b, \bm\psi}(\bm\epsilon|\tau)|\tau)}{\partial \psi_i}.
 \end{equation*}
+
 
 \subsubsection*{Split-based parametrization:}
 First consider the split-based parametrization given in the ``simple independent approximation'' section of the 2018 ICLR paper.
@@ -110,11 +116,7 @@ for some collection of functions $q(\theta; \psi)$ with corresponding $g(\epsilo
 To implement this, index $\bm\psi$ by splits.
 To get the gradient of $L(\bm\phi, \bm\psi)$ with respect to $\bm\psi$, we can start with a zero vector then loop over the branches $b$, and for each one incrementing the $b \slash \tau$ entry by
 \begin{equation*}
-    \left(
-        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
-        +
-        \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
-    \right)
+    \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}
     \frac{\partial \gSplit(\epsilon_b; \psi_{b \slash \tau})}{\partial \psi_{b \slash \tau}}
     - \frac{\log \qSplit(\gSplit(\epsilon_b; \psi_{b \slash \tau}); \psi_{b \slash \tau})}{\partial \psi_{b \slash \tau}}.
 \end{equation*}
@@ -135,44 +137,63 @@ g_{b,\psi}(\bm\epsilon | \tau) := \gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \p
 \]
 So we can do a similar procedure as before, in which we loop over all branches $b$ of $\tau$, but now we also loop over (sub)splits $\varsigma \in b \psp \tau$, and for each one incrementing the corresponding entry of the gradient by:
 \begin{equation*}
-    \left(
-        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
-        +
-        \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
-    \right)
+    \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}
     \frac{\partial \gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau})}{\partial \psi_{\varsigma}}
-    - \frac{\log \qPSP(\gSplit(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau}); \bm\psi_{b \psp \tau})}{\partial \psi_{\varsigma}}.
+    - \frac{\log \qPSP(\gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau}); \bm\psi_{b \psp \tau})}{\partial \psi_{\varsigma}}.
 \end{equation*}
 The fact that this is a sum across branches is justified by our assumption that $q$ factors across branches of the tree.
 
+\subsubsection*{Generalization:}
+This general recipe works given
+\begin{enumerate}
+    \item a variational distribution for branch lengths $q$ that factors as a product across branches
+    \item a matching reparametrization function $g$
+    \item a means of mapping a branch $b$ to the variables involved in its parametrization
+    \item a means of taking the relevant derivatives
+\end{enumerate}
 
 \subsection*{Families of scalar variational distributions}
 \subsubsection*{Log-normal:}
-If $q$ is log-normal with location $\mu$ and scale $\sigma$,
+If $q$ is log-normal, we take $\psi_\varsigma$ as being the pair of location $\mu_\varsigma$ and scale $\sigma_\varsigma$,
 \[
-\log q_{\varsigma, \psi}(\theta) := c - \log \theta - \log \sigma_\varsigma - \frac{(\log \theta - \mu_\varsigma)^2}{2 \sigma_\varsigma^2}.
+\log q(\theta; \psi_\varsigma) := c - \log \theta - \log \sigma_\varsigma - \frac{(\log \theta - \mu_\varsigma)^2}{2 \sigma_\varsigma^2}.
 \]
 for a constant $c$.
-Because taking $g_{\varsigma,\psi}(\epsilon) := \exp(\mu_\varsigma + \sigma_\varsigma \epsilon)$,
+Because taking $g(\epsilon; \psi_\varsigma) := \exp(\mu_\varsigma + \sigma_\varsigma \epsilon)$,
 \begin{align*}
-\log q_{\varsigma, \psi}(g_{\varsigma,\psi}(\epsilon))
+\log q(g(\epsilon; \psi_\varsigma); \psi_\varsigma)
 & := c - (\mu_\varsigma + \sigma_\varsigma \epsilon)
     - \log \sigma_\varsigma
     - \frac{(\mu_\varsigma + \sigma_\varsigma \epsilon - \mu_\varsigma)^2}{2 \sigma_\varsigma^2} \\
- & := c - \mu_\varsigma - \sigma_\varsigma \epsilon - \log \sigma_\varsigma - \frac{1}{2}
+ & := c - \mu_\varsigma - \sigma_\varsigma \epsilon - \log \sigma_\varsigma - \frac{1}{2}.
 \end{align*}
 Thus,
 \begin{equation}
-    \frac{\partial \log q_{\varsigma, \psi}(g_{\varsigma,\psi}(\epsilon))}{\partial \mu_\varsigma} = -1
+    \frac{\partial \log q(g(\epsilon; \psi_\varsigma); \psi_\varsigma)}{\partial \mu_\varsigma} = -1
     \qquad
-    \frac{\partial \log q_{\varsigma, \psi}(g_{\varsigma,\psi}(\epsilon))}{\partial \mu_\varsigma} = -\epsilon - \frac{1}{\sigma_\varsigma}.
+    \frac{\partial \log q(g(\epsilon; \psi_\varsigma); \psi_\varsigma)}{\partial \mu_\varsigma} = -\epsilon - \frac{1}{\sigma_\varsigma}.
 \end{equation}
 Also,
 \begin{equation}
-    \frac{\partial g_{\varsigma,\psi}(\epsilon)}{\partial \mu_\varsigma} = g_{\varsigma,\psi}(\epsilon)
+    \frac{\partial g(\epsilon; \psi_\varsigma)}{\partial \mu_\varsigma} = g(\epsilon; \psi_\varsigma)
     \qquad
-    \frac{\partial g_{\varsigma,\psi}(\epsilon)}{\partial \sigma_\varsigma} = g_{\varsigma,\psi}(\epsilon) \cdot \epsilon \, .
+    \frac{\partial g(\epsilon; \psi_\varsigma)}{\partial \sigma_\varsigma} = g(\epsilon; \psi_\varsigma) \cdot \epsilon \, .
 \end{equation}
+
+
+\subsubsection*{Log-normal PSP:}
+TODO write this out on paper
+\[
+\qPSP(\bm\theta; \bm\psi_{b \psp \tau}) = ...
+\]
+Then make sure that the lognormal decomposition with q of g goes through.
+\[
+    \frac{\partial \gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau})}{\partial \psi_{\varsigma}}
+\]
+\[
+    - \frac{\log \qPSP(\gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau}); \bm\psi_{b \psp \tau})}{\partial \psi_{\varsigma}}.
+\]
+
 
 % \begin{figure}[h]
 % \centering
