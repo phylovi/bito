@@ -26,8 +26,8 @@ We want to maximize the ELBO of our variational parameterization $q$
 L(\bm{\phi},{\bm{\psi}}) := \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}\log\left(\frac{p(\bm{Y}|\tau, \bm{\theta}) p(\tau, \bm{\theta})}{q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}\right) \leq \log p(\bm{Y}).
 \]
 over $\phi$ and $\psi$.
-The discrete part of the variational distribution is given by an SBN distribution $q_\bm\phi$, while $q_\bm\psi$ is the scalar density.
-We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_\bm\psi$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some normal variates $\bm\epsilon$ to get $\bm\theta$.
+The discrete part of the variational distribution is given by an SBN distribution $q_{\bm\phi}$, while $q_{\bm\psi}$ is the scalar density.
+We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_{\bm\psi}$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some normal variates $\bm\epsilon$ to get $\bm\theta$.
 We will use component-wise notation $\theta_b = g_{b, \psi}(\bm\epsilon|\tau)$ for branch $b$ of the topology $\tau$.
 So, applying the reparametrization trick we get
 \begin{equation}
@@ -78,8 +78,8 @@ In the case where the branch length prior $p(\bm\theta | \tau)$ is a product of 
     \frac{\partial \log p_b(\theta_b)}{\partial \theta_b}.
 \]
 
-For the denominator we only need to worry about the $q_\bm\psi$ term.
-We will assume that $q_\bm\psi(\bm\theta | \tau)$ factors as a product of terms across branches of the topology, so
+For the denominator we only need to worry about the $q_{\bm\psi}$ term.
+We will assume that $q_{\bm\psi}(\bm\theta | \tau)$ factors as a product of terms across branches of the topology, so
 \[
     - \log q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau) =
     - \sum_b \log q_{b, \bm{\psi}}(g_{b, \bm{\psi}}(\bm{\epsilon}|\tau)|\tau).
