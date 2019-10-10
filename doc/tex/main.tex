@@ -7,7 +7,11 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{bm}
 
-\newcommand{\median}{\operatorname{median}}
+\newcommand{\psp}{\slash\!\!\slash}
+\newcommand{\qSplit}{q^\textsf{S}\hspace{-1pt}}
+\newcommand{\gSplit}{g^\textsf{S}\hspace{-1pt}}
+\newcommand{\qPSP}{q^\textsf{PSP}\hspace{-1pt}}
+\newcommand{\gPSP}{g^\textsf{PSP}\hspace{-1pt}}
 
 \title{libsbn notes}
 \author{Erick}
@@ -23,8 +27,8 @@ L(\bm{\phi},{\bm{\psi}}) := \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\the
 \]
 over $\phi$ and $\psi$.
 The discrete part of the variational distribution is given by an SBN distribution $q_\bm\phi$, while $q_\bm\psi$ is the scalar density.
-We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_\bm\psi$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some normal variates $\bm\epsilon$.
-We will use component-wise notation $\theta_b = g_{b, \psi}(\epsilon|\tau)$ for branch $b$ of the topology $\tau$.
+We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_\bm\psi$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some normal variates $\bm\epsilon$ to get $\bm\theta$.
+We will use component-wise notation $\theta_b = g_{b, \psi}(\bm\epsilon|\tau)$ for branch $b$ of the topology $\tau$.
 So, applying the reparametrization trick we get
 \begin{equation}
 L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
@@ -52,7 +56,7 @@ Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i
         +
         \frac{\partial \log p(\tau, \bm\theta)}{\partial \theta_b}
     \right)
-    \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
+    \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}
     \label{eq:dLdPsi}
 \end{equation}
 Given that $p(\tau, \bm\theta) = p(\tau) p(\bm\theta | \tau)$ this simplifies to
@@ -63,7 +67,7 @@ Given that $p(\tau, \bm\theta) = p(\tau) p(\bm\theta | \tau)$ this simplifies to
         +
         \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
     \right)
-    \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
+    \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}
     \label{eq:dPdPsi}
 \end{equation}
 The left hand term of the sum is the standard log phylogenetic gradient, while the right hand term is the derivative of the log branch length prior with respect to a specific branch.
@@ -71,37 +75,62 @@ The left hand term of the sum is the standard log phylogenetic gradient, while t
 In the case where the branch length prior $p(\bm\theta | \tau)$ is a product of terms $\prod_b p_b(\theta_b)$ this becomes very simple:
 \[
     \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b} =
-    \frac{\partial \log p_b(\bm\theta_b)}{\partial \theta_b}.
+    \frac{\partial \log p_b(\theta_b)}{\partial \theta_b}.
 \]
 
-For the denominator we only need to worry about the $q_\psi$ term.
-We will assume that $q_\psi(\bm\theta | \tau)$ factors as a product of terms across branches of the topology, so
+For the denominator we only need to worry about the $q_\bm\psi$ term.
+We will assume that $q_\bm\psi(\bm\theta | \tau)$ factors as a product of terms across branches of the topology, so
 \[
     - \log q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau) =
     - \sum_b \log q_{b, \bm{\psi}}(g_{b, \bm{\psi}}(\bm{\epsilon}|\tau)|\tau).
 \]
 
-So, using \eqref{eq:dPdPsi} we get the derivative of $L(\phi, \psi)$ with respect to $\psi_i$ being the sum over $b$ of:
+So, using \eqref{eq:dPdPsi} we get the derivative of $L(\bm\phi, \bm\psi)$ with respect to $\psi_i$ being the sum over $b$ of:
 \begin{equation*}
     \left(
         \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
         +
         \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
     \right)
-    \frac{\partial g_{b,\psi}(\epsilon | \tau)}{\partial \psi_i}
-    - \frac{\log q_{b, \psi}(g_{b, \psi}(\epsilon|\tau)|\tau)}{\partial \psi_i}.
+    \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}
+    - \frac{\log q_{b, \bm\psi}(g_{b, \bm\psi}(\bm\epsilon|\tau)|\tau)}{\partial \psi_i}.
 \end{equation*}
 
 \subsubsection*{Split-based parametrization:}
 First consider the split-based parametrization given in the ``simple independent approximation'' section of the 2018 ICLR paper.
-If we use $b / \tau$ to mean the split given by branch $b$ of topology $\tau$, then the parametrization is
+If we use $b \slash \tau$ to mean the split given by branch $b$ of topology $\tau$, then the parametrization is
 \[
-q_{b, \bm{\psi}}(\theta_b | \tau) := q_{b / \tau}(\theta_b)
+q_{b, \bm{\psi}}(\theta_b | \tau) := \qSplit(\theta_b; \psi_{b \slash \tau})
 \qquad
-g_{b,\psi}(\epsilon | \tau) := g_{b / \tau,\psi}(\epsilon)
+g_{b,\bm\psi}(\bm\epsilon | \tau) := \gSplit(\epsilon_b; \psi_{b \slash \tau}).
 \]
-for some collection of functions $q_{\varsigma, \psi}(\theta)$ with corresponding $g_{\varsigma,\psi}(\epsilon)$ over splits $\varsigma$.
+for some collection of functions $q(\theta; \psi)$ with corresponding $g(\epsilon; \psi)$.
 
+To implement this, index $\bm\psi$ by splits.
+To get the gradient of $L(\bm\phi, \bm\psi)$ with respect to $\bm\psi$, we can start with a zero vector then loop over the branches $b$, and for each one incrementing the $b \slash \tau$ entry by
+\begin{equation*}
+    \left(
+        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
+        +
+        \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
+    \right)
+    \frac{\partial \gSplit(\epsilon_b; \psi_{b \slash \tau})}{\partial \psi_{b \slash \tau}}
+    - \frac{\log \qSplit(\gSplit(\epsilon_b; \psi_{b \slash \tau}); \psi_{b \slash \tau})}{\partial \psi_{b \slash \tau}}.
+\end{equation*}
+
+
+\subsubsection*{Primary subsplit pair parametrization:}
+Next consider the primary subsplit pair parametrization.
+If we use $b \psp \tau$ to mean the primary subsplit pair given by branch $b$ of topology $\tau$, then the parametrization is formally very similar:
+% TODO what is this bold epsilon?
+\[
+q_{b, \bm{\psi}}(\theta_b | \tau) := \qPSP(\theta_b; \bm\psi_{b \psp \tau})
+\qquad
+g_{b,\psi}(\bm\epsilon | \tau) := \gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau}).
+\]
+Note that $\bm\psi_{b \psp \tau}$ is a vector of the entries of $\bm\psi$ for the three edges contributing to the PSP.
+
+In the PSP parametrization, the parameters of the approximating distribution for a PSP $b \psp \tau$ are the sum of the split corresponding to the split $b \slash \tau$ and the two primary subsplits refining $b \slash \tau$.
 
 \subsection*{Families of scalar variational distributions}
 \subsubsection*{Log-normal:}
