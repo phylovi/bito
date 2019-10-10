@@ -13,10 +13,6 @@ if "CONDA_PREFIX" not in os.environ:
         "\nThis SConstruct is meant to be run in the libsbn conda environment; "
         "see README for installation process."
     )
-if "CC" not in os.environ:
-    sys.exit(
-        "\nDid you install compilers using conda? See README for installation process."
-    )
 
 metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
 full_tag = enscons.get_abi3_tag()
@@ -27,11 +23,13 @@ env = Environment(
     WHEEL_TAG=full_tag,
     ENV=os.environ,
     CPPPATH=["include", "src", pybind11.get_include()],
+    CC="clang",
     # CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion', '-pthread'],
     CCFLAGS=["-O3", "-pthread"],
-    CXXFLAGS=["-std=c++17"],
-    CC=os.environ["CC"],
-    CXX=os.environ["CXX"],
+    CXX="clang",
+    CXXFLAGS=["-std=c++17", "-stdlib=libc++"],
+    LINKFLAGS="-stdlib=libc++",
+    LIBS=["hmsbeagle", "pthread", "c++", "c++abi", "m"],
 )
 
 # Sometimes conda installs the pybind11 headers inside a pythonXXX directory, so we get
@@ -101,10 +99,9 @@ extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
     ["_build/pylibsbn.cpp"] + sources,
     SHLIBPREFIX="",
-    LIBS=["hmsbeagle"],
 )
-doctest = env.Program(["_build/doctest.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
-noodle = env.Program(["_build/noodle.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
+doctest = env.Program(["_build/doctest.cpp"] + sources)
+noodle = env.Program(["_build/noodle.cpp"] + sources)
 
 py_source = Glob("vip/*.py")
 
