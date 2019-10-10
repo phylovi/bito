@@ -27,7 +27,8 @@ L(\bm{\phi},{\bm{\psi}}) := \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\the
 \]
 over $\phi$ and $\psi$.
 The discrete part of the variational distribution is given by an SBN distribution $q_{\bm\phi}$, while $q_{\bm\psi}$ is the scalar density.
-We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_{\bm\psi}$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some normal variates $\bm\epsilon$ to get $\bm\theta$.
+We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_{\bm\psi}$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some variates $\bm\epsilon$ drawn from a fixed distribution to get $\bm\theta$.
+Said another way, each entry of $\bm{\epsilon}$ cam be obtained by applying the relevant standardization function to a sample from $q_{\bm\psi}$.
 We will use component-wise notation $\theta_b = g_{b, \psi}(\bm\epsilon|\tau)$ for branch $b$ of the topology $\tau$.
 So, applying the reparametrization trick we get
 \begin{equation}
@@ -120,17 +121,30 @@ To get the gradient of $L(\bm\phi, \bm\psi)$ with respect to $\bm\psi$, we can s
 
 
 \subsubsection*{Primary subsplit pair parametrization:}
-Next consider the primary subsplit pair parametrization.
-If we use $b \psp \tau$ to mean the primary subsplit pair given by branch $b$ of topology $\tau$, then the parametrization is formally very similar:
-% TODO what is this bold epsilon?
+Next consider the primary subsplit pair (PSP) parametrization.
+We use $b \psp \tau$ to mean the primary subsplit pair given by branch $b$ of topology $\tau$, which is explained in the paper.
+In the PSP parametrization, the parameters of the approximating distribution for a PSP $b \psp \tau$ are the sum of the split corresponding to the split $b \slash \tau$ and the two primary subsplits refining $b \slash \tau$.
+
+We will use $\bm\psi_{b \psp \tau}$ to represent a vector of the entries of $\bm\psi$ for the three variables contributing to the PSP.
+We will use $\bm\epsilon_{b \psp \tau}$ to denote the standardized versions of the draws from the random variables used to parameterize $b \psp \tau$.
+The parametrization is formally very similar:
 \[
 q_{b, \bm{\psi}}(\theta_b | \tau) := \qPSP(\theta_b; \bm\psi_{b \psp \tau})
 \qquad
 g_{b,\psi}(\bm\epsilon | \tau) := \gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau}).
 \]
-Note that $\bm\psi_{b \psp \tau}$ is a vector of the entries of $\bm\psi$ for the three edges contributing to the PSP.
+So we can do a similar procedure as before, in which we loop over all branches $b$ of $\tau$, but now we also loop over (sub)splits $\varsigma \in b \psp \tau$, and for each one incrementing the corresponding entry of the gradient by:
+\begin{equation*}
+    \left(
+        \frac{\partial \log p(Y | \tau, \bm\theta)}{\partial \theta_b}
+        +
+        \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
+    \right)
+    \frac{\partial \gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau})}{\partial \psi_{\varsigma}}
+    - \frac{\log \qPSP(\gSplit(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau}); \bm\psi_{b \psp \tau})}{\partial \psi_{\varsigma}}.
+\end{equation*}
+The fact that this is a sum across branches is justified by our assumption that $q$ factors across branches of the tree.
 
-In the PSP parametrization, the parameters of the approximating distribution for a PSP $b \psp \tau$ are the sum of the split corresponding to the split $b \slash \tau$ and the two primary subsplits refining $b \slash \tau$.
 
 \subsection*{Families of scalar variational distributions}
 \subsubsection*{Log-normal:}
