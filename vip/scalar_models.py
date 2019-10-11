@@ -11,7 +11,7 @@ tfd = tfp.distributions
 class ScalarModel(abc.ABC):
     """An abstract base class for Scalar Models.
 
-    Samples are laid out as particles x variables, which we will call
+    Samples are laid out as particles x branches, which we will call
     z-shape.
 
     * p is the target probability.
@@ -25,10 +25,10 @@ class ScalarModel(abc.ABC):
         self.q_params = np.full((variable_count, len(initial_params)), initial_params)
         self.particle_count = particle_count
         # The current stored sample.
-        self.z = None
-        # The gradient of z with respect to the parameters of q.
+        self.brlen_sample = None
+        # The gradient of brlen_sample with respect to the parameters of q.
         self.grad_z = None
-        # The stochastic gradient of log sum q for z.
+        # The stochastic gradient of log sum q for the current sample.
         self.grad_sum_log_q = None
 
     @property
@@ -40,43 +40,12 @@ class ScalarModel(abc.ABC):
         return self.q_params.shape[1]
 
     def clear_sample(self):
-        self.z = None
+        self.brlen_sample = None
         self.grad_z = None
         self.grad_sum_log_q = None
 
     def suggested_step_size(self):
         return np.average(np.abs(self.q_params), axis=0) / 100
-
-    def elbo_estimate(self, log_p, particle_count=None):
-        """A naive Monte Carlo estimate of the ELBO.
-
-        log_p must take an argument of z-shape.
-        """
-        if particle_count is None:
-            particle_count = self.particle_count
-        z, log_prob = self.sample(particle_count, log_prob=True)
-        return (np.sum(log_p(z) - log_prob)) / particle_count
-
-    @staticmethod
-    def _chain_rule(grad_log_p_z, grad_z):
-        return (
-            np.tensordot(grad_log_p_z.transpose(), grad_z, axes=1)
-            .diagonal()
-            .transpose()
-        )
-
-    @staticmethod
-    def _slow_chain_rule(grad_log_p_z, grad_z):
-        particle_count, variable_count, param_count = grad_z.shape
-        result = np.zeros((variable_count, param_count))
-        for variable in range(variable_count):
-            for param in range(param_count):
-                for particle in range(particle_count):
-                    result[variable, param] += (
-                        grad_log_p_z[particle, variable]
-                        * grad_z[particle, variable, param]
-                    )
-        return result
 
     def elbo_gradient_using_current_sample(self, grad_log_p_z, test_chain_rule=False):
         assert self.grad_z is not None
@@ -84,31 +53,23 @@ class ScalarModel(abc.ABC):
             raise Exception(
                 "Infinite gradient given to elbo_gradient_using_current_sample."
             )
-        if test_chain_rule:
-            if not np.allclose(
-                self._chain_rule(grad_log_p_z, self.grad_z),
-                self._slow_chain_rule(grad_log_p_z, self.grad_z),
-            ):
-                print("Warning: chain rule isn't close. Here's the difference:")
-                print(
-                    self._chain_rule(grad_log_p_z, self.grad_z)
-                    - self._slow_chain_rule(grad_log_p_z, self.grad_z)
-                )
-        unnormalized_result = (
+        unnormalized_grad = (
             self._chain_rule(grad_log_p_z, self.grad_z) - self.grad_sum_log_q
         )
-        return unnormalized_result / self.particle_count
+        return unnormalized_grad / self.particle_count
 
     @abc.abstractmethod
     def mode_match(self, modes):
         pass
 
     @abc.abstractmethod
-    def sample(self, particle_count, log_prob=False):
+    def sample(self, particle_count, which_variables, log_prob=False):
         pass
 
     @abc.abstractmethod
-    def sample_and_prep_gradients(self):
+    def sample_and_prep_gradients(self, which_variables):
+        """Sample the variables in which_variables and prepare so we can take a
+        gradient with respect to them."""
         pass
 
 
@@ -119,13 +80,11 @@ class LogNormalModel(ScalarModel):
         super().__init__(initial_params, variable_count, particle_count)
         self.name = "LogNormal"
 
-    @property
-    def mu(self):
-        return self.q_params[:, 0]
+    def mu(self, which_variables):
+        return self.q_params[which_variables, 0]
 
-    @property
-    def sigma(self):
-        return self.q_params[:, 1]
+    def sigma(self, which_variables):
+        return self.q_params[which_variables, 1]
 
     def mode_match(self, modes):
         """Some crazy heuristics for mode matching with the given branch
@@ -135,46 +94,58 @@ class LogNormalModel(ScalarModel):
         # TODO do we want to have the lognormal variance be in log space? Or do we want
         # to clip it?
         self.q_params[:, 1] = -0.1 * biclipped_log_modes
-        self.q_params[:, 0] = np.square(self.sigma) + log_modes
+        self.q_params[:, 0] = (
+            np.square(self.sigma(np.arange(self.variable_count))) + log_modes
+        )
 
-    def sample(self, particle_count, log_prob=False):
-        z = np.random.lognormal(
-            self.mu, self.sigma, (particle_count, self.variable_count)
+    def sample(self, particle_count, which_variables, log_prob=False):
+        # This brlen_sample is in branch space.
+        brlen_sample = np.random.lognormal(
+            self.mu(which_variables),
+            self.sigma(which_variables),
+            (particle_count, len(which_variables)),
         )
         if log_prob:
-            return z, self.log_prob(z)
+            return brlen_sample, self.log_prob(brlen_sample, which_variables)
         else:
-            return z
+            return brlen_sample
 
-    def log_prob(self, z):
-        """Return a log probability for each of the particles given in z."""
-        log_z = np.log(z)
+    def log_prob(self, brlen_sample, which_variables):
+        """Return a log probability for each of the particles given in brlen_sample."""
+        assert brlen_sample.shape[1] == which_variables.size
+        log_z = np.log(brlen_sample)
         # Here's the fancy stable version.
-        # ratio = np.exp(np.log((np.log(np.log(z)-mu)**2) - np.log(sigma**2))
-        ratio = (log_z - self.mu) ** 2 / (2 * self.sigma ** 2)
+        # ratio = np.exp(np.log((np.log(np.log(brlen_sample)-mu)**2) - np.log(sigma**2))
+        ratio = (log_z - self.mu(which_variables)) ** 2 / (
+            2 * self.sigma(which_variables) ** 2
+        )
         # Below we're summing over axis 1, which is the variable axis.
         result = (
             -0.5 * np.log(2 * np.pi)
             - np.sum(log_z, axis=1)
-            - np.sum(np.log(self.sigma))
+            - np.sum(np.log(self.sigma(which_variables)))
             - np.sum(ratio, axis=1)
         )
         return result
 
-    def sample_and_prep_gradients(self):
-        self.z = self.sample(self.particle_count)
-        epsilon = (np.log(self.z) - self.mu) / self.sigma
-        self.grad_z = np.empty((self.particle_count, self.variable_count, 2))
-        self.grad_z[:, :, 0] = self.z
-        self.grad_z[:, :, 1] = self.z * epsilon
-        self.grad_sum_log_q = np.empty((self.variable_count, 2))
-        # To get the gradients below, recall that log z is mu+sigma*epsilon in the
-        # reparametrization trick. If we substitute that into the log density of the
-        # normal distribution and take the derivatives we get this.
-        self.grad_sum_log_q[:, 0] = -1.0 * self.particle_count
-        self.grad_sum_log_q[:, 1] = (
-            -np.sum(epsilon, axis=0) - self.particle_count / self.sigma
+    def sample_and_prep_gradients(self, which_variables):
+        # This is a sample in branch space.
+        self.brlen_sample = self.sample(self.particle_count, which_variables)
+        epsilon = (np.log(self.brlen_sample) - self.mu(which_variables)) / self.sigma(
+            which_variables
         )
+        # The gradient is in variable space.
+        self.grad_z = np.empty((self.particle_count, self.variable_count, 2))
+        self.grad_z[:, which_variables, 0] = self.brlen_sample
+        self.grad_z[:, which_variables, 1] = self.brlen_sample * epsilon
+        self.grad_sum_log_q = np.empty((self.variable_count, 2))
+        # To get the gradients below, recall that log brlen_sample is mu+sigma*epsilon
+        # in the reparametrization trick. If we substitute that into the log density of
+        # the normal distribution and take the derivatives we get this.
+        self.grad_sum_log_q[which_variables, 0] = -1.0 * self.particle_count
+        self.grad_sum_log_q[which_variables, 1] = -np.sum(
+            epsilon, axis=0
+        ) - self.particle_count / self.sigma(which_variables)
 
 
 def exponential_factory(params):
@@ -239,27 +210,28 @@ class TFScalarModel(ScalarModel):
 
     def sample(self, particle_count, log_prob=False):
         q_distribution = self.q_factory(self.q_params)
-        z = q_distribution.sample(particle_count).numpy()
+        brlen_sample = q_distribution.sample(particle_count).numpy()
         if log_prob:
-            return z, np.sum(q_distribution.log_prob(z), axis=1)
+            return brlen_sample, np.sum(q_distribution.log_prob(brlen_sample), axis=1)
         else:
-            return z
+            return brlen_sample
 
-    def sample_and_prep_gradients(self):
+    def sample_and_prep_gradients(self, which_variables):
         """Take a sample from q and prepare a gradient of the sample and of log
         q with respect to the parameters of q."""
+        raise NotImplementedError("We don't use which_variables yet.")
         with tf.GradientTape(persistent=True) as g:
             tf_params = tf.constant(self.q_params, dtype=tf.float32)
             g.watch(tf_params)
             q_distribution = self.q_factory(tf_params)
             tf_z = q_distribution.sample(self.particle_count)
             q_term = tf.math.reduce_sum(q_distribution.log_prob(tf_z))
-        self.z = tf_z.numpy()
+        self.brlen_sample = tf_z.numpy()
         # The Jacobian is laid out as particles x edges x edges x params.
         self.grad_z = np.sum(g.jacobian(tf_z, tf_params).numpy(), axis=2)
         self.grad_sum_log_q = g.gradient(q_term, tf_params).numpy()
         del g  # Should happen anyway but being explicit to remember.
-        return self.z
+        return self.brlen_sample
 
 
 def of_name(name, *, variable_count, particle_count):

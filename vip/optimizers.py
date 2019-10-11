@@ -15,19 +15,19 @@ class BaseOptimizer:
             {"scalar_params": scalar_model.q_params.shape}
         )
 
-    def _simple_gradient_step(self, grad_log_p_z, history=None):
+    def _simple_gradient_step(self, vars_grad, history=None):
         """Just take a simple gradient step.
 
         Return True if the gradient step was successful.
         """
-        scalar_grad = self.scalar_model.elbo_gradient_using_current_sample(grad_log_p_z)
-        if not np.isfinite(np.array([scalar_grad])).all():
+        assert self.scalar_model.q_params.shape == vars_grad.shape
+        if not np.isfinite(np.array([vars_grad])).all():
             self.scalar_model.clear_sample()
             return False
         update_dict = self.sgd_server.adam(
             {"scalar_params": self.step_size},
             {"scalar_params": self.scalar_model.q_params},
-            {"scalar_params": scalar_grad},
+            {"scalar_params": vars_grad},
         )
         self.scalar_model.q_params += update_dict["scalar_params"]
         self.scalar_model.clear_sample()
@@ -41,9 +41,32 @@ class SimpleOptimizer(BaseOptimizer):
         super().__init__(sbn_model, scalar_model)
         self.stepsize_decreasing_rate = 1 - 1e-2
 
-    def gradient_step(self, target_log_like, grad_target_log_like):
-        self.scalar_model.sample_and_prep_gradients()
-        if self._simple_gradient_step(grad_target_log_like(self.scalar_model.z)):
+    def gradient_step(self, target_log_like, grad_target_log_like, which_variables):
+        """
+        Take a gradient step.
+
+        target_log_like and grad_target_log_like are all in terms of branch lengths.
+        """
+        self.scalar_model.sample_and_prep_gradients(which_variables)
+        # This gradient is in terms of branch lengths...
+        grad_log_p_z = grad_target_log_like(self.scalar_model.brlen_sample)
+        # ... so we need to move it into variable space.
+        vars_grad = np.zeros(
+            (self.scalar_model.variable_count, self.scalar_model.param_count)
+        )
+        for branch_index, variable_index in enumerate(which_variables):
+            # import pdb
+            # pdb.set_trace()
+            for param_index in range(self.scalar_model.param_count):
+                vars_grad[variable_index, param_index] += (
+                    np.sum(
+                        grad_log_p_z[:, branch_index]
+                        * self.scalar_model.grad_z[:, variable_index, param_index],
+                        axis=0,
+                    )
+                    - self.scalar_model.grad_sum_log_q[variable_index, param_index]
+                )
+        if self._simple_gradient_step(vars_grad):
             self.step_size *= self.stepsize_decreasing_rate
         else:
             self.step_size /= 2
@@ -74,7 +97,8 @@ class BumpStepsizeOptimizer(BaseOptimizer):
         self.step_size /= self.stepsize_drop_from_peak
         self.stepsize_increasing = False
 
-    def gradient_step(self, target_log_like, grad_target_log_like):
+    def gradient_step(self, target_log_like, grad_target_log_like, which_variables):
+        raise NotImplementedError("We don't use which_variables yet.")
         # Are we starting to decrease our objective function?
         if self.stepsize_increasing and self.step_number >= 2 * self.window_size:
             last_epoch = self.trace[-self.window_size :]
@@ -87,7 +111,9 @@ class BumpStepsizeOptimizer(BaseOptimizer):
         else:
             self.step_size *= self.stepsize_decreasing_rate
         self.scalar_model.sample_and_prep_gradients()
-        if not self._simple_gradient_step(grad_target_log_like(self.scalar_model.z)):
+        if not self._simple_gradient_step(
+            grad_target_log_like(self.scalar_model.brlen_sample)
+        ):
             self._turn_around()  # Gradient step failed.
         self.trace.append(
             self.scalar_model.elbo_estimate(target_log_like, particle_count=500)
