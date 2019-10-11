@@ -74,34 +74,25 @@ class Burrito:
         self.branch_to_split = np.array(
             self.inst.get_psp_indexer_representations()[0][0]
         )
-        # The ith entry of this array gives the index of the branch
-        # corresponding to the ith split.
-        self.split_to_branch = np.empty_like(self.branch_to_split)
-        for branch in range(len(self.branch_to_split)):
-            self.split_to_branch[self.branch_to_split[branch]] = branch
 
-    def log_like_or_grad_with(self, branch_lengths, grad=False):
-        """Calculate log likelihood or the gradient with given split
-        lengths."""
+    def log_like_with(self, branch_lengths):
         self.branch_lengths[:] = branch_lengths
-        if grad:
-            _, log_grad = self.inst.branch_gradients()[0]
-            # This :-2 is because of the two trailing zeroes that appear at the end of
-            # the gradient.
-            result = np.array(log_grad)[:-2]
-        else:
-            result = np.array(self.inst.log_likelihoods())[0]
-        return result
+        return np.array(self.inst.log_likelihoods())[0]
+
+    def grad_log_like_with(self, branch_lengths):
+        self.branch_lengths[:] = branch_lengths
+        _, log_grad = self.inst.branch_gradients()[0]
+        # This :-2 is because of the two trailing zeroes that appear at the end of
+        # the gradient.
+        return np.array(log_grad)[:-2]
 
     def phylo_log_like(self, branch_lengths_arr):
         """Calculate phylogenetic log likelihood for each of the split length
         assignments laid out along axis 1."""
-        return np.apply_along_axis(self.log_like_or_grad_with, 1, branch_lengths_arr)
+        return np.apply_along_axis(self.log_like_with, 1, branch_lengths_arr)
 
     def grad_phylo_log_like(self, branch_lengths_arr):
-        return np.apply_along_axis(
-            lambda x: self.log_like_or_grad_with(x, grad=True), 1, branch_lengths_arr
-        )
+        return np.apply_along_axis(self.grad_log_like_with, 1, branch_lengths_arr)
 
     def phylo_log_upost(self, branch_lengths_arr):
         """The unnormalized phylogenetic posterior with an Exp(10) prior."""
@@ -119,9 +110,10 @@ class Burrito:
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:
                 # SOON: self.sample_topology()
-                which_variables = self.branch_to_split
                 if not self.opt.gradient_step(
-                    self.phylo_log_upost, self.grad_phylo_log_upost, which_variables
+                    self.phylo_log_upost,
+                    self.grad_phylo_log_upost,
+                    self.branch_to_split,
                 ):
                     raise Exception("ELBO is not finite. Stopping.")
 
