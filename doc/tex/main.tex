@@ -159,7 +159,7 @@ We could develop some new notation, but we might as well just look at \eqref{eq:
 
 \subsection*{Families of scalar variational distributions}
 \subsubsection*{Log-normal:}
-If $q$ is log-normal, we take $\psi_\varsigma$ as being the pair of location $\mu_\varsigma$ and scale $\sigma_\varsigma$,
+If $q$ is log-normal, we take $\psi_\varsigma$ as being the location-scale pair $(\mu_\varsigma, \sigma_\varsigma)$,
 \[
 \log q(\theta; \psi_\varsigma) := c - \log \theta - \log \sigma_\varsigma - \frac{(\log \theta - \mu_\varsigma)^2}{2 \sigma_\varsigma^2}.
 \]
@@ -204,7 +204,6 @@ q\left(\theta; \left(
         \textstyle\sum_{\varsigma \in b \psp \tau} \sigma_\varsigma
     \right)
 \]
-% TODO think again: there is a single epsilon
 The derivatives are just like the above, with the only ``tricky'' part being
 \[
     \frac
@@ -214,7 +213,7 @@ The derivatives are just like the above, with the only ``tricky'' part being
     - \epsilon
     - \frac{1}{\textstyle\sum_{\varsigma' \in b \psp \tau} \sigma_{\varsigma'}}
 \]
-which is clearly different than $\frac{1}{\sigma_\varsigma}$ as for the simpler split-based distribution above.
+when $\varsigma \in b \psp \tau$ (and zero otherwise), which is clearly different than $\frac{1}{\sigma_\varsigma}$ as for the simpler split-based distribution above.
 
 % \begin{figure}[h]
 % \centering
