@@ -38,8 +38,6 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
     )
     last_sampled_split_lengths = mcmc_split_lengths.iloc[-1].to_numpy()
     mcmc_split_lengths["total"] = mcmc_split_lengths.sum(axis=1)
-    # ONEBUG
-    last_sampled_split_lengths = np.append(last_sampled_split_lengths, [1.0])
     burro.opt.scalar_model.mode_match(last_sampled_split_lengths)
 
     start_time = timeit.default_timer()

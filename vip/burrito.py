@@ -41,8 +41,7 @@ class Burrito:
         sbn_model = vip.sbn_model.SBNModel(self.inst)
         scalar_model = vip.scalar_models.of_name(
             model_name,
-            # ONEBUG
-            variable_count=1 + len(self.branch_lengths),
+            variable_count=len(self.branch_lengths),
             particle_count=particle_count,
         )
         self.opt = vip.optimizers.of_name(optimizer_name, sbn_model, scalar_model)
