@@ -120,17 +120,15 @@ class LogNormalModel(ScalarModel):
         return result
 
     def sample_and_prep_gradients(self, which_variables):
-        # This is a sample in branch space.
         self.theta_sample = self.sample(self.particle_count, which_variables)
         epsilon = (np.log(self.theta_sample) - self.mu(which_variables)) / self.sigma(
             which_variables
         )
-        # The gradient is in variable space.
+        # See the tex for details about this gradient.
         self.dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
         self.dg_dpsi[:, which_variables, 0] = self.theta_sample
         self.dg_dpsi[:, which_variables, 1] = self.theta_sample * epsilon
         self.dlog_sum_q_dpsi = np.empty((self.variable_count, 2))
-        # See the tex for details about this gradient.
         self.dlog_sum_q_dpsi[which_variables, 0] = -1.0 * self.particle_count
         self.dlog_sum_q_dpsi[which_variables, 1] = -np.sum(
             epsilon, axis=0
