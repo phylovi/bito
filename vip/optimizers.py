@@ -48,7 +48,7 @@ class SimpleOptimizer(BaseOptimizer):
         target_log_like and grad_target_log_like are all in terms of branch lengths.
         """
         self.scalar_model.sample_and_prep_gradients(which_variables)
-        grad_log_p_z = grad_target_log_like(self.scalar_model.brlen_sample)
+        grad_log_p_z = grad_target_log_like(self.scalar_model.theta_sample)
         vars_grad = np.zeros(
             (self.scalar_model.variable_count, self.scalar_model.param_count)
         )
@@ -57,10 +57,10 @@ class SimpleOptimizer(BaseOptimizer):
                 vars_grad[variable_index, param_index] += (
                     np.sum(
                         grad_log_p_z[:, branch_index]
-                        * self.scalar_model.grad_z[:, variable_index, param_index],
+                        * self.scalar_model.dg_dpsi[:, variable_index, param_index],
                         axis=0,
                     )
-                    - self.scalar_model.grad_sum_log_q[variable_index, param_index]
+                    - self.scalar_model.dlog_sum_q_dpsi[variable_index, param_index]
                 )
         if self._simple_gradient_step(vars_grad):
             self.step_size *= self.stepsize_decreasing_rate
@@ -108,7 +108,7 @@ class BumpStepsizeOptimizer(BaseOptimizer):
             self.step_size *= self.stepsize_decreasing_rate
         self.scalar_model.sample_and_prep_gradients()
         if not self._simple_gradient_step(
-            grad_target_log_like(self.scalar_model.brlen_sample)
+            grad_target_log_like(self.scalar_model.theta_sample)
         ):
             self._turn_around()  # Gradient step failed.
         self.trace.append(
