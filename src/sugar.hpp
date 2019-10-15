@@ -5,7 +5,7 @@
 #define SRC_SUGAR_HPP_
 
 #include <cassert>
-#include <experimental/optional>
+#include <optional>
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
@@ -24,8 +24,8 @@ typedef std::unordered_map<Tag, std::string> TagStringMap;
 typedef std::unordered_map<std::string, std::string> StringStringMap;
 typedef std::unordered_map<char, int> CharIntMap;
 // This will be STL in C++17 but we include the above header to fake it.
-typedef std::experimental::optional<std::vector<double>> DoubleVectorOption;
-typedef std::experimental::optional<TagStringMap> TagStringMapOption;
+typedef std::optional<std::vector<double>> DoubleVectorOption;
+typedef std::optional<TagStringMap> TagStringMapOption;
 typedef std::vector<std::string> StringVector;
 typedef std::vector<StringVector> StringVectorVector;
 typedef std::unordered_set<std::string> StringSet;

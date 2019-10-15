@@ -7,7 +7,7 @@
 // Turn off clang formatting so that it keeps this order, which is the one
 // preferred by cpplint.
 // clang-format off
-#include <experimental/optional>
+#include <optional>
 #include <algorithm>
 #include <functional>
 #include <string>
@@ -62,7 +62,7 @@ class Bitset {
   void CopyFrom(const Bitset &other, size_t begin, bool flip);
   // If the bitset only has one bit on, then we return the location of that bit.
   // Otherwise, return nullopt.
-  std::experimental::optional<uint32_t> SingletonOption() const;
+  std::optional<uint32_t> SingletonOption() const;
 
   // These methods require the bitset to be a "subsplit bitset" of even length,
   // consisting of two equal sized "chunks" representing the two sides of the
