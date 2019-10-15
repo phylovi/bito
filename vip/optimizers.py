@@ -122,7 +122,8 @@ class BumpStepsizeOptimizer(BaseOptimizer):
 
 
 def of_name(name, sbn_model: SBNModel, scalar_model: ScalarModel):
-    choices = {"simple": SimpleOptimizer, "bump": BumpStepsizeOptimizer}
+    # choices = {"simple": SimpleOptimizer, "bump": BumpStepsizeOptimizer}
+    choices = {"simple": SimpleOptimizer}
     if name in choices:
         choice = choices[name]
     else:

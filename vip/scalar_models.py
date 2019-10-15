@@ -25,7 +25,6 @@ class ScalarModel(abc.ABC):
 
     * p is the target probability.
     * q is the distribution that we're fitting to p.
-
     """
 
     def __init__(self, initial_params, variable_count, particle_count):
@@ -81,31 +80,27 @@ class LogNormalModel(ScalarModel):
         return self.q_params[which_variables, 1]
 
     def mode_match(self, modes):
-        """Some crazy heuristics for mode matching with the given branch
-        lengths."""
+        """Some crazy heuristics for mode matching with the given theta
+        values."""
         log_modes = np.log(np.clip(modes, 1e-6, None))
         biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1 - 1e-6))
-        # TODO do we want to have the lognormal variance be in log space? Or do we want
-        # to clip it?
+        # Issue #118: do we want to have the lognormal variance be in log space? Or do
+        # we want to clip it?
         self.q_params[:, 1] = -0.1 * biclipped_log_modes
         self.q_params[:, 0] = (
             np.square(self.sigma(np.arange(self.variable_count))) + log_modes
         )
 
-    def sample(self, particle_count, which_variables, log_prob=False):
-        # This theta_sample is in branch space.
-        theta_sample = np.random.lognormal(
+    def sample(self, particle_count, which_variables):
+        return np.random.lognormal(
             self.mu(which_variables),
             self.sigma(which_variables),
             (particle_count, len(which_variables)),
         )
-        if log_prob:
-            return theta_sample, self.log_prob(theta_sample, which_variables)
-        else:
-            return theta_sample
 
     def log_prob(self, theta_sample, which_variables):
-        """Return a log probability for each of the particles given in theta_sample."""
+        """Return a log probability for each of the particles given in
+        theta_sample."""
         assert theta_sample.shape[1] == which_variables.size
         log_z = np.log(theta_sample)
         # Here's the fancy stable version.
@@ -187,8 +182,6 @@ class TFScalarModel(ScalarModel):
         lengths."""
         log_modes = np.log(np.clip(modes, 1e-6, None))
         biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1 - 1e-6))
-        # TODO do we want to have the lognormal variance be in log space? Or do we want
-        # to clip it?
         if self.name == "TFLogNormal":
             self.q_params[:, 1] = -0.1 * biclipped_log_modes
             self.q_params[:, 0] = np.square(self.q_params[:, 1]) + log_modes

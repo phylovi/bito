@@ -123,7 +123,10 @@ class Burrito:
         """A naive Monte Carlo estimate of the ELBO."""
         if particle_count is None:
             particle_count = self.particle_count
-        z, log_prob = self.opt.scalar_model.sample(
-            particle_count, which_variables=self.branch_to_split, log_prob=True
+        theta = self.opt.scalar_model.sample(
+            particle_count, which_variables=self.branch_to_split
         )
-        return (np.sum(self.phylo_log_upost(z) - log_prob)) / particle_count
+        log_prob = self.opt.scalar_model.log_prob(
+            theta, which_variables=self.branch_to_split
+        )
+        return (np.sum(self.phylo_log_upost(theta) - log_prob)) / particle_count
