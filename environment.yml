@@ -6,7 +6,6 @@ channels:
   - defaults
 dependencies:
   - conda-build
-  - cxx-compiler
   - flex
   - make
   - numpy
