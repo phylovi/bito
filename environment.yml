@@ -5,8 +5,8 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - {{ compiler('cxx') }}
   - conda-build
+  - cxx-compiler
   - flex
   - make
   - numpy
