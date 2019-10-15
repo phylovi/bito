@@ -52,8 +52,9 @@ def find_conda_pkg_dir_containing(glob_str):
 beagle_pkg = find_conda_pkg_dir_containing("/pkgs/beagle-lib*/")
 beagle_lib = beagle_pkg + "lib"
 beagle_include = beagle_pkg + "include/libhmsbeagle-1"
+stdcxx_lib = find_conda_pkg_dir_containing("/pkgs/libstdcxx*/") + "lib"
 
-for path in [beagle_lib, beagle_include]:
+for path in [beagle_lib, beagle_include, stdcxx_lib]:
     if not os.path.isdir(path):
         sys.exit("Couldn't find:\n" + path)
 
@@ -65,7 +66,9 @@ def set_library_path(ld_variable_name):
     conda_vars_dir = conda_env_dir + "/etc/conda"
     os.makedirs(conda_vars_dir + "/activate.d", exist_ok=True)
     with open(conda_vars_dir + "/activate.d/vars.sh", "w") as fp:
-        fp.write(f"export {ld_variable_name}=" + beagle_lib + "\n")
+        fp.write(
+            f"export {ld_variable_name}=" + ":".join([beagle_lib, stdcxx_lib]) + "\n"
+        )
     os.makedirs(conda_vars_dir + "/deactivate.d", exist_ok=True)
     with open(conda_vars_dir + "/deactivate.d/vars.sh", "w") as fp:
         fp.write(f"unset {ld_variable_name}\n")
