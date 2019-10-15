@@ -9,9 +9,10 @@ import vip.optimizers
 class Burrito:
     """A class to wrap an instance and relevant model data.
 
-    The current division of labor is that the optimizer handles everything after we have
-    sampled a topology, while the burrito can sample topologies and then ask the
-    optimizer to update model parameters accordingly.
+    The current division of labor is that the optimizer handles
+    everything after we have sampled a topology, while the burrito can
+    sample topologies and then ask the optimizer to update model
+    parameters accordingly.
     """
 
     def __init__(
@@ -47,6 +48,9 @@ class Burrito:
 
     @staticmethod
     def log_exp_prior(x, rate=10):
+        # This commented version is the correct one, and will be fixed when I address
+        # issue #116.
+        # return np.log(rate) * x.shape[1] - rate * np.sum(x, axis=1)
         return np.log(rate) - np.sum(rate * x, axis=1)
 
     @staticmethod
@@ -72,62 +76,57 @@ class Burrito:
         self.branch_to_split = np.array(
             self.inst.get_psp_indexer_representations()[0][0]
         )
-        # The ith entry of this array gives the index of the branch
-        # corresponding to the ith split.
-        self.split_to_branch = np.empty_like(self.branch_to_split)
-        for branch in range(len(self.branch_to_split)):
-            self.split_to_branch[self.branch_to_split[branch]] = branch
 
-    def translate_branches_to_splits(self, branch_vector):
-        """The ith entry of the array returned by this function is the entry of
-        branch_vector corresponding to the ith split."""
-        return branch_vector[self.split_to_branch]
+    def log_like_with(self, branch_lengths):
+        self.branch_lengths[:] = branch_lengths
+        return np.array(self.inst.log_likelihoods())[0]
 
-    def translate_splits_to_branches(self, split_vector):
-        """The ith entry of the array returned by this function is the entry of
-        split_vector corresponding to the ith branch."""
-        return split_vector[self.branch_to_split]
+    def grad_log_like_with(self, branch_lengths):
+        self.branch_lengths[:] = branch_lengths
+        _, log_grad = self.inst.branch_gradients()[0]
+        # This :-2 is because of the two trailing zeroes that appear at the end of
+        # the gradient.
+        return np.array(log_grad)[:-2]
 
-    def log_like_or_grad_with(self, split_lengths, grad=False):
-        """Calculate log likelihood or the gradient with given split
-        lengths."""
-        self.branch_lengths[:] = self.translate_splits_to_branches(split_lengths)
-        if grad:
-            _, log_grad = self.inst.branch_gradients()[0]
-            # This :-2 is because of the two trailing zeroes that appear at the end of
-            # the gradient.
-            result = self.translate_branches_to_splits(np.array(log_grad)[:-2])
-        else:
-            result = np.array(self.inst.log_likelihoods())[0]
-        return result
-
-    def phylo_log_like(self, split_lengths_arr):
+    def phylo_log_like(self, branch_lengths_arr):
         """Calculate phylogenetic log likelihood for each of the split length
         assignments laid out along axis 1."""
-        return np.apply_along_axis(self.log_like_or_grad_with, 1, split_lengths_arr)
+        return np.apply_along_axis(self.log_like_with, 1, branch_lengths_arr)
 
-    def grad_phylo_log_like(self, split_lengths_arr):
-        return np.apply_along_axis(
-            lambda x: self.log_like_or_grad_with(x, grad=True), 1, split_lengths_arr
-        )
+    def grad_phylo_log_like(self, branch_lengths_arr):
+        return np.apply_along_axis(self.grad_log_like_with, 1, branch_lengths_arr)
 
-    def phylo_log_upost(self, split_lengths_arr):
+    def phylo_log_upost(self, branch_lengths_arr):
         """The unnormalized phylogenetic posterior with an Exp(10) prior."""
-        return self.phylo_log_like(split_lengths_arr) + Burrito.log_exp_prior(
-            split_lengths_arr
+        return self.phylo_log_like(branch_lengths_arr) + Burrito.log_exp_prior(
+            branch_lengths_arr
         )
 
-    def grad_phylo_log_upost(self, split_lengths_arr):
+    def grad_phylo_log_upost(self, branch_lengths_arr):
         """The unnormalized phylogenetic posterior with an Exp(10) prior."""
-        return self.grad_phylo_log_like(split_lengths_arr) + Burrito.grad_log_exp_prior(
-            split_lengths_arr
-        )
+        return self.grad_phylo_log_like(
+            branch_lengths_arr
+        ) + Burrito.grad_log_exp_prior(branch_lengths_arr)
 
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:
-                # TODO self.sample_topology()
+                # SOON: self.sample_topology()
                 if not self.opt.gradient_step(
-                    self.phylo_log_upost, self.grad_phylo_log_upost
+                    self.phylo_log_upost,
+                    self.grad_phylo_log_upost,
+                    self.branch_to_split,
                 ):
                     raise Exception("ELBO is not finite. Stopping.")
+
+    def elbo_estimate(self, particle_count=None):
+        """A naive Monte Carlo estimate of the ELBO."""
+        if particle_count is None:
+            particle_count = self.particle_count
+        theta = self.opt.scalar_model.sample(
+            particle_count, which_variables=self.branch_to_split
+        )
+        log_prob = self.opt.scalar_model.log_prob(
+            theta, which_variables=self.branch_to_split
+        )
+        return (np.sum(self.phylo_log_upost(theta) - log_prob)) / particle_count

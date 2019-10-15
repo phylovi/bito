@@ -1,0 +1,234 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[hidelinks]{hyperref}
+\usepackage{bm}
+
+\newcommand{\psp}{\slash\!\!\slash}
+\newcommand{\qSplit}{q^\textsf{S}\hspace{-1pt}}
+\newcommand{\gSplit}{g^\textsf{S}\hspace{-1pt}}
+\newcommand{\qPSP}{q^\textsf{PSP}\hspace{-1pt}}
+\newcommand{\gPSP}{g^\textsf{PSP}\hspace{-1pt}}
+
+\title{libsbn notes}
+\author{Erick}
+
+\begin{document}
+%\maketitle
+
+
+\section*{Setup}
+We want to maximize the ELBO of our variational parameterization $q$
+\[
+L(\bm{\phi},{\bm{\psi}}) :=
+\mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}
+\log\left(
+    \frac{p(\bm{Y}, \tau, \bm{\theta})}
+    {q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}
+\right) \leq \log p(\bm{Y}).
+\]
+over $\phi$ and $\psi$.
+The discrete part of the variational distribution is given by an SBN distribution $q_{\bm\phi}$, while $q_{\bm\psi}$ is the scalar density.
+We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_{\bm\psi}$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some variates $\bm\epsilon$ drawn from a fixed distribution to get $\bm\theta$.
+Said another way, each entry of $\bm{\epsilon}$ cam be obtained by applying the relevant standardization function to a sample from $q_{\bm\psi}$.
+We will use component-wise notation $\theta_b = g_{b, \psi}(\bm\epsilon|\tau)$ for branch $b$ of the topology $\tau$.
+So, applying the reparametrization trick we get
+\begin{equation}
+L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
+    q_{\bm{\phi}}(\tau,\bm{\epsilon})}
+    \log\left(
+        \frac
+        {p(\bm{Y},\tau,g_{\bm{\psi}}(\bm{\epsilon}|\tau))}
+        {q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau)}
+    \right).
+\label{eq:L}
+\end{equation}
+
+\section*{Gradient with respect to SBN parameters $\phi$}
+
+TODO
+
+\section*{Gradient with respect to scalar model parameters $\psi$}
+
+This section concerns taking the derivative of \eqref{eq:L} with respect to a $\psi_i$.
+Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i$ gives, in the general case
+\begin{equation}
+    \sum_b
+    \frac{\partial \log p(\bm{Y} , \tau, \bm\theta)}{\partial \theta_b} \,
+    \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}.
+    \label{eq:dLdPsi}
+\end{equation}
+Typically a variational parameter will appear in the expression for at most one branch, thus in this case at most one term of this sum will be nonzero.
+
+For the left hand side, we have
+\[
+p(\bm{Y},\tau,\bm\theta) =
+p(\bm{Y}|\tau,\bm\theta) \, p(\bm\theta | \tau) \, p(\tau).
+\]
+So
+\begin{equation}
+\frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b} =
+\frac{\partial \log p(\bm{Y} | \tau, \bm\theta)}{\partial \theta_b}
++
+\frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
+\label{eq:dPdPsi}
+\end{equation}
+The left hand term of the sum is the standard log phylogenetic gradient, while the right hand term is the derivative of the log branch length prior with respect to a specific branch.
+
+In the case where the branch length prior $p(\bm\theta | \tau)$ is a product of terms $\prod_b p_b(\theta_b)$ this becomes very simple:
+\[
+    \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b} =
+    \frac{\partial \log p_b(\theta_b)}{\partial \theta_b}.
+\]
+
+To keep things compact, though, we'll assume that this is all understood and will stick with the unexpanded form of the unnormalized posterior
+\[
+    \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}
+\]
+in the development below.
+
+For the denominator of \eqref{eq:L} we only need to worry about the $q_{\bm\psi}$ term.
+We will assume that $q_{\bm\psi}(\bm\theta | \tau)$ factors as a product of terms across branches of the topology, so
+\[
+    - \log q_{\bm{\psi}}(g_{\bm{\psi}}(\bm{\epsilon}|\tau)|\tau) =
+    - \sum_b \log q_{b, \bm{\psi}}(g_{b, \bm{\psi}}(\bm{\epsilon}|\tau)|\tau).
+\]
+
+So, we get the derivative of $L(\bm\phi, \bm\psi)$ with respect to $\psi_i$ being the sum over $b$ of:
+\begin{equation*}
+    \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}
+    \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}
+    - \frac{\partial \log q_{b, \bm\psi}(g_{b, \bm\psi}(\bm\epsilon|\tau)|\tau)}{\partial \psi_i}.
+\end{equation*}
+
+
+\subsubsection*{Split-based parametrization:}
+First consider the split-based parametrization given in the ``simple independent approximation'' section of the 2018 ICLR paper.
+If we use $b \slash \tau$ to mean the split given by branch $b$ of topology $\tau$, then the parametrization is
+\[
+q_{b, \bm{\psi}}(\theta_b | \tau) := \qSplit(\theta_b; \psi_{b \slash \tau})
+\qquad
+g_{b,\bm\psi}(\bm\epsilon | \tau) := \gSplit(\epsilon_b; \psi_{b \slash \tau}).
+\]
+for some function $\qSplit(\theta; \psi)$ with corresponding $\gSplit(\epsilon; \psi)$.
+
+To implement this, index $\bm\psi$ by splits.
+To get the gradient of $L(\bm\phi, \bm\psi)$ with respect to $\bm\psi$, we can start with a zero vector then loop over the branches $b$, and for each one incrementing the $b \slash \tau$ entry by
+\begin{equation*}
+    \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}
+    \frac{\partial \gSplit(\epsilon_b; \psi_{b \slash \tau})}{\partial \psi_{b \slash \tau}}
+    - \frac{\partial \log \qSplit(\gSplit(\epsilon_b; \psi_{b \slash \tau}); \psi_{b \slash \tau})}{\partial \psi_{b \slash \tau}}.
+\end{equation*}
+
+
+\subsubsection*{Primary subsplit pair parametrization:}
+Next we consider the ``primary subsplit pair'' (PSP) parametrization.
+We use $b \psp \tau$ to mean the primary subsplit pair given by branch $b$ of topology $\tau$: the parameters of the approximating distribution for a PSP $b \psp \tau$ are the sum of the split corresponding to the split $b \slash \tau$ and the two subsplits refining $b \slash \tau$.
+
+We will use $\bm\psi_{b \psp \tau}$ to represent a vector of the entries of $\bm\psi$ for the three variables contributing to the PSP.
+We will use $\bm\epsilon_{b \psp \tau}$ to denote the standardized versions of the draws from the random variables used to parameterize $b \psp \tau$.
+The parametrization is formally very similar:
+\[
+q_{b, \bm{\psi}}(\theta_b | \tau) := \qPSP(\theta_b; \bm\psi_{b \psp \tau})
+\qquad
+g_{b,\psi}(\bm\epsilon | \tau) := \gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau}).
+\]
+So we can do a similar procedure as before, in which we loop over all branches $b$ of $\tau$, but now we also loop over (sub)splits $\varsigma \in b \psp \tau$, and for each one incrementing the corresponding entry of the gradient by:
+\begin{equation}
+    \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}
+    \frac{\partial \gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau})}{\partial \psi_{\varsigma}}
+    - \frac{\partial \log \qPSP(\gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau}); \bm\psi_{b \psp \tau})}{\partial \psi_{\varsigma}}.
+    \label{eq:PSPgradComponent}
+\end{equation}
+The fact that this is a sum across branches is justified by our assumption that $q$ factors across branches of the tree.
+
+\subsubsection*{Generalization:}
+This general recipe works given
+\begin{enumerate}
+    \item a variational distribution for branch lengths $q$ that factors as a product across branches
+    \item a matching reparametrization function $g$
+    \item a ``branch representation:'' a means of mapping a branch $b$ to the variables $\psi_\varsigma$ involved in its parametrization
+    \item a means of taking the relevant derivatives
+\end{enumerate}
+
+We could develop some new notation for the general case, but we might as well just look at \eqref{eq:PSPgradComponent}, and replace $b \psp \tau$ in our minds with ``the variables $\varsigma$ relevant for branch $b$ of topology $\tau$.''
+
+
+\subsection*{Families of scalar variational distributions}
+\subsubsection*{Split-based Log-normal:}
+If $q$ is log-normal, we take $\psi_\varsigma$ as being the location-scale pair $(\mu_\varsigma, \sigma_\varsigma)$,
+\[
+\log q(\theta; \psi_\varsigma) := c - \log \theta - \log \sigma_\varsigma - \frac{(\log \theta - \mu_\varsigma)^2}{2 \sigma_\varsigma^2}.
+\]
+for a constant $c$.
+Taking $g(\epsilon; \psi_\varsigma) := \exp(\mu_\varsigma + \sigma_\varsigma \epsilon)$,
+\begin{align*}
+\log q(g(\epsilon; \psi_\varsigma); \psi_\varsigma)
+& := c - (\mu_\varsigma + \sigma_\varsigma \epsilon)
+    - \log \sigma_\varsigma
+    - \frac{(\mu_\varsigma + \sigma_\varsigma \epsilon - \mu_\varsigma)^2}{2 \sigma_\varsigma^2} \\
+& := c - \mu_\varsigma - \sigma_\varsigma \epsilon - \log \sigma_\varsigma - \frac{\epsilon^2}{2}.
+\end{align*}
+Thus,
+\begin{equation}
+    \frac{\partial \log q(g(\epsilon; \psi_\varsigma); \psi_\varsigma)}{\partial \mu_\varsigma} = -1
+    \qquad
+    \frac{\partial \log q(g(\epsilon; \psi_\varsigma); \psi_\varsigma)}{\partial \sigma_\varsigma} = -\epsilon - \frac{1}{\sigma_\varsigma}.
+\end{equation}
+Also,
+\begin{equation}
+    \frac{\partial g(\epsilon; \psi_\varsigma)}{\partial \mu_\varsigma} = g(\epsilon; \psi_\varsigma)
+    \qquad
+    \frac{\partial g(\epsilon; \psi_\varsigma)}{\partial \sigma_\varsigma} = g(\epsilon; \psi_\varsigma) \cdot \epsilon \, .
+\end{equation}
+
+
+\subsubsection*{PSP Log-normal:}
+
+The lognormal PSP parameterization uses the sum of the parameters across subsplits of the PSP for each component of the Log-normal parametrization:
+\[
+\qPSP(\theta; \bm\psi_{b \psp \tau}) :=
+q\left(\theta; \left(
+        \textstyle\sum_{\varsigma \in b \psp \tau} \mu_\varsigma,
+        \textstyle\sum_{\varsigma \in b \psp \tau} \sigma_\varsigma
+    \right)\right)
+\]
+\[
+\gPSP(\theta; \bm\psi_{b \psp \tau}) :=
+    \exp \left(
+        \textstyle\sum_{\varsigma \in b \psp \tau} \mu_\varsigma +
+        \epsilon
+        \textstyle\sum_{\varsigma \in b \psp \tau} \sigma_\varsigma
+    \right)
+\]
+Note that there is a single $\epsilon$ for each $b$ (rather than having a vector of such things).
+The derivatives follow like in the split-based case by replacing $\mu_\varsigma$ and $\sigma_\varsigma$ with the relevant sum of parameters.
+They come out the same except for
+\[
+    \frac
+    {\partial \log \qPSP(\gPSP(\bm\epsilon_{b \psp \tau}; \bm\psi_{b \psp \tau}); \bm\psi_{b \psp \tau})}
+    {\partial \sigma_{\varsigma}}
+    =
+    - \epsilon
+    - \frac{1}{\textstyle\sum_{\varsigma' \in b \psp \tau} \sigma_{\varsigma'}}
+\]
+when $\varsigma \in b \psp \tau$ (and zero otherwise), which is clearly different than $\frac{1}{\sigma_\varsigma}$ as for the simpler split-based distribution above.
+
+% \begin{figure}[h]
+% \centering
+% \includegraphics[width=0.35\textwidth]{figures/subsplit.pdf}
+% \caption{\
+% A subsplit structure.
+% }
+% \label{fig:subsplit}
+% \end{figure}
+
+\nocite{vbpi}
+
+\bibliographystyle{plain}
+\bibliography{main}
+
+\end{document}
