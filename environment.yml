@@ -5,6 +5,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - {{ compiler('cxx') }}
   - conda-build
   - flex
   - make
