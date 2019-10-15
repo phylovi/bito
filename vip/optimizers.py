@@ -18,6 +18,8 @@ class BaseOptimizer:
     def _simple_gradient_step(self, vars_grad, history=None):
         """Just take a simple gradient step.
 
+        vars_grad is the gradient with respect to the scalar variables.
+
         Return True if the gradient step was successful.
         """
         assert self.scalar_model.q_params.shape == vars_grad.shape
@@ -41,14 +43,14 @@ class SimpleOptimizer(BaseOptimizer):
         super().__init__(sbn_model, scalar_model)
         self.stepsize_decreasing_rate = 1 - 1e-2
 
-    def gradient_step(self, target_log_like, grad_target_log_like, which_variables):
+    def gradient_step(self, target_log_upost, grad_target_log_upost, which_variables):
         """
         Take a gradient step.
 
-        target_log_like and grad_target_log_like are all in terms of branch lengths.
+        target_log_upost and grad_target_log_upost are all in terms of branch lengths.
         """
         self.scalar_model.sample_and_prep_gradients(which_variables)
-        grad_log_p_z = grad_target_log_like(self.scalar_model.theta_sample)
+        grad_log_p = grad_target_log_upost(self.scalar_model.theta_sample)
         vars_grad = np.zeros(
             (self.scalar_model.variable_count, self.scalar_model.param_count)
         )
@@ -56,7 +58,7 @@ class SimpleOptimizer(BaseOptimizer):
             for param_index in range(self.scalar_model.param_count):
                 vars_grad[variable_index, param_index] += (
                     np.sum(
-                        grad_log_p_z[:, branch_index]
+                        grad_log_p[:, branch_index]
                         * self.scalar_model.dg_dpsi[:, variable_index, param_index],
                         axis=0,
                     )

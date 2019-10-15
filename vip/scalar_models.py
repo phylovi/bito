@@ -17,6 +17,8 @@ class ScalarModel(abc.ABC):
     "theta" to denote it. For an unrooted tree, the variables are the branch lengths for
     the ensemble of trees in the SBN support.
 
+    A full PSP parameterization (issue #119) we will need to generalize this.
+
     * theta_sample is the current stored sample and is laid out as (particle, variable).
     * dg_dpsi is the gradient of the reparametrization function with respect to the
       scalar model parameters, and is laid out as (particle, variable, parameter).
@@ -128,9 +130,7 @@ class LogNormalModel(ScalarModel):
         self.dg_dpsi[:, which_variables, 0] = self.theta_sample
         self.dg_dpsi[:, which_variables, 1] = self.theta_sample * epsilon
         self.dlog_sum_q_dpsi = np.empty((self.variable_count, 2))
-        # To get the gradients below, recall that log theta_sample is mu+sigma*epsilon
-        # in the reparametrization trick. If we substitute that into the log density of
-        # the normal distribution and take the derivatives we get this.
+        # See the tex for details about this gradient.
         self.dlog_sum_q_dpsi[which_variables, 0] = -1.0 * self.particle_count
         self.dlog_sum_q_dpsi[which_variables, 1] = -np.sum(
             epsilon, axis=0
@@ -182,6 +182,8 @@ class TFScalarModel(ScalarModel):
         lengths."""
         log_modes = np.log(np.clip(modes, 1e-6, None))
         biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1 - 1e-6))
+        # Issue #118: do we want to have the lognormal variance be in log space? Or do
+        # we want to clip it?
         if self.name == "TFLogNormal":
             self.q_params[:, 1] = -0.1 * biclipped_log_modes
             self.q_params[:, 0] = np.square(self.q_params[:, 1]) + log_modes
