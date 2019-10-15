@@ -1,5 +1,4 @@
-
-Implementation notes.
+# Implementation notes
 
 ## Compilation
 
