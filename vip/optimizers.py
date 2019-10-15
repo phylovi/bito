@@ -48,15 +48,11 @@ class SimpleOptimizer(BaseOptimizer):
         target_log_like and grad_target_log_like are all in terms of branch lengths.
         """
         self.scalar_model.sample_and_prep_gradients(which_variables)
-        # This gradient is in terms of branch lengths...
         grad_log_p_z = grad_target_log_like(self.scalar_model.brlen_sample)
-        # ... so we need to move it into variable space.
         vars_grad = np.zeros(
             (self.scalar_model.variable_count, self.scalar_model.param_count)
         )
         for branch_index, variable_index in enumerate(which_variables):
-            # import pdb
-            # pdb.set_trace()
             for param_index in range(self.scalar_model.param_count):
                 vars_grad[variable_index, param_index] += (
                     np.sum(
