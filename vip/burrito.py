@@ -2,8 +2,9 @@ import click
 import numpy as np
 
 import libsbn
-import vip.scalar_models
 import vip.optimizers
+import vip.priors
+import vip.scalar_models
 
 
 class Burrito:
@@ -46,17 +47,6 @@ class Burrito:
         )
         self.opt = vip.optimizers.of_name(optimizer_name, sbn_model, scalar_model)
 
-    @staticmethod
-    def log_exp_prior(x, rate=10):
-        # This commented version is the correct one, and will be fixed when I address
-        # issue #116.
-        # return np.log(rate) * x.shape[1] - rate * np.sum(x, axis=1)
-        return np.log(rate) - np.sum(rate * x, axis=1)
-
-    @staticmethod
-    def grad_log_exp_prior(x, rate=10):
-        return -rate
-
     def sample_topology(self):
         """Sample a tree, then set up branch length vector and the translation
         from splits to branches and back again."""
@@ -98,7 +88,7 @@ class Burrito:
 
     def phylo_log_upost(self, branch_lengths_arr):
         """The unnormalized phylogenetic posterior with an Exp(10) prior."""
-        return self.phylo_log_like(branch_lengths_arr) + Burrito.log_exp_prior(
+        return self.phylo_log_like(branch_lengths_arr) + vip.priors.log_exp_prior(
             branch_lengths_arr
         )
 
@@ -106,7 +96,7 @@ class Burrito:
         """The unnormalized phylogenetic posterior with an Exp(10) prior."""
         return self.grad_phylo_log_like(
             branch_lengths_arr
-        ) + Burrito.grad_log_exp_prior(branch_lengths_arr)
+        ) + vip.priors.grad_log_exp_prior(branch_lengths_arr)
 
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
