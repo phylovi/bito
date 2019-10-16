@@ -13,6 +13,10 @@ if "CONDA_PREFIX" not in os.environ:
         "\nThis SConstruct is meant to be run in the libsbn conda environment; "
         "see README for installation process."
     )
+if "CC" not in os.environ:
+    os.environ["CC"] = "clang"
+if "CXX" not in os.environ:
+    os.environ["CXX"] = "clang"
 
 metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
 full_tag = enscons.get_abi3_tag()
@@ -23,13 +27,11 @@ env = Environment(
     WHEEL_TAG=full_tag,
     ENV=os.environ,
     CPPPATH=["include", "src", pybind11.get_include()],
-    CC="clang",
     # CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion', '-pthread'],
     CCFLAGS=["-O3", "-pthread"],
-    CXX="clang",
-    CXXFLAGS=["-std=c++17", "-stdlib=libc++"],
-    LINKFLAGS="-stdlib=libc++",
-    LIBS=["hmsbeagle", "pthread", "c++", "c++abi", "m"],
+    CXXFLAGS=["-std=c++17"],
+    CC=os.environ["CC"],
+    CXX=os.environ["CXX"],
 )
 
 # Sometimes conda installs the pybind11 headers inside a pythonXXX directory, so we get
@@ -52,9 +54,8 @@ def find_conda_pkg_dir_containing(glob_str):
 beagle_pkg = find_conda_pkg_dir_containing("/pkgs/beagle-lib*/")
 beagle_lib = beagle_pkg + "lib"
 beagle_include = beagle_pkg + "include/libhmsbeagle-1"
-stdcxx_lib = find_conda_pkg_dir_containing("/pkgs/libstdcxx*/") + "lib"
 
-for path in [beagle_lib, beagle_include, stdcxx_lib]:
+for path in [beagle_lib, beagle_include]:
     if not os.path.isdir(path):
         sys.exit("Couldn't find:\n" + path)
 
@@ -66,9 +67,7 @@ def set_library_path(ld_variable_name):
     conda_vars_dir = conda_env_dir + "/etc/conda"
     os.makedirs(conda_vars_dir + "/activate.d", exist_ok=True)
     with open(conda_vars_dir + "/activate.d/vars.sh", "w") as fp:
-        fp.write(
-            f"export {ld_variable_name}=" + ":".join([beagle_lib, stdcxx_lib]) + "\n"
-        )
+        fp.write(f"export {ld_variable_name}=" + beagle_lib + "\n")
     os.makedirs(conda_vars_dir + "/deactivate.d", exist_ok=True)
     with open(conda_vars_dir + "/deactivate.d/vars.sh", "w") as fp:
         fp.write(f"unset {ld_variable_name}\n")
@@ -102,9 +101,10 @@ extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
     ["_build/pylibsbn.cpp"] + sources,
     SHLIBPREFIX="",
+    LIBS=["hmsbeagle"],
 )
-doctest = env.Program(["_build/doctest.cpp"] + sources)
-noodle = env.Program(["_build/noodle.cpp"] + sources)
+doctest = env.Program(["_build/doctest.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
+noodle = env.Program(["_build/noodle.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
 
 py_source = Glob("vip/*.py")
 
