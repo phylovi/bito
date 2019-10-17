@@ -105,7 +105,6 @@ class Burrito:
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:
-                # (branch_lengths, branch_to_split) = self.sample_topology()
                 self.gradient_step(self.branch_to_split)
 
     def elbo_estimate(self, particle_count=None):

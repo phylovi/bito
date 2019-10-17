@@ -18,15 +18,6 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
     burn_in_fraction = 0.1
     particle_count_for_final_elbo_estimate = 2000
 
-    burro = vip.burrito.Burrito(
-        mcmc_nexus_path=mcmc_nexus_path,
-        fasta_path=fasta_path,
-        model_name=model_name,
-        optimizer_name=optimizer_name,
-        step_count=step_count,
-        particle_count=particle_count,
-    )
-
     # Read MCMC run and get split lengths.
     mcmc_inst = libsbn.instance("mcmc_inst")
     mcmc_inst.read_nexus_file(mcmc_nexus_path)
@@ -38,6 +29,15 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
     )
     last_sampled_split_lengths = mcmc_split_lengths.iloc[-1].to_numpy()
     mcmc_split_lengths["total"] = mcmc_split_lengths.sum(axis=1)
+
+    burro = vip.burrito.Burrito(
+        mcmc_nexus_path=mcmc_nexus_path,
+        fasta_path=fasta_path,
+        model_name=model_name,
+        optimizer_name=optimizer_name,
+        step_count=step_count,
+        particle_count=particle_count,
+    )
     burro.opt.scalar_model.mode_match(last_sampled_split_lengths)
 
     start_time = timeit.default_timer()
