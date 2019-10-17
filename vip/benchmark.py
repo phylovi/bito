@@ -10,7 +10,9 @@ import vip.burrito
 
 # Documentation is in the CLI.
 # `*` forces everything after to be keyword-only.
-def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
+def fixed(
+    data_path, *, model_name, optimizer_name, step_count, particle_count, thread_count
+):
     data_path = os.path.normpath(data_path)
     data_id = os.path.basename(data_path)
     mcmc_nexus_path = os.path.join(data_path, data_id + "_out.t")
@@ -36,6 +38,7 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
         model_name=model_name,
         optimizer_name=optimizer_name,
         particle_count=particle_count,
+        thread_count=thread_count,
     )
     burro.opt.scalar_model.mode_match(last_sampled_split_lengths)
 

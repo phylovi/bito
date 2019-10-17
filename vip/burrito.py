@@ -14,7 +14,14 @@ class Burrito:
     """
 
     def __init__(
-        self, *, mcmc_nexus_path, fasta_path, model_name, optimizer_name, particle_count
+        self,
+        *,
+        mcmc_nexus_path,
+        fasta_path,
+        model_name,
+        optimizer_name,
+        particle_count,
+        thread_count=1
     ):
         self.particle_count = particle_count
         self.inst = libsbn.instance("burrito")
@@ -25,9 +32,8 @@ class Burrito:
 
         # Set up tree likelihood calculation.
         self.inst.read_fasta_file(fasta_path)
-        self.inst.make_beagle_instances(1)
+        self.inst.make_beagle_instances(thread_count)
         self.sbn_model = vip.sbn_model.SBNModel(self.inst)
-        # TODO cut this in favor of using an indexer
         (branch_lengths, branch_to_split) = self.sample_topology()
         scalar_model = vip.scalar_models.of_name(
             model_name,
@@ -89,8 +95,7 @@ class Burrito:
         for particle_idx, (_, log_grad_raw) in enumerate(gradient_result):
             # This :-2 is because of the two trailing zeroes that appear at the end of
             # the gradient.
-            # TODO copy=False
-            grad_log_p[particle_idx, :] = np.array(log_grad_raw)[:-2]
+            grad_log_p[particle_idx, :] = np.array(log_grad_raw, copy=False)[:-2]
         grad_log_p += vip.priors.grad_log_exp_prior(theta_sample)
 
         vars_grad = np.zeros(
