@@ -47,7 +47,8 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
 
     fit_sample = pd.DataFrame(
         burro.opt.scalar_model.sample(
-            len(mcmc_split_lengths), which_variables=burro.branch_to_split
+            len(mcmc_split_lengths),
+            which_variables=np.arange(burro.scalar_model.variable_count),
         )
     )
     fit_sample["total"] = fit_sample.sum(axis=1)
