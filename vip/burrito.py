@@ -59,6 +59,7 @@ class Burrito:
         self.inst.sample_trees(self.particle_count)
         # Here we are getting a slice that excludes the last (fake) element.
         # Thus we can just deal with the actual branch lengths.
+        # TODO explain what arr means, and/or change it.
         branch_lengths_arr = [
             np.array(tree.branch_lengths, copy=False)[:-1]
             for tree in self.inst.tree_collection.trees
@@ -73,42 +74,38 @@ class Burrito:
 
     def gradient_step(self):
         """Take a gradient step."""
-        (branch_lengths, branch_to_split) = self.sample_topology()
-        # Temporarily a constant array.
-        which_variables_arr = [branch_to_split for _ in range(self.particle_count)]
+        (branch_lengths_arr, branch_to_split_arr) = self.sample_topologies()
         (
             theta_sample,
             dg_dpsi,
             dlog_sum_q_dpsi,
-        ) = self.scalar_model.sample_and_gradients(which_variables_arr)
+        ) = self.scalar_model.sample_and_gradients(branch_to_split_arr)
         # Set branch lengths using the scalar model sample
+        for particle_idx, branch_lengths in enumerate(branch_lengths_arr):
+            branch_lengths[:] = theta_sample[particle_idx, :]
+        gradient_result = self.inst.branch_gradients()
 
-        def grad_log_like_with(in_branch_lengths):
-            branch_lengths[:] = in_branch_lengths
-            _, log_grad = self.inst.branch_gradients()[0]
+        grad_log_p = np.zeros_like(theta_sample)
+        for particle_idx, (_, log_grad_raw) in enumerate(gradient_result):
             # This :-2 is because of the two trailing zeroes that appear at the end of
             # the gradient.
-            return np.array(log_grad)[:-2]
+            # TODO copy=False
+            grad_log_p[particle_idx, :] = np.array(log_grad_raw)[:-2]
+        grad_log_p += vip.priors.grad_log_exp_prior(theta_sample)
 
-        def grad_phylo_log_upost(branch_lengths_arr):
-            return np.apply_along_axis(
-                grad_log_like_with, 1, branch_lengths_arr
-            ) + vip.priors.grad_log_exp_prior(branch_lengths_arr)
-
-        grad_log_p = grad_phylo_log_upost(theta_sample)
         vars_grad = np.zeros(
             (self.scalar_model.variable_count, self.scalar_model.param_count)
         )
-        for branch_index, variable_index in enumerate(branch_to_split):
-            for param_index in range(self.scalar_model.param_count):
-                vars_grad[variable_index, param_index] += (
-                    np.sum(
-                        grad_log_p[:, branch_index]
-                        * dg_dpsi[:, variable_index, param_index],
-                        axis=0,
+        for particle_idx, branch_to_split in enumerate(branch_to_split_arr):
+            for branch_index, variable_index in enumerate(branch_to_split):
+                for param_index in range(self.scalar_model.param_count):
+                    vars_grad[variable_index, param_index] += (
+                        grad_log_p[particle_idx, branch_index]
+                        * dg_dpsi[particle_idx, variable_index, param_index]
+                        # I don't understand why this particle count division.
+                        - dlog_sum_q_dpsi[variable_index, param_index]
+                        / self.particle_count
                     )
-                    - dlog_sum_q_dpsi[variable_index, param_index]
-                )
         self.opt.gradient_step(vars_grad)
 
     def gradient_steps(self, step_count):

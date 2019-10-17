@@ -103,7 +103,7 @@ class LogNormalModel(ScalarModel):
         We pass in a list of arrays, the ith entry of which is what variables we use for
         the ith particle, and get out the sample and some gradients as described above.
         """
-        # We assume that which_variables_arr is a fixed width.
+        # TODO We assume that which_variables_arr is a fixed width.
         theta_sample = np.empty((self.particle_count, which_variables_arr[0].size))
         dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
         dlog_sum_q_dpsi = np.zeros((self.variable_count, 2))
