@@ -43,33 +43,13 @@ class SimpleOptimizer(BaseOptimizer):
         super().__init__(sbn_model, scalar_model)
         self.stepsize_decreasing_rate = 1 - 1e-2
 
-    def gradient_step(self, target_log_upost, grad_target_log_upost, which_variables):
-        """
-        Take a gradient step.
-
-        target_log_upost and grad_target_log_upost are all in terms of branch lengths.
-        """
-        self.scalar_model.sample_and_prep_gradients(which_variables)
-        grad_log_p = grad_target_log_upost(self.scalar_model.theta_sample)
-        vars_grad = np.zeros(
-            (self.scalar_model.variable_count, self.scalar_model.param_count)
-        )
-        for branch_index, variable_index in enumerate(which_variables):
-            for param_index in range(self.scalar_model.param_count):
-                vars_grad[variable_index, param_index] += (
-                    np.sum(
-                        grad_log_p[:, branch_index]
-                        * self.scalar_model.dg_dpsi[:, variable_index, param_index],
-                        axis=0,
-                    )
-                    - self.scalar_model.dlog_sum_q_dpsi[variable_index, param_index]
-                )
-        if self._simple_gradient_step(vars_grad):
+    def gradient_step(self, vars_grad, history=None):
+        success = self._simple_gradient_step(vars_grad)
+        if success:
             self.step_size *= self.stepsize_decreasing_rate
         else:
             self.step_size /= 2
         self.step_number += 1
-        return True
 
 
 class BumpStepsizeOptimizer(BaseOptimizer):

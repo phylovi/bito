@@ -39,13 +39,14 @@ class Burrito:
         # etc gets set up.
         self.sample_topology()
 
-        sbn_model = vip.sbn_model.SBNModel(self.inst)
+        self.sbn_model = vip.sbn_model.SBNModel(self.inst)
         scalar_model = vip.scalar_models.of_name(
             model_name,
             variable_count=len(self.branch_lengths),
             particle_count=particle_count,
         )
-        self.opt = vip.optimizers.of_name(optimizer_name, sbn_model, scalar_model)
+        self.opt = vip.optimizers.of_name(optimizer_name, self.sbn_model, scalar_model)
+        self.scalar_model = self.opt.scalar_model
 
     def sample_topology(self):
         """Sample a tree, then set up branch length vector and the translation
@@ -98,16 +99,30 @@ class Burrito:
             branch_lengths_arr
         ) + vip.priors.grad_log_exp_prior(branch_lengths_arr)
 
+    def gradient_step(self, which_variables):
+        """Take a gradient step."""
+        self.scalar_model.sample_and_prep_gradients(which_variables)
+        grad_log_p = self.grad_phylo_log_upost(self.scalar_model.theta_sample)
+        vars_grad = np.zeros(
+            (self.scalar_model.variable_count, self.scalar_model.param_count)
+        )
+        for branch_index, variable_index in enumerate(which_variables):
+            for param_index in range(self.scalar_model.param_count):
+                vars_grad[variable_index, param_index] += (
+                    np.sum(
+                        grad_log_p[:, branch_index]
+                        * self.scalar_model.dg_dpsi[:, variable_index, param_index],
+                        axis=0,
+                    )
+                    - self.scalar_model.dlog_sum_q_dpsi[variable_index, param_index]
+                )
+        self.opt.gradient_step(vars_grad)
+
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:
                 # SOON: self.sample_topology()
-                if not self.opt.gradient_step(
-                    self.phylo_log_upost,
-                    self.grad_phylo_log_upost,
-                    self.branch_to_split,
-                ):
-                    raise Exception("ELBO is not finite. Stopping.")
+                self.gradient_step(self.branch_to_split)
 
     def elbo_estimate(self, particle_count=None):
         """A naive Monte Carlo estimate of the ELBO."""
