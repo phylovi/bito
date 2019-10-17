@@ -71,20 +71,10 @@ class Burrito:
         self.branch_lengths[:] = branch_lengths
         return np.array(self.inst.log_likelihoods())[0]
 
-    def grad_log_like_with(self, branch_lengths):
-        self.branch_lengths[:] = branch_lengths
-        _, log_grad = self.inst.branch_gradients()[0]
-        # This :-2 is because of the two trailing zeroes that appear at the end of
-        # the gradient.
-        return np.array(log_grad)[:-2]
-
     def phylo_log_like(self, branch_lengths_arr):
         """Calculate phylogenetic log likelihood for each of the split length
         assignments laid out along axis 1."""
         return np.apply_along_axis(self.log_like_with, 1, branch_lengths_arr)
-
-    def grad_phylo_log_like(self, branch_lengths_arr):
-        return np.apply_along_axis(self.grad_log_like_with, 1, branch_lengths_arr)
 
     def phylo_log_upost(self, branch_lengths_arr):
         """The unnormalized phylogenetic posterior with an Exp(10) prior."""
@@ -92,16 +82,29 @@ class Burrito:
             branch_lengths_arr
         )
 
-    def grad_phylo_log_upost(self, branch_lengths_arr):
-        """The unnormalized phylogenetic posterior with an Exp(10) prior."""
-        return self.grad_phylo_log_like(
-            branch_lengths_arr
-        ) + vip.priors.grad_log_exp_prior(branch_lengths_arr)
-
     def gradient_step(self, which_variables):
         """Take a gradient step."""
+        # Sample a tree, getting branch lengths vector and which_variables
         self.scalar_model.sample_and_prep_gradients(which_variables)
-        grad_log_p = self.grad_phylo_log_upost(self.scalar_model.theta_sample)
+        # Set branch lengths using the scalar model sample
+
+        def grad_log_like_with(branch_lengths):
+            self.branch_lengths[:] = branch_lengths
+            _, log_grad = self.inst.branch_gradients()[0]
+            # This :-2 is because of the two trailing zeroes that appear at the end of
+            # the gradient.
+            return np.array(log_grad)[:-2]
+
+        def grad_phylo_log_like(branch_lengths_arr):
+            return np.apply_along_axis(grad_log_like_with, 1, branch_lengths_arr)
+
+        def grad_phylo_log_upost(branch_lengths_arr):
+            """The unnormalized phylogenetic posterior with an Exp(10) prior."""
+            return grad_phylo_log_like(
+                branch_lengths_arr
+            ) + vip.priors.grad_log_exp_prior(branch_lengths_arr)
+
+        grad_log_p = grad_phylo_log_upost(self.scalar_model.theta_sample)
         vars_grad = np.zeros(
             (self.scalar_model.variable_count, self.scalar_model.param_count)
         )
