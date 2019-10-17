@@ -49,7 +49,7 @@ class ScalarModel(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def gradients(self, theta_sample, which_variables):
+    def sample_and_gradients(self, theta_sample, which_variables):
         """Sample the variables in which_variables and prepare so we can take a
         gradient with respect to them.
 
@@ -115,7 +115,8 @@ class LogNormalModel(ScalarModel):
         )
         return result
 
-    def gradients(self, theta_sample, which_variables):
+    def sample_and_gradients(self, which_variables):
+        theta_sample = self.sample(self.particle_count, which_variables)
         epsilon = (np.log(theta_sample) - self.mu(which_variables)) / self.sigma(
             which_variables
         )
@@ -128,7 +129,7 @@ class LogNormalModel(ScalarModel):
         dlog_sum_q_dpsi[which_variables, 1] = -np.sum(
             epsilon, axis=0
         ) - self.particle_count / self.sigma(which_variables)
-        return (dg_dpsi, dlog_sum_q_dpsi)
+        return (theta_sample, dg_dpsi, dlog_sum_q_dpsi)
 
 
 def exponential_factory(params):

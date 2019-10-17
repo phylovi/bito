@@ -74,12 +74,11 @@ class Burrito:
     def gradient_step(self):
         """Take a gradient step."""
         (branch_lengths, branch_to_split) = self.sample_topology()
-        theta_sample = self.opt.scalar_model.sample(
-            self.particle_count, branch_to_split
-        )
-        (dg_dpsi, dlog_sum_q_dpsi) = self.scalar_model.gradients(
-            theta_sample, branch_to_split
-        )
+        (
+            theta_sample,
+            dg_dpsi,
+            dlog_sum_q_dpsi,
+        ) = self.scalar_model.sample_and_gradients(branch_to_split)
         # Set branch lengths using the scalar model sample
 
         def grad_log_like_with(in_branch_lengths):
