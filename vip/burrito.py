@@ -43,6 +43,17 @@ class Burrito:
         self.opt = vip.optimizers.of_name(optimizer_name, self.sbn_model, scalar_model)
         self.scalar_model = self.opt.scalar_model
 
+        # Make choices about branch representations here, eventually.
+        self.branch_representations = self.split_based_representations
+
+    def split_based_representations(self):
+        """The ith entry of this array gives the index of the split
+        corresponding to the ith branch."""
+        return [
+            np.array(representation[0])
+            for representation in self.inst.get_psp_indexer_representations()
+        ]
+
     def sample_topology(self):
         """Sample a tree, then set up branch length vector and the translation
         from splits to branches and back again."""
@@ -60,27 +71,23 @@ class Burrito:
         return (branch_lengths, branch_to_split)
 
     def sample_topologies(self):
-        """Sample a tree, then set up branch length vector and the translation
-        from splits to branches and back again."""
+        """Sample trees into the instance and return the np'd version of their
+        branch length vectors."""
         self.inst.sample_trees(self.particle_count)
         # Here we are getting a slice that excludes the last (fake) element.
         # Thus we can just deal with the actual branch lengths.
         # TODO explain what arr means, and/or change it.
-        branch_lengths_arr = [
+        return [
             np.array(tree.branch_lengths, copy=False)[:-1]
             for tree in self.inst.tree_collection.trees
         ]
-        # The ith entry of this array gives the index of the split
-        # corresponding to the ith branch.
-        branch_to_split_arr = [
-            np.array(representation[0])
-            for representation in self.inst.get_psp_indexer_representations()
-        ]
-        return (branch_lengths_arr, branch_to_split_arr)
 
     def gradient_step(self):
         """Take a gradient step."""
-        (branch_lengths_arr, branch_to_split_arr) = self.sample_topologies()
+        branch_lengths_arr = self.sample_topologies()
+        branch_to_split_arr = self.branch_representations()
+        # For PSPs, we'll need to take these branch representations and turn them into
+        # the list of variables that they employ.
         (
             theta_sample,
             dg_dpsi,
@@ -120,6 +127,7 @@ class Burrito:
 
     def elbo_estimate(self, particle_count=None):
         """A naive Monte Carlo estimate of the ELBO."""
+        # TODO update this with sample_topologies
         if particle_count is None:
             particle_count = self.particle_count
         (branch_lengths, branch_to_split) = self.sample_topology()
@@ -135,7 +143,8 @@ class Burrito:
             return np.array(self.inst.log_likelihoods())[0]
 
         def phylo_log_upost(branch_lengths_arr):
-            """The unnormalized phylogenetic posterior with an Exp(10) prior."""
+            """The unnormalized phylogenetic posterior with an Exp(10)
+            prior."""
             return np.apply_along_axis(
                 log_like_with, 1, branch_lengths_arr
             ) + vip.priors.log_exp_prior(branch_lengths_arr)

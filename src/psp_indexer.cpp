@@ -50,8 +50,8 @@ SizeVectorVector PSPIndexer::RepresentationOf(
   const auto leaf_count = topology->LeafCount();
   Bitset rootsplit_bitset(leaf_count);
   Bitset psp_bitset(2 * leaf_count);
-  auto rootsplit_index =
-      [&rootsplit_bitset, &indexer = this->indexer_ ](const Node* node) {
+  auto rootsplit_index = [&rootsplit_bitset,
+                          &indexer = this->indexer_](const Node* node) {
     rootsplit_bitset.Zero();
     rootsplit_bitset.CopyFrom(node->Leaves(), 0, false);
     rootsplit_bitset.Minorize();
@@ -61,8 +61,8 @@ SizeVectorVector PSPIndexer::RepresentationOf(
   // https://github.com/phylovi/libsbn/issues/95) looking at the right-hand case
   // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
   // we use analogous notation.
-  auto psp_index = [&psp_bitset, &leaf_count, &indexer = this->indexer_ ](
-      const Bitset& z1, const Bitset& z2, const Bitset& z) {
+  auto psp_index = [&psp_bitset, &leaf_count, &indexer = this->indexer_](
+                       const Bitset& z1, const Bitset& z2, const Bitset& z) {
     psp_bitset.Zero();
     // Set Z in the middle location.
     psp_bitset.CopyFrom(z, 0, false);

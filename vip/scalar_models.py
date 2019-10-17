@@ -49,8 +49,8 @@ class ScalarModel(abc.ABC):
 
     @abc.abstractmethod
     def sample_and_gradients(self, theta_sample, which_variables):
-        """Sample the variables in which_variables and take a gradient with respect to
-        them.
+        """Sample the variables in which_variables and take a gradient with
+        respect to them.
 
         * theta_sample is the current sample and is laid out as (particle, variable).
         * dg_dpsi is the gradient of the reparametrization function with respect to the
@@ -99,10 +99,9 @@ class LogNormalModel(ScalarModel):
         )
 
     def sample_and_gradients(self, which_variables_arr):
-        """
-        We pass in a list of arrays, the ith entry of which is what variables we use for
-        the ith particle, and get out the sample and some gradients as described above.
-        """
+        """We pass in a list of arrays, the ith entry of which is what
+        variables we use for the ith particle, and get out the sample and some
+        gradients as described above."""
         # TODO We assume that which_variables_arr is a fixed width.
         theta_sample = np.empty((self.particle_count, which_variables_arr[0].size))
         dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
