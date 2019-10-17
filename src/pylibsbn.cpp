@@ -66,10 +66,18 @@ PYBIND11_MODULE(libsbn, m) {
       .def("get_psp_indexer_representations",
            &SBNInstance::GetPSPIndexerRepresentations)
       .def("split_lengths", &SBNInstance::SplitLengths)
+      .def("set_beagle_subst_models", &SBNInstance::SetBeagleSubstModels)
       // Member Variables
       .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
-      .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
+      .def_readwrite("tree_collection", &SBNInstance::tree_collection_)
+      // TODO
+      .def_readwrite("evec", &SBNInstance::evec)
+      .def_readwrite("ivec", &SBNInstance::ivec)
+      .def_readwrite("eval", &SBNInstance::eval)
+      .def_readwrite("freqs", &SBNInstance::freqs)
+      .def_readwrite("differential_mass_matrices", &SBNInstance::differential_mass_matrices)
+    ;
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
   // `with libsbn.ostream_redirect(stdout=True, stderr=True):`

@@ -260,6 +260,12 @@ void SBNInstance::CheckBeagleDimensions() const {
   }
 }
 
+void SBNInstance::SetBeagleSubstModels() const {
+  for (const auto &beagle_instance : beagle_instances_) {
+    beagle::SetSubstModel(beagle_instance, freqs, evec, ivec, eval);
+  }
+}
+
 void SBNInstance::MakeBeagleInstances(int instance_count) {
   // Start by clearing out any existing instances.
   FinalizeBeagleInstances();

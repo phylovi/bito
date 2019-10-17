@@ -72,12 +72,24 @@ struct SBNInstance {
   static std::mt19937 random_generator_;
   bool rescaling_;
 
+  // TODO
+  std::vector<double> evec;
+  std::vector<double> ivec;
+  std::vector<double> eval;
+  std::vector<double> freqs;
+  std::vector<std::vector<double>> differential_mass_matrices;
+  
+
   // ** Initialization, destruction, and status
   explicit SBNInstance(const std::string &name)
       : name_(name),
         symbol_table_(SitePattern::GetSymbolTable()),
         beagle_leaf_count_(0),
         beagle_site_count_(0),
+	evec(std::vector<double>(16, 0.)),
+        ivec(std::vector<double>(16, 0.)),
+        eval(std::vector<double>(4, 0.)),
+        freqs(std::vector<double>(4, 0.)),
         rescaling_{false} {}
 
   ~SBNInstance() { FinalizeBeagleInstances(); }
@@ -156,7 +168,8 @@ struct SBNInstance {
   // Make sure that BEAGLE's idea of the sequence count and length match what we
   // have loaded.
   void CheckBeagleDimensions() const;
-
+  
+  void SetBeagleSubstModels() const;  
   // Make the specified number of BEAGLE instances are appropriate for the
   // loaded data. Likelihood calculation will be run in parallel across the
   // specified number of instances.

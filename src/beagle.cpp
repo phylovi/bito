@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <cmath>
 
 namespace beagle {
 
@@ -97,6 +98,15 @@ void SetJCModel(BeagleInstance beagle_instance) {
                               -1.3333333333333333};
   beagleSetEigenDecomposition(beagle_instance, 0, evec.data(), ivec.data(),
                               eval.data());
+}
+
+void SetSubstModel(BeagleInstance beagle_instance,
+                   std::vector<double> freqs,
+                   std::vector<double> evec,
+                   std::vector<double> ivec,
+                   std::vector<double> eval){
+  beagleSetStateFrequencies(beagle_instance, 0, freqs.data());
+  beagleSetEigenDecomposition(beagle_instance, 0, evec.data(), ivec.data(), eval.data());
 }
 
 Tree PrepareTreeForLikelihood(const Tree &tree) {
@@ -358,6 +368,145 @@ std::vector<std::pair<double, std::vector<double>>> BranchGradients(
     const TreeCollection &tree_collection, bool rescaling) {
   return Parallelize<std::pair<double, std::vector<double>>>(
       BranchGradient, beagle_instances, tree_collection, rescaling);
+}
+
+void GetTripleMatrixMultiplication(int state_count, std::vector<double> left_matrix, std::vector<double> middle_matrix, std::vector<double> right_matrix){
+  std::vector<double> temp_matrix(state_count * state_count, 0.0);
+  for(int i = 0; i < state_count; i++){
+    for(int j = 0; j < state_count; j++){
+      for(int k = 0; k < state_count; k++){
+        temp_matrix[i * state_count + j] = middle_matrix[i * state_count + k] * right_matrix[k * state_count + j];
+      }
+    }
+  }
+
+  for(int i = 0; i < state_count; i++){
+    for(int j = 0; j < state_count; j++){
+      double sum_product = 0.0;
+      for(int k = 0; k < state_count; k++){
+        sum_product += left_matrix[i * state_count + k] * temp_matrix[k * state_count + j];
+      }
+      middle_matrix[i * state_count + j] = sum_product;
+    }
+  }
+}
+
+double ParameterGradient(BeagleInstance beagle_instance, const Tree &in_tree, bool rescaling, std::vector<double> q_differential, std::vector<double> freqs, std::vector<double> evec, std::vector<double> ivec, std::vector<double> eval){
+  beagleResetScaleFactors(beagle_instance, 0);
+  auto tree = PrepareTreeForLikelihood(in_tree);
+  tree.SlideRootPosition();
+
+  size_t node_count = tree.BranchLengths().size();
+  int int_node_count = static_cast<int>(node_count);
+  int int_taxon_count = static_cast<int>(tree.LeafCount());
+  int internal_count = int_taxon_count - 1;
+  std::vector<int> node_indices(node_count - 1);
+  std::iota(node_indices.begin(), node_indices.end(), 0);
+  std::vector<int> differential_indices(node_count - 1);
+  std::iota(differential_indices.begin(), differential_indices.end(), node_count);
+
+
+  int root_id = static_cast<int>(tree.Topology()->Id());
+
+  // Postorder partials
+  std::vector<BeagleOperation> operations;
+
+  tree.Topology()->BinaryIdPostOrder(
+      [&operations, int_taxon_count, rescaling](int node_id, int child0_id,
+                                                int child1_id) {
+        BeagleOperation op = {
+            node_id,                         // dest
+            BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
+            child0_id,      child0_id,       // src1 and matrix1
+            child1_id,      child1_id        // src2 and matrix2
+        };
+        if (rescaling) {
+          op.destinationScaleWrite = node_id - int_taxon_count + 1;
+        }
+        operations.push_back(op);
+      });
+  
+  std::vector<double> branch_lengths = tree.BranchLengths();
+  beagleUpdateTransitionMatrices(beagle_instance, 0, node_indices.data(), NULL, NULL, branch_lengths.data(), int_node_count - 1);
+  beagleUpdatePartials(beagle_instance, operations.data(), static_cast<int>(operations.size()), BEAGLE_OP_NONE); 
+  
+  // Preorder partials 
+  std::vector<BeagleOperation> pre_operations;
+  tree.Topology()->TripleIdPreOrderBifurcating([&pre_operations, &root_id,
+                                                &int_node_count, &rescaling,
+                                                &internal_count](
+      int node_id, int sister_id, int parent_id) {
+    if (node_id != root_id) {
+      BeagleOperation op = {
+          node_id + int_node_count,  // dest pre-order partial of current node
+          BEAGLE_OP_NONE,
+          BEAGLE_OP_NONE,
+          parent_id + int_node_count,  // pre-order partial parent
+          node_id,                     // matrices of current node
+          sister_id,                   // post-order partial of sibling
+          sister_id                    // matrices of sibling
+      };
+      // Scalers are indexed differently for the upper conditional
+      // likelihood. They start at the number of internal nodes + 1 because
+      // of the lower conditional likelihoods. Also, in this case the leaves
+      // have scalers.
+      if (rescaling) {
+        // Scaling factors are recomputed every time so we don't read them
+        // using destinationScaleRead.
+        op.destinationScaleWrite = node_id + 1 + internal_count;
+      }
+      pre_operations.push_back(op);
+    }
+  });  
+
+  beagleSetPartials(beagle_instance, differential_indices[root_id], freqs.data());  
+  beagleUpdatePrePartials(beagle_instance, pre_operations.data(), static_cast<int>(pre_operations.size()), BEAGLE_OP_NONE);
+ 
+  // Compute gradient
+   
+  std::vector<double> edge_derivatives(node_count, 0);
+  std::vector<int> category_weight_index = {0};
+  std::vector<int> post_buffer_indices(int_node_count - 1);
+  std::vector<int> pre_buffer_indices(int_node_count - 1);
+  std::iota(post_buffer_indices.begin(), post_buffer_indices.end(), 0);
+  std::iota(pre_buffer_indices.begin(), pre_buffer_indices.end(),
+            int_node_count);
+
+  std::vector<double> g(16, 0.0);
+  std::copy(q_differential.begin(), q_differential.end(), g.begin());
+  GetTripleMatrixMultiplication(4, ivec, g, evec);
+
+  for(auto node_id : node_indices){
+    std::vector<double> differential_matrix(16, 0.0); 
+    for(int i = 0; i < 4; i++){
+      for(int j = 0; j < 4; j++){
+        if(i == j){
+          differential_matrix[i * 4 + j] = g[i * 4 + j] * branch_lengths[i];
+        } else {
+          differential_matrix[i * 4 + j] = g[i * 4 + j] * (1.0 - exp((eval[j] - eval[i]) * branch_lengths[i])) / (eval[i] - eval[j]);    
+        }       
+      }
+    }
+    GetTripleMatrixMultiplication(4, evec, differential_matrix, ivec);    
+    beagleSetDifferentialMatrix(beagle_instance, differential_indices[node_id], differential_matrix.data());
+  }
+  
+  beagleCalculateEdgeDerivatives(
+      beagle_instance,
+      post_buffer_indices.data(),        // list of post order buffer indices
+      pre_buffer_indices.data(),         // list of pre order buffer indices
+      differential_indices.data(),  // differential Q matrix indices
+      category_weight_index.data(),      // category weights indices
+      int_node_count - 1,                // number of edges
+      NULL,                              // derivative-per-site output array
+      edge_derivatives.data(),  // sum of derivatives across sites output array
+      NULL);
+  
+  double derivative = 0.0;
+  for (auto edge_derivative : edge_derivatives){
+    derivative += edge_derivative;
+  }  
+  return derivative;
 }
 
 }  // namespace beagle
