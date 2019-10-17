@@ -45,22 +45,25 @@ class ScalarModel(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def sample(self, particle_count, which_variables, log_prob=False):
+    def sample(self, particle_count, which_variables):
         pass
 
     @abc.abstractmethod
     def sample_and_gradients(self, theta_sample, which_variables):
-        """Sample the variables in which_variables and prepare so we can take a
-        gradient with respect to them.
+        """Sample the variables in which_variables and take a gradient with respect to
+        them.
 
-        * theta_sample is the current stored sample and is laid out as (particle,
-        variable).
+        * theta_sample is the current sample and is laid out as (particle, variable).
         * dg_dpsi is the gradient of the reparametrization function with respect to the
           scalar model parameters, and is laid out as (particle, variable, parameter).
         * dlog_sum_q_dpsi is the gradient of the sum of the q function over particles
           with respect to the scalar model parameters, and is laid out as (variable,
           parameter).
         """
+        pass
+
+    @abc.abstractmethod
+    def log_prob(self, theta_sample, which_variables):
         pass
 
 
@@ -96,6 +99,22 @@ class LogNormalModel(ScalarModel):
             (particle_count, len(which_variables)),
         )
 
+    def sample_and_gradients(self, which_variables):
+        theta_sample = self.sample(self.particle_count, which_variables)
+        epsilon = (np.log(theta_sample) - self.mu(which_variables)) / self.sigma(
+            which_variables
+        )
+        # See the tex for details about this gradient.
+        dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
+        dg_dpsi[:, which_variables, 0] = theta_sample
+        dg_dpsi[:, which_variables, 1] = theta_sample * epsilon
+        dlog_sum_q_dpsi = np.empty((self.variable_count, 2))
+        dlog_sum_q_dpsi[which_variables, 0] = -1.0 * self.particle_count
+        dlog_sum_q_dpsi[which_variables, 1] = -np.sum(
+            epsilon, axis=0
+        ) - self.particle_count / self.sigma(which_variables)
+        return (theta_sample, dg_dpsi, dlog_sum_q_dpsi)
+
     def log_prob(self, theta_sample, which_variables):
         """Return a log probability for each of the particles given in
         theta_sample."""
@@ -114,22 +133,6 @@ class LogNormalModel(ScalarModel):
             - np.sum(ratio, axis=1)
         )
         return result
-
-    def sample_and_gradients(self, which_variables):
-        theta_sample = self.sample(self.particle_count, which_variables)
-        epsilon = (np.log(theta_sample) - self.mu(which_variables)) / self.sigma(
-            which_variables
-        )
-        # See the tex for details about this gradient.
-        dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
-        dg_dpsi[:, which_variables, 0] = theta_sample
-        dg_dpsi[:, which_variables, 1] = theta_sample * epsilon
-        dlog_sum_q_dpsi = np.empty((self.variable_count, 2))
-        dlog_sum_q_dpsi[which_variables, 0] = -1.0 * self.particle_count
-        dlog_sum_q_dpsi[which_variables, 1] = -np.sum(
-            epsilon, axis=0
-        ) - self.particle_count / self.sigma(which_variables)
-        return (theta_sample, dg_dpsi, dlog_sum_q_dpsi)
 
 
 def exponential_factory(params):
