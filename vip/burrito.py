@@ -14,15 +14,9 @@ class Burrito:
     """
 
     def __init__(
-        self,
-        *,
-        mcmc_nexus_path,
-        fasta_path,
-        model_name,
-        optimizer_name,
-        step_count,
-        particle_count
+        self, *, mcmc_nexus_path, fasta_path, model_name, optimizer_name, particle_count
     ):
+        self.particle_count = particle_count
         self.inst = libsbn.instance("burrito")
 
         # Read MCMC run to get tree structure.
@@ -52,15 +46,30 @@ class Burrito:
         # Here we are getting a slice that excludes the last (fake) element.
         # Thus we can just deal with the actual branch lengths.
         branch_lengths = branch_lengths_extended[:-1]
-
-        # Note: in the following arrays, the particles are laid out along axis 0 and the
-        # splits are laid out along axis 1.
         # Now we need to set things up to translate between split indexing and branch
         # indexing.
         # The ith entry of this array gives the index of the split
         # corresponding to the ith branch.
         branch_to_split = np.array(self.inst.get_psp_indexer_representations()[0][0])
         return (branch_lengths, branch_to_split)
+
+    def sample_topologies(self):
+        """Sample a tree, then set up branch length vector and the translation
+        from splits to branches and back again."""
+        self.inst.sample_trees(self.particle_count)
+        # Here we are getting a slice that excludes the last (fake) element.
+        # Thus we can just deal with the actual branch lengths.
+        branch_lengths_arr = [
+            np.array(tree.branch_lengths, copy=False)[:-1]
+            for tree in self.inst.tree_collection.trees
+        ]
+        # The ith entry of this array gives the index of the split
+        # corresponding to the ith branch.
+        branch_to_split_arr = [
+            np.array(representation[0])
+            for representation in self.inst.get_psp_indexer_representations()
+        ]
+        return (branch_lengths_arr, branch_to_split_arr)
 
     def gradient_step(self):
         """Take a gradient step."""

@@ -35,7 +35,6 @@ def fixed(data_path, *, model_name, optimizer_name, step_count, particle_count):
         fasta_path=fasta_path,
         model_name=model_name,
         optimizer_name=optimizer_name,
-        step_count=step_count,
         particle_count=particle_count,
     )
     burro.opt.scalar_model.mode_match(last_sampled_split_lengths)
