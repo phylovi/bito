@@ -142,7 +142,8 @@ struct SBNInstance {
   // Return indexer_ and parent_to_range_ converted into string-keyed maps.
   std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
 
-  // This function is really just for testing-- it recomputes counters scratch.
+  // This function is really just for testing-- it recomputes counters from
+  // scratch.
   std::pair<StringSizeMap, StringPCSSMap> SplitCounters() const;
 
   void ReadNewickFile(std::string fname);

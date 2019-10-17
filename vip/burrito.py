@@ -35,14 +35,14 @@ class Burrito:
         # Set up tree likelihood calculation.
         self.inst.read_fasta_file(fasta_path)
         self.inst.make_beagle_instances(1)
-        # It's important to do tree sampling here so that self.branch_lengths
-        # etc gets set up.
-        self.sample_topology()
-
         self.sbn_model = vip.sbn_model.SBNModel(self.inst)
+        # TODO cut this in favor of using an indexer
+        (branch_lengths, branch_to_split) = self.sample_topology()
+        self.branch_lengths = branch_lengths
+        self.branch_to_split = branch_to_split
         scalar_model = vip.scalar_models.of_name(
             model_name,
-            variable_count=len(self.branch_lengths),
+            variable_count=len(branch_lengths),
             particle_count=particle_count,
         )
         self.opt = vip.optimizers.of_name(optimizer_name, self.sbn_model, scalar_model)
@@ -56,7 +56,7 @@ class Burrito:
         branch_lengths_extended = np.array(tree.branch_lengths, copy=False)
         # Here we are getting a slice that excludes the last (fake) element.
         # Thus we can just deal with the actual branch lengths.
-        self.branch_lengths = branch_lengths_extended[:-1]
+        branch_lengths = branch_lengths_extended[:-1]
 
         # Note: in the following arrays, the particles are laid out along axis 0 and the
         # splits are laid out along axis 1.
@@ -64,9 +64,8 @@ class Burrito:
         # indexing.
         # The ith entry of this array gives the index of the split
         # corresponding to the ith branch.
-        self.branch_to_split = np.array(
-            self.inst.get_psp_indexer_representations()[0][0]
-        )
+        branch_to_split = np.array(self.inst.get_psp_indexer_representations()[0][0])
+        return (branch_lengths, branch_to_split)
 
     def log_like_with(self, branch_lengths):
         self.branch_lengths[:] = branch_lengths
@@ -121,7 +120,7 @@ class Burrito:
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:
-                # SOON: self.sample_topology()
+                # (branch_lengths, branch_to_split) = self.sample_topology()
                 self.gradient_step(self.branch_to_split)
 
     def elbo_estimate(self, particle_count=None):
