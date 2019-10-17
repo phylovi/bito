@@ -70,11 +70,12 @@ class Burrito:
     def gradient_step(self, which_variables):
         """Take a gradient step."""
         # Sample a tree, getting branch lengths vector and which_variables
+        branch_lengths = self.branch_lengths
         self.scalar_model.sample_and_prep_gradients(which_variables)
         # Set branch lengths using the scalar model sample
 
         def grad_log_like_with(in_branch_lengths):
-            self.branch_lengths[:] = in_branch_lengths
+            branch_lengths[:] = in_branch_lengths
             _, log_grad = self.inst.branch_gradients()[0]
             # This :-2 is because of the two trailing zeroes that appear at the end of
             # the gradient.
@@ -117,9 +118,10 @@ class Burrito:
         log_prob = self.opt.scalar_model.log_prob(
             theta, which_variables=self.branch_to_split
         )
+        branch_lengths = self.branch_lengths
 
         def log_like_with(in_branch_lengths):
-            self.branch_lengths[:] = in_branch_lengths
+            branch_lengths[:] = in_branch_lengths
             return np.array(self.inst.log_likelihoods())[0]
 
         def phylo_log_upost(branch_lengths_arr):
