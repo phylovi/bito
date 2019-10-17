@@ -35,8 +35,6 @@ class Burrito:
         self.sbn_model = vip.sbn_model.SBNModel(self.inst)
         # TODO cut this in favor of using an indexer
         (branch_lengths, branch_to_split) = self.sample_topology()
-        self.branch_lengths = branch_lengths
-        self.branch_to_split = branch_to_split
         scalar_model = vip.scalar_models.of_name(
             model_name,
             variable_count=len(branch_lengths),
@@ -64,11 +62,10 @@ class Burrito:
         branch_to_split = np.array(self.inst.get_psp_indexer_representations()[0][0])
         return (branch_lengths, branch_to_split)
 
-    def gradient_step(self, which_variables):
+    def gradient_step(self):
         """Take a gradient step."""
-        # Sample a tree, getting branch lengths vector and which_variables
-        branch_lengths = self.branch_lengths
-        self.scalar_model.sample_and_prep_gradients(which_variables)
+        (branch_lengths, branch_to_split) = self.sample_topology()
+        self.scalar_model.sample_and_prep_gradients(branch_to_split)
         # Set branch lengths using the scalar model sample
 
         def grad_log_like_with(in_branch_lengths):
@@ -87,7 +84,7 @@ class Burrito:
         vars_grad = np.zeros(
             (self.scalar_model.variable_count, self.scalar_model.param_count)
         )
-        for branch_index, variable_index in enumerate(which_variables):
+        for branch_index, variable_index in enumerate(branch_to_split):
             for param_index in range(self.scalar_model.param_count):
                 vars_grad[variable_index, param_index] += (
                     np.sum(
@@ -102,19 +99,19 @@ class Burrito:
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:
-                self.gradient_step(self.branch_to_split)
+                self.gradient_step()
 
     def elbo_estimate(self, particle_count=None):
         """A naive Monte Carlo estimate of the ELBO."""
         if particle_count is None:
             particle_count = self.particle_count
+        (branch_lengths, branch_to_split) = self.sample_topology()
         theta = self.opt.scalar_model.sample(
-            particle_count, which_variables=self.branch_to_split
+            particle_count, which_variables=branch_to_split
         )
         log_prob = self.opt.scalar_model.log_prob(
-            theta, which_variables=self.branch_to_split
+            theta, which_variables=branch_to_split
         )
-        branch_lengths = self.branch_lengths
 
         def log_like_with(in_branch_lengths):
             branch_lengths[:] = in_branch_lengths
