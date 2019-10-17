@@ -19,7 +19,6 @@ class ScalarModel(abc.ABC):
 
     A full PSP parameterization (issue #119) we will need to generalize this.
 
-
     * p is the target probability.
     * q is the distribution that we're fitting to p.
     """
@@ -99,20 +98,31 @@ class LogNormalModel(ScalarModel):
             (particle_count, len(which_variables)),
         )
 
-    def sample_and_gradients(self, which_variables):
-        theta_sample = self.sample(self.particle_count, which_variables)
-        epsilon = (np.log(theta_sample) - self.mu(which_variables)) / self.sigma(
-            which_variables
-        )
-        # See the tex for details about this gradient.
+    def sample_and_gradients(self, which_variables_arr):
+        """
+        We pass in a list of arrays, the ith entry of which is what variables we use for
+        the ith particle, and get out the sample and some gradients as described above.
+        """
+        # We assume that which_variables_arr is a fixed width.
+        theta_sample = np.empty((self.particle_count, which_variables_arr[0].size))
         dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
-        dg_dpsi[:, which_variables, 0] = theta_sample
-        dg_dpsi[:, which_variables, 1] = theta_sample * epsilon
-        dlog_sum_q_dpsi = np.empty((self.variable_count, 2))
-        dlog_sum_q_dpsi[which_variables, 0] = -1.0 * self.particle_count
-        dlog_sum_q_dpsi[which_variables, 1] = -np.sum(
-            epsilon, axis=0
-        ) - self.particle_count / self.sigma(which_variables)
+        dlog_sum_q_dpsi = np.zeros((self.variable_count, 2))
+        for particle_idx, which_variables in enumerate(which_variables_arr):
+            theta_sample[particle_idx, :] = np.random.lognormal(
+                self.mu(which_variables), self.sigma(which_variables)
+            )
+            epsilon = (
+                np.log(theta_sample[particle_idx, :]) - self.mu(which_variables)
+            ) / self.sigma(which_variables)
+            # See the tex for details about this gradient.
+            dg_dpsi[particle_idx, which_variables, 0] = theta_sample[particle_idx, :]
+            dg_dpsi[particle_idx, which_variables, 1] = (
+                theta_sample[particle_idx, :] * epsilon
+            )
+            dlog_sum_q_dpsi[which_variables, 0] += -1.0
+            dlog_sum_q_dpsi[which_variables, 1] += -epsilon - 1 / self.sigma(
+                which_variables
+            )
         return (theta_sample, dg_dpsi, dlog_sum_q_dpsi)
 
     def log_prob(self, theta_sample, which_variables):
