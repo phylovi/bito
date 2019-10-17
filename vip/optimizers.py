@@ -37,15 +37,18 @@ class BaseOptimizer:
             history.append(self.scalar_model.q_params.copy())
         return True
 
+    def gradient_step(self, vars_grad, history=None):
+        gradient_step_was_successful = self._simple_gradient_step(vars_grad)
+        self.update(gradient_step_was_successful)
+
 
 class SimpleOptimizer(BaseOptimizer):
     def __init__(self, sbn_model: SBNModel, scalar_model: ScalarModel):
         super().__init__(sbn_model, scalar_model)
         self.stepsize_decreasing_rate = 1 - 1e-2
 
-    def gradient_step(self, vars_grad, history=None):
-        success = self._simple_gradient_step(vars_grad)
-        if success:
+    def update(self, gradient_step_was_successful):
+        if gradient_step_was_successful:
             self.step_size *= self.stepsize_decreasing_rate
         else:
             self.step_size /= 2
