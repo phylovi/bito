@@ -509,4 +509,11 @@ double ParameterGradient(BeagleInstance beagle_instance, const Tree &in_tree, bo
   return derivative;
 }
 
+std::vector<double> ParameterGradients(std::vector<BeagleInstance> beagle_instances,
+                                   const TreeCollection &tree_collection,
+                                   bool rescaling,
+                                   std::vector<double> q_differential, std::vector<double> freqs, std::vector<double> evec, std::vector<double> ivec, std::vector<double> eval){
+  using namespace std::placeholders;
+  return Parallelize<double>(std::bind(ParameterGradient, _1, _2, _3, q_differential, freqs, evec, ivec, eval), beagle_instances, tree_collection, rescaling);
+}
 }  // namespace beagle

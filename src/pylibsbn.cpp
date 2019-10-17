@@ -58,6 +58,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("make_beagle_instances", &SBNInstance::MakeBeagleInstances)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
       .def("branch_gradients", &SBNInstance::BranchGradients)
+      .def("parameter_gradients", &SBNInstance::ParameterGradients)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_indexers", &SBNInstance::GetIndexers)
       .def("sample_trees", &SBNInstance::SampleTrees)
@@ -76,7 +77,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readwrite("ivec", &SBNInstance::ivec)
       .def_readwrite("eval", &SBNInstance::eval)
       .def_readwrite("freqs", &SBNInstance::freqs)
-      .def_readwrite("differential_mass_matrices", &SBNInstance::differential_mass_matrices)
+      .def_readwrite("q_differential", &SBNInstance::q_differential)
     ;
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:

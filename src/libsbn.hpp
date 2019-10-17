@@ -77,7 +77,7 @@ struct SBNInstance {
   std::vector<double> ivec;
   std::vector<double> eval;
   std::vector<double> freqs;
-  std::vector<std::vector<double>> differential_mass_matrices;
+  std::vector<double> q_differential;
   
 
   // ** Initialization, destruction, and status
@@ -90,6 +90,7 @@ struct SBNInstance {
         ivec(std::vector<double>(16, 0.)),
         eval(std::vector<double>(4, 0.)),
         freqs(std::vector<double>(4, 0.)),
+        q_differential(std::vector<double>(16, 0.)),
         rescaling_{false} {}
 
   ~SBNInstance() { FinalizeBeagleInstances(); }
@@ -176,6 +177,7 @@ struct SBNInstance {
   void MakeBeagleInstances(int instance_count);
 
   std::vector<double> LogLikelihoods() const;
+  std::vector<double> ParameterGradients() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients() const;
 };

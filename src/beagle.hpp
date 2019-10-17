@@ -77,13 +77,22 @@ std::vector<std::pair<double, std::vector<double>>> BranchGradients(
     std::vector<BeagleInstance> beagle_instances,
     const TreeCollection &tree_collection, bool rescaling);
 
-std::vector<double> Gradient(BeagleInstance beagle_instance, const Tree &tree, bool rescaling);
-
-double ParameterGradient(BeagleInstance beagle_instance, const Tree &tree, bool rescaling, std::vector<double> q_differential,
+double ParameterGradient(BeagleInstance beagle_instance, const Tree &tree, bool rescaling,
+                   std::vector<double> q_differential,
                    std::vector<double> freqs,
                    std::vector<double> evec,
                    std::vector<double> ivec,
                    std::vector<double> eval);
+
+std::vector<double> ParameterGradients(
+                   std::vector<BeagleInstance> beagle_instances,
+                   const TreeCollection &tree_collection, bool rescaling,
+                   std::vector<double> q_differential,
+                   std::vector<double> freqs,
+                   std::vector<double> evec,
+                   std::vector<double> ivec,
+                   std::vector<double> eval);
+
 }  // namespace beagle
 
 // The tests are in libsbn.hpp, where we have access to tree parsing.
