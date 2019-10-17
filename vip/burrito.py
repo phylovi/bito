@@ -10,10 +10,7 @@ import vip.scalar_models
 class Burrito:
     """A class to wrap an instance and relevant model data.
 
-    The current division of labor is that the optimizer handles
-    everything after we have sampled a topology, while the burrito can
-    sample topologies and then ask the optimizer to update model
-    parameters accordingly.
+    TODO overview.
     """
 
     def __init__(
