@@ -74,7 +74,12 @@ class Burrito:
     def gradient_step(self):
         """Take a gradient step."""
         (branch_lengths, branch_to_split) = self.sample_topology()
-        self.scalar_model.sample_and_prep_gradients(branch_to_split)
+        theta_sample = self.opt.scalar_model.sample(
+            self.particle_count, branch_to_split
+        )
+        (dg_dpsi, dlog_sum_q_dpsi) = self.scalar_model.gradients(
+            theta_sample, branch_to_split
+        )
         # Set branch lengths using the scalar model sample
 
         def grad_log_like_with(in_branch_lengths):
@@ -89,7 +94,7 @@ class Burrito:
                 grad_log_like_with, 1, branch_lengths_arr
             ) + vip.priors.grad_log_exp_prior(branch_lengths_arr)
 
-        grad_log_p = grad_phylo_log_upost(self.scalar_model.theta_sample)
+        grad_log_p = grad_phylo_log_upost(theta_sample)
         vars_grad = np.zeros(
             (self.scalar_model.variable_count, self.scalar_model.param_count)
         )
@@ -98,10 +103,10 @@ class Burrito:
                 vars_grad[variable_index, param_index] += (
                     np.sum(
                         grad_log_p[:, branch_index]
-                        * self.scalar_model.dg_dpsi[:, variable_index, param_index],
+                        * dg_dpsi[:, variable_index, param_index],
                         axis=0,
                     )
-                    - self.scalar_model.dlog_sum_q_dpsi[variable_index, param_index]
+                    - dlog_sum_q_dpsi[variable_index, param_index]
                 )
         self.opt.gradient_step(vars_grad)
 

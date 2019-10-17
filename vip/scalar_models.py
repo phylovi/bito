@@ -19,11 +19,6 @@ class ScalarModel(abc.ABC):
 
     A full PSP parameterization (issue #119) we will need to generalize this.
 
-    * theta_sample is the current stored sample and is laid out as (particle, variable).
-    * dg_dpsi is the gradient of the reparametrization function with respect to the
-      scalar model parameters, and is laid out as (particle, variable, parameter).
-    * dlog_sum_q_dpsi is the gradient of the sum of the q function over particles with
-      respect to the scalar model parameters, and is laid out as (variable, parameter).
 
     * p is the target probability.
     * q is the distribution that we're fitting to p.
@@ -33,9 +28,6 @@ class ScalarModel(abc.ABC):
         assert initial_params.ndim == 1
         self.q_params = np.full((variable_count, len(initial_params)), initial_params)
         self.particle_count = particle_count
-        self.theta_sample = None
-        self.dg_dpsi = None
-        self.dlog_sum_q_dpsi = None
 
     @property
     def variable_count(self):
@@ -44,11 +36,6 @@ class ScalarModel(abc.ABC):
     @property
     def param_count(self):
         return self.q_params.shape[1]
-
-    def clear_sample(self):
-        self.theta_sample = None
-        self.dg_dpsi = None
-        self.dlog_sum_q_dpsi = None
 
     def suggested_step_size(self):
         return np.average(np.abs(self.q_params), axis=0) / 100
@@ -62,9 +49,18 @@ class ScalarModel(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def sample_and_prep_gradients(self, which_variables):
+    def gradients(self, theta_sample, which_variables):
         """Sample the variables in which_variables and prepare so we can take a
-        gradient with respect to them."""
+        gradient with respect to them.
+
+        * theta_sample is the current stored sample and is laid out as (particle,
+        variable).
+        * dg_dpsi is the gradient of the reparametrization function with respect to the
+          scalar model parameters, and is laid out as (particle, variable, parameter).
+        * dlog_sum_q_dpsi is the gradient of the sum of the q function over particles
+          with respect to the scalar model parameters, and is laid out as (variable,
+          parameter).
+        """
         pass
 
 
@@ -119,20 +115,20 @@ class LogNormalModel(ScalarModel):
         )
         return result
 
-    def sample_and_prep_gradients(self, which_variables):
-        self.theta_sample = self.sample(self.particle_count, which_variables)
-        epsilon = (np.log(self.theta_sample) - self.mu(which_variables)) / self.sigma(
+    def gradients(self, theta_sample, which_variables):
+        epsilon = (np.log(theta_sample) - self.mu(which_variables)) / self.sigma(
             which_variables
         )
         # See the tex for details about this gradient.
-        self.dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
-        self.dg_dpsi[:, which_variables, 0] = self.theta_sample
-        self.dg_dpsi[:, which_variables, 1] = self.theta_sample * epsilon
-        self.dlog_sum_q_dpsi = np.empty((self.variable_count, 2))
-        self.dlog_sum_q_dpsi[which_variables, 0] = -1.0 * self.particle_count
-        self.dlog_sum_q_dpsi[which_variables, 1] = -np.sum(
+        dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
+        dg_dpsi[:, which_variables, 0] = theta_sample
+        dg_dpsi[:, which_variables, 1] = theta_sample * epsilon
+        dlog_sum_q_dpsi = np.empty((self.variable_count, 2))
+        dlog_sum_q_dpsi[which_variables, 0] = -1.0 * self.particle_count
+        dlog_sum_q_dpsi[which_variables, 1] = -np.sum(
             epsilon, axis=0
         ) - self.particle_count / self.sigma(which_variables)
+        return (dg_dpsi, dlog_sum_q_dpsi)
 
 
 def exponential_factory(params):

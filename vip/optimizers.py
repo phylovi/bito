@@ -24,7 +24,6 @@ class BaseOptimizer:
         """
         assert self.scalar_model.q_params.shape == vars_grad.shape
         if not np.isfinite(np.array([vars_grad])).all():
-            self.scalar_model.clear_sample()
             return False
         update_dict = self.sgd_server.adam(
             {"scalar_params": self.step_size},
@@ -32,7 +31,6 @@ class BaseOptimizer:
             {"scalar_params": vars_grad},
         )
         self.scalar_model.q_params += update_dict["scalar_params"]
-        self.scalar_model.clear_sample()
         if history is not None:
             history.append(self.scalar_model.q_params.copy())
         return True
