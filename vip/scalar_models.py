@@ -73,10 +73,14 @@ class LogNormalModel(ScalarModel):
         super().__init__(initial_params, variable_count, particle_count)
         self.name = "LogNormal"
 
-    def mu(self, which_variables):
+    def mu(self, which_variables=None):
+        if which_variables is None:
+            return self.q_params[:, 0]
         return self.q_params[which_variables, 0]
 
-    def sigma(self, which_variables):
+    def sigma(self, which_variables=None):
+        if which_variables is None:
+            return self.q_params[:, 1]
         return self.q_params[which_variables, 1]
 
     def mode_match(self, modes):
@@ -87,9 +91,7 @@ class LogNormalModel(ScalarModel):
         # Issue #118: do we want to have the lognormal variance be in log space? Or do
         # we want to clip it?
         self.q_params[:, 1] = -0.1 * biclipped_log_modes
-        self.q_params[:, 0] = (
-            np.square(self.sigma(np.arange(self.variable_count))) + log_modes
-        )
+        self.q_params[:, 0] = np.square(self.sigma()) + log_modes
 
     def sample(self, particle_count, which_variables):
         return np.random.lognormal(
@@ -101,28 +103,34 @@ class LogNormalModel(ScalarModel):
     def sample_and_gradients(self, which_variables_arr):
         """We pass in a list of arrays, the ith entry of which is what
         variables we use for the ith particle, and get out the sample and some
-        gradients as described above."""
-        # TODO We assume that which_variables_arr is a fixed width.
-        theta_sample = np.empty((self.particle_count, which_variables_arr[0].size))
+        gradients as described above.
+
+        See the tex for details. Comments of the form eq:XXX refer to equations in the
+        tex.
+        """
+        # We check that which_variables_arr is a fixed width in the loop below.
+        which_variables_size = which_variables_arr[0].size
+        theta_sample = np.empty((self.particle_count, which_variables_size))
         dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
-        dlog_sum_q_dpsi = np.zeros((self.variable_count, 2))
         for particle_idx, which_variables in enumerate(which_variables_arr):
+            assert which_variables_size == which_variables.size
             theta_sample[particle_idx, :] = np.random.lognormal(
                 self.mu(which_variables), self.sigma(which_variables)
             )
+            # eq:gLogNorm
             epsilon = (
                 np.log(theta_sample[particle_idx, :]) - self.mu(which_variables)
             ) / self.sigma(which_variables)
-            # See the tex for details about this gradient.
+            # eq:dgdPsi
             dg_dpsi[particle_idx, which_variables, 0] = theta_sample[particle_idx, :]
             dg_dpsi[particle_idx, which_variables, 1] = (
                 theta_sample[particle_idx, :] * epsilon
             )
-            dlog_sum_q_dpsi[which_variables, 0] += -1.0
-            dlog_sum_q_dpsi[which_variables, 1] += -epsilon - 1 / self.sigma(
-                which_variables
-            )
-        return (theta_sample, dg_dpsi, dlog_sum_q_dpsi)
+        # eq:dlogqgdPsi
+        dlog_qg_dpsi = np.zeros((self.variable_count, 2))
+        dlog_qg_dpsi[:, 0] = -1.0
+        dlog_qg_dpsi[:, 1] = -epsilon - 1.0 / self.sigma()
+        return (theta_sample, dg_dpsi, dlog_qg_dpsi)
 
     def log_prob(self, theta_sample, which_variables):
         """Return a log probability for each of the particles given in

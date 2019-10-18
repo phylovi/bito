@@ -86,14 +86,13 @@ class Burrito:
         """Take a gradient step."""
         branch_lengths_arr = self.sample_topologies()
         branch_to_split_arr = self.branch_representations()
+        # Sample continuous variables based on the branch representations.
         # For PSPs, we'll need to take these branch representations and turn them into
         # the list of variables that they employ.
-        (
-            theta_sample,
-            dg_dpsi,
-            dlog_sum_q_dpsi,
-        ) = self.scalar_model.sample_and_gradients(branch_to_split_arr)
-        # Put the branch lengths in the libsbn instance trees.
+        (theta_sample, dg_dpsi, dlog_qg_dpsi) = self.scalar_model.sample_and_gradients(
+            branch_to_split_arr
+        )
+        # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(branch_lengths_arr):
             branch_lengths[:] = theta_sample[particle_idx, :]
         gradient_result = self.inst.branch_gradients()
@@ -114,9 +113,7 @@ class Burrito:
                     vars_grad[variable_index, param_index] += (
                         dlogp_dtheta[particle_idx, branch_index]
                         * dg_dpsi[particle_idx, variable_index, param_index]
-                        # TODO I don't understand why this particle count division.
-                        - dlog_sum_q_dpsi[variable_index, param_index]
-                        / self.particle_count
+                        - dlog_qg_dpsi[variable_index, param_index]
                     )
         self.opt.gradient_step(vars_grad)
 
