@@ -6,6 +6,7 @@
 \usepackage{graphicx}
 \usepackage[hidelinks]{hyperref}
 \usepackage{bm}
+\usepackage{showlabels}
 
 \newcommand{\psp}{\slash\!\!\slash}
 \newcommand{\qSplit}{q^\textsf{S}\hspace{-1pt}}
@@ -59,7 +60,7 @@ Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i
     \sum_b
     \frac{\partial \log p(\bm{Y} , \tau, \bm\theta)}{\partial \theta_b} \,
     \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}.
-    \label{eq:dLdPsi}
+    \label{eq:dlogpdPsi}
 \end{equation}
 Typically a variational parameter will appear in the expression for at most one branch, thus in this case at most one term of this sum will be nonzero.
 
@@ -69,13 +70,12 @@ p(\bm{Y},\tau,\bm\theta) =
 p(\bm{Y}|\tau,\bm\theta) \, p(\bm\theta | \tau) \, p(\tau).
 \]
 So
-\begin{equation}
+\begin{equation*}
 \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b} =
 \frac{\partial \log p(\bm{Y} | \tau, \bm\theta)}{\partial \theta_b}
 +
 \frac{\partial \log p(\bm\theta | \tau)}{\partial \theta_b}
-\label{eq:dPdPsi}
-\end{equation}
+\end{equation*}
 The left hand term of the sum is the standard log phylogenetic gradient, while the right hand term is the derivative of the log branch length prior with respect to a specific branch.
 
 In the case where the branch length prior $p(\bm\theta | \tau)$ is a product of terms $\prod_b p_b(\theta_b)$ this becomes very simple:
@@ -98,12 +98,12 @@ We will assume that $q_{\bm\psi}(\bm\theta | \tau)$ factors as a product of term
 \]
 
 So, we get the derivative of $L(\bm\phi, \bm\psi)$ with respect to $\psi_i$ being the sum over $b$ of:
-\begin{equation*}
+\begin{equation}
     \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}
     \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}
     - \frac{\partial \log q_{b, \bm\psi}(g_{b, \bm\psi}(\bm\epsilon|\tau)|\tau)}{\partial \psi_i}.
-\end{equation*}
-
+    \label{eq:dLdPsi}
+\end{equation}
 
 \subsubsection*{Split-based parametrization:}
 First consider the split-based parametrization given in the ``simple independent approximation'' section of the 2018 ICLR paper.
@@ -164,7 +164,12 @@ If $q$ is log-normal, we take $\psi_\varsigma$ as being the location-scale pair 
 \log q(\theta; \psi_\varsigma) := c - \log \theta - \log \sigma_\varsigma - \frac{(\log \theta - \mu_\varsigma)^2}{2 \sigma_\varsigma^2}.
 \]
 for a constant $c$.
-Taking $g(\epsilon; \psi_\varsigma) := \exp(\mu_\varsigma + \sigma_\varsigma \epsilon)$,
+Taking
+\begin{equation}
+g(\epsilon; \psi_\varsigma) := \exp(\mu_\varsigma + \sigma_\varsigma \epsilon),
+\label{eq:gLogNorm}
+\end{equation}
+we have
 \begin{align*}
 \log q(g(\epsilon; \psi_\varsigma); \psi_\varsigma)
 & := c - (\mu_\varsigma + \sigma_\varsigma \epsilon)
@@ -177,12 +182,14 @@ Thus,
     \frac{\partial \log q(g(\epsilon; \psi_\varsigma); \psi_\varsigma)}{\partial \mu_\varsigma} = -1
     \qquad
     \frac{\partial \log q(g(\epsilon; \psi_\varsigma); \psi_\varsigma)}{\partial \sigma_\varsigma} = -\epsilon - \frac{1}{\sigma_\varsigma}.
+    \label{eq:dlogqgdPsi}
 \end{equation}
 Also,
 \begin{equation}
     \frac{\partial g(\epsilon; \psi_\varsigma)}{\partial \mu_\varsigma} = g(\epsilon; \psi_\varsigma)
     \qquad
     \frac{\partial g(\epsilon; \psi_\varsigma)}{\partial \sigma_\varsigma} = g(\epsilon; \psi_\varsigma) \cdot \epsilon \, .
+    \label{eq:dgdPsi}
 \end{equation}
 
 
