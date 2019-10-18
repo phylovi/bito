@@ -11,7 +11,8 @@ tfd = tfp.distributions
 class ScalarModel(abc.ABC):
     """An abstract base class for Scalar Models.
 
-    See the tex file in doc to understand the notation here.
+    See the tex file in `doc` to understand the notation here, and Burrito for notes
+    about abbreviations.
 
     PSP: set terminology about what thetas are vs variables of the scalar model.
 

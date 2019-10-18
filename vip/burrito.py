@@ -40,7 +40,6 @@ class Burrito:
         self.inst.read_fasta_file(fasta_path)
         self.inst.make_beagle_instances(thread_count)
         sbn_model = vip.sbn_model.SBNModel(self.inst)
-        (branch_lengths, branch_to_split) = self.sample_topology()
         # PSP: this will need to be expanded.
         variable_count = self.inst.psp_indexer.details()["after_rootsplits_index"]
         scalar_model = vip.scalar_models.of_name(
@@ -63,6 +62,7 @@ class Burrito:
     def scalar_model(self):
         return self.opt.scalar_model
 
+    # PSP: extract
     def split_based_representations(self):
         """The ith entry of this array gives the index of the split
         corresponding to the ith branch."""
@@ -70,22 +70,6 @@ class Burrito:
             np.array(representation[0])
             for representation in self.inst.get_psp_indexer_representations()
         ]
-
-    def sample_topology(self):
-        """Sample a tree, then set up branch length vector and the translation
-        from splits to branches and back again."""
-        self.inst.sample_trees(1)
-        tree = self.inst.tree_collection.trees[0]
-        branch_lengths_extended = np.array(tree.branch_lengths, copy=False)
-        # Here we are getting a slice that excludes the last (fake) element.
-        # Thus we can just deal with the actual branch lengths.
-        branch_lengths = branch_lengths_extended[:-1]
-        # Now we need to set things up to translate between split indexing and branch
-        # indexing.
-        # The ith entry of this array gives the index of the split
-        # corresponding to the ith branch.
-        branch_to_split = np.array(self.inst.get_psp_indexer_representations()[0][0])
-        return (branch_lengths, branch_to_split)
 
     def sample_topologies(self, count):
         """Sample trees into the instance and return the np'd version of their
