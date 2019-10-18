@@ -83,7 +83,11 @@ class Burrito:
         ]
 
     def gradient_step(self):
-        """Take a gradient step."""
+        """Take a gradient step.
+
+        See the tex for details. Comments of the form eq:XXX refer to equations in the
+        tex.
+        """
         branch_lengths_arr = self.sample_topologies()
         branch_to_split_arr = self.branch_representations()
         # Sample continuous variables based on the branch representations.
@@ -109,12 +113,12 @@ class Burrito:
         )
         for particle_idx, branch_to_split in enumerate(branch_to_split_arr):
             for branch_index, variable_index in enumerate(branch_to_split):
-                for param_index in range(self.scalar_model.param_count):
-                    vars_grad[variable_index, param_index] += (
-                        dlogp_dtheta[particle_idx, branch_index]
-                        * dg_dpsi[particle_idx, variable_index, param_index]
-                        - dlog_qg_dpsi[variable_index, param_index]
-                    )
+                vars_grad[variable_index, :] += (
+                    # eq:dLdPsi
+                    dlogp_dtheta[particle_idx, branch_index]
+                    * dg_dpsi[particle_idx, variable_index, :]
+                    - dlog_qg_dpsi[variable_index, :]
+                )
         self.opt.gradient_step(vars_grad)
 
     def gradient_steps(self, step_count):

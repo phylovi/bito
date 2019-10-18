@@ -60,7 +60,7 @@ Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i
     \sum_b
     \frac{\partial \log p(\bm{Y} , \tau, \bm\theta)}{\partial \theta_b} \,
     \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}.
-    \label{eq:dLdPsi}
+    \label{eq:dlogpdPsi}
 \end{equation}
 Typically a variational parameter will appear in the expression for at most one branch, thus in this case at most one term of this sum will be nonzero.
 
@@ -98,12 +98,12 @@ We will assume that $q_{\bm\psi}(\bm\theta | \tau)$ factors as a product of term
 \]
 
 So, we get the derivative of $L(\bm\phi, \bm\psi)$ with respect to $\psi_i$ being the sum over $b$ of:
-\begin{equation*}
+\begin{equation}
     \frac{\partial \log p(\bm{Y}, \tau, \bm\theta)}{\partial \theta_b}
     \frac{\partial g_{b,\bm\psi}(\bm\epsilon | \tau)}{\partial \psi_i}
     - \frac{\partial \log q_{b, \bm\psi}(g_{b, \bm\psi}(\bm\epsilon|\tau)|\tau)}{\partial \psi_i}.
-\end{equation*}
-
+    \label{eq:dLdPsi}
+\end{equation}
 
 \subsubsection*{Split-based parametrization:}
 First consider the split-based parametrization given in the ``simple independent approximation'' section of the 2018 ICLR paper.
