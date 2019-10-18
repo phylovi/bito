@@ -41,11 +41,12 @@ class Burrito:
         self.inst.make_beagle_instances(thread_count)
         sbn_model = vip.sbn_model.SBNModel(self.inst)
         (branch_lengths, branch_to_split) = self.sample_topology()
+        # PSP: this will need to be expanded.
+        variable_count = self.inst.psp_indexer.details()["after_rootsplits_index"]
         scalar_model = vip.scalar_models.of_name(
-            model_name, variable_count=len(branch_lengths)
+            model_name, variable_count=variable_count
         )
         self.opt = vip.optimizers.of_name(optimizer_name, sbn_model, scalar_model)
-
         # PSP: Make choices about branch representations here, eventually.
         self.branch_representations = self.split_based_representations
         # PSP: We will also want to make a choice about using an alternative to

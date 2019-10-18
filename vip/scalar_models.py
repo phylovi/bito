@@ -13,11 +13,7 @@ class ScalarModel(abc.ABC):
 
     See the tex file in doc to understand the notation here.
 
-    A "variable" here is some scalar variable that's part of our model, and we will use
-    "theta" to denote it. For an unrooted tree, the variables are the branch lengths for
-    the ensemble of trees in the SBN support.
-
-    A full PSP parameterization (issue #119) we will need to generalize this.
+    PSP: set terminology about what thetas are vs variables of the scalar model.
 
     * p is the target probability.
     * q is the distribution that we're fitting to p.
@@ -94,29 +90,28 @@ class LogNormalModel(ScalarModel):
         self.q_params[:, 1] = -0.1 * biclipped_log_modes
         self.q_params[:, 0] = np.square(self.sigma()) + log_modes
 
-    def sample(self, particle_count, which_variables_arr):
+    def sample(self, particle_count, px_which_variables):
         """Get a sample of size particle_count from the model.
 
-        which_variables_arr: a list of arrays, the ith entry of which is what
+        px_which_variables: a list of arrays, the ith entry of which is what
         variables we use for the ith particle, and get out the sample. If it is None,
         sample all the variables.
         """
-        if which_variables_arr is None:
+        if px_which_variables is None:
             return np.random.lognormal(
                 self.mu(), self.sigma(), (particle_count, self.variable_count)
             )
         # else:
-        which_variables_size = which_variables_arr[0].size
-        # TODO we don't want self.particle count.
+        which_variables_size = px_which_variables[0].size
         theta_sample = np.empty((particle_count, which_variables_size))
-        for particle_idx, which_variables in enumerate(which_variables_arr):
+        for particle_idx, which_variables in enumerate(px_which_variables):
             assert which_variables_size == which_variables.size
             theta_sample[particle_idx, :] = np.random.lognormal(
                 self.mu(which_variables), self.sigma(which_variables)
             )
         return theta_sample
 
-    def sample_and_gradients(self, particle_count, which_variables_arr):
+    def sample_and_gradients(self, particle_count, px_which_variables):
         """We pass in a list of arrays, the ith entry of which is what
         variables we use for the ith particle, and get out the sample and some
         gradients as described above.
@@ -124,11 +119,11 @@ class LogNormalModel(ScalarModel):
         See the tex for details. Comments of the form eq:XXX refer to
         equations in the tex.
         """
-        # We check that which_variables_arr is a fixed width in the loop below.
-        which_variables_size = which_variables_arr[0].size
+        # We check that px_which_variables is a fixed width in the loop below.
+        which_variables_size = px_which_variables[0].size
         theta_sample = np.empty((particle_count, which_variables_size))
         dg_dpsi = np.empty((particle_count, self.variable_count, 2))
-        for particle_idx, which_variables in enumerate(which_variables_arr):
+        for particle_idx, which_variables in enumerate(px_which_variables):
             assert which_variables_size == which_variables.size
             theta_sample[particle_idx, :] = np.random.lognormal(
                 self.mu(which_variables), self.sigma(which_variables)
