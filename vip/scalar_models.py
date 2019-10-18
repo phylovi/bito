@@ -61,7 +61,9 @@ class ScalarModel(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def log_prob(self, theta_sample, which_variables):
+    def log_prob(self, theta, which_variables):
+        """Get the log probability for the values in theta with respect to the variables
+        specified in which_variables."""
         pass
 
 
@@ -153,7 +155,7 @@ class LogNormalModel(ScalarModel):
         frac{1}{x sigma sqrt{2 pi}} exp(-frac{(log x - mu)^2}{2 sigma^2})
 
         So the log density is
-        -(log x + log sigma + 0.5 log(2 pi)) -frac{(log x - mu)^2}{2 sigma^2})
+        -(log x + log sigma + 0.5 log(2 pi) + frac{(log x - mu)^2}{2 sigma^2})
         """
         assert theta.size == which_variables.size
         mu = self.mu(which_variables)
@@ -162,13 +164,12 @@ class LogNormalModel(ScalarModel):
         # Here's the fancy stable version.
         # ratio = np.exp(np.log((np.log(np.log(theta)-mu)**2) - np.log(sigma**2))
         ratio = (log_theta - mu) ** 2 / (2 * sigma ** 2)
-        result = -(
-            which_variables.size * 0.5 * np.log(2 * np.pi)
-            + np.sum(log_theta)
+        return -(
+            np.sum(log_theta)
             + np.sum(np.log(sigma))
+            + which_variables.size * 0.5 * np.log(2 * np.pi)
             + np.sum(ratio)
         )
-        return result
 
 
 def exponential_factory(params):
