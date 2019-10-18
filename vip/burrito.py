@@ -45,7 +45,9 @@ class Burrito:
         scalar_model = vip.scalar_models.of_name(
             model_name, variable_count=variable_count
         )
-        self.opt = vip.optimizers.of_name(optimizer_name, sbn_model, scalar_model)
+        self.opt = vip.optimizers.of_name(
+            optimizer_name, sbn_model, scalar_model, self.estimate_elbo
+        )
         # PSP: Make choices about branch representations here, eventually.
         self.branch_representations = self.split_based_representations
         # PSP: We will also want to make a choice about using an alternative to
@@ -140,7 +142,7 @@ class Burrito:
             for step in bar:
                 self.gradient_step()
 
-    def elbo_estimate(self, particle_count):
+    def estimate_elbo(self, particle_count):
         """A naive Monte Carlo estimate of the ELBO."""
         px_branch_lengths = self.sample_topologies(particle_count)
         px_branch_to_split = self.branch_representations()

@@ -57,7 +57,7 @@ def fixed(
         [fit_sample.melt(id_vars="type"), mcmc_split_lengths.melt(id_vars="type")]
     )
     fitting_results["variable"] = fitting_results["variable"].astype(str)
-    final_elbo = burro.elbo_estimate(
+    final_elbo = burro.estimate_elbo(
         particle_count=particle_count_for_final_elbo_estimate
     )
 

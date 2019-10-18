@@ -5,9 +5,12 @@ from vip.scalar_models import ScalarModel
 
 
 class BaseOptimizer:
-    def __init__(self, sbn_model: SBNModel, scalar_model: ScalarModel):
+    def __init__(
+        self, sbn_model: SBNModel, scalar_model: ScalarModel, elbo_estimator_fun
+    ):
         self.sbn_model = sbn_model
         self.scalar_model = scalar_model
+        self.estimate_elbo = elbo_estimator_fun
         self.trace = []
         self.step_number = 0
         self.step_size = scalar_model.suggested_step_size()
@@ -41,8 +44,10 @@ class BaseOptimizer:
 
 
 class SimpleOptimizer(BaseOptimizer):
-    def __init__(self, sbn_model: SBNModel, scalar_model: ScalarModel):
-        super().__init__(sbn_model, scalar_model)
+    def __init__(
+        self, sbn_model: SBNModel, scalar_model: ScalarModel, elbo_estimator_fun
+    ):
+        super().__init__(sbn_model, scalar_model, elbo_estimator_fun)
         self.stepsize_decreasing_rate = 1 - 1e-2
 
     def update(self, gradient_step_was_successful):
@@ -57,8 +62,10 @@ class BumpStepsizeOptimizer(BaseOptimizer):
     """An optimizer that increases the stepsize until it's too big, then
     decreases it."""
 
-    def __init__(self, sbn_model: SBNModel, scalar_model: ScalarModel):
-        super().__init__(sbn_model, scalar_model)
+    def __init__(
+        self, sbn_model: SBNModel, scalar_model: ScalarModel, elbo_estimator_fun
+    ):
+        super().__init__(sbn_model, scalar_model, elbo_estimator_fun)
         self.window_size = 5
         self.stepsize_increasing_rate = 1.2
         self.stepsize_decreasing_rate = 1 - 1e-2
@@ -76,27 +83,21 @@ class BumpStepsizeOptimizer(BaseOptimizer):
         self.step_size /= self.stepsize_drop_from_peak
         self.stepsize_increasing = False
 
-    def gradient_step(self, target_log_like, grad_target_log_like, which_variables):
-        raise NotImplementedError("We don't use which_variables yet.")
+    def update(self, gradient_step_was_successful):
+        if not gradient_step_was_successful:
+            self._turn_around()
         # Are we starting to decrease our objective function?
         if self.stepsize_increasing and self.step_number >= 2 * self.window_size:
             last_epoch = self.trace[-self.window_size :]
             prev_epoch = self.trace[-2 * self.window_size : -self.window_size]
             if np.mean(last_epoch) < np.mean(prev_epoch):
                 self._turn_around()
-        # Perform gradient step.
+        # Adjust step size.
         if self.stepsize_increasing:
             self.step_size *= self.stepsize_increasing_rate
         else:
             self.step_size *= self.stepsize_decreasing_rate
-        self.scalar_model.sample_and_prep_gradients()
-        if not self._simple_gradient_step(
-            grad_target_log_like(self.scalar_model.theta_sample)
-        ):
-            self._turn_around()  # Gradient step failed.
-        self.trace.append(
-            self.scalar_model.elbo_estimate(target_log_like, particle_count=500)
-        )
+        self.trace.append(self.estimate_elbo(particle_count=500))
         if self.trace[-1] > self.best_elbo:
             self.best_elbo = self.trace[-1]
             np.copyto(self.best_q_params, self.scalar_model.q_params)
@@ -104,11 +105,10 @@ class BumpStepsizeOptimizer(BaseOptimizer):
         return np.isfinite(self.trace[-1])
 
 
-def of_name(name, sbn_model: SBNModel, scalar_model: ScalarModel):
-    # choices = {"simple": SimpleOptimizer, "bump": BumpStepsizeOptimizer}
-    choices = {"simple": SimpleOptimizer}
+def of_name(name, sbn_model: SBNModel, scalar_model: ScalarModel, elbo_estimator_fun):
+    choices = {"simple": SimpleOptimizer, "bump": BumpStepsizeOptimizer}
     if name in choices:
         choice = choices[name]
     else:
         raise Exception(f"Optimizer {name} not known.")
-    return choice(sbn_model, scalar_model)
+    return choice(sbn_model, scalar_model, elbo_estimator_fun)
