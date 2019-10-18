@@ -131,14 +131,13 @@ class Node {
   // above the current node.
   SizeVectorVector IdsAbove() const;
 
-  std::string Newick(std::function<std::string(const Node*)> node_labeler,
-                     const DoubleVectorOption& branch_lengths =
-                         std::nullopt) const;
-
   std::string Newick(
-      const DoubleVectorOption& branch_lengths = std::nullopt,
-      const TagStringMapOption& node_labels = std::nullopt,
-      bool show_tags = false) const;
+      std::function<std::string(const Node*)> node_labeler,
+      const DoubleVectorOption& branch_lengths = std::nullopt) const;
+
+  std::string Newick(const DoubleVectorOption& branch_lengths = std::nullopt,
+                     const TagStringMapOption& node_labels = std::nullopt,
+                     bool show_tags = false) const;
 
   // Construct a vector such that the ith entry is the id of the parent of the
   // node having id i. We assume that the indices are contiguous, and that the
