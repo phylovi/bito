@@ -48,9 +48,7 @@ TEST_CASE("TreeCollection") {
   auto counter = collection.TopologyCounter();
   std::unordered_map<std::string, uint32_t> counted;
   for (const auto &iter : counter) {
-    SafeInsert(counted,
-               iter.first->Newick(std::experimental::nullopt,
-                                  std::experimental::nullopt, true),
+    SafeInsert(counted, iter.first->Newick(std::nullopt, std::nullopt, true),
                iter.second);
   }
   std::unordered_map<std::string, uint32_t> counted_correct(

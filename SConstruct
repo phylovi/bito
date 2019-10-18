@@ -13,10 +13,11 @@ if "CONDA_PREFIX" not in os.environ:
         "\nThis SConstruct is meant to be run in the libsbn conda environment; "
         "see README for installation process."
     )
-if "CC" not in os.environ:
-    sys.exit(
-        "\nDid you install compilers using conda? See README for installation process."
-    )
+if platform.system() == "Darwin":
+    if "CC" not in os.environ:
+        os.environ["CC"] = "clang"
+    if "CXX" not in os.environ:
+        os.environ["CXX"] = "clang"
 
 metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
 full_tag = enscons.get_abi3_tag()
@@ -29,7 +30,7 @@ env = Environment(
     CPPPATH=["include", "src", pybind11.get_include()],
     # CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion', '-pthread'],
     CCFLAGS=["-O3", "-pthread"],
-    CXXFLAGS=["-std=c++14"],
+    CXXFLAGS=["-std=c++17"],
     CC=os.environ["CC"],
     CXX=os.environ["CXX"],
 )

@@ -47,11 +47,17 @@ int CreateInstance(int tip_count, int alignment_length,
   // BeagleFlags (input)
   int requirement_flags = BEAGLE_FLAG_SCALING_MANUAL;
 
-  return beagleCreateInstance(
+  auto beagle_instance = beagleCreateInstance(
       tip_count, partials_buffer_count, compact_buffer_count, state_count,
       pattern_count, eigen_buffer_count, matrix_buffer_count, category_count,
       scale_buffer_count, allowed_resources, resource_count, preference_flags,
       requirement_flags, return_info);
+
+  if (return_info->flags &
+      (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
+    return beagle_instance;
+  }
+  Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
 }
 
 BeagleInstance CreateInstance(const SitePattern &site_pattern) {
