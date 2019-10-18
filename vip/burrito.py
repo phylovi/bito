@@ -80,6 +80,30 @@ class Burrito:
             for tree in self.inst.tree_collection.trees
         ]
 
+    def split_based_scalar_grad(
+        self, theta_sample, branch_gradients, branch_to_split_arr, dg_dpsi, dlog_qg_dpsi
+    ):
+        # Calculate the gradient of the log unnormalized posterior.
+        dlogp_dtheta = np.zeros_like(theta_sample)
+        for particle_idx, (_, log_grad_raw) in enumerate(branch_gradients):
+            # This :-2 is because of the two trailing zeroes that appear at the end of
+            # the gradient.
+            dlogp_dtheta[particle_idx, :] = np.array(log_grad_raw, copy=False)[:-2]
+        dlogp_dtheta += vip.priors.grad_log_exp_prior(theta_sample)
+        # Now build up the complete gradient with respect to the variables.
+        grad = np.zeros(
+            (self.scalar_model.variable_count, self.scalar_model.param_count)
+        )
+        for particle_idx, branch_to_split in enumerate(branch_to_split_arr):
+            for branch_index, variable_index in enumerate(branch_to_split):
+                grad[variable_index, :] += (
+                    # eq:dLdPsi
+                    dlogp_dtheta[particle_idx, branch_index]
+                    * dg_dpsi[particle_idx, variable_index, :]
+                    - dlog_qg_dpsi[variable_index, :]
+                )
+        return grad
+
     def gradient_step(self):
         """Take a gradient step.
 
@@ -97,27 +121,11 @@ class Burrito:
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(branch_lengths_arr):
             branch_lengths[:] = theta_sample[particle_idx, :]
-        gradient_result = self.inst.branch_gradients()
-        # Calculate the gradient of the log unnormalized posterior.
-        dlogp_dtheta = np.zeros_like(theta_sample)
-        for particle_idx, (_, log_grad_raw) in enumerate(gradient_result):
-            # This :-2 is because of the two trailing zeroes that appear at the end of
-            # the gradient.
-            dlogp_dtheta[particle_idx, :] = np.array(log_grad_raw, copy=False)[:-2]
-        dlogp_dtheta += vip.priors.grad_log_exp_prior(theta_sample)
-        # Now build up the complete gradient with respect to the variables.
-        vars_grad = np.zeros(
-            (self.scalar_model.variable_count, self.scalar_model.param_count)
+        branch_gradients = self.inst.branch_gradients()
+        scalar_grad = self.split_based_scalar_grad(
+            theta_sample, branch_gradients, branch_to_split_arr, dg_dpsi, dlog_qg_dpsi
         )
-        for particle_idx, branch_to_split in enumerate(branch_to_split_arr):
-            for branch_index, variable_index in enumerate(branch_to_split):
-                vars_grad[variable_index, :] += (
-                    # eq:dLdPsi
-                    dlogp_dtheta[particle_idx, branch_index]
-                    * dg_dpsi[particle_idx, variable_index, :]
-                    - dlog_qg_dpsi[variable_index, :]
-                )
-        self.opt.gradient_step(vars_grad)
+        self.opt.gradient_step(scalar_grad)
 
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
