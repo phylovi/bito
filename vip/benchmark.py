@@ -48,10 +48,7 @@ def fixed(
     opt_trace = pd.DataFrame({"elbo": burro.opt.trace}).reset_index()
 
     fit_sample = pd.DataFrame(
-        burro.opt.scalar_model.sample(
-            len(mcmc_split_lengths),
-            which_variables=np.arange(burro.scalar_model.variable_count),
-        )
+        burro.opt.scalar_model.sample(len(mcmc_split_lengths), None)
     )
     fit_sample["total"] = fit_sample.sum(axis=1)
     fit_sample["type"] = "vb"

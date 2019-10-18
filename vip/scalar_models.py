@@ -23,10 +23,9 @@ class ScalarModel(abc.ABC):
     * q is the distribution that we're fitting to p.
     """
 
-    def __init__(self, initial_params, variable_count, particle_count):
+    def __init__(self, initial_params, variable_count):
         assert initial_params.ndim == 1
         self.q_params = np.full((variable_count, len(initial_params)), initial_params)
-        self.particle_count = particle_count
 
     @property
     def variable_count(self):
@@ -69,8 +68,8 @@ class ScalarModel(abc.ABC):
 class LogNormalModel(ScalarModel):
     """A log-normal model with hand-computed gradients."""
 
-    def __init__(self, initial_params, variable_count, particle_count):
-        super().__init__(initial_params, variable_count, particle_count)
+    def __init__(self, initial_params, variable_count):
+        super().__init__(initial_params, variable_count)
         self.name = "LogNormal"
 
     def mu(self, which_variables=None):
@@ -93,25 +92,40 @@ class LogNormalModel(ScalarModel):
         self.q_params[:, 1] = -0.1 * biclipped_log_modes
         self.q_params[:, 0] = np.square(self.sigma()) + log_modes
 
-    def sample(self, particle_count, which_variables):
-        return np.random.lognormal(
-            self.mu(which_variables),
-            self.sigma(which_variables),
-            (particle_count, len(which_variables)),
-        )
+    def sample(self, particle_count, which_variables_arr):
+        """Get a sample of size particle_count from the model.
 
-    def sample_and_gradients(self, which_variables_arr):
+        which_variables_arr: a list of arrays, the ith entry of which is what
+        variables we use for the ith particle, and get out the sample. If it is None,
+        sample all the variables.
+        """
+        if which_variables_arr is None:
+            return np.random.lognormal(
+                self.mu(), self.sigma(), (particle_count, self.variable_count)
+            )
+        # else:
+        which_variables_size = which_variables_arr[0].size
+        # TODO we don't want self.particle count.
+        theta_sample = np.empty((particle_count, which_variables_size))
+        for particle_idx, which_variables in enumerate(which_variables_arr):
+            assert which_variables_size == which_variables.size
+            theta_sample[particle_idx, :] = np.random.lognormal(
+                self.mu(which_variables), self.sigma(which_variables)
+            )
+        return theta_sample
+
+    def sample_and_gradients(self, particle_count, which_variables_arr):
         """We pass in a list of arrays, the ith entry of which is what
         variables we use for the ith particle, and get out the sample and some
         gradients as described above.
 
-        See the tex for details. Comments of the form eq:XXX refer to equations in the
-        tex.
+        See the tex for details. Comments of the form eq:XXX refer to
+        equations in the tex.
         """
         # We check that which_variables_arr is a fixed width in the loop below.
         which_variables_size = which_variables_arr[0].size
-        theta_sample = np.empty((self.particle_count, which_variables_size))
-        dg_dpsi = np.empty((self.particle_count, self.variable_count, 2))
+        theta_sample = np.empty((particle_count, which_variables_size))
+        dg_dpsi = np.empty((particle_count, self.variable_count, 2))
         for particle_idx, which_variables in enumerate(which_variables_arr):
             assert which_variables_size == which_variables.size
             theta_sample[particle_idx, :] = np.random.lognormal(
@@ -132,22 +146,27 @@ class LogNormalModel(ScalarModel):
         dlog_qg_dpsi[:, 1] = -epsilon - 1.0 / self.sigma()
         return (theta_sample, dg_dpsi, dlog_qg_dpsi)
 
-    def log_prob(self, theta_sample, which_variables):
-        """Return a log probability for each of the particles given in
-        theta_sample."""
-        assert theta_sample.shape[1] == which_variables.size
-        log_z = np.log(theta_sample)
+    def log_prob(self, theta, which_variables):
+        """Return a log probability for each of the particles given in theta.
+
+        The density is:
+        frac{1}{x sigma sqrt{2 pi}} exp(-frac{(log x - mu)^2}{2 sigma^2})
+
+        So the log density is
+        -(log x + log sigma + 0.5 log(2 pi)) -frac{(log x - mu)^2}{2 sigma^2})
+        """
+        assert theta.size == which_variables.size
+        mu = self.mu(which_variables)
+        sigma = self.sigma(which_variables)
+        log_theta = np.log(theta)
         # Here's the fancy stable version.
-        # ratio = np.exp(np.log((np.log(np.log(theta_sample)-mu)**2) - np.log(sigma**2))
-        ratio = (log_z - self.mu(which_variables)) ** 2 / (
-            2 * self.sigma(which_variables) ** 2
-        )
-        # Below we're summing over axis 1, which is the variable axis.
-        result = (
-            -0.5 * np.log(2 * np.pi)
-            - np.sum(log_z, axis=1)
-            - np.sum(np.log(self.sigma(which_variables)))
-            - np.sum(ratio, axis=1)
+        # ratio = np.exp(np.log((np.log(np.log(theta)-mu)**2) - np.log(sigma**2))
+        ratio = (log_theta - mu) ** 2 / (2 * sigma ** 2)
+        result = -(
+            which_variables.size * 0.5 * np.log(2 * np.pi)
+            + np.sum(log_theta)
+            + np.sum(np.log(sigma))
+            + np.sum(ratio)
         )
         return result
 
@@ -220,7 +239,7 @@ class TFScalarModel(ScalarModel):
         else:
             return theta_sample
 
-    def sample_and_prep_gradients(self, which_variables):
+    def sample_and_prep_gradients(self, particle_count, which_variables):
         """Take a sample from q and prepare a gradient of the sample and of log
         q with respect to the parameters of q."""
         raise NotImplementedError("We don't use which_variables yet.")
@@ -228,7 +247,7 @@ class TFScalarModel(ScalarModel):
             tf_params = tf.constant(self.q_params, dtype=tf.float32)
             g.watch(tf_params)
             q_distribution = self.q_factory(tf_params)
-            tf_z = q_distribution.sample(self.particle_count)
+            tf_z = q_distribution.sample(particle_count)
             q_term = tf.math.reduce_sum(q_distribution.log_prob(tf_z))
         self.theta_sample = tf_z.numpy()
         # The Jacobian is laid out as particles x edges x edges x params.
@@ -238,14 +257,12 @@ class TFScalarModel(ScalarModel):
         return self.theta_sample
 
 
-def of_name(name, *, variable_count, particle_count):
+def of_name(name, *, variable_count):
     def build_tf_model(q_factory, initial_params):
-        return TFScalarModel(
-            q_factory, np.array(initial_params), variable_count, particle_count
-        )
+        return TFScalarModel(q_factory, np.array(initial_params), variable_count)
 
     if name == "lognormal":
-        return LogNormalModel(np.array([-2.0, 0.5]), variable_count, particle_count)
+        return LogNormalModel(np.array([-2.0, 0.5]), variable_count)
     # if name == "tf_lognormal":
     #     return build_tf_model(lognormal_factory, [-2.0, 0.5])
     # if name == "tf_truncated_lognormal":
