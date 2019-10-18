@@ -10,7 +10,12 @@ import vip.scalar_models
 class Burrito:
     """A class to wrap an instance and relevant model data.
 
-    TODO overview.
+    Some terminology:
+
+    * We sample "particles" in order to calculate the ELBO and to do stochastic gradient
+    ascent. This is a handy terminology because it can be used for trees, or scalar
+    parameters, etc. We use the prefix `px_` to designate that the first dimension of
+    the given object is across particles.
     """
 
     def __init__(
@@ -33,16 +38,28 @@ class Burrito:
         # Set up tree likelihood calculation.
         self.inst.read_fasta_file(fasta_path)
         self.inst.make_beagle_instances(thread_count)
-        self.sbn_model = vip.sbn_model.SBNModel(self.inst)
+        sbn_model = vip.sbn_model.SBNModel(self.inst)
         (branch_lengths, branch_to_split) = self.sample_topology()
         scalar_model = vip.scalar_models.of_name(
             model_name, variable_count=len(branch_lengths)
         )
-        self.opt = vip.optimizers.of_name(optimizer_name, self.sbn_model, scalar_model)
-        self.scalar_model = self.opt.scalar_model
+        self.opt = vip.optimizers.of_name(optimizer_name, sbn_model, scalar_model)
 
-        # Make choices about branch representations here, eventually.
+        # PSP: Make choices about branch representations here, eventually.
         self.branch_representations = self.split_based_representations
+        # PSP: We will also want to make a choice about using an alternative to
+        # split_based_scalar_grad.
+
+    # We want the models to be part of the optimizer because they have state that's
+    # closely connected with optimizer state. But we add these convenience functions:
+
+    @property
+    def sbn_model(self):
+        return self.opt.sbn_model
+
+    @property
+    def scalar_model(self):
+        return self.opt.scalar_model
 
     def split_based_representations(self):
         """The ith entry of this array gives the index of the split
@@ -74,15 +91,20 @@ class Burrito:
         self.inst.sample_trees(count)
         # Here we are getting a slice that excludes the last (fake) element.
         # Thus we can just deal with the actual branch lengths.
-        # TODO explain what arr means, and/or change it.
         return [
             np.array(tree.branch_lengths, copy=False)[:-1]
             for tree in self.inst.tree_collection.trees
         ]
 
     def split_based_scalar_grad(
-        self, theta_sample, branch_gradients, branch_to_split_arr, dg_dpsi, dlog_qg_dpsi
+        self, theta_sample, branch_gradients, px_branch_to_split, dg_dpsi, dlog_qg_dpsi
     ):
+        """Do a gradient for the scalar parameters in terms of splits.
+
+        See the tex for details. Comments of the form eq:XXX refer to
+        equations in the tex.
+        See class-level docstring for information about `px_`.
+        """
         # Calculate the gradient of the log unnormalized posterior.
         dlogp_dtheta = np.zeros_like(theta_sample)
         for particle_idx, (_, log_grad_raw) in enumerate(branch_gradients):
@@ -94,13 +116,13 @@ class Burrito:
         grad = np.zeros(
             (self.scalar_model.variable_count, self.scalar_model.param_count)
         )
-        for particle_idx, branch_to_split in enumerate(branch_to_split_arr):
-            for branch_index, variable_index in enumerate(branch_to_split):
-                grad[variable_index, :] += (
+        for particle_idx, branch_to_split in enumerate(px_branch_to_split):
+            for branch_idx, variable_idx in enumerate(branch_to_split):
+                grad[variable_idx, :] += (
                     # eq:dLdPsi
-                    dlogp_dtheta[particle_idx, branch_index]
-                    * dg_dpsi[particle_idx, variable_index, :]
-                    - dlog_qg_dpsi[variable_index, :]
+                    dlogp_dtheta[particle_idx, branch_idx]
+                    * dg_dpsi[particle_idx, variable_idx, :]
+                    - dlog_qg_dpsi[variable_idx, :]
                 )
         return grad
 
@@ -110,20 +132,24 @@ class Burrito:
         See the tex for details. Comments of the form eq:XXX refer to
         equations in the tex.
         """
-        branch_lengths_arr = self.sample_topologies(self.particle_count)
-        branch_to_split_arr = self.branch_representations()
+        px_branch_lengths = self.sample_topologies(self.particle_count)
+        px_branch_representation = self.branch_representations()
         # Sample continuous variables based on the branch representations.
-        # For PSPs, we'll need to take these branch representations and turn them into
+        # PSPs: we'll need to take these branch representations and turn them into
         # the list of variables that they employ.
         (theta_sample, dg_dpsi, dlog_qg_dpsi) = self.scalar_model.sample_and_gradients(
-            self.particle_count, branch_to_split_arr
+            self.particle_count, px_branch_representation
         )
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
-        for particle_idx, branch_lengths in enumerate(branch_lengths_arr):
+        for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = theta_sample[particle_idx, :]
         branch_gradients = self.inst.branch_gradients()
         scalar_grad = self.split_based_scalar_grad(
-            theta_sample, branch_gradients, branch_to_split_arr, dg_dpsi, dlog_qg_dpsi
+            theta_sample,
+            branch_gradients,
+            px_branch_representation,
+            dg_dpsi,
+            dlog_qg_dpsi,
         )
         self.opt.gradient_step(scalar_grad)
 
@@ -134,18 +160,18 @@ class Burrito:
 
     def elbo_estimate(self, particle_count):
         """A naive Monte Carlo estimate of the ELBO."""
-        branch_lengths_arr = self.sample_topologies(particle_count)
-        branch_to_split_arr = self.branch_representations()
+        px_branch_lengths = self.sample_topologies(particle_count)
+        px_branch_to_split = self.branch_representations()
         # Sample continuous variables based on the branch representations.
-        theta_sample = self.scalar_model.sample(particle_count, branch_to_split_arr)
+        theta_sample = self.scalar_model.sample(particle_count, px_branch_to_split)
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
-        for particle_idx, branch_lengths in enumerate(branch_lengths_arr):
+        for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = theta_sample[particle_idx, :]
-        phylo_log_like_arr = np.array(self.inst.log_likelihoods(), copy=False)
-        log_prior_arr = vip.priors.log_exp_prior(theta_sample)
-        elbo_total = np.sum(phylo_log_like_arr + log_prior_arr)
-        for particle_idx, branch_to_split in enumerate(branch_to_split_arr):
-            elbo_total -= self.opt.scalar_model.log_prob(
+        px_phylo_log_like = np.array(self.inst.log_likelihoods(), copy=False)
+        px_log_prior = vip.priors.log_exp_prior(theta_sample)
+        elbo_total = np.sum(px_phylo_log_like + px_log_prior)
+        for particle_idx, branch_to_split in enumerate(px_branch_to_split):
+            elbo_total -= self.scalar_model.log_prob(
                 theta_sample[particle_idx, :], which_variables=branch_to_split
             )
         return elbo_total / particle_count
