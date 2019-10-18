@@ -18,7 +18,9 @@ conda activate libsbn
 **However, you also need to install platform-specific compiler packages as follows.**
 
 * if you are on linux, use `conda install -y gxx_linux-64`
-* if you are on OS X, use `conda install -y clangxx_osx-64`
+* if you are on OS X, use a recent version of Xcode and install command line tools (don't use conda, as their compiler packages are too old for us)
+
+If you want to override compiler choices you can set the `CC` and `CXX` shell variables.
 
 The packages in `environment-extras.yml` are not required to use the package or the command-line interface, but they are required to run the notebooks.
 To install them as well, call:
