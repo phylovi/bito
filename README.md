@@ -20,7 +20,7 @@ conda activate libsbn
 * if you are on linux, use `conda install -y gxx_linux-64`
 * if you are on OS X, use a recent version of Xcode and install command line tools (don't use conda, as their compiler packages are too old for us)
 
-If you want to specify your compiler manually set the `CC` and `CXX` shell variables.
+If you want to specify your compiler manually, set the `CC` and `CXX` shell variables to your desired compiler command.
 
 The packages in `environment-extras.yml` are not required to use the package or the command-line interface, but they are required to run the notebooks.
 To install them as well, call:
@@ -53,7 +53,9 @@ In the off chance that you are citing this library, don't forget to cite the [BE
 
 ## Contributing
 
-libsbn is written in C++14.
+libsbn is written in C++17, specifically the C++17 standard [as implemented by GCC 7.3.0](https://gcc.gnu.org/projects/cxx-status.html#cxx17).
+
+The associated Python module, `vip`, is targeting Python 3.6.
 
 ### Style
 

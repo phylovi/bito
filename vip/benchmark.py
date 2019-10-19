@@ -23,17 +23,19 @@ def fixed(
     # Read MCMC run and get split lengths.
     mcmc_inst = libsbn.instance("mcmc_inst")
     mcmc_inst.read_nexus_file(mcmc_nexus_path)
-    mcmc_inst.process_loaded_trees()
     burn_in_count = int(burn_in_fraction * mcmc_inst.tree_count())
-    mcmc_split_lengths_np = np.array([np.array(a) for a in mcmc_inst.split_lengths()])
-    mcmc_split_lengths = pd.DataFrame(
-        mcmc_split_lengths_np[:, burn_in_count:].transpose()
+    mcmc_inst.tree_collection.erase(0, burn_in_count)
+    mcmc_inst.process_loaded_trees()
+    ragged = [np.array(a) for a in mcmc_inst.split_lengths()]
+    mcmc_split_lengths = pd.concat(
+        [pd.DataFrame({"variable": idx, "value": a}) for idx, a in enumerate(ragged)],
+        sort=False,
     )
-    last_sampled_split_lengths = mcmc_split_lengths.iloc[-1].to_numpy()
-    mcmc_split_lengths["total"] = mcmc_split_lengths.sum(axis=1)
+    last_sampled_split_lengths = np.array([a[-1] for a in ragged])
 
     burro = vip.burrito.Burrito(
         mcmc_nexus_path=mcmc_nexus_path,
+        burn_in_fraction=burn_in_fraction,
         fasta_path=fasta_path,
         model_name=model_name,
         optimizer_name=optimizer_name,
@@ -47,14 +49,14 @@ def fixed(
     gradient_time = timeit.default_timer() - start_time
     opt_trace = pd.DataFrame({"elbo": burro.opt.trace}).reset_index()
 
+    # We sample from our fit model as many times as there were trees in our MCMC sample.
     fit_sample = pd.DataFrame(
-        burro.opt.scalar_model.sample(len(mcmc_split_lengths), None)
+        burro.opt.scalar_model.sample(mcmc_inst.tree_count(), None)
     )
-    fit_sample["total"] = fit_sample.sum(axis=1)
     fit_sample["type"] = "vb"
     mcmc_split_lengths["type"] = "mcmc"
     fitting_results = pd.concat(
-        [fit_sample.melt(id_vars="type"), mcmc_split_lengths.melt(id_vars="type")]
+        [fit_sample.melt(id_vars="type"), mcmc_split_lengths], sort=False
     )
     fitting_results["variable"] = fitting_results["variable"].astype(str)
     final_elbo = burro.estimate_elbo(

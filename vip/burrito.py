@@ -23,17 +23,20 @@ class Burrito:
         self,
         *,
         mcmc_nexus_path,
+        burn_in_fraction,
         fasta_path,
         model_name,
         optimizer_name,
         particle_count,
-        thread_count=1
+        thread_count=1,
     ):
         self.particle_count = particle_count
         self.inst = libsbn.instance("burrito")
 
         # Read MCMC run to get tree structure.
         self.inst.read_nexus_file(mcmc_nexus_path)
+        burn_in_count = int(burn_in_fraction * self.inst.tree_count())
+        self.inst.tree_collection.erase(0, burn_in_count)
         self.inst.process_loaded_trees()
 
         # Set up tree likelihood calculation.
@@ -110,7 +113,7 @@ class Burrito:
                     # eq:dLdPsi
                     dlogp_dtheta[particle_idx, branch_idx]
                     * dg_dpsi[particle_idx, variable_idx, :]
-                    - dlog_qg_dpsi[variable_idx, :]
+                    - dlog_qg_dpsi[particle_idx, variable_idx, :]
                 )
         return grad
 

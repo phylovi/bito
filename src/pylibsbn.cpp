@@ -40,6 +40,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def(py::init<Tree::TreeVector>())
       .def(py::init<Tree::TreeVector, TagStringMap>())
       .def(py::init<Tree::TreeVector, const std::vector<std::string> &>())
+      .def("erase", &TreeCollection::Erase)
       .def("newick", &TreeCollection::Newick)
       .def_readwrite("trees", &TreeCollection::trees_);
   // PSPIndexer
