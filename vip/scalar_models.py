@@ -125,24 +125,23 @@ class LogNormalModel(ScalarModel):
         which_variables_size = px_which_variables[0].size
         theta_sample = np.empty((particle_count, which_variables_size))
         dg_dpsi = np.empty((particle_count, self.variable_count, 2))
+        dlog_qg_dpsi = np.zeros((particle_count, self.variable_count, 2))
+        # eq:dlogqgdPsi
+        dlog_qg_dpsi[:, :, 0] = -1.0
         for particle_idx, which_variables in enumerate(px_which_variables):
+            mu = self.mu(which_variables)
+            sigma = self.sigma(which_variables)
             assert which_variables_size == which_variables.size
-            theta_sample[particle_idx, :] = np.random.lognormal(
-                self.mu(which_variables), self.sigma(which_variables)
-            )
+            theta_sample[particle_idx, :] = np.random.lognormal(mu, sigma)
             # eq:gLogNorm
-            epsilon = (
-                np.log(theta_sample[particle_idx, :]) - self.mu(which_variables)
-            ) / self.sigma(which_variables)
+            epsilon = (np.log(theta_sample[particle_idx, :]) - mu) / sigma
             # eq:dgdPsi
             dg_dpsi[particle_idx, which_variables, 0] = theta_sample[particle_idx, :]
             dg_dpsi[particle_idx, which_variables, 1] = (
                 theta_sample[particle_idx, :] * epsilon
             )
-        # eq:dlogqgdPsi
-        dlog_qg_dpsi = np.zeros((self.variable_count, 2))
-        dlog_qg_dpsi[:, 0] = -1.0
-        dlog_qg_dpsi[:, 1] = -epsilon - 1.0 / self.sigma()
+            # eq:dlogqgdPsi
+            dlog_qg_dpsi[particle_idx, which_variables, 1] = -epsilon - 1.0 / sigma
         return (theta_sample, dg_dpsi, dlog_qg_dpsi)
 
     def log_prob(self, theta, which_variables):

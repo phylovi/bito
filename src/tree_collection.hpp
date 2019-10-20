@@ -28,6 +28,9 @@ class TreeCollection {
 
   bool operator==(const TreeCollection &other) const;
 
+  // Remove trees from begin_idx to just before end_idx.
+  void Erase(size_t begin_idx, size_t end_idx);
+
   std::string Newick() const;
 
   Node::TopologyCounter TopologyCounter() const;

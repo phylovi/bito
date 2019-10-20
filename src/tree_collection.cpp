@@ -54,6 +54,14 @@ bool TreeCollection::operator==(const TreeCollection &other) const {
   return true;
 }
 
+void TreeCollection::Erase(size_t begin_idx, size_t end_idx) {
+  if (begin_idx > end_idx || end_idx > TreeCount()) {
+    Failwith("Illegal arguments to Tree_Collection.Erase");
+  }
+  // else:
+  trees_.erase(trees_.begin() + begin_idx, trees_.begin() + end_idx);
+}
+
 std::string TreeCollection::Newick() const {
   std::string str;
   for (const auto &tree : trees_) {
