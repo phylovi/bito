@@ -55,7 +55,7 @@ bool TreeCollection::operator==(const TreeCollection &other) const {
 }
 
 void TreeCollection::Erase(size_t begin_idx, size_t end_idx) {
-  if (begin_idx > end_idx || end_idx >= TreeCount()) {
+  if (begin_idx > end_idx || end_idx > TreeCount()) {
     Failwith("Illegal arguments to Tree_Collection.Erase");
   }
   // else:
