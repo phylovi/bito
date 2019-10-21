@@ -9,13 +9,14 @@ tfd = tfp.distributions
 
 
 def test_lognormal_log_prob():
-    x = 0.3
     loc = 0.4
     scale = 1.3
     log_normal = models.LogNormalModel(np.array([loc, scale]), 1)
-    ours = log_normal.log_prob(np.array([x]), which_variables=np.array([0]))
-    params = tf.constant([x, loc, scale])
-    distribution = tfp.distributions.LogNormal(loc=params[1], scale=params[2])
-    y = distribution.log_prob(params[0])
-    theirs = y.numpy()
+    tf_log_normal = models.of_name("tf_lognormal", variable_count=1)
+    tf_log_normal.q_params[:, 0] = loc
+    tf_log_normal.q_params[:, 1] = scale
+    sample = np.array([0.3])
+    which_variables = np.array([0])
+    ours = log_normal.log_prob(sample, which_variables=which_variables)
+    theirs = tf_log_normal.log_prob(sample, which_variables=which_variables)
     assert ours == approx(theirs)
