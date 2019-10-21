@@ -130,8 +130,6 @@ class LogNormalModel(ScalarModel):
         # We check that px_which_variables is a fixed width in the loop below.
         which_variables_size = px_which_variables[0].size
         sample = np.empty((particle_count, which_variables_size))
-        if prebaked_sample is not None:
-            sample[:, :] = prebaked_sample
         dg_dpsi = np.zeros((particle_count, self.variable_count, 2))
         dlog_qg_dpsi = np.zeros((particle_count, self.variable_count, 2))
         # eq:dlogqgdPsi
@@ -142,6 +140,10 @@ class LogNormalModel(ScalarModel):
             assert which_variables_size == which_variables.size
             if prebaked_sample is None:
                 sample[particle_idx, :] = np.random.lognormal(mu, sigma)
+            else:
+                # Yes, we repeat this in the loop but it allows us to keep all the
+                # prebaking in one place.
+                sample[:, :] = prebaked_sample
             # eq:gLogNorm
             epsilon = (np.log(sample[particle_idx, :]) - mu) / sigma
             # eq:dgdPsi
