@@ -2,8 +2,11 @@ import click
 import numpy as np
 
 import libsbn
+import vip.branch_model
 import vip.optimizers
 import vip.priors
+
+# TODO Make scalar_model singular?
 import vip.scalar_models
 
 
@@ -50,6 +53,9 @@ class Burrito:
         )
         self.opt = vip.optimizers.of_name(
             optimizer_name, sbn_model, scalar_model, self.estimate_elbo
+        )
+        self.branch_model = vip.branch_model.of_name(
+            "split", self.inst.get_psp_indexer_representations, self.scalar_model
         )
         # PSP: Make choices about branch representations here, eventually.
         self.branch_representations = self.split_based_representations
