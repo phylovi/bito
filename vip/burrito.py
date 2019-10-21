@@ -46,7 +46,6 @@ class Burrito:
         self.inst.read_fasta_file(fasta_path)
         self.inst.make_beagle_instances(thread_count)
         sbn_model = vip.sbn_model.SBNModel(self.inst)
-        # PSP: this will need to be expanded.
         variable_count = self.inst.psp_indexer.details()["after_rootsplits_index"]
         scalar_model = vip.scalar_models.of_name(
             model_name, variable_count=variable_count
@@ -54,13 +53,10 @@ class Burrito:
         self.opt = vip.optimizers.of_name(
             optimizer_name, sbn_model, scalar_model, self.estimate_elbo
         )
+        # TODO "split" hard coded
         self.branch_model = vip.branch_model.of_name(
             "split", self.inst.get_psp_indexer_representations, self.scalar_model
         )
-        # PSP: Make choices about branch representations here, eventually.
-        self.branch_representations = self.split_based_representations
-        # PSP: We will also want to make a choice about using an alternative to
-        # split_based_scalar_grad.
 
     # We want the models to be part of the optimizer because they have state that's
     # closely connected with optimizer state. But we add these convenience functions:
@@ -73,15 +69,6 @@ class Burrito:
     def scalar_model(self):
         return self.opt.scalar_model
 
-    # PSP: extract
-    def split_based_representations(self):
-        """The ith entry of this array gives the index of the split
-        corresponding to the ith branch."""
-        return [
-            np.array(representation[0])
-            for representation in self.inst.get_psp_indexer_representations()
-        ]
-
     def sample_topologies(self, count):
         """Sample trees into the instance and return the np'd version of their
         branch length vectors."""
@@ -93,51 +80,17 @@ class Burrito:
             for tree in self.inst.tree_collection.trees
         ]
 
-    def split_based_scalar_grad(
-        self, theta_sample, branch_gradients, px_branch_to_split, dg_dpsi, dlog_qg_dpsi
-    ):
-        """Do a gradient for the scalar parameters in terms of splits.
-
-        See the tex for details. Comments of the form eq:XXX refer to
-        equations in the tex. See class-level docstring for information
-        about `px_`.
-        """
-        # Calculate the gradient of the log unnormalized posterior.
-        dlogp_dtheta = np.zeros_like(theta_sample)
-        for particle_idx, (_, log_grad_raw) in enumerate(branch_gradients):
-            # This :-2 is because of the two trailing zeroes that appear at the end of
-            # the gradient.
-            dlogp_dtheta[particle_idx, :] = np.array(log_grad_raw, copy=False)[:-2]
-        dlogp_dtheta += vip.priors.grad_log_exp_prior(theta_sample)
-        # Now build up the complete gradient with respect to the variables.
-        grad = np.zeros(
-            (self.scalar_model.variable_count, self.scalar_model.param_count)
-        )
-        for particle_idx, branch_to_split in enumerate(px_branch_to_split):
-            for branch_idx, variable_idx in enumerate(branch_to_split):
-                grad[variable_idx, :] += (
-                    # eq:dLdPsi
-                    dlogp_dtheta[particle_idx, branch_idx]
-                    * dg_dpsi[particle_idx, variable_idx, :]
-                    - dlog_qg_dpsi[particle_idx, variable_idx, :]
-                )
-        return grad
-
     def gradient_step(self):
         """Take a gradient step."""
         px_branch_lengths = self.sample_topologies(self.particle_count)
-        px_branch_representation = self.branch_representations()
-        # Sample continuous variables based on the branch representations.
-        # PSPs: we'll need to take these branch representations and turn them into
-        # the list of variables that they employ.
-        (theta_sample, dg_dpsi, dlog_qg_dpsi) = self.scalar_model.sample_and_gradients(
+        px_branch_representation = self.branch_model.branch_representations()
+        (theta_sample, dg_dpsi, dlog_qg_dpsi) = self.branch_model.sample_and_gradients(
             self.particle_count, px_branch_representation
         )
-        # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = theta_sample[particle_idx, :]
         branch_gradients = self.inst.branch_gradients()
-        scalar_grad = self.split_based_scalar_grad(
+        scalar_grad = self.branch_model.scalar_grad(
             theta_sample,
             branch_gradients,
             px_branch_representation,
@@ -154,17 +107,17 @@ class Burrito:
     def estimate_elbo(self, particle_count):
         """A naive Monte Carlo estimate of the ELBO."""
         px_branch_lengths = self.sample_topologies(particle_count)
-        px_branch_to_split = self.branch_representations()
+        px_branch_representation = self.branch_model.branch_representations()
         # Sample continuous variables based on the branch representations.
-        theta_sample = self.scalar_model.sample(particle_count, px_branch_to_split)
+        theta_sample = self.branch_model.sample(
+            particle_count, px_branch_representation
+        )
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = theta_sample[particle_idx, :]
         px_phylo_log_like = np.array(self.inst.log_likelihoods(), copy=False)
-        px_log_prior = vip.priors.log_exp_prior(theta_sample)
-        elbo_total = np.sum(px_phylo_log_like + px_log_prior)
-        for particle_idx, branch_to_split in enumerate(px_branch_to_split):
-            elbo_total -= self.scalar_model.log_prob(
-                theta_sample[particle_idx, :], which_variables=branch_to_split
-            )
+        px_log_prior = self.branch_model.log_prior(theta_sample)
+        elbo_total = np.sum(
+            px_phylo_log_like + px_log_prior
+        ) - self.branch_model.log_prob(theta_sample, px_branch_representation)
         return elbo_total / particle_count
