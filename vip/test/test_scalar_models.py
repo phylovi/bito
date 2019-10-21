@@ -2,7 +2,7 @@ import numpy as np
 from pytest import approx
 import tensorflow.compat.v2 as tf
 import tensorflow_probability as tfp
-import vip.scalar_models as models
+import vip.scalar_model as models
 
 tf.enable_v2_behavior()
 tfd = tfp.distributions

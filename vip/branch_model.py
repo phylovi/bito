@@ -2,13 +2,13 @@ import abc
 import numpy as np
 
 import vip.priors
-import vip.scalar_models
+import vip.scalar_model
 
 
 class BranchModel(abc.ABC):
     def __init__(self, scalar_model_name, inst):
         self.get_raw_representation = inst.get_psp_indexer_representations
-        self.scalar_model = vip.scalar_models.of_name(
+        self.scalar_model = vip.scalar_model.of_name(
             scalar_model_name, variable_count=self._compute_variable_count(inst)
         )
         self.log_prior = vip.priors.log_exp_prior

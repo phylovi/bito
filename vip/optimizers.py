@@ -2,7 +2,7 @@ import abc
 import numpy as np
 import vip.sgd_server
 from vip.sbn_model import SBNModel
-from vip.scalar_models import ScalarModel
+from vip.scalar_model import ScalarModel
 
 
 class BaseOptimizer(abc.ABC):
