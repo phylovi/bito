@@ -7,7 +7,6 @@ import vip.optimizers
 import vip.priors
 
 # TODO Make scalar_model singular?
-import vip.scalar_models
 
 
 class Burrito:
@@ -47,16 +46,11 @@ class Burrito:
         self.inst.read_fasta_file(fasta_path)
         self.inst.make_beagle_instances(thread_count)
         sbn_model = vip.sbn_model.SBNModel(self.inst)
-        variable_count = self.inst.psp_indexer.details()["after_rootsplits_index"]
-        scalar_model = vip.scalar_models.of_name(
-            scalar_model_name, variable_count=variable_count
+        self.branch_model = vip.branch_model.of_name(
+            branch_model_name, scalar_model_name, self.inst
         )
         self.opt = vip.optimizers.of_name(
-            optimizer_name, sbn_model, scalar_model, self.estimate_elbo
-        )
-        # TODO "split" hard coded
-        self.branch_model = vip.branch_model.of_name(
-            "split", self.inst.get_psp_indexer_representations, self.scalar_model
+            optimizer_name, sbn_model, self.scalar_model, self.estimate_elbo
         )
 
     # We want the models to be part of the optimizer because they have state that's
@@ -68,7 +62,7 @@ class Burrito:
 
     @property
     def scalar_model(self):
-        return self.opt.scalar_model
+        return self.branch_model.scalar_model
 
     def sample_topologies(self, count):
         """Sample trees into the instance and return the np'd version of their

@@ -2,24 +2,22 @@ import abc
 import numpy as np
 
 import vip.priors
+import vip.scalar_models
 
 
 class BranchModel(abc.ABC):
-    def __init__(self, get_raw_representation, scalar_model):
-        self.get_raw_representation = get_raw_representation
-        self.scalar_model = scalar_model
+    def __init__(self, scalar_model_name, inst):
+        self.get_raw_representation = inst.get_psp_indexer_representations
+        self.scalar_model = vip.scalar_models.of_name(
+            scalar_model_name, variable_count=self.variable_count(inst)
+        )
         self.log_prior = vip.priors.log_exp_prior
         self.grad_log_prior = vip.priors.grad_log_exp_prior
 
-    # TODO
-    # @property
-    # def scalar_model(self):
-    #     return self.scalar_model
-
 
 class SplitModel(BranchModel):
-    def __init__(self, get_raw_representation, scalar_model):
-        super().__init__(get_raw_representation, scalar_model)
+    def __init__(self, scalar_model_name, inst):
+        super().__init__(scalar_model_name, inst)
 
     @staticmethod
     def variable_count(inst):
@@ -81,10 +79,10 @@ class SplitModel(BranchModel):
         return grad
 
 
-def of_name(name, get_raw_representation, scalar_model):
+def of_name(branch_model_name, scalar_model_name, inst):
     choices = {"split": SplitModel}
-    if name in choices:
-        choice = choices[name]
+    if branch_model_name in choices:
+        choice = choices[branch_model_name]
     else:
-        raise Exception(f"BranchModel {name} not known.")
-    return choice(get_raw_representation, scalar_model)
+        raise Exception(f"BranchModel {branch_model_name} not known.")
+    return choice(scalar_model_name, inst)
