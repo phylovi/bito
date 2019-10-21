@@ -65,7 +65,7 @@ class SplitModel(BranchModel):
     ):
         """Do a gradient for the scalar parameters in terms of splits.
 
-        See the tex for details. Comments of the form eq:XXX refer to
+        See the tex for details. Comments of the form eq:XX refer to
         equations in the tex. See class-level docstring for information
         about `px_`.
         """
