@@ -79,6 +79,10 @@ class Burrito:
         """Take a gradient step."""
         px_branch_lengths = self.sample_topologies(self.particle_count)
         px_branch_representation = self.branch_model.px_branch_representation()
+        # This design may seem a little strange, in that we separate out the
+        # branch_model part of the gradients and then consume them via branch_model
+        # later. This is driven by wanting to support scalar models (such as the TF
+        # models) that require sampling and gradient calculation at the same time.
         (theta_sample, dg_dpsi, dlog_qg_dpsi) = self.branch_model.sample_and_gradients(
             self.particle_count, px_branch_representation
         )
