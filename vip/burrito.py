@@ -6,8 +6,6 @@ import vip.branch_model
 import vip.optimizers
 import vip.priors
 
-# TODO Make scalar_model singular?
-
 
 class Burrito:
     """A class to wrap an instance and relevant model data.
@@ -19,6 +17,8 @@ class Burrito:
     parameters, etc. We use the prefix `px_` to designate that the first dimension of
     the given object is across particles. For example, `px_branch_lengths` is a list
     of branch length vectors, where the list is across particles.
+
+    * particle_count is the particle count to be used for gradient calculation
     """
 
     def __init__(
@@ -78,7 +78,7 @@ class Burrito:
     def gradient_step(self):
         """Take a gradient step."""
         px_branch_lengths = self.sample_topologies(self.particle_count)
-        px_branch_representation = self.branch_model.branch_representations()
+        px_branch_representation = self.branch_model.px_branch_representation()
         (theta_sample, dg_dpsi, dlog_qg_dpsi) = self.branch_model.sample_and_gradients(
             self.particle_count, px_branch_representation
         )
@@ -103,7 +103,7 @@ class Burrito:
     def estimate_elbo(self, particle_count):
         """A naive Monte Carlo estimate of the ELBO."""
         px_branch_lengths = self.sample_topologies(particle_count)
-        px_branch_representation = self.branch_model.branch_representations()
+        px_branch_representation = self.branch_model.px_branch_representation()
         # Sample continuous variables based on the branch representations.
         theta_sample = self.branch_model.sample(
             particle_count, px_branch_representation

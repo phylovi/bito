@@ -23,8 +23,7 @@ class SplitModel(BranchModel):
     def variable_count(inst):
         return inst.psp_indexer.details()["after_rootsplits_index"]
 
-    # TODO Plural here
-    def branch_representations(self):
+    def px_branch_representation(self):
         """The ith entry of this array gives the index of the split
         corresponding to the ith branch."""
         return [
