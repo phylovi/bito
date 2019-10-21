@@ -256,8 +256,8 @@ class TFScalarModel(ScalarModel):
     def sample_and_gradients(self, particle_count, px_which_variables):
         which_variables_size = px_which_variables[0].size
         sample = np.empty((particle_count, which_variables_size))
-        dg_dpsi = np.zeros((particle_count, self.variable_count, 2))
-        dlog_qg_dpsi = np.zeros((particle_count, self.variable_count, 2))
+        dg_dpsi = np.zeros((particle_count, self.variable_count, self.param_count))
+        dlog_qg_dpsi = np.zeros((particle_count, self.variable_count, self.param_count))
         for particle_idx, which_variables in enumerate(px_which_variables):
             with tf.GradientTape(persistent=True) as g:
                 tf_params = tf.constant(
