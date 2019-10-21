@@ -31,6 +31,9 @@ class SplitModel(BranchModel):
             for representation in self.get_raw_representation()
         ]
 
+    def mode_match(self, modes):
+        self.scalar_model.mode_match(modes)
+
     def sample(self, particle_count, px_branch_representation):
         return self.scalar_model.sample(particle_count, px_branch_representation)
 

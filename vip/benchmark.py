@@ -50,7 +50,7 @@ def fixed(
         particle_count=particle_count,
         thread_count=thread_count,
     )
-    burro.opt.scalar_model.mode_match(last_sampled_split_lengths)
+    burro.branch_model.mode_match(last_sampled_split_lengths)
 
     start_time = timeit.default_timer()
     burro.gradient_steps(step_count)
@@ -58,9 +58,7 @@ def fixed(
     opt_trace = pd.DataFrame({"elbo": burro.opt.trace}).reset_index()
 
     # We sample from our fit model as many times as there were trees in our MCMC sample.
-    fit_sample = pd.DataFrame(
-        burro.opt.scalar_model.sample(mcmc_inst.tree_count(), None)
-    )
+    fit_sample = pd.DataFrame(burro.scalar_model.sample(mcmc_inst.tree_count(), None))
     fit_sample["type"] = "vb"
     mcmc_split_lengths["type"] = "mcmc"
     fitting_results = pd.concat(
