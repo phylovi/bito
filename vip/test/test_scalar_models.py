@@ -25,15 +25,18 @@ def test_lognormal_log_prob():
 
 def test_lognormal_gradients():
     tf.random.set_seed(1)
+    particle_count = 8
     tf_log_normal = models.of_name("tf_lognormal", variable_count=variable_count)
     tf_log_normal.q_params[:, :] = params
-    px_which_variables = np.array([np.arange(variable_count)])
-    theirs = tf_log_normal.sample_and_gradients(1, px_which_variables)
+    px_which_variables = np.array(
+        [np.arange(variable_count) for _ in range(particle_count)]
+    )
+    theirs = tf_log_normal.sample_and_gradients(particle_count, px_which_variables)
     sample = theirs[0]
     log_normal = models.LogNormalModel(np.array([0.0, 1.0]), variable_count)
     log_normal.q_params[:, :] = params
     ours = log_normal.sample_and_gradients(
-        1, px_which_variables, prebaked_sample=sample
+        particle_count, px_which_variables, prebaked_sample=sample
     )
     for (our_item, their_item) in zip(ours, theirs):
-        assert our_item == approx(their_item)
+        assert our_item == approx(their_item, rel=1e-5)
