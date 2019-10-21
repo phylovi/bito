@@ -45,12 +45,12 @@ class Burrito:
         # Set up tree likelihood calculation.
         self.inst.read_fasta_file(fasta_path)
         self.inst.make_beagle_instances(thread_count)
-        sbn_model = vip.sbn_model.SBNModel(self.inst)
+        self.sbn_model = vip.sbn_model.SBNModel(self.inst)
         self.branch_model = vip.branch_model.of_name(
             branch_model_name, scalar_model_name, self.inst
         )
         self.opt = vip.optimizers.of_name(
-            optimizer_name, sbn_model, self.scalar_model, self.estimate_elbo
+            optimizer_name, self.sbn_model, self.scalar_model, self.estimate_elbo
         )
 
     # We want the models to be part of the optimizer because they have state that's
