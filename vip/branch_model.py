@@ -17,10 +17,10 @@ class BranchModel(abc.ABC):
     @staticmethod
     @abc.abstractmethod
     def _compute_variable_count(inst):
-        """ Compute the number of variables needed for a given instance.
+        """Compute the number of variables needed for a given instance.
 
-        This is a private method that is just used in the initialization of the
-        BranchModel.
+        This is a private method that is just used in the initialization
+        of the BranchModel.
         """
         pass
 

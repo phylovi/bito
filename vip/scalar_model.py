@@ -124,10 +124,8 @@ class LogNormalModel(ScalarModel):
     def sample_and_gradients(
         self, particle_count, px_which_variables, prebaked_sample=None
     ):
-        """
-        prebaked_sample allows us to pass in a sample rather than actually sampling
-        (handy for testing).
-        """
+        """prebaked_sample allows us to pass in a sample rather than actually
+        sampling (handy for testing)."""
         # Comments of the form eq:XX refer to equations in the tex.
         # We check that px_which_variables is a fixed width in the loop below.
         which_variables_size = px_which_variables[0].size
