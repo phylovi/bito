@@ -121,11 +121,19 @@ class LogNormalModel(ScalarModel):
             )
         return sample
 
-    def sample_and_gradients(self, particle_count, px_which_variables):
+    def sample_and_gradients(
+        self, particle_count, px_which_variables, prebaked_sample=None
+    ):
+        """
+        prebaked_sample allows us to pass in a sample rather than actually sampling
+        (handy for testing).
+        """
         # Comments of the form eq:XX refer to equations in the tex.
         # We check that px_which_variables is a fixed width in the loop below.
         which_variables_size = px_which_variables[0].size
         sample = np.empty((particle_count, which_variables_size))
+        if prebaked_sample is not None:
+            sample[:, :] = prebaked_sample
         dg_dpsi = np.zeros((particle_count, self.variable_count, 2))
         dlog_qg_dpsi = np.zeros((particle_count, self.variable_count, 2))
         # eq:dlogqgdPsi
@@ -134,7 +142,8 @@ class LogNormalModel(ScalarModel):
             mu = self.mu(which_variables)
             sigma = self.sigma(which_variables)
             assert which_variables_size == which_variables.size
-            sample[particle_idx, :] = np.random.lognormal(mu, sigma)
+            if prebaked_sample is None:
+                sample[particle_idx, :] = np.random.lognormal(mu, sigma)
             # eq:gLogNorm
             epsilon = (np.log(sample[particle_idx, :]) - mu) / sigma
             # eq:dgdPsi
