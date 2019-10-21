@@ -28,7 +28,8 @@ class Burrito:
         mcmc_nexus_path,
         burn_in_fraction,
         fasta_path,
-        model_name,
+        branch_model_name,
+        scalar_model_name,
         optimizer_name,
         particle_count,
         thread_count=1,
@@ -48,7 +49,7 @@ class Burrito:
         sbn_model = vip.sbn_model.SBNModel(self.inst)
         variable_count = self.inst.psp_indexer.details()["after_rootsplits_index"]
         scalar_model = vip.scalar_models.of_name(
-            model_name, variable_count=variable_count
+            scalar_model_name, variable_count=variable_count
         )
         self.opt = vip.optimizers.of_name(
             optimizer_name, sbn_model, scalar_model, self.estimate_elbo
@@ -87,6 +88,7 @@ class Burrito:
         (theta_sample, dg_dpsi, dlog_qg_dpsi) = self.branch_model.sample_and_gradients(
             self.particle_count, px_branch_representation
         )
+        # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = theta_sample[particle_idx, :]
         branch_gradients = self.inst.branch_gradients()

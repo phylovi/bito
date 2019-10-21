@@ -63,7 +63,8 @@ def benchmark(
 
     run_details, opt_trace, fitting_results = vip.benchmark.fixed(
         data_path,
-        model_name=model,
+        branch_model_name="split",
+        scalar_model_name=model,
         optimizer_name=optimizer,
         step_count=step_count,
         particle_count=particle_count,

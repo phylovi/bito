@@ -11,7 +11,14 @@ import vip.burrito
 # Documentation is in the CLI.
 # `*` forces everything after to be keyword-only.
 def fixed(
-    data_path, *, model_name, optimizer_name, step_count, particle_count, thread_count
+    data_path,
+    *,
+    branch_model_name,
+    scalar_model_name,
+    optimizer_name,
+    step_count,
+    particle_count,
+    thread_count
 ):
     data_path = os.path.normpath(data_path)
     data_id = os.path.basename(data_path)
@@ -37,7 +44,8 @@ def fixed(
         mcmc_nexus_path=mcmc_nexus_path,
         burn_in_fraction=burn_in_fraction,
         fasta_path=fasta_path,
-        model_name=model_name,
+        branch_model_name=branch_model_name,
+        scalar_model_name=scalar_model_name,
         optimizer_name=optimizer_name,
         particle_count=particle_count,
         thread_count=thread_count,
