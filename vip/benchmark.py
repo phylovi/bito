@@ -11,7 +11,14 @@ import vip.burrito
 # Documentation is in the CLI.
 # `*` forces everything after to be keyword-only.
 def fixed(
-    data_path, *, model_name, optimizer_name, step_count, particle_count, thread_count
+    data_path,
+    *,
+    branch_model_name,
+    scalar_model_name,
+    optimizer_name,
+    step_count,
+    particle_count,
+    thread_count
 ):
     data_path = os.path.normpath(data_path)
     data_id = os.path.basename(data_path)
@@ -37,12 +44,13 @@ def fixed(
         mcmc_nexus_path=mcmc_nexus_path,
         burn_in_fraction=burn_in_fraction,
         fasta_path=fasta_path,
-        model_name=model_name,
+        branch_model_name=branch_model_name,
+        scalar_model_name=scalar_model_name,
         optimizer_name=optimizer_name,
         particle_count=particle_count,
         thread_count=thread_count,
     )
-    burro.opt.scalar_model.mode_match(last_sampled_split_lengths)
+    burro.branch_model.mode_match(last_sampled_split_lengths)
 
     start_time = timeit.default_timer()
     burro.gradient_steps(step_count)
@@ -50,9 +58,7 @@ def fixed(
     opt_trace = pd.DataFrame({"elbo": burro.opt.trace}).reset_index()
 
     # We sample from our fit model as many times as there were trees in our MCMC sample.
-    fit_sample = pd.DataFrame(
-        burro.opt.scalar_model.sample(mcmc_inst.tree_count(), None)
-    )
+    fit_sample = pd.DataFrame(burro.scalar_model.sample(mcmc_inst.tree_count(), None))
     fit_sample["type"] = "vb"
     mcmc_split_lengths["type"] = "mcmc"
     fitting_results = pd.concat(
