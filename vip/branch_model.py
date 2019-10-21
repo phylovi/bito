@@ -9,10 +9,20 @@ class BranchModel(abc.ABC):
     def __init__(self, scalar_model_name, inst):
         self.get_raw_representation = inst.get_psp_indexer_representations
         self.scalar_model = vip.scalar_models.of_name(
-            scalar_model_name, variable_count=self.variable_count(inst)
+            scalar_model_name, variable_count=self._compute_variable_count(inst)
         )
         self.log_prior = vip.priors.log_exp_prior
         self.grad_log_prior = vip.priors.grad_log_exp_prior
+
+    @staticmethod
+    @abc.abstractmethod
+    def _compute_variable_count(inst):
+        """ Compute the number of variables needed for a given instance.
+
+        This is a private method that is just used in the initialization of the
+        BranchModel.
+        """
+        pass
 
 
 class SplitModel(BranchModel):
@@ -20,7 +30,7 @@ class SplitModel(BranchModel):
         super().__init__(scalar_model_name, inst)
 
     @staticmethod
-    def variable_count(inst):
+    def _compute_variable_count(inst):
         return inst.psp_indexer.details()["after_rootsplits_index"]
 
     def px_branch_representation(self):
