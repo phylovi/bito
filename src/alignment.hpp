@@ -10,7 +10,7 @@
 class Alignment {
  public:
   Alignment() {}
-  explicit Alignment(StringStringMap data) : data_(data) {}
+  explicit Alignment(const StringStringMap& data) : data_(data) {}
 
   StringStringMap Data() const { return data_; }
   size_t SequenceCount() const { return data_.size(); }
@@ -23,7 +23,7 @@ class Alignment {
   bool IsValid() const;
   std::string at(const std::string& taxon) const;
 
-  static Alignment ReadFasta(std::string fname);
+  static Alignment ReadFasta(const std::string& fname);
 
  private:
   StringStringMap data_;

@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "tree_collection.hpp"
+#include <algorithm>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -16,9 +17,12 @@ TreeCollection::TreeCollection(Tree::TreeVector trees)
     : trees_(std::move(trees)) {
   if (trees.size() > 0) {
     auto leaf_count = trees[0].LeafCount();
-    for (const auto &tree : trees) {
-      Assert(tree.LeafCount() == leaf_count,
-             "Trees must all have the same number of tips in TreeCollection.");
+    if (std::any_of(trees.cbegin(), trees.cend(),
+                    [leaf_count](const auto &tree) {
+                      return tree.LeafCount() != leaf_count;
+                    })) {
+      Failwith(
+          "Trees must all have the same number of tips in TreeCollection.");
     }
   }
 }
@@ -27,17 +31,20 @@ TreeCollection::TreeCollection(Tree::TreeVector trees,
                                TagStringMap tag_taxon_map)
     : trees_(std::move(trees)), tag_taxon_map_(std::move(tag_taxon_map)) {
   auto taxon_count = tag_taxon_map.size();
-  for (const auto &tree : trees) {
-    Assert(tree.LeafCount() == taxon_count,
-           "Tree leaf count doesn't match the size of tag_taxon_map in "
-           "TreeCollection::TreeCollection.");
+  if (std::any_of(trees.cbegin(), trees.cend(),
+                  [taxon_count](const auto &tree) {
+                    return tree.LeafCount() != taxon_count;
+                  })) {
+    Failwith(
+        "Tree leaf count doesn't match the size of tag_taxon_map in "
+        "TreeCollection::TreeCollection.");
   }
 }
 
 TreeCollection::TreeCollection(Tree::TreeVector trees,
                                const std::vector<std::string> &taxon_labels)
     : TreeCollection::TreeCollection(
-          trees, TreeCollection::TagStringMapOf(taxon_labels)) {}
+          std::move(trees), TreeCollection::TagStringMapOf(taxon_labels)) {}
 
 bool TreeCollection::operator==(const TreeCollection &other) const {
   if (this->TagTaxonMap() != other.TagTaxonMap()) {
@@ -59,7 +66,9 @@ void TreeCollection::Erase(size_t begin_idx, size_t end_idx) {
     Failwith("Illegal arguments to Tree_Collection.Erase");
   }
   // else:
-  trees_.erase(trees_.begin() + begin_idx, trees_.begin() + end_idx);
+  using difference_type = Tree::TreeVector::difference_type;
+  trees_.erase(trees_.begin() + static_cast<difference_type>(begin_idx),
+               trees_.begin() + static_cast<difference_type>(end_idx));
 }
 
 std::string TreeCollection::Newick() const {
@@ -100,7 +109,7 @@ std::vector<std::string> TreeCollection::TaxonNames() const {
 }
 
 TagStringMap TreeCollection::TagStringMapOf(
-    const std::vector<std::string> taxon_labels) {
+    const std::vector<std::string> &taxon_labels) {
   TagStringMap taxon_map;
   for (size_t index = 0; index < taxon_labels.size(); index++) {
     SafeInsert(taxon_map, PackInts(static_cast<uint32_t>(index), 1),

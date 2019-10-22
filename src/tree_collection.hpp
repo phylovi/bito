@@ -37,7 +37,7 @@ class TreeCollection {
   std::vector<std::string> TaxonNames() const;
 
   static TagStringMap TagStringMapOf(
-      const std::vector<std::string> taxon_labels);
+      const std::vector<std::string> &taxon_labels);
 
   Tree::TreeVector trees_;
 

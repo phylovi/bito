@@ -77,7 +77,6 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
   // Use uniform rates and weights.
   const double weights[1] = {1.0};
   const double rates[1] = {1.0};
-  const std::vector<SymbolVector> patterns = site_pattern.GetPatterns();
   int taxon_number = 0;
   for (const auto &pattern : site_pattern.GetPatterns()) {
     beagleSetTipStates(beagle_instance, taxon_number++, pattern.data());

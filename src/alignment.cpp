@@ -15,16 +15,13 @@ size_t Alignment::Length() const {
 }
 
 bool Alignment::IsValid() const {
-  if (data_.size() == 0) {
+  if (data_.empty()) {
     return false;
   }
   size_t length = data_.begin()->second.size();
-  for (const auto &iter : data_) {
-    if (length != iter.second.size()) {
-      return false;
-    }
-  }
-  return true;
+  return std::all_of(data_.cbegin(), data_.cend(), [length](const auto &datum) {
+    return (length == datum.second.size());
+  });
 }
 
 std::string Alignment::at(const std::string &taxon) const {
@@ -40,7 +37,7 @@ std::string Alignment::at(const std::string &taxon) const {
 // https://stackoverflow.com/questions/35251635/fasta-reader-written-in-c
 // which seems like it was originally taken from
 // http://rosettacode.org/wiki/FASTA_format#C.2B.2B
-Alignment Alignment::ReadFasta(std::string fname) {
+Alignment Alignment::ReadFasta(const std::string &fname) {
   StringStringMap data;
   auto insert = [&data](std::string taxon, std::string sequence) {
     if (!taxon.empty()) {
@@ -53,7 +50,10 @@ Alignment Alignment::ReadFasta(std::string fname) {
   }
   std::string line, taxon, sequence;
   while (std::getline(input, line)) {
-    if (line.empty()) continue;
+    if (line.empty()) {
+      continue;
+    }
+    // else:
     if (line[0] == '>') {
       insert(taxon, sequence);
       taxon = line.substr(1);

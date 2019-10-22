@@ -4,33 +4,32 @@
 #ifndef SRC_SUGAR_HPP_
 #define SRC_SUGAR_HPP_
 
+#include "prettyprint.hpp"
 #include <cassert>
-#include <optional>
 #include <iostream>
+#include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "prettyprint.hpp"
 
 // Put typedefs that are built of STL types here.
-typedef uint64_t Tag;
-typedef std::vector<int> SymbolVector;
-typedef std::vector<size_t> SizeVector;
-typedef std::vector<SizeVector> SizeVectorVector;
+using Tag = uint64_t;
+using SymbolVector = std::vector<int>;
+using SizeVector = std::vector<size_t>;
+using SizeVectorVector = std::vector<SizeVector>;
 using DoubleVectorVector = std::vector<std::vector<double>>;
-typedef std::unordered_map<Tag, double> TagDoubleMap;
-typedef std::unordered_map<Tag, size_t> TagSizeMap;
-typedef std::unordered_map<Tag, std::string> TagStringMap;
-typedef std::unordered_map<std::string, std::string> StringStringMap;
-typedef std::unordered_map<char, int> CharIntMap;
-// This will be STL in C++17 but we include the above header to fake it.
-typedef std::optional<std::vector<double>> DoubleVectorOption;
-typedef std::optional<TagStringMap> TagStringMapOption;
-typedef std::vector<std::string> StringVector;
-typedef std::vector<StringVector> StringVectorVector;
-typedef std::unordered_set<std::string> StringSet;
-typedef std::vector<StringSet> StringSetVector;
-typedef std::unordered_map<std::string, size_t> StringSizeMap;
+using TagDoubleMap = std::unordered_map<Tag, double>;
+using TagSizeMap = std::unordered_map<Tag, size_t>;
+using TagStringMap = std::unordered_map<Tag, std::string>;
+using StringStringMap = std::unordered_map<std::string, std::string>;
+using CharIntMap = std::unordered_map<char, int>;
+using StringSizeMap = std::unordered_map<std::string, size_t>;
+using DoubleVectorOption = std::optional<std::vector<double> >;
+using TagStringMapOption = std::optional<TagStringMap>;
+using StringVector = std::vector<std::string>;
+using StringVectorVector = std::vector<StringVector>;
+using StringSet = std::unordered_set<std::string>;
+using StringSetVector = std::vector<StringSet>;
 
 // We implement problems in terms of exceptions. That means that they work great
 // in Jupyter notebooks.

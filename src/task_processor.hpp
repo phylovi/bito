@@ -26,6 +26,7 @@
 #define SRC_TASK_PROCESSOR_HPP_
 
 #include <condition_variable>
+#include <functional>
 #include <mutex>
 #include <queue>
 #include <thread>
