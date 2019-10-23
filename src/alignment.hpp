@@ -9,8 +9,8 @@
 
 class Alignment {
  public:
-  Alignment() {}
-  explicit Alignment(const StringStringMap& data) : data_(data) {}
+  Alignment() = default;
+  explicit Alignment(StringStringMap data) : data_(std::move(data)) {}
 
   StringStringMap Data() const { return data_; }
   size_t SequenceCount() const { return data_.size(); }

@@ -28,9 +28,8 @@ std::string Alignment::at(const std::string &taxon) const {
   auto search = data_.find(taxon);
   if (search != data_.end()) {
     return search->second;
-  } else {
-    Failwith("Taxon '" + taxon + "' not found in alignment.");
-  }
+  }  // else
+  Failwith("Taxon '" + taxon + "' not found in alignment.");
 }
 
 // An edited version of
