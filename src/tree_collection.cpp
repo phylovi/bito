@@ -16,10 +16,10 @@ TreeCollection::TreeCollection(Tree::TreeVector trees)
     : trees_(std::move(trees)) {
   if (!trees_.empty()) {
     auto leaf_count = trees_[0].LeafCount();
-    if (std::any_of(trees_.cbegin(), trees_.cend(),
-                    [leaf_count](const auto &tree) {
-                      return tree.LeafCount() != leaf_count;
-                    })) {
+    auto different_leaf_count = [leaf_count](const auto &tree) {
+      return tree.LeafCount() != leaf_count;
+    };
+    if (std::any_of(trees_.cbegin(), trees_.cend(), different_leaf_count)) {
       Failwith(
           "Trees must all have the same number of tips in TreeCollection.");
     }
