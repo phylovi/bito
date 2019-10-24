@@ -73,10 +73,10 @@ void TreeCollection::Erase(size_t begin_idx, size_t end_idx) {
 std::string TreeCollection::Newick() const {
   std::string str;
   for (const auto &tree : trees_) {
-    if (!tag_taxon_map_.empty()) {
-      str.append(tree.Newick(tag_taxon_map_));
-    } else {
+    if (tag_taxon_map_.empty()) {
       str.append(tree.Newick());
+    } else {
+      str.append(tree.Newick(tag_taxon_map_));
     }
     str.push_back('\n');
   }
