@@ -11,7 +11,6 @@
 #include "sugar.hpp"
 #include "tree.hpp"
 
-
 TreeCollection::TreeCollection(Tree::TreeVector trees)
     : trees_(std::move(trees)) {
   if (!trees_.empty()) {

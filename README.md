@@ -53,7 +53,7 @@ In the off chance that you are citing this library, don't forget to cite the [BE
 
 ## Contributing
 
-libsbn is written in C++17, specifically the C++17 standard [as implemented by GCC 7.3.0](https://gcc.gnu.org/projects/cxx-status.html#cxx17).
+libsbn is written in C++17.
 
 The associated Python module, `vip`, is targeting Python 3.6.
 
@@ -76,15 +76,14 @@ Also let's:
 * Prefer [variable names and simple coding practices](https://blog.codinghorror.com/coding-without-comments/) to code comments.
   If that means having long identifier names, that's fine!
   If you can't make the code use and operation inherently obvious, please write documentation.
-* Prefer GitHub issues to TODO comments in code.
+* TODO comments shouldn't make it into master. Rather, make an issue on GitHub.
 * Always use curly braces for the body of conditionals and loops, even if they are one line.
 
 The [C++ core guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) are the authority for how to write C++, and we will follow them.
-For issues not covered by these guidelines (especially naming conventions), we will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html) to the letter.
-We use [cpplint](https://github.com/cpplint/cpplint) to check some aspects of this.
+More generally, we use [clang-tidy](https://clang.llvm.org/extra/clang-tidy/) to check our code according to the `.clang-tidy` file in the root of the repo.
+For issues not covered by these guidelines (especially naming conventions), we will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
 
 There are certainly violations of these guidelines in the code, so fix them when you see them!
-
 
 ### Formatting
 
