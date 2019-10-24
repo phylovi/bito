@@ -11,13 +11,12 @@
 #include "sugar.hpp"
 #include "tree.hpp"
 
-TreeCollection::TreeCollection() {}
 
 TreeCollection::TreeCollection(Tree::TreeVector trees)
     : trees_(std::move(trees)) {
-  if (trees.size() > 0) {
-    auto leaf_count = trees[0].LeafCount();
-    if (std::any_of(trees.cbegin(), trees.cend(),
+  if (!trees_.empty()) {
+    auto leaf_count = trees_[0].LeafCount();
+    if (std::any_of(trees_.cbegin(), trees_.cend(),
                     [leaf_count](const auto &tree) {
                       return tree.LeafCount() != leaf_count;
                     })) {
@@ -31,10 +30,10 @@ TreeCollection::TreeCollection(Tree::TreeVector trees,
                                TagStringMap tag_taxon_map)
     : trees_(std::move(trees)), tag_taxon_map_(std::move(tag_taxon_map)) {
   auto taxon_count = tag_taxon_map.size();
-  if (std::any_of(trees.cbegin(), trees.cend(),
-                  [taxon_count](const auto &tree) {
-                    return tree.LeafCount() != taxon_count;
-                  })) {
+  auto different_taxon_count = [taxon_count](const auto &tree) {
+    return tree.LeafCount() != taxon_count;
+  };
+  if (std::any_of(trees.cbegin(), trees.cend(), different_taxon_count)) {
     Failwith(
         "Tree leaf count doesn't match the size of tag_taxon_map in "
         "TreeCollection::TreeCollection.");
@@ -74,7 +73,7 @@ void TreeCollection::Erase(size_t begin_idx, size_t end_idx) {
 std::string TreeCollection::Newick() const {
   std::string str;
   for (const auto &tree : trees_) {
-    if (tag_taxon_map_.size()) {
+    if (!tag_taxon_map_.empty()) {
       str.append(tree.Newick(tag_taxon_map_));
     } else {
       str.append(tree.Newick());
