@@ -5,6 +5,7 @@
 #define SRC_ALIGNMENT_HPP_
 
 #include <string>
+#include <utility>
 #include "sugar.hpp"
 
 class Alignment {
