@@ -36,6 +36,7 @@ TEST_CASE("Alignment") {
                      {"saturn", "GCGCGCAGCTGCTGTAGATGGAGGCATGACG"},
                      {"jupiter", "GCGCGCAGCAGCTGTGGATGGAAGGATGACG"}});
   CHECK_EQ(correct, alignment);
+  CHECK(alignment.IsValid());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

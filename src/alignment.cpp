@@ -18,10 +18,11 @@ bool Alignment::IsValid() const {
   if (data_.empty()) {
     return false;
   }
-  size_t length = data_.begin()->second.size();
-  return std::all_of(data_.cbegin(), data_.cend(), [length](const auto &datum) {
+  auto length = Length();
+  auto is_same_length = [length](const auto &datum) {
     return (length == datum.second.size());
-  });
+  };
+  return std::all_of(data_.cbegin(), data_.cend(), is_same_length);
 }
 
 std::string Alignment::at(const std::string &taxon) const {

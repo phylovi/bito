@@ -1,5 +1,5 @@
 # See https://www.reddit.com/r/cpp/comments/5bqkk5/good_clangtidy_files/
-Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-llvm-header-guard,-llvm-include-order,-google-build-using-namespace,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-hicpp-no-array-decay,-clang-analyzer-alpha.deadcode.UnreachableCode,-fuchsia-default-arguments,-fuchsia-overloaded-operator'
+Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-llvm-header-guard,-llvm-include-order,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-hicpp-no-array-decay,-fuchsia-default-arguments,-fuchsia-overloaded-operator'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 AnalyzeTemporaryDtors: false
