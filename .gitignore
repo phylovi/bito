@@ -43,3 +43,4 @@ __pycache__
 build/
 dist/
 pip-wheel-metadata/
+.mypy_cache

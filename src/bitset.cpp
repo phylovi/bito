@@ -4,7 +4,7 @@
 #include "bitset.hpp"
 #include "sugar.hpp"
 
-Bitset::Bitset(std::vector<bool> value) : value_(value) {}
+Bitset::Bitset(std::vector<bool> value) : value_(std::move(value)) {}
 
 Bitset::Bitset(size_t n, bool initial_value) : value_(n, initial_value) {}
 
@@ -15,15 +15,15 @@ Bitset::Bitset(std::string str) : Bitset(str.length()) {
     } else if (str[i] == '1') {
       value_[i] = true;
     } else {
-      throw("String constructor for Bitset must use only 0s or 1s; found '" +
-            std::string(1, str[i]) + "'.");
+      Failwith("String constructor for Bitset must use only 0s or 1s; found '" +
+               std::string(1, str[i]) + "'.");
     }
   }
 }
 
 bool Bitset::operator[](size_t i) const { return value_[i]; }
 
-size_t Bitset::size(void) const { return value_.size(); }
+size_t Bitset::size() const { return value_.size(); }
 
 void Bitset::set(size_t i, bool value) {
   Assert(i < value_.size(), "i out of range in Bitset::set.");

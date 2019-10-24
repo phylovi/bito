@@ -9,8 +9,8 @@
 
 class Alignment {
  public:
-  Alignment() {}
-  explicit Alignment(StringStringMap data) : data_(data) {}
+  Alignment() = default;
+  explicit Alignment(StringStringMap data) : data_(std::move(data)) {}
 
   StringStringMap Data() const { return data_; }
   size_t SequenceCount() const { return data_.size(); }
@@ -23,7 +23,7 @@ class Alignment {
   bool IsValid() const;
   std::string at(const std::string& taxon) const;
 
-  static Alignment ReadFasta(std::string fname);
+  static Alignment ReadFasta(const std::string& fname);
 
  private:
   StringStringMap data_;
@@ -36,6 +36,7 @@ TEST_CASE("Alignment") {
                      {"saturn", "GCGCGCAGCTGCTGTAGATGGAGGCATGACG"},
                      {"jupiter", "GCGCGCAGCAGCTGTGGATGGAAGGATGACG"}});
   CHECK_EQ(correct, alignment);
+  CHECK(alignment.IsValid());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

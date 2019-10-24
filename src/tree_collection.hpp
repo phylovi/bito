@@ -15,7 +15,7 @@ class TreeCollection {
  public:
   explicit TreeCollection(Tree::TreeVector trees);
 
-  TreeCollection();
+  TreeCollection() = default;
   TreeCollection(Tree::TreeVector trees, TagStringMap tag_taxon_map);
   TreeCollection(Tree::TreeVector trees,
                  const std::vector<std::string> &taxon_labels);
@@ -37,7 +37,7 @@ class TreeCollection {
   std::vector<std::string> TaxonNames() const;
 
   static TagStringMap TagStringMapOf(
-      const std::vector<std::string> taxon_labels);
+      const std::vector<std::string> &taxon_labels);
 
   Tree::TreeVector trees_;
 
