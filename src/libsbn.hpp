@@ -30,6 +30,9 @@ using StringPCSSMap =
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
 using PCSSIndexVector = std::vector<size_t>;
 // We wish we had optional references, but not in C++17.
+// This works fairly nicely
+// (see https://github.com/phylovi/libsbn/issues/131#issuecomment-546427414)
+// though the interface isn't exactly bulletproof.
 using EnginePtrOption = std::optional<std::unique_ptr<Engine>>;
 
 // Turn a <Key, T> map into a <std::string, T> map for any Key type that has
