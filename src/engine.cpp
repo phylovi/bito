@@ -11,7 +11,7 @@ Engine::Engine(SitePattern site_pattern,
   if (thread_count == 0) {
     Failwith("Thread count needs to be strictly positive.");
   }
-  // TODO: something else
+  // TODO: allow other subs models
   Assert(substitution_model_->Details().type == SubstitutionModelType::JC,
          "Only JC model allowed.");
   auto make_beagle_instance = [& site_pattern =
@@ -25,12 +25,23 @@ Engine::Engine(SitePattern site_pattern,
                 make_beagle_instance);
 }
 
-Engine::~Engine() { FinalizeBeagleInstances(); }
-
-void Engine::FinalizeBeagleInstances() {
+Engine::~Engine() {
   for (const auto& beagle_instance : beagle_instances_) {
-    Assert(beagleFinalizeInstance(beagle_instance) == 0,
-           "beagleFinalizeInstance gave nonzero return value!");
+    auto finalize_result = beagleFinalizeInstance(beagle_instance);
+    if (finalize_result) {
+      std::cout << "beagleFinalizeInstance gave nonzero return value!";
+      std::terminate();
+    }
   }
-  beagle_instances_.clear();
 }
+
+std::vector<double> Engine::LogLikelihoods(
+    const TreeCollection& tree_collection, bool rescaling) {
+  return beagle::LogLikelihoods(beagle_instances_, tree_collection, rescaling);
+}
+
+std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
+    const TreeCollection& tree_collection, bool rescaling) {
+  return beagle::BranchGradients(beagle_instances_, tree_collection, rescaling);
+}
+
