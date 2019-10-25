@@ -50,48 +50,20 @@ StringPCSSMap StringPCSSMapOf(PCSSDict d);
 
 class SBNInstance {
  public:
-  std::string name_;
   // Trees get loaded in from a file or sampled from SBNs.
   TreeCollection tree_collection_;
-  Alignment alignment_;
-  // Beagly bits.
-  CharIntMap symbol_table_;
-  std::vector<beagle::BeagleInstance> beagle_instances_;
-  // TODO make private
-  EnginePtrOption engine_ = std::nullopt;
-  // TODO cut these?
-  size_t beagle_leaf_count_;
-  size_t beagle_site_count_;
-  // A vector that contains all of the SBN-related probabilities.
-  std::vector<double> sbn_parameters_;
-  // A map that indexes these probabilities: rootsplits are at the beginning,
-  // and PCSS bitsets are at the end.
-  // The collection of rootsplits, with the same indexing as in the indexer_.
-  BitsetVector rootsplits_;
-  // The first index after the rootsplit block in sbn_parameters_.
-  BitsetSizeMap indexer_;
-  // A map going from the index of a PCSS to its child.
-  SizeBitsetMap index_to_child_;
-  // A map going from a parent subsplit to the range of indices in
-  // sbn_parameters_ with its children.
-  BitsetSizePairMap parent_to_range_;
   // The Primary Split Pair indexer.
   PSPIndexer psp_indexer_;
-
-  // Random bits.
-  static std::random_device random_device_;
-  static std::mt19937 random_generator_;
-  bool rescaling_;
+  // A vector that contains all of the SBN-related probabilities.
+  std::vector<double> sbn_parameters_;
+  // The master indexer for SBN parameters.
+  BitsetSizeMap indexer_;
 
   // ** Initialization, destruction, and status
   explicit SBNInstance(const std::string &name)
       : name_(name),
         symbol_table_(SitePattern::GetSymbolTable()),
-        beagle_leaf_count_(0),
-        beagle_site_count_(0),
         rescaling_{false} {}
-
-  ~SBNInstance() { FinalizeBeagleInstances(); }
 
   // Return a raw pointer to the engine if it's available.
   Engine *GetEngine() const {
@@ -103,9 +75,6 @@ class SBNInstance {
         "Engine not available. Call MakeEngine to make an engine for "
         "phylogenetic likelihood computation computation.");
   }
-
-  // Release memory from BEAGLE instances and discard them.
-  void FinalizeBeagleInstances();
 
   void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
 
@@ -187,6 +156,26 @@ class SBNInstance {
   std::vector<double> LogLikelihoods() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients() const;
+
+ private:
+  std::string name_;
+  EnginePtrOption engine_ = std::nullopt;
+  Alignment alignment_;
+  CharIntMap symbol_table_;
+  // A map that indexes these probabilities: rootsplits are at the beginning,
+  // and PCSS bitsets are at the end.
+  // The collection of rootsplits, with the same indexing as in the indexer_.
+  BitsetVector rootsplits_;
+  // A map going from the index of a PCSS to its child.
+  SizeBitsetMap index_to_child_;
+  // A map going from a parent subsplit to the range of indices in
+  // sbn_parameters_ with its children.
+  BitsetSizePairMap parent_to_range_;
+
+  // Random bits.
+  static std::random_device random_device_;
+  static std::mt19937 random_generator_;
+  bool rescaling_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
