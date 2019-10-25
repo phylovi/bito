@@ -253,14 +253,12 @@ void SBNInstance::MakeEngine(size_t thread_count) {
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() const {
-  return beagle::LogLikelihoods(GetEngine()->BeagleInstances(),
-                                tree_collection_, rescaling_);
+  return GetEngine()->LogLikelihoods(tree_collection_, rescaling_);
 }
 
 std::vector<std::pair<double, std::vector<double>>>
 SBNInstance::BranchGradients() const {
-  return beagle::BranchGradients(GetEngine()->BeagleInstances(),
-                                 tree_collection_, rescaling_);
+  return GetEngine()->BranchGradients(tree_collection_, rescaling_);
 }
 
 // Here we initialize our static random number generator.
