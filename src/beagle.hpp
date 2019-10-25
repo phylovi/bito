@@ -26,7 +26,6 @@ int CreateInstance(int tip_count, int alignment_length,
 BeagleInstance CreateInstance(const SitePattern &site_pattern);
 
 void PrepareBeagleInstance(const BeagleInstance beagle_instance,
-                           const TreeCollection &tree_collection,
                            const SitePattern &site_pattern);
 
 void SetJCModel(BeagleInstance beagle_instance);

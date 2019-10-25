@@ -271,8 +271,7 @@ void SBNInstance::MakeBeagleInstances(int instance_count) {
     auto beagle_instance = beagle::CreateInstance(site_pattern);
     beagle::SetJCModel(beagle_instance);
     beagle_instances_.push_back(beagle_instance);
-    beagle::PrepareBeagleInstance(beagle_instance, tree_collection_,
-                                  site_pattern);
+    beagle::PrepareBeagleInstance(beagle_instance, site_pattern);
   }
 }
 

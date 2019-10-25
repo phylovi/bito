@@ -68,12 +68,7 @@ BeagleInstance CreateInstance(const SitePattern &site_pattern) {
 }
 
 void PrepareBeagleInstance(const BeagleInstance beagle_instance,
-                           const TreeCollection &tree_collection,
                            const SitePattern &site_pattern) {
-  if (tree_collection.TaxonCount() != site_pattern.SequenceCount()) {
-    Failwith(
-        "The number of tree tips doesn't match the alignment sequence count.");
-  }
   // Use uniform rates and weights.
   const double weights[1] = {1.0};
   const double rates[1] = {1.0};
