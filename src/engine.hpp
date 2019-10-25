@@ -10,12 +10,11 @@
 #include "beagle.hpp"
 #include "substitution_model.hpp"
 
-class LikelihoodEngine {
+class Engine {
  public:
-  LikelihoodEngine(SitePattern site_pattern,
-                   SubstitutionModelPtr substitution_model,
-                   size_t thread_count);
-  ~LikelihoodEngine();
+  Engine(SitePattern site_pattern, SubstitutionModelPtr substitution_model,
+         size_t thread_count);
+  ~Engine();
 
   std::vector<beagle::BeagleInstance> BeagleInstances() const {
     return beagle_instances_;
@@ -29,12 +28,11 @@ class LikelihoodEngine {
   std::vector<beagle::BeagleInstance> beagle_instances_;
 };
 
-
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("LikelihoodEngine") {
+TEST_CASE("Engine") {
   auto substitution_model = std::make_unique<GTRModel>();
 
-  // auto engine = LikelihoodEngine(std::move(substitution_model));
+  // auto engine = Engine(std::move(substitution_model));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

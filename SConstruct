@@ -89,7 +89,7 @@ sources = [
     "_build/bitset.cpp",
     "_build/driver.cpp",
     "_build/libsbn.cpp",
-    "_build/likelihood_engine.cpp",
+    "_build/engine.cpp",
     "_build/node.cpp",
     "_build/parser.cpp",
     "_build/psp_indexer.cpp",
