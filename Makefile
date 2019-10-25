@@ -1,4 +1,4 @@
-our_files = src/beagle.cpp src/beagle.hpp src/bitset.cpp src/bitset.hpp src/sbn_maps.hpp src/sbn_maps.cpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.cpp src/tree.hpp src/node.hpp src/node.cpp src/tree_collection.cpp src/tree_collection.hpp src/alignment.cpp src/alignment.hpp src/task_processor.hpp src/beagle.hpp src/beagle.cpp src/site_pattern.hpp src/site_pattern.cpp src/pylibsbn.cpp src/psp_indexer.cpp src/psp_indexer.hpp
+our_files = src/beagle.cpp src/beagle.hpp src/bitset.cpp src/bitset.hpp src/sbn_maps.hpp src/sbn_maps.cpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.cpp src/tree.hpp src/node.hpp src/node.cpp src/tree_collection.cpp src/tree_collection.hpp src/alignment.cpp src/alignment.hpp src/task_processor.hpp src/beagle.hpp src/beagle.cpp src/site_pattern.hpp src/site_pattern.cpp src/pylibsbn.cpp src/psp_indexer.cpp src/psp_indexer.hpp src/substitution_model.hpp src/substitution_model.cpp src/likelihood_engine.hpp src/likelihood_engine.cpp
 
 default:
 	scons

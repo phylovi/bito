@@ -15,6 +15,7 @@
 #include "alignment.hpp"
 #include "beagle.hpp"
 #include "driver.hpp"
+#include "likelihood_engine.hpp"
 #include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
 #include "sugar.hpp"
@@ -49,6 +50,7 @@ struct SBNInstance {
   // Beagly bits.
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
+  // TODO
   size_t beagle_leaf_count_;
   size_t beagle_site_count_;
   // A vector that contains all of the SBN-related probabilities.
