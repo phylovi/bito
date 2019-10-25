@@ -10,10 +10,8 @@ We are building a Python-interface C++ library for phylogenetic variational infe
 
 To install dependencies, use the associated conda environment file:
 
-```
-conda env create -f environment.yml
-conda activate libsbn
-```
+    conda env create -f environment.yml
+    conda activate libsbn
 
 **However, you also need to install platform-specific compiler packages as follows.**
 
@@ -25,14 +23,16 @@ If you want to specify your compiler manually, set the `CC` and `CXX` shell vari
 The packages in `environment-extras.yml` are not required to use the package or the command-line interface, but they are required to run the notebooks.
 To install them as well, call:
 
-```
-conda env update -n libsbn -f environment-extras.yml
-```
+    conda env update -n libsbn -f environment-extras.yml
 
 
 ## Building
 
-`make` will build, run tests, and install the Python packages.
+First:
+
+    git submodule update
+
+Then `make` will build, run tests, and install the Python packages.
 
 On OS X the build process will also modify the conda environment to point `DYLD_LIBRARY_PATH` to where BEAGLE is installed.
 If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.

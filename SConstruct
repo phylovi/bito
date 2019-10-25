@@ -27,7 +27,7 @@ env = Environment(
     PACKAGE_METADATA=metadata,
     WHEEL_TAG=full_tag,
     ENV=os.environ,
-    CPPPATH=["include", "src", pybind11.get_include()],
+    CPPPATH=["src", "lib/eigen", pybind11.get_include()],
     # CCFLAGS=['-g', '-Wall', '-Wextra', '-Wconversion', '-pthread'],
     CCFLAGS=["-O3", "-pthread"],
     CXXFLAGS=["-std=c++17"],
