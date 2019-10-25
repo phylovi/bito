@@ -12,14 +12,6 @@ StringPCSSMap StringPCSSMapOf(PCSSDict d) {
   return d_str;
 }
 
-void SBNInstance::FinalizeBeagleInstances() {
-  for (const auto &beagle_instance : beagle_instances_) {
-    Assert(beagleFinalizeInstance(beagle_instance) == 0,
-           "beagleFinalizeInstance gave nonzero return value!");
-  }
-  beagle_instances_.clear();
-}
-
 void SBNInstance::PrintStatus() {
   std::cout << "Status for instance '" << name_ << "':\n";
   if (tree_collection_.TreeCount()) {
