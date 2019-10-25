@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 #include <random>
 #include <string>
 #include <tuple>
@@ -21,16 +22,19 @@
 #include "sugar.hpp"
 #include "tree.hpp"
 
-typedef std::unordered_map<std::string, float> StringFloatMap;
-typedef std::unordered_map<std::string, std::pair<size_t, size_t>>
-    StringSizePairMap;
-typedef std::unordered_map<size_t, std::string> SizeStringMap;
-typedef std::unordered_map<std::string, std::unordered_map<std::string, size_t>>
-    StringPCSSMap;
-typedef std::vector<size_t> PCSSIndexVector;
+using StringFloatMap = std::unordered_map<std::string, float>;
+using StringSizePairMap =
+    std::unordered_map<std::string, std::pair<size_t, size_t>>;
+using SizeStringMap = std::unordered_map<size_t, std::string>;
+using StringPCSSMap =
+    std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
+using PCSSIndexVector = std::vector<size_t>;
+// We wish we had optional references, but not in C++17.
+using LikelihoodEnginePtrOption =
+    std::optional<std::unique_ptr<LikelihoodEngine>>;
 
-// Turn a <Key, T> map into a <std::string, T> map for any Key type that has a
-// ToString method.
+// Turn a <Key, T> map into a <std::string, T> map for any Key type that has
+// a ToString method.
 template <class Key, class T>
 std::unordered_map<std::string, T> StringifyMap(std::unordered_map<Key, T> m) {
   std::unordered_map<std::string, T> m_str;
@@ -42,7 +46,8 @@ std::unordered_map<std::string, T> StringifyMap(std::unordered_map<Key, T> m) {
 
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
 
-struct SBNInstance {
+class SBNInstance {
+ public:
   std::string name_;
   // Trees get loaded in from a file or sampled from SBNs.
   TreeCollection tree_collection_;
@@ -50,7 +55,9 @@ struct SBNInstance {
   // Beagly bits.
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
-  // TODO
+  // TODO make private
+  LikelihoodEnginePtrOption likelihood_engine_ = std::nullopt;
+  // TODO cut these?
   size_t beagle_leaf_count_;
   size_t beagle_site_count_;
   // A vector that contains all of the SBN-related probabilities.
@@ -83,6 +90,14 @@ struct SBNInstance {
         rescaling_{false} {}
 
   ~SBNInstance() { FinalizeBeagleInstances(); }
+
+  LikelihoodEngine *GetLikelihoodEngine() const {
+    if (likelihood_engine_) {
+      return (*likelihood_engine_).get();
+    }
+    // else
+    Failwith("LikelihoodEngine not available!");
+  }
 
   // Release memory from BEAGLE instances and discard them.
   void FinalizeBeagleInstances();
@@ -160,11 +175,6 @@ struct SBNInstance {
   // have loaded.
   void CheckBeagleDimensions() const;
 
-  // Make the specified number of BEAGLE instances are appropriate for the
-  // loaded data. Likelihood calculation will be run in parallel across the
-  // specified number of instances.
-  void MakeBeagleInstances(int instance_count);
-
   // Make a likelihood engine which will run across the specified number of
   // threads.
   void MakeLikelihoodEngine(size_t thread_count);
@@ -179,7 +189,7 @@ TEST_CASE("libsbn") {
   SBNInstance inst("charlie");
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
-  inst.MakeBeagleInstances(2);
+  inst.MakeLikelihoodEngine(2);
   for (auto ll : inst.LogLikelihoods()) {
     CHECK_LT(fabs(ll - -84.852358), 0.000001);
   }
@@ -239,7 +249,7 @@ TEST_CASE("libsbn") {
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
-  inst.MakeBeagleInstances(2);
+  inst.MakeLikelihoodEngine(2);
   auto likelihoods = inst.LogLikelihoods();
   std::vector<double> pybeagle_likelihoods(
       {-14582.995273982739, -6911.294207416366, -6916.880235529542,
@@ -281,7 +291,7 @@ TEST_CASE("libsbn") {
     CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
   }
   // Likelihoods from BranchGradients()
-  inst.MakeBeagleInstances(1);
+  inst.MakeLikelihoodEngine(1);
   auto gradients_rescaling = inst.BranchGradients();
   for (size_t i = 0; i < gradients_rescaling.size(); i++) {
     CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]),

@@ -15,8 +15,11 @@ class LikelihoodEngine {
   LikelihoodEngine(SitePattern site_pattern,
                    SubstitutionModelPtr substitution_model,
                    size_t thread_count);
-
   ~LikelihoodEngine();
+
+  std::vector<beagle::BeagleInstance> BeagleInstances() const {
+    return beagle_instances_;
+  }
 
   void FinalizeBeagleInstances();
 

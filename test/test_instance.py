@@ -50,7 +50,7 @@ def test_instance():
     assert subsplit_support.keys() == vbpi_subsplit_supp_dict.keys()
 
     inst.read_fasta_file("data/DS1.fasta")
-    inst.make_beagle_instances(2)
+    inst.make_likelihood_engine(2)
     print(np.array(inst.log_likelihoods()))
 
     log_likelihoods, gradients = zip(*inst.branch_gradients())
@@ -61,7 +61,7 @@ def test_instance():
         [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
     )
     inst.read_fasta_file("data/hello.fasta")
-    inst.make_beagle_instances(2)
+    inst.make_likelihood_engine(2)
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])
     print(inst.tree_collection.newick())
