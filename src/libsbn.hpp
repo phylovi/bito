@@ -165,6 +165,10 @@ struct SBNInstance {
   // specified number of instances.
   void MakeBeagleInstances(int instance_count);
 
+  // Make a likelihood engine which will run across the specified number of
+  // threads.
+  void MakeLikelihoodEngine(size_t thread_count);
+
   std::vector<double> LogLikelihoods() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients() const;

@@ -5,34 +5,44 @@
 #define SRC_SUBSTITUTION_MODEL_HPP_
 #include <memory>
 
+enum struct SubstitutionModelType { JC, GTR };
+
 struct SubstitutionModelDetails {
-  size_t state_count;
+  SubstitutionModelType type;
 };
 
 class SubstitutionModel {
  public:
+  SubstitutionModelDetails Details() const { return details_; }
+
   virtual void EigenDecomposition() const = 0;
-  virtual SubstitutionModelDetails Details() const = 0;
+
+ protected:
+  explicit SubstitutionModel(SubstitutionModelDetails details)
+      : details_(details) {}
+  SubstitutionModelDetails details_;
 };
 using SubstitutionModelPtr = std::unique_ptr<SubstitutionModel>;
 
-class GTRModel : public SubstitutionModel {
+class JCModel : public SubstitutionModel {
  public:
-  GTRModel() : details_({4}) {}
-
-  SubstitutionModelDetails Details() const override { return details_; }
+  JCModel() : SubstitutionModel({SubstitutionModelType::JC}) {}
 
   void EigenDecomposition() const override {}
+};
 
- private:
-  SubstitutionModelDetails details_;
+class GTRModel : public SubstitutionModel {
+ public:
+  GTRModel() : SubstitutionModel({SubstitutionModelType::GTR}) {}
+
+  void EigenDecomposition() const override {}
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("SubstitutionModel") {
   auto substitution_model = std::make_unique<GTRModel>();
 
-  CHECK_EQ(substitution_model->Details().state_count, 4);
+  CHECK_EQ(substitution_model->Details().type, SubstitutionModelType::GTR);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

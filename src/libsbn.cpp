@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "libsbn.hpp"
+#include <memory>
 
 StringPCSSMap StringPCSSMapOf(PCSSDict d) {
   StringPCSSMap d_str;
@@ -258,6 +259,16 @@ void SBNInstance::CheckBeagleDimensions() const {
         "Alignment dimensions for current BEAGLE instances do not "
         "match current alignment. Call MakeBeagleInstances again.");
   }
+}
+
+void SBNInstance::MakeLikelihoodEngine(size_t thread_count) {
+  CheckSequencesAndTreesLoaded();
+  beagle_leaf_count_ = alignment_.SequenceCount();
+  beagle_site_count_ = alignment_.Length();
+  SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
+  auto substitution_model = std::make_unique<JCModel>();
+  LikelihoodEngine engine(std::move(site_pattern),
+                          std::move(substitution_model), thread_count);
 }
 
 void SBNInstance::MakeBeagleInstances(int instance_count) {
