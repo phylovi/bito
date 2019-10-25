@@ -244,6 +244,7 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
+// TODO generalize to other models, including adding a model argument here.
 void SBNInstance::MakeEngine(size_t thread_count) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
