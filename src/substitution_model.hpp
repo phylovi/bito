@@ -3,6 +3,7 @@
 
 #ifndef SRC_SUBSTITUTION_MODEL_HPP_
 #define SRC_SUBSTITUTION_MODEL_HPP_
+#include <Eigen/Dense>
 #include <memory>
 
 enum struct SubstitutionModelType { JC, GTR };
@@ -36,6 +37,9 @@ class GTRModel : public SubstitutionModel {
   GTRModel() : SubstitutionModel({SubstitutionModelType::GTR}) {}
 
   void EigenDecomposition() const override {}
+
+ private:
+  Eigen::Matrix4d sample_matrix_not_doing_anything;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
