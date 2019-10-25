@@ -14,6 +14,7 @@ class SubstitutionModel {
   virtual void EigenDecomposition() const = 0;
   virtual SubstitutionModelDetails Details() const = 0;
 };
+using SubstitutionModelPtr = std::unique_ptr<SubstitutionModel>;
 
 class GTRModel : public SubstitutionModel {
  public:
@@ -29,9 +30,9 @@ class GTRModel : public SubstitutionModel {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("SubstitutionModel") {
-  std::unique_ptr<SubstitutionModel> model = std::make_unique<GTRModel>();
+  auto substitution_model = std::make_unique<GTRModel>();
 
-  CHECK_EQ(model->Details().state_count, 4);
+  CHECK_EQ(substitution_model->Details().state_count, 4);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
