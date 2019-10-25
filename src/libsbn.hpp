@@ -96,7 +96,9 @@ class SBNInstance {
       return (*engine_).get();
     }
     // else
-    Failwith("Engine not available!");
+    Failwith(
+        "Engine not available. Call MakeEngine to make an engine for "
+        "phylogenetic likelihood computation computation.");
   }
 
   // Release memory from BEAGLE instances and discard them.
