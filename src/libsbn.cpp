@@ -261,29 +261,27 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
 //   }
 // }
 
-void SBNInstance::MakeLikelihoodEngine(size_t thread_count) {
+void SBNInstance::MakeEngine(size_t thread_count) {
   CheckSequencesAndTreesLoaded();
   beagle_leaf_count_ = alignment_.SequenceCount();
   beagle_site_count_ = alignment_.Length();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
   auto substitution_model = std::make_unique<JCModel>();
   // TODO turn this into a factory?
-  likelihood_engine_ =
-      LikelihoodEnginePtrOption{std::make_unique<LikelihoodEngine>(
-          std::move(site_pattern), std::move(substitution_model),
-          thread_count)};
+  engine_ = EnginePtrOption{std::make_unique<Engine>(
+      std::move(site_pattern), std::move(substitution_model), thread_count)};
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() const {
   // TODO check dimensions?
   // CheckBeagleDimensions();
-  return beagle::LogLikelihoods(GetLikelihoodEngine()->BeagleInstances(),
+  return beagle::LogLikelihoods(GetEngine()->BeagleInstances(),
                                 tree_collection_, rescaling_);
 }
 
 std::vector<std::pair<double, std::vector<double>>>
 SBNInstance::BranchGradients() const {
-  return beagle::BranchGradients(GetLikelihoodEngine()->BeagleInstances(),
+  return beagle::BranchGradients(GetEngine()->BeagleInstances(),
                                  tree_collection_, rescaling_);
 }
 

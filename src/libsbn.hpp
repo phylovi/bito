@@ -16,7 +16,7 @@
 #include "alignment.hpp"
 #include "beagle.hpp"
 #include "driver.hpp"
-#include "likelihood_engine.hpp"
+#include "engine.hpp"
 #include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
 #include "sugar.hpp"
@@ -30,8 +30,7 @@ using StringPCSSMap =
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
 using PCSSIndexVector = std::vector<size_t>;
 // We wish we had optional references, but not in C++17.
-using LikelihoodEnginePtrOption =
-    std::optional<std::unique_ptr<LikelihoodEngine>>;
+using EnginePtrOption = std::optional<std::unique_ptr<Engine>>;
 
 // Turn a <Key, T> map into a <std::string, T> map for any Key type that has
 // a ToString method.
@@ -56,7 +55,7 @@ class SBNInstance {
   CharIntMap symbol_table_;
   std::vector<beagle::BeagleInstance> beagle_instances_;
   // TODO make private
-  LikelihoodEnginePtrOption likelihood_engine_ = std::nullopt;
+  EnginePtrOption engine_ = std::nullopt;
   // TODO cut these?
   size_t beagle_leaf_count_;
   size_t beagle_site_count_;
@@ -91,12 +90,13 @@ class SBNInstance {
 
   ~SBNInstance() { FinalizeBeagleInstances(); }
 
-  LikelihoodEngine *GetLikelihoodEngine() const {
-    if (likelihood_engine_) {
-      return (*likelihood_engine_).get();
+  // Return a raw pointer to the engine if it's available.
+  Engine *GetEngine() const {
+    if (engine_) {
+      return (*engine_).get();
     }
     // else
-    Failwith("LikelihoodEngine not available!");
+    Failwith("Engine not available!");
   }
 
   // Release memory from BEAGLE instances and discard them.
@@ -177,7 +177,7 @@ class SBNInstance {
 
   // Make a likelihood engine which will run across the specified number of
   // threads.
-  void MakeLikelihoodEngine(size_t thread_count);
+  void MakeEngine(size_t thread_count);
 
   std::vector<double> LogLikelihoods() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).
@@ -189,7 +189,7 @@ TEST_CASE("libsbn") {
   SBNInstance inst("charlie");
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
-  inst.MakeLikelihoodEngine(2);
+  inst.MakeEngine(2);
   for (auto ll : inst.LogLikelihoods()) {
     CHECK_LT(fabs(ll - -84.852358), 0.000001);
   }
@@ -249,7 +249,7 @@ TEST_CASE("libsbn") {
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
-  inst.MakeLikelihoodEngine(2);
+  inst.MakeEngine(2);
   auto likelihoods = inst.LogLikelihoods();
   std::vector<double> pybeagle_likelihoods(
       {-14582.995273982739, -6911.294207416366, -6916.880235529542,
@@ -291,7 +291,7 @@ TEST_CASE("libsbn") {
     CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
   }
   // Likelihoods from BranchGradients()
-  inst.MakeLikelihoodEngine(1);
+  inst.MakeEngine(1);
   auto gradients_rescaling = inst.BranchGradients();
   for (size_t i = 0; i < gradients_rescaling.size(); i++) {
     CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]),

@@ -56,7 +56,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("read_fasta_file", &SBNInstance::ReadFastaFile)
       .def("print_status", &SBNInstance::PrintStatus)
       .def("split_counters", &SBNInstance::SplitCounters)
-      .def("make_likelihood_engine", &SBNInstance::MakeLikelihoodEngine)
+      .def("make_engine", &SBNInstance::MakeEngine)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
       .def("branch_gradients", &SBNInstance::BranchGradients)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)

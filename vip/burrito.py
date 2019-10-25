@@ -44,7 +44,7 @@ class Burrito:
 
         # Set up tree likelihood calculation.
         self.inst.read_fasta_file(fasta_path)
-        self.inst.make_likelihood_engine(thread_count)
+        self.inst.make_engine(thread_count)
         sbn_model = vip.sbn_model.SBNModel(self.inst)
         self.branch_model = vip.branch_model.of_name(
             branch_model_name, scalar_model_name, self.inst
