@@ -8,6 +8,9 @@ Engine::Engine(SitePattern site_pattern,
     : site_pattern_(std::move(site_pattern)),
       substitution_model_(std::move(substitution_model)),
       beagle_instances_(thread_count) {
+  if (thread_count == 0) {
+    Failwith("Thread count needs to be strictly positive.");
+  }
   // TODO: something else
   Assert(substitution_model_->Details().type == SubstitutionModelType::JC,
          "Only JC model allowed.");

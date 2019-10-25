@@ -18,8 +18,6 @@ void SBNInstance::FinalizeBeagleInstances() {
            "beagleFinalizeInstance gave nonzero return value!");
   }
   beagle_instances_.clear();
-  beagle_leaf_count_ = 0;
-  beagle_site_count_ = 0;
 }
 
 void SBNInstance::PrintStatus() {
@@ -246,35 +244,15 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
-// void SBNInstance::CheckBeagleDimensions() const {
-//   CheckSequencesAndTreesLoaded();
-//   if (beagle_instances_.size() == 0) {
-//     Failwith(
-//         "Call MakeBeagleInstances to make some instances for likelihood "
-//         "computation.");
-//   }
-//   if (alignment_.SequenceCount() != beagle_leaf_count_ ||
-//       alignment_.Length() != beagle_site_count_) {
-//     Failwith(
-//         "Alignment dimensions for current BEAGLE instances do not "
-//         "match current alignment. Call MakeBeagleInstances again.");
-//   }
-// }
-
 void SBNInstance::MakeEngine(size_t thread_count) {
   CheckSequencesAndTreesLoaded();
-  beagle_leaf_count_ = alignment_.SequenceCount();
-  beagle_site_count_ = alignment_.Length();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
   auto substitution_model = std::make_unique<JCModel>();
-  // TODO turn this into a factory?
   engine_ = EnginePtrOption{std::make_unique<Engine>(
       std::move(site_pattern), std::move(substitution_model), thread_count)};
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() const {
-  // TODO check dimensions?
-  // CheckBeagleDimensions();
   return beagle::LogLikelihoods(GetEngine()->BeagleInstances(),
                                 tree_collection_, rescaling_);
 }
