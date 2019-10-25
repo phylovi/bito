@@ -246,20 +246,20 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
-void SBNInstance::CheckBeagleDimensions() const {
-  CheckSequencesAndTreesLoaded();
-  if (beagle_instances_.size() == 0) {
-    Failwith(
-        "Call MakeBeagleInstances to make some instances for likelihood "
-        "computation.");
-  }
-  if (alignment_.SequenceCount() != beagle_leaf_count_ ||
-      alignment_.Length() != beagle_site_count_) {
-    Failwith(
-        "Alignment dimensions for current BEAGLE instances do not "
-        "match current alignment. Call MakeBeagleInstances again.");
-  }
-}
+// void SBNInstance::CheckBeagleDimensions() const {
+//   CheckSequencesAndTreesLoaded();
+//   if (beagle_instances_.size() == 0) {
+//     Failwith(
+//         "Call MakeBeagleInstances to make some instances for likelihood "
+//         "computation.");
+//   }
+//   if (alignment_.SequenceCount() != beagle_leaf_count_ ||
+//       alignment_.Length() != beagle_site_count_) {
+//     Failwith(
+//         "Alignment dimensions for current BEAGLE instances do not "
+//         "match current alignment. Call MakeBeagleInstances again.");
+//   }
+// }
 
 void SBNInstance::MakeLikelihoodEngine(size_t thread_count) {
   CheckSequencesAndTreesLoaded();
@@ -267,35 +267,24 @@ void SBNInstance::MakeLikelihoodEngine(size_t thread_count) {
   beagle_site_count_ = alignment_.Length();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
   auto substitution_model = std::make_unique<JCModel>();
-  LikelihoodEngine engine(std::move(site_pattern),
-                          std::move(substitution_model), thread_count);
-}
-
-void SBNInstance::MakeBeagleInstances(int instance_count) {
-  // Start by clearing out any existing instances.
-  FinalizeBeagleInstances();
-  CheckSequencesAndTreesLoaded();
-  beagle_leaf_count_ = alignment_.SequenceCount();
-  beagle_site_count_ = alignment_.Length();
-  SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  for (auto i = 0; i < instance_count; i++) {
-    auto beagle_instance = beagle::CreateInstance(site_pattern);
-    beagle::SetJCModel(beagle_instance);
-    beagle_instances_.push_back(beagle_instance);
-    beagle::PrepareBeagleInstance(beagle_instance, site_pattern);
-  }
+  // TODO turn this into a factory?
+  likelihood_engine_ =
+      LikelihoodEnginePtrOption{std::make_unique<LikelihoodEngine>(
+          std::move(site_pattern), std::move(substitution_model),
+          thread_count)};
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() const {
-  CheckBeagleDimensions();
-  return beagle::LogLikelihoods(beagle_instances_, tree_collection_,
-                                rescaling_);
+  // TODO check dimensions?
+  // CheckBeagleDimensions();
+  return beagle::LogLikelihoods(GetLikelihoodEngine()->BeagleInstances(),
+                                tree_collection_, rescaling_);
 }
 
 std::vector<std::pair<double, std::vector<double>>>
 SBNInstance::BranchGradients() const {
-  return beagle::BranchGradients(beagle_instances_, tree_collection_,
-                                 rescaling_);
+  return beagle::BranchGradients(GetLikelihoodEngine()->BeagleInstances(),
+                                 tree_collection_, rescaling_);
 }
 
 // Here we initialize our static random number generator.
