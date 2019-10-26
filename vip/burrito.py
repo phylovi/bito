@@ -83,15 +83,19 @@ class Burrito:
         # branch_model part of the gradients and then consume them via branch_model
         # later. This is driven by wanting to support scalar models (such as the TF
         # models) that require sampling and gradient calculation at the same time.
-        (theta_sample, dg_dpsi, dlog_qg_dpsi) = self.branch_model.sample_and_gradients(
+        (
+            px_theta_sample,
+            dg_dpsi,
+            dlog_qg_dpsi,
+        ) = self.branch_model.sample_and_gradients(
             self.particle_count, px_branch_representation
         )
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
-            branch_lengths[:] = theta_sample[particle_idx, :]
+            branch_lengths[:] = px_theta_sample[particle_idx, :]
         branch_gradients = self.inst.branch_gradients()
         scalar_grad = self.branch_model.scalar_grad(
-            theta_sample,
+            px_theta_sample,
             branch_gradients,
             px_branch_representation,
             dg_dpsi,
@@ -109,15 +113,15 @@ class Burrito:
         px_branch_lengths = self.sample_topologies(particle_count)
         px_branch_representation = self.branch_model.px_branch_representation()
         # Sample continuous variables based on the branch representations.
-        theta_sample = self.branch_model.sample(
+        px_theta_sample = self.branch_model.sample(
             particle_count, px_branch_representation
         )
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
-            branch_lengths[:] = theta_sample[particle_idx, :]
+            branch_lengths[:] = px_theta_sample[particle_idx, :]
         px_phylo_log_like = np.array(self.inst.log_likelihoods(), copy=False)
-        px_log_prior = self.branch_model.log_prior(theta_sample)
+        px_log_prior = self.branch_model.log_prior(px_theta_sample)
         elbo_total = np.sum(
             px_phylo_log_like + px_log_prior
-        ) - self.branch_model.log_prob(theta_sample, px_branch_representation)
+        ) - self.branch_model.log_prob(px_theta_sample, px_branch_representation)
         return elbo_total / particle_count
