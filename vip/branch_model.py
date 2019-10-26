@@ -48,12 +48,12 @@ class SplitModel(BranchModel):
         return self.scalar_model.sample(particle_count, px_branch_representation)
 
     def log_prob(self, theta_sample, px_branch_representation):
-        elbo_total = 0.0
-        for particle_idx, branch_to_split in enumerate(px_branch_representation):
-            elbo_total += self.scalar_model.log_prob(
+        return sum(
+            self.scalar_model.log_prob(
                 theta_sample[particle_idx, :], which_variables=branch_to_split
             )
-        return elbo_total
+            for particle_idx, branch_to_split in enumerate(px_branch_representation)
+        )
 
     def sample_and_gradients(self, particle_count, px_branch_representation):
         return self.scalar_model.sample_and_gradients(
