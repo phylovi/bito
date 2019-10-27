@@ -9,30 +9,23 @@
 #include <string>
 #include <utility>
 #include <vector>
+
 #include "alignment.hpp"
+#include "clock_model.hpp"
 #include "intpack.hpp"
 #include "libhmsbeagle/beagle.h"
+#include "site_model.hpp"
 #include "site_pattern.hpp"
+#include "substitution_model.hpp"
 #include "sugar.hpp"
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
 
-namespace beagle {
-
 typedef int BeagleInstance;
-
-int CreateInstance(int tip_count, int alignment_length,
-                   BeagleInstanceDetails *return_info);
-BeagleInstance CreateInstance(const SitePattern &site_pattern);
-
-void PrepareBeagleInstance(const BeagleInstance beagle_instance,
-                           const SitePattern &site_pattern);
-
-void SetJCModel(BeagleInstance beagle_instance);
 
 template <typename T>
 std::vector<T> Parallelize(
-    std::function<T(BeagleInstance, const Tree &, bool rescaling)> f,
+    std::function<T(BeagleInstance, const Tree &, bool)> f,
     std::vector<BeagleInstance> beagle_instances,
     const TreeCollection &tree_collection, bool rescaling) {
   if (beagle_instances.size() == 0) {
@@ -58,19 +51,35 @@ std::vector<T> Parallelize(
   return results;
 }
 
-double LogLikelihood(BeagleInstance beagle_instance, const Tree &tree,
-                     bool rescaling);
-std::vector<double> LogLikelihoods(std::vector<BeagleInstance> beagle_instances,
-                                   const TreeCollection &tree_collection,
-                                   bool rescaling);
+class BeagleTreeLikelihood {
+ public:
+  BeagleTreeLikelihood(std::unique_ptr<SubstitutionModel> substitution_model,
+                       std::unique_ptr<SiteModelInterface> site_model,
+                       std::unique_ptr<ClockModel> clock_model,
+                       size_t thread_count, const SitePattern &site_pattern);
 
-std::pair<double, std::vector<double>> BranchGradient(
-    BeagleInstance beagle_instance, const Tree &tree, bool rescaling);
-std::vector<std::pair<double, std::vector<double>>> BranchGradients(
-    std::vector<BeagleInstance> beagle_instances,
-    const TreeCollection &tree_collection, bool rescaling);
+  void UpdateEigenDecompositionModel();
 
-}  // namespace beagle
+  void UpdateSiteModel();
+
+  std::vector<double> LogLikelihoods(const TreeCollection &tree_collection);
+
+  std::vector<std::pair<double, std::vector<double>>> BranchGradients(
+      const TreeCollection &tree_collection);
+
+  bool rescaling_;
+
+ private:
+  void CreateInstances(const SitePattern &site_pattern);
+  void SetTipStates(const SitePattern &site_pattern);
+
+  std::vector<int> beagle_instances_;
+  std::unique_ptr<SubstitutionModel> substitution_model_;
+  std::unique_ptr<SiteModelInterface> site_model_;
+  std::unique_ptr<ClockModel> clock_model_;
+  size_t thread_count_;
+  int pattern_count_;
+};
 
 // The tests are in libsbn.hpp, where we have access to tree parsing.
 

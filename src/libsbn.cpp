@@ -240,18 +240,29 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
 void SBNInstance::MakeEngine(size_t thread_count) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
+  std::vector<double> rates = {1, 1, 1, 1, 1, 1};
+  std::vector<double> frequencies = {0.25, 0.25, 0.25, 0.25};
+  //    auto substitution_model = std::make_unique<GTRModel>(rates,
+  //    frequencies);
   auto substitution_model = std::make_unique<JCModel>();
-  engine_ = EnginePtrOption{std::make_unique<Engine>(
-      std::move(site_pattern), std::move(substitution_model), thread_count)};
+  auto site_model = std::make_unique<SiteModel>();
+  bool clock = false;
+  std::unique_ptr<ClockModel> clock_model;
+  if (clock) {
+    clock_model = std::make_unique<StrictClockModel>(1.0);
+  }
+  engine_ = std::make_unique<BeagleTreeLikelihood>(
+      std::move(substitution_model), std::move(site_model),
+      std::move(clock_model), thread_count, site_pattern);
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() const {
-  return GetEngine()->LogLikelihoods(tree_collection_, rescaling_);
+  return GetEngine()->LogLikelihoods(tree_collection_);
 }
 
 std::vector<std::pair<double, std::vector<double>>>
 SBNInstance::BranchGradients() const {
-  return GetEngine()->BranchGradients(tree_collection_, rescaling_);
+  return GetEngine()->BranchGradients(tree_collection_);
 }
 
 // Here we initialize our static random number generator.
