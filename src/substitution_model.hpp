@@ -5,48 +5,89 @@
 #define SRC_SUBSTITUTION_MODEL_HPP_
 #include <Eigen/Dense>
 #include <memory>
-
-enum struct SubstitutionModelType { JC, GTR };
-
-struct SubstitutionModelDetails {
-  SubstitutionModelType type;
-};
+#include <vector>
 
 class SubstitutionModel {
  public:
-  SubstitutionModelDetails Details() const { return details_; }
+  virtual ~SubstitutionModel() {}
 
-  virtual void EigenDecomposition() const = 0;
+  size_t GetStateCount() const { return frequencies_.size(); }
+
+  const std::vector<double>& GetFrequencies() { return frequencies_; }
+
+  const std::vector<double>& GetEigenVectors() {
+    UpdateEigenDecomposition();
+    return evec_;
+  };
+  const std::vector<double>& GetInverseEigenVectors() {
+    UpdateEigenDecomposition();
+    return ivec_;
+  }
+  const std::vector<double>& GetEigenValues() {
+    UpdateEigenDecomposition();
+    return eval_;
+  }
 
  protected:
-  explicit SubstitutionModel(SubstitutionModelDetails details)
-      : details_(details) {}
-  SubstitutionModelDetails details_;
+  virtual void UpdateEigenDecomposition() = 0;
+
+  std::vector<double> frequencies_;
+  std::vector<double> evec_;
+  std::vector<double> ivec_;
+  std::vector<double> eval_;
 };
-using SubstitutionModelPtr = std::unique_ptr<SubstitutionModel>;
 
 class JCModel : public SubstitutionModel {
  public:
-  JCModel() : SubstitutionModel({SubstitutionModelType::JC}) {}
+  JCModel() {
+    frequencies_.assign(4, 0.25);
+    evec_ = {1.0, 2.0, 0.0, 0.5,  1.0, -2.0, 0.5,  0.0,
+             1.0, 2.0, 0.0, -0.5, 1.0, -2.0, -0.5, 0.0};
 
-  void EigenDecomposition() const override {}
+    ivec_ = {0.25, 0.25, 0.25, 0.25, 0.125, -0.125, 0.125, -0.125,
+             0.0,  1.0,  0.0,  -1.0, 1.0,   0.0,    -1.0,  0.0};
+
+    eval_ = {0.0, -1.3333333333333333, -1.3333333333333333,
+             -1.3333333333333333};
+  }
+
+ protected:
+  virtual void UpdateEigenDecomposition() {}
 };
 
 class GTRModel : public SubstitutionModel {
  public:
-  GTRModel() : SubstitutionModel({SubstitutionModelType::GTR}) {}
+  GTRModel(std::vector<double> rates, std::vector<double> frequencies)
+      : rates_(rates) {
+    frequencies_ = frequencies;
+    need_update_ = true;
+    evec_.resize(16);
+    ivec_.resize(16);
+    eval_.resize(4);
+  }
+  typedef Eigen::Matrix<double, 4, 4, Eigen::RowMajor> EigenMatrix4d;
+  typedef Eigen::Vector4d EigenVector4d;
 
-  void EigenDecomposition() const override {}
+ protected:
+  virtual void UpdateEigenDecomposition();
 
  private:
-  Eigen::Matrix4d sample_matrix_not_doing_anything;
+  std::vector<double> rates_;
+
+  EigenMatrix4d sqrtPi_;
+  EigenMatrix4d sqrtPiInv_;
+  EigenMatrix4d qmatrix_;
+  EigenMatrix4d eigenvectors_;
+  EigenMatrix4d inverse_eigenvectors_;
+  EigenVector4d eigenvalues_;
+  bool need_update_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("SubstitutionModel") {
-  auto substitution_model = std::make_unique<GTRModel>();
-
-  CHECK_EQ(substitution_model->Details().type, SubstitutionModelType::GTR);
+  std::vector<double> rates = {1, 1, 1, 1, 1, 1};
+  std::vector<double> frequencies = {0.25, 0.25, 0.25, 0.25};
+  auto substitution_model = std::make_unique<GTRModel>(rates, frequencies);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

@@ -16,7 +16,6 @@
 #include "alignment.hpp"
 #include "beagle.hpp"
 #include "driver.hpp"
-#include "engine.hpp"
 #include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
 #include "sugar.hpp"
@@ -29,11 +28,6 @@ using SizeStringMap = std::unordered_map<size_t, std::string>;
 using StringPCSSMap =
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
 using PCSSIndexVector = std::vector<size_t>;
-// We wish we had optional references, but not in C++17.
-// This works fairly nicely
-// (see https://github.com/phylovi/libsbn/issues/131#issuecomment-546427414)
-// though the interface isn't exactly bulletproof.
-using EnginePtrOption = std::optional<std::unique_ptr<Engine>>;
 
 // Turn a <Key, T> map into a <std::string, T> map for any Key type that has
 // a ToString method.
@@ -66,9 +60,9 @@ class SBNInstance {
         rescaling_{false} {}
 
   // Return a raw pointer to the engine if it's available.
-  Engine *GetEngine() const {
+  BeagleTreeLikelihood *GetEngine() const {
     if (engine_) {
-      return (*engine_).get();
+      return engine_.get();
     }
     // else
     Failwith(
@@ -159,7 +153,7 @@ class SBNInstance {
 
  private:
   std::string name_;
-  EnginePtrOption engine_ = std::nullopt;
+  std::unique_ptr<BeagleTreeLikelihood> engine_;
   Alignment alignment_;
   CharIntMap symbol_table_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
