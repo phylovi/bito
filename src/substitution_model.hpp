@@ -7,6 +7,9 @@
 #include <memory>
 #include <vector>
 
+using EigenMatrix4d = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>;
+using EigenVector4d = Eigen::Vector4d;
+
 class SubstitutionModel {
  public:
   virtual ~SubstitutionModel() {}
@@ -18,7 +21,7 @@ class SubstitutionModel {
   const std::vector<double>& GetEigenVectors() {
     UpdateEigenDecomposition();
     return evec_;
-  };
+  }
   const std::vector<double>& GetInverseEigenVectors() {
     UpdateEigenDecomposition();
     return ivec_;
@@ -52,7 +55,7 @@ class JCModel : public SubstitutionModel {
   }
 
  protected:
-  virtual void UpdateEigenDecomposition() {}
+  void UpdateEigenDecomposition() override {}
 };
 
 class GTRModel : public SubstitutionModel {
@@ -71,11 +74,9 @@ class GTRModel : public SubstitutionModel {
     rates_ = rates;
     frequencies_ = frequencies;
   }
-  typedef Eigen::Matrix<double, 4, 4, Eigen::RowMajor> EigenMatrix4d;
-  typedef Eigen::Vector4d EigenVector4d;
 
  protected:
-  virtual void UpdateEigenDecomposition();
+  void UpdateEigenDecomposition() override;
 
  private:
   std::vector<double> rates_;
