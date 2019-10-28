@@ -9,26 +9,29 @@ void GTRModel::UpdateEigenDecomposition() {
   EigenMatrix4d sqrt_frequencies_inv = sqrt_frequencies.inverse();
   EigenMatrix4d Q;
 
-  int index = 0;
+  int rate_index = 0;
   for (int i = 0; i < 4; i++) {
-    for (int j = i + 1; j < 4; j++, index++) {
-      double rate = rates_[index];
+    for (int j = i + 1; j < 4; j++) {
+      double rate = rates_[rate_index];
+      rate_index++;
       Q(i, j) = rate * frequencies_[j];
       Q(j, i) = rate * frequencies_[i];
     }
   }
-  // rows have to sum to 0
-  double subst = 0;
+  // Set the diagonal entries so the rows sum to one.
+  double total_substitution_rate = 0;
   for (int i = 0; i < 4; i++) {
-    double sum = 0;
+    double row_sum = 0;
     for (int j = 0; j < 4; j++) {
-      if (i != j) sum += Q(i, j);
+      if (i != j) {
+        row_sum += Q(i, j);
+      }
     }
-    Q(i, i) = -sum;
-    subst += sum * frequencies_[i];
+    Q(i, i) = -row_sum;
+    total_substitution_rate += row_sum * frequencies_[i];
   }
-  // rescale matrix
-  Q /= subst;
+  // Rescale matrix for unit substitution rate.
+  Q /= total_substitution_rate;
 
   EigenMatrix4d S = EigenMatrix4d(sqrt_frequencies * Q * sqrt_frequencies_inv);
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> solver(S);
@@ -39,6 +42,8 @@ void GTRModel::UpdateEigenDecomposition() {
       solver.eigenvectors().transpose() * sqrt_frequencies;
   const EigenVector4d& eigen_values = solver.eigenvalues();
 
+  // TODO Did you try using the eigen STL iterators?
+  // https://eigen.tuxfamily.org/dox-devel/group__TutorialSTL.html
   std::copy(&eigen_vectors.data()[0], &eigen_vectors.data()[0] + 16,
             evec_.begin());
   std::copy(&inverse_eigen_vectors.data()[0],
