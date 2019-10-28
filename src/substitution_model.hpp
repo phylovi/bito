@@ -80,13 +80,17 @@ class GTRModel : public SubstitutionModel {
 
  private:
   std::vector<double> rates_;
+  // TODO Do we want/need this flag? Can we just update whenever something
+  // changes via getters/setters?
   bool need_update_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 #include <algorithm>
 TEST_CASE("SubstitutionModel") {
-  auto gtr_model = std::make_unique<GTRModel>();
+  std::vector<double> rates{1, 1, 1, 1, 1, 1};
+  std::vector<double> frequencies{0.25, 0.25, 0.25, 0.25};
+  auto gtr_model = std::make_unique<GTRModel>(rates, frequencies);
   auto jc_model = std::make_unique<JCModel>();
   std::vector<double> evals_jc = jc_model->GetEigenValues();
   std::vector<double> evals_gtr = gtr_model->GetEigenValues();
