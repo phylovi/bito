@@ -57,13 +57,19 @@ class JCModel : public SubstitutionModel {
 
 class GTRModel : public SubstitutionModel {
  public:
-  GTRModel(std::vector<double> rates, std::vector<double> frequencies)
-      : rates_(rates) {
-    frequencies_ = frequencies;
+  GTRModel() {
     need_update_ = true;
     evec_.resize(16);
     ivec_.resize(16);
     eval_.resize(4);
+    rates_.assign(6, 1.0);
+    frequencies_.assign(4, 0.25);
+  }
+
+  GTRModel(std::vector<double> rates, std::vector<double> frequencies)
+      : GTRModel() {
+    rates_ = rates;
+    frequencies_ = frequencies;
   }
   typedef Eigen::Matrix<double, 4, 4, Eigen::RowMajor> EigenMatrix4d;
   typedef Eigen::Vector4d EigenVector4d;
@@ -73,21 +79,21 @@ class GTRModel : public SubstitutionModel {
 
  private:
   std::vector<double> rates_;
-
-  EigenMatrix4d sqrtPi_;
-  EigenMatrix4d sqrtPiInv_;
-  EigenMatrix4d qmatrix_;
-  EigenMatrix4d eigenvectors_;
-  EigenMatrix4d inverse_eigenvectors_;
-  EigenVector4d eigenvalues_;
   bool need_update_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+#include <algorithm>
 TEST_CASE("SubstitutionModel") {
-  std::vector<double> rates = {1, 1, 1, 1, 1, 1};
-  std::vector<double> frequencies = {0.25, 0.25, 0.25, 0.25};
-  auto substitution_model = std::make_unique<GTRModel>(rates, frequencies);
+  auto gtr_model = std::make_unique<GTRModel>();
+  auto jc_model = std::make_unique<JCModel>();
+  std::vector<double> evals_jc = jc_model->GetEigenValues();
+  std::vector<double> evals_gtr = gtr_model->GetEigenValues();
+  std::sort(evals_jc.begin(), evals_jc.end());
+  std::sort(evals_gtr.begin(), evals_gtr.end());
+  for (size_t i = 0; i < evals_jc.size(); i++) {
+    CHECK_LT(fabs(evals_jc[i] - evals_gtr[i]), 0.0001);
+  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
