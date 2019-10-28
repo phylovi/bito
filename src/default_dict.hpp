@@ -11,8 +11,8 @@
 template <class Key, class T>
 class DefaultDict {
  public:
-  typedef typename std::unordered_map<Key, T>::iterator iterator;
-  typedef typename std::unordered_map<Key, T>::const_iterator const_iterator;
+  using iterator = typename std::unordered_map<Key, T>::iterator;
+  using const_iterator = typename std::unordered_map<Key, T>::const_iterator;
 
   explicit DefaultDict(T default_value) : default_value_(default_value) {}
 

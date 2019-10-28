@@ -5,6 +5,7 @@
 #define SRC_BEAGLE_HPP_
 
 #include <functional>
+#include <memory>
 #include <queue>
 #include <string>
 #include <utility>
@@ -21,7 +22,7 @@
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
 
-typedef int BeagleInstance;
+using BeagleInstance = int;
 
 template <typename T>
 std::vector<T> Parallelize(
@@ -67,6 +68,7 @@ class BeagleTreeLikelihood {
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
       const TreeCollection &tree_collection);
 
+  // TODO do we want to have this public?
   bool rescaling_;
 
  private:
