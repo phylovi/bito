@@ -18,10 +18,9 @@ BeagleTreeLikelihood::BeagleTreeLikelihood(
     : substitution_model_(std::move(substitution_model)),
       site_model_(std::move(site_model)),
       clock_model_(std::move(clock_model)),
-      thread_count_(thread_count) {
-  pattern_count_ = static_cast<int>(site_pattern.PatternCount());
-  thread_count_ = thread_count;
-  rescaling_ = false;
+      thread_count_(thread_count),
+      pattern_count_(static_cast<int>(site_pattern.PatternCount())),
+      rescaling_(false) {
   CreateInstances(site_pattern);
   SetTipStates(site_pattern);
   UpdateSiteModel();
@@ -297,7 +296,6 @@ std::pair<double, std::vector<double>> BranchGradient(
   std::vector<int> category_weight_index = {0};
   std::vector<int> state_frequency_index = {0};
   std::vector<int> cumulative_scale_index = {rescaling ? 0 : BEAGLE_OP_NONE};
-  int mysterious_count = 1;
   std::vector<int> upper_partials_index = {0};
   std::vector<int> node_partial_indices = {0};
   std::vector<int> node_mat_indices = {0};
@@ -354,6 +352,7 @@ std::pair<double, std::vector<double>> BranchGradient(
                                      cumulative_scale_index[0]);
       }
 
+      int mysterious_count = 1;  // Not sure what this variable does.
       beagleCalculateEdgeLogLikelihoods(
           beagle_instance,                // instance number
           upper_partials_index.data(),    // indices of parent partialsBuffers

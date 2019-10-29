@@ -44,3 +44,4 @@ build/
 dist/
 pip-wheel-metadata/
 .mypy_cache
+compile_commands.json
