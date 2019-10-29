@@ -5,6 +5,7 @@
 
 #include <cmath>
 
+// TODO can you point me to a reference for these computations?
 void WeibullSiteModel::UpdateCategories() {
   double mean = 0;
   for (size_t i = 0; i < category_count_; i++) {

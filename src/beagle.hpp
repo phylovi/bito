@@ -24,12 +24,14 @@
 
 using BeagleInstance = int;
 
+// TODO I feel like the presence of rescaling here begs for having a likelihood
+// computation method that knows if rescaling is being applied.
 template <typename T>
 std::vector<T> Parallelize(
     std::function<T(BeagleInstance, const Tree &, bool)> f,
-    std::vector<BeagleInstance> beagle_instances,
+    const std::vector<BeagleInstance> &beagle_instances,
     const TreeCollection &tree_collection, bool rescaling) {
-  if (beagle_instances.size() == 0) {
+  if (beagle_instances.empty()) {
     Failwith(
         "Please add some BEAGLE instances that can be used for computation.");
   }

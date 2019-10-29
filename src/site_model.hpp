@@ -19,15 +19,16 @@ class SiteModelInterface {
   virtual const std::vector<double>& GetCategoryProportions() = 0;
 };
 
+// TODO Perhaps ConstantSiteModel here?
 class SiteModel : public SiteModelInterface {
  public:
   SiteModel() : one_(1, 1.0) {}
 
-  virtual size_t GetCategoryCount() { return 1; }
+  size_t GetCategoryCount() override { return 1; }
 
-  virtual const std::vector<double>& GetCategoryRates() { return one_; }
+  const std::vector<double>& GetCategoryRates() override { return one_; }
 
-  virtual const std::vector<double>& GetCategoryProportions() { return one_; }
+  const std::vector<double>& GetCategoryProportions() override { return one_; }
 
  private:
   std::vector<double> one_;
@@ -35,7 +36,7 @@ class SiteModel : public SiteModelInterface {
 
 class WeibullSiteModel : public SiteModelInterface {
  public:
-  WeibullSiteModel(size_t category_count)
+  explicit WeibullSiteModel(size_t category_count)
       : category_count_(category_count), need_update_(true), shape_(1.0) {
     category_rates_.resize(category_count);
     category_proportions_.assign(category_count, 1.0 / category_count);
@@ -49,8 +50,10 @@ class WeibullSiteModel : public SiteModelInterface {
  private:
   void UpdateCategories();
 
-  bool need_update_;
   size_t category_count_;
+  // TODO Would it be possible to recalculate things using setters rather than
+  // having an update flag?
+  bool need_update_;
   double shape_;  // shape of the Weibull distribution
   std::vector<double> category_rates_;
   std::vector<double> category_proportions_;

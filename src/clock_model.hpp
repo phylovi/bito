@@ -8,18 +8,21 @@
 
 class ClockModel {
  public:
-  virtual ~ClockModel() {}
+  // TODO Will we need a custom destructor here? I'm suspecting that we'll just
+  // have vectors and such as member variables, which will just go away ("rule
+  // of zero").
+  virtual ~ClockModel() = default;
 
   virtual double GetRate(const Node& node) = 0;
 };
 
 class StrictClockModel : public ClockModel {
  public:
-  StrictClockModel(double rate) : rate_(rate) {}
+  explicit StrictClockModel(double rate) : rate_(rate) {}
 
   StrictClockModel() : StrictClockModel(1.0) {}
 
-  virtual double GetRate(const Node& node) { return rate_; }
+  double GetRate(const Node& node) override { return rate_; }
 
  private:
   double rate_;

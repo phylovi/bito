@@ -10,6 +10,9 @@
 #include <utility>
 #include <vector>
 
+// TODO You prefer this name compared to Engine? I like expressing that the
+// object is itself not a likelihood, but is rather something for computing
+// likelihoods and gradients.
 BeagleTreeLikelihood::BeagleTreeLikelihood(
     std::unique_ptr<SubstitutionModel> substitution_model,
     std::unique_ptr<SiteModelInterface> site_model,
@@ -169,8 +172,8 @@ double LogLikelihood(int beagle_instance, const Tree& in_tree, bool rescaling) {
   beagleUpdateTransitionMatrices(beagle_instance,
                                  0,  // eigenIndex
                                  node_indices.data(),
-                                 NULL,  // firstDerivativeIndices
-                                 NULL,  // secondDervativeIndices
+                                 nullptr,  // firstDerivativeIndices
+                                 nullptr,  // secondDervativeIndices
                                  tree.BranchLengths().data(),
                                  static_cast<int>(node_count - 1));
 
@@ -285,7 +288,7 @@ std::pair<double, std::vector<double>> BranchGradient(
       0,  // eigenIndex
       node_indices.data(),
       gradient_indices.data(),  // firstDerivativeIndices
-      NULL,                     // secondDervativeIndices
+      nullptr,                  // secondDervativeIndices
       tree.BranchLengths().data(), int_node_count - 1);
 
   beagleUpdatePartials(beagle_instance,
@@ -359,14 +362,14 @@ std::pair<double, std::vector<double>> BranchGradient(
           node_partial_indices.data(),    // indices of child partialsBuffers
           node_mat_indices.data(),        // transition probability matrices
           node_deriv_index.data(),        // first derivative matrices
-          NULL,                           // second derivative matrices
+          nullptr,                        // second derivative matrices
           category_weight_index.data(),   // pattern weights
           state_frequency_index.data(),   // state frequencies
           cumulative_scale_index.data(),  // scale Factors
           mysterious_count,               // Number of partialsBuffer
           &log_like,                      // destination for log likelihood
           &dlogLp,                        // destination for first derivative
-          NULL);                          // destination for second derivative
+          nullptr);                       // destination for second derivative
       gradient[static_cast<size_t>(node_id)] = dlogLp;
     }
   });
