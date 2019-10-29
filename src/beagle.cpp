@@ -21,6 +21,7 @@ BeagleTreeLikelihood::BeagleTreeLikelihood(
       thread_count_(thread_count) {
   pattern_count_ = static_cast<int>(site_pattern.PatternCount());
   thread_count_ = thread_count;
+  rescaling_ = false;
   CreateInstances(site_pattern);
   SetTipStates(site_pattern);
   UpdateSiteModel();
