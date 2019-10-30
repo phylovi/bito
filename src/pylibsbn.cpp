@@ -45,6 +45,10 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readwrite("trees", &TreeCollection::trees_);
   // PSPIndexer
   py::class_<PSPIndexer>(m, "PSPIndexer").def("details", &PSPIndexer::Details);
+  // GTRModel
+  py::class_<GTRModel>(m, "GTRModel")
+      .def(py::init<std::vector<double>, std::vector<double>>())
+      .def("set_parameters", &GTRModel::SetParameters);
   // SBNInstance
   py::class_<SBNInstance>(m, "instance")
       // Constructors

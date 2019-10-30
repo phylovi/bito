@@ -3,6 +3,13 @@
 
 #include "substitution_model.hpp"
 
+void GTRModel::SetParameters(Parameterization parameterization) {
+  const auto& frequencies =
+      GetFromParameterization(parameterization, "frequencies", 4);
+  std::copy(frequencies.begin(), frequencies.end(), frequencies_.begin());
+  // TODO rates
+}
+
 void GTRModel::UpdateEigenDecomposition() {
   Eigen::Map<const Eigen::Array4d> tmp(&frequencies_[0]);
   EigenMatrix4d sqrt_frequencies = tmp.sqrt().matrix().asDiagonal();
@@ -51,5 +58,4 @@ void GTRModel::UpdateEigenDecomposition() {
   std::copy(&eigen_values.data()[0], &eigen_values.data()[0] + 4,
             eval_.begin());
 
-  need_update_ = false;
 }

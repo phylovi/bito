@@ -5,14 +5,32 @@
 #define SRC_SUBSTITUTION_MODEL_HPP_
 #include <Eigen/Dense>
 #include <memory>
+#include <string>
+#include <unordered_map>
 #include <vector>
+#include "sugar.hpp"
 
 using EigenMatrix4d = Eigen::Matrix<double, 4, 4, Eigen::RowMajor>;
 using EigenVector4d = Eigen::Vector4d;
 
 class SubstitutionModel {
  public:
-  virtual ~SubstitutionModel() {}
+  using Parameterization = std::unordered_map<std::string, std::vector<double>>;
+  static const std::vector<double>& GetFromParameterization(
+      Parameterization parameterization, std::string key,
+      size_t expected_length) {
+    auto search = parameterization.find(key);
+    if (search == parameterization.end()) {
+      Failwith("Model parameter " + key + " needed in model parameterization.");
+    }  // else
+    const auto& parameter = search->second;
+    if (parameter.size() != expected_length) {
+      Failwith("Model parameter " + key + " has length " +
+               std::to_string(parameter.size()) + " but expected size was " +
+               std::to_string(expected_length) + ".");
+    }  // else
+    return parameter;
+  }
 
   size_t GetStateCount() const { return frequencies_.size(); }
 
@@ -30,6 +48,8 @@ class SubstitutionModel {
     UpdateEigenDecomposition();
     return eval_;
   }
+
+  virtual void SetParameters(Parameterization parameterization) = 0;
 
  protected:
   virtual void UpdateEigenDecomposition() = 0;
@@ -54,6 +74,12 @@ class JCModel : public SubstitutionModel {
              -1.3333333333333333};
   }
 
+  void SetParameters(Parameterization parameterization) override {
+    if (!parameterization.empty()) {
+      Failwith("You tried to set parameters of a JC model, which has none.");
+    }
+  };
+
  protected:
   void UpdateEigenDecomposition() override {}
 };
@@ -61,7 +87,6 @@ class JCModel : public SubstitutionModel {
 class GTRModel : public SubstitutionModel {
  public:
   GTRModel() {
-    need_update_ = true;
     evec_.resize(16);
     ivec_.resize(16);
     eval_.resize(4);
@@ -75,14 +100,14 @@ class GTRModel : public SubstitutionModel {
     frequencies_ = frequencies;
   }
 
+  void SetParameters(
+      SubstitutionModel::Parameterization specification) override;
+
  protected:
   void UpdateEigenDecomposition() override;
 
  private:
   std::vector<double> rates_;
-  // TODO Do we want/need this flag? Can we just update whenever something
-  // changes via getters/setters?
-  bool need_update_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
