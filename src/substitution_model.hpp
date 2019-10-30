@@ -117,6 +117,13 @@ TEST_CASE("SubstitutionModel") {
   for (size_t i = 0; i < evals_jc.size(); i++) {
     CHECK_LT(fabs(evals_jc[i] - evals_gtr[i]), 0.0001);
   }
+  // TODO eigenvectors?
+  Eigen::VectorXd frequencies(4);
+  frequencies << 0.2, 0.55, 0.1, 0.15;
+  Eigen::VectorXd rates(6);
+  rates << 1., 0.5, 1., 2., 1., 1.;
+  gtr_model->SetParameters({{"frequencies", frequencies}, {"rates", rates}});
+  // TODO another eigenvalue/vector test.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
