@@ -14,7 +14,7 @@ variable_count = params.shape[0]
 def test_lognormal_log_prob():
     sample = np.array([0.3, 3.14159, 0.0001])
     which_variables = np.arange(variable_count)
-    log_normal = models.LogNormalModel(np.array([0.0, 1.0]), len(sample))
+    log_normal = models.of_name("lognormal", variable_count=len(sample))
     log_normal.q_params[:, :] = params
     tf_log_normal = models.of_name("tf_lognormal", variable_count=len(sample))
     tf_log_normal.q_params[:, :] = params
