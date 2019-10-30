@@ -25,7 +25,7 @@ def fixed(
     mcmc_nexus_path = os.path.join(data_path, data_id + "_out.t")
     fasta_path = os.path.join(data_path, data_id + ".fasta")
     burn_in_fraction = 0.1
-    particle_count_for_final_elbo_estimate = 2000
+    particle_count_for_final_elbo_estimate = 10000
 
     # Read MCMC run and get split lengths.
     mcmc_inst = libsbn.instance("mcmc_inst")
