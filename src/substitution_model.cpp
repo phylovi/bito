@@ -10,6 +10,8 @@ void GTRModel::SetParameters(Parameterization parameterization) {
   std::copy(frequencies.begin(), frequencies.end(), frequencies_.begin());
   const auto& rates = GetFromParameterization(parameterization, "rates", 6);
   std::copy(rates.begin(), rates.end(), rates_.begin());
+  // TODO how about calling UpdateEigenDecomposition here rather than in the
+  // getters?
 }
 
 void GTRModel::UpdateEigenDecomposition() {
