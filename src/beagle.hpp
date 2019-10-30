@@ -5,6 +5,7 @@
 #define SRC_BEAGLE_HPP_
 
 #include <functional>
+#include <memory>
 #include <queue>
 #include <string>
 #include <utility>
@@ -21,14 +22,16 @@
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
 
-typedef int BeagleInstance;
+using BeagleInstance = int;
 
+// TODO I feel like the presence of rescaling here begs for having a likelihood
+// computation method that knows if rescaling is being applied.
 template <typename T>
 std::vector<T> Parallelize(
     std::function<T(BeagleInstance, const Tree &, bool)> f,
-    std::vector<BeagleInstance> beagle_instances,
+    const std::vector<BeagleInstance> &beagle_instances,
     const TreeCollection &tree_collection, bool rescaling) {
-  if (beagle_instances.size() == 0) {
+  if (beagle_instances.empty()) {
     Failwith(
         "Please add some BEAGLE instances that can be used for computation.");
   }
@@ -67,6 +70,7 @@ class BeagleTreeLikelihood {
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
       const TreeCollection &tree_collection);
 
+  // TODO do we want to have this public?
   bool rescaling_;
 
  private:

@@ -10,6 +10,9 @@
 #include <utility>
 #include <vector>
 
+// TODO You prefer this name compared to Engine? I like expressing that the
+// object is itself not a likelihood, but is rather something for computing
+// likelihoods and gradients.
 BeagleTreeLikelihood::BeagleTreeLikelihood(
     std::unique_ptr<SubstitutionModel> substitution_model,
     std::unique_ptr<SiteModelInterface> site_model,
@@ -18,10 +21,9 @@ BeagleTreeLikelihood::BeagleTreeLikelihood(
     : substitution_model_(std::move(substitution_model)),
       site_model_(std::move(site_model)),
       clock_model_(std::move(clock_model)),
-      thread_count_(thread_count) {
-  pattern_count_ = static_cast<int>(site_pattern.PatternCount());
-  thread_count_ = thread_count;
-  rescaling_ = false;
+      thread_count_(thread_count),
+      pattern_count_(static_cast<int>(site_pattern.PatternCount())),
+      rescaling_(false) {
   CreateInstances(site_pattern);
   SetTipStates(site_pattern);
   UpdateSiteModel();
@@ -170,8 +172,8 @@ double LogLikelihood(int beagle_instance, const Tree& in_tree, bool rescaling) {
   beagleUpdateTransitionMatrices(beagle_instance,
                                  0,  // eigenIndex
                                  node_indices.data(),
-                                 NULL,  // firstDerivativeIndices
-                                 NULL,  // secondDervativeIndices
+                                 nullptr,  // firstDerivativeIndices
+                                 nullptr,  // secondDervativeIndices
                                  tree.BranchLengths().data(),
                                  static_cast<int>(node_count - 1));
 
@@ -286,7 +288,7 @@ std::pair<double, std::vector<double>> BranchGradient(
       0,  // eigenIndex
       node_indices.data(),
       gradient_indices.data(),  // firstDerivativeIndices
-      NULL,                     // secondDervativeIndices
+      nullptr,                  // secondDervativeIndices
       tree.BranchLengths().data(), int_node_count - 1);
 
   beagleUpdatePartials(beagle_instance,
@@ -297,7 +299,6 @@ std::pair<double, std::vector<double>> BranchGradient(
   std::vector<int> category_weight_index = {0};
   std::vector<int> state_frequency_index = {0};
   std::vector<int> cumulative_scale_index = {rescaling ? 0 : BEAGLE_OP_NONE};
-  int mysterious_count = 1;
   std::vector<int> upper_partials_index = {0};
   std::vector<int> node_partial_indices = {0};
   std::vector<int> node_mat_indices = {0};
@@ -354,20 +355,21 @@ std::pair<double, std::vector<double>> BranchGradient(
                                      cumulative_scale_index[0]);
       }
 
+      int mysterious_count = 1;  // Not sure what this variable does.
       beagleCalculateEdgeLogLikelihoods(
           beagle_instance,                // instance number
           upper_partials_index.data(),    // indices of parent partialsBuffers
           node_partial_indices.data(),    // indices of child partialsBuffers
           node_mat_indices.data(),        // transition probability matrices
           node_deriv_index.data(),        // first derivative matrices
-          NULL,                           // second derivative matrices
+          nullptr,                        // second derivative matrices
           category_weight_index.data(),   // pattern weights
           state_frequency_index.data(),   // state frequencies
           cumulative_scale_index.data(),  // scale Factors
           mysterious_count,               // Number of partialsBuffer
           &log_like,                      // destination for log likelihood
           &dlogLp,                        // destination for first derivative
-          NULL);                          // destination for second derivative
+          nullptr);                       // destination for second derivative
       gradient[static_cast<size_t>(node_id)] = dlogLp;
     }
   });

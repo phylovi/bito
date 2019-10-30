@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "bitset.hpp"
+#include <utility>
 #include "sugar.hpp"
 
 Bitset::Bitset(std::vector<bool> value) : value_(std::move(value)) {}
@@ -149,7 +150,7 @@ bool Bitset::Any() const {
 }
 
 void Bitset::Minorize() {
-  Assert(value_.size() > 0, "Can't Bitset::Minorize an empty bitset.");
+  Assert(!(value_.empty()), "Can't Bitset::Minorize an empty bitset.");
   if (value_[0]) {
     value_.flip();
   }
@@ -269,7 +270,9 @@ Bitset Bitset::PCSSChildSubsplit() const {
 }
 
 bool Bitset::PCSSIsValid() const {
-  if (size() % 3 != 0) return false;
+  if (size() % 3 != 0) {
+    return false;
+  }
   Bitset uncut_parent = PCSSChunk(0);
   Bitset cut_parent = PCSSChunk(1);
   Bitset child = PCSSChunk(2);

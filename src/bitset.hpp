@@ -23,7 +23,7 @@ class Bitset {
   explicit Bitset(std::string);
 
   bool operator[](size_t i) const;
-  size_t size(void) const;
+  size_t size() const;
 
   void set(size_t i, bool value = true);
   void reset(size_t i);
