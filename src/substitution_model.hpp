@@ -32,6 +32,12 @@ class SubstitutionModel {
     return parameter;
   }
 
+  static void TestEigen(
+      const std::unordered_map<std::string, Eigen::VectorXd>& m) {
+    auto v = m.at("hi");
+    std::cout << v(0, 0) << v.rows() << v.cols();
+  }
+
   size_t GetStateCount() const { return frequencies_.size(); }
 
   const std::vector<double>& GetFrequencies() { return frequencies_; }

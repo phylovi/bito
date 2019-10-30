@@ -1,6 +1,7 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
+#include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
@@ -48,6 +49,7 @@ PYBIND11_MODULE(libsbn, m) {
   // GTRModel
   py::class_<GTRModel>(m, "GTRModel")
       .def(py::init<std::vector<double>, std::vector<double>>())
+      .def("test_eigen", &GTRModel::TestEigen)
       .def("set_parameters", &GTRModel::SetParameters);
   // SBNInstance
   py::class_<SBNInstance>(m, "instance")
