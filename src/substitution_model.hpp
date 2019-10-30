@@ -15,27 +15,22 @@ using EigenVector4d = Eigen::Vector4d;
 
 class SubstitutionModel {
  public:
-  using Parameterization = std::unordered_map<std::string, std::vector<double>>;
-  static const std::vector<double>& GetFromParameterization(
+  using Parameterization = std::unordered_map<std::string, Eigen::VectorXd>;
+
+  static Eigen::VectorXd GetFromParameterization(
       Parameterization parameterization, std::string key,
       size_t expected_length) {
     auto search = parameterization.find(key);
     if (search == parameterization.end()) {
       Failwith("Model parameter " + key + " needed in model parameterization.");
     }  // else
-    const auto& parameter = search->second;
+    auto parameter = search->second;
     if (parameter.size() != expected_length) {
       Failwith("Model parameter " + key + " has length " +
                std::to_string(parameter.size()) + " but expected size was " +
                std::to_string(expected_length) + ".");
     }  // else
     return parameter;
-  }
-
-  static void TestEigen(
-      const std::unordered_map<std::string, Eigen::VectorXd>& m) {
-    auto v = m.at("hi");
-    std::cout << v(0, 0) << v.rows() << v.cols();
   }
 
   size_t GetStateCount() const { return frequencies_.size(); }
@@ -100,12 +95,6 @@ class GTRModel : public SubstitutionModel {
     frequencies_.assign(4, 0.25);
   }
 
-  GTRModel(std::vector<double> rates, std::vector<double> frequencies)
-      : GTRModel() {
-    rates_ = rates;
-    frequencies_ = frequencies;
-  }
-
   void SetParameters(
       SubstitutionModel::Parameterization specification) override;
 
@@ -119,9 +108,7 @@ class GTRModel : public SubstitutionModel {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 #include <algorithm>
 TEST_CASE("SubstitutionModel") {
-  std::vector<double> rates{1, 1, 1, 1, 1, 1};
-  std::vector<double> frequencies{0.25, 0.25, 0.25, 0.25};
-  auto gtr_model = std::make_unique<GTRModel>(rates, frequencies);
+  auto gtr_model = std::make_unique<GTRModel>();
   auto jc_model = std::make_unique<JCModel>();
   std::vector<double> evals_jc = jc_model->GetEigenValues();
   std::vector<double> evals_gtr = gtr_model->GetEigenValues();

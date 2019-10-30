@@ -4,10 +4,12 @@
 #include "substitution_model.hpp"
 
 void GTRModel::SetParameters(Parameterization parameterization) {
-  const auto& frequencies =
+  auto frequencies =
       GetFromParameterization(parameterization, "frequencies", 4);
+  // TODO perhaps there is some better eigen-like thing to do here?
   std::copy(frequencies.begin(), frequencies.end(), frequencies_.begin());
-  // TODO rates
+  const auto& rates = GetFromParameterization(parameterization, "rates", 6);
+  std::copy(rates.begin(), rates.end(), rates_.begin());
 }
 
 void GTRModel::UpdateEigenDecomposition() {

@@ -48,8 +48,8 @@ PYBIND11_MODULE(libsbn, m) {
   py::class_<PSPIndexer>(m, "PSPIndexer").def("details", &PSPIndexer::Details);
   // GTRModel
   py::class_<GTRModel>(m, "GTRModel")
-      .def(py::init<std::vector<double>, std::vector<double>>())
-      .def("test_eigen", &GTRModel::TestEigen)
+      .def(py::init<>())
+      .def("get_frequencies", &GTRModel::GetFrequencies)
       .def("set_parameters", &GTRModel::SetParameters);
   // SBNInstance
   py::class_<SBNInstance>(m, "instance")
