@@ -38,6 +38,7 @@ _ignore
 __pycache__
 .pytest_cache
 .ipynb_checkpoints
+.mypy_cache
 
 # Python packaging
 build/

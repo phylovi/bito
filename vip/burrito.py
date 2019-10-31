@@ -87,9 +87,7 @@ class Burrito:
             px_theta_sample,
             dg_dpsi,
             dlog_qg_dpsi,
-        ) = self.branch_model.sample_and_gradients(
-            self.particle_count, px_branch_representation
-        )
+        ) = self.branch_model.sample_and_gradients(px_branch_representation)
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = px_theta_sample[particle_idx, :]
@@ -113,9 +111,7 @@ class Burrito:
         px_branch_lengths = self.sample_topologies(particle_count)
         px_branch_representation = self.branch_model.px_branch_representation()
         # Sample continuous variables based on the branch representations.
-        px_theta_sample = self.branch_model.sample(
-            particle_count, px_branch_representation
-        )
+        px_theta_sample = self.branch_model.sample(px_branch_representation)
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = px_theta_sample[particle_idx, :]

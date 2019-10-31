@@ -38,11 +38,11 @@ class ScalarModel(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def sample(self, particle_count, which_variables):
+    def sample(self, px_which_variables):
         pass
 
     @abc.abstractmethod
-    def sample_and_gradients(self, particle_count, px_which_variables):
+    def sample_and_gradients(self, px_which_variables):
         """Sample the variables in which_variables and take a gradient with
         respect to them.
 
@@ -91,7 +91,6 @@ class LogNormalModel(ScalarModel):
         return self.q_params[which_variables, 1]
 
     def mode_match(self, modes):
-        """Some crazy heuristics for mode matching."""
         log_modes = np.log(np.clip(modes, 1e-6, None))
         biclipped_log_modes = np.log(np.clip(modes, 1e-6, 1 - 1e-6))
         # Issue #118: do we want to have the lognormal variance be in log space? Or do
@@ -99,18 +98,19 @@ class LogNormalModel(ScalarModel):
         self.q_params[:, 1] = -0.1 * biclipped_log_modes
         self.q_params[:, 0] = np.square(self.sigma()) + log_modes
 
-    def sample(self, particle_count, px_which_variables):
-        """Get a sample of size particle_count from the model.
+    def sample_all(self, particle_count):
+        """Sample all of the variables."""
+        return np.random.lognormal(
+            self.mu(), self.sigma(), (particle_count, self.variable_count)
+        )
+
+    def sample(self, px_which_variables):
+        """Get a sample from the model.
 
         px_which_variables: a list of arrays, the ith entry of which is what
-        variables we use for the ith particle, and get out the sample. If it is None,
-        sample all the variables.
+        variables we use for the ith particle, and get out the sample.
         """
-        if px_which_variables is None:
-            return np.random.lognormal(
-                self.mu(), self.sigma(), (particle_count, self.variable_count)
-            )
-        # else:
+        particle_count = len(px_which_variables)
         # We check that px_which_variables is a fixed width in the loop below.
         which_variables_size = px_which_variables[0].size
         sample = np.empty((particle_count, which_variables_size))
@@ -121,13 +121,12 @@ class LogNormalModel(ScalarModel):
             )
         return sample
 
-    def sample_and_gradients(
-        self, particle_count, px_which_variables, prebaked_sample=None
-    ):
+    def sample_and_gradients(self, px_which_variables, prebaked_sample=None):
         """prebaked_sample allows us to pass in a sample rather than actually
         sampling (handy for testing)."""
         # Comments of the form eq:XX refer to equations in the tex.
         # We check that px_which_variables is a fixed width in the loop below.
+        particle_count = len(px_which_variables)
         which_variables_size = px_which_variables[0].size
         sample = np.empty((particle_count, which_variables_size))
         dg_dpsi = np.zeros((particle_count, self.variable_count, 2))
@@ -239,7 +238,8 @@ class TFScalarModel(ScalarModel):
         else:
             print("Mode matching not implemented for " + self.name)
 
-    def sample(self, particle_count, px_which_variables):
+    def sample(self, px_which_variables):
+        particle_count = len(px_which_variables)
         if px_which_variables is None:
             q_distribution = self.q_factory(self.q_params)
             return q_distribution.sample(particle_count).numpy()
@@ -253,7 +253,8 @@ class TFScalarModel(ScalarModel):
             sample[particle_idx, :] = q_distribution.sample().numpy()
         return sample
 
-    def sample_and_gradients(self, particle_count, px_which_variables):
+    def sample_and_gradients(self, px_which_variables):
+        particle_count = len(px_which_variables)
         which_variables_size = px_which_variables[0].size
         sample = np.empty((particle_count, which_variables_size))
         dg_dpsi = np.zeros((particle_count, self.variable_count, self.param_count))
