@@ -31,12 +31,10 @@ def test_lognormal_gradients():
     px_which_variables = np.array(
         [np.arange(variable_count) for _ in range(particle_count)]
     )
-    theirs = tf_log_normal.sample_and_gradients(particle_count, px_which_variables)
+    theirs = tf_log_normal.sample_and_gradients(px_which_variables)
     sample = theirs[0]
     log_normal = models.LogNormalModel(np.array([0.0, 1.0]), variable_count)
     log_normal.q_params[:, :] = params
-    ours = log_normal.sample_and_gradients(
-        particle_count, px_which_variables, prebaked_sample=sample
-    )
+    ours = log_normal.sample_and_gradients(px_which_variables, prebaked_sample=sample)
     for (our_item, their_item) in zip(ours, theirs):
         assert our_item == approx(their_item, rel=1e-5)

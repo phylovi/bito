@@ -24,6 +24,23 @@ class BranchModel(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
+    def mode_match(self, split_modes):
+        """Do some crazy heuristics for mode matching.
+
+        split_modes is the set of modes as indexed by the splits.
+        """
+        pass
+
+    @abc.abstractmethod
+    def sample(self, px_branch_representation):
+        """Sample from the branch model.
+
+        Returns a list of samples over particles, each one being a
+        sample indexed by branches according to px_branch_representation.
+        """
+        pass
+
 
 class SplitModel(BranchModel):
     def __init__(self, scalar_model_name, inst):
@@ -34,18 +51,22 @@ class SplitModel(BranchModel):
         return inst.psp_indexer.details()["after_rootsplits_index"]
 
     def px_branch_representation(self):
-        """The ith entry of this array gives the index of the split
-        corresponding to the ith branch."""
+        """The split-based representation of each of the trees.
+
+        The ith entry of the resulting list is the representation of the
+        ith tree. The jth entry of such a representation is the index of
+        the split corresponding to the ith branch.
+        """
         return [
             np.array(representation[0])
             for representation in self.get_raw_representation()
         ]
 
-    def mode_match(self, modes):
-        self.scalar_model.mode_match(modes)
+    def mode_match(self, split_modes):
+        self.scalar_model.mode_match(split_modes)
 
-    def sample(self, particle_count, px_branch_representation):
-        return self.scalar_model.sample(particle_count, px_branch_representation)
+    def sample(self, px_branch_representation):
+        return self.scalar_model.sample(px_branch_representation)
 
     def log_prob(self, theta_sample, px_branch_representation):
         return sum(
@@ -55,10 +76,8 @@ class SplitModel(BranchModel):
             for particle_idx, branch_to_split in enumerate(px_branch_representation)
         )
 
-    def sample_and_gradients(self, particle_count, px_branch_representation):
-        return self.scalar_model.sample_and_gradients(
-            particle_count, px_branch_representation
-        )
+    def sample_and_gradients(self, px_branch_representation):
+        return self.scalar_model.sample_and_gradients(px_branch_representation)
 
     def scalar_grad(
         self, theta_sample, branch_gradients, px_branch_to_split, dg_dpsi, dlog_qg_dpsi

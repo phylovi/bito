@@ -10,7 +10,13 @@ def cli():
 
 @cli.command()
 @click.option(
-    "--model",
+    "--branch-model",
+    type=click.Choice(["split", "psp"]),
+    default="split",
+    show_default=True,
+)
+@click.option(
+    "--scalar-model",
     type=click.Choice(
         ["lognormal", "tf_lognormal", "tf_truncated_lognormal", "tf_gamma"]
     ),
@@ -43,7 +49,14 @@ def cli():
 )
 @click.argument("data-path")
 def benchmark(
-    model, optimizer, step_count, particle_count, thread_count, out_prefix, data_path
+    branch_model,
+    scalar_model,
+    optimizer,
+    step_count,
+    particle_count,
+    thread_count,
+    out_prefix,
+    data_path,
 ):
     """Do a benchmarking comparison to an MCMC run.
 
@@ -63,8 +76,8 @@ def benchmark(
 
     run_details, opt_trace, fitting_results = vip.benchmark.fixed(
         data_path,
-        branch_model_name="split",
-        scalar_model_name=model,
+        branch_model_name=branch_model,
+        scalar_model_name=scalar_model,
         optimizer_name=optimizer,
         step_count=step_count,
         particle_count=particle_count,
