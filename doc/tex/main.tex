@@ -222,7 +222,13 @@ They come out the same except for
     - \epsilon
     - \frac{1}{\textstyle\sum_{\varsigma' \in b \psp \tau} \sigma_{\varsigma'}}
 \]
-when $\varsigma \in b \psp \tau$ (and zero otherwise), which is clearly different than $\frac{1}{\sigma_\varsigma}$ as for the simpler split-based distribution above.
+when $\varsigma \in b \psp \tau$ (and zero otherwise), which is a little different than $\frac{1}{\sigma_\varsigma}$ as for the simpler split-based distribution above.
+
+Coding-wise it comes out very simply.
+Loop over the particles, each of which has a branch representation.
+Take the sum of the coefficients given in that branch representation for each split to get a split-based parameterization of the lognormal.
+Calculate the derivatives as above.
+Then set the derivative that is participating in a given split to the corresponding element of the lognormal derivative.
 
 % \begin{figure}[h]
 % \centering

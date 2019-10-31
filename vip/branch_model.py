@@ -41,12 +41,12 @@ class BranchModel(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
-    def sample_all(self, particle_count):
-        """Sample all of the splits from the branch model.
+        # @abc.abstractmethod
+        # def sample_all(self, particle_count):
+        #     """Sample all of the splits from the branch model.
 
-        TODO better.
-        """
+        #     TODO better.
+        #     """
         pass
 
 
@@ -137,6 +137,7 @@ class PSPModel(BranchModel):
         assert details["subsplit_down_position"] == 1
         assert details["subsplit_up_position"] == 2
         self.after_rootsplits_index = details["after_rootsplits_index"]
+        # TODO explain that we're not really using the scalar_model here.
         self.q_params = self.scalar_model.q_params
 
     @staticmethod
@@ -192,27 +193,56 @@ class PSPModel(BranchModel):
         return px_sample
 
     def log_prob(self, theta_sample, px_branch_representation):
-        # sum(
-        #     self.scalar_model.log_prob(
-        #         theta_sample[particle_idx, :], which_variables=branch_to_split
-        #     )
-        #     for particle_idx, branch_to_split in enumerate(px_branch_representation)
-        # )
-        return 0
+        total = 0.0
+        for particle_idx, branch_representation in enumerate(px_branch_representation):
+            lognormal_params = self._make_lognormal_params(branch_representation)
+            total += self.scalar_model.LogNormalModel.general_log_prob(
+                theta_sample[particle_idx, :],
+                lognormal_params[:, 0],
+                lognormal_params[:, 1],
+            )
+        return total
 
     def sample_and_gradients(self, px_branch_representation):
-        """
-        The challenge is that we want to sample after summing over parameters, but we
-        want to take the gradient with respect to all of the variables.
-        """
-        (
-            px_full_sample,
-            dg_dpsi,
-            dlog_qg_dpsi,
-        ) = self.scalar_model.sample_and_gradients(px_branch_representation)
+        import pdb
+
+        pdb.set_trace()
+        particle_count = len(px_branch_representation)
+        branch_representation_shape = px_branch_representation[0].shape
+        sample = np.empty((particle_count, branch_representation_shape[1]))
+        dg_dpsi = np.zeros((particle_count, self.scalar_model.variable_count, 2))
+        dlog_qg_dpsi = np.zeros((particle_count, self.scalar_model.variable_count, 2))
+        # eq:dlogqgdPsi
+        dlog_qg_dpsi[:, :, 0] = -1.0
+        for particle_idx, branch_representation in enumerate(px_branch_representation):
+            assert branch_representation_shape == branch_representation.shape
+            lognormal_params = self._make_lognormal_params(branch_representation)
+            mu = lognormal_params[:, 0]
+            sigma = lognormal_params[:, 1]
+            sample[particle_idx, :] = np.random.lognormal(mu, sigma)
+            # eq:gLogNorm
+            epsilon = (np.log(sample[particle_idx, :]) - mu) / sigma
+            # Loop over the rows of the branch representation, which are the root split
+            # and the two PSPs.
+            for which_variables in branch_representation:
+                # eq:dgdPsi
+                dg_dpsi[particle_idx, which_variables, 0] = sample[particle_idx, :]
+                dg_dpsi[particle_idx, which_variables, 1] = (
+                    sample[particle_idx, :] * epsilon
+                )
+                # eq:dlogqgdPsi
+                dlog_qg_dpsi[particle_idx, which_variables, 1] = -epsilon - 1.0 / sigma
+            # This is our sentinel and we want to keep it zero.
+            dg_dpsi[particle_idx, self.after_rootsplits_index, :] = 0.0
+        return (sample, dg_dpsi, dlog_qg_dpsi)
 
     def scalar_grad(
-        self, theta_sample, branch_gradients, px_branch_to_split, dg_dpsi, dlog_qg_dpsi
+        self,
+        theta_sample,
+        branch_gradients,
+        px_branch_representation,
+        dg_dpsi,
+        dlog_qg_dpsi,
     ):
         """Do a gradient for the scalar parameters in terms of splits.
 
@@ -231,14 +261,16 @@ class PSPModel(BranchModel):
         grad = np.zeros(
             (self.scalar_model.variable_count, self.scalar_model.param_count)
         )
-        for particle_idx, branch_to_split in enumerate(px_branch_to_split):
-            for branch_idx, variable_idx in enumerate(branch_to_split):
-                grad[variable_idx, :] += (
-                    # eq:dLdPsi
-                    dlogp_dtheta[particle_idx, branch_idx]
-                    * dg_dpsi[particle_idx, variable_idx, :]
-                    - dlog_qg_dpsi[particle_idx, variable_idx, :]
-                )
+        for particle_idx, branch_representation in enumerate(px_branch_representation):
+            for which_variables in branch_representation:
+                for branch_idx, variable_idx in enumerate(which_variables):
+                    grad[variable_idx, :] += (
+                        # eq:dLdPsi
+                        dlogp_dtheta[particle_idx, branch_idx]
+                        * dg_dpsi[particle_idx, variable_idx, :]
+                        - dlog_qg_dpsi[particle_idx, variable_idx, :]
+                    )
+        # TODO check to make sure that the last coordinate is zero?
         return grad
 
 
