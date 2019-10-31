@@ -58,7 +58,7 @@ def fixed(
     opt_trace = pd.DataFrame({"elbo": burro.opt.trace}).reset_index()
 
     # We sample from our fit model as many times as there were trees in our MCMC sample.
-    fit_sample = pd.DataFrame(burro.scalar_model.sample_all(mcmc_inst.tree_count()))
+    fit_sample = pd.DataFrame(burro.branch_model.sample_all(mcmc_inst.tree_count()))
     fit_sample["type"] = "vb"
     mcmc_split_lengths["type"] = "mcmc"
     fitting_results = pd.concat(

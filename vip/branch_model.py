@@ -41,6 +41,14 @@ class BranchModel(abc.ABC):
         """
         pass
 
+    @abc.abstractmethod
+    def sample_all(self, particle_count):
+        """Sample all of the splits from the branch model.
+
+        TODO better.
+        """
+        pass
+
 
 class SplitModel(BranchModel):
     def __init__(self, scalar_model_name, inst):
@@ -67,6 +75,9 @@ class SplitModel(BranchModel):
 
     def sample(self, px_branch_representation):
         return self.scalar_model.sample(px_branch_representation)
+
+    def sample_all(self, particle_count):
+        return self.scalar_model.sample_all(particle_count)
 
     def log_prob(self, theta_sample, px_branch_representation):
         return sum(
@@ -110,8 +121,129 @@ class SplitModel(BranchModel):
         return grad
 
 
+class PSPModel(BranchModel):
+    """The object containing a PSP model.
+
+    See `psp_indexer.hpp` for a description of how the PSPs are indexed.
+    """
+
+    def __init__(self, scalar_model_name, inst):
+        if scalar_model_name != "lognormal":
+            raise Exception("PSP only works with LogNormal.")
+        super().__init__(scalar_model_name, inst)
+        details = inst.psp_indexer.details()
+        # This is how things should be laid out.
+        assert details["rootsplit_position"] == 0
+        assert details["subsplit_down_position"] == 1
+        assert details["subsplit_up_position"] == 2
+        self.after_rootsplits_index = details["after_rootsplits_index"]
+        self.q_params = self.scalar_model.q_params
+
+    @staticmethod
+    def _compute_variable_count(inst):
+        # TODO +1 is because we have a sentinel.
+        return inst.psp_indexer.details()["first_empty_index"] + 1
+
+    def px_branch_representation(self):
+        """The PSP-based representation of each of the trees."""
+        return [
+            np.array(representation) for representation in self.get_raw_representation()
+        ]
+
+    def mode_match(self, split_modes):
+        # There are many more subsplit indices than there are split ones.
+        # So, how can we have something be rectangular?
+        assert split_modes.size == self.after_rootsplits_index
+        self.q_params[:, :] = 0.0
+        log_modes = np.log(np.clip(split_modes, 1e-6, None))
+        biclipped_log_modes = np.log(np.clip(split_modes, 1e-6, 1 - 1e-6))
+        # Issue #118: do we want to have the lognormal variance be in log space? Or do
+        # we want to clip it?
+        # Here we set the PSP parameters to zero except for the first block of
+        # parameters, which are the splits.
+        split_q_params = self.q_params[: self.after_rootsplits_index, :]
+        split_q_params[:, 1] = -0.1 * biclipped_log_modes
+        split_q_params[:, 0] = np.square(split_q_params[:, 1]) + log_modes
+
+    def _make_lognormal_params(self, branch_representation):
+        """Sum parameters across the branch representation so that we get a full
+        lognormal parametrization.
+        """
+        branch_count = branch_representation.shape[1]
+        lognormal_params = np.zeros((branch_count, 2))
+        for psp_idx in range(3):
+            lognormal_params[:, :] += self.q_params[
+                branch_representation[psp_idx, :], :
+            ]
+        return lognormal_params
+
+    def sample(self, px_branch_representation):
+        assert len(px_branch_representation) > 0
+        branch_representation_shape = px_branch_representation[0].shape
+        branch_count = branch_representation_shape[1]
+        px_sample = np.empty((len(px_branch_representation), branch_count))
+        for particle_idx, branch_representation in enumerate(px_branch_representation):
+            assert branch_representation_shape == branch_representation.shape
+            # Set up a lognormal parameter matrix for this specific branch.
+            lognormal_params = self._make_lognormal_params(branch_representation)
+            px_sample[particle_idx, :] = np.random.lognormal(
+                lognormal_params[:, 0], lognormal_params[:, 1]
+            )
+        return px_sample
+
+    def log_prob(self, theta_sample, px_branch_representation):
+        # sum(
+        #     self.scalar_model.log_prob(
+        #         theta_sample[particle_idx, :], which_variables=branch_to_split
+        #     )
+        #     for particle_idx, branch_to_split in enumerate(px_branch_representation)
+        # )
+        return 0
+
+    def sample_and_gradients(self, px_branch_representation):
+        """
+        The challenge is that we want to sample after summing over parameters, but we
+        want to take the gradient with respect to all of the variables.
+        """
+        (
+            px_full_sample,
+            dg_dpsi,
+            dlog_qg_dpsi,
+        ) = self.scalar_model.sample_and_gradients(px_branch_representation)
+
+    def scalar_grad(
+        self, theta_sample, branch_gradients, px_branch_to_split, dg_dpsi, dlog_qg_dpsi
+    ):
+        """Do a gradient for the scalar parameters in terms of splits.
+
+        See the tex for details. Comments of the form eq:XX refer to
+        equations in the tex. See class-level docstring for information
+        about `px_`.
+        """
+        # Calculate the gradient of the log unnormalized posterior.
+        dlogp_dtheta = np.zeros_like(theta_sample)
+        for particle_idx, (_, log_grad_raw) in enumerate(branch_gradients):
+            # This :-2 is because of the two trailing zeroes that appear at the end of
+            # the gradient.
+            dlogp_dtheta[particle_idx, :] = np.array(log_grad_raw, copy=False)[:-2]
+        dlogp_dtheta += self.grad_log_prior(theta_sample)
+        # Now build up the complete gradient with respect to the variables.
+        grad = np.zeros(
+            (self.scalar_model.variable_count, self.scalar_model.param_count)
+        )
+        for particle_idx, branch_to_split in enumerate(px_branch_to_split):
+            for branch_idx, variable_idx in enumerate(branch_to_split):
+                grad[variable_idx, :] += (
+                    # eq:dLdPsi
+                    dlogp_dtheta[particle_idx, branch_idx]
+                    * dg_dpsi[particle_idx, variable_idx, :]
+                    - dlog_qg_dpsi[particle_idx, variable_idx, :]
+                )
+        return grad
+
+
 def of_name(branch_model_name, scalar_model_name, inst):
-    choices = {"split": SplitModel}
+    choices = {"split": SplitModel, "psp": PSPModel}
     if branch_model_name in choices:
         choice = choices[branch_model_name]
     else:
