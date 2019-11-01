@@ -44,9 +44,7 @@ class BranchModel(abc.ABC):
 
     @abc.abstractmethod
     def sample_all(self, particle_count):
-        """Sample all of the splits from the branch model.
-
-        TODO better.
+        """Sample all of the splits from the model. Only makes sense for split-based models.
         """
         pass
 
@@ -126,6 +124,10 @@ class PSPModel(BranchModel):
     """The object containing a PSP model.
 
     See `psp_indexer.hpp` for a description of how the PSPs are indexed.
+    Especially important: the after_rootsplits_index acts as a sentinel for
+    when there isn't a component of a given PSP. We have an entry for that
+    sentinel so we don't have to write special-purpose code, but we keep it at zero.
+    That way we can just do the usual summation across PSP components.
     """
 
     def __init__(self, scalar_model_name, inst):
@@ -138,12 +140,13 @@ class PSPModel(BranchModel):
         assert details["subsplit_down_position"] == 1
         assert details["subsplit_up_position"] == 2
         self.after_rootsplits_index = details["after_rootsplits_index"]
-        # TODO explain that we're not really using the scalar_model here.
+        # Here we aren't using the scalar_model as it was designed -- we are replacing
+        # most of its functionality by PSPModel methods.
         self.q_params = self.scalar_model.q_params
 
     @staticmethod
     def _compute_variable_count(inst):
-        # TODO +1 is because we have a sentinel.
+        # Here the +1 is because we have a sentinel.
         return inst.psp_indexer.details()["first_empty_index"] + 1
 
     def px_branch_representation(self):
@@ -276,7 +279,7 @@ class PSPModel(BranchModel):
                         * dg_dpsi[particle_idx, variable_idx, :]
                         - dlog_qg_dpsi[particle_idx, variable_idx, :]
                     )
-        # We want our sentinel to stay zero.
+        # We want our sentinel to stay zero (see docstring for this class).
         grad[-1, :] = 0.0
         return grad
 

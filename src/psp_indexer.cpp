@@ -36,7 +36,7 @@ StringVector PSPIndexer::ToStringVector() const {
       reversed_indexer[iter.second] = iter.first.SubsplitToString();
     }
   }
-  // Add an extra at the end for the split that doesn't exist.
+  // Add an extra entry at the end for the split that doesn't exist.
   reversed_indexer[indexer_.size()] = "";
   return reversed_indexer;
 }

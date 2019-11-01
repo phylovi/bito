@@ -4,6 +4,9 @@
 // This is a class implementing the an indexing scheme for the Primary Subsplit
 // Pair branch length parameterization.
 // See the 2018 ICLR paper for details.
+// We will use the first unused index ("first_empty_index") as a sentinel that
+// means "not present." This only happens on pendant branches, which do not have
+// a PSP component "below" the pendant branch.
 
 #ifndef SRC_PSP_INDEXER_HPP_
 #define SRC_PSP_INDEXER_HPP_
@@ -27,7 +30,10 @@ class PSPIndexer {
   // These are just some things that we may want to know about the indexer.
   StringSizeMap Details() const {
     return {
+        // The first index after the rootsplits.
         {"after_rootsplits_index", after_rootsplits_index_},
+        // The first empty index, which is the number of entries. We will use
+        // this value as a "sentinel" as described above.
         {"first_empty_index", first_empty_index_},
         // This is the "official" definition of a PSP indexer representation of
         // a tree. It's a vector of vectors, where the order of entries of the
@@ -39,7 +45,7 @@ class PSPIndexer {
   }
 
   // Reverse the indexer to a vector of strings.
-  // We add in another extra empty string at the end for "not found."
+  // We add in another extra empty string at the end for "no entry."
   StringVector ToStringVector() const;
 
   // Get the PSP representation of a given topology.
