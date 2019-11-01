@@ -3,6 +3,7 @@ import numpy as np
 
 import vip.priors
 import vip.scalar_model
+from vip.scalar_model import LogNormalModel
 
 
 class BranchModel(abc.ABC):
@@ -41,12 +42,12 @@ class BranchModel(abc.ABC):
         """
         pass
 
-        # @abc.abstractmethod
-        # def sample_all(self, particle_count):
-        #     """Sample all of the splits from the branch model.
+    @abc.abstractmethod
+    def sample_all(self, particle_count):
+        """Sample all of the splits from the branch model.
 
-        #     TODO better.
-        #     """
+        TODO better.
+        """
         pass
 
 
@@ -192,11 +193,19 @@ class PSPModel(BranchModel):
             )
         return px_sample
 
+    def sample_all(self, particle_count):
+        # This is a placeholder, but it's hard to know what should go here for the PSP
+        # case. This function is designed to compare things to the splits-based
+        # distribution from an MCMC run. In principle we could boil the MCMC run down to
+        # a summary of branch lengths per PSP, but there would be a bunch of coding on
+        # that side too.
+        return np.zeros((self.after_rootsplits_index, 1))
+
     def log_prob(self, theta_sample, px_branch_representation):
         total = 0.0
         for particle_idx, branch_representation in enumerate(px_branch_representation):
             lognormal_params = self._make_lognormal_params(branch_representation)
-            total += self.scalar_model.LogNormalModel.general_log_prob(
+            total += LogNormalModel.general_log_prob(
                 theta_sample[particle_idx, :],
                 lognormal_params[:, 0],
                 lognormal_params[:, 1],
@@ -204,9 +213,6 @@ class PSPModel(BranchModel):
         return total
 
     def sample_and_gradients(self, px_branch_representation):
-        import pdb
-
-        pdb.set_trace()
         particle_count = len(px_branch_representation)
         branch_representation_shape = px_branch_representation[0].shape
         sample = np.empty((particle_count, branch_representation_shape[1]))
@@ -270,7 +276,8 @@ class PSPModel(BranchModel):
                         * dg_dpsi[particle_idx, variable_idx, :]
                         - dlog_qg_dpsi[particle_idx, variable_idx, :]
                     )
-        # TODO check to make sure that the last coordinate is zero?
+        # We want our sentinel to stay zero.
+        grad[-1, :] = 0.0
         return grad
 
 
