@@ -38,13 +38,16 @@ class BranchModel(abc.ABC):
         """Sample from the branch model.
 
         Returns a list of samples over particles, each one being a
-        sample indexed by branches according to px_branch_representation.
+        sample indexed by branches according to
+        px_branch_representation.
         """
         pass
 
     @abc.abstractmethod
     def sample_all(self, particle_count):
-        """Sample all of the splits from the model. Only makes sense for split-based models.
+        """Sample all of the splits from the model.
+
+        Only makes sense for split-based models.
         """
         pass
 
@@ -124,10 +127,12 @@ class PSPModel(BranchModel):
     """The object containing a PSP model.
 
     See `psp_indexer.hpp` for a description of how the PSPs are indexed.
-    Especially important: the after_rootsplits_index acts as a sentinel for
-    when there isn't a component of a given PSP. We have an entry for that
-    sentinel so we don't have to write special-purpose code, but we keep it at zero.
-    That way we can just do the usual summation across PSP components.
+    Especially important: the after_rootsplits_index acts as a sentinel
+    for when there isn't a component of a given PSP. We have an entry
+    for that sentinel so we don't have to write special-purpose code,
+    and instead keep that entry at zero so that it doesn't contribute
+    anything. That way we can just do the usual summation across PSP
+    components.
     """
 
     def __init__(self, scalar_model_name, inst):
@@ -171,9 +176,8 @@ class PSPModel(BranchModel):
         split_q_params[:, 0] = np.square(split_q_params[:, 1]) + log_modes
 
     def _make_lognormal_params(self, branch_representation):
-        """Sum parameters across the branch representation so that we get a full
-        lognormal parametrization.
-        """
+        """Sum parameters across the branch representation so that we get a
+        full lognormal parametrization."""
         branch_count = branch_representation.shape[1]
         lognormal_params = np.zeros((branch_count, 2))
         for psp_idx in range(3):
