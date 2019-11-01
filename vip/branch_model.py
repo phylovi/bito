@@ -143,6 +143,8 @@ class PSPModel(BranchModel):
         # Here we aren't using the scalar_model as it was designed -- we are replacing
         # most of its functionality by PSPModel methods.
         self.q_params = self.scalar_model.q_params
+        # Set the sentinel parameters to be zero.
+        self.q_params[-1, :] = 0.0
 
     @staticmethod
     def _compute_variable_count(inst):
@@ -156,8 +158,6 @@ class PSPModel(BranchModel):
         ]
 
     def mode_match(self, split_modes):
-        # There are many more subsplit indices than there are split ones.
-        # So, how can we have something be rectangular?
         assert split_modes.size == self.after_rootsplits_index
         self.q_params[:, :] = 0.0
         log_modes = np.log(np.clip(split_modes, 1e-6, None))
