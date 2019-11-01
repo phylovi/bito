@@ -236,7 +236,9 @@ class PSPModel(BranchModel):
             # eq:gLogNorm
             epsilon = (np.log(sample[particle_idx, :]) - mu) / sigma
             # Loop over the rows of the branch representation, which are the root split
-            # and the two PSPs.
+            # and the two PSPs. As described in the tex, we just have to set all of
+            # their derivatives equal to the lognormal derivatives with respect to the
+            # corresponding split.
             for which_variables in branch_representation:
                 # eq:dgdPsi
                 dg_dpsi[particle_idx, which_variables, 0] = sample[particle_idx, :]
@@ -245,8 +247,6 @@ class PSPModel(BranchModel):
                 )
                 # eq:dlogqgdPsi
                 dlog_qg_dpsi[particle_idx, which_variables, 1] = -epsilon - 1.0 / sigma
-            # This is our sentinel and we want to keep it zero.
-            dg_dpsi[particle_idx, self.after_rootsplits_index, :] = 0.0
         return (sample, dg_dpsi, dlog_qg_dpsi)
 
     def scalar_grad(
