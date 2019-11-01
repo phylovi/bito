@@ -154,7 +154,8 @@ class LogNormalModel(ScalarModel):
             dlog_qg_dpsi[particle_idx, which_variables, 1] = -epsilon - 1.0 / sigma
         return (sample, dg_dpsi, dlog_qg_dpsi)
 
-    def log_prob(self, values, which_variables):
+    @staticmethod
+    def general_log_prob(values, mu, sigma):
         """Return the log joint probability of the given values.
 
         The density is:
@@ -163,9 +164,6 @@ class LogNormalModel(ScalarModel):
         So the log density is
         -(log x + log sigma + 0.5 log(2 pi) + frac{(log x - mu)^2}{2 sigma^2})
         """
-        assert values.size == which_variables.size
-        mu = self.mu(which_variables)
-        sigma = self.sigma(which_variables)
         log_values = np.log(values)
         # Here's the fancy stable version.
         # ratio = np.exp(np.log((np.log(np.log(values)-mu)**2) - np.log(sigma**2))
@@ -173,9 +171,15 @@ class LogNormalModel(ScalarModel):
         return -(
             np.sum(log_values)
             + np.sum(np.log(sigma))
-            + which_variables.size * 0.5 * np.log(2 * np.pi)
+            + values.size * 0.5 * np.log(2 * np.pi)
             + np.sum(ratio)
         )
+
+    def log_prob(self, values, which_variables):
+        assert values.size == which_variables.size
+        mu = self.mu(which_variables)
+        sigma = self.sigma(which_variables)
+        return LogNormalModel.general_log_prob(values, mu, sigma)
 
 
 def exponential_factory(params):

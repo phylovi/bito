@@ -50,7 +50,10 @@ class Burrito:
             branch_model_name, scalar_model_name, self.inst
         )
         self.opt = vip.optimizers.of_name(
-            optimizer_name, sbn_model, self.scalar_model, self.estimate_elbo
+            optimizer_name,
+            sbn_model,
+            self.branch_model.scalar_model,
+            self.estimate_elbo,
         )
 
     # We want the models to be part of the optimizer because they have state that's
@@ -59,10 +62,6 @@ class Burrito:
     @property
     def sbn_model(self):
         return self.opt.sbn_model
-
-    @property
-    def scalar_model(self):
-        return self.branch_model.scalar_model
 
     def sample_topologies(self, count):
         """Sample trees into the instance and return the np'd version of their
