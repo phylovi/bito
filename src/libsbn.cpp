@@ -245,13 +245,13 @@ void SBNInstance::MakeEngine(size_t thread_count) {
   //    auto substitution_model = std::make_unique<GTRModel>(rates,
   //    frequencies);
   auto substitution_model = std::make_unique<JCModel>();
-  auto site_model = std::make_unique<SiteModel>();
+  auto site_model = std::make_unique<ConstantSiteModel>();
   bool clock = false;
   std::unique_ptr<ClockModel> clock_model;
   if (clock) {
     clock_model = std::make_unique<StrictClockModel>(1.0);
   }
-  engine_ = std::make_unique<BeagleTreeLikelihood>(
+  engine_ = std::make_unique<Engine>(
       std::move(substitution_model), std::move(site_model),
       std::move(clock_model), thread_count, site_pattern);
 }

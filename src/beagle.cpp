@@ -10,14 +10,10 @@
 #include <utility>
 #include <vector>
 
-// TODO You prefer this name compared to Engine? I like expressing that the
-// object is itself not a likelihood, but is rather something for computing
-// likelihoods and gradients.
-BeagleTreeLikelihood::BeagleTreeLikelihood(
-    std::unique_ptr<SubstitutionModel> substitution_model,
-    std::unique_ptr<SiteModelInterface> site_model,
-    std::unique_ptr<ClockModel> clock_model, size_t thread_count,
-    const SitePattern& site_pattern)
+Engine::Engine(std::unique_ptr<SubstitutionModel> substitution_model,
+               std::unique_ptr<SiteModel> site_model,
+               std::unique_ptr<ClockModel> clock_model, size_t thread_count,
+               const SitePattern& site_pattern)
     : substitution_model_(std::move(substitution_model)),
       site_model_(std::move(site_model)),
       clock_model_(std::move(clock_model)),
@@ -30,7 +26,7 @@ BeagleTreeLikelihood::BeagleTreeLikelihood(
   UpdateEigenDecompositionModel();
 }
 
-void BeagleTreeLikelihood::CreateInstances(const SitePattern& site_pattern) {
+void Engine::CreateInstances(const SitePattern& site_pattern) {
   int tip_count = static_cast<int>(site_pattern.SequenceCount());
 
   // Number of partial buffers to create (input):
@@ -85,7 +81,7 @@ void BeagleTreeLikelihood::CreateInstances(const SitePattern& site_pattern) {
   }
 }
 
-void BeagleTreeLikelihood::SetTipStates(const SitePattern& site_pattern) {
+void Engine::SetTipStates(const SitePattern& site_pattern) {
   for (auto beagle_instance : beagle_instances_) {
     int taxon_number = 0;
     for (const auto& pattern : site_pattern.GetPatterns()) {
@@ -95,7 +91,7 @@ void BeagleTreeLikelihood::SetTipStates(const SitePattern& site_pattern) {
   }
 }
 
-void BeagleTreeLikelihood::UpdateSiteModel() {
+void Engine::UpdateSiteModel() {
   const std::vector<double>& weights = site_model_->GetCategoryProportions();
   const std::vector<double>& rates = site_model_->GetCategoryRates();
   for (auto beagle_instance : beagle_instances_) {
@@ -104,23 +100,20 @@ void BeagleTreeLikelihood::UpdateSiteModel() {
   }
 }
 
-void BeagleTreeLikelihood::UpdateEigenDecompositionModel() {
-  const std::vector<double>& eigen_vectors =
-      substitution_model_->GetEigenVectors();
-  const std::vector<double>& inverse_eigen_vectors =
+void Engine::UpdateEigenDecompositionModel() {
+  const EigenMatrixXd& eigen_vectors = substitution_model_->GetEigenVectors();
+  const EigenMatrixXd& inverse_eigen_vectors =
       substitution_model_->GetInverseEigenVectors();
-  const std::vector<double>& eigen_values =
-      substitution_model_->GetEigenValues();
-  const std::vector<double>& frequencies =
-      substitution_model_->GetFrequencies();
+  const Eigen::VectorXd& eigen_values = substitution_model_->GetEigenValues();
+  const Eigen::VectorXd& frequencies = substitution_model_->GetFrequencies();
 
   for (auto beagle_instance : beagle_instances_) {
     beagleSetStateFrequencies(beagle_instance, 0, frequencies.data());
     beagleSetEigenDecomposition(beagle_instance,
                                 0,  // eigenIndex
-                                eigen_vectors.data(),
-                                inverse_eigen_vectors.data(),
-                                eigen_values.data());
+                                &eigen_vectors.data()[0],
+                                &inverse_eigen_vectors.data()[0],
+                                &eigen_values.data()[0]);
   }
 }
 
@@ -201,7 +194,7 @@ double LogLikelihood(int beagle_instance, const Tree& in_tree, bool rescaling) {
   return log_like;
 }
 
-std::vector<double> BeagleTreeLikelihood::LogLikelihoods(
+std::vector<double> Engine::LogLikelihoods(
     const TreeCollection& tree_collection) {
   UpdateSiteModel();
   UpdateEigenDecompositionModel();
@@ -377,8 +370,8 @@ std::pair<double, std::vector<double>> BranchGradient(
   return {log_like, gradient};
 }
 
-std::vector<std::pair<double, std::vector<double>>>
-BeagleTreeLikelihood::BranchGradients(const TreeCollection& tree_collection) {
+std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
+    const TreeCollection& tree_collection) {
   UpdateSiteModel();
   UpdateEigenDecompositionModel();
   return Parallelize<std::pair<double, std::vector<double>>>(

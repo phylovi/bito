@@ -60,7 +60,7 @@ class SBNInstance {
         rescaling_{false} {}
 
   // Return a raw pointer to the engine if it's available.
-  BeagleTreeLikelihood *GetEngine() const {
+  Engine *GetEngine() const {
     if (engine_) {
       return engine_.get();
     }
@@ -153,7 +153,7 @@ class SBNInstance {
 
  private:
   std::string name_;
-  std::unique_ptr<BeagleTreeLikelihood> engine_;
+  std::unique_ptr<Engine> engine_;
   Alignment alignment_;
   CharIntMap symbol_table_;
   // A map that indexes these probabilities: rootsplits are at the beginning,

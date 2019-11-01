@@ -8,9 +8,9 @@
 
 #include <vector>
 
-class SiteModelInterface {
+class SiteModel {
  public:
-  virtual ~SiteModelInterface() {}
+  virtual ~SiteModel() = default;
 
   virtual size_t GetCategoryCount() = 0;
 
@@ -19,10 +19,9 @@ class SiteModelInterface {
   virtual const std::vector<double>& GetCategoryProportions() = 0;
 };
 
-// TODO Perhaps ConstantSiteModel here?
-class SiteModel : public SiteModelInterface {
+class ConstantSiteModel : public SiteModel {
  public:
-  SiteModel() : one_(1, 1.0) {}
+  ConstantSiteModel() : one_(1, 1.0) {}
 
   size_t GetCategoryCount() override { return 1; }
 
@@ -34,7 +33,7 @@ class SiteModel : public SiteModelInterface {
   std::vector<double> one_;
 };
 
-class WeibullSiteModel : public SiteModelInterface {
+class WeibullSiteModel : public SiteModel {
  public:
   explicit WeibullSiteModel(size_t category_count)
       : category_count_(category_count), need_update_(true), shape_(1.0) {

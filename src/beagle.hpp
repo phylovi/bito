@@ -54,12 +54,12 @@ std::vector<T> Parallelize(
   return results;
 }
 
-class BeagleTreeLikelihood {
+class Engine {
  public:
-  BeagleTreeLikelihood(std::unique_ptr<SubstitutionModel> substitution_model,
-                       std::unique_ptr<SiteModelInterface> site_model,
-                       std::unique_ptr<ClockModel> clock_model,
-                       size_t thread_count, const SitePattern &site_pattern);
+  Engine(std::unique_ptr<SubstitutionModel> substitution_model,
+         std::unique_ptr<SiteModel> site_model,
+         std::unique_ptr<ClockModel> clock_model, size_t thread_count,
+         const SitePattern &site_pattern);
 
   void UpdateEigenDecompositionModel();
 
@@ -70,19 +70,17 @@ class BeagleTreeLikelihood {
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
       const TreeCollection &tree_collection);
 
-  // TODO do we want to have this public?
-  bool rescaling_;
-
  private:
   void CreateInstances(const SitePattern &site_pattern);
   void SetTipStates(const SitePattern &site_pattern);
 
   std::vector<int> beagle_instances_;
   std::unique_ptr<SubstitutionModel> substitution_model_;
-  std::unique_ptr<SiteModelInterface> site_model_;
+  std::unique_ptr<SiteModel> site_model_;
   std::unique_ptr<ClockModel> clock_model_;
   size_t thread_count_;
   int pattern_count_;
+  bool rescaling_;
 };
 
 // The tests are in libsbn.hpp, where we have access to tree parsing.
