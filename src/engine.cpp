@@ -7,16 +7,13 @@ Engine::Engine(PhyloModel phylo_model, SitePattern site_pattern,
                size_t thread_count)
     : phylo_model_(std::move(phylo_model)),
       site_pattern_(std::move(site_pattern)) {
-  // TODO actually make fat beagle vector
   if (thread_count == 0) {
     Failwith("Thread count needs to be strictly positive.");
   }
-  auto make_fat_beagle = [&phylo_model = std::as_const(this->phylo_model_),
-                          &site_pattern =
-                              std::as_const(this->site_pattern_)]() {
-    return std::make_unique<FatBeagle>(phylo_model, site_pattern);
-  };
-  std::generate(fat_beagles_.begin(), fat_beagles_.end(), make_fat_beagle);
+  for (size_t i = 0; i < thread_count; i++) {
+    fat_beagles_.push_back(
+        std::make_unique<FatBeagle>(phylo_model_, site_pattern_));
+  }
 }
 
 std::vector<double> Engine::LogLikelihoods(
