@@ -3,45 +3,31 @@
 
 #include "engine.hpp"
 
-Engine::Engine(SitePattern site_pattern,
-               SubstitutionModelPtr substitution_model, size_t thread_count)
-    : site_pattern_(std::move(site_pattern)),
-      substitution_model_(std::move(substitution_model)),
-      beagle_instances_(thread_count) {
+Engine::Engine(PhyloModel phylo_model, SitePattern site_pattern,
+               size_t thread_count)
+    : phylo_model_(std::move(phylo_model)),
+      site_pattern_(std::move(site_pattern)) {
+  // TODO actually make fat beagle vector
   if (thread_count == 0) {
     Failwith("Thread count needs to be strictly positive.");
   }
-  // TODO: allow other subs models
-  Assert(substitution_model_->Details().type == SubstitutionModelType::JC,
-         "Only JC model allowed.");
-  auto make_beagle_instance = [& site_pattern =
-                                   std::as_const(this->site_pattern_)]() {
-    auto beagle_instance = beagle::CreateInstance(site_pattern);
-    beagle::SetJCModel(beagle_instance);
-    beagle::PrepareBeagleInstance(beagle_instance, site_pattern);
-    return beagle_instance;
+  auto make_fat_beagle = [&phylo_model = std::as_const(this->phylo_model_),
+                          &site_pattern =
+                              std::as_const(this->site_pattern_)]() {
+    return std::make_unique<FatBeagle>(phylo_model, site_pattern);
   };
-  std::generate(beagle_instances_.begin(), beagle_instances_.end(),
-                make_beagle_instance);
-}
-
-Engine::~Engine() {
-  for (const auto& beagle_instance : beagle_instances_) {
-    auto finalize_result = beagleFinalizeInstance(beagle_instance);
-    if (finalize_result) {
-      std::cout << "beagleFinalizeInstance gave nonzero return value!";
-      std::terminate();
-    }
-  }
+  std::generate(fat_beagles_.begin(), fat_beagles_.end(), make_fat_beagle);
 }
 
 std::vector<double> Engine::LogLikelihoods(
-    const TreeCollection& tree_collection, bool rescaling) {
-  return beagle::LogLikelihoods(beagle_instances_, tree_collection, rescaling);
+    const TreeCollection &tree_collection) {
+  return Parallelize<double>(FatBeagle::LogLikelihood, fat_beagles_,
+                             tree_collection);
 }
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
-    const TreeCollection& tree_collection, bool rescaling) {
-  return beagle::BranchGradients(beagle_instances_, tree_collection, rescaling);
+    const TreeCollection &tree_collection) {
+  return Parallelize<std::pair<double, std::vector<double>>>(
+      FatBeagle::BranchGradient, fat_beagles_, tree_collection);
 }
 

@@ -7,34 +7,31 @@
 #include <memory>
 #include <utility>
 #include <vector>
-#include "beagle.hpp"
-#include "substitution_model.hpp"
+#include "fat_beagle.hpp"
+#include "phylo_model.hpp"
+#include "site_pattern.hpp"
+#include "tree_collection.hpp"
 
 // "Engine" is short for "phylogenetic likelihood computation engine".
 class Engine {
  public:
-  Engine(SitePattern site_pattern, SubstitutionModelPtr substitution_model,
-         size_t thread_count);
-  ~Engine();
+  Engine(PhyloModel phylo_model, SitePattern site_pattern, size_t thread_count);
+  ~Engine() = default;
   // Delete (copy + move) x (constructor + assignment)
   Engine(const Engine &) = delete;
   Engine(const Engine &&) = delete;
   Engine &operator=(const Engine &) = delete;
   Engine &operator=(const Engine &&) = delete;
 
-  std::vector<beagle::BeagleInstance> BeagleInstances() const {
-    return beagle_instances_;
-  }
 
-  std::vector<double> LogLikelihoods(const TreeCollection &tree_collection,
-                                     bool rescaling);
+  std::vector<double> LogLikelihoods(const TreeCollection &tree_collection);
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
-      const TreeCollection &tree_collection, bool rescaling);
+      const TreeCollection &tree_collection);
 
  private:
+  PhyloModel phylo_model_;
   SitePattern site_pattern_;
-  SubstitutionModelPtr substitution_model_;
-  std::vector<beagle::BeagleInstance> beagle_instances_;
+  std::vector<std::unique_ptr<FatBeagle>> fat_beagles_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

@@ -251,9 +251,10 @@ void SBNInstance::MakeEngine(size_t thread_count) {
   if (clock) {
     clock_model = std::make_unique<StrictClockModel>(1.0);
   }
-  engine_ = std::make_unique<Engine>(
-      std::move(substitution_model), std::move(site_model),
-      std::move(clock_model), thread_count, site_pattern);
+  auto phylo_model = PhyloModel(std::move(substitution_model),
+                                std::move(site_model), std::move(clock_model));
+  engine_ = std::make_unique<Engine>(std::move(phylo_model), site_pattern,
+                                     thread_count);
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() const {

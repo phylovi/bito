@@ -14,8 +14,8 @@
 #include <utility>
 #include <vector>
 #include "alignment.hpp"
-#include "beagle.hpp"
 #include "driver.hpp"
+#include "engine.hpp"
 #include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
 #include "sugar.hpp"

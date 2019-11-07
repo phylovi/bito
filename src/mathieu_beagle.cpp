@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "beagle.hpp"
+
 #include <algorithm>
 #include <iostream>
 #include <numeric>
@@ -9,10 +10,25 @@
 #include <utility>
 #include <vector>
 
-namespace beagle {
+Engine::Engine(std::unique_ptr<SubstitutionModel> substitution_model,
+               std::unique_ptr<SiteModel> site_model,
+               std::unique_ptr<ClockModel> clock_model, size_t thread_count,
+               const SitePattern& site_pattern)
+    : substitution_model_(std::move(substitution_model)),
+      site_model_(std::move(site_model)),
+      clock_model_(std::move(clock_model)),
+      thread_count_(thread_count),
+      pattern_count_(static_cast<int>(site_pattern.PatternCount())),
+      rescaling_(false) {
+  CreateInstances(site_pattern);
+  SetTipStates(site_pattern);
+  UpdateSiteModel();
+  UpdateEigenDecompositionModel();
+}
 
-int CreateInstance(int tip_count, int alignment_length,
-                   BeagleInstanceDetails *return_info) {
+void Engine::CreateInstances(const SitePattern& site_pattern) {
+  int tip_count = static_cast<int>(site_pattern.SequenceCount());
+
   // Number of partial buffers to create (input):
   // tip_count - 1 for lower partials (internal nodes only)
   // 2*tip_count - 2 for upper partials (every node except the root)
@@ -21,22 +37,22 @@ int CreateInstance(int tip_count, int alignment_length,
   // setTipStates (input) */
   int compact_buffer_count = tip_count;
   // DNA assumption here.
-  int state_count = 4;
+  int state_count = static_cast<int>(substitution_model_->GetStateCount());
   // Number of site patterns to be handled by the instance (input) -- not
   // compressed in this case
-  int pattern_count = alignment_length;
+  int pattern_count = pattern_count_;
   // Number of eigen-decomposition buffers to allocate (input)
   int eigen_buffer_count = 1;
   // Number of transition matrix buffers (input) -- two per edge
   int matrix_buffer_count = 2 * (2 * tip_count - 1);
   // Number of rate categories
-  int category_count = 1;
+  int category_count = static_cast<int>(site_model_->GetCategoryCount());
   // Number of scaling buffers -- 1 buffer per partial buffer and 1 more
   // for accumulating scale factors in position 0.
   int scale_buffer_count = partials_buffer_count + 1;
   // List of potential resources on which this instance is allowed (input,
   // NULL implies no restriction
-  int *allowed_resources = nullptr;
+  int* allowed_resources = nullptr;
   // Length of resourceList list (input) -- not needed to use the default
   // hardware config
   int resource_count = 0;
@@ -47,59 +63,61 @@ int CreateInstance(int tip_count, int alignment_length,
   // BeagleFlags (input)
   int requirement_flags = BEAGLE_FLAG_SCALING_MANUAL;
 
-  auto beagle_instance = beagleCreateInstance(
-      tip_count, partials_buffer_count, compact_buffer_count, state_count,
-      pattern_count, eigen_buffer_count, matrix_buffer_count, category_count,
-      scale_buffer_count, allowed_resources, resource_count, preference_flags,
-      requirement_flags, return_info);
-
-  if (return_info->flags &
-      (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
-    return beagle_instance;
-  }
-  Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
-}
-
-BeagleInstance CreateInstance(const SitePattern &site_pattern) {
   BeagleInstanceDetails return_info;
-  return CreateInstance(static_cast<int>(site_pattern.SequenceCount()),
-                        static_cast<int>(site_pattern.PatternCount()),
-                        &return_info);
-}
 
-void PrepareBeagleInstance(const BeagleInstance beagle_instance,
-                           const SitePattern &site_pattern) {
-  // Use uniform rates and weights.
-  const double weights[1] = {1.0};
-  const double rates[1] = {1.0};
-  int taxon_number = 0;
-  for (const auto &pattern : site_pattern.GetPatterns()) {
-    beagleSetTipStates(beagle_instance, taxon_number++, pattern.data());
+  for (size_t i = 0; i < thread_count_; i++) {
+    auto beagle_instance = beagleCreateInstance(
+        tip_count, partials_buffer_count, compact_buffer_count, state_count,
+        pattern_count, eigen_buffer_count, matrix_buffer_count, category_count,
+        scale_buffer_count, allowed_resources, resource_count, preference_flags,
+        requirement_flags, &return_info);
+
+    if (return_info.flags &
+        (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
+      beagle_instances_.push_back(beagle_instance);
+    } else {
+      Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
+    }
   }
-
-  beagleSetPatternWeights(beagle_instance, site_pattern.GetWeights().data());
-  beagleSetCategoryWeights(beagle_instance, 0, weights);
-  beagleSetCategoryRates(beagle_instance, rates);
 }
 
-void SetJCModel(BeagleInstance beagle_instance) {
-  std::vector<double> freqs(4, 0.25);
-  beagleSetStateFrequencies(beagle_instance, 0, freqs.data());
-  // an eigen decomposition for the JC69 model
-  std::vector<double> evec = {1.0, 2.0, 0.0, 0.5,  1.0, -2.0, 0.5,  0.0,
-                              1.0, 2.0, 0.0, -0.5, 1.0, -2.0, -0.5, 0.0};
-
-  std::vector<double> ivec = {0.25,  0.25,   0.25, 0.25, 0.125, -0.125,
-                              0.125, -0.125, 0.0,  1.0,  0.0,   -1.0,
-                              1.0,   0.0,    -1.0, 0.0};
-
-  std::vector<double> eval = {0.0, -1.3333333333333333, -1.3333333333333333,
-                              -1.3333333333333333};
-  beagleSetEigenDecomposition(beagle_instance, 0, evec.data(), ivec.data(),
-                              eval.data());
+void Engine::SetTipStates(const SitePattern& site_pattern) {
+  for (auto beagle_instance : beagle_instances_) {
+    int taxon_number = 0;
+    for (const auto& pattern : site_pattern.GetPatterns()) {
+      beagleSetTipStates(beagle_instance, taxon_number++, pattern.data());
+    }
+    beagleSetPatternWeights(beagle_instance, site_pattern.GetWeights().data());
+  }
 }
 
-Tree PrepareTreeForLikelihood(const Tree &tree) {
+void Engine::UpdateSiteModel() {
+  const std::vector<double>& weights = site_model_->GetCategoryProportions();
+  const std::vector<double>& rates = site_model_->GetCategoryRates();
+  for (auto beagle_instance : beagle_instances_) {
+    beagleSetCategoryWeights(beagle_instance, 0, weights.data());
+    beagleSetCategoryRates(beagle_instance, rates.data());
+  }
+}
+
+void Engine::UpdateEigenDecompositionModel() {
+  const EigenMatrixXd& eigen_vectors = substitution_model_->GetEigenVectors();
+  const EigenMatrixXd& inverse_eigen_vectors =
+      substitution_model_->GetInverseEigenVectors();
+  const Eigen::VectorXd& eigen_values = substitution_model_->GetEigenValues();
+  const Eigen::VectorXd& frequencies = substitution_model_->GetFrequencies();
+
+  for (auto beagle_instance : beagle_instances_) {
+    beagleSetStateFrequencies(beagle_instance, 0, frequencies.data());
+    beagleSetEigenDecomposition(beagle_instance,
+                                0,  // eigenIndex
+                                &eigen_vectors.data()[0],
+                                &inverse_eigen_vectors.data()[0],
+                                &eigen_values.data()[0]);
+  }
+}
+
+Tree PrepareTreeForLikelihood(const Tree& tree) {
   if (tree.Children().size() == 3) {
     return tree.Detrifurcate();
   }  // else
@@ -112,15 +130,14 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
       "bifurcation or a trifurcation at the root.");
 }
 
-double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
-                     bool rescaling) {
+double LogLikelihood(int beagle_instance, const Tree& in_tree, bool rescaling) {
   beagleResetScaleFactors(beagle_instance, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   auto node_count = tree.BranchLengths().size();
   int int_taxon_count = static_cast<int>(tree.LeafCount());
   std::vector<BeagleOperation> operations;
   tree.Topology()->PostOrder(
-      [&operations, int_taxon_count, rescaling](const Node *node) {
+      [&operations, int_taxon_count, rescaling](const Node* node) {
         if (!node->IsLeaf()) {
           Assert(node->Children().size() == 2,
                  "Tree isn't bifurcating in LogLikelihood.");
@@ -148,8 +165,8 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
   beagleUpdateTransitionMatrices(beagle_instance,
                                  0,  // eigenIndex
                                  node_indices.data(),
-                                 NULL,  // firstDerivativeIndices
-                                 NULL,  // secondDervativeIndices
+                                 nullptr,  // firstDerivativeIndices
+                                 nullptr,  // secondDervativeIndices
                                  tree.BranchLengths().data(),
                                  static_cast<int>(node_count - 1));
 
@@ -177,10 +194,18 @@ double LogLikelihood(BeagleInstance beagle_instance, const Tree &in_tree,
   return log_like;
 }
 
+std::vector<double> Engine::LogLikelihoods(
+    const TreeCollection& tree_collection) {
+  UpdateSiteModel();
+  UpdateEigenDecompositionModel();
+  return Parallelize<double>(LogLikelihood, beagle_instances_, tree_collection,
+                             rescaling_);
+}
+
 // Compute first derivative of the log likelihood with respect to each branch
 // length, as a vector of first derivatives indexed by node id.
 std::pair<double, std::vector<double>> BranchGradient(
-    BeagleInstance beagle_instance, const Tree &in_tree, bool rescaling) {
+    BeagleInstance beagle_instance, const Tree& in_tree, bool rescaling) {
   beagleResetScaleFactors(beagle_instance, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   tree.SlideRootPosition();
@@ -256,7 +281,7 @@ std::pair<double, std::vector<double>> BranchGradient(
       0,  // eigenIndex
       node_indices.data(),
       gradient_indices.data(),  // firstDerivativeIndices
-      NULL,                     // secondDervativeIndices
+      nullptr,                  // secondDervativeIndices
       tree.BranchLengths().data(), int_node_count - 1);
 
   beagleUpdatePartials(beagle_instance,
@@ -267,7 +292,6 @@ std::pair<double, std::vector<double>> BranchGradient(
   std::vector<int> category_weight_index = {0};
   std::vector<int> state_frequency_index = {0};
   std::vector<int> cumulative_scale_index = {rescaling ? 0 : BEAGLE_OP_NONE};
-  int mysterious_count = 1;
   std::vector<int> upper_partials_index = {0};
   std::vector<int> node_partial_indices = {0};
   std::vector<int> node_mat_indices = {0};
@@ -276,7 +300,7 @@ std::pair<double, std::vector<double>> BranchGradient(
   double log_like = 0;
 
   SizeVectorVector indices_above = tree.Topology()->IdsAbove();
-  for (auto &indices : indices_above) {
+  for (auto& indices : indices_above) {
     // Reverse vector so we have indices from node to root.
     std::reverse(indices.begin(), indices.end());
     // Remove the root scalers.
@@ -324,24 +348,32 @@ std::pair<double, std::vector<double>> BranchGradient(
                                      cumulative_scale_index[0]);
       }
 
+      int mysterious_count = 1;  // Not sure what this variable does.
       beagleCalculateEdgeLogLikelihoods(
           beagle_instance,                // instance number
           upper_partials_index.data(),    // indices of parent partialsBuffers
           node_partial_indices.data(),    // indices of child partialsBuffers
           node_mat_indices.data(),        // transition probability matrices
           node_deriv_index.data(),        // first derivative matrices
-          NULL,                           // second derivative matrices
+          nullptr,                        // second derivative matrices
           category_weight_index.data(),   // pattern weights
           state_frequency_index.data(),   // state frequencies
           cumulative_scale_index.data(),  // scale Factors
           mysterious_count,               // Number of partialsBuffer
           &log_like,                      // destination for log likelihood
           &dlogLp,                        // destination for first derivative
-          NULL);                          // destination for second derivative
+          nullptr);                       // destination for second derivative
       gradient[static_cast<size_t>(node_id)] = dlogLp;
     }
   });
 
   return {log_like, gradient};
 }
-}  // namespace beagle
+
+std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
+    const TreeCollection& tree_collection) {
+  UpdateSiteModel();
+  UpdateEigenDecompositionModel();
+  return Parallelize<std::pair<double, std::vector<double>>>(
+      BranchGradient, beagle_instances_, tree_collection, rescaling_);
+}

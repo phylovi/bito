@@ -1,7 +1,6 @@
 #include <vector>
 #include "beagle.hpp"
 
-
 class PhyloModel {
  public:
   PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
