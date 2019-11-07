@@ -34,14 +34,10 @@ class FatBeagle {
 
   static double StaticLogLikelihood(
       FatBeagle *fat_beagle,
-      // TODO
-      // const SubstitutionModel::Parameterization &parameterization,
       const Tree &in_tree);
 
   static std::pair<double, std::vector<double>> StaticBranchGradient(
       FatBeagle *fat_beagle,
-      // TODO
-      // const SubstitutionModel::Parameterization &parameterization,
       const Tree &in_tree);
 
  private:
