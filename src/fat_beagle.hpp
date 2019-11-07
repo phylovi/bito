@@ -44,6 +44,7 @@ class FatBeagle {
   BeagleInstance CreateInstance(const SitePattern &site_pattern);
   void SetTipStates(const SitePattern &site_pattern);
   void UpdateSiteModel();
+  void UpdateEigenDecompositionModel();
 
   const PhyloModel &phylo_model_;
   bool rescaling_;

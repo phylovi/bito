@@ -18,7 +18,7 @@ FatBeagle::FatBeagle(const PhyloModel &phylo_model,
   beagle_instance_ = CreateInstance(site_pattern);
   SetTipStates(site_pattern);
   UpdateSiteModel();
-  beagle::SetJCModel(beagle_instance_);
+  UpdateEigenDecompositionModel();
 };
 
 FatBeagle::~FatBeagle() {
@@ -98,6 +98,23 @@ void FatBeagle::UpdateSiteModel() {
   beagleSetCategoryRates(beagle_instance_, rates.data());
 }
 
+void FatBeagle::UpdateEigenDecompositionModel() {
+  // TODO integrate this with the locally stored eigenvectors
+  const auto substitution_model = phylo_model_.GetSubstitutionModel();
+  const EigenMatrixXd &eigen_vectors = substitution_model->GetEigenVectors();
+  const EigenMatrixXd &inverse_eigen_vectors =
+      substitution_model->GetInverseEigenVectors();
+  const Eigen::VectorXd &eigen_values = substitution_model->GetEigenValues();
+  const Eigen::VectorXd &frequencies = substitution_model->GetFrequencies();
+
+  beagleSetStateFrequencies(beagle_instance_, 0, frequencies.data());
+  beagleSetEigenDecomposition(beagle_instance_,
+                              0,  // eigenIndex
+                              &eigen_vectors.data()[0],
+                              &inverse_eigen_vectors.data()[0],
+                              &eigen_values.data()[0]);
+}
+
 Tree PrepareTreeForLikelihood(const Tree &tree) {
   if (tree.Children().size() == 3) {
     return tree.Detrifurcate();
@@ -113,6 +130,7 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
 
 double FatBeagle::LogLikelihood(
     const Tree &in_tree) {
+  // TODO update site and eigen model
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   auto node_count = tree.BranchLengths().size();
