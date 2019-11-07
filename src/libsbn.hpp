@@ -61,7 +61,7 @@ class SBNInstance {
 
   // Return a raw pointer to the engine if it's available.
   Engine *GetEngine() const {
-    if (engine_) {
+    if (engine_ != nullptr) {
       return engine_.get();
     }
     // else

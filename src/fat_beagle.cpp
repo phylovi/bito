@@ -9,6 +9,7 @@ FatBeagle::FatBeagle(const PhyloModel &phylo_model,
     : phylo_model_(phylo_model), rescaling_(false) {
   beagle_instance_ = beagle::CreateInstance(site_pattern);
   beagle::PrepareBeagleInstance(beagle_instance_, site_pattern);
+  beagle::SetJCModel(beagle_instance_);
 };
 
 FatBeagle::~FatBeagle() {
@@ -20,25 +21,17 @@ FatBeagle::~FatBeagle() {
 }
 
 double FatBeagle::LogLikelihood(
-    // TODO
-    // const SubstitutionModel::Parameterization &parameterization,
     const Tree &in_tree) {
-  // TODO It's possible that this is just a wrapper for calling a FatBeagle
-  // likelihood computation method. Same for BranchGradient.
-  Failwith("Not implemented.");
+  return beagle::LogLikelihood(beagle_instance_, in_tree, rescaling_);
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
-    // TODO
-    // const SubstitutionModel::Parameterization &parameterization,
     const Tree &in_tree) {
-  Failwith("Not implemented.");
+  return beagle::BranchGradient(beagle_instance_, in_tree, rescaling_);
 }
 
 double FatBeagle::StaticLogLikelihood(
     FatBeagle *fat_beagle,
-    // TODO
-    // const SubstitutionModel::Parameterization &parameterization,
     const Tree &in_tree) {
   Assert(fat_beagle != nullptr, "Null FatBeagle pointer!");
   return fat_beagle->LogLikelihood(in_tree);
@@ -46,8 +39,6 @@ double FatBeagle::StaticLogLikelihood(
 
 std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
     FatBeagle *fat_beagle,
-    // TODO
-    // const SubstitutionModel::Parameterization &parameterization,
     const Tree &in_tree) {
   Assert(fat_beagle != nullptr, "Null FatBeagle pointer!");
   return fat_beagle->BranchGradient(in_tree);

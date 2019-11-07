@@ -29,6 +29,11 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
                            const SitePattern &site_pattern);
 
 void SetJCModel(BeagleInstance beagle_instance);
+double LogLikelihood(BeagleInstance beagle_instance, const Tree &tree,
+                     bool rescaling);
+std::pair<double, std::vector<double>> BranchGradient(
+    BeagleInstance beagle_instance, const Tree &tree, bool rescaling);
+
 }  // namespace beagle
 
 // The tests are in libsbn.hpp, where we have access to tree parsing.
