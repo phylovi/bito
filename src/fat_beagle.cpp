@@ -16,7 +16,8 @@ FatBeagle::FatBeagle(const PhyloModel &phylo_model,
       rescaling_(false),
       pattern_count_(static_cast<int>(site_pattern.PatternCount())) {
   beagle_instance_ = CreateInstance(site_pattern);
-  beagle::PrepareBeagleInstance(beagle_instance_, site_pattern);
+  SetTipStates(site_pattern);
+  UpdateSiteModel();
   beagle::SetJCModel(beagle_instance_);
 };
 
@@ -30,7 +31,6 @@ FatBeagle::~FatBeagle() {
 
 BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
   int tip_count = static_cast<int>(site_pattern.SequenceCount());
-
   // Number of partial buffers to create (input):
   // tip_count - 1 for lower partials (internal nodes only)
   // 2*tip_count - 2 for upper partials (every node except the root)
@@ -68,19 +68,34 @@ BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
   int requirement_flags = BEAGLE_FLAG_SCALING_MANUAL;
 
   BeagleInstanceDetails return_info;
-
   auto beagle_instance = beagleCreateInstance(
       tip_count, partials_buffer_count, compact_buffer_count, state_count,
       pattern_count, eigen_buffer_count, matrix_buffer_count, category_count,
       scale_buffer_count, allowed_resources, resource_count, preference_flags,
       requirement_flags, &return_info);
-
   if (return_info.flags &
       (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
     return beagle_instance;
   }
   // else
   Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
+}
+
+void FatBeagle::SetTipStates(const SitePattern &site_pattern) {
+  int taxon_number = 0;
+  for (const auto &pattern : site_pattern.GetPatterns()) {
+    beagleSetTipStates(beagle_instance_, taxon_number++, pattern.data());
+  }
+  beagleSetPatternWeights(beagle_instance_, site_pattern.GetWeights().data());
+}
+
+void FatBeagle::UpdateSiteModel() {
+  const std::vector<double> &weights =
+      phylo_model_.GetSiteModel()->GetCategoryProportions();
+  const std::vector<double> &rates =
+      phylo_model_.GetSiteModel()->GetCategoryRates();
+  beagleSetCategoryWeights(beagle_instance_, 0, weights.data());
+  beagleSetCategoryRates(beagle_instance_, rates.data());
 }
 
 Tree PrepareTreeForLikelihood(const Tree &tree) {
