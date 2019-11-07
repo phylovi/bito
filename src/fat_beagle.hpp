@@ -42,6 +42,7 @@ class FatBeagle {
 
  private:
   void SetTipStates(const SitePattern &site_pattern);
+  BeagleInstance CreateInstance(const SitePattern &site_pattern);
 
   const PhyloModel &phylo_model_;
   bool rescaling_;
@@ -51,6 +52,7 @@ class FatBeagle {
   EigenMatrixXd ivec_;
   Eigen::VectorXd eval_;
   EigenMatrixXd Q_;
+  int pattern_count_;
   // TODO Mathieu-- I think that we will need some representation of the
   // parameterization of the site and clock model here too?
 };

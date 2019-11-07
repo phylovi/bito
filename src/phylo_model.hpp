@@ -16,6 +16,12 @@ class PhyloModel {
              std::unique_ptr<SiteModel> site_model,
              std::unique_ptr<ClockModel> clock_model);
 
+  SubstitutionModel* GetSubstitutionModel() const {
+    return substitution_model_.get();
+  }
+  SiteModel* GetSiteModel() const { return site_model_.get(); }
+  ClockModel* GetClockModel() const { return clock_model_.get(); }
+
  private:
   std::unique_ptr<SubstitutionModel> substitution_model_;
   std::unique_ptr<SiteModel> site_model_;

@@ -11,8 +11,11 @@
 
 FatBeagle::FatBeagle(const PhyloModel &phylo_model,
                      const SitePattern &site_pattern)
-    : phylo_model_(phylo_model), rescaling_(false) {
-  beagle_instance_ = beagle::CreateInstance(site_pattern);
+    : phylo_model_(phylo_model),
+      // TODO make pattern count part of phylo model?
+      rescaling_(false),
+      pattern_count_(static_cast<int>(site_pattern.PatternCount())) {
+  beagle_instance_ = CreateInstance(site_pattern);
   beagle::PrepareBeagleInstance(beagle_instance_, site_pattern);
   beagle::SetJCModel(beagle_instance_);
 };
@@ -23,6 +26,61 @@ FatBeagle::~FatBeagle() {
     std::cout << "beagleFinalizeInstance gave nonzero return value!";
     std::terminate();
   }
+}
+
+BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
+  int tip_count = static_cast<int>(site_pattern.SequenceCount());
+
+  // Number of partial buffers to create (input):
+  // tip_count - 1 for lower partials (internal nodes only)
+  // 2*tip_count - 2 for upper partials (every node except the root)
+  int partials_buffer_count = 3 * tip_count - 3;
+  // Number of compact state representation buffers to create -- for use with
+  // setTipStates (input) */
+  int compact_buffer_count = tip_count;
+  // DNA assumption here.
+  int state_count =
+      static_cast<int>(phylo_model_.GetSubstitutionModel()->GetStateCount());
+  // Number of site patterns to be handled by the instance (input) -- not
+  // compressed in this case
+  int pattern_count = pattern_count_;
+  // Number of eigen-decomposition buffers to allocate (input)
+  int eigen_buffer_count = 1;
+  // Number of transition matrix buffers (input) -- two per edge
+  int matrix_buffer_count = 2 * (2 * tip_count - 1);
+  // Number of rate categories
+  int category_count =
+      static_cast<int>(phylo_model_.GetSiteModel()->GetCategoryCount());
+  // Number of scaling buffers -- 1 buffer per partial buffer and 1 more
+  // for accumulating scale factors in position 0.
+  int scale_buffer_count = partials_buffer_count + 1;
+  // List of potential resources on which this instance is allowed (input,
+  // NULL implies no restriction
+  int *allowed_resources = nullptr;
+  // Length of resourceList list (input) -- not needed to use the default
+  // hardware config
+  int resource_count = 0;
+  // Bit-flags indicating preferred implementation charactertistics, see
+  // BeagleFlags (input)
+  int64_t preference_flags = 0;
+  // Bit-flags indicating required implementation characteristics, see
+  // BeagleFlags (input)
+  int requirement_flags = BEAGLE_FLAG_SCALING_MANUAL;
+
+  BeagleInstanceDetails return_info;
+
+  auto beagle_instance = beagleCreateInstance(
+      tip_count, partials_buffer_count, compact_buffer_count, state_count,
+      pattern_count, eigen_buffer_count, matrix_buffer_count, category_count,
+      scale_buffer_count, allowed_resources, resource_count, preference_flags,
+      requirement_flags, &return_info);
+
+  if (return_info.flags &
+      (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
+    return beagle_instance;
+  }
+  // else
+  Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
 }
 
 Tree PrepareTreeForLikelihood(const Tree &tree) {
