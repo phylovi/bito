@@ -5,10 +5,16 @@
 #define SRC_FAT_BEAGLE_HPP_
 
 #include <memory>
+#include <queue>
 #include <utility>
 #include <vector>
-#include "beagle.hpp"
+#include "libhmsbeagle/beagle.h"
 #include "phylo_model.hpp"
+#include "site_pattern.hpp"
+#include "task_processor.hpp"
+#include "tree_collection.hpp"
+
+using BeagleInstance = int;
 
 class FatBeagle {
  public:

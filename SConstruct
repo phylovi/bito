@@ -85,7 +85,6 @@ else:
 env.VariantDir("_build", "src")
 sources = [
     "_build/alignment.cpp",
-    "_build/beagle.cpp",
     "_build/bitset.cpp",
     "_build/driver.cpp",
     "_build/fat_beagle.cpp",
