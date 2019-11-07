@@ -82,6 +82,7 @@ void PrepareBeagleInstance(const BeagleInstance beagle_instance,
   beagleSetCategoryRates(beagle_instance, rates);
 }
 
+// TODO slated for destruction
 void SetJCModel(BeagleInstance beagle_instance) {
   std::vector<double> freqs(4, 0.25);
   beagleSetStateFrequencies(beagle_instance, 0, freqs.data());

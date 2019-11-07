@@ -13,14 +13,13 @@ FatBeagle::FatBeagle(const PhyloModel &phylo_model,
 
 FatBeagle::~FatBeagle() {
   auto finalize_result = beagleFinalizeInstance(beagle_instance_);
-  if (finalize_result) {
+  if (finalize_result != 0) {
     std::cout << "beagleFinalizeInstance gave nonzero return value!";
     std::terminate();
   }
 }
 
 double FatBeagle::LogLikelihood(
-    FatBeagle *fat_beagle,
     // TODO
     // const SubstitutionModel::Parameterization &parameterization,
     const Tree &in_tree) {
@@ -30,9 +29,26 @@ double FatBeagle::LogLikelihood(
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
-    FatBeagle *fat_beagle,
     // TODO
     // const SubstitutionModel::Parameterization &parameterization,
     const Tree &in_tree) {
   Failwith("Not implemented.");
+}
+
+double FatBeagle::StaticLogLikelihood(
+    FatBeagle *fat_beagle,
+    // TODO
+    // const SubstitutionModel::Parameterization &parameterization,
+    const Tree &in_tree) {
+  Assert(fat_beagle != nullptr, "Null FatBeagle pointer!");
+  return fat_beagle->LogLikelihood(in_tree);
+}
+
+std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
+    FatBeagle *fat_beagle,
+    // TODO
+    // const SubstitutionModel::Parameterization &parameterization,
+    const Tree &in_tree) {
+  Assert(fat_beagle != nullptr, "Null FatBeagle pointer!");
+  return fat_beagle->BranchGradient(in_tree);
 }

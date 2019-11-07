@@ -18,13 +18,13 @@ Engine::Engine(PhyloModel phylo_model, SitePattern site_pattern,
 
 std::vector<double> Engine::LogLikelihoods(
     const TreeCollection &tree_collection) {
-  return Parallelize<double>(FatBeagle::LogLikelihood, fat_beagles_,
+  return Parallelize<double>(FatBeagle::StaticLogLikelihood, fat_beagles_,
                              tree_collection);
 }
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
     const TreeCollection &tree_collection) {
   return Parallelize<std::pair<double, std::vector<double>>>(
-      FatBeagle::BranchGradient, fat_beagles_, tree_collection);
+      FatBeagle::StaticBranchGradient, fat_beagles_, tree_collection);
 }
 

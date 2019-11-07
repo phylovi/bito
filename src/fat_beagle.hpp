@@ -29,16 +29,16 @@ class FatBeagle {
   // TODO Rescaling should probably be set automatically.
   void SetRescaling();
 
-  // double LogLikelihood(const Tree &tree);
-  // std::pair<double, std::vector<double>> BranchGradient(const Tree &tree);
+  double LogLikelihood(const Tree &tree);
+  std::pair<double, std::vector<double>> BranchGradient(const Tree &tree);
 
-  static double LogLikelihood(
+  static double StaticLogLikelihood(
       FatBeagle *fat_beagle,
       // TODO
       // const SubstitutionModel::Parameterization &parameterization,
       const Tree &in_tree);
 
-  static std::pair<double, std::vector<double>> BranchGradient(
+  static std::pair<double, std::vector<double>> StaticBranchGradient(
       FatBeagle *fat_beagle,
       // TODO
       // const SubstitutionModel::Parameterization &parameterization,
