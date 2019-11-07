@@ -65,23 +65,12 @@ class FatBeagle {
   // parameterization of the site and clock model here too?
 };
 
-// This should be just like the existing parallelization routine, except now the
-// tree_number indexes both the tree and the parameterization.
-//
-// So, f is expected to call FatBeagle.SetParameters and then LogLikelihood or
-// whatever.
-//
-// TODO we are using FatBeagle pointer here because it is created as a smart
-// pointer but we don't care about ownership. We just want to use it.
 template <typename T>
 std::vector<T> Parallelize(
     std::function<T(FatBeagle *,
-                    // const SubstitutionModel::Parameterization &,
                     const Tree &)>
         f,
     const std::vector<std::unique_ptr<FatBeagle>> &fat_beagles,
-    // const std::vector<SubstitutionModel::Parameterization>
-    // &parameterizations,
     const TreeCollection &tree_collection) {
   if (fat_beagles.empty()) {
     Failwith(

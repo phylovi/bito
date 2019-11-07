@@ -10,8 +10,8 @@
 FatBeagle::FatBeagle(const PhyloModel &phylo_model,
                      const SitePattern &site_pattern)
     : phylo_model_(phylo_model),
-      // TODO make pattern count part of phylo model?
       rescaling_(false),
+      // TODO does it make sense to store pattern count?
       pattern_count_(static_cast<int>(site_pattern.PatternCount())) {
   beagle_instance_ = CreateInstance(site_pattern);
   SetTipStates(site_pattern);
@@ -297,7 +297,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   }
 
   // Actually compute gradient.
-  // TODO pass everything by reference
+  // TODO passing everything by reference here-- can it be avoided?
   tree.Topology()->TripleIdPreOrderBifurcating([&](int node_id, int sister_id,
                                                    int) {
     if (node_id != fixed_node_id) {
