@@ -25,10 +25,11 @@ class PhyloModel {
   SiteModel* GetSiteModel() const { return site_model_.get(); }
   ClockModel* GetClockModel() const { return clock_model_.get(); }
 
-  static PhyloModel OfSpecification(PhyloModelSpecification specification) {
-    return PhyloModel(std::make_unique<JCModel>(),
-                      std::make_unique<ConstantSiteModel>(),
-                      std::make_unique<StrictClockModel>(1.0));
+  static std::unique_ptr<PhyloModel> OfSpecification(
+      PhyloModelSpecification specification) {
+    return std::make_unique<PhyloModel>(
+        std::make_unique<JCModel>(), std::make_unique<ConstantSiteModel>(),
+        std::make_unique<StrictClockModel>(1.0));
   }
 
  private:

@@ -53,7 +53,7 @@ class FatBeagle {
   void UpdateSiteModel();
   void UpdateEigenDecompositionModel();
 
-  const PhyloModel &phylo_model_;
+  std::unique_ptr<PhyloModel> phylo_model_;
   bool rescaling_;
   BeagleInstance beagle_instance_;
   Eigen::VectorXd frequencies_;

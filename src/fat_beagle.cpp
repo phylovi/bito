@@ -38,7 +38,7 @@ BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
   int compact_buffer_count = tip_count;
   // DNA assumption here.
   int state_count =
-      static_cast<int>(phylo_model_.GetSubstitutionModel()->GetStateCount());
+      static_cast<int>(phylo_model_->GetSubstitutionModel()->GetStateCount());
   // Number of site patterns to be handled by the instance (input) -- not
   // compressed in this case
   int pattern_count = pattern_count_;
@@ -48,7 +48,7 @@ BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
   int matrix_buffer_count = 2 * (2 * tip_count - 1);
   // Number of rate categories
   int category_count =
-      static_cast<int>(phylo_model_.GetSiteModel()->GetCategoryCount());
+      static_cast<int>(phylo_model_->GetSiteModel()->GetCategoryCount());
   // Number of scaling buffers -- 1 buffer per partial buffer and 1 more
   // for accumulating scale factors in position 0.
   int scale_buffer_count = partials_buffer_count + 1;
@@ -89,16 +89,16 @@ void FatBeagle::SetTipStates(const SitePattern &site_pattern) {
 
 void FatBeagle::UpdateSiteModel() {
   const std::vector<double> &weights =
-      phylo_model_.GetSiteModel()->GetCategoryProportions();
+      phylo_model_->GetSiteModel()->GetCategoryProportions();
   const std::vector<double> &rates =
-      phylo_model_.GetSiteModel()->GetCategoryRates();
+      phylo_model_->GetSiteModel()->GetCategoryRates();
   beagleSetCategoryWeights(beagle_instance_, 0, weights.data());
   beagleSetCategoryRates(beagle_instance_, rates.data());
 }
 
 void FatBeagle::UpdateEigenDecompositionModel() {
   // TODO integrate this with the locally stored eigenvectors
-  const auto substitution_model = phylo_model_.GetSubstitutionModel();
+  const auto substitution_model = phylo_model_->GetSubstitutionModel();
   const EigenMatrixXd &eigen_vectors = substitution_model->GetEigenVectors();
   const EigenMatrixXd &inverse_eigen_vectors =
       substitution_model->GetInverseEigenVectors();
