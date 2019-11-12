@@ -3,6 +3,17 @@
 
 #include "substitution_model.hpp"
 
+std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
+    const std::string &specification) {
+  if (specification == "JC69") {
+    return std::make_unique<JCModel>();
+  }  // else
+  if (specification == "GTR") {
+    return std::make_unique<GTRModel>();
+  }  // else
+  Failwith("Substitution model not known: " + specification);
+}
+
 void GTRModel::SetParameters(Parameterization parameterization) {
   frequencies_ = GetFromParameterization(parameterization, "frequencies", 4);
   rates_ = GetFromParameterization(parameterization, "rates", 6);
@@ -50,3 +61,4 @@ void GTRModel::UpdateEigenDecomposition() {
   ivec_ = solver.eigenvectors().transpose() * sqrt_frequencies;
   eval_ = solver.eigenvalues();
 }
+

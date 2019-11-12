@@ -14,6 +14,9 @@ class ClockModel {
   virtual ~ClockModel() = default;
 
   virtual double GetRate(const Node& node) = 0;
+
+  static std::unique_ptr<ClockModel> OfSpecification(
+      const std::string& specification);
 };
 
 class StrictClockModel : public ClockModel {

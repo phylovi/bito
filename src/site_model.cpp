@@ -2,8 +2,18 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "site_model.hpp"
+#include "sugar.hpp"
 
 #include <cmath>
+
+std::unique_ptr<SiteModel> SiteModel::OfSpecification(
+    const std::string& specification) {
+  if (specification == "constant") {
+    return std::make_unique<ConstantSiteModel>();
+  }  // else
+  // TODO Weibull
+  Failwith("Site model not known: " + specification);
+}
 
 // TODO can you point me to a reference for these computations?
 void WeibullSiteModel::UpdateCategories() {

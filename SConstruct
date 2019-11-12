@@ -86,6 +86,7 @@ env.VariantDir("_build", "src")
 sources = [
     "_build/alignment.cpp",
     "_build/bitset.cpp",
+    "_build/clock_model.cpp",
     "_build/driver.cpp",
     "_build/fat_beagle.cpp",
     "_build/engine.cpp",

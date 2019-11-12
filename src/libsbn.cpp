@@ -240,7 +240,7 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
 void SBNInstance::MakeEngine(size_t thread_count) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  PhyloModelSpecification specification{1, 2, 3};
+  PhyloModelSpecification specification{"JC69", "constant", "strict"};
   engine_ = std::make_unique<Engine>(specification, site_pattern, thread_count);
 }
 

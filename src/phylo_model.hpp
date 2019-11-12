@@ -11,9 +11,9 @@
 #include "substitution_model.hpp"
 
 struct PhyloModelSpecification {
-  int substitution_model_specification_;
-  int site_model_specification_;
-  int clock_model_specification_;
+  std::string substitution_model_;
+  std::string site_model_;
+  std::string clock_model_;
 };
 
 class PhyloModel {
@@ -31,8 +31,9 @@ class PhyloModel {
   static std::unique_ptr<PhyloModel> OfSpecification(
       const PhyloModelSpecification& specification) {
     return std::make_unique<PhyloModel>(
-        std::make_unique<JCModel>(), std::make_unique<ConstantSiteModel>(),
-        std::make_unique<StrictClockModel>(1.0));
+        SubstitutionModel::OfSpecification(specification.substitution_model_),
+        SiteModel::OfSpecification(specification.site_model_),
+        ClockModel::OfSpecification(specification.clock_model_));
   }
 
  private:

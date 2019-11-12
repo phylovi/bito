@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 
+#include <memory>
 #include <vector>
 
 class SiteModel {
@@ -13,10 +14,11 @@ class SiteModel {
   virtual ~SiteModel() = default;
 
   virtual size_t GetCategoryCount() = 0;
-
   virtual const std::vector<double>& GetCategoryRates() = 0;
-
   virtual const std::vector<double>& GetCategoryProportions() = 0;
+
+  static std::unique_ptr<SiteModel> OfSpecification(
+      const std::string& specification);
 };
 
 class ConstantSiteModel : public SiteModel {

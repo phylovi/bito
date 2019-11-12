@@ -47,6 +47,9 @@ class SubstitutionModel {
 
   virtual void SetParameters(Parameterization parameterization) = 0;
 
+  static std::unique_ptr<SubstitutionModel> OfSpecification(
+      const std::string& specification);
+
  protected:
   Eigen::VectorXd frequencies_;
   EigenMatrixXd evec_;
@@ -55,6 +58,7 @@ class SubstitutionModel {
   EigenMatrixXd Q_;
 };
 
+// TODO change to JC69
 class JCModel : public SubstitutionModel {
  public:
   JCModel() {
@@ -86,6 +90,7 @@ class JCModel : public SubstitutionModel {
 class GTRModel : public SubstitutionModel {
  public:
   GTRModel() {
+    // TODO can we make this in the initializer list?
     rates_.resize(6);
     frequencies_.resize(4);
     rates_ << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
