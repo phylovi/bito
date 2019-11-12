@@ -240,8 +240,8 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
 void SBNInstance::MakeEngine(size_t thread_count) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  // TODO 42
-  engine_ = std::make_unique<Engine>(42, site_pattern, thread_count);
+  PhyloModelSpecification specification{1, 2, 3};
+  engine_ = std::make_unique<Engine>(specification, site_pattern, thread_count);
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() const {
