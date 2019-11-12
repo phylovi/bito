@@ -240,21 +240,8 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
 void SBNInstance::MakeEngine(size_t thread_count) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  std::vector<double> rates = {1, 1, 1, 1, 1, 1};
-  std::vector<double> frequencies = {0.25, 0.25, 0.25, 0.25};
-  //    auto substitution_model = std::make_unique<GTRModel>(rates,
-  //    frequencies);
-  auto substitution_model = std::make_unique<JCModel>();
-  auto site_model = std::make_unique<ConstantSiteModel>();
-  bool clock = false;
-  std::unique_ptr<ClockModel> clock_model;
-  if (clock) {
-    clock_model = std::make_unique<StrictClockModel>(1.0);
-  }
-  auto phylo_model = PhyloModel(std::move(substitution_model),
-                                std::move(site_model), std::move(clock_model));
-  engine_ = std::make_unique<Engine>(std::move(phylo_model), site_pattern,
-                                     thread_count);
+  // TODO 42
+  engine_ = std::make_unique<Engine>(42, site_pattern, thread_count);
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() const {

@@ -15,7 +15,8 @@
 // "Engine" is short for "phylogenetic likelihood computation engine".
 class Engine {
  public:
-  Engine(PhyloModel phylo_model, SitePattern site_pattern, size_t thread_count);
+  Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
+         size_t thread_count);
   ~Engine() = default;
   // Delete (copy + move) x (constructor + assignment)
   Engine(const Engine &) = delete;
@@ -29,7 +30,6 @@ class Engine {
       const TreeCollection &tree_collection);
 
  private:
-  PhyloModel phylo_model_;
   SitePattern site_pattern_;
   std::vector<std::unique_ptr<FatBeagle>> fat_beagles_;
 };

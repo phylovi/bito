@@ -10,6 +10,9 @@
 #include "site_model.hpp"
 #include "substitution_model.hpp"
 
+// TODO
+using PhyloModelSpecification = int;
+
 class PhyloModel {
  public:
   PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
@@ -21,6 +24,12 @@ class PhyloModel {
   }
   SiteModel* GetSiteModel() const { return site_model_.get(); }
   ClockModel* GetClockModel() const { return clock_model_.get(); }
+
+  static PhyloModel OfSpecification(PhyloModelSpecification specification) {
+    return PhyloModel(std::make_unique<JCModel>(),
+                      std::make_unique<ConstantSiteModel>(),
+                      std::make_unique<StrictClockModel>(1.0));
+  }
 
  private:
   std::unique_ptr<SubstitutionModel> substitution_model_;

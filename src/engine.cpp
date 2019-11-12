@@ -3,16 +3,15 @@
 
 #include "engine.hpp"
 
-Engine::Engine(PhyloModel phylo_model, SitePattern site_pattern,
-               size_t thread_count)
-    : phylo_model_(std::move(phylo_model)),
-      site_pattern_(std::move(site_pattern)) {
+Engine::Engine(const PhyloModelSpecification &specification,
+               SitePattern site_pattern, size_t thread_count)
+    : site_pattern_(std::move(site_pattern)) {
   if (thread_count == 0) {
     Failwith("Thread count needs to be strictly positive.");
   }
   for (size_t i = 0; i < thread_count; i++) {
     fat_beagles_.push_back(
-        std::make_unique<FatBeagle>(phylo_model_, site_pattern_));
+        std::make_unique<FatBeagle>(specification, site_pattern_));
   }
 }
 

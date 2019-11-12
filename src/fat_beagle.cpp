@@ -7,9 +7,9 @@
 #include <utility>
 #include <vector>
 
-FatBeagle::FatBeagle(const PhyloModel &phylo_model,
+FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
                      const SitePattern &site_pattern)
-    : phylo_model_(phylo_model),
+    : phylo_model_(PhyloModel::OfSpecification(specification)),
       rescaling_(false),
       // TODO does it make sense to store pattern count?
       pattern_count_(static_cast<int>(site_pattern.PatternCount())) {

@@ -19,7 +19,8 @@ using BeagleInstance = int;
 class FatBeagle {
  public:
   // This constructor makes the beagle_instance_;
-  FatBeagle(const PhyloModel &phylo_model, const SitePattern &site_pattern);
+  FatBeagle(const PhyloModelSpecification &specification,
+            const SitePattern &site_pattern);
   ~FatBeagle();
   // Delete (copy + move) x (constructor + assignment)
   FatBeagle(const FatBeagle &) = delete;
