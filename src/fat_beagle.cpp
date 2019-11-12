@@ -11,7 +11,7 @@ FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
                      const SitePattern &site_pattern)
     : phylo_model_(PhyloModel::OfSpecification(specification)),
       rescaling_(false),
-      // TODO does it make sense to store pattern count?
+      // TODO @M do we have to store pattern_count_?
       pattern_count_(static_cast<int>(site_pattern.PatternCount())) {
   beagle_instance_ = CreateInstance(site_pattern);
   SetTipStates(site_pattern);
