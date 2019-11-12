@@ -16,7 +16,7 @@ FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
   beagle_instance_ = CreateInstance(site_pattern);
   SetTipStates(site_pattern);
   UpdateSiteModel();
-  UpdateEigenDecompositionModel();
+  UpdateModelEigendecomposition();
 };
 
 FatBeagle::~FatBeagle() {
@@ -96,13 +96,15 @@ void FatBeagle::UpdateSiteModel() {
   beagleSetCategoryRates(beagle_instance_, rates.data());
 }
 
-void FatBeagle::UpdateEigenDecompositionModel() {
-  // TODO integrate this with the locally stored eigenvectors
-  const auto substitution_model = phylo_model_->GetSubstitutionModel();
-  const EigenMatrixXd &eigen_vectors = substitution_model->GetEigenVectors();
+// TODO given the above I think a better name would just be
+// UpdateSubstitutionModel. It seems like we should just have an
+// UpdatePhyloModel that calls both this function and the above.
+void FatBeagle::UpdateModelEigendecomposition() {
+  const auto &substitution_model = phylo_model_->GetSubstitutionModel();
+  const EigenMatrixXd &eigen_vectors = substitution_model->GetEigenvectors();
   const EigenMatrixXd &inverse_eigen_vectors =
-      substitution_model->GetInverseEigenVectors();
-  const Eigen::VectorXd &eigen_values = substitution_model->GetEigenValues();
+      substitution_model->GetInverseEigenvectors();
+  const Eigen::VectorXd &eigen_values = substitution_model->GetEigenvalues();
   const Eigen::VectorXd &frequencies = substitution_model->GetFrequencies();
 
   beagleSetStateFrequencies(beagle_instance_, 0, frequencies.data());

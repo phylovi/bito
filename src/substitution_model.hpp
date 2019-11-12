@@ -41,9 +41,9 @@ class SubstitutionModel {
 
   const Eigen::VectorXd& GetFrequencies() { return frequencies_; }
 
-  const EigenMatrixXd& GetEigenVectors() { return evec_; }
-  const EigenMatrixXd& GetInverseEigenVectors() { return ivec_; }
-  const Eigen::VectorXd& GetEigenValues() { return eval_; }
+  const EigenMatrixXd& GetEigenvectors() { return evec_; }
+  const EigenMatrixXd& GetInverseEigenvectors() { return ivec_; }
+  const Eigen::VectorXd& GetEigenvalues() { return eval_; }
 
   virtual void SetParameters(Parameterization parameterization) = 0;
 
@@ -52,6 +52,7 @@ class SubstitutionModel {
 
  protected:
   Eigen::VectorXd frequencies_;
+  // TODO rename these
   EigenMatrixXd evec_;
   EigenMatrixXd ivec_;
   Eigen::VectorXd eval_;
@@ -102,8 +103,7 @@ class GTRModel : public SubstitutionModel {
     UpdateEigenDecomposition();
   }
 
-  void SetParameters(
-      SubstitutionModel::Parameterization specification) override;
+  void SetParameters(SubstitutionModel::Parameterization parameters) override;
 
  protected:
   void UpdateEigenDecomposition();
@@ -118,8 +118,8 @@ class GTRModel : public SubstitutionModel {
 TEST_CASE("SubstitutionModel") {
   auto gtr_model = std::make_unique<GTRModel>();
   auto jc_model = std::make_unique<JCModel>();
-  Eigen::VectorXd evals_jc = jc_model->GetEigenValues();
-  Eigen::VectorXd evals_gtr = gtr_model->GetEigenValues();
+  Eigen::VectorXd evals_jc = jc_model->GetEigenvalues();
+  Eigen::VectorXd evals_gtr = gtr_model->GetEigenvalues();
   std::sort(evals_jc.begin(), evals_jc.end());
   std::sort(evals_gtr.begin(), evals_gtr.end());
   for (size_t i = 0; i < evals_jc.size(); i++) {
