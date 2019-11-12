@@ -44,7 +44,11 @@ class Burrito:
 
         # Set up tree likelihood calculation.
         self.inst.read_fasta_file(fasta_path)
-        self.inst.make_engine(thread_count)
+        # TODO pass the specification through the Burrito
+        phylo_model_specification = libsbn.PhyloModelSpecification(
+            "JC69", "constant", "strict"
+        )
+        self.inst.make_engine(phylo_model_specification, thread_count)
         sbn_model = vip.sbn_model.SBNModel(self.inst)
         self.branch_model = vip.branch_model.of_name(
             branch_model_name, scalar_model_name, self.inst

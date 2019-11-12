@@ -46,6 +46,10 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readwrite("trees", &TreeCollection::trees_);
   // PSPIndexer
   py::class_<PSPIndexer>(m, "PSPIndexer").def("details", &PSPIndexer::Details);
+  // PhyloModelSpecification
+  py::class_<PhyloModelSpecification>(m, "PhyloModelSpecification")
+      .def(py::init<const std::string &, const std::string &,
+                    const std::string &>());
   // GTRModel
   py::class_<GTRModel>(m, "GTRModel")
       .def(py::init<>())
