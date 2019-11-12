@@ -236,7 +236,6 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
-// TODO generalize to other models, including adding a model argument here.
 void SBNInstance::MakeEngine(PhyloModelSpecification specification,
                              size_t thread_count) {
   CheckSequencesAndTreesLoaded();

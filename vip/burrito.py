@@ -46,7 +46,7 @@ class Burrito:
         self.inst.read_fasta_file(fasta_path)
         # TODO pass the specification through the Burrito
         phylo_model_specification = libsbn.PhyloModelSpecification(
-            "JC69", "constant", "strict"
+            substitution="JC69", site="constant", clock="strict"
         )
         self.inst.make_engine(phylo_model_specification, thread_count)
         sbn_model = vip.sbn_model.SBNModel(self.inst)

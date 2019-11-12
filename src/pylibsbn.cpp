@@ -49,7 +49,8 @@ PYBIND11_MODULE(libsbn, m) {
   // PhyloModelSpecification
   py::class_<PhyloModelSpecification>(m, "PhyloModelSpecification")
       .def(py::init<const std::string &, const std::string &,
-                    const std::string &>());
+                    const std::string &>(),
+           py::arg("substitution"), py::arg("site"), py::arg("clock"));
   // GTRModel
   py::class_<GTRModel>(m, "GTRModel")
       .def(py::init<>())

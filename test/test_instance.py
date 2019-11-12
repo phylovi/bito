@@ -49,7 +49,9 @@ def test_instance():
     assert rootsplit_support.keys() == vbpi_rootsplit_supp_dict.keys()
     assert subsplit_support.keys() == vbpi_subsplit_supp_dict.keys()
 
-    simple_specification = libsbn.PhyloModelSpecification("JC69", "constant", "strict")
+    simple_specification = libsbn.PhyloModelSpecification(
+        substitution="JC69", site="constant", clock="strict"
+    )
     inst.read_fasta_file("data/DS1.fasta")
     inst.make_engine(simple_specification, 2)
     print(np.array(inst.log_likelihoods()))
