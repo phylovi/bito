@@ -6,7 +6,7 @@
 std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
     const std::string &specification) {
   if (specification == "JC69") {
-    return std::make_unique<JCModel>();
+    return std::make_unique<JC69Model>();
   }  // else
   if (specification == "GTR") {
     return std::make_unique<GTRModel>();

@@ -59,10 +59,9 @@ class SubstitutionModel {
   EigenMatrixXd Q_;
 };
 
-// TODO change to JC69
-class JCModel : public SubstitutionModel {
+class JC69Model : public SubstitutionModel {
  public:
-  JCModel() {
+  JC69Model() {
     frequencies_.resize(4);
     evec_.resize(4, 4);
     ivec_.resize(4, 4);
@@ -117,7 +116,7 @@ class GTRModel : public SubstitutionModel {
 #include <algorithm>
 TEST_CASE("SubstitutionModel") {
   auto gtr_model = std::make_unique<GTRModel>();
-  auto jc_model = std::make_unique<JCModel>();
+  auto jc_model = std::make_unique<JC69Model>();
   Eigen::VectorXd evals_jc = jc_model->GetEigenvalues();
   Eigen::VectorXd evals_gtr = gtr_model->GetEigenvalues();
   std::sort(evals_jc.begin(), evals_jc.end());

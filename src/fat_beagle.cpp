@@ -15,8 +15,7 @@ FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
       pattern_count_(static_cast<int>(site_pattern.PatternCount())) {
   beagle_instance_ = CreateInstance(site_pattern);
   SetTipStates(site_pattern);
-  UpdateSiteModel();
-  UpdateModelEigendecomposition();
+  PhyloModelUpdate();
 };
 
 FatBeagle::~FatBeagle() {
@@ -87,7 +86,7 @@ void FatBeagle::SetTipStates(const SitePattern &site_pattern) {
   beagleSetPatternWeights(beagle_instance_, site_pattern.GetWeights().data());
 }
 
-void FatBeagle::UpdateSiteModel() {
+void FatBeagle::SiteModelUpdate() {
   const std::vector<double> &weights =
       phylo_model_->GetSiteModel()->GetCategoryProportions();
   const std::vector<double> &rates =
@@ -96,10 +95,7 @@ void FatBeagle::UpdateSiteModel() {
   beagleSetCategoryRates(beagle_instance_, rates.data());
 }
 
-// TODO given the above I think a better name would just be
-// UpdateSubstitutionModel. It seems like we should just have an
-// UpdatePhyloModel that calls both this function and the above.
-void FatBeagle::UpdateModelEigendecomposition() {
+void FatBeagle::SubstitutionModelUpdate() {
   const auto &substitution_model = phylo_model_->GetSubstitutionModel();
   const EigenMatrixXd &eigen_vectors = substitution_model->GetEigenvectors();
   const EigenMatrixXd &inverse_eigen_vectors =
@@ -113,6 +109,11 @@ void FatBeagle::UpdateModelEigendecomposition() {
                               &eigen_vectors.data()[0],
                               &inverse_eigen_vectors.data()[0],
                               &eigen_values.data()[0]);
+}
+
+void FatBeagle::PhyloModelUpdate() {
+  SiteModelUpdate();
+  SubstitutionModelUpdate();
 }
 
 Tree PrepareTreeForLikelihood(const Tree &tree) {
@@ -130,7 +131,6 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
 
 double FatBeagle::LogLikelihood(
     const Tree &in_tree) {
-  // TODO update site and eigen model
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   auto node_count = tree.BranchLengths().size();

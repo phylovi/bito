@@ -50,8 +50,9 @@ class FatBeagle {
  private:
   BeagleInstance CreateInstance(const SitePattern &site_pattern);
   void SetTipStates(const SitePattern &site_pattern);
-  void UpdateSiteModel();
-  void UpdateModelEigendecomposition();
+  void SiteModelUpdate();
+  void SubstitutionModelUpdate();
+  void PhyloModelUpdate();
 
   std::unique_ptr<PhyloModel> phylo_model_;
   bool rescaling_;
@@ -62,8 +63,6 @@ class FatBeagle {
   Eigen::VectorXd eval_;
   EigenMatrixXd Q_;
   int pattern_count_;
-  // TODO Mathieu-- I think that we will need some representation of the
-  // parameterization of the site and clock model here too?
 };
 
 template <typename T>
