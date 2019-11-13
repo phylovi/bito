@@ -10,6 +10,11 @@
 
 class SiteModel {
  public:
+  SiteModel() = default;
+  SiteModel(const SiteModel&) = delete;
+  SiteModel(SiteModel&&) = delete;
+  SiteModel& operator=(const SiteModel&) = delete;
+  SiteModel& operator=(SiteModel&&) = delete;
   virtual ~SiteModel() = default;
 
   virtual size_t GetCategoryCount() = 0;

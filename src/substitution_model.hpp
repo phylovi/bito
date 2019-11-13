@@ -17,6 +17,11 @@ using ModelParameterization = std::unordered_map<std::string, Eigen::VectorXd>;
 
 class SubstitutionModel {
  public:
+  SubstitutionModel() = default;
+  SubstitutionModel(const SubstitutionModel&) = delete;
+  SubstitutionModel(SubstitutionModel&&) = delete;
+  SubstitutionModel& operator=(const SubstitutionModel&) = delete;
+  SubstitutionModel& operator=(SubstitutionModel&&) = delete;
   virtual ~SubstitutionModel() = default;
 
   size_t GetStateCount() const { return frequencies_.size(); }

@@ -9,6 +9,11 @@
 
 class ClockModel {
  public:
+  ClockModel() = default;
+  ClockModel(const ClockModel&) = delete;
+  ClockModel(ClockModel&&) = delete;
+  ClockModel& operator=(const ClockModel&) = delete;
+  ClockModel& operator=(ClockModel&&) = delete;
   virtual ~ClockModel() = default;
 
   virtual double GetRate(const Node& node) = 0;
