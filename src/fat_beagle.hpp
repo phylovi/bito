@@ -30,10 +30,7 @@ class FatBeagle {
 
   BeagleInstance GetBeagleInstance() const { return beagle_instance_; };
 
-  // This function updates the eigenstuff in the object and in Beagle.
-  // Question for Mathieu-- does this make sense for the clock model too?
-  void SetParameters(SubstitutionModel::Parameterization parameterization);
-  // TODO Rescaling should probably be set automatically.
+  void SetParameters(ModelParameterization parameterization);
   void SetRescaling();
 
   double LogLikelihood(const Tree &tree);

@@ -14,7 +14,7 @@ std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
   Failwith("Substitution model not known: " + specification);
 }
 
-void GTRModel::SetParameters(Parameterization parameterization) {
+void GTRModel::SetParameters(ModelParameterization parameterization) {
   frequencies_ = GetFromParameterization(parameterization, "frequencies", 4);
   rates_ = GetFromParameterization(parameterization, "rates", 6);
   UpdateEigenDecomposition();

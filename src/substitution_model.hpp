@@ -6,21 +6,21 @@
 #include <Eigen/Dense>
 #include <memory>
 #include <string>
-#include <unordered_map>
 #include <vector>
+#include "model_common.hpp"
 #include "sugar.hpp"
 
 using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
+using ModelParameterization = std::unordered_map<std::string, Eigen::VectorXd>;
+
 class SubstitutionModel {
  public:
   virtual ~SubstitutionModel() = default;
 
-  using Parameterization = std::unordered_map<std::string, Eigen::VectorXd>;
-
   static Eigen::VectorXd GetFromParameterization(
-      Parameterization parameterization, std::string key,
+      ModelParameterization parameterization, std::string key,
       size_t expected_length) {
     auto search = parameterization.find(key);
     if (search == parameterization.end()) {
@@ -45,7 +45,7 @@ class SubstitutionModel {
   const EigenMatrixXd& GetInverseEigenvectors() { return ivec_; }
   const Eigen::VectorXd& GetEigenvalues() { return eval_; }
 
-  virtual void SetParameters(Parameterization parameterization) = 0;
+  virtual void SetParameters(ModelParameterization parameterization) = 0;
 
   static std::unique_ptr<SubstitutionModel> OfSpecification(
       const std::string& specification);
@@ -84,7 +84,7 @@ class JC69Model : public DNAModel {
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
 
-  void SetParameters(Parameterization parameterization) override {
+  void SetParameters(ModelParameterization parameterization) override {
     if (!parameterization.empty()) {
       Failwith("You tried to set parameters of a JC model, which has none.");
     }
@@ -100,7 +100,7 @@ class GTRModel : public DNAModel {
     UpdateEigenDecomposition();
   }
 
-  void SetParameters(SubstitutionModel::Parameterization parameters) override;
+  void SetParameters(ModelParameterization parameterization) override;
 
  protected:
   void UpdateEigenDecomposition();

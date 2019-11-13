@@ -49,11 +49,11 @@ def test_instance():
     assert rootsplit_support.keys() == vbpi_rootsplit_supp_dict.keys()
     assert subsplit_support.keys() == vbpi_subsplit_supp_dict.keys()
 
-    simple_specification = libsbn.PhyloModelSpecification(
-        substitution="JC69", site="constant", clock="strict"
+    gtr_specification = libsbn.PhyloModelSpecification(
+        substitution="GTR", site="constant", clock="strict"
     )
     inst.read_fasta_file("data/DS1.fasta")
-    inst.make_engine(simple_specification, 2)
+    inst.make_engine(gtr_specification, 2)
     print(np.array(inst.log_likelihoods()))
 
     log_likelihoods, gradients = zip(*inst.branch_gradients())
@@ -64,6 +64,9 @@ def test_instance():
         [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
     )
     inst.read_fasta_file("data/hello.fasta")
+    simple_specification = libsbn.PhyloModelSpecification(
+        substitution="JC69", site="constant", clock="strict"
+    )
     inst.make_engine(simple_specification, 2)
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])

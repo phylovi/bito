@@ -28,6 +28,8 @@ class PhyloModel {
   SiteModel* GetSiteModel() const { return site_model_.get(); }
   ClockModel* GetClockModel() const { return clock_model_.get(); }
 
+  void SetParameters(ModelParameterization parameterization);
+
   static std::unique_ptr<PhyloModel> OfSpecification(
       const PhyloModelSpecification& specification) {
     return std::make_unique<PhyloModel>(
