@@ -91,6 +91,7 @@ sources = [
     "_build/fat_beagle.cpp",
     "_build/engine.cpp",
     "_build/libsbn.cpp",
+    "_build/model_parameterization.cpp",
     "_build/node.cpp",
     "_build/parser.cpp",
     "_build/phylo_model.cpp",

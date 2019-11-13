@@ -4,10 +4,9 @@
 #ifndef SRC_SITE_MODEL_HPP_
 #define SRC_SITE_MODEL_HPP_
 
-#include <stdio.h>
-
 #include <memory>
 #include <vector>
+#include "model_parameterization.hpp"
 
 class SiteModel {
  public:
@@ -19,6 +18,8 @@ class SiteModel {
 
   static std::unique_ptr<SiteModel> OfSpecification(
       const std::string& specification);
+  // TODO implement
+  void SetParameters(ModelParameterization parameterization) {}
 };
 
 class ConstantSiteModel : public SiteModel {

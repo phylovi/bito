@@ -7,7 +7,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "model_common.hpp"
+#include "model_parameterization.hpp"
 #include "sugar.hpp"
 
 using EigenMatrixXd =
@@ -18,22 +18,6 @@ using ModelParameterization = std::unordered_map<std::string, Eigen::VectorXd>;
 class SubstitutionModel {
  public:
   virtual ~SubstitutionModel() = default;
-
-  static Eigen::VectorXd GetFromParameterization(
-      ModelParameterization parameterization, std::string key,
-      size_t expected_length) {
-    auto search = parameterization.find(key);
-    if (search == parameterization.end()) {
-      Failwith("Model parameter " + key + " needed in model parameterization.");
-    }  // else
-    auto parameter = search->second;
-    if (parameter.size() != expected_length) {
-      Failwith("Model parameter " + key + " has length " +
-               std::to_string(parameter.size()) + " but expected size was " +
-               std::to_string(expected_length) + ".");
-    }  // else
-    return parameter;
-  }
 
   size_t GetStateCount() const { return frequencies_.size(); }
 
@@ -85,9 +69,11 @@ class JC69Model : public DNAModel {
   }
 
   void SetParameters(ModelParameterization parameterization) override {
-    if (!parameterization.empty()) {
-      Failwith("You tried to set parameters of a JC model, which has none.");
-    }
+    // TODO doing nothing with extra parameters. Dangerous?
+    //    if (!parameterization.empty()) {
+    //      Failwith("You tried to set parameters of a JC model, which has
+    //      none.");
+    //    }
   }
 };
 

@@ -15,8 +15,8 @@ std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
 }
 
 void GTRModel::SetParameters(ModelParameterization parameterization) {
-  frequencies_ = GetFromParameterization(parameterization, "frequencies", 4);
-  rates_ = GetFromParameterization(parameterization, "rates", 6);
+  SetFromParameterization(parameterization, "frequencies", frequencies_);
+  SetFromParameterization(parameterization, "rates", rates_);
   UpdateEigenDecomposition();
 }
 

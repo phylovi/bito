@@ -4,6 +4,7 @@
 #ifndef SRC_CLOCK_MODEL_HPP_
 #define SRC_CLOCK_MODEL_HPP_
 
+#include "model_parameterization.hpp"
 #include "node.hpp"
 
 class ClockModel {
@@ -17,6 +18,8 @@ class ClockModel {
 
   static std::unique_ptr<ClockModel> OfSpecification(
       const std::string& specification);
+  // TODO implement
+  void SetParameters(ModelParameterization parameterization) {}
 };
 
 class StrictClockModel : public ClockModel {
