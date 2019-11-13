@@ -72,6 +72,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("branch_gradients", &SBNInstance::BranchGradients)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_indexers", &SBNInstance::GetIndexers)
+      .def("set_fat_beagle_parameters", &SBNInstance::SetFatBeagleParameters)
       .def("sample_trees", &SBNInstance::SampleTrees)
       .def("get_indexer_representations",
            &SBNInstance::GetIndexerRepresentations)

@@ -54,6 +54,11 @@ def test_instance():
     )
     inst.read_fasta_file("data/DS1.fasta")
     inst.make_engine(gtr_specification, 2)
+    parametrization = {
+        "frequencies": np.array([0.2, 0.55, 0.1, 0.15]),
+        "rates": np.array([1.0, 0.5, 1.0, 2.0, 1.0, 1.0]),
+    }
+    inst.set_fat_beagle_parameters(0, parametrization)
     print(np.array(inst.log_likelihoods()))
 
     log_likelihoods, gradients = zip(*inst.branch_gradients())

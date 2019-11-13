@@ -243,6 +243,11 @@ void SBNInstance::MakeEngine(PhyloModelSpecification specification,
   engine_ = std::make_unique<Engine>(specification, site_pattern, thread_count);
 }
 
+void SBNInstance::SetFatBeagleParameters(
+    size_t which_fat_beagle, ModelParameterization parameterization) {
+  GetEngine()->GetFatBeagle(which_fat_beagle)->SetParameters(parameterization);
+}
+
 std::vector<double> SBNInstance::LogLikelihoods() const {
   return GetEngine()->LogLikelihoods(tree_collection_);
 }

@@ -26,6 +26,10 @@ FatBeagle::~FatBeagle() {
   }
 }
 
+void FatBeagle::SetParameters(ModelParameterization parameterization) {
+  phylo_model_->SetParameters(parameterization);
+}
+
 BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
   int tip_count = static_cast<int>(site_pattern.SequenceCount());
   // Number of partial buffers to create (input):

@@ -147,6 +147,10 @@ class SBNInstance {
   // threads.
   void MakeEngine(PhyloModelSpecification specification, size_t thread_count);
 
+  // TODO docs
+  void SetFatBeagleParameters(size_t which_fat_beagle,
+                              ModelParameterization parameterization);
+
   std::vector<double> LogLikelihoods() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients() const;

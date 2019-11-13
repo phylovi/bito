@@ -24,6 +24,10 @@ class Engine {
   Engine &operator=(const Engine &) = delete;
   Engine &operator=(const Engine &&) = delete;
 
+  FatBeagle *GetFatBeagle(size_t idx) {
+    Assert(idx < fat_beagles_.size(), "FatBeagle index out of range.");
+    return fat_beagles_[idx].get();
+  }
 
   std::vector<double> LogLikelihoods(const TreeCollection &tree_collection);
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
