@@ -9,9 +9,6 @@
 
 class ClockModel {
  public:
-  // TODO Will we need a custom destructor here? I'm suspecting that we'll just
-  // have vectors and such as member variables, which will just go away ("rule
-  // of zero").
   virtual ~ClockModel() = default;
 
   virtual double GetRate(const Node& node) = 0;
