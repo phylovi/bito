@@ -49,21 +49,19 @@ def test_instance():
     assert rootsplit_support.keys() == vbpi_rootsplit_supp_dict.keys()
     assert subsplit_support.keys() == vbpi_subsplit_supp_dict.keys()
 
+    inst.read_fasta_file("data/DS1.fasta")
+    inst.sample_trees(1)
+    branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
+    branch_lengths[:] = 0.1
     gtr_specification = libsbn.PhyloModelSpecification(
         substitution="GTR", site="constant", clock="strict"
     )
-    inst.read_fasta_file("data/DS1.fasta")
     inst.make_engine(gtr_specification, 2)
     parametrization = {
         "frequencies": np.array([0.2, 0.55, 0.1, 0.15]),
         "rates": np.array([1.0, 0.5, 1.0, 2.0, 1.0, 1.0]),
     }
-    inst.set_fat_beagle_parameters(0, parametrization)
-    print(np.array(inst.log_likelihoods()))
-
-    log_likelihoods, gradients = zip(*inst.branch_gradients())
-    print(np.array(log_likelihoods))
-    print(np.array(gradients[-1]))
+    print("with parameterization:", np.array(inst.log_likelihoods([parametrization])))
 
     inst.tree_collection = libsbn.TreeCollection(
         [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
@@ -76,7 +74,7 @@ def test_instance():
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])
     print(inst.tree_collection.newick())
-    print(np.array(inst.log_likelihoods()))
+    print(np.array(inst.log_likelihoods([])))
     branch_lengths[0] = 0.2
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))

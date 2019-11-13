@@ -29,9 +29,12 @@ class Engine {
     return fat_beagles_[idx].get();
   }
 
-  std::vector<double> LogLikelihoods(const TreeCollection &tree_collection);
+  std::vector<double> LogLikelihoods(
+      const TreeCollection &tree_collection,
+      const ModelParameterizationVector &parameterizations);
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
-      const TreeCollection &tree_collection);
+      const TreeCollection &tree_collection,
+      const ModelParameterizationVector &parameterizations);
 
  private:
   SitePattern site_pattern_;

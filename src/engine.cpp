@@ -16,14 +16,18 @@ Engine::Engine(const PhyloModelSpecification &specification,
 }
 
 std::vector<double> Engine::LogLikelihoods(
-    const TreeCollection &tree_collection) {
-  return Parallelize<double>(FatBeagle::StaticLogLikelihood, fat_beagles_,
-                             tree_collection);
+    const TreeCollection &tree_collection,
+    const ModelParameterizationVector &parameterizations) {
+  return FatBeagleParallelize<double>(FatBeagle::StaticLogLikelihood,
+                                      fat_beagles_, tree_collection,
+                                      parameterizations);
 }
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
-    const TreeCollection &tree_collection) {
-  return Parallelize<std::pair<double, std::vector<double>>>(
-      FatBeagle::StaticBranchGradient, fat_beagles_, tree_collection);
+    const TreeCollection &tree_collection,
+    const ModelParameterizationVector &parameterizations) {
+  return FatBeagleParallelize<std::pair<double, std::vector<double>>>(
+      FatBeagle::StaticBranchGradient, fat_beagles_, tree_collection,
+      parameterizations);
 }
 

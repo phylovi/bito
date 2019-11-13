@@ -9,6 +9,7 @@
 #include "sugar.hpp"
 
 using ModelParameterization = std::unordered_map<std::string, Eigen::VectorXd>;
+using ModelParameterizationVector = std::vector<ModelParameterization>;
 
 void SetFromParameterization(ModelParameterization parameterization,
                              std::string key,

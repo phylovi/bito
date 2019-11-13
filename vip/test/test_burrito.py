@@ -39,7 +39,7 @@ def test_elbo_innards():
     # parameters to the 0th entry of mathieu's, which is in terms of branches.
     branch_model.scalar_model.q_params[branch_rep, :] = mathieu_q_params
 
-    assert np.array(burro.inst.log_likelihoods())[0] == approx(-81.446550)
+    assert np.array(burro.inst.log_likelihoods([]))[0] == approx(-81.446550)
     assert burro.branch_model.log_prior(px_theta_sample)[0] == approx(4.327275)
     assert burro.branch_model.log_prob(
         px_theta_sample, px_branch_representation

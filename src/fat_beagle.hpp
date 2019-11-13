@@ -63,12 +63,11 @@ class FatBeagle {
 };
 
 template <typename T>
-std::vector<T> Parallelize(
-    std::function<T(FatBeagle *,
-                    const Tree &)>
-        f,
+std::vector<T> FatBeagleParallelize(
+    std::function<T(FatBeagle *, const Tree &)> f,
     const std::vector<std::unique_ptr<FatBeagle>> &fat_beagles,
-    const TreeCollection &tree_collection) {
+    const TreeCollection &tree_collection,
+    const ModelParameterizationVector &parameterizations) {
   if (fat_beagles.empty()) {
     Failwith(
         "Please add some BEAGLE instances that can be used for computation.");
@@ -83,10 +82,18 @@ std::vector<T> Parallelize(
   for (size_t i = 0; i < tree_collection.TreeCount(); i++) {
     tree_number_queue.push(i);
   }
+  // TODO we temporariliy allow parameterizations to be empty.
+  if (!parameterizations.empty()) {
+    Assert(tree_collection.TreeCount() == parameterizations.size(),
+           "We need as many parameterizations as we have trees.");
+  }
   TaskProcessor<FatBeagle *, size_t> task_processor(
       std::move(fat_beagle_queue), std::move(tree_number_queue),
-      [&results, &tree_collection, &f](FatBeagle *fat_beagle,
-                                       size_t tree_number) {
+      [&results, &tree_collection, &parameterizations, &f](
+          FatBeagle *fat_beagle, size_t tree_number) {
+        if (!parameterizations.empty()) {
+          fat_beagle->SetParameters(parameterizations[tree_number]);
+        }
         results[tree_number] =
             f(fat_beagle, tree_collection.GetTree(tree_number));
       });

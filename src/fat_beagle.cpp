@@ -28,6 +28,7 @@ FatBeagle::~FatBeagle() {
 
 void FatBeagle::SetParameters(ModelParameterization parameterization) {
   phylo_model_->SetParameters(parameterization);
+  PhyloModelUpdate();
 }
 
 BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
@@ -116,6 +117,7 @@ void FatBeagle::SubstitutionModelUpdate() {
 }
 
 void FatBeagle::PhyloModelUpdate() {
+  // TODO ClockModelUpdate();
   SiteModelUpdate();
   SubstitutionModelUpdate();
 }
