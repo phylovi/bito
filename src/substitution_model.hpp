@@ -52,30 +52,34 @@ class SubstitutionModel {
 
  protected:
   Eigen::VectorXd frequencies_;
-  // TODO rename these
+  // TODO rename these. evec isn't quite just the eigenvector. Perhaps we should
+  // use notation from Felsenstein's book? @M, alternate suggestion?
   EigenMatrixXd evec_;
   EigenMatrixXd ivec_;
   Eigen::VectorXd eval_;
   EigenMatrixXd Q_;
 };
 
-class JC69Model : public SubstitutionModel {
+class DNAModel : public SubstitutionModel {
  public:
-  JC69Model() {
+  DNAModel() {
     frequencies_.resize(4);
     evec_.resize(4, 4);
     ivec_.resize(4, 4);
     eval_.resize(4);
     Q_.resize(4, 4);
+  }
+};
+
+class JC69Model : public DNAModel {
+ public:
+  JC69Model() {
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
     evec_ << 1.0, 2.0, 0.0, 0.5, 1.0, -2.0, 0.5, 0.0, 1.0, 2.0, 0.0, -0.5, 1.0,
         -2.0, -0.5, 0.0;
-
     ivec_ << 0.25, 0.25, 0.25, 0.25, 0.125, -0.125, 0.125, -0.125, 0.0, 1.0,
         0.0, -1.0, 1.0, 0.0, -1.0, 0.0;
-
     eval_ << 0.0, -1.3333333333333333, -1.3333333333333333, -1.3333333333333333;
-
     Q_ << 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0,
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
@@ -87,18 +91,12 @@ class JC69Model : public SubstitutionModel {
   }
 };
 
-class GTRModel : public SubstitutionModel {
+class GTRModel : public DNAModel {
  public:
   GTRModel() {
-    // TODO can we make this in the initializer list?
     rates_.resize(6);
-    frequencies_.resize(4);
     rates_ << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
-    evec_.resize(4, 4);
-    ivec_.resize(4, 4);
-    eval_.resize(4);
-    Q_.resize(4, 4);
     UpdateEigenDecomposition();
   }
 
