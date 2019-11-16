@@ -146,12 +146,13 @@ class SBNInstance {
   // Make a likelihood engine which will run across the specified number of
   // threads.
   void MakeEngine(PhyloModelSpecification specification, size_t thread_count);
+  void SetPhyloModelParams(ModelParameterizationVector params) {
+    parameterizations_ = params;
+  }
 
-  std::vector<double> LogLikelihoods(
-      const ModelParameterizationVector &parameterizations) const;
+  std::vector<double> LogLikelihoods() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).
-  std::vector<std::pair<double, std::vector<double>>> BranchGradients(
-      const ModelParameterizationVector &parameterizations) const;
+  std::vector<std::pair<double, std::vector<double>>> BranchGradients() const;
 
  private:
   std::string name_;
@@ -167,6 +168,8 @@ class SBNInstance {
   // A map going from a parent subsplit to the range of indices in
   // sbn_parameters_ with its children.
   BitsetSizePairMap parent_to_range_;
+  // The phylogenetic model parameterization.
+  ModelParameterizationVector parameterizations_;
 
   // Random bits.
   static std::random_device random_device_;
@@ -181,7 +184,7 @@ TEST_CASE("libsbn") {
   inst.ReadFastaFile("data/hello.fasta");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
   inst.MakeEngine(simple_specification, 2);
-  for (auto ll : inst.LogLikelihoods({})) {
+  for (auto ll : inst.LogLikelihoods()) {
     CHECK_LT(fabs(ll - -84.852358), 0.000001);
   }
   // Reading one file after another checks that we've cleared out state.
@@ -241,7 +244,7 @@ TEST_CASE("libsbn") {
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
   inst.MakeEngine(simple_specification, 2);
-  auto likelihoods = inst.LogLikelihoods({});
+  auto likelihoods = inst.LogLikelihoods();
   std::vector<double> pybeagle_likelihoods(
       {-14582.995273982739, -6911.294207416366, -6916.880235529542,
        -6904.016888831189, -6915.055570693576, -6915.50496696512,
@@ -251,7 +254,7 @@ TEST_CASE("libsbn") {
     CHECK_LT(fabs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
 
-  auto gradients = inst.BranchGradients({});
+  auto gradients = inst.BranchGradients();
   // Test the log likelihoods.
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(fabs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
@@ -276,14 +279,14 @@ TEST_CASE("libsbn") {
 
   // Test rescaling
   inst.SetRescaling(true);
-  auto likelihoods_rescaling = inst.LogLikelihoods({});
+  auto likelihoods_rescaling = inst.LogLikelihoods();
   // Likelihoods from LogLikelihoods()
   for (size_t i = 0; i < likelihoods_rescaling.size(); i++) {
     CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
   }
   // Likelihoods from BranchGradients()
   inst.MakeEngine(simple_specification, 1);
-  auto gradients_rescaling = inst.BranchGradients({});
+  auto gradients_rescaling = inst.BranchGradients();
   for (size_t i = 0; i < gradients_rescaling.size(); i++) {
     CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]),
              0.00011);

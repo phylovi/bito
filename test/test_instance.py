@@ -61,7 +61,8 @@ def test_instance():
         "frequencies": np.array([0.2, 0.55, 0.1, 0.15]),
         "rates": np.array([1.0, 0.5, 1.0, 2.0, 1.0, 1.0]),
     }
-    print("with parameterization:", np.array(inst.log_likelihoods([parametrization])))
+    inst.set_phylo_model_params([parametrization])
+    print("with parameterization:", np.array(inst.log_likelihoods()))
 
     inst.tree_collection = libsbn.TreeCollection(
         [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
@@ -74,7 +75,7 @@ def test_instance():
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])
     print(inst.tree_collection.newick())
-    print(np.array(inst.log_likelihoods([])))
+    print(np.array(inst.log_likelihoods()))
     branch_lengths[0] = 0.2
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
