@@ -17,6 +17,7 @@ std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
 ParamCounts GTRModel::GetParamCounts() const {
   return {{"GTR rates", 6}, {"frequencies", 4}};
 };
+
 void GTRModel::SetParameters(const Eigen::VectorXd& parameters){};
 
 void GTRModel::UpdateQMatrix() {

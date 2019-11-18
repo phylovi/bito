@@ -25,9 +25,10 @@ void PhyloModel::SetParameters(const Eigen::VectorXd& parameterization) {
 }
 
 BlockSpecification PhyloModel::GetBlockSpecification() const {
+  size_t next_available_idx = 0;
   BlockSpecification blocks;
-  substitution_model_->AddToBlockSpecification(blocks);
-  site_model_->AddToBlockSpecification(blocks);
-  clock_model_->AddToBlockSpecification(blocks);
+  substitution_model_->AddToBlockSpecification(next_available_idx, blocks);
+  site_model_->AddToBlockSpecification(next_available_idx, blocks);
+  clock_model_->AddToBlockSpecification(next_available_idx, blocks);
   return blocks;
 }

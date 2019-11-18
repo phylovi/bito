@@ -4,11 +4,10 @@
 #include "block_model.hpp"
 #include "sugar.hpp"
 
-void BlockModel::AddToBlockSpecification(BlockSpecification& blocks) const {
-  size_t parameter_idx;
-
+void BlockModel::AddToBlockSpecification(size_t& next_available_idx,
+                                         BlockSpecification& blocks) const {
   for (const auto [param_name, param_length] : GetParamCounts()) {
-    SafeInsert(blocks, param_name, {parameter_idx, param_length});
-    parameter_idx += param_length;
+    SafeInsert(blocks, param_name, {next_available_idx, param_length});
+    next_available_idx += param_length;
   }
 }

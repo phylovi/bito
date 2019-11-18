@@ -26,7 +26,8 @@ class BlockModel {
 
   virtual void SetParameters(const Eigen::VectorXd& parameters) = 0;
 
-  void AddToBlockSpecification(BlockSpecification& blocks) const;
+  void AddToBlockSpecification(size_t& next_available_idx,
+                               BlockSpecification& blocks) const;
 
  protected:
   size_t parameter_count_;

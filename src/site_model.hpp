@@ -8,7 +8,7 @@
 #include <vector>
 #include "block_model.hpp"
 
-class SiteModel {
+class SiteModel : public BlockModel {
  public:
   SiteModel() = default;
   SiteModel(const SiteModel&) = delete;
@@ -23,8 +23,6 @@ class SiteModel {
 
   static std::unique_ptr<SiteModel> OfSpecification(
       const std::string& specification);
-  // TODO implement
-  void AddToBlockSpecification(BlockSpecification& blocks) const {};
   void SetParameters(const Eigen::VectorXd& parameters){};
 };
 
@@ -33,6 +31,8 @@ class ConstantSiteModel : public SiteModel {
   ConstantSiteModel() : one_(1, 1.0) {}
 
   size_t GetCategoryCount() override { return 1; }
+
+  ParamCounts GetParamCounts() const override { return {}; };
 
   const std::vector<double>& GetCategoryRates() override { return one_; }
 
