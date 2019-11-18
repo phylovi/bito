@@ -23,7 +23,7 @@ class SiteModel : public BlockModel {
 
   static std::unique_ptr<SiteModel> OfSpecification(
       const std::string& specification);
-  void SetParameters(const Eigen::VectorXd& parameters){};
+  void SetParameters(const EigenRowBlock& parameters){};
 };
 
 class ConstantSiteModel : public SiteModel {

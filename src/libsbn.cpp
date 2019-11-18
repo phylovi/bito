@@ -243,12 +243,12 @@ void SBNInstance::MakeEngine(PhyloModelSpecification specification,
   engine_ = std::make_unique<Engine>(specification, site_pattern, thread_count);
 }
 
-std::vector<double> SBNInstance::LogLikelihoods() const {
+std::vector<double> SBNInstance::LogLikelihoods() {
   return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_);
 }
 
 std::vector<std::pair<double, std::vector<double>>>
-SBNInstance::BranchGradients() const {
+SBNInstance::BranchGradients() {
   return GetEngine()->BranchGradients(tree_collection_, phylo_model_params_);
 }
 

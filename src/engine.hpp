@@ -34,10 +34,10 @@ class Engine {
   }
 
   std::vector<double> LogLikelihoods(const TreeCollection &tree_collection,
-                                     const EigenMatrixXd &phylo_model_params);
+                                     // TODO const
+                                     EigenMatrixXd &phylo_model_params);
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
-      const TreeCollection &tree_collection,
-      const EigenMatrixXd &phylo_model_params);
+      const TreeCollection &tree_collection, EigenMatrixXd &phylo_model_params);
 
  private:
   SitePattern site_pattern_;

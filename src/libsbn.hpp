@@ -154,9 +154,10 @@ class SBNInstance {
     return GetEngine()->GetBlockSpecification();
   }
 
-  std::vector<double> LogLikelihoods() const;
+  // TODO const
+  std::vector<double> LogLikelihoods();
   // For each loaded tree, returns a pair of (likelihood, gradient).
-  std::vector<std::pair<double, std::vector<double>>> BranchGradients() const;
+  std::vector<std::pair<double, std::vector<double>>> BranchGradients();
 
  private:
   std::string name_;

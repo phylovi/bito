@@ -28,7 +28,7 @@ std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
       ClockModel::OfSpecification(specification.clock_));
 }
 
-void PhyloModel::SetParameters(Eigen::VectorXd& parameterization) {
+void PhyloModel::SetParameters(EigenRowBlock& parameterization) {
   substitution_model_->SetParameters(
       ExtractFromParameterization(parameterization, "substitution total"));
   site_model_->SetParameters(

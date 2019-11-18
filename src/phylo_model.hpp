@@ -31,14 +31,14 @@ class PhyloModel {
   static std::unique_ptr<PhyloModel> OfSpecification(
       const PhyloModelSpecification& specification);
   // TODO const version?
-  void SetParameters(Eigen::VectorXd& parameterization);
+  void SetParameters(EigenRowBlock& parameterization);
 
   BlockSpecification GetBlockSpecification() const;
 
   // TODO move to cpp file
   // TODO const version? Factor out?
-  Eigen::VectorBlock<Eigen::VectorXd> ExtractFromParameterization(
-      Eigen::VectorXd& parameterization, std::string key) {
+  EigenRowBlock ExtractFromParameterization(EigenRowBlock& parameterization,
+                                            std::string key) {
     auto search = block_specification_.find(key);
     if (search == block_specification_.end()) {
       Failwith("Block specification not found: " + key);
@@ -49,8 +49,7 @@ class PhyloModel {
                " request too long for a parameterization of length " +
                std::to_string(parameterization.size()) + ".");
     }  // else
-    return Eigen::VectorBlock<Eigen::VectorXd>(parameterization, start_idx,
-                                               parameter_count);
+    return parameterization.segment(start_idx, parameter_count);
   }
 
  private:
