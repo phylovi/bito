@@ -38,6 +38,8 @@ class PhyloModel {
   std::unique_ptr<SubstitutionModel> substitution_model_;
   std::unique_ptr<SiteModel> site_model_;
   std::unique_ptr<ClockModel> clock_model_;
+
+  BlockSpecification block_specification_;
 };
 
 #endif  // SRC_PHYLO_MODEL_HPP_
