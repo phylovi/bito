@@ -30,9 +30,28 @@ class PhyloModel {
 
   static std::unique_ptr<PhyloModel> OfSpecification(
       const PhyloModelSpecification& specification);
-  void SetParameters(const Eigen::VectorXd& parameterization);
+  // TODO const version?
+  void SetParameters(Eigen::VectorXd& parameterization);
 
   BlockSpecification GetBlockSpecification() const;
+
+  // TODO move to cpp file
+  // TODO const version? Factor out?
+  Eigen::VectorBlock<Eigen::VectorXd> ExtractFromParameterization(
+      Eigen::VectorXd& parameterization, std::string key) {
+    auto search = block_specification_.find(key);
+    if (search == block_specification_.end()) {
+      Failwith("Block specification not found: " + key);
+    }  // else
+    auto [start_idx, parameter_count] = search->second;
+    if (start_idx + parameter_count > parameterization.size()) {
+      Failwith("Model parameter " + key +
+               " request too long for a parameterization of length " +
+               std::to_string(parameterization.size()) + ".");
+    }  // else
+    return Eigen::VectorBlock<Eigen::VectorXd>(parameterization, start_idx,
+                                               parameter_count);
+  }
 
  private:
   std::unique_ptr<SubstitutionModel> substitution_model_;

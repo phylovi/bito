@@ -11,6 +11,7 @@ PhyloModel::PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
       clock_model_(std::move(clock_model)),
       block_specification_({}) {
   size_t next_available_idx = 0;
+  // TODO put these strings somewhere.
   substitution_model_->AddToBlockSpecification(
       "substitution total", next_available_idx, block_specification_);
   site_model_->AddToBlockSpecification("site total", next_available_idx,
@@ -27,10 +28,13 @@ std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
       ClockModel::OfSpecification(specification.clock_));
 }
 
-void PhyloModel::SetParameters(const Eigen::VectorXd& parameterization) {
-  substitution_model_->SetParameters(parameterization);
-  site_model_->SetParameters(parameterization);
-  clock_model_->SetParameters(parameterization);
+void PhyloModel::SetParameters(Eigen::VectorXd& parameterization) {
+  substitution_model_->SetParameters(
+      ExtractFromParameterization(parameterization, "substitution total"));
+  site_model_->SetParameters(
+      ExtractFromParameterization(parameterization, "site total"));
+  clock_model_->SetParameters(
+      ExtractFromParameterization(parameterization, "clock total"));
 }
 
 BlockSpecification PhyloModel::GetBlockSpecification() const {
