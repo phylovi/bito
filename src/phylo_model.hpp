@@ -32,6 +32,8 @@ class PhyloModel {
       const PhyloModelSpecification& specification);
   void SetParameters(const Eigen::VectorXd& parameterization);
 
+  BlockSpecification GetBlockSpecification() const;
+
  private:
   std::unique_ptr<SubstitutionModel> substitution_model_;
   std::unique_ptr<SiteModel> site_model_;

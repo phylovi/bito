@@ -29,6 +29,10 @@ class Engine {
     return fat_beagles_[idx].get();
   }
 
+  BlockSpecification GetBlockSpecification() const {
+    return GetFirstFatBeagle()->GetBlockSpecification();
+  }
+
   std::vector<double> LogLikelihoods(const TreeCollection &tree_collection,
                                      const EigenMatrixXd &phylo_model_params);
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
@@ -38,6 +42,11 @@ class Engine {
  private:
   SitePattern site_pattern_;
   std::vector<std::unique_ptr<FatBeagle>> fat_beagles_;
+
+  FatBeagle *GetFirstFatBeagle() const {
+    Assert(!fat_beagles_.empty(), "You have no FatBeagles.");
+    return fat_beagles_[0].get();
+  }
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

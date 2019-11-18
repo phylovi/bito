@@ -14,7 +14,9 @@ std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
   Failwith("Substitution model not known: " + specification);
 }
 
-void GTRModel::AddToBlockSpecification(BlockSpecification& blocks) const {};
+ParamCounts GTRModel::GetParamCounts() const {
+  return {{"GTR rates", 6}, {"frequencies", 4}};
+};
 void GTRModel::SetParameters(const Eigen::VectorXd& parameters){};
 
 void GTRModel::UpdateQMatrix() {

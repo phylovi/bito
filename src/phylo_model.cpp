@@ -23,3 +23,11 @@ void PhyloModel::SetParameters(const Eigen::VectorXd& parameterization) {
   site_model_->SetParameters(parameterization);
   clock_model_->SetParameters(parameterization);
 }
+
+BlockSpecification PhyloModel::GetBlockSpecification() const {
+  BlockSpecification blocks;
+  substitution_model_->AddToBlockSpecification(blocks);
+  site_model_->AddToBlockSpecification(blocks);
+  clock_model_->AddToBlockSpecification(blocks);
+  return blocks;
+}

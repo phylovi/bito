@@ -150,6 +150,9 @@ class SBNInstance {
   // void SetPhyloModelParams(ModelParameterizationVector params) {
   //  parameterizations_ = params;
   //}
+  BlockSpecification GetBlockSpecification() const {
+    return GetEngine()->GetBlockSpecification();
+  }
 
   std::vector<double> LogLikelihoods() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).

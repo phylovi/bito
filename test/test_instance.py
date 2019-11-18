@@ -57,6 +57,7 @@ def test_instance():
         substitution="GTR", site="constant", clock="strict"
     )
     inst.make_engine(gtr_specification, 2)
+    print(inst.get_block_specification())
     parametrization = {
         "frequencies": np.array([0.2, 0.55, 0.1, 0.15]),
         "rates": np.array([1.0, 0.5, 1.0, 2.0, 1.0, 1.0]),

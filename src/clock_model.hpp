@@ -16,8 +16,6 @@ class ClockModel : public BlockModel {
 
   static std::unique_ptr<ClockModel> OfSpecification(
       const std::string& specification);
-  // TODO implement
-  void AddToBlockSpecification(BlockSpecification& blocks) const {};
   void SetParameters(const Eigen::VectorXd& parameters){};
 };
 
@@ -28,6 +26,8 @@ class StrictClockModel : public ClockModel {
   StrictClockModel() : StrictClockModel(1.0) {}
 
   double GetRate(const Node& node) override { return rate_; }
+
+  ParamCounts GetParamCounts() const override { return {{"clock rate", 1}}; }
 
  private:
   double rate_;

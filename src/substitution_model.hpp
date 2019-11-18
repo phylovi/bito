@@ -66,7 +66,7 @@ class JC69Model : public DNAModel {
     Q_ << 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0,
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
-  void AddToBlockSpecification(BlockSpecification& blocks) const {};
+  ParamCounts GetParamCounts() const { return {}; };
   void SetParameters(const Eigen::VectorXd& parameters){};
 };
 
@@ -79,10 +79,10 @@ class GTRModel : public DNAModel {
     UpdateEigenDecomposition();
   }
 
-  void AddToBlockSpecification(BlockSpecification& blocks) const override;
   void SetParameters(const Eigen::VectorXd& parameters) override;
 
  protected:
+  ParamCounts GetParamCounts() const override;
   void UpdateEigenDecomposition();
   void UpdateQMatrix();
 
