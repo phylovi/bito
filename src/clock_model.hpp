@@ -4,16 +4,12 @@
 #ifndef SRC_CLOCK_MODEL_HPP_
 #define SRC_CLOCK_MODEL_HPP_
 
-#include "model_parameterization.hpp"
+#include "block_model.hpp"
 #include "node.hpp"
 
-class ClockModel {
+class ClockModel : public BlockModel {
  public:
   ClockModel() = default;
-  ClockModel(const ClockModel&) = delete;
-  ClockModel(ClockModel&&) = delete;
-  ClockModel& operator=(const ClockModel&) = delete;
-  ClockModel& operator=(ClockModel&&) = delete;
   virtual ~ClockModel() = default;
 
   virtual double GetRate(const Node& node) = 0;
@@ -21,7 +17,8 @@ class ClockModel {
   static std::unique_ptr<ClockModel> OfSpecification(
       const std::string& specification);
   // TODO implement
-  void SetParameters(ModelParameterization parameterization) {}
+  void AddToBlockSpecification(BlockSpecification& blocks) const {};
+  void SetParameters(const Eigen::VectorXd& parameters){};
 };
 
 class StrictClockModel : public ClockModel {

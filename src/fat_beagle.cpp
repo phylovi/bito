@@ -26,7 +26,7 @@ FatBeagle::~FatBeagle() {
   }
 }
 
-void FatBeagle::SetParameters(ModelParameterization parameterization) {
+void FatBeagle::SetParameters(const Eigen::VectorXd &parameterization) {
   phylo_model_->SetParameters(parameterization);
   PhyloModelUpdate();
 }

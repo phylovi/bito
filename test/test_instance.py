@@ -61,7 +61,8 @@ def test_instance():
         "frequencies": np.array([0.2, 0.55, 0.1, 0.15]),
         "rates": np.array([1.0, 0.5, 1.0, 2.0, 1.0, 1.0]),
     }
-    inst.set_phylo_model_params([parametrization])
+    # TODO
+    # inst.set_phylo_model_params([parametrization])
     print("with parameterization:", np.array(inst.log_likelihoods()))
 
     inst.tree_collection = libsbn.TreeCollection(

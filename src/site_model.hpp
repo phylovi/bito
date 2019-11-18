@@ -6,7 +6,7 @@
 
 #include <memory>
 #include <vector>
-#include "model_parameterization.hpp"
+#include "block_model.hpp"
 
 class SiteModel {
  public:
@@ -24,7 +24,8 @@ class SiteModel {
   static std::unique_ptr<SiteModel> OfSpecification(
       const std::string& specification);
   // TODO implement
-  void SetParameters(ModelParameterization parameterization) {}
+  void AddToBlockSpecification(BlockSpecification& blocks) const {};
+  void SetParameters(const Eigen::VectorXd& parameters){};
 };
 
 class ConstantSiteModel : public SiteModel {

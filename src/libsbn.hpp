@@ -146,9 +146,10 @@ class SBNInstance {
   // Make a likelihood engine which will run across the specified number of
   // threads.
   void MakeEngine(PhyloModelSpecification specification, size_t thread_count);
-  void SetPhyloModelParams(ModelParameterizationVector params) {
-    parameterizations_ = params;
-  }
+  // TODO
+  // void SetPhyloModelParams(ModelParameterizationVector params) {
+  //  parameterizations_ = params;
+  //}
 
   std::vector<double> LogLikelihoods() const;
   // For each loaded tree, returns a pair of (likelihood, gradient).
@@ -169,7 +170,7 @@ class SBNInstance {
   // sbn_parameters_ with its children.
   BitsetSizePairMap parent_to_range_;
   // The phylogenetic model parameterization.
-  ModelParameterizationVector parameterizations_;
+  EigenMatrixXd phylo_model_params_;
 
   // Random bits.
   static std::random_device random_device_;

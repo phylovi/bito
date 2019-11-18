@@ -18,7 +18,7 @@ std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
       ClockModel::OfSpecification(specification.clock_));
 }
 
-void PhyloModel::SetParameters(ModelParameterization parameterization) {
+void PhyloModel::SetParameters(const Eigen::VectorXd& parameterization) {
   substitution_model_->SetParameters(parameterization);
   site_model_->SetParameters(parameterization);
   clock_model_->SetParameters(parameterization);

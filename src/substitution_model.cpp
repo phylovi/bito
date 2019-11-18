@@ -14,11 +14,8 @@ std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
   Failwith("Substitution model not known: " + specification);
 }
 
-void GTRModel::SetParameters(ModelParameterization parameterization) {
-  SetFromParameterization(parameterization, "frequencies", frequencies_);
-  SetFromParameterization(parameterization, "rates", rates_);
-  UpdateEigenDecomposition();
-}
+void GTRModel::AddToBlockSpecification(BlockSpecification& blocks) const {};
+void GTRModel::SetParameters(const Eigen::VectorXd& parameters){};
 
 void GTRModel::UpdateQMatrix() {
   int rate_index = 0;

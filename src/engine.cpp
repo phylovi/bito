@@ -17,17 +17,17 @@ Engine::Engine(const PhyloModelSpecification &specification,
 
 std::vector<double> Engine::LogLikelihoods(
     const TreeCollection &tree_collection,
-    const ModelParameterizationVector &parameterizations) {
+    const EigenMatrixXd &phylo_model_params) {
   return FatBeagleParallelize<double>(FatBeagle::StaticLogLikelihood,
                                       fat_beagles_, tree_collection,
-                                      parameterizations);
+                                      phylo_model_params);
 }
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
     const TreeCollection &tree_collection,
-    const ModelParameterizationVector &parameterizations) {
+    const EigenMatrixXd &phylo_model_params) {
   return FatBeagleParallelize<std::pair<double, std::vector<double>>>(
       FatBeagle::StaticBranchGradient, fat_beagles_, tree_collection,
-      parameterizations);
+      phylo_model_params);
 }
 

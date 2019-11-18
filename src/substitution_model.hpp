@@ -7,21 +7,15 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include "model_parameterization.hpp"
+#include "block_model.hpp"
 #include "sugar.hpp"
 
 using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-using ModelParameterization = std::unordered_map<std::string, Eigen::VectorXd>;
-
-class SubstitutionModel {
+class SubstitutionModel : public BlockModel {
  public:
   SubstitutionModel() = default;
-  SubstitutionModel(const SubstitutionModel&) = delete;
-  SubstitutionModel(SubstitutionModel&&) = delete;
-  SubstitutionModel& operator=(const SubstitutionModel&) = delete;
-  SubstitutionModel& operator=(SubstitutionModel&&) = delete;
   virtual ~SubstitutionModel() = default;
 
   size_t GetStateCount() const { return frequencies_.size(); }
@@ -34,7 +28,7 @@ class SubstitutionModel {
   const EigenMatrixXd& GetInverseEigenvectors() { return ivec_; }
   const Eigen::VectorXd& GetEigenvalues() { return eval_; }
 
-  virtual void SetParameters(ModelParameterization parameterization) = 0;
+  virtual void SetParameters(const Eigen::VectorXd& parameters) = 0;
 
   static std::unique_ptr<SubstitutionModel> OfSpecification(
       const std::string& specification);
@@ -72,14 +66,8 @@ class JC69Model : public DNAModel {
     Q_ << 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0,
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
-
-  void SetParameters(ModelParameterization parameterization) override {
-    // TODO doing nothing with extra parameters. Dangerous?
-    //    if (!parameterization.empty()) {
-    //      Failwith("You tried to set parameters of a JC model, which has
-    //      none.");
-    //    }
-  }
+  void AddToBlockSpecification(BlockSpecification& blocks) const {};
+  void SetParameters(const Eigen::VectorXd& parameters){};
 };
 
 class GTRModel : public DNAModel {
@@ -91,7 +79,8 @@ class GTRModel : public DNAModel {
     UpdateEigenDecomposition();
   }
 
-  void SetParameters(ModelParameterization parameterization) override;
+  void AddToBlockSpecification(BlockSpecification& blocks) const override;
+  void SetParameters(const Eigen::VectorXd& parameters) override;
 
  protected:
   void UpdateEigenDecomposition();
@@ -114,11 +103,10 @@ TEST_CASE("SubstitutionModel") {
     CHECK_LT(fabs(evals_jc[i] - evals_gtr[i]), 0.0001);
   }
   // TODO eigenvectors?
-  Eigen::VectorXd frequencies(4);
-  frequencies << 0.2, 0.55, 0.1, 0.15;
-  Eigen::VectorXd rates(6);
-  rates << 1., 0.5, 1., 2., 1., 1.;
-  gtr_model->SetParameters({{"frequencies", frequencies}, {"rates", rates}});
+  // Eigen::VectorXd frequencies(4);
+  // frequencies << 0.2, 0.55, 0.1, 0.15;
+  // Eigen::VectorXd rates(6);
+  // rates << 1., 0.5, 1., 2., 1., 1.;
   // TODO another eigenvalue/vector test.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

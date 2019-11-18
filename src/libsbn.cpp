@@ -244,12 +244,12 @@ void SBNInstance::MakeEngine(PhyloModelSpecification specification,
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() const {
-  return GetEngine()->LogLikelihoods(tree_collection_, parameterizations_);
+  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_);
 }
 
 std::vector<std::pair<double, std::vector<double>>>
 SBNInstance::BranchGradients() const {
-  return GetEngine()->BranchGradients(tree_collection_, parameterizations_);
+  return GetEngine()->BranchGradients(tree_collection_, phylo_model_params_);
 }
 
 // Here we initialize our static random number generator.

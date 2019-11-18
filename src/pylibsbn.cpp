@@ -68,7 +68,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("print_status", &SBNInstance::PrintStatus)
       .def("split_counters", &SBNInstance::SplitCounters)
       .def("make_engine", &SBNInstance::MakeEngine)
-      .def("set_phylo_model_params", &SBNInstance::SetPhyloModelParams)
+      //.def("set_phylo_model_params", &SBNInstance::SetPhyloModelParams)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
       .def("branch_gradients", &SBNInstance::BranchGradients)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)

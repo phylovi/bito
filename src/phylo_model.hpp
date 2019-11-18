@@ -30,7 +30,7 @@ class PhyloModel {
 
   static std::unique_ptr<PhyloModel> OfSpecification(
       const PhyloModelSpecification& specification);
-  void SetParameters(ModelParameterization parameterization);
+  void SetParameters(const Eigen::VectorXd& parameterization);
 
  private:
   std::unique_ptr<SubstitutionModel> substitution_model_;
