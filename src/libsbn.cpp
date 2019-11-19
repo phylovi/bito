@@ -132,17 +132,6 @@ void SBNInstance::SampleTrees(size_t count) {
   }
 }
 
-void SBNInstance::PreparePhyloModelParams() {
-  const auto &block_specification = GetEngine()->GetBlockSpecification();
-  auto search = block_specification.find("complete range");
-  if (search == block_specification.end()) {
-    Failwith("Can't find relevant part of block specification!");
-  }
-  auto parameter_count = std::get<1>(search->second);
-  phylo_model_params_ =
-      EigenMatrixXd(tree_collection_.TreeCount(), parameter_count);
-}
-
 std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
     const {
   std::vector<IndexerRepresentation> representations;
@@ -252,6 +241,23 @@ void SBNInstance::MakeEngine(PhyloModelSpecification specification,
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
   engine_ = std::make_unique<Engine>(specification, site_pattern, thread_count);
+}
+
+void SBNInstance::PrepareForPhyloLikelihood(
+    PhyloModelSpecification specification, size_t thread_count,
+    size_t tree_count) {
+  MakeEngine(specification, thread_count);
+  ResizePhyloModelParams(tree_count);
+}
+
+void SBNInstance::ResizePhyloModelParams(size_t tree_count) {
+  if (tree_count == 0) {
+    Failwith(
+        "Please add trees to your instance by sampling or loading before "
+        "preparing for phylogenetic likelihood calculation.");
+  }
+  phylo_model_params_.resize(
+      tree_count, GetEngine()->GetBlockSpecification().ParameterCount());
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() {

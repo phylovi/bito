@@ -48,7 +48,9 @@ class Burrito:
         phylo_model_specification = libsbn.PhyloModelSpecification(
             substitution="JC69", site="constant", clock="strict"
         )
-        self.inst.make_engine(phylo_model_specification, thread_count)
+        self.inst.prepare_for_phylo_likelihood(
+            phylo_model_specification, thread_count, particle_count
+        )
         sbn_model = vip.sbn_model.SBNModel(self.inst)
         self.branch_model = vip.branch_model.of_name(
             branch_model_name, scalar_model_name, self.inst

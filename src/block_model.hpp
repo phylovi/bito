@@ -5,11 +5,8 @@
 #define SRC_BLOCK_MODEL_HPP_
 
 #include <Eigen/Dense>
-#include <unordered_map>
-#include "sugar.hpp"
+#include "block_specfication.hpp"
 
-using BlockCoordinates = std::tuple<size_t, size_t>;
-using BlockSpecification = std::unordered_map<std::string, BlockCoordinates>;
 using ParamCounts = std::unordered_map<std::string, size_t>;
 using EigenRowBlock = Eigen::Ref<Eigen::VectorXd>;
 

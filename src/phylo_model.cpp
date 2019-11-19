@@ -18,8 +18,8 @@ PhyloModel::PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
                                        block_specification_);
   clock_model_->AddToBlockSpecification("clock total", next_available_idx,
                                         block_specification_);
-  SafeInsert(block_specification_, std::string("complete range"),
-             {0, next_available_idx});
+  block_specification_.Insert(BlockSpecification::entire_key_,
+                              {0, next_available_idx});
 }
 
 std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(

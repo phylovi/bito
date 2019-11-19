@@ -39,11 +39,7 @@ class PhyloModel {
   // TODO const version? Factor out?
   EigenRowBlock ExtractFromParameterization(EigenRowBlock& parameterization,
                                             std::string key) {
-    auto search = block_specification_.find(key);
-    if (search == block_specification_.end()) {
-      Failwith("Block specification not found: " + key);
-    }  // else
-    auto [start_idx, parameter_count] = search->second;
+    auto [start_idx, parameter_count] = block_specification_.Find(key);
     if (start_idx + parameter_count > parameterization.size()) {
       Failwith("Model parameter " + key +
                " request too long for a parameterization of length " +

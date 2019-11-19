@@ -66,8 +66,8 @@ class SBNInstance {
     }
     // else
     Failwith(
-        "Engine not available. Call MakeEngine to make an engine for "
-        "phylogenetic likelihood computation computation.");
+        "Engine not available. Call PrepareForPhyloLikelihood to make an "
+        "engine for phylogenetic likelihood computation computation.");
   }
 
   void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
@@ -99,8 +99,6 @@ class SBNInstance {
 
   // Sample trees and store them internally
   void SampleTrees(size_t count);
-  // TODO this should probably take an argument for the number of trees.
-  void PreparePhyloModelParams();
 
   // Get indexer representations of the trees in tree_collection_.
   // See the header documentation of IndexerRepresentationOf for an explanation
@@ -146,16 +144,25 @@ class SBNInstance {
   // have loaded.
   void CheckBeagleDimensions() const;
 
-  // Make a likelihood engine which will run across the specified number of
-  // threads.
-  void MakeEngine(PhyloModelSpecification specification, size_t thread_count);
+  BlockSpecification GetBlockSpecification() const {
+    return GetEngine()->GetBlockSpecification();
+  }
+
+  BlockSpecification::UnderlyingMapType GetBlockSpecificationMap() const {
+    return GetEngine()->GetBlockSpecification().GetMap();
+  }
+
+  // Prepare for phylogenetic likelihood calculation.
+  void PrepareForPhyloLikelihood(PhyloModelSpecification specification,
+                                 size_t thread_count, size_t tree_count);
+  // Make the number of phylogentic model parameters fit the number of trees and
+  // the speficied model.
+  void ResizePhyloModelParams(size_t tree_count);
+
   // TODO
   // void SetPhyloModelParams(ModelParameterizationVector params) {
   //  parameterizations_ = params;
   //}
-  BlockSpecification GetBlockSpecification() const {
-    return GetEngine()->GetBlockSpecification();
-  }
 
   // TODO const
   std::vector<double> LogLikelihoods();
@@ -183,6 +190,10 @@ class SBNInstance {
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
   bool rescaling_;
+
+  // Make a likelihood engine which will run across the specified number of
+  // threads.
+  void MakeEngine(PhyloModelSpecification specification, size_t thread_count);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -191,7 +202,7 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
-  inst.MakeEngine(simple_specification, 2);
+  inst.PrepareForPhyloLikelihood(simple_specification, 2, 1);
   for (auto ll : inst.LogLikelihoods()) {
     CHECK_LT(fabs(ll - -84.852358), 0.000001);
   }
@@ -251,7 +262,7 @@ TEST_CASE("libsbn") {
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
-  inst.MakeEngine(simple_specification, 2);
+  inst.PrepareForPhyloLikelihood(simple_specification, 2, 1);
   auto likelihoods = inst.LogLikelihoods();
   std::vector<double> pybeagle_likelihoods(
       {-14582.995273982739, -6911.294207416366, -6916.880235529542,
@@ -293,7 +304,7 @@ TEST_CASE("libsbn") {
     CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
   }
   // Likelihoods from BranchGradients()
-  inst.MakeEngine(simple_specification, 1);
+  inst.PrepareForPhyloLikelihood(simple_specification, 1, 1);
   auto gradients_rescaling = inst.BranchGradients();
   for (size_t i = 0; i < gradients_rescaling.size(); i++) {
     CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]),

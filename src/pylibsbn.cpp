@@ -67,14 +67,14 @@ PYBIND11_MODULE(libsbn, m) {
       .def("read_fasta_file", &SBNInstance::ReadFastaFile)
       .def("print_status", &SBNInstance::PrintStatus)
       .def("split_counters", &SBNInstance::SplitCounters)
-      .def("make_engine", &SBNInstance::MakeEngine)
-      .def("get_block_specification", &SBNInstance::GetBlockSpecification)
+      .def("prepare_for_phylo_likelihood",
+           &SBNInstance::PrepareForPhyloLikelihood)
+      .def("get_block_specification", &SBNInstance::GetBlockSpecificationMap)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
       .def("branch_gradients", &SBNInstance::BranchGradients)
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_indexers", &SBNInstance::GetIndexers)
       .def("sample_trees", &SBNInstance::SampleTrees)
-      .def("prepare_phylo_model_params", &SBNInstance::PreparePhyloModelParams)
       .def("get_indexer_representations",
            &SBNInstance::GetIndexerRepresentations)
       .def("get_psp_indexer_representations",

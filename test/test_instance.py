@@ -56,8 +56,7 @@ def test_instance():
     gtr_specification = libsbn.PhyloModelSpecification(
         substitution="GTR", site="constant", clock="strict"
     )
-    inst.make_engine(gtr_specification, 2)
-    inst.prepare_phylo_model_params()
+    inst.prepare_for_phylo_likelihood(gtr_specification, 2, 1)
     print(inst.get_block_specification())
     parametrization = {
         "frequencies": np.array([0.2, 0.55, 0.1, 0.15]),
@@ -74,7 +73,7 @@ def test_instance():
     simple_specification = libsbn.PhyloModelSpecification(
         substitution="JC69", site="constant", clock="strict"
     )
-    inst.make_engine(simple_specification, 2)
+    inst.prepare_for_phylo_likelihood(simple_specification, 2, 1)
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])
     print(inst.tree_collection.newick())

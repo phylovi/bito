@@ -10,10 +10,10 @@ void BlockModel::AddToBlockSpecification(const std::string& complete_range_name,
   size_t original_next_available_idx = next_available_idx;
   size_t total_param_length = 0;
   for (const auto [param_name, param_length] : GetParamCounts()) {
-    SafeInsert(blocks, param_name, {next_available_idx, param_length});
+    blocks.Insert(param_name, {next_available_idx, param_length});
     next_available_idx += param_length;
     total_param_length += param_length;
   }
-  SafeInsert(blocks, complete_range_name,
-             {original_next_available_idx, total_param_length});
+  blocks.Insert(complete_range_name,
+                {original_next_available_idx, total_param_length});
 }
