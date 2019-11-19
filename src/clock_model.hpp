@@ -16,7 +16,6 @@ class ClockModel : public BlockModel {
 
   static std::unique_ptr<ClockModel> OfSpecification(
       const std::string& specification);
-  void SetParameters(const EigenVectorXdRef parameters){};
 };
 
 class StrictClockModel : public ClockModel {
@@ -28,6 +27,12 @@ class StrictClockModel : public ClockModel {
   double GetRate(const Node& node) override { return rate_; }
 
   ParamCounts GetParamCounts() const override { return {{"clock rate", 1}}; }
+
+  void SetParameters(const EigenVectorXdRef parameters) override {
+    Assert(parameters.size() == 1,
+           "StrictClockModel parameters are the wrong length!");
+    rate_ = parameters[0];
+  };
 
  private:
   double rate_;

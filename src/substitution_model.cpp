@@ -18,7 +18,11 @@ ParamCounts GTRModel::GetParamCounts() const {
   return {{"GTR rates", 6}, {"frequencies", 4}};
 };
 
-void GTRModel::SetParameters(const EigenVectorXdRef parameters){};
+void GTRModel::SetParameters(const EigenVectorXdRef parameters) {
+  Assert(parameters.size() == 10, "GTR parameters are the wrong dimension!");
+  rates_ = parameters.head(6);
+  frequencies_ = parameters.tail(4);
+};
 
 void GTRModel::UpdateQMatrix() {
   int rate_index = 0;
