@@ -245,12 +245,15 @@ void SBNInstance::MakeEngine(PhyloModelSpecification specification,
 
 void SBNInstance::PrepareForPhyloLikelihood(
     PhyloModelSpecification specification, size_t thread_count,
-    size_t tree_count) {
+    std::optional<size_t> tree_count_option) {
   MakeEngine(specification, thread_count);
-  ResizePhyloModelParams(tree_count);
+  ResizePhyloModelParams(tree_count_option);
 }
 
-void SBNInstance::ResizePhyloModelParams(size_t tree_count) {
+void SBNInstance::ResizePhyloModelParams(
+    std::optional<size_t> tree_count_option) {
+  size_t tree_count =
+      tree_count_option ? *tree_count_option : tree_collection_.TreeCount();
   if (tree_count == 0) {
     Failwith(
         "Please add trees to your instance by sampling or loading before "

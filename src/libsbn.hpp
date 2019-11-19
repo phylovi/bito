@@ -152,17 +152,15 @@ class SBNInstance {
     return GetEngine()->GetBlockSpecification().GetMap();
   }
 
-  // Prepare for phylogenetic likelihood calculation.
-  void PrepareForPhyloLikelihood(PhyloModelSpecification specification,
-                                 size_t thread_count, size_t tree_count);
+  // Prepare for phylogenetic likelihood calculation. If we get a nullopt
+  // argument, it just uses the number of trees currently in the SBNInstance.
+  void PrepareForPhyloLikelihood(
+      PhyloModelSpecification specification, size_t thread_count,
+      std::optional<size_t> tree_count_option = std::nullopt);
   // Make the number of phylogentic model parameters fit the number of trees and
-  // the speficied model.
-  void ResizePhyloModelParams(size_t tree_count);
-
-  // TODO
-  // void SetPhyloModelParams(ModelParameterizationVector params) {
-  //  parameterizations_ = params;
-  //}
+  // the speficied model. If we get a nullopt argument, it just uses the number
+  // of trees currently in the SBNInstance.
+  void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
   // TODO const
   std::vector<double> LogLikelihoods();
@@ -202,7 +200,7 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
-  inst.PrepareForPhyloLikelihood(simple_specification, 2, 1);
+  inst.PrepareForPhyloLikelihood(simple_specification, 2);
   for (auto ll : inst.LogLikelihoods()) {
     CHECK_LT(fabs(ll - -84.852358), 0.000001);
   }
@@ -262,7 +260,7 @@ TEST_CASE("libsbn") {
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
-  inst.PrepareForPhyloLikelihood(simple_specification, 2, 1);
+  inst.PrepareForPhyloLikelihood(simple_specification, 2);
   auto likelihoods = inst.LogLikelihoods();
   std::vector<double> pybeagle_likelihoods(
       {-14582.995273982739, -6911.294207416366, -6916.880235529542,
@@ -304,7 +302,7 @@ TEST_CASE("libsbn") {
     CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
   }
   // Likelihoods from BranchGradients()
-  inst.PrepareForPhyloLikelihood(simple_specification, 1, 1);
+  inst.PrepareForPhyloLikelihood(simple_specification, 1);
   auto gradients_rescaling = inst.BranchGradients();
   for (size_t i = 0; i < gradients_rescaling.size(); i++) {
     CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]),

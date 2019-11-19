@@ -68,7 +68,13 @@ PYBIND11_MODULE(libsbn, m) {
       .def("print_status", &SBNInstance::PrintStatus)
       .def("split_counters", &SBNInstance::SplitCounters)
       .def("prepare_for_phylo_likelihood",
-           &SBNInstance::PrepareForPhyloLikelihood)
+           &SBNInstance::PrepareForPhyloLikelihood,
+           "Prepare instance for phylogenetic likelihood computation.",
+           py::arg("specification"), py::arg("thread_count"),
+           py::arg("tree_count_option") = std::nullopt)
+      .def("resize_phylo_model_params", &SBNInstance::ResizePhyloModelParams,
+           "Resize phylo_model_params.",
+           py::arg("tree_count_option") = std::nullopt)
       .def("get_block_specification", &SBNInstance::GetBlockSpecificationMap)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
       .def("branch_gradients", &SBNInstance::BranchGradients)
