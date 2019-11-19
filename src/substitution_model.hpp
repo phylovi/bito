@@ -25,7 +25,7 @@ class SubstitutionModel : public BlockModel {
   const EigenMatrixXd& GetInverseEigenvectors() { return ivec_; }
   const Eigen::VectorXd& GetEigenvalues() { return eval_; }
 
-  virtual void SetParameters(const EigenVectorRef parameters) = 0;
+  virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
 
   static std::unique_ptr<SubstitutionModel> OfSpecification(
       const std::string& specification);
@@ -64,7 +64,7 @@ class JC69Model : public DNAModel {
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
   ParamCounts GetParamCounts() const { return {}; };
-  void SetParameters(const EigenVectorRef parameters){};
+  void SetParameters(const EigenVectorXdRef parameters){};
 };
 
 class GTRModel : public DNAModel {
@@ -76,7 +76,7 @@ class GTRModel : public DNAModel {
     UpdateEigenDecomposition();
   }
 
-  void SetParameters(const EigenVectorRef parameters) override;
+  void SetParameters(const EigenVectorXdRef parameters) override;
 
  protected:
   ParamCounts GetParamCounts() const override;

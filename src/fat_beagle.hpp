@@ -30,7 +30,7 @@ class FatBeagle {
 
   BeagleInstance GetBeagleInstance() const { return beagle_instance_; };
 
-  void SetParameters(const EigenVectorRef parameterization);
+  void SetParameters(const EigenVectorXdRef parameterization);
   BlockSpecification GetBlockSpecification() const {
     return phylo_model_->GetBlockSpecification();
   }
@@ -69,9 +69,7 @@ template <typename T>
 std::vector<T> FatBeagleParallelize(
     std::function<T(FatBeagle *, const Tree &)> f,
     const std::vector<std::unique_ptr<FatBeagle>> &fat_beagles,
-    const TreeCollection &tree_collection,
-    // TODO const
-    EigenMatrixXd &parameterizations) {
+    const TreeCollection &tree_collection, EigenMatrixXdRef parameterizations) {
   if (fat_beagles.empty()) {
     Failwith(
         "Please add some BEAGLE instances that can be used for computation.");
@@ -92,8 +90,7 @@ std::vector<T> FatBeagleParallelize(
       std::move(fat_beagle_queue), std::move(tree_number_queue),
       [&results, &tree_collection, &parameterizations, &f](
           FatBeagle *fat_beagle, size_t tree_number) {
-        EigenVectorRef parameterization = parameterizations.row(tree_number);
-        fat_beagle->SetParameters(parameterization);
+        fat_beagle->SetParameters(parameterizations.row(tree_number));
         results[tree_number] =
             f(fat_beagle, tree_collection.GetTree(tree_number));
       });

@@ -16,7 +16,7 @@ class ClockModel : public BlockModel {
 
   static std::unique_ptr<ClockModel> OfSpecification(
       const std::string& specification);
-  void SetParameters(const EigenVectorRef parameters){};
+  void SetParameters(const EigenVectorXdRef parameters){};
 };
 
 class StrictClockModel : public ClockModel {

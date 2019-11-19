@@ -30,7 +30,7 @@ std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
       ClockModel::OfSpecification(specification.clock_));
 }
 
-void PhyloModel::SetParameters(const EigenVectorRef parameterization) {
+void PhyloModel::SetParameters(const EigenVectorXdRef parameterization) {
   substitution_model_->SetParameters(
       ExtractFromParameterization(parameterization, "substitution total"));
   site_model_->SetParameters(

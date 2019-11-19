@@ -18,7 +18,7 @@ ParamCounts GTRModel::GetParamCounts() const {
   return {{"GTR rates", 6}, {"frequencies", 4}};
 };
 
-void GTRModel::SetParameters(const EigenVectorRef parameters){};
+void GTRModel::SetParameters(const EigenVectorXdRef parameters){};
 
 void GTRModel::UpdateQMatrix() {
   int rate_index = 0;

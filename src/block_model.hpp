@@ -11,7 +11,7 @@ using ParamCounts = std::unordered_map<std::string, size_t>;
 
 using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using EigenVectorRef = Eigen::Ref<Eigen::VectorXd>;
+using EigenVectorXdRef = Eigen::Ref<Eigen::VectorXd>;
 using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 
 class BlockModel {
@@ -23,7 +23,7 @@ class BlockModel {
   BlockModel& operator=(BlockModel&&) = delete;
   virtual ~BlockModel() = default;
 
-  virtual void SetParameters(const EigenVectorRef parameters) = 0;
+  virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
 
   void AddToBlockSpecification(const std::string& complete_range_name,
                                size_t& next_available_idx,
