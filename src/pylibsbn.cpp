@@ -85,6 +85,7 @@ PYBIND11_MODULE(libsbn, m) {
            &SBNInstance::GetIndexerRepresentations)
       .def("get_psp_indexer_representations",
            &SBNInstance::GetPSPIndexerRepresentations)
+      .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
       .def("split_lengths", &SBNInstance::SplitLengths)
       // Member Variables
       .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)

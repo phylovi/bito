@@ -31,7 +31,7 @@ class FatBeagle {
   BeagleInstance GetBeagleInstance() const { return beagle_instance_; };
 
   // TODO const
-  void SetParameters(EigenRowBlock &parameterization);
+  void SetParameters(EigenVectorRef parameterization);
   BlockSpecification GetBlockSpecification() const {
     return phylo_model_->GetBlockSpecification();
   }
@@ -93,7 +93,7 @@ std::vector<T> FatBeagleParallelize(
       std::move(fat_beagle_queue), std::move(tree_number_queue),
       [&results, &tree_collection, &parameterizations, &f](
           FatBeagle *fat_beagle, size_t tree_number) {
-        EigenRowBlock parameterization = parameterizations.row(tree_number);
+        EigenVectorRef parameterization = parameterizations.row(tree_number);
         fat_beagle->SetParameters(parameterization);
         results[tree_number] =
             f(fat_beagle, tree_collection.GetTree(tree_number));

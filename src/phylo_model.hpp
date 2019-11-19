@@ -31,14 +31,14 @@ class PhyloModel {
   static std::unique_ptr<PhyloModel> OfSpecification(
       const PhyloModelSpecification& specification);
   // TODO const version?
-  void SetParameters(EigenRowBlock& parameterization);
+  void SetParameters(EigenVectorRef parameterization);
 
   const BlockSpecification& GetBlockSpecification() const;
 
   // TODO move to cpp file
   // TODO const version? Factor out?
-  EigenRowBlock ExtractFromParameterization(EigenRowBlock& parameterization,
-                                            std::string key) {
+  EigenVectorRef ExtractFromParameterization(EigenVectorRef parameterization,
+                                             std::string key) {
     auto [start_idx, parameter_count] = block_specification_.Find(key);
     if (start_idx + parameter_count > parameterization.size()) {
       Failwith("Model parameter " + key +

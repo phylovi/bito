@@ -8,7 +8,7 @@
 #include "block_specfication.hpp"
 
 using ParamCounts = std::unordered_map<std::string, size_t>;
-using EigenRowBlock = Eigen::Ref<Eigen::VectorXd>;
+using EigenVectorRef = Eigen::Ref<Eigen::VectorXd>;
 
 class BlockModel {
  public:
@@ -19,7 +19,7 @@ class BlockModel {
   BlockModel& operator=(BlockModel&&) = delete;
   virtual ~BlockModel() = default;
 
-  virtual void SetParameters(const EigenRowBlock& parameters) = 0;
+  virtual void SetParameters(const EigenVectorRef parameters) = 0;
 
   void AddToBlockSpecification(const std::string& complete_range_name,
                                size_t& next_available_idx,
