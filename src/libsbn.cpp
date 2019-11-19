@@ -132,6 +132,17 @@ void SBNInstance::SampleTrees(size_t count) {
   }
 }
 
+void SBNInstance::PreparePhyloModelParams() {
+  const auto &block_specification = GetEngine()->GetBlockSpecification();
+  auto search = block_specification.find("complete range");
+  if (search == block_specification.end()) {
+    Failwith("Can't find relevant part of block specification!");
+  }
+  auto parameter_count = std::get<1>(search->second);
+  phylo_model_params_ =
+      EigenMatrixXd(tree_collection_.TreeCount(), parameter_count);
+}
+
 std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
     const {
   std::vector<IndexerRepresentation> representations;

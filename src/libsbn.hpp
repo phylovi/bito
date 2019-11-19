@@ -97,7 +97,10 @@ class SBNInstance {
   // The input to this function is a parent subsplit (of length 2n).
   Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const;
 
+  // Sample trees and store them internally
   void SampleTrees(size_t count);
+  // TODO this should probably take an argument for the number of trees.
+  void PreparePhyloModelParams();
 
   // Get indexer representations of the trees in tree_collection_.
   // See the header documentation of IndexerRepresentationOf for an explanation

@@ -33,7 +33,7 @@ class PhyloModel {
   // TODO const version?
   void SetParameters(EigenRowBlock& parameterization);
 
-  BlockSpecification GetBlockSpecification() const;
+  const BlockSpecification& GetBlockSpecification() const;
 
   // TODO move to cpp file
   // TODO const version? Factor out?

@@ -57,6 +57,7 @@ def test_instance():
         substitution="GTR", site="constant", clock="strict"
     )
     inst.make_engine(gtr_specification, 2)
+    inst.prepare_phylo_model_params()
     print(inst.get_block_specification())
     parametrization = {
         "frequencies": np.array([0.2, 0.55, 0.1, 0.15]),

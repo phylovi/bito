@@ -15,10 +15,7 @@ using EigenRowBlock = Eigen::Ref<Eigen::VectorXd>;
 
 class BlockModel {
  public:
-  // TODO delete default constructor?
   BlockModel() = default;
-  explicit BlockModel(size_t parameter_start)
-      : parameter_count_(0), parameter_start_(parameter_start){};
   BlockModel(const BlockModel&) = delete;
   BlockModel(BlockModel&&) = delete;
   BlockModel& operator=(const BlockModel&) = delete;
@@ -32,9 +29,6 @@ class BlockModel {
                                BlockSpecification& blocks) const;
 
  protected:
-  size_t parameter_count_;
-  size_t parameter_start_;
-
   virtual ParamCounts GetParamCounts() const = 0;
 };
 

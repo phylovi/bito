@@ -74,6 +74,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_indexers", &SBNInstance::GetIndexers)
       .def("sample_trees", &SBNInstance::SampleTrees)
+      .def("prepare_phylo_model_params", &SBNInstance::PreparePhyloModelParams)
       .def("get_indexer_representations",
            &SBNInstance::GetIndexerRepresentations)
       .def("get_psp_indexer_representations",

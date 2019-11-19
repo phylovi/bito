@@ -18,6 +18,8 @@ PhyloModel::PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
                                        block_specification_);
   clock_model_->AddToBlockSpecification("clock total", next_available_idx,
                                         block_specification_);
+  SafeInsert(block_specification_, std::string("complete range"),
+             {0, next_available_idx});
 }
 
 std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
@@ -29,6 +31,9 @@ std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
 }
 
 void PhyloModel::SetParameters(EigenRowBlock& parameterization) {
+  // TODO const
+  // const auto substitution_model_parameterization =
+  //     ExtractFromParameterization(parameterization, "substitution total");
   substitution_model_->SetParameters(
       ExtractFromParameterization(parameterization, "substitution total"));
   site_model_->SetParameters(
@@ -37,6 +42,6 @@ void PhyloModel::SetParameters(EigenRowBlock& parameterization) {
       ExtractFromParameterization(parameterization, "clock total"));
 }
 
-BlockSpecification PhyloModel::GetBlockSpecification() const {
+const BlockSpecification& PhyloModel::GetBlockSpecification() const {
   return block_specification_;
 }

@@ -46,8 +46,8 @@ class Engine {
   FatBeagle *GetFirstFatBeagle() const {
     Assert(!fat_beagles_.empty(), "You have no FatBeagles.");
     return fat_beagles_[0].get();
-  }
-};
+    }
+  };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Engine") {
