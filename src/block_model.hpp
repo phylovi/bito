@@ -8,7 +8,11 @@
 #include "block_specfication.hpp"
 
 using ParamCounts = std::unordered_map<std::string, size_t>;
+
+using EigenMatrixXd =
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using EigenVectorRef = Eigen::Ref<Eigen::VectorXd>;
+using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 
 class BlockModel {
  public:

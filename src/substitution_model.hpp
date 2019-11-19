@@ -10,9 +10,6 @@
 #include "block_model.hpp"
 #include "sugar.hpp"
 
-using EigenMatrixXd =
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-
 class SubstitutionModel : public BlockModel {
  public:
   SubstitutionModel() = default;

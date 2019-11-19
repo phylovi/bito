@@ -30,8 +30,7 @@ class FatBeagle {
 
   BeagleInstance GetBeagleInstance() const { return beagle_instance_; };
 
-  // TODO const
-  void SetParameters(EigenVectorRef parameterization);
+  void SetParameters(const EigenVectorRef parameterization);
   BlockSpecification GetBlockSpecification() const {
     return phylo_model_->GetBlockSpecification();
   }
