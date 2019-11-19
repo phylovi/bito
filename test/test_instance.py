@@ -58,10 +58,13 @@ def test_instance():
     )
     inst.prepare_for_phylo_likelihood(gtr_specification, 2)
     print(inst.get_block_specification())
-    parametrization = {
-        "frequencies": np.array([0.2, 0.55, 0.1, 0.15]),
-        "rates": np.array([1.0, 0.5, 1.0, 2.0, 1.0, 1.0]),
-    }
+    phylo_model_params = inst.get_phylo_model_params()
+    print(phylo_model_params)
+    phylo_model_params[0, :] = np.array(
+        # gtr frequencies then gtr rates then clock rates
+        [0.2, 0.55, 0.1, 0.15, 1.0, 0.5, 1.0, 2.0, 1.0, 1.0, 1.0]
+    )
+    print(inst.get_phylo_model_params())
     # TODO
     # inst.set_phylo_model_params([parametrization])
     print("with parameterization:", np.array(inst.log_likelihoods()))

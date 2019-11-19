@@ -122,4 +122,10 @@ whl = env.WhlFile(source=platlib)
 print("\nTo install python wheel, execute:")
 print(f"pip install -U {whl[0]}\n")
 
-env.Default(doctest, whl, noodle, eigen)
+blerg = env.SharedLibrary(
+    "blerg" + os.popen("python3-config --extension-suffix").read().rstrip(),
+    ["_build/blerg.cpp"],
+    SHLIBPREFIX="",
+)
+
+env.Default(doctest, whl, noodle, eigen, blerg)

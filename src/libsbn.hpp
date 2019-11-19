@@ -152,6 +152,10 @@ class SBNInstance {
     return GetEngine()->GetBlockSpecification().GetMap();
   }
 
+  Eigen::Ref<EigenMatrixXd> GetPhyloModelParams() {
+    return phylo_model_params_;
+  }
+
   // Prepare for phylogenetic likelihood calculation. If we get a nullopt
   // argument, it just uses the number of trees currently in the SBNInstance.
   void PrepareForPhyloLikelihood(
