@@ -10,14 +10,10 @@ PhyloModel::PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
       substitution_model_(std::move(substitution_model)),
       site_model_(std::move(site_model)),
       clock_model_(std::move(clock_model)) {
-  size_t next_available_idx = 0;
-  Incorporate(next_available_idx, substitution_entire_key_,
-              substitution_model_->GetBlockSpecification());
-  Incorporate(next_available_idx, site_entire_key_,
-              site_model_->GetBlockSpecification());
-  Incorporate(next_available_idx, clock_entire_key_,
-              clock_model_->GetBlockSpecification());
-  InsertEntire({0, next_available_idx});
+  Append(substitution_entire_key_,
+         substitution_model_->GetBlockSpecification());
+  Append(site_entire_key_, site_model_->GetBlockSpecification());
+  Append(clock_entire_key_, clock_model_->GetBlockSpecification());
 }
 
 std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(

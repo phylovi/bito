@@ -40,15 +40,12 @@ class BlockModel {
   EigenVectorXdRef ExtractSegment(EigenVectorXdRef parameterization,
                                   std::string key);
 
-  void Incorporate(size_t& next_available_idx,
-                   const std::string& sub_entire_key,
-                   BlockSpecification other) {
-    block_specification_.Incorporate(next_available_idx, sub_entire_key, other);
+  void Append(const std::string& sub_entire_key, BlockSpecification other) {
+    block_specification_.Append(sub_entire_key, other);
   }
 
-  void InsertEntire(BlockSpecification::Coordinates coordinates) {
-    block_specification_.EraseEntireKey();
-    block_specification_.Insert(BlockSpecification::entire_key_, coordinates);
+  void InsertEntireKey(BlockSpecification::Coordinates coordinates) {
+    block_specification_.InsertEntireKey(coordinates);
   }
 
  private:

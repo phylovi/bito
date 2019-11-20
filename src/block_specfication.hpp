@@ -22,7 +22,7 @@ class BlockSpecification {
       Insert(block_name, {next_available_idx, block_size});
       next_available_idx += block_size;
     }
-    Insert(entire_key_, {0, next_available_idx});
+    InsertEntireKey({0, next_available_idx});
   }
 
   const UnderlyingMapType& GetMap() const { return map_; }
@@ -44,6 +44,10 @@ class BlockSpecification {
     Insert(std::string(key), value);
   }
 
+  void InsertEntireKey(Coordinates coordinates) {
+    EraseEntireKey();
+    Insert(entire_key_, coordinates);
+  }
   void EraseEntireKey() { map_.erase(entire_key_); }
 
   // Incorporate one BlockSpecification into this, starting at
@@ -51,9 +55,8 @@ class BlockSpecification {
   // coordinates from other get incorporated into this with key sub_entire_key,
   // with the coordinates incremented by the next_available_idx as passed into
   // this function.
-  void Incorporate(size_t& next_available_idx,
-                   const std::string& sub_entire_key,
-                   BlockSpecification other) {
+  void Append(const std::string& sub_entire_key, BlockSpecification other) {
+    auto next_available_idx = ParameterCount();
     const auto original_next_available_idx = next_available_idx;
     for (const auto [block_name, coordinate] : other.GetMap()) {
       auto [start_idx, block_size] = coordinate;
@@ -65,6 +68,7 @@ class BlockSpecification {
                {start_idx + original_next_available_idx, block_size});
       }
     }
+    InsertEntireKey({0, next_available_idx});
   }
 
   // The complete range of parameter counts.
@@ -86,7 +90,15 @@ TEST_CASE("BlockSpecification") {
   // keys in unordered_map, not in terms of their order in the initializer list.
   CHECK_EQ(spec.Find("kazoo"), BlockSpecification::Coordinates({0, 4}));
   CHECK_EQ(spec.Find("jordan"), BlockSpecification::Coordinates({4, 23}));
-  // spec.Incorporate(5, "entire turbo boost",
+  spec.Append("entire turbo boost",
+              BlockSpecification({{"turbo", 42}, {"boost", 666}}));
+  // After appending, we find boost at 23+4=27.
+  CHECK_EQ(spec.Find("boost"), BlockSpecification::Coordinates({27, 666}));
+  // Turbo is at 666+27 = 693.
+  CHECK_EQ(spec.Find("turbo"), BlockSpecification::Coordinates({693, 42}));
+  // The entire turbo boost starts at 27 and is 42+666 = 708 long.
+  CHECK_EQ(spec.Find("entire turbo boost"),
+           BlockSpecification::Coordinates({27, 708}));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
