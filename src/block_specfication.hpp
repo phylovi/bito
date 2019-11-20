@@ -15,7 +15,7 @@ class BlockSpecification {
   // The coordinates of a block consist of the starting index and the block
   // size.
   using Coordinates = std::tuple<size_t, size_t>;
-  using ParamCounts = std::unordered_map<std::string, size_t>;
+  using ParamCounts = std::vector<std::tuple<std::string, size_t>>;
   using UnderlyingMapType = std::unordered_map<std::string, Coordinates>;
 
   // Given a map of block names to the number of parameters they have, here we
@@ -87,19 +87,17 @@ class BlockSpecification {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("BlockSpecification") {
   // As an example, kazoo has 4 parameters, and jordan has 23.
-  BlockSpecification spec({{"jordan", 23}, {"kazoo", 4}});
+  BlockSpecification spec({{"kazoo", 4}, {"jordan", 23}});
   // Here we can see that the specification stores the starting index and then
   // the number of parameters.
-  // Note that the order of the blocks is laid out by the (arbitrary) order of
-  // keys in unordered_map, not in terms of their order in the initializer list.
   CHECK_EQ(spec.Find("kazoo"), BlockSpecification::Coordinates({0, 4}));
   CHECK_EQ(spec.Find("jordan"), BlockSpecification::Coordinates({4, 23}));
   spec.Append("entire turbo boost",
-              BlockSpecification({{"turbo", 42}, {"boost", 666}}));
+              BlockSpecification({{"turbo", 666}, {"boost", 42}}));
   // After appending, we find boost at 23+4=27.
-  CHECK_EQ(spec.Find("boost"), BlockSpecification::Coordinates({27, 666}));
+  CHECK_EQ(spec.Find("turbo"), BlockSpecification::Coordinates({27, 666}));
   // Turbo is at 666+27 = 693.
-  CHECK_EQ(spec.Find("turbo"), BlockSpecification::Coordinates({693, 42}));
+  CHECK_EQ(spec.Find("boost"), BlockSpecification::Coordinates({693, 42}));
   // The entire turbo boost starts at 27 and is 42+666 = 708 long.
   CHECK_EQ(spec.Find("entire turbo boost"),
            BlockSpecification::Coordinates({27, 708}));

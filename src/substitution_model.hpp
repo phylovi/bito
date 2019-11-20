@@ -81,11 +81,11 @@ class GTRModel : public DNAModel {
 
   inline const static std::string rates_key_ = "GTR rates";
   inline const static std::string frequencies_key_ = "frequencies";
+  void Update();
 
  protected:
   void UpdateEigenDecomposition();
   void UpdateQMatrix();
-  void Update();
 
  private:
   Eigen::VectorXd rates_;
@@ -104,16 +104,30 @@ TEST_CASE("SubstitutionModel") {
   };
   auto gtr_model = std::make_unique<GTRModel>();
   auto jc_model = std::make_unique<JC69Model>();
-  // First we test using the "built in" default values.
+  // Test 1: First we test using the "built in" default values.
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
   Eigen::VectorXd parameters(10);
-  // Now set parameters using SetParameters.
+  // Test 2: Now set parameters using SetParameters.
+  gtr_model = std::make_unique<GTRModel>();
   parameters << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.25, 0.25, 0.25, 0.25;
   gtr_model->SetParameters(parameters);
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
-  // TODO eigenvectors?
+  // Test 3: Now try out ParameterMapOf.
+  gtr_model = std::make_unique<GTRModel>();
+  // First zero out our parameters.
+  parameters.setZero();
+  auto parameter_map = gtr_model->ParameterMapOf(parameters);
+  auto frequencies = parameter_map.at(GTRModel::frequencies_key_);
+  frequencies.setConstant(0.25);
+  auto rates = parameter_map.at(GTRModel::rates_key_);
+  rates.setOnes();
+  gtr_model->SetParameters(parameters);
+  CheckEigenvalueEquality(jc_model->GetEigenvalues(),
+                          gtr_model->GetEigenvalues());
+  // TODO @M: would it be easy for you to add an eigenvector/value test with
+  // different coefficients given that you do the same thing in physher?
   // Eigen::VectorXd frequencies(4);
   // frequencies << 0.2, 0.55, 0.1, 0.15;
   // Eigen::VectorXd rates(6);

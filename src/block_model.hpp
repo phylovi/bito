@@ -19,6 +19,8 @@ using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 
 class BlockModel {
  public:
+  using ParameterMap = std::unordered_map<std::string, EigenVectorXdRef>;
+
   BlockModel(const BlockSpecification::ParamCounts& param_counts)
       : block_specification_(param_counts) {}
   BlockModel(const BlockModel&) = delete;
@@ -37,6 +39,8 @@ class BlockModel {
   }
 
   virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
+
+  ParameterMap ParameterMapOf(EigenVectorXdRef parameters);
 
   // TODO const
   EigenVectorXdRef ExtractSegment(EigenVectorXdRef parameterization,
