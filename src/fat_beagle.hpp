@@ -29,6 +29,7 @@ class FatBeagle {
   FatBeagle &operator=(const FatBeagle &&) = delete;
 
   BeagleInstance GetBeagleInstance() const { return beagle_instance_; };
+  PhyloModel *GetPhyloModel() const { return phylo_model_.get(); };
 
   void SetParameters(const EigenVectorXdRef parameterization);
   BlockSpecification GetBlockSpecification() const {
@@ -50,9 +51,9 @@ class FatBeagle {
  private:
   BeagleInstance CreateInstance(const SitePattern &site_pattern);
   void SetTipStates(const SitePattern &site_pattern);
-  void SiteModelUpdate();
-  void SubstitutionModelUpdate();
-  void PhyloModelUpdate();
+  void UpdateSiteModelInBeagle();
+  void UpdateSubstitutionModelInBeagle();
+  void UpdatePhyloModelInBeagle();
 
   std::unique_ptr<PhyloModel> phylo_model_;
   bool rescaling_;

@@ -33,6 +33,11 @@ class Engine {
     return GetFirstFatBeagle()->GetBlockSpecification();
   }
 
+  // TODO const
+  PhyloModel *GetPhyloModel() const {
+    return GetFirstFatBeagle()->GetPhyloModel();
+  }
+
   std::vector<double> LogLikelihoods(const TreeCollection &tree_collection,
                                      const EigenMatrixXdRef phylo_model_params);
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(

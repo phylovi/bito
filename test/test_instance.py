@@ -1,6 +1,8 @@
 import json
 import numpy as np
 import libsbn
+import pprint
+import pytest
 
 
 def test_instance():
@@ -53,29 +55,31 @@ def test_instance():
     inst.sample_trees(1)
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = 0.1
+    simple_specification = libsbn.PhyloModelSpecification(
+        substitution="JC69", site="constant", clock="strict"
+    )
+    inst.prepare_for_phylo_likelihood(simple_specification, 2)
+    jc69_likelihood = np.array(inst.log_likelihoods())
+
     gtr_specification = libsbn.PhyloModelSpecification(
         substitution="GTR", site="constant", clock="strict"
     )
     inst.prepare_for_phylo_likelihood(gtr_specification, 2)
     print(inst.get_block_specification())
-    phylo_model_params = inst.get_phylo_model_params()
-    print(phylo_model_params)
-    phylo_model_params[0, :] = np.array(
-        # gtr frequencies then gtr rates then clock rates
-        [0.2, 0.55, 0.1, 0.15, 1.0, 0.5, 1.0, 2.0, 1.0, 1.0, 1.0]
-    )
-    print(inst.get_phylo_model_params())
-    # TODO
-    # inst.set_phylo_model_params([parametrization])
-    print("with parameterization:", np.array(inst.log_likelihoods()))
+    phylo_model_param_block_map = inst.get_phylo_model_param_block_map()
+    phylo_model_param_block_map["GTR rates"][:] = 1.0
+    phylo_model_param_block_map["frequencies"][:] = 0.25
+    phylo_model_param_block_map["clock rate"][:] = 1.0
+    print("\nHere's a look at phylo_model_param_block_map:")
+    pprint.pprint(phylo_model_param_block_map)
+    print("\nWe can see that we are changing the phylo_model_params matrix:")
+    print(inst.get_phylo_model_params(), "\n")
+    assert jc69_likelihood == pytest.approx(np.array(inst.log_likelihoods()))
 
     inst.tree_collection = libsbn.TreeCollection(
         [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
     )
     inst.read_fasta_file("data/hello.fasta")
-    simple_specification = libsbn.PhyloModelSpecification(
-        substitution="JC69", site="constant", clock="strict"
-    )
     inst.prepare_for_phylo_likelihood(simple_specification, 2)
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])

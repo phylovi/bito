@@ -114,15 +114,19 @@ TEST_CASE("SubstitutionModel") {
   gtr_model->SetParameters(parameters);
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
-  // Test 3: Now try out ParameterMapOf.
+  // Test 3: Now try out ParameterSegmentMapOf.
   gtr_model = std::make_unique<GTRModel>();
   // First zero out our parameters.
   parameters.setZero();
-  auto parameter_map = gtr_model->ParameterMapOf(parameters);
+  // We can use ParameterSegmentMapOf to get two "views" into our parameter
+  // vector.
+  auto parameter_map = gtr_model->ParameterSegmentMapOf(parameters);
   auto frequencies = parameter_map.at(GTRModel::frequencies_key_);
-  frequencies.setConstant(0.25);
   auto rates = parameter_map.at(GTRModel::rates_key_);
+  // When we modify the contents of these views, that changes parameters.
+  frequencies.setConstant(0.25);
   rates.setOnes();
+  // We can then set parameters and go forward as before.
   gtr_model->SetParameters(parameters);
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());

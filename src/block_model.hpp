@@ -19,7 +19,8 @@ using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 
 class BlockModel {
  public:
-  using ParameterMap = std::unordered_map<std::string, EigenVectorXdRef>;
+  using ParameterSegmentMap = std::unordered_map<std::string, EigenVectorXdRef>;
+  using ParameterBlockMap = std::unordered_map<std::string, EigenMatrixXdRef>;
 
   BlockModel(const BlockSpecification::ParamCounts& param_counts)
       : block_specification_(param_counts) {}
@@ -37,14 +38,21 @@ class BlockModel {
     Assert(parameters.size() == block_specification_.ParameterCount(),
            "Parameters are the wrong dimension!");
   }
+  void CheckParameterMatrixSize(const EigenMatrixXdRef parameter_matrix) const {
+    Assert(parameter_matrix.cols() == block_specification_.ParameterCount(),
+           "Parameters are the wrong dimension!");
+  }
 
   virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
-
-  ParameterMap ParameterMapOf(EigenVectorXdRef parameters);
 
   // TODO const
   EigenVectorXdRef ExtractSegment(EigenVectorXdRef parameterization,
                                   std::string key);
+  EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef parameter_matrix,
+                                std::string key);
+
+  ParameterSegmentMap ParameterSegmentMapOf(EigenVectorXdRef parameters);
+  ParameterBlockMap ParameterBlockMapOf(EigenMatrixXdRef parameter_matrix);
 
   void Append(const std::string& sub_entire_key, BlockSpecification other) {
     block_specification_.Append(sub_entire_key, other);

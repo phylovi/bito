@@ -15,7 +15,7 @@ FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
       pattern_count_(static_cast<int>(site_pattern.PatternCount())) {
   beagle_instance_ = CreateInstance(site_pattern);
   SetTipStates(site_pattern);
-  PhyloModelUpdate();
+  UpdatePhyloModelInBeagle();
 };
 
 FatBeagle::~FatBeagle() {
@@ -28,7 +28,7 @@ FatBeagle::~FatBeagle() {
 
 void FatBeagle::SetParameters(const EigenVectorXdRef parameterization) {
   phylo_model_->SetParameters(parameterization);
-  PhyloModelUpdate();
+  UpdatePhyloModelInBeagle();
 }
 
 BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
@@ -91,7 +91,7 @@ void FatBeagle::SetTipStates(const SitePattern &site_pattern) {
   beagleSetPatternWeights(beagle_instance_, site_pattern.GetWeights().data());
 }
 
-void FatBeagle::SiteModelUpdate() {
+void FatBeagle::UpdateSiteModelInBeagle() {
   const std::vector<double> &weights =
       phylo_model_->GetSiteModel()->GetCategoryProportions();
   const std::vector<double> &rates =
@@ -100,7 +100,7 @@ void FatBeagle::SiteModelUpdate() {
   beagleSetCategoryRates(beagle_instance_, rates.data());
 }
 
-void FatBeagle::SubstitutionModelUpdate() {
+void FatBeagle::UpdateSubstitutionModelInBeagle() {
   const auto &substitution_model = phylo_model_->GetSubstitutionModel();
   const EigenMatrixXd &eigen_vectors = substitution_model->GetEigenvectors();
   const EigenMatrixXd &inverse_eigen_vectors =
@@ -116,10 +116,10 @@ void FatBeagle::SubstitutionModelUpdate() {
                               &eigen_values.data()[0]);
 }
 
-void FatBeagle::PhyloModelUpdate() {
+void FatBeagle::UpdatePhyloModelInBeagle() {
   // TODO ClockModelUpdate();
-  SiteModelUpdate();
-  SubstitutionModelUpdate();
+  UpdateSiteModelInBeagle();
+  UpdateSubstitutionModelInBeagle();
 }
 
 Tree PrepareTreeForLikelihood(const Tree &tree) {

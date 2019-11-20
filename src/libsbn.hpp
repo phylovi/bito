@@ -156,6 +156,11 @@ class SBNInstance {
     return phylo_model_params_;
   }
 
+  BlockModel::ParameterBlockMap GetPhyloModelParamBlockMap() {
+    return GetEngine()->GetPhyloModel()->ParameterBlockMapOf(
+        phylo_model_params_);
+  }
+
   // Prepare for phylogenetic likelihood calculation. If we get a nullopt
   // argument, it just uses the number of trees currently in the SBNInstance.
   void PrepareForPhyloLikelihood(

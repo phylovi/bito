@@ -4,7 +4,8 @@
 #include "block_model.hpp"
 #include "sugar.hpp"
 
-// TODO "parameterization" vs "parameters"?
+// TODO "parameterization" vs "parameters" vs "params"?
+// See parameter_matrix below.
 EigenVectorXdRef BlockModel::ExtractSegment(EigenVectorXdRef parameterization,
                                             std::string key) {
   auto [start_idx, parameter_count] = block_specification_.Find(key);
@@ -20,12 +21,35 @@ EigenVectorXdRef BlockModel::ExtractSegment(EigenVectorXdRef parameterization,
 // as many lookups as it needs by calling ExtractSegment. My intent is not to
 // have it be called frequently-- just once when we're setting things up. So if
 // this changes let's do something about it.
-BlockModel::ParameterMap BlockModel::ParameterMapOf(
+BlockModel::ParameterSegmentMap BlockModel::ParameterSegmentMapOf(
     EigenVectorXdRef parameterization) {
   CheckParametersSize(parameterization);
-  ParameterMap parameter_map;
+  ParameterSegmentMap parameter_segment_map;
   for (const auto [key, _] : GetBlockSpecification().GetMap()) {
-    SafeInsert(parameter_map, key, ExtractSegment(parameterization, key));
+    SafeInsert(parameter_segment_map, key,
+               ExtractSegment(parameterization, key));
   }
-  return parameter_map;
+  return parameter_segment_map;
+}
+
+EigenMatrixXdRef BlockModel::ExtractBlock(EigenMatrixXdRef parameter_matrix,
+                                          std::string key) {
+  auto [start_idx, parameter_count] = block_specification_.Find(key);
+  if (start_idx + parameter_count > parameter_matrix.cols()) {
+    Failwith("Model parameter " + key +
+             " request too long for a parameterization of width " +
+             std::to_string(parameter_matrix.cols()) + ".");
+  }  // else
+  return parameter_matrix.block(0, start_idx, parameter_matrix.rows(),
+                                parameter_count);
+}
+
+BlockModel::ParameterBlockMap BlockModel::ParameterBlockMapOf(
+    EigenMatrixXdRef parameter_matrix) {
+  ParameterBlockMap parameter_block_map;
+  CheckParametersSize(parameter_matrix);
+  for (const auto [key, _] : GetBlockSpecification().GetMap()) {
+    SafeInsert(parameter_block_map, key, ExtractBlock(parameter_matrix, key));
+  }
+  return parameter_block_map;
 }
