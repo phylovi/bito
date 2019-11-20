@@ -18,6 +18,7 @@ void GTRModel::SetParameters(const EigenVectorXdRef parameters) {
   CheckParametersSize(parameters);
   rates_ = ExtractSegment(parameters, rates_key_);
   frequencies_ = ExtractSegment(parameters, frequencies_key_);
+  Update();
 };
 
 void GTRModel::UpdateQMatrix() {
@@ -62,3 +63,7 @@ void GTRModel::UpdateEigenDecomposition() {
   eval_ = solver.eigenvalues();
 }
 
+void GTRModel::Update() {
+  UpdateEigenDecomposition();
+  UpdateQMatrix();
+}

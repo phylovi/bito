@@ -2,7 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
 // A BlockModel is an abstract class to enable us to have parameter vectors that
-// get subdivided and used.
+// get subdivided and used. To understand the structure of BlockModels, read the
+// header docs for BlockSpecification first. Then have a look at the GTR model
+// in substitution_model.hpp and those unit tests.
 
 #ifndef SRC_BLOCK_MODEL_HPP_
 #define SRC_BLOCK_MODEL_HPP_

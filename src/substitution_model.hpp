@@ -74,7 +74,7 @@ class GTRModel : public DNAModel {
     rates_.resize(6);
     rates_ << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
-    UpdateEigenDecomposition();
+    Update();
   }
 
   void SetParameters(const EigenVectorXdRef parameters) override;
@@ -85,6 +85,7 @@ class GTRModel : public DNAModel {
  protected:
   void UpdateEigenDecomposition();
   void UpdateQMatrix();
+  void Update();
 
  private:
   Eigen::VectorXd rates_;
@@ -93,15 +94,25 @@ class GTRModel : public DNAModel {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 #include <algorithm>
 TEST_CASE("SubstitutionModel") {
+  auto CheckEigenvalueEquality = [](Eigen::VectorXd eval1,
+                                    Eigen::VectorXd eval2) {
+    std::sort(eval1.begin(), eval1.end());
+    std::sort(eval2.begin(), eval2.end());
+    for (size_t i = 0; i < eval1.size(); i++) {
+      CHECK_LT(fabs(eval1[i] - eval2[i]), 0.0001);
+    }
+  };
   auto gtr_model = std::make_unique<GTRModel>();
   auto jc_model = std::make_unique<JC69Model>();
-  Eigen::VectorXd evals_jc = jc_model->GetEigenvalues();
-  Eigen::VectorXd evals_gtr = gtr_model->GetEigenvalues();
-  std::sort(evals_jc.begin(), evals_jc.end());
-  std::sort(evals_gtr.begin(), evals_gtr.end());
-  for (size_t i = 0; i < evals_jc.size(); i++) {
-    CHECK_LT(fabs(evals_jc[i] - evals_gtr[i]), 0.0001);
-  }
+  // First we test using the "built in" default values.
+  CheckEigenvalueEquality(jc_model->GetEigenvalues(),
+                          gtr_model->GetEigenvalues());
+  Eigen::VectorXd parameters(10);
+  // Now set parameters using SetParameters.
+  parameters << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.25, 0.25, 0.25, 0.25;
+  gtr_model->SetParameters(parameters);
+  CheckEigenvalueEquality(jc_model->GetEigenvalues(),
+                          gtr_model->GetEigenvalues());
   // TODO eigenvectors?
   // Eigen::VectorXd frequencies(4);
   // frequencies << 0.2, 0.55, 0.1, 0.15;

@@ -1,5 +1,9 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// This class describes the structure of parameter collections that sit in
+// contiguous blocks. It provides handy ways of assembling and using them. See
+// the unit tests at the bottom to see how they work.
 
 #ifndef SRC_BLOCK_SPECIFICATION_HPP_
 #define SRC_BLOCK_SPECIFICATION_HPP_
