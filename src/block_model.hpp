@@ -1,13 +1,14 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// A BlockModel is an abstract class to enable us to have parameter vectors that
+// get subdivided and used.
 
 #ifndef SRC_BLOCK_MODEL_HPP_
 #define SRC_BLOCK_MODEL_HPP_
 
 #include <Eigen/Dense>
 #include "block_specfication.hpp"
-
-using ParamCounts = std::unordered_map<std::string, size_t>;
 
 using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
@@ -16,21 +17,42 @@ using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 
 class BlockModel {
  public:
-  BlockModel() = default;
+  BlockModel(const BlockSpecification::ParamCounts& param_counts)
+      : block_specification_(param_counts) {}
   BlockModel(const BlockModel&) = delete;
   BlockModel(BlockModel&&) = delete;
   BlockModel& operator=(const BlockModel&) = delete;
   BlockModel& operator=(BlockModel&&) = delete;
   virtual ~BlockModel() = default;
 
+  const BlockSpecification& GetBlockSpecification() const {
+    return block_specification_;
+  }
+
+  void CheckParametersSize(const EigenVectorXdRef parameters) const {
+    Assert(parameters.size() == block_specification_.ParameterCount(),
+           "Parameters are the wrong dimension!");
+  }
+
   virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
 
-  void AddToBlockSpecification(const std::string& complete_range_name,
-                               size_t& next_available_idx,
-                               BlockSpecification& blocks) const;
+  // TODO const
+  EigenVectorXdRef ExtractSegment(EigenVectorXdRef parameterization,
+                                  std::string key);
 
- protected:
-  virtual ParamCounts GetParamCounts() const = 0;
-};
+  void Incorporate(size_t& next_available_idx,
+                   const std::string& sub_entire_key,
+                   BlockSpecification other) {
+    block_specification_.Incorporate(next_available_idx, sub_entire_key, other);
+  }
+
+  void InsertEntire(BlockSpecification::Coordinates coordinates) {
+    block_specification_.EraseEntireKey();
+    block_specification_.Insert(BlockSpecification::entire_key_, coordinates);
+  }
+
+ private:
+  BlockSpecification block_specification_;
+  };
 
 #endif  // SRC_BLOCK_MODEL_HPP_

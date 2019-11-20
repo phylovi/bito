@@ -10,11 +10,8 @@
 
 class SiteModel : public BlockModel {
  public:
-  SiteModel() = default;
-  SiteModel(const SiteModel&) = delete;
-  SiteModel(SiteModel&&) = delete;
-  SiteModel& operator=(const SiteModel&) = delete;
-  SiteModel& operator=(SiteModel&&) = delete;
+  SiteModel(const BlockSpecification::ParamCounts& param_counts)
+      : BlockModel(param_counts) {}
   virtual ~SiteModel() = default;
 
   virtual size_t GetCategoryCount() = 0;
@@ -23,20 +20,19 @@ class SiteModel : public BlockModel {
 
   static std::unique_ptr<SiteModel> OfSpecification(
       const std::string& specification);
-  void SetParameters(const EigenVectorXdRef parameters){};
 };
 
 class ConstantSiteModel : public SiteModel {
  public:
-  ConstantSiteModel() : one_(1, 1.0) {}
+  ConstantSiteModel() : SiteModel({}), one_(1, 1.0) {}
 
   size_t GetCategoryCount() override { return 1; }
-
-  ParamCounts GetParamCounts() const override { return {}; };
 
   const std::vector<double>& GetCategoryRates() override { return one_; }
 
   const std::vector<double>& GetCategoryProportions() override { return one_; }
+
+  void SetParameters(const EigenVectorXdRef parameters) override{};
 
  private:
   std::vector<double> one_;
@@ -45,15 +41,28 @@ class ConstantSiteModel : public SiteModel {
 class WeibullSiteModel : public SiteModel {
  public:
   explicit WeibullSiteModel(size_t category_count)
-      : category_count_(category_count), need_update_(true), shape_(1.0) {
+      : SiteModel({{rates_key_, category_count},
+                   {proportions_key_, category_count},
+                   {shape_key_, 1}}),
+        category_count_(category_count),
+        need_update_(true),
+        shape_(1.0) {
     category_rates_.resize(category_count);
     category_proportions_.assign(category_count, 1.0 / category_count);
   }
-  virtual size_t GetCategoryCount() = 0;
 
-  virtual const std::vector<double>& GetCategoryRates() = 0;
+  size_t GetCategoryCount() override;
+  const std::vector<double>& GetCategoryRates() override;
+  const std::vector<double>& GetCategoryProportions() override;
 
-  virtual const std::vector<double>& GetCategoryProportions() = 0;
+  void SetParameters(const EigenVectorXdRef parameters) override {
+    Failwith("not impelemented");
+  };
+
+  inline const static std::string rates_key_ = "Weibull category rates";
+  inline const static std::string proportions_key_ =
+      "Weibull category proportions";
+  inline const static std::string shape_key_ = "Weibull shape";
 
  private:
   void UpdateCategories();

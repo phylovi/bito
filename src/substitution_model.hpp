@@ -12,7 +12,8 @@
 
 class SubstitutionModel : public BlockModel {
  public:
-  SubstitutionModel() = default;
+  SubstitutionModel(const BlockSpecification::ParamCounts& param_counts)
+      : BlockModel(param_counts) {}
   virtual ~SubstitutionModel() = default;
 
   size_t GetStateCount() const { return frequencies_.size(); }
@@ -42,7 +43,8 @@ class SubstitutionModel : public BlockModel {
 
 class DNAModel : public SubstitutionModel {
  public:
-  DNAModel() {
+  DNAModel(const BlockSpecification::ParamCounts& param_counts)
+      : SubstitutionModel(param_counts) {
     frequencies_.resize(4);
     evec_.resize(4, 4);
     ivec_.resize(4, 4);
@@ -53,7 +55,7 @@ class DNAModel : public SubstitutionModel {
 
 class JC69Model : public DNAModel {
  public:
-  JC69Model() {
+  JC69Model() : DNAModel({}) {
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
     evec_ << 1.0, 2.0, 0.0, 0.5, 1.0, -2.0, 0.5, 0.0, 1.0, 2.0, 0.0, -0.5, 1.0,
         -2.0, -0.5, 0.0;
@@ -63,13 +65,12 @@ class JC69Model : public DNAModel {
     Q_ << 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0,
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
-  ParamCounts GetParamCounts() const { return {}; };
   void SetParameters(const EigenVectorXdRef parameters){};
 };
 
 class GTRModel : public DNAModel {
  public:
-  GTRModel() {
+  GTRModel() : DNAModel({{rates_key_, 6}, {frequencies_key_, 4}}) {
     rates_.resize(6);
     rates_ << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
@@ -78,8 +79,10 @@ class GTRModel : public DNAModel {
 
   void SetParameters(const EigenVectorXdRef parameters) override;
 
+  inline const static std::string rates_key_ = "GTR rates";
+  inline const static std::string frequencies_key_ = "frequencies";
+
  protected:
-  ParamCounts GetParamCounts() const override;
   void UpdateEigenDecomposition();
   void UpdateQMatrix();
 

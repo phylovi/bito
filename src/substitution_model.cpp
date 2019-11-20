@@ -14,14 +14,10 @@ std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
   Failwith("Substitution model not known: " + specification);
 }
 
-ParamCounts GTRModel::GetParamCounts() const {
-  return {{"GTR rates", 6}, {"frequencies", 4}};
-};
-
 void GTRModel::SetParameters(const EigenVectorXdRef parameters) {
-  Assert(parameters.size() == 10, "GTR parameters are the wrong dimension!");
-  rates_ = parameters.head(6);
-  frequencies_ = parameters.tail(4);
+  CheckParametersSize(parameters);
+  rates_ = ExtractSegment(parameters, rates_key_);
+  frequencies_ = ExtractSegment(parameters, frequencies_key_);
 };
 
 void GTRModel::UpdateQMatrix() {

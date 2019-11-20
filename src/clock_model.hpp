@@ -9,7 +9,8 @@
 
 class ClockModel : public BlockModel {
  public:
-  ClockModel() = default;
+  ClockModel(const BlockSpecification::ParamCounts& param_counts)
+      : BlockModel(param_counts) {}
   virtual ~ClockModel() = default;
 
   virtual double GetRate(const Node& node) = 0;
@@ -20,19 +21,20 @@ class ClockModel : public BlockModel {
 
 class StrictClockModel : public ClockModel {
  public:
-  explicit StrictClockModel(double rate) : rate_(rate) {}
+  explicit StrictClockModel(double rate)
+      : ClockModel({{rate_key_, 1}}), rate_(rate) {}
 
   StrictClockModel() : StrictClockModel(1.0) {}
 
   double GetRate(const Node& node) override { return rate_; }
-
-  ParamCounts GetParamCounts() const override { return {{"clock rate", 1}}; }
 
   void SetParameters(const EigenVectorXdRef parameters) override {
     Assert(parameters.size() == 1,
            "StrictClockModel parameters are the wrong length!");
     rate_ = parameters[0];
   };
+
+  inline const static std::string rate_key_ = "clock rate";
 
  private:
   double rate_;

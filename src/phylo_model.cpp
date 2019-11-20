@@ -6,20 +6,18 @@
 PhyloModel::PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
                        std::unique_ptr<SiteModel> site_model,
                        std::unique_ptr<ClockModel> clock_model)
-    : substitution_model_(std::move(substitution_model)),
+    : BlockModel({}),
+      substitution_model_(std::move(substitution_model)),
       site_model_(std::move(site_model)),
-      clock_model_(std::move(clock_model)),
-      block_specification_({}) {
+      clock_model_(std::move(clock_model)) {
   size_t next_available_idx = 0;
-  // TODO put these strings somewhere.
-  substitution_model_->AddToBlockSpecification(
-      "substitution total", next_available_idx, block_specification_);
-  site_model_->AddToBlockSpecification("site total", next_available_idx,
-                                       block_specification_);
-  clock_model_->AddToBlockSpecification("clock total", next_available_idx,
-                                        block_specification_);
-  block_specification_.Insert(BlockSpecification::entire_key_,
-                              {0, next_available_idx});
+  Incorporate(next_available_idx, substitution_entire_key_,
+              substitution_model_->GetBlockSpecification());
+  Incorporate(next_available_idx, site_entire_key_,
+              site_model_->GetBlockSpecification());
+  Incorporate(next_available_idx, clock_entire_key_,
+              clock_model_->GetBlockSpecification());
+  InsertEntire({0, next_available_idx});
 }
 
 std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
@@ -32,13 +30,10 @@ std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
 
 void PhyloModel::SetParameters(const EigenVectorXdRef parameterization) {
   substitution_model_->SetParameters(
-      ExtractFromParameterization(parameterization, "substitution total"));
+      ExtractSegment(parameterization, substitution_entire_key_));
   site_model_->SetParameters(
-      ExtractFromParameterization(parameterization, "site total"));
+      ExtractSegment(parameterization, site_entire_key_));
   clock_model_->SetParameters(
-      ExtractFromParameterization(parameterization, "clock total"));
+      ExtractSegment(parameterization, clock_entire_key_));
 }
 
-const BlockSpecification& PhyloModel::GetBlockSpecification() const {
-  return block_specification_;
-}

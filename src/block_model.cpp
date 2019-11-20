@@ -4,16 +4,14 @@
 #include "block_model.hpp"
 #include "sugar.hpp"
 
-void BlockModel::AddToBlockSpecification(const std::string& complete_range_name,
-                                         size_t& next_available_idx,
-                                         BlockSpecification& blocks) const {
-  size_t original_next_available_idx = next_available_idx;
-  size_t total_param_length = 0;
-  for (const auto [param_name, param_length] : GetParamCounts()) {
-    blocks.Insert(param_name, {next_available_idx, param_length});
-    next_available_idx += param_length;
-    total_param_length += param_length;
-  }
-  blocks.Insert(complete_range_name,
-                {original_next_available_idx, total_param_length});
+EigenVectorXdRef BlockModel::ExtractSegment(EigenVectorXdRef parameterization,
+                                            std::string key) {
+  auto [start_idx, parameter_count] = block_specification_.Find(key);
+  if (start_idx + parameter_count > parameterization.size()) {
+    Failwith("Model parameter " + key +
+             " request too long for a parameterization of length " +
+             std::to_string(parameterization.size()) + ".");
+  }  // else
+  return parameterization.segment(start_idx, parameter_count);
 }
+

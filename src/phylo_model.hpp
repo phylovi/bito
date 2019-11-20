@@ -16,7 +16,7 @@ struct PhyloModelSpecification {
   std::string clock_;
 };
 
-class PhyloModel {
+class PhyloModel : public BlockModel {
  public:
   PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
              std::unique_ptr<SiteModel> site_model,
@@ -32,27 +32,15 @@ class PhyloModel {
       const PhyloModelSpecification& specification);
   void SetParameters(const EigenVectorXdRef parameterization);
 
-  const BlockSpecification& GetBlockSpecification() const;
-
-  // TODO move to cpp file
-  // TODO const version? Factor out?
-  EigenVectorXdRef ExtractFromParameterization(
-      EigenVectorXdRef parameterization, std::string key) {
-    auto [start_idx, parameter_count] = block_specification_.Find(key);
-    if (start_idx + parameter_count > parameterization.size()) {
-      Failwith("Model parameter " + key +
-               " request too long for a parameterization of length " +
-               std::to_string(parameterization.size()) + ".");
-    }  // else
-    return parameterization.segment(start_idx, parameter_count);
-  }
+  inline const static std::string substitution_entire_key_ =
+      "substutition entire";
+  inline const static std::string site_entire_key_ = "site entire";
+  inline const static std::string clock_entire_key_ = "clock entire";
 
  private:
   std::unique_ptr<SubstitutionModel> substitution_model_;
   std::unique_ptr<SiteModel> site_model_;
   std::unique_ptr<ClockModel> clock_model_;
-
-  BlockSpecification block_specification_;
 };
 
 #endif  // SRC_PHYLO_MODEL_HPP_
