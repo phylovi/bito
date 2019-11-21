@@ -8,7 +8,7 @@ const BlockSpecification& BlockModel::GetBlockSpecification() const {
   return block_specification_;
 }
 
-void BlockModel::CheckParametersSize(
+void BlockModel::CheckParameterVectorSize(
     const EigenVectorXdRef param_vector) const {
   Assert(param_vector.size() == block_specification_.ParameterCount(),
          "Parameters are the wrong dimension!");
@@ -48,7 +48,7 @@ EigenMatrixXdRef BlockModel::ExtractBlock(EigenMatrixXdRef param_matrix,
 // this changes let's do something about it.
 BlockModel::ParameterSegmentMap BlockModel::ParameterSegmentMapOf(
     EigenVectorXdRef param_vector) const {
-  CheckParametersSize(param_vector);
+  CheckParameterVectorSize(param_vector);
   ParameterSegmentMap parameter_segment_map;
   for (const auto [key, _] : GetBlockSpecification().GetMap()) {
     SafeInsert(parameter_segment_map, key,
@@ -60,7 +60,7 @@ BlockModel::ParameterSegmentMap BlockModel::ParameterSegmentMapOf(
 BlockModel::ParameterBlockMap BlockModel::ParameterBlockMapOf(
     EigenMatrixXdRef param_matrix) const {
   ParameterBlockMap parameter_block_map;
-  CheckParametersSize(param_matrix);
+  CheckParameterMatrixSize(param_matrix);
   for (const auto [key, _] : GetBlockSpecification().GetMap()) {
     SafeInsert(parameter_block_map, key, ExtractBlock(param_matrix, key));
   }

@@ -15,7 +15,7 @@ std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
 }
 
 void GTRModel::SetParameters(const EigenVectorXdRef param_vector) {
-  CheckParametersSize(param_vector);
+  CheckParameterVectorSize(param_vector);
   rates_ = ExtractSegment(param_vector, rates_key_);
   frequencies_ = ExtractSegment(param_vector, frequencies_key_);
   Update();

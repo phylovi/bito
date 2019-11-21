@@ -14,6 +14,10 @@
 
 class BlockModel {
  public:
+  // These are handy structures that turn the block specification into a map
+  // from the block specification keys to segments (i.e. sub-vectors) and blocks
+  // (i.e. sub-matrices). We can then read and write to these values, which will
+  // be reflected in the original parameter vector/matrix.
   using ParameterSegmentMap = std::unordered_map<std::string, EigenVectorXdRef>;
   using ParameterBlockMap = std::unordered_map<std::string, EigenMatrixXdRef>;
 
@@ -27,16 +31,19 @@ class BlockModel {
 
   const BlockSpecification& GetBlockSpecification() const;
 
-  virtual void SetParameters(const EigenVectorXdRef param_vector) = 0;
-
-  void CheckParametersSize(const EigenVectorXdRef param_vector) const;
+  void CheckParameterVectorSize(const EigenVectorXdRef param_vector) const;
   void CheckParameterMatrixSize(const EigenMatrixXdRef param_matrix) const;
 
+  // These methods allow us to pull out segments (i.e. sub-vectors) from vectors
+  // and blocks from matrices depending on the coordinates of the BlockModel.
+  // They are very useful for writing the SetParameters method.
   EigenVectorXdRef ExtractSegment(EigenVectorXdRef param_vector,
                                   std::string key) const;
   EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef param_matrix,
                                 std::string key) const;
 
+  // These are explained in the definition of ParameterSegmentMap and
+  // ParameterBlockMap.
   ParameterSegmentMap ParameterSegmentMapOf(
       EigenVectorXdRef param_vector) const;
   ParameterBlockMap ParameterBlockMapOf(
@@ -46,9 +53,12 @@ class BlockModel {
     block_specification_.Append(sub_entire_key, other);
   }
 
+  virtual void SetParameters(const EigenVectorXdRef param_vector) = 0;
+
  private:
   BlockSpecification block_specification_;
   };
 
-  //  This is a virtual class so no unit tests. See substitution_model.hpp.
+  //  This is a virtual class so there are no unit tests. See
+  //  substitution_model.hpp.
 #endif  // SRC_BLOCK_MODEL_HPP_
