@@ -22,22 +22,26 @@ class SubstitutionModel : public BlockModel {
 
   const Eigen::VectorXd& GetFrequencies() { return frequencies_; }
 
-  const EigenMatrixXd& GetEigenvectors() { return evec_; }
-  const EigenMatrixXd& GetInverseEigenvectors() { return ivec_; }
-  const Eigen::VectorXd& GetEigenvalues() { return eval_; }
+  // We follow BEAGLE in terminology. "Inverse Eigenvectors" means the inverse
+  // of the matrix containing the eigenvectors.
+  const EigenMatrixXd& GetEigenvectors() { return eigen_vectors_; }
+  const EigenMatrixXd& GetInverseEigenvectors() {
+    return inverse_eigen_vectors_;
+  }
+  const Eigen::VectorXd& GetEigenvalues() { return eigen_values_; }
 
   virtual void SetParameters(const EigenVectorXdRef param_vector) = 0;
 
+  // This is the factory method that will be the typical way of buiding
+  // substitution models.
   static std::unique_ptr<SubstitutionModel> OfSpecification(
       const std::string& specification);
 
  protected:
   Eigen::VectorXd frequencies_;
-  // TODO rename these. evec isn't quite just the eigenvector. Perhaps we should
-  // use notation from Felsenstein's book? @M, alternate suggestion?
-  EigenMatrixXd evec_;
-  EigenMatrixXd ivec_;
-  Eigen::VectorXd eval_;
+  EigenMatrixXd eigen_vectors_;
+  EigenMatrixXd inverse_eigen_vectors_;
+  Eigen::VectorXd eigen_values_;
   EigenMatrixXd Q_;
 };
 
@@ -46,9 +50,9 @@ class DNAModel : public SubstitutionModel {
   DNAModel(const BlockSpecification::ParamCounts& param_counts)
       : SubstitutionModel(param_counts) {
     frequencies_.resize(4);
-    evec_.resize(4, 4);
-    ivec_.resize(4, 4);
-    eval_.resize(4);
+    eigen_vectors_.resize(4, 4);
+    inverse_eigen_vectors_.resize(4, 4);
+    eigen_values_.resize(4);
     Q_.resize(4, 4);
   }
 };
@@ -57,11 +61,12 @@ class JC69Model : public DNAModel {
  public:
   JC69Model() : DNAModel({}) {
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
-    evec_ << 1.0, 2.0, 0.0, 0.5, 1.0, -2.0, 0.5, 0.0, 1.0, 2.0, 0.0, -0.5, 1.0,
-        -2.0, -0.5, 0.0;
-    ivec_ << 0.25, 0.25, 0.25, 0.25, 0.125, -0.125, 0.125, -0.125, 0.0, 1.0,
-        0.0, -1.0, 1.0, 0.0, -1.0, 0.0;
-    eval_ << 0.0, -1.3333333333333333, -1.3333333333333333, -1.3333333333333333;
+    eigen_vectors_ << 1.0, 2.0, 0.0, 0.5, 1.0, -2.0, 0.5, 0.0, 1.0, 2.0, 0.0,
+        -0.5, 1.0, -2.0, -0.5, 0.0;
+    inverse_eigen_vectors_ << 0.25, 0.25, 0.25, 0.25, 0.125, -0.125, 0.125,
+        -0.125, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0, -1.0, 0.0;
+    eigen_values_ << 0.0, -1.3333333333333333, -1.3333333333333333,
+        -1.3333333333333333;
     Q_ << 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0,
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
