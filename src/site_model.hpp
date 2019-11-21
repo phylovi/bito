@@ -68,8 +68,8 @@ class WeibullSiteModel : public SiteModel {
   void UpdateCategories();
 
   size_t category_count_;
-  // TODO Would it be possible to recalculate things using setters rather than
-  // having an update flag?
+  // TODO Would it be possible to recalculate things whenever SetParameters is
+  // called rather than having an update flag?
   bool need_update_;
   double shape_;  // shape of the Weibull distribution
   std::vector<double> category_rates_;

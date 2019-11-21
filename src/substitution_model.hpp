@@ -70,6 +70,8 @@ class JC69Model : public DNAModel {
     Q_ << 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0,
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
+
+  // No parameters to set for GTR!
   void SetParameters(const EigenVectorXdRef param_vector){};
 };
 
