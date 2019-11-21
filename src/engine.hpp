@@ -1,8 +1,8 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// "Engine" is short for "phylogenetic likelihood computation engine". This
-// engine has FatBeagles as cylinders.
+// "Engine" is short for "phylogenetic likelihood computation engine".
+// This engine has FatBeagles as cylinders.
 
 #ifndef SRC_ENGINE_HPP_
 #define SRC_ENGINE_HPP_
@@ -22,11 +22,12 @@ class Engine {
 
   const BlockSpecification &GetBlockSpecification() const;
 
-  std::vector<double> LogLikelihoods(const TreeCollection &tree_collection,
-                                     const EigenMatrixXdRef phylo_model_params);
+  std::vector<double> LogLikelihoods(
+      const TreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params) const;
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
       const TreeCollection &tree_collection,
-      const EigenMatrixXdRef phylo_model_params);
+      const EigenMatrixXdRef phylo_model_params) const;
 
  private:
   SitePattern site_pattern_;

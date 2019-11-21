@@ -140,8 +140,7 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
       "bifurcation or a trifurcation at the root.");
 }
 
-double FatBeagle::LogLikelihood(
-    const Tree &in_tree) {
+double FatBeagle::LogLikelihood(const Tree &in_tree) const {
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   auto node_count = tree.BranchLengths().size();
@@ -206,7 +205,7 @@ double FatBeagle::LogLikelihood(
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
-    const Tree &in_tree) {
+    const Tree &in_tree) const {
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   tree.SlideRootPosition();

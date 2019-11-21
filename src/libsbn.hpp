@@ -171,7 +171,6 @@ class SBNInstance {
   // of trees currently in the SBNInstance.
   void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
-  // TODO const
   std::vector<double> LogLikelihoods();
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients();

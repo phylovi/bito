@@ -23,7 +23,7 @@ const BlockSpecification &Engine::GetBlockSpecification() const {
 
 std::vector<double> Engine::LogLikelihoods(
     const TreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params) {
+    const EigenMatrixXdRef phylo_model_params) const {
   return FatBeagleParallelize<double>(FatBeagle::StaticLogLikelihood,
                                       fat_beagles_, tree_collection,
                                       phylo_model_params);
@@ -31,7 +31,7 @@ std::vector<double> Engine::LogLikelihoods(
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
     const TreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params) {
+    const EigenMatrixXdRef phylo_model_params) const {
   return FatBeagleParallelize<std::pair<double, std::vector<double>>>(
       FatBeagle::StaticBranchGradient, fat_beagles_, tree_collection,
       phylo_model_params);

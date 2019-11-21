@@ -31,8 +31,8 @@ class FatBeagle {
   void SetParameters(const EigenVectorXdRef param_vector);
   void SetRescaling();
 
-  double LogLikelihood(const Tree &tree);
-  std::pair<double, std::vector<double>> BranchGradient(const Tree &tree);
+  double LogLikelihood(const Tree &tree) const;
+  std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.
   static double StaticLogLikelihood(
