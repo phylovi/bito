@@ -2,8 +2,12 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
 // This class describes the structure of parameter collections that sit in
-// contiguous blocks. It provides handy ways of assembling and using them. See
-// the unit tests at the bottom to see how they work.
+// contiguous blocks. These structures are maps from string keys (which are the
+// block names) to Coordinates. See the unit tests at the bottom to see how they
+// work.
+//
+// There is a special key called entire_key_ which gives the entire span of the
+// block.
 
 #ifndef SRC_BLOCK_SPECIFICATION_HPP_
 #define SRC_BLOCK_SPECIFICATION_HPP_
@@ -12,32 +16,17 @@
 
 class BlockSpecification {
  public:
-  // The coordinates of a block consist of the starting index and the block
-  // size.
+  // Block Coordinates are (starting index, block size) in a tuple.
   using Coordinates = std::tuple<size_t, size_t>;
   using ParamCounts = std::vector<std::tuple<std::string, size_t>>;
   using UnderlyingMapType = std::unordered_map<std::string, Coordinates>;
 
   // Given a map of block names to the number of parameters they have, here we
   // build out a block specification.
-  BlockSpecification(ParamCounts param_counts) {
-    size_t next_available_idx = 0;
-    for (const auto [block_name, block_size] : param_counts) {
-      Insert(block_name, {next_available_idx, block_size});
-      next_available_idx += block_size;
-    }
-    InsertEntireKey({0, next_available_idx});
-  }
-
+  BlockSpecification(ParamCounts param_counts);
   const UnderlyingMapType& GetMap() const { return map_; }
 
-  Coordinates Find(const std::string& key) const {
-    auto search = map_.find(key);
-    if (search == map_.end()) {
-      Failwith("Can't find '" + key + "' in block specification!");
-    }
-    return search->second;
-  }
+  Coordinates Find(const std::string& key) const;
 
   void Insert(const std::string& key, Coordinates value) {
     SafeInsert(map_, key, value);
@@ -48,32 +37,16 @@ class BlockSpecification {
     Insert(std::string(key), value);
   }
 
-  void InsertEntireKey(Coordinates coordinates) {
-    EraseEntireKey();
-    Insert(entire_key_, coordinates);
-  }
+  // See top for description of what Entire means in this case.
+  void InsertEntireKey(Coordinates coordinates);
   void EraseEntireKey() { map_.erase(entire_key_); }
 
-  // Incorporate one BlockSpecification into this, starting at
+  // Incorporate one BlockSpecification into `this` one, starting at
   // next_available_index which we mutate along the way. The "entire" block
   // coordinates from other get incorporated into this with key sub_entire_key,
   // with the coordinates incremented by the next_available_idx as passed into
   // this function.
-  void Append(const std::string& sub_entire_key, BlockSpecification other) {
-    auto next_available_idx = ParameterCount();
-    const auto original_next_available_idx = next_available_idx;
-    for (const auto [block_name, coordinate] : other.GetMap()) {
-      auto [start_idx, block_size] = coordinate;
-      if (block_name != entire_key_) {
-        Insert(block_name, {next_available_idx, block_size});
-        next_available_idx += block_size;
-      } else {
-        Insert(sub_entire_key,
-               {start_idx + original_next_available_idx, block_size});
-      }
-    }
-    InsertEntireKey({0, next_available_idx});
-  }
+  void Append(const std::string& sub_entire_key, BlockSpecification other);
 
   // The complete range of parameter counts.
   size_t ParameterCount() const { return std::get<1>(Find(entire_key_)); };

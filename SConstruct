@@ -87,6 +87,7 @@ sources = [
     "_build/alignment.cpp",
     "_build/bitset.cpp",
     "_build/block_model.cpp",
+    "_build/block_specification.cpp",
     "_build/clock_model.cpp",
     "_build/driver.cpp",
     "_build/fat_beagle.cpp",

@@ -10,7 +10,7 @@
 #define SRC_BLOCK_MODEL_HPP_
 
 #include <Eigen/Dense>
-#include "block_specfication.hpp"
+#include "block_specification.hpp"
 
 using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
@@ -58,6 +58,7 @@ class BlockModel {
     block_specification_.Append(sub_entire_key, other);
   }
 
+  // TODO comment out.
   void InsertEntireKey(BlockSpecification::Coordinates coordinates) {
     block_specification_.InsertEntireKey(coordinates);
   }
