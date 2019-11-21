@@ -86,11 +86,11 @@ class GTRModel : public DNAModel {
 
   inline const static std::string rates_key_ = "GTR rates";
   inline const static std::string frequencies_key_ = "frequencies";
-  void Update();
 
  protected:
-  void UpdateEigenDecomposition();
   void UpdateQMatrix();
+  // Update the Q matrix _and_ the eigendecomposition.
+  void Update();
 
  private:
   Eigen::VectorXd rates_;

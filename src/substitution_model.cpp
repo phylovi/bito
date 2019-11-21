@@ -47,7 +47,7 @@ void GTRModel::UpdateQMatrix() {
   Q_ /= total_substitution_rate;
 }
 
-void GTRModel::UpdateEigenDecomposition() {
+void GTRModel::Update() {
   Eigen::Map<const Eigen::Array4d> tmp(&frequencies_[0]);
   EigenMatrixXd sqrt_frequencies =
       EigenMatrixXd(tmp.sqrt().matrix().asDiagonal());
@@ -58,15 +58,10 @@ void GTRModel::UpdateEigenDecomposition() {
   EigenMatrixXd S = EigenMatrixXd(sqrt_frequencies * Q_ * sqrt_frequencies_inv);
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix4d> solver(S);
 
-  // See p.206 of Felsenstein's book. We can get the eigenstructure of a GTR
-  // model by first getting the eigenstructure of an associated diagonal matrix
-  // and then doing this transformation.
+  // See p.206 of Felsenstein's book. We can get the eigendecomposition of a GTR
+  // model by first getting the eigendecomposition of an associated diagonal
+  // matrix and then doing this transformation.
   eigen_vectors_ = sqrt_frequencies_inv * solver.eigenvectors();
   inverse_eigen_vectors_ = solver.eigenvectors().transpose() * sqrt_frequencies;
   eigen_values_ = solver.eigenvalues();
-}
-
-void GTRModel::Update() {
-  UpdateEigenDecomposition();
-  UpdateQMatrix();
 }
