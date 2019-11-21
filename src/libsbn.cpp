@@ -228,11 +228,39 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
+BlockSpecification SBNInstance::GetBlockSpecification() const {
+  return GetEngine()->GetBlockSpecification();
+}
+
+BlockSpecification::UnderlyingMapType SBNInstance::GetBlockSpecificationMap()
+    const {
+  return GetEngine()->GetBlockSpecification().GetMap();
+}
+
+Eigen::Ref<EigenMatrixXd> SBNInstance::GetPhyloModelParams() {
+  return phylo_model_params_;
+}
+
+BlockSpecification::ParameterBlockMap
+SBNInstance::GetPhyloModelParamBlockMap() {
+  return GetBlockSpecification().ParameterBlockMapOf(phylo_model_params_);
+}
+
 void SBNInstance::MakeEngine(PhyloModelSpecification specification,
                              size_t thread_count) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
   engine_ = std::make_unique<Engine>(specification, site_pattern, thread_count);
+}
+
+Engine *SBNInstance::GetEngine() const {
+  if (engine_ != nullptr) {
+    return engine_.get();
+  }
+  // else
+  Failwith(
+      "Engine not available. Call PrepareForPhyloLikelihood to make an "
+      "engine for phylogenetic likelihood computation computation.");
 }
 
 void SBNInstance::PrepareForPhyloLikelihood(

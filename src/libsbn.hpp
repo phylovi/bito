@@ -32,29 +32,18 @@ class SBNInstance {
   // The master indexer for SBN parameters.
   BitsetSizeMap indexer_;
 
-  // ** Initialization, destruction, and status
+  // ** Initialization, getters, and status
+
   explicit SBNInstance(const std::string &name)
       : name_(name),
         symbol_table_(SitePattern::GetSymbolTable()),
         rescaling_{false} {}
 
-  // Return a raw pointer to the engine if it's available.
-  Engine *GetEngine() const {
-    if (engine_ != nullptr) {
-      return engine_.get();
-    }
-    // else
-    Failwith(
-        "Engine not available. Call PrepareForPhyloLikelihood to make an "
-        "engine for phylogenetic likelihood computation computation.");
-  }
-
-  void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
-
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
 
-  // ** Building SBN-related items
+  // ** SBN-related items
+
   // Define "SBN maps" to be the collection of maps associated with the
   // SBNInstance, such as indexer_, index_to_child_, parent_to_range_, and
   // rootsplits_.
@@ -87,6 +76,9 @@ class SBNInstance {
   // Get PSP indexer representations of the trees in tree_collection_.
   std::vector<SizeVectorVector> GetPSPIndexerRepresentations() const;
 
+  // Return indexer_ and parent_to_range_ converted into string-keyed maps.
+  std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
+
   // Get the indexer, but reversed and with bitsets appropriately converted to
   // strings.
   StringVector StringReversedIndexer() const;
@@ -102,14 +94,11 @@ class SBNInstance {
   // split.
   DoubleVectorVector SplitLengths() const;
 
-  // ** I/O
-
-  // Return indexer_ and parent_to_range_ converted into string-keyed maps.
-  std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
-
   // This function is really just for testing-- it recomputes counters from
   // scratch.
   std::pair<StringSizeMap, StringPCSSMap> SplitCounters() const;
+
+  // ** I/O
 
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
@@ -117,28 +106,13 @@ class SBNInstance {
 
   // ** Phylogenetic likelihood
 
+  BlockSpecification GetBlockSpecification() const;
+  BlockSpecification::UnderlyingMapType GetBlockSpecificationMap() const;
+  Eigen::Ref<EigenMatrixXd> GetPhyloModelParams();
+  BlockSpecification::ParameterBlockMap GetPhyloModelParamBlockMap();
+
+  void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
   void CheckSequencesAndTreesLoaded() const;
-
-  // Make sure that BEAGLE's idea of the sequence count and length match what we
-  // have loaded.
-  void CheckBeagleDimensions() const;
-
-  BlockSpecification GetBlockSpecification() const {
-    return GetEngine()->GetBlockSpecification();
-  }
-
-  BlockSpecification::UnderlyingMapType GetBlockSpecificationMap() const {
-    return GetEngine()->GetBlockSpecification().GetMap();
-  }
-
-  Eigen::Ref<EigenMatrixXd> GetPhyloModelParams() {
-    return phylo_model_params_;
-  }
-
-  BlockSpecification::ParameterBlockMap GetPhyloModelParamBlockMap() {
-    return GetEngine()->GetBlockSpecification().ParameterBlockMapOf(
-        phylo_model_params_);
-  }
 
   // Prepare for phylogenetic likelihood calculation. If we get a nullopt
   // argument, it just uses the number of trees currently in the SBNInstance.
@@ -181,6 +155,8 @@ class SBNInstance {
   // Make a likelihood engine which will run across the specified number of
   // threads.
   void MakeEngine(PhyloModelSpecification specification, size_t thread_count);
+  // Return a raw pointer to the engine if it's available.
+  Engine *GetEngine() const;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
