@@ -78,8 +78,7 @@ BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
   if (return_info.flags &
       (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
     return beagle_instance;
-  }
-  // else
+  }  // else
   Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
 }
 

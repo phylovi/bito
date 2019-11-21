@@ -31,19 +31,20 @@ class FatBeagle {
   BeagleInstance GetBeagleInstance() const { return beagle_instance_; };
   PhyloModel *GetPhyloModel() const { return phylo_model_.get(); };
 
-  void SetParameters(const EigenVectorXdRef param_vector);
   BlockSpecification GetBlockSpecification() const {
     return phylo_model_->GetBlockSpecification();
   }
+
+  void SetParameters(const EigenVectorXdRef param_vector);
   void SetRescaling();
 
   double LogLikelihood(const Tree &tree);
   std::pair<double, std::vector<double>> BranchGradient(const Tree &tree);
 
+  // We can pass these static methods to FatBeagleParallelize.
   static double StaticLogLikelihood(
       FatBeagle *fat_beagle,
       const Tree &in_tree);
-
   static std::pair<double, std::vector<double>> StaticBranchGradient(
       FatBeagle *fat_beagle,
       const Tree &in_tree);
@@ -58,11 +59,6 @@ class FatBeagle {
   std::unique_ptr<PhyloModel> phylo_model_;
   bool rescaling_;
   BeagleInstance beagle_instance_;
-  Eigen::VectorXd frequencies_;
-  EigenMatrixXd evec_;
-  EigenMatrixXd ivec_;
-  Eigen::VectorXd eval_;
-  EigenMatrixXd Q_;
   int pattern_count_;
 };
 
