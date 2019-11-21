@@ -51,11 +51,6 @@ PYBIND11_MODULE(libsbn, m) {
       .def(py::init<const std::string &, const std::string &,
                     const std::string &>(),
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
-  // GTRModel
-  py::class_<GTRModel>(m, "GTRModel")
-      .def(py::init<>())
-      .def("get_frequencies", &GTRModel::GetFrequencies)
-      .def("set_parameters", &GTRModel::SetParameters);
   // SBNInstance
   py::class_<SBNInstance>(m, "instance")
       // Constructors
