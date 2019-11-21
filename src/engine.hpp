@@ -1,5 +1,7 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// "Engine" is short for "phylogenetic likelihood computation engine".
 
 #ifndef SRC_ENGINE_HPP_
 #define SRC_ENGINE_HPP_
@@ -12,30 +14,14 @@
 #include "site_pattern.hpp"
 #include "tree_collection.hpp"
 
-// "Engine" is short for "phylogenetic likelihood computation engine".
 class Engine {
  public:
   Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
          size_t thread_count);
-  ~Engine() = default;
-  // Delete (copy + move) x (constructor + assignment)
-  Engine(const Engine &) = delete;
-  Engine(const Engine &&) = delete;
-  Engine &operator=(const Engine &) = delete;
-  Engine &operator=(const Engine &&) = delete;
 
-  FatBeagle *GetFatBeagle(size_t idx) {
-    Assert(idx < fat_beagles_.size(), "FatBeagle index out of range.");
-    return fat_beagles_[idx].get();
-  }
-
-  BlockSpecification GetBlockSpecification() const {
-    return GetFirstFatBeagle()->GetBlockSpecification();
-  }
-
-  PhyloModel const *const GetPhyloModel() const {
-    return GetFirstFatBeagle()->GetPhyloModel();
-  }
+  FatBeagle *GetFatBeagle(size_t idx);
+  BlockSpecification GetBlockSpecification() const;
+  PhyloModel const *const GetPhyloModel() const;
 
   std::vector<double> LogLikelihoods(const TreeCollection &tree_collection,
                                      const EigenMatrixXdRef phylo_model_params);

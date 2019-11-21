@@ -14,8 +14,6 @@
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
 
-using BeagleInstance = int;
-
 class FatBeagle {
  public:
   // This constructor makes the beagle_instance_;
@@ -28,9 +26,7 @@ class FatBeagle {
   FatBeagle &operator=(const FatBeagle &) = delete;
   FatBeagle &operator=(const FatBeagle &&) = delete;
 
-  BeagleInstance GetBeagleInstance() const { return beagle_instance_; };
   PhyloModel *GetPhyloModel() const { return phylo_model_.get(); };
-
   BlockSpecification GetBlockSpecification() const {
     return phylo_model_->GetBlockSpecification();
   }
@@ -50,6 +46,8 @@ class FatBeagle {
       const Tree &in_tree);
 
  private:
+  using BeagleInstance = int;
+
   BeagleInstance CreateInstance(const SitePattern &site_pattern);
   void SetTipStates(const SitePattern &site_pattern);
   void UpdateSiteModelInBeagle();
@@ -68,8 +66,7 @@ std::vector<T> FatBeagleParallelize(
     const std::vector<std::unique_ptr<FatBeagle>> &fat_beagles,
     const TreeCollection &tree_collection, EigenMatrixXdRef param_matrix) {
   if (fat_beagles.empty()) {
-    Failwith(
-        "Please add some BEAGLE instances that can be used for computation.");
+    Failwith("Please add some FatBeagles that can be used for computation.");
   }
   std::vector<T> results(tree_collection.TreeCount());
   std::queue<FatBeagle *> fat_beagle_queue;
@@ -82,7 +79,7 @@ std::vector<T> FatBeagleParallelize(
     tree_number_queue.push(i);
   }
   Assert(tree_collection.TreeCount() == param_matrix.rows(),
-         "We need as many param_matrix as we have trees.");
+         "We param_matrix needs as many rows as we have trees.");
   TaskProcessor<FatBeagle *, size_t> task_processor(
       std::move(fat_beagle_queue), std::move(tree_number_queue),
       [&results, &tree_collection, &param_matrix, &f](
@@ -94,8 +91,5 @@ std::vector<T> FatBeagleParallelize(
   return results;
 }
 
-#ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("FatBeagle") {}
-#endif  // DOCTEST_LIBRARY_INCLUDED
-
+// Tests live in libsbn.hpp.
 #endif  // SRC_FAT_BEAGLE_HPP_
