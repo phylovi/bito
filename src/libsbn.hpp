@@ -21,27 +21,6 @@
 #include "sugar.hpp"
 #include "tree.hpp"
 
-using StringFloatMap = std::unordered_map<std::string, float>;
-using StringSizePairMap =
-    std::unordered_map<std::string, std::pair<size_t, size_t>>;
-using SizeStringMap = std::unordered_map<size_t, std::string>;
-using StringPCSSMap =
-    std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
-using PCSSIndexVector = std::vector<size_t>;
-
-// Turn a <Key, T> map into a <std::string, T> map for any Key type that has
-// a ToString method.
-template <class Key, class T>
-std::unordered_map<std::string, T> StringifyMap(std::unordered_map<Key, T> m) {
-  std::unordered_map<std::string, T> m_str;
-  for (const auto &iter : m) {
-    m_str[iter.first.ToString()] = iter.second;
-  }
-  return m_str;
-}
-
-StringPCSSMap StringPCSSMapOf(PCSSDict d);
-
 class SBNInstance {
  public:
   // Trees get loaded in from a file or sampled from SBNs.

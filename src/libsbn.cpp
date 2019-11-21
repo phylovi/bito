@@ -4,14 +4,6 @@
 #include "libsbn.hpp"
 #include <memory>
 
-StringPCSSMap StringPCSSMapOf(PCSSDict d) {
-  StringPCSSMap d_str;
-  for (const auto &iter : d) {
-    d_str[iter.first.ToString()] = StringifyMap(iter.second.Map());
-  }
-  return d_str;
-}
-
 void SBNInstance::PrintStatus() {
   std::cout << "Status for instance '" << name_ << "':\n";
   if (tree_collection_.TreeCount()) {
@@ -204,7 +196,7 @@ std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
 std::pair<StringSizeMap, StringPCSSMap> SBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();
   return {StringifyMap(SBNMaps::RootsplitCounterOf(counter).Map()),
-          StringPCSSMapOf(SBNMaps::PCSSCounterOf(counter))};
+          SBNMaps::StringPCSSMapOf(SBNMaps::PCSSCounterOf(counter))};
 }
 
 void SBNInstance::ReadNewickFile(std::string fname) {
