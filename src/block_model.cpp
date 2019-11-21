@@ -7,7 +7,7 @@
 // TODO "parameterization" vs "parameters" vs "params"?
 // See parameter_matrix below.
 EigenVectorXdRef BlockModel::ExtractSegment(EigenVectorXdRef parameterization,
-                                            std::string key) {
+                                            std::string key) const {
   auto [start_idx, parameter_count] = block_specification_.Find(key);
   if (start_idx + parameter_count > parameterization.size()) {
     Failwith("Model parameter " + key +
@@ -22,7 +22,7 @@ EigenVectorXdRef BlockModel::ExtractSegment(EigenVectorXdRef parameterization,
 // have it be called frequently-- just once when we're setting things up. So if
 // this changes let's do something about it.
 BlockModel::ParameterSegmentMap BlockModel::ParameterSegmentMapOf(
-    EigenVectorXdRef parameterization) {
+    EigenVectorXdRef parameterization) const {
   CheckParametersSize(parameterization);
   ParameterSegmentMap parameter_segment_map;
   for (const auto [key, _] : GetBlockSpecification().GetMap()) {
@@ -33,7 +33,7 @@ BlockModel::ParameterSegmentMap BlockModel::ParameterSegmentMapOf(
 }
 
 EigenMatrixXdRef BlockModel::ExtractBlock(EigenMatrixXdRef parameter_matrix,
-                                          std::string key) {
+                                          std::string key) const {
   auto [start_idx, parameter_count] = block_specification_.Find(key);
   if (start_idx + parameter_count > parameter_matrix.cols()) {
     Failwith("Model parameter " + key +
@@ -45,7 +45,7 @@ EigenMatrixXdRef BlockModel::ExtractBlock(EigenMatrixXdRef parameter_matrix,
 }
 
 BlockModel::ParameterBlockMap BlockModel::ParameterBlockMapOf(
-    EigenMatrixXdRef parameter_matrix) {
+    EigenMatrixXdRef parameter_matrix) const {
   ParameterBlockMap parameter_block_map;
   CheckParametersSize(parameter_matrix);
   for (const auto [key, _] : GetBlockSpecification().GetMap()) {

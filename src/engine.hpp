@@ -33,8 +33,7 @@ class Engine {
     return GetFirstFatBeagle()->GetBlockSpecification();
   }
 
-  // TODO const
-  PhyloModel *GetPhyloModel() const {
+  PhyloModel const *const GetPhyloModel() const {
     return GetFirstFatBeagle()->GetPhyloModel();
   }
 

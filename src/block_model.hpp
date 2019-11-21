@@ -45,14 +45,14 @@ class BlockModel {
 
   virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
 
-  // TODO const
   EigenVectorXdRef ExtractSegment(EigenVectorXdRef parameterization,
-                                  std::string key);
+                                  std::string key) const;
   EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef parameter_matrix,
-                                std::string key);
+                                std::string key) const;
 
-  ParameterSegmentMap ParameterSegmentMapOf(EigenVectorXdRef parameters);
-  ParameterBlockMap ParameterBlockMapOf(EigenMatrixXdRef parameter_matrix);
+  ParameterSegmentMap ParameterSegmentMapOf(EigenVectorXdRef parameters) const;
+  ParameterBlockMap ParameterBlockMapOf(
+      EigenMatrixXdRef parameter_matrix) const;
 
   void Append(const std::string& sub_entire_key, BlockSpecification other) {
     block_specification_.Append(sub_entire_key, other);

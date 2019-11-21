@@ -19,5 +19,6 @@ PYBIND11_MODULE(blerg, m) {
   py::class_<Blerg>(m, "Blerg")
       .def(py::init<>())
       .def("get_matrix", &Blerg::GetMatrix)
-      .def_readwrite("matrix", &Blerg::matrix);
+      .def_readwrite("matrix", &Blerg::matrix,
+                     py::return_value_policy::reference_internal);
 }
