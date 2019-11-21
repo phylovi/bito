@@ -6,6 +6,21 @@
 
 // TODO "parameterization" vs "parameters" vs "params"?
 // See parameter_matrix below.
+
+const BlockSpecification& BlockModel::GetBlockSpecification() const {
+  return block_specification_;
+}
+
+void BlockModel::CheckParametersSize(const EigenVectorXdRef parameters) const {
+  Assert(parameters.size() == block_specification_.ParameterCount(),
+         "Parameters are the wrong dimension!");
+}
+void BlockModel::CheckParameterMatrixSize(
+    const EigenMatrixXdRef parameter_matrix) const {
+  Assert(parameter_matrix.cols() == block_specification_.ParameterCount(),
+         "Parameters are the wrong dimension!");
+}
+
 EigenVectorXdRef BlockModel::ExtractSegment(EigenVectorXdRef parameterization,
                                             std::string key) const {
   auto [start_idx, parameter_count] = block_specification_.Find(key);

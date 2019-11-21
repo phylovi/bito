@@ -3,6 +3,14 @@
 
 #include "block_specification.hpp"
 
+void BlockSpecification::Insert(const std::string& key, Coordinates value) {
+  SafeInsert(map_, key, value);
+}
+
+void BlockSpecification::Insert(const char* key, Coordinates value) {
+  Insert(std::string(key), value);
+}
+
 BlockSpecification::BlockSpecification(ParamCounts param_counts) {
   size_t next_available_idx = 0;
   for (const auto [block_name, block_size] : param_counts) {

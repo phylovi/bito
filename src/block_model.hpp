@@ -9,13 +9,8 @@
 #ifndef SRC_BLOCK_MODEL_HPP_
 #define SRC_BLOCK_MODEL_HPP_
 
-#include <Eigen/Dense>
 #include "block_specification.hpp"
-
-using EigenMatrixXd =
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using EigenVectorXdRef = Eigen::Ref<Eigen::VectorXd>;
-using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
+#include "eigen_sugar.hpp"
 
 class BlockModel {
  public:
@@ -30,20 +25,12 @@ class BlockModel {
   BlockModel& operator=(BlockModel&&) = delete;
   virtual ~BlockModel() = default;
 
-  const BlockSpecification& GetBlockSpecification() const {
-    return block_specification_;
-  }
-
-  void CheckParametersSize(const EigenVectorXdRef parameters) const {
-    Assert(parameters.size() == block_specification_.ParameterCount(),
-           "Parameters are the wrong dimension!");
-  }
-  void CheckParameterMatrixSize(const EigenMatrixXdRef parameter_matrix) const {
-    Assert(parameter_matrix.cols() == block_specification_.ParameterCount(),
-           "Parameters are the wrong dimension!");
-  }
+  const BlockSpecification& GetBlockSpecification() const;
 
   virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
+
+  void CheckParametersSize(const EigenVectorXdRef parameters) const;
+  void CheckParameterMatrixSize(const EigenMatrixXdRef parameter_matrix) const;
 
   EigenVectorXdRef ExtractSegment(EigenVectorXdRef parameterization,
                                   std::string key) const;
@@ -62,4 +49,5 @@ class BlockModel {
   BlockSpecification block_specification_;
   };
 
+  //  This is a virtual class so no unit tests. See substitution_model.hpp.
 #endif  // SRC_BLOCK_MODEL_HPP_
