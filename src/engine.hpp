@@ -19,9 +19,8 @@ class Engine {
   Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
          size_t thread_count);
 
-  FatBeagle *GetFatBeagle(size_t idx);
+  // TODO const
   BlockSpecification GetBlockSpecification() const;
-  PhyloModel const *const GetPhyloModel() const;
 
   std::vector<double> LogLikelihoods(const TreeCollection &tree_collection,
                                      const EigenMatrixXdRef phylo_model_params);

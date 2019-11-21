@@ -156,8 +156,8 @@ class SBNInstance {
     return phylo_model_params_;
   }
 
-  BlockModel::ParameterBlockMap GetPhyloModelParamBlockMap() {
-    return GetEngine()->GetPhyloModel()->ParameterBlockMapOf(
+  BlockSpecification::ParameterBlockMap GetPhyloModelParamBlockMap() {
+    return GetEngine()->GetBlockSpecification().ParameterBlockMapOf(
         phylo_model_params_);
   }
 

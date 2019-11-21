@@ -127,7 +127,8 @@ TEST_CASE("SubstitutionModel") {
   param_vector.setZero();
   // We can use ParameterSegmentMapOf to get two "views" into our parameter
   // vector.
-  auto parameter_map = gtr_model->ParameterSegmentMapOf(param_vector);
+  auto parameter_map =
+      gtr_model->GetBlockSpecification().ParameterSegmentMapOf(param_vector);
   auto frequencies = parameter_map.at(GTRModel::frequencies_key_);
   auto rates = parameter_map.at(GTRModel::rates_key_);
   // When we modify the contents of these views, that changes param_vector.

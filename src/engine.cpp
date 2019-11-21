@@ -15,17 +15,8 @@ Engine::Engine(const PhyloModelSpecification &specification,
   }
 }
 
-FatBeagle *Engine::GetFatBeagle(size_t idx) {
-  Assert(idx < fat_beagles_.size(), "FatBeagle index out of range.");
-  return fat_beagles_[idx].get();
-}
-
 BlockSpecification Engine::GetBlockSpecification() const {
-  return Engine::GetFirstFatBeagle()->GetBlockSpecification();
-}
-
-PhyloModel const *const Engine::GetPhyloModel() const {
-  return GetFirstFatBeagle()->GetPhyloModel();
+  return GetFirstFatBeagle()->GetBlockSpecification();
 }
 
 std::vector<double> Engine::LogLikelihoods(
