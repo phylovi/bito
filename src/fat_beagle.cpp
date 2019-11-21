@@ -27,6 +27,10 @@ FatBeagle::~FatBeagle() {
   }
 }
 
+const BlockSpecification &FatBeagle::GetBlockSpecification() const {
+  return phylo_model_->GetBlockSpecification();
+}
+
 void FatBeagle::SetParameters(const EigenVectorXdRef param_vector) {
   phylo_model_->SetParameters(param_vector);
   UpdatePhyloModelInBeagle();

@@ -26,10 +26,7 @@ class FatBeagle {
   FatBeagle &operator=(const FatBeagle &) = delete;
   FatBeagle &operator=(const FatBeagle &&) = delete;
 
-  PhyloModel *GetPhyloModel() const { return phylo_model_.get(); };
-  BlockSpecification GetBlockSpecification() const {
-    return phylo_model_->GetBlockSpecification();
-  }
+  const BlockSpecification &GetBlockSpecification() const;
 
   void SetParameters(const EigenVectorXdRef param_vector);
   void SetRescaling();

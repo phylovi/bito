@@ -15,7 +15,9 @@ Engine::Engine(const PhyloModelSpecification &specification,
   }
 }
 
-BlockSpecification Engine::GetBlockSpecification() const {
+const BlockSpecification &Engine::GetBlockSpecification() const {
+  // The BlockSpecification is well defined for an Engine because the interface
+  // assures that all of the PhyloModels have the same specification.
   return GetFirstFatBeagle()->GetBlockSpecification();
 }
 
@@ -35,3 +37,7 @@ std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
       phylo_model_params);
 }
 
+const FatBeagle *const Engine::GetFirstFatBeagle() const {
+  Assert(!fat_beagles_.empty(), "You have no FatBeagles.");
+  return fat_beagles_[0].get();
+}
