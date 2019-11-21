@@ -30,16 +30,16 @@ class BlockModel {
   virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
 
   void CheckParametersSize(const EigenVectorXdRef parameters) const;
-  void CheckParameterMatrixSize(const EigenMatrixXdRef parameter_matrix) const;
+  void CheckParameterMatrixSize(const EigenMatrixXdRef param_matrix) const;
 
   EigenVectorXdRef ExtractSegment(EigenVectorXdRef parameterization,
                                   std::string key) const;
-  EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef parameter_matrix,
+  EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef param_matrix,
                                 std::string key) const;
 
   ParameterSegmentMap ParameterSegmentMapOf(EigenVectorXdRef parameters) const;
   ParameterBlockMap ParameterBlockMapOf(
-      EigenMatrixXdRef parameter_matrix) const;
+      EigenMatrixXdRef param_matrix) const;
 
   void Append(const std::string& sub_entire_key, BlockSpecification other) {
     block_specification_.Append(sub_entire_key, other);
