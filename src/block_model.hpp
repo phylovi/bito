@@ -32,7 +32,7 @@ class BlockModel {
   void CheckParametersSize(const EigenVectorXdRef parameters) const;
   void CheckParameterMatrixSize(const EigenMatrixXdRef param_matrix) const;
 
-  EigenVectorXdRef ExtractSegment(EigenVectorXdRef parameterization,
+  EigenVectorXdRef ExtractSegment(EigenVectorXdRef param_vector,
                                   std::string key) const;
   EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef param_matrix,
                                 std::string key) const;

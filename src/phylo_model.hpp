@@ -30,7 +30,7 @@ class PhyloModel : public BlockModel {
 
   static std::unique_ptr<PhyloModel> OfSpecification(
       const PhyloModelSpecification& specification);
-  void SetParameters(const EigenVectorXdRef parameterization);
+  void SetParameters(const EigenVectorXdRef param_vector);
 
   inline const static std::string substitution_entire_key_ =
       "substutition entire";

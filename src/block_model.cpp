@@ -4,9 +4,6 @@
 #include "block_model.hpp"
 #include "sugar.hpp"
 
-// TODO "parameterization" vs "parameters" vs "params"?
-// See param_matrix below.
-
 const BlockSpecification& BlockModel::GetBlockSpecification() const {
   return block_specification_;
 }
@@ -21,15 +18,15 @@ void BlockModel::CheckParameterMatrixSize(
          "Parameters are the wrong dimension!");
 }
 
-EigenVectorXdRef BlockModel::ExtractSegment(EigenVectorXdRef parameterization,
+EigenVectorXdRef BlockModel::ExtractSegment(EigenVectorXdRef param_vector,
                                             std::string key) const {
   auto [start_idx, parameter_count] = block_specification_.Find(key);
-  if (start_idx + parameter_count > parameterization.size()) {
+  if (start_idx + parameter_count > param_vector.size()) {
     Failwith("Model parameter " + key +
-             " request too long for a parameterization of length " +
-             std::to_string(parameterization.size()) + ".");
+             " request too long for a param_vector of length " +
+             std::to_string(param_vector.size()) + ".");
   }  // else
-  return parameterization.segment(start_idx, parameter_count);
+  return param_vector.segment(start_idx, parameter_count);
 }
 
 EigenMatrixXdRef BlockModel::ExtractBlock(EigenMatrixXdRef param_matrix,
@@ -37,7 +34,7 @@ EigenMatrixXdRef BlockModel::ExtractBlock(EigenMatrixXdRef param_matrix,
   auto [start_idx, parameter_count] = block_specification_.Find(key);
   if (start_idx + parameter_count > param_matrix.cols()) {
     Failwith("Model parameter " + key +
-             " request too long for a parameterization of width " +
+             " request too long for a param_matrix of width " +
              std::to_string(param_matrix.cols()) + ".");
   }  // else
   return param_matrix.block(0, start_idx, param_matrix.rows(),
@@ -49,12 +46,12 @@ EigenMatrixXdRef BlockModel::ExtractBlock(EigenMatrixXdRef param_matrix,
 // have it be called frequently-- just once when we're setting things up. So if
 // this changes let's do something about it.
 BlockModel::ParameterSegmentMap BlockModel::ParameterSegmentMapOf(
-    EigenVectorXdRef parameterization) const {
-  CheckParametersSize(parameterization);
+    EigenVectorXdRef param_vector) const {
+  CheckParametersSize(param_vector);
   ParameterSegmentMap parameter_segment_map;
   for (const auto [key, _] : GetBlockSpecification().GetMap()) {
     SafeInsert(parameter_segment_map, key,
-               ExtractSegment(parameterization, key));
+               ExtractSegment(param_vector, key));
   }
   return parameter_segment_map;
 }

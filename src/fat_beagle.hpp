@@ -31,7 +31,7 @@ class FatBeagle {
   BeagleInstance GetBeagleInstance() const { return beagle_instance_; };
   PhyloModel *GetPhyloModel() const { return phylo_model_.get(); };
 
-  void SetParameters(const EigenVectorXdRef parameterization);
+  void SetParameters(const EigenVectorXdRef param_vector);
   BlockSpecification GetBlockSpecification() const {
     return phylo_model_->GetBlockSpecification();
   }
@@ -70,7 +70,7 @@ template <typename T>
 std::vector<T> FatBeagleParallelize(
     std::function<T(FatBeagle *, const Tree &)> f,
     const std::vector<std::unique_ptr<FatBeagle>> &fat_beagles,
-    const TreeCollection &tree_collection, EigenMatrixXdRef parameterizations) {
+    const TreeCollection &tree_collection, EigenMatrixXdRef param_matrix) {
   if (fat_beagles.empty()) {
     Failwith(
         "Please add some BEAGLE instances that can be used for computation.");
@@ -85,13 +85,13 @@ std::vector<T> FatBeagleParallelize(
   for (size_t i = 0; i < tree_collection.TreeCount(); i++) {
     tree_number_queue.push(i);
   }
-  Assert(tree_collection.TreeCount() == parameterizations.rows(),
-         "We need as many parameterizations as we have trees.");
+  Assert(tree_collection.TreeCount() == param_matrix.rows(),
+         "We need as many param_matrix as we have trees.");
   TaskProcessor<FatBeagle *, size_t> task_processor(
       std::move(fat_beagle_queue), std::move(tree_number_queue),
-      [&results, &tree_collection, &parameterizations, &f](
+      [&results, &tree_collection, &param_matrix, &f](
           FatBeagle *fat_beagle, size_t tree_number) {
-        fat_beagle->SetParameters(parameterizations.row(tree_number));
+        fat_beagle->SetParameters(param_matrix.row(tree_number));
         results[tree_number] =
             f(fat_beagle, tree_collection.GetTree(tree_number));
       });

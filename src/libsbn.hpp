@@ -190,7 +190,9 @@ class SBNInstance {
   // A map going from a parent subsplit to the range of indices in
   // sbn_parameters_ with its children.
   BitsetSizePairMap parent_to_range_;
-  // The phylogenetic model parameterization.
+  // The phylogenetic model parameterization. This has as many rows as there are
+  // trees, and holds the parameters before likelihood computation, where they
+  // will be processed across threads.
   EigenMatrixXd phylo_model_params_;
 
   // Random bits.
