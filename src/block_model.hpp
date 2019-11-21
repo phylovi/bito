@@ -16,7 +16,6 @@
 
 class BlockModel {
  public:
-
   BlockModel(const BlockSpecification::ParamCounts& param_counts)
       : block_specification_(param_counts) {}
   BlockModel(const BlockModel&) = delete;
@@ -37,8 +36,8 @@ class BlockModel {
 
  private:
   BlockSpecification block_specification_;
-  };
+};
 
-  //  This is a virtual class so there are no unit tests. See
-  //  substitution_model.hpp.
+//  This is a virtual class so there are no unit tests. See
+//  substitution_model.hpp.
 #endif  // SRC_BLOCK_MODEL_HPP_

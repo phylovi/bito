@@ -373,16 +373,14 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   return {log_like, gradient};
 }
 
-double FatBeagle::StaticLogLikelihood(
-    FatBeagle *fat_beagle,
-    const Tree &in_tree) {
+double FatBeagle::StaticLogLikelihood(FatBeagle *fat_beagle,
+                                      const Tree &in_tree) {
   Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");
   return fat_beagle->LogLikelihood(in_tree);
 }
 
 std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
-    FatBeagle *fat_beagle,
-    const Tree &in_tree) {
+    FatBeagle *fat_beagle, const Tree &in_tree) {
   Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");
   return fat_beagle->BranchGradient(in_tree);
 }

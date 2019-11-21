@@ -35,12 +35,9 @@ class FatBeagle {
   std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.
-  static double StaticLogLikelihood(
-      FatBeagle *fat_beagle,
-      const Tree &in_tree);
+  static double StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree);
   static std::pair<double, std::vector<double>> StaticBranchGradient(
-      FatBeagle *fat_beagle,
-      const Tree &in_tree);
+      FatBeagle *fat_beagle, const Tree &in_tree);
 
  private:
   using BeagleInstance = int;
@@ -79,8 +76,8 @@ std::vector<T> FatBeagleParallelize(
          "We param_matrix needs as many rows as we have trees.");
   TaskProcessor<FatBeagle *, size_t> task_processor(
       std::move(fat_beagle_queue), std::move(tree_number_queue),
-      [&results, &tree_collection, &param_matrix, &f](
-          FatBeagle *fat_beagle, size_t tree_number) {
+      [&results, &tree_collection, &param_matrix, &f](FatBeagle *fat_beagle,
+                                                      size_t tree_number) {
         fat_beagle->SetParameters(param_matrix.row(tree_number));
         results[tree_number] =
             f(fat_beagle, tree_collection.GetTree(tree_number));

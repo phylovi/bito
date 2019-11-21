@@ -22,4 +22,3 @@ void BlockModel::Append(const std::string& sub_entire_key,
                         BlockSpecification other) {
   block_specification_.Append(sub_entire_key, other);
 }
-

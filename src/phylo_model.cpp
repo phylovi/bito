@@ -27,9 +27,6 @@ std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
 void PhyloModel::SetParameters(const EigenVectorXdRef param_vector) {
   substitution_model_->SetParameters(
       ExtractSegment(param_vector, substitution_entire_key_));
-  site_model_->SetParameters(
-      ExtractSegment(param_vector, site_entire_key_));
-  clock_model_->SetParameters(
-      ExtractSegment(param_vector, clock_entire_key_));
+  site_model_->SetParameters(ExtractSegment(param_vector, site_entire_key_));
+  clock_model_->SetParameters(ExtractSegment(param_vector, clock_entire_key_));
 }
-

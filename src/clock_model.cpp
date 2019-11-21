@@ -10,4 +10,3 @@ std::unique_ptr<ClockModel> ClockModel::OfSpecification(
   }  // else
   Failwith("Clock model not known: " + specification);
 }
-
