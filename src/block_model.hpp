@@ -58,11 +58,6 @@ class BlockModel {
     block_specification_.Append(sub_entire_key, other);
   }
 
-  // TODO comment out.
-  void InsertEntireKey(BlockSpecification::Coordinates coordinates) {
-    block_specification_.InsertEntireKey(coordinates);
-  }
-
  private:
   BlockSpecification block_specification_;
   };

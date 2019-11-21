@@ -33,6 +33,10 @@ void BlockSpecification::Append(const std::string& sub_entire_key,
   for (const auto [block_name, coordinate] : other.GetMap()) {
     auto [start_idx, block_size] = coordinate;
     if (block_name != entire_key_) {
+      auto search = map_.find(block_name);
+      if (search != map_.end()) {
+        Failwith("Key overlap between BlockSpecifications: " + block_name);
+      }  // else
       Insert(block_name, {next_available_idx, block_size});
       next_available_idx += block_size;
     } else {

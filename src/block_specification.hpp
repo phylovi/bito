@@ -21,40 +21,36 @@ class BlockSpecification {
   using ParamCounts = std::vector<std::tuple<std::string, size_t>>;
   using UnderlyingMapType = std::unordered_map<std::string, Coordinates>;
 
-  // Given a map of block names to the number of parameters they have, here we
-  // build out a block specification.
+  // Build out a block specification given a map of block names to the number of
+  // parameters they have.
   BlockSpecification(ParamCounts param_counts);
-  const UnderlyingMapType& GetMap() const { return map_; }
 
   Coordinates Find(const std::string& key) const;
-
-  void Insert(const std::string& key, Coordinates value) {
-    SafeInsert(map_, key, value);
-  }
-
+  void Insert(const std::string& key, Coordinates value);
   // Insert for string literals
-  void Insert(const char* key, Coordinates value) {
-    Insert(std::string(key), value);
-  }
-
-  // See top for description of what Entire means in this case.
-  void InsertEntireKey(Coordinates coordinates);
-  void EraseEntireKey() { map_.erase(entire_key_); }
+  void Insert(const char* key, Coordinates value);
 
   // Incorporate one BlockSpecification into `this` one, starting at
   // next_available_index which we mutate along the way. The "entire" block
   // coordinates from other get incorporated into this with key sub_entire_key,
   // with the coordinates incremented by the next_available_idx as passed into
-  // this function.
+  // this function. The "entire" block coordinates are then updated.
   void Append(const std::string& sub_entire_key, BlockSpecification other);
 
+  const UnderlyingMapType& GetMap() const { return map_; }
   // The complete range of parameter counts.
   size_t ParameterCount() const { return std::get<1>(Find(entire_key_)); };
 
+  // Here's how we set the "entire" key. In C++ we can just use these key
+  // variables, but in Python we use the strings as dictionary keys.
   inline const static std::string entire_key_ = "entire";
 
  private:
   UnderlyingMapType map_;
+
+  // See top for description of what Entire means in this case.
+  void InsertEntireKey(Coordinates coordinates);
+  void EraseEntireKey() { map_.erase(entire_key_); }
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
