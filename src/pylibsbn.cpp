@@ -56,23 +56,13 @@ PYBIND11_MODULE(libsbn, m) {
       // Constructors
       .def(py::init<const std::string &>())
       // Methods
+      .def("print_status", &SBNInstance::PrintStatus)
+      // Methods handling trees
       .def("tree_count", &SBNInstance::TreeCount)
       .def("read_newick_file", &SBNInstance::ReadNewickFile)
       .def("read_nexus_file", &SBNInstance::ReadNexusFile)
       .def("read_fasta_file", &SBNInstance::ReadFastaFile)
-      .def("print_status", &SBNInstance::PrintStatus)
-      .def("split_counters", &SBNInstance::SplitCounters)
-      .def("prepare_for_phylo_likelihood",
-           &SBNInstance::PrepareForPhyloLikelihood,
-           "Prepare instance for phylogenetic likelihood computation.",
-           py::arg("specification"), py::arg("thread_count"),
-           py::arg("tree_count_option") = std::nullopt)
-      .def("resize_phylo_model_params", &SBNInstance::ResizePhyloModelParams,
-           "Resize phylo_model_params.",
-           py::arg("tree_count_option") = std::nullopt)
-      .def("get_block_specification", &SBNInstance::GetBlockSpecificationMap)
-      .def("log_likelihoods", &SBNInstance::LogLikelihoods)
-      .def("branch_gradients", &SBNInstance::BranchGradients)
+      // Methods processing trees
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_indexers", &SBNInstance::GetIndexers)
       .def("sample_trees", &SBNInstance::SampleTrees)
@@ -80,10 +70,24 @@ PYBIND11_MODULE(libsbn, m) {
            &SBNInstance::GetIndexerRepresentations)
       .def("get_psp_indexer_representations",
            &SBNInstance::GetPSPIndexerRepresentations)
+      .def("split_counters", &SBNInstance::SplitCounters,
+           "For testing purposes.")
+      .def("split_lengths", &SBNInstance::SplitLengths)
+      // Phylogenetic likelihood methods
+      .def("prepare_for_phylo_likelihood",
+           &SBNInstance::PrepareForPhyloLikelihood,
+           "Prepare instance for phylogenetic likelihood computation.",
+           py::arg("specification"), py::arg("thread_count"),
+           py::arg("tree_count_option") = std::nullopt)
       .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
       .def("get_phylo_model_param_block_map",
            &SBNInstance::GetPhyloModelParamBlockMap)
-      .def("split_lengths", &SBNInstance::SplitLengths)
+      .def("resize_phylo_model_params", &SBNInstance::ResizePhyloModelParams,
+           "Resize phylo_model_params.",
+           py::arg("tree_count_option") = std::nullopt)
+      .def("get_block_specification", &SBNInstance::GetBlockSpecificationMap)
+      .def("log_likelihoods", &SBNInstance::LogLikelihoods)
+      .def("branch_gradients", &SBNInstance::BranchGradients)
       // Member Variables
       .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
