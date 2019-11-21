@@ -8,8 +8,9 @@ const BlockSpecification& BlockModel::GetBlockSpecification() const {
   return block_specification_;
 }
 
-void BlockModel::CheckParametersSize(const EigenVectorXdRef parameters) const {
-  Assert(parameters.size() == block_specification_.ParameterCount(),
+void BlockModel::CheckParametersSize(
+    const EigenVectorXdRef param_vector) const {
+  Assert(param_vector.size() == block_specification_.ParameterCount(),
          "Parameters are the wrong dimension!");
 }
 void BlockModel::CheckParameterMatrixSize(

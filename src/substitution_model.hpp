@@ -26,7 +26,7 @@ class SubstitutionModel : public BlockModel {
   const EigenMatrixXd& GetInverseEigenvectors() { return ivec_; }
   const Eigen::VectorXd& GetEigenvalues() { return eval_; }
 
-  virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
+  virtual void SetParameters(const EigenVectorXdRef param_vector) = 0;
 
   static std::unique_ptr<SubstitutionModel> OfSpecification(
       const std::string& specification);
@@ -65,7 +65,7 @@ class JC69Model : public DNAModel {
     Q_ << 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0,
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
-  void SetParameters(const EigenVectorXdRef parameters){};
+  void SetParameters(const EigenVectorXdRef param_vector){};
 };
 
 class GTRModel : public DNAModel {
@@ -77,7 +77,7 @@ class GTRModel : public DNAModel {
     Update();
   }
 
-  void SetParameters(const EigenVectorXdRef parameters) override;
+  void SetParameters(const EigenVectorXdRef param_vector) override;
 
   inline const static std::string rates_key_ = "GTR rates";
   inline const static std::string frequencies_key_ = "frequencies";
@@ -107,27 +107,27 @@ TEST_CASE("SubstitutionModel") {
   // Test 1: First we test using the "built in" default values.
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
-  Eigen::VectorXd parameters(10);
-  // Test 2: Now set parameters using SetParameters.
+  Eigen::VectorXd param_vector(10);
+  // Test 2: Now set param_vector using SetParameters.
   gtr_model = std::make_unique<GTRModel>();
-  parameters << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.25, 0.25, 0.25, 0.25;
-  gtr_model->SetParameters(parameters);
+  param_vector << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.25, 0.25, 0.25, 0.25;
+  gtr_model->SetParameters(param_vector);
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
   // Test 3: Now try out ParameterSegmentMapOf.
   gtr_model = std::make_unique<GTRModel>();
-  // First zero out our parameters.
-  parameters.setZero();
+  // First zero out our param_vector.
+  param_vector.setZero();
   // We can use ParameterSegmentMapOf to get two "views" into our parameter
   // vector.
-  auto parameter_map = gtr_model->ParameterSegmentMapOf(parameters);
+  auto parameter_map = gtr_model->ParameterSegmentMapOf(param_vector);
   auto frequencies = parameter_map.at(GTRModel::frequencies_key_);
   auto rates = parameter_map.at(GTRModel::rates_key_);
-  // When we modify the contents of these views, that changes parameters.
+  // When we modify the contents of these views, that changes param_vector.
   frequencies.setConstant(0.25);
   rates.setOnes();
-  // We can then set parameters and go forward as before.
-  gtr_model->SetParameters(parameters);
+  // We can then set param_vector and go forward as before.
+  gtr_model->SetParameters(param_vector);
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
   // TODO @M: would it be easy for you to add an eigenvector/value test with

@@ -27,9 +27,9 @@ class BlockModel {
 
   const BlockSpecification& GetBlockSpecification() const;
 
-  virtual void SetParameters(const EigenVectorXdRef parameters) = 0;
+  virtual void SetParameters(const EigenVectorXdRef param_vector) = 0;
 
-  void CheckParametersSize(const EigenVectorXdRef parameters) const;
+  void CheckParametersSize(const EigenVectorXdRef param_vector) const;
   void CheckParameterMatrixSize(const EigenMatrixXdRef param_matrix) const;
 
   EigenVectorXdRef ExtractSegment(EigenVectorXdRef param_vector,
@@ -37,7 +37,8 @@ class BlockModel {
   EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef param_matrix,
                                 std::string key) const;
 
-  ParameterSegmentMap ParameterSegmentMapOf(EigenVectorXdRef parameters) const;
+  ParameterSegmentMap ParameterSegmentMapOf(
+      EigenVectorXdRef param_vector) const;
   ParameterBlockMap ParameterBlockMapOf(
       EigenMatrixXdRef param_matrix) const;
 

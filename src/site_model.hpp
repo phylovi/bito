@@ -32,7 +32,7 @@ class ConstantSiteModel : public SiteModel {
 
   const std::vector<double>& GetCategoryProportions() override { return one_; }
 
-  void SetParameters(const EigenVectorXdRef parameters) override{};
+  void SetParameters(const EigenVectorXdRef param_vector) override{};
 
  private:
   std::vector<double> one_;
@@ -55,7 +55,7 @@ class WeibullSiteModel : public SiteModel {
   const std::vector<double>& GetCategoryRates() override;
   const std::vector<double>& GetCategoryProportions() override;
 
-  void SetParameters(const EigenVectorXdRef parameters) override {
+  void SetParameters(const EigenVectorXdRef param_vector) override {
     Failwith("not impelemented");
   };
 

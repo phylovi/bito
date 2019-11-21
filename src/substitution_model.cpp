@@ -14,10 +14,10 @@ std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
   Failwith("Substitution model not known: " + specification);
 }
 
-void GTRModel::SetParameters(const EigenVectorXdRef parameters) {
-  CheckParametersSize(parameters);
-  rates_ = ExtractSegment(parameters, rates_key_);
-  frequencies_ = ExtractSegment(parameters, frequencies_key_);
+void GTRModel::SetParameters(const EigenVectorXdRef param_vector) {
+  CheckParametersSize(param_vector);
+  rates_ = ExtractSegment(param_vector, rates_key_);
+  frequencies_ = ExtractSegment(param_vector, frequencies_key_);
   Update();
 };
 
