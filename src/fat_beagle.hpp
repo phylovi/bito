@@ -99,13 +99,16 @@ class FatBeagle {
   void UpdatePhyloModelInBeagle();
 
   static inline void AddLowerPartialOperation(BeagleOperationVector &operations,
-                                              const BeagleAccessories ba,
+                                              const BeagleAccessories &ba,
                                               int node_id, int child0_id,
                                               int child1_id);
   static inline void AddUpperPartialOperation(BeagleOperationVector &operations,
-                                              const BeagleAccessories ba,
+                                              const BeagleAccessories &ba,
                                               int node_id, int sister_id,
                                               int parent_id);
+  static inline std::pair<double, double> ComputeGradientEntry(
+      BeagleAccessories &ba, const SizeVectorVector &indices_above, int node_id,
+      int sister_id);
 };
 
 template <typename T>

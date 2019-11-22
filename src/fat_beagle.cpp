@@ -140,7 +140,7 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
 }
 
 void FatBeagle::AddLowerPartialOperation(BeagleOperationVector &operations,
-                                         const BeagleAccessories ba,
+                                         const BeagleAccessories &ba,
                                          int node_id, int child0_id,
                                          int child1_id) {
   BeagleOperation op = {
@@ -156,7 +156,7 @@ void FatBeagle::AddLowerPartialOperation(BeagleOperationVector &operations,
 }
 
 void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
-                                         const BeagleAccessories ba,
+                                         const BeagleAccessories &ba,
                                          int node_id, int sister_id,
                                          int parent_id) {
   if (node_id != ba.root_child_id_ && node_id != ba.fixed_node_id_) {
@@ -221,6 +221,58 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
   return log_like;
 }
 
+std::pair<double, double> FatBeagle::ComputeGradientEntry(
+    BeagleAccessories &ba, const SizeVectorVector &indices_above, int node_id,
+    int sister_id) {
+  double log_like;
+  double dlogLp;
+  ba.upper_partials_index_[0] = node_id + ba.node_count_;
+  ba.node_partial_indices_[0] = node_id;
+  ba.node_mat_indices_[0] = node_id;
+  ba.node_deriv_index_[0] = node_id + ba.node_count_;
+
+  if (node_id == ba.root_child_id_) {
+    ba.upper_partials_index_[0] = sister_id;
+  }
+  // parent partial Buffers cannot be a taxon in
+  // beagleCalculateEdgeLogLikelihoods
+  if (ba.node_partial_indices_[0] > ba.upper_partials_index_[0]) {
+    std::swap(ba.node_partial_indices_, ba.upper_partials_index_);
+  }
+
+  if (ba.rescaling_) {
+    beagleResetScaleFactors(ba.beagle_instance_, ba.cumulative_scale_index_[0]);
+    std::vector<int> scaler_indices(
+        static_cast<size_t>(ba.internal_count_ - 1));
+    std::iota(scaler_indices.begin(), scaler_indices.end(), 1);
+    // Replace lower scaler index with upper scaler index for nodes between
+    // node_index and root.
+    int child = node_id;
+    for (size_t upper : indices_above[static_cast<size_t>(node_id)]) {
+      int int_upper = static_cast<int>(upper);
+      int scaler_indices_index = int_upper - ba.taxon_count_;
+      Assert(scaler_indices_index >= 0, "int_upper must be >= taxon count.");
+      scaler_indices[static_cast<size_t>(scaler_indices_index)] =
+          child + ba.internal_count_ + 1;
+      child = int_upper;
+    }
+    beagleAccumulateScaleFactors(ba.beagle_instance_, scaler_indices.data(),
+                                 static_cast<int>(scaler_indices.size()),
+                                 ba.cumulative_scale_index_[0]);
+  }
+
+  beagleCalculateEdgeLogLikelihoods(
+      ba.beagle_instance_, ba.upper_partials_index_.data(),
+      ba.node_partial_indices_.data(), ba.node_mat_indices_.data(),
+      ba.node_deriv_index_.data(),
+      nullptr,  // second derivative matrices
+      ba.category_weight_index_.data(), ba.state_frequency_index_.data(),
+      ba.cumulative_scale_index_.data(), ba.mysterious_count_, &log_like,
+      &dlogLp,
+      nullptr);  // destination for second derivative
+  return {log_like, dlogLp};
+}
+
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     const Tree &in_tree) const {
   beagleResetScaleFactors(beagle_instance_, 0);
@@ -267,60 +319,17 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   }
 
   // Actually compute gradient.
-  tree.Topology()->TripleIdPreOrderBifurcating([&ba, &gradient, &indices_above,
-                                                &log_like](int node_id,
-                                                           int sister_id, int) {
-    if (node_id == ba.fixed_node_id_) {
-      return;
-    }
-    double dlogLp;
-    ba.upper_partials_index_[0] = node_id + ba.node_count_;
-    ba.node_partial_indices_[0] = node_id;
-    ba.node_mat_indices_[0] = node_id;
-    ba.node_deriv_index_[0] = node_id + ba.node_count_;
+  tree.Topology()->TripleIdPreOrderBifurcating(
+      [&ba, &gradient, &indices_above, &log_like](int node_id, int sister_id,
+                                                  int) {
+        if (node_id != ba.fixed_node_id_) {
+          auto [local_log_like, dlogLp] =
+              ComputeGradientEntry(ba, indices_above, node_id, sister_id);
 
-    if (node_id == ba.root_child_id_) {
-      ba.upper_partials_index_[0] = sister_id;
-    }
-    // parent partial Buffers cannot be a taxon in
-    // beagleCalculateEdgeLogLikelihoods
-    if (ba.node_partial_indices_[0] > ba.upper_partials_index_[0]) {
-      std::swap(ba.node_partial_indices_, ba.upper_partials_index_);
-    }
-
-    if (ba.rescaling_) {
-      beagleResetScaleFactors(ba.beagle_instance_,
-                              ba.cumulative_scale_index_[0]);
-      std::vector<int> scaler_indices(
-          static_cast<size_t>(ba.internal_count_ - 1));
-      std::iota(scaler_indices.begin(), scaler_indices.end(), 1);
-      // Replace lower scaler index with upper scaler index for nodes between
-      // node_index and root.
-      int child = node_id;
-      for (size_t upper : indices_above[static_cast<size_t>(node_id)]) {
-        int int_upper = static_cast<int>(upper);
-        int scaler_indices_index = int_upper - ba.taxon_count_;
-        Assert(scaler_indices_index >= 0, "int_upper must be >= taxon count.");
-        scaler_indices[static_cast<size_t>(scaler_indices_index)] =
-            child + ba.internal_count_ + 1;
-        child = int_upper;
-      }
-      beagleAccumulateScaleFactors(ba.beagle_instance_, scaler_indices.data(),
-                                   static_cast<int>(scaler_indices.size()),
-                                   ba.cumulative_scale_index_[0]);
-    }
-
-    beagleCalculateEdgeLogLikelihoods(
-        ba.beagle_instance_, ba.upper_partials_index_.data(),
-        ba.node_partial_indices_.data(), ba.node_mat_indices_.data(),
-        ba.node_deriv_index_.data(),
-        nullptr,  // second derivative matrices
-        ba.category_weight_index_.data(), ba.state_frequency_index_.data(),
-        ba.cumulative_scale_index_.data(), ba.mysterious_count_, &log_like,
-        &dlogLp,
-        nullptr);  // destination for second derivative
-    gradient[static_cast<size_t>(node_id)] = dlogLp;
-  });
+          log_like = local_log_like;
+          gradient[static_cast<size_t>(node_id)] = dlogLp;
+        }
+      });
 
   return {log_like, gradient};
 }
