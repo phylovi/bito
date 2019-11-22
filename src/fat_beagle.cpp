@@ -139,29 +139,18 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
       "bifurcation or a trifurcation at the root.");
 }
 
-void FatBeagle::AddLogLikelihoodOperation(BeagleOperationVector &operations,
-                                          const BeagleAccessories ba,
-                                          const Node *node) {
-  if (node->IsLeaf()) {
-    return;
-  }  // else
-  Assert(node->Children().size() == 2,
-         "Tree isn't bifurcating in LogLikelihood.");
-  int dest = static_cast<int>(node->Id());
-  int child0_id = static_cast<int>(node->Children()[0]->Id());
-  int child1_id = static_cast<int>(node->Children()[1]->Id());
+void FatBeagle::AddLowerPartialOperation(BeagleOperationVector &operations,
+                                         const BeagleAccessories ba,
+                                         int node_id, int child0_id,
+                                         int child1_id) {
   BeagleOperation op = {
-      dest,                            // dest
+      node_id,                         // dest
       BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
       child0_id,      child0_id,       // src1 and matrix1
       child1_id,      child1_id        // src2 and matrix2
   };
   if (ba.rescaling_) {
-    // We don't need scaling buffers for the leaves.
-    // Index 0 is reserved for accumulating the sum of log scalers.
-    // Thus the scaling buffers are indexed by the edge number minus the
-    // number of leaves + 1.
-    op.destinationScaleWrite = dest - ba.taxon_count_ + 1;
+    op.destinationScaleWrite = node_id - ba.taxon_count_ + 1;
   }
   operations.push_back(op);
 }
@@ -171,9 +160,10 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
   auto tree = PrepareTreeForLikelihood(in_tree);
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   BeagleOperationVector operations;
-  tree.Topology()->PostOrder([&operations, &ba](const Node *node) {
-    AddLogLikelihoodOperation(operations, ba, node);
-  });
+  tree.Topology()->BinaryIdPostOrder(
+      [&operations, &ba](int node_id, int child0_id, int child1_id) {
+        AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
+      });
   beagleUpdateTransitionMatrices(beagle_instance_,
                                  0,  // eigenIndex
                                  ba.node_indices_.data(),
@@ -205,19 +195,9 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   std::vector<int> gradient_indices(ba.internal_count_);
   std::iota(gradient_indices.begin(), gradient_indices.end(), ba.node_count_);
 
-  // Calculate lower partials.
   tree.Topology()->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
-        BeagleOperation op = {
-            node_id,                         // dest
-            BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
-            child0_id,      child0_id,       // src1 and matrix1
-            child1_id,      child1_id        // src2 and matrix2
-        };
-        if (ba.rescaling_) {
-          op.destinationScaleWrite = node_id - ba.taxon_count_ + 1;
-        }
-        operations.push_back(op);
+        AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
 
   // Calculate upper partials.
