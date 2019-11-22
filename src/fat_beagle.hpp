@@ -54,6 +54,33 @@ class FatBeagle {
   int pattern_count_;
 };
 
+struct BeagleAccessories {
+  const int beagle_instance_;
+  const bool rescaling_;
+  const int fixed_node_id_;
+  const int root_child_id_;
+  const int node_count_;
+  const int internal_count_;
+  const int taxon_count_;
+  std::vector<int> cumulative_scale_index_;
+  std::vector<int> category_weight_index_ = {0};
+  std::vector<int> state_frequency_index_ = {0};
+  std::vector<int> upper_partials_index_ = {0};
+  std::vector<int> node_partial_indices_ = {0};
+  std::vector<int> node_mat_indices_ = {0};
+  std::vector<int> node_deriv_index_ = {0};
+
+  BeagleAccessories(int beagle_instance, bool rescaling, const Tree &tree)
+      : beagle_instance_(beagle_instance),
+        rescaling_(rescaling),
+        fixed_node_id_(static_cast<int>(tree.Topology()->Children()[1]->Id())),
+        root_child_id_(static_cast<int>(tree.Topology()->Children()[0]->Id())),
+        node_count_(static_cast<int>(tree.BranchLengths().size())),
+        internal_count_(static_cast<int>(tree.BranchLengths().size()) - 1),
+        taxon_count_(static_cast<int>(tree.LeafCount())),
+        cumulative_scale_index_({rescaling ? 0 : BEAGLE_OP_NONE}) {}
+};
+
 template <typename T>
 std::vector<T> FatBeagleParallelize(
     std::function<T(FatBeagle *, const Tree &)> f,
