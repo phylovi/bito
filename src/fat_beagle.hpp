@@ -15,46 +15,6 @@
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
 
-class FatBeagle {
- public:
-  // This constructor makes the beagle_instance_;
-  FatBeagle(const PhyloModelSpecification &specification,
-            const SitePattern &site_pattern);
-  ~FatBeagle();
-  // Delete (copy + move) x (constructor + assignment)
-  FatBeagle(const FatBeagle &) = delete;
-  FatBeagle(const FatBeagle &&) = delete;
-  FatBeagle &operator=(const FatBeagle &) = delete;
-  FatBeagle &operator=(const FatBeagle &&) = delete;
-
-  const BlockSpecification &GetBlockSpecification() const;
-
-  void SetParameters(const EigenVectorXdRef param_vector);
-  void SetRescaling();
-
-  double LogLikelihood(const Tree &tree) const;
-  std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
-
-  // We can pass these static methods to FatBeagleParallelize.
-  static double StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree);
-  static std::pair<double, std::vector<double>> StaticBranchGradient(
-      FatBeagle *fat_beagle, const Tree &in_tree);
-
- private:
-  using BeagleInstance = int;
-
-  BeagleInstance CreateInstance(const SitePattern &site_pattern);
-  void SetTipStates(const SitePattern &site_pattern);
-  void UpdateSiteModelInBeagle();
-  void UpdateSubstitutionModelInBeagle();
-  void UpdatePhyloModelInBeagle();
-
-  std::unique_ptr<PhyloModel> phylo_model_;
-  bool rescaling_;
-  BeagleInstance beagle_instance_;
-  int pattern_count_;
-};
-
 struct BeagleAccessories {
   const int beagle_instance_;
   const bool rescaling_;
@@ -96,6 +56,51 @@ struct BeagleAccessories {
         node_indices_(internal_count_) {
     std::iota(node_indices_.begin(), node_indices_.end(), 0);
   }
+};
+
+class FatBeagle {
+ public:
+  // This constructor makes the beagle_instance_;
+  FatBeagle(const PhyloModelSpecification &specification,
+            const SitePattern &site_pattern);
+  ~FatBeagle();
+  // Delete (copy + move) x (constructor + assignment)
+  FatBeagle(const FatBeagle &) = delete;
+  FatBeagle(const FatBeagle &&) = delete;
+  FatBeagle &operator=(const FatBeagle &) = delete;
+  FatBeagle &operator=(const FatBeagle &&) = delete;
+
+  const BlockSpecification &GetBlockSpecification() const;
+
+  void SetParameters(const EigenVectorXdRef param_vector);
+  void SetRescaling();
+
+  double LogLikelihood(const Tree &tree) const;
+  std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
+
+  // We can pass these static methods to FatBeagleParallelize.
+  static double StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree);
+  static std::pair<double, std::vector<double>> StaticBranchGradient(
+      FatBeagle *fat_beagle, const Tree &in_tree);
+
+ private:
+  using BeagleInstance = int;
+  using BeagleOperationVector = std::vector<BeagleOperation>;
+
+  std::unique_ptr<PhyloModel> phylo_model_;
+  bool rescaling_;
+  BeagleInstance beagle_instance_;
+  int pattern_count_;
+
+  BeagleInstance CreateInstance(const SitePattern &site_pattern);
+  void SetTipStates(const SitePattern &site_pattern);
+  void UpdateSiteModelInBeagle();
+  void UpdateSubstitutionModelInBeagle();
+  void UpdatePhyloModelInBeagle();
+
+  static void AddLogLikelihoodOperation(BeagleOperationVector &operations,
+                                        const BeagleAccessories ba,
+                                        const Node *node);
 };
 
 template <typename T>

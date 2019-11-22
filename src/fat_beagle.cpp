@@ -139,35 +139,41 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
       "bifurcation or a trifurcation at the root.");
 }
 
+void FatBeagle::AddLogLikelihoodOperation(BeagleOperationVector &operations,
+                                          const BeagleAccessories ba,
+                                          const Node *node) {
+  if (node->IsLeaf()) {
+    return;
+  }  // else
+  Assert(node->Children().size() == 2,
+         "Tree isn't bifurcating in LogLikelihood.");
+  int dest = static_cast<int>(node->Id());
+  int child0_id = static_cast<int>(node->Children()[0]->Id());
+  int child1_id = static_cast<int>(node->Children()[1]->Id());
+  BeagleOperation op = {
+      dest,                            // dest
+      BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
+      child0_id,      child0_id,       // src1 and matrix1
+      child1_id,      child1_id        // src2 and matrix2
+  };
+  if (ba.rescaling_) {
+    // We don't need scaling buffers for the leaves.
+    // Index 0 is reserved for accumulating the sum of log scalers.
+    // Thus the scaling buffers are indexed by the edge number minus the
+    // number of leaves + 1.
+    op.destinationScaleWrite = dest - ba.taxon_count_ + 1;
+  }
+  operations.push_back(op);
+}
+
 double FatBeagle::LogLikelihood(const Tree &in_tree) const {
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   std::vector<BeagleOperation> operations;
-  tree.Topology()->PostOrder(
-      [&operations, &ba](const Node *node) {
-        if (!node->IsLeaf()) {
-          Assert(node->Children().size() == 2,
-                 "Tree isn't bifurcating in LogLikelihood.");
-          int dest = static_cast<int>(node->Id());
-          int child0_id = static_cast<int>(node->Children()[0]->Id());
-          int child1_id = static_cast<int>(node->Children()[1]->Id());
-          BeagleOperation op = {
-              dest,                            // dest
-              BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
-              child0_id,      child0_id,       // src1 and matrix1
-              child1_id,      child1_id        // src2 and matrix2
-          };
-          if (ba.rescaling_) {
-            // We don't need scaling buffers for the leaves.
-            // Index 0 is reserved for accumulating the sum of log scalers.
-            // Thus the scaling buffers are indexed by the edge number minus the
-            // number of leaves + 1.
-            op.destinationScaleWrite = dest - ba.taxon_count_ + 1;
-          }
-          operations.push_back(op);
-        }
-      });
+  tree.Topology()->PostOrder([&operations, &ba](const Node *node) {
+    AddLogLikelihoodOperation(operations, ba, node);
+  });
   beagleUpdateTransitionMatrices(beagle_instance_,
                                  0,  // eigenIndex
                                  ba.node_indices_.data(),
@@ -175,12 +181,10 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
                                  nullptr,  // secondDervativeIndices
                                  tree.BranchLengths().data(),
                                  ba.node_count_ - 1);
-
   beagleUpdatePartials(beagle_instance_,
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),
                        ba.cumulative_scale_index_[0]);
-
   double log_like = 0;
   std::vector<int> root_id = {static_cast<int>(tree.Id())};
   beagleCalculateRootLogLikelihoods(
