@@ -28,6 +28,9 @@ struct BeagleAccessories {
   // In the BEASTs it's hardcoded to 1 and in MrBayes it appears to be for
   // covarion models.
   const int mysterious_count_ = 1;
+  // Scaling factors are recomputed every time so we don't read them
+  // using destinationScaleRead.
+  const int destinationScaleRead_ = BEAGLE_OP_NONE;
   // This is the entry of scaleBuffer in which we store accumulated factors.
   std::vector<int> cumulative_scale_index_;
   std::vector<int> node_indices_;

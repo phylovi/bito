@@ -139,38 +139,43 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
       "bifurcation or a trifurcation at the root.");
 }
 
+// If we pass nullptr as gradient_indices_ptr then the gradient will not be
+// computed.
 void FatBeagle::UpdateBeagleTransitionMatrices(
     const BeagleAccessories &ba, const Tree &tree,
     const int *const gradient_indices_ptr) const {
   beagleUpdateTransitionMatrices(
-      beagle_instance_,
-      0,  // eigenIndex
-      ba.node_indices_.data(),
-      gradient_indices_ptr,  // firstDerivativeIndices
-      nullptr,               // secondDervativeIndices
-      tree.BranchLengths().data(), ba.node_count_ - 1);
+      beagle_instance_,             // instance
+      0,                            // eigenIndex
+      ba.node_indices_.data(),      // probabilityIndices
+      gradient_indices_ptr,         // firstDerivativeIndices
+      nullptr,                      // secondDerivativeIndices
+      tree.BranchLengths().data(),  // edgeLengths
+      ba.node_count_ - 1);          // count
 }
 
 void FatBeagle::AddLowerPartialOperation(BeagleOperationVector &operations,
                                          const BeagleAccessories &ba,
-                                         int node_id, int child0_id,
-                                         int child1_id) {
-  BeagleOperation op = {
-      node_id,                         // dest
-      BEAGLE_OP_NONE, BEAGLE_OP_NONE,  // src and dest scaling
-      child0_id,      child0_id,       // src1 and matrix1
-      child1_id,      child1_id        // src2 and matrix2
-  };
-  if (ba.rescaling_) {
-    op.destinationScaleWrite = node_id - ba.taxon_count_ + 1;
-  }
-  operations.push_back(op);
+                                         const int node_id, const int child0_id,
+                                         const int child1_id) {
+  const int destinationScaleWrite =
+      ba.rescaling_ ? node_id - ba.taxon_count_ + 1 : BEAGLE_OP_NONE;
+  // We can't emplace_back because BeagleOperation has no constructor.
+  // The compiler should elide this though.
+  operations.push_back({
+      node_id,  // destinationPartials
+      destinationScaleWrite, ba.destinationScaleRead_,
+      child0_id,  // child1Partials;
+      child0_id,  // child1TransitionMatrix;
+      child1_id,  // child2Partials;
+      child1_id   // child2TransitionMatrix;
+  });
 }
 
 void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
                                          const BeagleAccessories &ba,
-                                         int node_id, int sister_id,
-                                         int parent_id) {
+                                         const int node_id, const int sister_id,
+                                         const int parent_id) {
   if (node_id != ba.root_child_id_ && node_id != ba.fixed_node_id_) {
     int upper_partial_index;
     int upper_matrix_index;
@@ -184,25 +189,20 @@ void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
       upper_partial_index = parent_id + ba.node_count_;
       upper_matrix_index = parent_id;
     }
-    BeagleOperation op = {
-        node_id + ba.node_count_,  // dest
-        BEAGLE_OP_NONE,            // src scaling
-        BEAGLE_OP_NONE,            // dest scaling
-        upper_partial_index,       // src1
-        upper_matrix_index,        // matrix1
-        sister_id,                 // src2
-        sister_id                  // matrix2
-    };
     // Scalers are indexed differently for the upper conditional
     // likelihood. They start at the number of internal nodes + 1 because
     // of the lower conditional likelihoods. Also, in this case the leaves
     // have scalers.
-    if (ba.rescaling_) {
-      // Scaling factors are recomputed every time so we don't read them
-      // using destinationScaleRead.
-      op.destinationScaleWrite = node_id + 1 + ba.internal_count_;
-    }
-    operations.push_back(op);
+    const int destinationScaleWrite =
+        ba.rescaling_ ? node_id + 1 + ba.internal_count_ : BEAGLE_OP_NONE;
+    operations.push_back({
+        node_id + ba.node_count_,  // destinationPartials
+        destinationScaleWrite, ba.destinationScaleRead_,
+        upper_partial_index,  // child1Partials;
+        upper_matrix_index,   // child1TransitionMatrix;
+        sister_id,            // child2Partials;
+        sister_id             // child2TransitionMatrix;
+    });
   }
 }
 
