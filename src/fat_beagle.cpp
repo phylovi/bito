@@ -192,10 +192,6 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
   std::vector<int> category_weight_index = {0};
   std::vector<int> state_frequency_index = {0};
   std::vector<int> cumulative_scale_index = {cumululative_index};
-  // We're not exacty sure what this mysterious_count argument is for.
-  // The beagle docs say: Number of partialsBuffer to integrate (input)
-  // In the BEASTs it's hardcoded to 1 and in MrBayes it appears to be for
-  // covarion models.
   int mysterious_count = 1;
   beagleCalculateRootLogLikelihoods(
       beagle_instance_, root_id.data(), category_weight_index.data(),
@@ -336,21 +332,15 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
                                    ba.cumulative_scale_index_[0]);
     }
 
-    int mysterious_count = 1;  // Not sure what this variable does.
     beagleCalculateEdgeLogLikelihoods(
-        ba.beagle_instance_,                // instance number
-        ba.upper_partials_index_.data(),    // indices of parent partialsBuffers
-        ba.node_partial_indices_.data(),    // indices of child partialsBuffers
-        ba.node_mat_indices_.data(),        // transition probability matrices
-        ba.node_deriv_index_.data(),        // first derivative matrices
-        nullptr,                            // second derivative matrices
-        ba.category_weight_index_.data(),   // pattern weights
-        ba.state_frequency_index_.data(),   // state frequencies
-        ba.cumulative_scale_index_.data(),  // scale Factors
-        mysterious_count,                   // Number of partialsBuffer
-        &log_like,                          // destination for log likelihood
-        &dlogLp,                            // destination for first derivative
-        nullptr);                           // destination for second derivative
+        ba.beagle_instance_, ba.upper_partials_index_.data(),
+        ba.node_partial_indices_.data(), ba.node_mat_indices_.data(),
+        ba.node_deriv_index_.data(),
+        nullptr,  // second derivative matrices
+        ba.category_weight_index_.data(), ba.state_frequency_index_.data(),
+        ba.cumulative_scale_index_.data(), ba.mysterious_count_, &log_like,
+        &dlogLp,
+        nullptr);  // destination for second derivative
     gradient[static_cast<size_t>(node_id)] = dlogLp;
   });
 

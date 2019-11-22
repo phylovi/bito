@@ -62,12 +62,24 @@ struct BeagleAccessories {
   const int node_count_;
   const int internal_count_;
   const int taxon_count_;
+  // We're not exacty sure what this mysterious_count argument is for.
+  // The beagle docs say: Number of partialsBuffer to integrate (input)
+  // In the BEASTs it's hardcoded to 1 and in MrBayes it appears to be for
+  // covarion models.
+  int mysterious_count_ = 1;
+  // scale factors
   std::vector<int> cumulative_scale_index_;
+  // pattern weights
   std::vector<int> category_weight_index_ = {0};
+  // state frequencies
   std::vector<int> state_frequency_index_ = {0};
+  // indices of parent partialsBuffers
   std::vector<int> upper_partials_index_ = {0};
+  // indices of child partialsBuffers
   std::vector<int> node_partial_indices_ = {0};
+  // transition probability matrices
   std::vector<int> node_mat_indices_ = {0};
+  // first derivative matrices
   std::vector<int> node_deriv_index_ = {0};
 
   BeagleAccessories(int beagle_instance, bool rescaling, const Tree &tree)
