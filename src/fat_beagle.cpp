@@ -139,6 +139,18 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
       "bifurcation or a trifurcation at the root.");
 }
 
+void FatBeagle::UpdateBeagleTransitionMatrices(
+    const BeagleAccessories &ba, const Tree &tree,
+    const int *const gradient_indices_ptr) const {
+  beagleUpdateTransitionMatrices(
+      beagle_instance_,
+      0,  // eigenIndex
+      ba.node_indices_.data(),
+      gradient_indices_ptr,  // firstDerivativeIndices
+      nullptr,               // secondDervativeIndices
+      tree.BranchLengths().data(), ba.node_count_ - 1);
+}
+
 void FatBeagle::AddLowerPartialOperation(BeagleOperationVector &operations,
                                          const BeagleAccessories &ba,
                                          int node_id, int child0_id,
@@ -201,13 +213,7 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
-  beagleUpdateTransitionMatrices(beagle_instance_,
-                                 0,  // eigenIndex
-                                 ba.node_indices_.data(),
-                                 nullptr,  // firstDerivativeIndices
-                                 nullptr,  // secondDervativeIndices
-                                 tree.BranchLengths().data(),
-                                 ba.node_count_ - 1);
+  UpdateBeagleTransitionMatrices(ba, tree, nullptr);
   beagleUpdatePartials(beagle_instance_,
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),
@@ -281,8 +287,8 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
 
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   BeagleOperationVector operations;
-  std::vector<int> gradient_indices(ba.internal_count_);
-  std::iota(gradient_indices.begin(), gradient_indices.end(), ba.node_count_);
+  auto gradient_indices =
+      BeagleAccessories::IotaVector(ba.internal_count_, ba.node_count_);
 
   tree.Topology()->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
@@ -293,14 +299,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
       [&operations, &ba](int node_id, int sister_id, int parent_id) {
         AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
       });
-
-  beagleUpdateTransitionMatrices(
-      beagle_instance_,
-      0,  // eigenIndex
-      ba.node_indices_.data(),
-      gradient_indices.data(),  // firstDerivativeIndices
-      nullptr,                  // secondDervativeIndices
-      tree.BranchLengths().data(), ba.node_count_ - 1);
+  UpdateBeagleTransitionMatrices(ba, tree, gradient_indices.data());
 
   beagleUpdatePartials(beagle_instance_,
                        operations.data(),  // eigenIndex

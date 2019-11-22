@@ -53,8 +53,12 @@ struct BeagleAccessories {
         internal_count_(node_count_ - 1),
         taxon_count_(static_cast<int>(tree.LeafCount())),
         cumulative_scale_index_({rescaling ? 0 : BEAGLE_OP_NONE}),
-        node_indices_(internal_count_) {
-    std::iota(node_indices_.begin(), node_indices_.end(), 0);
+        node_indices_(IotaVector(internal_count_, 0)) {}
+
+  static std::vector<int> IotaVector(size_t size, int start_value) {
+    std::vector<int> v(size);
+    std::iota(v.begin(), v.end(), start_value);
+    return v;
   }
 };
 
@@ -98,6 +102,9 @@ class FatBeagle {
   void UpdateSubstitutionModelInBeagle();
   void UpdatePhyloModelInBeagle();
 
+  void UpdateBeagleTransitionMatrices(
+      const BeagleAccessories &ba, const Tree &tree,
+      const int *const gradient_indices_ptr) const;
   static inline void AddLowerPartialOperation(BeagleOperationVector &operations,
                                               const BeagleAccessories &ba,
                                               int node_id, int child0_id,

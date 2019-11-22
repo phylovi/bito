@@ -255,6 +255,7 @@ TEST_CASE("libsbn") {
       255.52967,  259.90378,  394.00504,  394.96619,  396.98933,  429.83873,
       450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
       888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
+  // TODO are these tests actually firing??
   for (size_t i = 0; i < last.second.size(); i++) {
     CHECK_LT(fabs(last.second[i] - physher_gradients[i]), 0.0001);
   }
