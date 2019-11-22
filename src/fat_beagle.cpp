@@ -251,9 +251,8 @@ std::pair<double, double> FatBeagle::ComputeGradientEntry(
 
   if (ba.rescaling_) {
     beagleResetScaleFactors(ba.beagle_instance_, ba.cumulative_scale_index_[0]);
-    std::vector<int> scaler_indices(
-        static_cast<size_t>(ba.internal_count_ - 1));
-    std::iota(scaler_indices.begin(), scaler_indices.end(), 1);
+    auto scaler_indices = BeagleAccessories::IotaVector(
+        static_cast<size_t>(ba.internal_count_ - 1), 1);
     // Replace lower scaler index with upper scaler index for nodes between
     // node_index and root.
     int child = node_id;
