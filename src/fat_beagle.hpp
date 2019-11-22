@@ -93,7 +93,7 @@ struct BeagleAccessories {
         internal_count_(node_count_ - 1),
         taxon_count_(static_cast<int>(tree.LeafCount())),
         cumulative_scale_index_({rescaling ? 0 : BEAGLE_OP_NONE}),
-        node_indices_({internal_count_}) {
+        node_indices_(internal_count_) {
     std::iota(node_indices_.begin(), node_indices_.end(), 0);
   }
 };

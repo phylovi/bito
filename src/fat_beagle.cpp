@@ -2,7 +2,6 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "fat_beagle.hpp"
-#include <algorithm>
 #include <numeric>
 #include <utility>
 #include <vector>
@@ -143,11 +142,10 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
 double FatBeagle::LogLikelihood(const Tree &in_tree) const {
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
-  auto node_count = tree.BranchLengths().size();
-  const int int_taxon_count = static_cast<int>(tree.LeafCount());
+  BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   std::vector<BeagleOperation> operations;
   tree.Topology()->PostOrder(
-      [&operations, int_taxon_count, rescaling = rescaling_](const Node *node) {
+      [&operations, &ba](const Node *node) {
         if (!node->IsLeaf()) {
           Assert(node->Children().size() == 2,
                  "Tree isn't bifurcating in LogLikelihood.");
@@ -160,43 +158,35 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
               child0_id,      child0_id,       // src1 and matrix1
               child1_id,      child1_id        // src2 and matrix2
           };
-          if (rescaling) {
+          if (ba.rescaling_) {
             // We don't need scaling buffers for the leaves.
             // Index 0 is reserved for accumulating the sum of log scalers.
             // Thus the scaling buffers are indexed by the edge number minus the
             // number of leaves + 1.
-            op.destinationScaleWrite = dest - int_taxon_count + 1;
+            op.destinationScaleWrite = dest - ba.taxon_count_ + 1;
           }
           operations.push_back(op);
         }
       });
-  std::vector<int> node_indices(node_count - 1);
-  std::iota(node_indices.begin(), node_indices.end(), 0);
   beagleUpdateTransitionMatrices(beagle_instance_,
                                  0,  // eigenIndex
-                                 node_indices.data(),
+                                 ba.node_indices_.data(),
                                  nullptr,  // firstDerivativeIndices
                                  nullptr,  // secondDervativeIndices
                                  tree.BranchLengths().data(),
-                                 static_cast<int>(node_count - 1));
+                                 ba.node_count_ - 1);
 
-  // This is the entry of scaleBuffer in which we store accumulated factors.
-  int cumululative_index = rescaling_ ? 0 : BEAGLE_OP_NONE;
   beagleUpdatePartials(beagle_instance_,
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),
-                       cumululative_index);  // cumulative scale index
+                       ba.cumulative_scale_index_[0]);
 
   double log_like = 0;
   std::vector<int> root_id = {static_cast<int>(tree.Id())};
-  std::vector<int> category_weight_index = {0};
-  std::vector<int> state_frequency_index = {0};
-  std::vector<int> cumulative_scale_index = {cumululative_index};
-  int mysterious_count = 1;
   beagleCalculateRootLogLikelihoods(
-      beagle_instance_, root_id.data(), category_weight_index.data(),
-      state_frequency_index.data(), cumulative_scale_index.data(),
-      mysterious_count, &log_like);
+      beagle_instance_, root_id.data(), ba.category_weight_index_.data(),
+      ba.state_frequency_index_.data(), ba.cumulative_scale_index_.data(),
+      ba.mysterious_count_, &log_like);
   return log_like;
 }
 
@@ -208,8 +198,6 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
 
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   std::vector<BeagleOperation> operations;
-  std::vector<int> node_indices(ba.internal_count_);
-  std::iota(node_indices.begin(), node_indices.end(), 0);
   std::vector<int> gradient_indices(ba.internal_count_);
   std::iota(gradient_indices.begin(), gradient_indices.end(), ba.node_count_);
 
@@ -267,7 +255,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   beagleUpdateTransitionMatrices(
       beagle_instance_,
       0,  // eigenIndex
-      node_indices.data(),
+      ba.node_indices_.data(),
       gradient_indices.data(),  // firstDerivativeIndices
       nullptr,                  // secondDervativeIndices
       tree.BranchLengths().data(), ba.node_count_ - 1);
