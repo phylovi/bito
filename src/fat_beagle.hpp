@@ -102,6 +102,10 @@ class FatBeagle {
                                               const BeagleAccessories ba,
                                               int node_id, int child0_id,
                                               int child1_id);
+  static inline void AddUpperPartialOperation(BeagleOperationVector &operations,
+                                              const BeagleAccessories ba,
+                                              int node_id, int sister_id,
+                                              int parent_id);
 };
 
 template <typename T>

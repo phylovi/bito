@@ -155,6 +155,43 @@ void FatBeagle::AddLowerPartialOperation(BeagleOperationVector &operations,
   operations.push_back(op);
 }
 
+void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
+                                         const BeagleAccessories ba,
+                                         int node_id, int sister_id,
+                                         int parent_id) {
+  if (node_id != ba.root_child_id_ && node_id != ba.fixed_node_id_) {
+    int upper_partial_index;
+    int upper_matrix_index;
+    if (parent_id == ba.root_child_id_) {
+      upper_matrix_index = static_cast<int>(ba.root_child_id_);
+      upper_partial_index = static_cast<int>(ba.fixed_node_id_);
+    } else if (parent_id == ba.fixed_node_id_) {
+      upper_matrix_index = static_cast<int>(ba.root_child_id_);
+      upper_partial_index = static_cast<int>(ba.root_child_id_);
+    } else {
+      upper_partial_index = parent_id + ba.node_count_;
+      upper_matrix_index = parent_id;
+    }
+    BeagleOperation op = {node_id + ba.node_count_,
+                          BEAGLE_OP_NONE,
+                          BEAGLE_OP_NONE,
+                          upper_partial_index,
+                          upper_matrix_index,
+                          sister_id,
+                          sister_id};
+    // Scalers are indexed differently for the upper conditional
+    // likelihood. They start at the number of internal nodes + 1 because
+    // of the lower conditional likelihoods. Also, in this case the leaves
+    // have scalers.
+    if (ba.rescaling_) {
+      // Scaling factors are recomputed every time so we don't read them
+      // using destinationScaleRead.
+      op.destinationScaleWrite = node_id + 1 + ba.internal_count_;
+    }
+    operations.push_back(op);
+  }
+}
+
 double FatBeagle::LogLikelihood(const Tree &in_tree) const {
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
@@ -200,40 +237,9 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
 
-  // Calculate upper partials.
   tree.Topology()->TripleIdPreOrderBifurcating(
       [&operations, &ba](int node_id, int sister_id, int parent_id) {
-        if (node_id != ba.root_child_id_ && node_id != ba.fixed_node_id_) {
-          int upper_partial_index;
-          int upper_matrix_index;
-          if (parent_id == ba.root_child_id_) {
-            upper_matrix_index = static_cast<int>(ba.root_child_id_);
-            upper_partial_index = static_cast<int>(ba.fixed_node_id_);
-          } else if (parent_id == ba.fixed_node_id_) {
-            upper_matrix_index = static_cast<int>(ba.root_child_id_);
-            upper_partial_index = static_cast<int>(ba.root_child_id_);
-          } else {
-            upper_partial_index = parent_id + ba.node_count_;
-            upper_matrix_index = parent_id;
-          }
-          BeagleOperation op = {node_id + ba.node_count_,
-                                BEAGLE_OP_NONE,
-                                BEAGLE_OP_NONE,
-                                upper_partial_index,
-                                upper_matrix_index,
-                                sister_id,
-                                sister_id};
-          // Scalers are indexed differently for the upper conditional
-          // likelihood. They start at the number of internal nodes + 1 because
-          // of the lower conditional likelihoods. Also, in this case the leaves
-          // have scalers.
-          if (ba.rescaling_) {
-            // Scaling factors are recomputed every time so we don't read them
-            // using destinationScaleRead.
-            op.destinationScaleWrite = node_id + 1 + ba.internal_count_;
-          }
-          operations.push_back(op);
-        }
+        AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
       });
 
   beagleUpdateTransitionMatrices(
