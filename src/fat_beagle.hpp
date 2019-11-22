@@ -5,6 +5,7 @@
 #define SRC_FAT_BEAGLE_HPP_
 
 #include <memory>
+#include <numeric>
 #include <queue>
 #include <utility>
 #include <vector>
@@ -66,9 +67,10 @@ struct BeagleAccessories {
   // The beagle docs say: Number of partialsBuffer to integrate (input)
   // In the BEASTs it's hardcoded to 1 and in MrBayes it appears to be for
   // covarion models.
-  int mysterious_count_ = 1;
-  // scale factors
+  const int mysterious_count_ = 1;
+  // This is the entry of scaleBuffer in which we store accumulated factors.
   std::vector<int> cumulative_scale_index_;
+  std::vector<int> node_indices_;
   // pattern weights
   std::vector<int> category_weight_index_ = {0};
   // state frequencies
@@ -88,9 +90,12 @@ struct BeagleAccessories {
         fixed_node_id_(static_cast<int>(tree.Topology()->Children()[1]->Id())),
         root_child_id_(static_cast<int>(tree.Topology()->Children()[0]->Id())),
         node_count_(static_cast<int>(tree.BranchLengths().size())),
-        internal_count_(static_cast<int>(tree.BranchLengths().size()) - 1),
+        internal_count_(node_count_ - 1),
         taxon_count_(static_cast<int>(tree.LeafCount())),
-        cumulative_scale_index_({rescaling ? 0 : BEAGLE_OP_NONE}) {}
+        cumulative_scale_index_({rescaling ? 0 : BEAGLE_OP_NONE}),
+        node_indices_({internal_count_}) {
+    std::iota(node_indices_.begin(), node_indices_.end(), 0);
+  }
 };
 
 template <typename T>
