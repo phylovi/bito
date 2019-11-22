@@ -98,9 +98,9 @@ class FatBeagle {
   void UpdateSubstitutionModelInBeagle();
   void UpdatePhyloModelInBeagle();
 
-  static void AddLogLikelihoodOperation(BeagleOperationVector &operations,
-                                        const BeagleAccessories ba,
-                                        const Node *node);
+  static inline void AddLogLikelihoodOperation(
+      BeagleOperationVector &operations, const BeagleAccessories ba,
+      const Node *node);
 };
 
 template <typename T>

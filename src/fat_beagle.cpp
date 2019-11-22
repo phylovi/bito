@@ -170,7 +170,7 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
-  std::vector<BeagleOperation> operations;
+  BeagleOperationVector operations;
   tree.Topology()->PostOrder([&operations, &ba](const Node *node) {
     AddLogLikelihoodOperation(operations, ba, node);
   });
@@ -201,7 +201,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   tree.SlideRootPosition();
 
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
-  std::vector<BeagleOperation> operations;
+  BeagleOperationVector operations;
   std::vector<int> gradient_indices(ba.internal_count_);
   std::iota(gradient_indices.begin(), gradient_indices.end(), ba.node_count_);
 
