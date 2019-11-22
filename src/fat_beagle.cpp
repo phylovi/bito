@@ -175,11 +175,11 @@ void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
     int upper_partial_index;
     int upper_matrix_index;
     if (parent_id == ba.root_child_id_) {
-      upper_matrix_index = static_cast<int>(ba.root_child_id_);
-      upper_partial_index = static_cast<int>(ba.fixed_node_id_);
+      upper_matrix_index = ba.root_child_id_;
+      upper_partial_index = ba.fixed_node_id_;
     } else if (parent_id == ba.fixed_node_id_) {
-      upper_matrix_index = static_cast<int>(ba.root_child_id_);
-      upper_partial_index = static_cast<int>(ba.root_child_id_);
+      upper_matrix_index = ba.root_child_id_;
+      upper_partial_index = ba.root_child_id_;
     } else {
       upper_partial_index = parent_id + ba.node_count_;
       upper_matrix_index = parent_id;
@@ -237,11 +237,12 @@ std::pair<double, double> FatBeagle::ComputeGradientEntry(
   ba.node_mat_indices_[0] = node_id;
   ba.node_deriv_index_[0] = node_id + ba.node_count_;
 
+  // If we're at the root then "up" is the sister.
   if (node_id == ba.root_child_id_) {
     ba.upper_partials_index_[0] = sister_id;
   }
-  // parent partial Buffers cannot be a taxon in
-  // beagleCalculateEdgeLogLikelihoods
+  // Parent partial Buffers cannot be a taxon in
+  // beagleCalculateEdgeLogLikelihoods.
   if (ba.node_partial_indices_[0] > ba.upper_partials_index_[0]) {
     std::swap(ba.node_partial_indices_, ba.upper_partials_index_);
   }
@@ -287,28 +288,24 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
 
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   BeagleOperationVector operations;
-  auto gradient_indices =
+  const auto gradient_indices =
       BeagleAccessories::IotaVector(ba.internal_count_, ba.node_count_);
-
   tree.Topology()->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
-
   tree.Topology()->TripleIdPreOrderBifurcating(
       [&operations, &ba](int node_id, int sister_id, int parent_id) {
         AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
       });
   UpdateBeagleTransitionMatrices(ba, tree, gradient_indices.data());
-
   beagleUpdatePartials(beagle_instance_,
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),
                        BEAGLE_OP_NONE);  // cumulative scale index
 
-  std::vector<double> gradient(ba.node_count_, 0);
   double log_like = 0;
-
+  std::vector<double> gradient(ba.node_count_, 0);
   SizeVectorVector indices_above = tree.Topology()->IdsAbove();
   for (auto &indices : indices_above) {
     // Reverse vector so we have indices from node to root.
@@ -316,7 +313,6 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     // Remove the root scalers.
     indices.pop_back();
   }
-
   // Actually compute gradient.
   tree.Topology()->TripleIdPreOrderBifurcating(
       [&ba, &gradient, &indices_above, &log_like](int node_id, int sister_id,
@@ -324,12 +320,10 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
         if (node_id != ba.fixed_node_id_) {
           auto [local_log_like, dlogLp] =
               ComputeGradientEntry(ba, indices_above, node_id, sister_id);
-
           log_like = local_log_like;
           gradient[static_cast<size_t>(node_id)] = dlogLp;
         }
       });
-
   return {log_like, gradient};
 }
 
