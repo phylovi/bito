@@ -184,13 +184,15 @@ void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
       upper_partial_index = parent_id + ba.node_count_;
       upper_matrix_index = parent_id;
     }
-    BeagleOperation op = {node_id + ba.node_count_,
-                          BEAGLE_OP_NONE,
-                          BEAGLE_OP_NONE,
-                          upper_partial_index,
-                          upper_matrix_index,
-                          sister_id,
-                          sister_id};
+    BeagleOperation op = {
+        node_id + ba.node_count_,  // dest
+        BEAGLE_OP_NONE,            // src scaling
+        BEAGLE_OP_NONE,            // dest scaling
+        upper_partial_index,       // src1
+        upper_matrix_index,        // matrix1
+        sister_id,                 // src2
+        sister_id                  // matrix2
+    };
     // Scalers are indexed differently for the upper conditional
     // likelihood. They start at the number of internal nodes + 1 because
     // of the lower conditional likelihoods. Also, in this case the leaves
