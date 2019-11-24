@@ -5,65 +5,14 @@
 #define SRC_FAT_BEAGLE_HPP_
 
 #include <memory>
-#include <numeric>
 #include <queue>
 #include <utility>
 #include <vector>
-#include "libhmsbeagle/beagle.h"
+#include "beagle_accessories.hpp"
 #include "phylo_model.hpp"
 #include "site_pattern.hpp"
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
-
-struct BeagleAccessories {
-  const int beagle_instance_;
-  const bool rescaling_;
-  const int fixed_node_id_;
-  const int root_child_id_;
-  const int node_count_;
-  const int internal_count_;
-  const int taxon_count_;
-  // We're not exacty sure what this mysterious_count argument is for.
-  // The beagle docs say: Number of partialsBuffer to integrate (input)
-  // In the BEASTs it's hardcoded to 1 and in MrBayes it appears to be for
-  // covarion models.
-  const int mysterious_count_ = 1;
-  // Scaling factors are recomputed every time so we don't read them
-  // using destinationScaleRead.
-  const int destinationScaleRead_ = BEAGLE_OP_NONE;
-  // This is the entry of scaleBuffer in which we store accumulated factors.
-  std::vector<int> cumulative_scale_index_;
-  std::vector<int> node_indices_;
-  // pattern weights
-  std::vector<int> category_weight_index_ = {0};
-  // state frequencies
-  std::vector<int> state_frequency_index_ = {0};
-  // indices of parent partialsBuffers
-  std::vector<int> upper_partials_index_ = {0};
-  // indices of child partialsBuffers
-  std::vector<int> node_partial_indices_ = {0};
-  // transition probability matrices
-  std::vector<int> node_mat_indices_ = {0};
-  // first derivative matrices
-  std::vector<int> node_deriv_index_ = {0};
-
-  BeagleAccessories(int beagle_instance, bool rescaling, const Tree &tree)
-      : beagle_instance_(beagle_instance),
-        rescaling_(rescaling),
-        fixed_node_id_(static_cast<int>(tree.Topology()->Children()[1]->Id())),
-        root_child_id_(static_cast<int>(tree.Topology()->Children()[0]->Id())),
-        node_count_(static_cast<int>(tree.BranchLengths().size())),
-        internal_count_(node_count_ - 1),
-        taxon_count_(static_cast<int>(tree.LeafCount())),
-        cumulative_scale_index_({rescaling ? 0 : BEAGLE_OP_NONE}),
-        node_indices_(IotaVector(internal_count_, 0)) {}
-
-  static std::vector<int> IotaVector(size_t size, int start_value) {
-    std::vector<int> v(size);
-    std::iota(v.begin(), v.end(), start_value);
-    return v;
-  }
-};
 
 class FatBeagle {
  public:
