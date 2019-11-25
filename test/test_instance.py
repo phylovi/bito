@@ -71,21 +71,21 @@ def test_instance():
     print(np.array(inst.log_likelihoods()))
 
     # Here we ensure that various rootings of a given tree give the same indexer
-    # representations when we sort them with respect to the order on the rootsplits.
+    # representations when we sort their representations with respect to the order on
+    # the rootsplits.
     # This is the correct check because we want to make sure that for each virtual
-    # rooting (corresponding to the given rootsplit) we have the same _set_ of PCSSs
-    # (the order within PCSS sets doesn't matter).
+    # rooting (corresponding to each rootsplit) we have the same _set_ of PCSSs (the
+    # order within PCSS sets doesn't matter).
     inst.read_newick_file("data/many_rootings.nwk")
     inst.process_loaded_trees()
-    # First we just sort the PCSSs, which don't have a meaningful order within their
-    # lists.
-    pcss_sorted_reps = [
-        (rootsplits, [sorted(pcss) for pcss in pcss_list])
-        for (rootsplits, pcss_list) in inst.get_indexer_representations()
+    # First we turn the PCSS sets into actual Python sets for unordered comparison.
+    reps = [
+        (rootsplits, [set(pcss_set) for pcss_set in pcss_set_list])
+        for (rootsplits, pcss_set_list) in inst.get_indexer_representations()
     ]
-    # Next we sort the pcss_lists with respect to the order on the rootsplits. This
-    # normalizes the order of the pcss_lists to a standard.
-    final_sorted = [zip(*sorted(zip(*rep))) for rep in pcss_sorted_reps]
+    # Next we sort the representations with respect to the order on the rootsplits
+    # (the first component, corresponding to the various virtual rootings).
+    final_sorted = [zip(*sorted(zip(*rep))) for rep in reps]
     first_sorted_rep = list(final_sorted[0])
     for rep in final_sorted[1:]:
         assert first_sorted_rep == list(rep)
