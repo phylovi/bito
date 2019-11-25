@@ -26,7 +26,7 @@ FatBeagle::~FatBeagle() {
   }
 }
 
-const BlockSpecification &FatBeagle::GetBlockSpecification() const {
+const BlockSpecification &FatBeagle::GetPhyloModelBlockSpecification() const {
   return phylo_model_->GetBlockSpecification();
 }
 

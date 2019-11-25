@@ -15,10 +15,10 @@ Engine::Engine(const PhyloModelSpecification &specification,
   }
 }
 
-const BlockSpecification &Engine::GetBlockSpecification() const {
+const BlockSpecification &Engine::GetPhyloModelBlockSpecification() const {
   // The BlockSpecification is well defined for an Engine because the interface
   // assures that all of the PhyloModels have the same specification.
-  return GetFirstFatBeagle()->GetBlockSpecification();
+  return GetFirstFatBeagle()->GetPhyloModelBlockSpecification();
 }
 
 std::vector<double> Engine::LogLikelihoods(

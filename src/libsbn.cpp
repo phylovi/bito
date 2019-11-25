@@ -232,7 +232,7 @@ Eigen::Ref<EigenMatrixXd> SBNInstance::GetPhyloModelParams() {
 
 BlockSpecification::ParameterBlockMap
 SBNInstance::GetPhyloModelParamBlockMap() {
-  return GetEngine()->GetBlockSpecification().ParameterBlockMapOf(
+  return GetEngine()->GetPhyloModelBlockSpecification().ParameterBlockMapOf(
       phylo_model_params_);
 }
 
@@ -270,7 +270,8 @@ void SBNInstance::ResizePhyloModelParams(
         "preparing for phylogenetic likelihood calculation.");
   }
   phylo_model_params_.resize(
-      tree_count, GetEngine()->GetBlockSpecification().ParameterCount());
+      tree_count,
+      GetEngine()->GetPhyloModelBlockSpecification().ParameterCount());
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() {

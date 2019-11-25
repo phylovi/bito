@@ -20,7 +20,7 @@ class Engine {
   Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
          size_t thread_count);
 
-  const BlockSpecification &GetBlockSpecification() const;
+  const BlockSpecification &GetPhyloModelBlockSpecification() const;
 
   std::vector<double> LogLikelihoods(
       const TreeCollection &tree_collection,
