@@ -1,5 +1,9 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// BeagleAccessories are collections of artifacts that we can make in constant
+// time given the tree, and remain const througout any operation-gathering tree
+// traversal.
 
 #ifndef SRC_BEAGLE_ACCESSORIES_HPP_
 #define SRC_BEAGLE_ACCESSORIES_HPP_
@@ -26,12 +30,12 @@ struct BeagleAccessories {
   // using destinationScaleRead.
   const int destinationScaleRead_ = BEAGLE_OP_NONE;
   // This is the entry of scaleBuffer in which we store accumulated factors.
-  std::vector<int> cumulative_scale_index_;
-  std::vector<int> node_indices_;
+  const std::vector<int> cumulative_scale_index_;
+  const std::vector<int> node_indices_;
   // pattern weights
-  std::vector<int> category_weight_index_ = {0};
+  const std::vector<int> category_weight_index_ = {0};
   // state frequencies
-  std::vector<int> state_frequency_index_ = {0};
+  const std::vector<int> state_frequency_index_ = {0};
   // indices of parent partialsBuffers
   std::vector<int> upper_partials_index_ = {0};
   // indices of child partialsBuffers
