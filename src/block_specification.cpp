@@ -40,16 +40,16 @@ void BlockSpecification::Append(const std::string& sub_entire_key,
   const auto original_next_available_idx = next_available_idx;
   for (const auto [block_name, coordinate] : other.GetMap()) {
     auto [start_idx, block_size] = coordinate;
-    if (block_name != entire_key_) {
+    if (block_name == entire_key_) {
+      Insert(sub_entire_key,
+             {start_idx + original_next_available_idx, block_size});
+    } else {
       auto search = map_.find(block_name);
       if (search != map_.end()) {
         Failwith("Key overlap between BlockSpecifications: " + block_name);
       }  // else
       Insert(block_name, {next_available_idx, block_size});
       next_available_idx += block_size;
-    } else {
-      Insert(sub_entire_key,
-             {start_idx + original_next_available_idx, block_size});
     }
   }
   InsertEntireKey({0, next_available_idx});
@@ -88,10 +88,10 @@ EigenMatrixXdRef BlockSpecification::ExtractBlock(EigenMatrixXdRef param_matrix,
   return param_matrix.block(0, start_idx, param_matrix.rows(), parameter_count);
 }
 
-// In the interest of having a single code path, this implementation does twice
-// as many lookups as it needs by calling ExtractSegment. My intent is not to
-// have it be called frequently-- just once when we're setting things up. So if
-// this changes let's do something about it.
+// In the interest of having a single code path, this implementation does a
+// lookups in ExtractSegment even though it doesn't really need to. My intent is
+// not to have it be called frequently-- just once when we're setting things up.
+// So if this changes let's do something about it.
 BlockSpecification::ParameterSegmentMap
 BlockSpecification::ParameterSegmentMapOf(EigenVectorXdRef param_vector) const {
   CheckParameterVectorSize(param_vector);
