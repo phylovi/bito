@@ -26,7 +26,9 @@ def fixed(
     fasta_path = os.path.join(data_path, data_id + ".fasta")
     burn_in_fraction = 0.1
     particle_count_for_final_elbo_estimate = 10000
-
+    phylo_model_specification = libsbn.PhyloModelSpecification(
+        substitution="JC69", site="constant", clock="strict"
+    )
     # Read MCMC run and get split lengths.
     mcmc_inst = libsbn.instance("mcmc_inst")
     mcmc_inst.read_nexus_file(mcmc_nexus_path)
@@ -44,6 +46,7 @@ def fixed(
         mcmc_nexus_path=mcmc_nexus_path,
         burn_in_fraction=burn_in_fraction,
         fasta_path=fasta_path,
+        phylo_model_specification=phylo_model_specification,
         branch_model_name=branch_model_name,
         scalar_model_name=scalar_model_name,
         optimizer_name=optimizer_name,

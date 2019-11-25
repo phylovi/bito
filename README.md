@@ -76,7 +76,7 @@ Also let's:
 * Prefer [variable names and simple coding practices](https://blog.codinghorror.com/coding-without-comments/) to code comments.
   If that means having long identifier names, that's fine!
   If you can't make the code use and operation inherently obvious, please write documentation.
-* TODO comments shouldn't make it into master. Rather, make an issue on GitHub.
+* TODO comments don't get merged into master. Rather, make an issue on GitHub.
 * Always use curly braces for the body of conditionals and loops, even if they are one line.
 
 The [C++ core guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) are the authority for how to write C++, and we will follow them.

@@ -27,6 +27,7 @@ class Burrito:
         mcmc_nexus_path,
         burn_in_fraction,
         fasta_path,
+        phylo_model_specification,
         branch_model_name,
         scalar_model_name,
         optimizer_name,
@@ -44,10 +45,6 @@ class Burrito:
 
         # Set up tree likelihood calculation.
         self.inst.read_fasta_file(fasta_path)
-        # TODO pass the specification through the Burrito
-        phylo_model_specification = libsbn.PhyloModelSpecification(
-            substitution="JC69", site="constant", clock="strict"
-        )
         self.inst.prepare_for_phylo_likelihood(
             phylo_model_specification, thread_count, particle_count
         )
