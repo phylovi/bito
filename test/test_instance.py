@@ -61,11 +61,11 @@ def test_instance():
     inst.prepare_for_phylo_likelihood(simple_specification, 2)
     jc69_likelihood = np.array(inst.log_likelihoods())
 
+    # Showing off phylo_model_param_block_map.
     gtr_specification = libsbn.PhyloModelSpecification(
         substitution="GTR", site="constant", clock="strict"
     )
     inst.prepare_for_phylo_likelihood(gtr_specification, 2)
-    print(inst.get_block_specification())
     phylo_model_param_block_map = inst.get_phylo_model_param_block_map()
     phylo_model_param_block_map["GTR rates"][:] = 1.0
     phylo_model_param_block_map["frequencies"][:] = 0.25

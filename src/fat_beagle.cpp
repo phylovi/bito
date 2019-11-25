@@ -138,8 +138,8 @@ Tree PrepareTreeForLikelihood(const Tree &tree) {
       "bifurcation or a trifurcation at the root.");
 }
 
-// If we pass nullptr as gradient_indices_ptr then the gradient will not be
-// computed.
+// If we pass nullptr as gradient_indices_ptr then we will not prepare for
+// gradient calculation.
 void FatBeagle::UpdateBeagleTransitionMatrices(
     const BeagleAccessories &ba, const Tree &tree,
     const int *const gradient_indices_ptr) const {

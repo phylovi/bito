@@ -85,7 +85,6 @@ PYBIND11_MODULE(libsbn, m) {
       .def("resize_phylo_model_params", &SBNInstance::ResizePhyloModelParams,
            "Resize phylo_model_params.",
            py::arg("tree_count_option") = std::nullopt)
-      .def("get_block_specification", &SBNInstance::GetBlockSpecificationMap)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
       .def("branch_gradients", &SBNInstance::BranchGradients)
       // Member Variables

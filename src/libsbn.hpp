@@ -106,9 +106,8 @@ class SBNInstance {
 
   // ** Phylogenetic likelihood
 
-  BlockSpecification GetBlockSpecification() const;
-  BlockSpecification::UnderlyingMapType GetBlockSpecificationMap() const;
   Eigen::Ref<EigenMatrixXd> GetPhyloModelParams();
+  // See test_instance for an example of what this looks like.
   BlockSpecification::ParameterBlockMap GetPhyloModelParamBlockMap();
 
   void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }

@@ -228,22 +228,14 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
-BlockSpecification SBNInstance::GetBlockSpecification() const {
-  return GetEngine()->GetBlockSpecification();
-}
-
-BlockSpecification::UnderlyingMapType SBNInstance::GetBlockSpecificationMap()
-    const {
-  return GetEngine()->GetBlockSpecification().GetMap();
-}
-
 Eigen::Ref<EigenMatrixXd> SBNInstance::GetPhyloModelParams() {
   return phylo_model_params_;
 }
 
 BlockSpecification::ParameterBlockMap
 SBNInstance::GetPhyloModelParamBlockMap() {
-  return GetBlockSpecification().ParameterBlockMapOf(phylo_model_params_);
+  return GetEngine()->GetBlockSpecification().ParameterBlockMapOf(
+      phylo_model_params_);
 }
 
 void SBNInstance::MakeEngine(PhyloModelSpecification specification,
