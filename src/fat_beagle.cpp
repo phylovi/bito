@@ -305,7 +305,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
                        BEAGLE_OP_NONE);  // cumulative scale index
 
   double log_like = 0;
-  std::vector<double> gradient(ba.node_count_, 0);
+  std::vector<double> gradient(ba.node_count_, 0.);
   SizeVectorVector indices_above = tree.Topology()->IdsAbove();
   for (auto &indices : indices_above) {
     // Reverse vector so we have indices from node to root.
