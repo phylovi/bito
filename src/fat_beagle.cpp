@@ -37,24 +37,23 @@ void FatBeagle::SetParameters(const EigenVectorXdRef param_vector) {
 
 FatBeagle::BeagleInstance FatBeagle::CreateInstance(
     const SitePattern &site_pattern) {
-  int tip_count = static_cast<int>(site_pattern.SequenceCount());
+  int taxon_count = static_cast<int>(site_pattern.SequenceCount());
   // Number of partial buffers to create (input):
-  // tip_count - 1 for lower partials (internal nodes only)
-  // 2*tip_count - 2 for upper partials (every node except the root)
-  int partials_buffer_count = 3 * tip_count - 3;
+  // taxon_count - 1 for lower partials (internal nodes only)
+  // 2*taxon_count - 2 for upper partials (every node except the root)
+  int partials_buffer_count = 3 * taxon_count - 3;
   // Number of compact state representation buffers to create -- for use with
-  // setTipStates (input) */
-  int compact_buffer_count = tip_count;
-  // DNA assumption here.
+  // setTipStates (input)
+  int compact_buffer_count = taxon_count;
+  // The number of states.
   int state_count =
       static_cast<int>(phylo_model_->GetSubstitutionModel()->GetStateCount());
-  // Number of site patterns to be handled by the instance (input) -- not
-  // compressed in this case
+  // Number of site patterns to be handled by the instance.
   int pattern_count = pattern_count_;
   // Number of eigen-decomposition buffers to allocate (input)
   int eigen_buffer_count = 1;
   // Number of transition matrix buffers (input) -- two per edge
-  int matrix_buffer_count = 2 * (2 * tip_count - 1);
+  int matrix_buffer_count = 2 * (2 * taxon_count - 1);
   // Number of rate categories
   int category_count =
       static_cast<int>(phylo_model_->GetSiteModel()->GetCategoryCount());
@@ -76,7 +75,7 @@ FatBeagle::BeagleInstance FatBeagle::CreateInstance(
 
   BeagleInstanceDetails return_info;
   auto beagle_instance = beagleCreateInstance(
-      tip_count, partials_buffer_count, compact_buffer_count, state_count,
+      taxon_count, partials_buffer_count, compact_buffer_count, state_count,
       pattern_count, eigen_buffer_count, matrix_buffer_count, category_count,
       scale_buffer_count, allowed_resources, resource_count, preference_flags,
       requirement_flags, &return_info);
