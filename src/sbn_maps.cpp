@@ -126,9 +126,13 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(
     bitset.CopyFrom(sister_node->Leaves(), 0, sister_direction);
     bitset.CopyFrom(focal_node->Leaves(), leaf_count, focal_direction);
     auto child0_bitset = child0_node->Leaves();
-    if (child0_direction) child0_bitset.flip();
+    if (child0_direction) {
+      child0_bitset.flip();
+    }
     auto child1_bitset = child1_node->Leaves();
-    if (child1_direction) child1_bitset.flip();
+    if (child1_direction) {
+      child1_bitset.flip();
+    }
     bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
                     false);
     auto indexer_position = indexer.at(bitset);

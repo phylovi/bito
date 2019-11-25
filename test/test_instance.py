@@ -29,7 +29,7 @@ def test_instance():
     print(inst.psp_indexer.details())
     print()
 
-    # Checking split supports
+    # Checking split supports.
     def convert_dict_to_int(d):
         return {k: int(v) for k, v in d.items()}
 
@@ -69,3 +69,23 @@ def test_instance():
     branch_lengths[0] = 0.2
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
+
+    # Here we ensure that various rootings of a given tree give the same indexer
+    # representations in a mathematical sense.
+    # In order to compare them, we sort their representations with respect to the order on
+    # the rootsplits. This makes sense because we want to make sure that for each virtual
+    # rooting (corresponding to each rootsplit) we have the same _set_ of PCSSs (the
+    # order within PCSS sets doesn't matter).
+    inst.read_newick_file("data/many_rootings.nwk")
+    inst.process_loaded_trees()
+    # First we turn the PCSS sets into actual Python sets for unordered comparison.
+    reps = [
+        (rootsplits, [set(pcss_set) for pcss_set in pcss_set_list])
+        for (rootsplits, pcss_set_list) in inst.get_indexer_representations()
+    ]
+    # Next we sort the representations with respect to the order on the rootsplits
+    # (the first component, corresponding to the various virtual rootings).
+    final_sorted = [zip(*sorted(zip(*rep))) for rep in reps]
+    first_sorted_rep = list(final_sorted[0])
+    for rep in final_sorted[1:]:
+        assert first_sorted_rep == list(rep)

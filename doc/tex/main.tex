@@ -21,7 +21,15 @@
 %\maketitle
 
 
-\section*{Setup}
+\section*{Introduction}
+
+\subsection*{Notation}
+
+In the 2019 ICLR paper, we used $q$ for branch lengths and $Q$ for the variational approximation.
+Here we will use $\bm \theta$ for branch lengths and $q$ for the variational approximation.
+
+
+\subsection*{Setup}
 We want to maximize the ELBO of our variational parameterization $q$
 \[
 L(\bm{\phi},{\bm{\psi}}) :=
@@ -33,8 +41,18 @@ L(\bm{\phi},{\bm{\psi}}) :=
 \]
 over $\phi$ and $\psi$.
 The discrete part of the variational distribution is given by an SBN distribution $q_{\bm\phi}$, while $q_{\bm\psi}$ is the scalar density.
+
+
+\section*{Gradient with respect to SBN parameters $\phi$}
+
+
+
+\section*{Gradient with respect to scalar model parameters $\psi$}
+
+This section concerns taking the derivative of \eqref{eq:L} with respect to a $\psi_i$.
+
 We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_{\bm\psi}$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some variates $\bm\epsilon$ drawn from a fixed distribution to get $\bm\theta$.
-Said another way, each entry of $\bm{\epsilon}$ cam be obtained by applying the relevant standardization function to a sample from $q_{\bm\psi}$.
+Said another way, each entry of $\bm{\epsilon}$ can be obtained by applying the relevant standardization function to a sample from $q_{\bm\psi}$.
 We will use component-wise notation $\theta_b = g_{b, \psi}(\bm\epsilon|\tau)$ for branch $b$ of the topology $\tau$.
 So, applying the reparametrization trick we get
 \begin{equation}
@@ -48,13 +66,6 @@ L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
 \label{eq:L}
 \end{equation}
 
-\section*{Gradient with respect to SBN parameters $\phi$}
-
-To write...
-
-\section*{Gradient with respect to scalar model parameters $\psi$}
-
-This section concerns taking the derivative of \eqref{eq:L} with respect to a $\psi_i$.
 Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i$ gives, in the general case
 \begin{equation}
     \sum_b
