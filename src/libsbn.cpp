@@ -33,9 +33,7 @@ void SBNInstance::ProcessLoadedTrees() {
     index++;
   }
   // Now add the PCSSs.
-  for (const auto &iter : SBNMaps::PCSSCounterOf(counter)) {
-    const auto &parent = iter.first;
-    const auto &child_counter = iter.second;
+  for (const auto &[parent, child_counter] : SBNMaps::PCSSCounterOf(counter)) {
     SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
     for (const auto &child_iter : child_counter) {
       const auto &child = child_iter.first;
@@ -57,11 +55,11 @@ void SBNInstance::CheckSBNMapsAvailable() {
 
 void SBNInstance::PrintSupports() {
   std::vector<std::string> to_print(indexer_.size());
-  for (const auto &iter : indexer_) {
-    if (iter.second < rootsplits_.size()) {
-      to_print[iter.second] = iter.first.ToString();
+  for (const auto &[key, idx] : indexer_) {
+    if (idx < rootsplits_.size()) {
+      to_print[idx] = key.ToString();
     } else {
-      to_print[iter.second] = iter.first.PCSSToString();
+      to_print[idx] = key.PCSSToString();
     }
   }
   for (size_t i = 0; i < to_print.size(); i++) {
@@ -147,11 +145,11 @@ std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations()
 
 StringVector SBNInstance::StringReversedIndexer() const {
   std::vector<std::string> reversed_indexer(indexer_.size());
-  for (const auto &iter : indexer_) {
-    if (iter.second < rootsplits_.size()) {
-      reversed_indexer[iter.second] = iter.first.ToString();
+  for (const auto &[key, idx] : indexer_) {
+    if (idx < rootsplits_.size()) {
+      reversed_indexer[idx] = key.ToString();
     } else {
-      reversed_indexer[iter.second] = iter.first.PCSSToString();
+      reversed_indexer[idx] = key.PCSSToString();
     }
   }
   return reversed_indexer;

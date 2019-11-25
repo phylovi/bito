@@ -58,12 +58,8 @@ class SBNInstance {
   // sbn_parameters_.
   size_t SampleIndex(std::pair<size_t, size_t> range) const;
 
-  // This function samples a tree by first sampling the rootsplit, and then
-  // calling the recursive form of SampleTopology (see next function)..
+  // Sample a topology from the SBN.
   Node::NodePtr SampleTopology() const;
-
-  // The input to this function is a parent subsplit (of length 2n).
-  Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const;
 
   // Sample trees and store them internally
   void SampleTrees(size_t count);
@@ -107,7 +103,8 @@ class SBNInstance {
   // ** Phylogenetic likelihood
 
   Eigen::Ref<EigenMatrixXd> GetPhyloModelParams();
-  // See test_instance for an example of what this looks like.
+  // The phylogenetic model parameters broken down into blocks according to
+  // model structure. See test_instance.py for an example of what this does.
   BlockSpecification::ParameterBlockMap GetPhyloModelParamBlockMap();
 
   void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
@@ -156,6 +153,9 @@ class SBNInstance {
   void MakeEngine(PhyloModelSpecification specification, size_t thread_count);
   // Return a raw pointer to the engine if it's available.
   Engine *GetEngine() const;
+
+  // The input to this function is a parent subsplit (of length 2n).
+  Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
