@@ -30,14 +30,21 @@ Here we will use $\bm \theta$ for branch lengths and $q$ for the variational app
 
 
 \subsection*{Setup}
+
+Define
+\[
+    f_{\bm{\phi},{\bm{\psi}}}(\tau, \bm \theta) :=
+    \frac{p(\bm{Y} \mid \tau, \bm{\theta}) \, p(\tau, \bm{\theta})}
+    {q_{\bm{\phi}}(\tau)\, q_{\bm{\psi}}(\bm{\theta}|\tau)}
+    = \frac{p(\bm{Y}, \tau, \bm{\theta})}
+    {q_{\bm{\phi}}(\tau)\, q_{\bm{\psi}}(\bm{\theta}|\tau)}
+\]
+
 We want to maximize the ELBO of our variational parameterization $q$
 \[
 L(\bm{\phi},{\bm{\psi}}) :=
 \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}
-\log\left(
-    \frac{p(\bm{Y}, \tau, \bm{\theta})}
-    {q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}
-\right) \leq \log p(\bm{Y}).
+\log\left( f_{\bm{\phi},{\bm{\psi}}}(\tau, \bm \theta) \right) \leq \log p(\bm{Y}).
 \]
 over $\phi$ and $\psi$.
 The discrete part of the variational distribution is given by an SBN distribution $q_{\bm\phi}$, while $q_{\bm\psi}$ is the scalar density.
@@ -45,6 +52,34 @@ The discrete part of the variational distribution is given by an SBN distributio
 
 \section*{Gradient with respect to SBN parameters $\phi$}
 
+Assume that $(\tau^{1:K}, \bm \theta^{1:K})$ are drawn from the joint distribution on $(\tau^i, \bm \theta^i)$ given by $q_{\bm{\phi}}(\tau)\, q_{\bm{\psi}}(\bm{\theta}|\tau)$.
+The stochastic lower bound with these $K$ samples is
+\[
+    \hat{L}^K(\bm{\phi},{\bm{\psi}}) :=
+    \log\left( \frac{1}{K} \sum_{i=1}^K f_{\bm{\phi},{\bm{\psi}}}(\tau^i, \bm \theta^i) \right).
+\]
+
+Set
+\[
+    \tilde{w}^j :=
+    \frac{f_{\bm{\phi},{\bm{\psi}}}(\tau^j, \bm \theta^j)}
+    {\sum_{i=1}^K f_{\bm{\phi},{\bm{\psi}}}(\tau^i, \bm \theta^i)}.
+\]
+
+Following the first section of Supplement A of the 2019 ICLR paper, we have the naive gradient estimate of the ELBO:
+\[
+\nabla_{{\bm{\phi}}}L^k({\bm{\phi}},{\bm{\psi}}) = \mathbb{E}_{q_{{\bm{\phi}},{\bm{\psi}}}(\tau^{1:K},\; {\bm{\theta}}^{1:K})} \sum_{j=1}^K \left(\hat{L}^K({\bm{\phi}},{\bm{\psi}}) - \tilde{w}^j\right) \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^j).
+\]
+
+Now, $q_{\bm{\phi}}(\tau^j)$ is going to be the sum over rootings of the rooted SBN probability of $\tau^j$: the probability of that rootsplit times the probability of all of the SBN conditional probabilities for that rooting.
+Any SBN conditional probability will appear at most once in this sum.
+We calculate
+\[
+    \nabla_{\bm \phi} \log q_{\bm \phi}(\tau^j) = \frac{\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau^j)} {q_{\bm{\phi}}(\tau^j)}
+\]
+by taking $\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau^j)$, which is a vector where the $\phi_i$th entry is the sum of $x / \phi_i$ for all terms $x$ of the summation that contain $\phi_i$.
+Michael note:
+we are going to be parameterizing $\phi_i$ as unnormalized parameters, therefore if we are taking a derivative with respect to a given child we need to have a nonzero term for every parent that goes with that child.
 
 
 \section*{Gradient with respect to scalar model parameters $\psi$}
