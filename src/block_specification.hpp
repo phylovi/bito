@@ -22,10 +22,10 @@ class BlockSpecification {
   using ParamCounts = std::vector<std::tuple<std::string, size_t>>;
   using UnderlyingMapType = std::unordered_map<std::string, Coordinates>;
 
-  // These are handy structures that turn the block specification into a map
-  // from the block specification keys to segments (i.e. sub-vectors) and blocks
-  // (i.e. sub-matrices). We can then read and write to these values, which will
-  // be reflected in the original parameter vector/matrix.
+  // These are handy structures: maps from the block specification keys to
+  // segments (i.e. sub-vectors) and blocks (i.e. sub-matrices). We can then
+  // read and write to these values, which will be reflected in the original
+  // parameter vector/matrix.
   using ParameterSegmentMap = std::unordered_map<std::string, EigenVectorXdRef>;
   using ParameterBlockMap = std::unordered_map<std::string, EigenMatrixXdRef>;
 
@@ -38,19 +38,18 @@ class BlockSpecification {
   // Insert for string literals
   void Insert(const char* key, Coordinates value);
 
-  // Incorporate one BlockSpecification into `this` one, starting at
-  // next_available_index which we mutate along the way. The "entire" block
-  // coordinates from other get incorporated into this with key sub_entire_key,
-  // with the coordinates incremented by the next_available_idx as passed into
-  // this function. The "entire" block coordinates are then updated.
+  // Incorporate one BlockSpecification into `this` one. The "entire" block
+  // coordinates from other get incorporated into this with key sub_entire_key.
+  // The "entire" block coordinates are then updated.
   void Append(const std::string& sub_entire_key, BlockSpecification other);
 
   void CheckParameterVectorSize(const EigenVectorXdRef param_vector) const;
   void CheckParameterMatrixSize(const EigenMatrixXdRef param_matrix) const;
 
   // These methods allow us to pull out segments (i.e. sub-vectors) from vectors
-  // and blocks from matrices depending on the coordinates of the BlockModel.
-  // They are very useful for writing the SetParameters method.
+  // and blocks from matrices depending on the coordinates of the block
+  // specification. They are very useful for writing the SetParameters method of
+  // BlockModels.
   EigenVectorXdRef ExtractSegment(EigenVectorXdRef param_vector,
                                   std::string key) const;
   EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef param_matrix,
