@@ -71,9 +71,9 @@ def test_instance():
     print(np.array(inst.log_likelihoods()))
 
     # Here we ensure that various rootings of a given tree give the same indexer
-    # representations when we sort their representations with respect to the order on
-    # the rootsplits.
-    # This is the correct check because we want to make sure that for each virtual
+    # representations in a mathematical sense.
+    # In order to compare them, we sort their representations with respect to the order on
+    # the rootsplits. This makes sense because we want to make sure that for each virtual
     # rooting (corresponding to each rootsplit) we have the same _set_ of PCSSs (the
     # order within PCSS sets doesn't matter).
     inst.read_newick_file("data/many_rootings.nwk")
