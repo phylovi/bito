@@ -19,6 +19,8 @@ class BlockSpecification {
  public:
   // Block Coordinates are (starting index, block size) in a tuple.
   using Coordinates = std::tuple<size_t, size_t>;
+  // ParamCounts are vectors of tuples of (block name, number of parameters for
+  // that block).
   using ParamCounts = std::vector<std::tuple<std::string, size_t>>;
   using UnderlyingMapType = std::unordered_map<std::string, Coordinates>;
 
@@ -29,13 +31,11 @@ class BlockSpecification {
   using ParameterSegmentMap = std::unordered_map<std::string, EigenVectorXdRef>;
   using ParameterBlockMap = std::unordered_map<std::string, EigenMatrixXdRef>;
 
-  // Build out a block specification given a map of block names to the number of
-  // parameters they have.
   BlockSpecification(ParamCounts param_counts);
 
   Coordinates Find(const std::string& key) const;
   void Insert(const std::string& key, Coordinates value);
-  // Insert for string literals
+  // Insert for string literals.
   void Insert(const char* key, Coordinates value);
 
   // Incorporate one BlockSpecification into `this` one. The "entire" block
