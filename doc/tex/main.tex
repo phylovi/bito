@@ -86,7 +86,7 @@ and similarly for $q_\phi(s)$, but where the softmax is over other subsplits $s'
 
 \section*{Gradient with respect to SBN parameters $\phi$}
 
-Assume that $(\tau^{1:K}, \bm \theta^{1:K})$ are drawn from the joint distribution on $(\tau^i, \bm \theta^i)$ given by $q_{\bm{\phi}}(\tau)\, q_{\bm{\psi}}(\bm{\theta}|\tau)$.
+Assume that $(\tau^{1:K}, \bm \theta^{1:K})$ are drawn from the joint distribution on $(\tau^i, \bm \theta^i)$ given by $q_{\bm{\phi},\bm{\psi}}(\tau, \bm{\theta})$.
 The stochastic lower bound with these $K$ samples is
 \[
     \hat{L}^K(\bm{\phi},{\bm{\psi}}) :=
@@ -104,6 +104,19 @@ Following the first section of Supplement A of the 2019 ICLR paper, we have the 
 \[
 \nabla_{{\bm{\phi}}}L^k({\bm{\phi}},{\bm{\psi}}) = \mathbb{E}_{q_{{\bm{\phi}},{\bm{\psi}}}(\tau^{1:K},\; {\bm{\theta}}^{1:K})} \sum_{j=1}^K \left(\hat{L}^K({\bm{\phi}},{\bm{\psi}}) - \tilde{w}^j\right) \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^j).
 \]
+
+To get the VIMCO gradient, we follow equation 10 of~\cite{Mnih2016-ec}, noting that their $\nabla_\theta \, \log f(x, h^j)$ is $-\nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^j)$ in our case.
+This gives (5) of the 2019 ICLR paper, which in our notation is
+\[
+\nabla_{\bm{\phi}} L^K(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau^{1:K},\;\bm{\theta}^{1:K})}\sum_{j=1}^K\left(\hat{L}_{j|-j}^K(\bm{\phi},{\bm{\psi}})-\tilde{w}^j\right)\nabla_{\bm{\phi}}\log q_{\bm{\phi}}(\tau^j)
+\]
+where
+\[
+\hat{L}_{j|-j}^K(\bm{\phi},{\bm{\psi}}) :=  \hat{L}^K(\bm{\phi},{\bm{\psi}}) - \log\frac1K\left(\sum_{i\neq j}f_{\bm{\phi},{\bm{\psi}}}(\tau^i,\bm{\theta}^i) + \hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})\right)
+\]
+is the per-sample local learning signal, with $\hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})$ being some estimate of $f_{\bm{\phi},{\bm{\psi}}}(\tau^j,\bm{\theta}^j)$ for sample $j$ using the rest of samples (e.g., the geometric mean).
+
+
 We will calculate $\nabla_{\bm \phi} \log q_{\bm \phi}(\tau^j)$ as the ratio ${\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau^j)} / {q_{\bm{\phi}}(\tau^j)}$.
 To calculate $\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau)$, we take derivatives of sums as per \eqref{eq:qRooted}.
 
