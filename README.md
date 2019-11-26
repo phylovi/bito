@@ -48,7 +48,10 @@ The following two papers will explain what this repository is about:
 * Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
 * Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2019/08/24/vbpi.html).
 
-👉🏽 We also have [documentation for the Python interface](https://phylovi.github.io/libsbn/)
+Our documentation consists of:
+
+* [Online documentation](https://phylovi.github.io/libsbn/)
+* Derivations in `doc/tex`, which explain what's going on in the code.
 
 In the off chance that you are citing this library, don't forget to cite the [BEAGLE paper](http://dx.doi.org/10.1093/sysbio/syz020) too, as we use BEAGLE!
 
@@ -111,13 +114,6 @@ Add a test for every new feature.
 * Code review on GitHub
 * [Squash and merge](https://help.github.com/en/articles/merging-a-pull-request), [closing the issue via the squash and merge commit message](https://help.github.com/articles/closing-issues-via-commit-messages/)
 * Delete branch
-
-
-## Terminology
-
-* PCSS stands for parent-child subsplit.
-  It's a general concept rather than a specific implementation of the concept.
-  For example, see the documentation of PCSSFun (in `node.hpp`) and PCSS Bitsets (in `bitset.hpp`) for two different ways of using this concept.
 
 
 ## Contributors
