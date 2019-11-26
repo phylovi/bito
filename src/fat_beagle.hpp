@@ -29,7 +29,6 @@ class FatBeagle {
   const BlockSpecification &GetPhyloModelBlockSpecification() const;
 
   void SetParameters(const EigenVectorXdRef param_vector);
-  void SetRescaling();
 
   double LogLikelihood(const Tree &tree) const;
   std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
@@ -57,6 +56,8 @@ class FatBeagle {
   void UpdateBeagleTransitionMatrices(
       const BeagleAccessories &ba, const Tree &tree,
       const int *const gradient_indices_ptr) const;
+
+  static Tree PrepareTreeForLikelihood(const Tree &tree);
   static inline void AddLowerPartialOperation(BeagleOperationVector &operations,
                                               const BeagleAccessories &ba,
                                               int node_id, int child0_id,
