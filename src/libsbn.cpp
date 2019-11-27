@@ -275,12 +275,14 @@ void SBNInstance::ResizePhyloModelParams(
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() {
-  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_);
+  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_,
+                                     rescaling_);
 }
 
 std::vector<std::pair<double, std::vector<double>>>
 SBNInstance::BranchGradients() {
-  return GetEngine()->BranchGradients(tree_collection_, phylo_model_params_);
+  return GetEngine()->BranchGradients(tree_collection_, phylo_model_params_,
+                                      rescaling_);
 }
 
 // Here we initialize our static random number generator.

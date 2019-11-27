@@ -140,11 +140,9 @@ TEST_CASE("SubstitutionModel") {
                           gtr_model->GetEigenvalues());
   // TODO @M: would it be easy for you to add an eigenvector/value test with
   // different coefficients given that you do the same thing in physher?
-  // Eigen::VectorXd frequencies(4);
   // frequencies << 0.2, 0.55, 0.1, 0.15;
-  // Eigen::VectorXd rates(6);
   // rates << 1., 0.5, 1., 2., 1., 1.;
-  // TODO another eigenvalue/vector test.
+  // gtr_model->SetParameters(param_vector);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

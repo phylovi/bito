@@ -23,18 +23,18 @@ const BlockSpecification &Engine::GetPhyloModelBlockSpecification() const {
 
 std::vector<double> Engine::LogLikelihoods(
     const TreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params) const {
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
   return FatBeagleParallelize<double>(FatBeagle::StaticLogLikelihood,
                                       fat_beagles_, tree_collection,
-                                      phylo_model_params);
+                                      phylo_model_params, rescaling);
 }
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
     const TreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params) const {
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
   return FatBeagleParallelize<std::pair<double, std::vector<double>>>(
       FatBeagle::StaticBranchGradient, fat_beagles_, tree_collection,
-      phylo_model_params);
+      phylo_model_params, rescaling);
 }
 
 const FatBeagle *const Engine::GetFirstFatBeagle() const {
