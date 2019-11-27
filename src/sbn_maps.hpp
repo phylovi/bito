@@ -12,21 +12,20 @@
 #include "driver.hpp"
 #include "tree.hpp"
 
-typedef std::vector<Bitset> BitsetVector;
-typedef std::unordered_map<size_t, Bitset> SizeBitsetMap;
-typedef std::unordered_map<Bitset, size_t> BitsetSizeMap;
-typedef std::unordered_map<Bitset, std::pair<size_t, size_t>> BitsetSizePairMap;
-typedef DefaultDict<Bitset, size_t> BitsetSizeDict;
-typedef std::pair<SizeVector, SizeVectorVector> IndexerRepresentation;
-
-typedef std::unordered_map<Bitset, DefaultDict<Bitset, size_t>> PCSSDict;
+using BitsetVector = std::vector<Bitset>;
+using SizeBitsetMap = std::unordered_map<size_t, Bitset>;
+using BitsetSizeMap = std::unordered_map<Bitset, size_t>;
+using BitsetSizePairMap = std::unordered_map<Bitset, std::pair<size_t, size_t>>;
+using BitsetSizeDict = DefaultDict<Bitset, size_t>;
+using IndexerRepresentation = std::pair<SizeVector, SizeVectorVector>;
+using PCSSDict = std::unordered_map<Bitset, DefaultDict<Bitset, size_t>>;
+using PCSSIndexVector = std::vector<size_t>;
 
 using StringSizePairMap =
     std::unordered_map<std::string, std::pair<size_t, size_t>>;
 using SizeStringMap = std::unordered_map<size_t, std::string>;
 using StringPCSSMap =
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
-using PCSSIndexVector = std::vector<size_t>;
 
 // Turn a <Key, T> map into a <std::string, T> map for any Key type that has
 // a ToString method.
