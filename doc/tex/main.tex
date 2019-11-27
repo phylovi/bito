@@ -118,12 +118,13 @@ is the per-sample local learning signal, with $\hat{f}_{\bm{\phi},{\bm{\psi}}}(\
 
 
 We will calculate $\nabla_{\bm \phi} \log q_{\bm \phi}(\tau^j)$ as the ratio ${\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau^j)} / {q_{\bm{\phi}}(\tau^j)}$.
-To calculate $\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau)$, we take derivatives of sums as per \eqref{eq:qRooted}.
+
+To calculate $\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau)$, we take derivatives of sums as per~\eqref{eq:qRooted}.
 
 
 \section*{Gradient with respect to scalar model parameters $\psi$}
 
-This section concerns taking the derivative of \eqref{eq:L} with respect to a $\psi_i$.
+This section concerns taking the derivative of~\eqref{eq:L} with respect to a $\psi_i$.
 
 We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_{\bm\psi}$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some variates $\bm\epsilon$ drawn from a fixed distribution to get $\bm\theta$.
 Said another way, each entry of $\bm{\epsilon}$ can be obtained by applying the relevant standardization function to a sample from $q_{\bm\psi}$.
@@ -140,7 +141,7 @@ L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
 \label{eq:L}
 \end{equation}
 
-Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i$ gives, in the general case
+Taking the derivative of the numerator of~\eqref{eq:L} with respect to a $\psi_i$ gives, in the general case
 \begin{equation}
     \sum_b
     \frac{\partial \log p(\bm{Y} , \tau, \bm\theta)}{\partial \theta_b} \,
