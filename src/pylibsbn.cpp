@@ -53,16 +53,11 @@ PYBIND11_MODULE(libsbn, m) {
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
   // SBNInstance
   py::class_<SBNInstance>(m, "instance")
-      // Constructors
+      // ** Initialization and status
       .def(py::init<const std::string &>())
-      // Methods
-      .def("print_status", &SBNInstance::PrintStatus)
-      // Methods handling trees
       .def("tree_count", &SBNInstance::TreeCount)
-      .def("read_newick_file", &SBNInstance::ReadNewickFile)
-      .def("read_nexus_file", &SBNInstance::ReadNexusFile)
-      .def("read_fasta_file", &SBNInstance::ReadFastaFile)
-      // Methods processing trees
+      .def("print_status", &SBNInstance::PrintStatus)
+      // ** SBN-related items
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_indexers", &SBNInstance::GetIndexers)
       .def("sample_trees", &SBNInstance::SampleTrees)
@@ -73,7 +68,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("split_counters", &SBNInstance::SplitCounters,
            "For testing purposes.")
       .def("split_lengths", &SBNInstance::SplitLengths)
-      // Phylogenetic likelihood methods
+      // ** Phylogenetic likelihood
       .def("prepare_for_phylo_likelihood",
            &SBNInstance::PrepareForPhyloLikelihood,
            "Prepare instance for phylogenetic likelihood computation.",
@@ -87,6 +82,10 @@ PYBIND11_MODULE(libsbn, m) {
            py::arg("tree_count_option") = std::nullopt)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
       .def("branch_gradients", &SBNInstance::BranchGradients)
+      // ** I/O
+      .def("read_newick_file", &SBNInstance::ReadNewickFile)
+      .def("read_nexus_file", &SBNInstance::ReadNexusFile)
+      .def("read_fasta_file", &SBNInstance::ReadFastaFile)
       // Member Variables
       .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)

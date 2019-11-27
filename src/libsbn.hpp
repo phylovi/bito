@@ -32,7 +32,7 @@ class SBNInstance {
   // The master indexer for SBN parameters.
   BitsetSizeMap indexer_;
 
-  // ** Initialization, getters, and status
+  // ** Initialization and status
 
   explicit SBNInstance(const std::string &name)
       : name_(name),
@@ -94,12 +94,6 @@ class SBNInstance {
   // scratch.
   std::pair<StringSizeMap, StringPCSSMap> SplitCounters() const;
 
-  // ** I/O
-
-  void ReadNewickFile(std::string fname);
-  void ReadNexusFile(std::string fname);
-  void ReadFastaFile(std::string fname);
-
   // ** Phylogenetic likelihood
 
   Eigen::Ref<EigenMatrixXd> GetPhyloModelParams();
@@ -123,6 +117,12 @@ class SBNInstance {
   std::vector<double> LogLikelihoods();
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients();
+
+  // ** I/O
+
+  void ReadNewickFile(std::string fname);
+  void ReadNexusFile(std::string fname);
+  void ReadFastaFile(std::string fname);
 
  private:
   std::string name_;
