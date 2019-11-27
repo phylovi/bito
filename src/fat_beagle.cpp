@@ -187,18 +187,18 @@ void FatBeagle::UpdateSiteModelInBeagle() {
 
 void FatBeagle::UpdateSubstitutionModelInBeagle() {
   const auto &substitution_model = phylo_model_->GetSubstitutionModel();
-  const EigenMatrixXd &eigen_vectors = substitution_model->GetEigenvectors();
-  const EigenMatrixXd &inverse_eigen_vectors =
+  const EigenMatrixXd &eigenvectors = substitution_model->GetEigenvectors();
+  const EigenMatrixXd &inverse_eigenvectors =
       substitution_model->GetInverseEigenvectors();
-  const Eigen::VectorXd &eigen_values = substitution_model->GetEigenvalues();
+  const Eigen::VectorXd &eigenvalues = substitution_model->GetEigenvalues();
   const Eigen::VectorXd &frequencies = substitution_model->GetFrequencies();
 
   beagleSetStateFrequencies(beagle_instance_, 0, frequencies.data());
   beagleSetEigenDecomposition(beagle_instance_,
                               0,  // eigenIndex
-                              &eigen_vectors.data()[0],
-                              &inverse_eigen_vectors.data()[0],
-                              &eigen_values.data()[0]);
+                              &eigenvectors.data()[0],
+                              &inverse_eigenvectors.data()[0],
+                              &eigenvalues.data()[0]);
 }
 
 void FatBeagle::UpdatePhyloModelInBeagle() {

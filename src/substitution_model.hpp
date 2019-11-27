@@ -24,11 +24,11 @@ class SubstitutionModel : public BlockModel {
 
   // We follow BEAGLE in terminology. "Inverse Eigenvectors" means the inverse
   // of the matrix containing the eigenvectors.
-  const EigenMatrixXd& GetEigenvectors() { return eigen_vectors_; }
+  const EigenMatrixXd& GetEigenvectors() { return eigenvectors_; }
   const EigenMatrixXd& GetInverseEigenvectors() {
-    return inverse_eigen_vectors_;
+    return inverse_eigenvectors_;
   }
-  const Eigen::VectorXd& GetEigenvalues() { return eigen_values_; }
+  const Eigen::VectorXd& GetEigenvalues() { return eigenvalues_; }
 
   virtual void SetParameters(const EigenVectorXdRef param_vector) = 0;
 
@@ -39,9 +39,9 @@ class SubstitutionModel : public BlockModel {
 
  protected:
   Eigen::VectorXd frequencies_;
-  EigenMatrixXd eigen_vectors_;
-  EigenMatrixXd inverse_eigen_vectors_;
-  Eigen::VectorXd eigen_values_;
+  EigenMatrixXd eigenvectors_;
+  EigenMatrixXd inverse_eigenvectors_;
+  Eigen::VectorXd eigenvalues_;
   EigenMatrixXd Q_;
 };
 
@@ -50,9 +50,9 @@ class DNAModel : public SubstitutionModel {
   DNAModel(const BlockSpecification::ParamCounts& param_counts)
       : SubstitutionModel(param_counts) {
     frequencies_.resize(4);
-    eigen_vectors_.resize(4, 4);
-    inverse_eigen_vectors_.resize(4, 4);
-    eigen_values_.resize(4);
+    eigenvectors_.resize(4, 4);
+    inverse_eigenvectors_.resize(4, 4);
+    eigenvalues_.resize(4);
     Q_.resize(4, 4);
   }
 };
@@ -61,17 +61,17 @@ class JC69Model : public DNAModel {
  public:
   JC69Model() : DNAModel({}) {
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
-    eigen_vectors_ << 1.0, 2.0, 0.0, 0.5, 1.0, -2.0, 0.5, 0.0, 1.0, 2.0, 0.0,
+    eigenvectors_ << 1.0, 2.0, 0.0, 0.5, 1.0, -2.0, 0.5, 0.0, 1.0, 2.0, 0.0,
         -0.5, 1.0, -2.0, -0.5, 0.0;
-    inverse_eigen_vectors_ << 0.25, 0.25, 0.25, 0.25, 0.125, -0.125, 0.125,
+    inverse_eigenvectors_ << 0.25, 0.25, 0.25, 0.25, 0.125, -0.125, 0.125,
         -0.125, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0, -1.0, 0.0;
-    eigen_values_ << 0.0, -1.3333333333333333, -1.3333333333333333,
+    eigenvalues_ << 0.0, -1.3333333333333333, -1.3333333333333333,
         -1.3333333333333333;
     Q_ << 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0, -1.0, -1.0, -1.0, -1.0,
         1.0 / 3.0, -1.0, -1.0, -1.0, -1.0, 1.0 / 3.0;
   }
 
-  // No parameters to set for GTR!
+  // No parameters to set for JC!
   void SetParameters(const EigenVectorXdRef param_vector){};
 };
 

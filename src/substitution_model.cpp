@@ -61,7 +61,7 @@ void GTRModel::Update() {
   // See p.206 of Felsenstein's book. We can get the eigendecomposition of a GTR
   // model by first getting the eigendecomposition of an associated diagonal
   // matrix and then doing this transformation.
-  eigen_vectors_ = sqrt_frequencies_inv * solver.eigenvectors();
-  inverse_eigen_vectors_ = solver.eigenvectors().transpose() * sqrt_frequencies;
-  eigen_values_ = solver.eigenvalues();
+  eigenvectors_ = sqrt_frequencies_inv * solver.eigenvectors();
+  inverse_eigenvectors_ = solver.eigenvectors().transpose() * sqrt_frequencies;
+  eigenvalues_ = solver.eigenvalues();
 }
