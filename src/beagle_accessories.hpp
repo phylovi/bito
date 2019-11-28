@@ -19,8 +19,8 @@ struct BeagleAccessories {
   const int fixed_node_id_;
   const int root_child_id_;
   const int node_count_;
-  const int internal_count_;
   const int taxon_count_;
+  const int internal_count_;
   // We're not exacty sure what this mysterious_count argument is for.
   // The beagle docs say: Number of partialsBuffer to integrate (input)
   // In the BEASTs it's hardcoded to 1 and in MrBayes it appears to be for
@@ -51,10 +51,10 @@ struct BeagleAccessories {
         fixed_node_id_(static_cast<int>(tree.Topology()->Children()[1]->Id())),
         root_child_id_(static_cast<int>(tree.Topology()->Children()[0]->Id())),
         node_count_(static_cast<int>(tree.BranchLengths().size())),
-        internal_count_(node_count_ - 1),
         taxon_count_(static_cast<int>(tree.LeafCount())),
+        internal_count_(taxon_count_ - 1),
         cumulative_scale_index_({rescaling ? 0 : BEAGLE_OP_NONE}),
-        node_indices_(IotaVector(internal_count_, 0)) {}
+        node_indices_(IotaVector(node_count_ - 1, 0)) {}
 
   static std::vector<int> IotaVector(size_t size, int start_value) {
     std::vector<int> v(size);

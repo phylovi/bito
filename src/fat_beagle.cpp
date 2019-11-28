@@ -65,7 +65,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   BeagleOperationVector operations;
   const auto gradient_indices =
-      BeagleAccessories::IotaVector(ba.internal_count_, ba.node_count_);
+      BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_);
   tree.Topology()->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
