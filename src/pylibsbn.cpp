@@ -17,7 +17,7 @@ namespace py = pybind11;
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
 PYBIND11_MODULE(libsbn, m) {
-  m.doc() = "libsbn bindings";
+  m.doc() = "Python interface to libsbn.";
   // Second, we expose them as buffer objects so that we can use them
   // as in-place numpy arrays with np.array(v, copy=False). See
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
@@ -45,18 +45,21 @@ PYBIND11_MODULE(libsbn, m) {
       .def("newick", &TreeCollection::Newick)
       .def_readwrite("trees", &TreeCollection::trees_);
   // PSPIndexer
-  py::class_<PSPIndexer>(m, "PSPIndexer").def("details", &PSPIndexer::Details);
+  py::class_<PSPIndexer>(m, "PSPIndexer", "The primary split pair indexer.")
+      .def("details", &PSPIndexer::Details);
   // PhyloModelSpecification
   py::class_<PhyloModelSpecification>(m, "PhyloModelSpecification")
       .def(py::init<const std::string &, const std::string &,
                     const std::string &>(),
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
   // SBNInstance
-  py::class_<SBNInstance>(m, "instance")
+  py::class_<SBNInstance>(m, "instance",
+                          "A wrapper for the all of the C++-side state.")
       // ** Initialization and status
       .def(py::init<const std::string &>())
       .def("tree_count", &SBNInstance::TreeCount)
-      .def("print_status", &SBNInstance::PrintStatus)
+      .def("print_status", &SBNInstance::PrintStatus,
+           "Print information about the instance.")
       // ** SBN-related items
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
       .def("get_indexers", &SBNInstance::GetIndexers)
@@ -66,7 +69,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("get_psp_indexer_representations",
            &SBNInstance::GetPSPIndexerRepresentations)
       .def("split_counters", &SBNInstance::SplitCounters,
-           "For testing purposes.")
+           "A testing method to count splits.")
       .def("split_lengths", &SBNInstance::SplitLengths)
       // ** Phylogenetic likelihood
       .def("prepare_for_phylo_likelihood",
@@ -83,9 +86,12 @@ PYBIND11_MODULE(libsbn, m) {
       .def("log_likelihoods", &SBNInstance::LogLikelihoods)
       .def("branch_gradients", &SBNInstance::BranchGradients)
       // ** I/O
-      .def("read_newick_file", &SBNInstance::ReadNewickFile)
-      .def("read_nexus_file", &SBNInstance::ReadNexusFile)
-      .def("read_fasta_file", &SBNInstance::ReadFastaFile)
+      .def("read_newick_file", &SBNInstance::ReadNewickFile,
+           "Read trees from a Newick file.")
+      .def("read_nexus_file", &SBNInstance::ReadNexusFile,
+           "Read trees from a Nexus file.")
+      .def("read_fasta_file", &SBNInstance::ReadFastaFile,
+           "Read a sequence alignment from a FASTA file.")
       // Member Variables
       .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)

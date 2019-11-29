@@ -1,3 +1,9 @@
+"""
+Methods for running and benchmarking performance.
+
+Documentation in the CLI.
+"""
+
 import os
 import timeit
 

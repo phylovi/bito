@@ -15,6 +15,19 @@ prep:
 	python test/prep/doctest.py
 	clang-format -i -style=file src/doctest.cpp
 
+docs:
+	make -C doc clean
+	PYTHONPATH=. sphinx-autogen doc/index.rst
+	make -C doc html
+
+deploy:
+	make
+	make docs
+	git checkout gh-pages
+	cp -a doc/_build/html/* .
+	git commit --amend -av -m "update docs"
+	git push -f
+
 format:
 	black vip/*py test/*py SConstruct
 	docformatter --in-place vip/*py test/*py
@@ -28,4 +41,4 @@ lint:
 	cpplint --filter=-runtime/references,-build/c++11 $(our_files) \
 		&& echo "LINTING PASS"
 
-.PHONY: bison prep format clean edit lint
+.PHONY: bison prep format clean edit lint deploy docs

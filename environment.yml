@@ -15,11 +15,13 @@ dependencies:
   - pytest
   - scons
   - scipy
+  - sphinx >= 2.2.1
   - pip:
       - black
       - click
       - docformatter
       - enscons
       - flake8
+      - sphinx-rtd-theme
       - tensorflow
       - tensorflow-probability
