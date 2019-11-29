@@ -1,0 +1,30 @@
+diff --git a/src/gp_engine.cpp b/src/gp_engine.cpp
+index aaffcbe..061f24e 100644
+--- a/src/gp_engine.cpp
++++ b/src/gp_engine.cpp
+@@ -247,9 +247,11 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
+                                      const BitsetSizeMap& indexer) {
+   const auto leaf_count = tree_collection.TaxonCount();
+   const size_t default_index = branch_lengths_.size();
++  branch_lengths_.setZero();
++  Eigen::VectorXi pcss_counts = Eigen::VectorXi::Zero(branch_lengths_.size());
+   for (const auto& tree : tree_collection.Trees()) {
+     tree.Topology()->RootedPCSSPreOrder(
+-        [&leaf_count, &default_index, &indexer, &tree, this](
++        [&leaf_count, &default_index, &indexer, &tree, &pcss_counts, this](
+             const Node* sister_node, const Node* focal_node, const Node* child0_node,
+             const Node* child1_node) {
+           Bitset pcss_bitset =
+@@ -257,9 +259,10 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
+                                     child0_node, false, child1_node, false);
+           const auto pcss_index = AtWithDefault(indexer, pcss_bitset, default_index);
+           if (pcss_index != default_index) {
+-            // TODO this is the cheap version-- we aren't taking a mean.
+-            branch_lengths_(pcss_index) = tree.BranchLength(focal_node);
++            branch_lengths_(pcss_index) += tree.BranchLength(focal_node);
++            pcss_counts(pcss_index) += 1;
+           }
+         });
+   }
++  branch_lengths_.array() /= pcss_counts.array().cast<double>();
+ }

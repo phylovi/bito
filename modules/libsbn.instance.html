@@ -1,0 +1,382 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>libsbn.instance &mdash; libsbn 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script type="text/javascript" src="../_static/jquery.js"></script>
+        <script type="text/javascript" src="../_static/underscore.js"></script>
+        <script type="text/javascript" src="../_static/doctools.js"></script>
+        <script type="text/javascript" src="../_static/language_data.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="vip" href="vip.html" />
+    <link rel="prev" title="libsbn.PSPIndexer" href="libsbn.PSPIndexer.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> libsbn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="libsbn.html">libsbn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="libsbn.PSPIndexer.html">libsbn.PSPIndexer</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">libsbn.instance</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.html">vip</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.benchmark.html">vip.benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.branch_model.html">vip.branch_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.burrito.html">vip.burrito</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.cli.html">vip.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.optimizers.html">vip.optimizers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.priors.html">vip.priors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.sbn_model.html">vip.sbn_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.scalar_model.html">vip.scalar_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.sgd_server.html">vip.sgd_server</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">libsbn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>libsbn.instance</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/libsbn.instance.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="libsbn-instance">
+<h1>libsbn.instance<a class="headerlink" href="#libsbn-instance" title="Permalink to this headline">¶</a></h1>
+<dl class="class">
+<dt id="libsbn.instance">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">instance</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pybind11_builtins.pybind11_object</span></code></p>
+<p>A wrapper for the all of the C++-side state.</p>
+<dl class="method">
+<dt id="libsbn.instance.__init__">
+<code class="sig-name descname">__init__</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.instance.__init__" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p class="rubric">Methods</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.instance.__init__" title="libsbn.instance.__init__"><code class="xref py py-obj docutils literal notranslate"><span class="pre">__init__</span></code></a>(self, arg0)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.instance.branch_gradients" title="libsbn.instance.branch_gradients"><code class="xref py py-obj docutils literal notranslate"><span class="pre">branch_gradients</span></code></a>(self)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.instance.get_indexer_representations" title="libsbn.instance.get_indexer_representations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_indexer_representations</span></code></a>(self)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.instance.get_indexers" title="libsbn.instance.get_indexers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_indexers</span></code></a>(self)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.instance.get_psp_indexer_representations" title="libsbn.instance.get_psp_indexer_representations"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_psp_indexer_representations</span></code></a>(self)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.instance.log_likelihoods" title="libsbn.instance.log_likelihoods"><code class="xref py py-obj docutils literal notranslate"><span class="pre">log_likelihoods</span></code></a>(self)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.instance.make_beagle_instances" title="libsbn.instance.make_beagle_instances"><code class="xref py py-obj docutils literal notranslate"><span class="pre">make_beagle_instances</span></code></a>(self, arg0)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.instance.print_status" title="libsbn.instance.print_status"><code class="xref py py-obj docutils literal notranslate"><span class="pre">print_status</span></code></a>(self)</p></td>
+<td><p>Print information about the instance.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.instance.process_loaded_trees" title="libsbn.instance.process_loaded_trees"><code class="xref py py-obj docutils literal notranslate"><span class="pre">process_loaded_trees</span></code></a>(self)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.instance.read_fasta_file" title="libsbn.instance.read_fasta_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_fasta_file</span></code></a>(self, arg0)</p></td>
+<td><p>Read a sequence alignment from a FASTA file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.instance.read_newick_file" title="libsbn.instance.read_newick_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_newick_file</span></code></a>(self, arg0)</p></td>
+<td><p>Read trees from a Newick file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.instance.read_nexus_file" title="libsbn.instance.read_nexus_file"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read_nexus_file</span></code></a>(self, arg0)</p></td>
+<td><p>Read trees from a Nexus file.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.instance.sample_trees" title="libsbn.instance.sample_trees"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample_trees</span></code></a>(self, arg0)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.instance.split_counters" title="libsbn.instance.split_counters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_counters</span></code></a>(self)</p></td>
+<td><p>Testing method to count splits.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.instance.split_lengths" title="libsbn.instance.split_lengths"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_lengths</span></code></a>(self)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.instance.tree_count" title="libsbn.instance.tree_count"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tree_count</span></code></a>(self)</p></td>
+<td><p>Return the number of trees.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Attributes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">psp_indexer</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">sbn_parameters</span></code></p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">tree_collection</span></code></p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="libsbn.instance.branch_gradients">
+<code class="sig-name descname">branch_gradients</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; List[Tuple[float, libsbn.vector_double]]<a class="headerlink" href="#libsbn.instance.branch_gradients" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.get_indexer_representations">
+<code class="sig-name descname">get_indexer_representations</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; List[Tuple[List[int], List[List[int]]]]<a class="headerlink" href="#libsbn.instance.get_indexer_representations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.get_indexers">
+<code class="sig-name descname">get_indexers</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; Tuple[Dict[str, int], Dict[str, Tuple[int, int]]]<a class="headerlink" href="#libsbn.instance.get_indexers" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.get_psp_indexer_representations">
+<code class="sig-name descname">get_psp_indexer_representations</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; List[List[List[int]]]<a class="headerlink" href="#libsbn.instance.get_psp_indexer_representations" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.log_likelihoods">
+<code class="sig-name descname">log_likelihoods</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; libsbn.vector_double<a class="headerlink" href="#libsbn.instance.log_likelihoods" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.make_beagle_instances">
+<code class="sig-name descname">make_beagle_instances</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em>, <em class="sig-param">arg0: int</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.instance.make_beagle_instances" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.print_status">
+<code class="sig-name descname">print_status</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.instance.print_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print information about the instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.process_loaded_trees">
+<code class="sig-name descname">process_loaded_trees</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.instance.process_loaded_trees" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.read_fasta_file">
+<code class="sig-name descname">read_fasta_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.instance.read_fasta_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a sequence alignment from a FASTA file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.read_newick_file">
+<code class="sig-name descname">read_newick_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.instance.read_newick_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read trees from a Newick file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.read_nexus_file">
+<code class="sig-name descname">read_nexus_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.instance.read_nexus_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read trees from a Nexus file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.sample_trees">
+<code class="sig-name descname">sample_trees</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em>, <em class="sig-param">arg0: int</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.instance.sample_trees" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.split_counters">
+<code class="sig-name descname">split_counters</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; Tuple[Dict[str, int], Dict[str, Dict[str, int]]]<a class="headerlink" href="#libsbn.instance.split_counters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Testing method to count splits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.split_lengths">
+<code class="sig-name descname">split_lengths</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; List[libsbn.vector_double]<a class="headerlink" href="#libsbn.instance.split_lengths" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.instance.tree_count">
+<code class="sig-name descname">tree_count</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.instance</em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#libsbn.instance.tree_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of trees.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="vip.html" class="btn btn-neutral float-right" title="vip" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="libsbn.PSPIndexer.html" class="btn btn-neutral float-left" title="libsbn.PSPIndexer" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Team PhyloVI
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

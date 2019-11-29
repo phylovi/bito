@@ -1,0 +1,264 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>libsbn.beagle_flags &mdash; libsbn 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="vip.benchmark" href="vip.benchmark.html" />
+    <link rel="prev" title="libsbn" href="libsbn.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> libsbn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">libsbn concepts</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="libsbn.html">libsbn</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">libsbn.beagle_flags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.benchmark.html">vip.benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.branch_model.html">vip.branch_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.burrito.html">vip.burrito</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.cli.html">vip.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.optimizers.html">vip.optimizers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.priors.html">vip.priors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.sbn_model.html">vip.sbn_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.scalar_model.html">vip.scalar_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.sgd_server.html">vip.sgd_server</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">libsbn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>libsbn.beagle_flags</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/libsbn.beagle_flags.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-libsbn.beagle_flags">
+<span id="libsbn-beagle-flags"></span><h1>libsbn.beagle_flags<a class="headerlink" href="#module-libsbn.beagle_flags" title="Permalink to this headline">¶</a></h1>
+<p>Flags that can be passed to BEAGLE.</p>
+<p>They are used in Python like <code class="docutils literal notranslate"><span class="pre">beagle_flags.PROCESSOR_GPU</span></code>.</p>
+<p>Note that we expose only a subset of the BEAGLE flags on purpose.</p>
+<p class="rubric">Classes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.beagle_flags.beagle_flag" title="libsbn.beagle_flags.beagle_flag"><code class="xref py py-obj docutils literal notranslate"><span class="pre">beagle_flag</span></code></a>(self, arg0)</p></td>
+<td><p>Members:</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="libsbn.beagle_flags.beagle_flag">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.beagle_flags.</code><code class="sig-name descname">beagle_flag</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.beagle_flags.beagle_flag</em>, <em class="sig-param">arg0: int</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.beagle_flags.beagle_flag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Members:</p>
+<p>PRECISION_SINGLE : Single precision computation</p>
+<p>PRECISION_DOUBLE : Double precision computation</p>
+<p>COMPUTATION_SYNCH : Synchronous computation (blocking)</p>
+<p>COMPUTATION_ASYNCH : Asynchronous computation (non-blocking)</p>
+<p>VECTOR_SSE : SSE computation</p>
+<p>VECTOR_NONE : No vector computation</p>
+<p>THREADING_CPP : C++11 threading</p>
+<p>THREADING_OPENMP : OpenMP threading</p>
+<p>THREADING_NONE : No threading (default)</p>
+<p>PROCESSOR_CPU : Use CPU as main processor</p>
+<p>PROCESSOR_GPU : Use GPU as main processor</p>
+<p>FRAMEWORK_CUDA : Use CUDA implementation with GPU resources</p>
+<p>FRAMEWORK_OPENCL : Use OpenCL implementation with GPU resources</p>
+<p>FRAMEWORK_CPU : Use CPU implementation</p>
+<p>PARALLELOPS_STREAMS : Operations in updatePartials may be assigned to separate device streams</p>
+<p>PARALLELOPS_GRID : Operations in updatePartials may be folded into single kernel launch (necessary for partitions; typically performs better for problems with fewer pattern sites)</p>
+<dl class="method">
+<dt id="libsbn.beagle_flags.beagle_flag.name">
+<em class="property">property </em><code class="sig-name descname">name</code><a class="headerlink" href="#libsbn.beagle_flags.beagle_flag.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>handle) -&gt; str</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>(self</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="vip.benchmark.html" class="btn btn-neutral float-right" title="vip.benchmark" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="libsbn.html" class="btn btn-neutral float-left" title="libsbn" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Team PhyloVI
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

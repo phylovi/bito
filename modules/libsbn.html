@@ -1,0 +1,758 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>libsbn &mdash; libsbn 0.0.1 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="../_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+        <script src="../_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="libsbn.beagle_flags" href="libsbn.beagle_flags.html" />
+    <link rel="prev" title="libsbn concepts" href="../concepts.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> libsbn
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../concepts.html">libsbn concepts</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">libsbn</a></li>
+<li class="toctree-l1"><a class="reference internal" href="libsbn.beagle_flags.html">libsbn.beagle_flags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.benchmark.html">vip.benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.branch_model.html">vip.branch_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.burrito.html">vip.burrito</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.cli.html">vip.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.optimizers.html">vip.optimizers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.priors.html">vip.priors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.sbn_model.html">vip.sbn_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.scalar_model.html">vip.scalar_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="vip.sgd_server.html">vip.sgd_server</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">libsbn</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+      <li>libsbn</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            <a href="../_sources/modules/libsbn.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="module-libsbn">
+<span id="libsbn"></span><h1>libsbn<a class="headerlink" href="#module-libsbn" title="Permalink to this headline">¶</a></h1>
+<p>Python interface to libsbn.</p>
+<p class="rubric">Classes</p>
+<table class="longtable docutils align-default">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.PSPIndexer" title="libsbn.PSPIndexer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PSPIndexer</span></code></a></p></td>
+<td><p>The primary split pair indexer.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.PhyloModelSpecification" title="libsbn.PhyloModelSpecification"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PhyloModelSpecification</span></code></a>(self, substitution, …)</p></td>
+<td><p>Phylogenetic model specification.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.UnrootedTree" title="libsbn.UnrootedTree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UnrootedTree</span></code></a></p></td>
+<td><p>An unrooted tree with branch lengths.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#libsbn.UnrootedTreeCollection" title="libsbn.UnrootedTreeCollection"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UnrootedTreeCollection</span></code></a>(*args, **kwargs)</p></td>
+<td><p>A collection of unrooted trees.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.unrooted_instance" title="libsbn.unrooted_instance"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unrooted_instance</span></code></a>(self, arg0)</p></td>
+<td><p>A unrooted SBN instance.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">ostream_redirect</span></code>(self, stdout, stderr)</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#libsbn.vector_double" title="libsbn.vector_double"><code class="xref py py-obj docutils literal notranslate"><span class="pre">vector_double</span></code></a></p></td>
+<td><p>A wrapper for vector&lt;double&gt;.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="class">
+<dt id="libsbn.PSPIndexer">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">PSPIndexer</code><a class="headerlink" href="#libsbn.PSPIndexer" title="Permalink to this definition">¶</a></dt>
+<dd><p>The primary split pair indexer.</p>
+<dl class="method">
+<dt id="libsbn.PSPIndexer.details">
+<code class="sig-name descname">details</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.PSPIndexer</em><span class="sig-paren">)</span> &#x2192; Dict[str, int]<a class="headerlink" href="#libsbn.PSPIndexer.details" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.PhyloModelSpecification">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">PhyloModelSpecification</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.PhyloModelSpecification</em>, <em class="sig-param">substitution: str</em>, <em class="sig-param">site: str</em>, <em class="sig-param">clock: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.PhyloModelSpecification" title="Permalink to this definition">¶</a></dt>
+<dd><p>Phylogenetic model specification.</p>
+<p>This is how we specify phylogenetic models, with strings for the substitution
+model, the site model, and the clock model.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.RootedPhyloGradient">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">RootedPhyloGradient</code><a class="headerlink" href="#libsbn.RootedPhyloGradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>A rooted tree phylogenetic gradient.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.RootedTree">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">RootedTree</code><a class="headerlink" href="#libsbn.RootedTree" title="Permalink to this definition">¶</a></dt>
+<dd><p>A rooted tree with branch lengths.</p>
+<dl class="method">
+<dt id="libsbn.RootedTree.example">
+<em class="property">static </em><code class="sig-name descname">example</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; libsbn.RootedTree<a class="headerlink" href="#libsbn.RootedTree.example" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.RootedTree.of_parent_id_vector">
+<em class="property">static </em><code class="sig-name descname">of_parent_id_vector</code><span class="sig-paren">(</span><em class="sig-param">arg0: List[int]</em><span class="sig-paren">)</span> &#x2192; Tree<a class="headerlink" href="#libsbn.RootedTree.of_parent_id_vector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.RootedTree.parent_id_vector">
+<code class="sig-name descname">parent_id_vector</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.RootedTree</em><span class="sig-paren">)</span> &#x2192; List[int]<a class="headerlink" href="#libsbn.RootedTree.parent_id_vector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.RootedTree.set_node_heights_via_height_ratios">
+<code class="sig-name descname">set_node_heights_via_height_ratios</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.RootedTree, arg0: numpy.ndarray[float64[m, 1]]</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.RootedTree.set_node_heights_via_height_ratios" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.RootedTreeCollection">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">RootedTreeCollection</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#libsbn.RootedTreeCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>A collection of rooted trees.</p>
+<p>In addition to the methods, RootedTreeCollection also offers direct access to
+the trees through the <code class="docutils literal notranslate"><span class="pre">trees</span></code> member variable.</p>
+<p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>__init__(self: libsbn.RootedTreeCollection, arg0: List[libsbn.RootedTree]) -&gt; None</p></li>
+</ol>
+<p>The empty constructor.</p>
+<ol class="arabic simple" start="2">
+<li><p>__init__(self: libsbn.RootedTreeCollection, arg0: List[libsbn.RootedTree], arg1: Dict[int, str]) -&gt; None</p></li>
+</ol>
+<p>Constructor from a vector of trees and a tags-&gt;taxon names map.</p>
+<ol class="arabic simple" start="3">
+<li><p>__init__(self: libsbn.RootedTreeCollection, arg0: List[libsbn.RootedTree], arg1: List[str]) -&gt; None</p></li>
+</ol>
+<p>Constructor from a vector of trees and a vector of taxon names.</p>
+<dl class="method">
+<dt id="libsbn.RootedTreeCollection.drop_first">
+<code class="sig-name descname">drop_first</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.RootedTreeCollection</em>, <em class="sig-param">fraction: float</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.RootedTreeCollection.drop_first" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drop the first <code class="docutils literal notranslate"><span class="pre">fraction</span></code> trees from the tree collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.RootedTreeCollection.erase">
+<code class="sig-name descname">erase</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.RootedTreeCollection</em>, <em class="sig-param">arg0: int</em>, <em class="sig-param">arg1: int</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.RootedTreeCollection.erase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Erase the specified range from the current tree collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.RootedTreeCollection.newick">
+<code class="sig-name descname">newick</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.RootedTreeCollection</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#libsbn.RootedTreeCollection.newick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current set of trees as a big Newick string.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.UnrootedPhyloGradient">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">UnrootedPhyloGradient</code><a class="headerlink" href="#libsbn.UnrootedPhyloGradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>An unrooted tree phylogenetic gradient.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.UnrootedTree">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">UnrootedTree</code><a class="headerlink" href="#libsbn.UnrootedTree" title="Permalink to this definition">¶</a></dt>
+<dd><p>An unrooted tree with branch lengths.</p>
+<dl class="method">
+<dt id="libsbn.UnrootedTree.of_parent_id_vector">
+<em class="property">static </em><code class="sig-name descname">of_parent_id_vector</code><span class="sig-paren">(</span><em class="sig-param">arg0: List[int]</em><span class="sig-paren">)</span> &#x2192; libsbn.UnrootedTree<a class="headerlink" href="#libsbn.UnrootedTree.of_parent_id_vector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.UnrootedTree.parent_id_vector">
+<code class="sig-name descname">parent_id_vector</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.UnrootedTree</em><span class="sig-paren">)</span> &#x2192; List[int]<a class="headerlink" href="#libsbn.UnrootedTree.parent_id_vector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.UnrootedTreeCollection">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">UnrootedTreeCollection</code><span class="sig-paren">(</span><em class="sig-param">*args</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#libsbn.UnrootedTreeCollection" title="Permalink to this definition">¶</a></dt>
+<dd><p>A collection of unrooted trees.</p>
+<p>In addition to the methods, UnrootedTreeCollection also offers direct access to
+the trees through the <code class="docutils literal notranslate"><span class="pre">trees</span></code> member variable.</p>
+<p>Overloaded function.</p>
+<ol class="arabic simple">
+<li><p>__init__(self: libsbn.UnrootedTreeCollection, arg0: List[libsbn.UnrootedTree]) -&gt; None</p></li>
+</ol>
+<p>The empty constructor.</p>
+<ol class="arabic simple" start="2">
+<li><p>__init__(self: libsbn.UnrootedTreeCollection, arg0: List[libsbn.UnrootedTree], arg1: Dict[int, str]) -&gt; None</p></li>
+</ol>
+<p>Constructor from a vector of trees and a tags-&gt;taxon names map.</p>
+<ol class="arabic simple" start="3">
+<li><p>__init__(self: libsbn.UnrootedTreeCollection, arg0: List[libsbn.UnrootedTree], arg1: List[str]) -&gt; None</p></li>
+</ol>
+<p>Constructor from a vector of trees and a vector of taxon names.</p>
+<dl class="method">
+<dt id="libsbn.UnrootedTreeCollection.drop_first">
+<code class="sig-name descname">drop_first</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.UnrootedTreeCollection</em>, <em class="sig-param">fraction: float</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.UnrootedTreeCollection.drop_first" title="Permalink to this definition">¶</a></dt>
+<dd><p>Drop the first <code class="docutils literal notranslate"><span class="pre">fraction</span></code> trees from the tree collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.UnrootedTreeCollection.erase">
+<code class="sig-name descname">erase</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.UnrootedTreeCollection</em>, <em class="sig-param">arg0: int</em>, <em class="sig-param">arg1: int</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.UnrootedTreeCollection.erase" title="Permalink to this definition">¶</a></dt>
+<dd><p>Erase the specified range from the current tree collection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.UnrootedTreeCollection.newick">
+<code class="sig-name descname">newick</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.UnrootedTreeCollection</em><span class="sig-paren">)</span> &#x2192; str<a class="headerlink" href="#libsbn.UnrootedTreeCollection.newick" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the current set of trees as a big Newick string.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn._instance">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">_instance</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn._instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>A general SBNInstance class (that just holds shared functionality between the two types of SBN instances). Don’t use directly, but read these docs to learn about the relevant functionality in the various subclasses.</p>
+<dl class="method">
+<dt id="libsbn._instance.get_phylo_model_param_block_map">
+<code class="sig-name descname">get_phylo_model_param_block_map</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em><span class="sig-paren">)</span> &#x2192; Dict[str, numpy.ndarray[float64[m, n], flags.writeable, flags.c_contiguous]]<a class="headerlink" href="#libsbn._instance.get_phylo_model_param_block_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn._instance.get_phylo_model_params">
+<code class="sig-name descname">get_phylo_model_params</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray[float64[m, n], flags.writeable, flags.c_contiguous]<a class="headerlink" href="#libsbn._instance.get_phylo_model_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn._instance.prepare_for_phylo_likelihood">
+<code class="sig-name descname">prepare_for_phylo_likelihood</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">model_specification: libsbn.PhyloModelSpecification</em>, <em class="sig-param">thread_count: int</em>, <em class="sig-param">beagle_flags: List[BeagleFlags] = []</em>, <em class="sig-param">use_tip_states: bool = True</em>, <em class="sig-param">tree_count_option: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn._instance.prepare_for_phylo_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare instance for phylogenetic likelihood computation.</p>
+<p>See the <code class="docutils literal notranslate"><span class="pre">libsbn.beagle_flags</span></code> online documentation to learn about the allowable flags.</p>
+<p><code class="docutils literal notranslate"><span class="pre">use_tip_states</span></code> tells BEAGLE if it should use tip states (versus tip partials).
+Note that libsbn currently treats degenerate nucleotides as gaps irrespective of this setting.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tree_count_option</span></code> tells libsbn for how many trees you will be asking for the likelihood
+or gradient at a time. If not specified, this is set to the number of trees currently loaded
+into the instance. This allocates the correct number of slots in the phylogenetic model
+parameter matrices, and it’s up to the user to set those model parameters after calling
+this function.
+Note that this tree count need not be the same as the number of threads (and is typically bigger).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn._instance.read_fasta_file">
+<code class="sig-name descname">read_fasta_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn._instance.read_fasta_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a sequence alignment from a FASTA file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn._instance.resize_phylo_model_params">
+<code class="sig-name descname">resize_phylo_model_params</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">tree_count_option: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn._instance.resize_phylo_model_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resize phylo_model_params.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.gp_instance">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">gp_instance</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.gp_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.gp_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>A generalized pruning instance.</p>
+<dl class="method">
+<dt id="libsbn.gp_instance.estimate_branch_lengths">
+<code class="sig-name descname">estimate_branch_lengths</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.gp_instance</em>, <em class="sig-param">arg0: float</em>, <em class="sig-param">arg1: int</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.gp_instance.estimate_branch_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Estimate branch lengths for the GPInstance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.gp_instance.estimate_sbn_parameters">
+<code class="sig-name descname">estimate_sbn_parameters</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.gp_instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.gp_instance.estimate_sbn_parameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read trees from a Newick file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.gp_instance.make_engine">
+<code class="sig-name descname">make_engine</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.gp_instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.gp_instance.make_engine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare for optimization.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.gp_instance.print_dag">
+<code class="sig-name descname">print_dag</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.gp_instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.gp_instance.print_dag" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print the generalized pruning DAG.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.gp_instance.print_status">
+<code class="sig-name descname">print_status</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.gp_instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.gp_instance.print_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print information about the instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.gp_instance.read_fasta_file">
+<code class="sig-name descname">read_fasta_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.gp_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.gp_instance.read_fasta_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a sequence alignment from a FASTA file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.gp_instance.read_newick_file">
+<code class="sig-name descname">read_newick_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.gp_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.gp_instance.read_newick_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read trees from a Newick file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.gp_instance.read_nexus_file">
+<code class="sig-name descname">read_nexus_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.gp_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.gp_instance.read_nexus_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read trees from a Nexus file.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="libsbn.ratio_gradient_of_height_gradient">
+<code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">ratio_gradient_of_height_gradient</code><span class="sig-paren">(</span><em class="sig-param">arg0: libsbn.RootedTree, arg1: numpy.ndarray[float64[m, 1]]</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray[float64[m, 1]]<a class="headerlink" href="#libsbn.ratio_gradient_of_height_gradient" title="Permalink to this definition">¶</a></dt>
+<dd><p>Obtain a ratio gradient from a height gradient.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.rooted_instance">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">rooted_instance</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.rooted_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.rooted_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>A rooted SBN instance.</p>
+<dl class="method">
+<dt id="libsbn.rooted_instance.get_phylo_model_param_block_map">
+<code class="sig-name descname">get_phylo_model_param_block_map</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em><span class="sig-paren">)</span> &#x2192; Dict[str, numpy.ndarray[float64[m, n], flags.writeable, flags.c_contiguous]]<a class="headerlink" href="#libsbn.rooted_instance.get_phylo_model_param_block_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.get_phylo_model_params">
+<code class="sig-name descname">get_phylo_model_params</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray[float64[m, n], flags.writeable, flags.c_contiguous]<a class="headerlink" href="#libsbn.rooted_instance.get_phylo_model_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.log_likelihoods">
+<code class="sig-name descname">log_likelihoods</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.rooted_instance</em><span class="sig-paren">)</span> &#x2192; libsbn.vector_double<a class="headerlink" href="#libsbn.rooted_instance.log_likelihoods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate log likelihoods for the current set of trees.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.phylo_gradients">
+<code class="sig-name descname">phylo_gradients</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.rooted_instance</em><span class="sig-paren">)</span> &#x2192; List[libsbn.RootedPhyloGradient]<a class="headerlink" href="#libsbn.rooted_instance.phylo_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate gradients of parameters for the current set of trees.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.prepare_for_phylo_likelihood">
+<code class="sig-name descname">prepare_for_phylo_likelihood</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">model_specification: libsbn.PhyloModelSpecification</em>, <em class="sig-param">thread_count: int</em>, <em class="sig-param">beagle_flags: List[BeagleFlags] = []</em>, <em class="sig-param">use_tip_states: bool = True</em>, <em class="sig-param">tree_count_option: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.rooted_instance.prepare_for_phylo_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare instance for phylogenetic likelihood computation.</p>
+<p>See the <code class="docutils literal notranslate"><span class="pre">libsbn.beagle_flags</span></code> online documentation to learn about the allowable flags.</p>
+<p><code class="docutils literal notranslate"><span class="pre">use_tip_states</span></code> tells BEAGLE if it should use tip states (versus tip partials).
+Note that libsbn currently treats degenerate nucleotides as gaps irrespective of this setting.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tree_count_option</span></code> tells libsbn for how many trees you will be asking for the likelihood
+or gradient at a time. If not specified, this is set to the number of trees currently loaded
+into the instance. This allocates the correct number of slots in the phylogenetic model
+parameter matrices, and it’s up to the user to set those model parameters after calling
+this function.
+Note that this tree count need not be the same as the number of threads (and is typically bigger).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.print_status">
+<code class="sig-name descname">print_status</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.rooted_instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.rooted_instance.print_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print information about the instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.read_fasta_file">
+<code class="sig-name descname">read_fasta_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.rooted_instance.read_fasta_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a sequence alignment from a FASTA file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.read_newick_file">
+<code class="sig-name descname">read_newick_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.rooted_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.rooted_instance.read_newick_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read trees from a Newick file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.read_nexus_file">
+<code class="sig-name descname">read_nexus_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.rooted_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.rooted_instance.read_nexus_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read trees from a Nexus file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.resize_phylo_model_params">
+<code class="sig-name descname">resize_phylo_model_params</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">tree_count_option: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.rooted_instance.resize_phylo_model_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resize phylo_model_params.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.set_rescaling">
+<code class="sig-name descname">set_rescaling</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.rooted_instance</em>, <em class="sig-param">arg0: bool</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.rooted_instance.set_rescaling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set whether BEAGLE’s likelihood rescaling is used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.rooted_instance.tree_count">
+<code class="sig-name descname">tree_count</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.rooted_instance</em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#libsbn.rooted_instance.tree_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of trees that are currently stored in the instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.unrooted_instance">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">unrooted_instance</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance" title="Permalink to this definition">¶</a></dt>
+<dd><p>A unrooted SBN instance.</p>
+<dl class="method">
+<dt id="libsbn.unrooted_instance.calculate_sbn_probabilities">
+<code class="sig-name descname">calculate_sbn_probabilities</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray[float64[m, 1]]<a class="headerlink" href="#libsbn.unrooted_instance.calculate_sbn_probabilities" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the SBN probabilities of the currently loaded trees.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.get_indexers">
+<code class="sig-name descname">get_indexers</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; Tuple[Dict[str, int], Dict[str, Tuple[int, int]]]<a class="headerlink" href="#libsbn.unrooted_instance.get_indexers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the indexer and parent_to_range as string-keyed maps.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.get_phylo_model_param_block_map">
+<code class="sig-name descname">get_phylo_model_param_block_map</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em><span class="sig-paren">)</span> &#x2192; Dict[str, numpy.ndarray[float64[m, n], flags.writeable, flags.c_contiguous]]<a class="headerlink" href="#libsbn.unrooted_instance.get_phylo_model_param_block_map" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.get_phylo_model_params">
+<code class="sig-name descname">get_phylo_model_params</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray[float64[m, n], flags.writeable, flags.c_contiguous]<a class="headerlink" href="#libsbn.unrooted_instance.get_phylo_model_params" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.log_likelihoods">
+<code class="sig-name descname">log_likelihoods</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; libsbn.vector_double<a class="headerlink" href="#libsbn.unrooted_instance.log_likelihoods" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate log likelihoods for the current set of trees.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.make_indexer_representations">
+<code class="sig-name descname">make_indexer_representations</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; List[List[List[int]]]<a class="headerlink" href="#libsbn.unrooted_instance.make_indexer_representations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the indexer representation of each currently stored tree.</p>
+<p>See the comment for <code class="docutils literal notranslate"><span class="pre">IndexerRepresentationOf</span></code> in <code class="docutils literal notranslate"><span class="pre">sbn_maps.hpp</span></code> to learn about what that means.</p>
+<p>Note: any rootsplit or a PCSP that is not contained in the subsplit support is given an index equal
+to the length of <code class="docutils literal notranslate"><span class="pre">sbn_parameters</span></code>. No warning is given.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.make_psp_indexer_representations">
+<code class="sig-name descname">make_psp_indexer_representations</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; List[List[List[int]]]<a class="headerlink" href="#libsbn.unrooted_instance.make_psp_indexer_representations" title="Permalink to this definition">¶</a></dt>
+<dd><p>Make the PSP indexer representation of each currently stored tree.</p>
+<p>See the comments in <code class="docutils literal notranslate"><span class="pre">psp_indexer.hpp</span></code> to understand the layout.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.phylo_gradients">
+<code class="sig-name descname">phylo_gradients</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; List[libsbn.UnrootedPhyloGradient]<a class="headerlink" href="#libsbn.unrooted_instance.phylo_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calculate gradients of parameters for the current set of trees.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.prepare_for_phylo_likelihood">
+<code class="sig-name descname">prepare_for_phylo_likelihood</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">model_specification: libsbn.PhyloModelSpecification</em>, <em class="sig-param">thread_count: int</em>, <em class="sig-param">beagle_flags: List[BeagleFlags] = []</em>, <em class="sig-param">use_tip_states: bool = True</em>, <em class="sig-param">tree_count_option: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.prepare_for_phylo_likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepare instance for phylogenetic likelihood computation.</p>
+<p>See the <code class="docutils literal notranslate"><span class="pre">libsbn.beagle_flags</span></code> online documentation to learn about the allowable flags.</p>
+<p><code class="docutils literal notranslate"><span class="pre">use_tip_states</span></code> tells BEAGLE if it should use tip states (versus tip partials).
+Note that libsbn currently treats degenerate nucleotides as gaps irrespective of this setting.</p>
+<p><code class="docutils literal notranslate"><span class="pre">tree_count_option</span></code> tells libsbn for how many trees you will be asking for the likelihood
+or gradient at a time. If not specified, this is set to the number of trees currently loaded
+into the instance. This allocates the correct number of slots in the phylogenetic model
+parameter matrices, and it’s up to the user to set those model parameters after calling
+this function.
+Note that this tree count need not be the same as the number of threads (and is typically bigger).</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.print_status">
+<code class="sig-name descname">print_status</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.print_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print information about the instance.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.process_loaded_trees">
+<code class="sig-name descname">process_loaded_trees</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.process_loaded_trees" title="Permalink to this definition">¶</a></dt>
+<dd><p>Process the trees currently stored in the instance.</p>
+<p>Specifically, parse them and build the indexers and the <code class="docutils literal notranslate"><span class="pre">sbn_parameters</span></code> vector.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.read_fasta_file">
+<code class="sig-name descname">read_fasta_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.read_fasta_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read a sequence alignment from a FASTA file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.read_newick_file">
+<code class="sig-name descname">read_newick_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.read_newick_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read trees from a Newick file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.read_nexus_file">
+<code class="sig-name descname">read_nexus_file</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em>, <em class="sig-param">arg0: str</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.read_nexus_file" title="Permalink to this definition">¶</a></dt>
+<dd><p>Read trees from a Nexus file.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.resize_phylo_model_params">
+<code class="sig-name descname">resize_phylo_model_params</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn._instance</em>, <em class="sig-param">tree_count_option: Optional[int] = None</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.resize_phylo_model_params" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resize phylo_model_params.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.sample_trees">
+<code class="sig-name descname">sample_trees</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em>, <em class="sig-param">count: int</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.sample_trees" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sample trees from the SBN and store them internally.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.set_rescaling">
+<code class="sig-name descname">set_rescaling</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em>, <em class="sig-param">arg0: bool</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.set_rescaling" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set whether BEAGLE’s likelihood rescaling is used.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.split_counters">
+<code class="sig-name descname">split_counters</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; Tuple[Dict[str, int], Dict[str, Dict[str, int]]]<a class="headerlink" href="#libsbn.unrooted_instance.split_counters" title="Permalink to this definition">¶</a></dt>
+<dd><p>A testing method to count splits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.split_lengths">
+<code class="sig-name descname">split_lengths</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; List[libsbn.vector_double]<a class="headerlink" href="#libsbn.unrooted_instance.split_lengths" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the lengths of the current set of trees, indexed by splits.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.topology_gradients">
+<code class="sig-name descname">topology_gradients</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance, arg0: numpy.ndarray[float64[m, 1], flags.writeable], arg1: bool</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray[float64[m, 1]]<a class="headerlink" href="#libsbn.unrooted_instance.topology_gradients" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>Calculate gradients of SBN parameters for the current set of trees.</dt><dd><p>Should be called after sampling trees and setting branch lengths.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.train_expectation_maximization">
+<code class="sig-name descname">train_expectation_maximization</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em>, <em class="sig-param">alpha: float</em>, <em class="sig-param">max_iter: int</em>, <em class="sig-param">score_epsilon: float = 0.0</em><span class="sig-paren">)</span> &#x2192; numpy.ndarray[float64[m, 1]]<a class="headerlink" href="#libsbn.unrooted_instance.train_expectation_maximization" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train the SBN using the expectation-maximization estimator.</p>
+<p>This is described in the “Expectation Maximization” section of the 2018
+NeurIPS paper, and is later referred to as the “SBN-EM” estimator.</p>
+<p>Here we can supply alpha, the absolute maxiumum number of iterations, and
+a score-based termination criterion for EM. EM will stop if the scaled
+score increase is less than the provided <code class="docutils literal notranslate"><span class="pre">score_epsilon</span></code>.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.train_simple_average">
+<code class="sig-name descname">train_simple_average</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; None<a class="headerlink" href="#libsbn.unrooted_instance.train_simple_average" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train the SBN using the “simple average” estimator.</p>
+<p>This is described in the “Maximum Lower Bound Estimates” section of the 2018
+NeurIPS paper, and is later referred to as the “SBN-SA” estimator.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="libsbn.unrooted_instance.tree_count">
+<code class="sig-name descname">tree_count</code><span class="sig-paren">(</span><em class="sig-param">self: libsbn.unrooted_instance</em><span class="sig-paren">)</span> &#x2192; int<a class="headerlink" href="#libsbn.unrooted_instance.tree_count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the number of trees that are currently stored in the instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="libsbn.vector_double">
+<em class="property">class </em><code class="sig-prename descclassname">libsbn.</code><code class="sig-name descname">vector_double</code><a class="headerlink" href="#libsbn.vector_double" title="Permalink to this definition">¶</a></dt>
+<dd><p>A wrapper for vector&lt;double&gt;.</p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="libsbn.beagle_flags.html" class="btn btn-neutral float-right" title="libsbn.beagle_flags" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="../concepts.html" class="btn btn-neutral float-left" title="libsbn concepts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2019, Team PhyloVI
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

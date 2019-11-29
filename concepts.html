@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>bito concepts &mdash; bito 0.0.1 documentation</title><link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="bito" href="modules/bito.html" />
+    <link rel="prev" title="Welcome to bito’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> bito
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">bito concepts</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#definitions">Definitions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#notation">Notation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#terminology-and-conventions">Terminology and conventions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#implementation">Implementation</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="modules/bito.html">bito</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/bito.beagle_flags.html">bito.beagle_flags</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/vip.benchmark.html">vip.benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/vip.branch_model.html">vip.branch_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/vip.burrito.html">vip.burrito</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/vip.cli.html">vip.cli</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/vip.optimizers.html">vip.optimizers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/vip.priors.html">vip.priors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/vip.sbn_model.html">vip.sbn_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/vip.scalar_model.html">vip.scalar_model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules/vip.sgd_server.html">vip.sgd_server</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">bito</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>bito concepts</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/concepts.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="section" id="bito-concepts">
+<h1>bito concepts<a class="headerlink" href="#bito-concepts" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="definitions">
+<h2>Definitions<a class="headerlink" href="#definitions" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt><span class="target" id="index-0"></span>PCSP</dt><dd><p>PCSP stands for parent-child subsplit pair, that is, a pair consisting of a parent subsplit and a child subsplit.
+It’s a general concept rather than a specific implementation of the concept.
+For example, see the documentation of PCSPFun (in <code class="docutils literal notranslate"><span class="pre">node.hpp</span></code>) and PCSP Bitsets (in <code class="docutils literal notranslate"><span class="pre">bitset.hpp</span></code>) for two different ways of using this concept.</p>
+</dd>
+<dt><span class="target" id="index-1"></span>PSP</dt><dd><p>PSP stands for primary subsplit pair, which is a way of parameterizing branch lengths on trees.
+See the 2019 ICLR paper for details.</p>
+</dd>
+<dt><span class="target" id="index-2"></span>SBN</dt><dd><p>SBN stands for subsplit Bayes network, which is how we parameterize variational distributions on tree topologies.
+See the 2018 NeurIPS paper for details.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="notation">
+<h2>Notation<a class="headerlink" href="#notation" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(X\)</span>: taxon set</p></li>
+<li><p><span class="math notranslate nohighlight">\(A, B, \ldots\)</span> taxon subsets</p></li>
+<li><p><span class="math notranslate nohighlight">\(\tau\)</span>: topology</p></li>
+<li><p><span class="math notranslate nohighlight">\(\theta\)</span>: branch lengths or other per-tree model parameters such as node heights</p></li>
+<li><p><span class="math notranslate nohighlight">\(t, s, u\)</span>: subsplits</p></li>
+<li><p><span class="math notranslate nohighlight">\(q(s | t)\)</span>: conditional probability of child subsplit <span class="math notranslate nohighlight">\(s\)</span> given parent subsplit <span class="math notranslate nohighlight">\(t\)</span></p></li>
+<li><p><span class="math notranslate nohighlight">\(t \rightarrow s\)</span>: parent-child subsplit pair consisting of a parent <span class="math notranslate nohighlight">\(t\)</span> and child <span class="math notranslate nohighlight">\(s\)</span></p></li>
+</ul>
+</div>
+<div class="section" id="terminology-and-conventions">
+<h2>Terminology and conventions<a class="headerlink" href="#terminology-and-conventions" title="Permalink to this headline">¶</a></h2>
+<p>We follow different naming conventions for C++ and Python.
+In C++ we follow the Google C++ conventions: <code class="docutils literal notranslate"><span class="pre">PascalCase</span></code> for types and functions, <code class="docutils literal notranslate"><span class="pre">snake_case</span></code> for variables, and <code class="docutils literal notranslate"><span class="pre">a_trailing_underscore_</span></code> for member variables.
+In Python we just use <code class="docutils literal notranslate"><span class="pre">snake_case</span></code> for everything, with no trailing underscore.
+Here we’ll just use the Python versions, and the C++ hackers will have to extrapolate.</p>
+<p>In Python bitsets will be expressed as strings, while in C++ they are Bitset objects.
+Hashtables are implemented using <code class="docutils literal notranslate"><span class="pre">unordered_map</span></code> in C++ and dictionaries in Python, but we will use the Python terminology even if we are talking about a C++ map.</p>
+</div>
+<div class="section" id="implementation">
+<h2>Implementation<a class="headerlink" href="#implementation" title="Permalink to this headline">¶</a></h2>
+<p>All of the SBN parameters are held in a single <code class="docutils literal notranslate"><span class="pre">sbn_parameters</span></code> block of doubles that is available for reading and writing through the bito instance interface.
+We index into that block using an “indexer” dictionary which maps from bitsets representing PCSPs to the index for that PCSP.
+See the definition of PCSP bitset in <code class="docutils literal notranslate"><span class="pre">bitset.hpp</span></code> and the tests in <code class="docutils literal notranslate"><span class="pre">bito.hpp</span></code> to see this in action.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">sbn_parameters</span></code> block is set up such that PCSPs that share a parent are laid out contiguously.
+This is nice because if we want to sample from the child subsplit conditional on the parent, then we have all of the probabilities there in one place.
+The <code class="docutils literal notranslate"><span class="pre">parent_to_range</span></code> dictionary maps parent bitsets to the range of indices corresponding to children descending from that parent.</p>
+<p>We can ask for an “indexer representation” of a tree, which is described in <code class="docutils literal notranslate"><span class="pre">sbn_maps.hpp</span></code> and shown off in the use of <code class="docutils literal notranslate"><span class="pre">StringIndexerRepresentationOf</span></code> in <code class="docutils literal notranslate"><span class="pre">bito.hpp</span></code>.
+Basically, its the expression of the rootsplits and PCSPs for a tree, in index form.</p>
+<p>PSPs are indexed using a different scheme, which uses a vector of three vectors.
+The first vector describes the rootsplit, the second describes the child subsplit going “up” the tree, and the third the child subsplit going “down” the tree.
+These directionality terms only make sense on rooted trees, but we represent unrooted trees as rooted trees in the typical way.</p>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to bito’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules/bito.html" class="btn btn-neutral float-right" title="bito" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2019-2021, Team PhyloVI.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

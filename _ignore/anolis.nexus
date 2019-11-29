@@ -1,0 +1,35 @@
+#NEXUS
+Begin trees;
+	Translate
+		1 "Anolis_ahli",
+		2 "Anolis_garmani",
+		3 "Anolis_grahami",
+		4 "Anolis_valencienni",
+		5 "Anolis_lineatopus",
+		6 "Anolis_ophiolepis",
+		7 "Anolis_sagrei",
+		8 "Anolis_alutaceus",
+		9 "Anolis_vanidicus",
+		10 "Anolis_angusticeps",
+		11 "Anolis_paternus",
+		12 "Anolis_loysiana",
+		13 "Anolis_marcanoi",
+		14 "Anolis_strahmi",
+		15 "Anolis_aliniger",
+		16 "Anolis_coelestinus",
+		17 "Anolis_equestris",
+		18 "Anolis_luteogularis",
+		19 "Anolis_bahorucoensis",
+		20 "Anolis_occultus",
+		21 "Anolis_insolitus",
+		22 "Anolis_olssoni",
+		23 "Anolis_barahonae",
+		24 "Anolis_cuvieri",
+		25 "Anolis_brevirostris",
+		26 "Anolis_distichus",
+		27 "Anolis_cristatellus",
+		28 "Anolis_stratulus",
+		29 "Anolis_krugi"
+;
+tree TREE0 = ((((1:0.146196,(((2:0.064016,3:0.064016):0.036970,4:0.100986):0.014181,5:0.115167):0.031029):0.026916,(6:0.070323,7:0.070323):0.102789):0.030547,(((8:0.102791,9:0.102791):0.054095,((10:0.052212,11:0.052212):0.072797,12:0.125010):0.031875):0.030926,(13:0.117326,14:0.117326):0.070485):0.015848):0.005171,((((((15:0.088426,16:0.088426):0.036646,(17:0.021454,18:0.021454):0.103618):0.020858,(19:0.131145,20:0.131145):0.014784):0.019347,(21:0.134985,22:0.134985):0.030292):0.013479,(23:0.118290,24:0.118290):0.060465):0.018628,((25:0.098269,26:0.098269):0.065457,((27:0.102588,28:0.102588):0.023419,29:0.126007):0.037720):0.033656):0.011448);
+END;

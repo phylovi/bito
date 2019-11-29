@@ -1,0 +1,12 @@
+*.so
+.pytest_cache
+.sconsign.dblite
+_build
+build
+doc
+lib
+test
+vip
+dist
+_modules
+compile_commands.json
