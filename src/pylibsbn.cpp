@@ -90,9 +90,17 @@ PYBIND11_MODULE(libsbn, m) {
            "Sample trees from the SBN and store them internally.",
            py::arg("count"))
       .def("get_indexer_representations",
-           &SBNInstance::GetIndexerRepresentations)
+           &SBNInstance::GetIndexerRepresentations, R"raw(
+            Get the indexer representation of each currently stored tree.
+
+            See the comment for ``IndexerRepresentationOf`` in ``sbn_maps.hpp`` to learn about what that means.
+           )raw")
       .def("get_psp_indexer_representations",
-           &SBNInstance::GetPSPIndexerRepresentations)
+           &SBNInstance::GetPSPIndexerRepresentations, R"raw(
+            Get the PSP indexer representation of each currently stored tree.
+
+            See the comments in ``psp_indexer.hpp`` to understand the layout.
+           )raw")
       .def("split_counters", &SBNInstance::SplitCounters,
            "A testing method to count splits.")
       .def("split_lengths", &SBNInstance::SplitLengths)
