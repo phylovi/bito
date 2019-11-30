@@ -62,7 +62,8 @@ PYBIND11_MODULE(libsbn, m) {
            "Print information about the instance.")
       // ** SBN-related items
       .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
-      .def("get_indexers", &SBNInstance::GetIndexers)
+      .def("get_indexers", &SBNInstance::GetIndexers,
+           "The indexer and parent_to_range as string-keyed maps.")
       .def("sample_trees", &SBNInstance::SampleTrees)
       .def("get_indexer_representations",
            &SBNInstance::GetIndexerRepresentations)

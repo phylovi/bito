@@ -4,6 +4,11 @@ Welcome to libsbn's documentation!
 .. toctree::
    :caption: Contents:
 
+See the README on the `libsbn GitHub repository <https://github.com/phylovi/libsbn>`_ for installation and general description.
+This is the documentation for interacting with libsbn from Python.
+
+From the perspective of a Python user, code is broken into two components: ``libsbn``, which is the direct interface to the C++ code, and ``vip``, which implements the Python components.
+
 
 Modules
 =======
@@ -12,8 +17,6 @@ Modules
    :toctree: modules
 
    libsbn
-   libsbn.PSPIndexer
-   libsbn.instance
    vip
    vip.benchmark
    vip.branch_model

@@ -20,7 +20,6 @@ vip.branch\_model
    .. autosummary::
    
       BranchModel
-      PSPModel
       SplitModel
    
    

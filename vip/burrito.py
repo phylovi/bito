@@ -13,11 +13,10 @@ class Burrito:
     Some terminology:
 
     * We sample "particles" in order to calculate the ELBO and to do stochastic gradient
-    ascent. This is a handy terminology because it can be used for trees, or scalar
-    parameters, etc. We use the prefix `px_` to designate that the first dimension of
-    the given object is across particles. For example, `px_branch_lengths` is a list
-    of branch length vectors, where the list is across particles.
-
+      ascent. This is a handy terminology because it can be used for trees, or scalar
+      parameters, etc. We use the prefix `px_` to designate that the first dimension of
+      the given object is across particles. For example, `px_branch_lengths` is a list
+      of branch length vectors, where the list is across particles.
     * particle_count is the particle count to be used for gradient calculation
     """
 

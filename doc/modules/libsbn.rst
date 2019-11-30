@@ -14,6 +14,7 @@ libsbn
    .. autosummary::
    
       PSPIndexer
+      PhyloModelSpecification
       Tree
       TreeCollection
       instance

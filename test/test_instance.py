@@ -5,6 +5,10 @@ import pprint
 import pytest
 
 
+def convert_dict_to_int(d):
+    return {k: int(v) for k, v in d.items()}
+
+
 def test_instance():
     """Test the libsbn instance.
 
@@ -17,7 +21,7 @@ def test_instance():
     inst.process_loaded_trees()
 
     # Showing off tree sampling.
-    [indexer, range_indexer] = inst.get_indexers()
+
     sbn_parameters = np.array(inst.sbn_parameters, copy=False)
     sbn_parameters[0] = 0.2
     # Note that this puts the trees into the instance object, replacing the trees loaded
@@ -31,10 +35,7 @@ def test_instance():
     print(inst.psp_indexer.details())
     print()
 
-    # Checking split supports.
-    def convert_dict_to_int(d):
-        return {k: int(v) for k, v in d.items()}
-
+    # Checking split supports
     inst.read_nexus_file("data/DS1.subsampled_10.t")
     inst.process_loaded_trees()
     [rootsplit_support, subsplit_support] = inst.split_counters()
