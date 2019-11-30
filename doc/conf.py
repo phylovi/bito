@@ -35,11 +35,11 @@ autodoc_default_flags = [
     "members",
     "inherited-members",
     "private-members",
-    "show-inheritance",
+    #    "show-inheritance",
 ]
 autosummary_generate = True  # Make _autosummary files and include them
-# napoleon_numpy_docstring = False  # Force consistency, leave only Google
-# napoleon_use_rtype = False  # More legible
+napoleon_numpy_docstring = False  # Force consistency, leave only Google
+napoleon_use_rtype = False  # More legible
 
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -48,9 +48,10 @@ autosummary_generate = True  # Make _autosummary files and include them
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
+    "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
-    "sphinx.ext.githubpages",
+    "sphinx.ext.napoleon",
 ]
 
 # Add any paths that contain templates here, relative to this directory.

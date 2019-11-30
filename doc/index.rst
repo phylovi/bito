@@ -10,6 +10,7 @@ This is the documentation for interacting with libsbn from Python.
 From the perspective of a Python user, code is broken into two components: ``libsbn``, which is the direct interface to the C++ code, and ``vip``, which implements the Python components.
 
 
+
 Modules
 =======
 

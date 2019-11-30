@@ -21,7 +21,9 @@ PYBIND11_MODULE(libsbn, m) {
   // Second, we expose them as buffer objects so that we can use them
   // as in-place numpy arrays with np.array(v, copy=False). See
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
-  py::class_<std::vector<double>>(m, "vector_double", py::buffer_protocol())
+  py::class_<std::vector<double>>(m, "vector_double",
+                                  "A wrapper for vector<double>.",
+                                  py::buffer_protocol())
       .def_buffer([](std::vector<double> &v) -> py::buffer_info {
         return py::buffer_info(
             v.data(),                                 // Pointer to buffer
@@ -32,23 +34,37 @@ PYBIND11_MODULE(libsbn, m) {
             {sizeof(double)});                        // Stride
       });
   // Tree
-  py::class_<Tree>(m, "Tree", py::buffer_protocol())
+  py::class_<Tree>(m, "Tree", "A tree with branch lengths.",
+                   py::buffer_protocol())
       .def("parent_id_vector", &Tree::ParentIdVector)
       .def_static("of_parent_id_vector", &Tree::OfParentIdVector)
       .def_readwrite("branch_lengths", &Tree::branch_lengths_);
   // TreeCollection
-  py::class_<TreeCollection>(m, "TreeCollection")
+  py::class_<TreeCollection>(m, "TreeCollection", R"raw(
+  A collection of trees.
+
+  In addition to the methods, TreeCollection also offers direct access to
+  the trees through the ``trees`` member variable.
+  )raw")
       .def(py::init<Tree::TreeVector>())
       .def(py::init<Tree::TreeVector, TagStringMap>())
       .def(py::init<Tree::TreeVector, const std::vector<std::string> &>())
-      .def("erase", &TreeCollection::Erase)
-      .def("newick", &TreeCollection::Newick)
+      .def("erase", &TreeCollection::Erase,
+           "Erase the specified range from the current tree collection.")
+      .def("newick", &TreeCollection::Newick,
+           "Get the current set of trees as a big Newick string.")
       .def_readwrite("trees", &TreeCollection::trees_);
   // PSPIndexer
   py::class_<PSPIndexer>(m, "PSPIndexer", "The primary split pair indexer.")
       .def("details", &PSPIndexer::Details);
   // PhyloModelSpecification
-  py::class_<PhyloModelSpecification>(m, "PhyloModelSpecification")
+  py::class_<PhyloModelSpecification>(m, "PhyloModelSpecification",
+                                      R"raw(
+    Phylogenetic model specification.
+
+    This is how we specify phylogenetic models, with strings for the substitution
+    model, the site model, and the clock model.
+      )raw")
       .def(py::init<const std::string &, const std::string &,
                     const std::string &>(),
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
@@ -57,14 +73,22 @@ PYBIND11_MODULE(libsbn, m) {
                           "A wrapper for the all of the C++-side state.")
       // ** Initialization and status
       .def(py::init<const std::string &>())
-      .def("tree_count", &SBNInstance::TreeCount)
+      .def("tree_count", &SBNInstance::TreeCount,
+           "Return the number of trees that are currently stored in the "
+           "instance.")
       .def("print_status", &SBNInstance::PrintStatus,
            "Print information about the instance.")
       // ** SBN-related items
-      .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees)
+      .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees, R"raw(
+          Process the trees currently stored in the instance.
+
+          Specifically, parse them and build the indexers and the ``sbn_parameters`` vector.
+      )raw")
       .def("get_indexers", &SBNInstance::GetIndexers,
-           "The indexer and parent_to_range as string-keyed maps.")
-      .def("sample_trees", &SBNInstance::SampleTrees)
+           "Return the indexer and parent_to_range as string-keyed maps.")
+      .def("sample_trees", &SBNInstance::SampleTrees,
+           "Sample trees from the SBN and store them internally.",
+           py::arg("count"))
       .def("get_indexer_representations",
            &SBNInstance::GetIndexerRepresentations)
       .def("get_psp_indexer_representations",
