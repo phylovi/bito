@@ -7,18 +7,17 @@ Welcome to libsbn's documentation!
 See the README on the `libsbn GitHub repository <https://github.com/phylovi/libsbn>`_ for installation and general description.
 This is the documentation for interacting with libsbn from Python.
 
-From the perspective of a Python user, code is broken into two components: ``libsbn``, which is the direct interface to the C++ code, and ``vip``, which implements the Python components.
+From the perspective of a Python user, code is broken into two packages: ``libsbn``, which is the direct interface to the C++ code, and ``vip``, which implements the Python components.
 
 
 
 Modules
-=======
+-------
 
 .. autosummary::
    :toctree: modules
 
    libsbn
-   vip
    vip.benchmark
    vip.branch_model
    vip.burrito
@@ -30,7 +29,7 @@ Modules
    vip.sgd_server
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

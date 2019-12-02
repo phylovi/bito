@@ -1,7 +1,7 @@
 """
 Methods for running and benchmarking performance.
 
-Documentation in the CLI.
+Documentation in the command line interface.
 """
 
 import os

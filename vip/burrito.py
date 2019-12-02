@@ -1,3 +1,4 @@
+"""The Burrito class wraps an instance and relevant model data."""
 import click
 import numpy as np
 
