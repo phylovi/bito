@@ -1,3 +1,7 @@
+"""
+Classes that perform optimization and contain relevant state.
+"""
+
 import abc
 import numpy as np
 import vip.sgd_server

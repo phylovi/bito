@@ -1,3 +1,6 @@
+"""
+Stub (unimplemented) class for SBN modeling.
+"""
 import numpy as np
 
 

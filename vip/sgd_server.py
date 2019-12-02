@@ -1,3 +1,7 @@
+"""
+Module for doing stochastic gradient descent.
+"""
+
 import numpy as np
 
 
