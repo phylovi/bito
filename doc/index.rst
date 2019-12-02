@@ -42,6 +42,14 @@ To see results, run::
     pytest -s test/test_instance.py
 
 
+``vip`` command line interface
+------------------------------
+
+.. click:: vip.cli:cli
+  :prog: vip
+  :show-nested:
+
+
 Modules
 -------
 
