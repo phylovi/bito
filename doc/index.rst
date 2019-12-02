@@ -37,10 +37,10 @@ Thus, there are typically two levels of state: the "raw" parameters in the ``lib
 
 The command-line interface is called ``vip`` and is available after installation (see ``vip.cli`` in the sidebar for docs).
 
-If you want to write Python code using these tools, have a look at ``test/test_instance.py``.
+If you want to write Python code using these tools, have a look at ``test/test_libsbn.py``.
 To run this code and see results, execute::
 
-    pytest -s test/test_instance.py
+    pytest -s test/test_libsbn.py
 
 
 

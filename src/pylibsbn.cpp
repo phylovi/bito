@@ -19,7 +19,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<double>);
 PYBIND11_MODULE(libsbn, m) {
   m.doc() = R"raw(Python interface to libsbn.
 
-  To see a demonstration of libsbn, see ``test/test_instance.py``.
+  To see a demonstration of libsbn, see ``test/test_libsbn.py``.
   )raw";
   // Second, we expose them as buffer objects so that we can use them
   // as in-place numpy arrays with np.array(v, copy=False). See

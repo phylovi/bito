@@ -135,7 +135,7 @@ def rootings_indexer_test():
         assert first_sorted_rep == list(rep)
 
 
-def test_instance():
+def test_libsbn():
     """Test the libsbn instance.
     """
 

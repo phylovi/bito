@@ -98,7 +98,7 @@ class SBNInstance {
 
   Eigen::Ref<EigenMatrixXd> GetPhyloModelParams();
   // The phylogenetic model parameters broken down into blocks according to
-  // model structure. See test_instance.py for an example of what this does.
+  // model structure. See test_libsbn.py for an example of what this does.
   BlockSpecification::ParameterBlockMap GetPhyloModelParamBlockMap();
 
   void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
