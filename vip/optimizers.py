@@ -1,6 +1,4 @@
-"""
-Classes that perform optimization and contain relevant state.
-"""
+"""Classes that perform optimization and contain relevant state."""
 
 import abc
 import numpy as np

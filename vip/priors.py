@@ -1,6 +1,4 @@
-"""
-Branch length priors.
-"""
+"""Branch length priors."""
 
 import numpy as np
 

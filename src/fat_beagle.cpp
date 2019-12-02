@@ -336,4 +336,3 @@ std::pair<double, double> FatBeagle::ComputeGradientEntry(
       nullptr);  // destination for second derivative
   return {log_like, dlogLp};
 }
-

@@ -1,6 +1,4 @@
-"""
-Classes to model scalar quantities with various distributions.
-"""
+"""Classes to model scalar quantities with various distributions."""
 
 import abc
 import numpy as np

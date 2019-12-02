@@ -1,6 +1,4 @@
-"""
-Stub (unimplemented) class for SBN modeling.
-"""
+"""Stub (unimplemented) class for SBN modeling."""
 import numpy as np
 
 

@@ -1,5 +1,4 @@
-"""
-Some basic testing and demo code for the libsbn module.
+"""Some basic testing and demo code for the libsbn module.
 
 If you want to see the results of the print statements, use `pytest -s`.
 """
@@ -21,7 +20,8 @@ def convert_dict_to_int(dictionary):
 
 
 def hello_demo():
-    """Demonstrate basic phylogenetic likelihood calculation using the "hello" data set."""
+    """Demonstrate basic phylogenetic likelihood calculation using the "hello"
+    data set."""
     inst = libsbn.instance("charlie")
     inst.tree_collection = libsbn.TreeCollection(
         [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
@@ -40,8 +40,10 @@ def hello_demo():
 def sampling_and_indexers_demo():
     """Demonstrate sampling and indexers.
 
-    Demonstrate loading trees, processing them to make the SBN data structures, and then
-    sampling from the SBN with arbitrarily-set parameters."""
+    Demonstrate loading trees, processing them to make the SBN data
+    structures, and then sampling from the SBN with arbitrarily-set
+    parameters.
+    """
     inst = libsbn.instance("charlie")
     inst.read_newick_file("data/five_taxon.nwk")
     assert inst.tree_count() == 4
@@ -110,14 +112,14 @@ def ds1_phylo_model_demo(inst):
 
 
 def rootings_indexer_test():
-    """
-    Ensure that various rootings of a given tree give the same indexer
+    """Ensure that various rootings of a given tree give the same indexer
     representations in a mathematical sense.
 
-    In order to compare them, we sort their representations with respect to the order on
-    the rootsplits. This makes sense because we want to make sure that for each virtual
-    rooting (corresponding to each rootsplit) we have the same _set_ of PCSSs (the
-    order within PCSS sets doesn't matter).
+    In order to compare them, we sort their representations with respect
+    to the order on the rootsplits. This makes sense because we want to
+    make sure that for each virtual rooting (corresponding to each
+    rootsplit) we have the same _set_ of PCSSs (the order within PCSS
+    sets doesn't matter).
     """
     inst = libsbn.instance("rootings")
     inst.read_newick_file("data/many_rootings.nwk")
@@ -136,8 +138,7 @@ def rootings_indexer_test():
 
 
 def test_libsbn():
-    """Test the libsbn instance.
-    """
+    """Test the libsbn instance."""
 
     hello_demo()
     sampling_and_indexers_demo()

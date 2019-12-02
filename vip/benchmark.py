@@ -1,5 +1,4 @@
-"""
-Methods for running and benchmarking performance.
+"""Methods for running and benchmarking performance.
 
 Documentation in the command line interface.
 """

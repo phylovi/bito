@@ -1,6 +1,4 @@
-"""
-Classes for modeling phylogenetic branch lengths.
-"""
+"""Classes for modeling phylogenetic branch lengths."""
 
 
 import abc
@@ -12,9 +10,7 @@ from vip.scalar_model import LogNormalModel
 
 
 class BranchModel(abc.ABC):
-    """
-    Our abstract base class for branch lengths.
-    """
+    """Our abstract base class for branch lengths."""
 
     def __init__(self, scalar_model_name, inst):
         self.get_raw_representation = inst.get_psp_indexer_representations
@@ -62,9 +58,7 @@ class BranchModel(abc.ABC):
 
 
 class SplitModel(BranchModel):
-    """
-    Branch modeling parameterized by splits.
-    """
+    """Branch modeling parameterized by splits."""
 
     def __init__(self, scalar_model_name, inst):
         super().__init__(scalar_model_name, inst)
