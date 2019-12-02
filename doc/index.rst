@@ -34,20 +34,14 @@ On the other hand, ``libsbn`` has a lot of functionality that make these models 
 
 Thus, there are typically two levels of state: the "raw" parameters in the ``libsbn`` module, and the parameters of models of those ``libsbn`` parameters, which is contained in ``vip``.
 ``vip`` also contains routines for running and benchmarking inference.
-The command-line interface for this is called ``vip`` and is available after installation.
 
-Please have a look at ``test/test_instance.py`` to see how this all works.
-To see results, run::
+The command-line interface is called ``vip`` and is available after installation (see ``vip.cli`` in the sidebar for docs).
+
+If you want to write Python code using these tools, have a look at ``test/test_instance.py``.
+To run this code and see results, execute::
 
     pytest -s test/test_instance.py
 
-
-``vip`` command line interface
-------------------------------
-
-.. click:: vip.cli:cli
-  :prog: vip
-  :show-nested:
 
 
 Modules
