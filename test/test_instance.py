@@ -15,8 +15,9 @@ SIMPLE_SPECIFICATION = libsbn.PhyloModelSpecification(
 )
 
 
-def convert_dict_to_int(d):
-    return {k: int(v) for k, v in d.items()}
+def convert_dict_to_int(dictionary):
+    """Change the values of a dict to ints."""
+    return {k: int(v) for k, v in dictionary.items()}
 
 
 def hello_demo():
@@ -67,8 +68,8 @@ def ds1_support_test():
     inst.read_nexus_file("data/DS1.subsampled_10.t")
     inst.process_loaded_trees()
     [rootsplit_support, subsplit_support] = inst.split_counters()
-    with open("data/DS1.subsampled_10.t_support.json") as fp:
-        supports = json.load(fp)
+    with open("data/DS1.subsampled_10.t_support.json") as json_fp:
+        supports = json.load(json_fp)
         vbpi_rootsplit_supp_dict = convert_dict_to_int(supports["rootsplit_supp_dict"])
         vbpi_subsplit_supp_dict = {
             ss: convert_dict_to_int(d)
