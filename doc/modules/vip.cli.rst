@@ -1,7 +1,8 @@
 vip.cli
 =======
 
-Here is the documentation for the ``vip`` command line interface.
+The ``vip`` command line interface has a nested subcommand interface.
+The documentation describes the ``vip`` command and then the various subcommands as nested sections.
 
 .. click:: vip.cli:cli
   :prog: vip
