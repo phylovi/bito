@@ -7,9 +7,9 @@ Welcome to libsbn's documentation!
 This is the documentation for interacting with libsbn from Python.
 See the README on the `libsbn GitHub repository <https://github.com/phylovi/libsbn>`_ for installation and general description.
 
-The design principle here is that we want Python users to be able to do everything needed to fit models, while having all of the tree manipulation and traversal happen in C++.
-We want as much as efficient to be in terms of Python.
-However, if we want efficient gradients for phylogenetic model parameters, the C++ needs to have data structures for these models.
+The design principle here is that *as much as is efficient* to be in Python.
+So, we want Python users to be able to do everything needed to fit models, while having all of the tree manipulation and traversal happen in C++.
+This does mean a reasonable amount is in C++, though: for example, if we want efficient gradients for phylogenetic model parameters, the C++ needs to have data structures for these models.
 
 From the perspective of a Python user, code is broken into two packages.
 
@@ -35,6 +35,11 @@ On the other hand, ``libsbn`` has a lot of functionality that make these models 
 Thus, there are typically two levels of state: the "raw" parameters in the ``libsbn`` module, and the parameters of models of those ``libsbn`` parameters, which is contained in ``vip``.
 ``vip`` also contains routines for running and benchmarking inference.
 The command-line interface for this is called ``vip`` and is available after installation.
+
+Please have a look at ``test/test_instance.py`` to see how this all works.
+To see results, run::
+
+    pytest -s test/test_instance.py
 
 
 Modules
