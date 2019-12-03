@@ -200,7 +200,7 @@ void FatBeagle::UpdateSubstitutionModelInBeagle() {
 }
 
 void FatBeagle::UpdatePhyloModelInBeagle() {
-  // TODO Update clock model.
+  // Issue #146: put in a clock model here.
   UpdateSiteModelInBeagle();
   UpdateSubstitutionModelInBeagle();
 }
@@ -211,8 +211,7 @@ Tree FatBeagle::PrepareTreeForLikelihood(const Tree &tree) {
   }  // else
   if (tree.Children().size() == 2) {
     return tree;
-  }
-  // else
+  }  // else
   Failwith(
       "Tree likelihood calculations should be done on a tree with a "
       "bifurcation or a trifurcation at the root.");

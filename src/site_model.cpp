@@ -11,12 +11,12 @@ std::unique_ptr<SiteModel> SiteModel::OfSpecification(
   if (specification == "constant") {
     return std::make_unique<ConstantSiteModel>();
   }  // else
-  // TODO Weibull. We'll need to parse a string that contains the number of
+  // Issue #147: We'll need to parse a string that contains the number of
   // categories.
   Failwith("Site model not known: " + specification);
 }
 
-// TODO can you point me to a reference for these computations?
+// Issue #147: can you point me to a reference for these computations?
 void WeibullSiteModel::UpdateCategories() {
   double mean = 0;
   for (size_t i = 0; i < category_count_; i++) {
