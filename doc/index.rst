@@ -1,11 +1,14 @@
 Welcome to libsbn's documentation!
 ==================================
 
-.. toctree::
-   :caption: Contents:
-
 This is the documentation for interacting with libsbn from Python.
 See the README on the `libsbn GitHub repository <https://github.com/phylovi/libsbn>`_ for installation and general description.
+
+For conceptual background, see
+
+.. toctree::
+
+   concepts
 
 
 Command-line interface

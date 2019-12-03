@@ -17,10 +17,7 @@ namespace py = pybind11;
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
 PYBIND11_MODULE(libsbn, m) {
-  m.doc() = R"raw(Python interface to libsbn.
-
-  To see a demonstration of libsbn, see ``test/test_libsbn.py``.
-  )raw";
+  m.doc() = R"raw(Python interface to libsbn.)raw";
   // Second, we expose them as buffer objects so that we can use them
   // as in-place numpy arrays with np.array(v, copy=False). See
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
