@@ -176,8 +176,8 @@ void FatBeagle::SetTipStates(const SitePattern &site_pattern) {
 
 void FatBeagle::UpdateSiteModelInBeagle() {
   const auto &site_model = phylo_model_->GetSiteModel();
-  const Eigen::VectorXd &weights = site_model->GetCategoryProportions();
-  const Eigen::VectorXd &rates = site_model->GetCategoryRates();
+  const auto &weights = site_model->GetCategoryProportions();
+  const auto &rates = site_model->GetCategoryRates();
   beagleSetCategoryWeights(beagle_instance_, 0, weights.data());
   beagleSetCategoryRates(beagle_instance_, rates.data());
 }

@@ -10,7 +10,8 @@ std::unique_ptr<SiteModel> SiteModel::OfSpecification(
     const std::string& specification) {
   if (specification == "constant") {
     return std::make_unique<ConstantSiteModel>();
-  } else if (specification.rfind("weibull", 0) == 0) {
+  }  // else
+  if (specification.rfind("weibull", 0) == 0) {
     size_t category_count = 4;
     auto index = specification.find("+");
     if (index != std::string::npos) {
@@ -18,7 +19,7 @@ std::unique_ptr<SiteModel> SiteModel::OfSpecification(
       category_count = stoi(cat_count_str);
     }
     return std::make_unique<WeibullSiteModel>(category_count);
-  }
+  }  // else
   Failwith("Site model not known: " + specification);
 }
 
@@ -30,13 +31,13 @@ void WeibullSiteModel::SetParameters(const EigenVectorXdRef param_vector) {
 }
 
 // Discretized Weibull distribution using the median approximation
-// Equivalent to the discretized gamma method in Yang 1994
+// Equivalent to the discretized gamma method in Yang 1994.
 // The scale (lambda) is fixed to 1
 void WeibullSiteModel::UpdateRates() {
   double mean = 0;
   for (size_t i = 0; i < category_count_; i++) {
     double quantile = (2.0 * i + 1.0) / (2.0 * category_count_);
-    // Set rate to inverse CDF at quantile
+    // Set rate to inverse CDF at quantile.
     category_rates_[i] = pow(-std::log(1.0 - quantile), 1.0 / shape_);
     mean += category_rates_[i];
   }

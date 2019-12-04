@@ -5,8 +5,9 @@
 #define SRC_SITE_MODEL_HPP_
 
 #include <memory>
-#include <vector>
+#include <numeric>
 #include <string>
+#include <vector>
 #include "block_model.hpp"
 
 class SiteModel : public BlockModel {
@@ -45,6 +46,7 @@ class ConstantSiteModel : public SiteModel {
 class WeibullSiteModel : public SiteModel {
  public:
   explicit WeibullSiteModel(size_t category_count, double shape = 1)
+      // Issue #147: Why are these commented out?
       : SiteModel({// {rates_key_, category_count},
                    // {proportions_key_, category_count},
                    {shape_key_, 1}}),
@@ -81,19 +83,12 @@ class WeibullSiteModel : public SiteModel {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 #include <algorithm>
 TEST_CASE("SiteModel") {
-  auto CheckVectorXdEquality = [](Eigen::VectorXd eval1,
-                                  Eigen::VectorXd eval2) {
-    for (size_t i = 0; i < eval1.size(); i++) {
-      CHECK_LT(fabs(eval1[i] - eval2[i]), 0.0001);
-    }
-  };
-
   // Test 1: First we test using the "built in" default values.
   auto weibull_model = std::make_unique<WeibullSiteModel>(4, 1.0);
   const Eigen::VectorXd& rates = weibull_model->GetCategoryRates();
   Eigen::VectorXd rates_r(4);
   rates_r << 0.1457844, 0.5131316, 1.0708310, 2.2702530;
-  CheckVectorXdEquality(rates, rates_r);
+  CheckVectorXdEquality(rates, rates_r, 0.0001);
 
   // Test 2: Now set param_vector using SetParameters.
   weibull_model = std::make_unique<WeibullSiteModel>(4);
@@ -104,18 +99,14 @@ TEST_CASE("SiteModel") {
   const Eigen::VectorXd& rates2 = weibull_model->GetCategoryRates();
   CheckVectorXdEquality(rates2, rates_r);
 
-  // Test 3: check proportions
+  // Test 3: Check proportions.
   const Eigen::VectorXd& proportions = weibull_model->GetCategoryProportions();
   for (size_t i = 0; i < proportions.size(); i++) {
     CHECK_LT(fabs(proportions[i] - 0.25), 0.0001);
   }
 
-  // Test 4: check sum rate[i]*proportions[i]==1
-  double total = 0.0;
-  for (size_t i = 0; i < proportions.size(); i++) {
-    total += rates[i] * proportions[i];
-  }
-  CHECK_LT(fabs(total - 1.0), 0.0001);
+  // Test 4: Check sum rate[i]*proportions[i]==1.
+  CHECK_LT(fabs(rates.dot(proportions) - 1.0), 0.0001);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

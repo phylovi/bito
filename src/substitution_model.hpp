@@ -105,9 +105,7 @@ TEST_CASE("SubstitutionModel") {
                                     Eigen::VectorXd eval2) {
     std::sort(eval1.begin(), eval1.end());
     std::sort(eval2.begin(), eval2.end());
-    for (size_t i = 0; i < eval1.size(); i++) {
-      CHECK_LT(fabs(eval1[i] - eval2[i]), 0.0001);
-    }
+    CheckVectorXdEquality(eval1, eval2, 0.0001);
   };
   auto gtr_model = std::make_unique<GTRModel>();
   auto jc_model = std::make_unique<JC69Model>();
