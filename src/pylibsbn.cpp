@@ -46,9 +46,11 @@ PYBIND11_MODULE(libsbn, m) {
   In addition to the methods, TreeCollection also offers direct access to
   the trees through the ``trees`` member variable.
   )raw")
-      .def(py::init<Tree::TreeVector>())
-      .def(py::init<Tree::TreeVector, TagStringMap>())
-      .def(py::init<Tree::TreeVector, const std::vector<std::string> &>())
+      .def(py::init<Tree::TreeVector>(), "The empty constructor.")
+      .def(py::init<Tree::TreeVector, TagStringMap>(),
+           "Constructor from a vector of trees and a tags->taxon names map.")
+      .def(py::init<Tree::TreeVector, const std::vector<std::string> &>(),
+           "Constructor from a vector of trees and a vector of taxon names.")
       .def("erase", &TreeCollection::Erase,
            "Erase the specified range from the current tree collection.")
       .def("newick", &TreeCollection::Newick,
@@ -103,7 +105,8 @@ PYBIND11_MODULE(libsbn, m) {
            )raw")
       .def("split_counters", &SBNInstance::SplitCounters,
            "A testing method to count splits.")
-      .def("split_lengths", &SBNInstance::SplitLengths)
+      .def("split_lengths", &SBNInstance::SplitLengths,
+           "Get the lengths of the current set of trees, indexed by splits.")
       // ** Phylogenetic likelihood
       .def("prepare_for_phylo_likelihood",
            &SBNInstance::PrepareForPhyloLikelihood,
@@ -116,8 +119,11 @@ PYBIND11_MODULE(libsbn, m) {
       .def("resize_phylo_model_params", &SBNInstance::ResizePhyloModelParams,
            "Resize phylo_model_params.",
            py::arg("tree_count_option") = std::nullopt)
-      .def("log_likelihoods", &SBNInstance::LogLikelihoods)
-      .def("branch_gradients", &SBNInstance::BranchGradients)
+      .def("log_likelihoods", &SBNInstance::LogLikelihoods,
+           "Calculate log likelihoods for the current set of trees.")
+      .def(
+          "branch_gradients", &SBNInstance::BranchGradients,
+          "Calculate gradients of branch lengths for the current set of trees.")
       // ** I/O
       .def("read_newick_file", &SBNInstance::ReadNewickFile,
            "Read trees from a Newick file.")

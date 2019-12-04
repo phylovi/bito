@@ -65,8 +65,8 @@ class SBNInstance {
   void SampleTrees(size_t count);
 
   // Get indexer representations of the trees in tree_collection_.
-  // See the header documentation of IndexerRepresentationOf for an explanation
-  // of what these are.
+  // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
+  // explanation of what these are.
   std::vector<IndexerRepresentation> GetIndexerRepresentations() const;
 
   // Get PSP indexer representations of the trees in tree_collection_.
