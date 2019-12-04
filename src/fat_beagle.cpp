@@ -187,8 +187,8 @@ void FatBeagle::UpdateSubstitutionModelInBeagle() {
   const EigenMatrixXd &eigenvectors = substitution_model->GetEigenvectors();
   const EigenMatrixXd &inverse_eigenvectors =
       substitution_model->GetInverseEigenvectors();
-  const Eigen::VectorXd &eigenvalues = substitution_model->GetEigenvalues();
-  const Eigen::VectorXd &frequencies = substitution_model->GetFrequencies();
+  const EigenVectorXd &eigenvalues = substitution_model->GetEigenvalues();
+  const EigenVectorXd &frequencies = substitution_model->GetFrequencies();
 
   beagleSetStateFrequencies(beagle_instance_, 0, frequencies.data());
   beagleSetEigenDecomposition(beagle_instance_,

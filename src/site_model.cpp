@@ -25,7 +25,7 @@ std::unique_ptr<SiteModel> SiteModel::OfSpecification(
 
 void WeibullSiteModel::SetParameters(const EigenVectorXdRef param_vector) {
   GetBlockSpecification().CheckParameterVectorSize(param_vector);
-  Eigen::VectorXd shape = ExtractSegment(param_vector, shape_key_);
+  EigenVectorXd shape = ExtractSegment(param_vector, shape_key_);
   shape_ = shape[0];
   UpdateRates();
 }
@@ -49,10 +49,10 @@ void WeibullSiteModel::UpdateRates() {
 
 size_t WeibullSiteModel::GetCategoryCount() { return category_count_; }
 
-const Eigen::VectorXd& WeibullSiteModel::GetCategoryRates() {
+const EigenVectorXd& WeibullSiteModel::GetCategoryRates() {
   return category_rates_;
 }
 
-const Eigen::VectorXd& WeibullSiteModel::GetCategoryProportions() {
+const EigenVectorXd& WeibullSiteModel::GetCategoryProportions() {
   return category_proportions_;
 }

@@ -8,23 +8,24 @@
 
 #include <Eigen/Dense>
 
+using EigenVectorXd = Eigen::VectorXd;
 using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-using EigenVectorXdRef = Eigen::Ref<Eigen::VectorXd>;
+using EigenVectorXdRef = Eigen::Ref<EigenVectorXd>;
 using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-void CheckVectorXdEquality(double value, const Eigen::VectorXd v,
+void CheckVectorXdEquality(double value, const EigenVectorXd v,
                            double tolerance) {
   for (size_t i = 0; i < v.size(); i++) {
-    CHECK_LT(fabs(value - v[i]), 0.0001);
+    CHECK_LT(fabs(value - v[i]), tolerance);
   }
 };
 
-void CheckVectorXdEquality(const Eigen::VectorXd v1, const Eigen::VectorXd v2,
+void CheckVectorXdEquality(const EigenVectorXd v1, const Eigen::VectorXd v2,
                            double tolerance) {
   for (size_t i = 0; i < v1.size(); i++) {
-    CHECK_LT(fabs(v1[i] - v2[i]), 0.0001);
+    CHECK_LT(fabs(v1[i] - v2[i]), tolerance);
   }
 };
 #endif  // DOCTEST_LIBRARY_INCLUDED

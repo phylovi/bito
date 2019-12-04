@@ -20,7 +20,7 @@ class SubstitutionModel : public BlockModel {
 
   const EigenMatrixXd& GetQMatrix() { return Q_; }
 
-  const Eigen::VectorXd& GetFrequencies() { return frequencies_; }
+  const EigenVectorXd& GetFrequencies() { return frequencies_; }
 
   // We follow BEAGLE in terminology. "Inverse Eigenvectors" means the inverse
   // of the matrix containing the eigenvectors.
@@ -28,7 +28,7 @@ class SubstitutionModel : public BlockModel {
   const EigenMatrixXd& GetInverseEigenvectors() {
     return inverse_eigenvectors_;
   }
-  const Eigen::VectorXd& GetEigenvalues() { return eigenvalues_; }
+  const EigenVectorXd& GetEigenvalues() { return eigenvalues_; }
 
   virtual void SetParameters(const EigenVectorXdRef param_vector) = 0;
 
@@ -38,10 +38,10 @@ class SubstitutionModel : public BlockModel {
       const std::string& specification);
 
  protected:
-  Eigen::VectorXd frequencies_;
+  EigenVectorXd frequencies_;
   EigenMatrixXd eigenvectors_;
   EigenMatrixXd inverse_eigenvectors_;
-  Eigen::VectorXd eigenvalues_;
+  EigenVectorXd eigenvalues_;
   EigenMatrixXd Q_;
 };
 
@@ -95,14 +95,14 @@ class GTRModel : public DNAModel {
   void Update();
 
  private:
-  Eigen::VectorXd rates_;
+  EigenVectorXd rates_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 #include <algorithm>
 TEST_CASE("SubstitutionModel") {
-  auto CheckEigenvalueEquality = [](Eigen::VectorXd eval1,
-                                    Eigen::VectorXd eval2) {
+  auto CheckEigenvalueEquality = [](EigenVectorXd eval1,
+                                    EigenVectorXd eval2) {
     std::sort(eval1.begin(), eval1.end());
     std::sort(eval2.begin(), eval2.end());
     CheckVectorXdEquality(eval1, eval2, 0.0001);
@@ -112,7 +112,7 @@ TEST_CASE("SubstitutionModel") {
   // Test 1: First we test using the "built in" default values.
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
-  Eigen::VectorXd param_vector(10);
+  EigenVectorXd param_vector(10);
   // Test 2: Now set param_vector using SetParameters.
   gtr_model = std::make_unique<GTRModel>();
   param_vector << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.25, 0.25, 0.25, 0.25;
@@ -140,7 +140,7 @@ TEST_CASE("SubstitutionModel") {
   frequencies << 0.479367, 0.172572, 0.140933, 0.207128;
   rates << 0.060602, 0.402732, 0.028230, 0.047910, 0.407249, 0.053277;
   gtr_model->SetParameters(param_vector);
-  Eigen::VectorXd eigen_values_r(4);
+  EigenVectorXd eigen_values_r(4);
   eigen_values_r << -2.567992e+00, -1.760838e+00, -4.214918e-01, 1.665335e-16;
   CheckEigenvalueEquality(eigen_values_r, gtr_model->GetEigenvalues());
 }

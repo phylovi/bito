@@ -13,6 +13,6 @@ std::unique_ptr<ClockModel> ClockModel::OfSpecification(
 
 void StrictClockModel::SetParameters(const EigenVectorXdRef param_vector) {
   GetBlockSpecification().CheckParameterVectorSize(param_vector);
-  Eigen::VectorXd rate = ExtractSegment(param_vector, rate_key_);
+  EigenVectorXd rate = ExtractSegment(param_vector, rate_key_);
   rate_ = rate[0];
 }
