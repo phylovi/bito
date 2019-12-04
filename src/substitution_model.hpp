@@ -18,17 +18,15 @@ class SubstitutionModel : public BlockModel {
 
   size_t GetStateCount() const { return frequencies_.size(); }
 
-  const EigenMatrixXd& GetQMatrix() { return Q_; }
-
-  const EigenVectorXd& GetFrequencies() { return frequencies_; }
-
+  const EigenMatrixXd& GetQMatrix() const { return Q_; }
+  const EigenVectorXd& GetFrequencies() const { return frequencies_; }
   // We follow BEAGLE in terminology. "Inverse Eigenvectors" means the inverse
   // of the matrix containing the eigenvectors.
-  const EigenMatrixXd& GetEigenvectors() { return eigenvectors_; }
-  const EigenMatrixXd& GetInverseEigenvectors() {
+  const EigenMatrixXd& GetEigenvectors() const { return eigenvectors_; }
+  const EigenMatrixXd& GetInverseEigenvectors() const {
     return inverse_eigenvectors_;
   }
-  const EigenVectorXd& GetEigenvalues() { return eigenvalues_; }
+  const EigenVectorXd& GetEigenvalues() const { return eigenvalues_; }
 
   virtual void SetParameters(const EigenVectorXdRef param_vector) = 0;
 
