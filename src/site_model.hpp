@@ -97,7 +97,7 @@ TEST_CASE("SiteModel") {
   weibull_model->SetParameters(param_vector);
   rates_r << 4.766392e-12, 1.391131e-06, 2.179165e-03, 3.997819e+00;
   const Eigen::VectorXd& rates2 = weibull_model->GetCategoryRates();
-  CheckVectorXdEquality(rates2, rates_r);
+  CheckVectorXdEquality(rates2, rates_r, 0.0001);
 
   // Test 3: Check proportions.
   const Eigen::VectorXd& proportions = weibull_model->GetCategoryProportions();
