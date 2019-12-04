@@ -138,11 +138,13 @@ TEST_CASE("SubstitutionModel") {
   gtr_model->SetParameters(param_vector);
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
-  // TODO @M: would it be easy for you to add an eigenvector/value test with
-  // different coefficients given that you do the same thing in physher?
-  // frequencies << 0.2, 0.55, 0.1, 0.15;
-  // rates << 1., 0.5, 1., 2., 1., 1.;
-  // gtr_model->SetParameters(param_vector);
+  // Test 4: eigen values values from R
+  frequencies << 0.479367, 0.172572, 0.140933, 0.207128;
+  rates << 0.060602, 0.402732, 0.028230, 0.047910, 0.407249, 0.053277;
+  gtr_model->SetParameters(param_vector);
+  Eigen::VectorXd eigen_values_r(4);
+  eigen_values_r << -2.567992e+00, -1.760838e+00, -4.214918e-01, 1.665335e-16;
+  CheckEigenvalueEquality(eigen_values_r, gtr_model->GetEigenvalues());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
