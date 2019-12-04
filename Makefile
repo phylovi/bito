@@ -25,6 +25,7 @@ deploy:
 	make docs
 	git checkout gh-pages
 	cp -a doc/_build/html/* .
+	git add .
 	git commit --amend -av -m "update docs"
 	git push -f
 
