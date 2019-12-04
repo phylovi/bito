@@ -1,6 +1,6 @@
 """Methods for running and benchmarking performance.
 
-Documentation in the command line interface.
+Documentation in ``vip.cli``.
 """
 
 import os
