@@ -10,7 +10,7 @@ import numpy as np
 import libsbn
 
 SIMPLE_SPECIFICATION = libsbn.PhyloModelSpecification(
-    substitution="JC69", site="constant", clock="strict"
+    substitution="JC69", site="constant", clock="none"
 )
 
 
@@ -94,18 +94,16 @@ def ds1_phylo_model_demo(inst):
 
     inst.prepare_for_phylo_likelihood(SIMPLE_SPECIFICATION, 2)
     phylo_model_param_block_map = inst.get_phylo_model_param_block_map()
-    phylo_model_param_block_map["clock rate"][:] = 1.0
     jc69_likelihood = np.array(inst.log_likelihoods())
 
     # Showing off phylo_model_param_block_map.
     gtr_specification = libsbn.PhyloModelSpecification(
-        substitution="GTR", site="constant", clock="strict"
+        substitution="GTR", site="constant", clock="none"
     )
     inst.prepare_for_phylo_likelihood(gtr_specification, 2)
     phylo_model_param_block_map = inst.get_phylo_model_param_block_map()
     phylo_model_param_block_map["GTR rates"][:] = 1.0
     phylo_model_param_block_map["frequencies"][:] = 0.25
-    phylo_model_param_block_map["clock rate"][:] = 1.0
     print("\nHere's a look at phylo_model_param_block_map:")
     pprint.pprint(phylo_model_param_block_map)
     print("\nWe can see that we are changing the phylo_model_params matrix:")

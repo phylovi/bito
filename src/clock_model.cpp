@@ -5,6 +5,9 @@
 
 std::unique_ptr<ClockModel> ClockModel::OfSpecification(
     const std::string &specification) {
+  if (specification == "none") {
+    return std::make_unique<NoClockModel>();
+  }  // else
   if (specification == "strict") {
     return std::make_unique<StrictClockModel>();
   }  // else

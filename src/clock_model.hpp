@@ -22,6 +22,15 @@ class ClockModel : public BlockModel {
       const std::string& specification);
 };
 
+class NoClockModel : public ClockModel {
+ public:
+  explicit NoClockModel() : ClockModel({}) {}
+
+  double GetRate(const Node& node) override { return 1.; }
+
+  void SetParameters(const EigenVectorXdRef parameters) override{};
+};
+
 class StrictClockModel : public ClockModel {
  public:
   explicit StrictClockModel(double rate)
