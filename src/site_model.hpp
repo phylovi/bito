@@ -6,6 +6,7 @@
 
 #include <memory>
 #include <vector>
+#include <string>
 #include "block_model.hpp"
 
 class SiteModel : public BlockModel {
@@ -15,8 +16,8 @@ class SiteModel : public BlockModel {
   virtual ~SiteModel() = default;
 
   virtual size_t GetCategoryCount() = 0;
-  virtual const std::vector<double>& GetCategoryRates() = 0;
-  virtual const std::vector<double>& GetCategoryProportions() = 0;
+  virtual const Eigen::VectorXd& GetCategoryRates() = 0;
+  virtual const Eigen::VectorXd& GetCategoryProportions() = 0;
 
   static std::unique_ptr<SiteModel> OfSpecification(
       const std::string& specification);
@@ -24,40 +25,44 @@ class SiteModel : public BlockModel {
 
 class ConstantSiteModel : public SiteModel {
  public:
-  ConstantSiteModel() : SiteModel({}), one_(1, 1.0) {}
+  ConstantSiteModel() : SiteModel({}) {
+    one_.resize(1);
+    one_[0] = 1.0;
+  }
 
   size_t GetCategoryCount() override { return 1; }
 
-  const std::vector<double>& GetCategoryRates() override { return one_; }
+  const Eigen::VectorXd& GetCategoryRates() override { return one_; }
 
-  const std::vector<double>& GetCategoryProportions() override { return one_; }
+  const Eigen::VectorXd& GetCategoryProportions() override { return one_; }
 
   void SetParameters(const EigenVectorXdRef param_vector) override{};
 
  private:
-  std::vector<double> one_;
+  Eigen::VectorXd one_;
 };
 
 class WeibullSiteModel : public SiteModel {
  public:
-  explicit WeibullSiteModel(size_t category_count)
-      : SiteModel({{rates_key_, category_count},
-                   {proportions_key_, category_count},
+  explicit WeibullSiteModel(size_t category_count, double shape = 1)
+      : SiteModel({// {rates_key_, category_count},
+                   // {proportions_key_, category_count},
                    {shape_key_, 1}}),
         category_count_(category_count),
-        need_update_(true),
-        shape_(1.0) {
+        shape_(shape) {
     category_rates_.resize(category_count);
-    category_proportions_.assign(category_count, 1.0 / category_count);
+    category_proportions_.resize(category_count);
+    for (int i = 0; i < category_count; i++) {
+      category_proportions_[i] = 1.0 / category_count;
+    }
+    UpdateRates();
   }
 
   size_t GetCategoryCount() override;
-  const std::vector<double>& GetCategoryRates() override;
-  const std::vector<double>& GetCategoryProportions() override;
+  const Eigen::VectorXd& GetCategoryRates() override;
+  const Eigen::VectorXd& GetCategoryProportions() override;
 
-  void SetParameters(const EigenVectorXdRef param_vector) override {
-    Failwith("not impelemented");
-  };
+  void SetParameters(const EigenVectorXdRef param_vector) override;
 
   inline const static std::string rates_key_ = "Weibull category rates";
   inline const static std::string proportions_key_ =
@@ -65,14 +70,53 @@ class WeibullSiteModel : public SiteModel {
   inline const static std::string shape_key_ = "Weibull shape";
 
  private:
-  void UpdateCategories();
+  void UpdateRates();
 
   size_t category_count_;
-  // Issue #147: Would it be possible to recalculate things whenever
-  // SetParameters is called rather than having an update flag?
-  bool need_update_;
   double shape_;  // shape of the Weibull distribution
-  std::vector<double> category_rates_;
-  std::vector<double> category_proportions_;
+  Eigen::VectorXd category_rates_;
+  Eigen::VectorXd category_proportions_;
 };
-#endif
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+#include <algorithm>
+TEST_CASE("SiteModel") {
+  auto CheckVectorXdEquality = [](Eigen::VectorXd eval1,
+                                  Eigen::VectorXd eval2) {
+    for (size_t i = 0; i < eval1.size(); i++) {
+      CHECK_LT(fabs(eval1[i] - eval2[i]), 0.0001);
+    }
+  };
+
+  // Test 1: First we test using the "built in" default values.
+  auto weibull_model = std::make_unique<WeibullSiteModel>(4, 1.0);
+  const Eigen::VectorXd& rates = weibull_model->GetCategoryRates();
+  Eigen::VectorXd rates_r(4);
+  rates_r << 0.1457844, 0.5131316, 1.0708310, 2.2702530;
+  CheckVectorXdEquality(rates, rates_r);
+
+  // Test 2: Now set param_vector using SetParameters.
+  weibull_model = std::make_unique<WeibullSiteModel>(4);
+  Eigen::VectorXd param_vector(1);
+  param_vector << 0.1;
+  weibull_model->SetParameters(param_vector);
+  rates_r << 4.766392e-12, 1.391131e-06, 2.179165e-03, 3.997819e+00;
+  const Eigen::VectorXd& rates2 = weibull_model->GetCategoryRates();
+  CheckVectorXdEquality(rates2, rates_r);
+
+  // Test 3: check proportions
+  const Eigen::VectorXd& proportions = weibull_model->GetCategoryProportions();
+  for (size_t i = 0; i < proportions.size(); i++) {
+    CHECK_LT(fabs(proportions[i] - 0.25), 0.0001);
+  }
+
+  // Test 4: check sum rate[i]*proportions[i]==1
+  double total = 0.0;
+  for (size_t i = 0; i < proportions.size(); i++) {
+    total += rates[i] * proportions[i];
+  }
+  CHECK_LT(fabs(total - 1.0), 0.0001);
+}
+#endif  // DOCTEST_LIBRARY_INCLUDED
+
+#endif  // SRC_SITE_MODEL_HPP_
