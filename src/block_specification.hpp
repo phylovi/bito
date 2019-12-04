@@ -87,10 +87,14 @@ TEST_CASE("BlockSpecification") {
   CHECK_EQ(spec.Find("jordan"), BlockSpecification::Coordinates({4, 23}));
   spec.Append("entire turbo boost",
               BlockSpecification({{"turbo", 666}, {"boost", 42}}));
-  // After appending, we find boost at 23+4=27.
-  CHECK_EQ(spec.Find("turbo"), BlockSpecification::Coordinates({27, 666}));
-  // Turbo is at 666+27 = 693.
-  CHECK_EQ(spec.Find("boost"), BlockSpecification::Coordinates({693, 42}));
+  auto [turbo_index, turbo_size] = spec.Find("turbo");
+  // After appending, we find turbo at 23+4=27 or 23+4+666 = 693 depending on
+  // the order of the unordered_map.
+  CHECK((turbo_index == 27 || turbo_index == 693));
+  CHECK_EQ(turbo_size, 666);
+  auto [boost_index, boost_size] = spec.Find("boost");
+  CHECK((boost_index == 27 || boost_index == 693));
+  CHECK_EQ(boost_size, 42);
   // The entire turbo boost starts at 27 and is 42+666 = 708 long.
   CHECK_EQ(spec.Find("entire turbo boost"),
            BlockSpecification::Coordinates({27, 708}));
