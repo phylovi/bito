@@ -4,6 +4,9 @@
 #ifndef SRC_CLOCK_MODEL_HPP_
 #define SRC_CLOCK_MODEL_HPP_
 
+#include <memory>
+#include <string>
+
 #include "block_model.hpp"
 #include "node.hpp"
 
@@ -28,15 +31,11 @@ class StrictClockModel : public ClockModel {
 
   double GetRate(const Node& node) override { return rate_; }
 
-  void SetParameters(const EigenVectorXdRef parameters) override {
-    Assert(parameters.size() == 1,
-           "StrictClockModel parameters are the wrong length!");
-    rate_ = parameters[0];
-  };
+  void SetParameters(const EigenVectorXdRef parameters) override;
 
   inline const static std::string rate_key_ = "clock rate";
 
  private:
   double rate_;
 };
-#endif
+#endif  // SRC_CLOCK_MODEL_HPP_
