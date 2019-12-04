@@ -105,8 +105,8 @@ TEST_CASE("SiteModel") {
     CHECK_LT(fabs(proportions[i] - 0.25), 0.0001);
   }
 
-  // Test 4: Check sum rate[i]*proportions[i]==1.
-  CHECK_LT(fabs(rates.dot(proportions) - 1.0), 0.0001);
+  // Test 4: Check sum rates[i]*proportions[i]==1.
+  CHECK_LT(fabs(rates.dot(proportions) - 1.), 0.0001);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
