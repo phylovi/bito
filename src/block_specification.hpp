@@ -88,11 +88,13 @@ TEST_CASE("BlockSpecification") {
   spec.Append("entire turbo boost",
               BlockSpecification({{"turbo", 666}, {"boost", 42}}));
   auto [turbo_index, turbo_size] = spec.Find("turbo");
-  // After appending, we find turbo at 23+4=27 or 23+4+666 = 693 depending on
+  // After appending, we find turbo at 23+4=27 or 23+4+42 = 69 depending on
   // the order of the unordered_map.
-  CHECK((turbo_index == 27 || turbo_index == 693));
+  CHECK((turbo_index == 27 || turbo_index == 69));
   CHECK_EQ(turbo_size, 666);
   auto [boost_index, boost_size] = spec.Find("boost");
+  // After appending, we find boost at 23+4=27 or 23+4+666 = 693 depending on
+  // the order of the unordered_map.
   CHECK((boost_index == 27 || boost_index == 693));
   CHECK_EQ(boost_size, 42);
   // The entire turbo boost starts at 27 and is 42+666 = 708 long.
