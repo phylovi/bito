@@ -84,8 +84,15 @@ TEST_CASE("BlockSpecification") {
   // Here we can see that the specification stores the starting index and then
   // the number of parameters.
   auto [jordan_index, jordan_size] = spec.Find("jordan");
-  CHECK((jordan_index == 0 || jordan_index == 4));
   CHECK_EQ(jordan_size, 23);
+  if (jordan_index == 0) {
+    // jordan came first.
+    CHECK_EQ(spec.Find("kazoo"), BlockSpecification::Coordinates({23, 4}));
+  } else {
+    // kazoo came first.
+    CHECK(jordan_index == 4);
+    CHECK_EQ(spec.Find("kazoo"), BlockSpecification::Coordinates({0, 4}));
+  }
   spec.Append("entire turbo boost",
               BlockSpecification({{"turbo", 666}, {"boost", 42}}));
   auto [turbo_index, turbo_size] = spec.Find("turbo");
