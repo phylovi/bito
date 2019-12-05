@@ -28,6 +28,7 @@ CharIntMap SitePattern::GetSymbolTable() {
                     {'K', 4},
                     {'M', 4},
                     {'R', 4},
+                    {'U', 4},
                     {'W', 4},
                     {'Y', 4}});
   return table;
