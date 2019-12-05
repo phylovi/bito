@@ -17,8 +17,7 @@ class TreeCollection {
 
   TreeCollection() = default;
   TreeCollection(Tree::TreeVector trees, TagStringMap tag_taxon_map);
-  TreeCollection(Tree::TreeVector trees,
-                 const std::vector<std::string> &taxon_labels);
+  TreeCollection(Tree::TreeVector trees, const std::vector<std::string> &taxon_labels);
 
   size_t TreeCount() const { return trees_.size(); }
   const Tree::TreeVector &Trees() const { return trees_; }
@@ -36,8 +35,7 @@ class TreeCollection {
   Node::TopologyCounter TopologyCounter() const;
   std::vector<std::string> TaxonNames() const;
 
-  static TagStringMap TagStringMapOf(
-      const std::vector<std::string> &taxon_labels);
+  static TagStringMap TagStringMapOf(const std::vector<std::string> &taxon_labels);
 
   Tree::TreeVector trees_;
 

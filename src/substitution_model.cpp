@@ -52,10 +52,8 @@ void GTRModel::UpdateQMatrix() {
 
 void GTRModel::Update() {
   Eigen::Map<const Eigen::Array4d> tmp(&frequencies_[0]);
-  EigenMatrixXd sqrt_frequencies =
-      EigenMatrixXd(tmp.sqrt().matrix().asDiagonal());
-  EigenMatrixXd sqrt_frequencies_inv =
-      EigenMatrixXd(sqrt_frequencies.inverse());
+  EigenMatrixXd sqrt_frequencies = EigenMatrixXd(tmp.sqrt().matrix().asDiagonal());
+  EigenMatrixXd sqrt_frequencies_inv = EigenMatrixXd(sqrt_frequencies.inverse());
 
   UpdateQMatrix();
   EigenMatrixXd S = EigenMatrixXd(sqrt_frequencies * Q_ * sqrt_frequencies_inv);

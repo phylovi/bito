@@ -47,12 +47,12 @@ void WeibullSiteModel::UpdateRates() {
   }
 }
 
-size_t WeibullSiteModel::GetCategoryCount() { return category_count_; }
+size_t WeibullSiteModel::GetCategoryCount() const { return category_count_; }
 
-const EigenVectorXd& WeibullSiteModel::GetCategoryRates() {
+const EigenVectorXd& WeibullSiteModel::GetCategoryRates() const {
   return category_rates_;
 }
 
-const EigenVectorXd& WeibullSiteModel::GetCategoryProportions() {
+const EigenVectorXd& WeibullSiteModel::GetCategoryProportions() const {
   return category_proportions_;
 }

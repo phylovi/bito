@@ -11,8 +11,7 @@
 #include "node.hpp"
 #include "sugar.hpp"
 
-Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths)
-    : topology_(topology) {
+Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths) : topology_(topology) {
   auto tag_id_map = topology->Polish();
   branch_lengths_ = std::vector<double>(topology->Id() + 1);
   for (const auto& iter : tag_id_map) {
@@ -52,8 +51,7 @@ double Tree::BranchLength(const Node* node) const {
 }
 
 Tree Tree::Detrifurcate() const {
-  Assert(Children().size() == 3,
-         "Tree::Detrifurcate given a non-trifurcating tree.");
+  Assert(Children().size() == 3, "Tree::Detrifurcate given a non-trifurcating tree.");
   auto branch_lengths = BranchLengths();
   auto our_id = Id();
   auto root12 = Node::Join(Children()[1], Children()[2], our_id);

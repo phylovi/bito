@@ -21,21 +21,18 @@ PYBIND11_MODULE(libsbn, m) {
   // Second, we expose them as buffer objects so that we can use them
   // as in-place numpy arrays with np.array(v, copy=False). See
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
-  py::class_<std::vector<double>>(m, "vector_double",
-                                  "A wrapper for vector<double>.",
+  py::class_<std::vector<double>>(m, "vector_double", "A wrapper for vector<double>.",
                                   py::buffer_protocol())
       .def_buffer([](std::vector<double> &v) -> py::buffer_info {
-        return py::buffer_info(
-            v.data(),                                 // Pointer to buffer
-            sizeof(double),                           // Size of one scalar
-            py::format_descriptor<double>::format(),  // See docs
-            1,                                        // Number of dimensions
-            {v.size()},                               // Buffer dimensions
-            {sizeof(double)});                        // Stride
+        return py::buffer_info(v.data(),        // Pointer to buffer
+                               sizeof(double),  // Size of one scalar
+                               py::format_descriptor<double>::format(),  // See docs
+                               1,                  // Number of dimensions
+                               {v.size()},         // Buffer dimensions
+                               {sizeof(double)});  // Stride
       });
   // Tree
-  py::class_<Tree>(m, "Tree", "A tree with branch lengths.",
-                   py::buffer_protocol())
+  py::class_<Tree>(m, "Tree", "A tree with branch lengths.", py::buffer_protocol())
       .def("parent_id_vector", &Tree::ParentIdVector)
       .def_static("of_parent_id_vector", &Tree::OfParentIdVector)
       .def_readwrite("branch_lengths", &Tree::branch_lengths_);
@@ -67,12 +64,10 @@ PYBIND11_MODULE(libsbn, m) {
     This is how we specify phylogenetic models, with strings for the substitution
     model, the site model, and the clock model.
       )raw")
-      .def(py::init<const std::string &, const std::string &,
-                    const std::string &>(),
+      .def(py::init<const std::string &, const std::string &, const std::string &>(),
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
   // SBNInstance
-  py::class_<SBNInstance>(m, "instance",
-                          "A wrapper for the all of the C++-side state.")
+  py::class_<SBNInstance>(m, "instance", "A wrapper for the all of the C++-side state.")
       // ** Initialization and status
       .def(py::init<const std::string &>())
       .def("tree_count", &SBNInstance::TreeCount,
@@ -89,10 +84,9 @@ PYBIND11_MODULE(libsbn, m) {
       .def("get_indexers", &SBNInstance::GetIndexers,
            "Return the indexer and parent_to_range as string-keyed maps.")
       .def("sample_trees", &SBNInstance::SampleTrees,
-           "Sample trees from the SBN and store them internally.",
-           py::arg("count"))
-      .def("get_indexer_representations",
-           &SBNInstance::GetIndexerRepresentations, R"raw(
+           "Sample trees from the SBN and store them internally.", py::arg("count"))
+      .def("get_indexer_representations", &SBNInstance::GetIndexerRepresentations,
+           R"raw(
             Get the indexer representation of each currently stored tree.
 
             See the comment for ``IndexerRepresentationOf`` in ``sbn_maps.hpp`` to learn about what that means.
@@ -108,22 +102,18 @@ PYBIND11_MODULE(libsbn, m) {
       .def("split_lengths", &SBNInstance::SplitLengths,
            "Get the lengths of the current set of trees, indexed by splits.")
       // ** Phylogenetic likelihood
-      .def("prepare_for_phylo_likelihood",
-           &SBNInstance::PrepareForPhyloLikelihood,
+      .def("prepare_for_phylo_likelihood", &SBNInstance::PrepareForPhyloLikelihood,
            "Prepare instance for phylogenetic likelihood computation.",
            py::arg("specification"), py::arg("thread_count"),
            py::arg("tree_count_option") = std::nullopt)
       .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
-      .def("get_phylo_model_param_block_map",
-           &SBNInstance::GetPhyloModelParamBlockMap)
+      .def("get_phylo_model_param_block_map", &SBNInstance::GetPhyloModelParamBlockMap)
       .def("resize_phylo_model_params", &SBNInstance::ResizePhyloModelParams,
-           "Resize phylo_model_params.",
-           py::arg("tree_count_option") = std::nullopt)
+           "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods,
            "Calculate log likelihoods for the current set of trees.")
-      .def(
-          "branch_gradients", &SBNInstance::BranchGradients,
-          "Calculate gradients of branch lengths for the current set of trees.")
+      .def("branch_gradients", &SBNInstance::BranchGradients,
+           "Calculate gradients of branch lengths for the current set of trees.")
       // ** I/O
       .def("read_newick_file", &SBNInstance::ReadNewickFile,
            "Read trees from a Newick file.")

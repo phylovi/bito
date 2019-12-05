@@ -70,13 +70,11 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     std::string line;
     std::getline(in, line);
     if (line != "#NEXUS") {
-      throw std::runtime_error(
-          "Putative Nexus file doesn't begin with #NEXUS.");
+      throw std::runtime_error("Putative Nexus file doesn't begin with #NEXUS.");
     }
     do {
       if (in.eof()) {
-        throw std::runtime_error(
-            "Finished reading and couldn't find 'begin trees;'");
+        throw std::runtime_error("Finished reading and couldn't find 'begin trees;'");
       }
       std::getline(in, line);
     } while (line != "begin trees;");
@@ -99,8 +97,7 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
       previous_position = in.tellg();
       std::getline(in, line);
       if (in.eof()) {
-        throw std::runtime_error(
-            "Encountered EOF while parsing translate block.");
+        throw std::runtime_error("Encountered EOF while parsing translate block.");
       }
     }
     // Back up one line to hit the first tree.

@@ -38,24 +38,12 @@ void Bitset::reset(size_t i) {
 
 void Bitset::flip() { value_.flip(); }
 
-bool Bitset::operator==(const Bitset& other) const {
-  return value_ == other.value_;
-}
-bool Bitset::operator!=(const Bitset& other) const {
-  return value_ != other.value_;
-}
-bool Bitset::operator<(const Bitset& other) const {
-  return value_ < other.value_;
-}
-bool Bitset::operator<=(const Bitset& other) const {
-  return value_ <= other.value_;
-}
-bool Bitset::operator>(const Bitset& other) const {
-  return value_ > other.value_;
-}
-bool Bitset::operator>=(const Bitset& other) const {
-  return value_ >= other.value_;
-}
+bool Bitset::operator==(const Bitset& other) const { return value_ == other.value_; }
+bool Bitset::operator!=(const Bitset& other) const { return value_ != other.value_; }
+bool Bitset::operator<(const Bitset& other) const { return value_ < other.value_; }
+bool Bitset::operator<=(const Bitset& other) const { return value_ <= other.value_; }
+bool Bitset::operator>(const Bitset& other) const { return value_ > other.value_; }
+bool Bitset::operator>=(const Bitset& other) const { return value_ >= other.value_; }
 
 Bitset Bitset::operator&(const Bitset& other) const {
   Assert(value_.size() == other.size(), "Size mismatch in Bitset::operator&.");
@@ -193,8 +181,7 @@ std::optional<uint32_t> Bitset::SingletonOption() const {
 // ** SBN-related functions
 
 Bitset Bitset::RotateSubsplit() const {
-  Assert(size() % 2 == 0,
-         "Bitset::RotateSubsplit requires an even-size bitset.");
+  Assert(size() % 2 == 0, "Bitset::RotateSubsplit requires an even-size bitset.");
   Bitset exchanged(size());
   size_t chunk_size = size() / 2;
   for (size_t i = 0; i < chunk_size; i++) {
@@ -245,15 +232,13 @@ Bitset Bitset::PCSSChunk(size_t i) const {
 
 Bitset Bitset::PCSSParent() const {
   size_t chunk_size = PCSSChunkSize();
-  std::vector<bool> new_value(value_.begin(),
-                              value_.begin() + int32_t(2 * chunk_size));
+  std::vector<bool> new_value(value_.begin(), value_.begin() + int32_t(2 * chunk_size));
   return Bitset(new_value);
 }
 
 Bitset Bitset::PCSSWithoutParent() const {
   size_t chunk_size = PCSSChunkSize();
-  std::vector<bool> new_value(value_.begin() + int32_t(chunk_size),
-                              value_.end());
+  std::vector<bool> new_value(value_.begin() + int32_t(chunk_size), value_.end());
   return Bitset(new_value);
 }
 
@@ -306,8 +291,7 @@ Bitset Bitset::Singleton(size_t n, size_t which_on) {
   return singleton;
 }
 
-Bitset Bitset::ChildSubsplit(const Bitset& parent_subsplit,
-                             const Bitset& child_half) {
+Bitset Bitset::ChildSubsplit(const Bitset& parent_subsplit, const Bitset& child_half) {
   size_t taxon_count = child_half.size();
   Bitset result(2 * taxon_count);
   Assert(result.size() == parent_subsplit.size(),

@@ -76,8 +76,7 @@ size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
       sbn_parameters_.begin() + static_cast<ptrdiff_t>(range.second));
   // We have to add on range.first because we have taken a slice of the full
   // array, and the sampler treats the beginning of this slice as zero.
-  auto result =
-      range.first + static_cast<size_t>(distribution(random_generator_));
+  auto result = range.first + static_cast<size_t>(distribution(random_generator_));
   Assert(result < range.second, "SampleIndex sampled a value out of range.");
   return result;
 }
@@ -122,8 +121,7 @@ void SBNInstance::SampleTrees(size_t count) {
   }
 }
 
-std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
-    const {
+std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations() const {
   std::vector<IndexerRepresentation> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
@@ -133,8 +131,7 @@ std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations()
   return representations;
 }
 
-std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations()
-    const {
+std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations() const {
   std::vector<SizeVectorVector> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
@@ -155,8 +152,7 @@ StringVector SBNInstance::StringReversedIndexer() const {
   return reversed_indexer;
 }
 
-std::pair<StringSet, StringSetVector>
-SBNInstance::StringIndexerRepresentationOf(
+std::pair<StringSet, StringSetVector> SBNInstance::StringIndexerRepresentationOf(
     IndexerRepresentation indexer_representation) const {
   auto reversed_indexer = StringReversedIndexer();
   auto rootsplit_indices = indexer_representation.first;
@@ -230,8 +226,7 @@ Eigen::Ref<EigenMatrixXd> SBNInstance::GetPhyloModelParams() {
   return phylo_model_params_;
 }
 
-BlockSpecification::ParameterBlockMap
-SBNInstance::GetPhyloModelParamBlockMap() {
+BlockSpecification::ParameterBlockMap SBNInstance::GetPhyloModelParamBlockMap() {
   return GetEngine()->GetPhyloModelBlockSpecification().ParameterBlockMapOf(
       phylo_model_params_);
 }
@@ -253,15 +248,14 @@ Engine *SBNInstance::GetEngine() const {
       "engine for phylogenetic likelihood computation computation.");
 }
 
-void SBNInstance::PrepareForPhyloLikelihood(
-    PhyloModelSpecification specification, size_t thread_count,
-    std::optional<size_t> tree_count_option) {
+void SBNInstance::PrepareForPhyloLikelihood(PhyloModelSpecification specification,
+                                            size_t thread_count,
+                                            std::optional<size_t> tree_count_option) {
   MakeEngine(specification, thread_count);
   ResizePhyloModelParams(tree_count_option);
 }
 
-void SBNInstance::ResizePhyloModelParams(
-    std::optional<size_t> tree_count_option) {
+void SBNInstance::ResizePhyloModelParams(std::optional<size_t> tree_count_option) {
   size_t tree_count =
       tree_count_option ? *tree_count_option : tree_collection_.TreeCount();
   if (tree_count == 0) {
@@ -270,17 +264,14 @@ void SBNInstance::ResizePhyloModelParams(
         "preparing for phylogenetic likelihood calculation.");
   }
   phylo_model_params_.resize(
-      tree_count,
-      GetEngine()->GetPhyloModelBlockSpecification().ParameterCount());
+      tree_count, GetEngine()->GetPhyloModelBlockSpecification().ParameterCount());
 }
 
 std::vector<double> SBNInstance::LogLikelihoods() {
-  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_,
-                                     rescaling_);
+  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_);
 }
 
-std::vector<std::pair<double, std::vector<double>>>
-SBNInstance::BranchGradients() {
+std::vector<std::pair<double, std::vector<double>>> SBNInstance::BranchGradients() {
   return GetEngine()->BranchGradients(tree_collection_, phylo_model_params_,
                                       rescaling_);
 }

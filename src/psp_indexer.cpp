@@ -41,8 +41,7 @@ StringVector PSPIndexer::ToStringVector() const {
   return reversed_indexer;
 }
 
-SizeVectorVector PSPIndexer::RepresentationOf(
-    const Node::NodePtr& topology) const {
+SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) const {
   Assert(first_empty_index_ > 0, "This PSPIndexer is uninitialized.");
   SizeVector rootsplit_result(topology->Id(), first_empty_index_);
   SizeVector psp_result_down(topology->Id(), first_empty_index_);
@@ -113,8 +112,7 @@ DoubleVectorVector PSPIndexer::SplitLengths(
     // The 0th part of the PSP representation is the rootsplit vector.
     auto split_indices = RepresentationOf(tree.Topology())[0];
     const auto branch_lengths = tree.BranchLengths();
-    for (size_t edge_index = 0; edge_index < split_indices.size();
-         edge_index++) {
+    for (size_t edge_index = 0; edge_index < split_indices.size(); edge_index++) {
       result[split_indices[edge_index]].push_back(branch_lengths[edge_index]);
     }
   }

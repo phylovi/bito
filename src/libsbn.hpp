@@ -35,9 +35,7 @@ class SBNInstance {
   // ** Initialization and status
 
   explicit SBNInstance(const std::string &name)
-      : name_(name),
-        symbol_table_(SitePattern::GetSymbolTable()),
-        rescaling_{false} {}
+      : name_(name), symbol_table_(SitePattern::GetSymbolTable()), rescaling_{false} {}
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
@@ -192,8 +190,8 @@ TEST_CASE("libsbn") {
   auto correct_psp_representation_1 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "01010", "01110"},
        {"", "", "", "", "", "01010|00010", "10001|00001"},
-       {"01111|00001", "10111|00010", "11011|01010", "11101|01000",
-        "11110|01110", "10101|00100", "01110|00100"}});
+       {"01111|00001", "10111|00010", "11011|01010", "11101|01000", "11110|01110",
+        "10101|00100", "01110|00100"}});
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_1),
            correct_psp_representation_1);
 
@@ -214,8 +212,8 @@ TEST_CASE("libsbn") {
   auto correct_psp_representation_2 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "00111", "00011"},
        {"", "", "", "", "", "11000|01000", "11100|00100"},
-       {"01111|00111", "10111|00111", "11011|00011", "11101|00001",
-        "11110|00010", "00111|00011", "00011|00001"}});
+       {"01111|00111", "10111|00111", "11011|00011", "11101|00001", "11110|00010",
+        "00111|00011", "00011|00001"}});
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_2),
            correct_psp_representation_2);
 
@@ -227,10 +225,9 @@ TEST_CASE("libsbn") {
   inst.PrepareForPhyloLikelihood(simple_specification, 2);
   auto likelihoods = inst.LogLikelihoods();
   std::vector<double> pybeagle_likelihoods(
-      {-14582.995273982739, -6911.294207416366, -6916.880235529542,
-       -6904.016888831189, -6915.055570693576, -6915.50496696512,
-       -6910.958836661867, -6909.02639968063, -6912.967861935749,
-       -6910.7871105783515});
+      {-14582.995273982739, -6911.294207416366, -6916.880235529542, -6904.016888831189,
+       -6915.055570693576, -6915.50496696512, -6910.958836661867, -6909.02639968063,
+       -6912.967861935749, -6910.7871105783515});
   for (size_t i = 0; i < likelihoods.size(); i++) {
     CHECK_LT(fabs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
   }
@@ -269,8 +266,7 @@ TEST_CASE("libsbn") {
   inst.PrepareForPhyloLikelihood(simple_specification, 1);
   auto gradients_rescaling = inst.BranchGradients();
   for (size_t i = 0; i < gradients_rescaling.size(); i++) {
-    CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]),
-             0.00011);
+    CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]), 0.00011);
   }
   // Gradients
   auto last_rescaling = gradients_rescaling.back();

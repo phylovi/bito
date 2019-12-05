@@ -16,9 +16,7 @@ class Alignment {
   StringStringMap Data() const { return data_; }
   size_t SequenceCount() const { return data_.size(); }
   size_t Length() const;
-  bool operator==(const Alignment& other) const {
-    return data_ == other.Data();
-  }
+  bool operator==(const Alignment& other) const { return data_ == other.Data(); }
 
   // Is the alignment non-empty and do all sequences have the same length?
   bool IsValid() const;

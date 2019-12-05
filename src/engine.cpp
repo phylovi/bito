@@ -3,15 +3,14 @@
 
 #include "engine.hpp"
 
-Engine::Engine(const PhyloModelSpecification &specification,
-               SitePattern site_pattern, size_t thread_count)
+Engine::Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
+               size_t thread_count)
     : site_pattern_(std::move(site_pattern)) {
   if (thread_count == 0) {
     Failwith("Thread count needs to be strictly positive.");
   }
   for (size_t i = 0; i < thread_count; i++) {
-    fat_beagles_.push_back(
-        std::make_unique<FatBeagle>(specification, site_pattern_));
+    fat_beagles_.push_back(std::make_unique<FatBeagle>(specification, site_pattern_));
   }
 }
 
@@ -21,17 +20,16 @@ const BlockSpecification &Engine::GetPhyloModelBlockSpecification() const {
   return GetFirstFatBeagle()->GetPhyloModelBlockSpecification();
 }
 
-std::vector<double> Engine::LogLikelihoods(
-    const TreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
-  return FatBeagleParallelize<double>(FatBeagle::StaticLogLikelihood,
-                                      fat_beagles_, tree_collection,
-                                      phylo_model_params, rescaling);
+std::vector<double> Engine::LogLikelihoods(const TreeCollection &tree_collection,
+                                           const EigenMatrixXdRef phylo_model_params,
+                                           const bool rescaling) const {
+  return FatBeagleParallelize<double>(FatBeagle::StaticLogLikelihood, fat_beagles_,
+                                      tree_collection, phylo_model_params, rescaling);
 }
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
-    const TreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
+    const TreeCollection &tree_collection, const EigenMatrixXdRef phylo_model_params,
+    const bool rescaling) const {
   return FatBeagleParallelize<std::pair<double, std::vector<double>>>(
       FatBeagle::StaticBranchGradient, fat_beagles_, tree_collection,
       phylo_model_params, rescaling);

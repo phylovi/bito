@@ -50,15 +50,12 @@ class BlockSpecification {
   // and blocks from matrices depending on the coordinates of the block
   // specification. They are very useful for writing the SetParameters method of
   // BlockModels.
-  EigenVectorXdRef ExtractSegment(EigenVectorXdRef param_vector,
-                                  std::string key) const;
-  EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef param_matrix,
-                                std::string key) const;
+  EigenVectorXdRef ExtractSegment(EigenVectorXdRef param_vector, std::string key) const;
+  EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef param_matrix, std::string key) const;
 
   // These are explained in the definition of ParameterSegmentMap and
   // ParameterBlockMap.
-  ParameterSegmentMap ParameterSegmentMapOf(
-      EigenVectorXdRef param_vector) const;
+  ParameterSegmentMap ParameterSegmentMapOf(EigenVectorXdRef param_vector) const;
   ParameterBlockMap ParameterBlockMapOf(EigenMatrixXdRef param_matrix) const;
 
   const UnderlyingMapType& GetMap() const { return map_; }

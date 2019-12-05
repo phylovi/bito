@@ -26,10 +26,8 @@ class BlockModel {
 
   const BlockSpecification& GetBlockSpecification() const;
 
-  EigenVectorXdRef ExtractSegment(EigenVectorXdRef param_vector,
-                                  std::string key) const;
-  EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef param_matrix,
-                                std::string key) const;
+  EigenVectorXdRef ExtractSegment(EigenVectorXdRef param_vector, std::string key) const;
+  EigenMatrixXdRef ExtractBlock(EigenMatrixXdRef param_matrix, std::string key) const;
   void Append(const std::string& sub_entire_key, BlockSpecification other);
 
   virtual void SetParameters(const EigenVectorXdRef param_vector) = 0;

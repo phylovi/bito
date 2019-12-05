@@ -20,8 +20,7 @@ BlockSpecification::BlockSpecification(ParamCounts param_counts) {
   InsertEntireKey({0, next_available_idx});
 }
 
-BlockSpecification::Coordinates BlockSpecification::Find(
-    const std::string& key) const {
+BlockSpecification::Coordinates BlockSpecification::Find(const std::string& key) const {
   auto search = map_.find(key);
   if (search == map_.end()) {
     Failwith("Can't find '" + key + "' in block specification!");
@@ -64,8 +63,8 @@ void BlockSpecification::CheckParameterMatrixSize(
          "Parameters are the wrong dimension!");
 }
 
-EigenVectorXdRef BlockSpecification::ExtractSegment(
-    EigenVectorXdRef param_vector, std::string key) const {
+EigenVectorXdRef BlockSpecification::ExtractSegment(EigenVectorXdRef param_vector,
+                                                    std::string key) const {
   auto [start_idx, parameter_count] = Find(key);
   if (start_idx + parameter_count > param_vector.size()) {
     Failwith("Model parameter '" + key +
@@ -90,8 +89,8 @@ EigenMatrixXdRef BlockSpecification::ExtractBlock(EigenMatrixXdRef param_matrix,
 // lookups in ExtractSegment even though it doesn't really need to. My intent is
 // not to have it be called frequently-- just once when we're setting things up.
 // So if this changes let's do something about it.
-BlockSpecification::ParameterSegmentMap
-BlockSpecification::ParameterSegmentMapOf(EigenVectorXdRef param_vector) const {
+BlockSpecification::ParameterSegmentMap BlockSpecification::ParameterSegmentMapOf(
+    EigenVectorXdRef param_vector) const {
   CheckParameterVectorSize(param_vector);
   ParameterSegmentMap parameter_segment_map;
   for (const auto [key, _] : GetMap()) {

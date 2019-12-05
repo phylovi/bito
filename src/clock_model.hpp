@@ -18,8 +18,7 @@ class ClockModel : public BlockModel {
 
   virtual double GetRate(const Node& node) = 0;
 
-  static std::unique_ptr<ClockModel> OfSpecification(
-      const std::string& specification);
+  static std::unique_ptr<ClockModel> OfSpecification(const std::string& specification);
 };
 
 class NoClockModel : public ClockModel {
@@ -33,8 +32,7 @@ class NoClockModel : public ClockModel {
 
 class StrictClockModel : public ClockModel {
  public:
-  explicit StrictClockModel(double rate)
-      : ClockModel({{rate_key_, 1}}), rate_(rate) {}
+  explicit StrictClockModel(double rate) : ClockModel({{rate_key_, 1}}), rate_(rate) {}
 
   StrictClockModel() : StrictClockModel(1.0) {}
 

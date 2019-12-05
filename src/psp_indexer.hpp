@@ -54,8 +54,7 @@ class PSPIndexer {
   SizeVectorVector RepresentationOf(const Node::NodePtr& topology) const;
   // Get the string version of the representation.
   // Inefficiently implemented, so for testing only.
-  StringVectorVector StringRepresentationOf(
-      const Node::NodePtr& topology) const;
+  StringVectorVector StringRepresentationOf(const Node::NodePtr& topology) const;
 
   // Return a ragged vector of vectors such that the ith vector is the
   // collection of branch lengths in the tree collection for the ith split.

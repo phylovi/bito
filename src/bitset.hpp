@@ -100,8 +100,7 @@ class Bitset {
   static Bitset Singleton(size_t n, size_t which_on);
   // Make the full subsplit out of the parent subsplit, whose second half is
   // split by child_half.
-  static Bitset ChildSubsplit(const Bitset &parent_subsplit,
-                              const Bitset &child_half);
+  static Bitset ChildSubsplit(const Bitset &parent_subsplit, const Bitset &child_half);
 
  private:
   std::vector<bool> value_;
@@ -117,9 +116,7 @@ struct hash<Bitset> {
 };
 template <>
 struct equal_to<Bitset> {
-  bool operator()(const Bitset &lhs, const Bitset &rhs) const {
-    return lhs == rhs;
-  }
+  bool operator()(const Bitset &lhs, const Bitset &rhs) const { return lhs == rhs; }
 };
 }  // namespace std
 

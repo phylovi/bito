@@ -11,22 +11,19 @@
 #include "sugar.hpp"
 #include "tree.hpp"
 
-TreeCollection::TreeCollection(Tree::TreeVector trees)
-    : trees_(std::move(trees)) {
+TreeCollection::TreeCollection(Tree::TreeVector trees) : trees_(std::move(trees)) {
   if (!trees_.empty()) {
     auto leaf_count = trees_[0].LeafCount();
     auto different_leaf_count = [leaf_count](const auto &tree) {
       return tree.LeafCount() != leaf_count;
     };
     if (std::any_of(trees_.cbegin(), trees_.cend(), different_leaf_count)) {
-      Failwith(
-          "Trees must all have the same number of tips in TreeCollection.");
+      Failwith("Trees must all have the same number of tips in TreeCollection.");
     }
   }
 }
 
-TreeCollection::TreeCollection(Tree::TreeVector trees,
-                               TagStringMap tag_taxon_map)
+TreeCollection::TreeCollection(Tree::TreeVector trees, TagStringMap tag_taxon_map)
     : trees_(std::move(trees)), tag_taxon_map_(std::move(tag_taxon_map)) {
   auto taxon_count = tag_taxon_map.size();
   auto different_taxon_count = [taxon_count](const auto &tree) {
@@ -41,8 +38,8 @@ TreeCollection::TreeCollection(Tree::TreeVector trees,
 
 TreeCollection::TreeCollection(Tree::TreeVector trees,
                                const std::vector<std::string> &taxon_labels)
-    : TreeCollection::TreeCollection(
-          std::move(trees), TreeCollection::TagStringMapOf(taxon_labels)) {}
+    : TreeCollection::TreeCollection(std::move(trees),
+                                     TreeCollection::TagStringMapOf(taxon_labels)) {}
 
 bool TreeCollection::operator==(const TreeCollection &other) const {
   if (this->TagTaxonMap() != other.TagTaxonMap()) {
@@ -99,8 +96,7 @@ std::vector<std::string> TreeCollection::TaxonNames() const {
   std::vector<std::string> names(tag_taxon_map_.size());
   for (const auto &iter : tag_taxon_map_) {
     size_t id = Node::MaxLeafIDOfTag(iter.first);
-    Assert(id < names.size(),
-           "Leaf ID is out of range in TreeCollection::TaxonNames.");
+    Assert(id < names.size(), "Leaf ID is out of range in TreeCollection::TaxonNames.");
     names[id] = iter.second;
   }
   return names;
