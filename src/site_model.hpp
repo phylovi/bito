@@ -16,9 +16,9 @@ class SiteModel : public BlockModel {
       : BlockModel(param_counts) {}
   virtual ~SiteModel() = default;
 
-  virtual size_t GetCategoryCount() = 0;
-  virtual const EigenVectorXd& GetCategoryRates() = 0;
-  virtual const EigenVectorXd& GetCategoryProportions() = 0;
+  virtual size_t GetCategoryCount() const = 0;
+  virtual const EigenVectorXd& GetCategoryRates() const = 0;
+  virtual const EigenVectorXd& GetCategoryProportions() const = 0;
 
   static std::unique_ptr<SiteModel> OfSpecification(const std::string& specification);
 };
@@ -30,11 +30,11 @@ class ConstantSiteModel : public SiteModel {
     one_[0] = 1.0;
   }
 
-  size_t GetCategoryCount() override { return 1; }
+  size_t GetCategoryCount() const override { return 1; }
 
-  const EigenVectorXd& GetCategoryRates() override { return one_; }
+  const EigenVectorXd& GetCategoryRates() const override { return one_; }
 
-  const EigenVectorXd& GetCategoryProportions() override { return one_; }
+  const EigenVectorXd& GetCategoryProportions() const override { return one_; }
 
   void SetParameters(const EigenVectorXdRef param_vector) override{};
 
@@ -59,9 +59,9 @@ class WeibullSiteModel : public SiteModel {
     UpdateRates();
   }
 
-  size_t GetCategoryCount() override;
-  const EigenVectorXd& GetCategoryRates() override;
-  const EigenVectorXd& GetCategoryProportions() override;
+  size_t GetCategoryCount() const override;
+  const EigenVectorXd& GetCategoryRates() const override;
+  const EigenVectorXd& GetCategoryProportions() const override;
 
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
