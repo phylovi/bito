@@ -25,7 +25,7 @@ using TagStringMap = std::unordered_map<Tag, std::string>;
 using StringStringMap = std::unordered_map<std::string, std::string>;
 using CharIntMap = std::unordered_map<char, int>;
 using StringSizeMap = std::unordered_map<std::string, size_t>;
-using DoubleVectorOption = std::optional<std::vector<double> >;
+using DoubleVectorOption = std::optional<std::vector<double>>;
 using TagStringMapOption = std::optional<TagStringMap>;
 using StringVector = std::vector<std::string>;
 using StringVectorVector = std::vector<StringVector>;
@@ -73,8 +73,7 @@ constexpr void SafeInsert(std::unordered_map<Key, T, Hash> &map, const Key &k,
 }
 
 template <class Key, class T, class Hash>
-constexpr void SafeInsert(std::map<Key, T, Hash> &map, const Key &k,
-                          const T &v) {
+constexpr void SafeInsert(std::map<Key, T, Hash> &map, const Key &k, const T &v) {
   Assert(map.insert({k, v}).second, "Failed map insertion!");
 }
 

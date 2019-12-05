@@ -15,8 +15,7 @@ using EigenVectorXdRef = Eigen::Ref<EigenVectorXd>;
 using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-void CheckVectorXdEquality(double value, const EigenVectorXd v,
-                           double tolerance) {
+void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {
   for (size_t i = 0; i < v.size(); i++) {
     CHECK_LT(fabs(value - v[i]), tolerance);
   }
