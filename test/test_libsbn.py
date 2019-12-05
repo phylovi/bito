@@ -88,7 +88,8 @@ def ds1_support_test():
 def ds1_phylo_model_demo(inst):
     """Demonstrate how phylogenetic models and likelihoods work using DS1."""
     inst.read_fasta_file("data/DS1.fasta")
-    inst.sample_trees(1)
+    # Just use the first tree for likelihood comparison.
+    inst.tree_collection.erase(1, 10)
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = 0.1
 
