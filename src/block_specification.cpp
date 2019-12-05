@@ -48,7 +48,7 @@ void BlockSpecification::Append(const std::string& sub_entire_key,
       if (search != map_.end()) {
         Failwith("Key overlap between BlockSpecifications: " + block_name);
       }  // else
-      Insert(block_name, {next_available_idx, block_size});
+      Insert(block_name, {start_idx + original_next_available_idx, block_size});
       next_available_idx += block_size;
     }
   }
