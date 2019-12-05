@@ -36,23 +36,21 @@ void BlockSpecification::InsertEntireKey(Coordinates coordinates) {
 
 void BlockSpecification::Append(const std::string& sub_entire_key,
                                 BlockSpecification other) {
-  auto next_available_idx = ParameterCount();
-  const auto original_next_available_idx = next_available_idx;
+  const auto our_parameter_count = ParameterCount();
   for (const auto [block_name, coordinate] : other.GetMap()) {
     auto [start_idx, block_size] = coordinate;
     if (block_name == entire_key_) {
-      Insert(sub_entire_key,
-             {start_idx + original_next_available_idx, block_size});
+      Assert(start_idx == 0, "Start index of entire block isn't zero.");
+      Insert(sub_entire_key, {our_parameter_count, block_size});
     } else {
       auto search = map_.find(block_name);
       if (search != map_.end()) {
         Failwith("Key overlap between BlockSpecifications: " + block_name);
       }  // else
-      Insert(block_name, {start_idx + next_available_idx, block_size});
-      next_available_idx += block_size;
+      Insert(block_name, {our_parameter_count + start_idx, block_size});
     }
   }
-  InsertEntireKey({0, next_available_idx});
+  InsertEntireKey({0, our_parameter_count + other.ParameterCount()});
 }
 
 void BlockSpecification::CheckParameterVectorSize(
@@ -80,7 +78,6 @@ EigenVectorXdRef BlockSpecification::ExtractSegment(
 EigenMatrixXdRef BlockSpecification::ExtractBlock(EigenMatrixXdRef param_matrix,
                                                   std::string key) const {
   auto [start_idx, parameter_count] = Find(key);
-  std::cout << map_ << std::endl;
   if (start_idx + parameter_count > param_matrix.cols()) {
     Failwith("Model parameter '" + key +
              "' request too long for a param_matrix of width " +

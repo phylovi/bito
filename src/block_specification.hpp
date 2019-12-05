@@ -17,10 +17,9 @@
 
 class BlockSpecification {
  public:
-  // Block Coordinates are (starting index, block size) in a tuple.
-  using Coordinates = std::tuple<size_t, size_t>;
-  // ParamCounts are vectors of tuples of (block name, number of parameters for
-  // that block).
+  // Block Coordinates are (starting index, block size) in a pair.
+  using Coordinates = std::pair<size_t, size_t>;
+  // ParamCounts are maps of (block name, number of parameters for that block).
   using ParamCounts = std::map<std::string, size_t>;
   using UnderlyingMapType = std::map<std::string, Coordinates>;
 
@@ -38,7 +37,8 @@ class BlockSpecification {
   // Insert for string literals.
   void Insert(const char* key, Coordinates value);
 
-  // Incorporate one BlockSpecification into `this` one. The "entire" block
+  // Incorporate another BlockSpecification into `this` one by incrementing all
+  // of the other starting indices by our parameter count. The "entire" block
   // coordinates from other get incorporated into this with key sub_entire_key.
   // The "entire" block coordinates are then updated.
   void Append(const std::string& sub_entire_key, BlockSpecification other);
@@ -63,7 +63,7 @@ class BlockSpecification {
 
   const UnderlyingMapType& GetMap() const { return map_; }
   // The complete range of parameter counts.
-  size_t ParameterCount() const { return std::get<1>(Find(entire_key_)); };
+  size_t ParameterCount() const { return Find(entire_key_).second; };
 
   // Here's how we set the "entire" key. In C++ we can just use these key
   // variables, but in Python we use the strings as dictionary keys.
@@ -81,21 +81,24 @@ class BlockSpecification {
 TEST_CASE("BlockSpecification") {
   // As an example, kazoo has 4 parameters, and jordan has 23.
   BlockSpecification spec({{"kazoo", 4}, {"jordan", 23}});
+  // The specification stores the starting index and then the number of
+  // parameters. Because we're using an ordered map, jordan has a lower index
+  // than kazoo.
+  const auto correct_spec_map = BlockSpecification::UnderlyingMapType(
+      {{"entire", {0, 27}}, {"jordan", {0, 23}}, {"kazoo", {23, 4}}});
+  CHECK_EQ(spec.GetMap(), correct_spec_map);
   spec.Append("entire turbo and boost",
               BlockSpecification({{"boost", 42}, {"turbo", 666}}));
-  // The specification stores the starting index and then the number of
-  // parameters:
-  auto correct_spec_map = BlockSpecification::UnderlyingMapType(
-      {{"boost", {27, 42}},
-       {"entire", {0, 735}},
-       {"entire turbo and boost", {27, 708}},
-       {"jordan", {0, 23}},
-       {"kazoo", {23, 4}},
-       {"turbo", {111, 666}}});
-  // Because we're using an ordered map, jordan has a lower index than kazoo.
   // Then after appending, the new stuff gets shifted down. For example, we find
-  // boost at 23+4=27.
-  CHECK_EQ(spec.GetMap(), correct_spec_map);
+  // boost at 23+4=27 and turbo at 27+42=69.
+  auto correct_appended_map = BlockSpecification::UnderlyingMapType(
+      {{"boost", {27, 42}},                    // 23+4=27
+       {"entire", {0, 735}},                   // 4+23+42+666=735
+       {"entire turbo and boost", {27, 708}},  // 42+666=708
+       {"jordan", {0, 23}},                    //
+       {"kazoo", {23, 4}},                     //
+       {"turbo", {69, 666}}});                 // 27+42=69
+  CHECK_EQ(spec.GetMap(), correct_appended_map);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

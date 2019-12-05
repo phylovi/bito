@@ -10,10 +10,10 @@ PhyloModel::PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
       substitution_model_(std::move(substitution_model)),
       site_model_(std::move(site_model)),
       clock_model_(std::move(clock_model)) {
-  Append(substitution_entire_key_,
+  Append(entire_substitution_key_,
          substitution_model_->GetBlockSpecification());
-  Append(site_entire_key_, site_model_->GetBlockSpecification());
-  Append(clock_entire_key_, clock_model_->GetBlockSpecification());
+  Append(entire_site_key_, site_model_->GetBlockSpecification());
+  Append(entire_clock_key_, clock_model_->GetBlockSpecification());
 }
 
 std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
@@ -26,7 +26,7 @@ std::unique_ptr<PhyloModel> PhyloModel::OfSpecification(
 
 void PhyloModel::SetParameters(const EigenVectorXdRef param_vector) {
   substitution_model_->SetParameters(
-      ExtractSegment(param_vector, substitution_entire_key_));
-  site_model_->SetParameters(ExtractSegment(param_vector, site_entire_key_));
-  clock_model_->SetParameters(ExtractSegment(param_vector, clock_entire_key_));
+      ExtractSegment(param_vector, entire_substitution_key_));
+  site_model_->SetParameters(ExtractSegment(param_vector, entire_site_key_));
+  clock_model_->SetParameters(ExtractSegment(param_vector, entire_clock_key_));
 }
