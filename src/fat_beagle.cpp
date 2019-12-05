@@ -157,6 +157,34 @@ FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_patt
       scale_buffer_count, allowed_resources, resource_count, preference_flags,
       requirement_flags, &return_info);
   if (return_info.flags & (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
+    if (return_info.flags & BEAGLE_FLAG_PROCESSOR_GPU) {
+      std::cout << R"raw(
+ __      __  ____        ____    _____   ______      __  __  ____
+/\ \  __/\ \/\  _`\     /\  _`\ /\  __`\/\__  _\    /\ \/\ \/\  _`\
+\ \ \/\ \ \ \ \ \L\_\   \ \ \L\_\ \ \/\ \/_/\ \/    \ \ \ \ \ \,\L\_\
+ \ \ \ \ \ \ \ \  _\L    \ \ \L_L\ \ \ \ \ \ \ \     \ \ \ \ \/_\__ \
+  \ \ \_/ \_\ \ \ \L\ \   \ \ \/, \ \ \_\ \ \ \ \     \ \ \_\ \/\ \L\ \
+   \ `\___x___/\ \____/    \ \____/\ \_____\ \ \_\     \ \_____\ `\____\
+    '\/__//__/  \/___/      \/___/  \/_____/  \/_/      \/_____/\/_____/
+
+
+ ______      ____    ____    __  __          __    __  _____   __  __
+/\  _  \    /\  _`\ /\  _`\ /\ \/\ \        /\ \  /\ \/\  __`\/\ \/\ \
+\ \ \L\ \   \ \ \L\_\ \ \L\ \ \ \ \ \       \ `\`\\/'/\ \ \/\ \ \ \ \ \
+ \ \  __ \   \ \ \L_L\ \ ,__/\ \ \ \ \       `\ `\ /'  \ \ \ \ \ \ \ \ \
+  \ \ \/\ \   \ \ \/, \ \ \/  \ \ \_\ \  __    `\ \ \   \ \ \_\ \ \ \_\ \
+   \ \_\ \_\   \ \____/\ \_\   \ \_____\/\ \     \ \_\   \ \_____\ \_____\
+    \/_/\/_/    \/___/  \/_/    \/_____/\ \/      \/_/    \/_____/\/_____/
+                                         \/
+
+ ____     ____    ______
+/\  _`\  /\  _`\ /\__  _\
+\ \ \L\ \\ \ \L\_\/_/\ \/
+ \ \  _ <'\ \  _\L  \ \ \
+  \ \ \L\ \\ \ \L\ \ \ \ \
+   \ \____/ \ \____/  \ \_\
+    \/___/   \/___/    \/_/)raw";
+    }
     return beagle_instance;
   }  // else
   Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
