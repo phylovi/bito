@@ -94,7 +94,6 @@ def ds1_phylo_model_demo(inst):
     branch_lengths[:] = 0.1
 
     inst.prepare_for_phylo_likelihood(SIMPLE_SPECIFICATION, 2)
-    phylo_model_param_block_map = inst.get_phylo_model_param_block_map()
     jc69_likelihood = np.array(inst.log_likelihoods())
 
     # Showing off phylo_model_param_block_map.
