@@ -19,8 +19,16 @@
 // nothing keeping you from having abundant data races if your Executors have
 // non-independent state.
 //
-// The fact that Executors are needed to run Tasks is what requires some design
-// like this-- we can't just use something like a C++17 parallel for loop.
+// The fact that there are fewer Executors than Tasks is what requires some
+// design like this-- we can't just use something like a C++17 parallel for
+// loop.
+//
+// I realize that it's not recommended to write your own thread-handling
+// library, and for good reason: see https://www.youtube.com/watch?v=QIHy8pXbneI
+// https://sean-parent.stlab.cc/presentations/2016-08-08-concurrency/2016-08-08-concurrency.pdf
+// However, here the tasks are few and big, the time required during locking is
+// small (put an integer in a dequeue). The overhead of including a true
+// threading library wouldn't be worth it for this example.
 
 #ifndef SRC_TASK_PROCESSOR_HPP_
 #define SRC_TASK_PROCESSOR_HPP_
@@ -50,6 +58,15 @@ class TaskProcessor {
     }
   }
 
+  // Delete (copy + move) x (constructor + assignment)
+  TaskProcessor(const TaskProcessor &) = delete;
+  TaskProcessor(const TaskProcessor &&) = delete;
+  TaskProcessor &operator=(const TaskProcessor &) = delete;
+  TaskProcessor &operator=(const TaskProcessor &&) = delete;
+
+  // Ensure that all tasks are done before destructor returns.
+  ~TaskProcessor() { Wait(); }
+
   void Wait() {
     condition_variable_.notify_all();
     // Wait for threads to finish before we exit
@@ -59,9 +76,6 @@ class TaskProcessor {
       }
     }
   }
-
-  // Ensure that all tasks are done before destructor returns.
-  ~TaskProcessor() { Wait(); }
 
  private:
   ExecutorQueue executor_queue_;

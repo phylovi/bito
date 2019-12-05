@@ -1,3 +1,4 @@
+"""The Burrito class wraps an instance and relevant model data."""
 import click
 import numpy as np
 
@@ -13,11 +14,10 @@ class Burrito:
     Some terminology:
 
     * We sample "particles" in order to calculate the ELBO and to do stochastic gradient
-    ascent. This is a handy terminology because it can be used for trees, or scalar
-    parameters, etc. We use the prefix `px_` to designate that the first dimension of
-    the given object is across particles. For example, `px_branch_lengths` is a list
-    of branch length vectors, where the list is across particles.
-
+      ascent. This is a handy terminology because it can be used for trees, or scalar
+      parameters, etc. We use the prefix `px_` to designate that the first dimension of
+      the given object is across particles. For example, `px_branch_lengths` is a list
+      of branch length vectors, where the list is across particles.
     * particle_count is the particle count to be used for gradient calculation
     """
 
@@ -27,6 +27,7 @@ class Burrito:
         mcmc_nexus_path,
         burn_in_fraction,
         fasta_path,
+        phylo_model_specification,
         branch_model_name,
         scalar_model_name,
         optimizer_name,
@@ -44,7 +45,9 @@ class Burrito:
 
         # Set up tree likelihood calculation.
         self.inst.read_fasta_file(fasta_path)
-        self.inst.make_beagle_instances(thread_count)
+        self.inst.prepare_for_phylo_likelihood(
+            phylo_model_specification, thread_count, particle_count
+        )
         sbn_model = vip.sbn_model.SBNModel(self.inst)
         self.branch_model = vip.branch_model.of_name(
             branch_model_name, scalar_model_name, self.inst
@@ -114,6 +117,7 @@ class Burrito:
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = px_theta_sample[particle_idx, :]
+        self.inst.resize_phylo_model_params()
         px_phylo_log_like = np.array(self.inst.log_likelihoods(), copy=False)
         px_log_prior = self.branch_model.log_prior(px_theta_sample)
         elbo_total = np.sum(

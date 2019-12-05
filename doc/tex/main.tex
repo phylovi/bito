@@ -13,12 +13,14 @@
 \newcommand{\gSplit}{g^\textsf{S}\hspace{-1pt}}
 \newcommand{\qPSP}{q^\textsf{PSP}\hspace{-1pt}}
 \newcommand{\gPSP}{g^\textsf{PSP}\hspace{-1pt}}
+\newcommand{\softmax}{\operatorname*{softmax}}
+\newcommand{\PCSS}{\operatorname{PCSS}}
 
-\title{libsbn notes}
-\author{Erick}
+\title{libsbn implementation notes}
+\author{Team Phylo VI}
 
 \begin{document}
-%\maketitle
+\maketitle
 
 
 \section*{Introduction}
@@ -27,29 +29,93 @@
 
 In the 2019 ICLR paper, we used $q$ for branch lengths and $Q$ for the variational approximation.
 Here we will use $\bm \theta$ for branch lengths and $q$ for the variational approximation.
+This $p$ and $q$ corresponds to most of the literature on VI, and allows us to use $Q$ for the Markov transition matrix.
 
 
 \subsection*{Setup}
+
+Define
+\[
+    f_{\bm{\phi},{\bm{\psi}}}(\tau, \bm \theta) :=
+    \frac{p(\bm{Y} \mid \tau, \bm{\theta}) \, p(\tau, \bm{\theta})}
+    {q_{\bm{\phi}}(\tau)\, q_{\bm{\psi}}(\bm{\theta}|\tau)}
+    = \frac{p(\bm{Y}, \tau, \bm{\theta})}
+    {q_{\bm{\phi}}(\tau)\, q_{\bm{\psi}}(\bm{\theta}|\tau)}
+\]
+
 We want to maximize the ELBO of our variational parameterization $q$
 \[
 L(\bm{\phi},{\bm{\psi}}) :=
 \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau, \bm{\theta})}
-\log\left(
-    \frac{p(\bm{Y}, \tau, \bm{\theta})}
-    {q_{\bm{\phi}}(\tau)q_{\bm{\psi}}(\bm{\theta}|\tau)}
-\right) \leq \log p(\bm{Y}).
+\log\left( f_{\bm{\phi},{\bm{\psi}}}(\tau, \bm \theta) \right) \leq \log p(\bm{Y}).
 \]
 over $\phi$ and $\psi$.
 The discrete part of the variational distribution is given by an SBN distribution $q_{\bm\phi}$, while $q_{\bm\psi}$ is the scalar density.
 
+Now, $q_{\bm{\phi}}(\tau)$ is going to be the sum over rootings of the rooted SBN probability of $\tau^j$:
+\[
+    q_\phi(\tau) = \sum_{b \in \tau} q_\phi(\rho_b(\tau)).
+\]
+where $\rho_b$ here means to root $\tau$ at branch $b$ and $q_\phi(\rho_b(\tau))$ is an ``overloaded'' definition of $q_\phi$ meaning the rooted SBN probability.
+
+We continue to overload $q_\phi$.
+Let $q_\phi(b \slash \tau)$ be the probability of the rootsplit for $\tau$ rooted at $b$, and
+$q_\phi(s)$ be the probability of a PCSS $s$.
+Now we have
+\begin{equation}
+    q_\phi(\rho_b(\tau)) = q_\phi(b \slash \tau) \, \prod_{s \in \PCSS(\rho_b(\tau))} q_\phi(s).
+    \label{eq:qRooted}
+\end{equation}
+
+We will store the $\phi$ parameters in pre-softmax form, so
+
+\[
+    q_\phi(b \slash \tau) = \left[ \softmax_{b' \in \tau} \phi_{b' \slash \tau} \right]_b .
+\]
+and similarly for $q_\phi(s)$, but where the softmax is over other subsplits $s'$ with the same parent as $s$.
+
 
 \section*{Gradient with respect to SBN parameters $\phi$}
 
+Assume that $(\tau^{1:K}, \bm \theta^{1:K})$ are drawn from the joint distribution on $(\tau^i, \bm \theta^i)$ given by $q_{\bm{\phi},\bm{\psi}}(\tau, \bm{\theta})$.
+The stochastic lower bound with these $K$ samples is
+\[
+    \hat{L}^K(\bm{\phi},{\bm{\psi}}) :=
+    \log\left( \frac{1}{K} \sum_{i=1}^K f_{\bm{\phi},{\bm{\psi}}}(\tau^i, \bm \theta^i) \right).
+\]
+
+Set
+\[
+    \tilde{w}^j :=
+    \frac{f_{\bm{\phi},{\bm{\psi}}}(\tau^j, \bm \theta^j)}
+    {\sum_{i=1}^K f_{\bm{\phi},{\bm{\psi}}}(\tau^i, \bm \theta^i)}.
+\]
+
+Following the first section of Supplement A of the 2019 ICLR paper, we have the naive gradient estimate of the ELBO:
+\[
+\nabla_{{\bm{\phi}}}L^k({\bm{\phi}},{\bm{\psi}}) = \mathbb{E}_{q_{{\bm{\phi}},{\bm{\psi}}}(\tau^{1:K},\; {\bm{\theta}}^{1:K})} \sum_{j=1}^K \left(\hat{L}^K({\bm{\phi}},{\bm{\psi}}) - \tilde{w}^j\right) \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^j).
+\]
+
+To get the VIMCO gradient, we follow equation 10 of~\cite{Mnih2016-ec}, noting that their $\nabla_\theta \, \log f(x, h^j)$ is $-\nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^j)$ in our case.
+This gives (5) of the 2019 ICLR paper, which in our notation is
+\[
+\nabla_{\bm{\phi}} L^K(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau^{1:K},\;\bm{\theta}^{1:K})}\sum_{j=1}^K\left(\hat{L}_{j|-j}^K(\bm{\phi},{\bm{\psi}})-\tilde{w}^j\right)\nabla_{\bm{\phi}}\log q_{\bm{\phi}}(\tau^j)
+\]
+where
+\[
+\hat{L}_{j|-j}^K(\bm{\phi},{\bm{\psi}}) :=  \hat{L}^K(\bm{\phi},{\bm{\psi}}) - \log\frac1K\left(\sum_{i\neq j}f_{\bm{\phi},{\bm{\psi}}}(\tau^i,\bm{\theta}^i) + \hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})\right)
+\]
+is the per-sample local learning signal, with $\hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})$ being some estimate of $f_{\bm{\phi},{\bm{\psi}}}(\tau^j,\bm{\theta}^j)$ for sample $j$ using the rest of samples (e.g., the geometric mean).
+
+
+We will calculate $\nabla_{\bm \phi} \log q_{\bm \phi}(\tau^j)$ as the ratio ${\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau^j)} / {q_{\bm{\phi}}(\tau^j)}$.
+
+To calculate $\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau)$, we take derivatives of the sum across rootings, where each derivative is just that of a product as per~\eqref{eq:qRooted}.
 
 
 \section*{Gradient with respect to scalar model parameters $\psi$}
 
-This section concerns taking the derivative of \eqref{eq:L} with respect to a $\psi_i$.
+This section concerns taking the derivative of~\eqref{eq:L} with respect to a $\psi_i$.
 
 We will use $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to designate the ``reparametrization function'' such that we can get a sample from $q_{\bm\psi}$ by applying $g_{\bm{\psi}}(\bm{\epsilon}|\tau)$ to some variates $\bm\epsilon$ drawn from a fixed distribution to get $\bm\theta$.
 Said another way, each entry of $\bm{\epsilon}$ can be obtained by applying the relevant standardization function to a sample from $q_{\bm\psi}$.
@@ -66,7 +132,7 @@ L(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{
 \label{eq:L}
 \end{equation}
 
-Taking the derivative of the numerator of \eqref{eq:L} with respect to a $\psi_i$ gives, in the general case
+Taking the derivative of the numerator of~\eqref{eq:L} with respect to a $\psi_i$ gives, in the general case
 \begin{equation}
     \sum_b
     \frac{\partial \log p(\bm{Y} , \tau, \bm\theta)}{\partial \theta_b} \,

@@ -1,5 +1,6 @@
 import numpy as np
 from pytest import approx
+import libsbn
 import vip.burrito
 
 
@@ -12,10 +13,15 @@ def test_elbo_innards():
     elbo: -82.449972
     """
 
+    phylo_model_specification = libsbn.PhyloModelSpecification(
+        substitution="JC69", site="constant", clock="strict"
+    )
+
     burro = vip.burrito.Burrito(
         mcmc_nexus_path="data/hello_out.t",
         burn_in_fraction=0,
         fasta_path="data/hello.fasta",
+        phylo_model_specification=phylo_model_specification,
         branch_model_name="split",
         scalar_model_name="lognormal",
         optimizer_name="simple",

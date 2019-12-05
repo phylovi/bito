@@ -10,10 +10,8 @@ We are building a Python-interface C++ library for phylogenetic variational infe
 
 To install dependencies, use the associated conda environment file:
 
-```
-conda env create -f environment.yml
-conda activate libsbn
-```
+    conda env create -f environment.yml
+    conda activate libsbn
 
 **However, you also need to install platform-specific compiler packages as follows.**
 
@@ -25,14 +23,16 @@ If you want to specify your compiler manually, set the `CC` and `CXX` shell vari
 The packages in `environment-extras.yml` are not required to use the package or the command-line interface, but they are required to run the notebooks.
 To install them as well, call:
 
-```
-conda env update -n libsbn -f environment-extras.yml
-```
+    conda env update -n libsbn -f environment-extras.yml
 
 
 ## Building
 
-`make` will build, run tests, and install the Python packages.
+First:
+
+    git submodule update
+
+Then `make` will build, run tests, and install the Python packages.
 
 On OS X the build process will also modify the conda environment to point `DYLD_LIBRARY_PATH` to where BEAGLE is installed.
 If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.
@@ -47,6 +47,11 @@ The following two papers will explain what this repository is about:
 
 * Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
 * Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2019/08/24/vbpi.html).
+
+Our documentation consists of:
+
+* [Online documentation](https://phylovi.github.io/libsbn/)
+* Derivations in `doc/tex`, which explain what's going on in the code.
 
 In the off chance that you are citing this library, don't forget to cite the [BEAGLE paper](http://dx.doi.org/10.1093/sysbio/syz020) too, as we use BEAGLE!
 
@@ -72,11 +77,11 @@ Also let's:
 
 * Prefer a functional style: returning variables versus modifying them in place. Because of return value optimization, this doesn't have a performance penalty.
 * [RAII](https://en.cppreference.com/w/cpp/language/raii). No `new`.
-* Avoid classic/raw pointers except as const parameters to functions.
+* Classic/raw pointers are used as non-owning references only.
 * Prefer [variable names and simple coding practices](https://blog.codinghorror.com/coding-without-comments/) to code comments.
   If that means having long identifier names, that's fine!
   If you can't make the code use and operation inherently obvious, please write documentation.
-* TODO comments shouldn't make it into master. Rather, make an issue on GitHub.
+* TODO comments don't get merged into master. Rather, make an issue on GitHub.
 * Always use curly braces for the body of conditionals and loops, even if they are one line.
 
 The [C++ core guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) are the authority for how to write C++, and we will follow them.
@@ -111,18 +116,11 @@ Add a test for every new feature.
 * Delete branch
 
 
-## Terminology
-
-* PCSS stands for parent-child subsplit.
-  It's a general concept rather than a specific implementation of the concept.
-  For example, see the documentation of PCSSFun (in `node.hpp`) and PCSS Bitsets (in `bitset.hpp`) for two different ways of using this concept.
-
-
 ## Contributors
 
-* Erick Matsen ([@matsen](https://github.com/matsen)): coding, design, maintenance
+* Erick Matsen ([@matsen](https://github.com/matsen)): implementation, design, janitorial duties
+* Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation, design
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
-* Mathieu Fourment ([@4ment](https://github.com/4ment)): design, site pattern compression, BEAGLE gradients and scaling
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
 
 

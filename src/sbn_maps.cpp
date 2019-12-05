@@ -171,3 +171,11 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(
   });
   return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
 }
+
+StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
+  StringPCSSMap d_str;
+  for (const auto& iter : d) {
+    d_str[iter.first.ToString()] = StringifyMap(iter.second.Map());
+  }
+  return d_str;
+}

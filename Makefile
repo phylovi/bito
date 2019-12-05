@@ -1,4 +1,4 @@
-our_files = src/beagle.cpp src/beagle.hpp src/bitset.cpp src/bitset.hpp src/sbn_maps.hpp src/sbn_maps.cpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.cpp src/tree.hpp src/node.hpp src/node.cpp src/tree_collection.cpp src/tree_collection.hpp src/alignment.cpp src/alignment.hpp src/task_processor.hpp src/beagle.hpp src/beagle.cpp src/site_pattern.hpp src/site_pattern.cpp src/pylibsbn.cpp src/psp_indexer.cpp src/psp_indexer.hpp
+our_files = src/bitset.cpp src/bitset.hpp src/sbn_maps.hpp src/sbn_maps.cpp src/default_dict.hpp src/doctest.cpp src/driver.cpp src/driver.hpp src/intpack.hpp src/libsbn.cpp src/libsbn.hpp src/tree.cpp src/tree.hpp src/node.hpp src/node.cpp src/tree_collection.cpp src/tree_collection.hpp src/alignment.cpp src/alignment.hpp src/task_processor.hpp src/site_pattern.hpp src/site_pattern.cpp src/pylibsbn.cpp src/psp_indexer.cpp src/psp_indexer.hpp src/substitution_model.hpp src/substitution_model.cpp src/site_model.hpp src/site_model.cpp src/clock_model.hpp src/clock_model.cpp src/engine.hpp src/engine.cpp src/fat_beagle.cpp src/fat_beagle.hpp src/phylo_model.cpp src/phylo_model.hpp src/block_model.hpp src/block_model.cpp src/block_specification.cpp src/block_specification.hpp src/beagle_accessories.hpp
 
 default:
 	scons
@@ -15,6 +15,20 @@ prep:
 	python test/prep/doctest.py
 	clang-format -i -style=file src/doctest.cpp
 
+docs:
+	make -C doc clean
+	PYTHONPATH=. sphinx-autogen doc/index.rst
+	make -C doc html
+
+deploy:
+	make
+	make docs
+	git checkout gh-pages
+	cp -a doc/_build/html/* .
+	git add .
+	git commit --amend -av -m "update docs"
+	git push -f
+
 format:
 	black vip/*py test/*py SConstruct
 	docformatter --in-place vip/*py test/*py
@@ -28,4 +42,4 @@ lint:
 	cpplint --filter=-runtime/references,-build/c++11 $(our_files) \
 		&& echo "LINTING PASS"
 
-.PHONY: bison prep format clean edit lint
+.PHONY: bison prep format clean edit lint deploy docs

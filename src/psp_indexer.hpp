@@ -1,9 +1,11 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
-
+//
 // This is a class implementing the an indexing scheme for the Primary Subsplit
 // Pair branch length parameterization.
-// See the 2018 ICLR paper for details.
+// See the 2018 ICLR paper for details, and the web documentation for a bit of
+// an introduction.
+//
 // We will use the first unused index ("first_empty_index") as a sentinel that
 // means "not present." This only happens on pendant branches, which do not have
 // a PSP component "below" the pendant branch.

@@ -5,6 +5,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
+  - python=3.7
   - beagle-lib
   - flex
   - make
@@ -15,11 +16,14 @@ dependencies:
   - pytest
   - scons
   - scipy
+  - sphinx >= 2.2.1
   - pip:
       - black
       - click
       - docformatter
       - enscons
       - flake8
+      - sphinx-click
+      - sphinx-rtd-theme
       - tensorflow
       - tensorflow-probability

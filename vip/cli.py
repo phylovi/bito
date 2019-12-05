@@ -1,3 +1,4 @@
+"""The ``vip`` command line interface."""
 import pprint
 
 import click
@@ -60,12 +61,15 @@ def benchmark(
 ):
     """Do a benchmarking comparison to an MCMC run.
 
-    DATA_PATH is a path to a directory, which say is named X.
+    ``DATA_PATH`` is a path to a directory, which say is named ``X``.
 
-    We assume that X contains:
+    We assume that ``X`` contains:
 
-    X_out.t: an MCMC run on a fixed tree topology, and
-    X.fasta: a FASTA file with the same sequence data as used for MCMC.
+    ``X_out.t``
+      an MCMC run on a fixed tree topology, and
+
+    ``X.fasta``
+      a FASTA file with the same sequence data as used for MCMC.
     """
     # This splendid non-Pythonic import in a function means that the CLI is fast unless
     # we do something.

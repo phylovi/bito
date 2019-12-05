@@ -2,24 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "libsbn.hpp"
-
-StringPCSSMap StringPCSSMapOf(PCSSDict d) {
-  StringPCSSMap d_str;
-  for (const auto &iter : d) {
-    d_str[iter.first.ToString()] = StringifyMap(iter.second.Map());
-  }
-  return d_str;
-}
-
-void SBNInstance::FinalizeBeagleInstances() {
-  for (const auto &beagle_instance : beagle_instances_) {
-    Assert(beagleFinalizeInstance(beagle_instance) == 0,
-           "beagleFinalizeInstance gave nonzero return value!");
-  }
-  beagle_instances_.clear();
-  beagle_leaf_count_ = 0;
-  beagle_site_count_ = 0;
-}
+#include <memory>
 
 void SBNInstance::PrintStatus() {
   std::cout << "Status for instance '" << name_ << "':\n";
@@ -50,9 +33,7 @@ void SBNInstance::ProcessLoadedTrees() {
     index++;
   }
   // Now add the PCSSs.
-  for (const auto &iter : SBNMaps::PCSSCounterOf(counter)) {
-    const auto &parent = iter.first;
-    const auto &child_counter = iter.second;
+  for (const auto &[parent, child_counter] : SBNMaps::PCSSCounterOf(counter)) {
     SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
     for (const auto &child_iter : child_counter) {
       const auto &child = child_iter.first;
@@ -74,11 +55,11 @@ void SBNInstance::CheckSBNMapsAvailable() {
 
 void SBNInstance::PrintSupports() {
   std::vector<std::string> to_print(indexer_.size());
-  for (const auto &iter : indexer_) {
-    if (iter.second < rootsplits_.size()) {
-      to_print[iter.second] = iter.first.ToString();
+  for (const auto &[key, idx] : indexer_) {
+    if (idx < rootsplits_.size()) {
+      to_print[idx] = key.ToString();
     } else {
-      to_print[iter.second] = iter.first.PCSSToString();
+      to_print[idx] = key.PCSSToString();
     }
   }
   for (size_t i = 0; i < to_print.size(); i++) {
@@ -164,11 +145,11 @@ std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations()
 
 StringVector SBNInstance::StringReversedIndexer() const {
   std::vector<std::string> reversed_indexer(indexer_.size());
-  for (const auto &iter : indexer_) {
-    if (iter.second < rootsplits_.size()) {
-      reversed_indexer[iter.second] = iter.first.ToString();
+  for (const auto &[key, idx] : indexer_) {
+    if (idx < rootsplits_.size()) {
+      reversed_indexer[idx] = key.ToString();
     } else {
-      reversed_indexer[iter.second] = iter.first.PCSSToString();
+      reversed_indexer[idx] = key.PCSSToString();
     }
   }
   return reversed_indexer;
@@ -213,7 +194,7 @@ std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
 std::pair<StringSizeMap, StringPCSSMap> SBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();
   return {StringifyMap(SBNMaps::RootsplitCounterOf(counter).Map()),
-          StringPCSSMapOf(SBNMaps::PCSSCounterOf(counter))};
+          SBNMaps::StringPCSSMapOf(SBNMaps::PCSSCounterOf(counter))};
 }
 
 void SBNInstance::ReadNewickFile(std::string fname) {
@@ -245,47 +226,63 @@ void SBNInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
-void SBNInstance::CheckBeagleDimensions() const {
-  CheckSequencesAndTreesLoaded();
-  if (beagle_instances_.size() == 0) {
-    Failwith(
-        "Call MakeBeagleInstances to make some instances for likelihood "
-        "computation.");
-  }
-  if (alignment_.SequenceCount() != beagle_leaf_count_ ||
-      alignment_.Length() != beagle_site_count_) {
-    Failwith(
-        "Alignment dimensions for current BEAGLE instances do not "
-        "match current alignment. Call MakeBeagleInstances again.");
-  }
+Eigen::Ref<EigenMatrixXd> SBNInstance::GetPhyloModelParams() {
+  return phylo_model_params_;
 }
 
-void SBNInstance::MakeBeagleInstances(int instance_count) {
-  // Start by clearing out any existing instances.
-  FinalizeBeagleInstances();
+BlockSpecification::ParameterBlockMap
+SBNInstance::GetPhyloModelParamBlockMap() {
+  return GetEngine()->GetPhyloModelBlockSpecification().ParameterBlockMapOf(
+      phylo_model_params_);
+}
+
+void SBNInstance::MakeEngine(PhyloModelSpecification specification,
+                             size_t thread_count) {
   CheckSequencesAndTreesLoaded();
-  beagle_leaf_count_ = alignment_.SequenceCount();
-  beagle_site_count_ = alignment_.Length();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  for (auto i = 0; i < instance_count; i++) {
-    auto beagle_instance = beagle::CreateInstance(site_pattern);
-    beagle::SetJCModel(beagle_instance);
-    beagle_instances_.push_back(beagle_instance);
-    beagle::PrepareBeagleInstance(beagle_instance, tree_collection_,
-                                  site_pattern);
-  }
+  engine_ = std::make_unique<Engine>(specification, site_pattern, thread_count);
 }
 
-std::vector<double> SBNInstance::LogLikelihoods() const {
-  CheckBeagleDimensions();
-  return beagle::LogLikelihoods(beagle_instances_, tree_collection_,
-                                rescaling_);
+Engine *SBNInstance::GetEngine() const {
+  if (engine_ != nullptr) {
+    return engine_.get();
+  }
+  // else
+  Failwith(
+      "Engine not available. Call PrepareForPhyloLikelihood to make an "
+      "engine for phylogenetic likelihood computation computation.");
+}
+
+void SBNInstance::PrepareForPhyloLikelihood(
+    PhyloModelSpecification specification, size_t thread_count,
+    std::optional<size_t> tree_count_option) {
+  MakeEngine(specification, thread_count);
+  ResizePhyloModelParams(tree_count_option);
+}
+
+void SBNInstance::ResizePhyloModelParams(
+    std::optional<size_t> tree_count_option) {
+  size_t tree_count =
+      tree_count_option ? *tree_count_option : tree_collection_.TreeCount();
+  if (tree_count == 0) {
+    Failwith(
+        "Please add trees to your instance by sampling or loading before "
+        "preparing for phylogenetic likelihood calculation.");
+  }
+  phylo_model_params_.resize(
+      tree_count,
+      GetEngine()->GetPhyloModelBlockSpecification().ParameterCount());
+}
+
+std::vector<double> SBNInstance::LogLikelihoods() {
+  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_,
+                                     rescaling_);
 }
 
 std::vector<std::pair<double, std::vector<double>>>
-SBNInstance::BranchGradients() const {
-  return beagle::BranchGradients(beagle_instances_, tree_collection_,
-                                 rescaling_);
+SBNInstance::BranchGradients() {
+  return GetEngine()->BranchGradients(tree_collection_, phylo_model_params_,
+                                      rescaling_);
 }
 
 // Here we initialize our static random number generator.
