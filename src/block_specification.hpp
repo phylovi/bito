@@ -21,7 +21,7 @@ class BlockSpecification {
   using Coordinates = std::tuple<size_t, size_t>;
   // ParamCounts are vectors of tuples of (block name, number of parameters for
   // that block).
-  using ParamCounts = std::vector<std::tuple<std::string, size_t>>;
+  using ParamCounts = std::unordered_map<std::string, size_t>;
   using UnderlyingMapType = std::unordered_map<std::string, Coordinates>;
 
   // These are handy structures: maps from the block specification keys to
@@ -83,8 +83,9 @@ TEST_CASE("BlockSpecification") {
   BlockSpecification spec({{"kazoo", 4}, {"jordan", 23}});
   // Here we can see that the specification stores the starting index and then
   // the number of parameters.
-  CHECK_EQ(spec.Find("kazoo"), BlockSpecification::Coordinates({0, 4}));
-  CHECK_EQ(spec.Find("jordan"), BlockSpecification::Coordinates({4, 23}));
+  auto [jordan_index, jordan_size] = spec.Find("jordan");
+  CHECK((jordan_index == 0 || jordan_index == 4));
+  CHECK_EQ(jordan_size, 23);
   spec.Append("entire turbo boost",
               BlockSpecification({{"turbo", 666}, {"boost", 42}}));
   auto [turbo_index, turbo_size] = spec.Find("turbo");
