@@ -111,13 +111,7 @@ TEST_CASE("SubstitutionModel") {
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
   EigenVectorXd param_vector(10);
-  // Test 2: Now set param_vector using SetParameters.
-  gtr_model = std::make_unique<GTRModel>();
-  param_vector << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.25, 0.25, 0.25, 0.25;
-  gtr_model->SetParameters(param_vector);
-  CheckEigenvalueEquality(jc_model->GetEigenvalues(),
-                          gtr_model->GetEigenvalues());
-  // Test 3: Now try out ParameterSegmentMapOf.
+  // Test 2: Now try out ParameterSegmentMapOf.
   gtr_model = std::make_unique<GTRModel>();
   // First zero out our param_vector.
   param_vector.setZero();
@@ -134,7 +128,7 @@ TEST_CASE("SubstitutionModel") {
   gtr_model->SetParameters(param_vector);
   CheckEigenvalueEquality(jc_model->GetEigenvalues(),
                           gtr_model->GetEigenvalues());
-  // Test 4: eigen values values from R
+  // Test 3: Compare to eigenvalues from R.
   frequencies << 0.479367, 0.172572, 0.140933, 0.207128;
   rates << 0.060602, 0.402732, 0.028230, 0.047910, 0.407249, 0.053277;
   gtr_model->SetParameters(param_vector);
