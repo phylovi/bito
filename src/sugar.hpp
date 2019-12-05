@@ -4,13 +4,14 @@
 #ifndef SRC_SUGAR_HPP_
 #define SRC_SUGAR_HPP_
 
-#include "prettyprint.hpp"
 #include <cassert>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "prettyprint.hpp"
 
 // Put typedefs that are built of STL types here.
 using Tag = uint64_t;
@@ -67,6 +68,12 @@ using StringSetVector = std::vector<StringSet>;
 
 template <class Key, class T, class Hash>
 constexpr void SafeInsert(std::unordered_map<Key, T, Hash> &map, const Key &k,
+                          const T &v) {
+  Assert(map.insert({k, v}).second, "Failed map insertion!");
+}
+
+template <class Key, class T, class Hash>
+constexpr void SafeInsert(std::map<Key, T, Hash> &map, const Key &k,
                           const T &v) {
   Assert(map.insert({k, v}).second, "Failed map insertion!");
 }

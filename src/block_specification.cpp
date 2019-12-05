@@ -48,7 +48,7 @@ void BlockSpecification::Append(const std::string& sub_entire_key,
       if (search != map_.end()) {
         Failwith("Key overlap between BlockSpecifications: " + block_name);
       }  // else
-      Insert(block_name, {start_idx + original_next_available_idx, block_size});
+      Insert(block_name, {start_idx + next_available_idx, block_size});
       next_available_idx += block_size;
     }
   }
@@ -70,8 +70,8 @@ EigenVectorXdRef BlockSpecification::ExtractSegment(
     EigenVectorXdRef param_vector, std::string key) const {
   auto [start_idx, parameter_count] = Find(key);
   if (start_idx + parameter_count > param_vector.size()) {
-    Failwith("Model parameter " + key +
-             " request too long for a param_vector of length " +
+    Failwith("Model parameter '" + key +
+             "' request too long for a param_vector of length " +
              std::to_string(param_vector.size()) + ".");
   }  // else
   return param_vector.segment(start_idx, parameter_count);
@@ -80,9 +80,10 @@ EigenVectorXdRef BlockSpecification::ExtractSegment(
 EigenMatrixXdRef BlockSpecification::ExtractBlock(EigenMatrixXdRef param_matrix,
                                                   std::string key) const {
   auto [start_idx, parameter_count] = Find(key);
+  std::cout << map_ << std::endl;
   if (start_idx + parameter_count > param_matrix.cols()) {
-    Failwith("Model parameter " + key +
-             " request too long for a param_matrix of width " +
+    Failwith("Model parameter '" + key +
+             "' request too long for a param_matrix of width " +
              std::to_string(param_matrix.cols()) + ".");
   }  // else
   return param_matrix.block(0, start_idx, param_matrix.rows(), parameter_count);

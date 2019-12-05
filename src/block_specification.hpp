@@ -21,15 +21,15 @@ class BlockSpecification {
   using Coordinates = std::tuple<size_t, size_t>;
   // ParamCounts are vectors of tuples of (block name, number of parameters for
   // that block).
-  using ParamCounts = std::unordered_map<std::string, size_t>;
-  using UnderlyingMapType = std::unordered_map<std::string, Coordinates>;
+  using ParamCounts = std::map<std::string, size_t>;
+  using UnderlyingMapType = std::map<std::string, Coordinates>;
 
   // These are handy structures: maps from the block specification keys to
   // segments (i.e. sub-vectors) and blocks (i.e. sub-matrices). We can then
   // read and write to these values, which will be reflected in the original
   // parameter vector/matrix.
-  using ParameterSegmentMap = std::unordered_map<std::string, EigenVectorXdRef>;
-  using ParameterBlockMap = std::unordered_map<std::string, EigenMatrixXdRef>;
+  using ParameterSegmentMap = std::map<std::string, EigenVectorXdRef>;
+  using ParameterBlockMap = std::map<std::string, EigenMatrixXdRef>;
 
   BlockSpecification(ParamCounts param_counts);
 
@@ -81,33 +81,21 @@ class BlockSpecification {
 TEST_CASE("BlockSpecification") {
   // As an example, kazoo has 4 parameters, and jordan has 23.
   BlockSpecification spec({{"kazoo", 4}, {"jordan", 23}});
-  // Here we can see that the specification stores the starting index and then
-  // the number of parameters.
-  auto [jordan_index, jordan_size] = spec.Find("jordan");
-  CHECK_EQ(jordan_size, 23);
-  if (jordan_index == 0) {
-    // jordan came first.
-    CHECK_EQ(spec.Find("kazoo"), BlockSpecification::Coordinates({23, 4}));
-  } else {
-    // kazoo came first.
-    CHECK(jordan_index == 4);
-    CHECK_EQ(spec.Find("kazoo"), BlockSpecification::Coordinates({0, 4}));
-  }
-  spec.Append("entire turbo boost",
-              BlockSpecification({{"turbo", 666}, {"boost", 42}}));
-  auto [turbo_index, turbo_size] = spec.Find("turbo");
-  // After appending, we find turbo at 23+4=27 or 23+4+42 = 69 depending on
-  // the order of the unordered_map.
-  CHECK((turbo_index == 27 || turbo_index == 69));
-  CHECK_EQ(turbo_size, 666);
-  auto [boost_index, boost_size] = spec.Find("boost");
-  // After appending, we find boost at 23+4=27 or 23+4+666 = 693 depending on
-  // the order of the unordered_map.
-  CHECK((boost_index == 27 || boost_index == 693));
-  CHECK_EQ(boost_size, 42);
-  // The entire turbo boost starts at 27 and is 42+666 = 708 long.
-  CHECK_EQ(spec.Find("entire turbo boost"),
-           BlockSpecification::Coordinates({27, 708}));
+  spec.Append("entire turbo and boost",
+              BlockSpecification({{"boost", 42}, {"turbo", 666}}));
+  // The specification stores the starting index and then the number of
+  // parameters:
+  auto correct_spec_map = BlockSpecification::UnderlyingMapType(
+      {{"boost", {27, 42}},
+       {"entire", {0, 735}},
+       {"entire turbo and boost", {27, 708}},
+       {"jordan", {0, 23}},
+       {"kazoo", {23, 4}},
+       {"turbo", {111, 666}}});
+  // Because we're using an ordered map, jordan has a lower index than kazoo.
+  // Then after appending, the new stuff gets shifted down. For example, we find
+  // boost at 23+4=27.
+  CHECK_EQ(spec.GetMap(), correct_spec_map);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
