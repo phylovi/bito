@@ -10,8 +10,7 @@ PhyloModel::PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,
       substitution_model_(std::move(substitution_model)),
       site_model_(std::move(site_model)),
       clock_model_(std::move(clock_model)) {
-  Append(entire_substitution_key_,
-         substitution_model_->GetBlockSpecification());
+  Append(entire_substitution_key_, substitution_model_->GetBlockSpecification());
   Append(entire_site_key_, site_model_->GetBlockSpecification());
   Append(entire_clock_key_, clock_model_->GetBlockSpecification());
 }

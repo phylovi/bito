@@ -63,8 +63,8 @@ class Node {
   // the entire tree. There's nothing else we can do without rerooting the tree.
   // It's not too hard to exclude the undesired bits with a conditional tree
   // traversal. See IndexerRepresentationOfTopology for an example.
-  typedef std::function<void(const Node*, bool, const Node*, bool, const Node*,
-                             bool, const Node*, bool, const Node*)>
+  typedef std::function<void(const Node*, bool, const Node*, bool, const Node*, bool,
+                             const Node*, bool, const Node*)>
       PCSSFun;
 
  public:
@@ -104,8 +104,7 @@ class Node {
   // for f_internal.
   void TriplePreOrder(
       std::function<void(const Node*, const Node*, const Node*)> f_root,
-      std::function<void(const Node*, const Node*, const Node*)> f_internal)
-      const;
+      std::function<void(const Node*, const Node*, const Node*)> f_internal) const;
   // Iterate f through (node, sister, parent) for bifurcating trees using a
   // preorder traversal.
   void TriplePreOrderBifurcating(
@@ -131,9 +130,8 @@ class Node {
   // above the current node.
   SizeVectorVector IdsAbove() const;
 
-  std::string Newick(
-      std::function<std::string(const Node*)> node_labeler,
-      const DoubleVectorOption& branch_lengths = std::nullopt) const;
+  std::string Newick(std::function<std::string(const Node*)> node_labeler,
+                     const DoubleVectorOption& branch_lengths = std::nullopt) const;
 
   std::string Newick(const DoubleVectorOption& branch_lengths = std::nullopt,
                      const TagStringMapOption& node_labels = std::nullopt,
@@ -147,12 +145,8 @@ class Node {
   NodePtr Deroot();
 
   // ** Static methods
-  static inline uint32_t MaxLeafIDOfTag(uint64_t tag) {
-    return UnpackFirstInt(tag);
-  }
-  static inline uint32_t LeafCountOfTag(uint64_t tag) {
-    return UnpackSecondInt(tag);
-  }
+  static inline uint32_t MaxLeafIDOfTag(uint64_t tag) { return UnpackFirstInt(tag); }
+  static inline uint32_t LeafCountOfTag(uint64_t tag) { return UnpackSecondInt(tag); }
   static NodePtr Leaf(uint32_t id, Bitset leaves = Bitset(0));
   // Join builds a Node with the given descendants, or-ing the leaves_ of the
   // descendants.
@@ -263,20 +257,18 @@ TEST_CASE("Node") {
   Node::NodePtr t2 = examples[2];       // 2: (0,2,(1,3))
   Node::NodePtr t3 = examples[3];       // 3: (0,(1,(2,3)))
   // ((((0,1)7,2)8,(3,4)9)10,5,6)11;
-  Node::NodePtr t4 =
-      Node::OfParentIdVector({7, 7, 8, 9, 9, 11, 11, 8, 10, 10, 11});
+  Node::NodePtr t4 = Node::OfParentIdVector({7, 7, 8, 9, 9, 11, 11, 8, 10, 10, 11});
 
   std::vector<std::string> triples;
   auto collect_triple = [&triples](const Node* node, const Node* sister,
                                    const Node* parent) {
-    triples.push_back(std::to_string(node->Id()) + ", " +
-                      std::to_string(sister->Id()) + ", " +
-                      std::to_string(parent->Id()));
+    triples.push_back(std::to_string(node->Id()) + ", " + std::to_string(sister->Id()) +
+                      ", " + std::to_string(parent->Id()));
   };
   t4->TriplePreOrder(collect_triple, collect_triple);
   std::vector<std::string> correct_triples(
-      {"10, 5, 6", "8, 9, 10", "7, 2, 8", "0, 1, 7", "1, 0, 7", "2, 7, 8",
-       "9, 8, 10", "3, 4, 9", "4, 3, 9", "5, 6, 10", "6, 10, 5"});
+      {"10, 5, 6", "8, 9, 10", "7, 2, 8", "0, 1, 7", "1, 0, 7", "2, 7, 8", "9, 8, 10",
+       "3, 4, 9", "4, 3, 9", "5, 6, 10", "6, 10, 5"});
   CHECK_EQ(triples, correct_triples);
 
   // This is actually a non-trivial test (see note in Node constructor above),

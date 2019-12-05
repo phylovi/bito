@@ -48,8 +48,8 @@ class DefaultDict {
   void print() const {
     std::cout << "Default value: " << default_value_ << std::endl;
     for (const auto &iter : map_) {
-      std::cout << std::to_string(iter.first) << " "
-                << std::to_string(iter.second) << std::endl;
+      std::cout << std::to_string(iter.first) << " " << std::to_string(iter.second)
+                << std::endl;
     }
   }
 

@@ -27,8 +27,7 @@ SizeBitsetMap SBNMaps::IdIdSetMapOf(Node::NodePtr topology) {
   return map;
 }
 
-BitsetSizeDict SBNMaps::RootsplitCounterOf(
-    const Node::TopologyCounter& topologies) {
+BitsetSizeDict SBNMaps::RootsplitCounterOf(const Node::TopologyCounter& topologies) {
   BitsetSizeDict rootsplit_counter(0);
   for (const auto& iter : topologies) {
     auto topology = iter.first;
@@ -51,9 +50,8 @@ PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
     auto topology = iter.first;
     auto count = iter.second;
     auto leaf_count = topology->LeafCount();
-    Assert(
-        topology->Children().size() == 3,
-        "PCSSCounterOf was expecting a tree with a trifurcation at the root!");
+    Assert(topology->Children().size() == 3,
+           "PCSSCounterOf was expecting a tree with a trifurcation at the root!");
     topology->PCSSPreOrder([&pcss_dict, &count, &leaf_count](
                                const Node* sister_node, bool sister_direction,
                                const Node* focal_node, bool focal_direction,  //
@@ -106,8 +104,8 @@ SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
   return split_result;
 }
 
-IndexerRepresentation SBNMaps::IndexerRepresentationOf(
-    const BitsetSizeMap& indexer, const Node::NodePtr& topology) {
+IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                       const Node::NodePtr& topology) {
   const auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
   SizeVector rootsplit_result = SBNMaps::SplitIndicesOf(indexer, topology);
@@ -133,8 +131,7 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(
     if (child1_direction) {
       child1_bitset.flip();
     }
-    bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count,
-                    false);
+    bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count, false);
     auto indexer_position = indexer.at(bitset);
     const auto& focal_index = focal_node->Id();
     if (sister_node == focal_node) {
@@ -161,8 +158,7 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(
         // Add all of the edges of the virtual rooting clade, except for the
         // root of the topology.
         if (node != topology.get()) {
-          Assert(node->Id() < pcss_result.size(),
-                 "node's root Id is out of range.");
+          Assert(node->Id() < pcss_result.size(), "node's root Id is out of range.");
           pcss_result[node->Id()].push_back(indexer_position);
         }
         return true;

@@ -30,19 +30,17 @@ Node::Node(uint32_t leaf_id, Bitset leaves)
 
 Node::Node(NodePtrVec children, size_t id, Bitset leaves)
     : children_(children), id_(id), leaves_(leaves) {
-  Assert(!children_.empty(),
-         "Called internal Node constructor with no children.");
+  Assert(!children_.empty(), "Called internal Node constructor with no children.");
   // Order the children by their max leaf ids.
-  std::sort(
-      children_.begin(), children_.end(), [](const auto& lhs, const auto& rhs) {
-        if (lhs->MaxLeafID() == rhs->MaxLeafID()) {
-          // Children should have non-overlapping leaf sets, so there
-          // should not be ties.
-          Failwith("Tie observed between " + lhs->Newick() + " and " +
-                   rhs->Newick() + "\n" + "Do you have a taxon name repeated?");
-        }
-        return lhs->MaxLeafID() < rhs->MaxLeafID();
-      });
+  std::sort(children_.begin(), children_.end(), [](const auto& lhs, const auto& rhs) {
+    if (lhs->MaxLeafID() == rhs->MaxLeafID()) {
+      // Children should have non-overlapping leaf sets, so there
+      // should not be ties.
+      Failwith("Tie observed between " + lhs->Newick() + " and " + rhs->Newick() +
+               "\n" + "Do you have a taxon name repeated?");
+    }
+    return lhs->MaxLeafID() < rhs->MaxLeafID();
+  });
   // Children are sorted by their max_leaf_id, so we can get the max by
   // looking at the last element.
   uint32_t max_leaf_id = children_.back()->MaxLeafID();
@@ -176,16 +174,15 @@ void Node::LevelOrder(std::function<void(const Node*)> f) const {
   }
 }
 
-static std::function<void(const Node*, const Node*, const Node*)> const
-TripletIdInfix(std::function<void(int, int, int)> f) {
+static std::function<void(const Node*, const Node*, const Node*)> const TripletIdInfix(
+    std::function<void(int, int, int)> f) {
   return [&f](const Node* node0, const Node* node1, const Node* node2) {
     f(static_cast<int>(node0->Id()), static_cast<int>(node1->Id()),
       static_cast<int>(node2->Id()));
   };
 }
 
-void Node::TripleIdPreOrderBifurcating(
-    std::function<void(int, int, int)> f) const {
+void Node::TripleIdPreOrderBifurcating(std::function<void(int, int, int)> f) const {
   TriplePreOrderBifurcating(TripletIdInfix(f));
 }
 
@@ -193,10 +190,8 @@ static std::function<void(const Node*)> const BinaryIdInfix(
     std::function<void(int, int, int)> f) {
   return [&f](const Node* node) {
     if (!node->IsLeaf()) {
-      Assert(node->Children().size() == 2,
-             "BinaryIdInfix expects a bifurcating tree.");
-      f(static_cast<int>(node->Id()),
-        static_cast<int>(node->Children()[0]->Id()),
+      Assert(node->Children().size() == 2, "BinaryIdInfix expects a bifurcating tree.");
+      f(static_cast<int>(node->Id()), static_cast<int>(node->Children()[0]->Id()),
         static_cast<int>(node->Children()[1]->Id()));
     }
   };
@@ -212,8 +207,7 @@ void Node::BinaryIdPostOrder(const std::function<void(int, int, int)> f) const {
 
 void Node::TriplePreOrder(
     std::function<void(const Node*, const Node*, const Node*)> f_root,
-    std::function<void(const Node*, const Node*, const Node*)> f_internal)
-    const {
+    std::function<void(const Node*, const Node*, const Node*)> f_internal) const {
   Assert(children_.size() == 3,
          "TriplePreOrder expects a tree with a trifurcation at the root.");
   f_root(children_[0].get(), children_[1].get(), children_[2].get());
@@ -340,9 +334,8 @@ std::string Node::Newick(std::function<std::string(const Node*)> node_labeler,
   return NewickAux(node_labeler, branch_lengths) + ";";
 }
 
-std::string Node::NewickAux(
-    std::function<std::string(const Node*)> node_labeler,
-    const DoubleVectorOption& branch_lengths) const {
+std::string Node::NewickAux(std::function<std::string(const Node*)> node_labeler,
+                            const DoubleVectorOption& branch_lengths) const {
   std::string str;
   if (IsLeaf()) {
     str.assign(node_labeler(this));
@@ -369,8 +362,7 @@ std::string Node::NewickAux(
 }
 
 std::string Node::Newick(const DoubleVectorOption& branch_lengths,
-                         const TagStringMapOption& node_labels,
-                         bool show_tags) const {
+                         const TagStringMapOption& node_labels, bool show_tags) const {
   return Newick(
       [&node_labels, &show_tags](const Node* node) {
         if (node->IsLeaf()) {
@@ -491,8 +483,7 @@ Node::NodePtrVec Node::ExampleTopologies() {
       // 2: (0,2,(1,3))
       Join(std::vector<NodePtr>({Leaf(0), Leaf(2), Join(Leaf(1), Leaf(3))})),
       // 3: (0,(1,(2,3)))
-      Join(std::vector<NodePtr>(
-          {Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
+      Join(std::vector<NodePtr>({Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
   for (auto& topology : topologies) {
     topology->Polish();
   }
@@ -517,8 +508,7 @@ inline uint32_t Node::SOHash(uint32_t x) {
 }
 
 inline size_t Node::SORotate(size_t n, uint32_t c) {
-  const uint32_t mask =
-      (CHAR_BIT * sizeof(n) - 1);  // assumes width is a power of 2.
+  const uint32_t mask = (CHAR_BIT * sizeof(n) - 1);  // assumes width is a power of 2.
   // assert ( (c<=mask) &&"rotate by type width or more");
   c &= mask;
   return (n << c) | (n >> ((-c) & mask));

@@ -18,7 +18,6 @@ EigenMatrixXdRef BlockModel::ExtractBlock(EigenMatrixXdRef param_matrix,
   return block_specification_.ExtractBlock(param_matrix, key);
 }
 
-void BlockModel::Append(const std::string& sub_entire_key,
-                        BlockSpecification other) {
+void BlockModel::Append(const std::string& sub_entire_key, BlockSpecification other) {
   block_specification_.Append(sub_entire_key, other);
 }

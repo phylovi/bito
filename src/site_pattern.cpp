@@ -78,8 +78,7 @@ void SitePattern::Compress() {
   // Collect the site patterns per taxon.
   for (const auto &iter_tag_taxon : tag_taxon_map_) {
     SymbolVector compressed_sequence;
-    size_t taxon_number =
-        static_cast<size_t>(UnpackFirstInt(iter_tag_taxon.first));
+    size_t taxon_number = static_cast<size_t>(UnpackFirstInt(iter_tag_taxon.first));
     for (const auto &iter_patterns : patterns) {
       compressed_sequence.push_back(iter_patterns.first[taxon_number]);
     }

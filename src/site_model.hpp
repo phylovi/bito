@@ -20,8 +20,7 @@ class SiteModel : public BlockModel {
   virtual const EigenVectorXd& GetCategoryRates() = 0;
   virtual const EigenVectorXd& GetCategoryProportions() = 0;
 
-  static std::unique_ptr<SiteModel> OfSpecification(
-      const std::string& specification);
+  static std::unique_ptr<SiteModel> OfSpecification(const std::string& specification);
 };
 
 class ConstantSiteModel : public SiteModel {
@@ -67,8 +66,7 @@ class WeibullSiteModel : public SiteModel {
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
   inline const static std::string rates_key_ = "Weibull category rates";
-  inline const static std::string proportions_key_ =
-      "Weibull category proportions";
+  inline const static std::string proportions_key_ = "Weibull category proportions";
   inline const static std::string shape_key_ = "Weibull shape";
 
  private:

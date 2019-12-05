@@ -91,8 +91,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   }
   // Actually compute gradient.
   tree.Topology()->TripleIdPreOrderBifurcating(
-      [&ba, &gradient, &indices_above, &log_like](int node_id, int sister_id,
-                                                  int) {
+      [&ba, &gradient, &indices_above, &log_like](int node_id, int sister_id, int) {
         if (node_id != ba.fixed_node_id_) {
           auto [local_log_like, dlogLp] =
               ComputeGradientEntry(ba, indices_above, node_id, sister_id);
@@ -103,8 +102,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   return {log_like, gradient};
 }
 
-double FatBeagle::StaticLogLikelihood(FatBeagle *fat_beagle,
-                                      const Tree &in_tree) {
+double FatBeagle::StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree) {
   Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");
   return fat_beagle->LogLikelihood(in_tree);
 }
@@ -115,8 +113,7 @@ std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
   return fat_beagle->BranchGradient(in_tree);
 }
 
-FatBeagle::BeagleInstance FatBeagle::CreateInstance(
-    const SitePattern &site_pattern) {
+FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
   int taxon_count = static_cast<int>(site_pattern.SequenceCount());
   // Number of partial buffers to create (input):
   // taxon_count - 1 for lower partials (internal nodes only)
@@ -159,8 +156,7 @@ FatBeagle::BeagleInstance FatBeagle::CreateInstance(
       pattern_count, eigen_buffer_count, matrix_buffer_count, category_count,
       scale_buffer_count, allowed_resources, resource_count, preference_flags,
       requirement_flags, &return_info);
-  if (return_info.flags &
-      (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
+  if (return_info.flags & (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
     return beagle_instance;
   }  // else
   Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
@@ -193,8 +189,7 @@ void FatBeagle::UpdateSubstitutionModelInBeagle() {
   beagleSetStateFrequencies(beagle_instance_, 0, frequencies.data());
   beagleSetEigenDecomposition(beagle_instance_,
                               0,  // eigenIndex
-                              &eigenvectors.data()[0],
-                              &inverse_eigenvectors.data()[0],
+                              &eigenvectors.data()[0], &inverse_eigenvectors.data()[0],
                               &eigenvalues.data()[0]);
 }
 
@@ -221,20 +216,18 @@ Tree FatBeagle::PrepareTreeForLikelihood(const Tree &tree) {
 void FatBeagle::UpdateBeagleTransitionMatrices(
     const BeagleAccessories &ba, const Tree &tree,
     const int *const gradient_indices_ptr) const {
-  beagleUpdateTransitionMatrices(
-      beagle_instance_,             // instance
-      0,                            // eigenIndex
-      ba.node_indices_.data(),      // probabilityIndices
-      gradient_indices_ptr,         // firstDerivativeIndices
-      nullptr,                      // secondDerivativeIndices
-      tree.BranchLengths().data(),  // edgeLengths
-      ba.node_count_ - 1);          // count
+  beagleUpdateTransitionMatrices(beagle_instance_,         // instance
+                                 0,                        // eigenIndex
+                                 ba.node_indices_.data(),  // probabilityIndices
+                                 gradient_indices_ptr,     // firstDerivativeIndices
+                                 nullptr,                  // secondDerivativeIndices
+                                 tree.BranchLengths().data(),  // edgeLengths
+                                 ba.node_count_ - 1);          // count
 }
 
 void FatBeagle::AddLowerPartialOperation(BeagleOperationVector &operations,
-                                         const BeagleAccessories &ba,
-                                         const int node_id, const int child0_id,
-                                         const int child1_id) {
+                                         const BeagleAccessories &ba, const int node_id,
+                                         const int child0_id, const int child1_id) {
   const int destinationScaleWrite =
       ba.rescaling_ ? node_id - ba.taxon_count_ + 1 : BEAGLE_OP_NONE;
   // We can't emplace_back because BeagleOperation has no constructor.
@@ -250,9 +243,8 @@ void FatBeagle::AddLowerPartialOperation(BeagleOperationVector &operations,
 }
 
 void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
-                                         const BeagleAccessories &ba,
-                                         const int node_id, const int sister_id,
-                                         const int parent_id) {
+                                         const BeagleAccessories &ba, const int node_id,
+                                         const int sister_id, const int parent_id) {
   if (node_id != ba.root_child_id_ && node_id != ba.fixed_node_id_) {
     int upper_partial_index;
     int upper_matrix_index;
@@ -305,8 +297,8 @@ std::pair<double, double> FatBeagle::ComputeGradientEntry(
 
   if (ba.rescaling_) {
     beagleResetScaleFactors(ba.beagle_instance_, ba.cumulative_scale_index_[0]);
-    auto scaler_indices = BeagleAccessories::IotaVector(
-        static_cast<size_t>(ba.internal_count_ - 1), 1);
+    auto scaler_indices =
+        BeagleAccessories::IotaVector(static_cast<size_t>(ba.internal_count_ - 1), 1);
     // Replace lower scaler index with upper scaler index for nodes between
     // node_index and root.
     int child = node_id;
@@ -329,8 +321,7 @@ std::pair<double, double> FatBeagle::ComputeGradientEntry(
       ba.node_deriv_index_.data(),
       nullptr,  // second derivative matrices
       ba.category_weight_index_.data(), ba.state_frequency_index_.data(),
-      ba.cumulative_scale_index_.data(), ba.mysterious_count_, &log_like,
-      &dlogLp,
+      ba.cumulative_scale_index_.data(), ba.mysterious_count_, &log_like, &dlogLp,
       nullptr);  // destination for second derivative
   return {log_like, dlogLp};
 }

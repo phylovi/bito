@@ -32,9 +32,7 @@ class Tree {
   uint32_t LeafCount() const { return Topology()->LeafCount(); }
   Node::NodePtrVec Children() const { return Topology()->Children(); }
   size_t Id() const { return Topology()->Id(); }
-  std::vector<size_t> ParentIdVector() const {
-    return Topology()->ParentIdVector();
-  }
+  std::vector<size_t> ParentIdVector() const { return Topology()->ParentIdVector(); }
 
   bool operator==(const Tree& other) const;
 
@@ -63,9 +61,7 @@ class Tree {
   Node::NodePtr topology_;
 };
 
-inline bool operator!=(const Tree& lhs, const Tree& rhs) {
-  return !(lhs == rhs);
-}
+inline bool operator!=(const Tree& lhs, const Tree& rhs) { return !(lhs == rhs); }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Tree") {

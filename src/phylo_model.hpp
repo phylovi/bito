@@ -22,9 +22,7 @@ class PhyloModel : public BlockModel {
              std::unique_ptr<SiteModel> site_model,
              std::unique_ptr<ClockModel> clock_model);
 
-  SubstitutionModel* GetSubstitutionModel() const {
-    return substitution_model_.get();
-  }
+  SubstitutionModel* GetSubstitutionModel() const { return substitution_model_.get(); }
   SiteModel* GetSiteModel() const { return site_model_.get(); }
   ClockModel* GetClockModel() const { return clock_model_.get(); }
 
@@ -32,8 +30,7 @@ class PhyloModel : public BlockModel {
       const PhyloModelSpecification& specification);
   void SetParameters(const EigenVectorXdRef param_vector);
 
-  inline const static std::string entire_substitution_key_ =
-      "entire substutition";
+  inline const static std::string entire_substitution_key_ = "entire substutition";
   inline const static std::string entire_site_key_ = "entire site";
   inline const static std::string entire_clock_key_ = "entire clock";
 

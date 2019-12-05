@@ -49,9 +49,7 @@ void WeibullSiteModel::UpdateRates() {
 
 size_t WeibullSiteModel::GetCategoryCount() { return category_count_; }
 
-const EigenVectorXd& WeibullSiteModel::GetCategoryRates() {
-  return category_rates_;
-}
+const EigenVectorXd& WeibullSiteModel::GetCategoryRates() { return category_rates_; }
 
 const EigenVectorXd& WeibullSiteModel::GetCategoryProportions() {
   return category_proportions_;

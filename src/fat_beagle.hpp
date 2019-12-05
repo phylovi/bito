@@ -54,19 +54,16 @@ class FatBeagle {
   void UpdateSubstitutionModelInBeagle();
   void UpdatePhyloModelInBeagle();
 
-  void UpdateBeagleTransitionMatrices(
-      const BeagleAccessories &ba, const Tree &tree,
-      const int *const gradient_indices_ptr) const;
+  void UpdateBeagleTransitionMatrices(const BeagleAccessories &ba, const Tree &tree,
+                                      const int *const gradient_indices_ptr) const;
 
   static Tree PrepareTreeForLikelihood(const Tree &tree);
   static inline void AddLowerPartialOperation(BeagleOperationVector &operations,
-                                              const BeagleAccessories &ba,
-                                              int node_id, int child0_id,
-                                              int child1_id);
+                                              const BeagleAccessories &ba, int node_id,
+                                              int child0_id, int child1_id);
   static inline void AddUpperPartialOperation(BeagleOperationVector &operations,
-                                              const BeagleAccessories &ba,
-                                              int node_id, int sister_id,
-                                              int parent_id);
+                                              const BeagleAccessories &ba, int node_id,
+                                              int sister_id, int parent_id);
   static inline std::pair<double, double> ComputeGradientEntry(
       BeagleAccessories &ba, const SizeVectorVector &indices_above, int node_id,
       int sister_id);
@@ -95,12 +92,11 @@ std::vector<T> FatBeagleParallelize(
          "We param_matrix needs as many rows as we have trees.");
   TaskProcessor<FatBeagle *, size_t> task_processor(
       std::move(fat_beagle_queue), std::move(tree_number_queue),
-      [&results, &tree_collection, &param_matrix, &rescaling, &f](
-          FatBeagle *fat_beagle, size_t tree_number) {
+      [&results, &tree_collection, &param_matrix, &rescaling, &f](FatBeagle *fat_beagle,
+                                                                  size_t tree_number) {
         fat_beagle->SetParameters(param_matrix.row(tree_number));
         fat_beagle->SetRescaling(rescaling);
-        results[tree_number] =
-            f(fat_beagle, tree_collection.GetTree(tree_number));
+        results[tree_number] = f(fat_beagle, tree_collection.GetTree(tree_number));
       });
   return results;
 }
