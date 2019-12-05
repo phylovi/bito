@@ -1,5 +1,5 @@
 our_files := $(wildcard src/*.cpp) $(wildcard src/*.hpp)
-our_files := $(filter-out src/noodle.cpp src/parser.cpp src/parser.hpp src/doctest.h, $(our_files))
+our_files := $(filter-out src/doctest.h src/noodle.cpp src/parser.cpp src/parser.hpp src/prettyprint.hpp src/scanner.cpp, $(our_files))
 
 default:
 	scons
