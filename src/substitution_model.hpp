@@ -99,8 +99,7 @@ class GTRModel : public DNAModel {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 #include <algorithm>
 TEST_CASE("SubstitutionModel") {
-  auto CheckEigenvalueEquality = [](EigenVectorXd eval1,
-                                    EigenVectorXd eval2) {
+  auto CheckEigenvalueEquality = [](EigenVectorXd eval1, EigenVectorXd eval2) {
     std::sort(eval1.begin(), eval1.end());
     std::sort(eval2.begin(), eval2.end());
     CheckVectorXdEquality(eval1, eval2, 0.0001);
