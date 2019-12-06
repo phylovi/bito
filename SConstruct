@@ -52,9 +52,13 @@ def find_conda_pkg_dir_containing(glob_str):
     sys.exit("I can't find the package directory containing " + glob_str)
 
 
-beagle_pkg = find_conda_pkg_dir_containing("/pkgs/beagle-lib*/")
-beagle_lib = beagle_pkg + "lib"
-beagle_include = beagle_pkg + "include/libhmsbeagle-1"
+if "BEAGLE_LOCAL" in os.environ:
+    beagle_local = os.environ["BEAGLE_LOCAL"]
+else:
+    beagle_local = find_conda_pkg_dir_containing("/pkgs/beagle-lib*/")
+
+beagle_lib = beagle_local + "lib"
+beagle_include = beagle_local + "include/libhmsbeagle-1"
 
 for path in [beagle_lib, beagle_include]:
     if not os.path.isdir(path):
