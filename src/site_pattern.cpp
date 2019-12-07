@@ -66,9 +66,8 @@ struct IntVectorHasher {
 void SitePattern::Compress() {
   CharIntMap symbol_table = GetSymbolTable();
   size_t sequence_length = alignment_.Length();
-  std::unordered_map<SymbolVector, double, IntVectorHasher> patterns;
+  std::map<SymbolVector, double> patterns;
 
-  // Build an unordered map of patterns.
   for (size_t pos = 0; pos < sequence_length; pos++) {
     SymbolVector pattern(alignment_.SequenceCount());
     for (const auto &iter : tag_taxon_map_) {
