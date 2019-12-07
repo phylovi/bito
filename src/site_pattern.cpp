@@ -57,7 +57,7 @@ struct IntVectorHasher {
   int operator()(const std::vector<int> &values) const {
     int hash = values[0];
     for (size_t i = 1; i < values.size(); i++) {
-      hash ^= values[i] + 0x9e3779b + (hash << 6) + (hash >> 2);
+      hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);
     }
     return hash;
   }
