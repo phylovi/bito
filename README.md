@@ -122,6 +122,8 @@ Add a test for every new feature.
 * Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation, design
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
+* Xiang Ji ([@xji3](https://github.com/xji3)): gradient expertise
+* Marc Suchard ([@msuchard](https://github.com/msuchard)): gradient expertise
 
 
 ## Acknowledgements
