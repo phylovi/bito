@@ -62,7 +62,6 @@ def sampling_and_indexers_demo():
     print(inst.get_psp_indexer_representations())
     print("\nPSP details:")
     print(inst.psp_indexer.details())
-
     print()
 
 
