@@ -123,6 +123,7 @@ PYBIND11_MODULE(libsbn, m) {
            "Read a sequence alignment from a FASTA file.")
       // Member Variables
       .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
+      .def_readonly("taxon_names", &SBNInstance::taxon_names_)
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
       .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
   // If you want to be sure to get all of the stdout and cerr messages, put your

@@ -44,11 +44,12 @@ void SBNInstance::ProcessLoadedTrees() {
   }
   sbn_parameters_ = std::vector<double>(index, 1.);
   psp_indexer_ = PSPIndexer(rootsplits_, indexer_);
+  taxon_names_ = tree_collection_.TaxonNames();
 }
 
 void SBNInstance::CheckSBNMapsAvailable() {
-  if (!indexer_.size() || !index_to_child_.size() || !parent_to_range_.size() ||
-      !rootsplits_.size()) {
+  if (indexer_.empty() || index_to_child_.empty() || parent_to_range_.empty() ||
+      rootsplits_.empty() || taxon_names_.empty()) {
     Failwith("Please call ProcessLoadedTrees to prepare your SBN maps.");
   }
 }

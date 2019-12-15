@@ -31,6 +31,8 @@ class SBNInstance {
   std::vector<double> sbn_parameters_;
   // The master indexer for SBN parameters.
   BitsetSizeMap indexer_;
+  // A vector of the taxon names.
+  std::vector<std::string> taxon_names_;
 
   // ** Initialization and status
 
@@ -46,8 +48,8 @@ class SBNInstance {
   // SBNInstance, such as indexer_, index_to_child_, parent_to_range_, and
   // rootsplits_.
 
-  // Use the loaded trees to get the SBN maps and prepare the sbn_parameters_
-  // vector.
+  // Use the loaded trees to get the SBN maps, set taxon_names_, and prepare the
+  // sbn_parameters_ vector.
   void ProcessLoadedTrees();
   void CheckSBNMapsAvailable();
   void PrintSupports();
