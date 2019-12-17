@@ -25,7 +25,8 @@ class Driver {
 
   // The next available id for parsing the first tree.
   uint32_t next_id_;
-  // Do we already have the taxon names in taxa_? If not, they get initialized with the first tree parsed.
+  // Do we already have the taxon names in taxa_? If not, they get initialized with the
+  // first tree parsed.
   bool taxa_complete_;
   // Debug level for parser.
   int trace_parsing_;
