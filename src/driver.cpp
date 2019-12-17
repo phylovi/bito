@@ -16,14 +16,14 @@
 Driver::Driver()
     : next_id_(0),
       taxa_complete_(false),
-      trace_parsing_(false),
+      trace_parsing_(0),
       trace_scanning_(false),
       latest_tree_(nullptr) {}
 
 void Driver::Clear() {
   next_id_ = 0;
   taxa_complete_ = false;
-  trace_parsing_ = false;
+  trace_parsing_ = 0;
   trace_scanning_ = false;
   latest_tree_ = nullptr;
   taxa_.clear();
@@ -42,8 +42,8 @@ TreeCollection Driver::ParseNewick(std::ifstream &in) {
     // messages.
     location_.initialize(nullptr, line_number);
     line_number++;
-    auto tree_start = line.find_first_of("(");
-    if (line.size() > 0 && tree_start != std::string::npos) {
+    auto tree_start = line.find_first_of('(');
+    if (!line.empty() && tree_start != std::string::npos) {
       // Erase any characters before the first '('.
       line.erase(0, tree_start);
       trees.push_back(ParseString(&parser_instance, line));
