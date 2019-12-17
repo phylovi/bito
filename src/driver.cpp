@@ -89,11 +89,16 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     std::regex translate_item_regex("^\\s*(\\d+)\\s([^,]*)[,;]$");
     std::smatch match;
     auto previous_position = in.tellg();
-    std::unordered_map<std::string, std::string> translator;
+    TagStringMap long_name_taxon_map;
+    uint32_t leaf_id = 0;
     while (std::regex_match(line, match, translate_item_regex)) {
-      const auto nexus_short_name = match[1].str();
-      const auto nexus_long_name = match[2].str();
-      SafeInsert(translator, nexus_short_name, nexus_long_name);
+      const auto short_name = match[1].str();
+      const auto long_name = match[2].str();
+      // We prepare taxa_ so that it can parse the short taxon names.
+      SafeInsert(taxa_, short_name, leaf_id);
+      // However, we keep the long names for the TagTaxonMap.
+      SafeInsert(long_name_taxon_map, PackInts(leaf_id, 1), long_name);
+      leaf_id++;
       // Semicolon marks the end of the translate block.
       if (match[3].str() == ";") {
         break;
@@ -104,21 +109,15 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
         throw std::runtime_error("Encountered EOF while parsing translate block.");
       }
     }
+    Assert(leaf_id > 0, "No taxa found in translate block!");
+    taxa_complete_ = true;
     // Back up one line to hit the first tree.
     in.seekg(previous_position);
     // Now we make a new TagTaxonMap to replace the one with numbers in place of
     // taxon names.
-    auto pre_translation = ParseNewick(in);
-    TagStringMap translated_taxon_map;
-    for (const auto &iter : pre_translation.TagTaxonMap()) {
-      auto search = translator.find(iter.second);
-      if (search == translator.end()) {
-        throw std::runtime_error("Couldn't find a translation table entry.");
-      }
-      SafeInsert(translated_taxon_map, iter.first, search->second);
-    }
-    return TreeCollection(std::move(pre_translation.Trees()),
-                          std::move(translated_taxon_map));
+    auto short_name_tree_collection = ParseNewick(in);
+    return TreeCollection(std::move(short_name_tree_collection.Trees()),
+                          std::move(long_name_taxon_map));
   } catch (const std::exception &exception) {
     Failwith("Problem parsing '" + fname + "':\n" + exception.what());
   }
