@@ -75,6 +75,9 @@ TEST_CASE("Driver") {
     CHECK_EQ(newick, collection.Trees()[0].Newick(collection.TagTaxonMap()));
   }
   driver.Clear();
+  // Note that the order of the taxa is given by the order in the translate table, not
+  // by the short names. We use that here to make sure that the ordering of the taxa is
+  // the same as that in the newick file below so that they can be compared.
   auto nexus_collection = driver.ParseNexusFile("data/DS1.subsampled_10.t");
   CHECK_EQ(nexus_collection.TreeCount(), 10);
   driver.Clear();
