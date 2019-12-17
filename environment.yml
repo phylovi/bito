@@ -7,6 +7,7 @@ channels:
 dependencies:
   - python=3.7
   - beagle-lib
+  - bison=3.4
   - flex
   - make
   - numpy
