@@ -86,7 +86,7 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
       throw std::runtime_error("Missing translate block.");
     }
     std::getline(in, line);
-    std::regex translate_item_regex("^\\s*(\\d+)\\s([^,]*)[,;]$");
+    std::regex translate_item_regex(R"raw(^\s*(\d+)\s([^,]*)[,;]$)raw");
     std::smatch match;
     auto previous_position = in.tellg();
     TagStringMap long_name_taxon_map;
@@ -116,7 +116,9 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     // Now we make a new TagTaxonMap to replace the one with numbers in place of
     // taxon names.
     auto short_name_tree_collection = ParseNewick(in);
-    return TreeCollection(std::move(short_name_tree_collection.Trees()),
+    // We're using the public member directly rather than the const accessor because we
+    // want to move.
+    return TreeCollection(std::move(short_name_tree_collection.trees_),
                           std::move(long_name_taxon_map));
   } catch (const std::exception &exception) {
     Failwith("Problem parsing '" + fname + "':\n" + exception.what());
