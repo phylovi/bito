@@ -54,6 +54,7 @@ TreeCollection Driver::ParseNewick(std::ifstream &in) {
 }
 
 TreeCollection Driver::ParseNewickFile(const std::string &fname) {
+  Clear();
   std::ifstream in(fname.c_str());
   if (!in) {
     Failwith("Cannot open the File : " + fname);
@@ -62,6 +63,7 @@ TreeCollection Driver::ParseNewickFile(const std::string &fname) {
 }
 
 TreeCollection Driver::ParseNexusFile(const std::string &fname) {
+  Clear();
   std::ifstream in(fname.c_str());
   try {
     if (!in) {
@@ -89,7 +91,9 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     auto previous_position = in.tellg();
     std::unordered_map<std::string, std::string> translator;
     while (std::regex_match(line, match, translate_item_regex)) {
-      SafeInsert(translator, match[1].str(), match[2].str());
+      const auto nexus_short_name = match[1].str();
+      const auto nexus_long_name = match[2].str();
+      SafeInsert(translator, nexus_short_name, nexus_long_name);
       // Semicolon marks the end of the translate block.
       if (match[3].str() == ";") {
         break;
