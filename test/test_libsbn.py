@@ -69,7 +69,7 @@ def ds1_support_test():
     """Check the subplit support calculation on DS1."""
     inst = libsbn.instance("DS1")
     # Checking split supports
-    inst.read_nexus_file("data/DS1.subsampled_10.t")
+    inst.read_nexus_file("data/DS1.subsampled_10.t.reordered")
     inst.process_loaded_trees()
     [rootsplit_support, subsplit_support] = inst.split_counters()
     with open("data/DS1.subsampled_10.t_support.json") as json_fp:

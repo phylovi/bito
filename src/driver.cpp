@@ -15,15 +15,15 @@
 
 Driver::Driver()
     : next_id_(0),
-      first_tree_(true),
-      trace_parsing_(false),
+      taxa_complete_(false),
+      trace_parsing_(0),
       trace_scanning_(false),
       latest_tree_(nullptr) {}
 
 void Driver::Clear() {
   next_id_ = 0;
-  first_tree_ = true;
-  trace_parsing_ = false;
+  taxa_complete_ = false;
+  trace_parsing_ = 0;
   trace_scanning_ = false;
   latest_tree_ = nullptr;
   taxa_.clear();
@@ -42,8 +42,8 @@ TreeCollection Driver::ParseNewick(std::ifstream &in) {
     // messages.
     location_.initialize(nullptr, line_number);
     line_number++;
-    auto tree_start = line.find_first_of("(");
-    if (line.size() > 0 && tree_start != std::string::npos) {
+    auto tree_start = line.find_first_of('(');
+    if (!line.empty() && tree_start != std::string::npos) {
       // Erase any characters before the first '('.
       line.erase(0, tree_start);
       trees.push_back(ParseString(&parser_instance, line));
@@ -54,6 +54,7 @@ TreeCollection Driver::ParseNewick(std::ifstream &in) {
 }
 
 TreeCollection Driver::ParseNewickFile(const std::string &fname) {
+  Clear();
   std::ifstream in(fname.c_str());
   if (!in) {
     Failwith("Cannot open the File : " + fname);
@@ -62,6 +63,7 @@ TreeCollection Driver::ParseNewickFile(const std::string &fname) {
 }
 
 TreeCollection Driver::ParseNexusFile(const std::string &fname) {
+  Clear();
   std::ifstream in(fname.c_str());
   try {
     if (!in) {
@@ -84,12 +86,19 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
       throw std::runtime_error("Missing translate block.");
     }
     std::getline(in, line);
-    std::regex translate_item_regex("^\\s*(\\d+)\\s([^,]*)[,;]$");
+    std::regex translate_item_regex(R"raw(^\s*(\d+)\s([^,]*)[,;]$)raw");
     std::smatch match;
     auto previous_position = in.tellg();
-    std::unordered_map<std::string, std::string> translator;
+    TagStringMap long_name_taxon_map;
+    uint32_t leaf_id = 0;
     while (std::regex_match(line, match, translate_item_regex)) {
-      SafeInsert(translator, match[1].str(), match[2].str());
+      const auto short_name = match[1].str();
+      const auto long_name = match[2].str();
+      // We prepare taxa_ so that it can parse the short taxon names.
+      SafeInsert(taxa_, short_name, leaf_id);
+      // However, we keep the long names for the TagTaxonMap.
+      SafeInsert(long_name_taxon_map, PackInts(leaf_id, 1), long_name);
+      leaf_id++;
       // Semicolon marks the end of the translate block.
       if (match[3].str() == ";") {
         break;
@@ -100,21 +109,17 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
         throw std::runtime_error("Encountered EOF while parsing translate block.");
       }
     }
+    Assert(leaf_id > 0, "No taxa found in translate block!");
+    taxa_complete_ = true;
     // Back up one line to hit the first tree.
     in.seekg(previous_position);
     // Now we make a new TagTaxonMap to replace the one with numbers in place of
     // taxon names.
-    auto pre_translation = ParseNewick(in);
-    TagStringMap translated_taxon_map;
-    for (const auto &iter : pre_translation.TagTaxonMap()) {
-      auto search = translator.find(iter.second);
-      if (search == translator.end()) {
-        throw std::runtime_error("Couldn't find a translation table entry.");
-      }
-      SafeInsert(translated_taxon_map, iter.first, search->second);
-    }
-    return TreeCollection(std::move(pre_translation.Trees()),
-                          std::move(translated_taxon_map));
+    auto short_name_tree_collection = ParseNewick(in);
+    // We're using the public member directly rather than the const accessor because we
+    // want to move.
+    return TreeCollection(std::move(short_name_tree_collection.trees_),
+                          std::move(long_name_taxon_map));
   } catch (const std::exception &exception) {
     Failwith("Problem parsing '" + fname + "':\n" + exception.what());
   }

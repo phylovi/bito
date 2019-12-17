@@ -683,7 +683,7 @@ namespace yy {
 #line 71 "src/parser.yy"
     {
     drv.latest_tree_ = std::make_shared<Tree>(yystack_[1].value.as < Node::NodePtr > (), drv.branch_lengths_);
-    drv.first_tree_ = false;
+    drv.taxa_complete_ = true;
     drv.branch_lengths_.clear();
   }
 #line 690 "src/parser.cpp"
@@ -712,7 +712,7 @@ namespace yy {
   case 5:
 #line 90 "src/parser.yy"
     {
-    if (drv.first_tree_) {
+    if (!drv.taxa_complete_) {
       // This is our first tree, so we're going to initialize the taxon set.
       drv.taxa_[yystack_[0].value.as < std::string > ()] = drv.next_id_;
       yylhs.value.as < Node::NodePtr > () = Node::Leaf(drv.next_id_);

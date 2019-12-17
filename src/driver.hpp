@@ -25,11 +25,11 @@ class Driver {
 
   // The next available id for parsing the first tree.
   uint32_t next_id_;
-  // Is this the first tree we have parsed? The first tree gets to set up
-  // indexing for the taxon names.
-  bool first_tree_;
-  // Whether to generate parser debug traces.
-  bool trace_parsing_;
+  // Do we already have the taxon names in taxa_? If not, they get initialized with the
+  // first tree parsed.
+  bool taxa_complete_;
+  // Debug level for parser.
+  int trace_parsing_;
   // Whether to generate scanner debug traces.
   bool trace_scanning_;
   // The most recent tree parsed.
@@ -75,7 +75,10 @@ TEST_CASE("Driver") {
     CHECK_EQ(newick, collection.Trees()[0].Newick(collection.TagTaxonMap()));
   }
   driver.Clear();
-  auto nexus_collection = driver.ParseNexusFile("data/DS1.subsampled_10.t");
+  // Note that the order of the taxa is given by the order in the translate table, not
+  // by the short names. We use that here to make sure that the ordering of the taxa is
+  // the same as that in the newick file below so that they can be compared.
+  auto nexus_collection = driver.ParseNexusFile("data/DS1.subsampled_10.t.reordered");
   CHECK_EQ(nexus_collection.TreeCount(), 10);
   driver.Clear();
   auto newick_collection = driver.ParseNewickFile("data/DS1.subsampled_10.t.nwk");

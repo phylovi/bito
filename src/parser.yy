@@ -70,7 +70,7 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_parser.y
 tree:
   fancy_node ";" {
     drv.latest_tree_ = std::make_shared<Tree>($1, drv.branch_lengths_);
-    drv.first_tree_ = false;
+    drv.taxa_complete_ = true;
     drv.branch_lengths_.clear();
   };
 
@@ -88,7 +88,7 @@ fancy_node:
 
 node:
   leaf {
-    if (drv.first_tree_) {
+    if (!drv.taxa_complete_) {
       // This is our first tree, so we're going to initialize the taxon set.
       drv.taxa_[$1] = drv.next_id_;
       $$ = Node::Leaf(drv.next_id_);
