@@ -13,11 +13,20 @@ if "CONDA_PREFIX" not in os.environ:
         "\nThis SConstruct is meant to be run in the libsbn conda environment; "
         "see README for installation process."
     )
+
+
+def perhaps_set_environ(key, value):
+    if key not in os.environ:
+        os.environ[key] = value
+
+
 if platform.system() == "Darwin":
-    if "CC" not in os.environ:
-        os.environ["CC"] = "clang"
-    if "CXX" not in os.environ:
-        os.environ["CXX"] = "clang"
+    perhaps_set_environ("CC", "clang")
+    perhaps_set_environ("CXX", "clang")
+elif platform.system() == "Linux":
+    perhaps_set_environ("CC", "gcc")
+    perhaps_set_environ("CXX", "g++")
+
 
 metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
 full_tag = enscons.get_abi3_tag()
