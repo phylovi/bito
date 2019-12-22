@@ -145,7 +145,7 @@ FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_patt
   int resource_count = 0;
   // Bit-flags indicating preferred implementation charactertistics, see
   // BeagleFlags (input)
-  int64_t preference_flags = 0;
+  int64_t preference_flags = BEAGLE_FLAG_PROCESSOR_GPU;
   // Bit-flags indicating required implementation characteristics, see
   // BeagleFlags (input)
   int requirement_flags = BEAGLE_FLAG_SCALING_MANUAL;
