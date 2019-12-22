@@ -24,7 +24,8 @@ CharIntMap SitePattern::GetSymbolTable() {
                     {'N', 4},
                     {'X', 4},
                     {'?', 4},
-                    // Treat degenerate nucleotides as gaps.
+                    // Treat degenerate nucleotides as gaps for now.
+                    // See issue #162.
                     {'K', 4},
                     {'M', 4},
                     {'R', 4},
