@@ -33,7 +33,7 @@ def find_conda_pkg_dir_containing(glob_str):
     sys.exit("I can't find the package directory containing " + glob_str)
 
 
-def record_beagle_prefix(beagle_prefix):
+def record_beagle_prefix(beagle_prefix, ld_variable_name):
     """
     Record the value of the BEAGLE_PREFIX environment variable so that it
     gets set upon `conda activate`.
@@ -45,8 +45,11 @@ def record_beagle_prefix(beagle_prefix):
     os.makedirs(conda_deactivate_dir, exist_ok=True)
     with open(os.path.join(conda_activate_dir, "vars.sh"), "w") as fp:
         fp.write("export BEAGLE_PREFIX=" + beagle_prefix + "\n")
+        fp.write(f"export {ld_variable_name}=" +
+                 os.path.join(beagle_prefix, "lib") + "\n")
     with open(os.path.join(conda_deactivate_dir, "vars.sh"), "w") as fp:
         fp.write(f"unset BEAGLE_PREFIX\n")
+        fp.write(f"unset {ld_variable_name}\n")
 
 
 if "BEAGLE_PREFIX" in os.environ:
@@ -81,7 +84,10 @@ and you'll get this prompt again.)
 
     check_file_exists(os.path.join(beagle_prefix,
                                    "include/libhmsbeagle-1/libhmsbeagle/beagle.h"))
-    record_beagle_prefix(beagle_prefix)
+    if platform.system() == "Darwin":
+        record_beagle_prefix(beagle_prefix, "DYLD_LIBRARY_PATH")
+    elif platform.system() == "Linux":
+        record_beagle_prefix(beagle_prefix, "LD_LIBRARY_PATH")
 
 
 metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
