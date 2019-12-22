@@ -1,6 +1,6 @@
 # libsbn
 
-[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/phylovi/libsbn.svg)](https://cloud.docker.com/u/phylovi/repository/docker/phylovi/libsbn/general) &nbsp;
+[![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/phylovi/libsbn.svg)](https://hub.docker.com/r/phylovi/libsbn) &nbsp;
 [![Travis CI status](https://travis-ci.org/phylovi/libsbn.svg?branch=master)](https://travis-ci.org/phylovi/libsbn)
 
 We are building a Python-interface C++ library for phylogenetic variational inference so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let libsbn handle the tree structure and likelihood computations for you.
@@ -8,15 +8,16 @@ We are building a Python-interface C++ library for phylogenetic variational infe
 
 ## Dependencies
 
-To install dependencies, use the associated conda environment file:
+* If you are on linux, install gcc >= 8, which is standard in Debian Buster and Ubuntu 18.04
+* If you are on OS X, use a recent version of Xcode and install command line tools (don't use conda, as their compiler packages are too old for us)
+
+Then, install [BEAGLE](https://github.com/beagle-dev/beagle-lib).
+You can see a full installation procedure by taking a look at the [conda-beagle Dockerfile](https://github.com/matsengrp/conda-beagle/blob/master/Dockerfile).
+
+To install additional dependencies, use the associated conda environment file:
 
     conda env create -f environment.yml
     conda activate libsbn
-
-**However, you also need to install platform-specific compiler packages as follows.**
-
-* if you are on linux, use `conda install -y gxx_linux-64`
-* if you are on OS X, use a recent version of Xcode and install command line tools (don't use conda, as their compiler packages are too old for us)
 
 If you want to specify your compiler manually, set the `CC` and `CXX` shell variables to your desired compiler command.
 
@@ -34,7 +35,7 @@ First:
 
 Then `make` will build, run tests, and install the Python packages.
 
-On OS X the build process will also modify the conda environment to point `DYLD_LIBRARY_PATH` to where BEAGLE is installed.
+The build process will also modify the conda environment to point `[DY]LD_LIBRARY_PATH` to where BEAGLE is installed.
 If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.
 
 * (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).

@@ -22,7 +22,16 @@ CharIntMap SitePattern::GetSymbolTable() {
                     {'t', 3},
                     {'-', 4},
                     {'N', 4},
-                    {'?', 4}});
+                    {'X', 4},
+                    {'?', 4},
+                    // Treat degenerate nucleotides as gaps for now.
+                    // See issue #162.
+                    {'K', 4},
+                    {'M', 4},
+                    {'R', 4},
+                    {'U', 4},
+                    {'W', 4},
+                    {'Y', 4}});
   return table;
 }
 
@@ -49,7 +58,7 @@ struct IntVectorHasher {
   int operator()(const std::vector<int> &values) const {
     int hash = values[0];
     for (size_t i = 1; i < values.size(); i++) {
-      hash ^= values[i] + 0x9e3779b + (hash << 6) + (hash >> 2);
+      hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);
     }
     return hash;
   }
@@ -60,11 +69,10 @@ void SitePattern::Compress() {
   size_t sequence_length = alignment_.Length();
   std::unordered_map<SymbolVector, double, IntVectorHasher> patterns;
 
-  // Build an unordered map of patterns.
   for (size_t pos = 0; pos < sequence_length; pos++) {
     SymbolVector pattern(alignment_.SequenceCount());
     for (const auto &iter : tag_taxon_map_) {
-      size_t taxon_number = static_cast<size_t>(UnpackFirstInt(iter.first));
+      auto taxon_number = static_cast<size_t>(UnpackFirstInt(iter.first));
       auto symbol_to_find = alignment_.at(iter.second)[pos];
       pattern[taxon_number] = SymbolTableAt(symbol_table, symbol_to_find);
     }
@@ -78,7 +86,7 @@ void SitePattern::Compress() {
   // Collect the site patterns per taxon.
   for (const auto &iter_tag_taxon : tag_taxon_map_) {
     SymbolVector compressed_sequence;
-    size_t taxon_number = static_cast<size_t>(UnpackFirstInt(iter_tag_taxon.first));
+    auto taxon_number = static_cast<size_t>(UnpackFirstInt(iter_tag_taxon.first));
     for (const auto &iter_patterns : patterns) {
       compressed_sequence.push_back(iter_patterns.first[taxon_number]);
     }

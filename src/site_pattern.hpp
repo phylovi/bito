@@ -11,8 +11,8 @@
 
 class SitePattern {
  public:
-  SitePattern() {}
-  explicit SitePattern(Alignment& alignment, const TagStringMap& tag_taxon_map)
+  SitePattern() = default;
+  explicit SitePattern(const Alignment& alignment, const TagStringMap& tag_taxon_map)
       : alignment_(alignment), tag_taxon_map_(tag_taxon_map) {
     patterns_.resize(alignment.SequenceCount());
     Compress();

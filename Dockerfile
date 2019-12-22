@@ -1,6 +1,9 @@
-FROM continuumio/anaconda3:2019.07
+FROM matsengrp/conda-beagle
 
 COPY environment.yml .
 
-RUN /opt/conda/bin/conda create -n libsbn python=3.7 gxx_linux-64
-RUN /opt/conda/bin/conda env update -n libsbn -f environment.yml
+RUN /opt/conda/bin/conda env create -f environment.yml
+
+WORKDIR /
+ENV BEAGLE_PREFIX /usr/local
+ENV LD_LIBRARY_PATH /usr/local/lib
