@@ -58,7 +58,7 @@ It looks like we need to configure your BEAGLE install.
 Please enter the prefix directory path where BEAGLE has been installed.
 For example, if you supply `/usr/local`, then we should find
 
-    /usr/local/lib/libhmsbeagle.so
+    /usr/local/lib/libhmsbeagle.[so|dylib]
     /usr/local/include/libhmsbeagle-1/libhmsbeagle/beagle.h
 
 If you have installed BEAGLE using conda, you can hit return.
@@ -79,7 +79,6 @@ and you'll get this prompt again.)
         print("OK, looking for BEAGLE install via conda.")
         beagle_prefix = find_conda_pkg_dir_containing("/pkgs/beagle-lib*/")
 
-    check_file_exists(os.path.join(beagle_prefix, "lib/libhmsbeagle.so"))
     check_file_exists(os.path.join(beagle_prefix,
                                    "include/libhmsbeagle-1/libhmsbeagle/beagle.h"))
     record_beagle_prefix(beagle_prefix)
