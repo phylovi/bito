@@ -74,7 +74,7 @@ Note that you also probably need to do this to run the tests.
 If you want to change your prefix directory, do
     rm $CONDA_PREFIX/etc/conda/activate.d/vars.sh
     unset BEAGLE_PREFIX
-and you'll get this prompt again.)
+and you'll get this prompt again when you `scons` or `make`.)
 """)
 
     beagle_prefix = input(">>> ").rstrip()
