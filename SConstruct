@@ -69,6 +69,7 @@ If you have installed BEAGLE using conda, you can hit return.
 If your compilation works after this configuration step, run
     conda activate libsbn
 which will mean that you don't have to do this configuration again.
+Note that you also probably need to do this to run the tests.
 
 If you want to change your prefix directory, do
     rm $CONDA_PREFIX/etc/conda/activate.d/vars.sh
