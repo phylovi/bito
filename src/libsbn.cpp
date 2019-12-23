@@ -19,21 +19,17 @@ void SBNInstance::PrintStatus() {
 
 void SBNInstance::ProcessLoadedTrees() {
   size_t index = 0;
-  auto counter = tree_collection_.TopologyCounter();
-  // See above for the definitions of these members.
-  sbn_parameters_.clear();
-  rootsplits_.clear();
-  indexer_.clear();
-  index_to_child_.clear();
-  parent_to_range_.clear();
+  ClearTreeCollectionAssociatedState();
+  topology_counter_ = tree_collection_.TopologyCounter();
   // Start by adding the rootsplits.
-  for (const auto &iter : SBNMaps::RootsplitCounterOf(counter)) {
+  for (const auto &iter : SBNMaps::RootsplitCounterOf(topology_counter_)) {
     SafeInsert(indexer_, iter.first, index);
     rootsplits_.push_back(iter.first);
     index++;
   }
   // Now add the PCSSs.
-  for (const auto &[parent, child_counter] : SBNMaps::PCSSCounterOf(counter)) {
+  for (const auto &[parent, child_counter] :
+       SBNMaps::PCSSCounterOf(topology_counter_)) {
     SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
     for (const auto &child_iter : child_counter) {
       const auto &child = child_iter.first;
@@ -248,6 +244,15 @@ Engine *SBNInstance::GetEngine() const {
   Failwith(
       "Engine not available. Call PrepareForPhyloLikelihood to make an "
       "engine for phylogenetic likelihood computation computation.");
+}
+
+void SBNInstance::ClearTreeCollectionAssociatedState() {
+  sbn_parameters_.clear();
+  rootsplits_.clear();
+  indexer_.clear();
+  index_to_child_.clear();
+  parent_to_range_.clear();
+  topology_counter_.clear();
 }
 
 void SBNInstance::PrepareForPhyloLikelihood(

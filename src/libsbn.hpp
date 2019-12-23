@@ -143,6 +143,8 @@ class SBNInstance {
   // trees, and holds the parameters before likelihood computation, where they
   // will be processed across threads.
   EigenMatrixXd phylo_model_params_;
+  // A counter for the currently loaded set of topologies.
+  Node::TopologyCounter topology_counter_;
 
   // Random bits.
   static std::random_device random_device_;
@@ -158,6 +160,8 @@ class SBNInstance {
 
   // The input to this function is a parent subsplit (of length 2n).
   Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const;
+
+  void ClearTreeCollectionAssociatedState();
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
