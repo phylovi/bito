@@ -14,3 +14,9 @@ IndexerRepresentationCounter SBNTraining::IndexerRepresentationCounterOf(
   return counter;
 }
 
+void SBNTrainingSimpleAverage(
+    std::vector<double>& sbn_parameters,
+    const IndexerRepresentationCounter& indexer_representation_counter) {
+  // TODO
+}
+

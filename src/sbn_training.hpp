@@ -12,7 +12,12 @@ using IndexerRepresentationCounter =
 namespace SBNTraining {
 
 IndexerRepresentationCounter IndexerRepresentationCounterOf(
-    const BitsetSizeMap& indexer, const Node::TopologyCounter& trees);
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter);
+
+// The "SBN-SA" estimator described in the "Maximum Lower Bound Estimates" section of
+// the 2018 NeurIPS paper.
+void SimpleAverage(std::vector<double>& sbn_parameters,
+                   const IndexerRepresentationCounter& indexer_representation_counter);
 
 }  // namespace SBNTraining
 

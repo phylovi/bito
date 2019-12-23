@@ -161,6 +161,7 @@ class SBNInstance {
   // The input to this function is a parent subsplit (of length 2n).
   Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const;
 
+  // Clear all of the state that depends on the current tree collection.
   void ClearTreeCollectionAssociatedState();
 };
 
