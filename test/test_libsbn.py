@@ -52,8 +52,7 @@ def sampling_and_indexers_demo():
     assert inst.tree_count() == 4
     # Showing off tree sampling.
     inst.process_loaded_trees()
-    sbn_parameters = np.array(inst.sbn_parameters, copy=False)
-    sbn_parameters[0] = 0.2
+    inst.sbn_parameters[0] = 0.2
     # Note that this puts the trees into the instance object, replacing the trees loaded
     # from the file.
     inst.sample_trees(2)
@@ -65,6 +64,8 @@ def sampling_and_indexers_demo():
     print(inst.get_psp_indexer_representations())
     print("\nPSP details:")
     print(inst.psp_indexer.details())
+    print("\nSBN parameters:")
+    print(inst.sbn_parameters)
     print()
 
 

@@ -38,7 +38,8 @@ void SBNInstance::ProcessLoadedTrees() {
       index++;
     }
   }
-  sbn_parameters_ = std::vector<double>(index, 1.);
+  sbn_parameters_.resize(index);
+  sbn_parameters_.setOnes();
   psp_indexer_ = PSPIndexer(rootsplits_, indexer_);
   taxon_names_ = tree_collection_.TaxonNames();
 }
@@ -247,7 +248,7 @@ Engine *SBNInstance::GetEngine() const {
 }
 
 void SBNInstance::ClearTreeCollectionAssociatedState() {
-  sbn_parameters_.clear();
+  sbn_parameters_.resize(0);
   rootsplits_.clear();
   indexer_.clear();
   index_to_child_.clear();

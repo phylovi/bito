@@ -11,6 +11,15 @@
 
 namespace py = pybind11;
 
+// This is how we can have Eigen objects be directly mutable from Python. See
+// https://github.com/eacousineau/repro/blob/f4ba595d077af7363f501f6c85d3d2449219f04a/python/pybind11/custom_tests/test_tmp.cc#L16-L38
+// Thanks to @eacousineau!
+template <typename PyClass, typename C, typename D>
+void def_read_write_mutable(PyClass& cls, const char* name, D C::*pm) {
+  cls.def_property(name, [pm](C & self) -> auto& { return self.*pm; },
+                   [pm](C& self, const D& value) { self.*pm = value; });
+}
+
 // In order to make vector<double>s available to numpy, we take two steps.
 // First, we make them opaque to pybind11, so that it doesn't do its default
 // conversion of STL types.
@@ -67,9 +76,10 @@ PYBIND11_MODULE(libsbn, m) {
       .def(py::init<const std::string &, const std::string &, const std::string &>(),
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
   // SBNInstance
-  py::class_<SBNInstance>(m, "instance", "A wrapper for the all of the C++-side state.")
-      // ** Initialization and status
-      .def(py::init<const std::string &>())
+  py::class_<SBNInstance> sbn_instance_class(
+      m, "instance", "A wrapper for the all of the C++-side state.");
+  // ** Initialization and status
+  sbn_instance_class.def(py::init<const std::string &>())
       .def("tree_count", &SBNInstance::TreeCount,
            "Return the number of trees that are currently stored in the "
            "instance.")
@@ -129,9 +139,9 @@ PYBIND11_MODULE(libsbn, m) {
       // Member Variables
       .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
       .def_readonly("taxon_names", &SBNInstance::taxon_names_)
-      .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
       .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
-
+  def_read_write_mutable(sbn_instance_class, "sbn_parameters",
+                         &SBNInstance::sbn_parameters_);
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
   // `with libsbn.ostream_redirect(stdout=True, stderr=True):`

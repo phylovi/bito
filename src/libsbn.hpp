@@ -28,7 +28,7 @@ class SBNInstance {
   // The Primary Split Pair indexer.
   PSPIndexer psp_indexer_;
   // A vector that contains all of the SBN-related probabilities.
-  std::vector<double> sbn_parameters_;
+  EigenVectorXd sbn_parameters_;
   // The master indexer for SBN parameters.
   BitsetSizeMap indexer_;
   // A vector of the taxon names.
