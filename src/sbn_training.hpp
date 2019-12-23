@@ -4,8 +4,17 @@
 #ifndef SRC_SBN_TRAINING_HPP_
 #define SRC_SBN_TRAINING_HPP_
 
+#include "sbn_maps.hpp"
 
-namespace SBNTraining {}  // namespace SBNTraining
+using IndexerRepresentationCounter =
+    std::vector<std::pair<IndexerRepresentation, uint32_t>>;
+
+namespace SBNTraining {
+
+IndexerRepresentationCounter IndexerRepresentationCounterOf(
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& trees);
+
+}  // namespace SBNTraining
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
