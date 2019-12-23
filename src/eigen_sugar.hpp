@@ -13,6 +13,8 @@ using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using EigenVectorXdRef = Eigen::Ref<EigenVectorXd>;
 using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
+using EigenConstVectorXdRef = Eigen::Ref<const EigenVectorXd>;
+using EigenConstMatrixXdRef = Eigen::Ref<const EigenMatrixXd>;
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {

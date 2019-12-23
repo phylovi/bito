@@ -17,6 +17,24 @@ void IncrementBy(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vect
   }
 }
 
+void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices,
+                 const EigenConstVectorXdRef values) {
+  Assert(indices.size() == values.size(),
+         "Indices and values don't have matching size.");
+  for (const auto& idx : indices) {
+    vec[idx] += values[idx];
+  }
+}
+
+void IncrementBy(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vector,
+                 const EigenConstVectorXdRef values) {
+  Assert(index_vector_vector.size() == values.size(),
+         "Indices and values don't have matching size.");
+  for (size_t i = 0; i < values.size(); ++i) {
+    IncrementBy(vec, index_vector_vector[i], values[i]);
+  }
+}
+
 IndexerRepresentationCounter SBNTraining::IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter) {
   IndexerRepresentationCounter counter;
