@@ -14,9 +14,23 @@ IndexerRepresentationCounter SBNTraining::IndexerRepresentationCounterOf(
   return counter;
 }
 
-void SBNTrainingSimpleAverage(
-    std::vector<double>& sbn_parameters,
+void SBNTraining::SimpleAverage(
+    EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter) {
-  // TODO
-}
+  sbn_parameters.setZero();
 
+  for (const auto& [indexer_representation, int_count] :
+       indexer_representation_counter) {
+    const auto& [rootsplits, pcsss] = indexer_representation;
+    const auto count = static_cast<double>(int_count);
+
+    for (const auto& rootsplit : rootsplits) {
+      sbn_parameters[rootsplit] += count;
+    }
+    for (const auto& pcss : pcsss) {
+      for (const auto& pcss_index : pcss) {
+        sbn_parameters[pcss_index] += count;
+      }
+    }
+  }
+}

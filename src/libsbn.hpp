@@ -53,6 +53,9 @@ class SBNInstance {
   void CheckSBNMapsAvailable();
   void PrintSupports();
 
+  // SBN training. See sbn_training.hpp for details.
+  void TrainSimpleAverage();
+
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
   size_t SampleIndex(std::pair<size_t, size_t> range) const;
@@ -125,8 +128,11 @@ class SBNInstance {
   void ReadFastaFile(std::string fname);
 
  private:
+  // The name of our libsbn instance.
   std::string name_;
+  // Our phylogenetic likelihood computation engine.
   std::unique_ptr<Engine> engine_;
+  // The multiple sequence alignment.
   Alignment alignment_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
   // and PCSS bitsets are at the end.

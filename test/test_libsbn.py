@@ -52,6 +52,7 @@ def sampling_and_indexers_demo():
     assert inst.tree_count() == 4
     # Showing off tree sampling.
     inst.process_loaded_trees()
+    inst.train_simple_average()
     inst.sbn_parameters[0] = 0.2
     # Note that this puts the trees into the instance object, replacing the trees loaded
     # from the file.
@@ -147,7 +148,6 @@ def test_libsbn():
     """Test the libsbn instance."""
 
     hello_demo()
-    sampling_and_indexers_demo()
     sampling_and_indexers_demo()
     inst = ds1_support_test()
     ds1_phylo_model_demo(inst)

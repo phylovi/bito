@@ -3,6 +3,7 @@
 
 #include "libsbn.hpp"
 #include <memory>
+#include "sbn_training.hpp"
 
 void SBNInstance::PrintStatus() {
   std::cout << "Status for instance '" << name_ << "':\n";
@@ -63,6 +64,12 @@ void SBNInstance::PrintSupports() {
   for (size_t i = 0; i < to_print.size(); i++) {
     std::cout << i << "\t" << to_print[i] << std::endl;
   }
+}
+
+void SBNInstance::TrainSimpleAverage() {
+  auto indexer_representation_counter =
+      SBNTraining::IndexerRepresentationCounterOf(indexer_, topology_counter_);
+  SBNTraining::SimpleAverage(sbn_parameters_, indexer_representation_counter);
 }
 
 size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {

@@ -93,6 +93,13 @@ PYBIND11_MODULE(libsbn, m) {
       )raw")
       .def("get_indexers", &SBNInstance::GetIndexers,
            "Return the indexer and parent_to_range as string-keyed maps.")
+      .def("train_simple_average", &SBNInstance::TrainSimpleAverage,
+           R"raw(
+           Train the SBN using the "simple average" estimator.
+
+           This is described in the "Maximum Lower Bound Estimates" section of the 2018
+           NeurIPS paper, and is later referred to as the "SBN-SA" estimator.
+           )raw")
       .def("sample_trees", &SBNInstance::SampleTrees,
            "Sample trees from the SBN and store them internally.", py::arg("count"))
       .def("get_indexer_representations", &SBNInstance::GetIndexerRepresentations,

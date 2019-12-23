@@ -4,6 +4,7 @@
 #ifndef SRC_SBN_TRAINING_HPP_
 #define SRC_SBN_TRAINING_HPP_
 
+#include "eigen_sugar.hpp"
 #include "sbn_maps.hpp"
 
 using IndexerRepresentationCounter =
@@ -16,7 +17,7 @@ IndexerRepresentationCounter IndexerRepresentationCounterOf(
 
 // The "SBN-SA" estimator described in the "Maximum Lower Bound Estimates" section of
 // the 2018 NeurIPS paper.
-void SimpleAverage(std::vector<double>& sbn_parameters,
+void SimpleAverage(EigenVectorXdRef sbn_parameters,
                    const IndexerRepresentationCounter& indexer_representation_counter);
 
 }  // namespace SBNTraining
