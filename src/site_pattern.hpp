@@ -26,6 +26,7 @@ class SitePattern {
   size_t PatternCount() const { return patterns_.at(0).size(); }
   size_t SequenceCount() const { return patterns_.size(); }
   const std::vector<double>& GetWeights() const { return weights_; }
+  const std::vector<double> GetPartials(size_t sequence_index) const;
 
  private:
   Alignment alignment_;
