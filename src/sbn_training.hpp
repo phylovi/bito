@@ -20,6 +20,13 @@ IndexerRepresentationCounter IndexerRepresentationCounterOf(
 void SimpleAverage(EigenVectorXdRef sbn_parameters,
                    const IndexerRepresentationCounter& indexer_representation_counter);
 
+// The "SBN-EM" estimator described in the "Expectation Maximization" section of
+// the 2018 NeurIPS paper.
+void ExpectationMaximization(
+    EigenVectorXdRef sbn_parameters,
+    const IndexerRepresentationCounter& indexer_representation_counter,
+    double tolerance);
+
 }  // namespace SBNTraining
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

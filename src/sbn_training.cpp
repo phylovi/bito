@@ -59,3 +59,18 @@ void SBNTraining::SimpleAverage(
     IncrementBy(sbn_parameters, pcsss, count);
   }
 }
+
+void SBNTraining::ExpectationMaximization(
+    EigenVectorXdRef sbn_parameters,
+    const IndexerRepresentationCounter& indexer_representation_counter,
+    double tolerance) {
+  sbn_parameters.setZero();
+
+  for (const auto& [indexer_representation, int_count] :
+       indexer_representation_counter) {
+    const auto& [rootsplits, pcsss] = indexer_representation;
+    const auto count = static_cast<double>(int_count);
+
+    // TODO
+  }
+}
