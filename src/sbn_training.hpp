@@ -25,7 +25,7 @@ void SimpleAverage(EigenVectorXdRef sbn_parameters,
 void ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
-    double tolerance);
+    size_t rootsplit_count, double tolerance);
 
 }  // namespace SBNTraining
 
