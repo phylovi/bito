@@ -9,7 +9,7 @@ We are building a Python-interface C++ library for phylogenetic variational infe
 ## Dependencies
 
 * If you are on linux, install gcc >= 8, which is standard in Debian Buster and Ubuntu 18.04
-* If you are on OS X, use a recent version of Xcode and install command line tools (don't use conda, as their compiler packages are too old for us)
+* If you are on OS X, use a recent version of Xcode and install command line tools
 
 Then, install **the `hmc-clock` branch** of [BEAGLE](https://github.com/beagle-dev/beagle-lib).
 This will require a from-source installation, as in their docs, but you have to do a full `git clone` (no `--depth=1`).
