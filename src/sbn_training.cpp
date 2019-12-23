@@ -4,6 +4,19 @@
 #include "sbn_training.hpp"
 #include "sbn_maps.hpp"
 
+void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices, double value) {
+  for (const auto& idx : indices) {
+    vec[idx] += value;
+  }
+}
+
+void IncrementBy(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vector,
+                 double value) {
+  for (const auto& indices : index_vector_vector) {
+    IncrementBy(vec, indices, value);
+  }
+}
+
 IndexerRepresentationCounter SBNTraining::IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter) {
   IndexerRepresentationCounter counter;
@@ -24,13 +37,7 @@ void SBNTraining::SimpleAverage(
     const auto& [rootsplits, pcsss] = indexer_representation;
     const auto count = static_cast<double>(int_count);
 
-    for (const auto& rootsplit_index : rootsplits) {
-      sbn_parameters[rootsplit_index] += count;
-    }
-    for (const auto& pcss : pcsss) {
-      for (const auto& pcss_index : pcss) {
-        sbn_parameters[pcss_index] += count;
-      }
-    }
+    IncrementBy(sbn_parameters, rootsplits, count);
+    IncrementBy(sbn_parameters, pcsss, count);
   }
 }
