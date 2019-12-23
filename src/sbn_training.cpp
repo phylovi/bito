@@ -24,8 +24,8 @@ void SBNTraining::SimpleAverage(
     const auto& [rootsplits, pcsss] = indexer_representation;
     const auto count = static_cast<double>(int_count);
 
-    for (const auto& rootsplit : rootsplits) {
-      sbn_parameters[rootsplit] += count;
+    for (const auto& rootsplit_index : rootsplits) {
+      sbn_parameters[rootsplit_index] += count;
     }
     for (const auto& pcss : pcsss) {
       for (const auto& pcss_index : pcss) {
