@@ -36,8 +36,7 @@ class SBNInstance {
 
   // ** Initialization and status
 
-  explicit SBNInstance(const std::string &name)
-      : name_(name), symbol_table_(SitePattern::GetSymbolTable()), rescaling_{false} {}
+  explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
@@ -129,7 +128,6 @@ class SBNInstance {
   std::string name_;
   std::unique_ptr<Engine> engine_;
   Alignment alignment_;
-  CharIntMap symbol_table_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
   // and PCSS bitsets are at the end.
   // The collection of rootsplits, with the same indexing as in the indexer_.
