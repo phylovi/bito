@@ -60,6 +60,7 @@ class FatBeagle {
 
   void UpdateBeagleTransitionMatrices(const BeagleAccessories &ba, const Tree &tree,
                                       const int *const gradient_indices_ptr) const;
+  void SetRootPreorderPartialsToStateFrequencies(const BeagleAccessories &ba) const;
 
   static Tree PrepareTreeForLikelihood(const Tree &tree);
   static inline void AddLowerPartialOperation(BeagleOperationVector &operations,

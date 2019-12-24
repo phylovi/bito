@@ -66,28 +66,18 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   tree.SlideRootPosition();
-
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   BeagleOperationVector operations;
+
+  // Calculate post-order partials
   tree.Topology()->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
-
   UpdateBeagleTransitionMatrices(ba, tree, nullptr);
-
-  // Calculate post-order partials
   beagleUpdatePartials(beagle_instance_, operations.data(),
                        static_cast<int>(operations.size()),
                        ba.cumulative_scale_index_[0]);  // cumulative scale index
-
-  operations.clear();
-  tree.Topology()->TripleIdPreOrderBifurcating(
-      [&operations, &ba](int node_id, int sister_id, int parent_id) {
-        if (node_id != ba.root_id_) {
-          AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
-        }
-      });
 
   // Set differential matrix for each branch.
   const auto derivative_matrix_indices =
@@ -97,20 +87,16 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, Q.data());
   }
 
-  // Set the preorder partials of root node equal to state frequencies.
-  size_t state_count = phylo_model_->GetSubstitutionModel()->GetStateCount();
-  const EigenVectorXd &frequencies =
-      phylo_model_->GetSubstitutionModel()->GetFrequencies();
-  std::vector<double> state_frequencies(pattern_count_ * state_count);
-  for (auto iter = state_frequencies.begin(); iter != state_frequencies.end();
-       iter += state_count) {
-    // TODO read
-    std::copy(frequencies.data(), frequencies.data() + state_count, iter);
-  }
-  beagleSetPartials(beagle_instance_, ba.root_id_ + ba.node_count_,
-                    state_frequencies.data());
+  SetRootPreorderPartialsToStateFrequencies(ba);
 
   // Calculate pre-order partials.
+  operations.clear();
+  tree.Topology()->TripleIdPreOrderBifurcating(
+      [&operations, &ba](int node_id, int sister_id, int parent_id) {
+        if (node_id != ba.root_id_) {
+          AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
+        }
+      });
   beagleUpdatePrePartials(beagle_instance_, operations.data(),
                           static_cast<int>(operations.size()),
                           BEAGLE_OP_NONE);  // cumulative scale index
@@ -118,7 +104,6 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   std::vector<double> gradient(ba.node_count_, 0);
   const auto pre_buffer_indices =
       BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_);
-
   beagleCalculateEdgeDerivatives(
       beagle_instance_,
       ba.node_indices_.data(),           // list of post order buffer indices
@@ -130,10 +115,10 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
       gradient.data(),                   // sum of derivatives across sites output array
       NULL);                             // sum of squared derivatives output array
 
-  // the rest of the code
-  gradient[tree.Topology()->Children()[1]->Id()] = 0.;
+  // Also calculate the likelihood.
+  gradient[ba.fixed_node_id_] = 0.;
   double log_like = 0.;
-  std::vector<int> root_buffer_index = {static_cast<int>(tree.Id())};
+  std::vector<int> root_buffer_index = {ba.root_id_};
   beagleCalculateRootLogLikelihoods(
       beagle_instance_, root_buffer_index.data(), ba.category_weight_index_.data(),
       ba.state_frequency_index_.data(), ba.cumulative_scale_index_.data(),
@@ -283,6 +268,21 @@ void FatBeagle::UpdateBeagleTransitionMatrices(
                                  nullptr,                  // secondDerivativeIndices
                                  tree.BranchLengths().data(),  // edgeLengths
                                  ba.node_count_ - 1);          // count
+}
+
+void FatBeagle::SetRootPreorderPartialsToStateFrequencies(
+    const BeagleAccessories &ba) const {
+  size_t state_count = phylo_model_->GetSubstitutionModel()->GetStateCount();
+  const EigenVectorXd &frequencies =
+      phylo_model_->GetSubstitutionModel()->GetFrequencies();
+  std::vector<double> state_frequencies(pattern_count_ * state_count);
+  for (auto iter = state_frequencies.begin(); iter != state_frequencies.end();
+       iter += state_count) {
+    // TODO read
+    std::copy(frequencies.data(), frequencies.data() + state_count, iter);
+  }
+  beagleSetPartials(beagle_instance_, ba.root_id_ + ba.node_count_,
+                    state_frequencies.data());
 }
 
 void FatBeagle::AddLowerPartialOperation(BeagleOperationVector &operations,
