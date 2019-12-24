@@ -109,8 +109,8 @@ void SBNTraining::ExpectationMaximization(
 
   SimpleAverage(sbn_parameters, indexer_representation_counter);
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
-  std::cout << "sbn_parameters: " << sbn_parameters << std::endl;
 
+  // TODO actually loop
   // Start EM loop.
   m_bar.setZero();
   // Loop over topologies (as manifested by their indexer representations).
@@ -131,16 +131,12 @@ void SBNTraining::ExpectationMaximization(
       // Calculate the SBN probability of this topology rooted at this position.
       q_weights[rooting_position] =
           sbn_parameters[rootsplit] * ProductOf(sbn_parameters, pcss);
-      std::cout << "q_weights intermediate: " << q_weights << std::endl;
     }
-    std::cout << "q_weights final: " << q_weights << std::endl;
     q_weights /= q_weights.sum();
     // Now increment the new SBN parameters by the q-weighted counts.
     q_weights *= topology_count;
-    std::cout << "q_weights post norm: " << q_weights << std::endl;
     IncrementBy(m_bar, rootsplits, q_weights);
     IncrementBy(m_bar, pcsss, q_weights);
-    std::cout << "m_bar: " << m_bar << std::endl;
   }
   sbn_parameters = m_bar;
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
