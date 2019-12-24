@@ -105,20 +105,21 @@ SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
 }
 
 IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                       const Node::NodePtr& topology) {
+                                                       const Node::NodePtr& topology,
+                                                       const size_t default_index) {
   const auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
   SizeVector rootsplit_result = SBNMaps::SplitIndicesOf(indexer, topology);
   // Next, the pcss_result.
   SizeVectorVector pcss_result(topology->Id());
-  topology->PCSSPreOrder([&indexer, &leaf_count, &pcss_result, &topology](
-                             const Node* sister_node, bool sister_direction,
-                             const Node* focal_node,
-                             bool focal_direction,  //
-                             const Node* child0_node,
-                             bool child0_direction,  //
-                             const Node* child1_node, bool child1_direction,
-                             const Node* virtual_root_clade) {
+  topology->PCSSPreOrder([&indexer, &default_index, &leaf_count, &pcss_result,
+                          &topology](const Node* sister_node, bool sister_direction,
+                                     const Node* focal_node,
+                                     bool focal_direction,  //
+                                     const Node* child0_node,
+                                     bool child0_direction,  //
+                                     const Node* child1_node, bool child1_direction,
+                                     const Node* virtual_root_clade) {
     // Start by making the bitset representation of this PCSS.
     Bitset bitset(3 * leaf_count, false);
     bitset.CopyFrom(sister_node->Leaves(), 0, sister_direction);
@@ -132,7 +133,7 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
       child1_bitset.flip();
     }
     bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count, false);
-    auto indexer_position = indexer.at(bitset);
+    const auto indexer_position = AtWithDefault(indexer, bitset, default_index);
     const auto& focal_index = focal_node->Id();
     if (sister_node == focal_node) {
       // We are in the bidirectional edge situation.
@@ -169,12 +170,14 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
 }
 
 IndexerRepresentationCounter SBNMaps::IndexerRepresentationCounterOf(
-    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter) {
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
+    const size_t default_index) {
   IndexerRepresentationCounter counter;
   counter.reserve(topology_counter.size());
   for (const auto& [topology, topology_count] : topology_counter) {
     counter.push_back(
-        {SBNMaps::IndexerRepresentationOf(indexer, topology), topology_count});
+        {SBNMaps::IndexerRepresentationOf(indexer, topology, default_index),
+         topology_count});
   }
   return counter;
 }

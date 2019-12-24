@@ -82,4 +82,14 @@ constexpr void SafeInsert(std::unordered_set<Key, Hash> &set, const Key &k) {
   Assert(set.insert(k).second, "Failed set insertion!");
 }
 
+template <class Key, class T, class Hash>
+T AtWithDefault(const std::unordered_map<Key, T, Hash> &map, const Key &key,
+                T default_value) {
+  auto search = map.find(key);
+  if (search == map.end()) {
+    return default_value;
+  }
+  return search->second;
+}
+
 #endif  // SRC_SUGAR_HPP_

@@ -26,13 +26,7 @@ class DefaultDict {
 
   std::unordered_map<Key, T> Map() const { return map_; }
 
-  T at(const Key &key) {
-    auto search = map_.find(key);
-    if (search == map_.end()) {
-      return default_value_;
-    }
-    return search->second;
-  }
+  T at(const Key &key) { return AtWithDefault(map_, key, default_value_); }
 
   bool contains(const Key &key) const { return (map_.find(key) != map_.end()); }
 

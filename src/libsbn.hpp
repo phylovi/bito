@@ -71,7 +71,8 @@ class SBNInstance {
 
   // Get indexer representations of the trees in tree_collection_.
   // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
-  // explanation of what these are.
+  // explanation of what these are. This version uses the length of sbn_parameters_ as a
+  // sentinel value for all rootsplits/PCSSs that aren't present in the indexer.
   std::vector<IndexerRepresentation> MakeIndexerRepresentations() const;
 
   // Get PSP indexer representations of the trees in tree_collection_.
@@ -201,7 +202,7 @@ TEST_CASE("libsbn") {
        {"10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
        {"00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
   CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
-               inst.indexer_, indexer_test_topology_1)),
+               inst.indexer_, indexer_test_topology_1, 99999999)),
            correct_representation_1);
   auto correct_psp_representation_1 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "01010", "01110"},
@@ -223,7 +224,7 @@ TEST_CASE("libsbn") {
        {"00111|11000|01000", "00100|00011|00001", "11000|00111|00011"},
        {"00100|11000|01000", "11100|00011|00001", "00011|11100|00100"}});
   CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
-               inst.indexer_, indexer_test_topology_2)),
+               inst.indexer_, indexer_test_topology_2, 99999999)),
            correct_representation_2);
   auto correct_psp_representation_2 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "00111", "00011"},
