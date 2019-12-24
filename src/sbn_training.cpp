@@ -72,7 +72,8 @@ void SBNTraining::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, double tolerance) {
-  EigenVectorXd new_sbn_parameters(sbn_parameters.size());
+  // This vector holds both of the \bar{m} vectors. TODO
+  EigenVectorXd m_bar(sbn_parameters.size());
   // The q weight of a rootsplit is the probability of each rooting given the current
   // SBN parameters.
   Assert(!indexer_representation_counter.empty(),
@@ -84,7 +85,7 @@ void SBNTraining::ExpectationMaximization(
   // TODO normalize the rootsplit and SBN probabilities.
 
   // Start EM loop.
-  new_sbn_parameters.setZero();
+  m_bar.setZero();
   // Loop over topologies (as manifested by their indexer representations).
   for (const auto& [indexer_representation, int_count] :
        indexer_representation_counter) {
@@ -92,22 +93,24 @@ void SBNTraining::ExpectationMaximization(
     const auto count = static_cast<double>(int_count);
     // Calculate the q weights for this topology.
     q_weights.setZero();
-    Assert(rootsplits.size() == pcsss.size(),
-           "Rootsplit length not the same as pcss length.");
+    Assert(rootsplits.size() == edge_count,
+           "Rootsplit length not equal to edge_count.");
+    Assert(pcsss.size() == edge_count, "PCSSs length not equal to edge_count.");
     // Loop over the various rooting positions of this topology.
-    for (size_t rooting_position = 0; rooting_position < rootsplits.size();
+    for (size_t rooting_position = 0; rooting_position < edge_count;
          ++rooting_position) {
-      const auto& rootsplit = rootsplits[rooting_position];
-      const auto& pcss = pcsss[rooting_position];
+      const size_t& rootsplit = rootsplits[rooting_position];
+      const SizeVector& pcss = pcsss[rooting_position];
       // Calculate the SBN probability of this topology rooted at this position.
+      // TODO normalization
       q_weights[rooting_position] =
           sbn_parameters[rootsplit] * ProductOf(sbn_parameters, pcss);
     }
     q_weights /= q_weights.sum();
     // Now increment the new SBN parameters by the q-weighted counts.
     q_weights *= count;
-    IncrementBy(new_sbn_parameters, rootsplits, q_weights);
-    IncrementBy(new_sbn_parameters, pcsss, q_weights);
+    IncrementBy(m_bar, rootsplits, q_weights);
+    IncrementBy(m_bar, pcsss, q_weights);
   }
-  sbn_parameters = new_sbn_parameters;
+  sbn_parameters = m_bar;
 }
