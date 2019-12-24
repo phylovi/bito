@@ -47,14 +47,12 @@ If you get an error about missing BEAGLE, just `conda activate libsbn` again and
 The following two papers will explain what this repository is about:
 
 * Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
-* Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2019/08/24/vbpi.html).
+* Zhang & Matsen IV, ICLR 2019. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2019/08/24/vbpi.html).
 
 Our documentation consists of:
 
 * [Online documentation](https://phylovi.github.io/libsbn/)
 * Derivations in `doc/tex`, which explain what's going on in the code.
-
-In the off chance that you are citing this library, don't forget to cite the [BEAGLE paper](http://dx.doi.org/10.1093/sysbio/syz020) too, as we use BEAGLE!
 
 
 ## Contributing
@@ -123,11 +121,24 @@ Add a test for every new feature.
 * Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation, design
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
+* Matthew Karcher ([@mdkarcher](https://github.com/mdkarcher/)): SBN expertise
 * Xiang Ji ([@xji3](https://github.com/xji3)): gradient expertise
 * Marc Suchard ([@msuchard](https://github.com/msuchard)): gradient expertise
+
+
+## Citations
+
+If you are citing this library, please cite the NeurIPS and ICLR papers listed above.
+We require BEAGLE, so please also cite these papers:
+
+* [BEAGLE](http://dx.doi.org/10.1093/sysbio/syr100)
+* [BEAGLE 3](http://dx.doi.org/10.1093/sysbio/syz020)
+* [BEAGLE gradients](http://arxiv.org/abs/1905.12146)
 
 
 ## Acknowledgements
 
 * Jaime Huerta-Cepas: several tree traversal functions are copied from [ete3](https://github.com/etetoolkit/ete)
 * Thomas Junier: parts of the parser are copied from [newick\_utils](https://github.com/tjunier/newick_utils)
+
+
