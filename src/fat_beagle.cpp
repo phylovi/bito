@@ -116,14 +116,12 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
                           BEAGLE_OP_NONE);  // cumulative scale index
 
   std::vector<double> gradient(ba.node_count_, 0);
-  std::vector<int> post_buffer_indices(ba.node_count_ - 1);
-  std::vector<int> pre_buffer_indices(ba.node_count_ - 1);
-  std::iota(post_buffer_indices.begin(), post_buffer_indices.end(), 0);
-  std::iota(pre_buffer_indices.begin(), pre_buffer_indices.end(), ba.node_count_);
+  const auto pre_buffer_indices =
+      BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_);
 
   beagleCalculateEdgeDerivatives(
       beagle_instance_,
-      post_buffer_indices.data(),        // list of post order buffer indices
+      ba.node_indices_.data(),           // list of post order buffer indices
       pre_buffer_indices.data(),         // list of pre order buffer indices
       derivative_matrix_indices.data(),  // differential Q matrix indices
       ba.category_weight_index_.data(),  // category weights indices
