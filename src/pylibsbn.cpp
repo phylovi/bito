@@ -100,6 +100,13 @@ PYBIND11_MODULE(libsbn, m) {
            This is described in the "Maximum Lower Bound Estimates" section of the 2018
            NeurIPS paper, and is later referred to as the "SBN-SA" estimator.
            )raw")
+      .def("train_expectation_maximization", &SBNInstance::TrainExpectationMaximization,
+           R"raw(
+           Train the SBN using the expectation-maximization estimator.
+
+           This is described in the "Expectation Maximization" section of the 2018 NeurIPS
+           paper, and is later referred to as the "SBN-EM" estimator.)raw",
+           py::arg("alpha"), py::arg("tolerance"))
       .def("sample_trees", &SBNInstance::SampleTrees,
            "Sample trees from the SBN and store them internally.", py::arg("count"))
       .def("get_indexer_representations", &SBNInstance::GetIndexerRepresentations,

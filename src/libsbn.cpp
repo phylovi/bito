@@ -72,6 +72,14 @@ void SBNInstance::TrainSimpleAverage() {
   SBNTraining::SimpleAverage(sbn_parameters_, indexer_representation_counter);
 }
 
+void SBNInstance::TrainExpectationMaximization(double alpha, double tolerance) {
+  auto indexer_representation_counter =
+      SBNTraining::IndexerRepresentationCounterOf(indexer_, topology_counter_);
+  SBNTraining::ExpectationMaximization(sbn_parameters_, indexer_representation_counter,
+                                       rootsplits_.size(), parent_to_range_, alpha,
+                                       tolerance);
+}
+
 size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
   Assert(range.first < range.second && range.second <= sbn_parameters_.size(),
          "SampleIndex given an invalid range.");

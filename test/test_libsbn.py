@@ -52,8 +52,7 @@ def sampling_and_indexers_demo():
     assert inst.tree_count() == 4
     # Showing off tree sampling.
     inst.process_loaded_trees()
-    inst.train_simple_average()
-    inst.sbn_parameters[0] = 0.2
+    inst.train_expectation_maximization(0.0001, 0.01)
     # Note that this puts the trees into the instance object, replacing the trees loaded
     # from the file.
     inst.sample_trees(2)
