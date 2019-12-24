@@ -66,18 +66,10 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   tree.SlideRootPosition();
-  BeagleAccessories ba(beagle_instance_, rescaling_, tree);
-  BeagleOperationVector operations;
 
-  // Calculate post-order partials
-  tree.Topology()->BinaryIdPostOrder(
-      [&operations, &ba](int node_id, int child0_id, int child1_id) {
-        AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
-      });
+  BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   UpdateBeagleTransitionMatrices(ba, tree, nullptr);
-  beagleUpdatePartials(beagle_instance_, operations.data(),
-                       static_cast<int>(operations.size()),
-                       ba.cumulative_scale_index_[0]);  // cumulative scale index
+  SetRootPreorderPartialsToStateFrequencies(ba);
 
   // Set differential matrix for each branch.
   const auto derivative_matrix_indices =
@@ -87,7 +79,15 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, Q.data());
   }
 
-  SetRootPreorderPartialsToStateFrequencies(ba);
+  // Calculate post-order partials
+  BeagleOperationVector operations;
+  tree.Topology()->BinaryIdPostOrder(
+      [&operations, &ba](int node_id, int child0_id, int child1_id) {
+        AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
+      });
+  beagleUpdatePartials(beagle_instance_, operations.data(),
+                       static_cast<int>(operations.size()),
+                       ba.cumulative_scale_index_[0]);  // cumulative scale index
 
   // Calculate pre-order partials.
   operations.clear();
@@ -101,7 +101,8 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
                           static_cast<int>(operations.size()),
                           BEAGLE_OP_NONE);  // cumulative scale index
 
-  std::vector<double> gradient(ba.node_count_, 0);
+  // Actually compute the gradient.
+  std::vector<double> gradient(ba.node_count_, 0.);
   const auto pre_buffer_indices =
       BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_);
   beagleCalculateEdgeDerivatives(
@@ -114,9 +115,10 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
       NULL,                              // derivative-per-site output array
       gradient.data(),                   // sum of derivatives across sites output array
       NULL);                             // sum of squared derivatives output array
+  // We want the fixed node to have a zero gradient.
+  gradient[ba.fixed_node_id_] = 0.;
 
   // Also calculate the likelihood.
-  gradient[ba.fixed_node_id_] = 0.;
   double log_like = 0.;
   std::vector<int> root_buffer_index = {ba.root_id_};
   beagleCalculateRootLogLikelihoods(
