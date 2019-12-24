@@ -32,6 +32,8 @@ class FatBeagle {
   void SetRescaling(const bool rescaling) { rescaling_ = rescaling; }
 
   double LogLikelihood(const Tree &tree) const;
+  // Compute first derivative of the log likelihood with respect to each branch
+  // length, as a vector of first derivatives indexed by node id.
   std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.

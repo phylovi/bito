@@ -52,17 +52,15 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),
                        ba.cumulative_scale_index_[0]);
-  double log_like = 0;
-  std::vector<int> root_id = {static_cast<int>(tree.Id())};
+  double log_like = 0.;
+  std::vector<int> root_id_vector = {ba.root_id_};
   beagleCalculateRootLogLikelihoods(
-      beagle_instance_, root_id.data(), ba.category_weight_index_.data(),
+      beagle_instance_, root_id_vector.data(), ba.category_weight_index_.data(),
       ba.state_frequency_index_.data(), ba.cumulative_scale_index_.data(),
       ba.mysterious_count_, &log_like);
   return log_like;
 }
 
-// Compute first derivative of the log likelihood with respect to each branch
-// length, as a vector of first derivatives indexed by node id.
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     const Tree &in_tree) const {
   beagleResetScaleFactors(beagle_instance_, 0);
@@ -84,42 +82,47 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
                        ba.cumulative_scale_index_[0]);  // cumulative scale index
 
   operations.clear();
-  int root_id = static_cast<int>(tree.Topology()->Id());
   tree.Topology()->TripleIdPreOrderBifurcating(
-      [&operations, &ba, &root_id](int node_id, int sister_id, int parent_id) {
-        if (node_id != root_id) {
+      [&operations, &ba](int node_id, int sister_id, int parent_id) {
+        if (node_id != ba.root_id_) {
           AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
         }
       });
 
+  // TODO ba
   size_t node_count = tree.BranchLengths().size();
 
   int int_node_count = static_cast<int>(node_count);
+  // TODO BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_);
   std::vector<int> node_indices(node_count - 1);
   std::iota(node_indices.begin(), node_indices.end(), 0);
-  std::vector<int> derivative_matrix_indices(int_node_count - 1);
+  // TODO BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_);
+  std::vector<int> derivative_matrix_indices(ba.node_count_ - 1);
   std::iota(derivative_matrix_indices.begin(), derivative_matrix_indices.end(),
             node_count - 1);
 
   // Set differential matrix for each branch
   const EigenMatrixXd &Q = phylo_model_->GetSubstitutionModel()->GetQMatrix();
+  // TODO rename index-- what is it indexing
   for (int index : derivative_matrix_indices) {
     beagleSetDifferentialMatrix(beagle_instance_, index, Q.data());
   }
 
   // Set the preorder partials of root node equal to state frequencies
+  // TODO is this in ba
   size_t state_count = phylo_model_->GetSubstitutionModel()->GetStateCount();
   const EigenVectorXd &frequencies =
       phylo_model_->GetSubstitutionModel()->GetFrequencies();
   std::vector<double> state_frequencies(pattern_count_ * state_count);
   for (auto iter = state_frequencies.begin(); iter != state_frequencies.end();
        iter += state_count) {
+    // TODO read
     std::copy(frequencies.data(), frequencies.data() + state_count, iter);
   }
-  beagleSetPartials(beagle_instance_, root_id + int_node_count,
+  beagleSetPartials(beagle_instance_, ba.root_id_ + int_node_count,
                     state_frequencies.data());
 
-  // Calculate pre-order partials
+  // Calculate pre-order partials.
   beagleUpdatePrePartials(beagle_instance_, operations.data(),
                           static_cast<int>(operations.size()),
                           BEAGLE_OP_NONE);  // cumulative scale index
@@ -142,8 +145,8 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
       NULL);                             // sum of squared derivatives output array
 
   // the rest of the code
-  gradient[tree.Topology()->Children()[1]->Id()] = 0;
-  double log_like = 0;
+  gradient[tree.Topology()->Children()[1]->Id()] = 0.;
+  double log_like = 0.;
   std::vector<int> root_buffer_index = {static_cast<int>(tree.Id())};
   beagleCalculateRootLogLikelihoods(
       beagle_instance_, root_buffer_index.data(), ba.category_weight_index_.data(),
@@ -169,7 +172,9 @@ FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_patt
   // taxon_count - 1 for lower partials (internal nodes only)
   // 2*taxon_count - 1 for upper partials (every node)
   int partials_buffer_count = 3 * taxon_count - 2;
-  if (!use_tip_states_) partials_buffer_count += taxon_count;
+  if (!use_tip_states_) {
+    partials_buffer_count += taxon_count;
+  }
   // Number of compact state representation buffers to create -- for use with
   // setTipStates (input)
   int compact_buffer_count = (use_tip_states_ ? taxon_count : 0);
