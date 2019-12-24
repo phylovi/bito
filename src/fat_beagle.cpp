@@ -89,27 +89,15 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
         }
       });
 
-  // TODO ba
-  size_t node_count = tree.BranchLengths().size();
-
-  int int_node_count = static_cast<int>(node_count);
-  // TODO BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_);
-  std::vector<int> node_indices(node_count - 1);
-  std::iota(node_indices.begin(), node_indices.end(), 0);
-  // TODO BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_);
-  std::vector<int> derivative_matrix_indices(ba.node_count_ - 1);
-  std::iota(derivative_matrix_indices.begin(), derivative_matrix_indices.end(),
-            node_count - 1);
-
-  // Set differential matrix for each branch
+  // Set differential matrix for each branch.
+  const auto derivative_matrix_indices =
+      BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_ - 1);
   const EigenMatrixXd &Q = phylo_model_->GetSubstitutionModel()->GetQMatrix();
-  // TODO rename index-- what is it indexing
-  for (int index : derivative_matrix_indices) {
-    beagleSetDifferentialMatrix(beagle_instance_, index, Q.data());
+  for (int derivative_matrix_idx : derivative_matrix_indices) {
+    beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, Q.data());
   }
 
-  // Set the preorder partials of root node equal to state frequencies
-  // TODO is this in ba
+  // Set the preorder partials of root node equal to state frequencies.
   size_t state_count = phylo_model_->GetSubstitutionModel()->GetStateCount();
   const EigenVectorXd &frequencies =
       phylo_model_->GetSubstitutionModel()->GetFrequencies();
@@ -119,7 +107,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     // TODO read
     std::copy(frequencies.data(), frequencies.data() + state_count, iter);
   }
-  beagleSetPartials(beagle_instance_, ba.root_id_ + int_node_count,
+  beagleSetPartials(beagle_instance_, ba.root_id_ + ba.node_count_,
                     state_frequencies.data());
 
   // Calculate pre-order partials.
@@ -127,11 +115,11 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
                           static_cast<int>(operations.size()),
                           BEAGLE_OP_NONE);  // cumulative scale index
 
-  std::vector<double> gradient(node_count, 0);
-  std::vector<int> post_buffer_indices(int_node_count - 1);
-  std::vector<int> pre_buffer_indices(int_node_count - 1);
+  std::vector<double> gradient(ba.node_count_, 0);
+  std::vector<int> post_buffer_indices(ba.node_count_ - 1);
+  std::vector<int> pre_buffer_indices(ba.node_count_ - 1);
   std::iota(post_buffer_indices.begin(), post_buffer_indices.end(), 0);
-  std::iota(pre_buffer_indices.begin(), pre_buffer_indices.end(), int_node_count);
+  std::iota(pre_buffer_indices.begin(), pre_buffer_indices.end(), ba.node_count_);
 
   beagleCalculateEdgeDerivatives(
       beagle_instance_,
@@ -139,7 +127,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
       pre_buffer_indices.data(),         // list of pre order buffer indices
       derivative_matrix_indices.data(),  // differential Q matrix indices
       ba.category_weight_index_.data(),  // category weights indices
-      int_node_count - 1,                // number of edges
+      ba.node_count_ - 1,                // number of edges
       NULL,                              // derivative-per-site output array
       gradient.data(),                   // sum of derivatives across sites output array
       NULL);                             // sum of squared derivatives output array
