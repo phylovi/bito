@@ -81,7 +81,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   // Calculate post-order partials
   beagleUpdatePartials(beagle_instance_, operations.data(),
                        static_cast<int>(operations.size()),
-                       BEAGLE_OP_NONE);  // cumulative scale index
+                       ba.cumulative_scale_index_[0]);  // cumulative scale index
 
   operations.clear();
   int root_id = static_cast<int>(tree.Topology()->Id());
