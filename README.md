@@ -11,7 +11,8 @@ We are building a Python-interface C++ library for phylogenetic variational infe
 * If you are on linux, install gcc >= 8, which is standard in Debian Buster and Ubuntu 18.04
 * If you are on OS X, use a recent version of Xcode and install command line tools (don't use conda, as their compiler packages are too old for us)
 
-Then, install [BEAGLE](https://github.com/beagle-dev/beagle-lib).
+Then, install **the `hmc-clock` branch** of [BEAGLE](https://github.com/beagle-dev/beagle-lib).
+This will require a from-source installation, as in their docs, but you have to do a full `git clone` (no `--depth=1`).
 You can see a full installation procedure by taking a look at the [conda-beagle Dockerfile](https://github.com/matsengrp/conda-beagle/blob/master/Dockerfile).
 
 To install additional dependencies, use the associated conda environment file:
@@ -29,14 +30,19 @@ To install them as well, call:
 
 ## Building
 
-First:
+For your first build, do
 
-    git submodule update
+* `git submodule update`
+* `scons`
+* Respond to interactive prompts about where `hmc-clock` BEAGLE is installed
+* `conda activate libsbn`
+* `make`
 
-Then `make` will build, run tests, and install the Python packages.
+After these steps `make` will build, run tests, and install the Python packages, and this should be the only command you need to run after modifying the code.
 
-The build process will also modify the conda environment to point `[DY]LD_LIBRARY_PATH` to where BEAGLE is installed.
+The build process will modify the conda environment to point `[DY]LD_LIBRARY_PATH` to where BEAGLE is installed.
 If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.
+If you want to modify your desired BEAGLE installation location, do `unset BEAGLE_PREFIX` and start the steps above again starting at `scons`.
 
 * (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
 * (Optional) If you modify the test preparation scripts, call `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
@@ -47,14 +53,12 @@ If you get an error about missing BEAGLE, just `conda activate libsbn` again and
 The following two papers will explain what this repository is about:
 
 * Zhang & Matsen IV, NeurIPS 2018. [_Generalizing Tree Probability Estimation via Bayesian Networks_](http://papers.nips.cc/paper/7418-generalizing-tree-probability-estimation-via-bayesian-networks.pdf); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2018/12/05/sbn.html).
-* Zhang & Matsen IV, ICLR 2018. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2019/08/24/vbpi.html).
+* Zhang & Matsen IV, ICLR 2019. [_Variational Bayesian Phylogenetic Inference_](https://openreview.net/pdf?id=SJVmjjR9FX_); 👉🏽 [blog post](https://matsen.fredhutch.org/general/2019/08/24/vbpi.html).
 
 Our documentation consists of:
 
 * [Online documentation](https://phylovi.github.io/libsbn/)
 * Derivations in `doc/tex`, which explain what's going on in the code.
-
-In the off chance that you are citing this library, don't forget to cite the [BEAGLE paper](http://dx.doi.org/10.1093/sysbio/syz020) too, as we use BEAGLE!
 
 
 ## Contributing
@@ -123,8 +127,18 @@ Add a test for every new feature.
 * Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation, design
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
+* Matthew Karcher ([@mdkarcher](https://github.com/mdkarcher/)): SBN expertise
 * Xiang Ji ([@xji3](https://github.com/xji3)): gradient expertise
 * Marc Suchard ([@msuchard](https://github.com/msuchard)): gradient expertise
+
+
+## Citations
+
+If you are citing this library, please cite the NeurIPS and ICLR papers listed above.
+We require BEAGLE, so please also cite these papers:
+
+* [BEAGLE 3](http://dx.doi.org/10.1093/sysbio/syz020)
+* [Linear-time, high-dimensional gradient in BEAGLE](http://arxiv.org/abs/1905.12146)
 
 
 ## Acknowledgements

@@ -108,6 +108,7 @@ class SBNInstance {
   // argument, it just uses the number of trees currently in the SBNInstance.
   void PrepareForPhyloLikelihood(
       PhyloModelSpecification specification, size_t thread_count,
+      const std::vector<BeagleFlags> &beagle_flag_vector = {},
       std::optional<size_t> tree_count_option = std::nullopt);
   // Make the number of phylogentic model parameters fit the number of trees and
   // the speficied model. If we get a nullopt argument, it just uses the number
@@ -150,7 +151,8 @@ class SBNInstance {
 
   // Make a likelihood engine which will run across the specified number of
   // threads.
-  void MakeEngine(PhyloModelSpecification specification, size_t thread_count);
+  void MakeEngine(PhyloModelSpecification specification, size_t thread_count,
+                  const std::vector<BeagleFlags> &beagle_flag_vector);
   // Return a raw pointer to the engine if it's available.
   Engine *GetEngine() const;
 

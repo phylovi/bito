@@ -103,8 +103,13 @@ PYBIND11_MODULE(libsbn, m) {
            "Get the lengths of the current set of trees, indexed by splits.")
       // ** Phylogenetic likelihood
       .def("prepare_for_phylo_likelihood", &SBNInstance::PrepareForPhyloLikelihood,
-           "Prepare instance for phylogenetic likelihood computation.",
+           R"raw(
+            Prepare instance for phylogenetic likelihood computation.
+
+            See the ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
+           )raw",
            py::arg("specification"), py::arg("thread_count"),
+           py::arg("beagle_flags") = std::vector<BeagleFlags>(),
            py::arg("tree_count_option") = std::nullopt)
       .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
       .def("get_phylo_model_param_block_map", &SBNInstance::GetPhyloModelParamBlockMap)
@@ -126,9 +131,54 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readonly("taxon_names", &SBNInstance::taxon_names_)
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
       .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
+
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
   // `with libsbn.ostream_redirect(stdout=True, stderr=True):`
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
   py::add_ostream_redirect(m, "ostream_redirect");
+
+  py::module beagle_flags = m.def_submodule("beagle_flags",
+                                            R"raw(
+      Flags that can be passed to BEAGLE.
+
+      They are used in Python like ``beagle_flags.PROCESSOR_GPU``.
+
+      Note that we expose only a subset of the BEAGLE flags on purpose.
+      )raw");
+  py::enum_<BeagleFlags>(beagle_flags, "beagle_flag")
+      .value("PRECISION_SINGLE", BEAGLE_FLAG_PRECISION_SINGLE,
+             "Single precision computation")
+      .value("PRECISION_DOUBLE", BEAGLE_FLAG_PRECISION_DOUBLE,
+             "Double precision computation")
+      .value("COMPUTATION_SYNCH", BEAGLE_FLAG_COMPUTATION_SYNCH,
+             "Synchronous computation (blocking)")
+      .value("COMPUTATION_ASYNCH", BEAGLE_FLAG_COMPUTATION_ASYNCH,
+             "Asynchronous computation (non-blocking)")
+      .value("VECTOR_SSE", BEAGLE_FLAG_VECTOR_SSE, "SSE computation")
+      .value("VECTOR_AVX", BEAGLE_FLAG_VECTOR_AVX, "AVX computation")
+      .value("VECTOR_NONE", BEAGLE_FLAG_VECTOR_NONE, "No vector computation")
+      .value("THREADING_CPP", BEAGLE_FLAG_THREADING_CPP, "C++11 threading")
+      .value("THREADING_OPENMP", BEAGLE_FLAG_THREADING_OPENMP, "OpenMP threading")
+      .value("THREADING_NONE", BEAGLE_FLAG_THREADING_NONE, "No threading (default)")
+      .value("PROCESSOR_CPU", BEAGLE_FLAG_PROCESSOR_CPU, "Use CPU as main processor")
+      .value("PROCESSOR_GPU", BEAGLE_FLAG_PROCESSOR_GPU, "Use GPU as main processor")
+      .value("PROCESSOR_FPGA", BEAGLE_FLAG_PROCESSOR_FPGA, "Use FPGA as main processor")
+      .value("PROCESSOR_CELL", BEAGLE_FLAG_PROCESSOR_CELL, "Use Cell as main processor")
+      .value("PROCESSOR_PHI", BEAGLE_FLAG_PROCESSOR_PHI,
+             "Use Intel Phi as main processor")
+      .value("PROCESSOR_OTHER", BEAGLE_FLAG_PROCESSOR_OTHER,
+             "Use other type of processor")
+      .value("FRAMEWORK_CUDA", BEAGLE_FLAG_FRAMEWORK_CUDA,
+             "Use CUDA implementation with GPU resources")
+      .value("FRAMEWORK_OPENCL", BEAGLE_FLAG_FRAMEWORK_OPENCL,
+             "Use OpenCL implementation with GPU resources")
+      .value("FRAMEWORK_CPU", BEAGLE_FLAG_FRAMEWORK_CPU, "Use CPU implementation")
+      .value("PARALLELOPS_STREAMS", BEAGLE_FLAG_PARALLELOPS_STREAMS,
+             "Operations in updatePartials may be assigned to separate device streams")
+      .value("PARALLELOPS_GRID", BEAGLE_FLAG_PARALLELOPS_GRID,
+             "Operations in updatePartials may be folded into single kernel launch "
+             "(necessary for partitions; typically performs better for problems with "
+             "fewer pattern sites)")
+      .export_values();
 }

@@ -16,9 +16,13 @@
 
 class FatBeagle {
  public:
+  using PackedBeagleFlags = long;
+
   // This constructor makes the beagle_instance_;
   FatBeagle(const PhyloModelSpecification &specification,
-            const SitePattern &site_pattern, bool use_tip_states=false);
+            const SitePattern &site_pattern,
+            const PackedBeagleFlags beagle_preference_flags,
+            bool use_tip_states = false);
   ~FatBeagle();
   // Delete (copy + move) x (constructor + assignment)
   FatBeagle(const FatBeagle &) = delete;
@@ -27,11 +31,14 @@ class FatBeagle {
   FatBeagle &operator=(const FatBeagle &&) = delete;
 
   const BlockSpecification &GetPhyloModelBlockSpecification() const;
+  const PackedBeagleFlags &GetBeagleFlags() const { return beagle_flags_; };
 
   void SetParameters(const EigenVectorXdRef param_vector);
   void SetRescaling(const bool rescaling) { rescaling_ = rescaling; }
 
   double LogLikelihood(const Tree &tree) const;
+  // Compute first derivative of the log likelihood with respect to each branch
+  // length, as a vector of first derivatives indexed by node id.
   std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.
@@ -46,10 +53,12 @@ class FatBeagle {
   std::unique_ptr<PhyloModel> phylo_model_;
   bool rescaling_;
   BeagleInstance beagle_instance_;
+  PackedBeagleFlags beagle_flags_;
   int pattern_count_;
   bool use_tip_states_;
 
-  BeagleInstance CreateInstance(const SitePattern &site_pattern);
+  std::pair<BeagleInstance, PackedBeagleFlags> CreateInstance(
+      const SitePattern &site_pattern, PackedBeagleFlags beagle_preference_flags);
   void SetTipStates(const SitePattern &site_pattern);
   void SetTipPartials(const SitePattern &site_pattern);
   void UpdateSiteModelInBeagle();
@@ -58,6 +67,7 @@ class FatBeagle {
 
   void UpdateBeagleTransitionMatrices(const BeagleAccessories &ba, const Tree &tree,
                                       const int *const gradient_indices_ptr) const;
+  void SetRootPreorderPartialsToStateFrequencies(const BeagleAccessories &ba) const;
 
   static Tree PrepareTreeForLikelihood(const Tree &tree);
   static inline void AddLowerPartialOperation(BeagleOperationVector &operations,

@@ -16,6 +16,7 @@
 struct BeagleAccessories {
   const int beagle_instance_;
   const bool rescaling_;
+  const int root_id_;
   const int fixed_node_id_;
   const int root_child_id_;
   const int node_count_;
@@ -48,6 +49,7 @@ struct BeagleAccessories {
   BeagleAccessories(int beagle_instance, bool rescaling, const Tree &tree)
       : beagle_instance_(beagle_instance),
         rescaling_(rescaling),
+        root_id_(static_cast<int>(tree.Topology()->Id())),
         fixed_node_id_(static_cast<int>(tree.Topology()->Children()[1]->Id())),
         root_child_id_(static_cast<int>(tree.Topology()->Children()[0]->Id())),
         node_count_(static_cast<int>(tree.BranchLengths().size())),

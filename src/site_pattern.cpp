@@ -99,15 +99,16 @@ void SitePattern::Compress() {
   }
 }
 
-const std::vector<double> SitePattern::GetPartials(size_t sequence_index) const {
+const std::vector<double> SitePattern::GetPartials(size_t sequence_idx) const {
+  // DNA assumption here.
   size_t state_count = 4;
-  std::vector<double> partials(state_count * patterns_[0].size(), 0);
-  for (int i = 0; i < PatternCount(); i++) {
-    if (patterns_[sequence_index][i] < state_count) {
-      partials[i * state_count + patterns_[sequence_index][i]] = 1.0;
+  std::vector<double> partials(state_count * PatternCount(), 0.);
+  for (int pattern_idx = 0; pattern_idx < PatternCount(); pattern_idx++) {
+    if (patterns_[sequence_idx][pattern_idx] < state_count) {
+      partials[pattern_idx * state_count + patterns_[sequence_idx][pattern_idx]] = 1.0;
     } else {
-      for (int j = 0; j < state_count; j++) {
-        partials[i * state_count + j] = 1.0;
+      for (int state_idx = 0; state_idx < state_count; state_idx++) {
+        partials[pattern_idx * state_count + state_idx] = 1.0;
       }
     }
   }

@@ -8,6 +8,7 @@ import pprint
 import pytest
 import numpy as np
 import libsbn
+import libsbn.beagle_flags as beagle_flags
 
 SIMPLE_SPECIFICATION = libsbn.PhyloModelSpecification(
     substitution="JC69", site="constant", clock="none"
@@ -27,7 +28,9 @@ def hello_demo():
         [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
     )
     inst.read_fasta_file("data/hello.fasta")
-    inst.prepare_for_phylo_likelihood(SIMPLE_SPECIFICATION, 2)
+    inst.prepare_for_phylo_likelihood(
+        SIMPLE_SPECIFICATION, 2, [beagle_flags.VECTOR_SSE]
+    )
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])
     print(inst.tree_collection.newick())

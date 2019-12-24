@@ -1,5 +1,7 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// A class for an alignment that has been compressed into site patterns.
 
 #ifndef SRC_SITE_PATTERN_HPP_
 #define SRC_SITE_PATTERN_HPP_
@@ -26,12 +28,17 @@ class SitePattern {
   size_t PatternCount() const { return patterns_.at(0).size(); }
   size_t SequenceCount() const { return patterns_.size(); }
   const std::vector<double>& GetWeights() const { return weights_; }
-  const std::vector<double> GetPartials(size_t sequence_index) const;
+  // Make a flattened partial likelihood vector for a given sequence, where anything
+  // above 4 is given a uniform distribution.
+  const std::vector<double> GetPartials(size_t sequence_idx) const;
 
  private:
   Alignment alignment_;
   TagStringMap tag_taxon_map_;
+  // The first index of patterns_ is across sequences, and the second is across site
+  // patterns.
   std::vector<SymbolVector> patterns_;
+  // The number of times each site pattern was seen in the alignment.
   std::vector<double> weights_;
 
   void Compress();
