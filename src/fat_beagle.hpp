@@ -18,7 +18,7 @@ class FatBeagle {
  public:
   // This constructor makes the beagle_instance_;
   FatBeagle(const PhyloModelSpecification &specification,
-            const SitePattern &site_pattern, bool use_tip_states=false);
+            const SitePattern &site_pattern, bool use_tip_states = false);
   ~FatBeagle();
   // Delete (copy + move) x (constructor + assignment)
   FatBeagle(const FatBeagle &) = delete;

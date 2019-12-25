@@ -45,8 +45,9 @@ def record_beagle_prefix(beagle_prefix, ld_variable_name):
     os.makedirs(conda_deactivate_dir, exist_ok=True)
     with open(os.path.join(conda_activate_dir, "vars.sh"), "w") as fp:
         fp.write("export BEAGLE_PREFIX=" + beagle_prefix + "\n")
-        fp.write(f"export {ld_variable_name}=" +
-                 os.path.join(beagle_prefix, "lib") + "\n")
+        fp.write(
+            f"export {ld_variable_name}=" + os.path.join(beagle_prefix, "lib") + "\n"
+        )
     with open(os.path.join(conda_deactivate_dir, "vars.sh"), "w") as fp:
         fp.write(f"unset BEAGLE_PREFIX\n")
         fp.write(f"unset {ld_variable_name}\n")
@@ -55,7 +56,8 @@ def record_beagle_prefix(beagle_prefix, ld_variable_name):
 if "BEAGLE_PREFIX" in os.environ:
     beagle_prefix = os.environ["BEAGLE_PREFIX"]
 else:
-    print("""
+    print(
+        """
 It looks like we need to configure your BEAGLE install.
 
 Please enter the prefix directory path where BEAGLE has been installed.
@@ -75,7 +77,8 @@ If you want to change your prefix directory, do
     rm $CONDA_PREFIX/etc/conda/activate.d/vars.sh
     unset BEAGLE_PREFIX
 and you'll get this prompt again when you `scons` or `make`.)
-""")
+"""
+    )
 
     beagle_prefix = input(">>> ").rstrip()
 
@@ -83,8 +86,9 @@ and you'll get this prompt again when you `scons` or `make`.)
         print("OK, looking for BEAGLE install via conda.")
         beagle_prefix = find_conda_pkg_dir_containing("/pkgs/beagle-lib*/")
 
-    check_file_exists(os.path.join(beagle_prefix,
-                                   "include/libhmsbeagle-1/libhmsbeagle/beagle.h"))
+    check_file_exists(
+        os.path.join(beagle_prefix, "include/libhmsbeagle-1/libhmsbeagle/beagle.h")
+    )
     if platform.system() == "Darwin":
         record_beagle_prefix(beagle_prefix, "DYLD_LIBRARY_PATH")
     elif platform.system() == "Linux":
@@ -103,7 +107,7 @@ env = Environment(
     CPPPATH=["src", "lib/eigen", pybind11.get_include()],
     # CCFLAGS=["-g", "-pthread"],
     CCFLAGS=["-O3", "-pthread"],
-    CXXFLAGS=["-std=c++17"]
+    CXXFLAGS=["-std=c++17"],
 )
 
 # Sometimes conda installs the pybind11 headers inside a pythonXXX directory, so we get
