@@ -140,5 +140,3 @@ We require BEAGLE, so please also cite these papers:
 
 * Jaime Huerta-Cepas: several tree traversal functions are copied from [ete3](https://github.com/etetoolkit/ete)
 * Thomas Junier: parts of the parser are copied from [newick\_utils](https://github.com/tjunier/newick_utils)
-
-

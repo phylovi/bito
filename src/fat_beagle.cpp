@@ -274,15 +274,9 @@ void FatBeagle::UpdateBeagleTransitionMatrices(
 
 void FatBeagle::SetRootPreorderPartialsToStateFrequencies(
     const BeagleAccessories &ba) const {
-  size_t state_count = phylo_model_->GetSubstitutionModel()->GetStateCount();
   const EigenVectorXd &frequencies =
       phylo_model_->GetSubstitutionModel()->GetFrequencies();
-  std::vector<double> state_frequencies(pattern_count_ * state_count);
-  for (auto iter = state_frequencies.begin(); iter != state_frequencies.end();
-       iter += state_count) {
-    // TODO read
-    std::copy(frequencies.data(), frequencies.data() + state_count, iter);
-  }
+  EigenVectorXd state_frequencies = frequencies.replicate(pattern_count_, 1);
   beagleSetPartials(beagle_instance_, ba.root_id_ + ba.node_count_,
                     state_frequencies.data());
 }
