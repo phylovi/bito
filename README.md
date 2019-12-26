@@ -131,9 +131,8 @@ Add a test for every new feature.
 If you are citing this library, please cite the NeurIPS and ICLR papers listed above.
 We require BEAGLE, so please also cite these papers:
 
-* [BEAGLE](http://dx.doi.org/10.1093/sysbio/syr100)
 * [BEAGLE 3](http://dx.doi.org/10.1093/sysbio/syz020)
-* [BEAGLE gradients](http://arxiv.org/abs/1905.12146)
+* [Linear-time, high-dimensional gradient in BEAGLE](http://arxiv.org/abs/1905.12146)
 
 
 ## Acknowledgements
