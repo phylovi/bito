@@ -103,7 +103,11 @@ PYBIND11_MODULE(libsbn, m) {
            "Get the lengths of the current set of trees, indexed by splits.")
       // ** Phylogenetic likelihood
       .def("prepare_for_phylo_likelihood", &SBNInstance::PrepareForPhyloLikelihood,
-           "Prepare instance for phylogenetic likelihood computation.",
+           R"raw(
+            Prepare instance for phylogenetic likelihood computation.
+
+            See ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
+           )raw",
            py::arg("specification"), py::arg("thread_count"),
            py::arg("beagle_flags") = std::vector<BeagleFlags>(),
            py::arg("tree_count_option") = std::nullopt)
@@ -127,16 +131,21 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readonly("taxon_names", &SBNInstance::taxon_names_)
       .def_readwrite("sbn_parameters", &SBNInstance::sbn_parameters_)
       .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
+
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
   // `with libsbn.ostream_redirect(stdout=True, stderr=True):`
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
   py::add_ostream_redirect(m, "ostream_redirect");
 
-  py::module beagle_flags =
-      m.def_submodule("beagle_flags",
-                      "Flags that can be passed to BEAGLE. Note that we expose only "
-                      "the subset of flags that the user should be allowed to modify.");
+  py::module beagle_flags = m.def_submodule("beagle_flags",
+                                            R"raw(
+      Flags that can be passed to BEAGLE.
+
+      They are used in Python like ``beagle_flags.PROCESSOR_GPU``.
+
+      Note that we expose only the subset of flags that the user should be allowed to modify.
+      )raw");
   py::enum_<BeagleFlags>(beagle_flags, "beagle_flag")
       .value("PRECISION_SINGLE", BEAGLE_FLAG_PRECISION_SINGLE,
              "Single precision computation")
