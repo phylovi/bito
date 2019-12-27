@@ -5,6 +5,7 @@
 #include <numeric>
 #include <utility>
 #include <vector>
+#include "beagle_flag_names.hpp"
 
 FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
                      const SitePattern &site_pattern, bool use_tip_states)
@@ -174,7 +175,9 @@ FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_patt
   int resource_count = 0;
   // Bit-flags indicating preferred implementation charactertistics, see
   // BeagleFlags (input)
-  int64_t preference_flags = BEAGLE_FLAG_PROCESSOR_GPU;
+  int64_t preference_flags =
+      BEAGLE_FLAG_VECTOR_SSE | BEAGLE_FLAG_VECTOR_AVX |
+      BEAGLE_FLAG_PROCESSOR_GPU;
   // Bit-flags indicating required implementation characteristics, see
   // BeagleFlags (input)
   int requirement_flags = BEAGLE_FLAG_SCALING_MANUAL;
@@ -186,17 +189,8 @@ FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_patt
       scale_buffer_count, allowed_resources, resource_count, preference_flags,
       requirement_flags, &return_info);
   if (return_info.flags & (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
-    if (return_info.flags & BEAGLE_FLAG_PROCESSOR_GPU) {
-      std::cout << R"raw(
- ____    ____    __  __      __    __  ______   __    __  __
-/\  _`\ /\  _`\ /\ \/\ \    /\ \  /\ \/\  _  \ /\ \  /\ \/\ \
-\ \ \L\_\ \ \L\ \ \ \ \ \   \ `\`\\/'/\ \ \L\ \\ `\`\\/'/\ \ \
- \ \ \L_L\ \ ,__/\ \ \ \ \   `\ `\ /'  \ \  __ \`\ `\ /'  \ \ \
-  \ \ \/, \ \ \/  \ \ \_\ \    `\ \ \   \ \ \/\ \ `\ \ \   \ \_\
-   \ \____/\ \_\   \ \_____\     \ \_\   \ \_\ \_\  \ \_\   \/\_\
-    \/___/  \/_/    \/_____/      \/_/    \/_/\/_/   \/_/    \/_/
-    )raw";
-    }
+    std::cout << "BEAGLE running with: "
+              << BeagleFlagNames::OfBeagleFlags(return_info.flags) << std::endl;
     return beagle_instance;
   }  // else
   Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
