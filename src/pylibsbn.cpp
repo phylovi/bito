@@ -134,7 +134,9 @@ PYBIND11_MODULE(libsbn, m) {
   py::add_ostream_redirect(m, "ostream_redirect");
 
   py::module beagle_flags =
-      m.def_submodule("beagle_flags", "Flags that can be passed to BEAGLE.");
+      m.def_submodule("beagle_flags",
+                      "Flags that can be passed to BEAGLE. Note that we expose only "
+                      "the subset of flags that the user should be allowed to modify.");
   py::enum_<BeagleFlags>(beagle_flags, "beagle_flag")
       .value("PRECISION_SINGLE", BEAGLE_FLAG_PRECISION_SINGLE,
              "Single precision computation")
@@ -144,21 +146,6 @@ PYBIND11_MODULE(libsbn, m) {
              "Synchronous computation (blocking)")
       .value("COMPUTATION_ASYNCH", BEAGLE_FLAG_COMPUTATION_ASYNCH,
              "Asynchronous computation (non-blocking)")
-      .value("EIGEN_REAL", BEAGLE_FLAG_EIGEN_REAL, "Real eigenvalue computation")
-      .value("EIGEN_COMPLEX", BEAGLE_FLAG_EIGEN_COMPLEX,
-             "Complex eigenvalue computation")
-      .value("SCALING_MANUAL", BEAGLE_FLAG_SCALING_MANUAL, "Manual scaling")
-      .value("SCALING_AUTO", BEAGLE_FLAG_SCALING_AUTO, "Auto-scaling on (deprecated)")
-      .value("SCALING_ALWAYS", BEAGLE_FLAG_SCALING_ALWAYS,
-             "Scale at every updatePartials (deprecated)")
-      .value("SCALING_DYNAMIC", BEAGLE_FLAG_SCALING_DYNAMIC,
-             "Manual scaling with dynamic checking (deprecated)")
-      .value("SCALERS_RAW", BEAGLE_FLAG_SCALERS_RAW, "Save raw scalers")
-      .value("SCALERS_LOG", BEAGLE_FLAG_SCALERS_LOG, "Save log scalers")
-      .value("INVEVEC_STANDARD", BEAGLE_FLAG_INVEVEC_STANDARD,
-             "Inverse eigen vectors passed to BEAGLE have not been transposed")
-      .value("INVEVEC_TRANSPOSED", BEAGLE_FLAG_INVEVEC_TRANSPOSED,
-             "Inverse eigen vectors passed to BEAGLE have been transposed")
       .value("VECTOR_SSE", BEAGLE_FLAG_VECTOR_SSE, "SSE computation")
       .value("VECTOR_AVX", BEAGLE_FLAG_VECTOR_AVX, "AVX computation")
       .value("VECTOR_NONE", BEAGLE_FLAG_VECTOR_NONE, "No vector computation")
@@ -184,9 +171,5 @@ PYBIND11_MODULE(libsbn, m) {
              "Operations in updatePartials may be folded into single kernel launch "
              "(necessary for partitions; typically performs better for problems with "
              "fewer pattern sites)")
-      .value("PREORDER_TRANSPOSE_MANUAL", BEAGLE_FLAG_PREORDER_TRANSPOSE_MANUAL,
-             "Pre-order transition matrices passed to BEAGLE have been transposed")
-      .value("PREORDER_TRANSPOSE_AUTO", BEAGLE_FLAG_PREORDER_TRANSPOSE_AUTO,
-             "Automatically transpose pre-order transition matrices")
       .export_values();
 }
