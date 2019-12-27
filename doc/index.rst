@@ -66,6 +66,7 @@ Modules
    :toctree: modules
 
    libsbn
+   libsbn.beagle_flags
    vip.benchmark
    vip.branch_model
    vip.burrito
