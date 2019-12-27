@@ -25,14 +25,6 @@ conda_env_dir = os.environ["CONDA_PREFIX"]
 conda_base_dir = re.search("(.*)/envs/.*", conda_env_dir).group(1)
 
 
-def find_conda_pkg_dir_containing(glob_str):
-    for possible_location in [conda_base_dir, conda_env_dir]:
-        g = glob.glob(possible_location + glob_str)
-        if g:
-            return g[0]
-    sys.exit("I can't find the package directory containing " + glob_str)
-
-
 def record_beagle_prefix(beagle_prefix, ld_variable_name):
     """
     Record the value of the BEAGLE_PREFIX environment variable so that it
@@ -60,13 +52,12 @@ else:
         """
 It looks like we need to configure your BEAGLE install.
 
-Please enter the prefix directory path where BEAGLE has been installed.
+Please enter the prefix directory path where BEAGLE (specifically,
+the `hmc-clock` branch) has been installed.
 For example, if you supply `/usr/local`, then we should find
 
     /usr/local/lib/libhmsbeagle.[so|dylib]
     /usr/local/include/libhmsbeagle-1/libhmsbeagle/beagle.h
-
-If you have installed BEAGLE using conda, you can hit return.
 
 If your compilation works after this configuration step, run
     conda activate libsbn
@@ -81,10 +72,6 @@ and you'll get this prompt again when you `scons` or `make`.)
     )
 
     beagle_prefix = input(">>> ").rstrip()
-
-    if beagle_prefix == "":
-        print("OK, looking for BEAGLE install via conda.")
-        beagle_prefix = find_conda_pkg_dir_containing("/pkgs/beagle-lib*/")
 
     check_file_exists(
         os.path.join(beagle_prefix, "include/libhmsbeagle-1/libhmsbeagle/beagle.h")

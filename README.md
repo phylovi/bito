@@ -11,7 +11,8 @@ We are building a Python-interface C++ library for phylogenetic variational infe
 * If you are on linux, install gcc >= 8, which is standard in Debian Buster and Ubuntu 18.04
 * If you are on OS X, use a recent version of Xcode and install command line tools (don't use conda, as their compiler packages are too old for us)
 
-Then, install [BEAGLE](https://github.com/beagle-dev/beagle-lib).
+Then, install **the `hmc-clock` branch** of [BEAGLE](https://github.com/beagle-dev/beagle-lib).
+This will require a from-source installation, as in their docs, but you have to do a full `git clone` (no `--depth=1`).
 You can see a full installation procedure by taking a look at the [conda-beagle Dockerfile](https://github.com/matsengrp/conda-beagle/blob/master/Dockerfile).
 
 To install additional dependencies, use the associated conda environment file:
@@ -29,14 +30,19 @@ To install them as well, call:
 
 ## Building
 
-First:
+For your first build, do
 
-    git submodule update
+* `git submodule update`
+* `scons`
+* Respond to interactive prompts about where `hmc-clock` BEAGLE is installed
+* `conda activate libsbn`
+* `make`
 
-Then `make` will build, run tests, and install the Python packages.
+After these steps `make` will build, run tests, and install the Python packages, and this should be the only command you need to run after modifying the code.
 
-The build process will also modify the conda environment to point `[DY]LD_LIBRARY_PATH` to where BEAGLE is installed.
+The build process will modify the conda environment to point `[DY]LD_LIBRARY_PATH` to where BEAGLE is installed.
 If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.
+If you want to modify your desired BEAGLE installation location, do `unset BEAGLE_PREFIX` and start the steps above again starting at `scons`.
 
 * (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
 * (Optional) If you modify the test preparation scripts, call `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
