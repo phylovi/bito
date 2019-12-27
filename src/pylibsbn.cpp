@@ -106,7 +106,7 @@ PYBIND11_MODULE(libsbn, m) {
            R"raw(
             Prepare instance for phylogenetic likelihood computation.
 
-            See ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
+            See the ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
            )raw",
            py::arg("specification"), py::arg("thread_count"),
            py::arg("beagle_flags") = std::vector<BeagleFlags>(),
