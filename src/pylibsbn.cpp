@@ -16,16 +16,6 @@ namespace py = pybind11;
 // conversion of STL types.
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
-enum Sentiment { Angry = 0, Happy, Confused };
-
-void mood(std::vector<Sentiment> sv) {
-  long total;
-  for (const auto &s : sv) {
-    total |= s;
-  }
-  std::cout << "beagle flags: " << total << std::endl;
-};
-
 PYBIND11_MODULE(libsbn, m) {
   m.doc() = R"raw(Python interface to libsbn.)raw";
   // Second, we expose them as buffer objects so that we can use them
@@ -115,6 +105,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("prepare_for_phylo_likelihood", &SBNInstance::PrepareForPhyloLikelihood,
            "Prepare instance for phylogenetic likelihood computation.",
            py::arg("specification"), py::arg("thread_count"),
+           py::arg("beagle_flags") = std::vector<BeagleFlags>(),
            py::arg("tree_count_option") = std::nullopt)
       .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
       .def("get_phylo_model_param_block_map", &SBNInstance::GetPhyloModelParamBlockMap)
@@ -143,11 +134,40 @@ PYBIND11_MODULE(libsbn, m) {
   py::add_ostream_redirect(m, "ostream_redirect");
 
   py::module beagle_flags =
-      m.def_submodule("beagle_flags", "A peon is a submodule of 'ork'");
-  py::enum_<Sentiment>(beagle_flags, "Sentiment")
-      .value("Angry", Angry)
-      .value("Happy", Happy)
-      .value("Confused", Confused)
+      m.def_submodule("beagle_flags", "Flags that can be passed to BEAGLE.");
+  py::enum_<BeagleFlags>(beagle_flags, "beagle_flags")
+      .value("PRECISION_SINGLE", BEAGLE_FLAG_PRECISION_SINGLE)
+      .value("PRECISION_DOUBLE", BEAGLE_FLAG_PRECISION_DOUBLE)
+      .value("COMPUTATION_SYNCH", BEAGLE_FLAG_COMPUTATION_SYNCH)
+      .value("COMPUTATION_ASYNCH", BEAGLE_FLAG_COMPUTATION_ASYNCH)
+      .value("EIGEN_REAL", BEAGLE_FLAG_EIGEN_REAL)
+      .value("EIGEN_COMPLEX", BEAGLE_FLAG_EIGEN_COMPLEX)
+      .value("SCALING_MANUAL", BEAGLE_FLAG_SCALING_MANUAL)
+      .value("SCALING_AUTO", BEAGLE_FLAG_SCALING_AUTO)
+      .value("SCALING_ALWAYS", BEAGLE_FLAG_SCALING_ALWAYS)
+      .value("SCALING_DYNAMIC", BEAGLE_FLAG_SCALING_DYNAMIC)
+      .value("SCALERS_RAW", BEAGLE_FLAG_SCALERS_RAW)
+      .value("SCALERS_LOG", BEAGLE_FLAG_SCALERS_LOG)
+      .value("INVEVEC_STANDARD", BEAGLE_FLAG_INVEVEC_STANDARD)
+      .value("INVEVEC_TRANSPOSED", BEAGLE_FLAG_INVEVEC_TRANSPOSED)
+      .value("VECTOR_SSE", BEAGLE_FLAG_VECTOR_SSE)
+      .value("VECTOR_AVX", BEAGLE_FLAG_VECTOR_AVX)
+      .value("VECTOR_NONE", BEAGLE_FLAG_VECTOR_NONE)
+      .value("THREADING_CPP", BEAGLE_FLAG_THREADING_CPP)
+      .value("THREADING_OPENMP", BEAGLE_FLAG_THREADING_OPENMP)
+      .value("THREADING_NONE", BEAGLE_FLAG_THREADING_NONE)
+      .value("PROCESSOR_CPU", BEAGLE_FLAG_PROCESSOR_CPU)
+      .value("PROCESSOR_GPU", BEAGLE_FLAG_PROCESSOR_GPU)
+      .value("PROCESSOR_FPGA", BEAGLE_FLAG_PROCESSOR_FPGA)
+      .value("PROCESSOR_CELL", BEAGLE_FLAG_PROCESSOR_CELL)
+      .value("PROCESSOR_PHI", BEAGLE_FLAG_PROCESSOR_PHI)
+      .value("PROCESSOR_OTHER", BEAGLE_FLAG_PROCESSOR_OTHER)
+      .value("FRAMEWORK_CUDA", BEAGLE_FLAG_FRAMEWORK_CUDA)
+      .value("FRAMEWORK_OPENCL", BEAGLE_FLAG_FRAMEWORK_OPENCL)
+      .value("FRAMEWORK_CPU", BEAGLE_FLAG_FRAMEWORK_CPU)
+      .value("PARALLELOPS_STREAMS", BEAGLE_FLAG_PARALLELOPS_STREAMS)
+      .value("PARALLELOPS_GRID", BEAGLE_FLAG_PARALLELOPS_GRID)
+      .value("PREORDER_TRANSPOSE_MANUAL", BEAGLE_FLAG_PREORDER_TRANSPOSE_MANUAL)
+      .value("PREORDER_TRANSPOSE_AUTO", BEAGLE_FLAG_PREORDER_TRANSPOSE_AUTO)
       .export_values();
-  m.def("mood", &mood, "Demonstrate using an enum");
 }

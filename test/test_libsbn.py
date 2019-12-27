@@ -28,7 +28,9 @@ def hello_demo():
         [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
     )
     inst.read_fasta_file("data/hello.fasta")
-    inst.prepare_for_phylo_likelihood(SIMPLE_SPECIFICATION, 2)
+    inst.prepare_for_phylo_likelihood(
+        SIMPLE_SPECIFICATION, 2, [beagle_flags.VECTOR_SSE]
+    )
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])
     print(inst.tree_collection.newick())
@@ -138,10 +140,6 @@ def rootings_indexer_test():
     first_sorted_rep = list(final_sorted[0])
     for rep in final_sorted[1:]:
         assert first_sorted_rep == list(rep)
-
-
-def test_beagle_flags():
-    libsbn.mood([beagle_flags.Happy, beagle_flags.Confused])
 
 
 def test_libsbn():

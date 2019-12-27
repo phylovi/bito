@@ -251,7 +251,9 @@ Engine *SBNInstance::GetEngine() const {
 
 void SBNInstance::PrepareForPhyloLikelihood(PhyloModelSpecification specification,
                                             size_t thread_count,
+                                            std::vector<BeagleFlags> beagle_flag_vector,
                                             std::optional<size_t> tree_count_option) {
+  // TODO
   MakeEngine(specification, thread_count);
   ResizePhyloModelParams(tree_count_option);
 }
