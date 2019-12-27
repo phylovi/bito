@@ -8,7 +8,7 @@
 
 FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
                      const SitePattern &site_pattern,
-                     FatBeagle::PackedBeagleFlags beagle_preference_flags,
+                     const FatBeagle::PackedBeagleFlags beagle_preference_flags,
                      bool use_tip_states)
     : phylo_model_(PhyloModel::OfSpecification(specification)),
       rescaling_(false),
