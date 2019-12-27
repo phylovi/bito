@@ -28,9 +28,8 @@ class SitePattern {
   size_t PatternCount() const { return patterns_.at(0).size(); }
   size_t SequenceCount() const { return patterns_.size(); }
   const std::vector<double>& GetWeights() const { return weights_; }
-  // TODO some docs here please.
-  // It seems like this is making a flattened partial likelihood vector for a given
-  // sequence, and anything above 4 is given a uniform distribution?
+  // Make a flattened partial likelihood vector for a given sequence, where anything
+  // above 4 is given a uniform distribution.
   const std::vector<double> GetPartials(size_t sequence_idx) const;
 
  private:
