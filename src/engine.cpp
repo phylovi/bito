@@ -11,11 +11,11 @@ Engine::Engine(const PhyloModelSpecification &specification, SitePattern site_pa
   if (thread_count == 0) {
     Failwith("Thread count needs to be strictly positive.");
   }  // else
-  long beagle_preference_flags =
+  auto beagle_preference_flags =
       beagle_flag_vector.empty()
           ? BEAGLE_FLAG_VECTOR_SSE | BEAGLE_FLAG_VECTOR_AVX  // Default flags.
           : std::accumulate(beagle_flag_vector.begin(), beagle_flag_vector.end(), 0,
-                            std::bit_or<long>());
+                            std::bit_or<FatBeagle::PackedBeagleFlags>());
   for (size_t i = 0; i < thread_count; i++) {
     fat_beagles_.push_back(std::make_unique<FatBeagle>(specification, site_pattern_,
                                                        beagle_preference_flags));

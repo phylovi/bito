@@ -7,7 +7,8 @@
 #include <vector>
 
 FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
-                     const SitePattern &site_pattern, long beagle_preference_flags,
+                     const SitePattern &site_pattern,
+                     FatBeagle::PackedBeagleFlags beagle_preference_flags,
                      bool use_tip_states)
     : phylo_model_(PhyloModel::OfSpecification(specification)),
       rescaling_(false),
@@ -141,8 +142,9 @@ std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
   return fat_beagle->BranchGradient(in_tree);
 }
 
-std::pair<FatBeagle::BeagleInstance, long> FatBeagle::CreateInstance(
-    const SitePattern &site_pattern, long beagle_preference_flags) {
+std::pair<FatBeagle::BeagleInstance, FatBeagle::PackedBeagleFlags>
+FatBeagle::CreateInstance(const SitePattern &site_pattern,
+                          FatBeagle::PackedBeagleFlags beagle_preference_flags) {
   int taxon_count = static_cast<int>(site_pattern.SequenceCount());
   // Number of partial buffers to create (input):
   // taxon_count - 1 for lower partials (internal nodes only)
