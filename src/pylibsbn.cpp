@@ -144,7 +144,7 @@ PYBIND11_MODULE(libsbn, m) {
 
       They are used in Python like ``beagle_flags.PROCESSOR_GPU``.
 
-      Note that we expose only the subset of flags that the user should be allowed to modify.
+      Note that we expose only a subset of the BEAGLE flags on purpose.
       )raw");
   py::enum_<BeagleFlags>(beagle_flags, "beagle_flag")
       .value("PRECISION_SINGLE", BEAGLE_FLAG_PRECISION_SINGLE,
