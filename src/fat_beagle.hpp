@@ -18,7 +18,7 @@ class FatBeagle {
  public:
   // This constructor makes the beagle_instance_;
   FatBeagle(const PhyloModelSpecification &specification,
-            const SitePattern &site_pattern, long beagle_flags,
+            const SitePattern &site_pattern, long beagle_preference_flags,
             bool use_tip_states = false);
   ~FatBeagle();
   // Delete (copy + move) x (constructor + assignment)
@@ -28,6 +28,7 @@ class FatBeagle {
   FatBeagle &operator=(const FatBeagle &&) = delete;
 
   const BlockSpecification &GetPhyloModelBlockSpecification() const;
+  const long &GetBeagleFlags() const { return beagle_flags_; };
 
   void SetParameters(const EigenVectorXdRef param_vector);
   void SetRescaling(const bool rescaling) { rescaling_ = rescaling; }
@@ -49,11 +50,12 @@ class FatBeagle {
   std::unique_ptr<PhyloModel> phylo_model_;
   bool rescaling_;
   BeagleInstance beagle_instance_;
+  long beagle_flags_;
   int pattern_count_;
   bool use_tip_states_;
 
-  BeagleInstance CreateInstance(const SitePattern &site_pattern,
-                                long beagle_preference_flags);
+  std::pair<BeagleInstance, long> CreateInstance(const SitePattern &site_pattern,
+                                                 long beagle_preference_flags);
   void SetTipStates(const SitePattern &site_pattern);
   void SetTipPartials(const SitePattern &site_pattern);
   void UpdateSiteModelInBeagle();

@@ -5,16 +5,16 @@
 #include <numeric>
 #include <utility>
 #include <vector>
-#include "beagle_flag_names.hpp"
 
 FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
-                     const SitePattern &site_pattern, long beagle_flags,
+                     const SitePattern &site_pattern, long beagle_preference_flags,
                      bool use_tip_states)
     : phylo_model_(PhyloModel::OfSpecification(specification)),
       rescaling_(false),
       pattern_count_(static_cast<int>(site_pattern.PatternCount())),
       use_tip_states_(use_tip_states) {
-  beagle_instance_ = CreateInstance(site_pattern, beagle_flags);
+  std::tie(beagle_instance_, beagle_flags_) =
+      CreateInstance(site_pattern, beagle_preference_flags);
   if (use_tip_states_) {
     SetTipStates(site_pattern);
   } else {
@@ -141,8 +141,8 @@ std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
   return fat_beagle->BranchGradient(in_tree);
 }
 
-FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern,
-                                                    long beagle_preference_flags) {
+std::pair<FatBeagle::BeagleInstance, long> FatBeagle::CreateInstance(
+    const SitePattern &site_pattern, long beagle_preference_flags) {
   int taxon_count = static_cast<int>(site_pattern.SequenceCount());
   // Number of partial buffers to create (input):
   // taxon_count - 1 for lower partials (internal nodes only)
@@ -186,9 +186,7 @@ FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_patt
       scale_buffer_count, allowed_resources, resource_count, beagle_preference_flags,
       requirement_flags, &return_info);
   if (return_info.flags & (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
-    std::cout << "BEAGLE running with: "
-              << BeagleFlagNames::OfBeagleFlags(return_info.flags) << std::endl;
-    return beagle_instance;
+    return {beagle_instance, return_info.flags};
   }  // else
   Failwith("Couldn't get a CPU or a GPU from BEAGLE.");
 }
