@@ -18,7 +18,7 @@
 class Engine {
  public:
   Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
-         size_t thread_count);
+         size_t thread_count, const std::vector<BeagleFlags> &beagle_flag_vector);
 
   const BlockSpecification &GetPhyloModelBlockSpecification() const;
 

@@ -135,7 +135,7 @@ PYBIND11_MODULE(libsbn, m) {
 
   py::module beagle_flags =
       m.def_submodule("beagle_flags", "Flags that can be passed to BEAGLE.");
-  py::enum_<BeagleFlags>(beagle_flags, "beagle_flags")
+  py::enum_<BeagleFlags>(beagle_flags, "beagle_flag")
       .value("PRECISION_SINGLE", BEAGLE_FLAG_PRECISION_SINGLE)
       .value("PRECISION_DOUBLE", BEAGLE_FLAG_PRECISION_DOUBLE)
       .value("COMPUTATION_SYNCH", BEAGLE_FLAG_COMPUTATION_SYNCH)

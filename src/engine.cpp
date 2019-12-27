@@ -2,15 +2,23 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "engine.hpp"
+#include <numeric>
 
 Engine::Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
-               size_t thread_count)
+               size_t thread_count, const std::vector<BeagleFlags> &beagle_flag_vector)
     : site_pattern_(std::move(site_pattern)) {
   if (thread_count == 0) {
     Failwith("Thread count needs to be strictly positive.");
-  }
+  }  // else
+  long beagle_flags =
+      beagle_flag_vector.empty()
+          ? BEAGLE_FLAG_VECTOR_SSE | BEAGLE_FLAG_VECTOR_AVX  // Default flags.
+          : std::accumulate(beagle_flag_vector.begin(), beagle_flag_vector.end(), 0,
+                            std::bit_or<long>());
+
   for (size_t i = 0; i < thread_count; i++) {
-    fat_beagles_.push_back(std::make_unique<FatBeagle>(specification, site_pattern_));
+    fat_beagles_.push_back(
+        std::make_unique<FatBeagle>(specification, site_pattern_, beagle_flags));
   }
 }
 

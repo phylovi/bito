@@ -8,12 +8,13 @@
 #include "beagle_flag_names.hpp"
 
 FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
-                     const SitePattern &site_pattern, bool use_tip_states)
+                     const SitePattern &site_pattern, long beagle_flags,
+                     bool use_tip_states)
     : phylo_model_(PhyloModel::OfSpecification(specification)),
       rescaling_(false),
       pattern_count_(static_cast<int>(site_pattern.PatternCount())),
       use_tip_states_(use_tip_states) {
-  beagle_instance_ = CreateInstance(site_pattern);
+  beagle_instance_ = CreateInstance(site_pattern, beagle_flags);
   if (use_tip_states_) {
     SetTipStates(site_pattern);
   } else {
@@ -140,7 +141,8 @@ std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
   return fat_beagle->BranchGradient(in_tree);
 }
 
-FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern) {
+FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_pattern,
+                                                    long beagle_preference_flags) {
   int taxon_count = static_cast<int>(site_pattern.SequenceCount());
   // Number of partial buffers to create (input):
   // taxon_count - 1 for lower partials (internal nodes only)
@@ -175,18 +177,13 @@ FatBeagle::BeagleInstance FatBeagle::CreateInstance(const SitePattern &site_patt
   int resource_count = 0;
   // Bit-flags indicating preferred implementation charactertistics, see
   // BeagleFlags (input)
-  int64_t preference_flags =
-      BEAGLE_FLAG_VECTOR_SSE | BEAGLE_FLAG_VECTOR_AVX |
-      BEAGLE_FLAG_PROCESSOR_GPU;
-  // Bit-flags indicating required implementation characteristics, see
-  // BeagleFlags (input)
   int requirement_flags = BEAGLE_FLAG_SCALING_MANUAL;
 
   BeagleInstanceDetails return_info;
   auto beagle_instance = beagleCreateInstance(
       taxon_count, partials_buffer_count, compact_buffer_count, state_count,
       pattern_count, eigen_buffer_count, matrix_buffer_count, category_count,
-      scale_buffer_count, allowed_resources, resource_count, preference_flags,
+      scale_buffer_count, allowed_resources, resource_count, beagle_preference_flags,
       requirement_flags, &return_info);
   if (return_info.flags & (BEAGLE_FLAG_PROCESSOR_CPU | BEAGLE_FLAG_PROCESSOR_GPU)) {
     std::cout << "BEAGLE running with: "
