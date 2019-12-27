@@ -16,6 +16,16 @@ namespace py = pybind11;
 // conversion of STL types.
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
+enum Sentiment { Angry = 0, Happy, Confused };
+
+void mood(std::vector<Sentiment> sv) {
+  long total;
+  for (const auto &s : sv) {
+    total |= s;
+  }
+  std::cout << "beagle flags: " << total << std::endl;
+};
+
 PYBIND11_MODULE(libsbn, m) {
   m.doc() = R"raw(Python interface to libsbn.)raw";
   // Second, we expose them as buffer objects so that we can use them
@@ -131,4 +141,13 @@ PYBIND11_MODULE(libsbn, m) {
   // `with libsbn.ostream_redirect(stdout=True, stderr=True):`
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
   py::add_ostream_redirect(m, "ostream_redirect");
+
+  py::module beagle_flags =
+      m.def_submodule("beagle_flags", "A peon is a submodule of 'ork'");
+  py::enum_<Sentiment>(beagle_flags, "Sentiment")
+      .value("Angry", Angry)
+      .value("Happy", Happy)
+      .value("Confused", Confused)
+      .export_values();
+  m.def("mood", &mood, "Demonstrate using an enum");
 }

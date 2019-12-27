@@ -8,6 +8,7 @@ import pprint
 import pytest
 import numpy as np
 import libsbn
+import libsbn.beagle_flags as beagle_flags
 
 SIMPLE_SPECIFICATION = libsbn.PhyloModelSpecification(
     substitution="JC69", site="constant", clock="none"
@@ -137,6 +138,10 @@ def rootings_indexer_test():
     first_sorted_rep = list(final_sorted[0])
     for rep in final_sorted[1:]:
         assert first_sorted_rep == list(rep)
+
+
+def test_beagle_flags():
+    libsbn.mood([beagle_flags.Happy, beagle_flags.Confused])
 
 
 def test_libsbn():
