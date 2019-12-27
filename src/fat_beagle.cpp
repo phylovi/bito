@@ -56,9 +56,8 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
                        static_cast<int>(operations.size()),
                        ba.cumulative_scale_index_[0]);
   double log_like = 0.;
-  std::vector<int> root_id_vector = {ba.root_id_};
   beagleCalculateRootLogLikelihoods(
-      beagle_instance_, root_id_vector.data(), ba.category_weight_index_.data(),
+      beagle_instance_, &ba.root_id_, ba.category_weight_index_.data(),
       ba.state_frequency_index_.data(), ba.cumulative_scale_index_.data(),
       ba.mysterious_count_, &log_like);
   return log_like;
@@ -123,9 +122,8 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
 
   // Also calculate the likelihood.
   double log_like = 0.;
-  std::vector<int> root_buffer_index = {ba.root_id_};
   beagleCalculateRootLogLikelihoods(
-      beagle_instance_, root_buffer_index.data(), ba.category_weight_index_.data(),
+      beagle_instance_, &ba.root_id_, ba.category_weight_index_.data(),
       ba.state_frequency_index_.data(), ba.cumulative_scale_index_.data(),
       ba.mysterious_count_, &log_like);
   return {log_like, gradient};
