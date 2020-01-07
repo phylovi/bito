@@ -136,6 +136,15 @@ PYBIND11_MODULE(libsbn, m) {
             Prepare instance for phylogenetic likelihood computation.
 
             See the ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
+
+            ``use_tip_states`` tells BEAGLE if it should use tip states (versus tip partials).
+
+            ``tree_count_option`` tells libsbn for how many trees you will be asking for the likelihood
+            or gradient at a time. If not specified, this is set to the number of trees currently loaded
+            into the instance. This allocates the correct number of slots in the phylogenetic model
+            parameter matrices, and it's up to the user to set those model parameters after calling
+            this function.
+            Note that this tree count need not be the same as the number of threads (and is typically bigger).
            )raw",
            py::arg("model_specification"), py::arg("thread_count"),
            py::arg("beagle_flags") = std::vector<BeagleFlags>(),
