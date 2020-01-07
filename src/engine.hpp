@@ -16,8 +16,9 @@
 #include "tree_collection.hpp"
 
 struct EngineSpecification {
-  const size_t thread_count;
-  const std::vector<BeagleFlags> &beagle_flag_vector;
+  const size_t thread_count_;
+  const std::vector<BeagleFlags> &beagle_flag_vector_;
+  const bool use_tip_states_;
 };
 
 class Engine {

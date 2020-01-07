@@ -277,9 +277,10 @@ void SBNInstance::ClearTreeCollectionAssociatedState() {
 
 void SBNInstance::PrepareForPhyloLikelihood(
     PhyloModelSpecification model_specification, size_t thread_count,
-    const std::vector<BeagleFlags> &beagle_flag_vector,
+    const std::vector<BeagleFlags> &beagle_flag_vector, const bool use_tip_states,
     std::optional<size_t> tree_count_option) {
-  const EngineSpecification engine_specification{thread_count, beagle_flag_vector};
+  const EngineSpecification engine_specification{thread_count, beagle_flag_vector,
+                                                 use_tip_states};
   MakeEngine(model_specification, engine_specification);
   ResizePhyloModelParams(tree_count_option);
 }
