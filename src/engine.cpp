@@ -5,22 +5,24 @@
 #include <numeric>
 #include "beagle_flag_names.hpp"
 
-Engine::Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
-               size_t thread_count, const std::vector<BeagleFlags> &beagle_flag_vector)
+Engine::Engine(const PhyloModelSpecification &model_specification,
+               SitePattern site_pattern,
+               const EngineSpecification &engine_specification)
     : site_pattern_(std::move(site_pattern)) {
-  if (thread_count == 0) {
+  if (engine_specification.thread_count == 0) {
     Failwith("Thread count needs to be strictly positive.");
   }  // else
   const auto beagle_preference_flags =
-      beagle_flag_vector.empty()
+      engine_specification.beagle_flag_vector.empty()
           ? BEAGLE_FLAG_VECTOR_SSE | BEAGLE_FLAG_VECTOR_AVX  // Default flags.
-          : std::accumulate(beagle_flag_vector.begin(), beagle_flag_vector.end(), 0,
+          : std::accumulate(engine_specification.beagle_flag_vector.begin(),
+                            engine_specification.beagle_flag_vector.end(), 0,
                             std::bit_or<FatBeagle::PackedBeagleFlags>());
-  for (size_t i = 0; i < thread_count; i++) {
-    fat_beagles_.push_back(std::make_unique<FatBeagle>(specification, site_pattern_,
-                                                       beagle_preference_flags));
+  for (size_t i = 0; i < engine_specification.thread_count; i++) {
+    fat_beagles_.push_back(std::make_unique<FatBeagle>(
+        model_specification, site_pattern_, beagle_preference_flags));
   }
-  if (!beagle_flag_vector.empty()) {
+  if (!engine_specification.beagle_flag_vector.empty()) {
     std::cout << "We asked BEAGLE for: "
               << BeagleFlagNames::OfBeagleFlags(beagle_preference_flags) << std::endl;
     auto beagle_flags = fat_beagles_[0]->GetBeagleFlags();

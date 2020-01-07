@@ -248,12 +248,12 @@ BlockSpecification::ParameterBlockMap SBNInstance::GetPhyloModelParamBlockMap() 
       phylo_model_params_);
 }
 
-void SBNInstance::MakeEngine(PhyloModelSpecification specification, size_t thread_count,
-                             const std::vector<BeagleFlags> &beagle_flag_vector) {
+void SBNInstance::MakeEngine(PhyloModelSpecification model_specification,
+                             const EngineSpecification &engine_specification) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  engine_ = std::make_unique<Engine>(specification, site_pattern, thread_count,
-                                     beagle_flag_vector);
+  engine_ =
+      std::make_unique<Engine>(model_specification, site_pattern, engine_specification);
 }
 
 Engine *SBNInstance::GetEngine() const {
@@ -276,10 +276,11 @@ void SBNInstance::ClearTreeCollectionAssociatedState() {
 }
 
 void SBNInstance::PrepareForPhyloLikelihood(
-    PhyloModelSpecification specification, size_t thread_count,
+    PhyloModelSpecification model_specification, size_t thread_count,
     const std::vector<BeagleFlags> &beagle_flag_vector,
     std::optional<size_t> tree_count_option) {
-  MakeEngine(specification, thread_count, beagle_flag_vector);
+  const EngineSpecification engine_specification{thread_count, beagle_flag_vector};
+  MakeEngine(model_specification, engine_specification);
   ResizePhyloModelParams(tree_count_option);
 }
 

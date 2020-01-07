@@ -24,7 +24,8 @@ class FatBeagle {
             const PackedBeagleFlags beagle_preference_flags,
             bool use_tip_states = false);
   ~FatBeagle();
-  // Delete (copy + move) x (constructor + assignment)
+  // Delete (copy + move) x (constructor + assignment) because FatBeagle manages an
+  // external resource (a BEAGLE instance).
   FatBeagle(const FatBeagle &) = delete;
   FatBeagle(const FatBeagle &&) = delete;
   FatBeagle &operator=(const FatBeagle &) = delete;
