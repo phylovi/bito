@@ -14,7 +14,7 @@ Engine::Engine(const PhyloModelSpecification &model_specification,
   }  // else
   const auto beagle_preference_flags =
       engine_specification.beagle_flag_vector_.empty()
-          ? BEAGLE_FLAG_VECTOR_SSE | BEAGLE_FLAG_VECTOR_AVX  // Default flags.
+          ? BEAGLE_FLAG_VECTOR_SSE  // Default flags.
           : std::accumulate(engine_specification.beagle_flag_vector_.begin(),
                             engine_specification.beagle_flag_vector_.end(), 0,
                             std::bit_or<FatBeagle::PackedBeagleFlags>());

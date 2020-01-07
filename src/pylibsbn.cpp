@@ -195,19 +195,12 @@ PYBIND11_MODULE(libsbn, m) {
       .value("COMPUTATION_ASYNCH", BEAGLE_FLAG_COMPUTATION_ASYNCH,
              "Asynchronous computation (non-blocking)")
       .value("VECTOR_SSE", BEAGLE_FLAG_VECTOR_SSE, "SSE computation")
-      .value("VECTOR_AVX", BEAGLE_FLAG_VECTOR_AVX, "AVX computation")
       .value("VECTOR_NONE", BEAGLE_FLAG_VECTOR_NONE, "No vector computation")
       .value("THREADING_CPP", BEAGLE_FLAG_THREADING_CPP, "C++11 threading")
       .value("THREADING_OPENMP", BEAGLE_FLAG_THREADING_OPENMP, "OpenMP threading")
       .value("THREADING_NONE", BEAGLE_FLAG_THREADING_NONE, "No threading (default)")
       .value("PROCESSOR_CPU", BEAGLE_FLAG_PROCESSOR_CPU, "Use CPU as main processor")
       .value("PROCESSOR_GPU", BEAGLE_FLAG_PROCESSOR_GPU, "Use GPU as main processor")
-      .value("PROCESSOR_FPGA", BEAGLE_FLAG_PROCESSOR_FPGA, "Use FPGA as main processor")
-      .value("PROCESSOR_CELL", BEAGLE_FLAG_PROCESSOR_CELL, "Use Cell as main processor")
-      .value("PROCESSOR_PHI", BEAGLE_FLAG_PROCESSOR_PHI,
-             "Use Intel Phi as main processor")
-      .value("PROCESSOR_OTHER", BEAGLE_FLAG_PROCESSOR_OTHER,
-             "Use other type of processor")
       .value("FRAMEWORK_CUDA", BEAGLE_FLAG_FRAMEWORK_CUDA,
              "Use CUDA implementation with GPU resources")
       .value("FRAMEWORK_OPENCL", BEAGLE_FLAG_FRAMEWORK_OPENCL,
