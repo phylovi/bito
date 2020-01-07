@@ -113,8 +113,9 @@ class SBNInstance {
   // Prepare for phylogenetic likelihood calculation. If we get a nullopt
   // argument, it just uses the number of trees currently in the SBNInstance.
   void PrepareForPhyloLikelihood(
-      PhyloModelSpecification specification, size_t thread_count,
+      PhyloModelSpecification model_specification, size_t thread_count,
       const std::vector<BeagleFlags> &beagle_flag_vector = {},
+      const bool use_tip_states = false,
       std::optional<size_t> tree_count_option = std::nullopt);
   // Make the number of phylogentic model parameters fit the number of trees and
   // the speficied model. If we get a nullopt argument, it just uses the number
