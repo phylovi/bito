@@ -159,10 +159,9 @@ class SBNInstance {
   static std::mt19937 random_generator_;
   bool rescaling_;
 
-  // Make a likelihood engine which will run across the specified number of
-  // threads.
-  void MakeEngine(PhyloModelSpecification specification, size_t thread_count,
-                  const std::vector<BeagleFlags> &beagle_flag_vector);
+  // Make a likelihood engine with the given specification.
+  void MakeEngine(PhyloModelSpecification specification,
+                  const EngineSpecification &engine_specification);
   // Return a raw pointer to the engine if it's available.
   Engine *GetEngine() const;
 
