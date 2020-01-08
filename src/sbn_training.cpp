@@ -7,6 +7,7 @@
 // first probabilities of rootsplits, then conditional probabilities of PCSSs.
 
 #include "sbn_training.hpp"
+#include <numeric>
 #include "sbn_maps.hpp"
 
 void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices, double value) {
@@ -76,7 +77,8 @@ IndexerRepresentationCounter SBNTraining::IndexerRepresentationCounterOf(
 
 void SBNTraining::SimpleAverage(
     EigenVectorXdRef sbn_parameters,
-    const IndexerRepresentationCounter& indexer_representation_counter) {
+    const IndexerRepresentationCounter& indexer_representation_counter,
+    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
   sbn_parameters.setZero();
 
   for (const auto& [indexer_representation, int_topology_count] :
@@ -86,9 +88,7 @@ void SBNTraining::SimpleAverage(
     IncrementBy(sbn_parameters, rootsplits, topology_count);
     IncrementBy(sbn_parameters, pcsss, topology_count);
   }
-  // We leave the counts in an un-normalized state, which is a suitable input for
-  // sampling.
-  // TODO but it's not suitable for probability normalization.
+  ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
 }
 
 void SBNTraining::ExpectationMaximization(
@@ -107,7 +107,8 @@ void SBNTraining::ExpectationMaximization(
   auto edge_count = indexer_representation_counter[0].first.first.size();
   EigenVectorXd q_weights(edge_count);
 
-  SimpleAverage(sbn_parameters, indexer_representation_counter);
+  SimpleAverage(sbn_parameters, indexer_representation_counter, rootsplit_count,
+                parent_to_range);
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
 
   // TODO actually loop
@@ -140,4 +141,35 @@ void SBNTraining::ExpectationMaximization(
   }
   sbn_parameters = m_bar;
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
+}
+
+double SBNTraining::ProbabilityOf(const EigenConstVectorXdRef sbn_parameters,
+                                  const IndexerRepresentation& indexer_representation) {
+  const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
+
+  auto single_rooting_probability = [&sbn_parameters](const size_t rootsplit,
+                                                      const SizeVector pcss_vector) {
+    return std::accumulate(
+        pcss_vector.cbegin(), pcss_vector.cend(), sbn_parameters[rootsplit],
+        [&sbn_parameters](const double& subproduct, const size_t& pcss_idx) {
+          return subproduct * sbn_parameters[pcss_idx];
+        });
+  };
+
+  return std::inner_product(rootsplits.cbegin(), rootsplits.cend(),
+                            pcss_vector_vector.cbegin(), 0., std::plus<>(),
+                            single_rooting_probability);
+}
+
+EigenVectorXd SBNTraining::ProbabilityOf(
+    const EigenConstVectorXdRef sbn_parameters,
+    const std::vector<IndexerRepresentation>& indexer_representations) {
+  const size_t tree_count = indexer_representations.size();
+  EigenVectorXd results(tree_count);
+  for (size_t tree_idx = 0; tree_idx < tree_count; ++tree_idx) {
+    results[tree_idx] =
+        ProbabilityOf(sbn_parameters, indexer_representations[tree_idx]);
+  }
+
+  return results;
 }

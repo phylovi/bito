@@ -56,6 +56,7 @@ class SBNInstance {
   // SBN training. See sbn_training.hpp for details.
   void TrainSimpleAverage();
   void TrainExpectationMaximization(double alpha, double tolerance);
+  EigenVectorXd CalculateSBNProbabilities();
 
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.

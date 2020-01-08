@@ -18,7 +18,8 @@ IndexerRepresentationCounter IndexerRepresentationCounterOf(
 // The "SBN-SA" estimator described in the "Maximum Lower Bound Estimates" section of
 // the 2018 NeurIPS paper.
 void SimpleAverage(EigenVectorXdRef sbn_parameters,
-                   const IndexerRepresentationCounter& indexer_representation_counter);
+                   const IndexerRepresentationCounter& indexer_representation_counter,
+                   size_t rootsplit_count, const BitsetSizePairMap& parent_to_range);
 
 // The "SBN-EM" estimator described in the "Expectation Maximization" section of
 // the 2018 NeurIPS paper.
@@ -27,6 +28,13 @@ void ExpectationMaximization(
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
     double tolerance);
+
+double ProbabilityOf(const EigenConstVectorXdRef,
+                     const IndexerRepresentation& indexer_representation);
+
+EigenVectorXd ProbabilityOf(
+    const EigenConstVectorXdRef sbn_parameters,
+    const std::vector<IndexerRepresentation>& indexer_representations);
 
 }  // namespace SBNTraining
 
