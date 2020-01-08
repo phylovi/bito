@@ -143,9 +143,22 @@ def rootings_indexer_test():
         assert first_sorted_rep == list(rep)
 
 
+def sbn_training_test():
+    """Test SBN training."""
+    inst = libsbn.instance("sbn")
+    inst.read_newick_file("/home/ematsen/example.trees")
+    inst.process_loaded_trees()
+    inst.train_simple_average()
+    probabilities = inst.calculate_sbn_probabilities()
+    import pandas as pd
+
+    pd.Series(probabilities).to_csv("test.csv", index=False)
+
+
 def test_libsbn():
     """Test the libsbn instance."""
 
+    sbn_training_test()
     hello_demo()
     sampling_and_indexers_demo()
     inst = ds1_support_test()
