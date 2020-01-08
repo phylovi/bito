@@ -240,7 +240,7 @@ TEST_CASE("libsbn") {
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
-  std::vector<bool> tip_state_options{false};
+  std::vector<bool> tip_state_options{false,true};
   for (const auto tip_state_option : tip_state_options) {
     inst.PrepareForPhyloLikelihood(simple_specification, 2, {}, tip_state_option);
     auto likelihoods = inst.LogLikelihoods();
