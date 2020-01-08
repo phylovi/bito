@@ -74,12 +74,11 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   SetRootPreorderPartialsToStateFrequencies(ba);
 
   // Set differential matrix for each branch.
-  const auto derivative_matrix_indices =
-      BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_ - 1);
   const EigenMatrixXd &Q = phylo_model_->GetSubstitutionModel()->GetQMatrix();
-  for (int derivative_matrix_idx : derivative_matrix_indices) {
-    beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, Q.data());
-  }
+  int derivative_matrix_idx = ba.node_count_ - 1;
+  beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, Q.data());
+  const auto derivative_matrix_indices =
+      std::vector<int>(ba.node_count_ - 1, derivative_matrix_idx);
 
   // Calculate post-order partials
   BeagleOperationVector operations;
