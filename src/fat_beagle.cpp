@@ -119,6 +119,9 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   // We want the fixed node to have a zero gradient.
   gradient[ba.fixed_node_id_] = 0.;
 
+  // TODO calculate likelihood???
+  return {0., gradient};
+
   // Also calculate the likelihood.
   double log_like = 0.;
   beagleCalculateRootLogLikelihoods(
