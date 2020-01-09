@@ -147,7 +147,7 @@ def rootings_indexer_test():
 def sbn_training_test():
     """Test SBN training."""
     inst = libsbn.instance("sbn")
-    inst.read_newick_file("/home/ematsen/example.trees")
+    inst.read_newick_file("data/DS1.100_topologies.nwk")
     inst.process_loaded_trees()
     inst.train_simple_average()
     probabilities = inst.calculate_sbn_probabilities()
@@ -163,6 +163,11 @@ def sbn_training_test():
     probabilities = inst.calculate_sbn_probabilities()
     pd.Series(probabilities).to_csv(
         "_ignore/em-alpha0-loop23.csv", index=False, header=False
+    )
+    inst.train_expectation_maximization(0.3, 7)
+    probabilities = inst.calculate_sbn_probabilities()
+    pd.Series(probabilities).to_csv(
+        "_ignore/em-alpha0.3-loop7.csv", index=False, header=False
     )
 
 
