@@ -6,7 +6,7 @@
 // We assume that readers are familiar with how the sbn_parameters_ vector is laid out:
 // first probabilities of rootsplits, then conditional probabilities of PCSSs.
 
-#include "sbn_training.hpp"
+#include "sbn_probability.hpp"
 #include <numeric>
 #include "sbn_maps.hpp"
 
@@ -77,7 +77,7 @@ void ProbabilityNormalizeParams(EigenVectorXdRef vec, size_t rootsplit_count,
   }
 }
 
-IndexerRepresentationCounter SBNTraining::IndexerRepresentationCounterOf(
+IndexerRepresentationCounter SBNProbability::IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter) {
   IndexerRepresentationCounter counter;
   counter.reserve(topology_counter.size());
@@ -104,7 +104,7 @@ void AccumulateCounts(
   }
 }
 
-void SBNTraining::SimpleAverage(
+void SBNProbability::SimpleAverage(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
@@ -113,7 +113,7 @@ void SBNTraining::SimpleAverage(
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
 }
 
-void SBNTraining::ExpectationMaximization(
+void SBNProbability::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
@@ -169,8 +169,9 @@ void SBNTraining::ExpectationMaximization(
   }
 }
 
-double SBNTraining::ProbabilityOf(const EigenConstVectorXdRef sbn_parameters,
-                                  const IndexerRepresentation& indexer_representation) {
+double SBNProbability::ProbabilityOf(
+    const EigenConstVectorXdRef sbn_parameters,
+    const IndexerRepresentation& indexer_representation) {
   const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
   auto single_rooting_probability = [&sbn_parameters](const size_t rootsplit,
                                                       const SizeVector pcss_vector) {
@@ -184,7 +185,7 @@ double SBNTraining::ProbabilityOf(const EigenConstVectorXdRef sbn_parameters,
       single_rooting_probability);             // How to combine pairs of elements.
 }
 
-EigenVectorXd SBNTraining::ProbabilityOf(
+EigenVectorXd SBNProbability::ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<IndexerRepresentation>& indexer_representations) {
   const size_t tree_count = indexer_representations.size();

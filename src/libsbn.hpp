@@ -53,7 +53,7 @@ class SBNInstance {
   void CheckSBNMapsAvailable();
   void PrintSupports();
 
-  // SBN training. See sbn_training.hpp for details.
+  // SBN training. See sbn_probability.hpp for details.
   void TrainSimpleAverage();
   void TrainExpectationMaximization(double alpha, size_t em_loop_count);
   EigenVectorXd CalculateSBNProbabilities();
