@@ -55,7 +55,7 @@ class SBNInstance {
 
   // SBN training. See sbn_training.hpp for details.
   void TrainSimpleAverage();
-  void TrainExpectationMaximization(double alpha, double tolerance);
+  void TrainExpectationMaximization(double alpha, size_t em_loop_count);
   EigenVectorXd CalculateSBNProbabilities();
 
   // Sample an integer index in [range.first, range.second) according to
@@ -232,7 +232,7 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_2),
            correct_psp_representation_2);
 
-  inst.TrainExpectationMaximization(0.0001, 0.01);
+  inst.TrainExpectationMaximization(0.0001, 1);
   inst.SampleTrees(2);
   inst.GetIndexerRepresentations();
 

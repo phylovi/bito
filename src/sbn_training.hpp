@@ -12,6 +12,7 @@ using IndexerRepresentationCounter =
 
 namespace SBNTraining {
 
+// Turn a TopologyCounter into an IndexerRepresentationCounter.
 IndexerRepresentationCounter IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter);
 
@@ -27,11 +28,13 @@ void ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
-    double tolerance);
+    size_t em_loop_count);
 
+// Calculate the probability of an indexer_representation of a topology.
 double ProbabilityOf(const EigenConstVectorXdRef,
                      const IndexerRepresentation& indexer_representation);
 
+// Calculate the probabilities of a collection of indexer_representations.
 EigenVectorXd ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<IndexerRepresentation>& indexer_representations);

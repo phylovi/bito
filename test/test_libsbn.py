@@ -4,6 +4,7 @@ If you want to see the results of the print statements, use `pytest -s`.
 """
 
 import json
+import pandas as pd
 import pprint
 import pytest
 import numpy as np
@@ -52,7 +53,7 @@ def sampling_and_indexers_demo():
     assert inst.tree_count() == 4
     # Showing off tree sampling.
     inst.process_loaded_trees()
-    inst.train_expectation_maximization(0.0001, 0.01)
+    inst.train_expectation_maximization(0.0001, 1)
     # Note that this puts the trees into the instance object, replacing the trees loaded
     # from the file.
     inst.sample_trees(2)
@@ -150,9 +151,14 @@ def sbn_training_test():
     inst.process_loaded_trees()
     inst.train_simple_average()
     probabilities = inst.calculate_sbn_probabilities()
-    import pandas as pd
-
-    pd.Series(probabilities).to_csv("test.csv", index=False)
+    pd.Series(probabilities).to_csv(
+        "_ignore/simple-average.csv", index=False, header=False
+    )
+    inst.train_expectation_maximization(0.0, 1)
+    probabilities = inst.calculate_sbn_probabilities()
+    pd.Series(probabilities).to_csv(
+        "_ignore/em-alpha0-loop1.csv", index=False, header=False
+    )
 
 
 def test_libsbn():

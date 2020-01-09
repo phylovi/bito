@@ -106,7 +106,7 @@ PYBIND11_MODULE(libsbn, m) {
 
            This is described in the "Expectation Maximization" section of the 2018 NeurIPS
            paper, and is later referred to as the "SBN-EM" estimator.)raw",
-           py::arg("alpha"), py::arg("tolerance"))
+           py::arg("alpha"), py::arg("em_loop_count"))
       .def("calculate_sbn_probabilities", &SBNInstance::CalculateSBNProbabilities,
            R"raw(Get the SBN probabilities of the currently loaded trees.)raw")
       .def("sample_trees", &SBNInstance::SampleTrees,
