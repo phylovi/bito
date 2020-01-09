@@ -86,16 +86,17 @@ EigenVectorXd SBNInstance::CalculateSBNProbabilities() {
 }
 
 size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
-  Assert(range.first < range.second && range.second <= sbn_parameters_.size(),
+  const auto &[start, end] = range;
+  Assert(start < end && end <= sbn_parameters_.size(),
          "SampleIndex given an invalid range.");
   std::discrete_distribution<> distribution(
       // Lordy, these integer types.
-      sbn_parameters_.begin() + static_cast<ptrdiff_t>(range.first),
-      sbn_parameters_.begin() + static_cast<ptrdiff_t>(range.second));
+      sbn_parameters_.begin() + static_cast<ptrdiff_t>(start),
+      sbn_parameters_.begin() + static_cast<ptrdiff_t>(end));
   // We have to add on range.first because we have taken a slice of the full
   // array, and the sampler treats the beginning of this slice as zero.
-  auto result = range.first + static_cast<size_t>(distribution(random_generator_));
-  Assert(result < range.second, "SampleIndex sampled a value out of range.");
+  auto result = start + static_cast<size_t>(distribution(random_generator_));
+  Assert(result < end, "SampleIndex sampled a value out of range.");
   return result;
 }
 
@@ -174,16 +175,15 @@ StringVector SBNInstance::StringReversedIndexer() const {
 std::pair<StringSet, StringSetVector> SBNInstance::StringIndexerRepresentationOf(
     IndexerRepresentation indexer_representation) const {
   auto reversed_indexer = StringReversedIndexer();
-  auto rootsplit_indices = indexer_representation.first;
-  auto pcss_index_vector = indexer_representation.second;
+  const auto &[rootsplit_indices, pcss_index_vector] = indexer_representation;
   StringSet rootsplit_string_set;
-  for (auto index : rootsplit_indices) {
+  for (const auto index : rootsplit_indices) {
     SafeInsert(rootsplit_string_set, reversed_indexer[index]);
   }
   StringSetVector pcss_string_sets;
   for (const auto &pcss_indices : pcss_index_vector) {
     StringSet pcss_string_set;
-    for (auto index : pcss_indices) {
+    for (const auto index : pcss_indices) {
       SafeInsert(pcss_string_set, reversed_indexer[index]);
     }
     pcss_string_sets.push_back(std::move(pcss_string_set));

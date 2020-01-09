@@ -159,6 +159,11 @@ def sbn_training_test():
     pd.Series(probabilities).to_csv(
         "_ignore/em-alpha0-loop1.csv", index=False, header=False
     )
+    inst.train_expectation_maximization(0.0, 23)
+    probabilities = inst.calculate_sbn_probabilities()
+    pd.Series(probabilities).to_csv(
+        "_ignore/em-alpha0-loop23.csv", index=False, header=False
+    )
 
 
 def test_libsbn():
