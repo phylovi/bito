@@ -47,12 +47,7 @@ void IncrementBy(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vect
   }
 }
 
-// I know I'm supposed to prefer
-// return std::accumulate(indices.cbegin(), indices.cend(), starting_value,
-//                        [&vec](const double& subproduct, const size_t& idx) {
-//                          return subproduct * vec[idx];
-//                        });
-// but the version below is so clear that it doesn't need any comments...
+// Take the product of the entries of vec in indices times starting_value.
 double ProductOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
                  const double starting_value) {
   double result = starting_value;
@@ -62,6 +57,7 @@ double ProductOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
   return result;
 }
 
+// Probability-normalize a range of values in a vector.
 void ProbabilityNormalizeRange(EigenVectorXdRef vec, std::pair<size_t, size_t> range) {
   auto [start_idx, end_idx] = range;
   auto segment = vec.segment(start_idx, end_idx - start_idx);
