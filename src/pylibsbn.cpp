@@ -15,9 +15,9 @@ namespace py = pybind11;
 // https://github.com/eacousineau/repro/blob/f4ba595d077af7363f501f6c85d3d2449219f04a/python/pybind11/custom_tests/test_tmp.cc#L16-L38
 // Thanks to @eacousineau!
 template <typename PyClass, typename C, typename D>
-void def_read_write_mutable(PyClass& cls, const char* name, D C::*pm) {
-  cls.def_property(name, [pm](C & self) -> auto& { return self.*pm; },
-                   [pm](C& self, const D& value) { self.*pm = value; });
+void def_read_write_mutable(PyClass &cls, const char *name, D C::*pm) {
+  cls.def_property(name, [pm](C & self) -> auto & { return self.*pm; },
+                   [pm](C &self, const D &value) { self.*pm = value; });
 }
 
 // In order to make vector<double>s available to numpy, we take two steps.

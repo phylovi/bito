@@ -43,7 +43,5 @@ EigenVectorXd ProbabilityOf(
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
-
-
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_SBN_PROBABILITY_HPP_
