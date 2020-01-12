@@ -149,7 +149,7 @@ PYBIND11_MODULE(libsbn, m) {
            )raw",
            py::arg("model_specification"), py::arg("thread_count"),
            py::arg("beagle_flags") = std::vector<BeagleFlags>(),
-           py::arg("use_tip_states") = false,
+           py::arg("use_tip_states") = true,
            py::arg("tree_count_option") = std::nullopt)
       .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
       .def("get_phylo_model_param_block_map", &SBNInstance::GetPhyloModelParamBlockMap)
