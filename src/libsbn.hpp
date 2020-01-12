@@ -179,7 +179,7 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
-  inst.PrepareForPhyloLikelihood(simple_specification, 2);
+  inst.PrepareForPhyloLikelihood(simple_specification, 2, {BEAGLE_FLAG_VECTOR_NONE});
   for (auto ll : inst.LogLikelihoods()) {
     CHECK_LT(fabs(ll - -84.852358), 0.000001);
   }
@@ -242,7 +242,8 @@ TEST_CASE("libsbn") {
   inst.ReadFastaFile("data/DS1.fasta");
   std::vector<bool> tip_state_options{false,true};
   for (const auto tip_state_option : tip_state_options) {
-    inst.PrepareForPhyloLikelihood(simple_specification, 2, {}, tip_state_option);
+    inst.PrepareForPhyloLikelihood(simple_specification, 2, {BEAGLE_FLAG_VECTOR_NONE},
+                                   tip_state_option);
     auto likelihoods = inst.LogLikelihoods();
     std::vector<double> pybeagle_likelihoods(
         {-14582.995273982739, -6911.294207416366, -6916.880235529542,
@@ -283,7 +284,8 @@ TEST_CASE("libsbn") {
       CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
     }
     // Likelihoods from BranchGradients()
-    inst.PrepareForPhyloLikelihood(simple_specification, 1, {}, tip_state_option);
+    inst.PrepareForPhyloLikelihood(simple_specification, 1, {BEAGLE_FLAG_VECTOR_NONE},
+                                   tip_state_option);
     auto gradients_rescaling = inst.BranchGradients();
     for (size_t i = 0; i < gradients_rescaling.size(); i++) {
       CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]), 0.00011);

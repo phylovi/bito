@@ -29,7 +29,7 @@ def hello_demo():
     )
     inst.read_fasta_file("data/hello.fasta")
     inst.prepare_for_phylo_likelihood(
-        SIMPLE_SPECIFICATION, 2, [beagle_flags.VECTOR_SSE]
+        SIMPLE_SPECIFICATION, 2, [beagle_flags.VECTOR_NONE]
     )
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
     branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])
