@@ -248,7 +248,7 @@ BlockSpecification::ParameterBlockMap SBNInstance::GetPhyloModelParamBlockMap() 
       phylo_model_params_);
 }
 
-void SBNInstance::MakeEngine(PhyloModelSpecification model_specification,
+void SBNInstance::MakeEngine(const PhyloModelSpecification &model_specification,
                              const EngineSpecification &engine_specification) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
@@ -276,7 +276,7 @@ void SBNInstance::ClearTreeCollectionAssociatedState() {
 }
 
 void SBNInstance::PrepareForPhyloLikelihood(
-    PhyloModelSpecification model_specification, size_t thread_count,
+    const PhyloModelSpecification &model_specification, size_t thread_count,
     const std::vector<BeagleFlags> &beagle_flag_vector, const bool use_tip_states,
     std::optional<size_t> tree_count_option) {
   const EngineSpecification engine_specification{thread_count, beagle_flag_vector,
