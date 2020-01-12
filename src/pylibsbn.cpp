@@ -138,6 +138,7 @@ PYBIND11_MODULE(libsbn, m) {
             See the ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
 
             ``use_tip_states`` tells BEAGLE if it should use tip states (versus tip partials).
+            Note that libsbn currently treats degenerate nucleotides as gaps irrespective of this setting.
 
             ``tree_count_option`` tells libsbn for how many trees you will be asking for the likelihood
             or gradient at a time. If not specified, this is set to the number of trees currently loaded
