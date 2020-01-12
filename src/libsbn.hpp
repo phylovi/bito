@@ -161,8 +161,8 @@ class SBNInstance {
   bool rescaling_;
 
   // Make a likelihood engine with the given specification.
-  void MakeEngine(const PhyloModelSpecification &model_specification,
-                  const EngineSpecification &engine_specification);
+  void MakeEngine(const EngineSpecification &engine_specification,
+                  const PhyloModelSpecification &model_specification);
   // Return a raw pointer to the engine if it's available.
   Engine *GetEngine() const;
 
