@@ -1,4 +1,4 @@
-FROM matsengrp/conda-beagle
+FROM quay.io/matsengrp/conda-beagle
 
 COPY environment.yml .
 
