@@ -179,7 +179,7 @@ def sbn_training_test():
 def test_libsbn():
     """Test the libsbn instance."""
 
-    sbn_training_test()
+    #sbn_training_test()
     hello_demo()
     sampling_and_indexers_demo()
     inst = ds1_support_test()
