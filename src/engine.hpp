@@ -23,8 +23,8 @@ struct EngineSpecification {
 
 class Engine {
  public:
-  Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
-         const EngineSpecification &engine_specification);
+  Engine(const EngineSpecification &engine_specification,
+         const PhyloModelSpecification &specification, SitePattern site_pattern);
 
   const BlockSpecification &GetPhyloModelBlockSpecification() const;
 

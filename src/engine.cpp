@@ -5,9 +5,9 @@
 #include <numeric>
 #include "beagle_flag_names.hpp"
 
-Engine::Engine(const PhyloModelSpecification &model_specification,
-               SitePattern site_pattern,
-               const EngineSpecification &engine_specification)
+Engine::Engine(const EngineSpecification &engine_specification,
+               const PhyloModelSpecification &model_specification,
+               SitePattern site_pattern)
     : site_pattern_(std::move(site_pattern)) {
   if (engine_specification.thread_count_ == 0) {
     Failwith("Thread count needs to be strictly positive.");
