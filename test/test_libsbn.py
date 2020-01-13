@@ -4,7 +4,6 @@ If you want to see the results of the print statements, use `pytest -s`.
 """
 
 import json
-import pandas as pd
 import pprint
 import pytest
 import numpy as np
