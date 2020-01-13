@@ -305,18 +305,23 @@ TEST_CASE("libsbn") {
   // Test SBN training.
   inst.ReadNewickFile("data/DS1.100_topologies.nwk");
   inst.ProcessLoadedTrees();
-  // These "Expected" functions are defined in sbn_probability.hpp.
-  const auto expected_SA = ExpectedSAVector();
-  inst.TrainSimpleAverage();
-  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_SA, 1e-12);
+  // // These "Expected" functions are defined in sbn_probability.hpp.
+  // const auto expected_SA = ExpectedSAVector();
+  // inst.TrainSimpleAverage();
+  // CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_SA, 1e-12);
   // Expected EM vectors with alpha = 0.
   const auto [expected_EM_0_1, expected_EM_0_23] = ExpectedEMVectorsAlpha0();
   // 1 iteration of EM with alpha = 0.
   inst.TrainExpectationMaximization(0., 1);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_1, 1e-12);
-  // 23 iterations of EM with alpha = 0
-  inst.TrainExpectationMaximization(0., 23);
-  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
+  // // 23 iterations of EM with alpha = 0
+  // inst.TrainExpectationMaximization(0., 23);
+  // CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
+
+  // ANDY
+  std::cout << inst.tree_collection_.TaxonNames() << std::endl;
+  std::cout << inst.GetIndexers() << std::endl;
+  std::cout << inst.sbn_parameters_ << std::endl;
 
   // MICHAEL
   // std::cout << "alpha 0.3 and one loop" << std::endl;
