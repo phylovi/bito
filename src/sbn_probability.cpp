@@ -171,11 +171,11 @@ double SBNProbability::ProbabilityOf(
 EigenVectorXd SBNProbability::ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<IndexerRepresentation>& indexer_representations) {
-  const size_t tree_count = indexer_representations.size();
-  EigenVectorXd results(tree_count);
-  for (size_t tree_idx = 0; tree_idx < tree_count; ++tree_idx) {
-    results[tree_idx] =
-        ProbabilityOf(sbn_parameters, indexer_representations[tree_idx]);
+  const size_t topology_count = indexer_representations.size();
+  EigenVectorXd results(topology_count);
+  for (size_t topology_idx = 0; topology_idx < topology_count; ++topology_idx) {
+    results[topology_idx] =
+        ProbabilityOf(sbn_parameters, indexer_representations[topology_idx]);
   }
   return results;
 }
