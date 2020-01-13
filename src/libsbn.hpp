@@ -18,6 +18,7 @@
 #include "engine.hpp"
 #include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
+#include "sbn_probability.hpp"
 #include "sugar.hpp"
 #include "tree.hpp"
 
@@ -290,6 +291,22 @@ TEST_CASE("libsbn") {
   for (size_t i = 0; i < last_rescaling.second.size(); i++) {
     CHECK_LT(fabs(last_rescaling.second[i] - physher_gradients[i]), 0.0001);
   }
+
+  // Test SBN training.
+  inst.ReadNewickFile("data/DS1.100_topologies.nwk");
+  inst.ProcessLoadedTrees();
+  // These "Expected" functions are defined in sbn_probability.hpp.
+  const auto expected_SA = ExpectedSAVector();
+  inst.TrainSimpleAverage();
+  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_SA, 1e-12);
+  // Expected EM vectors with alpha = 0.
+  const auto [expected_EM_0_1, expected_EM_0_23] = ExpectedEMVectorsAlpha0();
+  // 1 iteration of EM with alpha = 0.
+  inst.TrainExpectationMaximization(0., 1);
+  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_1, 1e-12);
+  // 23 iterations of EM with alpha = 0
+  inst.TrainExpectationMaximization(0., 23);
+  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
