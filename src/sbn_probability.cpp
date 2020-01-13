@@ -73,17 +73,6 @@ void ProbabilityNormalizeParams(EigenVectorXdRef vec, size_t rootsplit_count,
   }
 }
 
-IndexerRepresentationCounter SBNProbability::IndexerRepresentationCounterOf(
-    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter) {
-  IndexerRepresentationCounter counter;
-  counter.reserve(topology_counter.size());
-  for (const auto& [topology, topology_count] : topology_counter) {
-    counter.push_back(
-        {SBNMaps::IndexerRepresentationOf(indexer, topology), topology_count});
-  }
-  return counter;
-}
-
 // Set the provided counts vector to be the counts of the rootsplits and PCSSs provided
 // in the input.
 void AccumulateCounts(

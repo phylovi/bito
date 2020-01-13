@@ -67,14 +67,14 @@ void SBNInstance::PrintSupports() {
 
 void SBNInstance::TrainSimpleAverage() {
   auto indexer_representation_counter =
-      SBNProbability::IndexerRepresentationCounterOf(indexer_, topology_counter_);
+      SBNMaps::IndexerRepresentationCounterOf(indexer_, topology_counter_);
   SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
                                 rootsplits_.size(), parent_to_range_);
 }
 
 void SBNInstance::TrainExpectationMaximization(double alpha, size_t em_loop_count) {
   auto indexer_representation_counter =
-      SBNProbability::IndexerRepresentationCounterOf(indexer_, topology_counter_);
+      SBNMaps::IndexerRepresentationCounterOf(indexer_, topology_counter_);
   SBNProbability::ExpectationMaximization(
       sbn_parameters_, indexer_representation_counter, rootsplits_.size(),
       parent_to_range_, alpha, em_loop_count);

@@ -7,14 +7,7 @@
 #include "eigen_sugar.hpp"
 #include "sbn_maps.hpp"
 
-using IndexerRepresentationCounter =
-    std::vector<std::pair<IndexerRepresentation, uint32_t>>;
-
 namespace SBNProbability {
-
-// Turn a TopologyCounter into an IndexerRepresentationCounter.
-IndexerRepresentationCounter IndexerRepresentationCounterOf(
-    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter);
 
 // The "SBN-SA" estimator described in the "Maximum Lower Bound Estimates" section of
 // the 2018 NeurIPS paper.

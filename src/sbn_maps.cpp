@@ -168,6 +168,17 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
   return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
 }
 
+IndexerRepresentationCounter SBNMaps::IndexerRepresentationCounterOf(
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter) {
+  IndexerRepresentationCounter counter;
+  counter.reserve(topology_counter.size());
+  for (const auto& [topology, topology_count] : topology_counter) {
+    counter.push_back(
+        {SBNMaps::IndexerRepresentationOf(indexer, topology), topology_count});
+  }
+  return counter;
+}
+
 StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
   StringPCSSMap d_str;
   for (const auto& iter : d) {
