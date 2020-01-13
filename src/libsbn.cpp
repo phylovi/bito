@@ -81,7 +81,7 @@ void SBNInstance::TrainExpectationMaximization(double alpha, size_t em_loop_coun
 }
 
 EigenVectorXd SBNInstance::CalculateSBNProbabilities() {
-  return SBNProbability::ProbabilityOf(sbn_parameters_, GetIndexerRepresentations());
+  return SBNProbability::ProbabilityOf(sbn_parameters_, MakeIndexerRepresentations());
 }
 
 size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
@@ -139,8 +139,7 @@ void SBNInstance::SampleTrees(size_t count) {
   }
 }
 
-// TODO memoization
-std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations() const {
+std::vector<IndexerRepresentation> SBNInstance::MakeIndexerRepresentations() const {
   std::vector<IndexerRepresentation> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
@@ -150,7 +149,7 @@ std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations() cons
   return representations;
 }
 
-std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations() const {
+std::vector<SizeVectorVector> SBNInstance::MakePSPIndexerRepresentations() const {
   std::vector<SizeVectorVector> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {

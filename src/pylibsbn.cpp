@@ -111,15 +111,15 @@ PYBIND11_MODULE(libsbn, m) {
            R"raw(Get the SBN probabilities of the currently loaded trees.)raw")
       .def("sample_trees", &SBNInstance::SampleTrees,
            "Sample trees from the SBN and store them internally.", py::arg("count"))
-      .def("get_indexer_representations", &SBNInstance::GetIndexerRepresentations,
+      .def("make_indexer_representations", &SBNInstance::MakeIndexerRepresentations,
            R"raw(
-            Get the indexer representation of each currently stored tree.
+            Make the indexer representation of each currently stored tree.
 
             See the comment for ``IndexerRepresentationOf`` in ``sbn_maps.hpp`` to learn about what that means.
            )raw")
-      .def("get_psp_indexer_representations",
-           &SBNInstance::GetPSPIndexerRepresentations, R"raw(
-            Get the PSP indexer representation of each currently stored tree.
+      .def("make_psp_indexer_representations",
+           &SBNInstance::MakePSPIndexerRepresentations, R"raw(
+            Make the PSP indexer representation of each currently stored tree.
 
             See the comments in ``psp_indexer.hpp`` to understand the layout.
            )raw")

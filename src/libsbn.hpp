@@ -72,10 +72,10 @@ class SBNInstance {
   // Get indexer representations of the trees in tree_collection_.
   // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
   // explanation of what these are.
-  std::vector<IndexerRepresentation> GetIndexerRepresentations() const;
+  std::vector<IndexerRepresentation> MakeIndexerRepresentations() const;
 
   // Get PSP indexer representations of the trees in tree_collection_.
-  std::vector<SizeVectorVector> GetPSPIndexerRepresentations() const;
+  std::vector<SizeVectorVector> MakePSPIndexerRepresentations() const;
 
   // Return indexer_ and parent_to_range_ converted into string-keyed maps.
   std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
@@ -235,7 +235,7 @@ TEST_CASE("libsbn") {
 
   inst.TrainExpectationMaximization(0.0001, 1);
   inst.SampleTrees(2);
-  inst.GetIndexerRepresentations();
+  inst.MakeIndexerRepresentations();
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");

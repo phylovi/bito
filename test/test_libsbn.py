@@ -60,9 +60,9 @@ def sampling_and_indexers_demo():
     print("\ntaxon names:")
     print(inst.taxon_names)
     print("\nSBN indexing:")
-    print(inst.get_indexer_representations())
+    print(inst.make_indexer_representations())
     print("\nPSP indexing:")
-    print(inst.get_psp_indexer_representations())
+    print(inst.make_psp_indexer_representations())
     print("\nPSP details:")
     print(inst.psp_indexer.details())
     print("\nSBN parameters:")
@@ -134,7 +134,7 @@ def rootings_indexer_test():
     # First we turn the PCSS sets into actual Python sets for unordered comparison.
     reps = [
         (rootsplits, [set(pcss_set) for pcss_set in pcss_set_list])
-        for (rootsplits, pcss_set_list) in inst.get_indexer_representations()
+        for (rootsplits, pcss_set_list) in inst.make_indexer_representations()
     ]
     # Next we sort the representations with respect to the order on the rootsplits
     # (the first component, corresponding to the various virtual rootings).
