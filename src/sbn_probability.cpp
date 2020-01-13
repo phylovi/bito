@@ -25,7 +25,7 @@ void IncrementBy(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vect
   }
 }
 
-// Increment all entries from an index vector of length k by a value drawn from a vector
+// Increment all entries from an index vector of length k by a value taken from a vector
 // of values of length k.
 void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices,
                  const EigenConstVectorXdRef values) {
