@@ -136,9 +136,20 @@ PYBIND11_MODULE(libsbn, m) {
             Prepare instance for phylogenetic likelihood computation.
 
             See the ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
+
+            ``use_tip_states`` tells BEAGLE if it should use tip states (versus tip partials).
+            Note that libsbn currently treats degenerate nucleotides as gaps irrespective of this setting.
+
+            ``tree_count_option`` tells libsbn for how many trees you will be asking for the likelihood
+            or gradient at a time. If not specified, this is set to the number of trees currently loaded
+            into the instance. This allocates the correct number of slots in the phylogenetic model
+            parameter matrices, and it's up to the user to set those model parameters after calling
+            this function.
+            Note that this tree count need not be the same as the number of threads (and is typically bigger).
            )raw",
-           py::arg("specification"), py::arg("thread_count"),
+           py::arg("model_specification"), py::arg("thread_count"),
            py::arg("beagle_flags") = std::vector<BeagleFlags>(),
+           py::arg("use_tip_states") = true,
            py::arg("tree_count_option") = std::nullopt)
       .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
       .def("get_phylo_model_param_block_map", &SBNInstance::GetPhyloModelParamBlockMap)
@@ -185,19 +196,12 @@ PYBIND11_MODULE(libsbn, m) {
       .value("COMPUTATION_ASYNCH", BEAGLE_FLAG_COMPUTATION_ASYNCH,
              "Asynchronous computation (non-blocking)")
       .value("VECTOR_SSE", BEAGLE_FLAG_VECTOR_SSE, "SSE computation")
-      .value("VECTOR_AVX", BEAGLE_FLAG_VECTOR_AVX, "AVX computation")
       .value("VECTOR_NONE", BEAGLE_FLAG_VECTOR_NONE, "No vector computation")
       .value("THREADING_CPP", BEAGLE_FLAG_THREADING_CPP, "C++11 threading")
       .value("THREADING_OPENMP", BEAGLE_FLAG_THREADING_OPENMP, "OpenMP threading")
       .value("THREADING_NONE", BEAGLE_FLAG_THREADING_NONE, "No threading (default)")
       .value("PROCESSOR_CPU", BEAGLE_FLAG_PROCESSOR_CPU, "Use CPU as main processor")
       .value("PROCESSOR_GPU", BEAGLE_FLAG_PROCESSOR_GPU, "Use GPU as main processor")
-      .value("PROCESSOR_FPGA", BEAGLE_FLAG_PROCESSOR_FPGA, "Use FPGA as main processor")
-      .value("PROCESSOR_CELL", BEAGLE_FLAG_PROCESSOR_CELL, "Use Cell as main processor")
-      .value("PROCESSOR_PHI", BEAGLE_FLAG_PROCESSOR_PHI,
-             "Use Intel Phi as main processor")
-      .value("PROCESSOR_OTHER", BEAGLE_FLAG_PROCESSOR_OTHER,
-             "Use other type of processor")
       .value("FRAMEWORK_CUDA", BEAGLE_FLAG_FRAMEWORK_CUDA,
              "Use CUDA implementation with GPU resources")
       .value("FRAMEWORK_OPENCL", BEAGLE_FLAG_FRAMEWORK_OPENCL,
