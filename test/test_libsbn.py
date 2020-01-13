@@ -144,42 +144,9 @@ def rootings_indexer_test():
         assert first_sorted_rep == list(rep)
 
 
-def sbn_training_test():
-    """Test SBN training."""
-    inst = libsbn.instance("sbn")
-    inst.read_newick_file("data/DS1.100_topologies.nwk")
-    inst.process_loaded_trees()
-    inst.train_simple_average()
-    probabilities = inst.calculate_sbn_probabilities()
-    pd.Series(probabilities).to_csv(
-        "_ignore/simple-average.csv", index=False, header=False
-    )
-    inst.train_expectation_maximization(0.0, 1)
-    probabilities = inst.calculate_sbn_probabilities()
-    pd.Series(probabilities).to_csv(
-        "_ignore/em-alpha0-loop1.csv", index=False, header=False
-    )
-    inst.train_expectation_maximization(0.0, 23)
-    probabilities = inst.calculate_sbn_probabilities()
-    pd.Series(probabilities).to_csv(
-        "_ignore/em-alpha0-loop23.csv", index=False, header=False
-    )
-    inst.train_expectation_maximization(0.3, 7)
-    probabilities = inst.calculate_sbn_probabilities()
-    pd.Series(probabilities).to_csv(
-        "_ignore/em-alpha0.3-loop7.csv", index=False, header=False
-    )
-    inst.train_expectation_maximization(0.3, 1)
-    probabilities = inst.calculate_sbn_probabilities()
-    pd.Series(probabilities).to_csv(
-        "_ignore/em-alpha0.3-loop1.csv", index=False, header=False
-    )
-
-
 def test_libsbn():
     """Test the libsbn instance."""
 
-    #sbn_training_test()
     hello_demo()
     sampling_and_indexers_demo()
     inst = ds1_support_test()
