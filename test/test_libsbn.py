@@ -52,19 +52,20 @@ def sampling_and_indexers_demo():
     assert inst.tree_count() == 4
     # Showing off tree sampling.
     inst.process_loaded_trees()
-    sbn_parameters = np.array(inst.sbn_parameters, copy=False)
-    sbn_parameters[0] = 0.2
+    inst.train_expectation_maximization(0.0001, 1)
     # Note that this puts the trees into the instance object, replacing the trees loaded
     # from the file.
     inst.sample_trees(2)
     print("\ntaxon names:")
     print(inst.taxon_names)
     print("\nSBN indexing:")
-    print(inst.get_indexer_representations())
+    print(inst.make_indexer_representations())
     print("\nPSP indexing:")
-    print(inst.get_psp_indexer_representations())
+    print(inst.make_psp_indexer_representations())
     print("\nPSP details:")
     print(inst.psp_indexer.details())
+    print("\nSBN parameters:")
+    print(inst.sbn_parameters)
     print()
 
 
@@ -132,7 +133,7 @@ def rootings_indexer_test():
     # First we turn the PCSS sets into actual Python sets for unordered comparison.
     reps = [
         (rootsplits, [set(pcss_set) for pcss_set in pcss_set_list])
-        for (rootsplits, pcss_set_list) in inst.get_indexer_representations()
+        for (rootsplits, pcss_set_list) in inst.make_indexer_representations()
     ]
     # Next we sort the representations with respect to the order on the rootsplits
     # (the first component, corresponding to the various virtual rootings).
@@ -146,7 +147,6 @@ def test_libsbn():
     """Test the libsbn instance."""
 
     hello_demo()
-    sampling_and_indexers_demo()
     sampling_and_indexers_demo()
     inst = ds1_support_test()
     ds1_phylo_model_demo(inst)

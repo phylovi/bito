@@ -13,7 +13,7 @@ class BranchModel(abc.ABC):
     """Our abstract base class for branch lengths."""
 
     def __init__(self, scalar_model_name, inst):
-        self.get_raw_representation = inst.get_psp_indexer_representations
+        self.make_raw_representation = inst.make_psp_indexer_representations
         self.scalar_model = vip.scalar_model.of_name(
             scalar_model_name, variable_count=self._compute_variable_count(inst)
         )
@@ -76,7 +76,7 @@ class SplitModel(BranchModel):
         """
         return [
             np.array(representation[0])
-            for representation in self.get_raw_representation()
+            for representation in self.make_raw_representation()
         ]
 
     def mode_match(self, split_modes):
@@ -166,7 +166,8 @@ class PSPModel(BranchModel):
     def px_branch_representation(self):
         """The PSP-based representation of each of the trees."""
         return [
-            np.array(representation) for representation in self.get_raw_representation()
+            np.array(representation)
+            for representation in self.make_raw_representation()
         ]
 
     def mode_match(self, split_modes):

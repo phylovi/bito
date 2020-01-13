@@ -18,6 +18,8 @@ using BitsetSizeMap = std::unordered_map<Bitset, size_t>;
 using BitsetSizePairMap = std::unordered_map<Bitset, std::pair<size_t, size_t>>;
 using BitsetSizeDict = DefaultDict<Bitset, size_t>;
 using IndexerRepresentation = std::pair<SizeVector, SizeVectorVector>;
+using IndexerRepresentationCounter =
+    std::vector<std::pair<IndexerRepresentation, uint32_t>>;
 using PCSSDict = std::unordered_map<Bitset, DefaultDict<Bitset, size_t>>;
 using PCSSIndexVector = std::vector<size_t>;
 
@@ -55,6 +57,9 @@ SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& top
 // given topology.
 IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
                                               const Node::NodePtr& topology);
+// Turn a TopologyCounter into an IndexerRepresentationCounter.
+IndexerRepresentationCounter IndexerRepresentationCounterOf(
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter);
 
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
 

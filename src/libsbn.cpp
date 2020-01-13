@@ -19,21 +19,17 @@ void SBNInstance::PrintStatus() {
 
 void SBNInstance::ProcessLoadedTrees() {
   size_t index = 0;
-  auto counter = tree_collection_.TopologyCounter();
-  // See above for the definitions of these members.
-  sbn_parameters_.clear();
-  rootsplits_.clear();
-  indexer_.clear();
-  index_to_child_.clear();
-  parent_to_range_.clear();
+  ClearTreeCollectionAssociatedState();
+  topology_counter_ = tree_collection_.TopologyCounter();
   // Start by adding the rootsplits.
-  for (const auto &iter : SBNMaps::RootsplitCounterOf(counter)) {
+  for (const auto &iter : SBNMaps::RootsplitCounterOf(topology_counter_)) {
     SafeInsert(indexer_, iter.first, index);
     rootsplits_.push_back(iter.first);
     index++;
   }
   // Now add the PCSSs.
-  for (const auto &[parent, child_counter] : SBNMaps::PCSSCounterOf(counter)) {
+  for (const auto &[parent, child_counter] :
+       SBNMaps::PCSSCounterOf(topology_counter_)) {
     SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
     for (const auto &child_iter : child_counter) {
       const auto &child = child_iter.first;
@@ -42,7 +38,8 @@ void SBNInstance::ProcessLoadedTrees() {
       index++;
     }
   }
-  sbn_parameters_ = std::vector<double>(index, 1.);
+  sbn_parameters_.resize(index);
+  sbn_parameters_.setOnes();
   psp_indexer_ = PSPIndexer(rootsplits_, indexer_);
   taxon_names_ = tree_collection_.TaxonNames();
 }
@@ -68,17 +65,37 @@ void SBNInstance::PrintSupports() {
   }
 }
 
+void SBNInstance::TrainSimpleAverage() {
+  auto indexer_representation_counter =
+      SBNMaps::IndexerRepresentationCounterOf(indexer_, topology_counter_);
+  SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
+                                rootsplits_.size(), parent_to_range_);
+}
+
+void SBNInstance::TrainExpectationMaximization(double alpha, size_t em_loop_count) {
+  auto indexer_representation_counter =
+      SBNMaps::IndexerRepresentationCounterOf(indexer_, topology_counter_);
+  SBNProbability::ExpectationMaximization(
+      sbn_parameters_, indexer_representation_counter, rootsplits_.size(),
+      parent_to_range_, alpha, em_loop_count);
+}
+
+EigenVectorXd SBNInstance::CalculateSBNProbabilities() {
+  return SBNProbability::ProbabilityOf(sbn_parameters_, MakeIndexerRepresentations());
+}
+
 size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
-  Assert(range.first < range.second && range.second <= sbn_parameters_.size(),
+  const auto &[start, end] = range;
+  Assert(start < end && end <= sbn_parameters_.size(),
          "SampleIndex given an invalid range.");
   std::discrete_distribution<> distribution(
       // Lordy, these integer types.
-      sbn_parameters_.begin() + static_cast<ptrdiff_t>(range.first),
-      sbn_parameters_.begin() + static_cast<ptrdiff_t>(range.second));
+      sbn_parameters_.begin() + static_cast<ptrdiff_t>(start),
+      sbn_parameters_.begin() + static_cast<ptrdiff_t>(end));
   // We have to add on range.first because we have taken a slice of the full
   // array, and the sampler treats the beginning of this slice as zero.
-  auto result = range.first + static_cast<size_t>(distribution(random_generator_));
-  Assert(result < range.second, "SampleIndex sampled a value out of range.");
+  auto result = start + static_cast<size_t>(distribution(random_generator_));
+  Assert(result < end, "SampleIndex sampled a value out of range.");
   return result;
 }
 
@@ -122,7 +139,7 @@ void SBNInstance::SampleTrees(size_t count) {
   }
 }
 
-std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations() const {
+std::vector<IndexerRepresentation> SBNInstance::MakeIndexerRepresentations() const {
   std::vector<IndexerRepresentation> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
@@ -132,7 +149,7 @@ std::vector<IndexerRepresentation> SBNInstance::GetIndexerRepresentations() cons
   return representations;
 }
 
-std::vector<SizeVectorVector> SBNInstance::GetPSPIndexerRepresentations() const {
+std::vector<SizeVectorVector> SBNInstance::MakePSPIndexerRepresentations() const {
   std::vector<SizeVectorVector> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
@@ -156,16 +173,15 @@ StringVector SBNInstance::StringReversedIndexer() const {
 std::pair<StringSet, StringSetVector> SBNInstance::StringIndexerRepresentationOf(
     IndexerRepresentation indexer_representation) const {
   auto reversed_indexer = StringReversedIndexer();
-  auto rootsplit_indices = indexer_representation.first;
-  auto pcss_index_vector = indexer_representation.second;
+  const auto &[rootsplit_indices, pcss_index_vector] = indexer_representation;
   StringSet rootsplit_string_set;
-  for (auto index : rootsplit_indices) {
+  for (const auto index : rootsplit_indices) {
     SafeInsert(rootsplit_string_set, reversed_indexer[index]);
   }
   StringSetVector pcss_string_sets;
   for (const auto &pcss_indices : pcss_index_vector) {
     StringSet pcss_string_set;
-    for (auto index : pcss_indices) {
+    for (const auto index : pcss_indices) {
       SafeInsert(pcss_string_set, reversed_indexer[index]);
     }
     pcss_string_sets.push_back(std::move(pcss_string_set));
@@ -248,6 +264,15 @@ Engine *SBNInstance::GetEngine() const {
   Failwith(
       "Engine not available. Call PrepareForPhyloLikelihood to make an "
       "engine for phylogenetic likelihood computation computation.");
+}
+
+void SBNInstance::ClearTreeCollectionAssociatedState() {
+  sbn_parameters_.resize(0);
+  rootsplits_.clear();
+  indexer_.clear();
+  index_to_child_.clear();
+  parent_to_range_.clear();
+  topology_counter_.clear();
 }
 
 void SBNInstance::PrepareForPhyloLikelihood(

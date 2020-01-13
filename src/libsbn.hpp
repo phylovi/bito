@@ -18,6 +18,7 @@
 #include "engine.hpp"
 #include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
+#include "sbn_probability.hpp"
 #include "sugar.hpp"
 #include "tree.hpp"
 
@@ -28,7 +29,7 @@ class SBNInstance {
   // The Primary Split Pair indexer.
   PSPIndexer psp_indexer_;
   // A vector that contains all of the SBN-related probabilities.
-  std::vector<double> sbn_parameters_;
+  EigenVectorXd sbn_parameters_;
   // The master indexer for SBN parameters.
   BitsetSizeMap indexer_;
   // A vector of the taxon names.
@@ -36,8 +37,7 @@ class SBNInstance {
 
   // ** Initialization and status
 
-  explicit SBNInstance(const std::string &name)
-      : name_(name), symbol_table_(SitePattern::GetSymbolTable()), rescaling_{false} {}
+  explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
@@ -54,6 +54,11 @@ class SBNInstance {
   void CheckSBNMapsAvailable();
   void PrintSupports();
 
+  // SBN training. See sbn_probability.hpp for details.
+  void TrainSimpleAverage();
+  void TrainExpectationMaximization(double alpha, size_t em_loop_count);
+  EigenVectorXd CalculateSBNProbabilities();
+
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
   size_t SampleIndex(std::pair<size_t, size_t> range) const;
@@ -67,10 +72,10 @@ class SBNInstance {
   // Get indexer representations of the trees in tree_collection_.
   // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
   // explanation of what these are.
-  std::vector<IndexerRepresentation> GetIndexerRepresentations() const;
+  std::vector<IndexerRepresentation> MakeIndexerRepresentations() const;
 
   // Get PSP indexer representations of the trees in tree_collection_.
-  std::vector<SizeVectorVector> GetPSPIndexerRepresentations() const;
+  std::vector<SizeVectorVector> MakePSPIndexerRepresentations() const;
 
   // Return indexer_ and parent_to_range_ converted into string-keyed maps.
   std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
@@ -126,10 +131,12 @@ class SBNInstance {
   void ReadFastaFile(std::string fname);
 
  private:
+  // The name of our libsbn instance.
   std::string name_;
+  // Our phylogenetic likelihood computation engine.
   std::unique_ptr<Engine> engine_;
+  // The multiple sequence alignment.
   Alignment alignment_;
-  CharIntMap symbol_table_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
   // and PCSS bitsets are at the end.
   // The collection of rootsplits, with the same indexing as in the indexer_.
@@ -143,6 +150,8 @@ class SBNInstance {
   // trees, and holds the parameters before likelihood computation, where they
   // will be processed across threads.
   EigenMatrixXd phylo_model_params_;
+  // A counter for the currently loaded set of topologies.
+  Node::TopologyCounter topology_counter_;
 
   // Random bits.
   static std::random_device random_device_;
@@ -158,6 +167,9 @@ class SBNInstance {
 
   // The input to this function is a parent subsplit (of length 2n).
   Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const;
+
+  // Clear all of the state that depends on the current tree collection.
+  void ClearTreeCollectionAssociatedState();
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -221,8 +233,9 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_2),
            correct_psp_representation_2);
 
+  inst.TrainExpectationMaximization(0.0001, 1);
   inst.SampleTrees(2);
-  inst.GetIndexerRepresentations();
+  inst.MakeIndexerRepresentations();
 
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
@@ -278,6 +291,22 @@ TEST_CASE("libsbn") {
   for (size_t i = 0; i < last_rescaling.second.size(); i++) {
     CHECK_LT(fabs(last_rescaling.second[i] - physher_gradients[i]), 0.0001);
   }
+
+  // Test SBN training.
+  inst.ReadNewickFile("data/DS1.100_topologies.nwk");
+  inst.ProcessLoadedTrees();
+  // These "Expected" functions are defined in sbn_probability.hpp.
+  const auto expected_SA = ExpectedSAVector();
+  inst.TrainSimpleAverage();
+  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_SA, 1e-12);
+  // Expected EM vectors with alpha = 0.
+  const auto [expected_EM_0_1, expected_EM_0_23] = ExpectedEMVectorsAlpha0();
+  // 1 iteration of EM with alpha = 0.
+  inst.TrainExpectationMaximization(0., 1);
+  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_1, 1e-12);
+  // 23 iterations of EM with alpha = 0
+  inst.TrainExpectationMaximization(0., 23);
+  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_

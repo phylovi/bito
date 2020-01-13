@@ -13,6 +13,8 @@ using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using EigenVectorXdRef = Eigen::Ref<EigenVectorXd>;
 using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
+using EigenConstVectorXdRef = Eigen::Ref<const EigenVectorXd>;
+using EigenConstMatrixXdRef = Eigen::Ref<const EigenMatrixXd>;
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {
@@ -21,7 +23,7 @@ void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance
   }
 };
 
-void CheckVectorXdEquality(const EigenVectorXd v1, const Eigen::VectorXd v2,
+void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
                            double tolerance) {
   for (size_t i = 0; i < v1.size(); i++) {
     CHECK_LT(fabs(v1[i] - v2[i]), tolerance);

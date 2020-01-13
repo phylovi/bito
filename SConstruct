@@ -147,6 +147,7 @@ sources = [
     "_build/phylo_model.cpp",
     "_build/psp_indexer.cpp",
     "_build/sbn_maps.cpp",
+    "_build/sbn_probability.cpp",
     "_build/scanner.cpp",
     "_build/site_model.cpp",
     "_build/site_pattern.cpp",
