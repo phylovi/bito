@@ -242,7 +242,7 @@ TEST_CASE("libsbn") {
   inst.ReadFastaFile("data/DS1.fasta");
   std::vector<BeagleFlags> vector_flag_options{BEAGLE_FLAG_VECTOR_NONE,
                                                BEAGLE_FLAG_VECTOR_SSE};
-  std::vector<bool> tip_state_options{false,true};
+  std::vector<bool> tip_state_options{false, true};
   for (const auto vector_flag : vector_flag_options) {
     for (const auto tip_state_option : tip_state_options) {
       inst.PrepareForPhyloLikelihood(simple_specification, 2, {vector_flag},
@@ -317,6 +317,6 @@ TEST_CASE("libsbn") {
   // 23 iterations of EM with alpha = 0
   inst.TrainExpectationMaximization(0., 23);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
-  }
+}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
