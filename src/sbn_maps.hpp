@@ -55,11 +55,15 @@ SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& top
 // those various virtual rootings. pcss_result is a vector of vectors, giving
 // the indices of sbn_parameters_ corresponding to PCSSs that are present in the
 // given topology.
+// Any rootsplits or PCSSs that aren't known by the indexer are assigned
+// `default_index`.
 IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                              const Node::NodePtr& topology);
+                                              const Node::NodePtr& topology,
+                                              const size_t default_index);
 // Turn a TopologyCounter into an IndexerRepresentationCounter.
 IndexerRepresentationCounter IndexerRepresentationCounterOf(
-    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter);
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
+    const size_t default_index);
 
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
 

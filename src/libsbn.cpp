@@ -66,15 +66,15 @@ void SBNInstance::PrintSupports() {
 }
 
 void SBNInstance::TrainSimpleAverage() {
-  auto indexer_representation_counter =
-      SBNMaps::IndexerRepresentationCounterOf(indexer_, topology_counter_);
+  auto indexer_representation_counter = SBNMaps::IndexerRepresentationCounterOf(
+      indexer_, topology_counter_, sbn_parameters_.size());
   SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
                                 rootsplits_.size(), parent_to_range_);
 }
 
 void SBNInstance::TrainExpectationMaximization(double alpha, size_t em_loop_count) {
-  auto indexer_representation_counter =
-      SBNMaps::IndexerRepresentationCounterOf(indexer_, topology_counter_);
+  auto indexer_representation_counter = SBNMaps::IndexerRepresentationCounterOf(
+      indexer_, topology_counter_, sbn_parameters_.size());
   SBNProbability::ExpectationMaximization(
       sbn_parameters_, indexer_representation_counter, rootsplits_.size(),
       parent_to_range_, alpha, em_loop_count);
@@ -143,8 +143,8 @@ std::vector<IndexerRepresentation> SBNInstance::MakeIndexerRepresentations() con
   std::vector<IndexerRepresentation> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
-    representations.push_back(
-        SBNMaps::IndexerRepresentationOf(indexer_, tree.Topology()));
+    representations.push_back(SBNMaps::IndexerRepresentationOf(
+        indexer_, tree.Topology(), sbn_parameters_.size()));
   }
   return representations;
 }
