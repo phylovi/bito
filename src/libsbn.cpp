@@ -3,7 +3,6 @@
 
 #include "libsbn.hpp"
 #include <memory>
-#include "sbn_probability.hpp"
 
 void SBNInstance::PrintStatus() {
   std::cout << "Status for instance '" << name_ << "':\n";
