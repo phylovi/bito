@@ -160,6 +160,13 @@ double SBNProbability::ProbabilityOf(
                                                       const SizeVector pcss_vector) {
     return ProductOf(sbn_parameters, pcss_vector, sbn_parameters[rootsplit]);
   };
+  // MICHAEL
+  // EigenVectorXd rooting_probs(rootsplits.size());
+  // for (size_t i = 0; i < rootsplits.size(); ++i) {
+  //   rooting_probs(i) = single_rooting_probability(rootsplits[i],
+  //   pcss_vector_vector[i]);
+  // }
+  // std::cout << rooting_probs << std::endl;
   return std::inner_product(
       rootsplits.cbegin(), rootsplits.cend(),  // First vector.
       pcss_vector_vector.cbegin(),             // Second vector.

@@ -317,6 +317,11 @@ TEST_CASE("libsbn") {
   // 23 iterations of EM with alpha = 0
   inst.TrainExpectationMaximization(0., 23);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
+
+  // MICHAEL
+  // std::cout << "alpha 0.3 and one loop" << std::endl;
+  // inst.TrainExpectationMaximization(0.3, 1);
+  // inst.CalculateSBNProbabilities();
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
