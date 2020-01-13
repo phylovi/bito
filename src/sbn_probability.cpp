@@ -75,10 +75,9 @@ void ProbabilityNormalizeParams(EigenVectorXdRef vec, size_t rootsplit_count,
 
 // Set the provided counts vector to be the counts of the rootsplits and PCSSs provided
 // in the input.
-void AccumulateCounts(
-    EigenVectorXdRef counts,
-    const IndexerRepresentationCounter& indexer_representation_counter,
-    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+void SetCounts(EigenVectorXdRef counts,
+               const IndexerRepresentationCounter& indexer_representation_counter,
+               size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
   counts.setZero();
   for (const auto& [indexer_representation, int_topology_count] :
        indexer_representation_counter) {
@@ -93,8 +92,8 @@ void SBNProbability::SimpleAverage(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
-  AccumulateCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
-                   parent_to_range);
+  SetCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
+            parent_to_range);
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
 }
 
@@ -115,8 +114,7 @@ void SBNProbability::ExpectationMaximization(
   // This vector holds the \tilde{m} vectors (described in the 2018 NeurIPS paper),
   // which is the counts vector before normalization to get the SimpleAverage estimate.
   EigenVectorXd m_tilde(sbn_parameters.size());
-  AccumulateCounts(m_tilde, indexer_representation_counter, rootsplit_count,
-                   parent_to_range);
+  SetCounts(m_tilde, indexer_representation_counter, rootsplit_count, parent_to_range);
   // The normalized version of m_tilde is the SA estimate, which is our starting point.
   sbn_parameters = m_tilde;
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
