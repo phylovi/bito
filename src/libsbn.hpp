@@ -189,10 +189,15 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   auto pretty_indexer = inst.PrettyIndexer();
-  // The indexer_ is to index the sbn_parameters_, which are laid out as follows.
+  // The indexer_ is to index the sbn_parameters_. Note that neither of these data
+  // structures attempt to permit the complete collection of rootsplits or PCSSs, but
+  // just those that are present for some rooting of the input trees.
+  //
+  // The indexer_ and sbn_parameters_ are laid out as follows.
   // Say there are rootsplit_count rootsplits in the support.
-  // The first rootsplit_count entries of the index are assigned to the rootsplits.
-  // For the five_taxon example, this goes as follows:
+  // The first rootsplit_count entries of the index are assigned to the rootsplits
+  // (again, those rootsplits that are present for some rooting of the unrooted input
+  // trees). For the five_taxon example, this goes as follows:
   StringVector pretty_rootsplits({"01110", "01010", "00101", "00111", "00001", "00011",
                                   "00010", "00100", "00110", "01000", "01111",
                                   "01001"});
@@ -207,9 +212,15 @@ TEST_CASE("libsbn") {
                                   "00001|11110|01000", "00001|11110|00100"});
   CHECK(std::equal(pretty_pcss_block.begin(), pretty_pcss_block.end(),
                    32 + pretty_indexer.begin()));
-  // Now we can look at some tree representations.
-  // (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
+  // Now we can look at some tree representations. We get these by calling
+  // IndexerRepresentationOf on a tree topology. This function "digests" the tree by
+  // representing all of the PCSSs as bitsets which it can then look up in the indexer_.
+  // It then spits them out as the rootsplit and PCSS indices.
+  // The following tree is (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
   auto indexer_test_topology_1 = Node::OfParentIdVector({6, 5, 7, 5, 6, 7, 7});
+  // Here we look at the indexer representation of this tree. Rather than having the
+  // indices themselves, which is what IndexerRepresentationOf actually outputs, we have
+  // string representations of the features corresponding to those indices.
   std::pair<StringSet, StringSetVector> correct_representation_1(
       // The rootsplits.
       {"01110", "01000", "01010", "01111", "00010", "00100", "00001"},
@@ -223,9 +234,11 @@ TEST_CASE("libsbn") {
        {"00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
        {"10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
        {"00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
+  // Here 99999999 is the default value if a rootsplit or PCSS is missing.
   CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
                inst.indexer_, indexer_test_topology_1, 99999999)),
            correct_representation_1);
+  // See the "concepts" part of the online documentation to learn about PSP indexing.
   auto correct_psp_representation_1 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "01010", "01110"},
        {"", "", "", "", "", "01010|00010", "10001|00001"},
@@ -234,7 +247,7 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_1),
            correct_psp_representation_1);
 
-  // (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
+  // Same as above but for (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
   auto indexer_test_topology_2 = Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 7});
   std::pair<StringSet, StringSetVector> correct_representation_2(
       {"01000", "01111", "00011", "00010", "00111", "00100", "00001"},

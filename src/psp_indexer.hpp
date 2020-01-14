@@ -3,7 +3,7 @@
 //
 // This is a class implementing the an indexing scheme for the Primary Subsplit
 // Pair branch length parameterization.
-// See the 2018 ICLR paper for details, and the web documentation for a bit of
+// See the 2019 ICLR paper for details, and the web documentation for a bit of
 // an introduction.
 //
 // We will use the first unused index ("first_empty_index") as a sentinel that
