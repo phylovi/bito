@@ -11,7 +11,7 @@ Definitions
 
 :index:`PSP`
   PSP stands for primary subsplit pair, which is a way of parameterizing branch lengths on trees.
-  See the 2018 ICLR paper for details.
+  See the 2019 ICLR paper for details.
 
 :index:`SBN`
   PSP stands for subsplit Bayes network, which is how we parameterize variational distributions on tree topologies.

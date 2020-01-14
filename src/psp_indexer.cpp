@@ -56,7 +56,7 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) con
     rootsplit_bitset.Minorize();
     return indexer.at(rootsplit_bitset);
   };
-  // Here we use the terminology in the 2018 ICLR paper (screenshotted in
+  // Here we use the terminology in the 2019 ICLR paper (screenshotted in
   // https://github.com/phylovi/libsbn/issues/95) looking at the right-hand case
   // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
   // we use analogous notation.
