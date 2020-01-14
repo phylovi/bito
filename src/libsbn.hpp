@@ -321,6 +321,7 @@ TEST_CASE("libsbn") {
   // ANDY
   std::cout << inst.tree_collection_.TaxonNames() << std::endl;
   std::cout << inst.GetIndexers() << std::endl;
+  inst.PrintSupports();
   std::cout << inst.sbn_parameters_ << std::endl;
 
   // MICHAEL
