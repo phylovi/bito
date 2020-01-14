@@ -319,9 +319,12 @@ TEST_CASE("libsbn") {
   // CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
 
   // ANDY
+  inst.ReadNewickFile("data/five_taxon.nwk");
+  inst.ProcessLoadedTrees();
+  inst.TrainExpectationMaximization(0., 1);
   std::cout << inst.tree_collection_.TaxonNames() << std::endl;
-  std::cout << inst.GetIndexers() << std::endl;
   inst.PrintSupports();
+  std::cout << inst.GetIndexers() << std::endl;
   std::cout << inst.sbn_parameters_ << std::endl;
 
   // MICHAEL
