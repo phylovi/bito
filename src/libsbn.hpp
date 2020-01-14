@@ -52,7 +52,9 @@ class SBNInstance {
   // sbn_parameters_ vector.
   void ProcessLoadedTrees();
   void CheckSBNMapsAvailable();
-  void PrintSupports();
+  // "Pretty" string representation of the indexer.
+  StringVector PrettyIndexer();
+  void PrettyPrintIndexer();
 
   // SBN training. See sbn_probability.hpp for details.
   void TrainSimpleAverage();
@@ -186,6 +188,26 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
+  auto pretty_indexer = inst.PrettyIndexer();
+  // The indexer_ is to index the sbn_parameters_, which are laid out as follows.
+  // Say there are rootsplit_count rootsplits in the support.
+  // The first rootsplit_count entries of the index are assigned to the rootsplits.
+  // For the five_taxon example, this goes as follows:
+  StringVector pretty_rootsplits({"01110", "01010", "00101", "00111", "00001", "00011",
+                                  "00010", "00100", "00110", "01000", "01111",
+                                  "01001"});
+  CHECK(std::equal(pretty_rootsplits.begin(), pretty_rootsplits.end(),
+                   pretty_indexer.begin()));
+  // The rest of the entries of sbn_parameters_ are laid out as blocks of parameters for
+  // PCSSs that share the same parent. Take a look at the description of PCSS bitsets
+  // (and the unit tests) in bitset.hpp to understand the notation used here.
+  //
+  // For example, here are four PCSSs that all share the parent 00001|11110:
+  StringVector pretty_pcss_block({"00001|11110|01110", "00001|11110|00010",
+                                  "00001|11110|01000", "00001|11110|00100"});
+  CHECK(std::equal(pretty_pcss_block.begin(), pretty_pcss_block.end(),
+                   32 + pretty_indexer.begin()));
+  // Now we can look at some tree representations.
   // (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
   auto indexer_test_topology_1 = Node::OfParentIdVector({6, 5, 7, 5, 6, 7, 7});
   std::pair<StringSet, StringSetVector> correct_representation_1(

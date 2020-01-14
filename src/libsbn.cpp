@@ -51,17 +51,22 @@ void SBNInstance::CheckSBNMapsAvailable() {
   }
 }
 
-void SBNInstance::PrintSupports() {
-  std::vector<std::string> to_print(indexer_.size());
+StringVector SBNInstance::PrettyIndexer() {
+  StringVector pretty_representation(indexer_.size());
   for (const auto &[key, idx] : indexer_) {
     if (idx < rootsplits_.size()) {
-      to_print[idx] = key.ToString();
+      pretty_representation[idx] = key.ToString();
     } else {
-      to_print[idx] = key.PCSSToString();
+      pretty_representation[idx] = key.PCSSToString();
     }
   }
-  for (size_t i = 0; i < to_print.size(); i++) {
-    std::cout << i << "\t" << to_print[i] << std::endl;
+  return pretty_representation;
+}
+
+void SBNInstance::PrettyPrintIndexer() {
+  auto pretty_representation = PrettyIndexer();
+  for (size_t i = 0; i < pretty_representation.size(); i++) {
+    std::cout << i << "\t" << pretty_representation[i] << std::endl;
   }
 }
 
