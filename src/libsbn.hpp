@@ -190,11 +190,11 @@ TEST_CASE("libsbn") {
   inst.ProcessLoadedTrees();
   auto pretty_indexer = inst.PrettyIndexer();
   // The indexer_ is to index the sbn_parameters_. Note that neither of these data
-  // structures attempt to permit the complete collection of rootsplits or PCSSs, but
+  // structures attempt to catalog the complete collection of rootsplits or PCSSs, but
   // just those that are present for some rooting of the input trees.
   //
-  // The indexer_ and sbn_parameters_ are laid out as follows.
-  // Say there are rootsplit_count rootsplits in the support.
+  // The indexer_ and sbn_parameters_ are laid out as follows (I'll just call it the
+  // "index" in what follows). Say there are rootsplit_count rootsplits in the support.
   // The first rootsplit_count entries of the index are assigned to the rootsplits
   // (again, those rootsplits that are present for some rooting of the unrooted input
   // trees). For the five_taxon example, this goes as follows:
@@ -203,7 +203,7 @@ TEST_CASE("libsbn") {
                                   "01001"});
   CHECK(std::equal(pretty_rootsplits.begin(), pretty_rootsplits.end(),
                    pretty_indexer.begin()));
-  // The rest of the entries of sbn_parameters_ are laid out as blocks of parameters for
+  // The rest of the entries of the index are laid out as blocks of parameters for
   // PCSSs that share the same parent. Take a look at the description of PCSS bitsets
   // (and the unit tests) in bitset.hpp to understand the notation used here.
   //
@@ -246,7 +246,6 @@ TEST_CASE("libsbn") {
         "10101|00100", "01110|00100"}});
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_1),
            correct_psp_representation_1);
-
   // Same as above but for (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
   auto indexer_test_topology_2 = Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 7});
   std::pair<StringSet, StringSetVector> correct_representation_2(
@@ -269,10 +268,7 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_2),
            correct_psp_representation_2);
 
-  inst.TrainExpectationMaximization(0.0001, 1);
-  inst.SampleTrees(2);
-  inst.MakeIndexerRepresentations();
-
+  // Test likelihood and gradient computation.
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
   std::vector<BeagleFlags> vector_flag_options{BEAGLE_FLAG_VECTOR_NONE,
