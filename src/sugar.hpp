@@ -4,9 +4,9 @@
 #ifndef SRC_SUGAR_HPP_
 #define SRC_SUGAR_HPP_
 
+#include <limits.h>
 #include <cassert>
 #include <iostream>
-#include <limits.h>
 #include <map>
 #include <optional>
 #include <unordered_map>
