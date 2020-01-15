@@ -310,22 +310,26 @@ TEST_CASE("libsbn") {
   // inst.TrainSimpleAverage();
   // CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_SA, 1e-12);
   // Expected EM vectors with alpha = 0.
-  const auto [expected_EM_0_1, expected_EM_0_23] = ExpectedEMVectorsAlpha0();
+  // const auto [expected_EM_0_1, expected_EM_0_23] = ExpectedEMVectorsAlpha0();
   // 1 iteration of EM with alpha = 0.
-  inst.TrainExpectationMaximization(0., 1);
-  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_1, 1e-12);
+  // inst.TrainExpectationMaximization(0., 1);
+  // CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_1, 1e-12);
   // // 23 iterations of EM with alpha = 0
   // inst.TrainExpectationMaximization(0., 23);
   // CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
 
   // ANDY
-  inst.ReadNewickFile("data/five_taxon.nwk");
-  inst.ProcessLoadedTrees();
+  auto counter = inst.tree_collection_.TopologyCounter();
+  for (const auto &[topology, count] : counter) {
+    std::cout << count << "\t" << topology->Newick() << std::endl;
+  }
+  // inst.ReadNewickFile("data/five_taxon.nwk");
+  // inst.ProcessLoadedTrees();
   inst.TrainExpectationMaximization(0., 1);
-  std::cout << inst.tree_collection_.TaxonNames() << std::endl;
-  inst.PrintSupports();
-  std::cout << inst.GetIndexers() << std::endl;
-  std::cout << inst.sbn_parameters_ << std::endl;
+  // std::cout << inst.tree_collection_.TaxonNames() << std::endl;
+  // inst.PrintSupports();
+  // std::cout << inst.GetIndexers() << std::endl;
+  // std::cout << inst.sbn_parameters_ << std::endl;
 
   // MICHAEL
   // std::cout << "alpha 0.3 and one loop" << std::endl;

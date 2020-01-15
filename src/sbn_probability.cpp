@@ -146,6 +146,7 @@ void SBNProbability::ExpectationMaximization(
       q_weights *= topology_count;
       IncrementBy(m_bar, rootsplits, q_weights);
       IncrementBy(m_bar, pcss_vector_vector, q_weights);
+      std::cout << topology_count << "\t" << q_weights << std::endl;
     }
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
