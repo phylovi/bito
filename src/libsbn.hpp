@@ -53,7 +53,9 @@ class SBNInstance {
   // sbn_parameters_ vector.
   void ProcessLoadedTrees();
   void CheckSBNMapsAvailable();
-  void PrintSupports();
+  // "Pretty" string representation of the indexer.
+  StringVector PrettyIndexer();
+  void PrettyPrintIndexer();
 
   // SBN training. See sbn_probability.hpp for details.
   void TrainSimpleAverage();
@@ -115,8 +117,9 @@ class SBNInstance {
   // Prepare for phylogenetic likelihood calculation. If we get a nullopt
   // argument, it just uses the number of trees currently in the SBNInstance.
   void PrepareForPhyloLikelihood(
-      PhyloModelSpecification specification, size_t thread_count,
+      const PhyloModelSpecification &model_specification, size_t thread_count,
       const std::vector<BeagleFlags> &beagle_flag_vector = {},
+      const bool use_tip_states = true,
       std::optional<size_t> tree_count_option = std::nullopt);
   // Make the number of phylogentic model parameters fit the number of trees and
   // the speficied model. If we get a nullopt argument, it just uses the number
@@ -161,10 +164,9 @@ class SBNInstance {
   static std::mt19937 random_generator_;
   bool rescaling_;
 
-  // Make a likelihood engine which will run across the specified number of
-  // threads.
-  void MakeEngine(PhyloModelSpecification specification, size_t thread_count,
-                  const std::vector<BeagleFlags> &beagle_flag_vector);
+  // Make a likelihood engine with the given specification.
+  void MakeEngine(const EngineSpecification &engine_specification,
+                  const PhyloModelSpecification &model_specification);
   // Return a raw pointer to the engine if it's available.
   Engine *GetEngine() const;
 
@@ -188,8 +190,39 @@ TEST_CASE("libsbn") {
   // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
-  // (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
+  auto pretty_indexer = inst.PrettyIndexer();
+  // The indexer_ is to index the sbn_parameters_. Note that neither of these data
+  // structures attempt to catalog the complete collection of rootsplits or PCSSs, but
+  // just those that are present for some rooting of the input trees.
+  //
+  // The indexer_ and sbn_parameters_ are laid out as follows (I'll just call it the
+  // "index" in what follows). Say there are rootsplit_count rootsplits in the support.
+  // The first rootsplit_count entries of the index are assigned to the rootsplits
+  // (again, those rootsplits that are present for some rooting of the unrooted input
+  // trees). For the five_taxon example, this goes as follows:
+  StringVector pretty_rootsplits({"01110", "01010", "00101", "00111", "00001", "00011",
+                                  "00010", "00100", "00110", "01000", "01111",
+                                  "01001"});
+  CHECK(std::equal(pretty_rootsplits.begin(), pretty_rootsplits.end(),
+                   pretty_indexer.begin()));
+  // The rest of the entries of the index are laid out as blocks of parameters for
+  // PCSSs that share the same parent. Take a look at the description of PCSS bitsets
+  // (and the unit tests) in bitset.hpp to understand the notation used here.
+  //
+  // For example, here are four PCSSs that all share the parent 00001|11110:
+  StringVector pretty_pcss_block({"00001|11110|01110", "00001|11110|00010",
+                                  "00001|11110|01000", "00001|11110|00100"});
+  CHECK(std::equal(pretty_pcss_block.begin(), pretty_pcss_block.end(),
+                   32 + pretty_indexer.begin()));
+  // Now we can look at some tree representations. We get these by calling
+  // IndexerRepresentationOf on a tree topology. This function "digests" the tree by
+  // representing all of the PCSSs as bitsets which it can then look up in the indexer_.
+  // It then spits them out as the rootsplit and PCSS indices.
+  // The following tree is (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
   auto indexer_test_topology_1 = Node::OfParentIdVector({6, 5, 7, 5, 6, 7, 7});
+  // Here we look at the indexer representation of this tree. Rather than having the
+  // indices themselves, which is what IndexerRepresentationOf actually outputs, we have
+  // string representations of the features corresponding to those indices.
   std::pair<StringSet, StringSetVector> correct_representation_1(
       // The rootsplits.
       {"01110", "01000", "01010", "01111", "00010", "00100", "00001"},
@@ -203,9 +236,11 @@ TEST_CASE("libsbn") {
        {"00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
        {"10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
        {"00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
+  // Here 99999999 is the default value if a rootsplit or PCSS is missing.
   CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
                inst.indexer_, indexer_test_topology_1, 99999999)),
            correct_representation_1);
+  // See the "concepts" part of the online documentation to learn about PSP indexing.
   auto correct_psp_representation_1 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "01010", "01110"},
        {"", "", "", "", "", "01010|00010", "10001|00001"},
@@ -213,8 +248,7 @@ TEST_CASE("libsbn") {
         "10101|00100", "01110|00100"}});
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_1),
            correct_psp_representation_1);
-
-  // (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
+  // Same as above but for (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
   auto indexer_test_topology_2 = Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 7});
   std::pair<StringSet, StringSetVector> correct_representation_2(
       {"01000", "01111", "00011", "00010", "00111", "00100", "00001"},
@@ -236,63 +270,69 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_2),
            correct_psp_representation_2);
 
-  inst.TrainExpectationMaximization(0.0001, 1);
-  inst.SampleTrees(2);
-  inst.MakeIndexerRepresentations();
-
+  // Test likelihood and gradient computation.
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
-  inst.PrepareForPhyloLikelihood(simple_specification, 2);
-  auto likelihoods = inst.LogLikelihoods();
-  std::vector<double> pybeagle_likelihoods(
-      {-14582.995273982739, -6911.294207416366, -6916.880235529542, -6904.016888831189,
-       -6915.055570693576, -6915.50496696512, -6910.958836661867, -6909.02639968063,
-       -6912.967861935749, -6910.7871105783515});
-  for (size_t i = 0; i < likelihoods.size(); i++) {
-    CHECK_LT(fabs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
-  }
+  std::vector<BeagleFlags> vector_flag_options{BEAGLE_FLAG_VECTOR_NONE,
+                                               BEAGLE_FLAG_VECTOR_SSE};
+  std::vector<bool> tip_state_options{false, true};
+  for (const auto vector_flag : vector_flag_options) {
+    for (const auto tip_state_option : tip_state_options) {
+      inst.PrepareForPhyloLikelihood(simple_specification, 2, {vector_flag},
+                                     tip_state_option);
+      auto likelihoods = inst.LogLikelihoods();
+      std::vector<double> pybeagle_likelihoods(
+          {-14582.995273982739, -6911.294207416366, -6916.880235529542,
+           -6904.016888831189, -6915.055570693576, -6915.50496696512,
+           -6910.958836661867, -6909.02639968063, -6912.967861935749,
+           -6910.7871105783515});
+      for (size_t i = 0; i < likelihoods.size(); i++) {
+        CHECK_LT(fabs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
+      }
 
-  auto gradients = inst.BranchGradients();
-  // Test the log likelihoods.
-  for (size_t i = 0; i < likelihoods.size(); i++) {
-    CHECK_LT(fabs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
-  }
-  // Test the gradients for the last tree.
-  auto last = gradients.back();
-  std::sort(last.second.begin(), last.second.end());
-  // Zeros are for the root and one of the descendants of the root.
-  std::vector<double> physher_gradients = {
-      -904.18956, -607.70500, -562.36274, -553.63315, -542.26058, -539.64210,
-      -463.36511, -445.32555, -414.27197, -412.84218, -399.15359, -342.68038,
-      -306.23644, -277.05392, -258.73681, -175.07391, -171.59627, -168.57646,
-      -150.57623, -145.38176, -115.15798, -94.86412,  -83.02880,  -80.09165,
-      -69.00574,  -51.93337,  0.00000,    0.00000,    16.17497,   20.47784,
-      58.06984,   131.18998,  137.10799,  225.73617,  233.92172,  253.49785,
-      255.52967,  259.90378,  394.00504,  394.96619,  396.98933,  429.83873,
-      450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
-      888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
-  for (size_t i = 0; i < last.second.size(); i++) {
-    CHECK_LT(fabs(last.second[i] - physher_gradients[i]), 0.0001);
-  }
+      auto gradients = inst.BranchGradients();
+      // Test the log likelihoods.
+      for (size_t i = 0; i < likelihoods.size(); i++) {
+        CHECK_LT(fabs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
+      }
+      // Test the gradients for the last tree.
+      auto last = gradients.back();
+      std::sort(last.second.begin(), last.second.end());
+      // Zeros are for the root and one of the descendants of the root.
+      std::vector<double> physher_gradients = {
+          -904.18956, -607.70500, -562.36274, -553.63315, -542.26058, -539.64210,
+          -463.36511, -445.32555, -414.27197, -412.84218, -399.15359, -342.68038,
+          -306.23644, -277.05392, -258.73681, -175.07391, -171.59627, -168.57646,
+          -150.57623, -145.38176, -115.15798, -94.86412,  -83.02880,  -80.09165,
+          -69.00574,  -51.93337,  0.00000,    0.00000,    16.17497,   20.47784,
+          58.06984,   131.18998,  137.10799,  225.73617,  233.92172,  253.49785,
+          255.52967,  259.90378,  394.00504,  394.96619,  396.98933,  429.83873,
+          450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
+          888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
+      for (size_t i = 0; i < last.second.size(); i++) {
+        CHECK_LT(fabs(last.second[i] - physher_gradients[i]), 0.0001);
+      }
 
-  // Test rescaling
-  inst.SetRescaling(true);
-  auto likelihoods_rescaling = inst.LogLikelihoods();
-  // Likelihoods from LogLikelihoods()
-  for (size_t i = 0; i < likelihoods_rescaling.size(); i++) {
-    CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
-  }
-  // Likelihoods from BranchGradients()
-  inst.PrepareForPhyloLikelihood(simple_specification, 1);
-  auto gradients_rescaling = inst.BranchGradients();
-  for (size_t i = 0; i < gradients_rescaling.size(); i++) {
-    CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]), 0.00011);
-  }
-  // Gradients
-  auto last_rescaling = gradients_rescaling.back();
-  std::sort(last_rescaling.second.begin(), last_rescaling.second.end());
-  for (size_t i = 0; i < last_rescaling.second.size(); i++) {
-    CHECK_LT(fabs(last_rescaling.second[i] - physher_gradients[i]), 0.0001);
+      // Test rescaling
+      inst.SetRescaling(true);
+      auto likelihoods_rescaling = inst.LogLikelihoods();
+      // Likelihoods from LogLikelihoods()
+      for (size_t i = 0; i < likelihoods_rescaling.size(); i++) {
+        CHECK_LT(fabs(likelihoods_rescaling[i] - pybeagle_likelihoods[i]), 0.00011);
+      }
+      // Likelihoods from BranchGradients()
+      inst.PrepareForPhyloLikelihood(simple_specification, 1, {}, tip_state_option);
+      auto gradients_rescaling = inst.BranchGradients();
+      for (size_t i = 0; i < gradients_rescaling.size(); i++) {
+        CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]), 0.00011);
+      }
+      // Gradients
+      auto last_rescaling = gradients_rescaling.back();
+      std::sort(last_rescaling.second.begin(), last_rescaling.second.end());
+      for (size_t i = 0; i < last_rescaling.second.size(); i++) {
+        CHECK_LT(fabs(last_rescaling.second[i] - physher_gradients[i]), 0.0001);
+      }
+    }
   }
 
   // Test SBN training.

@@ -21,10 +21,10 @@ class FatBeagle {
   // This constructor makes the beagle_instance_;
   FatBeagle(const PhyloModelSpecification &specification,
             const SitePattern &site_pattern,
-            const PackedBeagleFlags beagle_preference_flags,
-            bool use_tip_states = false);
+            const PackedBeagleFlags beagle_preference_flags, bool use_tip_states);
   ~FatBeagle();
-  // Delete (copy + move) x (constructor + assignment)
+  // Delete (copy + move) x (constructor + assignment) because FatBeagle manages an
+  // external resource (a BEAGLE instance).
   FatBeagle(const FatBeagle &) = delete;
   FatBeagle(const FatBeagle &&) = delete;
   FatBeagle &operator=(const FatBeagle &) = delete;

@@ -15,10 +15,16 @@
 #include "site_pattern.hpp"
 #include "tree_collection.hpp"
 
+struct EngineSpecification {
+  const size_t thread_count_;
+  const std::vector<BeagleFlags> &beagle_flag_vector_;
+  const bool use_tip_states_;
+};
+
 class Engine {
  public:
-  Engine(const PhyloModelSpecification &specification, SitePattern site_pattern,
-         size_t thread_count, const std::vector<BeagleFlags> &beagle_flag_vector);
+  Engine(const EngineSpecification &engine_specification,
+         const PhyloModelSpecification &specification, SitePattern site_pattern);
 
   const BlockSpecification &GetPhyloModelBlockSpecification() const;
 

@@ -53,17 +53,22 @@ void SBNInstance::CheckSBNMapsAvailable() {
   }
 }
 
-void SBNInstance::PrintSupports() {
-  std::vector<std::string> to_print(indexer_.size());
+StringVector SBNInstance::PrettyIndexer() {
+  StringVector pretty_representation(indexer_.size());
   for (const auto &[key, idx] : indexer_) {
     if (idx < rootsplits_.size()) {
-      to_print[idx] = key.ToString();
+      pretty_representation[idx] = key.ToString();
     } else {
-      to_print[idx] = key.PCSSToString();
+      pretty_representation[idx] = key.PCSSToString();
     }
   }
-  for (size_t i = 0; i < to_print.size(); i++) {
-    std::cout << i << "\t" << to_print[i] << std::endl;
+  return pretty_representation;
+}
+
+void SBNInstance::PrettyPrintIndexer() {
+  auto pretty_representation = PrettyIndexer();
+  for (size_t i = 0; i < pretty_representation.size(); i++) {
+    std::cout << i << "\t" << pretty_representation[i] << std::endl;
   }
 }
 
@@ -82,20 +87,12 @@ void SBNInstance::TrainExpectationMaximization(double alpha, size_t em_loop_coun
       parent_to_range_, alpha, em_loop_count);
 }
 
-EigenVectorXd SBNInstance::CalculateSBNProbabilitiesInLog() {
-    
-  // invariant: sbn_parameters_ are  in the log space i.e.,
-  // sbn_parameters_[s] = log P(S = s) = log(counts_s) - log(sum_{s'} counts_{s'})
-  // or
-  // sbn_parameters_[s] = log P(S = s) = \phi_s - log(sum_{s'} exp(\phi_{s'}))
-  // we assume that it is unnormalized
-  EigenVectorXd sbn_parameters_copy = sbn_parameters_;
-  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters_copy, rootsplits_.size(), parent_to_range_);
-  return SBNProbability::ProbabilityOfLogSpace(sbn_parameters_copy, MakeIndexerRepresentations());
-}
-
 EigenVectorXd SBNInstance::CalculateSBNProbabilities() {
-  return SBNProbability::ProbabilityOf(sbn_parameters_, MakeIndexerRepresentations());
+  EigenVectorXd sbn_parameters_copy = sbn_parameters_;
+  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters_copy,
+                                                  rootsplits_.size(), parent_to_range_);
+  return SBNProbability::ProbabilityOf(sbn_parameters_copy,
+                                       MakeIndexerRepresentations());
 }
 
 size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
@@ -262,12 +259,12 @@ BlockSpecification::ParameterBlockMap SBNInstance::GetPhyloModelParamBlockMap() 
       phylo_model_params_);
 }
 
-void SBNInstance::MakeEngine(PhyloModelSpecification specification, size_t thread_count,
-                             const std::vector<BeagleFlags> &beagle_flag_vector) {
+void SBNInstance::MakeEngine(const EngineSpecification &engine_specification,
+                             const PhyloModelSpecification &model_specification) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  engine_ = std::make_unique<Engine>(specification, site_pattern, thread_count,
-                                     beagle_flag_vector);
+  engine_ =
+      std::make_unique<Engine>(engine_specification, model_specification, site_pattern);
 }
 
 Engine *SBNInstance::GetEngine() const {
@@ -290,10 +287,12 @@ void SBNInstance::ClearTreeCollectionAssociatedState() {
 }
 
 void SBNInstance::PrepareForPhyloLikelihood(
-    PhyloModelSpecification specification, size_t thread_count,
-    const std::vector<BeagleFlags> &beagle_flag_vector,
+    const PhyloModelSpecification &model_specification, size_t thread_count,
+    const std::vector<BeagleFlags> &beagle_flag_vector, const bool use_tip_states,
     std::optional<size_t> tree_count_option) {
-  MakeEngine(specification, thread_count, beagle_flag_vector);
+  const EngineSpecification engine_specification{thread_count, beagle_flag_vector,
+                                                 use_tip_states};
+  MakeEngine(engine_specification, model_specification);
   ResizePhyloModelParams(tree_count_option);
 }
 

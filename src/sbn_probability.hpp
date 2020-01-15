@@ -32,14 +32,9 @@ EigenVectorXd ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<IndexerRepresentation>& indexer_representations);
 
-double ProbabilityOfLogSpace(const EigenConstVectorXdRef sbn_parameters,
-                             const IndexerRepresentation& indexer_representation);
-
-EigenVectorXd ProbabilityOfLogSpace(
-    const EigenConstVectorXdRef sbn_parameters,
-    const std::vector<IndexerRepresentation>& indexer_representations);
-
-void ProbabilityNormalizeParamsInLog(EigenVectorXdRef vec, size_t rootsplit_count, const BitsetSizePairMap& parent_to_range);
+// Perform normalization of vec when its values are in log space
+void ProbabilityNormalizeParamsInLog(EigenVectorXdRef vec, size_t rootsplit_count,
+                                     const BitsetSizePairMap& parent_to_range);
 
 }  // namespace SBNProbability
 
