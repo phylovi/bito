@@ -6,12 +6,16 @@
 
 #include <cassert>
 #include <iostream>
+#include <limits.h>
 #include <map>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include "prettyprint.hpp"
+
+const double DOUBLE_INF = std::numeric_limits<double>::infinity();
+const double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 
 // Put typedefs that are built of STL types here.
 using Tag = uint64_t;
