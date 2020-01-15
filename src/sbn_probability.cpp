@@ -7,13 +7,30 @@
 // first probabilities of rootsplits, then conditional probabilities of PCSSs.
 
 #include "sbn_probability.hpp"
+#include <iostream>
 #include <numeric>
 #include "sbn_maps.hpp"
+#include "numerical_utils.hpp"
+
+// Increment all entries from an index vector by a log(value).
+void IncrementByInLogSpace(EigenVectorXdRef vec, const SizeVector& indices, double value) {
+    
+    for (const auto& idx : indices) {
+        vec[idx] = NumericalUtils::LogAdd(vec[idx], value);
+    }
+}
+
+// Increment all entries from an index vector vector by a log(value).
+void IncrementByInLogSpace(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vector, double value) {
+  for (const auto& indices : index_vector_vector) {
+    IncrementByInLogSpace(vec, indices, value);
+  }
+}
 
 // Increment all entries from an index vector by a value.
 void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices, double value) {
   for (const auto& idx : indices) {
-    vec[idx] += value;
+      vec[idx] += value;
   }
 }
 
@@ -32,7 +49,7 @@ void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices,
   Assert(indices.size() == values.size(),
          "Indices and values don't have matching size.");
   for (size_t i = 0; i < values.size(); ++i) {
-    vec[indices[i]] += values[i];
+      vec[indices[i]] += values[i];
   }
 }
 
@@ -57,6 +74,15 @@ double ProductOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
   return result;
 }
 
+double SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
+            const double starting_value) {
+  double result = starting_value;
+  for (const auto& idx : indices) {
+    result += vec[idx];
+  }
+  return result;
+}
+
 // Probability-normalize a range of values in a vector.
 void ProbabilityNormalizeRange(EigenVectorXdRef vec, std::pair<size_t, size_t> range) {
   auto [start_idx, end_idx] = range;
@@ -70,6 +96,22 @@ void ProbabilityNormalizeParams(EigenVectorXdRef vec, size_t rootsplit_count,
   ProbabilityNormalizeRange(vec, {0, rootsplit_count});
   for (const auto& [_, range] : parent_to_range) {
     ProbabilityNormalizeRange(vec, range);
+  }
+}
+
+// Normalize vec in log space
+void ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec, std::pair<size_t, size_t> range) {
+  auto [start_idx, end_idx] = range;
+  auto segment = vec.segment(start_idx, end_idx - start_idx);
+  // normalize log values
+  NumericalUtils::LogNormalize(segment);
+}
+
+// We assume that vec is laid out like sbn_parameters (see top).
+void SBNProbability::ProbabilityNormalizeParamsInLog(EigenVectorXdRef vec, size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+  ProbabilityNormalizeRangeInLog(vec, {0, rootsplit_count});
+  for (const auto& [_, range] : parent_to_range) {
+    ProbabilityNormalizeRangeInLog(vec, range);
   }
 }
 
@@ -88,13 +130,27 @@ void SetCounts(EigenVectorXdRef counts,
   }
 }
 
+// Set the provided counts vector to be the counts of the rootsplits and PCSSs provided
+// in the input.
+void SetLogCounts(EigenVectorXdRef counts,
+               const IndexerRepresentationCounter& indexer_representation_counter,
+               size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+  counts.fill(DOUBLE_NEG_INF);
+  for (const auto& [indexer_representation, int_topology_count] :
+       indexer_representation_counter) {
+    const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
+    const auto log_topology_count = log(static_cast<double>(int_topology_count));
+    IncrementByInLogSpace(counts, rootsplits, log_topology_count);
+    IncrementByInLogSpace(counts, pcss_vector_vector, log_topology_count);
+  }
+}
+
 void SBNProbability::SimpleAverage(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
-  SetCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
+  SetLogCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
             parent_to_range);
-  ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
 }
 
 void SBNProbability::ExpectationMaximization(
@@ -176,6 +232,35 @@ EigenVectorXd SBNProbability::ProbabilityOf(
   for (size_t topology_idx = 0; topology_idx < topology_count; ++topology_idx) {
     results[topology_idx] =
         ProbabilityOf(sbn_parameters, indexer_representations[topology_idx]);
+  }
+  return results;
+}
+
+double SBNProbability::ProbabilityOfLogSpace(
+    const EigenConstVectorXdRef sbn_parameters,
+    const IndexerRepresentation& indexer_representation) {
+  const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
+  auto single_rooting_probability = [&sbn_parameters](const size_t rootsplit,
+                                                      const SizeVector pcss_vector) {
+    return SumOf(sbn_parameters, pcss_vector, sbn_parameters[rootsplit]);
+  };
+  double ret = std::inner_product(
+      rootsplits.cbegin(), rootsplits.cend(),  // First vector.
+      pcss_vector_vector.cbegin(),             // Second vector.
+      DOUBLE_NEG_INF,                          // Starting value.
+      NumericalUtils::LogAdd,                                  // "Reduce" using LogAdd.
+      single_rooting_probability);             // How to combine pairs of elements.
+  return exp(ret);
+}
+
+EigenVectorXd SBNProbability::ProbabilityOfLogSpace(
+    const EigenConstVectorXdRef sbn_parameters,
+    const std::vector<IndexerRepresentation>& indexer_representations) {
+  const size_t topology_count = indexer_representations.size();
+  EigenVectorXd results(topology_count);
+  for (size_t topology_idx = 0; topology_idx < topology_count; ++topology_idx) {
+    results[topology_idx] =
+        ProbabilityOfLogSpace(sbn_parameters, indexer_representations[topology_idx]);
   }
   return results;
 }

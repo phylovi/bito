@@ -16,6 +16,7 @@
 #include "alignment.hpp"
 #include "driver.hpp"
 #include "engine.hpp"
+#include "numerical_utils.hpp"
 #include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
 #include "sbn_probability.hpp"
@@ -60,6 +61,7 @@ class SBNInstance {
   void TrainSimpleAverage();
   void TrainExpectationMaximization(double alpha, size_t em_loop_count);
   EigenVectorXd CalculateSBNProbabilities();
+  EigenVectorXd CalculateSBNProbabilitiesInLog();
 
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
@@ -339,7 +341,7 @@ TEST_CASE("libsbn") {
   // These "Expected" functions are defined in sbn_probability.hpp.
   const auto expected_SA = ExpectedSAVector();
   inst.TrainSimpleAverage();
-  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_SA, 1e-12);
+  CheckVectorXdEquality(inst.CalculateSBNProbabilitiesInLog(), expected_SA, 1e-12);
   // Expected EM vectors with alpha = 0.
   const auto [expected_EM_0_1, expected_EM_0_23] = ExpectedEMVectorsAlpha0();
   // 1 iteration of EM with alpha = 0.
