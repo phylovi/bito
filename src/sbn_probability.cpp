@@ -118,10 +118,8 @@ void SetCounts(EigenVectorXdRef counts,
   counts.setZero();
   for (const auto& [indexer_representation, int_topology_count] :
        indexer_representation_counter) {
-    const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
     const auto topology_count = static_cast<double>(int_topology_count);
-    IncrementBy(counts, rootsplits, topology_count);
-    IncrementBy(counts, pcss_vector_vector, topology_count);
+    IncrementBy(counts, indexer_representation, topology_count);
   }
 }
 
@@ -133,10 +131,8 @@ void SetLogCounts(EigenVectorXdRef counts,
   counts.fill(DOUBLE_NEG_INF);
   for (const auto& [indexer_representation, int_topology_count] :
        indexer_representation_counter) {
-    const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
     const auto log_topology_count = log(static_cast<double>(int_topology_count));
-    IncrementByInLog(counts, rootsplits, log_topology_count);
-    IncrementByInLog(counts, pcss_vector_vector, log_topology_count);
+    IncrementByInLog(counts, indexer_representation, log_topology_count);
   }
 }
 
@@ -160,7 +156,7 @@ void SBNProbability::ExpectationMaximization(
   // SBN parameters.
   Assert(!indexer_representation_counter.empty(),
          "Empty indexer_representation_counter.");
-  auto edge_count = indexer_representation_counter[0].first.first.size();
+  auto edge_count = indexer_representation_counter[0].first.size();
   EigenVectorXd q_weights(edge_count);
   // This vector holds the \tilde{m} vectors (described in the 2018 NeurIPS paper),
   // which is the counts vector before normalization to get the SimpleAverage estimate.
@@ -175,28 +171,24 @@ void SBNProbability::ExpectationMaximization(
     // Loop over topologies (as manifested by their indexer representations).
     for (const auto& [indexer_representation, int_topology_count] :
          indexer_representation_counter) {
-      const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
       const auto topology_count = static_cast<double>(int_topology_count);
       // Calculate the q weights for this topology.
       q_weights.setZero();
-      Assert(rootsplits.size() == edge_count,
-             "Rootsplit length not equal to edge_count.");
-      Assert(pcss_vector_vector.size() == edge_count,
+      Assert(indexer_representation.size() == edge_count,
              "PCSSs length not equal to edge_count.");
       // Loop over the various rooting positions of this topology.
       for (size_t rooting_position = 0; rooting_position < edge_count;
            ++rooting_position) {
-        const size_t& rootsplit = rootsplits[rooting_position];
-        const SizeVector& pcss_vector = pcss_vector_vector[rooting_position];
+        const SizeVector& rooted_representation =
+            indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
         q_weights[rooting_position] =
-            ProductOf(sbn_parameters, pcss_vector, sbn_parameters[rootsplit]);
+            ProductOf(sbn_parameters, rooted_representation, 1.);
       }
       q_weights /= q_weights.sum();
       // Now increment the new SBN parameters by the q-weighted counts.
       q_weights *= topology_count;
-      IncrementBy(m_bar, rootsplits, q_weights);
-      IncrementBy(m_bar, pcss_vector_vector, q_weights);
+      IncrementBy(m_bar, indexer_representation, q_weights);
     }
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
@@ -208,18 +200,12 @@ void SBNProbability::ExpectationMaximization(
 double SBNProbability::ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
     const IndexerRepresentation& indexer_representation) {
-  const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
-  auto single_rooting_probability = [&sbn_parameters](const size_t rootsplit,
-                                                      const SizeVector pcss_vector) {
-    return SumOf(sbn_parameters, pcss_vector, sbn_parameters[rootsplit]);
+  double log_total_probability = DOUBLE_NEG_INF;
+  for (const auto& rooted_representation : indexer_representation) {
+    log_total_probability = NumericalUtils::LogAdd(
+        log_total_probability, SumOf(sbn_parameters, rooted_representation, 0.));
   };
-  double log_probability = std::inner_product(
-      rootsplits.cbegin(), rootsplits.cend(),  // First vector.
-      pcss_vector_vector.cbegin(),             // Second vector.
-      DOUBLE_NEG_INF,                          // Starting value.
-      NumericalUtils::LogAdd,                  // "Reduce" using LogAdd.
-      single_rooting_probability);             // How to combine pairs of elements.
-  return exp(log_probability);
+  return exp(log_total_probability);
 }
 
 EigenVectorXd SBNProbability::ProbabilityOf(

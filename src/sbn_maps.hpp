@@ -17,7 +17,7 @@ using SizeBitsetMap = std::unordered_map<size_t, Bitset>;
 using BitsetSizeMap = std::unordered_map<Bitset, size_t>;
 using BitsetSizePairMap = std::unordered_map<Bitset, std::pair<size_t, size_t>>;
 using BitsetSizeDict = DefaultDict<Bitset, size_t>;
-using IndexerRepresentation = std::pair<SizeVector, SizeVectorVector>;
+using IndexerRepresentation = SizeVectorVector;
 using IndexerRepresentationCounter =
     std::vector<std::pair<IndexerRepresentation, uint32_t>>;
 using PCSSDict = std::unordered_map<Bitset, DefaultDict<Bitset, size_t>>;
@@ -49,6 +49,7 @@ PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& topology);
 // This function gives information about the splits and PCSSs of a given
 // topology with respect to the current indexing data structures.
+// TODO
 // Specifically, it returns a pair (rootsplit_result, pcss_result).
 // Each of these vectors are indexed by virtual rootings of the tree.
 // rootsplit_result simply gives the indices of the rootsplits that appear for

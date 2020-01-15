@@ -110,16 +110,24 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
   const auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
   SizeVector rootsplit_result = SBNMaps::SplitIndicesOf(indexer, topology);
-  // Next, the pcss_result.
-  SizeVectorVector pcss_result(topology->Id());
-  topology->PCSSPreOrder([&indexer, &default_index, &leaf_count, &pcss_result,
-                          &topology](const Node* sister_node, bool sister_direction,
-                                     const Node* focal_node,
-                                     bool focal_direction,  //
-                                     const Node* child0_node,
-                                     bool child0_direction,  //
-                                     const Node* child1_node, bool child1_direction,
-                                     const Node* virtual_root_clade) {
+  // We initialize each vector with the rootsplit index.
+  SizeVectorVector result(topology->Id());
+  std::transform(rootsplit_result.begin(), rootsplit_result.end(), result.begin(),
+                 [&topology](const auto rootsplit) {
+                   SizeVector v = {rootsplit};
+                   // The number of PCSSs is less than number of internal nodes/2.
+                   v.reserve(topology->Id() / 2);
+                   return v;
+                 });
+  // Now we append the PCSSs.
+  topology->PCSSPreOrder([&indexer, &default_index, &leaf_count, &result, &topology](
+                             const Node* sister_node, bool sister_direction,
+                             const Node* focal_node,
+                             bool focal_direction,  //
+                             const Node* child0_node,
+                             bool child0_direction,  //
+                             const Node* child1_node, bool child1_direction,
+                             const Node* virtual_root_clade) {
     // Start by making the bitset representation of this PCSS.
     Bitset bitset(3 * leaf_count, false);
     bitset.CopyFrom(sister_node->Leaves(), 0, sister_direction);
@@ -137,17 +145,17 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
     const auto& focal_index = focal_node->Id();
     if (sister_node == focal_node) {
       // We are in the bidirectional edge situation.
-      Assert(focal_index < pcss_result.size(), "focal_index out of range.");
+      Assert(focal_index < result.size(), "focal_index out of range.");
       // Rooting at the present edge will indeed lead to the given PCSS.
-      pcss_result[focal_index].push_back(indexer_position);
+      result[focal_index].push_back(indexer_position);
     } else {
       // The only time the virtual root clade should be nullptr should be when
       // sister_node == focal_node, but we check anyhow.
       Assert(virtual_root_clade != nullptr, "virtual_root_clade is null.");
       // Virtual-rooting on every edge in the virtual rooting clade will also
       // lead to this PCSS, because then the root will be "above" the PCSS.
-      virtual_root_clade->ConditionalPreOrder([&pcss_result, &indexer_position,
-                                               &sister_node, &focal_node,
+      virtual_root_clade->ConditionalPreOrder([&result, &indexer_position, &sister_node,
+                                               &focal_node,
                                                &topology](const Node* node) {
         if (node == sister_node || node == focal_node) {
           // Don't enter the sister or focal clades. This is only
@@ -159,14 +167,14 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
         // Add all of the edges of the virtual rooting clade, except for the
         // root of the topology.
         if (node != topology.get()) {
-          Assert(node->Id() < pcss_result.size(), "node's root Id is out of range.");
-          pcss_result[node->Id()].push_back(indexer_position);
+          Assert(node->Id() < result.size(), "node's root Id is out of range.");
+          result[node->Id()].push_back(indexer_position);
         }
         return true;
       });
     }
   });
-  return std::pair<SizeVector, SizeVectorVector>(rootsplit_result, pcss_result);
+  return result;
 }
 
 IndexerRepresentationCounter SBNMaps::IndexerRepresentationCounterOf(

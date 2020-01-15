@@ -91,7 +91,7 @@ class SBNInstance {
   // Turn an IndexerRepresentation into a string representation of the underying
   // bitsets. This is really just so that we can make a test of indexer
   // representations.
-  std::pair<StringSet, StringSetVector> StringIndexerRepresentationOf(
+  StringSetVector StringIndexerRepresentationOf(
       IndexerRepresentation indexer_representation) const;
 
   // Return a ragged vector of vectors such that the ith vector is the
@@ -222,19 +222,17 @@ TEST_CASE("libsbn") {
   // Here we look at the indexer representation of this tree. Rather than having the
   // indices themselves, which is what IndexerRepresentationOf actually outputs, we have
   // string representations of the features corresponding to those indices.
-  std::pair<StringSet, StringSetVector> correct_representation_1(
-      // The rootsplits.
-      {"01110", "01000", "01010", "01111", "00010", "00100", "00001"},
-      // The PCSSs for each of the possible virtual rootings.
+  StringSetVector correct_representation_1(
+      // The indexer representations for each of the possible virtual rootings.
       // For example, this first one is for rooting at the edge leading to leaf
-      // 0.
-      {{"10000|01111|00001", "00001|01110|00100", "00100|01010|00010"},
-       {"01000|10111|00010", "00100|10001|00001", "00010|10101|00100"},
-       {"10001|01010|00010", "01010|10001|00001", "00100|11011|01010"},
-       {"00010|11101|01000", "00100|10001|00001", "01000|10101|00100"},
-       {"00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
-       {"10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
-       {"00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
+      // 0, the second for rooting at leaf 1, etc.
+      {{"01111", "10000|01111|00001", "00001|01110|00100", "00100|01010|00010"},
+       {"01000", "01000|10111|00010", "00100|10001|00001", "00010|10101|00100"},
+       {"00100", "10001|01010|00010", "01010|10001|00001", "00100|11011|01010"},
+       {"00010", "00010|11101|01000", "00100|10001|00001", "01000|10101|00100"},
+       {"00001", "00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
+       {"01010", "10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
+       {"01110", "00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
   // Here 99999999 is the default value if a rootsplit or PCSS is missing.
   CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
                inst.indexer_, indexer_test_topology_1, 99999999)),
@@ -249,15 +247,14 @@ TEST_CASE("libsbn") {
            correct_psp_representation_1);
   // Same as above but for (((0,1),2),3,4);, or with internal nodes (((0,1)5,2)6,3,4)7;
   auto indexer_test_topology_2 = Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 7});
-  std::pair<StringSet, StringSetVector> correct_representation_2(
-      {"01000", "01111", "00011", "00010", "00111", "00100", "00001"},
-      {{"10000|01111|00111", "00100|00011|00001", "01000|00111|00011"},
-       {"01000|10111|00111", "00100|00011|00001", "10000|00111|00011"},
-       {"00100|11011|00011", "11000|00011|00001", "00011|11000|01000"},
-       {"00100|11000|01000", "00001|11100|00100", "00010|11101|00001"},
-       {"00100|11000|01000", "00001|11110|00010", "00010|11100|00100"},
-       {"00111|11000|01000", "00100|00011|00001", "11000|00111|00011"},
-       {"00100|11000|01000", "11100|00011|00001", "00011|11100|00100"}});
+  StringSetVector correct_representation_2(
+      {{"01111", "10000|01111|00111", "00100|00011|00001", "01000|00111|00011"},
+       {"01000", "01000|10111|00111", "00100|00011|00001", "10000|00111|00011"},
+       {"00100", "00100|11011|00011", "11000|00011|00001", "00011|11000|01000"},
+       {"00010", "00100|11000|01000", "00001|11100|00100", "00010|11101|00001"},
+       {"00001", "00100|11000|01000", "00001|11110|00010", "00010|11100|00100"},
+       {"00111", "00111|11000|01000", "00100|00011|00001", "11000|00111|00011"},
+       {"00011", "00100|11000|01000", "11100|00011|00001", "00011|11100|00100"}});
   CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
                inst.indexer_, indexer_test_topology_2, 99999999)),
            correct_representation_2);
