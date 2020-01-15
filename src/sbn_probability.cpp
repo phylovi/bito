@@ -11,7 +11,6 @@
 #include <numeric>
 #include "numerical_utils.hpp"
 #include "sbn_maps.hpp"
-#include "numerical_utils.hpp"
 
 // Increment all entries from an index vector by a log(value).
 void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices, double value) {

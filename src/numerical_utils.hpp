@@ -4,19 +4,21 @@
 #ifndef SRC_NUMERICAL_UTILS_HPP_
 #define SRC_NUMERICAL_UTILS_HPP_
 
+#include <limits.h>
+
 #include "eigen_sugar.hpp"
 #include "sugar.hpp"
 
 constexpr double DOUBLE_INF = std::numeric_limits<double>::infinity();
 constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
-//const double LOG_EPS = log(std::numeric_limits<double>::epsilon());
 
 namespace NumericalUtils {
 // It returns log(exp(x) + exp(y))
 constexpr double LogAdd(double x, double y) {
-  // See: https://github.com/alexandrebouchard/bayonet/blob/master/src/main/java/bayonet/math/NumericalUtils.java#L59
-  
+  // See:
+  // https://github.com/alexandrebouchard/bayonet/blob/master/src/main/java/bayonet/math/NumericalUtils.java#L59
+
   // make x the max
   if (y > x) {
     double temp = x;
