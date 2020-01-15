@@ -143,6 +143,7 @@ sources = [
     "_build/engine.cpp",
     "_build/libsbn.cpp",
     "_build/node.cpp",
+    "_build/numerical_utils.cpp",
     "_build/parser.cpp",
     "_build/phylo_model.cpp",
     "_build/psp_indexer.cpp",

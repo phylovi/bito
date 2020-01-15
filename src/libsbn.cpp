@@ -4,6 +4,8 @@
 #include "libsbn.hpp"
 #include <memory>
 
+#include "numerical_utils.hpp"
+
 void SBNInstance::PrintStatus() {
   std::cout << "Status for instance '" << name_ << "':\n";
   if (tree_collection_.TreeCount()) {
@@ -78,6 +80,18 @@ void SBNInstance::TrainExpectationMaximization(double alpha, size_t em_loop_coun
   SBNProbability::ExpectationMaximization(
       sbn_parameters_, indexer_representation_counter, rootsplits_.size(),
       parent_to_range_, alpha, em_loop_count);
+}
+
+EigenVectorXd SBNInstance::CalculateSBNProbabilitiesInLog() {
+    
+  // invariant: sbn_parameters_ are  in the log space i.e.,
+  // sbn_parameters_[s] = log P(S = s) = log(counts_s) - log(sum_{s'} counts_{s'})
+  // or
+  // sbn_parameters_[s] = log P(S = s) = \phi_s - log(sum_{s'} exp(\phi_{s'}))
+  // we assume that it is unnormalized
+  EigenVectorXd sbn_parameters_copy = sbn_parameters_;
+  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters_copy, rootsplits_.size(), parent_to_range_);
+  return SBNProbability::ProbabilityOfLogSpace(sbn_parameters_copy, MakeIndexerRepresentations());
 }
 
 EigenVectorXd SBNInstance::CalculateSBNProbabilities() {
