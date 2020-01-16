@@ -175,7 +175,7 @@ void SBNProbability::ExpectationMaximization(
       // Calculate the q weights for this topology.
       q_weights.setZero();
       Assert(indexer_representation.size() == edge_count,
-             "PCSSs length not equal to edge_count.");
+             "Indexer representation length is not constant.");
       // Loop over the various rooting positions of this topology.
       for (size_t rooting_position = 0; rooting_position < edge_count;
            ++rooting_position) {
