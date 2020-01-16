@@ -37,11 +37,11 @@ EigenVectorXd ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<IndexerRepresentation>& indexer_representations);
 
-// This function performs normalization of vec given by range -- it replaces the
-// existing values.
+// This function performs in-place normalization of vec given by range when its values
+// are in log space.
 void ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec,
                                     std::pair<size_t, size_t> range);
-// Perform normalization of vec when its values are in log space.
+// Perform in-place normalization of vec when its values are in log space.
 // We assume that vec is laid out like sbn_parameters (see top).
 void ProbabilityNormalizeParamsInLog(EigenVectorXdRef vec, size_t rootsplit_count,
                                      const BitsetSizePairMap& parent_to_range);
