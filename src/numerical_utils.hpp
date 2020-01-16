@@ -12,6 +12,9 @@
 constexpr double DOUBLE_INF = std::numeric_limits<double>::infinity();
 constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
+// log isn't constexpr :'(
+// https://stackoverflow.com/questions/50477974/constexpr-exp-log-pow
+const double LOG_EPS = log(EPS);
 
 namespace NumericalUtils {
 // Return log(exp(x) + exp(y)).
@@ -19,28 +22,29 @@ constexpr double LogAdd(double x, double y) {
   // See:
   // https://github.com/alexandrebouchard/bayonet/blob/master/src/main/java/bayonet/math/NumericalUtils.java#L59
 
-  // make x the max
+  // Make x the max.
   if (y > x) {
     double temp = x;
     x = y;
     y = temp;
   }
-  // now x is bigger
   if (x == DOUBLE_NEG_INF) {
     return x;
   }
   double negDiff = y - x;
-  if (negDiff < log(EPS)) {
+  if (negDiff < LOG_EPS) {
     return x;
   }
   return x + log(1.0 + exp(negDiff));
 }
-// It returns log(sum_i exp(vec(i)))
+
+// Return log(sum_i exp(vec(i))).
 double LogSum(const EigenVectorXdRef vec);
-// This function normalizes the entries of vec: vec(i) = vec(i) - LogSum(vec)
+// Normalize the entries of vec: vec(i) = vec(i) - LogSum(vec).
 void ProbabilityNormalizeInLog(EigenVectorXdRef vec);
-// This function computes exponetiation of vec: vec(i) = exp(vec(i))
+// Exponentiate vec in place: vec(i) = exp(vec(i))
 void Exponentiate(EigenVectorXdRef vec);
+
 }  // namespace NumericalUtils
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

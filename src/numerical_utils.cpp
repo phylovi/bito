@@ -4,25 +4,10 @@
 #include "numerical_utils.hpp"
 #include <iostream>
 
-using namespace std;
-
-double NumericalUtils::LogSum(const EigenVectorXdRef vec) {
-  double log_sum = DOUBLE_NEG_INF;
-  for (auto val : vec) {
-    log_sum = LogAdd(log_sum, val);
-  }
-  return log_sum;
-}
+double NumericalUtils::LogSum(const EigenVectorXdRef vec) { return vec.redux(LogAdd); }
 
 void NumericalUtils::ProbabilityNormalizeInLog(EigenVectorXdRef vec) {
-  double log_sum = LogSum(vec);
-  for (auto &log_val : vec) {
-    log_val -= log_sum;
-  }
+  vec = vec.array() - LogSum(vec);
 }
 
-void NumericalUtils::Exponentiate(EigenVectorXdRef vec) {
-  for (size_t i = 0; i < vec.size(); i++) {
-    vec[i] = exp(vec[i]);
-  }
-}
+void NumericalUtils::Exponentiate(EigenVectorXdRef vec) { vec = vec.array().exp(); }
