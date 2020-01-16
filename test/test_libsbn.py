@@ -132,15 +132,21 @@ def rootings_indexer_test():
     inst.process_loaded_trees()
     # First we turn the PCSS sets into actual Python sets for unordered comparison.
     reps = [
-        (rootsplits, [set(pcss_set) for pcss_set in pcss_set_list])
-        for (rootsplits, pcss_set_list) in inst.make_indexer_representations()
+        sorted(
+            [
+                # The first entry of the rooted representation is the rootsplit, and the
+                # rest are the PCSSs.
+                (rooted_representation[0], set(rooted_representation[1:]))
+                for rooted_representation in indexer_representation
+            ]
+        )
+        for indexer_representation in inst.make_indexer_representations()
     ]
     # Next we sort the representations with respect to the order on the rootsplits
     # (the first component, corresponding to the various virtual rootings).
-    final_sorted = [zip(*sorted(zip(*rep))) for rep in reps]
-    first_sorted_rep = list(final_sorted[0])
-    for rep in final_sorted[1:]:
-        assert first_sorted_rep == list(rep)
+    first_rep = list(reps[0])
+    for rep in reps[1:]:
+        assert first_rep == list(rep)
 
 
 def test_libsbn():

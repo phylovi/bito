@@ -184,23 +184,18 @@ StringVector SBNInstance::StringReversedIndexer() const {
   return reversed_indexer;
 }
 
-std::pair<StringSet, StringSetVector> SBNInstance::StringIndexerRepresentationOf(
+StringSetVector SBNInstance::StringIndexerRepresentationOf(
     IndexerRepresentation indexer_representation) const {
   auto reversed_indexer = StringReversedIndexer();
-  const auto &[rootsplit_indices, pcss_index_vector] = indexer_representation;
-  StringSet rootsplit_string_set;
-  for (const auto index : rootsplit_indices) {
-    SafeInsert(rootsplit_string_set, reversed_indexer[index]);
-  }
-  StringSetVector pcss_string_sets;
-  for (const auto &pcss_indices : pcss_index_vector) {
-    StringSet pcss_string_set;
-    for (const auto index : pcss_indices) {
-      SafeInsert(pcss_string_set, reversed_indexer[index]);
+  StringSetVector string_sets;
+  for (const auto &rooted_representation : indexer_representation) {
+    StringSet string_set;
+    for (const auto index : rooted_representation) {
+      SafeInsert(string_set, reversed_indexer[index]);
     }
-    pcss_string_sets.push_back(std::move(pcss_string_set));
+    string_sets.push_back(std::move(string_set));
   }
-  return {rootsplit_string_set, pcss_string_sets};
+  return string_sets;
 }
 
 DoubleVectorVector SBNInstance::SplitLengths() const {
