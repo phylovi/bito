@@ -116,9 +116,12 @@ void SBNProbability::ExpectationMaximization(
   EigenVectorXd m_tilde(sbn_parameters.size());
   SetCounts(m_tilde, indexer_representation_counter, rootsplit_count, parent_to_range);
   // The normalized version of m_tilde is the SA estimate, which is our starting point.
+  std::cout << "###### m tilde, #####" << std::endl;
+  std::cout << m_tilde << std::endl;
   sbn_parameters = m_tilde;
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
   // Do the specified number of EM loops.
+  std::cout << "###### q, #####" << std::endl;
   for (size_t em_idx = 0; em_idx < em_loop_count; ++em_idx) {
     m_bar.setZero();
     // Loop over topologies (as manifested by their indexer representations).
@@ -146,7 +149,9 @@ void SBNProbability::ExpectationMaximization(
       q_weights *= topology_count;
       IncrementBy(m_bar, rootsplits, q_weights);
       IncrementBy(m_bar, pcss_vector_vector, q_weights);
-      std::cout << topology_count << "\t" << q_weights << std::endl;
+      if (em_idx == em_loop_count - 1) {
+        std::cout << topology_count << "\t" << q_weights << std::endl;
+      }
     }
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);

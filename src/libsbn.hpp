@@ -325,7 +325,7 @@ TEST_CASE("libsbn") {
   }
   // inst.ReadNewickFile("data/five_taxon.nwk");
   // inst.ProcessLoadedTrees();
-  inst.TrainExpectationMaximization(0., 1);
+  inst.TrainExpectationMaximization(0., 50);
   // std::cout << inst.tree_collection_.TaxonNames() << std::endl;
   // inst.PrintSupports();
   // std::cout << inst.GetIndexers() << std::endl;
