@@ -162,6 +162,9 @@ void SBNProbability::ExpectationMaximization(
   // which is the counts vector before normalization to get the SimpleAverage estimate.
   EigenVectorXd m_tilde(sbn_parameters.size());
   SetCounts(m_tilde, indexer_representation_counter, rootsplit_count, parent_to_range);
+  // m_tilde is the counts, but marginalized over a uniform distribution on the rooting
+  // edge. Thus we take the total counts and then divide by the edge count.
+  m_tilde = m_tilde / static_cast<double>(edge_count);
   // The normalized version of m_tilde is the SA estimate, which is our starting point.
   sbn_parameters = m_tilde;
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);

@@ -366,6 +366,10 @@ TEST_CASE("libsbn") {
   // 23 iterations of EM with alpha = 0.
   inst.TrainExpectationMaximization(0., 23);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
+  // 1 iteration of EM with alpha = 0.3.
+  inst.TrainExpectationMaximization(0.3, 1);
+  auto result = inst.CalculateSBNProbabilities();
+  std::cout << result << std::endl;
 
   // Test tree sampling.
   inst.ReadNewickFile("data/five_taxon.nwk");
