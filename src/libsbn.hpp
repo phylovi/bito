@@ -222,6 +222,7 @@ TEST_CASE("libsbn") {
   // Here we look at the indexer representation of this tree. Rather than having the
   // indices themselves, which is what IndexerRepresentationOf actually outputs, we have
   // string representations of the features corresponding to those indices.
+  // See sbn_maps.hpp for more description of these indexer representations.
   StringSetVector correct_representation_1(
       // The indexer representations for each of the possible virtual rootings.
       // For example, this first one is for rooting at the edge leading to leaf
