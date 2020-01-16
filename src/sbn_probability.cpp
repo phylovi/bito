@@ -98,7 +98,6 @@ void SBNProbability::ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec,
                                                     std::pair<size_t, size_t> range) {
   auto [start_idx, end_idx] = range;
   auto segment = vec.segment(start_idx, end_idx - start_idx);
-  // normalize log values
   NumericalUtils::ProbabilityNormalizeInLog(segment);
 }
 

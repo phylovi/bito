@@ -12,9 +12,7 @@
 constexpr double DOUBLE_INF = std::numeric_limits<double>::infinity();
 constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
-// log isn't constexpr :'(
-// https://stackoverflow.com/questions/50477974/constexpr-exp-log-pow
-const double LOG_EPS = log(EPS);
+constexpr double LOG_EPS = log(EPS);
 
 namespace NumericalUtils {
 
