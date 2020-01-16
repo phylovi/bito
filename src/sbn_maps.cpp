@@ -9,7 +9,6 @@
 #include <unordered_set>
 #include <utility>
 
-// Make a map from Tags to the bitset representing the ids below the Tag.
 SizeBitsetMap SBNMaps::IdIdSetMapOf(Node::NodePtr topology) {
   SizeBitsetMap map;
   auto id_count = topology->Id() + 1;

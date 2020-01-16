@@ -40,23 +40,23 @@ std::unordered_map<std::string, T> StringifyMap(std::unordered_map<Key, T> m) {
 }
 
 namespace SBNMaps {
-SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
 
+// Make a map from Tags to the bitset representing the ids below the Tag.
+SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
+// Make a DefaultDict mapping rootsplits to the number of times they were seen.
 BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
+// Make a PCSSDict mapping PCSSs to the number of times they were seen.
 PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 // This function returns a vector indexed by the edges of the tree and
 // containing the corresponding split index as indexed by the indexer.
 SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& topology);
-// This function gives information about the splits and PCSSs of a given
+// This function gives information about the rootsplits and PCSSs of a given
 // topology with respect to the current indexing data structures.
-// TODO
-// Specifically, it returns a pair (rootsplit_result, pcss_result).
-// Each of these vectors are indexed by virtual rootings of the tree.
-// rootsplit_result simply gives the indices of the rootsplits that appear for
-// those various virtual rootings. pcss_result is a vector of vectors, giving
-// the indices of sbn_parameters_ corresponding to PCSSs that are present in the
-// given topology.
-// Any rootsplits or PCSSs that aren't known by the indexer are assigned
+// Specifically, it returns a vector of vectors, such that the ith vector is the indices
+// of sbn_parameters_ describing the tree when it is rooted above the ith node. The
+// first entry of this representation is always the index of the rootsplit. The rest are
+// the indices of the PCSSs that are present in the given topology.
+// NOTE: Any rootsplits or PCSSs that aren't known by the indexer are assigned
 // `default_index`.
 IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
                                               const Node::NodePtr& topology,
@@ -65,7 +65,7 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
 IndexerRepresentationCounter IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
     const size_t default_index);
-
+// Make a string version of a PCSSDict.
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
 
 }  // namespace SBNMaps
