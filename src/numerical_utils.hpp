@@ -17,6 +17,7 @@ constexpr double EPS = std::numeric_limits<double>::epsilon();
 const double LOG_EPS = log(EPS);
 
 namespace NumericalUtils {
+
 // Return log(exp(x) + exp(y)).
 constexpr double LogAdd(double x, double y) {
   // See:
