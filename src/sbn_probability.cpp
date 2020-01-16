@@ -8,15 +8,15 @@
 #include "sbn_maps.hpp"
 
 // Increment all entries from an index vector by a log(value).
-void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices, double value)
-{
-    for (const auto& idx : indices) {
-        vec[idx] = NumericalUtils::LogAdd(vec[idx], value);
-    }
+void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices, double value) {
+  for (const auto& idx : indices) {
+    vec[idx] = NumericalUtils::LogAdd(vec[idx], value);
+  }
 }
 
 // Increment all entries from an index vector vector by a log(value).
-void IncrementByInLog(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vector, double value) {
+void IncrementByInLog(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vector,
+                      double value) {
   for (const auto& indices : index_vector_vector) {
     IncrementByInLog(vec, indices, value);
   }
@@ -25,7 +25,7 @@ void IncrementByInLog(EigenVectorXdRef vec, const SizeVectorVector& index_vector
 // Increment all entries from an index vector by a value.
 void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices, double value) {
   for (const auto& idx : indices) {
-      vec[idx] += value;
+    vec[idx] += value;
   }
 }
 
@@ -44,7 +44,7 @@ void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices,
   Assert(indices.size() == values.size(),
          "Indices and values don't have matching size.");
   for (size_t i = 0; i < values.size(); ++i) {
-      vec[indices[i]] += values[i];
+    vec[indices[i]] += values[i];
   }
 }
 
