@@ -4,6 +4,7 @@
 #include "libsbn.hpp"
 #include <memory>
 
+#include "eigen_sugar.hpp"
 #include "numerical_utils.hpp"
 
 void SBNInstance::PrintStatus() {
@@ -99,10 +100,15 @@ size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
   const auto &[start, end] = range;
   Assert(start < end && end <= sbn_parameters_.size(),
          "SampleIndex given an invalid range.");
+
+  // We do not want to overwrite sbn_parameters so we make a copy.
+  EigenVectorXd sbn_parameters_copy = sbn_parameters_;
+  SBNProbability::ProbabilityNormalizeRangeInLog(sbn_parameters_copy, range);
+  NumericalUtils::Exponentiate(sbn_parameters_copy);
   std::discrete_distribution<> distribution(
       // Lordy, these integer types.
-      sbn_parameters_.begin() + static_cast<ptrdiff_t>(start),
-      sbn_parameters_.begin() + static_cast<ptrdiff_t>(end));
+      sbn_parameters_copy.begin() + static_cast<ptrdiff_t>(start),
+      sbn_parameters_copy.begin() + static_cast<ptrdiff_t>(end));
   // We have to add on range.first because we have taken a slice of the full
   // array, and the sampler treats the beginning of this slice as zero.
   auto result = start + static_cast<size_t>(distribution(random_generator_));

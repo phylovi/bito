@@ -13,7 +13,8 @@
 #include "sbn_maps.hpp"
 
 // Increment all entries from an index vector by a log(value).
-void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices, double value) {
+void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices, double value)
+{
     
     for (const auto& idx : indices) {
         vec[idx] = NumericalUtils::LogAdd(vec[idx], value);
@@ -100,8 +101,8 @@ void ProbabilityNormalizeParams(EigenVectorXdRef vec, size_t rootsplit_count,
 }
 
 // This achieves the same purpose as ProbabilityNormalizeRange when the vec is in log space
-void ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec,
-                                    std::pair<size_t, size_t> range) {
+void SBNProbability::ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec,
+                                                    std::pair<size_t, size_t> range) {
   auto [start_idx, end_idx] = range;
   auto segment = vec.segment(start_idx, end_idx - start_idx);
   // normalize log values
