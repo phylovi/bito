@@ -14,7 +14,7 @@ double NumericalUtils::LogSum(const EigenVectorXdRef vec) {
   return log_sum;
 }
 
-void NumericalUtils::NormalizeInLog(EigenVectorXdRef vec) {
+void NumericalUtils::ProbabilityNormalizeInLog(EigenVectorXdRef vec) {
   double log_sum = LogSum(vec);
   for (auto &log_val : vec) {
     log_val -= log_sum;

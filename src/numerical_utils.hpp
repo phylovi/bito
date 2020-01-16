@@ -14,7 +14,7 @@ constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
 
 namespace NumericalUtils {
-// It returns log(exp(x) + exp(y))
+// Return log(exp(x) + exp(y)).
 constexpr double LogAdd(double x, double y) {
   // See:
   // https://github.com/alexandrebouchard/bayonet/blob/master/src/main/java/bayonet/math/NumericalUtils.java#L59
@@ -38,7 +38,7 @@ constexpr double LogAdd(double x, double y) {
 // It returns log(sum_i exp(vec(i)))
 double LogSum(const EigenVectorXdRef vec);
 // This function normalizes the entries of vec: vec(i) = vec(i) - LogSum(vec)
-void NormalizeInLog(EigenVectorXdRef vec);
+void ProbabilityNormalizeInLog(EigenVectorXdRef vec);
 // This function computes exponetiation of vec: vec(i) = exp(vec(i))
 void Exponentiate(EigenVectorXdRef vec);
 }  // namespace NumericalUtils
@@ -60,13 +60,11 @@ TEST_CASE("NumericalUtils") {
   CHECK_LT(fabs(log_sum - 4.007333), 1e-5);
   CHECK_LT(fabs(log_sum2 - 4.007333), 1e-5);
 
-  // test normalization
-  NumericalUtils::NormalizeInLog(log_vec);
+  NumericalUtils::ProbabilityNormalizeInLog(log_vec);
   for (size_t i = 0; i < log_vec.size(); i++) {
     CHECK_LT(fabs(log_vec(i) - (log(i + 1) - log_sum)), 1e-5);
   }
 
-  // test Exponentiation
   NumericalUtils::Exponentiate(log_vec);
   double sum = 0.0;
   for (size_t i = 0; i < log_vec.size(); i++) {

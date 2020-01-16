@@ -1,10 +1,5 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
-//
-// Perform training of an SBN based on a sample of trees.
-//
-// We assume that readers are familiar with how the sbn_parameters_ vector is laid out:
-// first probabilities of rootsplits, then conditional probabilities of PCSSs.
 
 #include "sbn_probability.hpp"
 #include <iostream>
@@ -15,7 +10,6 @@
 // Increment all entries from an index vector by a log(value).
 void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices, double value)
 {
-    
     for (const auto& idx : indices) {
         vec[idx] = NumericalUtils::LogAdd(vec[idx], value);
     }
@@ -100,16 +94,14 @@ void ProbabilityNormalizeParams(EigenVectorXdRef vec, size_t rootsplit_count,
   }
 }
 
-// This achieves the same purpose as ProbabilityNormalizeRange when the vec is in log space
 void SBNProbability::ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec,
                                                     std::pair<size_t, size_t> range) {
   auto [start_idx, end_idx] = range;
   auto segment = vec.segment(start_idx, end_idx - start_idx);
   // normalize log values
-  NumericalUtils::NormalizeInLog(segment);
+  NumericalUtils::ProbabilityNormalizeInLog(segment);
 }
 
-// We assume that vec is laid out like sbn_parameters (see top).
 void SBNProbability::ProbabilityNormalizeParamsInLog(
     EigenVectorXdRef vec, size_t rootsplit_count,
     const BitsetSizePairMap& parent_to_range) {
