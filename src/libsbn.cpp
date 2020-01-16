@@ -4,6 +4,9 @@
 #include "libsbn.hpp"
 #include <memory>
 
+#include "eigen_sugar.hpp"
+#include "numerical_utils.hpp"
+
 void SBNInstance::PrintStatus() {
   std::cout << "Status for instance '" << name_ << "':\n";
   if (tree_collection_.TreeCount()) {
@@ -86,17 +89,23 @@ void SBNInstance::TrainExpectationMaximization(double alpha, size_t em_loop_coun
 }
 
 EigenVectorXd SBNInstance::CalculateSBNProbabilities() {
-  return SBNProbability::ProbabilityOf(sbn_parameters_, MakeIndexerRepresentations());
+  EigenVectorXd sbn_parameters_copy = sbn_parameters_;
+  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters_copy,
+                                                  rootsplits_.size(), parent_to_range_);
+  return SBNProbability::ProbabilityOf(sbn_parameters_copy,
+                                       MakeIndexerRepresentations());
 }
 
 size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
   const auto &[start, end] = range;
   Assert(start < end && end <= sbn_parameters_.size(),
          "SampleIndex given an invalid range.");
-  std::discrete_distribution<> distribution(
-      // Lordy, these integer types.
-      sbn_parameters_.begin() + static_cast<ptrdiff_t>(start),
-      sbn_parameters_.begin() + static_cast<ptrdiff_t>(end));
+  // We do not want to overwrite sbn_parameters so we make a copy.
+  EigenVectorXd sbn_parameters_subrange = sbn_parameters_.segment(start, end - start);
+  NumericalUtils::ProbabilityNormalizeInLog(sbn_parameters_subrange);
+  NumericalUtils::Exponentiate(sbn_parameters_subrange);
+  std::discrete_distribution<> distribution(sbn_parameters_subrange.begin(),
+                                            sbn_parameters_subrange.end());
   // We have to add on range.first because we have taken a slice of the full
   // array, and the sampler treats the beginning of this slice as zero.
   auto result = start + static_cast<size_t>(distribution(random_generator_));

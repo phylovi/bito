@@ -16,6 +16,7 @@
 #include "alignment.hpp"
 #include "driver.hpp"
 #include "engine.hpp"
+#include "numerical_utils.hpp"
 #include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
 #include "sbn_probability.hpp"

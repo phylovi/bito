@@ -1,14 +1,26 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
-//
-// Perform training of an SBN based on a sample of trees.
-//
-// We assume that readers are familiar with how the sbn_parameters_ vector is laid out:
-// first probabilities of rootsplits, then conditional probabilities of PCSSs.
 
 #include "sbn_probability.hpp"
+#include <iostream>
 #include <numeric>
+#include "numerical_utils.hpp"
 #include "sbn_maps.hpp"
+
+// Increment all entries from an index vector by a log(value).
+void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices, double value) {
+  for (const auto& idx : indices) {
+    vec[idx] = NumericalUtils::LogAdd(vec[idx], value);
+  }
+}
+
+// Increment all entries from an index vector vector by a log(value).
+void IncrementByInLog(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vector,
+                      double value) {
+  for (const auto& indices : index_vector_vector) {
+    IncrementByInLog(vec, indices, value);
+  }
+}
 
 // Increment all entries from an index vector by a value.
 void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices, double value) {
@@ -57,6 +69,15 @@ double ProductOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
   return result;
 }
 
+double SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
+             const double starting_value) {
+  double result = starting_value;
+  for (const auto& idx : indices) {
+    result += vec[idx];
+  }
+  return result;
+}
+
 // Probability-normalize a range of values in a vector.
 void ProbabilityNormalizeRange(EigenVectorXdRef vec, std::pair<size_t, size_t> range) {
   auto [start_idx, end_idx] = range;
@@ -70,6 +91,22 @@ void ProbabilityNormalizeParams(EigenVectorXdRef vec, size_t rootsplit_count,
   ProbabilityNormalizeRange(vec, {0, rootsplit_count});
   for (const auto& [_, range] : parent_to_range) {
     ProbabilityNormalizeRange(vec, range);
+  }
+}
+
+void SBNProbability::ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec,
+                                                    std::pair<size_t, size_t> range) {
+  auto [start_idx, end_idx] = range;
+  auto segment = vec.segment(start_idx, end_idx - start_idx);
+  NumericalUtils::ProbabilityNormalizeInLog(segment);
+}
+
+void SBNProbability::ProbabilityNormalizeParamsInLog(
+    EigenVectorXdRef vec, size_t rootsplit_count,
+    const BitsetSizePairMap& parent_to_range) {
+  ProbabilityNormalizeRangeInLog(vec, {0, rootsplit_count});
+  for (const auto& [_, range] : parent_to_range) {
+    ProbabilityNormalizeRangeInLog(vec, range);
   }
 }
 
@@ -88,13 +125,27 @@ void SetCounts(EigenVectorXdRef counts,
   }
 }
 
+// Set the provided counts vector to be the counts of the rootsplits and PCSSs provided
+// in the input.
+void SetLogCounts(EigenVectorXdRef counts,
+                  const IndexerRepresentationCounter& indexer_representation_counter,
+                  size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+  counts.fill(DOUBLE_NEG_INF);
+  for (const auto& [indexer_representation, int_topology_count] :
+       indexer_representation_counter) {
+    const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
+    const auto log_topology_count = log(static_cast<double>(int_topology_count));
+    IncrementByInLog(counts, rootsplits, log_topology_count);
+    IncrementByInLog(counts, pcss_vector_vector, log_topology_count);
+  }
+}
+
 void SBNProbability::SimpleAverage(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
-  SetCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
-            parent_to_range);
-  ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
+  SetLogCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
+               parent_to_range);
 }
 
 void SBNProbability::ExpectationMaximization(
@@ -150,6 +201,8 @@ void SBNProbability::ExpectationMaximization(
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
   }
+
+  sbn_parameters = sbn_parameters.array().log();
 }
 
 double SBNProbability::ProbabilityOf(
@@ -158,14 +211,15 @@ double SBNProbability::ProbabilityOf(
   const auto& [rootsplits, pcss_vector_vector] = indexer_representation;
   auto single_rooting_probability = [&sbn_parameters](const size_t rootsplit,
                                                       const SizeVector pcss_vector) {
-    return ProductOf(sbn_parameters, pcss_vector, sbn_parameters[rootsplit]);
+    return SumOf(sbn_parameters, pcss_vector, sbn_parameters[rootsplit]);
   };
-  return std::inner_product(
+  double log_probability = std::inner_product(
       rootsplits.cbegin(), rootsplits.cend(),  // First vector.
       pcss_vector_vector.cbegin(),             // Second vector.
-      0.,                                      // Starting value.
-      std::plus<>(),                           // "Reduce" using +.
+      DOUBLE_NEG_INF,                          // Starting value.
+      NumericalUtils::LogAdd,                  // "Reduce" using LogAdd.
       single_rooting_probability);             // How to combine pairs of elements.
+  return exp(log_probability);
 }
 
 EigenVectorXd SBNProbability::ProbabilityOf(

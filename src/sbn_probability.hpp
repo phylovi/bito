@@ -1,5 +1,10 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// Perform training of an SBN based on a sample of trees.
+//
+// We assume that readers are familiar with how the sbn_parameters_ vector is laid out:
+// first probabilities of rootsplits, then conditional probabilities of PCSSs.
 
 #ifndef SRC_SBN_PROBABILITY_HPP_
 #define SRC_SBN_PROBABILITY_HPP_
@@ -31,6 +36,15 @@ double ProbabilityOf(const EigenConstVectorXdRef,
 EigenVectorXd ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<IndexerRepresentation>& indexer_representations);
+
+// This function performs in-place normalization of vec given by range when its values
+// are in log space.
+void ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec,
+                                    std::pair<size_t, size_t> range);
+// Perform in-place normalization of vec when its values are in log space.
+// We assume that vec is laid out like sbn_parameters (see top).
+void ProbabilityNormalizeParamsInLog(EigenVectorXdRef vec, size_t rootsplit_count,
+                                     const BitsetSizePairMap& parent_to_range);
 
 }  // namespace SBNProbability
 
