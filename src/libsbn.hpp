@@ -344,7 +344,7 @@ TEST_CASE("libsbn") {
   // 1 iteration of EM with alpha = 0.
   inst.TrainExpectationMaximization(0., 1);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_1, 1e-12);
-  // 23 iterations of EM with alpha = 0
+  // 23 iterations of EM with alpha = 0.
   inst.TrainExpectationMaximization(0., 23);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
 }
