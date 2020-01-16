@@ -103,6 +103,27 @@ SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
   return split_result;
 }
 
+Bitset PCSSBitsetOf(const size_t leaf_count, const Node* sister_node,
+                    bool sister_direction, const Node* focal_node,
+                    bool focal_direction,  //
+                    const Node* child0_node,
+                    bool child0_direction,  //
+                    const Node* child1_node, bool child1_direction) {
+  Bitset bitset(3 * leaf_count, false);
+  bitset.CopyFrom(sister_node->Leaves(), 0, sister_direction);
+  bitset.CopyFrom(focal_node->Leaves(), leaf_count, focal_direction);
+  auto child0_bitset = child0_node->Leaves();
+  if (child0_direction) {
+    child0_bitset.flip();
+  }
+  auto child1_bitset = child1_node->Leaves();
+  if (child1_direction) {
+    child1_bitset.flip();
+  }
+  bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count, false);
+  return bitset;
+}
+
 IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
                                                        const Node::NodePtr& topology,
                                                        const size_t default_index) {
@@ -127,19 +148,9 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
                              bool child0_direction,  //
                              const Node* child1_node, bool child1_direction,
                              const Node* virtual_root_clade) {
-    // Start by making the bitset representation of this PCSS.
-    Bitset bitset(3 * leaf_count, false);
-    bitset.CopyFrom(sister_node->Leaves(), 0, sister_direction);
-    bitset.CopyFrom(focal_node->Leaves(), leaf_count, focal_direction);
-    auto child0_bitset = child0_node->Leaves();
-    if (child0_direction) {
-      child0_bitset.flip();
-    }
-    auto child1_bitset = child1_node->Leaves();
-    if (child1_direction) {
-      child1_bitset.flip();
-    }
-    bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count, false);
+    const auto bitset = PCSSBitsetOf(leaf_count, sister_node, sister_direction,
+                                     focal_node, focal_direction, child0_node,
+                                     child0_direction, child1_node, child1_direction);
     const auto indexer_position = AtWithDefault(indexer, bitset, default_index);
     const auto& focal_index = focal_node->Id();
     if (sister_node == focal_node) {
@@ -187,6 +198,18 @@ IndexerRepresentationCounter SBNMaps::IndexerRepresentationCounterOf(
          topology_count});
   }
   return counter;
+}
+
+IndexerRepresentation SBNMaps::RootedIndexerRepresentationOf(
+    const BitsetSizeMap& indexer, const Node::NodePtr& topology,
+    const size_t default_index) {
+  const auto leaf_count = topology->LeafCount();
+  // First, the rootsplits.
+  SizeVector rootsplit_result = SBNMaps::SplitIndicesOf(indexer, topology);
+  // We initialize each vector with the rootsplit index.
+  SizeVectorVector result(topology->Id());
+
+  return result;
 }
 
 StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
