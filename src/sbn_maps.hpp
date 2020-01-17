@@ -1,5 +1,8 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// A collection of functions to handle the subsplit support and to turn trees into
+// indexer representations.
 
 #ifndef SRC_SBN_MAPS_HPP_
 #define SRC_SBN_MAPS_HPP_
@@ -65,6 +68,9 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
 IndexerRepresentationCounter IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
     const size_t default_index);
+// A rooted indexer representation is the indexer representation of a given rooted tree.
+// That is, the first entry is the rootsplit for that rooting, and after that come the
+// PCSS indices.
 SizeVector RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
                                          const Node::NodePtr& topology,
                                          const size_t default_index);
