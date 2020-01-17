@@ -357,6 +357,34 @@ TEST_CASE("libsbn") {
   // 23 iterations of EM with alpha = 0.
   inst.TrainExpectationMaximization(0., 23);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
+  
+  inst.ReadNewickFile("/Users/sjun2/libsbn/data/five_taxon.nwk");
+  inst.ProcessLoadedTrees();
+  inst.TrainSimpleAverage();
+
+  size_t n_trees_from_file = 0;
+  RootedIndexerRepresentationSizeDict counter_from_file(0);
+  for (const auto& indexer_representation : inst.MakeIndexerRepresentations()) {
+    SBNMaps::IncrementRootedIndexerRepresentationSizeDict(counter_from_file,
+                                                          indexer_representation);
+    n_trees_from_file += indexer_representation.size();
+  }
+
+  size_t n_sampled_trees = 100000;
+  RootedIndexerRepresentationSizeDict counter_from_sampling(0);
+  for (size_t sample_idx = 0; sample_idx < n_sampled_trees; ++sample_idx) {
+    const auto topology = inst.SampleTopology(true);
+    SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
+        counter_from_sampling,
+        SBNMaps::RootedIndexerRepresentationOf(inst.indexer_, topology, 99999999));
+  }
+
+  for (auto it = counter_from_file.begin(); it != counter_from_file.end(); ++it) {
+    double observed = (double)counter_from_sampling.at(it->first)/n_sampled_trees;
+    double expected = (double)counter_from_file.at(it->first)/n_trees_from_file;
+    CHECK_LT(fabs(observed - expected), 1e-2);
+  }
+
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
