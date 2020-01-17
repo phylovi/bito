@@ -24,4 +24,27 @@ int main() {
 
   std::chrono::duration<double> duration = now() - t_start;
   std::cout << "time: " << duration.count() << " seconds\n";
+
+  // Playing with counting.
+  SBNInstance inst("charlie");
+  inst.ReadNewickFile("data/five_taxon.nwk");
+  // inst.ReadNewickFile("data/DS1.100_topologies.nwk");
+  inst.ProcessLoadedTrees();
+  inst.TrainSimpleAverage();
+
+  RootedIndexerRepresentationSizeDict counter_from_file(0);
+  for (const auto& indexer_representation : inst.MakeIndexerRepresentations()) {
+    SBNMaps::IncrementRootedIndexerRepresentationSizeDict(counter_from_file,
+                                                          indexer_representation);
+  }
+  std::cout << counter_from_file << std::endl;
+
+  RootedIndexerRepresentationSizeDict counter_from_sampling(0);
+  for (size_t sample_idx = 0; sample_idx < 10000; ++sample_idx) {
+    const auto topology = inst.SampleTopology(true);
+    SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
+        counter_from_sampling,
+        SBNMaps::RootedIndexerRepresentationOf(inst.indexer_, topology, 99999999));
+  }
+  std::cout << counter_from_sampling << std::endl;
 }

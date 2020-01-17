@@ -67,7 +67,7 @@ class SBNInstance {
   size_t SampleIndex(std::pair<size_t, size_t> range) const;
 
   // Sample a topology from the SBN.
-  Node::NodePtr SampleTopology() const;
+  Node::NodePtr SampleTopology(bool rooted = false) const;
 
   // Sample trees and store them internally
   void SampleTrees(size_t count);

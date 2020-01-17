@@ -228,6 +228,25 @@ SizeVector SBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
   return result;
 }
 
+void SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
+    RootedIndexerRepresentationSizeDict& dict,
+    SizeVector rooted_indexer_representation) {
+  Assert(rooted_indexer_representation.size() > 1,
+         "Rooted indexer representation is too small in "
+         "IncrementRootedIndexerRepresentationSizeDict!");
+  std::sort(rooted_indexer_representation.begin() + 1,
+            rooted_indexer_representation.end());
+  dict.increment(rooted_indexer_representation, 1);
+}
+
+void SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
+    RootedIndexerRepresentationSizeDict& dict,
+    const IndexerRepresentation& indexer_representation) {
+  for (const auto& rooted_indexer_representation : indexer_representation) {
+    IncrementRootedIndexerRepresentationSizeDict(dict, rooted_indexer_representation);
+  }
+}
+
 StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
   StringPCSSMap d_str;
   for (const auto& iter : d) {

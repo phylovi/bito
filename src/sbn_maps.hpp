@@ -25,6 +25,7 @@ using IndexerRepresentationCounter =
     std::vector<std::pair<IndexerRepresentation, uint32_t>>;
 using PCSSDict = std::unordered_map<Bitset, DefaultDict<Bitset, size_t>>;
 using PCSSIndexVector = std::vector<size_t>;
+using RootedIndexerRepresentationSizeDict = DefaultDict<SizeVector, size_t>;
 
 using StringSizePairMap = std::unordered_map<std::string, std::pair<size_t, size_t>>;
 using SizeStringMap = std::unordered_map<size_t, std::string>;
@@ -74,10 +75,32 @@ IndexerRepresentationCounter IndexerRepresentationCounterOf(
 SizeVector RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
                                          const Node::NodePtr& topology,
                                          const size_t default_index);
+// For counting standardized (i.e. PCSS index sorted) rooted indexer representations.
+void IncrementRootedIndexerRepresentationSizeDict(
+    RootedIndexerRepresentationSizeDict& dict,
+    const SizeVector rooted_indexer_representation);
+// Apply the above to every rooting in the indexer representation.
+void IncrementRootedIndexerRepresentationSizeDict(
+    RootedIndexerRepresentationSizeDict& dict,
+    const IndexerRepresentation& indexer_representation);
+
 // Make a string version of a PCSSDict.
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
 
 }  // namespace SBNMaps
+
+namespace std {
+template <>
+struct hash<SizeVector> {
+  size_t operator()(const SizeVector& values) const {
+    int hash = values[0];
+    for (size_t i = 1; i < values.size(); i++) {
+      hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+    }
+    return hash;
+  }
+};
+}  // namespace std
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
