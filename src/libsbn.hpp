@@ -370,7 +370,7 @@ TEST_CASE("libsbn") {
     n_trees_from_file += indexer_representation.size();
   }
 
-  size_t n_sampled_trees = 100000;
+  size_t n_sampled_trees = 1000000;
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
   for (size_t sample_idx = 0; sample_idx < n_sampled_trees; ++sample_idx) {
     const auto topology = inst.SampleTopology(true);
@@ -382,7 +382,7 @@ TEST_CASE("libsbn") {
   for (auto it = counter_from_file.begin(); it != counter_from_file.end(); ++it) {
     double observed = (double)counter_from_sampling.at(it->first)/n_sampled_trees;
     double expected = (double)counter_from_file.at(it->first)/n_trees_from_file;
-    CHECK_LT(fabs(observed - expected), 1e-2);
+    CHECK_LT(fabs(observed - expected), 5e-3);
   }
 
 }
