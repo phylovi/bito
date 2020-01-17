@@ -267,6 +267,19 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_2),
            correct_psp_representation_2);
 
+  // Rooted test
+  // Topology is ((((0,1),2),3),4);, or with internal nodes ((((0,1)5,2)6,3)7,4)8;
+  auto indexer_test_rooted_topology_1 =
+      Node::OfParentIdVector({5, 5, 6, 7, 8, 6, 7, 8});
+
+  std::cout << SBNMaps::RootedIndexerRepresentationOf(
+                   inst.indexer_, indexer_test_rooted_topology_1, 99999999)
+            << std::endl;
+  //  std::cout << inst.StringIndexerRepresentationOf(
+  //                   {SBNMaps::RootedIndexerRepresentationOf(
+  //                       inst.indexer_, indexer_test_rooted_topology_1, 99999999)})
+  //            << std::endl;
+
   // Test likelihood and gradient computation.
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");

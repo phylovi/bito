@@ -65,9 +65,9 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
 IndexerRepresentationCounter IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
     const size_t default_index);
-IndexerRepresentation RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                    const Node::NodePtr& topology,
-                                                    const size_t default_index);
+SizeVector RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                         const Node::NodePtr& topology,
+                                         const size_t default_index);
 // Make a string version of a PCSSDict.
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
 

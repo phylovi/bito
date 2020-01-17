@@ -103,6 +103,8 @@ SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
   return split_result;
 }
 
+// Make a PCSS bitset from a collection of Nodes and their directions. If direction is
+// true, then the bits get flipped.
 Bitset PCSSBitsetOf(const size_t leaf_count, const Node* sister_node,
                     bool sister_direction, const Node* focal_node,
                     bool focal_direction,  //
@@ -200,15 +202,24 @@ IndexerRepresentationCounter SBNMaps::IndexerRepresentationCounterOf(
   return counter;
 }
 
-IndexerRepresentation SBNMaps::RootedIndexerRepresentationOf(
-    const BitsetSizeMap& indexer, const Node::NodePtr& topology,
-    const size_t default_index) {
+SizeVector SBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                  const Node::NodePtr& topology,
+                                                  const size_t default_index) {
   const auto leaf_count = topology->LeafCount();
-  // First, the rootsplits.
-  SizeVector rootsplit_result = SBNMaps::SplitIndicesOf(indexer, topology);
-  // We initialize each vector with the rootsplit index.
-  SizeVectorVector result(topology->Id());
-
+  SizeVector result;
+  // Start with the rootsplit.
+  Bitset rootsplit = topology->Leaves();
+  rootsplit.Minorize();
+  result.push_back(AtWithDefault(indexer, rootsplit, default_index));
+  // Now add the PCSSs.
+  topology->RootedPCSSPreOrder([&leaf_count, &indexer, &default_index, &result](
+                                   const Node* sister_node, const Node* focal_node,
+                                   const Node* child0_node, const Node* child1_node) {
+    Bitset pcss_bitset = PCSSBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                                      child0_node, false, child1_node, false);
+    std::cout << pcss_bitset.PCSSToString() << std::endl;
+    result.push_back(AtWithDefault(indexer, pcss_bitset, default_index));
+  });
   return result;
 }
 

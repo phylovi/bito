@@ -304,6 +304,19 @@ void Node::PCSSPreOrder(PCSSFun f) const {
       });
 }
 
+void Node::RootedPCSSPreOrder(RootedPCSSFun f) const {
+  this->TriplePreOrderBifurcating([&f](const Node* node, const Node* sister,
+                                       const Node* parent) {
+    if (!node->IsLeaf()) {
+      Assert(node->Children().size() == 2,
+             "RootedPCSSPreOrder expects a bifurcating tree.");
+      auto child0 = node->Children()[0].get();
+      auto child1 = node->Children()[1].get();
+      f(sister, node, child0, child1);
+    }
+  });
+}
+
 // This function assigns ids to the nodes of the topology: the leaves get
 // their fixed ids (which we assume are contiguously numbered from 0 through
 // the leaf count -1) and the rest get ordered according to a postorder

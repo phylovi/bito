@@ -63,9 +63,11 @@ class Node {
   // the entire tree. There's nothing else we can do without rerooting the tree.
   // It's not too hard to exclude the undesired bits with a conditional tree
   // traversal. See IndexerRepresentationOfTopology for an example.
-  typedef std::function<void(const Node*, bool, const Node*, bool, const Node*, bool,
-                             const Node*, bool, const Node*)>
-      PCSSFun;
+  using PCSSFun = std::function<void(const Node*, bool, const Node*, bool, const Node*,
+                                     bool, const Node*, bool, const Node*)>;
+  // The rooted version just gives: sister clade, the focal clade, child 0, and child 1.
+  using RootedPCSSFun =
+      std::function<void(const Node*, const Node*, const Node*, const Node*)>;
 
  public:
   explicit Node(uint32_t leaf_id, Bitset leaves);
@@ -120,6 +122,7 @@ class Node {
   // See the typedef of PCSSFun to understand the argument type to this
   // function.
   void PCSSPreOrder(PCSSFun f) const;
+  void RootedPCSSPreOrder(RootedPCSSFun f) const;
 
   // This function prepares the id_ and leaves_ member variables as described at
   // the start of this document. It returns a map that maps the tags to their
