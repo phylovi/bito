@@ -358,7 +358,7 @@ TEST_CASE("libsbn") {
   inst.TrainExpectationMaximization(0., 23);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
   
-  inst.ReadNewickFile("/Users/sjun2/libsbn/data/five_taxon.nwk");
+  inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
 
