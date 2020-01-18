@@ -103,9 +103,11 @@ SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
   return split_result;
 }
 
-Bitset Rootsplit(const Node* topology) {
-  Assert(topology->Children().size() == 2, "Rootsplit expects a bifurcating tree.");
-  Bitset subsplit = topology->Children()[0]->Leaves();
+// Return the rootsplit of a rooted bifurcating topology.
+Bitset Rootsplit(const Node* rooted_topology) {
+  Assert(rooted_topology->Children().size() == 2,
+         "Rootsplit expects a bifurcating tree.");
+  Bitset subsplit = rooted_topology->Children()[0]->Leaves();
   subsplit.Minorize();
   return subsplit;
 }
