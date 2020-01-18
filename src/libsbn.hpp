@@ -277,6 +277,14 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.StringIndexerRepresentationOf({SBNMaps::RootedIndexerRepresentationOf(
                inst.indexer_, indexer_test_rooted_topology_1, out_of_sample_index)})[0],
            correct_rooted_indexer_representation_1);
+  // Topology is (((0,1),2),(3,4));, or with internal nodes (((0,1)5,2)6,(3,4)7)8;
+  auto indexer_test_rooted_topology_2 =
+      Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 8, 8});
+  auto correct_rooted_indexer_representation_2 = StringSet(
+      {"00011", "11100|00011|00001", "00011|11100|00100", "00100|11000|01000"});
+  CHECK_EQ(inst.StringIndexerRepresentationOf({SBNMaps::RootedIndexerRepresentationOf(
+               inst.indexer_, indexer_test_rooted_topology_2, out_of_sample_index)})[0],
+           correct_rooted_indexer_representation_2);
 
   // Test likelihood and gradient computation.
   inst.ReadNexusFile("data/DS1.subsampled_10.t");

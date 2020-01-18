@@ -65,7 +65,7 @@ class Node {
   // traversal. See IndexerRepresentationOfTopology for an example.
   using PCSSFun = std::function<void(const Node*, bool, const Node*, bool, const Node*,
                                      bool, const Node*, bool, const Node*)>;
-  // The rooted version just gives: sister clade, the focal clade, child 0, and child 1.
+  // The rooted version just uses: sister clade, the focal clade, child 0, and child 1.
   using RootedPCSSFun =
       std::function<void(const Node*, const Node*, const Node*, const Node*)>;
 
@@ -119,8 +119,8 @@ class Node {
   void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
   void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
 
-  // See the typedef of PCSSFun to understand the argument type to this
-  // function.
+  // See the typedef of PCSSFun to understand the argument type to these
+  // functions.
   void PCSSPreOrder(PCSSFun f) const;
   void RootedPCSSPreOrder(RootedPCSSFun f) const;
 
