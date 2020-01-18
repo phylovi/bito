@@ -235,8 +235,9 @@ TEST_CASE("libsbn") {
        {"01010", "10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
        {"01110", "00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
   // Here 99999999 is the default value if a rootsplit or PCSS is missing.
+  const size_t out_of_sample_index = 99999999;
   CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
-               inst.indexer_, indexer_test_topology_1, 99999999)),
+               inst.indexer_, indexer_test_topology_1, out_of_sample_index)),
            correct_representation_1);
   // See the "concepts" part of the online documentation to learn about PSP indexing.
   auto correct_psp_representation_1 = StringVectorVector(
@@ -257,7 +258,7 @@ TEST_CASE("libsbn") {
        {"00111", "00111|11000|01000", "00100|00011|00001", "11000|00111|00011"},
        {"00011", "00100|11000|01000", "11100|00011|00001", "00011|11100|00100"}});
   CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
-               inst.indexer_, indexer_test_topology_2, 99999999)),
+               inst.indexer_, indexer_test_topology_2, out_of_sample_index)),
            correct_representation_2);
   auto correct_psp_representation_2 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "00111", "00011"},
@@ -274,7 +275,7 @@ TEST_CASE("libsbn") {
   auto correct_rooted_indexer_representation_1 = StringSet(
       {"00001", "00001|11110|00010", "00010|11100|00100", "00100|11000|01000"});
   CHECK_EQ(inst.StringIndexerRepresentationOf({SBNMaps::RootedIndexerRepresentationOf(
-               inst.indexer_, indexer_test_rooted_topology_1, 99999999)})[0],
+               inst.indexer_, indexer_test_rooted_topology_1, out_of_sample_index)})[0],
            correct_rooted_indexer_representation_1);
 
   // Test likelihood and gradient computation.
@@ -357,34 +358,37 @@ TEST_CASE("libsbn") {
   // 23 iterations of EM with alpha = 0.
   inst.TrainExpectationMaximization(0., 23);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
-  
+
+  // Test tree sampling.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
-
-  size_t n_trees_from_file = 0;
+  // Count the frequencies of rooted trees in a file.
+  size_t rooted_tree_count_from_file = 0;
   RootedIndexerRepresentationSizeDict counter_from_file(0);
   for (const auto& indexer_representation : inst.MakeIndexerRepresentations()) {
     SBNMaps::IncrementRootedIndexerRepresentationSizeDict(counter_from_file,
                                                           indexer_representation);
-    n_trees_from_file += indexer_representation.size();
+    rooted_tree_count_from_file += indexer_representation.size();
   }
-
-  size_t n_sampled_trees = 1000000;
+  // Count the frequencies of trees when we sample after training with SimpleAverage.
+  size_t sampled_tree_count = 1'000'000;
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
-  for (size_t sample_idx = 0; sample_idx < n_sampled_trees; ++sample_idx) {
-    const auto topology = inst.SampleTopology(true);
+  for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
+    const auto rooted_topology = inst.SampleTopology(true);
     SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
-        SBNMaps::RootedIndexerRepresentationOf(inst.indexer_, topology, 99999999));
+        SBNMaps::RootedIndexerRepresentationOf(inst.indexer_, rooted_topology,
+                                               out_of_sample_index));
   }
-
-  for (auto it = counter_from_file.begin(); it != counter_from_file.end(); ++it) {
-    double observed = (double)counter_from_sampling.at(it->first)/n_sampled_trees;
-    double expected = (double)counter_from_file.at(it->first)/n_trees_from_file;
+  // These should be equal in the limit when we're training with SA.
+  for (const auto &[key, _] : counter_from_file) {
+    double observed =
+        static_cast<double>(counter_from_sampling.at(key)) / sampled_tree_count;
+    double expected =
+        static_cast<double>(counter_from_file.at(key)) / rooted_tree_count_from_file;
     CHECK_LT(fabs(observed - expected), 5e-3);
   }
-
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
