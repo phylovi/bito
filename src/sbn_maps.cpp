@@ -114,11 +114,10 @@ Bitset Rootsplit(const Node* rooted_topology) {
 
 // Make a PCSS bitset from a collection of Nodes and their directions. If direction is
 // true, then the bits get flipped.
-Bitset PCSSBitsetOf(const size_t leaf_count, const Node* sister_node,
-                    bool sister_direction, const Node* focal_node,
-                    bool focal_direction,  //
-                    const Node* child0_node,
-                    bool child0_direction,  //
+Bitset PCSSBitsetOf(const size_t leaf_count,  //
+                    const Node* sister_node, bool sister_direction,
+                    const Node* focal_node, bool focal_direction,
+                    const Node* child0_node, bool child0_direction,
                     const Node* child1_node, bool child1_direction) {
   Bitset bitset(3 * leaf_count, false);
   bitset.CopyFrom(sister_node->Leaves(), 0, sister_direction);
@@ -153,10 +152,8 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
   // Now we append the PCSSs.
   topology->PCSSPreOrder([&indexer, &default_index, &leaf_count, &result, &topology](
                              const Node* sister_node, bool sister_direction,
-                             const Node* focal_node,
-                             bool focal_direction,  //
-                             const Node* child0_node,
-                             bool child0_direction,  //
+                             const Node* focal_node, bool focal_direction,
+                             const Node* child0_node, bool child0_direction,
                              const Node* child1_node, bool child1_direction,
                              const Node* virtual_root_clade) {
     const auto bitset = PCSSBitsetOf(leaf_count, sister_node, sister_direction,
