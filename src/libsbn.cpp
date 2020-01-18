@@ -115,13 +115,14 @@ size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
 
 // This function samples a tree by first sampling the rootsplit, and then
 // calling the recursive form of SampleTopology.
-Node::NodePtr SBNInstance::SampleTopology() const {
+Node::NodePtr SBNInstance::SampleTopology(bool rooted) const {
   // Start by sampling a rootsplit.
   size_t rootsplit_index =
       SampleIndex(std::pair<size_t, size_t>(0, rootsplits_.size()));
   const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
   // The addition below turns the rootsplit into a subsplit.
-  auto topology = SampleTopology(rootsplit + ~rootsplit)->Deroot();
+  auto topology = rooted ? SampleTopology(rootsplit + ~rootsplit)
+                         : SampleTopology(rootsplit + ~rootsplit)->Deroot();
   topology->Polish();
   return topology;
 }

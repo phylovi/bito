@@ -1,5 +1,8 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// A collection of functions to handle the subsplit support and to turn trees into
+// indexer representations.
 
 #ifndef SRC_SBN_MAPS_HPP_
 #define SRC_SBN_MAPS_HPP_
@@ -22,6 +25,7 @@ using IndexerRepresentationCounter =
     std::vector<std::pair<IndexerRepresentation, uint32_t>>;
 using PCSSDict = std::unordered_map<Bitset, DefaultDict<Bitset, size_t>>;
 using PCSSIndexVector = std::vector<size_t>;
+using RootedIndexerRepresentationSizeDict = DefaultDict<SizeVector, size_t>;
 
 using StringSizePairMap = std::unordered_map<std::string, std::pair<size_t, size_t>>;
 using SizeStringMap = std::unordered_map<size_t, std::string>;
@@ -65,10 +69,40 @@ IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
 IndexerRepresentationCounter IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
     const size_t default_index);
+// A rooted indexer representation is the indexer representation of a given rooted tree.
+// That is, the first entry is the rootsplit for that rooting, and after that come the
+// PCSS indices.
+SizeVector RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                         const Node::NodePtr& topology,
+                                         const size_t default_index);
+// For counting standardized (i.e. PCSS index sorted) rooted indexer representations.
+void IncrementRootedIndexerRepresentationSizeDict(
+    RootedIndexerRepresentationSizeDict& dict,
+    const SizeVector rooted_indexer_representation);
+// Apply the above to every rooting in the indexer representation.
+void IncrementRootedIndexerRepresentationSizeDict(
+    RootedIndexerRepresentationSizeDict& dict,
+    const IndexerRepresentation& indexer_representation);
+
 // Make a string version of a PCSSDict.
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
 
 }  // namespace SBNMaps
+
+// Hash for vectors of size_t.
+// https://www.boost.org/doc/libs/1_35_0/doc/html/boost/hash_combine_id241013.html
+namespace std {
+template <>
+struct hash<SizeVector> {
+  size_t operator()(const SizeVector& values) const {
+    int hash = values[0];
+    for (size_t i = 1; i < values.size(); i++) {
+      hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);
+    }
+    return hash;
+  }
+};
+}  // namespace std
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
