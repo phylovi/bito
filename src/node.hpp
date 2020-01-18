@@ -119,8 +119,8 @@ class Node {
   void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
   void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
 
-  // See the typedef of PCSSFun to understand the argument type to these
-  // functions.
+  // See the typedef of PCSSFun and RootedPCSSFun to understand the argument type to
+  // these functions.
   void PCSSPreOrder(PCSSFun f) const;
   void RootedPCSSPreOrder(RootedPCSSFun f) const;
 
