@@ -89,7 +89,7 @@ StringPCSSMap StringPCSSMapOf(PCSSDict d);
 
 }  // namespace SBNMaps
 
-// Hash for vectors of unsigned ints.
+// Hash for vectors of size_t.
 // https://www.boost.org/doc/libs/1_35_0/doc/html/boost/hash_combine_id241013.html
 namespace std {
 template <>
