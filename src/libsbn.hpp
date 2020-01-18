@@ -374,7 +374,7 @@ TEST_CASE("libsbn") {
   // Count the frequencies of rooted trees in a file.
   size_t rooted_tree_count_from_file = 0;
   RootedIndexerRepresentationSizeDict counter_from_file(0);
-  for (const auto& indexer_representation : inst.MakeIndexerRepresentations()) {
+  for (const auto &indexer_representation : inst.MakeIndexerRepresentations()) {
     SBNMaps::IncrementRootedIndexerRepresentationSizeDict(counter_from_file,
                                                           indexer_representation);
     rooted_tree_count_from_file += indexer_representation.size();
