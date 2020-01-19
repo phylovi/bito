@@ -7,6 +7,7 @@
 #define SRC_EIGEN_SUGAR_HPP_
 
 #include <Eigen/Dense>
+#include <fstream>
 
 using EigenVectorXd = Eigen::VectorXd;
 using EigenMatrixXd =
@@ -15,6 +16,16 @@ using EigenVectorXdRef = Eigen::Ref<EigenVectorXd>;
 using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 using EigenConstVectorXdRef = Eigen::Ref<const EigenVectorXd>;
 using EigenConstMatrixXdRef = Eigen::Ref<const EigenMatrixXd>;
+
+// define the format you want, you only need one instance of this...
+const static Eigen::IOFormat EigenCSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+                                            ", ", "\n");
+
+template <class EigenType>
+void EigenToCSV(std::string file_path, EigenType eigen_object) {
+  std::ofstream file(file_path.c_str());
+  file << eigen_object.format(EigenCSVFormat) << std::endl;
+}
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {

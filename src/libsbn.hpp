@@ -59,7 +59,7 @@ class SBNInstance {
 
   // SBN training. See sbn_probability.hpp for details.
   void TrainSimpleAverage();
-  void TrainExpectationMaximization(double alpha, size_t em_loop_count);
+  EigenVectorXd TrainExpectationMaximization(double alpha, size_t em_loop_count);
   EigenVectorXd CalculateSBNProbabilities();
 
   // Sample an integer index in [range.first, range.second) according to
@@ -368,8 +368,9 @@ TEST_CASE("libsbn") {
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
   // 100 iteration of EM with alpha = 0.5.
   const auto expected_EM_05_100 = ExpectedEMVectorAlpha05();
-  inst.TrainExpectationMaximization(0.5, 100);
+  auto score_history = inst.TrainExpectationMaximization(0.5, 100);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_05_100, 1e-5);
+  EigenToCSV("testy", score_history);
 
   // Test tree sampling.
   inst.ReadNewickFile("data/five_taxon.nwk");

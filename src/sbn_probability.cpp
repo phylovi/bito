@@ -144,7 +144,7 @@ void SBNProbability::SimpleAverage(
                parent_to_range);
 }
 
-void SBNProbability::ExpectationMaximization(
+EigenVectorXd SBNProbability::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
@@ -169,8 +169,7 @@ void SBNProbability::ExpectationMaximization(
   sbn_parameters = m_tilde;
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
   // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
-  std::vector<double> score_history;
-  score_history.reserve(em_loop_count);
+  EigenVectorXd score_history(em_loop_count);
   // Do the specified number of EM loops.
   for (size_t em_idx = 0; em_idx < em_loop_count; ++em_idx) {
     double score = 0.;
@@ -208,13 +207,10 @@ void SBNProbability::ExpectationMaximization(
     }  // End of looping over topologies.
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
-    score_history.push_back(score);
+    score_history[em_idx] = score;
   }
   sbn_parameters = sbn_parameters.array().log();
-  std::cout << std::endl;
-  for (const auto score : score_history) {
-    std::cout << score << std::endl;
-  }
+  return score_history;
 }
 
 double SBNProbability::ProbabilityOf(

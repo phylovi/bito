@@ -21,8 +21,9 @@ void SimpleAverage(EigenVectorXdRef sbn_parameters,
                    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range);
 
 // The "SBN-EM" estimator described in the "Expectation Maximization" section of
-// the 2018 NeurIPS paper.
-void ExpectationMaximization(
+// the 2018 NeurIPS paper. Returns the sequence of scores (defined in the paper)
+// obtained by the EM iterations.
+EigenVectorXd ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
