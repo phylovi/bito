@@ -42,6 +42,8 @@ __pycache__
 *.pyc
 _modules
 _sources
+.RData
+.Rhistory
 
 # Python packaging
 build/
