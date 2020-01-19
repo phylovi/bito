@@ -368,9 +368,11 @@ TEST_CASE("libsbn") {
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
   // 100 iteration of EM with alpha = 0.5.
   const auto expected_EM_05_100 = ExpectedEMVectorAlpha05();
-  auto score_history = inst.TrainExpectationMaximization(0.5, 100);
+  inst.TrainExpectationMaximization(0.5, 100);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_05_100, 1e-5);
-  EigenToCSV("testy", score_history);
+  const auto expected_EM_00001_100 = ExpectedEMVectorAlpha05();
+  auto score_history = inst.TrainExpectationMaximization(0.0001, 1000);
+  EigenToCSV("_ignore/alpha0.0001-loop1000-score.csv", score_history);
 
   // Test tree sampling.
   inst.ReadNewickFile("data/five_taxon.nwk");
