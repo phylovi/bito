@@ -9,19 +9,17 @@ auto now = std::chrono::high_resolution_clock::now;
 // gprof2dot -f callgrind callgrind.out.16763 | dot -Tpng -o ~/output.png
 
 int main() {
-  uint32_t leaf_count = 10000;
-
-  Node::NodePtr topology = Node::Ladder(leaf_count);
-
-  std::vector<size_t> ids;
-  ids.reserve(1 + 2 * leaf_count);
-
   auto t_start = now();
-  for (int i = 0; i < 100; i++) {
-    ids.clear();
-    topology->PreOrder([&ids](const Node* node) { ids.push_back(node->Id()); });
-  }
 
+  SBNInstance inst("charlie");
+  std::cout << "reading trees...\n";
+  inst.ReadNewickFile("data/DS1.100_topologies.nwk");
+  // inst.ReadNewickFile("_ignore/makona_out.t");
+  std::cout << "processing trees...\n";
+  inst.ProcessLoadedTrees();
+  std::cout << "training sbn...\n";
+  auto score_history = inst.TrainExpectationMaximization(0.0001, 10000);
+  EigenToCSV("_ignore/makona-alpha0.0001-loop10000-score.csv", score_history);
   std::chrono::duration<double> duration = now() - t_start;
-  std::cout << "time: " << duration.count() << " seconds\n";
+  std::cout << "time to train SBN: " << duration.count() << " seconds\n";
 }
