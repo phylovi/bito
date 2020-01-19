@@ -149,14 +149,14 @@ void SBNProbability::ExpectationMaximization(
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
     size_t em_loop_count) {
+  Assert(!indexer_representation_counter.empty(),
+         "Empty indexer_representation_counter.");
+  auto edge_count = indexer_representation_counter[0].first.size();
   // This vector holds the \bar{m} vectors (described in the 2018 NeurIPS paper).
   // They are packed into a single vector as sbn_parameters is.
   EigenVectorXd m_bar(sbn_parameters.size());
   // The q weight of a rootsplit is the probability of each rooting given the current
   // SBN parameters.
-  Assert(!indexer_representation_counter.empty(),
-         "Empty indexer_representation_counter.");
-  auto edge_count = indexer_representation_counter[0].first.size();
   EigenVectorXd q_weights(edge_count);
   // This vector holds the \tilde{m} vectors (described in the 2018 NeurIPS paper),
   // which is the counts vector before normalization to get the SimpleAverage estimate.
@@ -168,12 +168,17 @@ void SBNProbability::ExpectationMaximization(
   // The normalized version of m_tilde is the SA estimate, which is our starting point.
   sbn_parameters = m_tilde;
   ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
+  // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
+  std::vector<double> score_history;
+  score_history.reserve(em_loop_count);
   // Do the specified number of EM loops.
   for (size_t em_idx = 0; em_idx < em_loop_count; ++em_idx) {
+    double score = 0.;
     m_bar.setZero();
     // Loop over topologies (as manifested by their indexer representations).
     for (const auto& [indexer_representation, int_topology_count] :
          indexer_representation_counter) {
+      double unnormalized_partial_score = 0.;
       const auto topology_count = static_cast<double>(int_topology_count);
       // Calculate the q weights for this topology.
       q_weights.setZero();
@@ -185,19 +190,31 @@ void SBNProbability::ExpectationMaximization(
         const SizeVector& rooted_representation =
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
-        q_weights[rooting_position] =
-            ProductOf(sbn_parameters, rooted_representation, 1.);
-      }
-      q_weights /= q_weights.sum();
+        double p_rooted_topology = ProductOf(sbn_parameters, rooted_representation, 1.);
+        // The unnormalized q_weight is this probability.
+        q_weights[rooting_position] = p_rooted_topology;
+        // This is the score with an unnormalized q.
+        unnormalized_partial_score += p_rooted_topology * log(p_rooted_topology);
+      }  // End of looping over rooting positions.
+      double q_sum = q_weights.sum();
+      // Normalize q_weights.
+      q_weights /= q_sum;
       // Now increment the new SBN parameters by the q-weighted counts.
       q_weights *= topology_count;
       IncrementBy(m_bar, indexer_representation, q_weights);
-    }
+      // We increment the score with the per-topology-contribution after applying the
+      // normalization factor for q, turning it into an actual probability.
+      score += unnormalized_partial_score / q_sum;
+    }  // End of looping over topologies.
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
+    score_history.push_back(score);
   }
-
   sbn_parameters = sbn_parameters.array().log();
+  std::cout << std::endl;
+  for (const auto score : score_history) {
+    std::cout << score << std::endl;
+  }
 }
 
 double SBNProbability::ProbabilityOf(
