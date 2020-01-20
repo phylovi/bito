@@ -146,3 +146,9 @@ We require BEAGLE, so please also cite these papers:
 
 * Jaime Huerta-Cepas: several tree traversal functions are copied from [ete3](https://github.com/etetoolkit/ete)
 * Thomas Junier: parts of the parser are copied from [newick\_utils](https://github.com/tjunier/newick_utils)
+* The parser driver is derived from the [Bison C++ example](https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parsing-Driver.html#Calc_002b_002b-Parsing-Driver)
+
+In addition to the packages mentioned above we also employ:
+
+* [cxx-prettyprint](https://github.com/louisdx/cxx-prettyprint) STL container pretty printing
+* [Progress-CPP](https://github.com/prakhar1989/progress-cpp) progress bar

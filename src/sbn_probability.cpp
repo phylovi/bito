@@ -4,6 +4,7 @@
 #include "sbn_probability.hpp"
 #include <iostream>
 #include <numeric>
+#include "ProgressBar.hpp"
 #include "numerical_utils.hpp"
 #include "sbn_maps.hpp"
 
@@ -171,6 +172,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
   EigenVectorXd score_history(em_loop_count);
   // Do the specified number of EM loops.
+  ProgressBar progress_bar(em_loop_count, 70);
   for (size_t em_idx = 0; em_idx < em_loop_count; ++em_idx) {
     double score = 0.;
     m_bar.setZero();
@@ -208,7 +210,10 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
     score_history[em_idx] = score;
-  }
+    ++progress_bar;
+    progress_bar.display();
+  }  // End of EM loop.
+  progress_bar.done();
   sbn_parameters = sbn_parameters.array().log();
   return score_history;
 }
