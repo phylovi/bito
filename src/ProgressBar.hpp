@@ -2,6 +2,7 @@
 #define PROGRESSBAR_PROGRESSBAR_HPP
 
 #include <chrono>
+#include <iomanip>
 #include <iostream>
 
 class ProgressBar {
@@ -22,23 +23,27 @@ public:
 
     unsigned int operator++() { return ++ticks; }
 
+    float calculate_seconds_elapsed() const {
+      std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
+      auto time_elapsed =
+          std::chrono::duration_cast<std::chrono::milliseconds>(now - start_time)
+              .count();
+      return float(time_elapsed) / 1000.0;
+    }
+
     void display() const
     {
         float progress = (float) ticks / total_ticks;
         int pos = (int) (bar_width * progress);
-
-        std::chrono::steady_clock::time_point now = std::chrono::steady_clock::now();
-        auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now-start_time).count();
+        auto seconds_elapsed = calculate_seconds_elapsed();
 
         std::cout << "[";
-
         for (int i = 0; i < bar_width; ++i) {
             if (i < pos) std::cout << complete_char;
             else if (i == pos) std::cout << ">";
             else std::cout << incomplete_char;
         }
-        std::cout << "] " << int(progress * 100.0) << "% "
-                  << float(time_elapsed) / 1000.0 << "s\r";
+        std::cout << "] " << int(progress * 100.0) << "% " << seconds_elapsed << "s\r";
         std::cout.flush();
     }
 
@@ -46,6 +51,7 @@ public:
     {
         display();
         std::cout << std::endl;
+        std::cout << "Execution time: " << calculate_seconds_elapsed() / 3600. << "h\r";
     }
 };
 
