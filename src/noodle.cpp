@@ -13,13 +13,13 @@ int main() {
 
   SBNInstance inst("charlie");
   std::cout << "reading trees...\n";
-  inst.ReadNewickFile("data/DS1.100_topologies.nwk");
+  inst.ReadNewickFile("../ds-experiments/DS7/DS7_out.t");
   // inst.ReadNewickFile("_ignore/makona_out.t");
   std::cout << "processing trees...\n";
   inst.ProcessLoadedTrees();
   std::cout << "training sbn...\n";
-  auto score_history = inst.TrainExpectationMaximization(0.0001, 10000);
-  EigenToCSV("_ignore/makona-alpha0.0001-loop10000-score.csv", score_history);
+  auto score_history = inst.TrainExpectationMaximization(0.0001, 100000);
+  EigenToCSV("_ignore/ds7-alpha0.0001-loop100000-score.csv", score_history);
   std::chrono::duration<double> duration = now() - t_start;
   std::cout << "time to train SBN: " << duration.count() << " seconds\n";
 }

@@ -22,10 +22,9 @@ To install additional dependencies, use the associated conda environment file:
 
 If you want to specify your compiler manually, set the `CC` and `CXX` shell variables to your desired compiler command.
 
-The packages in `environment-extras.yml` are not required to use the package or the command-line interface, but they are required to run the notebooks.
-To install them as well, call:
-
-    conda env update -n libsbn -f environment-extras.yml
+The notebooks require R, IRKernel, rpy2 >=3.1.0, and some R packages such as ggplot and cowplot.
+Do not install R via conda.
+Doing so will install the conda compiler toolchain, this will mess up our compilation.
 
 
 ## Building
