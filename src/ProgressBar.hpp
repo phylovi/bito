@@ -31,27 +31,34 @@ public:
       return float(time_elapsed) / 1000.0;
     }
 
-    void display() const
-    {
-        float progress = (float) ticks / total_ticks;
-        int pos = (int) (bar_width * progress);
-        auto seconds_elapsed = calculate_seconds_elapsed();
+    void display(bool show_hours = false) const {
+      float progress = (float)ticks / total_ticks;
+      int pos = (int)(bar_width * progress);
+      auto seconds_elapsed = calculate_seconds_elapsed();
 
-        std::cout << "[";
-        for (int i = 0; i < bar_width; ++i) {
-            if (i < pos) std::cout << complete_char;
-            else if (i == pos) std::cout << ">";
-            else std::cout << incomplete_char;
-        }
-        std::cout << "] " << int(progress * 100.0) << "% " << seconds_elapsed << "s\r";
-        std::cout.flush();
+      std::cout << "[";
+      for (int i = 0; i < bar_width; ++i) {
+        if (i < pos)
+          std::cout << complete_char;
+        else if (i == pos)
+          std::cout << ">";
+        else
+          std::cout << incomplete_char;
+      }
+      std::cout << "] " << int(progress * 100.0) << "% " << seconds_elapsed;
+      if (show_hours == true) {
+        std::cout << "s " << seconds_elapsed / 3600. << "h\r";
+      } else {
+        std::cout << "s\r";
+      }
+      std::cout.flush();
     }
 
     void done() const
     {
-        display();
-        std::cout << std::endl;
-        std::cout << "Execution time: " << calculate_seconds_elapsed() / 3600. << "h\r";
+      display(true);
+      std::cout << std::endl;
+      std::cout.flush();
     }
 };
 
