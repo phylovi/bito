@@ -153,16 +153,16 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   Assert(!indexer_representation_counter.empty(),
          "Empty indexer_representation_counter.");
   auto edge_count = indexer_representation_counter[0].first.size();
-  // This vector holds the \bar{m} vectors (described in the 2018 NeurIPS paper).
+  // The \bar{m} vectors (described in the 2018 NeurIPS paper).
   // They are packed into a single vector as sbn_parameters is.
   EigenVectorXd m_bar(sbn_parameters.size());
-  // // The log of the sbn_parameters (only used for calculating the regularized score).
-  // EigenVectorXd log_sbn_parameters(sbn_parameters.size());
   // The q weight of a rootsplit is the probability of each rooting given the current
   // SBN parameters.
   EigenVectorXd q_weights(edge_count);
-  // This vector holds the \tilde{m} vectors (described in the 2018 NeurIPS paper),
-  // which is the counts vector before normalization to get the SimpleAverage estimate.
+  // The log of the sbn_parameters (only used for calculating the regularized score).
+  EigenVectorXd log_sbn_parameters(sbn_parameters.size());
+  // The \tilde{m} vectors (described in the 2018 NeurIPS paper): the counts vector
+  // before normalization to get the SimpleAverage estimate.
   EigenVectorXd m_tilde(sbn_parameters.size());
   SetCounts(m_tilde, indexer_representation_counter, rootsplit_count, parent_to_range);
   // m_tilde is the counts, but marginalized over a uniform distribution on the rooting
@@ -174,7 +174,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
   EigenVectorXd score_history(em_loop_count);
   // Do the specified number of EM loops.
-  ProgressBar progress_bar(em_loop_count, 70);
+  ProgressBar progress_bar(em_loop_count);
   for (size_t em_idx = 0; em_idx < em_loop_count; ++em_idx) {
     double score = 0.;
     m_bar.setZero();
@@ -196,7 +196,8 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         double p_rooted_topology = ProductOf(sbn_parameters, rooted_representation, 1.);
         // The unnormalized q_weight is this probability.
         q_weights[rooting_position] = p_rooted_topology;
-        // This is the score with an unnormalized q.
+        // This is the score but where we use p_rooted_topology as a substitute for q.
+        // Once we normalize with the sum of the q_weights, this will become q.
         unnormalized_partial_score += p_rooted_topology * log(p_rooted_topology);
       }  // End of looping over rooting positions.
       double q_sum = q_weights.sum();
@@ -211,10 +212,11 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     }  // End of looping over topologies.
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
-    // if (alpha > 0.) {
-    //   log_sbn_parameters = sbn_parameters.log();
-    //   score += alpha * m_tilde.dot(log_sbn_parameters);
-    // }
+    // This is the last equation of p.6 of the 2018 NeurIPS paper.
+    if (alpha > 0.) {
+      log_sbn_parameters = sbn_parameters.array().log();
+      score += alpha * m_tilde.dot(log_sbn_parameters);
+    }
     score_history[em_idx] = score;
     ++progress_bar;
     progress_bar.display();
