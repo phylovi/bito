@@ -156,6 +156,8 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   // This vector holds the \bar{m} vectors (described in the 2018 NeurIPS paper).
   // They are packed into a single vector as sbn_parameters is.
   EigenVectorXd m_bar(sbn_parameters.size());
+  // // The log of the sbn_parameters (only used for calculating the regularized score).
+  // EigenVectorXd log_sbn_parameters(sbn_parameters.size());
   // The q weight of a rootsplit is the probability of each rooting given the current
   // SBN parameters.
   EigenVectorXd q_weights(edge_count);
@@ -209,6 +211,10 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     }  // End of looping over topologies.
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
+    // if (alpha > 0.) {
+    //   log_sbn_parameters = sbn_parameters.log();
+    //   score += alpha * m_tilde.dot(log_sbn_parameters);
+    // }
     score_history[em_idx] = score;
     ++progress_bar;
     progress_bar.display();
