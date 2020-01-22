@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "sbn_probability.hpp"
+#include <cmath>
 #include <iostream>
 #include <numeric>
 #include "ProgressBar.hpp"
@@ -197,13 +198,15 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         // Calculate the SBN probability of this topology rooted at this position.
         double p_rooted_topology = ProductOf(sbn_parameters, rooted_representation, 1.);
         // The unnormalized q_weight is this probability. We normalize later.
-        q_weights[rooting_position] = p_rooted_topology;
-        // This is the unregularized score but where we use p_rooted_topology as a
-        // substitute for q (the last equation before Theorem 1). Once we normalize with
-        // the sum of the q_weights, this will become q.
-        if (p_rooted_topology > EPS) {
-          // lim_{x -> 0+} x log x = 0.
-          unnormalized_partial_score += p_rooted_topology * log(p_rooted_topology);
+        if (std::isfinite(p_rooted_topology)) {
+          q_weights[rooting_position] = p_rooted_topology;
+          // This is the unregularized score but where we use p_rooted_topology as a
+          // substitute for q (the last equation before Theorem 1). Once we normalize
+          // with the sum of the q_weights, this will become q.
+          if (p_rooted_topology > EPS) {
+            // lim_{x -> 0+} x log x = 0.
+            unnormalized_partial_score += p_rooted_topology * log(p_rooted_topology);
+          }
         }
       }  // End of looping over rooting positions.
       double q_sum = q_weights.sum();
