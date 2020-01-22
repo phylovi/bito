@@ -145,6 +145,7 @@ void SBNProbability::SimpleAverage(
                parent_to_range);
 }
 
+// All references to equations, etc, are to the 2018 NeurIPS paper.
 EigenVectorXd SBNProbability::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
@@ -153,7 +154,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   Assert(!indexer_representation_counter.empty(),
          "Empty indexer_representation_counter.");
   auto edge_count = indexer_representation_counter[0].first.size();
-  // The \bar{m} vectors (described in the 2018 NeurIPS paper).
+  // The \bar{m} vectors (Algorithm 1).
   // They are packed into a single vector as sbn_parameters is.
   EigenVectorXd m_bar(sbn_parameters.size());
   // The q weight of a rootsplit is the probability of each rooting given the current
@@ -161,8 +162,8 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   EigenVectorXd q_weights(edge_count);
   // The log of the sbn_parameters (only used for calculating the regularized score).
   EigenVectorXd log_sbn_parameters(sbn_parameters.size());
-  // The \tilde{m} vectors (described in the 2018 NeurIPS paper): the counts vector
-  // before normalization to get the SimpleAverage estimate.
+  // The \tilde{m} vectors (p.6): the counts vector before normalization to get the
+  // SimpleAverage estimate.
   EigenVectorXd m_tilde(sbn_parameters.size());
   SetCounts(m_tilde, indexer_representation_counter, rootsplit_count, parent_to_range);
   // m_tilde is the counts, but marginalized over a uniform distribution on the rooting
@@ -182,6 +183,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     for (const auto& [indexer_representation, int_topology_count] :
          indexer_representation_counter) {
       double unnormalized_partial_score = 0.;
+      // The number of times this topology was seen in the counter.
       const auto topology_count = static_cast<double>(int_topology_count);
       // Calculate the q weights for this topology.
       q_weights.setZero();
@@ -194,25 +196,32 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
         double p_rooted_topology = ProductOf(sbn_parameters, rooted_representation, 1.);
-        // The unnormalized q_weight is this probability.
+        // The unnormalized q_weight is this probability. We normalize later.
         q_weights[rooting_position] = p_rooted_topology;
-        // This is the score but where we use p_rooted_topology as a substitute for q.
-        // Once we normalize with the sum of the q_weights, this will become q.
+        // This is the unregularized score but where we use p_rooted_topology as a
+        // substitute for q (the last equation before Theorem 1). Once we normalize with
+        // the sum of the q_weights, this will become q.
         unnormalized_partial_score += p_rooted_topology * log(p_rooted_topology);
       }  // End of looping over rooting positions.
       double q_sum = q_weights.sum();
-      // Normalize q_weights.
+      // Normalize q_weights to achieve the E-step of Algorithm 1.
+      // The topology_count doesn't come in yet because q is with reference to a single
+      // topology...
       q_weights /= q_sum;
-      // Now increment the new SBN parameters by the q-weighted counts.
+      // but for the increment step (M-step of Algorithm 1) we want a full topology
+      // count rather than just the unique count. So we multiply the q_weights by the
+      // topology count...
       q_weights *= topology_count;
+      // and increment the new SBN parameters by the q-weighted counts.
       IncrementBy(m_bar, indexer_representation, q_weights);
       // We increment the score with the per-topology-contribution after applying the
-      // normalization factor for q, turning it into an actual probability.
-      score += unnormalized_partial_score / q_sum;
+      // normalization factor for q, turning the left-hand p_rooted_topology terms into
+      // a q probability. Here we also need a topology_count term.
+      score += topology_count * unnormalized_partial_score / q_sum;
     }  // End of looping over topologies.
     sbn_parameters = m_bar + alpha * m_tilde;
     ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
-    // This is the last equation of p.6 of the 2018 NeurIPS paper.
+    // This is the last equation of p.6.
     if (alpha > 0.) {
       log_sbn_parameters = sbn_parameters.array().log();
       score += alpha * m_tilde.dot(log_sbn_parameters);
