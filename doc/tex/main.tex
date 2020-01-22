@@ -157,27 +157,31 @@ Set
 
 \subsection*{Naive estimator of the gradient}
 
+%EM I was using bold theta. We can discuss dropping it, or adding a macro, but let's make things consistent.
+
 We want to find the gradient of the ELBO with respect to $\bm{\phi}$:
 \begin{align*}
-    \nabla_{\bm{\phi}} \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\theta^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi})] &= \nabla_{\bm{\phi}} \int \hat{L}^K(\bm{\phi}, \bm{\psi}) q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}) d\tau^{1:K} d\theta^{1:K} \\
-    =& \int \left( q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}) \nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi}) + \hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}) \right) d\tau^{1:K} d\theta^{1:K} \\
-    =& \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}[\nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi})] + \\
-    & \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}))],
+    & \nabla_{\bm{\phi}} \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\theta^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi})] = \nabla_{\bm{\phi}} \int \hat{L}^K(\bm{\phi}, \bm{\psi}) q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}) d\tau^{1:K} d\theta^{1:K} \\
+    & \quad = \int \left( q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}) \nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi}) + \hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}) \right) d\tau^{1:K} d\theta^{1:K} \\
+    & \quad = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}[\nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi})] + \\
+    & \qquad \qquad \qquad \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}))],
 \end{align*}
-where the second summand in the last line is using the identify
+where the second summand in the last line is using the identity
 \[ \nabla_{\bm{\phi}} q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}) = q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}) \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})). \]
 Further derivation of the first summand yields,
+%EM We should use different indices for the top and the bottom. I'd suggest j for the top and i for the bottom as above, but we could flip that if you feel strongly.
 \begin{align}
-    \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}[\nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi})] &= \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}\left[\frac{\sum_{i=1}^{K} \nabla_{\bm{\phi}} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)}{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)}\right] \nonumber \\
-    &= \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}\left[\frac{\sum_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i) \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i))}{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)}\right] \nonumber \\
-    &= \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}\left[\sum_{i=1}^{K} \frac{f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i) }{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)} \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i))\right]. \label{eq1}
+    & \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}[\nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi})] = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}\left[\frac{\sum_{i=1}^{K} \nabla_{\bm{\phi}} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)}{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)}\right] \nonumber \\
+    & \qquad \qquad = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}\left[\frac{\sum_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i) \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i))}{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)}\right] \nonumber \\
+    & \qquad \qquad = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}\left[\sum_{i=1}^{K} \frac{f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i) }{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)} \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i))\right]. \label{eq:presummand1}
+    %EM Should we take this all the way to the weights w^j?
 \end{align}
 Now, note that
 \begin{align*}
     \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)) &= \nabla_{\bm{\phi}} (\log p(Y, \tau^i, \theta^i) - \log q_{\bm{\phi}}(\tau^i) - \log q_{\bm{\psi}}(\theta^i | \tau^i)) \\
     &= - \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^i).
 \end{align*}
-Hence, Equation~\ref{eq1} can be written as,
+Hence, Equation~\ref{eq:presummand1} can be written as,
 \begin{align}\label{eq:summand1}
     \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}[\nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi})] &= \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}\left[- \sum_{i=1}^{K} \frac{f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i) }{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \theta^i)} \nabla_{\bm{\phi}} \log(q_{\bm{\phi}}(\tau^i))\right].
 \end{align}
@@ -189,33 +193,40 @@ For the second summand note that,
 %    &= \sum\limits_{i=1}^{K} \frac{\nabla_{\bm{\phi}} q_{\bm{\phi}}(\tau^{i})}{q_{\bm{\phi}}(\tau^{i})}, \\
 \end{align*}
 and hence,
-\begin{equation}\label{eq:summand2}
-    \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}))] =\E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\theta^{1:K})}\left[\sum\limits_{i=1}^{K} \hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^{i})\right].
-\end{equation}
+\begin{multline}\label{eq:summand2}
+    \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \theta^{1:K}))] = \\
+    \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\theta^{1:K})}\left[\sum\limits_{i=1}^{K} \hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^{i})\right].
+\end{multline}
 Combining Eq~\ref{eq:summand1} and Eq~\ref{eq:summand2}, we get
 \begin{equation}\label{eq:naive-gradient}
     \nabla_{\bm{\phi}} \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\theta^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi})] = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\theta^{1:K})}\left[\sum\limits_{i=1}^{K} (\hat{L}^K(\bm{\phi}, \bm{\psi}) - \tilde{w}^i) \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^i) \right],
 \end{equation}
-Equation~\ref{eq:naive-gradient} matches the derivation given in the Supplement A of ICLR paper. Next, we will derive the exact equation for $\nabla_{\phi} \log q_{\phi}(\tau^i)$. It suffices to evaluate the gradient for arbitrary $\phi_{s|t}$ where $\phi_{s|t}$ is an element of the parameter vector $\phi$ corresponding to some subsplit $s|t \in \mathbb{C}_{.|t}$. For generality, we assume that the root split is given with parent split value of $t = \emptyset$.
+Equation~\ref{eq:naive-gradient} matches the derivation given in the Supplement A of ICLR paper.
+Next, we will derive the exact equation for $\nabla_{\phi} \log q_{\phi}(\tau^i)$.
+It suffices to evaluate the gradient for arbitrary $\phi_{s|t}$ where $\phi_{s|t}$ is an element of the parameter vector $\phi$ corresponding to some subsplit $s|t \in \mathbb{C}_{.|t}$.
+For generality, we assume that the root split is given with parent split value of $t = \emptyset$.
 \begin{align*}
     \nabla_{\phi_{s|t}} \log q_{\phi}(\tau^i) &= \nabla_{\phi_{s|t}} \log \left(\prod_{s' \in \mathbb{S}_{.|t'}^i} P(s' | t') \right) \\
     &= \nabla_{\phi_{s|t}} \sum\limits_{s' \in \mathbb{S}_{.|t'}^i} \log P(s' | t') \\
     &= \nabla_{\phi_{s|t}} \left(\sum\limits_{s' \in \mathbb{S}_{.|t'}^i} \phi_{s' | t'} - \log\left(\sum\limits_{s'' \in \mathbb{C}_{.|t'}} \exp(\phi_{s''|t'})\right)\right) \\
     &= 1[s|t \in \mathbb{S}^{i}_{.|t'}] - \frac{\exp(\phi_{s|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})}.
 \end{align*}
-Let $j = h(s|t)$ be the index of subsplit $s|t \in \mathbb{C}_{.|t}$ (i.e., we have a mapping $h : \mathbb{C}_{.|t} \to \{1, ..., |\mathbb{C}_{.|t}|$). Our library returns a vector $\nabla$, whose $j$-th element is given as follows:
-\begin{equation}
+Let $j = h(s|t)$ be the index of subsplit $s|t \in \mathbb{C}_{.|t}$ (i.e., we have a mapping $h : \mathbb{C}_{.|t} \to \{1, ..., |\mathbb{C}_{.|t}|$).
+Our library returns a vector $\nabla$, the naive gradient estimator of $\hat{L}^K$, the $j$-th element of which is as follows:
+\begin{equation}\label{eq:nabla}
+%EM We're abbreviating with \hat{L}^K here-- shall we do that earlier?
     \nabla_j = \sum\limits_{i=1}^{K} (\hat{L}^K - \tilde{w}^i) g_{s|t}^i,
 \end{equation}
 where $g_{s|t}^i = \nabla_{\phi_{s|t}} \log q_{\phi}(\tau^i)$.
 
-The implementation, first samples $(\tau^i, \theta^i) \sim q_{\bm{\phi}, \bm{\psi}}(\tau, \theta)$ for $i = 1, ..., K$, then evaluates the following quantities:
+The implementation first samples $(\tau^i, \theta^i) \sim q_{\bm{\phi}, \bm{\psi}}(\tau, \theta)$ for $i = 1, \ldots, K$, then evaluates the following quantities:
 \begin{enumerate}
     \item $F = \sum_{i=1}^{K} f_{\bm{\phi},\bm{\psi}}(\tau^i, \theta^i)$
     \item $\hat{L}^{K} = \log(F) - \log(K)$ (dropping $\bm{\phi}, \bm{\psi}$ from the notation)
     \item $\tilde{w}^i = \frac{f_{\bm{\phi},\bm{\psi}}(\tau^i, \theta^i)}{F}$
     \item $g^i = \nabla_{\phi} \log q_{\phi}(\tau^i)$.
 \end{enumerate}
+Combining these quantities as in \eqref{eq:nabla} gives $\nabla$.
 
 
 \subsection*{VIMCO estimator of the gradient}
@@ -444,9 +455,11 @@ Then set the derivative for each PSP component that is participating in a given 
 % \label{fig:subsplit}
 % \end{figure}
 
+%EM @Seong-- this idea is now deprecated, right?
 \section*{Stochastic VI}
-
-Stochastic VI can significantly reduce the running time of variational inference. For a phylogenetic tree with $N$ tips, there are 2N-3 edges connecting parent-child subsplits, requiring $O(N)$ computation for updating the gradients. We devise a strategy where we subsample $n \ll N$ nodes of the tree to decrease the computation required at each iteration of VI to $O(n)$.
+Stochastic VI can significantly reduce the running time of variational inference.
+For a phylogenetic tree with $N$ tips, there are 2N-3 edges connecting parent-child subsplits, requiring $O(N)$ computation for updating the gradients.
+We devise a strategy where we subsample $n \ll N$ nodes of the tree to decrease the computation required at each iteration of VI to $O(n)$.
 
 Q: How do we sample $n$ nodes? We need to sample $\tau^i$ from variational distribution, can we perform the task of selecting $n$ while sampling $\tau^i$? View it as subsampling clades?
 
