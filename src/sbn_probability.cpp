@@ -201,7 +201,10 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         // This is the unregularized score but where we use p_rooted_topology as a
         // substitute for q (the last equation before Theorem 1). Once we normalize with
         // the sum of the q_weights, this will become q.
-        unnormalized_partial_score += p_rooted_topology * log(p_rooted_topology);
+        if (p_rooted_topology > EPS) {
+          // lim_{x -> 0+} x log x = 0.
+          unnormalized_partial_score += p_rooted_topology * log(p_rooted_topology);
+        }
       }  // End of looping over rooting positions.
       double q_sum = q_weights.sum();
       // Normalize q_weights to achieve the E-step of Algorithm 1.
@@ -215,8 +218,9 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       // and increment the new SBN parameters by the q-weighted counts.
       IncrementBy(m_bar, indexer_representation, q_weights);
       // We increment the score with the per-topology-contribution after applying the
-      // normalization factor for q, turning the left-hand p_rooted_topology terms into
-      // a q probability. Here we also need a topology_count term.
+      // normalization factor for q, turning the left-hand (i.e. non-logged)
+      // p_rooted_topology terms into a q probability which is normalized across
+      // rootings for that topology. Here we also need a topology_count term.
       score += topology_count * unnormalized_partial_score / q_sum;
     }  // End of looping over topologies.
     sbn_parameters = m_bar + alpha * m_tilde;
@@ -230,6 +234,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     ++progress_bar;
     progress_bar.display();
   }  // End of EM loop.
+  std::cout << sbn_parameters << std::endl;
   progress_bar.done();
   sbn_parameters = sbn_parameters.array().log();
   return score_history;

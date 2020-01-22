@@ -4,6 +4,9 @@ our_files := $(filter-out src/doctest.h src/noodle.cpp src/parser.cpp src/parser
 default:
 	scons
 	pip install -U dist/libsbn-*.whl
+
+test:
+	make
 	./_build/doctest
 	pytest
 	./_build/noodle
@@ -43,4 +46,4 @@ lint:
 	cpplint --filter=-runtime/references,-build/c++11 $(our_files) \
 		&& echo "LINTING PASS"
 
-.PHONY: bison prep format clean edit lint deploy docs
+.PHONY: bison prep format clean edit lint deploy docs test
