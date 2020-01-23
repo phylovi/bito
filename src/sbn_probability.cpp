@@ -196,7 +196,9 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         const SizeVector& rooted_representation =
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
+        NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before ProductOf|");
         double p_rooted_topology = ProductOf(sbn_parameters, rooted_representation, 1.);
+        NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After ProductOf|");
         // The unnormalized q_weight is this probability. We normalize later.
         if (std::isfinite(p_rooted_topology)) {
           q_weights[rooting_position] = p_rooted_topology;
@@ -237,9 +239,10 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     ++progress_bar;
     progress_bar.display();
   }  // End of EM loop.
-  std::cout << sbn_parameters << std::endl;
   progress_bar.done();
+  NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before log|");
   sbn_parameters = sbn_parameters.array().log();
+  NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After log|");
   return score_history;
 }
 

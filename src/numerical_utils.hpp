@@ -4,6 +4,7 @@
 #ifndef SRC_NUMERICAL_UTILS_HPP_
 #define SRC_NUMERICAL_UTILS_HPP_
 
+#include <fenv.h>
 #include <limits.h>
 
 #include "eigen_sugar.hpp"
@@ -15,12 +16,10 @@ constexpr double EPS = std::numeric_limits<double>::epsilon();
 constexpr double LOG_EPS = log(EPS);
 
 namespace NumericalUtils {
-
 // Return log(exp(x) + exp(y)).
 constexpr double LogAdd(double x, double y) {
   // See:
   // https://github.com/alexandrebouchard/bayonet/blob/master/src/main/java/bayonet/math/NumericalUtils.java#L59
-
   // Make x the max.
   if (y > x) {
     double temp = x;
@@ -39,10 +38,22 @@ constexpr double LogAdd(double x, double y) {
 
 // Return log(sum_i exp(vec(i))).
 double LogSum(const EigenVectorXdRef vec);
-// Normalize the entries of vec: vec(i) = vec(i) - LogSum(vec).
+// Normalize the entries of vec such that they become logs of probabilities:
+// vec(i) = vec(i) - LogSum(vec).
 void ProbabilityNormalizeInLog(EigenVectorXdRef vec);
 // Exponentiate vec in place: vec(i) = exp(vec(i))
 void Exponentiate(EigenVectorXdRef vec);
+
+// This code concerns the floating-point environment (FE).
+// Note that a FE "exception" is not a C++ exception, it's just a signal that a
+// problem has happened. See
+// https://en.cppreference.com/w/c/numeric/fenv/FE_exceptions
+
+// If there is a worrying FE exception, get a string describing it.
+std::optional<std::string> DescribeFloatingPointEnvironmentExceptions();
+// If there is a worrying FE exception, report it and clear the record of there being
+// any exception.
+void ReportFloatingPointEnvironmentExceptions(std::string context = "");
 
 }  // namespace NumericalUtils
 
