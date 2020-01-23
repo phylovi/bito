@@ -199,20 +199,22 @@ TEST_CASE("libsbn") {
   // The first rootsplit_count entries of the index are assigned to the rootsplits
   // (again, those rootsplits that are present for some rooting of the unrooted input
   // trees). For the five_taxon example, this goes as follows:
-  StringVector pretty_rootsplits({"01110", "01010", "00101", "00111", "00001", "00011",
-                                  "00010", "00100", "00110", "01000", "01111",
-                                  "01001"});
-  CHECK(std::equal(pretty_rootsplits.begin(), pretty_rootsplits.end(),
-                   pretty_indexer.begin()));
+  StringSet correct_pretty_rootsplits({"01110", "01010", "00101", "00111", "00001",
+                                       "00011", "00010", "00100", "00110", "01000",
+                                       "01111", "01001"});
+  StringSet pretty_rootsplits(
+      pretty_indexer.begin(),
+      pretty_indexer.begin() + correct_pretty_rootsplits.size());
+  CHECK(correct_pretty_rootsplits == pretty_rootsplits);
   // The rest of the entries of the index are laid out as blocks of parameters for
   // PCSSs that share the same parent. Take a look at the description of PCSS bitsets
   // (and the unit tests) in bitset.hpp to understand the notation used here.
   //
   // For example, here are four PCSSs that all share the parent 00001|11110:
-  StringVector pretty_pcss_block({"00001|11110|01110", "00001|11110|00010",
-                                  "00001|11110|01000", "00001|11110|00100"});
-  CHECK(std::equal(pretty_pcss_block.begin(), pretty_pcss_block.end(),
-                   32 + pretty_indexer.begin()));
+  StringSet correct_pretty_pcss_block({"00001|11110|01110", "00001|11110|00010",
+                                       "00001|11110|01000", "00001|11110|00100"});
+  StringSet pretty_pcss_block(32 + pretty_indexer.begin(), 36 + pretty_indexer.begin());
+  CHECK(correct_pretty_pcss_block == pretty_pcss_block);
   // Now we can look at some tree representations. We get these by calling
   // IndexerRepresentationOf on a tree topology. This function "digests" the tree by
   // representing all of the PCSSs as bitsets which it can then look up in the indexer_.
