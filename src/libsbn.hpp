@@ -213,8 +213,12 @@ TEST_CASE("libsbn") {
   // For example, here are four PCSSs that all share the parent 00001|11110:
   StringSet correct_pretty_pcss_block({"00001|11110|01110", "00001|11110|00010",
                                        "00001|11110|01000", "00001|11110|00100"});
-  StringSet pretty_pcss_block(32 + pretty_indexer.begin(), 36 + pretty_indexer.begin());
-  CHECK(correct_pretty_pcss_block == pretty_pcss_block);
+  StringSet pretty_indexer_set(pretty_indexer.begin(), pretty_indexer.end());
+  // It's true that this test doesn't show the block-ness, but it wasn't easy to show
+  // off this feature in a way that wasn't compiler dependent.
+  for (auto pretty_pcss : correct_pretty_pcss_block) {
+    CHECK(pretty_indexer_set.find(pretty_pcss) != pretty_indexer_set.end());
+  }
   // Now we can look at some tree representations. We get these by calling
   // IndexerRepresentationOf on a tree topology. This function "digests" the tree by
   // representing all of the PCSSs as bitsets which it can then look up in the indexer_.
