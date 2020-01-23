@@ -13,7 +13,6 @@
 constexpr double DOUBLE_INF = std::numeric_limits<double>::infinity();
 constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
-constexpr double LOG_EPS = log(EPS);
 
 namespace NumericalUtils {
 // Return log(exp(x) + exp(y)).
@@ -30,7 +29,7 @@ constexpr double LogAdd(double x, double y) {
     return x;
   }
   double negDiff = y - x;
-  if (negDiff < LOG_EPS) {
+  if (negDiff < log(EPS)) {
     return x;
   }
   return x + log(1.0 + exp(negDiff));
