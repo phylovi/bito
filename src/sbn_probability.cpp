@@ -24,6 +24,28 @@ void IncrementByInLog(EigenVectorXdRef vec, const SizeVectorVector& index_vector
   }
 }
 
+// Increment all entries from an index vector of length k by a value taken from a vector
+// of values of length k.
+void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices,
+                      const EigenConstVectorXdRef values) {
+  Assert(indices.size() == values.size(),
+         "Indices and values don't have matching size.");
+  for (size_t i = 0; i < values.size(); ++i) {
+    vec[indices[i]] = NumericalUtils::LogAdd(vec[indices[i]], values[i]);
+  }
+}
+
+// Repeat the previous increment operation across a vector of index vectors with a fixed
+// vector of values.
+void IncrementByInLog(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vector,
+                      const EigenConstVectorXdRef values) {
+  Assert(index_vector_vector.size() == values.size(),
+         "Indices and values don't have matching size.");
+  for (size_t i = 0; i < values.size(); ++i) {
+    IncrementByInLog(vec, index_vector_vector[i], values[i]);
+  }
+}
+
 // Increment all entries from an index vector by a value.
 void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices, double value) {
   for (const auto& idx : indices) {
@@ -155,39 +177,45 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   Assert(!indexer_representation_counter.empty(),
          "Empty indexer_representation_counter.");
   auto edge_count = indexer_representation_counter[0].first.size();
-  // The \bar{m} vectors (Algorithm 1).
+  // The \bar{m} vectors (Algorithm 1) in log space.
   // They are packed into a single vector as sbn_parameters is.
-  EigenVectorXd m_bar(sbn_parameters.size());
+  EigenVectorXd log_m_bar(sbn_parameters.size());
   // The q weight of a rootsplit is the probability of each rooting given the current
   // SBN parameters.
-  EigenVectorXd q_weights(edge_count);
-  // The log of the sbn_parameters (only used for calculating the regularized score).
-  EigenVectorXd log_sbn_parameters(sbn_parameters.size());
+  EigenVectorXd log_q_weights(edge_count);
   // The \tilde{m} vectors (p.6): the counts vector before normalization to get the
   // SimpleAverage estimate.
-  EigenVectorXd m_tilde(sbn_parameters.size());
-  SetCounts(m_tilde, indexer_representation_counter, rootsplit_count, parent_to_range);
+  EigenVectorXd log_m_tilde(sbn_parameters.size());
+  SetLogCounts(log_m_tilde, indexer_representation_counter, rootsplit_count, parent_to_range);
   // m_tilde is the counts, but marginalized over a uniform distribution on the rooting
   // edge. Thus we take the total counts and then divide by the edge count.
-  m_tilde = m_tilde / static_cast<double>(edge_count);
+  log_m_tilde = log_m_tilde.array() - log(static_cast<double>(edge_count));
   // The normalized version of m_tilde is the SA estimate, which is our starting point.
-  sbn_parameters = m_tilde;
-  ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
+  sbn_parameters = log_m_tilde;
+  // We will keep sbn_parameters normalized as we need to take sum over its entries to get log q^{(n)}(s_1).
+  ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplit_count, parent_to_range);
+  
+  // We do not need log_m_tilde so we use it to store log(\alpha * m_tilde) needed for regularized EM algorithm
+  if (alpha > 0.) {
+    log_m_tilde = log_m_tilde.array() + log(alpha);
+  }
+
   // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
   EigenVectorXd score_history(em_loop_count);
   // Do the specified number of EM loops.
   ProgressBar progress_bar(em_loop_count);
   for (size_t em_idx = 0; em_idx < em_loop_count; ++em_idx) {
-    double score = 0.;
-    m_bar.setZero();
+    //double score = 0.;
+    //log_m_bar.setZero();
+    log_m_bar.setConstant(DOUBLE_NEG_INF);
     // Loop over topologies (as manifested by their indexer representations).
     for (const auto& [indexer_representation, int_topology_count] :
          indexer_representation_counter) {
-      double unnormalized_partial_score = 0.;
+      //double log_unnormalized_partial_score = 0.;
       // The number of times this topology was seen in the counter.
       const auto topology_count = static_cast<double>(int_topology_count);
       // Calculate the q weights for this topology.
-      q_weights.setZero();
+      log_q_weights.setZero();
       Assert(indexer_representation.size() == edge_count,
              "Indexer representation length is not constant.");
       // Loop over the various rooting positions of this topology.
@@ -196,53 +224,41 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         const SizeVector& rooted_representation =
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
-        NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before ProductOf|");
-        double p_rooted_topology = ProductOf(sbn_parameters, rooted_representation, 1.);
-        NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After ProductOf|");
+        NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before SumOf|");
+        double log_p_rooted_topology = SumOf(sbn_parameters, rooted_representation, 0.);
+        NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After SumOf|");
+
         // The unnormalized q_weight is this probability. We normalize later.
-        if (std::isfinite(p_rooted_topology)) {
-          q_weights[rooting_position] = p_rooted_topology;
-          // This is the unregularized score but where we use p_rooted_topology as a
-          // substitute for q (the last equation before Theorem 1). Once we normalize
-          // with the sum of the q_weights, this will become q.
-          if (p_rooted_topology > EPS) {
-            // lim_{x -> 0+} x log x = 0.
-            unnormalized_partial_score += p_rooted_topology * log(p_rooted_topology);
-          }
+        if (std::isfinite(log_p_rooted_topology)) {
+          log_q_weights[rooting_position] = log_p_rooted_topology;
         }
       }  // End of looping over rooting positions.
-      double q_sum = q_weights.sum();
+
+      //double q_sum = log_q_weights.sum();
+      //log_q_weights /= q_sum;
       // Normalize q_weights to achieve the E-step of Algorithm 1.
       // The topology_count doesn't come in yet because q is with reference to a single
       // topology...
-      q_weights /= q_sum;
+      NumericalUtils::ProbabilityNormalizeInLog(log_q_weights);
       // but for the increment step (M-step of Algorithm 1) we want a full topology
       // count rather than just the unique count. So we multiply the q_weights by the
-      // topology count...
-      q_weights *= topology_count;
+      // topology count... in log space, it becomes summation rather than multiplication
+      log_q_weights = log_q_weights.array() + log(topology_count);
       // and increment the new SBN parameters by the q-weighted counts.
-      IncrementBy(m_bar, indexer_representation, q_weights);
-      // We increment the score with the per-topology-contribution after applying the
-      // normalization factor for q, turning the left-hand (i.e. non-logged)
-      // p_rooted_topology terms into a q probability which is normalized across
-      // rootings for that topology. Here we also need a topology_count term.
-      score += topology_count * unnormalized_partial_score / q_sum;
+      //IncrementBy(m_bar, indexer_representation, log_q_weights);
+      IncrementByInLog(log_m_bar, indexer_representation, log_q_weights);
     }  // End of looping over topologies.
-    sbn_parameters = m_bar + alpha * m_tilde;
-    ProbabilityNormalizeParams(sbn_parameters, rootsplit_count, parent_to_range);
-    // This is the last equation of p.6.
     if (alpha > 0.) {
-      log_sbn_parameters = sbn_parameters.array().log();
-      score += alpha * m_tilde.dot(log_sbn_parameters);
+      sbn_parameters = NumericalUtils::LogAddVectors(log_m_bar, log_m_tilde);
+    } else {
+      sbn_parameters = log_m_bar;
     }
-    score_history[em_idx] = score;
+    // We normalize sbn_parameters right away to ensure that it is always normalized.
+    ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplit_count, parent_to_range);
     ++progress_bar;
     progress_bar.display();
   }  // End of EM loop.
   progress_bar.done();
-  NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before log|");
-  sbn_parameters = sbn_parameters.array().log();
-  NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After log|");
   return score_history;
 }
 

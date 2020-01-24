@@ -37,6 +37,8 @@ constexpr double LogAdd(double x, double y) {
 
 // Return log(sum_i exp(vec(i))).
 double LogSum(const EigenVectorXdRef vec);
+// Returns a vector with the i-th entry given by LogAdd(vec1(i), vec2(i))
+EigenVectorXd LogAddVectors(const EigenVectorXdRef vec1, const EigenVectorXdRef vec2);
 // Normalize the entries of vec such that they become logs of probabilities:
 // vec(i) = vec(i) - LogSum(vec).
 void ProbabilityNormalizeInLog(EigenVectorXdRef vec);
