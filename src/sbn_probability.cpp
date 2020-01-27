@@ -168,6 +168,27 @@ void SBNProbability::SimpleAverage(
                parent_to_range);
 }
 
+double ComputeScore(const EigenVectorXdRef p,
+                     const IndexerRepresentationCounter& indexer_representation_counter) {
+  double score = 0.0;
+  auto edge_count = indexer_representation_counter[0].first.size();
+  EigenVectorXd log_p_rooted_topology(edge_count);
+  for (const auto& [indexer_representation, int_topology_count] :
+       indexer_representation_counter) {
+    const auto topology_count = static_cast<double>(int_topology_count);
+    log_p_rooted_topology.setZero();
+    for (size_t rooting_position = 0; rooting_position < edge_count;
+         ++rooting_position) {
+      const SizeVector& rooted_representation =
+          indexer_representation[rooting_position];
+      log_p_rooted_topology[rooting_position] = SumOf(p, rooted_representation, 0.);
+    }
+    score += topology_count * NumericalUtils::LogSum(log_p_rooted_topology);
+  }
+
+  return score;
+}
+
 // All references to equations, etc, are to the 2018 NeurIPS paper.
 EigenVectorXd SBNProbability::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
@@ -192,12 +213,17 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   log_m_tilde = log_m_tilde.array() - log(static_cast<double>(edge_count));
   // The normalized version of m_tilde is the SA estimate, which is our starting point.
   sbn_parameters = log_m_tilde;
-  // We will keep sbn_parameters normalized as we need to take sum over its entries to get log q^{(n)}(s_1).
+  // We need to ensure sbn_parameters is normalized as we are computing log P(S_1, T^u) repeatedly.
   ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplit_count, parent_to_range);
-  
-  // We do not need log_m_tilde so we use it to store log(\alpha * m_tilde) needed for regularized EM algorithm
+
+  EigenVectorXd alpha_m_tilde;
   if (alpha > 0.) {
+    // For regularized case, we need log(alpha) + log_m_tilde
+    // Since log_m_tilde by itself has already served its purpose, we will use
+    // log_m_tilde to store log(alpha) + log_m_tilde
     log_m_tilde = log_m_tilde.array() + log(alpha);
+    // We also need exp(log_m_tilde) = \alpha * tilde{m}_{s|t} for regularized EM algorithm
+    alpha_m_tilde = log_m_tilde.array().exp();
   }
 
   // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
@@ -242,12 +268,13 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       NumericalUtils::ProbabilityNormalizeInLog(log_q_weights);
       // but for the increment step (M-step of Algorithm 1) we want a full topology
       // count rather than just the unique count. So we multiply the q_weights by the
-      // topology count... in log space, it becomes summation rather than multiplication
+      // topology count... In log space, it becomes summation rather than multiplication.
       log_q_weights = log_q_weights.array() + log(topology_count);
       // and increment the new SBN parameters by the q-weighted counts.
       //IncrementBy(m_bar, indexer_representation, log_q_weights);
       IncrementByInLog(log_m_bar, indexer_representation, log_q_weights);
     }  // End of looping over topologies.
+    // Make a copy of the sbn_parameters for the purpose of computing the Q score.
     if (alpha > 0.) {
       sbn_parameters = NumericalUtils::LogAddVectors(log_m_bar, log_m_tilde);
     } else {
@@ -255,6 +282,15 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     }
     // We normalize sbn_parameters right away to ensure that it is always normalized.
     ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplit_count, parent_to_range);
+
+    NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before ComputeScore|");
+    score_history[em_idx] = ComputeScore(sbn_parameters, indexer_representation_counter);
+    NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After ComputeScore|");
+    
+    if (alpha > 0.) {
+      score_history[em_idx] += alpha_m_tilde.dot(sbn_parameters);
+    }
+
     ++progress_bar;
     progress_bar.display();
   }  // End of EM loop.
