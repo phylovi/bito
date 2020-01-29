@@ -80,12 +80,13 @@ void SBNInstance::TrainSimpleAverage() {
                                 rootsplits_.size(), parent_to_range_);
 }
 
-void SBNInstance::TrainExpectationMaximization(double alpha, size_t em_loop_count) {
+EigenVectorXd SBNInstance::TrainExpectationMaximization(double alpha, size_t max_iter,
+                                                        double score_epsilon) {
   auto indexer_representation_counter = SBNMaps::IndexerRepresentationCounterOf(
       indexer_, topology_counter_, sbn_parameters_.size());
-  SBNProbability::ExpectationMaximization(
+  return SBNProbability::ExpectationMaximization(
       sbn_parameters_, indexer_representation_counter, rootsplits_.size(),
-      parent_to_range_, alpha, em_loop_count);
+      parent_to_range_, alpha, max_iter, score_epsilon);
 }
 
 EigenVectorXd SBNInstance::CalculateSBNProbabilities() {

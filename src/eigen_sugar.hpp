@@ -7,6 +7,8 @@
 #define SRC_EIGEN_SUGAR_HPP_
 
 #include <Eigen/Dense>
+#include <fstream>
+#include "sugar.hpp"
 
 using EigenVectorXd = Eigen::VectorXd;
 using EigenMatrixXd =
@@ -15,6 +17,18 @@ using EigenVectorXdRef = Eigen::Ref<EigenVectorXd>;
 using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 using EigenConstVectorXdRef = Eigen::Ref<const EigenVectorXd>;
 using EigenConstMatrixXdRef = Eigen::Ref<const EigenMatrixXd>;
+
+const static Eigen::IOFormat EigenCSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
+                                            ", ", "\n");
+// Write an Eigen object to a CSV file.
+template <class EigenType>
+void EigenToCSV(std::string file_path, EigenType eigen_object) {
+  std::ofstream file(file_path.c_str());
+  file << eigen_object.format(EigenCSVFormat) << std::endl;
+  if (file.bad()) {
+    Failwith("Failure writing to " + file_path);
+  }
+}
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {

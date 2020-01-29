@@ -4,6 +4,7 @@
 #ifndef SRC_NUMERICAL_UTILS_HPP_
 #define SRC_NUMERICAL_UTILS_HPP_
 
+#include <fenv.h>
 #include <limits.h>
 
 #include "eigen_sugar.hpp"
@@ -12,15 +13,15 @@
 constexpr double DOUBLE_INF = std::numeric_limits<double>::infinity();
 constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
-constexpr double LOG_EPS = log(EPS);
+// It turns out that log isn't constexpr for silly reasons, so we use inline instead.
+inline double LOG_EPS = log(EPS);
 
 namespace NumericalUtils {
 
 // Return log(exp(x) + exp(y)).
-constexpr double LogAdd(double x, double y) {
+inline double LogAdd(double x, double y) {
   // See:
   // https://github.com/alexandrebouchard/bayonet/blob/master/src/main/java/bayonet/math/NumericalUtils.java#L59
-
   // Make x the max.
   if (y > x) {
     double temp = x;
@@ -30,19 +31,33 @@ constexpr double LogAdd(double x, double y) {
   if (x == DOUBLE_NEG_INF) {
     return x;
   }
-  double negDiff = y - x;
-  if (negDiff < LOG_EPS) {
+  double neg_diff = y - x;
+  if (neg_diff < LOG_EPS) {
     return x;
   }
-  return x + log(1.0 + exp(negDiff));
+  return x + log(1.0 + exp(neg_diff));
 }
 
 // Return log(sum_i exp(vec(i))).
 double LogSum(const EigenVectorXdRef vec);
-// Normalize the entries of vec: vec(i) = vec(i) - LogSum(vec).
+// Returns a vector with the i-th entry given by LogAdd(vec1(i), vec2(i))
+EigenVectorXd LogAddVectors(const EigenVectorXdRef vec1, const EigenVectorXdRef vec2);
+// Normalize the entries of vec such that they become logs of probabilities:
+// vec(i) = vec(i) - LogSum(vec).
 void ProbabilityNormalizeInLog(EigenVectorXdRef vec);
 // Exponentiate vec in place: vec(i) = exp(vec(i))
 void Exponentiate(EigenVectorXdRef vec);
+
+// This code concerns the floating-point environment (FE).
+// Note that a FE "exception" is not a C++ exception, it's just a signal that a
+// problem has happened. See
+// https://en.cppreference.com/w/c/numeric/fenv/FE_exceptions
+
+// If there is a worrying FE exception, get a string describing it.
+std::optional<std::string> DescribeFloatingPointEnvironmentExceptions();
+// If there is a worrying FE exception, report it and clear the record of there being
+// any exception.
+void ReportFloatingPointEnvironmentExceptions(std::string context = "");
 
 }  // namespace NumericalUtils
 
