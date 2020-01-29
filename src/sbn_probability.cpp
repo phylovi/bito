@@ -261,8 +261,8 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
           abs(score_history[em_idx - 1]);
       if (scaled_score_improvement < score_epsilon) {
         progress_bar.done();
-        std::cout << "EM terminated after seeing scaled score improvement of "
-                  << scaled_score_improvement << std::endl;
+        std::cout << "EM converged according to normalized score improvement < "
+                  << score_epsilon << "." << std::endl;
         NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After EM|");
         return score_history;
       }
