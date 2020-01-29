@@ -13,10 +13,13 @@
 constexpr double DOUBLE_INF = std::numeric_limits<double>::infinity();
 constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
+// It turns out that log isn't constexpr for silly reasons, so we use inline instead.
+inline double LOG_EPS = log(EPS);
 
 namespace NumericalUtils {
+
 // Return log(exp(x) + exp(y)).
-constexpr double LogAdd(double x, double y) {
+inline double LogAdd(double x, double y) {
   // See:
   // https://github.com/alexandrebouchard/bayonet/blob/master/src/main/java/bayonet/math/NumericalUtils.java#L59
   // Make x the max.
@@ -28,11 +31,11 @@ constexpr double LogAdd(double x, double y) {
   if (x == DOUBLE_NEG_INF) {
     return x;
   }
-  double negDiff = y - x;
-  if (negDiff < log(EPS)) {
+  double neg_diff = y - x;
+  if (neg_diff < LOG_EPS) {
     return x;
   }
-  return x + log(1.0 + exp(negDiff));
+  return x + log(1.0 + exp(neg_diff));
 }
 
 // Return log(sum_i exp(vec(i))).
