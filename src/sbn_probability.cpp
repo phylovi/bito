@@ -211,8 +211,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     m_tilde_for_positive_alpha = log_m_tilde.array().exp();
   }
   // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
-  EigenVectorXd score_history(max_iter);
-  score_history.setZero();
+  EigenVectorXd score_history = EigenVectorXd::Zero(max_iter);
   // Do the specified number of EM loops.
   ProgressBar progress_bar(max_iter);
   for (size_t em_idx = 0; em_idx < max_iter; ++em_idx) {
@@ -264,7 +263,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
           fabs(score_history[em_idx - 1]);
       // To monitor correctness of EM, we check to ensure that the score is
       // monotonically increasing (modulo numerical instability).
-      Assert(scaled_score_improvement > -1e-9, "Score function decreased.");
+      Assert(scaled_score_improvement > -EPS, "Score function decreased.");
       if (fabs(scaled_score_improvement) < score_epsilon) {
         std::cout << "EM converged according to normalized score improvement < "
                   << score_epsilon << "." << std::endl;
