@@ -189,13 +189,15 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   // The \tilde{m} vectors (p.6): the counts vector before normalization to get the
   // SimpleAverage estimate. If alpha is nonzero log_m_tilde gets scaled by it below.
   EigenVectorXd log_m_tilde(sbn_parameters.size());
-  SetLogCounts(log_m_tilde, indexer_representation_counter, rootsplit_count, parent_to_range);
+  SetLogCounts(log_m_tilde, indexer_representation_counter, rootsplit_count,
+               parent_to_range);
   // m_tilde is the counts, but marginalized over a uniform distribution on the rooting
   // edge. Thus we take the total counts and then divide by the edge count.
   log_m_tilde = log_m_tilde.array() - log(static_cast<double>(edge_count));
   // The normalized version of m_tilde is the SA estimate, which is our starting point.
   sbn_parameters = log_m_tilde;
-  // We need to ensure sbn_parameters is normalized as we are computing log P(S_1, T^u) repeatedly.
+  // We need to ensure sbn_parameters is normalized as we are computing log P(S_1, T^u)
+  // repeatedly.
   ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplit_count, parent_to_range);
   // We need an exponentiated version of log_m_tilde for the score calculation if alpha
   // is nonzero.
@@ -204,7 +206,8 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     // For the regularized case, we always need log(alpha) + log_m_tilde so we store
     // this in log_m_tilde.
     log_m_tilde = log_m_tilde.array() + log(alpha);
-    // We also need exp(log_m_tilde) = \alpha * tilde{m}_{s|t} for regularized EM algorithm
+    // We also need exp(log_m_tilde) = \alpha * tilde{m}_{s|t} for regularized EM
+    // algorithm
     m_tilde_for_positive_alpha = log_m_tilde.array().exp();
   }
   // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
