@@ -262,7 +262,8 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       double scaled_score_improvement =
           (score_history[em_idx] - score_history[em_idx - 1]) /
           fabs(score_history[em_idx - 1]);
-      // To monitor correctness of EM, we check to ensure that the score is monotonically increasing.
+      // To monitor correctness of EM, we check to ensure that the score is
+      // monotonically increasing (modulo numerical instability).
       Assert(scaled_score_improvement > -1e-9, "Score function decreased.");
       if (fabs(scaled_score_improvement) < score_epsilon) {
         std::cout << "EM converged according to normalized score improvement < "
