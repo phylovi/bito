@@ -110,6 +110,7 @@ To be precise, since we have a collection of trees $\mathcal{D}^u = \{T^u_k\}_{k
     =& \sum\limits_{k=1}^{K} \log P(T^u_k | \bm{\phi}^{(n)}) \\
     =& \sum\limits_{k=1}^{K} \log \sum\limits_{s_1} P(S_1 = s_1 | \bm{\phi}^{(n)}) P(T^u_k | S_1 = s_1, \bm{\phi}^{(n)}).
 \end{align*}
+\textbf{This is the quantity called the score in the code, in contrast to the original paper.}
 
 We complete this section by providing details on the regularized EM algorithm.
 The regularization from the view of Bayesian statistics is to place a Dirichlet distribution as prior on the parameters $\bm{\phi}_{.|t} = \{\phi_{s|t}\}_{s \in \mathbb{C}_{.|t}}$.

@@ -172,8 +172,9 @@ void SBNProbability::SimpleAverage(
 }
 
 // All references to equations, etc, are to the 2018 NeurIPS paper.
-// See doc/tex for more details, in particular concerning how the prior calculation
-// works.
+// However, if you are doing a detailed read see doc/tex, because our definition of
+// score differs from that in the NeurIPS paper, and also for details of how the prior
+// calculation works.
 EigenVectorXd SBNProbability::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
@@ -208,11 +209,12 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     // For the regularized case, we always need log(alpha) + log_m_tilde so we store
     // this in log_m_tilde.
     log_m_tilde = log_m_tilde.array() + log(alpha);
-    // We also need exp(log_m_tilde) = \alpha * tilde{m}_{s|t} for regularized EM
-    // algorithm
+    // We also need exp(log_m_tilde) = \alpha * tilde{m}_{s|t} for the regularized EM
+    // algorithm.
     m_tilde_for_positive_alpha = log_m_tilde.array().exp();
   }
-  // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
+  // Our score is the marginal log likelihood of the training collection of trees (see
+  // doc/tex).
   EigenVectorXd score_history = EigenVectorXd::Zero(max_iter);
   // Do the specified number of EM loops.
   ProgressBar progress_bar(max_iter);
@@ -227,8 +229,9 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       log_q_weights.setConstant(DOUBLE_NEG_INF);
       Assert(indexer_representation.size() == edge_count,
              "Indexer representation length is not constant.");
-      // Loop over the various rooting positions of this topology.
-      double log_q_weight_sum = DOUBLE_NEG_INF;
+      // Loop over the various rooting positions of this topology, using log_q_weights
+      // to store the probability of the tree in the various rootings (we will normalize
+      // it later).
       for (size_t rooting_position = 0; rooting_position < edge_count;
            ++rooting_position) {
         const SizeVector& rooted_representation =
@@ -238,13 +241,16 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         log_q_weights[rooting_position] =
             (log_p_rooted_topology > LOG_EPS) ? log_p_rooted_topology : LOG_EPS;
       }  // End of looping over rooting positions.
-      log_q_weight_sum = NumericalUtils::LogSum(log_q_weights);
-      score_history[em_idx] += topology_count * log_q_weight_sum;
+      // This is the likelihood of the topology, marginalized over rooting position.
+      double log_p_unrooted_topology = NumericalUtils::LogSum(log_q_weights);
+      // Increase the total log marginal likelihood by this topologies contribution.
+      score_history[em_idx] += topology_count * log_p_unrooted_topology;
       // Normalize q_weights to achieve the E-step of Algorithm 1.
       // For the increment step (M-step of Algorithm 1) we want a full topology
       // count rather than just the unique count. So we multiply the q_weights by the
       // topology count (in log space, it becomes summation rather than multiplication).
-      log_q_weights = log_q_weights.array() + (-log_q_weight_sum + log(topology_count));
+      log_q_weights =
+          log_q_weights.array() + (-log_p_unrooted_topology + log(topology_count));
       // Increment the SBN-parameters-to-be by the q-weighted counts.
       IncrementByInLog(log_m_bar, indexer_representation, log_q_weights);
     }  // End of looping over topologies.
@@ -257,7 +263,6 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     if (alpha > 0.) {
       score_history[em_idx] += m_tilde_for_positive_alpha.dot(sbn_parameters);
     }
-
     // Return if we've converged according to score.
     if (em_idx > 0) {
       double scaled_score_improvement =
