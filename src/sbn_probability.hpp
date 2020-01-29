@@ -27,7 +27,7 @@ EigenVectorXd ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
-    size_t em_loop_count);
+    size_t max_iter, double score_epsilon);
 
 // Calculate the probability of an indexer_representation of a topology.
 double ProbabilityOf(const EigenConstVectorXdRef,

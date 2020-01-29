@@ -59,7 +59,10 @@ class SBNInstance {
 
   // SBN training. See sbn_probability.hpp for details.
   void TrainSimpleAverage();
-  EigenVectorXd TrainExpectationMaximization(double alpha, size_t em_loop_count);
+  // max_iter is the maximum number of EM iterations to do, while score_epsilon is the
+  // cutoff for score improvement.
+  EigenVectorXd TrainExpectationMaximization(double alpha, size_t max_iter,
+                                             double score_epsilon = 0.);
   EigenVectorXd CalculateSBNProbabilities();
 
   // Sample an integer index in [range.first, range.second) according to

@@ -104,9 +104,14 @@ PYBIND11_MODULE(libsbn, m) {
            R"raw(
            Train the SBN using the expectation-maximization estimator.
 
-           This is described in the "Expectation Maximization" section of the 2018 NeurIPS
-           paper, and is later referred to as the "SBN-EM" estimator.)raw",
-           py::arg("alpha"), py::arg("em_loop_count"))
+           This is described in the "Expectation Maximization" section of the 2018
+           NeurIPS paper, and is later referred to as the "SBN-EM" estimator.
+
+           Here we can supply alpha, the absolute maxiumum number of iterations, and
+           a score-based termination criterion for EM. EM will stop if the scaled
+           score increase is less than the provided ``score_epsilon``.
+           )raw",
+           py::arg("alpha"), py::arg("max_iter"), py::arg("score_epsilon") = 0.)
       .def("calculate_sbn_probabilities", &SBNInstance::CalculateSBNProbabilities,
            R"raw(Get the SBN probabilities of the currently loaded trees.)raw")
       .def("sample_trees", &SBNInstance::SampleTrees,

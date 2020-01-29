@@ -176,7 +176,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
-    size_t em_loop_count) {
+    size_t max_iter, double score_epsilon) {
   Assert(!indexer_representation_counter.empty(),
          "Empty indexer_representation_counter.");
   auto edge_count = indexer_representation_counter[0].first.size();
@@ -208,10 +208,10 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     m_tilde_for_positive_alpha = log_m_tilde.array().exp();
   }
   // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
-  EigenVectorXd score_history(em_loop_count);
+  EigenVectorXd score_history(max_iter);
   // Do the specified number of EM loops.
-  ProgressBar progress_bar(em_loop_count);
-  for (size_t em_idx = 0; em_idx < em_loop_count; ++em_idx) {
+  ProgressBar progress_bar(max_iter);
+  for (size_t em_idx = 0; em_idx < max_iter; ++em_idx) {
     log_m_bar.setConstant(DOUBLE_NEG_INF);
     // Loop over topologies (as manifested by their indexer representations).
     for (const auto& [indexer_representation, int_topology_count] :
@@ -253,6 +253,19 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplit_count, parent_to_range);
     if (alpha > 0.) {
       score_history[em_idx] += m_tilde_for_positive_alpha.dot(sbn_parameters);
+    }
+    // Return if we've converged according to score.
+    if (em_idx > 0) {
+      double scaled_score_improvement =
+          (score_history[em_idx] - score_history[em_idx - 1]) /
+          abs(score_history[em_idx - 1]);
+      if (scaled_score_improvement < score_epsilon) {
+        progress_bar.done();
+        std::cout << "EM terminated after seeing scaled score improvement of "
+                  << scaled_score_improvement << std::endl;
+        NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After EM|");
+        return score_history;
+      }
     }
     ++progress_bar;
     progress_bar.display();
