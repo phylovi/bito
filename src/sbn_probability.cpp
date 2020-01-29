@@ -261,7 +261,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     if (em_idx > 0) {
       double scaled_score_improvement =
           (score_history[em_idx] - score_history[em_idx - 1]) /
-          abs(score_history[em_idx - 1]);
+          fabs(score_history[em_idx - 1]);
       // To monitor correctness of EM, we check to ensure that the score is monotonically increasing.
       Assert(scaled_score_improvement > -1e-9, "Score function decreased.");
       if (fabs(scaled_score_improvement) < score_epsilon) {
