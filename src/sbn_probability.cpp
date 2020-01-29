@@ -261,6 +261,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     // We normalize sbn_parameters right away to ensure that it is always normalized.
     ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplit_count, parent_to_range);
     if (alpha > 0.) {
+      // Last line of the section on EM in doc/tex.
       score_history[em_idx] += m_tilde_for_positive_alpha.dot(sbn_parameters);
     }
     // Return if we've converged according to score.
