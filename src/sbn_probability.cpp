@@ -168,28 +168,6 @@ void SBNProbability::SimpleAverage(
                parent_to_range);
 }
 
-double ComputeScore(const EigenVectorXdRef p,
-                     const IndexerRepresentationCounter& indexer_representation_counter) {
-  double score = 0.0;
-  auto edge_count = indexer_representation_counter[0].first.size();
-  EigenVectorXd log_p_rooted_topology(edge_count);
-  for (const auto& [indexer_representation, int_topology_count] :
-       indexer_representation_counter) {
-    const auto topology_count = static_cast<double>(int_topology_count);
-    log_p_rooted_topology.setZero();
-    // FAM It seems to me that this loop is identical to (see way below)...
-    for (size_t rooting_position = 0; rooting_position < edge_count;
-         ++rooting_position) {
-      const SizeVector& rooted_representation =
-          indexer_representation[rooting_position];
-      log_p_rooted_topology[rooting_position] = SumOf(p, rooted_representation, 0.);
-    }
-    score += topology_count * NumericalUtils::LogSum(log_p_rooted_topology);
-  }
-
-  return score;
-}
-
 // All references to equations, etc, are to the 2018 NeurIPS paper.
 EigenVectorXd SBNProbability::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
@@ -199,6 +177,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   Assert(!indexer_representation_counter.empty(),
          "Empty indexer_representation_counter.");
   auto edge_count = indexer_representation_counter[0].first.size();
+  double log_EPS = log(EPS);
   // The \bar{m} vectors (Algorithm 1) in log space.
   // They are packed into a single vector as sbn_parameters is.
   EigenVectorXd log_m_bar(sbn_parameters.size());
@@ -232,7 +211,6 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   // Do the specified number of EM loops.
   ProgressBar progress_bar(em_loop_count);
   for (size_t em_idx = 0; em_idx < em_loop_count; ++em_idx) {
-    //double score = 0.;
     //log_m_bar.setZero();
     log_m_bar.setConstant(DOUBLE_NEG_INF);
     // Loop over topologies (as manifested by their indexer representations).
@@ -242,12 +220,12 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       // The number of times this topology was seen in the counter.
       const auto topology_count = static_cast<double>(int_topology_count);
       // Calculate the q weights for this topology.
-      log_q_weights.setZero();
+      //log_q_weights.setZero();
+      log_q_weights.setConstant(DOUBLE_NEG_INF);
       Assert(indexer_representation.size() == edge_count,
              "Indexer representation length is not constant.");
       // Loop over the various rooting positions of this topology.
-      // FAM ... this loop, modulo handling infinities. Let's factor that out into a
-      // nicely-named function.
+      double log_sum = DOUBLE_NEG_INF;
       for (size_t rooting_position = 0; rooting_position < edge_count;
            ++rooting_position) {
         const SizeVector& rooted_representation =
@@ -256,29 +234,29 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before SumOf|");
         double log_p_rooted_topology = SumOf(sbn_parameters, rooted_representation, 0.);
         NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After SumOf|");
-
-        // The unnormalized q_weight is this probability. We normalize later.
-        // FAM I'm not sure if this if statement makes sense anymore now that we are in
-        // log space. If something is infinite then this code sets it to be zero, which
-        // made sense in probability space but not log space.
-        if (std::isfinite(log_p_rooted_topology)) {
+        if (log_p_rooted_topology > log_EPS) {
           log_q_weights[rooting_position] = log_p_rooted_topology;
+        } else {
+          log_q_weights[rooting_position] = log_EPS;
         }
       }  // End of looping over rooting positions.
-
-      //double q_sum = log_q_weights.sum();
-      //log_q_weights /= q_sum;
+      log_sum = NumericalUtils::LogSum(log_q_weights);
+      score_history[em_idx] += topology_count * log_sum;
+      
       // Normalize q_weights to achieve the E-step of Algorithm 1.
       // The topology_count doesn't come in yet because q is with reference to a single
       // topology...
-      NumericalUtils::ProbabilityNormalizeInLog(log_q_weights);
+      log_q_weights = log_q_weights.array() - log_sum;
       // but for the increment step (M-step of Algorithm 1) we want a full topology
       // count rather than just the unique count. So we multiply the q_weights by the
       // topology count. In log space, it becomes summation rather than multiplication.
       log_q_weights = log_q_weights.array() + log(topology_count);
       // and increment the new SBN parameters by the q-weighted counts.
+      NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before IncrementByInLog|");
       IncrementByInLog(log_m_bar, indexer_representation, log_q_weights);
+      NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After IncrementByInLog|");
     }  // End of looping over topologies.
+
     if (alpha > 0.) {
       sbn_parameters = NumericalUtils::LogAddVectors(log_m_bar, log_m_tilde);
     } else {
@@ -286,11 +264,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     }
     // We normalize sbn_parameters right away to ensure that it is always normalized.
     ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplit_count, parent_to_range);
-
-    NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before ComputeScore|");
-    score_history[em_idx] = ComputeScore(sbn_parameters, indexer_representation_counter);
-    NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After ComputeScore|");
-
+    
     if (alpha > 0.) {
       score_history[em_idx] += m_tilde_for_positive_alpha.dot(sbn_parameters);
     }
