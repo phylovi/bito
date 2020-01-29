@@ -172,6 +172,8 @@ void SBNProbability::SimpleAverage(
 }
 
 // All references to equations, etc, are to the 2018 NeurIPS paper.
+// See doc/tex for more details, in particular concerning how the prior calculation
+// works.
 EigenVectorXd SBNProbability::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
     const IndexerRepresentationCounter& indexer_representation_counter,
