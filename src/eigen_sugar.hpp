@@ -18,10 +18,9 @@ using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 using EigenConstVectorXdRef = Eigen::Ref<const EigenVectorXd>;
 using EigenConstMatrixXdRef = Eigen::Ref<const EigenMatrixXd>;
 
-// define the format you want, you only need one instance of this...
 const static Eigen::IOFormat EigenCSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
                                             ", ", "\n");
-
+// Write an Eigen object to a CSV file.
 template <class EigenType>
 void EigenToCSV(std::string file_path, EigenType eigen_object) {
   std::ofstream file(file_path.c_str());
