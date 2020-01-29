@@ -8,7 +8,7 @@
 
 #include <Eigen/Dense>
 #include <fstream>
-#include <iostream>
+#include "sugar.hpp"
 
 using EigenVectorXd = Eigen::VectorXd;
 using EigenMatrixXd =
@@ -27,7 +27,7 @@ void EigenToCSV(std::string file_path, EigenType eigen_object) {
   std::ofstream file(file_path.c_str());
   file << eigen_object.format(EigenCSVFormat) << std::endl;
   if (file.bad()) {
-    std::cout << "Failure writing to " << file_path << std::endl;
+    Failwith("Failure writing to " + file_path);
   }
 }
 

@@ -9,7 +9,8 @@ double NumericalUtils::LogSum(const EigenVectorXdRef vec) { return vec.redux(Log
 EigenVectorXd NumericalUtils::LogAddVectors(const EigenVectorXdRef vec1,
                                             const EigenVectorXdRef vec2) {
   EigenVectorXd result(vec1.size());
-  Assert(vec1.size() == vec2.size(), "Two vectors must have the same length.");
+  Assert(vec1.size() == vec2.size(),
+         "LogAddVectors: two vectors must have the same length.");
   std::transform(vec1.begin(), vec1.end(), vec2.begin(), result.begin(), LogAdd);
   return result;
 }
