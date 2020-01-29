@@ -75,18 +75,28 @@ We will store the $\phi$ parameters in pre-softmax form, so
 \]
 and similarly for $q_\phi(s)$, but where the softmax is over other subsplits $s'$ with the same parent as $s$.
 
-\section*{Estimating SBN parameters via EM algorithm for unrooted trees}
 
-We provide further details on the EM algorithm used for estimating the SBN probabilities. The parameteriation is somewhat implicit in the original derivation provided in \cite{Zhang2018-mm}. For clarity, we make explicit the parameters of the conditional probability table $\bm{\phi}$ in this version. For unrooted trees, the root split values are latent variables and the observed variables are the remaining splits given the value of the root split. In the terminologies of the EM algorithm, we have a latent variable $S_1$ whose distribution we denote, $P(S_1 | \bm{\phi})$ and the complete data likelihood given by 
+\section*{Estimating SBN parameters via the EM algorithm for unrooted trees}
+
+We provide further details on the EM algorithm used for estimating the SBN probabilities.
+The parameterization is somewhat implicit in the original derivation provided in \cite{Zhang2018-mm}.
+For clarity, we make explicit the parameters of the conditional probability table $\bm{\phi}$ in this version.
+For unrooted trees, the root split values are latent variables and the observed variables are the remaining splits given the value of the root split.
+In the terminologies of the EM algorithm, we have a latent variable $S_1$ whose distribution we denote, $P(S_1 | \bm{\phi})$ and the complete data likelihood given by
 \begin{equation}
     P(S_1, T^u | \bm{\phi}) = P(S_1 | \bm{\phi}) P(T^u | S_1, \bm{\phi}) = P(S_1 | \bm{\phi}) \prod\limits_{i > 1} P(S_i | S_{\pi(i)}, \bm{\phi}).
 \end{equation}
-The E-step computes an expectation of the log of the complete data likelihood over the latent variable $S_1$ and the M-step maximizes it over $\bm{\phi}$. It is customary to refer to the output of the E-step as the Q-function (or Q-score). Note that in this section, $Q$ will not denote the rate matrix of a phylogenetic model but rather the Q-function of the EM algorithm (we default back to $Q$ being the rate matrix in all other sections). Q-fucntion for the $n$-th iteration of the EM algorithm is given by,
+The E-step computes an expectation of the log of the complete data likelihood over the latent variable $S_1$ and the M-step maximizes it over $\bm{\phi}$.
+It is customary to refer to the output of the E-step as the Q-function (or Q-score).
+Note that in this section, $Q$ will not denote the rate matrix of a phylogenetic model but rather the Q-function of the EM algorithm (we default back to $Q$ being the rate matrix in all other sections).
+The Q-function for the $n$-th iteration of the EM algorithm is given by
 \begin{align*}
     Q(\bm{\phi}, \bm{\phi}^{(n-1)}) &= \E_{S_1 \sim P(S_1 | \bm{\phi}^{(n-1)})}\left[ \log P(S_1, T^u | \bm{\phi}) \right] \\
-    &= \sum\limits_{s_1} P(S_1 = s_1 | \bm{\phi}^{(n-1)}) \log P(S_1, T^u | \bm{\phi})
+    &= \sum\limits_{s_1} P(S_1 = s_1 | \bm{\phi}^{(n-1)}) \log P(S_1, T^u | \bm{\phi}).
 \end{align*}
-The M-step maximizes this Q-function over $\bm{\phi}$. After M-step, we have a value $\bm{\phi}^{(n)}$. The Q-score $Q(\theta^{(n)}, \theta^{(n-1)})$ is assured to be at least as large as $Q(\theta^{(n-1)}, \theta^{(n-1)})$, by definition of maximization. The key idea behind EM algorithm is that the new value $\bm{\phi}^{(n)}$ results in at least as much increase in the log likelihood of the data:
+The M-step maximizes this Q-function over $\bm{\phi}$. After M-step, we have a value $\bm{\phi}^{(n)}$.
+The Q-score $Q(\theta^{(n)}, \theta^{(n-1)})$ is assured to be at least as large as $Q(\theta^{(n-1)}, \theta^{(n-1)})$, by definition of maximization.
+The key idea behind the EM algorithm is that the new value $\bm{\phi}^{(n)}$ results in at least this much increase in the log likelihood of the data:
 \begin{equation*}
     0 \leq Q(\bm{\phi}^{(n)}, \bm{\phi}^{(n-1)}) - Q(\bm{\phi}^{(n-1)}, \bm{\phi}^{(n-1)}) \leq \log P(T^u | \bm{\phi}^{(n)}) - \log P(T^u | \bm{\phi}^{(n-1)}).
 \end{equation*}
@@ -100,7 +110,15 @@ To be precise, since we have a collection of trees $\mathcal{D}^u = \{T^u_k\}_{k
     =& \sum\limits_{k=1}^{K} \log P(T^u_k | \bm{\phi}^{(n)}) \\
     =& \sum\limits_{k=1}^{K} \log \sum\limits_{s_1} P(S_1 = s_1 | \bm{\phi}^{(n)}) P(T^u_k | S_1 = s_1, \bm{\phi}^{(n)}).
 \end{align*}
-We complete this section by providing details on the regularized EM algorithm. The regularization from the view of Bayesian statistics is to place a Dirichlet distribution as prior on the parameters $\bm{\phi}_{.|t} = \{\phi_{s|t}\}_{s \in \mathbb{C}_{.|t}}$. We will denote the prior distribution by, $P(\bm{\phi}_{.|t} | \bm{\alpha}_{.|t})$. Note that we actually have a collection of such prior distributions, one for each parent subsplit. For convenience of notation, we can assume that $t = \empty$ for the root split. The hyperparameters $\bm{\alpha}_{.|t}$ is given by an empirical Bayes estimate $\alpha_{s|t} = \alpha \tilde{m}_{s|t}$ where $\alpha > 0$ is a global parameter and $\{\tilde{m}_{s|t}\}$ are the sample frequencies, i.e., the number of times we observed $s|t$. With the Bayesian formulation, the Q-function is expectation of the log of the posterior distribution rather than log of complete data likelihood w.r.t. the latent rooting $S_1 \sim P(S_1 | \bm{\phi}^{(n-1)})$. It takes on the following form:
+
+We complete this section by providing details on the regularized EM algorithm.
+The regularization from the view of Bayesian statistics is to place a Dirichlet distribution as prior on the parameters $\bm{\phi}_{.|t} = \{\phi_{s|t}\}_{s \in \mathbb{C}_{.|t}}$.
+We will denote the prior distribution by, $P(\bm{\phi}_{.|t} | \bm{\alpha}_{.|t})$.
+Note that we actually have a collection of such prior distributions, one for each parent subsplit.
+For convenience of notation, we can assume that $t = \emptyset$ for the root split.
+The hyperparameter vector $\bm{\alpha}_{.|t}$ is given by an empirical Bayes estimate $\alpha_{s|t} = \alpha \tilde{m}_{s|t}$ where $\alpha > 0$ is a global parameter and $\{\tilde{m}_{s|t}\}$ are the sample frequencies, i.e., the number of times we observed $s|t$.
+With the Bayesian formulation, the Q-function is expectation of the log of the posterior distribution rather than log of complete data likelihood w.r.t. the latent rooting $S_1 \sim P(S_1 | \bm{\phi}^{(n-1)})$.
+It takes on the following form:
 \begin{align*}
     \tilde{Q}(\bm{\phi}, \bm{\phi}^{(n-1)}) &= \E_{S_1 \sim P(S_1 | \bm{\phi}^{(n-1)})}\left[ \log P(\bm{\phi} | S_1, T^u, \alpha) \right] \\
     &= \E_{S_1 \sim P(S_1 | \bm{\phi}^{(n-1)})}\left[ \log \frac{P(S_1, T^u | \bm{\phi}) P(\bm{\phi} | \alpha))}{P(S_1, T^u | \alpha)} \right] \\
@@ -110,11 +128,11 @@ We complete this section by providing details on the regularized EM algorithm. T
     % &= \sum\limits_{s_1} P(S_1 = s_1 | \bm{\phi}^{(n-1)}) \log P(S_1 = s_1 | \bm{\phi}) P(T^u | S_1 = s_1, \bm{\phi}) + \log P(\bm{\phi} | \alpha) \\
     % &= Q(\bm{\phi}, \bm{\phi}^{(n-1)}) + \log P(\bm{\phi} | \alpha),
 \end{align*}
-where 
+where
 \begin{equation*}
     \log \left( P(s | t, \bm{\phi}_{.|t})P(\bm{\phi}_{.|t} | \alpha) \right) = \log(\phi_{s|t}) + \alpha \tilde{m}_{s|t} \log(\phi_{s|t}),
 \end{equation*}
-using the notation $\log(\phi_{s|t}) = \log P(s | t, \bm{\phi})$. Therefore, the final form for $\tilde{Q}$ is given by,
+using the notation $\phi_1 = P(S_1)$ and $\phi_{s|t} = P(s | t, \bm{\phi})$. Therefore, the final form for $\tilde{Q}$ is given by,
 \begin{equation*}
     \tilde{Q}(\bm{\phi}, \bm{\phi}^{(n-1)}) = Q(\bm{\phi}, \bm{\phi}^{(n-1)}) + \sum\limits_{s_1 \in \mathbb{C}_r} \alpha \tilde{m}_{s_1}^u \log P(s_1 | \bm{\phi}) + \sum\limits_{s|t \in \mathbb{C}_{.|t}} \alpha \tilde{m}_{s|t}^u \log P(s | t, \bm{\phi}).
 \end{equation*}
@@ -150,7 +168,6 @@ where
 \hat{L}_{j|-j}^K(\bm{\phi},{\bm{\psi}}) :=  \hat{L}^K(\bm{\phi},{\bm{\psi}}) - \log\frac1K\left(\sum_{i\neq j}f_{\bm{\phi},{\bm{\psi}}}(\tau^i,\bm{\theta}^i) + \hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})\right)
 \]
 is the per-sample local learning signal, with $\hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})$ being some estimate of $f_{\bm{\phi},{\bm{\psi}}}(\tau^j,\bm{\theta}^j)$ for sample $j$ using the rest of samples (e.g., the geometric mean).
-
 
 We will calculate $\nabla_{\bm \phi} \log q_{\bm \phi}(\tau^j)$ as the ratio ${\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau^j)} / {q_{\bm{\phi}}(\tau^j)}$.
 
