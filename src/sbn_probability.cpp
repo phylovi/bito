@@ -247,11 +247,9 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       IncrementByInLog(log_m_bar, indexer_representation, log_q_weights);
     }  // End of looping over topologies.
     // Store the proper value in sbn_parameters.
-    if (alpha > 0.) {
-      sbn_parameters = NumericalUtils::LogAddVectors(log_m_bar, log_m_tilde);
-    } else {
-      sbn_parameters = log_m_bar;
-    }
+    sbn_parameters = (alpha > 0.)
+                         ? NumericalUtils::LogAddVectors(log_m_bar, log_m_tilde)
+                         : log_m_bar;
     // We normalize sbn_parameters right away to ensure that it is always normalized.
     ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplit_count, parent_to_range);
     if (alpha > 0.) {
