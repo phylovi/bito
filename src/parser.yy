@@ -67,6 +67,8 @@ https://beast.community/nexus_metacomments
 %type  <Node::NodePtr> inner_node
 %type  <Node::NodePtrVecPtr> node_list
 %type  <std::shared_ptr<Tree>> tree
+%type  <std::string> metadata_comment_option
+%type  <std::string> metadata_comment
 %type  <std::string> attribute_list
 
 %printer { yyo << $$; } <*>;
@@ -139,13 +141,16 @@ node_list:
 
 metadata_comment_option:
   %empty {
+    $$ = "";
   }
   | metadata_comment {
+    $$ = $1;
   }
 
 
 metadata_comment:
   "[&" attribute_list "]" {
+    $$ = $2;
   }
 
 attribute_list:

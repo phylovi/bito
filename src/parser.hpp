@@ -385,6 +385,8 @@ namespace yy {
       // "label"
       // "quoted"
       // leaf
+      // metadata_comment_option
+      // metadata_comment
       // attribute_list
       char dummy4[sizeof (std::string)];
     };
@@ -589,6 +591,8 @@ switch (yytype)
       case 10: // "label"
       case 11: // "quoted"
       case 16: // leaf
+      case 19: // metadata_comment_option
+      case 20: // metadata_comment
       case 21: // attribute_list
         value.template destroy< std::string > ();
         break;
@@ -1276,6 +1280,8 @@ switch (yytype)
       case 10: // "label"
       case 11: // "quoted"
       case 16: // leaf
+      case 19: // metadata_comment_option
+      case 20: // metadata_comment
       case 21: // attribute_list
         value.move< std::string > (std::move (that.value));
         break;
@@ -1312,6 +1318,8 @@ switch (yytype)
       case 10: // "label"
       case 11: // "quoted"
       case 16: // leaf
+      case 19: // metadata_comment_option
+      case 20: // metadata_comment
       case 21: // attribute_list
         value.copy< std::string > (YY_MOVE (that.value));
         break;
@@ -1355,6 +1363,8 @@ switch (yytype)
       case 10: // "label"
       case 11: // "quoted"
       case 16: // leaf
+      case 19: // metadata_comment_option
+      case 20: // metadata_comment
       case 21: // attribute_list
         value.move< std::string > (YY_MOVE (s.value));
         break;
@@ -1430,7 +1440,7 @@ switch (yytype)
   }
 
 } // yy
-#line 1434 "src/parser.hpp"
+#line 1444 "src/parser.hpp"
 
 
 
