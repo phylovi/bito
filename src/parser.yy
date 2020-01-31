@@ -1,11 +1,16 @@
 /*
-Copyright 2019 libsbn project contributors.
+Copyright 2019-2020 libsbn project contributors.
 libsbn is free software under the GPLv3; see LICENSE file for details.
 
 Based on
 https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parser.html#Calc_002b_002b-Parser
 and
 https://github.com/tjunier/newick_utils/blob/master/src/newick_parser.y
+
+Generally I'm trying to follow
+http://evolution.genetics.washington.edu/phylip/newick_doc.html
+but also attributes as per
+https://beast.community/nexus_metacomments
 
 *** Section: prologue and Bison declarations.
   The prologue is broken up into %code blocks, with an optional qualifier
@@ -50,6 +55,8 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_parser.y
   SEMICOLON  ";"
   LPAREN     "("
   RPAREN     ")"
+  LBRACKAMP  "[&"
+  RBRACK     "]"
 ;
 
 %token <std::string> LABEL "label"
@@ -60,6 +67,7 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_parser.y
 %type  <Node::NodePtr> inner_node
 %type  <Node::NodePtrVecPtr> node_list
 %type  <std::shared_ptr<Tree>> tree
+%type  <std::string> attribute_list
 
 %printer { yyo << $$; } <*>;
 
@@ -76,13 +84,13 @@ tree:
 
 fancy_node:
   node
-| node ":" "label" {
+| node ":" metadata_comment_option "label" {
   $$ = $1;
 
   try {
-      SafeInsert(drv.branch_lengths_, $1->Tag(), std::stod($3));
+      SafeInsert(drv.branch_lengths_, $1->Tag(), std::stod($4));
   } catch (...) {
-    Failwith("Float conversion failed on branch length '" + $3 +"'");
+    Failwith("Float conversion failed on branch length '" + $4 +"'");
   }
 }
 
@@ -126,6 +134,22 @@ node_list:
   }
 | node_list "," fancy_node {
     $1->push_back($3);
+    $$ = $1;
+  }
+
+metadata_comment_option:
+  %empty {
+  }
+  | metadata_comment {
+  }
+
+
+metadata_comment:
+  "[&" attribute_list "]" {
+  }
+
+attribute_list:
+  "label" {
     $$ = $1;
   }
 

@@ -1,6 +1,6 @@
 %{
 /*
-Copyright 2019 libsbn project contributors.
+Copyright 2019-2020 libsbn project contributors.
 libsbn is free software under the GPLv3; see LICENSE file for details.
 
 Based on
@@ -62,6 +62,8 @@ BLANK         [ \t\r]
 ";"       return yy::parser::make_SEMICOLON(loc);
 "("       return yy::parser::make_LPAREN(loc);
 ")"       return yy::parser::make_RPAREN(loc);
+"[&"      return yy::parser::make_LBRACKAMP(loc);
+"]"       return yy::parser::make_RBRACK(loc);
 {LABEL}   return yy::parser::make_LABEL(yytext, loc);
 {QUOTED}  return yy::parser::make_QUOTED(yytext, loc);
 .         {

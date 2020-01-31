@@ -434,8 +434,8 @@ static void yynoreturn yy_fatal_error ( const char* msg  );
 /* %% [3.0] code to copy yytext_ptr to yytext[] goes here, if %array \ */\
 	(yy_c_buf_p) = yy_cp;
 /* %% [4.0] data tables for the DFA and the user's section 1 definitions go here */
-#define YY_NUM_RULES 11
-#define YY_END_OF_BUFFER 12
+#define YY_NUM_RULES 13
+#define YY_END_OF_BUFFER 14
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -443,10 +443,11 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static const flex_int16_t yy_accept[21] =
+static const flex_int16_t yy_accept[24] =
     {   0,
-        0,    0,   12,   10,    1,    2,    8,   10,    6,    7,
-        3,    4,    5,    1,    2,    8,    0,    9,    0,    0
+        0,    0,   14,   12,    1,    2,   10,   12,    6,    7,
+        3,    4,    5,   12,    9,    1,    2,   10,    0,   11,
+        8,    0,    0
     } ;
 
 static const YY_CHAR yy_ec[256] =
@@ -454,13 +455,13 @@ static const YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
         1,    1,    2,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-        1,    2,    4,    4,    4,    4,    4,    4,    5,    6,
-        7,    4,    4,    8,    4,    4,    4,    4,    4,    4,
-        4,    4,    4,    4,    4,    4,    4,    9,   10,    4,
+        1,    2,    4,    4,    4,    4,    4,    5,    6,    7,
+        8,    4,    4,    9,    4,    4,    4,    4,    4,    4,
+        4,    4,    4,    4,    4,    4,    4,   10,   11,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
-        1,    4,    1,    4,    4,    4,    4,    4,    4,    4,
+       12,    4,   13,    4,    4,    4,    4,    4,    4,    4,
 
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
         4,    4,    4,    4,    4,    4,    4,    4,    4,    4,
@@ -481,39 +482,40 @@ static const YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static const YY_CHAR yy_meta[11] =
+static const YY_CHAR yy_meta[14] =
     {   0,
-        1,    1,    1,    1,    1,    1,    1,    1,    1,    1
+        1,    1,    1,    2,    2,    1,    1,    1,    1,    1,
+        1,    1,    1
     } ;
 
-static const flex_int16_t yy_base[22] =
+static const flex_int16_t yy_base[26] =
     {   0,
-        0,    0,   22,   23,   19,   17,   15,   13,   23,   23,
-       23,   23,   23,   15,   13,   11,    9,    8,    7,   23,
-       10
+        0,    0,   26,   27,   23,   21,    0,   17,   27,   27,
+       27,   27,   27,   17,   27,   19,   17,    0,   13,   12,
+       27,   11,   27,   14,   13
     } ;
 
-static const flex_int16_t yy_def[22] =
+static const flex_int16_t yy_def[26] =
     {   0,
-       20,    1,   20,   20,   20,   20,   20,   21,   20,   20,
-       20,   20,   20,   20,   20,   20,   21,   20,   21,    0,
-       20
+       23,    1,   23,   23,   23,   23,   24,   25,   23,   23,
+       23,   23,   23,   23,   23,   23,   23,   24,   25,   23,
+       23,   25,    0,   23,   23
     } ;
 
-static const flex_int16_t yy_nxt[34] =
+static const flex_int16_t yy_nxt[41] =
     {   0,
-        4,    5,    6,    7,    8,    9,   10,   11,   12,   13,
-       17,   18,   19,   18,   16,   15,   14,   18,   16,   15,
-       14,   20,    3,   20,   20,   20,   20,   20,   20,   20,
-       20,   20,   20
+        4,    5,    6,    7,    7,    8,    9,   10,   11,   12,
+       13,   14,   15,   19,   19,   18,   20,   22,   20,   17,
+       16,   21,   20,   17,   16,   23,    3,   23,   23,   23,
+       23,   23,   23,   23,   23,   23,   23,   23,   23,   23
     } ;
 
-static const flex_int16_t yy_chk[34] =
+static const flex_int16_t yy_chk[41] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
-       21,   19,   18,   17,   16,   15,   14,    8,    7,    6,
-        5,    3,   20,   20,   20,   20,   20,   20,   20,   20,
-       20,   20,   20
+        1,    1,    1,   25,   25,   24,   22,   20,   19,   17,
+       16,   14,    8,    6,    5,    3,   23,   23,   23,   23,
+       23,   23,   23,   23,   23,   23,   23,   23,   23,   23
     } ;
 
 static yy_state_type yy_last_accepting_state;
@@ -522,9 +524,10 @@ static char *yy_last_accepting_cpos;
 extern int yy_flex_debug;
 int yy_flex_debug = 1;
 
-static const flex_int16_t yy_rule_linenum[11] =
+static const flex_int16_t yy_rule_linenum[13] =
     {   0,
-       58,   59,   61,   62,   63,   64,   65,   66,   67,   68
+       58,   59,   61,   62,   63,   64,   65,   66,   67,   68,
+       69,   70
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -538,7 +541,7 @@ char *yytext;
 #line 1 "src/scanner.ll"
 #line 2 "src/scanner.ll"
 /*
-Copyright 2019 libsbn project contributors.
+Copyright 2019-2020 libsbn project contributors.
 libsbn is free software under the GPLv3; see LICENSE file for details.
 
 Based on
@@ -570,13 +573,13 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_scanner.l
 #if FLEX_VERSION < 206
 #error "We require flex version > 2.6."
 #endif
-#line 573 "src/scanner.cpp"
+#line 576 "src/scanner.cpp"
 #define YY_NO_INPUT 1
 #line 44 "src/scanner.ll"
   // Code run each time a pattern is matched.
   # define YY_USER_ACTION  loc.columns (yyleng);
-#line 578 "src/scanner.cpp"
-#line 579 "src/scanner.cpp"
+#line 581 "src/scanner.cpp"
+#line 582 "src/scanner.cpp"
 
 #define INITIAL 0
 
@@ -865,7 +868,7 @@ YY_DECL
   loc.step ();
 
 
-#line 868 "src/scanner.cpp"
+#line 871 "src/scanner.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -894,13 +897,13 @@ yy_match:
 			while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
-				if ( yy_current_state >= 21 )
+				if ( yy_current_state >= 24 )
 					yy_c = yy_meta[yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
 			++yy_cp;
 			}
-		while ( yy_current_state != 20 );
+		while ( yy_current_state != 23 );
 		yy_cp = (yy_last_accepting_cpos);
 		yy_current_state = (yy_last_accepting_state);
 
@@ -919,13 +922,13 @@ do_action:	/* This label is used only to access EOF actions. */
 			{
 			if ( yy_act == 0 )
 				fprintf( stderr, "--scanner backing up\n" );
-			else if ( yy_act < 11 )
+			else if ( yy_act < 13 )
 				fprintf( stderr, "--accepting rule at line %ld (\"%s\")\n",
 				         (long)yy_rule_linenum[yy_act], yytext );
-			else if ( yy_act == 11 )
+			else if ( yy_act == 13 )
 				fprintf( stderr, "--accepting default rule (\"%s\")\n",
 				         yytext );
-			else if ( yy_act == 12 )
+			else if ( yy_act == 14 )
 				fprintf( stderr, "--(end of buffer or a NUL)\n" );
 			else
 				fprintf( stderr, "--EOF (start condition %d)\n", YY_START );
@@ -980,32 +983,42 @@ return yy::parser::make_RPAREN(loc);
 case 8:
 YY_RULE_SETUP
 #line 66 "src/scanner.ll"
-return yy::parser::make_LABEL(yytext, loc);
+return yy::parser::make_LBRACKAMP(loc);
 	YY_BREAK
 case 9:
-/* rule 9 can match eol */
 YY_RULE_SETUP
 #line 67 "src/scanner.ll"
-return yy::parser::make_QUOTED(yytext, loc);
+return yy::parser::make_RBRACK(loc);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
 #line 68 "src/scanner.ll"
+return yy::parser::make_LABEL(yytext, loc);
+	YY_BREAK
+case 11:
+/* rule 11 can match eol */
+YY_RULE_SETUP
+#line 69 "src/scanner.ll"
+return yy::parser::make_QUOTED(yytext, loc);
+	YY_BREAK
+case 12:
+YY_RULE_SETUP
+#line 70 "src/scanner.ll"
 {
             throw yy::parser::syntax_error
               (loc, "invalid character: " + std::string(yytext));
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 72 "src/scanner.ll"
+#line 74 "src/scanner.ll"
 return yy::parser::make_END (loc);
 	YY_BREAK
-case 11:
+case 13:
 YY_RULE_SETUP
-#line 74 "src/scanner.ll"
+#line 76 "src/scanner.ll"
 ECHO;
 	YY_BREAK
-#line 1008 "src/scanner.cpp"
+#line 1021 "src/scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1324,7 +1337,7 @@ static int yy_get_next_buffer (void)
 		while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
-			if ( yy_current_state >= 21 )
+			if ( yy_current_state >= 24 )
 				yy_c = yy_meta[yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
@@ -1357,11 +1370,11 @@ static int yy_get_next_buffer (void)
 	while ( yy_chk[yy_base[yy_current_state] + yy_c] != yy_current_state )
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
-		if ( yy_current_state >= 21 )
+		if ( yy_current_state >= 24 )
 			yy_c = yy_meta[yy_c];
 		}
 	yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
-	yy_is_jam = (yy_current_state == 20);
+	yy_is_jam = (yy_current_state == 23);
 
 		return yy_is_jam ? 0 : yy_current_state;
 }
@@ -2110,7 +2123,7 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 74 "src/scanner.ll"
+#line 76 "src/scanner.ll"
 
 /* *** Section: user code. It's just regular C++. */
 
