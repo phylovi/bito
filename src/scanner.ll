@@ -38,6 +38,7 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_scanner.l
 
 LABEL         [[:graph:]]{-}[();,:'\[\]]+
 QUOTED        ('[^']*')+
+ATTRIBUTES    [[:graph:]]{-}[();,:'\[\]]+
 BLANK         [ \t\r]
 
 %{
@@ -66,6 +67,7 @@ BLANK         [ \t\r]
 "]"       return yy::parser::make_RBRACK(loc);
 {LABEL}   return yy::parser::make_LABEL(yytext, loc);
 {QUOTED}  return yy::parser::make_QUOTED(yytext, loc);
+{ATTRIBUTES} return yy::parser::make_ATTRIBUTES(yytext, loc);
 .         {
             throw yy::parser::syntax_error
               (loc, "invalid character: " + std::string(yytext));

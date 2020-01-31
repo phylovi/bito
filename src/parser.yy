@@ -61,6 +61,7 @@ https://beast.community/nexus_metacomments
 
 %token <std::string> LABEL "label"
 %token <std::string> QUOTED "quoted"
+%token <std::string> ATTRIBUTES "attributes"
 %type  <Node::NodePtr> node
 %type  <Node::NodePtr> fancy_node
 %type  <std::string> leaf
@@ -154,7 +155,7 @@ metadata_comment:
   }
 
 attribute_list:
-  "label" {
+  "label" | "attributes" {
     $$ = $1;
   }
 

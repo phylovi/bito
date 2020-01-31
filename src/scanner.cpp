@@ -434,8 +434,8 @@ static void yynoreturn yy_fatal_error ( const char* msg  );
 /* %% [3.0] code to copy yytext_ptr to yytext[] goes here, if %array \ */\
 	(yy_c_buf_p) = yy_cp;
 /* %% [4.0] data tables for the DFA and the user's section 1 definitions go here */
-#define YY_NUM_RULES 13
-#define YY_END_OF_BUFFER 14
+#define YY_NUM_RULES 14
+#define YY_END_OF_BUFFER 15
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -445,8 +445,8 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[24] =
     {   0,
-        0,    0,   14,   12,    1,    2,   10,   12,    6,    7,
-        3,    4,    5,   12,    9,    1,    2,   10,    0,   11,
+        0,    0,   15,   13,    1,    2,   10,   13,    6,    7,
+        3,    4,    5,   13,    9,    1,    2,   10,    0,   11,
         8,    0,    0
     } ;
 
@@ -524,10 +524,10 @@ static char *yy_last_accepting_cpos;
 extern int yy_flex_debug;
 int yy_flex_debug = 1;
 
-static const flex_int16_t yy_rule_linenum[13] =
+static const flex_int16_t yy_rule_linenum[14] =
     {   0,
-       58,   59,   61,   62,   63,   64,   65,   66,   67,   68,
-       69,   70
+       59,   60,   62,   63,   64,   65,   66,   67,   68,   69,
+       70,   71,   72
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -575,7 +575,7 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_scanner.l
 #endif
 #line 576 "src/scanner.cpp"
 #define YY_NO_INPUT 1
-#line 44 "src/scanner.ll"
+#line 45 "src/scanner.ll"
   // Code run each time a pattern is matched.
   # define YY_USER_ACTION  loc.columns (yyleng);
 #line 581 "src/scanner.cpp"
@@ -857,10 +857,10 @@ YY_DECL
 
 	{
 /* %% [7.0] user's declarations go here */
-#line 48 "src/scanner.ll"
+#line 49 "src/scanner.ll"
 
 
-#line 51 "src/scanner.ll"
+#line 52 "src/scanner.ll"
 /* *** Section: rules. */
   // A handy shortcut to the location held by the driver.
   yy::location& loc = drv.location_;
@@ -922,13 +922,13 @@ do_action:	/* This label is used only to access EOF actions. */
 			{
 			if ( yy_act == 0 )
 				fprintf( stderr, "--scanner backing up\n" );
-			else if ( yy_act < 13 )
+			else if ( yy_act < 14 )
 				fprintf( stderr, "--accepting rule at line %ld (\"%s\")\n",
 				         (long)yy_rule_linenum[yy_act], yytext );
-			else if ( yy_act == 13 )
+			else if ( yy_act == 14 )
 				fprintf( stderr, "--accepting default rule (\"%s\")\n",
 				         yytext );
-			else if ( yy_act == 14 )
+			else if ( yy_act == 15 )
 				fprintf( stderr, "--(end of buffer or a NUL)\n" );
 			else
 				fprintf( stderr, "--EOF (start condition %d)\n", YY_START );
@@ -946,79 +946,84 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 58 "src/scanner.ll"
+#line 59 "src/scanner.ll"
 loc.step ();
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 59 "src/scanner.ll"
+#line 60 "src/scanner.ll"
 loc.lines (yyleng); loc.step ();
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 61 "src/scanner.ll"
+#line 62 "src/scanner.ll"
 return yy::parser::make_COMMA(loc);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 62 "src/scanner.ll"
+#line 63 "src/scanner.ll"
 return yy::parser::make_COLON(loc);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 63 "src/scanner.ll"
+#line 64 "src/scanner.ll"
 return yy::parser::make_SEMICOLON(loc);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 64 "src/scanner.ll"
+#line 65 "src/scanner.ll"
 return yy::parser::make_LPAREN(loc);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 65 "src/scanner.ll"
+#line 66 "src/scanner.ll"
 return yy::parser::make_RPAREN(loc);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 66 "src/scanner.ll"
+#line 67 "src/scanner.ll"
 return yy::parser::make_LBRACKAMP(loc);
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 67 "src/scanner.ll"
+#line 68 "src/scanner.ll"
 return yy::parser::make_RBRACK(loc);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 68 "src/scanner.ll"
+#line 69 "src/scanner.ll"
 return yy::parser::make_LABEL(yytext, loc);
 	YY_BREAK
 case 11:
 /* rule 11 can match eol */
 YY_RULE_SETUP
-#line 69 "src/scanner.ll"
+#line 70 "src/scanner.ll"
 return yy::parser::make_QUOTED(yytext, loc);
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 70 "src/scanner.ll"
+#line 71 "src/scanner.ll"
+return yy::parser::make_ATTRIBUTES(yytext, loc);
+	YY_BREAK
+case 13:
+YY_RULE_SETUP
+#line 72 "src/scanner.ll"
 {
             throw yy::parser::syntax_error
               (loc, "invalid character: " + std::string(yytext));
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 74 "src/scanner.ll"
+#line 76 "src/scanner.ll"
 return yy::parser::make_END (loc);
 	YY_BREAK
-case 13:
+case 14:
 YY_RULE_SETUP
-#line 76 "src/scanner.ll"
+#line 78 "src/scanner.ll"
 ECHO;
 	YY_BREAK
-#line 1021 "src/scanner.cpp"
+#line 1026 "src/scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2123,7 +2128,7 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 76 "src/scanner.ll"
+#line 78 "src/scanner.ll"
 
 /* *** Section: user code. It's just regular C++. */
 
