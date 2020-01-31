@@ -32,14 +32,27 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_scanner.l
 #if FLEX_VERSION < 206
 #error "We require flex version > 2.6."
 #endif
+
+/*
+After the %option comes the pattern matching.
+
+These are matched greedily (longest match gets priority) and if there are ties
+then the first wins.
+Note concerning :graph: in code below: this is all non-space printable characters
+https://en.cppreference.com/w/cpp/string/byte/isgraph
+while :print: is all printable characters
+https://en.cppreference.com/w/cpp/string/byte/isprint
+also
+https://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_mono/flex.html#SEC7
+*/
 %}
 
 %option noyywrap nounput noinput batch debug
 
-LABEL         [[:graph:]]{-}[();,:'\[\]]+
-QUOTED        ('[^']*')+
-ATTRIBUTES    [[:graph:]]{-}[();,:'\[\]]+
-BLANK         [ \t\r]
+LABEL [[:graph:]]{-}[();,:'\[\]]+
+QUOTED ('[^']*')+
+BRACKETED_WITH_AMPERSAND \[&[[:print:]]{-}[\[\]]+\]
+BLANK [ \t\r]
 
 %{
   // Code run each time a pattern is matched.
@@ -58,16 +71,14 @@ BLANK         [ \t\r]
 {BLANK}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 
-","       return yy::parser::make_COMMA(loc);
-":"       return yy::parser::make_COLON(loc);
-";"       return yy::parser::make_SEMICOLON(loc);
-"("       return yy::parser::make_LPAREN(loc);
-")"       return yy::parser::make_RPAREN(loc);
-"[&"      return yy::parser::make_LBRACKAMP(loc);
-"]"       return yy::parser::make_RBRACK(loc);
-{LABEL}   return yy::parser::make_LABEL(yytext, loc);
-{QUOTED}  return yy::parser::make_QUOTED(yytext, loc);
-{ATTRIBUTES} return yy::parser::make_ATTRIBUTES(yytext, loc);
+"," return yy::parser::make_COMMA(loc);
+":" return yy::parser::make_COLON(loc);
+";" return yy::parser::make_SEMICOLON(loc);
+"(" return yy::parser::make_LPAREN(loc);
+")" return yy::parser::make_RPAREN(loc);
+{LABEL} return yy::parser::make_LABEL(yytext, loc);
+{QUOTED} return yy::parser::make_QUOTED(yytext, loc);
+{BRACKETED_WITH_AMPERSAND} return yy::parser::make_BRACKETED_WITH_AMPERSAND(yytext, loc);
 .         {
             throw yy::parser::syntax_error
               (loc, "invalid character: " + std::string(yytext));

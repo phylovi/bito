@@ -9,7 +9,7 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_parser.y
 
 Generally I'm trying to follow
 http://evolution.genetics.washington.edu/phylip/newick_doc.html
-but also attributes as per
+but also metadata comments as per
 https://beast.community/nexus_metacomments
 
 *** Section: prologue and Bison declarations.
@@ -55,22 +55,17 @@ https://beast.community/nexus_metacomments
   SEMICOLON  ";"
   LPAREN     "("
   RPAREN     ")"
-  LBRACKAMP  "[&"
-  RBRACK     "]"
 ;
 
 %token <std::string> LABEL "label"
 %token <std::string> QUOTED "quoted"
-%token <std::string> ATTRIBUTES "attributes"
-%type  <Node::NodePtr> node
-%type  <Node::NodePtr> fancy_node
-%type  <std::string> leaf
-%type  <Node::NodePtr> inner_node
-%type  <Node::NodePtrVecPtr> node_list
-%type  <std::shared_ptr<Tree>> tree
-%type  <std::string> metadata_comment_option
-%type  <std::string> metadata_comment
-%type  <std::string> attribute_list
+%token <std::string> BRACKETED_WITH_AMPERSAND "bracketed_with_ampersand"
+%type <Node::NodePtr> node
+%type <Node::NodePtr> fancy_node
+%type <std::string> leaf
+%type <Node::NodePtr> inner_node
+%type <Node::NodePtrVecPtr> node_list
+%type <std::shared_ptr<Tree>> tree
 
 %printer { yyo << $$; } <*>;
 
@@ -141,23 +136,7 @@ node_list:
   }
 
 metadata_comment_option:
-  %empty {
-    $$ = "";
-  }
-  | metadata_comment {
-    $$ = $1;
-  }
-
-
-metadata_comment:
-  "[&" attribute_list "]" {
-    $$ = $2;
-  }
-
-attribute_list:
-  "label" | "attributes" {
-    $$ = $1;
-  }
+  %empty | "bracketed_with_ampersand"
 
 %%
 // Epilogue: arbitrary C++.
