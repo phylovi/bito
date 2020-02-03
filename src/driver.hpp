@@ -88,7 +88,9 @@ TEST_CASE("Driver") {
   std::vector<std::string> correct_five_taxon_names({"x0", "x1", "x2", "x3", "x4"});
   CHECK_EQ(five_taxon.TaxonNames(), correct_five_taxon_names);
   // Check that we can properly throw away BEAST [&comments].
-  driver.ParseNexusFile("data/test_beast_tree_parsing.nexus");
+  auto beast_nexus = driver.ParseNexusFile("data/test_beast_tree_parsing.nexus");
+  auto beast_newick = driver.ParseNewickFile("data/test_beast_tree_parsing.nwk");
+  CHECK_EQ(beast_nexus, beast_newick);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

@@ -104,8 +104,8 @@ node:
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa_.
       auto leaf_id = drv.taxa_.find($1);
       if(leaf_id == drv.taxa_.end()) { // leaf $1 not found in taxa_
-        Failwith("Taxon '" + $1 + "' did not appear in the first tree.\n" +
-         "We only parse lists of trees on the same taxa.");
+        Failwith("Taxon '" + $1 + "' is not known in our taxon set.\n" +
+         "Either it is missing in the translate block or it didn't appear in the first tree.");
       }
       $$ = Node::Leaf(leaf_id->second);
     }

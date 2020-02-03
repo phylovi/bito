@@ -248,27 +248,24 @@ namespace yy {
   {
     switch (that.type_get ())
     {
-      case 15: // fancy_node
-      case 16: // node
-      case 18: // inner_node
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.YY_MOVE_OR_COPY< Node::NodePtr > (YY_MOVE (that.value));
         break;
 
-      case 19: // node_list
+      case 17: // node_list
         value.YY_MOVE_OR_COPY< Node::NodePtrVecPtr > (YY_MOVE (that.value));
         break;
 
-      case 14: // tree
+      case 12: // tree
         value.YY_MOVE_OR_COPY< std::shared_ptr<Tree> > (YY_MOVE (that.value));
         break;
 
-      case 10: // "label"
-      case 11: // "quoted"
-      case 12: // "attributes"
-      case 17: // leaf
-      case 20: // metadata_comment_option
-      case 21: // metadata_comment
-      case 22: // attribute_list
+      case 8: // "label"
+      case 9: // "quoted"
+      case 10: // "bracketed_with_ampersand"
+      case 15: // leaf
         value.YY_MOVE_OR_COPY< std::string > (YY_MOVE (that.value));
         break;
 
@@ -287,27 +284,24 @@ namespace yy {
   {
     switch (that.type_get ())
     {
-      case 15: // fancy_node
-      case 16: // node
-      case 18: // inner_node
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.move< Node::NodePtr > (YY_MOVE (that.value));
         break;
 
-      case 19: // node_list
+      case 17: // node_list
         value.move< Node::NodePtrVecPtr > (YY_MOVE (that.value));
         break;
 
-      case 14: // tree
+      case 12: // tree
         value.move< std::shared_ptr<Tree> > (YY_MOVE (that.value));
         break;
 
-      case 10: // "label"
-      case 11: // "quoted"
-      case 12: // "attributes"
-      case 17: // leaf
-      case 20: // metadata_comment_option
-      case 21: // metadata_comment
-      case 22: // attribute_list
+      case 8: // "label"
+      case 9: // "quoted"
+      case 10: // "bracketed_with_ampersand"
+      case 15: // leaf
         value.move< std::string > (YY_MOVE (that.value));
         break;
 
@@ -326,27 +320,24 @@ namespace yy {
     state = that.state;
     switch (that.type_get ())
     {
-      case 15: // fancy_node
-      case 16: // node
-      case 18: // inner_node
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.move< Node::NodePtr > (that.value);
         break;
 
-      case 19: // node_list
+      case 17: // node_list
         value.move< Node::NodePtrVecPtr > (that.value);
         break;
 
-      case 14: // tree
+      case 12: // tree
         value.move< std::shared_ptr<Tree> > (that.value);
         break;
 
-      case 10: // "label"
-      case 11: // "quoted"
-      case 12: // "attributes"
-      case 17: // leaf
-      case 20: // metadata_comment_option
-      case 21: // metadata_comment
-      case 22: // attribute_list
+      case 8: // "label"
+      case 9: // "quoted"
+      case 10: // "bracketed_with_ampersand"
+      case 15: // leaf
         value.move< std::string > (that.value);
         break;
 
@@ -389,76 +380,58 @@ namespace yy {
         << yysym.location << ": ";
     switch (yytype)
     {
-      case 10: // "label"
-#line 75 "src/parser.yy"
+      case 8: // "label"
+#line 70 "src/parser.yy"
         { yyo << yysym.value.template as < std::string > (); }
-#line 396 "src/parser.cpp"
+#line 387 "src/parser.cpp"
         break;
 
-      case 11: // "quoted"
-#line 75 "src/parser.yy"
+      case 9: // "quoted"
+#line 70 "src/parser.yy"
         { yyo << yysym.value.template as < std::string > (); }
-#line 402 "src/parser.cpp"
+#line 393 "src/parser.cpp"
         break;
 
-      case 12: // "attributes"
-#line 75 "src/parser.yy"
+      case 10: // "bracketed_with_ampersand"
+#line 70 "src/parser.yy"
         { yyo << yysym.value.template as < std::string > (); }
-#line 408 "src/parser.cpp"
+#line 399 "src/parser.cpp"
         break;
 
-      case 14: // tree
-#line 75 "src/parser.yy"
+      case 12: // tree
+#line 70 "src/parser.yy"
         { yyo << yysym.value.template as < std::shared_ptr<Tree> > (); }
-#line 414 "src/parser.cpp"
+#line 405 "src/parser.cpp"
         break;
 
-      case 15: // fancy_node
-#line 75 "src/parser.yy"
+      case 13: // fancy_node
+#line 70 "src/parser.yy"
         { yyo << yysym.value.template as < Node::NodePtr > (); }
-#line 420 "src/parser.cpp"
+#line 411 "src/parser.cpp"
         break;
 
-      case 16: // node
-#line 75 "src/parser.yy"
+      case 14: // node
+#line 70 "src/parser.yy"
         { yyo << yysym.value.template as < Node::NodePtr > (); }
-#line 426 "src/parser.cpp"
+#line 417 "src/parser.cpp"
         break;
 
-      case 17: // leaf
-#line 75 "src/parser.yy"
+      case 15: // leaf
+#line 70 "src/parser.yy"
         { yyo << yysym.value.template as < std::string > (); }
-#line 432 "src/parser.cpp"
+#line 423 "src/parser.cpp"
         break;
 
-      case 18: // inner_node
-#line 75 "src/parser.yy"
+      case 16: // inner_node
+#line 70 "src/parser.yy"
         { yyo << yysym.value.template as < Node::NodePtr > (); }
-#line 438 "src/parser.cpp"
+#line 429 "src/parser.cpp"
         break;
 
-      case 19: // node_list
-#line 75 "src/parser.yy"
+      case 17: // node_list
+#line 70 "src/parser.yy"
         { yyo << yysym.value.template as < Node::NodePtrVecPtr > (); }
-#line 444 "src/parser.cpp"
-        break;
-
-      case 20: // metadata_comment_option
-#line 75 "src/parser.yy"
-        { yyo << yysym.value.template as < std::string > (); }
-#line 450 "src/parser.cpp"
-        break;
-
-      case 21: // metadata_comment
-#line 75 "src/parser.yy"
-        { yyo << yysym.value.template as < std::string > (); }
-#line 456 "src/parser.cpp"
-        break;
-
-      case 22: // attribute_list
-#line 75 "src/parser.yy"
-        { yyo << yysym.value.template as < std::string > (); }
-#line 462 "src/parser.cpp"
+#line 435 "src/parser.cpp"
         break;
 
       default:
@@ -675,27 +648,24 @@ namespace yy {
          when using variants.  */
       switch (yyr1_[yyn])
     {
-      case 15: // fancy_node
-      case 16: // node
-      case 18: // inner_node
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         yylhs.value.emplace< Node::NodePtr > ();
         break;
 
-      case 19: // node_list
+      case 17: // node_list
         yylhs.value.emplace< Node::NodePtrVecPtr > ();
         break;
 
-      case 14: // tree
+      case 12: // tree
         yylhs.value.emplace< std::shared_ptr<Tree> > ();
         break;
 
-      case 10: // "label"
-      case 11: // "quoted"
-      case 12: // "attributes"
-      case 17: // leaf
-      case 20: // metadata_comment_option
-      case 21: // metadata_comment
-      case 22: // attribute_list
+      case 8: // "label"
+      case 9: // "quoted"
+      case 10: // "bracketed_with_ampersand"
+      case 15: // leaf
         yylhs.value.emplace< std::string > ();
         break;
 
@@ -720,23 +690,23 @@ namespace yy {
           switch (yyn)
             {
   case 2:
-#line 82 "src/parser.yy"
+#line 77 "src/parser.yy"
     {
     drv.latest_tree_ = std::make_shared<Tree>(yystack_[1].value.as < Node::NodePtr > (), drv.branch_lengths_);
     drv.taxa_complete_ = true;
     drv.branch_lengths_.clear();
   }
-#line 730 "src/parser.cpp"
+#line 700 "src/parser.cpp"
     break;
 
   case 3:
-#line 89 "src/parser.yy"
+#line 84 "src/parser.yy"
     { yylhs.value.as < Node::NodePtr > () = yystack_[0].value.as < Node::NodePtr > (); }
-#line 736 "src/parser.cpp"
+#line 706 "src/parser.cpp"
     break;
 
   case 4:
-#line 90 "src/parser.yy"
+#line 85 "src/parser.yy"
     {
   yylhs.value.as < Node::NodePtr > () = yystack_[3].value.as < Node::NodePtr > ();
 
@@ -746,11 +716,11 @@ namespace yy {
     Failwith("Float conversion failed on branch length '" + yystack_[0].value.as < std::string > () +"'");
   }
 }
-#line 750 "src/parser.cpp"
+#line 720 "src/parser.cpp"
     break;
 
   case 5:
-#line 101 "src/parser.yy"
+#line 96 "src/parser.yy"
     {
     if (!drv.taxa_complete_) {
       // This is our first tree, so we're going to initialize the taxon set.
@@ -762,103 +732,65 @@ namespace yy {
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa_.
       auto leaf_id = drv.taxa_.find(yystack_[0].value.as < std::string > ());
       if(leaf_id == drv.taxa_.end()) { // leaf $1 not found in taxa_
-        Failwith("Taxon '" + yystack_[0].value.as < std::string > () + "' did not appear in the first tree.\n" +
-         "We only parse lists of trees on the same taxa.");
+        Failwith("Taxon '" + yystack_[0].value.as < std::string > () + "' is not known in our taxon set.\n" +
+         "Either it is missing in the translate block or it didn't appear in the first tree.");
       }
       yylhs.value.as < Node::NodePtr > () = Node::Leaf(leaf_id->second);
     }
   }
-#line 772 "src/parser.cpp"
+#line 742 "src/parser.cpp"
     break;
 
   case 6:
-#line 118 "src/parser.yy"
+#line 113 "src/parser.yy"
     { yylhs.value.as < Node::NodePtr > () = yystack_[0].value.as < Node::NodePtr > (); }
-#line 778 "src/parser.cpp"
+#line 748 "src/parser.cpp"
     break;
 
   case 7:
-#line 121 "src/parser.yy"
+#line 116 "src/parser.yy"
     {
     yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
   }
-#line 786 "src/parser.cpp"
+#line 756 "src/parser.cpp"
     break;
 
   case 8:
-#line 124 "src/parser.yy"
+#line 119 "src/parser.yy"
     {
     yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
   }
-#line 794 "src/parser.cpp"
+#line 764 "src/parser.cpp"
     break;
 
   case 9:
-#line 129 "src/parser.yy"
+#line 124 "src/parser.yy"
     {
     yylhs.value.as < Node::NodePtr > () = Node::Join(std::move(*yystack_[1].value.as < Node::NodePtrVecPtr > ()));
   }
-#line 802 "src/parser.cpp"
+#line 772 "src/parser.cpp"
     break;
 
   case 10:
-#line 134 "src/parser.yy"
+#line 129 "src/parser.yy"
     {
     yylhs.value.as < Node::NodePtrVecPtr > () = std::make_shared<Node::NodePtrVec>();
     yylhs.value.as < Node::NodePtrVecPtr > ()->push_back(yystack_[0].value.as < Node::NodePtr > ());
   }
-#line 811 "src/parser.cpp"
+#line 781 "src/parser.cpp"
     break;
 
   case 11:
-#line 138 "src/parser.yy"
+#line 133 "src/parser.yy"
     {
     yystack_[2].value.as < Node::NodePtrVecPtr > ()->push_back(yystack_[0].value.as < Node::NodePtr > ());
     yylhs.value.as < Node::NodePtrVecPtr > () = yystack_[2].value.as < Node::NodePtrVecPtr > ();
   }
-#line 820 "src/parser.cpp"
-    break;
-
-  case 12:
-#line 144 "src/parser.yy"
-    {
-    yylhs.value.as < std::string > () = "";
-  }
-#line 828 "src/parser.cpp"
-    break;
-
-  case 13:
-#line 147 "src/parser.yy"
-    {
-    yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
-  }
-#line 836 "src/parser.cpp"
-    break;
-
-  case 14:
-#line 153 "src/parser.yy"
-    {
-    yylhs.value.as < std::string > () = yystack_[1].value.as < std::string > ();
-  }
-#line 844 "src/parser.cpp"
-    break;
-
-  case 15:
-#line 158 "src/parser.yy"
-    { yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > (); }
-#line 850 "src/parser.cpp"
-    break;
-
-  case 16:
-#line 158 "src/parser.yy"
-    {
-    yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
-  }
-#line 858 "src/parser.cpp"
+#line 790 "src/parser.cpp"
     break;
 
 
-#line 862 "src/parser.cpp"
+#line 794 "src/parser.cpp"
 
             default:
               break;
@@ -1129,72 +1061,69 @@ namespace yy {
   }
 
 
-  const signed char parser::yypact_ninf_ = -9;
+  const signed char parser::yypact_ninf_ = -8;
 
   const signed char parser::yytable_ninf_ = -1;
 
   const signed char
   parser::yypact_[] =
   {
-      -5,    -5,    -9,    -9,     8,     4,     6,    -9,    -9,    -9,
-       0,    -9,    -9,     3,    -5,    -9,    -8,     2,    -9,    -9,
-      -9,    -9,     5,    -9,    -9
+       0,     0,    -8,    -8,     2,     5,     3,    -8,    -8,    -8,
+      -2,    -8,    -8,    -7,     0,    -8,    -8,    -4,    -8,    -8
   };
 
   const unsigned char
   parser::yydefact_[] =
   {
        0,     0,     7,     8,     0,     0,     3,     5,     6,    10,
-       0,     1,     2,    12,     0,     9,     0,     0,    13,    11,
-      15,    16,     0,     4,    14
+       0,     1,     2,    12,     0,     9,    13,     0,    11,     4
   };
 
   const signed char
   parser::yypgoto_[] =
   {
-      -9,    -9,    -1,    -9,    -9,    -9,    -9,    -9,    -9,    -9
+      -8,    -8,    -1,    -8,    -8,    -8,    -8,    -8
   };
 
   const signed char
   parser::yydefgoto_[] =
   {
-      -1,     4,     5,     6,     7,     8,    10,    17,    18,    22
+      -1,     4,     5,     6,     7,     8,    10,    17
   };
 
   const unsigned char
   parser::yytable_[] =
   {
-       9,     1,    20,    14,    21,     2,     3,    15,    11,    12,
-      13,    16,    23,    19,    24
+       9,    14,    11,    16,    19,    15,     1,    13,     2,     3,
+      12,     0,     0,    18
   };
 
-  const unsigned char
+  const signed char
   parser::yycheck_[] =
   {
-       1,     6,    10,     3,    12,    10,    11,     7,     0,     5,
-       4,     8,    10,    14,     9
+       1,     3,     0,    10,     8,     7,     6,     4,     8,     9,
+       5,    -1,    -1,    14
   };
 
   const unsigned char
   parser::yystos_[] =
   {
-       0,     6,    10,    11,    14,    15,    16,    17,    18,    15,
-      19,     0,     5,     4,     3,     7,     8,    20,    21,    15,
-      10,    12,    22,    10,     9
+       0,     6,     8,     9,    12,    13,    14,    15,    16,    13,
+      17,     0,     5,     4,     3,     7,    10,    18,    13,     8
   };
 
   const unsigned char
   parser::yyr1_[] =
   {
-       0,    13,    14,    15,    15,    16,    16,    17,    17,    18,
-      19,    19,    20,    20,    21,    22,    22
+       0,    11,    12,    13,    13,    14,    14,    15,    15,    16,
+      17,    17,    18,    18
   };
 
   const unsigned char
   parser::yyr2_[] =
   {
        0,     2,     2,     1,     4,     1,     1,     1,     1,     3,
-       1,     3,     0,     1,     3,     1,     1
+       1,     3,     0,     1
   };
 
 
@@ -1205,18 +1134,17 @@ namespace yy {
   const parser::yytname_[] =
   {
   "\"end of file\"", "error", "$undefined", "\",\"", "\":\"", "\";\"",
-  "\"(\"", "\")\"", "\"[&\"", "\"]\"", "\"label\"", "\"quoted\"",
-  "\"attributes\"", "$accept", "tree", "fancy_node", "node", "leaf",
-  "inner_node", "node_list", "metadata_comment_option", "metadata_comment",
-  "attribute_list", YY_NULLPTR
+  "\"(\"", "\")\"", "\"label\"", "\"quoted\"",
+  "\"bracketed_with_ampersand\"", "$accept", "tree", "fancy_node", "node",
+  "leaf", "inner_node", "node_list", "metadata_comment_option", YY_NULLPTR
   };
 
 #if YYDEBUG
   const unsigned char
   parser::yyrline_[] =
   {
-       0,    82,    82,    89,    90,   101,   118,   121,   124,   129,
-     134,   138,   144,   147,   153,   158,   158
+       0,    77,    77,    84,    85,    96,   113,   116,   119,   124,
+     129,   133,   139,   139
   };
 
   // Print the state stack on the debug stream.
@@ -1250,9 +1178,9 @@ namespace yy {
 
 
 } // yy
-#line 1254 "src/parser.cpp"
+#line 1182 "src/parser.cpp"
 
-#line 162 "src/parser.yy"
+#line 141 "src/parser.yy"
 
 // Epilogue: arbitrary C++.
 
