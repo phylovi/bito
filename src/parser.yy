@@ -1,11 +1,16 @@
 /*
-Copyright 2019 libsbn project contributors.
+Copyright 2019-2020 libsbn project contributors.
 libsbn is free software under the GPLv3; see LICENSE file for details.
 
 Based on
 https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parser.html#Calc_002b_002b-Parser
 and
 https://github.com/tjunier/newick_utils/blob/master/src/newick_parser.y
+
+Generally I'm trying to follow
+http://evolution.genetics.washington.edu/phylip/newick_doc.html
+but also metadata comments as per
+https://beast.community/nexus_metacomments
 
 *** Section: prologue and Bison declarations.
   The prologue is broken up into %code blocks, with an optional qualifier
@@ -54,12 +59,13 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_parser.y
 
 %token <std::string> LABEL "label"
 %token <std::string> QUOTED "quoted"
-%type  <Node::NodePtr> node
-%type  <Node::NodePtr> fancy_node
-%type  <std::string> leaf
-%type  <Node::NodePtr> inner_node
-%type  <Node::NodePtrVecPtr> node_list
-%type  <std::shared_ptr<Tree>> tree
+%token <std::string> BRACKETED_WITH_AMPERSAND "bracketed_with_ampersand"
+%type <Node::NodePtr> node
+%type <Node::NodePtr> fancy_node
+%type <std::string> leaf
+%type <Node::NodePtr> inner_node
+%type <Node::NodePtrVecPtr> node_list
+%type <std::shared_ptr<Tree>> tree
 
 %printer { yyo << $$; } <*>;
 
@@ -76,13 +82,13 @@ tree:
 
 fancy_node:
   node
-| node ":" "label" {
+| node ":" metadata_comment_option "label" {
   $$ = $1;
 
   try {
-      SafeInsert(drv.branch_lengths_, $1->Tag(), std::stod($3));
+      SafeInsert(drv.branch_lengths_, $1->Tag(), std::stod($4));
   } catch (...) {
-    Failwith("Float conversion failed on branch length '" + $3 +"'");
+    Failwith("Float conversion failed on branch length '" + $4 +"'");
   }
 }
 
@@ -98,8 +104,8 @@ node:
       // This is not our first tree, so we're going to get taxon numberings from drv.taxa_.
       auto leaf_id = drv.taxa_.find($1);
       if(leaf_id == drv.taxa_.end()) { // leaf $1 not found in taxa_
-        Failwith("Taxon '" + $1 + "' did not appear in the first tree.\n" +
-         "We only parse lists of trees on the same taxa.");
+        Failwith("Taxon '" + $1 + "' is not known in our taxon set.\n" +
+         "Either it is missing in the translate block or it didn't appear in the first tree.");
       }
       $$ = Node::Leaf(leaf_id->second);
     }
@@ -128,6 +134,9 @@ node_list:
     $1->push_back($3);
     $$ = $1;
   }
+
+metadata_comment_option:
+  %empty | "bracketed_with_ampersand"
 
 %%
 // Epilogue: arbitrary C++.

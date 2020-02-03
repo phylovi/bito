@@ -79,14 +79,17 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
         throw std::runtime_error("Finished reading and couldn't find 'begin trees;'");
       }
       std::getline(in, line);
+      // BEAST uses "Begin trees;" so we tolower here.
+      line[0] = std::tolower(line[0]);
     } while (line != "begin trees;");
     std::getline(in, line);
-    std::regex translate_start("^\\s*translate");
+    std::regex translate_start("^\\s*[Tt]ranslate");
     if (!std::regex_match(line, translate_start)) {
       throw std::runtime_error("Missing translate block.");
     }
     std::getline(in, line);
-    std::regex translate_item_regex(R"raw(^\s*(\d+)\s([^,]*)[,;]$)raw");
+    std::regex translate_item_regex(R"raw(^\s*(\d+)\s([^,;]*)[,;]?$)raw");
+    std::regex lone_semicolon_regex(R"raw(\s*;$)raw");
     std::smatch match;
     auto previous_position = in.tellg();
     TagStringMap long_name_taxon_map;
@@ -100,11 +103,16 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
       SafeInsert(long_name_taxon_map, PackInts(leaf_id, 1), long_name);
       leaf_id++;
       // Semicolon marks the end of the translate block.
+      // It appears at the end of a translation statement line in MrBayes.
       if (match[3].str() == ";") {
         break;
       }
       previous_position = in.tellg();
       std::getline(in, line);
+      // BEAST has the ending semicolon on a line of its own.
+      if (std::regex_match(line, match, lone_semicolon_regex)) {
+        break;
+      }
       if (in.eof()) {
         throw std::runtime_error("Encountered EOF while parsing translate block.");
       }

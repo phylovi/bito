@@ -87,6 +87,21 @@ TEST_CASE("Driver") {
   auto five_taxon = driver.ParseNewickFile("data/five_taxon.nwk");
   std::vector<std::string> correct_five_taxon_names({"x0", "x1", "x2", "x3", "x4"});
   CHECK_EQ(five_taxon.TaxonNames(), correct_five_taxon_names);
+  // Check that we can parse BEAST trees with [&comments], and that the different
+  // formatting of the translate block doesn't trip us up.
+  auto beast_nexus = driver.ParseNexusFile("data/test_beast_tree_parsing.nexus");
+  // These are the taxa, in order, taken directly from the nexus file:
+  StringVector beast_taxa = {
+      "aDuckA1976",   "aDuckB1977",   "aItaly1987", "aMallard1985", "hCHR1983",
+      "hCambr1939",   "hFortMon1947", "hKiev1979",  "hLenin1954",   "hMongol1985",
+      "hMongol1991",  "hNWS1933",     "hPR1934",    "hSCar1918",    "hScot1994",
+      "hSuita1989",   "hUSSR1977",    "sEhime1980", "sIllino1963",  "sIowa1930",
+      "sNebrask1992", "sNewJers1976", "sStHya1991", "sWiscons1961", "sWiscons1998"};
+  CHECK_EQ(beast_nexus.TaxonNames(), beast_taxa);
+  // Check that we got the whole tree.
+  for (const auto& [topology, count] : beast_nexus.TopologyCounter()) {
+    CHECK_EQ(topology->LeafCount(), beast_taxa.size());
+  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

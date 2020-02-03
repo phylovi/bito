@@ -44,7 +44,7 @@
 #ifndef YY_YY_SRC_PARSER_HPP_INCLUDED
 # define YY_YY_SRC_PARSER_HPP_INCLUDED
 // //                    "%code requires" blocks.
-#line 22 "src/parser.yy"
+#line 27 "src/parser.yy"
 
   // This code gets inserted into the parser header file.
   #include <string>
@@ -384,6 +384,7 @@ namespace yy {
 
       // "label"
       // "quoted"
+      // "bracketed_with_ampersand"
       // leaf
       char dummy4[sizeof (std::string)];
     };
@@ -440,7 +441,8 @@ namespace yy {
         TOK_LPAREN = 261,
         TOK_RPAREN = 262,
         TOK_LABEL = 263,
-        TOK_QUOTED = 264
+        TOK_QUOTED = 264,
+        TOK_BRACKETED_WITH_AMPERSAND = 265
       };
     };
 
@@ -569,23 +571,24 @@ namespace yy {
         // Type destructor.
 switch (yytype)
     {
-      case 12: // fancy_node
-      case 13: // node
-      case 15: // inner_node
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.template destroy< Node::NodePtr > ();
         break;
 
-      case 16: // node_list
+      case 17: // node_list
         value.template destroy< Node::NodePtrVecPtr > ();
         break;
 
-      case 11: // tree
+      case 12: // tree
         value.template destroy< std::shared_ptr<Tree> > ();
         break;
 
       case 8: // "label"
       case 9: // "quoted"
-      case 14: // leaf
+      case 10: // "bracketed_with_ampersand"
+      case 15: // leaf
         value.template destroy< std::string > ();
         break;
 
@@ -681,13 +684,13 @@ switch (yytype)
       symbol_type (int tok, std::string v, location_type l)
         : super_type(token_type (tok), std::move (v), std::move (l))
       {
-        YYASSERT (tok == token::TOK_LABEL || tok == token::TOK_QUOTED);
+        YYASSERT (tok == token::TOK_LABEL || tok == token::TOK_QUOTED || tok == token::TOK_BRACKETED_WITH_AMPERSAND);
       }
 #else
       symbol_type (int tok, const std::string& v, const location_type& l)
         : super_type(token_type (tok), v, l)
       {
-        YYASSERT (tok == token::TOK_LABEL || tok == token::TOK_QUOTED);
+        YYASSERT (tok == token::TOK_LABEL || tok == token::TOK_QUOTED || tok == token::TOK_BRACKETED_WITH_AMPERSAND);
       }
 #endif
     };
@@ -845,6 +848,21 @@ switch (yytype)
       make_QUOTED (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOK_QUOTED, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_BRACKETED_WITH_AMPERSAND (std::string v, location_type l)
+      {
+        return symbol_type (token::TOK_BRACKETED_WITH_AMPERSAND, std::move (v), std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_BRACKETED_WITH_AMPERSAND (const std::string& v, const location_type& l)
+      {
+        return symbol_type (token::TOK_BRACKETED_WITH_AMPERSAND, v, l);
       }
 #endif
 
@@ -1154,11 +1172,11 @@ switch (yytype)
     {
       yyeof_ = 0,
       yylast_ = 13,     ///< Last index in yytable_.
-      yynnts_ = 7,  ///< Number of nonterminal symbols.
+      yynnts_ = 8,  ///< Number of nonterminal symbols.
       yyfinal_ = 11, ///< Termination state number.
       yyterror_ = 1,
       yyerrcode_ = 256,
-      yyntokens_ = 10  ///< Number of tokens.
+      yyntokens_ = 11  ///< Number of tokens.
     };
 
 
@@ -1202,9 +1220,9 @@ switch (yytype)
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9
+       5,     6,     7,     8,     9,    10
     };
-    const unsigned user_token_number_max_ = 264;
+    const unsigned user_token_number_max_ = 265;
     const token_number_type undef_token_ = 2;
 
     if (static_cast<int> (t) <= yyeof_)
@@ -1225,23 +1243,24 @@ switch (yytype)
   {
     switch (this->type_get ())
     {
-      case 12: // fancy_node
-      case 13: // node
-      case 15: // inner_node
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.move< Node::NodePtr > (std::move (that.value));
         break;
 
-      case 16: // node_list
+      case 17: // node_list
         value.move< Node::NodePtrVecPtr > (std::move (that.value));
         break;
 
-      case 11: // tree
+      case 12: // tree
         value.move< std::shared_ptr<Tree> > (std::move (that.value));
         break;
 
       case 8: // "label"
       case 9: // "quoted"
-      case 14: // leaf
+      case 10: // "bracketed_with_ampersand"
+      case 15: // leaf
         value.move< std::string > (std::move (that.value));
         break;
 
@@ -1260,23 +1279,24 @@ switch (yytype)
   {
     switch (this->type_get ())
     {
-      case 12: // fancy_node
-      case 13: // node
-      case 15: // inner_node
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.copy< Node::NodePtr > (YY_MOVE (that.value));
         break;
 
-      case 16: // node_list
+      case 17: // node_list
         value.copy< Node::NodePtrVecPtr > (YY_MOVE (that.value));
         break;
 
-      case 11: // tree
+      case 12: // tree
         value.copy< std::shared_ptr<Tree> > (YY_MOVE (that.value));
         break;
 
       case 8: // "label"
       case 9: // "quoted"
-      case 14: // leaf
+      case 10: // "bracketed_with_ampersand"
+      case 15: // leaf
         value.copy< std::string > (YY_MOVE (that.value));
         break;
 
@@ -1302,23 +1322,24 @@ switch (yytype)
     super_type::move (s);
     switch (this->type_get ())
     {
-      case 12: // fancy_node
-      case 13: // node
-      case 15: // inner_node
+      case 13: // fancy_node
+      case 14: // node
+      case 16: // inner_node
         value.move< Node::NodePtr > (YY_MOVE (s.value));
         break;
 
-      case 16: // node_list
+      case 17: // node_list
         value.move< Node::NodePtrVecPtr > (YY_MOVE (s.value));
         break;
 
-      case 11: // tree
+      case 12: // tree
         value.move< std::shared_ptr<Tree> > (YY_MOVE (s.value));
         break;
 
       case 8: // "label"
       case 9: // "quoted"
-      case 14: // leaf
+      case 10: // "bracketed_with_ampersand"
+      case 15: // leaf
         value.move< std::string > (YY_MOVE (s.value));
         break;
 
@@ -1386,13 +1407,14 @@ switch (yytype)
     const unsigned short
     yytoken_number_[] =
     {
-       0,   256,   257,   258,   259,   260,   261,   262,   263,   264
+       0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
+     265
     };
     return token_type (yytoken_number_[type]);
   }
 
 } // yy
-#line 1396 "src/parser.hpp"
+#line 1418 "src/parser.hpp"
 
 
 
