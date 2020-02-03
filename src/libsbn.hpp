@@ -13,6 +13,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include "ProgressBar.hpp"
 #include "alignment.hpp"
 #include "driver.hpp"
 #include "engine.hpp"
@@ -396,12 +397,17 @@ TEST_CASE("libsbn") {
   // Count the frequencies of trees when we sample after training with SimpleAverage.
   size_t sampled_tree_count = 1'000'000;
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
+  ProgressBar progress_bar(sampled_tree_count / 1000);
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
     const auto rooted_topology = inst.SampleTopology(true);
     SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
         SBNMaps::RootedIndexerRepresentationOf(inst.indexer_, rooted_topology,
                                                out_of_sample_index));
+    if (sample_idx % 1000 == 0) {
+      ++progress_bar;
+      progress_bar.display();
+    }
   }
   // These should be equal in the limit when we're training with SA.
   for (const auto &[key, _] : counter_from_file) {
@@ -411,6 +417,7 @@ TEST_CASE("libsbn") {
         static_cast<double>(counter_from_file.at(key)) / rooted_tree_count_from_file;
     CHECK_LT(fabs(observed - expected), 5e-3);
   }
+  progress_bar.done();
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
