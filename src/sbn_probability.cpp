@@ -276,6 +276,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       if (fabs(scaled_score_improvement) < score_epsilon) {
         std::cout << "EM converged according to normalized score improvement < "
                   << score_epsilon << "." << std::endl;
+        score_history.resize(em_idx + 1);
         break;
       }
     }
