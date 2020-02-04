@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "sbn_probability.hpp"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <numeric>
@@ -282,6 +283,10 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     progress_bar.display();
   }  // End of EM loop.
   progress_bar.done();
+  auto finite_count = std::count_if(sbn_parameters.begin(), sbn_parameters.end(),
+                                    [](double d) { return std::isfinite(d); });
+  std::cout << finite_count << " / " << sbn_parameters.size()
+            << " of sbn_parameters are finite after training.\n";
   NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After EM|");
   return score_history;
 }
