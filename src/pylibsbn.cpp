@@ -59,6 +59,9 @@ PYBIND11_MODULE(libsbn, m) {
            "Constructor from a vector of trees and a vector of taxon names.")
       .def("erase", &TreeCollection::Erase,
            "Erase the specified range from the current tree collection.")
+      .def("drop_first", &TreeCollection::DropFirst,
+           "Drop the first ``fraction`` trees from the tree collection.",
+           py::arg("fraction"))
       .def("newick", &TreeCollection::Newick,
            "Get the current set of trees as a big Newick string.")
       .def_readwrite("trees", &TreeCollection::trees_);

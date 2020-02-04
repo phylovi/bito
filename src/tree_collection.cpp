@@ -58,12 +58,20 @@ bool TreeCollection::operator==(const TreeCollection &other) const {
 
 void TreeCollection::Erase(size_t begin_idx, size_t end_idx) {
   if (begin_idx > end_idx || end_idx > TreeCount()) {
-    Failwith("Illegal arguments to Tree_Collection.Erase");
+    Failwith("Illegal arguments to Tree_Collection.Erase.");
   }
   // else:
   using difference_type = Tree::TreeVector::difference_type;
   trees_.erase(trees_.begin() + static_cast<difference_type>(begin_idx),
                trees_.begin() + static_cast<difference_type>(end_idx));
+}
+
+void TreeCollection::DropFirst(double fraction) {
+  Assert(fraction >= 0. && fraction <= 1.,
+         "Illegal argument to TreeCollection.DropFirst.");
+  size_t tree_count = TreeCount();
+  size_t end_idx = static_cast<size_t>(fraction * static_cast<double>(tree_count));
+  Erase(0, end_idx);
 }
 
 std::string TreeCollection::Newick() const {

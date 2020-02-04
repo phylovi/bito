@@ -29,6 +29,8 @@ class TreeCollection {
 
   // Remove trees from begin_idx to just before end_idx.
   void Erase(size_t begin_idx, size_t end_idx);
+  // Drop the first fraction trees from the collection.
+  void DropFirst(double fraction);
 
   std::string Newick() const;
 
@@ -57,6 +59,10 @@ TEST_CASE("TreeCollection") {
        {"(0_1,2_1,(1_1,3_1)3_2)3_4;", 1},
        {"(0_1,(1_1,(2_1,3_1)3_2)3_3)3_4;", 1}});
   CHECK_EQ(counted, counted_correct);
+  collection.DropFirst(0.25);
+  CHECK_EQ(collection.TreeCount(), 3);
+  collection.DropFirst(1.);
+  CHECK_EQ(collection.TreeCount(), 0);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
