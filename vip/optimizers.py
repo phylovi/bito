@@ -18,31 +18,42 @@ class BaseOptimizer(abc.ABC):
         self.step_number = 0
         self.step_size = scalar_model.suggested_step_size()
         self.sgd_server = vip.sgd_server.SGD_Server(
-            {"scalar_params": scalar_model.q_params.shape}
+            {
+                "scalar_params": scalar_model.q_params.shape,
+                # "sbn_params": sbn_model.sbn_parameters.shape,
+            }
         )
 
-    def _simple_gradient_step(self, vars_grad, history=None):
+    def _simple_gradient_step(self, grad_dict, history=None):
         """Just take a simple gradient step.
 
-        vars_grad is the gradient with respect to the scalar variables.
+        scalar_grad is the gradient with respect to the scalar variables.
+        sbn_grad is the gradient with respect to the SBN variables.
 
         Return True if the gradient step was successful.
         """
-        assert self.scalar_model.q_params.shape == vars_grad.shape
-        if not np.isfinite(np.array([vars_grad])).all():
+        scalar_grad = grad_dict["scalar_params"]
+        # sbn_grad = grad_dict["sbn_params"]
+        assert self.scalar_model.q_params.shape == scalar_grad.shape
+        if not np.isfinite(np.array([scalar_grad])).all():
             return False
         update_dict = self.sgd_server.adam(
-            {"scalar_params": self.step_size},
-            {"scalar_params": self.scalar_model.q_params},
-            {"scalar_params": vars_grad},
+            {"scalar_params": self.step_size},  # "sbn_params": self.step_size
+            {
+                "scalar_params": self.scalar_model.q_params,
+                # "sbn_params": self.sbn_model.sbn_parameters,
+            },
+            grad_dict,
         )
         self.scalar_model.q_params += update_dict["scalar_params"]
+        # self.scalar_model.sbn_parameters += update_dict["sbn_params"]
         if history is not None:
             history.append(self.scalar_model.q_params.copy())
+            # history.append(self.sbn_model.sbn_parameters.copy())
         return True
 
-    def gradient_step(self, vars_grad, history=None):
-        gradient_step_was_successful = self._simple_gradient_step(vars_grad)
+    def gradient_step(self, grad_dict, history=None):
+        gradient_step_was_successful = self._simple_gradient_step(grad_dict)
         self.update(gradient_step_was_successful)
 
     @abc.abstractmethod

@@ -101,7 +101,6 @@ class Burrito:
             dg_dpsi,
             dlog_qg_dpsi,
         )
-        self.opt.gradient_step(scalar_grad)
         px_phylo_log_like = np.array(
             [branch_gradient[0] for branch_gradient in branch_gradients]
         )
@@ -109,6 +108,12 @@ class Burrito:
             px_phylo_log_like, px_theta_sample, px_branch_representation
         )
         # call inst.topology_gradients here...
+        self.opt.gradient_step(
+            {
+                "scalar_params": scalar_grad,
+                # "sbn_params": sbn_grad
+            }
+        )
 
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
