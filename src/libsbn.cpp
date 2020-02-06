@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "libsbn.hpp"
+#include <iostream>
 #include <memory>
 
 #include "eigen_sugar.hpp"
@@ -315,6 +316,71 @@ std::vector<double> SBNInstance::LogLikelihoods() {
 std::vector<std::pair<double, std::vector<double>>> SBNInstance::BranchGradients() {
   return GetEngine()->BranchGradients(tree_collection_, phylo_model_params_,
                                       rescaling_);
+}
+
+EigenVectorXd SBNInstance::TopologyGradients(const EigenMatrixXdRef log_f) {
+
+  // Assumption: This function is called from Python side
+  // after the trees (both the topology and the branch lengths) are sampled.
+  size_t num_trees = tree_collection_.Trees().size();
+
+  EigenVectorXd gradient_vector(sbn_parameters_.size());
+  gradient_vector.setZero();
+
+  // Compute log_q_topologies -- remove this once we confirm how this function is going to interact with Python.
+//  for (size_t j = 0; j < num_trees; j++) {
+//    auto rooted_representation = SBNMaps::RootedIndexerRepresentationOf(indexer_, tree_collection_.GetTree(j).Topology(), OUT_OF_SAMPLE_IDX);
+//    log_q_topologies[j] = SBNProbability::SumOf(sbn_parameters_, rooted_representation, 0.);
+//  }
+
+  double log_F = NumericalUtils::LogSum(log_f);
+  double hat_L = log_F - log(num_trees);
+  EigenMatrixXd tilde_w = log_f.array() - log_F;
+
+  // Prepare calculation common to each element of the gradient vector.
+  EigenVectorXd temp_gradient_vector(sbn_parameters_.size());
+  temp_gradient_vector.setZero();
+
+  double log_norm = NumericalUtils::LogSum(sbn_parameters_.segment(0, rootsplits_.size()));
+  temp_gradient_vector.segment(0, rootsplits_.size()) = sbn_parameters_.segment(0, rootsplits_.size()).array() - log_norm;
+  //std::cout << temp_gradient_vector << std::endl;
+  for (const auto &[_, range] : parent_to_range_) {
+    size_t length = (range.second - range.first);
+    auto segment = sbn_parameters_.segment(range.first, length);
+    log_norm = NumericalUtils::LogSum(segment);
+    temp_gradient_vector.segment(range.first, length) = segment.array() - log_norm;
+  }
+  std::cout << temp_gradient_vector << std::endl;
+
+  // Loop over the topologies to compute the gradient.
+  // TODO: Think about ways to make it more efficient.
+  for (size_t j = 0; j < num_trees; j++) {
+    auto indexer_representation = SBNMaps::IndexerRepresentationOf(indexer_, tree_collection_.GetTree(j).Topology(), OUT_OF_SAMPLE_IDX);
+    // TODO: Think about any potential problem that arises from the trees not being independently sampled.
+    // Stochastic VI assumes that each of the rooted trees are sampled independently from the variational approximation.
+    // Our sampling procedure is 1) sample a rooted tree, 2) unroot it, 3) get unrooted trees by placing a root
+    // at every edge. The trees that we obtain as output of step 3) is not independent.
+    for (size_t i = 0; i < indexer_representation.size(); i++) {
+      double multiplicative_factor = (hat_L - tilde_w(j,i));
+      //std::cout << multiplicative_factor << std::endl;
+      std::unordered_set<size_t> rooted_indexer_representaiton(indexer_representation.at(i).begin(), indexer_representation.at(i).end());
+      std::cout << rooted_indexer_representaiton << std::endl;
+      // We need to update all of the SBN parameters for each topology we sampled.
+      for (size_t idx = 0; idx < sbn_parameters_.size(); idx++) {
+        if (rooted_indexer_representaiton.count(idx) > 0) {
+          gradient_vector(idx) += multiplicative_factor * (1-exp(temp_gradient_vector(idx)));
+        } else {
+          gradient_vector(idx) += multiplicative_factor * -exp(temp_gradient_vector(idx));
+        }
+        if (idx == 0) {
+          std::cout << exp(temp_gradient_vector(idx)) << std::endl;
+          std::cout << gradient_vector(0) << std::endl;
+        }
+      }
+    }
+  }
+
+  return gradient_vector;
 }
 
 // Here we initialize our static random number generator.

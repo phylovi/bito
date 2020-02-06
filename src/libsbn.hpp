@@ -130,8 +130,12 @@ class SBNInstance {
   void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
   std::vector<double> LogLikelihoods();
+  
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients();
+  // For each loaded tree, it passes in a matrix of log_f values.
+  // Row j corresponds to the j-th sampled tree in the tree collection.
+  EigenVectorXd TopologyGradients(const EigenMatrixXdRef log_f);
 
   // ** I/O
 
