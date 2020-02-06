@@ -88,13 +88,15 @@ class SplitModel(BranchModel):
     def sample_all(self, particle_count):
         return self.scalar_model.sample_all(particle_count)
 
-    def log_prob(self, theta_sample, px_branch_representation):
-        return sum(
-            self.scalar_model.log_prob(
-                theta_sample[particle_idx, :], which_variables=branch_to_split
+    def log_prob_generator(self, px_theta_sample, px_branch_representation):
+        """Make a generator giving the values of the log probabilities."""
+        for particle_idx, branch_to_split in enumerate(px_branch_representation):
+            yield self.scalar_model.log_prob(
+                px_theta_sample[particle_idx, :], which_variables=branch_to_split
             )
-            for particle_idx, branch_to_split in enumerate(px_branch_representation)
-        )
+
+    def log_prob(self, px_theta_sample, px_branch_representation):
+        return sum(self.log_prob_generator(px_theta_sample, px_branch_representation))
 
     def sample_and_gradients(self, px_branch_representation):
         return self.scalar_model.sample_and_gradients(px_branch_representation)
