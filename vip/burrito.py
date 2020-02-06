@@ -102,6 +102,13 @@ class Burrito:
             dlog_qg_dpsi,
         )
         self.opt.gradient_step(scalar_grad)
+        px_phylo_log_like = np.array(
+            [branch_gradient[0] for branch_gradient in branch_gradients]
+        )
+        px_log_f = self.px_log_f(
+            px_phylo_log_like, px_theta_sample, px_branch_representation
+        )
+        # call inst.topology_gradients here...
 
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
@@ -135,3 +142,16 @@ class Burrito:
             - self.branch_model.log_prob(px_theta_sample, px_branch_representation)
         )
         return elbo_total / self.inst.tree_count()
+
+    def px_log_f(self, px_phylo_log_like, px_theta_sample, px_branch_representation):
+        """The vector of f values for each tree."""
+        px_log_prior = self.branch_model.log_prior(px_theta_sample)
+        px_log_sbn_prob = np.log(self.inst.calculate_sbn_probabilities())
+        px_branch_log_prob = np.array(
+            list(
+                self.branch_model.log_prob_generator(
+                    px_theta_sample, px_branch_representation
+                )
+            )
+        )
+        return px_phylo_log_like + px_log_prior - px_log_sbn_prob - px_branch_log_prob
