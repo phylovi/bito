@@ -109,7 +109,8 @@ class Burrito:
                 self.gradient_step()
 
     def estimate_elbo(self, particle_count):
-        """A naive Monte Carlo estimate of the ELBO."""
+        """Sample particle_count particles and then make a naive Monte Carlo estimate of
+        the ELBO."""
         px_branch_lengths = self.sample_topologies(particle_count)
         px_branch_representation = self.branch_model.px_branch_representation()
         # Sample continuous variables based on the branch representations.
@@ -119,8 +120,18 @@ class Burrito:
             branch_lengths[:] = px_theta_sample[particle_idx, :]
         self.inst.resize_phylo_model_params()
         px_phylo_log_like = np.array(self.inst.log_likelihoods(), copy=False)
+        return self.elbo_of_sample(
+            px_phylo_log_like, px_theta_sample, px_branch_representation,
+        )
+
+    def elbo_of_sample(
+        self, px_phylo_log_like, px_theta_sample, px_branch_representation
+    ):
+        """A naive Monte Carlo estimate of the ELBO given a sample."""
         px_log_prior = self.branch_model.log_prior(px_theta_sample)
-        elbo_total = np.sum(
-            px_phylo_log_like + px_log_prior
-        ) - self.branch_model.log_prob(px_theta_sample, px_branch_representation)
-        return elbo_total / particle_count
+        elbo_total = (
+            np.sum(px_phylo_log_like + px_log_prior)
+            - np.sum(np.log(self.inst.calculate_sbn_probabilities()))
+            - self.branch_model.log_prob(px_theta_sample, px_branch_representation)
+        )
+        return elbo_total / self.inst.tree_count()
