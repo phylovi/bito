@@ -167,6 +167,8 @@ PYBIND11_MODULE(libsbn, m) {
            "Calculate log likelihoods for the current set of trees.")
       .def("branch_gradients", &SBNInstance::BranchGradients,
            "Calculate gradients of branch lengths for the current set of trees.")
+      .def("topology_gradients", &SBNInstance::TopologyGradients,
+           "Calculate gradients of SBN parameters for the current set of trees.")
       // ** I/O
       .def("read_newick_file", &SBNInstance::ReadNewickFile,
            "Read trees from a Newick file.")
