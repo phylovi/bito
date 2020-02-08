@@ -94,8 +94,8 @@ double ProductOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
 }
 
 // Take the sum of the entries of vec in indices plus starting_value.
-double SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
-             const double starting_value) {
+double SBNProbability::SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
+                             const double starting_value) {
   double result = starting_value;
   for (const auto& idx : indices) {
     result += vec[idx];

@@ -47,6 +47,9 @@ void ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec,
 void ProbabilityNormalizeParamsInLog(EigenVectorXdRef vec, size_t rootsplit_count,
                                      const BitsetSizePairMap& parent_to_range);
 
+double SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
+             const double starting_value);
+
 }  // namespace SBNProbability
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
