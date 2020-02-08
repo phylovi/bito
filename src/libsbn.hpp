@@ -39,7 +39,8 @@ class SBNInstance {
 
   // ** Initialization and status
 
-  explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
+  explicit SBNInstance(const std::string &name) : name_(name),
+                                                  rescaling_{false} {}
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
@@ -60,8 +61,8 @@ class SBNInstance {
 
   // SBN training. See sbn_probability.hpp for details.
   void TrainSimpleAverage();
-  // max_iter is the maximum number of EM iterations to do, while score_epsilon is the
-  // cutoff for score improvement.
+  // max_iter is the maximum number of EM iterations to do, while score_epsilon
+  // is the cutoff for score improvement.
   EigenVectorXd TrainExpectationMaximization(double alpha, size_t max_iter,
                                              double score_epsilon = 0.);
   EigenVectorXd CalculateSBNProbabilities();
@@ -78,8 +79,9 @@ class SBNInstance {
 
   // Get indexer representations of the trees in tree_collection_.
   // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
-  // explanation of what these are. This version uses the length of sbn_parameters_ as a
-  // sentinel value for all rootsplits/PCSSs that aren't present in the indexer.
+  // explanation of what these are. This version uses the length of
+  // sbn_parameters_ as a sentinel value for all rootsplits/PCSSs that aren't
+  // present in the indexer.
   std::vector<IndexerRepresentation> MakeIndexerRepresentations() const;
 
   // Get PSP indexer representations of the trees in tree_collection_.
@@ -133,9 +135,8 @@ class SBNInstance {
   
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients();
-  // For each loaded tree, it passes in a matrix of log_f values.
-  // Row j corresponds to the j-th sampled tree in the tree collection.
-  EigenVectorXd TopologyGradients(const EigenMatrixXdRef log_f);
+  // Topology gradient for unrooted trees.
+  EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f);
 
   // ** I/O
 
@@ -198,15 +199,16 @@ TEST_CASE("libsbn") {
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   auto pretty_indexer = inst.PrettyIndexer();
-  // The indexer_ is to index the sbn_parameters_. Note that neither of these data
-  // structures attempt to catalog the complete collection of rootsplits or PCSSs, but
-  // just those that are present for some rooting of the input trees.
+  // The indexer_ is to index the sbn_parameters_. Note that neither of these
+  // data structures attempt to catalog the complete collection of rootsplits or
+  // PCSSs, but just those that are present for some rooting of the input trees.
   //
-  // The indexer_ and sbn_parameters_ are laid out as follows (I'll just call it the
-  // "index" in what follows). Say there are rootsplit_count rootsplits in the support.
-  // The first rootsplit_count entries of the index are assigned to the rootsplits
-  // (again, those rootsplits that are present for some rooting of the unrooted input
-  // trees). For the five_taxon example, this goes as follows:
+  // The indexer_ and sbn_parameters_ are laid out as follows (I'll just call it
+  // the "index" in what follows). Say there are rootsplit_count rootsplits in
+  // the support.
+  // The first rootsplit_count entries of the index are assigned to the
+  // rootsplits (again, those rootsplits that are present for some rooting of
+  // the unrooted input trees). For the five_taxon example, this goes as follows:
   StringSet correct_pretty_rootsplits({"01110", "01010", "00101", "00111", "00001",
                                        "00011", "00010", "00100", "00110", "01000",
                                        "01111", "01001"});
@@ -214,28 +216,31 @@ TEST_CASE("libsbn") {
       pretty_indexer.begin(),
       pretty_indexer.begin() + correct_pretty_rootsplits.size());
   CHECK(correct_pretty_rootsplits == pretty_rootsplits);
-  // The rest of the entries of the index are laid out as blocks of parameters for
-  // PCSSs that share the same parent. Take a look at the description of PCSS bitsets
-  // (and the unit tests) in bitset.hpp to understand the notation used here.
+  // The rest of the entries of the index are laid out as blocks of parameters
+  // for PCSSs that share the same parent. Take a look at the description of
+  // PCSS bitsets (and the unit tests) in bitset.hpp to understand the notation
+  // used here.
   //
   // For example, here are four PCSSs that all share the parent 00001|11110:
   StringSet correct_pretty_pcss_block({"00001|11110|01110", "00001|11110|00010",
                                        "00001|11110|01000", "00001|11110|00100"});
   StringSet pretty_indexer_set(pretty_indexer.begin(), pretty_indexer.end());
-  // It's true that this test doesn't show the block-ness, but it wasn't easy to show
-  // off this feature in a way that wasn't compiler dependent.
+  // It's true that this test doesn't show the block-ness, but it wasn't easy to
+  // show off this feature in a way that wasn't compiler dependent.
   for (auto pretty_pcss : correct_pretty_pcss_block) {
     CHECK(pretty_indexer_set.find(pretty_pcss) != pretty_indexer_set.end());
   }
   // Now we can look at some tree representations. We get these by calling
-  // IndexerRepresentationOf on a tree topology. This function "digests" the tree by
-  // representing all of the PCSSs as bitsets which it can then look up in the indexer_.
+  // IndexerRepresentationOf on a tree topology. This function "digests" the
+  // tree by representing all of the PCSSs as bitsets which it can then look up
+  // in the indexer_.
   // It then spits them out as the rootsplit and PCSS indices.
   // The following tree is (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
   auto indexer_test_topology_1 = Node::OfParentIdVector({6, 5, 7, 5, 6, 7, 7});
-  // Here we look at the indexer representation of this tree. Rather than having the
-  // indices themselves, which is what IndexerRepresentationOf actually outputs, we have
-  // string representations of the features corresponding to those indices.
+  // Here we look at the indexer representation of this tree. Rather than having
+  // the indices themselves, which is what IndexerRepresentationOf actually
+  // outputs, we have string representations of the features corresponding to
+  // those indices.
   // See sbn_maps.hpp for more description of these indexer representations.
   StringSetVector correct_representation_1(
       // The indexer representations for each of the possible virtual rootings.
