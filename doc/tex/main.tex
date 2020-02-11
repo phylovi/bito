@@ -31,7 +31,8 @@
 
 In the 2019 ICLR paper, we used $q$ for branch lengths and $Q$ for the variational approximation.
 Here we will use $\bm \theta$ for branch lengths and $q$ for the variational approximation.
-This $p$ and $q$ corresponds to most of the literature on VI, and allows us to use $Q$ for the Markov transition matrix. We use the notation $\mathbb{C}_r$ to denote the support for the root splits and $\mathbb{C}_{\cdot|t}$ to denote the support for the splits given the parent subsplit of $t$.
+This $p$ and $q$ corresponds to most of the literature on VI, and allows us to use $Q$ for the Markov transition matrix.
+We use the notation $\mathbb{C}_r$ to denote the support for the root splits and $\mathbb{C}_{\cdot|t}$ to denote the support for the splits given the parent subsplit of $t$.
 
 \subsection*{Setup}
 
@@ -113,8 +114,6 @@ To be precise, since we have a collection of trees $\mathcal{D}^u = \{T^u_k\}_{k
 \textbf{This is the quantity called the (unregularized) score in the code, in contrast to the original paper.}
 
 We complete this section by providing details on the regularized EM algorithm.
-%EM I guess we don't introduce \mathbb{C}_{.|t} really, do we?
-%SJ They are now defined at the very beginning of this document.
 The regularization from the view of Bayesian statistics is to place a Dirichlet distribution as prior on the parameters $\bm{\phi}_{.|t} = \{\phi_{s|t}\}_{s \in \mathbb{C}_{.|t}}$.
 We will denote the prior distribution by, $P(\bm{\phi}_{.|t} | \bm{\alpha}_{.|t})$.
 Note that we actually have a collection of such prior distributions, one for each parent subsplit.
@@ -158,11 +157,6 @@ Set
 \]
 
 \subsection*{Naive estimator of the gradient}
-%EM Perhaps this will become clear when we write out the VIMCO gradient, but somehow it would be nice to indicate where the "naive" assumption is applied.
-%SJ It's naive compared VIMCO but otherwise, it's just a regular gradient estimator. Let's remove "Naive" if it leaves any room for confusion.
-
-%EM I was using bold theta. We can discuss dropping it, or adding a macro, but let's make things consistent.
-%SJ Introduced new \bParam macro.
 
 We want to find the gradient of the ELBO with respect to $\bm{\phi}$:
 \begin{align*}
@@ -174,13 +168,9 @@ We want to find the gradient of the ELBO with respect to $\bm{\phi}$:
 where the second summand in the last line is using the identity
 \[ \nabla_{\bm{\phi}} q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K}) = q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K}) \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})). \]
 Further derivation of the first summand yields,
-%EM We should use different indices for the top and the bottom. I'd suggest j for the top and i for the bottom as above, but we could flip that if you feel strongly.
-%SJ Done.
 \begin{align}
     & \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}[\nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi})] = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}\left[\frac{\sum\limits_{j=1}^{K} \nabla_{\bm{\phi}} f_{\bm{\phi}, \bm{\psi}}(\tau^j, \bParam^j)}{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \bParam^i)}\right] \nonumber \\
     & \qquad \qquad = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}\left[\frac{\sum\limits_{j=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^j, \bParam^j) \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^j, \bParam^j))}{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \bParam^i)}\right] \nonumber \\
-    %EM Is there a reason you don't want to use the weights w^j?
-    %SJ Nope. Just forgot to use it.
     & \qquad \qquad = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}\left[\sum\limits_{j=1}^{K} \tilde{w}^j \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^j, \bParam^j))\right]. \label{eq:presummand1}
 \end{align}
 Now, note that
@@ -215,8 +205,6 @@ Next, we will derive the exact equation for $\nabla_{\phi} \log q_{\phi}(\tau^j)
 It suffices to derive the gradient for arbitrary $\phi_{s|t}$ where $\phi_{s|t}$ is an element of the parameter vector $\phi$ corresponding to some subsplit $s|t \in \mathbb{C}_{.|t}$.
 We use the notation $\nabla_{s|t}$ as a shorthand for $\nabla_{\phi_{s|t}}$: the gradient with respect to $\phi_{s|t}$.
 For generality, we assume that the root split is given with parent split value of $t = \emptyset$.
-%EM I'd suggest replacing $.|t$ with $t$ in the following sentence. There's a little inconsistency here.
-%SJ Done.
 We consider three cases: 1) if the split $s|t$ is observed in the tree, we denote this by $s|t \in \tau^j$, 2) if the parent split $t$ is observed in the tree i.e., $t \in \tau^j$ but the child split $s|t \notin \tau^j$, and 3) $t \notin \tau^j$ and hence $s|t \notin \tau^j$.
 The derivation for the first two cases is
 \begin{align*}
@@ -235,16 +223,12 @@ The derivation for the first two cases proceeds as follows.
 \begin{align*}
     \nabla_{s|t} \log q_{\phi}(\tau^j)
     &= \frac{\nabla_{s|t} q_{\phi}(\tau^j)}{q_{\phi}(\tau^j)} \\
-    %EM Don't we want to indicate that we are using a specific rooting in \prod\limits_{s'|t' \in \tau^i}? Something like \prod\limits_{s'|t' \in \tau^i_{r'}}?
-    %SJ Agreed. Combined with comment below, I'm using \rho instead of r'.
+    %EM I just realized this isn't quite right yet, is it? \mathbb{C}_{r} is the complete possible rootsplit support, while what we want here is the rootsplits of a specific unrooted topology.
+    %EM Shall we use \mathbb{C}_r (\tau^j)?
     &= \frac{1}{q_{\phi}(\tau^j)} \nabla_{s|t} \left( \sum\limits_{\rho \in \mathbb{C}_{r}} P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right).
 \end{align*}
 In the first two cases we assume $s^*|t \in \tau$ for some $s^*$, which yields the gradient as follows:
 \begin{align*}
-%EM I found r' \in \mathbb{C}_{r} a little confusing, because "r" here is just an indicator for rooted, and "r'" is essentially an index. I propose two possible solutions:
-%EM 1. use rho in place of r'
-%EM 2. replace \mathbb{C}_{r} with \mathbb{R} and r' by r.
-%SJ Going with the first solution.
     \nabla_{s|t} \left( \sum\limits_{\rho \in \mathbb{C}_{r}} P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right) &= \sum\limits_{\rho \in \mathbb{C}_{r}} \nabla_{s|t} \left( P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right) \\
     &= \sum\limits_{\rho \in \mathbb{C}_{r}} \left( P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j : t' \not= t } P_{\phi}(s' | t') \right) \nabla_{s|t} P_{\phi}(s^*|t) \\
     &= \sum\limits_{\rho \in \mathbb{C}_{r}} \frac{P_\phi(\tau_{\rho})}{P_{\phi}(s^*|t)} \nabla_{s|t} P_{\phi}(s^*|t).
@@ -274,8 +258,6 @@ where $P_{\phi}(\tau_{\rho}^j)$ denotes the SBN probability of the tree $\tau^j_
 \subsection*{Computation}
 Our library returns a vector $\nabla$, the naive gradient estimator of $\hat{L}^K$ with an element $s|t$ given by:
 \begin{equation}\label{eq:nabla}
-%EM We're abbreviating with \hat{L}^K here-- shall we do that earlier?
-%SJ I wanted to keep the parameters around above since we are taking gradient wrt them.
     \nabla_{s|t} = \sum\limits_{i=1}^{K} (\hat{L}^K - \tilde{w}^j) g_{s|t}^j,
 \end{equation}
 where $g_{s|t}^j = \nabla_{s|t} \log q_{\phi}(\tau^j)$.
