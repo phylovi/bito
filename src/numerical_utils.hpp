@@ -89,6 +89,13 @@ TEST_CASE("NumericalUtils") {
     sum += log_vec(i);
   }
   CHECK_LT(fabs(sum - 1), 1e-5);
+
+  // Here we use volatile to avoid GCC optimizing away the variable.
+  volatile double d = 4.;
+  d /= 0.;
+  auto fp_description = NumericalUtils::DescribeFloatingPointEnvironmentExceptions();
+  CHECK_EQ(*fp_description,
+           "The following floating point problems have been encountered: FE_DIVBYZERO");
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
