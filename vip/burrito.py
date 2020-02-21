@@ -107,11 +107,12 @@ class Burrito:
         px_log_f = self.px_log_f(
             px_phylo_log_like, px_theta_sample, px_branch_representation
         )
-        # call inst.topology_gradients here...
+        # Get topology gradients.
+        sbn_grad = self.inst.topology_gradients(px_log_f)
         self.opt.gradient_step(
             {
                 "scalar_params": scalar_grad,
-                # "sbn_params": sbn_grad
+                "sbn_params": sbn_grad
             }
         )
 
