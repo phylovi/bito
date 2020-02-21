@@ -321,7 +321,7 @@ std::vector<std::pair<double, std::vector<double>>> SBNInstance::BranchGradients
 
 // Retrieves range of subsplits for each s|t that appears in the tree
 // given by rooted_representation.
-std::vector<std::pair<size_t, size_t>> SBNInstance::GetSubplitRanges(
+std::vector<std::pair<size_t, size_t>> SBNInstance::GetSubsplitRanges(
     const SizeVector &rooted_representation) {
   std::vector<std::pair<size_t, size_t>> subsplits;
   subsplits.push_back(std::make_pair(0, rootsplits_.size()));
@@ -350,37 +350,39 @@ std::vector<std::pair<size_t, size_t>> SBNInstance::GetSubplitRanges(
   return subsplits;
 }
 
-EigenVectorXd CalculateMultiplicativeFactor(const EigenVectorXdRef log_f) {
+// This multiplicative factor is the quantity inside the parentheses in eq:nabla in the
+// tex.
+EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
   size_t num_trees = log_f.size();
   double log_F = NumericalUtils::LogSum(log_f);
   double hat_L = log_F - log(num_trees);
   EigenVectorXd tilde_w = log_f.array() - log_F;
   tilde_w = tilde_w.array().exp();
-  EigenVectorXd multiplicative_factor = hat_L - tilde_w.array();
-  return multiplicative_factor;
+  EigenVectorXd multiplicative_factors = hat_L - tilde_w.array();
+  return multiplicative_factors;
 }
 
+// This gives the gradient of log q at a specific unrooted topology.
+// See eq:gradLogQ in the tex.
 EigenVectorXd SBNInstance::GradientOfLogQ(
                           const IndexerRepresentation &indexer_representation) {
   EigenVectorXd grad_log_q(sbn_parameters_.size());
   grad_log_q.setZero();
   double log_q = DOUBLE_NEG_INF;
-  double log_probability_rooted_tree;
   for (const auto &rooted_representation : indexer_representation) {
-    log_probability_rooted_tree = SBNProbability::SumOf(sbn_parameters_,
-      rooted_representation, 0.0);
+    double log_probability_rooted_tree =
+        SBNProbability::SumOf(sbn_parameters_, rooted_representation, 0.0);
     // We need to look up the subsplits in the tree. Set representation allows
     // fast lookup.
     std::unordered_set<size_t> rooted_representation_as_set(
       rooted_representation.begin(), rooted_representation.end());
     // Get all subsplit ranges.
-    auto subsplit_ranges = GetSubplitRanges(rooted_representation);
-      // GetSubplitRanges(rootsplits_, parent_to_range_, rooted_representation,
-      //                 index_to_child_);
-
-    // Now, we update the gradients
+    auto subsplit_ranges = GetSubsplitRanges(rooted_representation);
+    // Now, we update the gradients.
     for (const auto &[begin, end] : subsplit_ranges) {
       for (size_t idx = begin; idx < end; idx++) {
+        // %EM What if, instead of this if, we actually had an indicator variable? I
+        // feel like this might be easier to follow for people who are reading the tex.
         if (rooted_representation_as_set.count(idx) > 0) {
           grad_log_q[idx] += exp(log_probability_rooted_tree) *
                                 (1 - exp(sbn_parameters_[idx]));
@@ -397,17 +399,16 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
 }
 
 EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f) {
-  // Assumption: This function is called from Python side
-  // after the trees (both the topology and the branch lengths) are sampled.
   size_t num_trees = tree_collection_.Trees().size();
 
   EigenVectorXd gradient_vector(sbn_parameters_.size());
   gradient_vector.setZero();
 
-  EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactor(log_f);
+  EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
 
+  // %EM I'm not sure what this comment means:
   // Normalize the sbn parameters -- note that it doesn't quite
-  // convert sbn_parameters_ to probabiility space.
+  // convert sbn_parameters_ to probability space.
   NormalizeSBNParametersInLog();
   for (size_t i = 0; i < num_trees; i++) {
     double multiplicative_factor = multiplicative_factors(i);

@@ -134,7 +134,8 @@ where
 \begin{equation*}
     \log \left( P(s | t, \bm{\phi}_{.|t})P(\bm{\phi}_{.|t} | \alpha) \right) = \log(\phi_{s|t}) + \alpha \tilde{m}_{s|t} \log(\phi_{s|t}),
 \end{equation*}
-using the notation $\phi_1 = P(S_1)$ and $\phi_{s|t} = P(s | t, \bm{\phi})$. Therefore, the final form for $\tilde{Q}$ is given by,
+using the notation $\phi_1 = P(S_1)$ and $\phi_{s|t} = P(s | t, \bm{\phi})$.
+Therefore, the final form for $\tilde{Q}$ is given by,
 \begin{equation*}
     \tilde{Q}(\bm{\phi}, \bm{\phi}^{(n-1)}) = Q(\bm{\phi}, \bm{\phi}^{(n-1)}) + \sum\limits_{s_1 \in \mathbb{C}_r} \alpha \tilde{m}_{s_1}^u \log P(s_1 | \bm{\phi}) + \sum\limits_{s|t \in \mathbb{C}_{.|t}} \alpha \tilde{m}_{s|t}^u \log P(s | t, \bm{\phi}).
 \end{equation*}
@@ -248,11 +249,13 @@ Otherwise, when $s \not= s^*$, $\nabla_{s|t} P_{\phi}(s^*|t)$ is given by,
     &= - P_{\phi}(s^*|t) P_{\phi}(s|t)
 \end{align*}
 Therefore, $\nabla_{s|t} \log q_{\phi}(\tau^j)$ is given by:
-\begin{align*}
+\begin{equation}
     \nabla_{s|t} \log q_{\phi}(\tau^j)
     &= \frac{1}{q_{\phi}(\tau^j)} \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} 1[t \in \tau_{\rho}^j] \times P_{\phi}(\tau^j_{\rho}) \times \left(1[s|t \in \tau^j_{\rho}] - P_{\phi}(s|t)\right),
-\end{align*}
-where $P_{\phi}(\tau_{\rho}^j)$ denotes the SBN probability of the tree $\tau^j_{\rho}$ rooted at $\rho \in \mathbb{C}_{r}(\tau^j)$. And of course, for the third case where $t \notin \tau_{\rho}^j$, i.e., the split $t$ is never seen in the tree, then the gradient is just $0$ for all $s | t \in \mathbb{C}_{\cdot|t}$.
+    \label{eq:gradLogQ}
+\end{equation}
+where $P_{\phi}(\tau_{\rho}^j)$ denotes the SBN probability of the tree $\tau^j_{\rho}$ rooted at $\rho \in \mathbb{C}_{r}(\tau^j)$.
+And of course, for the third case where $t \notin \tau_{\rho}^j$, i.e., the split $t$ is never seen in the tree, then the gradient is just $0$ for all $s | t \in \mathbb{C}_{\cdot|t}$.
 
 
 \subsection*{Computation}
