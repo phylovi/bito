@@ -458,6 +458,7 @@ TEST_CASE("libsbn") {
   inst.SampleTrees(K);
   // With seed set to 10, the tree that we sample is
   // \tau = ((1,2),(3,4),5).
+  std::cout << inst.tree_collection_.GetTree(0).Newick() << std::endl;
 
   // Initialize sbn_parameters to 0's and normalize.
   // Since the sbn_parameters are 0, each of the rootsplits \rho has
