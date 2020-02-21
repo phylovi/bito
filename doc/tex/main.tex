@@ -225,13 +225,13 @@ The derivation for the first two cases proceeds as follows.
     &= \frac{\nabla_{s|t} q_{\phi}(\tau^j)}{q_{\phi}(\tau^j)} \\
     %EM I just realized this isn't quite right yet, is it? \mathbb{C}_{r} is the complete possible rootsplit support, while what we want here is the rootsplits of a specific unrooted topology.
     %EM Shall we use \mathbb{C}_r (\tau^j)?
-    &= \frac{1}{q_{\phi}(\tau^j)} \nabla_{s|t} \left( \sum\limits_{\rho \in \mathbb{C}_{r}} P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right).
+    &= \frac{1}{q_{\phi}(\tau^j)} \nabla_{s|t} \left( \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right).
 \end{align*}
 In the first two cases we assume $s^*|t \in \tau$ for some $s^*$, which yields the gradient as follows:
 \begin{align*}
-    \nabla_{s|t} \left( \sum\limits_{\rho \in \mathbb{C}_{r}} P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right) &= \sum\limits_{\rho \in \mathbb{C}_{r}} \nabla_{s|t} \left( P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right) \\
-    &= \sum\limits_{\rho \in \mathbb{C}_{r}} 1[t \in \tau_{\rho}^j] \left( P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j : t' \not= t } P_{\phi}(s' | t') \right) \nabla_{s|t} P_{\phi}(s^*|t) \\
-    &= \sum\limits_{\rho \in \mathbb{C}_{r}} 1[t \in \tau_{\rho}^j] \frac{P_\phi(\tau_{\rho})}{P_{\phi}(s^*|t)} \nabla_{s|t} P_{\phi}(s^*|t).
+    \nabla_{s|t} \left( \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right) &= \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} \nabla_{s|t} \left( P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right) \\
+    &= \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} 1[t \in \tau_{\rho}^j] \left( P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j : t' \not= t } P_{\phi}(s' | t') \right) \nabla_{s|t} P_{\phi}(s^*|t) \\
+    &= \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} 1[t \in \tau_{\rho}^j] \frac{P_\phi(\tau_{\rho})}{P_{\phi}(s^*|t)} \nabla_{s|t} P_{\phi}(s^*|t).
 \end{align*}
 If $s^* = s$, then $\nabla_{s|t} P_{\phi}(s^*|t)$ is given by:
 \begin{align*}
@@ -250,9 +250,9 @@ Otherwise, when $s \not= s^*$, $\nabla_{s|t} P_{\phi}(s^*|t)$ is given by,
 Therefore, $\nabla_{s|t} \log q_{\phi}(\tau^j)$ is given by:
 \begin{align*}
     \nabla_{s|t} \log q_{\phi}(\tau^j)
-    &= \frac{1}{q_{\phi}(\tau^j)} \sum\limits_{\rho} 1[t \in \tau_{\rho}^j] \times P_{\phi}(\tau^j_{\rho}) \times \left(1[s|t \in \tau^j_{\rho}] - P_{\phi}(s|t)\right),
+    &= \frac{1}{q_{\phi}(\tau^j)} \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} 1[t \in \tau_{\rho}^j] \times P_{\phi}(\tau^j_{\rho}) \times \left(1[s|t \in \tau^j_{\rho}] - P_{\phi}(s|t)\right),
 \end{align*}
-where $P_{\phi}(\tau_{\rho}^j)$ denotes the SBN probability of the tree $\tau^j_{\rho}$ rooted at $\rho \in \mathbb{C}_r$. And of course, for the third case where $t \notin \tau_{\rho}^j$, i.e., the split $t$ is never seen in the tree, then the gradient is just $0$ for all $s | t \in \mathbb{C}_{\cdot|t}$.
+where $P_{\phi}(\tau_{\rho}^j)$ denotes the SBN probability of the tree $\tau^j_{\rho}$ rooted at $\rho \in \mathbb{C}_{r}(\tau^j)$. And of course, for the third case where $t \notin \tau_{\rho}^j$, i.e., the split $t$ is never seen in the tree, then the gradient is just $0$ for all $s | t \in \mathbb{C}_{\cdot|t}$.
 
 
 \subsection*{Computation}
