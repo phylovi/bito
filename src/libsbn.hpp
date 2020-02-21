@@ -494,7 +494,8 @@ TEST_CASE("libsbn") {
   auto indexer_representations = inst.MakeIndexerRepresentations();
   EigenVectorXd grad_log_q = inst.GradientOfLogQ(indexer_representations.at(0));
   EigenVectorXd realized_grad_rootsplit = grad_log_q.segment(0, 8);
-  // Sort them and compare against sorted version of realized_grad_rootsplit[0:7]
+  // Sort them and compare against sorted version of
+  // realized_grad_rootsplit[0:7].
   std::sort(realized_grad_rootsplit.begin(), realized_grad_rootsplit.end());
   for (size_t i = 0; i < num_rootsplits; i++) {
     CHECK_LT(fabs(realized_grad_rootsplit(i) - expected_grad_rootsplit.at(i)),
