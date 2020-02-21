@@ -165,7 +165,8 @@ PYBIND11_MODULE(libsbn, m) {
       .def("branch_gradients", &SBNInstance::BranchGradients,
            "Calculate gradients of branch lengths for the current set of trees.")
       .def("topology_gradients", &SBNInstance::TopologyGradients,
-           "Calculate gradients of SBN parameters for the current set of trees.")
+           R"raw(Calculate gradients of SBN parameters for the current set of trees.
+           Should be called after sampling trees and setting branch lengths.)raw")
       // ** I/O
       .def("read_newick_file", &SBNInstance::ReadNewickFile,
            "Read trees from a Newick file.")

@@ -131,10 +131,12 @@ class SBNInstance {
   void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
   std::vector<double> LogLikelihoods();
-  
+
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients();
   // Topology gradient for unrooted trees.
+  // Assumption: This function is called from Python side
+  // after the trees (both the topology and the branch lengths) are sampled.
   EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f);
   // Computes gradient wrt \phi of log q_{\phi}(\tau).
   // IndexerRepresentation contains all rooting of \tau.
@@ -142,8 +144,8 @@ class SBNInstance {
   EigenVectorXd GradientOfLogQ(
                            const IndexerRepresentation &indexer_representation);
   void NormalizeSBNParametersInLog();
-  std::vector<std::pair<size_t,size_t>> GetSubplitRanges(
-                                       const SizeVector &rooted_representation);
+  std::vector<std::pair<size_t, size_t>> GetSubsplitRanges(
+      const SizeVector &rooted_representation);
   inline void SetSeed(unsigned long seed) { random_generator_.seed(seed); }
 
   // ** I/O
