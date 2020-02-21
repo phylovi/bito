@@ -211,8 +211,8 @@ The derivation for the first two cases is
     \nabla_{s|t} \log q_{\phi}(\tau^j) &= \nabla_{s|t} \log \left(\prod_{s'|t' \in \tau^j} P_{\phi}(s' | t') \right) \\
     &= \nabla_{s|t} \sum\limits_{s'|t' \in \tau^j} \log P_{\phi}(s' | t') \\
     &= \nabla_{s|t} \left(\sum\limits_{s'|t' \in \tau^j} \left(\phi_{s' | t'} - \log\left(\sum\limits_{s'' \in \mathbb{C}_{.|t'}} \exp(\phi_{s''|t'})\right)\right)\right) \\
-    &= \sum\limits_{s'|t' \in \tau^j} 1[t \in \tau^j] \left(1[s|t \in \tau^{j}] - \frac{\exp(\phi_{s|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})} \right) \\
-    &= \sum\limits_{s'|t' \in \tau^j} 1[t \in \tau^j] \left(1[s|t \in \tau^{j}] - P_{\phi}(s|t) \right).
+    &= 1[s|t \in \tau^{j}] - \frac{\exp(\phi_{s|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})} \\
+    &= 1[s|t \in \tau^{j}] - P_{\phi}(s|t).
 \end{align*}
 For the latter case, the gradient $\nabla_{s|t} = 0$.
 
