@@ -136,6 +136,15 @@ class SBNInstance {
   std::vector<std::pair<double, std::vector<double>>> BranchGradients();
   // Topology gradient for unrooted trees.
   EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f);
+  // Computes gradient wrt \phi of log q_{\phi}(\tau).
+  // IndexerRepresentation contains all rooting of \tau.
+  // It assumes that sbn_gradients_ are normalized in log space.
+  EigenVectorXd GradientOfLogQ(
+                           const IndexerRepresentation &indexer_representation);
+  void NormalizeSBNParametersInLog();
+  std::vector<std::pair<size_t,size_t>> GetSubplitRanges(
+                                       const SizeVector &rooted_representation);
+  inline void SetSeed(unsigned long seed) { random_generator_.seed(seed); }
 
   // ** I/O
 
@@ -420,6 +429,172 @@ TEST_CASE("libsbn") {
         static_cast<double>(counter_from_file.at(key)) / rooted_tree_count_from_file;
     CHECK_LT(fabs(observed - expected), 5e-3);
   }
+
+  // Test computation of gradient of log q_{\phi}(\tau) wrt \phi.
+  // File gradient_test.t contains two trees:
+  // ((1,2), 3, (4,5)) and
+  // ((1,2), 5, (3,4)).
+  inst.ReadNexusFile("data/gradient_test.t");
+  inst.ProcessLoadedTrees();
+
+  // Hard code number of rootsplits found by manual enuemration.
+  // SBNInstance doesn't and it has no need to make this value available.
+  size_t num_rootsplits = 8;
+  // Manual enumeration shows that there are 31 PCSS's.
+  size_t num_pcss = inst.sbn_parameters_.size() - num_rootsplits;
+  
+  // Set seed so that the test will always produce the same output.
+  size_t seed = 10;
+  inst.SetSeed(seed);
+  // Sample K = 1 tree.
+  size_t K = 1;
+  inst.SampleTrees(K);
+  // With seed set to 10, the tree that we sample is
+  // \tau = ((1,2),(3,4),5).
+  
+  // Initialize sbn_parameters to 0's and normalize.
+  // Since the sbn_parameters are 0, each of the rootsplits \rho has
+  // P(\rho) = 1/8.
+  inst.sbn_parameters_.setZero();
+  inst.NormalizeSBNParametersInLog();
+
+  // There are 7 possible rooting of \tau.
+  // For example consider the rooting that yields the following subsplits:
+  // 34|125, 3|4, 5|12, 1|2.
+  // Each of the chid subsplits are the only possible subsplit,
+  // except for the root where it has probability 1/8. Hence, the probability
+  // for this tree is 1/8 x 1 x 1 x 1 = 1/8.
+  // Now, consider the rooting with the following subsplits:
+  // 1|2345, 2|345, 5|34, 3|4.
+  // The probability for this tree is 1/8 x 1 x 1/2 x 1 = 1/16.
+  //
+  // Each of the remaining 5 trees has the same probability:
+  // 1/8 for the rootsplit and 1/2 for one of the child subplit.
+  // Hence, q(\tau) = 6 x 1/16 + 1 x 1/8 = 8/16 = 0.5.
+  // Note that there are a total 8 rootsplits; 7 are possible rootsplits of
+  // the sampled tree \tau but one rootsplit,
+  // 125|34 is not observed rooting of \tau and hence,
+  // the gradient for 125|34 is simply -P(125|34) = -1/8.
+  //
+  // The gradient with respect to each of the 7 rootsplits is given by,
+  // P(\tau_{\rho})/q(\tau) - P(\rho),
+  // which equal to
+  // (1/8) / (8/16) - 1/8 = 1/8 for the tree with \rho = 34|125 and
+  // (1/16) / (0.5) - 1/8 = 0 for 6 remaining trees.
+
+  std::vector<double> expected_grad_rootsplit = {-1./8, 0, 0, 0, 0, 0, 0, 1./8};
+
+  auto indexer_representations = inst.MakeIndexerRepresentations();
+  EigenVectorXd grad_log_q = inst.GradientOfLogQ(indexer_representations.at(0));
+  EigenVectorXd realized_grad_rootsplit = grad_log_q.segment(0, 8);
+  // Sort them and compare against sorted version of realized_grad_rootsplit[0:7]
+  std::sort(realized_grad_rootsplit.begin(), realized_grad_rootsplit.end());
+  for (size_t i = 0; i < num_rootsplits; i++) {
+    CHECK_LT(fabs(realized_grad_rootsplit(i) - expected_grad_rootsplit.at(i)),
+             1e-9);
+  }
+
+  // Manual enumeration shows that the entries corresponding to PCSS should have
+  // 6 entries with -1/16 and 6 entries with 1/16 and the rest with 0's.
+  // For example, consider the tree with the following subsplits:
+  // 5|1234, 12|34, 1|2, 3|4.
+  // Note the subsplit s = 12|34 is one of two choices for
+  // the parent subsplit t = 5|1234,
+  // since 5|1234 can also be split into s' = 12|45 as well s = 12|34.
+  // Let \rho = 5|1234, the gradient for 12|34 is given by:
+  // (1/q(\tau)) P(\tau_{\rho}) * (1 - P(12|34 | 5|1234))
+  // = 2 * (1/16) * (1-0.5) = 1/16.
+  // The gradient for s' = 12|45 is,
+  // (1/q(\tau)) P(\tau_{\rho}) * -P(12|45 | 5|1234)
+  // = 2 * (1/16) * -0.5 = -1/16.
+  
+  // The gradient for the following PCSS are 1/16 by similar calculation as above.
+  // 4|125 | 3|1245
+  // 3|125 | 4|1235
+  // 12|34 | 5|1234
+  // 5|34  | 12|345
+  // 5|34  | 2|345
+  // 5|34  | 1|345
+  // And each of these have a subsplit s' that gets gradient of -1/16.
+  // Each of the other PCSS gradients are 0 either because its parent support
+  // never appears in the tree or it represents the only child subsplit.
+  EigenVectorXd expected_grad_pcss(num_pcss);
+  expected_grad_pcss.setZero();
+  expected_grad_pcss.segment(0, 6).setConstant(-1./16);
+  expected_grad_pcss.segment(num_pcss-6, 6).setConstant(1./16);
+  EigenVectorXd realized_grad_pcss = grad_log_q.tail(num_pcss);
+  std::sort(realized_grad_pcss.begin(), realized_grad_pcss.end());
+  for (size_t i = 0; i < num_pcss; i++) {
+    CHECK_LT(fabs(realized_grad_pcss(i) - expected_grad_pcss(i)), 1e-9);
+  }
+
+  // Consider the SBN defined by the following subsplits:
+  // 1|2345, 4|123, 3|12, 1|2.
+  // The PCSS s|t = (12|34) | (1|2345) corresponds to 00001|11110|00110.
+  // The PCSS s'|t = (4|123) | (1|2345) corresponds to 00001|11110|00010.
+  // Look up these entries in the indexer:
+  Bitset s("000011111000110");
+  Bitset s_prime("000011111000010");
+  size_t s_idx = inst.indexer_.at(s);
+  size_t s_prime_idx = inst.indexer_.at(s_prime);
+
+  // Reset sbn_parameters to 0.
+  inst.sbn_parameters_.setZero();
+  // Set sbn_paremeters for s_idx and s_prime_idx to 1, -1 respectively.
+  inst.sbn_parameters_(s_idx) = 1;
+  inst.sbn_parameters_(s_prime_idx) = -1;
+  // Normalize sbn_parameters_ in preparation for calling GradientOfLogQ().
+  inst.NormalizeSBNParametersInLog();
+  
+  // This changes q(\tau) as well as P(\tau_{\rho}) for \rho = 1|2345.
+  // First, P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) + exp(-1)) = 0.1100996.
+  double p_tau_rho = (1./8) * exp(inst.sbn_parameters_[s_idx]);
+  // q(\tau), we will just compute using already tested function:
+  double q_tau = inst.CalculateSBNProbabilities()(0);
+  // The gradient for s|t is given by,
+  // (1/q(\tau)) x P(\tau_{\rho}) x (1 - P(s|t))
+  double expected_grad_at_s =
+      (1./q_tau) * p_tau_rho * (1 - exp(inst.sbn_parameters_[s_idx]));
+  // And the gradient for s'|t is given by,
+  // (1/q(\tau)) x P(\tau_{\rho}) x (1 - P(s|t))
+  double expected_grad_at_s_prime =
+      (1./q_tau) * p_tau_rho * -exp(inst.sbn_parameters_[s_prime_idx]);
+  grad_log_q = inst.GradientOfLogQ(indexer_representations.at(0));
+  CHECK_LT(fabs(expected_grad_at_s - grad_log_q(s_idx)), 1e-9);
+  CHECK_LT(fabs(expected_grad_at_s_prime - grad_log_q(s_prime_idx)), 1e-9);
+  
+  // Let's do a simple test for TopologyGradient()
+  K = 4;
+  inst.SampleTrees(K);
+
+  // Make up some numbers for log_f
+  EigenVectorXd log_f(K);
+  log_f << -83, -75, -80, -79;
+  // log_F = -74.97493
+  double log_F = NumericalUtils::LogSum(log_f);
+  double elbo = log_F - log(K);
+  // 0.0003271564 0.9752395946 0.0065711127 0.0178621362
+  EigenVectorXd tilde_w = (log_f.array() - log_F).exp();
+  // -76.36155 -77.33646 -76.36779 -76.37908
+  EigenVectorXd multiplicative_factors = (elbo - tilde_w.array());
+
+  EigenVectorXd expected_nabla(inst.sbn_parameters_.size());
+  expected_nabla.setZero();
+  // We now have some confidence in GradientOfLogQ(), so we just use it.
+  auto indexer_reps = inst.MakeIndexerRepresentations();
+  for (size_t k = 0; k < K; k++) {
+    grad_log_q = multiplicative_factors(k) *
+                  inst.GradientOfLogQ(indexer_reps.at(k)).array();
+    expected_nabla += grad_log_q;
+  }
+
+  // This isn't the most useful way to test the code since we are baically doing
+  // the same calculation as implemented in TopologyGradients().
+  // But if the implementation of TopologyGradients() on any of the internal
+  // computation were to change, this test would catch any potential mistake.
+  EigenVectorXd realized_nabla = inst.TopologyGradients(log_f);
+  double diff = fabs((expected_nabla - realized_nabla).sum());
+  CHECK_LT(diff , 1e-6);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_

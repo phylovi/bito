@@ -319,34 +319,81 @@ std::vector<std::pair<double, std::vector<double>>> SBNInstance::BranchGradients
                                       rescaling_);
 }
 
-std::vector<std::pair<size_t,size_t>> GetSubplitRanges(
-    const BitsetVector &rootsplits, const BitsetSizePairMap &parent_to_range,
-    const SizeVector &rooted_representation, SizeBitsetMap &index_to_child) {
+// Retrieves range of subsplits for each s|t that appears in the tree
+// given by rooted_representation.
+std::vector<std::pair<size_t,size_t>> SBNInstance::GetSubplitRanges(
+    const SizeVector &rooted_representation) {
   std::vector<std::pair<size_t, size_t>> subsplits;
-  subsplits.push_back(std::make_pair(0, rootsplits.size()));
-  Bitset root = rootsplits.at(rooted_representation[0]);
+  subsplits.push_back(std::make_pair(0, rootsplits_.size()));
+  Bitset root = rootsplits_.at(rooted_representation[0]);
   // add child subsplit ranges
-  if (parent_to_range.count(root + ~root) > 0) {
-    const auto &parent_range = parent_to_range.at(root + ~root);
+  if (parent_to_range_.count(root + ~root) > 0) {
+    const auto &parent_range = parent_to_range_.at(root + ~root);
     subsplits.push_back(parent_range);
   }
-  if (parent_to_range.count(~root + root) > 0) {
-    const auto &parent_range = parent_to_range.at(~root + root);
+  if (parent_to_range_.count(~root + root) > 0) {
+    const auto &parent_range = parent_to_range_.at(~root + root);
     subsplits.push_back(parent_range);
   }
   for (size_t i = 1; i < rooted_representation.size(); i++) {
     size_t idx = rooted_representation[i];
-    Bitset parent = index_to_child.at(idx);
-    if (parent_to_range.count(parent) > 0) {
-      const auto &parent_range = parent_to_range.at(parent);
+    Bitset parent = index_to_child_.at(idx);
+    if (parent_to_range_.count(parent) > 0) {
+      const auto &parent_range = parent_to_range_.at(parent);
       subsplits.push_back(parent_range);
     }
-    if (parent_to_range.count(parent.RotateSubsplit()) > 0) {
-      const auto &parent_range = parent_to_range.at(parent.RotateSubsplit());
+    if (parent_to_range_.count(parent.RotateSubsplit()) > 0) {
+      const auto &parent_range = parent_to_range_.at(parent.RotateSubsplit());
       subsplits.push_back(parent_range);
     }
   }
   return subsplits;
+}
+
+EigenVectorXd CalculateMultiplicativeFactor(const EigenVectorXdRef log_f) {
+  size_t num_trees = log_f.size();
+  double log_F = NumericalUtils::LogSum(log_f);
+  double hat_L = log_F - log(num_trees);
+  EigenVectorXd tilde_w = log_f.array() - log_F;
+  tilde_w = tilde_w.array().exp();
+  EigenVectorXd multiplicative_factor = hat_L - tilde_w.array();
+  return multiplicative_factor;
+}
+
+EigenVectorXd SBNInstance::GradientOfLogQ(
+                          const IndexerRepresentation &indexer_representation) {
+  EigenVectorXd grad_log_q(sbn_parameters_.size());
+  grad_log_q.setZero();
+  double log_q = DOUBLE_NEG_INF;
+  double log_probability_rooted_tree;
+  for (const auto &rooted_representation : indexer_representation) {
+    log_probability_rooted_tree = SBNProbability::SumOf(sbn_parameters_,
+      rooted_representation, 0.0);
+    // We need to look up the subsplits in the tree. Set representation allows
+    // fast lookup.
+    std::unordered_set<size_t> rooted_representation_as_set(
+      rooted_representation.begin(), rooted_representation.end());
+    // Get all subsplit ranges.
+    auto subsplit_ranges = GetSubplitRanges(rooted_representation);
+      //GetSubplitRanges(rootsplits_, parent_to_range_, rooted_representation,
+      //                 index_to_child_);
+
+    // Now, we update the gradients
+    for (const auto &[begin, end] : subsplit_ranges) {
+      for (size_t idx = begin; idx < end; idx++) {
+        if (rooted_representation_as_set.count(idx) > 0) {
+          grad_log_q[idx] += exp(log_probability_rooted_tree) *
+                                (1 - exp(sbn_parameters_[idx]));
+        } else {
+          grad_log_q[idx] += -exp(log_probability_rooted_tree) *
+                                 exp(sbn_parameters_[idx]);
+        }
+      }
+    }
+    log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
+  }
+  grad_log_q = grad_log_q.array() * exp(-log_q);
+  return grad_log_q;
 }
 
 EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f) {
@@ -357,54 +404,25 @@ EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f) {
   EigenVectorXd gradient_vector(sbn_parameters_.size());
   gradient_vector.setZero();
 
-  double log_F = NumericalUtils::LogSum(log_f);
-  double hat_L = log_F - log(num_trees);
-  EigenVectorXd tilde_w = log_f.array() - log_F;
+  EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactor(log_f);
 
-  // Normalize the sbn parameters -- note that it doesn't
+  // Normalize the sbn parameters -- note that it doesn't quite
   // convert sbn_parameters_ to probabiility space.
-  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters_,
-    rootsplits_.size(), parent_to_range_);
+  NormalizeSBNParametersInLog();
   for (size_t i = 0; i < num_trees; i++) {
-    double multiplicative_factor = hat_L - tilde_w(i);
-    EigenVectorXd temp_grad(sbn_parameters_.size());
-    temp_grad.setZero();
-
+    double multiplicative_factor = multiplicative_factors(i);
     const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
       indexer_, tree_collection_.GetTree(i).Topology(), OUT_OF_SAMPLE_IDX);
-    double log_q = DOUBLE_NEG_INF;
-    double log_probability_rooted_tree;
-    for (const auto &rooted_representation : indexer_representation) {
-      log_probability_rooted_tree = SBNProbability::SumOf(sbn_parameters_,
-        rooted_representation, 0.0);
-      // We need to look up the subsplit in the tree below to compute gradient.
-      std::unordered_set<size_t> rooted_representation_as_set(
-        rooted_representation.begin(), rooted_representation.end());
-      // Get all subsplit range.
-      std::vector<std::pair<size_t, size_t>> subsplits =
-        GetSubplitRanges(rootsplits_, parent_to_range_, rooted_representation,
-                         index_to_child_);
-
-      // Now, we update the gradients
-      for (const auto &[begin, end] : subsplits) {
-        for (size_t idx = begin; idx < end; idx++) {
-          if (rooted_representation_as_set.count(idx) > 0) {
-            temp_grad[idx] += exp(log_probability_rooted_tree
-                                  + log(1 - exp(sbn_parameters_[idx])));
-            // Add the subsplit to the range
-          } else {
-            temp_grad[idx] += -exp(log_probability_rooted_tree
-                                   + sbn_parameters_[idx]);
-          }
-        }
-      }
-
-      log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
-    }
-    temp_grad = temp_grad.array() * exp(-log_q) * multiplicative_factor;
-    gradient_vector = gradient_vector + temp_grad;
+    EigenVectorXd log_grad_q = GradientOfLogQ(indexer_representation);
+    log_grad_q = log_grad_q.array() * multiplicative_factor;
+    gradient_vector = gradient_vector + log_grad_q;
   }
   return gradient_vector;
+}
+
+void SBNInstance::NormalizeSBNParametersInLog() {
+  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters_,
+    rootsplits_.size(), parent_to_range_);
 }
 
 // Here we initialize our static random number generator.
