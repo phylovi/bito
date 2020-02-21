@@ -442,7 +442,7 @@ TEST_CASE("libsbn") {
   size_t num_rootsplits = 8;
   // Manual enumeration shows that there are 31 PCSS's.
   size_t num_pcss = inst.sbn_parameters_.size() - num_rootsplits;
-  
+
   // Set seed so that the test will always produce the same output.
   size_t seed = 10;
   inst.SetSeed(seed);
@@ -451,7 +451,7 @@ TEST_CASE("libsbn") {
   inst.SampleTrees(K);
   // With seed set to 10, the tree that we sample is
   // \tau = ((1,2),(3,4),5).
-  
+
   // Initialize sbn_parameters to 0's and normalize.
   // Since the sbn_parameters are 0, each of the rootsplits \rho has
   // P(\rho) = 1/8.
@@ -487,7 +487,8 @@ TEST_CASE("libsbn") {
   auto indexer_representations = inst.MakeIndexerRepresentations();
   EigenVectorXd grad_log_q = inst.GradientOfLogQ(indexer_representations.at(0));
   EigenVectorXd realized_grad_rootsplit = grad_log_q.segment(0, 8);
-  // Sort them and compare against sorted version of realized_grad_rootsplit[0:7]
+  // Sort them and compare against sorted version of
+  // realized_grad_rootsplit[0:7].
   std::sort(realized_grad_rootsplit.begin(), realized_grad_rootsplit.end());
   for (size_t i = 0; i < num_rootsplits; i++) {
     CHECK_LT(fabs(realized_grad_rootsplit(i) - expected_grad_rootsplit.at(i)),
@@ -507,8 +508,8 @@ TEST_CASE("libsbn") {
   // The gradient for s' = 12|45 is,
   // (1/q(\tau)) P(\tau_{\rho}) * -P(12|45 | 5|1234)
   // = 2 * (1/16) * -0.5 = -1/16.
-  
-  // The gradient for the following PCSS are 1/16 by similar calculation as above.
+
+  // The gradient for the following PCSS are 1/16 as above.
   // 4|125 | 3|1245
   // 3|125 | 4|1235
   // 12|34 | 5|1234
@@ -545,7 +546,7 @@ TEST_CASE("libsbn") {
   inst.sbn_parameters_(s_prime_idx) = -1;
   // Normalize sbn_parameters_ in preparation for calling GradientOfLogQ().
   inst.NormalizeSBNParametersInLog();
-  
+
   // This changes q(\tau) as well as P(\tau_{\rho}) for \rho = 1|2345.
   // First, P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) + exp(-1)) = 0.1100996.
   double p_tau_rho = (1./8) * exp(inst.sbn_parameters_[s_idx]);
@@ -562,7 +563,7 @@ TEST_CASE("libsbn") {
   grad_log_q = inst.GradientOfLogQ(indexer_representations.at(0));
   CHECK_LT(fabs(expected_grad_at_s - grad_log_q(s_idx)), 1e-9);
   CHECK_LT(fabs(expected_grad_at_s_prime - grad_log_q(s_prime_idx)), 1e-9);
-  
+
   // Let's do a simple test for TopologyGradient()
   K = 4;
   inst.SampleTrees(K);

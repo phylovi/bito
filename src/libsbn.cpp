@@ -321,7 +321,7 @@ std::vector<std::pair<double, std::vector<double>>> SBNInstance::BranchGradients
 
 // Retrieves range of subsplits for each s|t that appears in the tree
 // given by rooted_representation.
-std::vector<std::pair<size_t,size_t>> SBNInstance::GetSubplitRanges(
+std::vector<std::pair<size_t, size_t>> SBNInstance::GetSubplitRanges(
     const SizeVector &rooted_representation) {
   std::vector<std::pair<size_t, size_t>> subsplits;
   subsplits.push_back(std::make_pair(0, rootsplits_.size()));
@@ -375,7 +375,7 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
       rooted_representation.begin(), rooted_representation.end());
     // Get all subsplit ranges.
     auto subsplit_ranges = GetSubplitRanges(rooted_representation);
-      //GetSubplitRanges(rootsplits_, parent_to_range_, rooted_representation,
+      // GetSubplitRanges(rootsplits_, parent_to_range_, rooted_representation,
       //                 index_to_child_);
 
     // Now, we update the gradients
