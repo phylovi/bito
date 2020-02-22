@@ -366,8 +366,7 @@ EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
 // See eq:gradLogQ in the tex.
 EigenVectorXd SBNInstance::GradientOfLogQ(
                           const IndexerRepresentation &indexer_representation) {
-  EigenVectorXd grad_log_q(sbn_parameters_.size());
-  grad_log_q.setZero();
+  EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters_.size());
   double log_q = DOUBLE_NEG_INF;
   for (const auto &rooted_representation : indexer_representation) {
     double log_probability_rooted_tree =
@@ -401,8 +400,7 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
 EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f) {
   size_t num_trees = tree_collection_.Trees().size();
 
-  EigenVectorXd gradient_vector(sbn_parameters_.size());
-  gradient_vector.setZero();
+  EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters_.size());
 
   EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
 
