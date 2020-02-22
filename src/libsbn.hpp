@@ -452,15 +452,14 @@ TEST_CASE("libsbn") {
   // Manual enumeration shows that there are 31 PCSS's.
   size_t num_pcss = inst.sbn_parameters_.size() - num_rootsplits;
 
-  // Set seed so that the test will always produce the same output.
-  size_t seed = 10;
-  inst.SetSeed(seed);
-  // Sample K = 1 tree.
+  // Test for K = 1 tree.
   size_t K = 1;
-  inst.SampleTrees(K);
-  // With seed set to 10, the tree that we sample is
-  // \tau = ((1,2),(3,4),5).
-  std::cout << inst.tree_collection_.GetTree(0).Newick() << std::endl;
+  inst.tree_collection_.trees_.clear();
+  // Generate a tree,
+  // \tau = ((0,1),(2,3),4) with internal node labels, ((0,1)5,(2,3)6,4)7
+  std::vector<size_t> tau_indices = {5, 5, 6, 6, 7, 7, 7};
+  auto tau = Tree::OfParentIdVector(tau_indices);
+  inst.tree_collection_.trees_.emplace_back(tau);
 
   // Initialize sbn_parameters to 0's and normalize.
   // Since the sbn_parameters are 0, each of the rootsplits \rho has
