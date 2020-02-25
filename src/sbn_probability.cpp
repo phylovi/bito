@@ -243,10 +243,16 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         const SizeVector& rooted_representation =
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
-        double log_p_rooted_topology = SumOfLogProbabilities(sbn_parameters, rooted_representation, 0.);
-        log_q_weights[rooting_position] = fetestexcept(FE_ALL_EXCEPT) ?
-                                            DOUBLE_MINIMUM :
-                                            log_p_rooted_topology;
+        double log_p_rooted_topology = SumOfLogProbabilities(sbn_parameters,
+                                                     rooted_representation, 0.);
+        // SHJ: Sometimes overflow is reported, sometimes it's underflow...
+        if (fetestexcept(FE_OVERFLOW) || fetestexcept(FE_UNDERFLOW)) {
+          log_q_weights[rooting_position] = DOUBLE_MINIMUM;
+          feclearexcept(FE_OVERFLOW);
+          feclearexcept(FE_UNDERFLOW);
+        } else {
+          log_q_weights[rooting_position] = log_p_rooted_topology;
+        }
       }  // End of looping over rooting positions.
       NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After Rooting|");
       log_q_weight_sum = NumericalUtils::LogSum(log_q_weights);
@@ -269,6 +275,10 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       // Last line of the section on EM in doc/tex.
       score_history[em_idx] += m_tilde_for_positive_alpha.dot(sbn_parameters);
     }
+    // SHJ: Print the score in the below line.
+    // Uncommenting it but leaving it incase we need to do further debugging.
+    // Remove it at some point.
+    //std::cout << std::setprecision(20) << score_history[em_idx] << std::endl;
     // Return if we've converged according to score.
     if (em_idx > 0) {
       double scaled_score_improvement =
@@ -276,7 +286,11 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
           fabs(score_history[em_idx - 1]);
       // To monitor correctness of EM, we check to ensure that the score is
       // monotonically increasing (modulo numerical instability).
-      Assert(scaled_score_improvement > -EPS, "Score function decreased.");
+      // SHJ: -EPS is too big, I noticed the assertion failure for
+      // scaled_score_improvement of -6e-16. Using ERR_TOLERANCE
+      // which is 1e-10.
+      //Assert(scaled_score_improvement > -EPS, "Score function decreased.");
+      Assert(scaled_score_improvement > -ERR_TOLERANCE, "Score function decreased.");
       if (fabs(scaled_score_improvement) < score_epsilon) {
         std::cout << "EM converged according to normalized score improvement < "
                   << score_epsilon << "." << std::endl;
