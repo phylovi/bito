@@ -5,7 +5,8 @@
 #define SRC_NUMERICAL_UTILS_HPP_
 
 #include <fenv.h>
-#include <limits.h>
+#include <limits>
+#include <string>
 
 #include "eigen_sugar.hpp"
 #include "sugar.hpp"
@@ -18,6 +19,10 @@ inline double LOG_EPS = log(EPS);
 // DOUBLE_MINIMUM defines de facto minimum value for double to deal with
 // potential overflow resulting from summing of large number of log
 // probabilities.
+// Note: using std::numeric_limits<double>::lowest() may result in numerical
+// instability, especially if other operations are to be performed using it.
+// This is why we are using a value that is slightly larger to denote
+// the lowest double value that we will consider.
 inline double DOUBLE_MINIMUM = std::numeric_limits<double>::lowest()*1e-10;
 
 namespace NumericalUtils {

@@ -6,6 +6,8 @@
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#include <utility>
+#include <vector>
 #include "ProgressBar.hpp"
 #include "numerical_utils.hpp"
 #include "sbn_maps.hpp"
@@ -101,9 +103,6 @@ double SumOfLogProbabilities(const EigenConstVectorXdRef vec, const SizeVector& 
   double result = starting_value;
   for (const auto& idx : indices) {
     result += vec[idx];
-    if (result < DOUBLE_MINIMUM) {
-      return DOUBLE_MINIMUM;
-    }
   }
   return result;
 }
@@ -245,7 +244,9 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
         double log_p_rooted_topology = SumOfLogProbabilities(sbn_parameters, rooted_representation, 0.);
-        log_q_weights[rooting_position] = log_p_rooted_topology;
+        log_q_weights[rooting_position] = fetestexcept(FE_ALL_EXCEPT) ?
+                                            DOUBLE_MINIMUM :
+                                            log_p_rooted_topology;
       }  // End of looping over rooting positions.
       NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After Rooting|");
       log_q_weight_sum = NumericalUtils::LogSum(log_q_weights);
@@ -301,8 +302,9 @@ double SBNProbability::ProbabilityOf(
   double log_total_probability = DOUBLE_NEG_INF;
   for (const auto& rooted_representation : indexer_representation) {
     log_total_probability = NumericalUtils::LogAdd(
-        log_total_probability, SumOfLogProbabilities(sbn_parameters, rooted_representation, 0.));
-  };
+        log_total_probability,
+         SumOfLogProbabilities(sbn_parameters, rooted_representation, 0.));
+  }
   return exp(log_total_probability);
 }
 
