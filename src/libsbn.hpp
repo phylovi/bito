@@ -476,12 +476,13 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // There are 7 possible rootings of \tau.
   // For example consider the rooting that yields the following subsplits:
   // %EM Hm, these are 1-indexed, I think?
-  // 34|125, 3|4, 5|12, 1|2.
+  // %SHJ Fixed.
+  // 23|014, 2|3, 4|01, 0|1.
   // Each of the child subsplits are the only possible subsplit,
   // except for the root where it has probability 1/8. Hence, the probability
   // for this tree is 1/8 x 1 x 1 x 1 = 1/8.
   // Now, consider the rooting with the following subsplits:
-  // 1|2345, 2|345, 5|34, 3|4.
+  // 0|1234, 1|234, 4|23, 2|3.
   // The probability for this tree is 1/8 x 1 x 1/2 x 1 = 1/16.
   //
   // Each of the remaining 5 trees has the same probability:
@@ -489,8 +490,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Hence, q(\tau) = 6 x 1/16 + 1 x 1/8 = 8/16 = 0.5.
   // Note that there are a total 8 rootsplits; 7 are possible rootsplits of
   // the sampled tree \tau but one rootsplit,
-  // 125|34 is not observed rooting of \tau and hence,
-  // the gradient for 125|34 is simply -P(125|34) = -1/8.
+  // 014|23 is not observed rooting of \tau and hence,
+  // the gradient for 014|23 is simply -P(014|23) = -1/8.
   //
   // The gradient with respect to each of the 7 rootsplits is given by,
   // P(\tau_{\rho})/q(\tau) - P(\rho),
@@ -513,24 +514,24 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Manual enumeration shows that the entries corresponding to PCSS should have
   // 6 entries with -1/16 and 6 entries with 1/16 and the rest with 0's.
   // For example, consider the tree with the following subsplits:
-  // 5|1234, 12|34, 1|2, 3|4.
-  // Note the subsplit s = 12|34 is one of two choices for
-  // the parent subsplit t = 5|1234,
-  // since 5|1234 can also be split into s' = 12|45 as well s = 12|34.
-  // Let \rho = 5|1234, the gradient for 12|34 is given by:
-  // (1/q(\tau)) P(\tau_{\rho}) * (1 - P(12|34 | 5|1234))
+  // 4|0123, 01|23, 0|1, 2|3.
+  // Note the subsplit s = 01|23 is one of two choices for
+  // the parent subsplit t = 4|0123,
+  // since 4|0123 can also be split into s' = 01|34 as well s = 01|23.
+  // Let \rho = 4|0123, the gradient for 01|23 is given by:
+  // (1/q(\tau)) P(\tau_{\rho}) * (1 - P(01|23 | 4|0123))
   // = 2 * (1/16) * (1-0.5) = 1/16.
-  // The gradient for s' = 12|45 is,
-  // (1/q(\tau)) P(\tau_{\rho}) * -P(12|45 | 5|1234)
+  // The gradient for s' = 01|34 is,
+  // (1/q(\tau)) P(\tau_{\rho}) * -P(01|34 | 4|0123)
   // = 2 * (1/16) * -0.5 = -1/16.
 
   // The gradient for the following PCSS are 1/16 as above.
-  // 4|125 | 3|1245
-  // 3|125 | 4|1235
-  // 12|34 | 5|1234
-  // 5|34  | 12|345
-  // 5|34  | 2|345
-  // 5|34  | 1|345
+  // 3|014 | 2|0134
+  // 2|014 | 3|0124
+  // 01|23 | 4|0123
+  // 4|23  | 01|234
+  // 4|23  | 1|234
+  // 4|23  | 0|234
   // And each of these have a subsplit s' that gets gradient of -1/16.
   // Each of the other PCSS gradients are 0 either because its parent support
   // never appears in the tree or it represents the only child subsplit.
@@ -545,9 +546,9 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   }
 
   // Consider the SBN defined by the following subsplits:
-  // 1|2345, 4|123, 3|12, 1|2.
-  // The PCSS s|t = (12|34) | (1|2345) corresponds to 00001|11110|00110.
-  // The PCSS s'|t = (4|123) | (1|2345) corresponds to 00001|11110|00010.
+  // 0|1234, 3|012, 2|01, 0|1.
+  // The PCSS s|t = (01|23) | (0|1234) corresponds to 00001|11110|00110.
+  // The PCSS s'|t = (3|012) | (0|1234) corresponds to 00001|11110|00010.
   // Look up these entries in the indexer:
   Bitset s("000011111000110");
   Bitset s_prime("000011111000010");
@@ -562,7 +563,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Normalize sbn_parameters_ in preparation for calling GradientOfLogQ().
   inst.NormalizeSBNParametersInLog();
 
-  // This changes q(\tau) as well as P(\tau_{\rho}) for \rho = 1|2345.
+  // This changes q(\tau) as well as P(\tau_{\rho}) for \rho = 0|1234.
   // First, P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) + exp(-1)) = 0.1100996.
   double p_tau_rho = (1. / 8) * exp(inst.sbn_parameters_[s_idx]);
   // q(\tau), we will just compute using already tested function:
