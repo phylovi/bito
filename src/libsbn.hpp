@@ -138,7 +138,7 @@ class SBNInstance {
   // Assumption: This function is called from Python side
   // after the trees (both the topology and the branch lengths) are sampled.
   EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f);
-  // Computes gradient wrt \phi of log q_{\phi}(\tau).
+  // Computes gradient WRT \phi of log q_{\phi}(\tau).
   // IndexerRepresentation contains all rooting of \tau.
   // It assumes that sbn_gradients_ are normalized in log space.
   EigenVectorXd GradientOfLogQ(
@@ -442,16 +442,18 @@ TEST_CASE("libsbn: tree sampling") {
   }
 }
 
-TEST_CASE("libsbn: gradient of log q_{phi}(tau) wrt phi") {
+TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   SBNInstance inst("charlie");
   // File gradient_test.t contains two trees:
+  // %EM Wow, it's confusing to have 1-indexing for these trees and 0-indexing for tau.
   // ((1,2), 3, (4,5)) and
   // ((1,2), 5, (3,4)).
   inst.ReadNexusFile("data/gradient_test.t");
   inst.ProcessLoadedTrees();
 
-  // Hard code number of rootsplits found by manual enuemration.
+  // Hard code number of rootsplits found by manual enumeration.
   // SBNInstance doesn't and it has no need to make this value available.
+  // %EM I'm happy to make it available if desired.
   size_t num_rootsplits = 8;
   // Manual enumeration shows that there are 31 PCSS's.
   size_t num_pcss = inst.sbn_parameters_.size() - num_rootsplits;
@@ -460,21 +462,22 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) wrt phi") {
   size_t K = 1;
   inst.tree_collection_.trees_.clear();
   // Generate a tree,
-  // \tau = ((0,1),(2,3),4) with internal node labels, ((0,1)5,(2,3)6,4)7
+  // \tau = ((0,1),(2,3),4) with internal node labels ((0,1)5,(2,3)6,4)7.
+  // Note that tau is not one of the two trees loaded in above.
   std::vector<size_t> tau_indices = {5, 5, 6, 6, 7, 7, 7};
   auto tau = Tree::OfParentIdVector(tau_indices);
-  inst.tree_collection_.trees_.emplace_back(tau);
+  inst.tree_collection_.trees_.push_back(tau);
 
   // Initialize sbn_parameters to 0's and normalize.
-  // Since the sbn_parameters are 0, each of the rootsplits \rho has
-  // P(\rho) = 1/8.
+  // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
   inst.sbn_parameters_.setZero();
   inst.NormalizeSBNParametersInLog();
 
-  // There are 7 possible rooting of \tau.
+  // There are 7 possible rootings of \tau.
   // For example consider the rooting that yields the following subsplits:
+  // %EM Hm, these are 1-indexed, I think?
   // 34|125, 3|4, 5|12, 1|2.
-  // Each of the chid subsplits are the only possible subsplit,
+  // Each of the child subsplits are the only possible subsplit,
   // except for the root where it has probability 1/8. Hence, the probability
   // for this tree is 1/8 x 1 x 1 x 1 = 1/8.
   // Now, consider the rooting with the following subsplits:
