@@ -446,8 +446,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   SBNInstance inst("charlie");
   // File gradient_test.t contains two trees:
   // %EM Wow, it's confusing to have 1-indexing for these trees and 0-indexing for tau.
-  // ((1,2), 3, (4,5)) and
-  // ((1,2), 5, (3,4)).
+  // ((0,1), 2, (3,4)) and
+  // ((0,1), 4, (2,3)).
   inst.ReadNexusFile("data/gradient_test.t");
   inst.ProcessLoadedTrees();
 
