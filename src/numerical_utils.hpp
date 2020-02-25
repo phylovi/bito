@@ -15,6 +15,10 @@ constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
 // It turns out that log isn't constexpr for silly reasons, so we use inline instead.
 inline double LOG_EPS = log(EPS);
+// DOUBLE_MINIMUM defines de facto minimum value for double to deal with
+// potential overflow resulting from summing of large number of log
+// probabilities.
+inline double DOUBLE_MINIMUM = std::numeric_limits<double>::lowest()*1e-10;
 
 namespace NumericalUtils {
 

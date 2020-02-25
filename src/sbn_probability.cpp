@@ -94,11 +94,15 @@ double ProductOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
 }
 
 // Take the sum of the entries of vec in indices plus starting_value.
-double SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
+// The contents of vec is log of probabilities, i.e., they are negative values.
+double SumOfLogProbabilities(const EigenConstVectorXdRef vec, const SizeVector& indices,
              const double starting_value) {
   double result = starting_value;
   for (const auto& idx : indices) {
     result += vec[idx];
+    if (result < DOUBLE_MINIMUM) {
+      return DOUBLE_MINIMUM;
+    }
   }
   return result;
 }
@@ -211,8 +215,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
     m_tilde_for_positive_alpha = log_m_tilde.array().exp();
   }
   // The score is the Q^(n) defined on p.6 of the 2018 NeurIPS paper.
-  EigenVectorXd score_history(max_iter);
-  score_history.setZero();
+  EigenVectorXd score_history = EigenVectorXd::Zero(max_iter);
   // Do the specified number of EM loops.
   ProgressBar progress_bar(max_iter);
   for (size_t em_idx = 0; em_idx < max_iter; ++em_idx) {
@@ -228,16 +231,18 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
              "Indexer representation length is not constant.");
       // Loop over the various rooting positions of this topology.
       double log_q_weight_sum = DOUBLE_NEG_INF;
+      NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before Rooting|");
       for (size_t rooting_position = 0; rooting_position < edge_count;
            ++rooting_position) {
         const SizeVector& rooted_representation =
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
-        double log_p_rooted_topology = SumOf(sbn_parameters, rooted_representation, 0.);
-        log_q_weights[rooting_position] =
-            (log_p_rooted_topology > LOG_EPS) ? log_p_rooted_topology : LOG_EPS;
+        double log_p_rooted_topology = SumOfLogProbabilities(sbn_parameters, rooted_representation, 0.);
+        log_q_weights[rooting_position] = log_p_rooted_topology;
       }  // End of looping over rooting positions.
+      NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After Rooting|");
       log_q_weight_sum = NumericalUtils::LogSum(log_q_weights);
+
       score_history[em_idx] += topology_count * log_q_weight_sum;
       // Normalize q_weights to achieve the E-step of Algorithm 1.
       // For the increment step (M-step of Algorithm 1) we want a full topology
@@ -284,7 +289,7 @@ double SBNProbability::ProbabilityOf(
   double log_total_probability = DOUBLE_NEG_INF;
   for (const auto& rooted_representation : indexer_representation) {
     log_total_probability = NumericalUtils::LogAdd(
-        log_total_probability, SumOf(sbn_parameters, rooted_representation, 0.));
+        log_total_probability, SumOfLogProbabilities(sbn_parameters, rooted_representation, 0.));
   };
   return exp(log_total_probability);
 }
