@@ -97,8 +97,7 @@ double ProductOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
 }
 
 // Take the sum of the entries of vec in indices plus starting_value.
-// The contents of vec is log of probabilities, i.e., they are negative values.
-double SumOfLogProbabilities(const EigenConstVectorXdRef vec, const SizeVector& indices,
+double SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
              const double starting_value) {
   double result = starting_value;
   for (const auto& idx : indices) {
@@ -236,32 +235,28 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       // Loop over the various rooting positions of this topology, using log_q_weights
       // to store the probability of the tree in the various rootings (we will normalize
       // it later).
-      double log_q_weight_sum = DOUBLE_NEG_INF;
-      NumericalUtils::ReportFloatingPointEnvironmentExceptions("|Before Rooting|");
       for (size_t rooting_position = 0; rooting_position < edge_count;
            ++rooting_position) {
         const SizeVector& rooted_representation =
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
-        double log_p_rooted_topology = SumOfLogProbabilities(sbn_parameters,
+        double log_p_rooted_topology = SumOf(sbn_parameters,
                                                      rooted_representation, 0.);
         // SHJ: Sometimes overflow is reported, sometimes it's underflow...
-        if (fetestexcept(FE_OVERFLOW) || fetestexcept(FE_UNDERFLOW)) {
+        if (fetestexcept(FE_OVER_AND_UNDER_FLOW_EXCEPT)) {
           log_q_weights[rooting_position] = DOUBLE_MINIMUM;
-          feclearexcept(FE_OVERFLOW);
-          feclearexcept(FE_UNDERFLOW);
+          feclearexcept(FE_OVER_AND_UNDER_FLOW_EXCEPT);
         } else {
           log_q_weights[rooting_position] = log_p_rooted_topology;
         }
       }  // End of looping over rooting positions.
-      NumericalUtils::ReportFloatingPointEnvironmentExceptions("|After Rooting|");
-      log_q_weight_sum = NumericalUtils::LogSum(log_q_weights);
-      score_history[em_idx] += topology_count * log_q_weight_sum;
+      double log_p_unrooted_topology = NumericalUtils::LogSum(log_q_weights);
+      score_history[em_idx] += topology_count * log_p_unrooted_topology;
       // Normalize q_weights to achieve the E-step of Algorithm 1.
       // For the increment step (M-step of Algorithm 1) we want a full topology
       // count rather than just the unique count. So we multiply the q_weights by the
       // topology count (in log space, it becomes summation rather than multiplication).
-      log_q_weights = log_q_weights.array() + (-log_q_weight_sum + log(topology_count));
+      log_q_weights = log_q_weights.array() + (-log_p_unrooted_topology + log(topology_count));
       // Increment the SBN-parameters-to-be by the q-weighted counts.
       IncrementByInLog(log_m_bar, indexer_representation, log_q_weights);
     }  // End of looping over topologies.
@@ -275,10 +270,6 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       // Last line of the section on EM in doc/tex.
       score_history[em_idx] += m_tilde_for_positive_alpha.dot(sbn_parameters);
     }
-    // SHJ: Print the score in the below line.
-    // Uncommenting it but leaving it incase we need to do further debugging.
-    // Remove it at some point.
-    //std::cout << std::setprecision(20) << score_history[em_idx] << std::endl;
     // Return if we've converged according to score.
     if (em_idx > 0) {
       double scaled_score_improvement =
@@ -286,10 +277,8 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
           fabs(score_history[em_idx - 1]);
       // To monitor correctness of EM, we check to ensure that the score is
       // monotonically increasing (modulo numerical instability).
-      // SHJ: -EPS is too big, I noticed the assertion failure for
-      // scaled_score_improvement of -6e-16. Using ERR_TOLERANCE
-      // which is 1e-10.
-      //Assert(scaled_score_improvement > -EPS, "Score function decreased.");
+      // SHJ: -EPS is too small, I noticed the assertion failure for
+      // scaled_score_improvement of -6e-16. Using ERR_TOLERANCE.
       Assert(scaled_score_improvement > -ERR_TOLERANCE, "Score function decreased.");
       if (fabs(scaled_score_improvement) < score_epsilon) {
         std::cout << "EM converged according to normalized score improvement < "
@@ -313,7 +302,7 @@ double SBNProbability::ProbabilityOf(
   for (const auto& rooted_representation : indexer_representation) {
     log_total_probability = NumericalUtils::LogAdd(
         log_total_probability,
-         SumOfLogProbabilities(sbn_parameters, rooted_representation, 0.));
+         SumOf(sbn_parameters, rooted_representation, 0.));
   }
   return exp(log_total_probability);
 }

@@ -25,6 +25,9 @@ constexpr double ERR_TOLERANCE = 1e-10;
 // the lowest double value that we will consider.
 inline double DOUBLE_MINIMUM = std::numeric_limits<double>::lowest()*ERR_TOLERANCE;
 
+constexpr auto FE_OVER_AND_UNDER_FLOW_EXCEPT = FE_OVERFLOW | FE_UNDERFLOW;
+
+
 namespace NumericalUtils {
 
 // Return log(exp(x) + exp(y)).
