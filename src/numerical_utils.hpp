@@ -6,7 +6,6 @@
 
 #include <fenv.h>
 #include <limits>
-#include <string>
 
 #include "eigen_sugar.hpp"
 #include "sugar.hpp"
