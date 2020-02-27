@@ -11,12 +11,11 @@
 #include "node.hpp"
 #include "sugar.hpp"
 
-Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths) : topology_(topology) {
+Tree::Tree(const Node::NodePtr& topology, TagDoubleMap branch_lengths)
+    : topology_(topology) {
   auto tag_id_map = topology->Polish();
   branch_lengths_ = std::vector<double>(topology->Id() + 1);
-  for (const auto& iter : tag_id_map) {
-    auto& tag = iter.first;
-    auto& id = iter.second;
+  for (const auto& [tag, id] : tag_id_map) {
     auto search = branch_lengths.find(tag);
     if (search != branch_lengths.end()) {
       Assert(id < branch_lengths_.size(),
@@ -28,7 +27,8 @@ Tree::Tree(Node::NodePtr topology, TagDoubleMap branch_lengths) : topology_(topo
   }
 }
 
-Tree::Tree(Node::NodePtr topology, BranchLengthVector branch_lengths)
+// TODO should we move branch lengths in?
+Tree::Tree(const Node::NodePtr& topology, BranchLengthVector branch_lengths)
     : branch_lengths_(branch_lengths), topology_(topology) {
   Assert(topology->Id() + 1 == branch_lengths.size(),
          "Root id is too large relative to the branch_lengths size in "
