@@ -23,10 +23,9 @@ constexpr double ERR_TOLERANCE = 1e-10;
 // instability, especially if other operations are to be performed using it.
 // This is why we are using a value that is slightly larger to denote
 // the lowest double value that we will consider.
-inline double DOUBLE_MINIMUM = std::numeric_limits<double>::lowest()*ERR_TOLERANCE;
+inline double DOUBLE_MINIMUM = std::numeric_limits<double>::lowest() * ERR_TOLERANCE;
 
 constexpr auto FE_OVER_AND_UNDER_FLOW_EXCEPT = FE_OVERFLOW | FE_UNDERFLOW;
-
 
 namespace NumericalUtils {
 

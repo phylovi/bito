@@ -41,9 +41,9 @@ void FatBeagle::SetParameters(const EigenVectorXdRef param_vector) {
   UpdatePhyloModelInBeagle();
 }
 
-// Have a generic tree interface that has branch lengths and topology.
-double FatBeagle::LogLikelihood(const Tree &in_tree) const {
-  auto tree = PrepareTreeForLikelihood(in_tree);
+// We assume that the tree has been prepared for likelihood.
+// TODO more docs
+double FatBeagle::LogLikelihoodInternals(const Tree &tree) const {
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   BeagleOperationVector operations;
   beagleResetScaleFactors(beagle_instance_, 0);
@@ -62,6 +62,14 @@ double FatBeagle::LogLikelihood(const Tree &in_tree) const {
       ba.state_frequency_index_.data(), ba.cumulative_scale_index_.data(),
       ba.mysterious_count_, &log_like);
   return log_like;
+}
+
+double FatBeagle::LogLikelihood(const Tree &tree) const {
+  return LogLikelihoodInternals(PrepareTreeForLikelihood(tree));
+}
+
+double FatBeagle::LogLikelihood(const RootedTree &tree) const {
+  return LogLikelihoodInternals(tree);
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(

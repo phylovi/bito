@@ -10,4 +10,3 @@ RootedTreeCollection::RootedTreeCollection(const TreeCollection& trees)
     trees_.push_back(RootedTree(tree));
   }
 }
-
