@@ -10,6 +10,7 @@
 #include <vector>
 #include "beagle_accessories.hpp"
 #include "phylo_model.hpp"
+#include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
@@ -37,6 +38,7 @@ class FatBeagle {
   void SetRescaling(const bool rescaling) { rescaling_ = rescaling; }
 
   double LogLikelihood(const Tree &tree) const;
+  double LogLikelihood(const RootedTree &tree) const;
   // Compute first derivative of the log likelihood with respect to each branch
   // length, as a vector of first derivatives indexed by node id.
   std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;

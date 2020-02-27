@@ -41,11 +41,12 @@ void FatBeagle::SetParameters(const EigenVectorXdRef param_vector) {
   UpdatePhyloModelInBeagle();
 }
 
+// Have a generic tree interface that has branch lengths and topology.
 double FatBeagle::LogLikelihood(const Tree &in_tree) const {
-  beagleResetScaleFactors(beagle_instance_, 0);
   auto tree = PrepareTreeForLikelihood(in_tree);
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   BeagleOperationVector operations;
+  beagleResetScaleFactors(beagle_instance_, 0);
   tree.Topology()->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
