@@ -9,6 +9,7 @@
 
 class RootedTreeCollection {
  public:
+  RootedTreeCollection() = default;
   explicit RootedTreeCollection(const TreeCollection& trees);
 
   size_t TreeCount() const { return trees_.size(); }

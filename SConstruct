@@ -149,6 +149,7 @@ sources = [
     "_build/psp_indexer.cpp",
     "_build/rooted_tree.cpp",
     "_build/rooted_tree_collection.cpp",
+    "_build/rooted_sbn_instance.cpp",
     "_build/sbn_maps.cpp",
     "_build/sbn_probability.cpp",
     "_build/scanner.cpp",
