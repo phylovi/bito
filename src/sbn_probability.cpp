@@ -2,9 +2,12 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "sbn_probability.hpp"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <numeric>
+#include <utility>
+#include <vector>
 #include "ProgressBar.hpp"
 #include "numerical_utils.hpp"
 #include "sbn_maps.hpp"
@@ -237,20 +240,23 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         const SizeVector& rooted_representation =
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
-        double log_p_rooted_topology = SumOf(sbn_parameters, rooted_representation, 0.);
-        log_q_weights[rooting_position] =
-            (log_p_rooted_topology > LOG_EPS) ? log_p_rooted_topology : LOG_EPS;
+        double log_p_rooted_topology = SumOf(sbn_parameters,
+                                                     rooted_representation, 0.);
+        // SHJ: Sometimes overflow is reported, sometimes it's underflow...
+        if (fetestexcept(FE_OVER_AND_UNDER_FLOW_EXCEPT)) {
+          log_q_weights[rooting_position] = DOUBLE_MINIMUM;
+          feclearexcept(FE_OVER_AND_UNDER_FLOW_EXCEPT);
+        } else {
+          log_q_weights[rooting_position] = log_p_rooted_topology;
+        }
       }  // End of looping over rooting positions.
-      // This is the likelihood of the topology, marginalized over rooting position.
       double log_p_unrooted_topology = NumericalUtils::LogSum(log_q_weights);
-      // Increase the total log marginal likelihood by this topologies contribution.
       score_history[em_idx] += topology_count * log_p_unrooted_topology;
       // Normalize q_weights to achieve the E-step of Algorithm 1.
       // For the increment step (M-step of Algorithm 1) we want a full topology
       // count rather than just the unique count. So we multiply the q_weights by the
       // topology count (in log space, it becomes summation rather than multiplication).
-      log_q_weights =
-          log_q_weights.array() + (-log_p_unrooted_topology + log(topology_count));
+      log_q_weights = log_q_weights.array() + (-log_p_unrooted_topology + log(topology_count));
       // Increment the SBN-parameters-to-be by the q-weighted counts.
       IncrementByInLog(log_m_bar, indexer_representation, log_q_weights);
     }  // End of looping over topologies.
@@ -271,10 +277,13 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
           fabs(score_history[em_idx - 1]);
       // To monitor correctness of EM, we check to ensure that the score is
       // monotonically increasing (modulo numerical instability).
-      Assert(scaled_score_improvement > -EPS, "Score function decreased.");
+      // SHJ: -EPS is too small, I noticed the assertion failure for
+      // scaled_score_improvement of -6e-16. Using ERR_TOLERANCE.
+      Assert(scaled_score_improvement > -ERR_TOLERANCE, "Score function decreased.");
       if (fabs(scaled_score_improvement) < score_epsilon) {
         std::cout << "EM converged according to normalized score improvement < "
                   << score_epsilon << "." << std::endl;
+        score_history.resize(em_idx + 1);
         break;
       }
     }
@@ -292,8 +301,9 @@ double SBNProbability::ProbabilityOf(
   double log_total_probability = DOUBLE_NEG_INF;
   for (const auto& rooted_representation : indexer_representation) {
     log_total_probability = NumericalUtils::LogAdd(
-        log_total_probability, SumOf(sbn_parameters, rooted_representation, 0.));
-  };
+        log_total_probability,
+         SumOf(sbn_parameters, rooted_representation, 0.));
+  }
   return exp(log_total_probability);
 }
 

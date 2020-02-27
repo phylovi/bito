@@ -5,7 +5,7 @@
 #define SRC_NUMERICAL_UTILS_HPP_
 
 #include <fenv.h>
-#include <limits.h>
+#include <limits>
 
 #include "eigen_sugar.hpp"
 #include "sugar.hpp"
@@ -15,6 +15,18 @@ constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
 // It turns out that log isn't constexpr for silly reasons, so we use inline instead.
 inline double LOG_EPS = log(EPS);
+constexpr double ERR_TOLERANCE = 1e-10;
+// DOUBLE_MINIMUM defines de facto minimum value for double to deal with
+// potential overflow resulting from summing of large number of log
+// probabilities.
+// Note: using std::numeric_limits<double>::lowest() may result in numerical
+// instability, especially if other operations are to be performed using it.
+// This is why we are using a value that is slightly larger to denote
+// the lowest double value that we will consider.
+inline double DOUBLE_MINIMUM = std::numeric_limits<double>::lowest()*ERR_TOLERANCE;
+
+constexpr auto FE_OVER_AND_UNDER_FLOW_EXCEPT = FE_OVERFLOW | FE_UNDERFLOW;
+
 
 namespace NumericalUtils {
 
@@ -89,6 +101,13 @@ TEST_CASE("NumericalUtils") {
     sum += log_vec(i);
   }
   CHECK_LT(fabs(sum - 1), 1e-5);
+
+  // Here we use volatile to avoid GCC optimizing away the variable.
+  volatile double d = 4.;
+  d /= 0.;
+  auto fp_description = NumericalUtils::DescribeFloatingPointEnvironmentExceptions();
+  CHECK_EQ(*fp_description,
+           "The following floating point problems have been encountered: FE_DIVBYZERO");
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
