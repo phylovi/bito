@@ -142,6 +142,12 @@ double FatBeagle::StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree
   return fat_beagle->LogLikelihood(in_tree);
 }
 
+double FatBeagle::StaticRootedLogLikelihood(FatBeagle *fat_beagle,
+                                            const RootedTree &in_tree) {
+  Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");
+  return fat_beagle->LogLikelihood(in_tree);
+}
+
 std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
     FatBeagle *fat_beagle, const Tree &in_tree) {
   Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");

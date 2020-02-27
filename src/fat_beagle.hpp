@@ -45,6 +45,8 @@ class FatBeagle {
 
   // We can pass these static methods to FatBeagleParallelize.
   static double StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree);
+  static double StaticRootedLogLikelihood(FatBeagle *fat_beagle,
+                                          const RootedTree &in_tree);
   static std::pair<double, std::vector<double>> StaticBranchGradient(
       FatBeagle *fat_beagle, const Tree &in_tree);
 
@@ -85,9 +87,9 @@ class FatBeagle {
       int sister_id);
 };
 
-template <typename TOut, typename TTreeCollection>
+template <typename TOut, typename TTree, typename TTreeCollection>
 std::vector<TOut> FatBeagleParallelize(
-    std::function<TOut(FatBeagle *, const Tree &)> f,
+    std::function<TOut(FatBeagle *, const TTree &)> f,
     const std::vector<std::unique_ptr<FatBeagle>> &fat_beagles,
     const TTreeCollection &tree_collection, EigenMatrixXdRef param_matrix,
     const bool rescaling) {

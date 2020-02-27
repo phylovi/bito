@@ -52,25 +52,26 @@ const BlockSpecification &Engine::GetPhyloModelBlockSpecification() const {
 std::vector<double> Engine::LogLikelihoods(const TreeCollection &tree_collection,
                                            const EigenMatrixXdRef phylo_model_params,
                                            const bool rescaling) const {
-  return FatBeagleParallelize<double, TreeCollection>(FatBeagle::StaticLogLikelihood,
-                                                      fat_beagles_, tree_collection,
-                                                      phylo_model_params, rescaling);
+  return FatBeagleParallelize<double, Tree, TreeCollection>(
+      FatBeagle::StaticLogLikelihood, fat_beagles_, tree_collection, phylo_model_params,
+      rescaling);
 }
 
 std::vector<double> Engine::LogLikelihoods(const RootedTreeCollection &tree_collection,
                                            const EigenMatrixXdRef phylo_model_params,
                                            const bool rescaling) const {
-  return FatBeagleParallelize<double, RootedTreeCollection>(
-      FatBeagle::StaticLogLikelihood, fat_beagles_, tree_collection, phylo_model_params,
-      rescaling);
+  return FatBeagleParallelize<double, RootedTree, RootedTreeCollection>(
+      FatBeagle::StaticRootedLogLikelihood, fat_beagles_, tree_collection,
+      phylo_model_params, rescaling);
 }
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
     const TreeCollection &tree_collection, const EigenMatrixXdRef phylo_model_params,
     const bool rescaling) const {
-  return FatBeagleParallelize<std::pair<double, std::vector<double>>, TreeCollection>(
-      FatBeagle::StaticBranchGradient, fat_beagles_, tree_collection,
-      phylo_model_params, rescaling);
+  return FatBeagleParallelize<std::pair<double, std::vector<double>>, Tree,
+                              TreeCollection>(FatBeagle::StaticBranchGradient,
+                                              fat_beagles_, tree_collection,
+                                              phylo_model_params, rescaling);
 }
 
 const FatBeagle *const Engine::GetFirstFatBeagle() const {
