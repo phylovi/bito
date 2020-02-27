@@ -85,16 +85,16 @@ class FatBeagle {
       int sister_id);
 };
 
-template <typename T>
-std::vector<T> FatBeagleParallelize(
-    std::function<T(FatBeagle *, const Tree &)> f,
+template <typename TOut, typename TTreeCollection>
+std::vector<TOut> FatBeagleParallelize(
+    std::function<TOut(FatBeagle *, const Tree &)> f,
     const std::vector<std::unique_ptr<FatBeagle>> &fat_beagles,
-    const TreeCollection &tree_collection, EigenMatrixXdRef param_matrix,
+    const TTreeCollection &tree_collection, EigenMatrixXdRef param_matrix,
     const bool rescaling) {
   if (fat_beagles.empty()) {
     Failwith("Please add some FatBeagles that can be used for computation.");
   }
-  std::vector<T> results(tree_collection.TreeCount());
+  std::vector<TOut> results(tree_collection.TreeCount());
   std::queue<FatBeagle *> fat_beagle_queue;
   for (const auto &fat_beagle : fat_beagles) {
     Assert(fat_beagle != nullptr, "Got a fat_beagle nullptr!");

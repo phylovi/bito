@@ -31,6 +31,9 @@ class Engine {
   std::vector<double> LogLikelihoods(const TreeCollection &tree_collection,
                                      const EigenMatrixXdRef phylo_model_params,
                                      const bool rescaling) const;
+  std::vector<double> LogLikelihoods(const RootedTreeCollection &tree_collection,
+                                     const EigenMatrixXdRef phylo_model_params,
+                                     const bool rescaling) const;
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
       const TreeCollection &tree_collection, const EigenMatrixXdRef phylo_model_params,
       const bool rescaling) const;
