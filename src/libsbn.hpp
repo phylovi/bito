@@ -452,15 +452,12 @@ TEST_CASE("libsbn: tree sampling") {
 TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   SBNInstance inst("charlie");
   // File gradient_test.t contains two trees:
-  // %EM Wow, it's confusing to have 1-indexing for these trees and 0-indexing for tau.
   // ((0,1), 2, (3,4)) and
-  // ((0,1), 4, (2,3)).
+  // ((0,1), (2,3), 4).
   inst.ReadNexusFile("data/gradient_test.t");
   inst.ProcessLoadedTrees();
 
-  // Hard code number of rootsplits found by manual enumeration.
-  // SBNInstance doesn't and it has no need to make this value available.
-  // %EM I'm happy to make it available if desired.
+  // The number of rootsplits across all of the input trees.
   size_t num_rootsplits = 8;
   // Manual enumeration shows that there are 31 PCSS's.
   size_t num_pcss = inst.sbn_parameters_.size() - num_rootsplits;
@@ -470,30 +467,31 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   inst.tree_collection_.trees_.clear();
   // Generate a tree,
   // \tau = ((0,1),(2,3),4) with internal node labels ((0,1)5,(2,3)6,4)7.
-  // Note that tau is not one of the two trees loaded in above.
   std::vector<size_t> tau_indices = {5, 5, 6, 6, 7, 7, 7};
   auto tau = Tree::OfParentIdVector(tau_indices);
   inst.tree_collection_.trees_.push_back(tau);
 
   // Initialize sbn_parameters to 0's and normalize.
-  // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
   inst.sbn_parameters_.setZero();
   inst.NormalizeSBNParametersInLog();
+  // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
 
+  // We're going to start by computing the XXX TODO erick
   // There are 7 possible rootings of \tau.
-  // For example consider the rooting that yields the following subsplits:
-  // %EM Hm, these are 1-indexed, I think?
-  // %SHJ Fixed.
+  // For example consider rooting on the 23|014 split, yielding the following subsplits:
   // 23|014, 2|3, 4|01, 0|1.
   // Each of the child subsplits are the only possible subsplit,
   // except for the root where it has probability 1/8. Hence, the probability
   // for this tree is 1/8 x 1 x 1 x 1 = 1/8.
-  // Now, consider the rooting with the following subsplits:
+  // Now, consider rooting on the 0|1234 split, yielding the following subsplits:
   // 0|1234, 1|234, 4|23, 2|3.
   // The probability for this tree is 1/8 x 1 x 1/2 x 1 = 1/16.
   //
   // Each of the remaining 5 trees has the same probability:
-  // 1/8 for the rootsplit and 1/2 for one of the child subplit.
+  // 1/8 for the rootsplit and 1/2 for one of the child subplits.
+  // One can see this because the only way for there not to be ambiguity in the
+  // resolution of the splitting of 234 is for one to take 23|014 as the rootsplit.
+  //
   // Hence, q(\tau) = 6 x 1/16 + 1 x 1/8 = 8/16 = 0.5.
   // Note that there are a total 8 rootsplits; 7 are possible rootsplits of
   // the sampled tree \tau but one rootsplit,
