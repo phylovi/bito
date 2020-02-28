@@ -129,8 +129,8 @@ class GenericTreeCollection {
     for (size_t index = 0; index < taxon_labels.size(); index++) {
       SafeInsert(taxon_map, PackInts(static_cast<uint32_t>(index), 1),
                  taxon_labels[index]);
-      }
-      return taxon_map;
+    }
+    return taxon_map;
   }
 
   TTreeVector trees_;

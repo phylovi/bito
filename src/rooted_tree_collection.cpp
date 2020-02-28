@@ -10,8 +10,7 @@ RootedTreeCollection RootedTreeCollection::OfTreeCollection(
   for (const auto& tree : trees.Trees()) {
     rooted_trees.push_back(RootedTree(tree));
   }
-  return RootedTreeCollection(std::move(rooted_trees),
-                              trees.TagTaxonMap());
+  return RootedTreeCollection(std::move(rooted_trees), trees.TagTaxonMap());
 }
 
 // void SBNInstance::ParseDates() {
@@ -57,4 +56,3 @@ RootedTreeCollection RootedTreeCollection::OfTreeCollection(
 //   }
 //   tree_collection_.SetTaxonDateMap(taxon_date_map);
 // }
-
