@@ -3,12 +3,16 @@
 
 #include "rooted_tree_collection.hpp"
 
-RootedTreeCollection::RootedTreeCollection(const TreeCollection& trees)
-    : tag_taxon_map_(trees.TagTaxonMap()) {
-  trees_.reserve(trees.TreeCount());
+RootedTreeCollection RootedTreeCollection::OfTreeCollection(
+    const TreeCollection& trees) {
+  TTreeVector rooted_trees;
+  // std::vector<RootedTree> rooted_trees;
+  rooted_trees.reserve(trees.TreeCount());
   for (const auto& tree : trees.Trees()) {
-    trees_.push_back(RootedTree(tree));
+    rooted_trees.push_back(RootedTree(tree));
   }
+  TagStringMap tag_taxon_map = trees.TagTaxonMap();
+  return RootedTreeCollection(rooted_trees, tag_taxon_map);
 }
 
 // void SBNInstance::ParseDates() {

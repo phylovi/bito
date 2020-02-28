@@ -4,22 +4,22 @@
 #ifndef SRC_ROOTED_TREE_COLLECTION_HPP_
 #define SRC_ROOTED_TREE_COLLECTION_HPP_
 
+#include "generic_tree_collection.hpp"
 #include "rooted_tree.hpp"
 #include "tree_collection.hpp"
 
-class RootedTreeCollection {
+template class GenericTreeCollection<RootedTree>;
+using PreRootedTreeCollection = GenericTreeCollection<RootedTree>;
+
+class RootedTreeCollection : public PreRootedTreeCollection {
  public:
-  RootedTreeCollection() = default;
+  // Inherit all constructors.
+  using PreRootedTreeCollection::PreRootedTreeCollection;
+
   // TODO add a parse_dates flag which populates the taxon_date_map_ variable.
-  explicit RootedTreeCollection(const TreeCollection& trees);
-
-  size_t TreeCount() const { return trees_.size(); }
-  const RootedTree& GetTree(size_t i) const { return trees_.at(i); }
-
-  RootedTree::RootedTreeVector trees_;
+  static RootedTreeCollection OfTreeCollection(const TreeCollection& trees);
 
  private:
-  TagStringMap tag_taxon_map_;
 
   // std::unordered_map<size_t, double> taxon_date_map_;
 };

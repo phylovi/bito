@@ -13,9 +13,9 @@
 
 template <typename TTree>
 class GenericTreeCollection {
-  using TTreeVector = std::vector<TTree>;
 
  public:
+  using TTreeVector = std::vector<TTree>;
   GenericTreeCollection() = default;
 
   explicit GenericTreeCollection(TTreeVector trees) : trees_(std::move(trees)) {
@@ -30,7 +30,7 @@ class GenericTreeCollection {
     }
   }
 
-  GenericTreeCollection(Tree::TreeVector trees, TagStringMap tag_taxon_map)
+  GenericTreeCollection(TTreeVector trees, TagStringMap tag_taxon_map)
       : trees_(std::move(trees)), tag_taxon_map_(std::move(tag_taxon_map)) {
     auto taxon_count = tag_taxon_map.size();
     auto different_taxon_count = [taxon_count](const auto &tree) {
@@ -43,13 +43,12 @@ class GenericTreeCollection {
     }
   }
 
-  GenericTreeCollection(Tree::TreeVector trees,
-                        const std::vector<std::string> &taxon_labels)
+  GenericTreeCollection(TTreeVector trees, const std::vector<std::string> &taxon_labels)
       : GenericTreeCollection(std::move(trees), TagStringMapOf(taxon_labels)) {}
 
   size_t TreeCount() const { return trees_.size(); }
-  const Tree::TreeVector &Trees() const { return trees_; }
-  const Tree &GetTree(size_t i) const { return trees_.at(i); }
+  const TTreeVector &Trees() const { return trees_; }
+  const TTree &GetTree(size_t i) const { return trees_.at(i); }
   const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
   size_t TaxonCount() const { return tag_taxon_map_.size(); }
 
@@ -74,7 +73,7 @@ class GenericTreeCollection {
       Failwith("Illegal arguments to Tree_Collection.Erase.");
     }
     // else:
-    using difference_type = Tree::TreeVector::difference_type;
+    using difference_type = typename TTreeVector::difference_type;
     trees_.erase(trees_.begin() + static_cast<difference_type>(begin_idx),
                  trees_.begin() + static_cast<difference_type>(end_idx));
   }
@@ -133,7 +132,7 @@ class GenericTreeCollection {
       return taxon_map;
   }
 
-  Tree::TreeVector trees_;
+  TTreeVector trees_;
 
  protected:
   TagStringMap tag_taxon_map_;

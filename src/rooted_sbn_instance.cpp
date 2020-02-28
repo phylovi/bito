@@ -4,7 +4,7 @@
 #include "rooted_sbn_instance.hpp"
 
 void RootedSBNInstance::UseCurrentTreesAsRooted() {
-  rooted_tree_collection_ = RootedTreeCollection(tree_collection_);
+  rooted_tree_collection_ = RootedTreeCollection::OfTreeCollection(tree_collection_);
 }
 
 std::vector<double> RootedSBNInstance::LogLikelihoods() {
