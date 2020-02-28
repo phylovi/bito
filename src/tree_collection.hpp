@@ -11,6 +11,9 @@
 #include <vector>
 #include "tree.hpp"
 
+// TODO Make a PreTreeCollection template that takes a tree type as template parameter.
+// RootedTreeCollection would then inherit from that and add additional functionality.
+
 class TreeCollection {
  public:
   explicit TreeCollection(Tree::TreeVector trees);

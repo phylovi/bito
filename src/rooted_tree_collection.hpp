@@ -10,6 +10,7 @@
 class RootedTreeCollection {
  public:
   RootedTreeCollection() = default;
+  // TODO add a parse_dates flag which populates the taxon_date_map_ variable.
   explicit RootedTreeCollection(const TreeCollection& trees);
 
   size_t TreeCount() const { return trees_.size(); }
@@ -19,6 +20,8 @@ class RootedTreeCollection {
 
  private:
   TagStringMap tag_taxon_map_;
+
+  // std::unordered_map<size_t, double> taxon_date_map_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
