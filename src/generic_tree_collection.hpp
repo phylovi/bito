@@ -13,9 +13,10 @@
 
 template <typename TTree>
 class GenericTreeCollection {
+ protected:
+  using TTreeVector = std::vector<TTree>;
 
  public:
-  using TTreeVector = std::vector<TTree>;
   GenericTreeCollection() = default;
 
   explicit GenericTreeCollection(TTreeVector trees) : trees_(std::move(trees)) {

@@ -6,13 +6,12 @@
 RootedTreeCollection RootedTreeCollection::OfTreeCollection(
     const TreeCollection& trees) {
   TTreeVector rooted_trees;
-  // std::vector<RootedTree> rooted_trees;
   rooted_trees.reserve(trees.TreeCount());
   for (const auto& tree : trees.Trees()) {
     rooted_trees.push_back(RootedTree(tree));
   }
-  TagStringMap tag_taxon_map = trees.TagTaxonMap();
-  return RootedTreeCollection(rooted_trees, tag_taxon_map);
+  return RootedTreeCollection(std::move(rooted_trees),
+                              trees.TagTaxonMap());
 }
 
 // void SBNInstance::ParseDates() {

@@ -17,4 +17,3 @@ RootedSBNInstance::BranchGradients() {
   return GetEngine()->BranchGradients(rooted_tree_collection_, phylo_model_params_,
                                       rescaling_);
 }
-
