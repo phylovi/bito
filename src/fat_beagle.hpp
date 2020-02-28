@@ -42,6 +42,7 @@ class FatBeagle {
   // Compute first derivative of the log likelihood with respect to each branch
   // length, as a vector of first derivatives indexed by node id.
   std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
+  std::pair<double, std::vector<double>> BranchGradient(const RootedTree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.
   static double StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree);
@@ -49,6 +50,8 @@ class FatBeagle {
                                           const RootedTree &in_tree);
   static std::pair<double, std::vector<double>> StaticBranchGradient(
       FatBeagle *fat_beagle, const Tree &in_tree);
+  static std::pair<double, std::vector<double>> StaticRootedBranchGradient(
+      FatBeagle *fat_beagle, const RootedTree &in_tree);
 
  private:
   using BeagleInstance = int;
@@ -70,6 +73,8 @@ class FatBeagle {
   void UpdatePhyloModelInBeagle();
 
   double LogLikelihoodInternals(const Tree &tree) const;
+  std::pair<double, std::vector<double>> BranchGradientInternals(
+      const Tree &tree) const;
 
   void UpdateBeagleTransitionMatrices(const BeagleAccessories &ba, const Tree &tree,
                                       const int *const gradient_indices_ptr) const;

@@ -37,6 +37,9 @@ class Engine {
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
       const TreeCollection &tree_collection, const EigenMatrixXdRef phylo_model_params,
       const bool rescaling) const;
+  std::vector<std::pair<double, std::vector<double>>> BranchGradients(
+      const RootedTreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling) const;
 
  private:
   SitePattern site_pattern_;

@@ -74,6 +74,15 @@ std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
                                               phylo_model_params, rescaling);
 }
 
+std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
+    const RootedTreeCollection &tree_collection,
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
+  return FatBeagleParallelize<std::pair<double, std::vector<double>>, RootedTree,
+                              RootedTreeCollection>(
+      FatBeagle::StaticRootedBranchGradient, fat_beagles_, tree_collection,
+      phylo_model_params, rescaling);
+}
+
 const FatBeagle *const Engine::GetFirstFatBeagle() const {
   Assert(!fat_beagles_.empty(), "You have no FatBeagles.");
   return fat_beagles_[0].get();

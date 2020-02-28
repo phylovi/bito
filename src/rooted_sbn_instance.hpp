@@ -12,6 +12,8 @@ class RootedSBNInstance : public SBNInstance {
 
   void UseCurrentTreesAsRooted();
   std::vector<double> LogLikelihoods();
+  // For each loaded tree, returns a pair of (likelihood, gradient).
+  std::vector<std::pair<double, std::vector<double>>> BranchGradients();
 
  private:
   RootedTreeCollection rooted_tree_collection_;
