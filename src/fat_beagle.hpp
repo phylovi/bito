@@ -80,7 +80,7 @@ class FatBeagle {
                                       const int *const gradient_indices_ptr) const;
   void SetRootPreorderPartialsToStateFrequencies(const BeagleAccessories &ba) const;
 
-  static Tree PrepareTreeForLikelihood(const Tree &tree);
+  static Tree DetrifurcateIfNeeded(const Tree &tree);
   static inline void AddLowerPartialOperation(BeagleOperationVector &operations,
                                               const BeagleAccessories &ba, int node_id,
                                               int child0_id, int child1_id);

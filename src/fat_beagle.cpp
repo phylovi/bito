@@ -41,8 +41,8 @@ void FatBeagle::SetParameters(const EigenVectorXdRef param_vector) {
   UpdatePhyloModelInBeagle();
 }
 
-// We assume that the tree has been prepared for likelihood.
-// TODO more docs
+// This is the "core" of the likelihood calculation, assuming that the tree is
+// bifurcating.
 double FatBeagle::LogLikelihoodInternals(const Tree &tree) const {
   BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   BeagleOperationVector operations;
@@ -65,7 +65,8 @@ double FatBeagle::LogLikelihoodInternals(const Tree &tree) const {
 }
 
 double FatBeagle::LogLikelihood(const Tree &tree) const {
-  return LogLikelihoodInternals(PrepareTreeForLikelihood(tree));
+  // TODO if we want to assume strict unrootedness then we would always detrifurcate.
+  return LogLikelihoodInternals(DetrifurcateIfNeeded(tree));
 }
 
 double FatBeagle::LogLikelihood(const RootedTree &tree) const {
@@ -136,7 +137,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     const Tree &in_tree) const {
-  auto tree = PrepareTreeForLikelihood(in_tree);
+  auto tree = DetrifurcateIfNeeded(in_tree);
   tree.SlideRootPosition();
   return BranchGradientInternals(tree);
 }
@@ -147,27 +148,28 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
   return BranchGradientInternals(in_tree);
 }
 
-double FatBeagle::StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree) {
+FatBeagle *NullPtrAssert(FatBeagle *fat_beagle) {
   Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");
-  return fat_beagle->LogLikelihood(in_tree);
+  return fat_beagle;
+}
+
+double FatBeagle::StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree) {
+  return NullPtrAssert(fat_beagle)->LogLikelihood(in_tree);
 }
 
 double FatBeagle::StaticRootedLogLikelihood(FatBeagle *fat_beagle,
                                             const RootedTree &in_tree) {
-  Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");
-  return fat_beagle->LogLikelihood(in_tree);
+  return NullPtrAssert(fat_beagle)->LogLikelihood(in_tree);
 }
 
 std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
     FatBeagle *fat_beagle, const Tree &in_tree) {
-  Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");
-  return fat_beagle->BranchGradient(in_tree);
+  return NullPtrAssert(fat_beagle)->BranchGradient(in_tree);
 }
 
 std::pair<double, std::vector<double>> FatBeagle::StaticRootedBranchGradient(
     FatBeagle *fat_beagle, const RootedTree &in_tree) {
-  Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");
-  return fat_beagle->BranchGradient(in_tree);
+  return NullPtrAssert(fat_beagle)->BranchGradient(in_tree);
 }
 
 std::pair<FatBeagle::BeagleInstance, FatBeagle::PackedBeagleFlags>
@@ -265,7 +267,7 @@ void FatBeagle::UpdatePhyloModelInBeagle() {
   UpdateSubstitutionModelInBeagle();
 }
 
-Tree FatBeagle::PrepareTreeForLikelihood(const Tree &tree) {
+Tree FatBeagle::DetrifurcateIfNeeded(const Tree &tree) {
   if (tree.Children().size() == 3) {
     return tree.Detrifurcate();
   }  // else
