@@ -369,6 +369,10 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
   EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters_.size());
   double log_q = DOUBLE_NEG_INF;
   for (const auto &rooted_representation : indexer_representation) {
+    if (!SBNProbability::IsInSBNSupport(rooted_representation,
+                                        sbn_parameters_.size())) {
+      continue;
+    }
     double log_probability_rooted_tree =
         SBNProbability::SumOf(sbn_parameters_, rooted_representation, 0.0);
     // We need to look up the subsplits in the tree. Set representation allows
@@ -380,15 +384,13 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
     // Now, we update the gradients.
     for (const auto &[begin, end] : subsplit_ranges) {
       for (size_t idx = begin; idx < end; idx++) {
+        size_t ind_subsplit_in_rooted_tree =
+          (rooted_representation_as_set.count(idx) > 0) ? 1 : 0;
         // %EM What if, instead of this if, we actually had an indicator variable? I
         // feel like this might be easier to follow for people who are reading the tex.
-        if (rooted_representation_as_set.count(idx) > 0) {
-          grad_log_q[idx] += exp(log_probability_rooted_tree) *
-                                (1 - exp(sbn_parameters_[idx]));
-        } else {
-          grad_log_q[idx] += -exp(log_probability_rooted_tree) *
-                                 exp(sbn_parameters_[idx]);
-        }
+        // %SJ Done.
+        grad_log_q[idx] += exp(log_probability_rooted_tree) *
+            (ind_subsplit_in_rooted_tree - exp(sbn_parameters_[idx]));
       }
     }
     log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
@@ -405,13 +407,13 @@ EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f) {
   EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
 
   // %EM I'm not sure what this comment means:
-  // Normalize the sbn parameters -- note that it doesn't quite
-  // convert sbn_parameters_ to probability space.
+  // %SJ How about now?
+  // Normalize the sbn parameters in log space.
   NormalizeSBNParametersInLog();
   for (size_t i = 0; i < num_trees; i++) {
     double multiplicative_factor = multiplicative_factors(i);
     const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
-      indexer_, tree_collection_.GetTree(i).Topology(), OUT_OF_SAMPLE_IDX);
+      indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
     EigenVectorXd log_grad_q = GradientOfLogQ(indexer_representation);
     log_grad_q = log_grad_q.array() * multiplicative_factor;
     gradient_vector = gradient_vector + log_grad_q;

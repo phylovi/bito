@@ -58,6 +58,7 @@ class Burrito:
             self.branch_model.scalar_model,
             self.estimate_elbo,
         )
+        self.elbo_trace = []
 
     # We want the models to be part of the optimizer because they have state that's
     # closely connected with optimizer state. But we add these convenience functions:
@@ -120,6 +121,7 @@ class Burrito:
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:
                 self.gradient_step()
+                self.elbo_trace.append(self.estimate_elbo(self.particle_count))
 
     def estimate_elbo(self, particle_count):
         """Sample particle_count particles and then make a naive Monte Carlo estimate of

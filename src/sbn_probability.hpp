@@ -46,7 +46,8 @@ void ProbabilityNormalizeRangeInLog(EigenVectorXdRef vec,
 // We assume that vec is laid out like sbn_parameters (see top).
 void ProbabilityNormalizeParamsInLog(EigenVectorXdRef vec, size_t rootsplit_count,
                                      const BitsetSizePairMap& parent_to_range);
-
+bool IsInSBNSupport(const SizeVector &rooted_representation,
+                    size_t num_sbn_parameters);
 double SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
              const double starting_value);
 

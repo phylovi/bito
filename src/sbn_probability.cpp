@@ -295,13 +295,28 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   return score_history;
 }
 
+bool SBNProbability::IsInSBNSupport(const SizeVector &rooted_representation,
+                                    size_t num_sbn_params) {
+  for (size_t idx : rooted_representation) {
+    Assert(idx <= num_sbn_params, "Rooted tree index is greater than maximum permitted.");
+    if (idx == num_sbn_params) {
+      return false;
+    }
+  }
+  return true;
+};
+
 double SBNProbability::ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
     const IndexerRepresentation& indexer_representation) {
+  size_t num_sbn_params = sbn_parameters.size();
   double log_total_probability = DOUBLE_NEG_INF;
   for (const auto& rooted_representation : indexer_representation) {
     log_total_probability = NumericalUtils::LogAdd(
-        log_total_probability, SumOf(sbn_parameters, rooted_representation, 0.));
+        log_total_probability,
+        IsInSBNSupport(rooted_representation, num_sbn_params) ?
+         SumOf(sbn_parameters, rooted_representation, 0.) :
+         DOUBLE_NEG_INF);
   }
   return exp(log_total_probability);
 }

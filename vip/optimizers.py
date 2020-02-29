@@ -5,7 +5,7 @@ import numpy as np
 import vip.sgd_server
 from vip.sbn_model import SBNModel
 from vip.scalar_model import ScalarModel
-
+import pdb
 
 class BaseOptimizer(abc.ABC):
     def __init__(
@@ -17,10 +17,11 @@ class BaseOptimizer(abc.ABC):
         self.trace = []
         self.step_number = 0
         self.step_size = scalar_model.suggested_step_size()
+        self.sbn_step_size = 0.001
         self.sgd_server = vip.sgd_server.SGD_Server(
             {
                 "scalar_params": scalar_model.q_params.shape,
-                # "sbn_params": sbn_model.sbn_parameters.shape,
+                "sbn_params": sbn_model.sbn_parameters.shape,
             }
         )
 
@@ -33,23 +34,24 @@ class BaseOptimizer(abc.ABC):
         Return True if the gradient step was successful.
         """
         scalar_grad = grad_dict["scalar_params"]
-        # sbn_grad = grad_dict["sbn_params"]
+        sbn_grad = grad_dict["sbn_params"]
         assert self.scalar_model.q_params.shape == scalar_grad.shape
         if not np.isfinite(np.array([scalar_grad])).all():
             return False
+        assert self.sbn_model.sbn_parameters.shape == sbn_grad.shape
         update_dict = self.sgd_server.adam(
-            {"scalar_params": self.step_size},  # "sbn_params": self.step_size
+            {"scalar_params": self.step_size,  "sbn_params": self.sbn_step_size},
             {
                 "scalar_params": self.scalar_model.q_params,
-                # "sbn_params": self.sbn_model.sbn_parameters,
+                "sbn_params": self.sbn_model.sbn_parameters,
             },
             grad_dict,
         )
         self.scalar_model.q_params += update_dict["scalar_params"]
-        # self.scalar_model.sbn_parameters += update_dict["sbn_params"]
+        self.sbn_model.sbn_parameters += update_dict["sbn_params"]
         if history is not None:
             history.append(self.scalar_model.q_params.copy())
-            # history.append(self.sbn_model.sbn_parameters.copy())
+            history.append(self.sbn_model.sbn_parameters.copy())
         return True
 
     def gradient_step(self, grad_dict, history=None):
