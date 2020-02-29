@@ -116,7 +116,7 @@ class GenericTreeCollection {
   std::vector<std::string> TaxonNames() const {
     std::vector<std::string> names(tag_taxon_map_.size());
     for (const auto &iter : tag_taxon_map_) {
-      size_t id = Node::MaxLeafIDOfTag(iter.first);
+      size_t id = MaxLeafIDOfTag(iter.first);
       Assert(id < names.size(),
              "Leaf ID is out of range in TaxonNames for tree collection.");
       names[id] = iter.second;

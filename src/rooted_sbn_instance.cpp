@@ -6,6 +6,7 @@
 void RootedSBNInstance::ReadNexusFile(std::string fname) {
   SBNInstance::ReadNexusFile(fname);
   rooted_tree_collection_ = RootedTreeCollection::OfTreeCollection(tree_collection_);
+  rooted_tree_collection_.ParseDatesFromTaxonNames();
 }
 
 std::vector<double> RootedSBNInstance::LogLikelihoods() {

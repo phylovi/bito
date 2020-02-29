@@ -12,19 +12,18 @@ template class GenericTreeCollection<RootedTree>;
 using PreRootedTreeCollection = GenericTreeCollection<RootedTree>;
 
 class RootedTreeCollection : public PreRootedTreeCollection {
-  using TaxonDateMap = std::unordered_map<size_t, double>;
+  using TagDateMap = std::unordered_map<Tag, double>;
 
  public:
   // Inherit all constructors.
   using PreRootedTreeCollection::PreRootedTreeCollection;
 
-  // TODO add a parse_dates flag which populates the taxon_date_map_ variable.
   static RootedTreeCollection OfTreeCollection(const TreeCollection& trees);
 
- private:
-  TaxonDateMap taxon_date_map_;
+  void ParseDatesFromTaxonNames();
 
-  TaxonDateMap ParseDates();
+ private:
+  TagDateMap tag_date_map_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

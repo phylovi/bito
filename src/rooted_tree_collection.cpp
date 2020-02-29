@@ -13,10 +13,12 @@ RootedTreeCollection RootedTreeCollection::OfTreeCollection(
     rooted_trees.push_back(RootedTree(tree));
   }
   return RootedTreeCollection(std::move(rooted_trees), trees.TagTaxonMap());
+  // TODO we could always parse dates when we make a rooted tree collection. It
+  // currently happens as part of Nexus parsing.
 }
 
-RootedTreeCollection::TaxonDateMap RootedTreeCollection::ParseDates() {
-  TaxonDateMap taxon_date_map;
+void RootedTreeCollection::ParseDatesFromTaxonNames() {
+  tag_date_map_.clear();
   std::regex date_regex(R"raw(^.+_(\d*\.?\d+(?:[eE][-+]?\d+)?)$)raw");
   std::smatch match_date;
   bool first_pass_through_parsing_loop = true;
@@ -24,11 +26,10 @@ RootedTreeCollection::TaxonDateMap RootedTreeCollection::ParseDates() {
   double max_date = DOUBLE_NEG_INF;
   for (auto &[tag, taxon] : TagTaxonMap()) {
     // TODO factor this up
-    size_t id = static_cast<size_t>(UnpackFirstInt(tag));
     if (std::regex_match(taxon, match_date, date_regex)) {
       double date = std::stod(match_date[1].str());
       max_date = std::max(date, max_date);
-      SafeInsert(taxon_date_map, id, date);
+      SafeInsert(tag_date_map_, tag, date);
       if (first_pass_through_parsing_loop) {
         have_parsed_a_date = true;
       } else {
@@ -37,15 +38,16 @@ RootedTreeCollection::TaxonDateMap RootedTreeCollection::ParseDates() {
     } else {  // We couldn't parse a date.
       if (!first_pass_through_parsing_loop && have_parsed_a_date) {
         Failwith("We did parse at least one date, but couldn't parse:" + taxon);
-      }  // else this is the first pass through the loop or we haven't parsed a date.
-      SafeInsert(taxon_date_map, id, 0.);
+      }
+      // This is the first pass through the loop or we haven't parsed a date previously.
+      // In this case we fill tag_date_map_ with zeroes.
+      SafeInsert(tag_date_map_, tag, 0.);
     }
     first_pass_through_parsing_loop = false;
   }
   if (have_parsed_a_date) {
-    for (auto& [id, date] : taxon_date_map) {
+    for (auto& [id, date] : tag_date_map_) {
       date -= max_date;
     }
   }
-  return taxon_date_map;
 }

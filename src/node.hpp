@@ -148,8 +148,6 @@ class Node {
   NodePtr Deroot();
 
   // ** Static methods
-  static inline uint32_t MaxLeafIDOfTag(uint64_t tag) { return UnpackFirstInt(tag); }
-  static inline uint32_t LeafCountOfTag(uint64_t tag) { return UnpackSecondInt(tag); }
   static NodePtr Leaf(uint32_t id, Bitset leaves = Bitset(0));
   // Join builds a Node with the given descendants, or-ing the leaves_ of the
   // descendants.

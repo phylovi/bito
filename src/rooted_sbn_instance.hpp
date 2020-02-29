@@ -21,12 +21,12 @@ class RootedSBNInstance : public SBNInstance {
   void ReadNewickFile(std::string fname) = delete;
   void ReadNexusFile(std::string fname);
 
- private:
   RootedTreeCollection rooted_tree_collection_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("RootedSBNInstance") {
+TEST_CASE("RootedSBNInstance: parsing dates") {
+  // TODO
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_ROOTED_SBN_INSTANCE_HPP_
