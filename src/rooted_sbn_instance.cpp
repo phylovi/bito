@@ -3,7 +3,8 @@
 
 #include "rooted_sbn_instance.hpp"
 
-void RootedSBNInstance::UseCurrentTreesAsRooted() {
+void RootedSBNInstance::ReadNexusFile(std::string fname) {
+  SBNInstance::ReadNexusFile(fname);
   rooted_tree_collection_ = RootedTreeCollection::OfTreeCollection(tree_collection_);
 }
 

@@ -11,10 +11,8 @@ auto now = std::chrono::high_resolution_clock::now;
 
 int main() {
   RootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/hello.nwk");
-  inst.tree_collection_.Erase(0, 1);
-  inst.UseCurrentTreesAsRooted();
-  inst.ReadFastaFile("data/hello.fasta");
+  inst.ReadNexusFile("data/DS1.BEAST.trees");
+  inst.ReadFastaFile("data/DS1.fasta");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
   inst.PrepareForPhyloLikelihood(simple_specification, 2);
   std::cout << inst.BranchGradients() << std::endl;

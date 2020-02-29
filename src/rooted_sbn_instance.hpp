@@ -13,10 +13,16 @@ class RootedSBNInstance : public SBNInstance {
  public:
   explicit RootedSBNInstance(const std::string &name) : SBNInstance(name) {}
 
-  void UseCurrentTreesAsRooted();
+  // ** Phylogenetic likelihood
+
   std::vector<double> LogLikelihoods();
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients();
+
+  // ** I/O
+
+  void ReadNewickFile(std::string fname) = delete;
+  void ReadNexusFile(std::string fname);
 
  private:
   RootedTreeCollection rooted_tree_collection_;
