@@ -65,7 +65,6 @@ double FatBeagle::LogLikelihoodInternals(const Tree &tree) const {
 }
 
 double FatBeagle::LogLikelihood(const Tree &tree) const {
-  // TODO if we want to assume strict unrootedness then we would always detrifurcate.
   return LogLikelihoodInternals(DetrifurcateIfNeeded(tree));
 }
 

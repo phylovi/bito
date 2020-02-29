@@ -6,9 +6,6 @@
 
 #include "libsbn.hpp"
 
-// TODO refactor so that we have a shared object from which the current SBNInstance and
-// the RootedSBNInstance descend.
-
 class RootedSBNInstance : public SBNInstance {
  public:
   explicit RootedSBNInstance(const std::string &name) : SBNInstance(name) {}
@@ -30,7 +27,6 @@ class RootedSBNInstance : public SBNInstance {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("RootedSBNInstance") {
-  // TODO
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_ROOTED_SBN_INSTANCE_HPP_

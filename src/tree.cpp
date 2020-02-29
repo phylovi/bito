@@ -27,7 +27,6 @@ Tree::Tree(const Node::NodePtr& topology, TagDoubleMap branch_lengths)
   }
 }
 
-// TODO should we move branch lengths in?
 Tree::Tree(const Node::NodePtr& topology, BranchLengthVector branch_lengths)
     : branch_lengths_(branch_lengths), topology_(topology) {
   Assert(topology->Id() + 1 == branch_lengths.size(),
