@@ -3,6 +3,7 @@
 
 #include "rooted_tree_collection.hpp"
 #include <regex>
+#include "numerical_utils.hpp"
 
 RootedTreeCollection RootedTreeCollection::OfTreeCollection(
     const TreeCollection& trees) {
@@ -15,37 +16,36 @@ RootedTreeCollection RootedTreeCollection::OfTreeCollection(
 }
 
 RootedTreeCollection::TaxonDateMap RootedTreeCollection::ParseDates() {
-  std::unordered_map<size_t, double> taxon_date_map;
-  std::regex date_regex("^.+_(\\d*\\.?\\d+(?:[eE][-+]?\\d+)?)$");
+  TaxonDateMap taxon_date_map;
+  std::regex date_regex(R"raw(^.+_(\d*\.?\d+(?:[eE][-+]?\d+)?)$)raw");
   std::smatch match_date;
-  for (auto &iter : TagTaxonMap()) {
-    if (std::regex_match(iter.second, match_date, date_regex)) {
-      taxon_date_map.insert(
-          std::make_pair(UnpackFirstInt(iter.first), std::stod(match_date[1].str())));
+  bool first_pass_through_parsing_loop = true;
+  bool have_parsed_a_date = false;
+  double max_date = DOUBLE_NEG_INF;
+  for (auto &[tag, taxon] : TagTaxonMap()) {
+    // TODO factor this up
+    size_t id = static_cast<size_t>(UnpackFirstInt(tag));
+    if (std::regex_match(taxon, match_date, date_regex)) {
+      double date = std::stod(match_date[1].str());
+      max_date = std::max(date, max_date);
+      SafeInsert(taxon_date_map, id, date);
+      if (first_pass_through_parsing_loop) {
+        have_parsed_a_date = true;
+      } else {
+        Failwith("We couldn't parse dates for a while, but we could parse:" + taxon);
+      }
+    } else {  // We couldn't parse a date.
+      if (!first_pass_through_parsing_loop && have_parsed_a_date) {
+        Failwith("We did parse at least one date, but couldn't parse:" + taxon);
+      }  // else this is the first pass through the loop or we haven't parsed a date.
+      SafeInsert(taxon_date_map, id, 0.);
+    }
+    first_pass_through_parsing_loop = false;
+  }
+  if (have_parsed_a_date) {
+    for (auto& [id, date] : taxon_date_map) {
+      date -= max_date;
     }
   }
-  if (taxon_date_map.size() != 0 && taxon_date_map.size() != TaxonCount()) {
-    Failwith("Cannot read dates from tree file.");
-  }
-  if (taxon_date_map.size() == 0) {
-    for (auto &iter : TagTaxonMap()) {
-      taxon_date_map.insert(std::make_pair(UnpackFirstInt(iter.first), 0));
-    }
-  }
-
-  std::vector<double> dates;
-  for (const auto &pair : taxon_date_map) {
-    dates.push_back(pair.second);
-  }
-  std::sort(dates.begin(), dates.end());
-
-  // date in years
-  if (dates[0] != 0.0) {
-    double max = dates[dates.size() - 1];
-    for (auto &pair : taxon_date_map) {
-      pair.second = max - pair.second;
-    }
-  }
-
   return taxon_date_map;
 }
