@@ -1,6 +1,7 @@
 """The Burrito class wraps an instance and relevant model data."""
 import click
 import numpy as np
+from scipy.special import logsumexp
 
 import libsbn
 import vip.branch_model
@@ -56,7 +57,7 @@ class Burrito:
             optimizer_name,
             sbn_model,
             self.branch_model.scalar_model,
-            self.estimate_elbo,
+            self.estimate_elbo
         )
         self.elbo_trace = []
 
@@ -163,3 +164,20 @@ class Burrito:
             )
         )
         return px_phylo_log_like + px_log_prior - px_log_sbn_prob - px_branch_log_prob
+
+    def marginal_likelihood_estimate(self, particle_count):
+        px_branch_lengths = self.sample_topologies(particle_count)
+        px_branch_representation = self.branch_model.px_branch_representation()
+        # Sample continuous variables based on the branch representations.
+        px_theta_sample = self.branch_model.sample(px_branch_representation)
+        # Put the branch lengths in the libsbn instance trees, and get branch gradients.
+        for particle_idx, branch_lengths in enumerate(px_branch_lengths):
+            branch_lengths[:] = px_theta_sample[particle_idx, :]
+        self.inst.resize_phylo_model_params()
+        px_phylo_log_like = np.array(self.inst.log_likelihoods(), copy=False)
+
+        px_log_f = self.px_log_f(
+            px_phylo_log_like, px_theta_sample, px_branch_representation
+        )
+
+        return logsumexp(px_log_f) - np.log(particle_count)

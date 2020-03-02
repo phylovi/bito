@@ -143,8 +143,9 @@ class SBNInstance {
   // IndexerRepresentation contains all rooting of \tau.
   // It assumes that sbn_gradients_ are normalized in log space.
   EigenVectorXd GradientOfLogQ(
+                           EigenVectorXdRef sbn_parameters,
                            const IndexerRepresentation &indexer_representation);
-  void NormalizeSBNParametersInLog();
+  void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
   std::vector<std::pair<size_t, size_t>> GetSubsplitRanges(
       const SizeVector &rooted_representation);
   inline void SetSeed(unsigned long seed) { random_generator_.seed(seed); }
@@ -473,7 +474,9 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
 
   // Initialize sbn_parameters to 0's and normalize.
   inst.sbn_parameters_.setZero();
-  inst.NormalizeSBNParametersInLog();
+  // Make a copy of sbn_parameters_
+  EigenVectorXd sbn_params = inst.sbn_parameters_;
+  inst.NormalizeSBNParametersInLog(sbn_params);
   // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
 
   // We're going to start by computing the XXX TODO erick
@@ -507,7 +510,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   std::vector<double> expected_grad_rootsplit = {-1. / 8, 0, 0, 0, 0, 0, 0, 1. / 8};
 
   auto indexer_representations = inst.MakeIndexerRepresentations();
-  EigenVectorXd grad_log_q = inst.GradientOfLogQ(indexer_representations.at(0));
+  EigenVectorXd grad_log_q = inst.GradientOfLogQ(sbn_params,
+                                                 indexer_representations.at(0));
   EigenVectorXd realized_grad_rootsplit = grad_log_q.segment(0, 8);
   // Sort them and compare against sorted version of
   // realized_grad_rootsplit[0:7].
@@ -565,23 +569,25 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Set sbn_paremeters for s_idx and s_prime_idx to 1, -1 respectively.
   inst.sbn_parameters_(s_idx) = 1;
   inst.sbn_parameters_(s_prime_idx) = -1;
+  sbn_params = inst.sbn_parameters_;
   // Normalize sbn_parameters_ in preparation for calling GradientOfLogQ().
-  inst.NormalizeSBNParametersInLog();
+  inst.NormalizeSBNParametersInLog(sbn_params);
 
   // This changes q(\tau) as well as P(\tau_{\rho}) for \rho = 0|1234.
   // First, P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) + exp(-1)) = 0.1100996.
-  double p_tau_rho = (1. / 8) * exp(inst.sbn_parameters_[s_idx]);
+  double p_tau_rho = (1. / 8) * exp(sbn_params[s_idx]);
   // q(\tau), we will just compute using already tested function:
   double q_tau = inst.CalculateSBNProbabilities()(0);
   // The gradient for s|t is given by,
   // (1/q(\tau)) x P(\tau_{\rho}) x (1 - P(s|t))
   double expected_grad_at_s =
-      (1. / q_tau) * p_tau_rho * (1 - exp(inst.sbn_parameters_[s_idx]));
+      (1. / q_tau) * p_tau_rho * (1 - exp(sbn_params[s_idx]));
   // And the gradient for s'|t is given by,
   // (1/q(\tau)) x P(\tau_{\rho}) x (1 - P(s|t))
   double expected_grad_at_s_prime =
-      (1. / q_tau) * p_tau_rho * -exp(inst.sbn_parameters_[s_prime_idx]);
-  grad_log_q = inst.GradientOfLogQ(indexer_representations.at(0));
+      (1. / q_tau) * p_tau_rho * -exp(sbn_params[s_prime_idx]);
+  grad_log_q = inst.GradientOfLogQ(sbn_params,
+                                   indexer_representations.at(0));
   CHECK_LT(fabs(expected_grad_at_s - grad_log_q(s_idx)), 1e-9);
   CHECK_LT(fabs(expected_grad_at_s_prime - grad_log_q(s_prime_idx)), 1e-9);
 
@@ -606,7 +612,9 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   auto indexer_reps = inst.MakeIndexerRepresentations();
   for (size_t k = 0; k < K; k++) {
     grad_log_q =
-        multiplicative_factors(k) * inst.GradientOfLogQ(indexer_reps.at(k)).array();
+        multiplicative_factors(k) * inst.GradientOfLogQ(
+                                                    sbn_params,
+                                                    indexer_reps.at(k)).array();
     expected_nabla += grad_log_q;
   }
 

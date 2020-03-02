@@ -365,18 +365,19 @@ EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
 // This gives the gradient of log q at a specific unrooted topology.
 // See eq:gradLogQ in the tex.
 EigenVectorXd SBNInstance::GradientOfLogQ(
+                          EigenVectorXdRef sbn_parameters,
                           const IndexerRepresentation &indexer_representation) {
-  EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters_.size());
+  EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters.size());
   double log_q = DOUBLE_NEG_INF;
   for (const auto &rooted_representation : indexer_representation) {
     if (!SBNProbability::IsInSBNSupport(rooted_representation,
-                                        sbn_parameters_.size())) {
+                                        sbn_parameters.size())) {
       continue;
     }
     double log_probability_rooted_tree =
-        SBNProbability::SumOf(sbn_parameters_, rooted_representation, 0.0);
-    // We need to look up the subsplits in the tree. Set representation allows
-    // fast lookup.
+        SBNProbability::SumOf(sbn_parameters, rooted_representation, 0.0);
+    // We need to look up the subsplits in the tree.
+    // Set representation allows fast lookup.
     std::unordered_set<size_t> rooted_representation_as_set(
       rooted_representation.begin(), rooted_representation.end());
     // Get all subsplit ranges.
@@ -390,7 +391,7 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
         // feel like this might be easier to follow for people who are reading the tex.
         // %SJ Done.
         grad_log_q[idx] += exp(log_probability_rooted_tree) *
-            (ind_subsplit_in_rooted_tree - exp(sbn_parameters_[idx]));
+            (ind_subsplit_in_rooted_tree - exp(sbn_parameters[idx]));
       }
     }
     log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
@@ -402,27 +403,30 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
 EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f) {
   size_t num_trees = tree_collection_.Trees().size();
 
-  EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters_.size());
+  EigenVectorXd sbn_parameters = sbn_parameters_;
+
+  EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters.size());
 
   EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
-
+  
   // %EM I'm not sure what this comment means:
-  // %SJ How about now?
   // Normalize the sbn parameters in log space.
-  NormalizeSBNParametersInLog();
+  // We work with copy to keep sbn_parameters_ unmodified.
+  NormalizeSBNParametersInLog(sbn_parameters);
   for (size_t i = 0; i < num_trees; i++) {
     double multiplicative_factor = multiplicative_factors(i);
     const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
-      indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
-    EigenVectorXd log_grad_q = GradientOfLogQ(indexer_representation);
+      indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters.size());
+    EigenVectorXd log_grad_q = GradientOfLogQ(sbn_parameters,
+                                              indexer_representation);
     log_grad_q = log_grad_q.array() * multiplicative_factor;
     gradient_vector = gradient_vector + log_grad_q;
   }
   return gradient_vector;
 }
 
-void SBNInstance::NormalizeSBNParametersInLog() {
-  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters_,
+void SBNInstance::NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
+  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters,
     rootsplits_.size(), parent_to_range_);
 }
 
