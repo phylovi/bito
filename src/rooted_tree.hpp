@@ -30,6 +30,8 @@ inline bool operator!=(const RootedTree& lhs, const RootedTree& rhs) {
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("RootedTree") {}
+TEST_CASE("RootedTree") {
+  // Issue 187: Unit tests here?
+}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_ROOTED_TREE_HPP_
