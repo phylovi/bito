@@ -82,8 +82,7 @@ class GenericTreeCollection {
   // Drop the first fraction trees from the collection.
   void DropFirst(double fraction) {
     Assert(fraction >= 0. && fraction <= 1., "Illegal argument to DropFirst.");
-    size_t tree_count = TreeCount();
-    size_t end_idx = static_cast<size_t>(fraction * static_cast<double>(tree_count));
+    size_t end_idx = static_cast<size_t>(fraction * static_cast<double>(TreeCount()));
     Erase(0, end_idx);
   }
 
@@ -138,5 +137,7 @@ class GenericTreeCollection {
  protected:
   TagStringMap tag_taxon_map_;
 };
+
+// Tests appear in non-generic subclasses.
 
 #endif  // SRC_GENERIC_TREE_COLLECTION_HPP_

@@ -25,8 +25,19 @@ class RootedSBNInstance : public SBNInstance {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+TEST_CASE("RootedSBNInstance: gradients") {
+  RootedSBNInstance inst("charlie");
+  inst.ReadNexusFile("data/DS1.BEAST.trees");
+  inst.ReadFastaFile("data/DS1.fasta");
+  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
+  inst.PrepareForPhyloLikelihood(simple_specification, 2);
+  // Issue 187: this should get replaced by node height gradients.
+  std::cout << inst.BranchGradients() << std::endl;
+}
+
 TEST_CASE("RootedSBNInstance: parsing dates") {
   // TODO
 }
+
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_ROOTED_SBN_INSTANCE_HPP_
