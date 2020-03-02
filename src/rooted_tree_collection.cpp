@@ -24,7 +24,7 @@ void RootedTreeCollection::ParseDatesFromTaxonNames() {
   bool first_pass_through_parsing_loop = true;
   bool have_parsed_a_date = false;
   double max_date = DOUBLE_NEG_INF;
-  for (auto &[tag, taxon] : TagTaxonMap()) {
+  for (auto& [tag, taxon] : TagTaxonMap()) {
     if (std::regex_match(taxon, match_date, date_regex)) {
       double date = std::stod(match_date[1].str());
       max_date = std::max(date, max_date);
