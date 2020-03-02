@@ -12,6 +12,7 @@ class RootedTree : public Tree {
 
   explicit RootedTree(const Tree& tree);
 
+  bool operator==(const Tree& other) const = delete;
   bool operator==(const RootedTree& other) const;
 
  private:
