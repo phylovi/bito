@@ -30,7 +30,8 @@ void RootedTreeCollection::ParseDatesFromTaxonNames() {
       if (first_pass_through_parsing_loop) {
         have_parsed_a_date = true;
       } else {
-        Failwith("We couldn't parse dates for a while, but we could parse:" + taxon);
+        Assert(have_parsed_a_date,
+               "We couldn't parse dates for a while, but we could parse:" + taxon);
       }
     } else {  // We couldn't parse a date.
       if (!first_pass_through_parsing_loop && have_parsed_a_date) {
