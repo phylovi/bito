@@ -22,7 +22,6 @@ class RootedTreeCollection : public PreRootedTreeCollection {
 
   void ParseDatesFromTaxonNames();
 
- private:
   TagDateMap tag_date_map_;
 };
 

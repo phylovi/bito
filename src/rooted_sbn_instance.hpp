@@ -36,7 +36,15 @@ TEST_CASE("RootedSBNInstance: gradients") {
 }
 
 TEST_CASE("RootedSBNInstance: parsing dates") {
-  // TODO
+  RootedSBNInstance inst("charlie");
+  inst.ReadNexusFile("data/test_beast_tree_parsing.nexus");
+  std::vector<double> dates;
+  for (auto [tag, date] : isnt.rooted_tree_collection_.tag_date_map_) {
+    dates.push_back(date);
+  }
+  std::sort(dates.begin(), dates.end());
+  CHECK_EQ(dates[0], 0);
+  CHECK_EQ(dates.back(), 80.0);
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
