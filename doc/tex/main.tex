@@ -298,9 +298,14 @@ where
 \]
 is the per-sample local learning signal, with $\hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})$ being some estimate of $f_{\bm{\phi},{\bm{\psi}}}(\tau^j,\bm{\theta}^j)$ for sample $j$ using the rest of samples (e.g., the geometric mean).
 
-We will calculate $\nabla_{\bm \phi} \log q_{\bm \phi}(\tau^j)$ as the ratio ${\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau^j)} / {q_{\bm{\phi}}(\tau^j)}$.
+The geometric mean is given by,
+\begin{equation}\label{eq:f_hat}
+    \hat{f}_{\bm{\phi}, \bm{\psi}}(\tau^{-j}, \bm{\theta}^{-j})  = \exp\left( \frac{1}{K-1} \sum_{i \not= j} \log f_{\bm{\phi}, \bm{\psi}}(\tau^i, \bm{\theta}^i) \right).
+\end{equation}
+% SHJ: Below are not needed anymore.
+% We will calculate $\nabla_{\bm \phi} \log q_{\bm \phi}(\tau^j)$ as the ratio ${\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau^j)} / {q_{\bm{\phi}}(\tau^j)}$.
 
-To calculate $\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau)$, we take derivatives of the sum across rootings, where each derivative is just that of a product as per~\eqref{eq:qRooted}.
+% To calculate $\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau)$, we take derivatives of the sum across rootings, where each derivative is just that of a product as per~\eqref{eq:qRooted}.
 
 
 \section*{Gradient with respect to scalar model parameters $\psi$}

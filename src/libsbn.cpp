@@ -362,6 +362,31 @@ EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
   return multiplicative_factors;
 }
 
+EigenVectorXd CalculateVIMCOMultiplicativeFactors(const EigenVectorXdRef log_f) {
+  size_t num_trees = log_f.size();
+  double log_num_trees = log(num_trees);
+  double log_F = NumericalUtils::LogSum(log_f);
+  double hat_L = log_F - log(num_trees);
+  EigenVectorXd tilde_w = log_f.array() - log_F;
+  tilde_w = tilde_w.array().exp();
+
+  // Use the geometric mean as \hat{f}(\tau^{-j}, \theta^{-j}), in eq:f_hat in
+  // the implementation notes.
+  double sum_of_logf = log_f.sum();
+  EigenVectorXd log_geometric_mean = (sum_of_logf - log_f.array()) / (num_trees - 1);
+  EigenVectorXd per_sample_signal(num_trees);
+  EigenVectorXd log_f_copy = log_f;
+  for (size_t i = 0; i < num_trees; i++) {
+    log_f_copy(i) = log_geometric_mean(i);
+    per_sample_signal(i) = log_f_copy.redux(NumericalUtils::LogAdd) - log_num_trees;
+    // Reset the value.
+    log_f_copy(i) = log_f(i);
+  }
+
+  EigenVectorXd multiplicative_factors = hat_L - per_sample_signal.array() - tilde_w.array();
+  return multiplicative_factors;
+}
+
 // This gives the gradient of log q at a specific unrooted topology.
 // See eq:gradLogQ in the tex.
 EigenVectorXd SBNInstance::GradientOfLogQ(
@@ -400,14 +425,17 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
   return grad_log_q;
 }
 
-EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f) {
+EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
+                                             bool use_vimco) {
   size_t num_trees = tree_collection_.Trees().size();
 
   EigenVectorXd sbn_parameters = sbn_parameters_;
 
   EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters.size());
 
-  EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
+  EigenVectorXd multiplicative_factors = use_vimco ?
+    CalculateVIMCOMultiplicativeFactors(log_f) :
+    CalculateMultiplicativeFactors(log_f);
   
   // %EM I'm not sure what this comment means:
   // Normalize the sbn parameters in log space.
