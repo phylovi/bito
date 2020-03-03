@@ -10,11 +10,9 @@ RootedTreeCollection RootedTreeCollection::OfTreeCollection(
   TTreeVector rooted_trees;
   rooted_trees.reserve(trees.TreeCount());
   for (const auto& tree : trees.Trees()) {
-    rooted_trees.push_back(RootedTree(tree));
+    rooted_trees.emplace_back(tree);
   }
   return RootedTreeCollection(std::move(rooted_trees), trees.TagTaxonMap());
-  // TODO we could always parse dates when we make a rooted tree collection. It
-  // currently happens as part of Nexus parsing.
 }
 
 void RootedTreeCollection::ParseDatesFromTaxonNames() {
