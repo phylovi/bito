@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include "intpack.hpp"
 #include "prettyprint.hpp"
 
 // Put typedefs that are built of STL types here.
@@ -31,6 +32,9 @@ using StringVector = std::vector<std::string>;
 using StringVectorVector = std::vector<StringVector>;
 using StringSet = std::unordered_set<std::string>;
 using StringSetVector = std::vector<StringSet>;
+
+inline uint32_t MaxLeafIDOfTag(Tag tag) { return UnpackFirstInt(tag); }
+inline uint32_t LeafCountOfTag(Tag tag) { return UnpackSecondInt(tag); }
 
 // We implement problems in terms of exceptions. That means that they work great
 // in Jupyter notebooks.

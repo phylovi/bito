@@ -139,7 +139,7 @@ class SBNInstance {
   void ReadNexusFile(std::string fname);
   void ReadFastaFile(std::string fname);
 
- private:
+ protected:
   // The name of our libsbn instance.
   std::string name_;
   // Our phylogenetic likelihood computation engine.

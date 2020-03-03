@@ -240,8 +240,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
         const SizeVector& rooted_representation =
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
-        double log_p_rooted_topology = SumOf(sbn_parameters,
-                                                     rooted_representation, 0.);
+        double log_p_rooted_topology = SumOf(sbn_parameters, rooted_representation, 0.);
         // SHJ: Sometimes overflow is reported, sometimes it's underflow...
         if (fetestexcept(FE_OVER_AND_UNDER_FLOW_EXCEPT)) {
           log_q_weights[rooting_position] = DOUBLE_MINIMUM;
@@ -256,7 +255,8 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       // For the increment step (M-step of Algorithm 1) we want a full topology
       // count rather than just the unique count. So we multiply the q_weights by the
       // topology count (in log space, it becomes summation rather than multiplication).
-      log_q_weights = log_q_weights.array() + (-log_p_unrooted_topology + log(topology_count));
+      log_q_weights =
+          log_q_weights.array() + (-log_p_unrooted_topology + log(topology_count));
       // Increment the SBN-parameters-to-be by the q-weighted counts.
       IncrementByInLog(log_m_bar, indexer_representation, log_q_weights);
     }  // End of looping over topologies.
@@ -301,8 +301,7 @@ double SBNProbability::ProbabilityOf(
   double log_total_probability = DOUBLE_NEG_INF;
   for (const auto& rooted_representation : indexer_representation) {
     log_total_probability = NumericalUtils::LogAdd(
-        log_total_probability,
-         SumOf(sbn_parameters, rooted_representation, 0.));
+        log_total_probability, SumOf(sbn_parameters, rooted_representation, 0.));
   }
   return exp(log_total_probability);
 }

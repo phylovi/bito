@@ -20,12 +20,12 @@ class Tree {
   Tree() {}
 
   // This is the primary constructor.
-  explicit Tree(Node::NodePtr topology, BranchLengthVector branch_lengths);
+  explicit Tree(const Node::NodePtr& topology, BranchLengthVector branch_lengths);
 
   // This constructor takes a map of tags to branch lengths; this map gets
   // turned into a branch length vector. It re-ids the topology. Note: any
   // missing branch lengths are set to zero.
-  explicit Tree(Node::NodePtr topology, TagDoubleMap branch_lengths);
+  explicit Tree(const Node::NodePtr& topology, TagDoubleMap branch_lengths);
 
   const Node::NodePtr Topology() const { return topology_; }
   const BranchLengthVector BranchLengths() const { return branch_lengths_; }

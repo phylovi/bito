@@ -4,46 +4,10 @@
 #ifndef SRC_TREE_COLLECTION_HPP_
 #define SRC_TREE_COLLECTION_HPP_
 
-#include <memory>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
+#include "generic_tree_collection.hpp"
 #include "tree.hpp"
 
-class TreeCollection {
- public:
-  explicit TreeCollection(Tree::TreeVector trees);
-
-  TreeCollection() = default;
-  TreeCollection(Tree::TreeVector trees, TagStringMap tag_taxon_map);
-  TreeCollection(Tree::TreeVector trees, const std::vector<std::string> &taxon_labels);
-
-  size_t TreeCount() const { return trees_.size(); }
-  const Tree::TreeVector &Trees() const { return trees_; }
-  const Tree &GetTree(size_t i) const { return trees_.at(i); }
-  const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
-  size_t TaxonCount() const { return tag_taxon_map_.size(); }
-
-  bool operator==(const TreeCollection &other) const;
-
-  // Remove trees from begin_idx to just before end_idx.
-  void Erase(size_t begin_idx, size_t end_idx);
-  // Drop the first fraction trees from the collection.
-  void DropFirst(double fraction);
-
-  std::string Newick() const;
-
-  Node::TopologyCounter TopologyCounter() const;
-  std::vector<std::string> TaxonNames() const;
-
-  static TagStringMap TagStringMapOf(const std::vector<std::string> &taxon_labels);
-
-  Tree::TreeVector trees_;
-
- private:
-  TagStringMap tag_taxon_map_;
-};
+using TreeCollection = GenericTreeCollection<Tree>;
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TreeCollection") {

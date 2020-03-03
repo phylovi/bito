@@ -10,6 +10,7 @@
 #include <vector>
 #include "beagle_accessories.hpp"
 #include "phylo_model.hpp"
+#include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
 #include "task_processor.hpp"
 #include "tree_collection.hpp"
@@ -37,14 +38,20 @@ class FatBeagle {
   void SetRescaling(const bool rescaling) { rescaling_ = rescaling; }
 
   double LogLikelihood(const Tree &tree) const;
+  double LogLikelihood(const RootedTree &tree) const;
   // Compute first derivative of the log likelihood with respect to each branch
   // length, as a vector of first derivatives indexed by node id.
   std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
+  std::pair<double, std::vector<double>> BranchGradient(const RootedTree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.
   static double StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree);
+  static double StaticRootedLogLikelihood(FatBeagle *fat_beagle,
+                                          const RootedTree &in_tree);
   static std::pair<double, std::vector<double>> StaticBranchGradient(
       FatBeagle *fat_beagle, const Tree &in_tree);
+  static std::pair<double, std::vector<double>> StaticRootedBranchGradient(
+      FatBeagle *fat_beagle, const RootedTree &in_tree);
 
  private:
   using BeagleInstance = int;
@@ -65,11 +72,15 @@ class FatBeagle {
   void UpdateSubstitutionModelInBeagle();
   void UpdatePhyloModelInBeagle();
 
+  double LogLikelihoodInternals(const Tree &tree) const;
+  std::pair<double, std::vector<double>> BranchGradientInternals(
+      const Tree &tree) const;
+
   void UpdateBeagleTransitionMatrices(const BeagleAccessories &ba, const Tree &tree,
                                       const int *const gradient_indices_ptr) const;
   void SetRootPreorderPartialsToStateFrequencies(const BeagleAccessories &ba) const;
 
-  static Tree PrepareTreeForLikelihood(const Tree &tree);
+  static Tree DetrifurcateIfNeeded(const Tree &tree);
   static inline void AddLowerPartialOperation(BeagleOperationVector &operations,
                                               const BeagleAccessories &ba, int node_id,
                                               int child0_id, int child1_id);
@@ -81,16 +92,16 @@ class FatBeagle {
       int sister_id);
 };
 
-template <typename T>
-std::vector<T> FatBeagleParallelize(
-    std::function<T(FatBeagle *, const Tree &)> f,
+template <typename TOut, typename TTree, typename TTreeCollection>
+std::vector<TOut> FatBeagleParallelize(
+    std::function<TOut(FatBeagle *, const TTree &)> f,
     const std::vector<std::unique_ptr<FatBeagle>> &fat_beagles,
-    const TreeCollection &tree_collection, EigenMatrixXdRef param_matrix,
+    const TTreeCollection &tree_collection, EigenMatrixXdRef param_matrix,
     const bool rescaling) {
   if (fat_beagles.empty()) {
     Failwith("Please add some FatBeagles that can be used for computation.");
   }
-  std::vector<T> results(tree_collection.TreeCount());
+  std::vector<TOut> results(tree_collection.TreeCount());
   std::queue<FatBeagle *> fat_beagle_queue;
   for (const auto &fat_beagle : fat_beagles) {
     Assert(fat_beagle != nullptr, "Got a fat_beagle nullptr!");

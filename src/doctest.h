@@ -442,7 +442,7 @@ DOCTEST_INTERFACE extern bool is_running_in_test;
 //              and the "is small" bit remains "0" ("as well as the capacity left") so its OK
 // Idea taken from this lecture about the string implementation of facebook/folly - fbstring
 // https://www.youtube.com/watch?v=kPR8h4-qZdk
-// TODO:
+// todo:
 // - optimizations - like not deleting memory unnecessarily in operator= and etc.
 // - resize/reserve/clear
 // - substr
@@ -3071,7 +3071,7 @@ namespace detail {
     ContextState* g_cs = nullptr;
 
     // used to avoid locks for the debug output
-    // TODO: figure out if this is indeed necessary/correct - seems like either there still
+    // todo: figure out if this is indeed necessary/correct - seems like either there still
     // could be a race or that there wouldn't be a race even if using the context directly
     DOCTEST_THREAD_LOCAL bool g_no_colors;
 
@@ -4198,7 +4198,7 @@ namespace {
 #ifdef DOCTEST_PLATFORM_WINDOWS
 #define DOCTEST_OUTPUT_DEBUG_STRING(text) ::OutputDebugStringA(text)
 #else
-    // TODO: integration with XCode and other IDEs
+    // todo: integration with XCode and other IDEs
 #define DOCTEST_OUTPUT_DEBUG_STRING(text)
 #endif // Platform
 
@@ -4843,7 +4843,7 @@ namespace {
             if(opt.no_version == false)
                 xml.writeAttribute("version", DOCTEST_VERSION_STR);
 
-            // only the consequential ones (TODO: filters)
+            // only the consequential ones (todo: filters)
             xml.scopedElement("Options")
                     .writeAttribute("order_by", opt.order_by.c_str())
                     .writeAttribute("rand_seed", opt.rand_seed)
@@ -5566,7 +5566,7 @@ namespace {
             }
         } else {
             // integer
-            // TODO: change this to use std::stoi or something else! currently it uses undefined behavior - assumes '0' on failed parse...
+            // todo: change this to use std::stoi or something else! currently it uses undefined behavior - assumes '0' on failed parse...
             int theInt = std::atoi(parsedValue.c_str()); // NOLINT
             if(theInt != 0) {
                 res = theInt; //!OCLINT parameter reassignment

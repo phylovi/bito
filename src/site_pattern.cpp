@@ -72,7 +72,7 @@ void SitePattern::Compress() {
   for (size_t pos = 0; pos < sequence_length; pos++) {
     SymbolVector pattern(alignment_.SequenceCount());
     for (const auto &iter : tag_taxon_map_) {
-      auto taxon_number = static_cast<size_t>(UnpackFirstInt(iter.first));
+      auto taxon_number = static_cast<size_t>(MaxLeafIDOfTag(iter.first));
       auto symbol_to_find = alignment_.at(iter.second)[pos];
       pattern[taxon_number] = SymbolTableAt(symbol_table, symbol_to_find);
     }
@@ -86,7 +86,7 @@ void SitePattern::Compress() {
   // Collect the site patterns per taxon.
   for (const auto &iter_tag_taxon : tag_taxon_map_) {
     SymbolVector compressed_sequence;
-    auto taxon_number = static_cast<size_t>(UnpackFirstInt(iter_tag_taxon.first));
+    auto taxon_number = static_cast<size_t>(MaxLeafIDOfTag(iter_tag_taxon.first));
     for (const auto &iter_patterns : patterns) {
       compressed_sequence.push_back(iter_patterns.first[taxon_number]);
     }
