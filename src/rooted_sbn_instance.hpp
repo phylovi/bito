@@ -39,7 +39,7 @@ TEST_CASE("RootedSBNInstance: parsing dates") {
   RootedSBNInstance inst("charlie");
   inst.ReadNexusFile("data/test_beast_tree_parsing.nexus");
   std::vector<double> dates;
-  for (auto [tag, date] : isnt.rooted_tree_collection_.tag_date_map_) {
+  for (auto [tag, date] : inst.rooted_tree_collection_.tag_date_map_) {
     dates.push_back(date);
   }
   std::sort(dates.begin(), dates.end());
