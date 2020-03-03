@@ -29,7 +29,7 @@ void RootedTreeCollection::ParseDatesFromTaxonNames() {
       double date = std::stod(match_date[1].str());
       max_date = std::max(date, max_date);
       SafeInsert(tag_date_map_, tag, date);
-      if (have_parsed_a_date || first_pass_through_parsing_loop) {
+      if (first_pass_through_parsing_loop) {
         have_parsed_a_date = true;
       } else {
         Failwith("We couldn't parse dates for a while, but we could parse:" + taxon);
