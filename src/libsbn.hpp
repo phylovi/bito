@@ -143,9 +143,11 @@ class SBNInstance {
   // Computes gradient WRT \phi of log q_{\phi}(\tau).
   // IndexerRepresentation contains all rooting of \tau.
   // It assumes that sbn_gradients_ are normalized in log space.
-  EigenVectorXd GradientOfLogQ(
-                           EigenVectorXdRef sbn_parameters,
-                           const IndexerRepresentation &indexer_representation);
+  // TODO Given that we are passing in sbn_parameters, this doesn't feel like a member
+  // function, but something that should stand alone, probably outside of the object. Am
+  // I missing something?
+  EigenVectorXd GradientOfLogQ(EigenVectorXdRef sbn_parameters,
+                               const IndexerRepresentation &indexer_representation);
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
   std::vector<std::pair<size_t, size_t>> GetSubsplitRanges(
       const SizeVector &rooted_representation);
@@ -473,13 +475,14 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   auto tau = Tree::OfParentIdVector(tau_indices);
   inst.tree_collection_.trees_.push_back(tau);
 
-  // Initialize sbn_parameters to 0's and normalize.
+  // Initialize sbn_parameters to 0's and normalize, which is going to give a uniform
+  // distribution for rootsplits and PCSS distributions.
   inst.sbn_parameters_.setZero();
-  // Make a copy of sbn_parameters_
+  // Make a copy of sbn_parameters_.
   EigenVectorXd sbn_params = inst.sbn_parameters_;
   inst.NormalizeSBNParametersInLog(sbn_params);
   // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
-
+  //
   // We're going to start by computing the rootsplit gradient.
   // There are 7 possible rootings of \tau.
   // For example consider rooting on the 014|23 split, yielding the following subsplits:
@@ -511,8 +514,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   EigenVectorXd expected_grad_rootsplit(8);
   expected_grad_rootsplit << -1. / 8, 0, 0, 0, 0, 0, 0, 1. / 8;
   auto indexer_representations = inst.MakeIndexerRepresentations();
-  EigenVectorXd grad_log_q = inst.GradientOfLogQ(sbn_params,
-                                                 indexer_representations.at(0));
+  EigenVectorXd grad_log_q =
+      inst.GradientOfLogQ(sbn_params, indexer_representations.at(0));
   EigenVectorXd realized_grad_rootsplit = grad_log_q.segment(0, 8);
   // Sort them and compare against sorted version of
   // realized_grad_rootsplit[0:7].
@@ -525,9 +528,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // 4|0123, 01|23, 0|1, 2|3.
   // Note the subsplit s = 01|23 is one of two choices for
   // the parent subsplit t = 4|0123,
-  // %EM I don't follow this statement re s'... how can 01|34 be a child of 4|0123?
-  // % SHJ Sorry about that. It should be 012|3 not 01|34.
-  // since 4|0123 can also be split into s' = 012|3 as well s = 01|23.
+  // since 4|0123 can also be split into s' = 012|3.
   // Let \rho = 4|0123, the gradient for 01|23 is given by:
   // (1/q(\tau)) P(\tau_{\rho}) * (1 - P(01|23 | 4|0123))
   // = 2 * (1/16) * (1-0.5) = 1/16.
@@ -542,7 +543,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // 4|23  | 01|234
   // 4|23  | 1|234
   // 4|23  | 0|234
-  // And each of these have a subsplit s' that gets gradient of -1/16.
+  // And each of these have an alternate subsplit s' that gets gradient of -1/16.
   // Each of the other PCSS gradients are 0 either because its parent support
   // never appears in the tree or it represents the only child subsplit.
   EigenVectorXd expected_grad_pcss(num_pcss);
@@ -551,20 +552,19 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   expected_grad_pcss.segment(num_pcss - 6, 6).setConstant(1. / 16);
   EigenVectorXd realized_grad_pcss = grad_log_q.tail(num_pcss);
   std::sort(realized_grad_pcss.begin(), realized_grad_pcss.end());
-  for (size_t i = 0; i < num_pcss; i++) {
-    CHECK_LT(fabs(realized_grad_pcss(i) - expected_grad_pcss(i)), 1e-9);
-  }
+  CheckVectorXdEquality(realized_grad_pcss, expected_grad_pcss, 1e-9);
 
   // Consider the SBN defined by the following subsplits:
-  // 0|1234, 3|012, 2|01, 0|1.
-  // The PCSS s|t = (01|23) | (0|1234) corresponds to 00001|11110|00110.
-  // The PCSS s'|t = (3|012) | (0|1234) corresponds to 00001|11110|00010.
+  // 0|1234, 012|3, 2|01, 0|1.
+  // The PCSS s|t =  (01|23) | (0|1234) corresponds to 00001|11110|00110.
+  // The PCSS s'|t = (012|3) | (0|1234) corresponds to 00001|11110|00010.
   // Look up these entries in the indexer:
   Bitset s("000011111000110");
   Bitset s_prime("000011111000010");
   size_t s_idx = inst.indexer_.at(s);
   size_t s_prime_idx = inst.indexer_.at(s_prime);
 
+  // TODO not obvious why we are playing with sbn_parameters_ vs the copy.
   // Reset sbn_parameters to 0.
   inst.sbn_parameters_.setZero();
   // Set sbn_paremeters for s_idx and s_prime_idx to 1, -1 respectively.
