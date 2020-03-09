@@ -521,10 +521,11 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
 
   // Manual enumeration shows that the entries corresponding to PCSS should have
   // 6 entries with -1/16 and 6 entries with 1/16 and the rest with 0's.
-  // For example, consider the tree with the following subsplits:
+  // For example, consider the tree ((0,1),(2,3),4), which has the following subsplits:
   // 4|0123, 01|23, 0|1, 2|3.
   // Note the subsplit s = 01|23 is one of two choices for
   // the parent subsplit t = 4|0123,
+  // %EM I don't follow this statement re s'... how can 01|34 be a child of 4|0123?
   // since 4|0123 can also be split into s' = 01|34 as well s = 01|23.
   // Let \rho = 4|0123, the gradient for 01|23 is given by:
   // (1/q(\tau)) P(\tau_{\rho}) * (1 - P(01|23 | 4|0123))
