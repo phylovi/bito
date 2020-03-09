@@ -205,7 +205,7 @@ Next, we will derive the exact equation for $\nabla_{\phi} \log q_{\phi}(\tau^j)
 \subsection*{Rooted tree}
 It suffices to derive the gradient for arbitrary $\phi_{s|t}$ where $\phi_{s|t}$ is an element of the parameter vector $\phi$ corresponding to some subsplit $s|t \in \mathbb{C}_{.|t}$.
 We use the notation $\nabla_{s|t}$ as a shorthand for $\nabla_{\phi_{s|t}}$: the gradient with respect to $\phi_{s|t}$.
-For generality, we assume that the root split is given with parent split value of $t = \emptyset$.
+For generality, we assume that the rootsplit is given with parent split value of $t = \emptyset$.
 We consider three cases: 1) if the split $s|t$ is observed in the tree, we denote this by $s|t \in \tau^j$, 2) if the parent split $t$ is observed in the tree i.e., $t \in \tau^j$ but the child split $s|t \notin \tau^j$, and 3) $t \notin \tau^j$ and hence $s|t \notin \tau^j$.
 The derivation for the first two cases is
 \begin{align*}
@@ -255,11 +255,12 @@ Therefore, $\nabla_{s|t} \log q_{\phi}(\tau^j)$ is given by:
     \label{eq:gradLogQ}
 \end{equation}
 where $P_{\phi}(\tau_{\rho}^j)$ denotes the SBN probability of the tree $\tau^j_{\rho}$ rooted at $\rho \in \mathbb{C}_{r}(\tau^j)$.
-Notice that for the rootsplit $s | t = \emptyset$, it may be simpler to express the gradient as,
-\begin{align*}
+Notice that for the rootsplit we use $t = \emptyset$, in which case it may be simpler to express the gradient as
+\begin{align}
     \nabla_{s|t} \log q_{\phi}(\tau^j)
     = \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} 1[s|t \in \tau^j_{\rho}] \frac{P_{\phi}(\tau^j_{\rho})}{q_{\phi}(\tau^j)} - P_{\phi}(s|t),
-\end{align*}
+    \label{eq:rootsplitGrad}
+\end{align}
 since $t = \emptyset \in \tau_{\rho}^j$ for all $\rho$ and $\sum_{\rho} P_{\phi}(\tau_{\rho}^j) = q_{\phi}(\tau)$.
 And of course, for the third case where $t \notin \tau_{\rho}^j$, i.e., the split $t$ is never seen in the tree, then the gradient is just $0$ for all $s | t \in \mathbb{C}_{\cdot|t}$.
 

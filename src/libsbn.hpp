@@ -480,10 +480,10 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   inst.NormalizeSBNParametersInLog(sbn_params);
   // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
 
-  // We're going to start by computing the XXX TODO erick
+  // We're going to start by computing the rootsplit gradient.
   // There are 7 possible rootings of \tau.
-  // For example consider rooting on the 23|014 split, yielding the following subsplits:
-  // 23|014, 2|3, 4|01, 0|1.
+  // For example consider rooting on the 014|23 split, yielding the following subsplits:
+  // 014|23, 2|3, 4|01, 0|1.
   // Each of the child subsplits are the only possible subsplit,
   // except for the root where it has probability 1/8. Hence, the probability
   // for this tree is 1/8 x 1 x 1 x 1 = 1/8.
@@ -494,22 +494,22 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Each of the remaining 5 trees has the same probability:
   // 1/8 for the rootsplit and 1/2 for one of the child subplits.
   // One can see this because the only way for there not to be ambiguity in the
-  // resolution of the splitting of 234 is for one to take 23|014 as the rootsplit.
+  // resolution of the splitting of 234 is for one to take 014|23 as the rootsplit.
   //
   // Hence, q(\tau) = 6 x 1/16 + 1 x 1/8 = 8/16 = 0.5.
-  // Note that there are a total 8 rootsplits; 7 are possible rootsplits of
+  // Note that there are a total of 8 rootsplits; 7 are possible rootsplits of
   // the sampled tree \tau but one rootsplit,
   // 014|23 is not observed rooting of \tau and hence,
   // the gradient for 014|23 is simply -P(014|23) = -1/8.
   //
-  // The gradient with respect to each of the 7 rootsplits is given by,
-  // P(\tau_{\rho})/q(\tau) - P(\rho),
-  // which equal to
-  // (1/8) / (8/16) - 1/8 = 1/8 for the tree with \rho = 34|125 and
+  // The gradient with respect to each of the 7 rootsplits is given by
+  // P(\tau_{\rho})/q(\tau) - P(\rho) via eq:rootsplitGrad,
+  // which is equal to
+  // (1/8) / (0.5) - 1/8 = 1/8 for the tree with \rho = 34|125 and
   // (1/16) / (0.5) - 1/8 = 0 for 6 remaining trees.
 
-  std::vector<double> expected_grad_rootsplit = {-1. / 8, 0, 0, 0, 0, 0, 0, 1. / 8};
-
+  EigenVectorXd expected_grad_rootsplit(8);
+  expected_grad_rootsplit << -1. / 8, 0, 0, 0, 0, 0, 0, 1. / 8;
   auto indexer_representations = inst.MakeIndexerRepresentations();
   EigenVectorXd grad_log_q = inst.GradientOfLogQ(sbn_params,
                                                  indexer_representations.at(0));
@@ -517,9 +517,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Sort them and compare against sorted version of
   // realized_grad_rootsplit[0:7].
   std::sort(realized_grad_rootsplit.begin(), realized_grad_rootsplit.end());
-  for (size_t i = 0; i < num_rootsplits; i++) {
-    CHECK_LT(fabs(realized_grad_rootsplit(i) - expected_grad_rootsplit.at(i)), 1e-9);
-  }
+  CheckVectorXdEquality(realized_grad_rootsplit, expected_grad_rootsplit, 1e-9);
 
   // Manual enumeration shows that the entries corresponding to PCSS should have
   // 6 entries with -1/16 and 6 entries with 1/16 and the rest with 0's.
