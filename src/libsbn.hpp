@@ -526,12 +526,13 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Note the subsplit s = 01|23 is one of two choices for
   // the parent subsplit t = 4|0123,
   // %EM I don't follow this statement re s'... how can 01|34 be a child of 4|0123?
-  // since 4|0123 can also be split into s' = 01|34 as well s = 01|23.
+  // % SHJ Sorry about that. It should be 012|3 not 01|34.
+  // since 4|0123 can also be split into s' = 012|3 as well s = 01|23.
   // Let \rho = 4|0123, the gradient for 01|23 is given by:
   // (1/q(\tau)) P(\tau_{\rho}) * (1 - P(01|23 | 4|0123))
   // = 2 * (1/16) * (1-0.5) = 1/16.
-  // The gradient for s' = 01|34 is,
-  // (1/q(\tau)) P(\tau_{\rho}) * -P(01|34 | 4|0123)
+  // The gradient for s' = 012|3 is,
+  // (1/q(\tau)) P(\tau_{\rho}) * -P(012|3 | 4|0123)
   // = 2 * (1/16) * -0.5 = -1/16.
 
   // The gradient for the following PCSS are 1/16 as above.
