@@ -353,32 +353,38 @@ std::vector<std::pair<size_t, size_t>> SBNInstance::GetSubsplitRanges(
 // This multiplicative factor is the quantity inside the parentheses in eq:nabla in the
 // tex.
 EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
-  size_t num_trees = log_f.size();
+  size_t tree_count = log_f.size();
   double log_F = NumericalUtils::LogSum(log_f);
-  double hat_L = log_F - log(num_trees);
+  double hat_L = log_F - log(tree_count);
   EigenVectorXd tilde_w = log_f.array() - log_F;
   tilde_w = tilde_w.array().exp();
   EigenVectorXd multiplicative_factors = hat_L - tilde_w.array();
   return multiplicative_factors;
 }
 
+// This multiplicative factor is the quantity inside the parentheses in eq:nablaVIMCO in
+// the tex.
+// %EM It sure seems to me that these multiplicative factors are the same as the above
+// multiplicative factors but subtracting off the per_sample_signal. Is that right? If
+// so, then I'd prefer to reduce code duplication by just calling the above code then
+// using -=.
 EigenVectorXd CalculateVIMCOMultiplicativeFactors(const EigenVectorXdRef log_f) {
-  size_t num_trees = log_f.size();
-  double log_num_trees = log(num_trees);
+  size_t tree_count = log_f.size();
+  double log_tree_count = log(tree_count);
   double log_F = NumericalUtils::LogSum(log_f);
-  double hat_L = log_F - log(num_trees);
+  double hat_L = log_F - log_tree_count;
   EigenVectorXd tilde_w = log_f.array() - log_F;
   tilde_w = tilde_w.array().exp();
 
   // Use the geometric mean as \hat{f}(\tau^{-j}, \theta^{-j}), in eq:f_hat in
   // the implementation notes.
-  double sum_of_logf = log_f.sum();
-  EigenVectorXd log_geometric_mean = (sum_of_logf - log_f.array()) / (num_trees - 1);
-  EigenVectorXd per_sample_signal(num_trees);
+  double sum_of_log_f = log_f.sum();
+  EigenVectorXd log_geometric_mean = (sum_of_log_f - log_f.array()) / (tree_count - 1);
+  EigenVectorXd per_sample_signal(tree_count);
   EigenVectorXd log_f_copy = log_f;
-  for (size_t i = 0; i < num_trees; i++) {
+  for (size_t i = 0; i < tree_count; i++) {
     log_f_copy(i) = log_geometric_mean(i);
-    per_sample_signal(i) = log_f_copy.redux(NumericalUtils::LogAdd) - log_num_trees;
+    per_sample_signal(i) = log_f_copy.redux(NumericalUtils::LogAdd) - log_tree_count;
     // Reset the value.
     log_f_copy(i) = log_f(i);
   }
@@ -425,7 +431,7 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
 
 EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
                                              bool use_vimco) {
-  size_t num_trees = tree_collection_.Trees().size();
+  size_t tree_count = tree_collection_.TreeCount();
 
   EigenVectorXd sbn_parameters = sbn_parameters_;
 
@@ -439,7 +445,7 @@ EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
   // Normalize the sbn parameters in log space.
   // We work with copy to keep sbn_parameters_ unmodified.
   NormalizeSBNParametersInLog(sbn_parameters);
-  for (size_t i = 0; i < num_trees; i++) {
+  for (size_t i = 0; i < tree_count; i++) {
     double multiplicative_factor = multiplicative_factors(i);
     const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
       indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters.size());

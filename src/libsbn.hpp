@@ -622,7 +622,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
                                                     indexer_reps.at(k)).array();
     expected_nabla += grad_log_q;
   }
-  // %EM Seems worthwhile to me... can I cut this comment?
+  // %EM Seems worthwhile to me... is this comment needed?
   // This isn't the most useful way to test the code since we are baically doing
   // the same calculation as implemented in TopologyGradients().
   // But if the implementation of TopologyGradients() on any of the internal
