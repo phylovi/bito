@@ -410,13 +410,11 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
     // Now, we update the gradients.
     for (const auto &[begin, end] : subsplit_ranges) {
       for (size_t idx = begin; idx < end; idx++) {
-        size_t ind_subsplit_in_rooted_tree =
-          (rooted_representation_as_set.count(idx) > 0) ? 1 : 0;
-        // %EM What if, instead of this if, we actually had an indicator variable? I
-        // feel like this might be easier to follow for people who are reading the tex.
-        // %SJ Done.
-        grad_log_q[idx] += exp(log_probability_rooted_tree) *
-            (ind_subsplit_in_rooted_tree - exp(sbn_parameters[idx]));
+        double indicator_subsplit_in_rooted_tree =
+            static_cast<double>(rooted_representation_as_set.count(idx) > 0);
+        grad_log_q[idx] +=
+            exp(log_probability_rooted_tree) *
+            (indicator_subsplit_in_rooted_tree - exp(sbn_parameters[idx]));
       }
     }
     log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
@@ -436,7 +434,7 @@ EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
   EigenVectorXd multiplicative_factors = use_vimco ?
     CalculateVIMCOMultiplicativeFactors(log_f) :
     CalculateMultiplicativeFactors(log_f);
-  
+
   // %EM I'm not sure what this comment means:
   // Normalize the sbn parameters in log space.
   // We work with copy to keep sbn_parameters_ unmodified.

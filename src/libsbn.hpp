@@ -143,7 +143,7 @@ class SBNInstance {
   // Computes gradient WRT \phi of log q_{\phi}(\tau).
   // IndexerRepresentation contains all rooting of \tau.
   // It assumes that sbn_gradients_ are normalized in log space.
-  // TODO Given that we are passing in sbn_parameters, this doesn't feel like a member
+  // %EM Given that we are passing in sbn_parameters, this doesn't feel like a member
   // function, but something that should stand alone, probably outside of the object. Am
   // I missing something?
   EigenVectorXd GradientOfLogQ(EigenVectorXdRef sbn_parameters,
@@ -486,12 +486,12 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // We're going to start by computing the rootsplit gradient.
   // There are 7 possible rootings of \tau.
   // For example consider rooting on the 014|23 split, yielding the following subsplits:
-  // 014|23, 2|3, 4|01, 0|1.
+  // 014|23, 2|3, 01|4, 0|1.
   // Each of the child subsplits are the only possible subsplit,
   // except for the root where it has probability 1/8. Hence, the probability
   // for this tree is 1/8 x 1 x 1 x 1 = 1/8.
   // Now, consider rooting on the 0|1234 split, yielding the following subsplits:
-  // 0|1234, 1|234, 4|23, 2|3.
+  // 0|1234, 1|234, 23|4, 2|3.
   // The probability for this tree is 1/8 x 1 x 1/2 x 1 = 1/16.
   //
   // Each of the remaining 5 trees has the same probability:
@@ -525,24 +525,24 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Manual enumeration shows that the entries corresponding to PCSS should have
   // 6 entries with -1/16 and 6 entries with 1/16 and the rest with 0's.
   // For example, consider the tree ((0,1),(2,3),4), which has the following subsplits:
-  // 4|0123, 01|23, 0|1, 2|3.
+  // 0123|4, 01|23, 0|1, 2|3.
   // Note the subsplit s = 01|23 is one of two choices for
-  // the parent subsplit t = 4|0123,
-  // since 4|0123 can also be split into s' = 012|3.
-  // Let \rho = 4|0123, the gradient for 01|23 is given by:
-  // (1/q(\tau)) P(\tau_{\rho}) * (1 - P(01|23 | 4|0123))
+  // the parent subsplit t = 0123|4,
+  // since 0123|4 can also be split into s' = 012|3.
+  // Let \rho = 0123|4, the gradient for 01|23 is given by:
+  // (1/q(\tau)) P(\tau_{\rho}) * (1 - P(01|23 | 0123|4))
   // = 2 * (1/16) * (1-0.5) = 1/16.
   // The gradient for s' = 012|3 is,
-  // (1/q(\tau)) P(\tau_{\rho}) * -P(012|3 | 4|0123)
+  // (1/q(\tau)) P(\tau_{\rho}) * -P(012|3 | 0123|4)
   // = 2 * (1/16) * -0.5 = -1/16.
 
   // The gradient for the following PCSS are 1/16 as above.
-  // 3|014 | 2|0134
-  // 2|014 | 3|0124
-  // 01|23 | 4|0123
-  // 4|23  | 01|234
-  // 4|23  | 1|234
-  // 4|23  | 0|234
+  // 014|3 | 0134|2
+  // 014|2 | 0124|3
+  // 01|23 | 0123|4
+  // 23|4  | 01|234
+  // 23|4  | 1|234
+  // 23|4  | 0|234
   // And each of these have an alternate subsplit s' that gets gradient of -1/16.
   // Each of the other PCSS gradients are 0 either because its parent support
   // never appears in the tree or it represents the only child subsplit.
@@ -554,37 +554,42 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   std::sort(realized_grad_pcss.begin(), realized_grad_pcss.end());
   CheckVectorXdEquality(realized_grad_pcss, expected_grad_pcss, 1e-9);
 
+  // %EM Do you mean to say SBN here? The SBN is already defined... this is some subset
+  // of the SBN. I think what we'd like to hear is that if we root at 0123|4, then the
+  // only "choice" we have is between s and s' below.
+  //
   // Consider the SBN defined by the following subsplits:
-  // 0|1234, 012|3, 2|01, 0|1.
-  // The PCSS s|t =  (01|23) | (0|1234) corresponds to 00001|11110|00110.
-  // The PCSS s'|t = (012|3) | (0|1234) corresponds to 00001|11110|00010.
+  // 0123|4, 012|3, 01|2, 0|1.
+  // The PCSS s|t =  (01|23) | (0123|4) corresponds to 00001|11110|00110.
+  // The PCSS s'|t = (012|3) | (0123|4) corresponds to 00001|11110|00010.
   // Look up these entries in the indexer:
   Bitset s("000011111000110");
   Bitset s_prime("000011111000010");
   size_t s_idx = inst.indexer_.at(s);
   size_t s_prime_idx = inst.indexer_.at(s_prime);
 
-  // TODO not obvious why we are playing with sbn_parameters_ vs the copy.
+  // %EM not obvious why we are playing with sbn_parameters_ vs the copy.
   // Reset sbn_parameters to 0.
   inst.sbn_parameters_.setZero();
-  // Set sbn_paremeters for s_idx and s_prime_idx to 1, -1 respectively.
+  // Set sbn_parameters_ for s_idx and s_prime_idx to 1, -1 respectively.
   inst.sbn_parameters_(s_idx) = 1;
   inst.sbn_parameters_(s_prime_idx) = -1;
   sbn_params = inst.sbn_parameters_;
+  // %EM no, we're normalizing sbn_params.
   // Normalize sbn_parameters_ in preparation for calling GradientOfLogQ().
   inst.NormalizeSBNParametersInLog(sbn_params);
 
-  // This changes q(\tau) as well as P(\tau_{\rho}) for \rho = 0|1234.
-  // First, P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) + exp(-1)) = 0.1100996.
+  // These changes to sbn_params will change q(\tau) as well as P(\tau_{\rho}) for \rho
+  // = 0123|4. First, P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) + exp(-1)) = 0.1100996.
   double p_tau_rho = (1. / 8) * exp(sbn_params[s_idx]);
-  // q(\tau), we will just compute using already tested function:
+  // For q(\tau), we will just compute using the already tested function:
   double q_tau = inst.CalculateSBNProbabilities()(0);
   // The gradient for s|t is given by,
   // (1/q(\tau)) x P(\tau_{\rho}) x (1 - P(s|t))
   double expected_grad_at_s =
       (1. / q_tau) * p_tau_rho * (1 - exp(sbn_params[s_idx]));
   // And the gradient for s'|t is given by,
-  // (1/q(\tau)) x P(\tau_{\rho}) x (1 - P(s|t))
+  // (1/q(\tau)) x P(\tau_{\rho}) x (-P(s|t))
   double expected_grad_at_s_prime =
       (1. / q_tau) * p_tau_rho * -exp(sbn_params[s_prime_idx]);
   grad_log_q = inst.GradientOfLogQ(sbn_params,
@@ -595,7 +600,6 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Let's do a simple test for TopologyGradient()
   K = 4;
   inst.SampleTrees(K);
-
   // Make up some numbers for log_f
   EigenVectorXd log_f(K);
   log_f << -83, -75, -80, -79;
@@ -618,7 +622,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
                                                     indexer_reps.at(k)).array();
     expected_nabla += grad_log_q;
   }
-
+  // %EM Seems worthwhile to me... can I cut this comment?
   // This isn't the most useful way to test the code since we are baically doing
   // the same calculation as implemented in TopologyGradients().
   // But if the implementation of TopologyGradients() on any of the internal
