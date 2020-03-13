@@ -24,6 +24,7 @@ TEST_CASE("TaxonNameMunging") {
   std::string single_quoted_dequoted(R"raw(this is a ' test)raw");
 
   assert(QuoteString(unquoted_test) == R"raw("hello 'there\" friend")raw");
+  assert(DequoteString(unquoted_test) == unquoted_test);
   assert(DequoteString(double_quoted_test) == double_quoted_dequoted);
   assert(DequoteString(single_quoted_test) == single_quoted_dequoted);
   assert(DequoteString(QuoteString(unquoted_test)) == unquoted_test);

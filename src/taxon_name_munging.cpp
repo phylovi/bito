@@ -17,7 +17,7 @@ std::string TaxonNameMunging::DequoteString(const std::string &in_str) {
   char delimiter = in_str.at(0);
   if (delimiter != '\'' && delimiter != '"') {
     return std::string(in_str);
-  }
+  }  // else
   std::stringstream ss(in_str);
   std::string out_str;
   ss >> std::quoted(out_str, delimiter);
