@@ -407,7 +407,7 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
     auto subsplit_ranges = GetSubsplitRanges(rooted_representation);
     // Fill the entries in normalized_sbn_parameters_in_log if it is not already filled.
     for (const auto &[begin, end] : subsplit_ranges) {
-      if (!isnan(normalized_sbn_parameters_in_log[begin])) {
+      if (!std::isnan(normalized_sbn_parameters_in_log[begin])) {
         continue;
       }
       auto segment = sbn_parameters_.segment(begin, end - begin);
