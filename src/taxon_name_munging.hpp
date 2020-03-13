@@ -10,8 +10,6 @@
 namespace TaxonNameMunging {
 std::string QuoteString(const std::string &in_str);
 std::string DequoteString(const std::string &in_str);
-TagStringMap TransformStringValues(std::function<std::string(const std::string &)> f,
-                                   const TagStringMap &in_map);
 TagStringMap DequoteTagStringMap(const TagStringMap &tag_string_map);
 }  // namespace TaxonNameMunging
 

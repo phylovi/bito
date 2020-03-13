@@ -24,8 +24,8 @@ std::string TaxonNameMunging::DequoteString(const std::string &in_str) {
   return out_str;
 }
 
-TagStringMap TaxonNameMunging::TransformStringValues(
-    std::function<std::string(const std::string &)> f, const TagStringMap &in_map) {
+TagStringMap TransformStringValues(std::function<std::string(const std::string &)> f,
+                                   const TagStringMap &in_map) {
   TagStringMap out_map;
   for (const auto &[tag, value] : in_map) {
     out_map.insert({tag, f(value)});
