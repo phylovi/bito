@@ -29,6 +29,7 @@ TEST_CASE("TaxonNameMunging") {
   assert(DequoteString(double_quoted_test) == double_quoted_dequoted);
   assert(DequoteString(single_quoted_test) == single_quoted_dequoted);
   assert(DequoteString(QuoteString(unquoted_test)) == unquoted_test);
+  assert(false);
 
   TagStringMap test_map(
       {{2, unquoted_test}, {3, double_quoted_test}, {5, single_quoted_test}});
