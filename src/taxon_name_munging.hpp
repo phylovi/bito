@@ -23,19 +23,16 @@ TEST_CASE("TaxonNameMunging") {
   std::string single_quoted_test(R"raw('this is a \' test')raw");
   std::string single_quoted_dequoted(R"raw(this is a ' test)raw");
 
-  assert(QuoteString(unquoted_test) == R"raw("hello 'there\" friend")raw");
-  assert(DequoteString(unquoted_test) == unquoted_test);
-  assert(DequoteString(double_quoted_test) == double_quoted_dequoted);
-  assert(DequoteString(single_quoted_test) == single_quoted_dequoted);
-  assert(DequoteString(QuoteString(unquoted_test)) == unquoted_test);
-  assert(false);
+  CHECK_EQ(QuoteString(unquoted_test), R"raw("hello 'there\" friend")raw");
+  CHECK_EQ(DequoteString(double_quoted_test), double_quoted_dequoted);
+  CHECK_EQ(DequoteString(single_quoted_test), single_quoted_dequoted);
+  CHECK_EQ(DequoteString(QuoteString(unquoted_test)), unquoted_test);
 
   TagStringMap test_map(
       {{2, unquoted_test}, {3, double_quoted_test}, {5, single_quoted_test}});
   TagStringMap expected_test_map(
       {{2, unquoted_test}, {3, double_quoted_dequoted}, {5, single_quoted_dequoted}});
-
-  assert(expected_test_map == DequoteTagStringMap(test_map));
+  CHECK_EQ(expected_test_map, DequoteTagStringMap(test_map));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
