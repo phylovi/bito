@@ -413,22 +413,21 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
               segment.array() - log_sum;
         }
       }
-
       double log_probability_rooted_tree = SBNProbability::SumOf(
           normalized_sbn_parameters_in_log, rooted_representation, 0.0);
-
+      double probability_rooted_tree = exp(log_probability_rooted_tree);
       // We need to look up the subsplits in the tree.
       // Set representation allows fast lookup.
       std::unordered_set<size_t> rooted_representation_as_set(
           rooted_representation.begin(), rooted_representation.end());
-      // Now, we update the gradients.
+      // Now, we actually perform the eq:gradLogQ calculation.
       for (const auto &[begin, end] : subsplit_ranges) {
         for (size_t idx = begin; idx < end; idx++) {
           double indicator_subsplit_in_rooted_tree =
               static_cast<double>(rooted_representation_as_set.count(idx) > 0);
-          grad_log_q[idx] += exp(log_probability_rooted_tree) *
-                             (indicator_subsplit_in_rooted_tree -
-                              exp(normalized_sbn_parameters_in_log[idx]));
+          grad_log_q[idx] +=
+              probability_rooted_tree * (indicator_subsplit_in_rooted_tree -
+                                         exp(normalized_sbn_parameters_in_log[idx]));
         }
       }
       log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
