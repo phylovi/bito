@@ -12,20 +12,6 @@ auto now = std::chrono::high_resolution_clock::now;
 // valgrind --tool=callgrind ./_build/noodle
 // gprof2dot -f callgrind callgrind.out.16763 | dot -Tpng -o ~/output.png
 
-// TagStringMap TransformStringValues(std::function<std::string(std::string)>,
-std::string TransformString(std::function<std::string(const std::string &)> f,
-                            std::string s) {
-  return f(s);
-}
-
-// TagStringMap DequoteTagStringMap(TagStringMap tag_string_map);
-
-// Parsing:
-// Quotation marks are always taken off, and an error is thrown if quotation marks are
-// not matching. If preserve_underscores is True, then underscores are kept. If
-// preserve_underscores is False, then underscores are replaced with spaces. If a string
-// is quoted,
-
 std::string QuoteString(const std::string &in_str) {
   std::stringstream ss;
   ss << std::quoted(in_str);
@@ -34,15 +20,29 @@ std::string QuoteString(const std::string &in_str) {
 
 std::string DequoteString(const std::string &in_str) {
   if (in_str.empty()) {
-    return in_str;
+    return std::string();
   }
-  // If the first character is an open single quote, then we assume that this is the
-  // delimiter. Otherwise we assume that it's a double quote.
-  char delim = (in_str.at(0) == '\'') ? '\'' : '"';
+  char delimiter = in_str.at(0);
+  if (delimiter != '\'' && delimiter != '"') {
+    return std::string(in_str);
+  }
   std::stringstream ss(in_str);
   std::string out_str;
-  ss >> std::quoted(out_str, delim);
+  ss >> std::quoted(out_str, delimiter);
   return out_str;
+}
+
+TagStringMap TransformStringValues(std::function<std::string(const std::string &)> f,
+                                   const TagStringMap &in_map) {
+  TagStringMap out_map;
+  for (const auto &[tag, value] : in_map) {
+    out_map.insert({tag, f(value)});
+  }
+  return out_map;
+}
+
+TagStringMap DequoteTagStringMap(const TagStringMap &tag_string_map) {
+  return TransformStringValues(DequoteString, tag_string_map);
 }
 
 int main() {
@@ -52,11 +52,17 @@ int main() {
   std::string single_quoted_test(R"raw('this is a \' test')raw");
   std::string single_quoted_dequoted(R"raw(this is a ' test)raw");
 
-  std::cout << QuoteString(unquoted_test) << std::endl;
-  std::cout << (DequoteString(double_quoted_test) == double_quoted_dequoted)
-            << std::endl;
-  std::cout << (DequoteString(single_quoted_test) == single_quoted_dequoted)
-            << std::endl;
+  assert(QuoteString(unquoted_test) == R"raw("hello 'there\" friend")raw");
+  assert(DequoteString(double_quoted_test) == double_quoted_dequoted);
+  assert(DequoteString(single_quoted_test) == single_quoted_dequoted);
+  assert(DequoteString(QuoteString(unquoted_test)) == unquoted_test);
+
+  TagStringMap test_map(
+      {{2, unquoted_test}, {3, double_quoted_test}, {5, single_quoted_test}});
+  TagStringMap expected_test_map(
+      {{2, unquoted_test}, {3, double_quoted_dequoted}, {5, single_quoted_dequoted}});
+
+  assert(expected_test_map == DequoteTagStringMap(test_map));
 
   // R"raw("hi 'there\" ")raw"
   // R"raw(this is a " test)raw"
