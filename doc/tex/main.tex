@@ -111,7 +111,6 @@ To be precise, since we have a collection of trees $\mathcal{D}^u = \{T^u_k\}_{k
     =& \sum\limits_{k=1}^{K} \log P(T^u_k | \bm{\phi}^{(n)}) \\
     =& \sum\limits_{k=1}^{K} \log \sum\limits_{s_1} P(S_1 = s_1 | \bm{\phi}^{(n)}) P(T^u_k | S_1 = s_1, \bm{\phi}^{(n)}).
 \end{align*}
-%EM Seong-- I added this but I can't remember if you approved it.
 \textbf{This is the quantity called the (unregularized) score in the code, in contrast to the original paper.}
 
 We complete this section by providing details on the regularized EM algorithm.
@@ -225,8 +224,6 @@ The derivation for the first two cases proceeds as follows.
 \begin{align*}
     \nabla_{s|t} \log q_{\phi}(\tau^j)
     &= \frac{\nabla_{s|t} q_{\phi}(\tau^j)}{q_{\phi}(\tau^j)} \\
-    %EM I just realized this isn't quite right yet, is it? \mathbb{C}_{r} is the complete possible rootsplit support, while what we want here is the rootsplits of a specific unrooted topology.
-    %EM Shall we use \mathbb{C}_r (\tau^j)?
     &= \frac{1}{q_{\phi}(\tau^j)} \nabla_{s|t} \left( \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right).
 \end{align*}
 In the first two cases we assume $s^*|t \in \tau$ for some $s^*$, which yields the gradient as follows:
@@ -291,9 +288,10 @@ This gives (5) of the 2019 ICLR paper, which in our notation is
 \nabla_{\bm{\phi}} L^K(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau^{1:K},\;\bm{\theta}^{1:K})}\sum_{j=1}^K\left(\hat{L}_{j|-j}^K(\bm{\phi},{\bm{\psi}})-\tilde{w}^j\right)\nabla_{\bm{\phi}}\log q_{\bm{\phi}}(\tau^j)
 \]
 where
-\[
+\begin{equation}
 \hat{L}_{j|-j}^K(\bm{\phi},{\bm{\psi}}) :=  \hat{L}^K(\bm{\phi},{\bm{\psi}}) - \log\frac1K\left(\sum_{i\neq j}f_{\bm{\phi},{\bm{\psi}}}(\tau^i,\bm{\theta}^i) + \hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})\right)
-\]
+\label{eq:perSampleLearning}
+\end{equation}
 is the per-sample local learning signal, with $\hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})$ being some estimate of $f_{\bm{\phi},{\bm{\psi}}}(\tau^j,\bm{\theta}^j)$ for sample $j$ using the rest of samples (in our case the geometric mean).
 
 The geometric mean is given by,

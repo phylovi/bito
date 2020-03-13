@@ -364,27 +364,26 @@ EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
 
 // This multiplicative factor is the quantity inside the parentheses in eq:nablaVIMCO in
 // the tex.
-// %EM It sure seems to me that these multiplicative factors are the same as the above
-// multiplicative factors but subtracting off the per_sample_signal. Is that right? If
-// so, then I'd prefer to reduce code duplication by just calling the above code then
-// using -=.
-// %SHJ Done.
 EigenVectorXd CalculateVIMCOMultiplicativeFactors(const EigenVectorXdRef log_f) {
   // Use the geometric mean as \hat{f}(\tau^{-j}, \theta^{-j}), in eq:f_hat in
   // the implementation notes.
   size_t tree_count = log_f.size();
   double log_tree_count = log(tree_count);
   double sum_of_log_f = log_f.sum();
+  // This has jth entry \hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j}),
+  // i.e. the log of the geometric mean of each item other than j.
   EigenVectorXd log_geometric_mean = (sum_of_log_f - log_f.array()) / (tree_count - 1);
   EigenVectorXd per_sample_signal(tree_count);
-  EigenVectorXd log_f_copy = log_f;
+  // This is a vector of entries that when summed become the parenthetical expression
+  // in eq:perSampleLearning.
+  EigenVectorXd log_f_perturbed = log_f;
   for (size_t i = 0; i < tree_count; i++) {
-    log_f_copy(i) = log_geometric_mean(i);
-    per_sample_signal(i) = log_f_copy.redux(NumericalUtils::LogAdd) - log_tree_count;
+    log_f_perturbed(i) = log_geometric_mean(i);
+    per_sample_signal(i) =
+        log_f_perturbed.redux(NumericalUtils::LogAdd) - log_tree_count;
     // Reset the value.
-    log_f_copy(i) = log_f(i);
+    log_f_perturbed(i) = log_f(i);
   }
-
   EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
   multiplicative_factors -= per_sample_signal;
   return multiplicative_factors;
@@ -398,41 +397,42 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
   EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters_.size());
   double log_q = DOUBLE_NEG_INF;
   for (const auto &rooted_representation : indexer_representation) {
-    if (!SBNProbability::IsInSBNSupport(rooted_representation,
-                                        sbn_parameters_.size())) {
-      continue;
-    }
-
-    // Get all subsplit ranges.
-    auto subsplit_ranges = GetSubsplitRanges(rooted_representation);
-    // Fill the entries in normalized_sbn_parameters_in_log if it is not already filled.
-    for (const auto &[begin, end] : subsplit_ranges) {
-      if (!std::isnan(normalized_sbn_parameters_in_log[begin])) {
-        continue;
+    if (SBNProbability::IsInSBNSupport(rooted_representation, sbn_parameters_.size())) {
+      auto subsplit_ranges = GetSubsplitRanges(rooted_representation);
+      // Fill the entries in normalized_sbn_parameters_in_log if it is not already
+      // filled.
+      for (const auto &[begin, end] : subsplit_ranges) {
+        if (std::isnan(normalized_sbn_parameters_in_log[begin])) {
+          // NaN means that it hasn't been filled yet.
+          auto segment = sbn_parameters_.segment(begin, end - begin);
+          double log_sum = segment.redux(NumericalUtils::LogAdd);
+          // I want to be extra careful of nans when we are using nan as a sentinel.
+          Assert(std::isfinite(log_sum),
+                 "GradientOfLogQ encountered non-finite value during calculation.");
+          normalized_sbn_parameters_in_log.segment(begin, end - begin) =
+              segment.array() - log_sum;
+        }
       }
-      auto segment = sbn_parameters_.segment(begin, end - begin);
-      double log_sum = segment.redux(NumericalUtils::LogAdd);
-      normalized_sbn_parameters_in_log.segment(begin, end - begin) = segment.array() - log_sum;
-    }
 
-    double log_probability_rooted_tree =
-        SBNProbability::SumOf(normalized_sbn_parameters_in_log, rooted_representation, 0.0);
+      double log_probability_rooted_tree = SBNProbability::SumOf(
+          normalized_sbn_parameters_in_log, rooted_representation, 0.0);
 
-    // We need to look up the subsplits in the tree.
-    // Set representation allows fast lookup.
-    std::unordered_set<size_t> rooted_representation_as_set(
-      rooted_representation.begin(), rooted_representation.end());
-    // Now, we update the gradients.
-    for (const auto &[begin, end] : subsplit_ranges) {
-      for (size_t idx = begin; idx < end; idx++) {
-        double indicator_subsplit_in_rooted_tree =
-            static_cast<double>(rooted_representation_as_set.count(idx) > 0);
-        grad_log_q[idx] +=
-            exp(log_probability_rooted_tree) *
-            (indicator_subsplit_in_rooted_tree - exp(normalized_sbn_parameters_in_log[idx]));
+      // We need to look up the subsplits in the tree.
+      // Set representation allows fast lookup.
+      std::unordered_set<size_t> rooted_representation_as_set(
+          rooted_representation.begin(), rooted_representation.end());
+      // Now, we update the gradients.
+      for (const auto &[begin, end] : subsplit_ranges) {
+        for (size_t idx = begin; idx < end; idx++) {
+          double indicator_subsplit_in_rooted_tree =
+              static_cast<double>(rooted_representation_as_set.count(idx) > 0);
+          grad_log_q[idx] += exp(log_probability_rooted_tree) *
+                             (indicator_subsplit_in_rooted_tree -
+                              exp(normalized_sbn_parameters_in_log[idx]));
+        }
       }
+      log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
     }
-    log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
   }
   grad_log_q = grad_log_q.array() * exp(-log_q);
   return grad_log_q;
