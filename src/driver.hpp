@@ -101,11 +101,13 @@ TEST_CASE("Driver") {
   auto beast_nexus = driver.ParseNexusFile("data/test_beast_tree_parsing.nexus");
   // These are the taxa, in order, taken directly from the nexus file:
   StringVector beast_taxa = {
-      "aDuckA_1976",   "aDuckB_1977",   "aItaly_1987", "aMallard_1985", "hCHR_1983",
-      "hCambr_1939",   "hFortMon_1947", "hKiev_1979",  "hLenin_1954",   "hMongol_1985",
-      "hMongol_1991",  "hNWS_1933",     "hPR_1934",    "hSCar_1918.00",    "hScot_1994",
-      "hSuita_1989",   "hUSSR_1977",    "sEhime_1980", "sIllino_1963",  "sIowa_1930",
-      "sNebrask_1992", "sNewJers_1976", "sStHya_1991", "sWiscons_1961", "sWiscons_1.998e3"};
+      "aDuckA_1976",     "aDuckB_1977",   "aItaly_1987",   "aMallard_1985",
+      "hCHR_1983",       "hCambr_1939",   "hFortMon_1947", "hKiev_1979",
+      "hLenin_1954",     "hMongol_1985",  "hMongol_1991",  "hNWS_1933",
+      "hPR_1934",        "hSCar_1918.00", "hScot_1994",    "hSuita_1989",
+      "hUSSR_1977",      "sEhime_1980",   "sIllino_1963",  "sIowa_1930",
+      "sNebrask_1992",   "sNewJers_1976", "sStHya_1991",   "sWiscons_1961",
+      "sWiscons_1.998e3"};
   CHECK_EQ(beast_nexus.TaxonNames(), beast_taxa);
   // Check that we got the whole tree.
   for (const auto& [topology, count] : beast_nexus.TopologyCounter()) {
