@@ -417,7 +417,7 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
 
     double log_probability_rooted_tree =
         SBNProbability::SumOf(normalized_sbn_parameters_in_log, rooted_representation, 0.0);
-    
+
     // We need to look up the subsplits in the tree.
     // Set representation allows fast lookup.
     std::unordered_set<size_t> rooted_representation_as_set(
@@ -443,9 +443,9 @@ EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
   size_t tree_count = tree_collection_.TreeCount();
 
   // This variable acts as a cache to store normalized SBN parameters in log.
-  // Initialization to DOUBLE_NaN indicates that all entries are empty.
+  // Initialization to DOUBLE_NAN indicates that all entries are empty.
   EigenVectorXd normalized_sbn_parameters_in_log(sbn_parameters_.size());
-  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NaN);
+  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
 
   EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters_.size());
 
