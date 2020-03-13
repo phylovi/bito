@@ -156,6 +156,7 @@ sources = [
     "_build/site_model.cpp",
     "_build/site_pattern.cpp",
     "_build/substitution_model.cpp",
+    "_build/taxon_name_munging.cpp",
     "_build/tree.cpp",
     "_build/tree_collection.cpp",
 ]
