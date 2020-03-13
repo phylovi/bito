@@ -368,16 +368,12 @@ EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
 // multiplicative factors but subtracting off the per_sample_signal. Is that right? If
 // so, then I'd prefer to reduce code duplication by just calling the above code then
 // using -=.
+// %SHJ Done.
 EigenVectorXd CalculateVIMCOMultiplicativeFactors(const EigenVectorXdRef log_f) {
-  size_t tree_count = log_f.size();
-  double log_tree_count = log(tree_count);
-  double log_F = NumericalUtils::LogSum(log_f);
-  double hat_L = log_F - log_tree_count;
-  EigenVectorXd tilde_w = log_f.array() - log_F;
-  tilde_w = tilde_w.array().exp();
-
   // Use the geometric mean as \hat{f}(\tau^{-j}, \theta^{-j}), in eq:f_hat in
   // the implementation notes.
+  size_t tree_count = log_f.size();
+  double log_tree_count = log(tree_count);
   double sum_of_log_f = log_f.sum();
   EigenVectorXd log_geometric_mean = (sum_of_log_f - log_f.array()) / (tree_count - 1);
   EigenVectorXd per_sample_signal(tree_count);
@@ -389,30 +385,43 @@ EigenVectorXd CalculateVIMCOMultiplicativeFactors(const EigenVectorXdRef log_f) 
     log_f_copy(i) = log_f(i);
   }
 
-  EigenVectorXd multiplicative_factors = hat_L - per_sample_signal.array() - tilde_w.array();
+  EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
+  multiplicative_factors -= per_sample_signal;
   return multiplicative_factors;
 }
 
 // This gives the gradient of log q at a specific unrooted topology.
 // See eq:gradLogQ in the tex.
 EigenVectorXd SBNInstance::GradientOfLogQ(
-                          EigenVectorXdRef sbn_parameters,
+                          EigenVectorXdRef normalized_sbn_parameters_in_log,
                           const IndexerRepresentation &indexer_representation) {
-  EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters.size());
+  EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters_.size());
   double log_q = DOUBLE_NEG_INF;
   for (const auto &rooted_representation : indexer_representation) {
     if (!SBNProbability::IsInSBNSupport(rooted_representation,
-                                        sbn_parameters.size())) {
+                                        sbn_parameters_.size())) {
       continue;
     }
+
+    // Get all subsplit ranges.
+    auto subsplit_ranges = GetSubsplitRanges(rooted_representation);
+    // Fill the entries in normalized_sbn_parameters_in_log if it is not already filled.
+    for (const auto &[begin, end] : subsplit_ranges) {
+      if (!isnan(normalized_sbn_parameters_in_log[begin])) {
+        continue;
+      }
+      auto segment = sbn_parameters_.segment(begin, end - begin);
+      double log_sum = segment.redux(NumericalUtils::LogAdd);
+      normalized_sbn_parameters_in_log.segment(begin, end - begin) = segment.array() - log_sum;
+    }
+
     double log_probability_rooted_tree =
-        SBNProbability::SumOf(sbn_parameters, rooted_representation, 0.0);
+        SBNProbability::SumOf(normalized_sbn_parameters_in_log, rooted_representation, 0.0);
+    
     // We need to look up the subsplits in the tree.
     // Set representation allows fast lookup.
     std::unordered_set<size_t> rooted_representation_as_set(
       rooted_representation.begin(), rooted_representation.end());
-    // Get all subsplit ranges.
-    auto subsplit_ranges = GetSubsplitRanges(rooted_representation);
     // Now, we update the gradients.
     for (const auto &[begin, end] : subsplit_ranges) {
       for (size_t idx = begin; idx < end; idx++) {
@@ -420,7 +429,7 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
             static_cast<double>(rooted_representation_as_set.count(idx) > 0);
         grad_log_q[idx] +=
             exp(log_probability_rooted_tree) *
-            (indicator_subsplit_in_rooted_tree - exp(sbn_parameters[idx]));
+            (indicator_subsplit_in_rooted_tree - exp(normalized_sbn_parameters_in_log[idx]));
       }
     }
     log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
@@ -433,25 +442,23 @@ EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
                                              bool use_vimco) {
   size_t tree_count = tree_collection_.TreeCount();
 
-  EigenVectorXd sbn_parameters = sbn_parameters_;
+  // This variable acts as a cache to store normalized SBN parameters in log.
+  // Initialization to DOUBLE_NaN indicates that all entries are empty.
+  EigenVectorXd normalized_sbn_parameters_in_log(sbn_parameters_.size());
+  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NaN);
 
-  EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters.size());
+  EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters_.size());
 
   EigenVectorXd multiplicative_factors = use_vimco ?
     CalculateVIMCOMultiplicativeFactors(log_f) :
     CalculateMultiplicativeFactors(log_f);
 
-  // %EM I'm not sure what this comment means:
-  // Normalize the sbn parameters in log space.
-  // We work with copy to keep sbn_parameters_ unmodified.
-  NormalizeSBNParametersInLog(sbn_parameters);
   for (size_t i = 0; i < tree_count; i++) {
-    double multiplicative_factor = multiplicative_factors(i);
     const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
-      indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters.size());
-    EigenVectorXd log_grad_q = GradientOfLogQ(sbn_parameters,
+      indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
+    EigenVectorXd log_grad_q = GradientOfLogQ(normalized_sbn_parameters_in_log,
                                               indexer_representation);
-    log_grad_q = log_grad_q.array() * multiplicative_factor;
+    log_grad_q = log_grad_q.array() * multiplicative_factors(i);
     gradient_vector = gradient_vector + log_grad_q;
   }
   return gradient_vector;
