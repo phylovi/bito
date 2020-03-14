@@ -621,6 +621,22 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // %SHJ Now it should fail if you uncomment the below line.
   //realized_nabla *= 2.;
   CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-9);
+  
+  // Test for VIMCO gradient estimator.
+  EigenVectorXd vimco_multiplicative_factors(K);
+  vimco_multiplicative_factors << -0.04742748, 2.59553236, -0.01779887, -0.01278592;
+  expected_nabla.setZero();
+  for (size_t k = 0; k < K; k++) {
+    grad_log_q =
+        vimco_multiplicative_factors(k) * inst.GradientOfLogQ(
+                                                    sbn_params,
+                                                    indexer_reps.at(k)).array();
+    expected_nabla += grad_log_q;
+  }
+  use_vimco = true;
+  realized_nabla = inst.TopologyGradients(log_f, use_vimco);
+  CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-9);
+  
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
