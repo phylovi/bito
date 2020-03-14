@@ -1,6 +1,7 @@
 """The Burrito class wraps an instance and relevant model data."""
 import click
 import numpy as np
+from scipy.special import logsumexp
 
 import libsbn
 import vip.branch_model
@@ -56,8 +57,9 @@ class Burrito:
             optimizer_name,
             sbn_model,
             self.branch_model.scalar_model,
-            self.estimate_elbo,
+            self.estimate_elbo
         )
+        self.elbo_trace = []
 
     # We want the models to be part of the optimizer because they have state that's
     # closely connected with optimizer state. But we add these convenience functions:
@@ -101,15 +103,30 @@ class Burrito:
             dg_dpsi,
             dlog_qg_dpsi,
         )
-        self.opt.gradient_step(scalar_grad)
+        px_phylo_log_like = np.array(
+            [branch_gradient[0] for branch_gradient in branch_gradients]
+        )
+        px_log_f = self.px_log_f(
+            px_phylo_log_like, px_theta_sample, px_branch_representation
+        )
+        # Get topology gradients.
+        sbn_grad = self.inst.topology_gradients(px_log_f)
+        self.opt.gradient_step(
+            {
+                "scalar_params": scalar_grad,
+                "sbn_params": sbn_grad
+            }
+        )
 
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:
                 self.gradient_step()
+                self.elbo_trace.append(self.estimate_elbo(self.particle_count))
 
     def estimate_elbo(self, particle_count):
-        """A naive Monte Carlo estimate of the ELBO."""
+        """Sample particle_count particles and then make a naive Monte Carlo estimate of
+        the ELBO."""
         px_branch_lengths = self.sample_topologies(particle_count)
         px_branch_representation = self.branch_model.px_branch_representation()
         # Sample continuous variables based on the branch representations.
@@ -119,8 +136,48 @@ class Burrito:
             branch_lengths[:] = px_theta_sample[particle_idx, :]
         self.inst.resize_phylo_model_params()
         px_phylo_log_like = np.array(self.inst.log_likelihoods(), copy=False)
+        return self.elbo_of_sample(
+            px_phylo_log_like, px_theta_sample, px_branch_representation,
+        )
+
+    def elbo_of_sample(
+        self, px_phylo_log_like, px_theta_sample, px_branch_representation
+    ):
+        """A naive Monte Carlo estimate of the ELBO given a sample."""
         px_log_prior = self.branch_model.log_prior(px_theta_sample)
-        elbo_total = np.sum(
-            px_phylo_log_like + px_log_prior
-        ) - self.branch_model.log_prob(px_theta_sample, px_branch_representation)
-        return elbo_total / particle_count
+        elbo_total = (
+            np.sum(px_phylo_log_like + px_log_prior)
+            - np.sum(np.log(self.inst.calculate_sbn_probabilities()))
+            - self.branch_model.log_prob(px_theta_sample, px_branch_representation)
+        )
+        return elbo_total / self.inst.tree_count()
+
+    def px_log_f(self, px_phylo_log_like, px_theta_sample, px_branch_representation):
+        """The vector of f values for each tree."""
+        px_log_prior = self.branch_model.log_prior(px_theta_sample)
+        px_log_sbn_prob = np.log(self.inst.calculate_sbn_probabilities())
+        px_branch_log_prob = np.array(
+            list(
+                self.branch_model.log_prob_generator(
+                    px_theta_sample, px_branch_representation
+                )
+            )
+        )
+        return px_phylo_log_like + px_log_prior - px_log_sbn_prob - px_branch_log_prob
+
+    def marginal_likelihood_estimate(self, particle_count):
+        px_branch_lengths = self.sample_topologies(particle_count)
+        px_branch_representation = self.branch_model.px_branch_representation()
+        # Sample continuous variables based on the branch representations.
+        px_theta_sample = self.branch_model.sample(px_branch_representation)
+        # Put the branch lengths in the libsbn instance trees, and get branch gradients.
+        for particle_idx, branch_lengths in enumerate(px_branch_lengths):
+            branch_lengths[:] = px_theta_sample[particle_idx, :]
+        self.inst.resize_phylo_model_params()
+        px_phylo_log_like = np.array(self.inst.log_likelihoods(), copy=False)
+
+        px_log_f = self.px_log_f(
+            px_phylo_log_like, px_theta_sample, px_branch_representation
+        )
+
+        return logsumexp(px_log_f) - np.log(particle_count)

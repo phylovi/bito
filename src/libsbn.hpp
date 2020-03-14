@@ -25,6 +25,9 @@
 #include "tree.hpp"
 
 class SBNInstance {
+  using Range = std::pair<size_t, size_t>;
+  using RangeVector = std::vector<Range>;
+
  public:
   // Trees get loaded in from a file or sampled from SBNs.
   TreeCollection tree_collection_;
@@ -39,7 +42,8 @@ class SBNInstance {
 
   // ** Initialization and status
 
-  explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
+  explicit SBNInstance(const std::string &name) : name_(name),
+                                                  rescaling_{false} {}
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
@@ -60,15 +64,15 @@ class SBNInstance {
 
   // SBN training. See sbn_probability.hpp for details.
   void TrainSimpleAverage();
-  // max_iter is the maximum number of EM iterations to do, while score_epsilon is the
-  // cutoff for score improvement.
+  // max_iter is the maximum number of EM iterations to do, while score_epsilon
+  // is the cutoff for score improvement.
   EigenVectorXd TrainExpectationMaximization(double alpha, size_t max_iter,
                                              double score_epsilon = 0.);
   EigenVectorXd CalculateSBNProbabilities();
 
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
-  size_t SampleIndex(std::pair<size_t, size_t> range) const;
+  size_t SampleIndex(Range range) const;
 
   // Sample a topology from the SBN.
   Node::NodePtr SampleTopology(bool rooted = false) const;
@@ -78,8 +82,9 @@ class SBNInstance {
 
   // Get indexer representations of the trees in tree_collection_.
   // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
-  // explanation of what these are. This version uses the length of sbn_parameters_ as a
-  // sentinel value for all rootsplits/PCSSs that aren't present in the indexer.
+  // explanation of what these are. This version uses the length of
+  // sbn_parameters_ as a sentinel value for all rootsplits/PCSSs that aren't
+  // present in the indexer.
   std::vector<IndexerRepresentation> MakeIndexerRepresentations() const;
 
   // Get PSP indexer representations of the trees in tree_collection_.
@@ -130,8 +135,22 @@ class SBNInstance {
   void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
   std::vector<double> LogLikelihoods();
+
   // For each loaded tree, returns a pair of (likelihood, gradient).
   std::vector<std::pair<double, std::vector<double>>> BranchGradients();
+  // Topology gradient for unrooted trees.
+  // Assumption: This function is called from Python side
+  // after the trees (both the topology and the branch lengths) are sampled.
+  EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f,
+                                  bool use_vimco = true);
+  // Computes gradient WRT \phi of log q_{\phi}(\tau).
+  // IndexerRepresentation contains all rootings of \tau.
+  // normalized_sbn_parameters_in_log is a cache; see implementation of
+  // TopologyGradients to see how it works. It would be private except that
+  // we want to be able to test it.
+  EigenVectorXd GradientOfLogQ(EigenVectorXdRef normalized_sbn_parameters_in_log,
+                               const IndexerRepresentation &indexer_representation);
+  void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
 
   // ** I/O
 
@@ -144,6 +163,8 @@ class SBNInstance {
   std::string name_;
   // Our phylogenetic likelihood computation engine.
   std::unique_ptr<Engine> engine_;
+  // Whether we use likelihood vector rescaling.
+  bool rescaling_;
   // The multiple sequence alignment.
   Alignment alignment_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
@@ -165,7 +186,7 @@ class SBNInstance {
   // Random bits.
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
-  bool rescaling_;
+  inline void SetSeed(unsigned long seed) { random_generator_.seed(seed); }
 
   // Make a likelihood engine with the given specification.
   void MakeEngine(const EngineSpecification &engine_specification,
@@ -178,31 +199,32 @@ class SBNInstance {
 
   // Clear all of the state that depends on the current tree collection.
   void ClearTreeCollectionAssociatedState();
+
+  void PushBackRangeForParentIfAvailable(const Bitset &parent,
+                                         SBNInstance::RangeVector &range_vector);
+  RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("libsbn") {
+
+// Below we use 99999999 is the default value if a rootsplit or PCSS is missing.
+const size_t out_of_sample_index = 99999999;
+
+TEST_CASE("libsbn: indexer and PSP representations") {
   SBNInstance inst("charlie");
-  inst.ReadNewickFile("data/hello.nwk");
-  inst.ReadFastaFile("data/hello.fasta");
-  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
-  inst.PrepareForPhyloLikelihood(simple_specification, 2);
-  for (auto ll : inst.LogLikelihoods()) {
-    CHECK_LT(fabs(ll - -84.852358), 0.000001);
-  }
-  // Reading one file after another checks that we've cleared out state.
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   auto pretty_indexer = inst.PrettyIndexer();
-  // The indexer_ is to index the sbn_parameters_. Note that neither of these data
-  // structures attempt to catalog the complete collection of rootsplits or PCSSs, but
-  // just those that are present for some rooting of the input trees.
+  // The indexer_ is to index the sbn_parameters_. Note that neither of these
+  // data structures attempt to catalog the complete collection of rootsplits or
+  // PCSSs, but just those that are present for some rooting of the input trees.
   //
-  // The indexer_ and sbn_parameters_ are laid out as follows (I'll just call it the
-  // "index" in what follows). Say there are rootsplit_count rootsplits in the support.
-  // The first rootsplit_count entries of the index are assigned to the rootsplits
-  // (again, those rootsplits that are present for some rooting of the unrooted input
-  // trees). For the five_taxon example, this goes as follows:
+  // The indexer_ and sbn_parameters_ are laid out as follows (I'll just call it
+  // the "index" in what follows). Say there are rootsplit_count rootsplits in
+  // the support.
+  // The first rootsplit_count entries of the index are assigned to the
+  // rootsplits (again, those rootsplits that are present for some rooting of
+  // the unrooted input trees). For the five_taxon example, this goes as follows:
   StringSet correct_pretty_rootsplits({"01110", "01010", "00101", "00111", "00001",
                                        "00011", "00010", "00100", "00110", "01000",
                                        "01111", "01001"});
@@ -210,28 +232,31 @@ TEST_CASE("libsbn") {
       pretty_indexer.begin(),
       pretty_indexer.begin() + correct_pretty_rootsplits.size());
   CHECK(correct_pretty_rootsplits == pretty_rootsplits);
-  // The rest of the entries of the index are laid out as blocks of parameters for
-  // PCSSs that share the same parent. Take a look at the description of PCSS bitsets
-  // (and the unit tests) in bitset.hpp to understand the notation used here.
+  // The rest of the entries of the index are laid out as blocks of parameters
+  // for PCSSs that share the same parent. Take a look at the description of
+  // PCSS bitsets (and the unit tests) in bitset.hpp to understand the notation
+  // used here.
   //
   // For example, here are four PCSSs that all share the parent 00001|11110:
   StringSet correct_pretty_pcss_block({"00001|11110|01110", "00001|11110|00010",
                                        "00001|11110|01000", "00001|11110|00100"});
   StringSet pretty_indexer_set(pretty_indexer.begin(), pretty_indexer.end());
-  // It's true that this test doesn't show the block-ness, but it wasn't easy to show
-  // off this feature in a way that wasn't compiler dependent.
+  // It's true that this test doesn't show the block-ness, but it wasn't easy to
+  // show off this feature in a way that wasn't compiler dependent.
   for (auto pretty_pcss : correct_pretty_pcss_block) {
     CHECK(pretty_indexer_set.find(pretty_pcss) != pretty_indexer_set.end());
   }
   // Now we can look at some tree representations. We get these by calling
-  // IndexerRepresentationOf on a tree topology. This function "digests" the tree by
-  // representing all of the PCSSs as bitsets which it can then look up in the indexer_.
+  // IndexerRepresentationOf on a tree topology. This function "digests" the
+  // tree by representing all of the PCSSs as bitsets which it can then look up
+  // in the indexer_.
   // It then spits them out as the rootsplit and PCSS indices.
   // The following tree is (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
   auto indexer_test_topology_1 = Node::OfParentIdVector({6, 5, 7, 5, 6, 7, 7});
-  // Here we look at the indexer representation of this tree. Rather than having the
-  // indices themselves, which is what IndexerRepresentationOf actually outputs, we have
-  // string representations of the features corresponding to those indices.
+  // Here we look at the indexer representation of this tree. Rather than having
+  // the indices themselves, which is what IndexerRepresentationOf actually
+  // outputs, we have string representations of the features corresponding to
+  // those indices.
   // See sbn_maps.hpp for more description of these indexer representations.
   StringSetVector correct_representation_1(
       // The indexer representations for each of the possible virtual rootings.
@@ -244,8 +269,6 @@ TEST_CASE("libsbn") {
        {"00001", "00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
        {"01010", "10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
        {"01110", "00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
-  // Here 99999999 is the default value if a rootsplit or PCSS is missing.
-  const size_t out_of_sample_index = 99999999;
   CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
                inst.indexer_, indexer_test_topology_1, out_of_sample_index)),
            correct_representation_1);
@@ -295,8 +318,17 @@ TEST_CASE("libsbn") {
   CHECK_EQ(inst.StringIndexerRepresentationOf({SBNMaps::RootedIndexerRepresentationOf(
                inst.indexer_, indexer_test_rooted_topology_2, out_of_sample_index)})[0],
            correct_rooted_indexer_representation_2);
+}
 
-  // Test likelihood and gradient computation.
+TEST_CASE("libsbn: likelihood and gradient") {
+  SBNInstance inst("charlie");
+  inst.ReadNewickFile("data/hello.nwk");
+  inst.ReadFastaFile("data/hello.fasta");
+  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
+  inst.PrepareForPhyloLikelihood(simple_specification, 2);
+  for (auto ll : inst.LogLikelihoods()) {
+    CHECK_LT(fabs(ll - -84.852358), 0.000001);
+  }
   inst.ReadNexusFile("data/DS1.subsampled_10.t");
   inst.ReadFastaFile("data/DS1.fasta");
   std::vector<BeagleFlags> vector_flag_options{BEAGLE_FLAG_VECTOR_NONE,
@@ -360,8 +392,10 @@ TEST_CASE("libsbn") {
       }
     }
   }
+}
 
-  // Test SBN training.
+TEST_CASE("libsbn: SBN training") {
+  SBNInstance inst("charlie");
   inst.ReadNewickFile("data/DS1.100_topologies.nwk");
   inst.ProcessLoadedTrees();
   // These "Expected" functions are defined in sbn_probability.hpp.
@@ -380,9 +414,10 @@ TEST_CASE("libsbn") {
   const auto expected_EM_05_100 = ExpectedEMVectorAlpha05();
   inst.TrainExpectationMaximization(0.5, 100);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_05_100, 1e-5);
-  const auto expected_EM_00001_100 = ExpectedEMVectorAlpha05();
+}
 
-  // Test tree sampling.
+TEST_CASE("libsbn: tree sampling") {
+  SBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
@@ -394,7 +429,8 @@ TEST_CASE("libsbn") {
                                                           indexer_representation);
     rooted_tree_count_from_file += indexer_representation.size();
   }
-  // Count the frequencies of trees when we sample after training with SimpleAverage.
+  // Count the frequencies of trees when we sample after training with
+  // SimpleAverage.
   size_t sampled_tree_count = 1'000'000;
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
   ProgressBar progress_bar(sampled_tree_count / 1000);
@@ -418,6 +454,190 @@ TEST_CASE("libsbn") {
     CHECK_LT(fabs(observed - expected), 5e-3);
   }
   progress_bar.done();
+}
+
+TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
+  SBNInstance inst("charlie");
+  // File gradient_test.t contains two trees:
+  // ((0,1), 2, (3,4)) and
+  // ((0,1), (2,3), 4).
+  inst.ReadNexusFile("data/gradient_test.t");
+  inst.ProcessLoadedTrees();
+
+  // The number of rootsplits across all of the input trees.
+  size_t num_rootsplits = 8;
+  // Manual enumeration shows that there are 31 PCSS's.
+  size_t num_pcss = inst.sbn_parameters_.size() - num_rootsplits;
+
+  // Test for K = 1 tree.
+  size_t K = 1;
+  inst.tree_collection_.trees_.clear();
+  // Generate a tree,
+  // \tau = ((0,1),(2,3),4) with internal node labels ((0,1)5,(2,3)6,4)7.
+  std::vector<size_t> tau_indices = {5, 5, 6, 6, 7, 7, 7};
+  auto tau = Tree::OfParentIdVector(tau_indices);
+  inst.tree_collection_.trees_.push_back(tau);
+
+  // Initialize sbn_parameters_ to 0's and normalize, which is going to give a uniform
+  // distribution for rootsplits and PCSS distributions.
+  inst.sbn_parameters_.setZero();
+  EigenVectorXd normalized_sbn_parameters_in_log = inst.sbn_parameters_;
+  inst.NormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
+  // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
+  //
+  // We're going to start by computing the rootsplit gradient.
+  // There are 7 possible rootings of \tau.
+  // For example consider rooting on the 014|23 split, yielding the following subsplits:
+  // 014|23, 2|3, 01|4, 0|1.
+  // Each of the child subsplits are the only possible subsplit,
+  // except for the root where it has probability 1/8. Hence, the probability
+  // for this tree is 1/8 x 1 x 1 x 1 = 1/8.
+  // Now, consider rooting on the 0|1234 split, yielding the following subsplits:
+  // 0|1234, 1|234, 23|4, 2|3.
+  // The probability for this tree is 1/8 x 1 x 1/2 x 1 = 1/16, where the 1/2 comes from
+  // the fact that we can have 23|4 or 2|34.
+  //
+  // Each of the remaining 5 trees has the same probability: the product of
+  // 1/8 for the rootsplit and 1/2 for one of the subsplit resolutions of 234.
+  // One can see this because the only way for there not to be ambiguity in the
+  // resolution of the splitting of 234 is for one to take 014|23 as the rootsplit.
+  //
+  // Hence, q(\tau) = 6 x 1/16 + 1 x 1/8 = 8/16 = 0.5.
+  // Note that there are a total of 8 rootsplits; 7 are possible rootsplits of
+  // the sampled tree \tau but one rootsplit,
+  // 014|23 is not observed rooting of \tau and hence,
+  // the gradient for 014|23 is simply -P(014|23) = -1/8.
+  //
+  // The gradient with respect to each of the 7 rootsplits is given by
+  // P(\tau_{\rho})/q(\tau) - P(\rho) via eq:rootsplitGrad,
+  // which is equal to
+  // (1/8) / (0.5) - 1/8 = 1/8 for the tree with \rho = 34|125 and
+  // (1/16) / (0.5) - 1/8 = 0 for 6 remaining trees.
+
+  EigenVectorXd expected_grad_rootsplit(8);
+  expected_grad_rootsplit << -1. / 8, 0, 0, 0, 0, 0, 0, 1. / 8;
+  auto indexer_representations = inst.MakeIndexerRepresentations();
+  EigenVectorXd grad_log_q = inst.GradientOfLogQ(normalized_sbn_parameters_in_log,
+                                                 indexer_representations.at(0));
+  EigenVectorXd realized_grad_rootsplit = grad_log_q.segment(0, 8);
+  // Sort them and compare against sorted version of
+  // realized_grad_rootsplit[0:7].
+  std::sort(realized_grad_rootsplit.begin(), realized_grad_rootsplit.end());
+  CheckVectorXdEquality(realized_grad_rootsplit, expected_grad_rootsplit, 1e-9);
+
+  // Manual enumeration shows that the entries corresponding to PCSS should have
+  // 6 entries with -1/16 and 6 entries with 1/16 and the rest with 0's.
+  // For example, consider the tree ((0,1),(2,3),4), which has the following subsplits:
+  // 0123|4, 01|23, 0|1, 2|3.
+  // Note the subsplit s = 01|23 is one of two choices for
+  // the parent subsplit t = 0123|4,
+  // since 0123|4 can also be split into s' = 012|3.
+  // Let \rho = 0123|4, the gradient for 01|23 is given by:
+  // (1/q(\tau)) P(\tau_{\rho}) * (1 - P(01|23 | 0123|4))
+  // = 2 * (1/16) * (1-0.5) = 1/16.
+  // The gradient for s' = 012|3 is,
+  // (1/q(\tau)) P(\tau_{\rho}) * -P(012|3 | 0123|4)
+  // = 2 * (1/16) * -0.5 = -1/16.
+
+  // The gradient for the following PCSS are 1/16 as above.
+  // 014|3 | 0134|2
+  // 014|2 | 0124|3
+  // 01|23 | 0123|4
+  // 23|4  | 01|234
+  // 23|4  | 1|234
+  // 23|4  | 0|234
+  // And each of these have an alternate subsplit s' that gets a gradient of -1/16.
+  // Each of the other PCSS gradients are 0 either because its parent support
+  // never appears in the tree or it represents the only child subsplit.
+  EigenVectorXd expected_grad_pcss = EigenVectorXd::Zero(num_pcss);
+  expected_grad_pcss.segment(0, 6).setConstant(-1. / 16);
+  expected_grad_pcss.segment(num_pcss - 6, 6).setConstant(1. / 16);
+  EigenVectorXd realized_grad_pcss = grad_log_q.tail(num_pcss);
+  std::sort(realized_grad_pcss.begin(), realized_grad_pcss.end());
+  CheckVectorXdEquality(realized_grad_pcss, expected_grad_pcss, 1e-9);
+
+  // We'll now change the SBN parameters and check the gradient there.
+  // If we root at 0123|4, then the only choice we have is between the following s and
+  // s' as described above.
+  // The PCSS s|t =  (01|23) | (0123|4) corresponds to 00001|11110|00110.
+  // The PCSS s'|t = (012|3) | (0123|4) corresponds to 00001|11110|00010.
+  Bitset s("000011111000110");
+  Bitset s_prime("000011111000010");
+  size_t s_idx = inst.indexer_.at(s);
+  size_t s_prime_idx = inst.indexer_.at(s_prime);
+  inst.sbn_parameters_.setZero();
+  inst.sbn_parameters_(s_idx) = 1;
+  inst.sbn_parameters_(s_prime_idx) = -1;
+  normalized_sbn_parameters_in_log = inst.sbn_parameters_;
+  inst.NormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
+
+  // These changes to normalized_sbn_parameters_in_log will change q(\tau) as well as
+  // P(\tau_{\rho}) for \rho = 0123|4. First,
+  // P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) + exp(-1)) = 0.1100996.
+  double p_tau_rho = (1. / 8) * exp(normalized_sbn_parameters_in_log[s_idx]);
+  // For q(\tau), we will just compute using the already tested function:
+  double q_tau = inst.CalculateSBNProbabilities()(0);
+  // The gradient for s|t is given by,
+  // (1/q(\tau)) x P(\tau_{\rho}) x (1 - P(s|t))
+  double expected_grad_at_s =
+      (1. / q_tau) * p_tau_rho * (1 - exp(normalized_sbn_parameters_in_log[s_idx]));
+  // And the gradient for s'|t is given by,
+  // (1/q(\tau)) x P(\tau_{\rho}) x (-P(s|t))
+  double expected_grad_at_s_prime =
+      (1. / q_tau) * p_tau_rho * -exp(normalized_sbn_parameters_in_log[s_prime_idx]);
+  // We're setting normalized_sbn_parameters_in_log to NaN as we would in a normal
+  // application of GradientOfLogQ.
+  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
+  grad_log_q = inst.GradientOfLogQ(normalized_sbn_parameters_in_log,
+                                   indexer_representations.at(0));
+  CHECK_LT(fabs(expected_grad_at_s - grad_log_q(s_idx)), 1e-9);
+  CHECK_LT(fabs(expected_grad_at_s_prime - grad_log_q(s_prime_idx)), 1e-9);
+
+  // Now we test the gradient by doing the calculation by hand.
+  K = 4;
+  inst.SampleTrees(K);
+  // Make up some numbers for log_f.
+  EigenVectorXd log_f(K);
+  log_f << -83, -75, -80, -79;
+  // log_F = -74.97493
+  double log_F = NumericalUtils::LogSum(log_f);
+  double elbo = log_F - log(K);
+  // 0.0003271564 0.9752395946 0.0065711127 0.0178621362
+  EigenVectorXd tilde_w = (log_f.array() - log_F).exp();
+  // -76.36155 -77.33646 -76.36779 -76.37908
+  EigenVectorXd multiplicative_factors = (elbo - tilde_w.array());
+
+  EigenVectorXd expected_nabla(inst.sbn_parameters_.size());
+  expected_nabla.setZero();
+  // We now have some confidence in GradientOfLogQ(), so we just use it.
+  auto indexer_reps = inst.MakeIndexerRepresentations();
+  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
+  for (size_t k = 0; k < K; k++) {
+    grad_log_q =
+        multiplicative_factors(k) *
+        inst.GradientOfLogQ(normalized_sbn_parameters_in_log, indexer_reps.at(k))
+            .array();
+    expected_nabla += grad_log_q;
+  }
+  bool use_vimco = false;
+  EigenVectorXd realized_nabla = inst.TopologyGradients(log_f, use_vimco);
+  CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-9);
+
+  // Test for VIMCO gradient estimator.
+  EigenVectorXd vimco_multiplicative_factors(K);
+  vimco_multiplicative_factors << -0.04742748, 2.59553236, -0.01779887, -0.01278592;
+  expected_nabla.setZero();
+  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
+  for (size_t k = 0; k < K; k++) {
+    grad_log_q =
+        vimco_multiplicative_factors(k) *
+        inst.GradientOfLogQ(normalized_sbn_parameters_in_log, indexer_reps.at(k))
+            .array();
+    expected_nabla += grad_log_q;
+  }
+  use_vimco = true;
+  realized_nabla = inst.TopologyGradients(log_f, use_vimco);
+  CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-9);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_

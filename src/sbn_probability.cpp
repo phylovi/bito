@@ -97,8 +97,8 @@ double ProductOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
 }
 
 // Take the sum of the entries of vec in indices plus starting_value.
-double SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
-             const double starting_value) {
+double SBNProbability::SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
+                             const double starting_value) {
   double result = starting_value;
   for (const auto& idx : indices) {
     result += vec[idx];
@@ -295,13 +295,31 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   return score_history;
 }
 
+bool SBNProbability::IsInSBNSupport(const SizeVector& rooted_representation,
+                                    size_t out_of_support_sentinel_value) {
+  for (size_t idx : rooted_representation) {
+    // Our convention is that out_of_support_sentinel_value is one more than the maximum
+    // allowed PCSS index, so here we check the index is reasonable.
+    Assert(idx <= out_of_support_sentinel_value,
+           "Rooted tree index is greater than maximum permitted.");
+    if (idx == out_of_support_sentinel_value) {
+      return false;
+    }
+  }
+  return true;
+};
+
 double SBNProbability::ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
     const IndexerRepresentation& indexer_representation) {
+  size_t sbn_parameter_count = sbn_parameters.size();
   double log_total_probability = DOUBLE_NEG_INF;
   for (const auto& rooted_representation : indexer_representation) {
     log_total_probability = NumericalUtils::LogAdd(
-        log_total_probability, SumOf(sbn_parameters, rooted_representation, 0.));
+        log_total_probability,
+        IsInSBNSupport(rooted_representation, sbn_parameter_count)
+            ? SumOf(sbn_parameters, rooted_representation, 0.)
+            : DOUBLE_NEG_INF);
   }
   return exp(log_total_probability);
 }

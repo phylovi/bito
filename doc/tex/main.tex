@@ -8,6 +8,7 @@
 \usepackage{bm}
 \usepackage{showlabels}
 
+\newcommand{\bParam}{\bm{\theta}}
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\psp}{\slash\!\!\slash}
 \newcommand{\qSplit}{q^\textsf{S}\hspace{-1pt}}
@@ -31,7 +32,7 @@
 In the 2019 ICLR paper, we used $q$ for branch lengths and $Q$ for the variational approximation.
 Here we will use $\bm \theta$ for branch lengths and $q$ for the variational approximation.
 This $p$ and $q$ corresponds to most of the literature on VI, and allows us to use $Q$ for the Markov transition matrix.
-
+We use the notation $\mathbb{C}_r$ to denote the support for the root splits and $\mathbb{C}_{\cdot|t}$ to denote the support for the splits given the parent subsplit of $t$.
 
 \subsection*{Setup}
 
@@ -95,7 +96,7 @@ The Q-function for the $n$-th iteration of the EM algorithm is given by
     &= \sum\limits_{s_1} P(S_1 = s_1 | \bm{\phi}^{(n-1)}) \log P(S_1, T^u | \bm{\phi}).
 \end{align*}
 The M-step maximizes this Q-function over $\bm{\phi}$. After M-step, we have a value $\bm{\phi}^{(n)}$.
-The Q-score $Q(\theta^{(n)}, \theta^{(n-1)})$ is assured to be at least as large as $Q(\theta^{(n-1)}, \theta^{(n-1)})$, by definition of maximization.
+The Q-score $Q(\phi^{(n)}, \phi^{(n-1)})$ is assured to be at least as large as $Q(\phi^{(n-1)}, \phi^{(n-1)})$, by definition of maximization.
 The key idea behind the EM algorithm is that the new value $\bm{\phi}^{(n)}$ results in at least this much increase in the log likelihood of the data:
 \begin{equation*}
     0 \leq Q(\bm{\phi}^{(n)}, \bm{\phi}^{(n-1)}) - Q(\bm{\phi}^{(n-1)}, \bm{\phi}^{(n-1)}) \leq \log P(T^u | \bm{\phi}^{(n)}) - \log P(T^u | \bm{\phi}^{(n-1)}).
@@ -133,7 +134,8 @@ where
 \begin{equation*}
     \log \left( P(s | t, \bm{\phi}_{.|t})P(\bm{\phi}_{.|t} | \alpha) \right) = \log(\phi_{s|t}) + \alpha \tilde{m}_{s|t} \log(\phi_{s|t}),
 \end{equation*}
-using the notation $\phi_1 = P(S_1)$ and $\phi_{s|t} = P(s | t, \bm{\phi})$. Therefore, the final form for $\tilde{Q}$ is given by,
+using the notation $\phi_1 = P(S_1)$ and $\phi_{s|t} = P(s | t, \bm{\phi})$.
+Therefore, the final form for $\tilde{Q}$ is given by,
 \begin{equation*}
     \tilde{Q}(\bm{\phi}, \bm{\phi}^{(n-1)}) = Q(\bm{\phi}, \bm{\phi}^{(n-1)}) + \sum\limits_{s_1 \in \mathbb{C}_r} \alpha \tilde{m}_{s_1}^u \log P(s_1 | \bm{\phi}) + \sum\limits_{s|t \in \mathbb{C}_{.|t}} \alpha \tilde{m}_{s|t}^u \log P(s | t, \bm{\phi}).
 \end{equation*}
@@ -141,11 +143,11 @@ using the notation $\phi_1 = P(S_1)$ and $\phi_{s|t} = P(s | t, \bm{\phi})$. The
 
 \section*{Gradient with respect to SBN parameters $\phi$}
 
-Assume that $(\tau^{1:K}, \bm \theta^{1:K})$ are drawn from the joint distribution on $(\tau^i, \bm \theta^i)$ given by $q_{\bm{\phi},\bm{\psi}}(\tau, \bm{\theta})$.
+Assume that $(\tau^{1:K}, \bm \theta^{1:K})$ are drawn from the joint distribution on $(\tau^j, \bm \theta^j)$ given by $q_{\bm{\phi},\bm{\psi}}(\tau, \bm{\theta})$.
 The stochastic lower bound with these $K$ samples is
 \[
     \hat{L}^K(\bm{\phi},{\bm{\psi}}) :=
-    \log\left( \frac{1}{K} \sum_{i=1}^K f_{\bm{\phi},{\bm{\psi}}}(\tau^i, \bm \theta^i) \right).
+    \log\left( \frac{1}{K} \sum_{j=1}^K f_{\bm{\phi},{\bm{\psi}}}(\tau^j, \bm \theta^j) \right).
 \]
 
 Set
@@ -155,10 +157,130 @@ Set
     {\sum_{i=1}^K f_{\bm{\phi},{\bm{\psi}}}(\tau^i, \bm \theta^i)}.
 \]
 
-Following the first section of Supplement A of the 2019 ICLR paper, we have the naive gradient estimate of the ELBO:
-\[
-\nabla_{{\bm{\phi}}}L^k({\bm{\phi}},{\bm{\psi}}) = \mathbb{E}_{q_{{\bm{\phi}},{\bm{\psi}}}(\tau^{1:K},\; {\bm{\theta}}^{1:K})} \sum_{j=1}^K \left(\hat{L}^K({\bm{\phi}},{\bm{\psi}}) - \tilde{w}^j\right) \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^j).
-\]
+\subsection*{Naive estimator of the gradient}
+
+We want to find the gradient of the ELBO with respect to $\bm{\phi}$:
+\begin{align*}
+    & \nabla_{\bm{\phi}} \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\bParam^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi})] = \nabla_{\bm{\phi}} \int \hat{L}^K(\bm{\phi}, \bm{\psi}) q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K}) d\tau^{1:K} d\bParam^{1:K} \\
+    & \quad = \int \left( q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K}) \nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi}) + \hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K}) \right) d\tau^{1:K} d\bParam^{1:K} \\
+    & \quad = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}[\nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi})] + \\
+    & \qquad \qquad \qquad \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K}))],
+\end{align*}
+where the second summand in the last line is using the identity
+\[ \nabla_{\bm{\phi}} q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K}) = q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K}) \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})). \]
+Further derivation of the first summand yields,
+\begin{align}
+    & \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}[\nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi})] = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}\left[\frac{\sum\limits_{j=1}^{K} \nabla_{\bm{\phi}} f_{\bm{\phi}, \bm{\psi}}(\tau^j, \bParam^j)}{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \bParam^i)}\right] \nonumber \\
+    & \qquad \qquad = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}\left[\frac{\sum\limits_{j=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^j, \bParam^j) \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^j, \bParam^j))}{\sum\limits_{i=1}^{K} f_{\bm{\phi}, \bm{\psi}}(\tau^i, \bParam^i)}\right] \nonumber \\
+    & \qquad \qquad = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}\left[\sum\limits_{j=1}^{K} \tilde{w}^j \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^j, \bParam^j))\right]. \label{eq:presummand1}
+\end{align}
+Now, note that
+\begin{align*}
+    \nabla_{\bm{\phi}} \log(f_{\bm{\phi}, \bm{\psi}}(\tau^j, \bParam^j)) &= \nabla_{\bm{\phi}} (\log p(Y, \tau^j, \bParam^j) - \log q_{\bm{\phi}}(\tau^j) - \log q_{\bm{\psi}}(\bParam^j | \tau^j)) \\
+    &= - \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^j).
+\end{align*}
+Hence, Equation~\ref{eq:presummand1} can be written as,
+\begin{align}\label{eq:summand1}
+    \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}[\nabla_{\bm{\phi}} \hat{L}^K(\bm{\phi}, \bm{\psi})] &= \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}\left[- \sum_{j=1}^{K} \tilde{w}^j \nabla_{\bm{\phi}} \log(q_{\bm{\phi}}(\tau^j))\right].
+\end{align}
+For the second summand note that,
+\begin{align*}
+    \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})) &= \sum\limits_{j=1}^{K} \nabla_{\bm{\phi}} \log(q_{\bm{\phi},\bm{\psi}}(\tau^{j}, \bParam^{j})) \\
+    &= \sum\limits_{j=1}^{K} \frac{\nabla_{\bm{\phi}} q_{\bm{\phi}}(\tau^{j})}{q_{\bm{\phi}}(\tau^{j})} \\
+    &= \sum\limits_{j=1}^{K} \nabla_{\bm{\phi}} \log(q_{\bm{\phi}}(\tau^{j}))
+%    &= \sum\limits_{i=1}^{K} \frac{\nabla_{\bm{\phi}} q_{\bm{\phi}}(\tau^{i})}{q_{\bm{\phi}}(\tau^{i})}, \\
+\end{align*}
+and hence,
+\begin{multline}\label{eq:summand2}
+    \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} \log(q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K}, \bParam^{1:K}))] = \\
+    \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\bParam^{1:K})}\left[\sum\limits_{j=1}^{K} \hat{L}^K(\bm{\phi}, \bm{\psi}) \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^{j})\right].
+\end{multline}
+Combining Eq~\ref{eq:summand1} and Eq~\ref{eq:summand2}, we get
+\begin{equation}\label{eq:naive-gradient}
+    \nabla_{\bm{\phi}} \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\bParam^{1:K})}[\hat{L}^K(\bm{\phi}, \bm{\psi})] = \E_{q_{\bm{\phi}, \bm{\psi}}(\tau^{1:K},\bParam^{1:K})}\left[\sum\limits_{j=1}^{K} (\hat{L}^K(\bm{\phi}, \bm{\psi}) - \tilde{w}^j) \nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^j) \right],
+\end{equation}
+Equation~\ref{eq:naive-gradient} matches the derivation given in the Supplement A of the 2019 ICLR paper.
+Next, we will derive the exact equation for $\nabla_{\phi} \log q_{\phi}(\tau^j)$.
+
+\subsection*{Rooted tree}
+It suffices to derive the gradient for arbitrary $\phi_{s|t}$ where $\phi_{s|t}$ is an element of the parameter vector $\phi$ corresponding to some subsplit $s|t \in \mathbb{C}_{.|t}$.
+We use the notation $\nabla_{s|t}$ as a shorthand for $\nabla_{\phi_{s|t}}$: the gradient with respect to $\phi_{s|t}$.
+For generality, we assume that the rootsplit is given with parent split value of $t = \emptyset$.
+We consider three cases: 1) if the split $s|t$ is observed in the tree, we denote this by $s|t \in \tau^j$, 2) if the parent split $t$ is observed in the tree i.e., $t \in \tau^j$ but the child split $s|t \notin \tau^j$, and 3) $t \notin \tau^j$ and hence $s|t \notin \tau^j$.
+The derivation for the first two cases is
+\begin{align*}
+    \nabla_{s|t} \log q_{\phi}(\tau^j) &= \nabla_{s|t} \log \left(\prod_{s'|t' \in \tau^j} P_{\phi}(s' | t') \right) \\
+    &= \nabla_{s|t} \sum\limits_{s'|t' \in \tau^j} \log P_{\phi}(s' | t') \\
+    &= \nabla_{s|t} \left(\sum\limits_{s'|t' \in \tau^j} \left(\phi_{s' | t'} - \log\left(\sum\limits_{s'' \in \mathbb{C}_{.|t'}} \exp(\phi_{s''|t'})\right)\right)\right) \\
+    &= 1[s|t \in \tau^{j}] - \frac{\exp(\phi_{s|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})} \\
+    &= 1[s|t \in \tau^{j}] - P_{\phi}(s|t).
+\end{align*}
+For the latter case, the gradient $\nabla_{s|t} = 0$.
+
+\subsection*{Unrooted tree}
+Since the unrooted case involves marginalization over all possible rootings, $\mathbb{C}_r$, we make the notation for rooting explicit in the derivation that follows.
+As for the rooted case above, there are 3 cases to consider.
+The derivation for the first two cases proceeds as follows.
+\begin{align*}
+    \nabla_{s|t} \log q_{\phi}(\tau^j)
+    &= \frac{\nabla_{s|t} q_{\phi}(\tau^j)}{q_{\phi}(\tau^j)} \\
+    &= \frac{1}{q_{\phi}(\tau^j)} \nabla_{s|t} \left( \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right).
+\end{align*}
+In the first two cases we assume $s^*|t \in \tau$ for some $s^*$, which yields the gradient as follows:
+\begin{align*}
+    \nabla_{s|t} \left( \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right) &= \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} \nabla_{s|t} \left( P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j} P_{\phi}(s' | t') \right) \\
+    &= \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} 1[t \in \tau_{\rho}^j] \left( P_{\phi}(\rho) \prod\limits_{s'|t' \in \tau_{\rho}^j : t' \not= t } P_{\phi}(s' | t') \right) \nabla_{s|t} P_{\phi}(s^*|t) \\
+    &= \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} 1[t \in \tau_{\rho}^j] \frac{P_\phi(\tau_{\rho})}{P_{\phi}(s^*|t)} \nabla_{s|t} P_{\phi}(s^*|t).
+\end{align*}
+If $s^* = s$, then $\nabla_{s|t} P_{\phi}(s^*|t)$ is given by:
+\begin{align*}
+    \nabla_{s|t} P_{\phi}(s^*|t) = \nabla_{s|t} P_{\phi}(s|t) &= \nabla_{s|t} \frac{\exp(\phi_{s|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})} \\
+    &= \frac{\exp(\phi_{s|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})} - \left(\frac{\exp(\phi_{s|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})}\right)^2 \\
+    &= \frac{\exp(\phi_{s|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})} \left(1 - \frac{\exp(\phi_{s|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})}\right) \\
+    &= P_{\phi}(s|t) (1 - P_{\phi}(s|t)) \\
+    &= P_{\phi}(s^*|t) (1 - P_{\phi}(s|t)).
+\end{align*}
+Otherwise, when $s \not= s^*$, $\nabla_{s|t} P_{\phi}(s^*|t)$ is given by,
+\begin{align*}
+    \nabla_{s|t} P_{\phi}(s^*|t) &= \nabla_{s|t} \frac{\exp(\phi_{s^*|t})}{\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})} \\
+    &= - \frac{\exp(\phi_{s|t}) \exp(\phi_{s^*|t})}{\left(\sum\limits_{s'' \in \mathbb{C}_{.|t}} \exp(\phi_{s''|t})\right)^2} \\
+    &= - P_{\phi}(s^*|t) P_{\phi}(s|t)
+\end{align*}
+Therefore, $\nabla_{s|t} \log q_{\phi}(\tau^j)$ is given by:
+\begin{equation}
+    \nabla_{s|t} \log q_{\phi}(\tau^j)
+    = \frac{1}{q_{\phi}(\tau^j)} \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} 1[t \in \tau_{\rho}^j] \times P_{\phi}(\tau^j_{\rho}) \times \left(1[s|t \in \tau^j_{\rho}] - P_{\phi}(s|t)\right),
+    \label{eq:gradLogQ}
+\end{equation}
+where $P_{\phi}(\tau_{\rho}^j)$ denotes the SBN probability of the tree $\tau^j_{\rho}$ rooted at $\rho \in \mathbb{C}_{r}(\tau^j)$.
+Notice that for the rootsplit we use $t = \emptyset$, in which case it may be simpler to express the gradient as
+\begin{align}
+    \nabla_{s|t} \log q_{\phi}(\tau^j)
+    = \sum\limits_{\rho \in \mathbb{C}_{r}(\tau^j)} 1[s|t \in \tau^j_{\rho}] \frac{P_{\phi}(\tau^j_{\rho})}{q_{\phi}(\tau^j)} - P_{\phi}(s|t),
+    \label{eq:rootsplitGrad}
+\end{align}
+since $t = \emptyset \in \tau_{\rho}^j$ for all $\rho$ and $\sum_{\rho} P_{\phi}(\tau_{\rho}^j) = q_{\phi}(\tau)$.
+And of course, for the third case where $t \notin \tau_{\rho}^j$, i.e., the split $t$ is never seen in the tree, then the gradient is just $0$ for all $s | t \in \mathbb{C}_{\cdot|t}$.
+
+
+\subsection*{Computation}
+Our library returns a vector $\nabla$, the naive gradient estimator of $\hat{L}^K$ with an element $s|t$ given by:
+\begin{equation}\label{eq:nabla}
+    \nabla_{s|t} = \sum\limits_{j=1}^{K} (\hat{L}^K - \tilde{w}^j) g_{s|t}^j,
+\end{equation}
+where $g_{s|t}^j = \nabla_{s|t} \log q_{\phi}(\tau^j)$.
+The parenthetical quantity in this equation are called the ``multiplicative factors'' in the code.
+
+The implementation first samples $(\tau^j, \bParam^j) \sim q_{\bm{\phi}, \bm{\psi}}(\tau, \bParam)$ for $j = 1, \ldots, K$, then evaluates the following quantities:
+\begin{enumerate}
+    \item $F = \sum_{j=1}^{K} f_{\bm{\phi},\bm{\psi}}(\tau^j, \bParam^j)$
+    \item $\hat{L}^{K} = \log(F) - \log(K)$ (dropping $\bm{\phi}, \bm{\psi}$ from the notation)
+    \item $\tilde{w}^j = \frac{f_{\bm{\phi},\bm{\psi}}(\tau^j, \bParam^j)}{F}$
+    \item $g^j = \nabla_{\phi} \log q_{\phi}(\tau^j)$.
+\end{enumerate}
+Combining these quantities as in \eqref{eq:nabla} gives $\nabla$.
+
+\subsection*{VIMCO estimator of the gradient}
 
 To get the VIMCO gradient, we follow equation 10 of~\cite{Mnih2016-ec}, noting that their $\nabla_\theta \, \log f(x, h^j)$ is $-\nabla_{\bm{\phi}} \log q_{\bm{\phi}}(\tau^j)$ in our case.
 This gives (5) of the 2019 ICLR paper, which in our notation is
@@ -166,14 +288,22 @@ This gives (5) of the 2019 ICLR paper, which in our notation is
 \nabla_{\bm{\phi}} L^K(\bm{\phi},{\bm{\psi}}) = \mathbb{E}_{q_{\bm{\phi},{\bm{\psi}}}(\tau^{1:K},\;\bm{\theta}^{1:K})}\sum_{j=1}^K\left(\hat{L}_{j|-j}^K(\bm{\phi},{\bm{\psi}})-\tilde{w}^j\right)\nabla_{\bm{\phi}}\log q_{\bm{\phi}}(\tau^j)
 \]
 where
-\[
+\begin{equation}
 \hat{L}_{j|-j}^K(\bm{\phi},{\bm{\psi}}) :=  \hat{L}^K(\bm{\phi},{\bm{\psi}}) - \log\frac1K\left(\sum_{i\neq j}f_{\bm{\phi},{\bm{\psi}}}(\tau^i,\bm{\theta}^i) + \hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})\right)
-\]
-is the per-sample local learning signal, with $\hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})$ being some estimate of $f_{\bm{\phi},{\bm{\psi}}}(\tau^j,\bm{\theta}^j)$ for sample $j$ using the rest of samples (e.g., the geometric mean).
+\label{eq:perSampleLearning}
+\end{equation}
+is the per-sample local learning signal, with $\hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j})$ being some estimate of $f_{\bm{\phi},{\bm{\psi}}}(\tau^j,\bm{\theta}^j)$ for sample $j$ using the rest of samples (in our case the geometric mean).
 
-We will calculate $\nabla_{\bm \phi} \log q_{\bm \phi}(\tau^j)$ as the ratio ${\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau^j)} / {q_{\bm{\phi}}(\tau^j)}$.
+The geometric mean is given by,
+\begin{equation}\label{eq:f_hat}
+    \hat{f}_{\bm{\phi}, \bm{\psi}}(\tau^{-j}, \bm{\theta}^{-j})  = \exp\left( \frac{1}{K-1} \sum_{i \not= j} \log f_{\bm{\phi}, \bm{\psi}}(\tau^i, \bm{\theta}^i) \right).
+\end{equation}
 
-To calculate $\nabla_{\bm \phi} \, q_{\bm{\phi}}(\tau)$, we take derivatives of the sum across rootings, where each derivative is just that of a product as per~\eqref{eq:qRooted}.
+Thus, the per-PCSS gradient equivalent of \eqref{eq:nabla} is:
+\begin{equation}\label{eq:nablaVIMCO}
+    \nabla_{s|t} = \sum\limits_{j=1}^{K} (\hat{L}_{j|-j}^K - \tilde{w}^j) g_{s|t}^j.
+\end{equation}
+The parenthetical quantity in this equation are called the ``VIMCO multiplicative factors'' in the code.
 
 
 \section*{Gradient with respect to scalar model parameters $\psi$}

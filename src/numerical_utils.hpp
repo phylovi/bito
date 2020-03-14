@@ -13,6 +13,8 @@
 constexpr double DOUBLE_INF = std::numeric_limits<double>::infinity();
 constexpr double DOUBLE_NEG_INF = -std::numeric_limits<double>::infinity();
 constexpr double EPS = std::numeric_limits<double>::epsilon();
+constexpr size_t OUT_OF_SAMPLE_IDX = std::numeric_limits<size_t>::max();
+constexpr double DOUBLE_NAN = std::numeric_limits<double>::quiet_NaN();
 // It turns out that log isn't constexpr for silly reasons, so we use inline instead.
 inline double LOG_EPS = log(EPS);
 constexpr double ERR_TOLERANCE = 1e-10;

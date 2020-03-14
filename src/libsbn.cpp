@@ -2,7 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "libsbn.hpp"
+#include <iostream>
 #include <memory>
+#include <unordered_set>
 
 #include "eigen_sugar.hpp"
 #include "numerical_utils.hpp"
@@ -315,6 +317,147 @@ std::vector<double> SBNInstance::LogLikelihoods() {
 std::vector<std::pair<double, std::vector<double>>> SBNInstance::BranchGradients() {
   return GetEngine()->BranchGradients(tree_collection_, phylo_model_params_,
                                       rescaling_);
+}
+
+void SBNInstance::PushBackRangeForParentIfAvailable(
+    const Bitset &parent, SBNInstance::RangeVector &range_vector) {
+  if (parent_to_range_.count(parent) > 0) {
+    range_vector.push_back(parent_to_range_.at(parent));
+  }
+}
+
+// Retrieves range of subsplits for each s|t that appears in the tree
+// given by rooted_representation.
+SBNInstance::RangeVector SBNInstance::GetSubsplitRanges(
+    const SizeVector &rooted_representation) {
+  RangeVector subsplit_ranges;
+  // PROFILE: should we be reserving here?
+  subsplit_ranges.emplace_back(0, rootsplits_.size());
+  Bitset root = rootsplits_.at(rooted_representation[0]);
+  PushBackRangeForParentIfAvailable(root + ~root, subsplit_ranges);
+  PushBackRangeForParentIfAvailable(~root + root, subsplit_ranges);
+  // Starting at 1 here because we took care of the rootsplit above (the 0th element).
+  for (size_t i = 1; i < rooted_representation.size(); i++) {
+    Bitset child = index_to_child_.at(rooted_representation[i]);
+    PushBackRangeForParentIfAvailable(child, subsplit_ranges);
+    PushBackRangeForParentIfAvailable(child.RotateSubsplit(), subsplit_ranges);
+  }
+  return subsplit_ranges;
+}
+
+// This multiplicative factor is the quantity inside the parentheses in eq:nabla in the
+// tex.
+EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
+  double tree_count = log_f.size();
+  double log_F = NumericalUtils::LogSum(log_f);
+  double hat_L = log_F - log(tree_count);
+  EigenVectorXd tilde_w = log_f.array() - log_F;
+  tilde_w = tilde_w.array().exp();
+  return hat_L - tilde_w.array();
+}
+
+// This multiplicative factor is the quantity inside the parentheses in eq:nablaVIMCO in
+// the tex.
+EigenVectorXd CalculateVIMCOMultiplicativeFactors(const EigenVectorXdRef log_f) {
+  // Use the geometric mean as \hat{f}(\tau^{-j}, \theta^{-j}), in eq:f_hat in
+  // the implementation notes.
+  size_t tree_count = log_f.size();
+  double log_tree_count = log(tree_count);
+  double sum_of_log_f = log_f.sum();
+  // This has jth entry \hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j}),
+  // i.e. the log of the geometric mean of each item other than j.
+  EigenVectorXd log_geometric_mean = (sum_of_log_f - log_f.array()) / (tree_count - 1);
+  EigenVectorXd per_sample_signal(tree_count);
+  // This is a vector of entries that when summed become the parenthetical expression
+  // in eq:perSampleLearning.
+  EigenVectorXd log_f_perturbed = log_f;
+  for (size_t j = 0; j < tree_count; j++) {
+    log_f_perturbed(j) = log_geometric_mean(j);
+    per_sample_signal(j) =
+        log_f_perturbed.redux(NumericalUtils::LogAdd) - log_tree_count;
+    // Reset the value.
+    log_f_perturbed(j) = log_f(j);
+  }
+  EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
+  multiplicative_factors -= per_sample_signal;
+  return multiplicative_factors;
+}
+
+// This gives the gradient of log q at a specific unrooted topology.
+// See eq:gradLogQ in the tex, and TopologyGradients for more information about
+// normalized_sbn_parameters_in_log.
+EigenVectorXd SBNInstance::GradientOfLogQ(
+    EigenVectorXdRef normalized_sbn_parameters_in_log,
+    const IndexerRepresentation &indexer_representation) {
+  EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters_.size());
+  double log_q = DOUBLE_NEG_INF;
+  for (const auto &rooted_representation : indexer_representation) {
+    if (SBNProbability::IsInSBNSupport(rooted_representation, sbn_parameters_.size())) {
+      auto subsplit_ranges = GetSubsplitRanges(rooted_representation);
+      // Calculate entries in normalized_sbn_parameters_in_log as needed.
+      for (const auto &[begin, end] : subsplit_ranges) {
+        if (std::isnan(normalized_sbn_parameters_in_log[begin])) {
+          // The entry hasn't been filled yet because it's NaN, so fill it.
+          auto sbn_parameters_segment = sbn_parameters_.segment(begin, end - begin);
+          double log_sum = sbn_parameters_segment.redux(NumericalUtils::LogAdd);
+          // We should be extra careful of NaNs when we are using NaN as a sentinel.
+          Assert(std::isfinite(log_sum),
+                 "GradientOfLogQ encountered non-finite value during calculation.");
+          normalized_sbn_parameters_in_log.segment(begin, end - begin) =
+              sbn_parameters_segment.array() - log_sum;
+        }
+      }
+      double log_probability_rooted_tree = SBNProbability::SumOf(
+          normalized_sbn_parameters_in_log, rooted_representation, 0.0);
+      double probability_rooted_tree = exp(log_probability_rooted_tree);
+      // We need to look up the subsplits in the tree.
+      // Set representation allows fast lookup.
+      std::unordered_set<size_t> rooted_representation_as_set(
+          rooted_representation.begin(), rooted_representation.end());
+      // Now, we actually perform the eq:gradLogQ calculation.
+      for (const auto &[begin, end] : subsplit_ranges) {
+        for (size_t pcss_idx = begin; pcss_idx < end; pcss_idx++) {
+          double indicator_subsplit_in_rooted_tree =
+              static_cast<double>(rooted_representation_as_set.count(pcss_idx) > 0);
+          grad_log_q[pcss_idx] += probability_rooted_tree *
+                                  (indicator_subsplit_in_rooted_tree -
+                                   exp(normalized_sbn_parameters_in_log[pcss_idx]));
+        }
+      }
+      log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
+    }
+  }
+  grad_log_q.array() *= exp(-log_q);
+  return grad_log_q;
+}
+
+EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
+                                             bool use_vimco) {
+  size_t tree_count = tree_collection_.TreeCount();
+  EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters_.size());
+  EigenVectorXd multiplicative_factors =
+      use_vimco ? CalculateVIMCOMultiplicativeFactors(log_f)
+                : CalculateMultiplicativeFactors(log_f);
+  // This variable acts as a cache to store normalized SBN parameters in log.
+  // Initialization to DOUBLE_NAN indicates that all entries are empty.
+  // It is mutated by GradientOfLogQ.
+  EigenVectorXd normalized_sbn_parameters_in_log =
+      EigenVectorXd::Constant(sbn_parameters_.size(), DOUBLE_NAN);
+  for (size_t i = 0; i < tree_count; i++) {
+    const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
+      indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
+    // PROFILE: does it matter that we are allocating another sbn_vector_ sized object?
+    EigenVectorXd log_grad_q = GradientOfLogQ(normalized_sbn_parameters_in_log,
+                                              indexer_representation);
+    log_grad_q.array() *= multiplicative_factors(i);
+    gradient_vector += log_grad_q;
+  }
+  return gradient_vector;
+}
+
+void SBNInstance::NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
+  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters,
+    rootsplits_.size(), parent_to_range_);
 }
 
 // Here we initialize our static random number generator.
