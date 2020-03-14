@@ -481,7 +481,6 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Initialize sbn_parameters to 0's and normalize, which is going to give a uniform
   // distribution for rootsplits and PCSS distributions.
   inst.sbn_parameters_.setZero();
-  // Make a copy of sbn_parameters_.
   EigenVectorXd normalized_sbn_parameters_in_log = inst.sbn_parameters_;
   inst.NormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
   // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
