@@ -324,6 +324,7 @@ std::vector<std::pair<double, std::vector<double>>> SBNInstance::BranchGradients
 std::vector<std::pair<size_t, size_t>> SBNInstance::GetSubsplitRanges(
     const SizeVector &rooted_representation) {
   std::vector<std::pair<size_t, size_t>> subsplits;
+  // PROFILE: should we be reserving here?
   subsplits.push_back(std::make_pair(0, rootsplits_.size()));
   Bitset root = rootsplits_.at(rooted_representation[0]);
   // add child subsplit ranges
@@ -400,18 +401,17 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
   for (const auto &rooted_representation : indexer_representation) {
     if (SBNProbability::IsInSBNSupport(rooted_representation, sbn_parameters_.size())) {
       auto subsplit_ranges = GetSubsplitRanges(rooted_representation);
-      // Fill the entries in normalized_sbn_parameters_in_log if it is not already
-      // filled.
+      // Calculate entries in normalized_sbn_parameters_in_log as needed.
       for (const auto &[begin, end] : subsplit_ranges) {
         if (std::isnan(normalized_sbn_parameters_in_log[begin])) {
-          // NaN means that it hasn't been filled yet.
-          auto segment = sbn_parameters_.segment(begin, end - begin);
-          double log_sum = segment.redux(NumericalUtils::LogAdd);
-          // I want to be extra careful of nans when we are using nan as a sentinel.
+          // The entry hasn't been filled yet because it's NaN, so fill it.
+          auto sbn_parameters_segment = sbn_parameters_.segment(begin, end - begin);
+          double log_sum = sbn_parameters_segment.redux(NumericalUtils::LogAdd);
+          // We should be extra careful of nans when we are using nan as a sentinel.
           Assert(std::isfinite(log_sum),
                  "GradientOfLogQ encountered non-finite value during calculation.");
           normalized_sbn_parameters_in_log.segment(begin, end - begin) =
-              segment.array() - log_sum;
+              sbn_parameters_segment.array() - log_sum;
         }
       }
       double log_probability_rooted_tree = SBNProbability::SumOf(
@@ -434,7 +434,7 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
       log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);
     }
   }
-  grad_log_q = grad_log_q.array() * exp(-log_q);
+  grad_log_q.array() *= exp(-log_q);
   return grad_log_q;
 }
 
@@ -453,6 +453,7 @@ EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
   for (size_t i = 0; i < tree_count; i++) {
     const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
       indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
+    // PROFILE: does it matter that we are allocating another sbn_vector_ sized object?
     EigenVectorXd log_grad_q = GradientOfLogQ(normalized_sbn_parameters_in_log,
                                               indexer_representation);
     log_grad_q.array() *= multiplicative_factors(i);
