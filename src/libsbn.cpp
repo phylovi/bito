@@ -319,34 +319,28 @@ std::vector<std::pair<double, std::vector<double>>> SBNInstance::BranchGradients
                                       rescaling_);
 }
 
+void SBNInstance::PushBackRangeForParentIfAvailable(
+    const Bitset &parent, SBNInstance::RangeVector &range_vector) {
+  if (parent_to_range_.count(parent) > 0) {
+    range_vector.push_back(parent_to_range_.at(parent));
+  }
+}
+
 // Retrieves range of subsplits for each s|t that appears in the tree
 // given by rooted_representation.
-std::vector<std::pair<size_t, size_t>> SBNInstance::GetSubsplitRanges(
+SBNInstance::RangeVector SBNInstance::GetSubsplitRanges(
     const SizeVector &rooted_representation) {
-  std::vector<std::pair<size_t, size_t>> subsplit_ranges;
+  RangeVector subsplit_ranges;
   // PROFILE: should we be reserving here?
   subsplit_ranges.emplace_back(0, rootsplits_.size());
   Bitset root = rootsplits_.at(rooted_representation[0]);
-  // add child subsplit ranges
-  if (parent_to_range_.count(root + ~root) > 0) {
-    const auto &parent_range = parent_to_range_.at(root + ~root);
-    subsplit_ranges.push_back(parent_range);
-  }
-  if (parent_to_range_.count(~root + root) > 0) {
-    const auto &parent_range = parent_to_range_.at(~root + root);
-    subsplit_ranges.push_back(parent_range);
-  }
+  PushBackRangeForParentIfAvailable(root + ~root, subsplit_ranges);
+  PushBackRangeForParentIfAvailable(~root + root, subsplit_ranges);
   // Starting at 1 here because we took care of the rootsplit above (the 0th element).
   for (size_t i = 1; i < rooted_representation.size(); i++) {
-    Bitset parent = index_to_child_.at(rooted_representation[i]);
-    if (parent_to_range_.count(parent) > 0) {
-      const auto &parent_range = parent_to_range_.at(parent);
-      subsplit_ranges.push_back(parent_range);
-    }
-    if (parent_to_range_.count(parent.RotateSubsplit()) > 0) {
-      const auto &parent_range = parent_to_range_.at(parent.RotateSubsplit());
-      subsplit_ranges.push_back(parent_range);
-    }
+    Bitset child = index_to_child_.at(rooted_representation[i]);
+    PushBackRangeForParentIfAvailable(child, subsplit_ranges);
+    PushBackRangeForParentIfAvailable(child.RotateSubsplit(), subsplit_ranges);
   }
   return subsplit_ranges;
 }

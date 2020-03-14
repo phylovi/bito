@@ -25,6 +25,9 @@
 #include "tree.hpp"
 
 class SBNInstance {
+  using Range = std::pair<size_t, size_t>;
+  using RangeVector = std::vector<Range>;
+
  public:
   // Trees get loaded in from a file or sampled from SBNs.
   TreeCollection tree_collection_;
@@ -69,7 +72,7 @@ class SBNInstance {
 
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
-  size_t SampleIndex(std::pair<size_t, size_t> range) const;
+  size_t SampleIndex(Range range) const;
 
   // Sample a topology from the SBN.
   Node::NodePtr SampleTopology(bool rooted = false) const;
@@ -148,8 +151,7 @@ class SBNInstance {
   EigenVectorXd GradientOfLogQ(EigenVectorXdRef normalized_sbn_parameters_in_log,
                                const IndexerRepresentation &indexer_representation);
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
-  std::vector<std::pair<size_t, size_t>> GetSubsplitRanges(
-      const SizeVector &rooted_representation);
+  RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);
   inline void SetSeed(unsigned long seed) { random_generator_.seed(seed); }
 
   // ** I/O
@@ -197,6 +199,9 @@ class SBNInstance {
 
   // Clear all of the state that depends on the current tree collection.
   void ClearTreeCollectionAssociatedState();
+
+  void PushBackRangeForParentIfAvailable(const Bitset &parent,
+                                         SBNInstance::RangeVector &range_vector);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
