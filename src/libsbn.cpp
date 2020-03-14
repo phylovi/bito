@@ -323,32 +323,32 @@ std::vector<std::pair<double, std::vector<double>>> SBNInstance::BranchGradients
 // given by rooted_representation.
 std::vector<std::pair<size_t, size_t>> SBNInstance::GetSubsplitRanges(
     const SizeVector &rooted_representation) {
-  std::vector<std::pair<size_t, size_t>> subsplits;
+  std::vector<std::pair<size_t, size_t>> subsplit_ranges;
   // PROFILE: should we be reserving here?
-  subsplits.push_back(std::make_pair(0, rootsplits_.size()));
+  subsplit_ranges.emplace_back(0, rootsplits_.size());
   Bitset root = rootsplits_.at(rooted_representation[0]);
   // add child subsplit ranges
   if (parent_to_range_.count(root + ~root) > 0) {
     const auto &parent_range = parent_to_range_.at(root + ~root);
-    subsplits.push_back(parent_range);
+    subsplit_ranges.push_back(parent_range);
   }
   if (parent_to_range_.count(~root + root) > 0) {
     const auto &parent_range = parent_to_range_.at(~root + root);
-    subsplits.push_back(parent_range);
+    subsplit_ranges.push_back(parent_range);
   }
+  // Starting at 1 here because we took care of the rootsplit above (the 0th element).
   for (size_t i = 1; i < rooted_representation.size(); i++) {
-    size_t idx = rooted_representation[i];
-    Bitset parent = index_to_child_.at(idx);
+    Bitset parent = index_to_child_.at(rooted_representation[i]);
     if (parent_to_range_.count(parent) > 0) {
       const auto &parent_range = parent_to_range_.at(parent);
-      subsplits.push_back(parent_range);
+      subsplit_ranges.push_back(parent_range);
     }
     if (parent_to_range_.count(parent.RotateSubsplit()) > 0) {
       const auto &parent_range = parent_to_range_.at(parent.RotateSubsplit());
-      subsplits.push_back(parent_range);
+      subsplit_ranges.push_back(parent_range);
     }
   }
-  return subsplits;
+  return subsplit_ranges;
 }
 
 // This multiplicative factor is the quantity inside the parentheses in eq:nabla in the
