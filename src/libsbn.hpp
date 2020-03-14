@@ -141,11 +141,10 @@ class SBNInstance {
   EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f,
                                   bool use_vimco = true);
   // Computes gradient WRT \phi of log q_{\phi}(\tau).
-  // IndexerRepresentation contains all rooting of \tau.
-  // It assumes that sbn_gradients_ are normalized in log space.
-  // %EM Given that we are passing in sbn_parameters, this doesn't feel like a member
-  // function, but something that should stand alone, probably outside of the object. Am
-  // I missing something?
+  // IndexerRepresentation contains all rootings of \tau.
+  // normalized_sbn_parameters_in_log is a cache; see implementation of
+  // TopologyGradients to see how it works. It would be private except that
+  // we want to be able to test it.
   EigenVectorXd GradientOfLogQ(EigenVectorXdRef normalized_sbn_parameters_in_log,
                                const IndexerRepresentation &indexer_representation);
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
@@ -479,8 +478,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // distribution for rootsplits and PCSS distributions.
   inst.sbn_parameters_.setZero();
   // Make a copy of sbn_parameters_.
-  EigenVectorXd sbn_params = inst.sbn_parameters_;
-  inst.NormalizeSBNParametersInLog(sbn_params);
+  EigenVectorXd normalized_sbn_parameters_in_log = inst.sbn_parameters_;
+  inst.NormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
   // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
   //
   // We're going to start by computing the rootsplit gradient.
@@ -514,8 +513,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   EigenVectorXd expected_grad_rootsplit(8);
   expected_grad_rootsplit << -1. / 8, 0, 0, 0, 0, 0, 0, 1. / 8;
   auto indexer_representations = inst.MakeIndexerRepresentations();
-  EigenVectorXd grad_log_q =
-      inst.GradientOfLogQ(sbn_params, indexer_representations.at(0));
+  EigenVectorXd grad_log_q = inst.GradientOfLogQ(normalized_sbn_parameters_in_log,
+                                                 indexer_representations.at(0));
   EigenVectorXd realized_grad_rootsplit = grad_log_q.segment(0, 8);
   // Sort them and compare against sorted version of
   // realized_grad_rootsplit[0:7].
@@ -563,29 +562,28 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   size_t s_idx = inst.indexer_.at(s);
   size_t s_prime_idx = inst.indexer_.at(s_prime);
 
-  // Reset sbn_parameters to 0.
   inst.sbn_parameters_.setZero();
-  // Set sbn_parameters_ for s_idx and s_prime_idx to 1, -1 respectively.
   inst.sbn_parameters_(s_idx) = 1;
   inst.sbn_parameters_(s_prime_idx) = -1;
-  sbn_params = inst.sbn_parameters_;
-  // %EM no, we're normalizing sbn_params.
-  inst.NormalizeSBNParametersInLog(sbn_params);
+  normalized_sbn_parameters_in_log = inst.sbn_parameters_;
+  inst.NormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
 
-  // These changes to sbn_params will change q(\tau) as well as P(\tau_{\rho}) for \rho
-  // = 0123|4. First, P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) + exp(-1)) = 0.1100996.
-  double p_tau_rho = (1. / 8) * exp(sbn_params[s_idx]);
+  // These changes to normalized_sbn_parameters_in_log will change q(\tau) as well as
+  // P(\tau_{\rho}) for \rho = 0123|4. First, P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) +
+  // exp(-1)) = 0.1100996.
+  double p_tau_rho = (1. / 8) * exp(normalized_sbn_parameters_in_log[s_idx]);
   // For q(\tau), we will just compute using the already tested function:
   double q_tau = inst.CalculateSBNProbabilities()(0);
   // The gradient for s|t is given by,
   // (1/q(\tau)) x P(\tau_{\rho}) x (1 - P(s|t))
   double expected_grad_at_s =
-      (1. / q_tau) * p_tau_rho * (1 - exp(sbn_params[s_idx]));
+      (1. / q_tau) * p_tau_rho * (1 - exp(normalized_sbn_parameters_in_log[s_idx]));
   // And the gradient for s'|t is given by,
   // (1/q(\tau)) x P(\tau_{\rho}) x (-P(s|t))
   double expected_grad_at_s_prime =
-      (1. / q_tau) * p_tau_rho * -exp(sbn_params[s_prime_idx]);
-  grad_log_q = inst.GradientOfLogQ(sbn_params,
+      (1. / q_tau) * p_tau_rho * -exp(normalized_sbn_parameters_in_log[s_prime_idx]);
+  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
+  grad_log_q = inst.GradientOfLogQ(normalized_sbn_parameters_in_log,
                                    indexer_representations.at(0));
   CHECK_LT(fabs(expected_grad_at_s - grad_log_q(s_idx)), 1e-9);
   CHECK_LT(fabs(expected_grad_at_s_prime - grad_log_q(s_prime_idx)), 1e-9);
@@ -608,35 +606,33 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   expected_nabla.setZero();
   // We now have some confidence in GradientOfLogQ(), so we just use it.
   auto indexer_reps = inst.MakeIndexerRepresentations();
+  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
   for (size_t k = 0; k < K; k++) {
     grad_log_q =
-        multiplicative_factors(k) * inst.GradientOfLogQ(
-                                                    sbn_params,
-                                                    indexer_reps.at(k)).array();
+        multiplicative_factors(k) *
+        inst.GradientOfLogQ(normalized_sbn_parameters_in_log, indexer_reps.at(k))
+            .array();
     expected_nabla += grad_log_q;
   }
   bool use_vimco = false;
   EigenVectorXd realized_nabla = inst.TopologyGradients(log_f, use_vimco);
-  // %EM I introduced a "bug" here.
-  // %SHJ Now it should fail if you uncomment the below line.
-  //realized_nabla *= 2.;
   CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-9);
-  
+
   // Test for VIMCO gradient estimator.
   EigenVectorXd vimco_multiplicative_factors(K);
   vimco_multiplicative_factors << -0.04742748, 2.59553236, -0.01779887, -0.01278592;
   expected_nabla.setZero();
+  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
   for (size_t k = 0; k < K; k++) {
     grad_log_q =
-        vimco_multiplicative_factors(k) * inst.GradientOfLogQ(
-                                                    sbn_params,
-                                                    indexer_reps.at(k)).array();
+        vimco_multiplicative_factors(k) *
+        inst.GradientOfLogQ(normalized_sbn_parameters_in_log, indexer_reps.at(k))
+            .array();
     expected_nabla += grad_log_q;
   }
   use_vimco = true;
   realized_nabla = inst.TopologyGradients(log_f, use_vimco);
   CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-9);
-  
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
