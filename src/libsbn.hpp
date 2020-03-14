@@ -408,8 +408,6 @@ TEST_CASE("libsbn: SBN training") {
   const auto expected_EM_05_100 = ExpectedEMVectorAlpha05();
   inst.TrainExpectationMaximization(0.5, 100);
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_05_100, 1e-5);
-  const auto expected_EM_00001_100 = ExpectedEMVectorAlpha05();
-  // TODO it looks like we're missing something here
 }
 
 TEST_CASE("libsbn: tree sampling") {
