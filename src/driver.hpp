@@ -1,5 +1,7 @@
 // Copyright 2019 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// This class drives tree parsing.
 
 #ifndef SRC_DRIVER_HPP_
 #define SRC_DRIVER_HPP_
@@ -23,6 +25,10 @@ class Driver {
  public:
   Driver();
 
+  // These member variables are public so that the parser and lexer can access them.
+  // Nevertheless, the reasonable thing to do is to interact with this class from the
+  // outside using the public method interface below.
+
   // The next available id for parsing the first tree.
   uint32_t next_id_;
   // Do we already have the taxon names in taxa_? If not, they get initialized with the
@@ -41,22 +47,25 @@ class Driver {
   // The token's location, used by the scanner to give good debug info.
   yy::location location_;
 
-  // Clear out stored state.
-  void Clear();
-  // Scan a string with flex.
-  void ScanString(const std::string& str);
-  // Parse a string with an existing parser object.
-  Tree ParseString(yy::parser* parser_instance, const std::string& str);
+  // These three parsing methods also remove quotes from Newick strings and Nexus files.
   // Make a parser and then parse a string for a one-off parsing.
   TreeCollection ParseString(const std::string& s);
-  // Run the parser on a Newick stream.
-  TreeCollection ParseNewick(std::ifstream& in);
   // Run the parser on a Newick file.
   TreeCollection ParseNewickFile(const std::string& fname);
   // Run the parser on a Nexus file.
   TreeCollection ParseNexusFile(const std::string& fname);
+  // Clear out stored state.
+  void Clear();
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
   TagStringMap TagTaxonMap();
+
+ private:
+  // Scan a string with flex.
+  void ScanString(const std::string& str);
+  // Parse a string with an existing parser object.
+  Tree ParseString(yy::parser* parser_instance, const std::string& str);
+  // Run the parser on a Newick stream.
+  TreeCollection ParseNewick(std::ifstream& in);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -92,11 +101,13 @@ TEST_CASE("Driver") {
   auto beast_nexus = driver.ParseNexusFile("data/test_beast_tree_parsing.nexus");
   // These are the taxa, in order, taken directly from the nexus file:
   StringVector beast_taxa = {
-      "aDuckA_1976",   "aDuckB_1977",   "aItaly_1987", "aMallard_1985", "hCHR_1983",
-      "hCambr_1939",   "hFortMon_1947", "hKiev_1979",  "hLenin_1954",   "hMongol_1985",
-      "hMongol_1991",  "hNWS_1933",     "hPR_1934",    "hSCar_1918.00",    "hScot_1994",
-      "hSuita_1989",   "hUSSR_1977",    "sEhime_1980", "sIllino_1963",  "sIowa_1930",
-      "sNebrask_1992", "sNewJers_1976", "sStHya_1991", "sWiscons_1961", "sWiscons_1.998e3"};
+      "aDuckA_1976",     "aDuckB_1977",   "aItaly_1987",   "aMallard_1985",
+      "hCHR_1983",       "hCambr_1939",   "hFortMon_1947", "hKiev_1979",
+      "hLenin_1954",     "hMongol_1985",  "hMongol_1991",  "hNWS_1933",
+      "hPR_1934",        "hSCar_1918.00", "hScot_1994",    "hSuita_1989",
+      "hUSSR_1977",      "sEhime_1980",   "sIllino_1963",  "sIowa_1930",
+      "sNebrask_1992",   "sNewJers_1976", "sStHya_1991",   "sWiscons_1961",
+      "sWiscons_1.998e3"};
   CHECK_EQ(beast_nexus.TaxonNames(), beast_taxa);
   // Check that we got the whole tree.
   for (const auto& [topology, count] : beast_nexus.TopologyCounter()) {

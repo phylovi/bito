@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <utility>
 #include "parser.hpp"
+#include "taxon_name_munging.hpp"
 
 Driver::Driver()
     : next_id_(0),
@@ -59,7 +60,10 @@ TreeCollection Driver::ParseNewickFile(const std::string &fname) {
   if (!in) {
     Failwith("Cannot open the File : " + fname);
   }
-  return ParseNewick(in);
+  TreeCollection perhaps_quoted_trees = ParseNewick(in);
+  return TreeCollection(
+      std::move(perhaps_quoted_trees.trees_),
+      TaxonNameMunging::DequoteTagStringMap(perhaps_quoted_trees.TagTaxonMap()));
 }
 
 TreeCollection Driver::ParseNexusFile(const std::string &fname) {
@@ -127,7 +131,7 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     // We're using the public member directly rather than the const accessor because we
     // want to move.
     return TreeCollection(std::move(short_name_tree_collection.trees_),
-                          std::move(long_name_taxon_map));
+                          TaxonNameMunging::DequoteTagStringMap(long_name_taxon_map));
   } catch (const std::exception &exception) {
     Failwith("Problem parsing '" + fname + "':\n" + exception.what());
   }
@@ -147,7 +151,8 @@ TreeCollection Driver::ParseString(const std::string &str) {
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);
   Tree::TreeVector trees = {ParseString(&parser_instance, str)};
-  return TreeCollection(trees, this->TagTaxonMap());
+  return TreeCollection(trees,
+                        TaxonNameMunging::DequoteTagStringMap(this->TagTaxonMap()));
 }
 
 TagStringMap Driver::TagTaxonMap() {

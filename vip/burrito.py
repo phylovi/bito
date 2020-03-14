@@ -57,7 +57,7 @@ class Burrito:
             optimizer_name,
             sbn_model,
             self.branch_model.scalar_model,
-            self.estimate_elbo
+            self.estimate_elbo,
         )
         self.elbo_trace = []
 
@@ -111,12 +111,7 @@ class Burrito:
         )
         # Get topology gradients.
         sbn_grad = self.inst.topology_gradients(px_log_f)
-        self.opt.gradient_step(
-            {
-                "scalar_params": scalar_grad,
-                "sbn_params": sbn_grad
-            }
-        )
+        self.opt.gradient_step({"scalar_params": scalar_grad, "sbn_params": sbn_grad})
 
     def gradient_steps(self, step_count):
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
@@ -125,8 +120,8 @@ class Burrito:
                 self.elbo_trace.append(self.estimate_elbo(self.particle_count))
 
     def estimate_elbo(self, particle_count):
-        """Sample particle_count particles and then make a naive Monte Carlo estimate of
-        the ELBO."""
+        """Sample particle_count particles and then make a naive Monte Carlo
+        estimate of the ELBO."""
         px_branch_lengths = self.sample_topologies(particle_count)
         px_branch_representation = self.branch_model.px_branch_representation()
         # Sample continuous variables based on the branch representations.

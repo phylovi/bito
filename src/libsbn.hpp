@@ -42,8 +42,7 @@ class SBNInstance {
 
   // ** Initialization and status
 
-  explicit SBNInstance(const std::string &name) : name_(name),
-                                                  rescaling_{false} {}
+  explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
@@ -141,8 +140,7 @@ class SBNInstance {
   // Topology gradient for unrooted trees.
   // Assumption: This function is called from Python side
   // after the trees (both the topology and the branch lengths) are sampled.
-  EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f,
-                                  bool use_vimco = true);
+  EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f, bool use_vimco = true);
   // Computes gradient WRT \phi of log q_{\phi}(\tau).
   // IndexerRepresentation contains all rootings of \tau.
   // normalized_sbn_parameters_in_log is a cache; see implementation of
@@ -523,7 +521,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Sort them and compare against sorted version of
   // realized_grad_rootsplit[0:7].
   std::sort(realized_grad_rootsplit.begin(), realized_grad_rootsplit.end());
-  CheckVectorXdEquality(realized_grad_rootsplit, expected_grad_rootsplit, 1e-9);
+  CheckVectorXdEquality(realized_grad_rootsplit, expected_grad_rootsplit, 1e-8);
 
   // Manual enumeration shows that the entries corresponding to PCSS should have
   // 6 entries with -1/16 and 6 entries with 1/16 and the rest with 0's.
@@ -554,7 +552,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   expected_grad_pcss.segment(num_pcss - 6, 6).setConstant(1. / 16);
   EigenVectorXd realized_grad_pcss = grad_log_q.tail(num_pcss);
   std::sort(realized_grad_pcss.begin(), realized_grad_pcss.end());
-  CheckVectorXdEquality(realized_grad_pcss, expected_grad_pcss, 1e-9);
+  CheckVectorXdEquality(realized_grad_pcss, expected_grad_pcss, 1e-8);
 
   // We'll now change the SBN parameters and check the gradient there.
   // If we root at 0123|4, then the only choice we have is between the following s and
@@ -590,8 +588,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
   grad_log_q = inst.GradientOfLogQ(normalized_sbn_parameters_in_log,
                                    indexer_representations.at(0));
-  CHECK_LT(fabs(expected_grad_at_s - grad_log_q(s_idx)), 1e-9);
-  CHECK_LT(fabs(expected_grad_at_s_prime - grad_log_q(s_prime_idx)), 1e-9);
+  CHECK_LT(fabs(expected_grad_at_s - grad_log_q(s_idx)), 1e-8);
+  CHECK_LT(fabs(expected_grad_at_s_prime - grad_log_q(s_prime_idx)), 1e-8);
 
   // Now we test the gradient by doing the calculation by hand.
   K = 4;
@@ -621,7 +619,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   }
   bool use_vimco = false;
   EigenVectorXd realized_nabla = inst.TopologyGradients(log_f, use_vimco);
-  CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-9);
+  CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-8);
 
   // Test for VIMCO gradient estimator.
   EigenVectorXd vimco_multiplicative_factors(K);
@@ -637,7 +635,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   }
   use_vimco = true;
   realized_nabla = inst.TopologyGradients(log_f, use_vimco);
-  CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-9);
+  CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-8);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
