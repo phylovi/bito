@@ -593,10 +593,10 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   CHECK_LT(fabs(expected_grad_at_s - grad_log_q(s_idx)), 1e-9);
   CHECK_LT(fabs(expected_grad_at_s_prime - grad_log_q(s_prime_idx)), 1e-9);
 
-  // Let's do a simple test for TopologyGradient()
+  // Now we test the gradient by doing the calculation by hand.
   K = 4;
   inst.SampleTrees(K);
-  // Make up some numbers for log_f
+  // Make up some numbers for log_f.
   EigenVectorXd log_f(K);
   log_f << -83, -75, -80, -79;
   // log_F = -74.97493
