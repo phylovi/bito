@@ -390,10 +390,11 @@ EigenVectorXd CalculateVIMCOMultiplicativeFactors(const EigenVectorXdRef log_f) 
 }
 
 // This gives the gradient of log q at a specific unrooted topology.
-// See eq:gradLogQ in the tex.
+// See eq:gradLogQ in the tex, and TopologyGradients for more information about
+// normalized_sbn_parameters_in_log.
 EigenVectorXd SBNInstance::GradientOfLogQ(
-                          EigenVectorXdRef normalized_sbn_parameters_in_log,
-                          const IndexerRepresentation &indexer_representation) {
+    EigenVectorXdRef normalized_sbn_parameters_in_log,
+    const IndexerRepresentation &indexer_representation) {
   EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters_.size());
   double log_q = DOUBLE_NEG_INF;
   for (const auto &rooted_representation : indexer_representation) {
@@ -440,25 +441,22 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
 EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
                                              bool use_vimco) {
   size_t tree_count = tree_collection_.TreeCount();
-
+  EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters_.size());
+  EigenVectorXd multiplicative_factors =
+      use_vimco ? CalculateVIMCOMultiplicativeFactors(log_f)
+                : CalculateMultiplicativeFactors(log_f);
   // This variable acts as a cache to store normalized SBN parameters in log.
   // Initialization to DOUBLE_NAN indicates that all entries are empty.
-  EigenVectorXd normalized_sbn_parameters_in_log(sbn_parameters_.size());
-  normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
-
-  EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters_.size());
-
-  EigenVectorXd multiplicative_factors = use_vimco ?
-    CalculateVIMCOMultiplicativeFactors(log_f) :
-    CalculateMultiplicativeFactors(log_f);
-
+  // It is mutated by GradientOfLogQ.
+  EigenVectorXd normalized_sbn_parameters_in_log =
+      EigenVectorXd::Constant(sbn_parameters_.size(), DOUBLE_NAN);
   for (size_t i = 0; i < tree_count; i++) {
     const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
       indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
     EigenVectorXd log_grad_q = GradientOfLogQ(normalized_sbn_parameters_in_log,
                                               indexer_representation);
-    log_grad_q = log_grad_q.array() * multiplicative_factors(i);
-    gradient_vector = gradient_vector + log_grad_q;
+    log_grad_q.array() *= multiplicative_factors(i);
+    gradient_vector += log_grad_q;
   }
   return gradient_vector;
 }

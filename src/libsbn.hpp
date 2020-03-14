@@ -554,21 +554,15 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   std::sort(realized_grad_pcss.begin(), realized_grad_pcss.end());
   CheckVectorXdEquality(realized_grad_pcss, expected_grad_pcss, 1e-9);
 
-  // %EM Do you mean to say SBN here? The SBN is already defined... this is some subset
-  // of the SBN. I think what we'd like to hear is that if we root at 0123|4, then the
-  // only "choice" we have is between s and s' below.
-  //
-  // Consider the SBN defined by the following subsplits:
-  // 0123|4, 012|3, 01|2, 0|1.
+  // If we root at 0123|4, then the only choice we have is between the following s and
+  // s'.
   // The PCSS s|t =  (01|23) | (0123|4) corresponds to 00001|11110|00110.
   // The PCSS s'|t = (012|3) | (0123|4) corresponds to 00001|11110|00010.
-  // Look up these entries in the indexer:
   Bitset s("000011111000110");
   Bitset s_prime("000011111000010");
   size_t s_idx = inst.indexer_.at(s);
   size_t s_prime_idx = inst.indexer_.at(s_prime);
 
-  // %EM not obvious why we are playing with sbn_parameters_ vs the copy.
   // Reset sbn_parameters to 0.
   inst.sbn_parameters_.setZero();
   // Set sbn_parameters_ for s_idx and s_prime_idx to 1, -1 respectively.
@@ -576,7 +570,6 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   inst.sbn_parameters_(s_prime_idx) = -1;
   sbn_params = inst.sbn_parameters_;
   // %EM no, we're normalizing sbn_params.
-  // Normalize sbn_parameters_ in preparation for calling GradientOfLogQ().
   inst.NormalizeSBNParametersInLog(sbn_params);
 
   // These changes to sbn_params will change q(\tau) as well as P(\tau_{\rho}) for \rho
@@ -622,12 +615,9 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
                                                     indexer_reps.at(k)).array();
     expected_nabla += grad_log_q;
   }
-  // %EM Seems worthwhile to me... is this comment needed?
-  // This isn't the most useful way to test the code since we are baically doing
-  // the same calculation as implemented in TopologyGradients().
-  // But if the implementation of TopologyGradients() on any of the internal
-  // computation were to change, this test would catch any potential mistake.
   EigenVectorXd realized_nabla = inst.TopologyGradients(log_f);
+  // %EM I introduced a "bug" here.
+  realized_nabla *= 2.;
   double diff = fabs((expected_nabla - realized_nabla).sum());
   CHECK_LT(diff, 1e-6);
 }
