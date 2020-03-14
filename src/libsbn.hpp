@@ -478,7 +478,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   auto tau = Tree::OfParentIdVector(tau_indices);
   inst.tree_collection_.trees_.push_back(tau);
 
-  // Initialize sbn_parameters to 0's and normalize, which is going to give a uniform
+  // Initialize sbn_parameters_ to 0's and normalize, which is going to give a uniform
   // distribution for rootsplits and PCSS distributions.
   inst.sbn_parameters_.setZero();
   EigenVectorXd normalized_sbn_parameters_in_log = inst.sbn_parameters_;
@@ -494,10 +494,11 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // for this tree is 1/8 x 1 x 1 x 1 = 1/8.
   // Now, consider rooting on the 0|1234 split, yielding the following subsplits:
   // 0|1234, 1|234, 23|4, 2|3.
-  // The probability for this tree is 1/8 x 1 x 1/2 x 1 = 1/16.
+  // The probability for this tree is 1/8 x 1 x 1/2 x 1 = 1/16, where the 1/2 comes from
+  // the fact that we can have 23|4 or 2|34.
   //
-  // Each of the remaining 5 trees has the same probability:
-  // 1/8 for the rootsplit and 1/2 for one of the child subplits.
+  // Each of the remaining 5 trees has the same probability: the product of
+  // 1/8 for the rootsplit and 1/2 for one of the subsplit resolutions of 234.
   // One can see this because the only way for there not to be ambiguity in the
   // resolution of the splitting of 234 is for one to take 014|23 as the rootsplit.
   //
@@ -545,26 +546,25 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // 23|4  | 01|234
   // 23|4  | 1|234
   // 23|4  | 0|234
-  // And each of these have an alternate subsplit s' that gets gradient of -1/16.
+  // And each of these have an alternate subsplit s' that gets a gradient of -1/16.
   // Each of the other PCSS gradients are 0 either because its parent support
   // never appears in the tree or it represents the only child subsplit.
-  EigenVectorXd expected_grad_pcss(num_pcss);
-  expected_grad_pcss.setZero();
+  EigenVectorXd expected_grad_pcss = EigenVectorXd::Zero(num_pcss);
   expected_grad_pcss.segment(0, 6).setConstant(-1. / 16);
   expected_grad_pcss.segment(num_pcss - 6, 6).setConstant(1. / 16);
   EigenVectorXd realized_grad_pcss = grad_log_q.tail(num_pcss);
   std::sort(realized_grad_pcss.begin(), realized_grad_pcss.end());
   CheckVectorXdEquality(realized_grad_pcss, expected_grad_pcss, 1e-9);
 
+  // We'll now change the SBN parameters and check the gradient there.
   // If we root at 0123|4, then the only choice we have is between the following s and
-  // s'.
+  // s' as described above.
   // The PCSS s|t =  (01|23) | (0123|4) corresponds to 00001|11110|00110.
   // The PCSS s'|t = (012|3) | (0123|4) corresponds to 00001|11110|00010.
   Bitset s("000011111000110");
   Bitset s_prime("000011111000010");
   size_t s_idx = inst.indexer_.at(s);
   size_t s_prime_idx = inst.indexer_.at(s_prime);
-
   inst.sbn_parameters_.setZero();
   inst.sbn_parameters_(s_idx) = 1;
   inst.sbn_parameters_(s_prime_idx) = -1;
@@ -572,8 +572,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   inst.NormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
 
   // These changes to normalized_sbn_parameters_in_log will change q(\tau) as well as
-  // P(\tau_{\rho}) for \rho = 0123|4. First, P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) +
-  // exp(-1)) = 0.1100996.
+  // P(\tau_{\rho}) for \rho = 0123|4. First,
+  // P(\tau_{\rho}) = 1/8 * exp(1)/(exp(1) + exp(-1)) = 0.1100996.
   double p_tau_rho = (1. / 8) * exp(normalized_sbn_parameters_in_log[s_idx]);
   // For q(\tau), we will just compute using the already tested function:
   double q_tau = inst.CalculateSBNProbabilities()(0);
@@ -585,6 +585,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // (1/q(\tau)) x P(\tau_{\rho}) x (-P(s|t))
   double expected_grad_at_s_prime =
       (1. / q_tau) * p_tau_rho * -exp(normalized_sbn_parameters_in_log[s_prime_idx]);
+  // We're setting normalized_sbn_parameters_in_log to NaN as we would in a normal
+  // application of GradientOfLogQ.
   normalized_sbn_parameters_in_log.setConstant(DOUBLE_NAN);
   grad_log_q = inst.GradientOfLogQ(normalized_sbn_parameters_in_log,
                                    indexer_representations.at(0));
