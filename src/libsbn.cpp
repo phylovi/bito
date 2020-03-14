@@ -348,13 +348,12 @@ SBNInstance::RangeVector SBNInstance::GetSubsplitRanges(
 // This multiplicative factor is the quantity inside the parentheses in eq:nabla in the
 // tex.
 EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
-  size_t tree_count = log_f.size();
+  double tree_count = log_f.size();
   double log_F = NumericalUtils::LogSum(log_f);
   double hat_L = log_F - log(tree_count);
   EigenVectorXd tilde_w = log_f.array() - log_F;
   tilde_w = tilde_w.array().exp();
-  EigenVectorXd multiplicative_factors = hat_L - tilde_w.array();
-  return multiplicative_factors;
+  return hat_L - tilde_w.array();
 }
 
 // This multiplicative factor is the quantity inside the parentheses in eq:nablaVIMCO in
@@ -372,12 +371,12 @@ EigenVectorXd CalculateVIMCOMultiplicativeFactors(const EigenVectorXdRef log_f) 
   // This is a vector of entries that when summed become the parenthetical expression
   // in eq:perSampleLearning.
   EigenVectorXd log_f_perturbed = log_f;
-  for (size_t i = 0; i < tree_count; i++) {
-    log_f_perturbed(i) = log_geometric_mean(i);
-    per_sample_signal(i) =
+  for (size_t j = 0; j < tree_count; j++) {
+    log_f_perturbed(j) = log_geometric_mean(j);
+    per_sample_signal(j) =
         log_f_perturbed.redux(NumericalUtils::LogAdd) - log_tree_count;
     // Reset the value.
-    log_f_perturbed(i) = log_f(i);
+    log_f_perturbed(j) = log_f(j);
   }
   EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
   multiplicative_factors -= per_sample_signal;
@@ -401,7 +400,7 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
           // The entry hasn't been filled yet because it's NaN, so fill it.
           auto sbn_parameters_segment = sbn_parameters_.segment(begin, end - begin);
           double log_sum = sbn_parameters_segment.redux(NumericalUtils::LogAdd);
-          // We should be extra careful of nans when we are using nan as a sentinel.
+          // We should be extra careful of NaNs when we are using NaN as a sentinel.
           Assert(std::isfinite(log_sum),
                  "GradientOfLogQ encountered non-finite value during calculation.");
           normalized_sbn_parameters_in_log.segment(begin, end - begin) =
@@ -417,12 +416,12 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
           rooted_representation.begin(), rooted_representation.end());
       // Now, we actually perform the eq:gradLogQ calculation.
       for (const auto &[begin, end] : subsplit_ranges) {
-        for (size_t idx = begin; idx < end; idx++) {
+        for (size_t pcss_idx = begin; pcss_idx < end; pcss_idx++) {
           double indicator_subsplit_in_rooted_tree =
-              static_cast<double>(rooted_representation_as_set.count(idx) > 0);
-          grad_log_q[idx] +=
-              probability_rooted_tree * (indicator_subsplit_in_rooted_tree -
-                                         exp(normalized_sbn_parameters_in_log[idx]));
+              static_cast<double>(rooted_representation_as_set.count(pcss_idx) > 0);
+          grad_log_q[pcss_idx] += probability_rooted_tree *
+                                  (indicator_subsplit_in_rooted_tree -
+                                   exp(normalized_sbn_parameters_in_log[pcss_idx]));
         }
       }
       log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);

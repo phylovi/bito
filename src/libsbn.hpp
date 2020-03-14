@@ -151,8 +151,6 @@ class SBNInstance {
   EigenVectorXd GradientOfLogQ(EigenVectorXdRef normalized_sbn_parameters_in_log,
                                const IndexerRepresentation &indexer_representation);
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
-  RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);
-  inline void SetSeed(unsigned long seed) { random_generator_.seed(seed); }
 
   // ** I/O
 
@@ -165,6 +163,8 @@ class SBNInstance {
   std::string name_;
   // Our phylogenetic likelihood computation engine.
   std::unique_ptr<Engine> engine_;
+  // Whether we use likelihood vector rescaling.
+  bool rescaling_;
   // The multiple sequence alignment.
   Alignment alignment_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
@@ -186,7 +186,7 @@ class SBNInstance {
   // Random bits.
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
-  bool rescaling_;
+  inline void SetSeed(unsigned long seed) { random_generator_.seed(seed); }
 
   // Make a likelihood engine with the given specification.
   void MakeEngine(const EngineSpecification &engine_specification,
@@ -202,6 +202,7 @@ class SBNInstance {
 
   void PushBackRangeForParentIfAvailable(const Bitset &parent,
                                          SBNInstance::RangeVector &range_vector);
+  RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
