@@ -5,7 +5,7 @@ import numpy as np
 import vip.sgd_server
 from vip.sbn_model import SBNModel
 from vip.scalar_model import ScalarModel
-import pdb
+
 
 class BaseOptimizer(abc.ABC):
     def __init__(
@@ -40,7 +40,7 @@ class BaseOptimizer(abc.ABC):
             return False
         assert self.sbn_model.sbn_parameters.shape == sbn_grad.shape
         update_dict = self.sgd_server.adam(
-            {"scalar_params": self.step_size,  "sbn_params": self.sbn_step_size},
+            {"scalar_params": self.step_size, "sbn_params": self.sbn_step_size},
             {
                 "scalar_params": self.scalar_model.q_params,
                 "sbn_params": self.sbn_model.sbn_parameters,
