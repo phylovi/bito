@@ -445,10 +445,10 @@ EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
       EigenVectorXd::Constant(sbn_parameters_.size(), DOUBLE_NAN);
   for (size_t i = 0; i < tree_count; i++) {
     const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
-      indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
+        indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
     // PROFILE: does it matter that we are allocating another sbn_vector_ sized object?
-    EigenVectorXd log_grad_q = GradientOfLogQ(normalized_sbn_parameters_in_log,
-                                              indexer_representation);
+    EigenVectorXd log_grad_q =
+        GradientOfLogQ(normalized_sbn_parameters_in_log, indexer_representation);
     log_grad_q.array() *= multiplicative_factors(i);
     gradient_vector += log_grad_q;
   }
@@ -456,8 +456,8 @@ EigenVectorXd SBNInstance::TopologyGradients(const EigenVectorXdRef log_f,
 }
 
 void SBNInstance::NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
-  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters,
-    rootsplits_.size(), parent_to_range_);
+  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplits_.size(),
+                                                  parent_to_range_);
 }
 
 // Here we initialize our static random number generator.

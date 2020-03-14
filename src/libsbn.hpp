@@ -42,8 +42,7 @@ class SBNInstance {
 
   // ** Initialization and status
 
-  explicit SBNInstance(const std::string &name) : name_(name),
-                                                  rescaling_{false} {}
+  explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
@@ -141,8 +140,7 @@ class SBNInstance {
   // Topology gradient for unrooted trees.
   // Assumption: This function is called from Python side
   // after the trees (both the topology and the branch lengths) are sampled.
-  EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f,
-                                  bool use_vimco = true);
+  EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f, bool use_vimco = true);
   // Computes gradient WRT \phi of log q_{\phi}(\tau).
   // IndexerRepresentation contains all rootings of \tau.
   // normalized_sbn_parameters_in_log is a cache; see implementation of
