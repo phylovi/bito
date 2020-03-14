@@ -146,7 +146,7 @@ class SBNInstance {
   // %EM Given that we are passing in sbn_parameters, this doesn't feel like a member
   // function, but something that should stand alone, probably outside of the object. Am
   // I missing something?
-  EigenVectorXd GradientOfLogQ(EigenVectorXdRef sbn_parameters,
+  EigenVectorXd GradientOfLogQ(EigenVectorXdRef normalized_sbn_parameters_in_log,
                                const IndexerRepresentation &indexer_representation);
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
   std::vector<std::pair<size_t, size_t>> GetSubsplitRanges(
@@ -615,11 +615,12 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
                                                     indexer_reps.at(k)).array();
     expected_nabla += grad_log_q;
   }
-  EigenVectorXd realized_nabla = inst.TopologyGradients(log_f);
+  bool use_vimco = false;
+  EigenVectorXd realized_nabla = inst.TopologyGradients(log_f, use_vimco);
   // %EM I introduced a "bug" here.
-  realized_nabla *= 2.;
-  double diff = fabs((expected_nabla - realized_nabla).sum());
-  CHECK_LT(diff, 1e-6);
+  // %SHJ Now it should fail if you uncomment the below line.
+  //realized_nabla *= 2.;
+  CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-9);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_LIBSBN_HPP_
