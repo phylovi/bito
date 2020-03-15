@@ -11,7 +11,7 @@ FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
                      const FatBeagle::PackedBeagleFlags beagle_preference_flags,
                      bool use_tip_states)
     : phylo_model_(PhyloModel::OfSpecification(specification)),
-      rescaling_(false),
+      rescaling_(false),  // Note: rescaling_ set via the SetRescaling method.
       pattern_count_(static_cast<int>(site_pattern.PatternCount())),
       use_tip_states_(use_tip_states) {
   std::tie(beagle_instance_, beagle_flags_) =
