@@ -165,6 +165,8 @@ PYBIND11_MODULE(libsbn, m) {
            "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
       .def("log_likelihoods", &SBNInstance::LogLikelihoods,
            "Calculate log likelihoods for the current set of trees.")
+      .def("set_rescaling", &SBNInstance::SetRescaling,
+           "Set whether BEAGLE's likelihood rescaling is used.")
       .def("branch_gradients", &SBNInstance::BranchGradients,
            "Calculate gradients of branch lengths for the current set of trees.")
       .def("topology_gradients", &SBNInstance::TopologyGradients,
