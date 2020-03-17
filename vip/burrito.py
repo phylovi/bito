@@ -34,8 +34,10 @@ class Burrito:
         optimizer_name,
         particle_count,
         thread_count=1,
+        use_vimco=True
     ):
         self.particle_count = particle_count
+        self.use_vimco = use_vimco
         self.inst = libsbn.instance("burrito")
 
         # Read MCMC run to get tree structure.
@@ -110,7 +112,7 @@ class Burrito:
             px_phylo_log_like, px_theta_sample, px_branch_representation
         )
         # Get topology gradients.
-        sbn_grad = self.inst.topology_gradients(px_log_f)
+        sbn_grad = self.inst.topology_gradients(px_log_f, self.use_vimco)
         self.opt.gradient_step(
             {
                 "scalar_params": scalar_grad,
