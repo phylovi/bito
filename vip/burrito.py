@@ -128,7 +128,6 @@ class Burrito:
             for step in bar:
                 self.gradient_step(betas[step])
                 self.elbo_trace.append(self.estimate_elbo(self.particle_count))
-                print(self.elbo_trace[-1])
 
     def estimate_elbo(self, particle_count):
         """Sample particle_count particles and then make a naive Monte Carlo estimate of
