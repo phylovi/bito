@@ -81,7 +81,7 @@ class Burrito:
             for tree in self.inst.tree_collection.trees
         ]
 
-    def gradient_step(self):
+    def gradient_step(self, beta_t = 1.0):
         """Take a gradient step."""
         px_branch_lengths = self.sample_topologies(self.particle_count)
         px_branch_representation = self.branch_model.px_branch_representation()
@@ -108,6 +108,7 @@ class Burrito:
         px_phylo_log_like = np.array(
             [branch_gradient[0] for branch_gradient in branch_gradients]
         )
+        px_phylo_log_like = beta_t * px_phylo_log_like
         px_log_f = self.px_log_f(
             px_phylo_log_like, px_theta_sample, px_branch_representation
         )
@@ -121,10 +122,13 @@ class Burrito:
         )
 
     def gradient_steps(self, step_count):
+        betas = np.arange(1, step_count + 1, dtype = np.float)
+        betas = np.maximum(betas / step_count, 0.001)
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:
-                self.gradient_step()
+                self.gradient_step(betas[step])
                 self.elbo_trace.append(self.estimate_elbo(self.particle_count))
+                print(self.elbo_trace[-1])
 
     def estimate_elbo(self, particle_count):
         """Sample particle_count particles and then make a naive Monte Carlo estimate of
