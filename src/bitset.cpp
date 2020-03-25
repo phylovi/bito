@@ -216,34 +216,34 @@ std::string Bitset::ToStringChunked(size_t chunk_count) const {
 }
 
 std::string Bitset::SubsplitToString() const { return ToStringChunked(2); }
-std::string Bitset::PCSSToString() const { return ToStringChunked(3); }
+std::string Bitset::PCSPToString() const { return ToStringChunked(3); }
 
-size_t Bitset::PCSSChunkSize() const {
-  Assert(size() % 3 == 0, "Size isn't 0 mod 3 in Bitset::PCSSChunkSize.");
+size_t Bitset::PCSPChunkSize() const {
+  Assert(size() % 3 == 0, "Size isn't 0 mod 3 in Bitset::PCSPChunkSize.");
   return size() / 3;
 }
 
-Bitset Bitset::PCSSChunk(size_t i) const {
-  size_t chunk_size = PCSSChunkSize();
+Bitset Bitset::PCSPChunk(size_t i) const {
+  size_t chunk_size = PCSPChunkSize();
   std::vector<bool> new_value(value_.begin() + int32_t(i * chunk_size),
                               value_.begin() + int32_t((i + 1) * chunk_size));
   return Bitset(new_value);
 }
 
-Bitset Bitset::PCSSParent() const {
-  size_t chunk_size = PCSSChunkSize();
+Bitset Bitset::PCSPParent() const {
+  size_t chunk_size = PCSPChunkSize();
   std::vector<bool> new_value(value_.begin(), value_.begin() + int32_t(2 * chunk_size));
   return Bitset(new_value);
 }
 
-Bitset Bitset::PCSSWithoutParent() const {
-  size_t chunk_size = PCSSChunkSize();
+Bitset Bitset::PCSPWithoutParent() const {
+  size_t chunk_size = PCSPChunkSize();
   std::vector<bool> new_value(value_.begin() + int32_t(chunk_size), value_.end());
   return Bitset(new_value);
 }
 
-Bitset Bitset::PCSSChildSubsplit() const {
-  size_t chunk_size = PCSSChunkSize();
+Bitset Bitset::PCSPChildSubsplit() const {
+  size_t chunk_size = PCSPChunkSize();
   std::vector<bool> new_value(value_.begin() + int32_t(chunk_size),
                               value_.begin() + int32_t(3 * chunk_size));
   for (size_t i = 0; i < chunk_size; i++) {
@@ -254,13 +254,13 @@ Bitset Bitset::PCSSChildSubsplit() const {
   return Bitset(new_value);
 }
 
-bool Bitset::PCSSIsValid() const {
+bool Bitset::PCSPIsValid() const {
   if (size() % 3 != 0) {
     return false;
   }
-  Bitset uncut_parent = PCSSChunk(0);
-  Bitset cut_parent = PCSSChunk(1);
-  Bitset child = PCSSChunk(2);
+  Bitset uncut_parent = PCSPChunk(0);
+  Bitset cut_parent = PCSPChunk(1);
+  Bitset child = PCSPChunk(2);
   // The parents should be disjoint.
   if ((uncut_parent & cut_parent).Any()) {
     return false;
@@ -277,10 +277,10 @@ bool Bitset::PCSSIsValid() const {
   return true;
 }
 
-bool Bitset::PCSSIsRootsplit() const {
-  Assert(size() % 3 == 0, "Size isn't 0 mod 3 in Bitset::PCSSIsRootsplit.");
+bool Bitset::PCSPIsRootsplit() const {
+  Assert(size() % 3 == 0, "Size isn't 0 mod 3 in Bitset::PCSPIsRootsplit.");
 
-  auto total = PCSSChunk(0) | PCSSChunk(1);
+  auto total = PCSPChunk(0) | PCSPChunk(1);
   return total.All();
 }
 

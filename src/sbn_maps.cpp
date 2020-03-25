@@ -43,15 +43,15 @@ BitsetSizeDict SBNMaps::RootsplitCounterOf(const Node::TopologyCounter& topologi
   return rootsplit_counter;
 }
 
-PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
-  PCSSDict pcss_dict;
+PCSPDict SBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies) {
+  PCSPDict pcsp_dict;
   for (const auto& iter : topologies) {
     auto topology = iter.first;
     auto count = iter.second;
     auto leaf_count = topology->LeafCount();
     Assert(topology->Children().size() == 3,
-           "PCSSCounterOf was expecting a tree with a trifurcation at the root!");
-    topology->PCSSPreOrder([&pcss_dict, &count, &leaf_count](
+           "PCSPCounterOf was expecting a tree with a trifurcation at the root!");
+    topology->PCSPPreOrder([&pcsp_dict, &count, &leaf_count](
                                const Node* sister_node, bool sister_direction,
                                const Node* focal_node, bool focal_direction,  //
                                const Node* child0_node,
@@ -75,18 +75,18 @@ PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
       }
       auto child = std::min(child0, child1);
       // Insert the parent-child pair into the map.
-      auto search = pcss_dict.find(parent);
-      if (search == pcss_dict.end()) {
+      auto search = pcsp_dict.find(parent);
+      if (search == pcsp_dict.end()) {
         // The first time we have seen this parent.
         BitsetSizeDict child_singleton(0);
         child_singleton.increment(std::move(child), count);
-        SafeInsert(pcss_dict, std::move(parent), child_singleton);
+        SafeInsert(pcsp_dict, std::move(parent), child_singleton);
       } else {
         search->second.increment(std::move(child), count);
       }
     });
   }
-  return pcss_dict;
+  return pcsp_dict;
 }
 
 SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
@@ -112,9 +112,9 @@ Bitset Rootsplit(const Node* rooted_topology) {
   return subsplit;
 }
 
-// Make a PCSS bitset from a collection of Nodes and their directions. If direction is
+// Make a PCSP bitset from a collection of Nodes and their directions. If direction is
 // true, then the bits get flipped.
-Bitset PCSSBitsetOf(const size_t leaf_count,  //
+Bitset PCSPBitsetOf(const size_t leaf_count,  //
                     const Node* sister_node, bool sister_direction,
                     const Node* focal_node, bool focal_direction,
                     const Node* child0_node, bool child0_direction,
@@ -145,18 +145,18 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
   std::transform(rootsplit_result.begin(), rootsplit_result.end(), result.begin(),
                  [&topology](const auto rootsplit) {
                    SizeVector v = {rootsplit};
-                   // The number of PCSSs is less than number of internal nodes/2.
+                   // The number of PCSPs is less than number of internal nodes/2.
                    v.reserve(topology->Id() / 2);
                    return v;
                  });
-  // Now we append the PCSSs.
-  topology->PCSSPreOrder([&indexer, &default_index, &leaf_count, &result, &topology](
+  // Now we append the PCSPs.
+  topology->PCSPPreOrder([&indexer, &default_index, &leaf_count, &result, &topology](
                              const Node* sister_node, bool sister_direction,
                              const Node* focal_node, bool focal_direction,
                              const Node* child0_node, bool child0_direction,
                              const Node* child1_node, bool child1_direction,
                              const Node* virtual_root_clade) {
-    const auto bitset = PCSSBitsetOf(leaf_count, sister_node, sister_direction,
+    const auto bitset = PCSPBitsetOf(leaf_count, sister_node, sister_direction,
                                      focal_node, focal_direction, child0_node,
                                      child0_direction, child1_node, child1_direction);
     const auto indexer_position = AtWithDefault(indexer, bitset, default_index);
@@ -164,20 +164,20 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
     if (sister_node == focal_node) {
       // We are in the bidirectional edge situation.
       Assert(focal_index < result.size(), "focal_index out of range.");
-      // Rooting at the present edge will indeed lead to the given PCSS.
+      // Rooting at the present edge will indeed lead to the given PCSP.
       result[focal_index].push_back(indexer_position);
     } else {
       // The only time the virtual root clade should be nullptr should be when
       // sister_node == focal_node, but we check anyhow.
       Assert(virtual_root_clade != nullptr, "virtual_root_clade is null.");
       // Virtual-rooting on every edge in the virtual rooting clade will also
-      // lead to this PCSS, because then the root will be "above" the PCSS.
+      // lead to this PCSP, because then the root will be "above" the PCSP.
       virtual_root_clade->ConditionalPreOrder([&result, &indexer_position, &sister_node,
                                                &focal_node,
                                                &topology](const Node* node) {
         if (node == sister_node || node == focal_node) {
           // Don't enter the sister or focal clades. This is only
-          // activated in the second case on the bottom row of pcss.svg:
+          // activated in the second case on the bottom row of pcsp.svg:
           // we want to add everything in the clade above the focal node,
           // but nothing else.
           return false;
@@ -216,13 +216,13 @@ SizeVector SBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
   // Start with the rootsplit.
   Bitset rootsplit = Rootsplit(topology.get());
   result.push_back(AtWithDefault(indexer, rootsplit, default_index));
-  // Now add the PCSSs.
-  topology->RootedPCSSPreOrder([&leaf_count, &indexer, &default_index, &result](
+  // Now add the PCSPs.
+  topology->RootedPCSPPreOrder([&leaf_count, &indexer, &default_index, &result](
                                    const Node* sister_node, const Node* focal_node,
                                    const Node* child0_node, const Node* child1_node) {
-    Bitset pcss_bitset = PCSSBitsetOf(leaf_count, sister_node, false, focal_node, false,
+    Bitset pcsp_bitset = PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
                                       child0_node, false, child1_node, false);
-    result.push_back(AtWithDefault(indexer, pcss_bitset, default_index));
+    result.push_back(AtWithDefault(indexer, pcsp_bitset, default_index));
   });
   return result;
 }
@@ -246,8 +246,8 @@ void SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
   }
 }
 
-StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
-  StringPCSSMap d_str;
+StringPCSPMap SBNMaps::StringPCSPMapOf(PCSPDict d) {
+  StringPCSPMap d_str;
   for (const auto& iter : d) {
     d_str[iter.first.ToString()] = StringifyMap(iter.second.Map());
   }

@@ -13,14 +13,14 @@ PSPIndexer::PSPIndexer(BitsetVector rootsplits, BitsetSizeMap in_indexer) {
     index++;
   }
   after_rootsplits_index_ = index;
-  // Now onto the PCSSs.
+  // Now onto the PCSPs.
   for (const auto& iter : in_indexer) {
-    const auto& pcss = iter.first;
+    const auto& pcsp = iter.first;
     // The first condition allows us to skip the rootsplits. We only want the
-    // PCSSs here. The second condition is because the "primary" part of Primary
+    // PCSPs here. The second condition is because the "primary" part of Primary
     // Subsplit Pair means that the parent split is a rootsplit.
-    if (iter.second >= rootsplits.size() && pcss.PCSSIsRootsplit()) {
-      SafeInsert(indexer_, pcss.PCSSWithoutParent(), index);
+    if (iter.second >= rootsplits.size() && pcsp.PCSPIsRootsplit()) {
+      SafeInsert(indexer_, pcsp.PCSPWithoutParent(), index);
       index++;
     }
   }

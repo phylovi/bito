@@ -32,9 +32,9 @@ void SBNInstance::ProcessLoadedTrees() {
     rootsplits_.push_back(iter.first);
     index++;
   }
-  // Now add the PCSSs.
+  // Now add the PCSPs.
   for (const auto &[parent, child_counter] :
-       SBNMaps::PCSSCounterOf(topology_counter_)) {
+       SBNMaps::PCSPCounterOf(topology_counter_)) {
     SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
     for (const auto &child_iter : child_counter) {
       const auto &child = child_iter.first;
@@ -62,7 +62,7 @@ StringVector SBNInstance::PrettyIndexer() {
     if (idx < rootsplits_.size()) {
       pretty_representation[idx] = key.ToString();
     } else {
-      pretty_representation[idx] = key.PCSSToString();
+      pretty_representation[idx] = key.PCSPToString();
     }
   }
   return pretty_representation;
@@ -182,7 +182,7 @@ StringVector SBNInstance::StringReversedIndexer() const {
     if (idx < rootsplits_.size()) {
       reversed_indexer[idx] = key.ToString();
     } else {
-      reversed_indexer[idx] = key.PCSSToString();
+      reversed_indexer[idx] = key.PCSPToString();
     }
   }
   return reversed_indexer;
@@ -217,10 +217,10 @@ std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
 }
 
 // This function is really just for testing-- it recomputes from scratch.
-std::pair<StringSizeMap, StringPCSSMap> SBNInstance::SplitCounters() const {
+std::pair<StringSizeMap, StringPCSPMap> SBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();
   return {StringifyMap(SBNMaps::RootsplitCounterOf(counter).Map()),
-          SBNMaps::StringPCSSMapOf(SBNMaps::PCSSCounterOf(counter))};
+          SBNMaps::StringPCSPMapOf(SBNMaps::PCSPCounterOf(counter))};
 }
 
 void SBNInstance::ReadNewickFile(std::string fname) {
@@ -416,12 +416,12 @@ EigenVectorXd SBNInstance::GradientOfLogQ(
           rooted_representation.begin(), rooted_representation.end());
       // Now, we actually perform the eq:gradLogQ calculation.
       for (const auto &[begin, end] : subsplit_ranges) {
-        for (size_t pcss_idx = begin; pcss_idx < end; pcss_idx++) {
+        for (size_t pcsp_idx = begin; pcsp_idx < end; pcsp_idx++) {
           double indicator_subsplit_in_rooted_tree =
-              static_cast<double>(rooted_representation_as_set.count(pcss_idx) > 0);
-          grad_log_q[pcss_idx] += probability_rooted_tree *
+              static_cast<double>(rooted_representation_as_set.count(pcsp_idx) > 0);
+          grad_log_q[pcsp_idx] += probability_rooted_tree *
                                   (indicator_subsplit_in_rooted_tree -
-                                   exp(normalized_sbn_parameters_in_log[pcss_idx]));
+                                   exp(normalized_sbn_parameters_in_log[pcsp_idx]));
         }
       }
       log_q = NumericalUtils::LogAdd(log_q, log_probability_rooted_tree);

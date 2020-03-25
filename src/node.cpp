@@ -255,10 +255,10 @@ void Node::TriplePreOrderBifurcating(
   }
 }
 
-// See the typedef of PCSSFun to understand the argument type to this
-// function, and `doc/pcss.svg` for a diagram that will greatly help you
+// See the typedef of PCSPFun to understand the argument type to this
+// function, and `doc/pcsp.svg` for a diagram that will greatly help you
 // understand the implementation.
-void Node::PCSSPreOrder(PCSSFun f) const {
+void Node::PCSPPreOrder(PCSPFun f) const {
   this->TriplePreOrder(
       // f_root
       [&f](const Node* node0, const Node* node1, const Node* node2) {
@@ -266,7 +266,7 @@ void Node::PCSSPreOrder(PCSSFun f) const {
         f(node2, false, node2, true, node0, false, node1, false, nullptr);
         if (!node2->IsLeaf()) {
           Assert(node2->Children().size() == 2,
-                 "PCSSPreOrder expects a bifurcating tree.");
+                 "PCSPPreOrder expects a bifurcating tree.");
           auto child0 = node2->Children()[0].get();
           auto child1 = node2->Children()[1].get();
           // Virtual root in node1.
@@ -287,7 +287,7 @@ void Node::PCSSPreOrder(PCSSFun f) const {
         f(node, false, node, true, parent, true, sister, false, nullptr);
         if (!node->IsLeaf()) {
           Assert(node->Children().size() == 2,
-                 "PCSSPreOrder expects a bifurcating tree.");
+                 "PCSPPreOrder expects a bifurcating tree.");
           auto child0 = node->Children()[0].get();
           auto child1 = node->Children()[1].get();
           // Virtual root up the tree.
@@ -304,12 +304,12 @@ void Node::PCSSPreOrder(PCSSFun f) const {
       });
 }
 
-void Node::RootedPCSSPreOrder(RootedPCSSFun f) const {
+void Node::RootedPCSPPreOrder(RootedPCSPFun f) const {
   this->TriplePreOrderBifurcating(
       [&f](const Node* node, const Node* sister, const Node* parent) {
         if (!node->IsLeaf()) {
           Assert(node->Children().size() == 2,
-                 "RootedPCSSPreOrder expects a bifurcating tree.");
+                 "RootedPCSPPreOrder expects a bifurcating tree.");
           auto child0 = node->Children()[0].get();
           auto child1 = node->Children()[1].get();
           f(sister, node, child0, child1);

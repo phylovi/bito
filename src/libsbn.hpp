@@ -82,7 +82,7 @@ class SBNInstance {
   // Get indexer representations of the trees in tree_collection_.
   // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
   // explanation of what these are. This version uses the length of
-  // sbn_parameters_ as a sentinel value for all rootsplits/PCSSs that aren't
+  // sbn_parameters_ as a sentinel value for all rootsplits/PCSPs that aren't
   // present in the indexer.
   std::vector<IndexerRepresentation> MakeIndexerRepresentations() const;
 
@@ -109,7 +109,7 @@ class SBNInstance {
 
   // This function is really just for testing-- it recomputes counters from
   // scratch.
-  std::pair<StringSizeMap, StringPCSSMap> SplitCounters() const;
+  std::pair<StringSizeMap, StringPCSPMap> SplitCounters() const;
 
   // ** Phylogenetic likelihood
 
@@ -166,10 +166,10 @@ class SBNInstance {
   // The multiple sequence alignment.
   Alignment alignment_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
-  // and PCSS bitsets are at the end.
+  // and PCSP bitsets are at the end.
   // The collection of rootsplits, with the same indexing as in the indexer_.
   BitsetVector rootsplits_;
-  // A map going from the index of a PCSS to its child.
+  // A map going from the index of a PCSP to its child.
   SizeBitsetMap index_to_child_;
   // A map going from a parent subsplit to the range of indices in
   // sbn_parameters_ with its children.
@@ -205,7 +205,7 @@ class SBNInstance {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
-// Below we use 99999999 is the default value if a rootsplit or PCSS is missing.
+// Below we use 99999999 is the default value if a rootsplit or PCSP is missing.
 const size_t out_of_sample_index = 99999999;
 
 TEST_CASE("libsbn: indexer and PSP representations") {
@@ -215,7 +215,7 @@ TEST_CASE("libsbn: indexer and PSP representations") {
   auto pretty_indexer = inst.PrettyIndexer();
   // The indexer_ is to index the sbn_parameters_. Note that neither of these
   // data structures attempt to catalog the complete collection of rootsplits or
-  // PCSSs, but just those that are present for some rooting of the input trees.
+  // PCSPs, but just those that are present for some rooting of the input trees.
   //
   // The indexer_ and sbn_parameters_ are laid out as follows (I'll just call it
   // the "index" in what follows). Say there are rootsplit_count rootsplits in
@@ -231,24 +231,24 @@ TEST_CASE("libsbn: indexer and PSP representations") {
       pretty_indexer.begin() + correct_pretty_rootsplits.size());
   CHECK(correct_pretty_rootsplits == pretty_rootsplits);
   // The rest of the entries of the index are laid out as blocks of parameters
-  // for PCSSs that share the same parent. Take a look at the description of
-  // PCSS bitsets (and the unit tests) in bitset.hpp to understand the notation
+  // for PCSPs that share the same parent. Take a look at the description of
+  // PCSP bitsets (and the unit tests) in bitset.hpp to understand the notation
   // used here.
   //
-  // For example, here are four PCSSs that all share the parent 00001|11110:
-  StringSet correct_pretty_pcss_block({"00001|11110|01110", "00001|11110|00010",
+  // For example, here are four PCSPs that all share the parent 00001|11110:
+  StringSet correct_pretty_pcsp_block({"00001|11110|01110", "00001|11110|00010",
                                        "00001|11110|01000", "00001|11110|00100"});
   StringSet pretty_indexer_set(pretty_indexer.begin(), pretty_indexer.end());
   // It's true that this test doesn't show the block-ness, but it wasn't easy to
   // show off this feature in a way that wasn't compiler dependent.
-  for (auto pretty_pcss : correct_pretty_pcss_block) {
-    CHECK(pretty_indexer_set.find(pretty_pcss) != pretty_indexer_set.end());
+  for (auto pretty_pcsp : correct_pretty_pcsp_block) {
+    CHECK(pretty_indexer_set.find(pretty_pcsp) != pretty_indexer_set.end());
   }
   // Now we can look at some tree representations. We get these by calling
   // IndexerRepresentationOf on a tree topology. This function "digests" the
-  // tree by representing all of the PCSSs as bitsets which it can then look up
+  // tree by representing all of the PCSPs as bitsets which it can then look up
   // in the indexer_.
-  // It then spits them out as the rootsplit and PCSS indices.
+  // It then spits them out as the rootsplit and PCSP indices.
   // The following tree is (2,(1,3),(0,4));, or with internal nodes (2,(1,3)5,(0,4)6)7
   auto indexer_test_topology_1 = Node::OfParentIdVector({6, 5, 7, 5, 6, 7, 7});
   // Here we look at the indexer representation of this tree. Rather than having
@@ -464,8 +464,8 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
 
   // The number of rootsplits across all of the input trees.
   size_t num_rootsplits = 8;
-  // Manual enumeration shows that there are 31 PCSS's.
-  size_t num_pcss = inst.sbn_parameters_.size() - num_rootsplits;
+  // Manual enumeration shows that there are 31 PCSP's.
+  size_t num_pcsp = inst.sbn_parameters_.size() - num_rootsplits;
 
   // Test for K = 1 tree.
   size_t K = 1;
@@ -477,7 +477,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   inst.tree_collection_.trees_.push_back(tau);
 
   // Initialize sbn_parameters_ to 0's and normalize, which is going to give a uniform
-  // distribution for rootsplits and PCSS distributions.
+  // distribution for rootsplits and PCSP distributions.
   inst.sbn_parameters_.setZero();
   EigenVectorXd normalized_sbn_parameters_in_log = inst.sbn_parameters_;
   inst.NormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
@@ -523,7 +523,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   std::sort(realized_grad_rootsplit.begin(), realized_grad_rootsplit.end());
   CheckVectorXdEquality(realized_grad_rootsplit, expected_grad_rootsplit, 1e-8);
 
-  // Manual enumeration shows that the entries corresponding to PCSS should have
+  // Manual enumeration shows that the entries corresponding to PCSP should have
   // 6 entries with -1/16 and 6 entries with 1/16 and the rest with 0's.
   // For example, consider the tree ((0,1),(2,3),4), which has the following subsplits:
   // 0123|4, 01|23, 0|1, 2|3.
@@ -537,7 +537,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // (1/q(\tau)) P(\tau_{\rho}) * -P(012|3 | 0123|4)
   // = 2 * (1/16) * -0.5 = -1/16.
 
-  // The gradient for the following PCSS are 1/16 as above.
+  // The gradient for the following PCSP are 1/16 as above.
   // 014|3 | 0134|2
   // 014|2 | 0124|3
   // 01|23 | 0123|4
@@ -545,20 +545,20 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // 23|4  | 1|234
   // 23|4  | 0|234
   // And each of these have an alternate subsplit s' that gets a gradient of -1/16.
-  // Each of the other PCSS gradients are 0 either because its parent support
+  // Each of the other PCSP gradients are 0 either because its parent support
   // never appears in the tree or it represents the only child subsplit.
-  EigenVectorXd expected_grad_pcss = EigenVectorXd::Zero(num_pcss);
-  expected_grad_pcss.segment(0, 6).setConstant(-1. / 16);
-  expected_grad_pcss.segment(num_pcss - 6, 6).setConstant(1. / 16);
-  EigenVectorXd realized_grad_pcss = grad_log_q.tail(num_pcss);
-  std::sort(realized_grad_pcss.begin(), realized_grad_pcss.end());
-  CheckVectorXdEquality(realized_grad_pcss, expected_grad_pcss, 1e-8);
+  EigenVectorXd expected_grad_pcsp = EigenVectorXd::Zero(num_pcsp);
+  expected_grad_pcsp.segment(0, 6).setConstant(-1. / 16);
+  expected_grad_pcsp.segment(num_pcsp - 6, 6).setConstant(1. / 16);
+  EigenVectorXd realized_grad_pcsp = grad_log_q.tail(num_pcsp);
+  std::sort(realized_grad_pcsp.begin(), realized_grad_pcsp.end());
+  CheckVectorXdEquality(realized_grad_pcsp, expected_grad_pcsp, 1e-8);
 
   // We'll now change the SBN parameters and check the gradient there.
   // If we root at 0123|4, then the only choice we have is between the following s and
   // s' as described above.
-  // The PCSS s|t =  (01|23) | (0123|4) corresponds to 00001|11110|00110.
-  // The PCSS s'|t = (012|3) | (0123|4) corresponds to 00001|11110|00010.
+  // The PCSP s|t =  (01|23) | (0123|4) corresponds to 00001|11110|00110.
+  // The PCSP s'|t = (012|3) | (0123|4) corresponds to 00001|11110|00010.
   Bitset s("000011111000110");
   Bitset s_prime("000011111000010");
   size_t s_idx = inst.indexer_.at(s);
