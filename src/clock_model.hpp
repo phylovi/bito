@@ -16,7 +16,7 @@ class ClockModel : public BlockModel {
       : BlockModel(param_counts) {}
   virtual ~ClockModel() = default;
 
-  virtual double GetRate(const Node& node) = 0;
+  virtual double GetRate(size_t node_id) = 0;
 
   static std::unique_ptr<ClockModel> OfSpecification(const std::string& specification);
 };
@@ -25,7 +25,7 @@ class NoClockModel : public ClockModel {
  public:
   explicit NoClockModel() : ClockModel({}) {}
 
-  double GetRate(const Node& node) override { return 1.; }
+  double GetRate(size_t node_id) override { return 1.; }
 
   void SetParameters(const EigenVectorXdRef parameters) override{};
 };
@@ -36,7 +36,7 @@ class StrictClockModel : public ClockModel {
 
   StrictClockModel() : StrictClockModel(1.0) {}
 
-  double GetRate(const Node& node) override { return rate_; }
+  double GetRate(size_t node_id) override { return rate_; }
 
   void SetParameters(const EigenVectorXdRef parameters) override;
 

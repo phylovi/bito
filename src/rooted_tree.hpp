@@ -15,7 +15,8 @@ class RootedTree : public Tree {
   bool operator==(const Tree& other) const = delete;
   bool operator==(const RootedTree& other) const;
 
- private:
+  void InitializeParameters(const std::unordered_map<Tag, double>& taxon_date_map);
+
   // Contains ratios and the root height.
   std::vector<double> parameters_;
 

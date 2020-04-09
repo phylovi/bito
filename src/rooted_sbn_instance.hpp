@@ -18,7 +18,7 @@ class RootedSBNInstance : public SBNInstance {
 
   // ** I/O
 
-  void ReadNewickFile(std::string fname) = delete;
+  void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
 
   RootedTreeCollection rooted_tree_collection_;
