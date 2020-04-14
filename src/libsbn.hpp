@@ -399,8 +399,8 @@ TEST_CASE("libsbn: rooted tree likelihood and gradient") {
   inst.ReadFastaFile("data/fluA.fa");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
   inst.PrepareForPhyloLikelihood(simple_specification, 1);
-  Eigen::Ref<EigenMatrixXd> params = inst.GetPhyloModelParams();
-  params(0, 0) = 0.001;
+  auto param_map = inst.GetPhyloModelParamBlockMap();
+  param_map.at(StrictClockModel::rate_key_).setConstant(0.001);
 
   auto gradients = inst.BranchGradients();
   std::vector<double> physher_gradients = {
