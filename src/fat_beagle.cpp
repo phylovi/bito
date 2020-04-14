@@ -141,7 +141,6 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     const RootedTree &in_tree) const {
-  std::cout << "We are doing a ROOTED branch gradient calculation.\n";
   std::pair<double, std::unordered_map<std::string, std::vector<double>>>
       like_gradient = Gradient(in_tree);
   return {like_gradient.first, like_gradient.second["ratio"]};
@@ -495,13 +494,14 @@ FatBeagle::Gradient(const RootedTree &tree) const {
 
   // calculate branch length gradient and log likelihood
   auto like_gradient = BranchGradientInternals(tree, branch_lengths);
-  for (size_t i = 0; i < like_gradient.second.size() - 1; i++) {
-    like_gradient.second[i] *= clock_model->GetRate(i);
-  }
 
   std::unordered_map<std::string, std::vector<double>> gradients;
   // calculate ratios and root height gradient
-  gradients["ratio"] = RatioGradient(tree, like_gradient.second);
+  auto branch_gradient = like_gradient.second;
+  for (size_t i = 0; i < branch_gradient.size() - 1; i++) {
+    branch_gradient[i] *= clock_model->GetRate(i);
+  }
+  gradients["ratio"] = RatioGradient(tree, branch_gradient);
 
   // calculate substitution model parameter gradient, if needed
   //    gradients["substmodel"] = SubstitutionModelGradient(tree, branch_gradient);
