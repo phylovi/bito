@@ -10,7 +10,7 @@ RootedTree::RootedTree(const Tree& tree) : Tree(tree.Topology(), tree.BranchLeng
 }
 
 void RootedTree::InitializeParameters(
-    const std::unordered_map<Tag, double>& taxon_date_map) {
+    const std::unordered_map<Tag, double>& tag_date_map) {
   size_t leaf_count = LeafCount();
   parameters_ = std::vector<double>(leaf_count - 1, -1);
 
@@ -22,10 +22,10 @@ void RootedTree::InitializeParameters(
 
   // Set up bounds and heights
   // Start with the leaves from the dates map
-  for (const auto& pair : taxon_date_map) {
-    size_t id = MaxLeafIDOfTag(pair.first);
-    node_heights_[id] = pair.second;
-    node_bounds_[id] = pair.second;
+  for (const auto& [tag, date] : tag_date_map) {
+    size_t id = MaxLeafIDOfTag(tag);
+    node_heights_[id] = date;
+    node_bounds_[id] = date;
   }
 
   // Set up the internal heights and bounds
