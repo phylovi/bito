@@ -337,6 +337,10 @@ void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
   });
 }
 
+// Calculation of the ratio and root height gradient is adpated from BEAST.
+// https://github.com/beast-dev/beast-mcmc
+// Credit to Xiang Ji and Marc Suchard.
+
 // \partial{L}/\partial{t_k} = \sum_j \partial{L}/\partial{b_j}
 // \partial{b_j}/\partial{t_k}
 std::vector<double> HeightGradient(const RootedTree &tree,
@@ -365,6 +369,7 @@ double GetNodePartial(size_t node_id, size_t leaf_count,
   return (heights[node_id] - bounds[node_id]) / ratios[node_id - leaf_count];
 }
 
+// Calculate \partial{t_j}/\partial{r_k}
 double GetEpochGradientAddition(
     size_t node_id, size_t child_id, size_t leaf_count,
     const std::vector<double> &heights, const std::vector<double> &ratios,
@@ -394,6 +399,7 @@ std::vector<double> GetLogTimeArray(const RootedTree &tree) {
   return log_time;
 }
 
+// Update ratio gradient with \partial{t_j}/\partial{r_k}
 std::vector<double> UpdateGradientUnWeightedLogDensity(
     const RootedTree &tree, const std::vector<double> &gradient_height) {
   size_t leaf_count = tree.LeafCount();
