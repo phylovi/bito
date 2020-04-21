@@ -78,9 +78,10 @@ class FatBeagle {
   std::pair<double, std::unordered_map<std::string, std::vector<double>>> Gradient(
       const Tree &in_tree) const;
 
-  double LogLikelihoodInternals(const Tree &tree) const;
+  double LogLikelihoodInternals(const Node::NodePtr root,
+                                const std::vector<double> &branch_lengths) const;
   std::pair<double, std::vector<double>> BranchGradientInternals(
-      const Tree &tree, const std::vector<double> &branch_lengths) const;
+      const Node::NodePtr root, const std::vector<double> &branch_lengths) const;
 
   void UpdateBeagleTransitionMatrices(
       const BeagleAccessories &baBranchGradientInternals,

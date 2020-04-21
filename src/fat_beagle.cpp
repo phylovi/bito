@@ -43,15 +43,16 @@ void FatBeagle::SetParameters(const EigenVectorXdRef param_vector) {
 
 // This is the "core" of the likelihood calculation, assuming that the tree is
 // bifurcating.
-double FatBeagle::LogLikelihoodInternals(const Tree &tree) const {
-  BeagleAccessories ba(beagle_instance_, rescaling_, tree);
+double FatBeagle::LogLikelihoodInternals(
+    const Node::NodePtr root, const std::vector<double> &branch_lengths) const {
+  BeagleAccessories ba(beagle_instance_, rescaling_, root);
   BeagleOperationVector operations;
   beagleResetScaleFactors(beagle_instance_, 0);
-  tree.Topology()->BinaryIdPostOrder(
+  root->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
-  UpdateBeagleTransitionMatrices(ba, tree.BranchLengths(), nullptr);
+  UpdateBeagleTransitionMatrices(ba, branch_lengths, nullptr);
   beagleUpdatePartials(beagle_instance_,
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),
@@ -65,17 +66,18 @@ double FatBeagle::LogLikelihoodInternals(const Tree &tree) const {
 }
 
 double FatBeagle::LogLikelihood(const Tree &tree) const {
-  return LogLikelihoodInternals(DetrifurcateIfNeeded(tree));
+  return LogLikelihoodInternals(DetrifurcateIfNeeded(tree).Topology(),
+                                tree.BranchLengths());
 }
 
 double FatBeagle::LogLikelihood(const RootedTree &tree) const {
-  return LogLikelihoodInternals(tree);
+  return LogLikelihoodInternals(tree.Topology(), tree.BranchLengths());
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
-    const Tree &tree, const std::vector<double> &branch_lengths) const {
+    const Node::NodePtr root, const std::vector<double> &branch_lengths) const {
   beagleResetScaleFactors(beagle_instance_, 0);
-  BeagleAccessories ba(beagle_instance_, rescaling_, tree);
+  BeagleAccessories ba(beagle_instance_, rescaling_, root);
   UpdateBeagleTransitionMatrices(ba, branch_lengths, nullptr);
   SetRootPreorderPartialsToStateFrequencies(ba);
 
@@ -88,7 +90,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
   // Calculate post-order partials
   BeagleOperationVector operations;
-  tree.Topology()->BinaryIdPostOrder(
+  root->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
@@ -98,7 +100,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
   // Calculate pre-order partials.
   operations.clear();
-  tree.Topology()->TripleIdPreOrderBifurcating(
+  root->TripleIdPreOrderBifurcating(
       [&operations, &ba](int node_id, int sister_id, int parent_id) {
         if (node_id != ba.root_id_) {
           AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
@@ -406,7 +408,7 @@ std::vector<double> UpdateGradientUnWeightedLogDensity(
   size_t root_id = tree.Topology()->Id();
   std::vector<double> ratiosGradientUnweightedLogDensity(leaf_count - 1);
   tree.Topology()->BinaryIdPostOrder(
-      [&gradient_height, &heights = tree.node_heights_, &ratios = tree.parameters_,
+      [&gradient_height, &heights = tree.node_heights_, &ratios = tree.height_ratios_,
        &bounds = tree.node_bounds_, &ratiosGradientUnweightedLogDensity, &leaf_count,
        &root_id](int node_id, int child0_id, int child1_id) {
         if (node_id >= leaf_count && node_id != root_id) {
@@ -433,7 +435,7 @@ double UpdateHeightParameterGradientUnweightedLogDensity(
   multiplierArray[root_id - leaf_count] = 1.0;
 
   tree.Topology()->BinaryIdPreOrder(
-      [&leaf_count, &root_id, &ratios = tree.parameters_, &multiplierArray](
+      [&leaf_count, &root_id, &ratios = tree.height_ratios_, &multiplierArray](
           int node_id, int child0_id, int child1_id) {
         if (child0_id >= leaf_count) {
           double ratio = ratios[child0_id - leaf_count];
@@ -480,7 +482,7 @@ std::vector<double> RatioGradient(const RootedTree &tree,
 
   for (int i = 0; i < gradientLogDensity.size() - 1; i++) {
     gradientLogDensity[i] +=
-        gradientLogJacobianDeterminant[i] - 1.0 / tree.parameters_[i];
+        gradientLogJacobianDeterminant[i] - 1.0 / tree.height_ratios_[i];
   }
 
   gradientLogDensity[root_id - leaf_count] +=
@@ -499,7 +501,7 @@ FatBeagle::Gradient(const RootedTree &tree) const {
   }
 
   // calculate branch length gradient and log likelihood
-  auto like_gradient = BranchGradientInternals(tree, branch_lengths);
+  auto like_gradient = BranchGradientInternals(tree.Topology(), branch_lengths);
 
   std::unordered_map<std::string, std::vector<double>> gradients;
   // calculate ratios and root height gradient
@@ -522,7 +524,7 @@ std::pair<double, std::unordered_map<std::string, std::vector<double>>>
 FatBeagle::Gradient(const Tree &in_tree) const {
   auto tree = DetrifurcateIfNeeded(in_tree);
   tree.SlideRootPosition();
-  auto like_gradient = BranchGradientInternals(tree, tree.BranchLengths());
+  auto like_gradient = BranchGradientInternals(tree.Topology(), tree.BranchLengths());
   // We want the fixed node to have a zero gradient.
   like_gradient.second[tree.Topology()->Children()[1]->Id()] = 0.;
 

@@ -46,14 +46,14 @@ struct BeagleAccessories {
   // first derivative matrices
   std::vector<int> node_deriv_index_ = {0};
 
-  BeagleAccessories(int beagle_instance, bool rescaling, const Tree &tree)
+  BeagleAccessories(int beagle_instance, bool rescaling, const Node::NodePtr root)
       : beagle_instance_(beagle_instance),
         rescaling_(rescaling),
-        root_id_(static_cast<int>(tree.Topology()->Id())),
-        fixed_node_id_(static_cast<int>(tree.Topology()->Children()[1]->Id())),
-        root_child_id_(static_cast<int>(tree.Topology()->Children()[0]->Id())),
-        node_count_(static_cast<int>(tree.BranchLengths().size())),
-        taxon_count_(static_cast<int>(tree.LeafCount())),
+        root_id_(static_cast<int>(root->Id())),
+        fixed_node_id_(static_cast<int>(root->Children()[1]->Id())),
+        root_child_id_(static_cast<int>(root->Children()[0]->Id())),
+        node_count_(static_cast<int>(root->LeafCount() * 2 - 1)),
+        taxon_count_(static_cast<int>(root->LeafCount())),
         internal_count_(taxon_count_ - 1),
         cumulative_scale_index_({rescaling ? 0 : BEAGLE_OP_NONE}),
         node_indices_(IotaVector(node_count_ - 1, 0)) {}

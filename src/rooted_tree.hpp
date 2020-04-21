@@ -18,7 +18,7 @@ class RootedTree : public Tree {
   void InitializeParameters(const std::unordered_map<Tag, double>& tag_date_map);
 
   // Contains ratios and the root height.
-  std::vector<double> parameters_;
+  std::vector<double> height_ratios_;
 
   // Node heights and node bounds are not parameters of the model but they will be
   // needed for calculating the gradient.

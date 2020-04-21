@@ -12,7 +12,7 @@ RootedTree::RootedTree(const Tree& tree) : Tree(tree.Topology(), tree.BranchLeng
 void RootedTree::InitializeParameters(
     const std::unordered_map<Tag, double>& tag_date_map) {
   size_t leaf_count = LeafCount();
-  parameters_ = std::vector<double>(leaf_count - 1, -1);
+  height_ratios_ = std::vector<double>(leaf_count - 1, -1);
 
   node_heights_ = std::vector<double>(Topology()->Id() + 1);
   node_bounds_ = std::vector<double>(Topology()->Id() + 1);
@@ -39,11 +39,11 @@ void RootedTree::InitializeParameters(
       });
 
   // Set up ratios
-  parameters_[root_id - leaf_count] = node_heights_[root_id];
+  height_ratios_[root_id - leaf_count] = node_heights_[root_id];
   Topology()->TripleIdPreOrderBifurcating(
       [&root_id, &leaf_count, this](int node_id, int sister_id, int parent_id) {
         if (node_id >= leaf_count) {
-          parameters_[node_id - leaf_count] =
+          height_ratios_[node_id - leaf_count] =
               (node_heights_[node_id] - node_bounds_[node_id]) /
               (node_heights_[parent_id] - node_bounds_[node_id]);
         }
