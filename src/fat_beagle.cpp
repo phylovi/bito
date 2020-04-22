@@ -44,11 +44,11 @@ void FatBeagle::SetParameters(const EigenVectorXdRef param_vector) {
 // This is the "core" of the likelihood calculation, assuming that the tree is
 // bifurcating.
 double FatBeagle::LogLikelihoodInternals(
-    const Node::NodePtr root, const std::vector<double> &branch_lengths) const {
-  BeagleAccessories ba(beagle_instance_, rescaling_, root);
+    const Node::NodePtr topology, const std::vector<double> &branch_lengths) const {
+  BeagleAccessories ba(beagle_instance_, rescaling_, topology);
   BeagleOperationVector operations;
   beagleResetScaleFactors(beagle_instance_, 0);
-  root->BinaryIdPostOrder(
+  topology->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
@@ -75,9 +75,9 @@ double FatBeagle::LogLikelihood(const RootedTree &tree) const {
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
-    const Node::NodePtr root, const std::vector<double> &branch_lengths) const {
+    const Node::NodePtr topology, const std::vector<double> &branch_lengths) const {
   beagleResetScaleFactors(beagle_instance_, 0);
-  BeagleAccessories ba(beagle_instance_, rescaling_, root);
+  BeagleAccessories ba(beagle_instance_, rescaling_, topology);
   UpdateBeagleTransitionMatrices(ba, branch_lengths, nullptr);
   SetRootPreorderPartialsToStateFrequencies(ba);
 
@@ -90,7 +90,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
   // Calculate post-order partials
   BeagleOperationVector operations;
-  root->BinaryIdPostOrder(
+  topology->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
@@ -100,7 +100,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
   // Calculate pre-order partials.
   operations.clear();
-  root->TripleIdPreOrderBifurcating(
+  topology->TripleIdPreOrderBifurcating(
       [&operations, &ba](int node_id, int sister_id, int parent_id) {
         if (node_id != ba.root_id_) {
           AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
