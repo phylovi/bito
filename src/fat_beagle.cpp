@@ -66,8 +66,9 @@ double FatBeagle::LogLikelihoodInternals(
 }
 
 double FatBeagle::LogLikelihood(const Tree &tree) const {
-  return LogLikelihoodInternals(DetrifurcateIfNeeded(tree).Topology(),
-                                tree.BranchLengths());
+  auto detrifurcated_tree = DetrifurcateIfNeeded(tree);
+  return LogLikelihoodInternals(detrifurcated_tree.Topology(),
+                                detrifurcated_tree.BranchLengths());
 }
 
 double FatBeagle::LogLikelihood(const RootedTree &tree) const {
