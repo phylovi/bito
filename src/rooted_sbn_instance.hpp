@@ -34,6 +34,10 @@ TEST_CASE("RootedSBNInstance: gradients") {
   auto param_map = inst.GetPhyloModelParamBlockMap();
   param_map.at(StrictClockModel::rate_key_).setConstant(0.001);
 
+  auto likelihood = inst.LogLikelihoods();
+  double physher_ll = -4777.616349;
+  CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
+
   auto gradients = inst.BranchGradients();
   std::vector<double> physher_gradients = {
       -0.593654, 6.441290,   11.202945, 5.173924,  -0.904631, 2.731402,   3.157131,
@@ -49,7 +53,6 @@ TEST_CASE("RootedSBNInstance: gradients") {
   for (size_t i = 0; i < gradients[0].second.size(); i++) {
     CHECK_LT(fabs(gradients[0].second[i] - physher_gradients[i]), 0.0001);
   }
-  double physher_ll = -4777.616349;
   CHECK_LT(fabs(gradients[0].first - physher_ll), 0.0001);
 }
 

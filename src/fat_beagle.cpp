@@ -72,7 +72,12 @@ double FatBeagle::LogLikelihood(const Tree &tree) const {
 }
 
 double FatBeagle::LogLikelihood(const RootedTree &tree) const {
-  return LogLikelihoodInternals(tree.Topology(), tree.BranchLengths());
+  const auto clock_model = phylo_model_->GetClockModel();
+  std::vector<double> branch_lengths = tree.BranchLengths();
+  for (size_t i = 0; i < tree.BranchLengths().size() - 1; i++) {
+    branch_lengths[i] *= clock_model->GetRate(i);
+  }
+  return LogLikelihoodInternals(tree.Topology(), branch_lengths);
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
