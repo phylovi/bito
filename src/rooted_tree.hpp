@@ -9,16 +9,15 @@
 // Node "heights" is how far we have to go back in time to that divergence event from
 // the present.
 //
-// The "true" parameterization here is in terms of node height ratios, which are of the
-// form n/d, where
+// The most important parameterization here is in terms of node height ratios, which are
+// of the form n/d, where
+//
 // n = time difference between this node's height and that of its earliest descendant E
 // d = time difference between the parent's height and that of E.
 //
-// The node bounds are the time of the earliest descendant, and the node heights are as
-// described above.
-//
 // The node_heights_ and node_bounds_ are needed to do gradient calculation, but they
-// are derived based on the node_heights.
+// are secondary to the node_ratios_, which is what the parameterization we actually
+// use, e.g. for the variational parameterization.
 
 #ifndef SRC_ROOTED_TREE_HPP_
 #define SRC_ROOTED_TREE_HPP_
@@ -41,8 +40,8 @@ class RootedTree : public Tree {
 
   TagDoubleMap TagDateMapOfDateVector(std::vector<double> leaf_date_vector);
 
-  // This vector is of length equal to the number of internal nodes, and except for the
-  // last entry has the node height ratios. The last entry is the root height.
+  // This vector is of length equal to the number of internal nodes, and (except for the
+  // last entry) has the node height ratios. The last entry is the root height.
   // The indexing is set up so that the ith entry has the node height ratio for the
   // (i+leaf_count)th node for all i except for the last.
   std::vector<double> height_ratios_;
@@ -59,7 +58,8 @@ inline bool operator!=(const RootedTree& lhs, const RootedTree& rhs) {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("RootedTree") {
-  // (0,(1,(2,3)))
+  // To understand this test, please see
+  // https://github.com/phylovi/libsbn/issues/187#issuecomment-618421183
   auto topology = Node::ExampleTopologies()[3];
   RootedTree tree(Tree(topology, {2., 1.5, 2., 1., 2.5, 2.5, 0.}));
   std::vector<double> date_vector({5., 3., 0., 1.});

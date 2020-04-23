@@ -37,7 +37,7 @@ void RootedTree::InitializeParameters(
               node_heights_[child0_id] + branch_lengths_[child0_id];
           if (fabs(node_heights_[child1_id] + branch_lengths_[child1_id] -
                    node_heights_[node_id]) > BRANCH_LENGTH_TOLERANCE) {
-            Failwith("Tree not ultrametric in RootedTree::InitializeParameters.");
+            Failwith("Tree isn't time-calibrated in RootedTree::InitializeParameters.");
           }
         }
       });
@@ -48,6 +48,7 @@ void RootedTree::InitializeParameters(
   Topology()->TripleIdPreOrderBifurcating(
       [&leaf_count, this](int node_id, int, int parent_id) {
         if (node_id >= leaf_count) {
+          // See the beginning of the header file for an explanation.
           height_ratios_[node_id - leaf_count] =
               (node_heights_[node_id] - node_bounds_[node_id]) /
               (node_heights_[parent_id] - node_bounds_[node_id]);
