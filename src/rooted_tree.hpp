@@ -8,6 +8,17 @@
 // In the terminology here, imagine that the tree is rooted at the top and hangs down.
 // Node "heights" is how far we have to go back in time to that divergence event from
 // the present.
+//
+// The "true" parameterization here is in terms of node height ratios, which are of the
+// form n/d, where
+// n = time difference between this node's height and that of its earliest descendant E
+// d = time difference between the parent's height and that of E.
+//
+// The node bounds are the time of the earliest descendant, and the node heights are as
+// described above.
+//
+// The node_heights_ and node_bounds_ are needed to do gradient calculation, but they
+// are derived based on the node_heights.
 
 #ifndef SRC_ROOTED_TREE_HPP_
 #define SRC_ROOTED_TREE_HPP_
@@ -30,11 +41,14 @@ class RootedTree : public Tree {
 
   TagDoubleMap TagDateMapOfDateVector(std::vector<double> leaf_date_vector);
 
-  // TODO and make unit test.
+  // This vector is of length equal to the number of internal nodes, and except for the
+  // last entry has the node height ratios. The last entry is the root height.
+  // The indexing is set up so that the ith entry has the node height ratio for the
+  // (i+leaf_count)th node for all i except for the last.
   std::vector<double> height_ratios_;
-  // The actual node heights.
+  // The actual node heights for all nodes.
   std::vector<double> node_heights_;
-  // The lower bound for the height of this node. This is set to be the maximum of the
+  // The lower bound for the height of each node. This is set to be the maximum of the
   // current height of the two children.
   std::vector<double> node_bounds_;
 };
@@ -51,6 +65,10 @@ TEST_CASE("RootedTree") {
   std::vector<double> date_vector({5., 3., 0., 1.});
   auto tag_date_map = tree.TagDateMapOfDateVector(date_vector);
   tree.InitializeParameters(tag_date_map);
+  std::vector<double> correct_height_ratios({1. / 3.5, 1.5 / 4., 7.});
+  for (size_t i = 0; i < correct_height_ratios.size(); ++i) {
+    CHECK_EQ(correct_height_ratios[i], tree.height_ratios_[i]);
+  }
   std::vector<double> correct_node_heights({5., 3., 0., 1., 2., 4.5, 7.});
   std::vector<double> correct_node_bounds({5., 3., 0., 1., 1., 3., 5.});
   for (size_t i = 0; i < correct_node_heights.size(); ++i) {

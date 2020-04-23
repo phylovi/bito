@@ -43,9 +43,10 @@ void RootedTree::InitializeParameters(
       });
 
   // Initialize ratios.
+  // The "height ratio" for the root is the root height.
   height_ratios_[root_id - leaf_count] = node_heights_[root_id];
   Topology()->TripleIdPreOrderBifurcating(
-      [&leaf_count, this](int node_id, int sister_id, int parent_id) {
+      [&leaf_count, this](int node_id, int, int parent_id) {
         if (node_id >= leaf_count) {
           height_ratios_[node_id - leaf_count] =
               (node_heights_[node_id] - node_bounds_[node_id]) /
