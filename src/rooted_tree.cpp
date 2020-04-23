@@ -3,6 +3,9 @@
 
 #include "rooted_tree.hpp"
 
+// Branch lengths should correspond to a time tree up to this tolerance.
+constexpr double BRANCH_LENGTH_TOLERANCE = 1e-6;
+
 RootedTree::RootedTree(const Tree& tree) : Tree(tree.Topology(), tree.BranchLengths()) {
   Assert(Children().size() == 2,
          "Failed to create a RootedTree out of a Tree that isn't bifurcating at the "
@@ -12,42 +15,53 @@ RootedTree::RootedTree(const Tree& tree) : Tree(tree.Topology(), tree.BranchLeng
 void RootedTree::InitializeParameters(
     const std::unordered_map<Tag, double>& tag_date_map) {
   size_t leaf_count = LeafCount();
+  int root_id = static_cast<int>(Topology()->Id());
   height_ratios_ = std::vector<double>(leaf_count - 1, -1);
-
   node_heights_ = std::vector<double>(Topology()->Id() + 1);
   node_bounds_ = std::vector<double>(Topology()->Id() + 1);
 
-  std::vector<double> branch_lengths = BranchLengths();
-  int root_id = static_cast<int>(Topology()->Id());
-
-  // Set up bounds and heights
-  // Start with the leaves from the dates map
+  // First initialize the leaves using the date map.
   for (const auto& [tag, date] : tag_date_map) {
-    size_t id = MaxLeafIDOfTag(tag);
-    node_heights_[id] = date;
-    node_bounds_[id] = date;
+    size_t leaf_id = MaxLeafIDOfTag(tag);
+    node_heights_[leaf_id] = date;
+    node_bounds_[leaf_id] = date;
   }
 
-  // Set up the internal heights and bounds
+  // Initialize the internal heights and bounds.
   Topology()->BinaryIdPostOrder(
-      [&leaf_count, &branch_lengths, this](int node_id, int child0_id, int child1_id) {
+      [&leaf_count, this](int node_id, int child0_id, int child1_id) {
         if (node_id >= leaf_count) {
           node_bounds_[node_id] =
               std::max(node_bounds_[child0_id], node_bounds_[child1_id]);
-          node_heights_[node_id] = node_heights_[child0_id] + branch_lengths[child0_id];
+          node_heights_[node_id] =
+              node_heights_[child0_id] + branch_lengths_[child0_id];
+          if (fabs(node_heights_[child1_id] + branch_lengths_[child1_id] -
+                   node_heights_[node_id]) > BRANCH_LENGTH_TOLERANCE) {
+            Failwith("Tree not ultrametric in RootedTree::InitializeParameters.");
+          }
         }
       });
 
-  // Set up ratios
+  // Initialize ratios.
   height_ratios_[root_id - leaf_count] = node_heights_[root_id];
   Topology()->TripleIdPreOrderBifurcating(
-      [&root_id, &leaf_count, this](int node_id, int sister_id, int parent_id) {
+      [&leaf_count, this](int node_id, int sister_id, int parent_id) {
         if (node_id >= leaf_count) {
           height_ratios_[node_id - leaf_count] =
               (node_heights_[node_id] - node_bounds_[node_id]) /
               (node_heights_[parent_id] - node_bounds_[node_id]);
         }
       });
+}
+
+TagDoubleMap RootedTree::TagDateMapOfDateVector(std::vector<double> leaf_date_vector) {
+  Assert(leaf_date_vector.size() == LeafCount(),
+         "Wrong size vector in TagDateMapOfDateVector");
+  TagDoubleMap tag_date_map;
+  for (uint32_t leaf_id = 0; leaf_id < LeafCount(); ++leaf_id) {
+    SafeInsert(tag_date_map, PackInts(leaf_id, 1), leaf_date_vector[leaf_id]);
+  }
+  return tag_date_map;
 }
 
 bool RootedTree::operator==(const RootedTree& other) const {
