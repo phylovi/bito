@@ -23,7 +23,7 @@ def convert_dict_to_int(dictionary):
 def hello_demo():
     """Demonstrate basic phylogenetic likelihood calculation using the "hello"
     data set."""
-    inst = libsbn.instance("charlie")
+    inst = libsbn.unrooted_instance("charlie")
     inst.tree_collection = libsbn.TreeCollection(
         [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
     )
@@ -47,13 +47,13 @@ def sampling_and_indexers_demo():
     structures, and then sampling from the SBN with arbitrarily-set
     parameters.
     """
-    inst = libsbn.instance("charlie")
+    inst = libsbn.unrooted_instance("charlie")
     inst.read_newick_file("data/five_taxon.nwk")
     assert inst.tree_count() == 4
     # Showing off tree sampling.
     inst.process_loaded_trees()
     inst.train_expectation_maximization(0.0001, 1)
-    # Note that this puts the trees into the instance object, replacing the trees loaded
+    # Note that this puts the trees into the unrooted_instance object, replacing the trees loaded
     # from the file.
     inst.sample_trees(2)
     print("\ntaxon names:")
@@ -71,7 +71,7 @@ def sampling_and_indexers_demo():
 
 def ds1_support_test():
     """Check the subplit support calculation on DS1."""
-    inst = libsbn.instance("DS1")
+    inst = libsbn.unrooted_instance("DS1")
     # Checking split supports
     inst.read_nexus_file("data/DS1.subsampled_10.t.reordered")
     inst.process_loaded_trees()
@@ -127,7 +127,7 @@ def rootings_indexer_test():
     rootsplit) we have the same _set_ of PCSSs (the order within PCSS
     sets doesn't matter).
     """
-    inst = libsbn.instance("rootings")
+    inst = libsbn.unrooted_instance("rootings")
     inst.read_newick_file("data/many_rootings.nwk")
     inst.process_loaded_trees()
     # First we turn the PCSS sets into actual Python sets for unordered comparison.
@@ -150,7 +150,7 @@ def rootings_indexer_test():
 
 
 def test_libsbn():
-    """Test the libsbn instance."""
+    """Test the libsbn unrooted_instance."""
 
     hello_demo()
     sampling_and_indexers_demo()
