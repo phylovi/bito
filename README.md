@@ -127,9 +127,9 @@ Add a test for every new feature.
 * Seong-Hwan Jun ([@junseonghwan](https://github.com/junseonghwan)): implementation of SBN gradients, design
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
-* Xiang Ji ([@xji3](https://github.com/xji3)): gradient expertise and node height code
-* Marc Suchard ([@msuchard](https://github.com/msuchard)): gradient expertise and node height code
 * Matthew Karcher ([@mdkarcher](https://github.com/mdkarcher/)): SBN expertise
+* Xiang Ji ([@xji3](https://github.com/xji3)): gradient expertise
+* Marc Suchard ([@msuchard](https://github.com/msuchard)): gradient expertise
 
 
 ## Citations

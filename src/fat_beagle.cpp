@@ -43,16 +43,15 @@ void FatBeagle::SetParameters(const EigenVectorXdRef param_vector) {
 
 // This is the "core" of the likelihood calculation, assuming that the tree is
 // bifurcating.
-double FatBeagle::LogLikelihoodInternals(
-    const Node::NodePtr topology, const std::vector<double> &branch_lengths) const {
-  BeagleAccessories ba(beagle_instance_, rescaling_, topology);
+double FatBeagle::LogLikelihoodInternals(const Tree &tree) const {
+  BeagleAccessories ba(beagle_instance_, rescaling_, tree);
   BeagleOperationVector operations;
   beagleResetScaleFactors(beagle_instance_, 0);
-  topology->BinaryIdPostOrder(
+  tree.Topology()->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
-  UpdateBeagleTransitionMatrices(ba, branch_lengths, nullptr);
+  UpdateBeagleTransitionMatrices(ba, tree, nullptr);
   beagleUpdatePartials(beagle_instance_,
                        operations.data(),  // eigenIndex
                        static_cast<int>(operations.size()),
@@ -66,25 +65,18 @@ double FatBeagle::LogLikelihoodInternals(
 }
 
 double FatBeagle::LogLikelihood(const Tree &tree) const {
-  auto detrifurcated_tree = DetrifurcateIfNeeded(tree);
-  return LogLikelihoodInternals(detrifurcated_tree.Topology(),
-                                detrifurcated_tree.BranchLengths());
+  return LogLikelihoodInternals(DetrifurcateIfNeeded(tree));
 }
 
 double FatBeagle::LogLikelihood(const RootedTree &tree) const {
-  const auto clock_model = phylo_model_->GetClockModel();
-  std::vector<double> branch_lengths = tree.BranchLengths();
-  for (size_t i = 0; i < tree.BranchLengths().size() - 1; i++) {
-    branch_lengths[i] *= clock_model->GetRate(i);
-  }
-  return LogLikelihoodInternals(tree.Topology(), branch_lengths);
+  return LogLikelihoodInternals(tree);
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
-    const Node::NodePtr topology, const std::vector<double> &branch_lengths) const {
+    const Tree &tree) const {
   beagleResetScaleFactors(beagle_instance_, 0);
-  BeagleAccessories ba(beagle_instance_, rescaling_, topology);
-  UpdateBeagleTransitionMatrices(ba, branch_lengths, nullptr);
+  BeagleAccessories ba(beagle_instance_, rescaling_, tree);
+  UpdateBeagleTransitionMatrices(ba, tree, nullptr);
   SetRootPreorderPartialsToStateFrequencies(ba);
 
   // Set differential matrix for each branch.
@@ -96,7 +88,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
   // Calculate post-order partials
   BeagleOperationVector operations;
-  topology->BinaryIdPostOrder(
+  tree.Topology()->BinaryIdPostOrder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
@@ -106,7 +98,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
   // Calculate pre-order partials.
   operations.clear();
-  topology->TripleIdPreOrderBifurcating(
+  tree.Topology()->TripleIdPreOrderBifurcating(
       [&operations, &ba](int node_id, int sister_id, int parent_id) {
         if (node_id != ba.root_id_) {
           AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
@@ -130,6 +122,8 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
       NULL,                              // derivative-per-site output array
       gradient.data(),                   // sum of derivatives across sites output array
       NULL);                             // sum of squared derivatives output array
+  // We want the fixed node to have a zero gradient.
+  gradient[ba.fixed_node_id_] = 0.;
 
   // Also calculate the likelihood.
   double log_like = 0.;
@@ -142,16 +136,15 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     const Tree &in_tree) const {
-  std::pair<double, std::unordered_map<std::string, std::vector<double>>>
-      like_gradient = Gradient(in_tree);
-  return {like_gradient.first, like_gradient.second["blens"]};
+  auto tree = DetrifurcateIfNeeded(in_tree);
+  tree.SlideRootPosition();
+  return BranchGradientInternals(tree);
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
     const RootedTree &in_tree) const {
-  std::pair<double, std::unordered_map<std::string, std::vector<double>>>
-      like_gradient = Gradient(in_tree);
-  return {like_gradient.first, like_gradient.second["ratio"]};
+  std::cout << "We are doing a ROOTED branch gradient calculation.\n";
+  return BranchGradientInternals(in_tree);
 }
 
 FatBeagle *NullPtrAssert(FatBeagle *fat_beagle) {
@@ -288,15 +281,15 @@ Tree FatBeagle::DetrifurcateIfNeeded(const Tree &tree) {
 // If we pass nullptr as gradient_indices_ptr then we will not prepare for
 // gradient calculation.
 void FatBeagle::UpdateBeagleTransitionMatrices(
-    const BeagleAccessories &ba, const std::vector<double> &branch_lengths,
+    const BeagleAccessories &ba, const Tree &tree,
     const int *const gradient_indices_ptr) const {
   beagleUpdateTransitionMatrices(beagle_instance_,         // instance
                                  0,                        // eigenIndex
                                  ba.node_indices_.data(),  // probabilityIndices
                                  gradient_indices_ptr,     // firstDerivativeIndices
                                  nullptr,                  // secondDerivativeIndices
-                                 branch_lengths.data(),    // edgeLengths
-                                 ba.node_count_ - 1);      // count
+                                 tree.BranchLengths().data(),  // edgeLengths
+                                 ba.node_count_ - 1);          // count
 }
 
 void FatBeagle::SetRootPreorderPartialsToStateFrequencies(
@@ -343,200 +336,4 @@ void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
       sister_id,                   // post-order partial of sibling
       sister_id                    // matrices of sibling
   });
-}
-
-// Calculation of the ratio and root height gradient is adpated from BEAST.
-// https://github.com/beast-dev/beast-mcmc
-// Credit to Xiang Ji and Marc Suchard.
-
-// \partial{L}/\partial{t_k} = \sum_j \partial{L}/\partial{b_j}
-// \partial{b_j}/\partial{t_k}
-std::vector<double> HeightGradient(const RootedTree &tree,
-                                   const std::vector<double> &branch_gradient) {
-  int root_id = static_cast<int>(tree.Topology()->Id());
-  std::vector<double> height_gradient(tree.LeafCount() - 1, 0);
-
-  tree.Topology()->BinaryIdPreOrder(
-      [&root_id, &branch_gradient, &height_gradient, leaf_count = tree.LeafCount()](
-          int node_id, int child0_id, int child1_id) {
-        if (node_id != root_id) {
-          height_gradient[node_id - leaf_count] = -branch_gradient[node_id];
-        }
-        if (node_id >= leaf_count) {
-          height_gradient[node_id - leaf_count] += branch_gradient[child0_id];
-          height_gradient[node_id - leaf_count] += branch_gradient[child1_id];
-        }
-      });
-  return height_gradient;
-}
-
-double GetNodePartial(size_t node_id, size_t leaf_count,
-                      const std::vector<double> &heights,
-                      const std::vector<double> &ratios,
-                      const std::vector<double> &bounds) {
-  return (heights[node_id] - bounds[node_id]) / ratios[node_id - leaf_count];
-}
-
-// Calculate \partial{t_j}/\partial{r_k}
-double GetEpochGradientAddition(
-    size_t node_id, size_t child_id, size_t leaf_count,
-    const std::vector<double> &heights, const std::vector<double> &ratios,
-    const std::vector<double> &bounds,
-    const std::vector<double> &ratiosGradientUnweightedLogDensity) {
-  if (child_id < leaf_count) {
-    return 0.0;
-  } else if (bounds[node_id] == bounds[child_id]) {
-    // child_id and node_id are in the same epoch
-    return ratiosGradientUnweightedLogDensity[child_id - leaf_count] *
-           ratios[child_id - leaf_count] / ratios[node_id - leaf_count];
-  } else {
-    // NOT the same epoch
-    return ratiosGradientUnweightedLogDensity[child_id - leaf_count] *
-           ratios[child_id - leaf_count] / (heights[node_id] - bounds[child_id]) *
-           GetNodePartial(node_id, leaf_count, heights, ratios, bounds);
-  }
-}
-
-std::vector<double> GetLogTimeArray(const RootedTree &tree) {
-  size_t leaf_count = tree.LeafCount();
-  std::vector<double> log_time(leaf_count - 1, 0);
-  for (size_t i = 0; i < leaf_count - 2; i++) {
-    log_time[i] =
-        1.0 / (tree.node_heights_[leaf_count + i] - tree.node_bounds_[leaf_count + i]);
-  }
-  return log_time;
-}
-
-// Update ratio gradient with \partial{t_j}/\partial{r_k}
-std::vector<double> UpdateGradientUnWeightedLogDensity(
-    const RootedTree &tree, const std::vector<double> &gradient_height) {
-  size_t leaf_count = tree.LeafCount();
-  size_t root_id = tree.Topology()->Id();
-  std::vector<double> ratiosGradientUnweightedLogDensity(leaf_count - 1);
-  tree.Topology()->BinaryIdPostOrder(
-      [&gradient_height, &heights = tree.node_heights_, &ratios = tree.height_ratios_,
-       &bounds = tree.node_bounds_, &ratiosGradientUnweightedLogDensity, &leaf_count,
-       &root_id](int node_id, int child0_id, int child1_id) {
-        if (node_id >= leaf_count && node_id != root_id) {
-          ratiosGradientUnweightedLogDensity[node_id - leaf_count] +=
-              GetNodePartial(node_id, leaf_count, heights, ratios, bounds) *
-              gradient_height[node_id - leaf_count];
-          ratiosGradientUnweightedLogDensity[node_id - leaf_count] +=
-              GetEpochGradientAddition(node_id, child0_id, leaf_count, heights, ratios,
-                                       bounds, ratiosGradientUnweightedLogDensity);
-          ratiosGradientUnweightedLogDensity[node_id - leaf_count] +=
-              GetEpochGradientAddition(node_id, child1_id, leaf_count, heights, ratios,
-                                       bounds, ratiosGradientUnweightedLogDensity);
-        }
-      });
-  return ratiosGradientUnweightedLogDensity;
-}
-
-double UpdateHeightParameterGradientUnweightedLogDensity(
-    const RootedTree &tree, const std::vector<double> &gradient) {
-  size_t leaf_count = tree.LeafCount();
-  size_t root_id = tree.Topology()->Id();
-
-  std::vector<double> multiplierArray(leaf_count - 1);
-  multiplierArray[root_id - leaf_count] = 1.0;
-
-  tree.Topology()->BinaryIdPreOrder(
-      [&leaf_count, &root_id, &ratios = tree.height_ratios_, &multiplierArray](
-          int node_id, int child0_id, int child1_id) {
-        if (child0_id >= leaf_count) {
-          double ratio = ratios[child0_id - leaf_count];
-          multiplierArray[child0_id - leaf_count] =
-              ratio * multiplierArray[node_id - leaf_count];
-        }
-        if (child1_id >= leaf_count) {
-          double ratio = ratios[child1_id - leaf_count];
-          multiplierArray[child1_id - leaf_count] =
-              ratio * multiplierArray[node_id - leaf_count];
-        }
-      });
-  double sum = 0.0;
-  for (int i = 0; i < gradient.size(); i++) {
-    sum += gradient[i] * multiplierArray[i];
-  }
-
-  return sum;
-}
-
-std::vector<double> RatioGradient(const RootedTree &tree,
-                                  const std::vector<double> &branch_gradient) {
-  size_t leaf_count = tree.LeafCount();
-  size_t root_id = tree.Topology()->Id();
-
-  // Calculate node height gradient
-  std::vector<double> height_gradient = HeightGradient(tree, branch_gradient);
-
-  // Calculate node ratio gradient
-  std::vector<double> gradientLogDensity =
-      UpdateGradientUnWeightedLogDensity(tree, height_gradient);
-
-  // Calculate root height gradient
-  gradientLogDensity[root_id - leaf_count] =
-      UpdateHeightParameterGradientUnweightedLogDensity(tree, height_gradient);
-
-  // Add gradient of log Jacobian determinant
-  std::vector<double> log_time = GetLogTimeArray(tree);
-
-  std::vector<double> gradientLogJacobianDeterminant =
-      UpdateGradientUnWeightedLogDensity(tree, log_time);
-  gradientLogJacobianDeterminant[root_id - leaf_count] =
-      UpdateHeightParameterGradientUnweightedLogDensity(tree, log_time);
-
-  for (int i = 0; i < gradientLogDensity.size() - 1; i++) {
-    gradientLogDensity[i] +=
-        gradientLogJacobianDeterminant[i] - 1.0 / tree.height_ratios_[i];
-  }
-
-  gradientLogDensity[root_id - leaf_count] +=
-      gradientLogJacobianDeterminant[root_id - leaf_count];
-
-  return gradientLogDensity;
-}
-
-std::pair<double, std::unordered_map<std::string, std::vector<double>>>
-FatBeagle::Gradient(const RootedTree &tree) const {
-  // Scale time with clock rate
-  const auto clock_model = phylo_model_->GetClockModel();
-  std::vector<double> branch_lengths = tree.BranchLengths();
-  for (size_t i = 0; i < tree.BranchLengths().size() - 1; i++) {
-    branch_lengths[i] *= clock_model->GetRate(i);
-  }
-
-  // calculate branch length gradient and log likelihood
-  auto like_gradient = BranchGradientInternals(tree.Topology(), branch_lengths);
-
-  std::unordered_map<std::string, std::vector<double>> gradients;
-  // calculate ratios and root height gradient
-  auto branch_gradient = like_gradient.second;
-  for (size_t i = 0; i < branch_gradient.size() - 1; i++) {
-    branch_gradient[i] *= clock_model->GetRate(i);
-  }
-  gradients["ratio"] = RatioGradient(tree, branch_gradient);
-
-  // calculate substitution model parameter gradient, if needed
-  //    gradients["substmodel"] = SubstitutionModelGradient(tree, branch_gradient);
-
-  // calculate site model parameter gradient, if needed
-  //    gradients["sitemodel"] = SiteModelGradient(tree, branch_gradient);
-
-  return {like_gradient.first, gradients};
-}
-
-std::pair<double, std::unordered_map<std::string, std::vector<double>>>
-FatBeagle::Gradient(const Tree &in_tree) const {
-  auto tree = DetrifurcateIfNeeded(in_tree);
-  tree.SlideRootPosition();
-  auto like_gradient = BranchGradientInternals(tree.Topology(), tree.BranchLengths());
-  // We want the fixed node to have a zero gradient.
-  like_gradient.second[tree.Topology()->Children()[1]->Id()] = 0.;
-
-  std::unordered_map<std::string, std::vector<double>> gradients;
-  gradients["blens"] = like_gradient.second;
-
-  // substitution and site model here like above
-  return {like_gradient.first, gradients};
 }

@@ -49,9 +49,3 @@ void RootedTreeCollection::ParseDatesFromTaxonNames() {
     }
   }
 }
-
-void RootedTreeCollection::InitializeParameters() {
-  for (auto& tree : trees_) {
-    tree.InitializeParameters(tag_date_map_);
-  }
-}

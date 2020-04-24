@@ -3,18 +3,10 @@
 
 #include "rooted_sbn_instance.hpp"
 
-void RootedSBNInstance::ReadNewickFile(std::string fname) {
-  SBNInstance::ReadNewickFile(fname);
-  rooted_tree_collection_ = RootedTreeCollection::OfTreeCollection(tree_collection_);
-  rooted_tree_collection_.ParseDatesFromTaxonNames();
-  rooted_tree_collection_.InitializeParameters();
-}
-
 void RootedSBNInstance::ReadNexusFile(std::string fname) {
   SBNInstance::ReadNexusFile(fname);
   rooted_tree_collection_ = RootedTreeCollection::OfTreeCollection(tree_collection_);
   rooted_tree_collection_.ParseDatesFromTaxonNames();
-  rooted_tree_collection_.InitializeParameters();
 }
 
 std::vector<double> RootedSBNInstance::LogLikelihoods() {

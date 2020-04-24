@@ -72,21 +72,12 @@ class FatBeagle {
   void UpdateSubstitutionModelInBeagle();
   void UpdatePhyloModelInBeagle();
 
-  std::pair<double, std::unordered_map<std::string, std::vector<double>>> Gradient(
-      const RootedTree &tree) const;
-
-  std::pair<double, std::unordered_map<std::string, std::vector<double>>> Gradient(
-      const Tree &in_tree) const;
-
-  double LogLikelihoodInternals(const Node::NodePtr topology,
-                                const std::vector<double> &branch_lengths) const;
+  double LogLikelihoodInternals(const Tree &tree) const;
   std::pair<double, std::vector<double>> BranchGradientInternals(
-      const Node::NodePtr topology, const std::vector<double> &branch_lengths) const;
+      const Tree &tree) const;
 
-  void UpdateBeagleTransitionMatrices(
-      const BeagleAccessories &baBranchGradientInternals,
-      const std::vector<double> &branch_lengths,
-      const int *const gradient_indices_ptr) const;
+  void UpdateBeagleTransitionMatrices(const BeagleAccessories &ba, const Tree &tree,
+                                      const int *const gradient_indices_ptr) const;
   void SetRootPreorderPartialsToStateFrequencies(const BeagleAccessories &ba) const;
 
   static Tree DetrifurcateIfNeeded(const Tree &tree);
