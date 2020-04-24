@@ -45,21 +45,12 @@ class SBNInstance {
   // ** SBN-related items
 
   // Define "SBN maps" to be the collection of maps associated with the
-  // UnrootedSBNInstance, such as indexer_, index_to_child_, parent_to_range_, and
-  // rootsplits_.
-
+  // SBNInstance, such as indexer_, index_to_child_, parent_to_range_, and rootsplits_.
   void CheckSBNMapsAvailable();
+
   // "Pretty" string representation of the indexer.
   StringVector PrettyIndexer();
   void PrettyPrintIndexer();
-
-  // Sample an integer index in [range.first, range.second) according to
-  // sbn_parameters_.
-  size_t SampleIndex(Range range) const;
-
-  // TODO
-  // Sample a topology from the SBN.
-  // Node::NodePtr SampleTopology() const;
 
   // Return indexer_ and parent_to_range_ converted into string-keyed maps.
   std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
@@ -74,6 +65,12 @@ class SBNInstance {
   StringSetVector StringIndexerRepresentationOf(
       IndexerRepresentation indexer_representation) const;
 
+  // Sample an integer index in [range.first, range.second) according to
+  // sbn_parameters_.
+  size_t SampleIndex(Range range) const;
+
+  void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
+
   // TODO
   // This function is really just for testing-- it recomputes counters from
   // scratch.
@@ -81,18 +78,22 @@ class SBNInstance {
 
   // ** Phylogenetic likelihood
 
+  // Get the phylogenetic model parameters as a big matrix.
   Eigen::Ref<EigenMatrixXd> GetPhyloModelParams();
+
   // The phylogenetic model parameters broken down into blocks according to
   // model structure. See test_libsbn.py for an example of what this does.
   BlockSpecification::ParameterBlockMap GetPhyloModelParamBlockMap();
 
+  // Set whether we use rescaling for phylogenetic likelihood computation.
   void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
+
   // TODO
   // void CheckSequencesAndTreesLoaded() const;
 
   // TODO
   // Prepare for phylogenetic likelihood calculation. If we get a nullopt
-  // argument, it just uses the number of trees currently in the UnrootedSBNInstance.
+  // argument, it just uses the number of trees currently in the SBNInstance.
   // void PrepareForPhyloLikelihood(
   //     const PhyloModelSpecification &model_specification, size_t thread_count,
   //     const std::vector<BeagleFlags> &beagle_flag_vector = {},
@@ -102,10 +103,9 @@ class SBNInstance {
   // TODO
   // Make the number of phylogentic model parameters fit the number of trees and
   // the speficied model. If we get a nullopt argument, it just uses the number
-  // of trees currently in the UnrootedSBNInstance.
+  // of trees currently in the SBNInstance.
   // void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
-  void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
 
   // ** I/O
 
