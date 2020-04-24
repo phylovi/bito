@@ -141,7 +141,6 @@ sources = [
     "_build/driver.cpp",
     "_build/fat_beagle.cpp",
     "_build/engine.cpp",
-    "_build/libsbn.cpp",
     "_build/node.cpp",
     "_build/numerical_utils.cpp",
     "_build/parser.cpp",
@@ -159,6 +158,7 @@ sources = [
     "_build/taxon_name_munging.cpp",
     "_build/tree.cpp",
     "_build/tree_collection.cpp",
+    "_build/unrooted_sbn_instance.cpp",
     "_build/unrooted_tree.cpp",
 ]
 extension = env.SharedLibrary(

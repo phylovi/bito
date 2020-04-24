@@ -7,7 +7,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
-#include "libsbn.hpp"
+#include "unrooted_sbn_instance.hpp"
 
 namespace py = pybind11;
 
@@ -78,32 +78,33 @@ PYBIND11_MODULE(libsbn, m) {
       )raw")
       .def(py::init<const std::string &, const std::string &, const std::string &>(),
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
-  // SBNInstance
-  py::class_<SBNInstance> sbn_instance_class(
+  // UnrootedSBNInstance
+  py::class_<UnrootedSBNInstance> sbn_instance_class(
       m, "instance", "A wrapper for the all of the C++-side state.");
   // ** Initialization and status
   sbn_instance_class.def(py::init<const std::string &>())
-      .def("tree_count", &SBNInstance::TreeCount,
+      .def("tree_count", &UnrootedSBNInstance::TreeCount,
            "Return the number of trees that are currently stored in the "
            "instance.")
-      .def("print_status", &SBNInstance::PrintStatus,
+      .def("print_status", &UnrootedSBNInstance::PrintStatus,
            "Print information about the instance.")
       // ** SBN-related items
-      .def("process_loaded_trees", &SBNInstance::ProcessLoadedTrees, R"raw(
+      .def("process_loaded_trees", &UnrootedSBNInstance::ProcessLoadedTrees, R"raw(
           Process the trees currently stored in the instance.
 
           Specifically, parse them and build the indexers and the ``sbn_parameters`` vector.
       )raw")
-      .def("get_indexers", &SBNInstance::GetIndexers,
+      .def("get_indexers", &UnrootedSBNInstance::GetIndexers,
            "Return the indexer and parent_to_range as string-keyed maps.")
-      .def("train_simple_average", &SBNInstance::TrainSimpleAverage,
+      .def("train_simple_average", &UnrootedSBNInstance::TrainSimpleAverage,
            R"raw(
            Train the SBN using the "simple average" estimator.
 
            This is described in the "Maximum Lower Bound Estimates" section of the 2018
            NeurIPS paper, and is later referred to as the "SBN-SA" estimator.
            )raw")
-      .def("train_expectation_maximization", &SBNInstance::TrainExpectationMaximization,
+      .def("train_expectation_maximization",
+           &UnrootedSBNInstance::TrainExpectationMaximization,
            R"raw(
            Train the SBN using the expectation-maximization estimator.
 
@@ -115,11 +116,13 @@ PYBIND11_MODULE(libsbn, m) {
            score increase is less than the provided ``score_epsilon``.
            )raw",
            py::arg("alpha"), py::arg("max_iter"), py::arg("score_epsilon") = 0.)
-      .def("calculate_sbn_probabilities", &SBNInstance::CalculateSBNProbabilities,
+      .def("calculate_sbn_probabilities",
+           &UnrootedSBNInstance::CalculateSBNProbabilities,
            R"raw(Get the SBN probabilities of the currently loaded trees.)raw")
-      .def("sample_trees", &SBNInstance::SampleTrees,
+      .def("sample_trees", &UnrootedSBNInstance::SampleTrees,
            "Sample trees from the SBN and store them internally.", py::arg("count"))
-      .def("make_indexer_representations", &SBNInstance::MakeIndexerRepresentations,
+      .def("make_indexer_representations",
+           &UnrootedSBNInstance::MakeIndexerRepresentations,
            R"raw(
             Make the indexer representation of each currently stored tree.
 
@@ -129,17 +132,18 @@ PYBIND11_MODULE(libsbn, m) {
             to the length of ``sbn_parameters``. No warning is given.
            )raw")
       .def("make_psp_indexer_representations",
-           &SBNInstance::MakePSPIndexerRepresentations, R"raw(
+           &UnrootedSBNInstance::MakePSPIndexerRepresentations, R"raw(
             Make the PSP indexer representation of each currently stored tree.
 
             See the comments in ``psp_indexer.hpp`` to understand the layout.
            )raw")
-      .def("split_counters", &SBNInstance::SplitCounters,
+      .def("split_counters", &UnrootedSBNInstance::SplitCounters,
            "A testing method to count splits.")
-      .def("split_lengths", &SBNInstance::SplitLengths,
+      .def("split_lengths", &UnrootedSBNInstance::SplitLengths,
            "Get the lengths of the current set of trees, indexed by splits.")
       // ** Phylogenetic likelihood
-      .def("prepare_for_phylo_likelihood", &SBNInstance::PrepareForPhyloLikelihood,
+      .def("prepare_for_phylo_likelihood",
+           &UnrootedSBNInstance::PrepareForPhyloLikelihood,
            R"raw(
             Prepare instance for phylogenetic likelihood computation.
 
@@ -159,32 +163,33 @@ PYBIND11_MODULE(libsbn, m) {
            py::arg("beagle_flags") = std::vector<BeagleFlags>(),
            py::arg("use_tip_states") = true,
            py::arg("tree_count_option") = std::nullopt)
-      .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
-      .def("get_phylo_model_param_block_map", &SBNInstance::GetPhyloModelParamBlockMap)
-      .def("resize_phylo_model_params", &SBNInstance::ResizePhyloModelParams,
+      .def("get_phylo_model_params", &UnrootedSBNInstance::GetPhyloModelParams)
+      .def("get_phylo_model_param_block_map",
+           &UnrootedSBNInstance::GetPhyloModelParamBlockMap)
+      .def("resize_phylo_model_params", &UnrootedSBNInstance::ResizePhyloModelParams,
            "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
-      .def("log_likelihoods", &SBNInstance::LogLikelihoods,
+      .def("log_likelihoods", &UnrootedSBNInstance::LogLikelihoods,
            "Calculate log likelihoods for the current set of trees.")
-      .def("set_rescaling", &SBNInstance::SetRescaling,
+      .def("set_rescaling", &UnrootedSBNInstance::SetRescaling,
            "Set whether BEAGLE's likelihood rescaling is used.")
-      .def("branch_gradients", &SBNInstance::BranchGradients,
+      .def("branch_gradients", &UnrootedSBNInstance::BranchGradients,
            "Calculate gradients of branch lengths for the current set of trees.")
-      .def("topology_gradients", &SBNInstance::TopologyGradients,
+      .def("topology_gradients", &UnrootedSBNInstance::TopologyGradients,
            R"raw(Calculate gradients of SBN parameters for the current set of trees.
            Should be called after sampling trees and setting branch lengths.)raw")
       // ** I/O
-      .def("read_newick_file", &SBNInstance::ReadNewickFile,
+      .def("read_newick_file", &UnrootedSBNInstance::ReadNewickFile,
            "Read trees from a Newick file.")
-      .def("read_nexus_file", &SBNInstance::ReadNexusFile,
+      .def("read_nexus_file", &UnrootedSBNInstance::ReadNexusFile,
            "Read trees from a Nexus file.")
-      .def("read_fasta_file", &SBNInstance::ReadFastaFile,
+      .def("read_fasta_file", &UnrootedSBNInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
       // Member Variables
-      .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
-      .def_readonly("taxon_names", &SBNInstance::taxon_names_)
-      .def_readwrite("tree_collection", &SBNInstance::tree_collection_);
+      .def_readonly("psp_indexer", &UnrootedSBNInstance::psp_indexer_)
+      .def_readonly("taxon_names", &UnrootedSBNInstance::taxon_names_)
+      .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
   def_read_write_mutable(sbn_instance_class, "sbn_parameters",
-                         &SBNInstance::sbn_parameters_);
+                         &UnrootedSBNInstance::sbn_parameters_);
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
   // `with libsbn.ostream_redirect(stdout=True, stderr=True):`

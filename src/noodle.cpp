@@ -1,4 +1,4 @@
-#include "libsbn.hpp"
+#include "unrooted_sbn_instance.hpp"
 
 // This is just a place to muck around, and check out performance.
 

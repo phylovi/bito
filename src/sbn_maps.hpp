@@ -123,7 +123,7 @@ TEST_CASE("SBNMaps") {
   }
 
   // Tests comparing to vbpi appear in Python test code.
-  // Tests of IndexerRepresentationOf in libsbn.hpp.
+  // Tests of IndexerRepresentationOf in unrooted_sbn_instance.hpp.
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
