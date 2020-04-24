@@ -49,32 +49,6 @@ void UnrootedSBNInstance::ProcessLoadedTrees() {
   taxon_names_ = tree_collection_.TaxonNames();
 }
 
-void UnrootedSBNInstance::CheckSBNMapsAvailable() {
-  if (indexer_.empty() || index_to_child_.empty() || parent_to_range_.empty() ||
-      rootsplits_.empty() || taxon_names_.empty()) {
-    Failwith("Please call ProcessLoadedTrees to prepare your SBN maps.");
-  }
-}
-
-StringVector UnrootedSBNInstance::PrettyIndexer() {
-  StringVector pretty_representation(indexer_.size());
-  for (const auto &[key, idx] : indexer_) {
-    if (idx < rootsplits_.size()) {
-      pretty_representation[idx] = key.ToString();
-    } else {
-      pretty_representation[idx] = key.PCSSToString();
-    }
-  }
-  return pretty_representation;
-}
-
-void UnrootedSBNInstance::PrettyPrintIndexer() {
-  auto pretty_representation = PrettyIndexer();
-  for (size_t i = 0; i < pretty_representation.size(); i++) {
-    std::cout << i << "\t" << pretty_representation[i] << std::endl;
-  }
-}
-
 void UnrootedSBNInstance::TrainSimpleAverage() {
   auto indexer_representation_counter = SBNMaps::IndexerRepresentationCounterOf(
       indexer_, topology_counter_, sbn_parameters_.size());
@@ -100,23 +74,6 @@ EigenVectorXd UnrootedSBNInstance::CalculateSBNProbabilities() {
                                        MakeIndexerRepresentations());
 }
 
-size_t UnrootedSBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
-  const auto &[start, end] = range;
-  Assert(start < end && end <= sbn_parameters_.size(),
-         "SampleIndex given an invalid range.");
-  // We do not want to overwrite sbn_parameters so we make a copy.
-  EigenVectorXd sbn_parameters_subrange = sbn_parameters_.segment(start, end - start);
-  NumericalUtils::ProbabilityNormalizeInLog(sbn_parameters_subrange);
-  NumericalUtils::Exponentiate(sbn_parameters_subrange);
-  std::discrete_distribution<> distribution(sbn_parameters_subrange.begin(),
-                                            sbn_parameters_subrange.end());
-  // We have to add on range.first because we have taken a slice of the full
-  // array, and the sampler treats the beginning of this slice as zero.
-  auto result = start + static_cast<size_t>(distribution(random_generator_));
-  Assert(result < end, "SampleIndex sampled a value out of range.");
-  return result;
-}
-
 // This function samples a tree by first sampling the rootsplit, and then
 // calling the recursive form of SampleTopology.
 Node::NodePtr UnrootedSBNInstance::SampleTopology(bool rooted) const {
@@ -125,24 +82,11 @@ Node::NodePtr UnrootedSBNInstance::SampleTopology(bool rooted) const {
       SampleIndex(std::pair<size_t, size_t>(0, rootsplits_.size()));
   const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
   // The addition below turns the rootsplit into a subsplit.
-  auto topology = rooted ? SampleTopology(rootsplit + ~rootsplit)
-                         : SampleTopology(rootsplit + ~rootsplit)->Deroot();
+  auto topology = rooted
+                      ? SBNInstance::SampleTopology(rootsplit + ~rootsplit)
+                      : SBNInstance::SampleTopology(rootsplit + ~rootsplit)->Deroot();
   topology->Polish();
   return topology;
-}
-
-// The input to this function is a parent subsplit (of length 2n).
-Node::NodePtr UnrootedSBNInstance::SampleTopology(const Bitset &parent_subsplit) const {
-  auto process_subsplit = [this](const Bitset &parent) {
-    auto singleton_option = parent.SplitChunk(1).SingletonOption();
-    if (singleton_option) {
-      return Node::Leaf(*singleton_option);
-    }  // else
-    auto child_index = SampleIndex(parent_to_range_.at(parent));
-    return SampleTopology(index_to_child_.at(child_index));
-  };
-  return Node::Join(process_subsplit(parent_subsplit),
-                    process_subsplit(parent_subsplit.RotateSubsplit()));
 }
 
 void UnrootedSBNInstance::SampleTrees(size_t count) {
@@ -179,45 +123,11 @@ std::vector<SizeVectorVector> UnrootedSBNInstance::MakePSPIndexerRepresentations
   return representations;
 }
 
-StringVector UnrootedSBNInstance::StringReversedIndexer() const {
-  std::vector<std::string> reversed_indexer(indexer_.size());
-  for (const auto &[key, idx] : indexer_) {
-    if (idx < rootsplits_.size()) {
-      reversed_indexer[idx] = key.ToString();
-    } else {
-      reversed_indexer[idx] = key.PCSSToString();
-    }
-  }
-  return reversed_indexer;
-}
-
-StringSetVector UnrootedSBNInstance::StringIndexerRepresentationOf(
-    IndexerRepresentation indexer_representation) const {
-  auto reversed_indexer = StringReversedIndexer();
-  StringSetVector string_sets;
-  for (const auto &rooted_representation : indexer_representation) {
-    StringSet string_set;
-    for (const auto index : rooted_representation) {
-      SafeInsert(string_set, reversed_indexer[index]);
-    }
-    string_sets.push_back(std::move(string_set));
-  }
-  return string_sets;
-}
-
 DoubleVectorVector UnrootedSBNInstance::SplitLengths() const {
   return psp_indexer_.SplitLengths(tree_collection_);
 }
 
 // ** I/O
-
-std::tuple<StringSizeMap, StringSizePairMap> UnrootedSBNInstance::GetIndexers() const {
-  auto str_indexer = StringifyMap(indexer_);
-  auto str_parent_to_range = StringifyMap(parent_to_range_);
-  std::string rootsplit("rootsplit");
-  SafeInsert(str_parent_to_range, rootsplit, {0, rootsplits_.size()});
-  return {str_indexer, str_parent_to_range};
-}
 
 // This function is really just for testing-- it recomputes from scratch.
 std::pair<StringSizeMap, StringPCSSMap> UnrootedSBNInstance::SplitCounters() const {
@@ -236,10 +146,6 @@ void UnrootedSBNInstance::ReadNexusFile(std::string fname) {
   tree_collection_ = driver.ParseNexusFile(fname);
 }
 
-void UnrootedSBNInstance::ReadFastaFile(std::string fname) {
-  alignment_ = Alignment::ReadFasta(fname);
-}
-
 // ** Phylogenetic likelihood
 
 void UnrootedSBNInstance::CheckSequencesAndTreesLoaded() const {
@@ -255,16 +161,6 @@ void UnrootedSBNInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
-Eigen::Ref<EigenMatrixXd> UnrootedSBNInstance::GetPhyloModelParams() {
-  return phylo_model_params_;
-}
-
-BlockSpecification::ParameterBlockMap
-UnrootedSBNInstance::GetPhyloModelParamBlockMap() {
-  return GetEngine()->GetPhyloModelBlockSpecification().ParameterBlockMapOf(
-      phylo_model_params_);
-}
-
 void UnrootedSBNInstance::MakeEngine(
     const EngineSpecification &engine_specification,
     const PhyloModelSpecification &model_specification) {
@@ -272,16 +168,6 @@ void UnrootedSBNInstance::MakeEngine(
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
   engine_ =
       std::make_unique<Engine>(engine_specification, model_specification, site_pattern);
-}
-
-Engine *UnrootedSBNInstance::GetEngine() const {
-  if (engine_ != nullptr) {
-    return engine_.get();
-  }
-  // else
-  Failwith(
-      "Engine not available. Call PrepareForPhyloLikelihood to make an "
-      "engine for phylogenetic likelihood computation computation.");
 }
 
 void UnrootedSBNInstance::ClearTreeCollectionAssociatedState() {
@@ -352,44 +238,6 @@ UnrootedSBNInstance::RangeVector UnrootedSBNInstance::GetSubsplitRanges(
   return subsplit_ranges;
 }
 
-// This multiplicative factor is the quantity inside the parentheses in eq:nabla in the
-// tex.
-EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f) {
-  double tree_count = log_f.size();
-  double log_F = NumericalUtils::LogSum(log_f);
-  double hat_L = log_F - log(tree_count);
-  EigenVectorXd tilde_w = log_f.array() - log_F;
-  tilde_w = tilde_w.array().exp();
-  return hat_L - tilde_w.array();
-}
-
-// This multiplicative factor is the quantity inside the parentheses in eq:nablaVIMCO in
-// the tex.
-EigenVectorXd CalculateVIMCOMultiplicativeFactors(const EigenVectorXdRef log_f) {
-  // Use the geometric mean as \hat{f}(\tau^{-j}, \theta^{-j}), in eq:f_hat in
-  // the implementation notes.
-  size_t tree_count = log_f.size();
-  double log_tree_count = log(tree_count);
-  double sum_of_log_f = log_f.sum();
-  // This has jth entry \hat{f}_{\bm{\phi},{\bm{\psi}}}(\tau^{-j},\bm{\theta}^{-j}),
-  // i.e. the log of the geometric mean of each item other than j.
-  EigenVectorXd log_geometric_mean = (sum_of_log_f - log_f.array()) / (tree_count - 1);
-  EigenVectorXd per_sample_signal(tree_count);
-  // This is a vector of entries that when summed become the parenthetical expression
-  // in eq:perSampleLearning.
-  EigenVectorXd log_f_perturbed = log_f;
-  for (size_t j = 0; j < tree_count; j++) {
-    log_f_perturbed(j) = log_geometric_mean(j);
-    per_sample_signal(j) =
-        log_f_perturbed.redux(NumericalUtils::LogAdd) - log_tree_count;
-    // Reset the value.
-    log_f_perturbed(j) = log_f(j);
-  }
-  EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
-  multiplicative_factors -= per_sample_signal;
-  return multiplicative_factors;
-}
-
 // This gives the gradient of log q at a specific unrooted topology.
 // See eq:gradLogQ in the tex, and TopologyGradients for more information about
 // normalized_sbn_parameters_in_log.
@@ -443,8 +291,8 @@ EigenVectorXd UnrootedSBNInstance::TopologyGradients(const EigenVectorXdRef log_
   size_t tree_count = tree_collection_.TreeCount();
   EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters_.size());
   EigenVectorXd multiplicative_factors =
-      use_vimco ? CalculateVIMCOMultiplicativeFactors(log_f)
-                : CalculateMultiplicativeFactors(log_f);
+      use_vimco ? SBNInstance::CalculateVIMCOMultiplicativeFactors(log_f)
+                : SBNInstance::CalculateMultiplicativeFactors(log_f);
   // This variable acts as a cache to store normalized SBN parameters in log.
   // Initialization to DOUBLE_NAN indicates that all entries are empty.
   // It is mutated by GradientOfLogQ.
@@ -461,13 +309,3 @@ EigenVectorXd UnrootedSBNInstance::TopologyGradients(const EigenVectorXdRef log_
   }
   return gradient_vector;
 }
-
-void UnrootedSBNInstance::NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
-  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplits_.size(),
-                                                  parent_to_range_);
-}
-
-// Here we initialize our static random number generator.
-std::random_device UnrootedSBNInstance::random_device_;
-std::mt19937 UnrootedSBNInstance::random_generator_(
-    UnrootedSBNInstance::random_device_());
