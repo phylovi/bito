@@ -90,9 +90,11 @@ PYBIND11_MODULE(libsbn, m) {
 
   // CLASS
   // SBNInstance
-  // TODO
-  py::class_<SBNInstance> sbn_instance_class(m, "hidden_instance",
-                                             "Don't instantiate this from Python");
+  // So, this is a wart. It would be nice to make SBNInstance virtual and not have this
+  // pybind11 binding, but it didn't appear possible to have
+  // 1. SBNInstance be virtual
+  // 2. Have sbn_parameters_ be available as a mutable member in an UnrootedSBNInstance.
+  py::class_<SBNInstance> sbn_instance_class(m, "_ignore", "Ignore this wart.");
   sbn_instance_class.def(py::init<const std::string &>())
       .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
       .def("read_fasta_file", &SBNInstance::ReadFastaFile,

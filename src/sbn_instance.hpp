@@ -41,6 +41,10 @@ class SBNInstance {
   // ** Initialization and status
 
   explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
+  // We would, ideally, like to make this a pure virtual function, but use this as a
+  // substitute.
+  virtual size_t TreeCount() const { return 0; }
+  virtual TagStringMap TagTaxonMap() const { return {}; }
 
   // ** SBN-related items
 
@@ -88,23 +92,20 @@ class SBNInstance {
   // Set whether we use rescaling for phylogenetic likelihood computation.
   void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
 
-  // TODO
-  // void CheckSequencesAndTreesLoaded() const;
+  void CheckSequencesAndTreesLoaded() const;
 
-  // TODO
   // Prepare for phylogenetic likelihood calculation. If we get a nullopt
   // argument, it just uses the number of trees currently in the SBNInstance.
-  // void PrepareForPhyloLikelihood(
-  //     const PhyloModelSpecification &model_specification, size_t thread_count,
-  //     const std::vector<BeagleFlags> &beagle_flag_vector = {},
-  //     const bool use_tip_states = true,
-  //     std::optional<size_t> tree_count_option = std::nullopt);
+  void PrepareForPhyloLikelihood(
+      const PhyloModelSpecification &model_specification, size_t thread_count,
+      const std::vector<BeagleFlags> &beagle_flag_vector = {},
+      const bool use_tip_states = true,
+      std::optional<size_t> tree_count_option = std::nullopt);
 
-  // TODO
   // Make the number of phylogentic model parameters fit the number of trees and
   // the speficied model. If we get a nullopt argument, it just uses the number
   // of trees currently in the SBNInstance.
-  // void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
+  void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
   // ** I/O
 
@@ -140,10 +141,9 @@ class SBNInstance {
   static std::mt19937 random_generator_;
   inline void SetSeed(unsigned long seed) { random_generator_.seed(seed); }
 
-  // TODO
-  //  // Make a likelihood engine with the given specification.
-  //  void MakeEngine(const EngineSpecification &engine_specification,
-  //                  const PhyloModelSpecification &model_specification);
+  // Make a likelihood engine with the given specification.
+  void MakeEngine(const EngineSpecification &engine_specification,
+                  const PhyloModelSpecification &model_specification);
 
   // Return a raw pointer to the engine if it's available.
   Engine *GetEngine() const;
