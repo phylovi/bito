@@ -22,7 +22,7 @@
 #include "sbn_maps.hpp"
 #include "sbn_probability.hpp"
 #include "sugar.hpp"
-#include "tree.hpp"
+#include "unrooted_tree.hpp"
 
 class SBNInstance {
   using Range = std::pair<size_t, size_t>;

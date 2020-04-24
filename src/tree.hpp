@@ -57,7 +57,7 @@ class Tree {
   // We make branch lengths public so we can muck with them in Python.
   BranchLengthVector branch_lengths_;
 
- private:
+ protected:
   Node::NodePtr topology_;
 };
 

@@ -159,6 +159,7 @@ sources = [
     "_build/taxon_name_munging.cpp",
     "_build/tree.cpp",
     "_build/tree_collection.cpp",
+    "_build/unrooted_tree.cpp",
 ]
 extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
