@@ -104,6 +104,40 @@ BlockSpecification::ParameterBlockMap SBNInstance::GetPhyloModelParamBlockMap() 
       phylo_model_params_);
 }
 
+void SBNInstance::CheckSequencesAndTreesLoaded() const {
+  if (alignment_.SequenceCount() == 0) {
+    Failwith(
+        "Load an alignment into your UnrootedSBNInstance on which you wish to "
+        "calculate phylogenetic likelihoods.");
+  }
+  if (TreeCount() == 0) {
+    Failwith(
+        "Load some trees into your UnrootedSBNInstance on which you wish to "
+        "calculate phylogenetic likelihoods.");
+  }
+}
+
+void SBNInstance::PrepareForPhyloLikelihood(
+    const PhyloModelSpecification &model_specification, size_t thread_count,
+    const std::vector<BeagleFlags> &beagle_flag_vector, const bool use_tip_states,
+    std::optional<size_t> tree_count_option) {
+  const EngineSpecification engine_specification{thread_count, beagle_flag_vector,
+                                                 use_tip_states};
+  MakeEngine(engine_specification, model_specification);
+  ResizePhyloModelParams(tree_count_option);
+}
+
+void SBNInstance::ResizePhyloModelParams(std::optional<size_t> tree_count_option) {
+  size_t tree_count = tree_count_option ? *tree_count_option : TreeCount();
+  if (tree_count == 0) {
+    Failwith(
+        "Please add trees to your instance by sampling or loading before "
+        "preparing for phylogenetic likelihood calculation.");
+  }
+  phylo_model_params_.resize(
+      tree_count, GetEngine()->GetPhyloModelBlockSpecification().ParameterCount());
+}
+
 // ** I/O
 
 void SBNInstance::ReadFastaFile(std::string fname) {
@@ -111,6 +145,14 @@ void SBNInstance::ReadFastaFile(std::string fname) {
 }
 
 // ** Protected methods
+
+void SBNInstance::MakeEngine(const EngineSpecification &engine_specification,
+                             const PhyloModelSpecification &model_specification) {
+  CheckSequencesAndTreesLoaded();
+  SitePattern site_pattern(alignment_, TagTaxonMap());
+  engine_ =
+      std::make_unique<Engine>(engine_specification, model_specification, site_pattern);
+}
 
 Engine *SBNInstance::GetEngine() const {
   if (engine_ != nullptr) {

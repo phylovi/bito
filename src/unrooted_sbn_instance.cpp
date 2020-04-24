@@ -148,28 +148,7 @@ void UnrootedSBNInstance::ReadNexusFile(std::string fname) {
 
 // ** Phylogenetic likelihood
 
-void UnrootedSBNInstance::CheckSequencesAndTreesLoaded() const {
-  if (alignment_.SequenceCount() == 0) {
-    Failwith(
-        "Load an alignment into your UnrootedSBNInstance on which you wish to "
-        "calculate phylogenetic likelihoods.");
-  }
-  if (TreeCount() == 0) {
-    Failwith(
-        "Load some trees into your UnrootedSBNInstance on which you wish to "
-        "calculate phylogenetic likelihoods.");
-  }
-}
-
-void UnrootedSBNInstance::MakeEngine(
-    const EngineSpecification &engine_specification,
-    const PhyloModelSpecification &model_specification) {
-  CheckSequencesAndTreesLoaded();
-  SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  engine_ =
-      std::make_unique<Engine>(engine_specification, model_specification, site_pattern);
-}
-
+// TODO
 void UnrootedSBNInstance::ClearTreeCollectionAssociatedState() {
   sbn_parameters_.resize(0);
   rootsplits_.clear();
@@ -177,29 +156,6 @@ void UnrootedSBNInstance::ClearTreeCollectionAssociatedState() {
   index_to_child_.clear();
   parent_to_range_.clear();
   topology_counter_.clear();
-}
-
-void UnrootedSBNInstance::PrepareForPhyloLikelihood(
-    const PhyloModelSpecification &model_specification, size_t thread_count,
-    const std::vector<BeagleFlags> &beagle_flag_vector, const bool use_tip_states,
-    std::optional<size_t> tree_count_option) {
-  const EngineSpecification engine_specification{thread_count, beagle_flag_vector,
-                                                 use_tip_states};
-  MakeEngine(engine_specification, model_specification);
-  ResizePhyloModelParams(tree_count_option);
-}
-
-void UnrootedSBNInstance::ResizePhyloModelParams(
-    std::optional<size_t> tree_count_option) {
-  size_t tree_count =
-      tree_count_option ? *tree_count_option : tree_collection_.TreeCount();
-  if (tree_count == 0) {
-    Failwith(
-        "Please add trees to your instance by sampling or loading before "
-        "preparing for phylogenetic likelihood calculation.");
-  }
-  phylo_model_params_.resize(
-      tree_count, GetEngine()->GetPhyloModelBlockSpecification().ParameterCount());
 }
 
 std::vector<double> UnrootedSBNInstance::LogLikelihoods() {

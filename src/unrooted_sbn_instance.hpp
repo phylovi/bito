@@ -34,7 +34,8 @@ class UnrootedSBNInstance : public SBNInstance {
   using SBNInstance::SBNInstance;
 
   void PrintStatus();
-  size_t TreeCount() const { return tree_collection_.TreeCount(); }
+  size_t TreeCount() const override { return tree_collection_.TreeCount(); }
+  TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
 
   // ** SBN-related items
 
@@ -81,18 +82,6 @@ class UnrootedSBNInstance : public SBNInstance {
 
   void CheckSequencesAndTreesLoaded() const;
 
-  // Prepare for phylogenetic likelihood calculation. If we get a nullopt
-  // argument, it just uses the number of trees currently in the UnrootedSBNInstance.
-  void PrepareForPhyloLikelihood(
-      const PhyloModelSpecification &model_specification, size_t thread_count,
-      const std::vector<BeagleFlags> &beagle_flag_vector = {},
-      const bool use_tip_states = true,
-      std::optional<size_t> tree_count_option = std::nullopt);
-  // Make the number of phylogentic model parameters fit the number of trees and
-  // the speficied model. If we get a nullopt argument, it just uses the number
-  // of trees currently in the UnrootedSBNInstance.
-  void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
-
   std::vector<double> LogLikelihoods();
 
   // For each loaded tree, returns a pair of (likelihood, gradient).
@@ -115,9 +104,6 @@ class UnrootedSBNInstance : public SBNInstance {
   void ReadNexusFile(std::string fname);
 
  protected:
-  // Make a likelihood engine with the given specification.
-  void MakeEngine(const EngineSpecification &engine_specification,
-                  const PhyloModelSpecification &model_specification);
 
   // Clear all of the state that depends on the current tree collection.
   void ClearTreeCollectionAssociatedState();
