@@ -191,8 +191,7 @@ void UnrootedSBNInstance::PrepareForPhyloLikelihood(
 
 void UnrootedSBNInstance::ResizePhyloModelParams(
     std::optional<size_t> tree_count_option) {
-  size_t tree_count =
-      tree_count_option ? *tree_count_option : tree_collection_.TreeCount();
+  size_t tree_count = tree_count_option ? *tree_count_option : TreeCount();
   if (tree_count == 0) {
     Failwith(
         "Please add trees to your instance by sampling or loading before "

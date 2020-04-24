@@ -42,6 +42,8 @@ class SBNInstance {
 
   explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
 
+  virtual size_t TreeCount() const = 0;
+
   // ** SBN-related items
 
   // Define "SBN maps" to be the collection of maps associated with the

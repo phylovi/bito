@@ -34,7 +34,7 @@ class UnrootedSBNInstance : public SBNInstance {
   using SBNInstance::SBNInstance;
 
   void PrintStatus();
-  size_t TreeCount() const { return tree_collection_.TreeCount(); }
+  size_t TreeCount() const override { return tree_collection_.TreeCount(); }
 
   // ** SBN-related items
 

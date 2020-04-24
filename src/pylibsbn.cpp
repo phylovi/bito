@@ -89,26 +89,18 @@ PYBIND11_MODULE(libsbn, m) {
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
 
   // CLASS
-  // SBNInstance
-  // TODO
-  py::class_<SBNInstance> sbn_instance_class(m, "hidden_instance",
-                                             "Don't instantiate this from Python");
-  sbn_instance_class.def(py::init<const std::string &>())
-      .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
-      .def("read_fasta_file", &SBNInstance::ReadFastaFile,
-           "Read a sequence alignment from a FASTA file.")
-      // Member Variables
-      .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
-      .def_readonly("taxon_names", &SBNInstance::taxon_names_);
-  def_read_write_mutable(sbn_instance_class, "sbn_parameters",
-                         &SBNInstance::sbn_parameters_);
-
-  // CLASS
   // UnrootedSBNInstance
   py::class_<UnrootedSBNInstance, SBNInstance> unrooted_sbn_instance_class(
       m, "unrooted_instance", "A wrapper for the all of the C++-side state.");
   unrooted_sbn_instance_class
       .def(py::init<const std::string &>())
+
+      // ** From SBNInstance
+      .def("get_phylo_model_params", &UnrootedSBNInstance::GetPhyloModelParams)
+      .def("read_fasta_file", &UnrootedSBNInstance::ReadFastaFile,
+           "Read a sequence alignment from a FASTA file.")
+      .def_readonly("psp_indexer", &UnrootedSBNInstance::psp_indexer_)
+      .def_readonly("taxon_names", &UnrootedSBNInstance::taxon_names_)
 
       // ** Initialization and status
       .def("print_status", &UnrootedSBNInstance::PrintStatus,
@@ -215,6 +207,9 @@ PYBIND11_MODULE(libsbn, m) {
 
       // ** Member variables
       .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
+
+  def_read_write_mutable(unrooted_sbn_instance_class, "sbn_parameters",
+                         &UnrootedSBNInstance::sbn_parameters_);
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
