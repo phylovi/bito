@@ -25,6 +25,7 @@ void def_read_write_mutable(PyClass &cls, const char *name, D C::*pm) {
 // conversion of STL types.
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
+// MODULE
 PYBIND11_MODULE(libsbn, m) {
   m.doc() = R"raw(Python interface to libsbn.)raw";
   // Second, we expose them as buffer objects so that we can use them
@@ -106,13 +107,16 @@ PYBIND11_MODULE(libsbn, m) {
   // UnrootedSBNInstance
   py::class_<UnrootedSBNInstance, SBNInstance> unrooted_sbn_instance_class(
       m, "unrooted_instance", "A wrapper for the all of the C++-side state.");
-  // ** Initialization and status
-  unrooted_sbn_instance_class.def(py::init<const std::string &>())
+  unrooted_sbn_instance_class
+      .def(py::init<const std::string &>())
+
+      // ** Initialization and status
       .def("print_status", &UnrootedSBNInstance::PrintStatus,
            "Print information about the instance.")
       .def("tree_count", &UnrootedSBNInstance::TreeCount,
            "Return the number of trees that are currently stored in the "
            "instance.")
+
       // ** SBN-related items
       .def("process_loaded_trees", &UnrootedSBNInstance::ProcessLoadedTrees, R"raw(
           Process the trees currently stored in the instance.
@@ -162,10 +166,11 @@ PYBIND11_MODULE(libsbn, m) {
 
             See the comments in ``psp_indexer.hpp`` to understand the layout.
            )raw")
-      .def("split_counters", &UnrootedSBNInstance::SplitCounters,
-           "A testing method to count splits.")
       .def("split_lengths", &UnrootedSBNInstance::SplitLengths,
            "Get the lengths of the current set of trees, indexed by splits.")
+      .def("split_counters", &UnrootedSBNInstance::SplitCounters,
+           "A testing method to count splits.")
+
       // ** Phylogenetic likelihood
       .def("prepare_for_phylo_likelihood",
            &UnrootedSBNInstance::PrepareForPhyloLikelihood,
@@ -201,19 +206,23 @@ PYBIND11_MODULE(libsbn, m) {
       .def("topology_gradients", &UnrootedSBNInstance::TopologyGradients,
            R"raw(Calculate gradients of SBN parameters for the current set of trees.
            Should be called after sampling trees and setting branch lengths.)raw")
+
       // ** I/O
       .def("read_newick_file", &UnrootedSBNInstance::ReadNewickFile,
            "Read trees from a Newick file.")
       .def("read_nexus_file", &UnrootedSBNInstance::ReadNexusFile,
            "Read trees from a Nexus file.")
+
       // ** Member variables
       .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
+
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
   // `with libsbn.ostream_redirect(stdout=True, stderr=True):`
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
   py::add_ostream_redirect(m, "ostream_redirect");
 
+  // MODULE
   py::module beagle_flags = m.def_submodule("beagle_flags",
                                             R"raw(
       Flags that can be passed to BEAGLE.
