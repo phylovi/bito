@@ -106,7 +106,6 @@ class SBNInstance {
   // of trees currently in the SBNInstance.
   // void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
-
   // ** I/O
 
   void ReadFastaFile(std::string fname);

@@ -26,7 +26,6 @@
 #include "unrooted_tree.hpp"
 
 class UnrootedSBNInstance : public SBNInstance {
-
  public:
   // Trees get loaded in from a file or sampled from SBNs.
   TreeCollection tree_collection_;
@@ -34,8 +33,8 @@ class UnrootedSBNInstance : public SBNInstance {
   // ** Initialization and status
   using SBNInstance::SBNInstance;
 
-  size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
+  size_t TreeCount() const { return tree_collection_.TreeCount(); }
 
   // ** SBN-related items
 
@@ -50,6 +49,7 @@ class UnrootedSBNInstance : public SBNInstance {
   EigenVectorXd TrainExpectationMaximization(double alpha, size_t max_iter,
                                              double score_epsilon = 0.);
 
+  // Calculate SBN probabilities for all currently-loaded trees.
   EigenVectorXd CalculateSBNProbabilities();
 
   // Sample a topology from the SBN.
@@ -115,7 +115,6 @@ class UnrootedSBNInstance : public SBNInstance {
   void ReadNexusFile(std::string fname);
 
  protected:
-
   // Make a likelihood engine with the given specification.
   void MakeEngine(const EngineSpecification &engine_specification,
                   const PhyloModelSpecification &model_specification);
@@ -133,7 +132,7 @@ class UnrootedSBNInstance : public SBNInstance {
 // Below we use 99999999 is the default value if a rootsplit or PCSS is missing.
 const size_t out_of_sample_index = 99999999;
 
-TEST_CASE("libsbn: indexer and PSP representations") {
+TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
   UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
@@ -243,7 +242,7 @@ TEST_CASE("libsbn: indexer and PSP representations") {
            correct_rooted_indexer_representation_2);
 }
 
-TEST_CASE("libsbn: likelihood and gradient") {
+TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
   UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
@@ -317,7 +316,7 @@ TEST_CASE("libsbn: likelihood and gradient") {
   }
 }
 
-TEST_CASE("libsbn: SBN training") {
+TEST_CASE("UnrootedSBNInstance: SBN training") {
   UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/DS1.100_topologies.nwk");
   inst.ProcessLoadedTrees();
@@ -339,7 +338,7 @@ TEST_CASE("libsbn: SBN training") {
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_05_100, 1e-5);
 }
 
-TEST_CASE("libsbn: tree sampling") {
+TEST_CASE("UnrootedSBNInstance: tree sampling") {
   UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
@@ -379,7 +378,7 @@ TEST_CASE("libsbn: tree sampling") {
   progress_bar.done();
 }
 
-TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
+TEST_CASE("UnrootedSBNInstance: gradient of log q_{phi}(tau) WRT phi") {
   UnrootedSBNInstance inst("charlie");
   // File gradient_test.t contains two trees:
   // ((0,1), 2, (3,4)) and
