@@ -37,35 +37,12 @@ void SBNInstance::PrettyPrintIndexer() {
   }
 }
 
-size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
-  const auto &[start, end] = range;
-  Assert(start < end && end <= sbn_parameters_.size(),
-         "SampleIndex given an invalid range.");
-  // We do not want to overwrite sbn_parameters so we make a copy.
-  EigenVectorXd sbn_parameters_subrange = sbn_parameters_.segment(start, end - start);
-  NumericalUtils::ProbabilityNormalizeInLog(sbn_parameters_subrange);
-  NumericalUtils::Exponentiate(sbn_parameters_subrange);
-  std::discrete_distribution<> distribution(sbn_parameters_subrange.begin(),
-                                            sbn_parameters_subrange.end());
-  // We have to add on range.first because we have taken a slice of the full
-  // array, and the sampler treats the beginning of this slice as zero.
-  auto result = start + static_cast<size_t>(distribution(random_generator_));
-  Assert(result < end, "SampleIndex sampled a value out of range.");
-  return result;
-}
-
-// The input to this function is a parent subsplit (of length 2n).
-Node::NodePtr SBNInstance::SampleTopology(const Bitset &parent_subsplit) const {
-  auto process_subsplit = [this](const Bitset &parent) {
-    auto singleton_option = parent.SplitChunk(1).SingletonOption();
-    if (singleton_option) {
-      return Node::Leaf(*singleton_option);
-    }  // else
-    auto child_index = SampleIndex(parent_to_range_.at(parent));
-    return SampleTopology(index_to_child_.at(child_index));
-  };
-  return Node::Join(process_subsplit(parent_subsplit),
-                    process_subsplit(parent_subsplit.RotateSubsplit()));
+std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
+  auto str_indexer = StringifyMap(indexer_);
+  auto str_parent_to_range = StringifyMap(parent_to_range_);
+  std::string rootsplit("rootsplit");
+  SafeInsert(str_parent_to_range, rootsplit, {0, rootsplits_.size()});
+  return {str_indexer, str_parent_to_range};
 }
 
 StringVector SBNInstance::StringReversedIndexer() const {
@@ -94,18 +71,26 @@ StringSetVector SBNInstance::StringIndexerRepresentationOf(
   return string_sets;
 }
 
-// ** I/O
-
-std::tuple<StringSizeMap, StringSizePairMap> SBNInstance::GetIndexers() const {
-  auto str_indexer = StringifyMap(indexer_);
-  auto str_parent_to_range = StringifyMap(parent_to_range_);
-  std::string rootsplit("rootsplit");
-  SafeInsert(str_parent_to_range, rootsplit, {0, rootsplits_.size()});
-  return {str_indexer, str_parent_to_range};
+size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
+  const auto &[start, end] = range;
+  Assert(start < end && end <= sbn_parameters_.size(),
+         "SampleIndex given an invalid range.");
+  // We do not want to overwrite sbn_parameters so we make a copy.
+  EigenVectorXd sbn_parameters_subrange = sbn_parameters_.segment(start, end - start);
+  NumericalUtils::ProbabilityNormalizeInLog(sbn_parameters_subrange);
+  NumericalUtils::Exponentiate(sbn_parameters_subrange);
+  std::discrete_distribution<> distribution(sbn_parameters_subrange.begin(),
+                                            sbn_parameters_subrange.end());
+  // We have to add on range.first because we have taken a slice of the full
+  // array, and the sampler treats the beginning of this slice as zero.
+  auto result = start + static_cast<size_t>(distribution(random_generator_));
+  Assert(result < end, "SampleIndex sampled a value out of range.");
+  return result;
 }
 
-void SBNInstance::ReadFastaFile(std::string fname) {
-  alignment_ = Alignment::ReadFasta(fname);
+void SBNInstance::NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
+  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplits_.size(),
+                                                  parent_to_range_);
 }
 
 // ** Phylogenetic likelihood
@@ -119,6 +104,14 @@ BlockSpecification::ParameterBlockMap SBNInstance::GetPhyloModelParamBlockMap() 
       phylo_model_params_);
 }
 
+// ** I/O
+
+void SBNInstance::ReadFastaFile(std::string fname) {
+  alignment_ = Alignment::ReadFasta(fname);
+}
+
+// ** Protected methods
+
 Engine *SBNInstance::GetEngine() const {
   if (engine_ != nullptr) {
     return engine_.get();
@@ -127,6 +120,20 @@ Engine *SBNInstance::GetEngine() const {
   Failwith(
       "Engine not available. Call PrepareForPhyloLikelihood to make an "
       "engine for phylogenetic likelihood computation computation.");
+}
+
+// The input to this function is a parent subsplit (of length 2n).
+Node::NodePtr SBNInstance::SampleTopology(const Bitset &parent_subsplit) const {
+  auto process_subsplit = [this](const Bitset &parent) {
+    auto singleton_option = parent.SplitChunk(1).SingletonOption();
+    if (singleton_option) {
+      return Node::Leaf(*singleton_option);
+    }  // else
+    auto child_index = SampleIndex(parent_to_range_.at(parent));
+    return SampleTopology(index_to_child_.at(child_index));
+  };
+  return Node::Join(process_subsplit(parent_subsplit),
+                    process_subsplit(parent_subsplit.RotateSubsplit()));
 }
 
 void SBNInstance::ClearTreeCollectionAssociatedState() {
@@ -202,11 +209,6 @@ EigenVectorXd SBNInstance::CalculateVIMCOMultiplicativeFactors(
   EigenVectorXd multiplicative_factors = CalculateMultiplicativeFactors(log_f);
   multiplicative_factors -= per_sample_signal;
   return multiplicative_factors;
-}
-
-void SBNInstance::NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
-  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplits_.size(),
-                                                  parent_to_range_);
 }
 
 // Here we initialize our static random number generator.

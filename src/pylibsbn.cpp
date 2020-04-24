@@ -40,11 +40,15 @@ PYBIND11_MODULE(libsbn, m) {
                                {v.size()},         // Buffer dimensions
                                {sizeof(double)});  // Stride
       });
+
+  // CLASS
   // Tree
   py::class_<Tree>(m, "Tree", "A tree with branch lengths.", py::buffer_protocol())
       .def("parent_id_vector", &Tree::ParentIdVector)
       .def_static("of_parent_id_vector", &Tree::OfParentIdVector)
       .def_readwrite("branch_lengths", &Tree::branch_lengths_);
+
+  // CLASS
   // TreeCollection
   py::class_<TreeCollection>(m, "TreeCollection", R"raw(
   A collection of trees.
@@ -65,9 +69,13 @@ PYBIND11_MODULE(libsbn, m) {
       .def("newick", &TreeCollection::Newick,
            "Get the current set of trees as a big Newick string.")
       .def_readwrite("trees", &TreeCollection::trees_);
+
+  // CLASS
   // PSPIndexer
   py::class_<PSPIndexer>(m, "PSPIndexer", "The primary split pair indexer.")
       .def("details", &PSPIndexer::Details);
+
+  // CLASS
   // PhyloModelSpecification
   py::class_<PhyloModelSpecification>(m, "PhyloModelSpecification",
                                       R"raw(
@@ -78,6 +86,8 @@ PYBIND11_MODULE(libsbn, m) {
       )raw")
       .def(py::init<const std::string &, const std::string &, const std::string &>(),
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
+
+  // CLASS
   // SBNInstance
   // TODO
   py::class_<SBNInstance> sbn_instance_class(m, "hidden_instance",
@@ -91,6 +101,8 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readonly("taxon_names", &SBNInstance::taxon_names_);
   def_read_write_mutable(sbn_instance_class, "sbn_parameters",
                          &SBNInstance::sbn_parameters_);
+
+  // CLASS
   // UnrootedSBNInstance
   py::class_<UnrootedSBNInstance, SBNInstance> unrooted_sbn_instance_class(
       m, "unrooted_instance", "A wrapper for the all of the C++-side state.");
