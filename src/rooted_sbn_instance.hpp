@@ -4,11 +4,11 @@
 #ifndef SRC_ROOTED_SBN_INSTANCE_HPP_
 #define SRC_ROOTED_SBN_INSTANCE_HPP_
 
-#include "libsbn.hpp"
+#include "unrooted_sbn_instance.hpp"
 
-class RootedSBNInstance : public SBNInstance {
+class RootedSBNInstance : public UnrootedSBNInstance {
  public:
-  explicit RootedSBNInstance(const std::string &name) : SBNInstance(name) {}
+  explicit RootedSBNInstance(const std::string &name) : UnrootedSBNInstance(name) {}
 
   // ** Phylogenetic likelihood
 

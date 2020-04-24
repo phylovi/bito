@@ -24,7 +24,7 @@
 #include "sugar.hpp"
 #include "unrooted_tree.hpp"
 
-class SBNInstance {
+class UnrootedSBNInstance {
   using Range = std::pair<size_t, size_t>;
   using RangeVector = std::vector<Range>;
 
@@ -42,7 +42,8 @@ class SBNInstance {
 
   // ** Initialization and status
 
-  explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
+  explicit UnrootedSBNInstance(const std::string &name)
+      : name_(name), rescaling_{false} {}
 
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   void PrintStatus();
@@ -50,7 +51,7 @@ class SBNInstance {
   // ** SBN-related items
 
   // Define "SBN maps" to be the collection of maps associated with the
-  // SBNInstance, such as indexer_, index_to_child_, parent_to_range_, and
+  // UnrootedSBNInstance, such as indexer_, index_to_child_, parent_to_range_, and
   // rootsplits_.
 
   // Use the loaded trees to get the SBN maps, set taxon_names_, and prepare the
@@ -122,7 +123,7 @@ class SBNInstance {
   void CheckSequencesAndTreesLoaded() const;
 
   // Prepare for phylogenetic likelihood calculation. If we get a nullopt
-  // argument, it just uses the number of trees currently in the SBNInstance.
+  // argument, it just uses the number of trees currently in the UnrootedSBNInstance.
   void PrepareForPhyloLikelihood(
       const PhyloModelSpecification &model_specification, size_t thread_count,
       const std::vector<BeagleFlags> &beagle_flag_vector = {},
@@ -130,7 +131,7 @@ class SBNInstance {
       std::optional<size_t> tree_count_option = std::nullopt);
   // Make the number of phylogentic model parameters fit the number of trees and
   // the speficied model. If we get a nullopt argument, it just uses the number
-  // of trees currently in the SBNInstance.
+  // of trees currently in the UnrootedSBNInstance.
   void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
   std::vector<double> LogLikelihoods();
@@ -198,8 +199,8 @@ class SBNInstance {
   // Clear all of the state that depends on the current tree collection.
   void ClearTreeCollectionAssociatedState();
 
-  void PushBackRangeForParentIfAvailable(const Bitset &parent,
-                                         SBNInstance::RangeVector &range_vector);
+  void PushBackRangeForParentIfAvailable(
+      const Bitset &parent, UnrootedSBNInstance::RangeVector &range_vector);
   RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);
 };
 
@@ -209,7 +210,7 @@ class SBNInstance {
 const size_t out_of_sample_index = 99999999;
 
 TEST_CASE("libsbn: indexer and PSP representations") {
-  SBNInstance inst("charlie");
+  UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   auto pretty_indexer = inst.PrettyIndexer();
@@ -319,7 +320,7 @@ TEST_CASE("libsbn: indexer and PSP representations") {
 }
 
 TEST_CASE("libsbn: likelihood and gradient") {
-  SBNInstance inst("charlie");
+  UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
@@ -393,7 +394,7 @@ TEST_CASE("libsbn: likelihood and gradient") {
 }
 
 TEST_CASE("libsbn: SBN training") {
-  SBNInstance inst("charlie");
+  UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/DS1.100_topologies.nwk");
   inst.ProcessLoadedTrees();
   // These "Expected" functions are defined in sbn_probability.hpp.
@@ -415,7 +416,7 @@ TEST_CASE("libsbn: SBN training") {
 }
 
 TEST_CASE("libsbn: tree sampling") {
-  SBNInstance inst("charlie");
+  UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
@@ -455,7 +456,7 @@ TEST_CASE("libsbn: tree sampling") {
 }
 
 TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
-  SBNInstance inst("charlie");
+  UnrootedSBNInstance inst("charlie");
   // File gradient_test.t contains two trees:
   // ((0,1), 2, (3,4)) and
   // ((0,1), (2,3), 4).
