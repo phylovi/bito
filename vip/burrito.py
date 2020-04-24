@@ -81,7 +81,7 @@ class Burrito:
             for tree in self.inst.tree_collection.trees
         ]
 
-    def gradient_step(self, beta_t = 1.0):
+    def gradient_step(self, beta_t=1.0):
         """Take a gradient step."""
         px_branch_lengths = self.sample_topologies(self.particle_count)
         px_branch_representation = self.branch_model.px_branch_representation()
@@ -114,15 +114,10 @@ class Burrito:
         )
         # Get topology gradients.
         sbn_grad = self.inst.topology_gradients(px_log_f, self.use_vimco)
-        self.opt.gradient_step(
-            {
-                "scalar_params": scalar_grad,
-                "sbn_params": sbn_grad
-            }
-        )
+        self.opt.gradient_step({"scalar_params": scalar_grad, "sbn_params": sbn_grad})
 
     def gradient_steps(self, step_count):
-        betas = np.arange(1, step_count + 1, dtype = np.float)
+        betas = np.arange(1, step_count + 1, dtype=np.float)
         betas = np.maximum(betas / step_count, 0.001)
         with click.progressbar(range(step_count), label="Gradient descent") as bar:
             for step in bar:

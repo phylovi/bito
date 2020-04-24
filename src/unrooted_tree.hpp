@@ -22,7 +22,6 @@ class UnrootedTree : public Tree {
   static void AssertTopologyTrifurcatingInConstructor(const Node::NodePtr& topology);
 };
 
-
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("UnrootedTree") {
   auto topologies = Node::ExampleTopologies();
