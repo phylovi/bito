@@ -60,6 +60,7 @@ Tree Tree::Detrifurcate() const {
   return Tree(rerooted_topology, branch_lengths);
 }
 
+// TODO cut this because it appears in UnrootedTree?
 Tree Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   topology->Polish();
   BranchLengthVector branch_lengths(1 + topology->Id());
