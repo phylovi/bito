@@ -78,26 +78,26 @@ PYBIND11_MODULE(libsbn, m) {
       )raw")
       .def(py::init<const std::string &, const std::string &, const std::string &>(),
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
-  // UnrootedSBNInstance
-  py::class_<UnrootedSBNInstance> sbn_instance_class(
-      m, "instance", "A wrapper for the all of the C++-side state.");
+  // SBNInstance
+  // TODO
+  py::class_<SBNInstance> sbn_instance_class(m, "hidden_instance",
+                                             "Don't instantiate this from Python");
   sbn_instance_class.def(py::init<const std::string &>())
-      .def("print_status", &UnrootedSBNInstance::PrintStatus,
-           "Print information about the instance.")
-      .def("get_phylo_model_params", &UnrootedSBNInstance::GetPhyloModelParams)
-      .def("read_fasta_file", &UnrootedSBNInstance::ReadFastaFile,
+      .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
+      .def("read_fasta_file", &SBNInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
       // Member Variables
-      .def_readonly("psp_indexer", &UnrootedSBNInstance::psp_indexer_)
-      .def_readonly("taxon_names", &UnrootedSBNInstance::taxon_names_)
-      .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
+      .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
+      .def_readonly("taxon_names", &SBNInstance::taxon_names_);
   def_read_write_mutable(sbn_instance_class, "sbn_parameters",
                          &SBNInstance::sbn_parameters_);
   // UnrootedSBNInstance
   py::class_<UnrootedSBNInstance, SBNInstance> unrooted_sbn_instance_class(
-      m, "instance", "A wrapper for the all of the C++-side state.");
+      m, "unrooted_instance", "A wrapper for the all of the C++-side state.");
   // ** Initialization and status
   unrooted_sbn_instance_class.def(py::init<const std::string &>())
+      .def("print_status", &UnrootedSBNInstance::PrintStatus,
+           "Print information about the instance.")
       .def("tree_count", &UnrootedSBNInstance::TreeCount,
            "Return the number of trees that are currently stored in the "
            "instance.")
@@ -193,7 +193,9 @@ PYBIND11_MODULE(libsbn, m) {
       .def("read_newick_file", &UnrootedSBNInstance::ReadNewickFile,
            "Read trees from a Newick file.")
       .def("read_nexus_file", &UnrootedSBNInstance::ReadNexusFile,
-           "Read trees from a Nexus file.");
+           "Read trees from a Nexus file.")
+      // ** Member variables
+      .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
   // `with libsbn.ostream_redirect(stdout=True, stderr=True):`

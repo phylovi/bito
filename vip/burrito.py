@@ -38,7 +38,7 @@ class Burrito:
     ):
         self.particle_count = particle_count
         self.use_vimco = use_vimco
-        self.inst = libsbn.instance("burrito")
+        self.inst = libsbn.unrooted_instance("burrito")
 
         # Read MCMC run to get tree structure.
         self.inst.read_nexus_file(mcmc_nexus_path)
