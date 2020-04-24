@@ -1,8 +1,8 @@
 // Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_LIBSBN_HPP_
-#define SRC_LIBSBN_HPP_
+#ifndef SRC_UNROOTED_SBN_INSTANCE_HPP_
+#define SRC_UNROOTED_SBN_INSTANCE_HPP_
 
 #include <algorithm>
 #include <cmath>
@@ -639,4 +639,4 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-8);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_LIBSBN_HPP_
+#endif  // SRC_UNROOTED_SBN_INSTANCE_HPP_
