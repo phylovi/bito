@@ -8,7 +8,11 @@
 
 class RootedSBNInstance : public SBNInstance {
  public:
-  explicit RootedSBNInstance(const std::string &name) : SBNInstance(name) {}
+  using SBNInstance::SBNInstance;
+
+  size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
+  size_t TreeCount() const override { return tree_collection_.TreeCount(); }
+  TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
 
   // ** Phylogenetic likelihood
 

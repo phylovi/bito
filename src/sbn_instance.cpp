@@ -133,12 +133,12 @@ BlockSpecification::ParameterBlockMap SBNInstance::GetPhyloModelParamBlockMap() 
 void SBNInstance::CheckSequencesAndTreesLoaded() const {
   if (alignment_.SequenceCount() == 0) {
     Failwith(
-        "Load an alignment into your UnrootedSBNInstance on which you wish to "
+        "Load an alignment into your SBNInstance on which you wish to "
         "calculate phylogenetic likelihoods.");
   }
   if (TreeCount() == 0) {
     Failwith(
-        "Load some trees into your UnrootedSBNInstance on which you wish to "
+        "Load some trees into your SBNInstance on which you wish to "
         "calculate phylogenetic likelihoods.");
   }
 }

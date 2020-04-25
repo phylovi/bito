@@ -13,7 +13,6 @@ class UnrootedSBNInstance : public SBNInstance {
   // TODO make this an UnrootedTreeCollection
   TreeCollection tree_collection_;
 
-  // ** Initialization and status
   using SBNInstance::SBNInstance;
 
   size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
