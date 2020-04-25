@@ -4,15 +4,7 @@
 #ifndef SRC_UNROOTED_SBN_INSTANCE_HPP_
 #define SRC_UNROOTED_SBN_INSTANCE_HPP_
 
-#include "alignment.hpp"
-#include "driver.hpp"
-#include "engine.hpp"
-#include "numerical_utils.hpp"
-#include "psp_indexer.hpp"
 #include "sbn_instance.hpp"
-#include "sbn_maps.hpp"
-#include "sbn_probability.hpp"
-#include "sugar.hpp"
 #include "unrooted_tree.hpp"
 
 class UnrootedSBNInstance : public SBNInstance {
@@ -34,6 +26,7 @@ class UnrootedSBNInstance : public SBNInstance {
   void ProcessLoadedTrees();
 
   // SBN training. See sbn_probability.hpp for details.
+  void CheckTopologyCounter();
   void TrainSimpleAverage();
   // max_iter is the maximum number of EM iterations to do, while score_epsilon
   // is the cutoff for score improvement.
