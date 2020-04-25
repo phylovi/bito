@@ -84,6 +84,7 @@ class SBNInstance {
   // Sample an integer index in [range.first, range.second) according to
   // sbn_parameters_.
   size_t SampleIndex(Range range) const;
+  Node::NodePtr SampleTopology(bool rooted) const;
 
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
 

@@ -10,6 +10,7 @@
 class UnrootedSBNInstance : public SBNInstance {
  public:
   // Trees get loaded in from a file or sampled from SBNs.
+  // TODO make this an UnrootedTreeCollection
   TreeCollection tree_collection_;
 
   // ** Initialization and status
@@ -37,7 +38,8 @@ class UnrootedSBNInstance : public SBNInstance {
   EigenVectorXd CalculateSBNProbabilities();
 
   // Sample a topology from the SBN.
-  Node::NodePtr SampleTopology(bool rooted = false) const;
+  using SBNInstance::SampleTopology;
+  Node::NodePtr SampleTopology() const;
 
   // Sample trees and store them internally
   void SampleTrees(size_t count);
