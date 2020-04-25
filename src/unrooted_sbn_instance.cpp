@@ -71,19 +71,8 @@ EigenVectorXd UnrootedSBNInstance::CalculateSBNProbabilities() {
                                        MakeIndexerRepresentations());
 }
 
-// This function samples a tree by first sampling the rootsplit, and then
-// calling the recursive form of SampleTopology.
-Node::NodePtr UnrootedSBNInstance::SampleTopology(bool rooted) const {
-  // Start by sampling a rootsplit.
-  size_t rootsplit_index =
-      SampleIndex(std::pair<size_t, size_t>(0, rootsplits_.size()));
-  const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
-  // The addition below turns the rootsplit into a subsplit.
-  auto topology = rooted
-                      ? SBNInstance::SampleTopology(rootsplit + ~rootsplit)
-                      : SBNInstance::SampleTopology(rootsplit + ~rootsplit)->Deroot();
-  topology->Polish();
-  return topology;
+Node::NodePtr UnrootedSBNInstance::SampleTopology() const {
+  return SampleTopology(false);
 }
 
 void UnrootedSBNInstance::SampleTrees(size_t count) {
@@ -133,7 +122,6 @@ std::pair<StringSizeMap, StringPCSSMap> UnrootedSBNInstance::SplitCounters() con
 
 // ** I/O
 
-// TODO make sure that these trees are trifurcating at the root.
 void UnrootedSBNInstance::ReadNewickFile(std::string fname) {
   Driver driver;
   tree_collection_ = driver.ParseNewickFile(fname);
