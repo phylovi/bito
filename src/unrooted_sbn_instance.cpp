@@ -124,14 +124,14 @@ DoubleVectorVector UnrootedSBNInstance::SplitLengths() const {
   return psp_indexer_.SplitLengths(tree_collection_);
 }
 
-// ** I/O
-
 // This function is really just for testing-- it recomputes from scratch.
 std::pair<StringSizeMap, StringPCSSMap> UnrootedSBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();
   return {StringifyMap(SBNMaps::RootsplitCounterOf(counter).Map()),
           SBNMaps::StringPCSSMapOf(SBNMaps::PCSSCounterOf(counter))};
 }
+
+// ** I/O
 
 void UnrootedSBNInstance::ReadNewickFile(std::string fname) {
   Driver driver;
@@ -144,16 +144,6 @@ void UnrootedSBNInstance::ReadNexusFile(std::string fname) {
 }
 
 // ** Phylogenetic likelihood
-
-// TODO
-void UnrootedSBNInstance::ClearTreeCollectionAssociatedState() {
-  sbn_parameters_.resize(0);
-  rootsplits_.clear();
-  indexer_.clear();
-  index_to_child_.clear();
-  parent_to_range_.clear();
-  topology_counter_.clear();
-}
 
 std::vector<double> UnrootedSBNInstance::LogLikelihoods() {
   return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_);

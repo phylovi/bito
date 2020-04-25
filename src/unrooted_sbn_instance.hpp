@@ -88,9 +88,6 @@ class UnrootedSBNInstance : public SBNInstance {
 
  protected:
 
-  // Clear all of the state that depends on the current tree collection.
-  void ClearTreeCollectionAssociatedState();
-
   void PushBackRangeForParentIfAvailable(
       const Bitset &parent, UnrootedSBNInstance::RangeVector &range_vector);
   RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);

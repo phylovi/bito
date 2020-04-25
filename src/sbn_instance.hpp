@@ -1,5 +1,15 @@
 // Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// This is a shared parent class between the rooted and unrooted SBN instances.
+//
+// The idea is to have as much in here as possible, which in practice means everything
+// that doesn't require explicit reference to a specific tree type. Note that this
+// excludes SBN training, which is different based on if we are thinking of trees as
+// rooted or unrooted.
+//
+// We can't make this a pure virtual class because we want to have some shared
+// functionality on the Python side (see pylibsbn.cpp).
 
 #ifndef SRC_SBN_INSTANCE_HPP_
 #define SRC_SBN_INSTANCE_HPP_
@@ -43,9 +53,7 @@ class SBNInstance {
   explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
   void PrintStatus();
 
-  // ** Dummy functions corresponding to an empty tree_collection.
-  // We can't make this a pure virtual class because we want to have some shared
-  // functionality on the Python side (see pylibsbn.cpp).
+  // ** Dummy functions corresponding to an empty tree_collection (see above).
   virtual size_t TaxonCount() const { return 0; }
   virtual size_t TreeCount() const { return 0; }
   virtual TagStringMap TagTaxonMap() const { return {}; }
@@ -78,11 +86,6 @@ class SBNInstance {
   size_t SampleIndex(Range range) const;
 
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
-
-  // TODO
-  // This function is really just for testing-- it recomputes counters from
-  // scratch.
-  // std::pair<StringSizeMap, StringPCSSMap> SplitCounters() const;
 
   // ** Phylogenetic likelihood
 
