@@ -38,7 +38,14 @@ void UnrootedSBNInstance::ProcessLoadedTrees() {
   taxon_names_ = tree_collection_.TaxonNames();
 }
 
+void UnrootedSBNInstance::CheckTopologyCounter() {
+  if (topology_counter_.empty()) {
+    Failwith("Please load some trees into your SBN instance.");
+  }
+}
+
 void UnrootedSBNInstance::TrainSimpleAverage() {
+  CheckTopologyCounter();
   auto indexer_representation_counter = SBNMaps::IndexerRepresentationCounterOf(
       indexer_, topology_counter_, sbn_parameters_.size());
   SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
@@ -48,6 +55,7 @@ void UnrootedSBNInstance::TrainSimpleAverage() {
 EigenVectorXd UnrootedSBNInstance::TrainExpectationMaximization(double alpha,
                                                                 size_t max_iter,
                                                                 double score_epsilon) {
+  CheckTopologyCounter();
   auto indexer_representation_counter = SBNMaps::IndexerRepresentationCounterOf(
       indexer_, topology_counter_, sbn_parameters_.size());
   return SBNProbability::ExpectationMaximization(
