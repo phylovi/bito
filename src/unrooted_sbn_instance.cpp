@@ -133,6 +133,7 @@ std::pair<StringSizeMap, StringPCSSMap> UnrootedSBNInstance::SplitCounters() con
 
 // ** I/O
 
+// TODO make sure that these trees are trifurcating at the root.
 void UnrootedSBNInstance::ReadNewickFile(std::string fname) {
   Driver driver;
   tree_collection_ = driver.ParseNewickFile(fname);

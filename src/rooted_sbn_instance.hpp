@@ -4,11 +4,11 @@
 #ifndef SRC_ROOTED_SBN_INSTANCE_HPP_
 #define SRC_ROOTED_SBN_INSTANCE_HPP_
 
-#include "unrooted_sbn_instance.hpp"
+#include "sbn_instance.hpp"
 
-class RootedSBNInstance : public UnrootedSBNInstance {
+class RootedSBNInstance : public SBNInstance {
  public:
-  explicit RootedSBNInstance(const std::string &name) : UnrootedSBNInstance(name) {}
+  explicit RootedSBNInstance(const std::string &name) : SBNInstance(name) {}
 
   // ** Phylogenetic likelihood
 
@@ -21,7 +21,7 @@ class RootedSBNInstance : public UnrootedSBNInstance {
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
 
-  RootedTreeCollection rooted_tree_collection_;
+  RootedTreeCollection tree_collection_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -60,7 +60,7 @@ TEST_CASE("RootedSBNInstance: parsing dates") {
   RootedSBNInstance inst("charlie");
   inst.ReadNexusFile("data/test_beast_tree_parsing.nexus");
   std::vector<double> dates;
-  for (auto [tag, date] : inst.rooted_tree_collection_.tag_date_map_) {
+  for (auto [tag, date] : inst.tree_collection_.tag_date_map_) {
     dates.push_back(date);
   }
   std::sort(dates.begin(), dates.end());
