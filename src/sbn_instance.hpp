@@ -41,8 +41,12 @@ class SBNInstance {
   // ** Initialization and status
 
   explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
-  // We would, ideally, like to make this a pure virtual function, but use this as a
-  // substitute.
+  void PrintStatus();
+
+  // ** Dummy functions corresponding to an empty tree_collection.
+  // We can't make this a pure virtual class because we want to have some shared
+  // functionality on the Python side (see pylibsbn.cpp).
+  virtual size_t TaxonCount() const { return 0; }
   virtual size_t TreeCount() const { return 0; }
   virtual TagStringMap TagTaxonMap() const { return {}; }
 
