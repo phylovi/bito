@@ -14,7 +14,7 @@ void RootedSBNInstance::ReadNewickFile(std::string fname) {
 void RootedSBNInstance::ReadNexusFile(std::string fname) {
   Driver driver;
   tree_collection_ =
-      RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
+      RootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
   tree_collection_.ParseDatesFromTaxonNames();
   tree_collection_.InitializeParameters();
 }
