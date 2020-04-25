@@ -4,16 +4,6 @@
 #ifndef SRC_UNROOTED_SBN_INSTANCE_HPP_
 #define SRC_UNROOTED_SBN_INSTANCE_HPP_
 
-#include <algorithm>
-#include <cmath>
-#include <memory>
-#include <random>
-#include <string>
-#include <tuple>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include "ProgressBar.hpp"
 #include "alignment.hpp"
 #include "driver.hpp"
 #include "engine.hpp"
@@ -33,7 +23,7 @@ class UnrootedSBNInstance : public SBNInstance {
   // ** Initialization and status
   using SBNInstance::SBNInstance;
 
-  void PrintStatus();
+  size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
   size_t TreeCount() const override { return tree_collection_.TreeCount(); }
   TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
 

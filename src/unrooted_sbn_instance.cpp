@@ -9,17 +9,6 @@
 #include "eigen_sugar.hpp"
 #include "numerical_utils.hpp"
 
-void UnrootedSBNInstance::PrintStatus() {
-  std::cout << "Status for instance '" << name_ << "':\n";
-  if (tree_collection_.TreeCount()) {
-    std::cout << TreeCount() << " unique tree topologies loaded on "
-              << tree_collection_.TaxonCount() << " leaves.\n";
-  } else {
-    std::cout << "No trees loaded.\n";
-  }
-  std::cout << alignment_.Data().size() << " sequences loaded.\n";
-}
-
 // ** Building SBN-related items
 
 void UnrootedSBNInstance::ProcessLoadedTrees() {
