@@ -28,6 +28,7 @@ class RootedTreeCollection : public PreRootedTreeCollection {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+// Test of ParseDatesFromTaxonNames appears in rooted_sbn_instance.hpp.
 TEST_CASE("RootedTreeCollection") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
