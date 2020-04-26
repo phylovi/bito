@@ -150,7 +150,7 @@ def rootings_indexer_test():
         assert first_rep == list(rep)
 
 
-def test_libsbn():
+def test_sbn_unrooted_instance():
     """Test the libsbn unrooted_instance."""
 
     hello_demo()
