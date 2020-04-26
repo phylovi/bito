@@ -441,7 +441,7 @@ double UpdateHeightParameterGradientUnweightedLogDensity(
   multiplierArray[root_id - leaf_count] = 1.0;
 
   tree.Topology()->BinaryIdPreOrder(
-      [&leaf_count, &root_id, &ratios = tree.height_ratios_, &multiplierArray](
+      [&leaf_count, &ratios = tree.height_ratios_, &multiplierArray](
           int node_id, int child0_id, int child1_id) {
         if (child0_id >= leaf_count) {
           double ratio = ratios[child0_id - leaf_count];

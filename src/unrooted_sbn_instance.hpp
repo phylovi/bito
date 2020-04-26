@@ -5,13 +5,12 @@
 #define SRC_UNROOTED_SBN_INSTANCE_HPP_
 
 #include "sbn_instance.hpp"
-#include "unrooted_tree.hpp"
+#include "unrooted_tree_collection.hpp"
 
 class UnrootedSBNInstance : public SBNInstance {
  public:
   // Trees get loaded in from a file or sampled from SBNs.
-  // TODO make this an UnrootedTreeCollection
-  TreeCollection tree_collection_;
+  UnrootedTreeCollection tree_collection_;
 
   using SBNInstance::SBNInstance;
 
@@ -364,7 +363,7 @@ TEST_CASE("UnrootedSBNInstance: gradient of log q_{phi}(tau) WRT phi") {
   // Generate a tree,
   // \tau = ((0,1),(2,3),4) with internal node labels ((0,1)5,(2,3)6,4)7.
   std::vector<size_t> tau_indices = {5, 5, 6, 6, 7, 7, 7};
-  auto tau = Tree::OfParentIdVector(tau_indices);
+  auto tau = UnrootedTree::OfParentIdVector(tau_indices);
   inst.tree_collection_.trees_.push_back(tau);
 
   // Initialize sbn_parameters_ to 0's and normalize, which is going to give a uniform

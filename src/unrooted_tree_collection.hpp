@@ -4,13 +4,21 @@
 #ifndef SRC_UNROOTED_TREE_COLLECTION_HPP_
 #define SRC_UNROOTED_TREE_COLLECTION_HPP_
 
-#include "generic_tree_collection.hpp"
+#include "tree_collection.hpp"
 #include "unrooted_tree.hpp"
 
-using UnrootedTreeCollection = GenericTreeCollection<UnrootedTree>;
+using PreUnrootedTreeCollection = GenericTreeCollection<UnrootedTree>;
+
+class UnrootedTreeCollection : public PreUnrootedTreeCollection {
+ public:
+  // Inherit all constructors.
+  using PreUnrootedTreeCollection::PreUnrootedTreeCollection;
+
+  static UnrootedTreeCollection OfTreeCollection(const TreeCollection& trees);
+};
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("UnrootedTreeCollection") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-#endif  // SRC_ROOTED_TREE_COLLECTION_HPP_
+#endif  // SRC_UNROOTED_TREE_COLLECTION_HPP_

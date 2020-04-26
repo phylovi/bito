@@ -104,7 +104,7 @@ StringVectorVector PSPIndexer::StringRepresentationOf(
 }
 
 DoubleVectorVector PSPIndexer::SplitLengths(
-    const TreeCollection& tree_collection) const {
+    const UnrootedTreeCollection& tree_collection) const {
   DoubleVectorVector result(after_rootsplits_index_);
   auto tree_count = tree_collection.TreeCount();
   for (size_t tree_index = 0; tree_index < tree_count; tree_index++) {
