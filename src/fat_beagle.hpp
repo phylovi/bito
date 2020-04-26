@@ -133,5 +133,5 @@ std::vector<TOut> FatBeagleParallelize(
   return results;
 }
 
-// Tests live in unrooted_sbn_instance.hpp.
+// Tests live in rooted_sbn_instance.hpp and unrooted_sbn_instance.hpp.
 #endif  // SRC_FAT_BEAGLE_HPP_
