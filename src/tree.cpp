@@ -51,14 +51,12 @@ double Tree::BranchLength(const Node* node) const {
 
 Tree Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   topology->Polish();
-  BranchLengthVector branch_lengths(1 + topology->Id(), 1.);
-  return Tree(topology, branch_lengths);
+  return Tree(topology, BranchLengthVector(1 + topology->Id(), 1.));
 }
 
-Tree Tree::OfParentIdVector(std::vector<size_t> ids) {
+Tree Tree::OfParentIdVector(const std::vector<size_t>& ids) {
   auto topology = Node::OfParentIdVector(ids);
-  std::vector<double> branch_lengths(topology->Id() + 1, 1.);
-  return Tree(topology, std::move(branch_lengths));
+  return Tree(topology, BranchLengthVector(topology->Id() + 1, 1.));
 }
 
 Tree::TreeVector Tree::ExampleTrees() {

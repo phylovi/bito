@@ -46,7 +46,7 @@ class Tree {
   void SlideRootPosition();
 
   static Tree UnitBranchLengthTreeOf(Node::NodePtr topology);
-  static Tree OfParentIdVector(std::vector<size_t> indices);
+  static Tree OfParentIdVector(const std::vector<size_t>& indices);
   static TreeVector ExampleTrees();
 
   // We make branch lengths public so we can muck with them in Python.

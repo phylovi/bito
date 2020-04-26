@@ -16,14 +16,12 @@ UnrootedTree::UnrootedTree(const Node::NodePtr& topology, TagDoubleMap branch_le
 
 UnrootedTree UnrootedTree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   topology->Polish();
-  BranchLengthVector branch_lengths(1 + topology->Id(), 1.);
-  return UnrootedTree(topology, branch_lengths);
+  return UnrootedTree(topology, BranchLengthVector(1 + topology->Id(), 1.));
 }
 
-UnrootedTree UnrootedTree::OfParentIdVector(std::vector<size_t> ids) {
+UnrootedTree UnrootedTree::OfParentIdVector(const std::vector<size_t>& ids) {
   auto topology = Node::OfParentIdVector(ids);
-  std::vector<double> branch_lengths(topology->Id() + 1, 1.);
-  return UnrootedTree(topology, std::move(branch_lengths));
+  return UnrootedTree(topology, BranchLengthVector(1 + topology->Id(), 1.));
 }
 
 Tree UnrootedTree::Detrifurcate() const {
