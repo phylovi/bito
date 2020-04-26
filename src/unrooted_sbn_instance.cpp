@@ -84,7 +84,7 @@ void UnrootedSBNInstance::SampleTrees(size_t count) {
   for (size_t i = 0; i < count; i++) {
     std::vector<double> branch_lengths(static_cast<size_t>(edge_count));
     tree_collection_.trees_.emplace_back(
-        Tree(SampleTopology(), std::move(branch_lengths)));
+        UnrootedTree(SampleTopology(), std::move(branch_lengths)));
   }
 }
 

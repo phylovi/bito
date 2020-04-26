@@ -27,7 +27,8 @@ UnrootedTree UnrootedTree::OfParentIdVector(std::vector<size_t> ids) {
 }
 
 Tree UnrootedTree::Detrifurcate() const {
-  Assert(Children().size() == 3, "Tree::Detrifurcate given a non-trifurcating tree.");
+  Assert(Children().size() == 3,
+         "UnrootedTree::Detrifurcate given a non-trifurcating tree.");
   auto branch_lengths = BranchLengths();
   auto our_id = Id();
   auto root12 = Node::Join(Children()[1], Children()[2], our_id);
@@ -35,6 +36,11 @@ Tree UnrootedTree::Detrifurcate() const {
   auto rerooted_topology = Node::Join(Children()[0], root12, our_id + 1);
   branch_lengths.push_back(0.);
   return Tree(rerooted_topology, branch_lengths);
+}
+
+bool UnrootedTree::operator==(const UnrootedTree& other) const {
+  return (this->Topology() == other.Topology()) &&
+         (this->BranchLengths() == other.BranchLengths());
 }
 
 void UnrootedTree::AssertTopologyTrifurcatingInConstructor(
