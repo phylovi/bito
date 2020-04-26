@@ -97,10 +97,36 @@ PYBIND11_MODULE(libsbn, m) {
   // without actually giving it a name. We just give it an underscore-name.
   py::class_<SBNInstance> sbn_instance_class(
       m, "_instance",
-      "A non-useful general SBNInstance class (that just holds shared functionality "
-      "between the two types of SBN instances). Ignore.");
+      "A general SBNInstance class (that just holds shared functionality between the "
+      "two types of SBN instances). Don't use directly, but read these docs to learn "
+      "about the relevant functionality in the various subclasses.");
   sbn_instance_class.def(py::init<const std::string &>())
       .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
+      .def("get_phylo_model_param_block_map",
+           &UnrootedSBNInstance::GetPhyloModelParamBlockMap)
+      .def("prepare_for_phylo_likelihood",
+           &UnrootedSBNInstance::PrepareForPhyloLikelihood,
+           R"raw(
+            Prepare instance for phylogenetic likelihood computation.
+
+            See the ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
+
+            ``use_tip_states`` tells BEAGLE if it should use tip states (versus tip partials).
+            Note that libsbn currently treats degenerate nucleotides as gaps irrespective of this setting.
+
+            ``tree_count_option`` tells libsbn for how many trees you will be asking for the likelihood
+            or gradient at a time. If not specified, this is set to the number of trees currently loaded
+            into the instance. This allocates the correct number of slots in the phylogenetic model
+            parameter matrices, and it's up to the user to set those model parameters after calling
+            this function.
+            Note that this tree count need not be the same as the number of threads (and is typically bigger).
+           )raw",
+           py::arg("model_specification"), py::arg("thread_count"),
+           py::arg("beagle_flags") = std::vector<BeagleFlags>(),
+           py::arg("use_tip_states") = true,
+           py::arg("tree_count_option") = std::nullopt)
+      .def("resize_phylo_model_params", &UnrootedSBNInstance::ResizePhyloModelParams,
+           "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
       .def("read_fasta_file", &SBNInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
       // Member Variables
@@ -183,31 +209,6 @@ PYBIND11_MODULE(libsbn, m) {
            "A testing method to count splits.")
 
       // ** Phylogenetic likelihood
-      .def("prepare_for_phylo_likelihood",
-           &UnrootedSBNInstance::PrepareForPhyloLikelihood,
-           R"raw(
-            Prepare instance for phylogenetic likelihood computation.
-
-            See the ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
-
-            ``use_tip_states`` tells BEAGLE if it should use tip states (versus tip partials).
-            Note that libsbn currently treats degenerate nucleotides as gaps irrespective of this setting.
-
-            ``tree_count_option`` tells libsbn for how many trees you will be asking for the likelihood
-            or gradient at a time. If not specified, this is set to the number of trees currently loaded
-            into the instance. This allocates the correct number of slots in the phylogenetic model
-            parameter matrices, and it's up to the user to set those model parameters after calling
-            this function.
-            Note that this tree count need not be the same as the number of threads (and is typically bigger).
-           )raw",
-           py::arg("model_specification"), py::arg("thread_count"),
-           py::arg("beagle_flags") = std::vector<BeagleFlags>(),
-           py::arg("use_tip_states") = true,
-           py::arg("tree_count_option") = std::nullopt)
-      .def("get_phylo_model_param_block_map",
-           &UnrootedSBNInstance::GetPhyloModelParamBlockMap)
-      .def("resize_phylo_model_params", &UnrootedSBNInstance::ResizePhyloModelParams,
-           "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
       .def("log_likelihoods", &UnrootedSBNInstance::LogLikelihoods,
            "Calculate log likelihoods for the current set of trees.")
       .def("set_rescaling", &UnrootedSBNInstance::SetRescaling,
