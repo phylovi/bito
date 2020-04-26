@@ -43,34 +43,35 @@ PYBIND11_MODULE(libsbn, m) {
       });
 
   // CLASS
-  // TODO Rooted vs unrooted tree?
-  // Tree
-  py::class_<Tree>(m, "Tree", "A tree with branch lengths.", py::buffer_protocol())
-      .def("parent_id_vector", &Tree::ParentIdVector)
-      .def_static("of_parent_id_vector", &Tree::OfParentIdVector)
-      .def_readwrite("branch_lengths", &Tree::branch_lengths_);
+  // UnrootedTree
+  py::class_<UnrootedTree>(m, "UnrootedTree", "A tree with branch lengths.",
+                           py::buffer_protocol())
+      .def("parent_id_vector", &UnrootedTree::ParentIdVector)
+      .def_static("of_parent_id_vector", &UnrootedTree::OfParentIdVector)
+      .def_readwrite("branch_lengths", &UnrootedTree::branch_lengths_);
 
   // CLASS
-  // TreeCollection
-  py::class_<TreeCollection>(m, "TreeCollection", R"raw(
+  // UnrootedTreeCollection
+  py::class_<UnrootedTreeCollection>(m, "UnrootedTreeCollection", R"raw(
   A collection of trees.
 
-  In addition to the methods, TreeCollection also offers direct access to
+  In addition to the methods, UnrootedTreeCollection also offers direct access to
   the trees through the ``trees`` member variable.
   )raw")
-      .def(py::init<Tree::TreeVector>(), "The empty constructor.")
-      .def(py::init<Tree::TreeVector, TagStringMap>(),
+      .def(py::init<UnrootedTree::UnrootedTreeVector>(), "The empty constructor.")
+      .def(py::init<UnrootedTree::UnrootedTreeVector, TagStringMap>(),
            "Constructor from a vector of trees and a tags->taxon names map.")
-      .def(py::init<Tree::TreeVector, const std::vector<std::string> &>(),
+      .def(py::init<UnrootedTree::UnrootedTreeVector,
+                    const std::vector<std::string> &>(),
            "Constructor from a vector of trees and a vector of taxon names.")
-      .def("erase", &TreeCollection::Erase,
+      .def("erase", &UnrootedTreeCollection::Erase,
            "Erase the specified range from the current tree collection.")
-      .def("drop_first", &TreeCollection::DropFirst,
+      .def("drop_first", &UnrootedTreeCollection::DropFirst,
            "Drop the first ``fraction`` trees from the tree collection.",
            py::arg("fraction"))
-      .def("newick", &TreeCollection::Newick,
+      .def("newick", &UnrootedTreeCollection::Newick,
            "Get the current set of trees as a big Newick string.")
-      .def_readwrite("trees", &TreeCollection::trees_);
+      .def_readwrite("trees", &UnrootedTreeCollection::trees_);
 
   // CLASS
   // PSPIndexer
