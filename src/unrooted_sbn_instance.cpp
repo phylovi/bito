@@ -124,12 +124,14 @@ std::pair<StringSizeMap, StringPCSSMap> UnrootedSBNInstance::SplitCounters() con
 
 void UnrootedSBNInstance::ReadNewickFile(std::string fname) {
   Driver driver;
-  tree_collection_ = driver.ParseNewickFile(fname);
+  tree_collection_ =
+      UnrootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
 }
 
 void UnrootedSBNInstance::ReadNexusFile(std::string fname) {
   Driver driver;
-  tree_collection_ = driver.ParseNexusFile(fname);
+  tree_collection_ =
+      UnrootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
 }
 
 // ** Phylogenetic likelihood

@@ -49,10 +49,10 @@ const BlockSpecification &Engine::GetPhyloModelBlockSpecification() const {
   return GetFirstFatBeagle()->GetPhyloModelBlockSpecification();
 }
 
-std::vector<double> Engine::LogLikelihoods(const TreeCollection &tree_collection,
-                                           const EigenMatrixXdRef phylo_model_params,
-                                           const bool rescaling) const {
-  return FatBeagleParallelize<double, Tree, TreeCollection>(
+std::vector<double> Engine::LogLikelihoods(
+    const UnrootedTreeCollection &tree_collection,
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
+  return FatBeagleParallelize<double, UnrootedTree, UnrootedTreeCollection>(
       FatBeagle::StaticLogLikelihood, fat_beagles_, tree_collection, phylo_model_params,
       rescaling);
 }
@@ -66,12 +66,12 @@ std::vector<double> Engine::LogLikelihoods(const RootedTreeCollection &tree_coll
 }
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
-    const TreeCollection &tree_collection, const EigenMatrixXdRef phylo_model_params,
-    const bool rescaling) const {
-  return FatBeagleParallelize<std::pair<double, std::vector<double>>, Tree,
-                              TreeCollection>(FatBeagle::StaticBranchGradient,
-                                              fat_beagles_, tree_collection,
-                                              phylo_model_params, rescaling);
+    const UnrootedTreeCollection &tree_collection,
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
+  return FatBeagleParallelize<std::pair<double, std::vector<double>>, UnrootedTree,
+                              UnrootedTreeCollection>(FatBeagle::StaticBranchGradient,
+                                                      fat_beagles_, tree_collection,
+                                                      phylo_model_params, rescaling);
 }
 
 std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(

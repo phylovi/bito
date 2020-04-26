@@ -12,11 +12,13 @@ class UnrootedTree : public Tree {
   typedef std::vector<UnrootedTree> UnrootedTreeVector;
 
   // See tree.hpp for description of constructors.
-  explicit UnrootedTree(const Node::NodePtr& topology,
-                        BranchLengthVector branch_lengths);
-  explicit UnrootedTree(const Node::NodePtr& topology, TagDoubleMap branch_lengths);
+  UnrootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths);
+  UnrootedTree(const Node::NodePtr& topology, TagDoubleMap branch_lengths);
+  explicit UnrootedTree(Tree tree)
+      : UnrootedTree(tree.Topology(), std::move(tree.branch_lengths_)){};
 
   static UnrootedTree UnitBranchLengthTreeOf(Node::NodePtr topology);
+  static UnrootedTree OfParentIdVector(std::vector<size_t> indices);
 
  private:
   static void AssertTopologyTrifurcatingInConstructor(const Node::NodePtr& topology);

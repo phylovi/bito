@@ -12,8 +12,9 @@
 #include <vector>
 #include "fat_beagle.hpp"
 #include "phylo_model.hpp"
+#include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
-#include "tree_collection.hpp"
+#include "unrooted_tree_collection.hpp"
 
 struct EngineSpecification {
   const size_t thread_count_;
@@ -28,15 +29,15 @@ class Engine {
 
   const BlockSpecification &GetPhyloModelBlockSpecification() const;
 
-  std::vector<double> LogLikelihoods(const TreeCollection &tree_collection,
+  std::vector<double> LogLikelihoods(const UnrootedTreeCollection &tree_collection,
                                      const EigenMatrixXdRef phylo_model_params,
                                      const bool rescaling) const;
   std::vector<double> LogLikelihoods(const RootedTreeCollection &tree_collection,
                                      const EigenMatrixXdRef phylo_model_params,
                                      const bool rescaling) const;
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
-      const TreeCollection &tree_collection, const EigenMatrixXdRef phylo_model_params,
-      const bool rescaling) const;
+      const UnrootedTreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling) const;
   std::vector<std::pair<double, std::vector<double>>> BranchGradients(
       const RootedTreeCollection &tree_collection,
       const EigenMatrixXdRef phylo_model_params, const bool rescaling) const;

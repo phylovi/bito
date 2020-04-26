@@ -43,6 +43,7 @@ PYBIND11_MODULE(libsbn, m) {
       });
 
   // CLASS
+  // TODO Rooted vs unrooted tree?
   // Tree
   py::class_<Tree>(m, "Tree", "A tree with branch lengths.", py::buffer_protocol())
       .def("parent_id_vector", &Tree::ParentIdVector)

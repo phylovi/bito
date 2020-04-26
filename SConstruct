@@ -161,6 +161,7 @@ sources = [
     "_build/tree_collection.cpp",
     "_build/unrooted_sbn_instance.cpp",
     "_build/unrooted_tree.cpp",
+    "_build/unrooted_tree_collection.cpp",
 ]
 extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
