@@ -35,7 +35,7 @@ def fixed(
         substitution="JC69", site="constant", clock="strict"
     )
     # Read MCMC run and get split lengths.
-    mcmc_inst = libsbn.instance("mcmc_inst")
+    mcmc_inst = libsbn.unrooted_instance("mcmc_inst")
     mcmc_inst.read_nexus_file(mcmc_nexus_path)
     burn_in_count = int(burn_in_fraction * mcmc_inst.tree_count())
     mcmc_inst.tree_collection.erase(0, burn_in_count)

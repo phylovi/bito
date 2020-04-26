@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #ifndef SRC_FAT_BEAGLE_HPP_
@@ -13,7 +13,7 @@
 #include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
 #include "task_processor.hpp"
-#include "tree_collection.hpp"
+#include "unrooted_tree_collection.hpp"
 
 class FatBeagle {
  public:
@@ -37,19 +37,19 @@ class FatBeagle {
   void SetParameters(const EigenVectorXdRef param_vector);
   void SetRescaling(const bool rescaling) { rescaling_ = rescaling; }
 
-  double LogLikelihood(const Tree &tree) const;
+  double LogLikelihood(const UnrootedTree &tree) const;
   double LogLikelihood(const RootedTree &tree) const;
   // Compute first derivative of the log likelihood with respect to each branch
   // length, as a vector of first derivatives indexed by node id.
-  std::pair<double, std::vector<double>> BranchGradient(const Tree &tree) const;
+  std::pair<double, std::vector<double>> BranchGradient(const UnrootedTree &tree) const;
   std::pair<double, std::vector<double>> BranchGradient(const RootedTree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.
-  static double StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree);
+  static double StaticLogLikelihood(FatBeagle *fat_beagle, const UnrootedTree &in_tree);
   static double StaticRootedLogLikelihood(FatBeagle *fat_beagle,
                                           const RootedTree &in_tree);
   static std::pair<double, std::vector<double>> StaticBranchGradient(
-      FatBeagle *fat_beagle, const Tree &in_tree);
+      FatBeagle *fat_beagle, const UnrootedTree &in_tree);
   static std::pair<double, std::vector<double>> StaticRootedBranchGradient(
       FatBeagle *fat_beagle, const RootedTree &in_tree);
 
@@ -76,7 +76,7 @@ class FatBeagle {
       const RootedTree &tree) const;
 
   std::pair<double, std::unordered_map<std::string, std::vector<double>>> Gradient(
-      const Tree &in_tree) const;
+      const UnrootedTree &in_tree) const;
 
   double LogLikelihoodInternals(const Node::NodePtr topology,
                                 const std::vector<double> &branch_lengths) const;
@@ -89,7 +89,6 @@ class FatBeagle {
       const int *const gradient_indices_ptr) const;
   void SetRootPreorderPartialsToStateFrequencies(const BeagleAccessories &ba) const;
 
-  static Tree DetrifurcateIfNeeded(const Tree &tree);
   static inline void AddLowerPartialOperation(BeagleOperationVector &operations,
                                               const BeagleAccessories &ba, int node_id,
                                               int child0_id, int child1_id);
@@ -133,5 +132,5 @@ std::vector<TOut> FatBeagleParallelize(
   return results;
 }
 
-// Tests live in libsbn.hpp.
+// Tests live in rooted_sbn_instance.hpp and unrooted_sbn_instance.hpp.
 #endif  // SRC_FAT_BEAGLE_HPP_

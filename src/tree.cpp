@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "tree.hpp"
@@ -28,8 +28,8 @@ Tree::Tree(const Node::NodePtr& topology, TagDoubleMap branch_lengths)
 }
 
 Tree::Tree(const Node::NodePtr& topology, BranchLengthVector branch_lengths)
-    : branch_lengths_(branch_lengths), topology_(topology) {
-  Assert(topology->Id() + 1 == branch_lengths.size(),
+    : branch_lengths_(std::move(branch_lengths)), topology_(topology) {
+  Assert(topology->Id() + 1 == branch_lengths_.size(),
          "Root id is too large relative to the branch_lengths size in "
          "Tree::Tree.");
 }
@@ -49,29 +49,14 @@ double Tree::BranchLength(const Node* node) const {
   return branch_lengths_[node->Id()];
 }
 
-Tree Tree::Detrifurcate() const {
-  Assert(Children().size() == 3, "Tree::Detrifurcate given a non-trifurcating tree.");
-  auto branch_lengths = BranchLengths();
-  auto our_id = Id();
-  auto root12 = Node::Join(Children()[1], Children()[2], our_id);
-  branch_lengths[our_id] = 0.;
-  auto rerooted_topology = Node::Join(Children()[0], root12, our_id + 1);
-  branch_lengths.push_back(0.);
-  return Tree(rerooted_topology, branch_lengths);
-}
-
 Tree Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   topology->Polish();
-  BranchLengthVector branch_lengths(1 + topology->Id());
-  topology->PreOrder(
-      [&branch_lengths](const Node* node) { branch_lengths[node->Id()] = 1.; });
-  return Tree(topology, branch_lengths);
+  return Tree(topology, BranchLengthVector(1 + topology->Id(), 1.));
 }
 
-Tree Tree::OfParentIdVector(std::vector<size_t> ids) {
+Tree Tree::OfParentIdVector(const std::vector<size_t>& ids) {
   auto topology = Node::OfParentIdVector(ids);
-  std::vector<double> branch_lengths(topology->Id() + 1, 1.);
-  return Tree(topology, std::move(branch_lengths));
+  return Tree(topology, BranchLengthVector(topology->Id() + 1, 1.));
 }
 
 Tree::TreeVector Tree::ExampleTrees() {

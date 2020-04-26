@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "node.hpp"
@@ -445,7 +445,7 @@ Node::NodePtr Node::Join(NodePtr left, NodePtr right, size_t id) {
   return Join(std::vector<NodePtr>({left, right}), id);
 }
 
-Node::NodePtr Node::OfParentIdVector(std::vector<size_t> ids) {
+Node::NodePtr Node::OfParentIdVector(const std::vector<size_t>& ids) {
   // We will fill this map with the ids of the descendants.
   std::unordered_map<size_t, std::vector<size_t>> downward_ids;
   for (size_t child_id = 0; child_id < ids.size(); child_id++) {

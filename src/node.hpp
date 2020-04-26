@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
 // The Node class is how we express tree topologies.
@@ -156,7 +156,7 @@ class Node {
   // Build a tree given a vector of indices, such that each entry gives the
   // id of its parent. We assume that the indices are contiguous, and that
   // the root has the largest id.
-  static NodePtr OfParentIdVector(std::vector<size_t> indices);
+  static NodePtr OfParentIdVector(const std::vector<size_t>& indices);
 
   //     topology           with internal node indices
   //     --------           --------------------------

@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "fat_beagle.hpp"
@@ -65,8 +65,8 @@ double FatBeagle::LogLikelihoodInternals(
   return log_like;
 }
 
-double FatBeagle::LogLikelihood(const Tree &tree) const {
-  auto detrifurcated_tree = DetrifurcateIfNeeded(tree);
+double FatBeagle::LogLikelihood(const UnrootedTree &tree) const {
+  auto detrifurcated_tree = tree.Detrifurcate();
   return LogLikelihoodInternals(detrifurcated_tree.Topology(),
                                 detrifurcated_tree.BranchLengths());
 }
@@ -141,7 +141,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 }
 
 std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
-    const Tree &in_tree) const {
+    const UnrootedTree &in_tree) const {
   std::pair<double, std::unordered_map<std::string, std::vector<double>>>
       like_gradient = Gradient(in_tree);
   return {like_gradient.first, like_gradient.second["blens"]};
@@ -159,7 +159,8 @@ FatBeagle *NullPtrAssert(FatBeagle *fat_beagle) {
   return fat_beagle;
 }
 
-double FatBeagle::StaticLogLikelihood(FatBeagle *fat_beagle, const Tree &in_tree) {
+double FatBeagle::StaticLogLikelihood(FatBeagle *fat_beagle,
+                                      const UnrootedTree &in_tree) {
   return NullPtrAssert(fat_beagle)->LogLikelihood(in_tree);
 }
 
@@ -169,7 +170,7 @@ double FatBeagle::StaticRootedLogLikelihood(FatBeagle *fat_beagle,
 }
 
 std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
-    FatBeagle *fat_beagle, const Tree &in_tree) {
+    FatBeagle *fat_beagle, const UnrootedTree &in_tree) {
   return NullPtrAssert(fat_beagle)->BranchGradient(in_tree);
 }
 
@@ -271,18 +272,6 @@ void FatBeagle::UpdatePhyloModelInBeagle() {
   // Issue #146: put in a clock model here.
   UpdateSiteModelInBeagle();
   UpdateSubstitutionModelInBeagle();
-}
-
-Tree FatBeagle::DetrifurcateIfNeeded(const Tree &tree) {
-  if (tree.Children().size() == 3) {
-    return tree.Detrifurcate();
-  }  // else
-  if (tree.Children().size() == 2) {
-    return tree;
-  }  // else
-  Failwith(
-      "Tree likelihood calculations should be done on a tree with a "
-      "bifurcation or a trifurcation at the root.");
 }
 
 // If we pass nullptr as gradient_indices_ptr then we will not prepare for
@@ -441,7 +430,7 @@ double UpdateHeightParameterGradientUnweightedLogDensity(
   multiplierArray[root_id - leaf_count] = 1.0;
 
   tree.Topology()->BinaryIdPreOrder(
-      [&leaf_count, &root_id, &ratios = tree.height_ratios_, &multiplierArray](
+      [&leaf_count, &ratios = tree.height_ratios_, &multiplierArray](
           int node_id, int child0_id, int child1_id) {
         if (child0_id >= leaf_count) {
           double ratio = ratios[child0_id - leaf_count];
@@ -527,8 +516,8 @@ FatBeagle::Gradient(const RootedTree &tree) const {
 }
 
 std::pair<double, std::unordered_map<std::string, std::vector<double>>>
-FatBeagle::Gradient(const Tree &in_tree) const {
-  auto tree = DetrifurcateIfNeeded(in_tree);
+FatBeagle::Gradient(const UnrootedTree &in_tree) const {
+  auto tree = in_tree.Detrifurcate();
   tree.SlideRootPosition();
   auto like_gradient = BranchGradientInternals(tree.Topology(), tree.BranchLengths());
   // We want the fixed node to have a zero gradient.

@@ -1,80 +1,43 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_LIBSBN_HPP_
-#define SRC_LIBSBN_HPP_
+#ifndef SRC_UNROOTED_SBN_INSTANCE_HPP_
+#define SRC_UNROOTED_SBN_INSTANCE_HPP_
 
-#include <algorithm>
-#include <cmath>
-#include <memory>
-#include <random>
-#include <string>
-#include <tuple>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-#include "ProgressBar.hpp"
-#include "alignment.hpp"
-#include "driver.hpp"
-#include "engine.hpp"
-#include "numerical_utils.hpp"
-#include "psp_indexer.hpp"
-#include "sbn_maps.hpp"
-#include "sbn_probability.hpp"
-#include "sugar.hpp"
-#include "tree.hpp"
+#include "sbn_instance.hpp"
+#include "unrooted_tree_collection.hpp"
 
-class SBNInstance {
-  using Range = std::pair<size_t, size_t>;
-  using RangeVector = std::vector<Range>;
-
+class UnrootedSBNInstance : public SBNInstance {
  public:
   // Trees get loaded in from a file or sampled from SBNs.
-  TreeCollection tree_collection_;
-  // The Primary Split Pair indexer.
-  PSPIndexer psp_indexer_;
-  // A vector that contains all of the SBN-related probabilities.
-  EigenVectorXd sbn_parameters_;
-  // The master indexer for SBN parameters.
-  BitsetSizeMap indexer_;
-  // A vector of the taxon names.
-  std::vector<std::string> taxon_names_;
+  UnrootedTreeCollection tree_collection_;
 
-  // ** Initialization and status
+  using SBNInstance::SBNInstance;
 
-  explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
-
-  size_t TreeCount() const { return tree_collection_.TreeCount(); }
-  void PrintStatus();
+  size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
+  size_t TreeCount() const override { return tree_collection_.TreeCount(); }
+  TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
 
   // ** SBN-related items
-
-  // Define "SBN maps" to be the collection of maps associated with the
-  // SBNInstance, such as indexer_, index_to_child_, parent_to_range_, and
-  // rootsplits_.
 
   // Use the loaded trees to get the SBN maps, set taxon_names_, and prepare the
   // sbn_parameters_ vector.
   void ProcessLoadedTrees();
-  void CheckSBNMapsAvailable();
-  // "Pretty" string representation of the indexer.
-  StringVector PrettyIndexer();
-  void PrettyPrintIndexer();
 
   // SBN training. See sbn_probability.hpp for details.
+  void CheckTopologyCounter();
   void TrainSimpleAverage();
   // max_iter is the maximum number of EM iterations to do, while score_epsilon
   // is the cutoff for score improvement.
   EigenVectorXd TrainExpectationMaximization(double alpha, size_t max_iter,
                                              double score_epsilon = 0.);
+
+  // Calculate SBN probabilities for all currently-loaded trees.
   EigenVectorXd CalculateSBNProbabilities();
 
-  // Sample an integer index in [range.first, range.second) according to
-  // sbn_parameters_.
-  size_t SampleIndex(Range range) const;
-
   // Sample a topology from the SBN.
-  Node::NodePtr SampleTopology(bool rooted = false) const;
+  using SBNInstance::SampleTopology;
+  Node::NodePtr SampleTopology() const;
 
   // Sample trees and store them internally
   void SampleTrees(size_t count);
@@ -89,19 +52,6 @@ class SBNInstance {
   // Get PSP indexer representations of the trees in tree_collection_.
   std::vector<SizeVectorVector> MakePSPIndexerRepresentations() const;
 
-  // Return indexer_ and parent_to_range_ converted into string-keyed maps.
-  std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
-
-  // Get the indexer, but reversed and with bitsets appropriately converted to
-  // strings.
-  StringVector StringReversedIndexer() const;
-
-  // Turn an IndexerRepresentation into a string representation of the underying
-  // bitsets. This is really just so that we can make a test of indexer
-  // representations.
-  StringSetVector StringIndexerRepresentationOf(
-      IndexerRepresentation indexer_representation) const;
-
   // Return a ragged vector of vectors such that the ith vector is the
   // collection of branch lengths in the current tree collection for the ith
   // split.
@@ -112,26 +62,6 @@ class SBNInstance {
   std::pair<StringSizeMap, StringPCSSMap> SplitCounters() const;
 
   // ** Phylogenetic likelihood
-
-  Eigen::Ref<EigenMatrixXd> GetPhyloModelParams();
-  // The phylogenetic model parameters broken down into blocks according to
-  // model structure. See test_libsbn.py for an example of what this does.
-  BlockSpecification::ParameterBlockMap GetPhyloModelParamBlockMap();
-
-  void SetRescaling(bool use_rescaling) { rescaling_ = use_rescaling; }
-  void CheckSequencesAndTreesLoaded() const;
-
-  // Prepare for phylogenetic likelihood calculation. If we get a nullopt
-  // argument, it just uses the number of trees currently in the SBNInstance.
-  void PrepareForPhyloLikelihood(
-      const PhyloModelSpecification &model_specification, size_t thread_count,
-      const std::vector<BeagleFlags> &beagle_flag_vector = {},
-      const bool use_tip_states = true,
-      std::optional<size_t> tree_count_option = std::nullopt);
-  // Make the number of phylogentic model parameters fit the number of trees and
-  // the speficied model. If we get a nullopt argument, it just uses the number
-  // of trees currently in the SBNInstance.
-  void ResizePhyloModelParams(std::optional<size_t> tree_count_option);
 
   std::vector<double> LogLikelihoods();
 
@@ -148,58 +78,15 @@ class SBNInstance {
   // we want to be able to test it.
   EigenVectorXd GradientOfLogQ(EigenVectorXdRef normalized_sbn_parameters_in_log,
                                const IndexerRepresentation &indexer_representation);
-  void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
 
   // ** I/O
 
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
-  void ReadFastaFile(std::string fname);
 
  protected:
-  // The name of our libsbn instance.
-  std::string name_;
-  // Our phylogenetic likelihood computation engine.
-  std::unique_ptr<Engine> engine_;
-  // Whether we use likelihood vector rescaling.
-  bool rescaling_;
-  // The multiple sequence alignment.
-  Alignment alignment_;
-  // A map that indexes these probabilities: rootsplits are at the beginning,
-  // and PCSS bitsets are at the end.
-  // The collection of rootsplits, with the same indexing as in the indexer_.
-  BitsetVector rootsplits_;
-  // A map going from the index of a PCSS to its child.
-  SizeBitsetMap index_to_child_;
-  // A map going from a parent subsplit to the range of indices in
-  // sbn_parameters_ with its children.
-  BitsetSizePairMap parent_to_range_;
-  // The phylogenetic model parameterization. This has as many rows as there are
-  // trees, and holds the parameters before likelihood computation, where they
-  // will be processed across threads.
-  EigenMatrixXd phylo_model_params_;
-  // A counter for the currently loaded set of topologies.
-  Node::TopologyCounter topology_counter_;
-
-  // Random bits.
-  static std::random_device random_device_;
-  static std::mt19937 random_generator_;
-  inline void SetSeed(unsigned long seed) { random_generator_.seed(seed); }
-
-  // Make a likelihood engine with the given specification.
-  void MakeEngine(const EngineSpecification &engine_specification,
-                  const PhyloModelSpecification &model_specification);
-  // Return a raw pointer to the engine if it's available.
-  Engine *GetEngine() const;
-
-  // The input to this function is a parent subsplit (of length 2n).
-  Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const;
-
-  // Clear all of the state that depends on the current tree collection.
-  void ClearTreeCollectionAssociatedState();
-
-  void PushBackRangeForParentIfAvailable(const Bitset &parent,
-                                         SBNInstance::RangeVector &range_vector);
+  void PushBackRangeForParentIfAvailable(
+      const Bitset &parent, UnrootedSBNInstance::RangeVector &range_vector);
   RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);
 };
 
@@ -208,8 +95,8 @@ class SBNInstance {
 // Below we use 99999999 is the default value if a rootsplit or PCSS is missing.
 const size_t out_of_sample_index = 99999999;
 
-TEST_CASE("libsbn: indexer and PSP representations") {
-  SBNInstance inst("charlie");
+TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
+  UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   auto pretty_indexer = inst.PrettyIndexer();
@@ -318,8 +205,8 @@ TEST_CASE("libsbn: indexer and PSP representations") {
            correct_rooted_indexer_representation_2);
 }
 
-TEST_CASE("libsbn: likelihood and gradient") {
-  SBNInstance inst("charlie");
+TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
+  UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/hello.nwk");
   inst.ReadFastaFile("data/hello.fasta");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
@@ -392,8 +279,8 @@ TEST_CASE("libsbn: likelihood and gradient") {
   }
 }
 
-TEST_CASE("libsbn: SBN training") {
-  SBNInstance inst("charlie");
+TEST_CASE("UnrootedSBNInstance: SBN training") {
+  UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/DS1.100_topologies.nwk");
   inst.ProcessLoadedTrees();
   // These "Expected" functions are defined in sbn_probability.hpp.
@@ -414,8 +301,8 @@ TEST_CASE("libsbn: SBN training") {
   CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_05_100, 1e-5);
 }
 
-TEST_CASE("libsbn: tree sampling") {
-  SBNInstance inst("charlie");
+TEST_CASE("UnrootedSBNInstance: tree sampling") {
+  UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
@@ -454,8 +341,8 @@ TEST_CASE("libsbn: tree sampling") {
   progress_bar.done();
 }
 
-TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
-  SBNInstance inst("charlie");
+TEST_CASE("UnrootedSBNInstance: gradient of log q_{phi}(tau) WRT phi") {
+  UnrootedSBNInstance inst("charlie");
   // File gradient_test.t contains two trees:
   // ((0,1), 2, (3,4)) and
   // ((0,1), (2,3), 4).
@@ -473,7 +360,7 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   // Generate a tree,
   // \tau = ((0,1),(2,3),4) with internal node labels ((0,1)5,(2,3)6,4)7.
   std::vector<size_t> tau_indices = {5, 5, 6, 6, 7, 7, 7};
-  auto tau = Tree::OfParentIdVector(tau_indices);
+  auto tau = UnrootedTree::OfParentIdVector(tau_indices);
   inst.tree_collection_.trees_.push_back(tau);
 
   // Initialize sbn_parameters_ to 0's and normalize, which is going to give a uniform
@@ -638,4 +525,4 @@ TEST_CASE("libsbn: gradient of log q_{phi}(tau) WRT phi") {
   CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-8);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_LIBSBN_HPP_
+#endif  // SRC_UNROOTED_SBN_INSTANCE_HPP_

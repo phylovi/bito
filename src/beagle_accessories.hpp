@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
 // BeagleAccessories are collections of artifacts that we can make in constant
@@ -11,7 +11,7 @@
 #include <numeric>
 #include <vector>
 #include "libhmsbeagle/beagle.h"
-#include "tree.hpp"
+#include "node.hpp"
 
 struct BeagleAccessories {
   const int beagle_instance_;

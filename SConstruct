@@ -141,7 +141,6 @@ sources = [
     "_build/driver.cpp",
     "_build/fat_beagle.cpp",
     "_build/engine.cpp",
-    "_build/libsbn.cpp",
     "_build/node.cpp",
     "_build/numerical_utils.cpp",
     "_build/parser.cpp",
@@ -150,6 +149,7 @@ sources = [
     "_build/rooted_tree.cpp",
     "_build/rooted_tree_collection.cpp",
     "_build/rooted_sbn_instance.cpp",
+    "_build/sbn_instance.cpp",
     "_build/sbn_maps.cpp",
     "_build/sbn_probability.cpp",
     "_build/scanner.cpp",
@@ -159,6 +159,9 @@ sources = [
     "_build/taxon_name_munging.cpp",
     "_build/tree.cpp",
     "_build/tree_collection.cpp",
+    "_build/unrooted_sbn_instance.cpp",
+    "_build/unrooted_tree.cpp",
+    "_build/unrooted_tree_collection.cpp",
 ]
 extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),

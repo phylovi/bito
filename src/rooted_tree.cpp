@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "rooted_tree.hpp"
@@ -28,19 +28,18 @@ void RootedTree::InitializeParameters(
   }
 
   // Initialize the internal heights and bounds.
-  Topology()->BinaryIdPostOrder(
-      [&leaf_count, this](int node_id, int child0_id, int child1_id) {
-        if (node_id >= leaf_count) {
-          node_bounds_[node_id] =
-              std::max(node_bounds_[child0_id], node_bounds_[child1_id]);
-          node_heights_[node_id] =
-              node_heights_[child0_id] + branch_lengths_[child0_id];
-          if (fabs(node_heights_[child1_id] + branch_lengths_[child1_id] -
-                   node_heights_[node_id]) > BRANCH_LENGTH_TOLERANCE) {
-            Failwith("Tree isn't time-calibrated in RootedTree::InitializeParameters.");
-          }
-        }
-      });
+  Topology()->BinaryIdPostOrder([&leaf_count, this](int node_id, int child0_id,
+                                                    int child1_id) {
+    if (node_id >= leaf_count) {
+      node_bounds_[node_id] =
+          std::max(node_bounds_[child0_id], node_bounds_[child1_id]);
+      node_heights_[node_id] = node_heights_[child0_id] + branch_lengths_[child0_id];
+      if (fabs(node_heights_[child1_id] + branch_lengths_[child1_id] -
+               node_heights_[node_id]) > BRANCH_LENGTH_TOLERANCE) {
+        Failwith("Tree isn't time-calibrated in RootedTree::InitializeParameters.");
+      }
+    }
+  });
 
   // Initialize ratios.
   // The "height ratio" for the root is the root height.

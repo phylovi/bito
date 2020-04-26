@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #ifndef SRC_ROOTED_TREE_COLLECTION_HPP_
@@ -12,7 +12,7 @@ template class GenericTreeCollection<RootedTree>;
 using PreRootedTreeCollection = GenericTreeCollection<RootedTree>;
 
 class RootedTreeCollection : public PreRootedTreeCollection {
-  using TagDateMap = std::unordered_map<Tag, double>;
+  using TagDateMap = TagDoubleMap;
 
  public:
   // Inherit all constructors.
@@ -28,6 +28,7 @@ class RootedTreeCollection : public PreRootedTreeCollection {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+// Test of ParseDatesFromTaxonNames appears in rooted_sbn_instance.hpp.
 TEST_CASE("RootedTreeCollection") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

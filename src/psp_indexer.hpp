@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
 // This is a class implementing the an indexing scheme for the Primary Subsplit
@@ -20,7 +20,7 @@
 #include <vector>
 #include "sbn_maps.hpp"
 #include "sugar.hpp"
-#include "tree.hpp"
+#include "unrooted_tree_collection.hpp"
 
 class PSPIndexer {
  public:
@@ -58,7 +58,7 @@ class PSPIndexer {
 
   // Return a ragged vector of vectors such that the ith vector is the
   // collection of branch lengths in the tree collection for the ith split.
-  DoubleVectorVector SplitLengths(const TreeCollection& tree_collection) const;
+  DoubleVectorVector SplitLengths(const UnrootedTreeCollection& tree_collection) const;
 
  private:
   BitsetSizeMap indexer_;

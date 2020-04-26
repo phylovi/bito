@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "psp_indexer.hpp"
@@ -104,7 +104,7 @@ StringVectorVector PSPIndexer::StringRepresentationOf(
 }
 
 DoubleVectorVector PSPIndexer::SplitLengths(
-    const TreeCollection& tree_collection) const {
+    const UnrootedTreeCollection& tree_collection) const {
   DoubleVectorVector result(after_rootsplits_index_);
   auto tree_count = tree_collection.TreeCount();
   for (size_t tree_index = 0; tree_index < tree_count; tree_index++) {

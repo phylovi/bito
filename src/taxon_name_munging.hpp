@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #ifndef SRC_TAXON_NAME_MUNGING_HPP_
@@ -11,6 +11,10 @@ namespace TaxonNameMunging {
 std::string QuoteString(const std::string &in_str);
 std::string DequoteString(const std::string &in_str);
 TagStringMap DequoteTagStringMap(const TagStringMap &tag_string_map);
+
+// Parses dates as numbers appearing after an underscore. Returns a map specifying the
+// height of each taxon compared to the maximum date.
+TagDoubleMap TagDateMapOfTagTaxonMap(TagStringMap tag_taxon_map);
 }  // namespace TaxonNameMunging
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -33,6 +37,8 @@ TEST_CASE("TaxonNameMunging") {
   TagStringMap expected_test_map(
       {{2, unquoted_test}, {3, double_quoted_dequoted}, {5, single_quoted_dequoted}});
   CHECK_EQ(expected_test_map, DequoteTagStringMap(test_map));
+
+  // Test of TagDateMapOfTagTaxonMap appears in rooted_sbn_instance.hpp.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

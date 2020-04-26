@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
 // A collection of functions to handle the subsplit support and to turn trees into
@@ -13,7 +13,7 @@
 #include "bitset.hpp"
 #include "default_dict.hpp"
 #include "driver.hpp"
-#include "tree.hpp"
+#include "node.hpp"
 
 using BitsetVector = std::vector<Bitset>;
 using SizeBitsetMap = std::unordered_map<size_t, Bitset>;
@@ -123,7 +123,7 @@ TEST_CASE("SBNMaps") {
   }
 
   // Tests comparing to vbpi appear in Python test code.
-  // Tests of IndexerRepresentationOf in libsbn.hpp.
+  // Tests of IndexerRepresentationOf in unrooted_sbn_instance.hpp.
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
