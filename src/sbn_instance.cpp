@@ -82,38 +82,6 @@ StringSetVector SBNInstance::StringIndexerRepresentationOf(
   return string_sets;
 }
 
-size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
-  const auto &[start, end] = range;
-  Assert(start < end && end <= sbn_parameters_.size(),
-         "SampleIndex given an invalid range.");
-  // We do not want to overwrite sbn_parameters so we make a copy.
-  EigenVectorXd sbn_parameters_subrange = sbn_parameters_.segment(start, end - start);
-  NumericalUtils::ProbabilityNormalizeInLog(sbn_parameters_subrange);
-  NumericalUtils::Exponentiate(sbn_parameters_subrange);
-  std::discrete_distribution<> distribution(sbn_parameters_subrange.begin(),
-                                            sbn_parameters_subrange.end());
-  // We have to add on range.first because we have taken a slice of the full
-  // array, and the sampler treats the beginning of this slice as zero.
-  auto result = start + static_cast<size_t>(distribution(random_generator_));
-  Assert(result < end, "SampleIndex sampled a value out of range.");
-  return result;
-}
-
-// This function samples a tree by first sampling the rootsplit, and then
-// calling the recursive form of SampleTopology.
-Node::NodePtr SBNInstance::SampleTopology(bool rooted) const {
-  // Start by sampling a rootsplit.
-  size_t rootsplit_index =
-      SampleIndex(std::pair<size_t, size_t>(0, rootsplits_.size()));
-  const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
-  // The addition below turns the rootsplit into a subsplit.
-  auto topology = rooted
-                      ? SBNInstance::SampleTopology(rootsplit + ~rootsplit)
-                      : SBNInstance::SampleTopology(rootsplit + ~rootsplit)->Deroot();
-  topology->Polish();
-  return topology;
-}
-
 void SBNInstance::NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
   SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplits_.size(),
                                                   parent_to_range_);
@@ -188,6 +156,38 @@ Engine *SBNInstance::GetEngine() const {
   Failwith(
       "Engine not available. Call PrepareForPhyloLikelihood to make an "
       "engine for phylogenetic likelihood computation computation.");
+}
+
+size_t SBNInstance::SampleIndex(std::pair<size_t, size_t> range) const {
+  const auto &[start, end] = range;
+  Assert(start < end && end <= sbn_parameters_.size(),
+         "SampleIndex given an invalid range.");
+  // We do not want to overwrite sbn_parameters so we make a copy.
+  EigenVectorXd sbn_parameters_subrange = sbn_parameters_.segment(start, end - start);
+  NumericalUtils::ProbabilityNormalizeInLog(sbn_parameters_subrange);
+  NumericalUtils::Exponentiate(sbn_parameters_subrange);
+  std::discrete_distribution<> distribution(sbn_parameters_subrange.begin(),
+                                            sbn_parameters_subrange.end());
+  // We have to add on range.first because we have taken a slice of the full
+  // array, and the sampler treats the beginning of this slice as zero.
+  auto result = start + static_cast<size_t>(distribution(random_generator_));
+  Assert(result < end, "SampleIndex sampled a value out of range.");
+  return result;
+}
+
+// This function samples a tree by first sampling the rootsplit, and then
+// calling the recursive form of SampleTopology.
+Node::NodePtr SBNInstance::SampleTopology(bool rooted) const {
+  // Start by sampling a rootsplit.
+  size_t rootsplit_index =
+      SampleIndex(std::pair<size_t, size_t>(0, rootsplits_.size()));
+  const Bitset &rootsplit = rootsplits_.at(rootsplit_index);
+  // The addition below turns the rootsplit into a subsplit.
+  auto topology = rooted
+                      ? SBNInstance::SampleTopology(rootsplit + ~rootsplit)
+                      : SBNInstance::SampleTopology(rootsplit + ~rootsplit)->Deroot();
+  topology->Polish();
+  return topology;
 }
 
 // The input to this function is a parent subsplit (of length 2n).

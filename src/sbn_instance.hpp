@@ -70,11 +70,6 @@ class SBNInstance {
   StringSetVector StringIndexerRepresentationOf(
       IndexerRepresentation indexer_representation) const;
 
-  // Sample an integer index in [range.first, range.second) according to
-  // sbn_parameters_.
-  size_t SampleIndex(Range range) const;
-  Node::NodePtr SampleTopology(bool rooted) const;
-
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
 
   // ** Phylogenetic likelihood
@@ -144,6 +139,11 @@ class SBNInstance {
 
   // Return a raw pointer to the engine if it's available.
   Engine *GetEngine() const;
+
+  // Sample an integer index in [range.first, range.second) according to
+  // sbn_parameters_.
+  size_t SampleIndex(Range range) const;
+  Node::NodePtr SampleTopology(bool rooted) const;
 
   // The input to this function is a parent subsplit (of length 2n).
   Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const;
