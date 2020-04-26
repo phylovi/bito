@@ -39,7 +39,7 @@ TEST_CASE("UnrootedTree") {
   CHECK_EQ(original_newick, trees[0].Newick());
 
   auto topologies = Node::ExampleTopologies();
-  // This works: topology has trifurcation at the root.
+  // This should work: topology has trifurcation at the root.
   UnrootedTree::UnitBranchLengthTreeOf(topologies[0]);
   // This shouldn't.
   CHECK_THROWS_AS(UnrootedTree::UnitBranchLengthTreeOf(topologies[3]),

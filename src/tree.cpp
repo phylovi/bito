@@ -49,12 +49,9 @@ double Tree::BranchLength(const Node* node) const {
   return branch_lengths_[node->Id()];
 }
 
-// TODO cut this because it appears in UnrootedTree?
 Tree Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   topology->Polish();
-  BranchLengthVector branch_lengths(1 + topology->Id());
-  topology->PreOrder(
-      [&branch_lengths](const Node* node) { branch_lengths[node->Id()] = 1.; });
+  BranchLengthVector branch_lengths(1 + topology->Id(), 1.);
   return Tree(topology, branch_lengths);
 }
 
