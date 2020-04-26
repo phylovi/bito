@@ -49,17 +49,6 @@ double Tree::BranchLength(const Node* node) const {
   return branch_lengths_[node->Id()];
 }
 
-Tree Tree::Detrifurcate() const {
-  Assert(Children().size() == 3, "Tree::Detrifurcate given a non-trifurcating tree.");
-  auto branch_lengths = BranchLengths();
-  auto our_id = Id();
-  auto root12 = Node::Join(Children()[1], Children()[2], our_id);
-  branch_lengths[our_id] = 0.;
-  auto rerooted_topology = Node::Join(Children()[0], root12, our_id + 1);
-  branch_lengths.push_back(0.);
-  return Tree(rerooted_topology, branch_lengths);
-}
-
 // TODO cut this because it appears in UnrootedTree?
 Tree Tree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   topology->Polish();
