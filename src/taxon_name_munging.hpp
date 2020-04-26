@@ -11,6 +11,7 @@ namespace TaxonNameMunging {
 std::string QuoteString(const std::string &in_str);
 std::string DequoteString(const std::string &in_str);
 TagStringMap DequoteTagStringMap(const TagStringMap &tag_string_map);
+TagDoubleMap TagDateMapOfTagTaxonMap(TagStringMap tag_taxon_map);
 }  // namespace TaxonNameMunging
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
