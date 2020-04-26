@@ -14,12 +14,9 @@ UnrootedTree::UnrootedTree(const Node::NodePtr& topology, TagDoubleMap branch_le
   AssertTopologyTrifurcatingInConstructor(topology);
 }
 
-// TODO what is up with this tree traversal?
 UnrootedTree UnrootedTree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
   topology->Polish();
-  BranchLengthVector branch_lengths(1 + topology->Id());
-  topology->PreOrder(
-      [&branch_lengths](const Node* node) { branch_lengths[node->Id()] = 1.; });
+  BranchLengthVector branch_lengths(1 + topology->Id(), 1.);
   return UnrootedTree(topology, branch_lengths);
 }
 
