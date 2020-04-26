@@ -12,7 +12,7 @@ template class GenericTreeCollection<RootedTree>;
 using PreRootedTreeCollection = GenericTreeCollection<RootedTree>;
 
 class RootedTreeCollection : public PreRootedTreeCollection {
-  using TagDateMap = std::unordered_map<Tag, double>;
+  using TagDateMap = TagDoubleMap;
 
  public:
   // Inherit all constructors.
