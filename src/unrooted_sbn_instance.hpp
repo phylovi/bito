@@ -63,8 +63,6 @@ class UnrootedSBNInstance : public SBNInstance {
 
   // ** Phylogenetic likelihood
 
-  void CheckSequencesAndTreesLoaded() const;
-
   std::vector<double> LogLikelihoods();
 
   // For each loaded tree, returns a pair of (likelihood, gradient).
