@@ -14,15 +14,7 @@
 #ifndef SRC_SBN_INSTANCE_HPP_
 #define SRC_SBN_INSTANCE_HPP_
 
-#include <algorithm>
-#include <cmath>
-#include <memory>
 #include <random>
-#include <string>
-#include <tuple>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 #include "ProgressBar.hpp"
 #include "alignment.hpp"
 #include "engine.hpp"
@@ -30,7 +22,6 @@
 #include "psp_indexer.hpp"
 #include "sbn_maps.hpp"
 #include "sbn_probability.hpp"
-#include "sugar.hpp"
 
 class SBNInstance {
  public:

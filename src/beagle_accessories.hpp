@@ -11,7 +11,7 @@
 #include <numeric>
 #include <vector>
 #include "libhmsbeagle/beagle.h"
-#include "tree.hpp"
+#include "node.hpp"
 
 struct BeagleAccessories {
   const int beagle_instance_;
