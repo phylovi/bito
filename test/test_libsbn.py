@@ -24,8 +24,9 @@ def hello_demo():
     """Demonstrate basic phylogenetic likelihood calculation using the "hello"
     data set."""
     inst = libsbn.unrooted_instance("charlie")
-    inst.tree_collection = libsbn.TreeCollection(
-        [libsbn.Tree.of_parent_id_vector([3, 3, 3])], ["mars", "saturn", "jupiter"]
+    inst.tree_collection = libsbn.UnrootedTreeCollection(
+        [libsbn.UnrootedTree.of_parent_id_vector([3, 3, 3])],
+        ["mars", "saturn", "jupiter"],
     )
     inst.read_fasta_file("data/hello.fasta")
     inst.prepare_for_phylo_likelihood(
