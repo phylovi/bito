@@ -13,7 +13,7 @@
 #include "bitset.hpp"
 #include "default_dict.hpp"
 #include "driver.hpp"
-#include "tree.hpp"
+#include "node.hpp"
 
 using BitsetVector = std::vector<Bitset>;
 using SizeBitsetMap = std::unordered_map<size_t, Bitset>;
