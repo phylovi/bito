@@ -3,26 +3,26 @@ libsbn
 
 .. automodule:: libsbn
 
-   
-   
-   
 
-   
-   
+
+
+
+
+
    .. rubric:: Classes
 
    .. autosummary::
-   
+
       PSPIndexer
       PhyloModelSpecification
-      Tree
-      TreeCollection
-      instance
+      UnrootedTree
+      UnrootedTreeCollection
+      unrooted_instance
       ostream_redirect
       vector_double
-   
-   
 
-   
-   
-   
+
+
+
+
+

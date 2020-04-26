@@ -44,7 +44,7 @@ PYBIND11_MODULE(libsbn, m) {
 
   // CLASS
   // UnrootedTree
-  py::class_<UnrootedTree>(m, "UnrootedTree", "A tree with branch lengths.",
+  py::class_<UnrootedTree>(m, "UnrootedTree", "An unrooted tree with branch lengths.",
                            py::buffer_protocol())
       .def("parent_id_vector", &UnrootedTree::ParentIdVector)
       .def_static("of_parent_id_vector", &UnrootedTree::OfParentIdVector)
@@ -53,7 +53,7 @@ PYBIND11_MODULE(libsbn, m) {
   // CLASS
   // UnrootedTreeCollection
   py::class_<UnrootedTreeCollection>(m, "UnrootedTreeCollection", R"raw(
-  A collection of trees.
+  A collection of unrooted trees.
 
   In addition to the methods, UnrootedTreeCollection also offers direct access to
   the trees through the ``trees`` member variable.
@@ -96,9 +96,9 @@ PYBIND11_MODULE(libsbn, m) {
   // UnrootedSBNInstance, and there doesn't appear to be a way to have that happen
   // without actually giving it a name. We just give it an underscore-name.
   py::class_<SBNInstance> sbn_instance_class(
-      m, "_sbn_instance",
+      m, "_instance",
       "A non-useful general SBNInstance class (that just holds shared functionality "
-      "between the two types of SBN instances).");
+      "between the two types of SBN instances). Ignore.");
   sbn_instance_class.def(py::init<const std::string &>())
       .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
       .def("read_fasta_file", &SBNInstance::ReadFastaFile,
@@ -112,7 +112,12 @@ PYBIND11_MODULE(libsbn, m) {
   // CLASS
   // UnrootedSBNInstance
   py::class_<UnrootedSBNInstance, SBNInstance> unrooted_sbn_instance_class(
-      m, "unrooted_instance", "A wrapper for the all of the C++-side state.");
+      m, "unrooted_instance",
+      R"raw(
+    A unrooted SBN instance.
+
+    This class wraps all of the relevant C++-side state.
+      )raw");
   unrooted_sbn_instance_class
       .def(py::init<const std::string &>())
 
