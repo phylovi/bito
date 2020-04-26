@@ -20,7 +20,6 @@
 #include <vector>
 #include "sbn_maps.hpp"
 #include "sugar.hpp"
-#include "tree.hpp"
 #include "unrooted_tree_collection.hpp"
 
 class PSPIndexer {

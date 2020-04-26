@@ -13,7 +13,6 @@
 #include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
 #include "task_processor.hpp"
-#include "tree_collection.hpp"
 #include "unrooted_tree_collection.hpp"
 
 class FatBeagle {
