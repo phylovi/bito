@@ -60,7 +60,6 @@ inline bool operator!=(const Tree& lhs, const Tree& rhs) { return !(lhs == rhs);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 // Lots of tests in UnrootedTree and RootedTree.
-TEST_CASE("Tree") {
-}
+TEST_CASE("Tree") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_TREE_HPP_

@@ -85,7 +85,6 @@ class UnrootedSBNInstance : public SBNInstance {
   void ReadNexusFile(std::string fname);
 
  protected:
-
   void PushBackRangeForParentIfAvailable(
       const Bitset &parent, UnrootedSBNInstance::RangeVector &range_vector);
   RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);
