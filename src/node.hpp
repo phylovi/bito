@@ -63,8 +63,9 @@ class Node {
   // the entire tree. There's nothing else we can do without rerooting the tree.
   // It's not too hard to exclude the undesired bits with a conditional tree
   // traversal. See IndexerRepresentationOfTopology for an example.
-  using PCSSFun = std::function<void(const Node*, bool, const Node*, bool, const Node*,
-                                     bool, const Node*, bool, const Node*)>;
+  using UnrootedPCSSFun =
+      std::function<void(const Node*, bool, const Node*, bool, const Node*, bool,
+                         const Node*, bool, const Node*)>;
   // The rooted version just uses: sister clade, the focal clade, child 0, and child 1.
   using RootedPCSSFun =
       std::function<void(const Node*, const Node*, const Node*, const Node*)>;
@@ -119,9 +120,9 @@ class Node {
   void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
   void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
 
-  // See the typedef of PCSSFun and RootedPCSSFun to understand the argument type to
-  // these functions.
-  void PCSSPreOrder(PCSSFun f) const;
+  // See the typedef of UnrootedPCSSFun and RootedPCSSFun to understand the argument
+  // type to these functions.
+  void UnrootedPCSSPreOrder(UnrootedPCSSFun f) const;
   void RootedPCSSPreOrder(RootedPCSSFun f) const;
 
   // This function prepares the id_ and leaves_ member variables as described at

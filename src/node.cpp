@@ -255,10 +255,10 @@ void Node::TriplePreOrderBifurcating(
   }
 }
 
-// See the typedef of PCSSFun to understand the argument type to this
+// See the typedef of UnrootedPCSSFun to understand the argument type to this
 // function, and `doc/pcss.svg` for a diagram that will greatly help you
 // understand the implementation.
-void Node::PCSSPreOrder(PCSSFun f) const {
+void Node::UnrootedPCSSPreOrder(UnrootedPCSSFun f) const {
   this->TriplePreOrder(
       // f_root
       [&f](const Node* node0, const Node* node1, const Node* node2) {

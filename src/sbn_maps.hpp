@@ -73,6 +73,10 @@ UnrootedIndexerRepresentationCounter IndexerRepresentationCounterOf(
 }  // namespace UnrootedSBNMaps
 
 namespace RootedSBNMaps {
+// Make a DefaultDict mapping rootsplits to the number of times they were seen.
+BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
+// Make a PCSSDict mapping PCSSs to the number of times they were seen.
+PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
 // A rooted indexer representation is the indexer representation of a given rooted tree.
 // That is, the first entry is the rootsplit for that rooting, and after that come the
 // PCSS indices.
