@@ -28,10 +28,8 @@ SizeBitsetMap SBNMaps::IdIdSetMapOf(const Node::NodePtr& topology) {
 
 BitsetSizeDict SBNMaps::RootsplitCounterOf(const Node::TopologyCounter& topologies) {
   BitsetSizeDict rootsplit_counter(0);
-  for (const auto& iter : topologies) {
-    auto topology = iter.first;
-    auto count = iter.second;
-    auto Aux = [&rootsplit_counter, &count](const Node* n) {
+  for (const auto& [topology, count] : topologies) {
+    auto Aux = [&rootsplit_counter, &count = count](const Node* n) {
       auto split = n->Leaves();
       split.Minorize();
       rootsplit_counter.increment(std::move(split), count);
