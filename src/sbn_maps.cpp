@@ -28,11 +28,11 @@ SizeBitsetMap SBNMaps::IdIdSetMapOf(const Node::NodePtr& topology) {
 
 BitsetSizeDict SBNMaps::RootsplitCounterOf(const Node::TopologyCounter& topologies) {
   BitsetSizeDict rootsplit_counter(0);
-  for (const auto& [topology, count] : topologies) {
-    auto Aux = [&rootsplit_counter, &count = count](const Node* n) {
+  for (const auto& [topology, topology_count] : topologies) {
+    auto Aux = [&rootsplit_counter, &topology_count = topology_count](const Node* n) {
       auto split = n->Leaves();
       split.Minorize();
-      rootsplit_counter.increment(std::move(split), count);
+      rootsplit_counter.increment(std::move(split), topology_count);
     };
     for (const auto& child : topology->Children()) {
       child->PreOrder(Aux);
@@ -43,13 +43,11 @@ BitsetSizeDict SBNMaps::RootsplitCounterOf(const Node::TopologyCounter& topologi
 
 PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
   PCSSDict pcss_dict;
-  for (const auto& iter : topologies) {
-    auto topology = iter.first;
-    auto count = iter.second;
+  for (const auto& [topology, topology_count] : topologies) {
     auto leaf_count = topology->LeafCount();
     Assert(topology->Children().size() == 3,
            "PCSSCounterOf was expecting a tree with a trifurcation at the root!");
-    topology->PCSSPreOrder([&pcss_dict, &count, &leaf_count](
+    topology->PCSSPreOrder([&pcss_dict, &topology_count = topology_count, &leaf_count](
                                const Node* sister_node, bool sister_direction,
                                const Node* focal_node, bool focal_direction,  //
                                const Node* child0_node,
@@ -77,10 +75,10 @@ PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
       if (search == pcss_dict.end()) {
         // The first time we have seen this parent.
         BitsetSizeDict child_singleton(0);
-        child_singleton.increment(std::move(child), count);
+        child_singleton.increment(std::move(child), topology_count);
         SafeInsert(pcss_dict, std::move(parent), std::move(child_singleton));
       } else {
-        search->second.increment(std::move(child), count);
+        search->second.increment(std::move(child), topology_count);
       }
     });
   }
