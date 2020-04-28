@@ -31,7 +31,16 @@ class DefaultDict {
 
   bool contains(const Key &key) const { return (map_.find(key) != map_.end()); }
 
-  void increment(const Key &key, const T &value) {
+  void increment(const Key &key, T value) {
+    auto search = map_.find(key);
+    if (search == map_.end()) {
+      SafeInsert(map_, key, value);
+    } else {
+      search->second += value;
+    }
+  }
+
+  void increment(Key &&key, T value) {
     auto search = map_.find(key);
     if (search == map_.end()) {
       SafeInsert(map_, key, value);
