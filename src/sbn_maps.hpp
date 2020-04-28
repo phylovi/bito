@@ -46,7 +46,7 @@ std::unordered_map<std::string, T> StringifyMap(std::unordered_map<Key, T> m) {
 namespace SBNMaps {
 
 // Make a map from each Tag to the bitset representing the ids below the Tag.
-SizeBitsetMap IdIdSetMapOf(Node::NodePtr topology);
+SizeBitsetMap IdIdSetMapOf(const Node::NodePtr& topology);
 // Make a DefaultDict mapping rootsplits to the number of times they were seen.
 BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
 // Make a PCSSDict mapping PCSSs to the number of times they were seen.

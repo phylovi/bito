@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <utility>
 
-SizeBitsetMap SBNMaps::IdIdSetMapOf(Node::NodePtr topology) {
+SizeBitsetMap SBNMaps::IdIdSetMapOf(const Node::NodePtr& topology) {
   SizeBitsetMap map;
   auto id_count = topology->Id() + 1;
   topology->PostOrder([&map, id_count](const Node* node) {
@@ -80,7 +80,7 @@ PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
         // The first time we have seen this parent.
         BitsetSizeDict child_singleton(0);
         child_singleton.increment(std::move(child), count);
-        SafeInsert(pcss_dict, std::move(parent), child_singleton);
+        SafeInsert(pcss_dict, std::move(parent), std::move(child_singleton));
       } else {
         search->second.increment(std::move(child), count);
       }

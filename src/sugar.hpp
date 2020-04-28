@@ -77,12 +77,27 @@ constexpr void SafeInsert(std::unordered_map<Key, T, Hash> &map, const Key &k,
 }
 
 template <class Key, class T, class Hash>
+constexpr void SafeInsert(std::unordered_map<Key, T, Hash> &map, Key &&k, T &&v) {
+  Assert(map.insert({k, v}).second, "Failed map insertion!");
+}
+
+template <class Key, class T, class Hash>
 constexpr void SafeInsert(std::map<Key, T, Hash> &map, const Key &k, const T &v) {
+  Assert(map.insert({k, v}).second, "Failed map insertion!");
+}
+
+template <class Key, class T, class Hash>
+constexpr void SafeInsert(std::map<Key, T, Hash> &map, Key &&k, T &&v) {
   Assert(map.insert({k, v}).second, "Failed map insertion!");
 }
 
 template <class Key, class Hash>
 constexpr void SafeInsert(std::unordered_set<Key, Hash> &set, const Key &k) {
+  Assert(set.insert(k).second, "Failed set insertion!");
+}
+
+template <class Key, class Hash>
+constexpr void SafeInsert(std::unordered_set<Key, Hash> &set, Key &&k) {
   Assert(set.insert(k).second, "Failed set insertion!");
 }
 
