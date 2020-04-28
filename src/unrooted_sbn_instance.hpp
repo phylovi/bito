@@ -47,7 +47,7 @@ class UnrootedSBNInstance : public SBNInstance {
   // explanation of what these are. This version uses the length of
   // sbn_parameters_ as a sentinel value for all rootsplits/PCSSs that aren't
   // present in the indexer.
-  std::vector<IndexerRepresentation> MakeIndexerRepresentations() const;
+  std::vector<UnrootedIndexerRepresentation> MakeIndexerRepresentations() const;
 
   // Get PSP indexer representations of the trees in tree_collection_.
   std::vector<SizeVectorVector> MakePSPIndexerRepresentations() const;
@@ -76,8 +76,9 @@ class UnrootedSBNInstance : public SBNInstance {
   // normalized_sbn_parameters_in_log is a cache; see implementation of
   // TopologyGradients to see how it works. It would be private except that
   // we want to be able to test it.
-  EigenVectorXd GradientOfLogQ(EigenVectorXdRef normalized_sbn_parameters_in_log,
-                               const IndexerRepresentation &indexer_representation);
+  EigenVectorXd GradientOfLogQ(
+      EigenVectorXdRef normalized_sbn_parameters_in_log,
+      const UnrootedIndexerRepresentation &indexer_representation);
 
   // ** I/O
 
@@ -87,7 +88,8 @@ class UnrootedSBNInstance : public SBNInstance {
  protected:
   void PushBackRangeForParentIfAvailable(
       const Bitset &parent, UnrootedSBNInstance::RangeVector &range_vector);
-  RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);
+  RangeVector GetSubsplitRanges(
+      const RootedIndexerRepresentation &rooted_representation);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -154,7 +156,7 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
        {"00001", "00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
        {"01010", "10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
        {"01110", "00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
-  CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
+  CHECK_EQ(inst.StringIndexerRepresentationOf(UnrootedSBNMaps::IndexerRepresentationOf(
                inst.indexer_, indexer_test_topology_1, out_of_sample_index)),
            correct_representation_1);
   // See the "concepts" part of the online documentation to learn about PSP indexing.
@@ -175,7 +177,7 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
        {"00001", "00100|11000|01000", "00001|11110|00010", "00010|11100|00100"},
        {"00111", "00111|11000|01000", "00100|00011|00001", "11000|00111|00011"},
        {"00011", "00100|11000|01000", "11100|00011|00001", "00011|11100|00100"}});
-  CHECK_EQ(inst.StringIndexerRepresentationOf(SBNMaps::IndexerRepresentationOf(
+  CHECK_EQ(inst.StringIndexerRepresentationOf(UnrootedSBNMaps::IndexerRepresentationOf(
                inst.indexer_, indexer_test_topology_2, out_of_sample_index)),
            correct_representation_2);
   auto correct_psp_representation_2 = StringVectorVector(
@@ -192,17 +194,19 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
       Node::OfParentIdVector({5, 5, 6, 7, 8, 6, 7, 8});
   auto correct_rooted_indexer_representation_1 = StringSet(
       {"00001", "00001|11110|00010", "00010|11100|00100", "00100|11000|01000"});
-  CHECK_EQ(inst.StringIndexerRepresentationOf({SBNMaps::RootedIndexerRepresentationOf(
-               inst.indexer_, indexer_test_rooted_topology_1, out_of_sample_index)})[0],
-           correct_rooted_indexer_representation_1);
+  CHECK_EQ(
+      inst.StringIndexerRepresentationOf({RootedSBNMaps::RootedIndexerRepresentationOf(
+          inst.indexer_, indexer_test_rooted_topology_1, out_of_sample_index)})[0],
+      correct_rooted_indexer_representation_1);
   // Topology is (((0,1),2),(3,4));, or with internal nodes (((0,1)5,2)6,(3,4)7)8;
   auto indexer_test_rooted_topology_2 =
       Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 8, 8});
   auto correct_rooted_indexer_representation_2 = StringSet(
       {"00011", "11100|00011|00001", "00011|11100|00100", "00100|11000|01000"});
-  CHECK_EQ(inst.StringIndexerRepresentationOf({SBNMaps::RootedIndexerRepresentationOf(
-               inst.indexer_, indexer_test_rooted_topology_2, out_of_sample_index)})[0],
-           correct_rooted_indexer_representation_2);
+  CHECK_EQ(
+      inst.StringIndexerRepresentationOf({RootedSBNMaps::RootedIndexerRepresentationOf(
+          inst.indexer_, indexer_test_rooted_topology_2, out_of_sample_index)})[0],
+      correct_rooted_indexer_representation_2);
 }
 
 TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
@@ -310,8 +314,8 @@ TEST_CASE("UnrootedSBNInstance: tree sampling") {
   size_t rooted_tree_count_from_file = 0;
   RootedIndexerRepresentationSizeDict counter_from_file(0);
   for (const auto &indexer_representation : inst.MakeIndexerRepresentations()) {
-    SBNMaps::IncrementRootedIndexerRepresentationSizeDict(counter_from_file,
-                                                          indexer_representation);
+    RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(counter_from_file,
+                                                                indexer_representation);
     rooted_tree_count_from_file += indexer_representation.size();
   }
   // Count the frequencies of trees when we sample after training with
@@ -321,10 +325,10 @@ TEST_CASE("UnrootedSBNInstance: tree sampling") {
   ProgressBar progress_bar(sampled_tree_count / 1000);
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
     const auto rooted_topology = inst.SampleTopology(true);
-    SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
+    RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
-        SBNMaps::RootedIndexerRepresentationOf(inst.indexer_, rooted_topology,
-                                               out_of_sample_index));
+        RootedSBNMaps::RootedIndexerRepresentationOf(inst.indexer_, rooted_topology,
+                                                     out_of_sample_index));
     if (sample_idx % 1000 == 0) {
       ++progress_bar;
       progress_bar.display();

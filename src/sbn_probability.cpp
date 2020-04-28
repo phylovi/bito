@@ -142,9 +142,10 @@ void SBNProbability::ProbabilityNormalizeParamsInLog(
 
 // Set the provided counts vector to be the counts of the rootsplits and PCSSs provided
 // in the input.
-void SetCounts(EigenVectorXdRef counts,
-               const IndexerRepresentationCounter& indexer_representation_counter,
-               size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+void SetCounts(
+    EigenVectorXdRef counts,
+    const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
+    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
   counts.setZero();
   for (const auto& [indexer_representation, int_topology_count] :
        indexer_representation_counter) {
@@ -155,9 +156,10 @@ void SetCounts(EigenVectorXdRef counts,
 
 // Set the provided counts vector to be the log of the counts of the rootsplits and
 // PCSSs provided in the input.
-void SetLogCounts(EigenVectorXdRef counts,
-                  const IndexerRepresentationCounter& indexer_representation_counter,
-                  size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+void SetLogCounts(
+    EigenVectorXdRef counts,
+    const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
+    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
   counts.fill(DOUBLE_NEG_INF);
   for (const auto& [indexer_representation, int_topology_count] :
        indexer_representation_counter) {
@@ -168,7 +170,7 @@ void SetLogCounts(EigenVectorXdRef counts,
 
 void SBNProbability::SimpleAverage(
     EigenVectorXdRef sbn_parameters,
-    const IndexerRepresentationCounter& indexer_representation_counter,
+    const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
   SetLogCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
                parent_to_range);
@@ -180,7 +182,7 @@ void SBNProbability::SimpleAverage(
 // calculation works.
 EigenVectorXd SBNProbability::ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
-    const IndexerRepresentationCounter& indexer_representation_counter,
+    const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
     size_t max_iter, double score_epsilon) {
   Assert(!indexer_representation_counter.empty(),
@@ -237,7 +239,7 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
       // it later).
       for (size_t rooting_position = 0; rooting_position < edge_count;
            ++rooting_position) {
-        const SizeVector& rooted_representation =
+        const RootedIndexerRepresentation& rooted_representation =
             indexer_representation[rooting_position];
         // Calculate the SBN probability of this topology rooted at this position.
         double log_p_rooted_topology = SumOf(sbn_parameters, rooted_representation, 0.);
@@ -295,8 +297,9 @@ EigenVectorXd SBNProbability::ExpectationMaximization(
   return score_history;
 }
 
-bool SBNProbability::IsInSBNSupport(const SizeVector& rooted_representation,
-                                    size_t out_of_support_sentinel_value) {
+bool SBNProbability::IsInSBNSupport(
+    const RootedIndexerRepresentation& rooted_representation,
+    size_t out_of_support_sentinel_value) {
   for (size_t idx : rooted_representation) {
     // Our convention is that out_of_support_sentinel_value is one more than the maximum
     // allowed PCSS index, so here we check the index is reasonable.
@@ -311,7 +314,7 @@ bool SBNProbability::IsInSBNSupport(const SizeVector& rooted_representation,
 
 double SBNProbability::ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
-    const IndexerRepresentation& indexer_representation) {
+    const UnrootedIndexerRepresentation& indexer_representation) {
   size_t sbn_parameter_count = sbn_parameters.size();
   double log_total_probability = DOUBLE_NEG_INF;
   for (const auto& rooted_representation : indexer_representation) {
@@ -326,7 +329,7 @@ double SBNProbability::ProbabilityOf(
 
 EigenVectorXd SBNProbability::ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
-    const std::vector<IndexerRepresentation>& indexer_representations) {
+    const std::vector<UnrootedIndexerRepresentation>& indexer_representations) {
   const size_t topology_count = indexer_representations.size();
   EigenVectorXd results(topology_count);
   for (size_t topology_idx = 0; topology_idx < topology_count; ++topology_idx) {

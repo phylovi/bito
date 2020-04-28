@@ -20,17 +20,75 @@ using SizeBitsetMap = std::unordered_map<size_t, Bitset>;
 using BitsetSizeMap = std::unordered_map<Bitset, size_t>;
 using BitsetSizePairMap = std::unordered_map<Bitset, std::pair<size_t, size_t>>;
 using BitsetSizeDict = DefaultDict<Bitset, size_t>;
-using IndexerRepresentation = SizeVectorVector;
-using IndexerRepresentationCounter =
-    std::vector<std::pair<IndexerRepresentation, uint32_t>>;
+using RootedIndexerRepresentation = SizeVector;
+using RootedIndexerRepresentationCounter =
+    std::vector<std::pair<RootedIndexerRepresentation, uint32_t>>;
+using UnrootedIndexerRepresentation = SizeVectorVector;
+using UnrootedIndexerRepresentationCounter =
+    std::vector<std::pair<UnrootedIndexerRepresentation, uint32_t>>;
 using PCSSDict = std::unordered_map<Bitset, DefaultDict<Bitset, size_t>>;
 using PCSSIndexVector = std::vector<size_t>;
-using RootedIndexerRepresentationSizeDict = DefaultDict<SizeVector, size_t>;
+using RootedIndexerRepresentationSizeDict =
+    DefaultDict<RootedIndexerRepresentation, size_t>;
 
 using StringSizePairMap = std::unordered_map<std::string, std::pair<size_t, size_t>>;
 using SizeStringMap = std::unordered_map<size_t, std::string>;
 using StringPCSSMap =
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
+
+namespace SBNMaps {
+
+// Make a map from each Tag to the bitset representing the ids below the Tag.
+SizeBitsetMap IdIdSetMapOf(const Node::NodePtr& topology);
+// This function returns a vector indexed by the edges of the tree and
+// containing the corresponding split index as indexed by the indexer.
+RootedIndexerRepresentation SplitIndicesOf(const BitsetSizeMap& indexer,
+                                           const Node::NodePtr& topology);
+// Make a string version of a PCSSDict.
+StringPCSSMap StringPCSSMapOf(PCSSDict d);
+
+}  // namespace SBNMaps
+
+namespace UnrootedSBNMaps {
+// Make a DefaultDict mapping rootsplits to the number of times they were seen.
+BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
+// Make a PCSSDict mapping PCSSs to the number of times they were seen.
+PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
+// This function gives information about the rootsplits and PCSSs of a given
+// topology with respect to the current indexing data structures.
+// Specifically, it returns a vector of vectors, such that the ith vector is the indices
+// of sbn_parameters_ describing the tree when it is rooted above the ith node. The
+// first entry of this representation is always the index of the rootsplit. The rest are
+// the indices of the PCSSs that are present in the given topology.
+// NOTE: Any rootsplits or PCSSs that aren't known by the indexer are assigned
+// `default_index`.
+UnrootedIndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                      const Node::NodePtr& topology,
+                                                      const size_t default_index);
+// Turn a TopologyCounter into an IndexerRepresentationCounter.
+UnrootedIndexerRepresentationCounter IndexerRepresentationCounterOf(
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
+    const size_t default_index);
+
+}  // namespace UnrootedSBNMaps
+
+namespace RootedSBNMaps {
+// A rooted indexer representation is the indexer representation of a given rooted tree.
+// That is, the first entry is the rootsplit for that rooting, and after that come the
+// PCSS indices.
+RootedIndexerRepresentation RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                          const Node::NodePtr& topology,
+                                                          const size_t default_index);
+// For counting standardized (i.e. PCSS index sorted) rooted indexer representations.
+void IncrementRootedIndexerRepresentationSizeDict(
+    RootedIndexerRepresentationSizeDict& dict,
+    const RootedIndexerRepresentation rooted_indexer_representation);
+// Apply the above to every rooting in the unrooted indexer representation.
+void IncrementRootedIndexerRepresentationSizeDict(
+    RootedIndexerRepresentationSizeDict& dict,
+    const UnrootedIndexerRepresentation& indexer_representation);
+
+}  // namespace RootedSBNMaps
 
 // Turn a <Key, T> map into a <std::string, T> map for any Key type that has
 // a ToString method.
@@ -43,58 +101,12 @@ std::unordered_map<std::string, T> StringifyMap(std::unordered_map<Key, T> m) {
   return m_str;
 }
 
-namespace SBNMaps {
-
-// Make a map from each Tag to the bitset representing the ids below the Tag.
-SizeBitsetMap IdIdSetMapOf(const Node::NodePtr& topology);
-// Make a DefaultDict mapping rootsplits to the number of times they were seen.
-BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
-// Make a PCSSDict mapping PCSSs to the number of times they were seen.
-PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies);
-// This function returns a vector indexed by the edges of the tree and
-// containing the corresponding split index as indexed by the indexer.
-SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& topology);
-// This function gives information about the rootsplits and PCSSs of a given
-// topology with respect to the current indexing data structures.
-// Specifically, it returns a vector of vectors, such that the ith vector is the indices
-// of sbn_parameters_ describing the tree when it is rooted above the ith node. The
-// first entry of this representation is always the index of the rootsplit. The rest are
-// the indices of the PCSSs that are present in the given topology.
-// NOTE: Any rootsplits or PCSSs that aren't known by the indexer are assigned
-// `default_index`.
-IndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                              const Node::NodePtr& topology,
-                                              const size_t default_index);
-// Turn a TopologyCounter into an IndexerRepresentationCounter.
-IndexerRepresentationCounter IndexerRepresentationCounterOf(
-    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
-    const size_t default_index);
-// A rooted indexer representation is the indexer representation of a given rooted tree.
-// That is, the first entry is the rootsplit for that rooting, and after that come the
-// PCSS indices.
-SizeVector RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                         const Node::NodePtr& topology,
-                                         const size_t default_index);
-// For counting standardized (i.e. PCSS index sorted) rooted indexer representations.
-void IncrementRootedIndexerRepresentationSizeDict(
-    RootedIndexerRepresentationSizeDict& dict,
-    const SizeVector rooted_indexer_representation);
-// Apply the above to every rooting in the indexer representation.
-void IncrementRootedIndexerRepresentationSizeDict(
-    RootedIndexerRepresentationSizeDict& dict,
-    const IndexerRepresentation& indexer_representation);
-
-// Make a string version of a PCSSDict.
-StringPCSSMap StringPCSSMapOf(PCSSDict d);
-
-}  // namespace SBNMaps
-
 // Hash for vectors of size_t.
 // https://www.boost.org/doc/libs/1_35_0/doc/html/boost/hash_combine_id241013.html
 namespace std {
 template <>
-struct hash<SizeVector> {
-  size_t operator()(const SizeVector& values) const {
+struct hash<RootedIndexerRepresentation> {
+  size_t operator()(const RootedIndexerRepresentation& values) const {
     int hash = values[0];
     for (size_t i = 1; i < values.size(); i++) {
       hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);

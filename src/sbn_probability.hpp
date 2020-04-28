@@ -16,27 +16,28 @@ namespace SBNProbability {
 
 // The "SBN-SA" estimator described in the "Maximum Lower Bound Estimates" section of
 // the 2018 NeurIPS paper.
-void SimpleAverage(EigenVectorXdRef sbn_parameters,
-                   const IndexerRepresentationCounter& indexer_representation_counter,
-                   size_t rootsplit_count, const BitsetSizePairMap& parent_to_range);
+void SimpleAverage(
+    EigenVectorXdRef sbn_parameters,
+    const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
+    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range);
 
 // The "SBN-EM" estimator described in the "Expectation Maximization" section of
 // the 2018 NeurIPS paper. Returns the sequence of scores (defined in the paper)
 // obtained by the EM iterations.
 EigenVectorXd ExpectationMaximization(
     EigenVectorXdRef sbn_parameters,
-    const IndexerRepresentationCounter& indexer_representation_counter,
+    const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range, double alpha,
     size_t max_iter, double score_epsilon);
 
 // Calculate the probability of an indexer_representation of a topology.
 double ProbabilityOf(const EigenConstVectorXdRef,
-                     const IndexerRepresentation& indexer_representation);
+                     const UnrootedIndexerRepresentation& indexer_representation);
 
 // Calculate the probabilities of a collection of indexer_representations.
 EigenVectorXd ProbabilityOf(
     const EigenConstVectorXdRef sbn_parameters,
-    const std::vector<IndexerRepresentation>& indexer_representations);
+    const std::vector<UnrootedIndexerRepresentation>& indexer_representations);
 
 // This function performs in-place normalization of vec given by range when its values
 // are in log space.

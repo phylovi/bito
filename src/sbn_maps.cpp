@@ -26,7 +26,30 @@ SizeBitsetMap SBNMaps::IdIdSetMapOf(const Node::NodePtr& topology) {
   return map;
 }
 
-BitsetSizeDict SBNMaps::RootsplitCounterOf(const Node::TopologyCounter& topologies) {
+SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
+                                   const Node::NodePtr& topology) {
+  SizeVector split_result(topology->Id());
+  topology->PreOrder([&topology, &split_result, &indexer](const Node* node) {
+    // Skip the root.
+    if (node != topology.get()) {
+      Bitset rootsplit = node->Leaves();
+      rootsplit.Minorize();
+      split_result[node->Id()] = indexer.at(rootsplit);
+    }
+  });
+  return split_result;
+}
+
+StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
+  StringPCSSMap d_str;
+  for (const auto& iter : d) {
+    d_str[iter.first.ToString()] = StringifyMap(iter.second.Map());
+  }
+  return d_str;
+}
+
+BitsetSizeDict UnrootedSBNMaps::RootsplitCounterOf(
+    const Node::TopologyCounter& topologies) {
   BitsetSizeDict rootsplit_counter(0);
   for (const auto& [topology, topology_count] : topologies) {
     auto Aux = [&rootsplit_counter, &topology_count = topology_count](const Node* n) {
@@ -41,7 +64,7 @@ BitsetSizeDict SBNMaps::RootsplitCounterOf(const Node::TopologyCounter& topologi
   return rootsplit_counter;
 }
 
-PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
+PCSSDict UnrootedSBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
   PCSSDict pcss_dict;
   for (const auto& [topology, topology_count] : topologies) {
     auto leaf_count = topology->LeafCount();
@@ -85,20 +108,6 @@ PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
   return pcss_dict;
 }
 
-SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
-                                   const Node::NodePtr& topology) {
-  SizeVector split_result(topology->Id());
-  topology->PreOrder([&topology, &split_result, &indexer](const Node* node) {
-    // Skip the root.
-    if (node != topology.get()) {
-      Bitset rootsplit = node->Leaves();
-      rootsplit.Minorize();
-      split_result[node->Id()] = indexer.at(rootsplit);
-    }
-  });
-  return split_result;
-}
-
 // Return the rootsplit of a rooted bifurcating topology.
 Bitset Rootsplit(const Node* rooted_topology) {
   Assert(rooted_topology->Children().size() == 2,
@@ -130,9 +139,9 @@ Bitset PCSSBitsetOf(const size_t leaf_count,  //
   return bitset;
 }
 
-IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                       const Node::NodePtr& topology,
-                                                       const size_t default_index) {
+UnrootedIndexerRepresentation UnrootedSBNMaps::IndexerRepresentationOf(
+    const BitsetSizeMap& indexer, const Node::NodePtr& topology,
+    const size_t default_index) {
   const auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
   SizeVector rootsplit_result = SBNMaps::SplitIndicesOf(indexer, topology);
@@ -191,22 +200,22 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
   return result;
 }
 
-IndexerRepresentationCounter SBNMaps::IndexerRepresentationCounterOf(
+UnrootedIndexerRepresentationCounter UnrootedSBNMaps::IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
     const size_t default_index) {
-  IndexerRepresentationCounter counter;
+  UnrootedIndexerRepresentationCounter counter;
   counter.reserve(topology_counter.size());
   for (const auto& [topology, topology_count] : topology_counter) {
     counter.push_back(
-        {SBNMaps::IndexerRepresentationOf(indexer, topology, default_index),
+        {UnrootedSBNMaps::IndexerRepresentationOf(indexer, topology, default_index),
          topology_count});
   }
   return counter;
 }
 
-SizeVector SBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                  const Node::NodePtr& topology,
-                                                  const size_t default_index) {
+SizeVector RootedSBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                        const Node::NodePtr& topology,
+                                                        const size_t default_index) {
   const auto leaf_count = topology->LeafCount();
   SizeVector result;
   // Start with the rootsplit.
@@ -223,7 +232,7 @@ SizeVector SBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
   return result;
 }
 
-void SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
+void RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
     RootedIndexerRepresentationSizeDict& dict,
     SizeVector rooted_indexer_representation) {
   Assert(rooted_indexer_representation.size() > 1,
@@ -234,18 +243,11 @@ void SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
   dict.increment(rooted_indexer_representation, 1);
 }
 
-void SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
+void RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
     RootedIndexerRepresentationSizeDict& dict,
-    const IndexerRepresentation& indexer_representation) {
+    const UnrootedIndexerRepresentation& indexer_representation) {
   for (const auto& rooted_indexer_representation : indexer_representation) {
     IncrementRootedIndexerRepresentationSizeDict(dict, rooted_indexer_representation);
   }
 }
 
-StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
-  StringPCSSMap d_str;
-  for (const auto& iter : d) {
-    d_str[iter.first.ToString()] = StringifyMap(iter.second.Map());
-  }
-  return d_str;
-}

@@ -69,7 +69,7 @@ StringVector SBNInstance::StringReversedIndexer() const {
 }
 
 StringSetVector SBNInstance::StringIndexerRepresentationOf(
-    IndexerRepresentation indexer_representation) const {
+    UnrootedIndexerRepresentation indexer_representation) const {
   auto reversed_indexer = StringReversedIndexer();
   StringSetVector string_sets;
   for (const auto &rooted_representation : indexer_representation) {

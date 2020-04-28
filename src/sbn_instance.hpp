@@ -68,7 +68,7 @@ class SBNInstance {
   // bitsets. This is really just so that we can make a test of indexer
   // representations.
   StringSetVector StringIndexerRepresentationOf(
-      IndexerRepresentation indexer_representation) const;
+      UnrootedIndexerRepresentation indexer_representation) const;
 
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
 
