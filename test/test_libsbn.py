@@ -49,7 +49,7 @@ def sampling_and_indexers_demo():
     parameters.
     """
     inst = libsbn.unrooted_instance("charlie")
-    inst.read_newick_file("data/five_taxon.nwk")
+    inst.read_newick_file("data/five_taxon_unrooted.nwk")
     assert inst.tree_count() == 4
     # Showing off tree sampling.
     inst.process_loaded_trees()

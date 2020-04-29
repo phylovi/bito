@@ -104,7 +104,7 @@ const size_t out_of_sample_index = 99999999;
 
 TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
   UnrootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/five_taxon.nwk");
+  inst.ReadNewickFile("data/five_taxon_unrooted.nwk");
   inst.ProcessLoadedTrees();
   auto pretty_indexer = inst.PrettyIndexer();
   // The indexer_ is to index the sbn_parameters_. Note that neither of these
@@ -135,6 +135,8 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
   StringSet pretty_indexer_set(pretty_indexer.begin(), pretty_indexer.end());
   // It's true that this test doesn't show the block-ness, but it wasn't easy to
   // show off this feature in a way that wasn't compiler dependent.
+  // You can see it by printing out a pretty_indexer if you wish. A test exhibiting
+  // block structure appeas in rooted_sbn_instance.hpp.
   for (auto pretty_pcss : correct_pretty_pcss_block) {
     CHECK(pretty_indexer_set.find(pretty_pcss) != pretty_indexer_set.end());
   }
@@ -312,7 +314,7 @@ TEST_CASE("UnrootedSBNInstance: SBN training") {
 
 TEST_CASE("UnrootedSBNInstance: tree sampling") {
   UnrootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/five_taxon.nwk");
+  inst.ReadNewickFile("data/five_taxon_unrooted.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
   // Count the frequencies of rooted trees in a file.
