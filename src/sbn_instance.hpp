@@ -25,6 +25,10 @@
 
 class SBNInstance {
  public:
+  // A Range is a range of values of our vector using 0-indexed Eigen/Python slice
+  // notation, such that if we have the range (1, 3), that refers to the items with
+  // 0-index 1 and 2. Said another way, these are considered half-open intervals [start,
+  // end).
   using Range = std::pair<size_t, size_t>;
   using RangeVector = std::vector<Range>;
 
@@ -128,7 +132,8 @@ class SBNInstance {
   // A map going from the index of a PCSS to its child.
   SizeBitsetMap index_to_child_;
   // A map going from a parent subsplit to the range of indices in
-  // sbn_parameters_ with its children.
+  // sbn_parameters_ with its children. See the definition of Range for the indexing
+  // convention.
   BitsetSizePairMap parent_to_range_;
   // The phylogenetic model parameterization. This has as many rows as there are
   // trees, and holds the parameters before likelihood computation, where they
