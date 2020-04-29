@@ -41,8 +41,7 @@ class RootedSBNInstance : public SBNInstance {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
-
-TEST_CASE("RootedSBNInstance: indexer and PSP representations") {
+TEST_CASE("RootedSBNInstance: subsplit support") {
   RootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon_rooted.nwk");
   inst.ProcessLoadedTrees();
