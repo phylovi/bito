@@ -80,15 +80,7 @@ using GPOperation =
 //                 GPOperations::OptimizeRootward, GPOperations::OptimizeLeafward,
 //                 GPOperations::UpdateSBNProbabilities>;
 
-
-StringSizePairVector guts(const GPOperations::Zero& operation) {
-  return {{"idx", operation.idx}};
-}
-StringSizePairVector guts(const GPOperations::WeightedSumAccumulate& operation) {
-  return {{"dest_idx", operation.dest_idx},
-          {"weight_idx", operation.weight_idx},
-          {"src_idx", operation.src_idx}};
-};
+using GPOperationVector = std::vector<GPOperation>;
 
 struct GPOperationOstream {
   std::ostream& os_;
@@ -108,60 +100,12 @@ std::ostream& operator<<(std::ostream& os, GPOperation const& v) {
   return os;
 }
 
-// struct GPToMap {
-//   StringSizeMap operator()(const GPOperations::Zero& operation) {
-//     return {{"idx", operation.idx}};
-//   }
-//   StringSizeMap operator()(const GPOperations::WeightedSumAccumulate& operation) {
-//     return {{"dest_idx", operation.dest_idx},
-//             {"weight_idx", operation.weight_idx},
-//             {"src_idx", operation.src_idx}};
-//   }
-// };
-
-// struct GPOperationOstream {
-//   std::ostream& os_;
-//
-//   GPOperationOstream(std::ostream& os) : os_{os} {}
-//
-//   template <typename... Args>
-//   void FoldPushBack(std::vector<size_t>& v, Args&&... args) {
-//     (v.push_back(args), ...);
-//   }
-//
-//   template <typename... Args>
-//   std::vector<size_t> MakeVector(Args&&... args) {
-//     std::vector<size_t> v;
-//     FoldPushBack(v, &args...);
-//     return v;
-//   }
-//
-//   template <typename... Args>
-//   void FoldPrint(Args&&... args) {
-//     (os_ << ... << std::forward<Args>(args)) << '\n';
-//   }
-//
-//   void operator()(const GPOperations::Zero& operation) {
-//     FoldPrint("Zero", operation.idx);
-//   }
-//   void operator()(const GPOperations::WeightedSumAccumulate& operation) {
-//     auto v = MakeVector(operation.dest_idx, operation.weight_idx, operation.src_idx);
-//     // std::vector<size_t> v{operation.dest_idx, operation.weight_idx,
-//     // operation.src_idx};
-//     os_ << "WeightedSumAccumulate" << v;
-//     // FoldPrint("WeightedSumAccumulate", operation.dest_idx, operation.weight_idx,
-//     //           operation.src_idx);
-//   }
-// };
-//
-// std::ostream& operator<<(std::ostream& os, GPOperation const& v) {
-//   std::visit(GPOperationOstream{os}, v);
-//   return os;
-// }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
-TEST_CASE("TODO") {}
+TEST_CASE("GPOperation") {
+  // TODO
+}
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
