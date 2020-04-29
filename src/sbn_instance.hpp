@@ -35,7 +35,7 @@ class SBNInstance {
   // The master indexer for SBN parameters.
   BitsetSizeMap indexer_;
   // A vector of the taxon names.
-  std::vector<std::string> taxon_names_;
+  StringVector taxon_names_;
 
   // ** Initialization and status
 
@@ -44,6 +44,7 @@ class SBNInstance {
 
   // ** Dummy functions corresponding to an empty tree_collection (see above).
   virtual size_t TaxonCount() const { return 0; }
+  virtual StringVector TaxonNames() const { return {}; }
   virtual size_t TreeCount() const { return 0; }
   virtual TagStringMap TagTaxonMap() const { return {}; }
   virtual Node::TopologyCounter TopologyCounter() const { return {}; }
@@ -56,6 +57,12 @@ class SBNInstance {
   }
 
   // ** SBN-related items
+
+  // Use the loaded trees to get the SBN maps, set taxon_names_, and prepare the
+  // sbn_parameters_ vector.
+  void ProcessLoadedTrees();
+
+  void CheckTopologyCounter();
 
   // Define "SBN maps" to be the collection of maps associated with the
   // SBNInstance, such as indexer_, index_to_child_, parent_to_range_, and rootsplits_.

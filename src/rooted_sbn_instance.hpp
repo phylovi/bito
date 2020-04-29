@@ -11,9 +11,19 @@ class RootedSBNInstance : public SBNInstance {
   using SBNInstance::SBNInstance;
 
   size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
+  StringVector TaxonNames() const override { return tree_collection_.TaxonNames(); }
   size_t TreeCount() const override { return tree_collection_.TreeCount(); }
   TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
-
+  Node::TopologyCounter TopologyCounter() const override {
+    return tree_collection_.TopologyCounter();
+  }
+  BitsetSizeDict RootsplitCounterOf(
+      const Node::TopologyCounter &topologies) const override {
+    return RootedSBNMaps::RootsplitCounterOf(topologies);
+  }
+  PCSSDict PCSSCounterOf(const Node::TopologyCounter &topologies) const override {
+    return RootedSBNMaps::PCSSCounterOf(topologies);
+  }
   // Use the loaded trees to get the SBN maps, set taxon_names_, and prepare the
   // sbn_parameters_ vector.
   void ProcessLoadedTrees();

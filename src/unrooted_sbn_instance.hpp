@@ -15,6 +15,7 @@ class UnrootedSBNInstance : public SBNInstance {
   using SBNInstance::SBNInstance;
 
   size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
+  StringVector TaxonNames() const override { return tree_collection_.TaxonNames(); }
   size_t TreeCount() const override { return tree_collection_.TreeCount(); }
   TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
   Node::TopologyCounter TopologyCounter() const override {
@@ -30,12 +31,6 @@ class UnrootedSBNInstance : public SBNInstance {
 
   // ** SBN-related items
 
-  // Use the loaded trees to get the SBN maps, set taxon_names_, and prepare the
-  // sbn_parameters_ vector.
-  void ProcessLoadedTrees();
-
-  // SBN training. See sbn_probability.hpp for details.
-  void CheckTopologyCounter();
   void TrainSimpleAverage();
   // max_iter is the maximum number of EM iterations to do, while score_epsilon
   // is the cutoff for score improvement.

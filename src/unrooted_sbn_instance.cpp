@@ -11,38 +11,6 @@
 
 // ** Building SBN-related items
 
-void UnrootedSBNInstance::ProcessLoadedTrees() {
-  size_t index = 0;
-  ClearTreeCollectionAssociatedState();
-  topology_counter_ = TopologyCounter();
-  // Start by adding the rootsplits.
-  for (const auto &iter : RootsplitCounterOf(topology_counter_)) {
-    SafeInsert(indexer_, iter.first, index);
-    rootsplits_.push_back(iter.first);
-    index++;
-  }
-  // Now add the PCSSs.
-  for (const auto &[parent, child_counter] : PCSSCounterOf(topology_counter_)) {
-    SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
-    for (const auto &child_iter : child_counter) {
-      const auto &child = child_iter.first;
-      SafeInsert(indexer_, parent + child, index);
-      SafeInsert(index_to_child_, index, Bitset::ChildSubsplit(parent, child));
-      index++;
-    }
-  }
-  sbn_parameters_.resize(index);
-  sbn_parameters_.setOnes();
-  psp_indexer_ = PSPIndexer(rootsplits_, indexer_);
-  taxon_names_ = tree_collection_.TaxonNames();
-}
-
-void UnrootedSBNInstance::CheckTopologyCounter() {
-  if (topology_counter_.empty()) {
-    Failwith("Please load some trees into your SBN instance.");
-  }
-}
-
 void UnrootedSBNInstance::TrainSimpleAverage() {
   CheckTopologyCounter();
   auto indexer_representation_counter = UnrootedSBNMaps::IndexerRepresentationCounterOf(
