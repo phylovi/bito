@@ -9,16 +9,24 @@
 #include <vector>
 #include "sugar.hpp"
 
+using StringSizePairVector = std::vector<std::pair<std::string, size_t>>;
+
 namespace GPOperations {
 
 struct Zero {
   size_t idx;
+
+  StringSizePairVector guts() const { return {{"idx", idx}}; }
 };
 
 struct WeightedSumAccumulate {
   size_t dest_idx;
   size_t weight_idx;
   size_t src_idx;
+
+  StringSizePairVector guts() const {
+    return {{"dest_idx", dest_idx}, {"weight_idx", weight_idx}, {"src_idx", src_idx}};
+  }
 };
 
 struct Multiply {
@@ -72,15 +80,14 @@ using GPOperation =
 //                 GPOperations::OptimizeRootward, GPOperations::OptimizeLeafward,
 //                 GPOperations::UpdateSBNProbabilities>;
 
-struct GPToMap {
-  StringSizeMap operator()(const GPOperations::Zero& operation) {
-    return {{"idx", operation.idx}};
-  }
-  StringSizeMap operator()(const GPOperations::WeightedSumAccumulate& operation) {
-    return {{"dest_idx", operation.dest_idx},
-            {"weight_idx", operation.weight_idx},
-            {"src_idx", operation.src_idx}};
-  }
+
+StringSizePairVector guts(const GPOperations::Zero& operation) {
+  return {{"idx", operation.idx}};
+}
+StringSizePairVector guts(const GPOperations::WeightedSumAccumulate& operation) {
+  return {{"dest_idx", operation.dest_idx},
+          {"weight_idx", operation.weight_idx},
+          {"src_idx", operation.src_idx}};
 };
 
 struct GPOperationOstream {
@@ -89,10 +96,10 @@ struct GPOperationOstream {
   GPOperationOstream(std::ostream& os) : os_{os} {}
 
   void operator()(const GPOperations::Zero& operation) {
-    os_ << "Zero" << std::visit(GPToMap{}, operation);
+    os_ << "Zero" << operation.guts();
   }
   void operator()(const GPOperations::WeightedSumAccumulate& operation) {
-    os_ << "WeightedSumAccumulate" << std::visit(GPToMap{}, operation);
+    os_ << "WeightedSumAccumulate" << operation.guts();
   }
 };
 
@@ -100,6 +107,17 @@ std::ostream& operator<<(std::ostream& os, GPOperation const& v) {
   std::visit(GPOperationOstream{os}, v);
   return os;
 }
+
+// struct GPToMap {
+//   StringSizeMap operator()(const GPOperations::Zero& operation) {
+//     return {{"idx", operation.idx}};
+//   }
+//   StringSizeMap operator()(const GPOperations::WeightedSumAccumulate& operation) {
+//     return {{"dest_idx", operation.dest_idx},
+//             {"weight_idx", operation.weight_idx},
+//             {"src_idx", operation.src_idx}};
+//   }
+// };
 
 // struct GPOperationOstream {
 //   std::ostream& os_;
