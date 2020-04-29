@@ -37,16 +37,13 @@ using StringPCSSMap =
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
 
 namespace SBNMaps {
-
 // Make a map from each Tag to the bitset representing the ids below the Tag.
 SizeBitsetMap IdIdSetMapOf(const Node::NodePtr& topology);
 // This function returns a vector indexed by the edges of the tree and
-// containing the corresponding split index as indexed by the indexer.
-RootedIndexerRepresentation SplitIndicesOf(const BitsetSizeMap& indexer,
-                                           const Node::NodePtr& topology);
+// containing indices of the corresponding splits as indexed by the indexer.
+SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& topology);
 // Make a string version of a PCSSDict.
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
-
 }  // namespace SBNMaps
 
 namespace UnrootedSBNMaps {
@@ -109,8 +106,8 @@ std::unordered_map<std::string, T> StringifyMap(std::unordered_map<Key, T> m) {
 // https://www.boost.org/doc/libs/1_35_0/doc/html/boost/hash_combine_id241013.html
 namespace std {
 template <>
-struct hash<RootedIndexerRepresentation> {
-  size_t operator()(const RootedIndexerRepresentation& values) const {
+struct hash<SizeVector> {
+  size_t operator()(const SizeVector& values) const {
     int hash = values[0];
     for (size_t i = 1; i < values.size(); i++) {
       hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);
