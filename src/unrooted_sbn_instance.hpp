@@ -17,6 +17,16 @@ class UnrootedSBNInstance : public SBNInstance {
   size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
   size_t TreeCount() const override { return tree_collection_.TreeCount(); }
   TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
+  Node::TopologyCounter TopologyCounter() const override {
+    return tree_collection_.TopologyCounter();
+  }
+  BitsetSizeDict RootsplitCounterOf(
+      const Node::TopologyCounter &topologies) const override {
+    return UnrootedSBNMaps::RootsplitCounterOf(topologies);
+  }
+  PCSSDict PCSSCounterOf(const Node::TopologyCounter &topologies) const override {
+    return UnrootedSBNMaps::PCSSCounterOf(topologies);
+  }
 
   // ** SBN-related items
 

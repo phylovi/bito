@@ -14,16 +14,15 @@
 void UnrootedSBNInstance::ProcessLoadedTrees() {
   size_t index = 0;
   ClearTreeCollectionAssociatedState();
-  topology_counter_ = tree_collection_.TopologyCounter();
+  topology_counter_ = TopologyCounter();
   // Start by adding the rootsplits.
-  for (const auto &iter : UnrootedSBNMaps::RootsplitCounterOf(topology_counter_)) {
+  for (const auto &iter : RootsplitCounterOf(topology_counter_)) {
     SafeInsert(indexer_, iter.first, index);
     rootsplits_.push_back(iter.first);
     index++;
   }
   // Now add the PCSSs.
-  for (const auto &[parent, child_counter] :
-       UnrootedSBNMaps::PCSSCounterOf(topology_counter_)) {
+  for (const auto &[parent, child_counter] : PCSSCounterOf(topology_counter_)) {
     SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
     for (const auto &child_iter : child_counter) {
       const auto &child = child_iter.first;

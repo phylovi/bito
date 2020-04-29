@@ -46,6 +46,14 @@ class SBNInstance {
   virtual size_t TaxonCount() const { return 0; }
   virtual size_t TreeCount() const { return 0; }
   virtual TagStringMap TagTaxonMap() const { return {}; }
+  virtual Node::TopologyCounter TopologyCounter() const { return {}; }
+  virtual BitsetSizeDict RootsplitCounterOf(
+      const Node::TopologyCounter &topologies) const {
+    return BitsetSizeDict(0);
+  }
+  virtual PCSSDict PCSSCounterOf(const Node::TopologyCounter &topologies) const {
+    return {};
+  }
 
   // ** SBN-related items
 

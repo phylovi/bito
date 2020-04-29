@@ -14,6 +14,10 @@ class RootedSBNInstance : public SBNInstance {
   size_t TreeCount() const override { return tree_collection_.TreeCount(); }
   TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
 
+  // Use the loaded trees to get the SBN maps, set taxon_names_, and prepare the
+  // sbn_parameters_ vector.
+  void ProcessLoadedTrees();
+
   // ** Phylogenetic likelihood
 
   std::vector<double> LogLikelihoods();
