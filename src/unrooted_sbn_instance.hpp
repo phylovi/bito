@@ -62,6 +62,12 @@ class UnrootedSBNInstance : public SBNInstance {
   // split.
   DoubleVectorVector SplitLengths() const;
 
+  // Turn an IndexerRepresentation into a string representation of the underying
+  // bitsets. This is really just so that we can make a test of indexer
+  // representations.
+  StringSetVector StringIndexerRepresentationOf(
+      UnrootedIndexerRepresentation indexer_representation) const;
+
   // This function is really just for testing-- it recomputes counters from
   // scratch.
   std::pair<StringSizeMap, StringPCSSMap> SplitCounters() const;

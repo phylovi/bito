@@ -100,20 +100,6 @@ StringVector SBNInstance::StringReversedIndexer() const {
   return reversed_indexer;
 }
 
-StringSetVector SBNInstance::StringIndexerRepresentationOf(
-    UnrootedIndexerRepresentation indexer_representation) const {
-  auto reversed_indexer = StringReversedIndexer();
-  StringSetVector string_sets;
-  for (const auto &rooted_representation : indexer_representation) {
-    StringSet string_set;
-    for (const auto index : rooted_representation) {
-      SafeInsert(string_set, reversed_indexer[index]);
-    }
-    string_sets.push_back(std::move(string_set));
-  }
-  return string_sets;
-}
-
 void SBNInstance::NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
   SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplits_.size(),
                                                   parent_to_range_);

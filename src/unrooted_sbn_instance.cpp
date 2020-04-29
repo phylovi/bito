@@ -80,6 +80,20 @@ DoubleVectorVector UnrootedSBNInstance::SplitLengths() const {
   return psp_indexer_.SplitLengths(tree_collection_);
 }
 
+StringSetVector UnrootedSBNInstance::StringIndexerRepresentationOf(
+    UnrootedIndexerRepresentation indexer_representation) const {
+  auto reversed_indexer = StringReversedIndexer();
+  StringSetVector string_sets;
+  for (const auto &rooted_representation : indexer_representation) {
+    StringSet string_set;
+    for (const auto index : rooted_representation) {
+      SafeInsert(string_set, reversed_indexer[index]);
+    }
+    string_sets.push_back(std::move(string_set));
+  }
+  return string_sets;
+}
+
 // This function is really just for testing-- it recomputes from scratch.
 std::pair<StringSizeMap, StringPCSSMap> UnrootedSBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();

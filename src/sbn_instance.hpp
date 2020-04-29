@@ -79,12 +79,6 @@ class SBNInstance {
   // strings.
   StringVector StringReversedIndexer() const;
 
-  // Turn an IndexerRepresentation into a string representation of the underying
-  // bitsets. This is really just so that we can make a test of indexer
-  // representations.
-  StringSetVector StringIndexerRepresentationOf(
-      UnrootedIndexerRepresentation indexer_representation) const;
-
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
 
   // ** Phylogenetic likelihood
