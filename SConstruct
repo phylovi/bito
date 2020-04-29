@@ -181,4 +181,4 @@ whl = env.WhlFile(source=platlib)
 print("\nTo install python wheel, execute:")
 print(f"pip install -U {whl[0]}\n")
 
-env.Default(doctest, whl, noodle)
+env.Default(doctest, whl, noodle, lasagna)
