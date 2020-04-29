@@ -42,8 +42,8 @@ SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
 
 StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
   StringPCSSMap d_str;
-  for (const auto& iter : d) {
-    d_str[iter.first.ToString()] = StringifyMap(iter.second.Map());
+  for (const auto& [parent, child_dict] : d) {
+    d_str[parent.ToString()] = StringifyMap(child_dict.Map());
   }
   return d_str;
 }
