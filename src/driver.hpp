@@ -93,7 +93,7 @@ TEST_CASE("Driver") {
   auto newick_collection = driver.ParseNewickFile("data/DS1.subsampled_10.t.nwk");
   CHECK_EQ(nexus_collection, newick_collection);
   driver.Clear();
-  auto five_taxon = driver.ParseNewickFile("data/five_taxon.nwk");
+  auto five_taxon = driver.ParseNewickFile("data/five_taxon_unrooted.nwk");
   std::vector<std::string> correct_five_taxon_names({"x0", "x1", "x2", "x3", "x4"});
   CHECK_EQ(five_taxon.TaxonNames(), correct_five_taxon_names);
   // Check that we can parse BEAST trees with [&comments], and that the different

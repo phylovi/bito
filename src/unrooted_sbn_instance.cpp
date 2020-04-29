@@ -11,42 +11,9 @@
 
 // ** Building SBN-related items
 
-void UnrootedSBNInstance::ProcessLoadedTrees() {
-  size_t index = 0;
-  ClearTreeCollectionAssociatedState();
-  topology_counter_ = tree_collection_.TopologyCounter();
-  // Start by adding the rootsplits.
-  for (const auto &iter : SBNMaps::RootsplitCounterOf(topology_counter_)) {
-    SafeInsert(indexer_, iter.first, index);
-    rootsplits_.push_back(iter.first);
-    index++;
-  }
-  // Now add the PCSSs.
-  for (const auto &[parent, child_counter] :
-       SBNMaps::PCSSCounterOf(topology_counter_)) {
-    SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
-    for (const auto &child_iter : child_counter) {
-      const auto &child = child_iter.first;
-      SafeInsert(indexer_, parent + child, index);
-      SafeInsert(index_to_child_, index, Bitset::ChildSubsplit(parent, child));
-      index++;
-    }
-  }
-  sbn_parameters_.resize(index);
-  sbn_parameters_.setOnes();
-  psp_indexer_ = PSPIndexer(rootsplits_, indexer_);
-  taxon_names_ = tree_collection_.TaxonNames();
-}
-
-void UnrootedSBNInstance::CheckTopologyCounter() {
-  if (topology_counter_.empty()) {
-    Failwith("Please load some trees into your SBN instance.");
-  }
-}
-
 void UnrootedSBNInstance::TrainSimpleAverage() {
   CheckTopologyCounter();
-  auto indexer_representation_counter = SBNMaps::IndexerRepresentationCounterOf(
+  auto indexer_representation_counter = UnrootedSBNMaps::IndexerRepresentationCounterOf(
       indexer_, topology_counter_, sbn_parameters_.size());
   SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
                                 rootsplits_.size(), parent_to_range_);
@@ -56,7 +23,7 @@ EigenVectorXd UnrootedSBNInstance::TrainExpectationMaximization(double alpha,
                                                                 size_t max_iter,
                                                                 double score_epsilon) {
   CheckTopologyCounter();
-  auto indexer_representation_counter = SBNMaps::IndexerRepresentationCounterOf(
+  auto indexer_representation_counter = UnrootedSBNMaps::IndexerRepresentationCounterOf(
       indexer_, topology_counter_, sbn_parameters_.size());
   return SBNProbability::ExpectationMaximization(
       sbn_parameters_, indexer_representation_counter, rootsplits_.size(),
@@ -88,12 +55,12 @@ void UnrootedSBNInstance::SampleTrees(size_t count) {
   }
 }
 
-std::vector<IndexerRepresentation> UnrootedSBNInstance::MakeIndexerRepresentations()
-    const {
-  std::vector<IndexerRepresentation> representations;
+std::vector<UnrootedIndexerRepresentation>
+UnrootedSBNInstance::MakeIndexerRepresentations() const {
+  std::vector<UnrootedIndexerRepresentation> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
-    representations.push_back(SBNMaps::IndexerRepresentationOf(
+    representations.push_back(UnrootedSBNMaps::IndexerRepresentationOf(
         indexer_, tree.Topology(), sbn_parameters_.size()));
   }
   return representations;
@@ -113,11 +80,25 @@ DoubleVectorVector UnrootedSBNInstance::SplitLengths() const {
   return psp_indexer_.SplitLengths(tree_collection_);
 }
 
+StringSetVector UnrootedSBNInstance::StringIndexerRepresentationOf(
+    UnrootedIndexerRepresentation indexer_representation) const {
+  auto reversed_indexer = StringReversedIndexer();
+  StringSetVector string_sets;
+  for (const auto &rooted_representation : indexer_representation) {
+    StringSet string_set;
+    for (const auto index : rooted_representation) {
+      SafeInsert(string_set, reversed_indexer[index]);
+    }
+    string_sets.push_back(std::move(string_set));
+  }
+  return string_sets;
+}
+
 // This function is really just for testing-- it recomputes from scratch.
 std::pair<StringSizeMap, StringPCSSMap> UnrootedSBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();
-  return {StringifyMap(SBNMaps::RootsplitCounterOf(counter).Map()),
-          SBNMaps::StringPCSSMapOf(SBNMaps::PCSSCounterOf(counter))};
+  return {StringifyMap(UnrootedSBNMaps::RootsplitCounterOf(counter).Map()),
+          SBNMaps::StringPCSSMapOf(UnrootedSBNMaps::PCSSCounterOf(counter))};
 }
 
 // ** I/O
@@ -177,7 +158,7 @@ UnrootedSBNInstance::RangeVector UnrootedSBNInstance::GetSubsplitRanges(
 // normalized_sbn_parameters_in_log.
 EigenVectorXd UnrootedSBNInstance::GradientOfLogQ(
     EigenVectorXdRef normalized_sbn_parameters_in_log,
-    const IndexerRepresentation &indexer_representation) {
+    const UnrootedIndexerRepresentation &indexer_representation) {
   EigenVectorXd grad_log_q = EigenVectorXd::Zero(sbn_parameters_.size());
   double log_q = DOUBLE_NEG_INF;
   for (const auto &rooted_representation : indexer_representation) {
@@ -233,7 +214,7 @@ EigenVectorXd UnrootedSBNInstance::TopologyGradients(const EigenVectorXdRef log_
   EigenVectorXd normalized_sbn_parameters_in_log =
       EigenVectorXd::Constant(sbn_parameters_.size(), DOUBLE_NAN);
   for (size_t i = 0; i < tree_count; i++) {
-    const auto indexer_representation = SBNMaps::IndexerRepresentationOf(
+    const auto indexer_representation = UnrootedSBNMaps::IndexerRepresentationOf(
         indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
     // PROFILE: does it matter that we are allocating another sbn_vector_ sized object?
     EigenVectorXd log_grad_q =

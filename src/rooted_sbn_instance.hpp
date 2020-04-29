@@ -11,8 +11,19 @@ class RootedSBNInstance : public SBNInstance {
   using SBNInstance::SBNInstance;
 
   size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
+  StringVector TaxonNames() const override { return tree_collection_.TaxonNames(); }
   size_t TreeCount() const override { return tree_collection_.TreeCount(); }
   TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
+  Node::TopologyCounter TopologyCounter() const override {
+    return tree_collection_.TopologyCounter();
+  }
+  BitsetSizeDict RootsplitCounterOf(
+      const Node::TopologyCounter &topologies) const override {
+    return RootedSBNMaps::RootsplitCounterOf(topologies);
+  }
+  PCSSDict PCSSCounterOf(const Node::TopologyCounter &topologies) const override {
+    return RootedSBNMaps::PCSSCounterOf(topologies);
+  }
 
   // ** Phylogenetic likelihood
 
@@ -29,6 +40,49 @@ class RootedSBNInstance : public SBNInstance {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+
+TEST_CASE("RootedSBNInstance: subsplit support") {
+  RootedSBNInstance inst("charlie");
+  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
+  inst.ProcessLoadedTrees();
+  auto pretty_indexer = inst.PrettyIndexer();
+  // The indexer_ is to index the sbn_parameters_. Note that neither of these
+  // data structures attempt to catalog the complete collection of rootsplits or
+  // PCSSs, but just those that are present in the the input trees.
+  //
+  // The indexer_ and sbn_parameters_ are laid out as follows (I'll just call it
+  // the "index" in what follows). Say there are rootsplit_count rootsplits in
+  // the support.
+  // The first rootsplit_count entries of the index are assigned to the
+  // rootsplits (again, those rootsplits that are present for some rooting of
+  // the unrooted input trees). The rest of the entries of the index are laid out as
+  // blocks of parameters for PCSSs that share the same parent. Take a look at the
+  // description of PCSS bitsets (and the unit tests) in bitset.hpp to understand the
+  // notation used here.
+  //
+  // In contrast to the unrooted case, we can write out the pretty indexer here and
+  // verify it by hand. Note the block structure in which the two children of
+  // 10000|01111 are grouped together.
+  StringVector correct_pretty_indexer{
+      "00111",              // ((x0,x1),(x2,(x3,x4)))
+      "01111",              // (x0,(((x1,x3),x2),x4)) and ((x1,((x2,x4),x3)),x0)
+      "00010",              // (x3,((x0,(x4,x1)),x2))
+      "00100|01010|00010",  // ((x1,x3),x2)
+      "00111|11000|01000",  // ((x0,x1),(x2,(x3,x4)))
+      "00100|00011|00001",  // (x2,(x3,x4))
+      "11000|00111|00011",  // ((x0,x1),(x2,(x3,x4)))
+      "00100|11001|01001",  // ((x0,(x4,x1)),x2)
+      "10000|01001|00001",  // (x0,(x4,x1))
+      "01000|00111|00010",  // (x1,((x2,x4),x3))
+      "10000|01111|00001",  // (x0,(((x1,x3),x2),x4))
+      "10000|01111|00111",  // ((x1,((x2,x4),x3)),x0)
+      "00010|00101|00001",  // ((x2,x4),x3)
+      "00001|01110|00100",  // (((x1,x3),x2),x4)
+      "00010|11101|00100"   // (x3,((x0,(x4,x1)),x2))
+  };
+  CHECK(pretty_indexer == correct_pretty_indexer);
+}
+
 TEST_CASE("RootedSBNInstance: gradients") {
   RootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/fluA.tree");

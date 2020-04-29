@@ -40,6 +40,15 @@ class DefaultDict {
     }
   }
 
+  void increment(Key &&key, T value) {
+    auto search = map_.find(key);
+    if (search == map_.end()) {
+      SafeInsert(map_, key, value);
+    } else {
+      search->second += value;
+    }
+  }
+
   void print() const {
     std::cout << "Default value: " << default_value_ << std::endl;
     for (const auto &iter : map_) {

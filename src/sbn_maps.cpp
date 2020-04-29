@@ -9,7 +9,7 @@
 #include <unordered_set>
 #include <utility>
 
-SizeBitsetMap SBNMaps::IdIdSetMapOf(Node::NodePtr topology) {
+SizeBitsetMap SBNMaps::IdIdSetMapOf(const Node::NodePtr& topology) {
   SizeBitsetMap map;
   auto id_count = topology->Id() + 1;
   topology->PostOrder([&map, id_count](const Node* node) {
@@ -26,69 +26,6 @@ SizeBitsetMap SBNMaps::IdIdSetMapOf(Node::NodePtr topology) {
   return map;
 }
 
-BitsetSizeDict SBNMaps::RootsplitCounterOf(const Node::TopologyCounter& topologies) {
-  BitsetSizeDict rootsplit_counter(0);
-  for (const auto& iter : topologies) {
-    auto topology = iter.first;
-    auto count = iter.second;
-    auto Aux = [&rootsplit_counter, &count](const Node* n) {
-      auto split = n->Leaves();
-      split.Minorize();
-      rootsplit_counter.increment(std::move(split), count);
-    };
-    for (const auto& child : topology->Children()) {
-      child->PreOrder(Aux);
-    }
-  }
-  return rootsplit_counter;
-}
-
-PCSSDict SBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
-  PCSSDict pcss_dict;
-  for (const auto& iter : topologies) {
-    auto topology = iter.first;
-    auto count = iter.second;
-    auto leaf_count = topology->LeafCount();
-    Assert(topology->Children().size() == 3,
-           "PCSSCounterOf was expecting a tree with a trifurcation at the root!");
-    topology->PCSSPreOrder([&pcss_dict, &count, &leaf_count](
-                               const Node* sister_node, bool sister_direction,
-                               const Node* focal_node, bool focal_direction,  //
-                               const Node* child0_node,
-                               bool child0_direction,  //
-                               const Node* child1_node, bool child1_direction,
-                               const Node*  // ignore virtual root clade
-                           ) {
-      Bitset parent(2 * leaf_count, false);
-      // The first chunk is for the sister node.
-      parent.CopyFrom(sister_node->Leaves(), 0, sister_direction);
-      // The second chunk is for the focal node.
-      parent.CopyFrom(focal_node->Leaves(), leaf_count, focal_direction);
-      // Now we build the child bitset.
-      auto child0 = child0_node->Leaves();
-      if (child0_direction) {
-        child0.flip();
-      }
-      auto child1 = child1_node->Leaves();
-      if (child1_direction) {
-        child1.flip();
-      }
-      auto child = std::min(child0, child1);
-      // Insert the parent-child pair into the map.
-      auto search = pcss_dict.find(parent);
-      if (search == pcss_dict.end()) {
-        // The first time we have seen this parent.
-        BitsetSizeDict child_singleton(0);
-        child_singleton.increment(std::move(child), count);
-        SafeInsert(pcss_dict, std::move(parent), child_singleton);
-      } else {
-        search->second.increment(std::move(child), count);
-      }
-    });
-  }
-  return pcss_dict;
-}
-
 SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
                                    const Node::NodePtr& topology) {
   SizeVector split_result(topology->Id());
@@ -101,6 +38,88 @@ SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
     }
   });
   return split_result;
+}
+
+StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
+  StringPCSSMap d_str;
+  for (const auto& [parent, child_dict] : d) {
+    d_str[parent.ToString()] = StringifyMap(child_dict.Map());
+  }
+  return d_str;
+}
+
+BitsetSizeDict UnrootedSBNMaps::RootsplitCounterOf(
+    const Node::TopologyCounter& topologies) {
+  BitsetSizeDict rootsplit_counter(0);
+  for (const auto& [topology, topology_count] : topologies) {
+    auto Aux = [&rootsplit_counter, &topology_count = topology_count](const Node* n) {
+      auto split = n->Leaves();
+      split.Minorize();
+      rootsplit_counter.increment(std::move(split), topology_count);
+    };
+    for (const auto& child : topology->Children()) {
+      child->PreOrder(Aux);
+    }
+  }
+  return rootsplit_counter;
+}
+
+// See functions below or the comments above the definition of UnrootedPCSSFun to
+// understand the collection of arguments starting with `sister_node`.
+void AddToPCSSDict(PCSSDict& pcss_dict, const size_t topology_count,
+                   const size_t leaf_count, const Node* sister_node,
+                   bool sister_direction, const Node* focal_node, bool focal_direction,
+                   const Node* child0_node, bool child0_direction,
+                   const Node* child1_node, bool child1_direction) {
+  Bitset parent(2 * leaf_count, false);
+  // The first chunk is for the sister node.
+  parent.CopyFrom(sister_node->Leaves(), 0, sister_direction);
+  // The second chunk is for the focal node.
+  parent.CopyFrom(focal_node->Leaves(), leaf_count, focal_direction);
+  // Now we build the child bitset.
+  auto child0 = child0_node->Leaves();
+  if (child0_direction) {
+    child0.flip();
+  }
+  auto child1 = child1_node->Leaves();
+  if (child1_direction) {
+    child1.flip();
+  }
+  auto child = std::min(child0, child1);
+  // Insert the parent-child pair into the map.
+  auto search = pcss_dict.find(parent);
+  if (search == pcss_dict.end()) {
+    // The first time we have seen this parent.
+    BitsetSizeDict child_singleton(0);
+    child_singleton.increment(std::move(child), topology_count);
+    SafeInsert(pcss_dict, std::move(parent), std::move(child_singleton));
+  } else {
+    search->second.increment(std::move(child), topology_count);
+  }
+}
+
+PCSSDict UnrootedSBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
+  PCSSDict pcss_dict;
+  for (const auto& [topology, topology_count] : topologies) {
+    auto leaf_count = topology->LeafCount();
+    Assert(topology->Children().size() == 3,
+           "UnrootedSBNMaps::PCSSCounterOf was expecting a tree with a trifurcation at "
+           "the root!");
+    topology->UnrootedPCSSPreOrder([&pcss_dict, &topology_count = topology_count,
+                                    &leaf_count](
+                                       const Node* sister_node, bool sister_direction,
+                                       const Node* focal_node, bool focal_direction,  //
+                                       const Node* child0_node,
+                                       bool child0_direction,  //
+                                       const Node* child1_node, bool child1_direction,
+                                       const Node*  // ignore virtual root clade
+                                   ) {
+      AddToPCSSDict(pcss_dict, topology_count, leaf_count, sister_node,
+                    sister_direction, focal_node, focal_direction, child0_node,
+                    child0_direction, child1_node, child1_direction);
+    });
+  }
+  return pcss_dict;
 }
 
 // Return the rootsplit of a rooted bifurcating topology.
@@ -134,9 +153,9 @@ Bitset PCSSBitsetOf(const size_t leaf_count,  //
   return bitset;
 }
 
-IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                       const Node::NodePtr& topology,
-                                                       const size_t default_index) {
+UnrootedIndexerRepresentation UnrootedSBNMaps::IndexerRepresentationOf(
+    const BitsetSizeMap& indexer, const Node::NodePtr& topology,
+    const size_t default_index) {
   const auto leaf_count = topology->LeafCount();
   // First, the rootsplits.
   SizeVector rootsplit_result = SBNMaps::SplitIndicesOf(indexer, topology);
@@ -150,12 +169,13 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
                    return v;
                  });
   // Now we append the PCSSs.
-  topology->PCSSPreOrder([&indexer, &default_index, &leaf_count, &result, &topology](
-                             const Node* sister_node, bool sister_direction,
-                             const Node* focal_node, bool focal_direction,
-                             const Node* child0_node, bool child0_direction,
-                             const Node* child1_node, bool child1_direction,
-                             const Node* virtual_root_clade) {
+  topology->UnrootedPCSSPreOrder([&indexer, &default_index, &leaf_count, &result,
+                                  &topology](
+                                     const Node* sister_node, bool sister_direction,
+                                     const Node* focal_node, bool focal_direction,
+                                     const Node* child0_node, bool child0_direction,
+                                     const Node* child1_node, bool child1_direction,
+                                     const Node* virtual_root_clade) {
     const auto bitset = PCSSBitsetOf(leaf_count, sister_node, sister_direction,
                                      focal_node, focal_direction, child0_node,
                                      child0_direction, child1_node, child1_direction);
@@ -195,22 +215,48 @@ IndexerRepresentation SBNMaps::IndexerRepresentationOf(const BitsetSizeMap& inde
   return result;
 }
 
-IndexerRepresentationCounter SBNMaps::IndexerRepresentationCounterOf(
+UnrootedIndexerRepresentationCounter UnrootedSBNMaps::IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
     const size_t default_index) {
-  IndexerRepresentationCounter counter;
+  UnrootedIndexerRepresentationCounter counter;
   counter.reserve(topology_counter.size());
   for (const auto& [topology, topology_count] : topology_counter) {
     counter.push_back(
-        {SBNMaps::IndexerRepresentationOf(indexer, topology, default_index),
+        {UnrootedSBNMaps::IndexerRepresentationOf(indexer, topology, default_index),
          topology_count});
   }
   return counter;
 }
 
-SizeVector SBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                  const Node::NodePtr& topology,
-                                                  const size_t default_index) {
+BitsetSizeDict RootedSBNMaps::RootsplitCounterOf(
+    const Node::TopologyCounter& topologies) {
+  BitsetSizeDict rootsplit_counter(0);
+  for (const auto& [topology, topology_count] : topologies) {
+    rootsplit_counter.increment(Rootsplit(topology.get()), topology_count);
+  }
+  return rootsplit_counter;
+}
+
+PCSSDict RootedSBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies) {
+  PCSSDict pcss_dict;
+  for (const auto& [topology, topology_count] : topologies) {
+    auto leaf_count = topology->LeafCount();
+    Assert(topology->Children().size() == 2,
+           "RootedSBNMaps::PCSSCounterOf was expecting a bifurcating tree!");
+    topology->RootedPCSSPreOrder(
+        [&pcss_dict, &topology_count = topology_count, &leaf_count](
+            const Node* sister_node, const Node* focal_node, const Node* child0_node,
+            const Node* child1_node) {
+          AddToPCSSDict(pcss_dict, topology_count, leaf_count, sister_node, false,
+                        focal_node, false, child0_node, false, child1_node, false);
+        });
+  }
+  return pcss_dict;
+}
+
+SizeVector RootedSBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                        const Node::NodePtr& topology,
+                                                        const size_t default_index) {
   const auto leaf_count = topology->LeafCount();
   SizeVector result;
   // Start with the rootsplit.
@@ -227,7 +273,7 @@ SizeVector SBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
   return result;
 }
 
-void SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
+void RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
     RootedIndexerRepresentationSizeDict& dict,
     SizeVector rooted_indexer_representation) {
   Assert(rooted_indexer_representation.size() > 1,
@@ -238,18 +284,11 @@ void SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
   dict.increment(rooted_indexer_representation, 1);
 }
 
-void SBNMaps::IncrementRootedIndexerRepresentationSizeDict(
+void RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
     RootedIndexerRepresentationSizeDict& dict,
-    const IndexerRepresentation& indexer_representation) {
+    const UnrootedIndexerRepresentation& indexer_representation) {
   for (const auto& rooted_indexer_representation : indexer_representation) {
     IncrementRootedIndexerRepresentationSizeDict(dict, rooted_indexer_representation);
   }
 }
 
-StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
-  StringPCSSMap d_str;
-  for (const auto& iter : d) {
-    d_str[iter.first.ToString()] = StringifyMap(iter.second.Map());
-  }
-  return d_str;
-}
