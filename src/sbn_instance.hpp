@@ -25,7 +25,7 @@
 
 class SBNInstance {
  public:
-  // A Range is a range of values of our vector using 0-indexed Eigen/Python slice
+  // A Range is a range of values of our vector using 0-indexed Python/Numpy slice
   // notation, such that if we have the range (1, 3), that refers to the items with
   // 0-index 1 and 2. Said another way, these are considered half-open intervals [start,
   // end).
