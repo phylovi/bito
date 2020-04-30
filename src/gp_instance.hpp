@@ -19,6 +19,7 @@ class GPInstance {
   void ReadNexusFile(std::string fname);
 
   void MakeEngine();
+  GPEngine *GetEngine() const;
 
  private:
   Alignment alignment_;
@@ -45,7 +46,6 @@ class GPInstance {
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;
   void ProcessLoadedTrees();
-  GPEngine *GetEngine() const;
 };
 
 #endif  // SRC_GP_INSTANCE_HPP_

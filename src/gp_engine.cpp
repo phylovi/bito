@@ -40,3 +40,10 @@ void GPEngine::SetBranchLengthForTransitionMatrix(double branch_length) {
   diagonal_matrix_.diagonal() = (branch_length * eigenvalues_).array().exp();
   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
 }
+
+void GPEngine::PrintPLV(size_t plv_idx) {
+  for (auto row : plvs_[plv_idx].rowwise()) {
+    std::cout << row << std::endl;
+  }
+  std::cout << std::endl;
+}

@@ -33,11 +33,10 @@ class GPEngine {
     plvs_[op.dest_idx].array() =
         plvs_[op.src1_idx].array() * plvs_[op.src2_idx].array();
   }
-  // TODO
-  // Stores the likelihood of `plv[src1_idx]` and `plv[src2_idx]`, incorporating site
-  // pattern weights, in `likelihoods[dest_idx]` (note that we will already have the
-  // stationary distribution in the rootward partial likelihood vector.
-  void operator()(const GPOperations::Likelihood& op) {}
+  void operator()(const GPOperations::Likelihood& op) {
+    likelihoods_[op.dest_idx] =
+        plvs_[op.src1_idx].reshaped().dot(plvs_[op.src2_idx].reshaped());
+  }
   void operator()(const GPOperations::EvolveRootward& op) {
     SetBranchLengthForTransitionMatrix(branch_lengths_[op.branch_length_idx]);
     plvs_[op.dest_idx] = transition_matrix_ * plvs_[op.src_idx];
@@ -51,6 +50,12 @@ class GPEngine {
 
   void SetBranchLengthForTransitionMatrix(double branch_length);
   const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
+  void PrintPLV(size_t plv_idx);
+
+  void SetBranchLengths(EigenVectorXd branch_lengths) {
+    branch_lengths_ = branch_lengths;
+  };
+  double GetLikelihood(size_t plv_idx) { return likelihoods_(plv_idx); };
 
  private:
   SitePattern site_pattern_;
