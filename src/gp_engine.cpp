@@ -12,6 +12,10 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t pcss_count)
   likelihoods_.resize(pcss_count_);
   q_.resize(pcss_count_);
 
+  auto weights = site_pattern_.GetWeights();
+  site_pattern_weights_ =
+      Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
+
   InitializePLVsWithSitePatterns();
 }
 
@@ -21,8 +25,10 @@ void GPEngine::InitializePLVsWithSitePatterns() {
     size_t site_idx = 0;
     for (const int symbol : pattern) {
       Assert(symbol >= 0, "Negative symbol!");
-      if (symbol < 4) {
-        plvs_[taxon_idx](symbol, site_idx) = 1.;
+      if (symbol == 4) {  // Gap character.
+        plvs_.at(taxon_idx).col(site_idx).setConstant(1.);
+      } else if (symbol < 4) {
+        plvs_.at(taxon_idx)(symbol, site_idx) = 1.;
       }
       site_idx++;
     }

@@ -34,8 +34,15 @@ class GPEngine {
         plvs_[op.src1_idx].array() * plvs_[op.src2_idx].array();
   }
   void operator()(const GPOperations::Likelihood& op) {
-    likelihoods_[op.dest_idx] =
-        plvs_[op.src1_idx].reshaped().dot(plvs_[op.src2_idx].reshaped());
+    std::cout << "likelihood:\n";
+    PrintPLV(op.src1_idx);
+    std::cout << "\n";
+    PrintPLV(op.src2_idx);
+    std::cout << "\n";
+    utility_.array() =
+        (plvs_[op.src1_idx].transpose() * plvs_[op.src2_idx]).diagonal().array().log();
+    std::cout << utility_ << std::endl;
+    likelihoods_[op.dest_idx] = utility_.dot(site_pattern_weights_);
   }
   void operator()(const GPOperations::EvolveRootward& op) {
     SetBranchLengthForTransitionMatrix(branch_lengths_[op.branch_length_idx]);
@@ -66,6 +73,7 @@ class GPEngine {
   EigenVectorXd branch_lengths_;
   EigenVectorXd likelihoods_;
   EigenVectorXd q_;
+  EigenVectorXd utility_;
 
   JC69Model substitution_model_;
   Eigen::Matrix4d eigenmatrix_ = substitution_model_.GetEigenvectors().reshaped(4, 4);
@@ -75,6 +83,7 @@ class GPEngine {
   Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
   Eigen::Matrix4d transition_matrix_;
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
+  EigenVectorXd site_pattern_weights_;
 
   void InitializePLVsWithSitePatterns();
 };

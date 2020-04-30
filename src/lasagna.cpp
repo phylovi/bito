@@ -24,19 +24,14 @@ TEST_CASE("GPInstance") {
       GPOperations::Likelihood{0, 3, 9},
   };
 
-  std::cout << operations << std::endl;
-
   GPInstance inst;
-
   inst.ReadFastaFile("data/hello.fasta");
   inst.ReadNewickFile("data/hello_rooted.nwk");
   inst.MakeEngine();
   auto engine = inst.GetEngine();
-  engine->PrintPLV(3);
   EigenVectorXd branch_lengths(4);
   branch_lengths << 0.1, 0.1, 0.2, 0.1;
   engine->SetBranchLengths(branch_lengths);
   engine->ProcessOperations(operations);
-  engine->PrintPLV(4);
-  std::cout << engine->GetLikelihood(0) << std::endl;
+  CHECK_LT(fabs(engine->GetLikelihood(0) - -84.852358), 1e-6);
 }
