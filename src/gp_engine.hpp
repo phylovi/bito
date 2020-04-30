@@ -11,19 +11,19 @@
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 
-using NucleotidePLV = Eigen::Matrix<double, Eigen::Dynamic, 4, Eigen::RowMajor>;
+using NucleotidePLV = Eigen::Matrix<double, 4, Eigen::Dynamic, Eigen::RowMajor>;
 
 class GPEngine {
  public:
   GPEngine(){};
   GPEngine(SitePattern site_pattern, size_t pcss_count);
 
-  // TODO replace braces with at
+  // TODO replace brackets with at
   void operator()(const GPOperations::Zero& op) { plvs_[op.dest_idx].setZero(); }
   void operator()(const GPOperations::SetToStationaryDistribution& op) {
     auto& plv = plvs_.at(op.dest_idx);
-    for (size_t column_idx = 0; column_idx < 4; ++column_idx) {
-      plv.col(column_idx).array() = stationary_distribution_(column_idx);
+    for (size_t row_idx = 0; row_idx < 4; ++row_idx) {
+      plv.row(row_idx).array() = stationary_distribution_(row_idx);
     }
   }
   void operator()(const GPOperations::WeightedSumAccumulate& op) {
@@ -39,9 +39,11 @@ class GPEngine {
   }
   void operator()(const GPOperations::EvolveRootward& op) {
     SetBranchLengthForTransitionMatrix(branch_lengths_[op.branch_length_idx]);
+    // std::cout << transition_matrix_.cols() << " " <<
     plvs_[op.dest_idx] = transition_matrix_ * plvs_[op.src_idx];
   }
   void operator()(const GPOperations::EvolveLeafward& op) {}
+  // TODO Perhaps not?
   void operator()(const GPOperations::OptimizeRootward& op) {}
   void operator()(const GPOperations::OptimizeLeafward& op) {}
   void operator()(const GPOperations::UpdateSBNProbabilities& op) {}
