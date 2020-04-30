@@ -9,6 +9,7 @@
 #include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
 #include "site_pattern.hpp"
+#include "substitution_model.hpp"
 
 using NucleotidePLV = Eigen::Matrix<double, Eigen::Dynamic, 4, Eigen::RowMajor>;
 
@@ -37,6 +38,8 @@ class GPEngine {
     }
   }
 
+  void TransitionMatrix(double branch_length) {}
+
  private:
   SitePattern site_pattern_;
   size_t pcss_count_;
@@ -44,6 +47,13 @@ class GPEngine {
   EigenVectorXd branch_lengths_;
   EigenVectorXd likelihoods_;
   EigenVectorXd q_;
+
+  JC69Model substitution_model_;
+  Eigen::Matrix4d eigenmatrix_ = substitution_model_.GetEigenvectors().reshaped(4, 4);
+  Eigen::Matrix4d inverse_eigenmatrix_ =
+      substitution_model_.GetInverseEigenvectors().reshaped(4, 4);
+  Eigen::DiagonalMatrix<double, 4> diagonal_matrix_ =
+      substitution_model_.GetEigenvalues().asDiagonal();
 
   void InitializePLVsWithSitePatterns();
 };
