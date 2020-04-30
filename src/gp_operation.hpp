@@ -181,12 +181,4 @@ struct GPOperationOstream {
 std::ostream& operator<<(std::ostream& os, GPOperation const& operation);
 std::ostream& operator<<(std::ostream& os, GPOperationVector const& operation_vector);
 
-#ifdef DOCTEST_LIBRARY_INCLUDED
-
-TEST_CASE("GPOperation") {
-  // TODO
-}
-
-#endif  // DOCTEST_LIBRARY_INCLUDED
-
 #endif  // GP_OPERATION_HPP_

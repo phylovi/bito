@@ -5,8 +5,9 @@
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t pcss_count)
     : site_pattern_(std::move(site_pattern)), pcss_count_(pcss_count) {
+  auto plv_count = site_pattern_.PatternCount() + pcss_count_;
   plvs_ = std::vector<NucleotidePLV>(
-      pcss_count_, NucleotidePLV::Zero(site_pattern_.PatternCount(), 4));
+      plv_count, NucleotidePLV::Zero(site_pattern_.PatternCount(), 4));
   branch_lengths_.resize(pcss_count_);
   likelihoods_.resize(pcss_count_);
   q_.resize(pcss_count_);
@@ -19,7 +20,7 @@ void GPEngine::InitializePLVsWithSitePatterns() {
   for (const auto &pattern : site_pattern_.GetPatterns()) {
     size_t site_idx = 0;
     for (const int symbol : pattern) {
-      Assert(symbol >= 0, "Negative pattern!");
+      Assert(symbol >= 0, "Negative symbol!");
       if (symbol < 4) {
         plvs_[taxon_idx](site_idx, symbol) = 1.;
       }

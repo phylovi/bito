@@ -1,6 +1,10 @@
+
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+
+#include "doctest.h"
 #include "gp_instance.hpp"
 
-int main() {
+TEST_CASE("GPInstance") {
   GPOperationVector operations{GPOperations::Zero{5},
                                GPOperations::UpdateSBNProbabilities{2, 5}};
 
