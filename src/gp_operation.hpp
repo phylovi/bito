@@ -135,54 +135,60 @@ struct UpdateSBNProbabilities {
 };
 }  // namespace GPOperations
 
-  using namespace GPOperations;
+using GPOperation =
+    std::variant<GPOperations::Zero, GPOperations::WeightedSumAccumulate,
+                 GPOperations::Multiply, GPOperations::Likelihood,
+                 GPOperations::EvolveRootward, GPOperations::EvolveLeafward,
+                 GPOperations::OptimizeRootward, GPOperations::OptimizeLeafward,
+                 GPOperations::UpdateSBNProbabilities>;
 
-  using GPOperation =
-      std::variant<GPOperations::Zero, GPOperations::WeightedSumAccumulate,
-                   GPOperations::Multiply, GPOperations::Likelihood,
-                   GPOperations::EvolveRootward, GPOperations::EvolveLeafward,
-                   GPOperations::OptimizeRootward, GPOperations::OptimizeLeafward,
-                   GPOperations::UpdateSBNProbabilities>;
+using GPOperationVector = std::vector<GPOperation>;
 
-  using GPOperationVector = std::vector<GPOperation>;
+struct GPOperationOstream {
+  std::ostream& os_;
 
-  struct GPOperationOstream {
+  GPOperationOstream(std::ostream& os) : os_{os} {}
 
-    std::ostream& os_;
+  void operator()(const GPOperations::Zero& operation) {
+    os_ << "Zero" << operation.guts();
+  }
+  void operator()(const GPOperations::WeightedSumAccumulate& operation) {
+    os_ << "WeightedSumAccumulate" << operation.guts();
+  }
+  void operator()(const GPOperations::Multiply& operation) {
+    os_ << "Multiply" << operation.guts();
+  }
+  void operator()(const GPOperations::Likelihood& operation) {
+    os_ << "Likelihood" << operation.guts();
+  }
+  void operator()(const GPOperations::EvolveRootward& operation) {
+    os_ << "EvolveRootward" << operation.guts();
+  }
+  void operator()(const GPOperations::EvolveLeafward& operation) {
+    os_ << "EvolveLeafward" << operation.guts();
+  }
+  void operator()(const GPOperations::OptimizeRootward& operation) {
+    os_ << "OptimizeRootward" << operation.guts();
+  }
+  void operator()(const GPOperations::OptimizeLeafward& operation) {
+    os_ << "OptimizeLeafward" << operation.guts();
+  }
+  void operator()(const GPOperations::UpdateSBNProbabilities& operation) {
+    os_ << "UpdateSBNProbabilities" << operation.guts();
+  }
+};
 
-    GPOperationOstream(std::ostream& os) : os_{os} {}
+std::ostream& operator<<(std::ostream& os, GPOperation const& operation) {
+  std::visit(GPOperationOstream{os}, operation);
+  return os;
+}
 
-    void operator()(const GPOperations::Zero& operation) {
-      os_ << "Zero" << operation.guts();
-    }
-    void operator()(const GPOperations::WeightedSumAccumulate& operation) {
-      os_ << "WeightedSumAccumulate" << operation.guts();
-    }
-    void operator()(const GPOperations::Multiply& operation) {
-      os_ << "Multiply" << operation.guts();
-    }
-    void operator()(const GPOperations::Likelihood& operation) {
-      os_ << "Likelihood" << operation.guts();
-    }
-    void operator()(const GPOperations::EvolveRootward& operation) {
-      os_ << "EvolveRootward" << operation.guts();
-    }
-    void operator()(const GPOperations::EvolveLeafward& operation) {
-      os_ << "EvolveLeafward" << operation.guts();
-    }
-    void operator()(const GPOperations::OptimizeRootward& operation) {
-      os_ << "OptimizeRootward" << operation.guts();
-    }
-    void operator()(const GPOperations::OptimizeLeafward& operation) {
-      os_ << "OptimizeLeafward" << operation.guts();
-    }
-    void operator()(const GPOperations::UpdateSBNProbabilities& operation) {
-      os_ << "UpdateSBNProbabilities" << operation.guts();
-    }
-  };
-
-std::ostream& operator<<(std::ostream& os, GPOperation const& v) {
-  std::visit(GPOperationOstream{os}, v);
+std::ostream& operator<<(std::ostream& os, GPOperationVector const& operation_vector) {
+  os << "[" << std::endl;
+  for (const auto& operation : operation_vector) {
+    os << "  " << operation << "," << std::endl;
+  }
+  os << "]" << std::endl;
   return os;
 }
 
