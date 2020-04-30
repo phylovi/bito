@@ -26,8 +26,15 @@ class GPEngine {
     plvs_[op.dest_idx].array() =
         plvs_[op.src1_idx].array() * plvs_[op.src2_idx].array();
   }
+  // TODO
+  // Stores the likelihood of `plv[src1_idx]` and `plv[src2_idx]`, incorporating site
+  // pattern weights, in `likelihoods[dest_idx]` (note that we will already have the
+  // stationary distribution in the rootward partial likelihood vector.
   void operator()(const GPOperations::Likelihood& op) {}
-  void operator()(const GPOperations::EvolveRootward& op) {}
+  void operator()(const GPOperations::EvolveRootward& op) {
+    SetBranchLengthForTransitionMatrix(branch_lengths_[op.branch_length_idx]);
+    plvs_[op.dest_idx] = transition_matrix_ * plvs_[op.src_idx];
+  }
   void operator()(const GPOperations::EvolveLeafward& op) {}
   void operator()(const GPOperations::OptimizeRootward& op) {}
   void operator()(const GPOperations::OptimizeLeafward& op) {}
@@ -53,6 +60,7 @@ class GPEngine {
   Eigen::Vector4d eigenvalues_ = substitution_model_.GetEigenvalues();
   Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
   Eigen::Matrix4d transition_matrix_;
+  Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
 
   void InitializePLVsWithSitePatterns();
 };
@@ -63,6 +71,8 @@ TEST_CASE("GPEngine") {
   GPEngine engine;
 
   engine.SetBranchLengthForTransitionMatrix(0.75);
+  // Computed directly:
+  // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29
   CHECK(fabs(0.52590958087 - engine.GetTransitionMatrix()(0, 0)) < 1e-10);
   CHECK(fabs(0.1580301397 - engine.GetTransitionMatrix()(0, 1)) < 1e-10);
 }
