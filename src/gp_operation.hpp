@@ -138,11 +138,11 @@ struct UpdateSBNProbabilities {
   using namespace GPOperations;
 
   using GPOperation =
-      std::variant<GPOperations::Zero, GPOperations::WeightedSumAccumulate>;
-  //                 GPOperations::Multiply, GPOperations::Likelihood,
-  //                 GPOperations::EvolveRootward, GPOperations::EvolveLeafward,
-  //                 GPOperations::OptimizeRootward, GPOperations::OptimizeLeafward,
-  //                 GPOperations::UpdateSBNProbabilities>;
+      std::variant<GPOperations::Zero, GPOperations::WeightedSumAccumulate,
+                   GPOperations::Multiply, GPOperations::Likelihood,
+                   GPOperations::EvolveRootward, GPOperations::EvolveLeafward,
+                   GPOperations::OptimizeRootward, GPOperations::OptimizeLeafward,
+                   GPOperations::UpdateSBNProbabilities>;
 
   using GPOperationVector = std::vector<GPOperation>;
 
@@ -158,13 +158,33 @@ struct UpdateSBNProbabilities {
     void operator()(const GPOperations::WeightedSumAccumulate& operation) {
       os_ << "WeightedSumAccumulate" << operation.guts();
     }
+    void operator()(const GPOperations::Multiply& operation) {
+      os_ << "Multiply" << operation.guts();
+    }
+    void operator()(const GPOperations::Likelihood& operation) {
+      os_ << "Likelihood" << operation.guts();
+    }
+    void operator()(const GPOperations::EvolveRootward& operation) {
+      os_ << "EvolveRootward" << operation.guts();
+    }
+    void operator()(const GPOperations::EvolveLeafward& operation) {
+      os_ << "EvolveLeafward" << operation.guts();
+    }
+    void operator()(const GPOperations::OptimizeRootward& operation) {
+      os_ << "OptimizeRootward" << operation.guts();
+    }
+    void operator()(const GPOperations::OptimizeLeafward& operation) {
+      os_ << "OptimizeLeafward" << operation.guts();
+    }
+    void operator()(const GPOperations::UpdateSBNProbabilities& operation) {
+      os_ << "UpdateSBNProbabilities" << operation.guts();
+    }
   };
 
 std::ostream& operator<<(std::ostream& os, GPOperation const& v) {
   std::visit(GPOperationOstream{os}, v);
   return os;
 }
-
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
