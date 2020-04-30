@@ -23,14 +23,14 @@ void GPInstance::ReadNexusFile(std::string fname) {
 void GPInstance::CheckSequencesAndTreesLoaded() const {
   if (alignment_.SequenceCount() == 0) {
     Failwith(
-        "Load an alignment into your SBNInstance on which you wish to "
+        "Load an alignment into your GPInstance on which you wish to "
         "calculate phylogenetic likelihoods.");
   }
-  // if (TreeCount() == 0) {
-  //   Failwith(
-  //       "Load some trees into your SBNInstance on which you wish to "
-  //       "calculate phylogenetic likelihoods.");
-  // }
+  if (tree_collection_.TreeCount() == 0) {
+    Failwith(
+        "Load some trees into your GPInstance on which you wish to "
+        "calculate phylogenetic likelihoods.");
+  }
 }
 
 void GPInstance::MakeEngine() {
@@ -45,6 +45,6 @@ GPEngine *GPInstance::GetEngine() const {
   }
   // else
   Failwith(
-      "Engine not available. Call PrepareForPhyloLikelihood to make an "
-      "engine for phylogenetic likelihood computation computation.");
+      "Engine not available. Call MakeEngine to make an engine for phylogenetic "
+      "likelihood computation computation.");
 }
