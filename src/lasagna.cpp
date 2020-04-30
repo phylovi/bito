@@ -11,4 +11,5 @@ int main() {
   inst.ReadFastaFile("data/hello.fasta");
   inst.ReadNewickFile("data/hello_rooted.nwk");
   inst.MakeEngine();
+  inst.ProcessLoadedTrees();
 }
