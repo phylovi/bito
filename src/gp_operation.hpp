@@ -178,19 +178,8 @@ struct GPOperationOstream {
   }
 };
 
-std::ostream& operator<<(std::ostream& os, GPOperation const& operation) {
-  std::visit(GPOperationOstream{os}, operation);
-  return os;
-}
-
-std::ostream& operator<<(std::ostream& os, GPOperationVector const& operation_vector) {
-  os << "[" << std::endl;
-  for (const auto& operation : operation_vector) {
-    os << "  " << operation << "," << std::endl;
-  }
-  os << "]" << std::endl;
-  return os;
-}
+std::ostream& operator<<(std::ostream& os, GPOperation const& operation);
+std::ostream& operator<<(std::ostream& os, GPOperationVector const& operation_vector);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 

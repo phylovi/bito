@@ -139,8 +139,8 @@ sources = [
     "_build/block_specification.cpp",
     "_build/clock_model.cpp",
     "_build/driver.cpp",
-    "_build/fat_beagle.cpp",
     "_build/engine.cpp",
+    "_build/fat_beagle.cpp",
     "_build/node.cpp",
     "_build/numerical_utils.cpp",
     "_build/parser.cpp",
@@ -163,6 +163,11 @@ sources = [
     "_build/unrooted_tree.cpp",
     "_build/unrooted_tree_collection.cpp",
 ]
+gp_sources = [
+    "_build/gp_engine.cpp",
+    "_build/gp_instance.cpp",
+    "_build/gp_operation.cpp",
+]
 extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
     ["_build/pylibsbn.cpp"] + sources,
@@ -171,7 +176,7 @@ extension = env.SharedLibrary(
 )
 doctest = env.Program(["_build/doctest.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
 noodle = env.Program(["_build/noodle.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
-lasagna = env.Program(["_build/lasagna.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
+lasagna = env.Program(["_build/lasagna.cpp"] + sources + gp_sources, LIBS=["hmsbeagle", "pthread"])
 
 py_source = Glob("vip/*.py")
 
