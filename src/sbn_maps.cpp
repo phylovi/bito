@@ -105,19 +105,19 @@ PCSSDict UnrootedSBNMaps::PCSSCounterOf(const Node::TopologyCounter& topologies)
     Assert(topology->Children().size() == 3,
            "UnrootedSBNMaps::PCSSCounterOf was expecting a tree with a trifurcation at "
            "the root!");
-    topology->UnrootedPCSSPreOrder([&pcss_dict, &topology_count = topology_count,
-                                    &leaf_count](
-                                       const Node* sister_node, bool sister_direction,
-                                       const Node* focal_node, bool focal_direction,  //
-                                       const Node* child0_node,
-                                       bool child0_direction,  //
-                                       const Node* child1_node, bool child1_direction,
-                                       const Node*  // ignore virtual root clade
-                                   ) {
-      AddToPCSSDict(pcss_dict, topology_count, leaf_count, sister_node,
-                    sister_direction, focal_node, focal_direction, child0_node,
-                    child0_direction, child1_node, child1_direction);
-    });
+    topology->UnrootedPCSSPreOrder(
+        [&pcss_dict, &topology_count = topology_count, &leaf_count](
+            const Node* sister_node, bool sister_direction, const Node* focal_node,
+            bool focal_direction,  //
+            const Node* child0_node,
+            bool child0_direction,  //
+            const Node* child1_node, bool child1_direction,
+            const Node*  // ignore virtual root clade
+        ) {
+          AddToPCSSDict(pcss_dict, topology_count, leaf_count, sister_node,
+                        sister_direction, focal_node, focal_direction, child0_node,
+                        child0_direction, child1_node, child1_direction);
+        });
   }
   return pcss_dict;
 }
@@ -169,49 +169,48 @@ UnrootedIndexerRepresentation UnrootedSBNMaps::IndexerRepresentationOf(
                    return v;
                  });
   // Now we append the PCSSs.
-  topology->UnrootedPCSSPreOrder([&indexer, &default_index, &leaf_count, &result,
-                                  &topology](
-                                     const Node* sister_node, bool sister_direction,
-                                     const Node* focal_node, bool focal_direction,
-                                     const Node* child0_node, bool child0_direction,
-                                     const Node* child1_node, bool child1_direction,
-                                     const Node* virtual_root_clade) {
-    const auto bitset = PCSSBitsetOf(leaf_count, sister_node, sister_direction,
-                                     focal_node, focal_direction, child0_node,
-                                     child0_direction, child1_node, child1_direction);
-    const auto indexer_position = AtWithDefault(indexer, bitset, default_index);
-    const auto& focal_index = focal_node->Id();
-    if (sister_node == focal_node) {
-      // We are in the bidirectional edge situation.
-      Assert(focal_index < result.size(), "focal_index out of range.");
-      // Rooting at the present edge will indeed lead to the given PCSS.
-      result[focal_index].push_back(indexer_position);
-    } else {
-      // The only time the virtual root clade should be nullptr should be when
-      // sister_node == focal_node, but we check anyhow.
-      Assert(virtual_root_clade != nullptr, "virtual_root_clade is null.");
-      // Virtual-rooting on every edge in the virtual rooting clade will also
-      // lead to this PCSS, because then the root will be "above" the PCSS.
-      virtual_root_clade->ConditionalPreOrder([&result, &indexer_position, &sister_node,
-                                               &focal_node,
-                                               &topology](const Node* node) {
-        if (node == sister_node || node == focal_node) {
-          // Don't enter the sister or focal clades. This is only
-          // activated in the second case on the bottom row of pcss.svg:
-          // we want to add everything in the clade above the focal node,
-          // but nothing else.
-          return false;
-        }  // else
-        // Add all of the edges of the virtual rooting clade, except for the
-        // root of the topology.
-        if (node != topology.get()) {
-          Assert(node->Id() < result.size(), "node's root Id is out of range.");
-          result[node->Id()].push_back(indexer_position);
+  topology->UnrootedPCSSPreOrder(
+      [&indexer, &default_index, &leaf_count, &result, &topology](
+          const Node* sister_node, bool sister_direction, const Node* focal_node,
+          bool focal_direction, const Node* child0_node, bool child0_direction,
+          const Node* child1_node, bool child1_direction,
+          const Node* virtual_root_clade) {
+        const auto bitset = PCSSBitsetOf(
+            leaf_count, sister_node, sister_direction, focal_node, focal_direction,
+            child0_node, child0_direction, child1_node, child1_direction);
+        const auto indexer_position = AtWithDefault(indexer, bitset, default_index);
+        const auto& focal_index = focal_node->Id();
+        if (sister_node == focal_node) {
+          // We are in the bidirectional edge situation.
+          Assert(focal_index < result.size(), "focal_index out of range.");
+          // Rooting at the present edge will indeed lead to the given PCSS.
+          result[focal_index].push_back(indexer_position);
+        } else {
+          // The only time the virtual root clade should be nullptr should be when
+          // sister_node == focal_node, but we check anyhow.
+          Assert(virtual_root_clade != nullptr, "virtual_root_clade is null.");
+          // Virtual-rooting on every edge in the virtual rooting clade will also
+          // lead to this PCSS, because then the root will be "above" the PCSS.
+          virtual_root_clade->ConditionalPreOrder([&result, &indexer_position,
+                                                   &sister_node, &focal_node,
+                                                   &topology](const Node* node) {
+            if (node == sister_node || node == focal_node) {
+              // Don't enter the sister or focal clades. This is only
+              // activated in the second case on the bottom row of pcss.svg:
+              // we want to add everything in the clade above the focal node,
+              // but nothing else.
+              return false;
+            }  // else
+            // Add all of the edges of the virtual rooting clade, except for the
+            // root of the topology.
+            if (node != topology.get()) {
+              Assert(node->Id() < result.size(), "node's root Id is out of range.");
+              result[node->Id()].push_back(indexer_position);
+            }
+            return true;
+          });
         }
-        return true;
       });
-    }
-  });
   return result;
 }
 
@@ -291,4 +290,3 @@ void RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
     IncrementRootedIndexerRepresentationSizeDict(dict, rooted_indexer_representation);
   }
 }
-
