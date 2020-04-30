@@ -3,7 +3,7 @@
 
 #include "gp_engine.hpp"
 
-GPEngine::GPEngine(SitePattern site_pattern) : site_pattern_(std::move(site_pattern)) {
-}
 
+GPEngine::GPEngine(SitePattern site_pattern, size_t pcss_count)
+    : site_pattern_(std::move(site_pattern)), pcss_count_(pcss_count) {}
 

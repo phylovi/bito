@@ -6,12 +6,15 @@
 #ifndef SRC_GP_ENGINE_HPP_
 #define SRC_GP_ENGINE_HPP_
 
+#include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
 #include "site_pattern.hpp"
 
+using NucleotidePLV = Eigen::Matrix<double, Eigen::Dynamic, 4, Eigen::RowMajor>;
+
 class GPEngine {
  public:
-  GPEngine(SitePattern site_pattern);
+  GPEngine(SitePattern site_pattern, size_t pcss_count);
 
   void operator()(const GPOperations::Zero& operation) { std::cout << "zero process"; }
   void operator()(const GPOperations::WeightedSumAccumulate& operation) {}
@@ -31,6 +34,8 @@ class GPEngine {
 
  private:
   SitePattern site_pattern_;
+  size_t pcss_count_;
+  std::vector<NucleotidePLV> plvs_;
 };
 
 #endif  // SRC_GP_ENGINE_HPP_

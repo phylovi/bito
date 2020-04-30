@@ -4,7 +4,6 @@
 #ifndef SRC_GP_INSTANCE_HPP_
 #define SRC_GP_INSTANCE_HPP_
 
-#include "eigen_sugar.hpp"
 #include "gp_engine.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
@@ -20,7 +19,6 @@ class GPInstance {
   void ReadNexusFile(std::string fname);
 
   void MakeEngine();
-  void ProcessLoadedTrees();
 
  private:
   Alignment alignment_;
@@ -46,6 +44,7 @@ class GPInstance {
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;
+  void ProcessLoadedTrees();
   GPEngine *GetEngine() const;
 };
 
