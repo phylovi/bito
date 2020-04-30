@@ -13,6 +13,22 @@ class GPEngine {
  public:
   GPEngine(SitePattern site_pattern);
 
+  void operator()(const GPOperations::Zero& operation) { std::cout << "zero process"; }
+  void operator()(const GPOperations::WeightedSumAccumulate& operation) {}
+  void operator()(const GPOperations::Multiply& operation) {}
+  void operator()(const GPOperations::Likelihood& operation) {}
+  void operator()(const GPOperations::EvolveRootward& operation) {}
+  void operator()(const GPOperations::EvolveLeafward& operation) {}
+  void operator()(const GPOperations::OptimizeRootward& operation) {}
+  void operator()(const GPOperations::OptimizeLeafward& operation) {}
+  void operator()(const GPOperations::UpdateSBNProbabilities& operation) {}
+
+  void ProcessOperations(GPOperationVector operations) {
+    for (const auto& operation : operations) {
+      std::visit(*this, operation);
+    }
+  }
+
  private:
   SitePattern site_pattern_;
 };
