@@ -15,6 +15,7 @@ using NucleotidePLV = Eigen::Matrix<double, Eigen::Dynamic, 4, Eigen::RowMajor>;
 
 class GPEngine {
  public:
+  GPEngine(){};
   GPEngine(SitePattern site_pattern, size_t pcss_count);
 
   void operator()(const GPOperations::Zero& op) { plvs_[op.dest_idx].setZero(); }
@@ -32,13 +33,10 @@ class GPEngine {
   void operator()(const GPOperations::OptimizeLeafward& op) {}
   void operator()(const GPOperations::UpdateSBNProbabilities& op) {}
 
-  void ProcessOperations(GPOperationVector operations) {
-    for (const auto& operation : operations) {
-      std::visit(*this, operation);
-    }
-  }
+  void ProcessOperations(GPOperationVector operations);
 
-  void TransitionMatrix(double branch_length) {}
+  void SetBranchLengthForTransitionMatrix(double branch_length);
+  const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
 
  private:
   SitePattern site_pattern_;
@@ -52,15 +50,22 @@ class GPEngine {
   Eigen::Matrix4d eigenmatrix_ = substitution_model_.GetEigenvectors().reshaped(4, 4);
   Eigen::Matrix4d inverse_eigenmatrix_ =
       substitution_model_.GetInverseEigenvectors().reshaped(4, 4);
-  Eigen::DiagonalMatrix<double, 4> diagonal_matrix_ =
-      substitution_model_.GetEigenvalues().asDiagonal();
+  Eigen::Vector4d eigenvalues_ = substitution_model_.GetEigenvalues();
+  Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
+  Eigen::Matrix4d transition_matrix_;
 
   void InitializePLVsWithSitePatterns();
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
-TEST_CASE("GPEngine") {}
+TEST_CASE("GPEngine") {
+  GPEngine engine;
+
+  engine.SetBranchLengthForTransitionMatrix(0.75);
+  CHECK(fabs(0.52590958087 - engine.GetTransitionMatrix()(0, 0)) < 1e-10);
+  CHECK(fabs(0.1580301397 - engine.GetTransitionMatrix()(0, 1)) < 1e-10);
+}
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

@@ -30,3 +30,13 @@ void GPEngine::InitializePLVsWithSitePatterns() {
   }
 }
 
+void GPEngine::ProcessOperations(GPOperationVector operations) {
+  for (const auto& operation : operations) {
+    std::visit(*this, operation);
+  }
+}
+
+void GPEngine::SetBranchLengthForTransitionMatrix(double branch_length) {
+  diagonal_matrix_.diagonal() = (branch_length * eigenvalues_).array().exp();
+  transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+}
