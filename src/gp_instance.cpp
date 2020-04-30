@@ -12,16 +12,12 @@ void GPInstance::ReadNewickFile(std::string fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
-  tree_collection_.ParseDatesFromTaxonNames();
-  tree_collection_.InitializeParameters();
 }
 
 void GPInstance::ReadNexusFile(std::string fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
-  tree_collection_.ParseDatesFromTaxonNames();
-  tree_collection_.InitializeParameters();
 }
 
 void GPInstance::CheckSequencesAndTreesLoaded() const {
@@ -40,5 +36,15 @@ void GPInstance::CheckSequencesAndTreesLoaded() const {
 void GPInstance::MakeEngine() {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  engine_ = GPEngine(site_pattern);
+  engine_ = std::make_unique<GPEngine>(site_pattern);
+}
+
+GPEngine *GPInstance::GetEngine() const {
+  if (engine_ != nullptr) {
+    return engine_.get();
+  }
+  // else
+  Failwith(
+      "Engine not available. Call PrepareForPhyloLikelihood to make an "
+      "engine for phylogenetic likelihood computation computation.");
 }

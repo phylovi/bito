@@ -10,19 +10,21 @@
 
 class GPInstance {
  public:
-  GPInstance();
+  GPInstance(){};
 
   void ReadFastaFile(std::string fname);
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
 
+  void MakeEngine();
+
  private:
   Alignment alignment_;
-  GPEngine engine_;
+  std::unique_ptr<GPEngine> engine_;
   RootedTreeCollection tree_collection_;
 
   void CheckSequencesAndTreesLoaded() const;
-  void MakeEngine();
+  GPEngine *GetEngine() const;
 };
 
 #endif  // SRC_GP_INSTANCE_HPP_
