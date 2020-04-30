@@ -16,15 +16,20 @@ class GPEngine {
  public:
   GPEngine(SitePattern site_pattern, size_t pcss_count);
 
-  void operator()(const GPOperations::Zero& operation) { std::cout << "zero process"; }
-  void operator()(const GPOperations::WeightedSumAccumulate& operation) {}
-  void operator()(const GPOperations::Multiply& operation) {}
-  void operator()(const GPOperations::Likelihood& operation) {}
-  void operator()(const GPOperations::EvolveRootward& operation) {}
-  void operator()(const GPOperations::EvolveLeafward& operation) {}
-  void operator()(const GPOperations::OptimizeRootward& operation) {}
-  void operator()(const GPOperations::OptimizeLeafward& operation) {}
-  void operator()(const GPOperations::UpdateSBNProbabilities& operation) {}
+  void operator()(const GPOperations::Zero& op) { plvs_[op.dest_idx].setZero(); }
+  void operator()(const GPOperations::WeightedSumAccumulate& op) {
+    plvs_[op.dest_idx] += q_[op.q_idx] * plvs_[op.src_idx];
+  }
+  void operator()(const GPOperations::Multiply& op) {
+    plvs_[op.dest_idx].array() =
+        plvs_[op.src1_idx].array() * plvs_[op.src2_idx].array();
+  }
+  void operator()(const GPOperations::Likelihood& op) {}
+  void operator()(const GPOperations::EvolveRootward& op) {}
+  void operator()(const GPOperations::EvolveLeafward& op) {}
+  void operator()(const GPOperations::OptimizeRootward& op) {}
+  void operator()(const GPOperations::OptimizeLeafward& op) {}
+  void operator()(const GPOperations::UpdateSBNProbabilities& op) {}
 
   void ProcessOperations(GPOperationVector operations) {
     for (const auto& operation : operations) {
@@ -36,6 +41,11 @@ class GPEngine {
   SitePattern site_pattern_;
   size_t pcss_count_;
   std::vector<NucleotidePLV> plvs_;
+  EigenVectorXd branch_lengths_;
+  EigenVectorXd likelihoods_;
+  EigenVectorXd q_;
+
+  void InitializePLVsWithSitePatterns();
 };
 
 #endif  // SRC_GP_ENGINE_HPP_
