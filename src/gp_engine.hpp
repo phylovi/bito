@@ -18,7 +18,14 @@ class GPEngine {
   GPEngine(){};
   GPEngine(SitePattern site_pattern, size_t pcss_count);
 
+  // TODO replace braces with at
   void operator()(const GPOperations::Zero& op) { plvs_[op.dest_idx].setZero(); }
+  void operator()(const GPOperations::SetToStationaryDistribution& op) {
+    auto& plv = plvs_.at(op.dest_idx);
+    for (size_t column_idx = 0; column_idx < 4; ++column_idx) {
+      plv.col(column_idx).array() = stationary_distribution_(column_idx);
+    }
+  }
   void operator()(const GPOperations::WeightedSumAccumulate& op) {
     plvs_[op.dest_idx] += q_[op.q_idx] * plvs_[op.src_idx];
   }

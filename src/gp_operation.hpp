@@ -31,6 +31,12 @@ struct Zero {
   StringSizePairVector guts() const { return {{"dest_idx", dest_idx}}; }
 };
 
+// Set the PLV at `dest_idx` to be the stationary distribution at every site.
+struct SetToStationaryDistribution {
+  size_t dest_idx;
+  StringSizePairVector guts() const { return {{"dest_idx", dest_idx}}; }
+};
+
 // Perform `plv[dest_idx] += q[q_idx] * plv[src_idx]`
 struct WeightedSumAccumulate {
   size_t dest_idx;
@@ -136,11 +142,11 @@ struct UpdateSBNProbabilities {
 }  // namespace GPOperations
 
 using GPOperation =
-    std::variant<GPOperations::Zero, GPOperations::WeightedSumAccumulate,
-                 GPOperations::Multiply, GPOperations::Likelihood,
-                 GPOperations::EvolveRootward, GPOperations::EvolveLeafward,
-                 GPOperations::OptimizeRootward, GPOperations::OptimizeLeafward,
-                 GPOperations::UpdateSBNProbabilities>;
+    std::variant<GPOperations::Zero, GPOperations::SetToStationaryDistribution,
+                 GPOperations::WeightedSumAccumulate, GPOperations::Multiply,
+                 GPOperations::Likelihood, GPOperations::EvolveRootward,
+                 GPOperations::EvolveLeafward, GPOperations::OptimizeRootward,
+                 GPOperations::OptimizeLeafward, GPOperations::UpdateSBNProbabilities>;
 
 using GPOperationVector = std::vector<GPOperation>;
 
@@ -151,6 +157,9 @@ struct GPOperationOstream {
 
   void operator()(const GPOperations::Zero& operation) {
     os_ << "Zero" << operation.guts();
+  }
+  void operator()(const GPOperations::SetToStationaryDistribution& operation) {
+    os_ << "SetToStationaryDistribution" << operation.guts();
   }
   void operator()(const GPOperations::WeightedSumAccumulate& operation) {
     os_ << "WeightedSumAccumulate" << operation.guts();
