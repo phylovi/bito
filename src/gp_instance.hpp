@@ -30,8 +30,6 @@ class GPInstance {
   EigenVectorXd sbn_parameters_;
   // The master indexer for SBN parameters.
   BitsetSizeMap indexer_;
-  // A vector of the taxon names.
-  StringVector taxon_names_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
   // and PCSS bitsets are at the end.
   // The collection of rootsplits, with the same indexing as in the indexer_.
