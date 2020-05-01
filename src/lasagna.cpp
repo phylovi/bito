@@ -6,6 +6,7 @@
 
 using namespace GPOperations;
 
+// The "ancestor" node is the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, ancestor, root };
 
 // According to HelloGPCSP, this makes
@@ -62,34 +63,46 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
 }
 
 TEST_CASE("GPInstance: subsplit traversal as written") {
-  // Here t is the rootsplit, and s is the subsplit with mars and jupiter.
-  enum PLV { p_ };
+  // Here t is the rootsplit (jupiter, other), and s is the osubsplit (mars, jupiter).
+  enum PLV {
+    p_jupiter,    // fake subsplit leading to jupiter
+    p_mars,       // fake subsplit leading to mars
+    p_saturn,     // fake subsplit leading to mars
+    phat_stilde,  // root side of mars edge
+    phat_s,       // root side of saturn edge
+    p_s,          // p at ancestor
+    phat_ttilde,  // root side of jupiter edge
+    phat_t,       // root side of ancestor edge
+    p_t,          // PLV at root from leaves
+    rhat_t,       // stationary distribution coming from root
+    r_ttilde,     // PLV pointing towards jupiter from root
+    r_t,          // PLV pointing towards ancestor from root
+    rhat_s,       // leaf side of ancestor edge
+    r_stilde,     // PLV pointing twoards mars from ancestor
+    r_s           // PLV pointing towards saturn from ancestor
+  };
 
-  /*
-    GPOperationVector leafward_likelihood_calculation{
-        // Get the PLV heading down towards the ancestor.
-        Multiply{HelloPLV::ancestor_root, HelloPLV::stationary, HelloPLV::jupiter_root},
-        // Evolve common ancestor leafward.
-        EvolveLeafward{HelloPLV::ancestor_leaf, HelloPLV::ancestor_root,
-                       HelloGPCSP::ancestor},
-        // Calculate likelihood at common ancestor.
-        Likelihood{HelloGPCSP::ancestor, HelloPLV::ancestor_leaf, HelloPLV::root_leaf},
-        // Get common ancestor of mars and saturn.
-        Multiply{HelloPLV::ancestor_leaf, HelloPLV::mars_root, HelloPLV::saturn_root},
-        // Evolve common ancestor rootward.
-        // Evolve jupiter rootward.
-        EvolveRootward{HelloPLV::jupiter_root, HelloPLV::jupiter_leaf,
-                       HelloGPCSP::jupiter},
-        // Get root.
-        Multiply{HelloPLV::root_leaf, HelloPLV::ancestor_root, HelloPLV::jupiter_root},
-        // Calculate likelihood.
-        Likelihood{HelloGPCSP::root, HelloPLV::stationary, HelloPLV::root_leaf},
-    };
+  GPOperationVector rootward_likelihood_calculation{
+      // Evolve jupiter rootward.
+      EvolveRootward{PLV::phat_ttilde, PLV::p_jupiter, HelloGPCSP::jupiter},
+      // Evolve mars rootward.
+      EvolveRootward{PLV::phat_stilde, PLV::p_mars, HelloGPCSP::mars},
+      // Evolve saturn rootward.
+      EvolveRootward{PLV::phat_s, PLV::p_saturn, HelloGPCSP::saturn},
+      // Get common ancestor of mars and saturn.
+      Multiply{PLV::p_s, PLV::phat_stilde, PLV::phat_s},
+      // Evolve ancestor rootward.
+      EvolveRootward{PLV::phat_t, PLV::p_s, HelloGPCSP::ancestor},
+      // Get root PLV coming from leaves
+      Multiply{PLV::p_t, PLV::phat_ttilde, PLV::phat_t},
+      // Set a stationary distribution coming from "beyond" the root.
+      SetToStationaryDistribution{PLV::rhat_t},
+      // Calculate likelihood at common ancestor.
+      Likelihood{HelloGPCSP::root, PLV::rhat_t, PLV::p_t},
+  };
 
-    auto inst = MakeHelloGPInstance();
-    auto engine = inst.GetEngine();
-    engine->ProcessOperations(rootward_likelihood_calculation);
-    // engine->ProcessOperations(leafward_likelihood_calculation);
-    // CHECK_LT(fabs(engine->GetLogLikelihoods()(0) - -84.852358), 1e-6);
-  */
+  auto inst = MakeHelloGPInstance();
+  auto engine = inst.GetEngine();
+  engine->ProcessOperations(rootward_likelihood_calculation);
+  CHECK_LT(fabs(engine->GetLogLikelihoods()(HelloGPCSP::root) - -84.77961943), 1e-6);
 }
