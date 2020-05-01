@@ -9,7 +9,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t pcss_count)
   plvs_ = std::vector<NucleotidePLV>(
       plv_count, NucleotidePLV::Zero(4, site_pattern_.PatternCount()));
   branch_lengths_.resize(pcss_count_);
-  likelihoods_.resize(pcss_count_);
+  log_likelihoods_.resize(pcss_count_);
   q_.resize(pcss_count_);
 
   auto weights = site_pattern_.GetWeights();
@@ -62,7 +62,8 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
           .diagonal()
           .array()
           .log();
-  likelihoods_(op.dest_idx) = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  log_likelihoods_(op.dest_idx) =
+      per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 }
 
 void GPEngine::operator()(const GPOperations::EvolveRootward& op) {

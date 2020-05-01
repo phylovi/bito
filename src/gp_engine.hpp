@@ -38,14 +38,14 @@ class GPEngine {
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     branch_lengths_ = branch_lengths;
   };
-  double GetLikelihood(size_t plv_idx) { return likelihoods_(plv_idx); };
+  double GetLogLikelihood(size_t plv_idx) { return log_likelihoods_(plv_idx); };
 
  private:
   SitePattern site_pattern_;
   size_t pcss_count_;
   std::vector<NucleotidePLV> plvs_;
   EigenVectorXd branch_lengths_;
-  EigenVectorXd likelihoods_;
+  EigenVectorXd log_likelihoods_;
   EigenVectorXd q_;
   EigenVectorXd per_pattern_log_likelihoods_;
 
