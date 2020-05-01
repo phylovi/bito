@@ -62,15 +62,19 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::EvolveRootward& op) {
-  SetBranchLengthForTransitionMatrix(branch_lengths_(op.branch_length_idx));
+  SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.branch_length_idx));
   plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.src_idx);
 }
 
-void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {}
+void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {
+  SetTransitionMatrixToHaveBranchLengthAndTranspose(
+      branch_lengths_(op.branch_length_idx));
+  plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.src_idx);
+}
 
 void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
   auto to_optimize = [this, &op](double branch_length) {
-    SetBranchLengthForTransitionMatrix(branch_length);
+    SetTransitionMatrixToHaveBranchLength(branch_length);
     plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
     return LogLikelihood(op.rootward_idx, op.dest_idx);
   };
@@ -95,9 +99,15 @@ void GPEngine::ProcessOperations(GPOperationVector operations) {
   }
 }
 
-void GPEngine::SetBranchLengthForTransitionMatrix(double branch_length) {
+void GPEngine::SetTransitionMatrixToHaveBranchLength(double branch_length) {
   diagonal_matrix_.diagonal() = (branch_length * eigenvalues_).array().exp();
   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+}
+
+void GPEngine::SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length) {
+  diagonal_matrix_.diagonal() = (branch_length * eigenvalues_).array().exp();
+  transition_matrix_ =
+      inverse_eigenmatrix_.transpose() * diagonal_matrix_ * eigenmatrix_.transpose();
 }
 
 void GPEngine::PrintPLV(size_t plv_idx) {

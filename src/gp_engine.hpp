@@ -32,7 +32,8 @@ class GPEngine {
 
   void ProcessOperations(GPOperationVector operations);
 
-  void SetBranchLengthForTransitionMatrix(double branch_length);
+  void SetTransitionMatrixToHaveBranchLength(double branch_length);
+  void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
   const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
   void PrintPLV(size_t plv_idx);
 
@@ -76,7 +77,7 @@ class GPEngine {
 TEST_CASE("GPEngine") {
   GPEngine engine;
 
-  engine.SetBranchLengthForTransitionMatrix(0.75);
+  engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29
   CHECK(fabs(0.52590958087 - engine.GetTransitionMatrix()(0, 0)) < 1e-10);
