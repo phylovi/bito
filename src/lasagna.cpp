@@ -16,7 +16,42 @@ GPInstance MakeHelloGPInstance() {
   return inst;
 }
 
+enum HelloIdx {
+  stationary = 3,
+  mars_leaf = 0,
+  mars_root = 4,
+  saturn_leaf = 1,
+  saturn_root = 5
+};
+
 GPOperationVector rootward_likelihood_calculation{
+    GPOperations::SetToStationaryDistribution{3},
+    // Evolve mars rootward.
+    GPOperations::EvolveRootward{HelloIdx::mars_root, HelloIdx::mars_leaf,
+                                 HelloIdx::mars_leaf},
+    // Evolve saturn rootward.
+    GPOperations::EvolveRootward{HelloIdx::saturn_root, HelloIdx::saturn_leaf,
+                                 HelloIdx::saturn_leaf},
+    // Get common ancestor of mars and saturn.
+    GPOperations::Multiply{6, 4, 5},
+    // Evolve common ancestor rootward.
+    GPOperations::EvolveRootward{7, 6, 2},
+    // Evolve jupiter rootward.
+    GPOperations::EvolveRootward{8, 2, 3},
+    // Get root.
+    GPOperations::Multiply{9, 7, 8},
+    // Calculate likelihood.
+    GPOperations::Likelihood{0, 3, 9},
+};
+
+TEST_CASE("GPInstance: rootward likelihood calculation") {
+  auto inst = MakeHelloGPInstance();
+  auto engine = inst.GetEngine();
+  engine->ProcessOperations(rootward_likelihood_calculation);
+  CHECK_LT(fabs(engine->GetLogLikelihoods()(0) - -84.852358), 1e-6);
+}
+
+GPOperationVector leafward_likelihood_calculation{
     GPOperations::SetToStationaryDistribution{3},
     // Evolve mars rootward.
     GPOperations::EvolveRootward{4, 0, 0},
@@ -34,9 +69,10 @@ GPOperationVector rootward_likelihood_calculation{
     GPOperations::Likelihood{0, 3, 9},
 };
 
-TEST_CASE("GPInstance: rootward likelihood calculation") {
+TEST_CASE("GPInstance: leafward likelihood calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
   engine->ProcessOperations(rootward_likelihood_calculation);
-  CHECK_LT(fabs(engine->GetLogLikelihood(0) - -84.852358), 1e-6);
-  }
+  engine->ProcessOperations(leafward_likelihood_calculation);
+  CHECK_LT(fabs(engine->GetLogLikelihoods()(0) - -84.852358), 1e-6);
+}

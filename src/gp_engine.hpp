@@ -40,7 +40,7 @@ class GPEngine {
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     branch_lengths_ = branch_lengths;
   };
-  double GetLogLikelihood(size_t plv_idx) { return log_likelihoods_(plv_idx); };
+  EigenVectorXd GetLogLikelihoods() { return log_likelihoods_; };
 
  private:
   SitePattern site_pattern_;
