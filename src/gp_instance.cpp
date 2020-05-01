@@ -37,7 +37,8 @@ void GPInstance::MakeEngine() {
   CheckSequencesAndTreesLoaded();
   ProcessLoadedTrees();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  engine_ = std::make_unique<GPEngine>(site_pattern, sbn_parameters_.size());
+  engine_ = std::make_unique<GPEngine>(site_pattern,
+                                       rootsplits_.size() + sbn_parameters_.size());
 }
 
 GPEngine *GPInstance::GetEngine() const {

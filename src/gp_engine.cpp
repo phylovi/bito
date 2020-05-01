@@ -4,14 +4,14 @@
 #include "gp_engine.hpp"
 #include "optimization.hpp"
 
-GPEngine::GPEngine(SitePattern site_pattern, size_t pcss_count)
-    : site_pattern_(std::move(site_pattern)), pcss_count_(pcss_count) {
-  auto plv_count = site_pattern_.PatternCount() + pcss_count_;
+GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count)
+    : site_pattern_(std::move(site_pattern)) {
+  auto plv_count = site_pattern_.PatternCount() + gpcsp_count;
   plvs_ = std::vector<NucleotidePLV>(
       plv_count, NucleotidePLV::Zero(4, site_pattern_.PatternCount()));
-  branch_lengths_.resize(pcss_count_);
-  log_likelihoods_.resize(pcss_count_);
-  q_.resize(pcss_count_);
+  branch_lengths_.resize(gpcsp_count);
+  log_likelihoods_.resize(gpcsp_count);
+  q_.resize(gpcsp_count);
 
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ =

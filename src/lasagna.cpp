@@ -4,6 +4,8 @@
 #include "doctest.h"
 #include "gp_instance.hpp"
 
+using namespace GPOperations;
+
 GPInstance MakeHelloGPInstance() {
   // ((mars:0.1,saturn:0.1):0.2,jupiter:0.1):0.1;
   GPInstance inst;
@@ -16,7 +18,9 @@ GPInstance MakeHelloGPInstance() {
   return inst;
 }
 
-// Here "leaf" is the leaf-side PLV, and "root" is the root-side PLV.
+enum HelloGPCSP { mars, saturn, ancestor, jupiter, root };
+
+// Here "_leaf" is the leaf-side PLV, and "_root" is the root-side PLV.
 enum HelloPLV {
   mars_leaf = 0,
   saturn_leaf,
@@ -26,34 +30,27 @@ enum HelloPLV {
   jupiter_root,
   ancestor_leaf,
   ancestor_root,
-  root,
+  root_leaf,  // The leaf-side PLV for the root node.
   stationary,
 };
 
-enum HelloBranchLength { mars, saturn, ancestor, jupiter };
-
 GPOperationVector rootward_likelihood_calculation{
-    GPOperations::SetToStationaryDistribution{HelloPLV::stationary},
+    SetToStationaryDistribution{stationary},
     // Evolve mars rootward.
-    GPOperations::EvolveRootward{HelloPLV::mars_root, HelloPLV::mars_leaf,
-                                 HelloBranchLength::mars},
+    EvolveRootward{HelloPLV::mars_root, HelloPLV::mars_leaf, HelloGPCSP::mars},
     // Evolve saturn rootward.
-    GPOperations::EvolveRootward{HelloPLV::saturn_root, HelloPLV::saturn_leaf,
-                                 HelloBranchLength::saturn},
+    EvolveRootward{HelloPLV::saturn_root, HelloPLV::saturn_leaf, HelloGPCSP::saturn},
     // Get common ancestor of mars and saturn.
-    GPOperations::Multiply{HelloPLV::ancestor_leaf, HelloPLV::mars_root,
-                           HelloPLV::saturn_root},
+    Multiply{HelloPLV::ancestor_leaf, HelloPLV::mars_root, HelloPLV::saturn_root},
     // Evolve common ancestor rootward.
-    GPOperations::EvolveRootward{HelloPLV::ancestor_root, HelloPLV::ancestor_leaf,
-                                 HelloBranchLength::ancestor},
+    EvolveRootward{HelloPLV::ancestor_root, HelloPLV::ancestor_leaf,
+                   HelloGPCSP::ancestor},
     // Evolve jupiter rootward.
-    GPOperations::EvolveRootward{HelloPLV::jupiter_root, HelloPLV::jupiter_leaf,
-                                 HelloBranchLength::jupiter},
+    EvolveRootward{HelloPLV::jupiter_root, HelloPLV::jupiter_leaf, HelloGPCSP::jupiter},
     // Get root.
-    GPOperations::Multiply{HelloPLV::root, HelloPLV::ancestor_root,
-                           HelloPLV::jupiter_root},
+    Multiply{HelloPLV::root_leaf, HelloPLV::ancestor_root, HelloPLV::jupiter_root},
     // Calculate likelihood.
-    GPOperations::Likelihood{0, HelloPLV::stationary, HelloPLV::root},
+    Likelihood{0, HelloPLV::stationary, HelloPLV::root_leaf},
 };
 
 TEST_CASE("GPInstance: rootward likelihood calculation") {

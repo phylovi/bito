@@ -44,7 +44,6 @@ class GPEngine {
 
  private:
   SitePattern site_pattern_;
-  size_t pcss_count_;
   std::vector<NucleotidePLV> plvs_;
   EigenVectorXd branch_lengths_;
   EigenVectorXd log_likelihoods_;
