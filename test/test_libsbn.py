@@ -33,7 +33,7 @@ def hello_demo():
         SIMPLE_SPECIFICATION, 2, [beagle_flags.VECTOR_SSE]
     )
     branch_lengths = np.array(inst.tree_collection.trees[0].branch_lengths, copy=False)
-    branch_lengths[:] = np.array([0.1, 0.1, 0.3, 0.0])
+    branch_lengths[:] = np.array([0.15, 0.1, 0.333, 0.24])
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
     branch_lengths[0] = 0.2
