@@ -18,37 +18,16 @@ class GPEngine {
   GPEngine(){};
   GPEngine(SitePattern site_pattern, size_t pcss_count);
 
-  void operator()(const GPOperations::Zero& op) { plvs_.at(op.dest_idx).setZero(); }
-  void operator()(const GPOperations::SetToStationaryDistribution& op) {
-    auto& plv = plvs_.at(op.dest_idx);
-    for (size_t row_idx = 0; row_idx < 4; ++row_idx) {
-      plv.row(row_idx).array() = stationary_distribution_(row_idx);
-    }
-  }
-  void operator()(const GPOperations::WeightedSumAccumulate& op) {
-    plvs_.at(op.dest_idx) += q_(op.q_idx) * plvs_.at(op.src_idx);
-  }
-  void operator()(const GPOperations::Multiply& op) {
-    plvs_.at(op.dest_idx).array() =
-        plvs_.at(op.src1_idx).array() * plvs_.at(op.src2_idx).array();
-  }
-  void operator()(const GPOperations::Likelihood& op) {
-    utility_ = (plvs_.at(op.src1_idx).transpose() * plvs_.at(op.src2_idx))
-                   .diagonal()
-                   .array()
-                   .log();
-    likelihoods_(op.dest_idx) = utility_.dot(site_pattern_weights_);
-  }
-  void operator()(const GPOperations::EvolveRootward& op) {
-    SetBranchLengthForTransitionMatrix(branch_lengths_(op.branch_length_idx));
-    // std::cout << transition_matrix_.cols() << " " <<
-    plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.src_idx);
-  }
-  void operator()(const GPOperations::EvolveLeafward& op) {}
-  // Skip Rootward.
-  void operator()(const GPOperations::OptimizeRootward& op) {}
-  void operator()(const GPOperations::OptimizeLeafward& op) {}
-  void operator()(const GPOperations::UpdateSBNProbabilities& op) {}
+  void operator()(const GPOperations::Zero& op);
+  void operator()(const GPOperations::SetToStationaryDistribution& op);
+  void operator()(const GPOperations::WeightedSumAccumulate& op);
+  void operator()(const GPOperations::Multiply& op);
+  void operator()(const GPOperations::Likelihood& op);
+  void operator()(const GPOperations::EvolveRootward& op);
+  void operator()(const GPOperations::EvolveLeafward& op);
+  void operator()(const GPOperations::OptimizeRootward& op);
+  void operator()(const GPOperations::OptimizeLeafward& op);
+  void operator()(const GPOperations::UpdateSBNProbabilities& op);
 
   void ProcessOperations(GPOperationVector operations);
 
@@ -68,7 +47,7 @@ class GPEngine {
   EigenVectorXd branch_lengths_;
   EigenVectorXd likelihoods_;
   EigenVectorXd q_;
-  EigenVectorXd utility_;
+  EigenVectorXd per_pattern_log_likelihoods_;
 
   JC69Model substitution_model_;
   Eigen::Matrix4d eigenmatrix_ = substitution_model_.GetEigenvectors().reshaped(4, 4);
