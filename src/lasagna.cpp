@@ -16,32 +16,44 @@ GPInstance MakeHelloGPInstance() {
   return inst;
 }
 
-enum HelloIdx {
-  stationary = 3,
+// Here "leaf" is the leaf-side PLV, and "root" is the root-side PLV.
+enum HelloPLV {
   mars_leaf = 0,
-  mars_root = 4,
-  saturn_leaf = 1,
-  saturn_root = 5
+  saturn_leaf,
+  jupiter_leaf,
+  mars_root,
+  saturn_root,
+  jupiter_root,
+  ancestor_leaf,
+  ancestor_root,
+  root,
+  stationary,
 };
 
+enum HelloBranchLength { mars, saturn, ancestor, jupiter };
+
 GPOperationVector rootward_likelihood_calculation{
-    GPOperations::SetToStationaryDistribution{3},
+    GPOperations::SetToStationaryDistribution{HelloPLV::stationary},
     // Evolve mars rootward.
-    GPOperations::EvolveRootward{HelloIdx::mars_root, HelloIdx::mars_leaf,
-                                 HelloIdx::mars_leaf},
+    GPOperations::EvolveRootward{HelloPLV::mars_root, HelloPLV::mars_leaf,
+                                 HelloBranchLength::mars},
     // Evolve saturn rootward.
-    GPOperations::EvolveRootward{HelloIdx::saturn_root, HelloIdx::saturn_leaf,
-                                 HelloIdx::saturn_leaf},
+    GPOperations::EvolveRootward{HelloPLV::saturn_root, HelloPLV::saturn_leaf,
+                                 HelloBranchLength::saturn},
     // Get common ancestor of mars and saturn.
-    GPOperations::Multiply{6, 4, 5},
+    GPOperations::Multiply{HelloPLV::ancestor_leaf, HelloPLV::mars_root,
+                           HelloPLV::saturn_root},
     // Evolve common ancestor rootward.
-    GPOperations::EvolveRootward{7, 6, 2},
+    GPOperations::EvolveRootward{HelloPLV::ancestor_root, HelloPLV::ancestor_leaf,
+                                 HelloBranchLength::ancestor},
     // Evolve jupiter rootward.
-    GPOperations::EvolveRootward{8, 2, 3},
+    GPOperations::EvolveRootward{HelloPLV::jupiter_root, HelloPLV::jupiter_leaf,
+                                 HelloBranchLength::jupiter},
     // Get root.
-    GPOperations::Multiply{9, 7, 8},
+    GPOperations::Multiply{HelloPLV::root, HelloPLV::ancestor_root,
+                           HelloPLV::jupiter_root},
     // Calculate likelihood.
-    GPOperations::Likelihood{0, 3, 9},
+    GPOperations::Likelihood{0, HelloPLV::stationary, HelloPLV::root},
 };
 
 TEST_CASE("GPInstance: rootward likelihood calculation") {
@@ -51,28 +63,10 @@ TEST_CASE("GPInstance: rootward likelihood calculation") {
   CHECK_LT(fabs(engine->GetLogLikelihoods()(0) - -84.852358), 1e-6);
 }
 
-GPOperationVector leafward_likelihood_calculation{
-    GPOperations::SetToStationaryDistribution{3},
-    // Evolve mars rootward.
-    GPOperations::EvolveRootward{4, 0, 0},
-    // Evolve saturn rootward.
-    GPOperations::EvolveRootward{5, 1, 1},
-    // Get common ancestor of mars and saturn.
-    GPOperations::Multiply{6, 4, 5},
-    // Evolve common ancestor rootward.
-    GPOperations::EvolveRootward{7, 6, 2},
-    // Evolve jupiter rootward.
-    GPOperations::EvolveRootward{8, 2, 3},
-    // Get root.
-    GPOperations::Multiply{9, 7, 8},
-    // Calculate likelihood.
-    GPOperations::Likelihood{0, 3, 9},
-};
-
 TEST_CASE("GPInstance: leafward likelihood calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
   engine->ProcessOperations(rootward_likelihood_calculation);
-  engine->ProcessOperations(leafward_likelihood_calculation);
+  // engine->ProcessOperations(leafward_likelihood_calculation);
   CHECK_LT(fabs(engine->GetLogLikelihoods()(0) - -84.852358), 1e-6);
 }
