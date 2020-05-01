@@ -65,21 +65,24 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
 TEST_CASE("GPInstance: subsplit traversal as written") {
   // Here t is the rootsplit (jupiter, other), and s is the osubsplit (mars, jupiter).
   enum PLV {
-    p_jupiter,    // fake subsplit leading to jupiter
-    p_mars,       // fake subsplit leading to mars
-    p_saturn,     // fake subsplit leading to mars
-    phat_stilde,  // root side of mars edge
-    phat_s,       // root side of saturn edge
-    p_s,          // p at ancestor
-    phat_ttilde,  // root side of jupiter edge
-    phat_t,       // root side of ancestor edge
-    p_t,          // PLV at root from leaves
-    rhat_t,       // stationary distribution coming from root
-    r_ttilde,     // PLV pointing towards jupiter from root
-    r_t,          // PLV pointing towards ancestor from root
-    rhat_s,       // leaf side of ancestor edge
-    r_stilde,     // PLV pointing twoards mars from ancestor
-    r_s           // PLV pointing towards saturn from ancestor
+    p_jupiter,     // fake subsplit leading to jupiter
+    p_mars,        // fake subsplit leading to mars
+    p_saturn,      // fake subsplit leading to mars
+    phat_stilde,   // root side of mars edge
+    phat_s,        // root side of saturn edge
+    p_s,           // p at ancestor
+    phat_ttilde,   // root side of jupiter edge
+    phat_t,        // root side of ancestor edge
+    p_t,           // PLV at root from leaves
+    rhat_t,        // stationary distribution coming from root
+    r_ttilde,      // PLV pointing towards jupiter from root
+    r_t,           // PLV pointing towards ancestor from root
+    rhat_s,        // leaf side of ancestor edge
+    r_stilde,      // PLV pointing towards mars from ancestor
+    r_s,           // PLV pointing towards saturn from ancestor
+    rhat_jupiter,  // Evolved message coming towards jupiter
+    rhat_mars,     // Evolved message coming towards mars
+    rhat_saturn,   // Evolved message coming towards saturn
   };
 
   GPOperationVector rootward_likelihood_calculation{
@@ -97,12 +100,42 @@ TEST_CASE("GPInstance: subsplit traversal as written") {
       Multiply{PLV::p_t, PLV::phat_ttilde, PLV::phat_t},
       // Set a stationary distribution coming from "beyond" the root.
       SetToStationaryDistribution{PLV::rhat_t},
-      // Calculate likelihood at common ancestor.
+      // Calculate likelihood at root.
       Likelihood{HelloGPCSP::root, PLV::rhat_t, PLV::p_t},
+      // Get message going towards jupiter.
+      Multiply{PLV::r_ttilde, PLV::rhat_t, PLV::phat_t},
+      // Evolve the message towards jupiter.
+      EvolveLeafward{PLV::rhat_jupiter, PLV::r_ttilde, HelloGPCSP::jupiter},
+      // Calculate likelihood at jupiter.
+      Likelihood{HelloGPCSP::jupiter, PLV::rhat_jupiter, PLV::p_jupiter},
+      // Get message going towards ancestor.
+      Multiply{PLV::r_t, PLV::phat_ttilde, PLV::rhat_t},
+      // Evolve the message towards ancestor.
+      EvolveLeafward{PLV::rhat_s, PLV::r_t, HelloGPCSP::ancestor},
+      // Calculate likelihood at common ancestor.
+      Likelihood{HelloGPCSP::ancestor, PLV::rhat_s, PLV::p_s},
+      // Get message going towards mars.
+      Multiply{PLV::r_stilde, PLV::rhat_s, PLV::phat_s},
+      // Evolve the message towards mars.
+      EvolveLeafward{PLV::rhat_mars, PLV::r_stilde, HelloGPCSP::mars},
+      // Calculate likelihood at mars.
+      Likelihood{HelloGPCSP::mars, PLV::rhat_mars, PLV::p_mars},
+      // Get message going towards saturn.
+      Multiply{PLV::r_s, PLV::rhat_s, PLV::phat_stilde},
+      // Evolve the message towards saturn.
+      EvolveLeafward{PLV::rhat_saturn, PLV::r_s, HelloGPCSP::saturn},
+      // Calculate likelihood at saturn.
+      Likelihood{HelloGPCSP::saturn, PLV::rhat_saturn, PLV::p_saturn},
+
   };
 
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
   engine->ProcessOperations(rootward_likelihood_calculation);
   CHECK_LT(fabs(engine->GetLogLikelihoods()(HelloGPCSP::root) - -84.77961943), 1e-6);
+  CHECK_LT(fabs(engine->GetLogLikelihoods()(HelloGPCSP::mars) - -84.77961943), 1e-6);
+  CHECK_LT(fabs(engine->GetLogLikelihoods()(HelloGPCSP::jupiter) - -84.77961943), 1e-6);
+  CHECK_LT(fabs(engine->GetLogLikelihoods()(HelloGPCSP::saturn) - -84.77961943), 1e-6);
+  CHECK_LT(fabs(engine->GetLogLikelihoods()(HelloGPCSP::ancestor) - -84.77961943),
+           1e-6);
 }
