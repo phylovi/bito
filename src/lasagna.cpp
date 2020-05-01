@@ -35,7 +35,7 @@ enum HelloPLV {
 };
 
 GPOperationVector rootward_likelihood_calculation{
-    SetToStationaryDistribution{stationary},
+    SetToStationaryDistribution{HelloPLV::stationary},
     // Evolve mars rootward.
     EvolveRootward{HelloPLV::mars_root, HelloPLV::mars_leaf, HelloGPCSP::mars},
     // Evolve saturn rootward.
@@ -49,7 +49,7 @@ GPOperationVector rootward_likelihood_calculation{
     EvolveRootward{HelloPLV::jupiter_root, HelloPLV::jupiter_leaf, HelloGPCSP::jupiter},
     // Get root.
     Multiply{HelloPLV::root_leaf, HelloPLV::ancestor_root, HelloPLV::jupiter_root},
-    // Calculate likelihood.
+    // Calculate likelihood at the root.
     Likelihood{HelloGPCSP::root, HelloPLV::stationary, HelloPLV::root_leaf},
 };
 
@@ -59,6 +59,25 @@ TEST_CASE("GPInstance: rootward likelihood calculation") {
   engine->ProcessOperations(rootward_likelihood_calculation);
   CHECK_LT(fabs(engine->GetLogLikelihoods()(HelloGPCSP::root) - -84.852358), 1e-6);
 }
+
+GPOperationVector leafward_likelihood_calculation{
+    // Get the PLV heading down towards the ancestor.
+    Multiply{HelloPLV::ancestor_root, HelloPLV::stationary, HelloPLV::jupiter_root},
+    // Evolve common ancestor leafward.
+    EvolveLeafward{HelloPLV::ancestor_leaf, HelloPLV::ancestor_root,
+                   HelloGPCSP::ancestor},
+    // Calculate likelihood at common ancestor.
+    Likelihood{HelloGPCSP::ancestor, HelloPLV::ancestor_leaf, HelloPLV::root_leaf},
+    // Get common ancestor of mars and saturn.
+    Multiply{HelloPLV::ancestor_leaf, HelloPLV::mars_root, HelloPLV::saturn_root},
+    // Evolve common ancestor rootward.
+    // Evolve jupiter rootward.
+    EvolveRootward{HelloPLV::jupiter_root, HelloPLV::jupiter_leaf, HelloGPCSP::jupiter},
+    // Get root.
+    Multiply{HelloPLV::root_leaf, HelloPLV::ancestor_root, HelloPLV::jupiter_root},
+    // Calculate likelihood.
+    Likelihood{HelloGPCSP::root, HelloPLV::stationary, HelloPLV::root_leaf},
+};
 
 TEST_CASE("GPInstance: leafward likelihood calculation") {
   auto inst = MakeHelloGPInstance();
