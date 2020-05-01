@@ -6,19 +6,21 @@
 
 using namespace GPOperations;
 
+enum HelloGPCSP { jupiter, mars, saturn, ancestor, root };
+
+// According to HelloGPCSP, this makes
+// (jupiter:0.113,(mars:0.15,saturn:0.1):0.22):0.;
 GPInstance MakeHelloGPInstance() {
-  // (jupiter:0.113,(mars:0.15,saturn:0.1):0.22):0.;
   GPInstance inst;
   inst.ReadFastaFile("data/hello.fasta");
   inst.ReadNewickFile("data/hello_rooted.nwk");
   inst.MakeEngine();
   EigenVectorXd branch_lengths(4);
-  branch_lengths << 0.15, 0.1, 0.113, 0.22;
+  // Order set by HelloGPCSP.
+  branch_lengths << 0.113, 0.15, 0.1, 0.22;
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   return inst;
 }
-
-enum HelloGPCSP { mars, saturn, ancestor, jupiter, root };
 
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   // Here "_leaf" is the leaf-side PLV, and "_root" is the root-side PLV.
