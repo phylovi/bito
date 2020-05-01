@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "gp_engine.hpp"
+#include "optimization.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t pcss_count)
     : site_pattern_(std::move(site_pattern)), pcss_count_(pcss_count) {
@@ -68,10 +69,21 @@ void GPEngine::operator()(const GPOperations::EvolveRootward& op) {
 void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {}
 
 void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
-  Failwith("OptimizeRootward unimplemented for now.");
+  auto to_optimize = [this, &op](double branch_length) {
+    SetBranchLengthForTransitionMatrix(branch_length);
+    plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
+    return LogLikelihood(op.rootward_idx, op.dest_idx);
+  };
+  // TODO can we start optimization somewhere smart?
+  auto [branch_length, log_likelihood] =
+      Optimization::BrentMinimize(to_optimize, 0, 5, 4, 20);
+  branch_lengths_[op.branch_length_idx] = branch_length;
+  log_likelihoods_[op.dest_idx] = log_likelihood;
 }
 
-void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {}
+void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {
+  Failwith("OptimizeRootward unimplemented for now.");
+}
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   Failwith("UpdateSBNProbabilities unimplemented for now.");

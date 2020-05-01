@@ -16,7 +16,7 @@ using StringSizePairVector = std::vector<std::pair<std::string, size_t>>;
 // Assume we have:
 // * all PLVs in a data structure such that `plv[idx]` is the `idx`th PLV
 // * branch lengths in a vector `branch_lengths` indexed by PCSPs
-// * likelihoods in a vector `likelihoods` indexed by PCSPs
+// * log likelihoods in a vector `log_likelihoods` indexed by PCSPs
 // * a vector of SBN probabilities `q` indexed by PCSPs, such that the children of a
 // given parent are contiguous
 // * a collection of weights from site pattern compression
@@ -58,7 +58,7 @@ struct Multiply {
 };
 
 // Stores the likelihood of `plv[src1_idx]` and `plv[src2_idx]`, incorporating site
-// pattern weights, in `likelihoods[dest_idx]` (note that we will already have the
+// pattern weights, in `log_likelihoods[dest_idx]` (note that we will already have the
 // stationary distribution in the rootward partial likelihood vector.
 struct Likelihood {
   size_t dest_idx;
@@ -94,10 +94,12 @@ struct EvolveLeafward {
 };
 
 // Finds the optimal `branch_length` for the likelihood of
-// `plv[rootward_idx]` and `P(branch_length) plv[leafward_idx]`, starting optimization
-// at `branch_lengths[branch_length_idx]`, and storing the PLV for
-// `P(branch_length) plv[leafward_idx]` in `plv[dest_idx]` for the optimal branch length
-// as well as the optimal branch length at `branch_lengths[branch_length_idx]`
+// `plv[rootward_idx]` and `P(branch_length) plv[leafward_idx]`,
+// * starting optimization at `branch_lengths[branch_length_idx]`,
+// * storing the PLV for `P(branch_length) plv[leafward_idx]` in `plv[dest_idx]` for the
+// optimal branch length
+// * storing log likelihood at `log_likelihoods[dest_idx]`
+// * storing optimal branch length at `branch_lengths[branch_length_idx]`
 struct OptimizeRootward {
   size_t dest_idx;
   size_t leafward_idx;
@@ -111,6 +113,7 @@ struct OptimizeRootward {
   }
 };
 
+// TODO make like above
 // Finds the optimal `branch_length` for the likelihood of
 // `P'(branch_length) plv[rootward_idx]` and `plv[leafward_idx]`, starting optimization
 // at `branch_lengths[branch_length_idx]`, and storing the PLV for
@@ -129,9 +132,9 @@ struct OptimizeLeafward {
   }
 };
 
-// Performs `eq:SBNUpdates`. That is, let `total` be the sum of `likelihoods[idx]` for
-// all `idx` in `start_idx <= idx < stop_idx`. Now let
-// `q[idx] = likelihoods[idx]/total` for all `idx` in `start_idx <= idx < stop_idx`.
+// Performs `eq:SBNUpdates`. That is, let `total` be the sum of `log_likelihoods[idx]`
+// for all `idx` in `start_idx <= idx < stop_idx`. Now let `q[idx] =
+// log_likelihoods[idx]/total` for all `idx` in `start_idx <= idx < stop_idx`.
 struct UpdateSBNProbabilities {
   size_t start_idx;
   size_t stop_idx;

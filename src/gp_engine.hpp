@@ -1,7 +1,8 @@
 // Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// A crappy version of Engine that only does JC, but does do our GP calculations.
+// A visitor for GPOperations. See
+// https://arne-mertz.de/2018/05/modern-c-features-stdvariant-and-stdvisit/
 
 #ifndef SRC_GP_ENGINE_HPP_
 #define SRC_GP_ENGINE_HPP_
@@ -49,6 +50,8 @@ class GPEngine {
   EigenVectorXd q_;
   EigenVectorXd per_pattern_log_likelihoods_;
 
+  // When we change from JC69Model, check that we are actually doing transpose in
+  // leafward calculations.
   JC69Model substitution_model_;
   Eigen::Matrix4d eigenmatrix_ = substitution_model_.GetEigenvectors().reshaped(4, 4);
   Eigen::Matrix4d inverse_eigenmatrix_ =
