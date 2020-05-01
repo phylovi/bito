@@ -57,13 +57,7 @@ void GPEngine::operator()(const GPOperations::Multiply& op) {
 }
 
 void GPEngine::operator()(const GPOperations::Likelihood& op) {
-  per_pattern_log_likelihoods_ =
-      (plvs_.at(op.src1_idx).transpose() * plvs_.at(op.src2_idx))
-          .diagonal()
-          .array()
-          .log();
-  log_likelihoods_(op.dest_idx) =
-      per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  log_likelihoods_(op.dest_idx) = LogLikelihood(op.src1_idx, op.src2_idx);
 }
 
 void GPEngine::operator()(const GPOperations::EvolveRootward& op) {
@@ -79,7 +73,9 @@ void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
 
 void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {}
 
-void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {}
+void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
+  Failwith("UpdateSBNProbabilities unimplemented for now.");
+}
 
 void GPEngine::ProcessOperations(GPOperationVector operations) {
   for (const auto& operation : operations) {
