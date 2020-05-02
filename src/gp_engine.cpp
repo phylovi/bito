@@ -22,7 +22,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count)
 
 void GPEngine::InitializePLVsWithSitePatterns() {
   size_t taxon_idx = 0;
-  for (const auto &pattern : site_pattern_.GetPatterns()) {
+  for (const auto& pattern : site_pattern_.GetPatterns()) {
     size_t site_idx = 0;
     for (const int symbol : pattern) {
       Assert(symbol >= 0, "Negative symbol!");
