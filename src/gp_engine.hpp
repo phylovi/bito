@@ -44,6 +44,11 @@ class GPEngine {
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
 
  private:
+  double branch_length_min_ = 1e-6;
+  double branch_length_max_ = 3.;
+  int significant_digits_for_optimization_ = 4;
+  size_t max_iter_for_optimization_ = 20;
+
   SitePattern site_pattern_;
   std::vector<NucleotidePLV> plvs_;
   EigenVectorXd branch_lengths_;

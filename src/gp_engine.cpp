@@ -81,8 +81,9 @@ void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
     return return_value;
   };
   // TODO can we start optimization somewhere smart?
-  auto [branch_length, neg_log_likelihood] =
-      Optimization::BrentMinimize(to_minimize, 0, 1, 4, 20);
+  auto [branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
+      to_minimize, branch_length_min_, branch_length_max_,
+      significant_digits_for_optimization_, max_iter_for_optimization_);
   branch_lengths_(op.branch_length_idx) = branch_length;
   log_likelihoods_(op.branch_length_idx) = neg_log_likelihood;
 }
