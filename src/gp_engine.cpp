@@ -73,16 +73,18 @@ void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
-  auto to_optimize = [this, &op](double branch_length) {
+  auto to_minimize = [this, &op](double branch_length) {
     SetTransitionMatrixToHaveBranchLength(branch_length);
     plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
-    return LogLikelihood(op.rootward_idx, op.dest_idx);
+    auto return_value = -LogLikelihood(op.rootward_idx, op.dest_idx);
+    std::cout << branch_length << ", " << return_value << std::endl;
+    return return_value;
   };
   // TODO can we start optimization somewhere smart?
-  auto [branch_length, log_likelihood] =
-      Optimization::BrentMinimize(to_optimize, 0, 5, 4, 20);
-  branch_lengths_[op.branch_length_idx] = branch_length;
-  log_likelihoods_[op.dest_idx] = log_likelihood;
+  auto [branch_length, neg_log_likelihood] =
+      Optimization::BrentMinimize(to_minimize, 0, 1, 4, 20);
+  branch_lengths_(op.branch_length_idx) = branch_length;
+  log_likelihoods_(op.branch_length_idx) = neg_log_likelihood;
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {

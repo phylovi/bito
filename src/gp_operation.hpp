@@ -98,7 +98,7 @@ struct EvolveLeafward {
 // * starting optimization at `branch_lengths[branch_length_idx]`,
 // * storing the PLV for `P(branch_length) plv[leafward_idx]` in `plv[dest_idx]` for the
 // optimal branch length
-// * storing log likelihood at `log_likelihoods[dest_idx]`
+// * storing log likelihood at `log_likelihoods[branch_length_idx]`
 // * storing optimal branch length at `branch_lengths[branch_length_idx]`
 struct OptimizeRootward {
   size_t dest_idx;

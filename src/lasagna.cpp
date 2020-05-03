@@ -85,7 +85,7 @@ TEST_CASE("GPInstance: subsplit traversal as written") {
     rhat_saturn,   // Evolved message coming towards saturn
   };
 
-  GPOperationVector rootward_likelihood_calculation{
+  GPOperationVector two_pass_likelihood_computation{
       // Evolve jupiter rootward.
       EvolveRootward{PLV::phat_ttilde, PLV::p_jupiter, HelloGPCSP::jupiter},
       // Evolve mars rootward.
@@ -128,10 +128,56 @@ TEST_CASE("GPInstance: subsplit traversal as written") {
       Likelihood{HelloGPCSP::saturn, PLV::rhat_saturn, PLV::p_saturn},
   };
 
+  GPOperationVector two_pass_optimization{
+      // Optimize jupiter branch length and assign PLV on the root side.
+      OptimizeRootward{PLV::phat_ttilde, PLV::p_jupiter, PLV::r_ttilde,
+                       HelloGPCSP::jupiter},
+      // Evolve mars rootward.
+      EvolveRootward{PLV::phat_stilde, PLV::p_mars, HelloGPCSP::mars},
+      // Evolve saturn rootward.
+      EvolveRootward{PLV::phat_s, PLV::p_saturn, HelloGPCSP::saturn},
+      // Get rootward PLV for venus.
+      Multiply{PLV::p_s, PLV::phat_stilde, PLV::phat_s},
+      // Evolve venus rootward.
+      EvolveRootward{PLV::phat_t, PLV::p_s, HelloGPCSP::venus},
+      // Get rootward PLV for root.
+      Multiply{PLV::p_t, PLV::phat_ttilde, PLV::phat_t},
+      // Set a stationary distribution coming from "beyond" the root.
+      SetToStationaryDistribution{PLV::rhat_t},
+      // Calculate likelihood at root.
+      Likelihood{HelloGPCSP::root, PLV::rhat_t, PLV::p_t},
+      // Get message going towards jupiter.
+      Multiply{PLV::r_ttilde, PLV::rhat_t, PLV::phat_t},
+      // Evolve the message towards jupiter.
+      EvolveLeafward{PLV::rhat_jupiter, PLV::r_ttilde, HelloGPCSP::jupiter},
+      // Calculate likelihood at jupiter.
+      Likelihood{HelloGPCSP::jupiter, PLV::rhat_jupiter, PLV::p_jupiter},
+      // Get message going towards venus.
+      Multiply{PLV::r_t, PLV::phat_ttilde, PLV::rhat_t},
+      // Evolve the message towards venus.
+      EvolveLeafward{PLV::rhat_s, PLV::r_t, HelloGPCSP::venus},
+      // Calculate likelihood at venus.
+      Likelihood{HelloGPCSP::venus, PLV::rhat_s, PLV::p_s},
+      // Get message going towards mars.
+      Multiply{PLV::r_stilde, PLV::rhat_s, PLV::phat_s},
+      // Evolve the message towards mars.
+      EvolveLeafward{PLV::rhat_mars, PLV::r_stilde, HelloGPCSP::mars},
+      // Calculate likelihood at mars.
+      Likelihood{HelloGPCSP::mars, PLV::rhat_mars, PLV::p_mars},
+      // Get message going towards saturn.
+      Multiply{PLV::r_s, PLV::rhat_s, PLV::phat_stilde},
+      // Evolve the message towards saturn.
+      EvolveLeafward{PLV::rhat_saturn, PLV::r_s, HelloGPCSP::saturn},
+      // Calculate likelihood at saturn.
+      Likelihood{HelloGPCSP::saturn, PLV::rhat_saturn, PLV::p_saturn},
+  };
+
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
-  engine->ProcessOperations(rootward_likelihood_calculation);
+  engine->ProcessOperations(two_pass_likelihood_computation);
   for (size_t idx = 0; idx <= root; idx++) {
     CHECK_LT(fabs(engine->GetLogLikelihoods()(idx) - -84.77961943), 1e-6);
   }
+  engine->ProcessOperations(two_pass_optimization);
+  std::cout << engine->GetBranchLengths() << std::endl;
 }
