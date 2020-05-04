@@ -47,6 +47,7 @@ class GPEngine {
   // TODO leave out for testing?
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeRootward& op);
   void BrentOptimization(const GPOperations::OptimizeRootward& op);
+  void GradientAscentOptimization(const GPOperations::OptimizeRootward& op);
 
  private:
   double branch_length_min_ = 1e-6;

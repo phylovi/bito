@@ -117,7 +117,7 @@ DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, doubl
   }
 }
 
-void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
+void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeRootward& op) {
   auto log_likelihood_and_derivative = [this, &op](double branch_length) {
     branch_lengths_(op.branch_length_idx) = branch_length;
     return this->LogLikelihoodAndDerivative(op);
@@ -128,6 +128,17 @@ void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
       branch_length_min_, max_iter_for_optimization_);
   branch_lengths_(op.branch_length_idx) = branch_length;
   log_likelihoods_(op.branch_length_idx) = log_likelihood;
+}
+
+void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
+  auto starting_branch_length = branch_lengths_(op.branch_length_idx);
+  std::cout << "starting branch length: " << starting_branch_length << std::endl;
+  GradientAscentOptimization(op);
+  std::cout << "after gradient ascent: " << branch_lengths_(op.branch_length_idx)
+            << std::endl;
+  branch_lengths_(op.branch_length_idx) = starting_branch_length;
+  BrentOptimization(op);
+  std::cout << "after brent: " << branch_lengths_(op.branch_length_idx) << std::endl;
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {
