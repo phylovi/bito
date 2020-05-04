@@ -132,14 +132,14 @@ TEST_CASE("GPInstance: subsplit traversal as written") {
       // Optimize jupiter branch length and assign PLV on the root side.
       OptimizeRootward{PLV::phat_ttilde, PLV::p_jupiter, PLV::r_ttilde,
                        HelloGPCSP::jupiter},
-      // Evolve mars rootward.
-      EvolveRootward{PLV::phat_stilde, PLV::p_mars, HelloGPCSP::mars},
-      // Evolve saturn rootward.
-      EvolveRootward{PLV::phat_s, PLV::p_saturn, HelloGPCSP::saturn},
+      // Optimize mars branch length and assign PLV on the root side.
+      OptimizeRootward{PLV::phat_stilde, PLV::p_mars, PLV::r_stilde, HelloGPCSP::mars},
+      // Optimize saturn branch length and assign PLV on the root side.
+      OptimizeRootward{PLV::phat_s, PLV::p_saturn, PLV::r_s, HelloGPCSP::saturn},
       // Get rootward PLV for venus.
       Multiply{PLV::p_s, PLV::phat_stilde, PLV::phat_s},
-      // Evolve venus rootward.
-      EvolveRootward{PLV::phat_t, PLV::p_s, HelloGPCSP::venus},
+      // Optimize venus branch length and assign PLV on the root side.
+      OptimizeRootward{PLV::phat_t, PLV::p_s, PLV::r_t, HelloGPCSP::venus},
       // Get rootward PLV for root.
       Multiply{PLV::p_t, PLV::phat_ttilde, PLV::phat_t},
       // Set a stationary distribution coming from "beyond" the root.
@@ -178,6 +178,8 @@ TEST_CASE("GPInstance: subsplit traversal as written") {
   for (size_t idx = 0; idx <= root; idx++) {
     CHECK_LT(fabs(engine->GetLogLikelihoods()(idx) - -84.77961943), 1e-6);
   }
+  engine->ProcessOperations(two_pass_optimization);
+  engine->ProcessOperations(two_pass_optimization);
   engine->ProcessOperations(two_pass_optimization);
   std::cout << engine->GetBranchLengths() << std::endl;
 }

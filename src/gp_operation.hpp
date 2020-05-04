@@ -113,12 +113,13 @@ struct OptimizeRootward {
   }
 };
 
-// TODO make like above
 // Finds the optimal `branch_length` for the likelihood of
-// `P'(branch_length) plv[rootward_idx]` and `plv[leafward_idx]`, starting optimization
-// at `branch_lengths[branch_length_idx]`, and storing the PLV for
-// `P'(branch_length) plv[rootward_idx]` in `plv[dest_idx]` for the optimal branch
-// length as well as the optimal branch length at `branch_lengths[branch_length_idx]`
+// `P'(branch_length) plv[rootward_idx]` and `plv[leafward_idx]`,
+// * starting optimization at `branch_lengths[branch_length_idx]`,
+// * storing the PLV for `P'(branch_length) plv[rootward_idx]` in `plv[dest_idx]` for
+// the optimal branch length
+// * storing log likelihood at `log_likelihoods[branch_length_idx]`
+// * storing optimal branch length at `branch_lengths[branch_length_idx]`
 struct OptimizeLeafward {
   size_t dest_idx;
   size_t leafward_idx;
