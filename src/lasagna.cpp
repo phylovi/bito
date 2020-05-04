@@ -178,6 +178,24 @@ TEST_CASE("GPInstance: subsplit traversal as written") {
   for (size_t idx = 0; idx <= root; idx++) {
     CHECK_LT(fabs(engine->GetLogLikelihoods()(idx) - -84.77961943), 1e-6);
   }
+  auto jupiter_optimization = OptimizeRootward{PLV::phat_ttilde, PLV::p_jupiter,
+                                               PLV::r_ttilde, HelloGPCSP::jupiter};
+  EigenVectorXd branch_lengths = engine->GetBranchLengths();
+  double original_branch_length = branch_lengths(0);
+  double original_log_likelihood = engine->GetLogLikelihoods()(0);
+  branch_lengths << original_branch_length, 0.15, 0.1, 0.22;
+  std::cout << "with matrices: "
+            << engine->LogLikelihoodAndDerivative(jupiter_optimization) << std::endl;
+  for (size_t idx = 4; idx <= 12; idx++) {
+    branch_lengths(0) = original_branch_length + std::pow(0.5, idx);
+    engine->SetBranchLengths(branch_lengths);
+    engine->ProcessOperations(two_pass_likelihood_computation);
+    auto log_likelihood = engine->GetLogLikelihoods()(0);
+    auto derivative_estimate = (log_likelihood - original_log_likelihood) /
+                               (branch_lengths(0) - original_branch_length);
+    std::cout << "with finite differences: " << branch_lengths << " " << log_likelihood
+              << " " << derivative_estimate << std::endl;
+  }
   engine->ProcessOperations(two_pass_optimization);
   engine->ProcessOperations(two_pass_optimization);
   std::cout << engine->GetBranchLengths() << std::endl;

@@ -72,6 +72,19 @@ void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {
   plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.src_idx);
 }
 
+std::pair<double, double> GPEngine::LogLikelihoodAndDerivative(
+    const GPOperations::OptimizeRootward& op) {
+  SetTransitionAndDerivativeMatricesToHaveBranchLength(
+      branch_lengths_(op.branch_length_idx));
+  // The per-site likelihood derivative is calculated in the same way as the per-site
+  // likelihood, but using the derivative matrix instead of the transition matrix.
+  plvs_.at(op.dest_idx) = derivative_matrix_ * plvs_.at(op.leafward_idx);
+  PreparePerPatternLikelihoodDerivatives(op.rootward_idx, op.dest_idx);
+  plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
+  PreparePerPatternLikelihoods(op.rootward_idx, op.dest_idx);
+  return LogLikelihoodAndDerivativeFromPreparations();
+}
+
 void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
   auto negative_log_likelihood = [this, &op](double branch_length) {
     SetTransitionMatrixToHaveBranchLength(branch_length);

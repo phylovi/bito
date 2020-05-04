@@ -44,6 +44,10 @@ class GPEngine {
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
 
+  // TODO leave out for testing?
+  std::pair<double, double> LogLikelihoodAndDerivative(
+      const GPOperations::OptimizeRootward& op);
+
  private:
   double branch_length_min_ = 1e-6;
   double branch_length_max_ = 3.;
@@ -55,7 +59,12 @@ class GPEngine {
   EigenVectorXd branch_lengths_;
   EigenVectorXd log_likelihoods_;
   EigenVectorXd q_;
+
+  // Internal "temporaries" useful for likelihood and derivative calculation.
   EigenVectorXd per_pattern_log_likelihoods_;
+  EigenVectorXd per_pattern_likelihoods_;
+  EigenVectorXd per_pattern_likelihood_derivatives_;
+  EigenVectorXd per_pattern_likelihood_derivative_ratios_;
 
   // When we change from JC69Model, check that we are actually doing transpose in
   // leafward calculations.
@@ -76,6 +85,30 @@ class GPEngine {
     per_pattern_log_likelihoods_ =
         (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array().log();
     return per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  }
+
+  inline void PreparePerPatternLikelihoodDerivatives(size_t src1_idx, size_t src2_idx) {
+    per_pattern_likelihood_derivatives_ =
+        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array();
+  }
+
+  inline void PreparePerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
+    per_pattern_likelihoods_ =
+        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array();
+  }
+
+  inline std::pair<double, double> LogLikelihoodAndDerivativeFromPreparations() {
+    per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
+    double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+    // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
+    // of l_i divided by l_i.
+    per_pattern_likelihood_derivative_ratios_ =
+        per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
+    // We weight this with the number of times we see the site patterns as for the log
+    // likelihood.
+    double log_likelihood_derivative =
+        per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
+    return {log_likelihood, log_likelihood_derivative};
   }
 };
 
