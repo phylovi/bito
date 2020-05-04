@@ -46,7 +46,7 @@ class GPEngine {
  private:
   double branch_length_min_ = 1e-6;
   double branch_length_max_ = 3.;
-  int significant_digits_for_optimization_ = 4;
+  int significant_digits_for_optimization_ = 6;
   size_t max_iter_for_optimization_ = 20;
 
   SitePattern site_pattern_;
