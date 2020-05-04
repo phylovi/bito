@@ -72,7 +72,7 @@ void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {
   plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.src_idx);
 }
 
-std::pair<double, double> GPEngine::LogLikelihoodAndDerivative(
+DoublePair GPEngine::LogLikelihoodAndDerivative(
     const GPOperations::OptimizeRootward& op) {
   SetTransitionAndDerivativeMatricesToHaveBranchLength(
       branch_lengths_(op.branch_length_idx));
@@ -85,7 +85,7 @@ std::pair<double, double> GPEngine::LogLikelihoodAndDerivative(
   return LogLikelihoodAndDerivativeFromPreparations();
 }
 
-void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
+void GPEngine::BrentOptimization(const GPOperations::OptimizeRootward& op) {
   auto negative_log_likelihood = [this, &op](double branch_length) {
     SetTransitionMatrixToHaveBranchLength(branch_length);
     plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
@@ -95,7 +95,39 @@ void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
       negative_log_likelihood, branch_length_min_, branch_length_max_,
       significant_digits_for_optimization_, max_iter_for_optimization_);
   branch_lengths_(op.branch_length_idx) = branch_length;
-  log_likelihoods_(op.branch_length_idx) = neg_log_likelihood;
+  log_likelihoods_(op.branch_length_idx) = -neg_log_likelihood;
+}
+
+DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
+                          const double tolerance, const double step_size,
+                          const double min_x, const size_t max_iter) {
+  size_t iter_idx = 0;
+  // std::cout << "x, f_x, f_prime_x\n";
+  while (true) {
+    auto [f_x, f_prime_x] = f_and_f_prime(x);
+    // std::cout << "gradient ascent " << iter_idx << " " << std::vector{x, f_x,
+    // f_prime_x}
+    //           << std::endl;
+    const double new_x = x + f_prime_x * step_size;
+    x = std::max(new_x, min_x);
+    if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
+      return {x, f_x};
+    }
+    ++iter_idx;
+  }
+}
+
+void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
+  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
+    branch_lengths_(op.branch_length_idx) = branch_length;
+    return this->LogLikelihoodAndDerivative(op);
+  };
+  auto [branch_length, log_likelihood] = GradientAscent(
+      log_likelihood_and_derivative, branch_lengths_(op.branch_length_idx),
+      relative_tolerance_for_optimization_, step_size_for_optimization_,
+      branch_length_min_, max_iter_for_optimization_);
+  branch_lengths_(op.branch_length_idx) = branch_length;
+  log_likelihoods_(op.branch_length_idx) = log_likelihood;
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {

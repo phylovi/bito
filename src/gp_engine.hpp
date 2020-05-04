@@ -45,14 +45,16 @@ class GPEngine {
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
 
   // TODO leave out for testing?
-  std::pair<double, double> LogLikelihoodAndDerivative(
-      const GPOperations::OptimizeRootward& op);
+  DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeRootward& op);
+  void BrentOptimization(const GPOperations::OptimizeRootward& op);
 
  private:
   double branch_length_min_ = 1e-6;
   double branch_length_max_ = 3.;
   int significant_digits_for_optimization_ = 6;
-  size_t max_iter_for_optimization_ = 20;
+  double relative_tolerance_for_optimization_ = 1e-2;
+  double step_size_for_optimization_ = 5e-4;
+  size_t max_iter_for_optimization_ = 100;
 
   SitePattern site_pattern_;
   std::vector<NucleotidePLV> plvs_;
@@ -97,7 +99,7 @@ class GPEngine {
         (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array();
   }
 
-  inline std::pair<double, double> LogLikelihoodAndDerivativeFromPreparations() {
+  inline DoublePair LogLikelihoodAndDerivativeFromPreparations() {
     per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
     double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
     // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative

@@ -199,6 +199,8 @@ TEST_CASE("GPInstance: subsplit traversal as written") {
 
   engine->ProcessOperations(two_pass_optimization);
   engine->ProcessOperations(two_pass_optimization);
+  engine->ProcessOperations(two_pass_optimization);
+  engine->ProcessOperations(two_pass_optimization);
   std::cout << engine->GetBranchLengths() << std::endl;
   std::cout << engine->GetLogLikelihoods() << std::endl;
 }
