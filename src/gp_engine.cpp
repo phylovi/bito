@@ -137,8 +137,10 @@ void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
   std::cout << "after gradient ascent: " << branch_lengths_(op.branch_length_idx)
             << std::endl;
   branch_lengths_(op.branch_length_idx) = starting_branch_length;
+  std::cout << "after reset: " << branch_lengths_(op.branch_length_idx) << std::endl;
   BrentOptimization(op);
-  std::cout << "after brent: " << branch_lengths_(op.branch_length_idx) << std::endl;
+  std::cout << "after brent: " << branch_lengths_(op.branch_length_idx) << std::endl
+            << std::endl;
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {
