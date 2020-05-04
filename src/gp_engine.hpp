@@ -33,6 +33,7 @@ class GPEngine {
   void ProcessOperations(GPOperationVector operations);
 
   void SetTransitionMatrixToHaveBranchLength(double branch_length);
+  void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
   const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
   void PrintPLV(size_t plv_idx);
@@ -65,6 +66,7 @@ class GPEngine {
   Eigen::Vector4d eigenvalues_ = substitution_model_.GetEigenvalues();
   Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
   Eigen::Matrix4d transition_matrix_;
+  Eigen::Matrix4d derivative_matrix_;
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
 

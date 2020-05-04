@@ -104,6 +104,15 @@ void GPEngine::SetTransitionMatrixToHaveBranchLength(double branch_length) {
   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
 }
 
+void GPEngine::SetTransitionAndDerivativeMatricesToHaveBranchLength(
+    double branch_length) {
+  Eigen::Vector4d diagonal_vector = (branch_length * eigenvalues_).array().exp();
+  diagonal_matrix_.diagonal() = diagonal_vector;
+  transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+  diagonal_matrix_.diagonal() = diagonal_vector.array() * eigenvalues_.array();
+  derivative_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+}
+
 void GPEngine::SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length) {
   diagonal_matrix_.diagonal() = (branch_length * eigenvalues_).array().exp();
   transition_matrix_ =
