@@ -20,35 +20,19 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count)
   InitializePLVsWithSitePatterns();
 }
 
-void GPEngine::InitializePLVsWithSitePatterns() {
-  size_t taxon_idx = 0;
-  for (const auto& pattern : site_pattern_.GetPatterns()) {
-    size_t site_idx = 0;
-    for (const int symbol : pattern) {
-      Assert(symbol >= 0, "Negative symbol!");
-      if (symbol == 4) {  // Gap character.
-        plvs_.at(taxon_idx).col(site_idx).setConstant(1.);
-      } else if (symbol < 4) {
-        plvs_.at(taxon_idx)(symbol, site_idx) = 1.;
-      }
-      site_idx++;
-    }
-    taxon_idx++;
-  }
-}
-
 void GPEngine::operator()(const GPOperations::Zero& op) {
   plvs_.at(op.dest_idx).setZero();
 }
 
 void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
   auto& plv = plvs_.at(op.dest_idx);
-  for (size_t row_idx = 0; row_idx < 4; ++row_idx) {
+  for (size_t row_idx = 0; row_idx < plv.rows(); ++row_idx) {
     plv.row(row_idx).array() = stationary_distribution_(row_idx);
   }
 }
 
 void GPEngine::operator()(const GPOperations::WeightedSumAccumulate& op) {
+  Failwith("Draft: this method has not been tested.");
   plvs_.at(op.dest_idx) += q_(op.q_idx) * plvs_.at(op.src_idx);
 }
 
@@ -70,45 +54,6 @@ void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {
   SetTransitionMatrixToHaveBranchLengthAndTranspose(
       branch_lengths_(op.branch_length_idx));
   plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.src_idx);
-}
-
-DoublePair GPEngine::LogLikelihoodAndDerivative(
-    const GPOperations::OptimizeRootward& op) {
-  SetTransitionAndDerivativeMatricesToHaveBranchLength(
-      branch_lengths_(op.branch_length_idx));
-  // The per-site likelihood derivative is calculated in the same way as the per-site
-  // likelihood, but using the derivative matrix instead of the transition matrix.
-  plvs_.at(op.dest_idx) = derivative_matrix_ * plvs_.at(op.leafward_idx);
-  PreparePerPatternLikelihoodDerivatives(op.rootward_idx, op.dest_idx);
-  plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
-  PreparePerPatternLikelihoods(op.rootward_idx, op.dest_idx);
-  return LogLikelihoodAndDerivativeFromPreparations();
-}
-
-void GPEngine::BrentOptimization(const GPOperations::OptimizeRootward& op) {
-  auto negative_log_likelihood = [this, &op](double branch_length) {
-    SetTransitionMatrixToHaveBranchLength(branch_length);
-    plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
-    return -LogLikelihood(op.rootward_idx, op.dest_idx);
-  };
-  auto [branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
-      negative_log_likelihood, branch_length_min_, branch_length_max_,
-      significant_digits_for_optimization_, max_iter_for_optimization_);
-  branch_lengths_(op.branch_length_idx) = branch_length;
-  log_likelihoods_(op.branch_length_idx) = -neg_log_likelihood;
-}
-
-void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeRootward& op) {
-  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
-    branch_lengths_(op.branch_length_idx) = branch_length;
-    return this->LogLikelihoodAndDerivative(op);
-  };
-  auto [branch_length, log_likelihood] = Optimization::GradientAscent(
-      log_likelihood_and_derivative, branch_lengths_(op.branch_length_idx),
-      relative_tolerance_for_optimization_, step_size_for_optimization_,
-      branch_length_min_, max_iter_for_optimization_);
-  branch_lengths_(op.branch_length_idx) = branch_length;
-  log_likelihoods_(op.branch_length_idx) = log_likelihood;
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
@@ -164,3 +109,63 @@ void GPEngine::PrintPLV(size_t plv_idx) {
   }
   std::cout << std::endl;
 }
+
+DoublePair GPEngine::LogLikelihoodAndDerivative(
+    const GPOperations::OptimizeRootward& op) {
+  SetTransitionAndDerivativeMatricesToHaveBranchLength(
+      branch_lengths_(op.branch_length_idx));
+  // The per-site likelihood derivative is calculated in the same way as the per-site
+  // likelihood, but using the derivative matrix instead of the transition matrix.
+  plvs_.at(op.dest_idx) = derivative_matrix_ * plvs_.at(op.leafward_idx);
+  PreparePerPatternLikelihoodDerivatives(op.rootward_idx, op.dest_idx);
+  plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
+  PreparePerPatternLikelihoods(op.rootward_idx, op.dest_idx);
+  return LogLikelihoodAndDerivativeFromPreparations();
+}
+
+void GPEngine::InitializePLVsWithSitePatterns() {
+  for (auto& plv : plvs_) {
+    plv.setZero();
+  }
+  size_t taxon_idx = 0;
+  for (const auto& pattern : site_pattern_.GetPatterns()) {
+    size_t site_idx = 0;
+    for (const int symbol : pattern) {
+      Assert(symbol >= 0, "Negative symbol!");
+      if (symbol == 4) {  // Gap character.
+        plvs_.at(taxon_idx).col(site_idx).setConstant(1.);
+      } else if (symbol < 4) {
+        plvs_.at(taxon_idx)(symbol, site_idx) = 1.;
+      }
+      site_idx++;
+    }
+    taxon_idx++;
+  }
+}
+
+void GPEngine::BrentOptimization(const GPOperations::OptimizeRootward& op) {
+  auto negative_log_likelihood = [this, &op](double branch_length) {
+    SetTransitionMatrixToHaveBranchLength(branch_length);
+    plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
+    return -LogLikelihood(op.rootward_idx, op.dest_idx);
+  };
+  auto [branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
+      negative_log_likelihood, min_branch_length_, max_branch_length_,
+      significant_digits_for_optimization_, max_iter_for_optimization_);
+  branch_lengths_(op.branch_length_idx) = branch_length;
+  log_likelihoods_(op.branch_length_idx) = -neg_log_likelihood;
+}
+
+void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeRootward& op) {
+  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
+    branch_lengths_(op.branch_length_idx) = branch_length;
+    return this->LogLikelihoodAndDerivative(op);
+  };
+  auto [branch_length, log_likelihood] = Optimization::GradientAscent(
+      log_likelihood_and_derivative, branch_lengths_(op.branch_length_idx),
+      relative_tolerance_for_optimization_, step_size_for_optimization_,
+      min_branch_length_, max_iter_for_optimization_);
+  branch_lengths_(op.branch_length_idx) = branch_length;
+  log_likelihoods_(op.branch_length_idx) = log_likelihood;
+}
+

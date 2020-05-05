@@ -12,13 +12,14 @@
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 
-using NucleotidePLV = Eigen::Matrix<double, 4, Eigen::Dynamic, Eigen::RowMajor>;
+using NucleotidePLV = Eigen::Matrix<double, 4, Eigen::Dynamic, Eigen::ColMajor>;
 
 class GPEngine {
  public:
   GPEngine(){};
   GPEngine(SitePattern site_pattern, size_t pcss_count);
 
+  // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::Zero& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
   void operator()(const GPOperations::WeightedSumAccumulate& op);
@@ -44,14 +45,11 @@ class GPEngine {
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
 
-  // TODO leave out for testing?
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeRootward& op);
-  void BrentOptimization(const GPOperations::OptimizeRootward& op);
-  void GradientAscentOptimization(const GPOperations::OptimizeRootward& op);
 
  private:
-  double branch_length_min_ = 1e-6;
-  double branch_length_max_ = 3.;
+  double min_branch_length_ = 1e-6;
+  double max_branch_length_ = 3.;
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-2;
   double step_size_for_optimization_ = 5e-4;
@@ -83,6 +81,8 @@ class GPEngine {
   EigenVectorXd site_pattern_weights_;
 
   void InitializePLVsWithSitePatterns();
+  void BrentOptimization(const GPOperations::OptimizeRootward& op);
+  void GradientAscentOptimization(const GPOperations::OptimizeRootward& op);
 
   inline double LogLikelihood(size_t src1_idx, size_t src2_idx) {
     per_pattern_log_likelihoods_ =

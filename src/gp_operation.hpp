@@ -25,7 +25,7 @@ namespace GPOperations {
 
 // We use the convention that `src_` and `dest_` indices always index PLVs.
 
-// Zero out the PLV at `dest_idx`
+// Zero out the PLV at `dest_idx`.
 struct Zero {
   size_t dest_idx;
   StringSizePairVector guts() const { return {{"dest_idx", dest_idx}}; }
@@ -59,7 +59,7 @@ struct Multiply {
 
 // Stores the likelihood of `plv[src1_idx]` and `plv[src2_idx]`, incorporating site
 // pattern weights, in `log_likelihoods[dest_idx]` (note that we will already have the
-// stationary distribution in the rootward partial likelihood vector.
+// stationary distribution in the rootward partial likelihood vector).
 struct Likelihood {
   size_t dest_idx;
   size_t src1_idx;
