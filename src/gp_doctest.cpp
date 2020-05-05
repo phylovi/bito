@@ -11,6 +11,8 @@ enum HelloGPCSP { jupiter, mars, saturn, venus, root };
 
 // Our tree is
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
+// You can see a helpful diagram at
+// https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
 GPInstance MakeHelloGPInstance() {
   GPInstance inst;
   inst.ReadFastaFile("data/hello.fasta");
