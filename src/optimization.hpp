@@ -1,5 +1,7 @@
 #include <cmath>
+#include <functional>
 #include <utility>
+#include "sugar.hpp"
 
 namespace Optimization {
 
@@ -107,5 +109,20 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
   max_iter -= count;
 
   return std::make_pair(x, fx);
+}
+
+DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
+                          const double tolerance, const double step_size,
+                          const double min_x, const size_t max_iter) {
+  size_t iter_idx = 0;
+  while (true) {
+    auto [f_x, f_prime_x] = f_and_f_prime(x);
+    const double new_x = x + f_prime_x * step_size;
+    x = std::max(new_x, min_x);
+    if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
+      return {x, f_x};
+    }
+    ++iter_idx;
+  }
 }
 }  // namespace Optimization

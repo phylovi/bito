@@ -197,10 +197,10 @@ TEST_CASE("GPInstance: subsplit traversal as written") {
       (log_likelihood - original_log_likelihood) / branch_length_difference;
   CHECK_LT(fabs(derivative_estimate - log_likelihood_derivative), 1e-6);
 
-  engine->ProcessOperations(two_pass_optimization);
-  engine->ProcessOperations(two_pass_optimization);
-  engine->ProcessOperations(two_pass_optimization);
-  engine->ProcessOperations(two_pass_optimization);
+  // Trying out optimization.
+  for (size_t pass_idx = 0; pass_idx < 8; ++pass_idx) {
+    engine->ProcessOperations(two_pass_optimization);
+  }
   std::cout << engine->GetBranchLengths() << std::endl;
   std::cout << engine->GetLogLikelihoods() << std::endl;
 }
