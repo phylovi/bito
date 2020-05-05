@@ -6,10 +6,11 @@
 
 using namespace GPOperations;
 
+// GPCSP stands for generalized PCSP-- see text.
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, root };
 
-// According to HelloGPCSP, this makes
+// Our tree is
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 GPInstance MakeHelloGPInstance() {
   GPInstance inst;
@@ -62,27 +63,27 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   CHECK_LT(fabs(engine->GetLogLikelihoods()(HelloGPCSP::root) - -84.77961943), 1e-6);
 }
 
-TEST_CASE("GPInstance: subsplit traversal as written") {
+TEST_CASE("GPInstance: two pass optimization") {
   // Here t is the rootsplit (jupiter, other), and s is the osubsplit (mars, jupiter).
   enum PLV {
-    p_jupiter,     // fake subsplit leading to jupiter
-    p_mars,        // fake subsplit leading to mars
-    p_saturn,      // fake subsplit leading to mars
-    phat_stilde,   // root side of mars edge
-    phat_s,        // root side of saturn edge
+    p_jupiter,     // p at fake subsplit with jupiter
+    p_mars,        // p at fake subsplit with mars
+    p_saturn,      // p at fake subsplit with mars
+    phat_stilde,   // evolved message coming from mars
+    phat_s,        // evolved message coming from saturn
     p_s,           // p at venus
-    phat_ttilde,   // root side of jupiter edge
-    phat_t,        // root side of venus edge
-    p_t,           // PLV at root from leaves
-    rhat_t,        // stationary distribution coming from root
+    phat_ttilde,   // evolved message coming from jupiter
+    phat_t,        // evolved message coming from venus
+    p_t,           // p at root
+    rhat_t,        // stationary distribution "beyond" root
     r_ttilde,      // PLV pointing towards jupiter from root
     r_t,           // PLV pointing towards venus from root
-    rhat_s,        // leaf side of venus edge
+    rhat_s,        // evolved message coming toward venus
     r_stilde,      // PLV pointing towards mars from venus
     r_s,           // PLV pointing towards saturn from venus
-    rhat_jupiter,  // Evolved message coming towards jupiter
-    rhat_mars,     // Evolved message coming towards mars
-    rhat_saturn,   // Evolved message coming towards saturn
+    rhat_jupiter,  // evolved message coming towards jupiter
+    rhat_mars,     // evolved message coming towards mars
+    rhat_saturn,   // evolved message coming towards saturn
   };
 
   GPOperationVector two_pass_likelihood_computation{
