@@ -168,4 +168,3 @@ void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeRootward& 
   branch_lengths_(op.branch_length_idx) = branch_length;
   log_likelihoods_(op.branch_length_idx) = log_likelihood;
 }
-
