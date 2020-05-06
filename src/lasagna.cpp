@@ -8,7 +8,7 @@
 // https://jameshfisher.com/2017/01/28/mmap-file-write/
 
 int main(void) {
-  int fd = open("test_file", O_RDWR | O_CREAT, (mode_t)0600);
+  int fd = open("_ignore/test_file", O_RDWR | O_CREAT, (mode_t)0600);
   const char *text = "hello";
   size_t textsize = strlen(text) + 1;
   lseek(fd, textsize-1, SEEK_SET);
