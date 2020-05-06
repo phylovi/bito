@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include "eigen_sugar.hpp"
 
+// Most complete example: https://gist.github.com/marcetcheverry/991042
 // https://www.youtube.com/watch?v=m7E9piHcfr4
 // https://jameshfisher.com/2017/01/28/mmap-file-write/
 // https://stackoverflow.com/a/43301909/467327
@@ -19,8 +20,7 @@ int main(void) {
   }
   size_t desired_vector_length = 5;
   auto v_size = desired_vector_length * sizeof(double);
-  lseek(fd, desired_vector_length - 1, SEEK_SET);
-  write(fd, "", 1);
+  ftruncate(fd, v_size);
   double *mmapped_file = (double *)mmap(  //
       NULL,    // This address is ignored because we are using MAP_SHARED.
       v_size,  // Size of map.
