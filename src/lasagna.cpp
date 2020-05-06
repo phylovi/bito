@@ -12,13 +12,15 @@
 
 int main(void) {
   std::string fname("_ignore/test_file");
-  int fd = open(fname.c_str(), O_RDWR | O_CREAT, (mode_t)0600);
+  int fd = open(fname.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
   if (fd == -1) {
     std::cout << "could not create file\n";
     return 1;
   }
   size_t desired_vector_length = 5;
   auto v_size = desired_vector_length * sizeof(double);
+  lseek(fd, desired_vector_length - 1, SEEK_SET);
+  write(fd, "", 1);
   double *mmapped_file = (double *)mmap(  //
       NULL,    // This address is ignored because we are using MAP_SHARED.
       v_size,  // Size of map.
@@ -28,7 +30,7 @@ int main(void) {
       0                        // Offset.
   );
   Eigen::Map<EigenVectorXd> v(mmapped_file, desired_vector_length);
-  // v(0) = 5.;
+  v(0) = 5.;
 
   msync(mmapped_file, v_size, MS_SYNC);
   munmap(mmapped_file, v_size);
