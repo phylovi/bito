@@ -13,7 +13,11 @@
 
 int main(void) {
   std::string fname("_ignore/test_file");
-  int fd = open(fname.c_str(), O_RDWR | O_CREAT, S_IRUSR | S_IWUSR);
+  int fd = open(
+      fname.c_str(),
+      O_RDWR | O_CREAT,  // Open for reading and writing; create if it doesn't exit.
+      S_IRUSR | S_IWUSR  // Make the file readable and writable by the user.
+  );
   if (fd == -1) {
     std::cout << "could not create file\n";
     return 1;
@@ -21,19 +25,21 @@ int main(void) {
   size_t desired_vector_length = 5;
   auto v_size = desired_vector_length * sizeof(double);
   ftruncate(fd, v_size);
-  double *mmapped_file = (double *)mmap(  //
+  double *mmapped_memory = (double *)mmap(  //
       NULL,    // This address is ignored because we are using MAP_SHARED.
       v_size,  // Size of map.
-      PROT_READ | PROT_WRITE,  // We want to read and write
+      PROT_READ | PROT_WRITE,  // We want to read and write.
       MAP_SHARED,              // We need MAP_SHARED to actually write to this.
       fd,                      // File descriptor.
       0                        // Offset.
   );
-  Eigen::Map<EigenVectorXd> v(mmapped_file, desired_vector_length);
+  Eigen::Map<EigenVectorXd> v(mmapped_memory, desired_vector_length);
   std::cout << v << std::endl;
   v(1) += 1.;
-  msync(mmapped_file, v_size, MS_SYNC);
-  munmap(mmapped_file, v_size);
+  // Synchronize memory with physical storage.
+  msync(mmapped_memory, v_size, MS_SYNC);
+  // Unmap memory mapped with mmap.
+  munmap(mmapped_memory, v_size);
   close(fd);
   return 0;
 }
