@@ -13,11 +13,13 @@
 int main(void) {
   std::string fname("_ignore/test_file");
   int fd = open(fname.c_str(), O_RDWR | O_CREAT, (mode_t)0600);
-  EigenVectorXd v(5);
-  v << 100, 2, 3, 4, 5;
-  std::cout << v << std::endl;
-  auto v_size = v.size() * sizeof(double);
-  double *map = (double *)mmap(  //
+  if (fd == -1) {
+    std::cout << "could not create file\n";
+    return 1;
+  }
+  size_t desired_vector_length = 5;
+  auto v_size = desired_vector_length * sizeof(double);
+  double *mmapped_file = (double *)mmap(  //
       NULL,    // This address is ignored because we are using MAP_SHARED.
       v_size,  // Size of map.
       PROT_READ | PROT_WRITE,  // We want to read and write
@@ -25,10 +27,11 @@ int main(void) {
       fd,                      // File descriptor.
       0                        // Offset.
   );
-  memcpy(map, v.data(), v_size);
-  map[0] = 3.14;
-  msync(map, v_size, MS_SYNC);
-  munmap(map, v_size);
+  Eigen::Map<EigenVectorXd> v(mmapped_file, desired_vector_length);
+  // v(0) = 5.;
+
+  msync(mmapped_file, v_size, MS_SYNC);
+  munmap(mmapped_file, v_size);
   close(fd);
 
   // reading file back
@@ -44,7 +47,9 @@ int main(void) {
 
   double *file_in_memory = (double *)mmap(NULL, v_size, PROT_READ, MAP_SHARED, fd, 0);
 
-  printf("%g", file_in_memory[0]);
+  Eigen::Map<EigenVectorXd> reconstituted_v(file_in_memory, desired_vector_length);
+  std::cout << reconstituted_v << std::endl;
+  // printf("%g", file_in_memory[0]);
   printf("\n");
   munmap(file_in_memory, v_size);
   close(fd);
