@@ -1,3 +1,4 @@
+#include <ctype.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,9 +17,13 @@ int main(void)
 
   printf("file size is %ld\n", sb.st_size);
 
-  char *file_in_memory = (char *)mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+  char *file_in_memory =
+      (char *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  // char *file_in_memory =
+  //     (char *)mmap(NULL, sb.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
   for (int i = 0; i < sb.st_size; i++) {
+    // file_in_memory[i] = toupper(file_in_memory[i]);
     printf("%c", file_in_memory[i]);
   }
   printf("\n");
