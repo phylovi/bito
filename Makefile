@@ -8,6 +8,7 @@ default:
 test:
 	make
 	./_build/doctest
+	./_build/gp_doctest
 	pytest
 	./_build/noodle
 

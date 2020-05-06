@@ -32,6 +32,7 @@ using StringVector = std::vector<std::string>;
 using StringVectorVector = std::vector<StringVector>;
 using StringSet = std::unordered_set<std::string>;
 using StringSetVector = std::vector<StringSet>;
+using DoublePair = std::pair<double, double>;
 
 inline uint32_t MaxLeafIDOfTag(Tag tag) { return UnpackFirstInt(tag); }
 inline uint32_t LeafCountOfTag(Tag tag) { return UnpackSecondInt(tag); }
