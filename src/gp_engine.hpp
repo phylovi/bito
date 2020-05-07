@@ -13,6 +13,7 @@
 #include "substitution_model.hpp"
 
 using NucleotidePLV = Eigen::Matrix<double, 4, Eigen::Dynamic, Eigen::ColMajor>;
+using NucleotidePLVRef = Eigen::Ref<NucleotidePLV>;
 
 class GPEngine {
  public:

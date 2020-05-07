@@ -85,13 +85,15 @@ class MmappedMatrix {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("MappedMatrix") {
+  Eigen::Index rows = 4;
+  Eigen::Index cols = 5;
   using MmappedMatrixXd = MmappedMatrix<Eigen::MatrixXd>;
   {
-    MmappedMatrixXd mmapped_matrix("_ignore/mmapped_matrix.data", 4, 5);
-    mmapped_matrix.get()(2, 3) = 5.;
+    MmappedMatrixXd mmapped_matrix("_ignore/mmapped_matrix.data", rows, cols);
+    mmapped_matrix.get()(rows - 1, cols - 1) = 5.;
   }  // End of scope, so our mmap is destroyed and file written.
-  MmappedMatrixXd mmapped_matrix("_ignore/mmapped_matrix.data", 4, 5);
-  CHECK_EQ(mmapped_matrix.get()(2, 3), 5.);
+  MmappedMatrixXd mmapped_matrix("_ignore/mmapped_matrix.data", rows, cols);
+  CHECK_EQ(mmapped_matrix.get()(rows - 1, cols - 1), 5.);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
