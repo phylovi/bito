@@ -29,9 +29,9 @@ class MmappedNucleotidePLV {
            "into_count isn't a multiple of total PLV length in "
            "MmappedNucleotidePLV::Subdivide.");
     size_t block_length = total_plv_length_ / into_count;
+    auto entire_plv = mmapped_matrix_.Get();
     NucleotidePLVRefVector sub_plvs;
     sub_plvs.reserve(into_count);
-    auto entire_plv = mmapped_matrix_.Get();
     for (size_t idx = 0; idx < into_count; ++idx) {
       sub_plvs.push_back(entire_plv.block(0, idx * block_length, 4, block_length));
     }
