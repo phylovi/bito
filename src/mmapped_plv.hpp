@@ -10,7 +10,6 @@
 #include "mmapped_matrix.hpp"
 
 using NucleotidePLV = Eigen::Matrix<double, 4, Eigen::Dynamic, Eigen::ColMajor>;
-using NucleotidePLVMap = Eigen::Map<NucleotidePLV>;
 using NucleotidePLVRef = Eigen::Ref<NucleotidePLV>;
 using NucleotidePLVRefVector = std::vector<NucleotidePLVRef>;
 
