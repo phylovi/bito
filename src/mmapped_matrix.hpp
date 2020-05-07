@@ -24,6 +24,7 @@ class MmappedMatrix {
   using Scalar = typename Eigen::DenseBase<EigenDenseMatrixBaseT>::Scalar;
 
  public:
+  MmappedMatrix(){};
   MmappedMatrix(std::string file_path, Eigen::Index rows, Eigen::Index cols)
       : rows_(rows), cols_(cols), mmap_len_(rows * cols * sizeof(Scalar)) {
     file_descriptor_ = open(
@@ -71,7 +72,7 @@ class MmappedMatrix {
   MmappedMatrix &operator=(const MmappedMatrix &) = delete;
   MmappedMatrix &operator=(const MmappedMatrix &&) = delete;
 
-  Eigen::Map<EigenDenseMatrixBaseT> get() {
+  Eigen::Map<EigenDenseMatrixBaseT> Get() {
     return Eigen::Map<EigenDenseMatrixBaseT>(mmapped_memory_, rows_, cols_);
   }
 
@@ -84,18 +85,17 @@ class MmappedMatrix {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("MappedMatrix") {
+TEST_CASE("MmappedMatrix") {
   Eigen::Index rows = 4;
   Eigen::Index cols = 5;
   using MmappedMatrixXd = MmappedMatrix<Eigen::MatrixXd>;
   {
     MmappedMatrixXd mmapped_matrix("_ignore/mmapped_matrix.data", rows, cols);
-    mmapped_matrix.get()(rows - 1, cols - 1) = 5.;
+    mmapped_matrix.Get()(rows - 1, cols - 1) = 5.;
   }  // End of scope, so our mmap is destroyed and file written.
   MmappedMatrixXd mmapped_matrix("_ignore/mmapped_matrix.data", rows, cols);
-  CHECK_EQ(mmapped_matrix.get()(rows - 1, cols - 1), 5.);
+  CHECK_EQ(mmapped_matrix.Get()(rows - 1, cols - 1), 5.);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_MMAPPED_MATRIX_HPP_
-

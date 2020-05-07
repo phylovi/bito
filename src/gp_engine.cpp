@@ -4,11 +4,18 @@
 #include "gp_engine.hpp"
 #include "optimization.hpp"
 
-GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count)
-    : site_pattern_(std::move(site_pattern)) {
-  auto plv_count = site_pattern_.PatternCount() + gpcsp_count;
-  plvs_ = std::vector<NucleotidePLV>(
-      plv_count, NucleotidePLV::Zero(4, site_pattern_.PatternCount()));
+GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
+                   std::string mmap_file_path)
+    : site_pattern_(std::move(site_pattern)),
+      plv_count_(site_pattern_.PatternCount() + gpcsp_count),
+      mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
+  Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
+  plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
+  Assert(plvs_.size() == plv_count_,
+         "Didn't get the right number of PLVs out of Subdivide.");
+  Assert(
+      plvs_.back().rows() == 4 && plvs_.back().cols() == site_pattern_.PatternCount(),
+      "Didn't get the right shape of PLVs out of Subdivide.");
   branch_lengths_.resize(gpcsp_count);
   log_likelihoods_.resize(gpcsp_count);
   q_.resize(gpcsp_count);

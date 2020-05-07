@@ -38,9 +38,10 @@ void GPInstance::MakeEngine() {
   ProcessLoadedTrees();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
   engine_ = std::make_unique<GPEngine>(
-      // To count GPCSSs, we add the usual suspects with the number of leaves (which are
+      // To count GPCSSs, we add the usual suspects to the number of leaves (which are
       // the fake PCSS).
-      site_pattern, sbn_parameters_.size() + tree_collection_.TaxonCount());
+      site_pattern, sbn_parameters_.size() + tree_collection_.TaxonCount(),
+      mmap_file_path_);
 }
 
 GPEngine *GPInstance::GetEngine() const {
