@@ -15,7 +15,6 @@
 
 class GPEngine {
  public:
-  GPEngine(){};
   GPEngine(SitePattern site_pattern, size_t pcss_count, std::string mmap_file_path);
 
   // These operators mean that we can invoke this class on each of the operations.
@@ -119,8 +118,8 @@ class GPEngine {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("GPEngine") {
-  GPEngine engine;
-
+  SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
+  GPEngine engine(hello_site_pattern, 5, "_ignore/mmapped_plv.data");
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29

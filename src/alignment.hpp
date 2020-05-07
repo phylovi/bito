@@ -24,6 +24,12 @@ class Alignment {
 
   static Alignment ReadFasta(const std::string& fname);
 
+  static Alignment HelloAlignment() {
+    return Alignment({{"mars", "CCGAG-AGCAGCAATGGAT-GAGGCATGGCG"},
+                      {"saturn", "GCGCGCAGCTGCTGTAGATGGAGGCATGACG"},
+                      {"jupiter", "GCGCGCAGCAGCTGTGGATGGAAGGATGACG"}});
+  }
+
  private:
   StringStringMap data_;
 };
@@ -31,10 +37,7 @@ class Alignment {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Alignment") {
   auto alignment = Alignment::ReadFasta("data/hello.fasta");
-  Alignment correct({{"mars", "CCGAG-AGCAGCAATGGAT-GAGGCATGGCG"},
-                     {"saturn", "GCGCGCAGCTGCTGTAGATGGAGGCATGACG"},
-                     {"jupiter", "GCGCGCAGCAGCTGTGGATGGAAGGATGACG"}});
-  CHECK_EQ(correct, alignment);
+  CHECK_EQ(alignment, Alignment::HelloAlignment());
   CHECK(alignment.IsValid());
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

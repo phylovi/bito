@@ -32,6 +32,11 @@ class SitePattern {
   // above 4 is given a uniform distribution.
   const std::vector<double> GetPartials(size_t sequence_idx) const;
 
+  static SitePattern HelloSitePattern() {
+    return SitePattern(Alignment::HelloAlignment(),
+                       {{0, "mars"}, {1, "saturn"}, {2, "jupiter"}});
+  }
+
  private:
   Alignment alignment_;
   TagStringMap tag_taxon_map_;

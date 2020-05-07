@@ -25,7 +25,6 @@ class MmappedMatrix {
   using Scalar = typename Eigen::DenseBase<EigenDenseMatrixBaseT>::Scalar;
 
  public:
-  MmappedMatrix() : mmapped_memory_(nullptr){};
   MmappedMatrix(std::string file_path, Eigen::Index rows, Eigen::Index cols)
       : rows_(rows), cols_(cols), mmap_len_(rows * cols * sizeof(Scalar)) {
     file_descriptor_ = open(
@@ -52,9 +51,6 @@ class MmappedMatrix {
   }
 
   ~MmappedMatrix() {
-    if (mmapped_memory_ == nullptr) {
-      return;
-    }
     auto CheckStatus = [](int status, std::string name) {
       if (status != 0) {
         std::cout << "Warning: " << name

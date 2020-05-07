@@ -16,7 +16,6 @@ using NucleotidePLVRefVector = std::vector<NucleotidePLVRef>;
 
 class MmappedNucleotidePLV {
  public:
-  MmappedNucleotidePLV(){};
   MmappedNucleotidePLV(std::string file_path, Eigen::Index total_plv_length)
       : mmapped_matrix_(file_path, 4, total_plv_length),
         total_plv_length_(total_plv_length){};
