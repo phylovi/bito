@@ -18,8 +18,10 @@ using NucleotidePLVRefVector = std::vector<NucleotidePLVRef>;
 
 class MmappedNucleotidePLV {
  public:
+  constexpr static Eigen::Index base_count_ = 4;
+
   MmappedNucleotidePLV(std::string file_path, Eigen::Index total_plv_length)
-      : mmapped_matrix_(file_path, 4, total_plv_length){};
+      : mmapped_matrix_(file_path, base_count_, total_plv_length){};
 
   NucleotidePLVRefVector Subdivide(size_t into_count) {
     auto entire_plv = mmapped_matrix_.Get();
@@ -31,7 +33,8 @@ class MmappedNucleotidePLV {
     NucleotidePLVRefVector sub_plvs;
     sub_plvs.reserve(into_count);
     for (size_t idx = 0; idx < into_count; ++idx) {
-      sub_plvs.push_back(entire_plv.block(0, idx * block_length, 4, block_length));
+      sub_plvs.push_back(
+          entire_plv.block(0, idx * block_length, base_count_, block_length));
     }
     return sub_plvs;
   }
@@ -45,7 +48,7 @@ TEST_CASE("MmappedNucleotidePLV") {
   MmappedNucleotidePLV mmapped_plv("_ignore/mmapped_plv.data", 10);
   auto plvs = mmapped_plv.Subdivide(2);
   for (const auto &plv : plvs) {
-    CHECK(plv.rows() == 4);
+    CHECK(plv.rows() == MmappedNucleotidePLV::base_count_);
     CHECK(plv.cols() == 5);
   }
 }

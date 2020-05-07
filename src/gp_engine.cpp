@@ -13,9 +13,9 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
   plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
   Assert(plvs_.size() == plv_count_,
          "Didn't get the right number of PLVs out of Subdivide.");
-  Assert(
-      plvs_.back().rows() == 4 && plvs_.back().cols() == site_pattern_.PatternCount(),
-      "Didn't get the right shape of PLVs out of Subdivide.");
+  Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
+             plvs_.back().cols() == site_pattern_.PatternCount(),
+         "Didn't get the right shape of PLVs out of Subdivide.");
   branch_lengths_.resize(gpcsp_count);
   log_likelihoods_.resize(gpcsp_count);
   q_.resize(gpcsp_count);
@@ -139,9 +139,9 @@ void GPEngine::InitializePLVsWithSitePatterns() {
     size_t site_idx = 0;
     for (const int symbol : pattern) {
       Assert(symbol >= 0, "Negative symbol!");
-      if (symbol == 4) {  // Gap character.
+      if (symbol == MmappedNucleotidePLV::base_count_) {  // Gap character.
         plvs_.at(taxon_idx).col(site_idx).setConstant(1.);
-      } else if (symbol < 4) {
+      } else if (symbol < MmappedNucleotidePLV::base_count_) {
         plvs_.at(taxon_idx)(symbol, site_idx) = 1.;
       }
       site_idx++;
