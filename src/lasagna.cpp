@@ -4,6 +4,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <iostream>
 #include "eigen_sugar.hpp"
 
 // Most complete example: https://gist.github.com/marcetcheverry/991042
@@ -24,12 +25,13 @@ int main(void) {
   }
   size_t desired_vector_length = 5;
   auto v_size = desired_vector_length * sizeof(double);
+  // Resizes fd so it's just right for our vector.
   ftruncate(fd, v_size);
   double *mmapped_memory = (double *)mmap(  //
-      NULL,    // This address is ignored because we are using MAP_SHARED.
-      v_size,  // Size of map.
+      NULL,                    // This address is ignored as we are using MAP_SHARED.
+      v_size,                  // Size of map.
       PROT_READ | PROT_WRITE,  // We want to read and write.
-      MAP_SHARED,              // We need MAP_SHARED to actually write to this.
+      MAP_SHARED,              // We need MAP_SHARED to actually write to memory.
       fd,                      // File descriptor.
       0                        // Offset.
   );
