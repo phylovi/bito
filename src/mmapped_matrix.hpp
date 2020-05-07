@@ -78,10 +78,10 @@ class MmappedMatrix {
   }
 
  private:
-  int file_descriptor_;
   Eigen::Index rows_;
   Eigen::Index cols_;
   size_t mmap_len_;
+  int file_descriptor_;
   Scalar *mmapped_memory_;
 };
 
