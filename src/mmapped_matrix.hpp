@@ -3,6 +3,7 @@
 //
 // RAII class for Eigen matrices that are mmapped to disk.
 //
+// https://en.wikipedia.org/wiki/Memory-mapped_file
 // Motivating post: https://stackoverflow.com/a/43301909/467327
 // Intro: https://www.youtube.com/watch?v=m7E9piHcfr4
 // Simple example: https://jameshfisher.com/2017/01/28/mmap-file-write/
@@ -24,7 +25,7 @@ class MmappedMatrix {
 
  public:
   MmappedMatrix(std::string file_path, Eigen::Index rows, Eigen::Index cols)
-      : rows_(rows), cols_(cols) {
+      : rows_(rows), cols_(cols), mmap_len_(rows * cols * sizeof(Scalar)) {
     file_descriptor_ = open(
         file_path.c_str(),
         O_RDWR | O_CREAT,  // Open for reading and writing; create if it doesn't exit.
@@ -33,15 +34,14 @@ class MmappedMatrix {
     if (file_descriptor_ == -1) {
       Failwith("MmappedMatrix could not create a file at " + file_path);
     }
-    mmapped_len_ = rows * cols * sizeof(Scalar);
-    // Resizes fd so it's just right for our vector.
-    auto ftruncate_status = ftruncate(file_descriptor_, mmapped_len_);
+    // Resizes file so it's just right for our vector.
+    auto ftruncate_status = ftruncate(file_descriptor_, mmap_len_);
     if (ftruncate_status != 0) {
-      Failwith("MmappedMatrix could not create a file at " + file_path);
+      Failwith("MmappedMatrix could not resize the file at " + file_path);
     }
     mmapped_memory_ = (Scalar *)mmap(  //
         NULL,                    // This address is ignored as we are using MAP_SHARED.
-        mmapped_len_,            // Size of map.
+        mmap_len_,               // Size of map.
         PROT_READ | PROT_WRITE,  // We want to read and write.
         MAP_SHARED,              // We need MAP_SHARED to actually write to memory.
         file_descriptor_,        // File descriptor.
@@ -51,12 +51,12 @@ class MmappedMatrix {
 
   ~MmappedMatrix() {
     // Synchronize memory with physical storage.
-    auto msync_status = msync(mmapped_memory_, mmapped_len_, MS_SYNC);
+    auto msync_status = msync(mmapped_memory_, mmap_len_, MS_SYNC);
     if (msync_status != 0) {
       std::cout << "Warning: msync did not succeed in MmappedMatrix.\n";
     }
     // Unmap memory mapped with mmap.
-    auto munmap_status = munmap(mmapped_memory_, mmapped_len_);
+    auto munmap_status = munmap(mmapped_memory_, mmap_len_);
     if (munmap_status != 0) {
       std::cout << "Warning: munmap did not succeed in MmappedMatrix.\n";
     }
@@ -79,17 +79,19 @@ class MmappedMatrix {
   int file_descriptor_;
   Eigen::Index rows_;
   Eigen::Index cols_;
-  size_t mmapped_len_;
+  size_t mmap_len_;
   Scalar *mmapped_memory_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("MappedMatrix") {
   using MmappedMatrixXd = MmappedMatrix<Eigen::MatrixXd>;
-  MmappedMatrixXd mmapped_matrix("_ignore/mapped_matrix.data", 4, 5);
-  mmapped_matrix.get()(2, 3) = 5.;
-  MmappedMatrixXd mmapped_matrix_read("_ignore/mapped_matrix.data", 4, 5);
-  CHECK_EQ(mmapped_matrix_read.get()(2, 3), 5.);
+  {
+    MmappedMatrixXd mmapped_matrix("_ignore/mmapped_matrix.data", 4, 5);
+    mmapped_matrix.get()(2, 3) = 5.;
+  }  // End of scope, so our mmap is destroyed and file written.
+  MmappedMatrixXd mmapped_matrix("_ignore/mmapped_matrix.data", 4, 5);
+  CHECK_EQ(mmapped_matrix.get()(2, 3), 5.);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
