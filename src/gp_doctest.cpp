@@ -14,7 +14,7 @@ enum HelloGPCSP { jupiter, mars, saturn, venus, root };
 // You can see a helpful diagram at
 // https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
 GPInstance MakeHelloGPInstance() {
-  GPInstance inst;
+  GPInstance inst("_ignore/mmapped_plv.data");
   inst.ReadFastaFile("data/hello.fasta");
   inst.ReadNewickFile("data/hello_rooted.nwk");
   inst.MakeEngine();

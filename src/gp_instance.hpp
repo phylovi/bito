@@ -12,7 +12,7 @@
 
 class GPInstance {
  public:
-  GPInstance(){};
+  GPInstance(std::string mmap_file_path) : mmap_file_path_(mmap_file_path){};
 
   void ReadFastaFile(std::string fname);
   void ReadNewickFile(std::string fname);
@@ -22,6 +22,7 @@ class GPInstance {
   GPEngine *GetEngine() const;
 
  private:
+  std::string mmap_file_path_;
   Alignment alignment_;
   std::unique_ptr<GPEngine> engine_;
   RootedTreeCollection tree_collection_;

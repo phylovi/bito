@@ -9,15 +9,13 @@
 
 #include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
+#include "mmapped_plv.hpp"
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 
-using NucleotidePLV = Eigen::Matrix<double, 4, Eigen::Dynamic, Eigen::ColMajor>;
-
 class GPEngine {
  public:
-  GPEngine(){};
-  GPEngine(SitePattern site_pattern, size_t pcss_count);
+  GPEngine(SitePattern site_pattern, size_t pcss_count, std::string mmap_file_path);
 
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::Zero& op);
@@ -56,7 +54,9 @@ class GPEngine {
   size_t max_iter_for_optimization_ = 100;
 
   SitePattern site_pattern_;
-  std::vector<NucleotidePLV> plvs_;
+  size_t plv_count_;
+  MmappedNucleotidePLV mmapped_master_plv_;
+  NucleotidePLVRefVector plvs_;
   EigenVectorXd branch_lengths_;
   EigenVectorXd log_likelihoods_;
   EigenVectorXd q_;
@@ -118,8 +118,8 @@ class GPEngine {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("GPEngine") {
-  GPEngine engine;
-
+  SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
+  GPEngine engine(hello_site_pattern, 5, "_ignore/mmapped_plv.data");
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29

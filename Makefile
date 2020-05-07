@@ -8,6 +8,7 @@ default:
 test:
 	make
 	./_build/doctest
+	mkdir -p _ignore  # Needed for gp_doctest.
 	./_build/gp_doctest
 	pytest
 	./_build/noodle
