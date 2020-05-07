@@ -176,7 +176,6 @@ extension = env.SharedLibrary(
 )
 doctest = env.Program(["_build/doctest.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
 noodle = env.Program(["_build/noodle.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
-lasagna = env.Program(["_build/lasagna.cpp"], LIBS=["pthread"])
 gp_doctest = env.Program(
     ["_build/gp_doctest.cpp"] + sources + gp_sources, LIBS=["hmsbeagle", "pthread"]
 )
@@ -189,4 +188,4 @@ whl = env.WhlFile(source=platlib)
 print("\nTo install python wheel, execute:")
 print(f"pip install -U {whl[0]}\n")
 
-env.Default(doctest, gp_doctest, whl, noodle, lasagna)
+env.Default(doctest, gp_doctest, whl, noodle)
