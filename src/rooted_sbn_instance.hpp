@@ -46,6 +46,7 @@ TEST_CASE("RootedSBNInstance: subsplit support") {
   inst.ReadNewickFile("data/five_taxon_rooted.nwk");
   inst.ProcessLoadedTrees();
   auto pretty_indexer = inst.PrettyIndexer();
+  StringSet pretty_indexer_set{pretty_indexer.begin(), pretty_indexer.end()};
   // The indexer_ is to index the sbn_parameters_. Note that neither of these
   // data structures attempt to catalog the complete collection of rootsplits or
   // PCSSs, but just those that are present in the the input trees.
@@ -61,9 +62,9 @@ TEST_CASE("RootedSBNInstance: subsplit support") {
   // notation used here.
   //
   // In contrast to the unrooted case, we can write out the pretty indexer here and
-  // verify it by hand. Note the block structure in which the two children of
+  // verify it by hand. There is the block structure in which the two children of
   // 10000|01111 are grouped together.
-  StringVector correct_pretty_indexer{
+  StringSet correct_pretty_indexer_set{
       "00111",              // ((x0,x1),(x2,(x3,x4)))
       "01111",              // (x0,(((x1,x3),x2),x4)) and ((x1,((x2,x4),x3)),x0)
       "00010",              // (x3,((x0,(x4,x1)),x2))
@@ -80,7 +81,7 @@ TEST_CASE("RootedSBNInstance: subsplit support") {
       "00001|01110|00100",  // (((x1,x3),x2),x4)
       "00010|11101|00100"   // (x3,((x0,(x4,x1)),x2))
   };
-  CHECK(pretty_indexer == correct_pretty_indexer);
+  CHECK_EQ(pretty_indexer_set, correct_pretty_indexer_set);
 }
 
 TEST_CASE("RootedSBNInstance: gradients") {
