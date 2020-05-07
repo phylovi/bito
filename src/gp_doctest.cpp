@@ -2,6 +2,7 @@
 
 #include "doctest.h"
 #include "gp_instance.hpp"
+#include "mmapped_matrix.hpp"
 
 using namespace GPOperations;
 
