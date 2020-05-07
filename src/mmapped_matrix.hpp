@@ -12,6 +12,7 @@
 #ifndef SRC_MMAPPED_MATRIX_HPP_
 #define SRC_MMAPPED_MATRIX_HPP_
 
+#include <errno.h>
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
@@ -51,20 +52,21 @@ class MmappedMatrix {
   }
 
   ~MmappedMatrix() {
+    auto CheckStatus = [](int status, std::string name) {
+      if (status != 0) {
+        std::cout << "Warning: " << name
+                  << " did not succeed in MmappedMatrix: " << strerror(errno)
+                  << std::endl;
+      }
+    };
     // Synchronize memory with physical storage.
     auto msync_status = msync(mmapped_memory_, mmap_len_, MS_SYNC);
-    if (msync_status != 0) {
-      std::cout << "Warning: msync did not succeed in MmappedMatrix.\n";
-    }
+    CheckStatus(msync_status, "msync");
     // Unmap memory mapped with mmap.
     auto munmap_status = munmap(mmapped_memory_, mmap_len_);
-    if (munmap_status != 0) {
-      std::cout << "Warning: munmap did not succeed in MmappedMatrix.\n";
-    }
+    CheckStatus(munmap_status, "munmap");
     auto close_status = close(file_descriptor_);
-    if (close_status != 0) {
-      std::cout << "Warning: close did not succeed in MmappedMatrix.\n";
-    }
+    CheckStatus(close_status, "close");
   }
 
   MmappedMatrix(const MmappedMatrix &) = delete;
