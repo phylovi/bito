@@ -2,6 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
 // RAII class for partial likelihood vectors that are mmapped to disk.
+//
+// This class is to allocate a very large partial likelihood vector in virtual memory
+// and then cut it up (via Subdivide) into a vector of partial likelihood vectors.
 
 #ifndef SRC_MMAPPED_PLV_HPP_
 #define SRC_MMAPPED_PLV_HPP_
@@ -18,18 +21,13 @@ class MmappedNucleotidePLV {
   MmappedNucleotidePLV(std::string file_path, Eigen::Index total_plv_length)
       : mmapped_matrix_(file_path, 4, total_plv_length){};
 
-  MmappedNucleotidePLV(const MmappedNucleotidePLV &) = delete;
-  MmappedNucleotidePLV(const MmappedNucleotidePLV &&) = delete;
-  MmappedNucleotidePLV &operator=(const MmappedNucleotidePLV &) = delete;
-  MmappedNucleotidePLV &operator=(const MmappedNucleotidePLV &&) = delete;
-
   NucleotidePLVRefVector Subdivide(size_t into_count) {
     auto entire_plv = mmapped_matrix_.Get();
-    auto total_plv_length = entire_plv.cols();
+    const auto total_plv_length = entire_plv.cols();
     Assert(total_plv_length % into_count == 0,
            "into_count isn't a multiple of total PLV length in "
            "MmappedNucleotidePLV::Subdivide.");
-    size_t block_length = total_plv_length / into_count;
+    const size_t block_length = total_plv_length / into_count;
     NucleotidePLVRefVector sub_plvs;
     sub_plvs.reserve(into_count);
     for (size_t idx = 0; idx < into_count; ++idx) {
