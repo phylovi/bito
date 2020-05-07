@@ -16,8 +16,7 @@ using NucleotidePLVRefVector = std::vector<NucleotidePLVRef>;
 class MmappedNucleotidePLV {
  public:
   MmappedNucleotidePLV(std::string file_path, Eigen::Index total_plv_length)
-      : mmapped_matrix_(file_path, 4, total_plv_length),
-        total_plv_length_(total_plv_length){};
+      : mmapped_matrix_(file_path, 4, total_plv_length){};
 
   MmappedNucleotidePLV(const MmappedNucleotidePLV &) = delete;
   MmappedNucleotidePLV(const MmappedNucleotidePLV &&) = delete;
@@ -25,11 +24,12 @@ class MmappedNucleotidePLV {
   MmappedNucleotidePLV &operator=(const MmappedNucleotidePLV &&) = delete;
 
   NucleotidePLVRefVector Subdivide(size_t into_count) {
-    Assert(total_plv_length_ % into_count == 0,
+    auto entire_plv = mmapped_matrix_.Get();
+    auto total_plv_length = entire_plv.cols();
+    Assert(total_plv_length % into_count == 0,
            "into_count isn't a multiple of total PLV length in "
            "MmappedNucleotidePLV::Subdivide.");
-    size_t block_length = total_plv_length_ / into_count;
-    auto entire_plv = mmapped_matrix_.Get();
+    size_t block_length = total_plv_length / into_count;
     NucleotidePLVRefVector sub_plvs;
     sub_plvs.reserve(into_count);
     for (size_t idx = 0; idx < into_count; ++idx) {
@@ -40,7 +40,6 @@ class MmappedNucleotidePLV {
 
  private:
   MmappedMatrix<NucleotidePLV> mmapped_matrix_;
-  Eigen::Index total_plv_length_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
