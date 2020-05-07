@@ -14,11 +14,14 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <Eigen/Dense>
 #include <iostream>
-#include "eigen_sugar.hpp"
+#include "sugar.hpp"
 
-template <typename T>
+template <typename EigenDenseMatrixBaseT>
 class MmappedMatrix {
+  using Scalar = typename Eigen::DenseBase<EigenDenseMatrixBaseT>::Scalar;
+
  public:
   MmappedMatrix(std::string file_path, Eigen::Index rows, Eigen::Index cols)
       : rows_(rows), cols_(cols) {
@@ -30,14 +33,13 @@ class MmappedMatrix {
     if (file_descriptor_ == -1) {
       Failwith("MmappedMatrix could not create a file at " + file_path);
     }
-    // TODO double
-    mmapped_len_ = rows * cols * sizeof(double);
+    mmapped_len_ = rows * cols * sizeof(Scalar);
     // Resizes fd so it's just right for our vector.
     auto ftruncate_status = ftruncate(file_descriptor_, mmapped_len_);
     if (ftruncate_status != 0) {
       Failwith("MmappedMatrix could not create a file at " + file_path);
     }
-    mmapped_memory_ = (double *)mmap(  //
+    mmapped_memory_ = (Scalar *)mmap(  //
         NULL,                    // This address is ignored as we are using MAP_SHARED.
         mmapped_len_,            // Size of map.
         PROT_READ | PROT_WRITE,  // We want to read and write.
@@ -69,14 +71,16 @@ class MmappedMatrix {
   MmappedMatrix &operator=(const MmappedMatrix &) = delete;
   MmappedMatrix &operator=(const MmappedMatrix &&) = delete;
 
-  Eigen::Map<T> get() { return Eigen::Map<T>(mmapped_memory_, rows_, cols_); }
+  Eigen::Map<EigenDenseMatrixBaseT> get() {
+    return Eigen::Map<EigenDenseMatrixBaseT>(mmapped_memory_, rows_, cols_);
+  }
 
  private:
   int file_descriptor_;
   Eigen::Index rows_;
   Eigen::Index cols_;
   size_t mmapped_len_;
-  double *mmapped_memory_;
+  Scalar *mmapped_memory_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
