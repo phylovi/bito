@@ -140,20 +140,6 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
   return {log_like, gradient};
 }
 
-std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
-    const UnrootedTree &in_tree) const {
-  std::pair<double, std::unordered_map<std::string, std::vector<double>>>
-      like_gradient = Gradient(in_tree);
-  return {like_gradient.first, like_gradient.second["blens"]};
-}
-
-std::pair<double, std::vector<double>> FatBeagle::BranchGradient(
-    const RootedTree &in_tree) const {
-  std::pair<double, std::unordered_map<std::string, std::vector<double>>>
-      like_gradient = Gradient(in_tree);
-  return {like_gradient.first, like_gradient.second["ratio"]};
-}
-
 FatBeagle *NullPtrAssert(FatBeagle *fat_beagle) {
   Assert(fat_beagle != nullptr, "NULL FatBeagle pointer!");
   return fat_beagle;
@@ -169,14 +155,14 @@ double FatBeagle::StaticRootedLogLikelihood(FatBeagle *fat_beagle,
   return NullPtrAssert(fat_beagle)->LogLikelihood(in_tree);
 }
 
-std::pair<double, std::vector<double>> FatBeagle::StaticBranchGradient(
-    FatBeagle *fat_beagle, const UnrootedTree &in_tree) {
-  return NullPtrAssert(fat_beagle)->BranchGradient(in_tree);
+UnrootedTreeGradient FatBeagle::StaticGradient(FatBeagle *fat_beagle,
+                                               const UnrootedTree &in_tree) {
+  return NullPtrAssert(fat_beagle)->Gradient(in_tree);
 }
 
-std::pair<double, std::vector<double>> FatBeagle::StaticRootedBranchGradient(
-    FatBeagle *fat_beagle, const RootedTree &in_tree) {
-  return NullPtrAssert(fat_beagle)->BranchGradient(in_tree);
+RootedTreeGradient FatBeagle::StaticRootedGradient(FatBeagle *fat_beagle,
+                                                   const RootedTree &in_tree) {
+  return NullPtrAssert(fat_beagle)->Gradient(in_tree);
 }
 
 std::pair<FatBeagle::BeagleInstance, FatBeagle::PackedBeagleFlags>
@@ -486,8 +472,7 @@ std::vector<double> RatioGradient(const RootedTree &tree,
   return gradientLogDensity;
 }
 
-std::pair<double, std::unordered_map<std::string, std::vector<double>>>
-FatBeagle::Gradient(const RootedTree &tree) const {
+RootedTreeGradient FatBeagle::Gradient(const RootedTree &tree) const {
   // Scale time with clock rate
   const auto clock_model = phylo_model_->GetClockModel();
   std::vector<double> branch_lengths = tree.BranchLengths();
@@ -498,13 +483,16 @@ FatBeagle::Gradient(const RootedTree &tree) const {
   // calculate branch length gradient and log likelihood
   auto like_gradient = BranchGradientInternals(tree.Topology(), branch_lengths);
 
-  std::unordered_map<std::string, std::vector<double>> gradients;
+  RootedTreeGradient gradient;
+  gradient.log_likelihood_ = like_gradient.first;
+
   // calculate ratios and root height gradient
   auto branch_gradient = like_gradient.second;
   for (size_t i = 0; i < branch_gradient.size() - 1; i++) {
     branch_gradient[i] *= clock_model->GetRate(i);
   }
-  gradients["ratio"] = RatioGradient(tree, branch_gradient);
+
+  gradient.ratios_root_height_ = RatioGradient(tree, branch_gradient);
 
   // calculate substitution model parameter gradient, if needed
   //    gradients["substmodel"] = SubstitutionModelGradient(tree, branch_gradient);
@@ -512,20 +500,20 @@ FatBeagle::Gradient(const RootedTree &tree) const {
   // calculate site model parameter gradient, if needed
   //    gradients["sitemodel"] = SiteModelGradient(tree, branch_gradient);
 
-  return {like_gradient.first, gradients};
+  return gradient;
 }
 
-std::pair<double, std::unordered_map<std::string, std::vector<double>>>
-FatBeagle::Gradient(const UnrootedTree &in_tree) const {
+UnrootedTreeGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
   auto tree = in_tree.Detrifurcate();
   tree.SlideRootPosition();
   auto like_gradient = BranchGradientInternals(tree.Topology(), tree.BranchLengths());
   // We want the fixed node to have a zero gradient.
   like_gradient.second[tree.Topology()->Children()[1]->Id()] = 0.;
 
-  std::unordered_map<std::string, std::vector<double>> gradients;
-  gradients["blens"] = like_gradient.second;
+  UnrootedTreeGradient gradient;
+  gradient.log_likelihood_ = like_gradient.first;
+  gradient.branch_lengths_ = like_gradient.second;
 
   // substitution and site model here like above
-  return {like_gradient.first, gradients};
+  return gradient;
 }

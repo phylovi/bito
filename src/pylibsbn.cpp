@@ -213,8 +213,8 @@ PYBIND11_MODULE(libsbn, m) {
            "Calculate log likelihoods for the current set of trees.")
       .def("set_rescaling", &UnrootedSBNInstance::SetRescaling,
            "Set whether BEAGLE's likelihood rescaling is used.")
-      .def("branch_gradients", &UnrootedSBNInstance::BranchGradients,
-           "Calculate gradients of branch lengths for the current set of trees.")
+      .def("gradients", &UnrootedSBNInstance::Gradients,
+           "Calculate gradients of parameters for the current set of trees.")
       .def("topology_gradients", &UnrootedSBNInstance::TopologyGradients,
            R"raw(Calculate gradients of SBN parameters for the current set of trees.
            Should be called after sampling trees and setting branch lengths.)raw")
