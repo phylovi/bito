@@ -16,21 +16,6 @@ struct PhyloModelSpecification {
   std::string clock_;
 };
 
-struct TreeGradient {
-  std::vector<double> substitution_model_;
-  std::vector<double> site_model_;
-  double log_likelihood_;
-};
-
-struct RootedTreeGradient : TreeGradient {
-  std::vector<double> ratios_root_height_;
-  std::vector<double> clock_model_;
-};
-
-struct UnrootedTreeGradient : TreeGradient {
-  std::vector<double> branch_lengths_;
-};
-
 class PhyloModel : public BlockModel {
  public:
   PhyloModel(std::unique_ptr<SubstitutionModel> substitution_model,

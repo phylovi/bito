@@ -13,6 +13,7 @@
 #include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
 #include "task_processor.hpp"
+#include "tree_gradient.hpp"
 #include "unrooted_tree_collection.hpp"
 
 class FatBeagle {
@@ -45,11 +46,12 @@ class FatBeagle {
   RootedTreeGradient Gradient(const RootedTree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.
-  static double StaticLogLikelihood(FatBeagle *fat_beagle, const UnrootedTree &in_tree);
+  static double StaticUnrootedLogLikelihood(FatBeagle *fat_beagle,
+                                            const UnrootedTree &in_tree);
   static double StaticRootedLogLikelihood(FatBeagle *fat_beagle,
                                           const RootedTree &in_tree);
-  static UnrootedTreeGradient StaticGradient(FatBeagle *fat_beagle,
-                                             const UnrootedTree &in_tree);
+  static UnrootedTreeGradient StaticUnrootedGradient(FatBeagle *fat_beagle,
+                                                     const UnrootedTree &in_tree);
   static RootedTreeGradient StaticRootedGradient(FatBeagle *fat_beagle,
                                                  const RootedTree &in_tree);
 

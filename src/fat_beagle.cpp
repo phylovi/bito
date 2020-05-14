@@ -127,9 +127,9 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
       derivative_matrix_indices.data(),  // differential Q matrix indices
       ba.category_weight_index_.data(),  // category weights indices
       ba.node_count_ - 1,                // number of edges
-      NULL,                              // derivative-per-site output array
+      nullptr,                           // derivative-per-site output array
       gradient.data(),                   // sum of derivatives across sites output array
-      NULL);                             // sum of squared derivatives output array
+      nullptr);                          // sum of squared derivatives output array
 
   // Also calculate the likelihood.
   double log_like = 0.;
@@ -145,8 +145,8 @@ FatBeagle *NullPtrAssert(FatBeagle *fat_beagle) {
   return fat_beagle;
 }
 
-double FatBeagle::StaticLogLikelihood(FatBeagle *fat_beagle,
-                                      const UnrootedTree &in_tree) {
+double FatBeagle::StaticUnrootedLogLikelihood(FatBeagle *fat_beagle,
+                                              const UnrootedTree &in_tree) {
   return NullPtrAssert(fat_beagle)->LogLikelihood(in_tree);
 }
 
@@ -155,8 +155,8 @@ double FatBeagle::StaticRootedLogLikelihood(FatBeagle *fat_beagle,
   return NullPtrAssert(fat_beagle)->LogLikelihood(in_tree);
 }
 
-UnrootedTreeGradient FatBeagle::StaticGradient(FatBeagle *fat_beagle,
-                                               const UnrootedTree &in_tree) {
+UnrootedTreeGradient FatBeagle::StaticUnrootedGradient(FatBeagle *fat_beagle,
+                                                       const UnrootedTree &in_tree) {
   return NullPtrAssert(fat_beagle)->Gradient(in_tree);
 }
 
@@ -472,48 +472,49 @@ std::vector<double> RatioGradient(const RootedTree &tree,
   return gradientLogDensity;
 }
 
+UnrootedTreeGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
+  auto tree = in_tree.Detrifurcate();
+  tree.SlideRootPosition();
+  auto [log_likelihood, branch_length_gradient] =
+      BranchGradientInternals(tree.Topology(), tree.BranchLengths());
+  // We want the fixed node to have a zero gradient.
+  branch_length_gradient[tree.Topology()->Children()[1]->Id()] = 0.;
+
+  std::vector<double> substitution_model_gradient;
+  std::vector<double> site_model_gradient;
+
+  return {log_likelihood, branch_length_gradient, site_model_gradient,
+          substitution_model_gradient};
+}
+
 RootedTreeGradient FatBeagle::Gradient(const RootedTree &tree) const {
-  // Scale time with clock rate
+  // Scale time with clock rate.
   const auto clock_model = phylo_model_->GetClockModel();
   std::vector<double> branch_lengths = tree.BranchLengths();
   for (size_t i = 0; i < tree.BranchLengths().size() - 1; i++) {
     branch_lengths[i] *= clock_model->GetRate(i);
   }
 
-  // calculate branch length gradient and log likelihood
-  auto like_gradient = BranchGradientInternals(tree.Topology(), branch_lengths);
+  // Calculate branch length gradient and log likelihood.
+  auto [log_likelihood, branch_gradient] =
+      BranchGradientInternals(tree.Topology(), branch_lengths);
 
-  RootedTreeGradient gradient;
-  gradient.log_likelihood_ = like_gradient.first;
-
-  // calculate ratios and root height gradient
-  auto branch_gradient = like_gradient.second;
+  // Calculate ratios and root height gradient.
   for (size_t i = 0; i < branch_gradient.size() - 1; i++) {
     branch_gradient[i] *= clock_model->GetRate(i);
   }
 
-  gradient.ratios_root_height_ = RatioGradient(tree, branch_gradient);
+  std::vector<double> clock_model_gradient;
 
-  // calculate substitution model parameter gradient, if needed
+  std::vector<double> substitution_model_gradient;
+  // Calculate substitution model parameter gradient, if needed.
   //    gradients["substmodel"] = SubstitutionModelGradient(tree, branch_gradient);
 
-  // calculate site model parameter gradient, if needed
+  std::vector<double> site_model_gradient;
+  // Calculate site model parameter gradient, if needed.
   //    gradients["sitemodel"] = SiteModelGradient(tree, branch_gradient);
 
-  return gradient;
+  return {log_likelihood, RatioGradient(tree, branch_gradient), clock_model_gradient,
+          site_model_gradient, substitution_model_gradient};
 }
 
-UnrootedTreeGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
-  auto tree = in_tree.Detrifurcate();
-  tree.SlideRootPosition();
-  auto like_gradient = BranchGradientInternals(tree.Topology(), tree.BranchLengths());
-  // We want the fixed node to have a zero gradient.
-  like_gradient.second[tree.Topology()->Children()[1]->Id()] = 0.;
-
-  UnrootedTreeGradient gradient;
-  gradient.log_likelihood_ = like_gradient.first;
-  gradient.branch_lengths_ = like_gradient.second;
-
-  // substitution and site model here like above
-  return gradient;
-}
