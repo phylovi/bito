@@ -129,7 +129,7 @@ Add a test for every new feature.
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
 * Xiang Ji ([@xji3](https://github.com/xji3)): gradient expertise and node height code
 * Marc Suchard ([@msuchard](https://github.com/msuchard)): gradient expertise and node height code
-* Matthew Karcher ([@mdkarcher](https://github.com/mdkarcher/)): SBN expertise
+* Michael Karcher ([@mdkarcher](https://github.com/mdkarcher/)): SBN expertise
 
 
 ## Citations
