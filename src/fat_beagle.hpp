@@ -13,6 +13,7 @@
 #include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
 #include "task_processor.hpp"
+#include "tree_gradient.hpp"
 #include "unrooted_tree_collection.hpp"
 
 class FatBeagle {
@@ -41,17 +42,18 @@ class FatBeagle {
   double LogLikelihood(const RootedTree &tree) const;
   // Compute first derivative of the log likelihood with respect to each branch
   // length, as a vector of first derivatives indexed by node id.
-  std::pair<double, std::vector<double>> BranchGradient(const UnrootedTree &tree) const;
-  std::pair<double, std::vector<double>> BranchGradient(const RootedTree &tree) const;
+  UnrootedTreeGradient Gradient(const UnrootedTree &tree) const;
+  RootedTreeGradient Gradient(const RootedTree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.
-  static double StaticLogLikelihood(FatBeagle *fat_beagle, const UnrootedTree &in_tree);
+  static double StaticUnrootedLogLikelihood(FatBeagle *fat_beagle,
+                                            const UnrootedTree &in_tree);
   static double StaticRootedLogLikelihood(FatBeagle *fat_beagle,
                                           const RootedTree &in_tree);
-  static std::pair<double, std::vector<double>> StaticBranchGradient(
-      FatBeagle *fat_beagle, const UnrootedTree &in_tree);
-  static std::pair<double, std::vector<double>> StaticRootedBranchGradient(
-      FatBeagle *fat_beagle, const RootedTree &in_tree);
+  static UnrootedTreeGradient StaticUnrootedGradient(FatBeagle *fat_beagle,
+                                                     const UnrootedTree &in_tree);
+  static RootedTreeGradient StaticRootedGradient(FatBeagle *fat_beagle,
+                                                 const RootedTree &in_tree);
 
  private:
   using BeagleInstance = int;
@@ -71,12 +73,6 @@ class FatBeagle {
   void UpdateSiteModelInBeagle();
   void UpdateSubstitutionModelInBeagle();
   void UpdatePhyloModelInBeagle();
-
-  std::pair<double, std::unordered_map<std::string, std::vector<double>>> Gradient(
-      const RootedTree &tree) const;
-
-  std::pair<double, std::unordered_map<std::string, std::vector<double>>> Gradient(
-      const UnrootedTree &in_tree) const;
 
   double LogLikelihoodInternals(const Node::NodePtr topology,
                                 const std::vector<double> &branch_lengths) const;

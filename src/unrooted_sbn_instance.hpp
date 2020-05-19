@@ -77,7 +77,7 @@ class UnrootedSBNInstance : public SBNInstance {
   std::vector<double> LogLikelihoods();
 
   // For each loaded tree, returns a pair of (likelihood, gradient).
-  std::vector<std::pair<double, std::vector<double>>> BranchGradients();
+  std::vector<UnrootedTreeGradient> Gradients();
   // Topology gradient for unrooted trees.
   // Assumption: This function is called from Python side
   // after the trees (both the topology and the branch lengths) are sampled.
@@ -250,14 +250,14 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
         CHECK_LT(fabs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
       }
 
-      auto gradients = inst.BranchGradients();
+      auto gradients = inst.Gradients();
       // Test the log likelihoods.
       for (size_t i = 0; i < likelihoods.size(); i++) {
-        CHECK_LT(fabs(gradients[i].first - pybeagle_likelihoods[i]), 0.00011);
+        CHECK_LT(fabs(gradients[i].log_likelihood_ - pybeagle_likelihoods[i]), 0.00011);
       }
       // Test the gradients for the last tree.
       auto last = gradients.back();
-      std::sort(last.second.begin(), last.second.end());
+      std::sort(last.branch_lengths_.begin(), last.branch_lengths_.end());
       // Zeros are for the root and one of the descendants of the root.
       std::vector<double> physher_gradients = {
           -904.18956, -607.70500, -562.36274, -553.63315, -542.26058, -539.64210,
@@ -269,8 +269,8 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
           255.52967,  259.90378,  394.00504,  394.96619,  396.98933,  429.83873,
           450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
           888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
-      for (size_t i = 0; i < last.second.size(); i++) {
-        CHECK_LT(fabs(last.second[i] - physher_gradients[i]), 0.0001);
+      for (size_t i = 0; i < last.branch_lengths_.size(); i++) {
+        CHECK_LT(fabs(last.branch_lengths_[i] - physher_gradients[i]), 0.0001);
       }
 
       // Test rescaling
@@ -282,15 +282,18 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
       }
       // Likelihoods from BranchGradients()
       inst.PrepareForPhyloLikelihood(simple_specification, 1, {}, tip_state_option);
-      auto gradients_rescaling = inst.BranchGradients();
+      auto gradients_rescaling = inst.Gradients();
       for (size_t i = 0; i < gradients_rescaling.size(); i++) {
-        CHECK_LT(fabs(gradients_rescaling[i].first - pybeagle_likelihoods[i]), 0.00011);
+        CHECK_LT(fabs(gradients_rescaling[i].log_likelihood_ - pybeagle_likelihoods[i]),
+                 0.00011);
       }
       // Gradients
       auto last_rescaling = gradients_rescaling.back();
-      std::sort(last_rescaling.second.begin(), last_rescaling.second.end());
-      for (size_t i = 0; i < last_rescaling.second.size(); i++) {
-        CHECK_LT(fabs(last_rescaling.second[i] - physher_gradients[i]), 0.0001);
+      std::sort(last_rescaling.branch_lengths_.begin(),
+                last_rescaling.branch_lengths_.end());
+      for (size_t i = 0; i < last_rescaling.branch_lengths_.size(); i++) {
+        CHECK_LT(fabs(last_rescaling.branch_lengths_[i] - physher_gradients[i]),
+                 0.0001);
       }
     }
   }

@@ -121,10 +121,8 @@ std::vector<double> UnrootedSBNInstance::LogLikelihoods() {
   return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_);
 }
 
-std::vector<std::pair<double, std::vector<double>>>
-UnrootedSBNInstance::BranchGradients() {
-  return GetEngine()->BranchGradients(tree_collection_, phylo_model_params_,
-                                      rescaling_);
+std::vector<UnrootedTreeGradient> UnrootedSBNInstance::Gradients() {
+  return GetEngine()->Gradients(tree_collection_, phylo_model_params_, rescaling_);
 }
 
 void UnrootedSBNInstance::PushBackRangeForParentIfAvailable(

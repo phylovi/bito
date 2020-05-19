@@ -53,8 +53,8 @@ std::vector<double> Engine::LogLikelihoods(
     const UnrootedTreeCollection &tree_collection,
     const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
   return FatBeagleParallelize<double, UnrootedTree, UnrootedTreeCollection>(
-      FatBeagle::StaticLogLikelihood, fat_beagles_, tree_collection, phylo_model_params,
-      rescaling);
+      FatBeagle::StaticUnrootedLogLikelihood, fat_beagles_, tree_collection,
+      phylo_model_params, rescaling);
 }
 
 std::vector<double> Engine::LogLikelihoods(const RootedTreeCollection &tree_collection,
@@ -65,21 +65,20 @@ std::vector<double> Engine::LogLikelihoods(const RootedTreeCollection &tree_coll
       phylo_model_params, rescaling);
 }
 
-std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
+std::vector<UnrootedTreeGradient> Engine::Gradients(
     const UnrootedTreeCollection &tree_collection,
     const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
-  return FatBeagleParallelize<std::pair<double, std::vector<double>>, UnrootedTree,
-                              UnrootedTreeCollection>(FatBeagle::StaticBranchGradient,
+  return FatBeagleParallelize<UnrootedTreeGradient, UnrootedTree,
+                              UnrootedTreeCollection>(FatBeagle::StaticUnrootedGradient,
                                                       fat_beagles_, tree_collection,
                                                       phylo_model_params, rescaling);
 }
 
-std::vector<std::pair<double, std::vector<double>>> Engine::BranchGradients(
+std::vector<RootedTreeGradient> Engine::Gradients(
     const RootedTreeCollection &tree_collection,
     const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
-  return FatBeagleParallelize<std::pair<double, std::vector<double>>, RootedTree,
-                              RootedTreeCollection>(
-      FatBeagle::StaticRootedBranchGradient, fat_beagles_, tree_collection,
+  return FatBeagleParallelize<RootedTreeGradient, RootedTree, RootedTreeCollection>(
+      FatBeagle::StaticRootedGradient, fat_beagles_, tree_collection,
       phylo_model_params, rescaling);
 }
 
