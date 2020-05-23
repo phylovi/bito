@@ -50,6 +50,10 @@ class RootedTree : public Tree {
   // The lower bound for the height of each node. This is set to be the maximum of the
   // current height of the two children.
   std::vector<double> node_bounds_;
+  // One substitution rate per branch.
+  std::vector<double> rates_;
+  // Number of substitution rates (e.g 1 rate for strict clock)
+  size_t rate_count_;
 };
 
 inline bool operator!=(const RootedTree& lhs, const RootedTree& rhs) {

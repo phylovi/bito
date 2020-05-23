@@ -72,10 +72,9 @@ double FatBeagle::LogLikelihood(const UnrootedTree &tree) const {
 }
 
 double FatBeagle::LogLikelihood(const RootedTree &tree) const {
-  const auto clock_model = phylo_model_->GetClockModel();
   std::vector<double> branch_lengths = tree.BranchLengths();
   for (size_t i = 0; i < tree.BranchLengths().size() - 1; i++) {
-    branch_lengths[i] *= clock_model->GetRate(i);
+    branch_lengths[i] *= tree.rates_[i];
   }
   return LogLikelihoodInternals(tree.Topology(), branch_lengths);
 }
@@ -320,6 +319,32 @@ void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
   });
 }
 
+// Calculation of the substitution rate gradient.
+// \partial{L}/\partial{r_i} = \partial{L}/\partial{b_i} \partial{b_i}/\partial{r_i}
+// For strict clock:
+// \partial{L}/\partial{r} = \sum_i \partial{L}/\partial{r_i}
+std::vector<double> ClockGradient(const RootedTree &tree,
+                                  const std::vector<double> &branch_gradient) {
+  int root_id = static_cast<int>(tree.Topology()->Id());
+  std::vector<double> rate_gradient(root_id, 0);
+  for (size_t i = 0; i < root_id; i++) {
+    rate_gradient[i] = branch_gradient[i] * tree.branch_lengths_[i];
+  }
+
+  // Strict clock.
+  if (tree.rate_count_ == 1) {
+    return {std::accumulate(rate_gradient.cbegin(), rate_gradient.cend(), 0.0)};
+  }
+  // One rate per branch.
+  else if (tree.rate_count_ == tree.rates_.size()) {
+    return rate_gradient;
+  } else {
+    Failwith(
+        "The number of rates should be equal to 1 (i.e. strict clock) or equal to "
+        "the number of branches.");
+  }
+}
+
 // Calculation of the ratio and root height gradient is adpated from BEAST.
 // https://github.com/beast-dev/beast-mcmc
 // Credit to Xiang Ji and Marc Suchard.
@@ -332,14 +357,17 @@ std::vector<double> HeightGradient(const RootedTree &tree,
   std::vector<double> height_gradient(tree.LeafCount() - 1, 0);
 
   tree.Topology()->BinaryIdPreOrder(
-      [&root_id, &branch_gradient, &height_gradient, leaf_count = tree.LeafCount()](
-          int node_id, int child0_id, int child1_id) {
+      [&root_id, &branch_gradient, &height_gradient, leaf_count = tree.LeafCount(),
+       &rates = tree.rates_](int node_id, int child0_id, int child1_id) {
         if (node_id != root_id) {
-          height_gradient[node_id - leaf_count] = -branch_gradient[node_id];
+          height_gradient[node_id - leaf_count] =
+              -branch_gradient[node_id] * rates[node_id];
         }
         if (node_id >= leaf_count) {
-          height_gradient[node_id - leaf_count] += branch_gradient[child0_id];
-          height_gradient[node_id - leaf_count] += branch_gradient[child1_id];
+          height_gradient[node_id - leaf_count] +=
+              branch_gradient[child0_id] * rates[child0_id];
+          height_gradient[node_id - leaf_count] +=
+              branch_gradient[child1_id] * rates[child1_id];
         }
       });
   return height_gradient;
@@ -489,22 +517,14 @@ UnrootedTreeGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
 
 RootedTreeGradient FatBeagle::Gradient(const RootedTree &tree) const {
   // Scale time with clock rate.
-  const auto clock_model = phylo_model_->GetClockModel();
   std::vector<double> branch_lengths = tree.BranchLengths();
   for (size_t i = 0; i < tree.BranchLengths().size() - 1; i++) {
-    branch_lengths[i] *= clock_model->GetRate(i);
+    branch_lengths[i] *= tree.rates_[i];
   }
 
   // Calculate branch length gradient and log likelihood.
   auto [log_likelihood, branch_gradient] =
       BranchGradientInternals(tree.Topology(), branch_lengths);
-
-  // Calculate ratios and root height gradient.
-  for (size_t i = 0; i < branch_gradient.size() - 1; i++) {
-    branch_gradient[i] *= clock_model->GetRate(i);
-  }
-
-  std::vector<double> clock_model_gradient;
 
   std::vector<double> substitution_model_gradient;
   // Calculate substitution model parameter gradient, if needed.
@@ -514,7 +534,7 @@ RootedTreeGradient FatBeagle::Gradient(const RootedTree &tree) const {
   // Calculate site model parameter gradient, if needed.
   //    gradients["sitemodel"] = SiteModelGradient(tree, branch_gradient);
 
-  return {log_likelihood, RatioGradient(tree, branch_gradient), clock_model_gradient,
-          site_model_gradient, substitution_model_gradient};
+  return {log_likelihood, RatioGradient(tree, branch_gradient),
+          ClockGradient(tree, branch_gradient), site_model_gradient,
+          substitution_model_gradient};
 }
-

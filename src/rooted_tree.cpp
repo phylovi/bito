@@ -19,6 +19,8 @@ void RootedTree::InitializeParameters(
   height_ratios_ = std::vector<double>(leaf_count - 1, -1);
   node_heights_ = std::vector<double>(Topology()->Id() + 1);
   node_bounds_ = std::vector<double>(Topology()->Id() + 1);
+  rates_ = std::vector<double>(Topology()->Id(), 1.0);
+  rate_count_ = 1.0;  // Default is a strict clock with rate 1
 
   // First initialize the leaves using the date map.
   for (const auto& [tag, date] : tag_date_map) {

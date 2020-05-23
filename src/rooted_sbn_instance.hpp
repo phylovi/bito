@@ -41,6 +41,63 @@ class RootedSBNInstance : public SBNInstance {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
+// Centered finite difference approximation of the derivative wrt rate.
+std::vector<double> derivative_strict_clock(RootedSBNInstance& inst) {
+  double eps = 0.00000001;
+  std::vector<double> rates;
+  std::vector<double> gradients;
+
+  for (auto& tree : inst.tree_collection_.trees_) {
+    rates.push_back(tree.rates_[0]);
+    tree.rates_.assign(tree.rates_.size(), rates.back() - eps);
+  }
+  auto lm = inst.LogLikelihoods();
+
+  int i = 0;
+  for (auto& tree : inst.tree_collection_.trees_) {
+    tree.rates_.assign(tree.rates_.size(), rates[i++] + eps);
+  }
+  auto lp = inst.LogLikelihoods();
+
+  for (size_t index = 0; index < lm.size(); index++) {
+    gradients.push_back((lp[index] - lm[index]) / (2. * eps));
+  }
+  return gradients;
+}
+
+// Centered finite difference approximation of the derivative wrt to each rate.
+std::vector<std::vector<double>> derivative_relaxed_clock(RootedSBNInstance& inst) {
+  double eps = 0.00000001;
+  std::vector<std::vector<double>> gradients;
+  std::vector<double> lp;
+  std::vector<double> lm;
+  size_t edge_count = inst.TaxonCount() * 2 - 2;
+
+  for (size_t index = 0; index < edge_count; index++) {
+    std::vector<double> gradient;
+    std::vector<double> rates;
+    for (int i = 0; i < inst.tree_collection_.TreeCount(); i++) {
+      double value = inst.tree_collection_.trees_[i].rates_[index];
+      rates.push_back(value);
+      inst.tree_collection_.trees_[i].rates_[index] = rates.back() - eps;
+    }
+    lm = inst.LogLikelihoods();
+
+    for (size_t i = 0; i < inst.tree_collection_.TreeCount(); i++) {
+      inst.tree_collection_.trees_[i].rates_[index] = rates[i] + eps;
+    }
+    lp = inst.LogLikelihoods();
+
+    for (size_t i = 0; i < inst.tree_collection_.TreeCount(); i++) {
+      inst.tree_collection_.trees_[i].rates_[index] = rates[i];
+      gradient.push_back((lp[i] - lm[i]) / (2. * eps));
+    }
+
+    gradients.push_back(gradient);
+  }
+  return gradients;
+}
+
 TEST_CASE("RootedSBNInstance: subsplit support") {
   RootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon_rooted.nwk");
@@ -90,8 +147,9 @@ TEST_CASE("RootedSBNInstance: gradients") {
   inst.ReadFastaFile("data/fluA.fa");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
   inst.PrepareForPhyloLikelihood(simple_specification, 1);
-  auto param_map = inst.GetPhyloModelParamBlockMap();
-  param_map.at(StrictClockModel::rate_key_).setConstant(0.001);
+  for (auto& tree : inst.tree_collection_.trees_) {
+    tree.rates_.assign(tree.rates_.size(), 0.001);
+  }
 
   auto likelihood = inst.LogLikelihoods();
   double physher_ll = -4777.616349;
@@ -113,6 +171,46 @@ TEST_CASE("RootedSBNInstance: gradients") {
     CHECK_LT(fabs(gradients[0].ratios_root_height_[i] - physher_gradients[i]), 0.0001);
   }
   CHECK_LT(fabs(gradients[0].log_likelihood_ - physher_ll), 0.0001);
+}
+
+TEST_CASE("RootedSBNInstance: clock gradients") {
+  RootedSBNInstance inst("charlie");
+  inst.ReadNewickFile("data/fluA.tree");
+  inst.ReadFastaFile("data/fluA.fa");
+  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
+  inst.PrepareForPhyloLikelihood(simple_specification, 1);
+
+  for (auto& tree : inst.tree_collection_.trees_) {
+    tree.rates_.assign(tree.rates_.size(), 0.001);
+  }
+
+  auto likelihood = inst.LogLikelihoods();
+  double physher_ll = -4777.616349;
+  CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
+
+  // Gradient with a strict clock.
+  auto gradients_strict = inst.Gradients();
+  std::vector<double> gradients_strict_approx = derivative_strict_clock(inst);
+  CHECK_LT(fabs(gradients_strict[0].clock_model_[0] - gradients_strict_approx[0]),
+           0.001);
+  CHECK_LT(fabs(gradients_strict[0].log_likelihood_ - physher_ll), 0.001);
+
+  // Gradient with a "relaxed" clock.
+  auto& tree = inst.tree_collection_.trees_[0];
+  // Make a clock with some rate variation.
+  for (size_t i = 0; i < tree.rates_.size(); i++) {
+    tree.rates_[i] *= i % 3 + 1.0;
+  }
+  tree.rate_count_ = tree.rates_.size();
+
+  auto gradients_relaxed = inst.Gradients();
+  auto gradients_relaxed_approx = derivative_relaxed_clock(inst);
+
+  for (size_t j = 0; j < gradients_relaxed_approx.size(); j++) {
+    CHECK_LT(
+        fabs(gradients_relaxed[0].clock_model_[j] - gradients_relaxed_approx[j][0]),
+        0.001);
+  }
 }
 
 TEST_CASE("RootedSBNInstance: parsing dates") {
