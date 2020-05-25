@@ -92,12 +92,11 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
   const EigenVectorXd &rates = phylo_model_->GetSiteModel()->GetCategoryRates();
   size_t state_count = phylo_model_->GetSubstitutionModel()->GetStateCount();
   size_t matrix_dim = state_count * state_count;
-  std::vector<double> dQ;
-  dQ.reserve(matrix_dim * category_count);
+  EigenMatrixXd Q = phylo_model_->GetSubstitutionModel()->GetQMatrix();
+  Eigen::Map<Eigen::RowVectorXd> mapQ(Q.data(), Q.size());
+  EigenMatrixXd dQ = mapQ.replicate(category_count, 1);
   for (size_t k = 0; k < category_count; k++) {
-    EigenMatrixXd Q = phylo_model_->GetSubstitutionModel()->GetQMatrix();
-    Q *= rates[k];
-    std::copy(Q.data(), Q.data() + matrix_dim, std::back_inserter(dQ));
+    dQ.block(0, k * matrix_dim, 1, matrix_dim) *= rates[k];
   }
   int derivative_matrix_idx = ba.node_count_ - 1;
   beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, dQ.data());
