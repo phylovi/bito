@@ -41,9 +41,19 @@ struct SetToStationaryDistribution {
 struct WeightedSumAccumulate {
   size_t dest_idx;
   size_t q_idx;
+  size_t branch_length_idx;
   size_t src_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"q_idx", q_idx}, {"src_idx", src_idx}};
+    return {{"dest_idx", dest_idx}, {"q_idx", q_idx}, {"branch_length_idx", branch_length_idx}, {"src_idx", src_idx}};
+  }
+};
+
+struct WeightedSumAccumulateStationary {
+  size_t q_idx;
+  size_t src_idx1;
+  size_t src_idx2;
+  StringSizePairVector guts() const {
+    return {{"q_idx", q_idx}, {"src_idx1", src_idx1}, {"src_idx2", src_idx2}};
   }
 };
 
@@ -57,17 +67,27 @@ struct Multiply {
   }
 };
 
-// Stores the likelihood of `plv[src1_idx]` and `plv[src2_idx]`, incorporating site
-// pattern weights, in `log_likelihoods[dest_idx]` (note that we will already have the
-// stationary distribution in the rootward partial likelihood vector).
+// Stores the likelihood of `plv[child_idx]` and `plv[parent_idx]`, incorporating site
+// pattern weights, in `log_likelihoods[dest_idx]`
 struct Likelihood {
   size_t dest_idx;
-  size_t src1_idx;
-  size_t src2_idx;
+  size_t child_idx;
+  size_t parent_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"src1_idx", src1_idx}, {"src2_idx", src2_idx}};
+    return {{"dest_idx", dest_idx}, {"child_idx", child_idx}, {"parent_idx", parent_idx}};
   }
 };
+
+// Perform `plv[dest_idx] = plv[src_idx]`
+struct CopyPLV {
+  size_t dest_idx;
+  size_t src_idx;
+  StringSizePairVector guts() const {
+    return {{"dest_idx", dest_idx},
+            {"src_idx", src_idx}};
+  }
+};
+
 
 // Perform `plv[dest_idx] = P(branch_lengths[branch_length_idx]) plv[src_idx]`
 struct EvolveRootward {
@@ -150,7 +170,8 @@ using GPOperation =
                  GPOperations::WeightedSumAccumulate, GPOperations::Multiply,
                  GPOperations::Likelihood, GPOperations::EvolveRootward,
                  GPOperations::EvolveLeafward, GPOperations::OptimizeRootward,
-                 GPOperations::OptimizeLeafward, GPOperations::UpdateSBNProbabilities>;
+                 GPOperations::OptimizeLeafward, GPOperations::UpdateSBNProbabilities,
+                 GPOperations::CopyPLV, GPOperations::WeightedSumAccumulateStationary>;
 
 using GPOperationVector = std::vector<GPOperation>;
 
@@ -168,8 +189,14 @@ struct GPOperationOstream {
   void operator()(const GPOperations::WeightedSumAccumulate& operation) {
     os_ << "WeightedSumAccumulate" << operation.guts();
   }
+  void operator()(const GPOperations::WeightedSumAccumulateStationary& operation) {
+    os_ << "WeightedSumAccumulateStationary" << operation.guts();
+  }
   void operator()(const GPOperations::Multiply& operation) {
     os_ << "Multiply" << operation.guts();
+  }
+  void operator()(const GPOperations::CopyPLV& operation) {
+    os_ << "CopyPLV" << operation.guts();
   }
   void operator()(const GPOperations::Likelihood& operation) {
     os_ << "Likelihood" << operation.guts();

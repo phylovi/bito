@@ -3,29 +3,59 @@
 
 #include "gp_engine.hpp"
 #include "optimization.hpp"
+#include "numerical_utils.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
                    std::string mmap_file_path)
     : site_pattern_(std::move(site_pattern)),
       plv_count_(site_pattern_.PatternCount() + gpcsp_count),
       mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
+        Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
+        plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
+        Assert(plvs_.size() == plv_count_,
+               "Didn't get the right number of PLVs out of Subdivide.");
+        Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
+             plvs_.back().cols() == site_pattern_.PatternCount(),
+         "Didn't get the right shape of PLVs out of Subdivide.");
+        branch_lengths_.resize(gpcsp_count);
+        log_likelihoods_.resize(gpcsp_count);
+        q_.resize(gpcsp_count);
+
+        auto weights = site_pattern_.GetWeights();
+        site_pattern_weights_ =
+          Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
+
+        InitializePLVsWithSitePatterns();
+        for (size_t i = 0; i < plvs_.size(); i++) {
+          PrintPLV(i);
+        }
+}
+
+GPEngine::GPEngine(SitePattern site_pattern,
+                   size_t num_plvs,
+                   size_t gpcsp_count,
+                   std::string mmap_file_path) :
+site_pattern_(std::move(site_pattern)),
+plv_count_(num_plvs),
+mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
   Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
   plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
   Assert(plvs_.size() == plv_count_,
          "Didn't get the right number of PLVs out of Subdivide.");
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
-             plvs_.back().cols() == site_pattern_.PatternCount(),
-         "Didn't get the right shape of PLVs out of Subdivide.");
+       plvs_.back().cols() == site_pattern_.PatternCount(),
+   "Didn't get the right shape of PLVs out of Subdivide.");
   branch_lengths_.resize(gpcsp_count);
   log_likelihoods_.resize(gpcsp_count);
   q_.resize(gpcsp_count);
 
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ =
-      Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
+    Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
 
   InitializePLVsWithSitePatterns();
 }
+
 
 void GPEngine::operator()(const GPOperations::Zero& op) {
   plvs_.at(op.dest_idx).setZero();
@@ -39,8 +69,17 @@ void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
 }
 
 void GPEngine::operator()(const GPOperations::WeightedSumAccumulate& op) {
-  Failwith("Draft: this method has not been tested.");
-  plvs_.at(op.dest_idx) += q_(op.q_idx) * plvs_.at(op.src_idx);
+  //Failwith("Draft: this method has not been tested.");
+  SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.branch_length_idx));
+  plvs_.at(op.dest_idx) += q_(op.q_idx) * transition_matrix_ * plvs_.at(op.src_idx);
+//  std::cout << op << std::endl;
+//  PrintPLV(op.dest_idx);
+//  PrintPLV(op.src_idx);
+}
+
+void GPEngine::operator()(const GPOperations::WeightedSumAccumulateStationary& op) {
+  double val = q_(op.q_idx) * LogLikelihood(op.src_idx1, op.src_idx2);
+  log_marginal_likelihood += val;
 }
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {
@@ -48,8 +87,24 @@ void GPEngine::operator()(const GPOperations::Multiply& op) {
       plvs_.at(op.src1_idx).array() * plvs_.at(op.src2_idx).array();
 }
 
+void GPEngine::operator()(const GPOperations::CopyPLV& op) {
+  plvs_.at(op.dest_idx).array() = plvs_.at(op.src_idx).array();
+}
+
 void GPEngine::operator()(const GPOperations::Likelihood& op) {
-  log_likelihoods_(op.dest_idx) = LogLikelihood(op.src1_idx, op.src2_idx);
+  SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_idx));
+  auto result = q_[op.dest_idx] * plvs_.at(op.child_idx).transpose() *
+                                  (transition_matrix_ * plvs_.at(op.parent_idx));
+  per_pattern_log_likelihoods_ = result.diagonal().array().log();
+//  for (size_t i = 0; i < per_pattern_log_likelihoods_.rows(); i++) {
+//    for (size_t j = 0; j < per_pattern_log_likelihoods_.cols(); j++) {
+//      std::cout << per_pattern_log_likelihoods_(i,j) << " ";
+//    }
+//    std::cout << "\n";
+//  }
+  log_likelihoods_[op.dest_idx] = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  std::cout << log_likelihoods_[op.dest_idx] << std::endl;
+//  log_likelihoods_(op.dest_idx) = LogLikelihood(op.src1_idx, op.src2_idx);
 }
 
 void GPEngine::operator()(const GPOperations::EvolveRootward& op) {
@@ -60,6 +115,7 @@ void GPEngine::operator()(const GPOperations::EvolveRootward& op) {
 void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {
   SetTransitionMatrixToHaveBranchLengthAndTranspose(
       branch_lengths_(op.branch_length_idx));
+  std::cout << plvs_[0].rows() << ", " << plvs_[0].cols() << std::endl;
   plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.src_idx);
 }
 
@@ -81,11 +137,25 @@ void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
-  Failwith("UpdateSBNProbabilities unimplemented for now.");
+  //Failwith("UpdateSBNProbabilities unimplemented for now.");
+  size_t range_length = op.stop_idx - op.start_idx;
+  if (range_length == 1)
+    return;
+
+  auto segment = log_likelihoods_.segment(op.start_idx, op.stop_idx-op.start_idx);
+  double log_norm = NumericalUtils::LogSum(segment);
+  segment = segment.array() - log_norm;
+  q_.segment(op.start_idx, op.stop_idx-op.start_idx) = segment.array().exp();
+  std::cout << "Updated SBN params: \n";
+  for (size_t i = op.start_idx; i < op.stop_idx; i++) {
+    std::cout << q_(i) << " ";
+  }
+  std::cout << "\n";
 }
 
 void GPEngine::ProcessOperations(GPOperationVector operations) {
   for (const auto& operation : operations) {
+    std::cout << operation << std::endl;
     std::visit(*this, operation);
   }
 }
@@ -148,6 +218,7 @@ void GPEngine::InitializePLVsWithSitePatterns() {
     }
     taxon_idx++;
   }
+  std::cout << "Num taxa: " << taxon_idx << std::endl;
 }
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeRootward& op) {

@@ -8,6 +8,7 @@
 #define SRC_GP_ENGINE_HPP_
 
 #include "eigen_sugar.hpp"
+#include "dag_node.hpp"
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
 #include "site_pattern.hpp"
@@ -16,12 +17,18 @@
 class GPEngine {
  public:
   GPEngine(SitePattern site_pattern, size_t pcss_count, std::string mmap_file_path);
-
+  GPEngine(SitePattern site_pattern,
+           size_t num_plvs,
+           size_t gpcsp_count,
+           std::string mmap_file_path);
+  
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::Zero& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
   void operator()(const GPOperations::WeightedSumAccumulate& op);
+  void operator()(const GPOperations::WeightedSumAccumulateStationary& op);
   void operator()(const GPOperations::Multiply& op);
+  void operator()(const GPOperations::CopyPLV& op);
   void operator()(const GPOperations::Likelihood& op);
   void operator()(const GPOperations::EvolveRootward& op);
   void operator()(const GPOperations::EvolveLeafward& op);
@@ -40,6 +47,15 @@ class GPEngine {
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     branch_lengths_ = branch_lengths;
   };
+  void SetSBNParameters(EigenVectorXd q) {
+    q_ = q;
+  };
+  void ResetLogMarginalLikelihood() {
+    log_marginal_likelihood = 0.0;
+  }
+  double GetLogMarginalLikelihood() {
+    return log_marginal_likelihood;
+  }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
 
@@ -52,11 +68,22 @@ class GPEngine {
   double relative_tolerance_for_optimization_ = 1e-2;
   double step_size_for_optimization_ = 5e-4;
   size_t max_iter_for_optimization_ = 100;
+  
+  double log_marginal_likelihood = 0.0;
 
   SitePattern site_pattern_;
   size_t plv_count_;
   MmappedNucleotidePLV mmapped_master_plv_;
+  // plvs_ store the following:
+  // [0, num_nodes): p(s).
+  // [num_nodes, 2*num_nodes): phat(s).
+  // [2*num_nodes, 3*num_nodes): phat(s_tilde).
+  // [3*num_nodes, 4*num_nodes): rhat(s) = rhat(s_tilde).
+  // [4*num_nodes, 5*num_nodes): r(s).
+  // [5*num_nodes, 6*num_nodes): r(s_tilde).
   NucleotidePLVRefVector plvs_;
+  // These parameters are indexed in the same way as sbn_parameters_ in
+  // gp_instance.
   EigenVectorXd branch_lengths_;
   EigenVectorXd log_likelihoods_;
   EigenVectorXd q_;
