@@ -27,8 +27,9 @@ class GPEngine {
   void operator()(const GPOperations::Zero& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
   void operator()(const GPOperations::WeightedSumAccumulate& op);
-  void operator()(const GPOperations::MarginalLikelihood& op);
+  void operator()(const GPOperations::WeightedSumAccumulateStationary& op);
   void operator()(const GPOperations::Multiply& op);
+  void operator()(const GPOperations::CopyPLV& op);
   void operator()(const GPOperations::Likelihood& op);
   void operator()(const GPOperations::EvolveRootward& op);
   void operator()(const GPOperations::EvolveLeafward& op);
@@ -51,7 +52,7 @@ class GPEngine {
     q_ = q;
   };
   void ResetLogMarginalLikelihood() {
-    log_marginal_likelihood = DOUBLE_NEG_INF;
+    log_marginal_likelihood = 0.0;
   }
   double GetLogMarginalLikelihood() {
     return log_marginal_likelihood;
@@ -68,9 +69,9 @@ class GPEngine {
   int significant_digits_for_optimization_ = 9;
   double relative_tolerance_for_optimization_ = 1e-2;
   double step_size_for_optimization_ = 5e-4;
-  size_t max_iter_for_optimization_ = 1000;
-
-  double log_marginal_likelihood = DOUBLE_NEG_INF;
+  size_t max_iter_for_optimization_ = 100;
+  
+  double log_marginal_likelihood = 0.0;
 
   SitePattern site_pattern_;
   size_t plv_count_;

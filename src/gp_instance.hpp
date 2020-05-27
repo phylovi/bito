@@ -30,10 +30,7 @@ class GPInstance {
   void MakeEngine();
   void MakeGPEngine();
   GPEngine *GetEngine() const;
-  void EstimateSBNParameters(double tol, size_t max_iter);
-  void EstimateBranchLengths(double tol, size_t max_iter);
-  void PopulatePLVs();
-  void ComputeLikelihoods();
+  void TrainLikelihoodEM(double tol, size_t max_iter);
 
  private:
   std::string mmap_file_path_;
@@ -68,12 +65,9 @@ class GPInstance {
 
   // Build indexing scheme for q_, branch_lengths_, log_likelihoods_.
   // PCSP to index.
-  BitsetSizeMap pcsp_indexer_;
+  BitsetSizeMap gp_engine_indexer_;
   // Stores range of indices for a subsplit and rotated subsplit.
   BitsetSizePairMap subsplit2range_;
-  std::vector<size_t> rootward_order_;
-  std::vector<size_t> leafward_order_;
-
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;
@@ -87,37 +81,16 @@ class GPInstance {
   void BuildNodes();
   void BuildEdges();
   void PrintDAG();
-  void ConstructDAG();
-  void BuildPCSPIndexer();
-  void BranchLengthOptimization();
-  GPOperationVector BranchLengthOptimization2();
-  GPOperationVector SBNParameterOptimization();
-  void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
-                                                  bool rotated,
-                                                  GPOperationVector &operations);
-  void AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
-                                                  GPOperationVector &operations);
-  void AddLeafwardLikelihoodOperations(std::vector<size_t> child_idxs,
-                                       size_t parent_idx,
-                                       const Bitset &parent_subsplit,
-                                       GPOperationVector &operations);
-  void OptimizeSBNParameters(const Bitset &subsplit,
-                             GPOperationVector &operations);
-  GPOperationVector MarginalLikelihoodOperations();
-  void ScheduleBranchLengthOptimization(size_t node_id,
-                                        std::unordered_set<size_t> visited_nodes,
-                                        GPOperationVector &operations);
-  void ScheduleSBNParametersOptimization(size_t node_id,
-                                         std::unordered_set<size_t> visited_nodes,
-                                         GPOperationVector &operations);
-  void RootwardPass(std::vector<size_t> visit_order);
-  void LeafwardPass(std::vector<size_t> visit_order);
-  void InitializeGPEngine();
-  void SetRootwardZero();
-  void SetLeafwardZero();
   std::vector<size_t> LeafwardPassTraversal();
   std::vector<size_t> RootwardPassTraversal();
-  std::vector<SizePair> RootwardPassTraversalEdges();
+  void ConstructDAG();
+  void BuildGPEngineIndexer(BitsetSizeMap &indexer,
+                            BitsetSizePairMap &subsplit2range);
+  void RootwardPass(std::vector<size_t> visit_order, bool optimize);
+  void LeafwardPass(std::vector<size_t> visit_order, bool optimize);
+  void InitializeLikelihoodEM();
+  void SetZero();
+
 };
 
 #endif  // SRC_GP_INSTANCE_HPP_
