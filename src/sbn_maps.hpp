@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
 #include "bitset.hpp"
 #include "default_dict.hpp"
 #include "driver.hpp"
@@ -35,6 +36,8 @@ using StringSizePairMap = std::unordered_map<std::string, std::pair<size_t, size
 using SizeStringMap = std::unordered_map<size_t, std::string>;
 using StringPCSSMap =
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
+using IndexerBundle =
+    std::tuple<BitsetVector, BitsetSizeMap, SizeBitsetMap, BitsetSizePairMap, size_t>;
 
 namespace SBNMaps {
 // Make a map from each Tag to the bitset representing the ids below the Tag.
@@ -44,6 +47,8 @@ SizeBitsetMap IdIdSetMapOf(const Node::NodePtr& topology);
 SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& topology);
 // Make a string version of a PCSSDict.
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
+IndexerBundle BuildIndexerBundle(const BitsetSizeDict& rootsplit_counter,
+                                 const PCSSDict& pcss_counter);
 }  // namespace SBNMaps
 
 namespace UnrootedSBNMaps {

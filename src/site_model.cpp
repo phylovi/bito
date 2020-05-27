@@ -2,9 +2,10 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "site_model.hpp"
-#include "sugar.hpp"
 
 #include <cmath>
+
+#include "sugar.hpp"
 
 std::unique_ptr<SiteModel> SiteModel::OfSpecification(
     const std::string& specification) {

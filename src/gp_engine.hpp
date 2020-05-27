@@ -10,23 +10,23 @@
 #include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
+#include "numerical_utils.hpp"
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 
 class GPEngine {
  public:
-  GPEngine(SitePattern site_pattern, size_t pcss_count, std::string mmap_file_path);
+  GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
+           std::string mmap_file_path);
 
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::Zero& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
-  void operator()(const GPOperations::WeightedSumAccumulate& op);
+  void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& op);
+  void operator()(const GPOperations::IncrementMarginalLikelihood& op);
   void operator()(const GPOperations::Multiply& op);
   void operator()(const GPOperations::Likelihood& op);
-  void operator()(const GPOperations::EvolveRootward& op);
-  void operator()(const GPOperations::EvolveLeafward& op);
-  void operator()(const GPOperations::OptimizeRootward& op);
-  void operator()(const GPOperations::OptimizeLeafward& op);
+  void operator()(const GPOperations::OptimizeBranchLength& op);
   void operator()(const GPOperations::UpdateSBNProbabilities& op);
 
   void ProcessOperations(GPOperationVector operations);
@@ -40,10 +40,14 @@ class GPEngine {
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     branch_lengths_ = branch_lengths;
   };
+  void SetSBNParameters(EigenVectorXd q) { q_ = q; };
+  void ResetLogMarginalLikelihood() { log_marginal_likelihood_ = DOUBLE_NEG_INF; }
+  double GetLogMarginalLikelihood() const { return log_marginal_likelihood_; }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
+  EigenVectorXd GetSBNParameters() const { return q_; };
 
-  DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeRootward& op);
+  DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
  private:
   double min_branch_length_ = 1e-6;
@@ -51,12 +55,23 @@ class GPEngine {
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-2;
   double step_size_for_optimization_ = 5e-4;
-  size_t max_iter_for_optimization_ = 100;
+  size_t max_iter_for_optimization_ = 1000;
+
+  double log_marginal_likelihood_ = DOUBLE_NEG_INF;
 
   SitePattern site_pattern_;
   size_t plv_count_;
   MmappedNucleotidePLV mmapped_master_plv_;
+  // plvs_ store the following (see GPDAG::GetPLVIndexStatic):
+  // [0, num_nodes): p(s).
+  // [num_nodes, 2*num_nodes): phat(s).
+  // [2*num_nodes, 3*num_nodes): phat(s_tilde).
+  // [3*num_nodes, 4*num_nodes): rhat(s) = rhat(s_tilde).
+  // [4*num_nodes, 5*num_nodes): r(s).
+  // [5*num_nodes, 6*num_nodes): r(s_tilde).
   NucleotidePLVRefVector plvs_;
+  // These parameters are indexed in the same way as sbn_parameters_ in
+  // gp_instance.
   EigenVectorXd branch_lengths_;
   EigenVectorXd log_likelihoods_;
   EigenVectorXd q_;
@@ -74,6 +89,7 @@ class GPEngine {
   Eigen::Matrix4d inverse_eigenmatrix_ =
       substitution_model_.GetInverseEigenvectors().reshaped(4, 4);
   Eigen::Vector4d eigenvalues_ = substitution_model_.GetEigenvalues();
+  Eigen::Vector4d diagonal_vector_;
   Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
   Eigen::Matrix4d transition_matrix_;
   Eigen::Matrix4d derivative_matrix_;
@@ -81,37 +97,29 @@ class GPEngine {
   EigenVectorXd site_pattern_weights_;
 
   void InitializePLVsWithSitePatterns();
-  void BrentOptimization(const GPOperations::OptimizeRootward& op);
-  void GradientAscentOptimization(const GPOperations::OptimizeRootward& op);
-
-  inline double LogLikelihood(size_t src1_idx, size_t src2_idx) {
-    per_pattern_log_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array().log();
-    return per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-  }
+  void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
   inline void PreparePerPatternLikelihoodDerivatives(size_t src1_idx, size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
-        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array();
+        (plvs_.at(src1_idx).transpose() * derivative_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array();
   }
 
   inline void PreparePerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
     per_pattern_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array();
+        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array();
   }
 
-  inline DoublePair LogLikelihoodAndDerivativeFromPreparations() {
-    per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
-    double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-    // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
-    // of l_i divided by l_i.
-    per_pattern_likelihood_derivative_ratios_ =
-        per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
-    // We weight this with the number of times we see the site patterns as for the log
-    // likelihood.
-    double log_likelihood_derivative =
-        per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
-    return {log_likelihood, log_likelihood_derivative};
+  inline void PreparePerPatternLogLikelihoods(size_t src1_idx, size_t src2_idx) {
+    per_pattern_log_likelihoods_ =
+        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array()
+            .log();
   }
 };
 
@@ -119,7 +127,7 @@ class GPEngine {
 
 TEST_CASE("GPEngine") {
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
-  GPEngine engine(hello_site_pattern, 5, "_ignore/mmapped_plv.data");
+  GPEngine engine(hello_site_pattern, 6 * 5, 5, "_ignore/mmapped_plv.data");
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29

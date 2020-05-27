@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+
 #include "alignment.hpp"
 #include "sugar.hpp"
 

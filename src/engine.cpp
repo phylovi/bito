@@ -2,7 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "engine.hpp"
+
 #include <numeric>
+
 #include "beagle_flag_names.hpp"
 
 Engine::Engine(const EngineSpecification &engine_specification,

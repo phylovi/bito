@@ -8,6 +8,7 @@
 
 #include <Eigen/Dense>
 #include <fstream>
+
 #include "sugar.hpp"
 
 using EigenVectorXd = Eigen::VectorXd;

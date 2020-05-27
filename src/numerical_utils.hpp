@@ -5,6 +5,7 @@
 #define SRC_NUMERICAL_UTILS_HPP_
 
 #include <fenv.h>
+
 #include <limits>
 
 #include "eigen_sugar.hpp"

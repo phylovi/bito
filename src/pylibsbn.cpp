@@ -7,6 +7,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
+#include "gp_instance.hpp"
 #include "rooted_gradient_transforms.hpp"
 #include "rooted_sbn_instance.hpp"
 #include "unrooted_sbn_instance.hpp"
@@ -315,6 +316,30 @@ PYBIND11_MODULE(libsbn, m) {
   // FUNCTIONS
   m.def("ratio_gradient_of_height_gradient", &RatioGradientOfHeightGradientEigen,
         "Obtain a ratio gradient from a height gradient.");
+
+  // CLASS
+  // GPInstance
+  py::class_<GPInstance> gp_instance_class(m, "gp_instance",
+                                           R"raw(A generalized pruning instance.)raw");
+  gp_instance_class.def(py::init<const std::string &>())
+      .def("print_status", &GPInstance::PrintStatus,
+           "Print information about the instance.")
+      .def("print_dag", &GPInstance::PrintDAG, "Print the generalized pruning DAG.")
+
+      // ** I/O
+      .def("read_newick_file", &GPInstance::ReadNewickFile,
+           "Read trees from a Newick file.")
+      .def("read_nexus_file", &GPInstance::ReadNexusFile,
+           "Read trees from a Nexus file.")
+      .def("read_fasta_file", &GPInstance::ReadFastaFile,
+           "Read a sequence alignment from a FASTA file.")
+
+      // ** Estimation
+      .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.")
+      .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
+           "Read trees from a Newick file.")
+      .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
+           "Estimate branch lengths for the GPInstance.");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
