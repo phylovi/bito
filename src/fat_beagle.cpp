@@ -87,9 +87,18 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
   SetRootPreorderPartialsToStateFrequencies(ba);
 
   // Set differential matrix for each branch.
-  const EigenMatrixXd &Q = phylo_model_->GetSubstitutionModel()->GetQMatrix();
+  size_t category_count = phylo_model_->GetSiteModel()->GetCategoryCount();
+  const EigenVectorXd &rates = phylo_model_->GetSiteModel()->GetCategoryRates();
+  size_t state_count = phylo_model_->GetSubstitutionModel()->GetStateCount();
+  size_t matrix_dim = state_count * state_count;
+  EigenMatrixXd Q = phylo_model_->GetSubstitutionModel()->GetQMatrix();
+  Eigen::Map<Eigen::RowVectorXd> mapQ(Q.data(), Q.size());
+  EigenMatrixXd dQ = mapQ.replicate(category_count, 1);
+  for (size_t k = 0; k < category_count; k++) {
+    dQ.block(0, k * matrix_dim, 1, matrix_dim) *= rates[k];
+  }
   int derivative_matrix_idx = ba.node_count_ - 1;
-  beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, Q.data());
+  beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, dQ.data());
   const auto derivative_matrix_indices =
       std::vector<int>(ba.node_count_ - 1, derivative_matrix_idx);
 
@@ -277,7 +286,9 @@ void FatBeagle::SetRootPreorderPartialsToStateFrequencies(
     const BeagleAccessories &ba) const {
   const EigenVectorXd &frequencies =
       phylo_model_->GetSubstitutionModel()->GetFrequencies();
-  EigenVectorXd state_frequencies = frequencies.replicate(pattern_count_, 1);
+  size_t category_count = phylo_model_->GetSiteModel()->GetCategoryCount();
+  EigenVectorXd state_frequencies =
+      frequencies.replicate(pattern_count_ * category_count, 1);
   beagleSetPartials(beagle_instance_, ba.root_id_ + ba.node_count_,
                     state_frequencies.data());
 }

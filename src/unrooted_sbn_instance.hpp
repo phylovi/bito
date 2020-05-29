@@ -299,6 +299,41 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
   }
 }
 
+TEST_CASE("UnrootedSBNInstance: likelihood and gradient with Weibull") {
+  UnrootedSBNInstance inst("charlie");
+  PhyloModelSpecification simple_specification{"JC69", "weibull+4", "strict"};
+  inst.ReadNexusFile("data/DS1.subsampled_10.t");
+  inst.ReadFastaFile("data/DS1.fasta");
+
+  std::vector<double> physher_likelihoods(
+      {-9456.1201098061, -6624.4110704332, -6623.4474776131, -6617.25658038029,
+       -6627.5385571548, -6621.6155048722, -6622.3314942713, -6618.7695717585,
+       -6616.3837517370, -6623.8295828648});
+  std::vector<BeagleFlags> vector_flag_options{BEAGLE_FLAG_VECTOR_NONE,
+                                               BEAGLE_FLAG_VECTOR_SSE};
+  std::vector<bool> tip_state_options{false, true};
+  for (const auto vector_flag : vector_flag_options) {
+    for (const auto tip_state_option : tip_state_options) {
+      inst.PrepareForPhyloLikelihood(simple_specification, 2, {vector_flag},
+                                     tip_state_option);
+      auto param_block_map = inst.GetPhyloModelParamBlockMap();
+      param_block_map.at(WeibullSiteModel::shape_key_).setConstant(0.1);
+      auto likelihoods = inst.LogLikelihoods();
+      for (size_t i = 0; i < likelihoods.size(); i++) {
+        CHECK_LT(fabs(likelihoods[i] - physher_likelihoods[i]), 0.00011);
+      }
+
+      // Test rescaling
+      inst.SetRescaling(true);
+      auto likelihoods_rescaling = inst.LogLikelihoods();
+      // Likelihoods from LogLikelihoods()
+      for (size_t i = 0; i < likelihoods_rescaling.size(); i++) {
+        CHECK_LT(fabs(likelihoods_rescaling[i] - physher_likelihoods[i]), 0.00011);
+      }
+    }
+  }
+}
+
 TEST_CASE("UnrootedSBNInstance: SBN training") {
   UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/DS1.100_topologies.nwk");
