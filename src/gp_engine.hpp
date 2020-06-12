@@ -27,9 +27,8 @@ class GPEngine {
   void operator()(const GPOperations::Zero& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
   void operator()(const GPOperations::WeightedSumAccumulate& op);
-  void operator()(const GPOperations::WeightedSumAccumulateStationary& op);
+  void operator()(const GPOperations::MarginalLikelihood& op);
   void operator()(const GPOperations::Multiply& op);
-  void operator()(const GPOperations::CopyPLV& op);
   void operator()(const GPOperations::Likelihood& op);
   void operator()(const GPOperations::EvolveRootward& op);
   void operator()(const GPOperations::EvolveLeafward& op);
