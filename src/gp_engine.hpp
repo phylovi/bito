@@ -26,9 +26,8 @@ class GPEngine {
   void operator()(const GPOperations::Zero& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
   void operator()(const GPOperations::WeightedSumAccumulate& op);
-  void operator()(const GPOperations::WeightedSumAccumulateStationary& op);
+  void operator()(const GPOperations::MarginalLikelihood& op);
   void operator()(const GPOperations::Multiply& op);
-  void operator()(const GPOperations::CopyPLV& op);
   void operator()(const GPOperations::Likelihood& op);
   void operator()(const GPOperations::EvolveRootward& op);
   void operator()(const GPOperations::EvolveLeafward& op);
@@ -42,6 +41,7 @@ class GPEngine {
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
   const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
+  NucleotidePLV GetPLV(size_t idx) { return plvs_[idx]; }
   void PrintPLV(size_t plv_idx);
 
   void SetBranchLengths(EigenVectorXd branch_lengths) {
