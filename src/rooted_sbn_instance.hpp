@@ -18,10 +18,10 @@ class RootedSBNInstance : public SBNInstance {
     return tree_collection_.TopologyCounter();
   }
   BitsetSizeDict RootsplitCounterOf(
-      const Node::TopologyCounter &topologies) const override {
+      const Node::TopologyCounter& topologies) const override {
     return RootedSBNMaps::RootsplitCounterOf(topologies);
   }
-  PCSSDict PCSSCounterOf(const Node::TopologyCounter &topologies) const override {
+  PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) const override {
     return RootedSBNMaps::PCSSCounterOf(topologies);
   }
 

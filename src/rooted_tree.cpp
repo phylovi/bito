@@ -4,7 +4,7 @@
 #include "rooted_tree.hpp"
 
 // Branch lengths should correspond to a time tree up to this tolerance.
-constexpr double BRANCH_LENGTH_TOLERANCE = 1e-6;
+constexpr double BRANCH_LENGTH_TOLERANCE = 1e-4;
 
 RootedTree::RootedTree(const Tree& tree) : Tree(tree.Topology(), tree.BranchLengths()) {
   Assert(Children().size() == 2,
@@ -36,9 +36,14 @@ void RootedTree::InitializeParameters(
       node_bounds_[node_id] =
           std::max(node_bounds_[child0_id], node_bounds_[child1_id]);
       node_heights_[node_id] = node_heights_[child0_id] + branch_lengths_[child0_id];
-      if (fabs(node_heights_[child1_id] + branch_lengths_[child1_id] -
-               node_heights_[node_id]) > BRANCH_LENGTH_TOLERANCE) {
-        Failwith("Tree isn't time-calibrated in RootedTree::InitializeParameters.");
+      const auto height_difference =
+          fabs(node_heights_[child1_id] + branch_lengths_[child1_id] -
+               node_heights_[node_id]);
+      if (height_difference > BRANCH_LENGTH_TOLERANCE) {
+        Failwith(
+            "Tree isn't time-calibrated in RootedTree::InitializeParameters. Height "
+            "difference: " +
+            std::to_string(height_difference));
       }
     }
   });
