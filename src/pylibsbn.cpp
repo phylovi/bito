@@ -7,6 +7,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
+#include "rooted_sbn_instance.hpp"
 #include "unrooted_sbn_instance.hpp"
 
 namespace py = pybind11;
@@ -41,6 +42,36 @@ PYBIND11_MODULE(libsbn, m) {
                                {v.size()},         // Buffer dimensions
                                {sizeof(double)});  // Stride
       });
+
+  // CLASS
+  // RootedTree
+  py::class_<RootedTree>(m, "RootedTree", "A rooted tree with branch lengths.",
+                         py::buffer_protocol())
+      .def("parent_id_vector", &RootedTree::ParentIdVector)
+      .def_static("of_parent_id_vector", &RootedTree::OfParentIdVector)
+      .def_readwrite("branch_lengths", &RootedTree::branch_lengths_);
+
+  // CLASS
+  // RootedTreeCollection
+  py::class_<RootedTreeCollection>(m, "RootedTreeCollection", R"raw(
+  A collection of rooted trees.
+
+  In addition to the methods, RootedTreeCollection also offers direct access to
+  the trees through the ``trees`` member variable.
+  )raw")
+      .def(py::init<RootedTree::RootedTreeVector>(), "The empty constructor.")
+      .def(py::init<RootedTree::RootedTreeVector, TagStringMap>(),
+           "Constructor from a vector of trees and a tags->taxon names map.")
+      .def(py::init<RootedTree::RootedTreeVector, const std::vector<std::string> &>(),
+           "Constructor from a vector of trees and a vector of taxon names.")
+      .def("erase", &RootedTreeCollection::Erase,
+           "Erase the specified range from the current tree collection.")
+      .def("drop_first", &RootedTreeCollection::DropFirst,
+           "Drop the first ``fraction`` trees from the tree collection.",
+           py::arg("fraction"))
+      .def("newick", &RootedTreeCollection::Newick,
+           "Get the current set of trees as a big Newick string.")
+      .def_readwrite("trees", &RootedTreeCollection::trees_);
 
   // CLASS
   // UnrootedTree
@@ -136,14 +167,40 @@ PYBIND11_MODULE(libsbn, m) {
                          &SBNInstance::sbn_parameters_);
 
   // CLASS
+  // RootedSBNInstance
+  py::class_<RootedSBNInstance, SBNInstance> rooted_sbn_instance_class(
+      m, "rooted_instance", R"raw(A rooted SBN instance.)raw");
+  rooted_sbn_instance_class
+      .def(py::init<const std::string &>())
+
+      // ** Initialization and status
+      .def("print_status", &RootedSBNInstance::PrintStatus,
+           "Print information about the instance.")
+      .def("tree_count", &RootedSBNInstance::TreeCount,
+           "Return the number of trees that are currently stored in the "
+           "instance.")
+
+      // ** Phylogenetic likelihood
+      .def("log_likelihoods", &RootedSBNInstance::LogLikelihoods,
+           "Calculate log likelihoods for the current set of trees.")
+      .def("set_rescaling", &RootedSBNInstance::SetRescaling,
+           "Set whether BEAGLE's likelihood rescaling is used.")
+      .def("gradients", &RootedSBNInstance::Gradients,
+           "Calculate gradients of parameters for the current set of trees.")
+
+      // ** I/O
+      .def("read_newick_file", &RootedSBNInstance::ReadNewickFile,
+           "Read trees from a Newick file.")
+      .def("read_nexus_file", &RootedSBNInstance::ReadNexusFile,
+           "Read trees from a Nexus file.")
+
+      // ** Member variables
+      .def_readwrite("tree_collection", &RootedSBNInstance::tree_collection_);
+
+  // CLASS
   // UnrootedSBNInstance
   py::class_<UnrootedSBNInstance, SBNInstance> unrooted_sbn_instance_class(
-      m, "unrooted_instance",
-      R"raw(
-    A unrooted SBN instance.
-
-    This class wraps all of the relevant C++-side state.
-      )raw");
+      m, "unrooted_instance", R"raw(A unrooted SBN instance.)raw");
   unrooted_sbn_instance_class
       .def(py::init<const std::string &>())
 
