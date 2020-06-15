@@ -42,7 +42,7 @@ void RootedTree::InitializeParameters(
       if (height_difference > BRANCH_LENGTH_TOLERANCE) {
         Failwith(
             "Tree isn't time-calibrated in RootedTree::InitializeParameters. Height "
-            "difference:" +
+            "difference: " +
             std::to_string(height_difference));
       }
     }
