@@ -28,8 +28,8 @@ class RootedSBNInstance : public SBNInstance {
   // ** Phylogenetic likelihood
 
   std::vector<double> LogLikelihoods();
-  // For each loaded tree, returns a pair of (likelihood, gradient).
-  std::vector<RootedTreeGradient> Gradients();
+  // For each loaded tree, return the phylogenetic gradient.
+  std::vector<RootedPhyloGradient> PhyloGradients();
 
   // ** I/O
 
@@ -155,7 +155,7 @@ TEST_CASE("RootedSBNInstance: gradients") {
   double physher_ll = -4777.616349;
   CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
 
-  auto gradients = inst.Gradients();
+  auto gradients = inst.PhyloGradients();
   std::vector<double> physher_gradients = {
       -0.593654, 6.441290,   11.202945, 5.173924,  -0.904631, 2.731402,   3.157131,
       7.082914,  10.305417,  13.988206, 20.709336, 48.897993, 99.164949,  130.205747,
@@ -189,7 +189,7 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
 
   // Gradient with a strict clock.
-  auto gradients_strict = inst.Gradients();
+  auto gradients_strict = inst.PhyloGradients();
   std::vector<double> gradients_strict_approx = derivative_strict_clock(inst);
   CHECK_LT(fabs(gradients_strict[0].clock_model_[0] - gradients_strict_approx[0]),
            0.001);
@@ -203,7 +203,7 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   }
   tree.rate_count_ = tree.rates_.size();
 
-  auto gradients_relaxed = inst.Gradients();
+  auto gradients_relaxed = inst.PhyloGradients();
   auto gradients_relaxed_approx = derivative_relaxed_clock(inst);
 
   for (size_t j = 0; j < gradients_relaxed_approx.size(); j++) {

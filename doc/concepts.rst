@@ -14,8 +14,20 @@ Definitions
   See the 2019 ICLR paper for details.
 
 :index:`SBN`
-  PSP stands for subsplit Bayes network, which is how we parameterize variational distributions on tree topologies.
+  SBN stands for subsplit Bayes network, which is how we parameterize variational distributions on tree topologies.
   See the 2018 NeurIPS paper for details.
+
+
+Notation
+--------
+
+* :math:`X`: taxon set
+* :math:`A, B, \ldots` taxon subsets
+* :math:`\tau`: topology
+* :math:`\theta`: branch lengths or other per-tree model parameters such as node heights
+* :math:`t, s, u`: subsplits
+* :math:`q(s | t)`: conditional probability of child subsplit :math:`s` given parent subsplit :math:`t`
+* :math:`t \rightarrow s`: parent-child subsplit pair consisting of a parent :math:`t` and child :math:`s`
 
 
 Terminology and conventions

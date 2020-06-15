@@ -41,20 +41,6 @@ def hello_demo():
     print(np.array(inst.log_likelihoods()))
 
 
-def rooted_demo():
-    inst = libsbn.rooted_instance("charlie")
-    inst.read_newick_file("data/fluA.tree")
-    inst.read_fasta_file("data/fluA.fa")
-    inst.prepare_for_phylo_likelihood(
-        SIMPLE_SPECIFICATION, 2, [beagle_flags.VECTOR_SSE]
-    )
-    print(inst.tree_collection.newick())
-    print(np.array(inst.log_likelihoods()))
-    # TODO assign rates if we are interested in them.
-    gradient = inst.gradients()
-    print(np.array(gradient[0].branch_lengths, copy=False))
-
-
 def sampling_and_indexers_demo():
     """Demonstrate sampling and indexers.
 
@@ -168,7 +154,6 @@ def test_sbn_unrooted_instance():
     """Test the libsbn unrooted_instance."""
 
     hello_demo()
-    rooted_demo()
     sampling_and_indexers_demo()
     inst = ds1_support_test()
     ds1_phylo_model_demo(inst)

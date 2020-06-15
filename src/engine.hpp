@@ -35,12 +35,12 @@ class Engine {
   std::vector<double> LogLikelihoods(const RootedTreeCollection &tree_collection,
                                      const EigenMatrixXdRef phylo_model_params,
                                      const bool rescaling) const;
-  std::vector<UnrootedTreeGradient> Gradients(
+  std::vector<UnrootedPhyloGradient> Gradients(
       const UnrootedTreeCollection &tree_collection,
       const EigenMatrixXdRef phylo_model_params, const bool rescaling) const;
-  std::vector<RootedTreeGradient> Gradients(const RootedTreeCollection &tree_collection,
-                                            const EigenMatrixXdRef phylo_model_params,
-                                            const bool rescaling) const;
+  std::vector<RootedPhyloGradient> Gradients(
+      const RootedTreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling) const;
 
  private:
   SitePattern site_pattern_;

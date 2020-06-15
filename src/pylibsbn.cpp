@@ -7,6 +7,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
+#include "rooted_gradient_transforms.hpp"
 #include "rooted_sbn_instance.hpp"
 #include "unrooted_sbn_instance.hpp"
 
@@ -48,8 +49,15 @@ PYBIND11_MODULE(libsbn, m) {
   py::class_<RootedTree>(m, "RootedTree", "A rooted tree with branch lengths.",
                          py::buffer_protocol())
       .def("parent_id_vector", &RootedTree::ParentIdVector)
+      .def("set_node_heights_via_height_ratios",
+           &RootedTree::SetNodeHeightsViaHeightRatios)
+      .def_static("example", &RootedTree::Example)
       .def_static("of_parent_id_vector", &RootedTree::OfParentIdVector)
-      .def_readwrite("branch_lengths", &RootedTree::branch_lengths_);
+      .def_readwrite("branch_lengths", &RootedTree::branch_lengths_)
+      .def_readwrite("height_ratios", &RootedTree::height_ratios_)
+      .def_readwrite("node_heights", &RootedTree::node_heights_)
+      .def_readwrite("node_bounds", &RootedTree::node_bounds_)
+      .def_readwrite("rates", &RootedTree::rates_);
 
   // CLASS
   // RootedTreeCollection
@@ -74,14 +82,15 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readwrite("trees", &RootedTreeCollection::trees_);
 
   // CLASS
-  // RootedTreeCollection
-  py::class_<RootedTreeGradient>(m, "RootedTreeGradient",
-                                 R"raw(A rooted tree gradient.)raw")
-      .def_readonly("log_likelihood", &RootedTreeGradient::log_likelihood_)
-      .def_readonly("substitution_model", &RootedTreeGradient::substitution_model_)
-      .def_readonly("branch_lengths", &RootedTreeGradient::branch_lengths_)
-      .def_readonly("clock_model", &RootedTreeGradient::clock_model_)
-      .def_readonly("ratios_root_height", &RootedTreeGradient::ratios_root_height_);
+  // RootedPhyloGradient
+  py::class_<RootedPhyloGradient>(m, "RootedPhyloGradient",
+                                  R"raw(A rooted tree phylogenetic gradient.)raw")
+      .def_readonly("log_likelihood", &RootedPhyloGradient::log_likelihood_)
+      .def_readonly("site_model", &RootedPhyloGradient::site_model_)
+      .def_readonly("substitution_model", &RootedPhyloGradient::substitution_model_)
+      .def_readonly("branch_lengths", &RootedPhyloGradient::branch_lengths_)
+      .def_readonly("clock_model", &RootedPhyloGradient::clock_model_)
+      .def_readonly("ratios_root_height", &RootedPhyloGradient::ratios_root_height_);
 
   // CLASS
   // UnrootedTree
@@ -113,6 +122,14 @@ PYBIND11_MODULE(libsbn, m) {
       .def("newick", &UnrootedTreeCollection::Newick,
            "Get the current set of trees as a big Newick string.")
       .def_readwrite("trees", &UnrootedTreeCollection::trees_);
+
+  // UnrootedPhyloGradient
+  py::class_<UnrootedPhyloGradient>(m, "UnrootedPhyloGradient",
+                                    R"raw(An unrooted tree phylogenetic gradient.)raw")
+      .def_readonly("log_likelihood", &UnrootedPhyloGradient::log_likelihood_)
+      .def_readonly("site_model", &UnrootedPhyloGradient::site_model_)
+      .def_readonly("substitution_model", &UnrootedPhyloGradient::substitution_model_)
+      .def_readonly("branch_lengths", &UnrootedPhyloGradient::branch_lengths_);
 
   // CLASS
   // PSPIndexer
@@ -195,7 +212,7 @@ PYBIND11_MODULE(libsbn, m) {
            "Calculate log likelihoods for the current set of trees.")
       .def("set_rescaling", &RootedSBNInstance::SetRescaling,
            "Set whether BEAGLE's likelihood rescaling is used.")
-      .def("gradients", &RootedSBNInstance::Gradients,
+      .def("phylo_gradients", &RootedSBNInstance::PhyloGradients,
            "Calculate gradients of parameters for the current set of trees.")
 
       // ** I/O
@@ -280,7 +297,7 @@ PYBIND11_MODULE(libsbn, m) {
            "Calculate log likelihoods for the current set of trees.")
       .def("set_rescaling", &UnrootedSBNInstance::SetRescaling,
            "Set whether BEAGLE's likelihood rescaling is used.")
-      .def("gradients", &UnrootedSBNInstance::Gradients,
+      .def("phylo_gradients", &UnrootedSBNInstance::PhyloGradients,
            "Calculate gradients of parameters for the current set of trees.")
       .def("topology_gradients", &UnrootedSBNInstance::TopologyGradients,
            R"raw(Calculate gradients of SBN parameters for the current set of trees.
@@ -294,6 +311,10 @@ PYBIND11_MODULE(libsbn, m) {
 
       // ** Member variables
       .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
+
+  // FUNCTIONS
+  m.def("ratio_gradient_of_height_gradient", &RatioGradientOfHeightGradientEigen,
+        "Obtain a ratio gradient from a height gradient.");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:

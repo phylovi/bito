@@ -31,7 +31,7 @@ Doing so will install the conda compiler toolchain, this will mess up our compil
 
 For your first build, do
 
-* `git submodule update`
+* `git submodule update --init --recursive`
 * `scons`
 * Respond to interactive prompts about where `hmc-clock` BEAGLE is installed
 * `conda activate libsbn`
@@ -64,7 +64,7 @@ Our documentation consists of:
 
 libsbn is written in C++17.
 
-The associated Python module, `vip`, is targeting Python 3.6.
+The associated Python module, `vip`, is targeting Python 3.7.
 
 ### Style
 
@@ -123,7 +123,7 @@ Add a test for every new feature.
 ## Contributors
 
 * Erick Matsen ([@matsen](https://github.com/matsen)): implementation, design, janitorial duties
-* Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation of substitution models and BEAGLE likelihoods/gradients, design
+* Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation of substitution models and likelihoods/gradients, design
 * Seong-Hwan Jun ([@junseonghwan](https://github.com/junseonghwan)): implementation of SBN gradients, design
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
@@ -150,4 +150,5 @@ We require BEAGLE, so please also cite these papers:
 In addition to the packages mentioned above we also employ:
 
 * [cxx-prettyprint](https://github.com/louisdx/cxx-prettyprint) STL container pretty printing
+* [Eigen](https://gitlab.com/libeigen/eigen)
 * [Progress-CPP](https://github.com/prakhar1989/progress-cpp) progress bar

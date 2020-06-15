@@ -6,10 +6,10 @@
 
 #include <vector>
 
-struct TreeGradient {
-  TreeGradient() = default;
-  TreeGradient(double log_likelihood, std::vector<double> site_model_gradient,
-               std::vector<double> substitution_model_gradient)
+struct PhyloGradient {
+  PhyloGradient() = default;
+  PhyloGradient(double log_likelihood, std::vector<double> site_model_gradient,
+                std::vector<double> substitution_model_gradient)
       : log_likelihood_(log_likelihood),
         site_model_(site_model_gradient),
         substitution_model_(substitution_model_gradient){};
@@ -19,26 +19,26 @@ struct TreeGradient {
   std::vector<double> substitution_model_;
 };
 
-struct UnrootedTreeGradient : TreeGradient {
-  UnrootedTreeGradient() = default;
-  UnrootedTreeGradient(double log_likelihood,
-                       std::vector<double> branch_length_gradient,
-                       std::vector<double> site_model_gradient,
-                       std::vector<double> substitution_model_gradient)
-      : TreeGradient(log_likelihood, site_model_gradient, substitution_model_gradient),
+struct UnrootedPhyloGradient : PhyloGradient {
+  UnrootedPhyloGradient() = default;
+  UnrootedPhyloGradient(double log_likelihood,
+                        std::vector<double> branch_length_gradient,
+                        std::vector<double> site_model_gradient,
+                        std::vector<double> substitution_model_gradient)
+      : PhyloGradient(log_likelihood, site_model_gradient, substitution_model_gradient),
         branch_lengths_(branch_length_gradient){};
 
   std::vector<double> branch_lengths_;
 };
 
-struct RootedTreeGradient : TreeGradient {
-  RootedTreeGradient() = default;
-  RootedTreeGradient(double log_likelihood, std::vector<double> branch_length_gradient,
-                     std::vector<double> ratios_root_height_gradient,
-                     std::vector<double> clock_model_gradient,
-                     std::vector<double> site_model_gradient,
-                     std::vector<double> substitution_model_gradient)
-      : TreeGradient(log_likelihood, site_model_gradient, substitution_model_gradient),
+struct RootedPhyloGradient : PhyloGradient {
+  RootedPhyloGradient() = default;
+  RootedPhyloGradient(double log_likelihood, std::vector<double> branch_length_gradient,
+                      std::vector<double> ratios_root_height_gradient,
+                      std::vector<double> clock_model_gradient,
+                      std::vector<double> site_model_gradient,
+                      std::vector<double> substitution_model_gradient)
+      : PhyloGradient(log_likelihood, site_model_gradient, substitution_model_gradient),
         branch_lengths_(branch_length_gradient),
         clock_model_(clock_model_gradient),
         ratios_root_height_(ratios_root_height_gradient){};
