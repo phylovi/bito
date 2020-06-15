@@ -109,7 +109,7 @@ struct EvolveLeafward {
 // optimal branch length
 // * storing log likelihood at `log_likelihoods[branch_length_idx]`
 // * storing optimal branch length at `branch_lengths[branch_length_idx]`
-struct OptimizeRootward {
+struct OptimizeBranchLength {
   size_t dest_idx;
   size_t leafward_idx;
   size_t rootward_idx;
@@ -119,29 +119,6 @@ struct OptimizeRootward {
             {"leafward_idx", leafward_idx},
             {"rootward_idx", rootward_idx},
             {"branch_length_idx", branch_length_idx}};
-  }
-};
-
-// Finds the optimal `branch_length` for the likelihood of
-// `P'(branch_length) plv[rootward_idx]` and `plv[leafward_idx]`,
-// * starting optimization at `branch_lengths[branch_length_idx]`,
-// * storing the PLV for `P'(branch_length) plv[rootward_idx]` in `plv[dest_idx]` for
-// the optimal branch length
-// * storing log likelihood at `log_likelihoods[branch_length_idx]`
-// * storing optimal branch length at `branch_lengths[branch_length_idx]`
-struct OptimizeLeafward {
-  size_t dest_idx;
-  size_t leafward_idx;
-  size_t rootward_idx;
-  //size_t branch_length_idx;
-  size_t start_idx, stop_idx;
-  StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx},
-            {"leafward_idx", leafward_idx},
-            {"rootward_idx", rootward_idx},
-            {"start_idx", start_idx},
-            {"end_idx", stop_idx}
-    };
   }
 };
 
@@ -161,8 +138,8 @@ using GPOperation =
     std::variant<GPOperations::Zero, GPOperations::SetToStationaryDistribution,
                  GPOperations::WeightedSumAccumulate, GPOperations::Multiply,
                  GPOperations::Likelihood, GPOperations::EvolveRootward,
-                 GPOperations::EvolveLeafward, GPOperations::OptimizeRootward,
-                 GPOperations::OptimizeLeafward, GPOperations::UpdateSBNProbabilities,
+                 GPOperations::EvolveLeafward, GPOperations::OptimizeBranchLength,
+                 GPOperations::UpdateSBNProbabilities,
                  GPOperations::MarginalLikelihood>;
 
 using GPOperationVector = std::vector<GPOperation>;
@@ -196,11 +173,8 @@ struct GPOperationOstream {
   void operator()(const GPOperations::EvolveLeafward& operation) {
     os_ << "EvolveLeafward" << operation.guts();
   }
-  void operator()(const GPOperations::OptimizeRootward& operation) {
-    os_ << "OptimizeRootward" << operation.guts();
-  }
-  void operator()(const GPOperations::OptimizeLeafward& operation) {
-    os_ << "OptimizeLeafward" << operation.guts();
+  void operator()(const GPOperations::OptimizeBranchLength& operation) {
+    os_ << "OptimizeBranchLength" << operation.guts();
   }
   void operator()(const GPOperations::UpdateSBNProbabilities& operation) {
     os_ << "UpdateSBNProbabilities" << operation.guts();

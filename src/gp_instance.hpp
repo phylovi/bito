@@ -30,10 +30,9 @@ class GPInstance {
   void MakeEngine();
   void MakeGPEngine();
   GPEngine *GetEngine() const;
-  void TrainLikelihoodEM(double tol, size_t max_iter);
+  void EstimateBranchLengths(double tol, size_t max_iter);
   void PopulatePLVs();
   void ComputeLikelihoods();
-  SitePattern GetSitePattern();
 
  private:
   std::string mmap_file_path_;
@@ -89,6 +88,7 @@ class GPInstance {
   void PrintDAG();
   void ConstructDAG();
   void BuildPCSPIndexer();
+  void BranchLengthOptimization();
   void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
                                                   bool rotated,
                                                   GPOperationVector &operations);
@@ -101,7 +101,7 @@ class GPInstance {
                                        size_t parent_idx,
                                        const Bitset &parent_subsplit,
                                        GPOperationVector &operations);
-  void AddLeafwardOptimizeOperations(const Bitset &subsplit,
+  void OptimizeSBNParameters(const Bitset &subsplit,
                                      GPOperationVector &operations);
   
   void RootwardPass(std::vector<size_t> visit_order);
