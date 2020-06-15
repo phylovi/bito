@@ -107,16 +107,16 @@ TEST_CASE("GPInstance: two pass optimization") {
 
   GPOperationVector two_pass_optimization{
       // Optimize jupiter branch length and assign PLV on the root side.
-      OptimizeRootward{PLV::phat_ttilde, PLV::p_jupiter, PLV::r_ttilde,
+      OptimizeBranchLength{PLV::phat_ttilde, PLV::p_jupiter, PLV::r_ttilde,
                        HelloGPCSP::jupiter},
       // Optimize mars branch length and assign PLV on the root side.
-      OptimizeRootward{PLV::phat_stilde, PLV::p_mars, PLV::r_stilde, HelloGPCSP::mars},
+      OptimizeBranchLength{PLV::phat_stilde, PLV::p_mars, PLV::r_stilde, HelloGPCSP::mars},
       // Optimize saturn branch length and assign PLV on the root side.
-      OptimizeRootward{PLV::phat_s, PLV::p_saturn, PLV::r_s, HelloGPCSP::saturn},
+      OptimizeBranchLength{PLV::phat_s, PLV::p_saturn, PLV::r_s, HelloGPCSP::saturn},
       // Get rootward PLV for venus.
       Multiply{PLV::p_s, PLV::phat_stilde, PLV::phat_s},
       // Optimize venus branch length and assign PLV on the root side.
-      OptimizeRootward{PLV::phat_t, PLV::p_s, PLV::r_t, HelloGPCSP::venus},
+      OptimizeBranchLength{PLV::phat_t, PLV::p_s, PLV::r_t, HelloGPCSP::venus},
       // Get rootward PLV for root.
       Multiply{PLV::p_t, PLV::phat_ttilde, PLV::phat_t},
       // Set a stationary distribution coming from "beyond" the root.
@@ -160,7 +160,7 @@ TEST_CASE("GPInstance: two pass optimization") {
   }
 
   // Test of our log likelihood derivative code on the jupiter branch.
-  auto jupiter_optimization = OptimizeRootward{PLV::phat_ttilde, PLV::p_jupiter,
+  auto jupiter_optimization = OptimizeBranchLength{PLV::phat_ttilde, PLV::p_jupiter,
                                                PLV::r_ttilde, HelloGPCSP::jupiter};
   EigenVectorXd branch_lengths = engine->GetBranchLengths();
   auto [original_log_likelihood, log_likelihood_derivative] =
