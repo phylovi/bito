@@ -100,40 +100,8 @@ void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {
   plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.src_idx);
 }
 
-void GPEngine::operator()(const GPOperations::OptimizeRootward& op) {
-  auto starting_branch_length = branch_lengths_(op.branch_length_idx);
-  std::cout << "starting branch length: " << starting_branch_length << std::endl;
-  GradientAscentOptimization(op);
-  std::cout << "after gradient ascent: " << branch_lengths_(op.branch_length_idx)
-            << std::endl;
-  branch_lengths_(op.branch_length_idx) = starting_branch_length;
-  std::cout << "after reset: " << branch_lengths_(op.branch_length_idx) << std::endl;
+void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
   BrentOptimization(op);
-  std::cout << "after brent: " << branch_lengths_(op.branch_length_idx) << std::endl
-            << std::endl;
-}
-
-void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {
-  //Failwith("OptimizeRootward unimplemented for now.");
-  // Update q_.
-  size_t range_length = op.stop_idx - op.start_idx;
-  if (range_length == 1)
-    return;
-
-  auto segment = log_likelihoods_.segment(op.start_idx, op.stop_idx-op.start_idx);
-  double log_norm = NumericalUtils::LogSum(segment);
-  segment = segment.array() - log_norm;
-  q_.segment(op.start_idx, op.stop_idx-op.start_idx) = segment.array().exp();
-  std::cout << "Updated SBN params: \n";
-  for (size_t i = op.start_idx; i < op.stop_idx; i++) {
-    std::cout << q_(i) << " ";
-  }
-  std::cout << "\n";
-  
-  // Update branch lengths.
-  for (size_t i = op.start_idx; i < op.stop_idx; i++) {
-    //BrentOptimization(op);
-  }
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
@@ -165,6 +133,15 @@ void GPEngine::SetTransitionMatrixToHaveBranchLength(double branch_length) {
   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
 }
 
+//void GPEngine::SetTransitionAndDerivativeMatricesToHaveBranchLength(
+//    double branch_length) {
+//  Eigen::Vector4d diagonal_vector = (branch_length * eigenvalues_).array().exp();
+//  diagonal_matrix_.diagonal() = diagonal_vector;
+//  transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+//  diagonal_matrix_.diagonal() = diagonal_vector.array() * eigenvalues_.array();
+//  derivative_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+//}
+
 void GPEngine::SetTransitionAndDerivativeMatricesToHaveBranchLength(
     double branch_length) {
   Eigen::Vector4d diagonal_vector = (branch_length * eigenvalues_).array().exp();
@@ -188,7 +165,7 @@ void GPEngine::PrintPLV(size_t plv_idx) {
 }
 
 DoublePair GPEngine::LogLikelihoodAndDerivative(
-    const GPOperations::OptimizeRootward& op) {
+    const GPOperations::OptimizeBranchLength& op) {
   SetTransitionAndDerivativeMatricesToHaveBranchLength(
       branch_lengths_(op.branch_length_idx));
   // The per-site likelihood derivative is calculated in the same way as the per-site
@@ -221,7 +198,7 @@ void GPEngine::InitializePLVsWithSitePatterns() {
   std::cout << "Num taxa: " << taxon_idx << std::endl;
 }
 
-void GPEngine::BrentOptimization(const GPOperations::OptimizeRootward& op) {
+void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double branch_length) {
     SetTransitionMatrixToHaveBranchLength(branch_length);
     plvs_.at(op.dest_idx) = transition_matrix_ * plvs_.at(op.leafward_idx);
@@ -234,7 +211,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeRootward& op) {
   log_likelihoods_(op.branch_length_idx) = -neg_log_likelihood;
 }
 
-void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeRootward& op) {
+void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto log_likelihood_and_derivative = [this, &op](double branch_length) {
     branch_lengths_(op.branch_length_idx) = branch_length;
     return this->LogLikelihoodAndDerivative(op);
@@ -246,4 +223,3 @@ void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeRootward& 
   branch_lengths_(op.branch_length_idx) = branch_length;
   log_likelihoods_(op.branch_length_idx) = log_likelihood;
 }
-

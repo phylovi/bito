@@ -31,8 +31,7 @@ class GPEngine {
   void operator()(const GPOperations::Likelihood& op);
   void operator()(const GPOperations::EvolveRootward& op);
   void operator()(const GPOperations::EvolveLeafward& op);
-  void operator()(const GPOperations::OptimizeRootward& op);
-  void operator()(const GPOperations::OptimizeLeafward& op);
+  void operator()(const GPOperations::OptimizeBranchLength& op);
   void operator()(const GPOperations::UpdateSBNProbabilities& op);
 
   void ProcessOperations(GPOperationVector operations);
@@ -59,7 +58,7 @@ class GPEngine {
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
 
-  DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeRootward& op);
+  DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
  private:
   double min_branch_length_ = 1e-6;
@@ -108,8 +107,8 @@ class GPEngine {
   EigenVectorXd site_pattern_weights_;
 
   void InitializePLVsWithSitePatterns();
-  void BrentOptimization(const GPOperations::OptimizeRootward& op);
-  void GradientAscentOptimization(const GPOperations::OptimizeRootward& op);
+  void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
   inline double LogLikelihood(size_t src1_idx, size_t src2_idx) {
     per_pattern_log_likelihoods_ =
