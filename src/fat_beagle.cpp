@@ -545,7 +545,10 @@ RootedTreeGradient FatBeagle::Gradient(const RootedTree &tree) const {
   // Calculate site model parameter gradient, if needed.
   //    gradients["sitemodel"] = SiteModelGradient(tree, branch_gradient);
 
-  return {log_likelihood, RatioGradient(tree, branch_gradient),
-          ClockGradient(tree, branch_gradient), site_model_gradient,
+  return {log_likelihood,
+          branch_gradient,
+          RatioGradient(tree, branch_gradient),
+          ClockGradient(tree, branch_gradient),
+          site_model_gradient,
           substitution_model_gradient};
 }

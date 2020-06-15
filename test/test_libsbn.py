@@ -50,9 +50,9 @@ def rooted_demo():
     )
     print(inst.tree_collection.newick())
     print(np.array(inst.log_likelihoods()))
-    # breakpoint()
-    # inst.gradients()
-
+    # TODO assign rates if we are interested in them.
+    gradient = inst.gradients()
+    print(np.array(gradient[0].branch_lengths, copy=False))
 
 
 def sampling_and_indexers_demo():

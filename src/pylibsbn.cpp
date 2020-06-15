@@ -74,6 +74,16 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readwrite("trees", &RootedTreeCollection::trees_);
 
   // CLASS
+  // RootedTreeCollection
+  py::class_<RootedTreeGradient>(m, "RootedTreeGradient",
+                                 R"raw(A rooted tree gradient.)raw")
+      .def_readonly("log_likelihood", &RootedTreeGradient::log_likelihood_)
+      .def_readonly("substitution_model", &RootedTreeGradient::substitution_model_)
+      .def_readonly("branch_lengths", &RootedTreeGradient::branch_lengths_)
+      .def_readonly("clock_model", &RootedTreeGradient::clock_model_)
+      .def_readonly("ratios_root_height", &RootedTreeGradient::ratios_root_height_);
+
+  // CLASS
   // UnrootedTree
   py::class_<UnrootedTree>(m, "UnrootedTree", "An unrooted tree with branch lengths.",
                            py::buffer_protocol())
