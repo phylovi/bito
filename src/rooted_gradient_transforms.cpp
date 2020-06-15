@@ -4,7 +4,9 @@
 // Calculation of the ratio and root height gradient is adpated from BEAST.
 // https://github.com/beast-dev/beast-mcmc
 // Credit to Xiang Ji and Marc Suchard.
-
+//
+// Because this is code adapted from elsewhere, at least for the time being the naming
+// conventions are a little different: pascalCase is allowed for variables.
 
 #include <numeric>
 #include "rooted_tree.hpp"
@@ -151,13 +153,10 @@ double UpdateHeightParameterGradientUnweightedLogDensity(
   return sum;
 }
 
-std::vector<double> RatioGradient(const RootedTree &tree,
-                                  const std::vector<double> &branch_gradient) {
+std::vector<double> RatioGradientOfHeightGradient(
+    const RootedTree &tree, const std::vector<double> &height_gradient) {
   size_t leaf_count = tree.LeafCount();
   size_t root_id = tree.Topology()->Id();
-
-  // Calculate node height gradient
-  std::vector<double> height_gradient = HeightGradient(tree, branch_gradient);
 
   // Calculate node ratio gradient
   std::vector<double> gradientLogDensity =
@@ -186,3 +185,10 @@ std::vector<double> RatioGradient(const RootedTree &tree,
   return gradientLogDensity;
 }
 
+std::vector<double> RatioGradientOfBranchGradient(
+    const RootedTree &tree, const std::vector<double> &branch_gradient) {
+  // Calculate node height gradient
+  std::vector<double> height_gradient = HeightGradient(tree, branch_gradient);
+
+  return RatioGradientOfHeightGradient(tree, height_gradient);
+}

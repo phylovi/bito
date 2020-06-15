@@ -42,6 +42,9 @@ std::vector<double> UpdateGradientUnWeightedLogDensity(
 double UpdateHeightParameterGradientUnweightedLogDensity(
     const RootedTree &tree, const std::vector<double> &gradient);
 
-std::vector<double> RatioGradient(const RootedTree &tree,
-                                  const std::vector<double> &branch_gradient);
+std::vector<double> RatioGradientOfBranchGradient(
+    const RootedTree &tree, const std::vector<double> &branch_gradient);
+
+std::vector<double> RatioGradientOfHeightGradient(
+    const RootedTree &tree, const std::vector<double> &height_gradient);
 
