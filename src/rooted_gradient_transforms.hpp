@@ -1,10 +1,9 @@
 // Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// Calculation of the ratio and root height gradient is adpated from BEAST.
+// Calculation of the ratio and root height gradient, adpated from BEAST.
 // https://github.com/beast-dev/beast-mcmc
 // Credit to Xiang Ji and Marc Suchard.
-
 
 #include <numeric>
 #include "rooted_tree.hpp"
