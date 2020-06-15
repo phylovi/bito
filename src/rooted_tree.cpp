@@ -62,6 +62,27 @@ void RootedTree::InitializeParameters(
       });
 }
 
+void RootedTree::SetHeightRatios(const std::vector<double>& height_ratios) {
+  // We had branch lengths -> node heights & node bounds -> height ratios
+  // Seems like we want height ratios -> node heights & node bounds -> branch lengths.
+  //
+  // TODO this seems non-trivial. Am I missing something?
+
+  // size_t leaf_count = LeafCount();
+  // Topology()->BinaryIdPostOrder([&leaf_count, this](int node_id, int child0_id,
+  //                                                   int child1_id) {
+  //   if (node_id >= leaf_count) {
+  //     node_bounds_[node_id] =
+  //         std::max(node_bounds_[child0_id], node_bounds_[child1_id]);
+  //     node_heights_[node_id] = node_heights_[child0_id] + branch_lengths_[child0_id];
+  //     if (fabs(node_heights_[child1_id] + branch_lengths_[child1_id] -
+  //              node_heights_[node_id]) > BRANCH_LENGTH_TOLERANCE) {
+  //       Failwith("Tree isn't time-calibrated in RootedTree::InitializeParameters.");
+  //     }
+  //   }
+  // });
+}
+
 TagDoubleMap RootedTree::TagDateMapOfDateVector(std::vector<double> leaf_date_vector) {
   Assert(leaf_date_vector.size() == LeafCount(),
          "Wrong size vector in TagDateMapOfDateVector");

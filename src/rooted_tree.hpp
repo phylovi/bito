@@ -6,8 +6,8 @@
 // all of the extra state in this object is redundant other than the tip dates.
 //
 // In the terminology here, imagine that the tree is rooted at the top and hangs down.
-// Node "heights" is how far we have to go back in time to that divergence event from
-// the present.
+// The "height" of a node is how far we have to go back in time to that divergence event
+// from the present.
 //
 // The most important parameterization here is in terms of node height ratios, which are
 // of the form n/d, where
@@ -16,8 +16,8 @@
 // d = time difference between the parent's height and that of E.
 //
 // The node_heights_ and node_bounds_ are needed to do gradient calculation, but they
-// are secondary to the node_ratios_, which is what the parameterization we actually
-// use, e.g. for the variational parameterization.
+// are secondary to the node_ratios_, which is what we actually use, e.g. for the
+// variational parameterization.
 
 #ifndef SRC_ROOTED_TREE_HPP_
 #define SRC_ROOTED_TREE_HPP_
@@ -37,6 +37,8 @@ class RootedTree : public Tree {
   // already exist in the tree). Note that these dates are the amount of time elapsed
   // between the sampling date and the present. Thus, older times have larger dates.
   void InitializeParameters(const TagDoubleMap& tag_date_map);
+
+  void SetHeightRatios(const std::vector<double>& height_ratios);
 
   TagDoubleMap TagDateMapOfDateVector(std::vector<double> leaf_date_vector);
 
