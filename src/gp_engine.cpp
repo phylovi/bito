@@ -101,33 +101,7 @@ void GPEngine::operator()(const GPOperations::EvolveLeafward& op) {
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
-  std::cout << "Starting branch length: " << branch_lengths_[op.branch_length_idx] << std::endl;
   BrentOptimization(op);
-  std::cout << "after brent: " << branch_lengths_(op.branch_length_idx) << std::endl
-            << std::endl;
-}
-
-void GPEngine::operator()(const GPOperations::OptimizeLeafward& op) {
-  //Failwith("OptimizeRootward unimplemented for now.");
-  // Update q_.
-  size_t range_length = op.stop_idx - op.start_idx;
-  if (range_length == 1)
-    return;
-
-  auto segment = log_likelihoods_.segment(op.start_idx, op.stop_idx-op.start_idx);
-  double log_norm = NumericalUtils::LogSum(segment);
-  segment = segment.array() - log_norm;
-  q_.segment(op.start_idx, op.stop_idx-op.start_idx) = segment.array().exp();
-  std::cout << "Updated SBN params: \n";
-  for (size_t i = op.start_idx; i < op.stop_idx; i++) {
-    std::cout << q_(i) << " ";
-  }
-  std::cout << "\n";
-  
-  // Update branch lengths.
-  for (size_t i = op.start_idx; i < op.stop_idx; i++) {
-    //BrentOptimization(op);
-  }
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
@@ -259,4 +233,3 @@ void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeBranchLeng
   branch_lengths_(op.branch_length_idx) = branch_length;
   log_likelihoods_(op.branch_length_idx) = log_likelihood;
 }
-

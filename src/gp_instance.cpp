@@ -511,8 +511,8 @@ void GPInstance::AddLeafwardLikelihoodOperations(std::vector<size_t> child_idxs,
   }
 }
 
-void GPInstance::AddLeafwardOptimizeOperations(const Bitset &subsplit,
-                                               GPOperationVector &operations)
+void GPInstance::OptimizeSBNParameters(const Bitset &subsplit,
+                                       GPOperationVector &operations)
 {
   if (subsplit2range_.count(subsplit)) {
     auto param_range = subsplit2range_[subsplit];
@@ -601,38 +601,36 @@ void GPInstance::SetLeafwardZero()
 
 }
 
-void GPInstance::TrainLikelihoodEM(double tol, size_t max_iter) {
-  InitializeGPEngine();
+void GPInstance::BranchLengthOptimization()
+{
+  GPOperationVector operations;
+  for (size_t node_idx : leafward_order_) {
+    auto node = dag_nodes_[node_idx];
+    for (size_t child_idx : dag_nodes_[node_idx]->GetLeafwardSorted()) {
+      auto child_node = dag_nodes_[child_idx];
+      size_t pcsp_idx = pcsp_indexer_[node->GetBitset() + child_node->GetBitset()];
+      operations.push_back(OptimizeBranchLength{0, child_idx, node_idx, pcsp_idx});
+    }
+  }
+  GetEngine()->ProcessOperations(operations);
+}
 
-  // Perform 1st rootward pass.
-  RootwardPass(rootward_order_);
-  // Reset marginal likelihood.
-  GetEngine()->ResetLogMarginalLikelihood();
-  double curr_log_lik = DOUBLE_NEG_INF;
+void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
 
-  // EM Loop: LeafwardPass, RootwardPass.
-  for (size_t i = 0; i < 5; i++) {
-    std::cout << "EM iter: " << i << std::endl;
-    SetLeafwardZero();
-    LeafwardPass(leafward_order_);
-    GetEngine()->ResetLogMarginalLikelihood();
-    SetRootwardZero();
-    RootwardPass(rootward_order_);
-    double log_lik = GetEngine()->GetLogMarginalLikelihood();
-    std::cout << "LogLik: " << log_lik << std::endl;
+  PopulatePLVs();
+  ComputeLikelihoods();
+  double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
 
-    // Get loglikelihood and check for convergence.
-    if (abs(log_lik - curr_log_lik) < tol) {
+  for (size_t i = 0; i < max_iter; i++) {
+    BranchLengthOptimization();
+    PopulatePLVs();
+    ComputeLikelihoods();
+    double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
+    if (abs(current_marginal_log_lik - marginal_log_lik) < tol) {
       break;
     }
-    curr_log_lik = log_lik;
+    current_marginal_log_lik = marginal_log_lik;
   }
-
-  // Unit test:
-  // - Subsplit support has exactly one tree. I know the exact likelihood.
-  // Perform one iteration of two pass algorithm, then I should get the likelhood of the data.
-  // - Add another test: compute likelihood on two trees, compute it using DAG using two pass algorithm, without optimization.
-  // Replace subsplit2range_ by parent_to_range_.
 }
 
 void GPInstance::PopulatePLVs()
@@ -682,9 +680,4 @@ void GPInstance::ComputeLikelihoods()
   }
 
   GetEngine()->ProcessOperations(operations);
-}
-
-SitePattern GPInstance::GetSitePattern() {
-  SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-  return site_pattern;
 }

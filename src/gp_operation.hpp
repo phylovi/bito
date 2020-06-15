@@ -116,15 +116,12 @@ struct OptimizeBranchLength {
   size_t dest_idx;
   size_t leafward_idx;
   size_t rootward_idx;
-  //size_t branch_length_idx;
-  size_t start_idx, stop_idx;
+  size_t branch_length_idx;
   StringSizePairVector guts() const {
     return {{"dest_idx", dest_idx},
             {"leafward_idx", leafward_idx},
             {"rootward_idx", rootward_idx},
-            {"start_idx", start_idx},
-            {"end_idx", stop_idx}
-    };
+            {"branch_length_idx", branch_length_idx}};
   }
 };
 
@@ -144,8 +141,8 @@ using GPOperation =
     std::variant<GPOperations::Zero, GPOperations::SetToStationaryDistribution,
                  GPOperations::WeightedSumAccumulate, GPOperations::Multiply,
                  GPOperations::Likelihood, GPOperations::EvolveRootward,
-                 GPOperations::EvolveLeafward, GPOperations::OptimizeRootward,
-                 GPOperations::OptimizeLeafward, GPOperations::UpdateSBNProbabilities,
+                 GPOperations::EvolveLeafward, GPOperations::OptimizeBranchLength,
+                 GPOperations::UpdateSBNProbabilities,
                  GPOperations::MarginalLikelihood>;
 
 using GPOperationVector = std::vector<GPOperation>;
