@@ -103,7 +103,7 @@ for d in glob.glob(os.path.join(pybind11.get_include(), "python*/")):
     env.Append(CPPPATH=d)
 
 # pyenv installs the python headers elsewhere
-for d in glob.glob(os.path.join(pybind11.get_include(),"../../../../../include/*")):
+for d in glob.glob(os.path.join(pybind11.get_include(),"../../../../../include/python*")):
 	env.Append(CPPPATH=d)
 
 beagle_lib = os.path.join(beagle_prefix, "lib")
