@@ -14,10 +14,6 @@
 //
 // n = time difference between this node's height and that of its earliest descendant E
 // d = time difference between the parent's height and that of E.
-//
-// The node_heights_ and node_bounds_ are needed to do gradient calculation, but they
-// are secondary to the node_ratios_, which is what we actually use, e.g. for the
-// variational parameterization.
 
 #ifndef SRC_ROOTED_TREE_HPP_
 #define SRC_ROOTED_TREE_HPP_
@@ -49,12 +45,12 @@ class RootedTree : public Tree {
   std::vector<double> height_ratios_;
   // The actual node heights for all nodes.
   std::vector<double> node_heights_;
-  // The lower bound for the height of each node. This is set to be the maximum of the
-  // current height of the two children.
+  // The lower bound for the height of each node, which is the maximum of the tip dates
+  // across all of the descendants of the node.
   std::vector<double> node_bounds_;
-  // One substitution rate per branch.
+  // The per-branch substitution rates.
   std::vector<double> rates_;
-  // Number of substitution rates (e.g 1 rate for strict clock)
+  // Number of substitution rates (e.g. 1 rate for strict clock)
   size_t rate_count_;
 };
 
@@ -82,6 +78,10 @@ TEST_CASE("RootedTree") {
     CHECK_EQ(correct_node_bounds[i], tree.node_bounds_[i]);
   }
   // Test ratios to heights.
+  const double arbitrary_dummy_number = -5.;
+  std::fill(tree.LeafCount() + tree.node_heights_.begin(),  // First internal node.
+            tree.node_heights_.end() - 1,                   // Last internal node.
+            arbitrary_dummy_number);
   tree.SetHeightRatios(correct_height_ratios);
   for (size_t i = 0; i < correct_node_heights.size(); ++i) {
     CHECK_EQ(correct_node_heights[i], tree.node_heights_[i]);
