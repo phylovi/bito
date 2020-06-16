@@ -81,6 +81,11 @@ TEST_CASE("RootedTree") {
     CHECK_EQ(correct_node_heights[i], tree.node_heights_[i]);
     CHECK_EQ(correct_node_bounds[i], tree.node_bounds_[i]);
   }
+  // Test ratios to heights.
+  tree.SetHeightRatios(correct_height_ratios);
+  for (size_t i = 0; i < correct_node_heights.size(); ++i) {
+    CHECK_EQ(correct_node_heights[i], tree.node_heights_[i]);
+  }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_ROOTED_TREE_HPP_
