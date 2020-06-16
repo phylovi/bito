@@ -80,8 +80,7 @@ TEST_CASE("RootedTree") {
   // Test ratios to heights.
   const double arbitrary_dummy_number = -5.;
   std::fill(tree.LeafCount() + tree.node_heights_.begin(),  // First internal node.
-            tree.node_heights_.end() - 1,                   // Last internal node.
-            arbitrary_dummy_number);
+            tree.node_heights_.end(), arbitrary_dummy_number);
   tree.SetHeightRatios(correct_height_ratios);
   for (size_t i = 0; i < correct_node_heights.size(); ++i) {
     CHECK_EQ(correct_node_heights[i], tree.node_heights_[i]);
