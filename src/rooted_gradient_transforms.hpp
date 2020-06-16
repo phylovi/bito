@@ -46,4 +46,3 @@ std::vector<double> RatioGradientOfBranchGradient(
 
 std::vector<double> RatioGradientOfHeightGradient(
     const RootedTree &tree, const std::vector<double> &height_gradient);
-
