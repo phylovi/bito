@@ -31,7 +31,7 @@ Doing so will install the conda compiler toolchain, this will mess up our compil
 
 For your first build, do
 
-* `git submodule update`
+* `git submodule update --init --recursive`
 * `scons`
 * Respond to interactive prompts about where `hmc-clock` BEAGLE is installed
 * `conda activate libsbn`
