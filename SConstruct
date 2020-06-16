@@ -102,6 +102,10 @@ env = Environment(
 for d in glob.glob(os.path.join(pybind11.get_include(), "python*/")):
     env.Append(CPPPATH=d)
 
+# pyenv installs the python headers elsewhere
+for d in glob.glob(os.path.join(pybind11.get_include(),"../../../../../include/*")):
+	env.Append(CPPPATH=d)
+
 beagle_lib = os.path.join(beagle_prefix, "lib")
 beagle_include = os.path.join(beagle_prefix, "include/libhmsbeagle-1")
 
@@ -111,7 +115,6 @@ for path in [beagle_lib, beagle_include]:
 
 env.Append(LIBPATH=beagle_lib)
 env.Append(CPPPATH=beagle_include)
-
 
 def perhaps_set_env(key, value):
     if key not in env:
@@ -123,6 +126,7 @@ if platform.system() == "Darwin":
     perhaps_set_env("CXX", "clang")
     env.Append(DYLD_LIBRARY_PATH=beagle_lib)
     env.Append(LINKFLAGS=["-undefined", "dynamic_lookup"])
+    env.Append(CXXFLAGS=["-D_LIBCPP_DISABLE_AVAILABILITY"])
 elif platform.system() == "Linux":
     perhaps_set_env("CC", "gcc")
     perhaps_set_env("CXX", "g++")
