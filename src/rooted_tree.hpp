@@ -34,7 +34,8 @@ class RootedTree : public Tree {
   // between the sampling date and the present. Thus, older times have larger dates.
   void InitializeParameters(const TagDoubleMap& tag_date_map);
 
-  void SetHeightRatios(const std::vector<double>& height_ratios);
+  // Set node_heights_ so that they have the given height ratios.
+  void SetNodeHeightsViaHeightRatios(const std::vector<double>& height_ratios);
 
   TagDoubleMap TagDateMapOfDateVector(std::vector<double> leaf_date_vector);
 
@@ -81,7 +82,7 @@ TEST_CASE("RootedTree") {
   const double arbitrary_dummy_number = -5.;
   std::fill(tree.LeafCount() + tree.node_heights_.begin(),  // First internal node.
             tree.node_heights_.end(), arbitrary_dummy_number);
-  tree.SetHeightRatios(correct_height_ratios);
+  tree.SetNodeHeightsViaHeightRatios(correct_height_ratios);
   for (size_t i = 0; i < correct_node_heights.size(); ++i) {
     CHECK_EQ(correct_node_heights[i], tree.node_heights_[i]);
   }

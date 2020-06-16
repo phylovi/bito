@@ -62,8 +62,8 @@ void RootedTree::InitializeParameters(
       });
 }
 
-// Initialize internal node heights from height_ratios.
-void RootedTree::SetHeightRatios(const std::vector<double>& height_ratios) {
+void RootedTree::SetNodeHeightsViaHeightRatios(
+    const std::vector<double>& height_ratios) {
   size_t leaf_count = LeafCount();
   size_t root_id = Topology()->Id();
   Topology()->TripleIdPreOrderBifurcating([&root_id, &leaf_count, &height_ratios, this](
