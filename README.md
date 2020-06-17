@@ -123,7 +123,7 @@ Add a test for every new feature.
 ## Contributors
 
 * Erick Matsen ([@matsen](https://github.com/matsen)): implementation, design, janitorial duties
-* Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation of substitution models and BEAGLE likelihoods/gradients, design
+* Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation of substitution models and likelihoods/gradients, design
 * Seong-Hwan Jun ([@junseonghwan](https://github.com/junseonghwan)): implementation of SBN gradients, design
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design

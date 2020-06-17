@@ -102,7 +102,7 @@ class SplitModel(BranchModel):
         return self.scalar_model.sample_and_gradients(px_branch_representation)
 
     def scalar_grad(
-        self, theta_sample, branch_gradients, px_branch_to_split, dg_dpsi, dlog_qg_dpsi
+        self, theta_sample, phylo_gradients, px_branch_to_split, dg_dpsi, dlog_qg_dpsi
     ):
         """Do a gradient for the scalar parameters in terms of splits.
 
@@ -112,7 +112,8 @@ class SplitModel(BranchModel):
         """
         # Calculate the gradient of the log unnormalized posterior.
         dlogp_dtheta = np.zeros_like(theta_sample)
-        for particle_idx, (_, log_grad_raw) in enumerate(branch_gradients):
+        for particle_idx, phylo_gradient in enumerate(phylo_gradients):
+            log_grad_raw = phylo_gradient.branch_lengths
             # This :-2 is because of the two trailing zeroes that appear at the end of
             # the gradient.
             dlogp_dtheta[particle_idx, :] = np.array(log_grad_raw, copy=False)[:-2]
