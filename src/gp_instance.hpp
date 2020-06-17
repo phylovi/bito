@@ -93,16 +93,13 @@ class GPInstance {
                                                   bool rotated,
                                                   GPOperationVector &operations);
   void AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
-                                                  bool rotated,
                                                   GPOperationVector &operations);
-  void LeafwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
-                                               GPOperationVector &operations);
   void AddLeafwardLikelihoodOperations(std::vector<size_t> child_idxs,
                                        size_t parent_idx,
                                        const Bitset &parent_subsplit,
                                        GPOperationVector &operations);
   void OptimizeSBNParameters(const Bitset &subsplit,
-                                     GPOperationVector &operations);
+                             GPOperationVector &operations);
   
   void RootwardPass(std::vector<size_t> visit_order);
   void LeafwardPass(std::vector<size_t> visit_order);

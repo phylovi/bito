@@ -446,28 +446,6 @@ void GPInstance::AddRootwardWeightedSumAccumulateOperations(
 }
 
 void GPInstance::AddLeafwardWeightedSumAccumulateOperations(
-    std::shared_ptr<DAGNode> node,
-    bool rotated,
-    GPOperationVector &operations)
-{
-  std::vector<size_t> child_idxs = rotated ? node->GetLeafwardRotated() :
-                                             node->GetLeafwardSorted();
-  auto parent_subsplit = rotated ? node->GetBitset().RotateSubsplit() :
-                                   node->GetBitset();
-  PlvType plv_type = rotated ? PlvType::R_TILDE : PlvType::R;
-  for (size_t child_idx : child_idxs) {
-    auto child_node = dag_nodes_[child_idx];
-    auto child_subsplit = child_node->GetBitset();
-    auto pcsp_idx = pcsp_indexer_[parent_subsplit + child_subsplit];
-
-    operations.push_back(WeightedSumAccumulate{
-      GetPlvIndex(PlvType::R_HAT, dag_nodes_.size(), child_idx),
-      pcsp_idx,
-      GetPlvIndex(plv_type, dag_nodes_.size(), node->Id())});
-  }
-}
-
-void GPInstance::LeafwardWeightedSumAccumulateOperations(
      std::shared_ptr<DAGNode> node,
      GPOperationVector &operations)
 {
@@ -490,7 +468,7 @@ void GPInstance::LeafwardWeightedSumAccumulateOperations(
     operations.push_back(WeightedSumAccumulate{
       GetPlvIndex(PlvType::R_HAT, dag_nodes_.size(), node->Id()),
       pcsp_idx,
-      GetPlvIndex(PlvType::R, dag_nodes_.size(), parent_node->Id())});
+      GetPlvIndex(PlvType::R_TILDE, dag_nodes_.size(), parent_node->Id())});
   }
 }
 
@@ -556,7 +534,7 @@ void GPInstance::LeafwardPass(std::vector<size_t> visit_order)
     // 1. WeightedSumAccumulate: rhat(s) += \sum_t q(s|t) P'(s|t) r(t)
     // 2. Multiply: r(s) = rhat(s) \circ phat(s_tilde).
     // 3. Multiply: r(s_tilde) = rhat(s) \circ phat(s).
-    LeafwardWeightedSumAccumulateOperations(node, operations);
+    AddLeafwardWeightedSumAccumulateOperations(node, operations);
     operations.push_back(Multiply{
       GetPlvIndex(PlvType::R, dag_nodes_.size(), node_idx),
       GetPlvIndex(PlvType::R_HAT, dag_nodes_.size(), node_idx),
@@ -606,31 +584,65 @@ void GPInstance::BranchLengthOptimization()
   GPOperationVector operations;
   for (size_t node_idx : leafward_order_) {
     auto node = dag_nodes_[node_idx];
+
+    // Update R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
+    if (!node->IsRoot()) {
+      operations.push_back(Zero{GetPlvIndex(PlvType::R_HAT, dag_nodes_.size(), node_idx)});
+      AddLeafwardWeightedSumAccumulateOperations(node, operations);
+    }
+
     for (size_t child_idx : dag_nodes_[node_idx]->GetLeafwardSorted()) {
       auto child_node = dag_nodes_[child_idx];
       size_t pcsp_idx = pcsp_indexer_[node->GetBitset() + child_node->GetBitset()];
-      operations.push_back(OptimizeBranchLength{0, child_idx, node_idx, pcsp_idx});
+      operations.push_back(OptimizeBranchLength{
+        0,
+        GetPlvIndex(PlvType::P, dag_nodes_.size(), child_idx),
+        GetPlvIndex(PlvType::R, dag_nodes_.size(), node_idx),
+        pcsp_idx});
+    }
+    // Update PLV entry for P_HAT(t): recall P_HAT(t) = \sum_{s} q(s|t) P(s|t) p(s)
+    // and that P(s|t) has changed as a result of optimization.
+    // Zero out P_HAT.
+    operations.push_back(Zero{GetPlvIndex(PlvType::P_HAT, dag_nodes_.size(), node_idx)});
+    AddRootwardWeightedSumAccumulateOperations(node, false, operations);
+    // Update PLV entry for R_TILDE(t) = P_HAT(t) \circ R_HAT(t).
+    operations.push_back(Multiply{
+      GetPlvIndex(PlvType::R_TILDE, dag_nodes_.size(), node_idx),
+      GetPlvIndex(PlvType::P_HAT, dag_nodes_.size(), node_idx),
+      GetPlvIndex(PlvType::R_HAT, dag_nodes_.size(), node_idx)
+    });
+
+    for (size_t child_idx : dag_nodes_[node_idx]->GetLeafwardRotated()) {
+      auto child_node = dag_nodes_[child_idx];
+      size_t pcsp_idx = pcsp_indexer_[node->GetBitset().RotateSubsplit() + child_node->GetBitset()];
+      operations.push_back(OptimizeBranchLength{
+        0,
+        GetPlvIndex(PlvType::P, dag_nodes_.size(), child_idx),
+        GetPlvIndex(PlvType::R_TILDE, dag_nodes_.size(), node_idx),
+        pcsp_idx});
+    }
+    // Update PLV entry for P_HAT_TILDE(t).
+    // Update PLV entry for R(t) = P_HAT_TILDE(t) \circ R_HAT(t).
+    // Zero out P_HAT_TILDE.
+    operations.push_back(Zero{GetPlvIndex(PlvType::P_HAT_TILDE, dag_nodes_.size(), node_idx)});
+    AddRootwardWeightedSumAccumulateOperations(node, true, operations);
+    // Update PLV entry for R_TILDE(t) = P_HAT(t) \circ R_HAT(t).
+    operations.push_back(Multiply{
+      GetPlvIndex(PlvType::R, dag_nodes_.size(), node_idx),
+      GetPlvIndex(PlvType::P_HAT_TILDE, dag_nodes_.size(), node_idx),
+      GetPlvIndex(PlvType::R_HAT, dag_nodes_.size(), node_idx)
+    });
+
+    // Update P(t) = P_HAT(t) \circ P_HAT_TILDE(t).
+    if (!node->IsLeaf()) {
+      operations.push_back(Multiply{
+        GetPlvIndex(PlvType::P, dag_nodes_.size(), node_idx),
+        GetPlvIndex(PlvType::P_HAT, dag_nodes_.size(), node_idx),
+        GetPlvIndex(PlvType::P_HAT_TILDE, dag_nodes_.size(), node_idx)
+      });
     }
   }
   GetEngine()->ProcessOperations(operations);
-}
-
-void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
-
-  PopulatePLVs();
-  ComputeLikelihoods();
-  double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-
-  for (size_t i = 0; i < max_iter; i++) {
-    BranchLengthOptimization();
-    PopulatePLVs();
-    ComputeLikelihoods();
-    double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-    if (abs(current_marginal_log_lik - marginal_log_lik) < tol) {
-      break;
-    }
-    current_marginal_log_lik = marginal_log_lik;
-  }
 }
 
 void GPInstance::PopulatePLVs()
@@ -680,4 +692,35 @@ void GPInstance::ComputeLikelihoods()
   }
 
   GetEngine()->ProcessOperations(operations);
+}
+
+void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
+
+  SetRootwardZero();
+  SetLeafwardZero();
+  GetEngine()->ResetLogMarginalLikelihood();
+  PopulatePLVs();
+  ComputeLikelihoods();
+  double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
+
+  for (size_t i = 0; i < max_iter; i++) {
+    std::cout << "Iteration: " << (i + 1) << std::endl;
+    BranchLengthOptimization();
+    GetEngine()->ResetLogMarginalLikelihood();
+    ComputeLikelihoods();
+    double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
+    std::cout << "Current marginal log likelihood: ";
+    std::cout << std::setprecision(9) << current_marginal_log_lik << std::endl;
+    std::cout << "New marginal log likelihood: ";
+    std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
+    if (marginal_log_lik < current_marginal_log_lik) {
+      std::cout << "Marginal log likelihood decreased.\n";
+      //break;
+    }
+    if (abs(current_marginal_log_lik - marginal_log_lik) < tol) {
+      std::cout << "Converged.\n";
+      break;
+    }
+    current_marginal_log_lik = marginal_log_lik;
+  }
 }
