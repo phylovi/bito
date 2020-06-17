@@ -7,6 +7,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
+#include "rooted_gradient_transforms.hpp"
 #include "rooted_sbn_instance.hpp"
 #include "unrooted_sbn_instance.hpp"
 
@@ -48,8 +49,14 @@ PYBIND11_MODULE(libsbn, m) {
   py::class_<RootedTree>(m, "RootedTree", "A rooted tree with branch lengths.",
                          py::buffer_protocol())
       .def("parent_id_vector", &RootedTree::ParentIdVector)
+      .def("set_node_heights_via_height_ratios",
+           &RootedTree::SetNodeHeightsViaHeightRatios)
       .def_static("of_parent_id_vector", &RootedTree::OfParentIdVector)
-      .def_readwrite("branch_lengths", &RootedTree::branch_lengths_);
+      .def_readwrite("branch_lengths", &RootedTree::branch_lengths_)
+      .def_readwrite("height_ratios", &RootedTree::height_ratios_)
+      .def_readwrite("node_heights", &RootedTree::node_heights_)
+      .def_readwrite("node_bounds", &RootedTree::node_bounds_)
+      .def_readwrite("rates", &RootedTree::rates_);
 
   // CLASS
   // RootedTreeCollection
@@ -294,6 +301,10 @@ PYBIND11_MODULE(libsbn, m) {
 
       // ** Member variables
       .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
+
+  // FUNCTIONS
+  m.def("ratio_gradient_of_height_gradient", &RatioGradientOfHeightGradient,
+        "Obtain a ratio gradient from a height gradient.");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
