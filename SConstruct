@@ -123,6 +123,7 @@ if platform.system() == "Darwin":
     perhaps_set_env("CXX", "clang")
     env.Append(DYLD_LIBRARY_PATH=beagle_lib)
     env.Append(LINKFLAGS=["-undefined", "dynamic_lookup"])
+    env.Append(CXXFLAGS=["-D_LIBCPP_DISABLE_AVAILABILITY"])
 elif platform.system() == "Linux":
     perhaps_set_env("CC", "gcc")
     perhaps_set_env("CXX", "g++")
