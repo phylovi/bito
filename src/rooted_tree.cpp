@@ -66,11 +66,10 @@ void RootedTree::SetNodeHeightsViaHeightRatios(
     const std::vector<double>& height_ratios) {
   size_t leaf_count = LeafCount();
   size_t root_id = Topology()->Id();
-  Topology()->TripleIdPreOrderBifurcating([&root_id, &leaf_count, &height_ratios, this](
+  node_heights_[root_id] = height_ratios[root_id - leaf_count];
+  Topology()->TripleIdPreOrderBifurcating([&leaf_count, &height_ratios, this](
                                               int node_id, int, int parent_id) {
-    if (node_id == root_id) {
-      node_heights_[node_id] = height_ratios[node_id - leaf_count];
-    } else if (node_id >= leaf_count) {
+    if (node_id >= leaf_count) {
       node_heights_[node_id] = node_bounds_[node_id] +
                                height_ratios[node_id - leaf_count] *
                                    (node_heights_[parent_id] - node_bounds_[node_id]);
