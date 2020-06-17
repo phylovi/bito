@@ -76,8 +76,8 @@ class UnrootedSBNInstance : public SBNInstance {
 
   std::vector<double> LogLikelihoods();
 
-  // For each loaded tree, returns a pair of (likelihood, gradient).
-  std::vector<UnrootedTreeGradient> Gradients();
+  // For each loaded tree, return the phylogenetic gradient.
+  std::vector<UnrootedTreeGradient> PhyloGradients();
   // Topology gradient for unrooted trees.
   // Assumption: This function is called from Python side
   // after the trees (both the topology and the branch lengths) are sampled.
@@ -250,7 +250,7 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
         CHECK_LT(fabs(likelihoods[i] - pybeagle_likelihoods[i]), 0.00011);
       }
 
-      auto gradients = inst.Gradients();
+      auto gradients = inst.PhyloGradients();
       // Test the log likelihoods.
       for (size_t i = 0; i < likelihoods.size(); i++) {
         CHECK_LT(fabs(gradients[i].log_likelihood_ - pybeagle_likelihoods[i]), 0.00011);
@@ -282,7 +282,7 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
       }
       // Likelihoods from BranchGradients()
       inst.PrepareForPhyloLikelihood(simple_specification, 1, {}, tip_state_option);
-      auto gradients_rescaling = inst.Gradients();
+      auto gradients_rescaling = inst.PhyloGradients();
       for (size_t i = 0; i < gradients_rescaling.size(); i++) {
         CHECK_LT(fabs(gradients_rescaling[i].log_likelihood_ - pybeagle_likelihoods[i]),
                  0.00011);
