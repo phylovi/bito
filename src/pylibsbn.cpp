@@ -51,6 +51,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("parent_id_vector", &RootedTree::ParentIdVector)
       .def("set_node_heights_via_height_ratios",
            &RootedTree::SetNodeHeightsViaHeightRatios)
+      .def_static("example", &RootedTree::Example)
       .def_static("of_parent_id_vector", &RootedTree::OfParentIdVector)
       .def_readwrite("branch_lengths", &RootedTree::branch_lengths_)
       .def_readwrite("height_ratios", &RootedTree::height_ratios_)
@@ -303,7 +304,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
 
   // FUNCTIONS
-  m.def("ratio_gradient_of_height_gradient", &RatioGradientOfHeightGradient,
+  m.def("ratio_gradient_of_height_gradient", &RatioGradientOfHeightGradientEigen,
         "Obtain a ratio gradient from a height gradient.");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your

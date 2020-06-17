@@ -18,6 +18,7 @@
 #ifndef SRC_ROOTED_TREE_HPP_
 #define SRC_ROOTED_TREE_HPP_
 
+#include "eigen_sugar.hpp"
 #include "tree.hpp"
 
 class RootedTree : public Tree {
@@ -35,7 +36,7 @@ class RootedTree : public Tree {
   void InitializeParameters(const TagDoubleMap& tag_date_map);
 
   // Set node_heights_ so that they have the given height ratios.
-  void SetNodeHeightsViaHeightRatios(const std::vector<double>& height_ratios);
+  void SetNodeHeightsViaHeightRatios(EigenConstVectorXdRef height_ratios);
 
   TagDoubleMap TagDateMapOfDateVector(std::vector<double> leaf_date_vector);
 
@@ -53,6 +54,10 @@ class RootedTree : public Tree {
   std::vector<double> rates_;
   // Number of substitution rates (e.g. 1 rate for strict clock)
   size_t rate_count_;
+
+  // The tree depicted in
+  // https://github.com/phylovi/libsbn/issues/187#issuecomment-618421183
+  static RootedTree Example();
 };
 
 inline bool operator!=(const RootedTree& lhs, const RootedTree& rhs) {
@@ -63,11 +68,7 @@ inline bool operator!=(const RootedTree& lhs, const RootedTree& rhs) {
 TEST_CASE("RootedTree") {
   // To understand this test, please see
   // https://github.com/phylovi/libsbn/issues/187#issuecomment-618421183
-  auto topology = Node::ExampleTopologies()[3];
-  RootedTree tree(Tree(topology, {2., 1.5, 2., 1., 2.5, 2.5, 0.}));
-  std::vector<double> date_vector({5., 3., 0., 1.});
-  auto tag_date_map = tree.TagDateMapOfDateVector(date_vector);
-  tree.InitializeParameters(tag_date_map);
+  auto tree = RootedTree::Example();
   std::vector<double> correct_height_ratios({1. / 3.5, 1.5 / 4., 7.});
   for (size_t i = 0; i < correct_height_ratios.size(); ++i) {
     CHECK_EQ(correct_height_ratios[i], tree.height_ratios_[i]);
@@ -82,7 +83,10 @@ TEST_CASE("RootedTree") {
   const double arbitrary_dummy_number = -5.;
   std::fill(tree.LeafCount() + tree.node_heights_.begin(),  // First internal node.
             tree.node_heights_.end(), arbitrary_dummy_number);
-  tree.SetNodeHeightsViaHeightRatios(correct_height_ratios);
+  EigenVectorXd height_ratios(3);
+  // TODO code dup
+  height_ratios << 1. / 3.5, 1.5 / 4., 7.;
+  tree.SetNodeHeightsViaHeightRatios(height_ratios);
   for (size_t i = 0; i < correct_node_heights.size(); ++i) {
     CHECK_EQ(correct_node_heights[i], tree.node_heights_[i]);
   }

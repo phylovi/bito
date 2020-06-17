@@ -41,6 +41,14 @@ def hello_demo():
     print(np.array(inst.log_likelihoods()))
 
 
+def rooted_demo():
+    print("rooted demo:")
+    tree = libsbn.RootedTree.example()
+    height_ratios = np.array([1.0 / 3.5, 1.5 / 4.0, 7.0])
+    tree.set_node_heights_via_height_ratios(height_ratios)
+    print(libsbn.ratio_gradient_of_height_gradient(tree, height_ratios))
+
+
 def sampling_and_indexers_demo():
     """Demonstrate sampling and indexers.
 
@@ -154,6 +162,7 @@ def test_sbn_unrooted_instance():
     """Test the libsbn unrooted_instance."""
 
     hello_demo()
+    rooted_demo()
     sampling_and_indexers_demo()
     inst = ds1_support_test()
     ds1_phylo_model_demo(inst)
