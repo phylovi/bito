@@ -84,7 +84,7 @@ TEST_CASE("RootedTree") {
   std::fill(tree.LeafCount() + tree.node_heights_.begin(),  // First internal node.
             tree.node_heights_.end(), arbitrary_dummy_number);
   EigenVectorXd height_ratios(3);
-  // TODO code dup
+  // Issue #205: eliminate this code duplication.
   height_ratios << 1. / 3.5, 1.5 / 4., 7.;
   tree.SetNodeHeightsViaHeightRatios(height_ratios);
   for (size_t i = 0; i < correct_node_heights.size(); ++i) {
