@@ -8,13 +8,6 @@
 #include <numeric>
 #include "rooted_tree.hpp"
 
-// Calculation of the substitution rate gradient.
-// \partial{L}/\partial{r_i} = \partial{L}/\partial{b_i} \partial{b_i}/\partial{r_i}
-// For strict clock:
-// \partial{L}/\partial{r} = \sum_i \partial{L}/\partial{r_i}
-std::vector<double> ClockGradient(const RootedTree &tree,
-                                  const std::vector<double> &branch_gradient);
-
 // \partial{L}/\partial{t_k} = \sum_j \partial{L}/\partial{b_j}
 // \partial{b_j}/\partial{t_k}
 std::vector<double> HeightGradient(const RootedTree &tree,

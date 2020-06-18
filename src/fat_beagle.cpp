@@ -330,6 +330,31 @@ void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
       sister_id                    // matrices of sibling
   });
 }
+// Calculation of the substitution rate gradient.
+// \partial{L}/\partial{r_i} = \partial{L}/\partial{b_i} \partial{b_i}/\partial{r_i}
+// For strict clock:
+// \partial{L}/\partial{r} = \sum_i \partial{L}/\partial{r_i}
+std::vector<double> ClockGradient(const RootedTree &tree,
+                                  const std::vector<double> &branch_gradient) {
+  int root_id = static_cast<int>(tree.Topology()->Id());
+  std::vector<double> rate_gradient(root_id, 0);
+  for (size_t i = 0; i < root_id; i++) {
+    rate_gradient[i] = branch_gradient[i] * tree.branch_lengths_[i];
+  }
+
+  // Strict clock.
+  if (tree.rate_count_ == 1) {
+    return {std::accumulate(rate_gradient.cbegin(), rate_gradient.cend(), 0.0)};
+  }
+  // One rate per branch.
+  else if (tree.rate_count_ == tree.rates_.size()) {
+    return rate_gradient;
+  } else {
+    Failwith(
+        "The number of rates should be equal to 1 (i.e. strict clock) or equal to "
+        "the number of branches.");
+  }
+}
 
 UnrootedTreeGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
   auto tree = in_tree.Detrifurcate();
