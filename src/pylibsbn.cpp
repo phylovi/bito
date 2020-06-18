@@ -313,7 +313,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
 
   // FUNCTIONS
-  m.def("ratio_gradient_of_height_gradient", &RatioGradientOfHeightGradientEigen,
+  m.def("ratio_gradient_of_height_gradient", &RatioGradientOfHeightGradient,
         "Obtain a ratio gradient from a height gradient.");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your

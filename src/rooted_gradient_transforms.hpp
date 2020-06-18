@@ -10,35 +10,29 @@
 
 // \partial{L}/\partial{t_k} = \sum_j \partial{L}/\partial{b_j}
 // \partial{b_j}/\partial{t_k}
-std::vector<double> HeightGradient(const RootedTree &tree,
-                                   const std::vector<double> &branch_gradient);
+EigenVectorXd HeightGradient(const RootedTree &tree,
+                             EigenConstVectorXdRef branch_gradient);
 
-double GetNodePartial(size_t node_id, size_t leaf_count,
-                      const std::vector<double> &heights,
-                      const std::vector<double> &ratios,
-                      const std::vector<double> &bounds);
+double GetNodePartial(size_t node_id, size_t leaf_count, EigenConstVectorXdRef heights,
+                      EigenConstVectorXdRef ratios, EigenConstVectorXdRef bounds);
 
 // Calculate \partial{t_j}/\partial{r_k}
 double GetEpochGradientAddition(
-    size_t node_id, size_t child_id, size_t leaf_count,
-    const std::vector<double> &heights, const std::vector<double> &ratios,
-    const std::vector<double> &bounds,
-    const std::vector<double> &ratiosGradientUnweightedLogDensity);
+    size_t node_id, size_t child_id, size_t leaf_count, EigenConstVectorXdRef heights,
+    EigenConstVectorXdRef ratios, EigenConstVectorXdRef bounds,
+    EigenConstVectorXdRef ratiosGradientUnweightedLogDensity);
 
-std::vector<double> GetLogTimeArray(const RootedTree &tree);
+EigenVectorXd GetLogTimeArray(const RootedTree &tree);
 
 // Update ratio gradient with \partial{t_j}/\partial{r_k}
-std::vector<double> UpdateGradientUnWeightedLogDensity(
-    const RootedTree &tree, const std::vector<double> &gradient_height);
+EigenVectorXd UpdateGradientUnWeightedLogDensity(const RootedTree &tree,
+                                                 EigenConstVectorXdRef gradient_height);
 
 double UpdateHeightParameterGradientUnweightedLogDensity(
-    const RootedTree &tree, const std::vector<double> &gradient);
+    const RootedTree &tree, EigenConstVectorXdRef gradient);
 
-std::vector<double> RatioGradientOfHeightGradient(
-    const RootedTree &tree, const std::vector<double> &height_gradient);
+EigenVectorXd RatioGradientOfHeightGradient(const RootedTree &tree,
+                                            EigenConstVectorXdRef height_gradient);
 
-std::vector<double> RatioGradientOfBranchGradient(
-    const RootedTree &tree, const std::vector<double> &branch_gradient);
-
-EigenVectorXd RatioGradientOfHeightGradientEigen(const RootedTree &tree,
-                                                 EigenConstVectorXdRef height_gradient);
+EigenVectorXd RatioGradientOfBranchGradient(const RootedTree &tree,
+                                            std::vector<double> &branch_gradient);

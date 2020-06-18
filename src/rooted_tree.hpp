@@ -38,20 +38,20 @@ class RootedTree : public Tree {
   // Set node_heights_ so that they have the given height ratios.
   void SetNodeHeightsViaHeightRatios(EigenConstVectorXdRef height_ratios);
 
-  TagDoubleMap TagDateMapOfDateVector(std::vector<double> leaf_date_vector);
+  TagDoubleMap TagDateMapOfDateVector(EigenVectorXd leaf_date_vector);
 
   // This vector is of length equal to the number of internal nodes, and (except for the
   // last entry) has the node height ratios. The last entry is the root height.
   // The indexing is set up so that the ith entry has the node height ratio for the
   // (i+leaf_count)th node for all i except for the last.
-  std::vector<double> height_ratios_;
+  EigenVectorXd height_ratios_;
   // The actual node heights for all nodes.
-  std::vector<double> node_heights_;
+  EigenVectorXd node_heights_;
   // The lower bound for the height of each node, which is the maximum of the tip dates
   // across all of the descendants of the node.
-  std::vector<double> node_bounds_;
+  EigenVectorXd node_bounds_;
   // The per-branch substitution rates.
-  std::vector<double> rates_;
+  EigenVectorXd rates_;
   // Number of substitution rates (e.g. 1 rate for strict clock)
   size_t rate_count_;
 
@@ -69,26 +69,26 @@ TEST_CASE("RootedTree") {
   // To understand this test, please see
   // https://github.com/phylovi/libsbn/issues/187#issuecomment-618421183
   auto tree = RootedTree::Example();
-  std::vector<double> correct_height_ratios({1. / 3.5, 1.5 / 4., 7.});
+  EigenVectorXd correct_height_ratios(3);
+  correct_height_ratios << 1. / 3.5, 1.5 / 4., 7.;
   for (size_t i = 0; i < correct_height_ratios.size(); ++i) {
-    CHECK_EQ(correct_height_ratios[i], tree.height_ratios_[i]);
+    CHECK_EQ(correct_height_ratios[i], tree.height_ratios_(i));
   }
-  std::vector<double> correct_node_heights({5., 3., 0., 1., 2., 4.5, 7.});
-  std::vector<double> correct_node_bounds({5., 3., 0., 1., 1., 3., 5.});
+  EigenVectorXd correct_node_heights(7);
+  correct_node_heights << 5., 3., 0., 1., 2., 4.5, 7.;
+  EigenVectorXd correct_node_bounds(7);
+  correct_node_bounds << 5., 3., 0., 1., 1., 3., 5.;
   for (size_t i = 0; i < correct_node_heights.size(); ++i) {
-    CHECK_EQ(correct_node_heights[i], tree.node_heights_[i]);
-    CHECK_EQ(correct_node_bounds[i], tree.node_bounds_[i]);
+    CHECK_EQ(correct_node_heights[i], tree.node_heights_(i));
+    CHECK_EQ(correct_node_bounds[i], tree.node_bounds_(i));
   }
   // Test ratios to heights.
   const double arbitrary_dummy_number = -5.;
   std::fill(tree.LeafCount() + tree.node_heights_.begin(),  // First internal node.
             tree.node_heights_.end(), arbitrary_dummy_number);
-  EigenVectorXd height_ratios(3);
-  // Issue #205: eliminate this code duplication.
-  height_ratios << 1. / 3.5, 1.5 / 4., 7.;
-  tree.SetNodeHeightsViaHeightRatios(height_ratios);
+  tree.SetNodeHeightsViaHeightRatios(correct_height_ratios);
   for (size_t i = 0; i < correct_node_heights.size(); ++i) {
-    CHECK_EQ(correct_node_heights[i], tree.node_heights_[i]);
+    CHECK_EQ(correct_node_heights[i], tree.node_heights_(i));
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

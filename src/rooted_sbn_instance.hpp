@@ -49,13 +49,13 @@ std::vector<double> derivative_strict_clock(RootedSBNInstance& inst) {
 
   for (auto& tree : inst.tree_collection_.trees_) {
     rates.push_back(tree.rates_[0]);
-    tree.rates_.assign(tree.rates_.size(), rates.back() - eps);
+    tree.rates_.setConstant(tree.rates_.size(), rates.back() - eps);
   }
   auto lm = inst.LogLikelihoods();
 
   int i = 0;
   for (auto& tree : inst.tree_collection_.trees_) {
-    tree.rates_.assign(tree.rates_.size(), rates[i++] + eps);
+    tree.rates_.setConstant(tree.rates_.size(), rates[i++] + eps);
   }
   auto lp = inst.LogLikelihoods();
 
@@ -148,7 +148,7 @@ TEST_CASE("RootedSBNInstance: gradients") {
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
   inst.PrepareForPhyloLikelihood(simple_specification, 1);
   for (auto& tree : inst.tree_collection_.trees_) {
-    tree.rates_.assign(tree.rates_.size(), 0.001);
+    tree.rates_.setConstant(tree.rates_.size(), 0.001);
   }
 
   auto likelihood = inst.LogLikelihoods();
@@ -181,7 +181,7 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   inst.PrepareForPhyloLikelihood(simple_specification, 1);
 
   for (auto& tree : inst.tree_collection_.trees_) {
-    tree.rates_.assign(tree.rates_.size(), 0.001);
+    tree.rates_.setConstant(tree.rates_.size(), 0.001);
   }
 
   auto likelihood = inst.LogLikelihoods();
