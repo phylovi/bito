@@ -89,6 +89,7 @@ class GPInstance {
   void ConstructDAG();
   void BuildPCSPIndexer();
   void BranchLengthOptimization();
+  GPOperationVector BranchLengthOptimization2();
   void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
                                                   bool rotated,
                                                   GPOperationVector &operations);
@@ -100,7 +101,9 @@ class GPInstance {
                                        GPOperationVector &operations);
   void OptimizeSBNParameters(const Bitset &subsplit,
                              GPOperationVector &operations);
-  
+  void OptimizationSchedule(size_t node_id,
+                            std::unordered_set<size_t> visited_nodes,
+                            GPOperationVector &operations);
   void RootwardPass(std::vector<size_t> visit_order);
   void LeafwardPass(std::vector<size_t> visit_order);
   void InitializeGPEngine();
@@ -108,7 +111,7 @@ class GPInstance {
   void SetLeafwardZero();
   std::vector<size_t> LeafwardPassTraversal();
   std::vector<size_t> RootwardPassTraversal();
-
+  std::vector<SizePair> RootwardPassTraversalEdges();
 };
 
 #endif  // SRC_GP_INSTANCE_HPP_

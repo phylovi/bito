@@ -61,7 +61,7 @@ void GPEngine::operator()(const GPOperations::Zero& op) {
 void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
   auto& plv = plvs_.at(op.dest_idx);
   for (size_t row_idx = 0; row_idx < plv.rows(); ++row_idx) {
-    plv.row(row_idx).array() = stationary_distribution_(row_idx);
+    plv.row(row_idx).array() = q_(op.pcsp_idx) * stationary_distribution_(row_idx);
   }
 }
 
@@ -207,18 +207,21 @@ void GPEngine::InitializePLVsWithSitePatterns() {
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double branch_length) {
     SetTransitionMatrixToHaveBranchLength(branch_length);
-    auto result = q_[op.dest_idx] * plvs_.at(op.rootward_idx).transpose() *
+    auto result = q_[op.branch_length_idx] * plvs_.at(op.rootward_idx).transpose() *
                                     (transition_matrix_ * plvs_.at(op.leafward_idx));
     per_pattern_log_likelihoods_ = result.diagonal().array().log();
     double ret = -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
     return ret;
   };
-  std::cout<< "Current neg log likelihood: " << negative_log_likelihood(branch_lengths_(op.branch_length_idx)) << std::endl;
+  double current_value = negative_log_likelihood(branch_lengths_(op.branch_length_idx));
+  std::cout<< "Current neg log likelihood: " << current_value << std::endl;
   auto [branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
       negative_log_likelihood, min_branch_length_, max_branch_length_,
       significant_digits_for_optimization_, max_iter_for_optimization_);
-  branch_lengths_(op.branch_length_idx) = branch_length;
-  std::cout << "Updated neg log likelihood: " << neg_log_likelihood << std::endl;
+  std::cout << "New neg log likelihood: " << neg_log_likelihood << std::endl;
+  if (neg_log_likelihood < current_value) {
+    branch_lengths_(op.branch_length_idx) = branch_length;
+  }
 }
 
 void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op) {
