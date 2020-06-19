@@ -308,6 +308,35 @@ std::vector<size_t> GPInstance::LeafwardPassTraversal()
   return visit_order;
 }
 
+void LeafwardDepthFirstEdges(std::shared_ptr<DAGNode> node,
+                             std::shared_ptr<DAGNode> parent_node,
+                             std::vector<std::shared_ptr<DAGNode>> &dag_nodes,
+                             std::vector<SizePair> &visit_order)
+{
+  for (size_t child_id : node->GetLeafwardSorted()) {
+    LeafwardDepthFirstEdges(dag_nodes[child_id], node, dag_nodes, visit_order);
+  }
+  for (size_t child_id : node->GetLeafwardRotated()) {
+    LeafwardDepthFirstEdges(dag_nodes[child_id], node, dag_nodes, visit_order);
+  }
+  if (parent_node != 0) {
+    visit_order.push_back(std::make_pair(parent_node->Id(), node->Id()));
+  }
+}
+
+std::vector<SizePair> GPInstance::RootwardPassTraversalEdges()
+{
+  std::vector<SizePair> visit_order;
+  for (auto rootsplit : rootsplits_) {
+    size_t root_idx = subsplit_to_index_[rootsplit + ~rootsplit];
+    LeafwardDepthFirstEdges(dag_nodes_[root_idx],
+                            0,
+                            dag_nodes_,
+                            visit_order);
+  }
+  return visit_order;
+}
+
 std::vector<size_t> GPInstance::RootwardPassTraversal()
 {
   std::vector<size_t> visit_order;
@@ -392,9 +421,11 @@ void GPInstance::InitializeGPEngine()
   std::vector<GPOperation> operations;
   for (auto rootsplit : rootsplits_) {
     auto root_idx = subsplit_to_index_[rootsplit + ~rootsplit];
-    operations.push_back(SetToStationaryDistribution{GetPlvIndex(PlvType::R_HAT,
-                                                                 dag_nodes_.size(),
-                                                                 root_idx)});
+    size_t pcsp_idx = pcsp_indexer_[rootsplit + ~rootsplit];
+    operations.push_back(SetToStationaryDistribution{
+      GetPlvIndex(PlvType::R_HAT, dag_nodes_.size(), root_idx),
+      pcsp_idx
+    });
   }
 
   GetEngine()->ProcessOperations(operations);
@@ -579,6 +610,124 @@ void GPInstance::SetLeafwardZero()
 
 }
 
+void GPInstance::OptimizationSchedule(size_t node_id,
+                                      std::unordered_set<size_t> visited_nodes,
+                                      GPOperationVector &operations) {
+  visited_nodes.insert(node_id);
+  auto node = dag_nodes_[node_id];
+
+  if (!node->IsRoot()) {
+    // Compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
+    operations.push_back(Zero{GetPlvIndex(R_HAT, dag_nodes_.size(), node_id)});
+    for (size_t parent_id : node->GetRootwardSorted()) {
+      auto parent_node = dag_nodes_[parent_id];
+      size_t pcsp_idx = pcsp_indexer_[parent_node->GetBitset() + node->GetBitset()];
+      operations.push_back(WeightedSumAccumulate{
+        GetPlvIndex(R_HAT, dag_nodes_.size(), node_id),
+        pcsp_idx,
+        GetPlvIndex(R, dag_nodes_.size(), parent_id)
+      });
+    }
+    for (size_t parent_id : node->GetRootwardRotated()) {
+      auto parent_node = dag_nodes_[parent_id];
+      size_t pcsp_idx = pcsp_indexer_[parent_node->GetBitset().RotateSubsplit() + node->GetBitset()];
+      operations.push_back(WeightedSumAccumulate{
+        GetPlvIndex(R_HAT, dag_nodes_.size(), node_id),
+        pcsp_idx,
+        GetPlvIndex(R_TILDE, dag_nodes_.size(), parent_id)
+      });
+    }
+    
+    // Update r(s) and r_tilde(s)
+    operations.push_back(Multiply{
+      GetPlvIndex(R, dag_nodes_.size(), node_id),
+      GetPlvIndex(R_HAT, dag_nodes_.size(), node_id),
+      GetPlvIndex(P_HAT_TILDE, dag_nodes_.size(), node_id)
+    });
+    operations.push_back(Multiply{
+      GetPlvIndex(R_TILDE, dag_nodes_.size(), node_id),
+      GetPlvIndex(R_HAT, dag_nodes_.size(), node_id),
+      GetPlvIndex(P_HAT, dag_nodes_.size(), node_id)
+    });
+  }
+
+  if (node->IsLeaf())
+    return;
+
+  operations.push_back(Zero{GetPlvIndex(P_HAT, dag_nodes_.size(), node_id)});
+  for (size_t child_id : dag_nodes_.at(node_id)->GetLeafwardSorted()) {
+    if (!visited_nodes.count(child_id)) {
+      OptimizationSchedule(child_id, visited_nodes, operations);
+    }
+    
+    auto child_node = dag_nodes_[child_id];
+    size_t pcsp_idx = pcsp_indexer_[node->GetBitset() + child_node->GetBitset()];
+    operations.push_back(OptimizeBranchLength{
+      0,
+      GetPlvIndex(P, dag_nodes_.size(), child_id),
+      GetPlvIndex(R, dag_nodes_.size(), node_id),
+      pcsp_idx
+    });
+    // Update p_hat(s)
+    operations.push_back(WeightedSumAccumulate{
+      GetPlvIndex(P_HAT, dag_nodes_.size(), node_id),
+      pcsp_idx,
+      GetPlvIndex(P, dag_nodes_.size(), child_id),
+    });
+  }
+  // Update r_tilde(t) = r_hat(t) \circ p_hat(t).
+  operations.push_back(Multiply{
+    GetPlvIndex(R_TILDE, dag_nodes_.size(), node_id),
+    GetPlvIndex(R_HAT, dag_nodes_.size(), node_id),
+    GetPlvIndex(P_HAT, dag_nodes_.size(), node_id)
+  });
+
+  operations.push_back(Zero{GetPlvIndex(P_HAT_TILDE, dag_nodes_.size(), node_id)});
+  for (size_t child_id : dag_nodes_.at(node_id)->GetLeafwardRotated()) {
+    if (!visited_nodes.count(child_id)) {
+      OptimizationSchedule(child_id, visited_nodes, operations);
+    }
+    auto child_node = dag_nodes_[child_id];
+    size_t pcsp_idx = pcsp_indexer_[node->GetBitset().RotateSubsplit() + child_node->GetBitset()];
+    operations.push_back(OptimizeBranchLength{
+      0,
+      GetPlvIndex(P, dag_nodes_.size(), child_id),
+      GetPlvIndex(R_TILDE, dag_nodes_.size(), node_id),
+      pcsp_idx
+    });
+    operations.push_back(WeightedSumAccumulate{
+      GetPlvIndex(P_HAT_TILDE, dag_nodes_.size(), node_id),
+      pcsp_idx,
+      GetPlvIndex(P, dag_nodes_.size(), child_id),
+    });
+  }
+  // Update r(t) = r_hat(t) \circ p_hat_tilde(t).
+  operations.push_back(Multiply{
+    GetPlvIndex(R, dag_nodes_.size(), node_id),
+    GetPlvIndex(R_HAT, dag_nodes_.size(), node_id),
+    GetPlvIndex(P_HAT_TILDE, dag_nodes_.size(), node_id)
+  });
+  
+  // Update p(t).
+  operations.push_back(Multiply{
+    GetPlvIndex(P, dag_nodes_.size(), node_id),
+    GetPlvIndex(P_HAT, dag_nodes_.size(), node_id),
+    GetPlvIndex(P_HAT_TILDE, dag_nodes_.size(), node_id)
+  });
+};
+
+GPOperationVector GPInstance::BranchLengthOptimization2()
+{
+  GPOperationVector operations;
+  std::unordered_set<size_t> visited_nodes;
+  for (auto rootsplit : rootsplits_) {
+    OptimizationSchedule(subsplit_to_index_[rootsplit + ~rootsplit],
+                         visited_nodes,
+                         operations);
+  }
+  return operations;
+}
+
 void GPInstance::BranchLengthOptimization()
 {
   GPOperationVector operations;
@@ -695,17 +844,23 @@ void GPInstance::ComputeLikelihoods()
 }
 
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
-
+  
   SetRootwardZero();
   SetLeafwardZero();
   GetEngine()->ResetLogMarginalLikelihood();
   PopulatePLVs();
   ComputeLikelihoods();
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
+  
+  std::cout << "Begin branch optimization\n";
+  GPOperationVector branch_optimization_operations = BranchLengthOptimization2();
+  for (auto op : branch_optimization_operations) {
+    std::cout << op << std::endl;
+  }
 
   for (size_t i = 0; i < max_iter; i++) {
     std::cout << "Iteration: " << (i + 1) << std::endl;
-    BranchLengthOptimization();
+    GetEngine()->ProcessOperations(branch_optimization_operations);
     GetEngine()->ResetLogMarginalLikelihood();
     ComputeLikelihoods();
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
