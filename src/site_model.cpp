@@ -34,16 +34,29 @@ void WeibullSiteModel::SetParameters(const EigenVectorXdRef param_vector) {
 // Equivalent to the discretized gamma method in Yang 1994.
 // The scale (lambda) is fixed to 1
 void WeibullSiteModel::UpdateRates() {
-  double mean = 0;
+  double mean_rate = 0;
+  double mean_rate_derivative = 0;
+  std::vector<double> deriv_unscaled_rates(category_count_);
   for (size_t i = 0; i < category_count_; i++) {
     double quantile = (2.0 * i + 1.0) / (2.0 * category_count_);
     // Set rate to inverse CDF at quantile.
     category_rates_[i] = pow(-std::log(1.0 - quantile), 1.0 / shape_);
-    mean += category_rates_[i];
+    mean_rate += category_rates_[i];
+    // Derivative of unormalized rate i wrt shape
+    deriv_unscaled_rates[i] =
+        -category_rates_[i] * std::log(-std::log(1.0 - quantile)) / (shape_ * shape_);
+    mean_rate_derivative += deriv_unscaled_rates[i];
   }
-  mean /= category_count_;
+  mean_rate /= category_count_;
+  mean_rate_derivative /= category_count_;
+
   for (int i = 0; i < category_count_; i++) {
-    category_rates_[i] /= mean;
+    // Derivative of rate i wrt shape
+    // dr_i/dshape = d(ur_i/mean)/dshape = (dur_i* mean - ur_i*dmean)/mean^2
+    rate_derivatives_[i] = (deriv_unscaled_rates[i] * mean_rate -
+                            category_rates_[i] * mean_rate_derivative) /
+                           (mean_rate * mean_rate);
+    category_rates_[i] /= mean_rate;
   }
 }
 
@@ -56,3 +69,11 @@ const EigenVectorXd& WeibullSiteModel::GetCategoryRates() const {
 const EigenVectorXd& WeibullSiteModel::GetCategoryProportions() const {
   return category_proportions_;
 }
+
+std::vector<double> WeibullSiteModel::Gradient(const std::vector<double>& grad) const {
+  double shape_gradient = 0;
+  for (size_t k = 0; k < category_count_; k++) {
+    shape_gradient += grad[k] * rate_derivatives_[k] * category_proportions_[k];
+  }
+  return {shape_gradient};
+};

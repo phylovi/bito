@@ -89,15 +89,9 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
   // Set differential matrix for each branch.
   size_t category_count = phylo_model_->GetSiteModel()->GetCategoryCount();
-  const EigenVectorXd &rates = phylo_model_->GetSiteModel()->GetCategoryRates();
-  size_t state_count = phylo_model_->GetSubstitutionModel()->GetStateCount();
-  size_t matrix_dim = state_count * state_count;
   EigenMatrixXd Q = phylo_model_->GetSubstitutionModel()->GetQMatrix();
   Eigen::Map<Eigen::RowVectorXd> mapQ(Q.data(), Q.size());
   EigenMatrixXd dQ = mapQ.replicate(category_count, 1);
-  for (size_t k = 0; k < category_count; k++) {
-    dQ.row(k) *= rates[k];
-  }
   int derivative_matrix_idx = ba.node_count_ - 1;
   beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, dQ.data());
   const auto derivative_matrix_indices =
@@ -126,7 +120,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
                           BEAGLE_OP_NONE);  // cumulative scale index
 
   // Actually compute the gradient.
-  std::vector<double> gradient(ba.node_count_, 0.);
+  std::vector<double> gradient(ba.node_count_ * category_count, 0.);
   const auto pre_buffer_indices =
       BeagleAccessories::IotaVector(ba.node_count_ - 1, ba.node_count_);
   beagleCalculateEdgeDerivatives(
@@ -361,11 +355,31 @@ UnrootedPhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
   tree.SlideRootPosition();
   auto [log_likelihood, branch_length_gradient] =
       BranchGradientInternals(tree.Topology(), tree.BranchLengths());
-  // We want the fixed node to have a zero gradient.
-  branch_length_gradient[tree.Topology()->Children()[1]->Id()] = 0.;
 
   std::vector<double> substitution_model_gradient;
   std::vector<double> site_model_gradient;
+  auto site_model = phylo_model_->GetSiteModel();
+  size_t category_count = site_model->GetCategoryCount();
+
+  if (category_count > 1) {
+    site_model_gradient = DiscreteSiteModelGradient(*site_model, tree.BranchLengths(),
+                                                    branch_length_gradient);
+
+    std::vector<double> total_gradient(tree.branch_lengths_.size(), 0.);
+    size_t edge_count = tree.branch_lengths_.size() - 1;
+    auto weights = site_model->GetCategoryProportions();
+    auto rates = site_model->GetCategoryRates();
+    // Calculate gradient wrt to branch lengths
+    for (size_t i = 0; i < edge_count; i++) {
+      for (size_t k = 0; k < category_count; k++) {
+        total_gradient[i] +=
+            branch_length_gradient[i * category_count + k] * weights[k] * rates[k];
+      }
+    }
+    branch_length_gradient = total_gradient;
+  }
+  // We want the fixed node to have a zero gradient.
+  branch_length_gradient[tree.Topology()->Children()[1]->Id()] = 0.;
 
   return {log_likelihood, branch_length_gradient, site_model_gradient,
           substitution_model_gradient};
