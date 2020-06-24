@@ -309,6 +309,10 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient with Weibull") {
       {-9456.1201098061, -6624.4110704332, -6623.4474776131, -6617.25658038029,
        -6627.5385571548, -6621.6155048722, -6622.3314942713, -6618.7695717585,
        -6616.3837517370, -6623.8295828648});
+  // First element of each gradient
+  std::vector<double> physher_gradients_bl0(
+      {-126.890527, 157.251275, 138.202510, -180.311856, 417.562897, -796.450894,
+       -173.744375, -70.693513, 699.190754, -723.034349});
   std::vector<BeagleFlags> vector_flag_options{BEAGLE_FLAG_VECTOR_NONE,
                                                BEAGLE_FLAG_VECTOR_SSE};
   std::vector<bool> tip_state_options{false, true};
@@ -323,12 +327,25 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient with Weibull") {
         CHECK_LT(fabs(likelihoods[i] - physher_likelihoods[i]), 0.00011);
       }
 
+      auto gradients = inst.Gradients();
+      for (size_t i = 0; i < gradients.size(); i++) {
+        CHECK_LT(fabs(gradients[i].branch_lengths_[0] - physher_gradients_bl0[i]),
+                 0.00011);
+      }
+
       // Test rescaling
       inst.SetRescaling(true);
       auto likelihoods_rescaling = inst.LogLikelihoods();
       // Likelihoods from LogLikelihoods()
       for (size_t i = 0; i < likelihoods_rescaling.size(); i++) {
         CHECK_LT(fabs(likelihoods_rescaling[i] - physher_likelihoods[i]), 0.00011);
+      }
+
+      auto gradients_rescaling = inst.Gradients();
+      for (size_t i = 0; i < gradients.size(); i++) {
+        CHECK_LT(
+            fabs(gradients_rescaling[i].branch_lengths_[0] - physher_gradients_bl0[i]),
+            0.00011);
       }
     }
   }

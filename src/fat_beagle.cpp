@@ -96,7 +96,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
   Eigen::Map<Eigen::RowVectorXd> mapQ(Q.data(), Q.size());
   EigenMatrixXd dQ = mapQ.replicate(category_count, 1);
   for (size_t k = 0; k < category_count; k++) {
-    dQ.block(0, k * matrix_dim, 1, matrix_dim) *= rates[k];
+    dQ.row(k) *= rates[k];
   }
   int derivative_matrix_idx = ba.node_count_ - 1;
   beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, dQ.data());
