@@ -11,6 +11,7 @@
 #include "dag_node.hpp"
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
+#include "numerical_utils.hpp"
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 
@@ -50,25 +51,26 @@ class GPEngine {
     q_ = q;
   };
   void ResetLogMarginalLikelihood() {
-    log_marginal_likelihood = 0.0;
+    log_marginal_likelihood = DOUBLE_NEG_INF;
   }
   double GetLogMarginalLikelihood() {
     return log_marginal_likelihood;
   }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
+  EigenVectorXd GetSBNParameters() const { return q_; };
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
  private:
-  double min_branch_length_ = 1e-6;
+  double min_branch_length_ = 1e-9;
   double max_branch_length_ = 3.;
-  int significant_digits_for_optimization_ = 6;
+  int significant_digits_for_optimization_ = 9;
   double relative_tolerance_for_optimization_ = 1e-2;
   double step_size_for_optimization_ = 5e-4;
-  size_t max_iter_for_optimization_ = 100;
-  
-  double log_marginal_likelihood = 0.0;
+  size_t max_iter_for_optimization_ = 1000;
+
+  double log_marginal_likelihood = DOUBLE_NEG_INF;
 
   SitePattern site_pattern_;
   size_t plv_count_;
