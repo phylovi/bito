@@ -12,28 +12,6 @@ std::string GetNeighborString(std::vector<size_t> neighbors)
   return str;
 }
 
-bool DAGNode::IsLeaf() const {
-  return (leafward_rotated.size() == 0) && (leafward_sorted.size() == 0);
-}
-
-void DAGNode::AddNeighbor(EdgeType edge_type, size_t node_id)
-{
-  switch (edge_type) {
-    case EdgeType::LEAFWARD_ROTATED:
-      leafward_rotated.push_back(node_id);
-      break;
-    case EdgeType::LEAFWARD_SORTED:
-      leafward_sorted.push_back(node_id);
-      break;
-    case EdgeType::ROOTWARD_SORTED:
-      rootward_sorted.push_back(node_id);
-      break;
-    case EdgeType::ROOTWARD_ROTATED:
-      rootward_rotated.push_back(node_id);
-      break;
-  }
-}
-
 std::string DAGNode::ToString()
 {
   std::string str = std::to_string(id_) + "\n";

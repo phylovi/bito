@@ -4,6 +4,7 @@
 #ifndef SRC_GP_INSTANCE_HPP_
 #define SRC_GP_INSTANCE_HPP_
 
+#include <deque>
 #include <memory.h>
 
 #include "dag_node.hpp"

@@ -3,12 +3,13 @@
 
 #include "gp_instance.hpp"
 
+#include <iomanip>
+#include <stdio.h>
+#include <string>
+
 #include "driver.hpp"
 #include "gp_operation.hpp"
 #include "numerical_utils.hpp"
-
-#include <stdio.h>
-#include <deque>
 
 using namespace GPOperations;
 
@@ -47,11 +48,13 @@ void GPInstance::MakeEngine() {
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   ConstructDAG();
+
   MakeGPEngine();
   BuildPCSPIndexer();
 
   rootward_order_ = RootwardPassTraversal();
   leafward_order_ = LeafwardPassTraversal();
+
   InitializeGPEngine();
 }
 
@@ -145,17 +148,24 @@ void GPInstance::ConnectNodes(size_t idx,
   // Retrieve children subsplits, set edge relation.
   Bitset subsplit = rotated ? node->GetBitset().RotateSubsplit() :
                               node->GetBitset();
-  EdgeType leaf_edge_type = rotated ? EdgeType::LEAFWARD_ROTATED :
-                                      EdgeType::LEAFWARD_SORTED;
-  EdgeType root_edge_type = rotated ? EdgeType::ROOTWARD_ROTATED :
-                                      EdgeType::ROOTWARD_SORTED;
+//  EdgeType leaf_edge_type = rotated ? EdgeType::LEAFWARD_ROTATED :
+//                                               EdgeType::LEAFWARD_SORTED;
+//  EdgeType root_edge_type = rotated ? EdgeType::ROOTWARD_ROTATED :
+//                                               EdgeType::ROOTWARD_SORTED;
 
   auto children = GetChildrenSubsplits(subsplit, true);
   for (auto child_subsplit : children) {
     auto child_node = dag_nodes_[subsplit_to_index_[child_subsplit]];
     //std::cout << child_node->Id() << std::endl;
-    node->AddNeighbor(leaf_edge_type, child_node->Id());
-    child_node->AddNeighbor(root_edge_type, node->Id());
+    if (rotated) {
+      node->AddLeafwardRotated(child_node->Id());
+      child_node->AddRootwardRotated(node->Id());
+    } else {
+      node->AddLeafwardSorted(child_node->Id());
+      child_node->AddRootwardSorted(node->Id());
+    }
+    //node->AddNeighbor(leaf_edge_type, child_node->Id());
+    //child_node->AddNeighbor(root_edge_type, node->Id());
   }
 
   //std::cout << node->ToString() << std::endl;
@@ -295,12 +305,12 @@ std::vector<size_t> GPInstance::LeafwardPassTraversal()
                        visit_order,
                        visited_nodes);
   }
-  std::cout << "Leafward traversal node order:\n";
-  for (size_t i = 0; i < visit_order.size(); i++) {
+  //std::cout << "Leafward traversal node order:\n";
+//  for (size_t i = 0; i < visit_order.size(); i++) {
 //    std::cout << visit_order[i] << std::endl;
-    std::cout << dag_nodes_[visit_order[i]]->ToString() << std::endl;
-  }
-  std::cout << "\n";
+//    std::cout << dag_nodes_[visit_order[i]]->ToString() << std::endl;
+//  }
+//  std::cout << "\n";
   return visit_order;
 }
 
@@ -344,12 +354,12 @@ std::vector<size_t> GPInstance::RootwardPassTraversal()
                        visit_order,
                        visited_nodes);
   }
-  std::cout << "Rootward traversal node order:\n";
-  for (size_t i = 0; i < visit_order.size(); i++) {
+//  std::cout << "Rootward traversal node order:\n";
+//  for (size_t i = 0; i < visit_order.size(); i++) {
 //    std::cout << visit_order[i] << std::endl;
-    std::cout << dag_nodes_[visit_order[i]]->ToString() << std::endl;
-  }
-  std::cout << "\n";
+//    std::cout << dag_nodes_[visit_order[i]]->ToString() << std::endl;
+//  }
+//  std::cout << "\n";
   return visit_order;
 }
 
@@ -444,6 +454,8 @@ size_t GetPlvIndex(PlvType plv_type,
       return 4*node_count + src_idx;
     case PlvType::R_TILDE:
       return 5*node_count + src_idx;
+    default:
+      Failwith("Invalid PLV index requested.");
   }
 }
 
@@ -994,9 +1006,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   std::cout << "Begin branch optimization\n";
   GPOperationVector branch_optimization_operations = BranchLengthOptimization2();
   GPOperationVector marginal_lik_operations = MarginalLikelihoodOperations();
-//  for (auto op : branch_optimization_operations) {
-//    std::cout << op << std::endl;
-//  }
 
   SetRootwardZero();
   SetLeafwardZero();
