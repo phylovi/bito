@@ -3,7 +3,6 @@
 
 #include "gp_engine.hpp"
 #include "optimization.hpp"
-#include "numerical_utils.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
                    std::string mmap_file_path)
@@ -61,7 +60,7 @@ void GPEngine::operator()(const GPOperations::Zero& op) {
 void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
   auto& plv = plvs_.at(op.dest_idx);
   for (size_t row_idx = 0; row_idx < plv.rows(); ++row_idx) {
-    plv.row(row_idx).array() = q_(op.pcsp_idx) * stationary_distribution_(row_idx);
+    plv.row(row_idx).array() = stationary_distribution_(row_idx);
   }
 }
 
@@ -72,11 +71,13 @@ void GPEngine::operator()(const GPOperations::WeightedSumAccumulate& op) {
 
 void GPEngine::operator()(const GPOperations::MarginalLikelihood& op)
 {
-  auto result = q_(op.pcsp_idx) * plvs_.at(op.stationary_idx).transpose() * plvs_.at(op.p_idx);
+  auto result = plvs_.at(op.stationary_idx).transpose() * plvs_.at(op.p_idx);
   per_pattern_log_likelihoods_ = result.diagonal().array().log();
-  log_likelihoods_[op.pcsp_idx] = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  log_likelihoods_[op.pcsp_idx] = log(q_(op.p_idx)) +
+                      per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   std::cout << "log_likelihoods[" << op.pcsp_idx << "]: " << log_likelihoods_[op.pcsp_idx] << std::endl;
-  log_marginal_likelihood += log_likelihoods_[op.pcsp_idx];
+  log_marginal_likelihood = NumericalUtils::LogAdd(log_marginal_likelihood,
+                                                   log_likelihoods_[op.pcsp_idx]);
 }
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {
@@ -86,11 +87,11 @@ void GPEngine::operator()(const GPOperations::Multiply& op) {
 
 void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_idx));
-  auto result = q_[op.dest_idx] * plvs_.at(op.parent_idx).transpose() *
+  auto result = plvs_.at(op.parent_idx).transpose() *
                                   (transition_matrix_ * plvs_.at(op.child_idx));
   per_pattern_log_likelihoods_ = result.diagonal().array().log();
-  log_likelihoods_[op.dest_idx] = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-  std::cout << "log_likelihoods[" << op.dest_idx << "]: " << log_likelihoods_[op.dest_idx] << std::endl;
+  log_likelihoods_[op.dest_idx] = log(q_[op.dest_idx]) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  //std::cout << "log_likelihoods[" << op.dest_idx << "]: " << log_likelihoods_[op.dest_idx] << std::endl;
 }
 
 void GPEngine::operator()(const GPOperations::EvolveRootward& op) {
@@ -116,9 +117,10 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   if (range_length == 1)
     return;
 
+  // Assumption: log_likelihoods_ have been updated on [op.start_idx, op.stop_idx).
   auto segment = log_likelihoods_.segment(op.start_idx, op.stop_idx-op.start_idx);
   double log_norm = NumericalUtils::LogSum(segment);
-  segment = segment.array() - log_norm;
+  segment.array() = segment.array() - log_norm;
   q_.segment(op.start_idx, op.stop_idx-op.start_idx) = segment.array().exp();
   std::cout << "Updated SBN params: \n";
   for (size_t i = op.start_idx; i < op.stop_idx; i++) {
@@ -129,7 +131,7 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
 
 void GPEngine::ProcessOperations(GPOperationVector operations) {
   for (const auto& operation : operations) {
-    std::cout << operation << std::endl;
+    //std::cout << operation << std::endl;
     std::visit(*this, operation);
   }
 }
@@ -207,18 +209,21 @@ void GPEngine::InitializePLVsWithSitePatterns() {
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double branch_length) {
     SetTransitionMatrixToHaveBranchLength(branch_length);
-    auto result = q_[op.branch_length_idx] * plvs_.at(op.rootward_idx).transpose() *
+    auto result = plvs_.at(op.rootward_idx).transpose() *
                                     (transition_matrix_ * plvs_.at(op.leafward_idx));
     per_pattern_log_likelihoods_ = result.diagonal().array().log();
-    double ret = -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+    double ret = -(log(q_[op.branch_length_idx]) + per_pattern_log_likelihoods_.dot(site_pattern_weights_));
     return ret;
   };
-  double current_value = negative_log_likelihood(branch_lengths_(op.branch_length_idx));
-  std::cout<< "Current neg log likelihood: " << current_value << std::endl;
+  double current_branch_length = branch_lengths_(op.branch_length_idx);
+  double current_value = negative_log_likelihood(current_branch_length);
+  std::cout<< "Current neg log likelihood: (" << current_branch_length << ", " <<
+      current_value << ")" << std::endl;
   auto [branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
       negative_log_likelihood, min_branch_length_, max_branch_length_,
       significant_digits_for_optimization_, max_iter_for_optimization_);
-  std::cout << "New neg log likelihood: " << neg_log_likelihood << std::endl;
+  std::cout << "New neg log likelihood: (" << branch_length << ", " << neg_log_likelihood
+    << ")" << std::endl;
   if (neg_log_likelihood < current_value) {
     branch_lengths_(op.branch_length_idx) = branch_length;
   }

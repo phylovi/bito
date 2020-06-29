@@ -51,7 +51,7 @@ class GPEngine {
     q_ = q;
   };
   void ResetLogMarginalLikelihood() {
-    log_marginal_likelihood = 0.0;
+    log_marginal_likelihood = DOUBLE_NEG_INF;
   }
   double GetLogMarginalLikelihood() {
     return log_marginal_likelihood;
@@ -68,9 +68,9 @@ class GPEngine {
   int significant_digits_for_optimization_ = 9;
   double relative_tolerance_for_optimization_ = 1e-2;
   double step_size_for_optimization_ = 5e-4;
-  size_t max_iter_for_optimization_ = 100;
-  
-  double log_marginal_likelihood = 0.0;
+  size_t max_iter_for_optimization_ = 1000;
+
+  double log_marginal_likelihood = DOUBLE_NEG_INF;
 
   SitePattern site_pattern_;
   size_t plv_count_;
