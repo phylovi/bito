@@ -30,6 +30,7 @@ class GPInstance {
   void MakeEngine();
   void MakeGPEngine();
   GPEngine *GetEngine() const;
+  void EstimateSBNParameters(double tol, size_t max_iter);
   void EstimateBranchLengths(double tol, size_t max_iter);
   void PopulatePLVs();
   void ComputeLikelihoods();
@@ -90,6 +91,7 @@ class GPInstance {
   void BuildPCSPIndexer();
   void BranchLengthOptimization();
   GPOperationVector BranchLengthOptimization2();
+  GPOperationVector SBNParameterOptimization();
   void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
                                                   bool rotated,
                                                   GPOperationVector &operations);
@@ -101,9 +103,13 @@ class GPInstance {
                                        GPOperationVector &operations);
   void OptimizeSBNParameters(const Bitset &subsplit,
                              GPOperationVector &operations);
-  void OptimizationSchedule(size_t node_id,
-                            std::unordered_set<size_t> visited_nodes,
-                            GPOperationVector &operations);
+  GPOperationVector MarginalLikelihoodOperations();
+  void ScheduleBranchLengthOptimization(size_t node_id,
+                                        std::unordered_set<size_t> visited_nodes,
+                                        GPOperationVector &operations);
+  void ScheduleSBNParametersOptimization(size_t node_id,
+                                         std::unordered_set<size_t> visited_nodes,
+                                         GPOperationVector &operations);
   void RootwardPass(std::vector<size_t> visit_order);
   void LeafwardPass(std::vector<size_t> visit_order);
   void InitializeGPEngine();
