@@ -13,6 +13,18 @@
 
 using namespace GPOperations;
 
+void GPInstance::PrintStatus() {
+  const auto tree_count = tree_collection_.TreeCount();
+  const auto taxon_count = tree_collection_.TaxonCount();
+  if (tree_count) {
+    std::cout << tree_count << " unique tree topologies loaded on " << taxon_count
+              << " leaves.\n";
+  } else {
+    std::cout << "No trees loaded.\n";
+  }
+  std::cout << alignment_.Data().size() << " sequences loaded.\n";
+}
+
 void GPInstance::ReadFastaFile(std::string fname) {
   alignment_ = Alignment::ReadFasta(fname);
 }
@@ -48,7 +60,7 @@ void GPInstance::MakeEngine() {
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   ConstructDAG();
-  
+
   MakeGPEngine();
   BuildPCSPIndexer();
 
@@ -179,7 +191,7 @@ std::vector<Bitset> GPInstance::GetChildrenSubsplits(const Bitset &subsplit,
                                                      bool include_fake_subsplits)
 {
   std::vector<Bitset> children_subsplits;
-  
+
   if (parent_to_range_.count(subsplit)) {
     auto range = parent_to_range_.at(subsplit);
     for (auto idx = range.first; idx < range.second; idx++) {
@@ -214,7 +226,7 @@ void GPInstance::BuildNodes()
     Bitset fake_subsplit = zero + fake;
     CreateAndInsertNode(fake_subsplit);
   }
-  
+
   std::deque<Bitset> q;
   std::unordered_set<Bitset> visited_subsplits;
 
@@ -226,7 +238,7 @@ void GPInstance::BuildNodes()
     AddChildrenSubsplits(subsplit, q, visited_subsplits);
     AddChildrenSubsplits(subsplit.RotateSubsplit(), q, visited_subsplits);
   }
-  
+
   // Fill the rest of dag_nodes_ with other subsplits.
   while (!q.empty()) {
     auto subsplit = q.front();
@@ -379,7 +391,6 @@ void GPInstance::BuildPCSPIndexer()
 
 void GPInstance::InitializeGPEngine()
 {
-  
   size_t n_params = engine_->GetBranchLengths().size();
 
   // Initialize branch lengths to 1.
@@ -517,7 +528,7 @@ void GPInstance::RootwardPass(std::vector<size_t> visit_order)
       GetPlvIndex(PlvType::P_HAT_TILDE, dag_nodes_.size(), node_idx)
     });
   }
-  
+
   GetEngine()->ProcessOperations(operations);
 }
 
@@ -607,7 +618,7 @@ void GPInstance::ScheduleBranchLengthOptimization(size_t node_id,
         GetPlvIndex(R_TILDE, dag_nodes_.size(), parent_id)
       });
     }
-    
+
     // Update r(s) and r_tilde(s)
     operations.push_back(Multiply{
       GetPlvIndex(R, dag_nodes_.size(), node_id),
@@ -629,7 +640,7 @@ void GPInstance::ScheduleBranchLengthOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleBranchLengthOptimization(child_id, visited_nodes, operations);
     }
-    
+
     auto child_node = dag_nodes_[child_id];
     size_t pcsp_idx = pcsp_indexer_[node->GetBitset() + child_node->GetBitset()];
     operations.push_back(OptimizeBranchLength{
@@ -677,7 +688,7 @@ void GPInstance::ScheduleBranchLengthOptimization(size_t node_id,
     GetPlvIndex(R_HAT, dag_nodes_.size(), node_id),
     GetPlvIndex(P_HAT_TILDE, dag_nodes_.size(), node_id)
   });
-  
+
   // Update p(t).
   operations.push_back(Multiply{
     GetPlvIndex(P, dag_nodes_.size(), node_id),
@@ -728,8 +739,7 @@ void GPInstance::ScheduleSBNParametersOptimization(size_t node_id,
         GetPlvIndex(R_TILDE, dag_nodes_.size(), parent_id)
       });
     }
-    
-    
+
     // Update r(s) and r_tilde(s) using rhat(s).
     operations.push_back(Multiply{
       GetPlvIndex(R, dag_nodes_.size(), node_id),
@@ -751,7 +761,7 @@ void GPInstance::ScheduleSBNParametersOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleSBNParametersOptimization(child_id, visited_nodes, operations);
     }
-    
+
     auto child_node = dag_nodes_[child_id];
     size_t pcsp_idx = pcsp_indexer_[node->GetBitset() + child_node->GetBitset()];
     // Update p_hat(s)
@@ -801,7 +811,7 @@ void GPInstance::ScheduleSBNParametersOptimization(size_t node_id,
     GetPlvIndex(R_HAT, dag_nodes_.size(), node_id),
     GetPlvIndex(P_HAT_TILDE, dag_nodes_.size(), node_id)
   });
-  
+
   // Update p(t).
   operations.push_back(Multiply{
     GetPlvIndex(P, dag_nodes_.size(), node_id),
@@ -865,7 +875,7 @@ void GPInstance::ComputeLikelihoods()
       });
     }
   }
-  
+
   // Compute marginal likelihood.
   for (size_t root_idx = 0; root_idx < rootsplits_.size(); root_idx++) {
     auto rootsplit = rootsplits_[root_idx];
@@ -898,7 +908,6 @@ GPOperationVector GPInstance::MarginalLikelihoodOperations() {
 }
 
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
-  
   std::cout << "Begin branch optimization\n";
   std::cout << pcsp_indexer_.size() << std::endl;
   GPOperationVector branch_optimization_operations = BranchLengthOptimization();
@@ -934,7 +943,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
 }
 
 void GPInstance::EstimateSBNParameters(double tol, size_t max_iter) {
-  
   std::cout << "Begin SBN parameter optimization\n";
   GPOperationVector sbn_param_optimization_operations = SBNParameterOptimization();
   GPOperationVector marginal_lik_operations = MarginalLikelihoodOperations();
@@ -948,7 +956,7 @@ void GPInstance::EstimateSBNParameters(double tol, size_t max_iter) {
   PopulatePLVs();
   ComputeLikelihoods();
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-  
+
   for (size_t i = 0; i < max_iter; i++) {
     std::cout << "Iteration: " << (i + 1) << std::endl;
     GetEngine()->ProcessOperations(sbn_param_optimization_operations);
