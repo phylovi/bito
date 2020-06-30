@@ -99,10 +99,6 @@ class GPInstance {
                                                   GPOperationVector &operations);
   void AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
                                                   GPOperationVector &operations);
-  void AddLeafwardLikelihoodOperations(std::vector<size_t> child_idxs,
-                                       size_t parent_idx,
-                                       const Bitset &parent_subsplit,
-                                       GPOperationVector &operations);
   void OptimizeSBNParameters(const Bitset &subsplit,
                              GPOperationVector &operations);
   GPOperationVector MarginalLikelihoodOperations();
@@ -119,7 +115,6 @@ class GPInstance {
   void SetLeafwardZero();
   std::vector<size_t> LeafwardPassTraversal();
   std::vector<size_t> RootwardPassTraversal();
-  std::vector<SizePair> RootwardPassTraversalEdges();
 };
 
 #endif  // SRC_GP_INSTANCE_HPP_

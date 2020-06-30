@@ -318,35 +318,6 @@ std::vector<size_t> GPInstance::LeafwardPassTraversal()
   return visit_order;
 }
 
-void LeafwardDepthFirstEdges(std::shared_ptr<DAGNode> node,
-                             std::shared_ptr<DAGNode> parent_node,
-                             std::vector<std::shared_ptr<DAGNode>> &dag_nodes,
-                             std::vector<SizePair> &visit_order)
-{
-  for (size_t child_id : node->GetLeafwardSorted()) {
-    LeafwardDepthFirstEdges(dag_nodes[child_id], node, dag_nodes, visit_order);
-  }
-  for (size_t child_id : node->GetLeafwardRotated()) {
-    LeafwardDepthFirstEdges(dag_nodes[child_id], node, dag_nodes, visit_order);
-  }
-  if (parent_node != 0) {
-    visit_order.push_back(std::make_pair(parent_node->Id(), node->Id()));
-  }
-}
-
-std::vector<SizePair> GPInstance::RootwardPassTraversalEdges()
-{
-  std::vector<SizePair> visit_order;
-  for (auto rootsplit : rootsplits_) {
-    size_t root_idx = subsplit_to_index_[rootsplit + ~rootsplit];
-    LeafwardDepthFirstEdges(dag_nodes_[root_idx],
-                            0,
-                            dag_nodes_,
-                            visit_order);
-  }
-  return visit_order;
-}
-
 std::vector<size_t> GPInstance::RootwardPassTraversal()
 {
   std::vector<size_t> visit_order;
@@ -512,23 +483,6 @@ void GPInstance::AddLeafwardWeightedSumAccumulateOperations(
       GetPlvIndex(PlvType::R_HAT, dag_nodes_.size(), node->Id()),
       pcsp_idx,
       GetPlvIndex(PlvType::R_TILDE, dag_nodes_.size(), parent_node->Id())});
-  }
-}
-
-
-void GPInstance::AddLeafwardLikelihoodOperations(std::vector<size_t> child_idxs,
-                                                 size_t parent_idx,
-                                                 const Bitset &parent_subsplit,
-                                                 GPOperationVector &operations)
-{
-  for (size_t child_idx : child_idxs) {
-    auto child_node = dag_nodes_[child_idx];
-    size_t pcsp_idx = pcsp_indexer_[parent_subsplit + child_node->GetBitset()];
-    operations.push_back(Likelihood{
-      pcsp_idx,
-      GetPlvIndex(PlvType::P, dag_nodes_.size(), child_idx),
-      GetPlvIndex(PlvType::R, dag_nodes_.size(), parent_idx)
-    });
   }
 }
 
