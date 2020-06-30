@@ -77,7 +77,8 @@ class FatBeagle {
   double LogLikelihoodInternals(const Node::NodePtr topology,
                                 const std::vector<double> &branch_lengths) const;
   std::pair<double, std::vector<double>> BranchGradientInternals(
-      const Node::NodePtr topology, const std::vector<double> &branch_lengths) const;
+      const Node::NodePtr topology, const std::vector<double> &branch_lengths,
+      const EigenMatrixXd &dQ) const;
 
   void UpdateBeagleTransitionMatrices(
       const BeagleAccessories &baBranchGradientInternals,

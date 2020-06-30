@@ -70,10 +70,6 @@ const EigenVectorXd& WeibullSiteModel::GetCategoryProportions() const {
   return category_proportions_;
 }
 
-std::vector<double> WeibullSiteModel::Gradient(const std::vector<double>& grad) const {
-  double shape_gradient = 0;
-  for (size_t k = 0; k < category_count_; k++) {
-    shape_gradient += grad[k] * rate_derivatives_[k] * category_proportions_[k];
-  }
-  return {shape_gradient};
+const EigenVectorXd& WeibullSiteModel::GetRateGradient() const {
+  return rate_derivatives_;
 };

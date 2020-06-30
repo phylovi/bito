@@ -19,7 +19,7 @@ class SiteModel : public BlockModel {
   virtual size_t GetCategoryCount() const = 0;
   virtual const EigenVectorXd& GetCategoryRates() const = 0;
   virtual const EigenVectorXd& GetCategoryProportions() const = 0;
-  virtual std::vector<double> Gradient(const std::vector<double>& grad) const = 0;
+  virtual const EigenVectorXd& GetRateGradient() const = 0;
 
   static std::unique_ptr<SiteModel> OfSpecification(const std::string& specification);
 };
@@ -29,6 +29,8 @@ class ConstantSiteModel : public SiteModel {
   ConstantSiteModel() : SiteModel({}) {
     one_.resize(1);
     one_[0] = 1.0;
+    zero_.resize(1);
+    zero_[0] = 0.0;
   }
 
   size_t GetCategoryCount() const override { return 1; }
@@ -37,23 +39,19 @@ class ConstantSiteModel : public SiteModel {
 
   const EigenVectorXd& GetCategoryProportions() const override { return one_; }
 
-  std::vector<double> Gradient(const std::vector<double>& grad) const override {
-    return {};
-  };
+  const EigenVectorXd& GetRateGradient() const override { return zero_; };
 
   void SetParameters(const EigenVectorXdRef param_vector) override{};
 
  private:
   EigenVectorXd one_;
+  EigenVectorXd zero_;
 };
 
 class WeibullSiteModel : public SiteModel {
  public:
   explicit WeibullSiteModel(size_t category_count, double shape = 1)
-      // Issue #147: Why are these commented out?
-      : SiteModel({// {rates_key_, category_count},
-                   // {proportions_key_, category_count},
-                   {shape_key_, 1}}),
+      : SiteModel({{shape_key_, 1}}),
         category_count_(category_count),
         shape_(shape),
         rate_derivatives_(category_count) {
@@ -68,7 +66,7 @@ class WeibullSiteModel : public SiteModel {
   size_t GetCategoryCount() const override;
   const EigenVectorXd& GetCategoryRates() const override;
   const EigenVectorXd& GetCategoryProportions() const override;
-  std::vector<double> Gradient(const std::vector<double>& grad) const override;
+  const EigenVectorXd& GetRateGradient() const override;
 
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
@@ -81,7 +79,7 @@ class WeibullSiteModel : public SiteModel {
 
   size_t category_count_;
   double shape_;  // shape of the Weibull distribution
-  std::vector<double> rate_derivatives_;
+  EigenVectorXd rate_derivatives_;
   EigenVectorXd category_rates_;
   EigenVectorXd category_proportions_;
 };
