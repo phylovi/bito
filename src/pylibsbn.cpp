@@ -324,8 +324,11 @@ PYBIND11_MODULE(libsbn, m) {
            "Read trees from a Newick file.")
       .def("read_nexus_file", &GPInstance::ReadNexusFile,
            "Read trees from a Nexus file.")
+      .def("read_fasta_file", &GPInstance::ReadFastaFile,
+           "Read a sequence alignment from a FASTA file.")
 
       // ** Estimation
+      .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.")
       .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
            "Read trees from a Newick file.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
