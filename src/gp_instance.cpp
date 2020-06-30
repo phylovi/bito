@@ -132,12 +132,16 @@ void GPInstance::CreateAndInsertNode(const Bitset &subsplit)
 }
 
 void GPInstance::AddChildrenSubsplits(const Bitset &subsplit,
-                                      std::deque<Bitset> &q)
+                                      std::deque<Bitset> &q,
+                                      std::unordered_set<Bitset> &visited_subsplits)
 {
   // Retrieve children subsplits, add it to the queue to be processed.
   auto children_subsplits = GetChildrenSubsplits(subsplit);
   for (auto child_subsplit : children_subsplits) {
-    q.push_back(child_subsplit);
+    if (!visited_subsplits.count(child_subsplit)) {
+      q.push_back(child_subsplit);
+      visited_subsplits.insert(child_subsplit);
+    }
   }
 }
 
@@ -212,24 +216,24 @@ void GPInstance::BuildNodes()
   }
   
   std::deque<Bitset> q;
+  std::unordered_set<Bitset> visited_subsplits;
 
   // We fill the next entries of dag_nodes_ using the root subsplits. subsplits.
   // And, populate the queue with children of rootsplits.
   for (auto rootsplit : rootsplits_) {
     auto subsplit = rootsplit + ~rootsplit;
     CreateAndInsertNode(subsplit);
-    AddChildrenSubsplits(subsplit, q);
-    AddChildrenSubsplits(subsplit.RotateSubsplit(), q);
+    AddChildrenSubsplits(subsplit, q, visited_subsplits);
+    AddChildrenSubsplits(subsplit.RotateSubsplit(), q, visited_subsplits);
   }
   
   // Fill the rest of dag_nodes_ with other subsplits.
-  std::unordered_set<Bitset> visisted_subsplits;
   while (!q.empty()) {
     auto subsplit = q.front();
     q.pop_front();
     CreateAndInsertNode(subsplit);
-    AddChildrenSubsplits(subsplit, q);
-    AddChildrenSubsplits(subsplit.RotateSubsplit(), q);
+    AddChildrenSubsplits(subsplit, q, visited_subsplits);
+    AddChildrenSubsplits(subsplit.RotateSubsplit(), q, visited_subsplits);
   }
 }
 
