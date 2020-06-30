@@ -138,7 +138,6 @@ sources = [
     "_build/block_model.cpp",
     "_build/block_specification.cpp",
     "_build/clock_model.cpp",
-    "_build/dag_node.cpp",
     "_build/driver.cpp",
     "_build/engine.cpp",
     "_build/fat_beagle.cpp",
@@ -165,13 +164,14 @@ sources = [
     "_build/unrooted_tree_collection.cpp",
 ]
 gp_sources = [
+    "_build/dag_node.cpp",
     "_build/gp_engine.cpp",
     "_build/gp_instance.cpp",
     "_build/gp_operation.cpp",
 ]
 extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
-    ["_build/pylibsbn.cpp"] + sources,
+    ["_build/pylibsbn.cpp"] + sources + gp_sources,
     SHLIBPREFIX="",
     LIBS=["hmsbeagle"],
 )

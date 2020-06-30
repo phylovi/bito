@@ -4,8 +4,8 @@
 #ifndef SRC_GP_INSTANCE_HPP_
 #define SRC_GP_INSTANCE_HPP_
 
-#include <deque>
 #include <memory.h>
+#include <deque>
 
 #include "dag_node.hpp"
 #include "gp_engine.hpp"
@@ -22,7 +22,11 @@ size_t GetPlvIndex(PlvType plv_type, size_t node_count, size_t src_idx);
 
 class GPInstance {
  public:
-  GPInstance(std::string mmap_file_path) : mmap_file_path_(mmap_file_path){};
+  GPInstance(std::string mmap_file_path) : mmap_file_path_(mmap_file_path) {
+    if (mmap_file_path.empty()) {
+      Failwith("GPInstance needs a legal path as a constructor argument.");
+    }
+};
   void PrintStatus();
 
   void ReadFastaFile(std::string fname);
