@@ -23,6 +23,7 @@ size_t GetPlvIndex(PlvType plv_type, size_t node_count, size_t src_idx);
 class GPInstance {
  public:
   GPInstance(std::string mmap_file_path) : mmap_file_path_(mmap_file_path){};
+  void PrintStatus();
 
   void ReadFastaFile(std::string fname);
   void ReadNewickFile(std::string fname);
@@ -79,7 +80,7 @@ class GPInstance {
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;
   void ProcessLoadedTrees();
-  
+
   void CreateAndInsertNode(const Bitset &subsplit);
   void ConnectNodes(size_t idx, bool rotated);
   void AddChildrenSubsplits(const Bitset &subsplit,

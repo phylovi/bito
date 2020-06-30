@@ -7,6 +7,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <string>
+#include "gp_instance.hpp"
 #include "unrooted_sbn_instance.hpp"
 
 namespace py = pybind11;
@@ -227,6 +228,26 @@ PYBIND11_MODULE(libsbn, m) {
 
       // ** Member variables
       .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
+
+  // CLASS
+  // GPInstance
+  py::class_<GPInstance> gp_instance_class(m, "gp_instance",
+                                           R"raw(A generalized pruning instance.)raw");
+  gp_instance_class.def(py::init<const std::string &>())
+      .def("print_status", &GPInstance::PrintStatus,
+           "Print information about the instance.")
+
+      // ** I/O
+      .def("read_newick_file", &GPInstance::ReadNewickFile,
+           "Read trees from a Newick file.")
+      .def("read_nexus_file", &GPInstance::ReadNexusFile,
+           "Read trees from a Nexus file.")
+
+      // ** Estimation
+      .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
+           "Read trees from a Newick file.")
+      .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
+           "Estimate branch lengths for the GPInstance.");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
