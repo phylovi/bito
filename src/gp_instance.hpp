@@ -92,8 +92,7 @@ class GPInstance {
   void PrintDAG();
   void ConstructDAG();
   void BuildPCSPIndexer();
-  void BranchLengthOptimization();
-  GPOperationVector BranchLengthOptimization2();
+  GPOperationVector BranchLengthOptimization();
   GPOperationVector SBNParameterOptimization();
   void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
                                                   bool rotated,
@@ -108,10 +107,10 @@ class GPInstance {
                              GPOperationVector &operations);
   GPOperationVector MarginalLikelihoodOperations();
   void ScheduleBranchLengthOptimization(size_t node_id,
-                                        std::unordered_set<size_t> visited_nodes,
+                                        std::unordered_set<size_t> &visited_nodes,
                                         GPOperationVector &operations);
   void ScheduleSBNParametersOptimization(size_t node_id,
-                                         std::unordered_set<size_t> visited_nodes,
+                                         std::unordered_set<size_t> &visited_nodes,
                                          GPOperationVector &operations);
   void RootwardPass(std::vector<size_t> visit_order);
   void LeafwardPass(std::vector<size_t> visit_order);

@@ -91,7 +91,7 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
                                   (transition_matrix_ * plvs_.at(op.child_idx));
   per_pattern_log_likelihoods_ = result.diagonal().array().log();
   log_likelihoods_[op.dest_idx] = log(q_[op.dest_idx]) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-  //std::cout << "log_likelihoods[" << op.dest_idx << "]: " << log_likelihoods_[op.dest_idx] << std::endl;
+  std::cout << "log_likelihoods[" << op.dest_idx << "]: " << log_likelihoods_[op.dest_idx] << std::endl;
 }
 
 void GPEngine::operator()(const GPOperations::EvolveRootward& op) {
