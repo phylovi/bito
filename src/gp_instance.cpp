@@ -68,6 +68,7 @@ void GPInstance::MakeEngine() {
   leafward_order_ = LeafwardPassTraversal();
 
   InitializeGPEngine();
+  GetEngine()->HotStartBranchLengths(tree_collection_, indexer_);
 }
 
 void GPInstance::MakeGPEngine() {

@@ -61,6 +61,8 @@ class GPEngine {
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
+  void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
+                             const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
@@ -113,8 +115,6 @@ class GPEngine {
   void InitializePLVsWithSitePatterns();
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
-  void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
-                             const BitsetSizeMap& indexer);
 
   inline double LogLikelihood(size_t src1_idx, size_t src2_idx) {
     per_pattern_log_likelihoods_ =
