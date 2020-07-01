@@ -7,11 +7,13 @@
 #ifndef SRC_GP_ENGINE_HPP_
 #define SRC_GP_ENGINE_HPP_
 
-#include "eigen_sugar.hpp"
 #include "dag_node.hpp"
+#include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
 #include "numerical_utils.hpp"
+#include "rooted_tree_collection.hpp"
+#include "sbn_maps.hpp"
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 
@@ -22,7 +24,7 @@ class GPEngine {
            size_t num_plvs,
            size_t gpcsp_count,
            std::string mmap_file_path);
-  
+
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::Zero& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
@@ -111,6 +113,8 @@ class GPEngine {
   void InitializePLVsWithSitePatterns();
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
+                             const BitsetSizeMap& indexer);
 
   inline double LogLikelihood(size_t src1_idx, size_t src2_idx) {
     per_pattern_log_likelihoods_ =

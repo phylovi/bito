@@ -3,6 +3,7 @@
 
 #include "gp_engine.hpp"
 #include "optimization.hpp"
+#include "sugar.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
                    std::string mmap_file_path)
@@ -240,4 +241,25 @@ void GPEngine::GradientAscentOptimization(const GPOperations::OptimizeBranchLeng
       min_branch_length_, max_iter_for_optimization_);
   branch_lengths_(op.branch_length_idx) = branch_length;
   log_likelihoods_(op.branch_length_idx) = log_likelihood;
+}
+
+void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
+                                     const BitsetSizeMap& indexer) {
+  const auto leaf_count = tree_collection.TaxonCount();
+  const size_t default_index = branch_lengths_.size();
+  for (const auto& tree : tree_collection.Trees()) {
+    tree.Topology()->RootedPCSSPreOrder(
+        [&leaf_count, &default_index, &indexer, &tree, this](
+            const Node* sister_node, const Node* focal_node, const Node* child0_node,
+            const Node* child1_node) {
+          Bitset pcss_bitset =
+              SBNMaps::PCSSBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                                    child0_node, false, child1_node, false);
+          const auto pcss_index = AtWithDefault(indexer, pcss_bitset, default_index);
+          if (pcss_index != default_index) {
+            // TODO this is the cheap version-- we aren't taking a mean.
+            branch_lengths_(pcss_index) = tree.BranchLength(focal_node);
+          }
+        });
+  }
 }

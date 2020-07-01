@@ -44,6 +44,15 @@ SizeBitsetMap IdIdSetMapOf(const Node::NodePtr& topology);
 SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& topology);
 // Make a string version of a PCSSDict.
 StringPCSSMap StringPCSSMapOf(PCSSDict d);
+
+// Make a PCSS bitset from a collection of Nodes and their directions. If direction is
+// true, then the bits get flipped.
+Bitset PCSSBitsetOf(const size_t leaf_count,  //
+                    const Node* sister_node, bool sister_direction,
+                    const Node* focal_node, bool focal_direction,
+                    const Node* child0_node, bool child0_direction,
+                    const Node* child1_node, bool child1_direction);
+
 }  // namespace SBNMaps
 
 namespace UnrootedSBNMaps {
