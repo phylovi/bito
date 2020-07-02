@@ -67,7 +67,7 @@ class GPEngine {
   double max_branch_length_ = 3.;
   int significant_digits_for_optimization_ = 9;
   double relative_tolerance_for_optimization_ = 1e-2;
-  double step_size_for_optimization_ = 5e-4;
+  double step_size_for_optimization_ = 5e-6;
   size_t max_iter_for_optimization_ = 1000;
 
   double log_marginal_likelihood = DOUBLE_NEG_INF;
@@ -120,12 +120,12 @@ class GPEngine {
 
   inline void PreparePerPatternLikelihoodDerivatives(size_t src1_idx, size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
-        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array();
+        (plvs_.at(src1_idx).transpose() * derivative_matrix_ * plvs_.at(src2_idx)).diagonal().array();
   }
 
   inline void PreparePerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
     per_pattern_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array();
+        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx)).diagonal().array();
   }
 
   inline DoublePair LogLikelihoodAndDerivativeFromPreparations() {

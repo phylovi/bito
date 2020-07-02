@@ -589,11 +589,11 @@ void GPInstance::SetLeafwardZero()
 void GPInstance::ScheduleBranchLengthOptimization(size_t node_id,
                                       std::unordered_set<size_t> &visited_nodes,
                                       GPOperationVector &operations) {
-  std::cout << "Visiting node: " << node_id << ", ";
-  std::cout << "already visited? " << visited_nodes.count(node_id) << "\n";
-  if (visited_nodes.count(node_id) > 0) {
-    Failwith("Error: Visiting a node already visited!");
-  }
+//  std::cout << "Visiting node: " << node_id << ", ";
+//  std::cout << "already visited? " << visited_nodes.count(node_id) << "\n";
+//  if (visited_nodes.count(node_id) > 0) {
+//    Failwith("Error: Visiting a node already visited!");
+//  }
   visited_nodes.insert(node_id);
   auto node = dag_nodes_[node_id];
 
