@@ -35,7 +35,9 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
     // work out if we're done already:
     fract1 = tolerance * fabs(x) + tolerance / 4;
     fract2 = 2 * fract1;
-    if (fabs(x - mid) <= (fract2 - (max - min) / 2)) break;
+    if (fabs(x - mid) <= (fract2 - (max - min) / 2)) {
+      break;
+    }
 
     if (fabs(delta2) > fract1) {
       // try and construct a parabolic fit:
