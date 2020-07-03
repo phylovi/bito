@@ -97,16 +97,16 @@ class Burrito:
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = px_theta_sample[particle_idx, :]
-        branch_gradients = self.inst.branch_gradients()
+        phylo_gradients = self.inst.gradients()
         scalar_grad = self.branch_model.scalar_grad(
             px_theta_sample,
-            branch_gradients,
+            phylo_gradients,
             px_branch_representation,
             dg_dpsi,
             dlog_qg_dpsi,
         )
         px_phylo_log_like = np.array(
-            [branch_gradient[0] for branch_gradient in branch_gradients]
+            [gradient.log_likelihood for gradient in phylo_gradients]
         )
         px_phylo_log_like = beta_t * px_phylo_log_like
         px_log_f = self.px_log_f(

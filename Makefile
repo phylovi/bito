@@ -41,7 +41,7 @@ format:
 	clang-format -i -style=file $(our_files)
 
 clean:
-	rm -rf _build
+	rm -rf _build build dist libsbn.*.so $(find . -name __pycache)
 
 # We follow C++ core guidelines by allowing passing by non-const reference.
 lint:

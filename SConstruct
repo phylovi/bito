@@ -93,6 +93,7 @@ env = Environment(
     ENV=os.environ,
     CPPPATH=["src", "lib/eigen", pybind11.get_include()],
     # CCFLAGS=["-g", "-pthread"],
+    # CCFLAGS=["-O3", "-pthread", "-fno-omit-frame-pointer"],
     CCFLAGS=["-O3", "-pthread"],
     CXXFLAGS=["-std=c++17"],
 )
@@ -123,6 +124,7 @@ if platform.system() == "Darwin":
     perhaps_set_env("CXX", "clang")
     env.Append(DYLD_LIBRARY_PATH=beagle_lib)
     env.Append(LINKFLAGS=["-undefined", "dynamic_lookup"])
+    env.Append(CXXFLAGS=["-D_LIBCPP_DISABLE_AVAILABILITY"])
 elif platform.system() == "Linux":
     perhaps_set_env("CC", "gcc")
     perhaps_set_env("CXX", "g++")
@@ -146,6 +148,7 @@ sources = [
     "_build/parser.cpp",
     "_build/phylo_model.cpp",
     "_build/psp_indexer.cpp",
+    "_build/rooted_gradient_transforms.cpp",
     "_build/rooted_tree.cpp",
     "_build/rooted_tree_collection.cpp",
     "_build/rooted_sbn_instance.cpp",

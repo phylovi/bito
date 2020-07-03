@@ -62,6 +62,20 @@ void RootedTree::InitializeParameters(
       });
 }
 
+void RootedTree::SetNodeHeightsViaHeightRatios(EigenConstVectorXdRef height_ratios) {
+  size_t leaf_count = LeafCount();
+  size_t root_id = Topology()->Id();
+  node_heights_[root_id] = height_ratios(root_id - leaf_count);
+  Topology()->TripleIdPreOrderBifurcating([&leaf_count, &height_ratios, this](
+                                              int node_id, int, int parent_id) {
+    if (node_id >= leaf_count) {
+      node_heights_[node_id] = node_bounds_[node_id] +
+                               height_ratios(node_id - leaf_count) *
+                                   (node_heights_[parent_id] - node_bounds_[node_id]);
+    }
+  });
+}
+
 TagDoubleMap RootedTree::TagDateMapOfDateVector(std::vector<double> leaf_date_vector) {
   Assert(leaf_date_vector.size() == LeafCount(),
          "Wrong size vector in TagDateMapOfDateVector");
@@ -70,6 +84,15 @@ TagDoubleMap RootedTree::TagDateMapOfDateVector(std::vector<double> leaf_date_ve
     SafeInsert(tag_date_map, PackInts(leaf_id, 1), leaf_date_vector[leaf_id]);
   }
   return tag_date_map;
+}
+
+RootedTree RootedTree::Example() {
+  auto topology = Node::ExampleTopologies()[3];
+  RootedTree tree(Tree(topology, {2., 1.5, 2., 1., 2.5, 2.5, 0.}));
+  std::vector<double> date_vector({5., 3., 0., 1.});
+  auto tag_date_map = tree.TagDateMapOfDateVector(date_vector);
+  tree.InitializeParameters(tag_date_map);
+  return tree;
 }
 
 bool RootedTree::operator==(const RootedTree& other) const {

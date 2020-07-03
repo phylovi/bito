@@ -121,7 +121,7 @@ std::vector<double> UnrootedSBNInstance::LogLikelihoods() {
   return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_);
 }
 
-std::vector<UnrootedTreeGradient> UnrootedSBNInstance::Gradients() {
+std::vector<UnrootedPhyloGradient> UnrootedSBNInstance::PhyloGradients() {
   return GetEngine()->Gradients(tree_collection_, phylo_model_params_, rescaling_);
 }
 
