@@ -644,7 +644,6 @@ void GPInstance::ScheduleBranchLengthOptimization(size_t node_id,
     auto child_node = dag_nodes_[child_id];
     size_t pcsp_idx = pcsp_indexer_[node->GetBitset() + child_node->GetBitset()];
     operations.push_back(OptimizeBranchLength{
-      0,
       GetPlvIndex(P, dag_nodes_.size(), child_id),
       GetPlvIndex(R, dag_nodes_.size(), node_id),
       pcsp_idx
@@ -671,7 +670,6 @@ void GPInstance::ScheduleBranchLengthOptimization(size_t node_id,
     auto child_node = dag_nodes_[child_id];
     size_t pcsp_idx = pcsp_indexer_[node->GetBitset().RotateSubsplit() + child_node->GetBitset()];
     operations.push_back(OptimizeBranchLength{
-      0,
       GetPlvIndex(P, dag_nodes_.size(), child_id),
       GetPlvIndex(R_TILDE, dag_nodes_.size(), node_id),
       pcsp_idx
@@ -957,7 +955,7 @@ void GPInstance::EstimateSBNParameters(double tol, size_t max_iter) {
   ComputeLikelihoods();
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
 
-  for (size_t i = 0; i < max_iter; i++) {
+  for (size_t i = 0; i < 1; i++) {
     std::cout << "Iteration: " << (i + 1) << std::endl;
     GetEngine()->ProcessOperations(sbn_param_optimization_operations);
     GetEngine()->ResetLogMarginalLikelihood();

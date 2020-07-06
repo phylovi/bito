@@ -81,30 +81,6 @@ struct Likelihood {
   }
 };
 
-// Perform `plv[dest_idx] = P(branch_lengths[branch_length_idx]) plv[src_idx]`
-struct EvolveRootward {
-  size_t dest_idx;
-  size_t src_idx;
-  size_t branch_length_idx;
-  StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx},
-            {"src_idx", src_idx},
-            {"branch_length_idx", branch_length_idx}};
-  }
-};
-
-// Perform `plv[dest_idx] = P'(branch_lengths[branch_length_idx]) plv[src_idx]`
-struct EvolveLeafward {
-  size_t dest_idx;
-  size_t src_idx;
-  size_t branch_length_idx;
-  StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx},
-            {"src_idx", src_idx},
-            {"branch_length_idx", branch_length_idx}};
-  }
-};
-
 // Finds the optimal `branch_length` for the likelihood of
 // `plv[rootward_idx]` and `P(branch_length) plv[leafward_idx]`,
 // * starting optimization at `branch_lengths[branch_length_idx]`,
@@ -113,15 +89,13 @@ struct EvolveLeafward {
 // * storing log likelihood at `log_likelihoods[branch_length_idx]`
 // * storing optimal branch length at `branch_lengths[branch_length_idx]`
 struct OptimizeBranchLength {
-  size_t dest_idx;
   size_t leafward_idx;
   size_t rootward_idx;
-  size_t branch_length_idx;
+  size_t pcsp_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx},
-            {"leafward_idx", leafward_idx},
+    return {{"leafward_idx", leafward_idx},
             {"rootward_idx", rootward_idx},
-            {"branch_length_idx", branch_length_idx}};
+            {"pcsp_idx", pcsp_idx}};
   }
 };
 
@@ -140,8 +114,7 @@ struct UpdateSBNProbabilities {
 using GPOperation =
     std::variant<GPOperations::Zero, GPOperations::SetToStationaryDistribution,
                  GPOperations::WeightedSumAccumulate, GPOperations::Multiply,
-                 GPOperations::Likelihood, GPOperations::EvolveRootward,
-                 GPOperations::EvolveLeafward, GPOperations::OptimizeBranchLength,
+                 GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
                  GPOperations::UpdateSBNProbabilities,
                  GPOperations::MarginalLikelihood>;
 
@@ -169,12 +142,6 @@ struct GPOperationOstream {
   }
   void operator()(const GPOperations::Likelihood& operation) {
     os_ << "Likelihood" << operation.guts();
-  }
-  void operator()(const GPOperations::EvolveRootward& operation) {
-    os_ << "EvolveRootward" << operation.guts();
-  }
-  void operator()(const GPOperations::EvolveLeafward& operation) {
-    os_ << "EvolveLeafward" << operation.guts();
   }
   void operator()(const GPOperations::OptimizeBranchLength& operation) {
     os_ << "OptimizeBranchLength" << operation.guts();
