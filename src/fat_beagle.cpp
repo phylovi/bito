@@ -121,9 +121,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
   operations.clear();
   topology->TripleIdPreOrderBifurcating(
       [&operations, &ba](int node_id, int sister_id, int parent_id) {
-        if (node_id != ba.root_id_) {
-          AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
-        }
+        AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
       });
   beagleUpdatePrePartials(beagle_instance_, operations.data(),
                           static_cast<int>(operations.size()),
