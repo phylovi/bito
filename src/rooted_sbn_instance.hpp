@@ -229,7 +229,6 @@ TEST_CASE("RootedSBNInstance: Weibull gradients") {
   auto likelihood = inst.LogLikelihoods();
   double physher_ll = -4618.2062529058;
   CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
-  std::cout << likelihood[0] << std::endl;
 
   // Gradient wrt Weibull site model.
   auto gradients = inst.Gradients();
