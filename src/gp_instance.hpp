@@ -40,6 +40,9 @@ class GPInstance {
   void EstimateBranchLengths(double tol, size_t max_iter);
   void PopulatePLVs();
   void ComputeLikelihoods();
+  size_t GetPCSPIndex(size_t parent_node_idx,
+                      size_t child_node_idx,
+                      bool rotated);
 
  private:
   std::string mmap_file_path_;
@@ -79,7 +82,6 @@ class GPInstance {
   BitsetSizePairMap subsplit2range_;
   std::vector<size_t> rootward_order_;
   std::vector<size_t> leafward_order_;
-
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;

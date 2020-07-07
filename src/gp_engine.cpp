@@ -138,7 +138,8 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   PreparePerPatternLikelihoods(op.rootward_idx, op.leafward_idx);
 
   per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
-  double log_likelihood = log(q_(op.pcsp_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  double log_likelihood = log(q_(op.pcsp_idx)) +
+                      per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
   per_pattern_likelihood_derivative_ratios_ =
       per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
