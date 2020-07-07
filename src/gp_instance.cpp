@@ -906,8 +906,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
     std::cout << "New marginal log likelihood: ";
     std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
     if (marginal_log_lik < current_marginal_log_lik) {
-      std::cout << "Marginal log likelihood decreased. Check branch optimization routine.\n";
-      //break;
+      std::cout << "Marginal log likelihood decreased. Check branch optimization: adjust step size.\n";
     }
     if (abs(current_marginal_log_lik - marginal_log_lik) < tol) {
       std::cout << "Converged.\n";

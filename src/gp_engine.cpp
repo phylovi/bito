@@ -96,8 +96,8 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
-  BrentOptimization(op);
-  //GradientAscentOptimization(op);
+  //BrentOptimization(op);
+  GradientAscentOptimization(op);
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
@@ -207,7 +207,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
       significant_digits_for_optimization_, max_iter_for_optimization_);
 
   // Numerical optimization sometimes yields new nllk > current nllk.
-  // In this case, we do not update the branch length.
+  // In this case, we reset the branch length to previous values.
   if (neg_log_likelihood > current_value) {
     branch_lengths_(op.pcsp_idx) = current_branch_length;
   } else {
