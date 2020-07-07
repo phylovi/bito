@@ -9,8 +9,6 @@ using namespace GPOperations;
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, root, venus };
 
-size_t hello_node_count = 4;
-
 // Our tree is
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
@@ -27,7 +25,19 @@ GPInstance MakeHelloGPInstance() {
   return inst;
 }
 
-GPInstance MakeHelloGPInstance2() {
+GPInstance MakeHelloGPInstanceSingleNucleotide() {
+  GPInstance inst("_ignore/mmapped_plv.data");
+  inst.ReadFastaFile("data/hello_single_nucleotide.fasta");
+  inst.ReadNewickFile("data/hello_rooted.nwk");
+  inst.MakeEngine();
+  EigenVectorXd branch_lengths(5);
+  // Order set by HelloGPCSP.
+  branch_lengths << 0, 0.113, 0.22, 0.1, 0.15;
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  return inst;
+}
+
+GPInstance MakeHelloGPInstanceTwoTrees() {
   GPInstance inst("_ignore/mmapped_plv.data");
   inst.ReadFastaFile("data/hello.fasta");
   inst.ReadNewickFile("data/hello_rooted_two_trees.nwk");
@@ -50,7 +60,7 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
 }
 
 TEST_CASE("GPInstance: marginal likelihood calculation") {
-  auto inst = MakeHelloGPInstance2();
+  auto inst = MakeHelloGPInstanceTwoTrees();
   auto engine = inst.GetEngine();
 
   inst.PopulatePLVs();
@@ -62,7 +72,7 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
 }
 
 TEST_CASE("GPInstance: gradient calculation") {
-  auto inst = MakeHelloGPInstance();
+  auto inst = MakeHelloGPInstanceSingleNucleotide();
   auto engine = inst.GetEngine();
 
   inst.PopulatePLVs();
@@ -70,15 +80,18 @@ TEST_CASE("GPInstance: gradient calculation") {
   
   size_t root_idx = root;
   size_t child_idx = jupiter;
-  size_t leafward_idx = GetPlvIndex(PlvType::R,
-                                    hello_node_count,
-                                    root_idx);
-  size_t rootward_idx = GetPlvIndex(PlvType::P,
+  size_t hello_node_count = 5;
+  size_t leafward_idx = GetPlvIndex(PlvType::P,
                                     hello_node_count,
                                     child_idx);
+  size_t rootward_idx = GetPlvIndex(PlvType::R,
+                                    hello_node_count,
+                                    root_idx);
   size_t pcsp_idx = inst.GetPCSPIndex(root_idx, child_idx, false);
   OptimizeBranchLength op{leafward_idx, rootward_idx, pcsp_idx};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
-  std::cout << log_lik_and_derivative.first << ", " << log_lik_and_derivative.second << "\n";
-  //CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -79.9944001), 1e-6);
+  // Expect log lik: -4.806671945.
+  // Expect log lik derivative: -0.6109379521.
+  CHECK_LT(fabs(log_lik_and_derivative.first - -4.806671945), 1e-6);
+  CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
 }
