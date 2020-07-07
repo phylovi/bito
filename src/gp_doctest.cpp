@@ -64,7 +64,7 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   std::cout << engine->GetLogMarginalLikelihood() << std::endl;
-  inst.EstimateBranchLengths(1e-6, 10);
+  inst.EstimateBranchLengths(1e-6, 100);
 
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -79.9944001), 1e-6);
 }
