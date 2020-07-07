@@ -26,12 +26,8 @@ class SiteModel : public BlockModel {
 
 class ConstantSiteModel : public SiteModel {
  public:
-  ConstantSiteModel() : SiteModel({}) {
-    one_.resize(1);
-    one_[0] = 1.0;
-    zero_.resize(1);
-    zero_[0] = 0.0;
-  }
+  ConstantSiteModel()
+      : SiteModel({}), zero_(EigenVectorXd::Zero(1)), one_(EigenVectorXd::Ones(1)) {}
 
   size_t GetCategoryCount() const override { return 1; }
 
