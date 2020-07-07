@@ -7,7 +7,9 @@ using namespace GPOperations;
 
 // GPCSP stands for generalized PCSP-- see text.
 // Let the "venus" node be the common ancestor of mars and saturn.
-enum HelloGPCSP { jupiter, mars, saturn, venus, root };
+enum HelloGPCSP { jupiter, mars, saturn, root, venus };
+
+size_t hello_node_count = 4;
 
 // Our tree is
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
@@ -57,4 +59,26 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
   inst.EstimateBranchLengths(1e-6, 10);
 
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -79.9944001), 1e-6);
+}
+
+TEST_CASE("GPInstance: gradient calculation") {
+  auto inst = MakeHelloGPInstance();
+  auto engine = inst.GetEngine();
+
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+  
+  size_t root_idx = root;
+  size_t child_idx = jupiter;
+  size_t leafward_idx = GetPlvIndex(PlvType::R,
+                                    hello_node_count,
+                                    root_idx);
+  size_t rootward_idx = GetPlvIndex(PlvType::P,
+                                    hello_node_count,
+                                    child_idx);
+  size_t pcsp_idx = inst.GetPCSPIndex(root_idx, child_idx, false);
+  OptimizeBranchLength op{leafward_idx, rootward_idx, pcsp_idx};
+  DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
+  std::cout << log_lik_and_derivative.first << ", " << log_lik_and_derivative.second << "\n";
+  //CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -79.9944001), 1e-6);
 }

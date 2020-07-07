@@ -508,6 +508,17 @@ void GPInstance::OptimizeSBNParameters(const Bitset &subsplit,
   }
 }
 
+size_t GPInstance::GetPCSPIndex(size_t parent_node_idx,
+                                size_t child_node_idx,
+                                bool rotated) {
+  auto parent_node = dag_nodes_[parent_node_idx];
+  auto child_node = dag_nodes_[child_node_idx];
+  auto pcsp = rotated ?
+        parent_node->GetBitset().RotateSubsplit() + child_node->GetBitset() :
+        parent_node->GetBitset() + child_node->GetBitset();
+  return pcsp_indexer_[pcsp];
+}
+
 void GPInstance::RootwardPass(std::vector<size_t> visit_order)
 {
   // Perform first rootward pass. No optimization.
@@ -895,7 +906,6 @@ GPOperationVector GPInstance::MarginalLikelihoodOperations() {
     auto rootsplit = rootsplits_[i];
     auto root_subsplit = rootsplit + ~rootsplit;
     size_t root_idx = subsplit_to_index_[root_subsplit];
-    size_t pcsp_idx = pcsp_indexer_[root_subsplit + ~root_subsplit];
     operations.push_back(MarginalLikelihood{
       GetPlvIndex(PlvType::R_HAT, dag_nodes_.size(), root_idx),
       i,
