@@ -61,11 +61,11 @@ class GPEngine {
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
  private:
-  double min_branch_length_ = 1e-9;
+  double min_branch_length_ = 1e-6;
   double max_branch_length_ = 3.;
-  int significant_digits_for_optimization_ = 9;
+  int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-2;
-  double step_size_for_optimization_ = 5e-6;
+  double step_size_for_optimization_ = 5e-4;
   size_t max_iter_for_optimization_ = 1000;
 
   double log_marginal_likelihood = DOUBLE_NEG_INF;

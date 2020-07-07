@@ -44,8 +44,6 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   inst.MakeEngine();
   EigenVectorXd branch_lengths = EigenVectorXd::Ones(inst.GetEngine()->GetBranchLengths().size());
   inst.GetEngine()->SetBranchLengths(branch_lengths);
-  std::cout << inst.GetEngine()->GetBranchLengths() << std::endl;
-  std::cout << inst.GetEngine()->GetSBNParameters() << std::endl;
   return inst;
 }
 
