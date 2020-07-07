@@ -110,11 +110,11 @@ class GPEngine {
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
-  inline double LogLikelihood(size_t src1_idx, size_t src2_idx) {
-    per_pattern_log_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array().log();
-    return per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-  }
+//  inline double LogLikelihood(size_t src1_idx, size_t src2_idx) {
+//    per_pattern_log_likelihoods_ =
+//        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array().log();
+//    return per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+//  }
 
   inline void PreparePerPatternLikelihoodDerivatives(size_t src1_idx, size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =

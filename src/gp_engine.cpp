@@ -4,6 +4,30 @@
 #include "gp_engine.hpp"
 #include "optimization.hpp"
 
+GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
+                   std::string mmap_file_path)
+    : site_pattern_(std::move(site_pattern)),
+      plv_count_(site_pattern_.PatternCount() + gpcsp_count),
+      mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount())
+{
+  Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
+  plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
+  Assert(plvs_.size() == plv_count_,
+         "Didn't get the right number of PLVs out of Subdivide.");
+  Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
+       plvs_.back().cols() == site_pattern_.PatternCount(),
+   "Didn't get the right shape of PLVs out of Subdivide.");
+  branch_lengths_.resize(gpcsp_count);
+  log_likelihoods_.resize(gpcsp_count);
+  q_.resize(gpcsp_count);
+
+  auto weights = site_pattern_.GetWeights();
+  site_pattern_weights_ =
+    Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
+
+  InitializePLVsWithSitePatterns();
+}
+
 GPEngine::GPEngine(SitePattern site_pattern,
                    size_t num_plvs,
                    size_t gpcsp_count,
@@ -93,7 +117,6 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
 
 void GPEngine::ProcessOperations(GPOperationVector operations) {
   for (const auto& operation : operations) {
-    //std::cout << operation << std::endl;
     std::visit(*this, operation);
   }
 }
@@ -108,7 +131,7 @@ void GPEngine::SetTransitionAndDerivativeMatricesToHaveBranchLength(
   Eigen::Vector4d diagonal_vector = (branch_length * eigenvalues_).array().exp();
   diagonal_matrix_.diagonal() = diagonal_vector;
   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
-  diagonal_matrix_.diagonal() = diagonal_vector.array() * eigenvalues_.array();
+  diagonal_matrix_.diagonal() = eigenvalues_.array() * diagonal_vector.array();
   derivative_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
 }
 
@@ -136,7 +159,7 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   // likelihood, but using the derivative matrix instead of the transition matrix.
   PreparePerPatternLikelihoodDerivatives(op.rootward_idx, op.leafward_idx);
   PreparePerPatternLikelihoods(op.rootward_idx, op.leafward_idx);
-
+  
   per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
   double log_likelihood = log(q_(op.pcsp_idx)) +
                       per_pattern_log_likelihoods_.dot(site_pattern_weights_);
@@ -166,7 +189,6 @@ void GPEngine::InitializePLVsWithSitePatterns() {
     }
     taxon_idx++;
   }
-  std::cout << "Num taxa: " << taxon_idx << std::endl;
 }
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
@@ -186,7 +208,9 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
 
   // Numerical optimization sometimes yields new nllk > current nllk.
   // In this case, we do not update the branch length.
-  if (neg_log_likelihood < current_value) {
+  if (neg_log_likelihood > current_value) {
+    branch_lengths_(op.pcsp_idx) = current_branch_length;
+  } else {
     branch_lengths_(op.pcsp_idx) = branch_length;
   }
 }

@@ -80,8 +80,6 @@ void GPInstance::MakeGPEngine() {
     n_fake_subsplit_params += dag_nodes_[i]->GetRootwardSorted().size();
   }
 
-  std::cout << "Num fake split params: " << n_fake_subsplit_params << std::endl;
-
   size_t node_count = dag_nodes_.size();
   size_t plv_count = 6 * node_count;
   engine_ = std::make_unique<GPEngine>(site_pattern,
@@ -139,7 +137,6 @@ void GPInstance::CreateAndInsertNode(const Bitset &subsplit)
     size_t id = dag_nodes_.size();
     subsplit_to_index_[subsplit] = id;
     dag_nodes_.push_back(std::make_shared<DAGNode>(id, subsplit));
-    //std::cout << id << ":" << subsplit.SubsplitToString() << std::endl;
   }
 }
 
@@ -164,15 +161,9 @@ void GPInstance::ConnectNodes(size_t idx,
   // Retrieve children subsplits, set edge relation.
   Bitset subsplit = rotated ? node->GetBitset().RotateSubsplit() :
                               node->GetBitset();
-//  EdgeType leaf_edge_type = rotated ? EdgeType::LEAFWARD_ROTATED :
-//                                               EdgeType::LEAFWARD_SORTED;
-//  EdgeType root_edge_type = rotated ? EdgeType::ROOTWARD_ROTATED :
-//                                               EdgeType::ROOTWARD_SORTED;
-
   auto children = GetChildrenSubsplits(subsplit, true);
   for (auto child_subsplit : children) {
     auto child_node = dag_nodes_[subsplit_to_index_[child_subsplit]];
-    //std::cout << child_node->Id() << std::endl;
     if (rotated) {
       node->AddLeafwardRotated(child_node->Id());
       child_node->AddRootwardRotated(node->Id());
@@ -180,11 +171,7 @@ void GPInstance::ConnectNodes(size_t idx,
       node->AddLeafwardSorted(child_node->Id());
       child_node->AddRootwardSorted(node->Id());
     }
-    //node->AddNeighbor(leaf_edge_type, child_node->Id());
-    //child_node->AddNeighbor(root_edge_type, node->Id());
   }
-
-  //std::cout << node->ToString() << std::endl;
 }
 
 std::vector<Bitset> GPInstance::GetChildrenSubsplits(const Bitset &subsplit,
@@ -321,12 +308,7 @@ std::vector<size_t> GPInstance::LeafwardPassTraversal()
                        visit_order,
                        visited_nodes);
   }
-  //std::cout << "Leafward traversal node order:\n";
-//  for (size_t i = 0; i < visit_order.size(); i++) {
-//    std::cout << visit_order[i] << std::endl;
-//    std::cout << dag_nodes_[visit_order[i]]->ToString() << std::endl;
-//  }
-//  std::cout << "\n";
+  
   return visit_order;
 }
 
@@ -341,12 +323,6 @@ std::vector<size_t> GPInstance::RootwardPassTraversal()
                        visit_order,
                        visited_nodes);
   }
-//  std::cout << "Rootward traversal node order:\n";
-//  for (size_t i = 0; i < visit_order.size(); i++) {
-//    std::cout << visit_order[i] << std::endl;
-//    std::cout << dag_nodes_[visit_order[i]]->ToString() << std::endl;
-//  }
-//  std::cout << "\n";
   return visit_order;
 }
 
@@ -361,13 +337,11 @@ void GPInstance::BuildPCSPIndexer()
 
   for (size_t i = taxon_count; i < dag_nodes_.size(); i++) {
     auto node = dag_nodes_[i];
-    //std::cout << node->Id() << std::endl;
     auto n_child = node->GetLeafwardSorted().size();
     if (n_child > 0) {
       SafeInsert(subsplit2range_, node->GetBitset(), {idx, idx + n_child});
       for (size_t j = 0; j < n_child; j++) {
         auto child = dag_nodes_[node->GetLeafwardSorted()[j]];
-        //std::cout << child->Id() << ": " << idx << "\n";
         SafeInsert(pcsp_indexer_, node->GetBitset() + child->GetBitset(), idx);
         idx++;
       }
@@ -379,7 +353,6 @@ void GPInstance::BuildPCSPIndexer()
                  {idx, idx + n_child});
       for (size_t j = 0; j < n_child; j++) {
         auto child = dag_nodes_[node->GetLeafwardRotated()[j]];
-        //std::cout << child->Id() << ": " << idx << "\n";
         SafeInsert(pcsp_indexer_,
                    node->GetBitset().RotateSubsplit() + child->GetBitset(),
                    idx);
@@ -600,11 +573,6 @@ void GPInstance::SetLeafwardZero()
 void GPInstance::ScheduleBranchLengthOptimization(size_t node_id,
                                       std::unordered_set<size_t> &visited_nodes,
                                       GPOperationVector &operations) {
-//  std::cout << "Visiting node: " << node_id << ", ";
-//  std::cout << "already visited? " << visited_nodes.count(node_id) << "\n";
-//  if (visited_nodes.count(node_id) > 0) {
-//    Failwith("Error: Visiting a node already visited!");
-//  }
   visited_nodes.insert(node_id);
   auto node = dag_nodes_[node_id];
 
@@ -917,7 +885,6 @@ GPOperationVector GPInstance::MarginalLikelihoodOperations() {
 
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   std::cout << "Begin branch optimization\n";
-  std::cout << pcsp_indexer_.size() << std::endl;
   GPOperationVector branch_optimization_operations = BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = MarginalLikelihoodOperations();
 
@@ -939,7 +906,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
     std::cout << "New marginal log likelihood: ";
     std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
     if (marginal_log_lik < current_marginal_log_lik) {
-      std::cout << "Marginal log likelihood decreased.\n";
+      std::cout << "Marginal log likelihood decreased. Check branch optimization routine.\n";
       //break;
     }
     if (abs(current_marginal_log_lik - marginal_log_lik) < tol) {
@@ -954,35 +921,15 @@ void GPInstance::EstimateSBNParameters(double tol, size_t max_iter) {
   std::cout << "Begin SBN parameter optimization\n";
   GPOperationVector sbn_param_optimization_operations = SBNParameterOptimization();
   GPOperationVector marginal_lik_operations = MarginalLikelihoodOperations();
-//  for (auto op : branch_optimization_operations) {
-//    std::cout << op << std::endl;
-//  }
 
   SetRootwardZero();
   SetLeafwardZero();
   GetEngine()->ResetLogMarginalLikelihood();
   PopulatePLVs();
   ComputeLikelihoods();
-  double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
 
-  for (size_t i = 0; i < 1; i++) {
-    std::cout << "Iteration: " << (i + 1) << std::endl;
-    GetEngine()->ProcessOperations(sbn_param_optimization_operations);
-    GetEngine()->ResetLogMarginalLikelihood();
-    GetEngine()->ProcessOperations(marginal_lik_operations);
-    double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-    std::cout << "Current marginal log likelihood: ";
-    std::cout << std::setprecision(9) << current_marginal_log_lik << std::endl;
-    std::cout << "New marginal log likelihood: ";
-    std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
-    if (marginal_log_lik < current_marginal_log_lik) {
-      std::cout << "Marginal log likelihood decreased.\n";
-      //break;
-    }
-    if (abs(current_marginal_log_lik - marginal_log_lik) < tol) {
-      std::cout << "Converged.\n";
-      break;
-    }
-    current_marginal_log_lik = marginal_log_lik;
-  }
+  GetEngine()->ProcessOperations(sbn_param_optimization_operations);
+  GetEngine()->ProcessOperations(marginal_lik_operations);
+  double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
+  std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
 }
