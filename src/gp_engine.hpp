@@ -7,7 +7,6 @@
 #ifndef SRC_GP_ENGINE_HPP_
 #define SRC_GP_ENGINE_HPP_
 
-#include "dag_node.hpp"
 #include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
