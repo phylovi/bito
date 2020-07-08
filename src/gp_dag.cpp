@@ -29,6 +29,8 @@ GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
   BuildNodes();
   BuildEdges();
   BuildPCSPIndexer();
+  rootward_order_ = RootwardPassTraversal();
+  leafward_order_ = LeafwardPassTraversal();
 }
 
 size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
@@ -231,7 +233,7 @@ void GPDAG::PrintPCSPIndexer() { PrintPCSPIndexerFree(pcsp_indexer_); }
 
 EigenVectorXd GPDAG::BuildUniformQ() {
   // For now, use uniform.
-  EigenVectorXd q = EigenVectorXd::Ones(GPCSPCount());
+  EigenVectorXd q = EigenVectorXd::Ones(ContinuousParameterCount());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
   for (auto it = subsplit2range_.begin(); it != subsplit2range_.end(); ++it) {
     auto range = subsplit2range_[it->first];
@@ -766,6 +768,8 @@ GPOperationVector GPDAG::ComputeLikelihoods() {
         GetPLVIndex(PLVType::R_HAT, dag_nodes_.size(), node_idx), root_idx,
         GetPLVIndex(PLVType::P, dag_nodes_.size(), node_idx)});
   }
+
+  std::cout << operations;
 
   return operations;
 }

@@ -61,6 +61,7 @@ void GPInstance::MakeEngine() {
   MakeGPEngine();
   PrintDAG();
   PrintPCSPIndexer();
+  InitializeGPEngine();
 }
 
 void GPInstance::MakeGPEngine() {
@@ -102,14 +103,13 @@ void GPInstance::PrintPCSPIndexer() { dag_.PrintPCSPIndexer(); }
 
 void GPInstance::InitializeGPEngine() {
   size_t n_params = engine_->GetBranchLengths().size();
+  std::cout << n_params << std::endl;
 
   // Initialize branch lengths to 1.
   EigenVectorXd branch_lengths(n_params);
   branch_lengths = EigenVectorXd::Ones(n_params);
   GetEngine()->SetBranchLengths(branch_lengths);
-
   GetEngine()->SetSBNParameters(dag_.BuildUniformQ());
-
   GetEngine()->ProcessOperations(dag_.SetRhatToStationary());
 }
 

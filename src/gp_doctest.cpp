@@ -50,44 +50,44 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
 
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
-  // auto engine = inst.GetEngine();
+  auto engine = inst.GetEngine();
 
-  // inst.PopulatePLVs();
-  // inst.PrintDAG();
-  // inst.ComputeLikelihoods();
+  inst.PopulatePLVs();
+  inst.PrintDAG();
+  inst.ComputeLikelihoods();
 
-  // CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
+  CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
 }
 
-// TEST_CASE("GPInstance: marginal likelihood calculation") {
-//   auto inst = MakeHelloGPInstanceTwoTrees();
-//   auto engine = inst.GetEngine();
-//
-//   inst.PopulatePLVs();
-//   inst.ComputeLikelihoods();
-//   std::cout << engine->GetLogMarginalLikelihood() << std::endl;
-//   inst.EstimateBranchLengths(1e-6, 100);
-//
-//   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -79.9944001), 1e-6);
-// }
+TEST_CASE("GPInstance: marginal likelihood calculation") {
+  auto inst = MakeHelloGPInstanceTwoTrees();
+  auto engine = inst.GetEngine();
 
-// TEST_CASE("GPInstance: gradient calculation") {
-//   auto inst = MakeHelloGPInstanceSingleNucleotide();
-//   auto engine = inst.GetEngine();
-//
-//   inst.PopulatePLVs();
-//   inst.ComputeLikelihoods();
-//
-//   size_t root_idx = root;
-//   size_t child_idx = jupiter;
-//   size_t hello_node_count = 5;
-//   size_t leafward_idx = GetPLVIndex(PLVType::P, hello_node_count, child_idx);
-//   size_t rootward_idx = GetPLVIndex(PLVType::R, hello_node_count, root_idx);
-//   size_t pcsp_idx = inst.GetPCSPIndex(root_idx, child_idx, false);
-//   OptimizeBranchLength op{leafward_idx, rootward_idx, pcsp_idx};
-//   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
-//   // Expect log lik: -4.806671945.
-//   // Expect log lik derivative: -0.6109379521.
-//   CHECK_LT(fabs(log_lik_and_derivative.first - -4.806671945), 1e-6);
-//   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
-// }
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+  std::cout << engine->GetLogMarginalLikelihood() << std::endl;
+  inst.EstimateBranchLengths(1e-6, 100);
+
+  CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -79.9944001), 1e-6);
+}
+
+TEST_CASE("GPInstance: gradient calculation") {
+  auto inst = MakeHelloGPInstanceSingleNucleotide();
+  auto engine = inst.GetEngine();
+
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+
+  size_t root_idx = root;
+  size_t child_idx = jupiter;
+  size_t hello_node_count = 5;
+  size_t leafward_idx = GetPLVIndex(PLVType::P, hello_node_count, child_idx);
+  size_t rootward_idx = GetPLVIndex(PLVType::R, hello_node_count, root_idx);
+  size_t pcsp_idx = inst.GetPCSPIndex(root_idx, child_idx, false);
+  OptimizeBranchLength op{leafward_idx, rootward_idx, pcsp_idx};
+  DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
+  // Expect log lik: -4.806671945.
+  // Expect log lik derivative: -0.6109379521.
+  CHECK_LT(fabs(log_lik_and_derivative.first - -4.806671945), 1e-6);
+  CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
+}

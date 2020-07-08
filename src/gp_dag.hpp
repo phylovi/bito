@@ -36,8 +36,6 @@ class GPDAG {
 
   EigenVectorXd BuildUniformQ();
 
-  GPOperationVector ComputeLikelihoods();
-  GPOperationVector SetRhatToStationary();
   void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
                                                   bool rotated,
                                                   GPOperationVector &operations);
@@ -46,24 +44,27 @@ class GPDAG {
   void OptimizeSBNParameters(const Bitset &subsplit, GPOperationVector &operations);
 
   void InitializeGPEngine();
-  GPOperationVector SetStationaryDistribution();
-  GPOperationVector BranchLengthOptimization();
-  GPOperationVector SBNParameterOptimization();
-  GPOperationVector MarginalLikelihoodOperations();
+  [[nodiscard]] GPOperationVector ComputeLikelihoods();
+  [[nodiscard]] GPOperationVector SetRhatToStationary();
+  [[nodiscard]] GPOperationVector SetStationaryDistribution();
+  [[nodiscard]] GPOperationVector BranchLengthOptimization();
+  [[nodiscard]] GPOperationVector SBNParameterOptimization();
+  [[nodiscard]] GPOperationVector MarginalLikelihoodOperations();
+  [[nodiscard]] GPOperationVector RootwardPass(std::vector<size_t> visit_order);
+  [[nodiscard]] GPOperationVector RootwardPass();
+  [[nodiscard]] GPOperationVector LeafwardPass(std::vector<size_t> visit_order);
+  [[nodiscard]] GPOperationVector LeafwardPass();
+  [[nodiscard]] GPOperationVector SetRootwardZero();
+  [[nodiscard]] GPOperationVector SetLeafwardZero();
+  [[nodiscard]] SizeVector LeafwardPassTraversal();
+  [[nodiscard]] SizeVector RootwardPassTraversal();
+
   void ScheduleBranchLengthOptimization(size_t node_id,
                                         std::unordered_set<size_t> &visited_nodes,
                                         GPOperationVector &operations);
   void ScheduleSBNParametersOptimization(size_t node_id,
                                          std::unordered_set<size_t> &visited_nodes,
                                          GPOperationVector &operations);
-  GPOperationVector RootwardPass(std::vector<size_t> visit_order);
-  GPOperationVector RootwardPass();
-  GPOperationVector LeafwardPass(std::vector<size_t> visit_order);
-  GPOperationVector LeafwardPass();
-  GPOperationVector SetRootwardZero();
-  GPOperationVector SetLeafwardZero();
-  std::vector<size_t> LeafwardPassTraversal();
-  std::vector<size_t> RootwardPassTraversal();
 
  private:
   size_t taxon_count_;
@@ -96,8 +97,8 @@ class GPDAG {
   BitsetSizeMap pcsp_indexer_;
   // Stores range of indices for a subsplit and rotated subsplit.
   BitsetSizePairMap subsplit2range_;
-  std::vector<size_t> rootward_order_;
-  std::vector<size_t> leafward_order_;
+  SizeVector rootward_order_;
+  SizeVector leafward_order_;
 
   void CreateAndInsertNode(const Bitset &subsplit);
   void ConnectNodes(size_t idx, bool rotated);
