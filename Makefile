@@ -1,12 +1,13 @@
 our_files := $(wildcard src/*.cpp) $(wildcard src/*.hpp)
 our_files := $(filter-out src/doctest.h src/noodle.cpp src/parser.cpp src/parser.hpp src/prettyprint.hpp src/scanner.cpp, $(our_files))
+j_flags = $(shell echo "${MAKEFLAGS}" | grep -o -- "-j[0-9]\+" || true)
 
 default:
-	scons
+	scons ${j_flags}
 	pip install -U dist/libsbn-*.whl
 
 test:
-	make
+	make ${j_flags}
 	./_build/doctest
 	mkdir -p _ignore  # Needed for gp_doctest.
 	./_build/gp_doctest
@@ -41,7 +42,7 @@ format:
 	clang-format -i -style=file $(our_files)
 
 clean:
-	rm -rf _build
+	rm -rf _build build dist libsbn.*.so $(find . -name __pycache)
 
 # We follow C++ core guidelines by allowing passing by non-const reference.
 lint:
