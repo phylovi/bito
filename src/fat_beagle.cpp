@@ -101,7 +101,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
   UpdateBeagleTransitionMatrices(ba, branch_lengths, nullptr);
   SetRootPreorderPartialsToStateFrequencies(ba);
 
-  // Set differential matrix for each branch.
+  // Set differential matrices.
   int derivative_matrix_idx = ba.node_count_ - 1;
   beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, dQ.data());
   const auto derivative_matrix_indices =

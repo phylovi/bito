@@ -46,7 +46,7 @@ class ConstantSiteModel : public SiteModel {
 
 class WeibullSiteModel : public SiteModel {
  public:
-  explicit WeibullSiteModel(size_t category_count, double shape = 1)
+  explicit WeibullSiteModel(size_t category_count, double shape)
       : SiteModel({{shape_key_, 1}}),
         category_count_(category_count),
         shape_(shape),
@@ -89,7 +89,7 @@ TEST_CASE("SiteModel") {
   CheckVectorXdEquality(rates, rates_r, 0.0001);
 
   // Test 2: Now set param_vector using SetParameters.
-  weibull_model = std::make_unique<WeibullSiteModel>(4);
+  weibull_model = std::make_unique<WeibullSiteModel>(4, 1.0);
   EigenVectorXd param_vector(1);
   param_vector << 0.1;
   weibull_model->SetParameters(param_vector);

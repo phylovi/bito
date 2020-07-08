@@ -18,7 +18,7 @@ std::unique_ptr<SiteModel> SiteModel::OfSpecification(
       std::string cat_count_str = specification.substr(index + 1);
       category_count = stoi(cat_count_str);
     }
-    return std::make_unique<WeibullSiteModel>(category_count);
+    return std::make_unique<WeibullSiteModel>(category_count, 1.0);
   }  // else
   Failwith("Site model not known: " + specification);
 }
