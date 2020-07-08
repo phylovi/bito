@@ -10,8 +10,6 @@
 #include "site_pattern.hpp"
 
 
-size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx);
-
 class GPInstance {
  public:
   GPInstance(std::string mmap_file_path) : mmap_file_path_(mmap_file_path) {
