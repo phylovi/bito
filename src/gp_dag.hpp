@@ -4,16 +4,11 @@
 #ifndef SRC_GP_DAG_HPP_
 #define SRC_GP_DAG_HPP_
 
-#include <memory.h>
-
 #include <deque>
-
 #include "gp_dag_node.hpp"
 #include "gp_engine.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
-#include "site_pattern.hpp"
-#include "sugar.hpp"
 
 enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
 

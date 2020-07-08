@@ -4,14 +4,10 @@
 #ifndef SRC_GP_INSTANCE_HPP_
 #define SRC_GP_INSTANCE_HPP_
 
-#include <memory.h>
-
 #include "gp_dag.hpp"
 #include "gp_engine.hpp"
 #include "rooted_tree_collection.hpp"
-#include "sbn_maps.hpp"
 #include "site_pattern.hpp"
-#include "sugar.hpp"
 
 
 size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx);
