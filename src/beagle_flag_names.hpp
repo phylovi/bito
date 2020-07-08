@@ -12,6 +12,7 @@
 #include <limits>
 #include <string>
 #include <vector>
+
 #include "libhmsbeagle/beagle.h"
 
 namespace BeagleFlagNames {

@@ -3,8 +3,7 @@
 
 #include "dag_node.hpp"
 
-std::string GetNeighborString(std::vector<size_t> neighbors)
-{
+std::string GetNeighborString(std::vector<size_t> neighbors) {
   std::string str = "";
   for (size_t i : neighbors) {
     str += std::to_string(i) + " ";
@@ -12,8 +11,7 @@ std::string GetNeighborString(std::vector<size_t> neighbors)
   return str;
 }
 
-std::string DAGNode::ToString()
-{
+std::string DAGNode::ToString() {
   std::string str = std::to_string(id_) + "\n";
   str += "Rootward Sorted: " + GetNeighborString(rootward_sorted) + "\n";
   str += "Rootward Rotated: " + GetNeighborString(rootward_rotated) + "\n";

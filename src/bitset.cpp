@@ -2,7 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "bitset.hpp"
+
 #include <utility>
+
 #include "sugar.hpp"
 
 Bitset::Bitset(std::vector<bool> value) : value_(std::move(value)) {}

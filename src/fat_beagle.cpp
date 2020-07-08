@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "fat_beagle.hpp"
+
 #include <numeric>
 #include <utility>
 #include <vector>

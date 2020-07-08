@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "sbn_instance.hpp"
+
 #include <iostream>
 #include <memory>
 #include <unordered_set>

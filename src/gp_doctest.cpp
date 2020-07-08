@@ -42,7 +42,8 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   inst.ReadFastaFile("data/hello.fasta");
   inst.ReadNewickFile("data/hello_rooted_two_trees.nwk");
   inst.MakeEngine();
-  EigenVectorXd branch_lengths = EigenVectorXd::Ones(inst.GetEngine()->GetBranchLengths().size());
+  EigenVectorXd branch_lengths =
+      EigenVectorXd::Ones(inst.GetEngine()->GetBranchLengths().size());
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   return inst;
 }
@@ -75,16 +76,12 @@ TEST_CASE("GPInstance: gradient calculation") {
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-  
+
   size_t root_idx = root;
   size_t child_idx = jupiter;
   size_t hello_node_count = 5;
-  size_t leafward_idx = GetPlvIndex(PlvType::P,
-                                    hello_node_count,
-                                    child_idx);
-  size_t rootward_idx = GetPlvIndex(PlvType::R,
-                                    hello_node_count,
-                                    root_idx);
+  size_t leafward_idx = GetPLVIndex(PLVType::P, hello_node_count, child_idx);
+  size_t rootward_idx = GetPLVIndex(PLVType::R, hello_node_count, root_idx);
   size_t pcsp_idx = inst.GetPCSPIndex(root_idx, child_idx, false);
   OptimizeBranchLength op{leafward_idx, rootward_idx, pcsp_idx};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);

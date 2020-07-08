@@ -7,8 +7,8 @@
 #ifndef SRC_GP_ENGINE_HPP_
 #define SRC_GP_ENGINE_HPP_
 
-#include "eigen_sugar.hpp"
 #include "dag_node.hpp"
+#include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
 #include "numerical_utils.hpp"
@@ -18,11 +18,9 @@
 class GPEngine {
  public:
   GPEngine(SitePattern site_pattern, size_t pcss_count, std::string mmap_file_path);
-  GPEngine(SitePattern site_pattern,
-           size_t num_plvs,
-           size_t gpcsp_count,
+  GPEngine(SitePattern site_pattern, size_t num_plvs, size_t gpcsp_count,
            std::string mmap_file_path);
-  
+
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::Zero& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
@@ -39,21 +37,14 @@ class GPEngine {
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
   const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
-  NucleotidePLV GetPLV(size_t idx) { return plvs_[idx]; }
   void PrintPLV(size_t plv_idx);
 
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     branch_lengths_ = branch_lengths;
   };
-  void SetSBNParameters(EigenVectorXd q) {
-    q_ = q;
-  };
-  void ResetLogMarginalLikelihood() {
-    log_marginal_likelihood = DOUBLE_NEG_INF;
-  }
-  double GetLogMarginalLikelihood() {
-    return log_marginal_likelihood;
-  }
+  void SetSBNParameters(EigenVectorXd q) { q_ = q; };
+  void ResetLogMarginalLikelihood() { log_marginal_likelihood = DOUBLE_NEG_INF; }
+  double GetLogMarginalLikelihood() { return log_marginal_likelihood; }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
@@ -110,20 +101,18 @@ class GPEngine {
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
-//  inline double LogLikelihood(size_t src1_idx, size_t src2_idx) {
-//    per_pattern_log_likelihoods_ =
-//        (plvs_.at(src1_idx).transpose() * plvs_.at(src2_idx)).diagonal().array().log();
-//    return per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-//  }
-
   inline void PreparePerPatternLikelihoodDerivatives(size_t src1_idx, size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
-        (plvs_.at(src1_idx).transpose() * derivative_matrix_ * plvs_.at(src2_idx)).diagonal().array();
+        (plvs_.at(src1_idx).transpose() * derivative_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array();
   }
 
   inline void PreparePerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
     per_pattern_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx)).diagonal().array();
+        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array();
   }
 
   inline DoublePair LogLikelihoodAndDerivativeFromPreparations() {

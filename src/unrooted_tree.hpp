@@ -5,6 +5,7 @@
 #define SRC_UNROOTED_TREE_HPP_
 
 #include <vector>
+
 #include "tree.hpp"
 
 class UnrootedTree : public Tree {

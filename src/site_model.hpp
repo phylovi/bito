@@ -8,6 +8,7 @@
 #include <numeric>
 #include <string>
 #include <vector>
+
 #include "block_model.hpp"
 
 class SiteModel : public BlockModel {

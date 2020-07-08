@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
 #include "sbn_maps.hpp"
 #include "sugar.hpp"
 #include "unrooted_tree_collection.hpp"

@@ -8,6 +8,7 @@
 #include <queue>
 #include <utility>
 #include <vector>
+
 #include "beagle_accessories.hpp"
 #include "phylo_model.hpp"
 #include "rooted_tree_collection.hpp"
