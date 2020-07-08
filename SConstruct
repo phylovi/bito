@@ -165,6 +165,7 @@ sources = [
 ]
 gp_sources = [
     "_build/dag_node.cpp",
+    "_build/gp_dag.cpp",
     "_build/gp_engine.cpp",
     "_build/gp_instance.cpp",
     "_build/gp_operation.cpp",
