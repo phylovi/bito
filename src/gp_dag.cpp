@@ -86,17 +86,10 @@ void GPDAG::ConnectNodes(size_t idx, bool rotated) {
   }
 }
 
-// This function returns empty vector if subsplit is invalid.
+// This function returns empty vector if subsplit is invalid or has no child.
 std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
                                                 bool include_fake_subsplits) {
   std::vector<Bitset> children_subsplits;
-
-  // Any subsplit with first chunk equal to zero is either invalid or
-  // has no children (fake subsplit).
-  // Any subsplit where the second chunk is equal to zero is an invalid.
-  if (!subsplit.SplitChunk(0).Any() || !subsplit.SplitChunk(1).Any()) {
-    return children_subsplits;
-  }
 
   if (parent_to_range_.count(subsplit)) {
     auto range = parent_to_range_.at(subsplit);
@@ -104,11 +97,13 @@ std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
       auto child_subsplit = index_to_child_.at(idx);
       children_subsplits.push_back(child_subsplit);
     }
-  } else {
+  } else if (include_fake_subsplits) {
     // In the case where second chunk of the subsplit is a trivial subsplit,
     // it will not map to any value (parent_to_range_[subsplit] doesn't exist).
     // But we still need to create and connect to fake subsplits in the DAG.
-    if (include_fake_subsplits &&
+    // A subsplit has a fake subsplit as a child if the first chunk is non-zero
+    // and the second chunk has exactly one bit set to 1.
+    if (subsplit.SplitChunk(0).Any() &&
               subsplit.SplitChunk(1).SingletonOption().has_value()) {
       // The fake subsplit corresponds to the second chunk of subsplit.
       // Prepend it by 0's.
@@ -117,6 +112,7 @@ std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
       children_subsplits.push_back(fake_subsplit);
     }
   }
+  
   return children_subsplits;
 }
 
