@@ -327,7 +327,7 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient with Weibull") {
         CHECK_LT(fabs(likelihoods[i] - physher_likelihoods[i]), 0.00011);
       }
 
-      auto gradients = inst.Gradients();
+      auto gradients = inst.PhyloGradients();
       for (size_t i = 0; i < gradients.size(); i++) {
         CHECK_LT(fabs(gradients[i].branch_lengths_[0] - physher_gradients_bl0[i]),
                  0.00011);
@@ -341,7 +341,7 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient with Weibull") {
         CHECK_LT(fabs(likelihoods_rescaling[i] - physher_likelihoods[i]), 0.00011);
       }
 
-      auto gradients_rescaling = inst.Gradients();
+      auto gradients_rescaling = inst.PhyloGradients();
       for (size_t i = 0; i < gradients.size(); i++) {
         CHECK_LT(
             fabs(gradients_rescaling[i].branch_lengths_[0] - physher_gradients_bl0[i]),

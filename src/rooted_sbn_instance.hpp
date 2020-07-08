@@ -231,7 +231,7 @@ TEST_CASE("RootedSBNInstance: Weibull gradients") {
   CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
 
   // Gradient wrt Weibull site model.
-  auto gradients = inst.Gradients();
+  auto gradients = inst.PhyloGradients();
   double physher_gradient = -5.231329;
   CHECK_LT(fabs(gradients[0].site_model_[0] - physher_gradient), 0.001);
   CHECK_LT(fabs(gradients[0].log_likelihood_ - physher_ll), 0.001);

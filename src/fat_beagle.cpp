@@ -358,6 +358,17 @@ std::vector<double> ClockGradient(const RootedTree &tree,
   }
 }
 
+std::vector<double> DiscreteSiteModelGradient(
+    const std::vector<double> &branch_lengths,
+    const std::vector<double> &unscaled_category_gradient) {
+  size_t edge_count = branch_lengths.size() - 1;
+  double rate_gradient = 0;
+  for (size_t node_id = 0; node_id < edge_count; node_id++) {
+    rate_gradient += unscaled_category_gradient[node_id] * branch_lengths[node_id];
+  }
+  return {rate_gradient};
+}
+
 UnrootedPhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
   auto tree = in_tree.Detrifurcate();
   tree.SlideRootPosition();
