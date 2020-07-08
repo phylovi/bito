@@ -153,37 +153,6 @@ void GPDAG::BuildNodes() {
     BuildNodesDepthFirst(subsplit,
                          visited_subsplits);
   }
-
-//  // We will create fake subsplits and insert to dag_nodes_.
-//  size_t taxon_count = this->alignment_.SequenceCount();
-//  Bitset zero(taxon_count);
-//  for (size_t i = 0; i < taxon_count; i++) {
-//    Bitset fake(taxon_count);
-//    fake.set(i);
-//    Bitset fake_subsplit = zero + fake;
-//    CreateAndInsertNode(fake_subsplit);
-//  }
-
-//  std::deque<Bitset> subsplit_queue;
-//  std::unordered_set<Bitset> visited_subsplits;
-
-//  // We fill the next entries of dag_nodes_ using the root subsplits. subsplits.
-//  // And, populate the queue with children of rootsplits.
-//  for (auto rootsplit : rootsplits_) {
-//    auto subsplit = rootsplit + ~rootsplit;
-//    CreateAndInsertNode(subsplit);
-//    AddChildrenSubsplits(subsplit, subsplit_queue, visited_subsplits);
-//    AddChildrenSubsplits(subsplit.RotateSubsplit(), subsplit_queue, visited_subsplits);
-//  }
-//
-//  // Fill the rest of dag_nodes_ with other subsplits.
-//  while (!subsplit_queue.empty()) {
-//    auto subsplit = subsplit_queue.front();
-//    subsplit_queue.pop_front();
-//    CreateAndInsertNode(subsplit);
-//    AddChildrenSubsplits(subsplit, subsplit_queue, visited_subsplits);
-//    AddChildrenSubsplits(subsplit.RotateSubsplit(), subsplit_queue, visited_subsplits);
-//  }
 }
 
 void GPDAG::BuildEdges() {
