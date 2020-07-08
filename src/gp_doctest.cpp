@@ -7,7 +7,7 @@ using namespace GPOperations;
 
 // GPCSP stands for generalized PCSP-- see text.
 // Let the "venus" node be the common ancestor of mars and saturn.
-enum HelloGPCSP { jupiter, mars, saturn, root, venus };
+enum HelloGPCSP { jupiter, mars, saturn, venus, root };
 
 // Our tree is
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
@@ -20,7 +20,7 @@ GPInstance MakeHelloGPInstance() {
   inst.MakeEngine();
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
-  branch_lengths << 0, 0.113, 0.22, 0.1, 0.15;
+  branch_lengths << 0, 0.1, 0.15, 0.113, 0.22;
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   return inst;
 }
@@ -32,7 +32,7 @@ GPInstance MakeHelloGPInstanceSingleNucleotide() {
   inst.MakeEngine();
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
-  branch_lengths << 0, 0.113, 0.22, 0.1, 0.15;
+  branch_lengths << 0, 0.1, 0.15, 0.113, 0.22;
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   return inst;
 }

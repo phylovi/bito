@@ -14,6 +14,12 @@
 
 using namespace GPOperations;
 
+void PrintPCSPIndexer(const BitsetSizeMap &pcsp_indexer) {
+  for (auto it = pcsp_indexer.begin(); it != pcsp_indexer.end(); ++it) {
+    std::cout << it->first.SplitChunk(0).ToString() << "|" << it->first.SplitChunk(1).ToString() << ", " << it->second << "\n";
+  }
+}
+
 void GPInstance::PrintStatus() {
   const auto tree_count = tree_collection_.TreeCount();
   const auto taxon_count = tree_collection_.TaxonCount();
@@ -63,7 +69,11 @@ void GPInstance::MakeEngine() {
   ConstructDAG();
 
   MakeGPEngine();
+  
   BuildPCSPIndexer();
+
+  PrintDAG();
+  PrintPCSPIndexer(pcsp_indexer_);
 
   rootward_order_ = RootwardPassTraversal();
   leafward_order_ = LeafwardPassTraversal();
@@ -169,9 +179,17 @@ void GPInstance::ConnectNodes(size_t idx, bool rotated) {
   }
 }
 
+// This function returns empty vector if subsplit is invalid.
 std::vector<Bitset> GPInstance::GetChildrenSubsplits(const Bitset &subsplit,
                                                      bool include_fake_subsplits) {
   std::vector<Bitset> children_subsplits;
+
+  // Any subsplit with first chunk equal to zero is either invalid or
+  // has no children (fake subsplit).
+  // Any subsplit where the second chunk is equal to zero is an invalid.
+  if (!subsplit.SplitChunk(0).Any() || !subsplit.SplitChunk(1).Any()) {
+    return children_subsplits;
+  }
 
   if (parent_to_range_.count(subsplit)) {
     auto range = parent_to_range_.at(subsplit);
@@ -183,8 +201,8 @@ std::vector<Bitset> GPInstance::GetChildrenSubsplits(const Bitset &subsplit,
     // In the case where second chunk of the subsplit is a trivial subsplit,
     // it will not map to any value (parent_to_range_[subsplit] doesn't exist).
     // But we still need to create and connect to fake subsplits in the DAG.
-    // TODO: Assertion that exactly one bit is 1 for subsplit.SplitChunk(1)
-    if (include_fake_subsplits && subsplit.SplitChunk(0).Any()) {
+    if (include_fake_subsplits &&
+              subsplit.SplitChunk(1).SingletonOption().has_value()) {
       // The fake subsplit corresponds to the second chunk of subsplit.
       // Prepend it by 0's.
       Bitset zero(subsplit.size() / 2);
@@ -195,8 +213,35 @@ std::vector<Bitset> GPInstance::GetChildrenSubsplits(const Bitset &subsplit,
   return children_subsplits;
 }
 
+
+void GPInstance::BuildNodesDepthFirst(const Bitset &subsplit,
+                                      std::deque<Bitset> &subsplit_queue,
+                                      std::unordered_set<Bitset> &visited_subsplits)
+{
+  if (!visited_subsplits.count(subsplit)) {
+    visited_subsplits.insert(subsplit);
+    auto children_subsplits = GetChildrenSubsplits(subsplit, false);
+    for (auto child_subsplit : children_subsplits) {
+      BuildNodesDepthFirst(child_subsplit, subsplit_queue, visited_subsplits);
+    }
+    children_subsplits = GetChildrenSubsplits(subsplit.RotateSubsplit(),
+                                              false);
+    for (auto child_subsplit : children_subsplits) {
+      BuildNodesDepthFirst(child_subsplit, subsplit_queue, visited_subsplits);
+    }
+
+    CreateAndInsertNode(subsplit);
+    subsplit_queue.push_back(subsplit);
+  }
+}
+
 void GPInstance::BuildNodes() {
+  
+  std::deque<Bitset> subsplit_queue;
+  std::unordered_set<Bitset> visited_subsplits;
+
   // We will create fake subsplits and insert to dag_nodes_.
+  // These nodes will take IDs [0, taxon_count).
   size_t taxon_count = this->alignment_.SequenceCount();
   Bitset zero(taxon_count);
   for (size_t i = 0; i < taxon_count; i++) {
@@ -205,27 +250,45 @@ void GPInstance::BuildNodes() {
     Bitset fake_subsplit = zero + fake;
     CreateAndInsertNode(fake_subsplit);
   }
-
-  std::deque<Bitset> subsplit_queue;
-  std::unordered_set<Bitset> visited_subsplits;
-
-  // We fill the next entries of dag_nodes_ using the root subsplits. subsplits.
-  // And, populate the queue with children of rootsplits.
+  // We are going to add the remaining nodes.
+  // The root splits will take on the higher IDs compared to the non-rootsplits.
   for (auto rootsplit : rootsplits_) {
     auto subsplit = rootsplit + ~rootsplit;
-    CreateAndInsertNode(subsplit);
-    AddChildrenSubsplits(subsplit, subsplit_queue, visited_subsplits);
-    AddChildrenSubsplits(subsplit.RotateSubsplit(), subsplit_queue, visited_subsplits);
+    BuildNodesDepthFirst(subsplit,
+                         subsplit_queue,
+                         visited_subsplits);
   }
 
-  // Fill the rest of dag_nodes_ with other subsplits.
-  while (!subsplit_queue.empty()) {
-    auto subsplit = subsplit_queue.front();
-    subsplit_queue.pop_front();
-    CreateAndInsertNode(subsplit);
-    AddChildrenSubsplits(subsplit, subsplit_queue, visited_subsplits);
-    AddChildrenSubsplits(subsplit.RotateSubsplit(), subsplit_queue, visited_subsplits);
-  }
+//  // We will create fake subsplits and insert to dag_nodes_.
+//  size_t taxon_count = this->alignment_.SequenceCount();
+//  Bitset zero(taxon_count);
+//  for (size_t i = 0; i < taxon_count; i++) {
+//    Bitset fake(taxon_count);
+//    fake.set(i);
+//    Bitset fake_subsplit = zero + fake;
+//    CreateAndInsertNode(fake_subsplit);
+//  }
+
+//  std::deque<Bitset> subsplit_queue;
+//  std::unordered_set<Bitset> visited_subsplits;
+
+//  // We fill the next entries of dag_nodes_ using the root subsplits. subsplits.
+//  // And, populate the queue with children of rootsplits.
+//  for (auto rootsplit : rootsplits_) {
+//    auto subsplit = rootsplit + ~rootsplit;
+//    CreateAndInsertNode(subsplit);
+//    AddChildrenSubsplits(subsplit, subsplit_queue, visited_subsplits);
+//    AddChildrenSubsplits(subsplit.RotateSubsplit(), subsplit_queue, visited_subsplits);
+//  }
+//
+//  // Fill the rest of dag_nodes_ with other subsplits.
+//  while (!subsplit_queue.empty()) {
+//    auto subsplit = subsplit_queue.front();
+//    subsplit_queue.pop_front();
+//    CreateAndInsertNode(subsplit);
+//    AddChildrenSubsplits(subsplit, subsplit_queue, visited_subsplits);
+//    AddChildrenSubsplits(subsplit.RotateSubsplit(), subsplit_queue, visited_subsplits);
+//  }
 }
 
 void GPInstance::BuildEdges() {
@@ -239,7 +302,6 @@ void GPInstance::BuildEdges() {
 void GPInstance::ConstructDAG() {
   BuildNodes();
   BuildEdges();
-  //  PrintDAG();
 }
 
 void GPInstance::PrintDAG() {
