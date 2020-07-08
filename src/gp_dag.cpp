@@ -2,15 +2,6 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "gp_dag.hpp"
-
-// TODO
-#include <stdio.h>
-
-#include <iomanip>
-#include <string>
-
-#include "gp_dag.hpp"
-#include "gp_operation.hpp"
 #include "numerical_utils.hpp"
 
 using namespace GPOperations;
@@ -291,7 +282,7 @@ void LeafwardDepthFirst(size_t id, std::vector<std::shared_ptr<DAGNode>> &dag_no
 }
 
 std::vector<size_t> GPDAG::LeafwardPassTraversal() {
-  // TODO
+  // TODO Can we re-add this assert?
   //  Assert(leaf_idx < taxon_count_, std::to_string(leaf_idx) + " >= num taxa.");
   std::vector<size_t> visit_order;
   std::unordered_set<size_t> visited_nodes;

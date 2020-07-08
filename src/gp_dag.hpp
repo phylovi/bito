@@ -67,6 +67,8 @@ class GPDAG {
                                          GPOperationVector &operations);
 
  private:
+  // TODO Can we start here with a description of the various indexing schemes? Could we
+  // consider naming them different things?
   size_t taxon_count_;
   size_t gpcsp_count_;
   // The master indexer for SBN parameters.

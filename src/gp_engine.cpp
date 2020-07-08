@@ -5,7 +5,7 @@
 
 #include "optimization.hpp"
 
-// TODO delete
+// TODO Can we delete this alternate constructor?
 GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
                    std::string mmap_file_path)
     : site_pattern_(std::move(site_pattern)),
