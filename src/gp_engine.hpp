@@ -18,7 +18,7 @@
 class GPEngine {
  public:
   GPEngine(SitePattern site_pattern, size_t pcss_count, std::string mmap_file_path);
-  GPEngine(SitePattern site_pattern, size_t num_plvs, size_t gpcsp_count,
+  GPEngine(SitePattern site_pattern, size_t num_plvs, size_t continous_parameter_count,
            std::string mmap_file_path);
 
   // These operators mean that we can invoke this class on each of the operations.

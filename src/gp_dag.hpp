@@ -28,9 +28,8 @@ class GPDAG {
   size_t GetPCSPIndex(size_t parent_node_idx, size_t child_node_idx, bool rotated);
 
   size_t NodeCount() const;
-  size_t PCSPCount() const;
+  size_t ContinuousParameterCount() const;
   size_t GPCSPCount() const;
-  size_t SBNParameterCount() const;
   void ProcessTrees(const RootedTreeCollection &tree_collection);
   void Construct();
   void Print();
@@ -68,7 +67,7 @@ class GPDAG {
 
  private:
   size_t taxon_count_;
-  size_t sbn_parameter_count_;
+  size_t gpcsp_count_;
   // The master indexer for SBN parameters.
   BitsetSizeMap indexer_;
   // A map that indexes these probabilities: rootsplits are at the beginning,

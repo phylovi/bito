@@ -21,7 +21,7 @@ void PrintPCSPIndexer(const BitsetSizeMap &pcsp_indexer) {
   }
 }
 
-GPDAG::GPDAG() : taxon_count_(0), sbn_parameter_count_(0) {}
+GPDAG::GPDAG() : taxon_count_(0), gpcsp_count_(0) {}
 
 GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
   taxon_count_ = tree_collection.TaxonCount();
@@ -30,10 +30,9 @@ GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
 }
 
 size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
-size_t GPDAG::PCSPCount() const { Failwith("not implemented"); }
-size_t GPDAG::SBNParameterCount() const { Failwith("not implemented"); }
+size_t GPDAG::GPCSPCount() const { return gpcsp_count_; }
 
-size_t GPDAG::GPCSPCount() const {
+size_t GPDAG::ContinuousParameterCount() const {
   // Get number of parameters involving fake subsplits.
   size_t fake_subsplit_parameter_count = 0;
   for (size_t i = 0; i < taxon_count_; i++) {
@@ -41,7 +40,7 @@ size_t GPDAG::GPCSPCount() const {
     fake_subsplit_parameter_count += dag_nodes_[i]->GetRootwardSorted().size();
   }
 
-  return PCSPCount() + fake_subsplit_parameter_count;
+  return GPCSPCount() + fake_subsplit_parameter_count;
 }
 
 void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
@@ -64,7 +63,7 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
       index++;
     }
   }
-  sbn_parameter_count_ = index;
+  gpcsp_count_ = index;
 }
 
 void GPDAG::CreateAndInsertNode(const Bitset &subsplit) {

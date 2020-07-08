@@ -67,8 +67,8 @@ void GPInstance::MakeGPEngine() {
 
   const size_t node_count = dag_.NodeCount();
   const size_t plv_count = 6 * node_count;
-  engine_ = std::make_unique<GPEngine>(site_pattern, plv_count, dag_.GPCSPCount(),
-                                       mmap_file_path_);
+  engine_ = std::make_unique<GPEngine>(
+      site_pattern, plv_count, dag_.ContinuousParameterCount(), mmap_file_path_);
 }
 
 GPEngine *GPInstance::GetEngine() const {
@@ -92,7 +92,7 @@ void GPInstance::ClearTreeCollectionAssociatedState() {
 
 void GPInstance::ProcessLoadedTrees() {
   dag_.ProcessTrees(tree_collection_);
-  sbn_parameters_.resize(dag_.SBNParameterCount());
+  sbn_parameters_.resize(dag_.GPCSPCount());
   sbn_parameters_.setOnes();
 }
 
