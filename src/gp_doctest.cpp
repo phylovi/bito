@@ -48,11 +48,14 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   return inst;
 }
 
+// TODO Discuss if we should include the old tests as well as a teaching tool.
+
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
 
   inst.PopulatePLVs();
+  inst.PrintDAG();
   inst.ComputeLikelihoods();
 
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
@@ -90,3 +93,5 @@ TEST_CASE("GPInstance: gradient calculation") {
   CHECK_LT(fabs(log_lik_and_derivative.first - -4.806671945), 1e-6);
   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
 }
+
+// TODO can we add a branch length optimization test?

@@ -3,19 +3,17 @@
 //
 // A class for node in a directed acyclic graph for likelihood EM training.
 
-#ifndef SRC_DAG_NODE_HPP_
-#define SRC_DAG_NODE_HPP_
-
-#include <stdio.h>
+#ifndef SRC_GP_DAG_NODE_HPP_
+#define SRC_GP_DAG_NODE_HPP_
 
 #include <string>
 #include <vector>
 
 #include "bitset.hpp"
 
-class DAGNode {
+class GPDAGNode {
  public:
-  DAGNode(size_t id, const Bitset &subsplit) : id_(id), subsplit_(subsplit) {}
+  GPDAGNode(size_t id, const Bitset &subsplit) : id_(id), subsplit_(subsplit) {}
 
   size_t Id() const { return id_; }
   const Bitset &GetBitset() const { return subsplit_; }
@@ -47,4 +45,4 @@ class DAGNode {
   std::vector<size_t> rootward_sorted;
 };
 
-#endif // SRC_DAG_NODE_HPP_
+#endif  // SRC_GP_DAG_NODE_HPP_

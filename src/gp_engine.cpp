@@ -5,6 +5,7 @@
 
 #include "optimization.hpp"
 
+// TODO Can we delete this alternate constructor?
 GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
                    std::string mmap_file_path)
     : site_pattern_(std::move(site_pattern)),
@@ -28,8 +29,8 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
   InitializePLVsWithSitePatterns();
 }
 
-GPEngine::GPEngine(SitePattern site_pattern, size_t num_plvs, size_t gpcsp_count,
-                   std::string mmap_file_path)
+GPEngine::GPEngine(SitePattern site_pattern, size_t num_plvs,
+                   size_t continous_parameter_count, std::string mmap_file_path)
     : site_pattern_(std::move(site_pattern)),
       plv_count_(num_plvs),
       mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
@@ -41,9 +42,9 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t num_plvs, size_t gpcsp_count
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
 
-  branch_lengths_.resize(gpcsp_count);
-  log_likelihoods_.resize(gpcsp_count);
-  q_.resize(gpcsp_count);
+  branch_lengths_.resize(continous_parameter_count);
+  log_likelihoods_.resize(continous_parameter_count);
+  q_.resize(continous_parameter_count);
 
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ =
