@@ -36,10 +36,10 @@ class GPDAG {
 
   EigenVectorXd BuildUniformQ();
 
-  void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
+  void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
                                                   bool rotated,
                                                   GPOperationVector &operations);
-  void AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
+  void AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
                                                   GPOperationVector &operations);
   void OptimizeSBNParameters(const Bitset &subsplit, GPOperationVector &operations);
 
@@ -92,7 +92,7 @@ class GPDAG {
   // The last entry is saved for pseudoroot -- for passing stationary.
   // The pseudoroot is a Bitset with all 1's.
   std::unordered_map<Bitset, size_t> subsplit_to_index_;
-  std::vector<std::shared_ptr<DAGNode>> dag_nodes_;
+  std::vector<std::shared_ptr<GPDAGNode>> dag_nodes_;
 
   // Build indexing scheme for q_, branch_lengths_, log_likelihoods_.
   // PCSP to index.

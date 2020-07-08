@@ -65,7 +65,7 @@ void GPDAG::CreateAndInsertNode(const Bitset &subsplit) {
   if (!subsplit_to_index_.count(subsplit)) {
     size_t id = dag_nodes_.size();
     subsplit_to_index_[subsplit] = id;
-    dag_nodes_.push_back(std::make_shared<DAGNode>(id, subsplit));
+    dag_nodes_.push_back(std::make_shared<GPDAGNode>(id, subsplit));
   }
 }
 
@@ -247,7 +247,7 @@ GPOperationVector GPDAG::SetRhatToStationary() {
   return operations;
 }
 
-void RootwardDepthFirst(size_t id, std::vector<std::shared_ptr<DAGNode>> &dag_nodes,
+void RootwardDepthFirst(size_t id, std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
                         std::vector<size_t> &visit_order,
                         std::unordered_set<size_t> &visited_nodes) {
   visited_nodes.insert(id);
@@ -264,7 +264,7 @@ void RootwardDepthFirst(size_t id, std::vector<std::shared_ptr<DAGNode>> &dag_no
   visit_order.push_back(id);
 }
 
-void LeafwardDepthFirst(size_t id, std::vector<std::shared_ptr<DAGNode>> &dag_nodes,
+void LeafwardDepthFirst(size_t id, std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
                         std::vector<size_t> &visit_order,
                         std::unordered_set<size_t> &visited_nodes) {
   visited_nodes.insert(id);
@@ -366,7 +366,7 @@ size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx) {
   }
 }
 
-void GPDAG::AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
+void GPDAG::AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
                                                        bool rotated,
                                                        GPOperationVector &operations) {
   std::vector<size_t> child_idxs =
@@ -389,7 +389,7 @@ void GPDAG::AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> 
   }
 }
 
-void GPDAG::AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
+void GPDAG::AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
                                                        GPOperationVector &operations) {
   auto subsplit = node->GetBitset();
   for (size_t parent_idx : node->GetRootwardSorted()) {

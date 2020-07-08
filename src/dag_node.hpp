@@ -13,9 +13,9 @@
 
 #include "bitset.hpp"
 
-class DAGNode {
+class GPDAGNode {
  public:
-  DAGNode(size_t id, const Bitset &subsplit) : id_(id), subsplit_(subsplit) {}
+  GPDAGNode(size_t id, const Bitset &subsplit) : id_(id), subsplit_(subsplit) {}
 
   size_t Id() const { return id_; }
   const Bitset &GetBitset() const { return subsplit_; }
