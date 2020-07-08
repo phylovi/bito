@@ -15,7 +15,7 @@
 #include "site_pattern.hpp"
 #include "sugar.hpp"
 
-enum PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
+enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
 
 size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx);
 
