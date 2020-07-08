@@ -65,10 +65,6 @@ class GPInstance {
   // The first entries are reserved for fake subsplits.
   // We will adopt the convention of denoting a trivial subsplit by placing
   // 0's in the first chunk.
-  // The next set of entries store the rootsplits.
-  // The remaining entries - 1 are for all other subsplits.
-  // The last entry is saved for pseudoroot -- for passing stationary.
-  // The pseudoroot is a Bitset with all 1's.
   std::unordered_map<Bitset, size_t> subsplit_to_index_;
   std::vector<std::shared_ptr<DAGNode>> dag_nodes_;
 
