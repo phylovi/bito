@@ -99,13 +99,9 @@ class GPDAG {
 
   void CreateAndInsertNode(const Bitset &subsplit);
   void ConnectNodes(size_t idx, bool rotated);
-  void AddChildrenSubsplits(const Bitset &subsplit,
-                            std::deque<Bitset> &subsplit_queue,
-                            std::unordered_set<Bitset> &visited_subsplits);
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
                                            bool include_fake_subsplits = false);
   void BuildNodesDepthFirst(const Bitset &subsplit,
-                            std::deque<Bitset> &subsplit_queue,
                             std::unordered_set<Bitset> &visited_subsplits);
   void BuildNodes();
   void BuildEdges();

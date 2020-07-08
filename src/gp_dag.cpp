@@ -69,19 +69,6 @@ void GPDAG::CreateAndInsertNode(const Bitset &subsplit) {
   }
 }
 
-void GPDAG::AddChildrenSubsplits(const Bitset &subsplit,
-                                 std::deque<Bitset> &subsplit_queue,
-                                 std::unordered_set<Bitset> &visited_subsplits) {
-  // Retrieve children subsplits, add it to the queue to be processed.
-  auto children_subsplits = GetChildrenSubsplits(subsplit);
-  for (auto child_subsplit : children_subsplits) {
-    if (!visited_subsplits.count(child_subsplit)) {
-      subsplit_queue.push_back(child_subsplit);
-      visited_subsplits.insert(child_subsplit);
-    }
-  }
-}
-
 void GPDAG::ConnectNodes(size_t idx, bool rotated) {
   auto node = dag_nodes_[idx];
   // Retrieve children subsplits, set edge relation.
@@ -134,27 +121,24 @@ std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
 }
 
 void GPDAG::BuildNodesDepthFirst(const Bitset &subsplit,
-                                 std::deque<Bitset> &subsplit_queue,
                                  std::unordered_set<Bitset> &visited_subsplits) {
   if (!visited_subsplits.count(subsplit)) {
     visited_subsplits.insert(subsplit);
     auto children_subsplits = GetChildrenSubsplits(subsplit, false);
     for (auto child_subsplit : children_subsplits) {
-      BuildNodesDepthFirst(child_subsplit, subsplit_queue, visited_subsplits);
+      BuildNodesDepthFirst(child_subsplit, visited_subsplits);
     }
     children_subsplits = GetChildrenSubsplits(subsplit.RotateSubsplit(),
                                               false);
     for (auto child_subsplit : children_subsplits) {
-      BuildNodesDepthFirst(child_subsplit, subsplit_queue, visited_subsplits);
+      BuildNodesDepthFirst(child_subsplit, visited_subsplits);
     }
 
     CreateAndInsertNode(subsplit);
-    subsplit_queue.push_back(subsplit);
   }
 }
 
 void GPDAG::BuildNodes() {
-  std::deque<Bitset> subsplit_queue;
   std::unordered_set<Bitset> visited_subsplits;
 
   // We will create fake subsplits and insert to dag_nodes_.
@@ -171,7 +155,6 @@ void GPDAG::BuildNodes() {
   for (auto rootsplit : rootsplits_) {
     auto subsplit = rootsplit + ~rootsplit;
     BuildNodesDepthFirst(subsplit,
-                         subsplit_queue,
                          visited_subsplits);
   }
 
