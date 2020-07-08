@@ -31,8 +31,8 @@ class GPDAG {
   size_t ContinuousParameterCount() const;
   size_t GPCSPCount() const;
   void ProcessTrees(const RootedTreeCollection &tree_collection);
-  void Construct();
   void Print();
+  void PrintPCSPIndexer();
 
   EigenVectorXd BuildUniformQ();
 

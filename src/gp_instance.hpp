@@ -29,17 +29,19 @@ class GPInstance {
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
 
-  // TODO confusing-- engine vs gpengine
+  // TODO Rename to avoid confusion with MakeEngine; we also build the DAG, so the name
+  // should be more general.
   void MakeEngine();
-  void MakeGPEngine();
   GPEngine *GetEngine() const;
+  void PrintDAG();
+  void PrintPCSPIndexer();
   void ProcessOperations(const GPOperationVector& operations);
   void EstimateSBNParameters(double tol, size_t max_iter);
   void EstimateBranchLengths(double tol, size_t max_iter);
   void PopulatePLVs();
   void ComputeLikelihoods();
 
-  // TODO just here for unit test.
+  // TODO Figure out a way to remove: just here for unit test.
   size_t GetPCSPIndex(size_t parent_node_idx, size_t child_node_idx, bool rotated) {
     return dag_.GetPCSPIndex(parent_node_idx, child_node_idx, rotated);
   }
@@ -59,8 +61,7 @@ class GPInstance {
   void CheckSequencesAndTreesLoaded() const;
   void ProcessLoadedTrees();
 
-  void PrintDAG();
-  void ConstructDAG();
+  void MakeGPEngine();
   void InitializeGPEngine();
 };
 

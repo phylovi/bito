@@ -57,9 +57,10 @@ void GPInstance::MakeEngine() {
   ProcessLoadedTrees();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
-  ConstructDAG();
+  dag_ = GPDAG(tree_collection_);
   MakeGPEngine();
   PrintDAG();
+  PrintPCSPIndexer();
 }
 
 void GPInstance::MakeGPEngine() {
@@ -96,12 +97,8 @@ void GPInstance::ProcessLoadedTrees() {
   sbn_parameters_.setOnes();
 }
 
-void GPInstance::ConstructDAG() {
-  dag_ = GPDAG(tree_collection_);
-  dag_.Construct();
-}
-
 void GPInstance::PrintDAG() { dag_.Print(); }
+void GPInstance::PrintPCSPIndexer() { dag_.PrintPCSPIndexer(); }
 
 void GPInstance::InitializeGPEngine() {
   size_t n_params = engine_->GetBranchLengths().size();
