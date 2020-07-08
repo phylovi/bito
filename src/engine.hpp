@@ -10,6 +10,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+
 #include "fat_beagle.hpp"
 #include "phylo_model.hpp"
 #include "rooted_tree_collection.hpp"

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <variant>
 #include <vector>
+
 #include "sugar.hpp"
 
 using StringSizePairVector = std::vector<std::pair<std::string, size_t>>;
@@ -35,8 +36,8 @@ struct Zero {
 struct SetToStationaryDistribution {
   size_t dest_idx;
   size_t pcsp_idx;
-  StringSizePairVector guts() const { return {{"dest_idx", dest_idx},
-    {"pcsp_idx", pcsp_idx}};
+  StringSizePairVector guts() const {
+    return {{"dest_idx", dest_idx}, {"pcsp_idx", pcsp_idx}};
   }
 };
 
@@ -77,7 +78,8 @@ struct Likelihood {
   size_t child_idx;
   size_t parent_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"child_idx", child_idx}, {"parent_idx", parent_idx}};
+    return {
+        {"dest_idx", dest_idx}, {"child_idx", child_idx}, {"parent_idx", parent_idx}};
   }
 };
 

@@ -1,6 +1,7 @@
 #include <cmath>
 #include <functional>
 #include <utility>
+
 #include "sugar.hpp"
 
 namespace Optimization {

@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "block_model.hpp"
+
 #include "sugar.hpp"
 
 const BlockSpecification& BlockModel::GetBlockSpecification() const {

@@ -5,12 +5,14 @@
 // https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Parsing-Driver.html#Calc_002b_002b-Parsing-Driver
 
 #include "driver.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <memory>
 #include <regex>
 #include <unordered_map>
 #include <utility>
+
 #include "parser.hpp"
 #include "taxon_name_munging.hpp"
 

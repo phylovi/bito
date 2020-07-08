@@ -10,6 +10,7 @@
 
 #include <numeric>
 #include <vector>
+
 #include "libhmsbeagle/beagle.h"
 #include "node.hpp"
 

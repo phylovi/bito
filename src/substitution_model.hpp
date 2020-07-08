@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+
 #include "block_model.hpp"
 #include "sugar.hpp"
 

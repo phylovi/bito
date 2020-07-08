@@ -6,6 +6,7 @@
 
 #include <string>
 #include <utility>
+
 #include "sugar.hpp"
 
 class Alignment {

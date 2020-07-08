@@ -5,6 +5,7 @@
 #define SRC_GP_INSTANCE_HPP_
 
 #include <memory.h>
+
 #include <deque>
 
 #include "dag_node.hpp"
@@ -14,11 +15,9 @@
 #include "site_pattern.hpp"
 #include "sugar.hpp"
 
-enum PlvType {
-  P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE
-};
+enum PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
 
-size_t GetPlvIndex(PlvType plv_type, size_t node_count, size_t src_idx);
+size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx);
 
 class GPInstance {
  public:
@@ -26,7 +25,7 @@ class GPInstance {
     if (mmap_file_path.empty()) {
       Failwith("GPInstance needs a legal path as a constructor argument.");
     }
-};
+  };
   void PrintStatus();
 
   void ReadFastaFile(std::string fname);
@@ -40,9 +39,7 @@ class GPInstance {
   void EstimateBranchLengths(double tol, size_t max_iter);
   void PopulatePLVs();
   void ComputeLikelihoods();
-  size_t GetPCSPIndex(size_t parent_node_idx,
-                      size_t child_node_idx,
-                      bool rotated);
+  size_t GetPCSPIndex(size_t parent_node_idx, size_t child_node_idx, bool rotated);
 
  private:
   std::string mmap_file_path_;
@@ -90,7 +87,7 @@ class GPInstance {
   void CreateAndInsertNode(const Bitset &subsplit);
   void ConnectNodes(size_t idx, bool rotated);
   void AddChildrenSubsplits(const Bitset &subsplit,
-                            std::deque<Bitset> &q,
+                            std::deque<Bitset> &subsplit_queue,
                             std::unordered_set<Bitset> &visited_subsplits);
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
                                            bool include_fake_subsplits = false);
@@ -106,8 +103,7 @@ class GPInstance {
                                                   GPOperationVector &operations);
   void AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<DAGNode> node,
                                                   GPOperationVector &operations);
-  void OptimizeSBNParameters(const Bitset &subsplit,
-                             GPOperationVector &operations);
+  void OptimizeSBNParameters(const Bitset &subsplit, GPOperationVector &operations);
   GPOperationVector MarginalLikelihoodOperations();
   void ScheduleBranchLengthOptimization(size_t node_id,
                                         std::unordered_set<size_t> &visited_nodes,

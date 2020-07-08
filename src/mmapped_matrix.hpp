@@ -16,8 +16,10 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+
 #include <Eigen/Dense>
 #include <iostream>
+
 #include "sugar.hpp"
 
 template <typename EigenDenseMatrixBaseT>

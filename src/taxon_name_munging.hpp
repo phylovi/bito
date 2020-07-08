@@ -5,6 +5,7 @@
 #define SRC_TAXON_NAME_MUNGING_HPP_
 
 #include <functional>
+
 #include "sugar.hpp"
 
 namespace TaxonNameMunging {

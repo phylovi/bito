@@ -7,14 +7,14 @@
 #define SRC_DAG_NODE_HPP_
 
 #include <stdio.h>
+
 #include <string>
 #include <vector>
 
 #include "bitset.hpp"
 
 class DAGNode {
-public:
-
+ public:
   DAGNode(size_t id, const Bitset &subsplit) : id_(id), subsplit_(subsplit) {}
 
   size_t Id() const { return id_; }
@@ -26,32 +26,25 @@ public:
     return (leafward_rotated.size() == 0) && (leafward_sorted.size() == 0);
   }
 
-  void AddLeafwardRotated(size_t node_id) {
-    leafward_rotated.push_back(node_id);
-  }
-  void AddLeafwardSorted(size_t node_id) {
-    leafward_sorted.push_back(node_id);
-  }
-  void AddRootwardRotated(size_t node_id) {
-    rootward_rotated.push_back(node_id);
-  }
-  void AddRootwardSorted(size_t node_id) {
-    rootward_sorted.push_back(node_id);
-  }
+  void AddLeafwardRotated(size_t node_id) { leafward_rotated.push_back(node_id); }
+  void AddLeafwardSorted(size_t node_id) { leafward_sorted.push_back(node_id); }
+  void AddRootwardRotated(size_t node_id) { rootward_rotated.push_back(node_id); }
+  void AddRootwardSorted(size_t node_id) { rootward_sorted.push_back(node_id); }
   const std::vector<size_t> &GetLeafwardRotated() { return leafward_rotated; }
   const std::vector<size_t> &GetLeafwardSorted() { return leafward_sorted; }
   const std::vector<size_t> &GetRootwardRotated() { return rootward_rotated; }
   const std::vector<size_t> &GetRootwardSorted() { return rootward_sorted; }
 
   std::string ToString();
-private:
+
+ private:
   size_t id_;
   Bitset subsplit_;
-  
+
   std::vector<size_t> leafward_rotated;
   std::vector<size_t> leafward_sorted;
   std::vector<size_t> rootward_rotated;
   std::vector<size_t> rootward_sorted;
 };
 
-#endif /* SRC_DAG_NODE_HPP_ */
+#endif // SRC_DAG_NODE_HPP_
