@@ -41,7 +41,6 @@ class GPDAG {
   void InitializeGPEngine();
   [[nodiscard]] GPOperationVector ComputeLikelihoods();
   [[nodiscard]] GPOperationVector SetRhatToStationary();
-  [[nodiscard]] GPOperationVector SetStationaryDistribution();
   [[nodiscard]] GPOperationVector BranchLengthOptimization();
   [[nodiscard]] GPOperationVector SBNParameterOptimization();
   [[nodiscard]] GPOperationVector MarginalLikelihoodOperations();

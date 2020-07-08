@@ -171,7 +171,6 @@ void GPDAG::Print() {
 void GPDAG::PrintPCSPIndexer() { PrintPCSPIndexerFree(pcsp_indexer_); }
 
 EigenVectorXd GPDAG::BuildUniformQ() {
-  // For now, use uniform.
   EigenVectorXd q = EigenVectorXd::Ones(ContinuousParameterCount());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
   for (auto it = subsplit2range_.begin(); it != subsplit2range_.end(); ++it) {
@@ -281,18 +280,6 @@ void GPDAG::BuildPCSPIndexer() {
       }
     }
   }
-}
-
-GPOperationVector GPDAG::SetStationaryDistribution() {
-  // Set rhat(s) = stationary for the rootsplits s.
-  std::vector<GPOperation> operations;
-  for (size_t i = 0; i < rootsplits_.size(); i++) {
-    auto rootsplit = rootsplits_[i];
-    auto root_idx = subsplit_to_index_[rootsplit + ~rootsplit];
-    operations.push_back(SetToStationaryDistribution{
-        GetPLVIndex(PLVType::R_HAT, dag_nodes_.size(), root_idx), i});
-  }
-  return operations;
 }
 
 size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx) {
