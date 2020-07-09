@@ -46,7 +46,7 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
   return operations;
 }
 
-GPOperationVector GPDAG::MarginalLikelihoodOperations() const {
+GPOperationVector GPDAG::MarginalLikelihood() const {
   GPOperationVector operations;
   for (size_t i = 0; i < rootsplits_.size(); i++) {
     auto rootsplit = rootsplits_[i];

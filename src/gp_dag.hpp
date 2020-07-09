@@ -27,9 +27,7 @@ class GPDAG {
   [[nodiscard]] GPOperationVector LeafwardPass() const;
   [[nodiscard]] GPOperationVector LeafwardPass(std::vector<size_t> visit_order) const;
   // Compute marginal likelihood.
-  // TODO do you want to rename this? All of the other functions also return operations,
-  // but only this one has operations in the name.
-  [[nodiscard]] GPOperationVector MarginalLikelihoodOperations() const;
+  [[nodiscard]] GPOperationVector MarginalLikelihood() const;
   [[nodiscard]] GPOperationVector RootwardPass() const;
   [[nodiscard]] GPOperationVector RootwardPass(std::vector<size_t> visit_order) const;
   [[nodiscard]] GPOperationVector SBNParameterOptimization() const;

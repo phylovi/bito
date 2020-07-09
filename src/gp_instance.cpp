@@ -108,7 +108,7 @@ void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihood
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   std::cout << "Begin branch optimization\n";
   GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
-  GPOperationVector marginal_lik_operations = dag_.MarginalLikelihoodOperations();
+  GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
   ProcessOperations(dag_.SetRootwardZero());
   ProcessOperations(dag_.SetLeafwardZero());
@@ -142,7 +142,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
 void GPInstance::EstimateSBNParameters(double tol, size_t max_iter) {
   std::cout << "Begin SBN parameter optimization\n";
   GPOperationVector sbn_param_optimization_operations = dag_.SBNParameterOptimization();
-  GPOperationVector marginal_lik_operations = dag_.MarginalLikelihoodOperations();
+  GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
   ProcessOperations(dag_.SetRootwardZero());
   ProcessOperations(dag_.SetLeafwardZero());
