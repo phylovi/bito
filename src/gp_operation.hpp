@@ -41,11 +41,9 @@ struct SetToStationaryDistribution {
   }
 };
 
-// TODO this comment is out of date.
-// Looking at GPEngine, it looks like this does a ton more than one would think based in
-// its name. Let's rename.
-// Perform `plv[dest_idx] += q[q_idx] * plv[src_idx]`
-struct WeightedSumAccumulate {
+// Set transition_matrix_ using branch_length(pcsp_idx) then,
+// perform `plv[dest_idx] += q[q_idx] * transition_matrix_ * plv[src_idx]`
+struct EvolvePLVWeightedBySBNParameter {
   size_t dest_idx;
   size_t pcsp_idx;
   size_t src_idx;
@@ -54,11 +52,9 @@ struct WeightedSumAccumulate {
   }
 };
 
-// TODO: this comment is incorrect
-// I also feel like this operation could be renamed to IncrementMarginalLikelihood,
-// because that's what it does.
-// Perform `plv[dest_idx] += q[q_idx] * plv[src_idx]`
-struct MarginalLikelihood {
+// Computes log_likelihoods_[pcsp_idx] where pcsp_idx is for the root subsplit.
+// Increments log marginal likelihood.
+struct IncrementMarginalLikelihood {
   size_t stationary_idx;
   size_t pcsp_idx;
   size_t p_idx;
@@ -121,10 +117,10 @@ struct UpdateSBNProbabilities {
 
 using GPOperation =
     std::variant<GPOperations::Zero, GPOperations::SetToStationaryDistribution,
-                 GPOperations::WeightedSumAccumulate, GPOperations::Multiply,
+                 GPOperations::EvolvePLVWeightedBySBNParameter, GPOperations::Multiply,
                  GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
                  GPOperations::UpdateSBNProbabilities,
-                 GPOperations::MarginalLikelihood>;
+                 GPOperations::IncrementMarginalLikelihood>;
 
 using GPOperationVector = std::vector<GPOperation>;
 
@@ -139,10 +135,10 @@ struct GPOperationOstream {
   void operator()(const GPOperations::SetToStationaryDistribution& operation) {
     os_ << "SetToStationaryDistribution" << operation.guts();
   }
-  void operator()(const GPOperations::WeightedSumAccumulate& operation) {
+  void operator()(const GPOperations::EvolvePLVWeightedBySBNParameter& operation) {
     os_ << "WeightedSumAccumulate" << operation.guts();
   }
-  void operator()(const GPOperations::MarginalLikelihood& operation) {
+  void operator()(const GPOperations::IncrementMarginalLikelihood& operation) {
     os_ << "MarginalLikelihood" << operation.guts();
   }
   void operator()(const GPOperations::Multiply& operation) {

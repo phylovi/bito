@@ -46,7 +46,7 @@ GPOperationVector GPDAG::MarginalLikelihood() const {
     auto rootsplit = rootsplits_[i];
     auto root_subsplit = rootsplit + ~rootsplit;
     size_t root_idx = subsplit_to_index_.at(root_subsplit);
-    operations.push_back(GPOperations::MarginalLikelihood{
+    operations.push_back(GPOperations::IncrementMarginalLikelihood{
       GetPLVIndex(PLVType::R_HAT, root_idx),
       i,
       GetPLVIndex(PLVType::P, root_idx)});
@@ -354,7 +354,7 @@ void GPDAG::AddRootwardWeightedSumAccumulateOperations(
     }
     auto pcsp_idx = pcsp_indexer_.at(pcsp);
 
-    operations.push_back(WeightedSumAccumulate{GetPLVIndex(plv_type, node->Id()),
+    operations.push_back(EvolvePLVWeightedBySBNParameter{GetPLVIndex(plv_type, node->Id()),
                                                pcsp_idx,
                                                GetPLVIndex(PLVType::P, child_idx)});
   }
@@ -369,7 +369,7 @@ void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
     auto pcsp_idx = pcsp_indexer_.at(parent_subsplit + subsplit);
 
     operations.push_back(
-        WeightedSumAccumulate{GetPLVIndex(PLVType::R_HAT, node->Id()), pcsp_idx,
+        EvolvePLVWeightedBySBNParameter{GetPLVIndex(PLVType::R_HAT, node->Id()), pcsp_idx,
                               GetPLVIndex(PLVType::R, parent_node->Id())});
   }
   for (size_t parent_idx : node->GetRootwardRotated()) {
@@ -378,7 +378,7 @@ void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
     auto pcsp_idx = pcsp_indexer_.at(parent_subsplit + subsplit);
 
     operations.push_back(
-        WeightedSumAccumulate{GetPLVIndex(PLVType::R_HAT, node->Id()), pcsp_idx,
+        EvolvePLVWeightedBySBNParameter{GetPLVIndex(PLVType::R_HAT, node->Id()), pcsp_idx,
                               GetPLVIndex(PLVType::R_TILDE, parent_node->Id())});
   }
 }
@@ -493,7 +493,7 @@ void GPDAG::UpdateRHat(size_t node_id, bool rotated,
         rotated ? parent_node->GetBitset().RotateSubsplit() : parent_node->GetBitset();
     pcsp = pcsp + node->GetBitset();
     size_t pcsp_idx = pcsp_indexer_.at(pcsp);
-    operations.push_back(WeightedSumAccumulate{
+    operations.push_back(EvolvePLVWeightedBySBNParameter{
         GetPLVIndex(PLVType::R_HAT, node_id), pcsp_idx,
         GetPLVIndex(src_plv_type, parent_id)});
   }
@@ -508,7 +508,7 @@ void GPDAG::UpdatePHatComputeLikelihood(
   pcsp = pcsp + child_node->GetBitset();
   size_t pcsp_idx = pcsp_indexer_.at(pcsp);
   // Update p_hat(s)
-  operations.push_back(WeightedSumAccumulate{
+  operations.push_back(EvolvePLVWeightedBySBNParameter{
       GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT,
                         node_id),
       pcsp_idx,
@@ -534,7 +534,7 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(
       GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R, node_id),
       pcsp_idx});
   // Update p_hat(s)
-  operations.push_back(WeightedSumAccumulate{
+  operations.push_back(EvolvePLVWeightedBySBNParameter{
       GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, node_id),
       pcsp_idx,
       GetPLVIndex(PLVType::P, child_node_id),
@@ -661,7 +661,7 @@ GPOperationVector GPDAG::SBNParameterOptimization() const {
     ScheduleSBNParametersOptimization(subsplit_to_index_.at(rootsplit + ~rootsplit),
                                       visited_nodes, operations);
     auto node_id = subsplit_to_index_.at(rootsplit + ~rootsplit);
-    operations.push_back(GPOperations::MarginalLikelihood{
+    operations.push_back(GPOperations::IncrementMarginalLikelihood{
       GetPLVIndex(PLVType::R_HAT, node_id),
       i,
       GetPLVIndex(PLVType::P, node_id)});

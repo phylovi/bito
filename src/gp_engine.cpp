@@ -39,13 +39,13 @@ void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
   }
 }
 
-void GPEngine::operator()(const GPOperations::WeightedSumAccumulate& op) {
+void GPEngine::operator()(const GPOperations::EvolvePLVWeightedBySBNParameter& op) {
   // TODO replace pcsp_idx.
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.pcsp_idx));
   plvs_.at(op.dest_idx) += q_(op.pcsp_idx) * transition_matrix_ * plvs_.at(op.src_idx);
 }
 
-void GPEngine::operator()(const GPOperations::MarginalLikelihood& op) {
+void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
   per_pattern_log_likelihoods_ =
       (plvs_.at(op.stationary_idx).transpose() * plvs_.at(op.p_idx))
           .diagonal()
