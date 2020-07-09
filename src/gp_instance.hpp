@@ -9,7 +9,6 @@
 #include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
 
-
 class GPInstance {
  public:
   GPInstance(std::string mmap_file_path) : mmap_file_path_(mmap_file_path) {
@@ -24,7 +23,7 @@ class GPInstance {
   void ReadNexusFile(std::string fname);
 
   void MakeEngine();
-  GPEngine *GetEngine() const;
+  GPEngine* GetEngine() const;
   void PrintDAG();
   void PrintPCSPIndexer();
   void ProcessOperations(const GPOperationVector& operations);

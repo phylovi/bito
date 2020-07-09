@@ -165,8 +165,8 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
     auto result = plvs_.at(op.rootward_idx).transpose() *
                   (transition_matrix_ * plvs_.at(op.leafward_idx));
     per_pattern_log_likelihoods_ = result.diagonal().array().log();
-    return  -(log(q_[op.pcsp_idx]) +
-                   per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+    return -(log(q_[op.pcsp_idx]) +
+             per_pattern_log_likelihoods_.dot(site_pattern_weights_));
   };
   double current_branch_length = branch_lengths_(op.pcsp_idx);
   double current_value = negative_log_likelihood(current_branch_length);

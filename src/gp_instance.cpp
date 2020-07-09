@@ -10,7 +10,6 @@
 
 using namespace GPOperations;
 
-
 void GPInstance::PrintStatus() {
   const auto tree_count = tree_collection_.TreeCount();
   const auto taxon_count = tree_collection_.TaxonCount();
@@ -58,9 +57,10 @@ void GPInstance::MakeEngine() {
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
-  engine_ = std::make_unique<GPEngine>(
-      site_pattern, 6 * dag_.NodeCount(), dag_.ContinuousParameterCount(), mmap_file_path_);
-  
+  engine_ =
+      std::make_unique<GPEngine>(site_pattern, 6 * dag_.NodeCount(),
+                                 dag_.ContinuousParameterCount(), mmap_file_path_);
+
   PrintDAG();
   PrintPCSPIndexer();
   InitializeGPEngine();

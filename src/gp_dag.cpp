@@ -8,7 +8,8 @@ using namespace GPOperations;
 
 void PrintPCSPIndexerFree(const BitsetSizeMap &pcsp_indexer) {
   for (auto it = pcsp_indexer.begin(); it != pcsp_indexer.end(); ++it) {
-    std::cout << it->first.SplitChunk(0).ToString() << "|" << it->first.SplitChunk(1).ToString() << ", " << it->second << "\n";
+    std::cout << it->first.SplitChunk(0).ToString() << "|"
+              << it->first.SplitChunk(1).ToString() << ", " << it->second << "\n";
   }
 }
 
@@ -100,7 +101,7 @@ std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
     // A subsplit has a fake subsplit as a child if the first chunk is non-zero
     // and the second chunk has exactly one bit set to 1.
     if (subsplit.SplitChunk(0).Any() &&
-              subsplit.SplitChunk(1).SingletonOption().has_value()) {
+        subsplit.SplitChunk(1).SingletonOption().has_value()) {
       // The fake subsplit corresponds to the second chunk of subsplit.
       // Prepend it by 0's.
       Bitset zero(subsplit.size() / 2);
@@ -108,7 +109,7 @@ std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
       children_subsplits.push_back(fake_subsplit);
     }
   }
-  
+
   return children_subsplits;
 }
 
@@ -120,8 +121,7 @@ void GPDAG::BuildNodesDepthFirst(const Bitset &subsplit,
     for (auto child_subsplit : children_subsplits) {
       BuildNodesDepthFirst(child_subsplit, visited_subsplits);
     }
-    children_subsplits = GetChildrenSubsplits(subsplit.RotateSubsplit(),
-                                              false);
+    children_subsplits = GetChildrenSubsplits(subsplit.RotateSubsplit(), false);
     for (auto child_subsplit : children_subsplits) {
       BuildNodesDepthFirst(child_subsplit, visited_subsplits);
     }
@@ -146,8 +146,7 @@ void GPDAG::BuildNodes() {
   // The root splits will take on the higher IDs compared to the non-rootsplits.
   for (auto rootsplit : rootsplits_) {
     auto subsplit = rootsplit + ~rootsplit;
-    BuildNodesDepthFirst(subsplit,
-                         visited_subsplits);
+    BuildNodesDepthFirst(subsplit, visited_subsplits);
   }
 }
 
@@ -456,20 +455,16 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
   return operations;
 }
 
-void UpdateRHat(size_t node_id,
-                bool rotated,
+void UpdateRHat(size_t node_id, bool rotated,
                 std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
-                BitsetSizeMap &pcsp_indexer,
-                GPOperationVector &operations)
-{
+                BitsetSizeMap &pcsp_indexer, GPOperationVector &operations) {
   auto node = dag_nodes[node_id];
   PLVType src_plv_type = rotated ? PLVType::R_TILDE : PLVType::R;
-  auto parent_nodes = rotated ? node->GetRootwardRotated() :
-                                node->GetRootwardSorted();
+  auto parent_nodes = rotated ? node->GetRootwardRotated() : node->GetRootwardSorted();
   for (size_t parent_id : parent_nodes) {
     auto parent_node = dag_nodes[parent_id];
-    auto pcsp = rotated ? parent_node->GetBitset().RotateSubsplit() :
-                          parent_node->GetBitset();
+    auto pcsp =
+        rotated ? parent_node->GetBitset().RotateSubsplit() : parent_node->GetBitset();
     pcsp = pcsp + node->GetBitset();
     size_t pcsp_idx = pcsp_indexer[pcsp];
     operations.push_back(WeightedSumAccumulate{
@@ -478,13 +473,10 @@ void UpdateRHat(size_t node_id,
   }
 }
 
-void UpdatePHatComputeLikelihood(size_t node_id,
-                                 size_t child_node_id,
-                                 bool rotated,
+void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
                                  std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
                                  BitsetSizeMap &pcsp_indexer,
-                                 GPOperationVector &operations)
-{
+                                 GPOperationVector &operations) {
   auto node = dag_nodes[node_id];
   auto child_node = dag_nodes[child_node_id];
   auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
@@ -492,26 +484,22 @@ void UpdatePHatComputeLikelihood(size_t node_id,
   size_t pcsp_idx = pcsp_indexer[pcsp];
   // Update p_hat(s)
   operations.push_back(WeightedSumAccumulate{
-      GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT,
-                  dag_nodes.size(),
+      GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, dag_nodes.size(),
                   node_id),
       pcsp_idx,
       GetPLVIndex(PLVType::P, dag_nodes.size(), child_node_id),
   });
-  operations.push_back(Likelihood{pcsp_idx,
-    GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R,
-                dag_nodes.size(),
-                node->Id()),
-    GetPLVIndex(PLVType::P, dag_nodes.size(), child_node->Id())});
+  operations.push_back(
+      Likelihood{pcsp_idx,
+                 GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R, dag_nodes.size(),
+                             node->Id()),
+                 GetPLVIndex(PLVType::P, dag_nodes.size(), child_node->Id())});
 }
 
-void OptimizeBranchLengthUpdatePHat(size_t node_id,
-                                    size_t child_node_id,
-                                    bool rotated,
+void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id, bool rotated,
                                     std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
                                     BitsetSizeMap &pcsp_indexer,
-                                    GPOperationVector &operations)
-{
+                                    GPOperationVector &operations) {
   auto node = dag_nodes[node_id];
   auto child_node = dag_nodes[child_node_id];
   auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
@@ -519,14 +507,11 @@ void OptimizeBranchLengthUpdatePHat(size_t node_id,
   size_t pcsp_idx = pcsp_indexer[pcsp];
   operations.push_back(OptimizeBranchLength{
       GetPLVIndex(PLVType::P, dag_nodes.size(), child_node_id),
-      GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R,
-                  dag_nodes.size(),
-                  node_id),
+      GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R, dag_nodes.size(), node_id),
       pcsp_idx});
   // Update p_hat(s)
   operations.push_back(WeightedSumAccumulate{
-      GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT,
-                  dag_nodes.size(),
+      GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, dag_nodes.size(),
                   node_id),
       pcsp_idx,
       GetPLVIndex(PLVType::P, dag_nodes.size(), child_node_id),
@@ -563,8 +548,8 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleBranchLengthOptimization(child_id, visited_nodes, operations);
     }
-    OptimizeBranchLengthUpdatePHat(node_id, child_id, false,
-                                   dag_nodes_, pcsp_indexer_, operations);
+    OptimizeBranchLengthUpdatePHat(node_id, child_id, false, dag_nodes_, pcsp_indexer_,
+                                   operations);
   }
   // Update r_tilde(t) = r_hat(t) \circ p_hat(t).
   operations.push_back(
@@ -578,8 +563,8 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleBranchLengthOptimization(child_id, visited_nodes, operations);
     }
-    OptimizeBranchLengthUpdatePHat(node_id, child_id, true,
-                                   dag_nodes_, pcsp_indexer_, operations);
+    OptimizeBranchLengthUpdatePHat(node_id, child_id, true, dag_nodes_, pcsp_indexer_,
+                                   operations);
   }
   // Update r(t) = r_hat(t) \circ p_hat_tilde(t).
   operations.push_back(
@@ -626,8 +611,8 @@ void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleSBNParametersOptimization(child_id, visited_nodes, operations);
     }
-    UpdatePHatComputeLikelihood(node_id, child_id, false,
-                                dag_nodes_, pcsp_indexer_, operations);
+    UpdatePHatComputeLikelihood(node_id, child_id, false, dag_nodes_, pcsp_indexer_,
+                                operations);
   }
   OptimizeSBNParameters(node->GetBitset(), operations);
 
@@ -643,8 +628,8 @@ void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleSBNParametersOptimization(child_id, visited_nodes, operations);
     }
-    UpdatePHatComputeLikelihood(node_id, child_id, true,
-                                dag_nodes_, pcsp_indexer_, operations);
+    UpdatePHatComputeLikelihood(node_id, child_id, true, dag_nodes_, pcsp_indexer_,
+                                operations);
   }
   OptimizeSBNParameters(node->GetBitset().RotateSubsplit(), operations);
 
