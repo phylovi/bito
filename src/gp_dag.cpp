@@ -20,8 +20,6 @@ GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
   BuildNodes();
   BuildEdges();
   BuildPCSPIndexer();
-  rootward_order_ = RootwardPassTraversal();
-  leafward_order_ = LeafwardPassTraversal();
 }
 
 size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
@@ -388,7 +386,10 @@ GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) {
   return operations;
 }
 
-GPOperationVector GPDAG::RootwardPass() { return RootwardPass(rootward_order_); }
+GPOperationVector GPDAG::RootwardPass() {
+  auto rootward_order_ = RootwardPassTraversal();
+  return RootwardPass(rootward_order_);
+}
 
 GPOperationVector GPDAG::LeafwardPass(std::vector<size_t> visit_order) {
   GPOperationVector operations;
@@ -412,7 +413,10 @@ GPOperationVector GPDAG::LeafwardPass(std::vector<size_t> visit_order) {
   return operations;
 }
 
-GPOperationVector GPDAG::LeafwardPass() { return LeafwardPass(leafward_order_); }
+GPOperationVector GPDAG::LeafwardPass() {
+  auto leafward_order_ = LeafwardPassTraversal();
+  return LeafwardPass(leafward_order_);
+}
 
 GPOperationVector GPDAG::SetRootwardZero() {
   GPOperationVector operations;

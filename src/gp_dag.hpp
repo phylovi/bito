@@ -87,9 +87,7 @@ class GPDAG {
   BitsetSizeMap pcsp_indexer_;
   // Stores range of indices for a subsplit and rotated subsplit.
   BitsetSizePairMap subsplit2range_;
-  SizeVector rootward_order_;
-  SizeVector leafward_order_;
-
+  
   void CreateAndInsertNode(const Bitset &subsplit);
   void ConnectNodes(size_t idx, bool rotated);
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
