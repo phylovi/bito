@@ -9,7 +9,6 @@ using namespace GPOperations;
 GPDAG::GPDAG() : taxon_count_(0), gpcsp_count_(0) {}
 
 GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
-  taxon_count_ = tree_collection.TaxonCount();
   ProcessTrees(tree_collection);
   BuildNodes();
   BuildEdges();
@@ -82,6 +81,7 @@ void GPDAG::IterateOverRealNodes(std::function<void(const GPDAGNode *)> f) const
 
 void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
   size_t index = 0;
+  taxon_count_ = tree_collection.TaxonCount();
   auto topology_counter = tree_collection.TopologyCounter();
   // TODO factor this out so there isn't duplicated code with sbn_instance.cpp.
   // Start by adding the rootsplits.
@@ -104,8 +104,6 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
 
 void GPDAG::CreateAndInsertNode(const Bitset &subsplit) {
   size_t id = dag_nodes_.size();
-  // TODO: note that I changed this so that it will fail if we try to insert a subsplit
-  // 2x. I think that's the right behavior, don't you?
   SafeInsert(subsplit_to_index_, subsplit, id);
   dag_nodes_.push_back(std::make_shared<GPDAGNode>(id, subsplit));
 }
@@ -132,17 +130,17 @@ std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
   std::vector<Bitset> children_subsplits;
 
   if (parent_to_range_.count(subsplit)) {
-    auto range = parent_to_range_.at(subsplit);
-    for (auto idx = range.first; idx < range.second; idx++) {
+    const auto [start, stop] = parent_to_range_.at(subsplit);
+    for (auto idx = start; idx < stop; idx++) {
       auto child_subsplit = index_to_child_.at(idx);
       children_subsplits.push_back(child_subsplit);
     }
   } else if (include_fake_subsplits) {
-    // In the case where second chunk of the subsplit is a trivial subsplit,
-    // it will not map to any value (parent_to_range_[subsplit] doesn't exist).
-    // But we still need to create and connect to fake subsplits in the DAG.
-    // A subsplit has a fake subsplit as a child if the first chunk is non-zero
-    // and the second chunk has exactly one bit set to 1.
+    // In the case where second chunk of the subsplit is just a single taxon,
+    // the subsplit will not map to any value (parent_to_range_[subsplit] doesn't
+    // exist). But we still need to create and connect to fake subsplits in the DAG. A
+    // subsplit has a fake subsplit as a child if the first chunk is non-zero and the
+    // second chunk has exactly one bit set to 1.
     if (subsplit.SplitChunk(0).Any() &&
         subsplit.SplitChunk(1).SingletonOption().has_value()) {
       // The fake subsplit corresponds to the second chunk of subsplit.
@@ -161,14 +159,13 @@ void GPDAG::BuildNodesDepthFirst(const Bitset &subsplit,
   if (!visited_subsplits.count(subsplit)) {
     visited_subsplits.insert(subsplit);
     auto children_subsplits = GetChildrenSubsplits(subsplit, false);
-    for (auto child_subsplit : children_subsplits) {
+    for (const auto &child_subsplit : children_subsplits) {
       BuildNodesDepthFirst(child_subsplit, visited_subsplits);
     }
     children_subsplits = GetChildrenSubsplits(subsplit.RotateSubsplit(), false);
-    for (auto child_subsplit : children_subsplits) {
+    for (const auto &child_subsplit : children_subsplits) {
       BuildNodesDepthFirst(child_subsplit, visited_subsplits);
     }
-
     CreateAndInsertNode(subsplit);
   }
 }
@@ -179,16 +176,16 @@ void GPDAG::BuildNodes() {
   // We will create fake subsplits and insert to dag_nodes_.
   // These nodes will take IDs in [0, taxon_count_).
   Bitset zero(taxon_count_);
-  for (size_t i = 0; i < taxon_count_; i++) {
+  for (size_t taxon_idx = 0; taxon_idx < taxon_count_; taxon_idx++) {
     Bitset fake(taxon_count_);
-    fake.set(i);
+    fake.set(taxon_idx);
     Bitset fake_subsplit = zero + fake;
     CreateAndInsertNode(fake_subsplit);
   }
   // We are going to add the remaining nodes.
   // The root splits will take on the higher IDs compared to the non-rootsplits.
-  for (auto rootsplit : rootsplits_) {
-    auto subsplit = rootsplit + ~rootsplit;
+  for (const auto &rootsplit : rootsplits_) {
+    const auto subsplit = rootsplit + ~rootsplit;
     BuildNodesDepthFirst(subsplit, visited_subsplits);
   }
 }
