@@ -40,6 +40,7 @@ void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
 }
 
 void GPEngine::operator()(const GPOperations::WeightedSumAccumulate& op) {
+  // TODO replace pcsp_idx.
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.pcsp_idx));
   plvs_.at(op.dest_idx) += q_(op.pcsp_idx) * transition_matrix_ * plvs_.at(op.src_idx);
 }

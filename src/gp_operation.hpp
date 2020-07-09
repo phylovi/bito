@@ -1,7 +1,7 @@
 // Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// These operations are just declarations. How we process them is a separate matter.
+// These operations are just declarations. We process them with the GPEngine.
 
 #ifndef GP_OPERATION_HPP_
 #define GP_OPERATION_HPP_

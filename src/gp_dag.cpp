@@ -35,6 +35,7 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
     }
   });
 
+  // TODO Is this duplicating code in MarginalLikelihoodOperations?
   // Compute marginal likelihood.
   for (size_t root_idx = 0; root_idx < rootsplits_.size(); root_idx++) {
     auto rootsplit = rootsplits_[root_idx];
@@ -47,7 +48,6 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
 }
 
 GPOperationVector GPDAG::MarginalLikelihoodOperations() const {
-  // Compute marginal likelihood.
   GPOperationVector operations;
   for (size_t i = 0; i < rootsplits_.size(); i++) {
     auto rootsplit = rootsplits_[i];
@@ -83,6 +83,7 @@ void GPDAG::IterateOverRealNodes(std::function<void(const GPDAGNode *)> f) const
 void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
   size_t index = 0;
   auto topology_counter = tree_collection.TopologyCounter();
+  // TODO factor this out so there isn't duplicated code with sbn_instance.cpp.
   // Start by adding the rootsplits.
   for (const auto &iter : RootedSBNMaps::RootsplitCounterOf(topology_counter)) {
     rootsplits_.push_back(iter.first);
@@ -102,20 +103,20 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
 }
 
 void GPDAG::CreateAndInsertNode(const Bitset &subsplit) {
-  if (!subsplit_to_index_.count(subsplit)) {
-    size_t id = dag_nodes_.size();
-    subsplit_to_index_[subsplit] = id;
-    dag_nodes_.push_back(std::make_shared<GPDAGNode>(id, subsplit));
-  }
+  size_t id = dag_nodes_.size();
+  // TODO: note that I changed this so that it will fail if we try to insert a subsplit
+  // 2x. I think that's the right behavior, don't you?
+  SafeInsert(subsplit_to_index_, subsplit, id);
+  dag_nodes_.push_back(std::make_shared<GPDAGNode>(id, subsplit));
 }
 
 void GPDAG::ConnectNodes(size_t idx, bool rotated) {
-  auto node = dag_nodes_[idx];
+  const auto node = dag_nodes_[idx];
   // Retrieve children subsplits, set edge relation.
-  Bitset subsplit = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
-  auto children = GetChildrenSubsplits(subsplit, true);
-  for (auto child_subsplit : children) {
-    auto child_node = dag_nodes_[subsplit_to_index_[child_subsplit]];
+  const Bitset subsplit = node->GetBitset(rotated);
+  const auto children = GetChildrenSubsplits(subsplit, true);
+  for (const auto &child_subsplit : children) {
+    auto child_node = dag_nodes_.at(subsplit_to_index_.at(child_subsplit));
     if (rotated) {
       node->AddLeafwardRotated(child_node->Id());
       child_node->AddRootwardRotated(node->Id());
@@ -126,7 +127,6 @@ void GPDAG::ConnectNodes(size_t idx, bool rotated) {
   }
 }
 
-// This function returns empty vector if subsplit is invalid or has no child.
 std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
                                                 bool include_fake_subsplits) {
   std::vector<Bitset> children_subsplits;

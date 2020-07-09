@@ -26,6 +26,9 @@ class GPDAG {
   [[nodiscard]] GPOperationVector ComputeLikelihoods() const;
   [[nodiscard]] GPOperationVector LeafwardPass() const;
   [[nodiscard]] GPOperationVector LeafwardPass(std::vector<size_t> visit_order) const;
+  // Compute marginal likelihood.
+  // TODO do you want to rename this? All of the other functions also return operations,
+  // but only this one has operations in the name.
   [[nodiscard]] GPOperationVector MarginalLikelihoodOperations() const;
   [[nodiscard]] GPOperationVector RootwardPass() const;
   [[nodiscard]] GPOperationVector RootwardPass(std::vector<size_t> visit_order) const;
@@ -83,7 +86,9 @@ class GPDAG {
 
   void ProcessTrees(const RootedTreeCollection &tree_collection);
   void CreateAndInsertNode(const Bitset &subsplit);
+  // Connect the `idx` node to its children, and its children to it, rotating as needed.
   void ConnectNodes(size_t idx, bool rotated);
+  // This function returns empty vector if subsplit is invalid or has no child.
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
                                            bool include_fake_subsplits = false);
   void BuildNodesDepthFirst(const Bitset &subsplit,
