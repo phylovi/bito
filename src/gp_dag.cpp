@@ -152,18 +152,20 @@ std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
 
 void GPDAG::BuildNodesDepthFirst(const Bitset &subsplit,
                                  std::unordered_set<Bitset> &visited_subsplits) {
-  if (!visited_subsplits.count(subsplit)) {
-    visited_subsplits.insert(subsplit);
-    auto children_subsplits = GetChildrenSubsplits(subsplit, false);
-    for (const auto &child_subsplit : children_subsplits) {
+  visited_subsplits.insert(subsplit);
+  auto children_subsplits = GetChildrenSubsplits(subsplit, false);
+  for (const auto &child_subsplit : children_subsplits) {
+    if (!visited_subsplits.count(child_subsplit)) {
       BuildNodesDepthFirst(child_subsplit, visited_subsplits);
     }
-    children_subsplits = GetChildrenSubsplits(subsplit.RotateSubsplit(), false);
-    for (const auto &child_subsplit : children_subsplits) {
-      BuildNodesDepthFirst(child_subsplit, visited_subsplits);
-    }
-    CreateAndInsertNode(subsplit);
   }
+  children_subsplits = GetChildrenSubsplits(subsplit.RotateSubsplit(), false);
+  for (const auto &child_subsplit : children_subsplits) {
+    if (!visited_subsplits.count(child_subsplit)) {
+      BuildNodesDepthFirst(child_subsplit, visited_subsplits);
+    }
+  }
+  CreateAndInsertNode(subsplit);
 }
 
 void GPDAG::BuildNodes() {
@@ -227,8 +229,6 @@ GPOperationVector GPDAG::SetRhatToStationary() const {
   return operations;
 }
 
-// TODO BuildNodesDepthFirst does this differently, by first testing if we've visited
-// and then recurring. Is there a reason for the difference? If not, can we pick one?
 void RootwardDepthFirst(size_t id,
                         const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
                         std::vector<size_t> &visit_order,
