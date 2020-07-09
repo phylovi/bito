@@ -18,8 +18,7 @@ GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
 
 GPOperationVector GPDAG::ComputeLikelihoods() const {
   GPOperationVector operations;
-  for (size_t i = taxon_count_; i < dag_nodes_.size(); i++) {
-    auto node = dag_nodes_[i];
+  IterateOverRealNodes([this, &operations](const GPDAGNode *node) {
     for (size_t child_idx : node->GetLeafwardSorted()) {
       auto child_node = dag_nodes_[child_idx];
       auto pcsp_idx = pcsp_indexer_.at(node->GetBitset() + child_node->GetBitset());
@@ -35,7 +34,7 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
           pcsp_idx, GetPLVIndex(PLVType::R_TILDE, dag_nodes_.size(), node->Id()),
           GetPLVIndex(PLVType::P, dag_nodes_.size(), child_node->Id())});
     }
-  }
+  });
 
   // Compute marginal likelihood.
   for (size_t root_idx = 0; root_idx < rootsplits_.size(); root_idx++) {
@@ -45,9 +44,6 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
         GetPLVIndex(PLVType::R_HAT, dag_nodes_.size(), node_idx), root_idx,
         GetPLVIndex(PLVType::P, dag_nodes_.size(), node_idx)});
   }
-
-  std::cout << operations;
-
   return operations;
 }
 
@@ -77,6 +73,13 @@ size_t GPDAG::ContinuousParameterCount() const {
   }
 
   return GPCSPCount() + fake_subsplit_parameter_count;
+}
+
+void GPDAG::IterateOverRealNodes(std::function<void(const GPDAGNode *)> f) const {
+  Assert(taxon_count_ < dag_nodes_.size(), "No real DAG nodes!");
+  for (auto it = dag_nodes_.cbegin() + taxon_count_; it < dag_nodes_.cend(); it++) {
+    f((*it).get());
+  }
 }
 
 void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {

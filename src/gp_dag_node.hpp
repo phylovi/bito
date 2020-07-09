@@ -28,10 +28,10 @@ class GPDAGNode {
   void AddLeafwardSorted(size_t node_id) { leafward_sorted.push_back(node_id); }
   void AddRootwardRotated(size_t node_id) { rootward_rotated.push_back(node_id); }
   void AddRootwardSorted(size_t node_id) { rootward_sorted.push_back(node_id); }
-  const std::vector<size_t> &GetLeafwardRotated() { return leafward_rotated; }
-  const std::vector<size_t> &GetLeafwardSorted() { return leafward_sorted; }
-  const std::vector<size_t> &GetRootwardRotated() { return rootward_rotated; }
-  const std::vector<size_t> &GetRootwardSorted() { return rootward_sorted; }
+  const std::vector<size_t> &GetLeafwardRotated() const { return leafward_rotated; }
+  const std::vector<size_t> &GetLeafwardSorted() const { return leafward_sorted; }
+  const std::vector<size_t> &GetRootwardRotated() const { return rootward_rotated; }
+  const std::vector<size_t> &GetRootwardSorted() const { return rootward_sorted; }
 
   std::string ToString();
 

@@ -15,6 +15,7 @@
 
 class GPDAG {
  public:
+  using NodePtrVector = std::vector<std::shared_ptr<GPDAGNode>>;
   enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
 
   GPDAG();
@@ -65,8 +66,8 @@ class GPDAG {
 
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
-  std::unordered_map<Bitset, size_t> subsplit_to_index_;
-  std::vector<std::shared_ptr<GPDAGNode>> dag_nodes_;
+  BitsetSizeMap subsplit_to_index_;
+  NodePtrVector dag_nodes_;
 
   // This indexer is an expanded version of indexer_ in indexer_ in sbn_instance.
   // This indexer can be used for q_, branch_lengths_, log_likelihoods_
@@ -74,6 +75,9 @@ class GPDAG {
   BitsetSizeMap pcsp_indexer_;
   // Stores range of indices for a subsplit and rotated subsplit.
   BitsetSizePairMap subsplit2range_;
+
+  // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
+  void IterateOverRealNodes(std::function<void(const GPDAGNode *)>) const;
 
   void ProcessTrees(const RootedTreeCollection &tree_collection);
   void CreateAndInsertNode(const Bitset &subsplit);
