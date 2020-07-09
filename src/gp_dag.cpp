@@ -226,6 +226,7 @@ void LeafwardDepthFirst(size_t id, std::vector<std::shared_ptr<GPDAGNode>> &dag_
 
 std::vector<size_t> GPDAG::LeafwardPassTraversal() {
   // TODO Can we re-add this assert?
+  // SHJ: I don't think it's relevant.
   //  Assert(leaf_idx < taxon_count_, std::to_string(leaf_idx) + " >= num taxa.");
   std::vector<size_t> visit_order;
   std::unordered_set<size_t> visited_nodes;

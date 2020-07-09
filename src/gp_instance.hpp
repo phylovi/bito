@@ -35,11 +35,6 @@ class GPInstance {
   void PopulatePLVs();
   void ComputeLikelihoods();
 
-  // TODO Figure out a way to remove: just here for unit test.
-  size_t GetPCSPIndex(size_t parent_node_idx, size_t child_node_idx, bool rotated) {
-    return dag_.GetPCSPIndex(parent_node_idx, child_node_idx, rotated);
-  }
-
  private:
   std::string mmap_file_path_;
   Alignment alignment_;

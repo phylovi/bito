@@ -9,6 +9,8 @@ using namespace GPOperations;
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, root };
 
+size_t root_jupiter_idx = 3;
+
 // Our tree is
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
@@ -85,8 +87,7 @@ TEST_CASE("GPInstance: gradient calculation") {
   size_t hello_node_count = 5;
   size_t leafward_idx = GetPLVIndex(PLVType::P, hello_node_count, child_idx);
   size_t rootward_idx = GetPLVIndex(PLVType::R, hello_node_count, root_idx);
-  size_t pcsp_idx = inst.GetPCSPIndex(root_idx, child_idx, false);
-  OptimizeBranchLength op{leafward_idx, rootward_idx, pcsp_idx};
+  OptimizeBranchLength op{leafward_idx, rootward_idx, root_jupiter_idx};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
   // Expect log lik derivative: -0.6109379521.
