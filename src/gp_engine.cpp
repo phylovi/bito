@@ -50,8 +50,8 @@ void GPEngine::operator()(const GPOperations::MarginalLikelihood& op) {
   per_pattern_log_likelihoods_ = result.diagonal().array().log();
   log_likelihoods_[op.pcsp_idx] =
       log(q_(op.p_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-  log_marginal_likelihood =
-      NumericalUtils::LogAdd(log_marginal_likelihood, log_likelihoods_[op.pcsp_idx]);
+  log_marginal_likelihood_ =
+      NumericalUtils::LogAdd(log_marginal_likelihood_, log_likelihoods_[op.pcsp_idx]);
 }
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {

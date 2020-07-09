@@ -42,8 +42,8 @@ class GPEngine {
     branch_lengths_ = branch_lengths;
   };
   void SetSBNParameters(EigenVectorXd q) { q_ = q; };
-  void ResetLogMarginalLikelihood() { log_marginal_likelihood = DOUBLE_NEG_INF; }
-  double GetLogMarginalLikelihood() { return log_marginal_likelihood; }
+  void ResetLogMarginalLikelihood() { log_marginal_likelihood_ = DOUBLE_NEG_INF; }
+  double GetLogMarginalLikelihood() { return log_marginal_likelihood_; }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
@@ -58,7 +58,7 @@ class GPEngine {
   double step_size_for_optimization_ = 5e-4;
   size_t max_iter_for_optimization_ = 1000;
 
-  double log_marginal_likelihood = DOUBLE_NEG_INF;
+  double log_marginal_likelihood_ = DOUBLE_NEG_INF;
 
   SitePattern site_pattern_;
   size_t plv_count_;
