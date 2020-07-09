@@ -133,7 +133,7 @@ class GPEngine {
 
 TEST_CASE("GPEngine") {
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
-  GPEngine engine(hello_site_pattern, 5, "_ignore/mmapped_plv.data");
+  GPEngine engine(hello_site_pattern, 6*5, 5, "_ignore/mmapped_plv.data");
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29

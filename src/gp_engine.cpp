@@ -5,30 +5,6 @@
 
 #include "optimization.hpp"
 
-// TODO Can we delete this alternate constructor?
-GPEngine::GPEngine(SitePattern site_pattern, size_t gpcsp_count,
-                   std::string mmap_file_path)
-    : site_pattern_(std::move(site_pattern)),
-      plv_count_(site_pattern_.PatternCount() + gpcsp_count),
-      mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
-  Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
-  plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
-  Assert(plvs_.size() == plv_count_,
-         "Didn't get the right number of PLVs out of Subdivide.");
-  Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
-             plvs_.back().cols() == site_pattern_.PatternCount(),
-         "Didn't get the right shape of PLVs out of Subdivide.");
-  branch_lengths_.resize(gpcsp_count);
-  log_likelihoods_.resize(gpcsp_count);
-  q_.resize(gpcsp_count);
-
-  auto weights = site_pattern_.GetWeights();
-  site_pattern_weights_ =
-      Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
-
-  InitializePLVsWithSitePatterns();
-}
-
 GPEngine::GPEngine(SitePattern site_pattern, size_t num_plvs,
                    size_t continous_parameter_count, std::string mmap_file_path)
     : site_pattern_(std::move(site_pattern)),
