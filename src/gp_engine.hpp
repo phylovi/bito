@@ -17,7 +17,7 @@
 class GPEngine {
  public:
   GPEngine(SitePattern site_pattern, size_t pcss_count, std::string mmap_file_path);
-  GPEngine(SitePattern site_pattern, size_t num_plvs, size_t continous_parameter_count,
+  GPEngine(SitePattern site_pattern, size_t plv_count, size_t continous_parameter_count,
            std::string mmap_file_path);
 
   // These operators mean that we can invoke this class on each of the operations.
@@ -116,14 +116,15 @@ class GPEngine {
 
   inline DoublePair LogLikelihoodAndDerivativeFromPreparations() {
     per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
-    double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+    const double log_likelihood =
+        per_pattern_log_likelihoods_.dot(site_pattern_weights_);
     // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
     // of l_i divided by l_i.
     per_pattern_likelihood_derivative_ratios_ =
         per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
     // We weight this with the number of times we see the site patterns as for the log
     // likelihood.
-    double log_likelihood_derivative =
+    const double log_likelihood_derivative =
         per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
     return {log_likelihood, log_likelihood_derivative};
   }

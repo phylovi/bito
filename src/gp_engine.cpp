@@ -2,13 +2,12 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "gp_engine.hpp"
-
 #include "optimization.hpp"
 
-GPEngine::GPEngine(SitePattern site_pattern, size_t num_plvs,
+GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count,
                    size_t continous_parameter_count, std::string mmap_file_path)
     : site_pattern_(std::move(site_pattern)),
-      plv_count_(num_plvs),
+      plv_count_(plv_count),
       mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
   Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
   plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
@@ -17,7 +16,6 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t num_plvs,
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
-
   branch_lengths_.resize(continous_parameter_count);
   log_likelihoods_.resize(continous_parameter_count);
   q_.resize(continous_parameter_count);
@@ -46,8 +44,11 @@ void GPEngine::operator()(const GPOperations::WeightedSumAccumulate& op) {
 }
 
 void GPEngine::operator()(const GPOperations::MarginalLikelihood& op) {
-  auto result = plvs_.at(op.stationary_idx).transpose() * plvs_.at(op.p_idx);
-  per_pattern_log_likelihoods_ = result.diagonal().array().log();
+  per_pattern_log_likelihoods_ =
+      (plvs_.at(op.stationary_idx).transpose() * plvs_.at(op.p_idx))
+          .diagonal()
+          .array()
+          .log();
   log_likelihoods_[op.pcsp_idx] =
       log(q_(op.p_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   log_marginal_likelihood_ =
@@ -79,10 +80,12 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
     return;
   }
 
+  // TODO this comment belongs in the documentation with the rest of the operations in
+  // gp_operations.hpp.
   // Assumption: log_likelihoods_ have been updated on [op.start_idx, op.stop_idx).
   auto segment = log_likelihoods_.segment(op.start_idx, op.stop_idx - op.start_idx);
   double log_norm = NumericalUtils::LogSum(segment);
-  segment.array() = segment.array() - log_norm;
+  segment.array() -= log_norm;
   q_.segment(op.start_idx, op.stop_idx - op.start_idx) = segment.array().exp();
 }
 
@@ -128,13 +131,14 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   PreparePerPatternLikelihoodDerivatives(op.rootward_idx, op.leafward_idx);
   PreparePerPatternLikelihoods(op.rootward_idx, op.leafward_idx);
 
+  // TODO why aren't we using LogLikelihoodAndDerivativeFromPreparations ?
   per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
-  double log_likelihood =
+  const double log_likelihood =
       log(q_(op.pcsp_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
   per_pattern_likelihood_derivative_ratios_ =
       per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
-  double log_likelihood_derivative =
+  const double log_likelihood_derivative =
       per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
   return {log_likelihood, log_likelihood_derivative};
 }
