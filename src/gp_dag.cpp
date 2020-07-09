@@ -34,16 +34,9 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
     }
   });
 
-  // TODO Is this duplicating code in MarginalLikelihoodOperations?
-  // Compute marginal likelihood.
-  for (size_t root_idx = 0; root_idx < rootsplits_.size(); root_idx++) {
-    auto rootsplit = rootsplits_[root_idx];
-    auto node_idx = subsplit_to_index_.at(rootsplit + ~rootsplit);
-    operations.push_back(GPOperations::MarginalLikelihood{
-      GetPLVIndex(PLVType::R_HAT, node_idx),
-      root_idx,
-      GetPLVIndex(PLVType::P, node_idx)});
-  }
+  auto marginal_likelihood_operations = MarginalLikelihood();
+  operations.insert(operations.end(), marginal_likelihood_operations.begin(),
+                    marginal_likelihood_operations.end());
   return operations;
 }
 
