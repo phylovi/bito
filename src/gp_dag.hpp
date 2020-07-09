@@ -1,21 +1,22 @@
 // Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// The purpose of this class is to hold a DAG that we use to build up the operations for
+// the generalized pruning operations.
 
 #ifndef SRC_GP_DAG_HPP_
 #define SRC_GP_DAG_HPP_
 
-#include <deque>
 #include "gp_dag_node.hpp"
 #include "gp_engine.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 
-enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
-
-size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx);
 
 class GPDAG {
  public:
+  enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
+
   GPDAG();
   explicit GPDAG(const RootedTreeCollection &tree_collection);
   void PrintStatus();
@@ -60,6 +61,8 @@ class GPDAG {
                                          std::unordered_set<size_t> &visited_nodes,
                                          GPOperationVector &operations);
 
+  static size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx);
+
  private:
   // TODO Can we start here with a description of the various indexing schemes? Could we
   // consider naming them different things?
@@ -97,6 +100,18 @@ class GPDAG {
   void BuildNodes();
   void BuildEdges();
   void BuildPCSPIndexer();
+
+  void UpdateRHat(size_t node_id, bool rotated,
+                  std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
+                  BitsetSizeMap &pcsp_indexer, GPOperationVector &operations);
+  void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
+                                   std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
+                                   BitsetSizeMap &pcsp_indexer,
+                                   GPOperationVector &operations);
+  void OptimizeBranchLengthUpdatePHat(
+      size_t node_id, size_t child_node_id, bool rotated,
+      std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes, BitsetSizeMap &pcsp_indexer,
+      GPOperationVector &operations);
 };
 
 #endif  // SRC_GP_DAG_HPP_

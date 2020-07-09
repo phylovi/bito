@@ -278,7 +278,7 @@ void GPDAG::BuildPCSPIndexer() {
   }
 }
 
-size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx) {
+size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx) {
   switch (plv_type) {
     case PLVType::P:
       return src_idx;
@@ -455,9 +455,9 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
   return operations;
 }
 
-void UpdateRHat(size_t node_id, bool rotated,
-                std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
-                BitsetSizeMap &pcsp_indexer, GPOperationVector &operations) {
+void GPDAG::UpdateRHat(size_t node_id, bool rotated,
+                       std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
+                       BitsetSizeMap &pcsp_indexer, GPOperationVector &operations) {
   auto node = dag_nodes[node_id];
   PLVType src_plv_type = rotated ? PLVType::R_TILDE : PLVType::R;
   auto parent_nodes = rotated ? node->GetRootwardRotated() : node->GetRootwardSorted();
@@ -473,10 +473,10 @@ void UpdateRHat(size_t node_id, bool rotated,
   }
 }
 
-void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
-                                 std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
-                                 BitsetSizeMap &pcsp_indexer,
-                                 GPOperationVector &operations) {
+void GPDAG::UpdatePHatComputeLikelihood(
+    size_t node_id, size_t child_node_id, bool rotated,
+    std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes, BitsetSizeMap &pcsp_indexer,
+    GPOperationVector &operations) {
   auto node = dag_nodes[node_id];
   auto child_node = dag_nodes[child_node_id];
   auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
@@ -496,10 +496,10 @@ void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rota
                  GetPLVIndex(PLVType::P, dag_nodes.size(), child_node->Id())});
 }
 
-void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id, bool rotated,
-                                    std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
-                                    BitsetSizeMap &pcsp_indexer,
-                                    GPOperationVector &operations) {
+void GPDAG::OptimizeBranchLengthUpdatePHat(
+    size_t node_id, size_t child_node_id, bool rotated,
+    std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes, BitsetSizeMap &pcsp_indexer,
+    GPOperationVector &operations) {
   auto node = dag_nodes[node_id];
   auto child_node = dag_nodes[child_node_id];
   auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
