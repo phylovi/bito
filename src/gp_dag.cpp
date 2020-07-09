@@ -445,6 +445,93 @@ GPOperationVector GPDAG::SetLeafwardZero() {
   return operations;
 }
 
+GPOperationVector GPDAG::BranchLengthOptimization() {
+  GPOperationVector operations;
+  std::unordered_set<size_t> visited_nodes;
+  for (auto rootsplit : rootsplits_) {
+    ScheduleBranchLengthOptimization(subsplit_to_index_[rootsplit + ~rootsplit],
+                                     visited_nodes, operations);
+  }
+  return operations;
+}
+
+void UpdateRHat(size_t node_id,
+                bool rotated,
+                std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
+                BitsetSizeMap &pcsp_indexer,
+                GPOperationVector &operations)
+{
+  auto node = dag_nodes[node_id];
+  PLVType src_plv_type = rotated ? PLVType::R_TILDE : PLVType::R;
+  auto parent_nodes = rotated ? node->GetRootwardRotated() :
+                                node->GetRootwardSorted();
+  for (size_t parent_id : parent_nodes) {
+    auto parent_node = dag_nodes[parent_id];
+    auto pcsp = rotated ? parent_node->GetBitset().RotateSubsplit() :
+                          parent_node->GetBitset();
+    pcsp = pcsp + node->GetBitset();
+    size_t pcsp_idx = pcsp_indexer[pcsp];
+    operations.push_back(WeightedSumAccumulate{
+        GetPLVIndex(PLVType::R_HAT, dag_nodes.size(), node_id), pcsp_idx,
+        GetPLVIndex(src_plv_type, dag_nodes.size(), parent_id)});
+  }
+}
+
+void UpdatePHatComputeLikelihood(size_t node_id,
+                                 size_t child_node_id,
+                                 bool rotated,
+                                 std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
+                                 BitsetSizeMap &pcsp_indexer,
+                                 GPOperationVector &operations)
+{
+  auto node = dag_nodes[node_id];
+  auto child_node = dag_nodes[child_node_id];
+  auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
+  pcsp = pcsp + child_node->GetBitset();
+  size_t pcsp_idx = pcsp_indexer[pcsp];
+  // Update p_hat(s)
+  operations.push_back(WeightedSumAccumulate{
+      GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT,
+                  dag_nodes.size(),
+                  node_id),
+      pcsp_idx,
+      GetPLVIndex(PLVType::P, dag_nodes.size(), child_node_id),
+  });
+  operations.push_back(Likelihood{pcsp_idx,
+    GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R,
+                dag_nodes.size(),
+                node->Id()),
+    GetPLVIndex(PLVType::P, dag_nodes.size(), child_node->Id())});
+}
+
+void OptimizeBranchLengthUpdatePHat(size_t node_id,
+                                    size_t child_node_id,
+                                    bool rotated,
+                                    std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
+                                    BitsetSizeMap &pcsp_indexer,
+                                    GPOperationVector &operations)
+{
+  auto node = dag_nodes[node_id];
+  auto child_node = dag_nodes[child_node_id];
+  auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
+  pcsp = pcsp + child_node->GetBitset();
+  size_t pcsp_idx = pcsp_indexer[pcsp];
+  operations.push_back(OptimizeBranchLength{
+      GetPLVIndex(PLVType::P, dag_nodes.size(), child_node_id),
+      GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R,
+                  dag_nodes.size(),
+                  node_id),
+      pcsp_idx});
+  // Update p_hat(s)
+  operations.push_back(WeightedSumAccumulate{
+      GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT,
+                  dag_nodes.size(),
+                  node_id),
+      pcsp_idx,
+      GetPLVIndex(PLVType::P, dag_nodes.size(), child_node_id),
+  });
+}
+
 void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                                              std::unordered_set<size_t> &visited_nodes,
                                              GPOperationVector &operations) {
@@ -454,21 +541,8 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
   if (!node->IsRoot()) {
     // Compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
     operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, dag_nodes_.size(), node_id)});
-    for (size_t parent_id : node->GetRootwardSorted()) {
-      auto parent_node = dag_nodes_[parent_id];
-      size_t pcsp_idx = pcsp_indexer_[parent_node->GetBitset() + node->GetBitset()];
-      operations.push_back(WeightedSumAccumulate{
-          GetPLVIndex(PLVType::R_HAT, dag_nodes_.size(), node_id), pcsp_idx,
-          GetPLVIndex(PLVType::R, dag_nodes_.size(), parent_id)});
-    }
-    for (size_t parent_id : node->GetRootwardRotated()) {
-      auto parent_node = dag_nodes_[parent_id];
-      size_t pcsp_idx =
-          pcsp_indexer_[parent_node->GetBitset().RotateSubsplit() + node->GetBitset()];
-      operations.push_back(WeightedSumAccumulate{
-          GetPLVIndex(PLVType::R_HAT, dag_nodes_.size(), node_id), pcsp_idx,
-          GetPLVIndex(PLVType::R_TILDE, dag_nodes_.size(), parent_id)});
-    }
+    UpdateRHat(node_id, false, dag_nodes_, pcsp_indexer_, operations);
+    UpdateRHat(node_id, true, dag_nodes_, pcsp_indexer_, operations);
 
     // Update r(s) and r_tilde(s)
     operations.push_back(
@@ -488,18 +562,8 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleBranchLengthOptimization(child_id, visited_nodes, operations);
     }
-
-    auto child_node = dag_nodes_[child_id];
-    size_t pcsp_idx = pcsp_indexer_[node->GetBitset() + child_node->GetBitset()];
-    operations.push_back(OptimizeBranchLength{
-        GetPLVIndex(PLVType::P, dag_nodes_.size(), child_id),
-        GetPLVIndex(PLVType::R, dag_nodes_.size(), node_id), pcsp_idx});
-    // Update p_hat(s)
-    operations.push_back(WeightedSumAccumulate{
-        GetPLVIndex(PLVType::P_HAT, dag_nodes_.size(), node_id),
-        pcsp_idx,
-        GetPLVIndex(PLVType::P, dag_nodes_.size(), child_id),
-    });
+    OptimizeBranchLengthUpdatePHat(node_id, child_id, false,
+                                   dag_nodes_, pcsp_indexer_, operations);
   }
   // Update r_tilde(t) = r_hat(t) \circ p_hat(t).
   operations.push_back(
@@ -513,17 +577,8 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleBranchLengthOptimization(child_id, visited_nodes, operations);
     }
-    auto child_node = dag_nodes_[child_id];
-    size_t pcsp_idx =
-        pcsp_indexer_[node->GetBitset().RotateSubsplit() + child_node->GetBitset()];
-    operations.push_back(OptimizeBranchLength{
-        GetPLVIndex(PLVType::P, dag_nodes_.size(), child_id),
-        GetPLVIndex(PLVType::R_TILDE, dag_nodes_.size(), node_id), pcsp_idx});
-    operations.push_back(WeightedSumAccumulate{
-        GetPLVIndex(PLVType::P_HAT_TILDE, dag_nodes_.size(), node_id),
-        pcsp_idx,
-        GetPLVIndex(PLVType::P, dag_nodes_.size(), child_id),
-    });
+    OptimizeBranchLengthUpdatePHat(node_id, child_id, true,
+                                   dag_nodes_, pcsp_indexer_, operations);
   }
   // Update r(t) = r_hat(t) \circ p_hat_tilde(t).
   operations.push_back(
@@ -538,16 +593,6 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                GetPLVIndex(PLVType::P_HAT_TILDE, dag_nodes_.size(), node_id)});
 };
 
-GPOperationVector GPDAG::BranchLengthOptimization() {
-  GPOperationVector operations;
-  std::unordered_set<size_t> visited_nodes;
-  for (auto rootsplit : rootsplits_) {
-    ScheduleBranchLengthOptimization(subsplit_to_index_[rootsplit + ~rootsplit],
-                                     visited_nodes, operations);
-  }
-  return operations;
-}
-
 void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
                                               std::unordered_set<size_t> &visited_nodes,
                                               GPOperationVector &operations) {
@@ -558,23 +603,9 @@ void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
     // We compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
     // This is necessary to reflect changes to r(t) as well as new values
     // for q(s|t).
-    // TODO: Code refactoring -- similar code is repeated twice.
     operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, dag_nodes_.size(), node_id)});
-    for (size_t parent_id : node->GetRootwardSorted()) {
-      auto parent_node = dag_nodes_[parent_id];
-      size_t pcsp_idx = pcsp_indexer_[parent_node->GetBitset() + node->GetBitset()];
-      operations.push_back(WeightedSumAccumulate{
-          GetPLVIndex(PLVType::R_HAT, dag_nodes_.size(), node_id), pcsp_idx,
-          GetPLVIndex(PLVType::R, dag_nodes_.size(), parent_id)});
-    }
-    for (size_t parent_id : node->GetRootwardRotated()) {
-      auto parent_node = dag_nodes_[parent_id];
-      size_t pcsp_idx =
-          pcsp_indexer_[parent_node->GetBitset().RotateSubsplit() + node->GetBitset()];
-      operations.push_back(WeightedSumAccumulate{
-          GetPLVIndex(PLVType::R_HAT, dag_nodes_.size(), node_id), pcsp_idx,
-          GetPLVIndex(PLVType::R_TILDE, dag_nodes_.size(), parent_id)});
-    }
+    UpdateRHat(node_id, false, dag_nodes_, pcsp_indexer_, operations);
+    UpdateRHat(node_id, true, dag_nodes_, pcsp_indexer_, operations);
 
     // Update r(s) and r_tilde(s) using rhat(s).
     operations.push_back(
@@ -594,18 +625,8 @@ void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleSBNParametersOptimization(child_id, visited_nodes, operations);
     }
-
-    auto child_node = dag_nodes_[child_id];
-    size_t pcsp_idx = pcsp_indexer_[node->GetBitset() + child_node->GetBitset()];
-    // Update p_hat(s)
-    operations.push_back(WeightedSumAccumulate{
-        GetPLVIndex(PLVType::P_HAT, dag_nodes_.size(), node_id),
-        pcsp_idx,
-        GetPLVIndex(PLVType::P, dag_nodes_.size(), child_id),
-    });
-    operations.push_back(
-        Likelihood{pcsp_idx, GetPLVIndex(PLVType::R, dag_nodes_.size(), node->Id()),
-                   GetPLVIndex(PLVType::P, dag_nodes_.size(), child_node->Id())});
+    UpdatePHatComputeLikelihood(node_id, child_id, false,
+                                dag_nodes_, pcsp_indexer_, operations);
   }
   OptimizeSBNParameters(node->GetBitset(), operations);
 
@@ -621,17 +642,8 @@ void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
     if (!visited_nodes.count(child_id)) {
       ScheduleSBNParametersOptimization(child_id, visited_nodes, operations);
     }
-    auto child_node = dag_nodes_[child_id];
-    size_t pcsp_idx =
-        pcsp_indexer_[node->GetBitset().RotateSubsplit() + child_node->GetBitset()];
-    operations.push_back(WeightedSumAccumulate{
-        GetPLVIndex(PLVType::P_HAT_TILDE, dag_nodes_.size(), node_id),
-        pcsp_idx,
-        GetPLVIndex(PLVType::P, dag_nodes_.size(), child_id),
-    });
-    operations.push_back(Likelihood{
-        pcsp_idx, GetPLVIndex(PLVType::R_TILDE, dag_nodes_.size(), node->Id()),
-        GetPLVIndex(PLVType::P, dag_nodes_.size(), child_node->Id())});
+    UpdatePHatComputeLikelihood(node_id, child_id, true,
+                                dag_nodes_, pcsp_indexer_, operations);
   }
   OptimizeSBNParameters(node->GetBitset().RotateSubsplit(), operations);
 
