@@ -20,15 +20,15 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
   IterateOverRealNodes([this, &operations](const GPDAGNode *node) {
     for (size_t child_idx : node->GetLeafwardSorted()) {
       auto child_node = dag_nodes_[child_idx];
-      auto pcsp_idx = pcsp_indexer_.at(node->GetBitset() + child_node->GetBitset());
-      operations.push_back(Likelihood{pcsp_idx, GetPLVIndex(PLVType::R, node->Id()),
+      auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset() + child_node->GetBitset());
+      operations.push_back(Likelihood{gpcsp_idx, GetPLVIndex(PLVType::R, node->Id()),
                                       GetPLVIndex(PLVType::P, child_node->Id())});
     }
     for (size_t child_idx : node->GetLeafwardRotated()) {
       auto child_node = dag_nodes_[child_idx];
-      auto pcsp_idx = pcsp_indexer_.at(node->GetBitset().RotateSubsplit() +
+      auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset().RotateSubsplit() +
                                        child_node->GetBitset());
-      operations.push_back(Likelihood{pcsp_idx,
+      operations.push_back(Likelihood{gpcsp_idx,
                                       GetPLVIndex(PLVType::R_TILDE, node->Id()),
                                       GetPLVIndex(PLVType::P, child_node->Id())});
     }
@@ -202,7 +202,7 @@ void GPDAG::Print() const {
 }
 
 void GPDAG::PrintPCSPIndexer() const {
-  for (const auto &[pcsp, idx] : pcsp_indexer_) {
+  for (const auto &[pcsp, idx] : gpcsp_indexer_) {
     std::cout << pcsp.SubsplitToString() << ", " << idx << std::endl;
   }
 }
@@ -287,7 +287,7 @@ std::vector<size_t> GPDAG::RootwardPassTraversal() const {
 void GPDAG::BuildPCSPIndexer() {
   size_t idx = 0;
   for (auto rootsplit : rootsplits_) {
-    SafeInsert(pcsp_indexer_, rootsplit + ~rootsplit, idx);
+    SafeInsert(gpcsp_indexer_, rootsplit + ~rootsplit, idx);
     idx++;
   }
 
@@ -297,7 +297,7 @@ void GPDAG::BuildPCSPIndexer() {
       SafeInsert(subsplit_to_range_, node->GetBitset(), {idx, idx + child_count});
       for (size_t j = 0; j < child_count; j++) {
         auto child = dag_nodes_.at(node->GetLeafwardSorted().at(j));
-        SafeInsert(pcsp_indexer_, node->GetBitset() + child->GetBitset(), idx);
+        SafeInsert(gpcsp_indexer_, node->GetBitset() + child->GetBitset(), idx);
         idx++;
       }
     }
@@ -307,7 +307,7 @@ void GPDAG::BuildPCSPIndexer() {
                  {idx, idx + child_count});
       for (size_t j = 0; j < child_count; j++) {
         auto child = dag_nodes_.at(node->GetLeafwardRotated().at(j));
-        SafeInsert(pcsp_indexer_,
+        SafeInsert(gpcsp_indexer_,
                    node->GetBitset().RotateSubsplit() + child->GetBitset(), idx);
         idx++;
       }
@@ -349,13 +349,13 @@ void GPDAG::AddRootwardWeightedSumAccumulateOperations(
     auto child_node = dag_nodes_[child_idx];
     auto child_subsplit = child_node->GetBitset();
     auto pcsp = parent_subsplit + child_subsplit;
-    if (!pcsp_indexer_.count(pcsp)) {
+    if (!gpcsp_indexer_.count(pcsp)) {
       Failwith("Non-existent PCSP index.");
     }
-    auto pcsp_idx = pcsp_indexer_.at(pcsp);
+    auto gpcsp_idx = gpcsp_indexer_.at(pcsp);
 
     operations.push_back(EvolvePLVWeightedBySBNParameter{GetPLVIndex(plv_type, node->Id()),
-                                               pcsp_idx,
+                                               gpcsp_idx,
                                                GetPLVIndex(PLVType::P, child_idx)});
   }
 }
@@ -366,19 +366,19 @@ void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
   for (size_t parent_idx : node->GetRootwardSorted()) {
     auto parent_node = dag_nodes_[parent_idx];
     auto parent_subsplit = parent_node->GetBitset();
-    auto pcsp_idx = pcsp_indexer_.at(parent_subsplit + subsplit);
+    auto gpcsp_idx = gpcsp_indexer_.at(parent_subsplit + subsplit);
 
     operations.push_back(
-        EvolvePLVWeightedBySBNParameter{GetPLVIndex(PLVType::R_HAT, node->Id()), pcsp_idx,
+        EvolvePLVWeightedBySBNParameter{GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
                               GetPLVIndex(PLVType::R, parent_node->Id())});
   }
   for (size_t parent_idx : node->GetRootwardRotated()) {
     auto parent_node = dag_nodes_[parent_idx];
     auto parent_subsplit = parent_node->GetBitset().RotateSubsplit();
-    auto pcsp_idx = pcsp_indexer_.at(parent_subsplit + subsplit);
+    auto gpcsp_idx = gpcsp_indexer_.at(parent_subsplit + subsplit);
 
     operations.push_back(
-        EvolvePLVWeightedBySBNParameter{GetPLVIndex(PLVType::R_HAT, node->Id()), pcsp_idx,
+        EvolvePLVWeightedBySBNParameter{GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
                               GetPLVIndex(PLVType::R_TILDE, parent_node->Id())});
   }
 }
@@ -492,9 +492,9 @@ void GPDAG::UpdateRHat(size_t node_id, bool rotated,
     auto pcsp =
         rotated ? parent_node->GetBitset().RotateSubsplit() : parent_node->GetBitset();
     pcsp = pcsp + node->GetBitset();
-    size_t pcsp_idx = pcsp_indexer_.at(pcsp);
+    size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
     operations.push_back(EvolvePLVWeightedBySBNParameter{
-        GetPLVIndex(PLVType::R_HAT, node_id), pcsp_idx,
+        GetPLVIndex(PLVType::R_HAT, node_id), gpcsp_idx,
         GetPLVIndex(src_plv_type, parent_id)});
   }
 }
@@ -506,16 +506,16 @@ void GPDAG::UpdatePHatComputeLikelihood(
   auto child_node = dag_nodes_[child_node_id];
   auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
   pcsp = pcsp + child_node->GetBitset();
-  size_t pcsp_idx = pcsp_indexer_.at(pcsp);
+  size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
   // Update p_hat(s)
   operations.push_back(EvolvePLVWeightedBySBNParameter{
       GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT,
                         node_id),
-      pcsp_idx,
+      gpcsp_idx,
       GetPLVIndex(PLVType::P, child_node_id),
   });
   operations.push_back(
-      Likelihood{pcsp_idx,
+      Likelihood{gpcsp_idx,
                  GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R,
                              node->Id()),
                  GetPLVIndex(PLVType::P, child_node->Id())});
@@ -528,15 +528,15 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(
   auto child_node = dag_nodes_[child_node_id];
   auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
   pcsp = pcsp + child_node->GetBitset();
-  size_t pcsp_idx = pcsp_indexer_.at(pcsp);
+  size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
   operations.push_back(OptimizeBranchLength{
       GetPLVIndex(PLVType::P, child_node_id),
       GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R, node_id),
-      pcsp_idx});
+      gpcsp_idx});
   // Update p_hat(s)
   operations.push_back(EvolvePLVWeightedBySBNParameter{
       GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, node_id),
-      pcsp_idx,
+      gpcsp_idx,
       GetPLVIndex(PLVType::P, child_node_id),
   });
 }

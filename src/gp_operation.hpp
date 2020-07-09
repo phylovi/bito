@@ -35,9 +35,9 @@ struct Zero {
 // Set the PLV at `dest_idx` to be the stationary distribution at every site.
 struct SetToStationaryDistribution {
   size_t dest_idx;
-  size_t pcsp_idx;
+  size_t gpcsp_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"pcsp_idx", pcsp_idx}};
+    return {{"dest_idx", dest_idx}, {"pcsp_idx", gpcsp_idx}};
   }
 };
 
@@ -45,21 +45,21 @@ struct SetToStationaryDistribution {
 // perform `plv[dest_idx] += q[q_idx] * transition_matrix_ * plv[src_idx]`
 struct EvolvePLVWeightedBySBNParameter {
   size_t dest_idx;
-  size_t pcsp_idx;
+  size_t gpcsp_idx;
   size_t src_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"pcsp_idx", pcsp_idx}, {"src_idx", src_idx}};
+    return {{"dest_idx", dest_idx}, {"pcsp_idx", gpcsp_idx}, {"src_idx", src_idx}};
   }
 };
 
-// Computes log_likelihoods_[pcsp_idx] where pcsp_idx is for the root subsplit.
+// Computes log_likelihoods_[gpcsp_idx] where gpcsp_idx is for the root subsplit.
 // Increments log marginal likelihood.
 struct IncrementMarginalLikelihood {
   size_t stationary_idx;
-  size_t pcsp_idx;
+  size_t gpcsp_idx;
   size_t p_idx;
   StringSizePairVector guts() const {
-    return {{"r_idx", stationary_idx}, {"pcsp_idx", pcsp_idx}, {"p_idx", p_idx}};
+    return {{"r_idx", stationary_idx}, {"pcsp_idx", gpcsp_idx}, {"p_idx", p_idx}};
   }
 };
 
@@ -95,17 +95,18 @@ struct Likelihood {
 struct OptimizeBranchLength {
   size_t leafward_idx;
   size_t rootward_idx;
-  size_t pcsp_idx;
+  size_t gpcsp_idx;
   StringSizePairVector guts() const {
     return {{"leafward_idx", leafward_idx},
             {"rootward_idx", rootward_idx},
-            {"pcsp_idx", pcsp_idx}};
+            {"pcsp_idx", gpcsp_idx}};
   }
 };
 
-// Performs `eq:SBNUpdates`. That is, let `total` be the sum of `log_likelihoods[idx]`
+// Assumption: log_likelihoods_ have been updated on [op.start_idx, op.stop_idx).
+// Performs `eq:SBNUpdates`. That is, let `total` be the log sum of `log_likelihoods[idx]`
 // for all `idx` in `start_idx <= idx < stop_idx`. Now let `q[idx] =
-// log_likelihoods[idx]/total` for all `idx` in `start_idx <= idx < stop_idx`.
+// exp(log_likelihoods[idx] - total)` for all `idx` in `start_idx <= idx < stop_idx`.
 struct UpdateSBNProbabilities {
   size_t start_idx;
   size_t stop_idx;

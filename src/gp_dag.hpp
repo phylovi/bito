@@ -40,8 +40,6 @@ class GPDAG {
 
   EigenVectorXd BuildUniformQ() const;
 
-  // TODO @Seong-- do you like the terminology "GPCSP" for "PCSP" + rootsplits?
-  // SHJ: Yes.
   size_t GPCSPCount() const;
   size_t NodeCount() const;
   size_t ContinuousParameterCount() const;
@@ -79,7 +77,7 @@ class GPDAG {
   // This indexer is an expanded version of indexer_ in indexer_ in sbn_instance.
   // This indexer can be used for q_, branch_lengths_, log_likelihoods_
   // in GPEngine.
-  BitsetSizeMap pcsp_indexer_;
+  BitsetSizeMap gpcsp_indexer_;
   // Stores range of indices for a subsplit and rotated subsplit.
   BitsetSizePairMap subsplit_to_range_;
 
