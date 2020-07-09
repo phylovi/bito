@@ -79,7 +79,7 @@ class GPDAG {
   // in GPEngine.
   BitsetSizeMap pcsp_indexer_;
   // Stores range of indices for a subsplit and rotated subsplit.
-  BitsetSizePairMap subsplit2range_;
+  BitsetSizePairMap subsplit_to_range_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(std::function<void(const GPDAGNode *)>) const;

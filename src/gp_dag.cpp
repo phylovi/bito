@@ -212,8 +212,8 @@ void GPDAG::PrintPCSPIndexer() const {
 EigenVectorXd GPDAG::BuildUniformQ() const {
   EigenVectorXd q = EigenVectorXd::Ones(ContinuousParameterCount());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
-  for (auto it = subsplit2range_.begin(); it != subsplit2range_.end(); ++it) {
-    auto range = subsplit2range_.at(it->first);
+  for (auto it = subsplit_to_range_.begin(); it != subsplit_to_range_.end(); ++it) {
+    auto range = subsplit_to_range_.at(it->first);
     auto num_child_subsplits = range.second - range.first;
     double val = 1. / num_child_subsplits;
     q.segment(range.first, num_child_subsplits).array() = val;
@@ -300,7 +300,7 @@ void GPDAG::BuildPCSPIndexer() {
     auto node = dag_nodes_[i];
     auto n_child = node->GetLeafwardSorted().size();
     if (n_child > 0) {
-      SafeInsert(subsplit2range_, node->GetBitset(), {idx, idx + n_child});
+      SafeInsert(subsplit_to_range_, node->GetBitset(), {idx, idx + n_child});
       for (size_t j = 0; j < n_child; j++) {
         auto child = dag_nodes_[node->GetLeafwardSorted()[j]];
         SafeInsert(pcsp_indexer_, node->GetBitset() + child->GetBitset(), idx);
@@ -309,7 +309,7 @@ void GPDAG::BuildPCSPIndexer() {
     }
     n_child = node->GetLeafwardRotated().size();
     if (n_child > 0) {
-      SafeInsert(subsplit2range_, node->GetBitset().RotateSubsplit(),
+      SafeInsert(subsplit_to_range_, node->GetBitset().RotateSubsplit(),
                  {idx, idx + n_child});
       for (size_t j = 0; j < n_child; j++) {
         auto child = dag_nodes_[node->GetLeafwardRotated()[j]];
@@ -392,8 +392,8 @@ void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
 
 void GPDAG::OptimizeSBNParameters(const Bitset &subsplit,
                                   GPOperationVector &operations) const {
-  if (subsplit2range_.count(subsplit)) {
-    auto param_range = subsplit2range_.at(subsplit);
+  if (subsplit_to_range_.count(subsplit)) {
+    auto param_range = subsplit_to_range_.at(subsplit);
     if (param_range.second - param_range.first > 1) {
       operations.push_back(
           UpdateSBNProbabilities{param_range.first, param_range.second});
