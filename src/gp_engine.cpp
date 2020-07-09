@@ -180,6 +180,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
 
   // Numerical optimization sometimes yields new nllk > current nllk.
   // In this case, we reset the branch length to the previous value.
+  // TODO don't we want to reset the log likelihood value in that case as well?
   if (neg_log_likelihood > current_value) {
     branch_lengths_(op.pcsp_idx) = current_branch_length;
   } else {
@@ -197,5 +198,6 @@ void GPEngine::GradientAscentOptimization(
       log_likelihood_and_derivative, branch_lengths_(op.pcsp_idx),
       relative_tolerance_for_optimization_, step_size_for_optimization_,
       min_branch_length_, max_iter_for_optimization_);
+  // TODO I guess we don't have the problem that Brent has of decreasing the LL?
   branch_lengths_(op.pcsp_idx) = branch_length;
 }

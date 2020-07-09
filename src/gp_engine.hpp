@@ -43,7 +43,7 @@ class GPEngine {
   };
   void SetSBNParameters(EigenVectorXd q) { q_ = q; };
   void ResetLogMarginalLikelihood() { log_marginal_likelihood_ = DOUBLE_NEG_INF; }
-  double GetLogMarginalLikelihood() { return log_marginal_likelihood_; }
+  double GetLogMarginalLikelihood() const { return log_marginal_likelihood_; }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
