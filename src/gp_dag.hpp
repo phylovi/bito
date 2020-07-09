@@ -41,6 +41,7 @@ class GPDAG {
   EigenVectorXd BuildUniformQ() const;
 
   // TODO @Seong-- do you like the terminology "GPCSP" for "PCSP" + rootsplits?
+  // SHJ: Yes.
   size_t GPCSPCount() const;
   size_t NodeCount() const;
   size_t ContinuousParameterCount() const;
@@ -112,21 +113,14 @@ class GPDAG {
                                          std::unordered_set<size_t> &visited_nodes,
                                          GPOperationVector &operations) const;
 
-  // TODO I don't see why these are functions taking dag_nodes rather than being methods
-  // and using the member variables. If you drop dag_nodes we can replace the uses of
-  // GetPLVIndexStatic with GetPLVIndex.
   void UpdateRHat(size_t node_id, bool rotated,
-                  const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
-                  const BitsetSizeMap &pcsp_indexer,
                   GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(
       size_t node_id, size_t child_node_id, bool rotated,
-      const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
-      const BitsetSizeMap &pcsp_indexer, GPOperationVector &operations) const;
+      GPOperationVector &operations) const;
   void OptimizeBranchLengthUpdatePHat(
       size_t node_id, size_t child_node_id, bool rotated,
-      const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
-      const BitsetSizeMap &pcsp_indexer, GPOperationVector &operations) const;
+      GPOperationVector &operations) const;
 };
 
 #endif  // SRC_GP_DAG_HPP_
