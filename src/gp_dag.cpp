@@ -6,13 +6,6 @@
 
 using namespace GPOperations;
 
-void PrintPCSPIndexerFree(const BitsetSizeMap &pcsp_indexer) {
-  for (auto it = pcsp_indexer.begin(); it != pcsp_indexer.end(); ++it) {
-    std::cout << it->first.SplitChunk(0).ToString() << "|"
-              << it->first.SplitChunk(1).ToString() << ", " << it->second << "\n";
-  }
-}
-
 GPDAG::GPDAG() : taxon_count_(0), gpcsp_count_(0) {}
 
 GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
@@ -163,7 +156,11 @@ void GPDAG::Print() {
   }
 }
 
-void GPDAG::PrintPCSPIndexer() { PrintPCSPIndexerFree(pcsp_indexer_); }
+void GPDAG::PrintPCSPIndexer() {
+  for (const auto &[pcsp, idx] : pcsp_indexer_) {
+    std::cout << pcsp.SubsplitToString() << ", " << idx << std::endl;
+  }
+}
 
 EigenVectorXd GPDAG::BuildUniformQ() {
   EigenVectorXd q = EigenVectorXd::Ones(ContinuousParameterCount());
