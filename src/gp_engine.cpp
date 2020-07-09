@@ -129,7 +129,6 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   PreparePerPatternLikelihoodDerivatives(op.rootward_idx, op.leafward_idx);
   PreparePerPatternLikelihoods(op.rootward_idx, op.leafward_idx);
 
-  // TODO why aren't we using LogLikelihoodAndDerivativeFromPreparations ?
   per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
   const double log_likelihood =
       log(q_(op.gpcsp_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);

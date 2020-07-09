@@ -114,20 +114,6 @@ class GPEngine {
             .array();
   }
 
-  inline DoublePair LogLikelihoodAndDerivativeFromPreparations() {
-    per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
-    const double log_likelihood =
-        per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-    // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
-    // of l_i divided by l_i.
-    per_pattern_likelihood_derivative_ratios_ =
-        per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
-    // We weight this with the number of times we see the site patterns as for the log
-    // likelihood.
-    const double log_likelihood_derivative =
-        per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
-    return {log_likelihood, log_likelihood_derivative};
-  }
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
