@@ -17,6 +17,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count,
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
   branch_lengths_.resize(continous_parameter_count);
+  branch_lengths_.setOnes();
   log_likelihoods_.resize(continous_parameter_count);
   q_.resize(continous_parameter_count);
 

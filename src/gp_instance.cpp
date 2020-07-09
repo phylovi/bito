@@ -57,12 +57,11 @@ void GPInstance::MakeEngine() {
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
+  PrintDAG();
+  PrintPCSPIndexer();
   engine_ =
       std::make_unique<GPEngine>(site_pattern, 6 * dag_.NodeCount(),
                                  dag_.ContinuousParameterCount(), mmap_file_path_);
-
-  PrintDAG();
-  PrintPCSPIndexer();
   InitializeGPEngine();
 }
 
@@ -94,13 +93,6 @@ void GPInstance::PrintDAG() { dag_.Print(); }
 void GPInstance::PrintPCSPIndexer() { dag_.PrintPCSPIndexer(); }
 
 void GPInstance::InitializeGPEngine() {
-  size_t n_params = engine_->GetBranchLengths().size();
-  std::cout << n_params << std::endl;
-
-  // Initialize branch lengths to 1.
-  EigenVectorXd branch_lengths(n_params);
-  branch_lengths = EigenVectorXd::Ones(n_params);
-  GetEngine()->SetBranchLengths(branch_lengths);
   GetEngine()->SetSBNParameters(dag_.BuildUniformQ());
   GetEngine()->ProcessOperations(dag_.SetRhatToStationary());
 }
