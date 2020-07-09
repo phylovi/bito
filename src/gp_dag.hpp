@@ -20,25 +20,22 @@ class GPDAG {
   GPDAG();
   explicit GPDAG(const RootedTreeCollection &tree_collection);
 
-  void InitializeGPEngine();
-  void ProcessTrees(const RootedTreeCollection &tree_collection);
+  [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
+  // Compute likelihood values l(s|t) for each PCSP s|t.
+  [[nodiscard]] GPOperationVector ComputeLikelihoods() const;
+  [[nodiscard]] GPOperationVector LeafwardPass() const;
+  [[nodiscard]] GPOperationVector LeafwardPass(std::vector<size_t> visit_order) const;
+  [[nodiscard]] GPOperationVector MarginalLikelihoodOperations() const;
+  [[nodiscard]] GPOperationVector RootwardPass() const;
+  [[nodiscard]] GPOperationVector RootwardPass(std::vector<size_t> visit_order) const;
+  [[nodiscard]] GPOperationVector SBNParameterOptimization() const;
+  [[nodiscard]] GPOperationVector SetLeafwardZero() const;
+  [[nodiscard]] GPOperationVector SetRhatToStationary() const;
+  [[nodiscard]] GPOperationVector SetRootwardZero() const;
+  [[nodiscard]] SizeVector LeafwardPassTraversal() const;
+  [[nodiscard]] SizeVector RootwardPassTraversal() const;
 
-  [[nodiscard]] GPOperationVector ComputeLikelihoods();
-  [[nodiscard]] GPOperationVector SetRhatToStationary();
-  [[nodiscard]] GPOperationVector BranchLengthOptimization();
-  [[nodiscard]] GPOperationVector SBNParameterOptimization();
-  [[nodiscard]] GPOperationVector MarginalLikelihoodOperations();
-  [[nodiscard]] GPOperationVector RootwardPass(std::vector<size_t> visit_order);
-  [[nodiscard]] GPOperationVector RootwardPass();
-  [[nodiscard]] GPOperationVector LeafwardPass(std::vector<size_t> visit_order);
-  [[nodiscard]] GPOperationVector LeafwardPass();
-  [[nodiscard]] GPOperationVector SetRootwardZero();
-  [[nodiscard]] GPOperationVector SetLeafwardZero();
-  [[nodiscard]] SizeVector LeafwardPassTraversal();
-  [[nodiscard]] SizeVector RootwardPassTraversal();
-
-
-  EigenVectorXd BuildUniformQ();
+  EigenVectorXd BuildUniformQ() const;
 
   // TODO @Seong-- do you like the terminology "GPCSP" for "PCSP" + rootsplits?
   size_t GPCSPCount() const;
@@ -78,7 +75,7 @@ class GPDAG {
   // Stores range of indices for a subsplit and rotated subsplit.
   BitsetSizePairMap subsplit2range_;
 
-
+  void ProcessTrees(const RootedTreeCollection &tree_collection);
   void CreateAndInsertNode(const Bitset &subsplit);
   void ConnectNodes(size_t idx, bool rotated);
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
@@ -91,28 +88,30 @@ class GPDAG {
 
   void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
                                                   bool rotated,
-                                                  GPOperationVector &operations);
+                                                  GPOperationVector &operations) const;
   void AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
-                                                  GPOperationVector &operations);
-  void OptimizeSBNParameters(const Bitset &subsplit, GPOperationVector &operations);
+                                                  GPOperationVector &operations) const;
+  void OptimizeSBNParameters(const Bitset &subsplit,
+                             GPOperationVector &operations) const;
   void ScheduleBranchLengthOptimization(size_t node_id,
                                         std::unordered_set<size_t> &visited_nodes,
-                                        GPOperationVector &operations);
+                                        GPOperationVector &operations) const;
   void ScheduleSBNParametersOptimization(size_t node_id,
                                          std::unordered_set<size_t> &visited_nodes,
-                                         GPOperationVector &operations);
+                                         GPOperationVector &operations) const;
 
   void UpdateRHat(size_t node_id, bool rotated,
-                  std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
-                  BitsetSizeMap &pcsp_indexer, GPOperationVector &operations);
-  void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
-                                   std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
-                                   BitsetSizeMap &pcsp_indexer,
-                                   GPOperationVector &operations);
+                  const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
+                  const BitsetSizeMap &pcsp_indexer,
+                  GPOperationVector &operations) const;
+  void UpdatePHatComputeLikelihood(
+      size_t node_id, size_t child_node_id, bool rotated,
+      const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
+      const BitsetSizeMap &pcsp_indexer, GPOperationVector &operations) const;
   void OptimizeBranchLengthUpdatePHat(
       size_t node_id, size_t child_node_id, bool rotated,
-      std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes, BitsetSizeMap &pcsp_indexer,
-      GPOperationVector &operations);
+      const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
+      const BitsetSizeMap &pcsp_indexer, GPOperationVector &operations) const;
 };
 
 #endif  // SRC_GP_DAG_HPP_

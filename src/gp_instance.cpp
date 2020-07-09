@@ -86,7 +86,6 @@ void GPInstance::ClearTreeCollectionAssociatedState() {
 }
 
 void GPInstance::ProcessLoadedTrees() {
-  dag_.ProcessTrees(tree_collection_);
   sbn_parameters_.resize(dag_.GPCSPCount());
   sbn_parameters_.setOnes();
 }
