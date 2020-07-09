@@ -43,7 +43,6 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
   auto topology_counter = tree_collection.TopologyCounter();
   // Start by adding the rootsplits.
   for (const auto &iter : RootedSBNMaps::RootsplitCounterOf(topology_counter)) {
-    SafeInsert(indexer_, iter.first, index);
     rootsplits_.push_back(iter.first);
     index++;
   }
@@ -53,7 +52,6 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
     SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
     for (const auto &child_iter : child_counter) {
       const auto &child = child_iter.first;
-      SafeInsert(indexer_, parent + child, index);
       SafeInsert(index_to_child_, index, Bitset::ChildSubsplit(parent, child));
       index++;
     }

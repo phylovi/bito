@@ -65,8 +65,6 @@ class GPDAG {
   // consider naming them different things?
   size_t taxon_count_;
   size_t gpcsp_count_;
-  // The master indexer for SBN parameters.
-  BitsetSizeMap indexer_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
   // and PCSS bitsets are at the end.
   // The collection of rootsplits, with the same indexing as in the indexer_.
@@ -79,17 +77,13 @@ class GPDAG {
   BitsetSizePairMap parent_to_range_;
 
   // The first entries are reserved for fake subsplits.
-  // We will adopt the convention of denoting a trivial subsplit by placing
-  // 0's in the first chunk.
-  // The next set of entries store the rootsplits.
-  // The remaining entries - 1 are for all other subsplits.
-  // The last entry is saved for pseudoroot -- for passing stationary.
-  // The pseudoroot is a Bitset with all 1's.
+  // The last entries are reserved for rootsplits.
   std::unordered_map<Bitset, size_t> subsplit_to_index_;
   std::vector<std::shared_ptr<GPDAGNode>> dag_nodes_;
 
-  // Build indexing scheme for q_, branch_lengths_, log_likelihoods_.
-  // PCSP to index.
+  // This indexer is an expanded version of indexer_ in indexer_ in sbn_instance.
+  // This indexer can be used for q_, branch_lengths_, log_likelihoods_
+  // in GPEngine.
   BitsetSizeMap pcsp_indexer_;
   // Stores range of indices for a subsplit and rotated subsplit.
   BitsetSizePairMap subsplit2range_;
