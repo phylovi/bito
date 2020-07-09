@@ -34,6 +34,7 @@ class GPDAG {
   [[nodiscard]] GPOperationVector RootwardPass(std::vector<size_t> visit_order) const;
   [[nodiscard]] GPOperationVector SBNParameterOptimization() const;
   [[nodiscard]] GPOperationVector SetLeafwardZero() const;
+  // Set rhat(s) = stationary for the rootsplits s.
   [[nodiscard]] GPOperationVector SetRhatToStationary() const;
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
   [[nodiscard]] SizeVector LeafwardPassTraversal() const;
@@ -56,6 +57,8 @@ class GPDAG {
  private:
   // TODO Can we start here with a description of the various indexing schemes? Could we
   // consider naming them different things?
+  // TODO I still feel like this is the case. We could use a special suffix like tcidx
+  // to designate the indexing in the tree components?
   size_t taxon_count_;
   size_t gpcsp_count_;
   // A map that indexes these probabilities: rootsplits are at the beginning,

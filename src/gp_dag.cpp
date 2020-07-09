@@ -221,22 +221,23 @@ EigenVectorXd GPDAG::BuildUniformQ() const {
 }
 
 GPOperationVector GPDAG::SetRhatToStationary() const {
-  // Set rhat(s) = stationary for the rootsplits s.
-  std::vector<GPOperation> operations;
-  for (size_t i = 0; i < rootsplits_.size(); i++) {
-    auto rootsplit = rootsplits_[i];
-    auto root_idx = subsplit_to_index_.at(rootsplit + ~rootsplit);
-    operations.push_back(
-        SetToStationaryDistribution{GetPLVIndex(PLVType::R_HAT, root_idx), i});
+  GPOperationVector operations;
+  for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
+    auto rootsplit = rootsplits_[rootsplit_idx];
+    operations.push_back(SetToStationaryDistribution{
+        GetPLVIndex(PLVType::R_HAT, subsplit_to_index_.at(rootsplit + ~rootsplit)),
+        rootsplit_idx});
   }
   return operations;
 }
 
+// TODO BuildNodesDepthFirst does this differently, by first testing if we've visited
+// and then recurring. Is there a reason for the difference? If not, can we pick one?
 void RootwardDepthFirst(size_t id,
                         const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
                         std::vector<size_t> &visit_order,
                         std::unordered_set<size_t> &visited_nodes) {
-  visited_nodes.insert(id);
+  SafeInsert(visited_nodes, id);
   for (size_t child_id : dag_nodes.at(id)->GetRootwardSorted()) {
     if (!visited_nodes.count(child_id)) {
       RootwardDepthFirst(child_id, dag_nodes, visit_order, visited_nodes);
@@ -254,7 +255,7 @@ void LeafwardDepthFirst(size_t id,
                         const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
                         std::vector<size_t> &visit_order,
                         std::unordered_set<size_t> &visited_nodes) {
-  visited_nodes.insert(id);
+  SafeInsert(visited_nodes, id);
   for (size_t child_id : dag_nodes.at(id)->GetLeafwardSorted()) {
     if (!visited_nodes.count(child_id)) {
       LeafwardDepthFirst(child_id, dag_nodes, visit_order, visited_nodes);
@@ -274,14 +275,13 @@ std::vector<size_t> GPDAG::LeafwardPassTraversal() const {
   for (size_t leaf_idx = 0; leaf_idx < taxon_count_; leaf_idx++) {
     RootwardDepthFirst(leaf_idx, dag_nodes_, visit_order, visited_nodes);
   }
-
   return visit_order;
 }
 
 std::vector<size_t> GPDAG::RootwardPassTraversal() const {
   std::vector<size_t> visit_order;
   std::unordered_set<size_t> visited_nodes;
-  for (auto rootsplit : rootsplits_) {
+  for (const auto &rootsplit : rootsplits_) {
     size_t root_idx = subsplit_to_index_.at(rootsplit + ~rootsplit);
     LeafwardDepthFirst(root_idx, dag_nodes_, visit_order, visited_nodes);
   }
@@ -295,8 +295,8 @@ void GPDAG::BuildPCSPIndexer() {
     idx++;
   }
 
-  for (size_t i = taxon_count_; i < dag_nodes_.size(); i++) {
-    auto node = dag_nodes_[i];
+  IterateOverRealNodes([this, &idx](const GPDAGNode *node) {
+    // TODO please rename variables and use .at() here (which is safer)
     auto n_child = node->GetLeafwardSorted().size();
     if (n_child > 0) {
       SafeInsert(subsplit_to_range_, node->GetBitset(), {idx, idx + n_child});
@@ -317,7 +317,7 @@ void GPDAG::BuildPCSPIndexer() {
         idx++;
       }
     }
-  }
+  });
 }
 
 size_t GPDAG::GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx) {
@@ -349,8 +349,7 @@ void GPDAG::AddRootwardWeightedSumAccumulateOperations(
   std::vector<size_t> child_idxs =
       rotated ? node->GetLeafwardRotated() : node->GetLeafwardSorted();
   PLVType plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
-  auto parent_subsplit =
-      rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
+  auto parent_subsplit = node->GetBitset(rotated);
   for (size_t child_idx : child_idxs) {
     auto child_node = dag_nodes_[child_idx];
     auto child_subsplit = child_node->GetBitset();
