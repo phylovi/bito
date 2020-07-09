@@ -296,22 +296,21 @@ void GPDAG::BuildPCSPIndexer() {
   }
 
   IterateOverRealNodes([this, &idx](const GPDAGNode *node) {
-    // TODO please rename variables and use .at() here (which is safer)
-    auto n_child = node->GetLeafwardSorted().size();
-    if (n_child > 0) {
-      SafeInsert(subsplit_to_range_, node->GetBitset(), {idx, idx + n_child});
-      for (size_t j = 0; j < n_child; j++) {
-        auto child = dag_nodes_[node->GetLeafwardSorted()[j]];
+    auto child_count = node->GetLeafwardSorted().size();
+    if (child_count > 0) {
+      SafeInsert(subsplit_to_range_, node->GetBitset(), {idx, idx + child_count});
+      for (size_t j = 0; j < child_count; j++) {
+        auto child = dag_nodes_.at(node->GetLeafwardSorted().at(j));
         SafeInsert(pcsp_indexer_, node->GetBitset() + child->GetBitset(), idx);
         idx++;
       }
     }
-    n_child = node->GetLeafwardRotated().size();
-    if (n_child > 0) {
+    child_count = node->GetLeafwardRotated().size();
+    if (child_count > 0) {
       SafeInsert(subsplit_to_range_, node->GetBitset().RotateSubsplit(),
-                 {idx, idx + n_child});
-      for (size_t j = 0; j < n_child; j++) {
-        auto child = dag_nodes_[node->GetLeafwardRotated()[j]];
+                 {idx, idx + child_count});
+      for (size_t j = 0; j < child_count; j++) {
+        auto child = dag_nodes_.at(node->GetLeafwardRotated().at(j));
         SafeInsert(pcsp_indexer_,
                    node->GetBitset().RotateSubsplit() + child->GetBitset(), idx);
         idx++;
