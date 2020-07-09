@@ -212,8 +212,7 @@ void GPDAG::PrintPCSPIndexer() const {
 EigenVectorXd GPDAG::BuildUniformQ() const {
   EigenVectorXd q = EigenVectorXd::Ones(ContinuousParameterCount());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
-  for (auto it = subsplit_to_range_.begin(); it != subsplit_to_range_.end(); ++it) {
-    auto range = subsplit_to_range_.at(it->first);
+  for (const auto &[_, range] : subsplit_to_range_) {
     auto num_child_subsplits = range.second - range.first;
     double val = 1. / num_child_subsplits;
     q.segment(range.first, num_child_subsplits).array() = val;
