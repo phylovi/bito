@@ -2,39 +2,44 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "site_pattern.hpp"
-
 #include <cstdio>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-
 #include "intpack.hpp"
 #include "sugar.hpp"
 
 // DNA assumption here.
 CharIntMap SitePattern::GetSymbolTable() {
-  CharIntMap table({{'A', 0},
-                    {'C', 1},
-                    {'G', 2},
-                    {'T', 3},
-                    {'a', 0},
-                    {'c', 1},
-                    {'g', 2},
-                    {'t', 3},
-                    {'-', 4},
-                    {'N', 4},
-                    {'X', 4},
-                    {'?', 4},
-                    // Treat degenerate nucleotides as gaps for now.
-                    // See issue #162.
-                    {'K', 4},
-                    {'M', 4},
-                    {'R', 4},
-                    {'U', 4},
-                    {'S', 4},
-                    {'W', 4},
-                    {'Y', 4}});
+  CharIntMap table({
+      {'A', 0},
+      {'C', 1},
+      {'G', 2},
+      {'T', 3},
+      {'a', 0},
+      {'c', 1},
+      {'g', 2},
+      {'t', 3},
+      {'-', 4},
+      {'N', 4},
+      {'X', 4},
+      {'?', 4},
+      // Treat degenerate nucleotides as gaps for now.
+      // See issue #162.
+      {'B', 4},
+      {'D', 4},
+      {'H', 4},
+      {'K', 4},
+      {'M', 4},
+      {'R', 4},
+      {'S', 4},
+      {'U', 4},
+      {'V', 4},
+      {'W', 4},
+      {'Y', 4},
+  });
+
   return table;
 }
 
