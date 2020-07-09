@@ -80,24 +80,28 @@ double FatBeagle::LogLikelihood(const RootedTree &tree) const {
   return LogLikelihoodInternals(tree.Topology(), branch_lengths);
 }
 
+// Build differential matrix and scale it.
+EigenMatrixXd BuildDifferentialMatrices(const SubstitutionModel &substitution_model,
+                                        const EigenVectorXd &scalers) {
+  size_t category_count = scalers.size();
+  EigenMatrixXd Q = substitution_model.GetQMatrix();
+  Eigen::Map<Eigen::RowVectorXd> mapQ(Q.data(), Q.size());
+  EigenMatrixXd dQ = mapQ.replicate(category_count, 1);
+  for (size_t k = 0; k < category_count; k++) {
+    dQ.row(k) *= scalers[k];
+  }
+  return dQ;
+}
+
 std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
-    const Node::NodePtr topology, const std::vector<double> &branch_lengths) const {
+    const Node::NodePtr topology, const std::vector<double> &branch_lengths,
+    const EigenMatrixXd &dQ) const {
   beagleResetScaleFactors(beagle_instance_, 0);
   BeagleAccessories ba(beagle_instance_, rescaling_, topology);
   UpdateBeagleTransitionMatrices(ba, branch_lengths, nullptr);
   SetRootPreorderPartialsToStateFrequencies(ba);
 
-  // Set differential matrix for each branch.
-  size_t category_count = phylo_model_->GetSiteModel()->GetCategoryCount();
-  const EigenVectorXd &rates = phylo_model_->GetSiteModel()->GetCategoryRates();
-  size_t state_count = phylo_model_->GetSubstitutionModel()->GetStateCount();
-  size_t matrix_dim = state_count * state_count;
-  EigenMatrixXd Q = phylo_model_->GetSubstitutionModel()->GetQMatrix();
-  Eigen::Map<Eigen::RowVectorXd> mapQ(Q.data(), Q.size());
-  EigenMatrixXd dQ = mapQ.replicate(category_count, 1);
-  for (size_t k = 0; k < category_count; k++) {
-    dQ.block(0, k * matrix_dim, 1, matrix_dim) *= rates[k];
-  }
+  // Set differential matrices.
   int derivative_matrix_idx = ba.node_count_ - 1;
   beagleSetDifferentialMatrix(beagle_instance_, derivative_matrix_idx, dQ.data());
   const auto derivative_matrix_indices =
@@ -117,9 +121,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
   operations.clear();
   topology->TripleIdPreOrderBifurcating(
       [&operations, &ba](int node_id, int sister_id, int parent_id) {
-        if (node_id != ba.root_id_) {
-          AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
-        }
+        AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
       });
   beagleUpdatePrePartials(beagle_instance_, operations.data(),
                           static_cast<int>(operations.size()),
@@ -356,16 +358,43 @@ std::vector<double> ClockGradient(const RootedTree &tree,
   }
 }
 
+std::vector<double> DiscreteSiteModelGradient(
+    const std::vector<double> &branch_lengths,
+    const std::vector<double> &unscaled_category_gradient) {
+  size_t edge_count = branch_lengths.size() - 1;
+  double rate_gradient = 0;
+  for (size_t node_id = 0; node_id < edge_count; node_id++) {
+    rate_gradient += unscaled_category_gradient[node_id] * branch_lengths[node_id];
+  }
+  return {rate_gradient};
+}
+
 UnrootedPhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
   auto tree = in_tree.Detrifurcate();
   tree.SlideRootPosition();
+  EigenMatrixXd dQ =
+      BuildDifferentialMatrices(*phylo_model_->GetSubstitutionModel(),
+                                phylo_model_->GetSiteModel()->GetCategoryRates());
   auto [log_likelihood, branch_length_gradient] =
-      BranchGradientInternals(tree.Topology(), tree.BranchLengths());
-  // We want the fixed node to have a zero gradient.
-  branch_length_gradient[tree.Topology()->Children()[1]->Id()] = 0.;
+      BranchGradientInternals(tree.Topology(), tree.BranchLengths(), dQ);
 
   std::vector<double> substitution_model_gradient;
   std::vector<double> site_model_gradient;
+  auto site_model = phylo_model_->GetSiteModel();
+  size_t category_count = site_model->GetCategoryCount();
+
+  if (category_count > 1) {
+    EigenMatrixXd dQ =
+        BuildDifferentialMatrices(*phylo_model_->GetSubstitutionModel(),
+                                  phylo_model_->GetSiteModel()->GetRateGradient());
+    auto [log_likelihood, unscaled_category_gradient] =
+        BranchGradientInternals(tree.Topology(), tree.BranchLengths(), dQ);
+    site_model_gradient =
+        DiscreteSiteModelGradient(tree.BranchLengths(), unscaled_category_gradient);
+  }
+
+  // We want the fixed node to have a zero gradient.
+  branch_length_gradient[tree.Topology()->Children()[1]->Id()] = 0.;
 
   return {log_likelihood, branch_length_gradient, site_model_gradient,
           substitution_model_gradient};
@@ -379,8 +408,11 @@ RootedPhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
   }
 
   // Calculate branch length gradient and log likelihood.
+  EigenMatrixXd dQ =
+      BuildDifferentialMatrices(*phylo_model_->GetSubstitutionModel(),
+                                phylo_model_->GetSiteModel()->GetCategoryRates());
   auto [log_likelihood, branch_gradient] =
-      BranchGradientInternals(tree.Topology(), branch_lengths);
+      BranchGradientInternals(tree.Topology(), branch_lengths, dQ);
 
   std::vector<double> substitution_model_gradient;
   // Calculate substitution model parameter gradient, if needed.
@@ -388,7 +420,18 @@ RootedPhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
 
   std::vector<double> site_model_gradient;
   // Calculate site model parameter gradient, if needed.
-  //    gradients["sitemodel"] = SiteModelGradient(tree, branch_gradient);
+  auto site_model = phylo_model_->GetSiteModel();
+  size_t category_count = site_model->GetCategoryCount();
+
+  if (category_count > 1) {
+    EigenMatrixXd dQ =
+        BuildDifferentialMatrices(*phylo_model_->GetSubstitutionModel(),
+                                  phylo_model_->GetSiteModel()->GetRateGradient());
+    auto [log_likelihood, unscaled_category_gradient] =
+        BranchGradientInternals(tree.Topology(), branch_lengths, dQ);
+    site_model_gradient =
+        DiscreteSiteModelGradient(branch_lengths, unscaled_category_gradient);
+  }
 
   return {log_likelihood,
           branch_gradient,

@@ -213,6 +213,30 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   }
 }
 
+TEST_CASE("RootedSBNInstance: Weibull gradients") {
+  RootedSBNInstance inst("charlie");
+  inst.ReadNewickFile("data/fluA.tree");
+  inst.ReadFastaFile("data/fluA.fa");
+  PhyloModelSpecification simple_specification{"JC69", "weibull+4", "strict"};
+  inst.PrepareForPhyloLikelihood(simple_specification, 1);
+
+  for (auto& tree : inst.tree_collection_.trees_) {
+    tree.rates_.assign(tree.rates_.size(), 0.001);
+  }
+  auto param_block_map = inst.GetPhyloModelParamBlockMap();
+  param_block_map.at(WeibullSiteModel::shape_key_).setConstant(0.1);
+
+  auto likelihood = inst.LogLikelihoods();
+  double physher_ll = -4618.2062529058;
+  CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
+
+  // Gradient wrt Weibull site model.
+  auto gradients = inst.PhyloGradients();
+  double physher_gradient = -5.231329;
+  CHECK_LT(fabs(gradients[0].site_model_[0] - physher_gradient), 0.001);
+  CHECK_LT(fabs(gradients[0].log_likelihood_ - physher_ll), 0.001);
+}
+
 TEST_CASE("RootedSBNInstance: parsing dates") {
   RootedSBNInstance inst("charlie");
   inst.ReadNexusFile("data/test_beast_tree_parsing.nexus");

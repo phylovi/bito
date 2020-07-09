@@ -19,16 +19,15 @@ class SiteModel : public BlockModel {
   virtual size_t GetCategoryCount() const = 0;
   virtual const EigenVectorXd& GetCategoryRates() const = 0;
   virtual const EigenVectorXd& GetCategoryProportions() const = 0;
+  virtual const EigenVectorXd& GetRateGradient() const = 0;
 
   static std::unique_ptr<SiteModel> OfSpecification(const std::string& specification);
 };
 
 class ConstantSiteModel : public SiteModel {
  public:
-  ConstantSiteModel() : SiteModel({}) {
-    one_.resize(1);
-    one_[0] = 1.0;
-  }
+  ConstantSiteModel()
+      : SiteModel({}), zero_(EigenVectorXd::Zero(1)), one_(EigenVectorXd::Ones(1)) {}
 
   size_t GetCategoryCount() const override { return 1; }
 
@@ -36,21 +35,22 @@ class ConstantSiteModel : public SiteModel {
 
   const EigenVectorXd& GetCategoryProportions() const override { return one_; }
 
+  const EigenVectorXd& GetRateGradient() const override { return zero_; };
+
   void SetParameters(const EigenVectorXdRef param_vector) override{};
 
  private:
   EigenVectorXd one_;
+  EigenVectorXd zero_;
 };
 
 class WeibullSiteModel : public SiteModel {
  public:
-  explicit WeibullSiteModel(size_t category_count, double shape = 1)
-      // Issue #147: Why are these commented out?
-      : SiteModel({// {rates_key_, category_count},
-                   // {proportions_key_, category_count},
-                   {shape_key_, 1}}),
+  explicit WeibullSiteModel(size_t category_count, double shape)
+      : SiteModel({{shape_key_, 1}}),
         category_count_(category_count),
-        shape_(shape) {
+        shape_(shape),
+        rate_derivatives_(category_count) {
     category_rates_.resize(category_count);
     category_proportions_.resize(category_count);
     for (int i = 0; i < category_count; i++) {
@@ -62,11 +62,10 @@ class WeibullSiteModel : public SiteModel {
   size_t GetCategoryCount() const override;
   const EigenVectorXd& GetCategoryRates() const override;
   const EigenVectorXd& GetCategoryProportions() const override;
+  const EigenVectorXd& GetRateGradient() const override;
 
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
-  inline const static std::string rates_key_ = "Weibull category rates";
-  inline const static std::string proportions_key_ = "Weibull category proportions";
   inline const static std::string shape_key_ = "Weibull shape";
 
  private:
@@ -74,6 +73,7 @@ class WeibullSiteModel : public SiteModel {
 
   size_t category_count_;
   double shape_;  // shape of the Weibull distribution
+  EigenVectorXd rate_derivatives_;
   EigenVectorXd category_rates_;
   EigenVectorXd category_proportions_;
 };
@@ -89,7 +89,7 @@ TEST_CASE("SiteModel") {
   CheckVectorXdEquality(rates, rates_r, 0.0001);
 
   // Test 2: Now set param_vector using SetParameters.
-  weibull_model = std::make_unique<WeibullSiteModel>(4);
+  weibull_model = std::make_unique<WeibullSiteModel>(4, 1.0);
   EigenVectorXd param_vector(1);
   param_vector << 0.1;
   weibull_model->SetParameters(param_vector);
