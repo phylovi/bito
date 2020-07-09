@@ -46,7 +46,9 @@ class GPDAG {
   void Print() const;
   void PrintPCSPIndexer() const;
 
-  static size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx);
+  // Get the index of a PLV of a given type and with a given index.
+  static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
+  size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
 
  private:
   // TODO Can we start here with a description of the various indexing schemes? Could we
@@ -104,6 +106,9 @@ class GPDAG {
                                          std::unordered_set<size_t> &visited_nodes,
                                          GPOperationVector &operations) const;
 
+  // TODO I don't see why these are functions taking dag_nodes rather than being methods
+  // and using the member variables. If you drop dag_nodes we can replace the uses of
+  // GetPLVIndexStatic with GetPLVIndex.
   void UpdateRHat(size_t node_id, bool rotated,
                   const std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,
                   const BitsetSizeMap &pcsp_indexer,

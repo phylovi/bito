@@ -86,9 +86,9 @@ TEST_CASE("GPInstance: gradient calculation") {
   size_t child_idx = jupiter;
   size_t hello_node_count = 5;
   size_t leafward_idx =
-      GPDAG::GetPLVIndex(GPDAG::PLVType::P, hello_node_count, child_idx);
+      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::P, hello_node_count, child_idx);
   size_t rootward_idx =
-      GPDAG::GetPLVIndex(GPDAG::PLVType::R, hello_node_count, root_idx);
+      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::R, hello_node_count, root_idx);
   OptimizeBranchLength op{leafward_idx, rootward_idx, root_jupiter_idx};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
