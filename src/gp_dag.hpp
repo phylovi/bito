@@ -19,27 +19,10 @@ class GPDAG {
 
   GPDAG();
   explicit GPDAG(const RootedTreeCollection &tree_collection);
-  void PrintStatus();
-
-  size_t GetPCSPIndex(size_t parent_node_idx, size_t child_node_idx, bool rotated);
-
-  size_t NodeCount() const;
-  size_t ContinuousParameterCount() const;
-  size_t GPCSPCount() const;
-  void ProcessTrees(const RootedTreeCollection &tree_collection);
-  void Print();
-  void PrintPCSPIndexer();
-
-  EigenVectorXd BuildUniformQ();
-
-  void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
-                                                  bool rotated,
-                                                  GPOperationVector &operations);
-  void AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
-                                                  GPOperationVector &operations);
-  void OptimizeSBNParameters(const Bitset &subsplit, GPOperationVector &operations);
 
   void InitializeGPEngine();
+  void ProcessTrees(const RootedTreeCollection &tree_collection);
+
   [[nodiscard]] GPOperationVector ComputeLikelihoods();
   [[nodiscard]] GPOperationVector SetRhatToStationary();
   [[nodiscard]] GPOperationVector BranchLengthOptimization();
@@ -54,12 +37,16 @@ class GPDAG {
   [[nodiscard]] SizeVector LeafwardPassTraversal();
   [[nodiscard]] SizeVector RootwardPassTraversal();
 
-  void ScheduleBranchLengthOptimization(size_t node_id,
-                                        std::unordered_set<size_t> &visited_nodes,
-                                        GPOperationVector &operations);
-  void ScheduleSBNParametersOptimization(size_t node_id,
-                                         std::unordered_set<size_t> &visited_nodes,
-                                         GPOperationVector &operations);
+
+  EigenVectorXd BuildUniformQ();
+
+  // TODO @Seong-- do you like the terminology "GPCSP" for "PCSP" + rootsplits?
+  size_t GPCSPCount() const;
+  size_t NodeCount() const;
+  size_t ContinuousParameterCount() const;
+
+  void Print() const;
+  void PrintPCSPIndexer() const;
 
   static size_t GetPLVIndex(PLVType plv_type, size_t node_count, size_t src_idx);
 
@@ -91,6 +78,7 @@ class GPDAG {
   // Stores range of indices for a subsplit and rotated subsplit.
   BitsetSizePairMap subsplit2range_;
 
+
   void CreateAndInsertNode(const Bitset &subsplit);
   void ConnectNodes(size_t idx, bool rotated);
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
@@ -100,6 +88,19 @@ class GPDAG {
   void BuildNodes();
   void BuildEdges();
   void BuildPCSPIndexer();
+
+  void AddRootwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
+                                                  bool rotated,
+                                                  GPOperationVector &operations);
+  void AddLeafwardWeightedSumAccumulateOperations(std::shared_ptr<GPDAGNode> node,
+                                                  GPOperationVector &operations);
+  void OptimizeSBNParameters(const Bitset &subsplit, GPOperationVector &operations);
+  void ScheduleBranchLengthOptimization(size_t node_id,
+                                        std::unordered_set<size_t> &visited_nodes,
+                                        GPOperationVector &operations);
+  void ScheduleSBNParametersOptimization(size_t node_id,
+                                         std::unordered_set<size_t> &visited_nodes,
+                                         GPOperationVector &operations);
 
   void UpdateRHat(size_t node_id, bool rotated,
                   std::vector<std::shared_ptr<GPDAGNode>> &dag_nodes,

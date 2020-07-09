@@ -150,13 +150,13 @@ void GPDAG::BuildEdges() {
   }
 }
 
-void GPDAG::Print() {
+void GPDAG::Print() const {
   for (size_t i = 0; i < dag_nodes_.size(); i++) {
     std::cout << dag_nodes_[i]->ToString() << std::endl;
   }
 }
 
-void GPDAG::PrintPCSPIndexer() {
+void GPDAG::PrintPCSPIndexer() const {
   for (const auto &[pcsp, idx] : pcsp_indexer_) {
     std::cout << pcsp.SubsplitToString() << ", " << idx << std::endl;
   }
@@ -349,16 +349,6 @@ void GPDAG::OptimizeSBNParameters(const Bitset &subsplit,
           UpdateSBNProbabilities{param_range.first, param_range.second});
     }
   }
-}
-
-size_t GPDAG::GetPCSPIndex(size_t parent_node_idx, size_t child_node_idx,
-                           bool rotated) {
-  auto parent_node = dag_nodes_[parent_node_idx];
-  auto child_node = dag_nodes_[child_node_idx];
-  auto pcsp = rotated
-                  ? parent_node->GetBitset().RotateSubsplit() + child_node->GetBitset()
-                  : parent_node->GetBitset() + child_node->GetBitset();
-  return pcsp_indexer_[pcsp];
 }
 
 GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) {
