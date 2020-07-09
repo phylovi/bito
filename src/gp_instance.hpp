@@ -23,8 +23,6 @@ class GPInstance {
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
 
-  // TODO Rename to avoid confusion with MakeEngine; we also build the DAG, so the name
-  // should be more general.
   void MakeEngine();
   GPEngine *GetEngine() const;
   void PrintDAG();
@@ -50,7 +48,6 @@ class GPInstance {
   void CheckSequencesAndTreesLoaded() const;
   void ProcessLoadedTrees();
 
-  void MakeGPEngine();
   void InitializeGPEngine();
 };
 

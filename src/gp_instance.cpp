@@ -58,19 +58,12 @@ void GPInstance::MakeEngine() {
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
-  MakeGPEngine();
+  engine_ = std::make_unique<GPEngine>(
+      site_pattern, 6 * dag_.NodeCount(), dag_.ContinuousParameterCount(), mmap_file_path_);
+  
   PrintDAG();
   PrintPCSPIndexer();
   InitializeGPEngine();
-}
-
-void GPInstance::MakeGPEngine() {
-  SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
-
-  const size_t node_count = dag_.NodeCount();
-  const size_t plv_count = 6 * node_count;
-  engine_ = std::make_unique<GPEngine>(
-      site_pattern, plv_count, dag_.ContinuousParameterCount(), mmap_file_path_);
 }
 
 GPEngine *GPInstance::GetEngine() const {
