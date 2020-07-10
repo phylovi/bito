@@ -59,9 +59,8 @@ void GPInstance::MakeEngine() {
   dag_ = GPDAG(tree_collection_);
   PrintDAG();
   PrintPCSPIndexer();
-  engine_ =
-      std::make_unique<GPEngine>(site_pattern, 6 * dag_.NodeCount(),
-                                 dag_.ContinuousParameterCount(), mmap_file_path_);
+  engine_ = std::make_unique<GPEngine>(site_pattern, 6 * dag_.NodeCount(),
+                                       dag_.GeneralizedPCSPCount(), mmap_file_path_);
   InitializeGPEngine();
 }
 
@@ -85,7 +84,7 @@ void GPInstance::ClearTreeCollectionAssociatedState() {
 }
 
 void GPInstance::ProcessLoadedTrees() {
-  sbn_parameters_.resize(dag_.GPCSPCount());
+  sbn_parameters_.resize(dag_.RootsplitAndPCSPCount());
   sbn_parameters_.setOnes();
 }
 

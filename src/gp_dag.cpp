@@ -6,7 +6,7 @@
 
 using namespace GPOperations;
 
-GPDAG::GPDAG() : taxon_count_(0), gpcsp_count_(0) {}
+GPDAG::GPDAG() : taxon_count_(0), rootsplit_and_pcsp_count_(0) {}
 
 GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
   ProcessTrees(tree_collection);
@@ -55,9 +55,10 @@ GPOperationVector GPDAG::MarginalLikelihood() const {
 }
 
 size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
-size_t GPDAG::GPCSPCount() const { return gpcsp_count_; }
 
-size_t GPDAG::ContinuousParameterCount() const {
+size_t GPDAG::RootsplitAndPCSPCount() const { return rootsplit_and_pcsp_count_; }
+
+size_t GPDAG::GeneralizedPCSPCount() const {
   // Get number of parameters involving fake subsplits.
   size_t fake_subsplit_parameter_count = 0;
   for (size_t i = 0; i < taxon_count_; i++) {
@@ -65,7 +66,7 @@ size_t GPDAG::ContinuousParameterCount() const {
     fake_subsplit_parameter_count += dag_nodes_[i]->GetRootwardSorted().size();
   }
 
-  return GPCSPCount() + fake_subsplit_parameter_count;
+  return RootsplitAndPCSPCount() + fake_subsplit_parameter_count;
 }
 
 void GPDAG::IterateOverRealNodes(std::function<void(const GPDAGNode *)> f) const {
@@ -95,7 +96,7 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
       index++;
     }
   }
-  gpcsp_count_ = index;
+  rootsplit_and_pcsp_count_ = index;
 }
 
 void GPDAG::CreateAndInsertNode(const Bitset &subsplit) {
@@ -208,7 +209,7 @@ void GPDAG::PrintPCSPIndexer() const {
 }
 
 EigenVectorXd GPDAG::BuildUniformQ() const {
-  EigenVectorXd q = EigenVectorXd::Ones(ContinuousParameterCount());
+  EigenVectorXd q = EigenVectorXd::Ones(GeneralizedPCSPCount());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
   for (const auto &[_, range] : subsplit_to_range_) {
     auto num_child_subsplits = range.second - range.first;

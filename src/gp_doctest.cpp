@@ -5,8 +5,6 @@
 
 using namespace GPOperations;
 
-// TODO somewhere we need an intro and a place to set up terms such as GPCSP.
-// Perhaps this is a good place?
 // GPCSP stands for generalized PCSP-- see text.
 
 // Let the "venus" node be the common ancestor of mars and saturn.

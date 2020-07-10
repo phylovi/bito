@@ -40,9 +40,10 @@ class GPDAG {
 
   EigenVectorXd BuildUniformQ() const;
 
-  size_t GPCSPCount() const;
   size_t NodeCount() const;
-  size_t ContinuousParameterCount() const;
+  size_t RootsplitAndPCSPCount() const;
+  // We definte a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
+  size_t GeneralizedPCSPCount() const;
 
   void Print() const;
   void PrintPCSPIndexer() const;
@@ -54,10 +55,8 @@ class GPDAG {
  private:
   // TODO Can we start here with a description of the various indexing schemes? Could we
   // consider naming them different things?
-  // TODO I still feel like this is the case. We could use a special suffix like tcidx
-  // to designate the indexing in the tree components?
   size_t taxon_count_;
-  size_t gpcsp_count_;
+  size_t rootsplit_and_pcsp_count_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
   // and PCSS bitsets are at the end.
   // The collection of rootsplits, with the same indexing as in the indexer_.
@@ -69,6 +68,8 @@ class GPDAG {
   // convention.
   BitsetSizePairMap parent_to_range_;
 
+  // TODO for example, here this subsplit_to_index_ is actually mapping to DAG ids.
+  // Perhaps we could name it subsplit_to_id_ and refer to dag nodes as having an id?
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
   BitsetSizeMap subsplit_to_index_;
