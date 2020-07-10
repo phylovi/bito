@@ -51,8 +51,6 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   return inst;
 }
 
-// TODO Discuss if we should include the old tests as well as a teaching tool.
-
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();

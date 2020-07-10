@@ -132,8 +132,8 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
   // The phylogenetic component of the likelihood is weighted with the number of times
   // we see the site patterns.
-  // TODO Seong-- I'm trying to understand the role of q_ here. Is this as a placeholder
-  // for the prior?
+  // TODO Seong-- I'm trying to understand the role of q_ here. I guess this as a
+  // placeholder for the prior?
   const double log_likelihood =
       log(q_(op.gpcsp_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
