@@ -130,9 +130,15 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   PreparePerPatternLikelihoods(op.rootward_idx, op.leafward_idx);
 
   per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
+  // The phylogenetic component of the likelihood is weighted with the number of times
+  // we see the site patterns.
+  // TODO Seong-- I'm trying to understand the role of q_ here. Is this as a placeholder
+  // for the prior?
   const double log_likelihood =
       log(q_(op.gpcsp_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
+  // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
+  // of l_i divided by l_i.
   per_pattern_likelihood_derivative_ratios_ =
       per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
   const double log_likelihood_derivative =

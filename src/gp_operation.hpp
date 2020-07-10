@@ -37,18 +37,18 @@ struct SetToStationaryDistribution {
   size_t dest_idx;
   size_t gpcsp_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"pcsp_idx", gpcsp_idx}};
+    return {{"dest_idx", dest_idx}, {"gpcsp_idx", gpcsp_idx}};
   }
 };
 
-// Set transition_matrix_ using branch_length(pcsp_idx) then,
+// Set transition_matrix_ using branch_length(gpcsp_idx) then,
 // perform `plv[dest_idx] += q[q_idx] * transition_matrix_ * plv[src_idx]`
 struct EvolvePLVWeightedBySBNParameter {
   size_t dest_idx;
   size_t gpcsp_idx;
   size_t src_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"pcsp_idx", gpcsp_idx}, {"src_idx", src_idx}};
+    return {{"dest_idx", dest_idx}, {"gpcsp_idx", gpcsp_idx}, {"src_idx", src_idx}};
   }
 };
 
@@ -59,7 +59,7 @@ struct IncrementMarginalLikelihood {
   size_t gpcsp_idx;
   size_t p_idx;
   StringSizePairVector guts() const {
-    return {{"r_idx", stationary_idx}, {"pcsp_idx", gpcsp_idx}, {"p_idx", p_idx}};
+    return {{"r_idx", stationary_idx}, {"gpcsp_idx", gpcsp_idx}, {"p_idx", p_idx}};
   }
 };
 
@@ -99,7 +99,7 @@ struct OptimizeBranchLength {
   StringSizePairVector guts() const {
     return {{"leafward_idx", leafward_idx},
             {"rootward_idx", rootward_idx},
-            {"pcsp_idx", gpcsp_idx}};
+            {"gpcsp_idx", gpcsp_idx}};
   }
 };
 
