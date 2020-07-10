@@ -104,9 +104,10 @@ struct OptimizeBranchLength {
 };
 
 // Assumption: log_likelihoods_ have been updated on [op.start_idx, op.stop_idx).
-// Performs `eq:SBNUpdates`. That is, let `total` be the log sum of `log_likelihoods[idx]`
-// for all `idx` in `start_idx <= idx < stop_idx`. Now let `q[idx] =
-// exp(log_likelihoods[idx] - total)` for all `idx` in `start_idx <= idx < stop_idx`.
+// Performs `eq:SBNUpdates`. That is, let `total` be the log sum of
+// `log_likelihoods[idx]` for all `idx` in `start_idx <= idx < stop_idx`. Now let
+// `q[idx] = exp(log_likelihoods[idx] - total)` for all `idx` in `start_idx <= idx <
+// stop_idx`.
 struct UpdateSBNProbabilities {
   size_t start_idx;
   size_t stop_idx;

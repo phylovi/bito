@@ -113,7 +113,6 @@ class GPEngine {
             .diagonal()
             .array();
   }
-
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

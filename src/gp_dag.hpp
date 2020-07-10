@@ -12,7 +12,6 @@
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 
-
 class GPDAG {
  public:
   using NodePtrVector = std::vector<std::shared_ptr<GPDAGNode>>;
@@ -112,14 +111,12 @@ class GPDAG {
                                          std::unordered_set<size_t> &visited_nodes,
                                          GPOperationVector &operations) const;
 
-  void UpdateRHat(size_t node_id, bool rotated,
-                  GPOperationVector &operations) const;
-  void UpdatePHatComputeLikelihood(
-      size_t node_id, size_t child_node_id, bool rotated,
-      GPOperationVector &operations) const;
-  void OptimizeBranchLengthUpdatePHat(
-      size_t node_id, size_t child_node_id, bool rotated,
-      GPOperationVector &operations) const;
+  void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
+  void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
+                                   GPOperationVector &operations) const;
+  void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
+                                      bool rotated,
+                                      GPOperationVector &operations) const;
 };
 
 #endif  // SRC_GP_DAG_HPP_
