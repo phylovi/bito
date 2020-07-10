@@ -46,6 +46,8 @@ class GPDAG {
   void Print() const;
   void PrintPCSPIndexer() const;
 
+  GPDAGNode *GetDagNode(const size_t node_idx) const;
+
   // Get the index of a PLV of a given type and with a given index.
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
   size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
@@ -71,7 +73,7 @@ class GPDAG {
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
   BitsetSizeMap subsplit_to_index_;
-  std::vector<std::shared_ptr<GPDAGNode>> dag_nodes_;
+  std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
 
   // This indexer is an expanded version of indexer_ in indexer_ in sbn_instance.
   // This indexer can be used for q_, branch_lengths_, log_likelihoods_
