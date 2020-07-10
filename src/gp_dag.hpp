@@ -98,9 +98,6 @@ class GPDAG {
   void BuildEdges();
   void BuildPCSPIndexer();
 
-  // TODO just a note-- I changed the signature here because we pass shared pointers
-  // only when we think that the call should participate in determining the lifetime of
-  // the object.
   void AddRootwardWeightedSumAccumulateOperations(const GPDAGNode *node, bool rotated,
                                                   GPOperationVector &operations) const;
   void AddLeafwardWeightedSumAccumulateOperations(const GPDAGNode *node,
