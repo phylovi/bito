@@ -81,7 +81,8 @@ Also let's:
 
 * Prefer a functional style: returning variables versus modifying them in place. Because of return value optimization, this doesn't have a performance penalty.
 * [RAII](https://en.cppreference.com/w/cpp/language/raii). No `new`.
-* Classic/raw pointers are used as non-owning references only.
+* Classic/raw pointers are used as non-owning references. Pass smart pointers only when you want to participate in ownership.
+* The default variable initialization should be `const auto`. Range-for loops should loop over `const auto &`.
 * Prefer [variable names and simple coding practices](https://blog.codinghorror.com/coding-without-comments/) to code comments.
   If that means having long identifier names, that's fine!
   If you can't make the code use and operation inherently obvious, please write documentation.
