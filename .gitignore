@@ -51,3 +51,4 @@ dist/
 pip-wheel-metadata/
 .mypy_cache
 compile_commands.json
+src/CMakeLists.txt
