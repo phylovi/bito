@@ -23,26 +23,41 @@ void SBNInstance::PrintStatus() {
 
 // ** Building SBN-related items
 
-void SBNInstance::ProcessLoadedTrees() {
+std::tuple<BitsetVector, BitsetSizeMap, SizeBitsetMap, BitsetSizePairMap, size_t>
+BuildIndexerBundle(const BitsetSizeDict &rootsplit_counter,
+                   const PCSSDict &pcss_counter) {
+  BitsetVector rootsplits;
+  BitsetSizeMap indexer;
+  SizeBitsetMap index_to_child;
+  BitsetSizePairMap parent_to_range;
   size_t index = 0;
-  ClearTreeCollectionAssociatedState();
-  topology_counter_ = TopologyCounter();
   // Start by adding the rootsplits.
-  for (const auto &iter : RootsplitCounterOf(topology_counter_)) {
-    SafeInsert(indexer_, iter.first, index);
-    rootsplits_.push_back(iter.first);
+  for (const auto &iter : rootsplit_counter) {
+    SafeInsert(indexer, iter.first, index);
+    rootsplits.push_back(iter.first);
     index++;
   }
   // Now add the PCSSs.
-  for (const auto &[parent, child_counter] : PCSSCounterOf(topology_counter_)) {
-    SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
+  for (const auto &[parent, child_counter] : pcss_counter) {
+    SafeInsert(parent_to_range, parent, {index, index + child_counter.size()});
     for (const auto &child_iter : child_counter) {
       const auto &child = child_iter.first;
-      SafeInsert(indexer_, parent + child, index);
-      SafeInsert(index_to_child_, index, Bitset::ChildSubsplit(parent, child));
+      SafeInsert(indexer, parent + child, index);
+      SafeInsert(index_to_child, index, Bitset::ChildSubsplit(parent, child));
       index++;
     }
   }
+  return {rootsplits, indexer, index_to_child, parent_to_range, index};
+}
+
+void SBNInstance::ProcessLoadedTrees() {
+  ClearTreeCollectionAssociatedState();
+  topology_counter_ = TopologyCounter();
+  size_t index;
+  std::tie(rootsplits_, indexer_, index_to_child_, parent_to_range_, index) =
+      BuildIndexerBundle(RootsplitCounterOf(topology_counter_),
+                         PCSSCounterOf(topology_counter_));
+
   sbn_parameters_.resize(index);
   sbn_parameters_.setOnes();
   psp_indexer_ = PSPIndexer(rootsplits_, indexer_);
