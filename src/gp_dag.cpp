@@ -19,22 +19,23 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
   GPOperationVector operations;
   IterateOverRealNodes([this, &operations](const GPDAGNode *node) {
     for (size_t child_idx : node->GetLeafwardSorted()) {
-      auto child_node = dag_nodes_[child_idx];
-      auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset() + child_node->GetBitset());
+      const auto child_node = dag_nodes_[child_idx];
+      const auto gpcsp_idx =
+          gpcsp_indexer_.at(node->GetBitset() + child_node->GetBitset());
       operations.push_back(Likelihood{gpcsp_idx, GetPLVIndex(PLVType::R, node->Id()),
                                       GetPLVIndex(PLVType::P, child_node->Id())});
     }
     for (size_t child_idx : node->GetLeafwardRotated()) {
-      auto child_node = dag_nodes_[child_idx];
-      auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset().RotateSubsplit() +
-                                         child_node->GetBitset());
+      const auto child_node = dag_nodes_[child_idx];
+      const auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset().RotateSubsplit() +
+                                               child_node->GetBitset());
       operations.push_back(Likelihood{gpcsp_idx,
                                       GetPLVIndex(PLVType::R_TILDE, node->Id()),
                                       GetPLVIndex(PLVType::P, child_node->Id())});
     }
   });
 
-  auto marginal_likelihood_operations = MarginalLikelihood();
+  const auto marginal_likelihood_operations = MarginalLikelihood();
   operations.insert(operations.end(), marginal_likelihood_operations.begin(),
                     marginal_likelihood_operations.end());
   return operations;
@@ -43,8 +44,8 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
 GPOperationVector GPDAG::MarginalLikelihood() const {
   GPOperationVector operations;
   for (size_t i = 0; i < rootsplits_.size(); i++) {
-    auto rootsplit = rootsplits_[i];
-    auto root_subsplit = rootsplit + ~rootsplit;
+    const auto rootsplit = rootsplits_[i];
+    const auto root_subsplit = rootsplit + ~rootsplit;
     size_t root_idx = subsplit_to_index_.at(root_subsplit);
     operations.push_back(GPOperations::IncrementMarginalLikelihood{
         GetPLVIndex(PLVType::R_HAT, root_idx), i, GetPLVIndex(PLVType::P, root_idx)});
@@ -77,7 +78,7 @@ void GPDAG::IterateOverRealNodes(std::function<void(const GPDAGNode *)> f) const
 void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
   size_t index = 0;
   taxon_count_ = tree_collection.TaxonCount();
-  auto topology_counter = tree_collection.TopologyCounter();
+  const auto topology_counter = tree_collection.TopologyCounter();
   // TODO factor this out so there isn't duplicated code with sbn_instance.cpp.
   // Start by adding the rootsplits.
   for (const auto &iter : RootedSBNMaps::RootsplitCounterOf(topology_counter)) {
@@ -109,7 +110,7 @@ void GPDAG::ConnectNodes(size_t idx, bool rotated) {
   const Bitset subsplit = node->GetBitset(rotated);
   const auto children = GetChildrenSubsplits(subsplit, true);
   for (const auto &child_subsplit : children) {
-    auto child_node = dag_nodes_.at(subsplit_to_index_.at(child_subsplit));
+    const auto child_node = dag_nodes_.at(subsplit_to_index_.at(child_subsplit));
     if (rotated) {
       node->AddLeafwardRotated(child_node->Id());
       child_node->AddRootwardRotated(node->Id());
@@ -127,7 +128,7 @@ std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
   if (parent_to_range_.count(subsplit)) {
     const auto [start, stop] = parent_to_range_.at(subsplit);
     for (auto idx = start; idx < stop; idx++) {
-      auto child_subsplit = index_to_child_.at(idx);
+      const auto child_subsplit = index_to_child_.at(idx);
       children_subsplits.push_back(child_subsplit);
     }
   } else if (include_fake_subsplits) {
@@ -210,7 +211,7 @@ EigenVectorXd GPDAG::BuildUniformQ() const {
   EigenVectorXd q = EigenVectorXd::Ones(GeneralizedPCSPCount());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
   for (const auto &[_, range] : subsplit_to_range_) {
-    auto num_child_subsplits = range.second - range.first;
+    const auto num_child_subsplits = range.second - range.first;
     double val = 1. / num_child_subsplits;
     q.segment(range.first, num_child_subsplits).array() = val;
   }
@@ -220,7 +221,7 @@ EigenVectorXd GPDAG::BuildUniformQ() const {
 GPOperationVector GPDAG::SetRhatToStationary() const {
   GPOperationVector operations;
   for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
-    auto rootsplit = rootsplits_[rootsplit_idx];
+    const auto rootsplit = rootsplits_[rootsplit_idx];
     operations.push_back(SetToStationaryDistribution{
         GetPLVIndex(PLVType::R_HAT, subsplit_to_index_.at(rootsplit + ~rootsplit)),
         rootsplit_idx});
@@ -285,7 +286,7 @@ std::vector<size_t> GPDAG::RootwardPassTraversal() const {
 
 void GPDAG::BuildPCSPIndexer() {
   size_t idx = 0;
-  for (auto rootsplit : rootsplits_) {
+  for (const auto &rootsplit : rootsplits_) {
     SafeInsert(gpcsp_indexer_, rootsplit + ~rootsplit, idx);
     idx++;
   }
@@ -295,7 +296,7 @@ void GPDAG::BuildPCSPIndexer() {
     if (child_count > 0) {
       SafeInsert(subsplit_to_range_, node->GetBitset(), {idx, idx + child_count});
       for (size_t j = 0; j < child_count; j++) {
-        auto child = dag_nodes_.at(node->GetLeafwardSorted().at(j));
+        const auto child = dag_nodes_.at(node->GetLeafwardSorted().at(j));
         SafeInsert(gpcsp_indexer_, node->GetBitset() + child->GetBitset(), idx);
         idx++;
       }
@@ -305,7 +306,7 @@ void GPDAG::BuildPCSPIndexer() {
       SafeInsert(subsplit_to_range_, node->GetBitset().RotateSubsplit(),
                  {idx, idx + child_count});
       for (size_t j = 0; j < child_count; j++) {
-        auto child = dag_nodes_.at(node->GetLeafwardRotated().at(j));
+        const auto child = dag_nodes_.at(node->GetLeafwardRotated().at(j));
         SafeInsert(gpcsp_indexer_,
                    node->GetBitset().RotateSubsplit() + child->GetBitset(), idx);
         idx++;
@@ -338,20 +339,19 @@ size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t src_idx) const {
 }
 
 void GPDAG::AddRootwardWeightedSumAccumulateOperations(
-    std::shared_ptr<GPDAGNode> node, bool rotated,
-    GPOperationVector &operations) const {
+    const GPDAGNode *node, bool rotated, GPOperationVector &operations) const {
   std::vector<size_t> child_idxs =
       rotated ? node->GetLeafwardRotated() : node->GetLeafwardSorted();
   PLVType plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
-  auto parent_subsplit = node->GetBitset(rotated);
+  const auto parent_subsplit = node->GetBitset(rotated);
   for (size_t child_idx : child_idxs) {
-    auto child_node = dag_nodes_[child_idx];
-    auto child_subsplit = child_node->GetBitset();
-    auto pcsp = parent_subsplit + child_subsplit;
+    const auto child_node = dag_nodes_[child_idx];
+    const auto child_subsplit = child_node->GetBitset();
+    const auto pcsp = parent_subsplit + child_subsplit;
     if (!gpcsp_indexer_.count(pcsp)) {
       Failwith("Non-existent PCSP index.");
     }
-    auto gpcsp_idx = gpcsp_indexer_.at(pcsp);
+    const auto gpcsp_idx = gpcsp_indexer_.at(pcsp);
 
     operations.push_back(
         EvolvePLVWeightedBySBNParameter{GetPLVIndex(plv_type, node->Id()), gpcsp_idx,
@@ -359,22 +359,24 @@ void GPDAG::AddRootwardWeightedSumAccumulateOperations(
   }
 }
 
+// TODO These functions need a renaming after renaming
+// EvolvePLVWeightedBySBNParameter... just do a search.
 void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
-    std::shared_ptr<GPDAGNode> node, GPOperationVector &operations) const {
-  auto subsplit = node->GetBitset();
-  for (size_t parent_idx : node->GetRootwardSorted()) {
-    auto parent_node = dag_nodes_[parent_idx];
-    auto parent_subsplit = parent_node->GetBitset();
-    auto gpcsp_idx = gpcsp_indexer_.at(parent_subsplit + subsplit);
+    const GPDAGNode *node, GPOperationVector &operations) const {
+  const auto subsplit = node->GetBitset();
+  for (const size_t parent_idx : node->GetRootwardSorted()) {
+    const auto parent_node = dag_nodes_[parent_idx];
+    const auto parent_subsplit = parent_node->GetBitset();
+    const auto gpcsp_idx = gpcsp_indexer_.at(parent_subsplit + subsplit);
 
     operations.push_back(EvolvePLVWeightedBySBNParameter{
         GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
         GetPLVIndex(PLVType::R, parent_node->Id())});
   }
-  for (size_t parent_idx : node->GetRootwardRotated()) {
-    auto parent_node = dag_nodes_[parent_idx];
-    auto parent_subsplit = parent_node->GetBitset().RotateSubsplit();
-    auto gpcsp_idx = gpcsp_indexer_.at(parent_subsplit + subsplit);
+  for (const size_t parent_idx : node->GetRootwardRotated()) {
+    const auto parent_node = dag_nodes_[parent_idx];
+    const auto parent_subsplit = parent_node->GetBitset().RotateSubsplit();
+    const auto gpcsp_idx = gpcsp_indexer_.at(parent_subsplit + subsplit);
 
     operations.push_back(EvolvePLVWeightedBySBNParameter{
         GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
@@ -385,7 +387,7 @@ void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
 void GPDAG::OptimizeSBNParameters(const Bitset &subsplit,
                                   GPOperationVector &operations) const {
   if (subsplit_to_range_.count(subsplit)) {
-    auto param_range = subsplit_to_range_.at(subsplit);
+    const auto param_range = subsplit_to_range_.at(subsplit);
     if (param_range.second - param_range.first > 1) {
       operations.push_back(
           UpdateSBNProbabilities{param_range.first, param_range.second});
@@ -396,8 +398,11 @@ void GPDAG::OptimizeSBNParameters(const Bitset &subsplit,
 GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
   // Perform first rootward pass. No optimization.
   GPOperationVector operations;
-  for (size_t node_idx : visit_order) {
-    auto node = dag_nodes_[node_idx];
+  for (const size_t node_idx : visit_order) {
+    // TODO this is the same as iterating over the "real" nodes, right?
+    // I tried changing to IterateOverRealNodes and it broke, so I must have missed
+    // something.
+    const auto node = dag_nodes_[node_idx];
     if (node->IsLeaf()) {
       continue;
     }
@@ -405,8 +410,8 @@ GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
     // Perform the following operations:
     // 1. WeightedSumAccummulate to get phat(s), phat(s_tilde).
     // 2. Multiply to get p(s) = phat(s) \circ phat(s_tilde).
-    AddRootwardWeightedSumAccumulateOperations(node, false, operations);
-    AddRootwardWeightedSumAccumulateOperations(node, true, operations);
+    AddRootwardWeightedSumAccumulateOperations(node.get(), false, operations);
+    AddRootwardWeightedSumAccumulateOperations(node.get(), true, operations);
     operations.push_back(Multiply{node_idx, GetPLVIndex(PLVType::P_HAT, node_idx),
                                   GetPLVIndex(PLVType::P_HAT_TILDE, node_idx)});
   }
@@ -415,20 +420,19 @@ GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
 }
 
 GPOperationVector GPDAG::RootwardPass() const {
-  auto rootward_order_ = RootwardPassTraversal();
-  return RootwardPass(rootward_order_);
+  return RootwardPass(RootwardPassTraversal());
 }
 
 GPOperationVector GPDAG::LeafwardPass(std::vector<size_t> visit_order) const {
   GPOperationVector operations;
-  for (size_t node_idx : visit_order) {
-    auto node = dag_nodes_[node_idx];
+  for (const size_t node_idx : visit_order) {
+    const auto node = dag_nodes_[node_idx];
 
     // Perform the following operations:
     // 1. WeightedSumAccumulate: rhat(s) += \sum_t q(s|t) P'(s|t) r(t)
     // 2. Multiply: r(s) = rhat(s) \circ phat(s_tilde).
     // 3. Multiply: r(s_tilde) = rhat(s) \circ phat(s).
-    AddLeafwardWeightedSumAccumulateOperations(node, operations);
+    AddLeafwardWeightedSumAccumulateOperations(node.get(), operations);
     operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_idx),
                                   GetPLVIndex(PLVType::R_HAT, node_idx),
                                   GetPLVIndex(PLVType::P_HAT_TILDE, node_idx)});
@@ -440,13 +444,12 @@ GPOperationVector GPDAG::LeafwardPass(std::vector<size_t> visit_order) const {
 }
 
 GPOperationVector GPDAG::LeafwardPass() const {
-  auto leafward_order_ = LeafwardPassTraversal();
-  return LeafwardPass(leafward_order_);
+  return LeafwardPass(LeafwardPassTraversal());
 }
 
 GPOperationVector GPDAG::SetRootwardZero() const {
   GPOperationVector operations;
-  auto node_count = dag_nodes_.size();
+  const auto node_count = dag_nodes_.size();
   for (size_t i = taxon_count_; i < node_count; i++) {
     operations.push_back(Zero{GetPLVIndex(PLVType::P, i)});
     operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT, i)});
@@ -457,7 +460,7 @@ GPOperationVector GPDAG::SetRootwardZero() const {
 
 GPOperationVector GPDAG::SetLeafwardZero() const {
   GPOperationVector operations;
-  auto node_count = dag_nodes_.size();
+  const auto node_count = dag_nodes_.size();
   for (size_t i = 0; i < node_count; i++) {
     operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, i)});
     operations.push_back(Zero{GetPLVIndex(PLVType::R, i)});
@@ -483,11 +486,12 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
 
 void GPDAG::UpdateRHat(size_t node_id, bool rotated,
                        GPOperationVector &operations) const {
-  auto node = dag_nodes_[node_id];
+  const auto node = dag_nodes_[node_id];
   PLVType src_plv_type = rotated ? PLVType::R_TILDE : PLVType::R;
-  auto parent_nodes = rotated ? node->GetRootwardRotated() : node->GetRootwardSorted();
+  const auto parent_nodes =
+      rotated ? node->GetRootwardRotated() : node->GetRootwardSorted();
   for (size_t parent_id : parent_nodes) {
-    auto parent_node = dag_nodes_[parent_id];
+    const auto parent_node = dag_nodes_[parent_id];
     auto pcsp =
         rotated ? parent_node->GetBitset().RotateSubsplit() : parent_node->GetBitset();
     pcsp = pcsp + node->GetBitset();
@@ -501,8 +505,8 @@ void GPDAG::UpdateRHat(size_t node_id, bool rotated,
 void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
                                         bool rotated,
                                         GPOperationVector &operations) const {
-  auto node = dag_nodes_[node_id];
-  auto child_node = dag_nodes_[child_node_id];
+  const auto node = dag_nodes_[node_id];
+  const auto child_node = dag_nodes_[child_node_id];
   auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
   pcsp = pcsp + child_node->GetBitset();
   size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
@@ -520,8 +524,8 @@ void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
 void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
                                            bool rotated,
                                            GPOperationVector &operations) const {
-  auto node = dag_nodes_[node_id];
-  auto child_node = dag_nodes_[child_node_id];
+  const auto node = dag_nodes_[node_id];
+  const auto child_node = dag_nodes_[child_node_id];
   auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
   pcsp = pcsp + child_node->GetBitset();
   size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
@@ -540,7 +544,7 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                                              std::unordered_set<size_t> &visited_nodes,
                                              GPOperationVector &operations) const {
   visited_nodes.insert(node_id);
-  auto node = dag_nodes_[node_id];
+  const auto node = dag_nodes_[node_id];
 
   if (!node->IsRoot()) {
     // Compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
@@ -593,7 +597,7 @@ void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
                                               std::unordered_set<size_t> &visited_nodes,
                                               GPOperationVector &operations) const {
   visited_nodes.insert(node_id);
-  auto node = dag_nodes_[node_id];
+  const auto node = dag_nodes_[node_id];
 
   if (!node->IsRoot()) {
     // We compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
@@ -652,10 +656,10 @@ GPOperationVector GPDAG::SBNParameterOptimization() const {
   GPOperationVector operations;
   std::unordered_set<size_t> visited_nodes;
   for (size_t i = 0; i < rootsplits_.size(); i++) {
-    auto rootsplit = rootsplits_[i];
+    const auto rootsplit = rootsplits_[i];
     ScheduleSBNParametersOptimization(subsplit_to_index_.at(rootsplit + ~rootsplit),
                                       visited_nodes, operations);
-    auto node_id = subsplit_to_index_.at(rootsplit + ~rootsplit);
+    const auto node_id = subsplit_to_index_.at(rootsplit + ~rootsplit);
     operations.push_back(GPOperations::IncrementMarginalLikelihood{
         GetPLVIndex(PLVType::R_HAT, node_id), i, GetPLVIndex(PLVType::P, node_id)});
   }

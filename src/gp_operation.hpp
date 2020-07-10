@@ -42,6 +42,7 @@ struct SetToStationaryDistribution {
 };
 
 // Set transition_matrix_ using branch_length(gpcsp_idx) then,
+// TODO there is no q_idx... which do you want to rename?
 // perform `plv[dest_idx] += q[q_idx] * transition_matrix_ * plv[src_idx]`
 struct EvolvePLVWeightedBySBNParameter {
   size_t dest_idx;
