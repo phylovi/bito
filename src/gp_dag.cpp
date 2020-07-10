@@ -595,9 +595,9 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
 // up, and then come through and do the SBN parameters? If not right now, could we set
 // it up to do that? This code duplication with the previous function somehow bothers me
 // more than some of the other duplication.
-void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
-                                              std::unordered_set<size_t> &visited_nodes,
-                                              GPOperationVector &operations) const {
+void GPDAG::ScheduleSBNParameterOptimization(size_t node_id,
+                                             std::unordered_set<size_t> &visited_nodes,
+                                             GPOperationVector &operations) const {
   visited_nodes.insert(node_id);
   const auto node = GetDagNode(node_id);
 
@@ -623,7 +623,7 @@ void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
   operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT, node_id)});
   for (size_t child_id : dag_nodes_.at(node_id)->GetLeafwardSorted()) {
     if (!visited_nodes.count(child_id)) {
-      ScheduleSBNParametersOptimization(child_id, visited_nodes, operations);
+      ScheduleSBNParameterOptimization(child_id, visited_nodes, operations);
     }
     UpdatePHatComputeLikelihood(node_id, child_id, false, operations);
   }
@@ -637,7 +637,7 @@ void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
   operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
   for (size_t child_id : dag_nodes_.at(node_id)->GetLeafwardRotated()) {
     if (!visited_nodes.count(child_id)) {
-      ScheduleSBNParametersOptimization(child_id, visited_nodes, operations);
+      ScheduleSBNParameterOptimization(child_id, visited_nodes, operations);
     }
     UpdatePHatComputeLikelihood(node_id, child_id, true, operations);
   }
@@ -659,8 +659,8 @@ GPOperationVector GPDAG::SBNParameterOptimization() const {
   std::unordered_set<size_t> visited_nodes;
   for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
     const auto rootsplit = rootsplits_[rootsplit_idx];
-    ScheduleSBNParametersOptimization(subsplit_to_index_.at(rootsplit + ~rootsplit),
-                                      visited_nodes, operations);
+    ScheduleSBNParameterOptimization(subsplit_to_index_.at(rootsplit + ~rootsplit),
+                                     visited_nodes, operations);
     const auto node_id = subsplit_to_index_.at(rootsplit + ~rootsplit);
     operations.push_back(GPOperations::IncrementMarginalLikelihood{
         GetPLVIndex(PLVType::R_HAT, node_id), rootsplit_idx,

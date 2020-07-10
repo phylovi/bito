@@ -113,9 +113,9 @@ class GPDAG {
   void ScheduleBranchLengthOptimization(size_t node_id,
                                         std::unordered_set<size_t> &visited_nodes,
                                         GPOperationVector &operations) const;
-  void ScheduleSBNParametersOptimization(size_t node_id,
-                                         std::unordered_set<size_t> &visited_nodes,
-                                         GPOperationVector &operations) const;
+  void ScheduleSBNParameterOptimization(size_t node_id,
+                                        std::unordered_set<size_t> &visited_nodes,
+                                        GPOperationVector &operations) const;
 
   void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
