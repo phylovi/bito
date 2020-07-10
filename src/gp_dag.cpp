@@ -77,26 +77,13 @@ void GPDAG::IterateOverRealNodes(std::function<void(const GPDAGNode *)> f) const
 }
 
 void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
-  size_t index = 0;
   taxon_count_ = tree_collection.TaxonCount();
   const auto topology_counter = tree_collection.TopologyCounter();
-  // TODO factor this out so there isn't duplicated code with sbn_instance.cpp.
-  // Start by adding the rootsplits.
-  for (const auto &iter : RootedSBNMaps::RootsplitCounterOf(topology_counter)) {
-    rootsplits_.push_back(iter.first);
-    index++;
-  }
-  // Now add the PCSSs.
-  for (const auto &[parent, child_counter] :
-       RootedSBNMaps::PCSSCounterOf(topology_counter)) {
-    SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
-    for (const auto &child_iter : child_counter) {
-      const auto &child = child_iter.first;
-      SafeInsert(index_to_child_, index, Bitset::ChildSubsplit(parent, child));
-      index++;
-    }
-  }
-  rootsplit_and_pcsp_count_ = index;
+
+  std::tie(rootsplits_, std::ignore, index_to_child_, parent_to_range_,
+           rootsplit_and_pcsp_count_) =
+      SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),
+                                  RootedSBNMaps::PCSSCounterOf(topology_counter));
 }
 
 void GPDAG::CreateAndInsertNode(const Bitset &subsplit) {

@@ -8,11 +8,11 @@ default:
 
 test:
 	make ${j_flags}
-	# ./_build/doctest
+	./_build/doctest
 	mkdir -p _ignore  # Needed for gp_doctest.
 	./_build/gp_doctest
-	# pytest
-	# ./_build/noodle
+	pytest
+	./_build/noodle
 
 bison: src/parser.yy src/scanner.ll
 	bison -o src/parser.cpp --defines=src/parser.hpp src/parser.yy
