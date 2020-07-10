@@ -16,31 +16,14 @@ class GPDAG {
  public:
   enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
 
+  // TODO let's decide on an order of things in the header file and then I'll sort the
+  // source file.
   GPDAG();
   explicit GPDAG(const RootedTreeCollection &tree_collection);
 
-  [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
-  // Compute likelihood values l(s|t) for each PCSP s|t.
-  [[nodiscard]] GPOperationVector ComputeLikelihoods() const;
-  [[nodiscard]] GPOperationVector LeafwardPass() const;
-  [[nodiscard]] GPOperationVector LeafwardPass(std::vector<size_t> visit_order) const;
-  // Compute marginal likelihood.
-  [[nodiscard]] GPOperationVector MarginalLikelihood() const;
-  [[nodiscard]] GPOperationVector RootwardPass() const;
-  [[nodiscard]] GPOperationVector RootwardPass(std::vector<size_t> visit_order) const;
-  [[nodiscard]] GPOperationVector SBNParameterOptimization() const;
-  [[nodiscard]] GPOperationVector SetLeafwardZero() const;
-  // Set rhat(s) = stationary for the rootsplits s.
-  [[nodiscard]] GPOperationVector SetRhatToStationary() const;
-  [[nodiscard]] GPOperationVector SetRootwardZero() const;
-  [[nodiscard]] SizeVector LeafwardPassTraversal() const;
-  [[nodiscard]] SizeVector RootwardPassTraversal() const;
-
-  EigenVectorXd BuildUniformQ() const;
-
   size_t NodeCount() const;
   size_t RootsplitAndPCSPCount() const;
-  // We definte a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
+  // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
   size_t GeneralizedPCSPCount() const;
 
   void Print() const;
@@ -52,9 +35,26 @@ class GPDAG {
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
   size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
 
+  // TODO could you add a one-line comment for each of these things in the public
+  // interface?
+  [[nodiscard]] EigenVectorXd BuildUniformQ() const;
+  [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
+  // Compute likelihood values l(s|t) for each PCSP s|t.
+  [[nodiscard]] GPOperationVector ComputeLikelihoods() const;
+  [[nodiscard]] GPOperationVector LeafwardPass() const;
+  // Compute marginal likelihood.
+  [[nodiscard]] GPOperationVector MarginalLikelihood() const;
+  [[nodiscard]] GPOperationVector RootwardPass() const;
+  [[nodiscard]] GPOperationVector SBNParameterOptimization() const;
+  [[nodiscard]] GPOperationVector SetLeafwardZero() const;
+  // Set rhat(s) = stationary for the rootsplits s.
+  [[nodiscard]] GPOperationVector SetRhatToStationary() const;
+  [[nodiscard]] GPOperationVector SetRootwardZero() const;
+
+
  private:
   // TODO Can we start here with a description of the various indexing schemes? Could we
-  // consider naming them different things?
+  // consider naming them different things? Below I suggest id for node ids.
   size_t taxon_count_;
   size_t rootsplit_and_pcsp_count_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
@@ -84,19 +84,25 @@ class GPDAG {
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(std::function<void(const GPDAGNode *)>) const;
+  // This function returns empty vector if subsplit is invalid or has no child.
+  std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
+                                           bool include_fake_subsplits = false);
 
   void ProcessTrees(const RootedTreeCollection &tree_collection);
   void CreateAndInsertNode(const Bitset &subsplit);
   // Connect the `idx` node to its children, and its children to it, rotating as needed.
   void ConnectNodes(size_t idx, bool rotated);
-  // This function returns empty vector if subsplit is invalid or has no child.
-  std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
-                                           bool include_fake_subsplits = false);
+
   void BuildNodesDepthFirst(const Bitset &subsplit,
                             std::unordered_set<Bitset> &visited_subsplits);
   void BuildNodes();
   void BuildEdges();
   void BuildPCSPIndexer();
+
+  [[nodiscard]] GPOperationVector LeafwardPass(std::vector<size_t> visit_order) const;
+  [[nodiscard]] GPOperationVector RootwardPass(std::vector<size_t> visit_order) const;
+  [[nodiscard]] SizeVector LeafwardPassTraversal() const;
+  [[nodiscard]] SizeVector RootwardPassTraversal() const;
 
   void AddRootwardWeightedSumAccumulateOperations(const GPDAGNode *node, bool rotated,
                                                   GPOperationVector &operations) const;
