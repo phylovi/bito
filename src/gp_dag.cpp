@@ -43,12 +43,13 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
 
 GPOperationVector GPDAG::MarginalLikelihood() const {
   GPOperationVector operations;
-  for (size_t i = 0; i < rootsplits_.size(); i++) {
-    const auto rootsplit = rootsplits_[i];
+  for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
+    const auto rootsplit = rootsplits_[rootsplit_idx];
     const auto root_subsplit = rootsplit + ~rootsplit;
     size_t root_idx = subsplit_to_index_.at(root_subsplit);
     operations.push_back(GPOperations::IncrementMarginalLikelihood{
-        GetPLVIndex(PLVType::R_HAT, root_idx), i, GetPLVIndex(PLVType::P, root_idx)});
+        GetPLVIndex(PLVType::R_HAT, root_idx), rootsplit_idx,
+        GetPLVIndex(PLVType::P, root_idx)});
   }
   return operations;
 }
@@ -60,9 +61,9 @@ size_t GPDAG::RootsplitAndPCSPCount() const { return rootsplit_and_pcsp_count_; 
 size_t GPDAG::GeneralizedPCSPCount() const {
   // Get number of parameters involving fake subsplits.
   size_t fake_subsplit_parameter_count = 0;
-  for (size_t i = 0; i < taxon_count_; i++) {
-    fake_subsplit_parameter_count += dag_nodes_[i]->GetRootwardRotated().size();
-    fake_subsplit_parameter_count += dag_nodes_[i]->GetRootwardSorted().size();
+  for (size_t taxon_idx = 0; taxon_idx < taxon_count_; taxon_idx++) {
+    fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardRotated().size();
+    fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardSorted().size();
   }
 
   return RootsplitAndPCSPCount() + fake_subsplit_parameter_count;
@@ -360,7 +361,8 @@ void GPDAG::AddRootwardWeightedSumAccumulateOperations(
 }
 
 // TODO These functions need a renaming after renaming
-// EvolvePLVWeightedBySBNParameter... just do a search.
+// EvolvePLVWeightedBySBNParameter... just do a search. But first I think we might want
+// to rename EvolvePLVWeightedBySBNParameter-- see note in gp_operation.hpp
 void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
     const GPDAGNode *node, GPOperationVector &operations) const {
   const auto subsplit = node->GetBitset();
@@ -458,6 +460,7 @@ GPOperationVector GPDAG::SetRootwardZero() const {
   return operations;
 }
 
+// TODO this also sets the stationary distribution. Rename?
 GPOperationVector GPDAG::SetLeafwardZero() const {
   GPOperationVector operations;
   const auto node_count = dag_nodes_.size();
@@ -540,6 +543,9 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
   });
 }
 
+// TODO This function is a jewel! Could you take 3 minutes and just write a comment or
+// two talking about how this gets around the problem you were having about things
+// getting out of date?
 void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                                              std::unordered_set<size_t> &visited_nodes,
                                              GPOperationVector &operations) const {
@@ -593,6 +599,11 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                                 GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
 };
 
+// TODO I'm a little unclear on why this is set up the way that it is. If we are just
+// optimizing SBN parameters, can't we just assume that the likelihood vectors are set
+// up, and then come through and do the SBN parameters? If not right now, could we set
+// it up to do that? This code duplication with the previous function somehow bothers me
+// more than some of the other duplication.
 void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
                                               std::unordered_set<size_t> &visited_nodes,
                                               GPOperationVector &operations) const {
@@ -655,13 +666,14 @@ void GPDAG::ScheduleSBNParametersOptimization(size_t node_id,
 GPOperationVector GPDAG::SBNParameterOptimization() const {
   GPOperationVector operations;
   std::unordered_set<size_t> visited_nodes;
-  for (size_t i = 0; i < rootsplits_.size(); i++) {
-    const auto rootsplit = rootsplits_[i];
+  for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
+    const auto rootsplit = rootsplits_[rootsplit_idx];
     ScheduleSBNParametersOptimization(subsplit_to_index_.at(rootsplit + ~rootsplit),
                                       visited_nodes, operations);
     const auto node_id = subsplit_to_index_.at(rootsplit + ~rootsplit);
     operations.push_back(GPOperations::IncrementMarginalLikelihood{
-        GetPLVIndex(PLVType::R_HAT, node_id), i, GetPLVIndex(PLVType::P, node_id)});
+        GetPLVIndex(PLVType::R_HAT, node_id), rootsplit_idx,
+        GetPLVIndex(PLVType::P, node_id)});
   }
   // Optimize SBN parameters for the rootsplits: at this point, p-vectors are
   // already updated in the call to ScheduleSBNParametersOptimization.

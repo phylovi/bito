@@ -44,6 +44,8 @@ struct SetToStationaryDistribution {
 // Set transition_matrix_ using branch_length(gpcsp_idx) then,
 // TODO there is no q_idx... which do you want to rename?
 // perform `plv[dest_idx] += q[q_idx] * transition_matrix_ * plv[src_idx]`
+// TODO Sorry, but I'd like for the name to convey that we're incrementing. Perhaps
+// "IncrementWithWeightedEvolvedPLV"?
 struct EvolvePLVWeightedBySBNParameter {
   size_t dest_idx;
   size_t gpcsp_idx;

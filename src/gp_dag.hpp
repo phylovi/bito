@@ -14,7 +14,6 @@
 
 class GPDAG {
  public:
-  using NodePtrVector = std::vector<std::shared_ptr<GPDAGNode>>;
   enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
 
   GPDAG();
@@ -72,7 +71,7 @@ class GPDAG {
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
   BitsetSizeMap subsplit_to_index_;
-  NodePtrVector dag_nodes_;
+  std::vector<std::shared_ptr<GPDAGNode>> dag_nodes_;
 
   // This indexer is an expanded version of indexer_ in indexer_ in sbn_instance.
   // This indexer can be used for q_, branch_lengths_, log_likelihoods_
