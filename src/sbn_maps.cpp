@@ -49,6 +49,32 @@ StringPCSSMap SBNMaps::StringPCSSMapOf(PCSSDict d) {
   return d_str;
 }
 
+IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counter,
+                                          const PCSSDict& pcss_counter) {
+  BitsetVector rootsplits;
+  BitsetSizeMap indexer;
+  SizeBitsetMap index_to_child;
+  BitsetSizePairMap parent_to_range;
+  size_t index = 0;
+  // Start by adding the rootsplits.
+  for (const auto& iter : rootsplit_counter) {
+    SafeInsert(indexer, iter.first, index);
+    rootsplits.push_back(iter.first);
+    index++;
+  }
+  // Now add the PCSSs.
+  for (const auto& [parent, child_counter] : pcss_counter) {
+    SafeInsert(parent_to_range, parent, {index, index + child_counter.size()});
+    for (const auto& child_iter : child_counter) {
+      const auto& child = child_iter.first;
+      SafeInsert(indexer, parent + child, index);
+      SafeInsert(index_to_child, index, Bitset::ChildSubsplit(parent, child));
+      index++;
+    }
+  }
+  return {rootsplits, indexer, index_to_child, parent_to_range, index};
+}
+
 BitsetSizeDict UnrootedSBNMaps::RootsplitCounterOf(
     const Node::TopologyCounter& topologies) {
   BitsetSizeDict rootsplit_counter(0);
