@@ -57,8 +57,6 @@ void GPInstance::MakeEngine() {
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
-  PrintDAG();
-  PrintPCSPIndexer();
   engine_ = std::make_unique<GPEngine>(site_pattern, 6 * dag_.NodeCount(),
                                        dag_.GeneralizedPCSPCount(), mmap_file_path_);
   InitializeGPEngine();
@@ -89,7 +87,7 @@ void GPInstance::ProcessLoadedTrees() {
 }
 
 void GPInstance::PrintDAG() { dag_.Print(); }
-void GPInstance::PrintPCSPIndexer() { dag_.PrintPCSPIndexer(); }
+void GPInstance::PrintGPCSPIndexer() { dag_.PrintGPCSPIndexer(); }
 
 void GPInstance::InitializeGPEngine() {
   GetEngine()->SetSBNParameters(dag_.BuildUniformQ());

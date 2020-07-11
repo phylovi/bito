@@ -324,6 +324,7 @@ PYBIND11_MODULE(libsbn, m) {
   gp_instance_class.def(py::init<const std::string &>())
       .def("print_status", &GPInstance::PrintStatus,
            "Print information about the instance.")
+      .def("print_dag", &GPInstance::PrintDAG, "Print the generalized pruning DAG.")
 
       // ** I/O
       .def("read_newick_file", &GPInstance::ReadNewickFile,

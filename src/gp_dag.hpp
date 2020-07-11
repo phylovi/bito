@@ -27,7 +27,7 @@ class GPDAG {
   size_t GeneralizedPCSPCount() const;
 
   void Print() const;
-  void PrintPCSPIndexer() const;
+  void PrintGPCSPIndexer() const;
 
   GPDAGNode *GetDagNode(const size_t node_idx) const;
 

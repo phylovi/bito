@@ -189,7 +189,7 @@ void GPDAG::Print() const {
   }
 }
 
-void GPDAG::PrintPCSPIndexer() const {
+void GPDAG::PrintGPCSPIndexer() const {
   for (const auto &[pcsp, idx] : gpcsp_indexer_) {
     std::cout << pcsp.SubsplitToString() << ", " << idx << std::endl;
   }
