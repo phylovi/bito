@@ -14,8 +14,7 @@ void GPInstance::PrintStatus() {
   const auto tree_count = tree_collection_.TreeCount();
   const auto taxon_count = tree_collection_.TaxonCount();
   if (tree_count) {
-    std::cout << tree_count << " unique tree topologies loaded on " << taxon_count
-              << " leaves.\n";
+    std::cout << tree_count << " trees loaded on " << taxon_count << " leaves.\n";
   } else {
     std::cout << "No trees loaded.\n";
   }
@@ -110,7 +109,9 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   ProcessOperations(dag_.SetRootwardZero());
   ProcessOperations(dag_.SetLeafwardZero());
   GetEngine()->ResetLogMarginalLikelihood();
+  std::cout << "Populating PLVs\n";
   PopulatePLVs();
+  std::cout << "Computing initial likelihood\n";
   ComputeLikelihoods();
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
 
