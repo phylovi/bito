@@ -51,7 +51,6 @@ class GPDAG {
   [[nodiscard]] GPOperationVector SetRhatToStationary() const;
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
 
-
  private:
   // TODO Can we start here with a description of the various indexing schemes? Could we
   // consider naming them different things? Below I suggest id for node ids.

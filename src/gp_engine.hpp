@@ -16,7 +16,6 @@
 
 class GPEngine {
  public:
-  GPEngine(SitePattern site_pattern, size_t pcss_count, std::string mmap_file_path);
   GPEngine(SitePattern site_pattern, size_t plv_count, size_t continous_parameter_count,
            std::string mmap_file_path);
 
