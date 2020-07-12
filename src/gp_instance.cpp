@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "gp_instance.hpp"
+#include <chrono>
 #include <iomanip>
 #include <string>
 #include "driver.hpp"
@@ -102,7 +103,10 @@ void GPInstance::PopulatePLVs() {
 void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }
 
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
+  auto now = std::chrono::high_resolution_clock::now;
+  auto t_start = now();
   std::cout << "Begin branch optimization\n";
+  GPOperationVector compute_likelihoods_operations = dag_.ComputeLikelihoods();
   GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
@@ -111,9 +115,13 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   GetEngine()->ResetLogMarginalLikelihood();
   std::cout << "Populating PLVs\n";
   PopulatePLVs();
+  std::chrono::duration<double> warmup_duration = now() - t_start;
+  t_start = now();
   std::cout << "Computing initial likelihood\n";
-  ComputeLikelihoods();
+  ProcessOperations(compute_likelihoods_operations);
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
+  std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
+  t_start = now();
 
   for (size_t i = 0; i < max_iter; i++) {
     std::cout << "Iteration: " << (i + 1) << std::endl;
@@ -135,6 +143,11 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
     }
     current_marginal_log_lik = marginal_log_lik;
   }
+  std::chrono::duration<double> optimization_duration = now() - t_start;
+  std::cout << "\ntiming report:\n";
+  std::cout << "warmup: " << warmup_duration.count() << "s\n";
+  std::cout << "initial likelihood: " << initial_likelihood_duration.count() << "s\n";
+  std::cout << "optimization: " << optimization_duration.count() << "s\n";
 }
 
 void GPInstance::EstimateSBNParameters(double tol, size_t max_iter) {
