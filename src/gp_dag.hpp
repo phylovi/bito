@@ -71,7 +71,7 @@ class GPDAG {
   // Perhaps we could name it subsplit_to_id_ and refer to dag nodes as having an id?
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
-  BitsetSizeMap subsplit_to_index_;
+  BitsetSizeMap subsplit_to_id_;
   std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
 
   // This indexer is an expanded version of indexer_ in indexer_ in sbn_instance.
