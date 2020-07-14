@@ -112,6 +112,14 @@ class GPEngine {
             .diagonal()
             .array();
   }
+
+  inline void PreparePerPatternLogLikelihoods(size_t src1_idx, size_t src2_idx) {
+    per_pattern_log_likelihoods_ =
+        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array()
+            .log();
+  }
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

@@ -63,11 +63,7 @@ void GPEngine::operator()(const GPOperations::Multiply& op) {
 
 void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_idx));
-  per_pattern_log_likelihoods_ =
-      (plvs_.at(op.parent_idx).transpose()(transition_matrix_ * plvs_.at(op.child_idx)))
-          .diagonal()
-          .array()
-          .log();
+  PreparePerPatternLogLikelihoods(op.parent_idx, op.child_idx);
   log_likelihoods_[op.dest_idx] =
       log(q_[op.dest_idx]) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 }
@@ -171,9 +167,7 @@ void GPEngine::InitializePLVsWithSitePatterns() {
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double branch_length) {
     SetTransitionMatrixToHaveBranchLength(branch_length);
-    auto result = plvs_.at(op.rootward_idx).transpose() *
-                  (transition_matrix_ * plvs_.at(op.leafward_idx));
-    per_pattern_log_likelihoods_ = result.diagonal().array().log();
+    PreparePerPatternLogLikelihoods(op.rootward_idx, op.leafward_idx);
     return -(log(q_[op.gpcsp_idx]) +
              per_pattern_log_likelihoods_.dot(site_pattern_weights_));
   };
