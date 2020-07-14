@@ -39,7 +39,7 @@ void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
   }
 }
 
-void GPEngine::operator()(const GPOperations::EvolvePLVWeightedBySBNParameter& op) {
+void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.gpcsp_idx));
   plvs_.at(op.dest_idx) += q_(op.gpcsp_idx) * transition_matrix_ * plvs_.at(op.src_idx);
 }

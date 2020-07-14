@@ -43,10 +43,10 @@ struct SetToStationaryDistribution {
 
 // Set transition_matrix_ using branch_length(gpcsp_idx) then,
 // TODO there is no q_idx... which do you want to rename?
-// perform `plv[dest_idx] += q[q_idx] * transition_matrix_ * plv[src_idx]`
+// perform `plv[dest_idx] += q[gpcsp_idx] * transition_matrix_ * plv[src_idx]`
 // TODO Sorry, but I'd like for the name to convey that we're incrementing. Perhaps
 // "IncrementWithWeightedEvolvedPLV"?
-struct EvolvePLVWeightedBySBNParameter {
+struct IncrementWithWeightedEvolvedPLV {
   size_t dest_idx;
   size_t gpcsp_idx;
   size_t src_idx;
@@ -124,7 +124,7 @@ struct UpdateSBNProbabilities {
 
 using GPOperation =
     std::variant<GPOperations::Zero, GPOperations::SetToStationaryDistribution,
-                 GPOperations::EvolvePLVWeightedBySBNParameter, GPOperations::Multiply,
+                 GPOperations::IncrementWithWeightedEvolvedPLV, GPOperations::Multiply,
                  GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
                  GPOperations::UpdateSBNProbabilities,
                  GPOperations::IncrementMarginalLikelihood>;
@@ -142,7 +142,7 @@ struct GPOperationOstream {
   void operator()(const GPOperations::SetToStationaryDistribution& operation) {
     os_ << "SetToStationaryDistribution" << operation.guts();
   }
-  void operator()(const GPOperations::EvolvePLVWeightedBySBNParameter& operation) {
+  void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& operation) {
     os_ << "WeightedSumAccumulate" << operation.guts();
   }
   void operator()(const GPOperations::IncrementMarginalLikelihood& operation) {

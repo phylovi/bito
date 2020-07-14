@@ -346,7 +346,7 @@ void GPDAG::AddRootwardWeightedSumAccumulateOperations(
     const auto gpcsp_idx = gpcsp_indexer_.at(pcsp);
 
     operations.push_back(
-        EvolvePLVWeightedBySBNParameter{GetPLVIndex(plv_type, node->Id()), gpcsp_idx,
+        IncrementWithWeightedEvolvedPLV{GetPLVIndex(plv_type, node->Id()), gpcsp_idx,
                                         GetPLVIndex(PLVType::P, child_idx)});
   }
 }
@@ -362,7 +362,7 @@ void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
     const auto parent_subsplit = parent_node->GetBitset();
     const auto gpcsp_idx = gpcsp_indexer_.at(parent_subsplit + subsplit);
 
-    operations.push_back(EvolvePLVWeightedBySBNParameter{
+    operations.push_back(IncrementWithWeightedEvolvedPLV{
         GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
         GetPLVIndex(PLVType::R, parent_node->Id())});
   }
@@ -371,7 +371,7 @@ void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
     const auto parent_subsplit = parent_node->GetBitset().RotateSubsplit();
     const auto gpcsp_idx = gpcsp_indexer_.at(parent_subsplit + subsplit);
 
-    operations.push_back(EvolvePLVWeightedBySBNParameter{
+    operations.push_back(IncrementWithWeightedEvolvedPLV{
         GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
         GetPLVIndex(PLVType::R_TILDE, parent_node->Id())});
   }
@@ -491,7 +491,7 @@ void GPDAG::UpdateRHat(size_t node_id, bool rotated,
     pcsp = pcsp + node->GetBitset();
     size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
     operations.push_back(
-        EvolvePLVWeightedBySBNParameter{GetPLVIndex(PLVType::R_HAT, node_id), gpcsp_idx,
+        IncrementWithWeightedEvolvedPLV{GetPLVIndex(PLVType::R_HAT, node_id), gpcsp_idx,
                                         GetPLVIndex(src_plv_type, parent_id)});
   }
 }
@@ -505,7 +505,7 @@ void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
   pcsp = pcsp + child_node->GetBitset();
   size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
   // Update p_hat(s)
-  operations.push_back(EvolvePLVWeightedBySBNParameter{
+  operations.push_back(IncrementWithWeightedEvolvedPLV{
       GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, node_id),
       gpcsp_idx,
       GetPLVIndex(PLVType::P, child_node_id),
@@ -527,7 +527,7 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
       GetPLVIndex(PLVType::P, child_node_id),
       GetPLVIndex(rotated ? PLVType::R_TILDE : PLVType::R, node_id), gpcsp_idx});
   // Update p_hat(s)
-  operations.push_back(EvolvePLVWeightedBySBNParameter{
+  operations.push_back(IncrementWithWeightedEvolvedPLV{
       GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, node_id),
       gpcsp_idx,
       GetPLVIndex(PLVType::P, child_node_id),
