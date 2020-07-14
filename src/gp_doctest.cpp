@@ -66,12 +66,15 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
   auto inst = MakeHelloGPInstanceTwoTrees();
   auto engine = inst.GetEngine();
 
+  EigenVectorXd branch_lengths(10);
+  branch_lengths << 1, 1, 0.0736678167, 0.206803557, 0.0158180779, 0.0540515854,
+                    0.206127184, 0.0736678167, 0.0158180779, 0.0540515854;
+  engine->SetBranchLengths(branch_lengths);
+
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-  std::cout << engine->GetLogMarginalLikelihood() << std::endl;
-  inst.EstimateBranchLengths(1e-6, 100);
 
-  CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -79.9944001), 1e-6);
+  CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -80.6907106056343), 1e-6);
 }
 
 TEST_CASE("GPInstance: gradient calculation") {
