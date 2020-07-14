@@ -50,7 +50,7 @@ class MmappedMatrix {
         file_descriptor_,        // File descriptor.
         0                        // Offset.
     );
-    if (!mmapped_memory_) {
+    if (mmapped_memory_ == MAP_FAILED) {
       throw std::system_error(errno, std::system_category(), "mmap");
     }
   }
