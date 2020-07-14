@@ -63,9 +63,11 @@ void GPEngine::operator()(const GPOperations::Multiply& op) {
 
 void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_idx));
-  auto result = plvs_.at(op.parent_idx).transpose() *
-                (transition_matrix_ * plvs_.at(op.child_idx));
-  per_pattern_log_likelihoods_ = result.diagonal().array().log();
+  per_pattern_log_likelihoods_ =
+      (plvs_.at(op.parent_idx).transpose()(transition_matrix_ * plvs_.at(op.child_idx)))
+          .diagonal()
+          .array()
+          .log();
   log_likelihoods_[op.dest_idx] =
       log(q_[op.dest_idx]) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 }
