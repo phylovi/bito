@@ -65,7 +65,7 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
-  GradientAscentOptimization(op);
+  BrentOptimization(op);
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
