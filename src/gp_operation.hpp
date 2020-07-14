@@ -111,6 +111,8 @@ struct OptimizeBranchLength {
 // `log_likelihoods[idx]` for all `idx` in `start_idx <= idx < stop_idx`. Now let
 // `q[idx] = exp(log_likelihoods[idx] - total)` for all `idx` in `start_idx <= idx <
 // stop_idx`.
+// Note that this operation modifies our log_likelihoods in place by normalizing them
+// across children of a parent. Thus they are no longer valid.
 struct UpdateSBNProbabilities {
   size_t start_idx;
   size_t stop_idx;

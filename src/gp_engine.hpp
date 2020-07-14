@@ -89,6 +89,7 @@ class GPEngine {
   Eigen::Matrix4d inverse_eigenmatrix_ =
       substitution_model_.GetInverseEigenvectors().reshaped(4, 4);
   Eigen::Vector4d eigenvalues_ = substitution_model_.GetEigenvalues();
+  Eigen::Vector4d diagonal_vector_;
   Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
   Eigen::Matrix4d transition_matrix_;
   Eigen::Matrix4d derivative_matrix_;

@@ -94,10 +94,10 @@ void GPEngine::SetTransitionMatrixToHaveBranchLength(double branch_length) {
 
 void GPEngine::SetTransitionAndDerivativeMatricesToHaveBranchLength(
     double branch_length) {
-  Eigen::Vector4d diagonal_vector = (branch_length * eigenvalues_).array().exp();
-  diagonal_matrix_.diagonal() = diagonal_vector;
+  diagonal_vector_ = (branch_length * eigenvalues_).array().exp();
+  diagonal_matrix_.diagonal() = diagonal_vector_;
   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
-  diagonal_matrix_.diagonal() = eigenvalues_.array() * diagonal_vector.array();
+  diagonal_matrix_.diagonal() = eigenvalues_.array() * diagonal_vector_.array();
   derivative_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
 }
 
@@ -168,7 +168,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   };
   double current_branch_length = branch_lengths_(op.gpcsp_idx);
   double current_value = negative_log_likelihood(current_branch_length);
-  auto [branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
+  const auto [branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
       negative_log_likelihood, min_branch_length_, max_branch_length_,
       significant_digits_for_optimization_, max_iter_for_optimization_);
 
@@ -187,7 +187,7 @@ void GPEngine::GradientAscentOptimization(
     branch_lengths_(op.gpcsp_idx) = branch_length;
     return this->LogLikelihoodAndDerivative(op);
   };
-  auto [branch_length, log_likelihood] = Optimization::GradientAscent(
+  const auto [branch_length, log_likelihood] = Optimization::GradientAscent(
       log_likelihood_and_derivative, branch_lengths_(op.gpcsp_idx),
       relative_tolerance_for_optimization_, step_size_for_optimization_,
       min_branch_length_, max_iter_for_optimization_);
