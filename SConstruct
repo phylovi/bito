@@ -93,8 +93,8 @@ env = Environment(
     ENV=os.environ,
     CPPPATH=["src", "lib/eigen", pybind11.get_include()],
     # CCFLAGS=["-g", "-pthread"],
-    # CCFLAGS=["-O3", "-pthread", "-fno-omit-frame-pointer"],
-    CCFLAGS=["-O3", "-pthread"],
+    CCFLAGS=["-O3", "-pthread", "-fno-omit-frame-pointer"],
+    # CCFLAGS=["-O3", "-pthread"],
     CXXFLAGS=["-std=c++17"],
 )
 
