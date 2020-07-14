@@ -75,7 +75,8 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
     return;
   }
   // else
-  auto segment = log_likelihoods_.segment(op.start_idx, range_length);
+  Eigen::VectorBlock<EigenVectorXd> segment =
+      log_likelihoods_.segment(op.start_idx, range_length);
   const double log_norm = NumericalUtils::LogSum(segment);
   segment.array() -= log_norm;
   q_.segment(op.start_idx, range_length) = segment.array().exp();
