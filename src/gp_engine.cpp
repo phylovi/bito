@@ -45,11 +45,7 @@ void GPEngine::operator()(const GPOperations::EvolvePLVWeightedBySBNParameter& o
 }
 
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
-  per_pattern_log_likelihoods_ =
-      (plvs_.at(op.stationary_idx).transpose() * plvs_.at(op.p_idx))
-          .diagonal()
-          .array()
-          .log();
+  PreparePerPatternLogLikelihoods(op.stationary_idx, op.p_idx);
   log_likelihoods_[op.gpcsp_idx] =
       log(q_(op.p_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   log_marginal_likelihood_ =
@@ -73,16 +69,16 @@ void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
-  size_t range_length = op.stop_idx - op.start_idx;
+  const size_t range_length = op.stop_idx - op.start_idx;
   if (range_length == 1) {
     q_(op.start_idx) = 1.;
     return;
   }
-
-  auto segment = log_likelihoods_.segment(op.start_idx, op.stop_idx - op.start_idx);
-  double log_norm = NumericalUtils::LogSum(segment);
+  // else
+  auto segment = log_likelihoods_.segment(op.start_idx, range_length);
+  const double log_norm = NumericalUtils::LogSum(segment);
   segment.array() -= log_norm;
-  q_.segment(op.start_idx, op.stop_idx - op.start_idx) = segment.array().exp();
+  q_.segment(op.start_idx, range_length) = segment.array().exp();
 }
 
 void GPEngine::ProcessOperations(GPOperationVector operations) {
@@ -126,12 +122,11 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   // likelihood, but using the derivative matrix instead of the transition matrix.
   PreparePerPatternLikelihoodDerivatives(op.rootward_idx, op.leafward_idx);
   PreparePerPatternLikelihoods(op.rootward_idx, op.leafward_idx);
-
   per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
+
+  // The prior is expressed using the current value of q_.
   // The phylogenetic component of the likelihood is weighted with the number of times
   // we see the site patterns.
-  // TODO Seong-- I'm trying to understand the role of q_ here. I guess this as a
-  // placeholder for the prior?
   const double log_likelihood =
       log(q_(op.gpcsp_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
