@@ -18,6 +18,7 @@ class GPDAG {
 
   // TODO let's decide on an order of things in the header file and then I'll sort the
   // source file.
+  // SHJ: EM confirmed he's happy with the current ordering.
   GPDAG();
   explicit GPDAG(const RootedTreeCollection &tree_collection);
 
@@ -37,23 +38,37 @@ class GPDAG {
 
   // TODO could you add a one-line comment for each of these things in the public
   // interface?
+  // SHJ: Done.
+  // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
+  // Schedule branch length optimization.
   [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
   // Compute likelihood values l(s|t) for each PCSP s|t.
   [[nodiscard]] GPOperationVector ComputeLikelihoods() const;
+  // Fill r-PLVs from leaf nodes to the root nodes.
   [[nodiscard]] GPOperationVector LeafwardPass() const;
   // Compute marginal likelihood.
   [[nodiscard]] GPOperationVector MarginalLikelihood() const;
+  // Fill p-PLVs from root nodes to the leaf nodes.
   [[nodiscard]] GPOperationVector RootwardPass() const;
+  // Optimize SBN parameters.
   [[nodiscard]] GPOperationVector SBNParameterOptimization() const;
+  // Set r-PLVs to zero.
   [[nodiscard]] GPOperationVector SetLeafwardZero() const;
   // Set rhat(s) = stationary for the rootsplits s.
   [[nodiscard]] GPOperationVector SetRhatToStationary() const;
+  // Set p-PLVs to zero.
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
 
  private:
   // TODO Can we start here with a description of the various indexing schemes? Could we
   // consider naming them different things? Below I suggest id for node ids.
+  // SHJ: Provided description for each indexer above its declaration.
+  // SHJ: It would simplify matters a lot if GPDAG builds nodes and indexers
+  // in ProcessTrees. This would allows us to merge parent_to_range_ and
+  // subsplit_to_range_.
+  // TODO: Determine if this should be done now or for later.
+  
   size_t taxon_count_;
   size_t rootsplit_and_pcsp_count_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
@@ -69,6 +84,9 @@ class GPDAG {
 
   // TODO for example, here this subsplit_to_index_ is actually mapping to DAG ids.
   // Perhaps we could name it subsplit_to_id_ and refer to dag nodes as having an id?
+  // SHJ: Done.
+  
+  // A map from Bitset to the corresponding index in dag_nodes_.
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
   BitsetSizeMap subsplit_to_id_;
@@ -79,6 +97,10 @@ class GPDAG {
   // in GPEngine.
   BitsetSizeMap gpcsp_indexer_;
   // Stores range of indices for a subsplit and rotated subsplit.
+  // This map is similar to parent_to_range_ but it is constructed with the
+  // gpcsp_indexer_ to match its contents.
+  // Each of the indices in parent_to_range_[parent_subsplit] is used to access
+  // log_likelihood_ in gp_engine for SBN parameter optimization.
   BitsetSizePairMap subsplit_to_range_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
@@ -109,6 +131,9 @@ class GPDAG {
                                                   GPOperationVector &operations) const;
   void OptimizeSBNParameters(const Bitset &subsplit,
                              GPOperationVector &operations) const;
+  // This function visits and optimizes branches in depth first fashion.
+  // It updates p-PLVs and r-PLVs to reflect/propagate the results
+  // of branch length optimization from/to other parts of the tree.
   void ScheduleBranchLengthOptimization(size_t node_id,
                                         std::unordered_set<size_t> &visited_nodes,
                                         GPOperationVector &operations) const;

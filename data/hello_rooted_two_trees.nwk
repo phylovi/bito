@@ -1,2 +1,2 @@
 (jupiter:0.1,(mars:0.1,saturn:0.1):0.2):0.;
-(saturn:0.1,(mars:0.1,jupiter:0.1):0.2):0.;
+(saturn:0.1,(jupiter:0.1,mars:0.1):0.2):0.;

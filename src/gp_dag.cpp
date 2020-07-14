@@ -354,6 +354,7 @@ void GPDAG::AddRootwardWeightedSumAccumulateOperations(
 // TODO These functions need a renaming after renaming
 // EvolvePLVWeightedBySBNParameter... just do a search. But first I think we might want
 // to rename EvolvePLVWeightedBySBNParameter-- see note in gp_operation.hpp
+// SHJ: Done.
 void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
     const GPDAGNode *node, GPOperationVector &operations) const {
   const auto subsplit = node->GetBitset();
@@ -452,6 +453,7 @@ GPOperationVector GPDAG::SetRootwardZero() const {
 }
 
 // TODO this also sets the stationary distribution. Rename?
+// SHJ: I defined SetLeafwardZero to zero out all r-PLVs to zero see .hpp file.
 GPOperationVector GPDAG::SetLeafwardZero() const {
   GPOperationVector operations;
   const auto node_count = dag_nodes_.size();
@@ -537,6 +539,7 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
 // TODO This function is a jewel! Could you take 3 minutes and just write a comment or
 // two talking about how this gets around the problem you were having about things
 // getting out of date?
+// SHJ: In the header.
 void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                                              std::unordered_set<size_t> &visited_nodes,
                                              GPOperationVector &operations) const {
@@ -666,7 +669,7 @@ GPOperationVector GPDAG::SBNParameterOptimization() const {
         GetPLVIndex(PLVType::R_HAT, node_id), rootsplit_idx,
         GetPLVIndex(PLVType::P, node_id)});
   }
-  // Optimize SBN parameters for the rootsplits: at this point, p-vectors are
+  // Optimize SBN parameters for the rootsplits: at this point, p-PLVs are
   // already updated in the call to ScheduleSBNParametersOptimization.
   operations.push_back(UpdateSBNProbabilities{0, rootsplits_.size()});
   return operations;
