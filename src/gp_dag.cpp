@@ -392,9 +392,6 @@ GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
   // Perform first rootward pass. No optimization.
   GPOperationVector operations;
   for (const size_t node_idx : visit_order) {
-    // TODO this is the same as iterating over the "real" nodes, right?
-    // I tried changing to IterateOverRealNodes and it broke, so I must have missed
-    // something.
     const auto node = GetDagNode(node_idx);
     if (node->IsLeaf()) {
       continue;
@@ -451,7 +448,8 @@ GPOperationVector GPDAG::SetRootwardZero() const {
   return operations;
 }
 
-// TODO this also sets the stationary distribution. Rename?
+// TODO this also sets the stationary distribution. I think we should split into two
+// functions.
 GPOperationVector GPDAG::SetLeafwardZero() const {
   GPOperationVector operations;
   const auto node_count = dag_nodes_.size();
