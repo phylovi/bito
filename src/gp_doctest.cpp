@@ -99,21 +99,19 @@ TEST_CASE("GPInstance: gradient calculation") {
   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
 }
 
-// TODO can we add a branch length optimization test?
-// SHJ: Adding a regression test on the branch lengths optimized using Brent.
 TEST_CASE("GPInstance: branch length optimization") {
   auto inst = MakeHelloGPInstanceTwoTrees();
-  
+
   EigenVectorXd expected_branch_lengths(10);
   expected_branch_lengths << 1, 1,
   0.0736678167, 0.206803557, 0.0158180779, 0.0540515854,
   0.206134746, 0.0736678167, 0.0150759956, 0.0540515854;
-  
+
   inst.GetEngine()->SetBranchLengths(expected_branch_lengths);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   double expected_log_marginal = inst.GetEngine()->GetLogMarginalLikelihood();
-  
+
   // Reset.
   inst = MakeHelloGPInstanceTwoTrees();
   inst.EstimateBranchLengths(1e-6, 100);

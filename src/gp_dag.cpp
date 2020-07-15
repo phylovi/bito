@@ -363,8 +363,8 @@ void GPDAG::AddRhatOperations(const GPDAGNode *node,
   }
 }
 
-void GPDAG::OptimizeSBNParameters(const Bitset &subsplit,
-                                  GPOperationVector &operations) const {
+void GPDAG::OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
+                                              GPOperationVector &operations) const {
   if (subsplit_to_range_.count(subsplit)) {
     const auto param_range = subsplit_to_range_.at(subsplit);
     if (param_range.second - param_range.first > 1) {
@@ -525,10 +525,6 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
   });
 }
 
-// TODO This function is a jewel! Could you take 3 minutes and just write a comment or
-// two talking about how this gets around the problem you were having about things
-// getting out of date?
-// SHJ: In the header.
 void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                                              std::unordered_set<size_t> &visited_nodes,
                                              GPOperationVector &operations) const {
@@ -582,13 +578,13 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                                 GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
 };
 
-GPOperationVector GPDAG::SBNParameterOptimization() const {
+GPOperationVector GPDAG::OptimizeSBNParameters() const {
   GPOperationVector operations;
   std::unordered_set<size_t> visited_nodes;
   for (size_t &id : LeafwardPassTraversal()) {
     const auto node = GetDagNode(id);
-    OptimizeSBNParameters(node->GetBitset(), operations);
-    OptimizeSBNParameters(node->GetBitset().RotateSubsplit(), operations);
+    OptimizeSBNParametersForASubsplit(node->GetBitset(), operations);
+    OptimizeSBNParametersForASubsplit(node->GetBitset().RotateSubsplit(), operations);
   }
   operations.push_back(UpdateSBNProbabilities{0, rootsplits_.size()});
   return operations;

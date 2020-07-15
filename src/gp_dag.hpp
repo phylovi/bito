@@ -46,7 +46,7 @@ class GPDAG {
   // Fill p-PLVs from root nodes to the leaf nodes.
   [[nodiscard]] GPOperationVector RootwardPass() const;
   // Optimize SBN parameters.
-  [[nodiscard]] GPOperationVector SBNParameterOptimization() const;
+  [[nodiscard]] GPOperationVector OptimizeSBNParameters() const;
   // Set r-PLVs to zero.
   [[nodiscard]] GPOperationVector SetLeafwardZero() const;
   // Set rhat(s) = stationary for the rootsplits s.
@@ -55,18 +55,8 @@ class GPDAG {
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
 
  private:
-  // TODO Can we start here with a description of the various indexing schemes? Could we
-  // consider naming them different things? Below I suggest id for node ids.
-  // SHJ: Provided description for each indexer above its declaration.
-  // SHJ: It would simplify matters a lot if GPDAG builds nodes and indexers
-  // in ProcessTrees. This would allows us to merge parent_to_range_ and
-  // subsplit_to_range_.
-  // TODO: Determine if this should be done now or for later.
-
   size_t taxon_count_;
   size_t rootsplit_and_pcsp_count_;
-  // A map that indexes these probabilities: rootsplits are at the beginning,
-  // and PCSS bitsets are at the end.
   // The collection of rootsplits, with the same indexing as in the indexer_.
   BitsetVector rootsplits_;
   // A map going from the index of a PCSP to its child.
@@ -75,16 +65,6 @@ class GPDAG {
   // sbn_parameters_ with its children. See the definition of Range for the indexing
   // convention.
   BitsetSizePairMap parent_to_range_;
-
-  // TODO for example, here this subsplit_to_index_ is actually mapping to DAG ids.
-  // Perhaps we could name it subsplit_to_id_ and refer to dag nodes as having an id?
-  // SHJ: Done.
-
-  // A map from Bitset to the corresponding index in dag_nodes_.
-  // The first entries are reserved for fake subsplits.
-  // The last entries are reserved for rootsplits.
-  BitsetSizeMap subsplit_to_id_;
-  std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
 
   // This indexer is an expanded version of indexer_ in indexer_ in sbn_instance.
   // This indexer can be used for q_, branch_lengths_, log_likelihoods_
@@ -96,6 +76,15 @@ class GPDAG {
   // Each of the indices in parent_to_range_[parent_subsplit] is used to access
   // log_likelihood_ in gp_engine for SBN parameter optimization.
   BitsetSizePairMap subsplit_to_range_;
+
+  // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
+  // This corresponds to the analogous concept for trees.
+  //
+  // A map from Bitset to the corresponding index in dag_nodes_.
+  // The first entries are reserved for fake subsplits.
+  // The last entries are reserved for rootsplits.
+  BitsetSizeMap subsplit_to_id_;
+  std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(std::function<void(const GPDAGNode *)>) const;
@@ -122,8 +111,8 @@ class GPDAG {
   void AddPhatOperations(const GPDAGNode *node, bool rotated,
                          GPOperationVector &operations) const;
   void AddRhatOperations(const GPDAGNode *node, GPOperationVector &operations) const;
-  void OptimizeSBNParameters(const Bitset &subsplit,
-                             GPOperationVector &operations) const;
+  void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
+                                         GPOperationVector &operations) const;
   // This function visits and optimizes branches in depth first fashion.
   // It updates p-PLVs and r-PLVs to reflect/propagate the results
   // of branch length optimization from/to other parts of the tree.

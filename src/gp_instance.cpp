@@ -153,12 +153,9 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
 
 void GPInstance::EstimateSBNParameters() {
   std::cout << "Begin SBN parameter optimization\n";
-  GPOperationVector sbn_param_optimization_operations = dag_.SBNParameterOptimization();
+  GPOperationVector sbn_param_optimization_operations = dag_.OptimizeSBNParameters();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
-  // TODO: If we are calling EstimateSBNParameters() right after
-  // EstimateBranchLength(), then these steps are redundant.
-  // Should we remove these lines?
   ProcessOperations(dag_.SetRootwardZero());
   ProcessOperations(dag_.SetLeafwardZero());
   ProcessOperations(dag_.SetRhatToStationary());
