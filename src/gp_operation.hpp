@@ -35,10 +35,7 @@ struct Zero {
 // Set the PLV at `dest_idx` to be the stationary distribution at every site.
 struct SetToStationaryDistribution {
   size_t dest_idx;
-  size_t gpcsp_idx;
-  StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"gpcsp_idx", gpcsp_idx}};
-  }
+  StringSizePairVector guts() const { return {{"dest_idx", dest_idx}}; }
 };
 
 // Set transition_matrix_ using branch_length(gpcsp_idx) then,
