@@ -29,7 +29,7 @@ void SBNInstance::ProcessLoadedTrees() {
   size_t index;
   std::tie(rootsplits_, indexer_, index_to_child_, parent_to_range_, index) =
       SBNMaps::BuildIndexerBundle(RootsplitCounterOf(topology_counter_),
-                                  PCSSCounterOf(topology_counter_));
+                                  PCSPCounterOf(topology_counter_));
 
   sbn_parameters_.resize(index);
   sbn_parameters_.setOnes();
@@ -56,7 +56,7 @@ StringVector SBNInstance::PrettyIndexer() {
     if (idx < rootsplits_.size()) {
       pretty_representation[idx] = key.ToString();
     } else {
-      pretty_representation[idx] = key.PCSSToString();
+      pretty_representation[idx] = key.PCSPToString();
     }
   }
   return pretty_representation;
@@ -83,7 +83,7 @@ StringVector SBNInstance::StringReversedIndexer() const {
     if (idx < rootsplits_.size()) {
       reversed_indexer[idx] = key.ToString();
     } else {
-      reversed_indexer[idx] = key.PCSSToString();
+      reversed_indexer[idx] = key.PCSPToString();
     }
   }
   return reversed_indexer;

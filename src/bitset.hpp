@@ -71,7 +71,7 @@ class Bitset {
   std::string ToStringChunked(size_t chunk_count) const;
   std::string SubsplitToString() const;
 
-  // These functions require the bitset to be a "PCSS bitset" with three
+  // These functions require the bitset to be a "PCSP bitset" with three
   // equal-sized "chunks".
   // The first chunk represents the sister clade, the second the focal clade,
   // and the third chunk describes the children. The children are well defined
@@ -81,19 +81,19 @@ class Bitset {
   // If the taxa are x0, x1, and x2 then this means the parent subsplit is (A,
   // BC), and the child subsplit is (B,C). See the unit tests at the bottom for
   // more examples.
-  std::string PCSSToString() const;
-  bool PCSSIsValid() const;
+  std::string PCSPToString() const;
+  bool PCSPIsValid() const;
   // Do the sister and focal clades union to the whole taxon set?
-  bool PCSSIsRootsplit() const;
-  size_t PCSSChunkSize() const;
-  Bitset PCSSChunk(size_t i) const;
-  // Get the first 2/3rds of the PCSS.
-  Bitset PCSSParent() const;
-  // Get the second 2/3rds of the PCSS.
-  Bitset PCSSWithoutParent() const;
+  bool PCSPIsRootsplit() const;
+  size_t PCSPChunkSize() const;
+  Bitset PCSPChunk(size_t i) const;
+  // Get the first 2/3rds of the PCSP.
+  Bitset PCSPParent() const;
+  // Get the second 2/3rds of the PCSP.
+  Bitset PCSPWithoutParent() const;
   // Get the representation of the child subsplit in the simple form of a pair
   // of membership indicators, concatenated together into one bitset.
-  Bitset PCSSChildSubsplit() const;
+  Bitset PCSPChildSubsplit() const;
 
   // ** Static methods
   // Make a bitset with only the specified entry turned on.
@@ -188,21 +188,21 @@ TEST_CASE("Bitset") {
   auto p = Bitset("000111");
   CHECK_EQ(p.SplitChunk(0), Bitset("000"));
   CHECK_EQ(p.SplitChunk(1), Bitset("111"));
-  CHECK_EQ(p.PCSSChunk(0), Bitset("00"));
-  CHECK_EQ(p.PCSSChunk(1), Bitset("01"));
-  CHECK_EQ(p.PCSSChunk(2), Bitset("11"));
+  CHECK_EQ(p.PCSPChunk(0), Bitset("00"));
+  CHECK_EQ(p.PCSPChunk(1), Bitset("01"));
+  CHECK_EQ(p.PCSPChunk(2), Bitset("11"));
 
   CHECK_EQ(Bitset("10011100").RotateSubsplit(), Bitset("11001001"));
 
-  CHECK_EQ(Bitset("011101").PCSSIsValid(), false);
-  CHECK_EQ(Bitset("000111").PCSSIsValid(), false);
-  CHECK_EQ(Bitset("100100").PCSSIsValid(), false);
-  CHECK_EQ(Bitset("100011001").PCSSIsValid(), true);
+  CHECK_EQ(Bitset("011101").PCSPIsValid(), false);
+  CHECK_EQ(Bitset("000111").PCSPIsValid(), false);
+  CHECK_EQ(Bitset("100100").PCSPIsValid(), false);
+  CHECK_EQ(Bitset("100011001").PCSPIsValid(), true);
 
-  CHECK_EQ(Bitset("100011001").PCSSParent(), Bitset("100011"));
-  CHECK_EQ(Bitset("100011001").PCSSWithoutParent(), Bitset("011001"));
-  CHECK_EQ(Bitset("100011001").PCSSChildSubsplit(), Bitset("010001"));
-  CHECK_EQ(Bitset("100001110001").PCSSChildSubsplit(), Bitset("01100001"));
+  CHECK_EQ(Bitset("100011001").PCSPParent(), Bitset("100011"));
+  CHECK_EQ(Bitset("100011001").PCSPWithoutParent(), Bitset("011001"));
+  CHECK_EQ(Bitset("100011001").PCSPChildSubsplit(), Bitset("010001"));
+  CHECK_EQ(Bitset("100001110001").PCSPChildSubsplit(), Bitset("01100001"));
 
   CHECK_EQ(Bitset::Singleton(4, 2), Bitset("0010"));
 

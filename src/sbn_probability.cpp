@@ -142,7 +142,7 @@ void SBNProbability::ProbabilityNormalizeParamsInLog(
   }
 }
 
-// Set the provided counts vector to be the counts of the rootsplits and PCSSs provided
+// Set the provided counts vector to be the counts of the rootsplits and PCSPs provided
 // in the input.
 void SetCounts(
     EigenVectorXdRef counts,
@@ -157,7 +157,7 @@ void SetCounts(
 }
 
 // Set the provided counts vector to be the log of the counts of the rootsplits and
-// PCSSs provided in the input.
+// PCSPs provided in the input.
 void SetLogCounts(
     EigenVectorXdRef counts,
     const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
@@ -304,7 +304,7 @@ bool SBNProbability::IsInSBNSupport(
     size_t out_of_support_sentinel_value) {
   for (size_t idx : rooted_representation) {
     // Our convention is that out_of_support_sentinel_value is one more than the maximum
-    // allowed PCSS index, so here we check the index is reasonable.
+    // allowed PCSP index, so here we check the index is reasonable.
     Assert(idx <= out_of_support_sentinel_value,
            "Rooted tree index is greater than maximum permitted.");
     if (idx == out_of_support_sentinel_value) {
