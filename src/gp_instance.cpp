@@ -93,11 +93,12 @@ void GPInstance::PrintGPCSPIndexer() { dag_.PrintGPCSPIndexer(); }
 
 void GPInstance::InitializeGPEngine() {
   GetEngine()->SetSBNParameters(dag_.BuildUniformQ());
-  ProcessOperations(dag_.SetRhatToStationary());
 }
 
 void GPInstance::PopulatePLVs() {
-  // Performs rootward and leafward pass to populate all relevant PLVs.
+  ProcessOperations(dag_.SetRootwardZero());
+  ProcessOperations(dag_.SetLeafwardZero());
+  ProcessOperations(dag_.SetRhatToStationary());
   ProcessOperations(dag_.RootwardPass());
   ProcessOperations(dag_.LeafwardPass());
 }
@@ -112,9 +113,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
-  ProcessOperations(dag_.SetRootwardZero());
-  ProcessOperations(dag_.SetLeafwardZero());
-  ProcessOperations(dag_.SetRhatToStationary());
   GetEngine()->ResetLogMarginalLikelihood();
   std::cout << "Populating PLVs\n";
   PopulatePLVs();
@@ -158,9 +156,6 @@ void GPInstance::EstimateSBNParameters() {
   GPOperationVector sbn_param_optimization_operations = dag_.OptimizeSBNParameters();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
-  ProcessOperations(dag_.SetRootwardZero());
-  ProcessOperations(dag_.SetLeafwardZero());
-  ProcessOperations(dag_.SetRhatToStationary());
   GetEngine()->ResetLogMarginalLikelihood();
   PopulatePLVs();
   ComputeLikelihoods();
