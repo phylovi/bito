@@ -11,6 +11,8 @@
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
 #include "numerical_utils.hpp"
+#include "rooted_tree_collection.hpp"
+#include "sbn_maps.hpp"
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 
@@ -50,6 +52,8 @@ class GPEngine {
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
+  void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
+                             const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 

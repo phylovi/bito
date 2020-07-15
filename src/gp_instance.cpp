@@ -99,6 +99,11 @@ void GPInstance::ProcessLoadedTrees() {
   sbn_parameters_.setOnes();
 }
 
+void GPInstance::HotStartBranchLengths() {
+  CheckSequencesAndTreesLoaded();
+  GetEngine()->HotStartBranchLengths(tree_collection_, indexer_);
+}
+
 void GPInstance::PrintDAG() { dag_.Print(); }
 void GPInstance::PrintGPCSPIndexer() { dag_.PrintGPCSPIndexer(); }
 
