@@ -62,7 +62,7 @@ class GPEngine {
   SitePattern site_pattern_;
   size_t plv_count_;
   MmappedNucleotidePLV mmapped_master_plv_;
-  // plvs_ store the following:
+  // plvs_ store the following (see GPDAG::GetPLVIndexStatic):
   // [0, num_nodes): p(s).
   // [num_nodes, 2*num_nodes): phat(s).
   // [2*num_nodes, 3*num_nodes): phat(s_tilde).
