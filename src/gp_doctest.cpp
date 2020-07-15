@@ -51,6 +51,14 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   return inst;
 }
 
+EigenVectorXd MakeHelloGPInstanceOptimalBranchLengths() {
+  EigenVectorXd hello_gp_optimal_branch_lengths(10);
+  hello_gp_optimal_branch_lengths << 1, 1, 0.0736678167, 0.206803557, 0.0158180779,
+      0.0540515854, 0.206134746, 0.0736678167, 0.0150759956, 0.0540515854;
+
+  return hello_gp_optimal_branch_lengths;
+}
+
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
@@ -66,15 +74,13 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
   auto inst = MakeHelloGPInstanceTwoTrees();
   auto engine = inst.GetEngine();
 
-  EigenVectorXd branch_lengths(10);
-  branch_lengths << 1, 1, 0.0736678167, 0.206803557, 0.0158180779, 0.0540515854,
-      0.206127184, 0.0736678167, 0.0158180779, 0.0540515854;
+  auto branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
   engine->SetBranchLengths(branch_lengths);
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
 
-  CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -80.6907106056343), 1e-6);
+  CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -80.6906345), 1e-6);
 }
 
 TEST_CASE("GPInstance: gradient calculation") {
@@ -102,10 +108,7 @@ TEST_CASE("GPInstance: gradient calculation") {
 TEST_CASE("GPInstance: branch length optimization") {
   auto inst = MakeHelloGPInstanceTwoTrees();
 
-  EigenVectorXd expected_branch_lengths(10);
-  expected_branch_lengths << 1, 1, 0.0736678167, 0.206803557, 0.0158180779,
-      0.0540515854, 0.206134746, 0.0736678167, 0.0150759956, 0.0540515854;
-
+  auto expected_branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
   inst.GetEngine()->SetBranchLengths(expected_branch_lengths);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
