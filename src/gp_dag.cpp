@@ -155,11 +155,6 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
     operations.push_back(Zero{GetPLVIndex(PLVType::R, i)});
     operations.push_back(Zero{GetPLVIndex(PLVType::R_TILDE, i)});
   }
-  for (const auto &rootsplit : rootsplits_) {
-    size_t root_id = subsplit_to_id_.at(rootsplit + ~rootsplit);
-    operations.push_back(
-        SetToStationaryDistribution{GetPLVIndex(PLVType::R_HAT, root_id)});
-  }
   return operations;
 }
 
