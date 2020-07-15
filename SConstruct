@@ -93,8 +93,7 @@ env = Environment(
     ENV=os.environ,
     CPPPATH=["src", "lib/eigen", pybind11.get_include()],
     # CCFLAGS=["-g", "-pthread"],
-    # CCFLAGS=["-O3", "-pthread", "-fno-omit-frame-pointer"],
-    CCFLAGS=["-O3", "-pthread"],
+    CCFLAGS=["-O3", "-pthread", "-fno-omit-frame-pointer"],
     CXXFLAGS=["-std=c++17"],
 )
 
@@ -167,13 +166,15 @@ sources = [
     "_build/unrooted_tree_collection.cpp",
 ]
 gp_sources = [
+    "_build/gp_dag.cpp",
+    "_build/gp_dag_node.cpp",
     "_build/gp_engine.cpp",
     "_build/gp_instance.cpp",
     "_build/gp_operation.cpp",
 ]
 extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
-    ["_build/pylibsbn.cpp"] + sources,
+    ["_build/pylibsbn.cpp"] + sources + gp_sources,
     SHLIBPREFIX="",
     LIBS=["hmsbeagle"],
 )

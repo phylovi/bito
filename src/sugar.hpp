@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
 #include "intpack.hpp"
 #include "prettyprint.hpp"
 
@@ -33,6 +34,7 @@ using StringVectorVector = std::vector<StringVector>;
 using StringSet = std::unordered_set<std::string>;
 using StringSetVector = std::vector<StringSet>;
 using DoublePair = std::pair<double, double>;
+using SizePair = std::pair<size_t, size_t>;
 
 inline uint32_t MaxLeafIDOfTag(Tag tag) { return UnpackFirstInt(tag); }
 inline uint32_t LeafCountOfTag(Tag tag) { return UnpackSecondInt(tag); }

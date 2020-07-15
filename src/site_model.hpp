@@ -8,6 +8,7 @@
 #include <numeric>
 #include <string>
 #include <vector>
+
 #include "block_model.hpp"
 
 class SiteModel : public BlockModel {
@@ -40,8 +41,8 @@ class ConstantSiteModel : public SiteModel {
   void SetParameters(const EigenVectorXdRef param_vector) override{};
 
  private:
-  EigenVectorXd one_;
   EigenVectorXd zero_;
+  EigenVectorXd one_;
 };
 
 class WeibullSiteModel : public SiteModel {

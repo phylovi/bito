@@ -16,8 +16,10 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+
 #include <Eigen/Dense>
 #include <iostream>
+
 #include "sugar.hpp"
 
 template <typename EigenDenseMatrixBaseT>
@@ -48,6 +50,9 @@ class MmappedMatrix {
         file_descriptor_,        // File descriptor.
         0                        // Offset.
     );
+    if (mmapped_memory_ == MAP_FAILED) {
+      throw std::system_error(errno, std::system_category(), "mmap");
+    }
   }
 
   ~MmappedMatrix() {

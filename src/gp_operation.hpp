@@ -1,7 +1,7 @@
 // Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// These operations are just declarations. How we process them is a separate matter.
+// These operations are just declarations. We process them with the GPEngine.
 
 #ifndef GP_OPERATION_HPP_
 #define GP_OPERATION_HPP_
@@ -9,6 +9,7 @@
 #include <iostream>
 #include <variant>
 #include <vector>
+
 #include "sugar.hpp"
 
 using StringSizePairVector = std::vector<std::pair<std::string, size_t>>;
@@ -37,13 +38,25 @@ struct SetToStationaryDistribution {
   StringSizePairVector guts() const { return {{"dest_idx", dest_idx}}; }
 };
 
-// Perform `plv[dest_idx] += q[q_idx] * plv[src_idx]`
-struct WeightedSumAccumulate {
+// Set transition_matrix_ using branch_length(gpcsp_idx) then,
+// perform `plv[dest_idx] += q[gpcsp_idx] * transition_matrix_ * plv[src_idx]`
+struct IncrementWithWeightedEvolvedPLV {
   size_t dest_idx;
-  size_t q_idx;
+  size_t gpcsp_idx;
   size_t src_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"q_idx", q_idx}, {"src_idx", src_idx}};
+    return {{"dest_idx", dest_idx}, {"gpcsp_idx", gpcsp_idx}, {"src_idx", src_idx}};
+  }
+};
+
+// Increment log marginal likelihood with the log likelihood at rootsplit rootsplit_idx.
+struct IncrementMarginalLikelihood {
+  size_t stationary_idx;
+  size_t rootsplit_idx;
+  size_t p_idx;
+  StringSizePairVector guts() const {
+    return {
+        {"r_idx", stationary_idx}, {"rootsplit_idx", rootsplit_idx}, {"p_idx", p_idx}};
   }
 };
 
@@ -57,39 +70,16 @@ struct Multiply {
   }
 };
 
-// Stores the likelihood of `plv[src1_idx]` and `plv[src2_idx]`, incorporating site
-// pattern weights, in `log_likelihoods[dest_idx]` (note that we will already have the
-// stationary distribution in the rootward partial likelihood vector).
+// Stores the likelihood of `plv[child_idx]` and `plv[parent_idx]` with branch length
+// branch_lengths[dest_idx], incorporating site pattern weights, in
+// `log_likelihoods[dest_idx]`
 struct Likelihood {
   size_t dest_idx;
-  size_t src1_idx;
-  size_t src2_idx;
+  size_t child_idx;
+  size_t parent_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx}, {"src1_idx", src1_idx}, {"src2_idx", src2_idx}};
-  }
-};
-
-// Perform `plv[dest_idx] = P(branch_lengths[branch_length_idx]) plv[src_idx]`
-struct EvolveRootward {
-  size_t dest_idx;
-  size_t src_idx;
-  size_t branch_length_idx;
-  StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx},
-            {"src_idx", src_idx},
-            {"branch_length_idx", branch_length_idx}};
-  }
-};
-
-// Perform `plv[dest_idx] = P'(branch_lengths[branch_length_idx]) plv[src_idx]`
-struct EvolveLeafward {
-  size_t dest_idx;
-  size_t src_idx;
-  size_t branch_length_idx;
-  StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx},
-            {"src_idx", src_idx},
-            {"branch_length_idx", branch_length_idx}};
+    return {
+        {"dest_idx", dest_idx}, {"child_idx", child_idx}, {"parent_idx", parent_idx}};
   }
 };
 
@@ -100,42 +90,24 @@ struct EvolveLeafward {
 // optimal branch length
 // * storing log likelihood at `log_likelihoods[branch_length_idx]`
 // * storing optimal branch length at `branch_lengths[branch_length_idx]`
-struct OptimizeRootward {
-  size_t dest_idx;
+struct OptimizeBranchLength {
   size_t leafward_idx;
   size_t rootward_idx;
-  size_t branch_length_idx;
+  size_t gpcsp_idx;
   StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx},
-            {"leafward_idx", leafward_idx},
+    return {{"leafward_idx", leafward_idx},
             {"rootward_idx", rootward_idx},
-            {"branch_length_idx", branch_length_idx}};
+            {"gpcsp_idx", gpcsp_idx}};
   }
 };
 
-// Finds the optimal `branch_length` for the likelihood of
-// `P'(branch_length) plv[rootward_idx]` and `plv[leafward_idx]`,
-// * starting optimization at `branch_lengths[branch_length_idx]`,
-// * storing the PLV for `P'(branch_length) plv[rootward_idx]` in `plv[dest_idx]` for
-// the optimal branch length
-// * storing log likelihood at `log_likelihoods[branch_length_idx]`
-// * storing optimal branch length at `branch_lengths[branch_length_idx]`
-struct OptimizeLeafward {
-  size_t dest_idx;
-  size_t leafward_idx;
-  size_t rootward_idx;
-  size_t branch_length_idx;
-  StringSizePairVector guts() const {
-    return {{"dest_idx", dest_idx},
-            {"leafward_idx", leafward_idx},
-            {"rootward_idx", rootward_idx},
-            {"branch_length_idx", branch_length_idx}};
-  }
-};
-
-// Performs `eq:SBNUpdates`. That is, let `total` be the sum of `log_likelihoods[idx]`
-// for all `idx` in `start_idx <= idx < stop_idx`. Now let `q[idx] =
-// log_likelihoods[idx]/total` for all `idx` in `start_idx <= idx < stop_idx`.
+// Assumption: log_likelihoods_ have been updated on [op.start_idx, op.stop_idx).
+// Performs `eq:SBNUpdates`. That is, let `total` be the log sum of
+// `log_likelihoods[idx]` for all `idx` in `start_idx <= idx < stop_idx`. Now let
+// `q[idx] = exp(log_likelihoods[idx] - total)` for all `idx` in `start_idx <= idx <
+// stop_idx`.
+// Note that this operation modifies our log_likelihoods in place by normalizing them
+// across children of a parent. Thus they are no longer valid.
 struct UpdateSBNProbabilities {
   size_t start_idx;
   size_t stop_idx;
@@ -147,10 +119,10 @@ struct UpdateSBNProbabilities {
 
 using GPOperation =
     std::variant<GPOperations::Zero, GPOperations::SetToStationaryDistribution,
-                 GPOperations::WeightedSumAccumulate, GPOperations::Multiply,
-                 GPOperations::Likelihood, GPOperations::EvolveRootward,
-                 GPOperations::EvolveLeafward, GPOperations::OptimizeRootward,
-                 GPOperations::OptimizeLeafward, GPOperations::UpdateSBNProbabilities>;
+                 GPOperations::IncrementWithWeightedEvolvedPLV, GPOperations::Multiply,
+                 GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
+                 GPOperations::UpdateSBNProbabilities,
+                 GPOperations::IncrementMarginalLikelihood>;
 
 using GPOperationVector = std::vector<GPOperation>;
 
@@ -165,8 +137,11 @@ struct GPOperationOstream {
   void operator()(const GPOperations::SetToStationaryDistribution& operation) {
     os_ << "SetToStationaryDistribution" << operation.guts();
   }
-  void operator()(const GPOperations::WeightedSumAccumulate& operation) {
+  void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& operation) {
     os_ << "WeightedSumAccumulate" << operation.guts();
+  }
+  void operator()(const GPOperations::IncrementMarginalLikelihood& operation) {
+    os_ << "MarginalLikelihood" << operation.guts();
   }
   void operator()(const GPOperations::Multiply& operation) {
     os_ << "Multiply" << operation.guts();
@@ -174,17 +149,8 @@ struct GPOperationOstream {
   void operator()(const GPOperations::Likelihood& operation) {
     os_ << "Likelihood" << operation.guts();
   }
-  void operator()(const GPOperations::EvolveRootward& operation) {
-    os_ << "EvolveRootward" << operation.guts();
-  }
-  void operator()(const GPOperations::EvolveLeafward& operation) {
-    os_ << "EvolveLeafward" << operation.guts();
-  }
-  void operator()(const GPOperations::OptimizeRootward& operation) {
-    os_ << "OptimizeRootward" << operation.guts();
-  }
-  void operator()(const GPOperations::OptimizeLeafward& operation) {
-    os_ << "OptimizeLeafward" << operation.guts();
+  void operator()(const GPOperations::OptimizeBranchLength& operation) {
+    os_ << "OptimizeBranchLength" << operation.guts();
   }
   void operator()(const GPOperations::UpdateSBNProbabilities& operation) {
     os_ << "UpdateSBNProbabilities" << operation.guts();

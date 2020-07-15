@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "sbn_instance.hpp"
+
 #include <iostream>
 #include <memory>
 #include <unordered_set>
@@ -23,25 +24,13 @@ void SBNInstance::PrintStatus() {
 // ** Building SBN-related items
 
 void SBNInstance::ProcessLoadedTrees() {
-  size_t index = 0;
   ClearTreeCollectionAssociatedState();
   topology_counter_ = TopologyCounter();
-  // Start by adding the rootsplits.
-  for (const auto &iter : RootsplitCounterOf(topology_counter_)) {
-    SafeInsert(indexer_, iter.first, index);
-    rootsplits_.push_back(iter.first);
-    index++;
-  }
-  // Now add the PCSSs.
-  for (const auto &[parent, child_counter] : PCSSCounterOf(topology_counter_)) {
-    SafeInsert(parent_to_range_, parent, {index, index + child_counter.size()});
-    for (const auto &child_iter : child_counter) {
-      const auto &child = child_iter.first;
-      SafeInsert(indexer_, parent + child, index);
-      SafeInsert(index_to_child_, index, Bitset::ChildSubsplit(parent, child));
-      index++;
-    }
-  }
+  size_t index;
+  std::tie(rootsplits_, indexer_, index_to_child_, parent_to_range_, index) =
+      SBNMaps::BuildIndexerBundle(RootsplitCounterOf(topology_counter_),
+                                  PCSSCounterOf(topology_counter_));
+
   sbn_parameters_.resize(index);
   sbn_parameters_.setOnes();
   psp_indexer_ = PSPIndexer(rootsplits_, indexer_);

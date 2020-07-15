@@ -2,7 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "node.hpp"
+
 #include <limits.h>
+
 #include <algorithm>
 #include <deque>
 #include <functional>

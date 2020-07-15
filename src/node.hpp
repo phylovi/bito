@@ -32,12 +32,14 @@
 #define SRC_NODE_HPP_
 
 #include <limits.h>
+
 #include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
 #include "bitset.hpp"
 #include "intpack.hpp"
 #include "sugar.hpp"

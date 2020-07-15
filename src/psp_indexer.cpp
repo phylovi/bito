@@ -2,7 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "psp_indexer.hpp"
+
 #include <algorithm>
+
 #include "sugar.hpp"
 
 PSPIndexer::PSPIndexer(BitsetVector rootsplits, BitsetSizeMap in_indexer) {

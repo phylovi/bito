@@ -2,12 +2,14 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "sbn_probability.hpp"
+
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <numeric>
 #include <utility>
 #include <vector>
+
 #include "ProgressBar.hpp"
 #include "numerical_utils.hpp"
 #include "sbn_maps.hpp"

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <regex>
 #include <sstream>
+
 #include "numerical_utils.hpp"
 
 std::string TaxonNameMunging::QuoteString(const std::string &in_str) {

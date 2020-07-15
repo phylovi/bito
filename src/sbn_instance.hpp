@@ -15,6 +15,7 @@
 #define SRC_SBN_INSTANCE_HPP_
 
 #include <random>
+
 #include "ProgressBar.hpp"
 #include "alignment.hpp"
 #include "engine.hpp"
