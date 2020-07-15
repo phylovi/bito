@@ -42,6 +42,7 @@ class GPDAG {
   void PrintGPCSPIndexer() const;
 
   GPDAGNode *GetDagNode(size_t node_id) const;
+  const BitsetSizeMap &GetClassicIndexer() const;
 
   // Get the index of a PLV of a given type and with a given index.
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
@@ -86,9 +87,11 @@ class GPDAG {
   // it includes single element range for fake subsplits.
   BitsetSizePairMap subsplit_to_range_;
 
-  // This indexer is a similarly expanded version of indexer_ in sbn_instance.
-  // This indexer is used for q_, branch_lengths_, log_likelihoods_
-  // in GPEngine.
+  // This indexer is deprecated but is here for hotstart, and will hopefully be
+  // eliminated in #247. It is just the sbn_instance indexer_.
+  BitsetSizeMap classic_indexer_;
+  // This indexer is a similarly expanded version of indexer_ in sbn_instance. This
+  // indexer is used for q_, branch_lengths_, log_likelihoods_ in GPEngine.
   BitsetSizeMap gpcsp_indexer_;
 
   // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
