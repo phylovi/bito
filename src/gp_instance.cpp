@@ -91,7 +91,7 @@ void GPInstance::PrintGPCSPIndexer() { dag_.PrintGPCSPIndexer(); }
 
 void GPInstance::InitializeGPEngine() {
   GetEngine()->SetSBNParameters(dag_.BuildUniformQ());
-  GetEngine()->ProcessOperations(dag_.SetRhatToStationary());
+  ProcessOperations(dag_.SetRhatToStationary());
 }
 
 void GPInstance::PopulatePLVs() {
@@ -112,6 +112,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
 
   ProcessOperations(dag_.SetRootwardZero());
   ProcessOperations(dag_.SetLeafwardZero());
+  ProcessOperations(dag_.SetRhatToStationary());
   GetEngine()->ResetLogMarginalLikelihood();
   std::cout << "Populating PLVs\n";
   PopulatePLVs();
@@ -160,6 +161,7 @@ void GPInstance::EstimateSBNParameters() {
   // Should we remove these lines?
   ProcessOperations(dag_.SetRootwardZero());
   ProcessOperations(dag_.SetLeafwardZero());
+  ProcessOperations(dag_.SetRhatToStationary());
   GetEngine()->ResetLogMarginalLikelihood();
   PopulatePLVs();
   ComputeLikelihoods();

@@ -210,17 +210,6 @@ EigenVectorXd GPDAG::BuildUniformQ() const {
   return q;
 }
 
-GPOperationVector GPDAG::SetRhatToStationary() const {
-  GPOperationVector operations;
-  for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
-    const auto rootsplit = rootsplits_[rootsplit_idx];
-    operations.push_back(SetToStationaryDistribution{
-        GetPLVIndex(PLVType::R_HAT, subsplit_to_id_.at(rootsplit + ~rootsplit)),
-        rootsplit_idx});
-  }
-  return operations;
-}
-
 void RootwardDepthFirst(size_t id,
                         const std::vector<std::unique_ptr<GPDAGNode>> &dag_nodes,
                         std::vector<size_t> &visit_order,
@@ -444,8 +433,6 @@ GPOperationVector GPDAG::SetRootwardZero() const {
   return operations;
 }
 
-// TODO this also sets the stationary distribution. Rename?
-// SHJ: I defined SetLeafwardZero to zero out all r-PLVs to zero see .hpp file.
 GPOperationVector GPDAG::SetLeafwardZero() const {
   GPOperationVector operations;
   const auto node_count = dag_nodes_.size();
@@ -454,10 +441,20 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
     operations.push_back(Zero{GetPLVIndex(PLVType::R, i)});
     operations.push_back(Zero{GetPLVIndex(PLVType::R_TILDE, i)});
   }
-  for (auto rootsplit : rootsplits_) {
-    size_t root_idx = subsplit_to_id_.at(rootsplit + ~rootsplit);
+  for (const auto &rootsplit : rootsplits_) {
+    size_t root_id = subsplit_to_id_.at(rootsplit + ~rootsplit);
     operations.push_back(
-        SetToStationaryDistribution{GetPLVIndex(PLVType::R_HAT, root_idx)});
+        SetToStationaryDistribution{GetPLVIndex(PLVType::R_HAT, root_id)});
+  }
+  return operations;
+}
+
+GPOperationVector GPDAG::SetRhatToStationary() const {
+  GPOperationVector operations;
+  for (const auto &rootsplit : rootsplits_) {
+    size_t root_id = subsplit_to_id_.at(rootsplit + ~rootsplit);
+    operations.push_back(
+        SetToStationaryDistribution{GetPLVIndex(PLVType::R_HAT, root_id)});
   }
   return operations;
 }
