@@ -103,8 +103,8 @@ class GPDAG {
   void BuildEdges();
   void BuildPCSPIndexer();
 
-  [[nodiscard]] GPOperationVector LeafwardPass(std::vector<size_t> visit_order) const;
-  [[nodiscard]] GPOperationVector RootwardPass(std::vector<size_t> visit_order) const;
+  [[nodiscard]] GPOperationVector LeafwardPass(SizeVector visit_order) const;
+  [[nodiscard]] GPOperationVector RootwardPass(SizeVector visit_order) const;
   [[nodiscard]] SizeVector LeafwardPassTraversal() const;
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
 

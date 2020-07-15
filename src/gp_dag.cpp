@@ -331,7 +331,7 @@ void GPDAG::BuildPCSPIndexer() {
 
 void RootwardDepthFirst(size_t id,
                         const std::vector<std::unique_ptr<GPDAGNode>> &dag_nodes,
-                        std::vector<size_t> &visit_order,
+                        SizeVector &visit_order,
                         std::unordered_set<size_t> &visited_nodes) {
   SafeInsert(visited_nodes, id);
   for (size_t child_id : dag_nodes.at(id)->GetRootwardSorted()) {
@@ -349,7 +349,7 @@ void RootwardDepthFirst(size_t id,
 
 void LeafwardDepthFirst(size_t id,
                         const std::vector<std::unique_ptr<GPDAGNode>> &dag_nodes,
-                        std::vector<size_t> &visit_order,
+                        SizeVector &visit_order,
                         std::unordered_set<size_t> &visited_nodes) {
   SafeInsert(visited_nodes, id);
   for (size_t child_id : dag_nodes.at(id)->GetLeafwardSorted()) {
@@ -365,7 +365,7 @@ void LeafwardDepthFirst(size_t id,
   visit_order.push_back(id);
 }
 
-GPOperationVector GPDAG::LeafwardPass(std::vector<size_t> visit_order) const {
+GPOperationVector GPDAG::LeafwardPass(SizeVector visit_order) const {
   GPOperationVector operations;
   for (const size_t node_id : visit_order) {
     const auto node = GetDagNode(node_id);
@@ -384,7 +384,7 @@ GPOperationVector GPDAG::LeafwardPass(std::vector<size_t> visit_order) const {
   return operations;
 }
 
-GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
+GPOperationVector GPDAG::RootwardPass(SizeVector visit_order) const {
   GPOperationVector operations;
   for (const size_t node_id : visit_order) {
     const auto node = GetDagNode(node_id);
@@ -402,8 +402,8 @@ GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
   return operations;
 }
 
-std::vector<size_t> GPDAG::LeafwardPassTraversal() const {
-  std::vector<size_t> visit_order;
+SizeVector GPDAG::LeafwardPassTraversal() const {
+  SizeVector visit_order;
   std::unordered_set<size_t> visited_nodes;
   for (size_t leaf_id = 0; leaf_id < taxon_count_; leaf_id++) {
     RootwardDepthFirst(leaf_id, dag_nodes_, visit_order, visited_nodes);
@@ -411,8 +411,8 @@ std::vector<size_t> GPDAG::LeafwardPassTraversal() const {
   return visit_order;
 }
 
-std::vector<size_t> GPDAG::RootwardPassTraversal() const {
-  std::vector<size_t> visit_order;
+SizeVector GPDAG::RootwardPassTraversal() const {
+  SizeVector visit_order;
   std::unordered_set<size_t> visited_nodes;
   for (const auto &rootsplit : rootsplits_) {
     size_t root_id = subsplit_to_id_.at(rootsplit + ~rootsplit);
@@ -423,7 +423,7 @@ std::vector<size_t> GPDAG::RootwardPassTraversal() const {
 
 void GPDAG::AddPhatOperations(const GPDAGNode *node, bool rotated,
                               GPOperationVector &operations) const {
-  std::vector<size_t> child_idxs =
+  SizeVector child_idxs =
       rotated ? node->GetLeafwardRotated() : node->GetLeafwardSorted();
   PLVType plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
   const auto parent_subsplit = node->GetBitset(rotated);
