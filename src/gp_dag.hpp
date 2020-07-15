@@ -16,9 +16,6 @@ class GPDAG {
  public:
   enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
 
-  // TODO let's decide on an order of things in the header file and then I'll sort the
-  // source file.
-  // SHJ: EM confirmed he's happy with the current ordering.
   GPDAG();
   explicit GPDAG(const RootedTreeCollection &tree_collection);
 
@@ -36,9 +33,6 @@ class GPDAG {
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
   size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
 
-  // TODO could you add a one-line comment for each of these things in the public
-  // interface?
-  // SHJ: Done.
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
   // Schedule branch length optimization.
@@ -68,7 +62,7 @@ class GPDAG {
   // in ProcessTrees. This would allows us to merge parent_to_range_ and
   // subsplit_to_range_.
   // TODO: Determine if this should be done now or for later.
-  
+
   size_t taxon_count_;
   size_t rootsplit_and_pcsp_count_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
@@ -85,7 +79,7 @@ class GPDAG {
   // TODO for example, here this subsplit_to_index_ is actually mapping to DAG ids.
   // Perhaps we could name it subsplit_to_id_ and refer to dag nodes as having an id?
   // SHJ: Done.
-  
+
   // A map from Bitset to the corresponding index in dag_nodes_.
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
@@ -125,10 +119,9 @@ class GPDAG {
   [[nodiscard]] SizeVector LeafwardPassTraversal() const;
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
 
-  void AddRootwardWeightedSumAccumulateOperations(const GPDAGNode *node, bool rotated,
-                                                  GPOperationVector &operations) const;
-  void AddLeafwardWeightedSumAccumulateOperations(const GPDAGNode *node,
-                                                  GPOperationVector &operations) const;
+  void AddPhatOperations(const GPDAGNode *node, bool rotated,
+                         GPOperationVector &operations) const;
+  void AddRhatOperations(const GPDAGNode *node, GPOperationVector &operations) const;
   void OptimizeSBNParameters(const Bitset &subsplit,
                              GPOperationVector &operations) const;
   // This function visits and optimizes branches in depth first fashion.

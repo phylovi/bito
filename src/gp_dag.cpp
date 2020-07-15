@@ -330,8 +330,8 @@ size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t src_idx) const {
   return GetPLVIndexStatic(plv_type, dag_nodes_.size(), src_idx);
 }
 
-void GPDAG::AddRootwardWeightedSumAccumulateOperations(
-    const GPDAGNode *node, bool rotated, GPOperationVector &operations) const {
+void GPDAG::AddPhatOperations(const GPDAGNode *node, bool rotated,
+                              GPOperationVector &operations) const {
   std::vector<size_t> child_idxs =
       rotated ? node->GetLeafwardRotated() : node->GetLeafwardSorted();
   PLVType plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
@@ -351,12 +351,8 @@ void GPDAG::AddRootwardWeightedSumAccumulateOperations(
   }
 }
 
-// TODO These functions need a renaming after renaming
-// EvolvePLVWeightedBySBNParameter... just do a search. But first I think we might want
-// to rename EvolvePLVWeightedBySBNParameter-- see note in gp_operation.hpp
-// SHJ: Done.
-void GPDAG::AddLeafwardWeightedSumAccumulateOperations(
-    const GPDAGNode *node, GPOperationVector &operations) const {
+void GPDAG::AddRhatOperations(const GPDAGNode *node,
+                              GPOperationVector &operations) const {
   const auto subsplit = node->GetBitset();
   for (const size_t parent_idx : node->GetRootwardSorted()) {
     const auto parent_node = GetDagNode(parent_idx);
@@ -398,11 +394,11 @@ GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
       continue;
     }
 
-    // Perform the following operations:
-    // 1. WeightedSumAccummulate to get phat(s), phat(s_tilde).
-    // 2. Multiply to get p(s) = phat(s) \circ phat(s_tilde).
-    AddRootwardWeightedSumAccumulateOperations(node, false, operations);
-    AddRootwardWeightedSumAccumulateOperations(node, true, operations);
+    // Build phat(s).
+    AddPhatOperations(node, false, operations);  // Bu
+    // Build phat(s_tilde).
+    AddPhatOperations(node, true, operations);
+    // Multiply to get p(s) = phat(s) \circ phat(s_tilde).
     operations.push_back(Multiply{node_idx, GetPLVIndex(PLVType::P_HAT, node_idx),
                                   GetPLVIndex(PLVType::P_HAT_TILDE, node_idx)});
   }
@@ -419,14 +415,13 @@ GPOperationVector GPDAG::LeafwardPass(std::vector<size_t> visit_order) const {
   for (const size_t node_idx : visit_order) {
     const auto node = GetDagNode(node_idx);
 
-    // Perform the following operations:
-    // 1. WeightedSumAccumulate: rhat(s) += \sum_t q(s|t) P'(s|t) r(t)
-    // 2. Multiply: r(s) = rhat(s) \circ phat(s_tilde).
-    // 3. Multiply: r(s_tilde) = rhat(s) \circ phat(s).
-    AddLeafwardWeightedSumAccumulateOperations(node, operations);
+    // Build rhat(s) via rhat(s) += \sum_t q(s|t) P'(s|t) r(t)
+    AddRhatOperations(node, operations);
+    // Multiply to get r(s) = rhat(s) \circ phat(s_tilde).
     operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_idx),
                                   GetPLVIndex(PLVType::R_HAT, node_idx),
                                   GetPLVIndex(PLVType::P_HAT_TILDE, node_idx)});
+    // Multiply to get r(s_tilde) = rhat(s) \circ phat(s).
     operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_idx),
                                   GetPLVIndex(PLVType::R_HAT, node_idx),
                                   GetPLVIndex(PLVType::P_HAT, node_idx)});
