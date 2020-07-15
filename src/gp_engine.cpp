@@ -45,7 +45,6 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
 }
 
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
-  // SHJ: This is what we had before.
   SetTransitionMatrixToHaveBranchLength(0.0);
   PreparePerPatternLogLikelihoods(op.stationary_idx, op.p_idx);
 
