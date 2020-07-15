@@ -68,7 +68,7 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
 
   EigenVectorXd branch_lengths(10);
   branch_lengths << 1, 1, 0.0736678167, 0.206803557, 0.0158180779, 0.0540515854,
-                    0.206127184, 0.0736678167, 0.0158180779, 0.0540515854;
+      0.206127184, 0.0736678167, 0.0158180779, 0.0540515854;
   engine->SetBranchLengths(branch_lengths);
 
   inst.PopulatePLVs();
@@ -103,9 +103,8 @@ TEST_CASE("GPInstance: branch length optimization") {
   auto inst = MakeHelloGPInstanceTwoTrees();
 
   EigenVectorXd expected_branch_lengths(10);
-  expected_branch_lengths << 1, 1,
-  0.0736678167, 0.206803557, 0.0158180779, 0.0540515854,
-  0.206134746, 0.0736678167, 0.0150759956, 0.0540515854;
+  expected_branch_lengths << 1, 1, 0.0736678167, 0.206803557, 0.0158180779,
+      0.0540515854, 0.206134746, 0.0736678167, 0.0150759956, 0.0540515854;
 
   inst.GetEngine()->SetBranchLengths(expected_branch_lengths);
   inst.PopulatePLVs();
@@ -116,7 +115,6 @@ TEST_CASE("GPInstance: branch length optimization") {
   inst = MakeHelloGPInstanceTwoTrees();
   inst.EstimateBranchLengths(1e-6, 100);
   auto realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
-  CheckVectorXdEquality(expected_branch_lengths,
-                        realized_branch_lengths, 1e-6);
+  CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
   CHECK_LT(fabs(expected_log_marginal - -80.6906345), 1e-6);
 }
