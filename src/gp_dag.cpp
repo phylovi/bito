@@ -15,6 +15,60 @@ GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
   BuildPCSPIndexer();
 }
 
+size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
+
+size_t GPDAG::RootsplitAndPCSPCount() const { return rootsplit_and_pcsp_count_; }
+
+size_t GPDAG::GeneralizedPCSPCount() const {
+  // Get number of parameters involving fake subsplits.
+  size_t fake_subsplit_parameter_count = 0;
+  for (size_t taxon_idx = 0; taxon_idx < taxon_count_; taxon_idx++) {
+    fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardRotated().size();
+    fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardSorted().size();
+  }
+
+  return RootsplitAndPCSPCount() + fake_subsplit_parameter_count;
+}
+
+void GPDAG::Print() const {
+  for (size_t i = 0; i < dag_nodes_.size(); i++) {
+    std::cout << dag_nodes_[i]->ToString() << std::endl;
+  }
+}
+
+void GPDAG::PrintGPCSPIndexer() const {
+  for (const auto &[pcsp, idx] : gpcsp_indexer_) {
+    std::cout << pcsp.SubsplitToString() << ", " << idx << std::endl;
+  }
+}
+
+GPDAGNode *GPDAG::GetDagNode(const size_t node_idx) const {
+  return dag_nodes_.at(node_idx).get();
+}
+
+size_t GPDAG::GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx) {
+  switch (plv_type) {
+    case PLVType::P:
+      return src_idx;
+    case PLVType::P_HAT:
+      return node_count + src_idx;
+    case PLVType::P_HAT_TILDE:
+      return 2 * node_count + src_idx;
+    case PLVType::R_HAT:
+      return 3 * node_count + src_idx;
+    case PLVType::R:
+      return 4 * node_count + src_idx;
+    case PLVType::R_TILDE:
+      return 5 * node_count + src_idx;
+    default:
+      Failwith("Invalid PLV index requested.");
+  }
+}
+
+size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t src_idx) const {
+  return GetPLVIndexStatic(plv_type, dag_nodes_.size(), src_idx);
+}
+
 GPOperationVector GPDAG::ComputeLikelihoods() const {
   GPOperationVector operations;
   IterateOverRealNodes([this, &operations](const GPDAGNode *node) {
@@ -52,21 +106,6 @@ GPOperationVector GPDAG::MarginalLikelihood() const {
         GetPLVIndex(PLVType::P, root_idx)});
   }
   return operations;
-}
-
-size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
-
-size_t GPDAG::RootsplitAndPCSPCount() const { return rootsplit_and_pcsp_count_; }
-
-size_t GPDAG::GeneralizedPCSPCount() const {
-  // Get number of parameters involving fake subsplits.
-  size_t fake_subsplit_parameter_count = 0;
-  for (size_t taxon_idx = 0; taxon_idx < taxon_count_; taxon_idx++) {
-    fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardRotated().size();
-    fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardSorted().size();
-  }
-
-  return RootsplitAndPCSPCount() + fake_subsplit_parameter_count;
 }
 
 void GPDAG::IterateOverRealNodes(std::function<void(const GPDAGNode *)> f) const {
@@ -183,22 +222,6 @@ void GPDAG::BuildEdges() {
   }
 }
 
-void GPDAG::Print() const {
-  for (size_t i = 0; i < dag_nodes_.size(); i++) {
-    std::cout << dag_nodes_[i]->ToString() << std::endl;
-  }
-}
-
-void GPDAG::PrintGPCSPIndexer() const {
-  for (const auto &[pcsp, idx] : gpcsp_indexer_) {
-    std::cout << pcsp.SubsplitToString() << ", " << idx << std::endl;
-  }
-}
-
-GPDAGNode *GPDAG::GetDagNode(const size_t node_idx) const {
-  return dag_nodes_.at(node_idx).get();
-}
-
 EigenVectorXd GPDAG::BuildUniformQ() const {
   EigenVectorXd q = EigenVectorXd::Ones(GeneralizedPCSPCount());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
@@ -294,29 +317,6 @@ void GPDAG::BuildPCSPIndexer() {
       }
     }
   });
-}
-
-size_t GPDAG::GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx) {
-  switch (plv_type) {
-    case PLVType::P:
-      return src_idx;
-    case PLVType::P_HAT:
-      return node_count + src_idx;
-    case PLVType::P_HAT_TILDE:
-      return 2 * node_count + src_idx;
-    case PLVType::R_HAT:
-      return 3 * node_count + src_idx;
-    case PLVType::R:
-      return 4 * node_count + src_idx;
-    case PLVType::R_TILDE:
-      return 5 * node_count + src_idx;
-    default:
-      Failwith("Invalid PLV index requested.");
-  }
-}
-
-size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t src_idx) const {
-  return GetPLVIndexStatic(plv_type, dag_nodes_.size(), src_idx);
 }
 
 void GPDAG::AddPhatOperations(const GPDAGNode *node, bool rotated,
