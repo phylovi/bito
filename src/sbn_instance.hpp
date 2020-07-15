@@ -57,7 +57,7 @@ class SBNInstance {
       const Node::TopologyCounter &topologies) const {
     return BitsetSizeDict(0);
   }
-  virtual PCSSDict PCSSCounterOf(const Node::TopologyCounter &topologies) const {
+  virtual PCSPDict PCSPCounterOf(const Node::TopologyCounter &topologies) const {
     return {};
   }
 
@@ -127,10 +127,10 @@ class SBNInstance {
   // The multiple sequence alignment.
   Alignment alignment_;
   // A map that indexes these probabilities: rootsplits are at the beginning,
-  // and PCSS bitsets are at the end.
+  // and PCSP bitsets are at the end.
   // The collection of rootsplits, with the same indexing as in the indexer_.
   BitsetVector rootsplits_;
-  // A map going from the index of a PCSS to its child.
+  // A map going from the index of a PCSP to its child.
   SizeBitsetMap index_to_child_;
   // A map going from a parent subsplit to the range of indices in
   // sbn_parameters_ with its children. See the definition of Range for the indexing

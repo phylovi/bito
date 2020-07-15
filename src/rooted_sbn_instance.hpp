@@ -21,8 +21,8 @@ class RootedSBNInstance : public SBNInstance {
       const Node::TopologyCounter& topologies) const override {
     return RootedSBNMaps::RootsplitCounterOf(topologies);
   }
-  PCSSDict PCSSCounterOf(const Node::TopologyCounter& topologies) const override {
-    return RootedSBNMaps::PCSSCounterOf(topologies);
+  PCSPDict PCSPCounterOf(const Node::TopologyCounter& topologies) const override {
+    return RootedSBNMaps::PCSPCounterOf(topologies);
   }
 
   // ** Phylogenetic likelihood
@@ -106,7 +106,7 @@ TEST_CASE("RootedSBNInstance: subsplit support") {
   StringSet pretty_indexer_set{pretty_indexer.begin(), pretty_indexer.end()};
   // The indexer_ is to index the sbn_parameters_. Note that neither of these
   // data structures attempt to catalog the complete collection of rootsplits or
-  // PCSSs, but just those that are present in the the input trees.
+  // PCSPs, but just those that are present in the the input trees.
   //
   // The indexer_ and sbn_parameters_ are laid out as follows (I'll just call it
   // the "index" in what follows). Say there are rootsplit_count rootsplits in
@@ -114,8 +114,8 @@ TEST_CASE("RootedSBNInstance: subsplit support") {
   // The first rootsplit_count entries of the index are assigned to the
   // rootsplits (again, those rootsplits that are present for some rooting of
   // the unrooted input trees). The rest of the entries of the index are laid out as
-  // blocks of parameters for PCSSs that share the same parent. Take a look at the
-  // description of PCSS bitsets (and the unit tests) in bitset.hpp to understand the
+  // blocks of parameters for PCSPs that share the same parent. Take a look at the
+  // description of PCSP bitsets (and the unit tests) in bitset.hpp to understand the
   // notation used here.
   //
   // In contrast to the unrooted case, we can write out the pretty indexer here and

@@ -279,7 +279,7 @@ PYBIND11_MODULE(libsbn, m) {
 
             See the comment for ``IndexerRepresentationOf`` in ``sbn_maps.hpp`` to learn about what that means.
 
-            Note: any rootsplit or a PCSS that is not contained in the subsplit support is given an index equal
+            Note: any rootsplit or a PCSP that is not contained in the subsplit support is given an index equal
             to the length of ``sbn_parameters``. No warning is given.
            )raw")
       .def("make_psp_indexer_representations",

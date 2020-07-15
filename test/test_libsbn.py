@@ -125,18 +125,18 @@ def rootings_indexer_test():
     In order to compare them, we sort their representations with respect
     to the order on the rootsplits. This makes sense because we want to
     make sure that for each virtual rooting (corresponding to each
-    rootsplit) we have the same _set_ of PCSSs (the order within PCSS
+    rootsplit) we have the same _set_ of PCSPs (the order within PCSP
     sets doesn't matter).
     """
     inst = libsbn.unrooted_instance("rootings")
     inst.read_newick_file("data/many_rootings.nwk")
     inst.process_loaded_trees()
-    # First we turn the PCSS sets into actual Python sets for unordered comparison.
+    # First we turn the PCSP sets into actual Python sets for unordered comparison.
     reps = [
         sorted(
             [
                 # The first entry of the rooted representation is the rootsplit, and the
-                # rest are the PCSSs.
+                # rest are the PCSPs.
                 (rooted_representation[0], set(rooted_representation[1:]))
                 for rooted_representation in indexer_representation
             ]

@@ -51,8 +51,8 @@ class Node {
   typedef std::shared_ptr<NodePtrVec> NodePtrVecPtr;
   typedef std::unordered_map<NodePtr, uint32_t> TopologyCounter;
 
-  // This is the type of functions that are used in the PCSS recursion
-  // functions. See `doc/pcss.svg` for a diagram of the PCSS traversal. In that
+  // This is the type of functions that are used in the PCSP recursion
+  // functions. See `doc/pcsp.svg` for a diagram of the PCSP traversal. In that
   // file, the first tree shows the terminology, and the subsequent trees show
   // the calls to f_root and f_internal.
   //
@@ -65,11 +65,11 @@ class Node {
   // the entire tree. There's nothing else we can do without rerooting the tree.
   // It's not too hard to exclude the undesired bits with a conditional tree
   // traversal. See IndexerRepresentationOfTopology for an example.
-  using UnrootedPCSSFun =
+  using UnrootedPCSPFun =
       std::function<void(const Node*, bool, const Node*, bool, const Node*, bool,
                          const Node*, bool, const Node*)>;
   // The rooted version just uses: sister clade, the focal clade, child 0, and child 1.
-  using RootedPCSSFun =
+  using RootedPCSPFun =
       std::function<void(const Node*, const Node*, const Node*, const Node*)>;
 
  public:
@@ -122,10 +122,10 @@ class Node {
   void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
   void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
 
-  // See the typedef of UnrootedPCSSFun and RootedPCSSFun to understand the argument
+  // See the typedef of UnrootedPCSPFun and RootedPCSPFun to understand the argument
   // type to these functions.
-  void UnrootedPCSSPreOrder(UnrootedPCSSFun f) const;
-  void RootedPCSSPreOrder(RootedPCSSFun f) const;
+  void UnrootedPCSPPreOrder(UnrootedPCSPFun f) const;
+  void RootedPCSPPreOrder(RootedPCSPFun f) const;
 
   // This function prepares the id_ and leaves_ member variables as described at
   // the start of this document. It returns a map that maps the tags to their

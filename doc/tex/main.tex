@@ -16,7 +16,7 @@
 \newcommand{\qPSP}{q^\textsf{PSP}\hspace{-1pt}}
 \newcommand{\gPSP}{g^\textsf{PSP}\hspace{-1pt}}
 \newcommand{\softmax}{\operatorname*{softmax}}
-\newcommand{\PCSS}{\operatorname{PCSS}}
+\newcommand{\PCSP}{\operatorname{PCSP}}
 
 \title{libsbn implementation notes}
 \author{Team Phylo VI}
@@ -62,10 +62,10 @@ where $\rho_b$ here means to root $\tau$ at branch $b$ and $q_\phi(\rho_b(\tau))
 
 We continue to overload $q_\phi$.
 Let $q_\phi(b \slash \tau)$ be the probability of the rootsplit for $\tau$ rooted at $b$, and
-$q_\phi(s)$ be the probability of a PCSS $s$.
+$q_\phi(s)$ be the probability of a PCSP $s$.
 Now we have
 \begin{equation}
-    q_\phi(\rho_b(\tau)) = q_\phi(b \slash \tau) \, \prod_{s \in \PCSS(\rho_b(\tau))} q_\phi(s).
+    q_\phi(\rho_b(\tau)) = q_\phi(b \slash \tau) \, \prod_{s \in \PCSP(\rho_b(\tau))} q_\phi(s).
     \label{eq:qRooted}
 \end{equation}
 
@@ -299,7 +299,7 @@ The geometric mean is given by,
     \hat{f}_{\bm{\phi}, \bm{\psi}}(\tau^{-j}, \bm{\theta}^{-j})  = \exp\left( \frac{1}{K-1} \sum_{i \not= j} \log f_{\bm{\phi}, \bm{\psi}}(\tau^i, \bm{\theta}^i) \right).
 \end{equation}
 
-Thus, the per-PCSS gradient equivalent of \eqref{eq:nabla} is:
+Thus, the per-PCSP gradient equivalent of \eqref{eq:nabla} is:
 \begin{equation}\label{eq:nablaVIMCO}
     \nabla_{s|t} = \sum\limits_{j=1}^{K} (\hat{L}_{j|-j}^K - \tilde{w}^j) g_{s|t}^j.
 \end{equation}
