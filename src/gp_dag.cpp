@@ -20,13 +20,11 @@ size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
 size_t GPDAG::RootsplitAndPCSPCount() const { return rootsplit_and_pcsp_count_; }
 
 size_t GPDAG::GeneralizedPCSPCount() const {
-  // Get number of parameters involving fake subsplits.
   size_t fake_subsplit_parameter_count = 0;
   for (size_t taxon_idx = 0; taxon_idx < taxon_count_; taxon_idx++) {
     fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardRotated().size();
     fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardSorted().size();
   }
-
   return RootsplitAndPCSPCount() + fake_subsplit_parameter_count;
 }
 
