@@ -49,14 +49,14 @@ struct IncrementWithWeightedEvolvedPLV {
   }
 };
 
-// Computes log_likelihoods_[gpcsp_idx] where gpcsp_idx is for the root subsplit.
-// Increments log marginal likelihood.
+// Increment log marginal likelihood with the log likelihood at rootsplit rootsplit_idx.
 struct IncrementMarginalLikelihood {
   size_t stationary_idx;
-  size_t gpcsp_idx;
+  size_t rootsplit_idx;
   size_t p_idx;
   StringSizePairVector guts() const {
-    return {{"r_idx", stationary_idx}, {"gpcsp_idx", gpcsp_idx}, {"p_idx", p_idx}};
+    return {
+        {"r_idx", stationary_idx}, {"rootsplit_idx", rootsplit_idx}, {"p_idx", p_idx}};
   }
 };
 

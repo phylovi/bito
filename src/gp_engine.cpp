@@ -48,11 +48,12 @@ void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
   SetTransitionMatrixToHaveBranchLength(0.0);
   PreparePerPatternLogLikelihoods(op.stationary_idx, op.p_idx);
 
-  log_likelihoods_[op.gpcsp_idx] =
-      log(q_(op.gpcsp_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  log_likelihoods_[op.rootsplit_idx] =
+      log(q_(op.rootsplit_idx)) +
+      per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
-  log_marginal_likelihood_ =
-      NumericalUtils::LogAdd(log_marginal_likelihood_, log_likelihoods_[op.gpcsp_idx]);
+  log_marginal_likelihood_ = NumericalUtils::LogAdd(log_marginal_likelihood_,
+                                                    log_likelihoods_[op.rootsplit_idx]);
 }
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {
