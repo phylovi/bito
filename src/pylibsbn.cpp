@@ -336,6 +336,8 @@ PYBIND11_MODULE(libsbn, m) {
 
       // ** Estimation
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.")
+      .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,
+           "Use given trees to initialize branch lengths.")
       .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
            "Read trees from a Newick file.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,

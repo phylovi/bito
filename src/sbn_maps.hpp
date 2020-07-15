@@ -47,6 +47,13 @@ SizeBitsetMap IdIdSetMapOf(const Node::NodePtr& topology);
 SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& topology);
 // Make a string version of a PCSPDict.
 StringPCSPMap StringPCSPMapOf(PCSPDict d);
+// Make a PCSP bitset from a collection of Nodes and their directions. If direction is
+// true, then the bits get flipped.
+Bitset PCSPBitsetOf(const size_t leaf_count,  //
+                    const Node* sister_node, bool sister_direction,
+                    const Node* focal_node, bool focal_direction,
+                    const Node* child0_node, bool child0_direction,
+                    const Node* child1_node, bool child1_direction);
 IndexerBundle BuildIndexerBundle(const BitsetSizeDict& rootsplit_counter,
                                  const PCSPDict& pcsp_counter);
 }  // namespace SBNMaps

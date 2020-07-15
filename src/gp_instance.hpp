@@ -24,6 +24,7 @@ class GPInstance {
 
   void MakeEngine();
   GPEngine* GetEngine() const;
+  void HostStartBranchLengths();
   void PrintDAG();
   void PrintGPCSPIndexer();
   void ProcessOperations(const GPOperationVector& operations);

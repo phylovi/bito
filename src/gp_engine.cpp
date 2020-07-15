@@ -3,6 +3,7 @@
 
 #include "gp_engine.hpp"
 #include "optimization.hpp"
+#include "sugar.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
                    std::string mmap_file_path)
@@ -197,4 +198,28 @@ void GPEngine::GradientAscentOptimization(
       relative_tolerance_for_optimization_, step_size_for_optimization_,
       min_branch_length_, max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_idx) = branch_length;
+}
+
+void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
+                                     const BitsetSizeMap& indexer) {
+  const auto leaf_count = tree_collection.TaxonCount();
+  const size_t default_index = branch_lengths_.size();
+  branch_lengths_.setZero();
+  Eigen::VectorXi pcss_counts = Eigen::VectorXi::Zero(branch_lengths_.size());
+  for (const auto& tree : tree_collection.Trees()) {
+    tree.Topology()->RootedPCSSPreOrder(
+        [&leaf_count, &default_index, &indexer, &tree, &pcss_counts, this](
+            const Node* sister_node, const Node* focal_node, const Node* child0_node,
+            const Node* child1_node) {
+          Bitset pcss_bitset =
+              SBNMaps::PCSSBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                                    child0_node, false, child1_node, false);
+          const auto pcss_index = AtWithDefault(indexer, pcss_bitset, default_index);
+          if (pcss_index != default_index) {
+            branch_lengths_(pcss_index) += tree.BranchLength(focal_node);
+            pcss_counts(pcss_index) += 1;
+          }
+        });
+      branch_lengths_.array() /= pcss_counts.array().cast<double>();
+  }
 }

@@ -64,6 +64,11 @@ void GPInstance::MakeEngine() {
   InitializeGPEngine();
 }
 
+void GPInstance::HotStartBranchLengths() {
+  CheckSequencesAndTreesLoaded();
+  GetEngine()->HotStartBranchLengths(tree_collection_, indexer_);
+}
+
 GPEngine *GPInstance::GetEngine() const {
   if (engine_ != nullptr) {
     return engine_.get();
