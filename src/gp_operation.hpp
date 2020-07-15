@@ -70,8 +70,9 @@ struct Multiply {
   }
 };
 
-// Stores the likelihood of `plv[child_idx]` and `plv[parent_idx]`, incorporating site
-// pattern weights, in `log_likelihoods[dest_idx]`
+// Stores the likelihood of `plv[child_idx]` and `plv[parent_idx]` with branch length
+// branch_lengths[dest_idx], incorporating site pattern weights, in
+// `log_likelihoods[dest_idx]`
 struct Likelihood {
   size_t dest_idx;
   size_t child_idx;
