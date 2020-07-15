@@ -431,9 +431,7 @@ void GPDAG::AddPhatOperations(const GPDAGNode *node, bool rotated,
     const auto child_node = GetDagNode(child_idx);
     const auto child_subsplit = child_node->GetBitset();
     const auto pcsp = parent_subsplit + child_subsplit;
-    if (!gpcsp_indexer_.count(pcsp)) {
-      Failwith("Non-existent PCSP index.");
-    }
+    Assert(gpcsp_indexer_.count(pcsp), "Non-existent PCSP index.");
     const auto gpcsp_idx = gpcsp_indexer_.at(pcsp);
 
     operations.push_back(
