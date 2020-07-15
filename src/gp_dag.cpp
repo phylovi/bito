@@ -405,8 +405,8 @@ GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
 std::vector<size_t> GPDAG::LeafwardPassTraversal() const {
   std::vector<size_t> visit_order;
   std::unordered_set<size_t> visited_nodes;
-  for (size_t leaf_idx = 0; leaf_idx < taxon_count_; leaf_idx++) {
-    RootwardDepthFirst(leaf_idx, dag_nodes_, visit_order, visited_nodes);
+  for (size_t leaf_id = 0; leaf_id < taxon_count_; leaf_id++) {
+    RootwardDepthFirst(leaf_id, dag_nodes_, visit_order, visited_nodes);
   }
   return visit_order;
 }
@@ -415,8 +415,8 @@ std::vector<size_t> GPDAG::RootwardPassTraversal() const {
   std::vector<size_t> visit_order;
   std::unordered_set<size_t> visited_nodes;
   for (const auto &rootsplit : rootsplits_) {
-    size_t root_idx = subsplit_to_id_.at(rootsplit + ~rootsplit);
-    LeafwardDepthFirst(root_idx, dag_nodes_, visit_order, visited_nodes);
+    size_t root_id = subsplit_to_id_.at(rootsplit + ~rootsplit);
+    LeafwardDepthFirst(root_id, dag_nodes_, visit_order, visited_nodes);
   }
   return visit_order;
 }
