@@ -147,7 +147,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
     current_marginal_log_lik = marginal_log_lik;
   }
   std::chrono::duration<double> optimization_duration = now() - t_start;
-  std::cout << "\ntiming report:\n";
+  std::cout << "\n# Timing Report\n";
   std::cout << "warmup: " << warmup_duration.count() << "s\n";
   std::cout << "initial likelihood: " << initial_likelihood_duration.count() << "s\n";
   std::cout << "optimization: " << optimization_duration.count() << "s\n";
