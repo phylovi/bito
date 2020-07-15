@@ -20,6 +20,8 @@ void GPInstance::PrintStatus() {
     std::cout << "No trees loaded.\n";
   }
   std::cout << alignment_.Data().size() << " sequences loaded.\n";
+  std::cout << dag_.NodeCount() << " DAG nodes.\n";
+  std::cout << dag_.GeneralizedPCSPCount() << " continuous parameters.\n";
 }
 
 void GPInstance::ReadFastaFile(std::string fname) {
