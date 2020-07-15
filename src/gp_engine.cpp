@@ -47,15 +47,9 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
   
   // SHJ: This is what we had before.
-//  per_pattern_log_likelihoods_ =
-//      (plvs_.at(op.stationary_idx).transpose() * plvs_.at(op.p_idx))
-//      .diagonal()
-//      .array()
-//      .log();
-
-  // SHJ: This is what we have now, which multiplies the transition matrix.
-  // Yet, the marginal likelihood tests are passing.
+  SetTransitionMatrixToHaveBranchLength(0.0);
   PreparePerPatternLogLikelihoods(op.stationary_idx, op.p_idx);
+  
   log_likelihoods_[op.gpcsp_idx] =
       log(q_(op.gpcsp_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   

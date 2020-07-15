@@ -393,9 +393,6 @@ GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
   // Perform first rootward pass. No optimization.
   GPOperationVector operations;
   for (const size_t node_idx : visit_order) {
-    // TODO this is the same as iterating over the "real" nodes, right?
-    // I tried changing to IterateOverRealNodes and it broke, so I must have missed
-    // something.
     const auto node = GetDagNode(node_idx);
     if (node->IsLeaf()) {
       continue;
@@ -593,84 +590,14 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                                 GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
 };
 
-// TODO I'm a little unclear on why this is set up the way that it is. If we are just
-// optimizing SBN parameters, can't we just assume that the likelihood vectors are set
-// up, and then come through and do the SBN parameters? If not right now, could we set
-// it up to do that? This code duplication with the previous function somehow bothers me
-// more than some of the other duplication.
-void GPDAG::ScheduleSBNParameterOptimization(size_t node_id,
-                                             std::unordered_set<size_t> &visited_nodes,
-                                             GPOperationVector &operations) const {
-  visited_nodes.insert(node_id);
-  const auto node = GetDagNode(node_id);
-
-  if (!node->IsRoot()) {
-    // We compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
-    // This is necessary to reflect changes to r(t) as well as new values
-    // for q(s|t).
-    operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, node_id)});
-    UpdateRHat(node_id, false, operations);
-    UpdateRHat(node_id, true, operations);
-
-    // Update r(s) and r_tilde(s) using rhat(s).
-    operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_id),
-                                  GetPLVIndex(PLVType::R_HAT, node_id),
-                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-    operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
-                                  GetPLVIndex(PLVType::R_HAT, node_id),
-                                  GetPLVIndex(PLVType::P_HAT, node_id)});
-  }
-
-  if (node->IsLeaf()) return;
-
-  operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT, node_id)});
-  for (size_t child_id : dag_nodes_.at(node_id)->GetLeafwardSorted()) {
-    if (!visited_nodes.count(child_id)) {
-      ScheduleSBNParameterOptimization(child_id, visited_nodes, operations);
-    }
-    UpdatePHatComputeLikelihood(node_id, child_id, false, operations);
-  }
-  OptimizeSBNParameters(node->GetBitset(), operations);
-
-  // Update r_tilde(t) = r_hat(t) \circ p_hat(t).
-  operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
-                                GetPLVIndex(PLVType::R_HAT, node_id),
-                                GetPLVIndex(PLVType::P_HAT, node_id)});
-
-  operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-  for (size_t child_id : dag_nodes_.at(node_id)->GetLeafwardRotated()) {
-    if (!visited_nodes.count(child_id)) {
-      ScheduleSBNParameterOptimization(child_id, visited_nodes, operations);
-    }
-    UpdatePHatComputeLikelihood(node_id, child_id, true, operations);
-  }
-  OptimizeSBNParameters(node->GetBitset().RotateSubsplit(), operations);
-
-  // Update r(t) = r_hat(t) \circ p_hat_tilde(t).
-  operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_id),
-                                GetPLVIndex(PLVType::R_HAT, node_id),
-                                GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-
-  // Update p(t).
-  operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
-                                GetPLVIndex(PLVType::P_HAT, node_id),
-                                GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-};
-
 GPOperationVector GPDAG::SBNParameterOptimization() const {
   GPOperationVector operations;
   std::unordered_set<size_t> visited_nodes;
-  for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
-    const auto rootsplit = rootsplits_[rootsplit_idx];
-    ScheduleSBNParameterOptimization(subsplit_to_id_.at(rootsplit + ~rootsplit),
-                                     visited_nodes, operations);
-    const auto node_id = subsplit_to_id_.at(rootsplit + ~rootsplit);
-    operations.push_back(GPOperations::IncrementMarginalLikelihood{
-        GetPLVIndex(PLVType::R_HAT, node_id), rootsplit_idx,
-        GetPLVIndex(PLVType::P, node_id)});
+  for (size_t &id : LeafwardPassTraversal()) {
+    const auto node = GetDagNode(id);
+    OptimizeSBNParameters(node->GetBitset(), operations);
+    OptimizeSBNParameters(node->GetBitset().RotateSubsplit(), operations);
   }
-  // Optimize SBN parameters for the rootsplits: at this point, p-PLVs are
-  // already updated in the call to ScheduleSBNParametersOptimization.
   operations.push_back(UpdateSBNProbabilities{0, rootsplits_.size()});
   return operations;
 }

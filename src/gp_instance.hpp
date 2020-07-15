@@ -27,7 +27,7 @@ class GPInstance {
   void PrintDAG();
   void PrintGPCSPIndexer();
   void ProcessOperations(const GPOperationVector& operations);
-  void EstimateSBNParameters(double tol, size_t max_iter);
+  void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter);
   void PopulatePLVs();
   void ComputeLikelihoods();
