@@ -27,7 +27,7 @@ class GPDAG {
   void Print() const;
   void PrintGPCSPIndexer() const;
 
-  GPDAGNode *GetDagNode(const size_t node_idx) const;
+  GPDAGNode *GetDagNode(const size_t node_id) const;
 
   // Get the index of a PLV of a given type and with a given index.
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);

@@ -40,8 +40,8 @@ void GPDAG::PrintGPCSPIndexer() const {
   }
 }
 
-GPDAGNode *GPDAG::GetDagNode(const size_t node_idx) const {
-  return dag_nodes_.at(node_idx).get();
+GPDAGNode *GPDAG::GetDagNode(const size_t node_id) const {
+  return dag_nodes_.at(node_id).get();
 }
 
 size_t GPDAG::GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx) {
@@ -367,41 +367,38 @@ void LeafwardDepthFirst(size_t id,
 
 GPOperationVector GPDAG::LeafwardPass(std::vector<size_t> visit_order) const {
   GPOperationVector operations;
-  for (const size_t node_idx : visit_order) {
-    const auto node = GetDagNode(node_idx);
+  for (const size_t node_id : visit_order) {
+    const auto node = GetDagNode(node_id);
 
     // Build rhat(s) via rhat(s) += \sum_t q(s|t) P'(s|t) r(t)
     AddRhatOperations(node, operations);
     // Multiply to get r(s) = rhat(s) \circ phat(s_tilde).
-    operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_idx),
-                                  GetPLVIndex(PLVType::R_HAT, node_idx),
-                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_idx)});
+    operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_id),
+                                  GetPLVIndex(PLVType::R_HAT, node_id),
+                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
     // Multiply to get r(s_tilde) = rhat(s) \circ phat(s).
-    operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_idx),
-                                  GetPLVIndex(PLVType::R_HAT, node_idx),
-                                  GetPLVIndex(PLVType::P_HAT, node_idx)});
+    operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
+                                  GetPLVIndex(PLVType::R_HAT, node_id),
+                                  GetPLVIndex(PLVType::P_HAT, node_id)});
   }
   return operations;
 }
 
 GPOperationVector GPDAG::RootwardPass(std::vector<size_t> visit_order) const {
-  // Perform first rootward pass. No optimization.
   GPOperationVector operations;
-  for (const size_t node_idx : visit_order) {
-    const auto node = GetDagNode(node_idx);
+  for (const size_t node_id : visit_order) {
+    const auto node = GetDagNode(node_id);
     if (node->IsLeaf()) {
       continue;
     }
-
     // Build phat(s).
-    AddPhatOperations(node, false, operations);  // Bu
+    AddPhatOperations(node, false, operations);
     // Build phat(s_tilde).
     AddPhatOperations(node, true, operations);
     // Multiply to get p(s) = phat(s) \circ phat(s_tilde).
-    operations.push_back(Multiply{node_idx, GetPLVIndex(PLVType::P_HAT, node_idx),
-                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_idx)});
+    operations.push_back(Multiply{node_id, GetPLVIndex(PLVType::P_HAT, node_id),
+                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
   }
-
   return operations;
 }
 
