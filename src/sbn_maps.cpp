@@ -161,11 +161,11 @@ Bitset Rootsplit(const Node* rooted_topology) {
 // TODO move elsewhere
 // Make a PCSP bitset from a collection of Nodes and their directions. If direction is
 // true, then the bits get flipped.
-Bitset PCSPBitsetOf(const size_t leaf_count,  //
-                    const Node* sister_node, bool sister_direction,
-                    const Node* focal_node, bool focal_direction,
-                    const Node* child0_node, bool child0_direction,
-                    const Node* child1_node, bool child1_direction) {
+Bitset SBNMaps::PCSPBitsetOf(const size_t leaf_count,  //
+                             const Node* sister_node, bool sister_direction,
+                             const Node* focal_node, bool focal_direction,
+                             const Node* child0_node, bool child0_direction,
+                             const Node* child1_node, bool child1_direction) {
   Bitset bitset(3 * leaf_count, false);
   bitset.CopyFrom(sister_node->Leaves(), 0, sister_direction);
   bitset.CopyFrom(focal_node->Leaves(), leaf_count, focal_direction);
@@ -203,7 +203,7 @@ UnrootedIndexerRepresentation UnrootedSBNMaps::IndexerRepresentationOf(
           bool focal_direction, const Node* child0_node, bool child0_direction,
           const Node* child1_node, bool child1_direction,
           const Node* virtual_root_clade) {
-        const auto bitset = PCSPBitsetOf(
+        const auto bitset = SBNMaps::PCSPBitsetOf(
             leaf_count, sister_node, sister_direction, focal_node, focal_direction,
             child0_node, child0_direction, child1_node, child1_direction);
         const auto indexer_position = AtWithDefault(indexer, bitset, default_index);
@@ -293,7 +293,7 @@ SizeVector RootedSBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& ind
   topology->RootedPCSPPreOrder([&leaf_count, &indexer, &default_index, &result](
                                    const Node* sister_node, const Node* focal_node,
                                    const Node* child0_node, const Node* child1_node) {
-    Bitset pcsp_bitset = PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
+    Bitset pcsp_bitset = SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
                                       child0_node, false, child1_node, false);
     result.push_back(AtWithDefault(indexer, pcsp_bitset, default_index));
   });
