@@ -205,21 +205,21 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   const auto leaf_count = tree_collection.TaxonCount();
   const size_t default_index = branch_lengths_.size();
   branch_lengths_.setZero();
-  Eigen::VectorXi pcss_counts = Eigen::VectorXi::Zero(branch_lengths_.size());
+  Eigen::VectorXi pcsp_counts = Eigen::VectorXi::Zero(branch_lengths_.size());
   for (const auto& tree : tree_collection.Trees()) {
-    tree.Topology()->RootedPCSSPreOrder(
-        [&leaf_count, &default_index, &indexer, &tree, &pcss_counts, this](
+    tree.Topology()->RootedPCSPPreOrder(
+        [&leaf_count, &default_index, &indexer, &tree, &pcsp_counts, this](
             const Node* sister_node, const Node* focal_node, const Node* child0_node,
             const Node* child1_node) {
-          Bitset pcss_bitset =
-              SBNMaps::PCSSBitsetOf(leaf_count, sister_node, false, focal_node, false,
+          Bitset pcsp_bitset =
+              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
                                     child0_node, false, child1_node, false);
-          const auto pcss_index = AtWithDefault(indexer, pcss_bitset, default_index);
-          if (pcss_index != default_index) {
-            branch_lengths_(pcss_index) += tree.BranchLength(focal_node);
-            pcss_counts(pcss_index) += 1;
+          const auto pcsp_index = AtWithDefault(indexer, pcsp_bitset, default_index);
+          if (pcsp_index != default_index) {
+            branch_lengths_(pcsp_index) += tree.BranchLength(focal_node);
+            pcsp_counts(pcsp_index) += 1;
           }
         });
-      branch_lengths_.array() /= pcss_counts.array().cast<double>();
+      branch_lengths_.array() /= pcsp_counts.array().cast<double>();
   }
 }

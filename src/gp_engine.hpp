@@ -7,11 +7,12 @@
 #ifndef SRC_GP_ENGINE_HPP_
 #define SRC_GP_ENGINE_HPP_
 
-#include "sbn_maps.hpp"
 #include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
 #include "numerical_utils.hpp"
+#include "rooted_tree_collection.hpp"
+#include "sbn_maps.hpp"
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 
