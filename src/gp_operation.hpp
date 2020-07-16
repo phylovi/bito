@@ -28,12 +28,14 @@ namespace GPOperations {
 
 // Zero out the PLV at `dest_idx`.
 struct Zero {
+  constexpr explicit Zero(size_t desti) : dest_idx{desti} {}
   size_t dest_idx;
   StringSizePairVector guts() const { return {{"dest_idx", dest_idx}}; }
 };
 
 // Set the PLV at `dest_idx` to be the stationary distribution at every site.
 struct SetToStationaryDistribution {
+  constexpr explicit SetToStationaryDistribution(size_t desti) : dest_idx{desti} {}
   size_t dest_idx;
   StringSizePairVector guts() const { return {{"dest_idx", dest_idx}}; }
 };
@@ -41,6 +43,7 @@ struct SetToStationaryDistribution {
 // Set transition_matrix_ using branch_length(gpcsp_idx) then,
 // perform `plv[dest_idx] += q[gpcsp_idx] * transition_matrix_ * plv[src_idx]`
 struct IncrementWithWeightedEvolvedPLV {
+  constexpr IncrementWithWeightedEvolvedPLV(size_t desti, size_t gpcspi, size_t srci) : dest_idx{desti}, gpcsp_idx{gpcspi}, src_idx{srci} {}
   size_t dest_idx;
   size_t gpcsp_idx;
   size_t src_idx;
@@ -51,6 +54,7 @@ struct IncrementWithWeightedEvolvedPLV {
 
 // Increment log marginal likelihood with the log likelihood at rootsplit rootsplit_idx.
 struct IncrementMarginalLikelihood {
+  constexpr IncrementMarginalLikelihood(size_t stationaryi, size_t rootspliti, size_t pi) : stationary_idx{stationaryi}, rootsplit_idx{rootspliti}, p_idx{pi} {}
   size_t stationary_idx;
   size_t rootsplit_idx;
   size_t p_idx;
@@ -62,6 +66,7 @@ struct IncrementMarginalLikelihood {
 
 // Componentwise multiplication: `plv[dest_idx] = plv[src1_idx] o plv[src2_idx]`
 struct Multiply {
+  constexpr Multiply(size_t desti, size_t src1i, size_t src2i) : dest_idx{desti}, src1_idx{src1i}, src2_idx{src2i} {}
   size_t dest_idx;
   size_t src1_idx;
   size_t src2_idx;
@@ -74,6 +79,7 @@ struct Multiply {
 // branch_lengths[dest_idx], incorporating site pattern weights, in
 // `log_likelihoods[dest_idx]`
 struct Likelihood {
+  constexpr Likelihood(size_t desti, size_t childi, size_t parenti) : dest_idx{desti}, child_idx{childi}, parent_idx{parenti} {}
   size_t dest_idx;
   size_t child_idx;
   size_t parent_idx;
@@ -91,6 +97,7 @@ struct Likelihood {
 // * storing log likelihood at `log_likelihoods[branch_length_idx]`
 // * storing optimal branch length at `branch_lengths[branch_length_idx]`
 struct OptimizeBranchLength {
+  constexpr OptimizeBranchLength(size_t leafwardi, size_t rootwardi, size_t gpcspi) : leafward_idx{leafwardi}, rootward_idx{rootwardi}, gpcsp_idx{gpcspi} {}
   size_t leafward_idx;
   size_t rootward_idx;
   size_t gpcsp_idx;
@@ -109,6 +116,7 @@ struct OptimizeBranchLength {
 // Note that this operation modifies our log_likelihoods in place by normalizing them
 // across children of a parent. Thus they are no longer valid.
 struct UpdateSBNProbabilities {
+  constexpr UpdateSBNProbabilities(size_t starti, size_t stopi) : start_idx{starti}, stop_idx{stopi} {}
   size_t start_idx;
   size_t stop_idx;
   StringSizePairVector guts() const {
