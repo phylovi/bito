@@ -212,8 +212,8 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
             const Node* sister_node, const Node* focal_node, const Node* child0_node,
             const Node* child1_node) {
           Bitset pcsp_bitset =
-              PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
-                           child0_node, false, child1_node, false);
+              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                                    child0_node, false, child1_node, false);
           const auto pcsp_index = AtWithDefault(indexer, pcsp_bitset, default_index);
           if (pcsp_index != default_index) {
             branch_lengths_(pcsp_index) += tree.BranchLength(focal_node);
