@@ -43,7 +43,10 @@ class GPInstance {
   // A vector that contains all of the SBN-related probabilities.
   EigenVectorXd sbn_parameters_;
   // The master indexer for SBN parameters.
-
+    
+  // for Hotstart
+  BitsetSizeMap indexer_;
+    
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;
   void ProcessLoadedTrees();
