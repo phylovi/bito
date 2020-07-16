@@ -24,9 +24,9 @@ class GPInstance {
 
   void MakeEngine();
   GPEngine* GetEngine() const;
-  void HotStartBranchLengths();
   void PrintDAG();
   void PrintGPCSPIndexer();
+  void HotStartBranchLengths();
   void ProcessOperations(const GPOperationVector& operations);
   void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter);

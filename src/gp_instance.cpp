@@ -64,11 +64,6 @@ void GPInstance::MakeEngine() {
   InitializeGPEngine();
 }
 
-void GPInstance::HotStartBranchLengths() {
-  CheckSequencesAndTreesLoaded();
-  GetEngine()->HotStartBranchLengths(tree_collection_, indexer_);
-}
-
 GPEngine *GPInstance::GetEngine() const {
   if (engine_ != nullptr) {
     return engine_.get();
@@ -95,6 +90,11 @@ void GPInstance::ProcessLoadedTrees() {
 
 void GPInstance::PrintDAG() { dag_.Print(); }
 void GPInstance::PrintGPCSPIndexer() { dag_.PrintGPCSPIndexer(); }
+
+void GPInstance::HotStartBranchLengths() {
+  CheckSequencesAndTreesLoaded();
+  GetEngine()->HotStartBranchLengths(tree_collection_, indexer_);
+}
 
 void GPInstance::InitializeGPEngine() {
   GetEngine()->SetSBNParameters(dag_.BuildUniformQ());
