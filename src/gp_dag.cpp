@@ -107,7 +107,7 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
                                       GetPLVIndex(PLVType::P, child_node->Id())});
     }
   });
-
+  
   const auto marginal_likelihood_operations = MarginalLikelihood();
   operations.insert(operations.end(), marginal_likelihood_operations.begin(),
                     marginal_likelihood_operations.end());

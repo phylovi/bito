@@ -37,7 +37,10 @@ class GPDAG {
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
   // Schedule branch length optimization.
   [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
-  // Compute likelihood values l(s|t) for each PCSP s|t.
+  // Compute likelihood values l(s|t) for each child subsplit s by visiting
+  // parent subsplit t and generating Likelihood operations for each PCSP s|t.
+  // Compute likelihood values l(s) for each rootsplit s by calling
+  // MarginalLikelihood().
   [[nodiscard]] GPOperationVector ComputeLikelihoods() const;
   // Fill r-PLVs from leaf nodes to the root nodes.
   [[nodiscard]] GPOperationVector LeafwardPass() const;
