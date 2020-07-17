@@ -27,8 +27,8 @@ class MmappedMatrix {
   using Scalar = typename Eigen::DenseBase<EigenDenseMatrixBaseT>::Scalar;
 
  public:
-  MmappedMatrix(std::string file_path, Eigen::Index rows, Eigen::Index cols)
-      : rows_(rows), cols_(cols), mmap_len_(rows * cols * sizeof(Scalar)) {
+  MmappedMatrix(const std::string &file_path, Eigen::Index rows, Eigen::Index cols)
+      : rows_(rows), cols_(cols), byte_count_(rows * cols * sizeof(Scalar)) {
     file_descriptor_ = open(
         file_path.c_str(),
         O_RDWR | O_CREAT,  // Open for reading and writing; create if it doesn't exit.
@@ -38,18 +38,18 @@ class MmappedMatrix {
       Failwith("MmappedMatrix could not create a file at " + file_path);
     }
     // Resizes file so it's just right for our vector.
-    auto ftruncate_status = ftruncate(file_descriptor_, mmap_len_);
+    auto ftruncate_status = ftruncate(file_descriptor_, byte_count_);
     if (ftruncate_status != 0) {
       Failwith("MmappedMatrix could not resize the file at " + file_path);
     }
-    mmapped_memory_ = (Scalar *)mmap(  //
+    mmapped_memory_ = static_cast<Scalar *>(mmap(  //
         NULL,                    // This address is ignored as we are using MAP_SHARED.
-        mmap_len_,               // Size of map.
+        byte_count_,             // Size of map.
         PROT_READ | PROT_WRITE,  // We want to read and write.
         MAP_SHARED,              // We need MAP_SHARED to actually write to memory.
         file_descriptor_,        // File descriptor.
         0                        // Offset.
-    );
+        ));
     if (mmapped_memory_ == MAP_FAILED) {
       throw std::system_error(errno, std::system_category(), "mmap");
     }
@@ -64,10 +64,10 @@ class MmappedMatrix {
       }
     };
     // Synchronize memory with physical storage.
-    auto msync_status = msync(mmapped_memory_, mmap_len_, MS_SYNC);
+    auto msync_status = msync(mmapped_memory_, byte_count_, MS_SYNC);
     CheckStatus(msync_status, "msync");
     // Unmap memory mapped with mmap.
-    auto munmap_status = munmap(mmapped_memory_, mmap_len_);
+    auto munmap_status = munmap(mmapped_memory_, byte_count_);
     CheckStatus(munmap_status, "munmap");
     auto close_status = close(file_descriptor_);
     CheckStatus(close_status, "close");
@@ -82,10 +82,12 @@ class MmappedMatrix {
     return Eigen::Map<EigenDenseMatrixBaseT>(mmapped_memory_, rows_, cols_);
   }
 
+  size_t ByteCount() const { return byte_count_; }
+
  private:
   Eigen::Index rows_;
   Eigen::Index cols_;
-  size_t mmap_len_;
+  size_t byte_count_;
   int file_descriptor_;
   Scalar *mmapped_memory_;
 };

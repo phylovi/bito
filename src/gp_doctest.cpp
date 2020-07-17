@@ -43,9 +43,7 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   inst.ReadFastaFile("data/hello.fasta");
   inst.ReadNewickFile("data/hello_rooted_two_trees.nwk");
   inst.MakeEngine();
-  EigenVectorXd branch_lengths =
-      EigenVectorXd::Ones(inst.GetEngine()->GetBranchLengths().size());
-  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.GetEngine()->SetBranchLengthsToConstant(1.);
   return inst;
 }
 
@@ -64,7 +62,7 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   inst.PopulatePLVs();
   inst.PrintDAG();
   inst.ComputeLikelihoods();
-  
+
   EigenVectorXd realized_log_likelihoods = inst.GetEngine()->GetLogLikelihoods();
   CheckVectorXdEquality(-84.77961943, realized_log_likelihoods, 1e-6);
 
@@ -123,4 +121,26 @@ TEST_CASE("GPInstance: branch length optimization") {
   EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
   CHECK_LT(fabs(expected_log_marginal - -80.6906345), 1e-6);
+}
+
+GPInstance MakeFluAGPInstance(double rescaling_threshold) {
+  GPInstance inst("_ignore/mmapped_plv.data");
+  inst.ReadFastaFile("data/fluA.fa");
+  inst.ReadNewickFile("data/fluA.tree");
+  inst.MakeEngine(rescaling_threshold);
+  inst.GetEngine()->SetBranchLengthsToConstant(0.01);
+  return inst;
+}
+
+double MakeAndRunFluAGPInstance(double rescaling_threshold) {
+  auto inst = MakeFluAGPInstance(rescaling_threshold);
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+  return inst.GetEngine()->GetLogMarginalLikelihood();
+}
+
+TEST_CASE("GPInstance: rescaling") {
+  double difference = MakeAndRunFluAGPInstance(GPEngine::default_rescaling_threshold_) -
+                      MakeAndRunFluAGPInstance(1e-4);
+  CHECK_LT(fabs(difference), 1e-10);
 }

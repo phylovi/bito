@@ -14,12 +14,24 @@
 
 class GPDAG {
  public:
+  // NodeLambda is for iterating over nodes.
+  using NodeLambda = std::function<void(const GPDAGNode *)>;
+  // EdgeDestinationLambda takes in a rotation status (true is rotated, false is not)
+  // and a "destination" node. For iterating over DAG edges with a rotation status.
+  using EdgeDestinationLambda = std::function<void(bool, const GPDAGNode *)>;
+
   enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
+  PLVType RPLVType(bool rotated) const {
+    return rotated ? PLVType::R_TILDE : PLVType::R;
+  }
 
   GPDAG();
   explicit GPDAG(const RootedTreeCollection &tree_collection);
 
   size_t NodeCount() const;
+  // How many trees can be expressed by the GPDAG? Expressed as a double because this
+  // number can be big.
+  double TreeCount() const;
   size_t RootsplitAndPCSPCount() const;
   // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
   size_t GeneralizedPCSPCount() const;
@@ -83,7 +95,14 @@ class GPDAG {
   std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
-  void IterateOverRealNodes(std::function<void(const GPDAGNode *)>) const;
+  void IterateOverRealNodes(NodeLambda) const;
+  // Iterate over the leafward edges of node using an EdgeDestinationLambda.
+  void IterateOverLeafwardEdges(const GPDAGNode *node, EdgeDestinationLambda f) const;
+  // Iterate over the rootward edges of node using an EdgeDestinationLambda.
+  void IterateOverRootwardEdges(const GPDAGNode *node, EdgeDestinationLambda f) const;
+  // Iterate over the node ids corresponding to rootsplits.
+  void IterateOverRootsplitIds(std::function<void(size_t)>) const;
+
   // This function returns empty vector if subsplit is invalid or has no child.
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
                                            bool include_fake_subsplits = false);
@@ -129,6 +148,8 @@ class GPDAG {
   void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
                                       bool rotated,
                                       GPOperationVector &operations) const;
+
+  Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated);
 };
 
 #endif  // SRC_GP_DAG_HPP_

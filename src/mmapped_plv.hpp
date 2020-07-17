@@ -20,7 +20,7 @@ class MmappedNucleotidePLV {
  public:
   constexpr static Eigen::Index base_count_ = 4;
 
-  MmappedNucleotidePLV(std::string file_path, Eigen::Index total_plv_length)
+  MmappedNucleotidePLV(const std::string &file_path, Eigen::Index total_plv_length)
       : mmapped_matrix_(file_path, base_count_, total_plv_length){};
 
   NucleotidePLVRefVector Subdivide(size_t into_count) {
@@ -38,6 +38,8 @@ class MmappedNucleotidePLV {
     }
     return sub_plvs;
   }
+
+  size_t ByteCount() const { return mmapped_matrix_.ByteCount(); }
 
  private:
   MmappedMatrix<NucleotidePLV> mmapped_matrix_;

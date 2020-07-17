@@ -17,7 +17,7 @@
 class GPEngine {
  public:
   GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
-           std::string mmap_file_path);
+           const std::string& mmap_file_path, double rescaling_threshold);
 
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::Zero& op);
@@ -28,6 +28,7 @@ class GPEngine {
   void operator()(const GPOperations::Likelihood& op);
   void operator()(const GPOperations::OptimizeBranchLength& op);
   void operator()(const GPOperations::UpdateSBNProbabilities& op);
+  void operator()(const GPOperations::PrepForMarginalization& op);
 
   void ProcessOperations(GPOperationVector operations);
 
@@ -38,9 +39,12 @@ class GPEngine {
   void PrintPLV(size_t plv_idx);
 
   void SetBranchLengths(EigenVectorXd branch_lengths) {
-    branch_lengths_ = branch_lengths;
+    branch_lengths_ = std::move(branch_lengths);
   };
-  void SetSBNParameters(EigenVectorXd q) { q_ = q; };
+  void SetBranchLengthsToConstant(double branch_length) {
+    branch_lengths_.setConstant(branch_length);
+  };
+  void SetSBNParameters(EigenVectorXd q) { q_ = std::move(q); };
   void ResetLogMarginalLikelihood() { log_marginal_likelihood_ = DOUBLE_NEG_INF; }
   double GetLogMarginalLikelihood() const { return log_marginal_likelihood_; }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
@@ -49,9 +53,14 @@ class GPEngine {
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
+  static constexpr double default_rescaling_threshold_ = 1e-40;
+
+  double PLVByteCount() const { return mmapped_master_plv_.ByteCount(); };
+
  private:
-  double min_branch_length_ = 1e-6;
-  double max_branch_length_ = 3.;
+  static constexpr double min_branch_length_ = 1e-6;
+  static constexpr double max_branch_length_ = 3.;
+
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-2;
   double step_size_for_optimization_ = 5e-4;
@@ -61,6 +70,8 @@ class GPEngine {
 
   SitePattern site_pattern_;
   size_t plv_count_;
+  const double rescaling_threshold_;
+  const double log_rescaling_threshold_;
   MmappedNucleotidePLV mmapped_master_plv_;
   // plvs_ store the following (see GPDAG::GetPLVIndexStatic):
   // [0, num_nodes): p(s).
@@ -70,6 +81,7 @@ class GPEngine {
   // [4*num_nodes, 5*num_nodes): r(s).
   // [5*num_nodes, 6*num_nodes): r(s_tilde).
   NucleotidePLVRefVector plvs_;
+  EigenVectorXi plv_rescaling_counts_;
   // These parameters are indexed in the same way as sbn_parameters_ in
   // gp_instance.
   EigenVectorXd branch_lengths_;
@@ -97,17 +109,23 @@ class GPEngine {
   EigenVectorXd site_pattern_weights_;
 
   void InitializePLVsWithSitePatterns();
+
+  void RescalePLV(size_t plv_idx, int amount);
+  void RescalePLVIfNeeded(size_t plv_idx);
+  double LogRescalingFor(size_t plv_idx);
+
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
-  inline void PreparePerPatternLikelihoodDerivatives(size_t src1_idx, size_t src2_idx) {
+  inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
+                                                               size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
         (plvs_.at(src1_idx).transpose() * derivative_matrix_ * plvs_.at(src2_idx))
             .diagonal()
             .array();
   }
 
-  inline void PreparePerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
+  inline void PrepareUnrescaledPerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
     per_pattern_likelihoods_ =
         (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
             .diagonal()
@@ -119,7 +137,8 @@ class GPEngine {
         (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
             .diagonal()
             .array()
-            .log();
+            .log() +
+        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
   }
 };
 
@@ -127,7 +146,8 @@ class GPEngine {
 
 TEST_CASE("GPEngine") {
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
-  GPEngine engine(hello_site_pattern, 6 * 5, 5, "_ignore/mmapped_plv.data");
+  GPEngine engine(hello_site_pattern, 6 * 5, 5, "_ignore/mmapped_plv.data",
+                  GPEngine::default_rescaling_threshold_);
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29

@@ -89,9 +89,10 @@ Also let's:
 * TODO comments don't get merged into master. Rather, make an issue on GitHub.
 * Always use curly braces for the body of conditionals and loops, even if they are one line.
 
-The [C++ core guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) are the authority for how to write C++, and we will follow them.
+The [C++ Core Guidelines](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines) are the authority for how to write C++, and we will follow them.
 More generally, we use [clang-tidy](https://clang.llvm.org/extra/clang-tidy/) to check our code according to the `.clang-tidy` file in the root of the repo.
 For issues not covered by these guidelines (especially naming conventions), we will use the [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+However, the Core Guidelines take priority when these guides differ, such as concerning [passing non-const parameters by reference](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rf-inout).
 
 There are certainly violations of these guidelines in the code, so fix them when you see them!
 

@@ -3,6 +3,11 @@
 
 #include "gp_operation.hpp"
 
+GPOperations::PrepForMarginalization GPOperations::PrepForMarginalizationOfOperations(
+    const GPOperationVector& operations) {
+  return PrepForMarginalizationVisitor(operations).ToPrepForMarginalization();
+}
+
 std::ostream& operator<<(std::ostream& os, GPOperation const& operation) {
   std::visit(GPOperationOstream{os}, operation);
   return os;

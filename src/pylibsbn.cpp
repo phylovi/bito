@@ -337,7 +337,8 @@ PYBIND11_MODULE(libsbn, m) {
            "Read a sequence alignment from a FASTA file.")
 
       // ** Estimation
-      .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.")
+      .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",
+           py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_)
       .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
            "Read trees from a Newick file.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
