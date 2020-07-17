@@ -51,6 +51,19 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   return inst;
 }
 
+// Hotstart
+GPInstance MakeHotStartGPInstance(){
+  GPInstance inst("_ignore/mmnapped_plv.data");
+  inst.ReadFastaFile("data/hello.fasta");
+  inst.ReadNewickFile("data/hello_rooted_two_trees.nwk");
+  inst.ReadNewickFile("data/hotstart_bootstrap_sample.nwk");
+  inst.MakeEngine();
+  EigenVectorXd branch_lengths =
+    EigenVectorXd::Ones(inst.GetEngine()->GetBranchLengths().size());
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  return inst;
+}
+
 EigenVectorXd MakeHelloGPInstanceOptimalBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
   hello_gp_optimal_branch_lengths << 1, 1, 0.0736678167, 0.206803557, 0.0158180779,
