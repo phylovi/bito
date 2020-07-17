@@ -302,12 +302,11 @@ void GPDAG::SetPCSPIndexerEncodingToFullSubsplits() {
     if (it->first.size() == taxon_count_) {
       SafeInsert(indexer, it->first + ~it->first, it->second);
     } else {
-      SafeInsert(indexer,
-          it->first.PCSPParent() + it->first.PCSPChildSubsplit(), it->second);
+      SafeInsert(indexer, it->first.PCSPParent() + it->first.PCSPChildSubsplit(),
+                 it->second);
     }
   }
   gpcsp_indexer_ = indexer;
-
 }
 
 void GPDAG::ExpandPCSPIndexerAndSubsplitToRange() {
