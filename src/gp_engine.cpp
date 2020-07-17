@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "gp_engine.hpp"
+
 #include "optimization.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
@@ -47,15 +48,16 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
   per_pattern_log_likelihoods_ =
       (plvs_.at(op.stationary_idx).transpose() * plvs_.at(op.p_idx))
-      .diagonal()
-      .array()
-      .log();
+          .diagonal()
+          .array()
+          .log();
 
   log_likelihoods_[op.rootsplit_idx] =
-      log(q_(op.rootsplit_idx)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-  
-  log_marginal_likelihood_ =
-      NumericalUtils::LogAdd(log_marginal_likelihood_, log_likelihoods_[op.rootsplit_idx]);
+      log(q_(op.rootsplit_idx)) +
+      per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+
+  log_marginal_likelihood_ = NumericalUtils::LogAdd(log_marginal_likelihood_,
+                                                    log_likelihoods_[op.rootsplit_idx]);
 }
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {

@@ -64,21 +64,14 @@ class GPDAG {
   BitsetVector rootsplits_;
   // A map going from the index of a PCSP to its child.
   SizeBitsetMap index_to_child_;
-  // A map going from a parent subsplit to the range of indices in
-  // sbn_parameters_ with its children. See the definition of Range for the indexing
-  // convention.
-  BitsetSizePairMap parent_to_range_;
+  // This indexer is an expanded version of parent_to_range_ in sbn_instance:
+  // it includes single element range for fake subsplits.
+  BitsetSizePairMap subsplit_to_range_;
 
-  // This indexer is an expanded version of indexer_ in indexer_ in sbn_instance.
-  // This indexer can be used for q_, branch_lengths_, log_likelihoods_
+  // This indexer is an expanded version of indexer_ in sbn_instance.
+  // This indexer is used for q_, branch_lengths_, log_likelihoods_
   // in GPEngine.
   BitsetSizeMap gpcsp_indexer_;
-  // Stores range of indices for a subsplit and rotated subsplit.
-  // This map is similar to parent_to_range_ but it is constructed with the
-  // gpcsp_indexer_ to match its contents.
-  // Each of the indices in parent_to_range_[parent_subsplit] is used to access
-  // log_likelihood_ in gp_engine for SBN parameter optimization.
-  BitsetSizePairMap subsplit_to_range_;
 
   // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
   // This corresponds to the analogous concept for trees.
@@ -104,7 +97,11 @@ class GPDAG {
                             std::unordered_set<Bitset> &visited_subsplits);
   void BuildNodes();
   void BuildEdges();
-  void BuildPCSPIndexer();
+  // Expand gpcsp_indexer_ and subsplit_to_range_ with fake subsplits.
+  void ExpandPCSPIndexerAndSubsplitToRange();
+  // Update gpcsp_indexer_ keys to be full parent child subsplits as opposed to
+  // full parent and half child subsplits.
+  void SetPCSPIndexerEncodingToFullSubsplits();
 
   [[nodiscard]] GPOperationVector LeafwardPass(SizeVector visit_order) const;
   [[nodiscard]] GPOperationVector RootwardPass(SizeVector visit_order) const;

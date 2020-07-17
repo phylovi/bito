@@ -2,9 +2,11 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "gp_instance.hpp"
+
 #include <chrono>
 #include <iomanip>
 #include <string>
+
 #include "driver.hpp"
 #include "gp_operation.hpp"
 #include "numerical_utils.hpp"

@@ -2,11 +2,13 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "site_pattern.hpp"
+
 #include <cstdio>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
+
 #include "intpack.hpp"
 #include "sugar.hpp"
 

@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+
 #include "bitset.hpp"
 #include "sugar.hpp"
 
