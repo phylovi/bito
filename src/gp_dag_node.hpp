@@ -14,7 +14,7 @@
 
 class GPDAGNode {
  public:
-  GPDAGNode(size_t id, const Bitset &subsplit) : id_(id), subsplit_(subsplit) {}
+  GPDAGNode(size_t id, Bitset subsplit) : id_(id), subsplit_(std::move(subsplit)) {}
 
   size_t Id() const { return id_; }
   const Bitset &GetBitset() const { return subsplit_; }
@@ -24,9 +24,7 @@ class GPDAGNode {
   bool IsRoot() const {
     return (rootward_sorted.size() + rootward_rotated.size()) == 0;
   };
-  bool IsLeaf() const {
-    return (leafward_rotated.size() == 0) && (leafward_sorted.size() == 0);
-  }
+  bool IsLeaf() const { return leafward_rotated.empty() && leafward_sorted.empty(); }
 
   void AddLeafwardRotated(size_t node_id) { leafward_rotated.push_back(node_id); }
   void AddLeafwardSorted(size_t node_id) { leafward_sorted.push_back(node_id); }
