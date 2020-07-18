@@ -6,6 +6,7 @@
 // Credit to Xiang Ji and Marc Suchard.
 
 #include <numeric>
+
 #include "rooted_tree.hpp"
 
 // \partial{L}/\partial{t_k} = \sum_j \partial{L}/\partial{b_j}

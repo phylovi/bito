@@ -6,6 +6,7 @@
 #include <numeric>
 #include <utility>
 #include <vector>
+
 #include "rooted_gradient_transforms.hpp"
 
 FatBeagle::FatBeagle(const PhyloModelSpecification &specification,

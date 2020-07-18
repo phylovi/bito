@@ -2,6 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "gp_dag.hpp"
+
+#include <iostream>
+
 #include "numerical_utils.hpp"
 
 using namespace GPOperations;
@@ -12,7 +15,8 @@ GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
   ProcessTrees(tree_collection);
   BuildNodes();
   BuildEdges();
-  BuildPCSPIndexer();
+  SetPCSPIndexerEncodingToFullSubsplits();
+  ExpandPCSPIndexerAndSubsplitToRange();
 }
 
 size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
@@ -189,9 +193,8 @@ void GPDAG::IterateOverRealNodes(std::function<void(const GPDAGNode *)> f) const
 std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
                                                 bool include_fake_subsplits) {
   std::vector<Bitset> children_subsplits;
-
-  if (parent_to_range_.count(subsplit)) {
-    const auto [start, stop] = parent_to_range_.at(subsplit);
+  if (subsplit_to_range_.count(subsplit)) {
+    const auto [start, stop] = subsplit_to_range_.at(subsplit);
     for (auto idx = start; idx < stop; idx++) {
       const auto child_subsplit = index_to_child_.at(idx);
       children_subsplits.push_back(child_subsplit);
@@ -219,7 +222,7 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
   taxon_count_ = tree_collection.TaxonCount();
   const auto topology_counter = tree_collection.TopologyCounter();
 
-  std::tie(rootsplits_, std::ignore, index_to_child_, parent_to_range_,
+  std::tie(rootsplits_, gpcsp_indexer_, index_to_child_, subsplit_to_range_,
            rootsplit_and_pcsp_count_) =
       SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),
                                   RootedSBNMaps::PCSPCounterOf(topology_counter));
@@ -293,35 +296,35 @@ void GPDAG::BuildEdges() {
   }
 }
 
-void GPDAG::BuildPCSPIndexer() {
-  size_t idx = 0;
-  for (const auto &rootsplit : rootsplits_) {
-    SafeInsert(gpcsp_indexer_, rootsplit + ~rootsplit, idx);
-    idx++;
+void GPDAG::SetPCSPIndexerEncodingToFullSubsplits() {
+  BitsetSizeMap indexer;
+  for (auto it = gpcsp_indexer_.cbegin(); it != gpcsp_indexer_.cend(); ++it) {
+    if (it->first.size() == taxon_count_) {
+      SafeInsert(indexer, it->first + ~it->first, it->second);
+    } else {
+      SafeInsert(indexer, it->first.PCSPParent() + it->first.PCSPChildSubsplit(),
+                 it->second);
+    }
   }
+  gpcsp_indexer_ = indexer;
+}
 
-  IterateOverRealNodes([this, &idx](const GPDAGNode *node) {
-    auto child_count = node->GetLeafwardSorted().size();
-    if (child_count > 0) {
-      SafeInsert(subsplit_to_range_, node->GetBitset(), {idx, idx + child_count});
-      for (size_t j = 0; j < child_count; j++) {
-        const auto child = GetDagNode(node->GetLeafwardSorted().at(j));
-        SafeInsert(gpcsp_indexer_, node->GetBitset() + child->GetBitset(), idx);
-        idx++;
-      }
+void GPDAG::ExpandPCSPIndexerAndSubsplitToRange() {
+  // Add fake subsplits to expand gpcsp_indexer_ and subsplit_to_range_.
+  for (size_t i = 0; i < taxon_count_; i++) {
+    for (const size_t &node_id : dag_nodes_[i]->GetRootwardSorted()) {
+      Bitset gpcsp = dag_nodes_[node_id]->GetBitset() + dag_nodes_[i]->GetBitset();
+      SafeInsert(subsplit_to_range_, dag_nodes_[node_id]->GetBitset(),
+                 {gpcsp_indexer_.size(), gpcsp_indexer_.size() + 1});
+      SafeInsert(gpcsp_indexer_, gpcsp, gpcsp_indexer_.size());
     }
-    child_count = node->GetLeafwardRotated().size();
-    if (child_count > 0) {
-      SafeInsert(subsplit_to_range_, node->GetBitset().RotateSubsplit(),
-                 {idx, idx + child_count});
-      for (size_t j = 0; j < child_count; j++) {
-        const auto child = GetDagNode(node->GetLeafwardRotated().at(j));
-        SafeInsert(gpcsp_indexer_,
-                   node->GetBitset().RotateSubsplit() + child->GetBitset(), idx);
-        idx++;
-      }
+    for (const size_t &node_id : dag_nodes_[i]->GetRootwardRotated()) {
+      Bitset gpcsp = dag_nodes_[node_id]->GetBitset(true) + dag_nodes_[i]->GetBitset();
+      SafeInsert(subsplit_to_range_, dag_nodes_[node_id]->GetBitset(true),
+                 {gpcsp_indexer_.size(), gpcsp_indexer_.size() + 1});
+      SafeInsert(gpcsp_indexer_, gpcsp, gpcsp_indexer_.size());
     }
-  });
+  }
 }
 
 void RootwardDepthFirst(size_t id,
