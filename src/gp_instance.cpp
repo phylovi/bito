@@ -120,6 +120,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   std::chrono::duration<double> warmup_duration = now() - t_start;
   t_start = now();
   std::cout << "Computing initial likelihood\n";
+  ProcessOperations(marginal_lik_operations);
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
   std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
   t_start = now();
