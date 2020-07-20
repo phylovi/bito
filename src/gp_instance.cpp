@@ -109,7 +109,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   auto now = std::chrono::high_resolution_clock::now;
   auto t_start = now();
   std::cout << "Begin branch optimization\n";
-  GPOperationVector compute_likelihoods_operations = dag_.ComputeLikelihoods();
   GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
@@ -119,7 +118,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   std::chrono::duration<double> warmup_duration = now() - t_start;
   t_start = now();
   std::cout << "Computing initial likelihood\n";
-  ProcessOperations(compute_likelihoods_operations);
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
   std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
   t_start = now();
