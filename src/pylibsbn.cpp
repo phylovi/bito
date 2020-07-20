@@ -6,7 +6,9 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
 #include <string>
+
 #include "gp_instance.hpp"
 #include "rooted_gradient_transforms.hpp"
 #include "rooted_sbn_instance.hpp"

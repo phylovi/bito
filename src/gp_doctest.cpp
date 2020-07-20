@@ -10,8 +10,6 @@ using namespace GPOperations;
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, root };
 
-size_t root_jupiter_idx = 3;
-
 // Our tree is
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
@@ -23,7 +21,7 @@ GPInstance MakeHelloGPInstance() {
   inst.MakeEngine();
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
-  branch_lengths << 0, 0.1, 0.15, 0.113, 0.22;
+  branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   return inst;
 }
@@ -35,7 +33,7 @@ GPInstance MakeHelloGPInstanceSingleNucleotide() {
   inst.MakeEngine();
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
-  branch_lengths << 0, 0.1, 0.15, 0.113, 0.22;
+  branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   return inst;
 }
@@ -53,8 +51,8 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
 
 EigenVectorXd MakeHelloGPInstanceOptimalBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
-  hello_gp_optimal_branch_lengths << 1, 1, 0.0736678167, 0.206803557, 0.0158180779,
-      0.0540515854, 0.206134746, 0.0736678167, 0.0150759956, 0.0540515854;
+  hello_gp_optimal_branch_lengths << 1, 1, 0.0540515854, 0.0150759956, 0.0158180779,
+      0.0736678167, 0.206134746, 0.206803557, 0.0736678167, 0.0540515854;
 
   return hello_gp_optimal_branch_lengths;
 }
@@ -96,6 +94,8 @@ TEST_CASE("GPInstance: gradient calculation") {
   size_t root_idx = root;
   size_t child_idx = jupiter;
   size_t hello_node_count = 5;
+  size_t root_jupiter_idx = 2;
+
   size_t leafward_idx =
       GPDAG::GetPLVIndexStatic(GPDAG::PLVType::P, hello_node_count, child_idx);
   size_t rootward_idx =
@@ -111,7 +111,7 @@ TEST_CASE("GPInstance: gradient calculation") {
 TEST_CASE("GPInstance: branch length optimization") {
   auto inst = MakeHelloGPInstanceTwoTrees();
 
-  auto expected_branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
+  EigenVectorXd expected_branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
   inst.GetEngine()->SetBranchLengths(expected_branch_lengths);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
@@ -120,7 +120,7 @@ TEST_CASE("GPInstance: branch length optimization") {
   // Reset.
   inst = MakeHelloGPInstanceTwoTrees();
   inst.EstimateBranchLengths(1e-6, 100);
-  auto realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
+  EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
   CHECK_LT(fabs(expected_log_marginal - -80.6906345), 1e-6);
 }
