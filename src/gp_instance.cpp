@@ -11,32 +11,39 @@
 #include "gp_operation.hpp"
 #include "numerical_utils.hpp"
 
-using namespace GPOperations;
+using namespace GPOperations;  // NOLINT
 
 void GPInstance::PrintStatus() {
   const auto tree_count = tree_collection_.TreeCount();
   const auto taxon_count = tree_collection_.TaxonCount();
-  if (tree_count) {
+  if (tree_count > 0) {
     std::cout << tree_count << " trees loaded on " << taxon_count << " leaves.\n";
   } else {
     std::cout << "No trees loaded.\n";
   }
   std::cout << alignment_.Data().size() << " sequences loaded.\n";
-  std::cout << dag_.NodeCount() << " DAG nodes.\n";
+  std::cout << dag_.NodeCount() << " DAG nodes representing " << dag_.TreeCount()
+            << " trees.\n";
   std::cout << dag_.GeneralizedPCSPCount() << " continuous parameters.\n";
+  if (engine_ == nullptr) {
+    std::cout << "Engine has not been made.\n";
+  } else {
+    std::cout << "Engine available with " << GetEngine()->PLVByteCount() / 1e9
+              << "G virtual memory.\n";
+  }
 }
 
-void GPInstance::ReadFastaFile(std::string fname) {
+void GPInstance::ReadFastaFile(const std::string &fname) {
   alignment_ = Alignment::ReadFasta(fname);
 }
 
-void GPInstance::ReadNewickFile(std::string fname) {
+void GPInstance::ReadNewickFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
 }
 
-void GPInstance::ReadNexusFile(std::string fname) {
+void GPInstance::ReadNexusFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
@@ -55,14 +62,15 @@ void GPInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
-void GPInstance::MakeEngine() {
+void GPInstance::MakeEngine(double rescaling_threshold) {
   CheckSequencesAndTreesLoaded();
   ProcessLoadedTrees();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
   engine_ = std::make_unique<GPEngine>(site_pattern, 6 * dag_.NodeCount(),
-                                       dag_.GeneralizedPCSPCount(), mmap_file_path_);
+                                       dag_.GeneralizedPCSPCount(), mmap_file_path_,
+                                       rescaling_threshold);
   InitializeGPEngine();
 }
 

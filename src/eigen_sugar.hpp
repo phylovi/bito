@@ -12,6 +12,7 @@
 #include "sugar.hpp"
 
 using EigenVectorXd = Eigen::VectorXd;
+using EigenVectorXi = Eigen::VectorXi;
 using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using EigenVectorXdRef = Eigen::Ref<EigenVectorXd>;

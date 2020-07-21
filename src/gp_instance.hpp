@@ -11,22 +11,23 @@
 
 class GPInstance {
  public:
-  GPInstance(std::string mmap_file_path) : mmap_file_path_(mmap_file_path) {
+  explicit GPInstance(const std::string &mmap_file_path)
+      : mmap_file_path_(mmap_file_path) {
     if (mmap_file_path.empty()) {
       Failwith("GPInstance needs a legal path as a constructor argument.");
     }
   };
   void PrintStatus();
 
-  void ReadFastaFile(std::string fname);
-  void ReadNewickFile(std::string fname);
-  void ReadNexusFile(std::string fname);
+  void ReadFastaFile(const std::string &fname);
+  void ReadNewickFile(const std::string &fname);
+  void ReadNexusFile(const std::string &fname);
 
-  void MakeEngine();
-  GPEngine* GetEngine() const;
+  void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
+  GPEngine *GetEngine() const;
   void PrintDAG();
   void PrintGPCSPIndexer();
-  void ProcessOperations(const GPOperationVector& operations);
+  void ProcessOperations(const GPOperationVector &operations);
   void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter);
   void PopulatePLVs();

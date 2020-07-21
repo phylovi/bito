@@ -6,9 +6,11 @@
 #include "optimization.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
-                   std::string mmap_file_path)
+                   const std::string& mmap_file_path, double rescaling_threshold)
     : site_pattern_(std::move(site_pattern)),
       plv_count_(plv_count),
+      rescaling_threshold_(rescaling_threshold),
+      log_rescaling_threshold_(log(rescaling_threshold)),
       mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
   Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
   plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
@@ -17,6 +19,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
+  plv_rescaling_counts_ = EigenVectorXi::Constant(plv_count_, 0);
   branch_lengths_.resize(gpcsp_count);
   branch_lengths_.setOnes();
   log_likelihoods_.resize(gpcsp_count);
@@ -31,6 +34,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
 
 void GPEngine::operator()(const GPOperations::Zero& op) {
   plvs_.at(op.dest_).setZero();
+  plv_rescaling_counts_(op.dest_) = 0;
 }
 
 void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
@@ -38,16 +42,38 @@ void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
   for (size_t row_idx = 0; row_idx < plv.rows(); ++row_idx) {
     plv.row(row_idx).array() = stationary_distribution_(row_idx);
   }
+  plv_rescaling_counts_(op.dest_) = 0;
 }
 
 void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.gpcsp_));
-  plvs_.at(op.dest_) += q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
+  // We assume that we've done a PrepForMarginalization operation, and thus the
+  // rescaling count for op.dest_ is the minimum of the rescaling counts among the
+  // op.src_s. Thus this should be zero or negative:
+  const int rescaling_difference =
+      plv_rescaling_counts_(op.dest_) - plv_rescaling_counts_(op.src_);
+  Assert(rescaling_difference <= 0,
+         "Too much dest_ rescaling in IncrementWithWeightedEvolvedPLV");
+  const double rescaling_factor =
+      rescaling_difference == 0
+          ? 1.
+          : pow(rescaling_threshold_, static_cast<double>(rescaling_difference));
+  // We are going to have evidence of reduced-precision arithmetic here because we are
+  // adding together things of radically different rescaling amounts. This appears
+  // unavoidable without special-purpose truncation code, which doesn't seem worthwhile.
+  plvs_.at(op.dest_) +=
+      rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
 }
 
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
+  Assert(plv_rescaling_counts_(op.stationary_) == 0,
+         "Surprise! Rescaled stationary distribution in IncrementMarginalLikelihood");
   per_pattern_log_likelihoods_ =
-      (plvs_.at(op.stationary_).transpose() * plvs_.at(op.p_)).diagonal().array().log();
+      (plvs_.at(op.stationary_).transpose() * plvs_.at(op.p_))
+          .diagonal()
+          .array()
+          .log() +
+      LogRescalingFor(op.p_);
 
   log_likelihoods_[op.rootsplit_] =
       log(q_(op.rootsplit_)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
@@ -58,6 +84,9 @@ void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {
   plvs_.at(op.dest_).array() = plvs_.at(op.src1_).array() * plvs_.at(op.src2_).array();
+  plv_rescaling_counts_(op.dest_) =
+      plv_rescaling_counts_(op.src1_) + plv_rescaling_counts_(op.src2_);
+  RescalePLVIfNeeded(op.dest_);
 }
 
 void GPEngine::operator()(const GPOperations::Likelihood& op) {
@@ -83,6 +112,18 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   const double log_norm = NumericalUtils::LogSum(segment);
   segment.array() -= log_norm;
   q_.segment(op.start_, range_length) = segment.array().exp();
+}
+
+void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
+  const size_t src_count = op.src_vector_.size();
+  Assert(src_count > 0, "Empty src_vector in PrepForMarginalization");
+  SizeVector src_rescaling_counts(src_count);
+  for (size_t idx = 0; idx < src_count; ++idx) {
+    src_rescaling_counts[idx] = plv_rescaling_counts_(op.src_vector_[idx]);
+  }
+  const auto min_rescaling_count =
+      *std::min_element(src_rescaling_counts.begin(), src_rescaling_counts.end());
+  plv_rescaling_counts_(op.dest_) = min_rescaling_count;
 }
 
 void GPEngine::ProcessOperations(GPOperationVector operations) {
@@ -121,19 +162,19 @@ void GPEngine::PrintPLV(size_t plv_idx) {
 DoublePair GPEngine::LogLikelihoodAndDerivative(
     const GPOperations::OptimizeBranchLength& op) {
   SetTransitionAndDerivativeMatricesToHaveBranchLength(branch_lengths_(op.gpcsp_));
-
-  // The per-site likelihood derivative is calculated in the same way as the per-site
-  // likelihood, but using the derivative matrix instead of the transition matrix.
-  PreparePerPatternLikelihoodDerivatives(op.rootward_, op.leafward_);
-  PreparePerPatternLikelihoods(op.rootward_, op.leafward_);
-  per_pattern_log_likelihoods_ = per_pattern_likelihoods_.array().log();
-
+  PreparePerPatternLogLikelihoods(op.rootward_, op.leafward_);
   // The prior is expressed using the current value of q_.
   // The phylogenetic component of the likelihood is weighted with the number of times
   // we see the site patterns.
   const double log_likelihood =
       log(q_(op.gpcsp_)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
+  // The per-site likelihood derivative is calculated in the same way as the per-site
+  // likelihood, but using the derivative matrix instead of the transition matrix.
+  // We first prepare two useful vectors _without_ likelihood rescaling, because the
+  // rescalings cancel out in the ratio below.
+  PrepareUnrescaledPerPatternLikelihoodDerivatives(op.rootward_, op.leafward_);
+  PrepareUnrescaledPerPatternLikelihoods(op.rootward_, op.leafward_);
   // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
   // of l_i divided by l_i.
   per_pattern_likelihood_derivative_ratios_ =
@@ -161,6 +202,35 @@ void GPEngine::InitializePLVsWithSitePatterns() {
     }
     taxon_idx++;
   }
+}
+
+void GPEngine::RescalePLV(size_t plv_idx, int rescaling_count) {
+  Assert(rescaling_count >= 0, "Negative rescaling count in RescalePLV.");
+  if (rescaling_count == 0) {
+    return;
+  }
+  // else
+  plvs_.at(plv_idx) /= pow(rescaling_threshold_, static_cast<double>(rescaling_count));
+  plv_rescaling_counts_(plv_idx) += rescaling_count;
+}
+
+void GPEngine::RescalePLVIfNeeded(size_t plv_idx) {
+  double min_entry = plvs_.at(plv_idx).minCoeff();
+  Assert(min_entry >= 0., "PLV with negative entry passed to RescalePLVIfNeeded");
+  if (min_entry == 0) {
+    return;
+  }
+  // else
+  int rescaling_count = 0;
+  while (min_entry < rescaling_threshold_) {
+    min_entry /= rescaling_threshold_;
+    rescaling_count++;
+  }
+  RescalePLV(plv_idx, rescaling_count);
+}
+
+double GPEngine::LogRescalingFor(size_t plv_idx) {
+  return static_cast<double>(plv_rescaling_counts_(plv_idx)) * log_rescaling_threshold_;
 }
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {

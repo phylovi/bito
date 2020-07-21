@@ -124,6 +124,24 @@ struct UpdateSBNProbabilities {
   size_t stop_;
   StringSizePairVector guts() const { return {{"start_", start_}, {"stop_", stop_}}; }
 };
+
+// This operation sets the rescaling amount for the PLV in op.dest_ to be the minimum of
+// that for all of the PLVs in op.src_vector_. We do this so that we can sum over
+// partial likelihood vectors after rescaling each one so that it is on the same scale
+// as dest. Note that we want the minimum here because we want to preserve accuracy for
+// the PLV with the highest likelihood (which corresponds to the least amount of
+// rescaling).
+struct PrepForMarginalization {
+  PrepForMarginalization(size_t dest, SizeVector src_vector)
+      : dest_{dest}, src_vector_{std::move(src_vector)} {}
+  size_t dest_;
+  SizeVector src_vector_;
+  std::pair<std::pair<std::string, size_t>, std::pair<std::string, SizeVector>> guts()
+      const {
+    return {{"dest_", dest_}, {"src_vector_", src_vector_}};
+  }
+};
+
 }  // namespace GPOperations
 
 using GPOperation =
@@ -131,9 +149,51 @@ using GPOperation =
                  GPOperations::IncrementWithWeightedEvolvedPLV, GPOperations::Multiply,
                  GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
                  GPOperations::UpdateSBNProbabilities,
-                 GPOperations::IncrementMarginalLikelihood>;
+                 GPOperations::IncrementMarginalLikelihood,
+                 GPOperations::PrepForMarginalization>;
 
 using GPOperationVector = std::vector<GPOperation>;
+
+// The purpose of this visitor class is to accumulate the
+// things-that-need-preparation-for-marginalization and build them into a
+// PrepForMarginalization (see PrepForMarginalizationOfOperations implementation).
+struct PrepForMarginalizationVisitor {
+  std::optional<size_t> dest_ = std::nullopt;
+  SizeVector src_vector;
+
+  explicit PrepForMarginalizationVisitor(const GPOperationVector& operations) {
+    for (const auto& operation : operations) {
+      std::visit(*this, operation);
+    }
+  }
+
+  void operator()(const GPOperations::Zero& op) {}
+  void operator()(const GPOperations::SetToStationaryDistribution& op) {}
+  void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& op) {
+    if (dest_) {
+      Assert(*dest_ == op.dest_, "dest_ mismatch in PrepForMarginalizationVisitor");
+    } else {
+      dest_ = op.dest_;
+    }
+    src_vector.push_back(op.src_);
+  }
+  void operator()(const GPOperations::IncrementMarginalLikelihood& op) {}
+  void operator()(const GPOperations::Multiply& op) {}
+  void operator()(const GPOperations::Likelihood& op) {}
+  void operator()(const GPOperations::OptimizeBranchLength& op) {}
+  void operator()(const GPOperations::UpdateSBNProbabilities& op) {}
+  void operator()(const GPOperations::PrepForMarginalization& op) {}
+
+  GPOperations::PrepForMarginalization ToPrepForMarginalization() {
+    Assert(dest_, "Nothing to prep in ToPrepForMarginalization");
+    return GPOperations::PrepForMarginalization{*dest_, src_vector};
+  }
+};
+
+namespace GPOperations {
+PrepForMarginalization PrepForMarginalizationOfOperations(
+    const GPOperationVector& operations);
+};  // namespace GPOperations
 
 struct GPOperationOstream {
   std::ostream& os_;
@@ -147,10 +207,10 @@ struct GPOperationOstream {
     os_ << "SetToStationaryDistribution" << operation.guts();
   }
   void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& operation) {
-    os_ << "WeightedSumAccumulate" << operation.guts();
+    os_ << "IncrementWithWeightedEvolvedPLV" << operation.guts();
   }
   void operator()(const GPOperations::IncrementMarginalLikelihood& operation) {
-    os_ << "MarginalLikelihood" << operation.guts();
+    os_ << "IncrementMarginalLikelihood" << operation.guts();
   }
   void operator()(const GPOperations::Multiply& operation) {
     os_ << "Multiply" << operation.guts();
@@ -163,6 +223,9 @@ struct GPOperationOstream {
   }
   void operator()(const GPOperations::UpdateSBNProbabilities& operation) {
     os_ << "UpdateSBNProbabilities" << operation.guts();
+  }
+  void operator()(const GPOperations::PrepForMarginalization& operation) {
+    os_ << "PrepForMarginalization" << operation.guts();
   }
 };
 

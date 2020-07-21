@@ -1,5 +1,8 @@
 # See https://www.reddit.com/r/cpp/comments/5bqkk5/good_clangtidy_files/
-Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-llvm-header-guard,-llvm-include-order,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-hicpp-no-array-decay,-fuchsia-default-arguments,-fuchsia-overloaded-operator'
+# Note that google-runtime-references disallows passing non-const references, but we prefer
+# https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Rf-inout
+# that suggests non-const references as how we express in/out arguments
+Checks:          'clang-diagnostic-*,clang-analyzer-*,*,-llvm-header-guard,-llvm-include-order,-cppcoreguidelines-pro-bounds-array-to-pointer-decay,-hicpp-no-array-decay,-fuchsia-default-arguments,-fuchsia-overloaded-operator,-google-runtime-references'
 WarningsAsErrors: ''
 HeaderFilterRegex: ''
 AnalyzeTemporaryDtors: false
