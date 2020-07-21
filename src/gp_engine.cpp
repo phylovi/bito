@@ -23,7 +23,9 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   rescaling_counts_ = EigenVectorXi::Zero(plv_count_);
   branch_lengths_.resize(gpcsp_count);
   branch_lengths_.setConstant(default_branch_length_);
-  log_likelihoods_.resize(gpcsp_count);
+  log_marginal_likelihood_.resize(site_pattern_.PatternCount());
+  log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
+  log_likelihoods_.resize(gpcsp_count, site_pattern_.PatternCount());
   q_.resize(gpcsp_count);
 
   auto weights = site_pattern_.GetWeights();
@@ -41,7 +43,8 @@ void GPEngine::operator()(const GPOperations::Zero& op) {
 void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
   auto& plv = plvs_.at(op.dest_);
   for (size_t row_idx = 0; row_idx < plv.rows(); ++row_idx) {
-    plv.row(row_idx).array() = stationary_distribution_(row_idx);
+    plv.row(row_idx).array() =
+        q_(op.root_gpcsp_idx_) * stationary_distribution_(row_idx);
   }
   rescaling_counts_(op.dest_) = 0;
 }
@@ -69,18 +72,16 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
   Assert(rescaling_counts_(op.stationary_) == 0,
          "Surprise! Rescaled stationary distribution in IncrementMarginalLikelihood");
-  per_pattern_log_likelihoods_ =
+  log_likelihoods_.row(op.rootsplit_) =
       (plvs_.at(op.stationary_).transpose() * plvs_.at(op.p_))
           .diagonal()
           .array()
           .log() +
       LogRescalingFor(op.p_);
 
-  log_likelihoods_[op.rootsplit_] =
-      log(q_(op.rootsplit_)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-
-  log_marginal_likelihood_ =
-      NumericalUtils::LogAdd(log_marginal_likelihood_, log_likelihoods_[op.rootsplit_]);
+  // Perform LogAdd per site.
+  log_marginal_likelihood_ = NumericalUtils::LogAddVectors(
+      log_marginal_likelihood_, log_likelihoods_.row(op.rootsplit_));
 }
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {
@@ -93,9 +94,8 @@ void GPEngine::operator()(const GPOperations::Multiply& op) {
 
 void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_));
-  PreparePerPatternLogLikelihoods(op.parent_, op.child_);
-  log_likelihoods_[op.dest_] =
-      log(q_[op.dest_]) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  PreparePerPatternLogLikelihoods(op.dest_, op.parent_, op.child_);
+  log_likelihoods_.row(op.dest_) = per_pattern_log_likelihoods_;
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
@@ -103,17 +103,17 @@ void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
-  const size_t range_length = op.stop_ - op.start_;
-  if (range_length == 1) {
-    q_(op.start_) = 1.;
-    return;
-  }
-  // else
-  Eigen::VectorBlock<EigenVectorXd> segment =
-      log_likelihoods_.segment(op.start_, range_length);
-  const double log_norm = NumericalUtils::LogSum(segment);
-  segment.array() -= log_norm;
-  q_.segment(op.start_, range_length) = segment.array().exp();
+  //  const size_t range_length = op.stop_ - op.start_;
+  //  if (range_length == 1) {
+  //    q_(op.start_) = 1.;
+  //    return;
+  //  }
+  //  // else
+  //  Eigen::VectorBlock<EigenVectorXd> segment =
+  //      log_likelihoods_.segment(op.start_, range_length);
+  //  const double log_norm = NumericalUtils::LogSum(segment);
+  //  segment.array() -= log_norm;
+  //  q_.segment(op.start_, range_length) = segment.array().exp();
 }
 
 void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
@@ -248,8 +248,9 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double branch_length) {
     SetTransitionMatrixToHaveBranchLength(branch_length);
     PreparePerPatternLogLikelihoods(op.rootward_, op.leafward_);
-    return -(log(q_[op.gpcsp_]) +
-             per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+    return -(per_pattern_log_likelihoods_.array() *
+             site_pattern_weights_.array())
+                .sum();
   };
   double current_branch_length = branch_lengths_(op.gpcsp_);
   double current_value = negative_log_likelihood(current_branch_length);

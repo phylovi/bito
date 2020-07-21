@@ -71,3 +71,12 @@ Alignment Alignment::ReadFasta(const std::string &fname) {
   }
   return alignment;
 }
+
+Alignment Alignment::MakeSingleColumnAlignment(const Alignment &in_alignment,
+                                               size_t which_column) {
+  StringStringMap out_map;
+  for (const auto &[taxon_name, sequence] : in_alignment.Data()) {
+    SafeInsert(out_map, taxon_name, sequence.substr(which_column, 1));
+  }
+  return Alignment(out_map);
+}
