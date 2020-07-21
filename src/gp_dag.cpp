@@ -98,17 +98,6 @@ size_t GPDAG::GetGPCSPIndex(const Bitset &parent_subsplit,
   return gpcsp_indexer_.at(Bitset::PCSPOfPair(parent_subsplit, child_subsplit));
 }
 
-size_t GPDAG::GetGPCSPIndexWithDefault(const Bitset &parent_subsplit,
-                                       const Bitset &child_subsplit) const {
-  const auto pcsp = Bitset::PCSPOfPair(parent_subsplit, child_subsplit, false);
-  if (gpcsp_indexer_.count(pcsp) > 0) {
-    return gpcsp_indexer_.at(pcsp);
-  }
-  // else
-  // Return the max value.
-  return SIZE_MAX;
-}
-
 EigenVectorXd GPDAG::BuildUniformQ() const {
   EigenVectorXd q = EigenVectorXd::Ones(GPCSPCountWithFakeSubsplits());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
@@ -277,8 +266,9 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
 GPOperationVector GPDAG::SetRhatToStationary() const {
   GPOperationVector operations;
   IterateOverRootsplitIds([this, &operations](size_t rootsplit_id) {
-    operations.push_back(
-        SetToStationaryDistribution{GetPLVIndex(PLVType::R_HAT, rootsplit_id)});
+    size_t root_gpcsp_idx = gpcsp_indexer_.at(GetDagNode(rootsplit_id)->GetBitset());
+    operations.push_back(SetToStationaryDistribution{
+        GetPLVIndex(PLVType::R_HAT, rootsplit_id), root_gpcsp_idx});
   });
   return operations;
 }

@@ -53,10 +53,6 @@ class GPDAG {
   // Asserts to make sure that the PCSP is well formed.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,
                        const Bitset &child_subsplit) const;
-  // As above, but return SIZE_MAX if not found.
-  // Does not assert to make sure that the PCSP is well formed.
-  size_t GetGPCSPIndexWithDefault(const Bitset &parent_subsplit,
-                                  const Bitset &child_subsplit) const;
 
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
