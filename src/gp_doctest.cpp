@@ -51,18 +51,7 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   return inst;
 }
 
-// Hotstart
-GPInstance MakeHotStartGPInstance(){
-  GPInstance inst("_ignore/mmnapped_plv.data");
-  inst.ReadFastaFile("data/hello.fasta");
-  inst.ReadNewickFile("data/hello_rooted_two_trees.nwk");
-  inst.ReadNewickFile("data/hotstart_bootstrap_sample.nwk");
-  inst.MakeEngine();
-  EigenVectorXd branch_lengths =
-    EigenVectorXd::Ones(inst.GetEngine()->GetBranchLengths().size());
-  inst.GetEngine()->SetBranchLengths(branch_lengths);
-  return inst;
-}
+
 
 EigenVectorXd MakeHelloGPInstanceOptimalBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
@@ -70,6 +59,36 @@ EigenVectorXd MakeHelloGPInstanceOptimalBranchLengths() {
       0.0540515854, 0.206134746, 0.0736678167, 0.0150759956, 0.0540515854;
 
   return hello_gp_optimal_branch_lengths;
+}
+
+// Hotstart
+// Might need something like this..
+GPInstance MakeHotStartGPInstance(){
+    GPInstance inst("_ignore/mmapped_plv.data");
+    inst.ReadFastaFile("data/hotstart.fasta");
+    inst.ReadNewickFile("data/hotstart_bootstrap_sample.nwk");
+    inst.MakeEngine();
+    inst.PrintStatus();
+    EigenVectorXd branch_lengths = inst.GetEngine()->GetBranchLengths();
+    std::cout << "Here is the vector " << branch_lengths << std::endl;
+    return inst;
+}
+
+// Outputting the test case branch length vector
+EigenVectorXd HotStartTestCase(){
+    Driver driver;
+    RootedTreeCollection tree_collection_ =
+      RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile("data/hotstart_bootstrap_sample.nwk"));
+    
+    const auto tree_count = tree_collection_.TreeCount();
+    EigenVectorXd hotstart_test_case(tree_count);
+    size_t i = 0;
+    
+    for (const auto& tree : tree_collection_.Trees()){
+        hotstart_test_case(i) = tree.branch_lengths_[0];
+        i++;
+    }
+    return hotstart_test_case;
 }
 
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
@@ -133,4 +152,20 @@ TEST_CASE("GPInstance: branch length optimization") {
   auto realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
   CHECK_LT(fabs(expected_log_marginal - -80.6906345), 1e-6);
+}
+
+EigenVectorXd MakeHotStartExpectedBranchLengths() {
+  EigenVectorXd hotstart_expected_branch_lengths(8);
+  hotstart_expected_branch_lengths << 0.135747939, 0.091601424, 0.11377897, 0.081359048,
+    0.115477758, 0.081239333, 0.126825273, 0.135747939;
+
+  return hotstart_expected_branch_lengths;
+}
+
+TEST_CASE("GPInstance: Hotstart branch lengths"){
+    EigenVectorXd hotstart_test_case = HotStartTestCase();
+    double true_mean = hotstart_test_case.array().mean();
+    
+    // TODO Figure out why hotstart function is only outputting 1's.
+    // then it should be straightforward to finish the unit test
 }
