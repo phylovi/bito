@@ -38,9 +38,9 @@ double GPDAG::TreeCount() const {
       }
     }
   }
-  double tree_count = 1.;
+  double tree_count = 0;
   IterateOverRootsplitIds([&tree_count, &tree_count_below](size_t root_id) {
-    tree_count *= tree_count_below[root_id];
+    tree_count += tree_count_below[root_id];
   });
   return tree_count;
 }
