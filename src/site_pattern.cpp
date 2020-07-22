@@ -79,11 +79,16 @@ void SitePattern::Compress() {
   size_t sequence_length = alignment_.Length();
   std::unordered_map<SymbolVector, double, IntVectorHasher> patterns;
 
+  std::unordered_map<size_t, std::string> taxon_number_to_sequence;
+  for (const auto &[tag, taxon] : tag_taxon_map_) {
+    const auto taxon_number = static_cast<size_t>(MaxLeafIDOfTag(tag));
+    SafeInsert(taxon_number_to_sequence, taxon_number, alignment_.at(taxon));
+  }
+
   for (size_t pos = 0; pos < sequence_length; pos++) {
     SymbolVector pattern(alignment_.SequenceCount());
-    for (const auto &iter : tag_taxon_map_) {
-      auto taxon_number = static_cast<size_t>(MaxLeafIDOfTag(iter.first));
-      auto symbol_to_find = alignment_.at(iter.second)[pos];
+    for (const auto &[taxon_number, sequence] : taxon_number_to_sequence) {
+      const auto symbol_to_find = sequence[pos];
       pattern[taxon_number] = SymbolTableAt(symbol_table, symbol_to_find);
     }
     if (patterns.find(pattern) == patterns.end()) {

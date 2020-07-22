@@ -26,7 +26,7 @@ bool Alignment::IsValid() const {
   return std::all_of(data_.cbegin(), data_.cend(), is_same_length);
 }
 
-std::string Alignment::at(const std::string &taxon) const {
+const std::string &Alignment::at(const std::string &taxon) const {
   auto search = data_.find(taxon);
   if (search != data_.end()) {
     return search->second;
