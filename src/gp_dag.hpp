@@ -32,6 +32,7 @@ class GPDAG {
   // How many trees can be expressed by the GPDAG? Expressed as a double because this
   // number can be big.
   double TreeCount() const;
+  double TreeCount(EigenVectorXdRef tree_count_below) const;
   size_t RootsplitAndPCSPCount() const;
   // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
   size_t GeneralizedPCSPCount() const;
@@ -47,6 +48,8 @@ class GPDAG {
 
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
+  // Uniform prior over all topologies.
+  [[nodiscard]] EigenVectorXd BuildUniformPrior() const;
   // Schedule branch length optimization.
   [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
   // Compute likelihood values l(s|t) for each child subsplit s by visiting

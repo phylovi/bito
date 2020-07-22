@@ -23,6 +23,13 @@ size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
 
 double GPDAG::TreeCount() const {
   EigenVectorXd tree_count_below = EigenVectorXd::Ones(NodeCount());
+  return TreeCount(tree_count_below);
+}
+
+double GPDAG::TreeCount(EigenVectorXdRef tree_count_below) const {
+  Assert(tree_count_below.size() == NodeCount(),
+         "Tree count vector size != " + std::to_string(NodeCount()));
+  tree_count_below.setOnes();
   for (const auto &node_id : RootwardPassTraversal()) {
     const auto &node = GetDagNode(node_id);
     if (!node->IsLeaf()) {
@@ -103,6 +110,39 @@ EigenVectorXd GPDAG::BuildUniformQ() const {
     double val = 1. / num_child_subsplits;
     q.segment(range.first, num_child_subsplits).array() = val;
   }
+  return q;
+}
+
+EigenVectorXd GPDAG::BuildUniformPrior() const {
+  EigenVectorXd tree_count_below = EigenVectorXd::Ones(NodeCount());
+  size_t tree_count = TreeCount(tree_count_below);
+
+  EigenVectorXd q = EigenVectorXd::Ones(GeneralizedPCSPCount());
+
+  for (const auto &node_id : RootwardPassTraversal()) {
+    const auto &node = GetDagNode(node_id);
+    if (!node->IsLeaf()) {
+      for (const bool rotated : {false, true}) {
+        double per_rotated_count = 0.;
+        // Sum options across the possible children.
+        for (const auto &child_id : node->GetLeafward(rotated)) {
+          per_rotated_count += tree_count_below[child_id];
+        }
+        for (const auto &child_id : node->GetLeafward(rotated)) {
+          Bitset gpcsp = node->GetBitset(rotated) + GetDagNode(child_id)->GetBitset();
+          size_t gpcsp_idx = gpcsp_indexer_.at(gpcsp);
+          q[gpcsp_idx] = tree_count_below[child_id] / per_rotated_count;
+        }
+      }
+    }
+  }
+
+  IterateOverRootsplitIds([this, &q, &tree_count_below, &tree_count](size_t root_id) {
+    auto node = GetDagNode(root_id);
+    auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset());
+    q[gpcsp_idx] = tree_count_below[root_id] / tree_count;
+  });
+
   return q;
 }
 

@@ -102,7 +102,7 @@ void GPInstance::PrintDAG() { dag_.Print(); }
 void GPInstance::PrintGPCSPIndexer() { dag_.PrintGPCSPIndexer(); }
 
 void GPInstance::InitializeGPEngine() {
-  GetEngine()->SetSBNParameters(dag_.BuildUniformQ());
+  GetEngine()->SetSBNParameters(dag_.BuildUniformPrior());
 }
 
 void GPInstance::PopulatePLVs() {
