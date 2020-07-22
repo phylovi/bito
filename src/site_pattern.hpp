@@ -34,8 +34,9 @@ class SitePattern {
   const std::vector<double> GetPartials(size_t sequence_idx) const;
 
   static SitePattern HelloSitePattern() {
-    return SitePattern(Alignment::HelloAlignment(),
-                       {{0, "mars"}, {1, "saturn"}, {2, "jupiter"}});
+    return SitePattern(Alignment::HelloAlignment(), {{PackInts(0, 1), "mars"},
+                                                     {PackInts(1, 1), "saturn"},
+                                                     {PackInts(2, 1), "jupiter"}});
   }
 
  private:
