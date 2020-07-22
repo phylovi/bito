@@ -180,6 +180,12 @@ EigenVectorXd HotStartTestCase() {
   EigenVectorXd hotstart_test_case(tree_count);
   size_t i = 0;
 
+  // TODO I note that not all these trees have the same topology, and not the same root
+  // PCSP:
+  //
+  // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
+  // 1 (outgroup,(((z0,z1),z2),z3));
+  // 33 (outgroup,((z0,z1),(z2,z3)));
   for (const auto& tree : tree_collection_.Trees()) {
     hotstart_test_case(i) = tree.branch_lengths_[0];
     i++;
@@ -198,8 +204,11 @@ EigenVectorXd MakeHotStartExpectedBranchLengths() {
 TEST_CASE("GPInstance: Hotstart branch lengths"){
   auto inst = MakeHotStartGPInstance();
   EigenVectorXd hotstart_test_case = HotStartTestCase();
+  std::cout << hotstart_test_case << std::endl;
   double true_mean = hotstart_test_case.array().mean();
 
-  // TODO Figure out why hotstart function is only outputting 1's.
-  // then it should be straightforward to finish the unit test
+  inst.HotStartBranchLengths();
+  std::cout << "After hot start: " << inst.GetEngine()->GetBranchLengths() << std::endl;
+
+  // Hot start no longer giving all 1's.
 }
