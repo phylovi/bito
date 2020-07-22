@@ -26,11 +26,11 @@ void GPInstance::PrintStatus() {
   std::cout << dag_.NodeCount() << " DAG nodes representing " << dag_.TopologyCount()
             << " trees.\n";
   std::cout << dag_.GeneralizedPCSPCount() << " continuous parameters.\n";
-  if (engine_ == nullptr) {
-    std::cout << "Engine has not been made.\n";
-  } else {
-    std::cout << "Engine available with " << GetEngine()->PLVByteCount() / 1e9
+  if (HasEngine()) {
+    std::cout << "Engine available using " << GetEngine()->PLVByteCount() / 1e9
               << "G virtual memory.\n";
+  } else {
+    std::cout << "Engine has not been made.\n";
   }
 }
 
@@ -85,6 +85,8 @@ GPEngine *GPInstance::GetEngine() const {
       "likelihood computation.");
 }
 
+bool GPInstance::HasEngine() const { return engine_ != nullptr; }
+
 void GPInstance::ProcessOperations(const GPOperationVector &operations) {
   GetEngine()->ProcessOperations(operations);
 }
@@ -100,11 +102,16 @@ void GPInstance::ProcessLoadedTrees() {
 }
 
 void GPInstance::HotStartBranchLengths() {
-  CheckSequencesAndTreesLoaded();
-  GetEngine()->HotStartBranchLengths(tree_collection_, indexer_);
+  if (HasEngine()) {
+    GetEngine()->HotStartBranchLengths(tree_collection_, dag_.GetClassicIndexer());
+  } else {
+    Failwith(
+        "Please load and process some trees before calling HotStartBranchLengths.");
+  }
 }
 
 void GPInstance::PrintDAG() { dag_.Print(); }
+
 void GPInstance::PrintGPCSPIndexer() { dag_.PrintGPCSPIndexer(); }
 
 void GPInstance::InitializeGPEngine() {

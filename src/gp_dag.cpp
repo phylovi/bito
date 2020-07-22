@@ -73,6 +73,8 @@ GPDAGNode *GPDAG::GetDagNode(const size_t node_id) const {
   return dag_nodes_.at(node_id).get();
 }
 
+const BitsetSizeMap &GPDAG::GetClassicIndexer() const { return classic_indexer_; }
+
 size_t GPDAG::GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx) {
   switch (plv_type) {
     case PLVType::P:
@@ -356,7 +358,7 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
   taxon_count_ = tree_collection.TaxonCount();
   const auto topology_counter = tree_collection.TopologyCounter();
 
-  std::tie(rootsplits_, gpcsp_indexer_, index_to_child_, subsplit_to_range_,
+  std::tie(rootsplits_, classic_indexer_, index_to_child_, subsplit_to_range_,
            rootsplit_and_pcsp_count_) =
       SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),
                                   RootedSBNMaps::PCSPCounterOf(topology_counter));
@@ -427,16 +429,16 @@ void GPDAG::BuildEdges() {
 }
 
 void GPDAG::SetPCSPIndexerEncodingToFullSubsplits() {
-  BitsetSizeMap indexer;
-  for (auto it = gpcsp_indexer_.cbegin(); it != gpcsp_indexer_.cend(); ++it) {
+  // Issue #247: if this is going to survive, please replace with a range for with const
+  // auto &[bitset, index].
+  for (auto it = classic_indexer_.cbegin(); it != classic_indexer_.cend(); ++it) {
     if (it->first.size() == taxon_count_) {
-      SafeInsert(indexer, it->first + ~it->first, it->second);
+      SafeInsert(gpcsp_indexer_, it->first + ~it->first, it->second);
     } else {
-      SafeInsert(indexer, it->first.PCSPParent() + it->first.PCSPChildSubsplit(),
+      SafeInsert(gpcsp_indexer_, it->first.PCSPParent() + it->first.PCSPChildSubsplit(),
                  it->second);
     }
   }
-  gpcsp_indexer_ = indexer;
 }
 
 void GPDAG::ExpandPCSPIndexerAndSubsplitToRange() {
