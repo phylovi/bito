@@ -96,6 +96,11 @@ class GPDAG {
   // The last entries are reserved for rootsplits.
   BitsetSizeMap subsplit_to_id_;
   std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
+  
+  // Total number of trees spanned by the DAG.
+  double tree_count_;
+  // Storage for number of trees below for each node.
+  EigenVectorXd tree_count_below_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(NodeLambda) const;
@@ -105,7 +110,7 @@ class GPDAG {
   void IterateOverRootwardEdges(const GPDAGNode *node, EdgeDestinationLambda f) const;
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(std::function<void(size_t)>) const;
-
+  
   // This function returns empty vector if subsplit is invalid or has no child.
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
                                            bool include_fake_subsplits = false);
@@ -119,6 +124,7 @@ class GPDAG {
                             std::unordered_set<Bitset> &visited_subsplits);
   void BuildNodes();
   void BuildEdges();
+  void CountTrees();
   // Expand gpcsp_indexer_ and subsplit_to_range_ with fake subsplits.
   void ExpandPCSPIndexerAndSubsplitToRange();
   // Update gpcsp_indexer_ keys to be full parent child subsplits as opposed to
