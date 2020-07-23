@@ -81,7 +81,7 @@ class GPEngine {
   // [4*num_nodes, 5*num_nodes): r(s).
   // [5*num_nodes, 6*num_nodes): r(s_tilde).
   NucleotidePLVRefVector plvs_;
-  EigenVectorXi plv_rescaling_counts_;
+  EigenVectorXi rescaling_counts_;
   // These parameters are indexed in the same way as sbn_parameters_ in
   // gp_instance.
   EigenVectorXd branch_lengths_;
@@ -111,6 +111,10 @@ class GPEngine {
   void InitializePLVsWithSitePatterns();
 
   void RescalePLV(size_t plv_idx, int amount);
+  void AssertPLVIsFinite(size_t plv_idx, const std::string& message) const;
+  std::pair<double, double> PLVMinMax(size_t plv_idx) const;
+  // If a PLV all entries smaller than rescaling_threshold_ then rescale it up and
+  // increment the corresponding entry in rescaling_counts_.
   void RescalePLVIfNeeded(size_t plv_idx);
   double LogRescalingFor(size_t plv_idx);
 
