@@ -157,7 +157,8 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
   std::cout << "\n# Timing Report\n";
   std::cout << "warmup: " << warmup_duration.count() << "s\n";
   std::cout << "initial likelihood: " << initial_likelihood_duration.count() << "s\n";
-  std::cout << "optimization: " << optimization_duration.count() << "s\n";
+  std::cout << "optimization: " << optimization_duration.count() << "s or "
+            << optimization_duration.count() / 60 << "m\n";
 }
 
 void GPInstance::EstimateSBNParameters() {
