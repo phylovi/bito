@@ -246,39 +246,39 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
 }
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
-  auto negative_log_likelihood = [this, &op](double branch_length) {
-    SetTransitionMatrixToHaveBranchLength(branch_length);
+  auto negative_log_likelihood = [this, &op](double log_branch_length) {
+    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
     PreparePerPatternLogLikelihoods(op.gpcsp_, op.rootward_, op.leafward_);
     return -(per_pattern_log_likelihoods_.array() *
              site_pattern_weights_.array())
                 .sum();
   };
-  double current_branch_length = branch_lengths_(op.gpcsp_);
-  double current_value = negative_log_likelihood(current_branch_length);
-  const auto [branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
-      negative_log_likelihood, min_branch_length_, max_branch_length_,
+  double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
+  double current_value = negative_log_likelihood(current_log_branch_length);
+  const auto [log_branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
+      negative_log_likelihood, min_log_branch_length_, max_log_branch_length_,
       significant_digits_for_optimization_, max_iter_for_optimization_);
 
   // Numerical optimization sometimes yields new nllk > current nllk.
   // In this case, we reset the branch length to the previous value.
   if (neg_log_likelihood > current_value) {
-    branch_lengths_(op.gpcsp_) = current_branch_length;
+    branch_lengths_(op.gpcsp_) = exp(current_log_branch_length);
   } else {
-    branch_lengths_(op.gpcsp_) = branch_length;
+    branch_lengths_(op.gpcsp_) = exp(log_branch_length);
   }
 }
 
 void GPEngine::GradientAscentOptimization(
     const GPOperations::OptimizeBranchLength& op) {
-  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
-    branch_lengths_(op.gpcsp_) = branch_length;
+  auto log_likelihood_and_derivative = [this, &op](double log_branch_length) {
+    branch_lengths_(op.gpcsp_) = exp(log_branch_length);
     return this->LogLikelihoodAndDerivative(op);
   };
-  const auto [branch_length, log_likelihood] = Optimization::GradientAscent(
-      log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
+  const auto [log_branch_length, log_likelihood] = Optimization::GradientAscent(
+      log_likelihood_and_derivative, log(branch_lengths_(op.gpcsp_)),
       relative_tolerance_for_optimization_, step_size_for_optimization_,
-      min_branch_length_, max_iter_for_optimization_);
-  branch_lengths_(op.gpcsp_) = branch_length;
+      min_log_branch_length_, max_iter_for_optimization_);
+  branch_lengths_(op.gpcsp_) = exp(log_branch_length);
 }
 
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
