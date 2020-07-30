@@ -108,6 +108,55 @@ EigenVectorXd GPDAG::BuildUniformQ() const {
   return q;
 }
 
+StringVector GPDAG::GenerateAllTrees() const {
+  std::vector<StringVector> trees_below(NodeCount());
+  
+  auto GetSubtrees = [&trees_below](const GPDAGNode *node,
+                        StringVector &rotated_subtrees,
+                        StringVector &ordered_subtrees) {
+    for (const bool rotated : {false, true}) {
+      for (const auto &child_id : node->GetLeafward(rotated)) {
+        for (const auto &sub_tree : trees_below.at(child_id)) {
+          rotated ? rotated_subtrees.push_back(sub_tree) :
+          ordered_subtrees.push_back(sub_tree);
+        }
+      }
+    }
+  };
+
+  
+  for (const auto &node_id : RootwardPassTraversal()) {
+    const auto &node = GetDagNode(node_id);
+    
+    if (node->IsLeaf()) {
+      trees_below.at(node_id).push_back(std::to_string(node_id));
+    } else {
+      StringVector rotated_subtrees, ordered_subtrees;
+      GetSubtrees(node, rotated_subtrees, ordered_subtrees);
+      for (auto &rotated_subtree : rotated_subtrees) {
+        for (auto &ordered_subtree : ordered_subtrees) {
+          std::string new_tree = "(" + rotated_subtree + "," + ordered_subtree + ")";
+          trees_below.at(node_id).push_back(new_tree);
+        }
+      }
+    }
+  }
+  
+  StringVector trees;
+  IterateOverRootsplitIds([this, &trees, &GetSubtrees](size_t root_id) {
+    StringVector rotated_subtrees, ordered_subtrees;
+    GetSubtrees(GetDagNode(root_id), rotated_subtrees, ordered_subtrees);
+    for (auto &rotated_subtree : rotated_subtrees) {
+      for (auto &ordered_subtree : ordered_subtrees) {
+        std::string new_tree = "(" + rotated_subtree + "," + ordered_subtree + ")";
+        trees.push_back(new_tree);
+      }
+    }
+  });
+  
+  return trees;
+}
+
 EigenVectorXd GPDAG::BuildUniformPrior() const {
   EigenVectorXd q = EigenVectorXd::Ones(GeneralizedPCSPCount());
 
@@ -116,7 +165,6 @@ EigenVectorXd GPDAG::BuildUniformPrior() const {
     if (!node->IsLeaf()) {
       for (const bool rotated : {false, true}) {
         double per_rotated_count = 0.;
-        // Sum options across the possible children.
         for (const auto &child_id : node->GetLeafward(rotated)) {
           per_rotated_count += tree_count_below_[child_id];
         }

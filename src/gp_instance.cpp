@@ -31,6 +31,10 @@ void GPInstance::PrintStatus() {
     std::cout << "Engine available with " << GetEngine()->PLVByteCount() / 1e9
               << "G virtual memory.\n";
   }
+  
+  for (auto &trees : dag_.GenerateAllTrees()) {
+    std::cout << trees << "\n";
+  }
 }
 
 void GPInstance::ReadFastaFile(const std::string &fname) {

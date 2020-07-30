@@ -32,7 +32,7 @@ class GPDAG {
   // How many trees can be expressed by the GPDAG? Expressed as a double because this
   // number can be big.
   double TreeCount() const;
-  double TreeCount(EigenVectorXdRef tree_count_below) const;
+  StringVector GenerateAllTrees() const;
   size_t RootsplitAndPCSPCount() const;
   // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
   size_t GeneralizedPCSPCount() const;
