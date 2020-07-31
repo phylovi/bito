@@ -11,8 +11,10 @@ using namespace GPOperations;
 
 GPDAG::GPDAG() : taxon_count_(0), rootsplit_and_pcsp_count_(0) {}
 
-GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
-  ProcessTrees(tree_collection);
+GPDAG::GPDAG(const RootedTreeCollection &tree_collection) :
+tree_collection_(tree_collection)
+{
+  ProcessTrees(tree_collection_);
   BuildNodes();
   BuildEdges();
   SetPCSPIndexerEncodingToFullSubsplits();
@@ -108,15 +110,15 @@ EigenVectorXd GPDAG::BuildUniformQ() const {
   return q;
 }
 
-StringVector GPDAG::GenerateAllTrees() const {
-  std::vector<StringVector> trees_below(NodeCount());
-  
-  auto GetSubtrees = [&trees_below](const GPDAGNode *node,
-                        StringVector &rotated_subtrees,
-                        StringVector &ordered_subtrees) {
+Node::NodePtrVec GPDAG::GenerateAllTrees() const {
+  std::vector<Node::NodePtrVec> nodes_below(NodeCount());
+    
+  auto GetSubnodes = [&nodes_below](const GPDAGNode *node,
+                                    Node::NodePtrVec &rotated_subtrees,
+                                    Node::NodePtrVec &ordered_subtrees) {
     for (const bool rotated : {false, true}) {
       for (const auto &child_id : node->GetLeafward(rotated)) {
-        for (const auto &sub_tree : trees_below.at(child_id)) {
+        for (const auto &sub_tree : nodes_below.at(child_id)) {
           rotated ? rotated_subtrees.push_back(sub_tree) :
           ordered_subtrees.push_back(sub_tree);
         }
@@ -124,37 +126,43 @@ StringVector GPDAG::GenerateAllTrees() const {
     }
   };
   
-  auto MergeTrees = [](StringVector &trees,
-                       StringVector &rotated_subtrees,
-                       StringVector &ordered_subtrees) {
+  auto MergeNodes = [](Node::NodePtrVec &trees,
+                       Node::NodePtrVec &rotated_subtrees,
+                       Node::NodePtrVec &ordered_subtrees) {
     for (auto &rotated_subtree : rotated_subtrees) {
       for (auto &ordered_subtree : ordered_subtrees) {
-        std::string new_tree = "(" + rotated_subtree + "," + ordered_subtree + ")";
+        Node::NodePtr new_tree = Node::Join(rotated_subtree, ordered_subtree);
         trees.push_back(new_tree);
       }
     }
   };
+
   
   for (const auto &node_id : RootwardPassTraversal()) {
     const auto &node = GetDagNode(node_id);
-    
+
     if (node->IsLeaf()) {
-      trees_below.at(node_id).push_back(std::to_string(node_id));
+      nodes_below.at(node_id).push_back(Node::Leaf(node_id));
     } else {
-      StringVector rotated_subtrees, ordered_subtrees;
-      GetSubtrees(node, rotated_subtrees, ordered_subtrees);
-      MergeTrees(trees_below.at(node_id), rotated_subtrees, ordered_subtrees);
+      Node::NodePtrVec rotated_nodes, ordered_nodes;
+      GetSubnodes(node, rotated_nodes, ordered_nodes);
+      MergeNodes(nodes_below.at(node_id), rotated_nodes, ordered_nodes);
     }
   }
-  
-  StringVector trees;
-  IterateOverRootsplitIds([this, &trees, &MergeTrees, &GetSubtrees](size_t root_id) {
-    StringVector rotated_subtrees, ordered_subtrees;
-    GetSubtrees(GetDagNode(root_id), rotated_subtrees, ordered_subtrees);
-    MergeTrees(trees, rotated_subtrees, ordered_subtrees);
+
+  Node::NodePtrVec nodes;
+  IterateOverRootsplitIds([this, &nodes, &GetSubnodes, &MergeNodes](size_t root_id) {
+    Node::NodePtrVec rotated_nodes, ordered_nodes;
+    GetSubnodes(GetDagNode(root_id), rotated_nodes, ordered_nodes);
+    MergeNodes(nodes, rotated_nodes, ordered_nodes);
   });
   
-  return trees;
+  for (auto &node : nodes) {
+    node->Polish();
+    std::cout << node->Newick() << std::endl;
+  }
+  
+  return nodes;
 }
 
 EigenVectorXd GPDAG::BuildUniformPrior() const {
