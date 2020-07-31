@@ -123,7 +123,17 @@ StringVector GPDAG::GenerateAllTrees() const {
       }
     }
   };
-
+  
+  auto MergeTrees = [](StringVector &trees,
+                       StringVector &rotated_subtrees,
+                       StringVector &ordered_subtrees) {
+    for (auto &rotated_subtree : rotated_subtrees) {
+      for (auto &ordered_subtree : ordered_subtrees) {
+        std::string new_tree = "(" + rotated_subtree + "," + ordered_subtree + ")";
+        trees.push_back(new_tree);
+      }
+    }
+  };
   
   for (const auto &node_id : RootwardPassTraversal()) {
     const auto &node = GetDagNode(node_id);
@@ -133,25 +143,15 @@ StringVector GPDAG::GenerateAllTrees() const {
     } else {
       StringVector rotated_subtrees, ordered_subtrees;
       GetSubtrees(node, rotated_subtrees, ordered_subtrees);
-      for (auto &rotated_subtree : rotated_subtrees) {
-        for (auto &ordered_subtree : ordered_subtrees) {
-          std::string new_tree = "(" + rotated_subtree + "," + ordered_subtree + ")";
-          trees_below.at(node_id).push_back(new_tree);
-        }
-      }
+      MergeTrees(trees_below.at(node_id), rotated_subtrees, ordered_subtrees);
     }
   }
   
   StringVector trees;
-  IterateOverRootsplitIds([this, &trees, &GetSubtrees](size_t root_id) {
+  IterateOverRootsplitIds([this, &trees, &MergeTrees, &GetSubtrees](size_t root_id) {
     StringVector rotated_subtrees, ordered_subtrees;
     GetSubtrees(GetDagNode(root_id), rotated_subtrees, ordered_subtrees);
-    for (auto &rotated_subtree : rotated_subtrees) {
-      for (auto &ordered_subtree : ordered_subtrees) {
-        std::string new_tree = "(" + rotated_subtree + "," + ordered_subtree + ")";
-        trees.push_back(new_tree);
-      }
-    }
+    MergeTrees(trees, rotated_subtrees, ordered_subtrees);
   });
   
   return trees;
