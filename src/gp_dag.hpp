@@ -32,7 +32,7 @@ class GPDAG {
   // How many trees can be expressed by the GPDAG? Expressed as a double because this
   // number can be big.
   double TreeCount() const;
-  StringVector GenerateAllTrees() const;
+  Node::NodePtrVec GenerateAllTrees() const;
   size_t RootsplitAndPCSPCount() const;
   // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
   size_t GeneralizedPCSPCount() const;
@@ -73,6 +73,7 @@ class GPDAG {
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
 
  private:
+  RootedTreeCollection tree_collection_;
   size_t taxon_count_;
   size_t rootsplit_and_pcsp_count_;
   // The collection of rootsplits, with the same indexing as in the indexer_.
@@ -99,7 +100,7 @@ class GPDAG {
   
   // Total number of trees spanned by the DAG.
   double tree_count_;
-  // Storage for number of trees below for each node.
+  // Storage for the number of trees below for each node.
   EigenVectorXd tree_count_below_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
