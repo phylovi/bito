@@ -10,6 +10,7 @@
 #include "driver.hpp"
 #include "gp_operation.hpp"
 #include "numerical_utils.hpp"
+#include "rooted_tree_collection.hpp"
 
 using namespace GPOperations;  // NOLINT
 
@@ -30,10 +31,6 @@ void GPInstance::PrintStatus() {
   } else {
     std::cout << "Engine available with " << GetEngine()->PLVByteCount() / 1e9
               << "G virtual memory.\n";
-  }
-  
-  for (auto &trees : dag_.GenerateAllTrees()) {
-    std::cout << trees << "\n";
   }
 }
 
@@ -178,4 +175,63 @@ void GPInstance::EstimateSBNParameters() {
   ProcessOperations(marginal_lik_operations);
   double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
   std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
+}
+
+RootedTreeCollection GPInstance::GetRootedTreeCollection() {
+
+  Tree::TreeVector tree_vector;
+  Node::NodePtrVec trees = dag_.GenerateAllTrees();
+  EigenVectorXd bl = engine_->GetBranchLengths();
+  for (auto &root_node : trees) {
+    root_node->Polish();
+
+    // Child leaves encoding to parent subsplit encoding.
+    std::unordered_map<Bitset, Bitset> child2parent_subsplit;
+    // Leaves encoding to subsplit encoding.
+    std::unordered_map<Bitset, Bitset> leaves2subsplit;
+    // Node id to leaves encoding.
+    std::unordered_map<size_t, Bitset> node2leaves;
+
+    root_node->PreOrder([&child2parent_subsplit, &leaves2subsplit, &node2leaves](const Node *node) {
+      const Node::NodePtrVec &children = node->Children();
+      Assert(children.size() == 2 || children.size() == 0, "Number of children must equal to 2 for internal nodes or 0 for leaves.");
+      if (children.size() == 2) {
+        Bitset subsplit = children.at(0)->Leaves() + children.at(1)->Leaves();
+        SafeInsert(node2leaves, node->Id(), node->Leaves());
+        SafeInsert(leaves2subsplit, node->Leaves(), subsplit);
+        SafeInsert(child2parent_subsplit, children.at(0)->Leaves(), subsplit.RotateSubsplit());
+        SafeInsert(child2parent_subsplit, children.at(1)->Leaves(), subsplit);
+      } else {
+        Bitset zero(node->Leaves().size());
+        Bitset subsplit = zero + node->Leaves();
+        SafeInsert(node2leaves, node->Id(), node->Leaves());
+        SafeInsert(leaves2subsplit, node->Leaves(), subsplit);
+      }
+    });
+    
+    // To get the branch length:
+    // 1. Get the leaves encoding for each node id.
+    // 2. Look up the parent subsplit using the leaves encoding.
+    // 3. Look up its subsplit encoding from the leaves encoding.
+    size_t node_count = 2 * root_node->LeafCount() - 1;
+    std::vector<double> branch_lengths(node_count);
+    for (auto it = node2leaves.cbegin(); it != node2leaves.cend(); ++it) {
+      const Bitset &leaves = it->second;
+      if (leaves.All()) {
+        branch_lengths[it->first] = 0.;
+      } else {
+        Bitset &child_subsplit = leaves2subsplit.at(leaves);
+        Bitset &parent_subsplit = child2parent_subsplit.at(leaves);
+        size_t idx = dag_.GetGPCSPIndex(parent_subsplit + child_subsplit);
+        branch_lengths[it->first] = bl[idx];
+      }
+    }
+
+    Tree tree(root_node, branch_lengths);
+    tree_vector.push_back(tree);
+  }
+
+  TreeCollection tree_collection(tree_vector, tree_collection_.TagTaxonMap());
+  auto rooted_tree_collection = RootedTreeCollection::OfTreeCollection(tree_collection);
+  return rooted_tree_collection;
 }
