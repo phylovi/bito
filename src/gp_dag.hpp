@@ -32,6 +32,8 @@ class GPDAG {
   // How many trees can be expressed by the GPDAG? Expressed as a double because this
   // number can be big.
   double TreeCount() const;
+  // Each tree is constructed so that the first child stores the rotated child,
+  // and the second child holds sorted child.
   Node::NodePtrVec GenerateAllTrees() const;
   size_t RootsplitAndPCSPCount() const;
   // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
@@ -45,6 +47,13 @@ class GPDAG {
   // Get the index of a PLV of a given type and with a given index.
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
   size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
+  
+  size_t GetGPCSPIndex(const Bitset &pcsp) const {
+    return gpcsp_indexer_.at(pcsp);
+  }
+  const Bitset &GetBitset(size_t node_id) const {
+    return GetDagNode(node_id)->GetBitset();
+  }
 
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
@@ -73,7 +82,6 @@ class GPDAG {
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
 
  private:
-  RootedTreeCollection tree_collection_;
   size_t taxon_count_;
   size_t rootsplit_and_pcsp_count_;
   // The collection of rootsplits, with the same indexing as in the indexer_.

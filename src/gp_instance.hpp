@@ -32,6 +32,7 @@ class GPInstance {
   void EstimateBranchLengths(double tol, size_t max_iter);
   void PopulatePLVs();
   void ComputeLikelihoods();
+  RootedTreeCollection GetRootedTreeCollection();
 
  private:
   std::string mmap_file_path_;
