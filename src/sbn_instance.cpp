@@ -89,6 +89,18 @@ StringVector SBNInstance::StringReversedIndexer() const {
   return reversed_indexer;
 }
 
+StringDoubleVector SBNInstance::PrettyIndexedSBNParameters() {
+  StringDoubleVector result;
+  result.reserve(sbn_parameters_.size());
+  const auto pretty_indexer = PrettyIndexer();
+
+  for (size_t i = 0; i < pretty_indexer.size(); i++) {
+    result.push_back({pretty_indexer[i], sbn_parameters_[i]});
+  }
+
+  return result;
+}
+
 void SBNInstance::NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
   SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplits_.size(),
                                                   parent_to_range_);

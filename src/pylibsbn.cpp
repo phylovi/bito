@@ -186,10 +186,12 @@ PYBIND11_MODULE(libsbn, m) {
            py::arg("beagle_flags") = std::vector<BeagleFlags>(),
            py::arg("use_tip_states") = true,
            py::arg("tree_count_option") = std::nullopt)
-      .def("resize_phylo_model_params", &UnrootedSBNInstance::ResizePhyloModelParams,
+      .def("resize_phylo_model_params", &SBNInstance::ResizePhyloModelParams,
            "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
       .def("read_fasta_file", &SBNInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
+      .def("pretty_indexed_sbn_parameters", &SBNInstance::PrettyIndexedSBNParameters,
+           "Return SBN parameters as string-keyed maps.")
       // Member Variables
       .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
       .def_readonly("taxon_names", &SBNInstance::taxon_names_);

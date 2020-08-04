@@ -44,7 +44,7 @@ class SBNInstance {
 
   // ** Initialization and status
 
-  explicit SBNInstance(const std::string &name) : name_(name), rescaling_{false} {}
+  explicit SBNInstance(std::string name) : name_(std::move(name)), rescaling_{false} {}
   void PrintStatus();
 
   // ** Dummy functions corresponding to an empty tree_collection (see above).
@@ -83,6 +83,10 @@ class SBNInstance {
   // Get the indexer, but reversed and with bitsets appropriately converted to
   // strings.
   StringVector StringReversedIndexer() const;
+
+  // Make a map that is keyed on "pretty" GPCSPs, with values being normalized SBN
+  // parameters.
+  StringDoubleVector PrettyIndexedSBNParameters();
 
   void NormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
 
