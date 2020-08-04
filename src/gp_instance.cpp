@@ -179,19 +179,10 @@ void GPInstance::EstimateSBNParameters() {
 
 RootedTreeCollection GPInstance::GetRootedTreeCollection() {
 
-  //dag_.PrintGPCSPIndexer();
-  dag_.Print();
-  std::cout << "=====\n";
-
-  // Note 1: Node class will have sorted the children.
-  // Keep this in mind when accessing GPCSP indexer.
-  // Note 2: Node ptr is shared across the trees, calling Polish on one node,
-  // will affect other nodes.
-
   Tree::TreeVector tree_vector;
   Node::NodePtrVec trees = dag_.GenerateAllTrees();
-  std::cout << "=====\n";
   EigenVectorXd bl = engine_->GetBranchLengths();
+
   // Leaves encoding to parent subsplit encoding.
   std::unordered_map<const Node*, Bitset> leaves2subsplit_indexer;
   for (size_t i = 0; i < trees.size(); i++) {
@@ -208,7 +199,6 @@ RootedTreeCollection GPInstance::GetRootedTreeCollection() {
         size_t i0 = dag_.GetGPCSPIndex(dag_node->GetBitset(false) + child_node->GetBitset());
         size_t i1 = dag_.GetGPCSPIndex(dag_node->GetBitset(true) + child_node->GetBitset());
         size_t gpcsp_idx = std::min(i0, i1);
-        std::cout << "(" << node->Id() << ", " << child_id << ", " << gpcsp_idx << ")\n";
         Assert(gpcsp_idx < SIZE_MAX, "GPCSP does not exist.");
       }
     });
@@ -232,21 +222,14 @@ RootedTreeCollection GPInstance::GetRootedTreeCollection() {
         // Node: child_subsplit is either a rotated or sorted subsplit of parent_subsplit.
         size_t i0 = dag_.GetGPCSPIndex(parent_subsplit + child_subsplit);
         size_t i1 = dag_.GetGPCSPIndex(parent_subsplit.RotateSubsplit() + child_subsplit);
-        if (i0 == SIZE_MAX && i1 == SIZE_MAX) {
-          std::cout << parent_subsplit.ToString() << "\n";
-          std::cout << child_subsplit.ToString() << "\n";
-        }
         Assert(i0 < SIZE_MAX || i1 < SIZE_MAX, "GPCSP does not exist.");
         size_t gpcsp_idx = std::min(i0, i1);
-        std::cout << "(" << node->Id() << ", " << children.at(i)->Id() << ", " << gpcsp_idx << ")\n";
         branch_lengths[children.at(i)->Id()] = bl[gpcsp_idx];
       }
     });
 
     Tree tree(root_node, branch_lengths);
     tree_vector.push_back(tree);
-    std::cout << tree.Newick(tree_collection_.TagTaxonMap()) << std::endl;
-    std::cout << "========\n";
   }
 
   TreeCollection tree_collection(tree_vector, tree_collection_.TagTaxonMap());
