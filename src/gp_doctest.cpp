@@ -123,6 +123,12 @@ TEST_CASE("GPInstance: branch length optimization") {
   CHECK_LT(fabs(expected_log_marginal - -80.6906345), 1e-6);
 }
 
+TEST_CASE("GPInstance: generate all trees") {
+  auto inst = MakeHelloGPInstanceTwoTrees();
+  auto rooted_tree_collection = inst.GetRootedTreeCollection();
+  CHECK_EQ(rooted_tree_collection.TreeCount(), 2);
+}
+
 GPInstance MakeFluAGPInstance(double rescaling_threshold) {
   GPInstance inst("_ignore/mmapped_plv.data");
   inst.ReadFastaFile("data/fluA.fa");
