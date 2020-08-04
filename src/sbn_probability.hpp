@@ -31,12 +31,12 @@ EigenVectorXd ExpectationMaximization(
     size_t max_iter, double score_epsilon);
 
 // Calculate the probability of an indexer_representation of a topology.
-double ProbabilityOf(const EigenConstVectorXdRef,
+double ProbabilityOf(EigenConstVectorXdRef sbn_parameters,
                      const UnrootedIndexerRepresentation& indexer_representation);
 
 // Calculate the probabilities of a collection of indexer_representations.
 EigenVectorXd ProbabilityOf(
-    const EigenConstVectorXdRef sbn_parameters,
+    EigenConstVectorXdRef sbn_parameters,
     const std::vector<UnrootedIndexerRepresentation>& indexer_representations);
 
 // This function performs in-place normalization of vec given by range when its values
@@ -51,8 +51,8 @@ bool IsInSBNSupport(const SizeVector& rooted_representation,
                     size_t out_of_support_sentinel_value);
 
 // Take the sum of the entries of vec in indices plus starting_value.
-double SumOf(const EigenConstVectorXdRef vec, const SizeVector& indices,
-             const double starting_value);
+double SumOf(EigenConstVectorXdRef vec, const SizeVector& indices,
+             double starting_value);
 
 }  // namespace SBNProbability
 
