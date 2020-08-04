@@ -167,6 +167,8 @@ class SBNInstance {
   // The input to this function is a parent subsplit (of length 2n).
   Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const;
 
+  EigenVectorXd NormalizedSBNParameters() const;
+
   // Clear all of the state that depends on the current tree collection.
   void ClearTreeCollectionAssociatedState();
 
@@ -174,9 +176,8 @@ class SBNInstance {
                                          SBNInstance::RangeVector &range_vector);
   RangeVector GetSubsplitRanges(const SizeVector &rooted_representation);
 
-  static EigenVectorXd CalculateMultiplicativeFactors(const EigenVectorXdRef log_f);
-  static EigenVectorXd CalculateVIMCOMultiplicativeFactors(
-      const EigenVectorXdRef log_f);
+  static EigenVectorXd CalculateMultiplicativeFactors(EigenVectorXdRef log_f);
+  static EigenVectorXd CalculateVIMCOMultiplicativeFactors(EigenVectorXdRef log_f);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

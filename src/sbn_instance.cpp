@@ -91,11 +91,12 @@ StringVector SBNInstance::StringReversedIndexer() const {
 
 StringDoubleVector SBNInstance::PrettyIndexedSBNParameters() {
   StringDoubleVector result;
-  result.reserve(sbn_parameters_.size());
+  auto sbn_parameters = NormalizedSBNParameters();
+  result.reserve(sbn_parameters.size());
   const auto pretty_indexer = PrettyIndexer();
 
   for (size_t i = 0; i < pretty_indexer.size(); i++) {
-    result.push_back({pretty_indexer[i], sbn_parameters_[i]});
+    result.push_back({pretty_indexer[i], sbn_parameters[i]});
   }
 
   return result;
@@ -223,6 +224,19 @@ Node::NodePtr SBNInstance::SampleTopology(const Bitset &parent_subsplit) const {
                     process_subsplit(parent_subsplit.RotateSubsplit()));
 }
 
+EigenVectorXd SBNInstance::NormalizedSBNParameters() const {
+  EigenVectorXd sbn_parameters_result = sbn_parameters_;
+  for (const auto &[_, range] : parent_to_range_) {
+    const auto &[start, end] = range;
+    Assert(start < end && end <= sbn_parameters_.size(),
+           "parent_to_range_ has an invalid range.");
+    NumericalUtils::ProbabilityNormalizeInLog(
+        sbn_parameters_result.segment(start, end - start));
+  }
+  NumericalUtils::Exponentiate(sbn_parameters_result);
+  return sbn_parameters_result;
+}
+
 void SBNInstance::ClearTreeCollectionAssociatedState() {
   sbn_parameters_.resize(0);
   rootsplits_.clear();
@@ -249,7 +263,8 @@ SBNInstance::RangeVector SBNInstance::GetSubsplitRanges(
   Bitset root = rootsplits_.at(rooted_representation[0]);
   PushBackRangeForParentIfAvailable(root + ~root, subsplit_ranges);
   PushBackRangeForParentIfAvailable(~root + root, subsplit_ranges);
-  // Starting at 1 here because we took care of the rootsplit above (the 0th element).
+  // Starting at 1 here because we took care of the rootsplit above (the 0th
+  // element).
   for (size_t i = 1; i < rooted_representation.size(); i++) {
     Bitset child = index_to_child_.at(rooted_representation[i]);
     PushBackRangeForParentIfAvailable(child, subsplit_ranges);
@@ -258,8 +273,8 @@ SBNInstance::RangeVector SBNInstance::GetSubsplitRanges(
   return subsplit_ranges;
 }
 
-// This multiplicative factor is the quantity inside the parentheses in eq:nabla in the
-// tex.
+// This multiplicative factor is the quantity inside the parentheses in eq:nabla in
+// the tex.
 EigenVectorXd SBNInstance::CalculateMultiplicativeFactors(
     const EigenVectorXdRef log_f) {
   double tree_count = log_f.size();
@@ -270,8 +285,8 @@ EigenVectorXd SBNInstance::CalculateMultiplicativeFactors(
   return hat_L - tilde_w.array();
 }
 
-// This multiplicative factor is the quantity inside the parentheses in eq:nablaVIMCO in
-// the tex.
+// This multiplicative factor is the quantity inside the parentheses in
+// eq:nablaVIMCO in the tex.
 EigenVectorXd SBNInstance::CalculateVIMCOMultiplicativeFactors(
     const EigenVectorXdRef log_f) {
   // Use the geometric mean as \hat{f}(\tau^{-j}, \theta^{-j}), in eq:f_hat in
@@ -283,8 +298,8 @@ EigenVectorXd SBNInstance::CalculateVIMCOMultiplicativeFactors(
   // i.e. the log of the geometric mean of each item other than j.
   EigenVectorXd log_geometric_mean = (sum_of_log_f - log_f.array()) / (tree_count - 1);
   EigenVectorXd per_sample_signal(tree_count);
-  // This is a vector of entries that when summed become the parenthetical expression
-  // in eq:perSampleLearning.
+  // This is a vector of entries that when summed become the parenthetical
+  // expression in eq:perSampleLearning.
   EigenVectorXd log_f_perturbed = log_f;
   for (size_t j = 0; j < tree_count; j++) {
     log_f_perturbed(j) = log_geometric_mean(j);

@@ -26,6 +26,7 @@ class RootedSBNInstance : public SBNInstance {
   }
 
   // ** Building SBN-related items
+
   void TrainSimpleAverage();
 
   // ** Phylogenetic likelihood
