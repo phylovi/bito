@@ -178,56 +178,74 @@ void GPInstance::EstimateSBNParameters() {
 
 RootedTreeCollection GPInstance::GetRootedTreeCollection() {
 
+  //dag_.PrintGPCSPIndexer();
+  dag_.Print();
+  std::cout << "=====\n";
+
+  // Note 1: Node class will have sorted the children.
+  // Keep this in mind when accessing GPCSP indexer.
+  // Note 2: Node ptr is shared across the trees, calling Polish on one node,
+  // will affect other nodes.
+
   Tree::TreeVector tree_vector;
   Node::NodePtrVec trees = dag_.GenerateAllTrees();
+  std::cout << "=====\n";
   EigenVectorXd bl = engine_->GetBranchLengths();
-  for (auto &root_node : trees) {
-    root_node->Polish();
+  // Leaves encoding to parent subsplit encoding.
+  std::unordered_map<const Node*, Bitset> leaves2subsplit_indexer;
+  for (size_t i = 0; i < trees.size(); i++) {
+    trees.at(i)->PreOrder([this, &leaves2subsplit_indexer](const Node *node)
+    {
+      GPDAGNode *dag_node = dag_.GetDagNode(node->Id());
+      if (!leaves2subsplit_indexer.count(node)) {
+        SafeInsert(leaves2subsplit_indexer, node, dag_node->GetBitset());
+      }
 
-    // Child leaves encoding to parent subsplit encoding.
-    std::unordered_map<Bitset, Bitset> child2parent_subsplit;
-    // Leaves encoding to subsplit encoding.
-    std::unordered_map<Bitset, Bitset> leaves2subsplit;
-    // Node id to leaves encoding.
-    std::unordered_map<size_t, Bitset> node2leaves;
-
-    root_node->PreOrder([&child2parent_subsplit, &leaves2subsplit, &node2leaves](const Node *node) {
-      const Node::NodePtrVec &children = node->Children();
-      Assert(children.size() == 2 || children.size() == 0, "Number of children must equal to 2 for internal nodes or 0 for leaves.");
-      if (children.size() == 2) {
-        Bitset subsplit = children.at(0)->Leaves() + children.at(1)->Leaves();
-        SafeInsert(node2leaves, node->Id(), node->Leaves());
-        SafeInsert(leaves2subsplit, node->Leaves(), subsplit);
-        SafeInsert(child2parent_subsplit, children.at(0)->Leaves(), subsplit.RotateSubsplit());
-        SafeInsert(child2parent_subsplit, children.at(1)->Leaves(), subsplit);
-      } else {
-        Bitset zero(node->Leaves().size());
-        Bitset subsplit = zero + node->Leaves();
-        SafeInsert(node2leaves, node->Id(), node->Leaves());
-        SafeInsert(leaves2subsplit, node->Leaves(), subsplit);
+      for (size_t i = 0; i < node->Children().size(); i++) {
+        size_t child_id = node->Children().at(i)->Id();
+        GPDAGNode *child_node = dag_.GetDagNode(child_id);
+        size_t i0 = dag_.GetGPCSPIndex(dag_node->GetBitset(false) + child_node->GetBitset());
+        size_t i1 = dag_.GetGPCSPIndex(dag_node->GetBitset(true) + child_node->GetBitset());
+        size_t gpcsp_idx = std::min(i0, i1);
+        std::cout << "(" << node->Id() << ", " << child_id << ", " << gpcsp_idx << ")\n";
+        Assert(gpcsp_idx < SIZE_MAX, "GPCSP does not exist.");
       }
     });
-    
-    // To get the branch length:
-    // 1. Get the leaves encoding for each node id.
-    // 2. Look up the parent subsplit using the leaves encoding.
-    // 3. Look up its subsplit encoding from the leaves encoding.
+  }
+
+  for (auto &root_node : trees) {
+    // Polish will re-assign the node Ids.
+    root_node->Polish();
+
     size_t node_count = 2 * root_node->LeafCount() - 1;
     std::vector<double> branch_lengths(node_count);
-    for (auto it = node2leaves.cbegin(); it != node2leaves.cend(); ++it) {
-      const Bitset &leaves = it->second;
-      if (leaves.All()) {
-        branch_lengths[it->first] = 0.;
-      } else {
-        Bitset &child_subsplit = leaves2subsplit.at(leaves);
-        Bitset &parent_subsplit = child2parent_subsplit.at(leaves);
-        size_t idx = dag_.GetGPCSPIndex(parent_subsplit + child_subsplit);
-        branch_lengths[it->first] = bl[idx];
+
+    root_node->PreOrder([this, &branch_lengths, &bl, &leaves2subsplit_indexer](const Node *node) {
+      const Node::NodePtrVec &children = node->Children();
+      Assert(children.size() == 2 || children.size() == 0, "Number of children must equal to 2 for the internal nodes and 0 for the leaves.");
+      auto &parent_subsplit = leaves2subsplit_indexer.at(node);
+      for (size_t i = 0; i < children.size(); i++) {
+        const Node *child_node = children.at(i).get();
+        auto &child_subsplit = leaves2subsplit_indexer.at(child_node);
+
+        // Node: child_subsplit is either a rotated or sorted subsplit of parent_subsplit.
+        size_t i0 = dag_.GetGPCSPIndex(parent_subsplit + child_subsplit);
+        size_t i1 = dag_.GetGPCSPIndex(parent_subsplit.RotateSubsplit() + child_subsplit);
+        if (i0 == SIZE_MAX && i1 == SIZE_MAX) {
+          std::cout << parent_subsplit.ToString() << "\n";
+          std::cout << child_subsplit.ToString() << "\n";
+        }
+        Assert(i0 < SIZE_MAX || i1 < SIZE_MAX, "GPCSP does not exist.");
+        size_t gpcsp_idx = std::min(i0, i1);
+        std::cout << "(" << node->Id() << ", " << children.at(i)->Id() << ", " << gpcsp_idx << ")\n";
+        branch_lengths[children.at(i)->Id()] = bl[gpcsp_idx];
       }
-    }
+    });
 
     Tree tree(root_node, branch_lengths);
     tree_vector.push_back(tree);
+    std::cout << tree.Newick(tree_collection_.TagTaxonMap()) << std::endl;
+    std::cout << "========\n";
   }
 
   TreeCollection tree_collection(tree_vector, tree_collection_.TagTaxonMap());

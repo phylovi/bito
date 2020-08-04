@@ -126,16 +126,16 @@ Node::NodePtrVec GPDAG::GenerateAllTrees() const {
   };
 
   auto MergeTrees = [](size_t node_id,
-                           Node::NodePtrVec &trees,
-                           Node::NodePtrVec &rotated_subtrees,
-                           Node::NodePtrVec &ordered_subtrees) {
+                       Node::NodePtrVec &trees,
+                       Node::NodePtrVec &rotated_subtrees,
+                       Node::NodePtrVec &ordered_subtrees) {
     for (size_t i = 0; i < rotated_subtrees.size(); i++) {
       auto &rotated_subtree = rotated_subtrees.at(i);
       for (size_t j = 0; j < ordered_subtrees.size(); j++) {
         auto &ordered_subtree = ordered_subtrees.at(j);
-        
-        Node::NodePtr new_tree = Node::Join(rotated_subtree, ordered_subtree, node_id);
+        Node::NodePtr new_tree = Node::Join(ordered_subtree, rotated_subtree, node_id);
         trees.push_back(new_tree);
+        std::cout << node_id << "(" << ordered_subtree->Id() << ", " << rotated_subtree->Id() << ")\n";
       }
     }
   };
@@ -156,6 +156,8 @@ Node::NodePtrVec GPDAG::GenerateAllTrees() const {
   IterateOverRootsplitIds([&trees, &trees_below](size_t root_id) {
     trees.insert(trees.end(), trees_below.at(root_id).begin(), trees_below.at(root_id).end());
   });
+  
+  Assert(trees.size() == TreeCount(), "The realized number of trees does not match the expected count.");
 
   return trees;
 }

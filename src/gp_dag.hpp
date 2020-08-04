@@ -49,7 +49,12 @@ class GPDAG {
   size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
   
   size_t GetGPCSPIndex(const Bitset &pcsp) const {
-    return gpcsp_indexer_.at(pcsp);
+    if (gpcsp_indexer_.count(pcsp) > 0) {
+      return gpcsp_indexer_.at(pcsp);
+    } else {
+      // Return the max value.
+      return SIZE_MAX;
+    }
   }
   const Bitset &GetBitset(size_t node_id) const {
     return GetDagNode(node_id)->GetBitset();
