@@ -135,7 +135,6 @@ Node::NodePtrVec GPDAG::GenerateAllTrees() const {
         auto &ordered_subtree = ordered_subtrees.at(j);
         Node::NodePtr new_tree = Node::Join(ordered_subtree, rotated_subtree, node_id);
         trees.push_back(new_tree);
-        std::cout << node_id << "(" << ordered_subtree->Id() << ", " << rotated_subtree->Id() << ")\n";
       }
     }
   };
