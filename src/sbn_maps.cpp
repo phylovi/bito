@@ -280,9 +280,9 @@ PCSPDict RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies) {
   return pcsp_dict;
 }
 
-SizeVector RootedSBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                        const Node::NodePtr& topology,
-                                                        const size_t default_index) {
+SizeVector RootedSBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                  const Node::NodePtr& topology,
+                                                  const size_t default_index) {
   const auto leaf_count = topology->LeafCount();
   SizeVector result;
   // Start with the rootsplit.
@@ -297,6 +297,20 @@ SizeVector RootedSBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& ind
     result.push_back(AtWithDefault(indexer, pcsp_bitset, default_index));
   });
   return result;
+}
+
+// TODO code duplication
+RootedIndexerRepresentationCounter RootedSBNMaps::IndexerRepresentationCounterOf(
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
+    const size_t default_index) {
+  RootedIndexerRepresentationCounter counter;
+  counter.reserve(topology_counter.size());
+  for (const auto& [topology, topology_count] : topology_counter) {
+    counter.push_back(
+        {RootedSBNMaps::IndexerRepresentationOf(indexer, topology, default_index),
+         topology_count});
+  }
+  return counter;
 }
 
 void RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(

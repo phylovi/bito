@@ -210,6 +210,22 @@ PYBIND11_MODULE(libsbn, m) {
            "Return the number of trees that are currently stored in the "
            "instance.")
 
+      // ** SBN-related items
+      .def("process_loaded_trees", &RootedSBNInstance::ProcessLoadedTrees, R"raw(
+          Process the trees currently stored in the instance.
+
+          Specifically, parse them and build the indexers and the ``sbn_parameters`` vector.
+      )raw")
+      .def("get_indexers", &RootedSBNInstance::GetIndexers,
+           "Return the indexer and parent_to_range as string-keyed maps.")
+      .def("train_simple_average", &RootedSBNInstance::TrainSimpleAverage,
+           R"raw(
+           Train the SBN using the "simple average" estimator.
+
+           This is described in the "Maximum Lower Bound Estimates" section of the 2018
+           NeurIPS paper, and is later referred to as the "SBN-SA" estimator.
+           )raw")
+
       // ** Phylogenetic likelihood
       .def("log_likelihoods", &RootedSBNInstance::LogLikelihoods,
            "Calculate log likelihoods for the current set of trees.")

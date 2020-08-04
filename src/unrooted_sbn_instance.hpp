@@ -201,25 +201,24 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_2),
            correct_psp_representation_2);
 
-  // Test of RootedIndexerRepresentationOf.
+  // TODO move this into unrooted_sbn_instance
+  // Test of RootedSBNMaps::IndexerRepresentationOf.
   // Topology is ((((0,1),2),3),4);, or with internal nodes ((((0,1)5,2)6,3)7,4)8;
   auto indexer_test_rooted_topology_1 =
       Node::OfParentIdVector({5, 5, 6, 7, 8, 6, 7, 8});
   auto correct_rooted_indexer_representation_1 = StringSet(
       {"00001", "00001|11110|00010", "00010|11100|00100", "00100|11000|01000"});
-  CHECK_EQ(
-      inst.StringIndexerRepresentationOf({RootedSBNMaps::RootedIndexerRepresentationOf(
-          inst.indexer_, indexer_test_rooted_topology_1, out_of_sample_index)})[0],
-      correct_rooted_indexer_representation_1);
+  CHECK_EQ(inst.StringIndexerRepresentationOf({RootedSBNMaps::IndexerRepresentationOf(
+               inst.indexer_, indexer_test_rooted_topology_1, out_of_sample_index)})[0],
+           correct_rooted_indexer_representation_1);
   // Topology is (((0,1),2),(3,4));, or with internal nodes (((0,1)5,2)6,(3,4)7)8;
   auto indexer_test_rooted_topology_2 =
       Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 8, 8});
   auto correct_rooted_indexer_representation_2 = StringSet(
       {"00011", "11100|00011|00001", "00011|11100|00100", "00100|11000|01000"});
-  CHECK_EQ(
-      inst.StringIndexerRepresentationOf({RootedSBNMaps::RootedIndexerRepresentationOf(
-          inst.indexer_, indexer_test_rooted_topology_2, out_of_sample_index)})[0],
-      correct_rooted_indexer_representation_2);
+  CHECK_EQ(inst.StringIndexerRepresentationOf({RootedSBNMaps::IndexerRepresentationOf(
+               inst.indexer_, indexer_test_rooted_topology_2, out_of_sample_index)})[0],
+           correct_rooted_indexer_representation_2);
 }
 
 TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
@@ -395,8 +394,8 @@ TEST_CASE("UnrootedSBNInstance: tree sampling") {
     const auto rooted_topology = inst.SampleTopology(true);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
-        RootedSBNMaps::RootedIndexerRepresentationOf(inst.indexer_, rooted_topology,
-                                                     out_of_sample_index));
+        RootedSBNMaps::IndexerRepresentationOf(inst.indexer_, rooted_topology,
+                                               out_of_sample_index));
     if (sample_idx % 1000 == 0) {
       ++progress_bar;
       progress_bar.display();

@@ -82,9 +82,15 @@ PCSPDict PCSPCounterOf(const Node::TopologyCounter& topologies);
 // A rooted indexer representation is the indexer representation of a given rooted tree.
 // That is, the first entry is the rootsplit for that rooting, and after that come the
 // PCSP indices.
-RootedIndexerRepresentation RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                          const Node::NodePtr& topology,
-                                                          const size_t default_index);
+RootedIndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                    const Node::NodePtr& topology,
+                                                    const size_t default_index);
+
+// Turn a TopologyCounter into an IndexerRepresentationCounter.
+RootedIndexerRepresentationCounter IndexerRepresentationCounterOf(
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
+    const size_t default_index);
+
 // For counting standardized (i.e. PCSP index sorted) rooted indexer representations.
 void IncrementRootedIndexerRepresentationSizeDict(
     RootedIndexerRepresentationSizeDict& dict,

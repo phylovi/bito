@@ -3,14 +3,13 @@
 
 #include "rooted_sbn_instance.hpp"
 
-// void RootedSBNInstance::TrainSimpleAverage() {
-//   CheckTopologyCounter();
-//   auto indexer_representation_counter =
-//   RootedSBNMaps::IndexerRepresentationCounterOf(
-//       indexer_, topology_counter_, sbn_parameters_.size());
-//   SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
-//                                 rootsplits_.size(), parent_to_range_);
-// }
+void RootedSBNInstance::TrainSimpleAverage() {
+  CheckTopologyCounter();
+  auto indexer_representation_counter = RootedSBNMaps::IndexerRepresentationCounterOf(
+      indexer_, topology_counter_, sbn_parameters_.size());
+  SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
+                                rootsplits_.size(), parent_to_range_);
+}
 
 void RootedSBNInstance::ReadNewickFile(const std::string &fname) {
   Driver driver;
