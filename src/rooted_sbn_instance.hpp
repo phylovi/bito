@@ -25,6 +25,9 @@ class RootedSBNInstance : public SBNInstance {
     return RootedSBNMaps::PCSPCounterOf(topologies);
   }
 
+  // ** Building SBN-related items
+  void TrainSimpleAverage();
+
   // ** Phylogenetic likelihood
 
   std::vector<double> LogLikelihoods();
@@ -33,8 +36,8 @@ class RootedSBNInstance : public SBNInstance {
 
   // ** I/O
 
-  void ReadNewickFile(std::string fname);
-  void ReadNexusFile(std::string fname);
+  void ReadNewickFile(const std::string& fname);
+  void ReadNexusFile(const std::string& fname);
 
   RootedTreeCollection tree_collection_;
 };

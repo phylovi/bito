@@ -3,7 +3,16 @@
 
 #include "rooted_sbn_instance.hpp"
 
-void RootedSBNInstance::ReadNewickFile(std::string fname) {
+// void RootedSBNInstance::TrainSimpleAverage() {
+//   CheckTopologyCounter();
+//   auto indexer_representation_counter =
+//   RootedSBNMaps::IndexerRepresentationCounterOf(
+//       indexer_, topology_counter_, sbn_parameters_.size());
+//   SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
+//                                 rootsplits_.size(), parent_to_range_);
+// }
+
+void RootedSBNInstance::ReadNewickFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
@@ -11,7 +20,7 @@ void RootedSBNInstance::ReadNewickFile(std::string fname) {
   tree_collection_.InitializeParameters();
 }
 
-void RootedSBNInstance::ReadNexusFile(std::string fname) {
+void RootedSBNInstance::ReadNexusFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
@@ -26,3 +35,5 @@ std::vector<double> RootedSBNInstance::LogLikelihoods() {
 std::vector<RootedPhyloGradient> RootedSBNInstance::PhyloGradients() {
   return GetEngine()->Gradients(tree_collection_, phylo_model_params_, rescaling_);
 }
+
+

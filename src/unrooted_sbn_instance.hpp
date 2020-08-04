@@ -81,7 +81,7 @@ class UnrootedSBNInstance : public SBNInstance {
   // Topology gradient for unrooted trees.
   // Assumption: This function is called from Python side
   // after the trees (both the topology and the branch lengths) are sampled.
-  EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f, bool use_vimco = true);
+  EigenVectorXd TopologyGradients(EigenVectorXdRef log_f, bool use_vimco = true);
   // Computes gradient WRT \phi of log q_{\phi}(\tau).
   // IndexerRepresentation contains all rootings of \tau.
   // normalized_sbn_parameters_in_log is a cache; see implementation of
@@ -93,8 +93,8 @@ class UnrootedSBNInstance : public SBNInstance {
 
   // ** I/O
 
-  void ReadNewickFile(std::string fname);
-  void ReadNexusFile(std::string fname);
+  void ReadNewickFile(const std::string &fname);
+  void ReadNexusFile(const std::string &fname);
 
  protected:
   void PushBackRangeForParentIfAvailable(

@@ -156,6 +156,11 @@ void SetCounts(
   }
 }
 
+// TODO Eliminate this code duplication by making this templated over an
+// IndexerRepresentationCounterT. Note that we will have to move a lot of functions into
+// the header file to make this possible. It would be cleanest to have this in a
+// SBNProbabilityInternals namespace: things that aren't part of the "public" interface.
+//
 // Set the provided counts vector to be the log of the counts of the rootsplits and
 // PCSPs provided in the input.
 void SetLogCounts(
@@ -170,9 +175,32 @@ void SetLogCounts(
   }
 }
 
+// Set the provided counts vector to be the log of the counts of the rootsplits and
+// PCSPs provided in the input.
+void SetLogCounts(
+    EigenVectorXdRef counts,
+    const RootedIndexerRepresentationCounter& indexer_representation_counter,
+    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+  counts.fill(DOUBLE_NEG_INF);
+  for (const auto& [indexer_representation, int_topology_count] :
+       indexer_representation_counter) {
+    const auto log_topology_count = log(static_cast<double>(int_topology_count));
+    IncrementByInLog(counts, indexer_representation, log_topology_count);
+  }
+}
+
+// TODO code dup here too
 void SBNProbability::SimpleAverage(
     EigenVectorXdRef sbn_parameters,
     const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
+    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+  SetLogCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
+               parent_to_range);
+}
+
+void SBNProbability::SimpleAverage(
+    EigenVectorXdRef sbn_parameters,
+    const RootedIndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
   SetLogCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
                parent_to_range);
