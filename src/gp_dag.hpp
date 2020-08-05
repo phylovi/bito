@@ -32,7 +32,7 @@ class GPDAG {
   // How many topologies can be expressed by the GPDAG? Expressed as a double because
   // this number can be big.
   double TopologyCount() const;
-  // Each node in a tree is constructed with GPDAGNode ID as Node ID.
+  // Each node in a topology is constructed with GPDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
   size_t RootsplitAndPCSPCount() const;
   // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
