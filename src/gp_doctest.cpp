@@ -125,7 +125,7 @@ TEST_CASE("GPInstance: branch length optimization") {
 
 TEST_CASE("GPInstance: generate all trees") {
   auto inst = MakeHelloGPInstanceTwoTrees();
-  auto rooted_tree_collection = inst.GetRootedTreeCollection();
+  auto rooted_tree_collection = inst.GenerateCompleteRootedTreeCollection();
   CHECK_EQ(rooted_tree_collection.TreeCount(), 2);
 }
 
