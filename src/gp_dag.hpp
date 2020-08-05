@@ -31,10 +31,9 @@ class GPDAG {
   size_t NodeCount() const;
   // How many trees can be expressed by the GPDAG? Expressed as a double because this
   // number can be big.
-  double TreeCount() const;
-  // Each tree is constructed so that the first child stores the rotated child,
-  // and the second child holds sorted child.
-  Node::NodePtrVec GenerateAllTrees() const;
+  double TopologyCount() const;
+  // Each node in a tree is constructed with GPDAGNode ID as Node ID.
+  Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
   size_t RootsplitAndPCSPCount() const;
   // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
   size_t GeneralizedPCSPCount() const;
@@ -47,18 +46,8 @@ class GPDAG {
   // Get the index of a PLV of a given type and with a given index.
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
   size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
-  
-  size_t GetGPCSPIndex(const Bitset &pcsp) const {
-    if (gpcsp_indexer_.count(pcsp) > 0) {
-      return gpcsp_indexer_.at(pcsp);
-    } else {
-      // Return the max value.
-      return SIZE_MAX;
-    }
-  }
-  const Bitset &GetBitset(size_t node_id) const {
-    return GetDagNode(node_id)->GetBitset();
-  }
+
+  size_t GetGPCSPIndexWithDefault(const Bitset &pcsp) const;
 
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
@@ -110,11 +99,11 @@ class GPDAG {
   // The last entries are reserved for rootsplits.
   BitsetSizeMap subsplit_to_id_;
   std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
-  
+
   // Total number of trees spanned by the DAG.
-  double tree_count_;
+  double topology_count;
   // Storage for the number of trees below for each node.
-  EigenVectorXd tree_count_below_;
+  EigenVectorXd topology_count_below_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(NodeLambda) const;
@@ -124,7 +113,7 @@ class GPDAG {
   void IterateOverRootwardEdges(const GPDAGNode *node, EdgeDestinationLambda f) const;
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(std::function<void(size_t)>) const;
-  
+
   // This function returns empty vector if subsplit is invalid or has no child.
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
                                            bool include_fake_subsplits = false);
@@ -138,7 +127,7 @@ class GPDAG {
                             std::unordered_set<Bitset> &visited_subsplits);
   void BuildNodes();
   void BuildEdges();
-  void CountTrees();
+  void CountTopologies();
   // Expand gpcsp_indexer_ and subsplit_to_range_ with fake subsplits.
   void ExpandPCSPIndexerAndSubsplitToRange();
   // Update gpcsp_indexer_ keys to be full parent child subsplits as opposed to
