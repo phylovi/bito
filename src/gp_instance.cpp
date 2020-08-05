@@ -180,9 +180,9 @@ void GPInstance::EstimateSBNParameters() {
 RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   Tree::TreeVector tree_vector;
   Node::NodePtrVec topologies = dag_.GenerateAllGPNodeIndexedTopologies();
-  const EigenVectorXd bl = engine_->GetBranchLengths();
+  const EigenVectorXd gpcsp_indexed_branch_lengths = engine_->GetBranchLengths();
 
-  // Leaves encoding to parent subsplit encoding.
+  // Map from Leaves-encoding to parent-subsplit encoding.
   std::unordered_map<const Node *, Bitset> leaves_to_subsplit_indexer;
   for (const auto &topology : topologies) {
     topology->PreOrder([this, &leaves_to_subsplit_indexer](const Node *node) {
@@ -201,7 +201,8 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
     std::vector<double> branch_lengths(node_count);
 
     root_node->PreOrder(
-        [this, &branch_lengths, &bl, &leaves_to_subsplit_indexer](const Node *node) {
+        [this, &branch_lengths, &gpcsp_indexed_branch_lengths,
+         &leaves_to_subsplit_indexer](const Node *node) {
           const Node::NodePtrVec &children = node->Children();
           Assert(children.size() == 2 || children.empty(),
                  "Number of children must equal to 2 for the internal nodes and 0 for "
@@ -211,18 +212,18 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
             const Node *child_node = child_node_shared.get();
             auto &child_subsplit = leaves_to_subsplit_indexer.at(child_node);
 
-            // Node: child_subsplit is either a rotated or sorted subsplit of
+            // Note: child_subsplit is either a rotated or sorted subsplit of
             // parent_subsplit.
             size_t i0 = dag_.GetGPCSPIndexWithDefault(parent_subsplit + child_subsplit);
             size_t i1 = dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit() +
                                                       child_subsplit);
             Assert(i0 < SIZE_MAX || i1 < SIZE_MAX, "GPCSP does not exist.");
             size_t gpcsp_idx = std::min(i0, i1);
-            branch_lengths[child_node->Id()] = bl[gpcsp_idx];
+            branch_lengths[child_node->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
           }
         });
 
-    Tree tree(root_node, branch_lengths);
+    Tree tree(root_node, std::move(branch_lengths));
     tree_vector.push_back(tree);
   }
 
