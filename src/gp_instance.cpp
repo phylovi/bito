@@ -213,8 +213,8 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
             // Node: child_subsplit is either a rotated or sorted subsplit of
             // parent_subsplit.
             size_t i0 = dag_.GetGPCSPIndexWithDefault(parent_subsplit + child_subsplit);
-            size_t i1 =
-                dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit() + child_subsplit);
+            size_t i1 = dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit() +
+                                                      child_subsplit);
             Assert(i0 < SIZE_MAX || i1 < SIZE_MAX, "GPCSP does not exist.");
             size_t gpcsp_idx = std::min(i0, i1);
             branch_lengths[children.at(i)->Id()] = bl[gpcsp_idx];

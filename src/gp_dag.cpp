@@ -132,15 +132,15 @@ Node::NodePtrVec GPDAG::GenerateAllGPNodeIndexedTopologies() const {
     return std::make_pair(rotated_subtrees, sorted_subtrees);
   };
 
-  auto MergeTrees = [](size_t node_id,
-                       Node::NodePtrVec &rotated_subtrees,
+  auto MergeTrees = [](size_t node_id, Node::NodePtrVec &rotated_subtrees,
                        Node::NodePtrVec &sorted_subtrees) {
     Node::NodePtrVec topologies;
     for (size_t i = 0; i < rotated_subtrees.size(); i++) {
       auto &rotated_subtree = rotated_subtrees.at(i);
       for (size_t j = 0; j < sorted_subtrees.size(); j++) {
         auto &sorted_subtree = sorted_subtrees.at(j);
-        Node::NodePtr new_topology = Node::Join(sorted_subtree, rotated_subtree, node_id);
+        Node::NodePtr new_topology =
+            Node::Join(sorted_subtree, rotated_subtree, node_id);
         topologies.push_back(new_topology);
       }
     }
@@ -160,7 +160,7 @@ Node::NodePtrVec GPDAG::GenerateAllGPNodeIndexedTopologies() const {
   Node::NodePtrVec topologies;
   IterateOverRootsplitIds([&topologies, &topology_below](size_t root_id) {
     topologies.insert(topologies.end(), topology_below.at(root_id).begin(),
-                 topology_below.at(root_id).end());
+                      topology_below.at(root_id).end());
   });
 
   Assert(topologies.size() == TopologyCount(),
