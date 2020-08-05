@@ -223,8 +223,7 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
           }
         });
 
-    Tree tree(root_node, std::move(branch_lengths));
-    tree_vector.push_back(tree);
+    tree_vector.emplace_back(root_node, std::move(branch_lengths));
   }
 
   TreeCollection tree_collection(tree_vector, tree_collection_.TagTaxonMap());
