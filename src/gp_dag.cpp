@@ -37,12 +37,12 @@ void GPDAG::CountTopologies() {
       }
     }
   }
-  topology_count = 0;
+  topology_count_ = 0;
   IterateOverRootsplitIds(
-      [this](size_t root_id) { topology_count += topology_count_below_[root_id]; });
+      [this](size_t root_id) { topology_count_ += topology_count_below_[root_id]; });
 }
 
-double GPDAG::TopologyCount() const { return topology_count; }
+double GPDAG::TopologyCount() const { return topology_count_; }
 
 size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
 
@@ -119,28 +119,28 @@ EigenVectorXd GPDAG::BuildUniformQ() const {
 Node::NodePtrVec GPDAG::GenerateAllGPNodeIndexedTopologies() const {
   std::vector<Node::NodePtrVec> topology_below(NodeCount());
 
-  auto GetSubtrees = [&topology_below](const GPDAGNode *node) {
-    Node::NodePtrVec rotated_subtrees, sorted_subtrees;
+  auto GetSubtopologies = [&topology_below](const GPDAGNode *node) {
+    Node::NodePtrVec rotated_subtopologies, sorted_subtopologies;
     for (const bool rotated : {false, true}) {
       for (const auto &child_id : node->GetLeafward(rotated)) {
-        for (const auto &sub_tree : topology_below.at(child_id)) {
-          rotated ? rotated_subtrees.push_back(sub_tree)
-                  : sorted_subtrees.push_back(sub_tree);
+        for (const auto &subtopology : topology_below.at(child_id)) {
+          rotated ? rotated_subtopologies.push_back(subtopology)
+                  : sorted_subtopologies.push_back(subtopology);
         }
       }
     }
-    return std::make_pair(rotated_subtrees, sorted_subtrees);
+    return std::make_pair(rotated_subtopologies, sorted_subtopologies);
   };
 
-  auto MergeTrees = [](size_t node_id, Node::NodePtrVec &rotated_subtrees,
-                       Node::NodePtrVec &sorted_subtrees) {
+  auto MergeTopologies = [](size_t node_id, Node::NodePtrVec &rotated_subtopologies,
+                            Node::NodePtrVec &sorted_subtopologies) {
     Node::NodePtrVec topologies;
-    for (size_t i = 0; i < rotated_subtrees.size(); i++) {
-      auto &rotated_subtree = rotated_subtrees.at(i);
-      for (size_t j = 0; j < sorted_subtrees.size(); j++) {
-        auto &sorted_subtree = sorted_subtrees.at(j);
+    for (size_t i = 0; i < rotated_subtopologies.size(); i++) {
+      auto &rotated_subtopology = rotated_subtopologies.at(i);
+      for (size_t j = 0; j < sorted_subtopologies.size(); j++) {
+        auto &sorted_subtopology = sorted_subtopologies.at(j);
         Node::NodePtr new_topology =
-            Node::Join(sorted_subtree, rotated_subtree, node_id);
+            Node::Join(sorted_subtopology, rotated_subtopology, node_id);
         topologies.push_back(new_topology);
       }
     }
@@ -152,8 +152,9 @@ Node::NodePtrVec GPDAG::GenerateAllGPNodeIndexedTopologies() const {
     if (node->IsLeaf()) {
       topology_below.at(node_id).push_back(Node::Leaf(node_id));
     } else {
-      auto [rotated_trees, sorted_trees] = GetSubtrees(node);
-      topology_below[node_id] = MergeTrees(node_id, rotated_trees, sorted_trees);
+      auto [rotated_topologies, sorted_topologies] = GetSubtopologies(node);
+      topology_below[node_id] =
+          MergeTopologies(node_id, rotated_topologies, sorted_topologies);
     }
   }
 
@@ -164,7 +165,7 @@ Node::NodePtrVec GPDAG::GenerateAllGPNodeIndexedTopologies() const {
   });
 
   Assert(topologies.size() == TopologyCount(),
-         "The realized number of trees does not match the expected count.");
+         "The realized number of topologies does not match the expected count.");
 
   return topologies;
 }
@@ -192,7 +193,7 @@ EigenVectorXd GPDAG::BuildUniformPrior() const {
   IterateOverRootsplitIds([this, &q](size_t root_id) {
     auto node = GetDagNode(root_id);
     auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset());
-    q[gpcsp_idx] = topology_count_below_[root_id] / topology_count;
+    q[gpcsp_idx] = topology_count_below_[root_id] / topology_count_;
   });
 
   return q;
