@@ -101,7 +101,7 @@ class GPDAG {
   std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
 
   // Total number of trees spanned by the DAG.
-  double topology_count;
+  double topology_count_;
   // Storage for the number of trees below for each node.
   EigenVectorXd topology_count_below_;
 

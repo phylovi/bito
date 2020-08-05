@@ -178,13 +178,13 @@ void GPInstance::EstimateSBNParameters() {
 
 RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   Tree::TreeVector tree_vector;
-  Node::NodePtrVec trees = dag_.GenerateAllGPNodeIndexedTopologies();
+  Node::NodePtrVec topologies = dag_.GenerateAllGPNodeIndexedTopologies();
   const EigenVectorXd bl = engine_->GetBranchLengths();
 
   // Leaves encoding to parent subsplit encoding.
   std::unordered_map<const Node *, Bitset> leaves_to_subsplit_indexer;
-  for (size_t i = 0; i < trees.size(); i++) {
-    trees.at(i)->PreOrder([this, &leaves_to_subsplit_indexer](const Node *node) {
+  for (size_t i = 0; i < topologies.size(); i++) {
+    topologies.at(i)->PreOrder([this, &leaves_to_subsplit_indexer](const Node *node) {
       GPDAGNode *dag_node = dag_.GetDagNode(node->Id());
       if (!leaves_to_subsplit_indexer.count(node)) {
         SafeInsert(leaves_to_subsplit_indexer, node, dag_node->GetBitset());
@@ -192,7 +192,7 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
     });
   }
 
-  for (auto &root_node : trees) {
+  for (auto &root_node : topologies) {
     // Polish will re-assign the node Ids.
     root_node->Polish();
 
