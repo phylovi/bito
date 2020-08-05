@@ -119,8 +119,8 @@ class Node {
 
   // These two functions take functions accepting triples of (node_id,
   // child0_id, child1_id) and apply them according to various traversals.
-  void BinaryIdPreOrder(const std::function<void(int, int, int)> f) const;
-  void BinaryIdPostOrder(const std::function<void(int, int, int)> f) const;
+  void BinaryIdPreOrder(std::function<void(int, int, int)> f) const;
+  void BinaryIdPostOrder(std::function<void(int, int, int)> f) const;
 
   // See the typedef of UnrootedPCSPFun and RootedPCSPFun to understand the argument
   // type to these functions.
