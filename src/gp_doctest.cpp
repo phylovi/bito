@@ -123,12 +123,6 @@ TEST_CASE("GPInstance: branch length optimization") {
   CHECK_LT(fabs(expected_log_marginal - -80.6906345), 1e-6);
 }
 
-TEST_CASE("GPInstance: generate all trees") {
-  auto inst = MakeHelloGPInstanceTwoTrees();
-  auto rooted_tree_collection = inst.GenerateCompleteRootedTreeCollection();
-  CHECK_EQ(rooted_tree_collection.TreeCount(), 2);
-}
-
 GPInstance MakeFluAGPInstance(double rescaling_threshold) {
   GPInstance inst("_ignore/mmapped_plv.data");
   inst.ReadFastaFile("data/fluA.fa");
@@ -149,4 +143,19 @@ TEST_CASE("GPInstance: rescaling") {
   double difference = MakeAndRunFluAGPInstance(GPEngine::default_rescaling_threshold_) -
                       MakeAndRunFluAGPInstance(1e-4);
   CHECK_LT(fabs(difference), 1e-10);
+}
+
+GPInstance MakeFiveTaxonRootedInstance() {
+  GPInstance inst("_ignore/mmapped_plv3.data");
+  inst.ReadFastaFile("data/five_taxon_rooted.fasta");
+  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
+  inst.MakeEngine();
+  return inst;
+}
+
+TEST_CASE("GPInstance: generate all trees") {
+  auto inst = MakeFiveTaxonRootedInstance();
+  auto rooted_tree_collection = inst.GenerateCompleteRootedTreeCollection();
+  CHECK_EQ(rooted_tree_collection.TreeCount(), 4);
+  CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
 }
