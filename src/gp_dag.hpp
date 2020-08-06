@@ -29,10 +29,10 @@ class GPDAG {
   explicit GPDAG(const RootedTreeCollection &tree_collection);
 
   size_t NodeCount() const;
-  // How many trees can be expressed by the GPDAG? Expressed as a double because this
-  // number can be big.
+  // How many topologies can be expressed by the GPDAG? Expressed as a double because
+  // this number can be big.
   double TopologyCount() const;
-  // Each node in a tree is constructed with GPDAGNode ID as Node ID.
+  // Each node in a topology is constructed with GPDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
   size_t RootsplitAndPCSPCount() const;
   // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
@@ -92,7 +92,7 @@ class GPDAG {
   BitsetSizeMap gpcsp_indexer_;
 
   // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
-  // This corresponds to the analogous concept for trees.
+  // This corresponds to the analogous concept for topologies.
   //
   // A map from Bitset to the corresponding index in dag_nodes_.
   // The first entries are reserved for fake subsplits.
@@ -100,9 +100,9 @@ class GPDAG {
   BitsetSizeMap subsplit_to_id_;
   std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
 
-  // Total number of trees spanned by the DAG.
-  double topology_count;
-  // Storage for the number of trees below for each node.
+  // Total number of topologies spanned by the DAG.
+  double topology_count_;
+  // Storage for the number of topologies below for each node.
   EigenVectorXd topology_count_below_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.

@@ -146,7 +146,7 @@ TEST_CASE("GPInstance: rescaling") {
 }
 
 GPInstance MakeFiveTaxonRootedInstance() {
-  GPInstance inst("_ignore/mmapped_plv3.data");
+  GPInstance inst("_ignore/mmapped_plv.data");
   inst.ReadFastaFile("data/five_taxon_rooted.fasta");
   inst.ReadNewickFile("data/five_taxon_rooted.nwk");
   inst.MakeEngine();
