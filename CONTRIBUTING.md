@@ -28,7 +28,7 @@ There are certainly violations of these guidelines in the code, so fix them when
 ## Specific tips
 
 * Prefer a functional style: returning variables versus modifying them in place. Because of return value optimization, this doesn't have a performance penalty.
-* [Follow C++ core guidelines for passing parameters](https://www.modernescpp.com/index.php/c-core-guidelines-how-to-pass-function-parameters)
+* [Follow C++ core guidelines for passing parameters](https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#fcall-parameter-passing) (F15-F21)
 * [RAII](https://en.cppreference.com/w/cpp/language/raii). No `new`.
 * Classic/raw pointers are used as non-owning references. Pass smart pointers only when you want to participate in ownership.
 * The default variable initialization should be `const auto`. Range-for loops should loop over `const auto &`. ([But don't use auto to store the results of Eigen expressions](https://eigen.tuxfamily.org/dox/TopicPitfalls.html).)
@@ -37,6 +37,11 @@ There are certainly violations of these guidelines in the code, so fix them when
   If you can't make the code use and operation inherently obvious, please write documentation.
 * TODO comments don't get merged into master. Rather, make an issue on GitHub.
 * Always use curly braces for the body of conditionals and loops, even if they are one line.
+
+
+## Code smells
+
+* Functions with multiple "sections": these should be broken into individual functions
 
 
 ## Formatting
