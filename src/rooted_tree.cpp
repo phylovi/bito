@@ -71,6 +71,9 @@ void RootedTree::SetNodeHeightsViaHeightRatios(EigenConstVectorXdRef height_rati
   size_t leaf_count = LeafCount();
   size_t root_id = Topology()->Id();
   node_heights_[root_id] = height_ratios(root_id - leaf_count);
+  for (size_t i = 0; i < height_ratios_.size(); i++) {
+    height_ratios_[i] = height_ratios(i);
+  }
   Topology()->TripleIdPreOrderBifurcating([&leaf_count, &height_ratios, this](
                                               int node_id, int, int parent_id) {
     if (node_id >= leaf_count) {
@@ -78,6 +81,7 @@ void RootedTree::SetNodeHeightsViaHeightRatios(EigenConstVectorXdRef height_rati
                                height_ratios(node_id - leaf_count) *
                                    (node_heights_[parent_id] - node_bounds_[node_id]);
     }
+    branch_lengths_[node_id] = node_heights_[parent_id] - node_heights_[node_id];
   });
 }
 
