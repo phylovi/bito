@@ -2,7 +2,7 @@
 
 Please include a summary of the change.
 
-Fixes issue ...
+Fixes issue # ...
 
 
 ## Tests
