@@ -66,7 +66,7 @@ Our documentation consists of:
 ## Contributing
 
 We welcome your contributions!
-Please see our detailed [contributing guidelines](CONTRIBUTING.md).
+Please see our detailed [contribution guidelines](CONTRIBUTING.md).
 
 
 ## Contributors
