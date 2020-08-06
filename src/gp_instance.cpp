@@ -181,13 +181,14 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   Node::NodePtrVec trees = dag_.GenerateAllGPNodeIndexedTopologies();
   const EigenVectorXd bl = engine_->GetBranchLengths();
 
-  // Leaves encoding to parent subsplit encoding.
-  std::unordered_map<const Node *, Bitset> leaves_to_subsplit_indexer;
+  // Construct Node pointer to parent subsplit encoding.
+  // We will use this indexer to look up the GPCSP index.
+  std::unordered_map<const Node *, Bitset> node_to_subsplit_indexer;
   for (size_t i = 0; i < trees.size(); i++) {
-    trees.at(i)->PreOrder([this, &leaves_to_subsplit_indexer](const Node *node) {
+    trees.at(i)->PreOrder([this, &node_to_subsplit_indexer](const Node *node) {
       GPDAGNode *dag_node = dag_.GetDagNode(node->Id());
-      if (!leaves_to_subsplit_indexer.count(node)) {
-        SafeInsert(leaves_to_subsplit_indexer, node, dag_node->GetBitset());
+      if (!node_to_subsplit_indexer.count(node)) {
+        SafeInsert(node_to_subsplit_indexer, node, dag_node->GetBitset());
       }
     });
   }
@@ -200,15 +201,15 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
     std::vector<double> branch_lengths(node_count);
 
     root_node->PreOrder(
-        [this, &branch_lengths, &bl, &leaves_to_subsplit_indexer](const Node *node) {
+        [this, &branch_lengths, &bl, &node_to_subsplit_indexer](const Node *node) {
           const Node::NodePtrVec &children = node->Children();
           Assert(children.size() == 2 || children.size() == 0,
                  "Number of children must equal to 2 for the internal nodes and 0 for "
                  "the leaves.");
-          auto &parent_subsplit = leaves_to_subsplit_indexer.at(node);
+          auto &parent_subsplit = node_to_subsplit_indexer.at(node);
           for (size_t i = 0; i < children.size(); i++) {
             const Node *child_node = children.at(i).get();
-            auto &child_subsplit = leaves_to_subsplit_indexer.at(child_node);
+            auto &child_subsplit = node_to_subsplit_indexer.at(child_node);
 
             // Node: child_subsplit is either a rotated or sorted subsplit of
             // parent_subsplit.
