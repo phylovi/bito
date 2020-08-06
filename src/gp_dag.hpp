@@ -29,9 +29,11 @@ class GPDAG {
   explicit GPDAG(const RootedTreeCollection &tree_collection);
 
   size_t NodeCount() const;
-  // How many trees can be expressed by the GPDAG? Expressed as a double because this
-  // number can be big.
-  double TreeCount() const;
+  // How many topologies can be expressed by the GPDAG? Expressed as a double because
+  // this number can be big.
+  double TopologyCount() const;
+  // Each node in a topology is constructed with GPDAGNode ID as Node ID.
+  Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
   size_t RootsplitAndPCSPCount() const;
   // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
   size_t GeneralizedPCSPCount() const;
@@ -45,8 +47,12 @@ class GPDAG {
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
   size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
 
+  size_t GetGPCSPIndexWithDefault(const Bitset &pcsp) const;
+
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
+  // Uniform prior over all topologies.
+  [[nodiscard]] EigenVectorXd BuildUniformPrior() const;
   // Schedule branch length optimization.
   [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
   // Compute likelihood values l(s|t) for each child subsplit s by visiting
@@ -86,13 +92,18 @@ class GPDAG {
   BitsetSizeMap gpcsp_indexer_;
 
   // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
-  // This corresponds to the analogous concept for trees.
+  // This corresponds to the analogous concept for topologies.
   //
   // A map from Bitset to the corresponding index in dag_nodes_.
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
   BitsetSizeMap subsplit_to_id_;
   std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
+
+  // Total number of topologies spanned by the DAG.
+  double topology_count_;
+  // Storage for the number of topologies below for each node.
+  EigenVectorXd topology_count_below_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(NodeLambda) const;
@@ -116,6 +127,7 @@ class GPDAG {
                             std::unordered_set<Bitset> &visited_subsplits);
   void BuildNodes();
   void BuildEdges();
+  void CountTopologies();
   // Expand gpcsp_indexer_ and subsplit_to_range_ with fake subsplits.
   void ExpandPCSPIndexerAndSubsplitToRange();
   // Update gpcsp_indexer_ keys to be full parent child subsplits as opposed to

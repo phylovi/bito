@@ -10,6 +10,7 @@
 #include "driver.hpp"
 #include "gp_operation.hpp"
 #include "numerical_utils.hpp"
+#include "rooted_tree_collection.hpp"
 
 using namespace GPOperations;  // NOLINT
 
@@ -22,7 +23,7 @@ void GPInstance::PrintStatus() {
     std::cout << "No trees loaded.\n";
   }
   std::cout << alignment_.Data().size() << " sequences loaded.\n";
-  std::cout << dag_.NodeCount() << " DAG nodes representing " << dag_.TreeCount()
+  std::cout << dag_.NodeCount() << " DAG nodes representing " << dag_.TopologyCount()
             << " trees.\n";
   std::cout << dag_.GeneralizedPCSPCount() << " continuous parameters.\n";
   if (engine_ == nullptr) {
@@ -102,7 +103,7 @@ void GPInstance::PrintDAG() { dag_.Print(); }
 void GPInstance::PrintGPCSPIndexer() { dag_.PrintGPCSPIndexer(); }
 
 void GPInstance::InitializeGPEngine() {
-  GetEngine()->SetSBNParameters(dag_.BuildUniformQ());
+  GetEngine()->SetSBNParameters(dag_.BuildUniformPrior());
 }
 
 void GPInstance::PopulatePLVs() {
@@ -174,4 +175,59 @@ void GPInstance::EstimateSBNParameters() {
   ProcessOperations(marginal_lik_operations);
   double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
   std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
+}
+
+RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
+  RootedTree::RootedTreeVector tree_vector;
+  Node::NodePtrVec topologies = dag_.GenerateAllGPNodeIndexedTopologies();
+  const EigenVectorXd gpcsp_indexed_branch_lengths = engine_->GetBranchLengths();
+
+  // Construct Node pointer to parent subsplit encoding.
+  // We will use this indexer to look up the GPCSP index.
+  std::unordered_map<const Node *, Bitset> node_to_subsplit_indexer;
+  for (const auto &topology : topologies) {
+    topology->PreOrder([this, &node_to_subsplit_indexer](const Node *node) {
+      GPDAGNode *dag_node = dag_.GetDagNode(node->Id());
+      if (node_to_subsplit_indexer.count(node) == 0) {
+        SafeInsert(node_to_subsplit_indexer, node, dag_node->GetBitset());
+      }
+    });
+  }
+
+  for (auto &root_node : topologies) {
+    // Polish will re-assign the node Ids.
+    root_node->Polish();
+
+    size_t node_count = 2 * root_node->LeafCount() - 1;
+    std::vector<double> branch_lengths(node_count);
+
+    root_node->PreOrder(
+        [this, &branch_lengths, &gpcsp_indexed_branch_lengths,
+         &node_to_subsplit_indexer](const Node *node) {
+          const Node::NodePtrVec &children = node->Children();
+          Assert(children.size() == 2 || children.empty(),
+                 "Number of children must equal to 2 for the internal nodes and 0 for "
+                 "the leaves.");
+          auto &parent_subsplit = node_to_subsplit_indexer.at(node);
+          for (const auto &child_node_shared : children) {
+            const Node *child_node = child_node_shared.get();
+            auto &child_subsplit = node_to_subsplit_indexer.at(child_node);
+
+            // Note: child_subsplit is either a rotated or sorted subsplit of
+            // parent_subsplit.
+            size_t i0 = dag_.GetGPCSPIndexWithDefault(parent_subsplit + child_subsplit);
+            size_t i1 = dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit() +
+                                                      child_subsplit);
+            Assert(i0 < SIZE_MAX || i1 < SIZE_MAX, "GPCSP does not exist.");
+            size_t gpcsp_idx = std::min(i0, i1);
+            branch_lengths[child_node->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+          }
+        });
+
+    tree_vector.emplace_back(root_node, std::move(branch_lengths));
+  }
+
+  RootedTreeCollection rooted_tree_collection(tree_vector,
+                                              tree_collection_.TagTaxonMap());
+  return rooted_tree_collection;
 }

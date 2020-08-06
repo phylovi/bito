@@ -17,12 +17,11 @@ GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
   BuildEdges();
   SetPCSPIndexerEncodingToFullSubsplits();
   ExpandPCSPIndexerAndSubsplitToRange();
+  CountTopologies();
 }
 
-size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
-
-double GPDAG::TreeCount() const {
-  EigenVectorXd tree_count_below = EigenVectorXd::Ones(NodeCount());
+void GPDAG::CountTopologies() {
+  topology_count_below_ = EigenVectorXd::Ones(NodeCount());
   for (const auto &node_id : RootwardPassTraversal()) {
     const auto &node = GetDagNode(node_id);
     if (!node->IsLeaf()) {
@@ -30,20 +29,22 @@ double GPDAG::TreeCount() const {
         double per_rotated_count = 0.;
         // Sum options across the possible children.
         for (const auto &child_id : node->GetLeafward(rotated)) {
-          per_rotated_count += tree_count_below[child_id];
+          per_rotated_count += topology_count_below_[child_id];
         }
         // Take the product across the number of options for the left and right branches
         // of the tree.
-        tree_count_below[node_id] *= per_rotated_count;
+        topology_count_below_[node_id] *= per_rotated_count;
       }
     }
   }
-  double tree_count = 1.;
-  IterateOverRootsplitIds([&tree_count, &tree_count_below](size_t root_id) {
-    tree_count *= tree_count_below[root_id];
-  });
-  return tree_count;
+  topology_count_ = 0;
+  IterateOverRootsplitIds(
+      [this](size_t root_id) { topology_count_ += topology_count_below_[root_id]; });
 }
+
+double GPDAG::TopologyCount() const { return topology_count_; }
+
+size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
 
 size_t GPDAG::RootsplitAndPCSPCount() const { return rootsplit_and_pcsp_count_; }
 
@@ -95,6 +96,15 @@ size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t src_idx) const {
   return GetPLVIndexStatic(plv_type, dag_nodes_.size(), src_idx);
 }
 
+size_t GPDAG::GetGPCSPIndexWithDefault(const Bitset &pcsp) const {
+  if (gpcsp_indexer_.count(pcsp) > 0) {
+    return gpcsp_indexer_.at(pcsp);
+  } else {
+    // Return the max value.
+    return SIZE_MAX;
+  }
+}
+
 EigenVectorXd GPDAG::BuildUniformQ() const {
   EigenVectorXd q = EigenVectorXd::Ones(GeneralizedPCSPCount());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
@@ -103,6 +113,89 @@ EigenVectorXd GPDAG::BuildUniformQ() const {
     double val = 1. / num_child_subsplits;
     q.segment(range.first, num_child_subsplits).array() = val;
   }
+  return q;
+}
+
+Node::NodePtrVec GPDAG::GenerateAllGPNodeIndexedTopologies() const {
+  std::vector<Node::NodePtrVec> topology_below(NodeCount());
+
+  auto GetSubtopologies = [&topology_below](const GPDAGNode *node) {
+    Node::NodePtrVec rotated_subtopologies, sorted_subtopologies;
+    for (const bool rotated : {false, true}) {
+      for (const auto &child_id : node->GetLeafward(rotated)) {
+        for (const auto &subtopology : topology_below.at(child_id)) {
+          rotated ? rotated_subtopologies.push_back(subtopology)
+                  : sorted_subtopologies.push_back(subtopology);
+        }
+      }
+    }
+    return std::make_pair(rotated_subtopologies, sorted_subtopologies);
+  };
+
+  auto MergeTopologies = [](size_t node_id, Node::NodePtrVec &rotated_subtopologies,
+                            Node::NodePtrVec &sorted_subtopologies) {
+    Node::NodePtrVec topologies;
+    for (size_t i = 0; i < rotated_subtopologies.size(); i++) {
+      auto &rotated_subtopology = rotated_subtopologies.at(i);
+      for (size_t j = 0; j < sorted_subtopologies.size(); j++) {
+        auto &sorted_subtopology = sorted_subtopologies.at(j);
+        Node::NodePtr new_topology =
+            Node::Join(sorted_subtopology, rotated_subtopology, node_id);
+        topologies.push_back(new_topology);
+      }
+    }
+    return topologies;
+  };
+
+  for (const auto &node_id : RootwardPassTraversal()) {
+    const auto &node = GetDagNode(node_id);
+    if (node->IsLeaf()) {
+      topology_below.at(node_id).push_back(Node::Leaf(node_id));
+    } else {
+      auto [rotated_topologies, sorted_topologies] = GetSubtopologies(node);
+      topology_below[node_id] =
+          MergeTopologies(node_id, rotated_topologies, sorted_topologies);
+    }
+  }
+
+  Node::NodePtrVec topologies;
+  IterateOverRootsplitIds([&topologies, &topology_below](size_t root_id) {
+    topologies.insert(topologies.end(), topology_below.at(root_id).begin(),
+                      topology_below.at(root_id).end());
+  });
+
+  Assert(topologies.size() == TopologyCount(),
+         "The realized number of topologies does not match the expected count.");
+
+  return topologies;
+}
+
+EigenVectorXd GPDAG::BuildUniformPrior() const {
+  EigenVectorXd q = EigenVectorXd::Ones(GeneralizedPCSPCount());
+
+  for (const auto &node_id : RootwardPassTraversal()) {
+    const auto &node = GetDagNode(node_id);
+    if (!node->IsLeaf()) {
+      for (const bool rotated : {false, true}) {
+        double per_rotated_count = 0.;
+        for (const auto &child_id : node->GetLeafward(rotated)) {
+          per_rotated_count += topology_count_below_[child_id];
+        }
+        for (const auto &child_id : node->GetLeafward(rotated)) {
+          Bitset gpcsp = node->GetBitset(rotated) + GetDagNode(child_id)->GetBitset();
+          size_t gpcsp_idx = gpcsp_indexer_.at(gpcsp);
+          q[gpcsp_idx] = topology_count_below_[child_id] / per_rotated_count;
+        }
+      }
+    }
+  }
+
+  IterateOverRootsplitIds([this, &q](size_t root_id) {
+    auto node = GetDagNode(root_id);
+    auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset());
+    q[gpcsp_idx] = topology_count_below_[root_id] / topology_count_;
+  });
+
   return q;
 }
 

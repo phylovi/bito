@@ -23,8 +23,9 @@
 
 class RootedTree : public Tree {
  public:
-  typedef std::vector<RootedTree> RootedTreeVector;
+  using RootedTreeVector = std::vector<RootedTree>;
 
+  RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths);
   explicit RootedTree(const Tree& tree);
 
   bool operator==(const Tree& other) const = delete;

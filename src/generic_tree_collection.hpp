@@ -83,7 +83,7 @@ class GenericTreeCollection {
   // Drop the first fraction trees from the collection.
   void DropFirst(double fraction) {
     Assert(fraction >= 0. && fraction <= 1., "Illegal argument to DropFirst.");
-    size_t end_idx = static_cast<size_t>(fraction * static_cast<double>(TreeCount()));
+    auto end_idx = static_cast<size_t>(fraction * static_cast<double>(TreeCount()));
     Erase(0, end_idx);
   }
 
