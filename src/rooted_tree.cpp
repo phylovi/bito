@@ -6,11 +6,16 @@
 // Branch lengths should correspond to a time tree up to this tolerance.
 constexpr double BRANCH_LENGTH_TOLERANCE = 1e-4;
 
-RootedTree::RootedTree(const Tree& tree) : Tree(tree.Topology(), tree.BranchLengths()) {
-  Assert(Children().size() == 2,
-         "Failed to create a RootedTree out of a Tree that isn't bifurcating at the "
-         "root. Are you trying to parse unrooted trees into a RootedSBNInstance?");
+RootedTree::RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths)
+    : Tree(topology, std::move(branch_lengths)) {
+  Assert(
+      Children().size() == 2,
+      "Failed to create a RootedTree out of a topology that isn't bifurcating at the "
+      "root. Perhaps you are trying to parse unrooted trees into a RootedSBNInstance?");
 }
+
+RootedTree::RootedTree(const Tree& tree)
+    : RootedTree(tree.Topology(), tree.BranchLengths()) {}
 
 void RootedTree::InitializeParameters(
     const std::unordered_map<Tag, double>& tag_date_map) {

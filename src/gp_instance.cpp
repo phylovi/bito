@@ -178,7 +178,7 @@ void GPInstance::EstimateSBNParameters() {
 }
 
 RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
-  Tree::TreeVector tree_vector;
+  RootedTree::RootedTreeVector tree_vector;
   Node::NodePtrVec topologies = dag_.GenerateAllGPNodeIndexedTopologies();
   const EigenVectorXd gpcsp_indexed_branch_lengths = engine_->GetBranchLengths();
 
@@ -227,7 +227,7 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
     tree_vector.emplace_back(root_node, std::move(branch_lengths));
   }
 
-  TreeCollection tree_collection(tree_vector, tree_collection_.TagTaxonMap());
-  auto rooted_tree_collection = RootedTreeCollection::OfTreeCollection(tree_collection);
+  RootedTreeCollection rooted_tree_collection(tree_vector,
+                                              tree_collection_.TagTaxonMap());
   return rooted_tree_collection;
 }

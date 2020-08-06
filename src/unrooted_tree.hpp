@@ -26,7 +26,7 @@ class UnrootedTree : public Tree {
   // (s1:b1, s2:b2):0):0. Note that we zero out the root branch length.
   Tree Detrifurcate() const;
 
-  static UnrootedTree UnitBranchLengthTreeOf(Node::NodePtr topology);
+  static UnrootedTree UnitBranchLengthTreeOf(const Node::NodePtr& topology);
   static UnrootedTree OfParentIdVector(const std::vector<size_t>& indices);
   static TreeVector ExampleTrees() = delete;
 

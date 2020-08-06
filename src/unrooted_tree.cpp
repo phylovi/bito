@@ -5,16 +5,16 @@
 
 UnrootedTree::UnrootedTree(const Node::NodePtr& topology,
                            BranchLengthVector branch_lengths)
-    : Tree(topology, branch_lengths) {
+    : Tree(topology, std::move(branch_lengths)) {
   AssertTopologyTrifurcatingInConstructor(topology);
 }
 
 UnrootedTree::UnrootedTree(const Node::NodePtr& topology, TagDoubleMap branch_lengths)
-    : Tree(topology, branch_lengths) {
+    : Tree(topology, std::move(branch_lengths)) {
   AssertTopologyTrifurcatingInConstructor(topology);
 }
 
-UnrootedTree UnrootedTree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
+UnrootedTree UnrootedTree::UnitBranchLengthTreeOf(const Node::NodePtr& topology) {
   topology->Polish();
   return UnrootedTree(topology, BranchLengthVector(1 + topology->Id(), 1.));
 }
