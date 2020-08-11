@@ -52,12 +52,14 @@ class GPEngine {
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
+  // TODO descriptive comment
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                              const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
   static constexpr double default_rescaling_threshold_ = 1e-40;
+  static constexpr double default_branch_length_ = 0.1;
 
   double PLVByteCount() const { return mmapped_master_plv_.ByteCount(); };
 

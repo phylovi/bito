@@ -29,6 +29,7 @@ class GPInstance {
   void PrintDAG();
   void PrintGPCSPIndexer();
   void ProcessOperations(const GPOperationVector &operations);
+  // TODO descriptive comment here.
   void HotStartBranchLengths();
   void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter);
@@ -45,10 +46,6 @@ class GPInstance {
 
   // A vector that contains all of the SBN-related probabilities.
   EigenVectorXd sbn_parameters_;
-  // The master indexer for SBN parameters.
-
-  // for Hotstart
-  BitsetSizeMap indexer_;
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;

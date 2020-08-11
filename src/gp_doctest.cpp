@@ -177,6 +177,13 @@ TEST_CASE("GPInstance: Hotstart branch lengths") {
   // 1 (outgroup,(((z0,z1),z2),z3));
   // 33 (outgroup,((z0,z1),(z2,z3)));
 
+  // This below is the GPCSP with sister z2, z3 and children z0, z1
+  // That corresponds to indices 1, 2, and children 4, 3
+  // 0110000011|0001000001, 2
+  // [(1, z2), (2, z3), (3, z1), (4, z0), (0, outgroup)]
+  // TODO a test that shows that in this case the IdTaxonMap is laid out like this.
+  // Compare tree_collection_.IdTaxonMap is exactly this.
+
   EigenVectorXd hotstart_expected_branch_lengths(33);
   hotstart_expected_branch_lengths << 0.1175370000, 0.1175750000, 0.1195780000,
       0.0918962000, 0.0918931000, 0.1192590000, 0.0906988000, 0.0906972000,
@@ -193,4 +200,5 @@ TEST_CASE("GPInstance: Hotstart branch lengths") {
   inst.HotStartBranchLengths();
   std::cout << "After hot start: " << inst.GetEngine()->GetBranchLengths() << std::endl;
 
+  CHECK_EQ(true_mean, inst.GetEngine()->GetBranchLengths()(2));
 }
