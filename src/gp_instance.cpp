@@ -69,7 +69,7 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
-  engine_ = std::make_unique<GPEngine>(site_pattern, 6 * dag_.NodeCount(),
+  engine_ = std::make_unique<GPEngine>(std::move(site_pattern), 6 * dag_.NodeCount(),
                                        dag_.GeneralizedPCSPCount(), mmap_file_path_,
                                        rescaling_threshold);
   InitializeGPEngine();
@@ -112,7 +112,11 @@ void GPInstance::HotStartBranchLengths() {
 
 void GPInstance::PrintDAG() { dag_.Print(); }
 
-void GPInstance::PrintGPCSPIndexer() { dag_.PrintGPCSPIndexer(); }
+void GPInstance::PrintGPCSPIndexer() {
+  std::cout << "Map from ids to taxon names: " << tree_collection_.BuildIdTaxonMap()
+            << std::endl;
+  dag_.PrintGPCSPIndexer();
+}
 
 void GPInstance::InitializeGPEngine() {
   GetEngine()->SetSBNParameters(dag_.BuildUniformPrior());

@@ -160,55 +160,37 @@ TEST_CASE("GPInstance: generate all trees") {
   CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
 }
 
-// Hotstart
-// Might need something like this..
-GPInstance MakeHotStartGPInstance() {
+TEST_CASE("GPInstance: Hotstart branch lengths") {
+  const std::string tree_path = "data/hotstart_bootstrap_sample.nwk";
   GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/five_taxon_rooted.fasta");
-  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
+  inst.ReadFastaFile("data/hotstart.fasta");
+  inst.ReadNewickFile(tree_path);
   inst.MakeEngine();
-  return inst;
-}
 
-// Outputting the test case branch length vector
-EigenVectorXd HotStartTestCase() {
   Driver driver;
-  RootedTreeCollection tree_collection_ = RootedTreeCollection::OfTreeCollection(
-      driver.ParseNewickFile("data/hotstart_bootstrap_sample.nwk"));
+  RootedTreeCollection tree_collection_ =
+      RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(tree_path));
 
   const auto tree_count = tree_collection_.TreeCount();
-  EigenVectorXd hotstart_test_case(tree_count);
-  size_t i = 0;
 
-  // TODO I note that not all these trees have the same topology, and not the same root
-  // PCSP:
-  //
   // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
   // 1 (outgroup,(((z0,z1),z2),z3));
   // 33 (outgroup,((z0,z1),(z2,z3)));
-  for (const auto& tree : tree_collection_.Trees()) {
-    hotstart_test_case(i) = tree.branch_lengths_[0];
-    i++;
-  }
-  return hotstart_test_case;
-}
 
-EigenVectorXd MakeHotStartExpectedBranchLengths() {
-  EigenVectorXd hotstart_expected_branch_lengths(8);
-  hotstart_expected_branch_lengths << 0.135747939, 0.091601424, 0.11377897, 0.081359048,
-      0.115477758, 0.081239333, 0.126825273, 0.135747939;
+  EigenVectorXd hotstart_expected_branch_lengths(33);
+  hotstart_expected_branch_lengths << 0.1175370000, 0.1175750000, 0.1195780000,
+      0.0918962000, 0.0918931000, 0.1192590000, 0.0906988000, 0.0906972000,
+      0.0905154000, 0.0903663000, 0.1245620000, 0.1244890000, 0.1245050000,
+      0.1245550000, 0.1245680000, 0.1248920000, 0.1248490000, 0.1164070000,
+      0.1164110000, 0.1164120000, 0.1245670000, 0.1245650000, 0.1245670000,
+      0.1245670000, 0.1240790000, 0.1242540000, 0.1242160000, 0.1242560000,
+      0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
 
-  return hotstart_expected_branch_lengths;
-}
-
-TEST_CASE("GPInstance: Hotstart branch lengths") {
-  auto inst = MakeHotStartGPInstance();
-  EigenVectorXd hotstart_test_case = HotStartTestCase();
-  std::cout << hotstart_test_case << std::endl;
-  double true_mean = hotstart_test_case.array().mean();
+  double true_mean = hotstart_expected_branch_lengths.array().mean();
+  std::cout << "true mean " << true_mean << std::endl;
+  inst.PrintGPCSPIndexer();
 
   inst.HotStartBranchLengths();
   std::cout << "After hot start: " << inst.GetEngine()->GetBranchLengths() << std::endl;
 
-  // Hot start no longer giving all 1's.
 }

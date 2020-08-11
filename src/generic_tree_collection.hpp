@@ -100,6 +100,16 @@ class GenericTreeCollection {
     return str;
   }
 
+  std::unordered_map<uint32_t, std::string> BuildIdTaxonMap() {
+    std::unordered_map<uint32_t, std::string> result;
+
+    for (const auto &[tag, taxon] : tag_taxon_map_) {
+      SafeInsert(result, MaxLeafIDOfTag(tag), taxon);
+    }
+
+    return result;
+  }
+
   Node::TopologyCounter TopologyCounter() const {
     Node::TopologyCounter counter;
     for (const auto &tree : trees_) {

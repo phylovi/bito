@@ -247,6 +247,8 @@ TEST_CASE("RootedSBNInstance: parsing dates") {
   std::sort(dates.begin(), dates.end());
   CHECK_EQ(dates[0], 0);
   CHECK_EQ(dates.back(), 80.0);
+
+  // TODO test BuildIdTaxonMap
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
