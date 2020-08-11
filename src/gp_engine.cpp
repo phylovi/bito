@@ -267,13 +267,13 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
 
 void GPEngine::GradientAscentOptimization(
     const GPOperations::OptimizeBranchLength& op) {
-  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
-    branch_lengths_(op.gpcsp_) = branch_length;
+  auto log_likelihood_and_derivative = [this, &op](double log_branch_length) {
+    branch_lengths_(op.gpcsp_) = exp(log_branch_length);
     return this->LogLikelihoodAndDerivative(op);
   };
-  const auto [branch_length, log_likelihood] = Optimization::GradientAscent(
-      log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
+  const auto [log_branch_length, log_likelihood] = Optimization::GradientAscent(
+      log_likelihood_and_derivative, log(branch_lengths_(op.gpcsp_)),
       relative_tolerance_for_optimization_, step_size_for_optimization_,
-      min_branch_length_, max_iter_for_optimization_);
-  branch_lengths_(op.gpcsp_) = branch_length;
+      min_log_branch_length_, max_iter_for_optimization_);
+  branch_lengths_(op.gpcsp_) = exp(log_branch_length);
 }
