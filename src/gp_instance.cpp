@@ -213,28 +213,27 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
     size_t node_count = 2 * root_node->LeafCount() - 1;
     std::vector<double> branch_lengths(node_count);
 
-    root_node->PreOrder(
-        [this, &branch_lengths, &gpcsp_indexed_branch_lengths,
-         &node_to_subsplit_indexer](const Node *node) {
-          const Node::NodePtrVec &children = node->Children();
-          Assert(children.size() == 2 || children.empty(),
-                 "Number of children must equal to 2 for the internal nodes and 0 for "
-                 "the leaves.");
-          auto &parent_subsplit = node_to_subsplit_indexer.at(node);
-          for (const auto &child_node_shared : children) {
-            const Node *child_node = child_node_shared.get();
-            auto &child_subsplit = node_to_subsplit_indexer.at(child_node);
+    root_node->PreOrder([this, &branch_lengths, &gpcsp_indexed_branch_lengths,
+                         &node_to_subsplit_indexer](const Node *node) {
+      const Node::NodePtrVec &children = node->Children();
+      Assert(children.size() == 2 || children.empty(),
+             "Number of children must equal to 2 for the internal nodes and 0 for "
+             "the leaves.");
+      auto &parent_subsplit = node_to_subsplit_indexer.at(node);
+      for (const auto &child_node_shared : children) {
+        const Node *child_node = child_node_shared.get();
+        auto &child_subsplit = node_to_subsplit_indexer.at(child_node);
 
-            // Note: child_subsplit is either a rotated or sorted subsplit of
-            // parent_subsplit.
-            size_t i0 = dag_.GetGPCSPIndexWithDefault(parent_subsplit + child_subsplit);
-            size_t i1 = dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit() +
-                                                      child_subsplit);
-            Assert(i0 < SIZE_MAX || i1 < SIZE_MAX, "GPCSP does not exist.");
-            size_t gpcsp_idx = std::min(i0, i1);
-            branch_lengths[child_node->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
-          }
-        });
+        // Note: child_subsplit is either a rotated or sorted subsplit of
+        // parent_subsplit.
+        size_t i0 = dag_.GetGPCSPIndexWithDefault(parent_subsplit + child_subsplit);
+        size_t i1 = dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit() +
+                                                  child_subsplit);
+        Assert(i0 < SIZE_MAX || i1 < SIZE_MAX, "GPCSP does not exist.");
+        size_t gpcsp_idx = std::min(i0, i1);
+        branch_lengths[child_node->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+      }
+    });
 
     tree_vector.emplace_back(root_node, std::move(branch_lengths));
   }

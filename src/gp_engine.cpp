@@ -299,13 +299,12 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
             pcsp_counts(pcsp_index) += 1;
           }
         });
-      for (Eigen::Index i=0; i < pcsp_counts.size(); ++i){
-          if(pcsp_counts(i) != 0){
-              branch_lengths_(i) /= (double)pcsp_counts(i);
-          }
-          else{
-              branch_lengths_(i) = 1.;
-          }
+    for (Eigen::Index i = 0; i < pcsp_counts.size(); ++i) {
+      if (pcsp_counts(i) != 0) {
+        branch_lengths_(i) /= (double)pcsp_counts(i);
+      } else {
+        branch_lengths_(i) = 1.;
       }
+    }
   }
 }

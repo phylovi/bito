@@ -293,8 +293,9 @@ SizeVector RootedSBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& ind
   topology->RootedPCSPPreOrder([&leaf_count, &indexer, &default_index, &result](
                                    const Node* sister_node, const Node* focal_node,
                                    const Node* child0_node, const Node* child1_node) {
-    Bitset pcsp_bitset = SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
-                                      child0_node, false, child1_node, false);
+    Bitset pcsp_bitset =
+        SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                              child0_node, false, child1_node, false);
     result.push_back(AtWithDefault(indexer, pcsp_bitset, default_index));
   });
   return result;

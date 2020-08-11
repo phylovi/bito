@@ -196,12 +196,12 @@ EigenVectorXd HotStartTestCase() {
 EigenVectorXd MakeHotStartExpectedBranchLengths() {
   EigenVectorXd hotstart_expected_branch_lengths(8);
   hotstart_expected_branch_lengths << 0.135747939, 0.091601424, 0.11377897, 0.081359048,
-    0.115477758, 0.081239333, 0.126825273, 0.135747939;
+      0.115477758, 0.081239333, 0.126825273, 0.135747939;
 
   return hotstart_expected_branch_lengths;
 }
 
-TEST_CASE("GPInstance: Hotstart branch lengths"){
+TEST_CASE("GPInstance: Hotstart branch lengths") {
   auto inst = MakeHotStartGPInstance();
   EigenVectorXd hotstart_test_case = HotStartTestCase();
   std::cout << hotstart_test_case << std::endl;
