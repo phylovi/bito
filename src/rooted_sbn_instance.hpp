@@ -4,26 +4,15 @@
 #ifndef SRC_ROOTED_SBN_INSTANCE_HPP_
 #define SRC_ROOTED_SBN_INSTANCE_HPP_
 
-#include "sbn_instance.hpp"
+#include "generic_sbn_instance.hpp"
+#include "rooted_sbn_support.hpp"
 
-class RootedSBNInstance : public SBNInstance {
+using PreRootedSBNInstance = GenericSBNInstance<RootedTreeCollection, RootedSBNSupport>;
+template class GenericSBNInstance<RootedTreeCollection, RootedSBNSupport>;
+
+class RootedSBNInstance : public PreRootedSBNInstance {
  public:
-  using SBNInstance::SBNInstance;
-
-  size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
-  StringVector TaxonNames() const override { return tree_collection_.TaxonNames(); }
-  size_t TreeCount() const override { return tree_collection_.TreeCount(); }
-  TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
-  Node::TopologyCounter TopologyCounter() const override {
-    return tree_collection_.TopologyCounter();
-  }
-  BitsetSizeDict RootsplitCounterOf(
-      const Node::TopologyCounter& topologies) const override {
-    return RootedSBNMaps::RootsplitCounterOf(topologies);
-  }
-  PCSPDict PCSPCounterOf(const Node::TopologyCounter& topologies) const override {
-    return RootedSBNMaps::PCSPCounterOf(topologies);
-  }
+  using PreRootedSBNInstance::PreRootedSBNInstance;
 
   // ** Phylogenetic likelihood
 
@@ -35,8 +24,6 @@ class RootedSBNInstance : public SBNInstance {
 
   void ReadNewickFile(std::string fname);
   void ReadNexusFile(std::string fname);
-
-  RootedTreeCollection tree_collection_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
