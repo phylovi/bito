@@ -58,7 +58,7 @@ class SBNSupport {
   // strings.
   StringVector StringReversedIndexer() const;
 
-  void ProbabilityNormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters);
+  void ProbabilityNormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) const;
 
  protected:
   // A vector of the taxon names.

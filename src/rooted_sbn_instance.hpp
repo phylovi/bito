@@ -14,6 +14,16 @@ class RootedSBNInstance : public PreRootedSBNInstance {
  public:
   using PreRootedSBNInstance::PreRootedSBNInstance;
 
+  // ** SBN-related items
+
+  // Turn an IndexerRepresentation into a string representation of the underying
+  // bitsets. This is really just so that we can make a test of indexer
+  // representations.
+  StringSet StringIndexerRepresentationOf(
+      const RootedIndexerRepresentation& indexer_representation) const;
+  StringSet StringIndexerRepresentationOf(const Node::NodePtr& topology,
+                                          size_t out_of_sample_index) const;
+
   // ** Phylogenetic likelihood
 
   std::vector<double> LogLikelihoods();
@@ -27,6 +37,8 @@ class RootedSBNInstance : public PreRootedSBNInstance {
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+
+#include "doctest_constants.hpp"
 
 // Centered finite difference approximation of the derivative wrt rate.
 std::vector<double> derivative_strict_clock(RootedSBNInstance& inst) {
@@ -85,7 +97,7 @@ std::vector<std::vector<double>> derivative_relaxed_clock(RootedSBNInstance& ins
   return gradients;
 }
 
-TEST_CASE("RootedSBNInstance: subsplit support") {
+TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
   RootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon_rooted.nwk");
   inst.ProcessLoadedTrees();
@@ -126,6 +138,35 @@ TEST_CASE("RootedSBNInstance: subsplit support") {
       "00010|11101|00100"   // (x3,((x0,(x4,x1)),x2))
   };
   CHECK_EQ(pretty_indexer_set, correct_pretty_indexer_set);
+
+  // Test of rooted IndexerRepresentationOf.
+  // Topology is ((0,1),(2,(3,4)));, or with internal nodes ((0,1)5,(2,(3,4)6)7)8;
+  auto indexer_test_rooted_topology = Node::OfParentIdVector({5, 5, 7, 6, 6, 8, 7, 8});
+  auto correct_rooted_indexer_representation = StringSet(
+      {"00111", "11000|00111|00011", "00100|00011|00001", "00111|11000|01000"});
+  CHECK_EQ(inst.StringIndexerRepresentationOf(indexer_test_rooted_topology,
+                                              out_of_sample_index),
+           correct_rooted_indexer_representation);
+
+  inst.TrainSimpleAverage();
+  StringVector correct_taxon_names({"x0", "x1", "x2", "x3", "x4"});
+  CHECK_EQ(inst.SBNSupport().TaxonNames(), correct_taxon_names);
+  StringDoubleVector correct_parameters({{"00111", 0.25},
+                                         {"01111", 0.5},
+                                         {"00010", 0.25},
+                                         {"00100|01010|00010", 1},
+                                         {"00111|11000|01000", 1},
+                                         {"00100|00011|00001", 1},
+                                         {"11000|00111|00011", 1},
+                                         {"00100|11001|01001", 1},
+                                         {"10000|01001|00001", 1},
+                                         {"01000|00111|00010", 1},
+                                         {"10000|01111|00001", 0.5},
+                                         {"10000|01111|00111", 0.5},
+                                         {"00010|00101|00001", 1},
+                                         {"00001|01110|00100", 1},
+                                         {"00010|11101|00100", 1}});
+  CHECK_EQ(correct_parameters, inst.PrettyIndexedSBNParameters());
 }
 
 TEST_CASE("RootedSBNInstance: gradients") {

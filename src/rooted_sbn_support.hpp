@@ -17,9 +17,32 @@ class RootedSBNSupport : public SBNSupport {
                                     RootedSBNMaps::PCSPCounterOf(topologies));
   }
 
+  RootedIndexerRepresentationCounter IndexerRepresentationCounterOf(
+      const Node::TopologyCounter &topology_counter, const size_t out_of_sample_index) {
+    return RootedSBNMaps::IndexerRepresentationCounterOf(indexer_, topology_counter,
+                                                         out_of_sample_index);
+  }
+
+  RootedIndexerRepresentationCounter IndexerRepresentationCounterOf(
+      const Node::TopologyCounter &topology_counter) {
+    return IndexerRepresentationCounterOf(topology_counter, GPCSPCount());
+  }
+
+  RootedIndexerRepresentation IndexerRepresentationOf(
+      const Node::NodePtr &topology, const size_t out_of_sample_index) const {
+    return RootedSBNMaps::IndexerRepresentationOf(indexer_, topology,
+                                                  out_of_sample_index);
+  }
+
+  RootedIndexerRepresentation IndexerRepresentationOf(
+      const Node::NodePtr &topology) const {
+    return IndexerRepresentationOf(topology, GPCSPCount());
+  }
+
   static BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter &topologies) {
     return RootedSBNMaps::RootsplitCounterOf(topologies);
   }
+
   static PCSPDict PCSPCounterOf(const Node::TopologyCounter &topologies) {
     return RootedSBNMaps::PCSPCounterOf(topologies);
   }

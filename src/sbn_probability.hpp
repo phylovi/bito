@@ -21,6 +21,11 @@ void SimpleAverage(
     const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
     size_t rootsplit_count, const BitsetSizePairMap& parent_to_range);
 
+void SimpleAverage(
+    EigenVectorXdRef sbn_parameters,
+    const RootedIndexerRepresentationCounter& indexer_representation_counter,
+    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range);
+
 // The "SBN-EM" estimator described in the "Expectation Maximization" section of
 // the 2018 NeurIPS paper. Returns the sequence of scores (defined in the paper)
 // obtained by the EM iterations.
@@ -31,7 +36,7 @@ EigenVectorXd ExpectationMaximization(
     size_t max_iter, double score_epsilon);
 
 // Calculate the probability of an indexer_representation of a topology.
-double ProbabilityOf(EigenConstVectorXdRef,
+double ProbabilityOf(EigenConstVectorXdRef sbn_parameters,
                      const UnrootedIndexerRepresentation& indexer_representation);
 
 // Calculate the probabilities of a collection of indexer_representations.

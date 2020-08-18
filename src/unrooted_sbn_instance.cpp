@@ -12,15 +12,6 @@
 
 // ** Building SBN-related items
 
-void UnrootedSBNInstance::TrainSimpleAverage() {
-  CheckTopologyCounter();
-  auto indexer_representation_counter =
-      sbn_support_.IndexerRepresentationCounterOf(topology_counter_);
-  SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
-                                sbn_support_.RootsplitCount(),
-                                sbn_support_.ParentToRange());
-}
-
 EigenVectorXd UnrootedSBNInstance::TrainExpectationMaximization(double alpha,
                                                                 size_t max_iter,
                                                                 double score_epsilon) {
@@ -84,17 +75,9 @@ DoubleVectorVector UnrootedSBNInstance::SplitLengths() const {
 }
 
 StringSetVector UnrootedSBNInstance::StringIndexerRepresentationOf(
-    UnrootedIndexerRepresentation indexer_representation) const {
-  auto reversed_indexer = sbn_support_.StringReversedIndexer();
-  StringSetVector string_sets;
-  for (const auto &rooted_representation : indexer_representation) {
-    StringSet string_set;
-    for (const auto index : rooted_representation) {
-      SafeInsert(string_set, reversed_indexer[index]);
-    }
-    string_sets.push_back(std::move(string_set));
-  }
-  return string_sets;
+    const UnrootedIndexerRepresentation &indexer_representation) const {
+  return UnrootedSBNMaps::StringIndexerRepresentationOf(
+      sbn_support_.StringReversedIndexer(), indexer_representation);
 }
 
 StringSetVector UnrootedSBNInstance::StringIndexerRepresentationOf(

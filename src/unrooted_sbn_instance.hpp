@@ -17,7 +17,6 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
 
   // ** SBN-related items
 
-  void TrainSimpleAverage();
   // max_iter is the maximum number of EM iterations to do, while score_epsilon
   // is the cutoff for score improvement.
   EigenVectorXd TrainExpectationMaximization(double alpha, size_t max_iter,
@@ -52,7 +51,7 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
   // bitsets. This is really just so that we can make a test of indexer
   // representations.
   StringSetVector StringIndexerRepresentationOf(
-      UnrootedIndexerRepresentation indexer_representation) const;
+      const UnrootedIndexerRepresentation &indexer_representation) const;
   StringSetVector StringIndexerRepresentationOf(const Node::NodePtr &topology,
                                                 size_t out_of_sample_index) const;
 
@@ -93,8 +92,7 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
-// Below we use 99999999 is the default value if a rootsplit or PCSP is missing.
-const size_t out_of_sample_index = 99999999;
+#include "doctest_constants.hpp"
 
 TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
   UnrootedSBNInstance inst("charlie");
@@ -189,28 +187,28 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
   CHECK_EQ(inst.psp_indexer_.StringRepresentationOf(indexer_test_topology_2),
            correct_psp_representation_2);
 
-  // Test of RootedIndexerRepresentationOf.
-  // Yes, it is strange for this to appear here. See issue #211.
+  // Test of RootedSBNMaps::IndexerRepresentationOf.
+  // It's a little surprising to see this here in unrooted land, but these are actually
+  // complementary tests to those found in rooted_sbn_instance.hpp, with a larger
+  // subsplit support because we deroot the trees.
   // Topology is ((((0,1),2),3),4);, or with internal nodes ((((0,1)5,2)6,3)7,4)8;
   auto indexer_test_rooted_topology_1 =
       Node::OfParentIdVector({5, 5, 6, 7, 8, 6, 7, 8});
   auto correct_rooted_indexer_representation_1 = StringSet(
       {"00001", "00001|11110|00010", "00010|11100|00100", "00100|11000|01000"});
-  CHECK_EQ(
-      inst.StringIndexerRepresentationOf({RootedSBNMaps::RootedIndexerRepresentationOf(
-          inst.SBNSupport().Indexer(), indexer_test_rooted_topology_1,
-          out_of_sample_index)})[0],
-      correct_rooted_indexer_representation_1);
+  CHECK_EQ(inst.StringIndexerRepresentationOf({RootedSBNMaps::IndexerRepresentationOf(
+               inst.SBNSupport().Indexer(), indexer_test_rooted_topology_1,
+               out_of_sample_index)})[0],
+           correct_rooted_indexer_representation_1);
   // Topology is (((0,1),2),(3,4));, or with internal nodes (((0,1)5,2)6,(3,4)7)8;
   auto indexer_test_rooted_topology_2 =
       Node::OfParentIdVector({5, 5, 6, 7, 7, 6, 8, 8});
   auto correct_rooted_indexer_representation_2 = StringSet(
       {"00011", "11100|00011|00001", "00011|11100|00100", "00100|11000|01000"});
-  CHECK_EQ(
-      inst.StringIndexerRepresentationOf({RootedSBNMaps::RootedIndexerRepresentationOf(
-          inst.SBNSupport().Indexer(), indexer_test_rooted_topology_2,
-          out_of_sample_index)})[0],
-      correct_rooted_indexer_representation_2);
+  CHECK_EQ(inst.StringIndexerRepresentationOf({RootedSBNMaps::IndexerRepresentationOf(
+               inst.SBNSupport().Indexer(), indexer_test_rooted_topology_2,
+               out_of_sample_index)})[0],
+           correct_rooted_indexer_representation_2);
 }
 
 TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
@@ -386,8 +384,8 @@ TEST_CASE("UnrootedSBNInstance: tree sampling") {
     const auto rooted_topology = inst.SampleTopology(true);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
-        RootedSBNMaps::RootedIndexerRepresentationOf(
-            inst.SBNSupport().Indexer(), rooted_topology, out_of_sample_index));
+        RootedSBNMaps::IndexerRepresentationOf(inst.SBNSupport().Indexer(),
+                                               rooted_topology, out_of_sample_index));
     if (sample_idx % 1000 == 0) {
       ++progress_bar;
       progress_bar.display();

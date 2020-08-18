@@ -34,7 +34,7 @@ std::tuple<StringSizeMap, StringSizePairMap> SBNSupport::GetIndexers() const {
 // Get the indexer, but reversed and with bitsets appropriately converted to
 // strings.
 StringVector SBNSupport::StringReversedIndexer() const {
-  std::vector<std::string> reversed_indexer(indexer_.size());
+  StringVector reversed_indexer(indexer_.size());
   for (const auto& [key, idx] : indexer_) {
     if (idx < rootsplits_.size()) {
       reversed_indexer[idx] = key.ToString();
@@ -46,7 +46,7 @@ StringVector SBNSupport::StringReversedIndexer() const {
 }
 
 void SBNSupport::ProbabilityNormalizeSBNParametersInLog(
-    EigenVectorXdRef sbn_parameters) {
+    EigenVectorXdRef sbn_parameters) const {
   SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplits_.size(),
                                                   parent_to_range_);
 }
