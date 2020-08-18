@@ -439,7 +439,7 @@ RootedPhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
 
   return {log_likelihood,
           branch_gradient,
-          RatioGradientOfBranchGradient(tree, branch_gradient),
+          RatioGradientOfBranchGradient(tree, branch_gradient, true),
           ClockGradient(tree, branch_gradient),
           site_model_gradient,
           substitution_model_gradient};

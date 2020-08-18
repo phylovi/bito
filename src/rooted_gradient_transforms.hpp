@@ -36,11 +36,11 @@ double UpdateHeightParameterGradientUnweightedLogDensity(
     const RootedTree &tree, const std::vector<double> &gradient);
 
 std::vector<double> RatioGradientOfHeightGradient(
-    const RootedTree &tree, const std::vector<double> &height_gradient);
+    const RootedTree &tree, const std::vector<double> &height_gradient, bool includeJacobian);
 
 std::vector<double> RatioGradientOfBranchGradient(
-    const RootedTree &tree, const std::vector<double> &branch_gradient);
+    const RootedTree &tree, const std::vector<double> &branch_gradient, bool includeJacobian);
 
 // This should go away with #205.
 EigenVectorXd RatioGradientOfHeightGradientEigen(const RootedTree &tree,
-                                                 EigenConstVectorXdRef height_gradient);
+                                                 EigenConstVectorXdRef height_gradient, bool includeJacobian);

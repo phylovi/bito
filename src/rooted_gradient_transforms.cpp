@@ -130,7 +130,8 @@ double UpdateHeightParameterGradientUnweightedLogDensity(
 }
 
 std::vector<double> RatioGradientOfHeightGradient(
-    const RootedTree &tree, const std::vector<double> &height_gradient) {
+    const RootedTree &tree, const std::vector<double> &height_gradient,
+    bool includeJacobian) {
   size_t leaf_count = tree.LeafCount();
   size_t root_id = tree.Topology()->Id();
 
@@ -142,40 +143,43 @@ std::vector<double> RatioGradientOfHeightGradient(
   gradientLogDensity[root_id - leaf_count] =
       UpdateHeightParameterGradientUnweightedLogDensity(tree, height_gradient);
 
-  // Add gradient of log Jacobian determinant
-  std::vector<double> log_time = GetLogTimeArray(tree);
+  if(includeJacobian){
+    std::vector<double> log_time = GetLogTimeArray(tree);
 
-  std::vector<double> gradientLogJacobianDeterminant =
-      UpdateGradientUnWeightedLogDensity(tree, log_time);
-  gradientLogJacobianDeterminant[root_id - leaf_count] =
-      UpdateHeightParameterGradientUnweightedLogDensity(tree, log_time);
+    std::vector<double> gradientLogJacobianDeterminant =
+        UpdateGradientUnWeightedLogDensity(tree, log_time);
+    gradientLogJacobianDeterminant[root_id - leaf_count] =
+        UpdateHeightParameterGradientUnweightedLogDensity(tree, log_time);
 
-  for (int i = 0; i < gradientLogDensity.size() - 1; i++) {
-    gradientLogDensity[i] +=
-        gradientLogJacobianDeterminant[i] - 1.0 / tree.height_ratios_[i];
+    for (int i = 0; i < gradientLogDensity.size() - 1; i++) {
+      gradientLogDensity[i] +=
+          gradientLogJacobianDeterminant[i] - 1.0 / tree.height_ratios_[i];
+    }
+
+    gradientLogDensity[root_id - leaf_count] +=
+        gradientLogJacobianDeterminant[root_id - leaf_count];
   }
-
-  gradientLogDensity[root_id - leaf_count] +=
-      gradientLogJacobianDeterminant[root_id - leaf_count];
+  
 
   return gradientLogDensity;
 }
 
 std::vector<double> RatioGradientOfBranchGradient(
-    const RootedTree &tree, const std::vector<double> &branch_gradient) {
+    const RootedTree &tree, const std::vector<double> &branch_gradient, bool includeJacobian) {
   // Calculate node height gradient
   std::vector<double> height_gradient = HeightGradient(tree, branch_gradient);
 
-  return RatioGradientOfHeightGradient(tree, height_gradient);
+  return RatioGradientOfHeightGradient(tree, height_gradient, includeJacobian);
 }
 
 EigenVectorXd RatioGradientOfHeightGradientEigen(
-    const RootedTree &tree, EigenConstVectorXdRef height_gradient) {
+    const RootedTree &tree, EigenConstVectorXdRef height_gradient,
+    bool includeJacobian) {
   std::vector<double> height_gradient_vector(height_gradient.size());
   for (size_t i = 0; i < height_gradient.size(); ++i) {
     height_gradient_vector[i] = height_gradient(i);
   }
-  auto vector_output = RatioGradientOfHeightGradient(tree, height_gradient_vector);
+  auto vector_output = RatioGradientOfHeightGradient(tree, height_gradient_vector, includeJacobian);
   EigenVectorXd eigen_output(vector_output.size());
   for (size_t i = 0; i < vector_output.size(); ++i) {
     eigen_output(i) = vector_output[i];
