@@ -97,7 +97,7 @@ class Burrito:
         # Put the branch lengths in the libsbn instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = px_theta_sample[particle_idx, :]
-        phylo_gradients = self.inst.gradients()
+        phylo_gradients = self.inst.phylo_gradients()
         scalar_grad = self.branch_model.scalar_grad(
             px_theta_sample,
             phylo_gradients,

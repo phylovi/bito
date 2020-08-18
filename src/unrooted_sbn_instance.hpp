@@ -4,30 +4,16 @@
 #ifndef SRC_UNROOTED_SBN_INSTANCE_HPP_
 #define SRC_UNROOTED_SBN_INSTANCE_HPP_
 
-#include "sbn_instance.hpp"
-#include "unrooted_tree_collection.hpp"
+#include "generic_sbn_instance.hpp"
+#include "unrooted_sbn_support.hpp"
 
-class UnrootedSBNInstance : public SBNInstance {
+using PreUnrootedSBNInstance =
+    GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport>;
+template class GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport>;
+
+class UnrootedSBNInstance : public PreUnrootedSBNInstance {
  public:
-  // Trees get loaded in from a file or sampled from SBNs.
-  UnrootedTreeCollection tree_collection_;
-
-  using SBNInstance::SBNInstance;
-
-  size_t TaxonCount() const override { return tree_collection_.TaxonCount(); }
-  StringVector TaxonNames() const override { return tree_collection_.TaxonNames(); }
-  size_t TreeCount() const override { return tree_collection_.TreeCount(); }
-  TagStringMap TagTaxonMap() const override { return tree_collection_.TagTaxonMap(); }
-  Node::TopologyCounter TopologyCounter() const override {
-    return tree_collection_.TopologyCounter();
-  }
-  BitsetSizeDict RootsplitCounterOf(
-      const Node::TopologyCounter &topologies) const override {
-    return UnrootedSBNMaps::RootsplitCounterOf(topologies);
-  }
-  PCSPDict PCSPCounterOf(const Node::TopologyCounter &topologies) const override {
-    return UnrootedSBNMaps::PCSPCounterOf(topologies);
-  }
+  using PreUnrootedSBNInstance::PreUnrootedSBNInstance;
 
   // ** SBN-related items
 
@@ -41,7 +27,7 @@ class UnrootedSBNInstance : public SBNInstance {
   EigenVectorXd CalculateSBNProbabilities();
 
   // Sample a topology from the SBN.
-  using SBNInstance::SampleTopology;
+  using PreUnrootedSBNInstance::SampleTopology;
   Node::NodePtr SampleTopology() const;
 
   // Sample trees and store them internally
@@ -67,6 +53,8 @@ class UnrootedSBNInstance : public SBNInstance {
   // representations.
   StringSetVector StringIndexerRepresentationOf(
       UnrootedIndexerRepresentation indexer_representation) const;
+  StringSetVector StringIndexerRepresentationOf(const Node::NodePtr &topology,
+                                                size_t out_of_sample_index) const;
 
   // This function is really just for testing-- it recomputes counters from
   // scratch.
@@ -81,7 +69,7 @@ class UnrootedSBNInstance : public SBNInstance {
   // Topology gradient for unrooted trees.
   // Assumption: This function is called from Python side
   // after the trees (both the topology and the branch lengths) are sampled.
-  EigenVectorXd TopologyGradients(const EigenVectorXdRef log_f, bool use_vimco = true);
+  EigenVectorXd TopologyGradients(EigenVectorXdRef log_f, bool use_vimco = true);
   // Computes gradient WRT \phi of log q_{\phi}(\tau).
   // IndexerRepresentation contains all rootings of \tau.
   // normalized_sbn_parameters_in_log is a cache; see implementation of
@@ -93,8 +81,8 @@ class UnrootedSBNInstance : public SBNInstance {
 
   // ** I/O
 
-  void ReadNewickFile(std::string fname);
-  void ReadNexusFile(std::string fname);
+  void ReadNewickFile(const std::string &fname);
+  void ReadNexusFile(const std::string &fname);
 
  protected:
   void PushBackRangeForParentIfAvailable(
@@ -169,9 +157,9 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
        {"00001", "00001|11110|01110", "10000|01110|00100", "00100|01010|00010"},
        {"01010", "10101|01010|00010", "00100|10001|00001", "01010|10101|00100"},
        {"01110", "00100|01010|00010", "10001|01110|00100", "01110|10001|00001"}});
-  CHECK_EQ(inst.StringIndexerRepresentationOf(UnrootedSBNMaps::IndexerRepresentationOf(
-               inst.indexer_, indexer_test_topology_1, out_of_sample_index)),
-           correct_representation_1);
+  CHECK_EQ(
+      inst.StringIndexerRepresentationOf(indexer_test_topology_1, out_of_sample_index),
+      correct_representation_1);
   // See the "concepts" part of the online documentation to learn about PSP indexing.
   auto correct_psp_representation_1 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "01010", "01110"},
@@ -190,9 +178,9 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
        {"00001", "00100|11000|01000", "00001|11110|00010", "00010|11100|00100"},
        {"00111", "00111|11000|01000", "00100|00011|00001", "11000|00111|00011"},
        {"00011", "00100|11000|01000", "11100|00011|00001", "00011|11100|00100"}});
-  CHECK_EQ(inst.StringIndexerRepresentationOf(UnrootedSBNMaps::IndexerRepresentationOf(
-               inst.indexer_, indexer_test_topology_2, out_of_sample_index)),
-           correct_representation_2);
+  CHECK_EQ(
+      inst.StringIndexerRepresentationOf(indexer_test_topology_2, out_of_sample_index),
+      correct_representation_2);
   auto correct_psp_representation_2 = StringVectorVector(
       {{"01111", "01000", "00100", "00010", "00001", "00111", "00011"},
        {"", "", "", "", "", "11000|01000", "11100|00100"},
@@ -202,6 +190,7 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
            correct_psp_representation_2);
 
   // Test of RootedIndexerRepresentationOf.
+  // Yes, it is strange for this to appear here. See issue #211.
   // Topology is ((((0,1),2),3),4);, or with internal nodes ((((0,1)5,2)6,3)7,4)8;
   auto indexer_test_rooted_topology_1 =
       Node::OfParentIdVector({5, 5, 6, 7, 8, 6, 7, 8});
@@ -209,7 +198,8 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
       {"00001", "00001|11110|00010", "00010|11100|00100", "00100|11000|01000"});
   CHECK_EQ(
       inst.StringIndexerRepresentationOf({RootedSBNMaps::RootedIndexerRepresentationOf(
-          inst.indexer_, indexer_test_rooted_topology_1, out_of_sample_index)})[0],
+          inst.SBNSupport().Indexer(), indexer_test_rooted_topology_1,
+          out_of_sample_index)})[0],
       correct_rooted_indexer_representation_1);
   // Topology is (((0,1),2),(3,4));, or with internal nodes (((0,1)5,2)6,(3,4)7)8;
   auto indexer_test_rooted_topology_2 =
@@ -218,7 +208,8 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
       {"00011", "11100|00011|00001", "00011|11100|00100", "00100|11000|01000"});
   CHECK_EQ(
       inst.StringIndexerRepresentationOf({RootedSBNMaps::RootedIndexerRepresentationOf(
-          inst.indexer_, indexer_test_rooted_topology_2, out_of_sample_index)})[0],
+          inst.SBNSupport().Indexer(), indexer_test_rooted_topology_2,
+          out_of_sample_index)})[0],
       correct_rooted_indexer_representation_2);
 }
 
@@ -395,8 +386,8 @@ TEST_CASE("UnrootedSBNInstance: tree sampling") {
     const auto rooted_topology = inst.SampleTopology(true);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
-        RootedSBNMaps::RootedIndexerRepresentationOf(inst.indexer_, rooted_topology,
-                                                     out_of_sample_index));
+        RootedSBNMaps::RootedIndexerRepresentationOf(
+            inst.SBNSupport().Indexer(), rooted_topology, out_of_sample_index));
     if (sample_idx % 1000 == 0) {
       ++progress_bar;
       progress_bar.display();
@@ -439,7 +430,7 @@ TEST_CASE("UnrootedSBNInstance: gradient of log q_{phi}(tau) WRT phi") {
   // distribution for rootsplits and PCSP distributions.
   inst.sbn_parameters_.setZero();
   EigenVectorXd normalized_sbn_parameters_in_log = inst.sbn_parameters_;
-  inst.NormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
+  inst.ProbabilityNormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
   // Because this is a uniform distribution, each rootsplit \rho has P(\rho) = 1/8.
   //
   // We're going to start by computing the rootsplit gradient.
@@ -520,13 +511,13 @@ TEST_CASE("UnrootedSBNInstance: gradient of log q_{phi}(tau) WRT phi") {
   // The PCSP s'|t = (012|3) | (0123|4) corresponds to 00001|11110|00010.
   Bitset s("000011111000110");
   Bitset s_prime("000011111000010");
-  size_t s_idx = inst.indexer_.at(s);
-  size_t s_prime_idx = inst.indexer_.at(s_prime);
+  size_t s_idx = inst.SBNSupport().IndexerAt(s);
+  size_t s_prime_idx = inst.SBNSupport().IndexerAt(s_prime);
   inst.sbn_parameters_.setZero();
   inst.sbn_parameters_(s_idx) = 1;
   inst.sbn_parameters_(s_prime_idx) = -1;
   normalized_sbn_parameters_in_log = inst.sbn_parameters_;
-  inst.NormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
+  inst.ProbabilityNormalizeSBNParametersInLog(normalized_sbn_parameters_in_log);
 
   // These changes to normalized_sbn_parameters_in_log will change q(\tau) as well as
   // P(\tau_{\rho}) for \rho = 0123|4. First,

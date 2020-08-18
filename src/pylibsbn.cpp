@@ -151,23 +151,10 @@ PYBIND11_MODULE(libsbn, m) {
       .def(py::init<const std::string &, const std::string &, const std::string &>(),
            py::arg("substitution"), py::arg("site"), py::arg("clock"));
 
-  // CLASS
-  // SBNInstance
-  // So, we'd like to have functionality be shared here between RootedSBNInstance and
-  // UnrootedSBNInstance, and there doesn't appear to be a way to have that happen
-  // without actually giving it a name. We just give it an underscore-name.
-  py::class_<SBNInstance> sbn_instance_class(
-      m, "_instance",
-      "A general SBNInstance class (that just holds shared functionality between the "
-      "two types of SBN instances). Don't use directly, but read these docs to learn "
-      "about the relevant functionality in the various subclasses.");
-  sbn_instance_class.def(py::init<const std::string &>())
-      .def("get_phylo_model_params", &SBNInstance::GetPhyloModelParams)
-      .def("get_phylo_model_param_block_map",
-           &UnrootedSBNInstance::GetPhyloModelParamBlockMap)
-      .def("prepare_for_phylo_likelihood",
-           &UnrootedSBNInstance::PrepareForPhyloLikelihood,
-           R"raw(
+  // ** SBNInstance variants
+
+  const char prepare_for_phylo_likelihood_docstring[] =
+      R"raw(
             Prepare instance for phylogenetic likelihood computation.
 
             See the ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
@@ -181,27 +168,32 @@ PYBIND11_MODULE(libsbn, m) {
             parameter matrices, and it's up to the user to set those model parameters after calling
             this function.
             Note that this tree count need not be the same as the number of threads (and is typically bigger).
-           )raw",
-           py::arg("model_specification"), py::arg("thread_count"),
-           py::arg("beagle_flags") = std::vector<BeagleFlags>(),
-           py::arg("use_tip_states") = true,
-           py::arg("tree_count_option") = std::nullopt)
-      .def("resize_phylo_model_params", &UnrootedSBNInstance::ResizePhyloModelParams,
-           "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
-      .def("read_fasta_file", &SBNInstance::ReadFastaFile,
-           "Read a sequence alignment from a FASTA file.")
-      // Member Variables
-      .def_readonly("psp_indexer", &SBNInstance::psp_indexer_)
-      .def_readonly("taxon_names", &SBNInstance::taxon_names_);
-  def_read_write_mutable(sbn_instance_class, "sbn_parameters",
-                         &SBNInstance::sbn_parameters_);
+           )raw";
 
   // CLASS
   // RootedSBNInstance
-  py::class_<RootedSBNInstance, SBNInstance> rooted_sbn_instance_class(
+  py::class_<PreRootedSBNInstance>(m, "PreRootedSBNInstance");
+  py::class_<RootedSBNInstance, PreRootedSBNInstance> rooted_sbn_instance_class(
       m, "rooted_instance", R"raw(A rooted SBN instance.)raw");
   rooted_sbn_instance_class
       .def(py::init<const std::string &>())
+
+      // ** BEGIN DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
+      .def("get_phylo_model_params", &RootedSBNInstance::GetPhyloModelParams)
+      .def("get_phylo_model_param_block_map",
+           &RootedSBNInstance::GetPhyloModelParamBlockMap)
+      .def(
+          "prepare_for_phylo_likelihood", &RootedSBNInstance::PrepareForPhyloLikelihood,
+          prepare_for_phylo_likelihood_docstring, py::arg("model_specification"),
+          py::arg("thread_count"), py::arg("beagle_flags") = std::vector<BeagleFlags>(),
+          py::arg("use_tip_states") = true, py::arg("tree_count_option") = std::nullopt)
+      .def("resize_phylo_model_params", &RootedSBNInstance::ResizePhyloModelParams,
+           "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
+      .def("read_fasta_file", &RootedSBNInstance::ReadFastaFile,
+           "Read a sequence alignment from a FASTA file.")
+      .def("taxon_names", &RootedSBNInstance::TaxonNames,
+           "Return a list of taxon names.")
+      // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
 
       // ** Initialization and status
       .def("print_status", &RootedSBNInstance::PrintStatus,
@@ -229,10 +221,29 @@ PYBIND11_MODULE(libsbn, m) {
 
   // CLASS
   // UnrootedSBNInstance
-  py::class_<UnrootedSBNInstance, SBNInstance> unrooted_sbn_instance_class(
+  py::class_<PreUnrootedSBNInstance>(m, "PreUnrootedSBNInstance");
+  py::class_<UnrootedSBNInstance, PreUnrootedSBNInstance> unrooted_sbn_instance_class(
       m, "unrooted_instance", R"raw(A unrooted SBN instance.)raw");
   unrooted_sbn_instance_class
       .def(py::init<const std::string &>())
+
+      // ** BEGIN DUPLICATED CODE BLOCK between this and RootedSBNInstance
+      .def("get_phylo_model_params", &UnrootedSBNInstance::GetPhyloModelParams)
+      .def("get_phylo_model_param_block_map",
+           &UnrootedSBNInstance::GetPhyloModelParamBlockMap)
+      .def(
+          "prepare_for_phylo_likelihood",
+          &UnrootedSBNInstance::PrepareForPhyloLikelihood,
+          prepare_for_phylo_likelihood_docstring, py::arg("model_specification"),
+          py::arg("thread_count"), py::arg("beagle_flags") = std::vector<BeagleFlags>(),
+          py::arg("use_tip_states") = true, py::arg("tree_count_option") = std::nullopt)
+      .def("resize_phylo_model_params", &UnrootedSBNInstance::ResizePhyloModelParams,
+           "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
+      .def("read_fasta_file", &UnrootedSBNInstance::ReadFastaFile,
+           "Read a sequence alignment from a FASTA file.")
+      .def("taxon_names", &UnrootedSBNInstance::TaxonNames,
+           "Return a list of taxon names.")
+      // ** END DUPLICATED CODE BLOCK between this and RootedSBNInstance
 
       // ** Initialization and status
       .def("print_status", &UnrootedSBNInstance::PrintStatus,
@@ -247,8 +258,6 @@ PYBIND11_MODULE(libsbn, m) {
 
           Specifically, parse them and build the indexers and the ``sbn_parameters`` vector.
       )raw")
-      .def("get_indexers", &UnrootedSBNInstance::GetIndexers,
-           "Return the indexer and parent_to_range as string-keyed maps.")
       .def("train_simple_average", &UnrootedSBNInstance::TrainSimpleAverage,
            R"raw(
            Train the SBN using the "simple average" estimator.
@@ -313,7 +322,11 @@ PYBIND11_MODULE(libsbn, m) {
            "Read trees from a Nexus file.")
 
       // ** Member variables
+      .def_readonly("psp_indexer", &UnrootedSBNInstance::psp_indexer_)
       .def_readwrite("tree_collection", &UnrootedSBNInstance::tree_collection_);
+
+  def_read_write_mutable(unrooted_sbn_instance_class, "sbn_parameters",
+                         &UnrootedSBNInstance::sbn_parameters_);
 
   // FUNCTIONS
   m.def("ratio_gradient_of_height_gradient", &RatioGradientOfHeightGradientEigen,

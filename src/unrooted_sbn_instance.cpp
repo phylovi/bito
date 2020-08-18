@@ -14,27 +14,28 @@
 
 void UnrootedSBNInstance::TrainSimpleAverage() {
   CheckTopologyCounter();
-  auto indexer_representation_counter = UnrootedSBNMaps::IndexerRepresentationCounterOf(
-      indexer_, topology_counter_, sbn_parameters_.size());
+  auto indexer_representation_counter =
+      sbn_support_.IndexerRepresentationCounterOf(topology_counter_);
   SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
-                                rootsplits_.size(), parent_to_range_);
+                                sbn_support_.RootsplitCount(),
+                                sbn_support_.ParentToRange());
 }
 
 EigenVectorXd UnrootedSBNInstance::TrainExpectationMaximization(double alpha,
                                                                 size_t max_iter,
                                                                 double score_epsilon) {
   CheckTopologyCounter();
-  auto indexer_representation_counter = UnrootedSBNMaps::IndexerRepresentationCounterOf(
-      indexer_, topology_counter_, sbn_parameters_.size());
+  auto indexer_representation_counter =
+      sbn_support_.IndexerRepresentationCounterOf(topology_counter_);
   return SBNProbability::ExpectationMaximization(
-      sbn_parameters_, indexer_representation_counter, rootsplits_.size(),
-      parent_to_range_, alpha, max_iter, score_epsilon);
+      sbn_parameters_, indexer_representation_counter, sbn_support_.RootsplitCount(),
+      sbn_support_.ParentToRange(), alpha, max_iter, score_epsilon);
 }
 
 EigenVectorXd UnrootedSBNInstance::CalculateSBNProbabilities() {
   EigenVectorXd sbn_parameters_copy = sbn_parameters_;
-  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters_copy,
-                                                  rootsplits_.size(), parent_to_range_);
+  SBNProbability::ProbabilityNormalizeParamsInLog(
+      sbn_parameters_copy, sbn_support_.RootsplitCount(), sbn_support_.ParentToRange());
   return SBNProbability::ProbabilityOf(sbn_parameters_copy,
                                        MakeIndexerRepresentations());
 }
@@ -44,10 +45,12 @@ Node::NodePtr UnrootedSBNInstance::SampleTopology() const {
 }
 
 void UnrootedSBNInstance::SampleTrees(size_t count) {
-  CheckSBNMapsAvailable();
-  auto leaf_count = rootsplits_[0].size();
+  CheckSBNSupportNonEmpty();
+  auto taxon_count = sbn_support_.TaxonCount();
+  Assert(taxon_count > 2,
+         "SampleTrees: Can't sample an unrooted tree with less than 3 taxa.");
   // 2n-2 because trees are unrooted.
-  auto edge_count = 2 * static_cast<int>(leaf_count) - 2;
+  auto edge_count = 2 * static_cast<int>(taxon_count) - 2;
   tree_collection_.trees_.clear();
   for (size_t i = 0; i < count; i++) {
     std::vector<double> branch_lengths(static_cast<size_t>(edge_count));
@@ -61,8 +64,7 @@ UnrootedSBNInstance::MakeIndexerRepresentations() const {
   std::vector<UnrootedIndexerRepresentation> representations;
   representations.reserve(tree_collection_.trees_.size());
   for (const auto &tree : tree_collection_.trees_) {
-    representations.push_back(UnrootedSBNMaps::IndexerRepresentationOf(
-        indexer_, tree.Topology(), sbn_parameters_.size()));
+    representations.push_back(sbn_support_.IndexerRepresentationOf(tree.Topology()));
   }
   return representations;
 }
@@ -83,7 +85,7 @@ DoubleVectorVector UnrootedSBNInstance::SplitLengths() const {
 
 StringSetVector UnrootedSBNInstance::StringIndexerRepresentationOf(
     UnrootedIndexerRepresentation indexer_representation) const {
-  auto reversed_indexer = StringReversedIndexer();
+  auto reversed_indexer = sbn_support_.StringReversedIndexer();
   StringSetVector string_sets;
   for (const auto &rooted_representation : indexer_representation) {
     StringSet string_set;
@@ -95,6 +97,12 @@ StringSetVector UnrootedSBNInstance::StringIndexerRepresentationOf(
   return string_sets;
 }
 
+StringSetVector UnrootedSBNInstance::StringIndexerRepresentationOf(
+    const Node::NodePtr &topology, size_t out_of_sample_index) const {
+  return StringIndexerRepresentationOf(
+      sbn_support_.IndexerRepresentationOf(topology, out_of_sample_index));
+}
+
 // This function is really just for testing-- it recomputes from scratch.
 std::pair<StringSizeMap, StringPCSPMap> UnrootedSBNInstance::SplitCounters() const {
   auto counter = tree_collection_.TopologyCounter();
@@ -104,13 +112,13 @@ std::pair<StringSizeMap, StringPCSPMap> UnrootedSBNInstance::SplitCounters() con
 
 // ** I/O
 
-void UnrootedSBNInstance::ReadNewickFile(std::string fname) {
+void UnrootedSBNInstance::ReadNewickFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       UnrootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
 }
 
-void UnrootedSBNInstance::ReadNexusFile(std::string fname) {
+void UnrootedSBNInstance::ReadNexusFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       UnrootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
@@ -128,8 +136,8 @@ std::vector<UnrootedPhyloGradient> UnrootedSBNInstance::PhyloGradients() {
 
 void UnrootedSBNInstance::PushBackRangeForParentIfAvailable(
     const Bitset &parent, UnrootedSBNInstance::RangeVector &range_vector) {
-  if (parent_to_range_.count(parent) > 0) {
-    range_vector.push_back(parent_to_range_.at(parent));
+  if (sbn_support_.ParentInSupport(parent)) {
+    range_vector.push_back(sbn_support_.ParentToRangeAt(parent));
   }
 }
 
@@ -139,13 +147,13 @@ UnrootedSBNInstance::RangeVector UnrootedSBNInstance::GetSubsplitRanges(
     const SizeVector &rooted_representation) {
   RangeVector subsplit_ranges;
   // PROFILE: should we be reserving here?
-  subsplit_ranges.emplace_back(0, rootsplits_.size());
-  Bitset root = rootsplits_.at(rooted_representation[0]);
+  subsplit_ranges.emplace_back(0, sbn_support_.RootsplitCount());
+  Bitset root = sbn_support_.RootsplitsAt(rooted_representation[0]);
   PushBackRangeForParentIfAvailable(root + ~root, subsplit_ranges);
   PushBackRangeForParentIfAvailable(~root + root, subsplit_ranges);
   // Starting at 1 here because we took care of the rootsplit above (the 0th element).
   for (size_t i = 1; i < rooted_representation.size(); i++) {
-    Bitset child = index_to_child_.at(rooted_representation[i]);
+    Bitset child = sbn_support_.IndexToChildAt(rooted_representation[i]);
     PushBackRangeForParentIfAvailable(child, subsplit_ranges);
     PushBackRangeForParentIfAvailable(child.RotateSubsplit(), subsplit_ranges);
   }
@@ -186,7 +194,7 @@ EigenVectorXd UnrootedSBNInstance::GradientOfLogQ(
       // Now, we actually perform the eq:gradLogQ calculation.
       for (const auto &[begin, end] : subsplit_ranges) {
         for (size_t pcsp_idx = begin; pcsp_idx < end; pcsp_idx++) {
-          double indicator_subsplit_in_rooted_tree =
+          auto indicator_subsplit_in_rooted_tree =
               static_cast<double>(rooted_representation_as_set.count(pcsp_idx) > 0);
           grad_log_q[pcsp_idx] += probability_rooted_tree *
                                   (indicator_subsplit_in_rooted_tree -
@@ -205,16 +213,16 @@ EigenVectorXd UnrootedSBNInstance::TopologyGradients(const EigenVectorXdRef log_
   size_t tree_count = tree_collection_.TreeCount();
   EigenVectorXd gradient_vector = EigenVectorXd::Zero(sbn_parameters_.size());
   EigenVectorXd multiplicative_factors =
-      use_vimco ? SBNInstance::CalculateVIMCOMultiplicativeFactors(log_f)
-                : SBNInstance::CalculateMultiplicativeFactors(log_f);
+      use_vimco ? CalculateVIMCOMultiplicativeFactors(log_f)
+                : CalculateMultiplicativeFactors(log_f);
   // This variable acts as a cache to store normalized SBN parameters in log.
   // Initialization to DOUBLE_NAN indicates that all entries are empty.
   // It is mutated by GradientOfLogQ.
   EigenVectorXd normalized_sbn_parameters_in_log =
       EigenVectorXd::Constant(sbn_parameters_.size(), DOUBLE_NAN);
   for (size_t i = 0; i < tree_count; i++) {
-    const auto indexer_representation = UnrootedSBNMaps::IndexerRepresentationOf(
-        indexer_, tree_collection_.GetTree(i).Topology(), sbn_parameters_.size());
+    const auto indexer_representation =
+        sbn_support_.IndexerRepresentationOf(tree_collection_.GetTree(i).Topology());
     // PROFILE: does it matter that we are allocating another sbn_vector_ sized object?
     EigenVectorXd log_grad_q =
         GradientOfLogQ(normalized_sbn_parameters_in_log, indexer_representation);

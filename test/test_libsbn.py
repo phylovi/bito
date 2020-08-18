@@ -58,7 +58,7 @@ def sampling_and_indexers_demo():
     # trees loaded from the file.
     inst.sample_trees(2)
     print("\ntaxon names:")
-    print(inst.taxon_names)
+    print(inst.taxon_names())
     print("\nSBN indexing:")
     print(inst.make_indexer_representations())
     print("\nPSP indexing:")
