@@ -27,6 +27,7 @@ using TagStringMap = std::unordered_map<Tag, std::string>;
 using StringStringMap = std::unordered_map<std::string, std::string>;
 using CharIntMap = std::unordered_map<char, int>;
 using StringSizeMap = std::unordered_map<std::string, size_t>;
+using StringDoubleMap = std::unordered_map<std::string, double>;
 using DoubleVectorOption = std::optional<std::vector<double>>;
 using TagStringMapOption = std::optional<TagStringMap>;
 using StringVector = std::vector<std::string>;

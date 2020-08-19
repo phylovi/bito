@@ -4,6 +4,7 @@
 #ifndef SRC_ROOTED_SBN_INSTANCE_HPP_
 #define SRC_ROOTED_SBN_INSTANCE_HPP_
 
+#include "csv.h"
 #include "generic_sbn_instance.hpp"
 #include "rooted_sbn_support.hpp"
 
@@ -167,6 +168,26 @@ TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
                                          {"00001|01110|00100", 1},
                                          {"00010|11101|00100", 1}});
   CHECK_EQ(correct_parameters, inst.PrettyIndexedSBNParameters());
+}
+
+TEST_CASE("RootedSBNInstance: TrainSimpleAverage on 20 taxa") {
+  RootedSBNInstance inst("rooted instance");
+  inst.ReadNewickFile("data/rooted_simple_average.nwk");
+  inst.ProcessLoadedTrees();
+  inst.TrainSimpleAverage();
+  auto results = inst.PrettyIndexedSBNParameters();
+  // Values confirmed with
+  // https://github.com/mdkarcher/vbsupertree/commit/b7f87f711e8a1044b7c059b5a92e94c117d8cee1
+  io::CSVReader<2> csv_in("data/rooted_simple_average_results.csv");
+  std::string correct_string;
+  double correct_probability;
+  StringDoubleMap correct_map;
+  while (csv_in.read_row(correct_string, correct_probability)) {
+    SafeInsert(correct_map, correct_string, correct_probability);
+  }
+  for (const auto& [found_string, found_probability] : results) {
+    CHECK(fabs(found_probability - correct_map.at(found_string)) < 1e-6);
+  }
 }
 
 TEST_CASE("RootedSBNInstance: gradients") {
