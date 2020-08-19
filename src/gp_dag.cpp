@@ -278,8 +278,8 @@ GPOperationVector GPDAG::SetRhatToStationary() const {
   GPOperationVector operations;
   IterateOverRootsplitIds([this, &operations](size_t rootsplit_id) {
     size_t root_gpcsp_idx = gpcsp_indexer_.at(GetDagNode(rootsplit_id)->GetBitset());
-    operations.push_back(
-        SetToStationaryDistribution{GetPLVIndex(PLVType::R_HAT, rootsplit_id), root_gpcsp_idx});
+    operations.push_back(SetToStationaryDistribution{
+        GetPLVIndex(PLVType::R_HAT, rootsplit_id), root_gpcsp_idx});
   });
   return operations;
 }

@@ -54,7 +54,7 @@ class GPEngine {
     return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
   }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
-  //EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
+  // EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
 
   // Use branch lengths from loaded sample as a starting point for optimization.
@@ -155,14 +155,16 @@ class GPEngine {
             .log() +
         LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
   }
-  
-  inline void PreparePerPatternLogLikelihoods(size_t gpcsp_idx, size_t src1_idx, size_t src2_idx) {
-    per_pattern_log_likelihoods_ =
-    (q_[gpcsp_idx] * plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
-            .diagonal()
-            .array()
-            .log() +
-        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
+
+  inline void PreparePerPatternLogLikelihoods(size_t gpcsp_idx, size_t src1_idx,
+                                              size_t src2_idx) {
+    per_pattern_log_likelihoods_ = (q_[gpcsp_idx] * plvs_.at(src1_idx).transpose() *
+                                    transition_matrix_ * plvs_.at(src2_idx))
+                                       .diagonal()
+                                       .array()
+                                       .log() +
+                                   LogRescalingFor(src1_idx) +
+                                   LogRescalingFor(src2_idx);
   }
 };
 
