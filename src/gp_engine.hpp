@@ -45,10 +45,14 @@ class GPEngine {
     branch_lengths_.setConstant(branch_length);
   };
   void SetSBNParameters(EigenVectorXd q) { q_ = std::move(q); };
-  void ResetLogMarginalLikelihood() { log_marginal_likelihood_ = DOUBLE_NEG_INF; }
-  double GetLogMarginalLikelihood() const { return log_marginal_likelihood_; }
+  void ResetLogMarginalLikelihood() {
+    log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
+  }
+  double GetLogMarginalLikelihood() const {
+    return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
+  }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
-  EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
+  //EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
@@ -66,7 +70,7 @@ class GPEngine {
   double step_size_for_optimization_ = 5e-4;
   size_t max_iter_for_optimization_ = 1000;
 
-  double log_marginal_likelihood_ = DOUBLE_NEG_INF;
+  EigenVectorXd log_marginal_likelihood_;
 
   SitePattern site_pattern_;
   size_t plv_count_;
@@ -85,7 +89,7 @@ class GPEngine {
   // These parameters are indexed in the same way as sbn_parameters_ in
   // gp_instance.
   EigenVectorXd branch_lengths_;
-  EigenVectorXd log_likelihoods_;
+  EigenMatrixXd log_likelihoods_;
   EigenVectorXd q_;
 
   // Internal "temporaries" useful for likelihood and derivative calculation.
@@ -135,6 +139,15 @@ class GPEngine {
   inline void PreparePerPatternLogLikelihoods(size_t src1_idx, size_t src2_idx) {
     per_pattern_log_likelihoods_ =
         (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array()
+            .log() +
+        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
+  }
+  
+  inline void PreparePerPatternLogLikelihoods(size_t gpcsp_idx, size_t src1_idx, size_t src2_idx) {
+    per_pattern_log_likelihoods_ =
+    (q_[gpcsp_idx] * plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
             .diagonal()
             .array()
             .log() +

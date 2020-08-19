@@ -116,6 +116,7 @@ class SBNInstance {
   // ** I/O
 
   void ReadFastaFile(std::string fname);
+  void SetAlignment(Alignment &alignment);
 
  protected:
   // The name of our libsbn instance.

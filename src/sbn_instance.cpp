@@ -145,6 +145,10 @@ void SBNInstance::ReadFastaFile(std::string fname) {
   alignment_ = Alignment::ReadFasta(fname);
 }
 
+void SBNInstance::SetAlignment(Alignment &alignment) {
+  alignment_ = std::move(alignment);
+}
+
 // ** Protected methods
 
 void SBNInstance::MakeEngine(const EngineSpecification &engine_specification,
