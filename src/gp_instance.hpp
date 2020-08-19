@@ -25,9 +25,11 @@ class GPInstance {
 
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
+  bool HasEngine() const;
   void PrintDAG();
   void PrintGPCSPIndexer();
   void ProcessOperations(const GPOperationVector &operations);
+  void HotStartBranchLengths();
   void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter);
   void PopulatePLVs();
@@ -43,7 +45,6 @@ class GPInstance {
 
   // A vector that contains all of the SBN-related probabilities.
   EigenVectorXd sbn_parameters_;
-  // The master indexer for SBN parameters.
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;

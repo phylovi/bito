@@ -4,6 +4,7 @@
 #include "gp_engine.hpp"
 
 #include "optimization.hpp"
+#include "sugar.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
                    const std::string& mmap_file_path, double rescaling_threshold)
@@ -21,7 +22,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
          "Didn't get the right shape of PLVs out of Subdivide.");
   rescaling_counts_ = EigenVectorXi::Zero(plv_count_);
   branch_lengths_.resize(gpcsp_count);
-  branch_lengths_.setConstant(0.1);
+  branch_lengths_.setConstant(default_branch_length_);
   log_likelihoods_.resize(gpcsp_count);
   q_.resize(gpcsp_count);
 
@@ -276,4 +277,37 @@ void GPEngine::GradientAscentOptimization(
       relative_tolerance_for_optimization_, step_size_for_optimization_,
       min_branch_length_, max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = branch_length;
+}
+
+void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
+                                     const BitsetSizeMap& indexer) {
+  const auto leaf_count = tree_collection.TaxonCount();
+  const size_t default_index = branch_lengths_.size();
+  branch_lengths_.setZero();
+  Eigen::VectorXi gpcsp_counts = Eigen::VectorXi::Zero(branch_lengths_.size());
+  // Set the branch length vector to be the total of the branch lengths for each PCSP,
+  // and count the number of times we have seen each PCSP (into gpcsp_counts).
+  for (const auto& tree : tree_collection.Trees()) {
+    tree.Topology()->RootedPCSPPreOrder(
+        [&leaf_count, &default_index, &indexer, &tree, &gpcsp_counts, this](
+            const Node* sister_node, const Node* focal_node, const Node* child0_node,
+            const Node* child1_node) {
+          Bitset gpcsp_bitset =
+              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                                    child0_node, false, child1_node, false);
+          const auto gpcsp_idx = AtWithDefault(indexer, gpcsp_bitset, default_index);
+          if (gpcsp_idx != default_index) {
+            branch_lengths_(gpcsp_idx) += tree.BranchLength(focal_node);
+            gpcsp_counts(gpcsp_idx)++;
+          }
+        });
+  }
+  for (Eigen::Index gpcsp_idx = 0; gpcsp_idx < gpcsp_counts.size(); ++gpcsp_idx) {
+    if (gpcsp_counts(gpcsp_idx) == 0) {
+      branch_lengths_(gpcsp_idx) = default_branch_length_;
+    } else {
+      // Normalize the branch length total using the counts to get a mean branch length.
+      branch_lengths_(gpcsp_idx) /= static_cast<double>(gpcsp_counts(gpcsp_idx));
+    }
+  }
 }

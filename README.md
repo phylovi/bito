@@ -126,7 +126,8 @@ Add a test for every new feature.
 
 * Erick Matsen ([@matsen](https://github.com/matsen)): implementation, design, janitorial duties
 * Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation of substitution models and likelihoods/gradients, design
-* Seong-Hwan Jun ([@junseonghwan](https://github.com/junseonghwan)): implementation of SBN gradients, design
+* Seong-Hwan Jun ([@junseonghwan](https://github.com/junseonghwan)): generalized pruning design and implementation, implementation of SBN gradients, design
+* Hassan Nasif ([@hrnasif](https://github.com/hrnasif)): hot start for generalized pruning
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
 * Xiang Ji ([@xji3](https://github.com/xji3)): gradient expertise and node height code

@@ -38,4 +38,3 @@ void RootedSBNInstance::ReadNexusFile(std::string fname) {
   tree_collection_.ParseDatesFromTaxonNames();
   tree_collection_.InitializeParameters();
 }
-
