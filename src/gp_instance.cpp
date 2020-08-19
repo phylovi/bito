@@ -232,6 +232,7 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   }
 
   for (auto &root_node : topologies) {
+    // Polish will re-assign the node Ids.
     root_node->Polish();
 
     size_t node_count = 2 * root_node->LeafCount() - 1;
