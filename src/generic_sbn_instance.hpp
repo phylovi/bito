@@ -54,6 +54,7 @@ class GenericSBNInstance {
   const TagStringMap &TagTaxonMap() const { return tree_collection_.TagTaxonMap(); }
   const StringVector &TaxonNames() const { return sbn_support_.TaxonNames(); }
   const TSBNSupport &SBNSupport() const { return sbn_support_; }
+  EigenConstVectorXdRef SBNParameters() const { return sbn_parameters_; }
 
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
@@ -101,8 +102,36 @@ class GenericSBNInstance {
     }
   }
 
-  void ProbabilityNormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) {
+  void ProbabilityNormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) const {
     sbn_support_.ProbabilityNormalizeSBNParametersInLog(sbn_parameters);
+  }
+
+  void TrainSimpleAverage() {
+    CheckTopologyCounter();
+    CheckSBNSupportNonEmpty();
+    auto indexer_representation_counter =
+        sbn_support_.IndexerRepresentationCounterOf(topology_counter_);
+    SBNProbability::SimpleAverage(sbn_parameters_, indexer_representation_counter,
+                                  sbn_support_.RootsplitCount(),
+                                  sbn_support_.ParentToRange());
+  }
+
+  EigenVectorXd NormalizedSBNParameters() const {
+    EigenVectorXd sbn_parameters_result = sbn_parameters_;
+    ProbabilityNormalizeSBNParametersInLog(sbn_parameters_result);
+    NumericalUtils::Exponentiate(sbn_parameters_result);
+    return sbn_parameters_result;
+  }
+
+  StringDoubleVector PrettyIndexedSBNParameters() {
+    StringDoubleVector result;
+    auto sbn_parameters = NormalizedSBNParameters();
+    result.reserve(sbn_parameters.size());
+    const auto pretty_indexer = PrettyIndexer();
+    for (size_t i = 0; i < pretty_indexer.size(); i++) {
+      result.push_back({pretty_indexer.at(i), sbn_parameters(i)});
+    }
+    return result;
   }
 
   // ** Phylogenetic likelihood

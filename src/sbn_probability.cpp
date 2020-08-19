@@ -157,6 +157,35 @@ void SetCounts(
 
 // Set the provided counts vector to be the log of the counts of the rootsplits and
 // PCSPs provided in the input.
+// Note code duplication with the override below for
+// UnrootedIndexerRepresentationCounter.
+// We could refactor with templates, but then this whole file would have to go in the
+// header.
+void SetLogCounts(
+    EigenVectorXdRef counts,
+    const RootedIndexerRepresentationCounter& indexer_representation_counter,
+    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+  counts.fill(DOUBLE_NEG_INF);
+  for (const auto& [indexer_representation, int_topology_count] :
+       indexer_representation_counter) {
+    const auto log_topology_count = log(static_cast<double>(int_topology_count));
+    IncrementByInLog(counts, indexer_representation, log_topology_count);
+  }
+}
+
+// Note code duplication with the override below for
+// UnrootedIndexerRepresentationCounter.
+void SBNProbability::SimpleAverage(
+    EigenVectorXdRef sbn_parameters,
+    const RootedIndexerRepresentationCounter& indexer_representation_counter,
+    size_t rootsplit_count, const BitsetSizePairMap& parent_to_range) {
+  SetLogCounts(sbn_parameters, indexer_representation_counter, rootsplit_count,
+               parent_to_range);
+}
+
+// Set the provided counts vector to be the log of the counts of the rootsplits and
+// PCSPs provided in the input.
+// Note code duplication with the override above for RootedIndexerRepresentationCounter.
 void SetLogCounts(
     EigenVectorXdRef counts,
     const UnrootedIndexerRepresentationCounter& indexer_representation_counter,
@@ -169,6 +198,7 @@ void SetLogCounts(
   }
 }
 
+// Note code duplication with the override above for RootedIndexerRepresentationCounter.
 void SBNProbability::SimpleAverage(
     EigenVectorXdRef sbn_parameters,
     const UnrootedIndexerRepresentationCounter& indexer_representation_counter,

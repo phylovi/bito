@@ -170,6 +170,13 @@ PYBIND11_MODULE(libsbn, m) {
             Note that this tree count need not be the same as the number of threads (and is typically bigger).
            )raw";
 
+  const char process_loaded_trees_docstring[] = R"raw(
+          Process the trees currently stored in the instance.
+
+          Specifically, parse them and build the subsplit support and allocate (but do not train) the corresponding SBN
+          parameters.
+      )raw";
+
   // CLASS
   // RootedSBNInstance
   py::class_<PreRootedSBNInstance>(m, "PreRootedSBNInstance");
@@ -193,7 +200,6 @@ PYBIND11_MODULE(libsbn, m) {
            "Read a sequence alignment from a FASTA file.")
       .def("taxon_names", &RootedSBNInstance::TaxonNames,
            "Return a list of taxon names.")
-      // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
 
       // ** Initialization and status
       .def("print_status", &RootedSBNInstance::PrintStatus,
@@ -201,6 +207,18 @@ PYBIND11_MODULE(libsbn, m) {
       .def("tree_count", &RootedSBNInstance::TreeCount,
            "Return the number of trees that are currently stored in the "
            "instance.")
+
+      // ** SBN-related items
+      .def("process_loaded_trees", &RootedSBNInstance::ProcessLoadedTrees,
+           process_loaded_trees_docstring)
+      .def("train_simple_average", &RootedSBNInstance::TrainSimpleAverage,
+           R"raw(
+           Train the SBN using the "simple average" estimator.
+
+           For rooted trees this training is simpler than in the unrooted case:
+           we simply take the normalized frequency of PCSPs.
+           )raw")
+      // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
 
       // ** Phylogenetic likelihood
       .def("log_likelihoods", &RootedSBNInstance::LogLikelihoods,
@@ -243,7 +261,6 @@ PYBIND11_MODULE(libsbn, m) {
            "Read a sequence alignment from a FASTA file.")
       .def("taxon_names", &UnrootedSBNInstance::TaxonNames,
            "Return a list of taxon names.")
-      // ** END DUPLICATED CODE BLOCK between this and RootedSBNInstance
 
       // ** Initialization and status
       .def("print_status", &UnrootedSBNInstance::PrintStatus,
@@ -253,11 +270,8 @@ PYBIND11_MODULE(libsbn, m) {
            "instance.")
 
       // ** SBN-related items
-      .def("process_loaded_trees", &UnrootedSBNInstance::ProcessLoadedTrees, R"raw(
-          Process the trees currently stored in the instance.
-
-          Specifically, parse them and build the indexers and the ``sbn_parameters`` vector.
-      )raw")
+      .def("process_loaded_trees", &UnrootedSBNInstance::ProcessLoadedTrees,
+           process_loaded_trees_docstring)
       .def("train_simple_average", &UnrootedSBNInstance::TrainSimpleAverage,
            R"raw(
            Train the SBN using the "simple average" estimator.
@@ -265,6 +279,8 @@ PYBIND11_MODULE(libsbn, m) {
            This is described in the "Maximum Lower Bound Estimates" section of the 2018
            NeurIPS paper, and is later referred to as the "SBN-SA" estimator.
            )raw")
+      // ** END DUPLICATED CODE BLOCK between this and RootedSBNInstance
+
       .def("train_expectation_maximization",
            &UnrootedSBNInstance::TrainExpectationMaximization,
            R"raw(

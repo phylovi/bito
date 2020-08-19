@@ -254,6 +254,17 @@ UnrootedIndexerRepresentationCounter UnrootedSBNMaps::IndexerRepresentationCount
   return counter;
 }
 
+StringSetVector UnrootedSBNMaps::StringIndexerRepresentationOf(
+    const StringVector& reversed_indexer,
+    const UnrootedIndexerRepresentation& indexer_representation) {
+  StringSetVector string_sets;
+  for (const auto& rooted_representation : indexer_representation) {
+    string_sets.push_back(RootedSBNMaps::StringIndexerRepresentationOf(
+        reversed_indexer, rooted_representation));
+  }
+  return string_sets;
+}
+
 BitsetSizeDict RootedSBNMaps::RootsplitCounterOf(
     const Node::TopologyCounter& topologies) {
   BitsetSizeDict rootsplit_counter(0);
@@ -280,9 +291,9 @@ PCSPDict RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies) {
   return pcsp_dict;
 }
 
-SizeVector RootedSBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                        const Node::NodePtr& topology,
-                                                        const size_t default_index) {
+SizeVector RootedSBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                  const Node::NodePtr& topology,
+                                                  const size_t default_index) {
   const auto leaf_count = topology->LeafCount();
   SizeVector result;
   // Start with the rootsplit.
@@ -299,9 +310,32 @@ SizeVector RootedSBNMaps::RootedIndexerRepresentationOf(const BitsetSizeMap& ind
   return result;
 }
 
+StringSet RootedSBNMaps::StringIndexerRepresentationOf(
+    const StringVector& reversed_indexer,
+    const RootedIndexerRepresentation& indexer_representation) {
+  StringSet string_set;
+  for (const auto index : indexer_representation) {
+    SafeInsert(string_set, reversed_indexer.at(index));
+  }
+  return string_set;
+}
+
+RootedIndexerRepresentationCounter RootedSBNMaps::IndexerRepresentationCounterOf(
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
+    const size_t default_index) {
+  RootedIndexerRepresentationCounter counter;
+  counter.reserve(topology_counter.size());
+  for (const auto& [topology, topology_count] : topology_counter) {
+    counter.push_back(
+        {RootedSBNMaps::IndexerRepresentationOf(indexer, topology, default_index),
+         topology_count});
+  }
+  return counter;
+}
+
 void RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
     RootedIndexerRepresentationSizeDict& dict,
-    SizeVector rooted_indexer_representation) {
+    RootedIndexerRepresentation rooted_indexer_representation) {
   Assert(rooted_indexer_representation.size() > 1,
          "Rooted indexer representation is too small in "
          "IncrementRootedIndexerRepresentationSizeDict!");

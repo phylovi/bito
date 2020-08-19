@@ -66,11 +66,19 @@ PCSPDict PCSPCounterOf(const Node::TopologyCounter& topologies);
 // `default_index`.
 UnrootedIndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
                                                       const Node::NodePtr& topology,
-                                                      const size_t default_index);
+                                                      size_t default_index);
 // Turn a TopologyCounter into an IndexerRepresentationCounter.
 UnrootedIndexerRepresentationCounter IndexerRepresentationCounterOf(
     const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
-    const size_t default_index);
+    size_t default_index);
+
+// Define a "reversed indexer" to be a vector with ith entry being the string version of
+// the ith GPCSP. This function takes such a vector and an unrooted indexer
+// representation and makes a vector of StringSets, such that the jth entry is the
+// string version of the indexer representation of the jth rooting.
+StringSetVector StringIndexerRepresentationOf(
+    const StringVector& reversed_indexer,
+    const UnrootedIndexerRepresentation& indexer_representation);
 
 }  // namespace UnrootedSBNMaps
 
@@ -82,13 +90,25 @@ PCSPDict PCSPCounterOf(const Node::TopologyCounter& topologies);
 // A rooted indexer representation is the indexer representation of a given rooted tree.
 // That is, the first entry is the rootsplit for that rooting, and after that come the
 // PCSP indices.
-RootedIndexerRepresentation RootedIndexerRepresentationOf(const BitsetSizeMap& indexer,
-                                                          const Node::NodePtr& topology,
-                                                          const size_t default_index);
+RootedIndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap& indexer,
+                                                    const Node::NodePtr& topology,
+                                                    size_t default_index);
+// Turn a TopologyCounter into an IndexerRepresentationCounter.
+RootedIndexerRepresentationCounter IndexerRepresentationCounterOf(
+    const BitsetSizeMap& indexer, const Node::TopologyCounter& topology_counter,
+    size_t default_index);
+
+// Define a "reversed indexer" to be a vector with ith entry being the string version of
+// the ith GPCSP. This function takes such a vector and a rooted indexer representation
+// and makes a StringSet of the indexer representation.
+StringSet StringIndexerRepresentationOf(
+    const StringVector& reversed_indexer,
+    const RootedIndexerRepresentation& indexer_representation);
+
 // For counting standardized (i.e. PCSP index sorted) rooted indexer representations.
 void IncrementRootedIndexerRepresentationSizeDict(
     RootedIndexerRepresentationSizeDict& dict,
-    const RootedIndexerRepresentation rooted_indexer_representation);
+    RootedIndexerRepresentation rooted_indexer_representation);
 // Apply the above to every rooting in the unrooted indexer representation.
 void IncrementRootedIndexerRepresentationSizeDict(
     RootedIndexerRepresentationSizeDict& dict,
@@ -115,6 +135,8 @@ struct hash<SizeVector> {
   size_t operator()(const SizeVector& values) const {
     int hash = values[0];
     for (size_t i = 1; i < values.size(); i++) {
+      // https://stackoverflow.com/a/58845898/467327
+      // NOLINTNEXTLINE(hicpp-signed-bitwise)
       hash ^= values[i] + 0x9e3779b9 + (hash << 6) + (hash >> 2);
     }
     return hash;
