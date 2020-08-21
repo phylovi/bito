@@ -2,6 +2,8 @@
 
 #include "doctest.h"
 #include "gp_instance.hpp"
+#include "phylo_model.hpp"
+#include "unrooted_sbn_instance.hpp"
 
 using namespace GPOperations;
 
@@ -9,6 +11,31 @@ using namespace GPOperations;
 
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, root };
+
+double ComputeExactMarginal(std::string newick_file, std::string fasta_file) {
+  UnrootedSBNInstance sbn_instance("charlie");
+  sbn_instance.ReadNewickFile(newick_file);
+  size_t tree_count = sbn_instance.TreeCount();
+  Alignment alignment = Alignment::ReadFasta(fasta_file);
+  Alignment alignment_copy(alignment);
+  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
+  sbn_instance.SetAlignment(alignment);
+  sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
+
+  double exact_marginal_log_lik = 0.0;
+  for (size_t i = 0; i < alignment_copy.Length(); i++) {
+    Alignment single_column_alignment = Alignment::MakeSingleColumnAlignment(alignment_copy, i);
+    sbn_instance.SetAlignment(single_column_alignment);
+    sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
+    double log_val = DOUBLE_NEG_INF;
+    for (double val : sbn_instance.LogLikelihoods()) {
+      log_val = NumericalUtils::LogAdd(log_val, val);
+    }
+    log_val += log(1./tree_count);
+    exact_marginal_log_lik += log_val;
+  }
+  return exact_marginal_log_lik;
+}
 
 // Our tree is
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
@@ -51,7 +78,7 @@ EigenVectorXd MakeHelloGPInstanceOptimalBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
   hello_gp_optimal_branch_lengths << 1, 1, 0.0540515854, 0.0150759956, 0.0158180779,
       0.0736678167, 0.206134746, 0.206803557, 0.0736678167, 0.0540515854;
-
+  
   return hello_gp_optimal_branch_lengths;
 }
 
@@ -60,7 +87,6 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto engine = inst.GetEngine();
 
   inst.PopulatePLVs();
-  inst.PrintDAG();
   inst.ComputeLikelihoods();
 
   EigenVectorXd realized_log_likelihoods = inst.GetEngine()->GetLogLikelihoods();
@@ -78,8 +104,10 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-
-  CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -80.6906345), 1e-6);
+  double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
+  double exact_log_likelihood = ComputeExactMarginal("data/hello_unrooted_two_trees.nwk",
+                                                     "data/hello.fasta");
+  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
 
 TEST_CASE("GPInstance: gradient calculation") {
@@ -106,6 +134,7 @@ TEST_CASE("GPInstance: gradient calculation") {
   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
 }
 
+// Regression test.
 TEST_CASE("GPInstance: branch length optimization") {
   auto inst = MakeHelloGPInstanceTwoTrees();
 
@@ -120,7 +149,6 @@ TEST_CASE("GPInstance: branch length optimization") {
   inst.EstimateBranchLengths(1e-6, 100);
   EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
-  CHECK_LT(fabs(expected_log_marginal - -80.6906345), 1e-6);
 }
 
 GPInstance MakeFluAGPInstance(double rescaling_threshold) {
@@ -145,51 +173,72 @@ TEST_CASE("GPInstance: rescaling") {
   CHECK_LT(fabs(difference), 1e-10);
 }
 
-GPInstance MakeFiveTaxonRootedInstance() {
+//TEST_CASE("GPInstance: Hotstart branch lengths") {
+//  // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
+//  // 1 (outgroup,(((z0,z1),z2),z3));
+//  // 33 (outgroup,((z0,z1),(z2,z3)));
+//  const std::string tree_path = "data/hotstart_bootstrap_sample.nwk";
+//  GPInstance inst("_ignore/mmapped_plv.data");
+//  // This is just a dummy fasta file, which is required to make an Engine.
+//  inst.ReadFastaFile("data/hotstart.fasta");
+//  inst.ReadNewickFile(tree_path);
+//  inst.MakeEngine();
+//
+//  // We are going to verify correct assignment of the PCSP with sister z2, z3 and
+//  // children z0, z1, which only appears in the tree (outgroup,((z0,z1),(z2,z3))).
+//  // Vector of taxon names: [outgroup, z2, z3, z1, z0]
+//  // So, this below is the desired GPCSP (in full subsplit notation), which corresponds
+//  // to sister indices 1, 2, and children 4, 3:
+//  // 0110000011|0001000001, 2
+//  // Thus we are interested in the branch length index 2.
+//
+//  // These branch lengths are obtained by excluding (outgroup,(((z0,z1),z2),z3)) (which
+//  // doesn't have this PCSP) and grabbing the rest of the branch lengths.
+//  EigenVectorXd hotstart_expected_branch_lengths(33);
+//  hotstart_expected_branch_lengths << 0.1175370000, 0.1175750000, 0.1195780000,
+//      0.0918962000, 0.0918931000, 0.1192590000, 0.0906988000, 0.0906972000,
+//      0.0905154000, 0.0903663000, 0.1245620000, 0.1244890000, 0.1245050000,
+//      0.1245550000, 0.1245680000, 0.1248920000, 0.1248490000, 0.1164070000,
+//      0.1164110000, 0.1164120000, 0.1245670000, 0.1245650000, 0.1245670000,
+//      0.1245670000, 0.1240790000, 0.1242540000, 0.1242160000, 0.1242560000,
+//      0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
+//  double true_mean = hotstart_expected_branch_lengths.array().mean();
+//  inst.HotStartBranchLengths();
+//  CHECK_EQ(true_mean, inst.GetEngine()->GetBranchLengths()(2));
+//}
+
+GPInstance MakeFourPlanetsInstance() {
   GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/five_taxon_rooted.fasta");
-  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
+  inst.ReadFastaFile("data/four_planets_rooted.fasta");
+  inst.ReadNewickFile("data/four_planets.nwk");
   inst.MakeEngine();
   return inst;
 }
 
+GPInstance MakeFiveTaxaInstance() {
+  GPInstance inst("_ignore/mmapped_plv.data");
+  inst.ReadFastaFile("data/five_taxon.fasta");
+  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
+  inst.MakeEngine();
+  EigenVectorXd branch_lengths(34);
+  branch_lengths << 1, 1, 1, 0.792097734, 0.0334060998, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.832851676, 0.832855622, 0.805664275, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.828284658, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 3, 3, 3, 3;
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  return inst;
+}
+
 TEST_CASE("GPInstance: generate all trees") {
-  auto inst = MakeFiveTaxonRootedInstance();
+  auto inst = MakeFiveTaxaInstance();
   auto rooted_tree_collection = inst.GenerateCompleteRootedTreeCollection();
   CHECK_EQ(rooted_tree_collection.TreeCount(), 4);
   CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
 }
 
-TEST_CASE("GPInstance: Hotstart branch lengths") {
-  // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
-  // 1 (outgroup,(((z0,z1),z2),z3));
-  // 33 (outgroup,((z0,z1),(z2,z3)));
-  const std::string tree_path = "data/hotstart_bootstrap_sample.nwk";
-  GPInstance inst("_ignore/mmapped_plv.data");
-  // This is just a dummy fasta file, which is required to make an Engine.
-  inst.ReadFastaFile("data/hotstart.fasta");
-  inst.ReadNewickFile(tree_path);
-  inst.MakeEngine();
-
-  // We are going to verify correct assignment of the PCSP with sister z2, z3 and
-  // children z0, z1, which only appears in the tree (outgroup,((z0,z1),(z2,z3))).
-  // Vector of taxon names: [outgroup, z2, z3, z1, z0]
-  // So, this below is the desired GPCSP (in full subsplit notation), which corresponds
-  // to sister indices 1, 2, and children 4, 3:
-  // 0110000011|0001000001, 2
-  // Thus we are interested in the branch length index 2.
-
-  // These branch lengths are obtained by excluding (outgroup,(((z0,z1),z2),z3)) (which
-  // doesn't have this PCSP) and grabbing the rest of the branch lengths.
-  EigenVectorXd hotstart_expected_branch_lengths(33);
-  hotstart_expected_branch_lengths << 0.1175370000, 0.1175750000, 0.1195780000,
-      0.0918962000, 0.0918931000, 0.1192590000, 0.0906988000, 0.0906972000,
-      0.0905154000, 0.0903663000, 0.1245620000, 0.1244890000, 0.1245050000,
-      0.1245550000, 0.1245680000, 0.1248920000, 0.1248490000, 0.1164070000,
-      0.1164110000, 0.1164120000, 0.1245670000, 0.1245650000, 0.1245670000,
-      0.1245670000, 0.1240790000, 0.1242540000, 0.1242160000, 0.1242560000,
-      0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
-  double true_mean = hotstart_expected_branch_lengths.array().mean();
-  inst.HotStartBranchLengths();
-  CHECK_EQ(true_mean, inst.GetEngine()->GetBranchLengths()(2));
+TEST_CASE("GPInstance: five taxa") {
+  auto inst = MakeFiveTaxaInstance();
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+  double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
+  double exact_marginal_log_likelihood = ComputeExactMarginal("data/five_taxon_unrooted_with_branch_lengths.nwk",
+                                                              "data/five_taxon.fasta");
+  CHECK_LT(abs(exact_marginal_log_likelihood - gp_marginal_log_likelihood), 1e-6);
 }
