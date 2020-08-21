@@ -54,7 +54,10 @@ class GPEngine {
     return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
   }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
-  // EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
+  EigenVectorXd GetLogLikelihoods() const {
+    return log_likelihoods_ * site_pattern_weights_;
+    
+  };
   EigenVectorXd GetSBNParameters() const { return q_; };
 
   // Use branch lengths from loaded sample as a starting point for optimization.
