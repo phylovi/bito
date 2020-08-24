@@ -22,6 +22,7 @@ double ComputeExactMarginal(std::string newick_file, std::string fasta_file) {
   sbn_instance.SetAlignment(alignment);
   sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
 
+  std::cout << "Tree count: " << tree_count << std::endl;
   double exact_marginal_log_lik = 0.0;
   for (size_t i = 0; i < alignment_copy.Length(); i++) {
     Alignment single_column_alignment = Alignment::MakeSingleColumnAlignment(alignment_copy, i);
@@ -32,6 +33,7 @@ double ComputeExactMarginal(std::string newick_file, std::string fasta_file) {
       log_val = NumericalUtils::LogAdd(log_val, val);
     }
     log_val += log(1./tree_count);
+    std::cout << "Log lik: " << log_val << std::endl;
     exact_marginal_log_lik += log_val;
   }
   return exact_marginal_log_lik;
@@ -239,6 +241,7 @@ TEST_CASE("GPInstance: five taxa") {
   inst.ComputeLikelihoods();
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
   double exact_marginal_log_likelihood = ComputeExactMarginal("data/five_taxon_unrooted_with_branch_lengths.nwk",
-                                                              "data/five_taxon.fasta");
+                         "data/five_taxon.fasta");
+  std::cout << gp_marginal_log_likelihood << ", " << exact_marginal_log_likelihood << std::endl;
   CHECK_LT(abs(exact_marginal_log_likelihood - gp_marginal_log_likelihood), 1e-6);
 }
