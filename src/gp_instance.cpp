@@ -127,6 +127,14 @@ void GPInstance::PopulatePLVs() {
   ProcessOperations(dag_.SetRhatToStationary());
   ProcessOperations(dag_.RootwardPass());
   ProcessOperations(dag_.LeafwardPass());
+  for (size_t i = 0; i < dag_.NodeCount(); i++) {
+    GetEngine()->PrintPLV(dag_.GetPLVIndex(GPDAG::PLVType::P_HAT, i));
+    GetEngine()->PrintPLV(dag_.GetPLVIndex(GPDAG::PLVType::P_HAT_TILDE, i));
+    GetEngine()->PrintPLV(dag_.GetPLVIndex(GPDAG::PLVType::P, i));
+    GetEngine()->PrintPLV(dag_.GetPLVIndex(GPDAG::PLVType::R_HAT, i));
+    GetEngine()->PrintPLV(dag_.GetPLVIndex(GPDAG::PLVType::R_TILDE, i));
+    GetEngine()->PrintPLV(dag_.GetPLVIndex(GPDAG::PLVType::R, i));
+  }
 }
 
 void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }

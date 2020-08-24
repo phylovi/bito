@@ -239,6 +239,8 @@ TEST_CASE("GPInstance: five taxa") {
   auto inst = MakeFiveTaxaInstance();
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
+  inst.PrintStatus();
+  inst.PrintGPCSPIndexer();
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
   double exact_marginal_log_likelihood = ComputeExactMarginal("data/five_taxon_unrooted_with_branch_lengths.nwk",
                          "data/five_taxon.fasta");
