@@ -1,13 +1,12 @@
 // Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// A class for node in a directed acyclic graph for generalized pruning.
+// A node in a directed acyclic graph for generalized pruning.
+//
+// Each node represents a subsplit, which is stored as a bitset in `subsplit_`.
 
 #ifndef SRC_GP_DAG_NODE_HPP_
 #define SRC_GP_DAG_NODE_HPP_
-
-#include <string>
-#include <vector>
 
 #include "bitset.hpp"
 #include "sugar.hpp"

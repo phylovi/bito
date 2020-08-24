@@ -34,21 +34,29 @@ class GPDAG {
   double TopologyCount() const;
   // Each node in a topology is constructed with GPDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
-  size_t RootsplitAndPCSPCount() const;
-  // We define a "generalized PCSP" to be a rootsplit, a PCSP, or a fake subsplit.
-  size_t GeneralizedPCSPCount() const;
+  size_t RootsplitCount() const;
+  size_t GPCSPCount() const;
+  size_t GPCSPCountWithFakeSubsplits() const;
 
   void Print() const;
   void PrintGPCSPIndexer() const;
 
+  const BitsetSizeMap &GetGPCSPIndexer() const;
+  const BitsetSizePairMap &GetParentToRange() const;
   GPDAGNode *GetDagNode(size_t node_id) const;
-  const BitsetSizeMap &GetClassicIndexer() const;
 
   // Get the index of a PLV of a given type and with a given index.
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
   size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
 
-  size_t GetGPCSPIndexWithDefault(const Bitset &pcsp) const;
+  // Access the value of the gpcsp_indexer_ at the given "expanded" PCSP.
+  // Asserts to make sure that the PCSP is well formed.
+  size_t GetGPCSPIndex(const Bitset &parent_subsplit,
+                       const Bitset &child_subsplit) const;
+  // As above, but return SIZE_MAX if not found.
+  // Does not assert to make sure that the PCSP is well formed.
+  size_t GetGPCSPIndexWithDefault(const Bitset &parent_subsplit,
+                                  const Bitset &child_subsplit) const;
 
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
@@ -78,20 +86,19 @@ class GPDAG {
 
  private:
   size_t taxon_count_;
-  size_t rootsplit_and_pcsp_count_;
+  size_t gpcsp_count_without_fake_subsplits_;
   // The collection of rootsplits, with the same indexing as in the indexer_.
   BitsetVector rootsplits_;
   // A map going from the index of a PCSP to its child.
   SizeBitsetMap index_to_child_;
   // This indexer is an expanded version of parent_to_range_ in sbn_instance:
   // it includes single element range for fake subsplits.
-  BitsetSizePairMap subsplit_to_range_;
+  BitsetSizePairMap parent_to_range_;
 
-  // This indexer is deprecated but is here for hotstart, and will hopefully be
-  // eliminated in #247. It is just the sbn_instance indexer_.
-  BitsetSizeMap classic_indexer_;
-  // This indexer is a similarly expanded version of indexer_ in sbn_instance. This
-  // indexer is used for q_, branch_lengths_, log_likelihoods_ in GPEngine.
+  // This indexer is a similarly expanded version of indexer_ in an SBNSupport, but also
+  // encoding rootsplits as full splits rather than a binary indicator.
+  //
+  // This indexer is used for q_, branch_lengths_, log_likelihoods_ in GPEngine.
   BitsetSizeMap gpcsp_indexer_;
 
   // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
@@ -109,15 +116,18 @@ class GPDAG {
   EigenVectorXd topology_count_below_;
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
-  void IterateOverRealNodes(NodeLambda) const;
+  void IterateOverRealNodes(const NodeLambda &f) const;
   // Iterate over the leafward edges of node using an EdgeDestinationLambda.
-  void IterateOverLeafwardEdges(const GPDAGNode *node, EdgeDestinationLambda f) const;
+  void IterateOverLeafwardEdges(const GPDAGNode *node,
+                                const EdgeDestinationLambda &f) const;
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
-  void IterateOverRootwardEdges(const GPDAGNode *node, EdgeDestinationLambda f) const;
+  void IterateOverRootwardEdges(const GPDAGNode *node,
+                                const EdgeDestinationLambda &f) const;
   // Iterate over the node ids corresponding to rootsplits.
-  void IterateOverRootsplitIds(std::function<void(size_t)>) const;
+  void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
-  // This function returns empty vector if subsplit is invalid or has no child.
+  // Gives the children subsplits of a given parent subsplit, optionally including fake
+  // subsplits.
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
                                            bool include_fake_subsplits = false);
 
@@ -131,11 +141,10 @@ class GPDAG {
   void BuildNodes();
   void BuildEdges();
   void CountTopologies();
-  // Expand gpcsp_indexer_ and subsplit_to_range_ with fake subsplits.
-  void ExpandPCSPIndexerAndSubsplitToRange();
-  // Update gpcsp_indexer_ keys to be full parent child subsplits as opposed to
-  // full parent and half child subsplits.
-  void SetPCSPIndexerEncodingToFullSubsplits();
+  // Expand gpcsp_indexer_ and parent_to_range_ with fake subsplits at the end.
+  void AddFakeSubsplitsToGPCSPIndexerAndParentToRange();
+  // Update gpcsp_indexer_ rootsplits to be full subsplits.
+  void ExpandRootsplitsInIndexer();
 
   [[nodiscard]] GPOperationVector LeafwardPass(SizeVector visit_order) const;
   [[nodiscard]] GPOperationVector RootwardPass(SizeVector visit_order) const;

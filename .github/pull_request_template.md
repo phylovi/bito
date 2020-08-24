@@ -12,7 +12,7 @@ Please describe the tests added to verify correct behavior.
 
 ## Checklist:
 
-* [ ] `clang-format` has been run
+* [ ] `make format` has been run
 * [ ] The code uses informative and accurate variable and function names
 * [ ] The functionality is factored out into functions and methods with logical interfaces
 * [ ] Comments are up to date, document intent, and there are no commented-out code blocks

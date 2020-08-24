@@ -36,12 +36,20 @@ class GPInstance {
   void ComputeLikelihoods();
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
 
+  // #273: A lot of code duplication here with things in SBNInstance.
+  StringVector PrettyIndexer() const;
+  void ProbabilityNormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) const;
+  EigenVectorXd NormalizedSBNParametersIncludingFakeSubsplits() const;
+  StringDoubleVector PrettyIndexedSBNParameters();
+  void SBNParametersToCSV(const std::string &file_path);
+
  private:
   std::string mmap_file_path_;
   Alignment alignment_;
   std::unique_ptr<GPEngine> engine_;
   RootedTreeCollection tree_collection_;
   GPDAG dag_;
+  static constexpr size_t plv_count_per_node_ = 6;
 
   // A vector that contains all of the SBN-related probabilities.
   EigenVectorXd sbn_parameters_;

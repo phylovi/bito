@@ -11,6 +11,7 @@
 #include "gp_operation.hpp"
 #include "numerical_utils.hpp"
 #include "rooted_tree_collection.hpp"
+#include "sbn_probability.hpp"
 
 using namespace GPOperations;  // NOLINT
 
@@ -25,7 +26,7 @@ void GPInstance::PrintStatus() {
   std::cout << alignment_.Data().size() << " sequences loaded.\n";
   std::cout << dag_.NodeCount() << " DAG nodes representing " << dag_.TopologyCount()
             << " trees.\n";
-  std::cout << dag_.GeneralizedPCSPCount() << " continuous parameters.\n";
+  std::cout << dag_.GPCSPCountWithFakeSubsplits() << " continuous parameters.\n";
   if (HasEngine()) {
     std::cout << "Engine available using " << GetEngine()->PLVByteCount() / 1e9
               << "G virtual memory.\n";
@@ -69,9 +70,9 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
-  engine_ = std::make_unique<GPEngine>(std::move(site_pattern), 6 * dag_.NodeCount(),
-                                       dag_.GeneralizedPCSPCount(), mmap_file_path_,
-                                       rescaling_threshold);
+  engine_ = std::make_unique<GPEngine>(
+      std::move(site_pattern), plv_count_per_node_ * dag_.NodeCount(),
+      dag_.GPCSPCountWithFakeSubsplits(), mmap_file_path_, rescaling_threshold);
   InitializeGPEngine();
 }
 
@@ -97,13 +98,13 @@ void GPInstance::ClearTreeCollectionAssociatedState() {
 }
 
 void GPInstance::ProcessLoadedTrees() {
-  sbn_parameters_.resize(dag_.RootsplitAndPCSPCount());
+  sbn_parameters_.resize(dag_.GPCSPCount());
   sbn_parameters_.setOnes();
 }
 
 void GPInstance::HotStartBranchLengths() {
   if (HasEngine()) {
-    GetEngine()->HotStartBranchLengths(tree_collection_, dag_.GetClassicIndexer());
+    GetEngine()->HotStartBranchLengths(tree_collection_, dag_.GetGPCSPIndexer());
   } else {
     Failwith(
         "Please load and process some trees before calling HotStartBranchLengths.");
@@ -229,8 +230,8 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
 
         // Note: child_subsplit is either a rotated or sorted subsplit of
         // parent_subsplit.
-        size_t i0 = dag_.GetGPCSPIndexWithDefault(parent_subsplit + child_subsplit);
-        size_t i1 = dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit() +
+        size_t i0 = dag_.GetGPCSPIndexWithDefault(parent_subsplit, child_subsplit);
+        size_t i1 = dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit(),
                                                   child_subsplit);
         Assert(i0 < SIZE_MAX || i1 < SIZE_MAX, "GPCSP does not exist.");
         size_t gpcsp_idx = std::min(i0, i1);
@@ -244,4 +245,59 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   RootedTreeCollection rooted_tree_collection(tree_vector,
                                               tree_collection_.TagTaxonMap());
   return rooted_tree_collection;
+}
+
+StringVector GPInstance::PrettyIndexer() const {
+  StringVector pretty_representation(dag_.GetGPCSPIndexer().size());
+  for (const auto &[key, idx] : dag_.GetGPCSPIndexer()) {
+    if (idx < dag_.RootsplitCount()) {
+      // We have decided to keep the "expanded" rootsplit representation for the time
+      // being (see #273). Here we convert it to the representation used in the rest of
+      // libsbn.
+      auto classic_rootsplit_representation =
+          std::min(key.SubsplitChunk(0), key.SubsplitChunk(1));
+      pretty_representation[idx] = classic_rootsplit_representation.ToString();
+    } else {
+      pretty_representation[idx] = key.PCSPToString();
+    }
+  }
+  return pretty_representation;
+}
+
+void GPInstance::ProbabilityNormalizeSBNParametersInLog(
+    EigenVectorXdRef sbn_parameters) const {
+  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, dag_.RootsplitCount(),
+                                                  dag_.GetParentToRange());
+}
+
+EigenVectorXd GPInstance::NormalizedSBNParametersIncludingFakeSubsplits() const {
+  // Extend SBN parameters to include the fake subsplits (which are indexed by the
+  // largest set of indices after running
+  // AddFakeSubsplitsToGPCSPIndexerAndParentToRange).
+  // They don't have any splitting so we set them to zero in log space.
+  EigenVectorXd sbn_parameters_result =
+      EigenVectorXd::Zero(dag_.GPCSPCountWithFakeSubsplits());
+  sbn_parameters_result.segment(0, sbn_parameters_.size()) = sbn_parameters_;
+  ProbabilityNormalizeSBNParametersInLog(sbn_parameters_result);
+  NumericalUtils::Exponentiate(sbn_parameters_result);
+  return sbn_parameters_result;
+}
+
+StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
+  StringDoubleVector result;
+  auto sbn_parameters = NormalizedSBNParametersIncludingFakeSubsplits();
+  result.reserve(sbn_parameters.size());
+  const auto pretty_indexer = PrettyIndexer();
+  for (size_t i = 0; i < sbn_parameters.size(); i++) {
+    result.push_back({pretty_indexer.at(i), sbn_parameters(i)});
+  }
+  return result;
+}
+
+void GPInstance::SBNParametersToCSV(const std::string &file_path) {
+  std::ofstream out_stream(file_path);
+  for (const auto &[gpcsp_string, sbn_value] : PrettyIndexedSBNParameters()) {
+    out_stream << gpcsp_string << "," << sbn_value << std::endl;
+  }
+  out_stream.close();
 }

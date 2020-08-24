@@ -7,16 +7,17 @@
 
 #include "numerical_utils.hpp"
 
-using namespace GPOperations;
+using namespace GPOperations;  // NOLINT
 
-GPDAG::GPDAG() : taxon_count_(0), rootsplit_and_pcsp_count_(0) {}
+GPDAG::GPDAG()
+    : taxon_count_(0), gpcsp_count_without_fake_subsplits_(0), topology_count_(0.) {}
 
-GPDAG::GPDAG(const RootedTreeCollection &tree_collection) {
+GPDAG::GPDAG(const RootedTreeCollection &tree_collection) : GPDAG() {
   ProcessTrees(tree_collection);
   BuildNodes();
   BuildEdges();
-  SetPCSPIndexerEncodingToFullSubsplits();
-  ExpandPCSPIndexerAndSubsplitToRange();
+  ExpandRootsplitsInIndexer();
+  AddFakeSubsplitsToGPCSPIndexerAndParentToRange();
   CountTopologies();
 }
 
@@ -46,34 +47,28 @@ double GPDAG::TopologyCount() const { return topology_count_; }
 
 size_t GPDAG::NodeCount() const { return dag_nodes_.size(); }
 
-size_t GPDAG::RootsplitAndPCSPCount() const { return rootsplit_and_pcsp_count_; }
-
-size_t GPDAG::GeneralizedPCSPCount() const {
-  size_t fake_subsplit_parameter_count = 0;
-  for (size_t taxon_idx = 0; taxon_idx < taxon_count_; taxon_idx++) {
-    fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardRotated().size();
-    fake_subsplit_parameter_count += dag_nodes_[taxon_idx]->GetRootwardSorted().size();
-  }
-  return RootsplitAndPCSPCount() + fake_subsplit_parameter_count;
-}
+size_t GPDAG::RootsplitCount() const { return rootsplits_.size(); }
+size_t GPDAG::GPCSPCount() const { return gpcsp_count_without_fake_subsplits_; }
+size_t GPDAG::GPCSPCountWithFakeSubsplits() const { return gpcsp_indexer_.size(); }
 
 void GPDAG::Print() const {
-  for (size_t i = 0; i < dag_nodes_.size(); i++) {
-    std::cout << dag_nodes_[i]->ToString() << std::endl;
+  for (const auto &dag_node : dag_nodes_) {
+    std::cout << dag_node->ToString() << std::endl;
   }
 }
 
 void GPDAG::PrintGPCSPIndexer() const {
   for (const auto &[pcsp, idx] : gpcsp_indexer_) {
-    std::cout << pcsp.SubsplitToString() << ", " << idx << std::endl;
+    std::cout << pcsp.PCSPToString() << ", " << idx << std::endl;
   }
 }
+
+const BitsetSizeMap &GPDAG::GetGPCSPIndexer() const { return gpcsp_indexer_; }
+const BitsetSizePairMap &GPDAG::GetParentToRange() const { return parent_to_range_; }
 
 GPDAGNode *GPDAG::GetDagNode(const size_t node_id) const {
   return dag_nodes_.at(node_id).get();
 }
-
-const BitsetSizeMap &GPDAG::GetClassicIndexer() const { return classic_indexer_; }
 
 size_t GPDAG::GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx) {
   switch (plv_type) {
@@ -98,19 +93,26 @@ size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t src_idx) const {
   return GetPLVIndexStatic(plv_type, dag_nodes_.size(), src_idx);
 }
 
-size_t GPDAG::GetGPCSPIndexWithDefault(const Bitset &pcsp) const {
+size_t GPDAG::GetGPCSPIndex(const Bitset &parent_subsplit,
+                            const Bitset &child_subsplit) const {
+  return gpcsp_indexer_.at(Bitset::PCSPOfPair(parent_subsplit, child_subsplit));
+}
+
+size_t GPDAG::GetGPCSPIndexWithDefault(const Bitset &parent_subsplit,
+                                       const Bitset &child_subsplit) const {
+  const auto pcsp = Bitset::PCSPOfPair(parent_subsplit, child_subsplit, false);
   if (gpcsp_indexer_.count(pcsp) > 0) {
     return gpcsp_indexer_.at(pcsp);
-  } else {
-    // Return the max value.
-    return SIZE_MAX;
   }
+  // else
+  // Return the max value.
+  return SIZE_MAX;
 }
 
 EigenVectorXd GPDAG::BuildUniformQ() const {
-  EigenVectorXd q = EigenVectorXd::Ones(GeneralizedPCSPCount());
+  EigenVectorXd q = EigenVectorXd::Ones(GPCSPCountWithFakeSubsplits());
   q.segment(0, rootsplits_.size()).array() = 1. / rootsplits_.size();
-  for (const auto &[_, range] : subsplit_to_range_) {
+  for (const auto &[_, range] : parent_to_range_) {
     const auto num_child_subsplits = range.second - range.first;
     double val = 1. / num_child_subsplits;
     q.segment(range.first, num_child_subsplits).array() = val;
@@ -137,10 +139,8 @@ Node::NodePtrVec GPDAG::GenerateAllGPNodeIndexedTopologies() const {
   auto MergeTopologies = [](size_t node_id, Node::NodePtrVec &rotated_subtopologies,
                             Node::NodePtrVec &sorted_subtopologies) {
     Node::NodePtrVec topologies;
-    for (size_t i = 0; i < rotated_subtopologies.size(); i++) {
-      auto &rotated_subtopology = rotated_subtopologies.at(i);
-      for (size_t j = 0; j < sorted_subtopologies.size(); j++) {
-        auto &sorted_subtopology = sorted_subtopologies.at(j);
+    for (const auto &rotated_subtopology : rotated_subtopologies) {
+      for (const auto &sorted_subtopology : sorted_subtopologies) {
         Node::NodePtr new_topology =
             Node::Join(sorted_subtopology, rotated_subtopology, node_id);
         topologies.push_back(new_topology);
@@ -173,7 +173,7 @@ Node::NodePtrVec GPDAG::GenerateAllGPNodeIndexedTopologies() const {
 }
 
 EigenVectorXd GPDAG::BuildUniformPrior() const {
-  EigenVectorXd q = EigenVectorXd::Ones(GeneralizedPCSPCount());
+  EigenVectorXd q = EigenVectorXd::Ones(GPCSPCountWithFakeSubsplits());
 
   for (const auto &node_id : RootwardPassTraversal()) {
     const auto &node = GetDagNode(node_id);
@@ -184,9 +184,9 @@ EigenVectorXd GPDAG::BuildUniformPrior() const {
           per_rotated_count += topology_count_below_[child_id];
         }
         for (const auto &child_id : node->GetLeafward(rotated)) {
-          Bitset gpcsp = node->GetBitset(rotated) + GetDagNode(child_id)->GetBitset();
-          size_t gpcsp_idx = gpcsp_indexer_.at(gpcsp);
-          q[gpcsp_idx] = topology_count_below_[child_id] / per_rotated_count;
+          size_t gpcsp_idx = GetGPCSPIndex(node->GetBitset(rotated),
+                                           GetDagNode(child_id)->GetBitset());
+          q(gpcsp_idx) = topology_count_below_(child_id) / per_rotated_count;
         }
       }
     }
@@ -217,7 +217,7 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
         node,
         [this, node, &operations](const bool rotated, const GPDAGNode *child_node) {
           const auto gpcsp_idx =
-              gpcsp_indexer_.at(node->GetBitset(rotated) + child_node->GetBitset());
+              GetGPCSPIndex(node->GetBitset(rotated), child_node->GetBitset());
           operations.push_back(Likelihood{gpcsp_idx,
                                           GetPLVIndex(RPLVType(rotated), node->Id()),
                                           GetPLVIndex(PLVType::P, child_node->Id())});
@@ -294,7 +294,7 @@ GPOperationVector GPDAG::SetRootwardZero() const {
   return operations;
 }
 
-void GPDAG::IterateOverRealNodes(NodeLambda f) const {
+void GPDAG::IterateOverRealNodes(const NodeLambda &f) const {
   Assert(taxon_count_ < dag_nodes_.size(), "No real DAG nodes!");
   for (auto it = dag_nodes_.cbegin() + taxon_count_; it < dag_nodes_.cend(); it++) {
     f((*it).get());
@@ -302,7 +302,7 @@ void GPDAG::IterateOverRealNodes(NodeLambda f) const {
 }
 
 void GPDAG::IterateOverLeafwardEdges(const GPDAGNode *node,
-                                     EdgeDestinationLambda f) const {
+                                     const EdgeDestinationLambda &f) const {
   for (bool rotated : {false, true}) {
     for (const size_t child_idx : node->GetLeafward(rotated)) {
       f(rotated, GetDagNode(child_idx));
@@ -311,7 +311,7 @@ void GPDAG::IterateOverLeafwardEdges(const GPDAGNode *node,
 }
 
 void GPDAG::IterateOverRootwardEdges(const GPDAGNode *node,
-                                     EdgeDestinationLambda f) const {
+                                     const EdgeDestinationLambda &f) const {
   for (bool rotated : {false, true}) {
     for (const size_t parent_idx : node->GetRootward(rotated)) {
       f(rotated, GetDagNode(parent_idx));
@@ -319,7 +319,7 @@ void GPDAG::IterateOverRootwardEdges(const GPDAGNode *node,
   }
 }
 
-void GPDAG::IterateOverRootsplitIds(std::function<void(size_t)> f) const {
+void GPDAG::IterateOverRootsplitIds(const std::function<void(size_t)> &f) const {
   for (const auto &rootsplit : rootsplits_) {
     const auto subsplit = rootsplit + ~rootsplit;
     f(subsplit_to_id_.at(rootsplit + ~rootsplit));
@@ -329,26 +329,20 @@ void GPDAG::IterateOverRootsplitIds(std::function<void(size_t)> f) const {
 std::vector<Bitset> GPDAG::GetChildrenSubsplits(const Bitset &subsplit,
                                                 bool include_fake_subsplits) {
   std::vector<Bitset> children_subsplits;
-  if (subsplit_to_range_.count(subsplit)) {
-    const auto [start, stop] = subsplit_to_range_.at(subsplit);
+  if (parent_to_range_.count(subsplit) > 0) {
+    const auto [start, stop] = parent_to_range_.at(subsplit);
     for (auto idx = start; idx < stop; idx++) {
-      const auto child_subsplit = index_to_child_.at(idx);
-      children_subsplits.push_back(child_subsplit);
+      children_subsplits.push_back(index_to_child_.at(idx));
     }
   } else if (include_fake_subsplits) {
-    // In the case where second chunk of the subsplit is just a single taxon,
-    // the subsplit will not map to any value (parent_to_range_[subsplit] doesn't
-    // exist). But we still need to create and connect to fake subsplits in the DAG. A
-    // subsplit has a fake subsplit as a child if the first chunk is non-zero and the
-    // second chunk has exactly one bit set to 1.
-    if (subsplit.SplitChunk(0).Any() &&
-        subsplit.SplitChunk(1).SingletonOption().has_value()) {
-      // The fake subsplit corresponds to the second chunk of subsplit.
-      // Prepend it by 0's.
-      Bitset zero(subsplit.size() / 2);
-      Bitset fake_subsplit = zero + subsplit.SplitChunk(1);
-      children_subsplits.push_back(fake_subsplit);
-    }
+    // This method is designed to be called before calling
+    // AddFakeSubsplitsToGPCSPIndexerAndParentToRange. In that case, if the second chunk
+    // of the subsplit is just a single taxon, the subsplit will not map to any value in
+    // parent_to_range_.
+    //
+    // But we still need to create and connect to fake subsplits in the DAG. So, here we
+    // make a fake child subsplit.
+    children_subsplits.push_back(Bitset::FakeChildSubsplit(subsplit));
   }
 
   return children_subsplits;
@@ -358,8 +352,8 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
   taxon_count_ = tree_collection.TaxonCount();
   const auto topology_counter = tree_collection.TopologyCounter();
 
-  std::tie(rootsplits_, classic_indexer_, index_to_child_, subsplit_to_range_,
-           rootsplit_and_pcsp_count_) =
+  std::tie(rootsplits_, gpcsp_indexer_, index_to_child_, parent_to_range_,
+           gpcsp_count_without_fake_subsplits_) =
       SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),
                                   RootedSBNMaps::PCSPCounterOf(topology_counter));
 }
@@ -393,7 +387,7 @@ void GPDAG::BuildNodesDepthFirst(const Bitset &subsplit,
   for (bool rotated : {false, true}) {
     for (const auto &child_subsplit :
          GetChildrenSubsplits(PerhapsRotateSubsplit(subsplit, rotated), false)) {
-      if (!visited_subsplits.count(child_subsplit)) {
+      if (visited_subsplits.count(child_subsplit) == 0) {
         BuildNodesDepthFirst(child_subsplit, visited_subsplits);
       }
     }
@@ -408,10 +402,8 @@ void GPDAG::BuildNodes() {
   // These nodes will take IDs in [0, taxon_count_).
   Bitset zero(taxon_count_);
   for (size_t taxon_idx = 0; taxon_idx < taxon_count_; taxon_idx++) {
-    Bitset fake(taxon_count_);
-    fake.set(taxon_idx);
-    Bitset fake_subsplit = zero + fake;
-    CreateAndInsertNode(fake_subsplit);
+    CreateAndInsertNode(
+        Bitset::FakeSubsplit(Bitset::Singleton(taxon_count_, taxon_idx)));
   }
   // We are going to add the remaining nodes.
   // The root splits will take on the higher IDs compared to the non-rootsplits.
@@ -428,30 +420,30 @@ void GPDAG::BuildEdges() {
   }
 }
 
-void GPDAG::SetPCSPIndexerEncodingToFullSubsplits() {
-  // Issue #247: if this is going to survive, please replace with a range for with const
-  // auto &[bitset, index].
-  for (auto it = classic_indexer_.cbegin(); it != classic_indexer_.cend(); ++it) {
-    if (it->first.size() == taxon_count_) {
-      SafeInsert(gpcsp_indexer_, it->first + ~it->first, it->second);
+// This should go away when addressing #273.
+void GPDAG::ExpandRootsplitsInIndexer() {
+  BitsetSizeMap old_indexer;
+  std::swap(gpcsp_indexer_, old_indexer);
+  for (const auto &[gpcsp, index] : old_indexer) {
+    if (gpcsp.size() == taxon_count_) {
+      SafeInsert(gpcsp_indexer_, gpcsp + ~gpcsp, index);
     } else {
-      SafeInsert(gpcsp_indexer_, it->first.PCSPParent() + it->first.PCSPChildSubsplit(),
-                 it->second);
+      SafeInsert(gpcsp_indexer_, gpcsp, index);
     }
   }
 }
 
-void GPDAG::ExpandPCSPIndexerAndSubsplitToRange() {
-  // Add fake subsplits to expand gpcsp_indexer_ and subsplit_to_range_.
+void GPDAG::AddFakeSubsplitsToGPCSPIndexerAndParentToRange() {
   for (size_t i = 0; i < taxon_count_; i++) {
     const auto current_bitset = dag_nodes_[i]->GetBitset();
     IterateOverRootwardEdges(
         GetDagNode(i),
         [this, current_bitset](const bool rotated, const GPDAGNode *node) {
-          Bitset gpcsp = node->GetBitset(rotated) + current_bitset;
-          SafeInsert(subsplit_to_range_, node->GetBitset(rotated),
+          SafeInsert(parent_to_range_, node->GetBitset(rotated),
                      {gpcsp_indexer_.size(), gpcsp_indexer_.size() + 1});
-          SafeInsert(gpcsp_indexer_, gpcsp, gpcsp_indexer_.size());
+          SafeInsert(gpcsp_indexer_,
+                     Bitset::PCSPOfPair(node->GetBitset(rotated), current_bitset),
+                     gpcsp_indexer_.size());
         });
   }
 }
@@ -462,12 +454,12 @@ void RootwardDepthFirst(size_t id,
                         std::unordered_set<size_t> &visited_nodes) {
   SafeInsert(visited_nodes, id);
   for (size_t child_id : dag_nodes.at(id)->GetRootwardSorted()) {
-    if (!visited_nodes.count(child_id)) {
+    if (visited_nodes.count(child_id) == 0) {
       RootwardDepthFirst(child_id, dag_nodes, visit_order, visited_nodes);
     }
   }
   for (size_t child_id : dag_nodes.at(id)->GetRootwardRotated()) {
-    if (!visited_nodes.count(child_id)) {
+    if (visited_nodes.count(child_id) == 0) {
       RootwardDepthFirst(child_id, dag_nodes, visit_order, visited_nodes);
     }
   }
@@ -480,12 +472,12 @@ void LeafwardDepthFirst(size_t id,
                         std::unordered_set<size_t> &visited_nodes) {
   SafeInsert(visited_nodes, id);
   for (size_t child_id : dag_nodes.at(id)->GetLeafwardSorted()) {
-    if (!visited_nodes.count(child_id)) {
+    if (visited_nodes.count(child_id) == 0) {
       LeafwardDepthFirst(child_id, dag_nodes, visit_order, visited_nodes);
     }
   }
   for (size_t child_id : dag_nodes.at(id)->GetLeafwardRotated()) {
-    if (!visited_nodes.count(child_id)) {
+    if (visited_nodes.count(child_id) == 0) {
       LeafwardDepthFirst(child_id, dag_nodes, visit_order, visited_nodes);
     }
   }
@@ -565,11 +557,8 @@ void GPDAG::AddPhatOperations(const GPDAGNode *node, bool rotated,
   const size_t dest_idx = GetPLVIndex(plv_type, node->Id());
   GPOperationVector new_operations;
   for (const size_t &child_idx : node->GetLeafward(rotated)) {
-    const auto child_node = GetDagNode(child_idx);
-    const auto child_subsplit = child_node->GetBitset();
-    const auto pcsp = parent_subsplit + child_subsplit;
-    Assert(gpcsp_indexer_.count(pcsp), "Non-existent PCSP index.");
-    const auto gpcsp_idx = gpcsp_indexer_.at(pcsp);
+    const auto gpcsp_idx =
+        GetGPCSPIndex(parent_subsplit, GetDagNode(child_idx)->GetBitset());
     new_operations.push_back(IncrementWithWeightedEvolvedPLV{
         dest_idx, gpcsp_idx, GetPLVIndex(PLVType::P, child_idx)});
   }
@@ -583,7 +572,7 @@ void GPDAG::AddRhatOperations(const GPDAGNode *node,
   IterateOverRootwardEdges(node, [this, node, &new_operations, subsplit](
                                      const bool rotated, const GPDAGNode *parent_node) {
     const auto parent_subsplit = parent_node->GetBitset(rotated);
-    const auto gpcsp_idx = gpcsp_indexer_.at(parent_subsplit + subsplit);
+    const auto gpcsp_idx = GetGPCSPIndex(parent_subsplit, subsplit);
 
     new_operations.push_back(IncrementWithWeightedEvolvedPLV{
         GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
@@ -594,8 +583,8 @@ void GPDAG::AddRhatOperations(const GPDAGNode *node,
 
 void GPDAG::OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                               GPOperationVector &operations) const {
-  if (subsplit_to_range_.count(subsplit)) {
-    const auto param_range = subsplit_to_range_.at(subsplit);
+  if (parent_to_range_.count(subsplit) > 0) {
+    const auto param_range = parent_to_range_.at(subsplit);
     if (param_range.second - param_range.first > 1) {
       operations.push_back(
           UpdateSBNProbabilities{param_range.first, param_range.second});
@@ -624,11 +613,13 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
                                   GetPLVIndex(PLVType::P_HAT, node_id)});
   }
 
-  if (node->IsLeaf()) return;
+  if (node->IsLeaf()) {
+    return;
+  }
 
   operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT, node_id)});
   for (size_t child_id : dag_nodes_.at(node_id)->GetLeafwardSorted()) {
-    if (!visited_nodes.count(child_id)) {
+    if (visited_nodes.count(child_id) == 0) {
       ScheduleBranchLengthOptimization(child_id, visited_nodes, operations);
     }
     OptimizeBranchLengthUpdatePHat(node_id, child_id, false, operations);
@@ -640,7 +631,7 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
 
   operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
   for (size_t child_id : dag_nodes_.at(node_id)->GetLeafwardRotated()) {
-    if (!visited_nodes.count(child_id)) {
+    if (visited_nodes.count(child_id) == 0) {
       ScheduleBranchLengthOptimization(child_id, visited_nodes, operations);
     }
     OptimizeBranchLengthUpdatePHat(node_id, child_id, true, operations);
@@ -665,10 +656,9 @@ void GPDAG::UpdateRHat(size_t node_id, bool rotated,
   GPOperationVector new_operations;
   for (size_t parent_id : parent_nodes) {
     const auto parent_node = GetDagNode(parent_id);
-    auto pcsp =
+    auto parent_subsplit =
         rotated ? parent_node->GetBitset().RotateSubsplit() : parent_node->GetBitset();
-    pcsp = pcsp + node->GetBitset();
-    size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
+    size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, node->GetBitset());
     new_operations.push_back(
         IncrementWithWeightedEvolvedPLV{GetPLVIndex(PLVType::R_HAT, node_id), gpcsp_idx,
                                         GetPLVIndex(src_plv_type, parent_id)});
@@ -681,9 +671,9 @@ void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
                                         GPOperationVector &operations) const {
   const auto node = GetDagNode(node_id);
   const auto child_node = GetDagNode(child_node_id);
-  auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
-  pcsp = pcsp + child_node->GetBitset();
-  size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
+  auto parent_subsplit =
+      rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
+  size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, child_node->GetBitset());
   // Update p_hat(s)
   GPOperationVector new_operations;
   new_operations.push_back(IncrementWithWeightedEvolvedPLV{
@@ -702,9 +692,9 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
                                            GPOperationVector &operations) const {
   const auto node = GetDagNode(node_id);
   const auto child_node = GetDagNode(child_node_id);
-  auto pcsp = rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
-  pcsp = pcsp + child_node->GetBitset();
-  size_t gpcsp_idx = gpcsp_indexer_.at(pcsp);
+  auto parent_subsplit =
+      rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
+  size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, child_node->GetBitset());
   operations.push_back(OptimizeBranchLength{GetPLVIndex(PLVType::P, child_node_id),
                                             GetPLVIndex(RPLVType(rotated), node_id),
                                             gpcsp_idx});
