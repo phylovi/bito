@@ -174,42 +174,42 @@ TEST_CASE("GPInstance: rescaling") {
   CHECK_LT(fabs(difference), 1e-10);
 }
 
-//TEST_CASE("GPInstance: Hotstart branch lengths") {
-//  // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
-//  // 1 (outgroup,(((z0,z1),z2),z3));
-//  // 33 (outgroup,((z0,z1),(z2,z3)));
-//  const std::string tree_path = "data/hotstart_bootstrap_sample.nwk";
-//  GPInstance inst("_ignore/mmapped_plv.data");
-//  // This is just a dummy fasta file, which is required to make an Engine.
-//  inst.ReadFastaFile("data/hotstart.fasta");
-//  inst.ReadNewickFile(tree_path);
-//  inst.MakeEngine();
-//
-//  // We are going to verify correct assignment of the PCSP with sister z2, z3 and
-//  // children z0, z1, which only appears in the tree (outgroup,((z0,z1),(z2,z3))).
-//  // Vector of taxon names: [outgroup, z2, z3, z1, z0]
-//  // So, this below is the desired GPCSP (in full subsplit notation), which corresponds
-//  // to sister indices 1, 2, and children 4, 3:
-//  // 0110000011|0001000001, 2
-//  // Thus we are interested in the branch length index 2.
-//
-//
-//  // These branch lengths are obtained by excluding (outgroup,(((z0,z1),z2),z3)) (which
-//  // doesn't have this PCSP) and grabbing the rest of the branch lengths.
-//  EigenVectorXd hotstart_expected_branch_lengths(33);
-//  hotstart_expected_branch_lengths << 0.1175370000, 0.1175750000, 0.1195780000,
-//      0.0918962000, 0.0918931000, 0.1192590000, 0.0906988000, 0.0906972000,
-//      0.0905154000, 0.0903663000, 0.1245620000, 0.1244890000, 0.1245050000,
-//      0.1245550000, 0.1245680000, 0.1248920000, 0.1248490000, 0.1164070000,
-//      0.1164110000, 0.1164120000, 0.1245670000, 0.1245650000, 0.1245670000,
-//      0.1245670000, 0.1240790000, 0.1242540000, 0.1242160000, 0.1242560000,
-//      0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
-//  double true_mean = hotstart_expected_branch_lengths.array().mean();
-//  inst.HotStartBranchLengths();
-//  std::cout << inst.GetEngine()->GetBranchLengths() << std::endl;
-//  std::cout << true_mean << std::endl;
-//  CHECK_EQ(true_mean, inst.GetEngine()->GetBranchLengths()(2));
-//}
+TEST_CASE("GPInstance: Hotstart branch lengths") {
+  // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
+  // 1 (outgroup,(((z0,z1),z2),z3));
+  // 33 (outgroup,((z0,z1),(z2,z3)));
+  const std::string tree_path = "data/hotstart_bootstrap_sample.nwk";
+  GPInstance inst("_ignore/mmapped_plv.data");
+  // This is just a dummy fasta file, which is required to make an Engine.
+  inst.ReadFastaFile("data/hotstart.fasta");
+  inst.ReadNewickFile(tree_path);
+  inst.MakeEngine();
+
+  // We are going to verify correct assignment of the PCSP with sister z2, z3 and
+  // children z0, z1, which only appears in the tree (outgroup,((z0,z1),(z2,z3))).
+  // Vector of taxon names: [outgroup, z2, z3, z1, z0]
+  // So, this below is the desired GPCSP (in full subsplit notation), which corresponds
+  // to sister indices 1, 2, and children 4, 3:
+  // 0110000011|0001000001, 2
+  // Thus we are interested in the branch length index 2.
+
+
+  // These branch lengths are obtained by excluding (outgroup,(((z0,z1),z2),z3)) (which
+  // doesn't have this PCSP) and grabbing the rest of the branch lengths.
+  EigenVectorXd hotstart_expected_branch_lengths(33);
+  hotstart_expected_branch_lengths << 0.1175370000, 0.1175750000, 0.1195780000,
+      0.0918962000, 0.0918931000, 0.1192590000, 0.0906988000, 0.0906972000,
+      0.0905154000, 0.0903663000, 0.1245620000, 0.1244890000, 0.1245050000,
+      0.1245550000, 0.1245680000, 0.1248920000, 0.1248490000, 0.1164070000,
+      0.1164110000, 0.1164120000, 0.1245670000, 0.1245650000, 0.1245670000,
+      0.1245670000, 0.1240790000, 0.1242540000, 0.1242160000, 0.1242560000,
+      0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
+  double true_mean = hotstart_expected_branch_lengths.array().mean();
+  inst.HotStartBranchLengths();
+  std::cout << inst.GetEngine()->GetBranchLengths() << std::endl;
+  std::cout << true_mean << std::endl;
+  CHECK_EQ(true_mean, inst.GetEngine()->GetBranchLengths()(2));
+}
 
 GPInstance MakeFiveTaxaInstance() {
   GPInstance inst("_ignore/mmapped_plv.data");
@@ -229,11 +229,22 @@ TEST_CASE("GPInstance: generate all trees") {
 TEST_CASE("GPInstance: five taxa") {
   auto inst = MakeFiveTaxaInstance();
   inst.EstimateBranchLengths(1e-6, 10);
-  std::cout << inst.GetEngine()->GetBranchLengths() << std::endl;
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
-  std::cout << inst.GenerateCompleteRootedTreeCollection().Newick() << std::endl;
   double exact_marginal_log_likelihood = ComputeExactMarginal("data/five_taxon_unrooted_with_branch_lengths.nwk",
                          "data/five_taxon.fasta");
-  std::cout << gp_marginal_log_likelihood << ", " << exact_marginal_log_likelihood << std::endl;
   CHECK_LT(abs(exact_marginal_log_likelihood - gp_marginal_log_likelihood), 1e-6);
+}
+
+TEST_CASE("GPInstance: test populate PLV") {
+  // Estimate branch lengths. This will populate and update PLVs. Then compute likelihoods.
+  // PopulatePLV, which reset log marginal as well as zeros out PLVs before re-populating them using the current branch lengths. Compute likelihoods.
+  // Compare the likelihood vectors.
+  auto inst = MakeFiveTaxaInstance();
+  inst.EstimateBranchLengths(1e-6, 10);
+  inst.ComputeLikelihoods();
+  const EigenVectorXd log_likelihoods1 = inst.GetEngine()->GetLogLikelihoods();
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+  const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetLogLikelihoods();
+  CheckVectorXdEquality(log_likelihoods1, log_likelihoods2, 1e-6);
 }

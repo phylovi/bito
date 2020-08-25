@@ -122,6 +122,8 @@ void GPInstance::InitializeGPEngine() {
 }
 
 void GPInstance::PopulatePLVs() {
+  // PopulatePLV is called to update all calculations so it makes sense to reset the marginal likelihood.
+  GetEngine()->ResetLogMarginalLikelihood();
   ProcessOperations(dag_.SetRootwardZero());
   ProcessOperations(dag_.SetLeafwardZero());
   ProcessOperations(dag_.SetRhatToStationary());
