@@ -216,6 +216,8 @@ GPInstance MakeFiveTaxaInstance() {
   inst.MakeEngine();
 //  EigenVectorXd branch_lengths(34);
 //  branch_lengths << 1, 1, 1, 0.792097734, 0.0334060998, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.832851676, 0.832855622, 0.805664275, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.828284658, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 0.0150759956, 3, 3, 3, 3;
+//  branch_lengths.setConstant(1);
+//  branch_lengths[3] = 0.5;
 //  inst.GetEngine()->SetBranchLengths(branch_lengths);
   return inst;
 }
@@ -229,11 +231,12 @@ TEST_CASE("GPInstance: generate all trees") {
 
 TEST_CASE("GPInstance: five taxa") {
   auto inst = MakeFiveTaxaInstance();
-  inst.PopulatePLVs();
-  inst.ComputeLikelihoods();
-  inst.PrintStatus();
-  inst.PrintGPCSPIndexer();
+  inst.EstimateBranchLengths(1e-6, 10);
+  std::cout << inst.GetEngine()->GetBranchLengths() << std::endl;
+//  inst.PopulatePLVs();
+//  inst.ComputeLikelihoods();
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
+  std::cout << inst.GenerateCompleteRootedTreeCollection().Newick() << std::endl;
   double exact_marginal_log_likelihood = ComputeExactMarginal("data/five_taxon_unrooted_with_branch_lengths.nwk",
                          "data/five_taxon.fasta");
   std::cout << gp_marginal_log_likelihood << ", " << exact_marginal_log_likelihood << std::endl;
