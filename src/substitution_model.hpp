@@ -68,7 +68,7 @@ class JC69Model : public DNAModel {
   }
 
   // No parameters to set for JC!
-  void SetParameters(const EigenVectorXdRef param_vector){};
+  void SetParameters(const EigenVectorXdRef){};  // NOLINT
 };
 
 class GTRModel : public DNAModel {

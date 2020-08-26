@@ -167,8 +167,6 @@ struct PrepForMarginalizationVisitor {
     }
   }
 
-  void operator()(const GPOperations::Zero& op) {}
-  void operator()(const GPOperations::SetToStationaryDistribution& op) {}
   void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& op) {
     if (dest_) {
       Assert(*dest_ == op.dest_, "dest_ mismatch in PrepForMarginalizationVisitor");
@@ -177,12 +175,15 @@ struct PrepForMarginalizationVisitor {
     }
     src_vector.push_back(op.src_);
   }
-  void operator()(const GPOperations::IncrementMarginalLikelihood& op) {}
-  void operator()(const GPOperations::Multiply& op) {}
-  void operator()(const GPOperations::Likelihood& op) {}
-  void operator()(const GPOperations::OptimizeBranchLength& op) {}
-  void operator()(const GPOperations::UpdateSBNProbabilities& op) {}
-  void operator()(const GPOperations::PrepForMarginalization& op) {}
+  // Do nothing for the rest of the operations.
+  void operator()(const GPOperations::Zero&) {}                         // NOLINT
+  void operator()(const GPOperations::SetToStationaryDistribution&) {}  // NOLINT
+  void operator()(const GPOperations::IncrementMarginalLikelihood&) {}  // NOLINT
+  void operator()(const GPOperations::Multiply&) {}                     // NOLINT
+  void operator()(const GPOperations::Likelihood&) {}                   // NOLINT
+  void operator()(const GPOperations::OptimizeBranchLength&) {}         // NOLINT
+  void operator()(const GPOperations::UpdateSBNProbabilities&) {}       // NOLINT
+  void operator()(const GPOperations::PrepForMarginalization&) {}       // NOLINT
 
   GPOperations::PrepForMarginalization ToPrepForMarginalization() {
     Assert(dest_, "Nothing to prep in ToPrepForMarginalization");

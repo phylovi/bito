@@ -155,4 +155,5 @@ In addition to the packages mentioned above we also employ:
 
 * [cxx-prettyprint](https://github.com/louisdx/cxx-prettyprint) STL container pretty printing
 * [Eigen](https://gitlab.com/libeigen/eigen)
+* [fast-cpp-csv-parser](https://github.com/ben-strasser/fast-cpp-csv-parser)
 * [Progress-CPP](https://github.com/prakhar1989/progress-cpp) progress bar
