@@ -45,8 +45,8 @@ class Bitset {
   void operator&=(const Bitset &other);
   void operator|=(const Bitset &other);
 
-  // These methods aren't in the bitset interface, so they get our usual
-  // convention.
+  // These methods aren't in the bitset interface, so they get our usual PascalCase
+  // naming convention.
   void Zero();
   size_t Hash() const;
   std::string ToString() const;
@@ -54,6 +54,8 @@ class Bitset {
   bool All() const;
   // Are any of the bits 1?
   bool Any() const;
+  // Is exactly one of the bits 1?
+  bool IsSingleton() const;
   void Minorize();
   void CopyFrom(const Bitset &other, size_t begin, bool flip);
   // If the bitset only has one bit on, then we return the location of that bit.
@@ -68,6 +70,8 @@ class Bitset {
   Bitset RotateSubsplit() const;
   // Get the ith chunk of the subsplit.
   Bitset SplitChunk(size_t i) const;
+  // Return a string of the PCSP in the specified number of chunks, with each chunk
+  // separated by a "|".
   std::string ToStringChunked(size_t chunk_count) const;
   std::string SubsplitToString() const;
 
@@ -85,6 +89,8 @@ class Bitset {
   bool PCSPIsValid() const;
   // Do the sister and focal clades union to the whole taxon set?
   bool PCSPIsRootsplit() const;
+  size_t SubsplitChunkSize() const;
+  Bitset SubsplitChunk(size_t i) const;
   size_t PCSPChunkSize() const;
   Bitset PCSPChunk(size_t i) const;
   // Get the first 2/3rds of the PCSP.
@@ -101,9 +107,22 @@ class Bitset {
   // Make the full subsplit out of the parent subsplit, whose second half is
   // split by child_half.
   static Bitset ChildSubsplit(const Bitset &parent_subsplit, const Bitset &child_half);
+  // Build a PCSP bitset out of a compatible parent-child pair of bitsets.
+  static Bitset PCSPOfPair(const Bitset &parent_subsplit, const Bitset &child_subsplit,
+                           bool assert_validity = true);
+  // Make a "fake" subsplit, which pads the nonzero contents on the right with zero to
+  // have double the width.
+  static Bitset FakeSubsplit(const Bitset &nonzero_contents);
+  // Make a "fake" child subsplit of a given parent; assert that the left-hand chunk of
+  // the parent subsplit is non-empty and that the right-hand chunk is a singleton.
+  // This fake subsplit has this singleton on the left and all zeroes on the right.
+  static Bitset FakeChildSubsplit(const Bitset &parent_subsplit);
 
  private:
   std::vector<bool> value_;
+
+  static void AssertIsDisjointUnion(const Bitset &should_be_union, const Bitset &set_1,
+                                    const Bitset &set_2);
 };
 
 // This is how we inject a hash routine and a custom comparator into the std
@@ -185,6 +204,10 @@ TEST_CASE("Bitset") {
   a.CopyFrom(Bitset("10"), 2, true);
   CHECK_EQ(a, Bitset("0101"));
 
+  auto singleton = Bitset("0010");
+  CHECK(singleton.IsSingleton());
+  CHECK_EQ(*singleton.SingletonOption(), 2);
+
   auto p = Bitset("000111");
   CHECK_EQ(p.SplitChunk(0), Bitset("000"));
   CHECK_EQ(p.SplitChunk(1), Bitset("111"));
@@ -211,6 +234,24 @@ TEST_CASE("Bitset") {
            Bitset("10100100"));
   CHECK_EQ(Bitset::ChildSubsplit(Bitset("00011110"), Bitset("1010")),
            Bitset("01001010"));
+
+  CHECK_EQ(Bitset("000110010"), Bitset::PCSPOfPair(Bitset("000110"), Bitset("010100")));
+  CHECK_EQ(Bitset("001110010"), Bitset::PCSPOfPair(Bitset("001110"), Bitset("100010")));
+  // Missing a left child.
+  CHECK_THROWS_AS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("000010")),
+                  std::runtime_error &);
+  // Missing a right child.
+  CHECK_THROWS_AS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100000")),
+                  std::runtime_error &);
+  // Not a disjoint union.
+  CHECK_THROWS_AS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100110")),
+                  std::runtime_error &);
+  // Not a union at all.
+  CHECK_THROWS_AS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100001")),
+                  std::runtime_error &);
+
+  CHECK_EQ(Bitset::FakeSubsplit(Bitset("010")), Bitset("010000"));
+  CHECK_EQ(Bitset::FakeChildSubsplit(Bitset("100001")), Bitset("001000"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

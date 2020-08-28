@@ -218,6 +218,8 @@ PYBIND11_MODULE(libsbn, m) {
            For rooted trees this training is simpler than in the unrooted case:
            we simply take the normalized frequency of PCSPs.
            )raw")
+      .def("sbn_parameters_to_csv", &RootedSBNInstance::SBNParametersToCSV,
+           R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
       // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
 
       // ** Phylogenetic likelihood
@@ -279,6 +281,8 @@ PYBIND11_MODULE(libsbn, m) {
            This is described in the "Maximum Lower Bound Estimates" section of the 2018
            NeurIPS paper, and is later referred to as the "SBN-SA" estimator.
            )raw")
+      .def("sbn_parameters_to_csv", &UnrootedSBNInstance::SBNParametersToCSV,
+           R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
       // ** END DUPLICATED CODE BLOCK between this and RootedSBNInstance
 
       .def("train_expectation_maximization",
@@ -364,6 +368,8 @@ PYBIND11_MODULE(libsbn, m) {
            "Read trees from a Nexus file.")
       .def("read_fasta_file", &GPInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
+      .def("sbn_parameters_to_csv", &GPInstance::SBNParametersToCSV,
+           R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
 
       // ** Estimation
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",
