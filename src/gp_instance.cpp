@@ -207,9 +207,7 @@ size_t GPInstance::ConstructAndGetGPCSPIndex(const Bitset &parent_subsplit,
 size_t GPInstance::ConstructAndGetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
                                                         const Node *leaf_node) {
   Assert(leaf_node->IsLeaf(), "Only leaf node is permitted.");
-  const Bitset &leaves = leaf_node->Leaves();
-  Bitset zero(leaves.size());
-  Bitset fake_subsplit = zero + leaves;
+  Bitset fake_subsplit = Bitset::FakeSubsplit(leaf_node->Leaves());
   size_t i0 = dag_.GetGPCSPIndexWithDefault(parent_subsplit, fake_subsplit);
   size_t i1 =
       dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit(), fake_subsplit);
