@@ -1,3 +1,6 @@
+// Copyright 2019 libsbn project contributors.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
 #include "doctest.h"
@@ -17,17 +20,15 @@ double ComputeExactMarginal(std::string newick_file, std::string fasta_file,
   UnrootedSBNInstance sbn_instance("charlie");
   sbn_instance.ReadNewickFile(newick_file);
   size_t tree_count = sbn_instance.TreeCount();
-  Alignment alignment = Alignment::ReadFasta(fasta_file);
-  Alignment alignment_copy(alignment);
+  const Alignment alignment = Alignment::ReadFasta(fasta_file);
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
   sbn_instance.SetAlignment(alignment);
   sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
 
   std::cout << "Tree count: " << tree_count << std::endl;
   double exact_marginal_log_lik = 0.0;
-  for (size_t i = 0; i < alignment_copy.Length(); i++) {
-    Alignment single_column_alignment = Alignment::MakeSingleColumnAlignment(alignment_copy, i);
-    sbn_instance.SetAlignment(single_column_alignment);
+  for (size_t i = 0; i < alignment.Length(); i++) {
+    sbn_instance.SetAlignment(alignment.ExtractSingleColumnAlignment(i));
     sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
     double log_val = DOUBLE_NEG_INF;
     for (double val : sbn_instance.LogLikelihoods()) {
@@ -267,14 +268,14 @@ TEST_CASE("GPInstance: SBN probabilities") {
 
   // The collection of trees that we are looking at has 3 rootplits where one root split
   // generates two trees for the total of 4 trees.
-  
+
   // We will first compare the values against the 3 rootsplits, since we cannot assume
   // the ordering due to different implementation of the map, we will sort the values before comparison.
 
   double log_lik_tree_1 = ComputeExactMarginal("data/five_taxon_tree1.nwk", "data/five_taxon.fasta", false);
   double log_lik_tree_2 = ComputeExactMarginal("data/five_taxon_tree2.nwk", "data/five_taxon.fasta", false);
   double log_lik_trees_3_4 = ComputeExactMarginal("data/five_taxon_trees_3_4.nwk", "data/five_taxon.fasta", false);
-  
+
   size_t alignment_length = 4;
   // Uniform prior over 4 trees.
   double log_q = log(1./4);
@@ -284,20 +285,20 @@ TEST_CASE("GPInstance: SBN probabilities") {
   expected_log_lik_vector_at_rootsplits[2] = log_lik_trees_3_4 + alignment_length * log_q;
   std::sort(expected_log_lik_vector_at_rootsplits.data(),
             expected_log_lik_vector_at_rootsplits.data() + expected_log_lik_vector_at_rootsplits.size());
-  
+
   EigenVectorXd realized_log_lik_vector_at_rootsplits = log_likelihood_vector.segment(0, 3);
   std::sort(realized_log_lik_vector_at_rootsplits.data(),
             realized_log_lik_vector_at_rootsplits.data() + realized_log_lik_vector_at_rootsplits.size());
-  
+
   std::cout << "Realized: " << realized_log_lik_vector_at_rootsplits << std::endl;
   std::cout << "Expected: " << expected_log_lik_vector_at_rootsplits << std::endl;
   CheckVectorXdEquality(realized_log_lik_vector_at_rootsplits, expected_log_lik_vector_at_rootsplits, 1e-6);
-  
+
   inst.EstimateSBNParameters();
   EigenVectorXd realized_q = inst.GetEngine()->GetSBNParameters().segment(0, 3);
   NumericalUtils::ProbabilityNormalizeInLog(realized_log_lik_vector_at_rootsplits);
   EigenVectorXd expected_q = realized_log_lik_vector_at_rootsplits.array().exp();
-  
+
   std::sort(realized_q.data(), realized_q.data() + realized_q.size());
   std::sort(expected_q.data(), expected_q.data() + expected_q.size());
   std::cout << "Realized: " << realized_q << std::endl;
