@@ -100,13 +100,18 @@ size_t GPDAG::GetGPCSPIndex(const Bitset &parent_subsplit,
 
 size_t GPDAG::GetGPCSPIndexWithDefault(const Bitset &parent_subsplit,
                                        const Bitset &child_subsplit) const {
-  const auto pcsp = Bitset::PCSPOfPair(parent_subsplit, child_subsplit, false);
-  if (gpcsp_indexer_.count(pcsp) > 0) {
-    return gpcsp_indexer_.at(pcsp);
+  // TODO tidy up
+  try {
+    const auto pcsp = Bitset::PCSPOfPair(parent_subsplit, child_subsplit, true);
+    if (gpcsp_indexer_.count(pcsp) > 0) {
+      return gpcsp_indexer_.at(pcsp);
+    }
+    // else
+    // Return the max value.
+    return SIZE_MAX;
+  } catch (...) {
+    return SIZE_MAX;
   }
-  // else
-  // Return the max value.
-  return SIZE_MAX;
 }
 
 EigenVectorXd GPDAG::BuildUniformQ() const {
