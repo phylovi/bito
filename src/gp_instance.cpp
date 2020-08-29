@@ -182,16 +182,11 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
 void GPInstance::EstimateSBNParameters() {
   std::cout << "Begin SBN parameter optimization\n";
   GPOperationVector sbn_param_optimization_operations = dag_.OptimizeSBNParameters();
-  GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
-  GetEngine()->ResetLogMarginalLikelihood();
   PopulatePLVs();
   ComputeLikelihoods();
 
   ProcessOperations(sbn_param_optimization_operations);
-  ProcessOperations(marginal_lik_operations);
-  double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-  std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
 }
 
 size_t GPInstance::ConstructAndGetGPCSPIndex(const Bitset &parent_subsplit,

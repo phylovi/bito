@@ -103,17 +103,18 @@ void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
-  //  const size_t range_length = op.stop_ - op.start_;
-  //  if (range_length == 1) {
-  //    q_(op.start_) = 1.;
-  //    return;
-  //  }
-  //  // else
-  //  Eigen::VectorBlock<EigenVectorXd> segment =
-  //      log_likelihoods_.segment(op.start_, range_length);
-  //  const double log_norm = NumericalUtils::LogSum(segment);
-  //  segment.array() -= log_norm;
-  //  q_.segment(op.start_, range_length) = segment.array().exp();
+    const size_t range_length = op.stop_ - op.start_;
+    if (range_length == 1) {
+      q_(op.start_) = 1.;
+      return;
+    }
+    EigenVectorXd log_likelihoods = GetLogLikelihoods();
+    // else
+    Eigen::VectorBlock<EigenVectorXd> segment =
+        log_likelihoods.segment(op.start_, range_length);
+    const double log_norm = NumericalUtils::LogSum(segment);
+    segment.array() -= log_norm;
+    q_.segment(op.start_, range_length) = segment.array().exp();
 }
 
 void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
@@ -164,7 +165,7 @@ void GPEngine::PrintPLV(size_t plv_idx) {
 DoublePair GPEngine::LogLikelihoodAndDerivative(
     const GPOperations::OptimizeBranchLength& op) {
   SetTransitionAndDerivativeMatricesToHaveBranchLength(branch_lengths_(op.gpcsp_));
-  PreparePerPatternLogLikelihoods(op.rootward_, op.leafward_);
+  PreparePerPatternLogLikelihoods(op.gpcsp_, op.rootward_, op.leafward_);
   // The prior is expressed using the current value of q_.
   // The phylogenetic component of the likelihood is weighted with the number of times
   // we see the site patterns.
@@ -247,7 +248,7 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double branch_length) {
     SetTransitionMatrixToHaveBranchLength(branch_length);
-    PreparePerPatternLogLikelihoods(op.rootward_, op.leafward_);
+    PreparePerPatternLogLikelihoods(op.gpcsp_, op.rootward_, op.leafward_);
     return -(per_pattern_log_likelihoods_.array() *
              site_pattern_weights_.array())
                 .sum();

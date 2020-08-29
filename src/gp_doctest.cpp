@@ -12,7 +12,8 @@ using namespace GPOperations;
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, root };
 
-double ComputeExactMarginal(std::string newick_file, std::string fasta_file) {
+double ComputeExactMarginal(std::string newick_file, std::string fasta_file,
+                            bool with_tree_prior = true) {
   UnrootedSBNInstance sbn_instance("charlie");
   sbn_instance.ReadNewickFile(newick_file);
   size_t tree_count = sbn_instance.TreeCount();
@@ -32,7 +33,7 @@ double ComputeExactMarginal(std::string newick_file, std::string fasta_file) {
     for (double val : sbn_instance.LogLikelihoods()) {
       log_val = NumericalUtils::LogAdd(log_val, val);
     }
-    log_val += log(1./tree_count);
+    log_val += with_tree_prior ? log(1./tree_count) : 0.0;
     std::cout << "Log lik: " << log_val << std::endl;
     exact_marginal_log_lik += log_val;
   }
@@ -247,4 +248,59 @@ TEST_CASE("GPInstance: test populate PLV") {
   inst.ComputeLikelihoods();
   const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetLogLikelihoods();
   CheckVectorXdEquality(log_likelihoods1, log_likelihoods2, 1e-6);
+}
+
+TEST_CASE("GPInstance: SBN probabilities") {
+  auto inst = MakeFiveTaxaInstance();
+  inst.GetEngine()->SetBranchLengthsToConstant(0.1);
+  inst.PopulatePLVs(); // This function resets the marginal likelihood.
+  // We compute likelihoods as EstimateBranchLengths doesn't populate the likelihood matrix.
+  inst.ComputeLikelihoods();
+
+  EigenVectorXd log_likelihood_vector = inst.GetEngine()->GetLogLikelihoods();
+
+  // Let s be a subsplit and k be the site. Then,
+  // log_likelihood_matrix.row(s)[k] = \log \sum_{\tau : s \in \tau} q(\tau) P(y_k | \tau),
+  // log_likelihood_vector[s] = \sum_{k=1}^{K} \log \sum_{\tau : s \in \tau} q(\tau) P(y_k | \tau).
+  // To test this, we are going to compute P(y_k | \tau) for {\tau : s \in \tau} and
+  // multiply this by q(\tau) = 1/4 since we are assuming uniform prior.
+
+  // The collection of trees that we are looking at has 3 rootplits where one root split
+  // generates two trees for the total of 4 trees.
+  
+  // We will first compare the values against the 3 rootsplits, since we cannot assume
+  // the ordering due to different implementation of the map, we will sort the values before comparison.
+
+  double log_lik_tree_1 = ComputeExactMarginal("data/five_taxon_tree1.nwk", "data/five_taxon.fasta", false);
+  double log_lik_tree_2 = ComputeExactMarginal("data/five_taxon_tree2.nwk", "data/five_taxon.fasta", false);
+  double log_lik_trees_3_4 = ComputeExactMarginal("data/five_taxon_trees_3_4.nwk", "data/five_taxon.fasta", false);
+  
+  size_t alignment_length = 4;
+  // Uniform prior over 4 trees.
+  double log_q = log(1./4);
+  EigenVectorXd expected_log_lik_vector_at_rootsplits(3);
+  expected_log_lik_vector_at_rootsplits[0] = log_lik_tree_1 + alignment_length * log_q;
+  expected_log_lik_vector_at_rootsplits[1] = log_lik_tree_2 + alignment_length * log_q;
+  expected_log_lik_vector_at_rootsplits[2] = log_lik_trees_3_4 + alignment_length * log_q;
+  std::sort(expected_log_lik_vector_at_rootsplits.data(),
+            expected_log_lik_vector_at_rootsplits.data() + expected_log_lik_vector_at_rootsplits.size());
+  
+  EigenVectorXd realized_log_lik_vector_at_rootsplits = log_likelihood_vector.segment(0, 3);
+  std::sort(realized_log_lik_vector_at_rootsplits.data(),
+            realized_log_lik_vector_at_rootsplits.data() + realized_log_lik_vector_at_rootsplits.size());
+  
+  std::cout << "Realized: " << realized_log_lik_vector_at_rootsplits << std::endl;
+  std::cout << "Expected: " << expected_log_lik_vector_at_rootsplits << std::endl;
+  CheckVectorXdEquality(realized_log_lik_vector_at_rootsplits, expected_log_lik_vector_at_rootsplits, 1e-6);
+  
+  inst.EstimateSBNParameters();
+  EigenVectorXd realized_q = inst.GetEngine()->GetSBNParameters().segment(0, 3);
+  NumericalUtils::ProbabilityNormalizeInLog(realized_log_lik_vector_at_rootsplits);
+  EigenVectorXd expected_q = realized_log_lik_vector_at_rootsplits.array().exp();
+  
+  std::sort(realized_q.data(), realized_q.data() + realized_q.size());
+  std::sort(expected_q.data(), expected_q.data() + expected_q.size());
+  std::cout << "Realized: " << realized_q << std::endl;
+  std::cout << "Expected: " << expected_q << std::endl;
+  CheckVectorXdEquality(realized_q, expected_q, 1e-6);
 }

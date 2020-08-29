@@ -56,7 +56,9 @@ class GPEngine {
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
   EigenVectorXd GetLogLikelihoods() const {
     return log_likelihoods_ * site_pattern_weights_;
-    
+  };
+  EigenMatrixXd GetLogLikelihoodMatrix() const {
+    return log_likelihoods_;
   };
   EigenVectorXd GetSBNParameters() const { return q_; };
 
@@ -150,6 +152,7 @@ class GPEngine {
             .array();
   }
 
+  // TODO: Remove this function.
   inline void PreparePerPatternLogLikelihoods(size_t src1_idx, size_t src2_idx) {
     per_pattern_log_likelihoods_ =
         (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
