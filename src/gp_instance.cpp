@@ -195,38 +195,10 @@ void GPInstance::EstimateSBNParameters() {
   std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
 }
 
-size_t GPInstance::ConstructAndGetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
-                                                        const Node *leaf_node) {
-  // TODO remove
+size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
+                                            const Node *leaf_node) {
   Assert(leaf_node->IsLeaf(), "Only leaf node is permitted.");
-  Bitset fake_subsplit = Bitset::FakeSubsplit(leaf_node->Leaves());
-  // Perhaps we are thinking about fake subsplits differently? I would think that
-  // the branch length associated with parent_subsplit and
-  // parent_subsplit.RotateSubsplit() would be different from one another.
-  size_t i0 = dag_.GetGPCSPIndexWithDefault(parent_subsplit, fake_subsplit);
-  size_t i1 =
-      dag_.GetGPCSPIndexWithDefault(parent_subsplit.RotateSubsplit(), fake_subsplit);
-  if ((i0 < SIZE_MAX) && (i1 < SIZE_MAX)) {
-    std::cout << i0 << std::endl;
-    std::cout << i1 << std::endl;
-    std::cout << parent_subsplit.SubsplitToString() << std::endl;
-    std::cout << fake_subsplit.SubsplitToString() << std::endl;
-    auto indexer = PrettyIndexer();
-    std::cout << indexer << std::endl;
-    std::cout << indexer[i0] << std::endl;
-    std::cout << indexer[i1] << std::endl;
-    std::cout << std::endl;
-    std::cout
-        << Bitset::PCSPOfPair(parent_subsplit, fake_subsplit, false).PCSPToString()
-        << std::endl;
-    std::cout << Bitset::PCSPOfPair(parent_subsplit.RotateSubsplit(), fake_subsplit,
-                                    false)
-                     .PCSPToString()
-              << std::endl;
-  }
-  Assert((i0 < SIZE_MAX) ^ (i1 < SIZE_MAX),
-         "GPCSP does not exist in ConstructAndGetGPCSPIndexForLeafNode.");
-  return std::min(i0, i1);
+  return dag_.GetGPCSPIndex(parent_subsplit, Bitset::FakeSubsplit(leaf_node->Leaves()));
 }
 
 RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
@@ -263,15 +235,17 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
           branch_lengths[focal->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
 
           if (sister->IsLeaf()) {
-            gpcsp_idx = ConstructAndGetGPCSPIndexForLeafNode(parent_subsplit, sister);
+            gpcsp_idx =
+                GetGPCSPIndexForLeafNode(parent_subsplit.RotateSubsplit(), sister);
             branch_lengths[sister->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
           }
           if (child0->IsLeaf()) {
-            gpcsp_idx = ConstructAndGetGPCSPIndexForLeafNode(child_subsplit, child0);
+            gpcsp_idx =
+                GetGPCSPIndexForLeafNode(child_subsplit.RotateSubsplit(), child0);
             branch_lengths[child0->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
           }
           if (child1->IsLeaf()) {
-            gpcsp_idx = ConstructAndGetGPCSPIndexForLeafNode(child_subsplit, child1);
+            gpcsp_idx = GetGPCSPIndexForLeafNode(child_subsplit, child1);
             branch_lengths[child1->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
           }
         });

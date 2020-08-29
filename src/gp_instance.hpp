@@ -60,8 +60,7 @@ class GPInstance {
 
   void InitializeGPEngine();
 
-  size_t ConstructAndGetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
-                                              const Node *leaf_node);
+  size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit, const Node *leaf_node);
 };
 
 #endif  // SRC_GP_INSTANCE_HPP_
