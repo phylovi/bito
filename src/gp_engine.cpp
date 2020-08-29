@@ -108,8 +108,8 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
       q_(op.start_) = 1.;
       return;
     }
-    EigenVectorXd log_likelihoods = GetLogLikelihoods();
     // else
+    EigenVectorXd log_likelihoods = GetLogLikelihoods();
     Eigen::VectorBlock<EigenVectorXd> segment =
         log_likelihoods.segment(op.start_, range_length);
     const double log_norm = NumericalUtils::LogSum(segment);
