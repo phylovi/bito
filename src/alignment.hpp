@@ -24,6 +24,7 @@ class Alignment {
   const std::string& at(const std::string& taxon) const;
 
   static Alignment ReadFasta(const std::string& fname);
+  Alignment ExtractSingleColumnAlignment(size_t which_column) const;
 
   static Alignment HelloAlignment() {
     return Alignment({{"mars", "CCGAG-AGCAGCAATGGAT-GAGGCATGGCG"},

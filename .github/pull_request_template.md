@@ -2,7 +2,7 @@
 
 Please include a summary of the change.
 
-Fixes issue # ...
+Closes #(replace this parenthetical with issue number)
 
 
 ## Tests
@@ -21,3 +21,4 @@ Please describe the tests added to verify correct behavior.
 * [ ] `const` used where appropriate
 * [ ] The code uses modern C++ conventions, including range-for, `auto`, and structured bindings
 * [ ] TODOs have been eliminated from the code
+* [ ] The corresponding issue number (e.g. `#278`) has been searched for in the code to find relevant notes

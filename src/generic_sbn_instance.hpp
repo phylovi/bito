@@ -202,6 +202,10 @@ class GenericSBNInstance {
     alignment_ = Alignment::ReadFasta(fname);
   }
 
+  // Allow users to pass in alignment directly.
+  void SetAlignment(const Alignment &alignment) { alignment_ = alignment; }
+  void SetAlignment(Alignment &&alignment) { alignment_ = alignment; }
+
  protected:
   // The name of our libsbn instance.
   std::string name_;

@@ -1,18 +1,33 @@
 our_files := $(wildcard src/*.cpp) $(wildcard src/*.hpp)
-our_files := $(filter-out src/doctest.h src/noodle.cpp src/parser.cpp src/parser.hpp src/prettyprint.hpp src/scanner.cpp, $(our_files))
+our_files := $(filter-out src/csv.h src/doctest.h src/noodle.cpp src/parser.cpp src/parser.hpp src/prettyprint.hpp src/scanner.cpp, $(our_files))
 j_flags = $(shell echo "${MAKEFLAGS}" | grep -o -- "-j[0-9]\+" || true)
 
 default:
 	scons ${j_flags}
 	pip install -U dist/libsbn-*.whl
 
-test:
-	make ${j_flags}
-	./_build/doctest
+rungptest:
 	mkdir -p _ignore  # Needed for gp_doctest.
-	./_build/gp_doctest
+	./_build/gp_doctest --test-case-exclude="UnrootedSBNInstance*"
+
+gptest:
+	make ${j_flags}
+	make rungptest
+
+runfasttest:
+	_build/doctest --test-case-exclude="* tree sampling"
+	make rungptest
 	pytest
 	./_build/noodle
+
+fasttest:
+	make ${j_flags}
+	make runfasttest
+
+test:
+	make ${j_flags}
+	make runfasttest
+	./_build/doctest
 
 bison: src/parser.yy src/scanner.ll
 	bison -o src/parser.cpp --defines=src/parser.hpp src/parser.yy
@@ -49,4 +64,4 @@ lint:
 	cpplint --filter=-runtime/references,-build/c++11 $(our_files) \
 		&& echo "LINTING PASS"
 
-.PHONY: bison prep format clean edit lint deploy docs test
+.PHONY: bison prep format clean edit lint deploy docs fasttest runfasttest runtest test

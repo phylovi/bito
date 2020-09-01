@@ -1,14 +1,47 @@
+// Copyright 2019 libsbn project contributors.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
 #include "doctest.h"
 #include "gp_instance.hpp"
+#include "phylo_model.hpp"
+#include "unrooted_sbn_instance.hpp"
 
-using namespace GPOperations;
+using namespace GPOperations;  // NOLINT
 
 // GPCSP stands for generalized PCSP-- see text.
 
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, root };
+
+// Compute the exact marginal likelihood via brute force to compare with generalized
+// pruning. We assume that the trees in `newick_path` are all of the trees over which we
+// should marginalize.
+double ComputeExactMarginal(const std::string& newick_path,
+                            const std::string& fasta_path,
+                            bool with_tree_prior = true) {
+  UnrootedSBNInstance sbn_instance("charlie");
+  sbn_instance.ReadNewickFile(newick_path);
+  size_t tree_count = sbn_instance.TreeCount();
+  const Alignment alignment = Alignment::ReadFasta(fasta_path);
+  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
+  sbn_instance.SetAlignment(alignment);
+  sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
+
+  double exact_marginal_log_lik = 0.0;
+  for (size_t i = 0; i < alignment.Length(); i++) {
+    sbn_instance.SetAlignment(alignment.ExtractSingleColumnAlignment(i));
+    sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
+    double log_val = DOUBLE_NEG_INF;
+    for (double val : sbn_instance.LogLikelihoods()) {
+      log_val = NumericalUtils::LogAdd(log_val, val);
+    }
+    log_val += with_tree_prior ? log(1. / tree_count) : 0.0;
+    exact_marginal_log_lik += log_val;
+  }
+  return exact_marginal_log_lik;
+}
 
 // Our tree is
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
@@ -49,8 +82,8 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
 
 EigenVectorXd MakeHelloGPInstanceOptimalBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
-  hello_gp_optimal_branch_lengths << 1, 1, 0.0540515854, 0.0150759956, 0.0158180779,
-      0.0736678167, 0.206134746, 0.206803557, 0.0736678167, 0.0540515854;
+  hello_gp_optimal_branch_lengths << 1, 1, 0.066509261, 0.00119570257, 0.00326456973,
+      0.0671995398, 0.203893516, 0.204056242, 0.0669969961, 0.068359082;
 
   return hello_gp_optimal_branch_lengths;
 }
@@ -59,11 +92,10 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
 
-  inst.PopulatePLVs();
-  inst.PrintDAG();
+  inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
 
-  EigenVectorXd realized_log_likelihoods = inst.GetEngine()->GetLogLikelihoods();
+  EigenVectorXd realized_log_likelihoods = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
   CheckVectorXdEquality(-84.77961943, realized_log_likelihoods, 1e-6);
 
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
@@ -76,17 +108,19 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
   auto branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
   engine->SetBranchLengths(branch_lengths);
 
-  inst.PopulatePLVs();
+  inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
-
-  CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -80.6906345), 1e-6);
+  double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
+  double exact_log_likelihood =
+      ComputeExactMarginal("data/hello_unrooted_two_trees.nwk", "data/hello.fasta");
+  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
 
 TEST_CASE("GPInstance: gradient calculation") {
   auto inst = MakeHelloGPInstanceSingleNucleotide();
   auto engine = inst.GetEngine();
 
-  inst.PopulatePLVs();
+  inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
 
   size_t root_idx = root;
@@ -106,21 +140,17 @@ TEST_CASE("GPInstance: gradient calculation") {
   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
 }
 
+// Regression test.
 TEST_CASE("GPInstance: branch length optimization") {
   auto inst = MakeHelloGPInstanceTwoTrees();
 
   EigenVectorXd expected_branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
-  inst.GetEngine()->SetBranchLengths(expected_branch_lengths);
-  inst.PopulatePLVs();
-  inst.ComputeLikelihoods();
-  double expected_log_marginal = inst.GetEngine()->GetLogMarginalLikelihood();
 
   // Reset.
   inst = MakeHelloGPInstanceTwoTrees();
   inst.EstimateBranchLengths(1e-6, 100);
   EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
-  CHECK_LT(fabs(expected_log_marginal - -80.6906345), 1e-6);
 }
 
 GPInstance MakeFluAGPInstance(double rescaling_threshold) {
@@ -134,7 +164,7 @@ GPInstance MakeFluAGPInstance(double rescaling_threshold) {
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   auto inst = MakeFluAGPInstance(rescaling_threshold);
-  inst.PopulatePLVs();
+  inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
   return inst.GetEngine()->GetLogMarginalLikelihood();
 }
@@ -145,22 +175,7 @@ TEST_CASE("GPInstance: rescaling") {
   CHECK_LT(fabs(difference), 1e-10);
 }
 
-GPInstance MakeFiveTaxonRootedInstance() {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/five_taxon_rooted.fasta");
-  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
-  inst.MakeEngine();
-  return inst;
-}
-
-TEST_CASE("GPInstance: generate all trees") {
-  auto inst = MakeFiveTaxonRootedInstance();
-  auto rooted_tree_collection = inst.GenerateCompleteRootedTreeCollection();
-  CHECK_EQ(rooted_tree_collection.TreeCount(), 4);
-  CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
-}
-
-TEST_CASE("GPInstance: Hotstart branch lengths") {
+TEST_CASE("GPInstance: hotstart branch lengths") {
   // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
   // 1 (outgroup,(((z0,z1),z2),z3));
   // 33 (outgroup,((z0,z1),(z2,z3)));
@@ -192,4 +207,93 @@ TEST_CASE("GPInstance: Hotstart branch lengths") {
   double true_mean = hotstart_expected_branch_lengths.array().mean();
   inst.HotStartBranchLengths();
   CHECK_EQ(true_mean, inst.GetEngine()->GetBranchLengths()(2));
+}
+
+GPInstance MakeFiveTaxaInstance() {
+  GPInstance inst("_ignore/mmapped_plv.data");
+  inst.ReadFastaFile("data/five_taxon.fasta");
+  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
+  inst.MakeEngine();
+  return inst;
+}
+
+TEST_CASE("GPInstance: generate all trees") {
+  auto inst = MakeFiveTaxaInstance();
+  auto rooted_tree_collection = inst.GenerateCompleteRootedTreeCollection();
+  CHECK_EQ(rooted_tree_collection.TreeCount(), 4);
+  CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
+}
+
+TEST_CASE("GPInstance: marginal likelihood on five taxa") {
+  auto inst = MakeFiveTaxaInstance();
+  inst.EstimateBranchLengths(1e-6, 10);
+  double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
+  double exact_marginal_log_likelihood = ComputeExactMarginal(
+      "data/five_taxon_unrooted_with_branch_lengths.nwk", "data/five_taxon.fasta");
+  CHECK_LT(abs(exact_marginal_log_likelihood - gp_marginal_log_likelihood), 1e-6);
+}
+
+TEST_CASE("GPInstance: test populate PLV") {
+  // This test makes sure that ResetMarginalLikelihoodAndPopulatePLVs correctly
+  // re-populates the PLVs using the current branch lengths.
+  auto inst = MakeFiveTaxaInstance();
+  inst.EstimateBranchLengths(1e-6, 10);
+  inst.ComputeLikelihoods();
+  const EigenVectorXd log_likelihoods1 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.ComputeLikelihoods();
+  const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+  CheckVectorXdEquality(log_likelihoods1, log_likelihoods2, 1e-6);
+}
+
+TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
+  auto inst = MakeFiveTaxaInstance();
+  inst.GetEngine()->SetBranchLengthsToConstant(0.1);
+  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  // We compute likelihoods as EstimateBranchLengths doesn't populate the likelihood
+  // matrix.
+  inst.ComputeLikelihoods();
+
+  EigenVectorXd log_likelihood_vector = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+
+  // Let s be a subsplit and k be the site. Then,
+  // log_likelihood_matrix.row(s)[k] =
+  //    \log \sum_{\tau : s \in \tau} q(\tau) P(y_k | \tau),
+  // log_likelihood_vector[s] =
+  //    \sum_{k=1}^{K} \log \sum_{\tau : s \in \tau} q(\tau) P(y_k | \tau).
+  // To test this, we are going to compute P(y_k | \tau) for {\tau : s \in \tau} and
+  // multiply this by q(\tau) = 1/4 since we are assuming uniform prior.
+
+  // The collection of trees that we are looking at has 3 rootplits where one root split
+  // generates two trees for the total of 4 trees.
+
+  // We will compare the values against the 3 rootsplits, since we cannot assume
+  // the ordering due to different implementation of the map, we will sort the values
+  // before comparison.
+
+  double log_lik_tree_1 =
+      ComputeExactMarginal("data/five_taxon_tree1.nwk", "data/five_taxon.fasta", false);
+  double log_lik_tree_2 =
+      ComputeExactMarginal("data/five_taxon_tree2.nwk", "data/five_taxon.fasta", false);
+  double log_lik_trees_3_4 = ComputeExactMarginal("data/five_taxon_trees_3_4.nwk",
+                                                  "data/five_taxon.fasta", false);
+
+  size_t alignment_length = 4;
+  // Uniform prior over 4 trees.
+  double log_q = log(1. / 4);
+  EigenVectorXd expected_log_lik_vector_at_rootsplits(3);
+  expected_log_lik_vector_at_rootsplits[0] = log_lik_tree_1 + alignment_length * log_q;
+  expected_log_lik_vector_at_rootsplits[1] = log_lik_tree_2 + alignment_length * log_q;
+  expected_log_lik_vector_at_rootsplits[2] =
+      log_lik_trees_3_4 + alignment_length * log_q;
+  EigenVectorXd realized_log_lik_vector_at_rootsplits =
+      log_likelihood_vector.segment(0, 3);
+  CheckVectorXdEqualityAfterSorting(realized_log_lik_vector_at_rootsplits,
+                                    expected_log_lik_vector_at_rootsplits, 1e-6);
+
+  inst.EstimateSBNParameters();
+  EigenVectorXd realized_q = inst.GetEngine()->GetSBNParameters().segment(0, 3);
+  NumericalUtils::ProbabilityNormalizeInLog(realized_log_lik_vector_at_rootsplits);
+  EigenVectorXd expected_q = realized_log_lik_vector_at_rootsplits.array().exp();
+  CheckVectorXdEqualityAfterSorting(realized_q, expected_q, 1e-6);
 }

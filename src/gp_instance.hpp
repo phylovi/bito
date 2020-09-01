@@ -32,7 +32,7 @@ class GPInstance {
   void HotStartBranchLengths();
   void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter);
-  void PopulatePLVs();
+  void ResetMarginalLikelihoodAndPopulatePLVs();
   void ComputeLikelihoods();
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
 
@@ -59,6 +59,8 @@ class GPInstance {
   void ProcessLoadedTrees();
 
   void InitializeGPEngine();
+
+  size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit, const Node *leaf_node);
 };
 
 #endif  // SRC_GP_INSTANCE_HPP_

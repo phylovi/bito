@@ -47,10 +47,20 @@ class GPEngine {
     branch_lengths_.setConstant(branch_length);
   };
   void SetSBNParameters(EigenVectorXd q) { q_ = std::move(q); };
-  void ResetLogMarginalLikelihood() { log_marginal_likelihood_ = DOUBLE_NEG_INF; }
-  double GetLogMarginalLikelihood() const { return log_marginal_likelihood_; }
+  void ResetLogMarginalLikelihood() {
+    log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
+  }
+  double GetLogMarginalLikelihood() const {
+    return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
+  }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
-  EigenVectorXd GetLogLikelihoods() const { return log_likelihoods_; };
+  // This function returns a vector indexed by GPCSP such that the i-th entry
+  // stores the marginal log likelihood over all trees that include a GPCSP
+  // indexed by i.
+  EigenVectorXd GetPerGPCSPLogLikelihoods() const {
+    return log_likelihoods_ * site_pattern_weights_;
+  };
+  EigenMatrixXd GetLogLikelihoodMatrix() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
 
   // Use branch lengths from loaded sample as a starting point for optimization.
@@ -65,15 +75,18 @@ class GPEngine {
   double PLVByteCount() const { return mmapped_master_plv_.ByteCount(); };
 
  private:
-  static constexpr double min_branch_length_ = 1e-6;
-  static constexpr double max_branch_length_ = 3.;
+  static constexpr double min_log_branch_length_ = -13.9;
+  static constexpr double max_log_branch_length_ = 1.1;
 
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-2;
   double step_size_for_optimization_ = 5e-4;
   size_t max_iter_for_optimization_ = 1000;
 
-  double log_marginal_likelihood_ = DOUBLE_NEG_INF;
+  // The length of this vector is equal to the number of site patterns.
+  // Entry j stores the marginal log likelihood over all trees at site pattern
+  // j.
+  EigenVectorXd log_marginal_likelihood_;
 
   SitePattern site_pattern_;
   size_t plv_count_;
@@ -89,11 +102,17 @@ class GPEngine {
   // [5*num_nodes, 6*num_nodes): r(s_tilde).
   NucleotidePLVRefVector plvs_;
   EigenVectorXi rescaling_counts_;
-  // These parameters are indexed in the same way as sbn_parameters_ in
+  // branch_lengths_ and q_ are indexed in the same way as sbn_parameters_ in
   // gp_instance.
   EigenVectorXd branch_lengths_;
-  EigenVectorXd log_likelihoods_;
   EigenVectorXd q_;
+
+  // The number of rows is equal to the number of GPCSPs.
+  // The number of columns is equal to the number of site patterns.
+  // The rows are indexed in the same way as branch_lengths_ and q_.
+  // Entry (i,j) stores the marginal log likelihood over all trees that include
+  // a GPCSP corresponding to index i at site j.
+  EigenMatrixXd log_likelihoods_;
 
   // Internal "temporaries" useful for likelihood and derivative calculation.
   EigenVectorXd per_pattern_log_likelihoods_;
@@ -143,13 +162,20 @@ class GPEngine {
             .array();
   }
 
-  inline void PreparePerPatternLogLikelihoods(size_t src1_idx, size_t src2_idx) {
-    per_pattern_log_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
-            .diagonal()
-            .array()
-            .log() +
-        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
+  // This function is used to compute the marginal log likelihood over all trees that
+  // have GPCSP corresponding to gpcsp_idx as a parent-child subsplit. We assume that
+  // transition_matrix_ is as desired, and src1_idx and src2_idx are the two PLV indices
+  // on either side of the GPCSP. Multiplication by the SBN probability, q_[gpcsp_idx],
+  // is needed to properly account for the likelihood of the trees.
+  inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t gpcsp_idx, size_t src1_idx,
+                                              size_t src2_idx) {
+    per_pattern_log_likelihoods_ = (q_[gpcsp_idx] * plvs_.at(src1_idx).transpose() *
+                                    transition_matrix_ * plvs_.at(src2_idx))
+                                       .diagonal()
+                                       .array()
+                                       .log() +
+                                   LogRescalingFor(src1_idx) +
+                                   LogRescalingFor(src2_idx);
   }
 };
 

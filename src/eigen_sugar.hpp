@@ -41,10 +41,19 @@ void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance
 
 void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
                            double tolerance) {
+  CHECK_EQ(v1.size(), v2.size());
   for (size_t i = 0; i < v1.size(); i++) {
     CHECK_LT(fabs(v1[i] - v2[i]), tolerance);
   }
 };
+
+void CheckVectorXdEqualityAfterSorting(EigenVectorXd v1, EigenVectorXd v2,
+                                       double tolerance) {
+  std::sort(v1.begin(), v1.end());
+  std::sort(v2.begin(), v2.end());
+  CheckVectorXdEquality(v1, v2, tolerance);
+};
+
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
 #endif  // SRC_EIGEN_SUGAR_HPP_
