@@ -17,7 +17,7 @@ RootedTree::RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_
 RootedTree::RootedTree(const Tree& tree)
     : RootedTree(tree.Topology(), tree.BranchLengths()) {}
 
-void RootedTree::InitializeParameters(
+void RootedTree::InitializeTimeTree(
     const std::unordered_map<Tag, double>& tag_date_map) {
   size_t leaf_count = LeafCount();
   int root_id = static_cast<int>(Topology()->Id());
@@ -25,7 +25,7 @@ void RootedTree::InitializeParameters(
   node_heights_ = std::vector<double>(Topology()->Id() + 1);
   node_bounds_ = std::vector<double>(Topology()->Id() + 1);
   rates_ = std::vector<double>(Topology()->Id(), 1.0);
-  rate_count_ = 1.0;  // Default is a strict clock with rate 1
+  rate_count_ = 1;  // Default is a strict clock with rate 1
 
   // First initialize the leaves using the date map.
   for (const auto& [tag, date] : tag_date_map) {
@@ -46,7 +46,7 @@ void RootedTree::InitializeParameters(
                node_heights_[node_id]);
       if (height_difference > BRANCH_LENGTH_TOLERANCE) {
         Failwith(
-            "Tree isn't time-calibrated in RootedTree::InitializeParameters. Height "
+            "Tree isn't time-calibrated in RootedTree::InitializeTimeTree. Height "
             "difference: " +
             std::to_string(height_difference));
       }
@@ -100,7 +100,7 @@ RootedTree RootedTree::Example() {
   RootedTree tree(Tree(topology, {2., 1.5, 2., 1., 2.5, 2.5, 0.}));
   std::vector<double> date_vector({5., 3., 0., 1.});
   auto tag_date_map = tree.TagDateMapOfDateVector(date_vector);
-  tree.InitializeParameters(tag_date_map);
+  tree.InitializeTimeTree(tag_date_map);
   return tree;
 }
 

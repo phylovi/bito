@@ -23,18 +23,27 @@ std::vector<RootedPhyloGradient> RootedSBNInstance::PhyloGradients() {
   return GetEngine()->Gradients(tree_collection_, phylo_model_params_, rescaling_);
 }
 
-void RootedSBNInstance::ReadNewickFile(std::string fname) {
+void RootedSBNInstance::ReadNewickFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
-  tree_collection_.ParseDatesFromTaxonNames();
-  tree_collection_.InitializeParameters();
 }
 
-void RootedSBNInstance::ReadNexusFile(std::string fname) {
+void RootedSBNInstance::ReadNexusFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
-  tree_collection_.ParseDatesFromTaxonNames();
-  tree_collection_.InitializeParameters();
+}
+
+void RootedSBNInstance::SetDatesToBeConstant(bool initialize_time_trees) {
+  tree_collection_.SetDatesToBeConstant(initialize_time_trees);
+}
+
+void RootedSBNInstance::ParseDatesFromTaxonNames(bool initialize_time_trees) {
+  tree_collection_.ParseDatesFromTaxonNames(initialize_time_trees);
+}
+
+void RootedSBNInstance::ParseDatesFromCSV(const std::string &csv_path,
+                                          bool initialize_time_trees) {
+  tree_collection_.ParseDatesFromCSV(csv_path, initialize_time_trees);
 }

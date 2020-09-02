@@ -76,8 +76,9 @@ double FatBeagle::LogLikelihood(const UnrootedTree &tree) const {
 
 double FatBeagle::LogLikelihood(const RootedTree &tree) const {
   std::vector<double> branch_lengths = tree.BranchLengths();
+  const std::vector<double> &rates = tree.GetRates();
   for (size_t i = 0; i < tree.BranchLengths().size() - 1; i++) {
-    branch_lengths[i] *= tree.rates_[i];
+    branch_lengths[i] *= rates[i];
   }
   return LogLikelihoodInternals(tree.Topology(), branch_lengths);
 }
@@ -405,8 +406,9 @@ UnrootedPhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
 RootedPhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
   // Scale time with clock rate.
   std::vector<double> branch_lengths = tree.BranchLengths();
+  const std::vector<double> &rates = tree.GetRates();
   for (size_t i = 0; i < tree.BranchLengths().size() - 1; i++) {
-    branch_lengths[i] *= tree.rates_[i];
+    branch_lengths[i] *= rates[i];
   }
 
   // Calculate branch length gradient and log likelihood.

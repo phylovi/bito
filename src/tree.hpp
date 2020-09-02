@@ -29,7 +29,7 @@ class Tree {
   explicit Tree(const Node::NodePtr& topology, TagDoubleMap branch_lengths);
 
   const Node::NodePtr Topology() const { return topology_; }
-  const BranchLengthVector BranchLengths() const { return branch_lengths_; }
+  const BranchLengthVector& BranchLengths() const { return branch_lengths_; }
   uint32_t LeafCount() const { return Topology()->LeafCount(); }
   Node::NodePtrVec Children() const { return Topology()->Children(); }
   size_t Id() const { return Topology()->Id(); }

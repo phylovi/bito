@@ -28,13 +28,42 @@ class RootedTree : public Tree {
   RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths);
   explicit RootedTree(const Tree& tree);
 
+  const std::vector<double>& GetHeightRatios() const {
+    EnsureTimeTreeHasBeenInitialized();
+    return height_ratios_;
+  }
+  const std::vector<double>& GetNodeHeights() const {
+    EnsureTimeTreeHasBeenInitialized();
+    return node_heights_;
+  }
+  const std::vector<double>& GetNodeBounds() const {
+    EnsureTimeTreeHasBeenInitialized();
+    return node_bounds_;
+  }
+  const std::vector<double>& GetRates() const {
+    EnsureTimeTreeHasBeenInitialized();
+    return rates_;
+  }
+  size_t RateCount() const { return rate_count_; }
+
   bool operator==(const Tree& other) const = delete;
   bool operator==(const RootedTree& other) const;
 
-  // Initialize the parameters of this tree using tip dates (and the branch lengths that
-  // already exist in the tree). Note that these dates are the amount of time elapsed
-  // between the sampling date and the present. Thus, older times have larger dates.
-  void InitializeParameters(const TagDoubleMap& tag_date_map);
+  // Initialize the parameters of the time tree using tip dates (and the branch lengths
+  // that already exist in the tree). Note that these dates are the amount of time
+  // elapsed between the sampling date and the present. Thus, older times have larger
+  // dates. This function requires the supplied branch lengths to be clocklike.
+  void InitializeTimeTree(const TagDoubleMap& tag_date_map);
+
+  // Check to see if a time tree has been initialized.
+  inline bool TimeTreeHasBeenInitialized() const { return !height_ratios_.empty(); }
+  inline void EnsureTimeTreeHasBeenInitialized() const {
+    if (!TimeTreeHasBeenInitialized()) {
+      Failwith(
+          "Attempted access of a time tree member that has not been initialized. Have "
+          "you set dates for your time trees, and initialized the time trees?");
+    }
+  }
 
   // Set node_heights_ so that they have the given height ratios.
   // This should become SetNodeHeights during #205, and actually set height ratios as
@@ -56,7 +85,7 @@ class RootedTree : public Tree {
   // The per-branch substitution rates.
   std::vector<double> rates_;
   // Number of substitution rates (e.g. 1 rate for strict clock)
-  size_t rate_count_;
+  size_t rate_count_ = 0;
 
   // The tree depicted in
   // https://github.com/phylovi/libsbn/issues/187#issuecomment-618421183
