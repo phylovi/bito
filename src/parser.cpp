@@ -750,7 +750,7 @@ namespace yy {
   case 7:
 #line 116 "src/parser.yy"
     {
-    yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
+    yylhs.value.as < std::string > () = yystack_[1].value.as < std::string > ();
   }
 #line 756 "src/parser.cpp"
     break;
@@ -758,7 +758,7 @@ namespace yy {
   case 8:
 #line 119 "src/parser.yy"
     {
-    yylhs.value.as < std::string > () = yystack_[0].value.as < std::string > ();
+    yylhs.value.as < std::string > () = yystack_[1].value.as < std::string > ();
   }
 #line 764 "src/parser.cpp"
     break;
@@ -1061,55 +1061,58 @@ namespace yy {
   }
 
 
-  const signed char parser::yypact_ninf_ = -8;
+  const signed char parser::yypact_ninf_ = -5;
 
   const signed char parser::yytable_ninf_ = -1;
 
   const signed char
   parser::yypact_[] =
   {
-       0,     0,    -8,    -8,     2,     5,     3,    -8,    -8,    -8,
-      -2,    -8,    -8,    -7,     0,    -8,    -8,    -4,    -8,    -8
+      -4,    -4,     1,     1,     6,     3,     5,    -5,    -5,    -5,
+       0,    -5,    -5,    -5,    -5,    -5,     1,    -4,    -5,     2,
+      -5,    -5
   };
 
   const unsigned char
   parser::yydefact_[] =
   {
-       0,     0,     7,     8,     0,     0,     3,     5,     6,    10,
-       0,     1,     2,    12,     0,     9,    13,     0,    11,     4
+       0,     0,    12,    12,     0,     0,     3,     5,     6,    10,
+       0,    13,     7,     8,     1,     2,    12,     0,     9,     0,
+      11,     4
   };
 
   const signed char
   parser::yypgoto_[] =
   {
-      -8,    -8,    -1,    -8,    -8,    -8,    -8,    -8
+      -5,    -5,    -1,    -5,    -5,    -5,    -5,    -2
   };
 
   const signed char
   parser::yydefgoto_[] =
   {
-      -1,     4,     5,     6,     7,     8,    10,    17
+      -1,     4,     5,     6,     7,     8,    10,    12
   };
 
   const unsigned char
   parser::yytable_[] =
   {
-       9,    14,    11,    16,    19,    15,     1,    13,     2,     3,
-      12,     0,     0,    18
+       9,    13,     1,    17,     2,     3,    14,    18,    15,    16,
+      21,    11,     0,     0,    19,     0,    20
   };
 
   const signed char
   parser::yycheck_[] =
   {
-       1,     3,     0,    10,     8,     7,     6,     4,     8,     9,
-       5,    -1,    -1,    14
+       1,     3,     6,     3,     8,     9,     0,     7,     5,     4,
+       8,    10,    -1,    -1,    16,    -1,    17
   };
 
   const unsigned char
   parser::yystos_[] =
   {
        0,     6,     8,     9,    12,    13,    14,    15,    16,    13,
-      17,     0,     5,     4,     3,     7,    10,    18,    13,     8
+      17,    10,    18,    18,     0,     5,     4,     3,     7,    18,
+      13,     8
   };
 
   const unsigned char
@@ -1122,7 +1125,7 @@ namespace yy {
   const unsigned char
   parser::yyr2_[] =
   {
-       0,     2,     2,     1,     4,     1,     1,     1,     1,     3,
+       0,     2,     2,     1,     4,     1,     1,     2,     2,     3,
        1,     3,     0,     1
   };
 
@@ -1178,7 +1181,7 @@ namespace yy {
 
 
 } // yy
-#line 1182 "src/parser.cpp"
+#line 1185 "src/parser.cpp"
 
 #line 141 "src/parser.yy"
 

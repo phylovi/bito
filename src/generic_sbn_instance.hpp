@@ -14,6 +14,7 @@
 
 #include "ProgressBar.hpp"
 #include "alignment.hpp"
+#include "csv.hpp"
 #include "engine.hpp"
 #include "mersenne_twister.hpp"
 #include "numerical_utils.hpp"
@@ -135,11 +136,7 @@ class GenericSBNInstance {
   }
 
   void SBNParametersToCSV(const std::string &file_path) {
-    std::ofstream out_stream(file_path);
-    for (const auto &[gpcsp_string, sbn_value] : PrettyIndexedSBNParameters()) {
-      out_stream << gpcsp_string << "," << sbn_value << std::endl;
-    }
-    out_stream.close();
+    CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);
   }
 
   // ** Phylogenetic likelihood

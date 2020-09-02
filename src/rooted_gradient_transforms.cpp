@@ -21,7 +21,7 @@ std::vector<double> HeightGradient(const RootedTree &tree,
 
   tree.Topology()->BinaryIdPreOrder(
       [&root_id, &branch_gradient, &height_gradient, leaf_count = tree.LeafCount(),
-       &rates = tree.rates_](int node_id, int child0_id, int child1_id) {
+       &rates = tree.GetRates()](int node_id, int child0_id, int child1_id) {
         if (node_id != root_id) {
           height_gradient[node_id - leaf_count] =
               -branch_gradient[node_id] * rates[node_id];
@@ -66,9 +66,10 @@ double GetEpochGradientAddition(
 std::vector<double> GetLogTimeArray(const RootedTree &tree) {
   size_t leaf_count = tree.LeafCount();
   std::vector<double> log_time(leaf_count - 1, 0);
+  const auto &node_bounds = tree.GetNodeBounds();
+  const auto &node_heights = tree.GetNodeHeights();
   for (size_t i = 0; i < leaf_count - 2; i++) {
-    log_time[i] =
-        1.0 / (tree.node_heights_[leaf_count + i] - tree.node_bounds_[leaf_count + i]);
+    log_time[i] = 1.0 / (node_heights[leaf_count + i] - node_bounds[leaf_count + i]);
   }
   return log_time;
 }
@@ -81,7 +82,7 @@ std::vector<double> UpdateGradientUnWeightedLogDensity(
   std::vector<double> ratiosGradientUnweightedLogDensity(leaf_count - 1);
   tree.Topology()->BinaryIdPostOrder(
       [&gradient_height, &heights = tree.node_heights_, &ratios = tree.height_ratios_,
-       &bounds = tree.node_bounds_, &ratiosGradientUnweightedLogDensity, &leaf_count,
+       &bounds = tree.GetNodeBounds(), &ratiosGradientUnweightedLogDensity, &leaf_count,
        &root_id](int node_id, int child0_id, int child1_id) {
         if (node_id >= leaf_count && node_id != root_id) {
           ratiosGradientUnweightedLogDensity[node_id - leaf_count] +=
