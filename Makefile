@@ -3,11 +3,11 @@ our_files := $(filter-out src/csv.h src/doctest.h src/noodle.cpp src/parser.cpp 
 j_flags = $(shell echo "${MAKEFLAGS}" | grep -o -- "-j[0-9]\+" || true)
 
 default:
+	mkdir -p _ignore  # Needed for test outputs.
 	scons ${j_flags}
 	pip install -U dist/libsbn-*.whl
 
 rungptest:
-	mkdir -p _ignore  # Needed for gp_doctest.
 	./_build/gp_doctest --test-case-exclude="UnrootedSBNInstance*"
 
 gptest:
