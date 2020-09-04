@@ -17,18 +17,18 @@ RootedTreeCollection RootedTreeCollection::OfTreeCollection(
 
 void RootedTreeCollection::SetDatesToBeConstant(bool initialize_time_trees) {
   tag_date_map_ = TaxonNameMunging::ConstantDatesForTagTaxonMap(TagTaxonMap());
-  PostprocessTrees(initialize_time_trees);
+  ProcessTreeDates(initialize_time_trees);
 }
 
 void RootedTreeCollection::ParseDatesFromTaxonNames(bool initialize_time_trees) {
   tag_date_map_ = TaxonNameMunging::ParseDatesFromTagTaxonMap(TagTaxonMap());
-  PostprocessTrees(initialize_time_trees);
+  ProcessTreeDates(initialize_time_trees);
 }
 
 void RootedTreeCollection::ParseDatesFromCSV(const std::string& csv_path,
                                              bool initialize_time_trees) {
   ParseDatesFromCSVButDontInitializeTimeTrees(csv_path);
-  PostprocessTrees(initialize_time_trees);
+  ProcessTreeDates(initialize_time_trees);
 }
 
 // Given a headerless 2-column CSV of quoted string keys then double values, this parses
@@ -79,7 +79,7 @@ void RootedTreeCollection::SetNodeBoundsUsingDates() {
   }
 }
 
-void RootedTreeCollection::PostprocessTrees(bool initialize_time_trees) {
+void RootedTreeCollection::ProcessTreeDates(bool initialize_time_trees) {
   if (initialize_time_trees) {
     InitializeTimeTrees();
   } else {
