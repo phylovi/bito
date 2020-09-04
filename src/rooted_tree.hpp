@@ -89,7 +89,7 @@ class RootedTree : public Tree {
 
   // The lower bound for the height of each node, which is the maximum of the tip dates
   // across all of the descendants of the node. See top of this file to read about how
-  // this vector can be initialized even if the rest are not.
+  // this vector can be initialized even if the rest of the fields below are not.
   std::vector<double> node_bounds_;
   // This vector is of length equal to the number of internal nodes, and (except for the
   // last entry) has the node height ratios. The last entry is the root height.
