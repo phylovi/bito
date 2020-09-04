@@ -5,6 +5,13 @@
 // gradients. In fact, because RootedTree also has branch lengths (inherited from Tree)
 // all of the extra state in this object is redundant other than the tip dates.
 //
+// Rooted trees can exist in 3 states:
+// 1. No dates associated
+// 2. Dates associated, which also initializes node_bounds_
+// 3. As an initialized time tree, which means that all members are initialized.
+//
+// State 3 means that the branch lengths must be compatible with tip dates.
+//
 // In the terminology here, imagine that the tree is rooted at the top and hangs down.
 // The "height" of a node is how far we have to go back in time to that divergence event
 // from the present.
@@ -28,6 +35,14 @@ class RootedTree : public Tree {
   RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths);
   explicit RootedTree(const Tree& tree);
 
+  const std::vector<double>& GetNodeBounds() const {
+    if (node_bounds_.empty()) {
+      Failwith(
+          "Node bounds access requires dates to have been set for a rooted tree."
+          "Have you set dates for your time trees?");
+    }
+    return node_bounds_;
+  }
   const std::vector<double>& GetHeightRatios() const {
     EnsureTimeTreeHasBeenInitialized();
     return height_ratios_;
@@ -35,10 +50,6 @@ class RootedTree : public Tree {
   const std::vector<double>& GetNodeHeights() const {
     EnsureTimeTreeHasBeenInitialized();
     return node_heights_;
-  }
-  const std::vector<double>& GetNodeBounds() const {
-    EnsureTimeTreeHasBeenInitialized();
-    return node_bounds_;
   }
   const std::vector<double>& GetRates() const {
     EnsureTimeTreeHasBeenInitialized();
@@ -56,15 +67,16 @@ class RootedTree : public Tree {
   void InitializeTimeTree(const TagDoubleMap& tag_date_map);
   // As for InitializeTimeTree, but only set the node bounds. No constraint on supplied
   // branch lengths.
-  void SetNodeBounds(const TagDoubleMap& tag_date_map);
+  void SetNodeBoundsUsingDates(const TagDoubleMap& tag_date_map);
 
   // Check to see if a time tree has been initialized.
   inline bool TimeTreeHasBeenInitialized() const { return !height_ratios_.empty(); }
   inline void EnsureTimeTreeHasBeenInitialized() const {
     if (!TimeTreeHasBeenInitialized()) {
       Failwith(
-          "Attempted access of a time tree member that has not been initialized. Have "
-          "you set dates for your time trees, and initialized the time trees?");
+          "Attempted access of a time tree member that requires the time tree to be "
+          "initialized. Have you set dates for your time trees, and initialized the "
+          "time trees in the process?");
     }
   }
 
@@ -75,6 +87,10 @@ class RootedTree : public Tree {
 
   TagDoubleMap TagDateMapOfDateVector(std::vector<double> leaf_date_vector);
 
+  // The lower bound for the height of each node, which is the maximum of the tip dates
+  // across all of the descendants of the node. See top of this file to read about how
+  // this vector can be initialized even if the rest are not.
+  std::vector<double> node_bounds_;
   // This vector is of length equal to the number of internal nodes, and (except for the
   // last entry) has the node height ratios. The last entry is the root height.
   // The indexing is set up so that the ith entry has the node height ratio for the
@@ -82,9 +98,6 @@ class RootedTree : public Tree {
   std::vector<double> height_ratios_;
   // The actual node heights for all nodes.
   std::vector<double> node_heights_;
-  // The lower bound for the height of each node, which is the maximum of the tip dates
-  // across all of the descendants of the node.
-  std::vector<double> node_bounds_;
   // The per-branch substitution rates.
   std::vector<double> rates_;
   // Number of substitution rates (e.g. 1 rate for strict clock)

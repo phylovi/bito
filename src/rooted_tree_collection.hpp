@@ -30,6 +30,8 @@ class RootedTreeCollection : public PreRootedTreeCollection {
   TagDateMap tag_date_map_;
 
   void InitializeTimeTrees();
+  void SetNodeBoundsUsingDates();
+  void PostprocessTrees(bool initialize_time_trees);
   void ParseDatesFromCSVButDontInitializeTimeTrees(const std::string& csv_path);
 };
 

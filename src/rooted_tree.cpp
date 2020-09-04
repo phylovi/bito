@@ -25,7 +25,7 @@ void RootedTree::InitializeTimeTree(const TagDoubleMap& tag_date_map) {
   rates_ = std::vector<double>(Topology()->Id(), 1.0);
   rate_count_ = 1;  // Default is a strict clock with rate 1
 
-  SetNodeBounds(tag_date_map);
+  SetNodeBoundsUsingDates(tag_date_map);
 
   // First initialize the leaves using the date map.
   for (const auto& [tag, date] : tag_date_map) {
@@ -63,7 +63,7 @@ void RootedTree::InitializeTimeTree(const TagDoubleMap& tag_date_map) {
       });
 }
 
-void RootedTree::SetNodeBounds(const TagDoubleMap& tag_date_map) {
+void RootedTree::SetNodeBoundsUsingDates(const TagDoubleMap& tag_date_map) {
   const size_t leaf_count = LeafCount();
   node_bounds_ = std::vector<double>(Topology()->Id() + 1);
   for (const auto& [tag, date] : tag_date_map) {

@@ -17,24 +17,18 @@ RootedTreeCollection RootedTreeCollection::OfTreeCollection(
 
 void RootedTreeCollection::SetDatesToBeConstant(bool initialize_time_trees) {
   tag_date_map_ = TaxonNameMunging::ConstantDatesForTagTaxonMap(TagTaxonMap());
-  if (initialize_time_trees) {
-    InitializeTimeTrees();
-  }
+  PostprocessTrees(initialize_time_trees);
 }
 
 void RootedTreeCollection::ParseDatesFromTaxonNames(bool initialize_time_trees) {
   tag_date_map_ = TaxonNameMunging::ParseDatesFromTagTaxonMap(TagTaxonMap());
-  if (initialize_time_trees) {
-    InitializeTimeTrees();
-  }
+  PostprocessTrees(initialize_time_trees);
 }
 
 void RootedTreeCollection::ParseDatesFromCSV(const std::string& csv_path,
                                              bool initialize_time_trees) {
   ParseDatesFromCSVButDontInitializeTimeTrees(csv_path);
-  if (initialize_time_trees) {
-    InitializeTimeTrees();
-  }
+  PostprocessTrees(initialize_time_trees);
 }
 
 // Given a headerless 2-column CSV of quoted string keys then double values, this parses
@@ -64,8 +58,8 @@ void RootedTreeCollection::ParseDatesFromCSVButDontInitializeTimeTrees(
   for (auto& [tag, taxon] : TagTaxonMap()) {
     auto search = taxon_date_map.find(taxon);
     if (search == taxon_date_map.end()) {
-      Failwith("Taxon " + taxon + " found in current tree collection but not in " +
-               csv_path);
+      Failwith("Taxon " + taxon +  // NOLINT
+               " found in current tree collection but not in " + csv_path);
     }
     // else
     SafeInsert(tag_date_map_, tag, search->second);
@@ -76,5 +70,19 @@ void RootedTreeCollection::ParseDatesFromCSVButDontInitializeTimeTrees(
 void RootedTreeCollection::InitializeTimeTrees() {
   for (auto& tree : trees_) {
     tree.InitializeTimeTree(tag_date_map_);
+  }
+}
+
+void RootedTreeCollection::SetNodeBoundsUsingDates() {
+  for (auto& tree : trees_) {
+    tree.SetNodeBoundsUsingDates(tag_date_map_);
+  }
+}
+
+void RootedTreeCollection::PostprocessTrees(bool initialize_time_trees) {
+  if (initialize_time_trees) {
+    InitializeTimeTrees();
+  } else {
+    SetNodeBoundsUsingDates();
   }
 }
