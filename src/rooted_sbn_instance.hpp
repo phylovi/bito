@@ -4,7 +4,7 @@
 #ifndef SRC_ROOTED_SBN_INSTANCE_HPP_
 #define SRC_ROOTED_SBN_INSTANCE_HPP_
 
-#include "csv.h"
+#include "csv.hpp"
 #include "generic_sbn_instance.hpp"
 #include "rooted_sbn_support.hpp"
 
@@ -182,13 +182,8 @@ TEST_CASE("RootedSBNInstance: TrainSimpleAverage on 20 taxa") {
   auto results = inst.PrettyIndexedSBNParameters();
   // Values confirmed with
   // https://github.com/mdkarcher/vbsupertree/commit/b7f87f711e8a1044b7c059b5a92e94c117d8cee1
-  io::CSVReader<2> csv_in("data/rooted_simple_average_results.csv");
-  std::string correct_string;
-  double correct_probability;
-  StringDoubleMap correct_map;
-  while (csv_in.read_row(correct_string, correct_probability)) {
-    SafeInsert(correct_map, correct_string, correct_probability);
-  }
+  auto correct_map =
+      CSV::StringDoubleMapOfCSV("data/rooted_simple_average_results.csv");
   for (const auto& [found_string, found_probability] : results) {
     CHECK(fabs(found_probability - correct_map.at(found_string)) < 1e-6);
   }

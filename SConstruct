@@ -139,6 +139,7 @@ sources = [
     "_build/block_model.cpp",
     "_build/block_specification.cpp",
     "_build/clock_model.cpp",
+    "_build/csv.cpp",
     "_build/driver.cpp",
     "_build/engine.cpp",
     "_build/fat_beagle.cpp",

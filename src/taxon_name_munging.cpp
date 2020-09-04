@@ -1,3 +1,6 @@
+// Copyright 2019-2020 libsbn project contributors.
+// libsbn is free software under the GPLv3; see LICENSE file for details.
+
 #include "taxon_name_munging.hpp"
 
 #include <iomanip>
