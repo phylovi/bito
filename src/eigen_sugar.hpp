@@ -24,7 +24,7 @@ const static Eigen::IOFormat EigenCSVFormat(Eigen::FullPrecision, Eigen::DontAli
                                             ", ", "\n");
 // Write an Eigen object to a CSV file.
 template <class EigenType>
-void EigenToCSV(std::string file_path, EigenType eigen_object) {
+void EigenToCSV(const std::string &file_path, EigenType eigen_object) {
   std::ofstream file(file_path.c_str());
   file << eigen_object.format(EigenCSVFormat) << std::endl;
   if (file.bad()) {
