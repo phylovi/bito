@@ -54,6 +54,9 @@ class RootedTree : public Tree {
   // elapsed between the sampling date and the present. Thus, older times have larger
   // dates. This function requires the supplied branch lengths to be clocklike.
   void InitializeTimeTree(const TagDoubleMap& tag_date_map);
+  // As for InitializeTimeTree, but only set the node bounds. No constraint on supplied
+  // branch lengths.
+  void SetNodeBounds(const TagDoubleMap& tag_date_map);
 
   // Check to see if a time tree has been initialized.
   inline bool TimeTreeHasBeenInitialized() const { return !height_ratios_.empty(); }

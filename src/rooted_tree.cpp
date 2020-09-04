@@ -17,29 +17,25 @@ RootedTree::RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_
 RootedTree::RootedTree(const Tree& tree)
     : RootedTree(tree.Topology(), tree.BranchLengths()) {}
 
-void RootedTree::InitializeTimeTree(
-    const std::unordered_map<Tag, double>& tag_date_map) {
-  size_t leaf_count = LeafCount();
-  int root_id = static_cast<int>(Topology()->Id());
+void RootedTree::InitializeTimeTree(const TagDoubleMap& tag_date_map) {
+  const size_t leaf_count = LeafCount();
+  const int root_id = static_cast<int>(Topology()->Id());
   height_ratios_ = std::vector<double>(leaf_count - 1, -1);
   node_heights_ = std::vector<double>(Topology()->Id() + 1);
-  node_bounds_ = std::vector<double>(Topology()->Id() + 1);
   rates_ = std::vector<double>(Topology()->Id(), 1.0);
   rate_count_ = 1;  // Default is a strict clock with rate 1
 
+  SetNodeBounds(tag_date_map);
+
   // First initialize the leaves using the date map.
   for (const auto& [tag, date] : tag_date_map) {
-    size_t leaf_id = MaxLeafIDOfTag(tag);
-    node_heights_[leaf_id] = date;
-    node_bounds_[leaf_id] = date;
+    node_heights_[MaxLeafIDOfTag(tag)] = date;
   }
 
   // Initialize the internal heights and bounds.
   Topology()->BinaryIdPostOrder([&leaf_count, this](int node_id, int child0_id,
                                                     int child1_id) {
     if (node_id >= leaf_count) {
-      node_bounds_[node_id] =
-          std::max(node_bounds_[child0_id], node_bounds_[child1_id]);
       node_heights_[node_id] = node_heights_[child0_id] + branch_lengths_[child0_id];
       const auto height_difference =
           fabs(node_heights_[child1_id] + branch_lengths_[child1_id] -
@@ -63,6 +59,21 @@ void RootedTree::InitializeTimeTree(
           height_ratios_[node_id - leaf_count] =
               (node_heights_[node_id] - node_bounds_[node_id]) /
               (node_heights_[parent_id] - node_bounds_[node_id]);
+        }
+      });
+}
+
+void RootedTree::SetNodeBounds(const TagDoubleMap& tag_date_map) {
+  const size_t leaf_count = LeafCount();
+  node_bounds_ = std::vector<double>(Topology()->Id() + 1);
+  for (const auto& [tag, date] : tag_date_map) {
+    node_bounds_[MaxLeafIDOfTag(tag)] = date;
+  }
+  Topology()->BinaryIdPostOrder(
+      [&leaf_count, this](int node_id, int child0_id, int child1_id) {
+        if (node_id >= leaf_count) {
+          node_bounds_[node_id] =
+              std::max(node_bounds_[child0_id], node_bounds_[child1_id]);
         }
       });
 }
