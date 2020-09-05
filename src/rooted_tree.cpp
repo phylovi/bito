@@ -8,6 +8,11 @@ constexpr double BRANCH_LENGTH_TOLERANCE = 1e-4;
 
 RootedTree::RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths)
     : Tree(topology, std::move(branch_lengths)) {
+  const size_t leaf_count = LeafCount();
+  height_ratios_ = std::vector<double>(leaf_count - 1, -1);
+  node_heights_ = std::vector<double>(Topology()->Id() + 1);
+  rates_ = std::vector<double>(Topology()->Id(), 1.0);
+  rate_count_ = 1;  // Default is a strict clock with rate 1
   Assert(
       Children().size() == 2,
       "Failed to create a RootedTree out of a topology that isn't bifurcating at the "
@@ -20,10 +25,6 @@ RootedTree::RootedTree(const Tree& tree)
 void RootedTree::InitializeTimeTree(const TagDoubleMap& tag_date_map) {
   const size_t leaf_count = LeafCount();
   const int root_id = static_cast<int>(Topology()->Id());
-  height_ratios_ = std::vector<double>(leaf_count - 1, -1);
-  node_heights_ = std::vector<double>(Topology()->Id() + 1);
-  rates_ = std::vector<double>(Topology()->Id(), 1.0);
-  rate_count_ = 1;  // Default is a strict clock with rate 1
 
   SetNodeBoundsUsingDates(tag_date_map);
 

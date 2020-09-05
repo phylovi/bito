@@ -70,7 +70,7 @@ class RootedTree : public Tree {
   void SetNodeBoundsUsingDates(const TagDoubleMap& tag_date_map);
 
   // Check to see if a time tree has been initialized.
-  inline bool TimeTreeHasBeenInitialized() const { return !height_ratios_.empty(); }
+  inline bool TimeTreeHasBeenInitialized() const { return height_ratios_[0] != -1; }
   inline void EnsureTimeTreeHasBeenInitialized() const {
     if (!TimeTreeHasBeenInitialized()) {
       Failwith(
