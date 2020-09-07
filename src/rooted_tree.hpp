@@ -5,6 +5,13 @@
 // gradients. In fact, because RootedTree also has branch lengths (inherited from Tree)
 // all of the extra state in this object is redundant other than the tip dates.
 //
+// Rooted trees can exist in 3 states:
+// 1. No dates associated
+// 2. Dates associated, which also initializes node_bounds_
+// 3. As an initialized time tree, which means that all members are initialized.
+//
+// State 3 means that the branch lengths must be compatible with tip dates.
+//
 // In the terminology here, imagine that the tree is rooted at the top and hangs down.
 // The "height" of a node is how far we have to go back in time to that divergence event
 // from the present.
@@ -28,21 +35,62 @@ class RootedTree : public Tree {
   RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths);
   explicit RootedTree(const Tree& tree);
 
-  bool operator==(const Tree& other) const = delete;
-  bool operator==(const RootedTree& other) const;
+  const std::vector<double>& GetNodeBounds() const {
+    EnsureTipDatesHaveBeenSet();
+    return node_bounds_;
+  }
+  const std::vector<double>& GetHeightRatios() const {
+    EnsureTimeTreeHasBeenInitialized();
+    return height_ratios_;
+  }
+  const std::vector<double>& GetNodeHeights() const {
+    EnsureTimeTreeHasBeenInitialized();
+    return node_heights_;
+  }
+  const std::vector<double>& GetRates() const {
+    EnsureTimeTreeHasBeenInitialized();
+    return rates_;
+  }
+  size_t RateCount() const { return rate_count_; }
 
-  // Initialize the parameters of this tree using tip dates (and the branch lengths that
-  // already exist in the tree). Note that these dates are the amount of time elapsed
-  // between the sampling date and the present. Thus, older times have larger dates.
-  void InitializeParameters(const TagDoubleMap& tag_date_map);
+  inline bool TipDatesHaveBeenSet() const { return !node_bounds_.empty(); }
+  inline void EnsureTipDatesHaveBeenSet() const {
+    if (!TipDatesHaveBeenSet()) {
+      Failwith(
+          "Attempted access of a time tree member that requires the tip dates to be "
+          "set. Have you set dates for your time trees?");
+    }
+  }
 
+  // Set the tip dates in the tree, and also set the node bounds.  Note that these dates
+  // are the amount of time elapsed between the sampling date and the present. Thus,
+  // older times have larger dates. This function requires the supplied branch lengths
+  // to be clocklike.
+  void SetTipDates(const TagDoubleMap& tag_date_map);
+
+  inline bool TimeTreeHasBeenInitialized() const { return !height_ratios_.empty(); }
+  inline void EnsureTimeTreeHasBeenInitialized() const {
+    if (!TimeTreeHasBeenInitialized()) {
+      Failwith(
+          "Attempted access of a time tree member that requires the time tree to be "
+          "initialized. Have you set dates for your time trees, and initialized the "
+          "time trees?");
+    }
+  }
+
+  // Use the branch lengths to set node heights and height ratios.
+  void InitializeTimeTreeUsingBranchLengths();
   // Set node_heights_ so that they have the given height ratios.
   // This should become SetNodeHeights during #205, and actually set height ratios as
   // well.
-  void SetNodeHeightsViaHeightRatios(EigenConstVectorXdRef height_ratios);
+  void InitializeTimeTreeUsingHeightRatios(EigenConstVectorXdRef height_ratios);
 
   TagDoubleMap TagDateMapOfDateVector(std::vector<double> leaf_date_vector);
 
+  // The lower bound for the height of each node, which is the maximum of the tip dates
+  // across all of the descendants of the node. See top of this file to read about how
+  // this vector can be initialized even if the rest of the fields below are not.
+  std::vector<double> node_bounds_;
   // This vector is of length equal to the number of internal nodes, and (except for the
   // last entry) has the node height ratios. The last entry is the root height.
   // The indexing is set up so that the ith entry has the node height ratio for the
@@ -50,17 +98,22 @@ class RootedTree : public Tree {
   std::vector<double> height_ratios_;
   // The actual node heights for all nodes.
   std::vector<double> node_heights_;
-  // The lower bound for the height of each node, which is the maximum of the tip dates
-  // across all of the descendants of the node.
-  std::vector<double> node_bounds_;
   // The per-branch substitution rates.
   std::vector<double> rates_;
   // Number of substitution rates (e.g. 1 rate for strict clock)
-  size_t rate_count_;
+  size_t rate_count_ = 0;
+
+  bool operator==(const Tree& other) const = delete;
+  bool operator==(const RootedTree& other) const;
 
   // The tree depicted in
   // https://github.com/phylovi/libsbn/issues/187#issuecomment-618421183
   static RootedTree Example();
+
+ private:
+  // As for SetTipDates, but only set the node bounds. No constraint on supplied
+  // branch lengths.
+  void SetNodeBoundsUsingDates(const TagDoubleMap& tag_date_map);
 };
 
 inline bool operator!=(const RootedTree& lhs, const RootedTree& rhs) {
@@ -96,7 +149,7 @@ TEST_CASE("RootedTree") {
   new_height_ratios << 1. / 3.5, 1.5 / 4., 14.;
   std::vector<double> new_correct_node_heights({5., 3., 0., 1., 2.75, 7.125, 14.});
   std::vector<double> new_correct_branch_lengths({9., 4.125, 2.75, 1.75, 4.375, 6.875});
-  tree.SetNodeHeightsViaHeightRatios(new_height_ratios);
+  tree.InitializeTimeTreeUsingHeightRatios(new_height_ratios);
   for (size_t i = 0; i < correct_node_heights.size(); ++i) {
     CHECK_EQ(new_correct_node_heights[i], tree.node_heights_[i]);
   }

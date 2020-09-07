@@ -4,7 +4,7 @@
 #ifndef SRC_ROOTED_SBN_INSTANCE_HPP_
 #define SRC_ROOTED_SBN_INSTANCE_HPP_
 
-#include "csv.h"
+#include "csv.hpp"
 #include "generic_sbn_instance.hpp"
 #include "rooted_sbn_support.hpp"
 
@@ -33,8 +33,13 @@ class RootedSBNInstance : public PreRootedSBNInstance {
 
   // ** I/O
 
-  void ReadNewickFile(std::string fname);
-  void ReadNexusFile(std::string fname);
+  void ReadNewickFile(const std::string& fname);
+  void ReadNexusFile(const std::string& fname);
+
+  void SetDatesToBeConstant(bool initialize_time_trees_using_branch_lengths);
+  void ParseDatesFromTaxonNames(bool initialize_time_trees_using_branch_lengths);
+  void ParseDatesFromCSV(const std::string& csv_path,
+                         bool initialize_time_trees_using_branch_lengths);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -178,24 +183,25 @@ TEST_CASE("RootedSBNInstance: TrainSimpleAverage on 20 taxa") {
   auto results = inst.PrettyIndexedSBNParameters();
   // Values confirmed with
   // https://github.com/mdkarcher/vbsupertree/commit/b7f87f711e8a1044b7c059b5a92e94c117d8cee1
-  io::CSVReader<2> csv_in("data/rooted_simple_average_results.csv");
-  std::string correct_string;
-  double correct_probability;
-  StringDoubleMap correct_map;
-  while (csv_in.read_row(correct_string, correct_probability)) {
-    SafeInsert(correct_map, correct_string, correct_probability);
-  }
+  auto correct_map =
+      CSV::StringDoubleMapOfCSV("data/rooted_simple_average_results.csv");
   for (const auto& [found_string, found_probability] : results) {
     CHECK(fabs(found_probability - correct_map.at(found_string)) < 1e-6);
   }
 }
 
-TEST_CASE("RootedSBNInstance: gradients") {
+RootedSBNInstance MakeFluInstance(bool initialize_time_trees) {
   RootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/fluA.tree");
+  inst.ParseDatesFromTaxonNames(initialize_time_trees);
   inst.ReadFastaFile("data/fluA.fa");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
   inst.PrepareForPhyloLikelihood(simple_specification, 1);
+  return inst;
+}
+
+TEST_CASE("RootedSBNInstance: gradients") {
+  auto inst = MakeFluInstance(true);
   for (auto& tree : inst.tree_collection_.trees_) {
     tree.rates_.assign(tree.rates_.size(), 0.001);
   }
@@ -223,12 +229,7 @@ TEST_CASE("RootedSBNInstance: gradients") {
 }
 
 TEST_CASE("RootedSBNInstance: clock gradients") {
-  RootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/fluA.tree");
-  inst.ReadFastaFile("data/fluA.fa");
-  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
-  inst.PrepareForPhyloLikelihood(simple_specification, 1);
-
+  auto inst = MakeFluInstance(true);
   for (auto& tree : inst.tree_collection_.trees_) {
     tree.rates_.assign(tree.rates_.size(), 0.001);
   }
@@ -263,12 +264,9 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
 }
 
 TEST_CASE("RootedSBNInstance: Weibull gradients") {
-  RootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/fluA.tree");
-  inst.ReadFastaFile("data/fluA.fa");
-  PhyloModelSpecification simple_specification{"JC69", "weibull+4", "strict"};
-  inst.PrepareForPhyloLikelihood(simple_specification, 1);
-
+  auto inst = MakeFluInstance(true);
+  PhyloModelSpecification weibull_specification{"JC69", "weibull+4", "strict"};
+  inst.PrepareForPhyloLikelihood(weibull_specification, 1);
   for (auto& tree : inst.tree_collection_.trees_) {
     tree.rates_.assign(tree.rates_.size(), 0.001);
   }
@@ -289,13 +287,26 @@ TEST_CASE("RootedSBNInstance: Weibull gradients") {
 TEST_CASE("RootedSBNInstance: parsing dates") {
   RootedSBNInstance inst("charlie");
   inst.ReadNexusFile("data/test_beast_tree_parsing.nexus");
+  inst.ParseDatesFromTaxonNames(true);
   std::vector<double> dates;
-  for (auto [tag, date] : inst.tree_collection_.tag_date_map_) {
+  for (const auto& [tag, date] : inst.tree_collection_.GetTagDateMap()) {
     dates.push_back(date);
   }
   std::sort(dates.begin(), dates.end());
   CHECK_EQ(dates[0], 0);
   CHECK_EQ(dates.back(), 80.0);
+
+  RootedSBNInstance alt_inst("betty");
+  alt_inst.ReadNexusFile("data/test_beast_tree_parsing.nexus");
+  alt_inst.tree_collection_.ParseDatesFromCSV("data/test_beast_tree_parsing.csv", true);
+  CHECK_EQ(inst.tree_collection_.GetTagDateMap(),
+           alt_inst.tree_collection_.GetTagDateMap());
+}
+
+TEST_CASE("RootedSBNInstance: uninitialized time trees raise an exception") {
+  auto inst = MakeFluInstance(false);
+  // Uncomment once #281 is fixed.
+  // CHECK_THROWS(inst.PhyloGradients());
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

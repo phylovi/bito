@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <string>
 
+#include "csv.hpp"
 #include "driver.hpp"
 #include "gp_operation.hpp"
 #include "numerical_utils.hpp"
@@ -301,9 +302,5 @@ StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
 }
 
 void GPInstance::SBNParametersToCSV(const std::string &file_path) {
-  std::ofstream out_stream(file_path);
-  for (const auto &[gpcsp_string, sbn_value] : PrettyIndexedSBNParameters()) {
-    out_stream << gpcsp_string << "," << sbn_value << std::endl;
-  }
-  out_stream.close();
+  CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);
 }

@@ -95,7 +95,8 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
 
-  EigenVectorXd realized_log_likelihoods = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+  EigenVectorXd realized_log_likelihoods =
+      inst.GetEngine()->GetPerGPCSPLogLikelihoods();
   CheckVectorXdEquality(-84.77961943, realized_log_likelihoods, 1e-6);
 
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);

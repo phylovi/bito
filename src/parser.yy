@@ -113,10 +113,10 @@ node:
 | inner_node
 
 leaf:
-  "label" {
+  "label" metadata_comment_option {
     $$ = $1;
   }
-| "quoted" {
+| "quoted" metadata_comment_option {
     $$ = $1;
   }
 

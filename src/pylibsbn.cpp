@@ -52,8 +52,8 @@ PYBIND11_MODULE(libsbn, m) {
   py::class_<RootedTree>(m, "RootedTree", "A rooted tree with branch lengths.",
                          py::buffer_protocol())
       .def("parent_id_vector", &RootedTree::ParentIdVector)
-      .def("set_node_heights_via_height_ratios",
-           &RootedTree::SetNodeHeightsViaHeightRatios)
+      .def("initialize_time_tree_using_height_ratios",
+           &RootedTree::InitializeTimeTreeUsingHeightRatios)
       .def_static("example", &RootedTree::Example)
       .def_static("of_parent_id_vector", &RootedTree::OfParentIdVector)
       .def_readwrite("branch_lengths", &RootedTree::branch_lengths_)
@@ -181,7 +181,17 @@ PYBIND11_MODULE(libsbn, m) {
   // RootedSBNInstance
   py::class_<PreRootedSBNInstance>(m, "PreRootedSBNInstance");
   py::class_<RootedSBNInstance, PreRootedSBNInstance> rooted_sbn_instance_class(
-      m, "rooted_instance", R"raw(A rooted SBN instance.)raw");
+      m, "rooted_instance", R"raw(
+      A rooted SBN instance.
+
+      The intent of this class is primarily to support rooted time trees, however some functionality works without
+      dates.
+
+      If you are using time trees, you will need to assign tip dates using one of the available methods and then
+      initialize the time trees, either using branch lengths or per-tree height ratios.
+
+      If you don't do this, then trying to calculate a phylogenetic gradient will raise an exception.
+      )raw");
   rooted_sbn_instance_class
       .def(py::init<const std::string &>())
 
@@ -221,6 +231,18 @@ PYBIND11_MODULE(libsbn, m) {
       .def("sbn_parameters_to_csv", &RootedSBNInstance::SBNParametersToCSV,
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
       // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
+
+      // ** Tip dates
+      .def("set_dates_to_be_constant", &RootedSBNInstance::SetDatesToBeConstant,
+           "Set tip dates to be constant.",
+           py::arg("initialize_time_trees_using_branch_lengths"))
+      .def("parse_dates_from_taxon_names", &RootedSBNInstance::ParseDatesFromTaxonNames,
+           "Take dates to be the numbers after an underscore in the taxon names.",
+           py::arg("initialize_time_trees_using_branch_lengths"))
+      .def(
+          "parse_dates_from_csv", &RootedSBNInstance::ParseDatesFromCSV,
+          "Parse dates from a headerless 2-column CSV of quoted taxon names and dates.",
+          py::arg("csv_path"), py::arg("initialize_time_trees_using_branch_lengths"))
 
       // ** Phylogenetic likelihood
       .def("log_likelihoods", &RootedSBNInstance::LogLikelihoods,

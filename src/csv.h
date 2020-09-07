@@ -49,6 +49,9 @@
 #include <cerrno>
 #include <istream>
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wshadow"
+
 namespace io{
         ////////////////////////////////////////////////////////////////////////////
         //                                 LineReader                             //
@@ -1266,5 +1269,8 @@ namespace io{
                 }
         };
 }
+
+#pragma clang diagnostic pop
+
 #endif
 

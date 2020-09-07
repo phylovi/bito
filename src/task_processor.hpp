@@ -43,9 +43,9 @@
 template <class Executor, class Work>
 class TaskProcessor {
  public:
-  typedef std::function<void(Executor, Work)> Task;
-  typedef std::queue<Executor> ExecutorQueue;
-  typedef std::queue<Work> WorkQueue;
+  using Task = std::function<void(Executor, Work)>;
+  using ExecutorQueue = std::queue<Executor>;
+  using WorkQueue = std::queue<Work>;
 
   TaskProcessor(ExecutorQueue executor_queue, WorkQueue work_queue, Task task)
       : executor_queue_(executor_queue),
@@ -85,7 +85,7 @@ class TaskProcessor {
   std::mutex lock_;
   std::condition_variable condition_variable_;
 
-  void thread_handler(void) {
+  void thread_handler() {
     std::unique_lock<std::mutex> lock(lock_);
     while (work_queue_.size()) {
       // Wait until we have an executor available. This right here is the key of

@@ -20,11 +20,19 @@ class RootedTreeCollection : public PreRootedTreeCollection {
 
   static RootedTreeCollection OfTreeCollection(const TreeCollection& trees);
 
-  void ParseDatesFromTaxonNames();
+  const TagDateMap& GetTagDateMap() const { return tag_date_map_; };
 
-  void InitializeParameters();
+  void SetDatesToBeConstant(bool initialize_time_trees_using_branch_lengths);
+  void ParseDatesFromTaxonNames(bool initialize_time_trees_using_branch_lengths);
+  void ParseDatesFromCSV(const std::string& csv_path,
+                         bool initialize_time_trees_using_branch_lengths);
 
+ private:
   TagDateMap tag_date_map_;
+
+  void SetTipDates();
+  void ProcessTreeDates(bool initialize_time_trees_using_branch_lengths);
+  void ParseDatesFromCSVButDontInitializeTimeTrees(const std::string& csv_path);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
