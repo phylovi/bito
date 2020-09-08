@@ -171,8 +171,7 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   // The prior is expressed using the current value of q_.
   // The phylogenetic component of the likelihood is weighted with the number of times
   // we see the site patterns.
-  const double log_likelihood =
-      log(q_(op.gpcsp_)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  const double log_likelihood = (per_pattern_log_likelihoods_.array() * site_pattern_weights_.array()).sum();
 
   // The per-site likelihood derivative is calculated in the same way as the per-site
   // likelihood, but using the derivative matrix instead of the transition matrix.
