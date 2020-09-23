@@ -139,6 +139,10 @@ struct equal_to<Bitset> {
 };
 }  // namespace std
 
+using SizeOptionVector = std::vector<std::optional<size_t>>;
+
+Bitset Remap(Bitset bitset, const SizeOptionVector& idx_map);
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Bitset") {
   Bitset a("1100");

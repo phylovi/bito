@@ -375,3 +375,13 @@ Bitset Bitset::FakeChildSubsplit(const Bitset& parent_subsplit) {
   // subsplit.
   return FakeSubsplit(parent_subsplit.SplitChunk(1));
 }
+
+Bitset Remap(Bitset bitset, const SizeOptionVector& idx_map) {
+	Bitset result{idx_map.size(), false};
+	for (size_t i = 0; i < idx_map.size(); ++i) {
+		if (idx_map[i].has_value()) {
+			result.set(i, bitset[idx_map[i].value()]);
+		}
+	}
+	return result;
+}
