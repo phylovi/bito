@@ -376,11 +376,11 @@ Bitset Bitset::FakeChildSubsplit(const Bitset& parent_subsplit) {
   return FakeSubsplit(parent_subsplit.SplitChunk(1));
 }
 
-Bitset Remap(Bitset bitset, const SizeOptionVector& idx_map) {
-	Bitset result{idx_map.size(), false};
-	for (size_t i = 0; i < idx_map.size(); ++i) {
-		if (idx_map[i].has_value()) {
-			result.set(i, bitset[idx_map[i].value()]);
+Bitset Remap(Bitset bitset, const SizeOptionVector& idx_table) {
+    Bitset result{idx_table.size(), false};
+    for (size_t i = 0; i < idx_table.size(); ++i) {
+		if (idx_table[i].has_value() && bitset[idx_table[i].value()]) {
+			result.set(i, true);
 		}
 	}
 	return result;

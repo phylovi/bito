@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+#include "sugar.hpp"
+
 // This file started life as the RbBitSet class from RevBayes by Sebastian
 // Hoehna. In general, I'm trying to follow the interface of std::bitset, though
 // this class goes way beyond what std::bitset offers.
@@ -139,9 +141,7 @@ struct equal_to<Bitset> {
 };
 }  // namespace std
 
-using SizeOptionVector = std::vector<std::optional<size_t>>;
-
-Bitset Remap(Bitset bitset, const SizeOptionVector& idx_map);
+Bitset Remap(Bitset bitset, const SizeOptionVector& idx_table);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Bitset") {
@@ -256,6 +256,9 @@ TEST_CASE("Bitset") {
 
   CHECK_EQ(Bitset::FakeSubsplit(Bitset("010")), Bitset("010000"));
   CHECK_EQ(Bitset::FakeChildSubsplit(Bitset("100001")), Bitset("001000"));
+  
+  CHECK_EQ(Remap(Bitset{"10101010101"}, {0,2,4,6,8,10}), Bitset{"111111"});
+  
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
