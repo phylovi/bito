@@ -85,9 +85,11 @@ and you'll get this prompt again when you `scons` or `make`.)
 metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
 full_tag = enscons.get_abi3_tag()
 
+
 def python3_get_includes():
     py_includes = set(os.popen("python3-config --includes").read().rstrip().split())
-    return list(map(lambda s: s.replace('-I', ''), py_includes))
+    return list(map(lambda s: s.replace("-I", ""), py_includes))
+
 
 env = Environment(
     tools=["default", "packaging", enscons.generate, enscons.cpyext.generate],
