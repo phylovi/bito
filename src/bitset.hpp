@@ -141,6 +141,12 @@ struct equal_to<Bitset> {
 };
 }  // namespace std
 
+// Returns a new Bitset with size equal to "idx_table"'s size. Bits in the result
+// will be taken from the "bitset" parameter, with ordering taken from "idx_table".
+// Values in "idx_table" represent indices within "bitset".
+// "False" will be placed at result's indices which has nullopt in the corresponding
+// element in "idx_table". 
+
 Bitset Remap(Bitset bitset, const SizeOptionVector& idx_table);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -257,7 +263,10 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset::FakeSubsplit(Bitset("010")), Bitset("010000"));
   CHECK_EQ(Bitset::FakeChildSubsplit(Bitset("100001")), Bitset("001000"));
   
-  CHECK_EQ(Remap(Bitset{"10101010101"}, {0,2,4,6,8,10}), Bitset{"111111"});
+  CHECK_EQ(Remap(Bitset{"10101010101"}, {0,2,4,6,8,10}), Bitset{"111111"}); // restrict
+  SizeOptionVector rotate120{6,7,8,0,1,2,3,4,5};
+  CHECK_EQ(Remap(Remap(Remap(Bitset{"110010100"}, rotate120), rotate120), rotate120), Bitset{"110010100"});
+  CHECK_EQ(Remap(Bitset{"11"}, {0,std::nullopt,1}), Bitset{"101"}); // lift
   
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
