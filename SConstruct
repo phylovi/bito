@@ -86,12 +86,17 @@ metadata = dict(toml.load(open("pyproject.toml")))["tool"]["enscons"]
 full_tag = enscons.get_abi3_tag()
 
 
+def python3_get_includes():
+    py_includes = set(os.popen("python3-config --includes").read().rstrip().split())
+    return list(map(lambda s: s.replace("-I", ""), py_includes))
+
+
 env = Environment(
     tools=["default", "packaging", enscons.generate, enscons.cpyext.generate],
     PACKAGE_METADATA=metadata,
     WHEEL_TAG=full_tag,
     ENV=os.environ,
-    CPPPATH=["src", "lib/eigen", pybind11.get_include()],
+    CPPPATH=["src", "lib/eigen", pybind11.get_include()] + python3_get_includes(),
     # CCFLAGS=["-g", "-pthread", "-fno-omit-frame-pointer"],
     CCFLAGS=["-O3", "-pthread", "-fno-omit-frame-pointer"],
     CXXFLAGS=["-std=c++17"],
