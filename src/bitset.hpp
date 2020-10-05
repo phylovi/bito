@@ -263,10 +263,10 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset::FakeSubsplit(Bitset("010")), Bitset("010000"));
   CHECK_EQ(Bitset::FakeChildSubsplit(Bitset("100001")), Bitset("001000"));
   
-  CHECK_EQ(Remap(Bitset{"10101010101"}, {0,2,4,6,8,10}), Bitset{"111111"}); // restrict
+  CHECK_EQ(Remap(Bitset("10101010101"), {0,2,4,6,8,10}), Bitset("111111")); // restrict
   SizeOptionVector rotate120{6,7,8,0,1,2,3,4,5};
-  CHECK_EQ(Remap(Remap(Remap(Bitset{"110010100"}, rotate120), rotate120), rotate120), Bitset{"110010100"});
-  CHECK_EQ(Remap(Bitset{"11"}, {0,std::nullopt,1}), Bitset{"101"}); // lift
+  CHECK_EQ(Remap(Remap(Remap(Bitset("110010100"), rotate120), rotate120), rotate120), Bitset("110010100"));
+  CHECK_EQ(Remap(Bitset("11"), {0,std::nullopt,1}), Bitset("101")); // lift
   
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
