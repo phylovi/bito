@@ -146,7 +146,7 @@ struct equal_to<Bitset> {
 // * If the `idx_table` entry is an integer i, then the value is the ith
 //   entry of `bitset`.
 // * If the entry is nullopt, then the value is False (i.e. zero).
-Bitset Remap(Bitset bitset, const SizeOptionVector& idx_table);
+Bitset Remap(Bitset bitset, const SizeOptionVector &idx_table);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Bitset") {
@@ -263,14 +263,13 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset::FakeChildSubsplit(Bitset("100001")), Bitset("001000"));
 
   // Restrict a bitset.
-  CHECK_EQ(Remap(Bitset("10101010101"), {0,2,4,6,8,10}), Bitset("111111"));
+  CHECK_EQ(Remap(Bitset("10101010101"), {0, 2, 4, 6, 8, 10}), Bitset("111111"));
   // If we apply this remap 3 times we should get back to where we started.
-  SizeOptionVector rotate120{6,7,8,0,1,2,3,4,5};
+  SizeOptionVector rotate120{6, 7, 8, 0, 1, 2, 3, 4, 5};
   auto to_rotate = Bitset("110010100");
   CHECK_EQ(Remap(Remap(Remap(to_rotate, rotate120), rotate120), rotate120), to_rotate);
   // "Lift" a bitset.
-  CHECK_EQ(Remap(Bitset("11"), {0,std::nullopt,1}), Bitset("101"));
-
+  CHECK_EQ(Remap(Bitset("11"), {0, std::nullopt, 1}), Bitset("101"));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
