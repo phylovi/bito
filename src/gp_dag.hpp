@@ -113,9 +113,13 @@ class GPDAG {
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(const NodeLambda &f) const;
-  // Iterate over the leafward edges of node using an EdgeDestinationLambda.
+  // Iterate over the all leafward edges, rotated and sorted, of node using an EdgeDestinationLambda.
   void IterateOverLeafwardEdges(const GPDAGNode *node,
                                 const EdgeDestinationLambda &f) const;
+  // Iterate over only the rotated/sorted leafward edges of node using a NodeLambda.
+  void IterateOverLeafwardEdges(const GPDAGNode *node,
+                                bool rotated,
+                                const NodeLambda &f) const;
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
   void IterateOverRootwardEdges(const GPDAGNode *node,
                                 const EdgeDestinationLambda &f) const;
@@ -152,15 +156,10 @@ class GPDAG {
   void AddRhatOperations(const GPDAGNode *node, GPOperationVector &operations) const;
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
-  // This function visits and optimizes branches in depth first fashion.
-  // It updates p-PLVs and r-PLVs to reflect/propagate the results
-  // of branch length optimization from/to other parts of the tree.
-  void ScheduleBranchLengthOptimization(size_t node_id,
-                                        std::unordered_set<size_t> &visited_nodes,
+  void ScheduleBranchLengthOptimization(SizeVector postorder_node_ids,
                                         GPOperationVector &operations) const;
-  void ScheduleSBNParameterOptimization(size_t node_id,
-                                        std::unordered_set<size_t> &visited_nodes,
-                                        GPOperationVector &operations) const;
+  void ScheduleBranchLengthOptimizationReverse(SizeVector reverse_postorder_node_ids,
+                                               GPOperationVector &operations) const;
 
   void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
