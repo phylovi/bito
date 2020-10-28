@@ -192,104 +192,59 @@ EigenVectorXd GPDAG::BuildUniformPrior() const {
   return q;
 }
 
+void GPDAG::UpdateRPlvs(size_t node_id, GPOperationVector &operations) const {
+    // Compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
+    operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, node_id)});
+    UpdateRHat(node_id, false, operations);
+    UpdateRHat(node_id, true, operations);
+
+    // Update r(s) and r_tilde(s)
+    operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_id),
+                                  GetPLVIndex(PLVType::R_HAT, node_id),
+                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
+    operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
+                                  GetPLVIndex(PLVType::R_HAT, node_id),
+                                  GetPLVIndex(PLVType::P_HAT, node_id)});
+}
+
+void GPDAG::ResetAndUpdatePHatAndPropagateRPlv(const GPDAGNode *node, bool rotated, GPOperationVector &operations) const {
+    PLVType p_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
+    PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
+    
+    size_t node_id = node->Id();
+
+    operations.push_back(Zero{GetPLVIndex(p_plv_type, node_id)});
+    // Optimize edges with sorted and then rotated children.
+    IterateOverLeafwardEdges(node, rotated, [this, &operations, &rotated, &node_id](const GPDAGNode *child_node) {
+      OptimizeBranchLengthUpdatePHat(node_id, child_node->Id(), rotated, operations);
+    });
+    // Update r_tilde(t) = r_hat(t) \circ p_hat(t) and r(t) = r_hat(t) \circ p_hat_tilde(t)
+    operations.push_back(Multiply{GetPLVIndex(r_plv_type, node_id),
+                                  GetPLVIndex(PLVType::R_HAT, node_id),
+                                  GetPLVIndex(p_plv_type, node_id)});
+
+}
+
 void GPDAG::ScheduleBranchLengthOptimization(SizeVector postorder_node_ids,
-                                             GPOperationVector &operations) const {
+  bool is_reverse_postorder, GPOperationVector &operations) const {
   for (auto node_id : postorder_node_ids) {
     const auto node = GetDagNode(node_id);
 
     if (!node->IsRoot()) {
-      // Compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
-      operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, node_id)});
-      UpdateRHat(node_id, false, operations);
-      UpdateRHat(node_id, true, operations);
-
-      // Update r(s) and r_tilde(s)
-      operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_id),
-                                    GetPLVIndex(PLVType::R_HAT, node_id),
-                                    GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-      operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
-                                    GetPLVIndex(PLVType::R_HAT, node_id),
-                                    GetPLVIndex(PLVType::P_HAT, node_id)});
+      UpdateRPlvs(node_id, operations);
     }
-
     if (node->IsLeaf()) {
       continue;
     }
-    
-    operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT, node_id)});
-    // Optimize edges with sorted and then rotated children.
-    IterateOverLeafwardEdges(node, false, [this, &operations, &node_id](const GPDAGNode *child_node) {
-      OptimizeBranchLengthUpdatePHat(node_id, child_node->Id(), false, operations);
-    });
 
-    // Update r_tilde(t) = r_hat(t) \circ p_hat(t).
-    operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
-                                  GetPLVIndex(PLVType::R_HAT, node_id),
-                                  GetPLVIndex(PLVType::P_HAT, node_id)});
-
-    operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-    
-    IterateOverLeafwardEdges(node, true, [this, &operations, &node_id](const GPDAGNode *child_node) {
-      OptimizeBranchLengthUpdatePHat(node_id, child_node->Id(), true, operations);
-    });
-    
-    // Update r(t) = r_hat(t) \circ p_hat_tilde(t).
-    operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_id),
-                                  GetPLVIndex(PLVType::R_HAT, node_id),
-                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-
-    // Update p(t).
-    operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
-                                  GetPLVIndex(PLVType::P_HAT, node_id),
-                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-  }
-};
-
-void GPDAG::ScheduleBranchLengthOptimizationReverse(SizeVector reverse_postorder_node_ids,
-                                                    GPOperationVector &operations) const {
-  for (auto node_id : reverse_postorder_node_ids) {
-    const auto node = GetDagNode(node_id);
-    
-    if (!node->IsRoot()) {
-      // Compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
-      operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, node_id)});
-      UpdateRHat(node_id, false, operations);
-      UpdateRHat(node_id, true, operations);
-
-      // Update r(s) and r_tilde(s)
-      operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_id),
-                                    GetPLVIndex(PLVType::R_HAT, node_id),
-                                    GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-      operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
-                                    GetPLVIndex(PLVType::R_HAT, node_id),
-                                    GetPLVIndex(PLVType::P_HAT, node_id)});
-    }
-
-    if (node->IsLeaf()) {
-      continue;
+    if (is_reverse_postorder) {
+      ResetAndUpdatePHatAndPropagateRPlv(node, true, operations);
+      ResetAndUpdatePHatAndPropagateRPlv(node, false, operations);
+    } else {
+      ResetAndUpdatePHatAndPropagateRPlv(node, false, operations);
+      ResetAndUpdatePHatAndPropagateRPlv(node, true, operations);
     }
     
-    // Optimize edges with rotated and then sorted children in reverse order.
-    operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-    IterateOverLeafwardEdges(node, true, [this, &operations, &node_id](const GPDAGNode *child_node) {
-      OptimizeBranchLengthUpdatePHat(node_id, child_node->Id(), true, operations);
-    });
-
-    // Update r(t) = r_hat(t) \circ p_hat_tilde(t).
-    operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_id),
-                                  GetPLVIndex(PLVType::R_HAT, node_id),
-                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-
-    operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT, node_id)});
-    IterateOverLeafwardEdges(node, false, [this, &operations, &node_id](const GPDAGNode *child_node) {
-      OptimizeBranchLengthUpdatePHat(node_id, child_node->Id(), false, operations);
-    });
-    
-    // Update r_tilde(t) = r_hat(t) \circ p_hat(t).
-    operations.push_back(Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
-                                  GetPLVIndex(PLVType::R_HAT, node_id),
-                                  GetPLVIndex(PLVType::P_HAT, node_id)});
-
     // Update p(t).
     operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
                                   GetPLVIndex(PLVType::P_HAT, node_id),
@@ -304,8 +259,8 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
   auto reverse_postorder = postorder;
   std::reverse(reverse_postorder.begin(), reverse_postorder.end());
 
-  ScheduleBranchLengthOptimizationReverse(reverse_postorder, operations);
-  ScheduleBranchLengthOptimization(postorder, operations);
+  ScheduleBranchLengthOptimization(reverse_postorder, true, operations);  
+  ScheduleBranchLengthOptimization(postorder, false, operations);
   
   return operations;
 }
