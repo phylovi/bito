@@ -157,16 +157,15 @@ class GPDAG {
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
   void ScheduleBranchLengthOptimization(SizeVector postorder_node_ids,
-                                        GPOperationVector &operations) const;
-  void ScheduleBranchLengthOptimizationReverse(SizeVector reverse_postorder_node_ids,
-                                               GPOperationVector &operations) const;
-
+    bool is_reverse_postorder, GPOperationVector &operations) const;
   void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
                                    GPOperationVector &operations) const;
   void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
                                       bool rotated,
                                       GPOperationVector &operations) const;
+  void UpdateRPlvs(size_t node_id, GPOperationVector &operations) const;
+  void ResetAndUpdatePHatAndPropagateRPlv(const GPDAGNode *node, bool rotated, GPOperationVector &operations) const;
 
   Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated);
 };
