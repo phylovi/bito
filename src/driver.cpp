@@ -68,6 +68,12 @@ TreeCollection Driver::ParseNewickFile(const std::string &fname) {
       TaxonNameMunging::DequoteTagStringMap(perhaps_quoted_trees.TagTaxonMap()));
 }
 
+void GetLineAndConvertToLowerCase(std::ifstream &in, std::string &line) {
+  std::getline(in, line);
+  std::transform(line.begin(), line.end(), line.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+}
+
 TreeCollection Driver::ParseNexusFile(const std::string &fname) {
   Clear();
   std::ifstream in(fname.c_str());
@@ -84,12 +90,10 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
       if (in.eof()) {
         throw std::runtime_error("Finished reading and couldn't find 'begin trees;'");
       }
-      std::getline(in, line);
-      // BEAST uses "Begin trees;" so we tolower here.
-      line[0] = std::tolower(line[0]);
+      GetLineAndConvertToLowerCase(in, line);
     } while (line != "begin trees;");
-    std::getline(in, line);
-    std::regex translate_start("^\\s*[Tt]ranslate");
+    GetLineAndConvertToLowerCase(in, line);
+    std::regex translate_start("^\\s*translate");
     if (!std::regex_match(line, translate_start)) {
       throw std::runtime_error("Missing translate block.");
     }
