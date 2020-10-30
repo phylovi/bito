@@ -141,22 +141,6 @@ TEST_CASE("GPInstance: gradient calculation") {
   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
 }
 
-// Regression test.
-// TODO: Change this test to be independent of other tests.
-//TEST_CASE("GPInstance: branch length optimization") {
-//  auto inst = MakeHelloGPInstanceTwoTrees();
-//
-//  EigenVectorXd expected_branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
-//
-//  // Reset.
-//  inst = MakeHelloGPInstanceTwoTrees();
-//  inst.EstimateBranchLengths(1e-6, 100);
-//  EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
-//  std::cout << expected_branch_lengths << std::endl;
-//  std::cout << realized_branch_lengths << std::endl;
-//  CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
-//}
-
 GPInstance MakeFluAGPInstance(double rescaling_threshold) {
   GPInstance inst("_ignore/mmapped_plv.data");
   inst.ReadFastaFile("data/fluA.fa");
@@ -300,10 +284,4 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   NumericalUtils::ProbabilityNormalizeInLog(realized_log_lik_vector_at_rootsplits);
   EigenVectorXd expected_q = realized_log_lik_vector_at_rootsplits.array().exp();
   CheckVectorXdEqualityAfterSorting(realized_q, expected_q, 1e-6);
-  
-  // TODO: Test to comopare log likelihood vectors and remove "rootsplit" from the name of this function.
-}
-
-TEST_CASE("GPInstance: GP branch length gradient test") {
-  // TODO: Add a test here.
 }
