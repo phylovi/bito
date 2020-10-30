@@ -113,12 +113,12 @@ class GPDAG {
 
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(const NodeLambda &f) const;
-  // Iterate over the all leafward edges, rotated and sorted, of node using an EdgeDestinationLambda.
+  // Iterate over the all leafward edges, rotated and sorted, of node using an
+  // EdgeDestinationLambda.
   void IterateOverLeafwardEdges(const GPDAGNode *node,
                                 const EdgeDestinationLambda &f) const;
   // Iterate over only the rotated/sorted leafward edges of node using a NodeLambda.
-  void IterateOverLeafwardEdges(const GPDAGNode *node,
-                                bool rotated,
+  void IterateOverLeafwardEdges(const GPDAGNode *node, bool rotated,
                                 const NodeLambda &f) const;
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
   void IterateOverRootwardEdges(const GPDAGNode *node,
@@ -157,7 +157,8 @@ class GPDAG {
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
   void ScheduleBranchLengthOptimization(SizeVector postorder_node_ids,
-    bool is_reverse_postorder, GPOperationVector &operations) const;
+                                        bool is_reverse_postorder,
+                                        GPOperationVector &operations) const;
   void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
                                    GPOperationVector &operations) const;
@@ -165,7 +166,8 @@ class GPDAG {
                                       bool rotated,
                                       GPOperationVector &operations) const;
   void UpdateRPlvs(size_t node_id, GPOperationVector &operations) const;
-  void ResetAndUpdatePHatAndPropagateRPlv(const GPDAGNode *node, bool rotated, GPOperationVector &operations) const;
+  void ResetAndUpdatePHatAndPropagateRPlv(const GPDAGNode *node, bool rotated,
+                                          GPOperationVector &operations) const;
 
   Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated);
 };

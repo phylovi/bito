@@ -111,7 +111,8 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
     return;
   }
   // else
-  EigenVectorXd log_likelihood = GetPerGPCSPLogLikelihoods().segment(op.start_, range_length);
+  EigenVectorXd log_likelihood =
+      GetPerGPCSPLogLikelihoods().segment(op.start_, range_length);
   EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
   EigenVectorXd unnormalize_posterior = log_likelihood + log_prior;
   const double log_norm = NumericalUtils::LogSum(unnormalize_posterior);
@@ -171,7 +172,8 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   // The prior is expressed using the current value of q_.
   // The phylogenetic component of the likelihood is weighted with the number of times
   // we see the site patterns.
-  const double log_likelihood = (per_pattern_log_likelihoods_.array() * site_pattern_weights_.array()).sum();
+  const double log_likelihood =
+      (per_pattern_log_likelihoods_.array() * site_pattern_weights_.array()).sum();
 
   // The per-site likelihood derivative is calculated in the same way as the per-site
   // likelihood, but using the derivative matrix instead of the transition matrix.
