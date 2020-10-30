@@ -253,7 +253,8 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   // multiply this by q(\tau) = 1/4 since we are assuming uniform prior.
 
   // The collection of trees that we are looking at has 3 rootplits where one root split
-  // generates two trees for the total of 4 trees.
+  // generates two trees and the other 2 root splits generating one tree each
+  // for the total of 4 trees.
 
   // We will compare the values against the 3 rootsplits, since we cannot assume
   // the ordering due to different implementation of the map, we will sort the values
@@ -278,10 +279,16 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
       log_likelihood_vector.segment(0, 3);
   CheckVectorXdEqualityAfterSorting(realized_log_lik_vector_at_rootsplits,
                                     expected_log_lik_vector_at_rootsplits, 1e-6);
-
+  
   inst.EstimateSBNParameters();
   EigenVectorXd realized_q = inst.GetEngine()->GetSBNParameters().segment(0, 3);
-  NumericalUtils::ProbabilityNormalizeInLog(realized_log_lik_vector_at_rootsplits);
-  EigenVectorXd expected_q = realized_log_lik_vector_at_rootsplits.array().exp();
+  // The expected values for the SBN parameters: q[s] \propto log_lik[s] + log_prior[s].
+  // The SBN params are initialized so that we get a uniform distribution over the trees.
+  // For the rootsplits, the values are (1/4, 1/4, 2/4) corresponding to the entries in expected_log_lik_vector_at_rootsplits.
+  EigenVectorXd log_prior(3);
+  log_prior << log(1./4), log(1./4), log(2./4);
+  EigenVectorXd expected_q = expected_log_lik_vector_at_rootsplits + log_prior;
+  NumericalUtils::ProbabilityNormalizeInLog(expected_q);
+  expected_q = expected_q.array().exp();
   CheckVectorXdEqualityAfterSorting(realized_q, expected_q, 1e-6);
 }

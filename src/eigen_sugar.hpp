@@ -47,11 +47,13 @@ void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
   }
 };
 
-void CheckVectorXdEqualityAfterSorting(EigenVectorXd v1, EigenVectorXd v2,
+void CheckVectorXdEqualityAfterSorting(const EigenVectorXdRef v1, const EigenVectorXdRef v2,
                                        double tolerance) {
-  std::sort(v1.begin(), v1.end());
-  std::sort(v2.begin(), v2.end());
-  CheckVectorXdEquality(v1, v2, tolerance);
+  EigenVectorXd v1_sorted = v1;
+  EigenVectorXd v2_sorted = v2;
+  std::sort(v1_sorted.begin(), v1_sorted.end());
+  std::sort(v2_sorted.begin(), v2_sorted.end());
+  CheckVectorXdEquality(v1_sorted, v2_sorted, tolerance);
 };
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
