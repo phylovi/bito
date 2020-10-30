@@ -111,12 +111,12 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
     return;
   }
   // else
-  EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods();
-  Eigen::VectorBlock<EigenVectorXd> segment =
-      log_likelihoods.segment(op.start_, range_length);
-  const double log_norm = NumericalUtils::LogSum(segment);
-  segment.array() -= log_norm;
-  q_.segment(op.start_, range_length) = segment.array().exp();
+  EigenVectorXd log_likelihood = GetPerGPCSPLogLikelihoods().segment(op.start_, range_length);
+  EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
+  EigenVectorXd unnormalize_posterior = log_likelihood + log_prior;
+  const double log_norm = NumericalUtils::LogSum(unnormalize_posterior);
+  unnormalize_posterior.array() -= log_norm;
+  q_.segment(op.start_, range_length) = unnormalize_posterior.array().exp();
 }
 
 void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
