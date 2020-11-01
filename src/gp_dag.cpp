@@ -208,8 +208,8 @@ void GPDAG::UpdateRPlvs(size_t node_id, GPOperationVector &operations) const {
                                 GetPLVIndex(PLVType::P_HAT, node_id)});
 }
 
-void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPlv(const GPDAGNode *node, bool rotated,
-                                               GPOperationVector &operations) const {
+void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPlv(
+    const GPDAGNode *node, bool rotated, GPOperationVector &operations) const {
   PLVType p_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
   PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
 
