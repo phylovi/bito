@@ -146,8 +146,8 @@ class GPDAG {
   // Update gpcsp_indexer_ rootsplits to be full subsplits.
   void ExpandRootsplitsInIndexer();
 
-  [[nodiscard]] GPOperationVector LeafwardPass(SizeVector visit_order) const;
-  [[nodiscard]] GPOperationVector RootwardPass(SizeVector visit_order) const;
+  [[nodiscard]] GPOperationVector LeafwardPass(const SizeVector &visit_order) const;
+  [[nodiscard]] GPOperationVector RootwardPass(const SizeVector &visit_order) const;
   [[nodiscard]] SizeVector LeafwardPassTraversal() const;
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
 
@@ -156,7 +156,10 @@ class GPDAG {
   void AddRhatOperations(const GPDAGNode *node, GPOperationVector &operations) const;
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
-  void ScheduleBranchLengthOptimization(SizeVector postorder_node_ids,
+  // This function visits and optimizes branches in depth first fashion.
+  // It updates p-PLVs and r-PLVs to reflect/propagate the results
+  // of branch length optimization from/to other parts of the tree.
+  void ScheduleBranchLengthOptimization(const SizeVector &postorder_node_ids,
                                         bool is_reverse_postorder,
                                         GPOperationVector &operations) const;
   void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
@@ -165,8 +168,8 @@ class GPDAG {
   void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
                                       bool rotated,
                                       GPOperationVector &operations) const;
-  void UpdateRPlvs(size_t node_id, GPOperationVector &operations) const;
-  void OptimizeBranchLengthsUpdatePHatAndPropagateRPlv(const GPDAGNode *node, bool rotated,
+  void UpdateRPLVs(size_t node_id, GPOperationVector &operations) const;
+  void OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(const GPDAGNode *node, bool rotated,
                                           GPOperationVector &operations) const;
 
   Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated);

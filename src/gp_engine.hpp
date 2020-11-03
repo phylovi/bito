@@ -60,6 +60,7 @@ class GPEngine {
   EigenVectorXd GetPerGPCSPLogLikelihoods() const {
     return log_likelihoods_ * site_pattern_weights_;
   };
+  EigenVectorXd GetPerGPCSPLogLikelihoods(size_t start, size_t length) const;
   EigenMatrixXd GetLogLikelihoodMatrix() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
 

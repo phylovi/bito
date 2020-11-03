@@ -61,7 +61,7 @@ void GPDAG::PrintGPCSPIndexer() const {
   for (const auto &[pcsp, idx] : gpcsp_indexer_) {
     // Since pcsp may be a rootsubsplit, we need to check and get subsplit.
     std::string gpcsp_string =
-        pcsp.size() % 3 == 0 ? pcsp.PCSPToString() : pcsp.SubsplitToString();
+        pcsp.size() == (taxon_count_ * 3) ? pcsp.PCSPToString() : pcsp.SubsplitToString();
     std::cout << gpcsp_string << ", " << idx << std::endl;
   }
 }
@@ -193,7 +193,7 @@ EigenVectorXd GPDAG::BuildUniformPrior() const {
   return q;
 }
 
-void GPDAG::UpdateRPlvs(size_t node_id, GPOperationVector &operations) const {
+void GPDAG::UpdateRPLVs(size_t node_id, GPOperationVector &operations) const {
   // Compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
   operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, node_id)});
   UpdateRHat(node_id, false, operations);
@@ -208,14 +208,14 @@ void GPDAG::UpdateRPlvs(size_t node_id, GPOperationVector &operations) const {
                                 GetPLVIndex(PLVType::P_HAT, node_id)});
 }
 
-void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPlv(const GPDAGNode *node, bool rotated,
+void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(const GPDAGNode *node, bool rotated,
                                                GPOperationVector &operations) const {
-  PLVType p_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
+  PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
   PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
 
   size_t node_id = node->Id();
 
-  operations.push_back(Zero{GetPLVIndex(p_plv_type, node_id)});
+  operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
   IterateOverLeafwardEdges(
       node, rotated,
       [this, &operations, &rotated, &node_id](const GPDAGNode *child_node) {
@@ -225,28 +225,30 @@ void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPlv(const GPDAGNode *nod
   // p_hat_tilde(t)
   operations.push_back(Multiply{GetPLVIndex(r_plv_type, node_id),
                                 GetPLVIndex(PLVType::R_HAT, node_id),
-                                GetPLVIndex(p_plv_type, node_id)});
+                                GetPLVIndex(p_hat_plv_type, node_id)});
 }
 
-void GPDAG::ScheduleBranchLengthOptimization(SizeVector postorder_node_ids,
+void GPDAG::ScheduleBranchLengthOptimization(const SizeVector &postorder_node_ids,
                                              bool is_reverse_postorder,
                                              GPOperationVector &operations) const {
   for (auto node_id : postorder_node_ids) {
     const auto node = GetDagNode(node_id);
 
     if (!node->IsRoot()) {
-      UpdateRPlvs(node_id, operations);
+      UpdateRPLVs(node_id, operations);
     }
     if (node->IsLeaf()) {
       continue;
     }
 
+    // In the reverse postorder, we will visit the rotated edges then sorted edges.
+    // This means that for postorder, we visit sorted edges and then the rotated edges to ensure that we visit the nodes in reverse.
     if (is_reverse_postorder) {
-      OptimizeBranchLengthsUpdatePHatAndPropagateRPlv(node, true, operations);
-      OptimizeBranchLengthsUpdatePHatAndPropagateRPlv(node, false, operations);
+      OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, true, operations);
+      OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, false, operations);
     } else {
-      OptimizeBranchLengthsUpdatePHatAndPropagateRPlv(node, false, operations);
-      OptimizeBranchLengthsUpdatePHatAndPropagateRPlv(node, true, operations);
+      OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, false, operations);
+      OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, true, operations);
     }
 
     // Update p(t).
@@ -550,7 +552,7 @@ void LeafwardDepthFirst(size_t id,
   visit_order.push_back(id);
 }
 
-GPOperationVector GPDAG::LeafwardPass(SizeVector visit_order) const {
+GPOperationVector GPDAG::LeafwardPass(const SizeVector &visit_order) const {
   GPOperationVector operations;
   for (const size_t node_id : visit_order) {
     const auto node = GetDagNode(node_id);
@@ -569,7 +571,7 @@ GPOperationVector GPDAG::LeafwardPass(SizeVector visit_order) const {
   return operations;
 }
 
-GPOperationVector GPDAG::RootwardPass(SizeVector visit_order) const {
+GPOperationVector GPDAG::RootwardPass(const SizeVector &visit_order) const {
   GPOperationVector operations;
   for (const size_t node_id : visit_order) {
     const auto node = GetDagNode(node_id);
