@@ -169,8 +169,8 @@ class GPDAG {
                                       bool rotated,
                                       GPOperationVector &operations) const;
   void UpdateRPLVs(size_t node_id, GPOperationVector &operations) const;
-  void OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(const GPDAGNode *node, bool rotated,
-                                          GPOperationVector &operations) const;
+  void OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
+      const GPDAGNode *node, bool rotated, GPOperationVector &operations) const;
 
   Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated);
 };

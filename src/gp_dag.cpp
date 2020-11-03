@@ -60,8 +60,9 @@ void GPDAG::Print() const {
 void GPDAG::PrintGPCSPIndexer() const {
   for (const auto &[pcsp, idx] : gpcsp_indexer_) {
     // Since pcsp may be a rootsubsplit, we need to check and get subsplit.
-    std::string gpcsp_string =
-        pcsp.size() == (taxon_count_ * 3) ? pcsp.PCSPToString() : pcsp.SubsplitToString();
+    std::string gpcsp_string = pcsp.size() == (taxon_count_ * 3)
+                                   ? pcsp.PCSPToString()
+                                   : pcsp.SubsplitToString();
     std::cout << gpcsp_string << ", " << idx << std::endl;
   }
 }
@@ -208,8 +209,8 @@ void GPDAG::UpdateRPLVs(size_t node_id, GPOperationVector &operations) const {
                                 GetPLVIndex(PLVType::P_HAT, node_id)});
 }
 
-void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(const GPDAGNode *node, bool rotated,
-                                               GPOperationVector &operations) const {
+void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
+    const GPDAGNode *node, bool rotated, GPOperationVector &operations) const {
   PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
   PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
 
@@ -242,7 +243,8 @@ void GPDAG::ScheduleBranchLengthOptimization(const SizeVector &postorder_node_id
     }
 
     // In the reverse postorder, we will visit the rotated edges then sorted edges.
-    // This means that for postorder, we visit sorted edges and then the rotated edges to ensure that we visit the nodes in reverse.
+    // This means that for postorder, we visit sorted edges and then the rotated edges
+    // to ensure that we visit the nodes in reverse.
     if (is_reverse_postorder) {
       OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, true, operations);
       OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, false, operations);

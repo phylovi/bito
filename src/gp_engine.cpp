@@ -166,7 +166,9 @@ void GPEngine::PrintPLV(size_t plv_idx) {
 }
 
 EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(size_t start, size_t length) const {
-  EigenVectorXd likelihood_segment = log_likelihoods_.block(start, 0, length, log_likelihoods_.cols()) * site_pattern_weights_;
+  EigenVectorXd likelihood_segment =
+      log_likelihoods_.block(start, 0, length, log_likelihoods_.cols()) *
+      site_pattern_weights_;
   return likelihood_segment;
 };
 
