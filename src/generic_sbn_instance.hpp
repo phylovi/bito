@@ -71,7 +71,7 @@ class GenericSBNInstance {
   BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter &topologies) const {
     return TSBNSupport::RootsplitCounterOf(topologies);
   }
-  PCSPDict PCSPCounterOf(const Node::TopologyCounter &topologies) const {
+  PCSPCounter PCSPCounterOf(const Node::TopologyCounter &topologies) const {
     return TSBNSupport::PCSPCounterOf(topologies);
   }
   StringVector PrettyIndexer() const { return sbn_support_.PrettyIndexer(); }
@@ -81,15 +81,23 @@ class GenericSBNInstance {
 
   // ** SBN-related items
 
+  void SetSBNSupport(const TSBNSupport &sbn_support) {
+    sbn_support_ = sbn_support;
+    sbn_parameters_.resize(sbn_support_.GPCSPCount());
+    sbn_parameters_.setOnes();
+    psp_indexer_ = sbn_support_.BuildPSPIndexer();
+  }
+
   // Use the loaded trees to set up the TopologyCounter, SBNSupport, etc.
   void ProcessLoadedTrees() {
     ClearTreeCollectionAssociatedState();
     topology_counter_ = TopologyCounter();
-    sbn_support_ = TSBNSupport(topology_counter_, tree_collection_.TaxonNames());
-    sbn_parameters_.resize(sbn_support_.GPCSPCount());
-    sbn_parameters_.setOnes();
-    psp_indexer_ = sbn_support_.BuildPSPIndexer();
+    SetSBNSupport(TSBNSupport(topology_counter_, tree_collection_.TaxonNames()));
   };
+
+  // TODO we need a way of ingesting SBN support and a list of taxon names.
+  // Then the subclasses can call the correct PreSBNSupport builder and then something
+  // that gets taxon names out of a nexus file.
 
   void CheckTopologyCounter() {
     if (TopologyCounter().empty()) {
@@ -134,6 +142,11 @@ class GenericSBNInstance {
     }
     return result;
   }
+
+  //  void SetSBNParameters(const BitsetDoubleMap &values) {
+  //    // Iterate through the bitset double map, using the support to get indices and
+  //    // updating the values.
+  //  }
 
   void SBNParametersToCSV(const std::string &file_path) {
     CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);

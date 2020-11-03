@@ -43,7 +43,7 @@ class RootedSBNSupport : public SBNSupport {
     return RootedSBNMaps::RootsplitCounterOf(topologies);
   }
 
-  static PCSPDict PCSPCounterOf(const Node::TopologyCounter &topologies) {
+  static PCSPCounter PCSPCounterOf(const Node::TopologyCounter &topologies) {
     return RootedSBNMaps::PCSPCounterOf(topologies);
   }
 };

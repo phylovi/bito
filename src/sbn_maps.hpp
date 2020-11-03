@@ -27,7 +27,8 @@ using RootedIndexerRepresentationCounter =
 using UnrootedIndexerRepresentation = SizeVectorVector;
 using UnrootedIndexerRepresentationCounter =
     std::vector<std::pair<UnrootedIndexerRepresentation, uint32_t>>;
-using PCSPDict = std::unordered_map<Bitset, DefaultDict<Bitset, size_t>>;
+using PCSPSupportDict = std::unordered_map<Bitset, std::vector<Bitset>>;
+using PCSPCounter = std::unordered_map<Bitset, DefaultDict<Bitset, size_t>>;
 using PCSPIndexVector = std::vector<size_t>;
 using RootedIndexerRepresentationSizeDict =
     DefaultDict<RootedIndexerRepresentation, size_t>;
@@ -36,6 +37,7 @@ using StringSizePairMap = std::unordered_map<std::string, std::pair<size_t, size
 using SizeStringMap = std::unordered_map<size_t, std::string>;
 using StringPCSPMap =
     std::unordered_map<std::string, std::unordered_map<std::string, size_t>>;
+// An ensemble of indexing data structures needed for an SBNSupport.
 using IndexerBundle =
     std::tuple<BitsetVector, BitsetSizeMap, SizeBitsetMap, BitsetSizePairMap, size_t>;
 
@@ -45,24 +47,28 @@ SizeBitsetMap IdIdSetMapOf(const Node::NodePtr& topology);
 // This function returns a vector indexed by the edges of the tree and
 // containing indices of the corresponding splits as indexed by the indexer.
 SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& topology);
-// Make a string version of a PCSPDict.
-StringPCSPMap StringPCSPMapOf(PCSPDict d);
+// Make a string version of a PCSPCounter.
+StringPCSPMap StringPCSPMapOf(PCSPCounter d);
 // Make a PCSP bitset from a collection of Nodes and their directions. If direction is
 // true, then the bits get flipped.
-Bitset PCSPBitsetOf(const size_t leaf_count,  //
+Bitset PCSPBitsetOf(size_t leaf_count,  //
                     const Node* sister_node, bool sister_direction,
                     const Node* focal_node, bool focal_direction,
                     const Node* child0_node, bool child0_direction,
                     const Node* child1_node, bool child1_direction);
+// TODO: Build an IndexerBundle from counters of rootsplits and PCSPs. Note that the
+// actual counts don't matter: we are just using the support here.
+// ... would I rather do that, or have
+// using PCSPSupportDict = std::unordered_map<Bitset, std::vector<Bitset>>;
 IndexerBundle BuildIndexerBundle(const BitsetSizeDict& rootsplit_counter,
-                                 const PCSPDict& pcsp_counter);
+                                 const PCSPCounter& pcsp_counter);
 }  // namespace SBNMaps
 
 namespace UnrootedSBNMaps {
 // Make a DefaultDict mapping rootsplits to the number of times they were seen.
 BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
-// Make a PCSPDict mapping PCSPs to the number of times they were seen.
-PCSPDict PCSPCounterOf(const Node::TopologyCounter& topologies);
+// Make a PCSPCounter mapping PCSPs to the number of times they were seen.
+PCSPCounter PCSPCounterOf(const Node::TopologyCounter& topologies);
 // This function gives information about the rootsplits and PCSPs of a given
 // topology with respect to the current indexing data structures.
 // Specifically, it returns a vector of vectors, such that the ith vector is the indices
@@ -92,8 +98,8 @@ StringSetVector StringIndexerRepresentationOf(
 namespace RootedSBNMaps {
 // Make a DefaultDict mapping rootsplits to the number of times they were seen.
 BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
-// Make a PCSPDict mapping PCSPs to the number of times they were seen.
-PCSPDict PCSPCounterOf(const Node::TopologyCounter& topologies);
+// Make a PCSPCounter mapping PCSPs to the number of times they were seen.
+PCSPCounter PCSPCounterOf(const Node::TopologyCounter& topologies);
 // A rooted indexer representation is the indexer representation of a given rooted tree.
 // That is, the first entry is the rootsplit for that rooting, and after that come the
 // PCSP indices.

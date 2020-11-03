@@ -44,7 +44,7 @@ class UnrootedSBNSupport : public SBNSupport {
     return UnrootedSBNMaps::RootsplitCounterOf(topologies);
   }
 
-  static PCSPDict PCSPCounterOf(const Node::TopologyCounter &topologies) {
+  static PCSPCounter PCSPCounterOf(const Node::TopologyCounter &topologies) {
     return UnrootedSBNMaps::PCSPCounterOf(topologies);
   }
 };
