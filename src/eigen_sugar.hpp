@@ -47,8 +47,8 @@ void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
   }
 };
 
-void CheckVectorXdEqualityAfterSorting(const EigenVectorXdRef v1, const EigenVectorXdRef v2,
-                                       double tolerance) {
+void CheckVectorXdEqualityAfterSorting(const EigenVectorXdRef v1,
+                                       const EigenVectorXdRef v2, double tolerance) {
   EigenVectorXd v1_sorted = v1;
   EigenVectorXd v2_sorted = v2;
   std::sort(v1_sorted.begin(), v1_sorted.end());
