@@ -229,10 +229,14 @@ void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
                                 GetPLVIndex(p_hat_plv_type, node_id)});
 }
 
-void GPDAG::ScheduleBranchLengthOptimization(const SizeVector &postorder_node_ids,
-                                             bool is_reverse_postorder,
+void GPDAG::ScheduleBranchLengthOptimization(bool is_reverse_postorder,
                                              GPOperationVector &operations) const {
-  for (auto node_id : postorder_node_ids) {
+  auto traversal = RootwardPassTraversal();
+  if (is_reverse_postorder) {
+    std::reverse(traversal.begin(), traversal.end());
+  }
+
+  for (auto node_id : traversal) {
     const auto node = GetDagNode(node_id);
 
     if (!node->IsRoot()) {
@@ -263,12 +267,8 @@ void GPDAG::ScheduleBranchLengthOptimization(const SizeVector &postorder_node_id
 GPOperationVector GPDAG::BranchLengthOptimization() const {
   GPOperationVector operations;
 
-  auto postorder = RootwardPassTraversal();
-  auto reverse_postorder = postorder;
-  std::reverse(reverse_postorder.begin(), reverse_postorder.end());
-
-  ScheduleBranchLengthOptimization(reverse_postorder, true, operations);
-  ScheduleBranchLengthOptimization(postorder, false, operations);
+  ScheduleBranchLengthOptimization(true, operations);
+  ScheduleBranchLengthOptimization(false, operations);
 
   return operations;
 }

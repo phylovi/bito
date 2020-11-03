@@ -159,8 +159,7 @@ class GPDAG {
   // This function visits and optimizes branches in depth first fashion.
   // It updates p-PLVs and r-PLVs to reflect/propagate the results
   // of branch length optimization from/to other parts of the tree.
-  void ScheduleBranchLengthOptimization(const SizeVector &postorder_node_ids,
-                                        bool is_reverse_postorder,
+  void ScheduleBranchLengthOptimization(bool is_reverse_postorder,
                                         GPOperationVector &operations) const;
   void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
