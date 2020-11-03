@@ -21,6 +21,7 @@ using SizeBitsetMap = std::unordered_map<size_t, Bitset>;
 using BitsetSizeMap = std::unordered_map<Bitset, size_t>;
 using BitsetSizePairMap = std::unordered_map<Bitset, std::pair<size_t, size_t>>;
 using BitsetSizeDict = DefaultDict<Bitset, size_t>;
+using BitsetSet = std::unordered_set<Bitset>;
 using RootedIndexerRepresentation = SizeVector;
 using RootedIndexerRepresentationCounter =
     std::vector<std::pair<RootedIndexerRepresentation, uint32_t>>;
