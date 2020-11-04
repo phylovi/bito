@@ -246,16 +246,8 @@ void GPDAG::ScheduleBranchLengthOptimization(bool is_reverse_postorder,
       continue;
     }
 
-    // In the reverse postorder, we will visit the rotated edges then sorted edges.
-    // This means that for postorder, we visit sorted edges and then the rotated edges
-    // to ensure that we visit the nodes in reverse.
-    if (is_reverse_postorder) {
-      OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, true, operations);
-      OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, false, operations);
-    } else {
-      OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, false, operations);
-      OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, true, operations);
-    }
+    OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, true, operations);
+    OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, false, operations);
 
     // Update p(t).
     operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),

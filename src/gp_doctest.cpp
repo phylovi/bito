@@ -80,13 +80,21 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   return inst;
 }
 
-EigenVectorXd MakeHelloGPInstanceOptimalBranchLengths() {
+EigenVectorXd MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
   hello_gp_optimal_branch_lengths << 1, 1, 0.066509261, 0.00119570257, 0.00326456973,
       0.0671995398, 0.203893516, 0.204056242, 0.0669969961, 0.068359082;
 
   return hello_gp_optimal_branch_lengths;
 }
+
+EigenVectorXd MakeHelloGPInstanceRegressionTestBranchLengths() {
+  EigenVectorXd hello_gp_optimal_branch_lengths(10);
+  hello_gp_optimal_branch_lengths << 1, 1, 0.0672153233, 0.0671996807, 0.00249636392, 0.0682740108, 0.204166006, 0.204158011, 0.0682230491, 0.00249636704;
+
+  return hello_gp_optimal_branch_lengths;
+}
+
 
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
@@ -106,7 +114,7 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
   auto inst = MakeHelloGPInstanceTwoTrees();
   auto engine = inst.GetEngine();
 
-  auto branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
+  auto branch_lengths = MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths();
   engine->SetBranchLengths(branch_lengths);
 
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
@@ -155,6 +163,21 @@ double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
   return inst.GetEngine()->GetLogMarginalLikelihood();
+}
+
+// Regression test.
+TEST_CASE("GPInstance: branch length optimization") {
+  auto inst = MakeHelloGPInstanceTwoTrees();
+
+  EigenVectorXd expected_branch_lengths = MakeHelloGPInstanceRegressionTestBranchLengths();
+
+  // Reset.
+  inst = MakeHelloGPInstanceTwoTrees();
+  inst.EstimateBranchLengths(1e-6, 100);
+  EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
+  std::cout << expected_branch_lengths << std::endl;
+  std::cout << realized_branch_lengths << std::endl;
+  CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
 }
 
 TEST_CASE("GPInstance: rescaling") {
@@ -227,7 +250,8 @@ TEST_CASE("GPInstance: test populate PLV") {
   auto inst = MakeFiveTaxaInstance();
   inst.EstimateBranchLengths(1e-6, 10);
   inst.ComputeLikelihoods();
-  const EigenVectorXd log_likelihoods1 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+  size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
+  const EigenVectorXd log_likelihoods1 = inst.GetEngine()->GetPerGPCSPLogLikelihoods(0, length);
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
   const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
@@ -238,8 +262,8 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   auto inst = MakeFiveTaxaInstance();
   inst.GetEngine()->SetBranchLengthsToConstant(0.1);
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
-  // We compute likelihoods as EstimateBranchLengths doesn't populate the likelihood
-  // matrix.
+  // We need to call ComputeLikelihoods to populate the likelihood matrix.
+  // Note: EstimateBranchLengths doesn't populate the likelihood matrix.
   inst.ComputeLikelihoods();
 
   EigenVectorXd log_likelihood_vector = inst.GetEngine()->GetPerGPCSPLogLikelihoods();

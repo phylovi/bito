@@ -60,6 +60,8 @@ class GPEngine {
   EigenVectorXd GetPerGPCSPLogLikelihoods() const {
     return log_likelihoods_ * site_pattern_weights_;
   };
+  // This function override GetPerGPCSPLogLikelihoods to compute the marginal log likelihood for GPCSP
+  // in the range [start, start + length).
   EigenVectorXd GetPerGPCSPLogLikelihoods(size_t start, size_t length) const;
   EigenMatrixXd GetLogLikelihoodMatrix() const { return log_likelihoods_; };
   EigenVectorXd GetSBNParameters() const { return q_; };
