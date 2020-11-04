@@ -80,10 +80,18 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   return inst;
 }
 
-EigenVectorXd MakeHelloGPInstanceOptimalBranchLengths() {
+EigenVectorXd MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
   hello_gp_optimal_branch_lengths << 1, 1, 0.066509261, 0.00119570257, 0.00326456973,
       0.0671995398, 0.203893516, 0.204056242, 0.0669969961, 0.068359082;
+
+  return hello_gp_optimal_branch_lengths;
+}
+
+EigenVectorXd MakeHelloGPInstanceRegressionTestBranchLengths() {
+  EigenVectorXd hello_gp_optimal_branch_lengths(10);
+  hello_gp_optimal_branch_lengths << 1, 1, 0.0672153233, 0.0671996807, 0.00249636392,
+      0.0682740108, 0.204166006, 0.204158011, 0.0682230491, 0.00249636704;
 
   return hello_gp_optimal_branch_lengths;
 }
@@ -106,7 +114,7 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
   auto inst = MakeHelloGPInstanceTwoTrees();
   auto engine = inst.GetEngine();
 
-  auto branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
+  auto branch_lengths = MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths();
   engine->SetBranchLengths(branch_lengths);
 
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
@@ -141,19 +149,6 @@ TEST_CASE("GPInstance: gradient calculation") {
   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
 }
 
-// Regression test.
-TEST_CASE("GPInstance: branch length optimization") {
-  auto inst = MakeHelloGPInstanceTwoTrees();
-
-  EigenVectorXd expected_branch_lengths = MakeHelloGPInstanceOptimalBranchLengths();
-
-  // Reset.
-  inst = MakeHelloGPInstanceTwoTrees();
-  inst.EstimateBranchLengths(1e-6, 100);
-  EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
-  CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
-}
-
 GPInstance MakeFluAGPInstance(double rescaling_threshold) {
   GPInstance inst("_ignore/mmapped_plv.data");
   inst.ReadFastaFile("data/fluA.fa");
@@ -168,6 +163,22 @@ double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
   return inst.GetEngine()->GetLogMarginalLikelihood();
+}
+
+// Regression test.
+TEST_CASE("GPInstance: branch length optimization") {
+  auto inst = MakeHelloGPInstanceTwoTrees();
+
+  EigenVectorXd expected_branch_lengths =
+      MakeHelloGPInstanceRegressionTestBranchLengths();
+
+  // Reset.
+  inst = MakeHelloGPInstanceTwoTrees();
+  inst.EstimateBranchLengths(1e-6, 100);
+  EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
+  std::cout << expected_branch_lengths << std::endl;
+  std::cout << realized_branch_lengths << std::endl;
+  CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
 }
 
 TEST_CASE("GPInstance: rescaling") {
@@ -240,7 +251,9 @@ TEST_CASE("GPInstance: test populate PLV") {
   auto inst = MakeFiveTaxaInstance();
   inst.EstimateBranchLengths(1e-6, 10);
   inst.ComputeLikelihoods();
-  const EigenVectorXd log_likelihoods1 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+  size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
+  const EigenVectorXd log_likelihoods1 =
+      inst.GetEngine()->GetPerGPCSPLogLikelihoods(0, length);
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
   const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
@@ -251,8 +264,8 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   auto inst = MakeFiveTaxaInstance();
   inst.GetEngine()->SetBranchLengthsToConstant(0.1);
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
-  // We compute likelihoods as EstimateBranchLengths doesn't populate the likelihood
-  // matrix.
+  // We need to call ComputeLikelihoods to populate the likelihood matrix.
+  // Note: EstimateBranchLengths doesn't populate the likelihood matrix.
   inst.ComputeLikelihoods();
 
   EigenVectorXd log_likelihood_vector = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
@@ -266,7 +279,8 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   // multiply this by q(\tau) = 1/4 since we are assuming uniform prior.
 
   // The collection of trees that we are looking at has 3 rootplits where one root split
-  // generates two trees for the total of 4 trees.
+  // generates two trees and the other 2 root splits generating one tree each
+  // for the total of 4 trees.
 
   // We will compare the values against the 3 rootsplits, since we cannot assume
   // the ordering due to different implementation of the map, we will sort the values
@@ -294,7 +308,14 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
 
   inst.EstimateSBNParameters();
   EigenVectorXd realized_q = inst.GetEngine()->GetSBNParameters().segment(0, 3);
-  NumericalUtils::ProbabilityNormalizeInLog(realized_log_lik_vector_at_rootsplits);
-  EigenVectorXd expected_q = realized_log_lik_vector_at_rootsplits.array().exp();
+  // The expected values for the SBN parameters: q[s] \propto log_lik[s] + log_prior[s].
+  // The SBN params are initialized so that we get a uniform distribution over the
+  // trees. For the rootsplits, the values are (1/4, 1/4, 2/4) corresponding to the
+  // entries in expected_log_lik_vector_at_rootsplits.
+  EigenVectorXd log_prior(3);
+  log_prior << log(1. / 4), log(1. / 4), log(2. / 4);
+  EigenVectorXd expected_q = expected_log_lik_vector_at_rootsplits + log_prior;
+  NumericalUtils::ProbabilityNormalizeInLog(expected_q);
+  expected_q = expected_q.array().exp();
   CheckVectorXdEqualityAfterSorting(realized_q, expected_q, 1e-6);
 }

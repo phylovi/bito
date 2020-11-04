@@ -111,12 +111,12 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
     return;
   }
   // else
-  EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods();
-  Eigen::VectorBlock<EigenVectorXd> segment =
-      log_likelihoods.segment(op.start_, range_length);
-  const double log_norm = NumericalUtils::LogSum(segment);
-  segment.array() -= log_norm;
-  q_.segment(op.start_, range_length) = segment.array().exp();
+  EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
+  EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
+  EigenVectorXd unnormalized_posterior = log_likelihoods + log_prior;
+  const double log_norm = NumericalUtils::LogSum(unnormalized_posterior);
+  unnormalized_posterior.array() -= log_norm;
+  q_.segment(op.start_, range_length) = unnormalized_posterior.array().exp();
 }
 
 void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
@@ -164,6 +164,11 @@ void GPEngine::PrintPLV(size_t plv_idx) {
   std::cout << std::endl;
 }
 
+EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(size_t start, size_t length) const {
+  return log_likelihoods_.block(start, 0, length, log_likelihoods_.cols()) *
+         site_pattern_weights_;
+};
+
 DoublePair GPEngine::LogLikelihoodAndDerivative(
     const GPOperations::OptimizeBranchLength& op) {
   SetTransitionAndDerivativeMatricesToHaveBranchLength(branch_lengths_(op.gpcsp_));
@@ -171,8 +176,7 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   // The prior is expressed using the current value of q_.
   // The phylogenetic component of the likelihood is weighted with the number of times
   // we see the site patterns.
-  const double log_likelihood =
-      log(q_(op.gpcsp_)) + per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  const double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
   // The per-site likelihood derivative is calculated in the same way as the per-site
   // likelihood, but using the derivative matrix instead of the transition matrix.
@@ -251,8 +255,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
     SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
     PreparePerPatternLogLikelihoodsForGPCSP(op.gpcsp_, op.rootward_, op.leafward_);
-    return -(per_pattern_log_likelihoods_.array() * site_pattern_weights_.array())
-                .sum();
+    return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   };
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
   double current_value = negative_log_likelihood(current_log_branch_length);
