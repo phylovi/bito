@@ -5,10 +5,12 @@
 
 We are building a Python-interface C++ library for phylogenetic variational inference so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let libsbn handle the tree structure and likelihood computations for you.
 
+This library is in an experimental state.
+
 
 ## Dependencies
 
-* If you are on linux, install gcc >= 8, which is standard in Debian Buster and Ubuntu 18.04
+* If you are on linux, install gcc >= 7.5, which is standard in Debian Buster and Ubuntu 18.04
 * If you are on OS X, use a recent version of Xcode and install command line tools
 
 Then, install **the `hmc-clock` branch** of [BEAGLE](https://github.com/beagle-dev/beagle-lib).
