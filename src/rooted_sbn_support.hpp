@@ -13,8 +13,8 @@ class RootedSBNSupport : public SBNSupport {
                             StringVector taxon_names)
       : SBNSupport(std::move(taxon_names)) {
     std::tie(rootsplits_, indexer_, index_to_child_, parent_to_range_, gpcsp_count_) =
-        SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topologies),
-                                    RootedSBNMaps::PCSPCounterOf(topologies));
+        SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitSupportOf(topologies),
+                                    RootedSBNMaps::PCSPSupportOf(topologies));
   }
 
   RootedIndexerRepresentationCounter IndexerRepresentationCounterOf(

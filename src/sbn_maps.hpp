@@ -57,19 +57,20 @@ Bitset PCSPBitsetOf(size_t leaf_count,  //
                     const Node* focal_node, bool focal_direction,
                     const Node* child0_node, bool child0_direction,
                     const Node* child1_node, bool child1_direction);
-// TODO: Build an IndexerBundle from counters of rootsplits and PCSPs. Note that the
-// actual counts don't matter: we are just using the support here.
-// ... would I rather do that, or have
-// using PCSPSupportDict = std::unordered_map<Bitset, std::vector<Bitset>>;
-IndexerBundle BuildIndexerBundle(const BitsetSizeDict& rootsplit_counter,
-                                 const PCSPCounter& pcsp_counter);
+// Build an IndexerBundle from rootsplit and PCSP support.
+IndexerBundle BuildIndexerBundle(const BitsetSet& rootsplit_counter,
+                                 const PCSPSupportDict& pcsp_counter);
 }  // namespace SBNMaps
 
 namespace UnrootedSBNMaps {
 // Make a DefaultDict mapping rootsplits to the number of times they were seen.
 BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
+// Make the rootsplit support for a collection of topologies.
+BitsetSet RootsplitSupportOf(const Node::TopologyCounter& topologies);
 // Make a PCSPCounter mapping PCSPs to the number of times they were seen.
 PCSPCounter PCSPCounterOf(const Node::TopologyCounter& topologies);
+// Make the PCSP support for a collection of topologies.
+PCSPSupportDict PCSPSupportOf(const Node::TopologyCounter& topologies);
 // This function gives information about the rootsplits and PCSPs of a given
 // topology with respect to the current indexing data structures.
 // Specifically, it returns a vector of vectors, such that the ith vector is the indices
@@ -99,8 +100,12 @@ StringSetVector StringIndexerRepresentationOf(
 namespace RootedSBNMaps {
 // Make a DefaultDict mapping rootsplits to the number of times they were seen.
 BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter& topologies);
+// Make the rootsplit support for a collection of topologies.
+BitsetSet RootsplitSupportOf(const Node::TopologyCounter& topologies);
 // Make a PCSPCounter mapping PCSPs to the number of times they were seen.
 PCSPCounter PCSPCounterOf(const Node::TopologyCounter& topologies);
+// Make the PCSP support for a collection of topologies.
+PCSPSupportDict PCSPSupportOf(const Node::TopologyCounter& topologies);
 // A rooted indexer representation is the indexer representation of a given rooted tree.
 // That is, the first entry is the rootsplit for that rooting, and after that come the
 // PCSP indices.

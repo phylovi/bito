@@ -416,8 +416,8 @@ void GPDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
 
   std::tie(rootsplits_, gpcsp_indexer_, index_to_child_, parent_to_range_,
            gpcsp_count_without_fake_subsplits_) =
-      SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),
-                                  RootedSBNMaps::PCSPCounterOf(topology_counter));
+      SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitSupportOf(topology_counter),
+                                  RootedSBNMaps::PCSPSupportOf(topology_counter));
 }
 
 void GPDAG::CreateAndInsertNode(const Bitset &subsplit) {

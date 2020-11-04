@@ -69,30 +69,51 @@ Bitset SBNMaps::PCSPBitsetOf(const size_t leaf_count,  //
   return bitset;
 }
 
-IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counter,
-                                          const PCSPCounter& pcsp_counter) {
+IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSet& rootsplit_support,
+                                          const PCSPSupportDict& pcsp_support) {
   BitsetVector rootsplits;
   BitsetSizeMap indexer;
   SizeBitsetMap index_to_child;
   BitsetSizePairMap parent_to_range;
   size_t index = 0;
   // Start by adding the rootsplits.
-  for (const auto& iter : rootsplit_counter) {
-    SafeInsert(indexer, iter.first, index);
-    rootsplits.push_back(iter.first);
+  for (const auto& rootsplit : rootsplit_support) {
+    SafeInsert(indexer, rootsplit, index);
+    rootsplits.push_back(rootsplit);
     index++;
   }
   // Now add the PCSPs.
-  for (const auto& [parent, child_counter] : pcsp_counter) {
-    SafeInsert(parent_to_range, parent, {index, index + child_counter.size()});
-    for (const auto& child_iter : child_counter) {
-      const auto& child = child_iter.first;
+  for (const auto& [parent, children] : pcsp_support) {
+    SafeInsert(parent_to_range, parent, {index, index + children.size()});
+    for (const auto& child : children) {
       SafeInsert(indexer, parent + child, index);
       SafeInsert(index_to_child, index, Bitset::ChildSubsplit(parent, child));
       index++;
     }
   }
   return {rootsplits, indexer, index_to_child, parent_to_range, index};
+}
+
+BitsetSet RootsplitSupportOf(const BitsetSizeDict& rootsplit_counter) {
+  BitsetSet rootsplit_support;
+
+  for (const auto& [rootsplit, count] : rootsplit_counter) {
+    SafeInsert(rootsplit_support, rootsplit);
+  }
+  return rootsplit_support;
+}
+
+PCSPSupportDict PCSPSupportOf(const PCSPCounter& pcsp_counter) {
+  PCSPSupportDict pcsp_support;
+
+  for (const auto& [parent, child_counter] : pcsp_counter) {
+    BitsetVector children;
+    for (const auto& [child, count] : child_counter) {
+      children.push_back(child);
+    }
+    SafeInsert(pcsp_support, parent, std::move(children));
+  }
+  return pcsp_support;
 }
 
 BitsetSizeDict UnrootedSBNMaps::RootsplitCounterOf(
@@ -109,6 +130,10 @@ BitsetSizeDict UnrootedSBNMaps::RootsplitCounterOf(
     }
   }
   return rootsplit_counter;
+}
+
+BitsetSet UnrootedSBNMaps::RootsplitSupportOf(const Node::TopologyCounter& topologies) {
+  return RootsplitSupportOf(UnrootedSBNMaps::RootsplitCounterOf(topologies));
 }
 
 // See functions below or the comments above the definition of UnrootedPCSPFun to
@@ -168,6 +193,11 @@ PCSPCounter UnrootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologi
         });
   }
   return pcsp_dict;
+}
+
+PCSPSupportDict UnrootedSBNMaps::PCSPSupportOf(
+    const Node::TopologyCounter& topologies) {
+  return PCSPSupportOf(UnrootedSBNMaps::PCSPCounterOf(topologies));
 }
 
 // Return the rootsplit of a rooted bifurcating topology.
@@ -273,6 +303,10 @@ BitsetSizeDict RootedSBNMaps::RootsplitCounterOf(
   return rootsplit_counter;
 }
 
+BitsetSet RootedSBNMaps::RootsplitSupportOf(const Node::TopologyCounter& topologies) {
+  return RootsplitSupportOf(RootedSBNMaps::RootsplitCounterOf(topologies));
+}
+
 PCSPCounter RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies) {
   PCSPCounter pcsp_dict;
   for (const auto& [topology, topology_count] : topologies) {
@@ -288,6 +322,10 @@ PCSPCounter RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies
         });
   }
   return pcsp_dict;
+}
+
+PCSPSupportDict RootedSBNMaps::PCSPSupportOf(const Node::TopologyCounter& topologies) {
+  return PCSPSupportOf(RootedSBNMaps::PCSPCounterOf(topologies));
 }
 
 SizeVector RootedSBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,

@@ -14,8 +14,8 @@ class UnrootedSBNSupport : public SBNSupport {
                               StringVector taxon_names)
       : SBNSupport(std::move(taxon_names)) {
     std::tie(rootsplits_, indexer_, index_to_child_, parent_to_range_, gpcsp_count_) =
-        SBNMaps::BuildIndexerBundle(UnrootedSBNMaps::RootsplitCounterOf(topologies),
-                                    UnrootedSBNMaps::PCSPCounterOf(topologies));
+        SBNMaps::BuildIndexerBundle(UnrootedSBNMaps::RootsplitSupportOf(topologies),
+                                    UnrootedSBNMaps::PCSPSupportOf(topologies));
   }
 
   UnrootedIndexerRepresentationCounter IndexerRepresentationCounterOf(
