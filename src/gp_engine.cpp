@@ -112,7 +112,7 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   }
   // else
   EigenVectorXd log_likelihoods =
-      GetPerGPCSPLogLikelihoods().segment(op.start_, range_length);
+      GetPerGPCSPLogLikelihoods(op.start_, range_length);
   EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
   EigenVectorXd unnormalized_posterior = log_likelihoods + log_prior;
   const double log_norm = NumericalUtils::LogSum(unnormalized_posterior);
