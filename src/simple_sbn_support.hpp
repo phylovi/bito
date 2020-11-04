@@ -23,12 +23,18 @@ class SimpleSBNSupport {
   // static OfRootedTopologies
   //     RootedSBNMaps::RootsplitCounterOf(topologies),
   //     RootedSBNMaps::PCSPCounterOf(topologies)
-  // TODO NEXT: convert BuildIndexerBundle to take this ensemble of things, then convert
-  // to take these static functions.
   //
   // static OfUnrootedTopologies
   // static OfPrettyStringDoubleMap
   // static OfPrettySBNParameterCSV
+  //
+  // TODO Next:
+  // We parse a CSV with the SBN parameters. Now what? Do we have these support objects
+  // and then a list of parameters? Do we have a map from bitsets to doubles?
+  //
+  // cheapest way: parse the same list of trees to get the SBN support, then take in a
+  // CSV with the SBN parameters. Set the SBN parameters by inverting the pretty
+  // indexer.
 
  protected:
   BitsetSet rootsplit_support_;
