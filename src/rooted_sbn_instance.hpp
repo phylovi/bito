@@ -103,10 +103,15 @@ std::vector<std::vector<double>> derivative_relaxed_clock(RootedSBNInstance& ins
   return gradients;
 }
 
-TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
+RootedSBNInstance MakeFiveTaxonRootedInstance() {
   RootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon_rooted.nwk");
   inst.ProcessLoadedTrees();
+  return inst;
+}
+
+TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
+  auto inst = MakeFiveTaxonRootedInstance();
   auto pretty_indexer = inst.PrettyIndexer();
   StringSet pretty_indexer_set{pretty_indexer.begin(), pretty_indexer.end()};
   // The indexer_ is to index the sbn_parameters_. Note that neither of these
@@ -307,6 +312,15 @@ TEST_CASE("RootedSBNInstance: uninitialized time trees raise an exception") {
   auto inst = MakeFluInstance(false);
   // Uncomment once #281 is fixed.
   // CHECK_THROWS(inst.PhyloGradients());
+}
+
+TEST_CASE("RootedSBNInstance: reading SBN parameters from a CSV") {
+  auto inst = MakeFiveTaxonRootedInstance();
+  inst.ReadSBNParametersFromCSV("data/test_modifying_sbn_parameters.csv");
+  auto pretty_indexer = inst.PrettyIndexer();
+  CHECK_EQ(pretty_indexer[10], "10000|01111|00001");
+  CHECK_LT(fabs(inst.sbn_parameters_[10] - 0.15), 1e-8);
+  CHECK_THROWS(inst.SetSBNParameters({}));
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

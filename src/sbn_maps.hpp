@@ -56,10 +56,8 @@ Bitset PCSPBitsetOf(size_t leaf_count,  //
                     const Node* focal_node, bool focal_direction,
                     const Node* child0_node, bool child0_direction,
                     const Node* child1_node, bool child1_direction);
-// TODO: Build an IndexerBundle from counters of rootsplits and PCSPs. Note that the
+// Build an IndexerBundle from counters of rootsplits and PCSPs. Note that the
 // actual counts don't matter: we are just using the support here.
-// ... would I rather do that, or have
-// using PCSPSupportDict = std::unordered_map<Bitset, std::vector<Bitset>>;
 IndexerBundle BuildIndexerBundle(const BitsetSizeDict& rootsplit_counter,
                                  const PCSPCounter& pcsp_counter);
 }  // namespace SBNMaps

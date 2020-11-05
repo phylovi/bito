@@ -230,6 +230,8 @@ PYBIND11_MODULE(libsbn, m) {
            )raw")
       .def("sbn_parameters_to_csv", &RootedSBNInstance::SBNParametersToCSV,
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
+      .def("read_sbn_parameters_from_csv", &RootedSBNInstance::ReadSBNParametersFromCSV,
+           R"raw(Read SBN parameters from a CSV. Support must agree.)raw")
       // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
 
       // ** Tip dates
@@ -305,6 +307,9 @@ PYBIND11_MODULE(libsbn, m) {
            )raw")
       .def("sbn_parameters_to_csv", &UnrootedSBNInstance::SBNParametersToCSV,
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
+      .def("read_sbn_parameters_from_csv",
+           &UnrootedSBNInstance::ReadSBNParametersFromCSV,
+           R"raw(Read SBN parameters from a CSV. Support must agree.)raw")
       // ** END DUPLICATED CODE BLOCK between this and RootedSBNInstance
 
       .def("train_expectation_maximization",

@@ -95,9 +95,24 @@ class GenericSBNInstance {
     SetSBNSupport(TSBNSupport(topology_counter_, tree_collection_.TaxonNames()));
   };
 
-  // TODO we need a way of ingesting SBN support and a list of taxon names.
-  // Then the subclasses can call the correct PreSBNSupport builder and then something
-  // that gets taxon names out of a nexus file.
+  // The support has to already be set up to accept these SBN parameters.
+  void SetSBNParameters(StringDoubleMap pretty_sbn_parameters) {
+    StringVector pretty_indexer = PrettyIndexer();
+    for (size_t i = 0; i < pretty_indexer.size(); i++) {  // NOLINT
+      std::string &pretty_gpcsp = pretty_indexer[i];
+      auto search = pretty_sbn_parameters.find(pretty_gpcsp);
+      if (search == pretty_sbn_parameters.end()) {
+        Failwith("Tried to set SBN parameter for " + pretty_gpcsp +
+                 " but it's not found in the support.");
+      }
+      sbn_parameters_[i] = search->second;
+    }
+  }
+
+  // The support has to already be set up to accept these SBN parameters.
+  void ReadSBNParametersFromCSV(const std::string &csv_path) {
+    SetSBNParameters(CSV::StringDoubleMapOfCSV(csv_path));
+  }
 
   void CheckTopologyCounter() {
     if (TopologyCounter().empty()) {
@@ -142,11 +157,6 @@ class GenericSBNInstance {
     }
     return result;
   }
-
-  //  void SetSBNParameters(const BitsetDoubleMap &values) {
-  //    // Iterate through the bitset double map, using the support to get indices and
-  //    // updating the values.
-  //  }
 
   void SBNParametersToCSV(const std::string &file_path) {
     CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);
