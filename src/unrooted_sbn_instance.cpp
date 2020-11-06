@@ -23,14 +23,6 @@ EigenVectorXd UnrootedSBNInstance::TrainExpectationMaximization(double alpha,
       sbn_support_.ParentToRange(), alpha, max_iter, score_epsilon);
 }
 
-EigenVectorXd UnrootedSBNInstance::CalculateSBNProbabilities() {
-  EigenVectorXd sbn_parameters_copy = sbn_parameters_;
-  SBNProbability::ProbabilityNormalizeParamsInLog(
-      sbn_parameters_copy, sbn_support_.RootsplitCount(), sbn_support_.ParentToRange());
-  return SBNProbability::ProbabilityOf(sbn_parameters_copy,
-                                       MakeIndexerRepresentations());
-}
-
 Node::NodePtr UnrootedSBNInstance::SampleTopology() const {
   return SampleTopology(false);
 }
@@ -48,16 +40,6 @@ void UnrootedSBNInstance::SampleTrees(size_t count) {
     tree_collection_.trees_.emplace_back(
         UnrootedTree(SampleTopology(), std::move(branch_lengths)));
   }
-}
-
-std::vector<UnrootedIndexerRepresentation>
-UnrootedSBNInstance::MakeIndexerRepresentations() const {
-  std::vector<UnrootedIndexerRepresentation> representations;
-  representations.reserve(tree_collection_.trees_.size());
-  for (const auto &tree : tree_collection_.trees_) {
-    representations.push_back(sbn_support_.IndexerRepresentationOf(tree.Topology()));
-  }
-  return representations;
 }
 
 std::vector<SizeVectorVector> UnrootedSBNInstance::MakePSPIndexerRepresentations()

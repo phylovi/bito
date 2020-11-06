@@ -232,6 +232,8 @@ PYBIND11_MODULE(libsbn, m) {
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
       .def("read_sbn_parameters_from_csv", &RootedSBNInstance::ReadSBNParametersFromCSV,
            R"raw(Read SBN parameters from a CSV. Support must agree.)raw")
+      .def("calculate_sbn_probabilities", &RootedSBNInstance::CalculateSBNProbabilities,
+           R"raw(Calculate the SBN probabilities of the currently loaded trees.)raw")
       // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
 
       // ** Tip dates
@@ -310,6 +312,9 @@ PYBIND11_MODULE(libsbn, m) {
       .def("read_sbn_parameters_from_csv",
            &UnrootedSBNInstance::ReadSBNParametersFromCSV,
            R"raw(Read SBN parameters from a CSV. Support must agree.)raw")
+      .def("calculate_sbn_probabilities",
+           &UnrootedSBNInstance::CalculateSBNProbabilities,
+           R"raw(Calculate the SBN probabilities of the currently loaded trees.)raw")
       // ** END DUPLICATED CODE BLOCK between this and RootedSBNInstance
 
       .def("train_expectation_maximization",
@@ -325,9 +330,6 @@ PYBIND11_MODULE(libsbn, m) {
            score increase is less than the provided ``score_epsilon``.
            )raw",
            py::arg("alpha"), py::arg("max_iter"), py::arg("score_epsilon") = 0.)
-      .def("calculate_sbn_probabilities",
-           &UnrootedSBNInstance::CalculateSBNProbabilities,
-           R"raw(Get the SBN probabilities of the currently loaded trees.)raw")
       .def("sample_trees", &UnrootedSBNInstance::SampleTrees,
            "Sample trees from the SBN and store them internally.", py::arg("count"))
       .def("make_indexer_representations",

@@ -8,8 +8,10 @@
 #include "generic_sbn_instance.hpp"
 #include "rooted_sbn_support.hpp"
 
-using PreRootedSBNInstance = GenericSBNInstance<RootedTreeCollection, RootedSBNSupport>;
-template class GenericSBNInstance<RootedTreeCollection, RootedSBNSupport>;
+using PreRootedSBNInstance = GenericSBNInstance<RootedTreeCollection, RootedSBNSupport,
+                                                RootedIndexerRepresentation>;
+template class GenericSBNInstance<RootedTreeCollection, RootedSBNSupport,
+                                  RootedIndexerRepresentation>;
 
 class RootedSBNInstance : public PreRootedSBNInstance {
  public:
@@ -319,8 +321,10 @@ TEST_CASE("RootedSBNInstance: reading SBN parameters from a CSV") {
   inst.ReadSBNParametersFromCSV("data/test_modifying_sbn_parameters.csv");
   auto pretty_indexer = inst.PrettyIndexer();
   CHECK_EQ(pretty_indexer[10], "10000|01111|00001");
-  CHECK_LT(fabs(inst.sbn_parameters_[10] - 0.15), 1e-8);
-  CHECK_THROWS(inst.SetSBNParameters({}));
+  CHECK_LT(fabs(inst.sbn_parameters_[10] - log(0.15)), 1e-8);
+  inst.SetSBNParameters({});
+  CHECK_EQ(inst.sbn_parameters_[10], DOUBLE_MINIMUM);
+  CHECK_THROWS(inst.SetSBNParameters({{"10000|01111|00001", -5.}}));
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

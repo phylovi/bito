@@ -8,8 +8,10 @@
 #include "unrooted_sbn_support.hpp"
 
 using PreUnrootedSBNInstance =
-    GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport>;
-template class GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport>;
+    GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport,
+                       UnrootedIndexerRepresentation>;
+template class GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport,
+                                  UnrootedIndexerRepresentation>;
 
 class UnrootedSBNInstance : public PreUnrootedSBNInstance {
  public:
@@ -22,22 +24,12 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
   EigenVectorXd TrainExpectationMaximization(double alpha, size_t max_iter,
                                              double score_epsilon = 0.);
 
-  // Calculate SBN probabilities for all currently-loaded trees.
-  EigenVectorXd CalculateSBNProbabilities();
-
   // Sample a topology from the SBN.
   using PreUnrootedSBNInstance::SampleTopology;
   Node::NodePtr SampleTopology() const;
 
   // Sample trees and store them internally
   void SampleTrees(size_t count);
-
-  // Get indexer representations of the trees in tree_collection_.
-  // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
-  // explanation of what these are. This version uses the length of
-  // sbn_parameters_ as a sentinel value for all rootsplits/PCSPs that aren't
-  // present in the indexer.
-  std::vector<UnrootedIndexerRepresentation> MakeIndexerRepresentations() const;
 
   // Get PSP indexer representations of the trees in tree_collection_.
   std::vector<SizeVectorVector> MakePSPIndexerRepresentations() const;
@@ -347,15 +339,15 @@ TEST_CASE("UnrootedSBNInstance: SBN training") {
   // These "Expected" functions are defined in sbn_probability.hpp.
   const auto expected_SA = ExpectedSAVector();
   inst.TrainSimpleAverage();
-  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_SA, 1e-12);
+  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_SA, 1e-7);
   // Expected EM vectors with alpha = 0.
   const auto [expected_EM_0_1, expected_EM_0_23] = ExpectedEMVectorsAlpha0();
   // 1 iteration of EM with alpha = 0.
   inst.TrainExpectationMaximization(0., 1);
-  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_1, 1e-12);
+  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_1, 1e-7);
   // 23 iterations of EM with alpha = 0.
   inst.TrainExpectationMaximization(0., 23);
-  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-12);
+  CheckVectorXdEquality(inst.CalculateSBNProbabilities(), expected_EM_0_23, 1e-7);
   // 100 iteration of EM with alpha = 0.5.
   const auto expected_EM_05_100 = ExpectedEMVectorAlpha05();
   inst.TrainExpectationMaximization(0.5, 100);
