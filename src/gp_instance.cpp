@@ -189,6 +189,7 @@ void GPInstance::EstimateSBNParameters() {
 
   ProcessOperations(sbn_param_optimization_operations);
   sbn_parameters_ = engine_->GetSBNParameters();
+  std::cout << "SBN parameters:\n" << sbn_parameters_ << std::endl;
 }
 
 size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
@@ -269,28 +270,20 @@ StringVector GPInstance::PrettyIndexer() const {
   return pretty_representation;
 }
 
-void GPInstance::ProbabilityNormalizeSBNParametersInLog(
-    EigenVectorXdRef sbn_parameters) const {
-  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, dag_.RootsplitCount(),
-                                                  dag_.GetParentToRange());
-}
-
-EigenVectorXd GPInstance::NormalizedSBNParametersIncludingFakeSubsplits() const {
+EigenVectorXd GPInstance::SBNParametersIncludingFakeSubsplits() const {
   // Extend SBN parameters to include the fake subsplits (which are indexed by the
   // largest set of indices after running
   // AddFakeSubsplitsToGPCSPIndexerAndParentToRange).
   // They don't have any splitting so we set them to zero in log space.
   EigenVectorXd sbn_parameters_result =
-      EigenVectorXd::Zero(dag_.GPCSPCountWithFakeSubsplits());
+      EigenVectorXd::Ones(dag_.GPCSPCountWithFakeSubsplits());
   sbn_parameters_result.segment(0, sbn_parameters_.size()) = sbn_parameters_;
-  ProbabilityNormalizeSBNParametersInLog(sbn_parameters_result);
-  NumericalUtils::Exponentiate(sbn_parameters_result);
   return sbn_parameters_result;
 }
 
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
   StringDoubleVector result;
-  auto sbn_parameters = NormalizedSBNParametersIncludingFakeSubsplits();
+  auto sbn_parameters = SBNParametersIncludingFakeSubsplits();
   result.reserve(sbn_parameters.size());
   const auto pretty_indexer = PrettyIndexer();
   for (size_t i = 0; i < sbn_parameters.size(); i++) {
