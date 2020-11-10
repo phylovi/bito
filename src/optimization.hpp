@@ -6,6 +6,7 @@
 #include <cmath>
 #include <functional>
 #include <utility>
+#include <array>
 
 #include "sugar.hpp"
 
@@ -133,4 +134,29 @@ DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, doubl
     ++iter_idx;
   }
 }
+/*  
+DoublePair BBGradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
+                          const double tolerance, const double default_step_size,
+			  const double uniformity_bound, const size_t  monotonicity_const,
+                          const double threshold_const, const double min_x, const size_t max_iter) {
+  size_t iter_idx = 0;
+  double alpha = 1/default_step_size;
+  double lambda_step_size = 1/alpha;
+  std::array<double, monotonicity_const> f_values;
+  double* min_f;
+
+  while (true) {
+    auto [f_x, f_prime_x] = f_and_f_prime(x);
+    double candidate_x = x + f_prime_x * lambda_step_size;
+    double threshold = threshold_const * lambda_step_size * f_prime_x * f_prime_x; 
+    f_values.at(iter_idx % monotonicity_const) = f_x;
+    min_f = std::min_element(f_values.begin(), f_values.end - std::min(monotonicity_const - iter_idx, 0));
+    x = std::max(new_x, min_x);
+    if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
+      return {x, f_x};
+    }
+    ++iter_idx;
+  }
+}
+*/
 }  // namespace Optimization
