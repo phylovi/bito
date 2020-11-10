@@ -283,6 +283,8 @@ TEST_CASE("GPInstance: hotstart branch lengths") {
       0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
   double true_mean = hotstart_expected_branch_lengths.array().mean();
   inst.HotStartBranchLengths();
+  // TODO: The correct index on mac is 1, not 2. Need to make this test more general to pass on all systems.
+  std::cout << "The hotstart branch lengths are: " << inst.GetEngine()->GetBranchLengths();
   CHECK_EQ(true_mean, inst.GetEngine()->GetBranchLengths()(2));
 }
 

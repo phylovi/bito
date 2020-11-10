@@ -359,7 +359,20 @@ void GPEngine::GradientAscentOptimization(
       min_log_branch_length_, max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = exp(log_branch_length);
 }
-
+/*
+void GPEngine::AdaptiveGradientAscentOptimization(
+    const GPOperations::OptimizeBranchLength& op) {
+  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
+    branch_lengths_(op.gpcsp_) = branch_length;
+    return this->LogLikelihoodAndDerivative(op);
+  };
+  const auto [branch_length, log_likelihood] = Optimization::GradientAscent(
+      log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
+      relative_tolerance_for_optimization_, step_size_for_optimization_,
+      min_branch_length_, max_iter_for_optimization_);
+  branch_lengths_(op.gpcsp_) = branch_length;
+}
+*/
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                                      const BitsetSizeMap& indexer) {
   const auto leaf_count = tree_collection.TaxonCount();
