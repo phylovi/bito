@@ -328,9 +328,9 @@ TEST_CASE("RootedSBNInstance: reading SBN parameters from a CSV") {
   auto pretty_indexer = inst.PrettyIndexer();
   CHECK_EQ(pretty_indexer[10], "10000|01111|00001");
   CHECK_LT(fabs(inst.sbn_parameters_[10] - log(0.15)), 1e-8);
-  inst.SetSBNParameters({});
+  inst.SetSBNParameters({}, false);
   CHECK_EQ(inst.sbn_parameters_[10], DOUBLE_MINIMUM);
-  CHECK_THROWS(inst.SetSBNParameters({{"10000|01111|00001", -5.}}));
+  CHECK_THROWS(inst.SetSBNParameters({{"10000|01111|00001", -5.}}, false));
 }
 
 TEST_CASE("RootedSBNInstance: SBN parameter round trip") {

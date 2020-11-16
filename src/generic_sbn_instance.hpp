@@ -107,7 +107,8 @@ class GenericSBNInstance {
   // get log parameters they will have negative values, which will raise a failure.
   //
   // TODO am I happy with using a StringDoubleMap here?
-  void SetSBNParameters(const StringDoubleMap &pretty_sbn_parameters) {
+  void SetSBNParameters(const StringDoubleMap &pretty_sbn_parameters,
+                        bool warn_missing = true) {
     StringVector pretty_indexer = PrettyIndexer();
     size_t missing_count = 0;
     for (size_t i = 0; i < pretty_indexer.size(); i++) {  // NOLINT
@@ -126,7 +127,7 @@ class GenericSBNInstance {
             "expect the probabilities to be expressed in log space.");
       }
     }
-    if (missing_count > 0) {
+    if (warn_missing && missing_count > 0) {
       std::cout << "Warning: when setting SBN parameters, " << missing_count
                 << " were in the support but not specified; these were set to "
                 << exp(DOUBLE_MINIMUM) << "." << std::endl;
