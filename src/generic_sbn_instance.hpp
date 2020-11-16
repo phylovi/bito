@@ -85,8 +85,8 @@ class GenericSBNInstance {
 
   // ** SBN-related items
 
-  void SetSBNSupport(const TSBNSupport &sbn_support) {
-    sbn_support_ = sbn_support;
+  void SetSBNSupport(TSBNSupport &&sbn_support) {
+    sbn_support_ = std::move(sbn_support);
     sbn_parameters_.resize(sbn_support_.GPCSPCount());
     sbn_parameters_.setOnes();
     psp_indexer_ = sbn_support_.BuildPSPIndexer();
@@ -99,13 +99,20 @@ class GenericSBNInstance {
     SetSBNSupport(TSBNSupport(topology_counter_, tree_collection_.TaxonNames()));
   };
 
-  // The support has to already be set up to accept these SBN parameters.
-  void SetSBNParameters(StringDoubleMap pretty_sbn_parameters) {
+  // Any GPCSP that is not assigned a value by pretty_sbn_parameters will be assigned a
+  // value of DOUBLE_MINIMUM (i.e. "log of 0"). We do emit a warning with this code is
+  // used.
+  //
+  // We assume pretty_sbn_parameters is delivered in linear (i.e not log) space. If we
+  // get log parameters they will have negative values, which will raise a failure.
+  //
+  // TODO am I happy with using a StringDoubleMap here?
+  void SetSBNParameters(const StringDoubleMap &pretty_sbn_parameters) {
     StringVector pretty_indexer = PrettyIndexer();
     size_t missing_count = 0;
     for (size_t i = 0; i < pretty_indexer.size(); i++) {  // NOLINT
-      std::string &pretty_gpcsp = pretty_indexer[i];
-      auto search = pretty_sbn_parameters.find(pretty_gpcsp);
+      const std::string &pretty_gpcsp = pretty_indexer[i];
+      const auto search = pretty_sbn_parameters.find(pretty_gpcsp);
       if (search == pretty_sbn_parameters.end()) {
         sbn_parameters_[i] = DOUBLE_MINIMUM;
         missing_count++;

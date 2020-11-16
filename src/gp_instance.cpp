@@ -189,6 +189,7 @@ void GPInstance::EstimateSBNParameters() {
 
   ProcessOperations(sbn_param_optimization_operations);
   sbn_parameters_ = engine_->GetSBNParameters();
+  // TODO diagnostic.
   std::cout << "SBN parameters:\n" << sbn_parameters_ << std::endl;
 }
 
