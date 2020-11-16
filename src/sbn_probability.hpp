@@ -39,14 +39,14 @@ EigenVectorXd ExpectationMaximization(
 double ProbabilityOfSingle(EigenConstVectorXdRef sbn_parameters,
                            const RootedIndexerRepresentation& indexer_representation);
 
+// Calculate the probability of an indexer_representation of an unrooted topology.
+double ProbabilityOfSingle(EigenConstVectorXdRef sbn_parameters,
+                           const UnrootedIndexerRepresentation& indexer_representation);
+
 // Calculate the probabilities of a collection of rooted indexer_representations.
 EigenVectorXd ProbabilityOfCollection(
     EigenConstVectorXdRef sbn_parameters,
     const std::vector<RootedIndexerRepresentation>& indexer_representations);
-
-// Calculate the probability of an indexer_representation of an unrooted topology.
-double ProbabilityOfSingle(EigenConstVectorXdRef sbn_parameters,
-                           const UnrootedIndexerRepresentation& indexer_representation);
 
 // Calculate the probabilities of a collection of unrooted indexer_representations.
 EigenVectorXd ProbabilityOfCollection(
