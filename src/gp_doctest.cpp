@@ -90,8 +90,7 @@ EigenVectorXd MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths() {
 
 EigenVectorXd MakeHelloGPInstanceRegressionTestBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
-  hello_gp_optimal_branch_lengths << 1, 1, 0.0672153233, 0.0671996807, 0.00249636392,
-      0.0682740108, 0.204166006, 0.204158011, 0.0682230491, 0.00249636704;
+  hello_gp_optimal_branch_lengths << 1, 1, 0.066509261, 0.00119570257, 0.00326456973, 0.0671995398, 0.203893516, 0.204056242, 0.0669969961, 0.068359082;
 
   return hello_gp_optimal_branch_lengths;
 }
