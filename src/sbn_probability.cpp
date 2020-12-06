@@ -367,10 +367,10 @@ double SBNProbability::ProbabilityOfSingle(
   return exp(log_total_probability);
 }
 
-// This code is duplicated for the unrooted case below.
 EigenVectorXd SBNProbability::ProbabilityOfCollection(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<RootedIndexerRepresentation>& indexer_representations) {
+  // We have to instantiate f before passing it as a lambda.
   std::function<double(const RootedIndexerRepresentation&)> f =
       [sbn_parameters](const RootedIndexerRepresentation& indexer_representation) {
         return ProbabilityOfSingle(sbn_parameters, indexer_representation);
@@ -378,15 +378,12 @@ EigenVectorXd SBNProbability::ProbabilityOfCollection(
   return MapFromStdVectorToEigenVectorXd(indexer_representations, f);
 }
 
-// This code is duplicated for the rooted case above.
 EigenVectorXd SBNProbability::ProbabilityOfCollection(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<UnrootedIndexerRepresentation>& indexer_representations) {
-  const size_t topology_count = indexer_representations.size();
-  EigenVectorXd results(topology_count);
-  for (size_t topology_idx = 0; topology_idx < topology_count; ++topology_idx) {
-    results[topology_idx] =
-        ProbabilityOfSingle(sbn_parameters, indexer_representations[topology_idx]);
-  }
-  return results;
+  std::function<double(const UnrootedIndexerRepresentation&)> f =
+      [sbn_parameters](const UnrootedIndexerRepresentation& indexer_representation) {
+        return ProbabilityOfSingle(sbn_parameters, indexer_representation);
+      };
+  return MapFromStdVectorToEigenVectorXd(indexer_representations, f);
 }
