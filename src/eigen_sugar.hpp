@@ -32,6 +32,30 @@ void EigenToCSV(const std::string &file_path, EigenType eigen_object) {
   }
 }
 
+template <typename T>
+EigenVectorXd MapFromStdVectorToEigenVectorXd(
+    const std::vector<T>& indexer_representations,
+    const std::function<double(const T&)> f) {
+  const size_t topology_count = indexer_representations.size();
+  EigenVectorXd results(topology_count);
+  for (size_t topology_idx = 0; topology_idx < topology_count; ++topology_idx) {
+    results[topology_idx] = f(indexer_representations[topology_idx]);
+  }
+  return results;
+}
+//
+// // Map from a std::vector<T> to an EigenVectorXd using a function f that maps
+// T->double. template <typename T> EigenVectorXd MapFromStdVectorToEigenVectorXd(const
+// std::vector<T>& v,
+//                                               const std::function<double(const T&)>
+//                                               f) {
+//   EigenVectorXd results(v.size());
+//   for (size_t i = 0; i < v.size(); ++i) {
+//     results[i] = f(v[i]);
+//   }
+//   return results;
+// }
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {
   for (size_t i = 0; i < v.size(); i++) {
