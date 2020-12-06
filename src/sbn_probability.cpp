@@ -367,17 +367,26 @@ double SBNProbability::ProbabilityOfSingle(
   return exp(log_total_probability);
 }
 
+EigenVectorXd MapFromStdVectorToEigenVectorXd(
+    const std::vector<RootedIndexerRepresentation>& indexer_representations,
+    const std::function<double(const RootedIndexerRepresentation&)> f) {
+  const size_t topology_count = indexer_representations.size();
+  EigenVectorXd results(topology_count);
+  for (size_t topology_idx = 0; topology_idx < topology_count; ++topology_idx) {
+    results[topology_idx] = f(indexer_representations[topology_idx]);
+  }
+  return results;
+}
+
 // This code is duplicated for the unrooted case below.
 EigenVectorXd SBNProbability::ProbabilityOfCollection(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<RootedIndexerRepresentation>& indexer_representations) {
-  const size_t topology_count = indexer_representations.size();
-  EigenVectorXd results(topology_count);
-  for (size_t topology_idx = 0; topology_idx < topology_count; ++topology_idx) {
-    results[topology_idx] =
-        ProbabilityOfSingle(sbn_parameters, indexer_representations[topology_idx]);
-  }
-  return results;
+  return MapFromStdVectorToEigenVectorXd(
+      indexer_representations,
+      [sbn_parameters](const RootedIndexerRepresentation& indexer_representation) {
+        return ProbabilityOfSingle(sbn_parameters, indexer_representation);
+      });
 }
 
 // This code is duplicated for the rooted case above.
