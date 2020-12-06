@@ -370,7 +370,7 @@ double SBNProbability::ProbabilityOfSingle(
 EigenVectorXd SBNProbability::ProbabilityOfCollection(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<RootedIndexerRepresentation>& indexer_representations) {
-  // We have to instantiate f before passing it as a lambda.
+  // Lambdas aren't std:functions, so we make a std::function here.
   std::function<double(const RootedIndexerRepresentation&)> f =
       [sbn_parameters](const RootedIndexerRepresentation& indexer_representation) {
         return ProbabilityOfSingle(sbn_parameters, indexer_representation);

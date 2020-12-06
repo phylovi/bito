@@ -27,7 +27,6 @@ using RootedIndexerRepresentationCounter =
 using UnrootedIndexerRepresentation = SizeVectorVector;
 using UnrootedIndexerRepresentationCounter =
     std::vector<std::pair<UnrootedIndexerRepresentation, uint32_t>>;
-using PCSPSupportDict = std::unordered_map<Bitset, std::vector<Bitset>>;
 using PCSPCounter = std::unordered_map<Bitset, DefaultDict<Bitset, size_t>>;
 using PCSPIndexVector = std::vector<size_t>;
 using RootedIndexerRepresentationSizeDict =
