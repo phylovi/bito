@@ -32,6 +32,18 @@ void EigenToCSV(const std::string &file_path, EigenType eigen_object) {
   }
 }
 
+// Convert each entry of a std::vector<T> to double using a function f and store in an
+// EigenVectorXd.
+template <typename T>
+EigenVectorXd EigenVectorXdOfStdVectorT(const std::vector<T> &v,
+                                        const std::function<double(const T &)> &f) {
+  EigenVectorXd results(v.size());
+  for (size_t i = 0; i < v.size(); ++i) {
+    results[i] = f(v[i]);
+  }
+  return results;
+}
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {
   for (size_t i = 0; i < v.size(); i++) {

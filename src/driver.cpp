@@ -104,6 +104,8 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     auto previous_position = in.tellg();
     TagStringMap long_name_taxon_map;
     uint32_t leaf_id = 0;
+    // Iterate through the translate table, assigning tags according to the order of
+    // taxa in the block. So, the first taxon name gets leaf number 0, etc.
     while (std::regex_match(line, match, translate_item_regex)) {
       const auto short_name = match[1].str();
       const auto long_name = match[2].str();

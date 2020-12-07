@@ -177,6 +177,13 @@ PYBIND11_MODULE(libsbn, m) {
           parameters.
       )raw";
 
+  const char read_sbn_parameters_from_csv_docstring[] = R"raw(
+        Read SBN parameters from a CSV mapping a string representation of the GPCSP to its probability in linear (not
+        log) space.
+
+        Any GPCSPs that are not found in the supplied CSV will be assigned a probability of 0.
+      )raw";
+
   // CLASS
   // RootedSBNInstance
   py::class_<PreRootedSBNInstance>(m, "PreRootedSBNInstance");
@@ -230,6 +237,10 @@ PYBIND11_MODULE(libsbn, m) {
            )raw")
       .def("sbn_parameters_to_csv", &RootedSBNInstance::SBNParametersToCSV,
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
+      .def("read_sbn_parameters_from_csv", &RootedSBNInstance::ReadSBNParametersFromCSV,
+           read_sbn_parameters_from_csv_docstring)
+      .def("calculate_sbn_probabilities", &RootedSBNInstance::CalculateSBNProbabilities,
+           R"raw(Calculate the SBN probabilities of the currently loaded trees.)raw")
       // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
 
       // ** Tip dates
@@ -305,6 +316,12 @@ PYBIND11_MODULE(libsbn, m) {
            )raw")
       .def("sbn_parameters_to_csv", &UnrootedSBNInstance::SBNParametersToCSV,
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
+      .def("read_sbn_parameters_from_csv",
+           &UnrootedSBNInstance::ReadSBNParametersFromCSV,
+           read_sbn_parameters_from_csv_docstring)
+      .def("calculate_sbn_probabilities",
+           &UnrootedSBNInstance::CalculateSBNProbabilities,
+           R"raw(Calculate the SBN probabilities of the currently loaded trees.)raw")
       // ** END DUPLICATED CODE BLOCK between this and RootedSBNInstance
 
       .def("train_expectation_maximization",
@@ -320,9 +337,6 @@ PYBIND11_MODULE(libsbn, m) {
            score increase is less than the provided ``score_epsilon``.
            )raw",
            py::arg("alpha"), py::arg("max_iter"), py::arg("score_epsilon") = 0.)
-      .def("calculate_sbn_probabilities",
-           &UnrootedSBNInstance::CalculateSBNProbabilities,
-           R"raw(Get the SBN probabilities of the currently loaded trees.)raw")
       .def("sample_trees", &UnrootedSBNInstance::SampleTrees,
            "Sample trees from the SBN and store them internally.", py::arg("count"))
       .def("make_indexer_representations",

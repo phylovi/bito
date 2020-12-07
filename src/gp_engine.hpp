@@ -46,7 +46,7 @@ class GPEngine {
   void SetBranchLengthsToConstant(double branch_length) {
     branch_lengths_.setConstant(branch_length);
   };
-  void SetSBNParameters(EigenVectorXd q) { q_ = std::move(q); };
+  void SetSBNParameters(EigenVectorXd&& q) { q_ = std::move(q); };
   void ResetLogMarginalLikelihood() {
     log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
   }

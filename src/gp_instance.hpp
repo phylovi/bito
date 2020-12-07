@@ -38,8 +38,6 @@ class GPInstance {
 
   // #273: A lot of code duplication here with things in SBNInstance.
   StringVector PrettyIndexer() const;
-  void ProbabilityNormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) const;
-  EigenVectorXd NormalizedSBNParametersIncludingFakeSubsplits() const;
   StringDoubleVector PrettyIndexedSBNParameters();
   void SBNParametersToCSV(const std::string &file_path);
 
