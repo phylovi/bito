@@ -99,14 +99,14 @@ class GenericSBNInstance {
     SetSBNSupport(TSBNSupport(topology_counter_, tree_collection_.TaxonNames()));
   };
 
+  // Set the SBN parameters using a "pretty" map of SBNs.
+  //
   // Any GPCSP that is not assigned a value by pretty_sbn_parameters will be assigned a
   // value of DOUBLE_MINIMUM (i.e. "log of 0"). We do emit a warning with this code is
-  // used.
+  // used if warn_missing is on.
   //
   // We assume pretty_sbn_parameters is delivered in linear (i.e not log) space. If we
   // get log parameters they will have negative values, which will raise a failure.
-  //
-  // TODO am I happy with using a StringDoubleMap here?
   void SetSBNParameters(const StringDoubleMap &pretty_sbn_parameters,
                         bool warn_missing = true) {
     StringVector pretty_indexer = PrettyIndexer();
@@ -123,14 +123,14 @@ class GenericSBNInstance {
         sbn_parameters_[i] = DOUBLE_MINIMUM;
       } else {
         Failwith(
-            "Negative probability encountered in SetSBNParameters. Note that we don't "
-            "expect the probabilities to be expressed in log space.");
+            "Negative probability encountered in SetSBNParameters. Note that we expect "
+            "the probabilities to be expressed in linear (not log) space.");
       }
     }
     if (warn_missing && missing_count > 0) {
       std::cout << "Warning: when setting SBN parameters, " << missing_count
                 << " were in the support but not specified; these were set to "
-                << exp(DOUBLE_MINIMUM) << "." << std::endl;
+                << DOUBLE_MINIMUM << " (parameters stored as log space)." << std::endl;
     }
   }
 
