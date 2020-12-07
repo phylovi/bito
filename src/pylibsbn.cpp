@@ -177,6 +177,13 @@ PYBIND11_MODULE(libsbn, m) {
           parameters.
       )raw";
 
+  const char read_sbn_parameters_from_csv_docstring[] = R"raw(
+        Read SBN parameters from a CSV mapping a string representation of the GPCSP to its probability in linear (not
+        log) space.
+
+        Any GPCSPs that are not found in the supplied CSV will be assigned a probability of 0.
+      )raw";
+
   // CLASS
   // RootedSBNInstance
   py::class_<PreRootedSBNInstance>(m, "PreRootedSBNInstance");
@@ -231,7 +238,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("sbn_parameters_to_csv", &RootedSBNInstance::SBNParametersToCSV,
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
       .def("read_sbn_parameters_from_csv", &RootedSBNInstance::ReadSBNParametersFromCSV,
-           R"raw(Read SBN parameters from a CSV. Support must agree.)raw")
+           read_sbn_parameters_from_csv_docstring)
       .def("calculate_sbn_probabilities", &RootedSBNInstance::CalculateSBNProbabilities,
            R"raw(Calculate the SBN probabilities of the currently loaded trees.)raw")
       // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
@@ -311,7 +318,7 @@ PYBIND11_MODULE(libsbn, m) {
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
       .def("read_sbn_parameters_from_csv",
            &UnrootedSBNInstance::ReadSBNParametersFromCSV,
-           R"raw(Read SBN parameters from a CSV. Support must agree.)raw")
+           read_sbn_parameters_from_csv_docstring)
       .def("calculate_sbn_probabilities",
            &UnrootedSBNInstance::CalculateSBNProbabilities,
            R"raw(Calculate the SBN probabilities of the currently loaded trees.)raw")
