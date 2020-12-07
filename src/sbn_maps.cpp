@@ -41,7 +41,7 @@ SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
   return split_result;
 }
 
-StringPCSPMap SBNMaps::StringPCSPMapOf(PCSPDict d) {
+StringPCSPMap SBNMaps::StringPCSPMapOf(PCSPCounter d) {
   StringPCSPMap d_str;
   for (const auto& [parent, child_dict] : d) {
     d_str[parent.ToString()] = StringifyMap(child_dict.Map());
@@ -70,7 +70,7 @@ Bitset SBNMaps::PCSPBitsetOf(const size_t leaf_count,  //
 }
 
 IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counter,
-                                          const PCSPDict& pcsp_counter) {
+                                          const PCSPCounter& pcsp_counter) {
   BitsetVector rootsplits;
   BitsetSizeMap indexer;
   SizeBitsetMap index_to_child;
@@ -113,11 +113,12 @@ BitsetSizeDict UnrootedSBNMaps::RootsplitCounterOf(
 
 // See functions below or the comments above the definition of UnrootedPCSPFun to
 // understand the collection of arguments starting with `sister_node`.
-void AddToPCSPDict(PCSPDict& pcsp_dict, const size_t topology_count,
-                   const size_t leaf_count, const Node* sister_node,
-                   bool sister_direction, const Node* focal_node, bool focal_direction,
-                   const Node* child0_node, bool child0_direction,
-                   const Node* child1_node, bool child1_direction) {
+void AddToPCSPCounter(PCSPCounter& pcsp_dict, const size_t topology_count,
+                      const size_t leaf_count, const Node* sister_node,
+                      bool sister_direction, const Node* focal_node,
+                      bool focal_direction, const Node* child0_node,
+                      bool child0_direction, const Node* child1_node,
+                      bool child1_direction) {
   Bitset parent(2 * leaf_count, false);
   // The first chunk is for the sister node.
   parent.CopyFrom(sister_node->Leaves(), 0, sister_direction);
@@ -145,8 +146,8 @@ void AddToPCSPDict(PCSPDict& pcsp_dict, const size_t topology_count,
   }
 }
 
-PCSPDict UnrootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies) {
-  PCSPDict pcsp_dict;
+PCSPCounter UnrootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies) {
+  PCSPCounter pcsp_dict;
   for (const auto& [topology, topology_count] : topologies) {
     auto leaf_count = topology->LeafCount();
     Assert(topology->Children().size() == 3,
@@ -161,9 +162,9 @@ PCSPDict UnrootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies)
             const Node* child1_node, bool child1_direction,
             const Node*  // ignore virtual root clade
         ) {
-          AddToPCSPDict(pcsp_dict, topology_count, leaf_count, sister_node,
-                        sister_direction, focal_node, focal_direction, child0_node,
-                        child0_direction, child1_node, child1_direction);
+          AddToPCSPCounter(pcsp_dict, topology_count, leaf_count, sister_node,
+                           sister_direction, focal_node, focal_direction, child0_node,
+                           child0_direction, child1_node, child1_direction);
         });
   }
   return pcsp_dict;
@@ -272,8 +273,8 @@ BitsetSizeDict RootedSBNMaps::RootsplitCounterOf(
   return rootsplit_counter;
 }
 
-PCSPDict RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies) {
-  PCSPDict pcsp_dict;
+PCSPCounter RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies) {
+  PCSPCounter pcsp_dict;
   for (const auto& [topology, topology_count] : topologies) {
     auto leaf_count = topology->LeafCount();
     Assert(topology->Children().size() == 2,
@@ -282,8 +283,8 @@ PCSPDict RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies) {
         [&pcsp_dict, &topology_count = topology_count, &leaf_count](
             const Node* sister_node, const Node* focal_node, const Node* child0_node,
             const Node* child1_node) {
-          AddToPCSPDict(pcsp_dict, topology_count, leaf_count, sister_node, false,
-                        focal_node, false, child0_node, false, child1_node, false);
+          AddToPCSPCounter(pcsp_dict, topology_count, leaf_count, sister_node, false,
+                           focal_node, false, child0_node, false, child1_node, false);
         });
   }
   return pcsp_dict;

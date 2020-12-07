@@ -8,8 +8,10 @@
 #include "unrooted_sbn_support.hpp"
 
 using PreUnrootedSBNInstance =
-    GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport>;
-template class GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport>;
+    GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport,
+                       UnrootedIndexerRepresentation>;
+template class GenericSBNInstance<UnrootedTreeCollection, UnrootedSBNSupport,
+                                  UnrootedIndexerRepresentation>;
 
 class UnrootedSBNInstance : public PreUnrootedSBNInstance {
  public:
@@ -22,22 +24,12 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
   EigenVectorXd TrainExpectationMaximization(double alpha, size_t max_iter,
                                              double score_epsilon = 0.);
 
-  // Calculate SBN probabilities for all currently-loaded trees.
-  EigenVectorXd CalculateSBNProbabilities();
-
   // Sample a topology from the SBN.
   using PreUnrootedSBNInstance::SampleTopology;
   Node::NodePtr SampleTopology() const;
 
   // Sample trees and store them internally
   void SampleTrees(size_t count);
-
-  // Get indexer representations of the trees in tree_collection_.
-  // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
-  // explanation of what these are. This version uses the length of
-  // sbn_parameters_ as a sentinel value for all rootsplits/PCSPs that aren't
-  // present in the indexer.
-  std::vector<UnrootedIndexerRepresentation> MakeIndexerRepresentations() const;
 
   // Get PSP indexer representations of the trees in tree_collection_.
   std::vector<SizeVectorVector> MakePSPIndexerRepresentations() const;

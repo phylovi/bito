@@ -8,8 +8,10 @@
 #include "generic_sbn_instance.hpp"
 #include "rooted_sbn_support.hpp"
 
-using PreRootedSBNInstance = GenericSBNInstance<RootedTreeCollection, RootedSBNSupport>;
-template class GenericSBNInstance<RootedTreeCollection, RootedSBNSupport>;
+using PreRootedSBNInstance = GenericSBNInstance<RootedTreeCollection, RootedSBNSupport,
+                                                RootedIndexerRepresentation>;
+template class GenericSBNInstance<RootedTreeCollection, RootedSBNSupport,
+                                  RootedIndexerRepresentation>;
 
 class RootedSBNInstance : public PreRootedSBNInstance {
  public:
@@ -103,10 +105,15 @@ std::vector<std::vector<double>> derivative_relaxed_clock(RootedSBNInstance& ins
   return gradients;
 }
 
-TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
+RootedSBNInstance MakeFiveTaxonRootedInstance() {
   RootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon_rooted.nwk");
   inst.ProcessLoadedTrees();
+  return inst;
+}
+
+TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
+  auto inst = MakeFiveTaxonRootedInstance();
   auto pretty_indexer = inst.PrettyIndexer();
   StringSet pretty_indexer_set{pretty_indexer.begin(), pretty_indexer.end()};
   // The indexer_ is to index the sbn_parameters_. Note that neither of these
@@ -175,11 +182,17 @@ TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
   CHECK_EQ(correct_parameters, inst.PrettyIndexedSBNParameters());
 }
 
-TEST_CASE("RootedSBNInstance: TrainSimpleAverage on 20 taxa") {
+// Instance SA-trained on a sample of 20-taxon trees.
+RootedSBNInstance MakeRootedSimpleAverageInstance() {
   RootedSBNInstance inst("rooted instance");
   inst.ReadNewickFile("data/rooted_simple_average.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
+  return inst;
+}
+
+TEST_CASE("RootedSBNInstance: TrainSimpleAverage on 20 taxa") {
+  auto inst = MakeRootedSimpleAverageInstance();
   auto results = inst.PrettyIndexedSBNParameters();
   // Values confirmed with
   // https://github.com/mdkarcher/vbsupertree/commit/b7f87f711e8a1044b7c059b5a92e94c117d8cee1
@@ -307,6 +320,28 @@ TEST_CASE("RootedSBNInstance: uninitialized time trees raise an exception") {
   auto inst = MakeFluInstance(false);
   // Uncomment once #281 is fixed.
   // CHECK_THROWS(inst.PhyloGradients());
+}
+
+TEST_CASE("RootedSBNInstance: reading SBN parameters from a CSV") {
+  auto inst = MakeFiveTaxonRootedInstance();
+  inst.ReadSBNParametersFromCSV("data/test_modifying_sbn_parameters.csv");
+  auto pretty_indexer = inst.PrettyIndexer();
+  CHECK_EQ(pretty_indexer[10], "10000|01111|00001");
+  CHECK_LT(fabs(inst.sbn_parameters_[10] - log(0.15)), 1e-8);
+  inst.SetSBNParameters({}, false);
+  CHECK_EQ(inst.sbn_parameters_[10], DOUBLE_MINIMUM);
+  CHECK_THROWS(inst.SetSBNParameters({{"10000|01111|00001", -5.}}, false));
+}
+
+TEST_CASE("RootedSBNInstance: SBN parameter round trip") {
+  std::string csv_test_file_path = "_ignore/for_sbn_parameter_round_trip.csv";
+  auto inst = MakeRootedSimpleAverageInstance();
+  auto original_normalized_sbn_parameters = inst.NormalizedSBNParameters();
+  inst.SBNParametersToCSV(csv_test_file_path);
+  inst.ReadSBNParametersFromCSV(csv_test_file_path);
+  auto reloaded_normalized_sbn_parameters = inst.NormalizedSBNParameters();
+  CheckVectorXdEquality(original_normalized_sbn_parameters,
+                        reloaded_normalized_sbn_parameters, 1e-6);
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

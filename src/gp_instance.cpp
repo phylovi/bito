@@ -269,32 +269,12 @@ StringVector GPInstance::PrettyIndexer() const {
   return pretty_representation;
 }
 
-void GPInstance::ProbabilityNormalizeSBNParametersInLog(
-    EigenVectorXdRef sbn_parameters) const {
-  SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, dag_.RootsplitCount(),
-                                                  dag_.GetParentToRange());
-}
-
-EigenVectorXd GPInstance::NormalizedSBNParametersIncludingFakeSubsplits() const {
-  // Extend SBN parameters to include the fake subsplits (which are indexed by the
-  // largest set of indices after running
-  // AddFakeSubsplitsToGPCSPIndexerAndParentToRange).
-  // They don't have any splitting so we set them to zero in log space.
-  EigenVectorXd sbn_parameters_result =
-      EigenVectorXd::Zero(dag_.GPCSPCountWithFakeSubsplits());
-  sbn_parameters_result.segment(0, sbn_parameters_.size()) = sbn_parameters_;
-  ProbabilityNormalizeSBNParametersInLog(sbn_parameters_result);
-  NumericalUtils::Exponentiate(sbn_parameters_result);
-  return sbn_parameters_result;
-}
-
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
   StringDoubleVector result;
-  auto sbn_parameters = NormalizedSBNParametersIncludingFakeSubsplits();
-  result.reserve(sbn_parameters.size());
+  result.reserve(sbn_parameters_.size());
   const auto pretty_indexer = PrettyIndexer();
-  for (size_t i = 0; i < sbn_parameters.size(); i++) {
-    result.push_back({pretty_indexer.at(i), sbn_parameters(i)});
+  for (size_t i = 0; i < sbn_parameters_.size(); i++) {
+    result.push_back({pretty_indexer.at(i), sbn_parameters_(i)});
   }
   return result;
 }

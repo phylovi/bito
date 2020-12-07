@@ -53,7 +53,8 @@ class Driver {
   TreeCollection ParseString(const std::string& s);
   // Run the parser on a Newick file.
   TreeCollection ParseNewickFile(const std::string& fname);
-  // Run the parser on a Nexus file.
+  // Run the parser on a Nexus file. The Nexus file must have a translate block, and the
+  // leaf tags are assigned according to the order of names in the translate block.
   TreeCollection ParseNexusFile(const std::string& fname);
   // Clear out stored state.
   void Clear();

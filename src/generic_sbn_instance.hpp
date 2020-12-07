@@ -23,12 +23,16 @@
 #include "sbn_probability.hpp"
 #include "unrooted_sbn_support.hpp"
 
-template <typename TTreeCollection, typename TSBNSupport>
+template <typename TTreeCollection, typename TSBNSupport,
+          typename TIndexerRepresentation>
 class GenericSBNInstance {
-  static_assert((std::is_same<TTreeCollection, RootedTreeCollection>::value &&
-                 std::is_same<TSBNSupport, RootedSBNSupport>::value) ||
-                (std::is_same<TTreeCollection, UnrootedTreeCollection>::value &&
-                 std::is_same<TSBNSupport, UnrootedSBNSupport>::value));
+  static_assert(
+      (std::is_same<TTreeCollection, RootedTreeCollection>::value &&
+       std::is_same<TSBNSupport, RootedSBNSupport>::value &&
+       std::is_same<TIndexerRepresentation, RootedIndexerRepresentation>::value) ||
+      (std::is_same<TTreeCollection, UnrootedTreeCollection>::value &&
+       std::is_same<TSBNSupport, UnrootedSBNSupport>::value &&
+       std::is_same<TIndexerRepresentation, UnrootedIndexerRepresentation>::value));
 
  public:
   // A Range is a range of values of our vector using 0-indexed Python/Numpy slice
@@ -71,7 +75,7 @@ class GenericSBNInstance {
   BitsetSizeDict RootsplitCounterOf(const Node::TopologyCounter &topologies) const {
     return TSBNSupport::RootsplitCounterOf(topologies);
   }
-  PCSPDict PCSPCounterOf(const Node::TopologyCounter &topologies) const {
+  PCSPCounter PCSPCounterOf(const Node::TopologyCounter &topologies) const {
     return TSBNSupport::PCSPCounterOf(topologies);
   }
   StringVector PrettyIndexer() const { return sbn_support_.PrettyIndexer(); }
@@ -81,15 +85,59 @@ class GenericSBNInstance {
 
   // ** SBN-related items
 
+  void SetSBNSupport(TSBNSupport &&sbn_support) {
+    sbn_support_ = std::move(sbn_support);
+    sbn_parameters_.resize(sbn_support_.GPCSPCount());
+    sbn_parameters_.setOnes();
+    psp_indexer_ = sbn_support_.BuildPSPIndexer();
+  }
+
   // Use the loaded trees to set up the TopologyCounter, SBNSupport, etc.
   void ProcessLoadedTrees() {
     ClearTreeCollectionAssociatedState();
     topology_counter_ = TopologyCounter();
-    sbn_support_ = TSBNSupport(topology_counter_, tree_collection_.TaxonNames());
-    sbn_parameters_.resize(sbn_support_.GPCSPCount());
-    sbn_parameters_.setOnes();
-    psp_indexer_ = sbn_support_.BuildPSPIndexer();
+    SetSBNSupport(TSBNSupport(topology_counter_, tree_collection_.TaxonNames()));
   };
+
+  // Set the SBN parameters using a "pretty" map of SBNs.
+  //
+  // Any GPCSP that is not assigned a value by pretty_sbn_parameters will be assigned a
+  // value of DOUBLE_MINIMUM (i.e. "log of 0"). We do emit a warning with this code is
+  // used if warn_missing is on.
+  //
+  // We assume pretty_sbn_parameters is delivered in linear (i.e not log) space. If we
+  // get log parameters they will have negative values, which will raise a failure.
+  void SetSBNParameters(const StringDoubleMap &pretty_sbn_parameters,
+                        bool warn_missing = true) {
+    StringVector pretty_indexer = PrettyIndexer();
+    size_t missing_count = 0;
+    for (size_t i = 0; i < pretty_indexer.size(); i++) {  // NOLINT
+      const std::string &pretty_gpcsp = pretty_indexer[i];
+      const auto search = pretty_sbn_parameters.find(pretty_gpcsp);
+      if (search == pretty_sbn_parameters.end()) {
+        sbn_parameters_[i] = DOUBLE_MINIMUM;
+        missing_count++;
+      } else if (search->second > 0.) {
+        sbn_parameters_[i] = log(search->second);
+      } else if (search->second == 0.) {
+        sbn_parameters_[i] = DOUBLE_MINIMUM;
+      } else {
+        Failwith(
+            "Negative probability encountered in SetSBNParameters. Note that we expect "
+            "the probabilities to be expressed in linear (not log) space.");
+      }
+    }
+    if (warn_missing && missing_count > 0) {
+      std::cout << "Warning: when setting SBN parameters, " << missing_count
+                << " were in the support but not specified; these were set to "
+                << DOUBLE_MINIMUM << " (parameters stored as log space)." << std::endl;
+    }
+  }
+
+  // The support has to already be set up to accept these SBN parameters.
+  void ReadSBNParametersFromCSV(const std::string &csv_path) {
+    SetSBNParameters(CSV::StringDoubleMapOfCSV(csv_path));
+  }
 
   void CheckTopologyCounter() {
     if (TopologyCounter().empty()) {
@@ -137,6 +185,30 @@ class GenericSBNInstance {
 
   void SBNParametersToCSV(const std::string &file_path) {
     CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);
+  }
+
+  // Get indexer representations of the trees in tree_collection_.
+  // See the documentation of IndexerRepresentationOf in sbn_maps.hpp for an
+  // explanation of what these are. This version uses the length of
+  // sbn_parameters_ as a sentinel value for all rootsplits/PCSPs that aren't
+  // present in the indexer.
+  std::vector<TIndexerRepresentation> MakeIndexerRepresentations() const {
+    std::vector<TIndexerRepresentation> representations;
+    representations.reserve(tree_collection_.trees_.size());
+    for (const auto &tree : tree_collection_.trees_) {
+      representations.push_back(sbn_support_.IndexerRepresentationOf(tree.Topology()));
+    }
+    return representations;
+  }
+
+  // Calculate SBN probabilities for all currently-loaded trees.
+  EigenVectorXd CalculateSBNProbabilities() {
+    EigenVectorXd sbn_parameters_copy = sbn_parameters_;
+    SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters_copy,
+                                                    sbn_support_.RootsplitCount(),
+                                                    sbn_support_.ParentToRange());
+    return SBNProbability::ProbabilityOfCollection(sbn_parameters_copy,
+                                                   MakeIndexerRepresentations());
   }
 
   // ** Phylogenetic likelihood

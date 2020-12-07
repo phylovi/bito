@@ -343,7 +343,16 @@ bool SBNProbability::IsInSBNSupport(
   return true;
 };
 
-double SBNProbability::ProbabilityOf(
+double SBNProbability::ProbabilityOfSingle(
+    const EigenConstVectorXdRef sbn_parameters,
+    const RootedIndexerRepresentation& rooted_representation) {
+  size_t sbn_parameter_count = sbn_parameters.size();
+  return IsInSBNSupport(rooted_representation, sbn_parameter_count)
+             ? exp(SumOf(sbn_parameters, rooted_representation, 0.))
+             : 0.;
+}
+
+double SBNProbability::ProbabilityOfSingle(
     const EigenConstVectorXdRef sbn_parameters,
     const UnrootedIndexerRepresentation& indexer_representation) {
   size_t sbn_parameter_count = sbn_parameters.size();
@@ -358,14 +367,23 @@ double SBNProbability::ProbabilityOf(
   return exp(log_total_probability);
 }
 
-EigenVectorXd SBNProbability::ProbabilityOf(
+EigenVectorXd SBNProbability::ProbabilityOfCollection(
+    const EigenConstVectorXdRef sbn_parameters,
+    const std::vector<RootedIndexerRepresentation>& indexer_representations) {
+  // Lambdas aren't std:functions, so we make a std::function here.
+  std::function<double(const RootedIndexerRepresentation&)> f =
+      [sbn_parameters](const RootedIndexerRepresentation& indexer_representation) {
+        return ProbabilityOfSingle(sbn_parameters, indexer_representation);
+      };
+  return EigenVectorXdOfStdVectorT(indexer_representations, f);
+}
+
+EigenVectorXd SBNProbability::ProbabilityOfCollection(
     const EigenConstVectorXdRef sbn_parameters,
     const std::vector<UnrootedIndexerRepresentation>& indexer_representations) {
-  const size_t topology_count = indexer_representations.size();
-  EigenVectorXd results(topology_count);
-  for (size_t topology_idx = 0; topology_idx < topology_count; ++topology_idx) {
-    results[topology_idx] =
-        ProbabilityOf(sbn_parameters, indexer_representations[topology_idx]);
-  }
-  return results;
+  std::function<double(const UnrootedIndexerRepresentation&)> f =
+      [sbn_parameters](const UnrootedIndexerRepresentation& indexer_representation) {
+        return ProbabilityOfSingle(sbn_parameters, indexer_representation);
+      };
+  return EigenVectorXdOfStdVectorT(indexer_representations, f);
 }
