@@ -32,10 +32,11 @@ void EigenToCSV(const std::string &file_path, EigenType eigen_object) {
   }
 }
 
-// Map from a std::vector<T> to an EigenVectorXd using a function f that maps T->double.
+// Convert each entry of a std::vector<T> to double using a function f and store in an
+// EigenVectorXd.
 template <typename T>
-EigenVectorXd MapFromStdVectorToEigenVectorXd(
-    const std::vector<T> &v, const std::function<double(const T &)> &f) {
+EigenVectorXd EigenVectorXdOfStdVectorT(const std::vector<T> &v,
+                                        const std::function<double(const T &)> &f) {
   EigenVectorXd results(v.size());
   for (size_t i = 0; i < v.size(); ++i) {
     results[i] = f(v[i]);

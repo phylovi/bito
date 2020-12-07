@@ -375,7 +375,7 @@ EigenVectorXd SBNProbability::ProbabilityOfCollection(
       [sbn_parameters](const RootedIndexerRepresentation& indexer_representation) {
         return ProbabilityOfSingle(sbn_parameters, indexer_representation);
       };
-  return MapFromStdVectorToEigenVectorXd(indexer_representations, f);
+  return EigenVectorXdOfStdVectorT(indexer_representations, f);
 }
 
 EigenVectorXd SBNProbability::ProbabilityOfCollection(
@@ -385,5 +385,5 @@ EigenVectorXd SBNProbability::ProbabilityOfCollection(
       [sbn_parameters](const UnrootedIndexerRepresentation& indexer_representation) {
         return ProbabilityOfSingle(sbn_parameters, indexer_representation);
       };
-  return MapFromStdVectorToEigenVectorXd(indexer_representations, f);
+  return EigenVectorXdOfStdVectorT(indexer_representations, f);
 }
