@@ -156,7 +156,7 @@ class GPDAG {
   void AddRhatOperations(const GPDAGNode *node, GPOperationVector &operations) const;
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
-  
+
   void ScheduleBranchLengthOptimization(size_t node_id,
                                         std::unordered_set<size_t> &visited_nodes,
                                         GPOperationVector &operations) const;
@@ -173,7 +173,8 @@ class GPDAG {
                                       GPOperationVector &operations) const;
   void UpdateRPLVs(size_t node_id, GPOperationVector &operations) const;
   void OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
-      const GPDAGNode *node, bool rotated, std::unordered_set<size_t> &visited_nodes, GPOperationVector &operations) const;
+      const GPDAGNode *node, bool rotated, std::unordered_set<size_t> &visited_nodes,
+      GPOperationVector &operations) const;
 
   Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated);
 };
