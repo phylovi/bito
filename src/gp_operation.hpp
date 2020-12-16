@@ -112,6 +112,20 @@ struct OptimizeBranchLength {
   }
 };
 
+// Integrates the likelihood of `plv[rootward_]` dot `P(branch_length) plv[leafward_]`
+// over potential branch lengths and stores log likelihood at
+// `log_likelihoods[branch_length_]`.
+struct IntegratedMarginalLikelihood {
+  constexpr IntegratedMarginalLikelihood(size_t leafward, size_t rootward, size_t gpcsp)
+      : leafward_{leafward}, rootward_{rootward}, gpcsp_{gpcsp} {}
+  size_t leafward_;
+  size_t rootward_;
+  size_t gpcsp_;
+  StringSizePairVector guts() const {
+    return {{"leafward_", leafward_}, {"rootward_", rootward_}, {"gpcsp_", gpcsp_}};
+  }
+};
+
 // Assumption: log_likelihoods_ have been updated on [op.start_, op.stop_).
 // Performs `eq:SBNUpdates`. That is, let `total` be the log sum of
 // `log_likelihoods[idx]` for all `idx` in `start_ <= idx < stop_`. Now let
@@ -146,13 +160,12 @@ struct PrepForMarginalization {
 
 }  // namespace GPOperations
 
-using GPOperation =
-    std::variant<GPOperations::Zero, GPOperations::SetToStationaryDistribution,
-                 GPOperations::IncrementWithWeightedEvolvedPLV, GPOperations::Multiply,
-                 GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
-                 GPOperations::UpdateSBNProbabilities,
-                 GPOperations::IncrementMarginalLikelihood,
-                 GPOperations::PrepForMarginalization>;
+using GPOperation = std::variant<
+    GPOperations::Zero, GPOperations::SetToStationaryDistribution,
+    GPOperations::IncrementWithWeightedEvolvedPLV, GPOperations::Multiply,
+    GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
+    GPOperations::UpdateSBNProbabilities, GPOperations::IncrementMarginalLikelihood,
+    GPOperations::IntegratedMarginalLikelihood, GPOperations::PrepForMarginalization>;
 
 using GPOperationVector = std::vector<GPOperation>;
 
@@ -185,6 +198,7 @@ struct PrepForMarginalizationVisitor {
   void operator()(const GPOperations::Likelihood&) {}                   // NOLINT
   void operator()(const GPOperations::OptimizeBranchLength&) {}         // NOLINT
   void operator()(const GPOperations::UpdateSBNProbabilities&) {}       // NOLINT
+  void operator()(const GPOperations::IntegratedMarginalLikelihood&) {}  // NOLINT
   void operator()(const GPOperations::PrepForMarginalization&) {}       // NOLINT
 
   GPOperations::PrepForMarginalization ToPrepForMarginalization() {
@@ -226,6 +240,9 @@ struct GPOperationOstream {
   }
   void operator()(const GPOperations::UpdateSBNProbabilities& operation) {
     os_ << "UpdateSBNProbabilities" << operation.guts();
+  }
+  void operator()(const GPOperations::IntegratedMarginalLikelihood& operation) {
+    os_ << "IntegratedMarginalLikelihood" << operation.guts();
   }
   void operator()(const GPOperations::PrepForMarginalization& operation) {
     os_ << "PrepForMarginalization" << operation.guts();

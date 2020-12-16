@@ -184,6 +184,12 @@ void GPInstance::EstimateSBNParameters() {
   std::cout << "Begin SBN parameter optimization\n";
   ResetMarginalLikelihoodAndPopulatePLVs();
   ComputeLikelihoods();
+
+  GPOperationVector integrated_marginal_likelihood_ops;
+  // TODO: write this
+  // = dag_.IntegratedMarginalLikelihoodOperations();
+  ProcessOperations(integrated_marginal_likelihood_ops);
+
   ProcessOperations(dag_.OptimizeSBNParameters());
   sbn_parameters_ = engine_->GetSBNParameters();
 }

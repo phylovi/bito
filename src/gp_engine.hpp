@@ -30,6 +30,7 @@ class GPEngine {
   void operator()(const GPOperations::Likelihood& op);
   void operator()(const GPOperations::OptimizeBranchLength& op);
   void operator()(const GPOperations::UpdateSBNProbabilities& op);
+  void operator()(const GPOperations::IntegratedMarginalLikelihood& op);
   void operator()(const GPOperations::PrepForMarginalization& op);
 
   void ProcessOperations(GPOperationVector operations);
