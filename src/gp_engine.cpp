@@ -118,6 +118,7 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   const double log_norm = NumericalUtils::LogSum(unnormalized_posterior);
   unnormalized_posterior.array() -= log_norm;
   q_.segment(op.start_, range_length) = unnormalized_posterior.array().exp();
+  std::cout << "post: " << q_.segment(op.start_, range_length) << std::endl;
 }
 
 void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
