@@ -99,11 +99,8 @@ struct Likelihood {
 
 // Finds the optimal `branch_length` for the likelihood of
 // `plv[rootward_]` and `P(branch_length) plv[leafward_]`,
-// * starting optimization at `branch_lengths[branch_length_]`,
-// * storing the PLV for `P(branch_length) plv[leafward_]` in `plv[dest_]` for the
-// optimal branch length
-// * storing log likelihood at `log_likelihoods[branch_length_]`
-// * storing optimal branch length at `branch_lengths[branch_length_]`
+// starting optimization at `branch_lengths[branch_length_]`, and
+// storing optimal branch length at `branch_lengths[branch_length_]`.
 struct OptimizeBranchLength {
   constexpr OptimizeBranchLength(size_t leafward, size_t rootward, size_t gpcsp)
       : leafward_{leafward}, rootward_{rootward}, gpcsp_{gpcsp} {}
