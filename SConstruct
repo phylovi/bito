@@ -164,6 +164,8 @@ sources = [
     "_build/scanner.cpp",
     "_build/site_model.cpp",
     "_build/site_pattern.cpp",
+    "_build/subsplit_dag.cpp",
+    "_build/subsplit_dag_node.cpp",
     "_build/substitution_model.cpp",
     "_build/taxon_name_munging.cpp",
     "_build/tree.cpp",
@@ -177,8 +179,6 @@ gp_sources = [
     "_build/gp_engine.cpp",
     "_build/gp_instance.cpp",
     "_build/gp_operation.cpp",
-    "_build/subsplit_dag.cpp",
-    "_build/subsplit_dag_node.cpp",
 ]
 extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
