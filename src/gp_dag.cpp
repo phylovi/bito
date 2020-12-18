@@ -45,8 +45,8 @@ void GPDAG::UpdateRPLVs(size_t node_id, GPOperationVector &operations) const {
 }
 
 void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
-    const SubsplitDAGNode *node, bool rotated, std::unordered_set<size_t> &visited_nodes,
-    GPOperationVector &operations) const {
+    const SubsplitDAGNode *node, bool rotated,
+    std::unordered_set<size_t> &visited_nodes, GPOperationVector &operations) const {
   PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
   PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
 
@@ -84,8 +84,8 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
   GPOperationVector operations;
   IterateOverRealNodes([this, &operations](const SubsplitDAGNode *node) {
     IterateOverLeafwardEdges(
-        node,
-        [this, node, &operations](const bool rotated, const SubsplitDAGNode *child_node) {
+        node, [this, node, &operations](const bool rotated,
+                                        const SubsplitDAGNode *child_node) {
           const auto gpcsp_idx =
               GetGPCSPIndex(node->GetBitset(rotated), child_node->GetBitset());
           operations.push_back(Likelihood{gpcsp_idx,
@@ -257,15 +257,16 @@ void GPDAG::AddRhatOperations(const SubsplitDAGNode *node,
                               GPOperationVector &operations) const {
   const auto subsplit = node->GetBitset();
   GPOperationVector new_operations;
-  IterateOverRootwardEdges(node, [this, node, &new_operations, subsplit](
-                                     const bool rotated, const SubsplitDAGNode *parent_node) {
-    const auto parent_subsplit = parent_node->GetBitset(rotated);
-    const auto gpcsp_idx = GetGPCSPIndex(parent_subsplit, subsplit);
+  IterateOverRootwardEdges(
+      node, [this, node, &new_operations, subsplit](
+                const bool rotated, const SubsplitDAGNode *parent_node) {
+        const auto parent_subsplit = parent_node->GetBitset(rotated);
+        const auto gpcsp_idx = GetGPCSPIndex(parent_subsplit, subsplit);
 
-    new_operations.push_back(IncrementWithWeightedEvolvedPLV{
-        GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
-        GetPLVIndex(RPLVType(rotated), parent_node->Id())});
-  });
+        new_operations.push_back(IncrementWithWeightedEvolvedPLV{
+            GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
+            GetPLVIndex(RPLVType(rotated), parent_node->Id())});
+      });
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
@@ -340,4 +341,3 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
   });
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
-

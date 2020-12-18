@@ -7,9 +7,9 @@
 #ifndef SRC_SUBSPLIT_DAG_HPP_
 #define SRC_SUBSPLIT_DAG_HPP_
 
-#include "subsplit_dag_node.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
+#include "subsplit_dag_node.hpp"
 
 class SubsplitDAG {
  public:
