@@ -68,7 +68,7 @@ const BitsetSizePairMap &SubsplitDAG::GetParentToRange() const {
   return parent_to_range_;
 }
 
-GPDAGNode *SubsplitDAG::GetDagNode(const size_t node_id) const {
+SubsplitDAGNode *SubsplitDAG::GetDagNode(const size_t node_id) const {
   return dag_nodes_.at(node_id).get();
 }
 
@@ -80,7 +80,7 @@ size_t SubsplitDAG::GetGPCSPIndex(const Bitset &parent_subsplit,
 Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
   std::vector<Node::NodePtrVec> topology_below(NodeCount());
 
-  auto GetSubtopologies = [&topology_below](const GPDAGNode *node) {
+  auto GetSubtopologies = [&topology_below](const SubsplitDAGNode *node) {
     Node::NodePtrVec rotated_subtopologies, sorted_subtopologies;
     for (const bool rotated : {false, true}) {
       for (const auto &child_id : node->GetLeafward(rotated)) {
@@ -165,14 +165,14 @@ void SubsplitDAG::IterateOverRealNodes(const NodeLambda &f) const {
   }
 }
 
-void SubsplitDAG::IterateOverLeafwardEdges(const GPDAGNode *node, bool rotated,
+void SubsplitDAG::IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
                                            const NodeLambda &f) const {
   for (const size_t child_idx : node->GetLeafward(rotated)) {
     f(GetDagNode(child_idx));
   }
 }
 
-void SubsplitDAG::IterateOverLeafwardEdges(const GPDAGNode *node,
+void SubsplitDAG::IterateOverLeafwardEdges(const SubsplitDAGNode *node,
                                            const EdgeDestinationLambda &f) const {
   for (bool rotated : {false, true}) {
     for (const size_t child_idx : node->GetLeafward(rotated)) {
@@ -181,7 +181,7 @@ void SubsplitDAG::IterateOverLeafwardEdges(const GPDAGNode *node,
   }
 }
 
-void SubsplitDAG::IterateOverRootwardEdges(const GPDAGNode *node,
+void SubsplitDAG::IterateOverRootwardEdges(const SubsplitDAGNode *node,
                                            const EdgeDestinationLambda &f) const {
   for (bool rotated : {false, true}) {
     for (const size_t parent_idx : node->GetRootward(rotated)) {
@@ -231,7 +231,7 @@ void SubsplitDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
 void SubsplitDAG::CreateAndInsertNode(const Bitset &subsplit) {
   size_t id = dag_nodes_.size();
   SafeInsert(subsplit_to_id_, subsplit, id);
-  dag_nodes_.push_back(std::make_unique<GPDAGNode>(id, subsplit));
+  dag_nodes_.push_back(std::make_unique<SubsplitDAGNode>(id, subsplit));
 }
 
 void SubsplitDAG::ConnectNodes(size_t idx, bool rotated) {
@@ -308,7 +308,7 @@ void SubsplitDAG::AddFakeSubsplitsToGPCSPIndexerAndParentToRange() {
     const auto current_bitset = dag_nodes_[i]->GetBitset();
     IterateOverRootwardEdges(
         GetDagNode(i),
-        [this, current_bitset](const bool rotated, const GPDAGNode *node) {
+        [this, current_bitset](const bool rotated, const SubsplitDAGNode *node) {
           SafeInsert(parent_to_range_, node->GetBitset(rotated),
                      {gpcsp_indexer_.size(), gpcsp_indexer_.size() + 1});
           SafeInsert(gpcsp_indexer_,
@@ -319,7 +319,7 @@ void SubsplitDAG::AddFakeSubsplitsToGPCSPIndexerAndParentToRange() {
 }
 
 void RootwardDepthFirst(size_t id,
-                        const std::vector<std::unique_ptr<GPDAGNode>> &dag_nodes,
+                        const std::vector<std::unique_ptr<SubsplitDAGNode>> &dag_nodes,
                         SizeVector &visit_order,
                         std::unordered_set<size_t> &visited_nodes) {
   SafeInsert(visited_nodes, id);
@@ -337,7 +337,7 @@ void RootwardDepthFirst(size_t id,
 }
 
 void LeafwardDepthFirst(size_t id,
-                        const std::vector<std::unique_ptr<GPDAGNode>> &dag_nodes,
+                        const std::vector<std::unique_ptr<SubsplitDAGNode>> &dag_nodes,
                         SizeVector &visit_order,
                         std::unordered_set<size_t> &visited_nodes) {
   SafeInsert(visited_nodes, id);

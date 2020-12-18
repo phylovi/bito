@@ -207,7 +207,7 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   std::unordered_map<const Node *, Bitset> node_to_subsplit_indexer;
   for (const auto &topology : topologies) {
     topology->PreOrder([this, &node_to_subsplit_indexer](const Node *node) {
-      GPDAGNode *dag_node = dag_.GetDagNode(node->Id());
+      SubsplitDAGNode *dag_node = dag_.GetDagNode(node->Id());
       if (node_to_subsplit_indexer.count(node) == 0) {
         SafeInsert(node_to_subsplit_indexer, node, dag_node->GetBitset());
       }

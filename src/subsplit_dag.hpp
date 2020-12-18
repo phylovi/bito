@@ -7,17 +7,17 @@
 #ifndef SRC_SUBSPLIT_DAG_HPP_
 #define SRC_SUBSPLIT_DAG_HPP_
 
-#include "gp_dag_node.hpp"
+#include "subsplit_dag_node.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 
 class SubsplitDAG {
  public:
   // NodeLambda is for iterating over nodes.
-  using NodeLambda = std::function<void(const GPDAGNode *)>;
+  using NodeLambda = std::function<void(const SubsplitDAGNode *)>;
   // EdgeDestinationLambda takes in a rotation status (true is rotated, false is not)
   // and a "destination" node. For iterating over DAG edges with a rotation status.
-  using EdgeDestinationLambda = std::function<void(bool, const GPDAGNode *)>;
+  using EdgeDestinationLambda = std::function<void(bool, const SubsplitDAGNode *)>;
 
   SubsplitDAG();
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
@@ -26,7 +26,7 @@ class SubsplitDAG {
   // How many topologies can be expressed by the GPDAG? Expressed as a double because
   // this number can be big.
   double TopologyCount() const;
-  // Each node in a topology is constructed with GPDAGNode ID as Node ID.
+  // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
   size_t RootsplitCount() const;
   size_t GPCSPCount() const;
@@ -37,7 +37,7 @@ class SubsplitDAG {
 
   const BitsetSizeMap &GetGPCSPIndexer() const;
   const BitsetSizePairMap &GetParentToRange() const;
-  GPDAGNode *GetDagNode(size_t node_id) const;
+  SubsplitDAGNode *GetDagNode(size_t node_id) const;
 
   // Access the value of the gpcsp_indexer_ at the given "expanded" PCSP.
   // Asserts to make sure that the PCSP is well formed.
@@ -73,7 +73,7 @@ class SubsplitDAG {
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
   BitsetSizeMap subsplit_to_id_;
-  std::vector<std::unique_ptr<GPDAGNode>> dag_nodes_;
+  std::vector<std::unique_ptr<SubsplitDAGNode>> dag_nodes_;
 
   // Total number of topologies spanned by the DAG.
   double topology_count_;
@@ -84,13 +84,13 @@ class SubsplitDAG {
   void IterateOverRealNodes(const NodeLambda &f) const;
   // Iterate over the all leafward edges, rotated and sorted, of node using an
   // EdgeDestinationLambda.
-  void IterateOverLeafwardEdges(const GPDAGNode *node,
+  void IterateOverLeafwardEdges(const SubsplitDAGNode *node,
                                 const EdgeDestinationLambda &f) const;
   // Iterate over only the rotated/sorted leafward edges of node using a NodeLambda.
-  void IterateOverLeafwardEdges(const GPDAGNode *node, bool rotated,
+  void IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
                                 const NodeLambda &f) const;
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
-  void IterateOverRootwardEdges(const GPDAGNode *node,
+  void IterateOverRootwardEdges(const SubsplitDAGNode *node,
                                 const EdgeDestinationLambda &f) const;
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;

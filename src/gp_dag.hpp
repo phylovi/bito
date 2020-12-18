@@ -7,7 +7,7 @@
 #ifndef SRC_GP_DAG_HPP_
 #define SRC_GP_DAG_HPP_
 
-#include "gp_dag_node.hpp"
+#include "subsplit_dag_node.hpp"
 #include "gp_engine.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
@@ -54,9 +54,9 @@ class GPDAG : public SubsplitDAG {
   [[nodiscard]] GPOperationVector LeafwardPass(const SizeVector &visit_order) const;
   [[nodiscard]] GPOperationVector RootwardPass(const SizeVector &visit_order) const;
 
-  void AddPhatOperations(const GPDAGNode *node, bool rotated,
+  void AddPhatOperations(const SubsplitDAGNode *node, bool rotated,
                          GPOperationVector &operations) const;
-  void AddRhatOperations(const GPDAGNode *node, GPOperationVector &operations) const;
+  void AddRhatOperations(const SubsplitDAGNode *node, GPOperationVector &operations) const;
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
 
@@ -76,7 +76,7 @@ class GPDAG : public SubsplitDAG {
                                       GPOperationVector &operations) const;
   void UpdateRPLVs(size_t node_id, GPOperationVector &operations) const;
   void OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
-      const GPDAGNode *node, bool rotated, std::unordered_set<size_t> &visited_nodes,
+      const SubsplitDAGNode *node, bool rotated, std::unordered_set<size_t> &visited_nodes,
       GPOperationVector &operations) const;
 };
 

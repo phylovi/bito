@@ -45,7 +45,7 @@ void GPDAG::UpdateRPLVs(size_t node_id, GPOperationVector &operations) const {
 }
 
 void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
-    const GPDAGNode *node, bool rotated, std::unordered_set<size_t> &visited_nodes,
+    const SubsplitDAGNode *node, bool rotated, std::unordered_set<size_t> &visited_nodes,
     GPOperationVector &operations) const {
   PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
   PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
@@ -56,7 +56,7 @@ void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
   IterateOverLeafwardEdges(
       node, rotated,
       [this, &operations, &rotated, &visited_nodes,
-       &node_id](const GPDAGNode *child_node) {
+       &node_id](const SubsplitDAGNode *child_node) {
         size_t child_id = child_node->Id();
         if (visited_nodes.count(child_id) == 0) {
           ScheduleBranchLengthOptimization(child_id, visited_nodes, operations);
@@ -82,10 +82,10 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
 
 GPOperationVector GPDAG::ComputeLikelihoods() const {
   GPOperationVector operations;
-  IterateOverRealNodes([this, &operations](const GPDAGNode *node) {
+  IterateOverRealNodes([this, &operations](const SubsplitDAGNode *node) {
     IterateOverLeafwardEdges(
         node,
-        [this, node, &operations](const bool rotated, const GPDAGNode *child_node) {
+        [this, node, &operations](const bool rotated, const SubsplitDAGNode *child_node) {
           const auto gpcsp_idx =
               GetGPCSPIndex(node->GetBitset(rotated), child_node->GetBitset());
           operations.push_back(Likelihood{gpcsp_idx,
@@ -238,7 +238,7 @@ void AppendOperationsAfterPrepForMarginalization(
   }
 }
 
-void GPDAG::AddPhatOperations(const GPDAGNode *node, bool rotated,
+void GPDAG::AddPhatOperations(const SubsplitDAGNode *node, bool rotated,
                               GPOperationVector &operations) const {
   PLVType plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
   const auto parent_subsplit = node->GetBitset(rotated);
@@ -253,12 +253,12 @@ void GPDAG::AddPhatOperations(const GPDAGNode *node, bool rotated,
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
-void GPDAG::AddRhatOperations(const GPDAGNode *node,
+void GPDAG::AddRhatOperations(const SubsplitDAGNode *node,
                               GPOperationVector &operations) const {
   const auto subsplit = node->GetBitset();
   GPOperationVector new_operations;
   IterateOverRootwardEdges(node, [this, node, &new_operations, subsplit](
-                                     const bool rotated, const GPDAGNode *parent_node) {
+                                     const bool rotated, const SubsplitDAGNode *parent_node) {
     const auto parent_subsplit = parent_node->GetBitset(rotated);
     const auto gpcsp_idx = GetGPCSPIndex(parent_subsplit, subsplit);
 
