@@ -4,7 +4,7 @@
 #include "gp_dag_node.hpp"
 
 std::string GetNeighborString(std::vector<size_t> neighbors) {
-  std::string str = "";
+  std::string str;
   for (size_t i : neighbors) {
     str += std::to_string(i) + " ";
   }

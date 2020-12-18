@@ -178,6 +178,7 @@ gp_sources = [
     "_build/gp_engine.cpp",
     "_build/gp_instance.cpp",
     "_build/gp_operation.cpp",
+    "_build/subsplit_dag.cpp",
 ]
 extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
