@@ -31,16 +31,15 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
       [&dag, &subsplit_probabilities, &normalized_sbn_parameters](size_t rootsplit_id) {
         const auto rootsplit_bitset = dag.GetDagNode(rootsplit_id)->GetBitset();
         std::cout << rootsplit_bitset.ToString() << std::endl;
-        auto undoubled_bitset = rootsplit_bitset.SubsplitChunk(0);
-        Assert(!subsplit_probabilities.contains(undoubled_bitset),
+        Assert(!subsplit_probabilities.contains(rootsplit_bitset),
                "We have iterated over the same rootsplit multiple times.");
         subsplit_probabilities.increment(
-            undoubled_bitset,
+            rootsplit_bitset,
             normalized_sbn_parameters[dag.GetRootsplitIndex(rootsplit_bitset)]);
       });
 
   for (const auto node_id : dag.ReversePostorderTraversal()) {
-    // Perhaps IterateOverEdgesAndChildren?
+    // TODO(e) Perhaps IterateOverEdgesAndChildren?
     const auto node = dag.GetDagNode(node_id);
     dag.IterateOverLeafwardEdgesAndNodes(
         node,
@@ -49,12 +48,26 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
           std::cout << node->GetBitset().SubsplitToString() << " ";
           std::cout << child->GetBitset().SubsplitToString() << std::endl;
           subsplit_probabilities.increment(
-              child->GetBitset(), subsplit_probabilities.at(node->GetBitset()) *
+              child->GetBitset(), subsplit_probabilities.Map().at(node->GetBitset()) *
                                       normalized_sbn_parameters[gpcsp_index]);
         });
   }
 
-  return subsplit_probabilities.Map();
+  // Now we undo the fact that the rootsplits have been expanded in the DAG.
+  // Temporary until #273.
+  BitsetDoubleMap unexpanded_subsplit_probabilities;
+
+  for (const auto &[subsplit, probability] : subsplit_probabilities.Map()) {
+    auto total = subsplit.SubsplitChunk(0) | subsplit.SubsplitChunk(1);
+    if (total.All()) {
+      SafeInsert(unexpanded_subsplit_probabilities, subsplit.SubsplitChunk(0),
+                 probability);
+    } else {
+      SafeInsert(unexpanded_subsplit_probabilities, subsplit, probability);
+    }
+  }
+
+  return unexpanded_subsplit_probabilities;
 }
 
 std::vector<double> RootedSBNInstance::LogLikelihoods() {

@@ -94,7 +94,7 @@ class SubsplitDAG {
   BitsetSizePairMap parent_to_range_;
 
   // This indexer is a similarly expanded version of indexer_ in an SBNSupport, but also
-  // encoding rootsplits as full splits rather than a binary indicator.
+  // encoding rootsplits as full splits rather than a binary indicator (#273).
   //
   // This indexer is used for q_, branch_lengths_, log_likelihoods_ in GPEngine.
   BitsetSizeMap gpcsp_indexer_;
