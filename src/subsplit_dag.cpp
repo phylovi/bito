@@ -72,6 +72,11 @@ SubsplitDAGNode *SubsplitDAG::GetDagNode(const size_t node_id) const {
   return dag_nodes_.at(node_id).get();
 }
 
+size_t SubsplitDAG::GetRootsplitIndex(const Bitset &rootsplit) const {
+  return gpcsp_indexer_.at(rootsplit);
+}
+
+// TODO(eric) rename to GetPCSPIndex
 size_t SubsplitDAG::GetGPCSPIndex(const Bitset &parent_subsplit,
                                   const Bitset &child_subsplit) const {
   return gpcsp_indexer_.at(Bitset::PCSPOfPair(parent_subsplit, child_subsplit));
@@ -187,10 +192,12 @@ void SubsplitDAG::IterateOverLeafwardEdgesAndNodes(const SubsplitDAGNode *node,
       node, [this, &node, &f](bool rotated, const SubsplitDAGNode *child) {
         Bitset node_bitset = node->GetBitset(rotated);
         if (!node_bitset.SubsplitChunk(1).IsSingleton()) {
-          std::cout << "\nparent is rotated:" << rotated << std::endl;
-          std::cout << node->ToString();
-          std::cout << "child:\n";
-          std::cout << child->ToString();
+          /*
+            std::cout << "\nparent is rotated:" << rotated << std::endl;
+            std::cout << node->ToString();
+            std::cout << "child:\n";
+            std::cout << child->ToString();
+            */
           f(GetGPCSPIndex(node_bitset, child->GetBitset()), child);
         }
       });
@@ -202,6 +209,14 @@ void SubsplitDAG::IterateOverRootwardEdges(const SubsplitDAGNode *node,
     for (const size_t parent_idx : node->GetRootward(rotated)) {
       f(rotated, GetDagNode(parent_idx));
     }
+  }
+}
+
+// TODO(e) used?
+void SubsplitDAG::IterateOverRootsplits(
+    const std::function<void(const Bitset &)> &f) const {
+  for (const auto &rootsplit : rootsplits_) {
+    f(rootsplit);
   }
 }
 

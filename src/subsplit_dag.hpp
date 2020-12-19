@@ -42,6 +42,8 @@ class SubsplitDAG {
   const BitsetSizePairMap &GetParentToRange() const;
   SubsplitDAGNode *GetDagNode(size_t node_id) const;
 
+  // Access the value of the gpcsp_indexer_ at the given rootsplit.
+  size_t GetRootsplitIndex(const Bitset &rootsplit) const;
   // Access the value of the gpcsp_indexer_ at the given "expanded" PCSP.
   // Asserts to make sure that the PCSP is well formed.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,
@@ -64,6 +66,9 @@ class SubsplitDAG {
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
   void IterateOverRootwardEdges(const SubsplitDAGNode *node,
                                 const EdgeDestinationLambda &f) const;
+
+  // Iterate over the rootsplits.
+  void IterateOverRootsplits(const std::function<void(const Bitset &)> &f) const;
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 

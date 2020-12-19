@@ -23,21 +23,36 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
         "UnconditionalSubsplitProbabilities.");
   }
 
-  SubsplitDAG dag(tree_collection_);
+  const SubsplitDAG dag(tree_collection_);
   auto subsplit_probabilities = DefaultDict<Bitset, double>(0.);
+  const auto normalized_sbn_parameters = NormalizedSBNParameters();
+
+  dag.IterateOverRootsplitIds(
+      [&dag, &subsplit_probabilities, &normalized_sbn_parameters](size_t rootsplit_id) {
+        const auto rootsplit_bitset = dag.GetDagNode(rootsplit_id)->GetBitset();
+        std::cout << rootsplit_bitset.ToString() << std::endl;
+        auto undoubled_bitset = rootsplit_bitset.SubsplitChunk(0);
+        Assert(!subsplit_probabilities.contains(undoubled_bitset),
+               "We have iterated over the same rootsplit multiple times.");
+        subsplit_probabilities.increment(
+            undoubled_bitset,
+            normalized_sbn_parameters[dag.GetRootsplitIndex(rootsplit_bitset)]);
+      });
 
   for (const auto node_id : dag.ReversePostorderTraversal()) {
     // Perhaps IterateOverEdgesAndChildren?
+    const auto node = dag.GetDagNode(node_id);
     dag.IterateOverLeafwardEdgesAndNodes(
-        dag.GetDagNode(node_id),
-        [this, &subsplit_probabilities](const size_t gpcsp_index,
-                                        const SubsplitDAGNode *child) {
-          subsplit_probabilities.increment(child->GetBitset(),
-                                           sbn_parameters_[gpcsp_index]);
+        node,
+        [&node, &subsplit_probabilities, &normalized_sbn_parameters](
+            const size_t gpcsp_index, const SubsplitDAGNode *child) {
+          std::cout << node->GetBitset().SubsplitToString() << " ";
+          std::cout << child->GetBitset().SubsplitToString() << std::endl;
+          subsplit_probabilities.increment(
+              child->GetBitset(), subsplit_probabilities.at(node->GetBitset()) *
+                                      normalized_sbn_parameters[gpcsp_index]);
         });
   }
-
-  // TODO(e) add the rootsplits.
 
   return subsplit_probabilities.Map();
 }
