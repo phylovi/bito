@@ -67,6 +67,11 @@ class SubsplitDAG {
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
+  // TODO(erick) rename as postorder traversal? Add docs.
+  [[nodiscard]] SizeVector LeafwardPassTraversal() const;
+  [[nodiscard]] SizeVector RootwardPassTraversal() const;
+  [[nodiscard]] SizeVector ReversePostorderTraversal() const;
+
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
   // Uniform prior over all topologies.
@@ -123,9 +128,6 @@ class SubsplitDAG {
   void AddFakeSubsplitsToGPCSPIndexerAndParentToRange();
   // Update gpcsp_indexer_ rootsplits to be full subsplits.
   void ExpandRootsplitsInIndexer();
-
-  [[nodiscard]] SizeVector LeafwardPassTraversal() const;
-  [[nodiscard]] SizeVector RootwardPassTraversal() const;
 
   Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated);
 };

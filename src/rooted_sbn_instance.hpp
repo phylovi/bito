@@ -27,6 +27,9 @@ class RootedSBNInstance : public PreRootedSBNInstance {
   StringSet StringIndexerRepresentationOf(const Node::NodePtr& topology,
                                           size_t out_of_sample_index) const;
 
+  // Make a map from each subsplit to its probability.
+  BitsetDoubleMap UnconditionalSubsplitProbabilities() const;
+
   // ** Phylogenetic likelihood
 
   std::vector<double> LogLikelihoods();
@@ -180,6 +183,15 @@ TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
                                          {"00001|01110|00100", 1},
                                          {"00010|11101|00100", 1}});
   CHECK_EQ(correct_parameters, inst.PrettyIndexedSBNParameters());
+}
+
+TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
+  auto inst = MakeFiveTaxonRootedInstance();
+  inst.TrainSimpleAverage();
+  std::cout << "UnconditionalSubsplitProbabilities\n";
+  for (const auto [subsplit, probability] : inst.UnconditionalSubsplitProbabilities()) {
+    std::cout << subsplit.ToString() << "\t" << probability << std::endl;
+  }
 }
 
 // Instance SA-trained on a sample of 20-taxon trees.

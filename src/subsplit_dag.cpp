@@ -183,9 +183,17 @@ void SubsplitDAG::IterateOverLeafwardEdges(const SubsplitDAGNode *node,
 
 void SubsplitDAG::IterateOverLeafwardEdgesAndNodes(const SubsplitDAGNode *node,
                                                    const EdgeAndNodeLambda &f) const {
-  IterateOverLeafwardEdges(node, [this, &node, &f](bool, const SubsplitDAGNode *child) {
-    f(GetGPCSPIndex(node->GetBitset(), child->GetBitset()), child);
-  });
+  IterateOverLeafwardEdges(
+      node, [this, &node, &f](bool rotated, const SubsplitDAGNode *child) {
+        Bitset node_bitset = node->GetBitset(rotated);
+        if (!node_bitset.SubsplitChunk(1).IsSingleton()) {
+          std::cout << "\nparent is rotated:" << rotated << std::endl;
+          std::cout << node->ToString();
+          std::cout << "child:\n";
+          std::cout << child->ToString();
+          f(GetGPCSPIndex(node_bitset, child->GetBitset()), child);
+        }
+      });
 }
 
 void SubsplitDAG::IterateOverRootwardEdges(const SubsplitDAGNode *node,
@@ -376,6 +384,12 @@ SizeVector SubsplitDAG::RootwardPassTraversal() const {
   IterateOverRootsplitIds([this, &visit_order, &visited_nodes](size_t root_id) {
     LeafwardDepthFirst(root_id, dag_nodes_, visit_order, visited_nodes);
   });
+  return visit_order;
+}
+
+SizeVector SubsplitDAG::ReversePostorderTraversal() const {
+  auto visit_order = RootwardPassTraversal();
+  std::reverse(visit_order.begin(), visit_order.end());
   return visit_order;
 }
 

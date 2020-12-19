@@ -42,7 +42,7 @@ class SubsplitDAGNode {
     return rotated ? GetRootwardRotated() : GetRootwardSorted();
   }
 
-  std::string ToString();
+  std::string ToString() const;
 
  private:
   size_t id_;

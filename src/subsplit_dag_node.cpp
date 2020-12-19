@@ -11,7 +11,7 @@ std::string GetNeighborString(std::vector<size_t> neighbors) {
   return str;
 }
 
-std::string SubsplitDAGNode::ToString() {
+std::string SubsplitDAGNode::ToString() const {
   std::string str = std::to_string(id_) + ": " + GetBitset().SubsplitToString() + "\n";
   str += "Rootward Sorted: " + GetNeighborString(rootward_sorted_) + "\n";
   str += "Rootward Rotated: " + GetNeighborString(rootward_rotated_) + "\n";
