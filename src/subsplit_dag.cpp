@@ -181,6 +181,13 @@ void SubsplitDAG::IterateOverLeafwardEdges(const SubsplitDAGNode *node,
   }
 }
 
+void SubsplitDAG::IterateOverLeafwardEdgesAndNodes(const SubsplitDAGNode *node,
+                                                   const EdgeAndNodeLambda &f) const {
+  IterateOverLeafwardEdges(node, [this, &node, &f](bool, const SubsplitDAGNode *child) {
+    f(GetGPCSPIndex(node->GetBitset(), child->GetBitset()), child);
+  });
+}
+
 void SubsplitDAG::IterateOverRootwardEdges(const SubsplitDAGNode *node,
                                            const EdgeDestinationLambda &f) const {
   for (bool rotated : {false, true}) {

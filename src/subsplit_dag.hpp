@@ -18,6 +18,9 @@ class SubsplitDAG {
   // EdgeDestinationLambda takes in a rotation status (true is rotated, false is not)
   // and a "destination" node. For iterating over DAG edges with a rotation status.
   using EdgeDestinationLambda = std::function<void(bool, const SubsplitDAGNode *)>;
+  // EdgeAndNodeLambda takes a GPCSP index of an edge and the SubsplitDAGNode of the
+  // child.
+  using EdgeAndNodeLambda = std::function<void(size_t, const SubsplitDAGNode *)>;
 
   SubsplitDAG();
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
@@ -43,6 +46,26 @@ class SubsplitDAG {
   // Asserts to make sure that the PCSP is well formed.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,
                        const Bitset &child_subsplit) const;
+
+  // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
+  void IterateOverRealNodes(const NodeLambda &f) const;
+  // Iterate over the all leafward edges, rotated and sorted, of node using an
+  // EdgeDestinationLambda.
+  void IterateOverLeafwardEdges(const SubsplitDAGNode *node,
+                                const EdgeDestinationLambda &f) const;
+  // Iterate over only the rotated/sorted leafward edges of node using a NodeLambda.
+  void IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
+                                const NodeLambda &f) const;
+  // Iterate over the leafward edges, supplying both the a GPCSP index of an edge and
+  // the SubsplitDAGNode of the child. Note that this is not efficiently implemented
+  // right now-- it requires bitset manipulationa and lookup for the index of each edge.
+  void IterateOverLeafwardEdgesAndNodes(const SubsplitDAGNode *node,
+                                        const EdgeAndNodeLambda &f) const;
+  // Iterate over the rootward edges of node using an EdgeDestinationLambda.
+  void IterateOverRootwardEdges(const SubsplitDAGNode *node,
+                                const EdgeDestinationLambda &f) const;
+  // Iterate over the node ids corresponding to rootsplits.
+  void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
@@ -80,20 +103,6 @@ class SubsplitDAG {
   // Storage for the number of topologies below for each node.
   EigenVectorXd topology_count_below_;
 
-  // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
-  void IterateOverRealNodes(const NodeLambda &f) const;
-  // Iterate over the all leafward edges, rotated and sorted, of node using an
-  // EdgeDestinationLambda.
-  void IterateOverLeafwardEdges(const SubsplitDAGNode *node,
-                                const EdgeDestinationLambda &f) const;
-  // Iterate over only the rotated/sorted leafward edges of node using a NodeLambda.
-  void IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
-                                const NodeLambda &f) const;
-  // Iterate over the rootward edges of node using an EdgeDestinationLambda.
-  void IterateOverRootwardEdges(const SubsplitDAGNode *node,
-                                const EdgeDestinationLambda &f) const;
-  // Iterate over the node ids corresponding to rootsplits.
-  void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
   // Gives the children subsplits of a given parent subsplit, optionally including fake
   // subsplits.
