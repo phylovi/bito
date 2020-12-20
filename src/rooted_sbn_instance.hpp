@@ -27,7 +27,8 @@ class RootedSBNInstance : public PreRootedSBNInstance {
   StringSet StringIndexerRepresentationOf(const Node::NodePtr& topology,
                                           size_t out_of_sample_index) const;
 
-  // Make a map from each subsplit to its probability.
+  // Make a map from each subsplit to its overall probability when we sample a tree from
+  // the SBN.
   BitsetDoubleMap UnconditionalSubsplitProbabilities() const;
 
   // ** Phylogenetic likelihood

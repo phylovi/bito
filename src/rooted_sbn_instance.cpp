@@ -22,7 +22,6 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
         "Please load some trees into your RootedSBNInstance before trying to calculate "
         "UnconditionalSubsplitProbabilities.");
   }
-
   const SubsplitDAG dag(tree_collection_);
   auto subsplit_probabilities = DefaultDict<Bitset, double>(0.);
   const auto normalized_sbn_parameters = NormalizedSBNParameters();
@@ -30,7 +29,6 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
   dag.IterateOverRootsplitIds(
       [&dag, &subsplit_probabilities, &normalized_sbn_parameters](size_t rootsplit_id) {
         const auto rootsplit_bitset = dag.GetDagNode(rootsplit_id)->GetBitset();
-        std::cout << rootsplit_bitset.ToString() << std::endl;
         Assert(!subsplit_probabilities.contains(rootsplit_bitset),
                "We have iterated over the same rootsplit multiple times.");
         subsplit_probabilities.increment(
@@ -39,14 +37,11 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
       });
 
   for (const auto node_id : dag.ReversePostorderTraversal()) {
-    // TODO(e) Perhaps IterateOverEdgesAndChildren?
     const auto node = dag.GetDagNode(node_id);
     dag.IterateOverLeafwardEdgesAndNodes(
-        node,
-        [&node, &subsplit_probabilities, &normalized_sbn_parameters](
-            const size_t gpcsp_index, const SubsplitDAGNode *child) {
-          std::cout << node->GetBitset().SubsplitToString() << " ";
-          std::cout << child->GetBitset().SubsplitToString() << std::endl;
+        node, [&node, &subsplit_probabilities, &normalized_sbn_parameters](
+                  const size_t gpcsp_index, const SubsplitDAGNode *child) {
+          // Increment the child's probability by the parent times the PCSP probability.
           subsplit_probabilities.increment(
               child->GetBitset(), subsplit_probabilities.Map().at(node->GetBitset()) *
                                       normalized_sbn_parameters[gpcsp_index]);
@@ -58,8 +53,7 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
   BitsetDoubleMap unexpanded_subsplit_probabilities;
 
   for (const auto &[subsplit, probability] : subsplit_probabilities.Map()) {
-    auto total = subsplit.SubsplitChunk(0) | subsplit.SubsplitChunk(1);
-    if (total.All()) {
+    if ((subsplit.SubsplitChunk(0) | subsplit.SubsplitChunk(1)).All()) {
       SafeInsert(unexpanded_subsplit_probabilities, subsplit.SubsplitChunk(0),
                  probability);
     } else {
