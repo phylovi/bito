@@ -242,6 +242,10 @@ PYBIND11_MODULE(libsbn, m) {
       .def("calculate_sbn_probabilities", &RootedSBNInstance::CalculateSBNProbabilities,
            R"raw(Calculate the SBN probabilities of the currently loaded trees.)raw")
       // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
+      .def("unconditional_subsplit_probabilities_to_csv",
+           &RootedSBNInstance::UnconditionalSubsplitProbabilitiesToCSV,
+           "Write out the overall probability of seeing each subsplit when we sample a "
+           "tree from the SBN.")
 
       // ** Tip dates
       .def("set_dates_to_be_constant", &RootedSBNInstance::SetDatesToBeConstant,

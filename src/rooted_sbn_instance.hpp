@@ -30,6 +30,7 @@ class RootedSBNInstance : public PreRootedSBNInstance {
   // Make a map from each subsplit to its overall probability when we sample a tree from
   // the SBN.
   BitsetDoubleMap UnconditionalSubsplitProbabilities() const;
+  void UnconditionalSubsplitProbabilitiesToCSV(const std::string& csv_path) const;
 
   // ** Phylogenetic likelihood
 

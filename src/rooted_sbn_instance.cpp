@@ -64,6 +64,17 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
   return unexpanded_subsplit_probabilities;
 }
 
+void RootedSBNInstance::UnconditionalSubsplitProbabilitiesToCSV(
+    const std::string &csv_path) const {
+  auto subsplit_probabilities = UnconditionalSubsplitProbabilities();
+  StringDoubleVector result;
+  result.reserve(subsplit_probabilities.size());
+  for (const auto &[subsplit, probability] : subsplit_probabilities) {
+    result.push_back({subsplit.ToString(), probability});
+  }
+  CSV::StringDoubleVectorToCSV(result, csv_path);
+}
+
 std::vector<double> RootedSBNInstance::LogLikelihoods() {
   return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_);
 }
