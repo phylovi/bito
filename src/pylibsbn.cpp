@@ -410,6 +410,8 @@ PYBIND11_MODULE(libsbn, m) {
            "Read a sequence alignment from a FASTA file.")
       .def("sbn_parameters_to_csv", &GPInstance::SBNParametersToCSV,
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
+      .def("branch_lengths_to_csv", &GPInstance::BranchLengthsToCSV,
+           R"raw(Write "pretty" formatted branch lengths to a CSV.)raw")
 
       // ** Estimation
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",

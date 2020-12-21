@@ -61,7 +61,7 @@ void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
         if (visited_nodes.count(child_id) == 0) {
           ScheduleBranchLengthOptimization(child_id, visited_nodes, operations);
         }
-        OptimizeBranchLengthUpdatePHat(node_id, child_node->Id(), rotated, operations);
+        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
       });
   // Update r_tilde(t) = r_hat(t) \circ p_hat(t) and r(t) = r_hat(t) \circ
   // p_hat_tilde(t)

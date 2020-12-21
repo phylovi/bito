@@ -39,7 +39,9 @@ class GPInstance {
   // #273: A lot of code duplication here with things in SBNInstance.
   StringVector PrettyIndexer() const;
   StringDoubleVector PrettyIndexedSBNParameters();
+  StringDoubleVector PrettyIndexedBranchLengths();
   void SBNParametersToCSV(const std::string &file_path);
+  void BranchLengthsToCSV(const std::string &file_path);
 
  private:
   std::string mmap_file_path_;
@@ -59,6 +61,8 @@ class GPInstance {
   void InitializeGPEngine();
 
   size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit, const Node *leaf_node);
+
+  StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
 };
 
 #endif  // SRC_GP_INSTANCE_HPP_
