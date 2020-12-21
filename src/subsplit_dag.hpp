@@ -60,19 +60,17 @@ class SubsplitDAG {
                                 const NodeLambda &f) const;
   // Iterate over the leafward edges, supplying both the a GPCSP index of an edge and
   // the SubsplitDAGNode of the child. Note that this is not efficiently implemented
-  // right now-- it requires bitset manipulationa and lookup for the index of each edge.
-  void IterateOverLeafwardEdgesAndNodes(const SubsplitDAGNode *node,
-                                        const EdgeAndNodeLambda &f) const;
+  // right now-- it requires bitset manipulations and lookup for the index of each edge.
+  void IterateOverLeafwardEdgesAndChildren(const SubsplitDAGNode *node,
+                                           const EdgeAndNodeLambda &f) const;
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
   void IterateOverRootwardEdges(const SubsplitDAGNode *node,
                                 const EdgeDestinationLambda &f) const;
 
-  // Iterate over the rootsplits.
-  void IterateOverRootsplits(const std::function<void(const Bitset &)> &f) const;
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
-  // TODO(erick) rename as postorder traversal? Add docs.
+  // #288: consider renaming these.
   [[nodiscard]] SizeVector LeafwardPassTraversal() const;
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
   [[nodiscard]] SizeVector ReversePostorderTraversal() const;

@@ -38,7 +38,7 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
 
   for (const auto node_id : dag.ReversePostorderTraversal()) {
     const auto node = dag.GetDagNode(node_id);
-    dag.IterateOverLeafwardEdgesAndNodes(
+    dag.IterateOverLeafwardEdgesAndChildren(
         node, [&node, &subsplit_probabilities, &normalized_sbn_parameters](
                   const size_t gpcsp_index, const SubsplitDAGNode *child) {
           // Increment the child's probability by the parent times the PCSP probability.

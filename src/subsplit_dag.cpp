@@ -76,7 +76,6 @@ size_t SubsplitDAG::GetRootsplitIndex(const Bitset &rootsplit) const {
   return gpcsp_indexer_.at(rootsplit);
 }
 
-// TODO(eric) rename to GetPCSPIndex
 size_t SubsplitDAG::GetGPCSPIndex(const Bitset &parent_subsplit,
                                   const Bitset &child_subsplit) const {
   return gpcsp_indexer_.at(Bitset::PCSPOfPair(parent_subsplit, child_subsplit));
@@ -186,9 +185,8 @@ void SubsplitDAG::IterateOverLeafwardEdges(const SubsplitDAGNode *node,
   }
 }
 
-// TODO(e) Perhaps IterateOverEdgesAndChildren?
-void SubsplitDAG::IterateOverLeafwardEdgesAndNodes(const SubsplitDAGNode *node,
-                                                   const EdgeAndNodeLambda &f) const {
+void SubsplitDAG::IterateOverLeafwardEdgesAndChildren(
+    const SubsplitDAGNode *node, const EdgeAndNodeLambda &f) const {
   IterateOverLeafwardEdges(
       node, [this, &node, &f](bool rotated, const SubsplitDAGNode *child) {
         Bitset node_bitset = node->GetBitset(rotated);
@@ -204,14 +202,6 @@ void SubsplitDAG::IterateOverRootwardEdges(const SubsplitDAGNode *node,
     for (const size_t parent_idx : node->GetRootward(rotated)) {
       f(rotated, GetDagNode(parent_idx));
     }
-  }
-}
-
-// TODO(e) used?
-void SubsplitDAG::IterateOverRootsplits(
-    const std::function<void(const Bitset &)> &f) const {
-  for (const auto &rootsplit : rootsplits_) {
-    f(rootsplit);
   }
 }
 
