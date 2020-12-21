@@ -172,13 +172,13 @@ class GPEngine {
   // is needed to properly account for the likelihood of the trees.
   inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t gpcsp_idx, size_t src1_idx,
                                                       size_t src2_idx) {
-    per_pattern_log_likelihoods_ =
-        // TODO took out q
-        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
-            .diagonal()
-            .array()
-            .log() +
-        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
+    per_pattern_log_likelihoods_ = (q_[gpcsp_idx] * plvs_.at(src1_idx).transpose() *
+                                    transition_matrix_ * plvs_.at(src2_idx))
+                                       .diagonal()
+                                       .array()
+                                       .log() +
+                                   LogRescalingFor(src1_idx) +
+                                   LogRescalingFor(src2_idx);
   }
 };
 
