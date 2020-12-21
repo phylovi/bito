@@ -111,7 +111,6 @@ class SubsplitDAG {
   // Storage for the number of topologies below for each node.
   EigenVectorXd topology_count_below_;
 
-
   // Gives the children subsplits of a given parent subsplit, optionally including fake
   // subsplits.
   std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
