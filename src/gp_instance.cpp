@@ -293,5 +293,5 @@ void GPInstance::SBNParametersToCSV(const std::string &file_path) {
 }
 
 void GPInstance::BranchLengthsToCSV(const std::string &file_path) {
-  CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);
+  CSV::StringDoubleVectorToCSV(PrettyIndexedBranchLengths(), file_path);
 }
