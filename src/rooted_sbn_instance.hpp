@@ -192,9 +192,9 @@ TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
   inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
-  StringDoubleMap correct_parameters({{"00111", 0.5},       // 01|234
-                                      {"01111", 0.3},       // 0|1234
-                                      {"00010", 0.2},       // 0124|3
+  StringDoubleMap correct_parameters({{"0011111000", 0.5},  // 01|234
+                                      {"0111110000", 0.3},  // 0|1234
+                                      {"0001011101", 0.2},  // 0124|3
                                       {"1100100100", 0.2},  // 014|2
                                       {"0100000111", 0.1},  // 1|234
                                       {"0111000001", 0.2},  // 123|4

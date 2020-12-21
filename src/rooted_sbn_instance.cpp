@@ -48,20 +48,7 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
         });
   }
 
-  // Now we undo the fact that the rootsplits have been expanded in the DAG.
-  // Temporary until #273.
-  BitsetDoubleMap unexpanded_subsplit_probabilities;
-
-  for (const auto &[subsplit, probability] : subsplit_probabilities.Map()) {
-    if ((subsplit.SubsplitChunk(0) | subsplit.SubsplitChunk(1)).All()) {
-      SafeInsert(unexpanded_subsplit_probabilities, subsplit.SubsplitChunk(0),
-                 probability);
-    } else {
-      SafeInsert(unexpanded_subsplit_probabilities, subsplit, probability);
-    }
-  }
-
-  return unexpanded_subsplit_probabilities;
+  return subsplit_probabilities.Map();
 }
 
 void RootedSBNInstance::UnconditionalSubsplitProbabilitiesToCSV(
@@ -72,6 +59,7 @@ void RootedSBNInstance::UnconditionalSubsplitProbabilitiesToCSV(
   for (const auto &[subsplit, probability] : subsplit_probabilities) {
     result.push_back({subsplit.ToString(), probability});
   }
+  std::sort(result.begin(), result.end());
   CSV::StringDoubleVectorToCSV(result, csv_path);
 }
 
