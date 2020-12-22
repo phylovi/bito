@@ -151,8 +151,6 @@ void Bitset::Minorize() {
   }
 }
 
-// Copy all of the bits from another bitset into this bitset, starting at
-// begin, and optionally flipping the bits as they get copied.
 void Bitset::CopyFrom(const Bitset& other, size_t begin, bool flip) {
   Assert(begin + other.size() <= size(), "Can't fit copy in Bitset::CopyFrom.");
   if (flip) {

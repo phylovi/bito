@@ -58,7 +58,10 @@ class Bitset {
   bool Any() const;
   // Is exactly one of the bits 1?
   bool IsSingleton() const;
+  // Take the minimum of the bitset and its complement.
   void Minorize();
+  // Copy all of the bits from another bitset into this bitset, starting at
+  // begin, and optionally flipping the bits as they get copied.
   void CopyFrom(const Bitset &other, size_t begin, bool flip);
   // If the bitset only has one bit on, then we return the location of that bit.
   // Otherwise, return nullopt.

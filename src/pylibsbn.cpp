@@ -242,6 +242,10 @@ PYBIND11_MODULE(libsbn, m) {
       .def("calculate_sbn_probabilities", &RootedSBNInstance::CalculateSBNProbabilities,
            R"raw(Calculate the SBN probabilities of the currently loaded trees.)raw")
       // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
+      .def("unconditional_subsplit_probabilities_to_csv",
+           &RootedSBNInstance::UnconditionalSubsplitProbabilitiesToCSV,
+           "Write out the overall probability of seeing each subsplit when we sample a "
+           "tree from the SBN.")
 
       // ** Tip dates
       .def("set_dates_to_be_constant", &RootedSBNInstance::SetDatesToBeConstant,
@@ -406,6 +410,8 @@ PYBIND11_MODULE(libsbn, m) {
            "Read a sequence alignment from a FASTA file.")
       .def("sbn_parameters_to_csv", &GPInstance::SBNParametersToCSV,
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
+      .def("branch_lengths_to_csv", &GPInstance::BranchLengthsToCSV,
+           R"raw(Write "pretty" formatted branch lengths to a CSV.)raw")
 
       // ** Estimation
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",

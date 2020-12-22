@@ -1,19 +1,21 @@
 // Copyright 2019-2020 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// A node in a directed acyclic graph for generalized pruning.
+// A node in a directed acyclic graph representing a collection of subsplits with their
+// corresponding parent-child relationships.
 //
 // Each node represents a subsplit, which is stored as a bitset in `subsplit_`.
 
-#ifndef SRC_GP_DAG_NODE_HPP_
-#define SRC_GP_DAG_NODE_HPP_
+#ifndef SRC_SUBSPLIT_DAG_NODE_HPP_
+#define SRC_SUBSPLIT_DAG_NODE_HPP_
 
 #include "bitset.hpp"
 #include "sugar.hpp"
 
-class GPDAGNode {
+class SubsplitDAGNode {
  public:
-  GPDAGNode(size_t id, Bitset subsplit) : id_(id), subsplit_(std::move(subsplit)) {}
+  SubsplitDAGNode(size_t id, Bitset subsplit)
+      : id_(id), subsplit_(std::move(subsplit)) {}
 
   size_t Id() const { return id_; }
   const Bitset &GetBitset() const { return subsplit_; }
@@ -40,7 +42,7 @@ class GPDAGNode {
     return rotated ? GetRootwardRotated() : GetRootwardSorted();
   }
 
-  std::string ToString();
+  std::string ToString() const;
 
  private:
   size_t id_;
@@ -52,4 +54,4 @@ class GPDAGNode {
   SizeVector rootward_sorted_;
 };
 
-#endif  // SRC_GP_DAG_NODE_HPP_
+#endif  // SRC_SUBSPLIT_DAG_NODE_HPP_

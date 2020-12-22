@@ -207,7 +207,7 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   std::unordered_map<const Node *, Bitset> node_to_subsplit_indexer;
   for (const auto &topology : topologies) {
     topology->PreOrder([this, &node_to_subsplit_indexer](const Node *node) {
-      GPDAGNode *dag_node = dag_.GetDagNode(node->Id());
+      SubsplitDAGNode *dag_node = dag_.GetDagNode(node->Id());
       if (node_to_subsplit_indexer.count(node) == 0) {
         SafeInsert(node_to_subsplit_indexer, node, dag_node->GetBitset());
       }
@@ -269,16 +269,29 @@ StringVector GPInstance::PrettyIndexer() const {
   return pretty_representation;
 }
 
-StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
+StringDoubleVector GPInstance::PrettyIndexedVector(EigenConstVectorXdRef v) {
   StringDoubleVector result;
-  result.reserve(sbn_parameters_.size());
+  result.reserve(v.size());
   const auto pretty_indexer = PrettyIndexer();
-  for (size_t i = 0; i < sbn_parameters_.size(); i++) {
-    result.push_back({pretty_indexer.at(i), sbn_parameters_(i)});
+  Assert(v.size() <= pretty_indexer.size(), "v is too long in PrettyIndexedVector");
+  for (size_t i = 0; i < v.size(); i++) {
+    result.push_back({pretty_indexer.at(i), v(i)});
   }
   return result;
 }
 
+StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
+  return PrettyIndexedVector(sbn_parameters_);
+}
+
+StringDoubleVector GPInstance::PrettyIndexedBranchLengths() {
+  return PrettyIndexedVector(GetEngine()->GetBranchLengths());
+}
+
 void GPInstance::SBNParametersToCSV(const std::string &file_path) {
   CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);
+}
+
+void GPInstance::BranchLengthsToCSV(const std::string &file_path) {
+  CSV::StringDoubleVectorToCSV(PrettyIndexedBranchLengths(), file_path);
 }
