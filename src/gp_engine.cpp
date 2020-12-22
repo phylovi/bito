@@ -114,11 +114,9 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
   EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
   EigenVectorXd unnormalized_posterior = log_likelihoods + log_prior;
-  std::cout << "upost: " << unnormalized_posterior << std::endl;
   const double log_norm = NumericalUtils::LogSum(unnormalized_posterior);
   unnormalized_posterior.array() -= log_norm;
   q_.segment(op.start_, range_length) = unnormalized_posterior.array().exp();
-  std::cout << "post: " << q_.segment(op.start_, range_length) << std::endl;
 }
 
 void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
