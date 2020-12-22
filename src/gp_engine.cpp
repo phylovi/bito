@@ -3,6 +3,7 @@
 
 #include "gp_engine.hpp"
 
+#include "csv.hpp"
 #include "optimization.hpp"
 #include "sugar.hpp"
 
@@ -98,6 +99,18 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_));
   PreparePerPatternLogLikelihoodsForGPCSP(op.parent_, op.child_);
   log_likelihoods_.row(op.dest_) = per_pattern_log_likelihoods_;
+
+  auto log_likelihood = [this, &op](double branch_length) {
+    SetTransitionMatrixToHaveBranchLength(branch_length);
+    PreparePerPatternLogLikelihoodsForGPCSP(op.parent_, op.child_);
+    return per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  };
+  StringDoubleVector points;
+  for (double x = 0.; x < 2.; x += 0.1) {
+    const double branch_length = x * branch_lengths_(op.dest_);
+    points.push_back({std::to_string(branch_length), log_likelihood(branch_length)});
+  }
+  CSV::StringDoubleVectorToCSV(points, "_ignore/likes/" + std::to_string(op.dest_));
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
@@ -135,7 +148,7 @@ void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
 void GPEngine::operator()(const GPOperations::IntegratedMarginalLikelihood& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
     SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
-    PreparePerPatternLogLikelihoodsForGPCSP(op.gpcsp_, op.rootward_, op.leafward_);
+    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
     return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   };
   // Integrate using this negative log likelihood, taking into account the fact that we
