@@ -211,8 +211,8 @@ void SubsplitDAG::IterateOverRootsplitIds(const std::function<void(size_t)> &f) 
   }
 }
 
-std::vector<Bitset> SubsplitDAG::GetChildrenSubsplits(const Bitset &subsplit,
-                                                      bool include_fake_subsplits) {
+std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,
+                                                   bool include_fake_subsplits) {
   std::vector<Bitset> children_subsplits;
   if (parent_to_range_.count(subsplit) > 0) {
     const auto [start, stop] = parent_to_range_.at(subsplit);
@@ -253,7 +253,7 @@ void SubsplitDAG::ConnectNodes(size_t idx, bool rotated) {
   const auto node = dag_nodes_[idx].get();
   // Retrieve children subsplits, set edge relation.
   const Bitset subsplit = node->GetBitset(rotated);
-  const auto children = GetChildrenSubsplits(subsplit, true);
+  const auto children = GetChildSubsplits(subsplit, true);
   for (const auto &child_subsplit : children) {
     const auto child_node = GetDagNode(subsplit_to_id_.at(child_subsplit));
     if (rotated) {
@@ -271,7 +271,7 @@ void SubsplitDAG::BuildNodesDepthFirst(const Bitset &subsplit,
   visited_subsplits.insert(subsplit);
   for (bool rotated : {false, true}) {
     for (const auto &child_subsplit :
-         GetChildrenSubsplits(PerhapsRotateSubsplit(subsplit, rotated), false)) {
+         GetChildSubsplits(PerhapsRotateSubsplit(subsplit, rotated), false)) {
       if (visited_subsplits.count(child_subsplit) == 0) {
         BuildNodesDepthFirst(child_subsplit, visited_subsplits);
       }

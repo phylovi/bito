@@ -111,10 +111,10 @@ class SubsplitDAG {
   // Storage for the number of topologies below for each node.
   EigenVectorXd topology_count_below_;
 
-  // Gives the children subsplits of a given parent subsplit, optionally including fake
+  // Gives the child subsplits of a given parent subsplit, optionally including fake
   // subsplits.
-  std::vector<Bitset> GetChildrenSubsplits(const Bitset &subsplit,
-                                           bool include_fake_subsplits = false);
+  std::vector<Bitset> GetChildSubsplits(const Bitset &subsplit,
+                                        bool include_fake_subsplits = false);
 
   void ProcessTrees(const RootedTreeCollection &tree_collection);
   void CreateAndInsertNode(const Bitset &subsplit);
