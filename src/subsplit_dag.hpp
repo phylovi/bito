@@ -18,8 +18,8 @@ class SubsplitDAG {
   // EdgeDestinationLambda takes in a rotation status (true is rotated, false is not)
   // and a "destination" node. For iterating over DAG edges with a rotation status.
   using EdgeDestinationLambda = std::function<void(bool, const SubsplitDAGNode *)>;
-  // EdgeAndNodeLambda takes a GPCSP index of an edge and the SubsplitDAGNode of the
-  // child.
+  // EdgeAndNodeLambda takes a GPCSP index of an edge and a pointer to a
+  // SubsplitDAGNode.
   using EdgeAndNodeLambda = std::function<void(size_t, const SubsplitDAGNode *)>;
 
   SubsplitDAG();
