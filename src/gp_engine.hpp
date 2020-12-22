@@ -166,11 +166,9 @@ class GPEngine {
   }
 
   // This function is used to compute the marginal log likelihood over all trees that
-  // have GPCSP corresponding to gpcsp_idx as a parent-child subsplit. We assume that
-  // transition_matrix_ is as desired, and src1_idx and src2_idx are the two PLV indices
-  // on either side of the GPCSP. Multiplication by the SBN probability, q_[gpcsp_idx],
-  // is needed to properly account for the likelihood of the trees.
-  inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t gpcsp_idx, size_t src1_idx,
+  // have a given PCSP. We assume that transition_matrix_ is as desired, and src1_idx
+  // and src2_idx are the two PLV indices on either side of the PCSP.
+  inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t src1_idx,
                                                       size_t src2_idx) {
     per_pattern_log_likelihoods_ =
         (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))

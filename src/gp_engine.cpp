@@ -96,7 +96,7 @@ void GPEngine::operator()(const GPOperations::Multiply& op) {
 
 void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_));
-  PreparePerPatternLogLikelihoodsForGPCSP(op.dest_, op.parent_, op.child_);
+  PreparePerPatternLogLikelihoodsForGPCSP(op.parent_, op.child_);
   log_likelihoods_.row(op.dest_) = per_pattern_log_likelihoods_;
 }
 
@@ -174,7 +174,7 @@ EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(size_t start, size_t length) c
 DoublePair GPEngine::LogLikelihoodAndDerivative(
     const GPOperations::OptimizeBranchLength& op) {
   SetTransitionAndDerivativeMatricesToHaveBranchLength(branch_lengths_(op.gpcsp_));
-  PreparePerPatternLogLikelihoodsForGPCSP(op.gpcsp_, op.rootward_, op.leafward_);
+  PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
   // The prior is expressed using the current value of q_.
   // The phylogenetic component of the likelihood is weighted with the number of times
   // we see the site patterns.
@@ -256,7 +256,7 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
     SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
-    PreparePerPatternLogLikelihoodsForGPCSP(op.gpcsp_, op.rootward_, op.leafward_);
+    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
     return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   };
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
