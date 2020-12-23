@@ -43,32 +43,28 @@ double ComputeExactMarginal(const std::string& newick_path,
   return exact_marginal_log_lik;
 }
 
-// Our tree is
+// Our tree is (see check below)
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
 // https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
-GPInstance MakeHelloGPInstance() {
+GPInstance MakeHelloGPInstance(const std::string fasta_path) {
   GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/hello.fasta");
+  inst.ReadFastaFile(fasta_path);
   inst.ReadNewickFile("data/hello_rooted.nwk");
   inst.MakeEngine();
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
   branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
   inst.GetEngine()->SetBranchLengths(branch_lengths);
+  CHECK_EQ(inst.GenerateCompleteRootedTreeCollection().Newick(),
+           "(jupiter:0.113,(mars:0.15,saturn:0.1):0.22):0;\n");
   return inst;
 }
 
+GPInstance MakeHelloGPInstance() { return MakeHelloGPInstance("data/hello.fasta"); }
+
 GPInstance MakeHelloGPInstanceSingleNucleotide() {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/hello_single_nucleotide.fasta");
-  inst.ReadNewickFile("data/hello_rooted.nwk");
-  inst.MakeEngine();
-  EigenVectorXd branch_lengths(5);
-  // Order set by HelloGPCSP.
-  branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
-  inst.GetEngine()->SetBranchLengths(branch_lengths);
-  return inst;
+  return MakeHelloGPInstance("data/hello_single_nucleotide.fasta");
 }
 
 GPInstance MakeHelloGPInstanceTwoTrees() {
