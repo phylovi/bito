@@ -9,6 +9,7 @@
 // their indices (which are contiguously numbered from 0 through the leaf
 // count minus 1) and the rest get ordered according to a postorder traversal.
 // Thus the root always has id equal to the number of nodes in the tree.
+// See ExampleTopologies below for some examples.
 //
 // Because this integer assignment cannot be known as we
 // are building up the tree, we must make a second pass through the tree, which
@@ -30,8 +31,6 @@
 
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
-
-#include <limits.h>
 
 #include <functional>
 #include <memory>

@@ -3,9 +3,8 @@
 
 #include "node.hpp"
 
-#include <limits.h>
-
 #include <algorithm>
+#include <climits>
 #include <deque>
 #include <functional>
 #include <iostream>
