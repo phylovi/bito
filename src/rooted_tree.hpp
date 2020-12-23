@@ -106,7 +106,7 @@ class RootedTree : public Tree {
   bool operator==(const Tree& other) const = delete;
   bool operator==(const RootedTree& other) const;
 
-  // The tree depicted in
+  // The tree `(0:2,(1:1.5,(2:2,3:1):2.5):2.5):0;` as depicted in
   // https://github.com/phylovi/libsbn/issues/187#issuecomment-618421183
   static RootedTree Example();
 

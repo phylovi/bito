@@ -189,27 +189,15 @@ void GPInstance::EstimateSBNParameters() {
 }
 
 size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
-                                            const Node *leaf_node) {
+                                            const Node *leaf_node) const {
   Assert(leaf_node->IsLeaf(), "Only leaf node is permitted.");
   return dag_.GetGPCSPIndex(parent_subsplit, Bitset::FakeSubsplit(leaf_node->Leaves()));
 }
 
-RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
-  RootedTree::RootedTreeVector tree_vector;
-  Node::NodePtrVec topologies = dag_.GenerateAllGPNodeIndexedTopologies();
+RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
+    Node::NodePtrVec &&topologies) const {
   const EigenVectorXd gpcsp_indexed_branch_lengths = engine_->GetBranchLengths();
-
-  // Construct Node pointer to parent subsplit encoding.
-  // We will use this indexer to look up the GPCSP index.
-  std::unordered_map<const Node *, Bitset> node_to_subsplit_indexer;
-  for (const auto &topology : topologies) {
-    topology->PreOrder([this, &node_to_subsplit_indexer](const Node *node) {
-      SubsplitDAGNode *dag_node = dag_.GetDagNode(node->Id());
-      if (node_to_subsplit_indexer.count(node) == 0) {
-        SafeInsert(node_to_subsplit_indexer, node, dag_node->GetBitset());
-      }
-    });
-  }
+  RootedTree::RootedTreeVector tree_vector;
 
   for (auto &root_node : topologies) {
     // Polish will re-assign the node Ids.
@@ -244,9 +232,12 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
     tree_vector.emplace_back(root_node, std::move(branch_lengths));
   }
 
-  RootedTreeCollection rooted_tree_collection(tree_vector,
-                                              tree_collection_.TagTaxonMap());
-  return rooted_tree_collection;
+  return RootedTreeCollection(tree_vector, tree_collection_.TagTaxonMap());
+}
+
+RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
+  return TreesWithGPBranchLengthsOfTopologies(
+      dag_.GenerateAllGPNodeIndexedTopologies());
 }
 
 StringVector GPInstance::PrettyIndexer() const {
@@ -308,30 +299,10 @@ void GPInstance::BranchLengthsToCSV(const std::string &file_path) {
   CSV::StringDoubleVectorToCSV(PrettyIndexedBranchLengths(), file_path);
 }
 
-RootedTreeCollection GPInstance::TreesWithCurrentBranchLengths() {
-  const auto gp_branch_lengths = GetEngine()->GetBranchLengths();
-  const auto indexer = UnexpandedIndexer();
-  RootedTree::RootedTreeVector trees;
-  trees.reserve(tree_collection_.TreeCount());
-
-  const auto size_max = std::numeric_limits<size_t>::max();
+RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {
+  Node::NodePtrVec topologies;
   for (const auto &tree : tree_collection_.Trees()) {
-    std::cout << tree.Newick() << std::endl;
-    auto indexer_representation =
-        RootedSBNMaps::IndexerRepresentationOf(indexer, tree.Topology(), size_max);
-    std::cout << indexer_representation << std::endl;
-    Assert(std::find(indexer_representation.begin(), indexer_representation.end(),
-                     size_max) == indexer_representation.end(),
-           "GPInstance::TreesWithCurrentBranchLengths: current tree collection "
-           "contains splits not in the support!");
-    Tree::BranchLengthVector branch_lengths;
-    std::transform(indexer_representation.begin(), indexer_representation.end(),
-                   std::back_inserter(branch_lengths),
-                   [&gp_branch_lengths](size_t gpcsp_index) {
-                     return gp_branch_lengths[gpcsp_index];
-                   });
-    trees.emplace_back(tree.Topology(), std::move(branch_lengths));
+    topologies.push_back(tree.Topology()->DeepCopy());
   }
-
-  return RootedTreeCollection(std::move(trees), tree_collection_.TagTaxonMap());
+  return TreesWithGPBranchLengthsOfTopologies(std::move(topologies));
 }

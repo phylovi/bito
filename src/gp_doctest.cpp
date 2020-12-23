@@ -47,7 +47,7 @@ double ComputeExactMarginal(const std::string& newick_path,
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
 // https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
-GPInstance MakeHelloGPInstance(const std::string fasta_path) {
+GPInstance MakeHelloGPInstance(const std::string& fasta_path) {
   GPInstance inst("_ignore/mmapped_plv.data");
   inst.ReadFastaFile(fasta_path);
   inst.ReadNewickFile("data/hello_rooted.nwk");
@@ -316,9 +316,11 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   CheckVectorXdEqualityAfterSorting(realized_q, expected_q, 1e-6);
 }
 
-TEST_CASE("GPInstance: TreesWithCurrentBranchLengths") {
+TEST_CASE("GPInstance: CurrentlyLoadedTreesWithGPBranchLengths") {
   auto inst = MakeHelloGPInstanceSingleNucleotide();
-  std::cout << inst.PrettyIndexer() << std::endl;
-  auto trees = inst.TreesWithCurrentBranchLengths();
-  std::cout << trees.Newick() << std::endl;
+  EigenVectorXd branch_lengths(5);
+  branch_lengths << 0, 0.1, 0.2, 0.3, 0.4;
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
+  CHECK_EQ(trees.Newick(), "(jupiter:0.2,(mars:0.3,saturn:0.4):0.1):0;\n");
 }

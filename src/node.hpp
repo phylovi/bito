@@ -87,6 +87,8 @@ class Node {
 
   bool operator==(const Node& other) const;
 
+  NodePtr DeepCopy();
+
   void PreOrder(std::function<void(const Node*)> f) const;
   // ConditionalPreOrder continues to recur as long as f returns true.
   void ConditionalPreOrder(std::function<bool(const Node*)> f) const;
@@ -293,6 +295,7 @@ TEST_CASE("Node") {
 
   for (const auto& topology : examples) {
     CHECK_EQ(topology, Node::OfParentIdVector(topology->ParentIdVector()));
+    CHECK_EQ(topology, topology->DeepCopy());
     auto tag_leaf_set_map = TagLeafSetMapOf(topology);
     topology->PreOrder([&tag_leaf_set_map](const Node* node) {
       CHECK_EQ(node->Leaves(), tag_leaf_set_map.at(node->Tag()));

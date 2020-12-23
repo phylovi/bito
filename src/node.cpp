@@ -74,6 +74,8 @@ bool Node::operator==(const Node& other) const {
   return true;
 }
 
+Node::NodePtr Node::DeepCopy() { return Node::OfParentIdVector(ParentIdVector()); }
+
 void Node::PreOrder(std::function<void(const Node*)> f) const {
   std::stack<const Node*> stack;
   stack.push(this);

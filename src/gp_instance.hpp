@@ -46,7 +46,7 @@ class GPInstance {
 
   // Generate a version of the topologies in the current tree collection that use the
   // current branch lengths.
-  RootedTreeCollection TreesWithCurrentBranchLengths();
+  RootedTreeCollection CurrentlyLoadedTreesWithGPBranchLengths();
 
  private:
   std::string mmap_file_path_;
@@ -65,8 +65,10 @@ class GPInstance {
 
   void InitializeGPEngine();
 
-  size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit, const Node *leaf_node);
-
+  size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
+                                  const Node *leaf_node) const;
+  RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
+      Node::NodePtrVec &&topologies) const;
   BitsetSizeMap UnexpandedIndexer() const;
   StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
 };
