@@ -48,6 +48,9 @@ class GPInstance {
   // current branch lengths.
   RootedTreeCollection CurrentlyLoadedTreesWithGPBranchLengths();
 
+  RootedTreeCollection CurrentlyLoadedTreesWithAPCSPString(
+      const std::string &pcsp_string);
+
  private:
   std::string mmap_file_path_;
   Alignment alignment_;

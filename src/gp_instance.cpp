@@ -306,3 +306,26 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {
   }
   return TreesWithGPBranchLengthsOfTopologies(std::move(topologies));
 }
+
+// TODO(e) these have GP branch lengths... rename?
+RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPString(
+    const std::string &pcsp_string) {
+  const BitsetSizeMap &indexer = dag_.GetGPCSPIndexer();
+  Bitset pcsp(pcsp_string);
+  auto search = indexer.find(pcsp);
+  if (search == indexer.end()) {
+    Failwith("Don't have " + pcsp_string + " as a PCSP in the instance!");
+  }
+  auto pcsp_index = search->second;
+
+  Node::NodePtrVec topologies;
+  for (const auto &tree : tree_collection_.Trees()) {
+    auto indexer_representation = dag_.IndexerRepresentationOf(
+        tree.Topology(), std::numeric_limits<size_t>::max());
+    if (std::find(indexer_representation.begin(), indexer_representation.end(),
+                  pcsp_index) != indexer_representation.end()) {
+      topologies.push_back(tree.Topology()->DeepCopy());
+    }
+  }
+  return TreesWithGPBranchLengthsOfTopologies(std::move(topologies));
+}
