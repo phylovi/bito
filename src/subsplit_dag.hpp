@@ -80,6 +80,9 @@ class SubsplitDAG {
   // Uniform prior over all topologies.
   [[nodiscard]] EigenVectorXd BuildUniformPrior() const;
 
+  RootedIndexerRepresentation IndexerRepresentationOf(const Node::NodePtr &topology,
+                                                      size_t default_index);
+
  protected:
   size_t taxon_count_;
   size_t gpcsp_count_without_fake_subsplits_;
