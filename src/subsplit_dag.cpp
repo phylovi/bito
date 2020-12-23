@@ -211,12 +211,6 @@ void SubsplitDAG::IterateOverRootsplitIds(const std::function<void(size_t)> &f) 
   }
 }
 
-RootedIndexerRepresentation SubsplitDAG::IndexerRepresentationOf(
-    const Node::NodePtr &topology, size_t default_index) {
-  return RootedSBNMaps::IndexerRepresentationOf(gpcsp_indexer_, topology,
-                                                default_index);
-}
-
 std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,
                                                    bool include_fake_subsplits) {
   std::vector<Bitset> children_subsplits;
