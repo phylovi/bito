@@ -51,6 +51,9 @@ class GPInstance {
   RootedTreeCollection CurrentlyLoadedTreesWithAPCSPString(
       const std::string &pcsp_string);
 
+  void ExportTreesWithAPCSP(const std::string &newick_path,
+                            const std::string &pcsp_string);
+
  private:
   std::string mmap_file_path_;
   Alignment alignment_;

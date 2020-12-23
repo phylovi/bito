@@ -329,3 +329,9 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPString(
   }
   return TreesWithGPBranchLengthsOfTopologies(std::move(topologies));
 }
+
+void GPInstance::ExportTreesWithAPCSP(const std::string &out_path,
+                                      const std::string &pcsp_string) {
+  auto trees = CurrentlyLoadedTreesWithAPCSPString(pcsp_string);
+  trees.ToNewickFile(out_path);
+}
