@@ -45,11 +45,10 @@
 
 class Node {
  public:
-  typedef std::shared_ptr<Node> NodePtr;
-  typedef std::vector<NodePtr> NodePtrVec;
-  typedef std::shared_ptr<NodePtrVec> NodePtrVecPtr;
-  typedef std::unordered_map<NodePtr, uint32_t> TopologyCounter;
-
+  using NodePtr = std::shared_ptr<Node>;
+  using NodePtrVec = std::vector<NodePtr>;
+  using NodePtrVecPtr = std::shared_ptr<NodePtrVec>;
+  using TopologyCounter = std::unordered_map<NodePtr, uint32_t>;
   // This is the type of functions that are used in the PCSP recursion
   // functions. See `doc/pcsp.svg` for a diagram of the PCSP traversal. In that
   // file, the first tree shows the terminology, and the subsequent trees show
