@@ -69,6 +69,7 @@ class Node {
   // The rooted version just uses: sister clade, the focal clade, child 0, and child 1.
   using RootedPCSPFun =
       std::function<void(const Node*, const Node*, const Node*, const Node*)>;
+  using TwoNodeFun = std::function<void(const Node*, const Node*)>;
 
  public:
   explicit Node(uint32_t leaf_id, Bitset leaves);
@@ -124,6 +125,9 @@ class Node {
   // type to these functions.
   void UnrootedPCSPPreOrder(UnrootedPCSPFun f) const;
   void RootedPCSPPreOrder(RootedPCSPFun f) const;
+  // Iterate over (leaf sister, leaf) pairs in order. Rooted because that's the only
+  // case in which we have a well defined set of such pairs.
+  void RootedSisterAndLeafTraversal(TwoNodeFun f) const;
 
   // This function prepares the id_ and leaves_ member variables as described at
   // the start of this document. It returns a map that maps the tags to their
@@ -303,6 +307,13 @@ TEST_CASE("Node") {
            Node::OfParentIdVector({3, 3, 4, 4})->Deroot());
 
   CHECK_EQ(Node::OfParentIdVector({4, 4, 5, 6, 5, 6}), Node::Ladder(4));
+
+  SizeVector correct_sisters({5, 4, 3, 2});
+  SizeVector sisters;
+  t3->RootedSisterAndLeafTraversal([&sisters](const Node* sister, const Node* leaf) {
+    sisters.push_back(sister->Id());
+  });
+  CHECK_EQ(correct_sisters, sisters);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_

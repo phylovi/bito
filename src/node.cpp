@@ -318,6 +318,15 @@ void Node::RootedPCSPPreOrder(RootedPCSPFun f) const {
       });
 }
 
+void Node::RootedSisterAndLeafTraversal(TwoNodeFun f) const {
+  this->TriplePreOrderBifurcating(
+      [&f](const Node* node, const Node* sister, const Node* parent) {
+        if (node->IsLeaf()) {
+          f(sister, node);
+        }
+      });
+}
+
 // This function assigns ids to the nodes of the topology: the leaves get
 // their fixed ids (which we assume are contiguously numbered from 0 through
 // the leaf count -1) and the rest get ordered according to a postorder
