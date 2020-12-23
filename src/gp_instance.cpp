@@ -266,6 +266,21 @@ StringVector GPInstance::PrettyIndexer() const {
   return pretty_representation;
 }
 
+// Convert the GP indexer to the representation used in the rest of libsbn (#273).
+BitsetSizeMap GPInstance::UnexpandedIndexer() const {
+  BitsetSizeMap unexpanded_indexer;
+  for (const auto &[key, idx] : dag_.GetGPCSPIndexer()) {
+    if (idx < dag_.RootsplitCount()) {
+      const auto classic_rootsplit_representation =
+          std::min(key.SubsplitChunk(0), key.SubsplitChunk(1));
+      SafeInsert(unexpanded_indexer, classic_rootsplit_representation, idx);
+    } else {
+      SafeInsert(unexpanded_indexer, key, idx);
+    }
+  }
+  return unexpanded_indexer;
+}
+
 StringDoubleVector GPInstance::PrettyIndexedVector(EigenConstVectorXdRef v) {
   StringDoubleVector result;
   result.reserve(v.size());
@@ -291,4 +306,32 @@ void GPInstance::SBNParametersToCSV(const std::string &file_path) {
 
 void GPInstance::BranchLengthsToCSV(const std::string &file_path) {
   CSV::StringDoubleVectorToCSV(PrettyIndexedBranchLengths(), file_path);
+}
+
+RootedTreeCollection GPInstance::TreesWithCurrentBranchLengths() {
+  const auto gp_branch_lengths = GetEngine()->GetBranchLengths();
+  const auto indexer = UnexpandedIndexer();
+  RootedTree::RootedTreeVector trees;
+  trees.reserve(tree_collection_.TreeCount());
+
+  const auto size_max = std::numeric_limits<size_t>::max();
+  for (const auto &tree : tree_collection_.Trees()) {
+    std::cout << tree.Newick() << std::endl;
+    auto indexer_representation =
+        RootedSBNMaps::IndexerRepresentationOf(indexer, tree.Topology(), size_max);
+    std::cout << indexer_representation << std::endl;
+    Assert(std::find(indexer_representation.begin(), indexer_representation.end(),
+                     size_max) == indexer_representation.end(),
+           "GPInstance::TreesWithCurrentBranchLengths: current tree collection "
+           "contains splits not in the support!");
+    Tree::BranchLengthVector branch_lengths;
+    std::transform(indexer_representation.begin(), indexer_representation.end(),
+                   std::back_inserter(branch_lengths),
+                   [&gp_branch_lengths](size_t gpcsp_index) {
+                     return gp_branch_lengths[gpcsp_index];
+                   });
+    trees.emplace_back(tree.Topology(), std::move(branch_lengths));
+  }
+
+  return RootedTreeCollection(std::move(trees), tree_collection_.TagTaxonMap());
 }

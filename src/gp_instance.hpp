@@ -40,8 +40,13 @@ class GPInstance {
   StringVector PrettyIndexer() const;
   StringDoubleVector PrettyIndexedSBNParameters();
   StringDoubleVector PrettyIndexedBranchLengths();
+
   void SBNParametersToCSV(const std::string &file_path);
   void BranchLengthsToCSV(const std::string &file_path);
+
+  // Generate a version of the topologies in the current tree collection that use the
+  // current branch lengths.
+  RootedTreeCollection TreesWithCurrentBranchLengths();
 
  private:
   std::string mmap_file_path_;
@@ -62,6 +67,7 @@ class GPInstance {
 
   size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit, const Node *leaf_node);
 
+  BitsetSizeMap UnexpandedIndexer() const;
   StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
 };
 

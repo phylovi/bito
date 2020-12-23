@@ -319,3 +319,10 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   expected_q = expected_q.array().exp();
   CheckVectorXdEqualityAfterSorting(realized_q, expected_q, 1e-6);
 }
+
+TEST_CASE("GPInstance: TreesWithCurrentBranchLengths") {
+  auto inst = MakeHelloGPInstanceSingleNucleotide();
+  std::cout << inst.PrettyIndexer() << std::endl;
+  auto trees = inst.TreesWithCurrentBranchLengths();
+  std::cout << trees.Newick() << std::endl;
+}
