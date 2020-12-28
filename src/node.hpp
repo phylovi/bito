@@ -87,7 +87,7 @@ class Node {
 
   bool operator==(const Node& other) const;
 
-  NodePtr DeepCopy();
+  NodePtr DeepCopy() const;
 
   void PreOrder(std::function<void(const Node*)> f) const;
   // ConditionalPreOrder continues to recur as long as f returns true.
