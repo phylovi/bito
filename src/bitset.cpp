@@ -363,18 +363,29 @@ Bitset Bitset::FakeSubsplit(const Bitset& nonzero_contents) {
   return fake;
 }
 
-Bitset Bitset::FakeChildSubsplit(const Bitset& parent_subsplit) {
-  Assert(parent_subsplit.SplitChunk(0).Any() &&
-             parent_subsplit.SplitChunk(1).IsSingleton(),
-         "FakeChildSubsplit requires that the left-hand chunk of the subsplit be "
+void AssertSisterAndLeafSubsplit(const Bitset& subsplit) {
+  Assert(subsplit.SplitChunk(0).Any() && subsplit.SplitChunk(1).IsSingleton(),
+         "Assertion failed: we want the left-hand chunk of the subsplit be "
          "non-empty and the right-hand chunk be a singleton.");
+}
 
+Bitset Bitset::FakeChildSubsplit(const Bitset& parent_subsplit) {
+  AssertSisterAndLeafSubsplit(parent_subsplit);
   // Put the right-hand chunk of the subsplit as the nonzero contents of the fake
   // subsplit.
   return FakeSubsplit(parent_subsplit.SplitChunk(1));
 }
 
-Bitset Remap(Bitset bitset, const SizeOptionVector& idx_table) {
+Bitset Bitset::FakePCSP(const Bitset& parent_subsplit) {
+  AssertSisterAndLeafSubsplit(parent_subsplit);
+  const auto taxon_count = parent_subsplit.SubsplitChunkSize();
+  Bitset fake(3 * taxon_count);
+  // Put the nonzero contents on the left of the fake subsplit.
+  fake.CopyFrom(parent_subsplit, 0, false);
+  return fake;
+}
+
+Bitset Remap(const Bitset& bitset, const SizeOptionVector& idx_table) {
   Bitset result(idx_table.size(), false);
   for (size_t i = 0; i < idx_table.size(); ++i) {
     if (idx_table[i].has_value() && bitset[idx_table[i].value()]) {

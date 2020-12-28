@@ -412,6 +412,11 @@ PYBIND11_MODULE(libsbn, m) {
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
       .def("branch_lengths_to_csv", &GPInstance::BranchLengthsToCSV,
            R"raw(Write "pretty" formatted branch lengths to a CSV.)raw")
+      .def(
+          "export_trees_with_a_pcsp", &GPInstance::ExportTreesWithAPCSP,
+          R"raw(Write out trees with a given PCSP string to a Newick file (using current
+          GP branch lengths).)raw",
+          py::arg("pcsp_string"), py::arg("newick_path"))
 
       // ** Estimation
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",

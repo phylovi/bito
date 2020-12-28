@@ -3,9 +3,8 @@
 
 #include "node.hpp"
 
-#include <limits.h>
-
 #include <algorithm>
+#include <climits>
 #include <deque>
 #include <functional>
 #include <iostream>
@@ -73,6 +72,10 @@ bool Node::operator==(const Node& other) const {
     }
   }
   return true;
+}
+
+Node::NodePtr Node::DeepCopy() const {
+  return Node::OfParentIdVector(ParentIdVector());
 }
 
 void Node::PreOrder(std::function<void(const Node*)> f) const {
@@ -315,6 +318,15 @@ void Node::RootedPCSPPreOrder(RootedPCSPFun f) const {
           auto child0 = node->Children()[0].get();
           auto child1 = node->Children()[1].get();
           f(sister, node, child0, child1);
+        }
+      });
+}
+
+void Node::RootedSisterAndLeafTraversal(TwoNodeFun f) const {
+  this->TriplePreOrderBifurcating(
+      [&f](const Node* node, const Node* sister, const Node* parent) {
+        if (node->IsLeaf()) {
+          f(sister, node);
         }
       });
 }

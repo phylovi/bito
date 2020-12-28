@@ -4,6 +4,7 @@
 #ifndef SRC_GENERIC_TREE_COLLECTION_HPP_
 #define SRC_GENERIC_TREE_COLLECTION_HPP_
 
+#include <fstream>
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -98,6 +99,12 @@ class GenericTreeCollection {
       str.push_back('\n');
     }
     return str;
+  }
+
+  void ToNewickFile(const std::string &out_path) {
+    std::ofstream out_stream(out_path);
+    out_stream << Newick();
+    out_stream.close();
   }
 
   Node::TopologyCounter TopologyCounter() const {

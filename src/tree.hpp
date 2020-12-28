@@ -15,12 +15,13 @@
 
 class Tree {
  public:
-  typedef std::vector<Tree> TreeVector;
-  typedef std::vector<double> BranchLengthVector;
+  using TreeVector = std::vector<Tree>;
+  using BranchLengthVector = std::vector<double>;
 
-  Tree() {}
+  Tree() = default;
 
-  // This is the primary constructor.
+  // This is the primary constructor. The branch lengths are indexed according to the
+  // numbering of the nodes of the tree (see node.hpp for details on how that works.)
   explicit Tree(const Node::NodePtr& topology, BranchLengthVector branch_lengths);
 
   // This constructor takes a map of tags to branch lengths; this map gets

@@ -122,6 +122,10 @@ class Bitset {
   // the parent subsplit is non-empty and that the right-hand chunk is a singleton.
   // This fake subsplit has this singleton on the left and all zeroes on the right.
   static Bitset FakeChildSubsplit(const Bitset &parent_subsplit);
+  // Make a "fake" PCSP of a given parent subsplit; assert that the left-hand chunk of
+  // the parent subsplit is non-empty and that the right-hand chunk is a singleton.
+  // This fake subsplit has parent subsplit on the left and all zeroes on the right.
+  static Bitset FakePCSP(const Bitset &parent_subsplit);
 
  private:
   std::vector<bool> value_;
@@ -149,7 +153,7 @@ struct equal_to<Bitset> {
 // * If the `idx_table` entry is an integer i, then the value is the ith
 //   entry of `bitset`.
 // * If the entry is nullopt, then the value is False (i.e. zero).
-Bitset Remap(Bitset bitset, const SizeOptionVector &idx_table);
+Bitset Remap(const Bitset &bitset, const SizeOptionVector &idx_table);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("Bitset") {
@@ -250,20 +254,20 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("000110010"), Bitset::PCSPOfPair(Bitset("000110"), Bitset("010100")));
   CHECK_EQ(Bitset("001110010"), Bitset::PCSPOfPair(Bitset("001110"), Bitset("100010")));
   // Missing a left child.
-  CHECK_THROWS_AS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("000010")),
-                  std::runtime_error &);
+  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("000010")));
   // Missing a right child.
-  CHECK_THROWS_AS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100000")),
-                  std::runtime_error &);
+  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100000")));
   // Not a disjoint union.
-  CHECK_THROWS_AS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100110")),
-                  std::runtime_error &);
+  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100110")));
   // Not a union at all.
-  CHECK_THROWS_AS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100001")),
-                  std::runtime_error &);
+  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100001")));
 
   CHECK_EQ(Bitset::FakeSubsplit(Bitset("010")), Bitset("010000"));
   CHECK_EQ(Bitset::FakeChildSubsplit(Bitset("100001")), Bitset("001000"));
+  CHECK_THROWS(Bitset::FakeChildSubsplit(Bitset("100011")));
+  CHECK_EQ(Bitset::FakePCSP(Bitset("100001")), Bitset("100001000"));
+  CHECK_THROWS(Bitset::FakePCSP(Bitset("0000110")));
+  CHECK_THROWS(Bitset::FakePCSP(Bitset("100101")));
 
   // Restrict a bitset.
   CHECK_EQ(Remap(Bitset("10101010101"), {0, 2, 4, 6, 8, 10}), Bitset("111111"));

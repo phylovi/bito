@@ -9,6 +9,7 @@
 // their indices (which are contiguously numbered from 0 through the leaf
 // count minus 1) and the rest get ordered according to a postorder traversal.
 // Thus the root always has id equal to the number of nodes in the tree.
+// See ExampleTopologies below for some examples.
 //
 // Because this integer assignment cannot be known as we
 // are building up the tree, we must make a second pass through the tree, which
@@ -31,8 +32,6 @@
 #ifndef SRC_NODE_HPP_
 #define SRC_NODE_HPP_
 
-#include <limits.h>
-
 #include <functional>
 #include <memory>
 #include <string>
@@ -46,11 +45,10 @@
 
 class Node {
  public:
-  typedef std::shared_ptr<Node> NodePtr;
-  typedef std::vector<NodePtr> NodePtrVec;
-  typedef std::shared_ptr<NodePtrVec> NodePtrVecPtr;
-  typedef std::unordered_map<NodePtr, uint32_t> TopologyCounter;
-
+  using NodePtr = std::shared_ptr<Node>;
+  using NodePtrVec = std::vector<NodePtr>;
+  using NodePtrVecPtr = std::shared_ptr<NodePtrVec>;
+  using TopologyCounter = std::unordered_map<NodePtr, uint32_t>;
   // This is the type of functions that are used in the PCSP recursion
   // functions. See `doc/pcsp.svg` for a diagram of the PCSP traversal. In that
   // file, the first tree shows the terminology, and the subsequent trees show
@@ -71,6 +69,7 @@ class Node {
   // The rooted version just uses: sister clade, the focal clade, child 0, and child 1.
   using RootedPCSPFun =
       std::function<void(const Node*, const Node*, const Node*, const Node*)>;
+  using TwoNodeFun = std::function<void(const Node*, const Node*)>;
 
  public:
   explicit Node(uint32_t leaf_id, Bitset leaves);
@@ -87,6 +86,8 @@ class Node {
   const NodePtrVec& Children() const { return children_; }
 
   bool operator==(const Node& other) const;
+
+  NodePtr DeepCopy() const;
 
   void PreOrder(std::function<void(const Node*)> f) const;
   // ConditionalPreOrder continues to recur as long as f returns true.
@@ -126,6 +127,9 @@ class Node {
   // type to these functions.
   void UnrootedPCSPPreOrder(UnrootedPCSPFun f) const;
   void RootedPCSPPreOrder(RootedPCSPFun f) const;
+  // Iterate over (leaf sister, leaf) pairs in order. Rooted because that's the only
+  // case in which we are guaranteed to have a well defined set of such pairs.
+  void RootedSisterAndLeafTraversal(TwoNodeFun f) const;
 
   // This function prepares the id_ and leaves_ member variables as described at
   // the start of this document. It returns a map that maps the tags to their
@@ -291,6 +295,7 @@ TEST_CASE("Node") {
 
   for (const auto& topology : examples) {
     CHECK_EQ(topology, Node::OfParentIdVector(topology->ParentIdVector()));
+    CHECK_EQ(topology, topology->DeepCopy());
     auto tag_leaf_set_map = TagLeafSetMapOf(topology);
     topology->PreOrder([&tag_leaf_set_map](const Node* node) {
       CHECK_EQ(node->Leaves(), tag_leaf_set_map.at(node->Tag()));
@@ -305,6 +310,13 @@ TEST_CASE("Node") {
            Node::OfParentIdVector({3, 3, 4, 4})->Deroot());
 
   CHECK_EQ(Node::OfParentIdVector({4, 4, 5, 6, 5, 6}), Node::Ladder(4));
+
+  SizeVector correct_sisters({5, 4, 3, 2});
+  SizeVector sisters;
+  t3->RootedSisterAndLeafTraversal([&sisters](const Node* sister, const Node* leaf) {
+    sisters.push_back(sister->Id());
+  });
+  CHECK_EQ(correct_sisters, sisters);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 #endif  // SRC_NODE_HPP_
