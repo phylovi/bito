@@ -128,7 +128,7 @@ class Node {
   void UnrootedPCSPPreOrder(UnrootedPCSPFun f) const;
   void RootedPCSPPreOrder(RootedPCSPFun f) const;
   // Iterate over (leaf sister, leaf) pairs in order. Rooted because that's the only
-  // case in which we have a well defined set of such pairs.
+  // case in which we are guaranteed to have a well defined set of such pairs.
   void RootedSisterAndLeafTraversal(TwoNodeFun f) const;
 
   // This function prepares the id_ and leaves_ member variables as described at

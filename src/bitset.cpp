@@ -388,7 +388,6 @@ Bitset Bitset::FakePCSP(const Bitset& parent_subsplit) {
 Bitset Remap(const Bitset& bitset, const SizeOptionVector& idx_table) {
   Bitset result(idx_table.size(), false);
   for (size_t i = 0; i < idx_table.size(); ++i) {
-    // TODO(e) let's at least use .at() here.
     if (idx_table[i].has_value() && bitset[idx_table[i].value()]) {
       result.set(i, true);
     }

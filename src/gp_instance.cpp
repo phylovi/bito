@@ -308,7 +308,8 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {
 }
 
 // TODO(e) these have GP branch lengths... rename?
-RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPString(
+// also note that this doesn't do fake subsplits.
+RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
     const std::string &pcsp_string) {
   const BitsetSizeMap &indexer = dag_.GetGPCSPIndexer();
   Bitset pcsp(pcsp_string);
@@ -330,8 +331,8 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPString(
   return TreesWithGPBranchLengthsOfTopologies(std::move(topologies));
 }
 
-void GPInstance::ExportTreesWithAPCSP(const std::string &out_path,
-                                      const std::string &pcsp_string) {
-  auto trees = CurrentlyLoadedTreesWithAPCSPString(pcsp_string);
+void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,
+                                      const std::string &out_path) {
+  auto trees = CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(pcsp_string);
   trees.ToNewickFile(out_path);
 }

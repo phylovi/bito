@@ -325,14 +325,15 @@ TEST_CASE("GPInstance: CurrentlyLoadedTreesWithGPBranchLengths") {
   CHECK_EQ(trees.Newick(), "(jupiter:0.2,(mars:0.3,saturn:0.4):0.1):0;\n");
 }
 
-TEST_CASE("GPInstance: CurrentlyLoadedTreesWithAPCSPString") {
+TEST_CASE("GPInstance: CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths") {
   GPInstance inst("_ignore/mmapped_plv.data");
   inst.ReadFastaFile("data/five_taxon.fasta");
   inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
   inst.MakeEngine();
   inst.GetEngine()->SetBranchLengthsToConstant(0.9);
   // Only take trees that have (x4,(x2,x3)).
-  auto trees = inst.CurrentlyLoadedTreesWithAPCSPString("000010011000010");
+  auto trees =
+      inst.CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths("000010011000010");
   CHECK_EQ(trees.Newick(),
            "((x0:0.9,x1:0.9):0.9,((x2:0.9,x3:0.9):0.9,x4:0.9):0.9):0;\n"
            "(x0:0.9,(x1:0.9,((x2:0.9,x3:0.9):0.9,x4:0.9):0.9):0.9):0;\n");

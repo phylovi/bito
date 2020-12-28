@@ -45,14 +45,18 @@ class GPInstance {
   void BranchLengthsToCSV(const std::string &file_path);
 
   // Generate a version of the topologies in the current tree collection that use the
-  // current branch lengths.
+  // current GP branch lengths.
   RootedTreeCollection CurrentlyLoadedTreesWithGPBranchLengths();
 
-  RootedTreeCollection CurrentlyLoadedTreesWithAPCSPString(
+  // Subset the currently loaded topologies to those that have a given PCSP, and equip
+  // them with current GP branch lengths.
+  RootedTreeCollection CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
       const std::string &pcsp_string);
 
-  void ExportTreesWithAPCSP(const std::string &newick_path,
-                            const std::string &pcsp_string);
+  // Run CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths and export to a Newick
+  // file.
+  void ExportTreesWithAPCSP(const std::string &pcsp_string,
+                            const std::string &newick_path);
 
  private:
   std::string mmap_file_path_;
