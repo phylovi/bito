@@ -307,8 +307,6 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {
   return TreesWithGPBranchLengthsOfTopologies(std::move(topologies));
 }
 
-// TODO(e) these have GP branch lengths... rename?
-// also note that this doesn't do fake subsplits.
 RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
     const std::string &pcsp_string) {
   const BitsetSizeMap &indexer = dag_.GetGPCSPIndexer();
