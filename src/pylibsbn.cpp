@@ -424,7 +424,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,
            "Use given trees to initialize branch lengths.")
       .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
-           "Read trees from a Newick file.")
+           "EstimateSBNParameters.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.");
 

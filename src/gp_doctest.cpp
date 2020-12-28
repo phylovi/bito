@@ -136,7 +136,7 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   auto inst = MakeDS1Reduced5Instance();
   auto engine = inst.GetEngine();
 
-  inst.EstimateBranchLengths(0.0001, 100);
+  inst.EstimateBranchLengths(0.0001, 100, true);
   inst.ResetMarginalLikelihoodAndPopulatePLVs();
   inst.ComputeLikelihoods();
   double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
@@ -199,7 +199,7 @@ TEST_CASE("GPInstance: branch length optimization") {
 
   // Reset.
   inst = MakeHelloGPInstanceTwoTrees();
-  inst.EstimateBranchLengths(1e-6, 100);
+  inst.EstimateBranchLengths(1e-6, 100, true);
   EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
   std::cout << expected_branch_lengths << std::endl;
   std::cout << realized_branch_lengths << std::endl;
@@ -263,7 +263,7 @@ TEST_CASE("GPInstance: generate all trees") {
 
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
   auto inst = MakeFiveTaxaInstance();
-  inst.EstimateBranchLengths(1e-6, 10);
+  inst.EstimateBranchLengths(1e-6, 10, true);
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
   double exact_marginal_log_likelihood = ComputeExactMarginal(
       "data/five_taxon_unrooted_with_branch_lengths.nwk", "data/five_taxon.fasta");
@@ -274,7 +274,7 @@ TEST_CASE("GPInstance: test populate PLV") {
   // This test makes sure that ResetMarginalLikelihoodAndPopulatePLVs correctly
   // re-populates the PLVs using the current branch lengths.
   auto inst = MakeFiveTaxaInstance();
-  inst.EstimateBranchLengths(1e-6, 10);
+  inst.EstimateBranchLengths(1e-6, 10, true);
   inst.ComputeLikelihoods();
   size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
   const EigenVectorXd log_likelihoods1 =
