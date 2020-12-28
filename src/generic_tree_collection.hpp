@@ -101,7 +101,7 @@ class GenericTreeCollection {
     return str;
   }
 
-  void ToNewickFile(const std::string &out_path) {
+  void ToNewickFile(const std::string &out_path) const {
     std::ofstream out_stream(out_path);
     out_stream << Newick();
     out_stream.close();

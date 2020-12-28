@@ -43,15 +43,21 @@ double ComputeExactMarginal(const std::string& newick_path,
   return exact_marginal_log_lik;
 }
 
+GPInstance GPInstanceOfFiles(const std::string& fasta_path,
+                             const std::string& newick_path) {
+  GPInstance inst("_ignore/mmapped_plv.data");
+  inst.ReadFastaFile(fasta_path);
+  inst.ReadNewickFile(newick_path);
+  inst.MakeEngine();
+  return inst;
+}
+
 // Our tree is (see check below)
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
 // https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
 GPInstance MakeHelloGPInstance(const std::string& fasta_path) {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile(fasta_path);
-  inst.ReadNewickFile("data/hello_rooted.nwk");
-  inst.MakeEngine();
+  auto inst = GPInstanceOfFiles(fasta_path, "data/hello_rooted.nwk");
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
   branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
@@ -68,11 +74,13 @@ GPInstance MakeHelloGPInstanceSingleNucleotide() {
 }
 
 GPInstance MakeHelloGPInstanceTwoTrees() {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/hello.fasta");
-  inst.ReadNewickFile("data/hello_rooted_two_trees.nwk");
-  inst.MakeEngine();
+  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
   inst.GetEngine()->SetBranchLengthsToConstant(1.);
+  return inst;
+}
+
+GPInstance MakeDS1Reduced5Instance() {
+  auto inst = GPInstanceOfFiles("data/ds1-reduced-5.fasta", "data/ds1-reduced-5.nwk");
   return inst;
 }
 
@@ -106,7 +114,7 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
 }
 
-TEST_CASE("GPInstance: marginal likelihood calculation") {
+TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   auto inst = MakeHelloGPInstanceTwoTrees();
   auto engine = inst.GetEngine();
 
@@ -118,6 +126,24 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
   double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
   double exact_log_likelihood =
       ComputeExactMarginal("data/hello_unrooted_two_trees.nwk", "data/hello.fasta");
+  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
+}
+
+TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
+  auto inst = MakeDS1Reduced5Instance();
+  auto engine = inst.GetEngine();
+
+  inst.EstimateBranchLengths(0.0001, 100);
+  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.ComputeLikelihoods();
+  double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
+
+  const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
+  // "ds1-reduced-5.gp-branch-lengths.unrooted.nwk" created by
+  // trees.ToNewickFile("data/ds1-reduced-5.gp-branch-lengths.nwk");
+  // then derooting with `nw_reroot -d`.
+  double exact_log_likelihood = ComputeExactMarginal(
+      "data/ds1-reduced-5.gp-branch-lengths.unrooted.nwk", "data/ds1-reduced-5.fasta");
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
 
