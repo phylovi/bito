@@ -426,7 +426,8 @@ PYBIND11_MODULE(libsbn, m) {
       .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
            "EstimateSBNParameters.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
-           "Estimate branch lengths for the GPInstance.");
+           "Estimate branch lengths for the GPInstance.", py::arg("tol"),
+           py::arg("max_iter"), py::arg("quiet") = false);
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
