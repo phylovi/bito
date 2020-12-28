@@ -201,8 +201,6 @@ TEST_CASE("GPInstance: branch length optimization") {
   inst = MakeHelloGPInstanceTwoTrees();
   inst.EstimateBranchLengths(1e-6, 100, true);
   EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
-  std::cout << expected_branch_lengths << std::endl;
-  std::cout << realized_branch_lengths << std::endl;
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
 }
 
