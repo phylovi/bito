@@ -106,6 +106,12 @@ void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   const size_t range_length = op.stop_ - op.start_;
+  // TODO(e) Begin code block just giving the likelihoods.
+  //  q_.segment(op.start_, range_length) =
+  //      GetPerGPCSPLogLikelihoods(op.start_, range_length);
+  std::cout << GetPerGPCSPLogLikelihoods(op.start_, range_length) << std::endl;
+  // return;
+  // End code block just giving the likelihoods.
   if (range_length == 1) {
     q_(op.start_) = 1.;
     return;
@@ -113,6 +119,7 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   // else
   EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
   EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
+  // std::cout << log_prior << std::endl;
   EigenVectorXd unnormalized_posterior = log_likelihoods + log_prior;
   const double log_norm = NumericalUtils::LogSum(unnormalized_posterior);
   unnormalized_posterior.array() -= log_norm;
