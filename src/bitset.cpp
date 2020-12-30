@@ -183,6 +183,8 @@ std::optional<uint32_t> Bitset::SingletonOption() const {
   return std::nullopt;
 }
 
+size_t Bitset::Count() const { return std::count(value_.begin(), value_.end(), true); }
+
 // ** SBN-related functions
 
 Bitset Bitset::RotateSubsplit() const {

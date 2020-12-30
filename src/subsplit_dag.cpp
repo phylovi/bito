@@ -2,6 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "subsplit_dag.hpp"
+#include "numerical_utils.hpp"
+#include "sbn_probability.hpp"
+#include "tree_count.hpp"
 
 SubsplitDAG::SubsplitDAG()
     : taxon_count_(0), gpcsp_count_without_fake_subsplits_(0), topology_count_(0.) {}
@@ -133,7 +136,7 @@ Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
   return topologies;
 }
 
-EigenVectorXd SubsplitDAG::BuildUniformPrior() const {
+EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
   EigenVectorXd q = EigenVectorXd::Ones(GPCSPCountWithFakeSubsplits());
 
   for (const auto &node_id : RootwardPassTraversal()) {
@@ -160,6 +163,32 @@ EigenVectorXd SubsplitDAG::BuildUniformPrior() const {
   });
 
   return q;
+}
+
+EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
+  EigenVectorXd result = EigenVectorXd::Zero(GPCSPCountWithFakeSubsplits());
+  for (const auto &[our_bitset, gpcsp_idx] : gpcsp_indexer_) {
+    size_t child0_taxon_count, child1_taxon_count;
+    if (our_bitset.size() == 3 * taxon_count_) {
+      std::tie(child0_taxon_count, child1_taxon_count) =
+          our_bitset.PCSPChildSubsplitTaxonCounts();
+
+    } else if (our_bitset.size() == 2 * taxon_count_) {  // #273
+      child0_taxon_count = our_bitset.SplitChunk(0).Count();
+      child1_taxon_count = static_cast<size_t>(our_bitset.size() - child0_taxon_count);
+    } else {
+      std::cout << our_bitset.ToString() << " " << our_bitset.size();
+      Failwith("Don't recognize bitset size!");
+    }
+
+    result(gpcsp_idx) =
+        TreeCount::LogChildSubsplitCountRatio(child0_taxon_count, child1_taxon_count);
+  }
+
+  SBNProbability::ProbabilityNormalizeParamsInLog(result, rootsplits_.size(),
+                                                  parent_to_range_);
+  NumericalUtils::Exponentiate(result);
+  return result;
 }
 
 void SubsplitDAG::IterateOverRealNodes(const NodeLambda &f) const {

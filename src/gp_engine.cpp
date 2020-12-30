@@ -5,6 +5,7 @@
 
 #include "optimization.hpp"
 #include "sugar.hpp"
+#include "tree_count.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
                    const std::string& mmap_file_path, double rescaling_threshold)
@@ -27,6 +28,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
   log_likelihoods_.resize(gpcsp_count, site_pattern_.PatternCount());
   q_.resize(gpcsp_count);
+  // uniform_on_all_topologies_log_prior_.resize(gpcsp_count);
 
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ =
@@ -119,7 +121,9 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   // else
   EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
   EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
-  // std::cout << log_prior << std::endl;
+  // EigenVectorXd log_prior =
+  //     uniform_on_all_topologies_log_prior_.segment(op.start_, range_length);
+  std::cout << log_prior << std::endl;
   EigenVectorXd unnormalized_posterior = log_likelihoods + log_prior;
   const double log_norm = NumericalUtils::LogSum(unnormalized_posterior);
   unnormalized_posterior.array() -= log_norm;
