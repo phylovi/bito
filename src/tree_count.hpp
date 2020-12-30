@@ -10,6 +10,10 @@
 namespace TreeCount {
 double TreeCount(size_t taxon_count);
 double LogTreeCount(size_t taxon_count);
+// TODO(e) docs
+double LogChildSubsplitCountRatioNaive(size_t child0_taxon_count,
+                                       size_t child1_taxon_count);
+double LogChildSubsplitCountRatio(size_t child0_taxon_count, size_t child1_taxon_count);
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -19,6 +23,8 @@ TEST_CASE("TreeCount") {
                   std::log(TreeCount::TreeCount(taxon_count))),
              1e-10);
   }
+
+  // TODO(e) add a non-naive version and a test for it.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

@@ -20,3 +20,15 @@ double TreeCount::LogTreeCount(size_t taxon_count) {
   }
   return result;
 }
+
+double TreeCount::LogChildSubsplitCountRatioNaive(size_t child0_taxon_count,
+                                                  size_t child1_taxon_count) {
+  return LogTreeCount(child0_taxon_count + child1_taxon_count) -
+         (LogTreeCount(child0_taxon_count) + LogTreeCount(child1_taxon_count));
+}
+
+// TODO(e) make a non-naive version
+double TreeCount::LogChildSubsplitCountRatio(size_t child0_taxon_count,
+                                             size_t child1_taxon_count) {
+  return LogChildSubsplitCountRatioNaive(child0_taxon_count, child1_taxon_count);
+}
