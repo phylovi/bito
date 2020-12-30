@@ -105,6 +105,8 @@ class Bitset {
   // Get the representation of the child subsplit in the simple form of a pair
   // of membership indicators, concatenated together into one bitset.
   Bitset PCSPChildSubsplit() const;
+  // Get the number of taxon in each side of the child subsplit.
+  SizePair PCSPChildSubsplitTaxonCounts() const;
 
   // ** Static methods
   // Make a bitset with only the specified entry turned on.
@@ -242,6 +244,8 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("100011001").PCSPWithoutParent(), Bitset("011001"));
   CHECK_EQ(Bitset("100011001").PCSPChildSubsplit(), Bitset("010001"));
   CHECK_EQ(Bitset("100001110001").PCSPChildSubsplit(), Bitset("01100001"));
+  CHECK_EQ(Bitset("100001110001").PCSPChildSubsplitTaxonCounts(), SizePair({1, 2}));
+  CHECK_EQ(Bitset("100000111100101").PCSPChildSubsplitTaxonCounts(), SizePair({2, 2}));
 
   CHECK_EQ(Bitset::Singleton(4, 2), Bitset("0010"));
 
