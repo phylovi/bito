@@ -6,6 +6,7 @@
 #include "doctest.h"
 #include "gp_instance.hpp"
 #include "phylo_model.hpp"
+#include "tree_count.hpp"
 #include "unrooted_sbn_instance.hpp"
 
 using namespace GPOperations;  // NOLINT

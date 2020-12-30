@@ -170,6 +170,7 @@ sources = [
     "_build/taxon_name_munging.cpp",
     "_build/tree.cpp",
     "_build/tree_collection.cpp",
+    "_build/tree_count.cpp",
     "_build/unrooted_sbn_instance.cpp",
     "_build/unrooted_tree.cpp",
     "_build/unrooted_tree_collection.cpp",
