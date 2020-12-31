@@ -47,6 +47,11 @@ class GPEngine {
     branch_lengths_.setConstant(branch_length);
   };
   void SetSBNParameters(EigenVectorXd&& q) { q_ = std::move(q); };
+  void SetUniformOnAllTopologiesLogPrior(
+      EigenVectorXd&& uniform_on_all_topologies_log_prior) {
+    uniform_on_all_topologies_log_prior_ =
+        std::move(uniform_on_all_topologies_log_prior);
+  };
   void ResetLogMarginalLikelihood() {
     log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
   }
@@ -109,6 +114,8 @@ class GPEngine {
   // gp_instance.
   EigenVectorXd branch_lengths_;
   EigenVectorXd q_;
+  // TODO(e) keep this?
+  EigenVectorXd uniform_on_all_topologies_log_prior_;
 
   // The number of rows is equal to the number of GPCSPs.
   // The number of columns is equal to the number of site patterns.

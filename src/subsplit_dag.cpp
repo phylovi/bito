@@ -165,6 +165,7 @@ EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
   return q;
 }
 
+// TODO (e) test
 EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   EigenVectorXd result = EigenVectorXd::Zero(GPCSPCountWithFakeSubsplits());
   for (const auto &[our_bitset, gpcsp_idx] : gpcsp_indexer_) {

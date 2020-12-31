@@ -120,7 +120,10 @@ void GPInstance::PrintGPCSPIndexer() {
 }
 
 void GPInstance::InitializeGPEngine() {
-  GetEngine()->SetSBNParameters(dag_.BuildUniformPrior());
+  GetEngine()->SetSBNParameters(dag_.BuildUniformOnTopologicalSupportPrior());
+  // TODO(e)
+  //  GetEngine()->SetUniformOnAllTopologiesLogPrior(
+  //      dag_.BuildUniformOnAllTopologiesLogPrior());
 }
 
 void GPInstance::ResetMarginalLikelihoodAndPopulatePLVs() {
