@@ -265,10 +265,15 @@ BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
     IterateOverLeafwardEdgesAndChildren(
         node, [&node, &subsplit_probabilities, &normalized_sbn_parameters](
                   const size_t gpcsp_index, const SubsplitDAGNode *child) {
-          // Increment the child's probability by the parent times the PCSP probability.
+          const double parent_probability =
+              subsplit_probabilities.Map().at(node->GetBitset());
+          const double child_probability_given_parent =
+              normalized_sbn_parameters[gpcsp_index];
+          Assert(child_probability_given_parent >= 0. &&
+                     child_probability_given_parent <= 1.,
+                 "UnconditionalSubsplitProbabilities: got an unormalized probability.");
           subsplit_probabilities.increment(
-              child->GetBitset(), subsplit_probabilities.Map().at(node->GetBitset()) *
-                                      normalized_sbn_parameters[gpcsp_index]);
+              child->GetBitset(), parent_probability * child_probability_given_parent);
         });
   }
 
