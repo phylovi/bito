@@ -38,6 +38,7 @@ class GPInstance {
 
   // #273: A lot of code duplication here with things in SBNInstance.
   StringVector PrettyIndexer() const;
+  EigenConstVectorXdRef GetSBNParameters();
   StringDoubleVector PrettyIndexedSBNParameters();
   StringDoubleVector PrettyIndexedBranchLengths();
 
@@ -65,9 +66,6 @@ class GPInstance {
   RootedTreeCollection tree_collection_;
   GPDAG dag_;
   static constexpr size_t plv_count_per_node_ = 6;
-
-  // A vector that contains all of the SBN-related probabilities.
-  EigenVectorXd sbn_parameters_;
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;

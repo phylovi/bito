@@ -94,13 +94,11 @@ void GPInstance::ProcessOperations(const GPOperationVector &operations) {
 }
 
 void GPInstance::ClearTreeCollectionAssociatedState() {
-  sbn_parameters_.resize(0);
   dag_ = GPDAG();
 }
 
 void GPInstance::ProcessLoadedTrees() {
-  sbn_parameters_.resize(dag_.GPCSPCount());
-  sbn_parameters_.setOnes();
+  // TODO(e) cleanup
 }
 
 void GPInstance::HotStartBranchLengths() {
@@ -199,7 +197,6 @@ void GPInstance::EstimateSBNParameters() {
   // std::cout << dag_.OptimizeSBNParameters() << std::endl;
   // PrintGPCSPIndexer();
   ProcessOperations(dag_.OptimizeSBNParameters());
-  sbn_parameters_ = engine_->GetSBNParameters();
 }
 
 size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
@@ -297,8 +294,12 @@ StringDoubleVector GPInstance::PrettyIndexedVector(EigenConstVectorXdRef v) {
   return result;
 }
 
+EigenConstVectorXdRef GPInstance::GetSBNParameters() {
+  return engine_->GetSBNParameters();
+}
+
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
-  return PrettyIndexedVector(sbn_parameters_);
+  return PrettyIndexedVector(GetSBNParameters());
 }
 
 StringDoubleVector GPInstance::PrettyIndexedBranchLengths() {

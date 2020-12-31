@@ -69,8 +69,7 @@ class GPEngine {
   // likelihood for GPCSPs in the range [start, start + length).
   EigenVectorXd GetPerGPCSPLogLikelihoods(size_t start, size_t length) const;
   EigenMatrixXd GetLogLikelihoodMatrix() const { return log_likelihoods_; };
-  // TODO(e) this could be a const eigen ref
-  EigenVectorXd GetSBNParameters() const { return q_; };
+  EigenConstVectorXdRef GetSBNParameters() const { return q_; };
 
   // Use branch lengths from loaded sample as a starting point for optimization.
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
