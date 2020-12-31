@@ -49,6 +49,8 @@ SizeBitsetMap IdIdSetMapOf(const Node::NodePtr& topology);
 SizeVector SplitIndicesOf(const BitsetSizeMap& indexer, const Node::NodePtr& topology);
 // Make a string version of a PCSPCounter.
 StringPCSPMap StringPCSPMapOf(PCSPCounter d);
+// Convert a BitsetDoubleMap to a sorted vector of (bitset string, double)s.
+StringDoubleVector StringDoubleVectorOf(BitsetDoubleMap m);
 // Make a PCSP bitset from a collection of Nodes and their directions. If direction is
 // true, then the bits get flipped.
 Bitset PCSPBitsetOf(size_t leaf_count,  //

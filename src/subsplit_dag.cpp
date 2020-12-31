@@ -242,9 +242,37 @@ void SubsplitDAG::IterateOverRootsplitIds(const std::function<void(size_t)> &f) 
 }
 
 RootedIndexerRepresentation SubsplitDAG::IndexerRepresentationOf(
-    const Node::NodePtr &topology, size_t default_index) {
+    const Node::NodePtr &topology, size_t default_index) const {
   return RootedSBNMaps::IndexerRepresentationOf(gpcsp_indexer_, topology,
                                                 default_index);
+}
+
+BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
+    EigenConstVectorXdRef normalized_sbn_parameters) const {
+  auto subsplit_probabilities = DefaultDict<Bitset, double>(0.);
+  IterateOverRootsplitIds(
+      [this, &subsplit_probabilities, &normalized_sbn_parameters](size_t rootsplit_id) {
+        const auto rootsplit_bitset = GetDagNode(rootsplit_id)->GetBitset();
+        Assert(!subsplit_probabilities.contains(rootsplit_bitset),
+               "We have iterated over the same rootsplit multiple times.");
+        subsplit_probabilities.increment(
+            rootsplit_bitset,
+            normalized_sbn_parameters[GetRootsplitIndex(rootsplit_bitset)]);
+      });
+
+  for (const auto node_id : ReversePostorderTraversal()) {
+    const auto node = GetDagNode(node_id);
+    IterateOverLeafwardEdgesAndChildren(
+        node, [&node, &subsplit_probabilities, &normalized_sbn_parameters](
+                  const size_t gpcsp_index, const SubsplitDAGNode *child) {
+          // Increment the child's probability by the parent times the PCSP probability.
+          subsplit_probabilities.increment(
+              child->GetBitset(), subsplit_probabilities.Map().at(node->GetBitset()) *
+                                      normalized_sbn_parameters[gpcsp_index]);
+        });
+  }
+
+  return subsplit_probabilities.Map();
 }
 
 std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,

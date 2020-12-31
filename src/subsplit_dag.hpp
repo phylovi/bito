@@ -85,7 +85,13 @@ class SubsplitDAG {
   [[nodiscard]] EigenVectorXd BuildUniformOnAllTopologiesPrior() const;
 
   RootedIndexerRepresentation IndexerRepresentationOf(const Node::NodePtr &topology,
-                                                      size_t default_index);
+                                                      size_t default_index) const;
+
+  // Get a map from each subsplit to the probability of observing that subsplit with the
+  // supplied SBN parameters. These SBN parameters must be indexed in a compatible way
+  // as the gpcsp_indexer_ of the subsplit DAG.
+  BitsetDoubleMap UnconditionalSubsplitProbabilities(
+      EigenConstVectorXdRef normalized_sbn_parameters) const;
 
  protected:
   size_t taxon_count_;
