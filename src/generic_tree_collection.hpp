@@ -105,6 +105,9 @@ class GenericTreeCollection {
     std::ofstream out_stream(out_path);
     out_stream << Newick();
     out_stream.close();
+    if (!out_stream) {
+      Failwith("ToNewickFile: could not write file to " + out_path);
+    }
   }
 
   Node::TopologyCounter TopologyCounter() const {
