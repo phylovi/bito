@@ -43,6 +43,7 @@ class GPInstance {
   StringDoubleVector PrettyIndexedBranchLengths();
 
   void SBNParametersToCSV(const std::string &file_path);
+  void SBNPriorToCSV(const std::string &file_path);
   void BranchLengthsToCSV(const std::string &file_path);
 
   // Generate a version of the topologies in the current tree collection that use the
@@ -69,7 +70,6 @@ class GPInstance {
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;
-  void ProcessLoadedTrees();
 
   void InitializeGPEngine();
 

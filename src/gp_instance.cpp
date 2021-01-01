@@ -67,7 +67,6 @@ void GPInstance::CheckSequencesAndTreesLoaded() const {
 
 void GPInstance::MakeEngine(double rescaling_threshold) {
   CheckSequencesAndTreesLoaded();
-  ProcessLoadedTrees();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
@@ -97,10 +96,6 @@ void GPInstance::ClearTreeCollectionAssociatedState() {
   dag_ = GPDAG();
 }
 
-void GPInstance::ProcessLoadedTrees() {
-  // TODO(e) cleanup
-}
-
 void GPInstance::HotStartBranchLengths() {
   if (HasEngine()) {
     GetEngine()->HotStartBranchLengths(tree_collection_, dag_.GetGPCSPIndexer());
@@ -119,9 +114,6 @@ void GPInstance::PrintGPCSPIndexer() {
 
 void GPInstance::InitializeGPEngine() {
   GetEngine()->SetSBNParameters(dag_.BuildUniformOnTopologicalSupportPrior());
-  // TODO(e)
-  //  GetEngine()->SetUniformOnAllTopologiesLogPrior(
-  //      dag_.BuildUniformOnAllTopologiesLogPrior());
 }
 
 void GPInstance::ResetMarginalLikelihoodAndPopulatePLVs() {
@@ -308,6 +300,11 @@ StringDoubleVector GPInstance::PrettyIndexedBranchLengths() {
 
 void GPInstance::SBNParametersToCSV(const std::string &file_path) {
   CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);
+}
+
+void GPInstance::SBNPriorToCSV(const std::string &file_path) {
+  CSV::StringDoubleVectorToCSV(
+      PrettyIndexedVector(dag_.BuildUniformOnTopologicalSupportPrior()), file_path);
 }
 
 void GPInstance::BranchLengthsToCSV(const std::string &file_path) {
