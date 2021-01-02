@@ -165,7 +165,6 @@ EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
   return q;
 }
 
-// TODO (e) test
 EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   EigenVectorXd result = EigenVectorXd::Zero(GPCSPCountWithFakeSubsplits());
   for (const auto &[our_bitset, gpcsp_idx] : gpcsp_indexer_) {
@@ -176,9 +175,8 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
 
     } else if (our_bitset.size() == 2 * taxon_count_) {  // #273
       child0_taxon_count = our_bitset.SplitChunk(0).Count();
-      child1_taxon_count = static_cast<size_t>(our_bitset.size() - child0_taxon_count);
+      child1_taxon_count = static_cast<size_t>(taxon_count_ - child0_taxon_count);
     } else {
-      std::cout << our_bitset.ToString() << " " << our_bitset.size();
       Failwith("Don't recognize bitset size!");
     }
 
@@ -186,8 +184,6 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
         TreeCount::LogChildSubsplitCountRatio(child0_taxon_count, child1_taxon_count);
   }
 
-  SBNProbability::ProbabilityNormalizeParamsInLog(result, rootsplits_.size(),
-                                                  parent_to_range_);
   NumericalUtils::Exponentiate(result);
   return result;
 }

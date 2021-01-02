@@ -290,6 +290,8 @@ EigenConstVectorXdRef GPInstance::GetSBNParameters() {
   return engine_->GetSBNParameters();
 }
 
+const GPDAG &GPInstance::GetDAG() { return dag_; }
+
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
   return PrettyIndexedVector(GetSBNParameters());
 }
