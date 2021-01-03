@@ -4,4 +4,4 @@ services:
   - docker
 
 script:
-  - docker run -v ${PWD}:/libsbn -t quay.io/phylovi/libsbn /bin/bash -c "/opt/conda/bin/conda run -n libsbn make test -C /libsbn"
+  - docker run -v ${PWD}:/libsbn -t quay.io/matsengrp/libsbn /bin/bash -c "/opt/conda/bin/conda run -n libsbn make test -C /libsbn"
