@@ -2,9 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "subsplit_dag.hpp"
+#include "combinatorics.hpp"
 #include "numerical_utils.hpp"
 #include "sbn_probability.hpp"
-#include "tree_count.hpp"
 
 SubsplitDAG::SubsplitDAG()
     : taxon_count_(0), gpcsp_count_without_fake_subsplits_(0), topology_count_(0.) {}
@@ -180,8 +180,8 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
       Failwith("Don't recognize bitset size!");
     }
 
-    result(gpcsp_idx) =
-        TreeCount::LogChildSubsplitCountRatio(child0_taxon_count, child1_taxon_count);
+    result(gpcsp_idx) = Combinatorics::LogChildSubsplitCountRatio(child0_taxon_count,
+                                                                  child1_taxon_count);
   }
 
   NumericalUtils::Exponentiate(result);

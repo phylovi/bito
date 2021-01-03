@@ -5,7 +5,6 @@
 
 #include "optimization.hpp"
 #include "sugar.hpp"
-#include "tree_count.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
                    const std::string& mmap_file_path, double rescaling_threshold)
