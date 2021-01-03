@@ -305,7 +305,6 @@ bool Bitset::PCSPIsRootsplit() const {
   return total.All();
 }
 
-// TODO(e) reorder methods here?
 SizePair Bitset::PCSPChildSubsplitTaxonCounts() const {
   auto chunk_size = PCSPChunkSize();
   auto total_child_taxon_count =
