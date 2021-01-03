@@ -399,4 +399,3 @@ TEST_CASE("GPInstance: Priors") {
   CHECK_LT(fabs(all[4] - 1. / 3.), 1e-6);
   CHECK_LT(fabs(all[5] - 1. / 3.), 1e-6);
 }
-

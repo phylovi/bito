@@ -24,7 +24,7 @@ BitsetDoubleMap RootedSBNInstance::UnconditionalSubsplitProbabilities() const {
   }
   const SubsplitDAG dag(tree_collection_);
   return dag.UnconditionalSubsplitProbabilities(NormalizedSBNParameters());
-  }
+}
 
 void RootedSBNInstance::UnconditionalSubsplitProbabilitiesToCSV(
     const std::string &csv_path) const {

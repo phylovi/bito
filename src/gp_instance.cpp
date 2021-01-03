@@ -92,9 +92,7 @@ void GPInstance::ProcessOperations(const GPOperationVector &operations) {
   GetEngine()->ProcessOperations(operations);
 }
 
-void GPInstance::ClearTreeCollectionAssociatedState() {
-  dag_ = GPDAG();
-}
+void GPInstance::ClearTreeCollectionAssociatedState() { dag_ = GPDAG(); }
 
 void GPInstance::HotStartBranchLengths() {
   if (HasEngine()) {
