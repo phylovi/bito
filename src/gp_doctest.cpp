@@ -3,7 +3,11 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
+// ** Doctest include must go first for all header tests to run.
 #include "doctest.h"
+// **
+
+#include "combinatorics.hpp"
 #include "gp_instance.hpp"
 #include "phylo_model.hpp"
 #include "unrooted_sbn_instance.hpp"

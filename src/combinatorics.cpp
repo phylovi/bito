@@ -27,8 +27,13 @@ double Combinatorics::LogChildSubsplitCountRatioNaive(size_t child0_taxon_count,
          LogTreeCount(child0_taxon_count + child1_taxon_count);
 }
 
-// TODO(e) make a non-naive version
 double Combinatorics::LogChildSubsplitCountRatio(size_t child0_taxon_count,
                                                  size_t child1_taxon_count) {
-  return LogChildSubsplitCountRatioNaive(child0_taxon_count, child1_taxon_count);
+  size_t total_count = child0_taxon_count + child1_taxon_count;
+  double total_without_child1 = 0.;
+
+  for (size_t i = child1_taxon_count + 1; i <= total_count; i++) {
+    total_without_child1 += std::log(2. * static_cast<double>(i) - 3.);
+  }
+  return LogTreeCount(child0_taxon_count) - total_without_child1;
 }
