@@ -118,11 +118,7 @@ void GPInstance::InitializeGPEngine() {
 
 void GPInstance::ResetMarginalLikelihoodAndPopulatePLVs() {
   GetEngine()->ResetLogMarginalLikelihood();
-  ProcessOperations(dag_.SetRootwardZero());
-  ProcessOperations(dag_.SetLeafwardZero());
-  ProcessOperations(dag_.SetRhatToStationary());
-  ProcessOperations(dag_.RootwardPass());
-  ProcessOperations(dag_.LeafwardPass());
+  ProcessOperations(dag_.PopulatePLVs());
 }
 
 void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }
@@ -179,15 +175,6 @@ void GPInstance::EstimateSBNParameters() {
   std::cout << "Begin SBN parameter optimization\n";
   ResetMarginalLikelihoodAndPopulatePLVs();
   ComputeLikelihoods();
-
-  // std::cout << dag_.SetRootwardZero() << std::endl;
-  // std::cout << dag_.SetLeafwardZero() << std::endl;
-  // std::cout << dag_.SetRhatToStationary() << std::endl;
-  // std::cout << dag_.RootwardPass() << std::endl;
-  // std::cout << dag_.LeafwardPass() << std::endl;
-  // std::cout << dag_.ComputeLikelihoods() << std::endl;
-  // std::cout << dag_.OptimizeSBNParameters() << std::endl;
-  // PrintGPCSPIndexer();
   ProcessOperations(dag_.OptimizeSBNParameters());
 }
 
