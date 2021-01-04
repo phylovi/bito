@@ -67,7 +67,6 @@ void GPInstance::CheckSequencesAndTreesLoaded() const {
 
 void GPInstance::MakeEngine(double rescaling_threshold) {
   CheckSequencesAndTreesLoaded();
-  ProcessLoadedTrees();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
@@ -93,15 +92,7 @@ void GPInstance::ProcessOperations(const GPOperationVector &operations) {
   GetEngine()->ProcessOperations(operations);
 }
 
-void GPInstance::ClearTreeCollectionAssociatedState() {
-  sbn_parameters_.resize(0);
-  dag_ = GPDAG();
-}
-
-void GPInstance::ProcessLoadedTrees() {
-  sbn_parameters_.resize(dag_.GPCSPCount());
-  sbn_parameters_.setOnes();
-}
+void GPInstance::ClearTreeCollectionAssociatedState() { dag_ = GPDAG(); }
 
 void GPInstance::HotStartBranchLengths() {
   if (HasEngine()) {
@@ -120,62 +111,60 @@ void GPInstance::PrintGPCSPIndexer() {
 }
 
 void GPInstance::InitializeGPEngine() {
-  GetEngine()->SetSBNParameters(dag_.BuildUniformPrior());
+  GetEngine()->SetSBNParameters(dag_.BuildUniformOnTopologicalSupportPrior());
 }
 
 void GPInstance::ResetMarginalLikelihoodAndPopulatePLVs() {
   GetEngine()->ResetLogMarginalLikelihood();
-  ProcessOperations(dag_.SetRootwardZero());
-  ProcessOperations(dag_.SetLeafwardZero());
-  ProcessOperations(dag_.SetRhatToStationary());
-  ProcessOperations(dag_.RootwardPass());
-  ProcessOperations(dag_.LeafwardPass());
+  ProcessOperations(dag_.PopulatePLVs());
 }
 
 void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }
 
-void GPInstance::EstimateBranchLengths(double tol, size_t max_iter) {
+void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) {
+  std::stringstream dev_null;
+  auto &our_ostream = quiet ? dev_null : std::cout;
   auto now = std::chrono::high_resolution_clock::now;
   auto t_start = now();
-  std::cout << "Begin branch optimization\n";
+  our_ostream << "Begin branch optimization\n";
   GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
-  std::cout << "Populating PLVs\n";
+  our_ostream << "Populating PLVs\n";
   ResetMarginalLikelihoodAndPopulatePLVs();
   std::chrono::duration<double> warmup_duration = now() - t_start;
   t_start = now();
-  std::cout << "Computing initial likelihood\n";
+  our_ostream << "Computing initial likelihood\n";
   ProcessOperations(marginal_lik_operations);
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
   std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
   t_start = now();
 
   for (size_t i = 0; i < max_iter; i++) {
-    std::cout << "Iteration: " << (i + 1) << std::endl;
+    our_ostream << "Iteration: " << (i + 1) << std::endl;
     ProcessOperations(branch_optimization_operations);
     GetEngine()->ResetLogMarginalLikelihood();
     ProcessOperations(marginal_lik_operations);
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-    std::cout << "Current marginal log likelihood: ";
-    std::cout << std::setprecision(9) << current_marginal_log_lik << std::endl;
-    std::cout << "New marginal log likelihood: ";
-    std::cout << std::setprecision(9) << marginal_log_lik << std::endl;
+    our_ostream << "Current marginal log likelihood: ";
+    our_ostream << std::setprecision(9) << current_marginal_log_lik << std::endl;
+    our_ostream << "New marginal log likelihood: ";
+    our_ostream << std::setprecision(9) << marginal_log_lik << std::endl;
     if (marginal_log_lik < current_marginal_log_lik) {
-      std::cout << "Marginal log likelihood decreased.\n";
+      our_ostream << "Marginal log likelihood decreased.\n";
     }
     if (abs(current_marginal_log_lik - marginal_log_lik) < tol) {
-      std::cout << "Converged.\n";
+      our_ostream << "Converged.\n";
       break;
     }
     current_marginal_log_lik = marginal_log_lik;
   }
   std::chrono::duration<double> optimization_duration = now() - t_start;
-  std::cout << "\n# Timing Report\n";
-  std::cout << "warmup: " << warmup_duration.count() << "s\n";
-  std::cout << "initial likelihood: " << initial_likelihood_duration.count() << "s\n";
-  std::cout << "optimization: " << optimization_duration.count() << "s or "
-            << optimization_duration.count() / 60 << "m\n";
+  our_ostream << "\n# Timing Report\n";
+  our_ostream << "warmup: " << warmup_duration.count() << "s\n";
+  our_ostream << "initial likelihood: " << initial_likelihood_duration.count() << "s\n";
+  our_ostream << "optimization: " << optimization_duration.count() << "s or "
+              << optimization_duration.count() / 60 << "m\n";
   std::ofstream branch_length_file("_output/branch_lengths.txt");
   branch_length_file << GetEngine()->GetBranchLengths();
 }
@@ -185,7 +174,6 @@ void GPInstance::EstimateSBNParameters() {
   ResetMarginalLikelihoodAndPopulatePLVs();
   ComputeLikelihoods();
   ProcessOperations(dag_.OptimizeSBNParameters());
-  sbn_parameters_ = engine_->GetSBNParameters();
 }
 
 size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
@@ -283,8 +271,14 @@ StringDoubleVector GPInstance::PrettyIndexedVector(EigenConstVectorXdRef v) {
   return result;
 }
 
+EigenConstVectorXdRef GPInstance::GetSBNParameters() {
+  return engine_->GetSBNParameters();
+}
+
+const GPDAG &GPInstance::GetDAG() { return dag_; }
+
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
-  return PrettyIndexedVector(sbn_parameters_);
+  return PrettyIndexedVector(GetSBNParameters());
 }
 
 StringDoubleVector GPInstance::PrettyIndexedBranchLengths() {
@@ -293,6 +287,11 @@ StringDoubleVector GPInstance::PrettyIndexedBranchLengths() {
 
 void GPInstance::SBNParametersToCSV(const std::string &file_path) {
   CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);
+}
+
+void GPInstance::SBNPriorToCSV(const std::string &file_path) {
+  CSV::StringDoubleVectorToCSV(
+      PrettyIndexedVector(dag_.BuildUniformOnTopologicalSupportPrior()), file_path);
 }
 
 void GPInstance::BranchLengthsToCSV(const std::string &file_path) {

@@ -183,6 +183,8 @@ std::optional<uint32_t> Bitset::SingletonOption() const {
   return std::nullopt;
 }
 
+size_t Bitset::Count() const { return std::count(value_.begin(), value_.end(), true); }
+
 // ** SBN-related functions
 
 Bitset Bitset::RotateSubsplit() const {
@@ -301,6 +303,18 @@ bool Bitset::PCSPIsRootsplit() const {
 
   auto total = PCSPChunk(0) | PCSPChunk(1);
   return total.All();
+}
+
+SizePair Bitset::PCSPChildSubsplitTaxonCounts() const {
+  auto chunk_size = PCSPChunkSize();
+  auto total_child_taxon_count =
+      std::count(value_.begin() + chunk_size, value_.begin() + 2 * chunk_size, true);
+  auto child0_taxon_count =
+      std::count(value_.begin() + 2 * chunk_size, value_.end(), true);
+  Assert(child0_taxon_count < total_child_taxon_count,
+         "PCSPChildSubsplitTaxonCounts: not a proper PCSP bitset.");
+  return {static_cast<size_t>(child0_taxon_count),
+          static_cast<size_t>(total_child_taxon_count - child0_taxon_count)};
 }
 
 Bitset Bitset::Singleton(size_t n, size_t which_on) {

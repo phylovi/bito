@@ -2,6 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "subsplit_dag.hpp"
+#include "combinatorics.hpp"
+#include "numerical_utils.hpp"
+#include "sbn_probability.hpp"
 
 SubsplitDAG::SubsplitDAG()
     : taxon_count_(0), gpcsp_count_without_fake_subsplits_(0), topology_count_(0.) {}
@@ -133,7 +136,7 @@ Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
   return topologies;
 }
 
-EigenVectorXd SubsplitDAG::BuildUniformPrior() const {
+EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
   EigenVectorXd q = EigenVectorXd::Ones(GPCSPCountWithFakeSubsplits());
 
   for (const auto &node_id : RootwardPassTraversal()) {
@@ -160,6 +163,26 @@ EigenVectorXd SubsplitDAG::BuildUniformPrior() const {
   });
 
   return q;
+}
+
+EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
+  EigenVectorXd result = EigenVectorXd::Zero(GPCSPCountWithFakeSubsplits());
+  for (const auto &[our_bitset, gpcsp_idx] : gpcsp_indexer_) {
+    size_t child0_taxon_count, child1_taxon_count;
+    if (our_bitset.size() == 3 * taxon_count_) {
+      std::tie(child0_taxon_count, child1_taxon_count) =
+          our_bitset.PCSPChildSubsplitTaxonCounts();
+    } else if (our_bitset.size() == 2 * taxon_count_) {  // #273
+      child0_taxon_count = our_bitset.SplitChunk(0).Count();
+      child1_taxon_count = static_cast<size_t>(taxon_count_ - child0_taxon_count);
+    } else {
+      Failwith("Don't recognize bitset size!");
+    }
+    result(gpcsp_idx) = Combinatorics::LogChildSubsplitCountRatio(child0_taxon_count,
+                                                                  child1_taxon_count);
+  }
+  NumericalUtils::Exponentiate(result);
+  return result;
 }
 
 void SubsplitDAG::IterateOverRealNodes(const NodeLambda &f) const {
@@ -212,9 +235,42 @@ void SubsplitDAG::IterateOverRootsplitIds(const std::function<void(size_t)> &f) 
 }
 
 RootedIndexerRepresentation SubsplitDAG::IndexerRepresentationOf(
-    const Node::NodePtr &topology, size_t default_index) {
+    const Node::NodePtr &topology, size_t default_index) const {
   return RootedSBNMaps::IndexerRepresentationOf(gpcsp_indexer_, topology,
                                                 default_index);
+}
+
+BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
+    EigenConstVectorXdRef normalized_sbn_parameters) const {
+  auto subsplit_probabilities = DefaultDict<Bitset, double>(0.);
+  IterateOverRootsplitIds(
+      [this, &subsplit_probabilities, &normalized_sbn_parameters](size_t rootsplit_id) {
+        const auto rootsplit_bitset = GetDagNode(rootsplit_id)->GetBitset();
+        Assert(!subsplit_probabilities.contains(rootsplit_bitset),
+               "We have iterated over the same rootsplit multiple times.");
+        subsplit_probabilities.increment(
+            rootsplit_bitset,
+            normalized_sbn_parameters[GetRootsplitIndex(rootsplit_bitset)]);
+      });
+
+  for (const auto node_id : ReversePostorderTraversal()) {
+    const auto node = GetDagNode(node_id);
+    IterateOverLeafwardEdgesAndChildren(
+        node, [&node, &subsplit_probabilities, &normalized_sbn_parameters](
+                  const size_t gpcsp_index, const SubsplitDAGNode *child) {
+          const double parent_probability =
+              subsplit_probabilities.Map().at(node->GetBitset());
+          const double child_probability_given_parent =
+              normalized_sbn_parameters[gpcsp_index];
+          Assert(child_probability_given_parent >= 0. &&
+                     child_probability_given_parent <= 1.,
+                 "UnconditionalSubsplitProbabilities: got an unormalized probability.");
+          subsplit_probabilities.increment(
+              child->GetBitset(), parent_probability * child_probability_given_parent);
+        });
+  }
+
+  return subsplit_probabilities.Map();
 }
 
 std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,

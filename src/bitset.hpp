@@ -66,6 +66,8 @@ class Bitset {
   // If the bitset only has one bit on, then we return the location of that bit.
   // Otherwise, return nullopt.
   std::optional<uint32_t> SingletonOption() const;
+  // Get the number of bits set to be 1;
+  size_t Count() const;
 
   // These methods require the bitset to be a "subsplit bitset" of even length,
   // consisting of two equal sized "chunks" representing the two sides of the
@@ -105,6 +107,8 @@ class Bitset {
   // Get the representation of the child subsplit in the simple form of a pair
   // of membership indicators, concatenated together into one bitset.
   Bitset PCSPChildSubsplit() const;
+  // Get the number of taxa in each side of the child subsplit.
+  SizePair PCSPChildSubsplitTaxonCounts() const;
 
   // ** Static methods
   // Make a bitset with only the specified entry turned on.
@@ -224,6 +228,10 @@ TEST_CASE("Bitset") {
   CHECK(singleton.IsSingleton());
   CHECK_EQ(*singleton.SingletonOption(), 2);
 
+  CHECK_EQ(Bitset("0000").Count(), 0);
+  CHECK_EQ(Bitset("0100").Count(), 1);
+  CHECK_EQ(Bitset("011101").Count(), 4);
+
   auto p = Bitset("000111");
   CHECK_EQ(p.SplitChunk(0), Bitset("000"));
   CHECK_EQ(p.SplitChunk(1), Bitset("111"));
@@ -242,6 +250,8 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("100011001").PCSPWithoutParent(), Bitset("011001"));
   CHECK_EQ(Bitset("100011001").PCSPChildSubsplit(), Bitset("010001"));
   CHECK_EQ(Bitset("100001110001").PCSPChildSubsplit(), Bitset("01100001"));
+  CHECK_EQ(Bitset("100001110001").PCSPChildSubsplitTaxonCounts(), SizePair({1, 2}));
+  CHECK_EQ(Bitset("100000111100101").PCSPChildSubsplitTaxonCounts(), SizePair({2, 2}));
 
   CHECK_EQ(Bitset::Singleton(4, 2), Bitset("0010"));
 

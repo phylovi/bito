@@ -3,7 +3,11 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
+// ** Doctest include must go first for all header tests to run.
 #include "doctest.h"
+// **
+
+#include "combinatorics.hpp"
 #include "gp_instance.hpp"
 #include "phylo_model.hpp"
 #include "unrooted_sbn_instance.hpp"
@@ -43,15 +47,21 @@ double ComputeExactMarginal(const std::string& newick_path,
   return exact_marginal_log_lik;
 }
 
+GPInstance GPInstanceOfFiles(const std::string& fasta_path,
+                             const std::string& newick_path) {
+  GPInstance inst("_ignore/mmapped_plv.data");
+  inst.ReadFastaFile(fasta_path);
+  inst.ReadNewickFile(newick_path);
+  inst.MakeEngine();
+  return inst;
+}
+
 // Our tree is (see check below)
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
 // https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
 GPInstance MakeHelloGPInstance(const std::string& fasta_path) {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile(fasta_path);
-  inst.ReadNewickFile("data/hello_rooted.nwk");
-  inst.MakeEngine();
+  auto inst = GPInstanceOfFiles(fasta_path, "data/hello_rooted.nwk");
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
   branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
@@ -68,11 +78,16 @@ GPInstance MakeHelloGPInstanceSingleNucleotide() {
 }
 
 GPInstance MakeHelloGPInstanceTwoTrees() {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/hello.fasta");
-  inst.ReadNewickFile("data/hello_rooted_two_trees.nwk");
-  inst.MakeEngine();
+  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
   inst.GetEngine()->SetBranchLengthsToConstant(1.);
+  return inst;
+}
+
+// The sequences for this were obtained by cutting DS1 down to 5 taxa by taking the
+// first 4 taxa then moving taxon 15 (Latimera) to be number 5. The alignment was
+// trimmed to 500 sites by using seqmagick convert with `--cut 500:1000`.
+GPInstance MakeDS1Reduced5Instance() {
+  auto inst = GPInstanceOfFiles("data/ds1-reduced-5.fasta", "data/ds1-reduced-5.nwk");
   return inst;
 }
 
@@ -106,7 +121,7 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
 }
 
-TEST_CASE("GPInstance: marginal likelihood calculation") {
+TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   auto inst = MakeHelloGPInstanceTwoTrees();
   auto engine = inst.GetEngine();
 
@@ -118,6 +133,24 @@ TEST_CASE("GPInstance: marginal likelihood calculation") {
   double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
   double exact_log_likelihood =
       ComputeExactMarginal("data/hello_unrooted_two_trees.nwk", "data/hello.fasta");
+  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
+}
+
+TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
+  auto inst = MakeDS1Reduced5Instance();
+  auto engine = inst.GetEngine();
+
+  inst.EstimateBranchLengths(0.0001, 100, true);
+  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.ComputeLikelihoods();
+  double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
+
+  const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
+  // "ds1-reduced-5.gp-branch-lengths.unrooted.nwk" created by
+  // trees.ToNewickFile("data/ds1-reduced-5.gp-branch-lengths.nwk");
+  // then derooting with `nw_reroot -d`.
+  double exact_log_likelihood = ComputeExactMarginal(
+      "data/ds1-reduced-5.gp-branch-lengths.unrooted.nwk", "data/ds1-reduced-5.fasta");
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
 
@@ -170,10 +203,8 @@ TEST_CASE("GPInstance: branch length optimization") {
 
   // Reset.
   inst = MakeHelloGPInstanceTwoTrees();
-  inst.EstimateBranchLengths(1e-6, 100);
+  inst.EstimateBranchLengths(1e-6, 100, true);
   EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
-  std::cout << expected_branch_lengths << std::endl;
-  std::cout << realized_branch_lengths << std::endl;
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
 }
 
@@ -234,7 +265,7 @@ TEST_CASE("GPInstance: generate all trees") {
 
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
   auto inst = MakeFiveTaxaInstance();
-  inst.EstimateBranchLengths(1e-6, 10);
+  inst.EstimateBranchLengths(1e-6, 10, true);
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
   double exact_marginal_log_likelihood = ComputeExactMarginal(
       "data/five_taxon_unrooted_with_branch_lengths.nwk", "data/five_taxon.fasta");
@@ -245,7 +276,7 @@ TEST_CASE("GPInstance: test populate PLV") {
   // This test makes sure that ResetMarginalLikelihoodAndPopulatePLVs correctly
   // re-populates the PLVs using the current branch lengths.
   auto inst = MakeFiveTaxaInstance();
-  inst.EstimateBranchLengths(1e-6, 10);
+  inst.EstimateBranchLengths(1e-6, 10, true);
   inst.ComputeLikelihoods();
   size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
   const EigenVectorXd log_likelihoods1 =
@@ -337,4 +368,34 @@ TEST_CASE("GPInstance: CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths") {
   CHECK_EQ(trees.Newick(),
            "((x0:0.9,x1:0.9):0.9,((x2:0.9,x3:0.9):0.9,x4:0.9):0.9):0;\n"
            "(x0:0.9,(x1:0.9,((x2:0.9,x3:0.9):0.9,x4:0.9):0.9):0.9):0;\n");
+}
+
+TEST_CASE("GPInstance: Priors") {
+  auto inst = GPInstanceOfFiles("data/four-numbered-taxa.fasta",
+                                "data/four-taxon-two-tree-rootsplit-uncertainty.nwk");
+  // Here are the trees:
+  // (((1,2),3),4);
+  // ((1,(2,3)),4);
+  // ((1,2),(3,4));
+  //
+  // Here's the interesting part of the indexer:
+  // 0001|1110,      0
+  // 0011|1100,      1
+  // 0001|1110|0110, 4
+  // 0001|1110|0010, 5
+  auto support = inst.GetDAG().BuildUniformOnTopologicalSupportPrior();
+  CHECK_LT(fabs(support[0] - 2. / 3.), 1e-10);
+  CHECK_LT(fabs(support[1] - 1. / 3.), 1e-10);
+  CHECK_LT(fabs(support[4] - 1. / 2.), 1e-10);
+  CHECK_LT(fabs(support[5] - 1. / 2.), 1e-10);
+  auto all = inst.GetDAG().BuildUniformOnAllTopologiesPrior();
+  // There are 15 topologies on 4 taxa.
+  // There are 3 topologies on 3 taxa, so there are 3 topologies with rootsplit
+  // 0001|1110.
+  CHECK_LT(fabs(all[0] - 3. / 15.), 1e-10);
+  // There is only 1 topology with rootsplit 0011|1100.
+  CHECK_LT(fabs(all[1] - 1. / 15.), 1e-10);
+  // There are 3 topologies on 3 taxa.
+  CHECK_LT(fabs(all[4] - 1. / 3.), 1e-10);
+  CHECK_LT(fabs(all[5] - 1. / 3.), 1e-10);
 }

@@ -144,6 +144,7 @@ sources = [
     "_build/block_model.cpp",
     "_build/block_specification.cpp",
     "_build/clock_model.cpp",
+    "_build/combinatorics.cpp",
     "_build/csv.cpp",
     "_build/driver.cpp",
     "_build/engine.cpp",

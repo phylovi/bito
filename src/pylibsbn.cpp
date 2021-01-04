@@ -410,6 +410,8 @@ PYBIND11_MODULE(libsbn, m) {
            "Read a sequence alignment from a FASTA file.")
       .def("sbn_parameters_to_csv", &GPInstance::SBNParametersToCSV,
            R"raw(Write "pretty" formatted SBN parameters to a CSV.)raw")
+      .def("sbn_prior_to_csv", &GPInstance::SBNPriorToCSV,
+           R"raw(Write "pretty" formatted SBN parameters for the prior to a CSV.)raw")
       .def("branch_lengths_to_csv", &GPInstance::BranchLengthsToCSV,
            R"raw(Write "pretty" formatted branch lengths to a CSV.)raw")
       .def(
@@ -424,9 +426,10 @@ PYBIND11_MODULE(libsbn, m) {
       .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,
            "Use given trees to initialize branch lengths.")
       .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
-           "Read trees from a Newick file.")
+           "EstimateSBNParameters.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
-           "Estimate branch lengths for the GPInstance.");
+           "Estimate branch lengths for the GPInstance.", py::arg("tol"),
+           py::arg("max_iter"), py::arg("quiet") = false);
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:

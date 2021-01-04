@@ -49,6 +49,16 @@ StringPCSPMap SBNMaps::StringPCSPMapOf(PCSPCounter d) {
   return d_str;
 }
 
+StringDoubleVector SBNMaps::StringDoubleVectorOf(BitsetDoubleMap m) {
+  StringDoubleVector result;
+  result.reserve(m.size());
+  for (const auto& [k, v] : m) {
+    result.push_back({k.ToString(), v});
+  }
+  std::sort(result.begin(), result.end());
+  return result;
+}
+
 Bitset SBNMaps::PCSPBitsetOf(const size_t leaf_count,  //
                              const Node* sister_node, bool sister_direction,
                              const Node* focal_node, bool focal_direction,

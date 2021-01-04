@@ -26,22 +26,25 @@ class GPInstance {
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;
+  const GPDAG &GetDAG();
   void PrintDAG();
   void PrintGPCSPIndexer();
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();
   void EstimateSBNParameters();
-  void EstimateBranchLengths(double tol, size_t max_iter);
+  void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false);
   void ResetMarginalLikelihoodAndPopulatePLVs();
   void ComputeLikelihoods();
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
 
   // #273: A lot of code duplication here with things in SBNInstance.
   StringVector PrettyIndexer() const;
+  EigenConstVectorXdRef GetSBNParameters();
   StringDoubleVector PrettyIndexedSBNParameters();
   StringDoubleVector PrettyIndexedBranchLengths();
 
   void SBNParametersToCSV(const std::string &file_path);
+  void SBNPriorToCSV(const std::string &file_path);
   void BranchLengthsToCSV(const std::string &file_path);
 
   // Generate a version of the topologies in the current tree collection that use the
@@ -66,12 +69,8 @@ class GPInstance {
   GPDAG dag_;
   static constexpr size_t plv_count_per_node_ = 6;
 
-  // A vector that contains all of the SBN-related probabilities.
-  EigenVectorXd sbn_parameters_;
-
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;
-  void ProcessLoadedTrees();
 
   void InitializeGPEngine();
 

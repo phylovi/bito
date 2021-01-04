@@ -77,11 +77,21 @@ class SubsplitDAG {
 
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
-  // Uniform prior over all topologies.
-  [[nodiscard]] EigenVectorXd BuildUniformPrior() const;
+  // Uniform prior over all topologies in the subsplit support.
+  [[nodiscard]] EigenVectorXd BuildUniformOnTopologicalSupportPrior() const;
+  // Uniform prior over all topologies, whether or not they are in the support.
+  // Thus, this will only be a normalized probability distribution for each subsplit if
+  // all topologies are in the support.
+  [[nodiscard]] EigenVectorXd BuildUniformOnAllTopologiesPrior() const;
 
   RootedIndexerRepresentation IndexerRepresentationOf(const Node::NodePtr &topology,
-                                                      size_t default_index);
+                                                      size_t default_index) const;
+
+  // Get a map from each subsplit to the probability of observing that subsplit with the
+  // supplied SBN parameters. These SBN parameters must be indexed in a compatible way
+  // as the gpcsp_indexer_ of the subsplit DAG.
+  BitsetDoubleMap UnconditionalSubsplitProbabilities(
+      EigenConstVectorXdRef normalized_sbn_parameters) const;
 
  protected:
   size_t taxon_count_;

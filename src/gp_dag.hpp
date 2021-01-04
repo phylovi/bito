@@ -33,6 +33,8 @@ class GPDAG : public SubsplitDAG {
   // Compute likelihood values l(s) for each rootsplit s by calling
   // MarginalLikelihood().
   [[nodiscard]] GPOperationVector ComputeLikelihoods() const;
+  // Do a complete two-pass traversal to correctly populate the PLVs.
+  [[nodiscard]] GPOperationVector PopulatePLVs();
   // Fill r-PLVs from leaf nodes to the root nodes.
   [[nodiscard]] GPOperationVector LeafwardPass() const;
   // Compute marginal likelihood.
