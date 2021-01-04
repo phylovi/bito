@@ -172,18 +172,15 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
     if (our_bitset.size() == 3 * taxon_count_) {
       std::tie(child0_taxon_count, child1_taxon_count) =
           our_bitset.PCSPChildSubsplitTaxonCounts();
-
     } else if (our_bitset.size() == 2 * taxon_count_) {  // #273
       child0_taxon_count = our_bitset.SplitChunk(0).Count();
       child1_taxon_count = static_cast<size_t>(taxon_count_ - child0_taxon_count);
     } else {
       Failwith("Don't recognize bitset size!");
     }
-
     result(gpcsp_idx) = Combinatorics::LogChildSubsplitCountRatio(child0_taxon_count,
                                                                   child1_taxon_count);
   }
-
   NumericalUtils::Exponentiate(result);
   return result;
 }
