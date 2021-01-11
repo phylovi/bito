@@ -61,13 +61,11 @@ class GPDAG : public SubsplitDAG {
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
 
-  void ScheduleBranchLengthOptimization(size_t node_id,
-                                        std::unordered_set<size_t> &visited_nodes,
-                                        GPOperationVector &operations) const;
   // This function visits and optimizes branches in depth first fashion.
   // It updates p-PLVs and r-PLVs to reflect/propagate the results
   // of branch length optimization from/to other parts of the tree.
-  void ScheduleBranchLengthOptimization(bool is_reverse_postorder,
+  void ScheduleBranchLengthOptimization(size_t node_id,
+                                        std::unordered_set<size_t> &visited_nodes,
                                         GPOperationVector &operations) const;
   void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
