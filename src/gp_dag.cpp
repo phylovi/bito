@@ -63,8 +63,9 @@ void GPDAG::OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
         }
         OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
       });
-  // Update r_tilde(t) = r_hat(t) \circ p_hat(t) and r(t) = r_hat(t) \circ
-  // p_hat_tilde(t)
+  // Depending on rotated, either:
+  // r_tilde(t) = r_hat(t) \circ p_hat(t)
+  // r(t) = r_hat(t) \circ p_hat_tilde(t)
   operations.push_back(Multiply{GetPLVIndex(r_plv_type, node_id),
                                 GetPLVIndex(PLVType::R_HAT, node_id),
                                 GetPLVIndex(p_hat_plv_type, node_id)});
@@ -76,6 +77,49 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
   IterateOverRootsplitIds([this, &operations, &visited_nodes](size_t rootsplit_id) {
     ScheduleBranchLengthOptimization(rootsplit_id, visited_nodes, operations);
   });
+
+  return operations;
+}
+
+GPOperationVector GPDAG::NewBranchLengthOptimization() const {
+  GPOperationVector operations;
+
+  auto action = SubsplitDAGAction(
+      // BeforeNode
+      [this, &operations](size_t node_id) {
+        const auto node = GetDagNode(node_id);
+        if (!node->IsRoot()) {
+          UpdateRPLVs(node_id, operations);
+        }
+      },
+      // AfterNode
+      [this, &operations](size_t node_id) {
+        operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
+                                      GetPLVIndex(PLVType::P_HAT, node_id),
+                                      GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
+      },
+      // BeforeNodeClade
+      [this, &operations](size_t node_id, bool rotated) {
+        const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
+        operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
+      },
+      // AfterNodeClade
+      [this, &operations](size_t node_id, bool rotated) {
+        const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
+        const PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
+        // Depending on rotated, either:
+        // r_tilde(t) = r_hat(t) \circ p_hat(t)
+        // r(t) = r_hat(t) \circ p_hat_tilde(t)
+        operations.push_back(Multiply{GetPLVIndex(r_plv_type, node_id),
+                                      GetPLVIndex(PLVType::R_HAT, node_id),
+                                      GetPLVIndex(p_hat_plv_type, node_id)});
+      },
+      // VisitEdge
+      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
+      });
+
+  PostOrderWithDAGAction(action);
 
   return operations;
 }

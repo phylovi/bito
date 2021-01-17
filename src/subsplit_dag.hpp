@@ -73,7 +73,7 @@ class SubsplitDAG {
 
   // Traverse the DAG, applying the SubsplitDAGAction.
   template <typename SubsplitDAGActionT>
-  void PostOrderWithDAGAction(SubsplitDAGActionT &action) {
+  void PostOrderWithDAGAction(SubsplitDAGActionT &action) const {
     std::unordered_set<size_t> visited_nodes;
     for (const auto &rootsplit : rootsplits_) {
       PostOrderWithDAGActionForNode(action, subsplit_to_id_.at(rootsplit + ~rootsplit),
@@ -84,9 +84,14 @@ class SubsplitDAG {
   // The portion of the traversal that is below a given node.
   template <typename SubsplitDAGActionT>
   void PostOrderWithDAGActionForNode(SubsplitDAGActionT &action, size_t node_id,
-                                     std::unordered_set<size_t> visited_nodes) {
+                                     std::unordered_set<size_t> visited_nodes) const {
     visited_nodes.insert(node_id);
     action.BeforeNode(node_id);
+    // TODO(e) here we are just replicating old behavior, but it's a little surprising.
+    const auto node = GetDagNode(node_id);
+    if (node->IsLeaf()) {
+      return;
+    }
     PostOrderWithDAGActionForNodeClade(action, node_id, false, visited_nodes);
     PostOrderWithDAGActionForNodeClade(action, node_id, true, visited_nodes);
     action.AfterNode(node_id);
@@ -94,9 +99,9 @@ class SubsplitDAG {
 
   // The portion of the traversal that is below a given node and a given clade.
   template <typename SubsplitDAGActionT>
-  void PostOrderWithDAGActionForNodeClade(SubsplitDAGActionT &action, size_t node_id,
-                                          bool rotated,
-                                          std::unordered_set<size_t> visited_nodes) {
+  void PostOrderWithDAGActionForNodeClade(
+      SubsplitDAGActionT &action, size_t node_id, bool rotated,
+      std::unordered_set<size_t> visited_nodes) const {
     action.BeforeNodeClade(node_id, rotated);
     const auto node = GetDagNode(node_id);
     for (const size_t child_id : node->GetLeafward(rotated)) {
@@ -111,6 +116,7 @@ class SubsplitDAG {
   // #288: consider renaming these re leafward and rootward.
   // Also, note that they could be called "TraversalTrace" to signify that they are
   // recording the trace of a traversal.
+  // TODO Postorder should be PostOrder?
   [[nodiscard]] SizeVector LeafwardPassTraversal() const;
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
   [[nodiscard]] SizeVector ReversePostorderTraversal() const;

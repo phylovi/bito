@@ -14,10 +14,10 @@ using TypeOf = decltype(std::get<I>(std::declval<std::tuple<Args...>>()));
 template <typename... Args>
 auto SubsplitDAGAction(Args&&... args) {
   struct Impl {
-    TypeOf<0, Args...> BeforeSubsplit;
-    TypeOf<1, Args...> AfterSubsplit;
-    TypeOf<2, Args...> BeforeSubsplitClade;
-    TypeOf<3, Args...> AfterSubsplitClade;
+    TypeOf<0, Args...> BeforeNode;
+    TypeOf<1, Args...> AfterNode;
+    TypeOf<2, Args...> BeforeNodeClade;
+    TypeOf<3, Args...> AfterNodeClade;
     TypeOf<4, Args...> VisitEdge;
   };
   return Impl{std::forward<Args>(args)...};

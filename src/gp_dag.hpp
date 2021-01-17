@@ -28,6 +28,7 @@ class GPDAG : public SubsplitDAG {
 
   // Schedule branch length optimization.
   [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
+  [[nodiscard]] GPOperationVector NewBranchLengthOptimization() const;
   // Compute likelihood values l(s|t) for each child subsplit s by visiting
   // parent subsplit t and generating Likelihood operations for each PCSP s|t.
   // Compute likelihood values l(s) for each rootsplit s by calling
