@@ -9,6 +9,7 @@
 
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
+#include "subsplit_dag_action.hpp"
 #include "subsplit_dag_node.hpp"
 
 class SubsplitDAG {
@@ -70,7 +71,44 @@ class SubsplitDAG {
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
-  // #288: consider renaming these.
+  // Traverse the DAG, applying the SubsplitDAGAction.
+  template <typename SubsplitDAGActionT>
+  void IterateWithDAGAction(SubsplitDAGActionT &action) {
+    std::unordered_set<size_t> visited_nodes;
+    for (const auto &rootsplit : rootsplits_) {
+      IterateWithDAGActionBelowNode(action, subsplit_to_id_.at(rootsplit + ~rootsplit),
+                                    visited_nodes);
+    }
+  };
+
+  // The portion of the traversal that is below a given node.
+  template <typename SubsplitDAGActionT>
+  void IterateWithDAGActionBelowNode(SubsplitDAGActionT &action, size_t node_id,
+                                     std::unordered_set<size_t> visited_nodes) {
+    visited_nodes.insert(node_id);
+    action.BeforeNode(node_id);
+    IterateWithDAGActionBelowNodeClade(action, node_id, false, visited_nodes);
+    IterateWithDAGActionBelowNodeClade(action, node_id, true, visited_nodes);
+    action.AfterNode(node_id);
+  };
+
+  // The portion of the traversal that is below a given node and a given clade.
+  template <typename SubsplitDAGActionT>
+  void IterateWithDAGActionBelowNodeClade(SubsplitDAGActionT &action, size_t node_id,
+                                          bool rotated,
+                                          std::unordered_set<size_t> visited_nodes) {
+    action.BeforeNodeClade(node_id, rotated);
+    const auto node = GetDagNode(node_id);
+    for (const size_t child_id : node->GetLeafward(rotated)) {
+      IterateWithDAGActionBelowNode(action, node_id, visited_nodes);
+      action.VisitEdge(node_id, child_id, rotated);
+    }
+    action.AfterNodeClade(node_id, rotated);
+  };
+
+  // #288: consider renaming these re leafward and rootward.
+  // Also, note that they could be called "TraversalTrace" to signify that they are
+  // recording the trace of a traversal.
   [[nodiscard]] SizeVector LeafwardPassTraversal() const;
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
   [[nodiscard]] SizeVector ReversePostorderTraversal() const;

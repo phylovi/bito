@@ -194,16 +194,16 @@ void SubsplitDAG::IterateOverRealNodes(const NodeLambda &f) const {
 
 void SubsplitDAG::IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
                                            const NodeLambda &f) const {
-  for (const size_t child_idx : node->GetLeafward(rotated)) {
-    f(GetDagNode(child_idx));
+  for (const size_t child_id : node->GetLeafward(rotated)) {
+    f(GetDagNode(child_id));
   }
 }
 
 void SubsplitDAG::IterateOverLeafwardEdges(const SubsplitDAGNode *node,
                                            const EdgeDestinationLambda &f) const {
   for (bool rotated : {false, true}) {
-    for (const size_t child_idx : node->GetLeafward(rotated)) {
-      f(rotated, GetDagNode(child_idx));
+    for (const size_t child_id : node->GetLeafward(rotated)) {
+      f(rotated, GetDagNode(child_id));
     }
   }
 }
