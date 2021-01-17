@@ -84,7 +84,7 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
 GPOperationVector GPDAG::NewBranchLengthOptimization() const {
   GPOperationVector operations;
 
-  auto action = SubsplitDAGAction(
+  const auto action = SubsplitDAGAction(
       // BeforeNode
       [this, &operations](size_t node_id) {
         const auto node = GetDagNode(node_id);

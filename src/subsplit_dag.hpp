@@ -73,7 +73,7 @@ class SubsplitDAG {
 
   // Traverse the DAG, applying the SubsplitDAGAction.
   template <typename SubsplitDAGActionT>
-  void PostOrderWithDAGAction(SubsplitDAGActionT &action) const {
+  void PostOrderWithDAGAction(const SubsplitDAGActionT &action) const {
     std::unordered_set<size_t> visited_nodes;
     for (const auto &rootsplit : rootsplits_) {
       PostOrderWithDAGActionForNode(action, subsplit_to_id_.at(rootsplit + ~rootsplit),
@@ -83,7 +83,7 @@ class SubsplitDAG {
 
   // The portion of the traversal that is below a given node.
   template <typename SubsplitDAGActionT>
-  void PostOrderWithDAGActionForNode(SubsplitDAGActionT &action, size_t node_id,
+  void PostOrderWithDAGActionForNode(const SubsplitDAGActionT &action, size_t node_id,
                                      std::unordered_set<size_t> visited_nodes) const {
     visited_nodes.insert(node_id);
     action.BeforeNode(node_id);
@@ -100,7 +100,7 @@ class SubsplitDAG {
   // The portion of the traversal that is below a given node and a given clade.
   template <typename SubsplitDAGActionT>
   void PostOrderWithDAGActionForNodeClade(
-      SubsplitDAGActionT &action, size_t node_id, bool rotated,
+      const SubsplitDAGActionT &action, size_t node_id, bool rotated,
       std::unordered_set<size_t> visited_nodes) const {
     action.BeforeNodeClade(node_id, rotated);
     const auto node = GetDagNode(node_id);
