@@ -73,34 +73,36 @@ class SubsplitDAG {
 
   // Traverse the DAG, applying the SubsplitDAGAction.
   template <typename SubsplitDAGActionT>
-  void IterateWithDAGAction(SubsplitDAGActionT &action) {
+  void PostOrderWithDAGAction(SubsplitDAGActionT &action) {
     std::unordered_set<size_t> visited_nodes;
     for (const auto &rootsplit : rootsplits_) {
-      IterateWithDAGActionBelowNode(action, subsplit_to_id_.at(rootsplit + ~rootsplit),
+      PostOrderWithDAGActionForNode(action, subsplit_to_id_.at(rootsplit + ~rootsplit),
                                     visited_nodes);
     }
   };
 
   // The portion of the traversal that is below a given node.
   template <typename SubsplitDAGActionT>
-  void IterateWithDAGActionBelowNode(SubsplitDAGActionT &action, size_t node_id,
+  void PostOrderWithDAGActionForNode(SubsplitDAGActionT &action, size_t node_id,
                                      std::unordered_set<size_t> visited_nodes) {
     visited_nodes.insert(node_id);
     action.BeforeNode(node_id);
-    IterateWithDAGActionBelowNodeClade(action, node_id, false, visited_nodes);
-    IterateWithDAGActionBelowNodeClade(action, node_id, true, visited_nodes);
+    PostOrderWithDAGActionForNodeClade(action, node_id, false, visited_nodes);
+    PostOrderWithDAGActionForNodeClade(action, node_id, true, visited_nodes);
     action.AfterNode(node_id);
   };
 
   // The portion of the traversal that is below a given node and a given clade.
   template <typename SubsplitDAGActionT>
-  void IterateWithDAGActionBelowNodeClade(SubsplitDAGActionT &action, size_t node_id,
+  void PostOrderWithDAGActionForNodeClade(SubsplitDAGActionT &action, size_t node_id,
                                           bool rotated,
                                           std::unordered_set<size_t> visited_nodes) {
     action.BeforeNodeClade(node_id, rotated);
     const auto node = GetDagNode(node_id);
     for (const size_t child_id : node->GetLeafward(rotated)) {
-      IterateWithDAGActionBelowNode(action, node_id, visited_nodes);
+      if (visited_nodes.count(child_id) == 0) {
+        PostOrderWithDAGActionForNode(action, child_id, visited_nodes);
+      }
       action.VisitEdge(node_id, child_id, rotated);
     }
     action.AfterNodeClade(node_id, rotated);
