@@ -108,8 +108,8 @@ EigenVectorXd MakeHelloGPInstanceRegressionTestBranchLengths() {
 }
 
 void CheckBranchLengthOptimization(GPInstance& inst) {
-  auto old_operations = inst.GetDAG().BranchLengthOptimization();
-  auto new_operations = inst.GetDAG().NewBranchLengthOptimization();
+  auto old_operations = inst.GetDAG().OldBranchLengthOptimization();
+  auto new_operations = inst.GetDAG().BranchLengthOptimization();
   CHECK_EQ(GenericToString(old_operations), GenericToString(new_operations));
 }
 
