@@ -84,7 +84,7 @@ class SubsplitDAG {
   // The portion of the traversal that is below a given node.
   template <typename SubsplitDAGActionT>
   void PostOrderWithDAGActionForNode(const SubsplitDAGActionT &action, size_t node_id,
-                                     std::unordered_set<size_t> visited_nodes) const {
+                                     std::unordered_set<size_t> &visited_nodes) const {
     visited_nodes.insert(node_id);
     action.BeforeNode(node_id);
     // TODO(e) here we are just replicating old behavior, but it's a little surprising.
@@ -101,7 +101,7 @@ class SubsplitDAG {
   template <typename SubsplitDAGActionT>
   void PostOrderWithDAGActionForNodeClade(
       const SubsplitDAGActionT &action, size_t node_id, bool rotated,
-      std::unordered_set<size_t> visited_nodes) const {
+      std::unordered_set<size_t> &visited_nodes) const {
     action.BeforeNodeClade(node_id, rotated);
     const auto node = GetDagNode(node_id);
     for (const size_t child_id : node->GetLeafward(rotated)) {
