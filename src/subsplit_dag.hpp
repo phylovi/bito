@@ -114,7 +114,6 @@ class SubsplitDAG {
   // #288: consider renaming these re leafward and rootward.
   // Also, note that they could be called "TraversalTrace" to signify that they are
   // recording the trace of a traversal.
-  // TODO Postorder should be PostOrder?
   [[nodiscard]] SizeVector LeafwardPassTraversal() const;
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
   [[nodiscard]] SizeVector ReversePostorderTraversal() const;

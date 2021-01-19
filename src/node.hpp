@@ -89,15 +89,15 @@ class Node {
 
   NodePtr DeepCopy() const;
 
-  void PreOrder(std::function<void(const Node*)> f) const;
-  // ConditionalPreOrder continues to recur as long as f returns true.
-  void ConditionalPreOrder(std::function<bool(const Node*)> f) const;
-  void PostOrder(std::function<void(const Node*)> f) const;
+  void Preorder(std::function<void(const Node*)> f) const;
+  // ConditionalPreorder continues to recur as long as f returns true.
+  void ConditionalPreorder(std::function<bool(const Node*)> f) const;
+  void Postorder(std::function<void(const Node*)> f) const;
   void LevelOrder(std::function<void(const Node*)> f) const;
   // Apply the pre function before recurring down the tree, and then apply the
   // post function as we are recurring back up the tree.
-  void PrePostOrder(std::function<void(const Node*)> pre,
-                    std::function<void(const Node*)> post) const;
+  void DepthFirst(std::function<void(const Node*)> pre,
+                  std::function<void(const Node*)> post) const;
 
   // We take in two functions, f_root, and f_internal, each of which take three
   // edges.
@@ -108,25 +108,25 @@ class Node {
   // the distinct calls of f.
   // At the internal nodes we cycle through triples of (node, sister, parent)
   // for f_internal.
-  void TriplePreOrder(
+  void TriplePreorder(
       std::function<void(const Node*, const Node*, const Node*)> f_root,
       std::function<void(const Node*, const Node*, const Node*)> f_internal) const;
   // Iterate f through (node, sister, parent) for bifurcating trees using a
   // preorder traversal.
-  void TriplePreOrderBifurcating(
+  void TriplePreorderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const;
   // As above, but getting indices rather than nodes themselves.
-  void TripleIdPreOrderBifurcating(std::function<void(int, int, int)> f) const;
+  void TripleIdPreorderBifurcating(std::function<void(int, int, int)> f) const;
 
   // These two functions take functions accepting triples of (node_id,
   // child0_id, child1_id) and apply them according to various traversals.
-  void BinaryIdPreOrder(std::function<void(int, int, int)> f) const;
-  void BinaryIdPostOrder(std::function<void(int, int, int)> f) const;
+  void BinaryIdPreorder(std::function<void(int, int, int)> f) const;
+  void BinaryIdPostorder(std::function<void(int, int, int)> f) const;
 
   // See the typedef of UnrootedPCSPFun and RootedPCSPFun to understand the argument
   // type to these functions.
-  void UnrootedPCSPPreOrder(UnrootedPCSPFun f) const;
-  void RootedPCSPPreOrder(RootedPCSPFun f) const;
+  void UnrootedPCSPPreorder(UnrootedPCSPFun f) const;
+  void RootedPCSPPreorder(RootedPCSPFun f) const;
   // Iterate over (leaf sister, leaf) pairs in order. Rooted because that's the only
   // case in which we are guaranteed to have a well defined set of such pairs.
   void RootedSisterAndLeafTraversal(TwoNodeFun f) const;
@@ -201,8 +201,8 @@ class Node {
   Node(const Node&);
   Node& operator=(const Node&);
 
-  // This is a private PostOrder that can change the Node.
-  void MutablePostOrder(std::function<void(Node*)> f);
+  // This is a private Postorder that can change the Node.
+  void MutablePostorder(std::function<void(Node*)> f);
 
   std::string NewickAux(std::function<std::string(const Node*)> node_labeler,
                         const DoubleVectorOption& branch_lengths) const;
@@ -243,7 +243,7 @@ typedef std::unordered_map<uint64_t, Bitset> TagBitsetMap;
 TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
   TagBitsetMap map;
   auto leaf_count = topology->LeafCount();
-  topology->PostOrder([&map, leaf_count](const Node* node) {
+  topology->Postorder([&map, leaf_count](const Node* node) {
     Bitset bitset((size_t)leaf_count);
     if (node->IsLeaf()) {
       bitset.set(node->MaxLeafID());
@@ -273,7 +273,7 @@ TEST_CASE("Node") {
     triples.push_back(std::to_string(node->Id()) + ", " + std::to_string(sister->Id()) +
                       ", " + std::to_string(parent->Id()));
   };
-  t4->TriplePreOrder(collect_triple, collect_triple);
+  t4->TriplePreorder(collect_triple, collect_triple);
   std::vector<std::string> correct_triples(
       {"10, 5, 6", "8, 9, 10", "7, 2, 8", "0, 1, 7", "1, 0, 7", "2, 7, 8", "9, 8, 10",
        "3, 4, 9", "4, 3, 9", "5, 6, 10", "6, 10, 5"});
@@ -297,7 +297,7 @@ TEST_CASE("Node") {
     CHECK_EQ(topology, Node::OfParentIdVector(topology->ParentIdVector()));
     CHECK_EQ(topology, topology->DeepCopy());
     auto tag_leaf_set_map = TagLeafSetMapOf(topology);
-    topology->PreOrder([&tag_leaf_set_map](const Node* node) {
+    topology->Preorder([&tag_leaf_set_map](const Node* node) {
       CHECK_EQ(node->Leaves(), tag_leaf_set_map.at(node->Tag()));
     });
   }

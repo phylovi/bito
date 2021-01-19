@@ -70,7 +70,7 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) con
     psp_bitset.CopyFrom(std::min(z1, z2), leaf_count, false);
     return indexer.at(psp_bitset);
   };
-  topology->TriplePreOrder(
+  topology->TriplePreorder(
       // f_root
       [&rootsplit_result, &psp_result_up, &rootsplit_index, &psp_index](
           const Node* node0, const Node* node1, const Node* node2) {

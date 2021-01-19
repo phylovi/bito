@@ -297,7 +297,7 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   // Set the branch length vector to be the total of the branch lengths for each PCSP,
   // and count the number of times we have seen each PCSP (into gpcsp_counts).
   for (const auto& tree : tree_collection.Trees()) {
-    tree.Topology()->RootedPCSPPreOrder(
+    tree.Topology()->RootedPCSPPreorder(
         [&leaf_count, &default_index, &indexer, &tree, &gpcsp_counts, this](
             const Node* sister_node, const Node* focal_node, const Node* child0_node,
             const Node* child1_node) {

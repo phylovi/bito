@@ -78,7 +78,7 @@ Node::NodePtr Node::DeepCopy() const {
   return Node::OfParentIdVector(ParentIdVector());
 }
 
-void Node::PreOrder(std::function<void(const Node*)> f) const {
+void Node::Preorder(std::function<void(const Node*)> f) const {
   std::stack<const Node*> stack;
   stack.push(this);
   const Node* node;
@@ -93,7 +93,7 @@ void Node::PreOrder(std::function<void(const Node*)> f) const {
   }
 }
 
-void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
+void Node::ConditionalPreorder(std::function<bool(const Node*)> f) const {
   std::stack<const Node*> stack;
   stack.push(this);
   const Node* node;
@@ -109,7 +109,7 @@ void Node::ConditionalPreOrder(std::function<bool(const Node*)> f) const {
   }
 }
 
-void Node::MutablePostOrder(std::function<void(Node*)> f) {
+void Node::MutablePostorder(std::function<void(Node*)> f) {
   // The stack records the nodes and whether they have been visited or not.
   std::stack<std::pair<Node*, bool>> stack;
   stack.push({this, false});
@@ -134,14 +134,14 @@ void Node::MutablePostOrder(std::function<void(Node*)> f) {
   }
 }
 
-void Node::PostOrder(std::function<void(const Node*)> f) const {
+void Node::Postorder(std::function<void(const Node*)> f) const {
   // https://stackoverflow.com/a/56603436/467327
   Node* mutable_this = const_cast<Node*>(this);
-  mutable_this->MutablePostOrder(f);
+  mutable_this->MutablePostorder(f);
 }
 
-void Node::PrePostOrder(std::function<void(const Node*)> pre,
-                        std::function<void(const Node*)> post) const {
+void Node::DepthFirst(std::function<void(const Node*)> pre,
+                      std::function<void(const Node*)> post) const {
   // The stack records the nodes and whether they have been visited or not.
   std::stack<std::pair<const Node*, bool>> stack;
   stack.push({this, false});
@@ -187,8 +187,8 @@ static std::function<void(const Node*, const Node*, const Node*)> const TripletI
   };
 }
 
-void Node::TripleIdPreOrderBifurcating(std::function<void(int, int, int)> f) const {
-  TriplePreOrderBifurcating(TripletIdInfix(f));
+void Node::TripleIdPreorderBifurcating(std::function<void(int, int, int)> f) const {
+  TriplePreorderBifurcating(TripletIdInfix(f));
 }
 
 static std::function<void(const Node*)> const BinaryIdInfix(
@@ -202,28 +202,28 @@ static std::function<void(const Node*)> const BinaryIdInfix(
   };
 }
 
-void Node::BinaryIdPreOrder(const std::function<void(int, int, int)> f) const {
-  PreOrder(BinaryIdInfix(f));
+void Node::BinaryIdPreorder(const std::function<void(int, int, int)> f) const {
+  Preorder(BinaryIdInfix(f));
 }
 
-void Node::BinaryIdPostOrder(const std::function<void(int, int, int)> f) const {
-  PostOrder(BinaryIdInfix(f));
+void Node::BinaryIdPostorder(const std::function<void(int, int, int)> f) const {
+  Postorder(BinaryIdInfix(f));
 }
 
-void Node::TriplePreOrder(
+void Node::TriplePreorder(
     std::function<void(const Node*, const Node*, const Node*)> f_root,
     std::function<void(const Node*, const Node*, const Node*)> f_internal) const {
   Assert(children_.size() == 3,
-         "TriplePreOrder expects a tree with a trifurcation at the root.");
+         "TriplePreorder expects a tree with a trifurcation at the root.");
   f_root(children_[0].get(), children_[1].get(), children_[2].get());
-  children_[0]->TriplePreOrderBifurcating(f_internal);
+  children_[0]->TriplePreorderBifurcating(f_internal);
   f_root(children_[1].get(), children_[2].get(), children_[0].get());
-  children_[1]->TriplePreOrderBifurcating(f_internal);
+  children_[1]->TriplePreorderBifurcating(f_internal);
   f_root(children_[2].get(), children_[0].get(), children_[1].get());
-  children_[2]->TriplePreOrderBifurcating(f_internal);
+  children_[2]->TriplePreorderBifurcating(f_internal);
 }
 
-void Node::TriplePreOrderBifurcating(
+void Node::TriplePreorderBifurcating(
     std::function<void(const Node*, const Node*, const Node*)> f) const {
   if (IsLeaf()) {
     return;
@@ -238,7 +238,7 @@ void Node::TriplePreOrderBifurcating(
     stack.pop();
     const auto& children = node->Children();
     Assert(children.size() == 2,
-           "TriplePreOrderBifurcating expects a bifurcating tree.");
+           "TriplePreorderBifurcating expects a bifurcating tree.");
     if (visited) {
       // We've already visited this node once, so do the second orientation.
       f(children[1].get(), children[0].get(), node);
@@ -263,15 +263,15 @@ void Node::TriplePreOrderBifurcating(
 // See the typedef of UnrootedPCSPFun to understand the argument type to this
 // function, and `doc/pcsp.svg` for a diagram that will greatly help you
 // understand the implementation.
-void Node::UnrootedPCSPPreOrder(UnrootedPCSPFun f) const {
-  this->TriplePreOrder(
+void Node::UnrootedPCSPPreorder(UnrootedPCSPFun f) const {
+  this->TriplePreorder(
       // f_root
       [&f](const Node* node0, const Node* node1, const Node* node2) {
         // Virtual root on node2's edge, with subsplit pointing up.
         f(node2, false, node2, true, node0, false, node1, false, nullptr);
         if (!node2->IsLeaf()) {
           Assert(node2->Children().size() == 2,
-                 "PCSPPreOrder expects a bifurcating tree.");
+                 "PCSPPreorder expects a bifurcating tree.");
           auto child0 = node2->Children()[0].get();
           auto child1 = node2->Children()[1].get();
           // Virtual root in node1.
@@ -292,7 +292,7 @@ void Node::UnrootedPCSPPreOrder(UnrootedPCSPFun f) const {
         f(node, false, node, true, parent, true, sister, false, nullptr);
         if (!node->IsLeaf()) {
           Assert(node->Children().size() == 2,
-                 "PCSPPreOrder expects a bifurcating tree.");
+                 "PCSPPreorder expects a bifurcating tree.");
           auto child0 = node->Children()[0].get();
           auto child1 = node->Children()[1].get();
           // Virtual root up the tree.
@@ -309,12 +309,12 @@ void Node::UnrootedPCSPPreOrder(UnrootedPCSPFun f) const {
       });
 }
 
-void Node::RootedPCSPPreOrder(RootedPCSPFun f) const {
-  this->TriplePreOrderBifurcating(
+void Node::RootedPCSPPreorder(RootedPCSPFun f) const {
+  this->TriplePreorderBifurcating(
       [&f](const Node* node, const Node* sister, const Node* parent) {
         if (!node->IsLeaf()) {
           Assert(node->Children().size() == 2,
-                 "RootedPCSPPreOrder expects a bifurcating tree.");
+                 "RootedPCSPPreorder expects a bifurcating tree.");
           auto child0 = node->Children()[0].get();
           auto child1 = node->Children()[1].get();
           f(sister, node, child0, child1);
@@ -323,7 +323,7 @@ void Node::RootedPCSPPreOrder(RootedPCSPFun f) const {
 }
 
 void Node::RootedSisterAndLeafTraversal(TwoNodeFun f) const {
-  this->TriplePreOrderBifurcating(
+  this->TriplePreorderBifurcating(
       [&f](const Node* node, const Node* sister, const Node* parent) {
         if (node->IsLeaf()) {
           f(sister, node);
@@ -342,7 +342,7 @@ TagSizeMap Node::Polish() {
   TagSizeMap tag_id_map;
   const size_t leaf_count = MaxLeafID() + 1;
   size_t next_id = leaf_count;
-  MutablePostOrder([&tag_id_map, &next_id, &leaf_count](Node* node) {
+  MutablePostorder([&tag_id_map, &next_id, &leaf_count](Node* node) {
     if (node->IsLeaf()) {
       node->id_ = node->MaxLeafID();
       node->leaves_ = Bitset::Singleton(leaf_count, node->id_);
@@ -412,7 +412,7 @@ std::string Node::Newick(const DoubleVectorOption& branch_lengths,
 
 std::vector<size_t> Node::ParentIdVector() const {
   std::vector<size_t> ids(Id());
-  PostOrder([&ids](const Node* node) {
+  Postorder([&ids](const Node* node) {
     if (!node->IsLeaf()) {
       for (const auto& child : node->Children()) {
         Assert(child->Id() < ids.size(), "Problematic ids in ParentIdVector.");
@@ -544,7 +544,7 @@ inline size_t Node::SORotate(size_t n, uint32_t c) {
 SizeVectorVector Node::IdsAbove() const {
   SizeVectorVector ids_above(Id() + 1);
   SizeVector mutable_ids;
-  PrePostOrder(
+  DepthFirst(
       [&ids_above, &mutable_ids](const Node* node) {
         // Store the current set of ids above.
         ids_above[node->Id()] = SizeVector(mutable_ids);
