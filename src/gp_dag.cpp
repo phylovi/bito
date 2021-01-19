@@ -48,23 +48,27 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
   GPOperationVector operations;
   DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
+      // Update the R PLVs for each node-clade.
       [this, &operations](size_t node_id) {
         if (!GetDagNode(node_id)->IsRoot()) {
           UpdateRPLVs(node_id, operations);
         }
       },
       // AfterNode
+      // P is the elementwise product ("o") of the two PLVs for the node-clades.
       [this, &operations](size_t node_id) {
         operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
                                       GetPLVIndex(PLVType::P_HAT, node_id),
                                       GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
       },
       // BeforeNodeClade
+      // Zero out the PLV in preparation for filling it as part of VisitEdge.
       [this, &operations](size_t node_id, bool rotated) {
         const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
         operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // AfterNodeClade
+      // Update the R PLV fopr the node-clade that we just visited.
       [this, &operations](size_t node_id, bool rotated) {
         const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
         const PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
@@ -76,6 +80,8 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
                                       GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // VisitEdge
+      // Optimize each branch for a given node-clade and accumulate the resulting P PLVs
+      // in the parent node.
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
         OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
       }));

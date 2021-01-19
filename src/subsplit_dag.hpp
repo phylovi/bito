@@ -77,8 +77,8 @@ class SubsplitDAG {
   // * For each of the clades of the node, we:
   //     * Apply BeforeNodeClade
   //     * For each edge descending from that clade, we:
-  //       * Recur into the child node of the clade if it is not a leaf
-  //       * Apply VisitEdge to the edge
+  //         * Recur into the child node of the clade if it is not a leaf
+  //         * Apply VisitEdge to the edge
   //     * Apply AfterNodeClade
   // * Apply AfterNode
   template <typename TraversalActionT>
