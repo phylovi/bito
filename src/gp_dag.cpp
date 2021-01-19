@@ -50,8 +50,7 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
   const auto action = SubsplitDAGTraversalAction(
       // BeforeNode
       [this, &operations](size_t node_id) {
-        const auto node = GetDagNode(node_id);
-        if (!node->IsRoot()) {
+        if (!GetDagNode(node_id)->IsRoot()) {
           UpdateRPLVs(node_id, operations);
         }
       },
