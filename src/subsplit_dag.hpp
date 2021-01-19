@@ -72,6 +72,15 @@ class SubsplitDAG {
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
   // Apply an Action via a depth first traversal. Do not visit leaf nodes.
+  // Applied to a given node, we:
+  // * Apply BeforeNode
+  // * For each of the clades of the node, we:
+  //     * Apply BeforeNodeClade
+  //     * For each edge descending from that clade, we:
+  //       * Recur into the child node of the clade if it is not a leaf
+  //       * Apply VisitEdge to the edge
+  //     * Apply AfterNodeClade
+  // * Apply AfterNode
   template <typename TraversalActionT>
   void DepthFirstWithAction(const TraversalActionT &action) const {
     std::unordered_set<size_t> visited_nodes;
@@ -100,9 +109,11 @@ class SubsplitDAG {
     action.BeforeNodeClade(node_id, rotated);
     const auto node = GetDagNode(node_id);
     for (const size_t child_id : node->GetLeafward(rotated)) {
-      if (visited_nodes.count(child_id) == 0 && !GetDagNode(child_id)->IsLeaf()) {
+      if (visited_nodes.count(child_id) == 0) {
         visited_nodes.insert(child_id);
-        DepthFirstWithActionForNode(action, child_id, visited_nodes);
+        if (!GetDagNode(child_id)->IsLeaf()) {
+          DepthFirstWithActionForNode(action, child_id, visited_nodes);
+        }
       }
       action.VisitEdge(node_id, child_id, rotated);
     }
