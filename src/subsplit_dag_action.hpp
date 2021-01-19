@@ -9,7 +9,8 @@
 #include <tuple>
 
 template <size_t I, typename... Args>
-using TypeOf = decltype(std::get<I>(std::declval<std::tuple<Args...>>()));
+// std::get returns by reference, but adding decay_t will provide the actual type.
+using TypeOf = std::decay_t<decltype(std::get<I>(std::declval<std::tuple<Args...>>()))>;
 
 template <typename... Args>
 auto SubsplitDAGAction(Args&&... args) {
