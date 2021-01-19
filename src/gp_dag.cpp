@@ -131,17 +131,17 @@ void GPDAG::DeprecatedOptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
   size_t node_id = node->Id();
 
   operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
-  IterateOverLeafwardEdges(
-      node, rotated,
-      [this, &operations, &rotated, &visited_nodes,
-       &node_id](const SubsplitDAGNode *child_node) {
-        size_t child_id = child_node->Id();
-        if (visited_nodes.count(child_id) == 0) {
-          DeprecatedScheduleBranchLengthOptimization(child_id, visited_nodes,
-                                                     operations);
-        }
-        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
-      });
+  IterateOverLeafwardEdges(node, rotated,
+                           [this, &operations, &rotated, &visited_nodes,
+                            &node_id](const SubsplitDAGNode *child_node) {
+                             size_t child_id = child_node->Id();
+                             if (visited_nodes.count(child_id) == 0) {
+                               DeprecatedScheduleBranchLengthOptimization(
+                                   child_id, visited_nodes, operations);
+                             }
+                             OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated,
+                                                            operations);
+                           });
   // Depending on rotated, either:
   // r_tilde(t) = r_hat(t) \circ p_hat(t)
   // r(t) = r_hat(t) \circ p_hat_tilde(t)
@@ -285,7 +285,6 @@ GPOperationVector GPDAG::PopulatePLVs() {
   append_operations(LeafwardPass());
   return operations;
 }
-
 
 // Take in some new operations, determine an appropriate PrepForMarginalization for
 // them, then append the PrepForMarginalization and the new operations to `operations`
