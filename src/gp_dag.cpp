@@ -84,7 +84,7 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
 GPOperationVector GPDAG::NewBranchLengthOptimization() const {
   GPOperationVector operations;
 
-  const auto action = SubsplitDAGAction(
+  const auto action = SubsplitDAGTraversalAction(
       // BeforeNode
       [this, &operations](size_t node_id) {
         const auto node = GetDagNode(node_id);
@@ -119,7 +119,7 @@ GPOperationVector GPDAG::NewBranchLengthOptimization() const {
         OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
       });
 
-  PostOrderWithDAGAction(action);
+  DepthFirstWithAction(action);
 
   return operations;
 }
@@ -266,12 +266,12 @@ void GPDAG::ScheduleBranchLengthOptimization(size_t node_id,
   visited_nodes.insert(node_id);
   const auto node = GetDagNode(node_id);
 
-  if (!node->IsRoot()) {
-    UpdateRPLVs(node_id, operations);
-  }
-
   if (node->IsLeaf()) {
     return;
+  }
+
+  if (!node->IsRoot()) {
+    UpdateRPLVs(node_id, operations);
   }
 
   OptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, false, visited_nodes,

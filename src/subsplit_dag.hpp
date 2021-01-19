@@ -71,42 +71,40 @@ class SubsplitDAG {
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
-  // Traverse the DAG, applying the SubsplitDAGAction.
-  template <typename SubsplitDAGActionT>
-  void PostOrderWithDAGAction(const SubsplitDAGActionT &action) const {
+  // Apply the SubsplitDAGAction as via a postorder traversal. Do not visit leaf nodes.
+  template <typename TraversalActionT>
+  void DepthFirstWithAction(const TraversalActionT &action) const {
     std::unordered_set<size_t> visited_nodes;
     for (const auto &rootsplit : rootsplits_) {
-      PostOrderWithDAGActionForNode(action, subsplit_to_id_.at(rootsplit + ~rootsplit),
-                                    visited_nodes);
+      DepthFirstWithActionForNode(action, subsplit_to_id_.at(rootsplit + ~rootsplit),
+                                  visited_nodes);
     }
   };
 
   // The portion of the traversal that is below a given node.
-  template <typename SubsplitDAGActionT>
-  void PostOrderWithDAGActionForNode(const SubsplitDAGActionT &action, size_t node_id,
-                                     std::unordered_set<size_t> &visited_nodes) const {
+  template <typename TraversalActionT>
+  void DepthFirstWithActionForNode(const TraversalActionT &action, size_t node_id,
+                                   std::unordered_set<size_t> &visited_nodes) const {
     visited_nodes.insert(node_id);
-    action.BeforeNode(node_id);
-    // TODO(e) here we are just replicating old behavior, but it's a little surprising.
-    const auto node = GetDagNode(node_id);
-    if (node->IsLeaf()) {
+    if (GetDagNode(node_id)->IsLeaf()) {
       return;
     }
-    PostOrderWithDAGActionForNodeClade(action, node_id, false, visited_nodes);
-    PostOrderWithDAGActionForNodeClade(action, node_id, true, visited_nodes);
+    action.BeforeNode(node_id);
+    DepthFirstWithActionForNodeClade(action, node_id, false, visited_nodes);
+    DepthFirstWithActionForNodeClade(action, node_id, true, visited_nodes);
     action.AfterNode(node_id);
   };
 
   // The portion of the traversal that is below a given node and a given clade.
-  template <typename SubsplitDAGActionT>
-  void PostOrderWithDAGActionForNodeClade(
-      const SubsplitDAGActionT &action, size_t node_id, bool rotated,
+  template <typename TraversalActionT>
+  void DepthFirstWithActionForNodeClade(
+      const TraversalActionT &action, size_t node_id, bool rotated,
       std::unordered_set<size_t> &visited_nodes) const {
     action.BeforeNodeClade(node_id, rotated);
     const auto node = GetDagNode(node_id);
     for (const size_t child_id : node->GetLeafward(rotated)) {
       if (visited_nodes.count(child_id) == 0) {
-        PostOrderWithDAGActionForNode(action, child_id, visited_nodes);
+        DepthFirstWithActionForNode(action, child_id, visited_nodes);
       }
       action.VisitEdge(node_id, child_id, rotated);
     }

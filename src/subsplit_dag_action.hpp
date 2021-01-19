@@ -12,13 +12,19 @@ template <size_t I, typename... Args>
 // std::get returns by reference, but adding decay_t will provide the actual type.
 using TypeOf = std::decay_t<decltype(std::get<I>(std::declval<std::tuple<Args...>>()))>;
 
+// An action to be performed as part of a traversal of the subsplit DAG.
 template <typename... Args>
-auto SubsplitDAGAction(Args&&... args) {
+auto SubsplitDAGTraversalAction(Args&&... args) {
   struct Impl {
+    // Applied just before visiting a node.
     TypeOf<0, Args...> BeforeNode;
+    // Applied after visiting a node.
     TypeOf<1, Args...> AfterNode;
+    // Applied before visiting the set of edges below a (node, clade) pair.
     TypeOf<2, Args...> BeforeNodeClade;
+    // Applied after visiting the set of edges below a (node, clade) pair.
     TypeOf<3, Args...> AfterNodeClade;
+    // Applied for each edge.
     TypeOf<4, Args...> VisitEdge;
   };
   return Impl{std::forward<Args>(args)...};
