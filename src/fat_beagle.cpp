@@ -51,7 +51,7 @@ double FatBeagle::LogLikelihoodInternals(
   BeagleAccessories ba(beagle_instance_, rescaling_, topology);
   BeagleOperationVector operations;
   beagleResetScaleFactors(beagle_instance_, 0);
-  topology->BinaryIdPostOrder(
+  topology->BinaryIdPostorder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
@@ -112,7 +112,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
   // Calculate post-order partials
   BeagleOperationVector operations;
-  topology->BinaryIdPostOrder(
+  topology->BinaryIdPostorder(
       [&operations, &ba](int node_id, int child0_id, int child1_id) {
         AddLowerPartialOperation(operations, ba, node_id, child0_id, child1_id);
       });
@@ -122,7 +122,7 @@ std::pair<double, std::vector<double>> FatBeagle::BranchGradientInternals(
 
   // Calculate pre-order partials.
   operations.clear();
-  topology->TripleIdPreOrderBifurcating(
+  topology->TripleIdPreorderBifurcating(
       [&operations, &ba](int node_id, int sister_id, int parent_id) {
         AddUpperPartialOperation(operations, ba, node_id, sister_id, parent_id);
       });

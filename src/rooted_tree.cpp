@@ -33,7 +33,7 @@ void RootedTree::SetNodeBoundsUsingDates(const TagDoubleMap& tag_date_map) {
   for (const auto& [tag, date] : tag_date_map) {
     node_bounds_[MaxLeafIDOfTag(tag)] = date;
   }
-  Topology()->BinaryIdPostOrder(
+  Topology()->BinaryIdPostorder(
       [&leaf_count, this](int node_id, int child0_id, int child1_id) {
         if (node_id >= leaf_count) {
           node_bounds_[node_id] =
@@ -49,7 +49,7 @@ void RootedTree::InitializeTimeTreeUsingBranchLengths() {
   height_ratios_.resize(leaf_count - 1);
 
   // Initialize the internal heights.
-  Topology()->BinaryIdPostOrder([&leaf_count, this](int node_id, int child0_id,
+  Topology()->BinaryIdPostorder([&leaf_count, this](int node_id, int child0_id,
                                                     int child1_id) {
     if (node_id >= leaf_count) {
       node_heights_[node_id] = node_heights_[child0_id] + branch_lengths_[child0_id];
@@ -69,7 +69,7 @@ void RootedTree::InitializeTimeTreeUsingBranchLengths() {
   // Initialize ratios.
   // The "height ratio" for the root is the root height.
   height_ratios_[root_id - leaf_count] = node_heights_[root_id];
-  Topology()->TripleIdPreOrderBifurcating(
+  Topology()->TripleIdPreorderBifurcating(
       [&leaf_count, this](int node_id, int, int parent_id) {
         if (node_id >= leaf_count) {
           // See the beginning of the header file for an explanation.
@@ -90,7 +90,7 @@ void RootedTree::InitializeTimeTreeUsingHeightRatios(
   for (size_t i = 0; i < height_ratios_.size(); i++) {
     height_ratios_[i] = height_ratios(i);
   }
-  Topology()->TripleIdPreOrderBifurcating([&leaf_count, &height_ratios, this](
+  Topology()->TripleIdPreorderBifurcating([&leaf_count, &height_ratios, this](
                                               int node_id, int, int parent_id) {
     if (node_id >= leaf_count) {
       node_heights_[node_id] = node_bounds_[node_id] +

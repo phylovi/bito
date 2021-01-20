@@ -194,16 +194,16 @@ void SubsplitDAG::IterateOverRealNodes(const NodeLambda &f) const {
 
 void SubsplitDAG::IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
                                            const NodeLambda &f) const {
-  for (const size_t child_idx : node->GetLeafward(rotated)) {
-    f(GetDagNode(child_idx));
+  for (const size_t child_id : node->GetLeafward(rotated)) {
+    f(GetDagNode(child_id));
   }
 }
 
 void SubsplitDAG::IterateOverLeafwardEdges(const SubsplitDAGNode *node,
                                            const EdgeDestinationLambda &f) const {
   for (bool rotated : {false, true}) {
-    for (const size_t child_idx : node->GetLeafward(rotated)) {
-      f(rotated, GetDagNode(child_idx));
+    for (const size_t child_id : node->GetLeafward(rotated)) {
+      f(rotated, GetDagNode(child_id));
     }
   }
 }
@@ -312,7 +312,7 @@ void SubsplitDAG::CreateAndInsertNode(const Bitset &subsplit) {
 }
 
 void SubsplitDAG::ConnectNodes(size_t idx, bool rotated) {
-  const auto node = dag_nodes_[idx].get();
+  const auto node = GetDagNode(idx);
   // Retrieve children subsplits, set edge relation.
   const Bitset subsplit = node->GetBitset(rotated);
   const auto children = GetChildSubsplits(subsplit, true);
@@ -382,7 +382,7 @@ void SubsplitDAG::ExpandRootsplitsInIndexer() {
 
 void SubsplitDAG::AddFakeSubsplitsToGPCSPIndexerAndParentToRange() {
   for (size_t i = 0; i < taxon_count_; i++) {
-    const auto current_bitset = dag_nodes_[i]->GetBitset();
+    const auto current_bitset = dag_nodes_.at(i)->GetBitset();
     IterateOverRootwardEdges(
         GetDagNode(i),
         [this, current_bitset](const bool rotated, const SubsplitDAGNode *node) {

@@ -19,7 +19,7 @@ int main() {
   auto t_start = now();
   for (int i = 0; i < 100; i++) {
     ids.clear();
-    topology->PreOrder([&ids](const Node* node) { ids.push_back(node->Id()); });
+    topology->Preorder([&ids](const Node* node) { ids.push_back(node->Id()); });
   }
 
   std::chrono::duration<double> duration = now() - t_start;

@@ -194,7 +194,7 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
     size_t node_count = 2 * root_node->LeafCount() - 1;
     std::vector<double> branch_lengths(node_count);
 
-    root_node->RootedPCSPPreOrder([this, &branch_lengths,
+    root_node->RootedPCSPPreorder([this, &branch_lengths,
                                    &gpcsp_indexed_branch_lengths](
                                       const Node *sister, const Node *focal,
                                       const Node *child0, const Node *child1) {

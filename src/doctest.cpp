@@ -21,7 +21,7 @@ TEST_CASE("Node") {
           .Trees()[0];
 
   // preorder:
-  t.Topology()->PreOrder(
+  t.Topology()->Preorder(
       [&trace](const Node* node) { trace.push_back(node->TagString()); });
   CHECK(std::vector<std::string>({"9_10", "4_5", "3_4", "1_2", "0_1", "1_1", "3_2",
                                   "2_1", "3_1", "4_1", "9_5", "7_3", "5_1", "7_2",
@@ -29,7 +29,7 @@ TEST_CASE("Node") {
   trace.clear();
 
   // postorder:
-  t.Topology()->PostOrder(
+  t.Topology()->Postorder(
       [&trace](const Node* node) { trace.push_back(node->TagString()); });
   CHECK(std::vector<std::string>({"0_1", "1_1", "1_2", "2_1", "3_1", "3_2", "3_4",
                                   "4_1", "4_5", "5_1", "6_1", "7_1", "7_2", "7_3",

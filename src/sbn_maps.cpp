@@ -13,7 +13,7 @@
 SizeBitsetMap SBNMaps::IdIdSetMapOf(const Node::NodePtr& topology) {
   SizeBitsetMap map;
   auto id_count = topology->Id() + 1;
-  topology->PostOrder([&map, id_count](const Node* node) {
+  topology->Postorder([&map, id_count](const Node* node) {
     Bitset bitset(static_cast<size_t>(id_count));
     Assert(node->Id() < id_count, "Malformed ids in IdIdSetMapOf.");
     // Set the bit for the id of the current edge.
@@ -30,7 +30,7 @@ SizeBitsetMap SBNMaps::IdIdSetMapOf(const Node::NodePtr& topology) {
 SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
                                    const Node::NodePtr& topology) {
   SizeVector split_result(topology->Id());
-  topology->PreOrder([&topology, &split_result, &indexer](const Node* node) {
+  topology->Preorder([&topology, &split_result, &indexer](const Node* node) {
     // Skip the root.
     if (node != topology.get()) {
       Bitset rootsplit = node->Leaves();
@@ -115,7 +115,7 @@ BitsetSizeDict UnrootedSBNMaps::RootsplitCounterOf(
       rootsplit_counter.increment(std::move(split), topology_count);
     };
     for (const auto& child : topology->Children()) {
-      child->PreOrder(Aux);
+      child->Preorder(Aux);
     }
   }
   return rootsplit_counter;
@@ -163,7 +163,7 @@ PCSPCounter UnrootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologi
     Assert(topology->Children().size() == 3,
            "UnrootedSBNMaps::PCSPCounterOf was expecting a tree with a trifurcation at "
            "the root!");
-    topology->UnrootedPCSPPreOrder(
+    topology->UnrootedPCSPPreorder(
         [&pcsp_dict, &topology_count = topology_count, &leaf_count](
             const Node* sister_node, bool sister_direction, const Node* focal_node,
             bool focal_direction,  //
@@ -205,7 +205,7 @@ UnrootedIndexerRepresentation UnrootedSBNMaps::IndexerRepresentationOf(
                    return v;
                  });
   // Now we append the PCSPs.
-  topology->UnrootedPCSPPreOrder(
+  topology->UnrootedPCSPPreorder(
       [&indexer, &default_index, &leaf_count, &result, &topology](
           const Node* sister_node, bool sister_direction, const Node* focal_node,
           bool focal_direction, const Node* child0_node, bool child0_direction,
@@ -227,7 +227,7 @@ UnrootedIndexerRepresentation UnrootedSBNMaps::IndexerRepresentationOf(
           Assert(virtual_root_clade != nullptr, "virtual_root_clade is null.");
           // Virtual-rooting on every edge in the virtual rooting clade will also
           // lead to this PCSP, because then the root will be "above" the PCSP.
-          virtual_root_clade->ConditionalPreOrder([&result, &indexer_position,
+          virtual_root_clade->ConditionalPreorder([&result, &indexer_position,
                                                    &sister_node, &focal_node,
                                                    &topology](const Node* node) {
             if (node == sister_node || node == focal_node) {
@@ -289,7 +289,7 @@ PCSPCounter RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies
     auto leaf_count = topology->LeafCount();
     Assert(topology->Children().size() == 2,
            "RootedSBNMaps::PCSPCounterOf was expecting a bifurcating tree!");
-    topology->RootedPCSPPreOrder(
+    topology->RootedPCSPPreorder(
         [&pcsp_dict, &topology_count = topology_count, &leaf_count](
             const Node* sister_node, const Node* focal_node, const Node* child0_node,
             const Node* child1_node) {
@@ -309,7 +309,7 @@ SizeVector RootedSBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
   Bitset rootsplit = Rootsplit(topology.get());
   result.push_back(AtWithDefault(indexer, rootsplit, default_index));
   // Now add the PCSPs.
-  topology->RootedPCSPPreOrder([&leaf_count, &indexer, &default_index, &result](
+  topology->RootedPCSPPreorder([&leaf_count, &indexer, &default_index, &result](
                                    const Node* sister_node, const Node* focal_node,
                                    const Node* child0_node, const Node* child1_node) {
     Bitset pcsp_bitset =

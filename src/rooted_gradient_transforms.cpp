@@ -19,7 +19,7 @@ std::vector<double> HeightGradient(const RootedTree &tree,
   int root_id = static_cast<int>(tree.Topology()->Id());
   std::vector<double> height_gradient(tree.LeafCount() - 1, 0);
 
-  tree.Topology()->BinaryIdPreOrder(
+  tree.Topology()->BinaryIdPreorder(
       [&root_id, &branch_gradient, &height_gradient, leaf_count = tree.LeafCount(),
        &rates = tree.GetRates()](int node_id, int child0_id, int child1_id) {
         if (node_id != root_id) {
@@ -80,7 +80,7 @@ std::vector<double> UpdateGradientUnWeightedLogDensity(
   size_t leaf_count = tree.LeafCount();
   size_t root_id = tree.Topology()->Id();
   std::vector<double> ratiosGradientUnweightedLogDensity(leaf_count - 1);
-  tree.Topology()->BinaryIdPostOrder(
+  tree.Topology()->BinaryIdPostorder(
       [&gradient_height, &heights = tree.node_heights_, &ratios = tree.height_ratios_,
        &bounds = tree.GetNodeBounds(), &ratiosGradientUnweightedLogDensity, &leaf_count,
        &root_id](int node_id, int child0_id, int child1_id) {
@@ -107,7 +107,7 @@ double UpdateHeightParameterGradientUnweightedLogDensity(
   std::vector<double> multiplierArray(leaf_count - 1);
   multiplierArray[root_id - leaf_count] = 1.0;
 
-  tree.Topology()->BinaryIdPreOrder(
+  tree.Topology()->BinaryIdPreorder(
       [&leaf_count, &ratios = tree.height_ratios_, &multiplierArray](
           int node_id, int child0_id, int child1_id) {
         if (child0_id >= leaf_count) {

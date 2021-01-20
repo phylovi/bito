@@ -107,6 +107,12 @@ EigenVectorXd MakeHelloGPInstanceRegressionTestBranchLengths() {
   return hello_gp_optimal_branch_lengths;
 }
 
+void CheckBranchLengthOptimization(GPInstance& inst) {
+  auto old_operations = inst.GetDAG().OldBranchLengthOptimization();
+  auto new_operations = inst.GetDAG().BranchLengthOptimization();
+  CHECK_EQ(GenericToString(old_operations), GenericToString(new_operations));
+}
+
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
@@ -119,6 +125,8 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   CheckVectorXdEquality(-84.77961943, realized_log_likelihoods, 1e-6);
 
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
+
+  CheckBranchLengthOptimization(inst);
 }
 
 TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
@@ -134,6 +142,8 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   double exact_log_likelihood =
       ComputeExactMarginal("data/hello_unrooted_two_trees.nwk", "data/hello.fasta");
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
+
+  CheckBranchLengthOptimization(inst);
 }
 
 TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
@@ -152,6 +162,8 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   double exact_log_likelihood = ComputeExactMarginal(
       "data/ds1-reduced-5.gp-branch-lengths.unrooted.nwk", "data/ds1-reduced-5.fasta");
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
+
+  CheckBranchLengthOptimization(inst);
 }
 
 TEST_CASE("GPInstance: gradient calculation") {

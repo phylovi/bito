@@ -8,6 +8,7 @@
 #include <iostream>
 #include <map>
 #include <optional>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -115,6 +116,13 @@ T AtWithDefault(const std::unordered_map<Key, T, Hash> &map, const Key &key,
     return default_value;
   }
   return search->second;
+}
+
+template <typename T>
+std::string GenericToString(T x) {
+  std::stringstream ss;
+  ss << x << std::endl;
+  return ss.str();
 }
 
 #endif  // SRC_SUGAR_HPP_

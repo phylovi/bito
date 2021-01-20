@@ -9,6 +9,7 @@
 
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
+#include "subsplit_dag_action.hpp"
 #include "subsplit_dag_node.hpp"
 
 class SubsplitDAG {
@@ -70,7 +71,58 @@ class SubsplitDAG {
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
-  // #288: consider renaming these.
+  // Apply an Action via a depth first traversal. Do not visit leaf nodes.
+  // Applied to a given node, we:
+  // * Apply BeforeNode
+  // * For each of the clades of the node, we:
+  //     * Apply BeforeNodeClade
+  //     * For each edge descending from that clade, we:
+  //         * Recur into the child node of the clade if it is not a leaf
+  //         * Apply VisitEdge to the edge
+  //     * Apply AfterNodeClade
+  // * Apply AfterNode
+  template <typename TraversalActionT>
+  void DepthFirstWithAction(const TraversalActionT &action) const {
+    std::unordered_set<size_t> visited_nodes;
+    for (const auto &rootsplit : rootsplits_) {
+      DepthFirstWithActionForNode(action, subsplit_to_id_.at(rootsplit + ~rootsplit),
+                                  visited_nodes);
+    }
+  };
+
+  // The portion of the traversal that is below a given node.
+  template <typename TraversalActionT>
+  void DepthFirstWithActionForNode(const TraversalActionT &action, size_t node_id,
+                                   std::unordered_set<size_t> &visited_nodes) const {
+    action.BeforeNode(node_id);
+    DepthFirstWithActionForNodeClade(action, node_id, false, visited_nodes);
+    DepthFirstWithActionForNodeClade(action, node_id, true, visited_nodes);
+    action.AfterNode(node_id);
+  };
+
+  // The portion of the traversal that is below a given clade of a given node.
+  // Do not recur into leaf nodes.
+  template <typename TraversalActionT>
+  void DepthFirstWithActionForNodeClade(
+      const TraversalActionT &action, size_t node_id, bool rotated,
+      std::unordered_set<size_t> &visited_nodes) const {
+    action.BeforeNodeClade(node_id, rotated);
+    const auto node = GetDagNode(node_id);
+    for (const size_t child_id : node->GetLeafward(rotated)) {
+      if (visited_nodes.count(child_id) == 0) {
+        visited_nodes.insert(child_id);
+        if (!GetDagNode(child_id)->IsLeaf()) {
+          DepthFirstWithActionForNode(action, child_id, visited_nodes);
+        }
+      }
+      action.VisitEdge(node_id, child_id, rotated);
+    }
+    action.AfterNodeClade(node_id, rotated);
+  };
+
+  // #288: consider renaming these re leafward and rootward.
+  // Also, note that they could be called "TraversalTrace" to signify that they are
+  // recording the trace of a traversal.
   [[nodiscard]] SizeVector LeafwardPassTraversal() const;
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
   [[nodiscard]] SizeVector ReversePostorderTraversal() const;
