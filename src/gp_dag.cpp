@@ -47,6 +47,7 @@ void GPDAG::UpdateRPLVs(size_t node_id, GPOperationVector &operations) const {
 GPOperationVector GPDAG::BranchLengthOptimization() const {
   GPOperationVector operations;
   DepthFirstWithAction(SubsplitDAGTraversalAction(
+      // Update as part of #288.
       // BeforeNode
       // Update the R PLVs for each node-clade.
       [this, &operations](size_t node_id) {
@@ -62,13 +63,13 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
                                       GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
       },
       // BeforeNodeClade
-      // Zero out the PLV in preparation for filling it as part of VisitEdge.
+      // Zero out the node-clade PLV in preparation for filling it as part of VisitEdge.
       [this, &operations](size_t node_id, bool rotated) {
         const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
         operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // AfterNodeClade
-      // Update the R PLV fopr the node-clade that we just visited.
+      // Update the R PLV for the other node-clade than the one that we just visited.
       [this, &operations](size_t node_id, bool rotated) {
         const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
         const PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
