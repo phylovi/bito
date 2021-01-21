@@ -10,10 +10,10 @@
 #include "gp_engine.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
-#include "subsplit_dag.hpp"
 #include "subsplit_dag_node.hpp"
+#include "tidy_subsplit_dag.hpp"
 
-class GPDAG : public SubsplitDAG {
+class GPDAG : public TidySubsplitDAG {
  public:
   // We store 6 PLVs per subsplit, and index them according to this enum.
   // The notation is as described in the manuscript, but with a slight shift in the
@@ -21,7 +21,7 @@ class GPDAG : public SubsplitDAG {
   // \hat{p}(\tilde{s}).
   enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
 
-  using SubsplitDAG::SubsplitDAG;
+  using TidySubsplitDAG::TidySubsplitDAG;
 
   // Get the index of a PLV of a given type and with a given index.
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
