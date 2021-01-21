@@ -14,7 +14,7 @@ EigenArrayXbRef TidySubsplitDAG::AboveNode(size_t node_idx) {
   return above_.col(node_idx).array();
 }
 
-EigenArrayXbRef TidySubsplitDAG::BelowNode(size_t node_idx) {
+EigenRowArrayXbRef TidySubsplitDAG::BelowNode(size_t node_idx) {
   // This block is a way of getting the node_idx'th row.
   return above_.block(node_idx, 0, 1, above_.cols()).array();
   // I don't know why we can't do this:
