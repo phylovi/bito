@@ -29,8 +29,6 @@ class GPDAG : public SubsplitDAG {
 
   // Schedule branch length optimization.
   [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
-  // The old version of branch length optimization, kept for testing purposes.
-  [[nodiscard]] GPOperationVector OldBranchLengthOptimization() const;
   // Compute likelihood values l(s|t) for each child subsplit s by visiting
   // parent subsplit t and generating Likelihood operations for each PCSP s|t.
   // Compute likelihood values l(s) for each rootsplit s by calling
@@ -72,17 +70,6 @@ class GPDAG : public SubsplitDAG {
   void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
                                       bool rotated,
                                       GPOperationVector &operations) const;
-  // The following two functions were the version of branch length optimization we did
-  // before adding the traversals based on Actions. Kept for testing.
-  // This function visits and optimizes branches in depth first fashion.
-  // It updates p-PLVs and r-PLVs to reflect/propagate the results
-  // of branch length optimization from/to other parts of the tree.
-  void DeprecatedScheduleBranchLengthOptimization(
-      size_t node_id, std::unordered_set<size_t> &visited_nodes,
-      GPOperationVector &operations) const;
-  void DeprecatedOptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
-      const SubsplitDAGNode *node, bool rotated,
-      std::unordered_set<size_t> &visited_nodes, GPOperationVector &operations) const;
 };
 
 #endif  // SRC_GP_DAG_HPP_
