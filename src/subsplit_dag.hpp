@@ -79,7 +79,6 @@ class SubsplitDAG {
   //     * For each edge descending from that clade, we:
   //         * Recur into the child node of the clade if it is not a leaf
   //         * Apply VisitEdge to the edge
-  //     * Apply AfterNodeClade
   // * Apply AfterNode
   template <typename TraversalActionT>
   void DepthFirstWithAction(const TraversalActionT &action) const {
@@ -117,7 +116,6 @@ class SubsplitDAG {
       }
       action.VisitEdge(node_id, child_id, rotated);
     }
-    action.AfterNodeClade(node_id, rotated);
   };
 
   // #288: consider renaming these re leafward and rootward.

@@ -74,9 +74,6 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
         // VisitEdge.
         operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
       },
-      // AfterNodeClade
-      // Do nothing.
-      [](size_t node_id, bool rotated) {},
       // VisitEdge
       // Optimize each branch for a given node-clade and accumulate the resulting P PLVs
       // in the parent node.
