@@ -13,8 +13,8 @@ class TidySubsplitDAG : public SubsplitDAG {
   TidySubsplitDAG();
   explicit TidySubsplitDAG(const RootedTreeCollection &tree_collection);
 
-  EigenColArrayXbRef AboveNode(size_t node_idx);
-  EigenRowArrayXbRef BelowNode(size_t node_idx);
+  EigenArrayXbRef AboveNode(size_t node_idx);
+  EigenArrayXbRef BelowNode(size_t node_idx);
 
  private:
   // above_.(i,j) is true if i is above j, otherwise it's false.
