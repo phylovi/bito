@@ -6,6 +6,11 @@
 
 using namespace GPOperations;  // NOLINT
 
+GPDAG::PLVType RPLVType(bool rotated) {
+  return rotated ? GPDAG::PLVType::R_TILDE : GPDAG::PLVType::R;
+}
+
+// The PLVTypes are documented where the enum is defined in the header file.
 size_t GPDAG::GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx) {
   switch (plv_type) {
     case PLVType::P:
@@ -38,12 +43,6 @@ GPOperation GPDAG::RUpdateOfRotated(size_t node_id, bool rotated) const {
                             GetPLVIndex(PLVType::P_HAT, node_id)};
 }
 
-void GPDAG::UpdateRPLVs(size_t node_id, GPOperationVector &operations) const {
-  // Update r(s) and r_tilde(s)
-  operations.push_back(RUpdateOfRotated(node_id, false));
-  operations.push_back(RUpdateOfRotated(node_id, true));
-}
-
 GPOperationVector GPDAG::BranchLengthOptimization() const {
   GPOperationVector operations;
   DepthFirstWithAction(SubsplitDAGTraversalAction(
@@ -53,19 +52,27 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
       [this, &operations](size_t node_id) {
         if (!GetDagNode(node_id)->IsRoot()) {
           UpdateRHat(node_id, operations);
+          operations.push_back(RUpdateOfRotated(node_id, false));
+          operations.push_back(RUpdateOfRotated(node_id, true));
         }
       },
       // AfterNode
       // P is the elementwise product ("o") of the two PLVs for the node-clades.
       [this, &operations](size_t node_id) {
+        // We just finished the rotated version, so we make the corresponding update for
+        // R tilde.
+        // operations.push_back(RUpdateOfRotated(node_id, true));
         operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
                                       GetPLVIndex(PLVType::P_HAT, node_id),
                                       GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
       },
       // BeforeNodeClade
-      // Zero out the node-clade PLV in preparation for filling it as part of VisitEdge.
       [this, &operations](size_t node_id, bool rotated) {
         const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
+        // Update the R vector corresponding to our rotation status.
+        // operations.push_back(RUpdateOfRotated(node_id, rotated));
+        // Zero out the node-clade PLV in preparation for filling it as part of
+        // VisitEdge.
         operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // AfterNodeClade
@@ -110,7 +117,9 @@ void GPDAG::DeprecatedScheduleBranchLengthOptimization(
   }
 
   if (!node->IsRoot()) {
-    UpdateRPLVs(node_id, operations);
+    UpdateRHat(node_id, operations);
+    operations.push_back(RUpdateOfRotated(node_id, false));
+    operations.push_back(RUpdateOfRotated(node_id, true));
   }
 
   DeprecatedOptimizeBranchLengthsUpdatePHatAndPropagateRPLV(node, false, visited_nodes,

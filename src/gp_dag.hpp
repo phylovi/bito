@@ -15,10 +15,11 @@
 
 class GPDAG : public SubsplitDAG {
  public:
+  // We store 6 PLVs per subsplit, and index them according to this enum.
+  // The notation is as described in the manuscript, but with a slight shift in the
+  // position of the tilde. For example P_HAT_TILDE for a subsplit s is
+  // \hat{p}(\tilde{s}).
   enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
-  PLVType RPLVType(bool rotated) const {
-    return rotated ? PLVType::R_TILDE : PLVType::R;
-  }
 
   using SubsplitDAG::SubsplitDAG;
 
@@ -71,7 +72,6 @@ class GPDAG : public SubsplitDAG {
   void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
                                       bool rotated,
                                       GPOperationVector &operations) const;
-  void UpdateRPLVs(size_t node_id, GPOperationVector &operations) const;
   // The following two functions were the version of branch length optimization we did
   // before adding the traversals based on Actions. Kept for testing.
   // This function visits and optimizes branches in depth first fashion.
