@@ -34,34 +34,33 @@ size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t src_idx) const {
   return GetPLVIndexStatic(plv_type, dag_nodes_.size(), src_idx);
 }
 
+// The R PLV update that corresponds to our rotation status.
 GPOperation GPDAG::RUpdateOfRotated(size_t node_id, bool rotated) const {
-  return rotated ? Multiply{GetPLVIndex(PLVType::R, node_id),
+  return rotated ? Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
                             GetPLVIndex(PLVType::R_HAT, node_id),
-                            GetPLVIndex(PLVType::P_HAT_TILDE, node_id)}
-                 : Multiply{GetPLVIndex(PLVType::R_TILDE, node_id),
+                            GetPLVIndex(PLVType::P_HAT, node_id)}
+                 : Multiply{GetPLVIndex(PLVType::R, node_id),
                             GetPLVIndex(PLVType::R_HAT, node_id),
-                            GetPLVIndex(PLVType::P_HAT, node_id)};
+                            GetPLVIndex(PLVType::P_HAT_TILDE, node_id)};
 }
 
+// After this traversal, we will have optimized branch lengths, but we cannot assume
+// that all of the PLVs are in a valid state.
+//
+// Update the terminology in this function as part of #288.
 GPOperationVector GPDAG::BranchLengthOptimization() const {
   GPOperationVector operations;
   DepthFirstWithAction(SubsplitDAGTraversalAction(
-      // Update as part of #288.
       // BeforeNode
       // Update the R PLVs for each node-clade.
       [this, &operations](size_t node_id) {
         if (!GetDagNode(node_id)->IsRoot()) {
           UpdateRHat(node_id, operations);
-          operations.push_back(RUpdateOfRotated(node_id, false));
-          operations.push_back(RUpdateOfRotated(node_id, true));
         }
       },
       // AfterNode
       // P is the elementwise product ("o") of the two PLVs for the node-clades.
       [this, &operations](size_t node_id) {
-        // We just finished the rotated version, so we make the corresponding update for
-        // R tilde.
-        // operations.push_back(RUpdateOfRotated(node_id, true));
         operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
                                       GetPLVIndex(PLVType::P_HAT, node_id),
                                       GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
@@ -69,24 +68,15 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
       // BeforeNodeClade
       [this, &operations](size_t node_id, bool rotated) {
         const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
-        // Update the R vector corresponding to our rotation status.
-        // operations.push_back(RUpdateOfRotated(node_id, rotated));
+        // Update the R PLV corresponding to our rotation status.
+        operations.push_back(RUpdateOfRotated(node_id, rotated));
         // Zero out the node-clade PLV in preparation for filling it as part of
         // VisitEdge.
         operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // AfterNodeClade
-      // Update the R PLV for the other node-clade than the one that we just visited.
-      [this, &operations](size_t node_id, bool rotated) {
-        const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
-        const PLVType r_plv_type = rotated ? PLVType::R : PLVType::R_TILDE;
-        // Depending on rotated, either:
-        // r_tilde(t) = r_hat(t) \circ p_hat(t)
-        // r(t) = r_hat(t) \circ p_hat_tilde(t)
-        operations.push_back(Multiply{GetPLVIndex(r_plv_type, node_id),
-                                      GetPLVIndex(PLVType::R_HAT, node_id),
-                                      GetPLVIndex(p_hat_plv_type, node_id)});
-      },
+      // Do nothing.
+      [](size_t node_id, bool rotated) {},
       // VisitEdge
       // Optimize each branch for a given node-clade and accumulate the resulting P PLVs
       // in the parent node.
