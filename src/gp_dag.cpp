@@ -351,9 +351,8 @@ void GPDAG::UpdateRHat(size_t node_id, bool rotated,
   GPOperationVector new_operations;
   for (size_t parent_id : parent_nodes) {
     const auto parent_node = GetDagNode(parent_id);
-    auto parent_subsplit =
-        rotated ? parent_node->GetBitset().RotateSubsplit() : parent_node->GetBitset();
-    size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, node->GetBitset());
+    size_t gpcsp_idx =
+        GetGPCSPIndex(parent_node->GetBitset(rotated), node->GetBitset());
     new_operations.push_back(
         IncrementWithWeightedEvolvedPLV{GetPLVIndex(PLVType::R_HAT, node_id), gpcsp_idx,
                                         GetPLVIndex(src_plv_type, parent_id)});
