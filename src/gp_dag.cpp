@@ -44,6 +44,7 @@ GPOperation GPDAG::RUpdateOfRotated(size_t node_id, bool rotated) const {
                             GetPLVIndex(PLVType::P_HAT_TILDE, node_id)};
 }
 
+// Optimize branch lengths.
 // After this traversal, we will have optimized branch lengths, but we cannot assume
 // that all of the PLVs are in a valid state.
 //
@@ -52,15 +53,15 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
   GPOperationVector operations;
   DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
-      // Update the R PLVs for each node-clade.
       [this, &operations](size_t node_id) {
         if (!GetDagNode(node_id)->IsRoot()) {
+          // Update R-hat if we're not at the root.
           UpdateRHat(node_id, operations);
         }
       },
       // AfterNode
-      // P is the elementwise product ("o") of the two PLVs for the node-clades.
       [this, &operations](size_t node_id) {
+        // Make P the elementwise product ("o") of the two P PLVs for the node-clades.
         operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
                                       GetPLVIndex(PLVType::P_HAT, node_id),
                                       GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
@@ -70,14 +71,13 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
         const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
         // Update the R PLV corresponding to our rotation status.
         operations.push_back(RUpdateOfRotated(node_id, rotated));
-        // Zero out the node-clade PLV in preparation for filling it as part of
-        // VisitEdge.
+        // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
         operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // VisitEdge
-      // Optimize each branch for a given node-clade and accumulate the resulting P PLVs
-      // in the parent node.
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+        // Optimize each branch for a given node-clade and accumulate the resulting
+        // P-hat PLVs in the parent node.
         OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
       }));
   return operations;
