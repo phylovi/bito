@@ -63,7 +63,8 @@ class GPDAG : public SubsplitDAG {
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
 
-  void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
+  // Compute R_HAT(s) = \sum_{t : s < t} P'(s|t) r(t) prior(s|t)
+  void UpdateRHat(size_t node_id, GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
                                    GPOperationVector &operations) const;
   void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,

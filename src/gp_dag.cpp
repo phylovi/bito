@@ -31,9 +31,7 @@ size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t src_idx) const {
 
 void GPDAG::UpdateRPLVs(size_t node_id, GPOperationVector &operations) const {
   // Compute R_HAT(s) = \sum_{t : s < t} q(s|t) P(s|t) r(t).
-  operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, node_id)});
-  UpdateRHat(node_id, false, operations);
-  UpdateRHat(node_id, true, operations);
+  UpdateRHat(node_id, operations);
 
   // Update r(s) and r_tilde(s)
   operations.push_back(Multiply{GetPLVIndex(PLVType::R, node_id),
@@ -342,20 +340,20 @@ void GPDAG::OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
   }
 }
 
-void GPDAG::UpdateRHat(size_t node_id, bool rotated,
-                       GPOperationVector &operations) const {
-  const auto node = GetDagNode(node_id);
-  PLVType src_plv_type = rotated ? PLVType::R_TILDE : PLVType::R;
-  const auto parent_nodes =
-      rotated ? node->GetRootwardRotated() : node->GetRootwardSorted();
+void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
+  operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, node_id)});
   GPOperationVector new_operations;
-  for (size_t parent_id : parent_nodes) {
-    const auto parent_node = GetDagNode(parent_id);
-    size_t gpcsp_idx =
-        GetGPCSPIndex(parent_node->GetBitset(rotated), node->GetBitset());
-    new_operations.push_back(
-        IncrementWithWeightedEvolvedPLV{GetPLVIndex(PLVType::R_HAT, node_id), gpcsp_idx,
-                                        GetPLVIndex(src_plv_type, parent_id)});
+  const auto node = GetDagNode(node_id);
+  for (const bool rotated : {false, true}) {
+    PLVType src_plv_type = rotated ? PLVType::R_TILDE : PLVType::R;
+    for (size_t parent_id : node->GetRootward(rotated)) {
+      const auto parent_node = GetDagNode(parent_id);
+      size_t gpcsp_idx =
+          GetGPCSPIndex(parent_node->GetBitset(rotated), node->GetBitset());
+      new_operations.push_back(IncrementWithWeightedEvolvedPLV{
+          GetPLVIndex(PLVType::R_HAT, node_id), gpcsp_idx,
+          GetPLVIndex(src_plv_type, parent_id)});
+    }
   }
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
