@@ -15,10 +15,13 @@ using EigenVectorXd = Eigen::VectorXd;
 using EigenVectorXi = Eigen::VectorXi;
 using EigenMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+using EigenMatrixXb = Eigen::Matrix<bool, Eigen::Dynamic, Eigen::Dynamic>;
 using EigenVectorXdRef = Eigen::Ref<EigenVectorXd>;
 using EigenMatrixXdRef = Eigen::Ref<EigenMatrixXd>;
 using EigenConstVectorXdRef = Eigen::Ref<const EigenVectorXd>;
 using EigenConstMatrixXdRef = Eigen::Ref<const EigenMatrixXd>;
+using EigenColArrayXbRef = Eigen::Ref<Eigen::Array<bool, Eigen::Dynamic, 1>>;
+using EigenRowArrayXbRef = Eigen::Ref<Eigen::Array<bool, 1, Eigen::Dynamic>>;
 
 const static Eigen::IOFormat EigenCSVFormat(Eigen::FullPrecision, Eigen::DontAlignCols,
                                             ", ", "\n");
