@@ -4,7 +4,14 @@
 // A node in a directed acyclic graph representing a collection of subsplits with their
 // corresponding parent-child relationships.
 //
-// Each node represents a subsplit, which is stored as a bitset in `subsplit_`.
+// Each node represents a sorted osubsplit, which is stored as a bitset in `subsplit_`.
+// The leafward edges are divided into two groups based on if they split apart the
+// right clade (in which case they are called sorted children) or if they split apart
+// the left clade (in which case they are called rotated children).
+// Similarly, the rootward edges are divided into two groups based on if the child of
+// the edge splits apart the right clade of the parent (in which case they are called
+// sorted parents) or if they split apart the left clade of the parent (in which case
+// they are called rotated parents).
 
 #ifndef SRC_SUBSPLIT_DAG_NODE_HPP_
 #define SRC_SUBSPLIT_DAG_NODE_HPP_

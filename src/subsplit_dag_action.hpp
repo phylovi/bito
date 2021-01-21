@@ -22,10 +22,8 @@ auto SubsplitDAGTraversalAction(Args&&... args) {
     TypeOf<1, Args...> AfterNode;
     // Applied before visiting the set of edges below a (node, clade) pair.
     TypeOf<2, Args...> BeforeNodeClade;
-    // Applied after visiting the set of edges below a (node, clade) pair.
-    TypeOf<3, Args...> AfterNodeClade;
     // Applied for each edge.
-    TypeOf<4, Args...> VisitEdge;
+    TypeOf<3, Args...> VisitEdge;
   };
   return Impl{std::forward<Args>(args)...};
 }

@@ -15,10 +15,11 @@
 
 class GPDAG : public SubsplitDAG {
  public:
+  // We store 6 PLVs per subsplit, and index them according to this enum.
+  // The notation is as described in the manuscript, but with a slight shift in the
+  // position of the tilde. For example P_HAT_TILDE for a subsplit s is
+  // \hat{p}(\tilde{s}).
   enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
-  PLVType RPLVType(bool rotated) const {
-    return rotated ? PLVType::R_TILDE : PLVType::R;
-  }
 
   using SubsplitDAG::SubsplitDAG;
 
@@ -28,8 +29,6 @@ class GPDAG : public SubsplitDAG {
 
   // Schedule branch length optimization.
   [[nodiscard]] GPOperationVector BranchLengthOptimization() const;
-  // The old version of branch length optimization, kept for testing purposes.
-  [[nodiscard]] GPOperationVector OldBranchLengthOptimization() const;
   // Compute likelihood values l(s|t) for each child subsplit s by visiting
   // parent subsplit t and generating Likelihood operations for each PCSP s|t.
   // Compute likelihood values l(s) for each rootsplit s by calling
@@ -63,24 +62,14 @@ class GPDAG : public SubsplitDAG {
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
 
-  void UpdateRHat(size_t node_id, bool rotated, GPOperationVector &operations) const;
+  GPOperation RUpdateOfRotated(size_t node_id, bool rotated) const;
+  // Compute R_HAT(s) = \sum_{t : s < t} P'(s|t) r(t) prior(s|t)
+  void UpdateRHat(size_t node_id, GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
                                    GPOperationVector &operations) const;
   void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
                                       bool rotated,
                                       GPOperationVector &operations) const;
-  void UpdateRPLVs(size_t node_id, GPOperationVector &operations) const;
-  // The following two functions were the version of branch length optimization we did
-  // before adding the traversals based on Actions. Kept for testing.
-  // This function visits and optimizes branches in depth first fashion.
-  // It updates p-PLVs and r-PLVs to reflect/propagate the results
-  // of branch length optimization from/to other parts of the tree.
-  void DeprecatedScheduleBranchLengthOptimization(
-      size_t node_id, std::unordered_set<size_t> &visited_nodes,
-      GPOperationVector &operations) const;
-  void DeprecatedOptimizeBranchLengthsUpdatePHatAndPropagateRPLV(
-      const SubsplitDAGNode *node, bool rotated,
-      std::unordered_set<size_t> &visited_nodes, GPOperationVector &operations) const;
 };
 
 #endif  // SRC_GP_DAG_HPP_
