@@ -15,8 +15,11 @@ class TidySubsplitDAG : public SubsplitDAG {
   explicit TidySubsplitDAG(EigenMatrixXb above);
   explicit TidySubsplitDAG(const RootedTreeCollection &tree_collection);
 
-  EigenArrayXb AboveNode(size_t node_idx);
   EigenArrayXbRef BelowNode(size_t node_idx);
+  EigenArrayXb AboveNode(size_t node_idx);
+  void JoinBelow(size_t dst, size_t src1, size_t src2);
+
+  void PrintBelowMatrix();
 
  private:
   // above_.(i,j) is true if i is above j, otherwise it's false.
@@ -25,22 +28,14 @@ class TidySubsplitDAG : public SubsplitDAG {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TidySubsplitDAG: slicing") {
-  EigenMatrixXb above(3, 3);
-  above.setConstant(false);
-  above << true, false, true,  //
-      false, true, true,       //
-      false, false, false;
-  // std::cout << GenericToString(above) << std::endl;
+  EigenMatrixXb above(5, 5);
+  above.setIdentity();
   auto dag = TidySubsplitDAG(above);
-  // AboveNode is working
-  std::cout << GenericToString(dag.AboveNode(0));
-  std::cout << GenericToString(dag.AboveNode(1));
-  std::cout << GenericToString(dag.AboveNode(2));
-  std::cout << std::endl;
-  // BelowNode is not
-  std::cout << GenericToString(dag.BelowNode(0));
-  std::cout << GenericToString(dag.BelowNode(1));
-  std::cout << GenericToString(dag.BelowNode(2));
+
+  dag.JoinBelow(1, 0, 2);
+  dag.JoinBelow(3, 1, 4);
+
+  dag.PrintBelowMatrix();
   // CHECK_EQ(GenericToString(dag.AboveNode(1)), "[0, 1, 0]\n");
   // CHECK_EQ(GenericToString(dag.BelowNode(1)), "[0, 1, 1]\n");
 }

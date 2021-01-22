@@ -17,3 +17,14 @@ EigenArrayXbRef TidySubsplitDAG::BelowNode(size_t node_idx) {
 EigenArrayXb TidySubsplitDAG::AboveNode(size_t node_idx) {
   return above_.row(node_idx).array();
 }
+
+void TidySubsplitDAG::JoinBelow(size_t dst, size_t src1, size_t src2) {
+  BelowNode(dst) = BelowNode(dst).max(BelowNode(src1));
+  BelowNode(dst) = BelowNode(dst).max(BelowNode(src2));
+}
+
+void TidySubsplitDAG::PrintBelowMatrix() {
+  for (size_t i = 0; i < above_.rows(); i++) {
+    std::cout << above_.row(i) << std::endl;
+  }
+}
