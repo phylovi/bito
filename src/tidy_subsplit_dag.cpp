@@ -5,27 +5,38 @@
 
 TidySubsplitDAG::TidySubsplitDAG() : SubsplitDAG() {}
 
-TidySubsplitDAG::TidySubsplitDAG(size_t node_count)
-    : above_(EigenMatrixXb::Identity(node_count, node_count)){};
-
 TidySubsplitDAG::TidySubsplitDAG(const RootedTreeCollection &tree_collection)
     : SubsplitDAG(tree_collection) {}
 
-EigenArrayXbRef TidySubsplitDAG::BelowNode(size_t node_idx) {
-  return above_.col(node_idx).array();
+TidySubsplitDAG::TidySubsplitDAG(size_t node_count)
+    : above_sorted_(EigenMatrixXb::Identity(node_count, node_count)),
+      above_rotated_(EigenMatrixXb::Identity(node_count, node_count)){};
+
+EigenArrayXb TidySubsplitDAG::BelowNode(size_t node_idx) {
+  return BelowNode(false, node_idx).max(BelowNode(true, node_idx));
+}
+
+EigenArrayXbRef TidySubsplitDAG::BelowNode(bool rotated, size_t node_idx) {
+  if (rotated) {
+    return above_rotated_.col(node_idx).array();
+  } else {
+    return above_sorted_.col(node_idx).array();
+  }
 }
 
 EigenArrayXb TidySubsplitDAG::AboveNode(size_t node_idx) {
-  return above_.row(node_idx).array();
+  return AboveNode(false, node_idx).max(AboveNode(true, node_idx));
 }
 
-void TidySubsplitDAG::JoinBelow(size_t dst, size_t src1, size_t src2) {
-  BelowNode(dst) = BelowNode(dst).max(BelowNode(src1));
-  BelowNode(dst) = BelowNode(dst).max(BelowNode(src2));
-}
-
-void TidySubsplitDAG::PrintBelowMatrix() {
-  for (size_t i = 0; i < above_.rows(); i++) {
-    std::cout << above_.row(i) << std::endl;
+EigenArrayXb TidySubsplitDAG::AboveNode(bool rotated, size_t node_idx) {
+  if (rotated) {
+    return above_rotated_.row(node_idx).array();
+  } else {
+    return above_sorted_.row(node_idx).array();
   }
+}
+
+void TidySubsplitDAG::SetBelow(size_t dst_idx, bool dst_rotated, size_t src_idx) {
+  BelowNode(dst_rotated, dst_idx) =
+      BelowNode(dst_rotated, dst_idx).max(BelowNode(src_idx));
 }
