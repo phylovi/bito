@@ -85,7 +85,6 @@ TidySubsplitDAG TidySubsplitDAG::TrivialExample() {
   // ((0,1),2)
   auto topology = Node::Join(Node::Join(Node::Leaf(0), Node::Leaf(1)), Node::Leaf(2));
   topology->Polish();
-  std::cout << topology->Newick(std::nullopt, std::nullopt, true) << std::endl;
   return TidySubsplitDAG(3, {{topology, 1}});
 }
 

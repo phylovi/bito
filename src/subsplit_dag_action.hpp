@@ -28,4 +28,22 @@ auto SubsplitDAGTraversalAction(Args&&... args) {
   return Impl{std::forward<Args>(args)...};
 }
 
+// An action to be performed as part of a traversal of a Tidy subsplit DAG.
+template <typename... Args>
+auto TidySubsplitDAGTraversalAction(Args&&... args) {
+  struct Impl {
+    // Applied just before visiting a node.
+    TypeOf<0, Args...> BeforeNode;
+    // Applied after visiting a node.
+    TypeOf<1, Args...> AfterNode;
+    // Applied before visiting the set of edges below a (node, clade) pair.
+    TypeOf<2, Args...> BeforeNodeClade;
+    // Applied for each edge.
+    TypeOf<3, Args...> ModifyEdge;
+    // Cleans up the mess left by ModifyEdge.
+    TypeOf<4, Args...> UpdateEdge;
+  };
+  return Impl{std::forward<Args>(args)...};
+}
+
 #endif  // SRC_SUBSPLIT_DAG_ACTION_HPP_
