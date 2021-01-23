@@ -9,14 +9,19 @@
 SubsplitDAG::SubsplitDAG()
     : taxon_count_(0), gpcsp_count_without_fake_subsplits_(0), topology_count_(0.) {}
 
-SubsplitDAG::SubsplitDAG(const RootedTreeCollection &tree_collection) : SubsplitDAG() {
-  ProcessTrees(tree_collection);
+SubsplitDAG::SubsplitDAG(size_t taxon_count,
+                         const Node::TopologyCounter &topology_counter)
+    : taxon_count_(taxon_count) {
+  ProcessTopologyCounter(topology_counter);
   BuildNodes();
   BuildEdges();
   ExpandRootsplitsInIndexer();
   AddFakeSubsplitsToGPCSPIndexerAndParentToRange();
   CountTopologies();
 }
+
+SubsplitDAG::SubsplitDAG(const RootedTreeCollection &tree_collection)
+    : SubsplitDAG(tree_collection.TaxonCount(), tree_collection.TopologyCounter()) {}
 
 void SubsplitDAG::CountTopologies() {
   topology_count_below_ = EigenVectorXd::Ones(NodeCount());
@@ -295,10 +300,8 @@ std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,
   return children_subsplits;
 }
 
-void SubsplitDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
-  taxon_count_ = tree_collection.TaxonCount();
-  const auto topology_counter = tree_collection.TopologyCounter();
-
+void SubsplitDAG::ProcessTopologyCounter(
+    const Node::TopologyCounter &topology_counter) {
   std::tie(rootsplits_, gpcsp_indexer_, index_to_child_, parent_to_range_,
            gpcsp_count_without_fake_subsplits_) =
       SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),
