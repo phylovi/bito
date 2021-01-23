@@ -49,10 +49,11 @@ TEST_CASE("TidySubsplitDAG: slicing") {
   auto manual_dag = TidySubsplitDAG(5);
 
   // The tree ((0,1)3,2)4:
+  // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769
   manual_dag.SetBelow(3, true, 0);
   manual_dag.SetBelow(3, false, 1);
-  manual_dag.SetBelow(4, true, 3);
-  manual_dag.SetBelow(4, false, 2);
+  manual_dag.SetBelow(4, true, 2);
+  manual_dag.SetBelow(4, false, 3);
 
   CHECK_EQ(GenericToString(manual_dag.AboveNode(0)), "[1, 0, 0, 1, 1]\n");
   CHECK_EQ(GenericToString(manual_dag.AboveNode(1)), "[0, 1, 0, 1, 1]\n");
@@ -61,8 +62,10 @@ TEST_CASE("TidySubsplitDAG: slicing") {
   CHECK_EQ(GenericToString(manual_dag.AboveNode(4)), "[0, 0, 0, 0, 1]\n");
 
   auto trivial_dag = TidySubsplitDAG::TrivialExample();
-  std::cout << trivial_dag.AboveMatricesAsString() << std::endl;
-  std::cout << trivial_dag.ToDot() << std::endl;
+  CHECK_EQ(trivial_dag.AboveMatricesAsString(), manual_dag.AboveMatricesAsString());
+
+  auto motivating_dag = TidySubsplitDAG::MotivatingExample();
+  std::cout << motivating_dag.ToDot() << std::endl;
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
