@@ -173,6 +173,12 @@ class Node {
   // 3: (0,(1,(2,3)))       (0,(1,(2,3)4)5)6;
   static NodePtrVec ExampleTopologies();
 
+  // 2 instances of (0,(1,(2,3)))
+  // 1 instance of ((0,(2,3)),1)
+  // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
+  // Update during #288
+  static TopologyCounter TidySubsplitDAGMotivatingExampleTopologyCounter();
+
   // Make a maximally-unbalanced "ladder" tree.
   static NodePtr Ladder(uint32_t leaf_count);
 
@@ -265,7 +271,7 @@ TEST_CASE("Node") {
   Node::NodePtr t2 = examples[2];       // 2: (0,2,(1,3))
   Node::NodePtr t3 = examples[3];       // 3: (0,(1,(2,3)))
   // ((((0,1)7,2)8,(3,4)9)10,5,6)11;
-  Node::NodePtr t4 = Node::OfParentIdVector({7, 7, 8, 9, 9, 11, 11, 8, 10, 10, 11});
+  Node::NodePtr tbig = Node::OfParentIdVector({7, 7, 8, 9, 9, 11, 11, 8, 10, 10, 11});
 
   std::vector<std::string> triples;
   auto collect_triple = [&triples](const Node* node, const Node* sister,
@@ -273,7 +279,7 @@ TEST_CASE("Node") {
     triples.push_back(std::to_string(node->Id()) + ", " + std::to_string(sister->Id()) +
                       ", " + std::to_string(parent->Id()));
   };
-  t4->TriplePreorder(collect_triple, collect_triple);
+  tbig->TriplePreorder(collect_triple, collect_triple);
   std::vector<std::string> correct_triples(
       {"10, 5, 6", "8, 9, 10", "7, 2, 8", "0, 1, 7", "1, 0, 7", "2, 7, 8", "9, 8, 10",
        "3, 4, 9", "4, 3, 9", "5, 6, 10", "6, 10, 5"});

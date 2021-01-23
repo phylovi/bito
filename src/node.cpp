@@ -510,11 +510,18 @@ Node::NodePtrVec Node::ExampleTopologies() {
       // 2: (0,2,(1,3))
       Join(std::vector<NodePtr>({Leaf(0), Leaf(2), Join(Leaf(1), Leaf(3))})),
       // 3: (0,(1,(2,3)))
-      Join(std::vector<NodePtr>({Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))}))};
+      Join(std::vector<NodePtr>({Leaf(0), Join(Leaf(1), Join(Leaf(2), Leaf(3)))})),
+      // 4: ((0,(2,3)),1)
+      Join(std::vector<NodePtr>({Join(Leaf(0), Join(Leaf(2), Leaf(3))), Leaf(1)}))};
   for (auto& topology : topologies) {
     topology->Polish();
   }
   return topologies;
+}
+
+static Node::TopologyCounter TidySubsplitDAGMotivatingExampleTopologyCounter() {
+  auto topologies = Node::ExampleTopologies();
+  return {{topologies[3], 2}, {topologies[4], 1}};
 }
 
 Node::NodePtr Node::Ladder(uint32_t leaf_count) {
