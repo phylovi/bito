@@ -5,7 +5,8 @@
 
 TidySubsplitDAG::TidySubsplitDAG() : SubsplitDAG() {}
 
-TidySubsplitDAG::TidySubsplitDAG(EigenMatrixXb above) : above_(above){};
+TidySubsplitDAG::TidySubsplitDAG(size_t node_count)
+    : above_(EigenMatrixXb::Identity(node_count, node_count)){};
 
 TidySubsplitDAG::TidySubsplitDAG(const RootedTreeCollection &tree_collection)
     : SubsplitDAG(tree_collection) {}

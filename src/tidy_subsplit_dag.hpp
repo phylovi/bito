@@ -12,7 +12,7 @@ class TidySubsplitDAG : public SubsplitDAG {
  public:
   TidySubsplitDAG();
   // This constructor is really just meant for testing.
-  explicit TidySubsplitDAG(EigenMatrixXb above);
+  explicit TidySubsplitDAG(size_t node_count);
   explicit TidySubsplitDAG(const RootedTreeCollection &tree_collection);
 
   // What nodes are above or below the specified node? We consider a node to be both
@@ -30,9 +30,7 @@ class TidySubsplitDAG : public SubsplitDAG {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TidySubsplitDAG: slicing") {
-  EigenMatrixXb above(5, 5);
-  above.setIdentity();
-  auto dag = TidySubsplitDAG(above);
+  auto dag = TidySubsplitDAG(5);
 
   // The tree ((0,1)3,2)4:
   dag.JoinBelow(3, 0, 1);
