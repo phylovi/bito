@@ -26,11 +26,18 @@ class TidySubsplitDAG : public SubsplitDAG {
   // described by (dst_rotated, dst_idx).
   void SetBelow(size_t dst_idx, bool dst_rotated, size_t src_idx);
 
+  // (0,(1,(2,3))) and ((0,(2,3)),1)
+  // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
+  // Update during #288
+  static TidySubsplitDAG MotivatingExample();
+
  private:
   // above_rotated_.(i,j) is true iff i,true is above j.
   EigenMatrixXb above_rotated_;
   // above_sorted.(i,j) is true iff i,false is above j.
   EigenMatrixXb above_sorted_;
+
+  TidySubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

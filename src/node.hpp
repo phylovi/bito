@@ -173,12 +173,6 @@ class Node {
   // 3: (0,(1,(2,3)))       (0,(1,(2,3)4)5)6;
   static NodePtrVec ExampleTopologies();
 
-  // 2 instances of (0,(1,(2,3)))
-  // 1 instance of ((0,(2,3)),1)
-  // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
-  // Update during #288
-  static TopologyCounter TidySubsplitDAGMotivatingExampleTopologyCounter();
-
   // Make a maximally-unbalanced "ladder" tree.
   static NodePtr Ladder(uint32_t leaf_count);
 

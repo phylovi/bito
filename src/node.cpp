@@ -519,11 +519,6 @@ Node::NodePtrVec Node::ExampleTopologies() {
   return topologies;
 }
 
-static Node::TopologyCounter TidySubsplitDAGMotivatingExampleTopologyCounter() {
-  auto topologies = Node::ExampleTopologies();
-  return {{topologies[3], 2}, {topologies[4], 1}};
-}
-
 Node::NodePtr Node::Ladder(uint32_t leaf_count) {
   Assert(leaf_count > 0, "leaf_count should be positive in Node::Ladder.");
   NodePtr node = Leaf(0);
