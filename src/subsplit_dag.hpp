@@ -38,6 +38,7 @@ class SubsplitDAG {
 
   void Print() const;
   void PrintGPCSPIndexer() const;
+  std::string ToDot() const;
 
   const BitsetSizeMap &GetGPCSPIndexer() const;
   const BitsetSizePairMap &GetParentToRange() const;
@@ -175,6 +176,7 @@ class SubsplitDAG {
   EigenVectorXd topology_count_below_;
 
   // TODO Make TopologyCounter accessible without Node:: ?
+  // TODO do we want to verify taxon count?
   SubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter);
 
   // Gives the child subsplits of a given parent subsplit, optionally including fake

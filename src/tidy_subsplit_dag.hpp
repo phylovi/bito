@@ -26,9 +26,11 @@ class TidySubsplitDAG : public SubsplitDAG {
   // described by (dst_rotated, dst_idx).
   void SetBelow(size_t dst_idx, bool dst_rotated, size_t src_idx);
 
-  static TidySubsplitDAG TrivialExample();
+  std::string AboveMatricesAsString();
 
-  // (0,(1,(2,3))) and ((0,(2,3)),1)
+  // From ((0,1)2)
+  static TidySubsplitDAG TrivialExample();
+  // From (0,(1,(2,3))) and ((0,(2,3)),1)
   // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
   // Update during #288
   static TidySubsplitDAG MotivatingExample();
@@ -57,6 +59,10 @@ TEST_CASE("TidySubsplitDAG: slicing") {
   CHECK_EQ(GenericToString(manual_dag.AboveNode(2)), "[0, 0, 1, 0, 1]\n");
   CHECK_EQ(GenericToString(manual_dag.AboveNode(3)), "[0, 0, 0, 1, 1]\n");
   CHECK_EQ(GenericToString(manual_dag.AboveNode(4)), "[0, 0, 0, 0, 1]\n");
+
+  auto trivial_dag = TidySubsplitDAG::TrivialExample();
+  std::cout << trivial_dag.AboveMatricesAsString() << std::endl;
+  std::cout << trivial_dag.ToDot() << std::endl;
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

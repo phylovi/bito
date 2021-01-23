@@ -71,6 +71,37 @@ void SubsplitDAG::PrintGPCSPIndexer() const {
   }
 }
 
+std::string SubsplitDAG::ToDot() const {
+  std::stringstream ss;
+  ss << "digraph g {\n";
+  ss << "node [shape=record];\n";
+  DepthFirstWithAction(SubsplitDAGTraversalAction(
+      // BeforeNode
+      [&ss](size_t node_id) {
+        ss << node_id << "[label=\"<f0>|<f1>" << node_id << "|<f2>\"]\n";
+      },
+      // AfterNode
+      [](size_t node_id) {},
+      // BeforeNodeClade
+      [](size_t node_id, bool rotated) {},
+      // VisitEdge
+      [this, &ss](size_t node_id, size_t child_id, bool rotated) {
+        if (GetDagNode(child_id)->IsLeaf()) {
+          ss << child_id << "[label=\"<f1>" << child_id << "\"]\n";
+        }
+        ss << "\"" << node_id << "\":";
+        if (rotated) {
+          ss << "f0";
+        } else {
+          ss << "f2";
+        }
+        ss << "->\"";
+        ss << child_id << "\":f1;\n";
+      }));
+  ss << "}";
+  return ss.str();
+}
+
 const BitsetSizeMap &SubsplitDAG::GetGPCSPIndexer() const { return gpcsp_indexer_; }
 const BitsetSizePairMap &SubsplitDAG::GetParentToRange() const {
   return parent_to_range_;
