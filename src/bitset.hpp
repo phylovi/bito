@@ -68,7 +68,7 @@ class Bitset {
   std::optional<uint32_t> SingletonOption() const;
   // Get the number of bits set to be 1;
   size_t Count() const;
-  std::string ToIndexString() const;
+  std::string ToIndexSetString() const;
 
   // These methods require the bitset to be a "subsplit bitset" of even length,
   // consisting of two equal sized "chunks" representing the two sides of the
@@ -235,8 +235,8 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("0100").Count(), 1);
   CHECK_EQ(Bitset("011101").Count(), 4);
 
-  CHECK_EQ(Bitset("1001").ToIndexString(), "0,3");
-  CHECK_EQ(Bitset("0000").ToIndexString(), "");
+  CHECK_EQ(Bitset("1001").ToIndexSetString(), "0,3");
+  CHECK_EQ(Bitset("0000").ToIndexSetString(), "");
 
   auto p = Bitset("000111");
   CHECK_EQ(p.SplitChunk(0), Bitset("000"));

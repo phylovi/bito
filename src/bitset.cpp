@@ -185,7 +185,7 @@ std::optional<uint32_t> Bitset::SingletonOption() const {
 
 size_t Bitset::Count() const { return std::count(value_.begin(), value_.end(), true); }
 
-std::string Bitset::ToIndexString() const {
+std::string Bitset::ToIndexSetString() const {
   std::string str;
   for (size_t i = 0; i < size(); i++) {
     if (value_[i]) {
@@ -240,9 +240,9 @@ std::string Bitset::SubsplitToString() const { return ToStringChunked(2); }
 
 std::string Bitset::SubsplitToIndexSetString() const {
   std::string str;
-  str += SubsplitChunk(0).ToIndexString();
+  str += SubsplitChunk(0).ToIndexSetString();
   str += "|";
-  str += SubsplitChunk(1).ToIndexString();
+  str += SubsplitChunk(1).ToIndexSetString();
   return str;
 }
 
