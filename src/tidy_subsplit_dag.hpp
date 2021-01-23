@@ -29,6 +29,7 @@ class TidySubsplitDAG : public SubsplitDAG {
   std::string AboveMatricesAsString();
 
   // From ((0,1)2)
+  // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769
   static TidySubsplitDAG TrivialExample();
   // From (0,(1,(2,3))) and ((0,(2,3)),1)
   // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
@@ -65,7 +66,18 @@ TEST_CASE("TidySubsplitDAG: slicing") {
   CHECK_EQ(trivial_dag.AboveMatricesAsString(), manual_dag.AboveMatricesAsString());
 
   auto motivating_dag = TidySubsplitDAG::MotivatingExample();
-  std::cout << motivating_dag.ToDot() << std::endl;
+  CHECK_EQ(GenericToString(motivating_dag.AboveNode(false, 4)),
+           "[0, 0, 0, 0, 1, 1, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(motivating_dag.AboveNode(true, 4)),
+           "[0, 0, 0, 0, 1, 0, 1, 0, 0]\n");
+  CHECK_EQ(GenericToString(motivating_dag.AboveNode(false, 7)),
+           "[0, 0, 0, 0, 0, 0, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(motivating_dag.AboveNode(true, 7)),
+           "[0, 0, 0, 0, 0, 0, 0, 1, 0]\n");
+  CHECK_EQ(GenericToString(motivating_dag.BelowNode(false, 7)),
+           "[0, 0, 1, 1, 1, 0, 0, 1, 0]\n");
+  CHECK_EQ(GenericToString(motivating_dag.BelowNode(true, 7)),
+           "[1, 0, 0, 0, 0, 0, 0, 1, 0]\n");
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
