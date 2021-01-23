@@ -77,8 +77,10 @@ std::string SubsplitDAG::ToDot() const {
   ss << "node [shape=record];\n";
   DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
-      [&ss](size_t node_id) {
-        ss << node_id << "[label=\"<f0>|<f1>" << node_id << "|<f2>\"]\n";
+      [this, &ss](size_t node_id) {
+        ss << node_id << "[label=\"<f0>|<f1>" << node_id << ": "
+           << GetDagNode(node_id)->GetBitset().SubsplitToIndexSetString()
+           << "|<f2>\"]\n";
       },
       // AfterNode
       [](size_t node_id) {},
