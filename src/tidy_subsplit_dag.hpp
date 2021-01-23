@@ -15,6 +15,8 @@ class TidySubsplitDAG : public SubsplitDAG {
   explicit TidySubsplitDAG(EigenMatrixXb above);
   explicit TidySubsplitDAG(const RootedTreeCollection &tree_collection);
 
+  // What nodes are above or below the specified node? We consider a node to be both
+  // above and below itself (this just happens to be handy for the implementation).
   EigenArrayXbRef BelowNode(size_t node_idx);
   EigenArrayXb AboveNode(size_t node_idx);
   void JoinBelow(size_t dst, size_t src1, size_t src2);
@@ -32,12 +34,15 @@ TEST_CASE("TidySubsplitDAG: slicing") {
   above.setIdentity();
   auto dag = TidySubsplitDAG(above);
 
-  dag.JoinBelow(1, 0, 2);
-  dag.JoinBelow(3, 1, 4);
+  // The tree ((0,1)3,2)4:
+  dag.JoinBelow(3, 0, 1);
+  dag.JoinBelow(4, 2, 3);
 
-  dag.PrintBelowMatrix();
-  // CHECK_EQ(GenericToString(dag.AboveNode(1)), "[0, 1, 0]\n");
-  // CHECK_EQ(GenericToString(dag.BelowNode(1)), "[0, 1, 1]\n");
+  CHECK_EQ(GenericToString(dag.AboveNode(0)), "[1, 0, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(dag.AboveNode(1)), "[0, 1, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(dag.AboveNode(2)), "[0, 0, 1, 0, 1]\n");
+  CHECK_EQ(GenericToString(dag.AboveNode(3)), "[0, 0, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(dag.AboveNode(4)), "[0, 0, 0, 0, 1]\n");
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
