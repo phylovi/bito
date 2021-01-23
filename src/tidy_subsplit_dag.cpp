@@ -46,6 +46,13 @@ void TidySubsplitDAG::SetBelow(size_t dst_idx, bool dst_rotated, size_t src_idx)
       BelowNode(dst_rotated, dst_idx).max(BelowNode(src_idx));
 }
 
+TidySubsplitDAG TidySubsplitDAG::TrivialExample() {
+  // ((0,1),2)
+  auto topology = Node::Join(Node::Join(Node::Leaf(0), Node::Leaf(1)), Node::Leaf(2));
+  topology->Polish();
+  return TidySubsplitDAG(3, {{topology, 1}});
+}
+
 TidySubsplitDAG TidySubsplitDAG::MotivatingExample() {
   auto topologies = Node::ExampleTopologies();
   return TidySubsplitDAG(4, {{topologies[3], 1}, {topologies[4], 1}});

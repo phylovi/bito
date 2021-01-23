@@ -26,6 +26,8 @@ class TidySubsplitDAG : public SubsplitDAG {
   // described by (dst_rotated, dst_idx).
   void SetBelow(size_t dst_idx, bool dst_rotated, size_t src_idx);
 
+  static TidySubsplitDAG TrivialExample();
+
   // (0,(1,(2,3))) and ((0,(2,3)),1)
   // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
   // Update during #288
@@ -42,19 +44,19 @@ class TidySubsplitDAG : public SubsplitDAG {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TidySubsplitDAG: slicing") {
-  auto dag = TidySubsplitDAG(5);
+  auto manual_dag = TidySubsplitDAG(5);
 
   // The tree ((0,1)3,2)4:
-  dag.SetBelow(3, true, 0);
-  dag.SetBelow(3, false, 1);
-  dag.SetBelow(4, true, 3);
-  dag.SetBelow(4, false, 2);
+  manual_dag.SetBelow(3, true, 0);
+  manual_dag.SetBelow(3, false, 1);
+  manual_dag.SetBelow(4, true, 3);
+  manual_dag.SetBelow(4, false, 2);
 
-  CHECK_EQ(GenericToString(dag.AboveNode(0)), "[1, 0, 0, 1, 1]\n");
-  CHECK_EQ(GenericToString(dag.AboveNode(1)), "[0, 1, 0, 1, 1]\n");
-  CHECK_EQ(GenericToString(dag.AboveNode(2)), "[0, 0, 1, 0, 1]\n");
-  CHECK_EQ(GenericToString(dag.AboveNode(3)), "[0, 0, 0, 1, 1]\n");
-  CHECK_EQ(GenericToString(dag.AboveNode(4)), "[0, 0, 0, 0, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(0)), "[1, 0, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(1)), "[0, 1, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(2)), "[0, 0, 1, 0, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(3)), "[0, 0, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(4)), "[0, 0, 0, 0, 1]\n");
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
