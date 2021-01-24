@@ -46,6 +46,8 @@ class TidySubsplitDAG : public SubsplitDAG {
   // Update during #288
   static TidySubsplitDAG MotivatingExample();
 
+  std::string RecordTraversal();
+
   // Apply a TidySubsplitDAGTraversalAction via a depth first traversal. Do not visit
   // leaf nodes. Applied to a given node, we:
   // * Apply BeforeNode
@@ -86,9 +88,9 @@ class TidySubsplitDAG : public SubsplitDAG {
       // We are in updating mode.
       for (const size_t child_id : node->GetLeafward(rotated)) {
         if (!GetDagNode(child_id)->IsLeaf()) {
-          DepthFirstWithActionForNodeClade(action, node_id, false, visited_nodes);
-          DepthFirstWithActionForNodeClade(action, node_id, true, visited_nodes);
-          action.AfterNode(node_id);
+          DepthFirstWithActionForNodeClade(action, child_id, false, visited_nodes);
+          DepthFirstWithActionForNodeClade(action, child_id, true, visited_nodes);
+          action.AfterNode(child_id);
         }
         action.UpdateEdge(node_id, child_id, rotated);
         DirtyVector(rotated)[node_id] = false;
@@ -177,6 +179,8 @@ TEST_CASE("TidySubsplitDAG: slicing") {
            "[0, 0, 0, 0, 1, 0, 1, 0, 0]\n");
   CHECK_EQ(GenericToString(motivating_dag.DirtyVector(false)),
            "[0, 0, 0, 0, 1, 1, 0, 1, 1]\n");
+
+  std::cout << motivating_dag.RecordTraversal();
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

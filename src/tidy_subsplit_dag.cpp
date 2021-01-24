@@ -118,3 +118,25 @@ TidySubsplitDAG TidySubsplitDAG::MotivatingExample() {
   return TidySubsplitDAG(4, {{topologies[3], 1}, {topologies[4], 1}});
 }
 
+std::string TidySubsplitDAG::RecordTraversal() {
+  std::stringstream result;
+  DepthFirstWithAction(TidySubsplitDAGTraversalAction(
+      // BeforeNode
+      [](size_t node_id) {},
+      // AfterNode
+      [](size_t node_id) {},
+      // BeforeNodeClade
+      [](size_t node_id, bool rotated) {},
+      // ModifyEdge
+      [this, &result](size_t node_id, size_t child_id, bool rotated) {
+        result << "modifying: ";
+        result << node_id << ", " << child_id << ", " << rotated << "\n";
+      },
+      // UpdateEdge
+      [this, &result](size_t node_id, size_t child_id, bool rotated) {
+        result << "updating: ";
+        result << node_id << ", " << child_id << ", " << rotated << "\n";
+      }));
+  return result.str();
+}
+
