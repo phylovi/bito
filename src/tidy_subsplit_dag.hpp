@@ -18,7 +18,8 @@ class TidySubsplitDAG : public SubsplitDAG {
   // What nodes are above or below the specified node? We consider a node to be both
   // above and below itself (this just happens to be handy for the implementation).
   EigenArrayXb BelowNode(size_t node_idx);
-  // TODO let's change to rotated second. It's a subsplit clade.
+  // These use a different convention of rotated, then node idx, reflecting that we are
+  // asking the question "which `rotated` nodes are above node_idx"?
   EigenArrayXbRef BelowNode(bool rotated, size_t node_idx);
   EigenArrayXb AboveNode(size_t node_idx);
   EigenArrayXb AboveNode(bool rotated, size_t node_idx);
