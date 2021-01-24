@@ -89,6 +89,11 @@ void TidySubsplitDAG::SetDirtyAbove(size_t node_idx) {
   }
 }
 
+void TidySubsplitDAG::SetClean() {
+  dirty_rotated_.setConstant(false);
+  dirty_sorted_.setConstant(false);
+}
+
 std::string EigenMatrixXbToString(EigenMatrixXb m) {
   std::stringstream ss;
   // I would have thought that we could just do ss << m, but this doesn't work.
@@ -120,6 +125,7 @@ TidySubsplitDAG TidySubsplitDAG::MotivatingExample() {
 
 std::string TidySubsplitDAG::RecordTraversal() {
   std::stringstream result;
+  size_t counter = 0;
   DepthFirstWithAction(TidySubsplitDAGTraversalAction(
       // BeforeNode
       [](size_t node_id) {},
@@ -128,13 +134,15 @@ std::string TidySubsplitDAG::RecordTraversal() {
       // BeforeNodeClade
       [](size_t node_id, bool rotated) {},
       // ModifyEdge
-      [this, &result](size_t node_id, size_t child_id, bool rotated) {
-        result << "modifying: ";
+      [this, &result, &counter](size_t node_id, size_t child_id, bool rotated) {
+        result << counter << " modifying: ";
+        counter++;
         result << node_id << ", " << child_id << ", " << rotated << "\n";
       },
       // UpdateEdge
-      [this, &result](size_t node_id, size_t child_id, bool rotated) {
-        result << "updating: ";
+      [this, &result, &counter](size_t node_id, size_t child_id, bool rotated) {
+        result << counter << " updating: ";
+        counter++;
         result << node_id << ", " << child_id << ", " << rotated << "\n";
       }));
   return result.str();

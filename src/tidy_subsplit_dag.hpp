@@ -35,6 +35,7 @@ class TidySubsplitDAG : public SubsplitDAG {
   EigenArrayXbRef DirtyVector(bool rotated);
   bool IsDirtyBelow(size_t node_idx, bool rotated);
   void SetDirtyAbove(size_t node_idx);
+  void SetClean();
 
   std::string AboveMatricesAsString();
 
@@ -180,6 +181,7 @@ TEST_CASE("TidySubsplitDAG: slicing") {
   CHECK_EQ(GenericToString(motivating_dag.DirtyVector(false)),
            "[0, 0, 0, 0, 1, 1, 0, 1, 1]\n");
 
+  motivating_dag.SetClean();
   std::cout << motivating_dag.RecordTraversal();
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
