@@ -17,8 +17,10 @@ TidySubsplitDAG::TidySubsplitDAG(size_t taxon_count,
                                  const Node::TopologyCounter &topology_counter)
     : SubsplitDAG(taxon_count, topology_counter) {
   auto node_count = NodeCount();
-  above_sorted_ = EigenMatrixXb::Identity(node_count, node_count);
   above_rotated_ = EigenMatrixXb::Identity(node_count, node_count);
+  above_sorted_ = EigenMatrixXb::Identity(node_count, node_count);
+  dirty_rotated_ = EigenArrayXb::Zero(node_count);
+  dirty_sorted_ = EigenArrayXb::Zero(node_count);
 
   DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
@@ -62,6 +64,27 @@ void TidySubsplitDAG::SetBelow(size_t parent_idx, bool parent_rotated,
                                size_t child_idx) {
   BelowNode(parent_rotated, parent_idx) =
       BelowNode(parent_rotated, parent_idx).max(BelowNode(child_idx));
+}
+
+EigenArrayXbRef TidySubsplitDAG::DirtyVector(bool rotated) {
+  if (rotated) {
+    return dirty_rotated_;
+  } else {
+    return dirty_sorted_;
+  }
+}
+
+bool TidySubsplitDAG::IsDirtyBelow(size_t node_idx, bool rotated) {
+  // We use `min` as a way of getting "and": we want to find if there are any dirty
+  // node-clades below us.
+  return BelowNode(rotated, node_idx).min(DirtyVector(rotated)).maxCoeff();
+}
+
+void TidySubsplitDAG::SetDirtyAbove(size_t node_idx, bool rotated) {
+  // We use `max` as a way of getting "or": we want to maintain anything that's already
+  // dirty as dirty, while adding all nodes above us.
+  EigenArrayXbRef dirty = DirtyVector(rotated);
+  dirty = dirty.max(AboveNode(rotated, node_idx));
 }
 
 std::string EigenMatrixXbToString(EigenMatrixXb m) {

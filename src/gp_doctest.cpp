@@ -11,6 +11,7 @@
 #include "gp_instance.hpp"
 #include "phylo_model.hpp"
 #include "rooted_sbn_instance.hpp"
+#include "tidy_subsplit_dag.hpp"
 
 using namespace GPOperations;  // NOLINT
 
