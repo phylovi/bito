@@ -22,7 +22,7 @@ TidySubsplitDAG::TidySubsplitDAG(size_t taxon_count,
   dirty_rotated_ = EigenArrayXb::Zero(node_count);
   dirty_sorted_ = EigenArrayXb::Zero(node_count);
 
-  DepthFirstWithAction(SubsplitDAGTraversalAction(
+  SubsplitDAG::DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
       [](size_t node_id) {},
       // AfterNode
