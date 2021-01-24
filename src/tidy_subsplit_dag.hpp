@@ -34,7 +34,7 @@ class TidySubsplitDAG : public SubsplitDAG {
 
   EigenArrayXbRef DirtyVector(bool rotated);
   bool IsDirtyBelow(size_t node_idx, bool rotated);
-  void SetDirtyAbove(size_t node_idx);
+  void SetDirtyStrictlyAbove(size_t node_idx);
   void SetClean();
 
   std::string AboveMatricesAsString();
@@ -123,7 +123,7 @@ class TidySubsplitDAG : public SubsplitDAG {
           }
         }
         action.ModifyEdge(node_id, child_id, rotated);
-        SetDirtyAbove(node_id);
+        SetDirtyStrictlyAbove(node_id);
         // We assume that ModifyEdge leaves (node_id, rotated) in a clean state.
         DirtyVector(rotated)[node_id] = false;
       }
@@ -184,11 +184,11 @@ TEST_CASE("TidySubsplitDAG: slicing") {
   CHECK_EQ(GenericToString(motivating_dag.BelowNode(true, 7)),
            "[1, 0, 0, 0, 0, 0, 0, 1, 0]\n");
 
-  motivating_dag.SetDirtyAbove(4);
+  motivating_dag.SetDirtyStrictlyAbove(4);
   CHECK_EQ(GenericToString(motivating_dag.DirtyVector(true)),
-           "[0, 0, 0, 0, 1, 0, 1, 0, 0]\n");
+           "[0, 0, 0, 0, 0, 0, 1, 0, 0]\n");
   CHECK_EQ(GenericToString(motivating_dag.DirtyVector(false)),
-           "[0, 0, 0, 0, 1, 1, 0, 1, 1]\n");
+           "[0, 0, 0, 0, 0, 1, 0, 1, 1]\n");
 
   motivating_dag.SetClean();
   std::cout << motivating_dag.RecordTraversal();
