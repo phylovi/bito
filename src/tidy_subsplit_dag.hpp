@@ -50,7 +50,9 @@ class TidySubsplitDAG : public SubsplitDAG {
   std::string RecordTraversal();
 
   // Apply a TidySubsplitDAGTraversalAction via a depth first traversal. Do not visit
-  // leaf nodes. Applied to a given node, we:
+  // leaf nodes.
+  // We assume that ModifyEdge leaves (node_id, rotated) in a clean state.
+  // Applied to a given node, we:
   // * Apply BeforeNode
   // * For each of the clades of the node, we:
   //     * Descend into each clade, cleaning up with UpdateEdge as needed.
@@ -87,26 +89,31 @@ class TidySubsplitDAG : public SubsplitDAG {
     const auto node = GetDagNode(node_id);
     if (updating_below_) {
       // We are in updating mode.
-      for (const size_t child_id : node->GetLeafward(rotated)) {
-        if (!GetDagNode(child_id)->IsLeaf()) {
-          DepthFirstWithActionForNodeClade(action, child_id, false, visited_nodes);
-          DepthFirstWithActionForNodeClade(action, child_id, true, visited_nodes);
-          action.AfterNode(child_id);
+      if (IsDirtyBelow(node_id, rotated)) {
+        for (const size_t child_id : node->GetLeafward(rotated)) {
+          if (!GetDagNode(child_id)->IsLeaf()) {
+            DepthFirstWithActionForNodeClade(action, child_id, false, visited_nodes);
+            DepthFirstWithActionForNodeClade(action, child_id, true, visited_nodes);
+            action.AfterNode(child_id);
+          }
+          action.UpdateEdge(node_id, child_id, rotated);
+          DirtyVector(rotated)[node_id] = false;
         }
-        action.UpdateEdge(node_id, child_id, rotated);
-        DirtyVector(rotated)[node_id] = false;
       }
+      // When we get to this point, everything is clean below node_id,rotated.
       if (*updating_below_ == std::make_pair(node_id, rotated)) {
         // We have completed updating our original goal of updating, and can turn off
         // updating mode.
         updating_below_ = std::nullopt;
       }
     } else {
+      // We are in modifying mode.
       // If the _other_ clade is dirty, then go into updating mode and recur into it.
       if (IsDirtyBelow(node_id, !rotated)) {
         updating_below_ = {node_id, !rotated};
         DepthFirstWithActionForNodeClade(action, node_id, !rotated, visited_nodes);
       }
+      // When we get to this point, the other clade is clean and we can proceed.
       action.BeforeNodeClade(node_id, rotated);
       for (const size_t child_id : node->GetLeafward(rotated)) {
         if (visited_nodes.count(child_id) == 0) {
@@ -117,6 +124,8 @@ class TidySubsplitDAG : public SubsplitDAG {
         }
         action.ModifyEdge(node_id, child_id, rotated);
         SetDirtyAbove(node_id);
+        // We assume that ModifyEdge leaves (node_id, rotated) in a clean state.
+        DirtyVector(rotated)[node_id] = false;
       }
     }
   };

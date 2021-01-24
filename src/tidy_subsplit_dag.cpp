@@ -125,24 +125,24 @@ TidySubsplitDAG TidySubsplitDAG::MotivatingExample() {
 
 std::string TidySubsplitDAG::RecordTraversal() {
   std::stringstream result;
-  size_t counter = 0;
+  result << std::boolalpha;
   DepthFirstWithAction(TidySubsplitDAGTraversalAction(
       // BeforeNode
       [](size_t node_id) {},
       // AfterNode
       [](size_t node_id) {},
       // BeforeNodeClade
-      [](size_t node_id, bool rotated) {},
+      [&result](size_t node_id, bool rotated) {
+        result << "descending along " << node_id << ", " << rotated << "\n";
+      },
       // ModifyEdge
-      [this, &result, &counter](size_t node_id, size_t child_id, bool rotated) {
-        result << counter << " modifying: ";
-        counter++;
+      [this, &result](size_t node_id, size_t child_id, bool rotated) {
+        result << "modifying: ";
         result << node_id << ", " << child_id << ", " << rotated << "\n";
       },
       // UpdateEdge
-      [this, &result, &counter](size_t node_id, size_t child_id, bool rotated) {
-        result << counter << " updating: ";
-        counter++;
+      [this, &result](size_t node_id, size_t child_id, bool rotated) {
+        result << "updating:  ";
         result << node_id << ", " << child_id << ", " << rotated << "\n";
       }));
   return result.str();
