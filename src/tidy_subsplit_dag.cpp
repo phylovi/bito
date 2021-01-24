@@ -5,9 +5,9 @@
 
 TidySubsplitDAG::TidySubsplitDAG() : SubsplitDAG() {}
 
-// TODO something
 TidySubsplitDAG::TidySubsplitDAG(const RootedTreeCollection &tree_collection)
-    : SubsplitDAG(tree_collection) {}
+    : TidySubsplitDAG(tree_collection.TaxonCount(), tree_collection.TopologyCounter()) {
+}
 
 TidySubsplitDAG::TidySubsplitDAG(size_t node_count)
     : above_sorted_(EigenMatrixXb::Identity(node_count, node_count)),
@@ -40,6 +40,12 @@ EigenArrayXb TidySubsplitDAG::BelowNode(size_t node_idx) {
 }
 
 EigenArrayXbRef TidySubsplitDAG::BelowNode(bool rotated, size_t node_idx) {
+  if (node_idx >= above_rotated_.cols()) {
+    std::cout << ToDot() << std::endl;
+    std::cout << AboveMatricesAsString() << std::endl;
+    std::cout << above_rotated_.cols() << std::endl;
+  }
+  Assert(node_idx < above_rotated_.cols(), "BelowNode: node_idx too big.");
   if (rotated) {
     return above_rotated_.col(node_idx).array();
   } else {
@@ -130,7 +136,7 @@ TidySubsplitDAG TidySubsplitDAG::MotivatingExample() {
 std::string TidySubsplitDAG::RecordTraversal() {
   std::stringstream result;
   result << std::boolalpha;
-  DepthFirstWithAction(TidySubsplitDAGTraversalAction(
+  DepthFirstWithTidyAction(TidySubsplitDAGTraversalAction(
       // BeforeNode
       [](size_t node_id) {},
       // AfterNode

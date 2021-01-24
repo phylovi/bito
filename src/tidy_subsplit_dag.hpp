@@ -64,39 +64,41 @@ class TidySubsplitDAG : public SubsplitDAG {
   //         * Recur into the child node of the clade if it is not a leaf
   //         * Apply VisitEdge to the edge
   // * Apply AfterNode
-  template <typename TraversalActionT>
-  void DepthFirstWithAction(const TraversalActionT &action) {
+  template <typename TidyTraversalActionT>
+  void DepthFirstWithTidyAction(const TidyTraversalActionT &action) {
     std::unordered_set<size_t> visited_nodes;
     for (const auto &rootsplit : rootsplits_) {
-      DepthFirstWithActionForNode(action, subsplit_to_id_.at(rootsplit + ~rootsplit),
-                                  visited_nodes);
+      DepthFirstWithTidyActionForNode(
+          action, subsplit_to_id_.at(rootsplit + ~rootsplit), visited_nodes);
     }
   };
 
   // The portion of the traversal that is below a given node.
-  template <typename TraversalActionT>
-  void DepthFirstWithActionForNode(const TraversalActionT &action, size_t node_id,
-                                   std::unordered_set<size_t> &visited_nodes) {
+  template <typename TidyTraversalActionT>
+  void DepthFirstWithTidyActionForNode(const TidyTraversalActionT &action,
+                                       size_t node_id,
+                                       std::unordered_set<size_t> &visited_nodes) {
     action.BeforeNode(node_id);
-    DepthFirstWithActionForNodeClade(action, node_id, true, visited_nodes);
-    DepthFirstWithActionForNodeClade(action, node_id, false, visited_nodes);
+    DepthFirstWithTidyActionForNodeClade(action, node_id, true, visited_nodes);
+    DepthFirstWithTidyActionForNodeClade(action, node_id, false, visited_nodes);
     action.AfterNode(node_id);
   };
 
   // The portion of the traversal that is below a given clade of a given node.
   // Do not recur into leaf nodes.
-  template <typename TraversalActionT>
-  void DepthFirstWithActionForNodeClade(const TraversalActionT &action, size_t node_id,
-                                        bool rotated,
-                                        std::unordered_set<size_t> &visited_nodes) {
+  template <typename TidyTraversalActionT>
+  void DepthFirstWithTidyActionForNodeClade(const TidyTraversalActionT &action,
+                                            size_t node_id, bool rotated,
+                                            std::unordered_set<size_t> &visited_nodes) {
     const auto node = GetDagNode(node_id);
     if (updating_below_) {
       // We are in updating mode.
       if (IsDirtyBelow(node_id, rotated)) {
         for (const size_t child_id : node->GetLeafward(rotated)) {
           if (!GetDagNode(child_id)->IsLeaf()) {
-            DepthFirstWithActionForNodeClade(action, child_id, true, visited_nodes);
-            DepthFirstWithActionForNodeClade(action, child_id, false, visited_nodes);
+            DepthFirstWithTidyActionForNodeClade(action, child_id, true, visited_nodes);
+            DepthFirstWithTidyActionForNodeClade(action, child_id, false,
+                                                 visited_nodes);
             action.AfterNode(child_id);
           }
           action.UpdateEdge(node_id, child_id, rotated);
@@ -114,7 +116,7 @@ class TidySubsplitDAG : public SubsplitDAG {
       // If the _other_ clade is dirty, then go into updating mode and recur into it.
       if (IsDirtyBelow(node_id, !rotated)) {
         updating_below_ = {node_id, !rotated};
-        DepthFirstWithActionForNodeClade(action, node_id, !rotated, visited_nodes);
+        DepthFirstWithTidyActionForNodeClade(action, node_id, !rotated, visited_nodes);
       }
       // When we get to this point, the other clade is clean and we can proceed.
       action.BeforeNodeClade(node_id, rotated);
@@ -122,7 +124,7 @@ class TidySubsplitDAG : public SubsplitDAG {
         if (visited_nodes.count(child_id) == 0) {
           visited_nodes.insert(child_id);
           if (!GetDagNode(child_id)->IsLeaf()) {
-            DepthFirstWithActionForNode(action, child_id, visited_nodes);
+            DepthFirstWithTidyActionForNode(action, child_id, visited_nodes);
           }
         }
         action.ModifyEdge(node_id, child_id, rotated);
