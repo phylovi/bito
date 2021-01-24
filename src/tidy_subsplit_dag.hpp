@@ -2,6 +2,9 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
 // A "tidy" subsplit DAG has a notion of clean and dirty vectors.
+//
+// A node-clade is dirty iff there has been a calculation below that node-clade that
+// invalidates the p-hat PLV coming up into it.
 
 // TODO we could set things up so that the traversals are const, and we provide them
 // with a dirty vector. This would be better but more work.

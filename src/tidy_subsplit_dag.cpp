@@ -93,6 +93,7 @@ void TidySubsplitDAG::SetDirtyStrictlyAbove(size_t node_idx) {
 }
 
 void TidySubsplitDAG::SetClean() {
+  updating_below_ = std::nullopt;
   dirty_rotated_.setConstant(false);
   dirty_sorted_.setConstant(false);
 }
