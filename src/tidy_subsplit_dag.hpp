@@ -29,7 +29,7 @@ class TidySubsplitDAG : public SubsplitDAG {
 
   EigenArrayXbRef DirtyVector(bool rotated);
   bool IsDirtyBelow(size_t node_idx, bool rotated);
-  void SetDirtyAbove(size_t node_idx, bool rotated);
+  void SetDirtyAbove(size_t node_idx);
 
   std::string AboveMatricesAsString();
 
@@ -103,9 +103,11 @@ class TidySubsplitDAG : public SubsplitDAG {
   // above_sorted(i,j) is true iff i,false is above j.
   EigenMatrixXb above_sorted_;
 
-  // dirty_rotated_(i) is true iff i,true is dirty.
+  // dirty_rotated_(i) is true iff there has been a calculation below i,true that
+  // invalidates the p-hat PLV coming up into it.
   EigenArrayXb dirty_rotated_;
-  // dirty_sorted_(i) is true iff i,false is dirty.
+  // dirty_rotated_(i) is true iff there has been a calculation below i,false that
+  // invalidates the p-hat PLV coming up into it.
   EigenArrayXb dirty_sorted_;
 
   TidySubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter);
@@ -144,6 +146,12 @@ TEST_CASE("TidySubsplitDAG: slicing") {
            "[0, 0, 1, 1, 1, 0, 0, 1, 0]\n");
   CHECK_EQ(GenericToString(motivating_dag.BelowNode(true, 7)),
            "[1, 0, 0, 0, 0, 0, 0, 1, 0]\n");
+
+  motivating_dag.SetDirtyAbove(4);
+  CHECK_EQ(GenericToString(motivating_dag.DirtyVector(true)),
+           "[0, 0, 0, 0, 1, 0, 1, 0, 0]\n");
+  CHECK_EQ(GenericToString(motivating_dag.DirtyVector(false)),
+           "[0, 0, 0, 0, 1, 1, 0, 1, 1]\n");
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

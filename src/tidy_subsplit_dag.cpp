@@ -80,11 +80,13 @@ bool TidySubsplitDAG::IsDirtyBelow(size_t node_idx, bool rotated) {
   return BelowNode(rotated, node_idx).min(DirtyVector(rotated)).maxCoeff();
 }
 
-void TidySubsplitDAG::SetDirtyAbove(size_t node_idx, bool rotated) {
-  // We use `max` as a way of getting "or": we want to maintain anything that's already
-  // dirty as dirty, while adding all nodes above us.
-  EigenArrayXbRef dirty = DirtyVector(rotated);
-  dirty = dirty.max(AboveNode(rotated, node_idx));
+void TidySubsplitDAG::SetDirtyAbove(size_t node_idx) {
+  for (const bool rotated : {false, true}) {
+    EigenArrayXbRef dirty = DirtyVector(rotated);
+    // We use `max` as a way of getting "or": we want to maintain anything that's
+    // already dirty as dirty, while adding all nodes above us.
+    dirty = dirty.max(AboveNode(rotated, node_idx));
+  }
 }
 
 std::string EigenMatrixXbToString(EigenMatrixXb m) {
