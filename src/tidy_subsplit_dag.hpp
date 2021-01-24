@@ -78,8 +78,8 @@ class TidySubsplitDAG : public SubsplitDAG {
   void DepthFirstWithActionForNode(const TraversalActionT &action, size_t node_id,
                                    std::unordered_set<size_t> &visited_nodes) {
     action.BeforeNode(node_id);
-    DepthFirstWithActionForNodeClade(action, node_id, false, visited_nodes);
     DepthFirstWithActionForNodeClade(action, node_id, true, visited_nodes);
+    DepthFirstWithActionForNodeClade(action, node_id, false, visited_nodes);
     action.AfterNode(node_id);
   };
 
@@ -95,8 +95,8 @@ class TidySubsplitDAG : public SubsplitDAG {
       if (IsDirtyBelow(node_id, rotated)) {
         for (const size_t child_id : node->GetLeafward(rotated)) {
           if (!GetDagNode(child_id)->IsLeaf()) {
-            DepthFirstWithActionForNodeClade(action, child_id, false, visited_nodes);
             DepthFirstWithActionForNodeClade(action, child_id, true, visited_nodes);
+            DepthFirstWithActionForNodeClade(action, child_id, false, visited_nodes);
             action.AfterNode(child_id);
           }
           action.UpdateEdge(node_id, child_id, rotated);
