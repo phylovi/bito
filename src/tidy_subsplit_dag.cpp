@@ -40,12 +40,6 @@ EigenArrayXb TidySubsplitDAG::BelowNode(size_t node_idx) {
 }
 
 EigenArrayXbRef TidySubsplitDAG::BelowNode(bool rotated, size_t node_idx) {
-  if (node_idx >= above_rotated_.cols()) {
-    std::cout << ToDot() << std::endl;
-    std::cout << AboveMatricesAsString() << std::endl;
-    std::cout << above_rotated_.cols() << std::endl;
-  }
-  Assert(node_idx < above_rotated_.cols(), "BelowNode: node_idx too big.");
   if (rotated) {
     return above_rotated_.col(node_idx).array();
   } else {
