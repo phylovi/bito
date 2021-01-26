@@ -35,35 +35,33 @@ TidySubsplitDAG::TidySubsplitDAG(size_t taxon_count,
       }));
 }
 
-EigenArrayXb TidySubsplitDAG::BelowNode(size_t node_idx) {
-  return BelowNode(false, node_idx).max(BelowNode(true, node_idx));
+EigenArrayXb TidySubsplitDAG::BelowNode(size_t node_id) {
+  return BelowNode(false, node_id).max(BelowNode(true, node_id));
 }
 
-EigenArrayXbRef TidySubsplitDAG::BelowNode(bool rotated, size_t node_idx) {
+EigenArrayXbRef TidySubsplitDAG::BelowNode(bool rotated, size_t node_id) {
   if (rotated) {
-    return above_rotated_.col(node_idx).array();
+    return above_rotated_.col(node_id).array();
   } else {
-    return above_sorted_.col(node_idx).array();
+    return above_sorted_.col(node_id).array();
   }
 }
 
-EigenArrayXb TidySubsplitDAG::AboveNode(size_t node_idx) {
-  return AboveNode(false, node_idx).max(AboveNode(true, node_idx));
+EigenArrayXb TidySubsplitDAG::AboveNode(size_t node_id) {
+  return AboveNode(false, node_id).max(AboveNode(true, node_id));
 }
 
-EigenArrayXb TidySubsplitDAG::AboveNode(bool rotated, size_t node_idx) {
+EigenArrayXb TidySubsplitDAG::AboveNode(bool rotated, size_t node_id) {
   if (rotated) {
-    return above_rotated_.row(node_idx).array();
+    return above_rotated_.row(node_id).array();
   } else {
-    return above_sorted_.row(node_idx).array();
+    return above_sorted_.row(node_id).array();
   }
 }
 
-// TODO change idx to id
-void TidySubsplitDAG::SetBelow(size_t parent_idx, bool parent_rotated,
-                               size_t child_idx) {
-  BelowNode(parent_rotated, parent_idx) =
-      BelowNode(parent_rotated, parent_idx).max(BelowNode(child_idx));
+void TidySubsplitDAG::SetBelow(size_t parent_id, bool parent_rotated, size_t child_id) {
+  BelowNode(parent_rotated, parent_id) =
+      BelowNode(parent_rotated, parent_id).max(BelowNode(child_id));
 }
 
 EigenArrayXbRef TidySubsplitDAG::DirtyVector(bool rotated) {
@@ -74,18 +72,18 @@ EigenArrayXbRef TidySubsplitDAG::DirtyVector(bool rotated) {
   }
 }
 
-bool TidySubsplitDAG::IsDirtyBelow(size_t node_idx, bool rotated) {
+bool TidySubsplitDAG::IsDirtyBelow(size_t node_id, bool rotated) {
   // We use `min` as a way of getting "and": we want to find if there are any dirty
   // node-clades below us.
-  return BelowNode(rotated, node_idx).min(DirtyVector(rotated)).maxCoeff();
+  return BelowNode(rotated, node_id).min(DirtyVector(rotated)).maxCoeff();
 }
 
-void TidySubsplitDAG::SetDirtyStrictlyAbove(size_t node_idx) {
+void TidySubsplitDAG::SetDirtyStrictlyAbove(size_t node_id) {
   for (const bool rotated : {false, true}) {
     EigenArrayXbRef dirty = DirtyVector(rotated);
-    EigenArrayXb to_make_dirty = AboveNode(rotated, node_idx);
+    EigenArrayXb to_make_dirty = AboveNode(rotated, node_id);
     // We are only dirtying things that are strictly above us.
-    to_make_dirty[node_idx] = false;
+    to_make_dirty[node_id] = false;
     // We use `max` as a way of getting "or": we want to maintain anything that's
     // already dirty as dirty, while adding all nodes strictly above us.
     dirty = dirty.max(to_make_dirty);

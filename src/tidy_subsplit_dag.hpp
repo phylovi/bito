@@ -24,20 +24,20 @@ class TidySubsplitDAG : public SubsplitDAG {
 
   // What nodes are above or below the specified node? We consider a node to be both
   // above and below itself (this just happens to be handy for the implementation).
-  EigenArrayXb BelowNode(size_t node_idx);
-  // These use a different convention of rotated, then node idx, reflecting that we are
-  // asking the question "which `rotated` nodes are above node_idx"?
-  EigenArrayXbRef BelowNode(bool rotated, size_t node_idx);
-  EigenArrayXb AboveNode(size_t node_idx);
-  EigenArrayXb AboveNode(bool rotated, size_t node_idx);
+  EigenArrayXb BelowNode(size_t node_id);
+  // These use a different convention of rotated, then node id, reflecting that we are
+  // asking the question "which `rotated` nodes are above node_id"?
+  EigenArrayXbRef BelowNode(bool rotated, size_t node_id);
+  EigenArrayXb AboveNode(size_t node_id);
+  EigenArrayXb AboveNode(bool rotated, size_t node_id);
 
-  // Set the below matrix up to have the node at src_idx below the subsplit-clade
-  // described by (dst_rotated, dst_idx).
-  void SetBelow(size_t dst_idx, bool dst_rotated, size_t src_idx);
+  // Set the below matrix up to have the node at src_id below the subsplit-clade
+  // described by (dst_rotated, dst_id).
+  void SetBelow(size_t dst_id, bool dst_rotated, size_t src_id);
 
   EigenArrayXbRef DirtyVector(bool rotated);
-  bool IsDirtyBelow(size_t node_idx, bool rotated);
-  void SetDirtyStrictlyAbove(size_t node_idx);
+  bool IsDirtyBelow(size_t node_id, bool rotated);
+  void SetDirtyStrictlyAbove(size_t node_id);
   void SetClean();
 
   std::string AboveMatricesAsString();
