@@ -323,7 +323,9 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
-  BrentOptimization(op);
+   BrentOptimization(op);
+  // LogSpaceGradientAscentOptimization(op);
+  // AdaptiveGradientAscentOptimization(op);
 }
 
 EigenVectorXd NormalizedPosteriorOfLogUnnormalized(
@@ -608,20 +610,36 @@ void GPEngine::GradientAscentOptimization(
   std::ignore = log_likelihood;
   branch_lengths_(op.gpcsp_) = exp(log_branch_length);
 }
-/*
+
+// Fixes log-space branch length gradient ascient optimization
+void GPEngine::LogSpaceGradientAscentOptimization(
+    const GPOperations::OptimizeBranchLength& op) {
+  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
+    branch_lengths_(op.gpcsp_) = branch_length;
+    return this->LogLikelihoodAndDerivative(op);
+  };
+  const auto [branch_length, log_likelihood] = Optimization::LogSpaceGradientAscent(
+      log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
+      relative_tolerance_for_optimization_, step_size_for_optimization_,
+      exp(min_log_branch_length_), max_iter_for_optimization_);
+  branch_lengths_(op.gpcsp_) = branch_length;
+}
+
 void GPEngine::AdaptiveGradientAscentOptimization(
     const GPOperations::OptimizeBranchLength& op) {
   auto log_likelihood_and_derivative = [this, &op](double branch_length) {
     branch_lengths_(op.gpcsp_) = branch_length;
     return this->LogLikelihoodAndDerivative(op);
   };
-  const auto [branch_length, log_likelihood] = Optimization::GradientAscent(
+  const auto [branch_length, log_likelihood] = Optimization::AdaptiveGradientAscent(
       log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
       relative_tolerance_for_optimization_, step_size_for_optimization_,
-      min_branch_length_, max_iter_for_optimization_);
+      adaptive_stepsize_uniformity_bound_, montonicity_const_for_adaptive_stepsize_,
+      threshold_const_for_adaptive_stepsize_, rescaling_const_for_adaptive_stepsize_,
+      max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = branch_length;
 }
-*/
+
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                                      const BitsetSizeMap& indexer) {
   size_t unique_gpcsp_count = branch_lengths_.size();

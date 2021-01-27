@@ -350,6 +350,59 @@ class GPEngine {
   Eigen::Matrix4d derivative_matrix_;
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
+
+  // For hybrid marginal calculations. #328
+  // The PLV coming down from the root.
+  EigenMatrixXd quartet_root_plv_;
+  // The R-PLV pointing leafward from s.
+  EigenMatrixXd quartet_r_s_plv_;
+  // The Q-PLV pointing leafward from s.
+  EigenMatrixXd quartet_q_s_plv_;
+  // The R-PLV pointing leafward from t.
+  EigenMatrixXd quartet_r_sorted_plv_;
+
+  void InitializePLVsWithSitePatterns();
+
+  void RescalePLV(size_t plv_idx, int amount);
+  void AssertPLVIsFinite(size_t plv_idx, const std::string& message) const;
+  std::pair<double, double> PLVMinMax(size_t plv_idx) const;
+  // If a PLV all entries smaller than rescaling_threshold_ then rescale it up and
+  // increment the corresponding entry in rescaling_counts_.
+  void RescalePLVIfNeeded(size_t plv_idx);
+  double LogRescalingFor(size_t plv_idx);
+
+  void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void AdaptiveGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  
+  inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
+                                                               size_t src2_idx) {
+    per_pattern_likelihood_derivatives_ =
+        (plvs_.at(src1_idx).transpose() * derivative_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array();
+  }
+
+  inline void PrepareUnrescaledPerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
+    per_pattern_likelihoods_ =
+        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array();
+  }
+
+  // This function is used to compute the marginal log likelihood over all trees that
+  // have a given PCSP. We assume that transition_matrix_ is as desired, and src1_idx
+  // and src2_idx are the two PLV indices on either side of the PCSP.
+  inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t src1_idx,
+                                                      size_t src2_idx) {
+    per_pattern_log_likelihoods_ =
+        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array()
+            .log() +
+        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
+  }
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
