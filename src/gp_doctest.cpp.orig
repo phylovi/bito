@@ -239,6 +239,8 @@ TEST_CASE("GPInstance: gradient calculation") {
   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
 }
 
+<<<<<<< HEAD
+=======
 TEST_CASE("GPInstance: multi-site gradient calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
@@ -272,6 +274,7 @@ GPInstance MakeFluAGPInstance(double rescaling_threshold) {
   return inst;
 }
 
+>>>>>>> 7199f09... multi-site gradient test, log space grad ascent and adaptive grad ascent with tests failing
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   auto inst = MakeFluAGPInstance(rescaling_threshold);
   inst.PopulatePLVs();

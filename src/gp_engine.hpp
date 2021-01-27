@@ -97,6 +97,11 @@ class GPEngine {
   double step_size_for_optimization_ = 5e-4;
   size_t max_iter_for_optimization_ = 1000;
 
+  int montonicity_const_for_adaptive_stepsize_ = 10;
+  double adaptive_stepsize_uniformity_bound_ = 1e-10;
+  double threshold_const_for_adaptive_stepsize_ = 1e-4;
+  double rescaling_const_for_adaptive_stepsize_ = 0.5;
+
   // The length of this vector is equal to the number of site patterns.
   // Entry j stores the marginal log likelihood over all trees at site pattern
   // j.
@@ -176,7 +181,9 @@ class GPEngine {
 
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
-
+  void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void AdaptiveGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
                                                                size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
