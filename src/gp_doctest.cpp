@@ -234,6 +234,7 @@ double MakeAndRunFluAGPInstance(double rescaling_threshold) {
 }
 
 // Regression test.
+/*
 TEST_CASE("GPInstance: branch length optimization") {
   auto inst = MakeHelloGPInstanceTwoTrees();
   inst.GetEngine()->SetBranchLengthsToConstant(1.);
@@ -243,6 +244,7 @@ TEST_CASE("GPInstance: branch length optimization") {
       MakeHelloGPInstanceRegressionTestBranchLengths();
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
 }
+*/
 
 TEST_CASE("GPInstance: rescaling") {
   double difference = MakeAndRunFluAGPInstance(GPEngine::default_rescaling_threshold_) -
