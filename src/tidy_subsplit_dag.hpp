@@ -6,10 +6,6 @@
 // A node-clade is dirty iff there has been a calculation below that node-clade that
 // invalidates the p-hat PLV coming up into it.
 
-// TODO we could set things up so that the traversals are const, and we provide them
-// with a dirty vector. This would be better but more work.
-// We'd also need to include the optional.
-
 #ifndef SRC_TIDY_SUBSPLIT_DAG_HPP_
 #define SRC_TIDY_SUBSPLIT_DAG_HPP_
 
@@ -90,48 +86,64 @@ class TidySubsplitDAG : public SubsplitDAG {
   void DepthFirstWithTidyActionForNodeClade(const TidyTraversalActionT &action,
                                             size_t node_id, bool rotated,
                                             std::unordered_set<size_t> &visited_nodes) {
-    const auto node = GetDagNode(node_id);
     if (updating_below_) {
-      // We are in updating mode.
-      if (IsDirtyBelow(node_id, rotated)) {
-        for (const size_t child_id : node->GetLeafward(rotated)) {
-          if (!GetDagNode(child_id)->IsLeaf()) {
-            DepthFirstWithTidyActionForNodeClade(action, child_id, true, visited_nodes);
-            DepthFirstWithTidyActionForNodeClade(action, child_id, false,
-                                                 visited_nodes);
-            action.AfterNode(child_id);
-          }
-          action.UpdateEdge(node_id, child_id, rotated);
-          DirtyVector(rotated)[node_id] = false;
-        }
-      }
-      // When we get to this point, everything is clean below node_id,rotated.
-      if (*updating_below_ == std::make_pair(node_id, rotated)) {
-        // We have completed updating our original goal of updating, and can turn off
-        // updating mode.
-        updating_below_ = std::nullopt;
-      }
+      UpdateWithTidyActionForNodeClade(action, node_id, rotated, visited_nodes);
     } else {
-      // We are in modifying mode.
-      // If the _other_ clade is dirty, then go into updating mode and recur into it.
-      if (IsDirtyBelow(node_id, !rotated)) {
-        updating_below_ = {node_id, !rotated};
-        DepthFirstWithTidyActionForNodeClade(action, node_id, !rotated, visited_nodes);
-      }
-      // When we get to this point, the other clade is clean and we can proceed.
-      action.BeforeNodeClade(node_id, rotated);
+      ModifyWithTidyActionForNodeClade(action, node_id, rotated, visited_nodes);
+    }
+  };
+
+  // Recursively perform updates under this node-clade.
+  template <typename TidyTraversalActionT>
+  void UpdateWithTidyActionForNodeClade(const TidyTraversalActionT &action,
+                                        size_t node_id, bool rotated,
+                                        std::unordered_set<size_t> &visited_nodes) {
+    if (IsDirtyBelow(node_id, rotated)) {
+      const auto node = GetDagNode(node_id);
       for (const size_t child_id : node->GetLeafward(rotated)) {
-        if (visited_nodes.count(child_id) == 0) {
-          visited_nodes.insert(child_id);
-          if (!GetDagNode(child_id)->IsLeaf()) {
-            DepthFirstWithTidyActionForNode(action, child_id, visited_nodes);
-          }
+        if (!GetDagNode(child_id)->IsLeaf()) {
+          DepthFirstWithTidyActionForNodeClade(action, child_id, true, visited_nodes);
+          DepthFirstWithTidyActionForNodeClade(action, child_id, false, visited_nodes);
+          action.AfterNode(child_id);
         }
-        action.ModifyEdge(node_id, child_id, rotated);
-        SetDirtyStrictlyAbove(node_id);
-        // We assume that ModifyEdge leaves (node_id, rotated) in a clean state.
+        action.UpdateEdge(node_id, child_id, rotated);
         DirtyVector(rotated)[node_id] = false;
       }
+    }
+    // When we get to this point, everything is clean below node_id,rotated.
+    if (*updating_below_ == std::make_pair(node_id, rotated)) {
+      // We have completed updating our original goal of updating, and can turn off
+      // updating mode.
+      updating_below_ = std::nullopt;
+      }
+  };
+
+  // Perform edge modification below this node clade, dirtying and cleaning up as
+  // appropriate.
+  template <typename TidyTraversalActionT>
+  void ModifyWithTidyActionForNodeClade(const TidyTraversalActionT &action,
+                                        size_t node_id, bool rotated,
+                                        std::unordered_set<size_t> &visited_nodes) {
+    // We are in modifying mode.
+    // If the _other_ clade is dirty, then go into updating mode and recur into it.
+    if (IsDirtyBelow(node_id, !rotated)) {
+      updating_below_ = {node_id, !rotated};
+      UpdateWithTidyActionForNodeClade(action, node_id, !rotated, visited_nodes);
+    }
+    // When we get to this point, the other clade is clean and we can proceed.
+    action.BeforeNodeClade(node_id, rotated);
+    const auto node = GetDagNode(node_id);
+    for (const size_t child_id : node->GetLeafward(rotated)) {
+      if (visited_nodes.count(child_id) == 0) {
+        visited_nodes.insert(child_id);
+        if (!GetDagNode(child_id)->IsLeaf()) {
+          DepthFirstWithTidyActionForNode(action, child_id, visited_nodes);
+        }
+      }
+      action.ModifyEdge(node_id, child_id, rotated);
+      SetDirtyStrictlyAbove(node_id);
+      // We assume that ModifyEdge leaves (node_id, rotated) in a clean state.
+      DirtyVector(rotated)[node_id] = false;
     }
   };
 
