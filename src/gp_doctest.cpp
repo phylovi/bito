@@ -136,6 +136,7 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
 
+// TODO sometimes nice to comment this one
 TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   auto inst = MakeDS1Reduced5Instance();
   auto engine = inst.GetEngine();
@@ -263,6 +264,7 @@ TEST_CASE("GPInstance: generate all trees") {
   CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
 }
 
+// TODO sometimes nice to comment these two
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
   auto inst = MakeFiveTaxaInstance();
   inst.EstimateBranchLengths(1e-6, 10, true);

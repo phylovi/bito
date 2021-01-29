@@ -144,7 +144,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   for (size_t i = 0; i < max_iter; i++) {
     our_ostream << "Iteration: " << (i + 1) << std::endl;
     ProcessOperations(branch_optimization_operations);
-    GetEngine()->ResetLogMarginalLikelihood();
     ProcessOperations(marginal_lik_operations);
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
     our_ostream << "Current marginal log likelihood: ";
