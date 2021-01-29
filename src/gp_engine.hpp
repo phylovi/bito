@@ -122,6 +122,7 @@ class GPEngine {
   EigenVectorXd per_pattern_likelihoods_;
   EigenVectorXd per_pattern_likelihood_derivatives_;
   EigenVectorXd per_pattern_likelihood_derivative_ratios_;
+  EigenVectorXd per_pattern_marginal_constant_;
 
   // When we change from JC69Model, check that we are actually doing transpose in
   // leafward calculations.
@@ -148,6 +149,7 @@ class GPEngine {
   double LogRescalingFor(size_t plv_idx);
 
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void PartialBrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
