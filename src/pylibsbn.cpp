@@ -422,7 +422,7 @@ PYBIND11_MODULE(libsbn, m) {
       .def("branch_lengths_to_csv", &GPInstance::BranchLengthsToCSV,
            R"raw(Write "pretty" formatted branch lengths to a CSV.)raw")
       .def("subsplit_dag_to_dot", &GPInstance::SubsplitDAGToDot,
-           R"raw(Write the current subsplit DAG to a .dot format file.)raw")
+           R"raw(Write the current subsplit DAG to a DOT format file.)raw")
 
       // ** Estimation
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",
