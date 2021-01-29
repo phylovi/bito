@@ -334,8 +334,8 @@ void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
-// TODO there's some work to be done here.
-// There's a lot of common code betwen this function and the next.
+// #311 there's some work to be done here.
+// There's a lot of common code between this function and the next.
 // Also, the prep for marginalization isn't actually working correctly: we need to
 // gather more operations first.
 void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
