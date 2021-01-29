@@ -101,6 +101,7 @@ struct Likelihood {
 // `plv[rootward_]` and `P(branch_length) plv[leafward_]`,
 // starting optimization at `branch_lengths[branch_length_]`, and
 // storing optimal branch length at `branch_lengths[branch_length_]`.
+// #288 are we happy with definition of rootward and leafward?
 struct OptimizeBranchLength {
   constexpr OptimizeBranchLength(size_t leafward, size_t rootward, size_t gpcsp)
       : leafward_{leafward}, rootward_{rootward}, gpcsp_{gpcsp} {}
@@ -155,6 +156,9 @@ using GPOperation =
                  GPOperations::PrepForMarginalization>;
 
 using GPOperationVector = std::vector<GPOperation>;
+
+void AppendGPOperations(GPOperationVector& operations,
+                        GPOperationVector&& new_operations);
 
 // The purpose of this visitor class is to accumulate the
 // things-that-need-preparation-for-marginalization and build them into a

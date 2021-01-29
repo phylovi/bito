@@ -205,17 +205,13 @@ GPOperationVector GPDAG::RootwardPass(const SizeVector &visit_order) const {
   return operations;
 }
 
-GPOperationVector GPDAG::PopulatePLVs() {
+GPOperationVector GPDAG::PopulatePLVs() const {
   GPOperationVector operations;
-  auto append_operations = [&operations](GPOperationVector &&new_operations) {
-    std::move(new_operations.begin(), new_operations.end(),
-              std::back_inserter(operations));
-  };
-  append_operations(SetRootwardZero());
-  append_operations(SetLeafwardZero());
-  append_operations(SetRhatToStationary());
-  append_operations(RootwardPass());
-  append_operations(LeafwardPass());
+  AppendGPOperations(operations, SetRootwardZero());
+  AppendGPOperations(operations, SetLeafwardZero());
+  AppendGPOperations(operations, SetRhatToStationary());
+  AppendGPOperations(operations, RootwardPass());
+  AppendGPOperations(operations, LeafwardPass());
   return operations;
 }
 
