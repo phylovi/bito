@@ -22,7 +22,7 @@ class GPEngine {
            const std::string& mmap_file_path, double rescaling_threshold);
 
   // These operators mean that we can invoke this class on each of the operations.
-  void operator()(const GPOperations::Zero& op);
+  void operator()(const GPOperations::ZeroPLV& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
   void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& op);
   void operator()(const GPOperations::IncrementMarginalLikelihood& op);

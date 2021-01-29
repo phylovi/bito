@@ -35,7 +35,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   InitializePLVsWithSitePatterns();
 }
 
-void GPEngine::operator()(const GPOperations::Zero& op) {
+void GPEngine::operator()(const GPOperations::ZeroPLV& op) {
   plvs_.at(op.dest_).setZero();
   rescaling_counts_(op.dest_) = 0;
 }

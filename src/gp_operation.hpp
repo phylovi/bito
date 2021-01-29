@@ -26,9 +26,9 @@ namespace GPOperations {
 
 // We use the convention that `src_` and `dest_` indices always index PLVs.
 
-// Zero out the PLV at `dest_`.
-struct Zero {
-  constexpr explicit Zero(size_t dest) : dest_{dest} {}
+// ZeroPLV out the PLV at `dest_`.
+struct ZeroPLV {
+  constexpr explicit ZeroPLV(size_t dest) : dest_{dest} {}
   size_t dest_;
   StringSizePairVector guts() const { return {{"dest_", dest_}}; }
 };
@@ -148,7 +148,7 @@ struct PrepForMarginalization {
 }  // namespace GPOperations
 
 using GPOperation =
-    std::variant<GPOperations::Zero, GPOperations::SetToStationaryDistribution,
+    std::variant<GPOperations::ZeroPLV, GPOperations::SetToStationaryDistribution,
                  GPOperations::IncrementWithWeightedEvolvedPLV, GPOperations::Multiply,
                  GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
                  GPOperations::UpdateSBNProbabilities,
@@ -182,7 +182,7 @@ struct PrepForMarginalizationVisitor {
     src_vector.push_back(op.src_);
   }
   // Do nothing for the rest of the operations.
-  void operator()(const GPOperations::Zero&) {}                         // NOLINT
+  void operator()(const GPOperations::ZeroPLV&) {}                      // NOLINT
   void operator()(const GPOperations::SetToStationaryDistribution&) {}  // NOLINT
   void operator()(const GPOperations::IncrementMarginalLikelihood&) {}  // NOLINT
   void operator()(const GPOperations::Multiply&) {}                     // NOLINT
@@ -207,8 +207,8 @@ struct GPOperationOstream {
 
   explicit GPOperationOstream(std::ostream& os) : os_{os} {}
 
-  void operator()(const GPOperations::Zero& operation) {
-    os_ << "Zero" << operation.guts();
+  void operator()(const GPOperations::ZeroPLV& operation) {
+    os_ << "ZeroPLV" << operation.guts();
   }
   void operator()(const GPOperations::SetToStationaryDistribution& operation) {
     os_ << "SetToStationaryDistribution" << operation.guts();

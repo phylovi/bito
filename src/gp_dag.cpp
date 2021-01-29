@@ -72,7 +72,7 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
         // Update the R PLV corresponding to our rotation status.
         operations.push_back(RUpdateOfRotated(node_id, rotated));
         // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
-        operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
+        operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // VisitEdge
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
@@ -144,9 +144,9 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
   GPOperationVector operations;
   const auto node_count = dag_nodes_.size();
   for (size_t i = 0; i < node_count; i++) {
-    operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, i)});
-    operations.push_back(Zero{GetPLVIndex(PLVType::R, i)});
-    operations.push_back(Zero{GetPLVIndex(PLVType::R_TILDE, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R_HAT, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R_TILDE, i)});
   }
   return operations;
 }
@@ -165,9 +165,9 @@ GPOperationVector GPDAG::SetRootwardZero() const {
   GPOperationVector operations;
   const auto node_count = dag_nodes_.size();
   for (size_t i = taxon_count_; i < node_count; i++) {
-    operations.push_back(Zero{GetPLVIndex(PLVType::P, i)});
-    operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT, i)});
-    operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT_TILDE, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P_HAT, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P_HAT_TILDE, i)});
   }
   return operations;
 }
@@ -274,7 +274,7 @@ void GPDAG::OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
 }
 
 void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
-  operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, node_id)});
+  operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R_HAT, node_id)});
   GPOperationVector new_operations;
   const auto node = GetDagNode(node_id);
   for (const bool rotated : {false, true}) {
