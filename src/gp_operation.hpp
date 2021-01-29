@@ -58,6 +58,12 @@ struct IncrementWithWeightedEvolvedPLV {
   }
 };
 
+// Reset the marginal likelihood before incrementing.
+struct ResetMarginalLikelihood {
+  constexpr ResetMarginalLikelihood() {}
+  StringSizePairVector guts() const { return {}; }
+};
+
 // Increment log marginal likelihood with the log likelihood at rootsplit rootsplit_
 // with a leafward PLV p_ and a stationary distribution at stationary_.
 struct IncrementMarginalLikelihood {
@@ -147,13 +153,12 @@ struct PrepForMarginalization {
 
 }  // namespace GPOperations
 
-using GPOperation =
-    std::variant<GPOperations::ZeroPLV, GPOperations::SetToStationaryDistribution,
-                 GPOperations::IncrementWithWeightedEvolvedPLV, GPOperations::Multiply,
-                 GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
-                 GPOperations::UpdateSBNProbabilities,
-                 GPOperations::IncrementMarginalLikelihood,
-                 GPOperations::PrepForMarginalization>;
+using GPOperation = std::variant<
+    GPOperations::ZeroPLV, GPOperations::SetToStationaryDistribution,
+    GPOperations::IncrementWithWeightedEvolvedPLV, GPOperations::Multiply,
+    GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
+    GPOperations::UpdateSBNProbabilities, GPOperations::ResetMarginalLikelihood,
+    GPOperations::IncrementMarginalLikelihood, GPOperations::PrepForMarginalization>;
 
 using GPOperationVector = std::vector<GPOperation>;
 
@@ -184,6 +189,7 @@ struct PrepForMarginalizationVisitor {
   // Do nothing for the rest of the operations.
   void operator()(const GPOperations::ZeroPLV&) {}                      // NOLINT
   void operator()(const GPOperations::SetToStationaryDistribution&) {}  // NOLINT
+  void operator()(const GPOperations::ResetMarginalLikelihood&) {}      // NOLINT
   void operator()(const GPOperations::IncrementMarginalLikelihood&) {}  // NOLINT
   void operator()(const GPOperations::Multiply&) {}                     // NOLINT
   void operator()(const GPOperations::Likelihood&) {}                   // NOLINT
@@ -215,6 +221,10 @@ struct GPOperationOstream {
   }
   void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& operation) {
     os_ << "IncrementWithWeightedEvolvedPLV" << operation.guts();
+  }
+  // #288 should this be TotalMarginalLikelihood or something?
+  void operator()(const GPOperations::ResetMarginalLikelihood& operation) {
+    os_ << "ResetMarginalLikelihood" << operation.guts();
   }
   void operator()(const GPOperations::IncrementMarginalLikelihood& operation) {
     os_ << "IncrementMarginalLikelihood" << operation.guts();

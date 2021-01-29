@@ -71,6 +71,10 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
       rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
 }
 
+void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {
+  ResetLogMarginalLikelihood();
+}
+
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
   Assert(rescaling_counts_(op.stationary_) == 0,
          "Surprise! Rescaled stationary distribution in IncrementMarginalLikelihood");

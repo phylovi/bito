@@ -114,6 +114,7 @@ void GPInstance::InitializeGPEngine() {
   GetEngine()->SetSBNParameters(dag_.BuildUniformOnTopologicalSupportPrior());
 }
 
+// TODO do we need this any more now that ResetMarginalLikelihood is an operation?
 void GPInstance::ResetMarginalLikelihoodAndPopulatePLVs() {
   GetEngine()->ResetLogMarginalLikelihood();
   ProcessOperations(dag_.PopulatePLVs());

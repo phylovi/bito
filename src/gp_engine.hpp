@@ -25,6 +25,7 @@ class GPEngine {
   void operator()(const GPOperations::ZeroPLV& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
   void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& op);
+  void operator()(const GPOperations::ResetMarginalLikelihood& op);
   void operator()(const GPOperations::IncrementMarginalLikelihood& op);
   void operator()(const GPOperations::Multiply& op);
   void operator()(const GPOperations::Likelihood& op);
