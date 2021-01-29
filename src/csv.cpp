@@ -30,5 +30,8 @@ void CSV::StringDoubleVectorToCSV(const StringDoubleVector& vect,
   for (const auto& [s, value] : vect) {
     out_stream << s << "," << value << std::endl;
   }
+  if (out_stream.bad()) {
+    Failwith("Failure writing to " + out_path);
+  }
   out_stream.close();
 }

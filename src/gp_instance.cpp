@@ -347,3 +347,9 @@ void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,
   auto trees = CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(pcsp_string);
   trees.ToNewickFile(out_path);
 }
+
+void GPInstance::SubsplitDAGToDot(const std::string &out_path) {
+  std::ofstream out_stream(out_path);
+  out_stream << dag_.ToDot();
+  out_stream.close();
+}
