@@ -125,6 +125,7 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
       // UpdateEdge
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
         // Accumulate all P-hat PLVs in the parent node without optimization.
+        // #311 I don't think we need this Likelihood call... just the update PHat.
         UpdatePHatComputeLikelihood(node_id, child_id, rotated, operations);
       }));
   return operations;

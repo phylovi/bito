@@ -75,6 +75,7 @@ class TidySubsplitDAG : public SubsplitDAG {
                                        size_t node_id,
                                        std::unordered_set<size_t> &visited_nodes) {
     action.BeforeNode(node_id);
+    // #288 Here we are doing true and then false (left and then right).
     DepthFirstWithTidyActionForNodeClade(action, node_id, true, visited_nodes);
     DepthFirstWithTidyActionForNodeClade(action, node_id, false, visited_nodes);
     action.AfterNode(node_id);
@@ -102,6 +103,7 @@ class TidySubsplitDAG : public SubsplitDAG {
       const auto node = GetDagNode(node_id);
       for (const size_t child_id : node->GetLeafward(rotated)) {
         if (!GetDagNode(child_id)->IsLeaf()) {
+          // #288 Here we are doing true and then false (left and then right).
           DepthFirstWithTidyActionForNodeClade(action, child_id, true, visited_nodes);
           DepthFirstWithTidyActionForNodeClade(action, child_id, false, visited_nodes);
           action.AfterNode(child_id);
