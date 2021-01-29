@@ -419,8 +419,6 @@ PYBIND11_MODULE(libsbn, m) {
           R"raw(Write out trees with a given PCSP string to a Newick file (using current
           GP branch lengths).)raw",
           py::arg("pcsp_string"), py::arg("newick_path"))
-      .def("branch_lengths_to_csv", &GPInstance::BranchLengthsToCSV,
-           R"raw(Write "pretty" formatted branch lengths to a CSV.)raw")
       .def("subsplit_dag_to_dot", &GPInstance::SubsplitDAGToDot,
            R"raw(Write the current subsplit DAG to a DOT format file.)raw")
 
