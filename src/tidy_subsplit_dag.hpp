@@ -115,7 +115,7 @@ class TidySubsplitDAG : public SubsplitDAG {
       // We have completed updating our original goal of updating, and can turn off
       // updating mode.
       updating_below_ = std::nullopt;
-      }
+    }
   };
 
   // Perform edge modification below this node clade, dirtying and cleaning up as

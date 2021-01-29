@@ -149,4 +149,3 @@ std::string TidySubsplitDAG::RecordTraversal() {
       }));
   return result.str();
 }
-
