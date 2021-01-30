@@ -150,10 +150,6 @@ class GPEngine {
   double LogRescalingFor(size_t plv_idx);
 
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
-  void v1BrentOptimization(const GPOperations::OptimizeBranchLength& op);
-  void v2BrentOptimization(const GPOperations::OptimizeBranchLength& op);
-  void v3BrentOptimization(const GPOperations::OptimizeBranchLength& op);
-  void PartialBrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
