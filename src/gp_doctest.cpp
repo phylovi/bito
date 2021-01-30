@@ -10,9 +10,7 @@
 #include "combinatorics.hpp"
 #include "gp_instance.hpp"
 #include "phylo_model.hpp"
-// TODO remove unrooted?
 #include "rooted_sbn_instance.hpp"
-#include "unrooted_sbn_instance.hpp"
 
 using namespace GPOperations;  // NOLINT
 
@@ -158,10 +156,10 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal("data/hello_rooted_two_trees.nwk", "data/hello.fasta");
   std::cout << exact_per_pcsp_log_marginal << std::endl;
+  std::cout << engine->GetPerGPCSPLogLikelihoods() << std::endl;
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
 
-/*
 TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   auto inst = MakeDS1Reduced5Instance();
   auto engine = inst.GetEngine();
@@ -172,19 +170,14 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
 
   const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
-  // "ds1-reduced-5.gp-branch-lengths.unrooted.nwk" created by
-  // trees.ToNewickFile("data/ds1-reduced-5.gp-branch-lengths.nwk");
-  // then derooting with `nw_reroot -d`.
-  double exact_log_likelihood = ComputeExactMarginal(
-      "data/ds1-reduced-5.gp-branch-lengths.unrooted.nwk", "data/ds1-reduced-5.fasta");
+  std::string tree_path = "_ignore/ds1-reduced-5.gp-branch-lengths.nwk";
+  trees.ToNewickFile(tree_path);
+  auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
+      ComputeExactMarginal(tree_path, "data/ds1-reduced-5.fasta");
+  std::cout << exact_per_pcsp_log_marginal << std::endl;
+  std::cout << engine->GetPerGPCSPLogLikelihoods() << std::endl;
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-3);
-}
-*/
-
-TEST_CASE("GPInstance: DS1-reduced-5 per-PLV marginal likelihood calculation") {
-  auto inst = MakeDS1Reduced5Instance();
-  auto engine = inst.GetEngine();
-  // inst.PrintGPCSPIndexer();
+  // TODO test exact_per_pscp_...
 }
 
 TEST_CASE("GPInstance: gradient calculation") {
