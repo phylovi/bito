@@ -162,9 +162,6 @@ using GPOperation = std::variant<
 
 using GPOperationVector = std::vector<GPOperation>;
 
-void AppendGPOperations(GPOperationVector& operations,
-                        GPOperationVector&& new_operations);
-
 // The purpose of this visitor class is to accumulate the
 // things-that-need-preparation-for-marginalization and build them into a
 // PrepForMarginalization (see PrepForMarginalizationOfOperations implementation).
@@ -204,6 +201,9 @@ struct PrepForMarginalizationVisitor {
 };
 
 namespace GPOperations {
+void AppendGPOperations(GPOperationVector& operations,
+                        GPOperationVector&& new_operations);
+
 PrepForMarginalization PrepForMarginalizationOfOperations(
     const GPOperationVector& operations);
 };  // namespace GPOperations
