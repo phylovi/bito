@@ -63,6 +63,9 @@ GPInstance MakeFiveTaxonInstance() {
 // The sequences for this were obtained by cutting DS1 down to 5 taxa by taking the
 // first 4 taxa then moving taxon 15 (Latimera) to be number 5. The alignment was
 // trimmed to 500 sites by using seqmagick convert with `--cut 500:1000`.
+// The DAG obtained by `inst.SubsplitDAGToDot("_ignore/ds1-reduced-5.dot");` can be seen
+// at
+// https://user-images.githubusercontent.com/112708/106355238-8a0d7700-62ab-11eb-8830-f5e3cb6790e1.png
 GPInstance MakeDS1Reduced5Instance() {
   auto inst = GPInstanceOfFiles("data/ds1-reduced-5.fasta", "data/ds1-reduced-5.nwk");
   return inst;
