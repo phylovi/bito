@@ -123,7 +123,6 @@ class GPEngine {
   EigenVectorXd per_pattern_likelihoods_;
   EigenVectorXd per_pattern_likelihood_derivatives_;
   EigenVectorXd per_pattern_likelihood_derivative_ratios_;
-  EigenVectorXd per_pattern_marginal_constant_;
 
   // When we change from JC69Model, check that we are actually doing transpose in
   // leafward calculations.
