@@ -74,6 +74,10 @@ double FatBeagle::LogLikelihood(const UnrootedTree &tree) const {
                                 detrifurcated_tree.BranchLengths());
 }
 
+double FatBeagle::UnrootedLogLikelihood(const RootedTree &tree) const {
+  return LogLikelihoodInternals(tree.Topology(), tree.BranchLengths());
+}
+
 double FatBeagle::LogLikelihood(const RootedTree &tree) const {
   std::vector<double> branch_lengths = tree.BranchLengths();
   const std::vector<double> &rates = tree.GetRates();
@@ -162,6 +166,11 @@ FatBeagle *NullPtrAssert(FatBeagle *fat_beagle) {
 double FatBeagle::StaticUnrootedLogLikelihood(FatBeagle *fat_beagle,
                                               const UnrootedTree &in_tree) {
   return NullPtrAssert(fat_beagle)->LogLikelihood(in_tree);
+}
+
+double FatBeagle::StaticUnrootedLogLikelihoodOfRooted(FatBeagle *fat_beagle,
+                                                      const RootedTree &in_tree) {
+  return NullPtrAssert(fat_beagle)->UnrootedLogLikelihood(in_tree);
 }
 
 double FatBeagle::StaticRootedLogLikelihood(FatBeagle *fat_beagle,

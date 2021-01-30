@@ -40,6 +40,9 @@ class FatBeagle {
   void SetRescaling(const bool rescaling) { rescaling_ = rescaling; }
 
   double LogLikelihood(const UnrootedTree &tree) const;
+  // This override performs a "classical" log likelihood calculation of a rooted tree
+  // considered as an unrooted tree with no time-tree extras.
+  double UnrootedLogLikelihood(const RootedTree &tree) const;
   double LogLikelihood(const RootedTree &tree) const;
   // Compute first derivative of the log likelihood with respect to each branch
   // length, as a vector of first derivatives indexed by node id.
@@ -49,6 +52,10 @@ class FatBeagle {
   // We can pass these static methods to FatBeagleParallelize.
   static double StaticUnrootedLogLikelihood(FatBeagle *fat_beagle,
                                             const UnrootedTree &in_tree);
+  // This override performs a "classical" log likelihood calculation of a rooted tree
+  // considered as an unrooted tree with no time-tree extras.
+  static double StaticUnrootedLogLikelihoodOfRooted(FatBeagle *fat_beagle,
+                                                    const RootedTree &in_tree);
   static double StaticRootedLogLikelihood(FatBeagle *fat_beagle,
                                           const RootedTree &in_tree);
   static UnrootedPhyloGradient StaticUnrootedGradient(FatBeagle *fat_beagle,

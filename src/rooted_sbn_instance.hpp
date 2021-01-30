@@ -35,6 +35,7 @@ class RootedSBNInstance : public PreRootedSBNInstance {
   // ** Phylogenetic likelihood
 
   std::vector<double> LogLikelihoods();
+  std::vector<double> UnrootedLogLikelihoods();
   // For each loaded tree, return the phylogenetic gradient.
   std::vector<RootedPhyloGradient> PhyloGradients();
 
