@@ -114,10 +114,7 @@ void GPInstance::InitializeGPEngine() {
   GetEngine()->SetSBNParameters(dag_.BuildUniformOnTopologicalSupportPrior());
 }
 
-void GPInstance::ResetMarginalLikelihoodAndPopulatePLVs() {
-  GetEngine()->ResetLogMarginalLikelihood();
-  ProcessOperations(dag_.PopulatePLVs());
-}
+void GPInstance::PopulatePLVs() { ProcessOperations(dag_.PopulatePLVs()); }
 
 void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }
 
@@ -131,7 +128,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
 
   our_ostream << "Populating PLVs\n";
-  ResetMarginalLikelihoodAndPopulatePLVs();
+  PopulatePLVs();
   std::chrono::duration<double> warmup_duration = now() - t_start;
   t_start = now();
   our_ostream << "Computing initial likelihood\n";
@@ -143,7 +140,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   for (size_t i = 0; i < max_iter; i++) {
     our_ostream << "Iteration: " << (i + 1) << std::endl;
     ProcessOperations(branch_optimization_operations);
-    GetEngine()->ResetLogMarginalLikelihood();
     ProcessOperations(marginal_lik_operations);
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
     our_ostream << "Current marginal log likelihood: ";
@@ -171,7 +167,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
 
 void GPInstance::EstimateSBNParameters() {
   std::cout << "Begin SBN parameter optimization\n";
-  ResetMarginalLikelihoodAndPopulatePLVs();
+  PopulatePLVs();
   ComputeLikelihoods();
   ProcessOperations(dag_.OptimizeSBNParameters());
 }
@@ -326,6 +322,11 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPStringAndGPBranchL
     }
   }
   return TreesWithGPBranchLengthsOfTopologies(std::move(topologies));
+}
+
+void GPInstance::ExportTrees(const std::string &out_path) {
+  auto trees = CurrentlyLoadedTreesWithGPBranchLengths();
+  trees.ToNewickFile(out_path);
 }
 
 void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,

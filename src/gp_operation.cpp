@@ -21,3 +21,9 @@ std::ostream& operator<<(std::ostream& os, GPOperationVector const& operation_ve
   os << "]" << std::endl;
   return os;
 }
+
+void GPOperations::AppendGPOperations(GPOperationVector& operations,
+                                      GPOperationVector&& new_operations) {
+  std::move(new_operations.begin(), new_operations.end(),
+            std::back_inserter(operations));
+}

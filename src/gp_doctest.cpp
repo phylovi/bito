@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2021 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -111,7 +111,7 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
 
-  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.PopulatePLVs();
   inst.ComputeLikelihoods();
 
   EigenVectorXd realized_log_likelihoods =
@@ -128,7 +128,7 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   auto branch_lengths = MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths();
   engine->SetBranchLengths(branch_lengths);
 
-  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
   double exact_log_likelihood =
@@ -141,7 +141,7 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   auto engine = inst.GetEngine();
 
   inst.EstimateBranchLengths(0.0001, 100, true);
-  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
 
@@ -158,7 +158,7 @@ TEST_CASE("GPInstance: gradient calculation") {
   auto inst = MakeHelloGPInstanceSingleNucleotide();
   auto engine = inst.GetEngine();
 
-  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.PopulatePLVs();
   inst.ComputeLikelihoods();
 
   size_t root_idx = root;
@@ -189,7 +189,7 @@ GPInstance MakeFluAGPInstance(double rescaling_threshold) {
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   auto inst = MakeFluAGPInstance(rescaling_threshold);
-  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   return inst.GetEngine()->GetLogMarginalLikelihood();
 }
@@ -264,16 +264,22 @@ TEST_CASE("GPInstance: generate all trees") {
 }
 
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
+  const std::string tree_path = "_ignore/five_taxon_rooted.gp_branch_lengths.nwk";
   auto inst = MakeFiveTaxaInstance();
   inst.EstimateBranchLengths(1e-6, 10, true);
+  inst.ExportTrees(tree_path);
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
+  // #313: It'd be really nice to be able to deroot on the fly, in which case we'd be
+  // able to just load back in `tree_path`, but for now
+  // nw_reroot -d _ignore/five_taxon_rooted.gp_branch_lengths.nwk > \
+  // data/five_taxon_unrooted_with_branch_lengths.nwk
   double exact_marginal_log_likelihood = ComputeExactMarginal(
       "data/five_taxon_unrooted_with_branch_lengths.nwk", "data/five_taxon.fasta");
   CHECK_LT(abs(exact_marginal_log_likelihood - gp_marginal_log_likelihood), 1e-6);
 }
 
 TEST_CASE("GPInstance: test populate PLV") {
-  // This test makes sure that ResetMarginalLikelihoodAndPopulatePLVs correctly
+  // This test makes sure that PopulatePLVs correctly
   // re-populates the PLVs using the current branch lengths.
   auto inst = MakeFiveTaxaInstance();
   inst.EstimateBranchLengths(1e-6, 10, true);
@@ -281,7 +287,7 @@ TEST_CASE("GPInstance: test populate PLV") {
   size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
   const EigenVectorXd log_likelihoods1 =
       inst.GetEngine()->GetPerGPCSPLogLikelihoods(0, length);
-  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
   CheckVectorXdEquality(log_likelihoods1, log_likelihoods2, 1e-6);
@@ -290,7 +296,7 @@ TEST_CASE("GPInstance: test populate PLV") {
 TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   auto inst = MakeFiveTaxaInstance();
   inst.GetEngine()->SetBranchLengthsToConstant(0.1);
-  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.PopulatePLVs();
   // We need to call ComputeLikelihoods to populate the likelihood matrix.
   // Note: EstimateBranchLengths doesn't populate the likelihood matrix.
   inst.ComputeLikelihoods();

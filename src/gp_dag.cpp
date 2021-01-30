@@ -72,10 +72,15 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
         // Update the R PLV corresponding to our rotation status.
         operations.push_back(RUpdateOfRotated(node_id, rotated));
         // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
-        operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
+        operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // VisitEdge
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+        // #310 this is temporary:
+        // We do a full PLV population and then marginal likelihood calculation.
+        // GPOperations::AppendGPOperations(operations, PopulatePLVs());
+        // GPOperations::AppendGPOperations(operations, MarginalLikelihood());
+
         // Optimize each branch for a given node-clade and accumulate the resulting
         // P-hat PLVs in the parent node.
         OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
@@ -108,7 +113,7 @@ GPOperationVector GPDAG::LeafwardPass() const {
 }
 
 GPOperationVector GPDAG::MarginalLikelihood() const {
-  GPOperationVector operations;
+  GPOperationVector operations = {GPOperations::ResetMarginalLikelihood{}};
   for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
     const auto rootsplit = rootsplits_[rootsplit_idx];
     const auto root_subsplit = rootsplit + ~rootsplit;
@@ -140,9 +145,9 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
   GPOperationVector operations;
   const auto node_count = dag_nodes_.size();
   for (size_t i = 0; i < node_count; i++) {
-    operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, i)});
-    operations.push_back(Zero{GetPLVIndex(PLVType::R, i)});
-    operations.push_back(Zero{GetPLVIndex(PLVType::R_TILDE, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R_HAT, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R_TILDE, i)});
   }
   return operations;
 }
@@ -161,9 +166,9 @@ GPOperationVector GPDAG::SetRootwardZero() const {
   GPOperationVector operations;
   const auto node_count = dag_nodes_.size();
   for (size_t i = taxon_count_; i < node_count; i++) {
-    operations.push_back(Zero{GetPLVIndex(PLVType::P, i)});
-    operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT, i)});
-    operations.push_back(Zero{GetPLVIndex(PLVType::P_HAT_TILDE, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P_HAT, i)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P_HAT_TILDE, i)});
   }
   return operations;
 }
@@ -205,17 +210,13 @@ GPOperationVector GPDAG::RootwardPass(const SizeVector &visit_order) const {
   return operations;
 }
 
-GPOperationVector GPDAG::PopulatePLVs() {
+GPOperationVector GPDAG::PopulatePLVs() const {
   GPOperationVector operations;
-  auto append_operations = [&operations](GPOperationVector &&new_operations) {
-    std::move(new_operations.begin(), new_operations.end(),
-              std::back_inserter(operations));
-  };
-  append_operations(SetRootwardZero());
-  append_operations(SetLeafwardZero());
-  append_operations(SetRhatToStationary());
-  append_operations(RootwardPass());
-  append_operations(LeafwardPass());
+  GPOperations::AppendGPOperations(operations, SetRootwardZero());
+  GPOperations::AppendGPOperations(operations, SetLeafwardZero());
+  GPOperations::AppendGPOperations(operations, SetRhatToStationary());
+  GPOperations::AppendGPOperations(operations, RootwardPass());
+  GPOperations::AppendGPOperations(operations, LeafwardPass());
   return operations;
 }
 
@@ -274,7 +275,7 @@ void GPDAG::OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
 }
 
 void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
-  operations.push_back(Zero{GetPLVIndex(PLVType::R_HAT, node_id)});
+  operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R_HAT, node_id)});
   GPOperationVector new_operations;
   const auto node = GetDagNode(node_id);
   for (const bool rotated : {false, true}) {

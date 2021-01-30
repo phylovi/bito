@@ -35,7 +35,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   InitializePLVsWithSitePatterns();
 }
 
-void GPEngine::operator()(const GPOperations::Zero& op) {
+void GPEngine::operator()(const GPOperations::ZeroPLV& op) {
   plvs_.at(op.dest_).setZero();
   rescaling_counts_(op.dest_) = 0;
 }
@@ -69,6 +69,10 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
   // unavoidable without special-purpose truncation code, which doesn't seem worthwhile.
   plvs_.at(op.dest_) +=
       rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
+}
+
+void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {
+  ResetLogMarginalLikelihood();
 }
 
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
