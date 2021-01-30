@@ -56,6 +56,8 @@ class GPInstance {
   RootedTreeCollection CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
       const std::string &pcsp_string);
 
+  // Run CurrentlyLoadedTreesWithGPBranchLengths and export to a Newick file.
+  void ExportTrees(const std::string &newick_path);
   // Run CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths and export to a Newick
   // file.
   void ExportTreesWithAPCSP(const std::string &pcsp_string,

@@ -1,4 +1,4 @@
-// Copyright 2019 libsbn project contributors.
+// Copyright 2019-2021 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -136,7 +136,6 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
 
-// TODO sometimes nice to comment this one
 TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   auto inst = MakeDS1Reduced5Instance();
   auto engine = inst.GetEngine();
@@ -264,11 +263,16 @@ TEST_CASE("GPInstance: generate all trees") {
   CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
 }
 
-// TODO sometimes nice to comment these two
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
+  const std::string tree_path = "_ignore/five_taxon_rooted.gp_branch_lengths.nwk";
   auto inst = MakeFiveTaxaInstance();
   inst.EstimateBranchLengths(1e-6, 10, true);
+  inst.ExportTrees(tree_path);
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
+  // #313: It'd be really nice to be able to deroot on the fly, in which case we'd be
+  // able to just load back in `tree_path`, but for now
+  // nw_reroot -d _ignore/five_taxon_rooted.gp_branch_lengths.nwk > \
+  // data/five_taxon_unrooted_with_branch_lengths.nwk
   double exact_marginal_log_likelihood = ComputeExactMarginal(
       "data/five_taxon_unrooted_with_branch_lengths.nwk", "data/five_taxon.fasta");
   CHECK_LT(abs(exact_marginal_log_likelihood - gp_marginal_log_likelihood), 1e-6);
