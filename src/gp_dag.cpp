@@ -113,7 +113,6 @@ GPOperationVector GPDAG::LeafwardPass() const {
 }
 
 GPOperationVector GPDAG::MarginalLikelihood() const {
-  // TODO check for unnecessary ResetMarginalLikelihood
   GPOperationVector operations = {GPOperations::ResetMarginalLikelihood{}};
   for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
     const auto rootsplit = rootsplits_[rootsplit_idx];
