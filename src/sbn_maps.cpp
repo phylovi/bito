@@ -1,4 +1,4 @@
-// Copyright 2019-2020 libsbn project contributors.
+// Copyright 2019-2021 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "sbn_maps.hpp"
