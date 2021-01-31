@@ -94,6 +94,7 @@ class Bitset {
   // more examples.
   std::string PCSPToString() const;
   bool PCSPIsValid() const;
+  bool PCSPIsFake() const;
   // Do the sister and focal clades union to the whole taxon set?
   bool PCSPIsRootsplit() const;
   size_t SubsplitChunkSize() const;
@@ -245,6 +246,9 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("000111").PCSPIsValid(), false);
   CHECK_EQ(Bitset("100100").PCSPIsValid(), false);
   CHECK_EQ(Bitset("100011001").PCSPIsValid(), true);
+
+  CHECK_EQ(Bitset("100011001").PCSPIsFake(), false);
+  CHECK_EQ(Bitset("100011000").PCSPIsFake(), true);
 
   CHECK_EQ(Bitset("100011001").PCSPParent(), Bitset("100011"));
   CHECK_EQ(Bitset("100011001").PCSPWithoutParent(), Bitset("011001"));

@@ -298,6 +298,11 @@ bool Bitset::PCSPIsValid() const {
   return true;
 }
 
+bool Bitset::PCSPIsFake() const {
+  Assert(size() % 3 == 0, "Size isn't 0 mod 3 in Bitset::PCSPIsFake.");
+  return !PCSPChunk(2).Any();
+}
+
 bool Bitset::PCSPIsRootsplit() const {
   Assert(size() % 3 == 0, "Size isn't 0 mod 3 in Bitset::PCSPIsRootsplit.");
 
