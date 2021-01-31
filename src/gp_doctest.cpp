@@ -22,9 +22,9 @@ enum HelloGPCSP { jupiter, mars, saturn, venus, root };
 // Compute the exact marginal likelihood via brute force to compare with generalized
 // pruning. We assume that the trees in `newick_path` are all of the trees over which we
 // should marginalize.
-std::pair<double, EigenVectorXd> ComputeExactMarginal(const std::string& newick_path,
-                                                      const std::string& fasta_path,
-                                                      bool with_tree_prior = true) {
+std::pair<double, StringDoubleMap> ComputeExactMarginal(const std::string& newick_path,
+                                                        const std::string& fasta_path,
+                                                        bool with_tree_prior = true) {
   RootedSBNInstance sbn_instance("charlie");
   sbn_instance.ReadNewickFile(newick_path);
   sbn_instance.ProcessLoadedTrees();
@@ -66,7 +66,9 @@ std::pair<double, EigenVectorXd> ComputeExactMarginal(const std::string& newick_
     exact_marginal_log_lik += per_site_log_marginal;
     exact_per_pcsp_log_marginals.array() += per_site_per_pcsp_log_marginals.array();
   }
-  return {exact_marginal_log_lik, exact_per_pcsp_log_marginals};
+  return {
+      exact_marginal_log_lik,
+      UnorderedMapOf(sbn_instance.PrettyIndexedVector(exact_per_pcsp_log_marginals))};
 }
 
 GPInstance GPInstanceOfFiles(const std::string& fasta_path,
@@ -143,6 +145,22 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
 }
 
+void CheckMapVsVector(const StringDoubleMap& exact_map,
+                      const StringDoubleVector& gp_vector) {
+  for (const auto& [gp_string, gp_value] : gp_vector) {
+    if (exact_map.find(gp_string) == exact_map.end()) {
+      Assert(!Bitset(gp_string.substr(gp_string.rfind('|') + 1)).Any(),
+             "Missing a non-fake bitset in CheckMapVsVector.");
+    } else {
+      auto exact_value = exact_map.at(gp_string);
+      if (fabs(gp_value - exact_value) > 1e-3) {
+        std::cout << "exact/gp mismatch for " << gp_string << ": " << exact_value
+                  << ", " << gp_value << std::endl;
+      }
+    }
+  }
+}
+
 TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   auto inst = MakeHelloGPInstanceTwoTrees();
   auto engine = inst.GetEngine();
@@ -155,8 +173,8 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal("data/hello_rooted_two_trees.nwk", "data/hello.fasta");
-  std::cout << exact_per_pcsp_log_marginal << std::endl;
-  std::cout << engine->GetPerGPCSPLogLikelihoods() << std::endl;
+  auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPLogLikelihoods();
+  CheckMapVsVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
 
@@ -174,10 +192,9 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   trees.ToNewickFile(tree_path);
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal(tree_path, "data/ds1-reduced-5.fasta");
-  std::cout << exact_per_pcsp_log_marginal << std::endl;
-  std::cout << engine->GetPerGPCSPLogLikelihoods() << std::endl;
+  auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPLogLikelihoods();
+  CheckMapVsVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-3);
-  // TODO test exact_per_pscp_...
 }
 
 TEST_CASE("GPInstance: gradient calculation") {
