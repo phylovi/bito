@@ -161,25 +161,7 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
   }
 }
 
-TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
-  auto inst = MakeHelloGPInstanceTwoTrees();
-  auto engine = inst.GetEngine();
-
-  auto branch_lengths = MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths();
-  engine->SetBranchLengths(branch_lengths);
-
-  inst.PopulatePLVs();
-  inst.ComputeLikelihoods();
-  double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
-  auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
-      ComputeExactMarginal("data/hello_rooted_two_trees.nwk", "data/hello.fasta");
-  auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPComponentsOfFullMarginal();
-  CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
-  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
-}
-
-TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
-  auto inst = MakeDS1Reduced5Instance();
+void TestMarginal(GPInstance inst, const std::string fasta_path) {
   auto engine = inst.GetEngine();
 
   inst.EstimateBranchLengths(0.0001, 100, true);
@@ -188,13 +170,21 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
 
   const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
-  std::string tree_path = "_ignore/ds1-reduced-5.gp-branch-lengths.nwk";
+  std::string tree_path = "_ignore/test_marginal_tree.nwk";
   trees.ToNewickFile(tree_path);
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
-      ComputeExactMarginal(tree_path, "data/ds1-reduced-5.fasta");
+      ComputeExactMarginal(tree_path, fasta_path);
   auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPComponentsOfFullMarginal();
-  CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-3);
+  CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
+}
+
+TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
+  TestMarginal(MakeHelloGPInstanceTwoTrees(), "data/hello.fasta");
+}
+
+TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
+  TestMarginal(MakeDS1Reduced5Instance(), "data/ds1-reduced-5.fasta");
 }
 
 TEST_CASE("GPInstance: gradient calculation") {
