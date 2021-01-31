@@ -41,6 +41,7 @@ class GPEngine {
   const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
   void PrintPLV(size_t plv_idx);
 
+  // TODO move these out of header file
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     branch_lengths_ = std::move(branch_lengths);
   };

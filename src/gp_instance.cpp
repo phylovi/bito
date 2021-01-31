@@ -281,6 +281,10 @@ StringDoubleVector GPInstance::PrettyIndexedBranchLengths() {
   return PrettyIndexedVector(GetEngine()->GetBranchLengths());
 }
 
+StringDoubleVector GPInstance::PrettyIndexedPerGPCSPLogLikelihoods() {
+  return PrettyIndexedVector(GetEngine()->GetPerGPCSPLogLikelihoods());
+}
+
 void GPInstance::SBNParametersToCSV(const std::string &file_path) {
   CSV::StringDoubleVectorToCSV(PrettyIndexedSBNParameters(), file_path);
 }

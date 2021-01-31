@@ -172,15 +172,19 @@ class GenericSBNInstance {
     return sbn_parameters_result;
   }
 
-  StringDoubleVector PrettyIndexedSBNParameters() {
+  StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v) {
     StringDoubleVector result;
-    auto sbn_parameters = NormalizedSBNParameters();
-    result.reserve(sbn_parameters.size());
+    result.reserve(v.size());
     const auto pretty_indexer = PrettyIndexer();
-    for (size_t i = 0; i < pretty_indexer.size(); i++) {
-      result.push_back({pretty_indexer.at(i), sbn_parameters(i)});
+    Assert(v.size() <= pretty_indexer.size(), "v is too long in PrettyIndexedVector");
+    for (size_t i = 0; i < v.size(); i++) {
+      result.push_back({pretty_indexer.at(i), v(i)});
     }
     return result;
+  }
+
+  StringDoubleVector PrettyIndexedSBNParameters() {
+    return PrettyIndexedVector(NormalizedSBNParameters());
   }
 
   void SBNParametersToCSV(const std::string &file_path) {

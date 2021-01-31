@@ -42,6 +42,7 @@ class GPInstance {
   EigenConstVectorXdRef GetSBNParameters();
   StringDoubleVector PrettyIndexedSBNParameters();
   StringDoubleVector PrettyIndexedBranchLengths();
+  StringDoubleVector PrettyIndexedPerGPCSPLogLikelihoods();
 
   void SBNParametersToCSV(const std::string &file_path);
   void SBNPriorToCSV(const std::string &file_path);
