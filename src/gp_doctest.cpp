@@ -165,7 +165,7 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
   inst.EstimateBranchLengths(0.0001, 100, true);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-  std::string tree_path = "_ignore/test_marginal_tree.nwk";
+  std::string tree_path = "_ignore/test_marginal_trees.nwk";
   const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
   trees.ToNewickFile(tree_path);
 
