@@ -145,12 +145,12 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
 }
 
-void CheckMapVsVector(const StringDoubleMap& exact_map,
-                      const StringDoubleVector& gp_vector) {
+void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
+                             const StringDoubleVector& gp_vector) {
   for (const auto& [gp_string, gp_value] : gp_vector) {
     if (exact_map.find(gp_string) == exact_map.end()) {
       Assert(!Bitset(gp_string.substr(gp_string.rfind('|') + 1)).Any(),
-             "Missing a non-fake bitset in CheckMapVsVector.");
+             "Missing a non-fake bitset in CheckExactMapVsGPVector.");
     } else {
       auto exact_value = exact_map.at(gp_string);
       if (fabs(gp_value - exact_value) > 1e-3) {
@@ -174,7 +174,7 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal("data/hello_rooted_two_trees.nwk", "data/hello.fasta");
   auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPLogLikelihoods();
-  CheckMapVsVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
+  CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
 
@@ -193,7 +193,7 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal(tree_path, "data/ds1-reduced-5.fasta");
   auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPLogLikelihoods();
-  CheckMapVsVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
+  CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-3);
 }
 
