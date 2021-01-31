@@ -28,6 +28,7 @@ class SitePattern {
   const std::vector<SymbolVector>& GetPatterns() const { return patterns_; }
   size_t PatternCount() const { return patterns_.at(0).size(); }
   size_t SequenceCount() const { return patterns_.size(); }
+  size_t SiteCount() const { return alignment_.Length(); }
   const std::vector<double>& GetWeights() const { return weights_; }
   // Make a flattened partial likelihood vector for a given sequence, where anything
   // above 4 is given a uniform distribution.

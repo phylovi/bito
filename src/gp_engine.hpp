@@ -65,11 +65,15 @@ class GPEngine {
     return log_likelihoods_ * site_pattern_weights_;
   };
   // This is the full marginal likelihood sum restricted to trees containing a PCSP.
-  // See eq:PerGPCSPComponentsOfFullMarginal
+  // When we sum the log of eq:PerGPCSPComponentsOfFullMarginal over the sites, we get
+  // out a term that is the number of sites times the log of the prior conditional PCSP
+  // probability.
+  //
   // TODO speed?
   // TODO add Log to name
   EigenVectorXd GetPerGPCSPComponentsOfFullMarginal() const {
-    return GetPerGPCSPLogLikelihoods().array() + q_.array().log();
+    return GetPerGPCSPLogLikelihoods().array() +
+           static_cast<double>(site_pattern_.SiteCount()) * q_.array().log();
   };
   // This override of GetPerGPCSPLogLikelihoods computes the marginal log
   // likelihood for GPCSPs in the range [start, start + length).
