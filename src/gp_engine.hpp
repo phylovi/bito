@@ -56,18 +56,20 @@ class GPEngine {
     return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
   }
   EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
-  // TODO this is not a correct description
   // This function returns a vector indexed by GPCSP such that the i-th entry
-  // stores the marginal log likelihood over all trees that include a GPCSP
-  // indexed by i.
+  // stores the log of:
+  // (the marginal likelihood over all trees that include a GPCSP
+  // indexed by i) / (the unconditional probability of i's parent subsplit)
+  // TODO rename?
   EigenVectorXd GetPerGPCSPLogLikelihoods() const {
     return log_likelihoods_ * site_pattern_weights_;
   };
   // This is the full marginal likelihood sum restricted to trees containing a PCSP.
   // See eq:PerGPCSPComponentsOfFullMarginal
   // TODO speed?
+  // TODO add Log to name
   EigenVectorXd GetPerGPCSPComponentsOfFullMarginal() const {
-    return GetPerGPCSPLogLikelihoods().array() * q_.array();
+    return GetPerGPCSPLogLikelihoods().array() + q_.array().log();
   };
   // This override of GetPerGPCSPLogLikelihoods computes the marginal log
   // likelihood for GPCSPs in the range [start, start + length).
