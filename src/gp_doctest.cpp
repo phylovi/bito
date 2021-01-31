@@ -173,7 +173,7 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal("data/hello_rooted_two_trees.nwk", "data/hello.fasta");
-  auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPLogLikelihoods();
+  auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPComponentsOfFullMarginal();
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
 }
@@ -192,7 +192,7 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   trees.ToNewickFile(tree_path);
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal(tree_path, "data/ds1-reduced-5.fasta");
-  auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPLogLikelihoods();
+  auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPComponentsOfFullMarginal();
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-3);
 }
