@@ -162,19 +162,17 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
 }
 
 void TestMarginal(GPInstance inst, const std::string fasta_path) {
-  auto engine = inst.GetEngine();
-
   inst.EstimateBranchLengths(0.0001, 100, true);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-  double gp_marginal_log_likelihood = engine->GetLogMarginalLikelihood();
-
-  const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
   std::string tree_path = "_ignore/test_marginal_tree.nwk";
+  const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
   trees.ToNewickFile(tree_path);
+
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal(tree_path, fasta_path);
   auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPComponentsOfFullMarginal();
+  double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-3);
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
 }
