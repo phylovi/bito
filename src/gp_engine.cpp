@@ -76,18 +76,26 @@ void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
-  Assert(rescaling_counts_(op.stationary_) == 0,
+  Assert(rescaling_counts_(op.stationary_times_prior_) == 0,
          "Surprise! Rescaled stationary distribution in IncrementMarginalLikelihood");
+  // This operation does two things: imcrement the overall per-site log marginal
+  // likelihood, and also set the conditional per-rootsplit marginal likelihood.
+  //
+  // We first calculate the unconditional contribution of the rootsplit to the overall
+  // per-site marginal likelihood. It's an unconditional contribution because our
+  // stationary distribution incorporates the prior on rootsplits.
   log_likelihoods_.row(op.rootsplit_) =
-      (plvs_.at(op.stationary_).transpose() * plvs_.at(op.p_))
+      (plvs_.at(op.stationary_times_prior_).transpose() * plvs_.at(op.p_))
           .diagonal()
           .array()
-          .log() -
-      log(q_[op.rootsplit_]) + LogRescalingFor(op.p_);
-
-  // Perform LogAdd per site.
+          .log() +
+      LogRescalingFor(op.p_);
+  // We can then increment the overall per-site marginal likelihood.
   log_marginal_likelihood_ = NumericalUtils::LogAddVectors(
       log_marginal_likelihood_, log_likelihoods_.row(op.rootsplit_));
+  // However, we want the row in log_likelihoods_ to be the marginal likelihood
+  // *conditional* on that rootsplit, so we log-divide by the rootsplit's probability.
+  log_likelihoods_.row(op.rootsplit_).array() -= log(q_[op.rootsplit_]);
 }
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {

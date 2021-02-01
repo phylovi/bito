@@ -65,15 +65,22 @@ struct ResetMarginalLikelihood {
 };
 
 // Increment log marginal likelihood with the log likelihood at rootsplit rootsplit_
-// with a leafward PLV p_ and a stationary distribution at stationary_.
+// with a leafward PLV p_ and a stationary distribution multiplied by the rootsplit
+// prior at stationary_times_prior_.
+// #288 note that this also sets the per-rootsplit conditional likelihood. It deserves a
+// better name that has something to do with rootsplits. We should also consider just
+// rejiggering things to use the stationary distribution directly.
 struct IncrementMarginalLikelihood {
-  constexpr IncrementMarginalLikelihood(size_t stationary, size_t rootsplit, size_t p)
-      : stationary_{stationary}, rootsplit_{rootsplit}, p_{p} {}
-  size_t stationary_;
+  constexpr IncrementMarginalLikelihood(size_t stationary_times_prior, size_t rootsplit,
+                                        size_t p)
+      : stationary_times_prior_{stationary_times_prior}, rootsplit_{rootsplit}, p_{p} {}
+  size_t stationary_times_prior_;
   size_t rootsplit_;
   size_t p_;
   StringSizePairVector guts() const {
-    return {{"stationary_", stationary_}, {"rootsplit_", rootsplit_}, {"p_", p_}};
+    return {{"stationary_times_prior_", stationary_times_prior_},
+            {"rootsplit_", rootsplit_},
+            {"p_", p_}};
   }
 };
 
@@ -89,6 +96,7 @@ struct Multiply {
   }
 };
 
+// #288 this deserves a better description, and perhaps a better name.
 // Stores the likelihood of `plv[child_]` and `plv[parent_]` with branch length
 // branch_lengths[dest_], incorporating site pattern weights, in
 // `log_likelihoods[dest_]`
