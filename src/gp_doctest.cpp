@@ -107,8 +107,7 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
 // pruning. We assume that the trees in `newick_path` are all of the trees over which we
 // should marginalize.
 std::pair<double, StringDoubleMap> ComputeExactMarginal(const std::string& newick_path,
-                                                        const std::string& fasta_path,
-                                                        bool with_tree_prior = true) {
+                                                        const std::string& fasta_path) {
   RootedSBNInstance sbn_instance("charlie");
   sbn_instance.ReadNewickFile(newick_path);
   sbn_instance.ProcessLoadedTrees();
@@ -124,7 +123,7 @@ std::pair<double, StringDoubleMap> ComputeExactMarginal(const std::string& newic
   double exact_marginal_log_lik = 0.0;
   EigenVectorXd exact_per_pcsp_log_marginals(gpcsp_count);
   exact_per_pcsp_log_marginals.setZero();
-  double log_prior_term = with_tree_prior ? log(1. / tree_count) : 0.0;
+  double log_prior_term = log(1. / tree_count);
 
   for (size_t column_idx = 0; column_idx < alignment.Length(); column_idx++) {
     sbn_instance.SetAlignment(alignment.ExtractSingleColumnAlignment(column_idx));
@@ -162,11 +161,7 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
       Assert(!Bitset(gp_string.substr(gp_string.rfind('|') + 1)).Any(),
              "Missing a non-fake bitset in CheckExactMapVsGPVector.");
     } else {
-      auto exact_value = exact_map.at(gp_string);
-      if (fabs(gp_value - exact_value) > 1e-3) {
-        std::cout << "exact/gp mismatch for " << gp_string << ": " << exact_value
-                  << ", " << gp_value << std::endl;
-      }
+      CHECK_LT(fabs(exact_map.at(gp_string) - gp_value), 1e-6);
     }
   }
 }
@@ -350,9 +345,8 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
       ComputeExactMarginal("data/five_taxon_trees_3_4.nwk", "data/five_taxon.fasta");
 
   EigenVectorXd expected_log_lik_vector_at_rootsplits(3);
-  expected_log_lik_vector_at_rootsplits[0] = log_lik_tree_1;
-  expected_log_lik_vector_at_rootsplits[1] = log_lik_tree_2;
-  expected_log_lik_vector_at_rootsplits[2] = log_lik_trees_3_4;
+  expected_log_lik_vector_at_rootsplits << log_lik_tree_1, log_lik_tree_2,
+      log_lik_trees_3_4;
   EigenVectorXd realized_log_lik_vector_at_rootsplits =
       log_likelihood_vector.segment(0, 3);
   CheckVectorXdEqualityAfterSorting(realized_log_lik_vector_at_rootsplits,
