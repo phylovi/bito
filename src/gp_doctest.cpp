@@ -112,6 +112,7 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
 // we should marginalize. So if you have generated a subsplit DAG with a set of trees,
 // use GenerateCompleteRootedTreeCollection to get all the trees over which you will be
 // marginalizing.
+// If we rename things in #288, let's do that in the body of this function too.
 std::pair<double, StringDoubleMap> ComputeExactMarginal(const std::string& newick_path,
                                                         const std::string& fasta_path) {
   RootedSBNInstance sbn_instance("charlie");
@@ -182,10 +183,10 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
 
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal(tree_path, fasta_path);
+  double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
   auto gp_per_pcsp_log_marginal =
       inst.PrettyIndexedPerGPCSPComponentsOfFullLogMarginal();
-  double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
-  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-3);
+  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
 }
 
