@@ -179,6 +179,7 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
   const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
   trees.ToNewickFile(tree_path);
 
+  std::cout << inst.PrettyIndexedSBNParameters() << std::endl;
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal(tree_path, fasta_path);
   auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPComponentsOfFullMarginal();
@@ -192,6 +193,7 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   TestMarginal(MakeHelloGPInstanceTwoTrees(), "data/hello.fasta");
 }
 
+/*
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
   TestMarginal(MakeFiveTaxonInstance(), "data/five_taxon.fasta");
 }
@@ -199,6 +201,7 @@ TEST_CASE("GPInstance: marginal likelihood on five taxa") {
 TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   TestMarginal(MakeDS1Reduced5Instance(), "data/ds1-reduced-5.fasta");
 }
+*/
 
 TEST_CASE("GPInstance: gradient calculation") {
   auto inst = MakeHelloGPInstanceSingleNucleotide();
