@@ -343,20 +343,16 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   // before comparison.
 
   auto [log_lik_tree_1, ignored_1] =
-      ComputeExactMarginal("data/five_taxon_tree1.nwk", "data/five_taxon.fasta", false);
+      ComputeExactMarginal("data/five_taxon_tree1.nwk", "data/five_taxon.fasta");
   auto [log_lik_tree_2, ignored_2] =
-      ComputeExactMarginal("data/five_taxon_tree2.nwk", "data/five_taxon.fasta", false);
-  auto [log_lik_trees_3_4, ignored_3_4] = ComputeExactMarginal(
-      "data/five_taxon_trees_3_4.nwk", "data/five_taxon.fasta", false);
+      ComputeExactMarginal("data/five_taxon_tree2.nwk", "data/five_taxon.fasta");
+  auto [log_lik_trees_3_4, ignored_3_4] =
+      ComputeExactMarginal("data/five_taxon_trees_3_4.nwk", "data/five_taxon.fasta");
 
-  size_t alignment_length = 4;
-  // Uniform prior over 4 trees.
-  double log_q = log(1. / 4);
   EigenVectorXd expected_log_lik_vector_at_rootsplits(3);
-  expected_log_lik_vector_at_rootsplits[0] = log_lik_tree_1 + alignment_length * log_q;
-  expected_log_lik_vector_at_rootsplits[1] = log_lik_tree_2 + alignment_length * log_q;
-  expected_log_lik_vector_at_rootsplits[2] =
-      log_lik_trees_3_4 + alignment_length * log_q;
+  expected_log_lik_vector_at_rootsplits[0] = log_lik_tree_1;
+  expected_log_lik_vector_at_rootsplits[1] = log_lik_tree_2;
+  expected_log_lik_vector_at_rootsplits[2] = log_lik_trees_3_4;
   EigenVectorXd realized_log_lik_vector_at_rootsplits =
       log_likelihood_vector.segment(0, 3);
   CheckVectorXdEqualityAfterSorting(realized_log_lik_vector_at_rootsplits,
