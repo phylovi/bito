@@ -47,20 +47,23 @@ class GPEngine {
   double GetLogMarginalLikelihood() const;
   EigenVectorXd GetBranchLengths() const;
   // This function returns a vector indexed by GPCSP such that the i-th entry
-  // stores the log of:
-  // (the marginal likelihood over all trees that include a GPCSP
-  // indexed by i) / (the unconditional probability of i's parent subsplit)
+  // stores the product of
+  // (the marginal likelihood conditioned on a given GPCSP) *
+  //     (the unconditional probability of i's parent subsplit).
+  // That is, it's sum_m r^m(t) P(t -> s) p^m(s).
+  // See lem:PerPCSPMarginalLikelihood.
   // #288 rename?
   EigenVectorXd GetPerGPCSPLogLikelihoods() const;
+  // This override of GetPerGPCSPLogLikelihoods computes the marginal log
+  // likelihood for GPCSPs in the range [start, start + length).
+  EigenVectorXd GetPerGPCSPLogLikelihoods(size_t start, size_t length) const;
   // This is the full marginal likelihood sum restricted to trees containing a PCSP.
   // When we sum the log of eq:PerGPCSPComponentsOfFullMarginal over the sites, we get
   // out a term that is the number of sites times the log of the prior conditional PCSP
   // probability.
   EigenVectorXd GetPerGPCSPComponentsOfFullLogMarginal() const;
-  // This override of GetPerGPCSPLogLikelihoods computes the marginal log
-  // likelihood for GPCSPs in the range [start, start + length).
-  EigenVectorXd GetPerGPCSPLogLikelihoods(size_t start, size_t length) const;
-  EigenMatrixXd GetLogLikelihoodMatrix() const;
+  // #288 reconsider this name
+  EigenConstMatrixXdRef GetLogLikelihoodMatrix() const;
   EigenConstVectorXdRef GetSBNParameters() const;
 
   void PrintPLV(size_t plv_idx);

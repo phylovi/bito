@@ -172,37 +172,41 @@ void GPEngine::SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_l
 void GPEngine::SetBranchLengths(EigenVectorXd branch_lengths) {
   branch_lengths_ = std::move(branch_lengths);
 };
+
 void GPEngine::SetBranchLengthsToConstant(double branch_length) {
   branch_lengths_.setConstant(branch_length);
 };
+
 void GPEngine::SetSBNParameters(EigenVectorXd&& q) { q_ = std::move(q); };
+
 void GPEngine::ResetLogMarginalLikelihood() {
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
 }
+
 double GPEngine::GetLogMarginalLikelihood() const {
   return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
 }
+
 EigenVectorXd GPEngine::GetBranchLengths() const { return branch_lengths_; };
-// This function returns a vector indexed by GPCSP such that the i-th entry
-// stores the log of:
-// (the marginal likelihood over all trees that include a GPCSP
-// indexed by i) / (the unconditional probability of i's parent subsplit)
+
 EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {
   return log_likelihoods_ * site_pattern_weights_;
 };
-// This is the full marginal likelihood sum restricted to trees containing a PCSP.
-// When we sum the log of eq:PerGPCSPComponentsOfFullMarginal over the sites, we get
-// out a term that is the number of sites times the log of the prior conditional PCSP
-// probability.
-//
-// #288 add Log to name
+
+EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(size_t start, size_t length) const {
+  return log_likelihoods_.block(start, 0, length, log_likelihoods_.cols()) *
+         site_pattern_weights_;
+};
+
 EigenVectorXd GPEngine::GetPerGPCSPComponentsOfFullLogMarginal() const {
   return GetPerGPCSPLogLikelihoods().array() +
          static_cast<double>(site_pattern_.SiteCount()) * q_.array().log();
 };
-// This override of GetPerGPCSPLogLikelihoods computes the marginal log
-// likelihood for GPCSPs in the range [start, start + length).
-EigenMatrixXd GPEngine::GetLogLikelihoodMatrix() const { return log_likelihoods_; };
+
+EigenConstMatrixXdRef GPEngine::GetLogLikelihoodMatrix() const {
+  return log_likelihoods_;
+};
+
 EigenConstVectorXdRef GPEngine::GetSBNParameters() const { return q_; };
 
 void GPEngine::PrintPLV(size_t plv_idx) {
@@ -211,11 +215,6 @@ void GPEngine::PrintPLV(size_t plv_idx) {
   }
   std::cout << std::endl;
 }
-
-EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(size_t start, size_t length) const {
-  return log_likelihoods_.block(start, 0, length, log_likelihoods_.cols()) *
-         site_pattern_weights_;
-};
 
 DoublePair GPEngine::LogLikelihoodAndDerivative(
     const GPOperations::OptimizeBranchLength& op) {
