@@ -47,7 +47,7 @@ class GPEngine {
   double GetLogMarginalLikelihood() const;
   EigenVectorXd GetBranchLengths() const;
   // This function returns a vector indexed by GPCSP such that the i-th entry
-  // stores the product of
+  // stores the log of the across-sites product of
   // (the marginal likelihood conditioned on a given GPCSP) *
   //     (the unconditional probability of i's parent subsplit).
   // That is, it's sum_m r^m(t) P(t -> s) p^m(s).
