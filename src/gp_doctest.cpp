@@ -290,7 +290,6 @@ TEST_CASE("GPInstance: generate all trees") {
   CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
 }
 
-
 TEST_CASE("GPInstance: test populate PLV") {
   // This test makes sure that PopulatePLVs correctly
   // re-populates the PLVs using the current branch lengths.
