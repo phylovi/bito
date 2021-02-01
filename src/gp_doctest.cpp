@@ -58,11 +58,7 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
 }
 
 GPInstance MakeFiveTaxonInstance() {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/five_taxon.fasta");
-  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
-  inst.MakeEngine();
-  return inst;
+  return GPInstanceOfFiles("data/five_taxon.fasta", "data/five_taxon_rooted.nwk");
 }
 
 // The sequences for this were obtained by cutting DS1 down to 5 taxa by taking the
@@ -70,6 +66,13 @@ GPInstance MakeFiveTaxonInstance() {
 // trimmed to 500 sites by using seqmagick convert with `--cut 500:1000`.
 GPInstance MakeDS1Reduced5Instance() {
   auto inst = GPInstanceOfFiles("data/ds1-reduced-5.fasta", "data/ds1-reduced-5.nwk");
+  return inst;
+}
+
+GPInstance MakeFluAGPInstance(double rescaling_threshold) {
+  auto inst = GPInstanceOfFiles("data/fluA.fa", "data/fluA.tree");
+  inst.MakeEngine(rescaling_threshold);
+  inst.GetEngine()->SetBranchLengthsToConstant(0.01);
   return inst;
 }
 
@@ -216,15 +219,6 @@ TEST_CASE("GPInstance: gradient calculation") {
   // Expect log lik derivative: -0.6109379521.
   CHECK_LT(fabs(log_lik_and_derivative.first - -4.806671945), 1e-6);
   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
-}
-
-GPInstance MakeFluAGPInstance(double rescaling_threshold) {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/fluA.fa");
-  inst.ReadNewickFile("data/fluA.tree");
-  inst.MakeEngine(rescaling_threshold);
-  inst.GetEngine()->SetBranchLengthsToConstant(0.01);
-  return inst;
 }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
