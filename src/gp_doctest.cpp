@@ -179,7 +179,8 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
 
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal(tree_path, fasta_path);
-  auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPComponentsOfFullMarginal();
+  auto gp_per_pcsp_log_marginal =
+      inst.PrettyIndexedPerGPCSPComponentsOfFullLogMarginal();
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-3);
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);

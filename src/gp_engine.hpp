@@ -56,7 +56,7 @@ class GPEngine {
   // When we sum the log of eq:PerGPCSPComponentsOfFullMarginal over the sites, we get
   // out a term that is the number of sites times the log of the prior conditional PCSP
   // probability.
-  EigenVectorXd GetPerGPCSPComponentsOfFullMarginal() const;
+  EigenVectorXd GetPerGPCSPComponentsOfFullLogMarginal() const;
   // This override of GetPerGPCSPLogLikelihoods computes the marginal log
   // likelihood for GPCSPs in the range [start, start + length).
   EigenVectorXd GetPerGPCSPLogLikelihoods(size_t start, size_t length) const;

@@ -196,7 +196,7 @@ EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {
 // probability.
 //
 // #288 add Log to name
-EigenVectorXd GPEngine::GetPerGPCSPComponentsOfFullMarginal() const {
+EigenVectorXd GPEngine::GetPerGPCSPComponentsOfFullLogMarginal() const {
   return GetPerGPCSPLogLikelihoods().array() +
          static_cast<double>(site_pattern_.SiteCount()) * q_.array().log();
 };

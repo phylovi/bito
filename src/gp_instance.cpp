@@ -285,8 +285,8 @@ StringDoubleVector GPInstance::PrettyIndexedPerGPCSPLogLikelihoods() {
   return PrettyIndexedVector(GetEngine()->GetPerGPCSPLogLikelihoods());
 }
 
-StringDoubleVector GPInstance::PrettyIndexedPerGPCSPComponentsOfFullMarginal() {
-  return PrettyIndexedVector(GetEngine()->GetPerGPCSPComponentsOfFullMarginal());
+StringDoubleVector GPInstance::PrettyIndexedPerGPCSPComponentsOfFullLogMarginal() {
+  return PrettyIndexedVector(GetEngine()->GetPerGPCSPComponentsOfFullLogMarginal());
 }
 
 void GPInstance::SBNParametersToCSV(const std::string &file_path) {
