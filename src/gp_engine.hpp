@@ -81,7 +81,7 @@ class GPEngine {
 
  private:
   static constexpr double min_log_branch_length_ = -13.9;
-  static constexpr double max_log_branch_length_ = 1.1;
+  static constexpr double max_log_branch_length_ = 0.4;
 
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-2;
