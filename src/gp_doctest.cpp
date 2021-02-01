@@ -19,57 +19,7 @@ using namespace GPOperations;  // NOLINT
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, root };
 
-// Compute the exact marginal likelihood via brute force to compare with generalized
-// pruning. We assume that the trees in `newick_path` are all of the trees over which we
-// should marginalize.
-std::pair<double, StringDoubleMap> ComputeExactMarginal(const std::string& newick_path,
-                                                        const std::string& fasta_path,
-                                                        bool with_tree_prior = true) {
-  RootedSBNInstance sbn_instance("charlie");
-  sbn_instance.ReadNewickFile(newick_path);
-  sbn_instance.ProcessLoadedTrees();
-  const Alignment alignment = Alignment::ReadFasta(fasta_path);
-  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
-  sbn_instance.SetAlignment(alignment);
-  sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
-
-  const size_t tree_count = sbn_instance.TreeCount();
-  const size_t gpcsp_count = sbn_instance.SBNSupport().GPCSPCount();
-  auto indexer_representations = sbn_instance.MakeIndexerRepresentations();
-
-  double exact_marginal_log_lik = 0.0;
-  EigenVectorXd exact_per_pcsp_log_marginals(gpcsp_count);
-  exact_per_pcsp_log_marginals.setZero();
-  double log_prior_term = with_tree_prior ? log(1. / tree_count) : 0.0;
-
-  for (size_t column_idx = 0; column_idx < alignment.Length(); column_idx++) {
-    sbn_instance.SetAlignment(alignment.ExtractSingleColumnAlignment(column_idx));
-    sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
-    auto per_site_phylo_likelihoods = sbn_instance.UnrootedLogLikelihoods();
-
-    double per_site_log_marginal = DOUBLE_NEG_INF;
-    EigenVectorXd per_site_per_pcsp_log_marginals(gpcsp_count);
-    per_site_per_pcsp_log_marginals.setConstant(DOUBLE_NEG_INF);
-
-    for (size_t tree_idx = 0; tree_idx < tree_count; tree_idx++) {
-      const auto per_site_phylo_likelihood = per_site_phylo_likelihoods[tree_idx];
-      per_site_log_marginal =
-          NumericalUtils::LogAdd(per_site_log_marginal, per_site_phylo_likelihood);
-      for (const auto& gpcsp_idx : indexer_representations.at(tree_idx)) {
-        per_site_per_pcsp_log_marginals[gpcsp_idx] = NumericalUtils::LogAdd(
-            per_site_per_pcsp_log_marginals[gpcsp_idx], per_site_phylo_likelihood);
-      }
-    }
-    per_site_log_marginal += log_prior_term;
-    per_site_per_pcsp_log_marginals.array() += log_prior_term;
-
-    exact_marginal_log_lik += per_site_log_marginal;
-    exact_per_pcsp_log_marginals.array() += per_site_per_pcsp_log_marginals.array();
-  }
-  return {
-      exact_marginal_log_lik,
-      UnorderedMapOf(sbn_instance.PrettyIndexedVector(exact_per_pcsp_log_marginals))};
-}
+// *** GPInstances used for testing ***
 
 GPInstance GPInstanceOfFiles(const std::string& fasta_path,
                              const std::string& newick_path) {
@@ -151,6 +101,58 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   CheckVectorXdEquality(-84.77961943, realized_log_likelihoods, 1e-6);
 
   CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
+}
+
+// Compute the exact marginal likelihood via brute force to compare with generalized
+// pruning. We assume that the trees in `newick_path` are all of the trees over which we
+// should marginalize.
+std::pair<double, StringDoubleMap> ComputeExactMarginal(const std::string& newick_path,
+                                                        const std::string& fasta_path,
+                                                        bool with_tree_prior = true) {
+  RootedSBNInstance sbn_instance("charlie");
+  sbn_instance.ReadNewickFile(newick_path);
+  sbn_instance.ProcessLoadedTrees();
+  const Alignment alignment = Alignment::ReadFasta(fasta_path);
+  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
+  sbn_instance.SetAlignment(alignment);
+  sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
+
+  const size_t tree_count = sbn_instance.TreeCount();
+  const size_t gpcsp_count = sbn_instance.SBNSupport().GPCSPCount();
+  auto indexer_representations = sbn_instance.MakeIndexerRepresentations();
+
+  double exact_marginal_log_lik = 0.0;
+  EigenVectorXd exact_per_pcsp_log_marginals(gpcsp_count);
+  exact_per_pcsp_log_marginals.setZero();
+  double log_prior_term = with_tree_prior ? log(1. / tree_count) : 0.0;
+
+  for (size_t column_idx = 0; column_idx < alignment.Length(); column_idx++) {
+    sbn_instance.SetAlignment(alignment.ExtractSingleColumnAlignment(column_idx));
+    sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
+    auto per_site_phylo_likelihoods = sbn_instance.UnrootedLogLikelihoods();
+
+    double per_site_log_marginal = DOUBLE_NEG_INF;
+    EigenVectorXd per_site_per_pcsp_log_marginals(gpcsp_count);
+    per_site_per_pcsp_log_marginals.setConstant(DOUBLE_NEG_INF);
+
+    for (size_t tree_idx = 0; tree_idx < tree_count; tree_idx++) {
+      const auto per_site_phylo_likelihood = per_site_phylo_likelihoods[tree_idx];
+      per_site_log_marginal =
+          NumericalUtils::LogAdd(per_site_log_marginal, per_site_phylo_likelihood);
+      for (const auto& gpcsp_idx : indexer_representations.at(tree_idx)) {
+        per_site_per_pcsp_log_marginals[gpcsp_idx] = NumericalUtils::LogAdd(
+            per_site_per_pcsp_log_marginals[gpcsp_idx], per_site_phylo_likelihood);
+      }
+    }
+    per_site_log_marginal += log_prior_term;
+    per_site_per_pcsp_log_marginals.array() += log_prior_term;
+
+    exact_marginal_log_lik += per_site_log_marginal;
+    exact_per_pcsp_log_marginals.array() += per_site_per_pcsp_log_marginals.array();
+  }
+  return {
+      exact_marginal_log_lik,
+      UnorderedMapOf(sbn_instance.PrettyIndexedVector(exact_per_pcsp_log_marginals))};
 }
 
 void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
@@ -331,7 +333,7 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   // log_likelihood_vector[s] =
   //    \sum_{k=1}^{K} \log \sum_{\tau : s \in \tau} q(\tau) P(y_k | \tau).
   // To test this, we are going to compute P(y_k | \tau) for {\tau : s \in \tau} and
-  // multiply this by q(\tau) = 1/4 since we are assuming uniform prior.
+  // multiply this by q(\tau) = 1/4 since we are assuming a uniform prior.
 
   // The collection of trees that we are looking at has 3 rootplits where one root split
   // generates two trees and the other 2 root splits generating one tree each
