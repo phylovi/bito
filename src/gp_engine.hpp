@@ -72,9 +72,8 @@ class GPEngine {
   // TODO speed?
   // TODO add Log to name
   EigenVectorXd GetPerGPCSPComponentsOfFullMarginal() const {
-    return GetPerGPCSPLogLikelihoods()
-        .array();  //+
-                   // static_cast<double>(site_pattern_.SiteCount()) * q_.array().log();
+    return GetPerGPCSPLogLikelihoods().array() +
+           static_cast<double>(site_pattern_.SiteCount()) * q_.array().log();
   };
   // This override of GetPerGPCSPLogLikelihoods computes the marginal log
   // likelihood for GPCSPs in the range [start, start + length).

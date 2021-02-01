@@ -82,8 +82,8 @@ void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
       (plvs_.at(op.stationary_).transpose() * plvs_.at(op.p_))
           .diagonal()
           .array()
-          .log() +
-      LogRescalingFor(op.p_);
+          .log() -
+      log(q_[op.rootsplit_]) + LogRescalingFor(op.p_);
 
   // Perform LogAdd per site.
   log_marginal_likelihood_ = NumericalUtils::LogAddVectors(
