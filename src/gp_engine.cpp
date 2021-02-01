@@ -113,6 +113,8 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
+  // #310 eliminate the partial optimization eventually.
+  PartialBrentOptimization(op);
   BrentOptimization(op);
 }
 
@@ -303,7 +305,7 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
 // that the thing we are subtracting and adding is the right thing.
 //
 // STRANGE: the branch lengths are headed towards zero.
-void GPEngine::v2BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
+void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   std::cout << "\nNEW BRANCH\ntrue log marginal: "
             << (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum()
             << std::endl;
@@ -353,7 +355,7 @@ void GPEngine::v2BrentOptimization(const GPOperations::OptimizeBranchLength& op)
   //  }
 }
 
-void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
+void GPEngine::PartialBrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
     SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
     PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);

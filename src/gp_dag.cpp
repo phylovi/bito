@@ -78,8 +78,8 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
         // #310 this is temporary:
         // We do a full PLV population and then marginal likelihood calculation.
-        // GPOperations::AppendGPOperations(operations, PopulatePLVs());
-        // GPOperations::AppendGPOperations(operations, MarginalLikelihood());
+        GPOperations::AppendGPOperations(operations, PopulatePLVs());
+        GPOperations::AppendGPOperations(operations, MarginalLikelihood());
 
         // Optimize each branch for a given node-clade and accumulate the resulting
         // P-hat PLVs in the parent node.

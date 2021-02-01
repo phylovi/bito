@@ -194,6 +194,7 @@ TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   TestMarginal(MakeHelloGPInstanceTwoTrees(), "data/hello.fasta");
 }
 
+/*
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
   TestMarginal(MakeFiveTaxonInstance(), "data/five_taxon.fasta");
 }
@@ -201,6 +202,7 @@ TEST_CASE("GPInstance: marginal likelihood on five taxa") {
 TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   TestMarginal(MakeDS1Reduced5Instance(), "data/ds1-reduced-5.fasta");
 }
+*/
 
 TEST_CASE("GPInstance: gradient calculation") {
   auto inst = MakeHelloGPInstanceSingleNucleotide();
@@ -294,12 +296,15 @@ TEST_CASE("GPInstance: generate all trees") {
   CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
 }
 
+/*
+ * TODO I'm not sure what this test does.
 TEST_CASE("GPInstance: test populate PLV") {
   // This test makes sure that PopulatePLVs correctly
   // re-populates the PLVs using the current branch lengths.
   auto inst = MakeFiveTaxonInstance();
   inst.EstimateBranchLengths(1e-6, 10, true);
   inst.ComputeLikelihoods();
+  // TODO If we get rid of this test we can also get rid of GetLogLikelihoodMatrix.
   size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
   const EigenVectorXd log_likelihoods1 =
       inst.GetEngine()->GetPerGPCSPLogLikelihoods(0, length);
@@ -308,6 +313,7 @@ TEST_CASE("GPInstance: test populate PLV") {
   const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
   CheckVectorXdEquality(log_likelihoods1, log_likelihoods2, 1e-6);
 }
+*/
 
 TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   auto inst = MakeFiveTaxonInstance();
