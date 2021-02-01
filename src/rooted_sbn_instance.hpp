@@ -35,6 +35,7 @@ class RootedSBNInstance : public PreRootedSBNInstance {
   // ** Phylogenetic likelihood
 
   std::vector<double> LogLikelihoods();
+  std::vector<double> UnrootedLogLikelihoods();
   // For each loaded tree, return the phylogenetic gradient.
   std::vector<RootedPhyloGradient> PhyloGradients();
 
@@ -54,7 +55,7 @@ class RootedSBNInstance : public PreRootedSBNInstance {
 #include "doctest_constants.hpp"
 
 // Centered finite difference approximation of the derivative wrt rate.
-std::vector<double> derivative_strict_clock(RootedSBNInstance& inst) {
+std::vector<double> DerivativeStrictClock(RootedSBNInstance& inst) {
   double eps = 0.00000001;
   std::vector<double> rates;
   std::vector<double> gradients;
@@ -78,7 +79,7 @@ std::vector<double> derivative_strict_clock(RootedSBNInstance& inst) {
 }
 
 // Centered finite difference approximation of the derivative wrt to each rate.
-std::vector<std::vector<double>> derivative_relaxed_clock(RootedSBNInstance& inst) {
+std::vector<std::vector<double>> DerivativeRelaxedClock(RootedSBNInstance& inst) {
   double eps = 0.00000001;
   std::vector<std::vector<double>> gradients;
   std::vector<double> lp;
@@ -287,7 +288,7 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
 
   // Gradient with a strict clock.
   auto gradients_strict = inst.PhyloGradients();
-  std::vector<double> gradients_strict_approx = derivative_strict_clock(inst);
+  std::vector<double> gradients_strict_approx = DerivativeStrictClock(inst);
   CHECK_LT(fabs(gradients_strict[0].clock_model_[0] - gradients_strict_approx[0]),
            0.001);
   CHECK_LT(fabs(gradients_strict[0].log_likelihood_ - physher_ll), 0.001);
@@ -301,7 +302,7 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   tree.rate_count_ = tree.rates_.size();
 
   auto gradients_relaxed = inst.PhyloGradients();
-  auto gradients_relaxed_approx = derivative_relaxed_clock(inst);
+  auto gradients_relaxed_approx = DerivativeRelaxedClock(inst);
 
   for (size_t j = 0; j < gradients_relaxed_approx.size(); j++) {
     CHECK_LT(

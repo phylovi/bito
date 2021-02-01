@@ -76,18 +76,26 @@ void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
-  Assert(rescaling_counts_(op.stationary_) == 0,
+  Assert(rescaling_counts_(op.stationary_times_prior_) == 0,
          "Surprise! Rescaled stationary distribution in IncrementMarginalLikelihood");
+  // This operation does two things: imcrement the overall per-site log marginal
+  // likelihood, and also set the conditional per-rootsplit marginal likelihood.
+  //
+  // We first calculate the unconditional contribution of the rootsplit to the overall
+  // per-site marginal likelihood. It's an unconditional contribution because our
+  // stationary distribution incorporates the prior on rootsplits.
   log_likelihoods_.row(op.rootsplit_) =
-      (plvs_.at(op.stationary_).transpose() * plvs_.at(op.p_))
+      (plvs_.at(op.stationary_times_prior_).transpose() * plvs_.at(op.p_))
           .diagonal()
           .array()
           .log() +
       LogRescalingFor(op.p_);
-
-  // Perform LogAdd per site.
+  // We can then increment the overall per-site marginal likelihood.
   log_marginal_likelihood_ = NumericalUtils::LogAddVectors(
       log_marginal_likelihood_, log_likelihoods_.row(op.rootsplit_));
+  // However, we want the row in log_likelihoods_ to be the marginal likelihood
+  // *conditional* on that rootsplit, so we log-divide by the rootsplit's probability.
+  log_likelihoods_.row(op.rootsplit_).array() -= log(q_[op.rootsplit_]);
 }
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {
@@ -161,17 +169,52 @@ void GPEngine::SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_l
       inverse_eigenmatrix_.transpose() * diagonal_matrix_ * eigenmatrix_.transpose();
 }
 
+void GPEngine::SetBranchLengths(EigenVectorXd branch_lengths) {
+  branch_lengths_ = std::move(branch_lengths);
+};
+
+void GPEngine::SetBranchLengthsToConstant(double branch_length) {
+  branch_lengths_.setConstant(branch_length);
+};
+
+void GPEngine::SetSBNParameters(EigenVectorXd&& q) { q_ = std::move(q); };
+
+void GPEngine::ResetLogMarginalLikelihood() {
+  log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
+}
+
+double GPEngine::GetLogMarginalLikelihood() const {
+  return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
+}
+
+EigenVectorXd GPEngine::GetBranchLengths() const { return branch_lengths_; };
+
+EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {
+  return log_likelihoods_ * site_pattern_weights_;
+};
+
+EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(size_t start, size_t length) const {
+  return log_likelihoods_.block(start, 0, length, log_likelihoods_.cols()) *
+         site_pattern_weights_;
+};
+
+EigenVectorXd GPEngine::GetPerGPCSPComponentsOfFullLogMarginal() const {
+  return GetPerGPCSPLogLikelihoods().array() +
+         static_cast<double>(site_pattern_.SiteCount()) * q_.array().log();
+};
+
+EigenConstMatrixXdRef GPEngine::GetLogLikelihoodMatrix() const {
+  return log_likelihoods_;
+};
+
+EigenConstVectorXdRef GPEngine::GetSBNParameters() const { return q_; };
+
 void GPEngine::PrintPLV(size_t plv_idx) {
   for (const auto& row : plvs_[plv_idx].rowwise()) {
     std::cout << row << std::endl;
   }
   std::cout << std::endl;
 }
-
-EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(size_t start, size_t length) const {
-  return log_likelihoods_.block(start, 0, length, log_likelihoods_.cols()) *
-         site_pattern_weights_;
-};
 
 DoublePair GPEngine::LogLikelihoodAndDerivative(
     const GPOperations::OptimizeBranchLength& op) {

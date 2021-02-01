@@ -39,33 +39,34 @@ class GPEngine {
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
   const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
-  void PrintPLV(size_t plv_idx);
 
-  void SetBranchLengths(EigenVectorXd branch_lengths) {
-    branch_lengths_ = std::move(branch_lengths);
-  };
-  void SetBranchLengthsToConstant(double branch_length) {
-    branch_lengths_.setConstant(branch_length);
-  };
-  void SetSBNParameters(EigenVectorXd&& q) { q_ = std::move(q); };
-  void ResetLogMarginalLikelihood() {
-    log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
-  }
-  double GetLogMarginalLikelihood() const {
-    return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
-  }
-  EigenVectorXd GetBranchLengths() const { return branch_lengths_; };
+  void SetBranchLengths(EigenVectorXd branch_lengths);
+  void SetBranchLengthsToConstant(double branch_length);
+  void SetSBNParameters(EigenVectorXd&& q);
+  void ResetLogMarginalLikelihood();
+  double GetLogMarginalLikelihood() const;
+  EigenVectorXd GetBranchLengths() const;
   // This function returns a vector indexed by GPCSP such that the i-th entry
-  // stores the marginal log likelihood over all trees that include a GPCSP
-  // indexed by i.
-  EigenVectorXd GetPerGPCSPLogLikelihoods() const {
-    return log_likelihoods_ * site_pattern_weights_;
-  };
+  // stores the log of the across-sites product of
+  // (the marginal likelihood conditioned on a given GPCSP) *
+  //     (the unconditional probability of i's parent subsplit).
+  // That is, it's sum_m r^m(t) P(t -> s) p^m(s).
+  // See lem:PerPCSPMarginalLikelihood.
+  // #288 rename?
+  EigenVectorXd GetPerGPCSPLogLikelihoods() const;
   // This override of GetPerGPCSPLogLikelihoods computes the marginal log
   // likelihood for GPCSPs in the range [start, start + length).
   EigenVectorXd GetPerGPCSPLogLikelihoods(size_t start, size_t length) const;
-  EigenMatrixXd GetLogLikelihoodMatrix() const { return log_likelihoods_; };
-  EigenConstVectorXdRef GetSBNParameters() const { return q_; };
+  // This is the full marginal likelihood sum restricted to trees containing a PCSP.
+  // When we sum the log of eq:PerGPCSPComponentsOfFullMarginal over the sites, we get
+  // out a term that is the number of sites times the log of the prior conditional PCSP
+  // probability.
+  EigenVectorXd GetPerGPCSPComponentsOfFullLogMarginal() const;
+  // #288 reconsider this name
+  EigenConstMatrixXdRef GetLogLikelihoodMatrix() const;
+  EigenConstVectorXdRef GetSBNParameters() const;
+
+  void PrintPLV(size_t plv_idx);
 
   // Use branch lengths from loaded sample as a starting point for optimization.
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,

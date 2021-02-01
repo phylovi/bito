@@ -1,5 +1,8 @@
 // Copyright 2019-2021 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// A rooted tree collection has a notion of sampling date for the tips of the tree, and
+// all taxa are assumed to share those sampling dates.
 
 #ifndef SRC_ROOTED_TREE_COLLECTION_HPP_
 #define SRC_ROOTED_TREE_COLLECTION_HPP_

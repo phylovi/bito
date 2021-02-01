@@ -36,6 +36,11 @@ std::vector<double> RootedSBNInstance::LogLikelihoods() {
   return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_);
 }
 
+std::vector<double> RootedSBNInstance::UnrootedLogLikelihoods() {
+  return GetEngine()->UnrootedLogLikelihoods(tree_collection_, phylo_model_params_,
+                                             rescaling_);
+}
+
 std::vector<RootedPhyloGradient> RootedSBNInstance::PhyloGradients() {
   return GetEngine()->Gradients(tree_collection_, phylo_model_params_, rescaling_);
 }

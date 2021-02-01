@@ -117,10 +117,10 @@ GPOperationVector GPDAG::MarginalLikelihood() const {
   for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
     const auto rootsplit = rootsplits_[rootsplit_idx];
     const auto root_subsplit = rootsplit + ~rootsplit;
-    size_t root_idx = subsplit_to_id_.at(root_subsplit);
+    size_t rootsplit_dag_id = subsplit_to_id_.at(root_subsplit);
     operations.push_back(GPOperations::IncrementMarginalLikelihood{
-        GetPLVIndex(PLVType::R_HAT, root_idx), rootsplit_idx,
-        GetPLVIndex(PLVType::P, root_idx)});
+        GetPLVIndex(PLVType::R_HAT, rootsplit_dag_id), rootsplit_idx,
+        GetPLVIndex(PLVType::P, rootsplit_dag_id)});
   }
   return operations;
 }
