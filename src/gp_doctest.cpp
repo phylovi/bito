@@ -107,8 +107,11 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
 }
 
 // Compute the exact marginal likelihood via brute force to compare with generalized
-// pruning. We assume that the trees in `newick_path` are all of the trees over which we
-// should marginalize.
+// pruning.
+// IMPORTANT: We assume that the trees in `newick_path` are all of the trees over which
+// we should marginalize. So if you have generated a subsplit DAG with a set of trees,
+// use GenerateCompleteRootedTreeCollection to get all the trees over which you will be
+// marginalizing.
 std::pair<double, StringDoubleMap> ComputeExactMarginal(const std::string& newick_path,
                                                         const std::string& fasta_path) {
   RootedSBNInstance sbn_instance("charlie");
