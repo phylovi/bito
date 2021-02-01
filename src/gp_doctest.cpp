@@ -107,6 +107,14 @@ GPInstance MakeHelloGPInstanceTwoTrees() {
   return inst;
 }
 
+GPInstance MakeFiveTaxonInstance() {
+  GPInstance inst("_ignore/mmapped_plv.data");
+  inst.ReadFastaFile("data/five_taxon.fasta");
+  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
+  inst.MakeEngine();
+  return inst;
+}
+
 // The sequences for this were obtained by cutting DS1 down to 5 taxa by taking the
 // first 4 taxa then moving taxon 15 (Latimera) to be number 5. The alignment was
 // trimmed to 500 sites by using seqmagick convert with `--cut 500:1000`.
@@ -173,12 +181,17 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
       ComputeExactMarginal(tree_path, fasta_path);
   auto gp_per_pcsp_log_marginal = inst.PrettyIndexedPerGPCSPComponentsOfFullMarginal();
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
+  std::cout << gp_marginal_log_likelihood << std::endl;
   CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-3);
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
 }
 
 TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   TestMarginal(MakeHelloGPInstanceTwoTrees(), "data/hello.fasta");
+}
+
+TEST_CASE("GPInstance: marginal likelihood on five taxa") {
+  TestMarginal(MakeFiveTaxonInstance(), "data/five_taxon.fasta");
 }
 
 TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
@@ -279,42 +292,18 @@ TEST_CASE("GPInstance: hotstart branch lengths") {
   CHECK_EQ(true_mean, inst.GetEngine()->GetBranchLengths()(2));
 }
 
-GPInstance MakeFiveTaxaInstance() {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/five_taxon.fasta");
-  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
-  inst.MakeEngine();
-  return inst;
-}
-
 TEST_CASE("GPInstance: generate all trees") {
-  auto inst = MakeFiveTaxaInstance();
+  auto inst = MakeFiveTaxonInstance();
   auto rooted_tree_collection = inst.GenerateCompleteRootedTreeCollection();
   CHECK_EQ(rooted_tree_collection.TreeCount(), 4);
   CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
 }
 
-/*
-TEST_CASE("GPInstance: marginal likelihood on five taxa") {
-  const std::string tree_path = "_ignore/five_taxon_rooted.gp_branch_lengths.nwk";
-  auto inst = MakeFiveTaxaInstance();
-  inst.EstimateBranchLengths(1e-6, 10, true);
-  inst.ExportTrees(tree_path);
-  double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
-  // #313: It'd be really nice to be able to deroot on the fly, in which case we'd be
-  // able to just load back in `tree_path`, but for now
-  // nw_reroot -d _ignore/five_taxon_rooted.gp_branch_lengths.nwk > \
-  // data/five_taxon_unrooted_with_branch_lengths.nwk
-  double exact_marginal_log_likelihood = ComputeExactMarginal(
-      "data/five_taxon_unrooted_with_branch_lengths.nwk", "data/five_taxon.fasta");
-  CHECK_LT(abs(exact_marginal_log_likelihood - gp_marginal_log_likelihood), 1e-6);
-}
-*/
 
 TEST_CASE("GPInstance: test populate PLV") {
   // This test makes sure that PopulatePLVs correctly
   // re-populates the PLVs using the current branch lengths.
-  auto inst = MakeFiveTaxaInstance();
+  auto inst = MakeFiveTaxonInstance();
   inst.EstimateBranchLengths(1e-6, 10, true);
   inst.ComputeLikelihoods();
   size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
@@ -326,9 +315,8 @@ TEST_CASE("GPInstance: test populate PLV") {
   CheckVectorXdEquality(log_likelihoods1, log_likelihoods2, 1e-6);
 }
 
-/*
 TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
-  auto inst = MakeFiveTaxaInstance();
+  auto inst = MakeFiveTaxonInstance();
   inst.GetEngine()->SetBranchLengthsToConstant(0.1);
   inst.PopulatePLVs();
   // We need to call ComputeLikelihoods to populate the likelihood matrix.
@@ -353,12 +341,12 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   // the ordering due to different implementation of the map, we will sort the values
   // before comparison.
 
-  double log_lik_tree_1 =
+  auto [log_lik_tree_1, ignored_1] =
       ComputeExactMarginal("data/five_taxon_tree1.nwk", "data/five_taxon.fasta", false);
-  double log_lik_tree_2 =
+  auto [log_lik_tree_2, ignored_2] =
       ComputeExactMarginal("data/five_taxon_tree2.nwk", "data/five_taxon.fasta", false);
-  double log_lik_trees_3_4 = ComputeExactMarginal("data/five_taxon_trees_3_4.nwk",
-                                                  "data/five_taxon.fasta", false);
+  auto [log_lik_trees_3_4, ignored_3_4] = ComputeExactMarginal(
+      "data/five_taxon_trees_3_4.nwk", "data/five_taxon.fasta", false);
 
   size_t alignment_length = 4;
   // Uniform prior over 4 trees.
@@ -386,7 +374,6 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   expected_q = expected_q.array().exp();
   CheckVectorXdEqualityAfterSorting(realized_q, expected_q, 1e-6);
 }
-*/
 
 TEST_CASE("GPInstance: CurrentlyLoadedTreesWithGPBranchLengths") {
   auto inst = MakeHelloGPInstanceSingleNucleotide();
