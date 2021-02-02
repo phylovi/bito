@@ -201,27 +201,42 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
 TEST_CASE("GPInstance: one tree optimization") {
   auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted.nwk");
   inst.PrintGPCSPIndexer();
-  inst.EstimateBranchLengths(0.0001, 100, true);
+  inst.EstimateBranchLengths(0.0001, 100, false);
 }
 
+// For v2BrentOptimization:
+// final true marginal likelihood: -80.2743308
+// resulting in wacky branch lengths:
 // Vector of taxon names: [jupiter, mars, saturn]
-// 110|001|000, 9
-// 001|010|000, 7
-// 010|001|000, 8
-// 100|010|000, 6
-// 011|100, 0
-// 001|110|010, 3
-// 100|011|001, 2
-// 001|110, 1
-// 011|100|000, 4
-// 010|100|000, 5
-// A reasonable answer:
-// [0.1, 0.1, 0.0682104322, 0.000843851953, 0.00116913342, 0.0685374826, 0.206360318,
-// 0.21164464, 0.0701768376, 0.0685908216]
+// 011|100,     0 :    0.1,
+// 001|110,     1 :    0.1,
+// 100|011|001, 2 :    1.54294562e-06,
+// 001|110|010, 3 :    0.0510080394,
+// 011|100|000, 4 :    1.52514496e-06,
+// 010|100|000, 5 :    0.147642992,
+// 100|010|000, 6 :    1.52581422e-06,
+// 001|010|000, 7 :    0.463296615,
+// 010|001|000, 8 :    1.53063383e-06,
+// 110|001|000, 9 :    0.0953556198
+
+// For PartialBrentOptimization:
+// final true marginal likelihood: -80.6877868
+// resulting in sensible branch lengths:
+// 011|100,     0 :    0.1,
+// 001|110,     1 :    0.1,
+// 100|011|001, 2 :    0.0682104322,
+// 001|110|010, 3 :    0.000843851953,
+// 011|100|000, 4 :    0.00116913342,
+// 010|100|000, 5 :    0.0685374826,
+// 100|010|000, 6 :    0.206360318,
+// 001|010|000, 7 :    0.21164464,
+// 010|001|000, 8 :    0.0701768376,
+// 110|001|000, 9 :    0.0685908216
+
 TEST_CASE("GPInstance: two tree optimization") {
   auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
   inst.PrintGPCSPIndexer();
-  inst.EstimateBranchLengths(0.0001, 100, true);
+  inst.EstimateBranchLengths(0.0001, 100, false);
 }
 
 /*
