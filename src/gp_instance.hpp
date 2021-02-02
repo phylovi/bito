@@ -35,6 +35,7 @@ class GPInstance {
   void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false);
   void PopulatePLVs();
   void ComputeLikelihoods();
+  void ComputeMarginalLikelihood();
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
 
   // #273: A lot of code duplication here with things in SBNInstance.

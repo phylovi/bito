@@ -3,6 +3,8 @@
 
 #include "gp_engine.hpp"
 
+// #310 temporary
+#include <iomanip>
 #include "optimization.hpp"
 #include "sugar.hpp"
 
@@ -234,6 +236,8 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
   // of l_i divided by l_i.
   per_pattern_likelihood_derivative_ratios_ =
+      // #310 to become:
+      // per_pattern_likelihood_derivatives_.array() / log_marginal_likelihood_.array();
       per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
   const double log_likelihood_derivative =
       per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
@@ -298,11 +302,45 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
   return static_cast<double>(rescaling_counts_(plv_idx)) * log_rescaling_threshold_;
 }
 
-void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
-  auto negative_log_likelihood = [this, &op](double log_branch_length) {
+void GPEngine::v2BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
+  std::stringstream dev_null;
+  auto& our_ostream = dev_null;
+  Assert(rescaling_counts_.maxCoeff() == 0, "We are rescaling in BrentOptimization.");
+  // BEGIN we make some assertions that the unrescaled per pattern likelihoods are
+  // performing as expected.
+  SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.gpcsp_));
+  PrepareUnrescaledPerPatternLikelihoods(op.rootward_, op.leafward_);
+  Assert((log_likelihoods_.row(op.gpcsp_).transpose().array() -
+          per_pattern_likelihoods_.array().log())
+                 .abs()
+                 .maxCoeff() < 1e-6,
+         "Problem with log likelihoods.");
+  // END assertions
+
+  our_ostream << "\nFANCY BRENT, NEW BRANCH: " << op.gpcsp_ << "\ntrue log marginal: "
+              << log_marginal_likelihood_.dot(site_pattern_weights_) << std::endl;
+
+  // 5: C := F - D
+  per_pattern_marginal_constant_ = log_marginal_likelihood_.array().exp() -
+                                   per_pattern_likelihoods_.array() * q_(op.gpcsp_);
+
+  our_ostream << "log marg: " << log_marginal_likelihood_.array().exp() << std::endl;
+  our_ostream << "like: " << per_pattern_likelihoods_ << std::endl;
+  our_ostream << "const: " << per_pattern_marginal_constant_ << std::endl;
+  our_ostream << "q: " << q_(op.gpcsp_) << std::endl;
+
+  auto negative_log_likelihood = [this, &op, &our_ostream](double log_branch_length) {
     SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
-    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
-    return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+    PrepareUnrescaledPerPatternLikelihoods(op.rootward_, op.leafward_);
+    // 6: f is log(D + C)
+    per_pattern_log_likelihoods_ =
+        (per_pattern_likelihoods_ * q_(op.gpcsp_) + per_pattern_marginal_constant_)
+            .array()
+            .log();
+    auto result = -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+    our_ostream << std::setprecision(9) << "neg log like:\t" << result
+                << "\tbranch length:\t" << exp(log_branch_length) << std::endl;
+    return result;
   };
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
   double current_value = negative_log_likelihood(current_log_branch_length);
@@ -317,6 +355,44 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   } else {
     branch_lengths_(op.gpcsp_) = exp(log_branch_length);
   }
+
+  our_ostream << "final branch length: " << exp(log_branch_length) << std::endl;
+  our_ostream << branch_lengths_ << std::endl;
+}
+
+void GPEngine::PartialBrentOptimization(const GPOperations::OptimizeBranchLength& op) {
+  std::stringstream dev_null;
+  auto& our_ostream = dev_null;
+  our_ostream << "\nNEW BRANCH: " << op.gpcsp_ << std::endl;
+  auto negative_log_likelihood = [this, &op, &our_ostream](double log_branch_length) {
+    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
+    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
+    auto result = -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+    our_ostream << std::setprecision(9) << "neg log like:\t" << result
+                << "\tbranch length:\t" << exp(log_branch_length) << std::endl;
+    return result;
+    // return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  };
+  double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
+  double current_value = negative_log_likelihood(current_log_branch_length);
+  const auto [log_branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
+      negative_log_likelihood, min_log_branch_length_, max_log_branch_length_,
+      significant_digits_for_optimization_, max_iter_for_optimization_);
+
+  // Numerical optimization sometimes yields new nllk > current nllk.
+  // In this case, we reset the branch length to the previous value.
+  if (neg_log_likelihood > current_value) {
+    branch_lengths_(op.gpcsp_) = exp(current_log_branch_length);
+  } else {
+    branch_lengths_(op.gpcsp_) = exp(log_branch_length);
+  }
+  our_ostream << "final branch length: " << exp(log_branch_length) << std::endl;
+  our_ostream << branch_lengths_ << std::endl;
+}
+
+void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
+  v2BrentOptimization(op);
+  // PartialBrentOptimization(op);
 }
 
 void GPEngine::GradientAscentOptimization(

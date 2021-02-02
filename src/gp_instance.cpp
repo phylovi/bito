@@ -118,6 +118,10 @@ void GPInstance::PopulatePLVs() { ProcessOperations(dag_.PopulatePLVs()); }
 
 void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }
 
+void GPInstance::ComputeMarginalLikelihood() {
+  ProcessOperations(dag_.MarginalLikelihood());
+}
+
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) {
   std::stringstream dev_null;
   auto &our_ostream = quiet ? dev_null : std::cout;
@@ -126,6 +130,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   our_ostream << "Begin branch optimization\n";
   GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
+  GPOperationVector populate_plv_operations = dag_.PopulatePLVs();
 
   our_ostream << "Populating PLVs\n";
   PopulatePLVs();
@@ -140,6 +145,8 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   for (size_t i = 0; i < max_iter; i++) {
     our_ostream << "Iteration: " << (i + 1) << std::endl;
     ProcessOperations(branch_optimization_operations);
+    // #307 Replace with a cleaned up traversal.
+    ProcessOperations(populate_plv_operations);
     ProcessOperations(marginal_lik_operations);
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
     our_ostream << "Current marginal log likelihood: ";
@@ -161,6 +168,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   our_ostream << "initial likelihood: " << initial_likelihood_duration.count() << "s\n";
   our_ostream << "optimization: " << optimization_duration.count() << "s or "
               << optimization_duration.count() / 60 << "m\n";
+  // #310 probably cut this out.
   std::ofstream branch_length_file("_output/branch_lengths.txt");
   branch_length_file << GetEngine()->GetBranchLengths();
 }
