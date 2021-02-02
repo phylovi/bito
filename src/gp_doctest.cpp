@@ -172,9 +172,11 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
 }
 
 void TestMarginal(GPInstance inst, const std::string fasta_path) {
+  inst.PrintGPCSPIndexer();
   inst.EstimateBranchLengths(0.0001, 100, true);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
+  inst.ComputeMarginalLikelihood();
   std::string tree_path = "_ignore/test_marginal_trees.nwk";
   const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
   trees.ToNewickFile(tree_path);
@@ -188,11 +190,45 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
 }
 
+// A good outcome of optimization:
+// Vector of taxon names: [jupiter, mars, saturn]
+// 010|001|000, 4
+// 011|100|000, 2
+// 001|010|000, 3
+// 100|011|001, 1
+// 011|100, 0
+// [0.1, 0.0682104322, 0.00116913342, 0.21164464, 0.0701768376]
+TEST_CASE("GPInstance: one tree optimization") {
+  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted.nwk");
+  inst.PrintGPCSPIndexer();
+  inst.EstimateBranchLengths(0.0001, 100, true);
+}
+
+// Vector of taxon names: [jupiter, mars, saturn]
+// 110|001|000, 9
+// 001|010|000, 7
+// 010|001|000, 8
+// 100|010|000, 6
+// 011|100, 0
+// 001|110|010, 3
+// 100|011|001, 2
+// 001|110, 1
+// 011|100|000, 4
+// 010|100|000, 5
+// A reasonable answer:
+// [0.1, 0.1, 0.0682104322, 0.000843851953, 0.00116913342, 0.0685374826, 0.206360318,
+// 0.21164464, 0.0701768376, 0.0685908216]
+TEST_CASE("GPInstance: two tree optimization") {
+  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
+  inst.PrintGPCSPIndexer();
+  inst.EstimateBranchLengths(0.0001, 100, true);
+}
+
+/*
 TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   TestMarginal(MakeHelloGPInstanceTwoTrees(), "data/hello.fasta");
 }
 
-/*
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
   TestMarginal(MakeFiveTaxonInstance(), "data/five_taxon.fasta");
 }

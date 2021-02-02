@@ -118,6 +118,10 @@ void GPInstance::PopulatePLVs() { ProcessOperations(dag_.PopulatePLVs()); }
 
 void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }
 
+void GPInstance::ComputeMarginalLikelihood() {
+  ProcessOperations(dag_.MarginalLikelihood());
+}
+
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) {
   std::stringstream dev_null;
   auto &our_ostream = quiet ? dev_null : std::cout;
