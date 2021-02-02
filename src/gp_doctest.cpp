@@ -52,9 +52,7 @@ GPInstance MakeHelloGPInstanceSingleNucleotide() {
 }
 
 GPInstance MakeHelloGPInstanceTwoTrees() {
-  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
-  inst.GetEngine()->SetBranchLengthsToConstant(1.);
-  return inst;
+  return GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
 }
 
 GPInstance MakeFiveTaxonInstance() {
