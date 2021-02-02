@@ -239,11 +239,11 @@ TEST_CASE("GPInstance: two tree optimization") {
   inst.EstimateBranchLengths(0.0001, 100, false);
 }
 
-/*
 TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   TestMarginal(MakeHelloGPInstanceTwoTrees(), "data/hello.fasta");
 }
 
+/*
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
   TestMarginal(MakeFiveTaxonInstance(), "data/five_taxon.fasta");
 }
