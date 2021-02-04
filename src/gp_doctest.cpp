@@ -52,9 +52,7 @@ GPInstance MakeHelloGPInstanceSingleNucleotide() {
 }
 
 GPInstance MakeHelloGPInstanceTwoTrees() {
-  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
-  inst.GetEngine()->SetBranchLengthsToConstant(1.);
-  return inst;
+  return GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
 }
 
 GPInstance MakeFiveTaxonInstance() {
@@ -168,7 +166,7 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
       Assert(!Bitset(gp_string.substr(gp_string.rfind('|') + 1)).Any(),
              "Missing a non-fake bitset in CheckExactMapVsGPVector.");
     } else {
-      CHECK_LT(fabs(exact_map.at(gp_string) - gp_value), 1e-6);
+      CHECK_LT(fabs(exact_map.at(gp_string) - gp_value), 1e-5);
     }
   }
 }
@@ -177,6 +175,7 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
   inst.EstimateBranchLengths(0.0001, 100, true);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
+  inst.ComputeMarginalLikelihood();
   std::string tree_path = "_ignore/test_marginal_trees.nwk";
   const auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
   trees.ToNewickFile(tree_path);
@@ -236,14 +235,11 @@ double MakeAndRunFluAGPInstance(double rescaling_threshold) {
 // Regression test.
 TEST_CASE("GPInstance: branch length optimization") {
   auto inst = MakeHelloGPInstanceTwoTrees();
-
-  EigenVectorXd expected_branch_lengths =
-      MakeHelloGPInstanceRegressionTestBranchLengths();
-
-  // Reset.
-  inst = MakeHelloGPInstanceTwoTrees();
+  inst.GetEngine()->SetBranchLengthsToConstant(1.);
   inst.EstimateBranchLengths(1e-6, 100, true);
   EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
+  EigenVectorXd expected_branch_lengths =
+      MakeHelloGPInstanceRegressionTestBranchLengths();
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
 }
 
