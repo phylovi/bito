@@ -172,7 +172,6 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
 }
 
 void TestMarginal(GPInstance inst, const std::string fasta_path) {
-  inst.PrintGPCSPIndexer();
   inst.EstimateBranchLengths(0.0001, 100, true);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
@@ -186,64 +185,14 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
   auto gp_per_pcsp_log_marginal =
       inst.PrettyIndexedPerGPCSPComponentsOfFullLogMarginal();
-  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-5);
+  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
-}
-
-// A good outcome of optimization:
-// Vector of taxon names: [jupiter, mars, saturn]
-// 010|001|000, 4
-// 011|100|000, 2
-// 001|010|000, 3
-// 100|011|001, 1
-// 011|100, 0
-// [0.1, 0.0682104322, 0.00116913342, 0.21164464, 0.0701768376]
-TEST_CASE("GPInstance: one tree optimization") {
-  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted.nwk");
-  inst.PrintGPCSPIndexer();
-  inst.EstimateBranchLengths(0.0001, 100, false);
-}
-
-// For v2BrentOptimization:
-// final true marginal likelihood: -80.2743308
-// resulting in wacky branch lengths:
-// Vector of taxon names: [jupiter, mars, saturn]
-// 011|100,     0 :    0.1,
-// 001|110,     1 :    0.1,
-// 100|011|001, 2 :    1.54294562e-06,
-// 001|110|010, 3 :    0.0510080394,
-// 011|100|000, 4 :    1.52514496e-06,
-// 010|100|000, 5 :    0.147642992,
-// 100|010|000, 6 :    1.52581422e-06,
-// 001|010|000, 7 :    0.463296615,
-// 010|001|000, 8 :    1.53063383e-06,
-// 110|001|000, 9 :    0.0953556198
-
-// For PartialBrentOptimization:
-// final true marginal likelihood: -80.6877868
-// resulting in sensible branch lengths:
-// 011|100,     0 :    0.1,
-// 001|110,     1 :    0.1,
-// 100|011|001, 2 :    0.0682104322,
-// 001|110|010, 3 :    0.000843851953,
-// 011|100|000, 4 :    0.00116913342,
-// 010|100|000, 5 :    0.0685374826,
-// 100|010|000, 6 :    0.206360318,
-// 001|010|000, 7 :    0.21164464,
-// 010|001|000, 8 :    0.0701768376,
-// 110|001|000, 9 :    0.0685908216
-
-TEST_CASE("GPInstance: two tree optimization") {
-  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
-  inst.PrintGPCSPIndexer();
-  inst.EstimateBranchLengths(0.0001, 100, false);
 }
 
 TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   TestMarginal(MakeHelloGPInstanceTwoTrees(), "data/hello.fasta");
 }
 
-/*
 TEST_CASE("GPInstance: marginal likelihood on five taxa") {
   TestMarginal(MakeFiveTaxonInstance(), "data/five_taxon.fasta");
 }
@@ -251,7 +200,6 @@ TEST_CASE("GPInstance: marginal likelihood on five taxa") {
 TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
   TestMarginal(MakeDS1Reduced5Instance(), "data/ds1-reduced-5.fasta");
 }
-*/
 
 TEST_CASE("GPInstance: gradient calculation") {
   auto inst = MakeHelloGPInstanceSingleNucleotide();
@@ -284,21 +232,16 @@ double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   return inst.GetEngine()->GetLogMarginalLikelihood();
 }
 
-/*
 // Regression test.
 TEST_CASE("GPInstance: branch length optimization") {
   auto inst = MakeHelloGPInstanceTwoTrees();
-
-  EigenVectorXd expected_branch_lengths =
-      MakeHelloGPInstanceRegressionTestBranchLengths();
-
-  // Reset.
-  inst = MakeHelloGPInstanceTwoTrees();
+  inst.GetEngine()->SetBranchLengthsToConstant(1.);
   inst.EstimateBranchLengths(1e-6, 100, true);
   EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
+  EigenVectorXd expected_branch_lengths =
+      MakeHelloGPInstanceRegressionTestBranchLengths();
   CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
 }
-*/
 
 TEST_CASE("GPInstance: rescaling") {
   double difference = MakeAndRunFluAGPInstance(GPEngine::default_rescaling_threshold_) -
@@ -347,15 +290,12 @@ TEST_CASE("GPInstance: generate all trees") {
   CHECK_EQ(rooted_tree_collection.TopologyCounter().size(), 4);
 }
 
-/*
- * TODO I'm not sure what this test does.
 TEST_CASE("GPInstance: test populate PLV") {
   // This test makes sure that PopulatePLVs correctly
   // re-populates the PLVs using the current branch lengths.
   auto inst = MakeFiveTaxonInstance();
   inst.EstimateBranchLengths(1e-6, 10, true);
   inst.ComputeLikelihoods();
-  // TODO If we get rid of this test we can also get rid of GetLogLikelihoodMatrix.
   size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
   const EigenVectorXd log_likelihoods1 =
       inst.GetEngine()->GetPerGPCSPLogLikelihoods(0, length);
@@ -364,7 +304,6 @@ TEST_CASE("GPInstance: test populate PLV") {
   const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
   CheckVectorXdEquality(log_likelihoods1, log_likelihoods2, 1e-6);
 }
-*/
 
 TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   auto inst = MakeFiveTaxonInstance();

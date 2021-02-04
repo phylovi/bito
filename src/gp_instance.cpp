@@ -168,9 +168,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   our_ostream << "initial likelihood: " << initial_likelihood_duration.count() << "s\n";
   our_ostream << "optimization: " << optimization_duration.count() << "s or "
               << optimization_duration.count() / 60 << "m\n";
-  // #310 probably cut this out.
-  std::ofstream branch_length_file("_output/branch_lengths.txt");
-  branch_length_file << GetEngine()->GetBranchLengths();
 }
 
 void GPInstance::EstimateSBNParameters() {
