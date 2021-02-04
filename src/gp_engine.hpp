@@ -246,6 +246,7 @@ class GPEngine {
   double relative_tolerance_for_optimization_ = 1e-2;
   // Step size used for gradient-based branch length optimization.
   double step_size_for_optimization_ = 5e-4;
+  double step_size_for_log_space_optimization_ = 1.0005;
   // Number of iterations allowed for branch length optimization.
   size_t max_iter_for_optimization_ = 1000;
 

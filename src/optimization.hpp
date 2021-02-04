@@ -137,17 +137,17 @@ DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, doubl
 
 DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prime,
                                   double x, const double tolerance,
-                                  const double step_size, const double min_x,
+                                  const double log_space_step_size, const double min_x,
                                   const size_t max_iter) {
   size_t iter_idx = 0;
   while (true) {
     double log_x = log(x);
     auto [f_x, f_prime_x] = f_and_f_prime(x);
-    auto [f_log_x, f_prime_log_x] = f_and_f_prime(log_x);
-    double log_space_grad = (1. / x) * f_prime_log_x;
-    const double new_log_x = log_x + log_space_grad * step_size;
-    x = std::max(exp(new_log_x), min_x);
-    if (fabs(log_space_grad) < fabs(f_log_x) * tolerance || iter_idx >= max_iter) {
+    double log_space_grad = x * f_prime_x;
+    const double new_log_x = log_x + log_space_grad * log_space_step_size;
+    const double new_x = exp(new_log_x);
+    x = std::max(new_x, min_x);
+    if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
       return {x, f_x};
     }
     ++iter_idx;
@@ -161,21 +161,20 @@ DoublePair AdaptiveGradientAscent(
     const double rescaling_constant, const size_t max_iter) {
   size_t iter_idx = 0;
   double alpha = 1 / default_step_size;
-  std::vector<double> f_log_values(monotonicity_const, 0.);
+  std::vector<double> f_values(monotonicity_const, 0.);
 
   while (true) {
     double log_x = log(x);
     auto [f_x, f_prime_x] = f_and_f_prime(x);
-    auto [f_log_x, f_prime_log_x] = f_and_f_prime(log_x);
-    double log_space_grad = (1. / x) * f_prime_log_x;
+    double log_space_grad = x * f_prime_x;
     double log_space_grad_sq = std::pow(log_space_grad, 2);
 
-    int f_log_value_index = static_cast<int>(iter_idx % monotonicity_const);
-    f_log_values.at(f_log_value_index) = f_log_x;
+    int f_value_index = static_cast<int>(iter_idx % monotonicity_const);
+    f_values.at(f_value_index) = f_x;
     // int last_element_index =
     //    std::min(static_cast<int>(iter_idx + 1),
     //    static_cast<int>(monotonicity_const));
-    double min_f_log = *std::min_element(f_log_values.begin(), f_log_values.end());
+    double min_f = *std::min_element(f_values.begin(), f_values.end());
 
     if (alpha <= uniformity_bound || alpha >= (1 / uniformity_bound)) {
       alpha = 1 / default_step_size;
@@ -183,25 +182,27 @@ DoublePair AdaptiveGradientAscent(
     double lambda_step_size = 1 / alpha;
 
     double candidate_log_x = std::max(log_x + log_space_grad * lambda_step_size, log_x);
-    auto [f_candidate_log_x, f_prime_candidate_log_x] = f_and_f_prime(candidate_log_x);
+    double candidate_x = exp(candidate_log_x);
+    auto [f_candidate_x, f_prime_candidate_x] = f_and_f_prime(candidate_x);
     double acceptance_threshold =
         threshold_const * lambda_step_size * log_space_grad_sq;
 
-    while (f_candidate_log_x < min_f_log + acceptance_threshold) {
+    while (f_candidate_x < min_f + acceptance_threshold) {
       lambda_step_size = lambda_step_size * rescaling_constant;
-      candidate_log_x = std::max(log_x + log_space_grad * lambda_step_size, log_x);
-      auto [f_candidate_log_x, f_prime_candidate_log_x] =
-          f_and_f_prime(candidate_log_x);
+      candidate_log_x =
+          std::max(log_x + log_space_grad * lambda_step_size, log_x);
+      candidate_x = exp(candidate_log_x);
+      auto [f_candidate_x, f_prime_candidate_x] = f_and_f_prime(candidate_x);
       acceptance_threshold =
           threshold_const * lambda_step_size * log_space_grad_sq;
     }
 
     x = exp(candidate_log_x);
     alpha = (-log_space_grad *
-             (f_prime_candidate_log_x * exp(-candidate_log_x) - log_space_grad)) /
+             (f_prime_candidate_x * candidate_x - log_space_grad)) /
             (lambda_step_size * log_space_grad_sq);
 
-    if (fabs(log_space_grad) < fabs(f_log_x) * tolerance || iter_idx >= max_iter) {
+    if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
       return {x, f_x};
     }
     // TODO: should overwrite f_x and f_prime_x with the candidate values

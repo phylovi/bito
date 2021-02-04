@@ -620,7 +620,7 @@ void GPEngine::LogSpaceGradientAscentOptimization(
   };
   const auto [branch_length, log_likelihood] = Optimization::LogSpaceGradientAscent(
       log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
-      relative_tolerance_for_optimization_, step_size_for_optimization_,
+      relative_tolerance_for_optimization_, step_size_for_log_space_optimization_,
       exp(min_log_branch_length_), max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = branch_length;
 }
