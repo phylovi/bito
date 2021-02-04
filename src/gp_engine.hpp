@@ -95,6 +95,7 @@ class GPEngine {
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-2;
   double step_size_for_optimization_ = 5e-4;
+  double step_size_for_log_space_optimization_ = 1.0005;
   size_t max_iter_for_optimization_ = 1000;
 
   int montonicity_const_for_adaptive_stepsize_ = 10;
