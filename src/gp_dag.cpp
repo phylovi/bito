@@ -114,7 +114,7 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
         // Update the R PLV corresponding to our rotation status.
         operations.push_back(RUpdateOfRotated(node_id, rotated));
         // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
-        operations.push_back(Zero{GetPLVIndex(p_hat_plv_type, node_id)});
+        operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // ModifyEdge
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
