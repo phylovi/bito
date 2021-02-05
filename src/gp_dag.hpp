@@ -29,7 +29,7 @@ class GPDAG : public TidySubsplitDAG {
 
   // Optimize branch lengths without handling out of date PLVs.
   [[nodiscard]] GPOperationVector ApproximateBranchLengthOptimization() const;
-  // Schedule branch length optimization.
+  // Schedule branch length, updating PLVs so they are always up to date.
   [[nodiscard]] GPOperationVector BranchLengthOptimization();
   // Compute likelihood values l(s|t) for each child subsplit s by visiting
   // parent subsplit t and generating Likelihood operations for each PCSP s|t.
