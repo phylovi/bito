@@ -59,11 +59,6 @@ EigenArrayXb TidySubsplitDAG::AboveNode(bool rotated, size_t node_id) {
   }
 }
 
-void TidySubsplitDAG::SetBelow(size_t parent_id, bool parent_rotated, size_t child_id) {
-  BelowNode(parent_rotated, parent_id) =
-      BelowNode(parent_rotated, parent_id).max(BelowNode(child_id));
-}
-
 EigenArrayXbRef TidySubsplitDAG::DirtyVector(bool rotated) {
   if (rotated) {
     return dirty_rotated_;
@@ -120,6 +115,19 @@ TidySubsplitDAG TidySubsplitDAG::TrivialExample() {
   return TidySubsplitDAG(3, {{topology, 1}});
 }
 
+TidySubsplitDAG TidySubsplitDAG::ManualTrivialExample() {
+  auto manual_dag = TidySubsplitDAG(5);
+
+  // The tree ((0,1)3,2)4:
+  // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769
+  manual_dag.SetBelow(3, true, 0);
+  manual_dag.SetBelow(3, false, 1);
+  manual_dag.SetBelow(4, true, 2);
+  manual_dag.SetBelow(4, false, 3);
+
+  return manual_dag;
+}
+
 TidySubsplitDAG TidySubsplitDAG::MotivatingExample() {
   auto topologies = Node::ExampleTopologies();
   return TidySubsplitDAG(4, {{topologies[3], 1}, {topologies[4], 1}});
@@ -149,3 +157,9 @@ std::string TidySubsplitDAG::RecordTraversal() {
       }));
   return result.str();
 }
+
+void TidySubsplitDAG::SetBelow(size_t parent_id, bool parent_rotated, size_t child_id) {
+  BelowNode(parent_rotated, parent_id) =
+      BelowNode(parent_rotated, parent_id).max(BelowNode(child_id));
+}
+

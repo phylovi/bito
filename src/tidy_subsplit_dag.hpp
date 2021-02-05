@@ -27,10 +27,6 @@ class TidySubsplitDAG : public SubsplitDAG {
   EigenArrayXb AboveNode(size_t node_id);
   EigenArrayXb AboveNode(bool rotated, size_t node_id);
 
-  // Set the below matrix up to have the node at src_id below the subsplit-clade
-  // described by (dst_rotated, dst_id).
-  void SetBelow(size_t dst_id, bool dst_rotated, size_t src_id);
-
   EigenArrayXbRef DirtyVector(bool rotated);
   bool IsDirtyBelow(size_t node_id, bool rotated);
   void SetDirtyStrictlyAbove(size_t node_id);
@@ -41,6 +37,8 @@ class TidySubsplitDAG : public SubsplitDAG {
   // From ((0,1)2)
   // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769
   static TidySubsplitDAG TrivialExample();
+  // The same DAG, built by hand for the test.
+  static TidySubsplitDAG ManualTrivialExample();
   // From (0,(1,(2,3))) and ((0,(2,3)),1)
   // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
   // Update during #288 #321
@@ -168,11 +166,16 @@ class TidySubsplitDAG : public SubsplitDAG {
   EigenArrayXb dirty_sorted_;
 
   TidySubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter);
+
+  // Set the below matrix up to have all of the nodes below src_id below the
+  // subsplit-clade described by (dst_rotated, dst_id). Meant to be used as part of a
+  // depth-first traversal.
+  void SetBelow(size_t dst_id, bool dst_rotated, size_t src_id);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TidySubsplitDAG: slicing") {
-  auto manual_dag = TidySubsplitDAG(5);
+  auto manual_dag = ManualTrivialExample();
 
   // The tree ((0,1)3,2)4:
   // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769
