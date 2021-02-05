@@ -43,7 +43,7 @@ class TidySubsplitDAG : public SubsplitDAG {
   static TidySubsplitDAG TrivialExample();
   // From (0,(1,(2,3))) and ((0,(2,3)),1)
   // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
-  // Update during #288
+  // Update during #288 #321
   static TidySubsplitDAG MotivatingExample();
 
   std::string RecordTraversal();
@@ -75,7 +75,8 @@ class TidySubsplitDAG : public SubsplitDAG {
                                        size_t node_id,
                                        std::unordered_set<size_t> &visited_nodes) {
     action.BeforeNode(node_id);
-    // #288 Here we are doing true and then false (left and then right).
+    // #288 #321 Here we are doing true and then false (left and then right).
+    // This means that we get an update with the MotivatingExample as coded.
     DepthFirstWithTidyActionForNodeClade(action, node_id, true, visited_nodes);
     DepthFirstWithTidyActionForNodeClade(action, node_id, false, visited_nodes);
     action.AfterNode(node_id);
@@ -210,7 +211,7 @@ TEST_CASE("TidySubsplitDAG: slicing") {
            "[0, 0, 0, 0, 0, 1, 0, 1, 1]\n");
 
   motivating_dag.SetClean();
-  // #310 Add test for Tidy traversal.
+  // #321 Add test for Tidy traversal.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

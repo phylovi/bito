@@ -86,14 +86,6 @@ EigenVectorXd MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths() {
   return hello_gp_optimal_branch_lengths;
 }
 
-EigenVectorXd MakeHelloGPInstanceRegressionTestBranchLengths() {
-  EigenVectorXd hello_gp_optimal_branch_lengths(10);
-  hello_gp_optimal_branch_lengths << 1, 1, 0.066509261, 0.00119570257, 0.00326456973,
-      0.0671995398, 0.203893516, 0.204056242, 0.0669969961, 0.068359082;
-
-  return hello_gp_optimal_branch_lengths;
-}
-
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
@@ -235,19 +227,6 @@ double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   inst.ComputeLikelihoods();
   return inst.GetEngine()->GetLogMarginalLikelihood();
 }
-
-// Regression test.
-/*
-TEST_CASE("GPInstance: branch length optimization") {
-  auto inst = MakeHelloGPInstanceTwoTrees();
-  inst.GetEngine()->SetBranchLengthsToConstant(1.);
-  inst.EstimateBranchLengths(1e-6, 100, true);
-  EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
-  EigenVectorXd expected_branch_lengths =
-      MakeHelloGPInstanceRegressionTestBranchLengths();
-  CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
-}
-*/
 
 TEST_CASE("GPInstance: rescaling") {
   double difference = MakeAndRunFluAGPInstance(GPEngine::default_rescaling_threshold_) -
