@@ -15,8 +15,6 @@ class TidySubsplitDAG : public SubsplitDAG {
  public:
   TidySubsplitDAG();
   explicit TidySubsplitDAG(const RootedTreeCollection &tree_collection);
-  // This constructor is really just meant for testing.
-  explicit TidySubsplitDAG(size_t node_count);
 
   // What nodes are above or below the specified node? We consider a node to be both
   // above and below itself (this just happens to be handy for the implementation).
@@ -165,6 +163,9 @@ class TidySubsplitDAG : public SubsplitDAG {
   // invalidates the p-hat PLV coming up into it.
   EigenArrayXb dirty_sorted_;
 
+  // This constructor is really just meant for testing.
+  explicit TidySubsplitDAG(size_t node_count);
+
   TidySubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter);
 
   // Set the below matrix up to have all of the nodes below src_id below the
@@ -175,14 +176,7 @@ class TidySubsplitDAG : public SubsplitDAG {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TidySubsplitDAG: slicing") {
-  auto manual_dag = ManualTrivialExample();
-
-  // The tree ((0,1)3,2)4:
-  // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769
-  manual_dag.SetBelow(3, true, 0);
-  manual_dag.SetBelow(3, false, 1);
-  manual_dag.SetBelow(4, true, 2);
-  manual_dag.SetBelow(4, false, 3);
+  auto manual_dag = TidySubsplitDAG::ManualTrivialExample();
 
   CHECK_EQ(GenericToString(manual_dag.AboveNode(0)), "[1, 0, 0, 1, 1]\n");
   CHECK_EQ(GenericToString(manual_dag.AboveNode(1)), "[0, 1, 0, 1, 1]\n");
