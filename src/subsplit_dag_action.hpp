@@ -38,9 +38,11 @@ auto TidySubsplitDAGTraversalAction(Args&&... args) {
     TypeOf<1, Args...> AfterNode;
     // Applied before visiting the set of edges below a (node, clade) pair.
     TypeOf<2, Args...> BeforeNodeClade;
-    // Applied for each edge.
+    // Applied for each edge, and "dirties" all of the nodes above it.
     TypeOf<3, Args...> ModifyEdge;
-    // Cleans up the mess left by ModifyEdge.
+    // Applying this function "cleans" the node just above an edge that has been
+    // "dirtied" by ModifyEdge assuming the node just below the edge is clean.
+    // (Traversals using this action ensure that children are visited before parents.)
     TypeOf<4, Args...> UpdateEdge;
   };
   return Impl{std::forward<Args>(args)...};
