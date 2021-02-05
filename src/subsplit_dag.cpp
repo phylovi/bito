@@ -72,37 +72,37 @@ void SubsplitDAG::PrintGPCSPIndexer() const {
 }
 
 std::string SubsplitDAG::ToDot() const {
-  std::stringstream ss;
-  ss << "digraph g {\n";
-  ss << "node [shape=record];\n";
+  std::stringstream string_stream;
+  string_stream << "digraph g {\n";
+  string_stream << "node [shape=record];\n";
   DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
-      [this, &ss](size_t node_id) {
+      [this, &string_stream](size_t node_id) {
         auto bs = GetDagNode(node_id)->GetBitset();
-        ss << node_id << "[label=\"<f0>" << bs.SubsplitChunk(0).ToIndexSetString()
-           << "|<f1>" << node_id << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString()
-           << "\"]\n";
+        string_stream << node_id << "[label=\"<f0>"
+                      << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>" << node_id
+                      << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString() << "\"]\n";
       },
       // AfterNode
       [](size_t node_id) {},
       // BeforeNodeClade
       [](size_t node_id, bool rotated) {},
       // VisitEdge
-      [this, &ss](size_t node_id, size_t child_id, bool rotated) {
+      [this, &string_stream](size_t node_id, size_t child_id, bool rotated) {
         if (GetDagNode(child_id)->IsLeaf()) {
-          ss << child_id << "[label=\"<f1>" << child_id << "\"]\n";
+          string_stream << child_id << "[label=\"<f1>" << child_id << "\"]\n";
         }
-        ss << "\"" << node_id << "\":";
+        string_stream << "\"" << node_id << "\":";
         if (rotated) {
-          ss << "f0";
+          string_stream << "f0";
         } else {
-          ss << "f2";
+          string_stream << "f2";
         }
-        ss << "->\"";
-        ss << child_id << "\":f1;\n";
+        string_stream << "->\"";
+        string_stream << child_id << "\":f1;\n";
       }));
-  ss << "}";
-  return ss.str();
+  string_stream << "}";
+  return string_stream.str();
 }
 
 const BitsetSizeMap &SubsplitDAG::GetGPCSPIndexer() const { return gpcsp_indexer_; }
