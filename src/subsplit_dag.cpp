@@ -12,6 +12,9 @@ SubsplitDAG::SubsplitDAG()
 SubsplitDAG::SubsplitDAG(size_t taxon_count,
                          const Node::TopologyCounter &topology_counter)
     : taxon_count_(taxon_count) {
+  Assert(topology_counter.size() > 0, "Empty topology counter given to SubsplitDAG.");
+  Assert(topology_counter.begin()->first->LeafCount() == taxon_count,
+         "Taxon count mismatch in SubsplitDAG constructor.");
   ProcessTopologyCounter(topology_counter);
   BuildNodes();
   BuildEdges();

@@ -175,8 +175,6 @@ class SubsplitDAG {
   // Storage for the number of topologies below for each node.
   EigenVectorXd topology_count_below_;
 
-  // #310 Make TopologyCounter accessible without Node:: ?
-  // #310 do we want to verify taxon count?
   SubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter);
 
   // Gives the child subsplits of a given parent subsplit, optionally including fake
