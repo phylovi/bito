@@ -5,6 +5,10 @@
 //
 // A node-clade is dirty iff there has been a calculation below that node-clade that
 // invalidates the p-hat PLV coming up into it.
+//
+// #321 It would be nice to make the traversals const, which would require us to supply
+// dirty and clean vectors, and updating_below_ as variables. Perhaps these could be
+// part of the Action?
 
 #ifndef SRC_TIDY_SUBSPLIT_DAG_HPP_
 #define SRC_TIDY_SUBSPLIT_DAG_HPP_
@@ -22,15 +26,15 @@ class TidySubsplitDAG : public SubsplitDAG {
   // These use a different convention of rotated, then node id, reflecting that we are
   // asking the question "which `rotated` nodes are above node_id"?
   EigenArrayXbRef BelowNode(bool rotated, size_t node_id);
-  EigenArrayXb AboveNode(size_t node_id);
-  EigenArrayXb AboveNode(bool rotated, size_t node_id);
+  EigenArrayXb AboveNode(size_t node_id) const;
+  EigenArrayXb AboveNode(bool rotated, size_t node_id) const;
 
   EigenArrayXbRef DirtyVector(bool rotated);
   bool IsDirtyBelow(size_t node_id, bool rotated);
   void SetDirtyStrictlyAbove(size_t node_id);
   void SetClean();
 
-  std::string AboveMatricesAsString();
+  std::string AboveMatricesAsString() const;
 
   // From ((0,1)2)
   // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769

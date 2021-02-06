@@ -47,11 +47,11 @@ EigenArrayXbRef TidySubsplitDAG::BelowNode(bool rotated, size_t node_id) {
   }
 }
 
-EigenArrayXb TidySubsplitDAG::AboveNode(size_t node_id) {
+EigenArrayXb TidySubsplitDAG::AboveNode(size_t node_id) const {
   return AboveNode(false, node_id).max(AboveNode(true, node_id));
 }
 
-EigenArrayXb TidySubsplitDAG::AboveNode(bool rotated, size_t node_id) {
+EigenArrayXb TidySubsplitDAG::AboveNode(bool rotated, size_t node_id) const {
   if (rotated) {
     return above_rotated_.row(node_id).array();
   } else {
@@ -101,7 +101,7 @@ std::string EigenMatrixXbToString(EigenMatrixXb m) {
   return string_stream.str();
 }
 
-std::string TidySubsplitDAG::AboveMatricesAsString() {
+std::string TidySubsplitDAG::AboveMatricesAsString() const {
   std::stringstream string_stream;
   string_stream << "[\n"
                 << EigenMatrixXbToString(above_rotated_) << ", \n"
