@@ -77,10 +77,10 @@ class GPDAG : public TidySubsplitDAG {
   // Compute R_HAT(s) = P'(t -> s) r(t) where t is the parent giving the highest
   // likelihood for child s.
   void UpdateRHatViaChoice(size_t node_id, GPOperationVector &operations) const;
-  // Compute P_HAT(s) = P(t -> s) p(s) where s is the child giving the highest
-  // likelihood for parent t.
-  void UpdatePHatViaChoice(size_t node_id, bool rotated,
-                           GPOperationVector &operations) const;
+  // Test to see if the likelihood for t -> s is the highest among children of t, and if
+  // so adopt P_HAT(s) = P(t -> s) p(s).
+  void PerhapsAdoptPHat(size_t node_id, size_t child_node_id, bool rotated,
+                        GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
                                    GPOperationVector &operations) const;
   void OptimizeBranchLength(size_t node_id, size_t child_node_id, bool rotated,
