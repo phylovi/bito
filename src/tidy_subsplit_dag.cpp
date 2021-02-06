@@ -163,4 +163,3 @@ void TidySubsplitDAG::SetBelow(size_t parent_id, bool parent_rotated, size_t chi
   BelowNode(parent_rotated, parent_id) =
       BelowNode(parent_rotated, parent_id).max(BelowNode(child_id));
 }
-
