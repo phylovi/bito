@@ -25,6 +25,8 @@ class GPEngine {
   void operator()(const GPOperations::ZeroPLV& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
   void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& op);
+  void operator()(const GPOperations::PerhapsAdoptEvolvedPLV& op);
+  void operator()(const GPOperations::ResetLikelihoodRecord& op);
   void operator()(const GPOperations::ResetMarginalLikelihood& op);
   void operator()(const GPOperations::IncrementMarginalLikelihood& op);
   void operator()(const GPOperations::Multiply& op);
@@ -118,8 +120,9 @@ class GPEngine {
   // Entry (i,j) stores the marginal log likelihood over all trees that include
   // a GPCSP corresponding to index i at site j.
   EigenMatrixXd log_likelihoods_;
-  // Stores the log product across sites of the per-site per-GPCSP log likelihoods.
-  EigenVectorXd classical_log_likelihoods_;
+  // For a PLV i, holds the best log likelihood for a PLV getting evolved into i among
+  // alternatives in the subsplit DAG.
+  EigenVectorXd classical_log_likelihood_records_;
 
   // Internal "temporaries" useful for likelihood and derivative calculation.
   EigenVectorXd per_pattern_log_likelihoods_;

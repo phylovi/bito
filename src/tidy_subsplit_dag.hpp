@@ -219,8 +219,8 @@ TEST_CASE("TidySubsplitDAG: slicing") {
            "[0, 0, 0, 0, 0, 1, 0, 1, 1]\n");
 
   motivating_dag.SetClean();
-  std::cout << motivating_dag.RecordTraversal() << std::endl;
   // #321 Add test for Tidy traversal.
+  // std::cout << motivating_dag.RecordTraversal() << std::endl;
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

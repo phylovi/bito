@@ -26,7 +26,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   log_marginal_likelihood_.resize(site_pattern_.PatternCount());
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
   log_likelihoods_.resize(gpcsp_count, site_pattern_.PatternCount());
-  classical_log_likelihoods_.resize(gpcsp_count);
+  classical_log_likelihood_records_.resize(plv_count);
   q_.resize(gpcsp_count);
 
   auto weights = site_pattern_.GetWeights();
@@ -72,6 +72,21 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
       rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
 }
 
+void GPEngine::operator()(const GPOperations::PerhapsAdoptEvolvedPLV& op) {
+  SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.gpcsp_));
+  PreparePerPatternLogLikelihoodsForGPCSP(op.dest_, op.src_);
+  auto our_log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  if (our_log_likelihood > classical_log_likelihood_records_[op.dest_]) {
+    classical_log_likelihood_records_[op.dest_] = our_log_likelihood;
+    plvs_.at(op.dest_) = transition_matrix_ * plvs_.at(op.src_);
+    // #322 rescaling
+  }
+}
+
+void GPEngine::operator()(const GPOperations::ResetLikelihoodRecord& op) {
+  classical_log_likelihood_records_[op.dest_] = DOUBLE_NEG_INF;
+}
+
 void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {  // NOLINT
   ResetLogMarginalLikelihood();
 }
@@ -115,9 +130,6 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
   BrentOptimization(op);
-  PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
-  classical_log_likelihoods_[op.gpcsp_] =
-      per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
@@ -303,6 +315,8 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
 }
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
+  // TODO(e) rescaling
+  Assert(rescaling_counts_.maxCoeff() == 0, "We are rescaling in BrentOptimization.");
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
     SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
     PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
