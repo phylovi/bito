@@ -46,11 +46,16 @@ class TidySubsplitDAG : public SubsplitDAG {
 
   // Apply a TidySubsplitDAGTraversalAction via a depth first traversal. Do not visit
   // leaf nodes.
-  // We assume that ModifyEdge leaves (node_id, rotated) in a clean state.
+  // We assume that ModifyEdge leaves (node_id, rotated) in a clean state, however, each
+  // ModifyEdge dirties all of the nodes above it. These nodes must be cleaned by
+  // UpdateEdge before they are ready to be used. See TidySubslitDAGTraversalAction for
+  // more details.
+  //
   // Applied to a given node, we:
   // * Apply BeforeNode
   // * For each of the clades of the node, we:
-  //     * Descend into each clade, cleaning up with UpdateEdge as needed.
+  //     * Descend into each clade, cleaning up the sister clade with UpdateEdge as
+  //     needed.
   //     * Apply BeforeNodeClade
   //     * For each edge descending from that clade, we:
   //         * Recur into the child node of the clade if it is not a leaf
