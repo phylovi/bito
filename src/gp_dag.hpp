@@ -31,6 +31,9 @@ class GPDAG : public TidySubsplitDAG {
   [[nodiscard]] GPOperationVector ApproximateBranchLengthOptimization() const;
   // Schedule branch length, updating PLVs so they are always up to date.
   [[nodiscard]] GPOperationVector BranchLengthOptimization();
+  // Perform branch length optimization for an approximation of the classical
+  // likelihood, using maximization rather than marginalization.
+  [[nodiscard]] GPOperationVector ClassicalLikelihoodOptimization();
   // Compute likelihood values l(s|t) for each child subsplit s by visiting
   // parent subsplit t and generating Likelihood operations for each PCSP s|t.
   // Compute likelihood values l(s) for each rootsplit s by calling
@@ -65,13 +68,23 @@ class GPDAG : public TidySubsplitDAG {
                                          GPOperationVector &operations) const;
 
   GPOperation RUpdateOfRotated(size_t node_id, bool rotated) const;
-  // Compute R_HAT(s) = \sum_{t : s < t} P'(s|t) r(t) prior(s|t)
-  void UpdateRHat(size_t node_id, GPOperationVector &operations) const;
+  // Compute R_HAT(s) = \sum_{t : s < t} P'(t -> s) r(t) prior(s|t)
+  void UpdateRHatViaMarginalization(size_t node_id,
+                                    GPOperationVector &operations) const;
+  // Compute P_HAT(s) = \sum_{s : s < t} P(t -> s) p(s) prior(s|t)
+  void UpdatePHatViaMarginalization(size_t node_id, size_t child_node_id, bool rotated,
+                                    GPOperationVector &operations) const;
+  // Compute R_HAT(s) = P'(t -> s) r(t) where t is the parent giving the highest
+  // likelihood for child s.
+  void UpdateRHatViaChoice(size_t node_id, GPOperationVector &operations) const;
+  // Compute P_HAT(s) = P(t -> s) p(s) where s is the child giving the highest
+  // likelihood for parent t.
+  void UpdatePHatViaChoice(size_t node_id, bool rotated,
+                           GPOperationVector &operations) const;
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
                                    GPOperationVector &operations) const;
-  void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
-                                      bool rotated,
-                                      GPOperationVector &operations) const;
+  void OptimizeBranchLength(size_t node_id, size_t child_node_id, bool rotated,
+                            GPOperationVector &operations) const;
 };
 
 #endif  // SRC_GP_DAG_HPP_

@@ -118,6 +118,8 @@ class GPEngine {
   // Entry (i,j) stores the marginal log likelihood over all trees that include
   // a GPCSP corresponding to index i at site j.
   EigenMatrixXd log_likelihoods_;
+  // Stores the log product across sites of the per-site per-GPCSP log likelihoods.
+  EigenVectorXd classical_log_likelihoods_;
 
   // Internal "temporaries" useful for likelihood and derivative calculation.
   EigenVectorXd per_pattern_log_likelihoods_;

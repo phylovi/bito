@@ -55,7 +55,7 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
       [this, &operations](size_t node_id) {
         if (!GetDagNode(node_id)->IsRoot()) {
           // Update R-hat if we're not at the root.
-          UpdateRHat(node_id, operations);
+          UpdateRHatViaMarginalization(node_id, operations);
         }
       },
       // AfterNode
@@ -82,7 +82,8 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
 
         // Optimize each branch for a given node-clade and accumulate the resulting
         // P-hat PLVs in the parent node.
-        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
+        OptimizeBranchLength(node_id, child_id, rotated, operations);
+        UpdatePHatViaMarginalization(node_id, child_id, rotated, operations);
       }));
   return operations;
 }
@@ -98,7 +99,7 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
       [this, &operations](size_t node_id) {
         if (!GetDagNode(node_id)->IsRoot()) {
           // Update R-hat if we're not at the root.
-          UpdateRHat(node_id, operations);
+          UpdateRHatViaMarginalization(node_id, operations);
         }
       },
       // AfterNode
@@ -120,13 +121,62 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
         // Optimize each branch for a given node-clade and accumulate the resulting
         // P-hat PLVs in the parent node.
-        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
+        OptimizeBranchLength(node_id, child_id, rotated, operations);
+        UpdatePHatViaMarginalization(node_id, child_id, rotated, operations);
       },
       // UpdateEdge
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
         // Accumulate all P-hat PLVs in the parent node without optimization.
         // #321 I don't think we need this Likelihood call... just the update PHat.
         UpdatePHatComputeLikelihood(node_id, child_id, rotated, operations);
+      }));
+  return operations;
+}
+
+// After this traversal, we will have optimized branch lengths, but we cannot assume
+// that all of the PLVs are in a valid state.
+//
+// Update the terminology in this function as part of #288.
+GPOperationVector GPDAG::ClassicalLikelihoodOptimization() {
+  GPOperationVector operations;
+  DepthFirstWithTidyAction(TidySubsplitDAGTraversalAction(
+      // BeforeNode
+      [this, &operations](size_t node_id) {
+        if (!GetDagNode(node_id)->IsRoot()) {
+          // Update R-hat if we're not at the root.
+          UpdateRHatViaChoice(node_id, operations);
+        }
+      },
+      // AfterNode
+      [this, &operations](size_t node_id) {
+        // Make P the elementwise product ("o") of the two P PLVs for the node-clades.
+        operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
+                                      GetPLVIndex(PLVType::P_HAT, node_id),
+                                      GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
+      },
+      // BeforeNodeClade
+      [this, &operations](size_t node_id, bool rotated) {
+        const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
+        // Update the R PLV corresponding to our rotation status.
+        operations.push_back(RUpdateOfRotated(node_id, rotated));
+        // TODO this isn't needed because we will be setting the PLV
+        // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
+        // operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
+      },
+      // AfterNodeClade
+      //
+      // This is where we will make the choice of the best PLV
+      //
+      // ModifyEdge
+      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+        // Optimize each branch for a given node-clade and accumulate the resulting
+        // P-hat PLVs in the parent node.
+        OptimizeBranchLength(node_id, child_id, rotated, operations);
+        UpdatePHatViaChoice(node_id, rotated, operations);
+      },
+      // UpdateEdge
+      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+        UpdatePHatViaChoice(node_id, rotated, operations);
       }));
   return operations;
 }
@@ -317,7 +367,8 @@ void GPDAG::OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
   }
 }
 
-void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
+void GPDAG::UpdateRHatViaMarginalization(size_t node_id,
+                                         GPOperationVector &operations) const {
   operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R_HAT, node_id)});
   GPOperationVector new_operations;
   const auto node = GetDagNode(node_id);
@@ -335,48 +386,83 @@ void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
-// #311 there's some work to be done here.
-// There's a lot of common code between this function and the next.
-// Also, the prep for marginalization isn't actually working correctly: we need to
-// gather more operations first.
-void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
-                                        bool rotated,
-                                        GPOperationVector &operations) const {
+void GPDAG::UpdateRHatViaChoice(size_t node_id, GPOperationVector &operations) const {
   const auto node = GetDagNode(node_id);
-  const auto child_node = GetDagNode(child_node_id);
-  auto parent_subsplit =
-      rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
-  size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, child_node->GetBitset());
-  // Update p_hat(s)
-  GPOperationVector new_operations;
-  new_operations.push_back(IncrementWithWeightedEvolvedPLV{
-      GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, node_id),
-      gpcsp_idx,
-      GetPLVIndex(PLVType::P, child_node_id),
-  });
-  new_operations.push_back(Likelihood{gpcsp_idx,
-                                      GetPLVIndex(RPLVType(rotated), node->Id()),
-                                      GetPLVIndex(PLVType::P, child_node->Id())});
-  AppendOperationsAfterPrepForMarginalization(operations, new_operations);
+  for (const bool rotated : {false, true}) {
+    PLVType src_plv_type = rotated ? PLVType::R_TILDE : PLVType::R;
+    for (size_t parent_id : node->GetRootward(rotated)) {
+      const auto parent_node = GetDagNode(parent_id);
+      size_t gpcsp_idx =
+          GetGPCSPIndex(parent_node->GetBitset(rotated), node->GetBitset());
+      // TODO EvolveBestPLV
+      // We need to make sure that the per-PLV likelihoods have been updated.
+      // Also don't forget about rescaling.
+      //
+      // operations.push_back(IncrementWithWeightedEvolvedPLV{
+      //     GetPLVIndex(PLVType::R_HAT, node_id), gpcsp_idx,
+      //     GetPLVIndex(src_plv_type, parent_id)});
+    }
+  }
 }
 
-void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
-                                           bool rotated,
-                                           GPOperationVector &operations) const {
-  const auto node = GetDagNode(node_id);
-  const auto child_node = GetDagNode(child_node_id);
-  auto parent_subsplit =
-      rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
-  size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, child_node->GetBitset());
-  operations.push_back(OptimizeBranchLength{GetPLVIndex(PLVType::P, child_node_id),
-                                            GetPLVIndex(RPLVType(rotated), node_id),
-                                            gpcsp_idx});
-  // Update p_hat(s)
-  GPOperationVector new_operations;
-  new_operations.push_back(IncrementWithWeightedEvolvedPLV{
-      GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, node_id),
-      gpcsp_idx,
-      GetPLVIndex(PLVType::P, child_node_id),
-  });
-  AppendOperationsAfterPrepForMarginalization(operations, new_operations);
+void GPDAG::UpdatePHatViaChoice(size_t node_id, bool rotated,
+                                GPOperationVector &operations) const {
+  // TODO
+  // Make sure we are updating the classical likelihood.
 }
+
+  // #311 there's some work to be done here.
+  // There's a lot of common code between this function and the next.
+  // Also, the prep for marginalization isn't actually working correctly: we need to
+  // gather more operations first.
+  void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
+                                          bool rotated, GPOperationVector &operations)
+      const {
+    const auto node = GetDagNode(node_id);
+    const auto child_node = GetDagNode(child_node_id);
+    auto parent_subsplit =
+        rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
+    size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, child_node->GetBitset());
+    // Update p_hat(s)
+    GPOperationVector new_operations;
+    new_operations.push_back(IncrementWithWeightedEvolvedPLV{
+        GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, node_id),
+        gpcsp_idx,
+        GetPLVIndex(PLVType::P, child_node_id),
+    });
+    new_operations.push_back(Likelihood{gpcsp_idx,
+                                        GetPLVIndex(RPLVType(rotated), node->Id()),
+                                        GetPLVIndex(PLVType::P, child_node->Id())});
+    AppendOperationsAfterPrepForMarginalization(operations, new_operations);
+  }
+
+  void GPDAG::OptimizeBranchLength(size_t node_id, size_t child_node_id, bool rotated,
+                                   GPOperationVector &operations) const {
+    const auto node = GetDagNode(node_id);
+    const auto child_node = GetDagNode(child_node_id);
+    auto parent_subsplit =
+        rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
+    size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, child_node->GetBitset());
+    // TODO rename?
+    operations.push_back(GPOperations::OptimizeBranchLength{
+        GetPLVIndex(PLVType::P, child_node_id), GetPLVIndex(RPLVType(rotated), node_id),
+        gpcsp_idx});
+  }
+
+  void GPDAG::UpdatePHatViaMarginalization(size_t node_id, size_t child_node_id,
+                                           bool rotated, GPOperationVector &operations)
+      const {
+    // TODO refactor code dupe with above.
+    const auto node = GetDagNode(node_id);
+    const auto child_node = GetDagNode(child_node_id);
+    auto parent_subsplit =
+        rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
+    size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, child_node->GetBitset());
+    GPOperationVector new_operations;
+    new_operations.push_back(IncrementWithWeightedEvolvedPLV{
+        GetPLVIndex(rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT, node_id),
+        gpcsp_idx,
+        GetPLVIndex(PLVType::P, child_node_id),
+    });
+    AppendOperationsAfterPrepForMarginalization(operations, new_operations);
+  }

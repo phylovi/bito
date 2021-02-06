@@ -26,6 +26,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   log_marginal_likelihood_.resize(site_pattern_.PatternCount());
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
   log_likelihoods_.resize(gpcsp_count, site_pattern_.PatternCount());
+  classical_log_likelihoods_.resize(gpcsp_count);
   q_.resize(gpcsp_count);
 
   auto weights = site_pattern_.GetWeights();
@@ -71,7 +72,7 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
       rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
 }
 
-void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {
+void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {  // NOLINT
   ResetLogMarginalLikelihood();
 }
 
@@ -114,6 +115,9 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
   BrentOptimization(op);
+  PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
+  classical_log_likelihoods_[op.gpcsp_] =
+      per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 }
 
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
