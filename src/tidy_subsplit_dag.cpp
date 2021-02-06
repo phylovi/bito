@@ -92,20 +92,21 @@ void TidySubsplitDAG::SetClean() {
 }
 
 std::string EigenMatrixXbToString(EigenMatrixXb m) {
-  std::stringstream ss;
-  // I would have thought that we could just do ss << m, but this doesn't work.
+  std::stringstream string_stream;
+  // I would have thought that we could just do string_stream << m, but this doesn't
+  // work.
   for (size_t i = 0; i < m.rows(); i++) {
-    ss << m.row(i) << "\n";
+    string_stream << m.row(i) << "\n";
   }
-  return ss.str();
+  return string_stream.str();
 }
 
 std::string TidySubsplitDAG::AboveMatricesAsString() {
-  std::stringstream ss;
-  ss << "[\n"
-     << EigenMatrixXbToString(above_rotated_) << ", \n"
-     << EigenMatrixXbToString(above_sorted_) << "\n]";
-  return ss.str();
+  std::stringstream string_stream;
+  string_stream << "[\n"
+                << EigenMatrixXbToString(above_rotated_) << ", \n"
+                << EigenMatrixXbToString(above_sorted_) << "\n]";
+  return string_stream.str();
 }
 
 TidySubsplitDAG TidySubsplitDAG::TrivialExample() {
