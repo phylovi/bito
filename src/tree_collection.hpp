@@ -11,7 +11,9 @@ using TreeCollection = GenericTreeCollection<Tree>;
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("TreeCollection") {
-  TreeCollection collection(Tree::ExampleTrees());
+  auto first_four_example_trees = Tree::ExampleTrees();
+  first_four_example_trees.resize(4);
+  TreeCollection collection(first_four_example_trees);
   auto counter = collection.TopologyCounter();
   std::unordered_map<std::string, uint32_t> counted;
   for (const auto &iter : counter) {

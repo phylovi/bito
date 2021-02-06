@@ -169,6 +169,7 @@ sources = [
     "_build/subsplit_dag_node.cpp",
     "_build/substitution_model.cpp",
     "_build/taxon_name_munging.cpp",
+    "_build/tidy_subsplit_dag.cpp",
     "_build/tree.cpp",
     "_build/tree_collection.cpp",
     "_build/unrooted_sbn_instance.cpp",

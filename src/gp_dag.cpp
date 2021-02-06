@@ -44,14 +44,13 @@ GPOperation GPDAG::RUpdateOfRotated(size_t node_id, bool rotated) const {
                             GetPLVIndex(PLVType::P_HAT_TILDE, node_id)};
 }
 
-// Optimize branch lengths.
 // After this traversal, we will have optimized branch lengths, but we cannot assume
 // that all of the PLVs are in a valid state.
 //
 // Update the terminology in this function as part of #288.
-GPOperationVector GPDAG::BranchLengthOptimization() const {
+GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
   GPOperationVector operations;
-  DepthFirstWithAction(SubsplitDAGTraversalAction(
+  SubsplitDAG::DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
       [this, &operations](size_t node_id) {
         if (!GetDagNode(node_id)->IsRoot()) {
@@ -84,6 +83,50 @@ GPOperationVector GPDAG::BranchLengthOptimization() const {
         // Optimize each branch for a given node-clade and accumulate the resulting
         // P-hat PLVs in the parent node.
         OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
+      }));
+  return operations;
+}
+
+// After this traversal, we will have optimized branch lengths, but we cannot assume
+// that all of the PLVs are in a valid state.
+//
+// Update the terminology in this function as part of #288.
+GPOperationVector GPDAG::BranchLengthOptimization() {
+  GPOperationVector operations;
+  DepthFirstWithTidyAction(TidySubsplitDAGTraversalAction(
+      // BeforeNode
+      [this, &operations](size_t node_id) {
+        if (!GetDagNode(node_id)->IsRoot()) {
+          // Update R-hat if we're not at the root.
+          UpdateRHat(node_id, operations);
+        }
+      },
+      // AfterNode
+      [this, &operations](size_t node_id) {
+        // Make P the elementwise product ("o") of the two P PLVs for the node-clades.
+        operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
+                                      GetPLVIndex(PLVType::P_HAT, node_id),
+                                      GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
+      },
+      // BeforeNodeClade
+      [this, &operations](size_t node_id, bool rotated) {
+        const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
+        // Update the R PLV corresponding to our rotation status.
+        operations.push_back(RUpdateOfRotated(node_id, rotated));
+        // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
+        operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
+      },
+      // ModifyEdge
+      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+        // Optimize each branch for a given node-clade and accumulate the resulting
+        // P-hat PLVs in the parent node.
+        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
+      },
+      // UpdateEdge
+      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+        // Accumulate all P-hat PLVs in the parent node without optimization.
+        // #321 I don't think we need this Likelihood call... just the update PHat.
+        UpdatePHatComputeLikelihood(node_id, child_id, rotated, operations);
       }));
   return operations;
 }
@@ -292,6 +335,10 @@ void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
+// #311 there's some work to be done here.
+// There's a lot of common code between this function and the next.
+// Also, the prep for marginalization isn't actually working correctly: we need to
+// gather more operations first.
 void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
                                         bool rotated,
                                         GPOperationVector &operations) const {

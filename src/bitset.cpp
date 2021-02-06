@@ -185,6 +185,20 @@ std::optional<uint32_t> Bitset::SingletonOption() const {
 
 size_t Bitset::Count() const { return std::count(value_.begin(), value_.end(), true); }
 
+std::string Bitset::ToIndexSetString() const {
+  std::string str;
+  for (size_t i = 0; i < size(); i++) {
+    if (value_[i]) {
+      str += std::to_string(i);
+      str += ",";
+    }
+  }
+  if (!str.empty()) {
+    str.pop_back();
+  }
+  return str;
+}
+
 // ** SBN-related functions
 
 Bitset Bitset::RotateSubsplit() const {
@@ -223,7 +237,14 @@ std::string Bitset::ToStringChunked(size_t chunk_count) const {
 }
 
 std::string Bitset::SubsplitToString() const { return ToStringChunked(2); }
-std::string Bitset::PCSPToString() const { return ToStringChunked(3); }
+
+std::string Bitset::SubsplitToIndexSetString() const {
+  std::string str;
+  str += SubsplitChunk(0).ToIndexSetString();
+  str += "|";
+  str += SubsplitChunk(1).ToIndexSetString();
+  return str;
+}
 
 size_t Bitset::SubsplitChunkSize() const {
   Assert(size() % 2 == 0, "Size isn't 0 mod 2 in Bitset::SubsplitChunkSize.");
@@ -274,6 +295,8 @@ Bitset Bitset::PCSPChildSubsplit() const {
   }
   return Bitset(std::move(new_value));
 }
+
+std::string Bitset::PCSPToString() const { return ToStringChunked(3); }
 
 bool Bitset::PCSPIsValid() const {
   if (size() % 3 != 0) {

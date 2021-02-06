@@ -66,6 +66,9 @@ class GPInstance {
   void ExportTreesWithAPCSP(const std::string &pcsp_string,
                             const std::string &newick_path);
 
+  // Export the subsplit DAG as a DOT file.
+  void SubsplitDAGToDot(const std::string &out_path);
+
  private:
   std::string mmap_file_path_;
   Alignment alignment_;

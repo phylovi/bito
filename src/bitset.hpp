@@ -68,6 +68,7 @@ class Bitset {
   std::optional<uint32_t> SingletonOption() const;
   // Get the number of bits set to be 1;
   size_t Count() const;
+  std::string ToIndexSetString() const;
 
   // These methods require the bitset to be a "subsplit bitset" of even length,
   // consisting of two equal sized "chunks" representing the two sides of the
@@ -81,6 +82,7 @@ class Bitset {
   // separated by a "|".
   std::string ToStringChunked(size_t chunk_count) const;
   std::string SubsplitToString() const;
+  std::string SubsplitToIndexSetString() const;
 
   // These functions require the bitset to be a "PCSP bitset" with three
   // equal-sized "chunks".
@@ -233,6 +235,9 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("0100").Count(), 1);
   CHECK_EQ(Bitset("011101").Count(), 4);
 
+  CHECK_EQ(Bitset("1001").ToIndexSetString(), "0,3");
+  CHECK_EQ(Bitset("0000").ToIndexSetString(), "");
+
   auto p = Bitset("000111");
   CHECK_EQ(p.SplitChunk(0), Bitset("000"));
   CHECK_EQ(p.SplitChunk(1), Bitset("111"));
@@ -241,6 +246,7 @@ TEST_CASE("Bitset") {
   CHECK_EQ(p.PCSPChunk(2), Bitset("11"));
 
   CHECK_EQ(Bitset("10011100").RotateSubsplit(), Bitset("11001001"));
+  CHECK_EQ(Bitset("010101").SubsplitToIndexSetString(), "1|0,2");
 
   CHECK_EQ(Bitset("011101").PCSPIsValid(), false);
   CHECK_EQ(Bitset("000111").PCSPIsValid(), false);

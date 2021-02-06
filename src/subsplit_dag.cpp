@@ -9,14 +9,22 @@
 SubsplitDAG::SubsplitDAG()
     : taxon_count_(0), gpcsp_count_without_fake_subsplits_(0), topology_count_(0.) {}
 
-SubsplitDAG::SubsplitDAG(const RootedTreeCollection &tree_collection) : SubsplitDAG() {
-  ProcessTrees(tree_collection);
+SubsplitDAG::SubsplitDAG(size_t taxon_count,
+                         const Node::TopologyCounter &topology_counter)
+    : taxon_count_(taxon_count) {
+  Assert(topology_counter.size() > 0, "Empty topology counter given to SubsplitDAG.");
+  Assert(topology_counter.begin()->first->LeafCount() == taxon_count,
+         "Taxon count mismatch in SubsplitDAG constructor.");
+  ProcessTopologyCounter(topology_counter);
   BuildNodes();
   BuildEdges();
   ExpandRootsplitsInIndexer();
   AddFakeSubsplitsToGPCSPIndexerAndParentToRange();
   CountTopologies();
 }
+
+SubsplitDAG::SubsplitDAG(const RootedTreeCollection &tree_collection)
+    : SubsplitDAG(tree_collection.TaxonCount(), tree_collection.TopologyCounter()) {}
 
 void SubsplitDAG::CountTopologies() {
   topology_count_below_ = EigenVectorXd::Ones(NodeCount());
@@ -64,6 +72,40 @@ void SubsplitDAG::PrintGPCSPIndexer() const {
                                    : pcsp.SubsplitToString();
     std::cout << gpcsp_string << ", " << idx << std::endl;
   }
+}
+
+std::string SubsplitDAG::ToDot() const {
+  std::stringstream string_stream;
+  string_stream << "digraph g {\n";
+  string_stream << "node [shape=record];\n";
+  DepthFirstWithAction(SubsplitDAGTraversalAction(
+      // BeforeNode
+      [this, &string_stream](size_t node_id) {
+        auto bs = GetDagNode(node_id)->GetBitset();
+        string_stream << node_id << "[label=\"<f0>"
+                      << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>" << node_id
+                      << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString() << "\"]\n";
+      },
+      // AfterNode
+      [](size_t node_id) {},
+      // BeforeNodeClade
+      [](size_t node_id, bool rotated) {},
+      // VisitEdge
+      [this, &string_stream](size_t node_id, size_t child_id, bool rotated) {
+        if (GetDagNode(child_id)->IsLeaf()) {
+          string_stream << child_id << "[label=\"<f1>" << child_id << "\"]\n";
+        }
+        string_stream << "\"" << node_id << "\":";
+        if (rotated) {
+          string_stream << "f0";
+        } else {
+          string_stream << "f2";
+        }
+        string_stream << "->\"";
+        string_stream << child_id << "\":f1;\n";
+      }));
+  string_stream << "}";
+  return string_stream.str();
 }
 
 const BitsetSizeMap &SubsplitDAG::GetGPCSPIndexer() const { return gpcsp_indexer_; }
@@ -295,10 +337,8 @@ std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,
   return children_subsplits;
 }
 
-void SubsplitDAG::ProcessTrees(const RootedTreeCollection &tree_collection) {
-  taxon_count_ = tree_collection.TaxonCount();
-  const auto topology_counter = tree_collection.TopologyCounter();
-
+void SubsplitDAG::ProcessTopologyCounter(
+    const Node::TopologyCounter &topology_counter) {
   std::tie(rootsplits_, gpcsp_indexer_, index_to_child_, parent_to_range_,
            gpcsp_count_without_fake_subsplits_) =
       SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),

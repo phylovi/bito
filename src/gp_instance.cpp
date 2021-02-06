@@ -145,7 +145,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   for (size_t i = 0; i < max_iter; i++) {
     our_ostream << "Iteration: " << (i + 1) << std::endl;
     ProcessOperations(branch_optimization_operations);
-    // #307 Replace with a cleaned up traversal.
+    // #321 Replace with a cleaned up traversal.
     ProcessOperations(populate_plv_operations);
     ProcessOperations(marginal_lik_operations);
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
@@ -346,4 +346,13 @@ void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,
                                       const std::string &out_path) {
   auto trees = CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(pcsp_string);
   trees.ToNewickFile(out_path);
+}
+
+void GPInstance::SubsplitDAGToDot(const std::string &out_path) {
+  std::ofstream out_stream(out_path);
+  out_stream << dag_.ToDot();
+  if (out_stream.bad()) {
+    Failwith("Failure writing to " + out_path);
+  }
+  out_stream.close();
 }

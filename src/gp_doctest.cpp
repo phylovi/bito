@@ -11,6 +11,7 @@
 #include "gp_instance.hpp"
 #include "phylo_model.hpp"
 #include "rooted_sbn_instance.hpp"
+#include "tidy_subsplit_dag.hpp"
 
 using namespace GPOperations;  // NOLINT
 
@@ -62,6 +63,9 @@ GPInstance MakeFiveTaxonInstance() {
 // The sequences for this were obtained by cutting DS1 down to 5 taxa by taking the
 // first 4 taxa then moving taxon 15 (Latimera) to be number 5. The alignment was
 // trimmed to 500 sites by using seqmagick convert with `--cut 500:1000`.
+// The DAG obtained by `inst.SubsplitDAGToDot("_ignore/ds1-reduced-5.dot");` can be seen
+// at
+// https://user-images.githubusercontent.com/112708/106355238-8a0d7700-62ab-11eb-8830-f5e3cb6790e1.png
 GPInstance MakeDS1Reduced5Instance() {
   auto inst = GPInstanceOfFiles("data/ds1-reduced-5.fasta", "data/ds1-reduced-5.nwk");
   return inst;
@@ -75,14 +79,6 @@ GPInstance MakeFluAGPInstance(double rescaling_threshold) {
 }
 
 EigenVectorXd MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths() {
-  EigenVectorXd hello_gp_optimal_branch_lengths(10);
-  hello_gp_optimal_branch_lengths << 1, 1, 0.066509261, 0.00119570257, 0.00326456973,
-      0.0671995398, 0.203893516, 0.204056242, 0.0669969961, 0.068359082;
-
-  return hello_gp_optimal_branch_lengths;
-}
-
-EigenVectorXd MakeHelloGPInstanceRegressionTestBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
   hello_gp_optimal_branch_lengths << 1, 1, 0.066509261, 0.00119570257, 0.00326456973,
       0.0671995398, 0.203893516, 0.204056242, 0.0669969961, 0.068359082;
@@ -230,17 +226,6 @@ double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   return inst.GetEngine()->GetLogMarginalLikelihood();
-}
-
-// Regression test.
-TEST_CASE("GPInstance: branch length optimization") {
-  auto inst = MakeHelloGPInstanceTwoTrees();
-  inst.GetEngine()->SetBranchLengthsToConstant(1.);
-  inst.EstimateBranchLengths(1e-6, 100, true);
-  EigenVectorXd realized_branch_lengths = inst.GetEngine()->GetBranchLengths();
-  EigenVectorXd expected_branch_lengths =
-      MakeHelloGPInstanceRegressionTestBranchLengths();
-  CheckVectorXdEquality(expected_branch_lengths, realized_branch_lengths, 1e-6);
 }
 
 TEST_CASE("GPInstance: rescaling") {
