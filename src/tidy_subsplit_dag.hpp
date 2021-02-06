@@ -64,6 +64,7 @@ class TidySubsplitDAG : public SubsplitDAG {
   //     * For each edge descending from that clade, we:
   //         * Recur into the child node of the clade if it is not a leaf
   //         * Apply VisitEdge to the edge
+  //     * Apply AfterNodeClade
   // * Apply AfterNode
   template <typename TidyTraversalActionT>
   void DepthFirstWithTidyAction(const TidyTraversalActionT &action) {
@@ -153,6 +154,7 @@ class TidySubsplitDAG : public SubsplitDAG {
       // We assume that ModifyEdge leaves (node_id, rotated) in a clean state.
       DirtyVector(rotated)[node_id] = false;
     }
+    action.AfterNodeClade(node_id, rotated);
   };
 
  private:
@@ -217,6 +219,7 @@ TEST_CASE("TidySubsplitDAG: slicing") {
            "[0, 0, 0, 0, 0, 1, 0, 1, 1]\n");
 
   motivating_dag.SetClean();
+  std::cout << motivating_dag.RecordTraversal() << std::endl;
   // #321 Add test for Tidy traversal.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

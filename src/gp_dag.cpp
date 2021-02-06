@@ -117,6 +117,8 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
         // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
         operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
       },
+      // AfterNodeClade
+      [](size_t node_id, bool rotated) {},
       // ModifyEdge
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
         // Optimize each branch for a given node-clade and accumulate the resulting
@@ -165,8 +167,12 @@ GPOperationVector GPDAG::ClassicalLikelihoodOptimization() {
       },
       // AfterNodeClade
       //
-      // This is where we will make the choice of the best PLV
-      //
+      // Make the choice of the best PLV.
+      [this, &operations](size_t node_id, bool rotated) {
+        // This is where we will make the choice of the best PLV. We need another thing
+        // here rather than do it as part of AfterNode because we want that PLV to be up
+        // to date before going down into the next one.
+      },
       // ModifyEdge
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
         // Optimize each branch for a given node-clade and accumulate the resulting
