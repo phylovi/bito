@@ -175,6 +175,10 @@ void GPInstance::ClassicalEstimateBranchLengths(double tol, size_t max_iter,
   std::stringstream dev_null;
   auto &our_ostream = quiet ? dev_null : std::cout;
 
+  // TODO note that we have to run this after the composite branch length estimation
+
+  ProcessOperations(dag_.SetRhatToStationary());
+
   GPOperationVector classical_optimization_operations_ =
       dag_.ClassicalLikelihoodOptimization();
 

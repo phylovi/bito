@@ -248,6 +248,15 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
   return operations;
 }
 
+GPOperationVector GPDAG::SetRhatToStationary() const {
+  GPOperationVector operations;
+  IterateOverRootsplitIds([this, &operations](size_t rootsplit_id) {
+    operations.push_back(
+        SetToStationaryDistribution{GetPLVIndex(PLVType::R_HAT, rootsplit_id)});
+  });
+  return operations;
+}
+
 GPOperationVector GPDAG::SetRhatToWeightedStationary() const {
   GPOperationVector operations;
   IterateOverRootsplitIds([this, &operations](size_t rootsplit_id) {
