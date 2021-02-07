@@ -23,7 +23,7 @@ class GPEngine {
 
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
-  void operator()(const GPOperations::SetToStationaryDistribution& op);
+  void operator()(const GPOperations::SetToWeightedStationaryDistribution& op);
   void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& op);
   void operator()(const GPOperations::PerhapsAdoptEvolvedPLV& op);
   void operator()(const GPOperations::ResetLikelihoodRecord& op);

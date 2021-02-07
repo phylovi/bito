@@ -35,8 +35,8 @@ struct ZeroPLV {
 
 // Set the PLV at `dest_` to be the stationary distribution multiplied by
 // rootsplit probability indexed by `root_gpcsp_idx` at every site.
-struct SetToStationaryDistribution {
-  constexpr explicit SetToStationaryDistribution(size_t dest, size_t root_gpcsp_idx)
+struct SetToWeightedStationaryDistribution {
+  constexpr explicit SetToWeightedStationaryDistribution(size_t dest, size_t root_gpcsp_idx)
       : dest_{dest}, root_gpcsp_idx_(root_gpcsp_idx) {}
   size_t dest_;
   size_t root_gpcsp_idx_;
@@ -183,7 +183,7 @@ struct PrepForMarginalization {
 }  // namespace GPOperations
 
 using GPOperation = std::variant<
-    GPOperations::ZeroPLV, GPOperations::SetToStationaryDistribution,
+    GPOperations::ZeroPLV, GPOperations::SetToWeightedStationaryDistribution,
     GPOperations::IncrementWithWeightedEvolvedPLV, GPOperations::PerhapsAdoptEvolvedPLV,
     GPOperations::ResetLikelihoodRecord, GPOperations::Multiply,
     GPOperations::Likelihood, GPOperations::OptimizeBranchLength,
@@ -215,7 +215,7 @@ struct PrepForMarginalizationVisitor {
   }
   // Do nothing for the rest of the operations.
   void operator()(const GPOperations::ZeroPLV&) {}                      // NOLINT
-  void operator()(const GPOperations::SetToStationaryDistribution&) {}  // NOLINT
+  void operator()(const GPOperations::SetToWeightedStationaryDistribution&) {}  // NOLINT
   void operator()(const GPOperations::PerhapsAdoptEvolvedPLV&) {}       // NOLINT
   void operator()(const GPOperations::ResetLikelihoodRecord&) {}        // NOLINT
   void operator()(const GPOperations::ResetMarginalLikelihood&) {}      // NOLINT
@@ -248,8 +248,8 @@ struct GPOperationOstream {
   void operator()(const GPOperations::ZeroPLV& operation) {
     os_ << "ZeroPLV" << operation.guts();
   }
-  void operator()(const GPOperations::SetToStationaryDistribution& operation) {
-    os_ << "SetToStationaryDistribution" << operation.guts();
+  void operator()(const GPOperations::SetToWeightedStationaryDistribution& operation) {
+    os_ << "SetToWeightedStationaryDistribution" << operation.guts();
   }
   void operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& operation) {
     os_ << "IncrementWithWeightedEvolvedPLV" << operation.guts();
