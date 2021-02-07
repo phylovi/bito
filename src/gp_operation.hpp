@@ -36,7 +36,8 @@ struct ZeroPLV {
 // Set the PLV at `dest_` to be the stationary distribution multiplied by
 // rootsplit probability indexed by `root_gpcsp_idx` at every site.
 struct SetToWeightedStationaryDistribution {
-  constexpr explicit SetToWeightedStationaryDistribution(size_t dest, size_t root_gpcsp_idx)
+  constexpr explicit SetToWeightedStationaryDistribution(size_t dest,
+                                                         size_t root_gpcsp_idx)
       : dest_{dest}, root_gpcsp_idx_(root_gpcsp_idx) {}
   size_t dest_;
   size_t root_gpcsp_idx_;
@@ -214,8 +215,9 @@ struct PrepForMarginalizationVisitor {
     src_vector.push_back(op.src_);
   }
   // Do nothing for the rest of the operations.
-  void operator()(const GPOperations::ZeroPLV&) {}                      // NOLINT
-  void operator()(const GPOperations::SetToWeightedStationaryDistribution&) {}  // NOLINT
+  void operator()(const GPOperations::ZeroPLV&) {}  // NOLINT
+  void operator()(const GPOperations::SetToWeightedStationaryDistribution&) {
+  }                                                                     // NOLINT
   void operator()(const GPOperations::PerhapsAdoptEvolvedPLV&) {}       // NOLINT
   void operator()(const GPOperations::ResetLikelihoodRecord&) {}        // NOLINT
   void operator()(const GPOperations::ResetMarginalLikelihood&) {}      // NOLINT

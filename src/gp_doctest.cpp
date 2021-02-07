@@ -185,6 +185,45 @@ void TestMarginal(GPInstance inst, const std::string fasta_path) {
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
 }
 
+TEST_CASE(
+    "GPInstance: classical branch lengths should give the same as marginal for one "
+    "tree") {
+  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted.nwk");
+  inst.EstimateBranchLengths(0.0001, 10, true);
+  auto original_branch_lengths = inst.PrettyIndexedBranchLengths();
+  inst.ClassicalEstimateBranchLengths(0.0001, 10, true);
+  auto classical_branch_lengths = inst.PrettyIndexedBranchLengths();
+  CHECK_EQ(original_branch_lengths, classical_branch_lengths);
+}
+
+// A good outcome of optimization:
+// Vector of taxon names: [jupiter, mars, saturn]
+// 010|001|000, 4
+// 011|100|000, 2
+// 001|010|000, 3
+// 100|011|001, 1
+// 011|100, 0
+// [0.1, 0.0682104322, 0.00116913342, 0.21164464, 0.0701768376]
+TEST_CASE("GPInstance: two tree optimization") {
+  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
+  inst.SubsplitDAGToDot("_ignore/two_tree.dot");
+  inst.PrintGPCSPIndexer();
+  inst.EstimateBranchLengths(0.0001, 10, true);
+  std::cout << "hello branch lengths via composite\n"
+            << inst.PrettyIndexedBranchLengths() << std::endl;
+  inst.ClassicalEstimateBranchLengths(0.0001, 10, true);
+  std::cout << "hello branch lengths via classical\n"
+            << inst.PrettyIndexedBranchLengths() << std::endl;
+  inst.ComputeLikelihoods();
+  std::cout << inst.PrettyIndexedPerGPCSPLogLikelihoods() << std::endl;
+}
+
+TEST_CASE("GPInstance: check out Classical") {
+  auto dag = GPDAG(TidySubsplitDAG::MotivatingExample());
+
+  // std::cout << dag.ClassicalLikelihoodOptimization() << std::endl;
+}
+
 TEST_CASE("GPInstance: two tree marginal likelihood calculation") {
   TestMarginal(MakeHelloGPInstanceTwoTrees(), "data/hello.fasta");
 }
@@ -344,10 +383,6 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   NumericalUtils::ProbabilityNormalizeInLog(expected_q);
   expected_q = expected_q.array().exp();
   CheckVectorXdEqualityAfterSorting(realized_q, expected_q, 1e-6);
-}
-
-TEST_CASE("GPInstance: check out Classical") {
-  auto dag = GPDAG(TidySubsplitDAG::MotivatingExample());
 }
 
 TEST_CASE("GPInstance: CurrentlyLoadedTreesWithGPBranchLengths") {
