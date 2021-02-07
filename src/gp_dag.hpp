@@ -52,8 +52,8 @@ class GPDAG : public TidySubsplitDAG {
   [[nodiscard]] GPOperationVector OptimizeSBNParameters() const;
   // Set r-PLVs to zero.
   [[nodiscard]] GPOperationVector SetLeafwardZero() const;
-  // Set rhat(s) = stationary for the rootsplits s.
-  [[nodiscard]] GPOperationVector SetRhatToStationary() const;
+  // Set rhat(s) = prior-weighted stationary for the rootsplits s.
+  [[nodiscard]] GPOperationVector SetRhatToWeightedStationary() const;
   // Set p-PLVs to zero.
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
 

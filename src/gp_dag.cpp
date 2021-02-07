@@ -248,7 +248,7 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
   return operations;
 }
 
-GPOperationVector GPDAG::SetRhatToStationary() const {
+GPOperationVector GPDAG::SetRhatToWeightedStationary() const {
   GPOperationVector operations;
   IterateOverRootsplitIds([this, &operations](size_t rootsplit_id) {
     size_t root_gpcsp_idx = gpcsp_indexer_.at(GetDagNode(rootsplit_id)->GetBitset());
@@ -310,7 +310,7 @@ GPOperationVector GPDAG::PopulatePLVs() const {
   GPOperationVector operations;
   GPOperations::AppendGPOperations(operations, SetRootwardZero());
   GPOperations::AppendGPOperations(operations, SetLeafwardZero());
-  GPOperations::AppendGPOperations(operations, SetRhatToStationary());
+  GPOperations::AppendGPOperations(operations, SetRhatToWeightedStationary());
   GPOperations::AppendGPOperations(operations, RootwardPass());
   GPOperations::AppendGPOperations(operations, LeafwardPass());
   return operations;
