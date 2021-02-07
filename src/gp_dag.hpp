@@ -22,6 +22,7 @@ class GPDAG : public TidySubsplitDAG {
   enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
 
   using TidySubsplitDAG::TidySubsplitDAG;
+  explicit GPDAG(TidySubsplitDAG dag);
 
   // Get the index of a PLV of a given type and with a given index.
   static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);

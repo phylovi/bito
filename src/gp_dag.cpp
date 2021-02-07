@@ -6,6 +6,8 @@
 
 using namespace GPOperations;  // NOLINT
 
+GPDAG::GPDAG(TidySubsplitDAG dag) : TidySubsplitDAG(std::move(dag)) {}
+
 GPDAG::PLVType RPLVType(bool rotated) {
   return rotated ? GPDAG::PLVType::R_TILDE : GPDAG::PLVType::R;
 }

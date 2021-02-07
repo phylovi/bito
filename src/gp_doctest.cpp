@@ -331,6 +331,7 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   CheckVectorXdEqualityAfterSorting(realized_log_lik_vector_at_rootsplits,
                                     expected_log_lik_vector_at_rootsplits, 1e-6);
 
+  inst.PopulatePLVs();
   inst.EstimateSBNParameters();
   EigenVectorXd realized_q = inst.GetEngine()->GetSBNParameters().segment(0, 3);
   // The expected values for the SBN parameters: q[s] \propto log_lik[s] + log_prior[s].
@@ -343,6 +344,10 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   NumericalUtils::ProbabilityNormalizeInLog(expected_q);
   expected_q = expected_q.array().exp();
   CheckVectorXdEqualityAfterSorting(realized_q, expected_q, 1e-6);
+}
+
+TEST_CASE("GPInstance: check out Classical") {
+  auto dag = GPDAG(TidySubsplitDAG::MotivatingExample());
 }
 
 TEST_CASE("GPInstance: CurrentlyLoadedTreesWithGPBranchLengths") {

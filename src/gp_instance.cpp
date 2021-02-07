@@ -170,9 +170,24 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
               << optimization_duration.count() / 60 << "m\n";
 }
 
+void GPInstance::ClassicalEstimateBranchLengths(double tol, size_t max_iter,
+                                                bool quiet) {
+  std::stringstream dev_null;
+  auto &our_ostream = quiet ? dev_null : std::cout;
+
+  GPOperationVector classical_optimization_operations_ =
+      dag_.ClassicalLikelihoodOptimization();
+
+  for (size_t i = 0; i < max_iter; i++) {
+    our_ostream << "Iteration of classical: " << (i + 1) << std::endl;
+    ProcessOperations(classical_optimization_operations_);
+  }
+}
+
 void GPInstance::EstimateSBNParameters() {
-  std::cout << "Begin SBN parameter optimization\n";
-  PopulatePLVs();
+  // TODO(e) note that we aren't populating PLVs first
+  std::cout << "estimating SBN parameters without populating PLVs!" << std::endl;
+  // PopulatePLVs();
   ComputeLikelihoods();
   ProcessOperations(dag_.OptimizeSBNParameters());
 }
