@@ -215,6 +215,10 @@ TEST_CASE("GPInstance: two tree optimization") {
   std::cout << "hello branch lengths via classical\n"
             << inst.PrettyIndexedBranchLengths() << std::endl;
   inst.ComputeLikelihoods();
+  // TODO optimization for too long takes us strange places on DS1
+  // TODO why are we getting strange likelihoods for rootsplits
+  // TODO make sure that we are getting the right likelihoods as computed by BEAGLE
+  // TODO step through things?
   std::cout << inst.PrettyIndexedPerGPCSPLogLikelihoods() << std::endl;
 }
 
