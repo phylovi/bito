@@ -167,7 +167,7 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
   }
 }
 
-void TestMarginal(GPInstance inst, const std::string fasta_path) {
+void TestMarginal(GPInstance inst, const std::string& fasta_path) {
   inst.EstimateBranchLengths(0.0001, 100, true);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
