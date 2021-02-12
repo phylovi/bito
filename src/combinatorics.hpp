@@ -4,6 +4,7 @@
 #ifndef SRC_COMBINATORICS_HPP_
 #define SRC_COMBINATORICS_HPP_
 
+#include <algorithm>
 #include <cmath>
 #include <cstddef>
 #include <vector>
@@ -50,6 +51,19 @@ std::vector<std::vector<T>> CartesianProduct(
   return result;
 }
 
+template <typename T>
+std::vector<std::pair<T, T>> CartesianProduct(const std::vector<T>& input_1,
+                                              const std::vector<T>& input_2) {
+  std::vector<std::pair<T, T>> result;
+  result.reserve(input_1.size() * input_2.size());
+  for (const auto& item_1 : input_1) {
+    for (const auto& item_2 : input_2) {
+      result.emplace_back(item_1, item_2);
+    }
+  }
+  return result;
+}
+
 }  // namespace Combinatorics
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -87,6 +101,15 @@ TEST_CASE("Combinatorics") {
   std::vector<std::vector<int>> w = {{1, 2}};
   std::vector<std::vector<int>> w_result = {{1}, {2}};
   CHECK_EQ(w_result, Combinatorics::CartesianProduct(w));
+  std::vector<int> v_pair_1 = {1, 2};
+  std::vector<int> v_pair_2 = {3, 4, 5};
+  std::vector<std::pair<int, int>> v_pair_result = {{1, 3}, {1, 4}, {1, 5},
+                                                    {2, 3}, {2, 4}, {2, 5}};
+  CHECK_EQ(v_pair_result, Combinatorics::CartesianProduct(v_pair_1, v_pair_2));
+  std::vector<int> empty_vector = {};
+  std::vector<std::pair<int, int>> empty_vector_result = {};
+  CHECK_EQ(empty_vector_result,
+           Combinatorics::CartesianProduct(empty_vector, v_pair_2));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
