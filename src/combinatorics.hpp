@@ -6,6 +6,7 @@
 
 #include <cmath>
 #include <cstddef>
+#include <vector>
 
 namespace Combinatorics {
 
@@ -25,6 +26,29 @@ double LogChildSubsplitCountRatioNaive(size_t child0_taxon_count,
                                        size_t child1_taxon_count);
 // Non-naive version:
 double LogChildSubsplitCountRatio(size_t child0_taxon_count, size_t child1_taxon_count);
+
+// Take the cartesian product of a vector of vectors.
+// Simple. Not especially efficient.
+// https://stackoverflow.com/a/17050528/467327
+template <typename T>
+std::vector<std::vector<T>> CartesianProduct(
+    const std::vector<std::vector<T>>& input_vector_vector) {
+  if (input_vector_vector.empty()) {
+    return {};
+  }  // else
+  std::vector<std::vector<T>> result = {{}};
+  for (const auto& current_vector : input_vector_vector) {
+    std::vector<std::vector<T>> updated_result;
+    for (const auto& partial_element_of_result : result) {
+      for (const auto item : current_vector) {
+        updated_result.push_back(partial_element_of_result);
+        updated_result.back().push_back(item);
+      }
+    }
+    result = std::move(updated_result);
+  }
+  return result;
+}
 
 }  // namespace Combinatorics
 
@@ -53,6 +77,16 @@ TEST_CASE("Combinatorics") {
           1e-10);
     }
   }
+
+  std::vector<std::vector<int>> v = {{1, 2}, {3, 4, 5}};
+  std::vector<std::vector<int>> v_result = {{1, 3}, {1, 4}, {1, 5},
+                                            {2, 3}, {2, 4}, {2, 5}};
+  CHECK_EQ(v_result, Combinatorics::CartesianProduct(v));
+  std::vector<std::vector<int>> empty_case = {};
+  CHECK_EQ(empty_case, Combinatorics::CartesianProduct(empty_case));
+  std::vector<std::vector<int>> w = {{1, 2}};
+  std::vector<std::vector<int>> w_result = {{1}, {2}};
+  CHECK_EQ(w_result, Combinatorics::CartesianProduct(w));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
