@@ -178,13 +178,13 @@ double FatBeagle::StaticRootedLogLikelihood(FatBeagle *fat_beagle,
   return NullPtrAssert(fat_beagle)->LogLikelihood(in_tree);
 }
 
-UnrootedPhyloGradient FatBeagle::StaticUnrootedGradient(FatBeagle *fat_beagle,
-                                                        const UnrootedTree &in_tree) {
+PhyloGradient FatBeagle::StaticUnrootedGradient(FatBeagle *fat_beagle,
+                                                const UnrootedTree &in_tree) {
   return NullPtrAssert(fat_beagle)->Gradient(in_tree);
 }
 
-RootedPhyloGradient FatBeagle::StaticRootedGradient(FatBeagle *fat_beagle,
-                                                    const RootedTree &in_tree) {
+PhyloGradient FatBeagle::StaticRootedGradient(FatBeagle *fat_beagle,
+                                              const RootedTree &in_tree) {
   return NullPtrAssert(fat_beagle)->Gradient(in_tree);
 }
 
@@ -381,7 +381,7 @@ std::vector<double> DiscreteSiteModelGradient(
   return {rate_gradient};
 }
 
-UnrootedPhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
+PhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
   auto tree = in_tree.Detrifurcate();
   tree.SlideRootPosition();
   EigenMatrixXd dQ =
@@ -390,8 +390,7 @@ UnrootedPhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
   auto [log_likelihood, branch_length_gradient] =
       BranchGradientInternals(tree.Topology(), tree.BranchLengths(), dQ);
 
-  std::vector<double> substitution_model_gradient;
-  std::vector<double> site_model_gradient;
+  GradientMap gradient;
   auto site_model = phylo_model_->GetSiteModel();
   size_t category_count = site_model->GetCategoryCount();
 
@@ -401,18 +400,18 @@ UnrootedPhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
                                   phylo_model_->GetSiteModel()->GetRateGradient());
     auto [log_likelihood, unscaled_category_gradient] =
         BranchGradientInternals(tree.Topology(), tree.BranchLengths(), dQ);
-    site_model_gradient =
+    gradient["site_model"] =
         DiscreteSiteModelGradient(tree.BranchLengths(), unscaled_category_gradient);
   }
 
   // We want the fixed node to have a zero gradient.
   branch_length_gradient[tree.Topology()->Children()[1]->Id()] = 0.;
+  gradient["branch_lengths"] = branch_length_gradient;
 
-  return {log_likelihood, branch_length_gradient, site_model_gradient,
-          substitution_model_gradient};
+  return {log_likelihood, gradient};
 }
 
-RootedPhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
+PhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
   // Scale time with clock rate.
   std::vector<double> branch_lengths = tree.BranchLengths();
   const std::vector<double> &rates = tree.GetRates();
@@ -427,11 +426,10 @@ RootedPhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
   auto [log_likelihood, branch_gradient] =
       BranchGradientInternals(tree.Topology(), branch_lengths, dQ);
 
-  std::vector<double> substitution_model_gradient;
+  GradientMap gradient;
   // Calculate substitution model parameter gradient, if needed.
   //    gradients["substmodel"] = SubstitutionModelGradient(tree, branch_gradient);
 
-  std::vector<double> site_model_gradient;
   // Calculate site model parameter gradient, if needed.
   auto site_model = phylo_model_->GetSiteModel();
   size_t category_count = site_model->GetCategoryCount();
@@ -442,14 +440,11 @@ RootedPhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
                                   phylo_model_->GetSiteModel()->GetRateGradient());
     auto [log_likelihood, unscaled_category_gradient] =
         BranchGradientInternals(tree.Topology(), branch_lengths, dQ);
-    site_model_gradient =
+    gradient["site_model"] =
         DiscreteSiteModelGradient(branch_lengths, unscaled_category_gradient);
   }
+  gradient["ratios_root_height"] = RatioGradientOfBranchGradient(tree, branch_gradient);
+  gradient["clock_model"] = ClockGradient(tree, branch_gradient);
 
-  return {log_likelihood,
-          branch_gradient,
-          RatioGradientOfBranchGradient(tree, branch_gradient),
-          ClockGradient(tree, branch_gradient),
-          site_model_gradient,
-          substitution_model_gradient};
+  return {log_likelihood, gradient};
 }

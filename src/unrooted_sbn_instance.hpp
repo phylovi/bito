@@ -56,7 +56,7 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
   std::vector<double> LogLikelihoods();
 
   // For each loaded tree, return the phylogenetic gradient.
-  std::vector<UnrootedPhyloGradient> PhyloGradients();
+  std::vector<PhyloGradient> PhyloGradients();
   // Topology gradient for unrooted trees.
   // Assumption: This function is called from Python side
   // after the trees (both the topology and the branch lengths) are sampled.
@@ -238,7 +238,8 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
       }
       // Test the gradients for the last tree.
       auto last = gradients.back();
-      std::sort(last.branch_lengths_.begin(), last.branch_lengths_.end());
+      std::sort(last.gradient_["branch_lengths"].begin(),
+                last.gradient_["branch_lengths"].end());
       // Zeros are for the root and one of the descendants of the root.
       std::vector<double> physher_gradients = {
           -904.18956, -607.70500, -562.36274, -553.63315, -542.26058, -539.64210,
@@ -250,8 +251,9 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
           255.52967,  259.90378,  394.00504,  394.96619,  396.98933,  429.83873,
           450.71566,  462.75827,  471.57364,  472.83161,  514.59289,  650.72575,
           888.87834,  913.96566,  927.14730,  959.10746,  2296.55028};
-      for (size_t i = 0; i < last.branch_lengths_.size(); i++) {
-        CHECK_LT(fabs(last.branch_lengths_[i] - physher_gradients[i]), 0.0001);
+      for (size_t i = 0; i < last.gradient_["branch_lengths"].size(); i++) {
+        CHECK_LT(fabs(last.gradient_["branch_lengths"][i] - physher_gradients[i]),
+                 0.0001);
       }
 
       // Test rescaling
@@ -270,11 +272,10 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
       }
       // Gradients
       auto last_rescaling = gradients_rescaling.back();
-      std::sort(last_rescaling.branch_lengths_.begin(),
-                last_rescaling.branch_lengths_.end());
-      for (size_t i = 0; i < last_rescaling.branch_lengths_.size(); i++) {
-        CHECK_LT(fabs(last_rescaling.branch_lengths_[i] - physher_gradients[i]),
-                 0.0001);
+      auto branch_lengths_gradient = last_rescaling.gradient_["branch_lengths"];
+      std::sort(branch_lengths_gradient.begin(), branch_lengths_gradient.end());
+      for (size_t i = 0; i < branch_lengths_gradient.size(); i++) {
+        CHECK_LT(fabs(branch_lengths_gradient[i] - physher_gradients[i]), 0.0001);
       }
     }
   }
@@ -310,7 +311,8 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient with Weibull") {
 
       auto gradients = inst.PhyloGradients();
       for (size_t i = 0; i < gradients.size(); i++) {
-        CHECK_LT(fabs(gradients[i].branch_lengths_[0] - physher_gradients_bl0[i]),
+        CHECK_LT(fabs(gradients[i].gradient_["branch_lengths"][0] -
+                      physher_gradients_bl0[i]),
                  0.00011);
       }
 
@@ -324,9 +326,9 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient with Weibull") {
 
       auto gradients_rescaling = inst.PhyloGradients();
       for (size_t i = 0; i < gradients.size(); i++) {
-        CHECK_LT(
-            fabs(gradients_rescaling[i].branch_lengths_[0] - physher_gradients_bl0[i]),
-            0.00011);
+        CHECK_LT(fabs(gradients_rescaling[i].gradient_["branch_lengths"][0] -
+                      physher_gradients_bl0[i]),
+                 0.00011);
       }
     }
   }
