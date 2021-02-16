@@ -397,3 +397,10 @@ TEST_CASE("GPInstance: Priors") {
   CHECK_LT(fabs(all[4] - 1. / 3.), 1e-10);
   CHECK_LT(fabs(all[5] - 1. / 3.), 1e-10);
 }
+
+TEST_CASE("GPInstance: hybrid marginal") {
+  // See the DAG at
+  // https://user-images.githubusercontent.com/112708/108065117-6324a400-7012-11eb-8eaa-9ff1438192ad.png
+  auto inst = GPInstanceOfFiles("data/7-taxon-slice-of-ds1.fasta",
+                                "data/simplest-hybrid-marginal.nwk");
+}

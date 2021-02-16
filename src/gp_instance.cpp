@@ -355,7 +355,7 @@ void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,
 
 void GPInstance::SubsplitDAGToDot(const std::string &out_path) {
   std::ofstream out_stream(out_path);
-  out_stream << dag_.ToDot();
+  out_stream << dag_.ToDot() << std::endl;
   if (out_stream.bad()) {
     Failwith("Failure writing to " + out_path);
   }

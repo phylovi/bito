@@ -71,7 +71,7 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
       rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
 }
 
-void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {
+void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {  // NOLINT
   ResetLogMarginalLikelihood();
 }
 
