@@ -170,6 +170,8 @@ void GPEngine::SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_l
 }
 
 void GPEngine::SetBranchLengths(EigenVectorXd branch_lengths) {
+  Assert(branch_lengths_.size() == branch_lengths.size(),
+         "Size mismatch in GPEngine::SetBranchLengths.");
   branch_lengths_ = std::move(branch_lengths);
 };
 

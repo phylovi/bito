@@ -403,4 +403,14 @@ TEST_CASE("GPInstance: hybrid marginal") {
   // https://user-images.githubusercontent.com/112708/108065117-6324a400-7012-11eb-8eaa-9ff1438192ad.png
   auto inst = GPInstanceOfFiles("data/7-taxon-slice-of-ds1.fasta",
                                 "data/simplest-hybrid-marginal.nwk");
+  // Branch lengths generated from Python via
+  // import random
+  // [round(random.uniform(1e-6, 0.1), 3) for i in range(23)]
+  EigenVectorXd branch_lengths(23);
+  branch_lengths << 0.058, 0.044, 0.006, 0.099, 0.078, 0.036, 0.06, 0.073, 0.004, 0.041,
+      0.088, 0.033, 0.043, 0.096, 0.027, 0.039, 0.043, 0.023, 0.064, 0.032, 0.03, 0.085,
+      0.034;
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.ExportAllGeneratedTrees("_ignore/simplest-hybrid-marginal-trees.nwk");
 }
+
