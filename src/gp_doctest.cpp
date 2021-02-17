@@ -399,10 +399,10 @@ TEST_CASE("GPInstance: Priors") {
 }
 
 TEST_CASE("GPInstance: hybrid marginal") {
+  const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
   // https://user-images.githubusercontent.com/112708/108065117-6324a400-7012-11eb-8eaa-9ff1438192ad.png
-  auto inst = GPInstanceOfFiles("data/7-taxon-slice-of-ds1.fasta",
-                                "data/simplest-hybrid-marginal.nwk");
+  auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   // Branch lengths generated from Python via
   // import random
   // [round(random.uniform(1e-6, 0.1), 3) for i in range(23)]
@@ -411,6 +411,17 @@ TEST_CASE("GPInstance: hybrid marginal") {
       0.088, 0.033, 0.043, 0.096, 0.027, 0.039, 0.043, 0.023, 0.064, 0.032, 0.03, 0.085,
       0.034;
   inst.GetEngine()->SetBranchLengths(branch_lengths);
-  inst.ExportAllGeneratedTrees("_ignore/simplest-hybrid-marginal-trees.nwk");
+  const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
+  inst.ExportAllGeneratedTrees(tree_path);
+
+  RootedSBNInstance sbn_instance("charlie");
+  sbn_instance.ReadNewickFile(tree_path);
+  sbn_instance.ProcessLoadedTrees();
+  const Alignment alignment = Alignment::ReadFasta(fasta_path);
+  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
+  sbn_instance.SetAlignment(alignment);
+  sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
+
+  const auto manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
 }
 
