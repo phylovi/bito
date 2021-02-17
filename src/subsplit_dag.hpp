@@ -38,7 +38,7 @@ class SubsplitDAG {
 
   void Print() const;
   void PrintGPCSPIndexer() const;
-  std::string ToDot() const;
+  std::string ToDot(bool show_node_id = true) const;
 
   const BitsetSizeMap &GetGPCSPIndexer() const;
   const BitsetSizePairMap &GetParentToRange() const;

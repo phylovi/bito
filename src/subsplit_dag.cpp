@@ -74,17 +74,20 @@ void SubsplitDAG::PrintGPCSPIndexer() const {
   }
 }
 
-std::string SubsplitDAG::ToDot() const {
+std::string SubsplitDAG::ToDot(bool show_node_id) const {
   std::stringstream string_stream;
   string_stream << "digraph g {\n";
   string_stream << "node [shape=record];\n";
   DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
-      [this, &string_stream](size_t node_id) {
+      [this, &string_stream, &show_node_id](size_t node_id) {
         auto bs = GetDagNode(node_id)->GetBitset();
         string_stream << node_id << "[label=\"<f0>"
-                      << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>" << node_id
-                      << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString() << "\"]\n";
+                      << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>";
+        if (show_node_id) {
+          string_stream << node_id;
+        }
+        string_stream << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString() << "\"]\n";
       },
       // AfterNode
       [](size_t node_id) {},
