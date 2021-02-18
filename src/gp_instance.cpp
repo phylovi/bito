@@ -70,10 +70,14 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
   dag_ = GPDAG(tree_collection_);
+  auto sbn_prior = dag_.BuildUniformOnTopologicalSupportPrior();
+  auto unconditional_node_probabilities =
+      dag_.UnconditionalNodeProbabilities(sbn_prior);
   engine_ = std::make_unique<GPEngine>(
       std::move(site_pattern), plv_count_per_node_ * dag_.NodeCount(),
-      dag_.GPCSPCountWithFakeSubsplits(), mmap_file_path_, rescaling_threshold);
-  InitializeGPEngine();
+      dag_.GPCSPCountWithFakeSubsplits(), mmap_file_path_, rescaling_threshold,
+      // TODO std::move
+      std::move(sbn_prior), std::move(unconditional_node_probabilities));
 }
 
 GPEngine *GPInstance::GetEngine() const {
@@ -108,10 +112,6 @@ void GPInstance::PrintDAG() { dag_.Print(); }
 void GPInstance::PrintGPCSPIndexer() {
   std::cout << "Vector of taxon names: " << tree_collection_.TaxonNames() << std::endl;
   dag_.PrintGPCSPIndexer();
-}
-
-void GPInstance::InitializeGPEngine() {
-  GetEngine()->SetSBNParameters(dag_.BuildUniformOnTopologicalSupportPrior());
 }
 
 void GPInstance::PopulatePLVs() { ProcessOperations(dag_.PopulatePLVs()); }

@@ -9,12 +9,15 @@
 #include "mmapped_plv.hpp"
 
 class TripodHybridMarginalizer {
-  TripodHybridMarginalizer(const NucleotidePLVRefVector& plvs_,
-                           EigenConstVectorXdRef branch_lengths_);
+ public:
+  TripodHybridMarginalizer(const NucleotidePLVRefVector& plvs,
+                           EigenConstVectorXdRef branch_lengths,
+                           EigenVectorXd node_probabilities);
 
  private:
   const NucleotidePLVRefVector& plvs_;
   EigenConstVectorXdRef branch_lengths_;
+  EigenVectorXd node_probabilities_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

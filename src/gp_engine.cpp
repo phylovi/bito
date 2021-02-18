@@ -7,16 +7,22 @@
 #include "sugar.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
-                   const std::string& mmap_file_path, double rescaling_threshold)
+                   const std::string& mmap_file_path, double rescaling_threshold,
+                   EigenVectorXd sbn_prior,
+                   EigenVectorXd node_probabilities_under_prior)
     : site_pattern_(std::move(site_pattern)),
       plv_count_(plv_count),
       rescaling_threshold_(rescaling_threshold),
       log_rescaling_threshold_(log(rescaling_threshold)),
-      mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
-  Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
-  plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
-  Assert(plvs_.size() == plv_count_,
-         "Didn't get the right number of PLVs out of Subdivide.");
+      mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()),
+      plvs_(mmapped_master_plv_.Subdivide(plv_count_)),
+      // #323 rename q_ to describe what it is?
+      // TODO std::move
+      q_(sbn_prior),
+      hybrid_marginalizer_(TripodHybridMarginalizer(plvs_, branch_lengths_,
+                                                    node_probabilities_under_prior))
+
+{
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
@@ -26,7 +32,6 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   log_marginal_likelihood_.resize(site_pattern_.PatternCount());
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
   log_likelihoods_.resize(gpcsp_count, site_pattern_.PatternCount());
-  q_.resize(gpcsp_count);
 
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ =
@@ -178,8 +183,6 @@ void GPEngine::SetBranchLengths(EigenVectorXd branch_lengths) {
 void GPEngine::SetBranchLengthsToConstant(double branch_length) {
   branch_lengths_.setConstant(branch_length);
 };
-
-void GPEngine::SetSBNParameters(EigenVectorXd&& q) { q_ = std::move(q); };
 
 void GPEngine::ResetLogMarginalLikelihood() {
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);

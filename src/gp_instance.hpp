@@ -82,8 +82,6 @@ class GPInstance {
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;
 
-  void InitializeGPEngine();
-
   size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
                                   const Node *leaf_node) const;
   RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(

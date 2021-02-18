@@ -4,5 +4,9 @@
 #include "tripod_hybrid_marginalizer.hpp"
 
 TripodHybridMarginalizer::TripodHybridMarginalizer(const NucleotidePLVRefVector& plvs,
-                                                   EigenConstVectorXdRef branch_lengths)
-    : plvs_(plvs), branch_lengths_(branch_lengths) {}
+                                                   EigenConstVectorXdRef branch_lengths,
+                                                   EigenVectorXd node_probabilities)
+    : plvs_(plvs),
+      branch_lengths_(branch_lengths),
+      // TODO std::move
+      node_probabilities_(std::move(node_probabilities)) {}
