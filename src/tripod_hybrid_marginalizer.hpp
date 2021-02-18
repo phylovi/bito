@@ -1,18 +1,20 @@
 // Copyright 2019-2021 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// A rooted tree collection has a notion of sampling date for the tips of the tree, and
-// all taxa are assumed to share those sampling dates.
+// Enables hybrid marginalization on a three-taxon tree.
 
 #ifndef SRC_TRIPOD_HYBRID_MARGINALIZER_HPP_
 #define SRC_TRIPOD_HYBRID_MARGINALIZER_HPP_
 
-#include "generic_tree_collection.hpp"
-#include "rooted_tree.hpp"
-#include "tree_collection.hpp"
+#include "mmapped_plv.hpp"
 
-class HybridTripodMarginalizer {
+class TripodHybridMarginalizer {
+  TripodHybridMarginalizer(const NucleotidePLVRefVector& plvs_,
+                           EigenConstVectorXdRef branch_lengths_);
+
  private:
+  const NucleotidePLVRefVector& plvs_;
+  EigenConstVectorXdRef branch_lengths_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
