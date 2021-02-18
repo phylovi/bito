@@ -85,17 +85,6 @@ PYBIND11_MODULE(libsbn, m) {
       .def_readwrite("trees", &RootedTreeCollection::trees_);
 
   // CLASS
-  // RootedPhyloGradient
-  py::class_<RootedPhyloGradient>(m, "RootedPhyloGradient",
-                                  R"raw(A rooted tree phylogenetic gradient.)raw")
-      .def_readonly("log_likelihood", &RootedPhyloGradient::log_likelihood_)
-      .def_readonly("site_model", &RootedPhyloGradient::site_model_)
-      .def_readonly("substitution_model", &RootedPhyloGradient::substitution_model_)
-      .def_readonly("branch_lengths", &RootedPhyloGradient::branch_lengths_)
-      .def_readonly("clock_model", &RootedPhyloGradient::clock_model_)
-      .def_readonly("ratios_root_height", &RootedPhyloGradient::ratios_root_height_);
-
-  // CLASS
   // UnrootedTree
   py::class_<UnrootedTree>(m, "UnrootedTree", "An unrooted tree with branch lengths.",
                            py::buffer_protocol())
@@ -126,13 +115,10 @@ PYBIND11_MODULE(libsbn, m) {
            "Get the current set of trees as a big Newick string.")
       .def_readwrite("trees", &UnrootedTreeCollection::trees_);
 
-  // UnrootedPhyloGradient
-  py::class_<UnrootedPhyloGradient>(m, "UnrootedPhyloGradient",
-                                    R"raw(An unrooted tree phylogenetic gradient.)raw")
-      .def_readonly("log_likelihood", &UnrootedPhyloGradient::log_likelihood_)
-      .def_readonly("site_model", &UnrootedPhyloGradient::site_model_)
-      .def_readonly("substitution_model", &UnrootedPhyloGradient::substitution_model_)
-      .def_readonly("branch_lengths", &UnrootedPhyloGradient::branch_lengths_);
+  // PhyloGradient
+  py::class_<PhyloGradient>(m, "PhyloGradient", R"raw(A phylogenetic gradient.)raw")
+      .def_readonly("log_likelihood", &PhyloGradient::log_likelihood_)
+      .def_readonly("gradient", &PhyloGradient::gradient_);
 
   // CLASS
   // PSPIndexer

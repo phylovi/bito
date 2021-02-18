@@ -46,8 +46,8 @@ class FatBeagle {
   double LogLikelihood(const RootedTree &tree) const;
   // Compute first derivative of the log likelihood with respect to each branch
   // length, as a vector of first derivatives indexed by node id.
-  UnrootedPhyloGradient Gradient(const UnrootedTree &tree) const;
-  RootedPhyloGradient Gradient(const RootedTree &tree) const;
+  PhyloGradient Gradient(const UnrootedTree &tree) const;
+  PhyloGradient Gradient(const RootedTree &tree) const;
 
   // We can pass these static methods to FatBeagleParallelize.
   static double StaticUnrootedLogLikelihood(FatBeagle *fat_beagle,
@@ -58,10 +58,10 @@ class FatBeagle {
                                                     const RootedTree &in_tree);
   static double StaticRootedLogLikelihood(FatBeagle *fat_beagle,
                                           const RootedTree &in_tree);
-  static UnrootedPhyloGradient StaticUnrootedGradient(FatBeagle *fat_beagle,
-                                                      const UnrootedTree &in_tree);
-  static RootedPhyloGradient StaticRootedGradient(FatBeagle *fat_beagle,
-                                                  const RootedTree &in_tree);
+  static PhyloGradient StaticUnrootedGradient(FatBeagle *fat_beagle,
+                                              const UnrootedTree &in_tree);
+  static PhyloGradient StaticRootedGradient(FatBeagle *fat_beagle,
+                                            const RootedTree &in_tree);
 
  private:
   using BeagleInstance = int;

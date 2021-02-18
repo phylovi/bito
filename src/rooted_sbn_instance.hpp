@@ -37,7 +37,7 @@ class RootedSBNInstance : public PreRootedSBNInstance {
   std::vector<double> LogLikelihoods();
   std::vector<double> UnrootedLogLikelihoods();
   // For each loaded tree, return the phylogenetic gradient.
-  std::vector<RootedPhyloGradient> PhyloGradients();
+  std::vector<PhyloGradient> PhyloGradients();
 
   // ** I/O
 
@@ -274,7 +274,9 @@ TEST_CASE("RootedSBNInstance: gradients") {
       48.871694, 3.488516,   82.969065, 9.009334,  8.032474,  3.981016,   6.543650,
       53.702423, 37.835952,  2.840831,  7.517186,  19.936861};
   for (size_t i = 0; i < physher_gradients.size(); i++) {
-    CHECK_LT(fabs(gradients[0].ratios_root_height_[i] - physher_gradients[i]), 0.0001);
+    CHECK_LT(
+        fabs(gradients[0].gradient_["ratios_root_height"][i] - physher_gradients[i]),
+        0.0001);
   }
   CHECK_LT(fabs(gradients[0].log_likelihood_ - physher_ll), 0.0001);
 }
@@ -292,7 +294,8 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   // Gradient with a strict clock.
   auto gradients_strict = inst.PhyloGradients();
   std::vector<double> gradients_strict_approx = DerivativeStrictClock(inst);
-  CHECK_LT(fabs(gradients_strict[0].clock_model_[0] - gradients_strict_approx[0]),
+  CHECK_LT(fabs(gradients_strict[0].gradient_["clock_model"][0] -
+                gradients_strict_approx[0]),
            0.001);
   CHECK_LT(fabs(gradients_strict[0].log_likelihood_ - physher_ll), 0.001);
 
@@ -308,9 +311,9 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   auto gradients_relaxed_approx = DerivativeRelaxedClock(inst);
 
   for (size_t j = 0; j < gradients_relaxed_approx.size(); j++) {
-    CHECK_LT(
-        fabs(gradients_relaxed[0].clock_model_[j] - gradients_relaxed_approx[j][0]),
-        0.001);
+    CHECK_LT(fabs(gradients_relaxed[0].gradient_["clock_model"][j] -
+                  gradients_relaxed_approx[j][0]),
+             0.001);
   }
 }
 
@@ -331,7 +334,7 @@ TEST_CASE("RootedSBNInstance: Weibull gradients") {
   // Gradient wrt Weibull site model.
   auto gradients = inst.PhyloGradients();
   double physher_gradient = -5.231329;
-  CHECK_LT(fabs(gradients[0].site_model_[0] - physher_gradient), 0.001);
+  CHECK_LT(fabs(gradients[0].gradient_["site_model"][0] - physher_gradient), 0.001);
   CHECK_LT(fabs(gradients[0].log_likelihood_ - physher_ll), 0.001);
 }
 

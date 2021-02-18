@@ -75,19 +75,18 @@ std::vector<double> Engine::UnrootedLogLikelihoods(
       phylo_model_params, rescaling);
 }
 
-std::vector<UnrootedPhyloGradient> Engine::Gradients(
+std::vector<PhyloGradient> Engine::Gradients(
     const UnrootedTreeCollection &tree_collection,
     const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
-  return FatBeagleParallelize<UnrootedPhyloGradient, UnrootedTree,
-                              UnrootedTreeCollection>(FatBeagle::StaticUnrootedGradient,
-                                                      fat_beagles_, tree_collection,
-                                                      phylo_model_params, rescaling);
+  return FatBeagleParallelize<PhyloGradient, UnrootedTree, UnrootedTreeCollection>(
+      FatBeagle::StaticUnrootedGradient, fat_beagles_, tree_collection,
+      phylo_model_params, rescaling);
 }
 
-std::vector<RootedPhyloGradient> Engine::Gradients(
+std::vector<PhyloGradient> Engine::Gradients(
     const RootedTreeCollection &tree_collection,
     const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
-  return FatBeagleParallelize<RootedPhyloGradient, RootedTree, RootedTreeCollection>(
+  return FatBeagleParallelize<PhyloGradient, RootedTree, RootedTreeCollection>(
       FatBeagle::StaticRootedGradient, fat_beagles_, tree_collection,
       phylo_model_params, rescaling);
 }
