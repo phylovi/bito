@@ -218,7 +218,7 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
       std::tie(child0_taxon_count, child1_taxon_count) =
           our_bitset.PCSPChildSubsplitTaxonCounts();
     } else if (our_bitset.size() == 2 * taxon_count_) {  // #273
-      child0_taxon_count = our_bitset.SplitChunk(0).Count();
+      child0_taxon_count = our_bitset.SubsplitChunk(0).Count();
       child1_taxon_count = static_cast<size_t>(taxon_count_ - child0_taxon_count);
     } else {
       Failwith("Don't recognize bitset size!");
@@ -285,37 +285,52 @@ RootedIndexerRepresentation SubsplitDAG::IndexerRepresentationOf(
                                                 default_index);
 }
 
-BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
+// #323 do we want to change this into log space?
+EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
     EigenConstVectorXdRef normalized_sbn_parameters) const {
-  auto subsplit_probabilities = DefaultDict<Bitset, double>(0.);
+  EigenVectorXd node_probabilities(NodeCount());
+  node_probabilities.setZero();
+
   IterateOverRootsplitIds(
-      [this, &subsplit_probabilities, &normalized_sbn_parameters](size_t rootsplit_id) {
-        const auto rootsplit_bitset = GetDagNode(rootsplit_id)->GetBitset();
-        Assert(!subsplit_probabilities.contains(rootsplit_bitset),
+      [this, &node_probabilities, &normalized_sbn_parameters](size_t rootsplit_id) {
+        Assert(node_probabilities[rootsplit_id] == 0.,
                "We have iterated over the same rootsplit multiple times.");
-        subsplit_probabilities.increment(
-            rootsplit_bitset,
-            normalized_sbn_parameters[GetRootsplitIndex(rootsplit_bitset)]);
+        node_probabilities[rootsplit_id] += normalized_sbn_parameters[GetRootsplitIndex(
+            GetDagNode(rootsplit_id)->GetBitset())];
       });
 
   for (const auto node_id : ReversePostorderTraversal()) {
     const auto node = GetDagNode(node_id);
     IterateOverLeafwardEdgesAndChildren(
-        node, [&node, &subsplit_probabilities, &normalized_sbn_parameters](
+        node, [&node, &node_probabilities, &normalized_sbn_parameters](
                   const size_t gpcsp_index, const SubsplitDAGNode *child) {
-          const double parent_probability =
-              subsplit_probabilities.Map().at(node->GetBitset());
+          const double parent_probability = node_probabilities[node->Id()];
           const double child_probability_given_parent =
               normalized_sbn_parameters[gpcsp_index];
           Assert(child_probability_given_parent >= 0. &&
                      child_probability_given_parent <= 1.,
                  "UnconditionalSubsplitProbabilities: got an unormalized probability.");
-          subsplit_probabilities.increment(
-              child->GetBitset(), parent_probability * child_probability_given_parent);
+          node_probabilities[child->Id()] +=
+              parent_probability * child_probability_given_parent;
         });
   }
 
-  return subsplit_probabilities.Map();
+  return node_probabilities;
+}
+
+BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
+    EigenConstVectorXdRef normalized_sbn_parameters) const {
+  auto node_probabilities = UnconditionalNodeProbabilities(normalized_sbn_parameters);
+  BitsetDoubleMap subsplit_probability_map;
+  for (size_t node_id = 0; node_id < node_probabilities.size(); node_id++) {
+    const auto &subsplit_bitset = GetDagNode(node_id)->GetBitset();
+    // #323 we could include fake subsplits
+    if (!subsplit_bitset.SubsplitIsFake()) {
+      SafeInsert(subsplit_probability_map, subsplit_bitset,
+                 node_probabilities[node_id]);
+    }
+  }
+  return subsplit_probability_map;
 }
 
 std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,
