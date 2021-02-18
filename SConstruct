@@ -181,6 +181,7 @@ gp_sources = [
     "_build/gp_engine.cpp",
     "_build/gp_instance.cpp",
     "_build/gp_operation.cpp",
+    "_build/tripod_hybrid_marginalizer.cpp",
 ]
 extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
