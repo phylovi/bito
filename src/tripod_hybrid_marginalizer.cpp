@@ -8,5 +8,4 @@ TripodHybridMarginalizer::TripodHybridMarginalizer(const NucleotidePLVRefVector&
                                                    EigenVectorXd node_probabilities)
     : plvs_(plvs),
       branch_lengths_(branch_lengths),
-      // TODO std::move
       node_probabilities_(std::move(node_probabilities)) {}

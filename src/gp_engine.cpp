@@ -16,17 +16,16 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
       log_rescaling_threshold_(log(rescaling_threshold)),
       mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()),
       plvs_(mmapped_master_plv_.Subdivide(plv_count_)),
-      // #323 rename q_ to describe what it is?
-      // TODO std::move
-      q_(sbn_prior),
-      hybrid_marginalizer_(TripodHybridMarginalizer(plvs_, branch_lengths_,
-                                                    node_probabilities_under_prior))
+      q_(std::move(sbn_prior)),
+      hybrid_marginalizer_(TripodHybridMarginalizer(
+          plvs_, branch_lengths_, std::move(node_probabilities_under_prior)))
 
 {
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
-  rescaling_counts_ = EigenVectorXi::Zero(plv_count_);
+  rescaling_counts_.resize(plv_count_);
+  rescaling_counts_.setZero();
   branch_lengths_.resize(gpcsp_count);
   branch_lengths_.setConstant(default_branch_length_);
   log_marginal_likelihood_.resize(site_pattern_.PatternCount());
