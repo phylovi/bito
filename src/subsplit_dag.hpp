@@ -48,9 +48,12 @@ class SubsplitDAG {
   size_t GetRootsplitIndex(const Bitset &rootsplit) const;
   // Access the value of the gpcsp_indexer_ at the given "expanded" PCSP.
   // Asserts to make sure that the PCSP is well formed.
+  // #323 change this to GPCSPIndexOfBitsets.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,
                        const Bitset &child_subsplit) const;
-
+  // Get the GPCSP index from a parent-child pair of DAG nodes and the rotated status of
+  // the parent.
+  size_t GPCSPIndexOfIds(size_t parent_id, bool rotated, size_t child_id) const;
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(const NodeLambda &f) const;
   // Iterate over the all leafward edges, rotated and sorted, of node using an

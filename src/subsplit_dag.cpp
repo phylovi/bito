@@ -129,6 +129,12 @@ size_t SubsplitDAG::GetGPCSPIndex(const Bitset &parent_subsplit,
   return gpcsp_indexer_.at(Bitset::PCSPOfPair(parent_subsplit, child_subsplit));
 }
 
+size_t SubsplitDAG::GPCSPIndexOfIds(size_t parent_id, bool rotated,
+                                    size_t child_id) const {
+  return GetGPCSPIndex(GetDagNode(parent_id)->GetBitset(rotated),
+                       GetDagNode(child_id)->GetBitset());
+}
+
 Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
   std::vector<Node::NodePtrVec> topology_below(NodeCount());
 

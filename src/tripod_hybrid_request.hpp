@@ -1,7 +1,7 @@
 // Copyright 2019-2021 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
-// Enables hybrid marginalization on a three-taxon tree.
+// Stores a "request" for a tripod hybrid marginal calculation.
 
 #ifndef SRC_TRIPOD_HYBRID_REQUEST_HPP_
 #define SRC_TRIPOD_HYBRID_REQUEST_HPP_
