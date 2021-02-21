@@ -265,7 +265,7 @@ void SubsplitDAG::IterateOverLeafwardEdgesAndChildren(
       node, [this, &node, &f](bool rotated, const SubsplitDAGNode *child) {
         Bitset node_bitset = node->GetBitset(rotated);
         if (!node_bitset.SubsplitChunk(1).IsSingleton()) {
-          f(GetGPCSPIndex(node_bitset, child->GetBitset()), child);
+          f(GetGPCSPIndex(node_bitset, child->GetBitset()), child->Id());
         }
       });
 }
@@ -309,14 +309,14 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
     const auto node = GetDagNode(node_id);
     IterateOverLeafwardEdgesAndChildren(
         node, [&node, &node_probabilities, &normalized_sbn_parameters](
-                  const size_t gpcsp_index, const SubsplitDAGNode *child) {
+                  const size_t gpcsp_index, const size_t child_id) {
           const double parent_probability = node_probabilities[node->Id()];
           const double child_probability_given_parent =
               normalized_sbn_parameters[gpcsp_index];
           Assert(child_probability_given_parent >= 0. &&
                      child_probability_given_parent <= 1.,
                  "UnconditionalSubsplitProbabilities: got an unormalized probability.");
-          node_probabilities[child->Id()] +=
+          node_probabilities[child_id] +=
               parent_probability * child_probability_given_parent;
         });
   }
