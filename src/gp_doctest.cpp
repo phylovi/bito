@@ -403,6 +403,7 @@ TEST_CASE("GPInstance: hybrid marginal") {
   // See the DAG at
   // https://user-images.githubusercontent.com/112708/108065117-6324a400-7012-11eb-8eaa-9ff1438192ad.png
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
+  inst.SubsplitDAGToDot("_ignore/hybrid-marginal.dot");
   // Branch lengths generated from Python via
   // import random
   // [round(random.uniform(1e-6, 0.1), 3) for i in range(23)]
@@ -413,6 +414,9 @@ TEST_CASE("GPInstance: hybrid marginal") {
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
   inst.ExportAllGeneratedTrees(tree_path);
+
+  auto request = inst.GetDAG().TripodHybridRequestOf(12, 11, false);
+  std::cout << request << std::endl;
 
   RootedSBNInstance sbn_instance("charlie");
   sbn_instance.ReadNewickFile(tree_path);

@@ -369,3 +369,30 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
   });
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
+
+TripodHybridRequest GPDAG::TripodHybridRequestOf(size_t parent_id, size_t child_id,
+                                                 bool rotated) const {
+  std::vector<PLVPCSPPair> rootward_pairs;
+  IterateOverRootwardEdgesAndParents(
+      GetDagNode(parent_id),
+      [this, &rootward_pairs](const size_t gpcsp_idx, const bool rootward_rotated,
+                              const size_t grandparent_id) {
+        rootward_pairs.emplace_back(
+            GetPLVIndex(RPLVType(rootward_rotated), grandparent_id), gpcsp_idx);
+      });
+  std::vector<PLVPCSPPair> rotated_pairs;
+  std::vector<PLVPCSPPair> sorted_pairs;
+  IterateOverLeafwardEdgesAndChildren(
+      GetDagNode(child_id), [this, &rotated_pairs, &sorted_pairs](
+                                const size_t gpcsp_idx, const bool leafward_rotated,
+                                const size_t grandchild_id) {
+        if (leafward_rotated) {
+          rotated_pairs.emplace_back(GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
+        } else {
+          sorted_pairs.emplace_back(GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
+        }
+      });
+  return TripodHybridRequest(GPCSPIndexOfIds(parent_id, rotated, child_id),
+                             std::move(rootward_pairs), std::move(rotated_pairs),
+                             std::move(sorted_pairs));
+}

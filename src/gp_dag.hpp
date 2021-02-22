@@ -12,6 +12,7 @@
 #include "sbn_maps.hpp"
 #include "subsplit_dag_node.hpp"
 #include "tidy_subsplit_dag.hpp"
+#include "tripod_hybrid_request.hpp"
 
 class GPDAG : public TidySubsplitDAG {
  public:
@@ -52,6 +53,9 @@ class GPDAG : public TidySubsplitDAG {
   [[nodiscard]] GPOperationVector SetRhatToStationary() const;
   // Set p-PLVs to zero.
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
+
+  TripodHybridRequest TripodHybridRequestOf(size_t parent_id, size_t child_id,
+                                            bool rotated) const;
 
  private:
   [[nodiscard]] GPOperationVector LeafwardPass(const SizeVector &visit_order) const;

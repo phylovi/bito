@@ -172,6 +172,7 @@ sources = [
     "_build/tidy_subsplit_dag.cpp",
     "_build/tree.cpp",
     "_build/tree_collection.cpp",
+    "_build/tripod_hybrid_request.cpp",
     "_build/unrooted_sbn_instance.cpp",
     "_build/unrooted_tree.cpp",
     "_build/unrooted_tree_collection.cpp",

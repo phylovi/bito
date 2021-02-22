@@ -14,6 +14,9 @@ class TripodHybridMarginalizer {
                            EigenConstVectorXdRef branch_lengths,
                            EigenVectorXd node_probabilities);
 
+  double LogLikelihood(size_t plv_root_idx, size_t root_node_idx,
+                       double root_branch_length);
+
  private:
   const NucleotidePLVRefVector& plvs_;
   EigenConstVectorXdRef branch_lengths_;
