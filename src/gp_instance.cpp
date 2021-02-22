@@ -353,9 +353,9 @@ void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,
   trees.ToNewickFile(out_path);
 }
 
-void GPInstance::SubsplitDAGToDot(const std::string &out_path) {
+void GPInstance::SubsplitDAGToDot(const std::string &out_path, bool show_index_labels) {
   std::ofstream out_stream(out_path);
-  out_stream << dag_.ToDot() << std::endl;
+  out_stream << dag_.ToDot(show_index_labels) << std::endl;
   if (out_stream.bad()) {
     Failwith("Failure writing to " + out_path);
   }

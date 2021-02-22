@@ -69,7 +69,7 @@ class GPInstance {
                             const std::string &newick_path);
 
   // Export the subsplit DAG as a DOT file.
-  void SubsplitDAGToDot(const std::string &out_path);
+  void SubsplitDAGToDot(const std::string &out_path, bool show_index_labels = true);
 
  private:
   std::string mmap_file_path_;

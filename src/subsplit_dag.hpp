@@ -19,9 +19,9 @@ class SubsplitDAG {
   // EdgeDestinationLambda takes in a rotation status (true is rotated, false is not)
   // and a "destination" node. For iterating over DAG edges with a rotation status.
   using EdgeDestinationLambda = std::function<void(bool, const SubsplitDAGNode *)>;
-  // EdgeAndNodeLambda takes a GPCSP index of an edge and an index of the node on the
-  // other side of the edge.
-  using EdgeAndNodeLambda = std::function<void(const size_t, const size_t)>;
+  // EdgeAndNodeLambda takes a GPCSP index of an edge, its rotation status, and an index
+  // of the node on the other side of the edge.
+  using EdgeAndNodeLambda = std::function<void(const size_t, const bool, const size_t)>;
 
   SubsplitDAG();
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
@@ -38,7 +38,7 @@ class SubsplitDAG {
 
   void Print() const;
   void PrintGPCSPIndexer() const;
-  std::string ToDot(bool show_node_id = true) const;
+  std::string ToDot(bool show_index_labels = true) const;
 
   const BitsetSizeMap &GetGPCSPIndexer() const;
   const BitsetSizePairMap &GetParentToRange() const;
@@ -63,14 +63,17 @@ class SubsplitDAG {
   // Iterate over only the rotated/sorted leafward edges of node using a NodeLambda.
   void IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
                                 const NodeLambda &f) const;
-  // Iterate over the leafward edges, supplying both the a GPCSP index of an edge and
-  // the SubsplitDAGNode of the child. Note that this is not efficiently implemented
-  // right now-- it requires bitset manipulations and lookup for the index of each edge.
+  // Iterate over the leafward edges, supplying both the a GPCSP index of the edge and
+  // the SubsplitDAGNode of the corresponding child.
   void IterateOverLeafwardEdgesAndChildren(const SubsplitDAGNode *node,
                                            const EdgeAndNodeLambda &f) const;
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
   void IterateOverRootwardEdges(const SubsplitDAGNode *node,
                                 const EdgeDestinationLambda &f) const;
+  // Iterate over the rootward edges, supplying both the a GPCSP index of the edge and
+  // the SubsplitDAGNode of the corresponding child.
+  void IterateOverRootwardEdgesAndParents(const SubsplitDAGNode *node,
+                                          const EdgeAndNodeLambda &f) const;
 
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;

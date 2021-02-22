@@ -74,17 +74,18 @@ void SubsplitDAG::PrintGPCSPIndexer() const {
   }
 }
 
-std::string SubsplitDAG::ToDot(bool show_node_id) const {
+std::string SubsplitDAG::ToDot(bool show_index_labels) const {
   std::stringstream string_stream;
   string_stream << "digraph g {\n";
   string_stream << "node [shape=record];\n";
+  string_stream << "edge [colorscheme=dark23];\n";
   DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
-      [this, &string_stream, &show_node_id](size_t node_id) {
+      [this, &string_stream, &show_index_labels](size_t node_id) {
         auto bs = GetDagNode(node_id)->GetBitset();
-        string_stream << node_id << "[label=\"<f0>"
+        string_stream << node_id << " [label=\"<f0>"
                       << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>";
-        if (show_node_id) {
+        if (show_index_labels) {
           string_stream << node_id;
         }
         string_stream << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString() << "\"]\n";
@@ -94,18 +95,24 @@ std::string SubsplitDAG::ToDot(bool show_node_id) const {
       // BeforeNodeClade
       [](size_t node_id, bool rotated) {},
       // VisitEdge
-      [this, &string_stream](size_t node_id, size_t child_id, bool rotated) {
+      [this, &string_stream, &show_index_labels](size_t node_id, size_t child_id,
+                                                 bool rotated) {
         if (GetDagNode(child_id)->IsLeaf()) {
-          string_stream << child_id << "[label=\"<f1>" << child_id << "\"]\n";
+          string_stream << child_id << " [label=\"<f1>" << child_id << "\"]\n";
         }
         string_stream << "\"" << node_id << "\":";
-        if (rotated) {
-          string_stream << "f0";
-        } else {
-          string_stream << "f2";
-        }
+        string_stream << (rotated ? "f0" : "f2");
         string_stream << "->\"";
-        string_stream << child_id << "\":f1;\n";
+        string_stream << child_id << "\":f1";
+        if (show_index_labels) {
+          string_stream << " [label=\"" << GPCSPIndexOfIds(node_id, rotated, child_id);
+          if (rotated) {
+            string_stream << "\", color=1, fontcolor=1]";
+          } else {
+            string_stream << "\", color=3, fontcolor=3]";
+          }
+        }
+        string_stream << "\n";
       }));
   string_stream << "}";
   return string_stream.str();
@@ -263,9 +270,9 @@ void SubsplitDAG::IterateOverLeafwardEdgesAndChildren(
     const SubsplitDAGNode *node, const EdgeAndNodeLambda &f) const {
   IterateOverLeafwardEdges(
       node, [this, &node, &f](bool rotated, const SubsplitDAGNode *child) {
-        Bitset node_bitset = node->GetBitset(rotated);
+        const Bitset &node_bitset = node->GetBitset(rotated);
         if (!node_bitset.SubsplitChunk(1).IsSingleton()) {
-          f(GetGPCSPIndex(node_bitset, child->GetBitset()), child->Id());
+          f(GetGPCSPIndex(node_bitset, child->GetBitset()), rotated, child->Id());
         }
       });
 }
@@ -277,6 +284,15 @@ void SubsplitDAG::IterateOverRootwardEdges(const SubsplitDAGNode *node,
       f(rotated, GetDagNode(parent_idx));
     }
   }
+}
+
+void SubsplitDAG::IterateOverRootwardEdgesAndParents(const SubsplitDAGNode *node,
+                                                     const EdgeAndNodeLambda &f) const {
+  IterateOverRootwardEdges(
+      node, [this, &node, &f](bool rotated, const SubsplitDAGNode *parent) {
+        f(GetGPCSPIndex(parent->GetBitset(rotated), node->GetBitset()), rotated,
+          parent->Id());
+      });
 }
 
 void SubsplitDAG::IterateOverRootsplitIds(const std::function<void(size_t)> &f) const {
@@ -309,7 +325,7 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
     const auto node = GetDagNode(node_id);
     IterateOverLeafwardEdgesAndChildren(
         node, [&node, &node_probabilities, &normalized_sbn_parameters](
-                  const size_t gpcsp_index, const size_t child_id) {
+                  const size_t gpcsp_index, const bool, const size_t child_id) {
           const double parent_probability = node_probabilities[node->Id()];
           const double child_probability_given_parent =
               normalized_sbn_parameters[gpcsp_index];
