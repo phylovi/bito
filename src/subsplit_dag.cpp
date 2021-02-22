@@ -48,12 +48,14 @@ void SubsplitDAG::CountTopologies() {
       [this](size_t root_id) { topology_count_ += topology_count_below_[root_id]; });
 }
 
-double SubsplitDAG::TopologyCount() const { return topology_count_; }
-
 size_t SubsplitDAG::NodeCount() const { return dag_nodes_.size(); }
 
+double SubsplitDAG::TopologyCount() const { return topology_count_; }
+
 size_t SubsplitDAG::RootsplitCount() const { return rootsplits_.size(); }
+
 size_t SubsplitDAG::GPCSPCount() const { return gpcsp_count_without_fake_subsplits_; }
+
 size_t SubsplitDAG::GPCSPCountWithFakeSubsplits() const {
   return gpcsp_indexer_.size();
 }
@@ -142,6 +144,35 @@ size_t SubsplitDAG::GPCSPIndexOfIds(size_t parent_id, bool rotated,
                        GetDagNode(child_id)->GetBitset());
 }
 
+EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
+  EigenVectorXd q = EigenVectorXd::Ones(GPCSPCountWithFakeSubsplits());
+
+  for (const auto &node_id : RootwardPassTraversal()) {
+    const auto &node = GetDagNode(node_id);
+    if (!node->IsLeaf()) {
+      for (const bool rotated : {false, true}) {
+        double per_rotated_count = 0.;
+        for (const auto &child_id : node->GetLeafward(rotated)) {
+          per_rotated_count += topology_count_below_[child_id];
+        }
+        for (const auto &child_id : node->GetLeafward(rotated)) {
+          size_t gpcsp_idx = GetGPCSPIndex(node->GetBitset(rotated),
+                                           GetDagNode(child_id)->GetBitset());
+          q(gpcsp_idx) = topology_count_below_(child_id) / per_rotated_count;
+        }
+      }
+    }
+  }
+
+  IterateOverRootsplitIds([this, &q](size_t root_id) {
+    auto node = GetDagNode(root_id);
+    auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset());
+    q[gpcsp_idx] = topology_count_below_[root_id] / topology_count_;
+  });
+
+  return q;
+}
+
 Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
   std::vector<Node::NodePtrVec> topology_below(NodeCount());
 
@@ -194,35 +225,6 @@ Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
   return topologies;
 }
 
-EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
-  EigenVectorXd q = EigenVectorXd::Ones(GPCSPCountWithFakeSubsplits());
-
-  for (const auto &node_id : RootwardPassTraversal()) {
-    const auto &node = GetDagNode(node_id);
-    if (!node->IsLeaf()) {
-      for (const bool rotated : {false, true}) {
-        double per_rotated_count = 0.;
-        for (const auto &child_id : node->GetLeafward(rotated)) {
-          per_rotated_count += topology_count_below_[child_id];
-        }
-        for (const auto &child_id : node->GetLeafward(rotated)) {
-          size_t gpcsp_idx = GetGPCSPIndex(node->GetBitset(rotated),
-                                           GetDagNode(child_id)->GetBitset());
-          q(gpcsp_idx) = topology_count_below_(child_id) / per_rotated_count;
-        }
-      }
-    }
-  }
-
-  IterateOverRootsplitIds([this, &q](size_t root_id) {
-    auto node = GetDagNode(root_id);
-    auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset());
-    q[gpcsp_idx] = topology_count_below_[root_id] / topology_count_;
-  });
-
-  return q;
-}
-
 EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   EigenVectorXd result = EigenVectorXd::Zero(GPCSPCountWithFakeSubsplits());
   for (const auto &[our_bitset, gpcsp_idx] : gpcsp_indexer_) {
@@ -270,6 +272,9 @@ void SubsplitDAG::IterateOverLeafwardEdgesAndChildren(
     const SubsplitDAGNode *node, const EdgeAndNodeLambda &f) const {
   IterateOverLeafwardEdges(
       node, [this, &node, &f](bool rotated, const SubsplitDAGNode *child) {
+        // TODO don't we want all?
+        // f(GetGPCSPIndex(node->GetBitset(rotated), child->GetBitset()), rotated,
+        //   child->Id());
         const Bitset &node_bitset = node->GetBitset(rotated);
         if (!node_bitset.SubsplitChunk(1).IsSingleton()) {
           f(GetGPCSPIndex(node_bitset, child->GetBitset()), rotated, child->Id());

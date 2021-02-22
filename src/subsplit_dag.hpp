@@ -30,8 +30,6 @@ class SubsplitDAG {
   // How many topologies can be expressed by the GPDAG? Expressed as a double because
   // this number can be big.
   double TopologyCount() const;
-  // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
-  Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
   size_t RootsplitCount() const;
   size_t GPCSPCount() const;
   size_t GPCSPCountWithFakeSubsplits() const;
@@ -77,6 +75,9 @@ class SubsplitDAG {
 
   // Iterate over the node ids corresponding to rootsplits.
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
+
+  // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
+  Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
 
   // Apply an Action via a depth first traversal. Do not visit leaf nodes.
   // Applied to a given node, we:
