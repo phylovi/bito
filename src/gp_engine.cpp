@@ -371,3 +371,7 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
     }
   }
 }
+
+std::vector<double> GPEngine::ProcessTripodHybridRequest(TripodHybridRequest request) {
+  return hybrid_marginalizer_.Process(request);
+}

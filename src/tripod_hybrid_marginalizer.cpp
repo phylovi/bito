@@ -9,3 +9,7 @@ TripodHybridMarginalizer::TripodHybridMarginalizer(const NucleotidePLVRefVector&
     : plvs_(plvs),
       branch_lengths_(branch_lengths),
       node_probabilities_(std::move(node_probabilities)) {}
+
+std::vector<double> TripodHybridMarginalizer::Process(TripodHybridRequest request) {
+  return {};
+}

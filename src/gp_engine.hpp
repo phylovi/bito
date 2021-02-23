@@ -16,6 +16,7 @@
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 #include "tripod_hybrid_marginalizer.hpp"
+#include "tripod_hybrid_request.hpp"
 
 class GPEngine {
  public:
@@ -66,6 +67,8 @@ class GPEngine {
   // #288 reconsider this name
   EigenConstMatrixXdRef GetLogLikelihoodMatrix() const;
   EigenConstVectorXdRef GetSBNParameters() const;
+
+  std::vector<double> ProcessTripodHybridRequest(TripodHybridRequest request);
 
   void PrintPLV(size_t plv_idx);
 
