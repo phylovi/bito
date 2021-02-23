@@ -1,5 +1,15 @@
 // Copyright 2019-2021 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// A class to store bitsets in their various forms.
+//
+// This file started life as the RbBitSet class from RevBayes by Sebastian
+// Hoehna, but has evolved a lot since then!
+//
+// For basic operations, I'm trying to follow the interface of std::bitset, though
+// this class goes way beyond what std::bitset offers.
+// Note that we can't use std::bitset because we don't know the size of the
+// bitsets at compile time.
 
 #ifndef SRC_BITSET_HPP_
 #define SRC_BITSET_HPP_
@@ -11,12 +21,6 @@
 #include <vector>
 
 #include "sugar.hpp"
-
-// This file started life as the RbBitSet class from RevBayes by Sebastian
-// Hoehna. In general, I'm trying to follow the interface of std::bitset, though
-// this class goes way beyond what std::bitset offers.
-// Note that we can't use std::bitset because we don't know the size of the
-// bitsets at compile time.
 
 class Bitset {
  public:
