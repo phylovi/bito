@@ -412,6 +412,7 @@ TEST_CASE("GPInstance: hybrid marginal") {
       0.088, 0.033, 0.043, 0.096, 0.027, 0.039, 0.043, 0.023, 0.064, 0.032, 0.03, 0.085,
       0.034;
   inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.PopulatePLVs();
   const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
   inst.ExportAllGeneratedTrees(tree_path);
 

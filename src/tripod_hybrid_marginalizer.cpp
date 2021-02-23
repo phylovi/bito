@@ -8,8 +8,19 @@ TripodHybridMarginalizer::TripodHybridMarginalizer(const NucleotidePLVRefVector&
                                                    EigenVectorXd node_probabilities)
     : plvs_(plvs),
       branch_lengths_(branch_lengths),
-      node_probabilities_(std::move(node_probabilities)) {}
+      node_probabilities_(std::move(node_probabilities)) {
+  Assert(!plvs_.empty(),
+         "Need at least one PLV in constructor of TripodHybridMarginalizer.");
+  root_plv_ = plvs_.at(0);
+  root_plv_.setZero();
+  left_plv_ = root_plv_;
+  right_plv_ = root_plv_;
+}
 
-std::vector<double> TripodHybridMarginalizer::Process(TripodHybridRequest request) {
+std::vector<double> TripodHybridMarginalizer::Process(
+    const TripodHybridRequest& request) {
+  root_plv_(0, 0) = 1.;
+  std::cout << root_plv_.row(0) << std::endl;
+  std::cout << left_plv_.row(0) << std::endl;
   return {};
 }

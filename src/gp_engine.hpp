@@ -15,7 +15,6 @@
 #include "sbn_maps.hpp"
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
-#include "tripod_hybrid_marginalizer.hpp"
 #include "tripod_hybrid_request.hpp"
 
 class GPEngine {
@@ -68,7 +67,7 @@ class GPEngine {
   EigenConstMatrixXdRef GetLogLikelihoodMatrix() const;
   EigenConstVectorXdRef GetSBNParameters() const;
 
-  std::vector<double> ProcessTripodHybridRequest(TripodHybridRequest request);
+  std::vector<double> ProcessTripodHybridRequest(const TripodHybridRequest& request);
 
   void PrintPLV(size_t plv_idx);
 
@@ -143,7 +142,14 @@ class GPEngine {
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
 
-  TripodHybridMarginalizer hybrid_marginalizer_;
+  // For the tripod calculations.
+  EigenVectorXd node_probabilities_under_prior_;
+  // The PLV coming down from the root.
+  EigenMatrixXd tripod_root_plv_;
+  // The PLV on the root side of the edge leading to the sorted PLV.
+  EigenMatrixXd tripod_above_plv_;
+  // The sorted PLV.
+  EigenMatrixXd tripod_sorted_plv_;
 
   void InitializePLVsWithSitePatterns();
 

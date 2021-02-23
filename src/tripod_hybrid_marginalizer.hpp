@@ -18,12 +18,15 @@ class TripodHybridMarginalizer {
   //  double LogLikelihood(size_t plv_root_idx, size_t root_node_idx,
   //                       double root_branch_length);
 
-  std::vector<double> Process(TripodHybridRequest request);
+  std::vector<double> Process(const TripodHybridRequest& request);
 
  private:
   const NucleotidePLVRefVector& plvs_;
   EigenConstVectorXdRef branch_lengths_;
   EigenVectorXd node_probabilities_;
+  EigenMatrixXd tripod_root_plv_;
+  EigenMatrixXd tripod_left_plv_;
+  EigenMatrixXd tripod_right_plv_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

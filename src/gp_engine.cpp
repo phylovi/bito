@@ -17,10 +17,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
       mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()),
       plvs_(mmapped_master_plv_.Subdivide(plv_count_)),
       q_(std::move(sbn_prior)),
-      hybrid_marginalizer_(TripodHybridMarginalizer(
-          plvs_, branch_lengths_, std::move(node_probabilities_under_prior)))
-
-{
+      node_probabilities_under_prior_(std::move(node_probabilities_under_prior)) {
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
@@ -35,6 +32,11 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ =
       Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
+
+  tripod_root_plv_ = plvs_.at(0);
+  tripod_root_plv_.setZero();
+  tripod_above_plv_ = tripod_root_plv_;
+  tripod_sorted_plv_ = tripod_root_plv_;
 
   InitializePLVsWithSitePatterns();
 }
@@ -372,6 +374,32 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   }
 }
 
-std::vector<double> GPEngine::ProcessTripodHybridRequest(TripodHybridRequest request) {
-  return hybrid_marginalizer_.Process(request);
+// TODO(e) rescaling factor
+// TODO(e) transpose for down the tree
+std::vector<double> GPEngine::ProcessTripodHybridRequest(
+    const TripodHybridRequest& request) {
+  std::vector<double> result;
+  for (const auto& rootward_pair : request.rootward_pairs_) {
+    SetTransitionMatrixToHaveBranchLength(branch_lengths_[request.central_gpcsp_idx_] +
+                                          branch_lengths_[rootward_pair.gpcsp_idx_]);
+    // TODO(e) node_probabilities_under_prior_[op.gpcsp_] *
+    tripod_root_plv_ = transition_matrix_ * plvs_.at(rootward_pair.plv_idx_);
+    for (const auto& rotated_pair : request.rotated_pairs_) {
+      SetTransitionMatrixToHaveBranchLength(branch_lengths_[rotated_pair.gpcsp_idx_]);
+      tripod_above_plv_.array() =
+          tripod_root_plv_.array() *
+          (transition_matrix_ * plvs_.at(rotated_pair.plv_idx_)).array();
+      for (const auto& sorted_pair : request.sorted_pairs_) {
+        SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_pair.gpcsp_idx_]);
+        tripod_sorted_plv_ = transition_matrix_ * plvs_.at(sorted_pair.plv_idx_);
+        per_pattern_log_likelihoods_ =
+            (tripod_above_plv_.transpose() * transition_matrix_ * tripod_sorted_plv_)
+                .diagonal()
+                .array()
+                .log();
+        result.push_back(per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+      }
+    }
+  }
+  return result;
 }
