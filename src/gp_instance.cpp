@@ -76,7 +76,6 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
   engine_ = std::make_unique<GPEngine>(
       std::move(site_pattern), plv_count_per_node_ * dag_.NodeCount(),
       dag_.GPCSPCountWithFakeSubsplits(), mmap_file_path_, rescaling_threshold,
-      // TODO std::move
       std::move(sbn_prior), std::move(unconditional_node_probabilities));
 }
 

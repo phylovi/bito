@@ -272,13 +272,8 @@ void SubsplitDAG::IterateOverLeafwardEdgesAndChildren(
     const SubsplitDAGNode *node, const EdgeAndNodeLambda &f) const {
   IterateOverLeafwardEdges(
       node, [this, &node, &f](bool rotated, const SubsplitDAGNode *child) {
-        // TODO don't we want all?
-        // f(GetGPCSPIndex(node->GetBitset(rotated), child->GetBitset()), rotated,
-        //   child->Id());
-        const Bitset &node_bitset = node->GetBitset(rotated);
-        if (!node_bitset.SubsplitChunk(1).IsSingleton()) {
-          f(GetGPCSPIndex(node_bitset, child->GetBitset()), rotated, child->Id());
-        }
+        f(GetGPCSPIndex(node->GetBitset(rotated), child->GetBitset()), rotated,
+          child->Id());
       });
 }
 
