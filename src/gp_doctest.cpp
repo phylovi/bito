@@ -418,7 +418,8 @@ TEST_CASE("GPInstance: hybrid marginal") {
 
   auto request = inst.GetDAG().TripodHybridRequestOf(12, 11, false);
   std::cout << request << std::endl;
-  std::cout << inst.GetEngine()->ProcessTripodHybridRequest(request) << std::endl;
+  std::cout << "tripod likelihoods:\t"
+            << inst.GetEngine()->ProcessTripodHybridRequest(request) << std::endl;
 
   // auto request2 = inst.GetDAG().TripodHybridRequestOf(11, 8, false);
   // std::cout << request2 << std::endl;
@@ -432,7 +433,6 @@ TEST_CASE("GPInstance: hybrid marginal") {
   sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
 
   const auto manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
-
-  std::cout << manual_log_likelihoods << std::endl;
+  std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
 }
 
