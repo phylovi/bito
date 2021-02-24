@@ -191,36 +191,34 @@ TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
   CHECK_EQ(correct_parameters, parameters);
 }
 
-// TODO(e): adapt to case when we include leaf subsplits. or something
-//
-// TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
-//   RootedSBNInstance inst("rooted instance");
-//   inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
-//   inst.ProcessLoadedTrees();
-//   inst.TrainSimpleAverage();
-//   StringDoubleMap correct_parameters({{"0011111000", 0.5},  // 01|234
-//                                       {"0111110000", 0.3},  // 0|1234
-//                                       {"0001011101", 0.2},  // 0124|3
-//                                       {"1100100100", 0.2},  // 014|2
-//                                       {"0100000111", 0.1},  // 1|234
-//                                       {"0111000001", 0.2},  // 123|4
-//                                       {"0101000100", 0.2},  // 13|4
-//                                       {"1000001001", 0.2},  // 0|14
-//                                       {"0010000011", 0.4},  // 2|34
-//                                       {"0011000001", 0.2},  // 23|4
-//                                       {"1000001000", 0.5},  // 0|1
-//                                       {"0100000010", 0.2},  // 1|3
-//                                       {"0100000001", 0.2},  // 1|4
-//                                       {"0010000010", 0.2},  // 2|3
-//                                       {"0001000001", 0.4}}  // 3|4
-//   );
-//
-// auto subsplit_probabilities = inst.UnconditionalSubsplitProbabilities();
-// CHECK_EQ(correct_parameters.size(), subsplit_probabilities.size());
-// for (const auto [subsplit, probability] : subsplit_probabilities) {
-//   CHECK_LT(fabs(correct_parameters.at(subsplit.ToString()) - probability), 1e-8);
-//   }
-// }
+TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
+  RootedSBNInstance inst("rooted instance");
+  inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
+  inst.ProcessLoadedTrees();
+  inst.TrainSimpleAverage();
+  StringDoubleMap correct_parameters({{"0011111000", 0.5},  // 01|234
+                                      {"0111110000", 0.3},  // 0|1234
+                                      {"0001011101", 0.2},  // 0124|3
+                                      {"1100100100", 0.2},  // 014|2
+                                      {"0100000111", 0.1},  // 1|234
+                                      {"0111000001", 0.2},  // 123|4
+                                      {"0101000100", 0.2},  // 13|4
+                                      {"1000001001", 0.2},  // 0|14
+                                      {"0010000011", 0.4},  // 2|34
+                                      {"0011000001", 0.2},  // 23|4
+                                      {"1000001000", 0.5},  // 0|1
+                                      {"0100000010", 0.2},  // 1|3
+                                      {"0100000001", 0.2},  // 1|4
+                                      {"0010000010", 0.2},  // 2|3
+                                      {"0001000001", 0.4}}  // 3|4
+  );
+
+  auto subsplit_probabilities = inst.UnconditionalSubsplitProbabilities();
+  CHECK_EQ(correct_parameters.size(), subsplit_probabilities.size());
+  for (const auto [subsplit, probability] : subsplit_probabilities) {
+    CHECK_LT(fabs(correct_parameters.at(subsplit.ToString()) - probability), 1e-8);
+  }
+}
 
 // Instance SA-trained on a sample of 20-taxon trees.
 RootedSBNInstance MakeRootedSimpleAverageInstance() {

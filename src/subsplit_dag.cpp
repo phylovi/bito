@@ -321,21 +321,16 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
             GetDagNode(rootsplit_id)->GetBitset())];
       });
 
-  for (const auto node_id : ReversePostorderTraversal()) {
-    const auto node = GetDagNode(node_id);
-    IterateOverLeafwardEdgesAndChildren(
-        node, [&node, &node_probabilities, &normalized_sbn_parameters](
-                  const size_t gpcsp_index, const bool, const size_t child_id) {
-          const double parent_probability = node_probabilities[node->Id()];
-          const double child_probability_given_parent =
-              normalized_sbn_parameters[gpcsp_index];
-          Assert(child_probability_given_parent >= 0. &&
-                     child_probability_given_parent <= 1.,
-                 "UnconditionalSubsplitProbabilities: got an unormalized probability.");
-          node_probabilities[child_id] +=
-              parent_probability * child_probability_given_parent;
-        });
-  }
+  ReversePostorderIndexTraversal([&node_probabilities, &normalized_sbn_parameters](
+                                     const size_t parent_id, const size_t gpcsp_index,
+                                     const size_t child_id) {
+    const double child_probability_given_parent =
+        normalized_sbn_parameters[gpcsp_index];
+    Assert(child_probability_given_parent >= 0. && child_probability_given_parent <= 1.,
+           "UnconditionalNodeProbabilities: got an unormalized probability.");
+    const double parent_probability = node_probabilities[parent_id];
+    node_probabilities[child_id] += parent_probability * child_probability_given_parent;
+  });
 
   return node_probabilities;
 }
@@ -533,6 +528,16 @@ SizeVector SubsplitDAG::ReversePostorderTraversal() const {
   auto visit_order = RootwardPassTraversal();
   std::reverse(visit_order.begin(), visit_order.end());
   return visit_order;
+}
+
+void SubsplitDAG::ReversePostorderIndexTraversal(ParentEdgeChildLambda f) const {
+  for (const auto node_id : ReversePostorderTraversal()) {
+    IterateOverLeafwardEdgesAndChildren(
+        GetDagNode(node_id),
+        [&f, &node_id](const size_t gpcsp_index, const bool, const size_t child_id) {
+          f(node_id, gpcsp_index, child_id);
+        });
+  }
 }
 
 Bitset SubsplitDAG::PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated) {
