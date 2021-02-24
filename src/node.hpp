@@ -50,7 +50,7 @@ class Node {
   using NodePtrVecPtr = std::shared_ptr<NodePtrVec>;
   using TopologyCounter = std::unordered_map<NodePtr, uint32_t>;
   // This is the type of functions that are used in the PCSP recursion
-  // functions. See `doc/pcsp.svg` for a diagram of the PCSP traversal. In that
+  // functions. See `doc/svg/pcsp.svg` for a diagram of the PCSP traversal. In that
   // file, the first tree shows the terminology, and the subsequent trees show
   // the calls to f_root and f_internal.
   //
