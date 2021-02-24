@@ -398,6 +398,36 @@ TEST_CASE("GPInstance: Priors") {
   CHECK_LT(fabs(all[5] - 1. / 3.), 1e-10);
 }
 
+TEST_CASE("GPInstance: flipped SBN parameters") {
+  // Note that just for fun, I have duplicated the first tree, but that doesn't matter
+  // because we are looking at uniform over topological support.
+  auto inst =
+      GPInstanceOfFiles("data/five_taxon.fasta", "data/five_taxon_rooted_more_2.nwk");
+  inst.SubsplitDAGToDot("_ignore/five_taxon_more_2.dot");
+  const auto& dag = inst.GetDAG();
+  EigenVectorXd node_probabilities =
+      dag.UnconditionalNodeProbabilities(dag.BuildUniformOnTopologicalSupportPrior());
+  EigenVectorXd correct_node_probabilities(15);
+  correct_node_probabilities <<  //
+      1.,                        // 0
+      1.,                        // 1
+      1.,                        // 2
+      1.,                        // 3
+      1.,                        // 4
+      0.25,                      // 5
+      0.25,                      // 6
+      0.75,                      // 7
+      0.25,                      // 8
+      0.5,                       // 9
+      0.25,                      // 10
+      0.75,                      // 11
+      0.5,                       // 12
+      0.5,                       // 13
+      0.25;                      // 14
+  std::cout << node_probabilities << std::endl;
+  CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
+}
+
 TEST_CASE("GPInstance: hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
