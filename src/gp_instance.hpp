@@ -58,9 +58,10 @@ class GPInstance {
   // them with current GP branch lengths.
   RootedTreeCollection CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
       const std::string &pcsp_string);
+
   // Run CurrentlyLoadedTreesWithGPBranchLengths and export to a Newick file.
   void ExportTrees(const std::string &out_path);
-  // Export all trees in the span of the subsplit DAG and export to a Newick file.
+  // Run CurrentlyLoadedTreesWithGPBranchLengths and export to a Newick file.
   void ExportAllGeneratedTrees(const std::string &out_path);
   // Run CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths and export to a Newick
   // file.
@@ -68,7 +69,7 @@ class GPInstance {
                             const std::string &newick_path);
 
   // Export the subsplit DAG as a DOT file.
-  void SubsplitDAGToDot(const std::string &out_path);
+  void SubsplitDAGToDot(const std::string &out_path, bool show_index_labels = true);
 
  private:
   std::string mmap_file_path_;
@@ -80,8 +81,6 @@ class GPInstance {
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;
-
-  void InitializeGPEngine();
 
   size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
                                   const Node *leaf_node) const;

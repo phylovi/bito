@@ -167,7 +167,7 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
   }
 }
 
-void TestMarginal(GPInstance inst, const std::string fasta_path) {
+void TestMarginal(GPInstance inst, const std::string& fasta_path) {
   inst.EstimateBranchLengths(0.0001, 100, true);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
@@ -396,4 +396,72 @@ TEST_CASE("GPInstance: Priors") {
   // There are 3 topologies on 3 taxa.
   CHECK_LT(fabs(all[4] - 1. / 3.), 1e-10);
   CHECK_LT(fabs(all[5] - 1. / 3.), 1e-10);
+}
+
+TEST_CASE("GPInstance: flipped SBN parameters") {
+  // Note that just for fun, I have duplicated the first tree, but that doesn't matter
+  // because we are looking at uniform over topological support.
+  auto inst =
+      GPInstanceOfFiles("data/five_taxon.fasta", "data/five_taxon_rooted_more_2.nwk");
+  // See the DAG and the uniform probabilities at
+  // https://github.com/phylovi/libsbn/issues/323#issuecomment-785410551
+  const auto& dag = inst.GetDAG();
+  EigenVectorXd node_probabilities =
+      dag.UnconditionalNodeProbabilities(dag.BuildUniformOnTopologicalSupportPrior());
+  EigenVectorXd correct_node_probabilities(15);
+  correct_node_probabilities <<  //
+      1.,                        // 0
+      1.,                        // 1
+      1.,                        // 2
+      1.,                        // 3
+      1.,                        // 4
+      0.5,                       // 5
+      0.25,                      // 6
+      0.75,                      // 7
+      0.25,                      // 8
+      0.5,                       // 9
+      0.25,                      // 10
+      0.25,                      // 11
+      0.5,                       // 12
+      0.5,                       // 13
+      0.25;                      // 14
+  CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
+}
+
+TEST_CASE("GPInstance: hybrid marginal") {
+  const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
+  // See the DAG at
+  // https://user-images.githubusercontent.com/112708/108065117-6324a400-7012-11eb-8eaa-9ff1438192ad.png
+  auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
+  inst.SubsplitDAGToDot("_ignore/hybrid-marginal.dot");
+  // Branch lengths generated from Python via
+  // import random
+  // [round(random.uniform(1e-6, 0.1), 3) for i in range(23)]
+  EigenVectorXd branch_lengths(23);
+  branch_lengths << 0.058, 0.044, 0.006, 0.099, 0.078, 0.036, 0.06, 0.073, 0.004, 0.041,
+      0.088, 0.033, 0.043, 0.096, 0.027, 0.039, 0.043, 0.023, 0.064, 0.032, 0.03, 0.085,
+      0.034;
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.PopulatePLVs();
+  const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
+  inst.ExportAllGeneratedTrees(tree_path);
+
+  auto request = inst.GetDAG().TripodHybridRequestOf(12, 11, false);
+  std::cout << request << std::endl;
+  std::cout << "tripod likelihoods:\t"
+            << inst.GetEngine()->ProcessTripodHybridRequest(request) << std::endl;
+
+  // auto request2 = inst.GetDAG().TripodHybridRequestOf(11, 8, false);
+  // std::cout << request2 << std::endl;
+
+  RootedSBNInstance sbn_instance("charlie");
+  sbn_instance.ReadNewickFile(tree_path);
+  sbn_instance.ProcessLoadedTrees();
+  const Alignment alignment = Alignment::ReadFasta(fasta_path);
+  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
+  sbn_instance.SetAlignment(alignment);
+  sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
+
+  const auto manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
+  std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
 }

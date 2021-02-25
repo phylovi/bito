@@ -137,6 +137,8 @@ class SubsplitDAG {
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
   [[nodiscard]] SizeVector ReversePostorderTraversal() const;
 
+  // Do a postorder traversal on the edges of the DAG, supplying the relevant indices to
+  // a lambda.
   void ReversePostorderIndexTraversal(ParentEdgeChildLambda f) const;
 
   // Discrete uniform distribution over each subsplit.

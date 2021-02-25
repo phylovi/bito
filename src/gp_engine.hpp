@@ -15,11 +15,13 @@
 #include "sbn_maps.hpp"
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
+#include "tripod_hybrid_request.hpp"
 
 class GPEngine {
  public:
   GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
-           const std::string& mmap_file_path, double rescaling_threshold);
+           const std::string& mmap_file_path, double rescaling_threshold,
+           EigenVectorXd sbn_prior, EigenVectorXd node_probabilities_under_prior);
 
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
@@ -42,7 +44,6 @@ class GPEngine {
 
   void SetBranchLengths(EigenVectorXd branch_lengths);
   void SetBranchLengthsToConstant(double branch_length);
-  void SetSBNParameters(EigenVectorXd&& q);
   void ResetLogMarginalLikelihood();
   double GetLogMarginalLikelihood() const;
   EigenVectorXd GetBranchLengths() const;
@@ -65,6 +66,8 @@ class GPEngine {
   // #288 reconsider this name
   EigenConstMatrixXdRef GetLogLikelihoodMatrix() const;
   EigenConstVectorXdRef GetSBNParameters() const;
+
+  std::vector<double> ProcessTripodHybridRequest(const TripodHybridRequest& request);
 
   void PrintPLV(size_t plv_idx);
 
@@ -139,6 +142,15 @@ class GPEngine {
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
 
+  // For the tripod calculations.
+  EigenVectorXd node_probabilities_under_prior_;
+  // The PLV coming down from the root.
+  EigenMatrixXd tripod_root_plv_;
+  // The PLV on the root side of the edge leading to the sorted PLV.
+  EigenMatrixXd tripod_above_plv_;
+  // The sorted PLV.
+  EigenMatrixXd tripod_sorted_plv_;
+
   void InitializePLVsWithSitePatterns();
 
   void RescalePLV(size_t plv_idx, int amount);
@@ -184,9 +196,10 @@ class GPEngine {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("GPEngine") {
+  EigenVectorXd empty_vector;
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
   GPEngine engine(hello_site_pattern, 6 * 5, 5, "_ignore/mmapped_plv.data",
-                  GPEngine::default_rescaling_threshold_);
+                  GPEngine::default_rescaling_threshold_, empty_vector, empty_vector);
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29
