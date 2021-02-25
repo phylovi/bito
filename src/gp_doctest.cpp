@@ -406,8 +406,9 @@ TEST_CASE("GPInstance: flipped SBN parameters") {
   // See the DAG and the uniform probabilities at
   // https://github.com/phylovi/libsbn/issues/323#issuecomment-785410551
   const auto& dag = inst.GetDAG();
+  EigenVectorXd normalized_sbn_parameters = dag.BuildUniformOnTopologicalSupportPrior();
   EigenVectorXd node_probabilities =
-      dag.UnconditionalNodeProbabilities(dag.BuildUniformOnTopologicalSupportPrior());
+      dag.UnconditionalNodeProbabilities(normalized_sbn_parameters);
   EigenVectorXd correct_node_probabilities(15);
   correct_node_probabilities <<  //
       1.,                        // 0
@@ -425,6 +426,39 @@ TEST_CASE("GPInstance: flipped SBN parameters") {
       0.5,                       // 12
       0.5,                       // 13
       0.25;                      // 14
+  CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
+
+  EigenVectorXd inverted_probabilities =
+      dag.InvertedGPCSPProbabilities(normalized_sbn_parameters, node_probabilities);
+  EigenVectorXd correct_inverted_probabilities(24);
+  correct_inverted_probabilities <<  //
+                                     //
+      0.,                            // 0 (rootsplit)
+      0.,                            // 1 (rootsplit)
+      0.,                            // 2 (rootsplit)
+      1. / 3.,                       // 3
+      0.5,                           // 4
+      1.,                            // 5
+      // We have the 0.5 coming from node 12, but that's split evenly between the two
+      // descendants, so we have 0.25 from each. Thus even weights.
+      0.5,      // 6
+      1.,       // 7
+      1.,       // 8
+      1.,       // 9
+      0.5,      // 10 (analogous to 6)
+      2. / 3.,  // 11
+      0.5,      // 12
+      1.,       // 13
+      0.5,      // 14
+      0.5,      // 15
+      0.5,      // 16
+      0.25,     // 17
+      0.5,      // 18
+      0.25,     // 19
+      0.25,     // 20
+      0.75,     // 21
+      0.75,     // 22
+      0.25;     // 23
   CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
 }
 

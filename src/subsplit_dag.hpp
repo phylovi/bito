@@ -163,6 +163,11 @@ class SubsplitDAG {
   // UnconditionalSubsplitProbabilityVector for notes.
   BitsetDoubleMap UnconditionalSubsplitProbabilities(
       EigenConstVectorXdRef normalized_sbn_parameters) const;
+  // Get a vector from each GPCSP index to the Bayes-inverted probability of sampling
+  // the parent given the child.
+  EigenVectorXd InvertedGPCSPProbabilities(
+      EigenConstVectorXdRef normalized_sbn_parameters,
+      EigenConstVectorXdRef node_probabilities) const;
 
  protected:
   size_t taxon_count_;
