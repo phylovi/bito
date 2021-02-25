@@ -21,7 +21,8 @@ class GPEngine {
  public:
   GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
            const std::string& mmap_file_path, double rescaling_threshold,
-           EigenVectorXd sbn_prior, EigenVectorXd node_probabilities_under_prior);
+           EigenVectorXd sbn_prior, EigenVectorXd unconditional_node_probabilities,
+           EigenVectorXd inverted_sbn_prior);
 
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
@@ -143,7 +144,8 @@ class GPEngine {
   EigenVectorXd site_pattern_weights_;
 
   // For the tripod calculations.
-  EigenVectorXd node_probabilities_under_prior_;
+  EigenVectorXd unconditional_node_probabilities_;
+  EigenVectorXd inverted_sbn_prior_;
   // The PLV coming down from the root.
   EigenMatrixXd tripod_root_plv_;
   // The PLV on the root side of the edge leading to the sorted PLV.
@@ -199,7 +201,8 @@ TEST_CASE("GPEngine") {
   EigenVectorXd empty_vector;
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
   GPEngine engine(hello_site_pattern, 6 * 5, 5, "_ignore/mmapped_plv.data",
-                  GPEngine::default_rescaling_threshold_, empty_vector, empty_vector);
+                  GPEngine::default_rescaling_threshold_, empty_vector, empty_vector,
+                  empty_vector);
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29

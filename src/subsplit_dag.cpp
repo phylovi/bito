@@ -327,7 +327,8 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
     const double child_probability_given_parent =
         normalized_sbn_parameters[gpcsp_index];
     Assert(child_probability_given_parent >= 0. && child_probability_given_parent <= 1.,
-           "UnconditionalNodeProbabilities: got an unormalized probability.");
+           "UnconditionalNodeProbabilities: got an out-of-range probability. Are these "
+           "normalized and in linear space?");
     const double parent_probability = node_probabilities[parent_id];
     node_probabilities[child_id] += parent_probability * child_probability_given_parent;
   });

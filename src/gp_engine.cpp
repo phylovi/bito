@@ -9,7 +9,8 @@
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
                    const std::string& mmap_file_path, double rescaling_threshold,
                    EigenVectorXd sbn_prior,
-                   EigenVectorXd node_probabilities_under_prior)
+                   EigenVectorXd unconditional_node_probabilities,
+                   EigenVectorXd inverted_sbn_prior)
     : site_pattern_(std::move(site_pattern)),
       plv_count_(plv_count),
       rescaling_threshold_(rescaling_threshold),
@@ -17,7 +18,8 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
       mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()),
       plvs_(mmapped_master_plv_.Subdivide(plv_count_)),
       q_(std::move(sbn_prior)),
-      node_probabilities_under_prior_(std::move(node_probabilities_under_prior)) {
+      unconditional_node_probabilities_(std::move(unconditional_node_probabilities)),
+      inverted_sbn_prior_(std::move(inverted_sbn_prior)) {
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
@@ -382,7 +384,6 @@ std::vector<double> GPEngine::ProcessTripodHybridRequest(
   for (const auto& rootward_pair : request.rootward_pairs_) {
     SetTransitionMatrixToHaveBranchLength(branch_lengths_[request.central_gpcsp_idx_] +
                                           branch_lengths_[rootward_pair.gpcsp_idx_]);
-    // TODO(e) node_probabilities_under_prior_[op.gpcsp_] *
     tripod_root_plv_ = transition_matrix_ * plvs_.at(rootward_pair.plv_idx_);
     for (const auto& rotated_pair : request.rotated_pairs_) {
       SetTransitionMatrixToHaveBranchLength(branch_lengths_[rotated_pair.gpcsp_idx_]);
