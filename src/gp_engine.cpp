@@ -382,6 +382,8 @@ std::vector<double> GPEngine::ProcessTripodHybridRequest(
     const TripodHybridRequest& request) {
   std::vector<double> result;
   for (const auto& rootward_tip : request.rootward_tips_) {
+    const double log_rootward_tip_probability =
+        log(unconditional_node_probabilities_[rootward_tip.tip_node_id_]);
     SetTransitionMatrixToHaveBranchLength(branch_lengths_[request.central_gpcsp_idx_] +
                                           branch_lengths_[rootward_tip.gpcsp_idx_]);
     tripod_root_plv_ = transition_matrix_ * plvs_.at(rootward_tip.plv_idx_);
@@ -391,6 +393,11 @@ std::vector<double> GPEngine::ProcessTripodHybridRequest(
           tripod_root_plv_.array() *
           (transition_matrix_ * plvs_.at(rotated_pair.plv_idx_)).array();
       for (const auto& sorted_pair : request.sorted_tips_) {
+        // P(sigma_{ijk} | \eta)
+        const double non_sequence_based_log_probability =
+            log(inverted_sbn_prior_[rootward_tip.gpcsp_idx_] *
+                q_[rotated_pair.gpcsp_idx_] * q_[sorted_pair.gpcsp_idx_]);
+        // Now calculate the sequence-based likelihood.
         SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_pair.gpcsp_idx_]);
         tripod_sorted_plv_ = transition_matrix_ * plvs_.at(sorted_pair.plv_idx_);
         per_pattern_log_likelihoods_ =
@@ -398,8 +405,9 @@ std::vector<double> GPEngine::ProcessTripodHybridRequest(
                 .diagonal()
                 .array()
                 .log();
-
-        result.push_back(per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+        per_pattern_log_likelihoods_.array() -= log_rootward_tip_probability;
+        result.push_back(non_sequence_based_log_probability +
+                         per_pattern_log_likelihoods_.dot(site_pattern_weights_));
       }
     }
   }
