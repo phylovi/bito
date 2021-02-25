@@ -3,12 +3,13 @@
 
 #include "tripod_hybrid_request.hpp"
 
-std::ostream& operator<<(std::ostream& os, PLVPCSPPair const& plv_pcsp) {
-  os << "(plv " << plv_pcsp.plv_idx_ << ", gpcsp " << plv_pcsp.gpcsp_idx_ << ")";
+std::ostream& operator<<(std::ostream& os, TripodTip const& plv_pcsp) {
+  os << "(tip node " << plv_pcsp.tip_node_id_ << ", plv " << plv_pcsp.plv_idx_
+     << ", gpcsp " << plv_pcsp.gpcsp_idx_ << ")";
   return os;
 }
 
-std::ostream& operator<<(std::ostream& os, PLVPCSPPairVector const& plv_pcsp_vector) {
+std::ostream& operator<<(std::ostream& os, TripodTipVector const& plv_pcsp_vector) {
   os << "[";
   for (const auto& plv_pcsp : plv_pcsp_vector) {
     os << plv_pcsp << ", ";
