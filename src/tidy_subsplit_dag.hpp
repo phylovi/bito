@@ -106,9 +106,9 @@ class TidySubsplitDAG : public SubsplitDAG {
                                         size_t node_id, bool rotated,
                                         std::unordered_set<size_t> &visited_nodes) {
     if (IsDirtyBelow(node_id, rotated)) {
-      const auto node = GetDagNode(node_id);
+      const auto node = GetDAGNode(node_id);
       for (const size_t child_id : node->GetLeafward(rotated)) {
-        if (!GetDagNode(child_id)->IsLeaf()) {
+        if (!GetDAGNode(child_id)->IsLeaf()) {
           // #288 Here we are doing true and then false (left and then right).
           DepthFirstWithTidyActionForNodeClade(action, child_id, true, visited_nodes);
           DepthFirstWithTidyActionForNodeClade(action, child_id, false, visited_nodes);
@@ -140,11 +140,11 @@ class TidySubsplitDAG : public SubsplitDAG {
     }
     // When we get to this point, the other clade is clean and we can proceed.
     action.BeforeNodeClade(node_id, rotated);
-    const auto node = GetDagNode(node_id);
+    const auto node = GetDAGNode(node_id);
     for (const size_t child_id : node->GetLeafward(rotated)) {
       if (visited_nodes.count(child_id) == 0) {
         visited_nodes.insert(child_id);
-        if (!GetDagNode(child_id)->IsLeaf()) {
+        if (!GetDAGNode(child_id)->IsLeaf()) {
           DepthFirstWithTidyActionForNode(action, child_id, visited_nodes);
         }
       }

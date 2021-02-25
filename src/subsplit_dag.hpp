@@ -42,19 +42,21 @@ class SubsplitDAG {
   void PrintGPCSPIndexer() const;
   std::string ToDot(bool show_index_labels = true) const;
 
-  const BitsetSizeMap &GetGPCSPIndexer() const;
-  const BitsetSizePairMap &GetParentToRange() const;
-  SubsplitDAGNode *GetDagNode(size_t node_id) const;
+  // Create a gpcsp indexer from ReversePostorderIndexTraversal and rootsplits_.
+  // The gpcsp indexer is "expanded" meaning it contains fake PCSPs and rootsplit
+  // bitsets are formatted as subsplits: 1110|0001.
+  BitsetSizeMap BuildGPCSPIndexer() const;
+  SubsplitDAGNode *GetDAGNode(size_t node_id) const;
 
-  // Access the value of the gpcsp_indexer_ at the given rootsplit.
+  // Access the GPCSP index of a given rootsplit.
   size_t GetRootsplitIndex(const Bitset &rootsplit) const;
-  // Access the value of the gpcsp_indexer_ at the given "expanded" PCSP.
-  // Asserts to make sure that the PCSP is well formed.
+  // Access the GPCSP index of a given rootsplit.
+  size_t RootsplitIndexOfId(size_t root_id) const;
+  // Access the GPCSP index from a parent-child pair of DAG nodes.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,
                        const Bitset &child_subsplit) const;
-  // Get the GPCSP index from a parent-child pair of DAG nodes and the rotated status of
-  // the parent.
-  size_t GPCSPIndexOfIds(size_t parent_id, bool rotated, size_t child_id) const;
+  // Get the GPCSP index from a parent-child pair of DAG nodes using the dag_edges_.
+  size_t GPCSPIndexOfIds(size_t parent_id, size_t child_id) const;
   // Iterate over the "real" nodes, i.e. those that do not correspond to fake subsplits.
   void IterateOverRealNodes(const NodeLambda &f) const;
   // Iterate over the all leafward edges, rotated and sorted, of node using an
@@ -117,11 +119,11 @@ class SubsplitDAG {
       const TraversalActionT &action, size_t node_id, bool rotated,
       std::unordered_set<size_t> &visited_nodes) const {
     action.BeforeNodeClade(node_id, rotated);
-    const auto node = GetDagNode(node_id);
+    const auto node = GetDAGNode(node_id);
     for (const size_t child_id : node->GetLeafward(rotated)) {
       if (visited_nodes.count(child_id) == 0) {
         visited_nodes.insert(child_id);
-        if (!GetDagNode(child_id)->IsLeaf()) {
+        if (!GetDAGNode(child_id)->IsLeaf()) {
           DepthFirstWithActionForNode(action, child_id, visited_nodes);
         }
       }
@@ -149,12 +151,13 @@ class SubsplitDAG {
   // all topologies are in the support.
   [[nodiscard]] EigenVectorXd BuildUniformOnAllTopologiesPrior() const;
 
-  RootedIndexerRepresentation IndexerRepresentationOf(const Node::NodePtr &topology,
+  RootedIndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap &indexer,
+                                                      const Node::NodePtr &topology,
                                                       size_t default_index) const;
 
   // Get a vector from each DAG node index to the probability of sampling that DAG node
   // with the supplied SBN parameters. These SBN parameters must be indexed in a
-  // compatible way as the gpcsp_indexer_ of the subsplit DAG.
+  // compatible way as the dag_edges_ of the subsplit DAG.
   EigenVectorXd UnconditionalNodeProbabilities(
       EigenConstVectorXdRef normalized_sbn_parameters) const;
   // Get a map from each non-fake subsplit to the probability of observing that
@@ -173,17 +176,12 @@ class SubsplitDAG {
   size_t gpcsp_count_without_fake_subsplits_;
   // The collection of rootsplits, with the same indexing as in the indexer_.
   BitsetVector rootsplits_;
-  // A map going from the index of a PCSP to its child.
-  SizeBitsetMap index_to_child_;
   // This indexer is an expanded version of parent_to_range_ in sbn_instance:
   // it includes single element range for fake subsplits.
   BitsetSizePairMap parent_to_range_;
 
-  // This indexer is a similarly expanded version of indexer_ in an SBNSupport, but also
-  // encoding rootsplits as full splits rather than a binary indicator (#273).
-  //
-  // This indexer is used for q_, branch_lengths_, log_likelihoods_ in GPEngine.
-  BitsetSizeMap gpcsp_indexer_;
+  // A map from node id pairs to gpcsp idxes.
+  std::map<SizePair, size_t> dag_edges_;
 
   // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
   // This corresponds to the analogous concept for topologies.
@@ -203,24 +201,24 @@ class SubsplitDAG {
 
   // Gives the child subsplits of a given parent subsplit, optionally including fake
   // subsplits.
-  std::vector<Bitset> GetChildSubsplits(const Bitset &subsplit,
+  std::vector<Bitset> GetChildSubsplits(const SizeBitsetMap &index_to_child,
+                                        const Bitset &subsplit,
                                         bool include_fake_subsplits = false);
 
-  void ProcessTopologyCounter(const Node::TopologyCounter &tree_collection);
+  std::pair<BitsetSizeMap, SizeBitsetMap> ProcessTopologyCounter(
+      const Node::TopologyCounter &topology_counter);
   void CreateAndInsertNode(const Bitset &subsplit);
   // Connect the `idx` node to its children, and its children to it, rotating as needed.
-  void ConnectNodes(size_t idx, bool rotated);
+  void ConnectNodes(const SizeBitsetMap &index_to_child, size_t idx, bool rotated);
 
-  void BuildNodesDepthFirst(const Bitset &subsplit,
+  void BuildNodesDepthFirst(const SizeBitsetMap &index_to_child, const Bitset &subsplit,
                             std::unordered_set<Bitset> &visited_subsplits);
-  void BuildNodes();
-  void BuildEdges();
+  void BuildNodes(const SizeBitsetMap &index_to_child);
+  void BuildEdges(const SizeBitsetMap &index_to_child);
+  void BuildDAGEdgesFromGPCSPIndexer(BitsetSizeMap &gpcsp_indexer);
   void CountTopologies();
-  // Expand gpcsp_indexer_ and parent_to_range_ with fake subsplits at the end.
-  void AddFakeSubsplitsToGPCSPIndexerAndParentToRange();
-  // Update gpcsp_indexer_ rootsplits to be full subsplits.
-  void ExpandRootsplitsInIndexer();
-
+  // Expand dag_edges_ and parent_to_range_ with fake subsplits at the end.
+  void AddFakeSubsplitsToDAGEdgesAndParentToRange();
   Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated);
 };
 

@@ -111,7 +111,7 @@ void GPInstance::ClearTreeCollectionAssociatedState() { dag_ = GPDAG(); }
 
 void GPInstance::HotStartBranchLengths() {
   if (HasEngine()) {
-    GetEngine()->HotStartBranchLengths(tree_collection_, dag_.GetGPCSPIndexer());
+    GetEngine()->HotStartBranchLengths(tree_collection_, dag_.BuildGPCSPIndexer());
   } else {
     Failwith(
         "Please load and process some trees before calling HotStartBranchLengths.");
@@ -240,8 +240,8 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
 }
 
 StringVector GPInstance::PrettyIndexer() const {
-  StringVector pretty_representation(dag_.GetGPCSPIndexer().size());
-  for (const auto &[key, idx] : dag_.GetGPCSPIndexer()) {
+  StringVector pretty_representation(dag_.BuildGPCSPIndexer().size());
+  for (const auto &[key, idx] : dag_.BuildGPCSPIndexer()) {
     if (idx < dag_.RootsplitCount()) {
       // We have decided to keep the "expanded" rootsplit representation for the time
       // being (see #273). Here we convert it to the representation used in the rest of
@@ -259,7 +259,7 @@ StringVector GPInstance::PrettyIndexer() const {
 // Convert the GP indexer to the representation used in the rest of libsbn (#273).
 BitsetSizeMap GPInstance::UnexpandedIndexer() const {
   BitsetSizeMap unexpanded_indexer;
-  for (const auto &[key, idx] : dag_.GetGPCSPIndexer()) {
+  for (const auto &[key, idx] : dag_.BuildGPCSPIndexer()) {
     if (idx < dag_.RootsplitCount()) {
       const auto classic_rootsplit_representation =
           std::min(key.SubsplitChunk(0), key.SubsplitChunk(1));
@@ -325,7 +325,7 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {
 
 RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
     const std::string &pcsp_string) {
-  const BitsetSizeMap &indexer = dag_.GetGPCSPIndexer();
+  const BitsetSizeMap &indexer = dag_.BuildGPCSPIndexer();
   Bitset pcsp(pcsp_string);
   auto search = indexer.find(pcsp);
   if (search == indexer.end()) {
@@ -336,7 +336,7 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPStringAndGPBranchL
   Node::NodePtrVec topologies;
   for (const auto &tree : tree_collection_.Trees()) {
     auto indexer_representation = dag_.IndexerRepresentationOf(
-        tree.Topology(), std::numeric_limits<size_t>::max());
+        indexer, tree.Topology(), std::numeric_limits<size_t>::max());
     if (std::find(indexer_representation.begin(), indexer_representation.end(),
                   pcsp_index) != indexer_representation.end()) {
       topologies.push_back(tree.Topology()->DeepCopy());
