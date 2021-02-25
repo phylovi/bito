@@ -48,12 +48,14 @@ void SubsplitDAG::CountTopologies() {
       [this](size_t root_id) { topology_count_ += topology_count_below_[root_id]; });
 }
 
-double SubsplitDAG::TopologyCount() const { return topology_count_; }
-
 size_t SubsplitDAG::NodeCount() const { return dag_nodes_.size(); }
 
+double SubsplitDAG::TopologyCount() const { return topology_count_; }
+
 size_t SubsplitDAG::RootsplitCount() const { return rootsplits_.size(); }
+
 size_t SubsplitDAG::GPCSPCount() const { return gpcsp_count_without_fake_subsplits_; }
+
 size_t SubsplitDAG::GPCSPCountWithFakeSubsplits() const {
   return gpcsp_indexer_.size();
 }
@@ -74,35 +76,45 @@ void SubsplitDAG::PrintGPCSPIndexer() const {
   }
 }
 
-std::string SubsplitDAG::ToDot() const {
+std::string SubsplitDAG::ToDot(bool show_index_labels) const {
   std::stringstream string_stream;
   string_stream << "digraph g {\n";
   string_stream << "node [shape=record];\n";
+  string_stream << "edge [colorscheme=dark23];\n";
   DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
-      [this, &string_stream](size_t node_id) {
+      [this, &string_stream, &show_index_labels](size_t node_id) {
         auto bs = GetDagNode(node_id)->GetBitset();
-        string_stream << node_id << "[label=\"<f0>"
-                      << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>" << node_id
-                      << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString() << "\"]\n";
+        string_stream << node_id << " [label=\"<f0>"
+                      << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>";
+        if (show_index_labels) {
+          string_stream << node_id;
+        }
+        string_stream << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString() << "\"]\n";
       },
       // AfterNode
       [](size_t node_id) {},
       // BeforeNodeClade
       [](size_t node_id, bool rotated) {},
       // VisitEdge
-      [this, &string_stream](size_t node_id, size_t child_id, bool rotated) {
+      [this, &string_stream, &show_index_labels](size_t node_id, size_t child_id,
+                                                 bool rotated) {
         if (GetDagNode(child_id)->IsLeaf()) {
-          string_stream << child_id << "[label=\"<f1>" << child_id << "\"]\n";
+          string_stream << child_id << " [label=\"<f1>" << child_id << "\"]\n";
         }
         string_stream << "\"" << node_id << "\":";
-        if (rotated) {
-          string_stream << "f0";
-        } else {
-          string_stream << "f2";
-        }
+        string_stream << (rotated ? "f0" : "f2");
         string_stream << "->\"";
-        string_stream << child_id << "\":f1;\n";
+        string_stream << child_id << "\":f1";
+        if (show_index_labels) {
+          string_stream << " [label=\"" << GPCSPIndexOfIds(node_id, rotated, child_id);
+          if (rotated) {
+            string_stream << "\", color=1, fontcolor=1]";
+          } else {
+            string_stream << "\", color=3, fontcolor=3]";
+          }
+        }
+        string_stream << "\n";
       }));
   string_stream << "}";
   return string_stream.str();
@@ -124,6 +136,41 @@ size_t SubsplitDAG::GetRootsplitIndex(const Bitset &rootsplit) const {
 size_t SubsplitDAG::GetGPCSPIndex(const Bitset &parent_subsplit,
                                   const Bitset &child_subsplit) const {
   return gpcsp_indexer_.at(Bitset::PCSPOfPair(parent_subsplit, child_subsplit));
+}
+
+size_t SubsplitDAG::GPCSPIndexOfIds(size_t parent_id, bool rotated,
+                                    size_t child_id) const {
+  return GetGPCSPIndex(GetDagNode(parent_id)->GetBitset(rotated),
+                       GetDagNode(child_id)->GetBitset());
+}
+
+EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
+  EigenVectorXd q = EigenVectorXd::Ones(GPCSPCountWithFakeSubsplits());
+
+  for (const auto &node_id : RootwardPassTraversal()) {
+    const auto &node = GetDagNode(node_id);
+    if (!node->IsLeaf()) {
+      for (const bool rotated : {false, true}) {
+        double per_rotated_count = 0.;
+        for (const auto &child_id : node->GetLeafward(rotated)) {
+          per_rotated_count += topology_count_below_[child_id];
+        }
+        for (const auto &child_id : node->GetLeafward(rotated)) {
+          size_t gpcsp_idx = GetGPCSPIndex(node->GetBitset(rotated),
+                                           GetDagNode(child_id)->GetBitset());
+          q(gpcsp_idx) = topology_count_below_(child_id) / per_rotated_count;
+        }
+      }
+    }
+  }
+
+  IterateOverRootsplitIds([this, &q](size_t root_id) {
+    auto node = GetDagNode(root_id);
+    auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset());
+    q[gpcsp_idx] = topology_count_below_[root_id] / topology_count_;
+  });
+
+  return q;
 }
 
 Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
@@ -178,35 +225,6 @@ Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
   return topologies;
 }
 
-EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
-  EigenVectorXd q = EigenVectorXd::Ones(GPCSPCountWithFakeSubsplits());
-
-  for (const auto &node_id : RootwardPassTraversal()) {
-    const auto &node = GetDagNode(node_id);
-    if (!node->IsLeaf()) {
-      for (const bool rotated : {false, true}) {
-        double per_rotated_count = 0.;
-        for (const auto &child_id : node->GetLeafward(rotated)) {
-          per_rotated_count += topology_count_below_[child_id];
-        }
-        for (const auto &child_id : node->GetLeafward(rotated)) {
-          size_t gpcsp_idx = GetGPCSPIndex(node->GetBitset(rotated),
-                                           GetDagNode(child_id)->GetBitset());
-          q(gpcsp_idx) = topology_count_below_(child_id) / per_rotated_count;
-        }
-      }
-    }
-  }
-
-  IterateOverRootsplitIds([this, &q](size_t root_id) {
-    auto node = GetDagNode(root_id);
-    auto gpcsp_idx = gpcsp_indexer_.at(node->GetBitset());
-    q[gpcsp_idx] = topology_count_below_[root_id] / topology_count_;
-  });
-
-  return q;
-}
-
 EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   EigenVectorXd result = EigenVectorXd::Zero(GPCSPCountWithFakeSubsplits());
   for (const auto &[our_bitset, gpcsp_idx] : gpcsp_indexer_) {
@@ -215,7 +233,7 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
       std::tie(child0_taxon_count, child1_taxon_count) =
           our_bitset.PCSPChildSubsplitTaxonCounts();
     } else if (our_bitset.size() == 2 * taxon_count_) {  // #273
-      child0_taxon_count = our_bitset.SplitChunk(0).Count();
+      child0_taxon_count = our_bitset.SubsplitChunk(0).Count();
       child1_taxon_count = static_cast<size_t>(taxon_count_ - child0_taxon_count);
     } else {
       Failwith("Don't recognize bitset size!");
@@ -254,10 +272,8 @@ void SubsplitDAG::IterateOverLeafwardEdgesAndChildren(
     const SubsplitDAGNode *node, const EdgeAndNodeLambda &f) const {
   IterateOverLeafwardEdges(
       node, [this, &node, &f](bool rotated, const SubsplitDAGNode *child) {
-        Bitset node_bitset = node->GetBitset(rotated);
-        if (!node_bitset.SubsplitChunk(1).IsSingleton()) {
-          f(GetGPCSPIndex(node_bitset, child->GetBitset()), child);
-        }
+        f(GetGPCSPIndex(node->GetBitset(rotated), child->GetBitset()), rotated,
+          child->Id());
       });
 }
 
@@ -268,6 +284,15 @@ void SubsplitDAG::IterateOverRootwardEdges(const SubsplitDAGNode *node,
       f(rotated, GetDagNode(parent_idx));
     }
   }
+}
+
+void SubsplitDAG::IterateOverRootwardEdgesAndParents(const SubsplitDAGNode *node,
+                                                     const EdgeAndNodeLambda &f) const {
+  IterateOverRootwardEdges(
+      node, [this, &node, &f](bool rotated, const SubsplitDAGNode *parent) {
+        f(GetGPCSPIndex(parent->GetBitset(rotated), node->GetBitset()), rotated,
+          parent->Id());
+      });
 }
 
 void SubsplitDAG::IterateOverRootsplitIds(const std::function<void(size_t)> &f) const {
@@ -282,37 +307,47 @@ RootedIndexerRepresentation SubsplitDAG::IndexerRepresentationOf(
                                                 default_index);
 }
 
-BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
+// #323 do we want to change this into log space?
+EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
     EigenConstVectorXdRef normalized_sbn_parameters) const {
-  auto subsplit_probabilities = DefaultDict<Bitset, double>(0.);
+  EigenVectorXd node_probabilities(NodeCount());
+  node_probabilities.setZero();
+
   IterateOverRootsplitIds(
-      [this, &subsplit_probabilities, &normalized_sbn_parameters](size_t rootsplit_id) {
-        const auto rootsplit_bitset = GetDagNode(rootsplit_id)->GetBitset();
-        Assert(!subsplit_probabilities.contains(rootsplit_bitset),
+      [this, &node_probabilities, &normalized_sbn_parameters](size_t rootsplit_id) {
+        Assert(node_probabilities[rootsplit_id] == 0.,
                "We have iterated over the same rootsplit multiple times.");
-        subsplit_probabilities.increment(
-            rootsplit_bitset,
-            normalized_sbn_parameters[GetRootsplitIndex(rootsplit_bitset)]);
+        node_probabilities[rootsplit_id] += normalized_sbn_parameters[GetRootsplitIndex(
+            GetDagNode(rootsplit_id)->GetBitset())];
       });
 
-  for (const auto node_id : ReversePostorderTraversal()) {
-    const auto node = GetDagNode(node_id);
-    IterateOverLeafwardEdgesAndChildren(
-        node, [&node, &subsplit_probabilities, &normalized_sbn_parameters](
-                  const size_t gpcsp_index, const SubsplitDAGNode *child) {
-          const double parent_probability =
-              subsplit_probabilities.Map().at(node->GetBitset());
-          const double child_probability_given_parent =
-              normalized_sbn_parameters[gpcsp_index];
-          Assert(child_probability_given_parent >= 0. &&
-                     child_probability_given_parent <= 1.,
-                 "UnconditionalSubsplitProbabilities: got an unormalized probability.");
-          subsplit_probabilities.increment(
-              child->GetBitset(), parent_probability * child_probability_given_parent);
-        });
-  }
+  ReversePostorderIndexTraversal([&node_probabilities, &normalized_sbn_parameters](
+                                     const size_t parent_id, const size_t gpcsp_index,
+                                     const size_t child_id) {
+    const double child_probability_given_parent =
+        normalized_sbn_parameters[gpcsp_index];
+    Assert(child_probability_given_parent >= 0. && child_probability_given_parent <= 1.,
+           "UnconditionalNodeProbabilities: got an unormalized probability.");
+    const double parent_probability = node_probabilities[parent_id];
+    node_probabilities[child_id] += parent_probability * child_probability_given_parent;
+  });
 
-  return subsplit_probabilities.Map();
+  return node_probabilities;
+}
+
+BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
+    EigenConstVectorXdRef normalized_sbn_parameters) const {
+  auto node_probabilities = UnconditionalNodeProbabilities(normalized_sbn_parameters);
+  BitsetDoubleMap subsplit_probability_map;
+  for (size_t node_id = 0; node_id < node_probabilities.size(); node_id++) {
+    const auto &subsplit_bitset = GetDagNode(node_id)->GetBitset();
+    // #323 we could include fake subsplits
+    if (!subsplit_bitset.SubsplitIsFake()) {
+      SafeInsert(subsplit_probability_map, subsplit_bitset,
+                 node_probabilities[node_id]);
+    }
+  }
+  return subsplit_probability_map;
 }
 
 std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,
@@ -493,6 +528,16 @@ SizeVector SubsplitDAG::ReversePostorderTraversal() const {
   auto visit_order = RootwardPassTraversal();
   std::reverse(visit_order.begin(), visit_order.end());
   return visit_order;
+}
+
+void SubsplitDAG::ReversePostorderIndexTraversal(ParentEdgeChildLambda f) const {
+  for (const auto node_id : ReversePostorderTraversal()) {
+    IterateOverLeafwardEdgesAndChildren(
+        GetDagNode(node_id),
+        [&f, &node_id](const size_t gpcsp_index, const bool, const size_t child_id) {
+          f(node_id, gpcsp_index, child_id);
+        });
+  }
 }
 
 Bitset SubsplitDAG::PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated) {

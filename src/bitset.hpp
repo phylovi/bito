@@ -1,5 +1,15 @@
 // Copyright 2019-2021 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// A class to store bitsets in their various forms.
+//
+// This file started life as the RbBitSet class from RevBayes by Sebastian
+// Hoehna, but has evolved a lot since then!
+//
+// For basic operations, I'm trying to follow the interface of std::bitset, though
+// this class goes way beyond what std::bitset offers.
+// Note that we can't use std::bitset because we don't know the size of the
+// bitsets at compile time.
 
 #ifndef SRC_BITSET_HPP_
 #define SRC_BITSET_HPP_
@@ -11,12 +21,6 @@
 #include <vector>
 
 #include "sugar.hpp"
-
-// This file started life as the RbBitSet class from RevBayes by Sebastian
-// Hoehna. In general, I'm trying to follow the interface of std::bitset, though
-// this class goes way beyond what std::bitset offers.
-// Note that we can't use std::bitset because we don't know the size of the
-// bitsets at compile time.
 
 class Bitset {
  public:
@@ -76,13 +80,16 @@ class Bitset {
   //
   // Flip the order of the two sides of a subsplit.
   Bitset RotateSubsplit() const;
+  size_t SubsplitChunkSize() const;
   // Get the ith chunk of the subsplit.
-  Bitset SplitChunk(size_t i) const;
+  Bitset SubsplitChunk(size_t i) const;
   // Return a string of the PCSP in the specified number of chunks, with each chunk
   // separated by a "|".
   std::string ToStringChunked(size_t chunk_count) const;
   std::string SubsplitToString() const;
   std::string SubsplitToIndexSetString() const;
+  // Is the right hand chunk all zero?
+  bool SubsplitIsFake() const;
 
   // These functions require the bitset to be a "PCSP bitset" with three
   // equal-sized "chunks".
@@ -99,8 +106,6 @@ class Bitset {
   bool PCSPIsFake() const;
   // Do the sister and focal clades union to the whole taxon set?
   bool PCSPIsRootsplit() const;
-  size_t SubsplitChunkSize() const;
-  Bitset SubsplitChunk(size_t i) const;
   size_t PCSPChunkSize() const;
   Bitset PCSPChunk(size_t i) const;
   // Get the first 2/3rds of the PCSP.
@@ -239,8 +244,8 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("0000").ToIndexSetString(), "");
 
   auto p = Bitset("000111");
-  CHECK_EQ(p.SplitChunk(0), Bitset("000"));
-  CHECK_EQ(p.SplitChunk(1), Bitset("111"));
+  CHECK_EQ(p.SubsplitChunk(0), Bitset("000"));
+  CHECK_EQ(p.SubsplitChunk(1), Bitset("111"));
   CHECK_EQ(p.PCSPChunk(0), Bitset("00"));
   CHECK_EQ(p.PCSPChunk(1), Bitset("01"));
   CHECK_EQ(p.PCSPChunk(2), Bitset("11"));
@@ -282,6 +287,9 @@ TEST_CASE("Bitset") {
   // Not a union at all.
   CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100001")));
 
+  CHECK_EQ(true, Bitset("010000").SubsplitIsFake());
+  CHECK_EQ(false, Bitset("010010").SubsplitIsFake());
+  CHECK_EQ(true, Bitset("").SubsplitIsFake());
   CHECK_EQ(Bitset::FakeSubsplit(Bitset("010")), Bitset("010000"));
   CHECK_EQ(Bitset::FakeChildSubsplit(Bitset("100001")), Bitset("001000"));
   CHECK_THROWS(Bitset::FakeChildSubsplit(Bitset("100011")));

@@ -196,21 +196,23 @@ TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
   inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
-  StringDoubleMap correct_parameters({{"0011111000", 0.5},  // 01|234
-                                      {"0111110000", 0.3},  // 0|1234
-                                      {"0001011101", 0.2},  // 0124|3
-                                      {"1100100100", 0.2},  // 014|2
-                                      {"0100000111", 0.1},  // 1|234
-                                      {"0111000001", 0.2},  // 123|4
-                                      {"0101000100", 0.2},  // 13|4
-                                      {"1000001001", 0.2},  // 0|14
-                                      {"0010000011", 0.4},  // 2|34
-                                      {"0011000001", 0.2},  // 23|4
-                                      {"1000001000", 0.5},  // 0|1
-                                      {"0100000010", 0.2},  // 1|3
-                                      {"0100000001", 0.2},  // 1|4
-                                      {"0010000010", 0.2},  // 2|3
-                                      {"0001000001", 0.4}}  // 3|4
+  // See diagram at https://github.com/phylovi/libsbn/issues/323#issuecomment-785080187
+  // Numbering in comments is...                               node: subsplit.
+  StringDoubleMap correct_parameters({{"0011111000", 0.5},  // 10: 01|234
+                                      {"0111110000", 0.3},  // 15: 0|1234
+                                      {"0001011101", 0.2},  // 19: 0124|3
+                                      {"1100100100", 0.2},  // 18: 014|2
+                                      {"0100000111", 0.1},  // 14: 1|234
+                                      {"0111000001", 0.2},  // 13: 123|4
+                                      {"0101000100", 0.2},  // 12: 13|2
+                                      {"1000001001", 0.2},  // 17: 0|14
+                                      {"0010000011", 0.4},  //  7: 2|34
+                                      {"0011000001", 0.2},  //  9: 23|4
+                                      {"1000001000", 0.5},  //  5: 0|1
+                                      {"0100000010", 0.2},  // 11: 1|3
+                                      {"0100000001", 0.2},  // 16: 1|4
+                                      {"0010000010", 0.2},  //  6: 2|3
+                                      {"0001000001", 0.4}}  //  8: 3|4
   );
 
   auto subsplit_probabilities = inst.UnconditionalSubsplitProbabilities();
@@ -367,7 +369,8 @@ TEST_CASE("RootedSBNInstance: reading SBN parameters from a CSV") {
   auto inst = MakeFiveTaxonRootedInstance();
   inst.ReadSBNParametersFromCSV("data/test_modifying_sbn_parameters.csv");
   auto pretty_indexer = inst.PrettyIndexer();
-  auto gpcsp_it = std::find(pretty_indexer.begin(), pretty_indexer.end(), "10000|01111|00001");
+  auto gpcsp_it =
+      std::find(pretty_indexer.begin(), pretty_indexer.end(), "10000|01111|00001");
   CHECK(gpcsp_it != pretty_indexer.end());
   auto gpcsp_idx = std::distance(pretty_indexer.begin(), gpcsp_it);
   CHECK_LT(fabs(inst.sbn_parameters_[gpcsp_idx] - log(0.15)), 1e-8);

@@ -35,6 +35,7 @@
 .sconsign.dblite
 _build
 _ignore
+.clangd
 __pycache__
 .pytest_cache
 .ipynb_checkpoints

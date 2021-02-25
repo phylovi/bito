@@ -24,6 +24,7 @@ class MmappedNucleotidePLV {
       : mmapped_matrix_(file_path, base_count_, total_plv_length){};
 
   NucleotidePLVRefVector Subdivide(size_t into_count) {
+    Assert(into_count > 0, "into_count is zero in MmappedNucleotidePLV::Subdivide.");
     auto entire_plv = mmapped_matrix_.Get();
     const auto total_plv_length = entire_plv.cols();
     Assert(total_plv_length % into_count == 0,
