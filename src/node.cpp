@@ -261,7 +261,7 @@ void Node::TriplePreorderBifurcating(
 }
 
 // See the typedef of UnrootedPCSPFun to understand the argument type to this
-// function, and `doc/pcsp.svg` for a diagram that will greatly help you
+// function, and `doc/svg/pcsp.svg` for a diagram that will greatly help you
 // understand the implementation.
 void Node::UnrootedPCSPPreorder(UnrootedPCSPFun f) const {
   this->TriplePreorder(

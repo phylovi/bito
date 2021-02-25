@@ -212,15 +212,6 @@ Bitset Bitset::RotateSubsplit() const {
   return exchanged;
 }
 
-Bitset Bitset::SplitChunk(size_t i) const {
-  Assert(size() % 2 == 0, "Bitset::SplitChunk requires an even-size bitset.");
-  Assert(i < 2, "Bitset::SplitChunk only allows 2 chunks.");
-  size_t chunk_size = size() / 2;
-  std::vector<bool> new_value(value_.begin() + int32_t(i * chunk_size),
-                              value_.begin() + int32_t((i + 1) * chunk_size));
-  return Bitset(new_value);
-}
-
 std::string Bitset::ToStringChunked(size_t chunk_count) const {
   Assert(size() % chunk_count == 0,
          "Size isn't a multiple of chunk_count in Bitset::ToStringChunked.");
@@ -244,6 +235,10 @@ std::string Bitset::SubsplitToIndexSetString() const {
   str += "|";
   str += SubsplitChunk(1).ToIndexSetString();
   return str;
+}
+
+bool Bitset::SubsplitIsFake() const {
+  return !SubsplitChunk(1).Any();
 }
 
 size_t Bitset::SubsplitChunkSize() const {
@@ -406,7 +401,7 @@ Bitset Bitset::FakeSubsplit(const Bitset& nonzero_contents) {
 }
 
 void AssertSisterAndLeafSubsplit(const Bitset& subsplit) {
-  Assert(subsplit.SplitChunk(0).Any() && subsplit.SplitChunk(1).IsSingleton(),
+  Assert(subsplit.SubsplitChunk(0).Any() && subsplit.SubsplitChunk(1).IsSingleton(),
          "Assertion failed: we want the left-hand chunk of the subsplit be "
          "non-empty and the right-hand chunk be a singleton.");
 }
@@ -415,7 +410,7 @@ Bitset Bitset::FakeChildSubsplit(const Bitset& parent_subsplit) {
   AssertSisterAndLeafSubsplit(parent_subsplit);
   // Put the right-hand chunk of the subsplit as the nonzero contents of the fake
   // subsplit.
-  return FakeSubsplit(parent_subsplit.SplitChunk(1));
+  return FakeSubsplit(parent_subsplit.SubsplitChunk(1));
 }
 
 Bitset Bitset::FakePCSP(const Bitset& parent_subsplit) {

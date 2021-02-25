@@ -297,10 +297,9 @@ void GPDAG::AddRhatOperations(const SubsplitDAGNode *node,
       node, [this, node, &new_operations, subsplit](
                 const bool rotated, const SubsplitDAGNode *parent_node) {
         const auto parent_subsplit = parent_node->GetBitset(rotated);
-        const auto gpcsp_idx = GetGPCSPIndex(parent_subsplit, subsplit);
-
         new_operations.push_back(IncrementWithWeightedEvolvedPLV{
-            GetPLVIndex(PLVType::R_HAT, node->Id()), gpcsp_idx,
+            GetPLVIndex(PLVType::R_HAT, node->Id()),
+            GetGPCSPIndex(parent_subsplit, subsplit),
             GetPLVIndex(RPLVType(rotated), parent_node->Id())});
       });
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
@@ -324,12 +323,10 @@ void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
   for (const bool rotated : {false, true}) {
     PLVType src_plv_type = rotated ? PLVType::R_TILDE : PLVType::R;
     for (size_t parent_id : node->GetRootward(rotated)) {
-      const auto parent_node = GetDagNode(parent_id);
-      size_t gpcsp_idx =
-          GetGPCSPIndex(parent_node->GetBitset(rotated), node->GetBitset());
-      new_operations.push_back(IncrementWithWeightedEvolvedPLV{
-          GetPLVIndex(PLVType::R_HAT, node_id), gpcsp_idx,
-          GetPLVIndex(src_plv_type, parent_id)});
+      new_operations.push_back(
+          IncrementWithWeightedEvolvedPLV{GetPLVIndex(PLVType::R_HAT, node_id),
+                                          GPCSPIndexOfIds(parent_id, rotated, node_id),
+                                          GetPLVIndex(src_plv_type, parent_id)});
     }
   }
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
@@ -342,11 +339,7 @@ void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
 void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
                                         bool rotated,
                                         GPOperationVector &operations) const {
-  const auto node = GetDagNode(node_id);
-  const auto child_node = GetDagNode(child_node_id);
-  auto parent_subsplit =
-      rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
-  size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, child_node->GetBitset());
+  const auto gpcsp_idx = GPCSPIndexOfIds(node_id, rotated, child_node_id);
   // Update p_hat(s)
   GPOperationVector new_operations;
   new_operations.push_back(IncrementWithWeightedEvolvedPLV{
@@ -355,19 +348,15 @@ void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
       GetPLVIndex(PLVType::P, child_node_id),
   });
   new_operations.push_back(Likelihood{gpcsp_idx,
-                                      GetPLVIndex(RPLVType(rotated), node->Id()),
-                                      GetPLVIndex(PLVType::P, child_node->Id())});
+                                      GetPLVIndex(RPLVType(rotated), node_id),
+                                      GetPLVIndex(PLVType::P, child_node_id)});
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
 void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
                                            bool rotated,
                                            GPOperationVector &operations) const {
-  const auto node = GetDagNode(node_id);
-  const auto child_node = GetDagNode(child_node_id);
-  auto parent_subsplit =
-      rotated ? node->GetBitset().RotateSubsplit() : node->GetBitset();
-  size_t gpcsp_idx = GetGPCSPIndex(parent_subsplit, child_node->GetBitset());
+  size_t gpcsp_idx = GPCSPIndexOfIds(node_id, rotated, child_node_id);
   operations.push_back(OptimizeBranchLength{GetPLVIndex(PLVType::P, child_node_id),
                                             GetPLVIndex(RPLVType(rotated), node_id),
                                             gpcsp_idx});
@@ -379,4 +368,31 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
       GetPLVIndex(PLVType::P, child_node_id),
   });
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
+}
+
+TripodHybridRequest GPDAG::TripodHybridRequestOf(size_t parent_id, size_t child_id,
+                                                 bool rotated) const {
+  std::vector<PLVPCSPPair> rootward_pairs;
+  IterateOverRootwardEdgesAndParents(
+      GetDagNode(parent_id),
+      [this, &rootward_pairs](const size_t gpcsp_idx, const bool rootward_rotated,
+                              const size_t grandparent_id) {
+        rootward_pairs.emplace_back(
+            GetPLVIndex(RPLVType(rootward_rotated), grandparent_id), gpcsp_idx);
+      });
+  std::vector<PLVPCSPPair> rotated_pairs;
+  std::vector<PLVPCSPPair> sorted_pairs;
+  IterateOverLeafwardEdgesAndChildren(
+      GetDagNode(child_id), [this, &rotated_pairs, &sorted_pairs](
+                                const size_t gpcsp_idx, const bool leafward_rotated,
+                                const size_t grandchild_id) {
+        if (leafward_rotated) {
+          rotated_pairs.emplace_back(GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
+        } else {
+          sorted_pairs.emplace_back(GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
+        }
+      });
+  return TripodHybridRequest(GPCSPIndexOfIds(parent_id, rotated, child_id),
+                             std::move(rootward_pairs), std::move(rotated_pairs),
+                             std::move(sorted_pairs));
 }
