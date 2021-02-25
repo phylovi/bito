@@ -350,6 +350,26 @@ BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
   return subsplit_probability_map;
 }
 
+EigenVectorXd SubsplitDAG::InvertedGPCSPProbabilities(
+    EigenConstVectorXdRef normalized_sbn_parameters,
+    EigenConstVectorXdRef node_probabilities) const {
+  EigenVectorXd inverted_probabilities =
+      EigenVectorXd(normalized_sbn_parameters.size());
+  // The traversal doesn't set the rootsplit probabilities, but those are always 1
+  // (there is only one "parent" of a rootsplit).
+  inverted_probabilities.setOnes();
+  ReversePostorderIndexTraversal(
+      [&node_probabilities, &normalized_sbn_parameters, &inverted_probabilities](
+          const size_t parent_id, const size_t gpcsp_idx, const size_t child_id) {
+        // For a PCSP t -> s:
+        inverted_probabilities[gpcsp_idx] =         // P(t|s)
+            node_probabilities[parent_id] *         // P(t)
+            normalized_sbn_parameters[gpcsp_idx] /  // P(s|t)
+            node_probabilities[child_id];           // P(s)
+      });
+  return inverted_probabilities;
+}
+
 std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,
                                                    bool include_fake_subsplits) {
   std::vector<Bitset> children_subsplits;
