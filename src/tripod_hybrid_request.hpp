@@ -21,17 +21,17 @@ struct TripodTip {
 using TripodTipVector = std::vector<TripodTip>;
 
 struct TripodHybridRequest {
-  TripodHybridRequest(size_t central_gpcsp_idx, TripodTipVector rootward_pairs,
-                      TripodTipVector rotated_pairs, TripodTipVector sorted_pairs)
+  TripodHybridRequest(size_t central_gpcsp_idx, TripodTipVector rootward_tips,
+                      TripodTipVector rotated_tips, TripodTipVector sorted_tips)
       : central_gpcsp_idx_(central_gpcsp_idx),
-        rootward_pairs_(std::move(rootward_pairs)),
-        rotated_pairs_(std::move(rotated_pairs)),
-        sorted_pairs_(std::move(sorted_pairs)){};
+        rootward_tips_(std::move(rootward_tips)),
+        rotated_tips_(std::move(rotated_tips)),
+        sorted_tips_(std::move(sorted_tips)){};
 
   size_t central_gpcsp_idx_;
-  TripodTipVector rootward_pairs_;
-  TripodTipVector rotated_pairs_;
-  TripodTipVector sorted_pairs_;
+  TripodTipVector rootward_tips_;
+  TripodTipVector rotated_tips_;
+  TripodTipVector sorted_tips_;
 };
 
 std::ostream& operator<<(std::ostream& os, TripodTip const& plv_pcsp);

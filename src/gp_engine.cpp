@@ -381,16 +381,16 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 std::vector<double> GPEngine::ProcessTripodHybridRequest(
     const TripodHybridRequest& request) {
   std::vector<double> result;
-  for (const auto& rootward_pair : request.rootward_pairs_) {
+  for (const auto& rootward_tip : request.rootward_tips_) {
     SetTransitionMatrixToHaveBranchLength(branch_lengths_[request.central_gpcsp_idx_] +
-                                          branch_lengths_[rootward_pair.gpcsp_idx_]);
-    tripod_root_plv_ = transition_matrix_ * plvs_.at(rootward_pair.plv_idx_);
-    for (const auto& rotated_pair : request.rotated_pairs_) {
+                                          branch_lengths_[rootward_tip.gpcsp_idx_]);
+    tripod_root_plv_ = transition_matrix_ * plvs_.at(rootward_tip.plv_idx_);
+    for (const auto& rotated_pair : request.rotated_tips_) {
       SetTransitionMatrixToHaveBranchLength(branch_lengths_[rotated_pair.gpcsp_idx_]);
       tripod_above_plv_.array() =
           tripod_root_plv_.array() *
           (transition_matrix_ * plvs_.at(rotated_pair.plv_idx_)).array();
-      for (const auto& sorted_pair : request.sorted_pairs_) {
+      for (const auto& sorted_pair : request.sorted_tips_) {
         SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_pair.gpcsp_idx_]);
         tripod_sorted_plv_ = transition_matrix_ * plvs_.at(sorted_pair.plv_idx_);
         per_pattern_log_likelihoods_ =
@@ -398,6 +398,7 @@ std::vector<double> GPEngine::ProcessTripodHybridRequest(
                 .diagonal()
                 .array()
                 .log();
+
         result.push_back(per_pattern_log_likelihoods_.dot(site_pattern_weights_));
       }
     }

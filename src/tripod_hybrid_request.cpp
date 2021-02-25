@@ -21,9 +21,9 @@ std::ostream& operator<<(std::ostream& os, TripodTipVector const& plv_pcsp_vecto
 std::ostream& operator<<(std::ostream& os, TripodHybridRequest const& request) {
   os << "[\n";
   os << "\tcentral GPCSP: " << request.central_gpcsp_idx_ << "\n";
-  os << "\trootward pairs: " << request.rootward_pairs_ << "\n";
-  os << "\trotated pairs: " << request.rotated_pairs_ << "\n";
-  os << "\tsorted pairs: " << request.sorted_pairs_ << "\n";
+  os << "\trootward pairs: " << request.rootward_tips_ << "\n";
+  os << "\trotated pairs: " << request.rotated_tips_ << "\n";
+  os << "\tsorted pairs: " << request.sorted_tips_ << "\n";
   os << "]" << std::endl;
   return os;
 }
