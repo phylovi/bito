@@ -7,30 +7,36 @@
 #include "sugar.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
-                   const std::string& mmap_file_path, double rescaling_threshold)
+                   const std::string& mmap_file_path, double rescaling_threshold,
+                   EigenVectorXd sbn_prior,
+                   EigenVectorXd node_probabilities_under_prior)
     : site_pattern_(std::move(site_pattern)),
       plv_count_(plv_count),
       rescaling_threshold_(rescaling_threshold),
       log_rescaling_threshold_(log(rescaling_threshold)),
-      mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
-  Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
-  plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
-  Assert(plvs_.size() == plv_count_,
-         "Didn't get the right number of PLVs out of Subdivide.");
+      mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()),
+      plvs_(mmapped_master_plv_.Subdivide(plv_count_)),
+      q_(std::move(sbn_prior)),
+      node_probabilities_under_prior_(std::move(node_probabilities_under_prior)) {
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
-  rescaling_counts_ = EigenVectorXi::Zero(plv_count_);
+  rescaling_counts_.resize(plv_count_);
+  rescaling_counts_.setZero();
   branch_lengths_.resize(gpcsp_count);
   branch_lengths_.setConstant(default_branch_length_);
   log_marginal_likelihood_.resize(site_pattern_.PatternCount());
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
   log_likelihoods_.resize(gpcsp_count, site_pattern_.PatternCount());
-  q_.resize(gpcsp_count);
 
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ =
       Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
+
+  tripod_root_plv_ = plvs_.at(0);
+  tripod_root_plv_.setZero();
+  tripod_above_plv_ = tripod_root_plv_;
+  tripod_sorted_plv_ = tripod_root_plv_;
 
   InitializePLVsWithSitePatterns();
 }
@@ -71,7 +77,7 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
       rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
 }
 
-void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {
+void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {  // NOLINT
   ResetLogMarginalLikelihood();
 }
 
@@ -170,14 +176,14 @@ void GPEngine::SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_l
 }
 
 void GPEngine::SetBranchLengths(EigenVectorXd branch_lengths) {
+  Assert(branch_lengths_.size() == branch_lengths.size(),
+         "Size mismatch in GPEngine::SetBranchLengths.");
   branch_lengths_ = std::move(branch_lengths);
 };
 
 void GPEngine::SetBranchLengthsToConstant(double branch_length) {
   branch_lengths_.setConstant(branch_length);
 };
-
-void GPEngine::SetSBNParameters(EigenVectorXd&& q) { q_ = std::move(q); };
 
 void GPEngine::ResetLogMarginalLikelihood() {
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
@@ -366,4 +372,34 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
       branch_lengths_(gpcsp_idx) /= static_cast<double>(gpcsp_counts(gpcsp_idx));
     }
   }
+}
+
+// TODO(e) rescaling factor
+// TODO(e) transpose for down the tree
+std::vector<double> GPEngine::ProcessTripodHybridRequest(
+    const TripodHybridRequest& request) {
+  std::vector<double> result;
+  for (const auto& rootward_pair : request.rootward_pairs_) {
+    SetTransitionMatrixToHaveBranchLength(branch_lengths_[request.central_gpcsp_idx_] +
+                                          branch_lengths_[rootward_pair.gpcsp_idx_]);
+    // TODO(e) node_probabilities_under_prior_[op.gpcsp_] *
+    tripod_root_plv_ = transition_matrix_ * plvs_.at(rootward_pair.plv_idx_);
+    for (const auto& rotated_pair : request.rotated_pairs_) {
+      SetTransitionMatrixToHaveBranchLength(branch_lengths_[rotated_pair.gpcsp_idx_]);
+      tripod_above_plv_.array() =
+          tripod_root_plv_.array() *
+          (transition_matrix_ * plvs_.at(rotated_pair.plv_idx_)).array();
+      for (const auto& sorted_pair : request.sorted_pairs_) {
+        SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_pair.gpcsp_idx_]);
+        tripod_sorted_plv_ = transition_matrix_ * plvs_.at(sorted_pair.plv_idx_);
+        per_pattern_log_likelihoods_ =
+            (tripod_above_plv_.transpose() * transition_matrix_ * tripod_sorted_plv_)
+                .diagonal()
+                .array()
+                .log();
+        result.push_back(per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+      }
+    }
+  }
+  return result;
 }
