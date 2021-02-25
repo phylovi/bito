@@ -465,4 +465,3 @@ TEST_CASE("GPInstance: hybrid marginal") {
   const auto manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
   std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
 }
-

@@ -369,7 +369,8 @@ TEST_CASE("RootedSBNInstance: reading SBN parameters from a CSV") {
   auto inst = MakeFiveTaxonRootedInstance();
   inst.ReadSBNParametersFromCSV("data/test_modifying_sbn_parameters.csv");
   auto pretty_indexer = inst.PrettyIndexer();
-  auto gpcsp_it = std::find(pretty_indexer.begin(), pretty_indexer.end(), "10000|01111|00001");
+  auto gpcsp_it =
+      std::find(pretty_indexer.begin(), pretty_indexer.end(), "10000|01111|00001");
   CHECK(gpcsp_it != pretty_indexer.end());
   auto gpcsp_idx = std::distance(pretty_indexer.begin(), gpcsp_it);
   CHECK_LT(fabs(inst.sbn_parameters_[gpcsp_idx] - log(0.15)), 1e-8);

@@ -237,9 +237,7 @@ std::string Bitset::SubsplitToIndexSetString() const {
   return str;
 }
 
-bool Bitset::SubsplitIsFake() const {
-  return !SubsplitChunk(1).Any();
-}
+bool Bitset::SubsplitIsFake() const { return !SubsplitChunk(1).Any(); }
 
 size_t Bitset::SubsplitChunkSize() const {
   Assert(size() % 2 == 0, "Size isn't 0 mod 2 in Bitset::SubsplitChunkSize.");

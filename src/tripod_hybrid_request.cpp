@@ -26,4 +26,3 @@ std::ostream& operator<<(std::ostream& os, TripodHybridRequest const& request) {
   os << "]" << std::endl;
   return os;
 }
-

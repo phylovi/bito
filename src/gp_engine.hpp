@@ -199,8 +199,7 @@ TEST_CASE("GPEngine") {
   EigenVectorXd empty_vector;
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
   GPEngine engine(hello_site_pattern, 6 * 5, 5, "_ignore/mmapped_plv.data",
-                  GPEngine::default_rescaling_threshold_,
-                  empty_vector, empty_vector);
+                  GPEngine::default_rescaling_threshold_, empty_vector, empty_vector);
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29
