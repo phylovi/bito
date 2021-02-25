@@ -372,30 +372,30 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
 
 TripodHybridRequest GPDAG::TripodHybridRequestOf(size_t parent_id, size_t child_id,
                                                  bool rotated) const {
-  TripodTipVector rootward_pairs;
+  TripodTipVector rootward_tips;
   IterateOverRootwardEdgesAndParents(
       GetDagNode(parent_id),
-      [this, &rootward_pairs](const size_t gpcsp_idx, const bool rootward_rotated,
-                              const size_t grandparent_id) {
-        rootward_pairs.emplace_back(
+      [this, &rootward_tips](const size_t gpcsp_idx, const bool rootward_rotated,
+                             const size_t grandparent_id) {
+        rootward_tips.emplace_back(
             grandparent_id, GetPLVIndex(RPLVType(rootward_rotated), grandparent_id),
             gpcsp_idx);
       });
-  TripodTipVector rotated_pairs;
-  TripodTipVector sorted_pairs;
+  TripodTipVector rotated_tips;
+  TripodTipVector sorted_tips;
   IterateOverLeafwardEdgesAndChildren(
-      GetDagNode(child_id), [this, &rotated_pairs, &sorted_pairs](
+      GetDagNode(child_id), [this, &rotated_tips, &sorted_tips](
                                 const size_t gpcsp_idx, const bool leafward_rotated,
                                 const size_t grandchild_id) {
         if (leafward_rotated) {
-          rotated_pairs.emplace_back(grandchild_id,
-                                     GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
-        } else {
-          sorted_pairs.emplace_back(grandchild_id,
+          rotated_tips.emplace_back(grandchild_id,
                                     GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
+        } else {
+          sorted_tips.emplace_back(grandchild_id,
+                                   GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
         }
       });
   return TripodHybridRequest(GPCSPIndexOfIds(parent_id, rotated, child_id),
-                             std::move(rootward_pairs), std::move(rotated_pairs),
-                             std::move(sorted_pairs));
+                             std::move(rootward_tips), std::move(rotated_tips),
+                             std::move(sorted_tips));
 }
