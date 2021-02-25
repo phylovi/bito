@@ -464,9 +464,11 @@ TEST_CASE("GPInstance: flipped SBN parameters") {
 
 TEST_CASE("GPInstance: hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
+  const double alignment_length = 501;
   // See the DAG at
   // https://user-images.githubusercontent.com/112708/108065117-6324a400-7012-11eb-8eaa-9ff1438192ad.png
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
+  auto& dag = inst.GetDAG();
   inst.SubsplitDAGToDot("_ignore/hybrid-marginal.dot");
   // Branch lengths generated from Python via
   // import random
@@ -480,10 +482,16 @@ TEST_CASE("GPInstance: hybrid marginal") {
   const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
   inst.ExportAllGeneratedTrees(tree_path);
 
-  auto request = inst.GetDAG().TripodHybridRequestOf(12, 11, false);
+  const size_t parent_id = 12;
+  const size_t child_id = 11;
+  const bool rotation_status = false;
+
+  auto request = dag.TripodHybridRequestOf(parent_id, child_id, rotation_status);
+  std::vector<double> tripod_likelihoods =
+      inst.GetEngine()->ProcessTripodHybridRequest(request);
+  std::sort(tripod_likelihoods.begin(), tripod_likelihoods.end());
   std::cout << request << std::endl;
-  std::cout << "tripod likelihoods:\t"
-            << inst.GetEngine()->ProcessTripodHybridRequest(request) << std::endl;
+  std::cout << "tripod likelihoods:\t" << tripod_likelihoods << std::endl;
 
   // auto request2 = inst.GetDAG().TripodHybridRequestOf(11, 8, false);
   // std::cout << request2 << std::endl;
@@ -496,6 +504,14 @@ TEST_CASE("GPInstance: hybrid marginal") {
   sbn_instance.SetAlignment(alignment);
   sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
 
-  const auto manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
+  std::vector<double> manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
+  std::sort(manual_log_likelihoods.begin(), manual_log_likelihoods.end());
   std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
+
+  /*
+  EigenVectorXd node_probabilities =
+      dag.UnconditionalNodeProbabilities(dag.BuildUniformOnTopologicalSupportPrior());
+  double log_prior_of_parent = log(node_probabilities[parent_id]);
+  std::cout << alignment_length * log_prior_of_parent << std::endl;
+  */
 }
