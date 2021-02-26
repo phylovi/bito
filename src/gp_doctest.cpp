@@ -477,6 +477,37 @@ std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
   return manual_log_likelihoods;
 }
 
+TEST_CASE("GPInstance: hybrid marginal one minimal tree") {
+  const std::string fasta_path = "data/4-taxon-slice-of-ds1.fasta";
+  // See the DAG at
+  // https://github.com/phylovi/libsbn/issues/323#issuecomment-786538796
+  auto inst = GPInstanceOfFiles(fasta_path,
+                                "data/simplest-hybrid-marginal-one-minimal-tree.nwk");
+  auto& dag = inst.GetDAG();
+  inst.SubsplitDAGToDot("_ignore/hybrid-marginal-one-tree.dot");
+  // Branch lengths truncated from the branch length vector described below.
+  EigenVectorXd branch_lengths(7);
+  branch_lengths << 0.058, 0.044, 0.006, 0.099, 0.078, 0.036, 0.06;
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.PopulatePLVs();
+  const std::string tree_path = "_ignore/simplest-hybrid-marginal-one-minimal-tree.nwk";
+  inst.ExportAllGeneratedTrees(tree_path);
+
+  const size_t parent_id = 5;
+  const size_t child_id = 4;
+  const bool rotation_status = false;
+
+  auto request = dag.TripodHybridRequestOf(parent_id, child_id, rotation_status);
+  std::vector<double> tripod_likelihoods =
+      inst.GetEngine()->ProcessTripodHybridRequest(request);
+  std::sort(tripod_likelihoods.begin(), tripod_likelihoods.end());
+  std::cout << request << std::endl;
+  std::cout << "tripod likelihoods:\t" << tripod_likelihoods << std::endl;
+
+  auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
+  std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
+}
+
 TEST_CASE("GPInstance: hybrid marginal one tree") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
@@ -484,7 +515,7 @@ TEST_CASE("GPInstance: hybrid marginal one tree") {
   auto inst =
       GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal-one-tree.nwk");
   auto& dag = inst.GetDAG();
-  inst.SubsplitDAGToDot("_ignore/hybrid-marginal-one-tree.dot");
+  // inst.SubsplitDAGToDot("_ignore/hybrid-marginal-one-tree.dot");
   // Branch lengths truncated from the branch length vector described below.
   EigenVectorXd branch_lengths(13);
   branch_lengths << 0.058, 0.044, 0.006, 0.099, 0.078, 0.036, 0.06, 0.073, 0.004, 0.041,
@@ -494,8 +525,8 @@ TEST_CASE("GPInstance: hybrid marginal one tree") {
   const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
   inst.ExportAllGeneratedTrees(tree_path);
 
-  const size_t parent_id = 10;
-  const size_t child_id = 9;
+  const size_t parent_id = 11;
+  const size_t child_id = 10;
   const bool rotation_status = false;
 
   auto request = dag.TripodHybridRequestOf(parent_id, child_id, rotation_status);
@@ -515,7 +546,7 @@ TEST_CASE("GPInstance: hybrid marginal") {
   // https://github.com/phylovi/libsbn/issues/323#issuecomment-783349464
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
-  inst.SubsplitDAGToDot("_ignore/hybrid-marginal.dot");
+  // inst.SubsplitDAGToDot("_ignore/hybrid-marginal.dot");
   // Branch lengths generated from Python via
   // import random
   // [round(random.uniform(1e-6, 0.1), 3) for i in range(23)]
