@@ -462,11 +462,57 @@ TEST_CASE("GPInstance: flipped SBN parameters") {
   CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
 }
 
+std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
+                                          const std::string& fasta_path) {
+  RootedSBNInstance sbn_instance("charlie");
+  sbn_instance.ReadNewickFile(tree_path);
+  sbn_instance.ProcessLoadedTrees();
+  const Alignment alignment = Alignment::ReadFasta(fasta_path);
+  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
+  sbn_instance.SetAlignment(alignment);
+  sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
+
+  std::vector<double> manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
+  std::sort(manual_log_likelihoods.begin(), manual_log_likelihoods.end());
+  return manual_log_likelihoods;
+}
+
+TEST_CASE("GPInstance: hybrid marginal one tree") {
+  const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
+  // See the DAG at
+  // https://github.com/phylovi/libsbn/issues/323#issuecomment-786538796
+  auto inst =
+      GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal-one-tree.nwk");
+  auto& dag = inst.GetDAG();
+  inst.SubsplitDAGToDot("_ignore/hybrid-marginal-one-tree.dot");
+  // Branch lengths truncated from the branch length vector described below.
+  EigenVectorXd branch_lengths(13);
+  branch_lengths << 0.058, 0.044, 0.006, 0.099, 0.078, 0.036, 0.06, 0.073, 0.004, 0.041,
+      0.088, 0.033, 0.043;
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.PopulatePLVs();
+  const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
+  inst.ExportAllGeneratedTrees(tree_path);
+
+  const size_t parent_id = 10;
+  const size_t child_id = 9;
+  const bool rotation_status = false;
+
+  auto request = dag.TripodHybridRequestOf(parent_id, child_id, rotation_status);
+  std::vector<double> tripod_likelihoods =
+      inst.GetEngine()->ProcessTripodHybridRequest(request);
+  std::sort(tripod_likelihoods.begin(), tripod_likelihoods.end());
+  std::cout << request << std::endl;
+  std::cout << "tripod likelihoods:\t" << tripod_likelihoods << std::endl;
+
+  auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
+  std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
+}
+
 TEST_CASE("GPInstance: hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
-  const double alignment_length = 501;
   // See the DAG at
-  // https://user-images.githubusercontent.com/112708/108065117-6324a400-7012-11eb-8eaa-9ff1438192ad.png
+  // https://github.com/phylovi/libsbn/issues/323#issuecomment-783349464
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   inst.SubsplitDAGToDot("_ignore/hybrid-marginal.dot");
@@ -496,22 +542,6 @@ TEST_CASE("GPInstance: hybrid marginal") {
   // auto request2 = inst.GetDAG().TripodHybridRequestOf(11, 8, false);
   // std::cout << request2 << std::endl;
 
-  RootedSBNInstance sbn_instance("charlie");
-  sbn_instance.ReadNewickFile(tree_path);
-  sbn_instance.ProcessLoadedTrees();
-  const Alignment alignment = Alignment::ReadFasta(fasta_path);
-  PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
-  sbn_instance.SetAlignment(alignment);
-  sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
-
-  std::vector<double> manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
-  std::sort(manual_log_likelihoods.begin(), manual_log_likelihoods.end());
+  auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
   std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
-
-  /*
-  EigenVectorXd node_probabilities =
-      dag.UnconditionalNodeProbabilities(dag.BuildUniformOnTopologicalSupportPrior());
-  double log_prior_of_parent = log(node_probabilities[parent_id]);
-  std::cout << alignment_length * log_prior_of_parent << std::endl;
-  */
 }
