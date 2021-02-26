@@ -376,14 +376,17 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   }
 }
 
-// TODO(e) rescaling factor
-// TODO(e) transpose for down the tree
+// #323 rescaling factor
+// #323 transpose for down the tree
 std::vector<double> GPEngine::ProcessTripodHybridRequest(
     const TripodHybridRequest& request) {
   std::vector<double> result;
   for (const auto& rootward_tip : request.rootward_tips_) {
-    const double log_rootward_tip_probability =
-        log(unconditional_node_probabilities_[rootward_tip.tip_node_id_]);
+    const double rootward_tip_prior =
+        unconditional_node_probabilities_[rootward_tip.tip_node_id_];
+    std::cout << "rootward tip " << rootward_tip.tip_node_id_ << " has prior "
+              << rootward_tip_prior << std::endl;
+    const double log_rootward_tip_prior = log(rootward_tip_prior);
     SetTransitionMatrixToHaveBranchLength(branch_lengths_[request.central_gpcsp_idx_] +
                                           branch_lengths_[rootward_tip.gpcsp_idx_]);
     tripod_root_plv_ = transition_matrix_ * plvs_.at(rootward_tip.plv_idx_);
@@ -405,7 +408,7 @@ std::vector<double> GPEngine::ProcessTripodHybridRequest(
                 .diagonal()
                 .array()
                 .log();
-        per_pattern_log_likelihoods_.array() -= log_rootward_tip_probability;
+        per_pattern_log_likelihoods_.array() -= log_rootward_tip_prior;
         result.push_back(non_sequence_based_log_probability +
                          per_pattern_log_likelihoods_.dot(site_pattern_weights_));
       }
