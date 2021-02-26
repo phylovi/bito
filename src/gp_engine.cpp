@@ -40,7 +40,6 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   quartet_r_s_plv_ = quartet_root_plv_;
   quartet_q_s_plv_ = quartet_root_plv_;
   quartet_r_sorted_plv_ = quartet_root_plv_;
-  quartet_sorted_plv_ = quartet_root_plv_;
 
   InitializePLVsWithSitePatterns();
 }
@@ -414,12 +413,12 @@ std::vector<double> GPEngine::ProcessQuartetHybridRequest(
               q_[rotated_tip.gpcsp_idx_] * q_[sorted_tip.gpcsp_idx_]);
           // Now calculate the sequence-based likelihood.
           SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_tip.gpcsp_idx_]);
-          quartet_sorted_plv_ = transition_matrix_ * plvs_.at(sorted_tip.plv_idx_);
-          per_pattern_log_likelihoods_ = (quartet_sorted_plv_.transpose() *
-                                          transition_matrix_ * quartet_sorted_plv_)
-                                             .diagonal()
-                                             .array()
-                                             .log();
+          per_pattern_log_likelihoods_ =
+              (quartet_r_sorted_plv_.transpose() * transition_matrix_ *
+               plvs_.at(sorted_tip.plv_idx_))
+                  .diagonal()
+                  .array()
+                  .log();
           per_pattern_log_likelihoods_.array() -= log_rootward_tip_prior;
           result.push_back(non_sequence_based_log_probability +
                            per_pattern_log_likelihoods_.dot(site_pattern_weights_));
