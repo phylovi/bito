@@ -473,6 +473,12 @@ std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
   sbn_instance.PrepareForPhyloLikelihood(simple_specification, 1);
 
   std::vector<double> manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
+  const double log_prior = log(1. / sbn_instance.tree_collection_.TreeCount());
+  std::cout << "log prior: " << log_prior << std::endl;
+  // TODO(e) we get matching likelihoods if we don't do this...
+  // std::transform(manual_log_likelihoods.begin(), manual_log_likelihoods.end(),
+  //                manual_log_likelihoods.begin(),
+  //                [&log_prior](double log_like) { return log_like + log_prior; });
   std::sort(manual_log_likelihoods.begin(), manual_log_likelihoods.end());
   return manual_log_likelihoods;
 }
@@ -568,11 +574,13 @@ TEST_CASE("GPInstance: hybrid marginal") {
       inst.GetEngine()->ProcessQuartetHybridRequest(request);
   std::sort(quartet_likelihoods.begin(), quartet_likelihoods.end());
   std::cout << request << std::endl;
-  std::cout << "quartet likelihoods:\t" << quartet_likelihoods << std::endl;
+  std::cout << std::setprecision(9) << "quartet likelihoods:\t" << quartet_likelihoods
+            << std::endl;
 
   // auto request2 = inst.GetDAG().QuartetHybridRequestOf(11, 8, false);
   // std::cout << request2 << std::endl;
 
   auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
-  std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
+  std::cout << std::setprecision(9) << "manual log likelihoods:\t"
+            << manual_log_likelihoods << std::endl;
 }

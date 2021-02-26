@@ -154,8 +154,6 @@ class GPEngine {
   EigenMatrixXd quartet_q_s_plv_;
   // The R-PLV pointing leafward from t.
   EigenMatrixXd quartet_r_sorted_plv_;
-  //   // The sorted PLV.
-  //   EigenMatrixXd quartet_sorted_plv_;
 
   void InitializePLVsWithSitePatterns();
 
