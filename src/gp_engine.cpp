@@ -35,10 +35,12 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   site_pattern_weights_ =
       Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
 
-  tripod_root_plv_ = plvs_.at(0);
-  tripod_root_plv_.setZero();
-  tripod_above_plv_ = tripod_root_plv_;
-  tripod_sorted_plv_ = tripod_root_plv_;
+  quartet_root_plv_ = plvs_.at(0);
+  quartet_root_plv_.setZero();
+  quartet_r_s_plv_ = quartet_root_plv_;
+  quartet_q_s_plv_ = quartet_root_plv_;
+  quartet_r_sorted_plv_ = quartet_root_plv_;
+  quartet_sorted_plv_ = quartet_root_plv_;
 
   InitializePLVsWithSitePatterns();
 }
@@ -378,8 +380,8 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 
 // #323 rescaling factor
 // #323 transpose for down the tree
-std::vector<double> GPEngine::ProcessTripodHybridRequest(
-    const TripodHybridRequest& request) {
+std::vector<double> GPEngine::ProcessQuartetHybridRequest(
+    const QuartetHybridRequest& request) {
   std::vector<double> result;
   for (const auto& rootward_tip : request.rootward_tips_) {
     const double rootward_tip_prior =
@@ -387,30 +389,41 @@ std::vector<double> GPEngine::ProcessTripodHybridRequest(
     std::cout << "rootward tip " << rootward_tip.tip_node_id_ << " has prior "
               << rootward_tip_prior << std::endl;
     const double log_rootward_tip_prior = log(rootward_tip_prior);
-    SetTransitionMatrixToHaveBranchLength(branch_lengths_[request.central_gpcsp_idx_] +
-                                          branch_lengths_[rootward_tip.gpcsp_idx_]);
-    tripod_root_plv_ = transition_matrix_ * plvs_.at(rootward_tip.plv_idx_);
-    for (const auto& rotated_pair : request.rotated_tips_) {
-      SetTransitionMatrixToHaveBranchLength(branch_lengths_[rotated_pair.gpcsp_idx_]);
-      tripod_above_plv_.array() =
-          tripod_root_plv_.array() *
-          (transition_matrix_ * plvs_.at(rotated_pair.plv_idx_)).array();
-      for (const auto& sorted_pair : request.sorted_tips_) {
-        // P(sigma_{ijk} | \eta)
-        const double non_sequence_based_log_probability =
-            log(inverted_sbn_prior_[rootward_tip.gpcsp_idx_] *
-                q_[rotated_pair.gpcsp_idx_] * q_[sorted_pair.gpcsp_idx_]);
-        // Now calculate the sequence-based likelihood.
-        SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_pair.gpcsp_idx_]);
-        tripod_sorted_plv_ = transition_matrix_ * plvs_.at(sorted_pair.plv_idx_);
-        per_pattern_log_likelihoods_ =
-            (tripod_above_plv_.transpose() * transition_matrix_ * tripod_sorted_plv_)
-                .diagonal()
-                .array()
-                .log();
-        per_pattern_log_likelihoods_.array() -= log_rootward_tip_prior;
-        result.push_back(non_sequence_based_log_probability +
-                         per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+    SetTransitionMatrixToHaveBranchLength(branch_lengths_[rootward_tip.gpcsp_idx_]);
+    quartet_root_plv_ = transition_matrix_ * plvs_.at(rootward_tip.plv_idx_);
+    for (const auto& sister_tip : request.sister_tips_) {
+      // Form the PLV on the root side of the central edge.
+      SetTransitionMatrixToHaveBranchLength(branch_lengths_[sister_tip.gpcsp_idx_]);
+      quartet_r_s_plv_.array() =
+          quartet_root_plv_.array() *
+          (transition_matrix_ * plvs_.at(sister_tip.plv_idx_)).array();
+      // Advance it along the edge.
+      SetTransitionMatrixToHaveBranchLength(
+          branch_lengths_[request.central_gpcsp_idx_]);
+      quartet_q_s_plv_ = transition_matrix_ * quartet_r_s_plv_;
+      for (const auto& rotated_tip : request.rotated_tips_) {
+        // Form the PLV on the root side of the sorted edge.
+        SetTransitionMatrixToHaveBranchLength(branch_lengths_[rotated_tip.gpcsp_idx_]);
+        quartet_r_sorted_plv_.array() =
+            quartet_q_s_plv_.array() *
+            (transition_matrix_ * plvs_.at(rotated_tip.plv_idx_)).array();
+        for (const auto& sorted_tip : request.sorted_tips_) {
+          // P(sigma_{ijkl} | \eta)
+          const double non_sequence_based_log_probability = log(
+              inverted_sbn_prior_[rootward_tip.gpcsp_idx_] * q_[sorted_tip.gpcsp_idx_] *
+              q_[rotated_tip.gpcsp_idx_] * q_[sorted_tip.gpcsp_idx_]);
+          // Now calculate the sequence-based likelihood.
+          SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_tip.gpcsp_idx_]);
+          quartet_sorted_plv_ = transition_matrix_ * plvs_.at(sorted_tip.plv_idx_);
+          per_pattern_log_likelihoods_ = (quartet_sorted_plv_.transpose() *
+                                          transition_matrix_ * quartet_sorted_plv_)
+                                             .diagonal()
+                                             .array()
+                                             .log();
+          per_pattern_log_likelihoods_.array() -= log_rootward_tip_prior;
+          result.push_back(non_sequence_based_log_probability +
+                           per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+        }
       }
     }
   }

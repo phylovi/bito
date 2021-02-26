@@ -497,12 +497,12 @@ TEST_CASE("GPInstance: hybrid marginal one minimal tree") {
   const size_t child_id = 4;
   const bool rotation_status = false;
 
-  auto request = dag.TripodHybridRequestOf(parent_id, child_id, rotation_status);
-  std::vector<double> tripod_likelihoods =
-      inst.GetEngine()->ProcessTripodHybridRequest(request);
-  std::sort(tripod_likelihoods.begin(), tripod_likelihoods.end());
+  auto request = dag.QuartetHybridRequestOf(parent_id, child_id, rotation_status);
+  std::vector<double> quartet_likelihoods =
+      inst.GetEngine()->ProcessQuartetHybridRequest(request);
+  std::sort(quartet_likelihoods.begin(), quartet_likelihoods.end());
   std::cout << request << std::endl;
-  std::cout << "tripod likelihoods:\t" << tripod_likelihoods << std::endl;
+  std::cout << "quartet likelihoods:\t" << quartet_likelihoods << std::endl;
 
   auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
   std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
@@ -529,12 +529,12 @@ TEST_CASE("GPInstance: hybrid marginal one tree") {
   const size_t child_id = 10;
   const bool rotation_status = false;
 
-  auto request = dag.TripodHybridRequestOf(parent_id, child_id, rotation_status);
-  std::vector<double> tripod_likelihoods =
-      inst.GetEngine()->ProcessTripodHybridRequest(request);
-  std::sort(tripod_likelihoods.begin(), tripod_likelihoods.end());
+  auto request = dag.QuartetHybridRequestOf(parent_id, child_id, rotation_status);
+  std::vector<double> quartet_likelihoods =
+      inst.GetEngine()->ProcessQuartetHybridRequest(request);
+  std::sort(quartet_likelihoods.begin(), quartet_likelihoods.end());
   std::cout << request << std::endl;
-  std::cout << "tripod likelihoods:\t" << tripod_likelihoods << std::endl;
+  std::cout << "quartet likelihoods:\t" << quartet_likelihoods << std::endl;
 
   auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
   std::cout << "manual log likelihoods:\t" << manual_log_likelihoods << std::endl;
@@ -563,14 +563,14 @@ TEST_CASE("GPInstance: hybrid marginal") {
   const size_t child_id = 11;
   const bool rotation_status = false;
 
-  auto request = dag.TripodHybridRequestOf(parent_id, child_id, rotation_status);
-  std::vector<double> tripod_likelihoods =
-      inst.GetEngine()->ProcessTripodHybridRequest(request);
-  std::sort(tripod_likelihoods.begin(), tripod_likelihoods.end());
+  auto request = dag.QuartetHybridRequestOf(parent_id, child_id, rotation_status);
+  std::vector<double> quartet_likelihoods =
+      inst.GetEngine()->ProcessQuartetHybridRequest(request);
+  std::sort(quartet_likelihoods.begin(), quartet_likelihoods.end());
   std::cout << request << std::endl;
-  std::cout << "tripod likelihoods:\t" << tripod_likelihoods << std::endl;
+  std::cout << "quartet likelihoods:\t" << quartet_likelihoods << std::endl;
 
-  // auto request2 = inst.GetDAG().TripodHybridRequestOf(11, 8, false);
+  // auto request2 = inst.GetDAG().QuartetHybridRequestOf(11, 8, false);
   // std::cout << request2 << std::endl;
 
   auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
