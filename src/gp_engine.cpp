@@ -420,8 +420,13 @@ std::vector<double> GPEngine::ProcessQuartetHybridRequest(
                   .array()
                   .log();
           per_pattern_log_likelihoods_.array() -= log_rootward_tip_prior;
-          result.push_back(non_sequence_based_log_probability +
-                           per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+          // TODO(e) ... and if we comment out this
+          result.push_back(  // non_sequence_based_log_probability +
+              per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+          std::cout << rootward_tip << " gives "
+                    << per_pattern_log_likelihoods_.dot(site_pattern_weights_)
+                    << " with prior term " << non_sequence_based_log_probability
+                    << std::endl;
         }
       }
     }
