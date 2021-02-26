@@ -11,11 +11,11 @@
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
 #include "numerical_utils.hpp"
+#include "quartet_hybrid_request.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
-#include "tripod_hybrid_request.hpp"
 
 class GPEngine {
  public:
@@ -68,7 +68,7 @@ class GPEngine {
   EigenConstMatrixXdRef GetLogLikelihoodMatrix() const;
   EigenConstVectorXdRef GetSBNParameters() const;
 
-  std::vector<double> ProcessTripodHybridRequest(const TripodHybridRequest& request);
+  std::vector<double> ProcessQuartetHybridRequest(const QuartetHybridRequest& request);
 
   void PrintPLV(size_t plv_idx);
 
@@ -143,15 +143,19 @@ class GPEngine {
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
 
-  // For the tripod calculations.
+  // For the quartet calculations.
   EigenVectorXd unconditional_node_probabilities_;
   EigenVectorXd inverted_sbn_prior_;
   // The PLV coming down from the root.
-  EigenMatrixXd tripod_root_plv_;
-  // The PLV on the root side of the edge leading to the sorted PLV.
-  EigenMatrixXd tripod_above_plv_;
+  EigenMatrixXd quartet_root_plv_;
+  // The R-PLV pointing leafward from s.
+  EigenMatrixXd quartet_r_s_plv_;
+  // The Q-PLV pointing leafward from s.
+  EigenMatrixXd quartet_q_s_plv_;
+  // The R-PLV pointing leafward from t.
+  EigenMatrixXd quartet_r_sorted_plv_;
   // The sorted PLV.
-  EigenMatrixXd tripod_sorted_plv_;
+  EigenMatrixXd quartet_sorted_plv_;
 
   void InitializePLVsWithSitePatterns();
 

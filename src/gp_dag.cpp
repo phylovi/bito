@@ -370,9 +370,9 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
-TripodHybridRequest GPDAG::TripodHybridRequestOf(size_t parent_id, size_t child_id,
-                                                 bool rotated) const {
-  TripodTipVector rootward_tips;
+QuartetHybridRequest GPDAG::QuartetHybridRequestOf(size_t parent_id, size_t child_id,
+                                                   bool rotated) const {
+  QuartetTipVector rootward_tips;
   IterateOverRootwardEdgesAndParents(
       GetDagNode(parent_id),
       [this, &rootward_tips](const size_t gpcsp_idx, const bool rootward_rotated,
@@ -381,8 +381,20 @@ TripodHybridRequest GPDAG::TripodHybridRequestOf(size_t parent_id, size_t child_
             grandparent_id, GetPLVIndex(RPLVType(rootward_rotated), grandparent_id),
             gpcsp_idx);
       });
-  TripodTipVector rotated_tips;
-  TripodTipVector sorted_tips;
+
+  QuartetTipVector sister_tips;
+  const auto &parent_node = GetDagNode(parent_id);
+  IterateOverLeafwardEdges(
+      parent_node, true,
+      [this, &parent_node, &sister_tips](const SubsplitDAGNode *sister_node) {
+        const auto sister_id = sister_node->Id();
+        sister_tips.emplace_back(
+            sister_id, GetPLVIndex(PLVType::P, sister_id),
+            GetGPCSPIndex(parent_node->GetBitset(true), sister_node->GetBitset()));
+      });
+
+  QuartetTipVector rotated_tips;
+  QuartetTipVector sorted_tips;
   IterateOverLeafwardEdgesAndChildren(
       GetDagNode(child_id), [this, &rotated_tips, &sorted_tips](
                                 const size_t gpcsp_idx, const bool leafward_rotated,
@@ -395,7 +407,7 @@ TripodHybridRequest GPDAG::TripodHybridRequestOf(size_t parent_id, size_t child_
                                    GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
         }
       });
-  return TripodHybridRequest(GPCSPIndexOfIds(parent_id, rotated, child_id),
-                             std::move(rootward_tips), std::move(rotated_tips),
-                             std::move(sorted_tips));
+  return QuartetHybridRequest(GPCSPIndexOfIds(parent_id, rotated, child_id),
+                              std::move(rootward_tips), std::move(sister_tips),
+                              std::move(rotated_tips), std::move(sorted_tips));
 }
