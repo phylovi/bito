@@ -162,7 +162,12 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
       Assert(!Bitset(gp_string.substr(gp_string.rfind('|') + 1)).Any(),
              "Missing a non-fake bitset in CheckExactMapVsGPVector.");
     } else {
-      CHECK_LT(fabs(exact_map.at(gp_string) - gp_value), 1e-5);
+      const double tolerance = 1e-5;
+      const double error = fabs(exact_map.at(gp_string) - gp_value);
+      if (error > tolerance) {
+        std::cout << "check failed for " << gp_string << ":" << std::endl;
+      }
+      CHECK_LT(error, tolerance);
     }
   }
 }
