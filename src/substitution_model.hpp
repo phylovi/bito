@@ -21,6 +21,7 @@ class SubstitutionModel : public BlockModel {
 
   const EigenMatrixXd& GetQMatrix() const { return Q_; }
   const EigenVectorXd& GetFrequencies() const { return frequencies_; }
+  const size_t GetRateCount() const { return 0; }
   // We follow BEAGLE in terminology. "Inverse Eigenvectors" means the inverse
   // of the matrix containing the eigenvectors.
   const EigenMatrixXd& GetEigenvectors() const { return eigenvectors_; }
@@ -79,7 +80,7 @@ class GTRModel : public DNAModel {
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
     Update();
   }
-
+  const size_t GetRateCount() const { return 6; }
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
   inline const static std::string rates_key_ = "GTR rates";

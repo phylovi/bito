@@ -63,6 +63,11 @@ class FatBeagle {
   static PhyloGradient StaticRootedGradient(FatBeagle *fat_beagle,
                                             const RootedTree &in_tree);
 
+  template <typename TTree>
+  std::vector<double> SubstitutionModelGradient(
+      std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
+      const TTree &tree) const;
+
  private:
   using BeagleInstance = int;
   using BeagleOperationVector = std::vector<BeagleOperation>;
