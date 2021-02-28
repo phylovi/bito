@@ -426,7 +426,7 @@ std::vector<double> GPEngine::ProcessQuartetHybridRequest(
           std::cout << rootward_tip << " gives "
                     << per_pattern_log_likelihoods_.dot(site_pattern_weights_)
                     << " with prior term " << non_sequence_based_log_probability
-                    << std::endl;
+                    << " and per-site prior " << log_rootward_tip_prior << std::endl;
         }
       }
     }

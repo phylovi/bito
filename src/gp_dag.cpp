@@ -384,13 +384,16 @@ QuartetHybridRequest GPDAG::QuartetHybridRequestOf(size_t parent_id, size_t chil
 
   QuartetTipVector sister_tips;
   const auto &parent_node = GetDagNode(parent_id);
+  const bool is_edge_to_sister_rotated = !rotated;
   IterateOverLeafwardEdges(
-      parent_node, true,
-      [this, &parent_node, &sister_tips](const SubsplitDAGNode *sister_node) {
+      parent_node, is_edge_to_sister_rotated,
+      [this, &parent_node, &sister_tips,
+       &is_edge_to_sister_rotated](const SubsplitDAGNode *sister_node) {
         const auto sister_id = sister_node->Id();
         sister_tips.emplace_back(
             sister_id, GetPLVIndex(PLVType::P, sister_id),
-            GetGPCSPIndex(parent_node->GetBitset(true), sister_node->GetBitset()));
+            GetGPCSPIndex(parent_node->GetBitset(is_edge_to_sister_rotated),
+                          sister_node->GetBitset()));
       });
 
   QuartetTipVector rotated_tips;
