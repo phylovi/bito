@@ -509,10 +509,9 @@ std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
   std::vector<double> manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
   const double log_prior = log(1. / sbn_instance.tree_collection_.TreeCount());
   std::cout << "log prior: " << log_prior << std::endl;
-  // TODO(e) we get matching likelihoods if we don't do this...
-  // std::transform(manual_log_likelihoods.begin(), manual_log_likelihoods.end(),
-  //                manual_log_likelihoods.begin(),
-  //                [&log_prior](double log_like) { return log_like + log_prior; });
+  std::transform(manual_log_likelihoods.begin(), manual_log_likelihoods.end(),
+                 manual_log_likelihoods.begin(),
+                 [&log_prior](double log_like) { return log_like + log_prior; });
   std::sort(manual_log_likelihoods.begin(), manual_log_likelihoods.end());
   return manual_log_likelihoods;
 }
