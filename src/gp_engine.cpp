@@ -40,6 +40,8 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   quartet_r_s_plv_ = quartet_root_plv_;
   quartet_q_s_plv_ = quartet_root_plv_;
   quartet_r_sorted_plv_ = quartet_root_plv_;
+  hybrid_marginal_log_likelihoods_.resize(gpcsp_count);
+  hybrid_marginal_log_likelihoods_.setConstant(DOUBLE_NEG_INF);
 
   InitializePLVsWithSitePatterns();
 }
@@ -136,7 +138,14 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   if (range_length == 1) {
     q_(op.start_) = 1.;
   } else {
-    EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
+    EigenVectorXd log_likelihoods;
+    EigenConstVectorXdRef our_hybrid_log_likelihoods =
+        hybrid_marginal_log_likelihoods_.segment(op.start_, range_length);
+    if (our_hybrid_log_likelihoods.minCoeff() > DOUBLE_NEG_INF) {
+      log_likelihoods = our_hybrid_log_likelihoods;
+    } else {
+      log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
+    }
     EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
     q_.segment(op.start_, range_length) =
         NormalizedPosteriorOfUnnormalized(log_likelihoods + log_prior);
@@ -382,7 +391,7 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 
 // #323 rescaling factor
 // #323 transpose for down the tree
-std::vector<double> GPEngine::ProcessQuartetHybridRequest(
+std::vector<double> GPEngine::CalculateQuartetHybridLikelihoods(
     const QuartetHybridRequest& request) {
   std::vector<double> result;
   for (const auto& rootward_tip : request.rootward_tips_) {

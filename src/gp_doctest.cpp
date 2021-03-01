@@ -546,7 +546,7 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   // requests are printable to stdout if you're keen.
   auto request = dag.QuartetHybridRequestOf(12, 11, false);
   std::vector<double> quartet_log_likelihoods =
-      inst.GetEngine()->ProcessQuartetHybridRequest(request);
+      inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
   std::sort(quartet_log_likelihoods.begin(), quartet_log_likelihoods.end());
 
   auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
@@ -575,7 +575,7 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
 
   auto request = dag.QuartetHybridRequestOf(12, 11, true);
   std::vector<double> quartet_log_likelihoods =
-      inst.GetEngine()->ProcessQuartetHybridRequest(request);
+      inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
   std::sort(quartet_log_likelihoods.begin(), quartet_log_likelihoods.end());
 
   inst.LoadAllGeneratedTrees();
