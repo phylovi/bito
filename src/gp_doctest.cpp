@@ -511,7 +511,6 @@ std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
   std::transform(manual_log_likelihoods.begin(), manual_log_likelihoods.end(),
                  manual_log_likelihoods.begin(),
                  [&log_prior](double log_like) { return log_like + log_prior; });
-  std::sort(manual_log_likelihoods.begin(), manual_log_likelihoods.end());
   return manual_log_likelihoods;
 }
 
@@ -547,8 +546,10 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   auto request = dag.QuartetHybridRequestOf(12, 11, false);
   std::vector<double> quartet_log_likelihoods =
       inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
-  std::sort(quartet_log_likelihoods.begin(), quartet_log_likelihoods.end());
 
+  // Note that we aren't sorting likelihoods here, though we might have to do so for
+  // more complex tests. I don't think that there's any guarantee that the hybrid log
+  // likelihoods will be in the same order as the generated tree, but it worked here.
   auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
   CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
 }
@@ -576,7 +577,6 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
   auto request = dag.QuartetHybridRequestOf(12, 11, true);
   std::vector<double> quartet_log_likelihoods =
       inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
-  std::sort(quartet_log_likelihoods.begin(), quartet_log_likelihoods.end());
 
   inst.LoadAllGeneratedTrees();
   // We restrict to only the trees that contain the DAG edge 6 (which goes between node
