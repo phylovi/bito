@@ -135,13 +135,12 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   const size_t range_length = op.stop_ - op.start_;
   if (range_length == 1) {
     q_(op.start_) = 1.;
-    return;
+  } else {
+    EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
+    EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
+    q_.segment(op.start_, range_length) =
+        NormalizedPosteriorOfUnnormalized(log_likelihoods + log_prior);
   }
-  // else
-  EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
-  EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
-  q_.segment(op.start_, range_length) =
-      NormalizedPosteriorOfUnnormalized(log_likelihoods + log_prior);
 }
 
 void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
