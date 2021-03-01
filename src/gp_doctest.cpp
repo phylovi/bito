@@ -533,7 +533,6 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   // https://github.com/phylovi/libsbn/issues/323#issuecomment-783349464
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
-  inst.SubsplitDAGToDot("_ignore/hybrid-marginal.dot");
   // Branch lengths generated from Python via
   // import random
   // [round(random.uniform(1e-6, 0.1), 3) for i in range(23)]
@@ -553,57 +552,37 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   std::sort(quartet_log_likelihoods.begin(), quartet_log_likelihoods.end());
 
   auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
-  CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-8);
-
-  /*
-  quartet_log_likelihoods = inst.GetEngine()->ProcessQuartetHybridRequest(
-      inst.GetDAG().QuartetHybridRequestOf(11, 8, false));
-  std::cout << inst.GetDAG().QuartetHybridRequestOf(11, 8, false) << std::endl;
-  std::sort(quartet_log_likelihoods.begin(), quartet_log_likelihoods.end());
-  inst.LoadAllGeneratedTrees();
-  inst.ExportTreesWithAPCSP("000100000001110000011", tree_path);
-  manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
-  CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-8);
-  */
+  CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
 }
 
 TEST_CASE("GPInstance: second simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // TODO
+  // https://github.com/phylovi/libsbn/issues/323#issuecomment-787963552
   auto inst = GPInstanceOfFiles(fasta_path, "data/second-simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
-  inst.SubsplitDAGToDot("_ignore/hybrid-marginal.dot");
-  /*
   // Branch lengths generated from Python via
-  // import random
-  // [round(random.uniform(1e-6, 0.1), 3) for i in range(23)]
-  EigenVectorXd branch_lengths(23);
-  branch_lengths << 0.058, 0.044, 0.006, 0.099, 0.078, 0.036, 0.06, 0.073, 0.004, 0.041,
-      0.088, 0.033, 0.043, 0.096, 0.027, 0.039, 0.043, 0.023, 0.064, 0.032, 0.03, 0.085,
-      0.034;
+// import random
+// [round(random.uniform(1e-6, 0.1), 3) for i in range(32)]
+  EigenVectorXd branch_lengths(32);
+  branch_lengths << 0.09, 0.064, 0.073, 0.062, 0.051, 0.028, 0.077, 0.097, 0.089, 0.061,
+      0.036, 0.049, 0.085, 0.01, 0.099, 0.027, 0.07, 0.023, 0.043, 0.056, 0.043, 0.026,
+      0.058, 0.015, 0.093, 0.01, 0.011, 0.007, 0.022, 0.009, 0.037, 0.017;
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   inst.PopulatePLVs();
   const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
   inst.ExportAllGeneratedTrees(tree_path);
 
-  // requests are printable to stdout if you're keen.
-  auto request = dag.QuartetHybridRequestOf(12, 11, false);
+  auto request = dag.QuartetHybridRequestOf(12, 11, true);
   std::vector<double> quartet_log_likelihoods =
       inst.GetEngine()->ProcessQuartetHybridRequest(request);
   std::sort(quartet_log_likelihoods.begin(), quartet_log_likelihoods.end());
 
-  auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
-  CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-8);
-
-  quartet_log_likelihoods = inst.GetEngine()->ProcessQuartetHybridRequest(
-      inst.GetDAG().QuartetHybridRequestOf(11, 8, false));
-  std::cout << inst.GetDAG().QuartetHybridRequestOf(11, 8, false) << std::endl;
-  std::sort(quartet_log_likelihoods.begin(), quartet_log_likelihoods.end());
   inst.LoadAllGeneratedTrees();
-  inst.ExportTreesWithAPCSP("000100000001110000011", tree_path);
-  manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
-  CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-8);
-  */
+  // We restrict to only the trees that contain the DAG edge 6 (which goes between node
+  // 12 and node 11). We get the bitset representation using inst.PrintGPCSPIndexer();
+  inst.ExportTreesWithAPCSP("000000100111100001110", tree_path);
+  auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
+  CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
 }
 
