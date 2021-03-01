@@ -125,6 +125,12 @@ void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
   BrentOptimization(op);
 }
 
+EigenVectorXd NormalizedPosteriorOfUnnormalized(EigenVectorXd unnormalized_posterior) {
+  const double log_norm = NumericalUtils::LogSum(unnormalized_posterior);
+  unnormalized_posterior.array() -= log_norm;
+  return unnormalized_posterior.array().exp();
+}
+
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   const size_t range_length = op.stop_ - op.start_;
   if (range_length == 1) {
@@ -134,10 +140,8 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   // else
   EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
   EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
-  EigenVectorXd unnormalized_posterior = log_likelihoods + log_prior;
-  const double log_norm = NumericalUtils::LogSum(unnormalized_posterior);
-  unnormalized_posterior.array() -= log_norm;
-  q_.segment(op.start_, range_length) = unnormalized_posterior.array().exp();
+  q_.segment(op.start_, range_length) =
+      NormalizedPosteriorOfUnnormalized(log_likelihoods + log_prior);
 }
 
 void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
