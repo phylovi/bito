@@ -480,6 +480,22 @@ TEST_CASE("GPInstance: flipped SBN parameters") {
   CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
 }
 
+TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
+  const std::string fasta_path = "data/5-taxon-slice-of-ds1.fasta";
+  auto inst = GPInstanceOfFiles(
+      fasta_path, "data/5-taxon-hybrid-marginal-only-rootward-uncertainty-alt-2.nwk");
+  EigenVectorXd branch_lengths(14);
+  // The branch lengths contain the index of this GPCSP-indexed vector.
+  branch_lengths << 0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13.;
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  // Because the branch lengths contain the GPCSP index, we can check that the indices
+  // correspond to what we see in the GPCSP DAG in
+  // https://github.com/phylovi/libsbn/issues/323#issuecomment-787451356
+  CHECK_EQ(inst.GenerateCompleteRootedTreeCollection().Newick(),
+           "((0:7,1:9):3,(2:11,(3:12,4:13):5):2):0;\n"
+           "(1:10,(0:8,(2:11,(3:12,4:13):5):6):4):0;\n");
+}
+
 std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
                                           const std::string& fasta_path) {
   RootedSBNInstance sbn_instance("charlie");
