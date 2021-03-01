@@ -517,6 +517,40 @@ std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
   return manual_log_likelihoods;
 }
 
+/*
+TEST_CASE("GPInstance: hybrid marginal only uncertainty above 5 taxa; alternate 2") {
+  const std::string fasta_path = "data/5-taxon-slice-of-ds1.fasta";
+  // See the DAG at
+  // https://github.com/phylovi/libsbn/issues/323#issuecomment-787451356
+  auto inst = GPInstanceOfFiles(
+      fasta_path, "data/5-taxon-hybrid-marginal-only-rootward-uncertainty-alt-2.nwk");
+  auto& dag = inst.GetDAG();
+  inst.SubsplitDAGToDot("_ignore/hybrid-marginal-only-rootward-5.dot");
+  EigenVectorXd branch_lengths(14);
+  branch_lengths << 0.058, 0.044, 0.006, 0.099, 0.078, 0.036, 0.06, 0.073, 0.004, 0.041,
+      0.088, 0.033, 0.043, 0.096;
+  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.PopulatePLVs();
+  const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
+  inst.ExportAllGeneratedTrees(tree_path);
+
+  const size_t parent_id = 7;
+  const size_t child_id = 6;
+  const bool rotation_status = false;
+
+  auto request = dag.QuartetHybridRequestOf(parent_id, child_id, rotation_status);
+  std::vector<double> quartet_likelihoods =
+      inst.GetEngine()->ProcessQuartetHybridRequest(request);
+  std::sort(quartet_likelihoods.begin(), quartet_likelihoods.end());
+  std::cout << request << std::endl;
+  std::cout << std::setprecision(9) << "quartet likelihoods:\t" << quartet_likelihoods
+            << std::endl;
+
+  auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
+  std::cout << std::setprecision(9) << "manual log likelihoods:\t"
+            << manual_log_likelihoods << std::endl;
+}
+
 TEST_CASE("GPInstance: hybrid marginal only uncertainty above 5 taxa") {
   const std::string fasta_path = "data/5-taxon-slice-of-ds1.fasta";
   // See the DAG at
@@ -552,6 +586,7 @@ TEST_CASE("GPInstance: hybrid marginal only uncertainty above 5 taxa") {
   std::cout << std::setprecision(9) << "manual log likelihoods:\t"
             << manual_log_likelihoods << std::endl;
 }
+*/
 
 /*
 // TODO(e) a test that has rotation status=true;
@@ -567,9 +602,6 @@ TEST_CASE("GPInstance: hybrid marginal only uncertainty above 5 taxa; alternate"
       fasta_path, "data/5-taxon-hybrid-marginal-only-rootward-uncertainty-alt.nwk");
   auto& dag = inst.GetDAG();
   inst.SubsplitDAGToDot("_ignore/hybrid-marginal-only-rootward-5.dot");
-  // Branch lengths generated from Python via
-  // import random
-  // [round(random.uniform(1e-6, 0.1), 3) for i in range(18)]
   EigenVectorXd branch_lengths(14);
   branch_lengths << 0.058, 0.044, 0.006, 0.099, 0.078, 0.036, 0.06, 0.073, 0.004, 0.041,
       0.088, 0.033, 0.043, 0.096;
@@ -633,6 +665,7 @@ TEST_CASE("GPInstance: hybrid marginal only uncertainty above") {
   std::cout << std::setprecision(9) << "manual log likelihoods:\t"
             << manual_log_likelihoods << std::endl;
 }
+*/
 
 TEST_CASE("GPInstance: hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
@@ -672,7 +705,6 @@ TEST_CASE("GPInstance: hybrid marginal") {
   std::cout << std::setprecision(9) << "manual log likelihoods:\t"
             << manual_log_likelihoods << std::endl;
 }
-*/
 
 /*
 TEST_CASE("GPInstance: hybrid marginal one minimal tree") {
