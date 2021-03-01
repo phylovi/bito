@@ -68,7 +68,12 @@ class GPEngine {
   EigenConstMatrixXdRef GetLogLikelihoodMatrix() const;
   EigenConstVectorXdRef GetSBNParameters() const;
 
-  std::vector<double> ProcessQuartetHybridRequest(const QuartetHybridRequest& request);
+  // Calculate a vector of likelihoods, one for each summand of the hybrid marginal.
+  std::vector<double> CalculateQuartetHybridLikelihoods(
+      const QuartetHybridRequest& request);
+  // Calculate the actual hybrid marginal and store it in the corresponding entry of
+  // hybrid_marginal_log_likelihoods_.
+  void ProcessQuartetHybridRequest(const QuartetHybridRequest& request);
 
   void PrintPLV(size_t plv_idx);
 
@@ -96,6 +101,10 @@ class GPEngine {
   // Entry j stores the marginal log likelihood over all trees at site pattern
   // j.
   EigenVectorXd log_marginal_likelihood_;
+
+  // This vector is indexed by the GPCSPs and stores the hybrid marginals if they are
+  // available.
+  EigenVectorXd hybrid_marginal_log_likelihoods_;
 
   SitePattern site_pattern_;
   size_t plv_count_;
