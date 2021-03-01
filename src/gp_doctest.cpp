@@ -515,8 +515,6 @@ std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
   return manual_log_likelihoods;
 }
 
-// TODO(e) a test that has rotation status=true;
-
 void CheckVectorDoubleEquality(const std::vector<double>& v1,
                                const std::vector<double>& v2, double tolerance) {
   CHECK_EQ(v1.size(), v2.size());
@@ -562,8 +560,8 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
   auto inst = GPInstanceOfFiles(fasta_path, "data/second-simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   // Branch lengths generated from Python via
-// import random
-// [round(random.uniform(1e-6, 0.1), 3) for i in range(32)]
+  // import random
+  // [round(random.uniform(1e-6, 0.1), 3) for i in range(32)]
   EigenVectorXd branch_lengths(32);
   branch_lengths << 0.09, 0.064, 0.073, 0.062, 0.051, 0.028, 0.077, 0.097, 0.089, 0.061,
       0.036, 0.049, 0.085, 0.01, 0.099, 0.027, 0.07, 0.023, 0.043, 0.056, 0.043, 0.026,
@@ -585,4 +583,3 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
   auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
   CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
 }
-
