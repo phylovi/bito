@@ -64,6 +64,12 @@ class FatBeagle {
                                             const RootedTree &in_tree);
 
   template <typename TTree>
+  std::vector<double> SubstitutionModelGradientFiniteDifference(
+      std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
+      const TTree &tree, SubstitutionModel *subst_model, EigenVectorXdRef &parameters,
+      double delta = 1.e-8) const;
+
+  template <typename TTree>
   std::vector<double> SubstitutionModelGradient(
       std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
       const TTree &tree) const;
@@ -84,7 +90,7 @@ class FatBeagle {
   void SetTipStates(const SitePattern &site_pattern);
   void SetTipPartials(const SitePattern &site_pattern);
   void UpdateSiteModelInBeagle();
-  void UpdateSubstitutionModelInBeagle();
+  void UpdateSubstitutionModelInBeagle() const;
   void UpdatePhyloModelInBeagle();
 
   double LogLikelihoodInternals(const Node::NodePtr topology,

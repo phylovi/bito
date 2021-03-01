@@ -19,7 +19,12 @@ void GTRModel::SetParameters(const EigenVectorXdRef param_vector) {
   rates_ = ExtractSegment(param_vector, rates_key_);
   frequencies_ = ExtractSegment(param_vector, frequencies_key_);
   if (fabs(frequencies_.sum() - 1.) >= 0.001) {
+    std::cerr << frequencies_ << std::endl;
     Failwith("GTR frequencies do not sum to 1 +/- 0.001!");
+  }
+  if (fabs(rates_.sum() - 1.) >= 0.001) {
+    std::cerr << rates_ << std::endl;
+    Failwith("GTR rates do not sum to 1 +/- 0.001!");
   }
   Update();
 };

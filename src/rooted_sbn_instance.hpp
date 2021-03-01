@@ -317,6 +317,34 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   }
 }
 
+TEST_CASE("RootedSBNInstance: GTR gradients") {
+  auto inst = MakeFluInstance(true);
+  PhyloModelSpecification gtr_specification{"GTR", "constant", "strict"};
+  inst.PrepareForPhyloLikelihood(gtr_specification, 1);
+  for (auto& tree : inst.tree_collection_.trees_) {
+    tree.rates_.assign(tree.rates_.size(), 0.001);
+  }
+  auto param_block_map = inst.GetPhyloModelParamBlockMap();
+  auto frequencies = param_block_map.at(GTRModel::frequencies_key_);
+  auto rates = param_block_map.at(GTRModel::rates_key_);
+  frequencies << 0.1, 0.2, 0.3, 0.4;
+  rates << 0.05, 0.1, 0.15, 0.20, 0.25, 0.25;
+
+  auto likelihood = inst.LogLikelihoods();
+  double phylotorch_ll = -5221.437446315317;
+  CHECK_LT(fabs(likelihood[0] - phylotorch_ll), 0.0001);
+
+  // Gradient wrt Weibull site model.
+  auto gradients = inst.PhyloGradients();
+  double physher_gradient = -5.231329;
+  for (double derivative : gradients[0].gradient_["substitution_model"]) {
+    std::cout << "==== derivative" << derivative << std::endl;
+  }
+  CHECK_LT(fabs(gradients[0].gradient_["substitution_model"][0] - physher_gradient),
+           0.001);
+  CHECK_LT(fabs(gradients[0].log_likelihood_ - phylotorch_ll), 0.001);
+}
+
 TEST_CASE("RootedSBNInstance: Weibull gradients") {
   auto inst = MakeFluInstance(true);
   PhyloModelSpecification weibull_specification{"JC69", "weibull+4", "strict"};
@@ -367,7 +395,8 @@ TEST_CASE("RootedSBNInstance: reading SBN parameters from a CSV") {
   auto inst = MakeFiveTaxonRootedInstance();
   inst.ReadSBNParametersFromCSV("data/test_modifying_sbn_parameters.csv");
   auto pretty_indexer = inst.PrettyIndexer();
-  auto gpcsp_it = std::find(pretty_indexer.begin(), pretty_indexer.end(), "10000|01111|00001");
+  auto gpcsp_it =
+      std::find(pretty_indexer.begin(), pretty_indexer.end(), "10000|01111|00001");
   CHECK(gpcsp_it != pretty_indexer.end());
   auto gpcsp_idx = std::distance(pretty_indexer.begin(), gpcsp_it);
   CHECK_LT(fabs(inst.sbn_parameters_[gpcsp_idx] - log(0.15)), 1e-8);
