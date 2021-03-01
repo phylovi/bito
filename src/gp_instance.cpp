@@ -340,15 +340,19 @@ void GPInstance::ExportTrees(const std::string &out_path) {
   trees.ToNewickFile(out_path);
 }
 
+void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,
+                                      const std::string &out_path) {
+  auto trees = CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(pcsp_string);
+  trees.ToNewickFile(out_path);
+}
+
 void GPInstance::ExportAllGeneratedTrees(const std::string &out_path) {
   auto trees = GenerateCompleteRootedTreeCollection();
   trees.ToNewickFile(out_path);
 }
 
-void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,
-                                      const std::string &out_path) {
-  auto trees = CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(pcsp_string);
-  trees.ToNewickFile(out_path);
+void GPInstance::LoadAllGeneratedTrees() {
+  tree_collection_ = GenerateCompleteRootedTreeCollection();
 }
 
 void GPInstance::SubsplitDAGToDot(const std::string &out_path, bool show_index_labels) {

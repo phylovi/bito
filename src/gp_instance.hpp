@@ -61,12 +61,16 @@ class GPInstance {
 
   // Run CurrentlyLoadedTreesWithGPBranchLengths and export to a Newick file.
   void ExportTrees(const std::string &out_path);
-  // Run CurrentlyLoadedTreesWithGPBranchLengths and export to a Newick file.
-  void ExportAllGeneratedTrees(const std::string &out_path);
   // Run CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths and export to a Newick
   // file.
   void ExportTreesWithAPCSP(const std::string &pcsp_string,
                             const std::string &newick_path);
+  // Run CurrentlyLoadedTreesWithGPBranchLengths and export to a Newick file.
+  // Export all trees in the span of the subsplit DAG (with GP branch lengths) to a
+  // Newick file.
+  void ExportAllGeneratedTrees(const std::string &out_path);
+  // Generate all trees spanned by the DAG and load them into the instance.
+  void LoadAllGeneratedTrees();
 
   // Export the subsplit DAG as a DOT file.
   void SubsplitDAGToDot(const std::string &out_path, bool show_index_labels = true);
