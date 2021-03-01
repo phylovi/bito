@@ -191,9 +191,6 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
   RootedTree::RootedTreeVector tree_vector;
 
   for (auto &root_node : topologies) {
-    // Polish will re-assign the node Ids.
-    root_node->Polish();
-
     size_t node_count = 2 * root_node->LeafCount() - 1;
     std::vector<double> branch_lengths(node_count);
 
@@ -227,8 +224,7 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
 }
 
 RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
-  return TreesWithGPBranchLengthsOfTopologies(
-      dag_.GenerateAllGPNodeIndexedTopologies());
+  return TreesWithGPBranchLengthsOfTopologies(dag_.GenerateAllTopologies());
 }
 
 StringVector GPInstance::PrettyIndexer() const {

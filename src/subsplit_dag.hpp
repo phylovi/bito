@@ -81,7 +81,7 @@ class SubsplitDAG {
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
-  Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
+  Node::NodePtrVec GenerateAllTopologies() const;
 
   // Apply an Action via a depth first traversal. Do not visit leaf nodes.
   // Applied to a given node, we:

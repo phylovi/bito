@@ -173,7 +173,7 @@ EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
   return q;
 }
 
-Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
+Node::NodePtrVec SubsplitDAG::GenerateAllTopologies() const {
   std::vector<Node::NodePtrVec> topology_below(NodeCount());
 
   auto GetSubtopologies = [&topology_below](const SubsplitDAGNode *node) {
@@ -222,7 +222,18 @@ Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
   Assert(topologies.size() == TopologyCount(),
          "The realized number of topologies does not match the expected count.");
 
-  return topologies;
+  // We return a deep copy of every Polished topology to avoid loops in the pointer
+  // structure. Such loops can create problems when we Polish the topologies one at a
+  // time: polishing a second topology can change the numbering of a previous topology.
+  // This is checked for in the "GPInstance: GenerateCompleteRootedTreeCollection" test.
+  Node::NodePtrVec final_topologies;
+  final_topologies.reserve(topologies.size());
+  for (auto &topology : topologies) {
+    topology->Polish();
+    final_topologies.push_back(topology->DeepCopy());
+  }
+
+  return final_topologies;
 }
 
 EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
