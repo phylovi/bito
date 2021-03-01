@@ -409,7 +409,7 @@ std::vector<double> GPEngine::ProcessQuartetHybridRequest(
         for (const auto& sorted_tip : request.sorted_tips_) {
           // P(sigma_{ijkl} | \eta)
           const double non_sequence_based_log_probability = log(
-              inverted_sbn_prior_[rootward_tip.gpcsp_idx_] * q_[sorted_tip.gpcsp_idx_] *
+              inverted_sbn_prior_[rootward_tip.gpcsp_idx_] * q_[sister_tip.gpcsp_idx_] *
               q_[rotated_tip.gpcsp_idx_] * q_[sorted_tip.gpcsp_idx_]);
           // Now calculate the sequence-based likelihood.
           SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_tip.gpcsp_idx_]);
@@ -420,9 +420,8 @@ std::vector<double> GPEngine::ProcessQuartetHybridRequest(
                   .array()
                   .log();
           per_pattern_log_likelihoods_.array() -= log_rootward_tip_prior;
-          // TODO(e) ... and if we comment out this
-          result.push_back(  // non_sequence_based_log_probability +
-              per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+          result.push_back(non_sequence_based_log_probability +
+                           per_pattern_log_likelihoods_.dot(site_pattern_weights_));
           std::cout << rootward_tip << " gives "
                     << per_pattern_log_likelihoods_.dot(site_pattern_weights_)
                     << " with prior term " << non_sequence_based_log_probability
