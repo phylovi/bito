@@ -385,8 +385,6 @@ std::vector<double> GPEngine::ProcessQuartetHybridRequest(
   for (const auto& rootward_tip : request.rootward_tips_) {
     const double rootward_tip_prior =
         unconditional_node_probabilities_[rootward_tip.tip_node_id_];
-    std::cout << "rootward tip " << rootward_tip.tip_node_id_ << " has prior "
-              << rootward_tip_prior << std::endl;
     const double log_rootward_tip_prior = log(rootward_tip_prior);
     SetTransitionMatrixToHaveBranchLength(branch_lengths_[rootward_tip.gpcsp_idx_]);
     quartet_root_plv_ = transition_matrix_ * plvs_.at(rootward_tip.plv_idx_);
@@ -422,10 +420,6 @@ std::vector<double> GPEngine::ProcessQuartetHybridRequest(
           per_pattern_log_likelihoods_.array() -= log_rootward_tip_prior;
           result.push_back(non_sequence_based_log_probability +
                            per_pattern_log_likelihoods_.dot(site_pattern_weights_));
-          std::cout << rootward_tip << " gives "
-                    << per_pattern_log_likelihoods_.dot(site_pattern_weights_)
-                    << " with prior term " << non_sequence_based_log_probability
-                    << " and per-site prior " << log_rootward_tip_prior << std::endl;
         }
       }
     }

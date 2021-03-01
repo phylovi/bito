@@ -508,7 +508,6 @@ std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
 
   std::vector<double> manual_log_likelihoods = sbn_instance.UnrootedLogLikelihoods();
   const double log_prior = log(1. / sbn_instance.tree_collection_.TreeCount());
-  std::cout << "log prior: " << log_prior << std::endl;
   std::transform(manual_log_likelihoods.begin(), manual_log_likelihoods.end(),
                  manual_log_likelihoods.begin(),
                  [&log_prior](double log_like) { return log_like + log_prior; });
@@ -517,6 +516,14 @@ std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
 }
 
 // TODO(e) a test that has rotation status=true;
+
+void CheckVectorDoubleEquality(const std::vector<double>& v1,
+                               const std::vector<double>& v2, double tolerance) {
+  CHECK_EQ(v1.size(), v2.size());
+  for (size_t i = 0; i < v1.size(); i++) {
+    CHECK_LT(fabs(v1.at(i) - v2.at(i)), tolerance);
+  }
+}
 
 TEST_CASE("GPInstance: hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
@@ -542,18 +549,14 @@ TEST_CASE("GPInstance: hybrid marginal") {
   const bool rotation_status = false;
 
   auto request = dag.QuartetHybridRequestOf(parent_id, child_id, rotation_status);
-  std::vector<double> quartet_likelihoods =
+  std::vector<double> quartet_log_likelihoods =
       inst.GetEngine()->ProcessQuartetHybridRequest(request);
-  std::sort(quartet_likelihoods.begin(), quartet_likelihoods.end());
-  std::cout << request << std::endl;
-  std::cout << std::setprecision(9) << "quartet likelihoods:\t" << quartet_likelihoods
-            << std::endl;
+  std::sort(quartet_log_likelihoods.begin(), quartet_log_likelihoods.end());
 
   // auto request2 = inst.GetDAG().QuartetHybridRequestOf(11, 8, false);
   // std::cout << request2 << std::endl;
 
   auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
-  std::cout << std::setprecision(9) << "manual log likelihoods:\t"
-            << manual_log_likelihoods << std::endl;
+  CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-8);
 }
 
