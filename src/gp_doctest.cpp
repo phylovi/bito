@@ -553,6 +553,8 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
 }
 
+// This is a slightly more complex test, that has a rotation status of true, and has
+// some paths through the DAG that aren't part of the hybrid marginal.
 TEST_CASE("GPInstance: second simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
