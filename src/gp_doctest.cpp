@@ -496,8 +496,8 @@ TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
            "(1:10,(0:8,(2:11,(3:12,4:13):5):6):4):0;\n");
 }
 
-std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
-                                          const std::string& fasta_path) {
+EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
+                                    const std::string& fasta_path) {
   RootedSBNInstance sbn_instance("charlie");
   sbn_instance.ReadNewickFile(tree_path);
   sbn_instance.ProcessLoadedTrees();
@@ -511,15 +511,7 @@ std::vector<double> ClassicalLikelihoodOf(const std::string& tree_path,
   std::transform(manual_log_likelihoods.begin(), manual_log_likelihoods.end(),
                  manual_log_likelihoods.begin(),
                  [&log_prior](double log_like) { return log_like + log_prior; });
-  return manual_log_likelihoods;
-}
-
-void CheckVectorDoubleEquality(const std::vector<double>& v1,
-                               const std::vector<double>& v2, double tolerance) {
-  CHECK_EQ(v1.size(), v2.size());
-  for (size_t i = 0; i < v1.size(); i++) {
-    CHECK_LT(fabs(v1.at(i) - v2.at(i)), tolerance);
-  }
+  return EigenVectorXdOfStdVectorDouble(manual_log_likelihoods);
 }
 
 // This is the simplest hybrid marginal that has tree uncertainty above and below the
@@ -544,14 +536,14 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
 
   // requests are printable to stdout if you're keen.
   auto request = dag.QuartetHybridRequestOf(12, 11, false);
-  std::vector<double> quartet_log_likelihoods =
+  EigenVectorXd quartet_log_likelihoods =
       inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
 
   // Note that we aren't sorting likelihoods here, though we might have to do so for
   // more complex tests. I don't think that there's any guarantee that the hybrid log
   // likelihoods will be in the same order as the generated tree, but it worked here.
-  auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
-  CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
+  EigenVectorXd manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
+  CheckVectorXdEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
 }
 
 // This is a slightly more complex test, that has a rotation status of true, and has
@@ -575,13 +567,13 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
   inst.ExportAllGeneratedTrees(tree_path);
 
   auto request = dag.QuartetHybridRequestOf(12, 11, true);
-  std::vector<double> quartet_log_likelihoods =
+  EigenVectorXd quartet_log_likelihoods =
       inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
 
   inst.LoadAllGeneratedTrees();
   // We restrict to only the trees that contain the DAG edge 6 (which goes between node
   // 12 and node 11). We get the bitset representation using inst.PrintGPCSPIndexer();
   inst.ExportTreesWithAPCSP("000000100111100001110", tree_path);
-  auto manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
-  CheckVectorDoubleEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
+  EigenVectorXd manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
+  CheckVectorXdEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
 }

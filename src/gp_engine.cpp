@@ -32,8 +32,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   log_likelihoods_.resize(gpcsp_count, site_pattern_.PatternCount());
 
   auto weights = site_pattern_.GetWeights();
-  site_pattern_weights_ =
-      Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
+  site_pattern_weights_ = EigenVectorXdOfStdVectorDouble(weights);
 
   quartet_root_plv_ = plvs_.at(0);
   quartet_root_plv_.setZero();
@@ -391,7 +390,7 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 
 // #323 rescaling factor
 // #323 transpose for down the tree
-std::vector<double> GPEngine::CalculateQuartetHybridLikelihoods(
+EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
     const QuartetHybridRequest& request) {
   std::vector<double> result;
   for (const auto& rootward_tip : request.rootward_tips_) {
@@ -436,5 +435,5 @@ std::vector<double> GPEngine::CalculateQuartetHybridLikelihoods(
       }
     }
   }
-  return result;
+  return EigenVectorXdOfStdVectorDouble(result);
 }

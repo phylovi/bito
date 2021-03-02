@@ -69,8 +69,7 @@ class GPEngine {
   EigenConstVectorXdRef GetSBNParameters() const;
 
   // Calculate a vector of likelihoods, one for each summand of the hybrid marginal.
-  std::vector<double> CalculateQuartetHybridLikelihoods(
-      const QuartetHybridRequest& request);
+  EigenVectorXd CalculateQuartetHybridLikelihoods(const QuartetHybridRequest& request);
   // Calculate the actual hybrid marginal and store it in the corresponding entry of
   // hybrid_marginal_log_likelihoods_.
   void ProcessQuartetHybridRequest(const QuartetHybridRequest& request);
