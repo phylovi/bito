@@ -333,10 +333,9 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
       });
 
   ReversePostorderIndexTraversal([&node_probabilities, &normalized_sbn_parameters](
-                                     const size_t parent_id, const size_t gpcsp_index,
-                                     const size_t child_id) {
-    const double child_probability_given_parent =
-        normalized_sbn_parameters[gpcsp_index];
+                                     const size_t parent_id, const bool,
+                                     const size_t child_id, const size_t gpcsp_idx) {
+    const double child_probability_given_parent = normalized_sbn_parameters[gpcsp_idx];
     Assert(child_probability_given_parent >= 0. && child_probability_given_parent <= 1.,
            "UnconditionalNodeProbabilities: got an out-of-range probability. Are these "
            "normalized and in linear space?");
@@ -372,7 +371,8 @@ EigenVectorXd SubsplitDAG::InvertedGPCSPProbabilities(
   inverted_probabilities.setOnes();
   ReversePostorderIndexTraversal(
       [&node_probabilities, &normalized_sbn_parameters, &inverted_probabilities](
-          const size_t parent_id, const size_t gpcsp_idx, const size_t child_id) {
+          const size_t parent_id, const bool, const size_t child_id,
+          const size_t gpcsp_idx) {
         // For a PCSP t -> s:
         inverted_probabilities[gpcsp_idx] =         // P(t|s)
             node_probabilities[parent_id] *         // P(t)
@@ -562,12 +562,13 @@ SizeVector SubsplitDAG::ReversePostorderTraversal() const {
   return visit_order;
 }
 
-void SubsplitDAG::ReversePostorderIndexTraversal(ParentEdgeChildLambda f) const {
+void SubsplitDAG::ReversePostorderIndexTraversal(
+    ParentRotationChildEdgeLambda f) const {
   for (const auto node_id : ReversePostorderTraversal()) {
     IterateOverLeafwardEdgesAndChildren(
-        GetDagNode(node_id),
-        [&f, &node_id](const size_t gpcsp_index, const bool, const size_t child_id) {
-          f(node_id, gpcsp_index, child_id);
+        GetDagNode(node_id), [&f, &node_id](const size_t gpcsp_idx, const bool rotated,
+                                            const size_t child_id) {
+          f(node_id, rotated, child_id, gpcsp_idx);
         });
   }
 }

@@ -515,7 +515,10 @@ EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
 }
 
 // This is the simplest hybrid marginal that has tree uncertainty above and below the
-// focal PCSP.
+// focal PCSP. Note that this test and the next one are set up so that the quartets
+// reach far enough out that there is no uncertainty in the part of the tree outside of
+// the quartet. In this case the hybrid marginal will be the same as the sum of
+// classical likelihoods.
 TEST_CASE("GPInstance: simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
