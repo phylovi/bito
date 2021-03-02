@@ -370,8 +370,8 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
-QuartetHybridRequest GPDAG::QuartetHybridRequestOf(size_t parent_id, size_t child_id,
-                                                   bool rotated) const {
+QuartetHybridRequest GPDAG::QuartetHybridRequestOf(size_t parent_id, bool rotated,
+                                                   size_t child_id) const {
   QuartetTipVector rootward_tips;
   IterateOverRootwardEdgesAndParents(
       GetDagNode(parent_id),

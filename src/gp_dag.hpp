@@ -54,8 +54,8 @@ class GPDAG : public TidySubsplitDAG {
   // Set p-PLVs to zero.
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
 
-  QuartetHybridRequest QuartetHybridRequestOf(size_t parent_id, size_t child_id,
-                                              bool rotated) const;
+  QuartetHybridRequest QuartetHybridRequestOf(size_t parent_id, bool rotated,
+                                              size_t child_id) const;
 
  private:
   [[nodiscard]] GPOperationVector LeafwardPass(const SizeVector &visit_order) const;
