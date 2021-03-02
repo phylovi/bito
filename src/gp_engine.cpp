@@ -118,8 +118,9 @@ void GPEngine::operator()(const GPOperations::Multiply& op) {
 
 void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_));
-  PreparePerPatternLogLikelihoodsForGPCSP(op.parent_, op.child_);
-  log_likelihoods_.row(op.dest_) = per_pattern_log_likelihoods_;
+  PreparePerPatternLogLikelihoodsForGPCSP(op.parent_plv_, op.child_plv_);
+  log_likelihoods_.row(op.dest_).array() =
+      per_pattern_log_likelihoods_.array() - log(q_[op.parent_id_]);
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {

@@ -97,17 +97,25 @@ struct Multiply {
 };
 
 // #288 this deserves a better description, and perhaps a better name.
-// Stores the likelihood of `plv[child_]` and `plv[parent_]` with branch length
-// branch_lengths[dest_], incorporating site pattern weights, in
-// `log_likelihoods[dest_]`
+// Stores the log likelihood of `plv[child_plv_]` and `plv[parent_plv_]` with branch
+// length branch_lengths[dest_], incorporating site pattern weights, and subtracting off
+// the log unconditional probability of the parent node, in `log_likelihoods[dest_]`
 struct Likelihood {
-  constexpr Likelihood(size_t dest, size_t child, size_t parent)
-      : dest_{dest}, child_{child}, parent_{parent} {}
+  constexpr Likelihood(size_t dest, size_t child_plv, size_t parent_plv,
+                       size_t parent_id)
+      : dest_{dest},
+        child_plv_{child_plv},
+        parent_plv_{parent_plv},
+        parent_id_{parent_id} {}
   size_t dest_;
-  size_t child_;
-  size_t parent_;
+  size_t child_plv_;
+  size_t parent_plv_;
+  size_t parent_id_;
   StringSizePairVector guts() const {
-    return {{"dest_", dest_}, {"child_", child_}, {"parent_", parent_}};
+    return {{"dest_", dest_},
+            {"child_plv_", child_plv_},
+            {"parent_plv_", parent_plv_},
+            {"parent_id_", parent_id_}};
   }
 };
 

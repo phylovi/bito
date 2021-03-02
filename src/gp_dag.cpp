@@ -139,9 +139,9 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
                                         const SubsplitDAGNode *child_node) {
           const auto gpcsp_idx =
               GetGPCSPIndex(node->GetBitset(rotated), child_node->GetBitset());
-          operations.push_back(Likelihood{gpcsp_idx,
-                                          GetPLVIndex(RPLVType(rotated), node->Id()),
-                                          GetPLVIndex(PLVType::P, child_node->Id())});
+          operations.push_back(
+              Likelihood{gpcsp_idx, GetPLVIndex(RPLVType(rotated), node->Id()),
+                         GetPLVIndex(PLVType::P, child_node->Id()), node->Id()});
         });
   });
 
@@ -349,7 +349,7 @@ void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
   });
   new_operations.push_back(Likelihood{gpcsp_idx,
                                       GetPLVIndex(RPLVType(rotated), node_id),
-                                      GetPLVIndex(PLVType::P, child_node_id)});
+                                      GetPLVIndex(PLVType::P, child_node_id), node_id});
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
