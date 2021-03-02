@@ -22,10 +22,10 @@ class SubsplitDAG {
   // EdgeAndNodeLambda takes a GPCSP index of an edge, its rotation status, and an index
   // of the node on the other side of the edge.
   using EdgeAndNodeLambda = std::function<void(const size_t, const bool, const size_t)>;
-  // ParentEdgeChildLambda takes three indices: the parent id in the DAG, the GCPSP
-  // index, and the child id.
-  using ParentEdgeChildLambda =
-      std::function<void(const size_t, const size_t, const size_t)>;
+  // ParentEdgeChildLambda takes: the parent id in the DAG, the rotation status of the
+  // edge, the child id, and the GCPSP index of the edge.
+  using ParentRotationChildEdgeLambda =
+      std::function<void(const size_t, const bool, const size_t, const size_t)>;
 
   SubsplitDAG();
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
@@ -139,7 +139,7 @@ class SubsplitDAG {
 
   // Do a postorder traversal on the edges of the DAG, supplying the relevant indices to
   // a lambda.
-  void ReversePostorderIndexTraversal(ParentEdgeChildLambda f) const;
+  void ReversePostorderIndexTraversal(ParentRotationChildEdgeLambda f) const;
 
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
