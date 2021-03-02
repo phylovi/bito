@@ -16,6 +16,8 @@
 
 using namespace GPOperations;  // NOLINT
 
+// #323 sort these methods
+
 void GPInstance::PrintStatus() {
   const auto tree_count = tree_collection_.TreeCount();
   const auto taxon_count = tree_collection_.TaxonCount();
@@ -177,6 +179,16 @@ void GPInstance::EstimateSBNParameters() {
   PopulatePLVs();
   ComputeLikelihoods();
   ProcessOperations(dag_.OptimizeSBNParameters());
+}
+
+void GPInstance::CalculateHybridMarginals() {
+  std::cout << "Calculating hybrid marginals\n";
+  PopulatePLVs();
+  dag_.ReversePostorderIndexTraversal([this](const size_t parent_id, const bool rotated,
+                                             const size_t child_id, const size_t) {
+    this->GetEngine()->ProcessQuartetHybridRequest(
+        dag_.QuartetHybridRequestOf(parent_id, rotated, child_id));
+  });
 }
 
 size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,

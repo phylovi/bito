@@ -36,6 +36,7 @@ class GPInstance {
   void PopulatePLVs();
   void ComputeLikelihoods();
   void ComputeMarginalLikelihood();
+  void CalculateHybridMarginals();
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
 
   // #273: A lot of code duplication here with things in SBNInstance.
