@@ -439,6 +439,8 @@ EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
 }
 
 void GPEngine::ProcessQuartetHybridRequest(const QuartetHybridRequest& request) {
-  hybrid_marginal_log_likelihoods_[request.central_gpcsp_idx_] =
-      CalculateQuartetHybridLikelihoods(request).sum();
+  if (request.IsComplete()) {
+    hybrid_marginal_log_likelihoods_[request.central_gpcsp_idx_] =
+        CalculateQuartetHybridLikelihoods(request).sum();
+  }
 }
