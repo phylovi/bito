@@ -547,6 +547,11 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   // likelihoods will be in the same order as the generated tree, but it worked here.
   EigenVectorXd manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
   CheckVectorXdEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
+
+  CHECK_EQ(request.IsComplete(), true);
+  CHECK_EQ(dag.QuartetHybridRequestOf(14, true, 13).IsComplete(), false);
+  CHECK_EQ(dag.QuartetHybridRequestOf(14, false, 0).IsComplete(), false);
+  CHECK_EQ(dag.QuartetHybridRequestOf(8, true, 4).IsComplete(), false);
 }
 
 // This is a slightly more complex test, that has a rotation status of true, and has

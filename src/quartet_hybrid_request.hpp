@@ -29,6 +29,9 @@ struct QuartetHybridRequest {
         rotated_tips_(std::move(rotated_tips)),
         sorted_tips_(std::move(sorted_tips)){};
 
+  // Are each of the tip vectors non-empty?
+  bool IsComplete() const;
+
   size_t central_gpcsp_idx_;
   QuartetTipVector rootward_tips_;
   QuartetTipVector sister_tips_;
