@@ -422,8 +422,10 @@ PYBIND11_MODULE(libsbn, m) {
            py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_)
       .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,
            "Use given trees to initialize branch lengths.")
+      .def("calculate_hybrid_marginals", &GPInstance::CalculateHybridMarginals,
+           "Calculate hybrid marginals.")
       .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
-           "EstimateSBNParameters.")
+           "Estimate the SBN parameters based on current branch lengths.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.", py::arg("tol"),
            py::arg("max_iter"), py::arg("quiet") = false);
