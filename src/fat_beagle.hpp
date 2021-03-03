@@ -66,8 +66,8 @@ class FatBeagle {
   template <typename TTree>
   std::vector<double> SubstitutionModelGradientFiniteDifference(
       std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
-      const TTree &tree, SubstitutionModel *subst_model, EigenVectorXdRef &parameters,
-      double delta = 1.e-8) const;
+      const TTree &tree, SubstitutionModel *subst_model,
+      const std::string &parameter_key, EigenVectorXd param_vector, double delta) const;
 
   template <typename TTree>
   std::vector<double> SubstitutionModelGradient(

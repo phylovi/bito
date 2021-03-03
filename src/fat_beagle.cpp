@@ -43,7 +43,6 @@ const BlockSpecification &FatBeagle::GetPhyloModelBlockSpecification() const {
 void FatBeagle::SetParameters(const EigenVectorXdRef param_vector) {
   phylo_model_->SetParameters(param_vector);
   UpdatePhyloModelInBeagle();
-  std::cout << "FatBeagle::SetParameters" << std::endl;
 }
 
 // This is the "core" of the likelihood calculation, assuming that the tree is
@@ -386,31 +385,33 @@ std::vector<double> DiscreteSiteModelGradient(
 template <typename TTree>
 std::vector<double> FatBeagle::SubstitutionModelGradientFiniteDifference(
     std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
-    const TTree &tree, SubstitutionModel *subst_model, EigenVectorXdRef &parameters,
-    double delta) const {
+    const TTree &tree, SubstitutionModel *subst_model, const std::string &parameter_key,
+    EigenVectorXd param_vector, double delta) const {
   StickBreakingTransform transform;
-  EigenVectorXd param_vector(10);
-  auto parameter_map =
-      subst_model->GetBlockSpecification().ParameterSegmentMapOf(param_vector);
+  auto parameter_map = subst_model->GetBlockSpecification().GetMap().at(parameter_key);
 
+  EigenVectorXd parameters =
+      param_vector.segment(parameter_map.first, parameter_map.second);
   EigenVectorXd parameters_reparameterized = transform.inverse(parameters);
 
   std::vector<double> gradient(parameters_reparameterized.size());
-  std::cout << "SubstitutionModelGradientFiniteDifference " << parameters_reparameterized << " " << parameters << std::endl;
   for (size_t i = 0; i < parameters_reparameterized.size(); i++) {
     double value = parameters_reparameterized[i];
     parameters_reparameterized[i] += delta;
 
-    parameters = transform(parameters_reparameterized);
+    param_vector.segment(parameter_map.first, parameter_map.second) =
+        transform(parameters_reparameterized);
     subst_model->SetParameters(param_vector);
     UpdateSubstitutionModelInBeagle();
     double log_prob_plus = f(fat_beagle, tree);
 
     parameters_reparameterized[i] = value - delta;
-    parameters = transform(parameters_reparameterized);
+    param_vector.segment(parameter_map.first, parameter_map.second) =
+        transform(parameters_reparameterized);
     subst_model->SetParameters(param_vector);
     UpdateSubstitutionModelInBeagle();
     double log_prob_minus = f(fat_beagle, tree);
+
     gradient[i] = (log_prob_plus - log_prob_minus) / (2. * delta);
 
     parameters_reparameterized[i] = value;
@@ -425,19 +426,21 @@ std::vector<double> FatBeagle::SubstitutionModelGradient(
     std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
     const TTree &tree) const {
   auto subst_model = phylo_model_->GetSubstitutionModel();
-  EigenVectorXd param_vector(10);
-  auto parameter_map =
-      subst_model->GetBlockSpecification().ParameterSegmentMapOf(param_vector);
-
-  auto frequencies = parameter_map.at(GTRModel::frequencies_key_);
-  std::cerr << "SubstitutionModelGradient frequencies" << frequencies << " "
-            << phylo_model_->GetSubstitutionModel()->GetFrequencies() << std::endl;
+  EigenVectorXd param_vector(subst_model->GetBlockSpecification().ParameterCount());
+  auto subst_map = subst_model->GetBlockSpecification().GetMap();
+  param_vector.segment(subst_map.at(GTRModel::frequencies_key_).first,
+                       subst_map.at(GTRModel::frequencies_key_).second) =
+      phylo_model_->GetSubstitutionModel()->GetFrequencies();
+  param_vector.segment(subst_map.at(GTRModel::rates_key_).first,
+                       subst_map.at(GTRModel::rates_key_).second) =
+      phylo_model_->GetSubstitutionModel()->GetRates();
+  double delta = 1.e-6;
   std::vector<double> frequencies_grad = SubstitutionModelGradientFiniteDifference(
-      f, fat_beagle, tree, subst_model, frequencies);
+      f, fat_beagle, tree, subst_model, GTRModel::frequencies_key_, param_vector,
+      delta);
 
-  auto rates = parameter_map.at(GTRModel::rates_key_);
   std::vector<double> rates_grad = SubstitutionModelGradientFiniteDifference(
-      f, fat_beagle, tree, subst_model, rates);
+      f, fat_beagle, tree, subst_model, GTRModel::rates_key_, param_vector, delta);
 
   std::vector<double> gradient(8);
   std::merge(frequencies_grad.begin(), frequencies_grad.end(), rates_grad.begin(),
@@ -457,7 +460,7 @@ PhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
   GradientMap gradient;
 
   // Calculate substitution model parameter gradient, if needed.
-  if (phylo_model_->GetSubstitutionModel()->GetRateCount() > 0) {
+  if (phylo_model_->GetSubstitutionModel()->GetRates().size() > 0) {
     FatBeagle *mutable_this = const_cast<FatBeagle *>(this);
     gradient["substitution_model"] = SubstitutionModelGradient<UnrootedTree>(
         FatBeagle::StaticUnrootedLogLikelihood, mutable_this, in_tree);
@@ -499,13 +502,9 @@ PhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
       BranchGradientInternals(tree.Topology(), branch_lengths, dQ);
 
   GradientMap gradient;
-  std::cout << "substitution_model =========="
-            << phylo_model_->GetSubstitutionModel()->GetRateCount() << std::endl;
   // Calculate substitution model parameter gradient, if needed.
-  if (phylo_model_->GetSubstitutionModel()->GetRateCount() > 0) {
+  if (phylo_model_->GetSubstitutionModel()->GetRates().size() > 0) {
     FatBeagle *mutable_this = const_cast<FatBeagle *>(this);
-    std::cout << "substitution_model " << gradient["substitution_model"].size()
-              << std::endl;
     gradient["substitution_model"] = SubstitutionModelGradient<RootedTree>(
         FatBeagle::StaticRootedLogLikelihood, mutable_this, tree);
   }
