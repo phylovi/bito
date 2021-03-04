@@ -1,5 +1,9 @@
 // Copyright 2019-2021 libsbn project contributors.
 // libsbn is free software under the GPLv3; see LICENSE file for details.
+//
+// This code closely follows
+// https://mc-stan.org/docs/2_26/reference-manual/simplex-transform-section.html
+// and so we follow their notation.
 
 #include "stick_breaking_transform.hpp"
 
@@ -17,13 +21,12 @@ EigenVectorXd StickBreakingTransform::operator()(EigenVectorXd const& y) const {
   size_t K = y.size() + 1;
   EigenVectorXd x(K);
   double stick = 1.0;
-  size_t k = 0;
-  for (; k < K - 1; k++) {
+  for (size_t k = 0; k < K - 1; k++) {
     double z = inverse_logit(y[k] - std::log(K - k - 1));
     x[k] = stick * z;
     stick -= x[k];
   }
-  x[k] = stick;
+  x[K - 1] = stick;
   return x;
 }
 
