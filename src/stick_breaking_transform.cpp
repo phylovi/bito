@@ -9,8 +9,8 @@ inline double logit(const double x) { return std::log(x / (1.0 - x)); }
 
 inline double log1p_exp(double a) {
   // prevents underflow
-  if (a > 0.0) return a + log1p(exp(-a));
-  return log1p(exp(a));
+  if (a > 0.0) return a + std::log1p(exp(-a));
+  return std::log1p(exp(a));
 }
 
 EigenVectorXd StickBreakingTransform::operator()(EigenVectorXd const& y) const {

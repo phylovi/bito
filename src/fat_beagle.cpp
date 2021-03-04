@@ -388,33 +388,34 @@ std::vector<double> FatBeagle::SubstitutionModelGradientFiniteDifference(
     const TTree &tree, SubstitutionModel *subst_model, const std::string &parameter_key,
     EigenVectorXd param_vector, double delta) const {
   StickBreakingTransform transform;
-  auto parameter_map = subst_model->GetBlockSpecification().GetMap().at(parameter_key);
+  auto [parameter_start, parameter_length] =
+      subst_model->GetBlockSpecification().GetMap().at(parameter_key);
 
-  EigenVectorXd parameters =
-      param_vector.segment(parameter_map.first, parameter_map.second);
+  EigenVectorXd parameters = param_vector.segment(parameter_start, parameter_length);
   EigenVectorXd parameters_reparameterized = transform.inverse(parameters);
 
   std::vector<double> gradient(parameters_reparameterized.size());
-  for (size_t i = 0; i < parameters_reparameterized.size(); i++) {
-    double value = parameters_reparameterized[i];
-    parameters_reparameterized[i] += delta;
+  for (size_t parameter_idx = 0; parameter_idx < parameters_reparameterized.size();
+       parameter_idx++) {
+    double original_parameter_value = parameters_reparameterized[parameter_idx];
+    parameters_reparameterized[parameter_idx] += delta;
 
-    param_vector.segment(parameter_map.first, parameter_map.second) =
+    param_vector.segment(parameter_start, parameter_length) =
         transform(parameters_reparameterized);
     subst_model->SetParameters(param_vector);
     UpdateSubstitutionModelInBeagle();
     double log_prob_plus = f(fat_beagle, tree);
 
-    parameters_reparameterized[i] = value - delta;
-    param_vector.segment(parameter_map.first, parameter_map.second) =
+    parameters_reparameterized[parameter_idx] = original_parameter_value - delta;
+    param_vector.segment(parameter_start, parameter_length) =
         transform(parameters_reparameterized);
     subst_model->SetParameters(param_vector);
     UpdateSubstitutionModelInBeagle();
     double log_prob_minus = f(fat_beagle, tree);
 
-    gradient[i] = (log_prob_plus - log_prob_minus) / (2. * delta);
+    gradient[parameter_idx] = (log_prob_plus - log_prob_minus) / (2. * delta);
 
-    parameters_reparameterized[i] = value;
+    parameters_reparameterized[parameter_idx] = original_parameter_value;
     subst_model->SetParameters(param_vector);
   }
   UpdateSubstitutionModelInBeagle();
@@ -434,6 +435,7 @@ std::vector<double> FatBeagle::SubstitutionModelGradient(
   param_vector.segment(subst_map.at(GTRModel::rates_key_).first,
                        subst_map.at(GTRModel::rates_key_).second) =
       phylo_model_->GetSubstitutionModel()->GetRates();
+  // #324: make delta part of a gradient request
   double delta = 1.e-6;
   std::vector<double> frequencies_grad = SubstitutionModelGradientFiniteDifference(
       f, fat_beagle, tree, subst_model, GTRModel::frequencies_key_, param_vector,
@@ -442,9 +444,8 @@ std::vector<double> FatBeagle::SubstitutionModelGradient(
   std::vector<double> rates_grad = SubstitutionModelGradientFiniteDifference(
       f, fat_beagle, tree, subst_model, GTRModel::rates_key_, param_vector, delta);
 
-  std::vector<double> gradient(8);
-  std::merge(frequencies_grad.begin(), frequencies_grad.end(), rates_grad.begin(),
-             rates_grad.end(), gradient.begin());
+  std::vector<double> gradient = rates_grad;
+  gradient.insert(gradient.end(), frequencies_grad.begin(), frequencies_grad.end());
   return gradient;
 }
 

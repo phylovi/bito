@@ -16,6 +16,8 @@ class Transform {
 };
 
 class StickBreakingTransform : public Transform {
+  // The stick breaking procedure as defined in Stan
+  // https://mc-stan.org/docs/2_26/reference-manual/simplex-transform-section.html
  public:
   EigenVectorXd operator()(EigenVectorXd const& x) const;
 
@@ -30,12 +32,17 @@ TEST_CASE("BreakingStickTransform") {
   EigenVectorXd y(3);
   y << 1., 2., 3.;
   EigenVectorXd x_expected(3);
+  // x_expected =
+  // torch.distributions.StickBreakingTransform()(torch.tensor([1., 2., 3.]))
   x_expected << 0.475367, 0.412879, 0.106454, 0.00530004;
   EigenVectorXd x = a(y);
   CheckVectorXdEquality(x, x_expected, 1.e-5);
   EigenVectorXd yy = a.inverse(x);
   CheckVectorXdEquality(y, yy, 1e-5);
-  CHECK_EQ(a.log_abs_det_jacobian(x, y), -9.108352, 1.e-5);
+  // log_abs_det_jacobian_expected =
+  // torch.distributions.StickBreakingTransform().log_abs_det_jacobian(y,x)
+  double log_abs_det_jacobian_expected = -9.108352;
+  CHECK_EQ(a.log_abs_det_jacobian(x, y), log_abs_det_jacobian_expected, 1.e-5);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
