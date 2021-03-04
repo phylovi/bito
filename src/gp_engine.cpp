@@ -230,6 +230,10 @@ EigenConstMatrixXdRef GPEngine::GetLogLikelihoodMatrix() const {
   return log_likelihoods_;
 };
 
+EigenConstVectorXdRef GPEngine::GetHybridMarginals() const {
+  return hybrid_marginal_log_likelihoods_;
+};
+
 EigenConstVectorXdRef GPEngine::GetSBNParameters() const { return q_; };
 
 void GPEngine::PrintPLV(size_t plv_idx) {
@@ -445,6 +449,8 @@ void GPEngine::ProcessQuartetHybridRequest(const QuartetHybridRequest& request) 
   if (request.IsComplete()) {
     EigenVectorXd hybrid_log_likelihoods = CalculateQuartetHybridLikelihoods(request);
     hybrid_marginal_log_likelihoods_[request.central_gpcsp_idx_] =
-        NumericalUtils::LogSum(hybrid_log_likelihoods);
+        // TODO do we want the LogSum? Or the LogSum average?
+        NumericalUtils::LogSum(hybrid_log_likelihoods) -
+        log(static_cast<double>(hybrid_log_likelihoods.size()));
   }
 }

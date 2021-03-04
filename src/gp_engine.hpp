@@ -66,6 +66,7 @@ class GPEngine {
   EigenVectorXd GetPerGPCSPComponentsOfFullLogMarginal() const;
   // #288 reconsider this name
   EigenConstMatrixXdRef GetLogLikelihoodMatrix() const;
+  EigenConstVectorXdRef GetHybridMarginals() const;
   EigenConstVectorXdRef GetSBNParameters() const;
 
   // Calculate a vector of likelihoods, one for each summand of the hybrid marginal.
