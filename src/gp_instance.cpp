@@ -16,8 +16,6 @@
 
 using namespace GPOperations;  // NOLINT
 
-// #323 sort these methods
-
 void GPInstance::PrintStatus() {
   const auto tree_count = tree_collection_.TreeCount();
   const auto taxon_count = tree_collection_.TaxonCount();
@@ -96,6 +94,15 @@ GPEngine *GPInstance::GetEngine() const {
 
 bool GPInstance::HasEngine() const { return engine_ != nullptr; }
 
+const GPDAG &GPInstance::GetDAG() { return dag_; }
+
+void GPInstance::PrintDAG() { dag_.Print(); }
+
+void GPInstance::PrintGPCSPIndexer() {
+  std::cout << "Vector of taxon names: " << tree_collection_.TaxonNames() << std::endl;
+  dag_.PrintGPCSPIndexer();
+}
+
 void GPInstance::ProcessOperations(const GPOperationVector &operations) {
   GetEngine()->ProcessOperations(operations);
 }
@@ -109,13 +116,6 @@ void GPInstance::HotStartBranchLengths() {
     Failwith(
         "Please load and process some trees before calling HotStartBranchLengths.");
   }
-}
-
-void GPInstance::PrintDAG() { dag_.Print(); }
-
-void GPInstance::PrintGPCSPIndexer() {
-  std::cout << "Vector of taxon names: " << tree_collection_.TaxonNames() << std::endl;
-  dag_.PrintGPCSPIndexer();
 }
 
 void GPInstance::PopulatePLVs() { ProcessOperations(dag_.PopulatePLVs()); }
@@ -288,8 +288,6 @@ StringDoubleVector GPInstance::PrettyIndexedVector(EigenConstVectorXdRef v) {
 EigenConstVectorXdRef GPInstance::GetSBNParameters() {
   return engine_->GetSBNParameters();
 }
-
-const GPDAG &GPInstance::GetDAG() { return dag_; }
 
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
   return PrettyIndexedVector(GetSBNParameters());
