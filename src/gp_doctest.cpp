@@ -466,7 +466,7 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
       0.5,      // 10 (analogous to 6)
       2. / 3.,  // 11
       0.5,      // 12
-      1.,       // 13
+      0.5,      // 13
       0.5,      // 14
       0.5,      // 15
       0.5,      // 16
