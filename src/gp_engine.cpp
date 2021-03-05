@@ -395,18 +395,24 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   }
 }
 
-// #323 rescaling factor
-// #323 transpose for down the tree
 EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
     const QuartetHybridRequest& request) {
+  auto CheckRescaling = [this](size_t plv_idx) {
+    Assert(rescaling_counts_[plv_idx] == 0,
+           "Rescaling not implemented in CalculateQuartetHybridLikelihoods.");
+  };
   std::vector<double> result;
   for (const auto& rootward_tip : request.rootward_tips_) {
+    CheckRescaling(rootward_tip.plv_idx_);
     const double rootward_tip_prior =
         unconditional_node_probabilities_[rootward_tip.tip_node_id_];
     const double log_rootward_tip_prior = log(rootward_tip_prior);
+    // #328 note that for the general case we should transpose the transition matrix
+    // when coming down the tree.
     SetTransitionMatrixToHaveBranchLength(branch_lengths_[rootward_tip.gpcsp_idx_]);
     quartet_root_plv_ = transition_matrix_ * plvs_.at(rootward_tip.plv_idx_);
     for (const auto& sister_tip : request.sister_tips_) {
+      CheckRescaling(sister_tip.plv_idx_);
       // Form the PLV on the root side of the central edge.
       SetTransitionMatrixToHaveBranchLength(branch_lengths_[sister_tip.gpcsp_idx_]);
       quartet_r_s_plv_.array() =
@@ -417,12 +423,14 @@ EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
           branch_lengths_[request.central_gpcsp_idx_]);
       quartet_q_s_plv_ = transition_matrix_ * quartet_r_s_plv_;
       for (const auto& rotated_tip : request.rotated_tips_) {
+        CheckRescaling(rotated_tip.plv_idx_);
         // Form the PLV on the root side of the sorted edge.
         SetTransitionMatrixToHaveBranchLength(branch_lengths_[rotated_tip.gpcsp_idx_]);
         quartet_r_sorted_plv_.array() =
             quartet_q_s_plv_.array() *
             (transition_matrix_ * plvs_.at(rotated_tip.plv_idx_)).array();
         for (const auto& sorted_tip : request.sorted_tips_) {
+          CheckRescaling(sorted_tip.plv_idx_);
           // P(sigma_{ijkl} | \eta)
           const double non_sequence_based_log_probability = log(
               inverted_sbn_prior_[rootward_tip.gpcsp_idx_] * q_[sister_tip.gpcsp_idx_] *
@@ -449,8 +457,6 @@ void GPEngine::ProcessQuartetHybridRequest(const QuartetHybridRequest& request) 
   if (request.IsComplete()) {
     EigenVectorXd hybrid_log_likelihoods = CalculateQuartetHybridLikelihoods(request);
     hybrid_marginal_log_likelihoods_[request.central_gpcsp_idx_] =
-        // TODO do we want the LogSum? Or the LogSum average?
-        NumericalUtils::LogSum(hybrid_log_likelihoods) -
-        log(static_cast<double>(hybrid_log_likelihoods.size()));
+        NumericalUtils::LogSum(hybrid_log_likelihoods);
   }
 }
