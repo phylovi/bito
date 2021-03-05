@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "rooted_gradient_transforms.hpp"
+#include "stick_breaking_transform.hpp"
 
 FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
                      const SitePattern &site_pattern,
@@ -262,7 +263,7 @@ void FatBeagle::UpdateSiteModelInBeagle() {
   beagleSetCategoryRates(beagle_instance_, rates.data());
 }
 
-void FatBeagle::UpdateSubstitutionModelInBeagle() {
+void FatBeagle::UpdateSubstitutionModelInBeagle() const {
   const auto &substitution_model = phylo_model_->GetSubstitutionModel();
   const EigenMatrixXd &eigenvectors = substitution_model->GetEigenvectors();
   const EigenMatrixXd &inverse_eigenvectors =
@@ -381,6 +382,73 @@ std::vector<double> DiscreteSiteModelGradient(
   return {rate_gradient};
 }
 
+template <typename TTree>
+std::vector<double> FatBeagle::SubstitutionModelGradientFiniteDifference(
+    std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
+    const TTree &tree, SubstitutionModel *subst_model, const std::string &parameter_key,
+    EigenVectorXd param_vector, double delta) const {
+  StickBreakingTransform transform;
+  auto [parameter_start, parameter_length] =
+      subst_model->GetBlockSpecification().GetMap().at(parameter_key);
+
+  EigenVectorXd parameters = param_vector.segment(parameter_start, parameter_length);
+  EigenVectorXd parameters_reparameterized = transform.inverse(parameters);
+
+  std::vector<double> gradient(parameters_reparameterized.size());
+  for (size_t parameter_idx = 0; parameter_idx < parameters_reparameterized.size();
+       parameter_idx++) {
+    double original_parameter_value = parameters_reparameterized[parameter_idx];
+    parameters_reparameterized[parameter_idx] += delta;
+
+    param_vector.segment(parameter_start, parameter_length) =
+        transform(parameters_reparameterized);
+    subst_model->SetParameters(param_vector);
+    UpdateSubstitutionModelInBeagle();
+    double log_prob_plus = f(fat_beagle, tree);
+
+    parameters_reparameterized[parameter_idx] = original_parameter_value - delta;
+    param_vector.segment(parameter_start, parameter_length) =
+        transform(parameters_reparameterized);
+    subst_model->SetParameters(param_vector);
+    UpdateSubstitutionModelInBeagle();
+    double log_prob_minus = f(fat_beagle, tree);
+
+    gradient[parameter_idx] = (log_prob_plus - log_prob_minus) / (2. * delta);
+
+    parameters_reparameterized[parameter_idx] = original_parameter_value;
+    subst_model->SetParameters(param_vector);
+  }
+  UpdateSubstitutionModelInBeagle();
+  return gradient;
+}
+
+template <typename TTree>
+std::vector<double> FatBeagle::SubstitutionModelGradient(
+    std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
+    const TTree &tree) const {
+  auto subst_model = phylo_model_->GetSubstitutionModel();
+  EigenVectorXd param_vector(subst_model->GetBlockSpecification().ParameterCount());
+  auto subst_map = subst_model->GetBlockSpecification().GetMap();
+  param_vector.segment(subst_map.at(GTRModel::frequencies_key_).first,
+                       subst_map.at(GTRModel::frequencies_key_).second) =
+      phylo_model_->GetSubstitutionModel()->GetFrequencies();
+  param_vector.segment(subst_map.at(GTRModel::rates_key_).first,
+                       subst_map.at(GTRModel::rates_key_).second) =
+      phylo_model_->GetSubstitutionModel()->GetRates();
+  // #324: make delta part of a gradient request
+  double delta = 1.e-6;
+  std::vector<double> frequencies_grad = SubstitutionModelGradientFiniteDifference(
+      f, fat_beagle, tree, subst_model, GTRModel::frequencies_key_, param_vector,
+      delta);
+
+  std::vector<double> rates_grad = SubstitutionModelGradientFiniteDifference(
+      f, fat_beagle, tree, subst_model, GTRModel::rates_key_, param_vector, delta);
+
+  std::vector<double> gradient = rates_grad;
+  gradient.insert(gradient.end(), frequencies_grad.begin(), frequencies_grad.end());
+  return gradient;
+}
+
 PhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
   auto tree = in_tree.Detrifurcate();
   tree.SlideRootPosition();
@@ -391,6 +459,14 @@ PhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
       BranchGradientInternals(tree.Topology(), tree.BranchLengths(), dQ);
 
   GradientMap gradient;
+
+  // Calculate substitution model parameter gradient, if needed.
+  if (phylo_model_->GetSubstitutionModel()->GetRates().size() > 0) {
+    FatBeagle *mutable_this = const_cast<FatBeagle *>(this);
+    gradient["substitution_model"] = SubstitutionModelGradient<UnrootedTree>(
+        FatBeagle::StaticUnrootedLogLikelihood, mutable_this, in_tree);
+  }
+
   auto site_model = phylo_model_->GetSiteModel();
   size_t category_count = site_model->GetCategoryCount();
 
@@ -428,7 +504,11 @@ PhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
 
   GradientMap gradient;
   // Calculate substitution model parameter gradient, if needed.
-  //    gradients["substmodel"] = SubstitutionModelGradient(tree, branch_gradient);
+  if (phylo_model_->GetSubstitutionModel()->GetRates().size() > 0) {
+    FatBeagle *mutable_this = const_cast<FatBeagle *>(this);
+    gradient["substitution_model"] = SubstitutionModelGradient<RootedTree>(
+        FatBeagle::StaticRootedLogLikelihood, mutable_this, tree);
+  }
 
   // Calculate site model parameter gradient, if needed.
   auto site_model = phylo_model_->GetSiteModel();

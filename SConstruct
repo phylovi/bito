@@ -165,6 +165,7 @@ sources = [
     "_build/scanner.cpp",
     "_build/site_model.cpp",
     "_build/site_pattern.cpp",
+    "_build/stick_breaking_transform.cpp",
     "_build/subsplit_dag.cpp",
     "_build/subsplit_dag_node.cpp",
     "_build/substitution_model.cpp",

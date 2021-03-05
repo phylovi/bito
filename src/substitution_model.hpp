@@ -21,6 +21,7 @@ class SubstitutionModel : public BlockModel {
 
   const EigenMatrixXd& GetQMatrix() const { return Q_; }
   const EigenVectorXd& GetFrequencies() const { return frequencies_; }
+  const EigenVectorXd& GetRates() const { return rates_; }
   // We follow BEAGLE in terminology. "Inverse Eigenvectors" means the inverse
   // of the matrix containing the eigenvectors.
   const EigenMatrixXd& GetEigenvectors() const { return eigenvectors_; }
@@ -36,6 +37,7 @@ class SubstitutionModel : public BlockModel {
 
  protected:
   EigenVectorXd frequencies_;
+  EigenVectorXd rates_;
   EigenMatrixXd eigenvectors_;
   EigenMatrixXd inverse_eigenvectors_;
   EigenVectorXd eigenvalues_;
@@ -73,13 +75,12 @@ class JC69Model : public DNAModel {
 
 class GTRModel : public DNAModel {
  public:
-  GTRModel() : DNAModel({{rates_key_, 6}, {frequencies_key_, 4}}) {
+  explicit GTRModel() : DNAModel({{rates_key_, 6}, {frequencies_key_, 4}}) {
     rates_.resize(6);
-    rates_ << 1.0, 1.0, 1.0, 1.0, 1.0, 1.0;
+    rates_.setConstant(1.0 / 6.0);
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
     Update();
   }
-
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
   inline const static std::string rates_key_ = "GTR rates";
@@ -89,9 +90,6 @@ class GTRModel : public DNAModel {
   void UpdateQMatrix();
   // Update the Q matrix _and_ the eigendecomposition.
   void Update();
-
- private:
-  EigenVectorXd rates_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -119,7 +117,7 @@ TEST_CASE("SubstitutionModel") {
   auto rates = parameter_map.at(GTRModel::rates_key_);
   // When we modify the contents of these views, that changes param_vector.
   frequencies.setConstant(0.25);
-  rates.setOnes();
+  rates.setConstant(1.0 / 6.0);
   // We can then set param_vector and go forward as before.
   gtr_model->SetParameters(param_vector);
   CheckEigenvalueEquality(jc_model->GetEigenvalues(), gtr_model->GetEigenvalues());
