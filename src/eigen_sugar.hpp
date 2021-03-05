@@ -64,7 +64,12 @@ void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
                            double tolerance) {
   CHECK_EQ(v1.size(), v2.size());
   for (size_t i = 0; i < v1.size(); i++) {
-    CHECK_LT(fabs(v1[i] - v2[i]), tolerance);
+    double error = fabs(v1[i] - v2[i]);
+    if (error > tolerance) {
+      std::cerr << "CheckVectorXdEquality failed for index " << i << ": " << v1[i]
+                << " vs " << v2[i] << std::endl;
+    }
+    CHECK_LT(error, tolerance);
   }
 };
 

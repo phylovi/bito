@@ -416,7 +416,7 @@ TEST_CASE("GPInstance: Priors") {
   CHECK_LT(fabs(all[5] - 1. / 3.), 1e-10);
 }
 
-TEST_CASE("GPInstance: flipped SBN parameters") {
+TEST_CASE("GPInstance: inverted GPCSP probabilities") {
   // Note that just for fun, I have duplicated the first tree, but that doesn't matter
   // because we are looking at uniform over topological support.
   auto inst =
@@ -451,9 +451,9 @@ TEST_CASE("GPInstance: flipped SBN parameters") {
   EigenVectorXd correct_inverted_probabilities(24);
   correct_inverted_probabilities <<  //
                                      //
-      0.,                            // 0 (rootsplit)
-      0.,                            // 1 (rootsplit)
-      0.,                            // 2 (rootsplit)
+      1.,                            // 0 (rootsplit)
+      1.,                            // 1 (rootsplit)
+      1.,                            // 2 (rootsplit)
       1. / 3.,                       // 3
       0.5,                           // 4
       1.,                            // 5
@@ -477,7 +477,7 @@ TEST_CASE("GPInstance: flipped SBN parameters") {
       0.75,     // 21
       0.75,     // 22
       0.25;     // 23
-  CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
+  CheckVectorXdEquality(inverted_probabilities, correct_inverted_probabilities, 1e-12);
 }
 
 TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {

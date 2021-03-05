@@ -50,7 +50,6 @@ class SubsplitDAG {
   size_t GetRootsplitIndex(const Bitset &rootsplit) const;
   // Access the value of the gpcsp_indexer_ at the given "expanded" PCSP.
   // Asserts to make sure that the PCSP is well formed.
-  // #323 change this to GPCSPIndexOfBitsets.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,
                        const Bitset &child_subsplit) const;
   // Get the GPCSP index from a parent-child pair of DAG nodes and the rotated status of
