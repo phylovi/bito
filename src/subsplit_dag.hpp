@@ -157,7 +157,7 @@ class SubsplitDAG {
   // compatible way as the gpcsp_indexer_ of the subsplit DAG.
   EigenVectorXd UnconditionalNodeProbabilities(
       EigenConstVectorXdRef normalized_sbn_parameters) const;
-  // Get a map from each non-fake (#323) subsplit to the probability of observing that
+  // Get a map from each non-fake subsplit to the probability of observing that
   // subsplit with the supplied SBN parameters. See
   // UnconditionalSubsplitProbabilityVector for notes.
   BitsetDoubleMap UnconditionalSubsplitProbabilities(

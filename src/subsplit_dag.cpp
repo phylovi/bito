@@ -318,7 +318,6 @@ RootedIndexerRepresentation SubsplitDAG::IndexerRepresentationOf(
                                                 default_index);
 }
 
-// #323 do we want to change this into log space?
 EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
     EigenConstVectorXdRef normalized_sbn_parameters) const {
   EigenVectorXd node_probabilities(NodeCount());
@@ -352,7 +351,6 @@ BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
   BitsetDoubleMap subsplit_probability_map;
   for (size_t node_id = 0; node_id < node_probabilities.size(); node_id++) {
     const auto &subsplit_bitset = GetDagNode(node_id)->GetBitset();
-    // #323 we could include fake subsplits
     if (!subsplit_bitset.SubsplitIsFake()) {
       SafeInsert(subsplit_probability_map, subsplit_bitset,
                  node_probabilities[node_id]);
