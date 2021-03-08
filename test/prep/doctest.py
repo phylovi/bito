@@ -18,6 +18,7 @@ preamble = """\
 #include "doctest.h"
 #include <string>
 #include "rooted_sbn_instance.hpp"
+#include "stick_breaking_transform.hpp"
 #include "taxon_name_munging.hpp"
 #include "unrooted_sbn_instance.hpp"
 
@@ -37,8 +38,8 @@ fp.write(t.write(format=9))
 fp.write('").Trees()[0];\n')
 
 traversal_translator = {
-    "preorder": "PreOrder",
-    "postorder": "PostOrder",
+    "preorder": "Preorder",
+    "postorder": "Postorder",
     "levelorder": "LevelOrder",
 }
 

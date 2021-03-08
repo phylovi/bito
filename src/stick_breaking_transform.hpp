@@ -36,7 +36,7 @@ TEST_CASE("BreakingStickTransform") {
   StickBreakingTransform a;
   EigenVectorXd y(3);
   y << 1., 2., 3.;
-  EigenVectorXd x_expected(3);
+  EigenVectorXd x_expected(4);
   // x_expected =
   // torch.distributions.StickBreakingTransform()(torch.tensor([1., 2., 3.]))
   x_expected << 0.475367, 0.412879, 0.106454, 0.00530004;
@@ -47,7 +47,8 @@ TEST_CASE("BreakingStickTransform") {
   // log_abs_det_jacobian_expected =
   // torch.distributions.StickBreakingTransform().log_abs_det_jacobian(y,x)
   double log_abs_det_jacobian_expected = -9.108352;
-  CHECK_EQ(a.log_abs_det_jacobian(x, y), log_abs_det_jacobian_expected, 1.e-5);
+  CHECK(a.log_abs_det_jacobian(x, y) ==
+        doctest::Approx(log_abs_det_jacobian_expected).epsilon(1.e-5));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
