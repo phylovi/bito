@@ -3,7 +3,9 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
+
 #include <string>
+
 #include "rooted_sbn_instance.hpp"
 #include "stick_breaking_transform.hpp"
 #include "taxon_name_munging.hpp"
