@@ -120,10 +120,12 @@ class GPEngine {
   // [5*num_nodes, 6*num_nodes): r(s_tilde).
   NucleotidePLVRefVector plvs_;
   EigenVectorXi rescaling_counts_;
-  // branch_lengths_ and q_ are indexed in the same way as sbn_parameters_ in
+  // branch_lengths_, q_, etc. are indexed in the same way as sbn_parameters_ in
   // gp_instance.
   EigenVectorXd branch_lengths_;
   EigenVectorXd q_;
+  EigenVectorXd unconditional_node_probabilities_;
+  EigenVectorXd inverted_sbn_prior_;
 
   // The number of rows is equal to the number of GPCSPs.
   // The number of columns is equal to the number of site patterns.
@@ -152,9 +154,7 @@ class GPEngine {
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
 
-  // For the quartet calculations.
-  EigenVectorXd unconditional_node_probabilities_;
-  EigenVectorXd inverted_sbn_prior_;
+  // For hybrid marginal calculations. #328
   // The PLV coming down from the root.
   EigenMatrixXd quartet_root_plv_;
   // The R-PLV pointing leafward from s.
