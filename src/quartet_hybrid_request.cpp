@@ -3,7 +3,7 @@
 
 #include "quartet_hybrid_request.hpp"
 
-bool QuartetHybridRequest::IsComplete() const {
+bool QuartetHybridRequest::IsFullyFormed() const {
   return !rootward_tips_.empty() && !sister_tips_.empty() && !rotated_tips_.empty() &&
          !sorted_tips_.empty();
 }
