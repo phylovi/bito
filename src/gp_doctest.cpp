@@ -482,8 +482,8 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
 
 TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
   const std::string fasta_path = "data/5-taxon-slice-of-ds1.fasta";
-  auto inst = GPInstanceOfFiles(
-      fasta_path, "data/5-taxon-hybrid-marginal-only-rootward-uncertainty-alt-2.nwk");
+  auto inst =
+      GPInstanceOfFiles(fasta_path, "data/5-taxon-only-rootward-uncertainty.nwk");
   EigenVectorXd branch_lengths(14);
   // The branch lengths contain the index of this GPCSP-indexed vector.
   branch_lengths << 0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13.;
