@@ -79,9 +79,7 @@ class GenericSBNInstance {
     return TSBNSupport::PCSPCounterOf(topologies);
   }
   StringVector PrettyIndexer() const { return sbn_support_.PrettyIndexer(); }
-  Node::TopologyCounter TopologyCounter() const {
-    return tree_collection_.TopologyCounter();
-  }
+  const Node::TopologyCounter &TopologyCounter() const { return topology_counter_; }
 
   // ** SBN-related items
 
@@ -92,11 +90,16 @@ class GenericSBNInstance {
     psp_indexer_ = sbn_support_.BuildPSPIndexer();
   }
 
+  // Use the given topologies to set up the TopologyCounter, SBNSupport, etc.
+  void SetAndProcessTopologyCounter(Node::TopologyCounter &&topology_counter) {
+    ClearTreeCollectionAssociatedState();
+    topology_counter_ = topology_counter;
+    SetSBNSupport(TSBNSupport(topology_counter_, tree_collection_.TaxonNames()));
+  };
+
   // Use the loaded trees to set up the TopologyCounter, SBNSupport, etc.
   void ProcessLoadedTrees() {
-    ClearTreeCollectionAssociatedState();
-    topology_counter_ = TopologyCounter();
-    SetSBNSupport(TSBNSupport(topology_counter_, tree_collection_.TaxonNames()));
+    SetAndProcessTopologyCounter(tree_collection_.TopologyCounter());
   };
 
   // Set the SBN parameters using a "pretty" map of SBNs.
@@ -141,7 +144,7 @@ class GenericSBNInstance {
 
   void CheckTopologyCounter() {
     if (TopologyCounter().empty()) {
-      Failwith("Please load some trees into your SBN instance.");
+      Failwith("Please load some trees into your SBN instance and process them.");
     }
   }
 
