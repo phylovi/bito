@@ -22,10 +22,10 @@ class SubsplitDAG {
   // EdgeAndNodeLambda takes a GPCSP index of an edge, its rotation status, and an index
   // of the node on the other side of the edge.
   using EdgeAndNodeLambda = std::function<void(const size_t, const bool, const size_t)>;
-  // ParentEdgeChildLambda takes three indices: the parent id in the DAG, the GCPSP
-  // index, and the child id.
-  using ParentEdgeChildLambda =
-      std::function<void(const size_t, const size_t, const size_t)>;
+  // ParentEdgeChildLambda takes: the parent id in the DAG, the rotation status of the
+  // edge, the child id, and the GCPSP index of the edge.
+  using ParentRotationChildEdgeLambda =
+      std::function<void(const size_t, const bool, const size_t, const size_t)>;
 
   SubsplitDAG();
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
@@ -50,7 +50,6 @@ class SubsplitDAG {
   size_t GetRootsplitIndex(const Bitset &rootsplit) const;
   // Access the value of the gpcsp_indexer_ at the given "expanded" PCSP.
   // Asserts to make sure that the PCSP is well formed.
-  // #323 change this to GPCSPIndexOfBitsets.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,
                        const Bitset &child_subsplit) const;
   // Get the GPCSP index from a parent-child pair of DAG nodes and the rotated status of
@@ -81,7 +80,7 @@ class SubsplitDAG {
   void IterateOverRootsplitIds(const std::function<void(size_t)> &f) const;
 
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
-  Node::NodePtrVec GenerateAllGPNodeIndexedTopologies() const;
+  Node::NodePtrVec GenerateAllTopologies() const;
 
   // Apply an Action via a depth first traversal. Do not visit leaf nodes.
   // Applied to a given node, we:
@@ -137,7 +136,9 @@ class SubsplitDAG {
   [[nodiscard]] SizeVector RootwardPassTraversal() const;
   [[nodiscard]] SizeVector ReversePostorderTraversal() const;
 
-  void ReversePostorderIndexTraversal(ParentEdgeChildLambda f) const;
+  // Do a reverse postorder traversal on the edges of the DAG, supplying the relevant
+  // indices to a lambda.
+  void ReversePostorderIndexTraversal(ParentRotationChildEdgeLambda f) const;
 
   // Discrete uniform distribution over each subsplit.
   [[nodiscard]] EigenVectorXd BuildUniformQ() const;
@@ -156,11 +157,16 @@ class SubsplitDAG {
   // compatible way as the gpcsp_indexer_ of the subsplit DAG.
   EigenVectorXd UnconditionalNodeProbabilities(
       EigenConstVectorXdRef normalized_sbn_parameters) const;
-  // Get a map from each non-fake (#323) subsplit to the probability of observing that
+  // Get a map from each non-fake subsplit to the probability of observing that
   // subsplit with the supplied SBN parameters. See
   // UnconditionalSubsplitProbabilityVector for notes.
   BitsetDoubleMap UnconditionalSubsplitProbabilities(
       EigenConstVectorXdRef normalized_sbn_parameters) const;
+  // Get a vector from each GPCSP index to the Bayes-inverted probability of sampling
+  // the parent given the child.
+  EigenVectorXd InvertedGPCSPProbabilities(
+      EigenConstVectorXdRef normalized_sbn_parameters,
+      EigenConstVectorXdRef node_probabilities) const;
 
  protected:
   size_t taxon_count_;

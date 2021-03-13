@@ -7,30 +7,40 @@
 #include "sugar.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
-                   const std::string& mmap_file_path, double rescaling_threshold)
+                   const std::string& mmap_file_path, double rescaling_threshold,
+                   EigenVectorXd sbn_prior,
+                   EigenVectorXd unconditional_node_probabilities,
+                   EigenVectorXd inverted_sbn_prior)
     : site_pattern_(std::move(site_pattern)),
       plv_count_(plv_count),
       rescaling_threshold_(rescaling_threshold),
       log_rescaling_threshold_(log(rescaling_threshold)),
-      mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()) {
-  Assert(plv_count_ > 0, "Zero PLV count in constructor of GPEngine.");
-  plvs_ = mmapped_master_plv_.Subdivide(plv_count_);
-  Assert(plvs_.size() == plv_count_,
-         "Didn't get the right number of PLVs out of Subdivide.");
+      mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()),
+      plvs_(mmapped_master_plv_.Subdivide(plv_count_)),
+      q_(std::move(sbn_prior)),
+      unconditional_node_probabilities_(std::move(unconditional_node_probabilities)),
+      inverted_sbn_prior_(std::move(inverted_sbn_prior)) {
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
              plvs_.back().cols() == site_pattern_.PatternCount(),
          "Didn't get the right shape of PLVs out of Subdivide.");
-  rescaling_counts_ = EigenVectorXi::Zero(plv_count_);
+  rescaling_counts_.resize(plv_count_);
+  rescaling_counts_.setZero();
   branch_lengths_.resize(gpcsp_count);
   branch_lengths_.setConstant(default_branch_length_);
   log_marginal_likelihood_.resize(site_pattern_.PatternCount());
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
   log_likelihoods_.resize(gpcsp_count, site_pattern_.PatternCount());
-  q_.resize(gpcsp_count);
 
   auto weights = site_pattern_.GetWeights();
-  site_pattern_weights_ =
-      Eigen::Map<Eigen::VectorXd, Eigen::Unaligned>(weights.data(), weights.size());
+  site_pattern_weights_ = EigenVectorXdOfStdVectorDouble(weights);
+
+  quartet_root_plv_ = plvs_.at(0);
+  quartet_root_plv_.setZero();
+  quartet_r_s_plv_ = quartet_root_plv_;
+  quartet_q_s_plv_ = quartet_root_plv_;
+  quartet_r_sorted_plv_ = quartet_root_plv_;
+  hybrid_marginal_log_likelihoods_.resize(gpcsp_count);
+  hybrid_marginal_log_likelihoods_.setConstant(DOUBLE_NEG_INF);
 
   InitializePLVsWithSitePatterns();
 }
@@ -71,7 +81,7 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
       rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
 }
 
-void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {
+void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {  // NOLINT
   ResetLogMarginalLikelihood();
 }
 
@@ -116,19 +126,30 @@ void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
   BrentOptimization(op);
 }
 
+EigenVectorXd NormalizedPosteriorOfLogUnnormalized(
+    EigenVectorXd log_unnormalized_posterior) {
+  const double log_norm = NumericalUtils::LogSum(log_unnormalized_posterior);
+  log_unnormalized_posterior.array() -= log_norm;
+  return log_unnormalized_posterior.array().exp();
+}
+
 void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
   const size_t range_length = op.stop_ - op.start_;
   if (range_length == 1) {
     q_(op.start_) = 1.;
-    return;
+  } else {
+    EigenVectorXd log_likelihoods;
+    EigenConstVectorXdRef our_hybrid_log_likelihoods =
+        hybrid_marginal_log_likelihoods_.segment(op.start_, range_length);
+    if (our_hybrid_log_likelihoods.minCoeff() > DOUBLE_NEG_INF) {
+      log_likelihoods = our_hybrid_log_likelihoods;
+    } else {
+      log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
+    }
+    EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
+    q_.segment(op.start_, range_length) =
+        NormalizedPosteriorOfLogUnnormalized(log_likelihoods + log_prior);
   }
-  // else
-  EigenVectorXd log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
-  EigenVectorXd log_prior = q_.segment(op.start_, range_length).array().log();
-  EigenVectorXd unnormalized_posterior = log_likelihoods + log_prior;
-  const double log_norm = NumericalUtils::LogSum(unnormalized_posterior);
-  unnormalized_posterior.array() -= log_norm;
-  q_.segment(op.start_, range_length) = unnormalized_posterior.array().exp();
 }
 
 void GPEngine::operator()(const GPOperations::PrepForMarginalization& op) {
@@ -170,14 +191,14 @@ void GPEngine::SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_l
 }
 
 void GPEngine::SetBranchLengths(EigenVectorXd branch_lengths) {
+  Assert(branch_lengths_.size() == branch_lengths.size(),
+         "Size mismatch in GPEngine::SetBranchLengths.");
   branch_lengths_ = std::move(branch_lengths);
 };
 
 void GPEngine::SetBranchLengthsToConstant(double branch_length) {
   branch_lengths_.setConstant(branch_length);
 };
-
-void GPEngine::SetSBNParameters(EigenVectorXd&& q) { q_ = std::move(q); };
 
 void GPEngine::ResetLogMarginalLikelihood() {
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
@@ -205,6 +226,10 @@ EigenVectorXd GPEngine::GetPerGPCSPComponentsOfFullLogMarginal() const {
 
 EigenConstMatrixXdRef GPEngine::GetLogLikelihoodMatrix() const {
   return log_likelihoods_;
+};
+
+EigenConstVectorXdRef GPEngine::GetHybridMarginals() const {
+  return hybrid_marginal_log_likelihoods_;
 };
 
 EigenConstVectorXdRef GPEngine::GetSBNParameters() const { return q_; };
@@ -365,5 +390,71 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
       // Normalize the branch length total using the counts to get a mean branch length.
       branch_lengths_(gpcsp_idx) /= static_cast<double>(gpcsp_counts(gpcsp_idx));
     }
+  }
+}
+
+EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
+    const QuartetHybridRequest& request) {
+  auto CheckRescaling = [this](size_t plv_idx) {
+    Assert(rescaling_counts_[plv_idx] == 0,
+           "Rescaling not implemented in CalculateQuartetHybridLikelihoods.");
+  };
+  std::vector<double> result;
+  for (const auto& rootward_tip : request.rootward_tips_) {
+    CheckRescaling(rootward_tip.plv_idx_);
+    const double rootward_tip_prior =
+        unconditional_node_probabilities_[rootward_tip.tip_node_id_];
+    const double log_rootward_tip_prior = log(rootward_tip_prior);
+    // #328 note that for the general case we should transpose the transition matrix
+    // when coming down the tree.
+    SetTransitionMatrixToHaveBranchLength(branch_lengths_[rootward_tip.gpcsp_idx_]);
+    quartet_root_plv_ = transition_matrix_ * plvs_.at(rootward_tip.plv_idx_);
+    for (const auto& sister_tip : request.sister_tips_) {
+      CheckRescaling(sister_tip.plv_idx_);
+      // Form the PLV on the root side of the central edge.
+      SetTransitionMatrixToHaveBranchLength(branch_lengths_[sister_tip.gpcsp_idx_]);
+      quartet_r_s_plv_.array() =
+          quartet_root_plv_.array() *
+          (transition_matrix_ * plvs_.at(sister_tip.plv_idx_)).array();
+      // Advance it along the edge.
+      SetTransitionMatrixToHaveBranchLength(
+          branch_lengths_[request.central_gpcsp_idx_]);
+      quartet_q_s_plv_ = transition_matrix_ * quartet_r_s_plv_;
+      for (const auto& rotated_tip : request.rotated_tips_) {
+        CheckRescaling(rotated_tip.plv_idx_);
+        // Form the PLV on the root side of the sorted edge.
+        SetTransitionMatrixToHaveBranchLength(branch_lengths_[rotated_tip.gpcsp_idx_]);
+        quartet_r_sorted_plv_.array() =
+            quartet_q_s_plv_.array() *
+            (transition_matrix_ * plvs_.at(rotated_tip.plv_idx_)).array();
+        for (const auto& sorted_tip : request.sorted_tips_) {
+          CheckRescaling(sorted_tip.plv_idx_);
+          // P(sigma_{ijkl} | \eta)
+          const double non_sequence_based_log_probability = log(
+              inverted_sbn_prior_[rootward_tip.gpcsp_idx_] * q_[sister_tip.gpcsp_idx_] *
+              q_[rotated_tip.gpcsp_idx_] * q_[sorted_tip.gpcsp_idx_]);
+          // Now calculate the sequence-based likelihood.
+          SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_tip.gpcsp_idx_]);
+          per_pattern_log_likelihoods_ =
+              (quartet_r_sorted_plv_.transpose() * transition_matrix_ *
+               plvs_.at(sorted_tip.plv_idx_))
+                  .diagonal()
+                  .array()
+                  .log();
+          per_pattern_log_likelihoods_.array() -= log_rootward_tip_prior;
+          result.push_back(non_sequence_based_log_probability +
+                           per_pattern_log_likelihoods_.dot(site_pattern_weights_));
+        }
+      }
+    }
+  }
+  return EigenVectorXdOfStdVectorDouble(result);
+}
+
+void GPEngine::ProcessQuartetHybridRequest(const QuartetHybridRequest& request) {
+  if (request.IsFullyFormed()) {
+    EigenVectorXd hybrid_log_likelihoods = CalculateQuartetHybridLikelihoods(request);
+    hybrid_marginal_log_likelihoods_[request.central_gpcsp_idx_] =
+        NumericalUtils::LogSum(hybrid_log_likelihoods);
   }
 }

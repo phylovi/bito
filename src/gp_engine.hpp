@@ -11,6 +11,7 @@
 #include "gp_operation.hpp"
 #include "mmapped_plv.hpp"
 #include "numerical_utils.hpp"
+#include "quartet_hybrid_request.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 #include "site_pattern.hpp"
@@ -19,7 +20,9 @@
 class GPEngine {
  public:
   GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
-           const std::string& mmap_file_path, double rescaling_threshold);
+           const std::string& mmap_file_path, double rescaling_threshold,
+           EigenVectorXd sbn_prior, EigenVectorXd unconditional_node_probabilities,
+           EigenVectorXd inverted_sbn_prior);
 
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
@@ -42,7 +45,6 @@ class GPEngine {
 
   void SetBranchLengths(EigenVectorXd branch_lengths);
   void SetBranchLengthsToConstant(double branch_length);
-  void SetSBNParameters(EigenVectorXd&& q);
   void ResetLogMarginalLikelihood();
   double GetLogMarginalLikelihood() const;
   EigenVectorXd GetBranchLengths() const;
@@ -64,7 +66,14 @@ class GPEngine {
   EigenVectorXd GetPerGPCSPComponentsOfFullLogMarginal() const;
   // #288 reconsider this name
   EigenConstMatrixXdRef GetLogLikelihoodMatrix() const;
+  EigenConstVectorXdRef GetHybridMarginals() const;
   EigenConstVectorXdRef GetSBNParameters() const;
+
+  // Calculate a vector of likelihoods, one for each summand of the hybrid marginal.
+  EigenVectorXd CalculateQuartetHybridLikelihoods(const QuartetHybridRequest& request);
+  // Calculate the actual hybrid marginal and store it in the corresponding entry of
+  // hybrid_marginal_log_likelihoods_.
+  void ProcessQuartetHybridRequest(const QuartetHybridRequest& request);
 
   void PrintPLV(size_t plv_idx);
 
@@ -93,6 +102,10 @@ class GPEngine {
   // j.
   EigenVectorXd log_marginal_likelihood_;
 
+  // This vector is indexed by the GPCSPs and stores the hybrid marginals if they are
+  // available.
+  EigenVectorXd hybrid_marginal_log_likelihoods_;
+
   SitePattern site_pattern_;
   size_t plv_count_;
   const double rescaling_threshold_;
@@ -107,10 +120,12 @@ class GPEngine {
   // [5*num_nodes, 6*num_nodes): r(s_tilde).
   NucleotidePLVRefVector plvs_;
   EigenVectorXi rescaling_counts_;
-  // branch_lengths_ and q_ are indexed in the same way as sbn_parameters_ in
+  // branch_lengths_, q_, etc. are indexed in the same way as sbn_parameters_ in
   // gp_instance.
   EigenVectorXd branch_lengths_;
   EigenVectorXd q_;
+  EigenVectorXd unconditional_node_probabilities_;
+  EigenVectorXd inverted_sbn_prior_;
 
   // The number of rows is equal to the number of GPCSPs.
   // The number of columns is equal to the number of site patterns.
@@ -138,6 +153,16 @@ class GPEngine {
   Eigen::Matrix4d derivative_matrix_;
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
+
+  // For hybrid marginal calculations. #328
+  // The PLV coming down from the root.
+  EigenMatrixXd quartet_root_plv_;
+  // The R-PLV pointing leafward from s.
+  EigenMatrixXd quartet_r_s_plv_;
+  // The Q-PLV pointing leafward from s.
+  EigenMatrixXd quartet_q_s_plv_;
+  // The R-PLV pointing leafward from t.
+  EigenMatrixXd quartet_r_sorted_plv_;
 
   void InitializePLVsWithSitePatterns();
 
@@ -184,9 +209,11 @@ class GPEngine {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("GPEngine") {
+  EigenVectorXd empty_vector;
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
   GPEngine engine(hello_site_pattern, 6 * 5, 5, "_ignore/mmapped_plv.data",
-                  GPEngine::default_rescaling_threshold_);
+                  GPEngine::default_rescaling_threshold_, empty_vector, empty_vector,
+                  empty_vector);
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29

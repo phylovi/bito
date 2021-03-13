@@ -8,11 +8,11 @@
 #define SRC_GP_DAG_HPP_
 
 #include "gp_engine.hpp"
+#include "quartet_hybrid_request.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 #include "subsplit_dag_node.hpp"
 #include "tidy_subsplit_dag.hpp"
-#include "tripod_hybrid_request.hpp"
 
 class GPDAG : public TidySubsplitDAG {
  public:
@@ -54,8 +54,8 @@ class GPDAG : public TidySubsplitDAG {
   // Set p-PLVs to zero.
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
 
-  TripodHybridRequest TripodHybridRequestOf(size_t parent_id, size_t child_id,
-                                            bool rotated) const;
+  QuartetHybridRequest QuartetHybridRequestOf(size_t parent_id, bool rotated,
+                                              size_t child_id) const;
 
  private:
   [[nodiscard]] GPOperationVector LeafwardPass(const SizeVector &visit_order) const;

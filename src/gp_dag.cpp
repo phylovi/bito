@@ -370,29 +370,47 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
-TripodHybridRequest GPDAG::TripodHybridRequestOf(size_t parent_id, size_t child_id,
-                                                 bool rotated) const {
-  std::vector<PLVPCSPPair> rootward_pairs;
+QuartetHybridRequest GPDAG::QuartetHybridRequestOf(size_t parent_id, bool rotated,
+                                                   size_t child_id) const {
+  QuartetTipVector rootward_tips;
   IterateOverRootwardEdgesAndParents(
       GetDagNode(parent_id),
-      [this, &rootward_pairs](const size_t gpcsp_idx, const bool rootward_rotated,
-                              const size_t grandparent_id) {
-        rootward_pairs.emplace_back(
-            GetPLVIndex(RPLVType(rootward_rotated), grandparent_id), gpcsp_idx);
+      [this, &rootward_tips](const size_t gpcsp_idx, const bool rootward_rotated,
+                             const size_t grandparent_id) {
+        rootward_tips.emplace_back(
+            grandparent_id, GetPLVIndex(RPLVType(rootward_rotated), grandparent_id),
+            gpcsp_idx);
       });
-  std::vector<PLVPCSPPair> rotated_pairs;
-  std::vector<PLVPCSPPair> sorted_pairs;
+
+  QuartetTipVector sister_tips;
+  const auto &parent_node = GetDagNode(parent_id);
+  const bool is_edge_to_sister_rotated = !rotated;
+  IterateOverLeafwardEdges(
+      parent_node, is_edge_to_sister_rotated,
+      [this, &parent_node, &sister_tips,
+       &is_edge_to_sister_rotated](const SubsplitDAGNode *sister_node) {
+        const auto sister_id = sister_node->Id();
+        sister_tips.emplace_back(
+            sister_id, GetPLVIndex(PLVType::P, sister_id),
+            GetGPCSPIndex(parent_node->GetBitset(is_edge_to_sister_rotated),
+                          sister_node->GetBitset()));
+      });
+
+  QuartetTipVector rotated_tips;
+  QuartetTipVector sorted_tips;
   IterateOverLeafwardEdgesAndChildren(
-      GetDagNode(child_id), [this, &rotated_pairs, &sorted_pairs](
+      GetDagNode(child_id), [this, &rotated_tips, &sorted_tips](
                                 const size_t gpcsp_idx, const bool leafward_rotated,
                                 const size_t grandchild_id) {
         if (leafward_rotated) {
-          rotated_pairs.emplace_back(GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
+          rotated_tips.emplace_back(grandchild_id,
+                                    GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
         } else {
-          sorted_pairs.emplace_back(GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
+          sorted_tips.emplace_back(grandchild_id,
+                                   GetPLVIndex(PLVType::P, grandchild_id), gpcsp_idx);
         }
       });
-  return TripodHybridRequest(GPCSPIndexOfIds(parent_id, rotated, child_id),
-                             std::move(rootward_pairs), std::move(rotated_pairs),
-                             std::move(sorted_pairs));
+  return QuartetHybridRequest(GPCSPIndexOfIds(parent_id, rotated, child_id),
+                              std::move(rootward_tips), std::move(sister_tips),
+                              std::move(rotated_tips), std::move(sorted_tips));
 }

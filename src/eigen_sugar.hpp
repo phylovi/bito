@@ -47,6 +47,12 @@ EigenVectorXd EigenVectorXdOfStdVectorT(const std::vector<T> &v,
   return results;
 }
 
+// Initialize a new EigenVectorXd using a std::vector<double>.
+// See test below showing that it is indeed a new vector, not a Map.
+inline EigenVectorXd EigenVectorXdOfStdVectorDouble(std::vector<double> &v) {
+  return Eigen::Map<EigenVectorXd, Eigen::Unaligned>(v.data(), v.size());
+}
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {
   for (size_t i = 0; i < v.size(); i++) {
@@ -58,7 +64,12 @@ void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
                            double tolerance) {
   CHECK_EQ(v1.size(), v2.size());
   for (size_t i = 0; i < v1.size(); i++) {
-    CHECK_LT(fabs(v1[i] - v2[i]), tolerance);
+    double error = fabs(v1[i] - v2[i]);
+    if (error > tolerance) {
+      std::cerr << "CheckVectorXdEquality failed for index " << i << ": " << v1[i]
+                << " vs " << v2[i] << std::endl;
+    }
+    CHECK_LT(error, tolerance);
   }
 };
 
@@ -70,6 +81,15 @@ void CheckVectorXdEqualityAfterSorting(const EigenVectorXdRef v1,
   std::sort(v2_sorted.begin(), v2_sorted.end());
   CheckVectorXdEquality(v1_sorted, v2_sorted, tolerance);
 };
+
+TEST_CASE(
+    "Make sure that EigenVectorXdOfStdVectorDouble makes a new vector rather than "
+    "wrapping data.") {
+  std::vector<double> a = {1., 2., 3., 4.};
+  EigenVectorXd b = EigenVectorXdOfStdVectorDouble(a);
+  a[0] = 99;
+  CHECK_EQ(b[0], 1.);
+}
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

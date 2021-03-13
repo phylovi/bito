@@ -173,7 +173,7 @@ EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
   return q;
 }
 
-Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
+Node::NodePtrVec SubsplitDAG::GenerateAllTopologies() const {
   std::vector<Node::NodePtrVec> topology_below(NodeCount());
 
   auto GetSubtopologies = [&topology_below](const SubsplitDAGNode *node) {
@@ -222,7 +222,18 @@ Node::NodePtrVec SubsplitDAG::GenerateAllGPNodeIndexedTopologies() const {
   Assert(topologies.size() == TopologyCount(),
          "The realized number of topologies does not match the expected count.");
 
-  return topologies;
+  // We return a deep copy of every Polished topology to avoid loops in the pointer
+  // structure. Such loops can create problems when we Polish the topologies one at a
+  // time: polishing a second topology can change the numbering of a previous topology.
+  // This is checked for in the "GPInstance: GenerateCompleteRootedTreeCollection" test.
+  Node::NodePtrVec final_topologies;
+  final_topologies.reserve(topologies.size());
+  for (auto &topology : topologies) {
+    topology->Polish();
+    final_topologies.push_back(topology->DeepCopy());
+  }
+
+  return final_topologies;
 }
 
 EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
@@ -307,7 +318,6 @@ RootedIndexerRepresentation SubsplitDAG::IndexerRepresentationOf(
                                                 default_index);
 }
 
-// #323 do we want to change this into log space?
 EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
     EigenConstVectorXdRef normalized_sbn_parameters) const {
   EigenVectorXd node_probabilities(NodeCount());
@@ -322,12 +332,12 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
       });
 
   ReversePostorderIndexTraversal([&node_probabilities, &normalized_sbn_parameters](
-                                     const size_t parent_id, const size_t gpcsp_index,
-                                     const size_t child_id) {
-    const double child_probability_given_parent =
-        normalized_sbn_parameters[gpcsp_index];
+                                     const size_t parent_id, const bool,
+                                     const size_t child_id, const size_t gpcsp_idx) {
+    const double child_probability_given_parent = normalized_sbn_parameters[gpcsp_idx];
     Assert(child_probability_given_parent >= 0. && child_probability_given_parent <= 1.,
-           "UnconditionalNodeProbabilities: got an unormalized probability.");
+           "UnconditionalNodeProbabilities: got an out-of-range probability. Are these "
+           "normalized and in linear space?");
     const double parent_probability = node_probabilities[parent_id];
     node_probabilities[child_id] += parent_probability * child_probability_given_parent;
   });
@@ -341,13 +351,33 @@ BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
   BitsetDoubleMap subsplit_probability_map;
   for (size_t node_id = 0; node_id < node_probabilities.size(); node_id++) {
     const auto &subsplit_bitset = GetDagNode(node_id)->GetBitset();
-    // #323 we could include fake subsplits
     if (!subsplit_bitset.SubsplitIsFake()) {
       SafeInsert(subsplit_probability_map, subsplit_bitset,
                  node_probabilities[node_id]);
     }
   }
   return subsplit_probability_map;
+}
+
+EigenVectorXd SubsplitDAG::InvertedGPCSPProbabilities(
+    EigenConstVectorXdRef normalized_sbn_parameters,
+    EigenConstVectorXdRef node_probabilities) const {
+  EigenVectorXd inverted_probabilities =
+      EigenVectorXd(normalized_sbn_parameters.size());
+  // The traversal doesn't set the rootsplit probabilities, but those are always 1
+  // (there is only one "parent" of a rootsplit).
+  inverted_probabilities.setOnes();
+  ReversePostorderIndexTraversal(
+      [&node_probabilities, &normalized_sbn_parameters, &inverted_probabilities](
+          const size_t parent_id, const bool, const size_t child_id,
+          const size_t gpcsp_idx) {
+        // For a PCSP t -> s:
+        inverted_probabilities[gpcsp_idx] =         // P(t|s)
+            node_probabilities[parent_id] *         // P(t)
+            normalized_sbn_parameters[gpcsp_idx] /  // P(s|t)
+            node_probabilities[child_id];           // P(s)
+      });
+  return inverted_probabilities;
 }
 
 std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const Bitset &subsplit,
@@ -530,12 +560,13 @@ SizeVector SubsplitDAG::ReversePostorderTraversal() const {
   return visit_order;
 }
 
-void SubsplitDAG::ReversePostorderIndexTraversal(ParentEdgeChildLambda f) const {
+void SubsplitDAG::ReversePostorderIndexTraversal(
+    ParentRotationChildEdgeLambda f) const {
   for (const auto node_id : ReversePostorderTraversal()) {
     IterateOverLeafwardEdgesAndChildren(
-        GetDagNode(node_id),
-        [&f, &node_id](const size_t gpcsp_index, const bool, const size_t child_id) {
-          f(node_id, gpcsp_index, child_id);
+        GetDagNode(node_id), [&f, &node_id](const size_t gpcsp_idx, const bool rotated,
+                                            const size_t child_id) {
+          f(node_id, rotated, child_id, gpcsp_idx);
         });
   }
 }
