@@ -141,9 +141,6 @@ void GPEngine::operator()(const GPOperations::UpdateSBNProbabilities& op) {
     EigenConstVectorXdRef our_hybrid_log_likelihoods =
         hybrid_marginal_log_likelihoods_.segment(op.start_, range_length);
     if (our_hybrid_log_likelihoods.minCoeff() > DOUBLE_NEG_INF) {
-      std::cout << "hybrid likelihoods:\t" << our_hybrid_log_likelihoods << std::endl;
-      std::cout << "original likelihoods:\t"
-                << GetPerGPCSPLogLikelihoods(op.start_, range_length) << std::endl;
       log_likelihoods = our_hybrid_log_likelihoods;
     } else {
       log_likelihoods = GetPerGPCSPLogLikelihoods(op.start_, range_length);
