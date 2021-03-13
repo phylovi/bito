@@ -189,9 +189,6 @@ void GPInstance::CalculateHybridMarginals() {
     this->GetEngine()->ProcessQuartetHybridRequest(
         dag_.QuartetHybridRequestOf(parent_id, rotated, child_id));
   });
-  // TODO(e) cut before merging
-  CSV::StringDoubleVectorToCSV(PrettyIndexedVector(GetEngine()->GetHybridMarginals()),
-                               "_ignore/hybrid-marginals.csv");
 }
 
 size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
