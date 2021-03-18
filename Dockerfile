@@ -1,4 +1,5 @@
-FROM quay.io/matsengrp/conda-beagle
+ARG BASE=quay.io/matsengrp/conda-beagle:latest
+FROM $BASE
 
 COPY environment.yml .
 
