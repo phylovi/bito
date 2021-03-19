@@ -175,7 +175,10 @@ EigenVectorXd RatioGradientOfHeightGradientEigen(
   for (size_t i = 0; i < height_gradient.size(); ++i) {
     height_gradient_vector[i] = height_gradient(i);
   }
-  auto vector_output = RatioGradientOfHeightGradient(tree, height_gradient_vector);
+  std::vector<double> vector_output =
+      UpdateGradientUnWeightedLogDensity(tree, height_gradient_vector);
+  vector_output[vector_output.size() - 1] =
+      UpdateHeightParameterGradientUnweightedLogDensity(tree, height_gradient_vector);
   EigenVectorXd eigen_output(vector_output.size());
   for (size_t i = 0; i < vector_output.size(); ++i) {
     eigen_output(i) = vector_output[i];
