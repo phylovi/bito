@@ -261,7 +261,9 @@ TEST_CASE("RootedSBNInstance: gradients") {
 
   auto likelihood = inst.LogLikelihoods();
   double physher_ll = -4777.616349;
-  CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
+  double physher_jacobian = -9.25135166;
+  double physher_ll_jacobian = physher_ll + physher_jacobian;
+  CHECK_LT(fabs(likelihood[0] - physher_ll_jacobian), 0.0001);
 
   auto gradients = inst.PhyloGradients();
   std::vector<double> physher_gradients = {
@@ -291,7 +293,9 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
 
   auto likelihood = inst.LogLikelihoods();
   double physher_ll = -4777.616349;
-  CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
+  double physher_jacobian = -9.25135166;
+  double physher_ll_jacobian = physher_ll + physher_jacobian;
+  CHECK_LT(fabs(likelihood[0] - physher_ll_jacobian), 0.0001);
 
   // Gradient with a strict clock.
   auto gradients_strict = inst.PhyloGradients();
@@ -334,7 +338,9 @@ TEST_CASE("RootedSBNInstance: GTR gradients") {
 
   auto likelihood = inst.LogLikelihoods();
   double phylotorch_ll = -5221.438941335706;
-  CHECK_LT(fabs(likelihood[0] - phylotorch_ll), 0.001);
+  double physher_jacobian = -9.25135166;
+  double expected_ll_jacobian = phylotorch_ll + physher_jacobian;
+  CHECK_LT(fabs(likelihood[0] - expected_ll_jacobian), 0.001);
 
   auto gradients = inst.PhyloGradients();
   std::vector<double> phylotorch_gradients = {49.06451538, 151.83105912, 26.40235659,
@@ -360,7 +366,9 @@ TEST_CASE("RootedSBNInstance: Weibull gradients") {
 
   auto likelihood = inst.LogLikelihoods();
   double physher_ll = -4618.2062529058;
-  CHECK_LT(fabs(likelihood[0] - physher_ll), 0.0001);
+  double physher_jacobian = -9.25135166;
+  double physher_ll_jacobian = physher_ll + physher_jacobian;
+  CHECK_LT(fabs(likelihood[0] - physher_ll_jacobian), 0.0001);
 
   // Gradient wrt Weibull site model.
   auto gradients = inst.PhyloGradients();
