@@ -15,7 +15,7 @@ This library is in an experimental state.
 
 Then, install **the `hmc-clock` branch** of [BEAGLE](https://github.com/beagle-dev/beagle-lib).
 This will require a from-source installation, as in their docs, but you have to do a full `git clone` (no `--depth=1`).
-We don't use Java, so you can use the `--without-jdk` flag in the configure script.
+We don't use Java, so you can use the `-DBUILD_JNI=OFF` flag with `cmake` to configure.
 You can see a full installation procedure by taking a look at the [conda-beagle Dockerfile](https://github.com/matsengrp/conda-beagle/blob/master/Dockerfile).
 
 To install additional dependencies, use the associated conda environment file:
@@ -145,7 +145,7 @@ If you are citing this library, please cite the NeurIPS and ICLR papers listed a
 We require BEAGLE, so please also cite these papers:
 
 * [BEAGLE 3](http://dx.doi.org/10.1093/sysbio/syz020)
-* [Linear-time, high-dimensional gradient in BEAGLE](http://arxiv.org/abs/1905.12146)
+* [Linear-time, high-dimensional gradient in BEAGLE](https://doi.org/10.1093/molbev/msaa130)
 
 
 ## Acknowledgements
