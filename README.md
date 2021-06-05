@@ -15,8 +15,7 @@ This library is in an experimental state.
 
 Then, install **the `hmc-clock` branch** of [BEAGLE](https://github.com/beagle-dev/beagle-lib).
 This will require a from-source installation, as in their docs, but you have to do a full `git clone` (no `--depth=1`).
-We don't use Java, so you can use the `-DBUILD_JNI=OFF` flag with `cmake` to configure.
-You can see a full installation procedure by taking a look at the [conda-beagle Dockerfile](https://github.com/matsengrp/conda-beagle/blob/master/Dockerfile).
+The BEAGLE install process is somewhat in flux, so it's best to look at the [conda-beagle Dockerfile](https://github.com/matsengrp/conda-beagle/blob/master/Dockerfile) and follow those steps.
 
 To install additional dependencies, use the associated conda environment file:
 
