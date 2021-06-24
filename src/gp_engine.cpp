@@ -124,8 +124,6 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
    BrentOptimization(op);
-  // LogSpaceGradientAscentOptimization(op);
-  // AdaptiveGradientAscentOptimization(op);
 }
 
 EigenVectorXd NormalizedPosteriorOfLogUnnormalized(
