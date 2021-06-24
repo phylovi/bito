@@ -136,11 +136,11 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
                                   const size_t max_iter) {
   size_t iter_idx = 0;
   while (true) {
-    double log_x = log(x);
+    double y = log(x);
     auto [f_x, f_prime_x] = f_and_f_prime(x);
     double log_space_grad = x * f_prime_x;
-    const double new_log_x = log_x + log_space_grad * log_space_step_size;
-    const double new_x = exp(new_log_x);
+    const double new_y = y + log_space_grad * log_space_step_size;
+    const double new_x = exp(new_y);
     x = std::max(new_x, min_x);
     if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
       return {x, f_x};
