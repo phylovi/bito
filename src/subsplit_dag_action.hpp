@@ -9,8 +9,7 @@
 #include <tuple>
 
 template <size_t I, typename... Args>
-// std::get returns by reference, but adding decay_t will provide the actual type.
-using TypeOf = std::decay_t<decltype(std::get<I>(std::declval<std::tuple<Args...>>()))>;
+using TypeOf = std::tuple_element_t<I, std::tuple<Args...>>;
 
 // An action to be performed as part of a traversal of the subsplit DAG.
 template <typename... Args>
