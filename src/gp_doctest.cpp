@@ -243,7 +243,7 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
 
-  inst.ResetMarginalLikelihoodAndPopulatePLVs();
+  inst.PopulatePLVs();
   inst.ComputeLikelihoods();
 
   size_t root_idx = root;
@@ -261,15 +261,6 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   // Expect log lik derivative: -18.22479569.
   CHECK_LT(fabs(log_lik_and_derivative.first - -84.77961943), 1e-6);
   CHECK_LT(fabs(log_lik_and_derivative.second - -18.22479569), 1e-6);
-}
-
-GPInstance MakeFluAGPInstance(double rescaling_threshold) {
-  GPInstance inst("_ignore/mmapped_plv.data");
-  inst.ReadFastaFile("data/fluA.fa");
-  inst.ReadNewickFile("data/fluA.tree");
-  inst.MakeEngine(rescaling_threshold);
-  inst.GetEngine()->SetBranchLengthsToConstant(0.01);
-  return inst;
 }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
