@@ -372,6 +372,7 @@ class GPEngine {
   void RescalePLVIfNeeded(size_t plv_idx);
   double LogRescalingFor(size_t plv_idx);
 
+  void TypeOfOptimization(const GPOperations::OptimizeBranchLength& op);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);

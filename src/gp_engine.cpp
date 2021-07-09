@@ -323,7 +323,7 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
-   BrentOptimization(op);
+  TypeOfOptimization(op);
 }
 
 EigenVectorXd NormalizedPosteriorOfLogUnnormalized(
@@ -569,6 +569,14 @@ void GPEngine::RescalePLVIfNeeded(size_t plv_idx) {
 
 double GPEngine::LogRescalingFor(size_t plv_idx) {
   return static_cast<double>(rescaling_counts_(plv_idx)) * log_rescaling_threshold_;
+}
+
+void GPEngine::TypeOfOptimization(const GPOperations::OptimizeBranchLength& op) {
+  if (op.use_gradients_ == true) {
+    LogSpaceGradientAscentOptimization(op);
+  } else {
+    BrentOptimization(op);
+  }
 }
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {

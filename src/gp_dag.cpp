@@ -27,7 +27,7 @@ GPOperation GPDAG::RUpdateOfRotated(size_t node_id, bool rotated) const {
 // that all of the PLVs are in a valid state.
 //
 // Update the terminology in this function as part of #288.
-GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
+GPOperationVector GPDAG::ApproximateBranchLengthOptimization(bool use_gradients) const {
   GPOperationVector operations;
   SubsplitDAG::DepthFirstWithAction(
       GetRootsplitNodeIds(),
@@ -74,7 +74,7 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
 // that all of the PLVs are in a valid state.
 //
 // Update the terminology in this function as part of #288.
-GPOperationVector GPDAG::BranchLengthOptimization() {
+GPOperationVector GPDAG::BranchLengthOptimization(bool use_gradients) {
   GPOperationVector operations;
   DepthFirstWithTidyAction(
       GetRootsplitNodeIds(),
@@ -327,7 +327,7 @@ void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
 }
 
 void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
-                                           bool rotated,
+                                           bool rotated, bool use_gradients,
                                            GPOperationVector &operations) const {
   size_t gpcsp_idx = GetEdgeIdx(node_id, child_node_id);
   operations.push_back(OptimizeBranchLength{

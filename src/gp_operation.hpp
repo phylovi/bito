@@ -116,13 +116,21 @@ struct Likelihood {
 // storing optimal branch length at `branch_lengths[branch_length_]`.
 // #288 are we happy with definition of rootward and leafward?
 struct OptimizeBranchLength {
-  constexpr OptimizeBranchLength(size_t leafward, size_t rootward, size_t gpcsp)
-      : leafward_{leafward}, rootward_{rootward}, gpcsp_{gpcsp} {}
+  constexpr OptimizeBranchLength(size_t leafward, size_t rootward, size_t gpcsp,
+                                 bool use_gradients)
+      : leafward_{leafward},
+        rootward_{rootward},
+        gpcsp_{gpcsp},
+        use_gradients_(use_gradients) {}
   size_t leafward_;
   size_t rootward_;
   size_t gpcsp_;
+  bool use_gradients_;
   StringSizePairVector guts() const {
-    return {{"leafward_", leafward_}, {"rootward_", rootward_}, {"gpcsp_", gpcsp_}};
+    return {{"leafward_", leafward_},
+            {"rootward_", rootward_},
+            {"gpcsp_", gpcsp_},
+            {"use_gradients_", use_gradients_}};
   }
 };
 
@@ -191,15 +199,15 @@ struct PrepForMarginalizationVisitor {
     src_vector.push_back(op.src_);
   }
   // Do nothing for the rest of the operations.
-  void operator()(const GPOperations::ZeroPLV&) {}                      // NOLINT
-  void operator()(const GPOperations::SetToStationaryDistribution&) {}  // NOLINT
-  void operator()(const GPOperations::ResetMarginalLikelihood&) {}      // NOLINT
-  void operator()(const GPOperations::IncrementMarginalLikelihood&) {}  // NOLINT
-  void operator()(const GPOperations::Multiply&) {}                     // NOLINT
-  void operator()(const GPOperations::Likelihood&) {}                   // NOLINT
-  void operator()(const GPOperations::OptimizeBranchLength&) {}         // NOLINT
-  void operator()(const GPOperations::UpdateSBNProbabilities&) {}       // NOLINT
-  void operator()(const GPOperations::PrepForMarginalization&) {}       // NOLINT
+  void operator()(const GPOperations::ZeroPLV&) {}                            // NOLINT
+  void operator()(const GPOperations::SetToStationaryDistribution&) {}        // NOLINT
+  void operator()(const GPOperations::ResetMarginalLikelihood&) {}            // NOLINT
+  void operator()(const GPOperations::IncrementMarginalLikelihood&) {}        // NOLINT
+  void operator()(const GPOperations::Multiply&) {}                           // NOLINT
+  void operator()(const GPOperations::Likelihood&) {}                         // NOLINT
+  void operator()(const GPOperations::OptimizeBranchLength&) {}               // NOLINT
+  void operator()(const GPOperations::UpdateSBNProbabilities&) {}             // NOLINT
+  void operator()(const GPOperations::PrepForMarginalization&) {}             // NOLINT
 
   GPOperations::PrepForMarginalization ToPrepForMarginalization() {
     Assert(dest_, "Nothing to prep in ToPrepForMarginalization");
