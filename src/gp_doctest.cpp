@@ -287,7 +287,7 @@ double ObtainLikelihoodWithOptimization(bool use_gradients) {
 TEST_CASE("GPInstance: Gradient-based optimization") {
   double difference =
       ObtainLikelihoodWithOptimization(false) - ObtainLikelihoodWithOptimization(true);
-  CHECK_LT(fabs(difference), 1e-6);
+  CHECK_LT(fabs(difference), 1e-6); // Difference is currently within 0.001
 }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
