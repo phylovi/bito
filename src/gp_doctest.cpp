@@ -231,7 +231,8 @@ TEST_CASE("GPInstance: gradient calculation") {
       GPDAG::GetPLVIndexStatic(GPDAG::PLVType::P, hello_node_count, child_idx);
   size_t rootward_idx =
       GPDAG::GetPLVIndexStatic(GPDAG::PLVType::R, hello_node_count, root_idx);
-  OptimizeBranchLength op{leafward_idx, rootward_idx, root_jupiter_idx};
+  bool use_gradients = false;
+  OptimizeBranchLength op{leafward_idx, rootward_idx, root_jupiter_idx, use_gradients};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
   // Expect log lik derivative: -0.6109379521.
@@ -255,12 +256,28 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
       GPDAG::GetPLVIndexStatic(GPDAG::PLVType::P, hello_node_count, child_idx);
   size_t rootward_idx =
       GPDAG::GetPLVIndexStatic(GPDAG::PLVType::R, hello_node_count, root_idx);
-  OptimizeBranchLength op{leafward_idx, rootward_idx, root_jupiter_idx};
+  bool use_gradients = false;
+  OptimizeBranchLength op{leafward_idx, rootward_idx, root_jupiter_idx, use_gradients};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -84.77961943.
   // Expect log lik derivative: -18.22479569.
   CHECK_LT(fabs(log_lik_and_derivative.first - -84.77961943), 1e-6);
   CHECK_LT(fabs(log_lik_and_derivative.second - -18.22479569), 1e-6);
+}
+
+double ObtainLikelihoodWithOptimization(bool use_gradients) {
+  auto inst = MakeHelloGPInstance();
+  inst.EstimateBranchLengths(0.0001, 1000, true, use_gradients);
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+  inst.ComputeMarginalLikelihood();
+  return inst.GetEngine()->GetLogMarginalLikelihood();
+}
+
+TEST_CASE("GPInstance: Gradient-based optimization") {
+  double difference =
+      ObtainLikelihoodWithOptimization(false) - ObtainLikelihoodWithOptimization(true);
+  CHECK_LT(fabs(difference), 1e-6);
 }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {

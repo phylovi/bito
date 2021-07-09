@@ -29,9 +29,9 @@ class GPDAG : public TidySubsplitDAG {
   size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
 
   // Optimize branch lengths without handling out of date PLVs.
-  [[nodiscard]] GPOperationVector ApproximateBranchLengthOptimization() const;
+  [[nodiscard]] GPOperationVector ApproximateBranchLengthOptimization(bool use_gradients) const;
   // Schedule branch length, updating PLVs so they are always up to date.
-  [[nodiscard]] GPOperationVector BranchLengthOptimization();
+  [[nodiscard]] GPOperationVector BranchLengthOptimization(bool use_gradients);
   // Compute likelihood values l(s|t) for each child subsplit s by visiting
   // parent subsplit t and generating Likelihood operations for each PCSP s|t.
   // Compute likelihood values l(s) for each rootsplit s by calling
@@ -74,7 +74,7 @@ class GPDAG : public TidySubsplitDAG {
   void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
                                    GPOperationVector &operations) const;
   void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
-                                      bool rotated,
+                                      bool rotated, bool use_gradients,
                                       GPOperationVector &operations) const;
 };
 

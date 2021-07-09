@@ -32,7 +32,8 @@ class GPInstance {
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();
   void EstimateSBNParameters();
-  void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false);
+  void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false,
+                             bool use_gradients = false);
   void PopulatePLVs();
   void ComputeLikelihoods();
   void ComputeMarginalLikelihood();
