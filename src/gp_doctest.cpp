@@ -585,3 +585,13 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
   EigenVectorXd manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
   CheckVectorXdEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
 }
+
+TEST_CASE("GPInstance: test GPCSP indexes") {
+  const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
+  auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
+  auto& dag = inst.GetDAG();
+  dag.ReversePostorderIndexTraversal(
+      [&dag](size_t parent_id, bool rotated, size_t child_id, size_t gpcsp_idx) {
+        CHECK_EQ(dag.GPCSPIndexOfIds(parent_id, child_id), gpcsp_idx);
+      });
+}

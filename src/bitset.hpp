@@ -94,13 +94,17 @@ class Bitset {
   // These functions require the bitset to be a "PCSP bitset" with three
   // equal-sized "chunks".
   // The first chunk represents the sister clade, the second the focal clade,
-  // and the third chunk describes the children. The children are well defined
-  // relative to the cut parent: the other part of the subsplit is the cut
-  // parent setminus the child.
+  // and the third chunk describes the "child 0" clade of the child subsplit.
+  // We define "child 0" as the clade of a child subsplit that has a bitset with
+  // the smaller binary representation.
+  // The children are well defined relative to the cut parent: the other part of
+  // the subsplit, "child 1" is the cut parent setminus child 0.
+  //
   // For example, `100011001` is composed of the chunks `100`, `011` and `001`.
   // If the taxa are x0, x1, and x2 then this means the parent subsplit is (A,
-  // BC), and the child subsplit is (B,C). See the unit tests at the bottom for
-  // more examples.
+  // BC) with bitset `100|001`, and the child subsplit is (B, C) with bitset
+  // `010|001.` Child 0 is the clade `001` and child 1 is the clade `010.`
+  // See the unit tests at the bottom for more examples.
   std::string PCSPToString() const;
   bool PCSPIsValid() const;
   bool PCSPIsFake() const;
