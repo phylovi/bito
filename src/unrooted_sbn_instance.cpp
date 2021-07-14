@@ -114,8 +114,8 @@ UnrootedSBNInstance::RangeVector UnrootedSBNInstance::GetSubsplitRanges(
   // PROFILE: should we be reserving here?
   subsplit_ranges.emplace_back(0, sbn_support_.RootsplitCount());
   Bitset root = sbn_support_.RootsplitsAt(rooted_representation[0]);
-  PushBackRangeForParentIfAvailable(root + ~root, subsplit_ranges);
-  PushBackRangeForParentIfAvailable(~root + root, subsplit_ranges);
+  PushBackRangeForParentIfAvailable(root, subsplit_ranges);
+  PushBackRangeForParentIfAvailable(root.RotateSubsplit(), subsplit_ranges);
   // Starting at 1 here because we took care of the rootsplit above (the 0th element).
   for (size_t i = 1; i < rooted_representation.size(); i++) {
     Bitset child = sbn_support_.IndexToChildAt(rooted_representation[i]);

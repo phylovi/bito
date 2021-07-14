@@ -18,7 +18,7 @@ using namespace GPOperations;  // NOLINT
 // GPCSP stands for generalized PCSP-- see text.
 
 // Let the "venus" node be the common ancestor of mars and saturn.
-enum HelloGPCSP { jupiter, mars, saturn, venus, root };
+enum HelloGPCSP { jupiter, mars, saturn, venus, rootsplit, root };
 
 // *** GPInstances used for testing ***
 
@@ -34,6 +34,7 @@ GPInstance GPInstanceOfFiles(const std::string& fasta_path,
 // Our tree is (see check below)
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
+// #349: Update image to match tests.
 // https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
 GPInstance MakeHelloGPInstance(const std::string& fasta_path) {
   auto inst = GPInstanceOfFiles(fasta_path, "data/hello_rooted.nwk");
@@ -159,8 +160,9 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
                              const StringDoubleVector& gp_vector) {
   for (const auto& [gp_string, gp_value] : gp_vector) {
     if (exact_map.find(gp_string) == exact_map.end()) {
-      Assert(!Bitset(gp_string.substr(gp_string.rfind('|') + 1)).Any(),
-             "Missing a non-fake bitset in CheckExactMapVsGPVector.");
+      Assert(!Bitset(gp_string.substr(0, gp_string.find('|') - 1)).Any() ||
+                 !Bitset(gp_string.substr(gp_string.rfind('|') + 1)).Any(),
+             "Missing an internal node in CheckExactMapVsGPVector.");
     } else {
       const double tolerance = 1e-5;
       const double error = fabs(exact_map.at(gp_string) - gp_value);
@@ -209,6 +211,7 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
 TEST_CASE("GPInstance: marginal likelihood on seven taxa and four trees") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
+  // #349: Update images to match tests.
   // https://github.com/phylovi/libsbn/issues/323#issuecomment-783349464
   TestCompositeMarginal(
       GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal-all-trees.nwk"),
@@ -222,16 +225,16 @@ TEST_CASE("GPInstance: gradient calculation") {
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
 
-  size_t root_idx = root;
-  size_t child_idx = jupiter;
-  size_t hello_node_count = 5;
-  size_t root_jupiter_idx = 2;
+  size_t rootsplit_id = rootsplit;
+  size_t child_id = jupiter;
+  size_t hello_node_count_without_dag_root_node = 5;
+  size_t rootsplit_jupiter_idx = 2;
 
-  size_t leafward_idx =
-      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::P, hello_node_count, child_idx);
-  size_t rootward_idx =
-      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::R, hello_node_count, root_idx);
-  OptimizeBranchLength op{leafward_idx, rootward_idx, root_jupiter_idx};
+  size_t leafward_idx = GPDAG::GetPLVIndexStatic(
+      GPDAG::PLVType::P, hello_node_count_without_dag_root_node, child_id);
+  size_t rootward_idx = GPDAG::GetPLVIndexStatic(
+      GPDAG::PLVType::R_TILDE, hello_node_count_without_dag_root_node, rootsplit_id);
+  OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
   // Expect log lik derivative: -0.6109379521.
@@ -422,28 +425,30 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
   auto inst =
       GPInstanceOfFiles("data/five_taxon.fasta", "data/five_taxon_rooted_more_2.nwk");
   // See the DAG and the uniform probabilities at
+  // #349: Update images to match tests.
   // https://github.com/phylovi/libsbn/issues/323#issuecomment-785410551
   const auto& dag = inst.GetDAG();
   EigenVectorXd normalized_sbn_parameters = dag.BuildUniformOnTopologicalSupportPrior();
   EigenVectorXd node_probabilities =
       dag.UnconditionalNodeProbabilities(normalized_sbn_parameters);
-  EigenVectorXd correct_node_probabilities(15);
+  EigenVectorXd correct_node_probabilities(16);
   correct_node_probabilities <<  //
       1.,                        // 0
       1.,                        // 1
       1.,                        // 2
       1.,                        // 3
       1.,                        // 4
-      0.5,                       // 5
-      0.25,                      // 6
-      0.75,                      // 7
+      0.75,                      // 5
+      0.5,                       // 6
+      0.25,                      // 7
       0.25,                      // 8
       0.5,                       // 9
       0.25,                      // 10
       0.25,                      // 11
       0.5,                       // 12
       0.5,                       // 13
-      0.25;                      // 14
+      0.25,                      // 14
+      1.;                        // 15 (DAG root node)
   CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
 
   EigenVectorXd inverted_probabilities =
@@ -490,6 +495,7 @@ TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   // Because the branch lengths contain the GPCSP index, we can check that the indices
   // correspond to what we see in the GPCSP DAG in
+  // #349: Update images to match tests.
   // https://github.com/phylovi/libsbn/issues/323#issuecomment-787451356
   CHECK_EQ(inst.GenerateCompleteRootedTreeCollection().Newick(),
            "((0:7,1:9):3,(2:11,(3:12,4:13):5):2):0;\n"
@@ -522,6 +528,7 @@ EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
 TEST_CASE("GPInstance: simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
+  // #349: Update images to match tests.
   // https://github.com/phylovi/libsbn/issues/323#issuecomment-783349464
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
@@ -559,6 +566,7 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
 TEST_CASE("GPInstance: second simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
+  // #349: Update images to match tests.
   // https://github.com/phylovi/libsbn/issues/323#issuecomment-787963552
   auto inst = GPInstanceOfFiles(fasta_path, "data/second-simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
@@ -594,4 +602,14 @@ TEST_CASE("GPInstance: test GPCSP indexes") {
       [&dag](size_t parent_id, bool rotated, size_t child_id, size_t gpcsp_idx) {
         CHECK_EQ(dag.GPCSPIndexOfIds(parent_id, child_id), gpcsp_idx);
       });
+}
+
+TEST_CASE("GPInstance: test rootsplits") {
+  const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
+  auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
+  auto& dag = inst.GetDAG();
+  for (const auto& rootsplit_id : dag.RootsplitIds()) {
+    const auto rootsplit_node = dag.GetDAGNode(rootsplit_id);
+    CHECK(rootsplit_node->IsRootsplit());
+  }
 }

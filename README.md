@@ -73,13 +73,16 @@ Please see our detailed [contribution guidelines](CONTRIBUTING.md).
 * Erick Matsen ([@matsen](https://github.com/matsen)): implementation, design, janitorial duties
 * Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation of substitution models and likelihoods/gradients, design
 * Seong-Hwan Jun ([@junseonghwan](https://github.com/junseonghwan)): generalized pruning design and implementation, implementation of SBN gradients, design
-* Hassan Nasif ([@hrnasif](https://github.com/hrnasif)): hot start for generalized pruning
+* Hassan Nasif ([@hrnasif](https://github.com/hrnasif)): hot start for generalized pruning; gradient descent for generalized pruning
+* Anna Kooperberg ([@annakooperberg](https://github.com/annakooperberg)): refactoring the subsplit DAG
+* Sho Kiami ([@shokiami](https://github.com/shokiami)): refactoring the subsplit DAG
+* Tanvi Ganapathy ([@tanviganapathy](https://github.com/tanviganapathy)): refactoring the subsplit DAG
+* Ognian Milanov ([@ognian-](https://github.com/ognian-)): C++ wisdom, compressed files
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
 * Xiang Ji ([@xji3](https://github.com/xji3)): gradient expertise and node height code
 * Marc Suchard ([@msuchard](https://github.com/msuchard)): gradient expertise and node height code
 * Michael Karcher ([@mdkarcher](https://github.com/mdkarcher)): SBN expertise
-* Ognian Milanov ([@ognian-](https://github.com/ognian-)): C++ wisdom
 * Eric J. Isaac ([@EricJIsaac](https://github.com/EricJIsaac)): C++ wisdom
 
 

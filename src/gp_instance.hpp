@@ -39,7 +39,7 @@ class GPInstance {
   void CalculateHybridMarginals();
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
 
-  // #273: A lot of code duplication here with things in SBNInstance.
+  // #348: A lot of code duplication here with things in SBNInstance.
   StringVector PrettyIndexer() const;
   EigenConstVectorXdRef GetSBNParameters();
   StringDoubleVector PrettyIndexedSBNParameters();
@@ -91,7 +91,6 @@ class GPInstance {
                                   const Node *leaf_node) const;
   RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
       Node::NodePtrVec &&topologies) const;
-  BitsetSizeMap UnexpandedIndexer() const;
   StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
 };
 

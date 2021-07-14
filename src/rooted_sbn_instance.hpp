@@ -19,7 +19,7 @@ class RootedSBNInstance : public PreRootedSBNInstance {
 
   // ** SBN-related items
 
-  // Turn an IndexerRepresentation into a string representation of the underying
+  // Turn an IndexerRepresentation into a string representation of the underlying
   // bitsets. This is really just so that we can make a test of indexer
   // representations.
   StringSet StringIndexerRepresentationOf(
@@ -140,9 +140,9 @@ TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
   // verify it by hand. There is the block structure in which the two children of
   // 10000|01111 are grouped together.
   StringSet correct_pretty_indexer_set{
-      "00111",              // ((x0,x1),(x2,(x3,x4)))
-      "01111",              // (x0,(((x1,x3),x2),x4)) and ((x1,((x2,x4),x3)),x0)
-      "00010",              // (x3,((x0,(x4,x1)),x2))
+      "00000|11111|00111",  // ((x0,x1),(x2,(x3,x4)))
+      "00000|11111|01111",  // (x0,(((x1,x3),x2),x4)) and ((x1,((x2,x4),x3)),x0)
+      "00000|11111|00010",  // (x3,((x0,(x4,x1)),x2))
       "00100|01010|00010",  // ((x1,x3),x2)
       "00111|11000|01000",  // ((x0,x1),(x2,(x3,x4)))
       "00100|00011|00001",  // (x2,(x3,x4))
@@ -161,8 +161,9 @@ TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
   // Test of rooted IndexerRepresentationOf.
   // Topology is ((0,1),(2,(3,4)));, or with internal nodes ((0,1)5,(2,(3,4)6)7)8;
   auto indexer_test_rooted_topology = Node::OfParentIdVector({5, 5, 7, 6, 6, 8, 7, 8});
-  auto correct_rooted_indexer_representation = StringSet(
-      {"00111", "11000|00111|00011", "00100|00011|00001", "00111|11000|01000"});
+  auto correct_rooted_indexer_representation =
+      StringSet({"00000|11111|00111", "11000|00111|00011", "00100|00011|00001",
+                 "00111|11000|01000"});
   CHECK_EQ(inst.StringIndexerRepresentationOf(indexer_test_rooted_topology,
                                               out_of_sample_index),
            correct_rooted_indexer_representation);
@@ -170,9 +171,9 @@ TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
   inst.TrainSimpleAverage();
   StringVector correct_taxon_names({"x0", "x1", "x2", "x3", "x4"});
   CHECK_EQ(inst.SBNSupport().TaxonNames(), correct_taxon_names);
-  StringDoubleVector correct_parameters({{"00111", 0.25},
-                                         {"01111", 0.5},
-                                         {"00010", 0.25},
+  StringDoubleVector correct_parameters({{"00000|11111|00111", 0.25},
+                                         {"00000|11111|01111", 0.5},
+                                         {"00000|11111|00010", 0.25},
                                          {"00100|01010|00010", 1},
                                          {"00111|11000|01000", 1},
                                          {"00100|00011|00001", 1},
@@ -188,7 +189,11 @@ TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
   std::sort(correct_parameters.begin(), correct_parameters.end());
   auto parameters = inst.PrettyIndexedSBNParameters();
   std::sort(parameters.begin(), parameters.end());
-  CHECK_EQ(correct_parameters, parameters);
+  CHECK_EQ(correct_parameters.size(), parameters.size());
+  for (size_t i = 0; i < correct_parameters.size(); i++) {
+    CHECK_EQ(correct_parameters[i].first, parameters[i].first);
+    CHECK_LT(fabs(correct_parameters[i].second - parameters[i].second), 1e-8);
+  }
 }
 
 TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
@@ -196,11 +201,12 @@ TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
   inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
+  // #349: Update images to match tests.
   // See diagram at https://github.com/phylovi/libsbn/issues/323#issuecomment-785080187
   // Numbering in comments is...                               node: subsplit.
-  StringDoubleMap correct_parameters({{"0011111000", 0.5},  // 10: 01|234
-                                      {"0111110000", 0.3},  // 15: 0|1234
-                                      {"0001011101", 0.2},  // 19: 0124|3
+  StringDoubleMap correct_parameters({{"1100000111", 0.5},  // 10: 01|234
+                                      {"1000001111", 0.3},  // 15: 0|1234
+                                      {"1110100010", 0.2},  // 19: 0124|3
                                       {"1100100100", 0.2},  // 18: 014|2
                                       {"0100000111", 0.1},  // 14: 1|234
                                       {"0111000001", 0.2},  // 13: 123|4

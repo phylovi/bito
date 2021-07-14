@@ -21,8 +21,8 @@ PSPIndexer::PSPIndexer(BitsetVector rootsplits, BitsetSizeMap in_indexer) {
     // The first condition allows us to skip the rootsplits. We only want the
     // PCSPs here. The second condition is because the "primary" part of Primary
     // Subsplit Pair means that the parent split is a rootsplit.
-    if (iter.second >= rootsplits.size() && pcsp.PCSPIsRootsplit()) {
-      SafeInsert(indexer_, pcsp.PCSPWithoutParent(), index);
+    if (iter.second >= rootsplits.size() && pcsp.PCSPParentIsRootsplit()) {
+      SafeInsert(indexer_, pcsp.PCSPChildSubsplit(), index);
       index++;
     }
   }
@@ -32,11 +32,7 @@ PSPIndexer::PSPIndexer(BitsetVector rootsplits, BitsetSizeMap in_indexer) {
 StringVector PSPIndexer::ToStringVector() const {
   std::vector<std::string> reversed_indexer(indexer_.size() + 1);
   for (const auto& iter : indexer_) {
-    if (iter.second < after_rootsplits_index_) {
-      reversed_indexer[iter.second] = iter.first.ToString();
-    } else {
-      reversed_indexer[iter.second] = iter.first.SubsplitToString();
-    }
+    reversed_indexer[iter.second] = iter.first.SubsplitToString();
   }
   // Add an extra entry at the end for the split that doesn't exist.
   reversed_indexer[indexer_.size()] = "";
@@ -48,44 +44,29 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) con
   SizeVector rootsplit_result(topology->Id(), first_empty_index_);
   SizeVector psp_result_down(topology->Id(), first_empty_index_);
   SizeVector psp_result_up(topology->Id(), first_empty_index_);
-  const auto leaf_count = topology->LeafCount();
-  Bitset rootsplit_bitset(leaf_count);
-  Bitset psp_bitset(2 * leaf_count);
-  auto rootsplit_index = [&rootsplit_bitset,
-                          &indexer = this->indexer_](const Node* node) {
-    rootsplit_bitset.Zero();
-    rootsplit_bitset.CopyFrom(node->Leaves(), 0, false);
-    rootsplit_bitset.Minorize();
-    return indexer.at(rootsplit_bitset);
+  auto rootsplit_index = [& indexer = this->indexer_](const Node* node) {
+    return indexer.at(Bitset::RootsplitOfHalf(node->Leaves()));
   };
   // Here we use the terminology in the 2019 ICLR paper (screenshotted in
   // https://github.com/phylovi/libsbn/issues/95) looking at the right-hand case
   // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
   // we use analogous notation.
-  auto psp_index = [&psp_bitset, &leaf_count, &indexer = this->indexer_](
-                       const Bitset& z1, const Bitset& z2, const Bitset& z) {
-    psp_bitset.Zero();
-    // Set Z in the middle location.
-    psp_bitset.CopyFrom(z, 0, false);
-    psp_bitset.CopyFrom(std::min(z1, z2), leaf_count, false);
-    return indexer.at(psp_bitset);
+  auto psp_index = [& indexer = this->indexer_](const Bitset& z1, const Bitset& z2) {
+    return indexer.at(std::max(z1, z2) + std::min(z1, z2));
   };
   topology->TriplePreorder(
-      // f_root
+      // f_rootsplit
       [&rootsplit_result, &psp_result_up, &rootsplit_index, &psp_index](
           const Node* node0, const Node* node1, const Node* node2) {
         rootsplit_result[node0->Id()] = rootsplit_index(node0);
-        psp_result_up[node0->Id()] =
-            psp_index(node1->Leaves(), node2->Leaves(), ~node0->Leaves());
+        psp_result_up[node0->Id()] = psp_index(node1->Leaves(), node2->Leaves());
       },
       // f_internal
       [&rootsplit_result, &psp_result_up, &psp_result_down, &rootsplit_index,
        &psp_index](const Node* node, const Node* sister, const Node* parent) {
         rootsplit_result[node->Id()] = rootsplit_index(node);
-        psp_result_up[node->Id()] =
-            psp_index(~parent->Leaves(), sister->Leaves(), ~node->Leaves());
-        psp_result_down[parent->Id()] =
-            psp_index(node->Leaves(), sister->Leaves(), parent->Leaves());
+        psp_result_up[node->Id()] = psp_index(~parent->Leaves(), sister->Leaves());
+        psp_result_down[parent->Id()] = psp_index(node->Leaves(), sister->Leaves());
       });
   return {rootsplit_result, psp_result_down, psp_result_up};
 }
@@ -94,7 +75,6 @@ StringVectorVector PSPIndexer::StringRepresentationOf(
     const Node::NodePtr& topology) const {
   StringVector reversed_indexer = ToStringVector();
   StringVectorVector result;
-
   for (const auto& partial_representation : RepresentationOf(topology)) {
     StringVector str_partial_representation;
     for (const auto& index : partial_representation) {
