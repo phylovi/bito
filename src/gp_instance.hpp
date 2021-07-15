@@ -21,7 +21,9 @@ class GPInstance {
 
   void ReadFastaFile(const std::string &fname);
   void ReadNewickFile(const std::string &fname);
+  void ReadNewickFileGZ(const std::string &fname);
   void ReadNexusFile(const std::string &fname);
+  void ReadNexusFileGZ(const std::string &fname);
 
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;

@@ -53,9 +53,13 @@ class Driver {
   TreeCollection ParseString(const std::string& s);
   // Run the parser on a Newick file.
   TreeCollection ParseNewickFile(const std::string& fname);
+  // Run the parser on a gzip-ed Newick file.
+  TreeCollection ParseNewickFileGZ(const std::string& fname);
   // Run the parser on a Nexus file. The Nexus file must have a translate block, and the
   // leaf tags are assigned according to the order of names in the translate block.
   TreeCollection ParseNexusFile(const std::string& fname);
+  // Run the parser on a gzip-ed Nexus file. Check ParseNexusFile() for details.
+  TreeCollection ParseNexusFileGZ(const std::string& fname);
   // Clear out stored state.
   void Clear();
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
@@ -67,7 +71,11 @@ class Driver {
   // Parse a string with an existing parser object.
   Tree ParseString(yy::parser* parser_instance, const std::string& str);
   // Run the parser on a Newick stream.
-  TreeCollection ParseNewick(std::ifstream& in);
+  TreeCollection ParseNewick(std::istream& in);
+  // Runs ParseNewick() and dequotes the resulting trees.
+  TreeCollection ParseAndDequoteNewick(std::istream& in);
+  // Run the parser on a Nexus stream.
+  TreeCollection ParseNexus(std::istream& in);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -95,6 +103,10 @@ TEST_CASE("Driver") {
   auto newick_collection = driver.ParseNewickFile("data/DS1.subsampled_10.t.nwk");
   CHECK_EQ(nexus_collection, newick_collection);
   driver.Clear();
+  auto newick_collection_gz =
+      driver.ParseNewickFileGZ("data/DS1.subsampled_10.t.nwk.gz");
+  CHECK_EQ(nexus_collection, newick_collection_gz);
+  driver.Clear();
   auto five_taxon = driver.ParseNewickFile("data/five_taxon_unrooted.nwk");
   std::vector<std::string> correct_five_taxon_names({"x0", "x1", "x2", "x3", "x4"});
   CHECK_EQ(five_taxon.TaxonNames(), correct_five_taxon_names);
@@ -115,6 +127,9 @@ TEST_CASE("Driver") {
   for (const auto& [topology, count] : beast_nexus.TopologyCounter()) {
     CHECK_EQ(topology->LeafCount(), beast_taxa.size());
   }
+  auto beast_nexus_gz =
+      driver.ParseNexusFileGZ("data/test_beast_tree_parsing.nexus.gz");
+  CHECK_EQ(beast_nexus, beast_nexus_gz);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 

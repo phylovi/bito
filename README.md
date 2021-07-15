@@ -36,10 +36,12 @@ For your first build, do
 * `git submodule update --init --recursive`
 * `scons`
 * Respond to interactive prompts about where `hmc-clock` BEAGLE is installed
-* `conda activate libsbn`
+* `conda activate libsbn` &nbsp; **(this is an important step, even though you are already in the libsbn conda environment)**
 * `make`
 
 After these steps `make` will build, run tests, and install the Python packages, and this should be the only command you need to run after modifying the code.
+
+Note that `scons` and `make` accept `-j` flags for multi-core builds: e.g. `-j20` will build with 20 jobs.
 
 The build process will modify the conda environment to point `[DY]LD_LIBRARY_PATH` to where BEAGLE is installed.
 If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.

@@ -46,10 +46,22 @@ void GPInstance::ReadNewickFile(const std::string &fname) {
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
 }
 
+void GPInstance::ReadNewickFileGZ(const std::string &fname) {
+  Driver driver;
+  tree_collection_ =
+      RootedTreeCollection::OfTreeCollection(driver.ParseNewickFileGZ(fname));
+}
+
 void GPInstance::ReadNexusFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
+}
+
+void GPInstance::ReadNexusFileGZ(const std::string &fname) {
+  Driver driver;
+  tree_collection_ =
+      RootedTreeCollection::OfTreeCollection(driver.ParseNexusFileGZ(fname));
 }
 
 void GPInstance::CheckSequencesAndTreesLoaded() const {
