@@ -154,6 +154,21 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
   }
 }
 
+DoublePair NewtonRaphsonOptimization(
+    std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
+    double x, const double tolerance, const double min_x, const size_t max_iter) {
+  size_t iter_idx = 0;
+  while (true) {
+    auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
+    const double new_x = x - f_prime_x / f_double_prime_x;
+    x = std::max(new_x, min_x);
+    if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
+      return {x, f_x};
+    }
+    ++iter_idx;
+  }
+}
+
 DoublePair AdaptiveGradientAscent(
     std::function<DoublePair(double)> f_and_f_prime, double x, const double tolerance,
     const double default_step_size, const double uniformity_bound,
@@ -189,17 +204,14 @@ DoublePair AdaptiveGradientAscent(
 
     while (f_candidate_x < min_f + acceptance_threshold) {
       lambda_step_size = lambda_step_size * rescaling_constant;
-      candidate_log_x =
-          std::max(log_x + log_space_grad * lambda_step_size, log_x);
+      candidate_log_x = std::max(log_x + log_space_grad * lambda_step_size, log_x);
       candidate_x = exp(candidate_log_x);
       auto [f_candidate_x, f_prime_candidate_x] = f_and_f_prime(candidate_x);
-      acceptance_threshold =
-          threshold_const * lambda_step_size * log_space_grad_sq;
+      acceptance_threshold = threshold_const * lambda_step_size * log_space_grad_sq;
     }
 
     x = exp(candidate_log_x);
-    alpha = (-log_space_grad *
-             (f_prime_candidate_x * candidate_x - log_space_grad)) /
+    alpha = (-log_space_grad * (f_prime_candidate_x * candidate_x - log_space_grad)) /
             (lambda_step_size * log_space_grad_sq);
 
     if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
