@@ -156,6 +156,8 @@ class GPEngine {
                              const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
+  std::tuple<double, double, double> LogLikelihoodAndFirstTwoDerivatives(
+      const GPOperations::OptimizeBranchLength& op);
 
   // ** I/O
 
@@ -335,6 +337,8 @@ class GPEngine {
   EigenVectorXd per_pattern_likelihoods_;
   EigenVectorXd per_pattern_likelihood_derivatives_;
   EigenVectorXd per_pattern_likelihood_derivative_ratios_;
+  EigenVectorXd per_pattern_likelihood_second_derivatives_;
+  EigenVectorXd per_pattern_likelihood_second_derivative_ratios_;
 
   // ** Model
 
@@ -349,6 +353,7 @@ class GPEngine {
   Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
   Eigen::Matrix4d transition_matrix_;
   Eigen::Matrix4d derivative_matrix_;
+  Eigen::Matrix4d hessian_matrix_;
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
 
@@ -377,7 +382,14 @@ class GPEngine {
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void AdaptiveGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
-  
+
+  inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
+                                                                     size_t src2_idx) {
+    per_pattern_likelihood_second_derivatives_ =
+        (plvs_.at(src1_idx).transpose() * hessian_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array();
+  }
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
                                                                size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
