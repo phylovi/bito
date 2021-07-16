@@ -182,6 +182,9 @@ void GPEngine::SetTransitionAndDerivativeMatricesToHaveBranchLength(
   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
   diagonal_matrix_.diagonal() = eigenvalues_.array() * diagonal_vector_.array();
   derivative_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+  diagonal_matrix_.diagonal() =
+      eigenvalues_.array() * eigenvalues_.array() * diagonal_vector_.array();
+  hessian_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
 }
 
 void GPEngine::SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length) {
@@ -263,6 +266,43 @@ DoublePair GPEngine::LogLikelihoodAndDerivative(
   const double log_likelihood_derivative =
       per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
   return {log_likelihood, log_likelihood_derivative};
+}
+
+std::tuple<double, double, double> GPEngine::LogLikelihoodAndFirstTwoDerivatives(
+    const GPOperations::OptimizeBranchLength& op) {
+  SetTransitionAndDerivativeMatricesToHaveBranchLength(branch_lengths_(op.gpcsp_));
+  PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
+
+  const double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+
+  // The per-site likelihood derivative is calculated in the same way as the per-site
+  // likelihood, but using the derivative matrix instead of the transition matrix.
+  // We first prepare two useful vectors _without_ likelihood rescaling, because the
+  // rescalings cancel out in the ratio below.
+  PrepareUnrescaledPerPatternLikelihoodDerivatives(op.rootward_, op.leafward_);
+  PrepareUnrescaledPerPatternLikelihoods(op.rootward_, op.leafward_);
+  // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
+  // of l_i divided by l_i.
+  per_pattern_likelihood_derivative_ratios_ =
+      per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
+  const double log_likelihood_gradient =
+      per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
+
+  // Second derivative is calculated the same way, but has an extra term due to
+  // the product rule
+
+  PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(op.rootward_, op.leafward_);
+
+  per_pattern_likelihood_second_derivative_ratios_ =
+      per_pattern_likelihood_second_derivatives_.array() /
+      per_pattern_likelihoods_.array();
+
+  const double log_likelihood_hessian =
+      per_pattern_likelihood_second_derivative_ratios_.dot(site_pattern_weights_) -
+      std::pow(log_likelihood_gradient, 2);
+
+  return std::make_tuple(log_likelihood, log_likelihood_gradient,
+                         log_likelihood_hessian);
 }
 
 void GPEngine::InitializePLVsWithSitePatterns() {
