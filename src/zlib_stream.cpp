@@ -33,7 +33,7 @@ ZStream::ZStream() {
   }
 }
 
-ZStream::~ZStream() try { Close(); } catch (...) {
+ZStream::~ZStream() noexcept try { Close(); } catch (...) {
 }
 
 void ZStream::Close() {
