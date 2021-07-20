@@ -15,6 +15,7 @@
 
 #include "parser.hpp"
 #include "taxon_name_munging.hpp"
+#include "zlib_stream.hpp"
 
 Driver::Driver()
     : next_id_(0),
@@ -34,7 +35,7 @@ void Driver::Clear() {
 }
 
 // This parser will allow anything before the first '('.
-TreeCollection Driver::ParseNewick(std::ifstream &in) {
+TreeCollection Driver::ParseNewick(std::istream &in) {
   yy::parser parser_instance(*this);
   parser_instance.set_debug_level(trace_parsing_);
   std::string line;
@@ -52,8 +53,14 @@ TreeCollection Driver::ParseNewick(std::ifstream &in) {
       trees.push_back(ParseString(&parser_instance, line));
     }
   }
-  in.close();
   return TreeCollection(std::move(trees), this->TagTaxonMap());
+}
+
+TreeCollection Driver::ParseAndDequoteNewick(std::istream &in) {
+  TreeCollection perhaps_quoted_trees = ParseNewick(in);
+  return TreeCollection(
+      std::move(perhaps_quoted_trees.trees_),
+      TaxonNameMunging::DequoteTagStringMap(perhaps_quoted_trees.TagTaxonMap()));
 }
 
 TreeCollection Driver::ParseNewickFile(const std::string &fname) {
@@ -62,25 +69,47 @@ TreeCollection Driver::ParseNewickFile(const std::string &fname) {
   if (!in) {
     Failwith("Cannot open the File : " + fname);
   }
-  TreeCollection perhaps_quoted_trees = ParseNewick(in);
-  return TreeCollection(
-      std::move(perhaps_quoted_trees.trees_),
-      TaxonNameMunging::DequoteTagStringMap(perhaps_quoted_trees.TagTaxonMap()));
+  return ParseAndDequoteNewick(in);
 }
 
-void GetLineAndConvertToLowerCase(std::ifstream &in, std::string &line) {
+TreeCollection Driver::ParseNewickFileGZ(const std::string &fname) {
+  Clear();
+  std::ifstream in_compressed(fname.c_str());
+  if (!in_compressed) {
+    Failwith("Cannot open the File : " + fname);
+  }
+  zlib::ZStringBuf zbuf(in_compressed, 1024, 2048);
+  std::istream in(&zbuf);
+  return ParseAndDequoteNewick(in);
+}
+
+void GetLineAndConvertToLowerCase(std::istream &in, std::string &line) {
   std::getline(in, line);
   std::transform(line.begin(), line.end(), line.begin(),
                  [](unsigned char c) { return std::tolower(c); });
 }
 
 TreeCollection Driver::ParseNexusFile(const std::string &fname) {
-  Clear();
   std::ifstream in(fname.c_str());
+  if (!in) {
+    throw std::runtime_error("Cannot open file.");
+  }
+  return ParseNexus(in);
+}
+
+TreeCollection Driver::ParseNexusFileGZ(const std::string &fname) {
+  std::ifstream in_compressed(fname.c_str());
+  if (!in_compressed) {
+    throw std::runtime_error("Cannot open file.");
+  }
+  zlib::ZStringBuf zbuf(in_compressed, 1024, 2048);
+  std::istream in(&zbuf);
+  return ParseNexus(in);
+}
+
+TreeCollection Driver::ParseNexus(std::istream &in) {
+  Clear();
   try {
-    if (!in) {
-      throw std::runtime_error("Cannot open file.");
-    }
     std::string line;
     std::getline(in, line);
     if (line != "#NEXUS") {
@@ -141,7 +170,7 @@ TreeCollection Driver::ParseNexusFile(const std::string &fname) {
     return TreeCollection(std::move(short_name_tree_collection.trees_),
                           TaxonNameMunging::DequoteTagStringMap(long_name_taxon_map));
   } catch (const std::exception &exception) {
-    Failwith("Problem parsing '" + fname + "':\n" + exception.what());
+    Failwith(std::string("Problem parsing Nexus file:\n") + exception.what());
   }
 }
 

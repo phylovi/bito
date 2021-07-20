@@ -177,6 +177,7 @@ sources = [
     "_build/unrooted_sbn_instance.cpp",
     "_build/unrooted_tree.cpp",
     "_build/unrooted_tree_collection.cpp",
+    "_build/zlib_stream.cpp",
 ]
 gp_sources = [
     "_build/gp_dag.cpp",
@@ -188,12 +189,16 @@ extension = env.SharedLibrary(
     "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
     ["_build/pylibsbn.cpp"] + sources + gp_sources,
     SHLIBPREFIX="",
-    LIBS=["hmsbeagle"],
+    LIBS=["hmsbeagle", "z"],
 )
-doctest = env.Program(["_build/doctest.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
-noodle = env.Program(["_build/noodle.cpp"] + sources, LIBS=["hmsbeagle", "pthread"])
+doctest = env.Program(
+    ["_build/doctest.cpp"] + sources, LIBS=["hmsbeagle", "pthread", "z"]
+)
+noodle = env.Program(
+    ["_build/noodle.cpp"] + sources, LIBS=["hmsbeagle", "pthread", "z"]
+)
 gp_doctest = env.Program(
-    ["_build/gp_doctest.cpp"] + sources + gp_sources, LIBS=["hmsbeagle", "pthread"]
+    ["_build/gp_doctest.cpp"] + sources + gp_sources, LIBS=["hmsbeagle", "pthread", "z"]
 )
 
 py_source = Glob("vip/*.py")

@@ -390,8 +390,12 @@ PYBIND11_MODULE(libsbn, m) {
       // ** I/O
       .def("read_newick_file", &GPInstance::ReadNewickFile,
            "Read trees from a Newick file.")
+      .def("read_newick_file_gz", &GPInstance::ReadNewickFileGZ,
+           "Read trees from a gzip-ed Newick file.")
       .def("read_nexus_file", &GPInstance::ReadNexusFile,
            "Read trees from a Nexus file.")
+      .def("read_nexus_file_gz", &GPInstance::ReadNexusFileGZ,
+           "Read trees from a gzip-ed Nexus file.")
       .def("read_fasta_file", &GPInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
       .def("sbn_parameters_to_csv", &GPInstance::SBNParametersToCSV,
