@@ -430,8 +430,8 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
   };
   const auto [branch_length, log_likelihood] = Optimization::NewtonRaphsonOptimization(
       log_likelihood_and_first_two_derivatives, branch_lengths_(op.gpcsp_),
-      relative_tolerance_for_optimization_, exp(min_log_branch_length_),
-      max_iter_for_optimization_);
+      relative_tolerance_for_optimization_, denominator_tolerance_for_newton_,
+      exp(min_log_branch_length_), max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = branch_length;
 }
 
