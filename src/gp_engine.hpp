@@ -244,9 +244,8 @@ class GPEngine {
   static constexpr double max_log_branch_length_ = 1.1;
   // Precision used for checking convergence of branch length optimization.
   int significant_digits_for_optimization_ = 6;
-  //
-  double relative_tolerance_for_optimization_ = 1e-2;
-  // Step size used for gradient-based branch length optimization.
+  double relative_tolerance_for_optimization_ = 1e-3;
+  double denominator_tolerance_for_newton_ = 1e-15;
   double step_size_for_optimization_ = 5e-4;
   double step_size_for_log_space_optimization_ = 1.0005;
   // Number of iterations allowed for branch length optimization.

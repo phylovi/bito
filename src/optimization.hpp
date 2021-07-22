@@ -156,13 +156,14 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
 
 DoublePair NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
-    double x, const double tolerance, const double min_x, const size_t max_iter) {
+    double x, const double tolerance, const double epsilon, const double min_x,
+    const size_t max_iter) {
   size_t iter_idx = 0;
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
     const double new_x = x - f_prime_x / f_double_prime_x;
     x = std::max(new_x, min_x);
-    if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
+    if (iter_idx >= max_iter || fabs(f_double_prime_x) < epsilon) {
       return {x, f_x};
     }
     ++iter_idx;

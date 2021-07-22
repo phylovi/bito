@@ -278,19 +278,22 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   CHECK_LT(fabs(std::get<2>(log_lik_and_derivatives) - -307.843450646), 1e-6);
 }
 
-double ObtainLikelihoodWithOptimization(bool use_gradients) {
+EigenVectorXd ObtainLikelihoodWithOptimization(bool use_gradients) {
   auto inst = MakeHelloGPInstance();
-  inst.EstimateBranchLengths(0.0001, 1000, true, use_gradients);
+  inst.EstimateBranchLengths(0.001, 1000, true, use_gradients);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   inst.ComputeMarginalLikelihood();
-  return inst.GetEngine()->GetLogMarginalLikelihood();
+  return inst.GetEngine()->GetBranchLengths();
 }
 
 TEST_CASE("GPInstance: Gradient-based optimization") {
-  double difference =
-      ObtainLikelihoodWithOptimization(false) - ObtainLikelihoodWithOptimization(true);
-  CHECK_LT(fabs(difference), 1e-6);  // Difference is currently within 0.001
+EigenVectorXd brent = ObtainLikelihoodWithOptimization(false);
+       EigenVectorXd grads = ObtainLikelihoodWithOptimization(true);	
+
+       std::cout << "Brent branch lengths are " << brent << std::endl;
+       std::cout << "Gradient branch lengths are " << grads << std::endl;
+	CHECK_LT(0.1, 1e-6);
 }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
