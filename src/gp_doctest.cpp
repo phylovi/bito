@@ -298,6 +298,7 @@ TEST_CASE("GPInstance: Gradient-based optimization") {
   double grad = ObtainBranchLengthWithOptimization(true);
 
   // We now compare the branch length estimates b/w brent and gradient-based optimization
+  // We expect gradient optimization to be closer than brent
   std::cout << "Brent branch lengths are " << brent << std::endl;
   std::cout << "Gradient branch lengths are " << grad << std::endl;
   
