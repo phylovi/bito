@@ -176,13 +176,13 @@ void GPInstance::ComputeMarginalLikelihood() {
   ProcessOperations(dag_.MarginalLikelihood());
 }
 
-void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet, bool use_gradients) {
+void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) {
   std::stringstream dev_null;
   auto &our_ostream = quiet ? dev_null : std::cout;
   auto now = std::chrono::high_resolution_clock::now;
   auto t_start = now();
   our_ostream << "Begin branch optimization\n";
-  GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization(use_gradients);
+  GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
   GPOperationVector populate_plv_operations = dag_.PopulatePLVs();
   GPOperationVector compute_lik_operations = dag_.ComputeLikelihoods();

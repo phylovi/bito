@@ -626,6 +626,9 @@ PYBIND11_MODULE(bito, m) {
           "Build a map from SubsplitDAG edge index to its corresponding PCSP bitset.")
 
       // ** Estimation
+      .def("use_gradient_optimization", &GPInstance::UseGradientOptimization,
+           "Use gradients for branch length optimization?",
+           py::arg("use_gradients") = false)
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",
            py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_)
       .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,

@@ -13,7 +13,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
                    const std::string& mmap_file_path, double rescaling_threshold,
                    EigenVectorXd sbn_prior,
                    EigenVectorXd unconditional_node_probabilities,
-                   EigenVectorXd inverted_sbn_prior)
+                   EigenVectorXd inverted_sbn_prior, bool use_gradients)
     : site_pattern_(std::move(site_pattern)),
       rescaling_threshold_(rescaling_threshold),
       log_rescaling_threshold_(log(rescaling_threshold)),
@@ -323,7 +323,11 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
-  TypeOfOptimization(op);
+  if (use_gradients_ == true) {
+    NewtonOptimization(op);
+  } else {
+    BrentOptimization(op);
+  }
 }
 
 EigenVectorXd NormalizedPosteriorOfLogUnnormalized(
@@ -380,8 +384,10 @@ void GPEngine::SetTransitionAndDerivativeMatricesToHaveBranchLength(
   diagonal_vector_ = (branch_length * eigenvalues_).array().exp();
   diagonal_matrix_.diagonal() = diagonal_vector_;
   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+  // Now calculating derivative matrix
   diagonal_matrix_.diagonal() = eigenvalues_.array() * diagonal_vector_.array();
   derivative_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+  // Now calculating hessian matrix
   diagonal_matrix_.diagonal() =
       eigenvalues_.array() * eigenvalues_.array() * diagonal_vector_.array();
   hessian_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
@@ -543,11 +549,13 @@ std::tuple<double, double, double> GPEngine::LogLikelihoodAndFirstTwoDerivatives
 
   per_pattern_likelihood_second_derivative_ratios_ =
       per_pattern_likelihood_second_derivatives_.array() /
-      per_pattern_likelihoods_.array();
+          per_pattern_likelihoods_.array() -
+      (per_pattern_likelihood_derivatives_.array() *
+       per_pattern_likelihood_derivatives_.array()) /
+          (per_pattern_likelihoods_.array() * per_pattern_likelihoods_.array());
 
   const double log_likelihood_hessian =
-      per_pattern_likelihood_second_derivative_ratios_.dot(site_pattern_weights_) -
-      std::pow(log_likelihood_gradient, 2);
+      per_pattern_likelihood_second_derivative_ratios_.dot(site_pattern_weights_);
 
   return std::make_tuple(log_likelihood, log_likelihood_gradient,
                          log_likelihood_hessian);
@@ -611,14 +619,6 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
   return static_cast<double>(rescaling_counts_(plv_idx)) * log_rescaling_threshold_;
 }
 
-void GPEngine::TypeOfOptimization(const GPOperations::OptimizeBranchLength& op) {
-  if (op.use_gradients_ == true) {
-    NewtonOptimization(op);
-  } else {
-    BrentOptimization(op);
-  }
-}
-
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
     SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
@@ -680,21 +680,6 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
       log_likelihood_and_first_two_derivatives, branch_lengths_(op.gpcsp_),
       relative_tolerance_for_optimization_, denominator_tolerance_for_newton_,
       exp(min_log_branch_length_), max_iter_for_optimization_);
-  branch_lengths_(op.gpcsp_) = branch_length;
-}
-
-void GPEngine::AdaptiveGradientAscentOptimization(
-    const GPOperations::OptimizeBranchLength& op) {
-  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
-    branch_lengths_(op.gpcsp_) = branch_length;
-    return this->LogLikelihoodAndDerivative(op);
-  };
-  const auto [branch_length, log_likelihood] = Optimization::AdaptiveGradientAscent(
-      log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
-      relative_tolerance_for_optimization_, step_size_for_optimization_,
-      adaptive_stepsize_uniformity_bound_, montonicity_const_for_adaptive_stepsize_,
-      threshold_const_for_adaptive_stepsize_, rescaling_const_for_adaptive_stepsize_,
-      max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = branch_length;
 }
 

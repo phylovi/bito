@@ -245,7 +245,7 @@ class GPEngine {
   // Precision used for checking convergence of branch length optimization.
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-3;
-  double denominator_tolerance_for_newton_ = 1e-15;
+  double denominator_tolerance_for_newton_ = 1e-5;
   double step_size_for_optimization_ = 5e-4;
   double step_size_for_log_space_optimization_ = 1.0005;
   // Number of iterations allowed for branch length optimization.
@@ -317,6 +317,8 @@ class GPEngine {
   // Stored in log space.
   EigenVectorXd q_;
   EigenVectorXd inverted_sbn_prior_;
+  bool use_gradients_;
+
   // The number of rows is equal to the number of GPCSPs.
   // The number of columns is equal to the number of site patterns.
   // The rows are indexed in the same way as branch_lengths_ and q_.
@@ -376,12 +378,10 @@ class GPEngine {
   void RescalePLVIfNeeded(size_t plv_idx);
   double LogRescalingFor(size_t plv_idx);
 
-  void TypeOfOptimization(const GPOperations::OptimizeBranchLength& op);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void NewtonOptimization(const GPOperations::OptimizeBranchLength& op);
-  void AdaptiveGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
   inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
                                                                      size_t src2_idx) {
@@ -426,7 +426,7 @@ TEST_CASE("GPEngine") {
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
   GPEngine engine(hello_site_pattern, 5, 6, 5, "_ignore/mmapped_plv.data",
                   GPEngine::default_rescaling_threshold_, empty_vector, empty_vector,
-                  empty_vector);
+                  empty_vector, false);
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29
