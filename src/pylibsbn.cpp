@@ -21,8 +21,9 @@ namespace py = pybind11;
 // Thanks to @eacousineau!
 template <typename PyClass, typename C, typename D>
 void def_read_write_mutable(PyClass &cls, const char *name, D C::*pm) {
-  cls.def_property(name, [pm](C & self) -> auto & { return self.*pm; },
-                   [pm](C &self, const D &value) { self.*pm = value; });
+  cls.def_property(
+      name, [pm](C & self) -> auto & { return self.*pm; },
+      [pm](C &self, const D &value) { self.*pm = value; });
 }
 
 // In order to make vector<double>s available to numpy, we take two steps.
@@ -418,6 +419,9 @@ PYBIND11_MODULE(libsbn, m) {
            R"raw(Write the current subsplit DAG to a DOT format file.)raw")
 
       // ** Estimation
+      .def("use_gradient_optimization", &GPInstance::UseGradientOptimization,
+           "Use gradients for branch length optimization?",
+           py::arg("use_gradients") = false)
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",
            py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_)
       .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,
@@ -428,7 +432,7 @@ PYBIND11_MODULE(libsbn, m) {
            "Estimate the SBN parameters based on current branch lengths.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.", py::arg("tol"),
-           py::arg("max_iter"), py::arg("quiet") = false, py::arg("use_gradients") = false);
+           py::arg("max_iter"), py::arg("quiet") = false);
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:

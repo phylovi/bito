@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "gp_dag.hpp"
+
 #include "numerical_utils.hpp"
 
 using namespace GPOperations;  // NOLINT
@@ -48,7 +49,7 @@ GPOperation GPDAG::RUpdateOfRotated(size_t node_id, bool rotated) const {
 // that all of the PLVs are in a valid state.
 //
 // Update the terminology in this function as part of #288.
-GPOperationVector GPDAG::ApproximateBranchLengthOptimization(bool use_gradients) const {
+GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
   GPOperationVector operations;
   SubsplitDAG::DepthFirstWithAction(SubsplitDAGTraversalAction(
       // BeforeNode
@@ -74,7 +75,8 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization(bool use_gradients)
         operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // VisitEdge
-      [this, &operations, &use_gradients](size_t node_id, size_t child_id, bool rotated) {
+      [this, &operations](size_t node_id, size_t child_id,
+                                          bool rotated) {
         // #310 this is temporary:
         // We do a full PLV population and then marginal likelihood calculation.
         // GPOperations::AppendGPOperations(operations, PopulatePLVs());
@@ -82,7 +84,8 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization(bool use_gradients)
 
         // Optimize each branch for a given node-clade and accumulate the resulting
         // P-hat PLVs in the parent node.
-        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, use_gradients, operations);
+        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated,
+                                       operations);
       }));
   return operations;
 }
@@ -91,7 +94,7 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization(bool use_gradients)
 // that all of the PLVs are in a valid state.
 //
 // Update the terminology in this function as part of #288.
-GPOperationVector GPDAG::BranchLengthOptimization(bool use_gradients) {
+GPOperationVector GPDAG::BranchLengthOptimization() {
   GPOperationVector operations;
   DepthFirstWithTidyAction(TidySubsplitDAGTraversalAction(
       // BeforeNode
@@ -117,10 +120,12 @@ GPOperationVector GPDAG::BranchLengthOptimization(bool use_gradients) {
         operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // ModifyEdge
-      [this, &operations, &use_gradients](size_t node_id, size_t child_id, bool rotated) {
+      [this, &operations] (size_t node_id, size_t child_id,
+                                          bool rotated) {
         // Optimize each branch for a given node-clade and accumulate the resulting
         // P-hat PLVs in the parent node.
-        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, use_gradients, operations);
+        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated,
+                                       operations);
       },
       // UpdateEdge
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {
@@ -354,12 +359,12 @@ void GPDAG::UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id,
 }
 
 void GPDAG::OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
-                                           bool rotated, bool use_gradients,
+                                           bool rotated,
                                            GPOperationVector &operations) const {
   size_t gpcsp_idx = GPCSPIndexOfIds(node_id, rotated, child_node_id);
   operations.push_back(OptimizeBranchLength{GetPLVIndex(PLVType::P, child_node_id),
                                             GetPLVIndex(RPLVType(rotated), node_id),
-                                            gpcsp_idx, use_gradients});
+                                            gpcsp_idx});
   // Update p_hat(s)
   GPOperationVector new_operations;
   new_operations.push_back(IncrementWithWeightedEvolvedPLV{

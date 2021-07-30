@@ -22,7 +22,7 @@ class GPEngine {
   GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
            const std::string& mmap_file_path, double rescaling_threshold,
            EigenVectorXd sbn_prior, EigenVectorXd unconditional_node_probabilities,
-           EigenVectorXd inverted_sbn_prior);
+           EigenVectorXd inverted_sbn_prior, bool use_gradients);
 
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
@@ -81,6 +81,7 @@ class GPEngine {
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                              const BitsetSizeMap& indexer);
 
+  // Log llh and derivative functions
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
   std::tuple<double, double, double> LogLikelihoodAndFirstTwoDerivatives(
       const GPOperations::OptimizeBranchLength& op);
@@ -96,15 +97,10 @@ class GPEngine {
 
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-3;
-  double denominator_tolerance_for_newton_ = 1e-15;
+  double denominator_tolerance_for_newton_ = 1e-5;
   double step_size_for_optimization_ = 5e-4;
   double step_size_for_log_space_optimization_ = 1.0003;
-  size_t max_iter_for_optimization_ = 10000;
-
-  int montonicity_const_for_adaptive_stepsize_ = 10;
-  double adaptive_stepsize_uniformity_bound_ = 1e-10;
-  double threshold_const_for_adaptive_stepsize_ = 1e-4;
-  double rescaling_const_for_adaptive_stepsize_ = 0.5;
+  size_t max_iter_for_optimization_ = 1000;
 
   // The length of this vector is equal to the number of site patterns.
   // Entry j stores the marginal log likelihood over all trees at site pattern
@@ -135,6 +131,7 @@ class GPEngine {
   EigenVectorXd q_;
   EigenVectorXd unconditional_node_probabilities_;
   EigenVectorXd inverted_sbn_prior_;
+  bool use_gradients_;
 
   // The number of rows is equal to the number of GPCSPs.
   // The number of columns is equal to the number of site patterns.
@@ -186,12 +183,10 @@ class GPEngine {
   void RescalePLVIfNeeded(size_t plv_idx);
   double LogRescalingFor(size_t plv_idx);
 
-  void TypeOfOptimization(const GPOperations::OptimizeBranchLength& op);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void NewtonOptimization(const GPOperations::OptimizeBranchLength& op);
-  void AdaptiveGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
   inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
                                                                      size_t src2_idx) {
@@ -236,7 +231,7 @@ TEST_CASE("GPEngine") {
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
   GPEngine engine(hello_site_pattern, 6 * 5, 5, "_ignore/mmapped_plv.data",
                   GPEngine::default_rescaling_threshold_, empty_vector, empty_vector,
-                  empty_vector);
+                  empty_vector, false);
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29

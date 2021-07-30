@@ -23,6 +23,7 @@ class GPInstance {
   void ReadNewickFile(const std::string &fname);
   void ReadNexusFile(const std::string &fname);
 
+  void UseGradientOptimization(bool use_gradients = false);
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;
@@ -32,8 +33,7 @@ class GPInstance {
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();
   void EstimateSBNParameters();
-  void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false,
-                             bool use_gradients = false);
+  void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false);
   void PopulatePLVs();
   void ComputeLikelihoods();
   void ComputeMarginalLikelihood();
@@ -84,6 +84,7 @@ class GPInstance {
   RootedTreeCollection tree_collection_;
   GPDAG dag_;
   static constexpr size_t plv_count_per_node_ = 6;
+  bool use_gradients_;
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;

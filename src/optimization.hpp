@@ -158,63 +158,10 @@ DoublePair NewtonRaphsonOptimization(
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
     const double new_x = x - f_prime_x / f_double_prime_x;
     x = std::max(new_x, min_x);
-    if (iter_idx >= max_iter || fabs(f_double_prime_x) < epsilon) {
+    if (fabs(f_prime_x) < fabs(f_x) * tolerance || fabs(f_double_prime_x) < epsilon ||
+        iter_idx == max_iter) {
       return {x, f_x};
     }
-    ++iter_idx;
-  }
-}
-
-DoublePair AdaptiveGradientAscent(
-    std::function<DoublePair(double)> f_and_f_prime, double x, const double tolerance,
-    const double default_step_size, const double uniformity_bound,
-    const size_t monotonicity_const, const double threshold_const,
-    const double rescaling_constant, const size_t max_iter) {
-  size_t iter_idx = 0;
-  double alpha = 1 / default_step_size;
-  std::vector<double> f_values(monotonicity_const, 0.);
-
-  while (true) {
-    double log_x = log(x);
-    auto [f_x, f_prime_x] = f_and_f_prime(x);
-    double log_space_grad = x * f_prime_x;
-    double log_space_grad_sq = std::pow(log_space_grad, 2);
-
-    int f_value_index = static_cast<int>(iter_idx % monotonicity_const);
-    f_values.at(f_value_index) = f_x;
-    // int last_element_index =
-    //    std::min(static_cast<int>(iter_idx + 1),
-    //    static_cast<int>(monotonicity_const));
-    double min_f = *std::min_element(f_values.begin(), f_values.end());
-
-    if (alpha <= uniformity_bound || alpha >= (1 / uniformity_bound)) {
-      alpha = 1 / default_step_size;
-    }
-    double lambda_step_size = 1 / alpha;
-
-    double candidate_log_x = std::max(log_x + log_space_grad * lambda_step_size, log_x);
-    double candidate_x = exp(candidate_log_x);
-    auto [f_candidate_x, f_prime_candidate_x] = f_and_f_prime(candidate_x);
-    double acceptance_threshold =
-        threshold_const * lambda_step_size * log_space_grad_sq;
-
-    while (f_candidate_x < min_f + acceptance_threshold) {
-      lambda_step_size = lambda_step_size * rescaling_constant;
-      candidate_log_x = std::max(log_x + log_space_grad * lambda_step_size, log_x);
-      candidate_x = exp(candidate_log_x);
-      auto [f_candidate_x, f_prime_candidate_x] = f_and_f_prime(candidate_x);
-      acceptance_threshold = threshold_const * lambda_step_size * log_space_grad_sq;
-    }
-
-    x = exp(candidate_log_x);
-    alpha = (-log_space_grad * (f_prime_candidate_x * candidate_x - log_space_grad)) /
-            (lambda_step_size * log_space_grad_sq);
-
-    if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
-      return {x, f_x};
-    }
-    // TODO: should overwrite f_x and f_prime_x with the candidate values
-    // so that they are not unnecessarily recomputed at the top of the loop
     ++iter_idx;
   }
 }

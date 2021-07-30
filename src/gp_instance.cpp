@@ -65,6 +65,10 @@ void GPInstance::CheckSequencesAndTreesLoaded() const {
   }
 }
 
+void GPInstance::UseGradientOptimization(bool use_gradients) {
+  use_gradients_ = use_gradients;
+};
+
 void GPInstance::MakeEngine(double rescaling_threshold) {
   CheckSequencesAndTreesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
@@ -79,7 +83,7 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
       std::move(site_pattern), plv_count_per_node_ * dag_.NodeCount(),
       dag_.GPCSPCountWithFakeSubsplits(), mmap_file_path_, rescaling_threshold,
       std::move(sbn_prior), std::move(unconditional_node_probabilities),
-      std::move(inverted_sbn_prior));
+      std::move(inverted_sbn_prior), use_gradients_);
 }
 
 GPEngine *GPInstance::GetEngine() const {
@@ -126,13 +130,13 @@ void GPInstance::ComputeMarginalLikelihood() {
   ProcessOperations(dag_.MarginalLikelihood());
 }
 
-void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet, bool use_gradients) {
+void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) {
   std::stringstream dev_null;
   auto &our_ostream = quiet ? dev_null : std::cout;
   auto now = std::chrono::high_resolution_clock::now;
   auto t_start = now();
   our_ostream << "Begin branch optimization\n";
-  GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization(use_gradients);
+  GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
   GPOperationVector populate_plv_operations = dag_.PopulatePLVs();
 
