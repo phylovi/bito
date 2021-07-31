@@ -83,13 +83,20 @@ class Bitset {
   size_t SubsplitChunkSize() const;
   // Get the ith chunk of the subsplit.
   Bitset SubsplitChunk(size_t i) const;
-  // Return a string of the PCSP in the specified number of chunks, with each chunk
+  // Returns "child 0" (the child bitset with the smaller binary representation)
+  // or "child 1" (the child bitset with the larger binary representation).
+  Bitset SubsplitGetChild(size_t i) const;
+  // Return a string of the bitset in the specified number of chunks, with each chunk
   // separated by a "|".
   std::string ToStringChunked(size_t chunk_count) const;
   std::string SubsplitToString() const;
   std::string SubsplitToIndexSetString() const;
   // Is the right hand chunk all zero?
   bool SubsplitIsFake() const;
+  // Is every taxon included exactly once in the subsplit?
+  // Exclude the DAG root node where every taxon is present in one half
+  // of the subsplit.
+  bool SubsplitIsRootsplit() const;
 
   // These functions require the bitset to be a "PCSP bitset" with three
   // equal-sized "chunks".
@@ -102,22 +109,25 @@ class Bitset {
   //
   // For example, `100011001` is composed of the chunks `100`, `011` and `001`.
   // If the taxa are x0, x1, and x2 then this means the parent subsplit is (A,
-  // BC) with bitset `100|001`, and the child subsplit is (B, C) with bitset
+  // BC) with bitset `100|011`, and the child subsplit is (B, C) with bitset
   // `010|001.` Child 0 is the clade `001` and child 1 is the clade `010.`
+  //
+  // For rootsplit PCSPs where the parent subsplit is the DAG root node, the PCSP
+  // is the sister clade (all 0s), the focal clade (all 1s), and "child 0". For
+  // example, `000111010` is the PCSP from the DAG root node to the rootsplit (AC, B).
   // See the unit tests at the bottom for more examples.
   std::string PCSPToString() const;
   bool PCSPIsValid() const;
   bool PCSPIsFake() const;
   // Do the sister and focal clades union to the whole taxon set?
-  bool PCSPIsRootsplit() const;
+  // Method excludes rootsplit PCSPs where sister and focal clades
+  // also union to the whole taxon set.
+  bool PCSPParentIsRootsplit() const;
   size_t PCSPChunkSize() const;
   Bitset PCSPChunk(size_t i) const;
-  // Get the first 2/3rds of the PCSP.
-  Bitset PCSPParent() const;
-  // Get the second 2/3rds of the PCSP.
-  Bitset PCSPWithoutParent() const;
-  // Get the representation of the child subsplit in the simple form of a pair
-  // of membership indicators, concatenated together into one bitset.
+  // Get the parent subsplit of the PCSP.
+  Bitset PCSPParentSubsplit() const;
+  // Get the child subsplit of the PCSP.
   Bitset PCSPChildSubsplit() const;
   // Get the number of taxa in each side of the child subsplit.
   SizePair PCSPChildSubsplitTaxonCounts() const;
@@ -125,9 +135,6 @@ class Bitset {
   // ** Static methods
   // Make a bitset with only the specified entry turned on.
   static Bitset Singleton(size_t n, size_t which_on);
-  // Make the full subsplit out of the parent subsplit, whose second half is
-  // split by child_half.
-  static Bitset ChildSubsplit(const Bitset &parent_subsplit, const Bitset &child_half);
   // Build a PCSP bitset out of a compatible parent-child pair of bitsets.
   static Bitset PCSPOfPair(const Bitset &parent_subsplit, const Bitset &child_subsplit,
                            bool assert_validity = true);
@@ -142,12 +149,22 @@ class Bitset {
   // the parent subsplit is non-empty and that the right-hand chunk is a singleton.
   // This fake subsplit has parent subsplit on the left and all zeroes on the right.
   static Bitset FakePCSP(const Bitset &parent_subsplit);
+  // Get the subsplit of the DAG root node with a taxon count.
+  // Since subsplit bitsets are always big-small, the DAG root node subsplit
+  // consists of all 1s then 0s (e.g. 5 would return '1111100000').
+  static Bitset DAGRootSubsplitOfTaxonCount(const size_t taxon_count);
+  // Get the full rootsplit bitset out of a rootsplit half.
+  // Note: the first half of the rootsplit bitset is always larger than the second.
+  static Bitset RootsplitOfHalf(const Bitset &rootsplit_half);
+  // Given a rootsplit, get the PCSP connecting the DAG root node to that rootsplit
+  // (e.g. '11000011' would return '000011110011').
+  static Bitset PCSPOfRootsplit(const Bitset &rootsplit);
 
  private:
   std::vector<bool> value_;
 
-  static void AssertIsDisjointUnion(const Bitset &should_be_union, const Bitset &set_1,
-                                    const Bitset &set_2);
+  static bool IsDisjointUnion(const Bitset &should_be_union, const Bitset &set_1,
+                              const Bitset &set_2);
 };
 
 // This is how we inject a hash routine and a custom comparator into the std
@@ -254,8 +271,15 @@ TEST_CASE("Bitset") {
   CHECK_EQ(p.PCSPChunk(1), Bitset("01"));
   CHECK_EQ(p.PCSPChunk(2), Bitset("11"));
 
+  CHECK_EQ(Bitset("10010110").SubsplitGetChild(0), Bitset("0110"));
+  CHECK_EQ(Bitset("10010110").SubsplitGetChild(1), Bitset("1001"));
+  CHECK_THROWS(Bitset("01101001").SubsplitGetChild(1));
+
   CHECK_EQ(Bitset("10011100").RotateSubsplit(), Bitset("11001001"));
   CHECK_EQ(Bitset("010101").SubsplitToIndexSetString(), "1|0,2");
+  CHECK_EQ(Bitset("101010").SubsplitIsRootsplit(), true);
+  CHECK_EQ(Bitset("111000").SubsplitIsRootsplit(), false);
+  CHECK_EQ(Bitset("00011100").SubsplitIsRootsplit(), false);
 
   CHECK_EQ(Bitset("011101").PCSPIsValid(), false);
   CHECK_EQ(Bitset("000111").PCSPIsValid(), false);
@@ -265,8 +289,12 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("100011001").PCSPIsFake(), false);
   CHECK_EQ(Bitset("100011000").PCSPIsFake(), true);
 
-  CHECK_EQ(Bitset("100011001").PCSPParent(), Bitset("100011"));
-  CHECK_EQ(Bitset("100011001").PCSPWithoutParent(), Bitset("011001"));
+  CHECK_EQ(Bitset("000111010").PCSPParentIsRootsplit(), false);
+  CHECK_EQ(Bitset("000111000100").PCSPParentIsRootsplit(), false);
+  CHECK_EQ(Bitset("101010000").PCSPParentIsRootsplit(), true);
+
+  CHECK_EQ(Bitset("100011001").PCSPParentSubsplit(), Bitset("100011"));
+  CHECK_EQ(Bitset("011100001").PCSPParentSubsplit(), Bitset("100011"));
   CHECK_EQ(Bitset("100011001").PCSPChildSubsplit(), Bitset("010001"));
   CHECK_EQ(Bitset("100001110001").PCSPChildSubsplit(), Bitset("01100001"));
   CHECK_EQ(Bitset("100001110001").PCSPChildSubsplitTaxonCounts(), SizePair({1, 2}));
@@ -274,13 +302,7 @@ TEST_CASE("Bitset") {
 
   CHECK_EQ(Bitset::Singleton(4, 2), Bitset("0010"));
 
-  // parent clade is 1110, child is 0100, so child subsplit is 1010|0100.
-  CHECK_EQ(Bitset::ChildSubsplit(Bitset("00011110"), Bitset("0100")),
-           Bitset("10100100"));
-  CHECK_EQ(Bitset::ChildSubsplit(Bitset("00011110"), Bitset("1010")),
-           Bitset("01001010"));
-
-  CHECK_EQ(Bitset("000110010"), Bitset::PCSPOfPair(Bitset("000110"), Bitset("010100")));
+  CHECK_EQ(Bitset("000110010"), Bitset::PCSPOfPair(Bitset("110000"), Bitset("100010")));
   CHECK_EQ(Bitset("001110010"), Bitset::PCSPOfPair(Bitset("001110"), Bitset("100010")));
   // Missing a left child.
   CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("000010")));
@@ -290,6 +312,9 @@ TEST_CASE("Bitset") {
   CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100110")));
   // Not a union at all.
   CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100001")));
+
+  CHECK_EQ(Bitset::RootsplitOfHalf(Bitset("0011")), Bitset("11000011"));
+  CHECK_EQ(Bitset::PCSPOfRootsplit(Bitset("11000011")), Bitset("000011110011"));
 
   CHECK_EQ(true, Bitset("010000").SubsplitIsFake());
   CHECK_EQ(false, Bitset("010010").SubsplitIsFake());

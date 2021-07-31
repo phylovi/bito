@@ -29,9 +29,10 @@ class SubsplitDAGNode {
   const Bitset GetBitset(bool rotated) const {
     return rotated ? subsplit_.RotateSubsplit() : subsplit_;
   }
-  bool IsRoot() const {
+  bool IsDAGRootNode() const {
     return (rootward_sorted_.empty() && rootward_rotated_.empty());
-  };
+  }
+  bool IsRootsplit() const { return subsplit_.SubsplitIsRootsplit(); }
   bool IsLeaf() const { return leafward_rotated_.empty() && leafward_sorted_.empty(); }
 
   void AddLeafwardRotated(size_t node_id) { leafward_rotated_.push_back(node_id); }

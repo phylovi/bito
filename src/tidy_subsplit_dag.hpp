@@ -37,11 +37,13 @@ class TidySubsplitDAG : public SubsplitDAG {
   std::string AboveMatricesAsString() const;
 
   // From ((0,1)2)
+  // #349: Update images to match tests.
   // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769
   static TidySubsplitDAG TrivialExample();
   // The same DAG, built by hand for the test.
   static TidySubsplitDAG ManualTrivialExample();
   // From (0,(1,(2,3))) and ((0,(2,3)),1)
+  // #349: Update images to match tests.
   // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
   // Update during #288 #321
   static TidySubsplitDAG MotivatingExample();
@@ -50,6 +52,7 @@ class TidySubsplitDAG : public SubsplitDAG {
 
   // Apply a TidySubsplitDAGTraversalAction via a depth first traversal. Do not visit
   // leaf nodes.
+  // Has option to include the DAG root node in the traversal.
   // We assume that ModifyEdge leaves (node_id, rotated) in a clean state, however, each
   // ModifyEdge dirties all of the nodes above it. These nodes must be cleaned by
   // UpdateEdge before they are ready to be used. See TidySubslitDAGTraversalAction for
@@ -66,11 +69,15 @@ class TidySubsplitDAG : public SubsplitDAG {
   //         * Apply VisitEdge to the edge
   // * Apply AfterNode
   template <typename TidyTraversalActionT>
-  void DepthFirstWithTidyAction(const TidyTraversalActionT &action) {
+  void DepthFirstWithTidyAction(const bool include_dag_root_node,
+                                const TidyTraversalActionT &action) {
     std::unordered_set<size_t> visited_nodes;
-    for (const auto &rootsplit : rootsplits_) {
-      DepthFirstWithTidyActionForNode(
-          action, subsplit_to_id_.at(rootsplit + ~rootsplit), visited_nodes);
+    if (include_dag_root_node) {
+      DepthFirstWithTidyActionForNode(action, DAGRootNodeId(), visited_nodes);
+    } else {
+      for (const auto &rootsplit_id : RootsplitIds()) {
+        DepthFirstWithTidyActionForNode(action, rootsplit_id, visited_nodes);
+      }
     }
   };
 
@@ -187,34 +194,36 @@ class TidySubsplitDAG : public SubsplitDAG {
 TEST_CASE("TidySubsplitDAG: slicing") {
   auto manual_dag = TidySubsplitDAG::ManualTrivialExample();
 
-  CHECK_EQ(GenericToString(manual_dag.AboveNode(0)), "[1, 0, 0, 1, 1]\n");
-  CHECK_EQ(GenericToString(manual_dag.AboveNode(1)), "[0, 1, 0, 1, 1]\n");
-  CHECK_EQ(GenericToString(manual_dag.AboveNode(2)), "[0, 0, 1, 0, 1]\n");
-  CHECK_EQ(GenericToString(manual_dag.AboveNode(3)), "[0, 0, 0, 1, 1]\n");
-  CHECK_EQ(GenericToString(manual_dag.AboveNode(4)), "[0, 0, 0, 0, 1]\n");
+  // std::cout << manual_dag.AboveMatricesAsString() << std::endl;
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(0)), "[1, 0, 0, 1, 1, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(1)), "[0, 1, 0, 1, 1, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(2)), "[0, 0, 1, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(3)), "[0, 0, 0, 1, 1, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(4)), "[0, 0, 0, 0, 1, 1]\n");
+  CHECK_EQ(GenericToString(manual_dag.AboveNode(5)), "[0, 0, 0, 0, 0, 1]\n");
 
   auto trivial_dag = TidySubsplitDAG::TrivialExample();
   CHECK_EQ(trivial_dag.AboveMatricesAsString(), manual_dag.AboveMatricesAsString());
 
   auto motivating_dag = TidySubsplitDAG::MotivatingExample();
   CHECK_EQ(GenericToString(motivating_dag.AboveNode(false, 4)),
-           "[0, 0, 0, 0, 1, 1, 0, 1, 1]\n");
+           "[0, 0, 0, 0, 1, 1, 1, 1, 0, 0]\n");
   CHECK_EQ(GenericToString(motivating_dag.AboveNode(true, 4)),
-           "[0, 0, 0, 0, 1, 0, 1, 0, 0]\n");
+           "[0, 0, 0, 0, 1, 0, 0, 0, 1, 1]\n");
   CHECK_EQ(GenericToString(motivating_dag.AboveNode(false, 7)),
-           "[0, 0, 0, 0, 0, 0, 0, 1, 1]\n");
+           "[0, 0, 0, 0, 0, 0, 0, 1, 0, 0]\n");
   CHECK_EQ(GenericToString(motivating_dag.AboveNode(true, 7)),
-           "[0, 0, 0, 0, 0, 0, 0, 1, 0]\n");
+           "[0, 0, 0, 0, 0, 0, 0, 1, 1, 1]\n");
   CHECK_EQ(GenericToString(motivating_dag.BelowNode(false, 7)),
-           "[0, 0, 1, 1, 1, 0, 0, 1, 0]\n");
+           "[0, 0, 1, 1, 1, 0, 0, 1, 0, 0]\n");
   CHECK_EQ(GenericToString(motivating_dag.BelowNode(true, 7)),
-           "[1, 0, 0, 0, 0, 0, 0, 1, 0]\n");
+           "[1, 0, 0, 0, 0, 0, 0, 1, 0, 0]\n");
 
   motivating_dag.SetDirtyStrictlyAbove(4);
   CHECK_EQ(GenericToString(motivating_dag.DirtyVector(true)),
-           "[0, 0, 0, 0, 0, 0, 1, 0, 0]\n");
+           "[0, 0, 0, 0, 0, 0, 0, 0, 1, 1]\n");
   CHECK_EQ(GenericToString(motivating_dag.DirtyVector(false)),
-           "[0, 0, 0, 0, 0, 1, 0, 1, 1]\n");
+           "[0, 0, 0, 0, 0, 1, 1, 1, 0, 0]\n");
 
   motivating_dag.SetClean();
   // #321 Add test for Tidy traversal.

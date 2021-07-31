@@ -31,7 +31,7 @@ size_t GPDAG::GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_
 }
 
 size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t src_idx) const {
-  return GetPLVIndexStatic(plv_type, dag_nodes_.size(), src_idx);
+  return GetPLVIndexStatic(plv_type, NodeCountWithoutDAGRoot(), src_idx);
 }
 
 // The R PLV update that corresponds to our rotation status.
@@ -50,40 +50,44 @@ GPOperation GPDAG::RUpdateOfRotated(size_t node_id, bool rotated) const {
 // Update the terminology in this function as part of #288.
 GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
   GPOperationVector operations;
-  SubsplitDAG::DepthFirstWithAction(SubsplitDAGTraversalAction(
-      // BeforeNode
-      [this, &operations](size_t node_id) {
-        if (!GetDAGNode(node_id)->IsRoot()) {
-          // Update R-hat if we're not at the root.
-          UpdateRHat(node_id, operations);
-        }
-      },
-      // AfterNode
-      [this, &operations](size_t node_id) {
-        // Make P the elementwise product ("o") of the two P PLVs for the node-clades.
-        operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
-                                      GetPLVIndex(PLVType::P_HAT, node_id),
-                                      GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-      },
-      // BeforeNodeClade
-      [this, &operations](size_t node_id, bool rotated) {
-        const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
-        // Update the R PLV corresponding to our rotation status.
-        operations.push_back(RUpdateOfRotated(node_id, rotated));
-        // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
-        operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
-      },
-      // VisitEdge
-      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
-        // #310 this is temporary:
-        // We do a full PLV population and then marginal likelihood calculation.
-        // GPOperations::AppendGPOperations(operations, PopulatePLVs());
-        // GPOperations::AppendGPOperations(operations, MarginalLikelihood());
+  SubsplitDAG::DepthFirstWithAction(
+      false,
+      SubsplitDAGTraversalAction(
+          // BeforeNode
+          [this, &operations](size_t node_id) {
+            if (!GetDAGNode(node_id)->IsRootsplit()) {
+              // Update R-hat if we're not at the root.
+              UpdateRHat(node_id, operations);
+            }
+          },
+          // AfterNode
+          [this, &operations](size_t node_id) {
+            // Make P the elementwise product ("o") of the two P PLVs for the
+            // node-clades.
+            operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
+                                          GetPLVIndex(PLVType::P_HAT, node_id),
+                                          GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
+          },
+          // BeforeNodeClade
+          [this, &operations](size_t node_id, bool rotated) {
+            const PLVType p_hat_plv_type =
+                rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
+            // Update the R PLV corresponding to our rotation status.
+            operations.push_back(RUpdateOfRotated(node_id, rotated));
+            // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
+            operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
+          },
+          // VisitEdge
+          [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+            // #310 this is temporary:
+            // We do a full PLV population and then marginal likelihood calculation.
+            // GPOperations::AppendGPOperations(operations, PopulatePLVs());
+            // GPOperations::AppendGPOperations(operations, MarginalLikelihood());
 
-        // Optimize each branch for a given node-clade and accumulate the resulting
-        // P-hat PLVs in the parent node.
-        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
-      }));
+            // Optimize each branch for a given node-clade and accumulate the resulting
+            // P-hat PLVs in the parent node.
+            OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
+          }));
   return operations;
 }
 
@@ -93,41 +97,45 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
 // Update the terminology in this function as part of #288.
 GPOperationVector GPDAG::BranchLengthOptimization() {
   GPOperationVector operations;
-  DepthFirstWithTidyAction(TidySubsplitDAGTraversalAction(
-      // BeforeNode
-      [this, &operations](size_t node_id) {
-        if (!GetDAGNode(node_id)->IsRoot()) {
-          // Update R-hat if we're not at the root.
-          UpdateRHat(node_id, operations);
-        }
-      },
-      // AfterNode
-      [this, &operations](size_t node_id) {
-        // Make P the elementwise product ("o") of the two P PLVs for the node-clades.
-        operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
-                                      GetPLVIndex(PLVType::P_HAT, node_id),
-                                      GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
-      },
-      // BeforeNodeClade
-      [this, &operations](size_t node_id, bool rotated) {
-        const PLVType p_hat_plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
-        // Update the R PLV corresponding to our rotation status.
-        operations.push_back(RUpdateOfRotated(node_id, rotated));
-        // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
-        operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
-      },
-      // ModifyEdge
-      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
-        // Optimize each branch for a given node-clade and accumulate the resulting
-        // P-hat PLVs in the parent node.
-        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
-      },
-      // UpdateEdge
-      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
-        // Accumulate all P-hat PLVs in the parent node without optimization.
-        // #321 I don't think we need this Likelihood call... just the update PHat.
-        UpdatePHatComputeLikelihood(node_id, child_id, rotated, operations);
-      }));
+  DepthFirstWithTidyAction(
+      false,
+      TidySubsplitDAGTraversalAction(
+          // BeforeNode
+          [this, &operations](size_t node_id) {
+            if (!GetDAGNode(node_id)->IsRootsplit()) {
+              // Update R-hat if we're not at the root.
+              UpdateRHat(node_id, operations);
+            }
+          },
+          // AfterNode
+          [this, &operations](size_t node_id) {
+            // Make P the elementwise product ("o") of the two P PLVs for the
+            // node-clades.
+            operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
+                                          GetPLVIndex(PLVType::P_HAT, node_id),
+                                          GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
+          },
+          // BeforeNodeClade
+          [this, &operations](size_t node_id, bool rotated) {
+            const PLVType p_hat_plv_type =
+                rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
+            // Update the R PLV corresponding to our rotation status.
+            operations.push_back(RUpdateOfRotated(node_id, rotated));
+            // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
+            operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
+          },
+          // ModifyEdge
+          [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+            // Optimize each branch for a given node-clade and accumulate the resulting
+            // P-hat PLVs in the parent node.
+            OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
+          },
+          // UpdateEdge
+          [this, &operations](size_t node_id, size_t child_id, bool rotated) {
+            // Accumulate all P-hat PLVs in the parent node without optimization.
+            // #321 I don't think we need this Likelihood call... just the update PHat.
+            UpdatePHatComputeLikelihood(node_id, child_id, rotated, operations);
+          }));
   return operations;
 }
 
@@ -151,42 +159,39 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
 }
 
 GPOperationVector GPDAG::LeafwardPass() const {
-  return LeafwardPass(LeafwardPassTraversal());
+  return LeafwardPass(LeafwardPassTraversal(false));
 }
 
 GPOperationVector GPDAG::MarginalLikelihood() const {
   GPOperationVector operations = {GPOperations::ResetMarginalLikelihood{}};
-  for (size_t rootsplit_idx = 0; rootsplit_idx < rootsplits_.size(); rootsplit_idx++) {
-    const auto rootsplit = rootsplits_[rootsplit_idx];
-    const auto root_subsplit = rootsplit + ~rootsplit;
-    size_t rootsplit_dag_id = subsplit_to_id_.at(root_subsplit);
+  for (const auto &rootsplit_id : RootsplitIds()) {
     operations.push_back(GPOperations::IncrementMarginalLikelihood{
-        GetPLVIndex(PLVType::R_HAT, rootsplit_dag_id), rootsplit_idx,
-        GetPLVIndex(PLVType::P, rootsplit_dag_id)});
+        GetPLVIndex(PLVType::R_HAT, rootsplit_id),
+        GPCSPIndexOfIds(DAGRootNodeId(), rootsplit_id),
+        GetPLVIndex(PLVType::P, rootsplit_id)});
   }
   return operations;
 }
 
 GPOperationVector GPDAG::RootwardPass() const {
-  return RootwardPass(RootwardPassTraversal());
+  return RootwardPass(RootwardPassTraversal(false));
 }
 
 GPOperationVector GPDAG::OptimizeSBNParameters() const {
   GPOperationVector operations;
   std::unordered_set<size_t> visited_nodes;
-  for (size_t &id : LeafwardPassTraversal()) {
+  for (size_t &id : LeafwardPassTraversal(false)) {
     const auto node = GetDAGNode(id);
     OptimizeSBNParametersForASubsplit(node->GetBitset(), operations);
     OptimizeSBNParametersForASubsplit(node->GetBitset().RotateSubsplit(), operations);
   }
-  operations.push_back(UpdateSBNProbabilities{0, rootsplits_.size()});
+  operations.push_back(UpdateSBNProbabilities{0, RootsplitCount()});
   return operations;
 }
 
 GPOperationVector GPDAG::SetLeafwardZero() const {
   GPOperationVector operations;
-  const auto node_count = dag_nodes_.size();
-  for (size_t i = 0; i < node_count; i++) {
+  for (size_t i = 0; i < NodeCountWithoutDAGRoot(); i++) {
     operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R_HAT, i)});
     operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R, i)});
     operations.push_back(ZeroPLV{GetPLVIndex(PLVType::R_TILDE, i)});
@@ -196,18 +201,17 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
 
 GPOperationVector GPDAG::SetRhatToStationary() const {
   GPOperationVector operations;
-  IterateOverRootsplitIds([this, &operations](size_t rootsplit_id) {
-    size_t root_gpcsp_idx = RootsplitIndexOfId(rootsplit_id);
+  for (const auto &rootsplit_id : RootsplitIds()) {
+    size_t root_gpcsp_idx = GPCSPIndexOfIds(DAGRootNodeId(), rootsplit_id);
     operations.push_back(SetToStationaryDistribution{
         GetPLVIndex(PLVType::R_HAT, rootsplit_id), root_gpcsp_idx});
-  });
+  }
   return operations;
 }
 
 GPOperationVector GPDAG::SetRootwardZero() const {
   GPOperationVector operations;
-  const auto node_count = dag_nodes_.size();
-  for (size_t i = taxon_count_; i < node_count; i++) {
+  for (size_t i = taxon_count_; i < NodeCountWithoutDAGRoot(); i++) {
     operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P, i)});
     operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P_HAT, i)});
     operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P_HAT_TILDE, i)});
@@ -219,7 +223,6 @@ GPOperationVector GPDAG::LeafwardPass(const SizeVector &visit_order) const {
   GPOperationVector operations;
   for (const size_t node_id : visit_order) {
     const auto node = GetDAGNode(node_id);
-
     // Build rhat(s) via rhat(s) += \sum_t q(s|t) P'(s|t) r(t)
     AddRhatOperations(node, operations);
     // Multiply to get r(s) = rhat(s) \circ phat(s_tilde).
@@ -238,16 +241,15 @@ GPOperationVector GPDAG::RootwardPass(const SizeVector &visit_order) const {
   GPOperationVector operations;
   for (const size_t node_id : visit_order) {
     const auto node = GetDAGNode(node_id);
-    if (node->IsLeaf()) {
-      continue;
+    if (!node->IsLeaf()) {
+      // Build phat(s).
+      AddPhatOperations(node, false, operations);
+      // Build phat(s_tilde).
+      AddPhatOperations(node, true, operations);
+      // Multiply to get p(s) = phat(s) \circ phat(s_tilde).
+      operations.push_back(Multiply{node_id, GetPLVIndex(PLVType::P_HAT, node_id),
+                                    GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
     }
-    // Build phat(s).
-    AddPhatOperations(node, false, operations);
-    // Build phat(s_tilde).
-    AddPhatOperations(node, true, operations);
-    // Multiply to get p(s) = phat(s) \circ phat(s_tilde).
-    operations.push_back(Multiply{node_id, GetPLVIndex(PLVType::P_HAT, node_id),
-                                  GetPLVIndex(PLVType::P_HAT_TILDE, node_id)});
   }
   return operations;
 }

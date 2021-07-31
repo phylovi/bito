@@ -88,7 +88,7 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
   auto inverted_sbn_prior =
       dag_.InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
   engine_ = std::make_unique<GPEngine>(
-      std::move(site_pattern), plv_count_per_node_ * dag_.NodeCount(),
+      std::move(site_pattern), plv_count_per_node_ * (dag_.NodeCountWithoutDAGRoot()),
       dag_.GPCSPCountWithFakeSubsplits(), mmap_file_path_, rescaling_threshold,
       std::move(sbn_prior), std::move(unconditional_node_probabilities),
       std::move(inverted_sbn_prior));
@@ -253,34 +253,10 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
 
 StringVector GPInstance::PrettyIndexer() const {
   StringVector pretty_representation(dag_.BuildGPCSPIndexer().size());
-  for (const auto &[key, idx] : dag_.BuildGPCSPIndexer()) {
-    if (idx < dag_.RootsplitCount()) {
-      // We have decided to keep the "expanded" rootsplit representation for the time
-      // being (see #273). Here we convert it to the representation used in the rest of
-      // libsbn.
-      auto classic_rootsplit_representation =
-          std::min(key.SubsplitChunk(0), key.SubsplitChunk(1));
-      pretty_representation[idx] = classic_rootsplit_representation.ToString();
-    } else {
-      pretty_representation[idx] = key.PCSPToString();
-    }
+  for (const auto &[pcsp, idx] : dag_.BuildGPCSPIndexer()) {
+    pretty_representation[idx] = pcsp.PCSPToString();
   }
   return pretty_representation;
-}
-
-// Convert the GP indexer to the representation used in the rest of libsbn (#273).
-BitsetSizeMap GPInstance::UnexpandedIndexer() const {
-  BitsetSizeMap unexpanded_indexer;
-  for (const auto &[key, idx] : dag_.BuildGPCSPIndexer()) {
-    if (idx < dag_.RootsplitCount()) {
-      const auto classic_rootsplit_representation =
-          std::min(key.SubsplitChunk(0), key.SubsplitChunk(1));
-      SafeInsert(unexpanded_indexer, classic_rootsplit_representation, idx);
-    } else {
-      SafeInsert(unexpanded_indexer, key, idx);
-    }
-  }
-  return unexpanded_indexer;
 }
 
 StringDoubleVector GPInstance::PrettyIndexedVector(EigenConstVectorXdRef v) {

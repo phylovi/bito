@@ -22,17 +22,18 @@ TidySubsplitDAG::TidySubsplitDAG(size_t taxon_count,
   dirty_rotated_ = EigenArrayXb::Zero(node_count);
   dirty_sorted_ = EigenArrayXb::Zero(node_count);
 
-  SubsplitDAG::DepthFirstWithAction(SubsplitDAGTraversalAction(
-      // BeforeNode
-      [](size_t node_id) {},
-      // AfterNode
-      [](size_t node_id) {},
-      // BeforeNodeClade
-      [](size_t node_id, bool rotated) {},
-      // VisitEdge
-      [this](size_t node_id, size_t child_id, bool rotated) {
-        SetBelow(node_id, rotated, child_id);
-      }));
+  SubsplitDAG::DepthFirstWithAction(
+      true, SubsplitDAGTraversalAction(
+                // BeforeNode
+                [](size_t node_id) {},
+                // AfterNode
+                [](size_t node_id) {},
+                // BeforeNodeClade
+                [](size_t node_id, bool rotated) {},
+                // VisitEdge
+                [this](size_t node_id, size_t child_id, bool rotated) {
+                  SetBelow(node_id, rotated, child_id);
+                }));
 }
 
 EigenArrayXb TidySubsplitDAG::BelowNode(size_t node_id) {
@@ -117,14 +118,16 @@ TidySubsplitDAG TidySubsplitDAG::TrivialExample() {
 }
 
 TidySubsplitDAG TidySubsplitDAG::ManualTrivialExample() {
-  auto manual_dag = TidySubsplitDAG(5);
+  auto manual_dag = TidySubsplitDAG(6);
 
   // The tree ((0,1)3,2)4:
+  // #349: Update images to match tests.
   // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769
   manual_dag.SetBelow(3, true, 0);
   manual_dag.SetBelow(3, false, 1);
-  manual_dag.SetBelow(4, true, 2);
-  manual_dag.SetBelow(4, false, 3);
+  manual_dag.SetBelow(4, false, 2);
+  manual_dag.SetBelow(4, true, 3);
+  manual_dag.SetBelow(5, true, 4);
 
   return manual_dag;
 }
@@ -137,25 +140,26 @@ TidySubsplitDAG TidySubsplitDAG::MotivatingExample() {
 std::string TidySubsplitDAG::RecordTraversal() {
   std::stringstream result;
   result << std::boolalpha;
-  DepthFirstWithTidyAction(TidySubsplitDAGTraversalAction(
-      // BeforeNode
-      [](size_t node_id) {},
-      // AfterNode
-      [](size_t node_id) {},
-      // BeforeNodeClade
-      [&result](size_t node_id, bool rotated) {
-        result << "descending along " << node_id << ", " << rotated << "\n";
-      },
-      // ModifyEdge
-      [this, &result](size_t node_id, size_t child_id, bool rotated) {
-        result << "modifying: ";
-        result << node_id << ", " << child_id << ", " << rotated << "\n";
-      },
-      // UpdateEdge
-      [this, &result](size_t node_id, size_t child_id, bool rotated) {
-        result << "updating:  ";
-        result << node_id << ", " << child_id << ", " << rotated << "\n";
-      }));
+  DepthFirstWithTidyAction(
+      true, TidySubsplitDAGTraversalAction(
+                // BeforeNode
+                [](size_t node_id) {},
+                // AfterNode
+                [](size_t node_id) {},
+                // BeforeNodeClade
+                [&result](size_t node_id, bool rotated) {
+                  result << "descending along " << node_id << ", " << rotated << "\n";
+                },
+                // ModifyEdge
+                [this, &result](size_t node_id, size_t child_id, bool rotated) {
+                  result << "modifying: ";
+                  result << node_id << ", " << child_id << ", " << rotated << "\n";
+                },
+                // UpdateEdge
+                [this, &result](size_t node_id, size_t child_id, bool rotated) {
+                  result << "updating:  ";
+                  result << node_id << ", " << child_id << ", " << rotated << "\n";
+                }));
   return result.str();
 }
 
