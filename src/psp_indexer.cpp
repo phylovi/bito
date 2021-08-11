@@ -52,7 +52,7 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) con
   // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
   // we use analogous notation.
   auto psp_index = [& indexer = this->indexer_](const Bitset& z1, const Bitset& z2) {
-    return indexer.at(std::max(z1, z2) + std::min(z1, z2));
+    return indexer.at(Bitset::SubsplitOfPair(z1, z2));
   };
   topology->TriplePreorder(
       // f_rootsplit

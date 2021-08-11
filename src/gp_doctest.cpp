@@ -10,6 +10,7 @@
 #include "combinatorics.hpp"
 #include "gp_instance.hpp"
 #include "phylo_model.hpp"
+#include "reindexer.hpp"
 #include "rooted_sbn_instance.hpp"
 #include "tidy_subsplit_dag.hpp"
 
@@ -159,8 +160,8 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
                              const StringDoubleVector& gp_vector) {
   for (const auto& [gp_string, gp_value] : gp_vector) {
     if (exact_map.find(gp_string) == exact_map.end()) {
-      Assert(!Bitset(gp_string.substr(0, gp_string.find('|') - 1)).Any() ||
-                 !Bitset(gp_string.substr(gp_string.rfind('|') + 1)).Any(),
+      Assert(Bitset(gp_string.substr(0, gp_string.find('|') - 1)).None() ||
+                 Bitset(gp_string.substr(gp_string.rfind('|') + 1)).None(),
              "Missing an internal node in CheckExactMapVsGPVector.");
     } else {
       const double tolerance = 1e-5;
@@ -606,4 +607,162 @@ TEST_CASE("GPInstance: test rootsplits") {
     const auto rootsplit_node = dag.GetDAGNode(rootsplit_id);
     CHECK(rootsplit_node->IsRootsplit());
   }
+}
+
+// See diagram at https://github.com/phylovi/libsbn/issues/351#issuecomment-908707617.
+TEST_CASE("GPInstance: IsValidNewNodePair tests") {
+  const std::string fasta_path = "data/five_taxon.fasta";
+  auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
+  auto& dag = inst.GetDAG();
+  // Nodes are not adjacent (12|34 and 2|4).
+  CHECK(!dag.IsValidNewNodePair(Bitset("0110000011"), Bitset("0010000001")));
+  // Nodes have 5 taxa while the DAG has 4 (12|34 and 1|2).
+  CHECK(!dag.IsValidNewNodePair(Bitset("011000000110"), Bitset("010000001000")));
+  // Parent node does not have a parent (12|3 and 1|2).
+  CHECK(!dag.IsValidNewNodePair(Bitset("0110000010"), Bitset("0100000100")));
+  // Rotated clade of the parent node does not have a child (02|134 and 1|34).
+  CHECK(!dag.IsValidNewNodePair(Bitset("1010001011"), Bitset("0100000011")));
+  // Rotated clade of the child node does not have a child (0123|4 and 023|1).
+  CHECK(!dag.IsValidNewNodePair(Bitset("1111000001"), Bitset("1011001000")));
+  // Sorted clade of the child node does not have a child (0123|4 and 0|123).
+  CHECK(!dag.IsValidNewNodePair(Bitset("1111000001"), Bitset("1000001110")));
+  // Valid new node pair (0123|4 and 012|3).
+  CHECK(dag.IsValidNewNodePair(Bitset("1111000001"), Bitset("1110000010")));
+}
+
+// See diagram at https://github.com/phylovi/libsbn/issues/351#issuecomment-908708284.
+TEST_CASE("GPInstance: AddNodePair tests") {
+  const std::string fasta_path = "data/five_taxon.fasta";
+  auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
+  auto& dag = inst.GetDAG();
+  // Check that AddNodePair throws if node pair is invalid (12|34 and 2|4).
+  CHECK_THROWS(dag.AddNodePair(Bitset("0110000011"), Bitset("0010000001")));
+  // Add 2|34 and 3|4, which are both already in the DAG.
+  // Check that AddNodePair returns empty new_node_ids and new_edge_idxs
+  // and that node_reindexer and edge_reindexer are the identity reindexers.
+  auto node_addition_result =
+      dag.AddNodePair(Bitset("0010000011"), Bitset("0001000001"));
+  CHECK(node_addition_result.new_node_ids.empty());
+  CHECK(node_addition_result.new_edge_idxs.empty());
+  CHECK_EQ(node_addition_result.node_reindexer, Reindexer::IdentityReindexer(16));
+  CHECK_EQ(node_addition_result.edge_reindexer, Reindexer::IdentityReindexer(24));
+  // Before adding any nodes.
+  size_t prev_node_count = dag.NodeCount();
+  size_t prev_edge_count = dag.GPCSPCountWithFakeSubsplits();
+  size_t prev_topology_count = dag.TopologyCount();
+  // Add nodes 24|3 and 2|4.
+  Bitset parent_subsplit("0010100010");
+  Bitset child_subsplit("0010000001");
+  node_addition_result = dag.AddNodePair(parent_subsplit, child_subsplit);
+  // Check that the node count and edge count was updated.
+  CHECK_EQ(dag.NodeCount(), prev_node_count + 2);
+  CHECK_EQ(dag.GPCSPCountWithFakeSubsplits(), prev_edge_count + 6);
+  // Check that both nodes now exist.
+  CHECK(dag.ContainsNode(parent_subsplit));
+  CHECK(dag.ContainsNode(child_subsplit));
+  // Check that all necessary edges were created.
+  const auto parent_node = dag.GetDAGNode(dag.GetDAGNodeId(parent_subsplit));
+  const auto child_node = dag.GetDAGNode(dag.GetDAGNodeId(child_subsplit));
+  std::map<bool, SizeVector> correct_parents_of_parent{{true, {}}, {false, {16, 14}}};
+  std::map<bool, SizeVector> parents_of_parent{
+      {true, parent_node->GetRootwardRotated()},
+      {false, parent_node->GetRootwardSorted()}};
+  CHECK_EQ(parents_of_parent, correct_parents_of_parent);
+  std::map<bool, SizeVector> children_of_parent{
+      {true, parent_node->GetLeafwardRotated()},
+      {false, parent_node->GetLeafwardSorted()}};
+  std::map<bool, SizeVector> correct_children_of_parent{{true, {12}}, {false, {3}}};
+  CHECK_EQ(children_of_parent, correct_children_of_parent);
+  std::map<bool, SizeVector> parents_of_children{
+      {true, child_node->GetRootwardRotated()},
+      {false, child_node->GetRootwardSorted()}};
+  std::map<bool, SizeVector> correct_parents_of_children{{true, {13}}, {false, {}}};
+  CHECK_EQ(parents_of_children, correct_parents_of_children);
+  std::map<bool, SizeVector> children_of_child{
+      {true, child_node->GetLeafwardRotated()},
+      {false, child_node->GetLeafwardSorted()}};
+  std::map<bool, SizeVector> correct_children_of_child{{true, {2}}, {false, {4}}};
+  CHECK_EQ(children_of_child, correct_children_of_child);
+  // Check that node_reindexer and edge_reindexer are correct.
+  SizeVector correct_node_reindexer{0, 1,  2,  3,  4,  5,  6,  7,  8,
+                                    9, 10, 11, 14, 15, 16, 17, 12, 13};
+  CHECK_EQ(node_addition_result.node_reindexer, correct_node_reindexer);
+  SizeVector correct_edge_reindexer{0,  1,  2,  3,  4,  5,  6,  7,  9,  10,
+                                    11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
+                                    22, 23, 24, 25, 26, 27, 28, 29, 12, 8};
+  CHECK_EQ(node_addition_result.edge_reindexer, correct_edge_reindexer);
+  // Check that new_node_ids and new_edge_idxs are correct.
+  SizeVector correct_new_node_ids{12, 13};
+  CHECK_EQ(node_addition_result.new_node_ids, correct_new_node_ids);
+  SizeVector correct_new_edge_idxs{26, 27, 28, 29, 12, 8};
+  CHECK_EQ(node_addition_result.new_edge_idxs, correct_new_edge_idxs);
+  // Check that `dag_nodes` was updated (node 12 -> 14).
+  const auto& node_14 = dag.GetDAGNode(14);
+  CHECK_EQ(node_14->GetBitset().ToString(), "0100000111");
+  // Check that node fields were updated correctly.
+  const auto& sorted_parents_14 = node_14->GetRootwardSorted();
+  const auto& sorted_children_14 = node_14->GetLeafwardSorted();
+  CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 13) ==
+        sorted_parents_14.end());
+  CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 15) !=
+        sorted_parents_14.end());
+  CHECK(std::find(sorted_children_14.begin(), sorted_children_14.end(), 11) !=
+        sorted_children_14.end());
+  CHECK_EQ(node_14->Id(), 14);
+  // Check that `subsplit_to_id_` node ids were updated.
+  CHECK_EQ(dag.GetDAGNodeId(node_14->GetBitset()), 14);
+  // Check that `dag_edges_` node ids were updated.
+  CHECK_EQ(dag.GPCSPIndexOfIds(15, 14), 9);
+  // Check that `dag_edges_` edge idxs were updated.
+  CHECK_EQ(dag.GPCSPIndexOfIds(14, 13), 8);
+  CHECK_EQ(dag.GPCSPIndexOfIds(16, 13), 12);
+  CHECK_EQ(dag.GPCSPIndexOfIds(11, 4), 25);
+  // Check that `parent_to_range_` was updated.
+  CHECK_EQ(dag.GetEdgeRange(node_14->GetBitset(), false).second, 9);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(16)->GetBitset(), false).first, 11);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(16)->GetBitset(), false).second, 13);
+  // Check that `topology_count_` was updated.
+  CHECK_EQ(dag.TopologyCount(), prev_topology_count + 2);
+}
+
+// See diagram at https://github.com/phylovi/libsbn/issues/351#issuecomment-908709477.
+TEST_CASE("GPInstance: Only add parent node tests") {
+  const std::string fasta_path = "data/five_taxon.fasta";
+  auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
+  auto& dag = inst.GetDAG();
+  // Before adding any nodes.
+  size_t prev_node_count = dag.NodeCount();
+  size_t prev_edge_count = dag.GPCSPCountWithFakeSubsplits();
+  // Add nodes 12|34 and 1|2.
+  dag.AddNodePair(Bitset("0110000011"), Bitset("0100000100"));
+  CHECK_EQ(dag.NodeCount(), prev_node_count + 2);
+  CHECK_EQ(dag.GPCSPCountWithFakeSubsplits(), prev_edge_count + 5);
+  // Add nodes 0|12 and 1|2 (this should just add 0|12 and associated edges).
+  dag.AddNodePair(Bitset("1000001100"), Bitset("0100000100"));
+  // Check that the node count and edge count was updated.
+  CHECK_EQ(dag.NodeCount(), prev_node_count + 3);
+  CHECK_EQ(dag.GPCSPCountWithFakeSubsplits(), prev_edge_count + 8);
+  // Check that BuildEdgeReindexer() correctly handles rotated edges.
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), true).first, 5);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), true).second, 7);
+}
+
+// See diagram at https://github.com/phylovi/libsbn/issues/351#issuecomment-908711187.
+TEST_CASE("GPInstance: Only add child node tests") {
+  const std::string fasta_path = "data/five_taxon.fasta";
+  auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_3.nwk");
+  auto& dag = inst.GetDAG();
+  // Before adding any nodes.
+  size_t prev_node_count = dag.NodeCount();
+  size_t prev_edge_count = dag.GPCSPCountWithFakeSubsplits();
+  // Add nodes 1|234 and 24|3 (this should just add 24|3 and associated edges).
+  dag.AddNodePair(Bitset("0100000111"), Bitset("0010100010"));
+  // Check that the node count and edge count was updated.
+  CHECK_EQ(dag.NodeCount(), prev_node_count + 1);
+  CHECK_EQ(dag.GPCSPCountWithFakeSubsplits(), prev_edge_count + 4);
+  // Check that new child node is connected to all possible parents.
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), false).first, 9);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), false).second, 11);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11)->GetBitset(), false).first, 3);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11)->GetBitset(), false).second, 5);
 }

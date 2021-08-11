@@ -34,6 +34,7 @@
 #ifndef SRC_SUBSPLIT_DAG_HPP_
 #define SRC_SUBSPLIT_DAG_HPP_
 
+#include "reindexer.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 #include "subsplit_dag_action.hpp"
@@ -54,6 +55,11 @@ class SubsplitDAG {
   using ParentRotationChildEdgeLambda =
       std::function<void(const size_t, const bool, const size_t, const size_t)>;
 
+  // NodeAdditionResult is the return value of SubsplitDAG::AddNodePair.
+  struct NodeAdditionResult {
+    SizeVector new_node_ids, new_edge_idxs, node_reindexer, edge_reindexer;
+  };
+
   SubsplitDAG();
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
 
@@ -70,6 +76,7 @@ class SubsplitDAG {
   void Print() const;
   void PrintGPCSPIndexer() const;
   void PrintDAGEdges() const;
+  void PrintParentToRange() const;
   std::string ToDot(bool show_index_labels = true) const;
 
   // Create a GPCSPIndexer representing the DAG.
@@ -77,6 +84,7 @@ class SubsplitDAG {
   // bitsets are formatted as subsplits: 1110|0001.
   BitsetSizeMap BuildGPCSPIndexer() const;
   SubsplitDAGNode *GetDAGNode(size_t node_id) const;
+  size_t GetDAGNodeId(const Bitset &subsplit) const;
   size_t DAGRootNodeId() const;
   // Return the node ids corresponding to the rootsplits.
   const SizeVector &RootsplitIds() const;
@@ -86,6 +94,8 @@ class SubsplitDAG {
                        const Bitset &child_subsplit) const;
   // Get the GPCSP index from a parent-child pair of DAG nodes using the dag_edges_.
   size_t GPCSPIndexOfIds(size_t parent_id, size_t child_id) const;
+  // Get the range of outgoing idxs from the given clade of a subsplit.
+  SizePair GetEdgeRange(const Bitset &subsplit, const bool rotated) const;
   // Iterate over the "real" nodes, i.e. those that do not correspond to
   // fake subsplits or the DAG root node.
   void IterateOverRealNodes(const NodeLambda &f) const;
@@ -101,6 +111,7 @@ class SubsplitDAG {
   void IterateOverLeafwardEdgesAndChildren(const SubsplitDAGNode *node,
                                            const EdgeAndNodeLambda &f) const;
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
+  // Excludes edges to the DAG root node.
   void IterateOverRootwardEdges(const SubsplitDAGNode *node,
                                 const EdgeDestinationLambda &f) const;
   // Iterate over the rootward edges, supplying both the a GPCSP index of the edge and
@@ -112,7 +123,6 @@ class SubsplitDAG {
   Node::NodePtrVec GenerateAllTopologies() const;
 
   // Apply an Action via a depth first traversal. Do not visit leaf nodes.
-  // Has option to include the DAG root node in the traversal.
   // Applied to a given node, we:
   // * Apply BeforeNode
   // * For each of the clades of the node, we:
@@ -122,15 +132,11 @@ class SubsplitDAG {
   //         * Apply VisitEdge to the edge
   // * Apply AfterNode
   template <typename TraversalActionT>
-  void DepthFirstWithAction(const bool include_dag_root_node,
+  void DepthFirstWithAction(const SizeVector &starting_nodes,
                             const TraversalActionT &action) const {
     std::unordered_set<size_t> visited_nodes;
-    if (include_dag_root_node) {
-      DepthFirstWithActionForNode(action, DAGRootNodeId(), visited_nodes);
-    } else {
-      for (const auto &rootsplit_id : RootsplitIds()) {
-        DepthFirstWithActionForNode(action, rootsplit_id, visited_nodes);
-      }
+    for (const auto &node_id : starting_nodes) {
+      DepthFirstWithActionForNode(action, node_id, visited_nodes);
     }
   };
 
@@ -203,6 +209,45 @@ class SubsplitDAG {
       EigenConstVectorXdRef normalized_sbn_parameters,
       EigenConstVectorXdRef node_probabilities) const;
 
+  // Does a node with the given subsplit exist?
+  bool ContainsNode(const Bitset &subsplit) const;
+  // Does a node with the given id exist?
+  bool ContainsNode(const size_t node_id) const;
+  // Does an edge that connects the two nodes exist?
+  bool ContainsEdge(const size_t parent_id, const size_t child_id) const;
+  // Get the rotated and sorted parents of the node with the given subsplit.
+  std::pair<SizeVector, SizeVector> BuildParentIdVector(const Bitset &subsplit) const;
+  // Get the rotated and sorted children of the node with the given subsplit.
+  std::pair<SizeVector, SizeVector> BuildChildIdVector(const Bitset &subsplit) const;
+  // Check if it is valid to add the node pair. More specifically, check that:
+  // - The nodes are adjacent.
+  // - The nodes do not add/remove any taxa.
+  // - The parent node has at least 1 parent.
+  // - Including the child node, each clade of the parent node has at least 1 child.
+  // - Each clade of the child node has at least 1 child.
+  bool IsValidNewNodePair(const Bitset &parent_subsplit,
+                          const Bitset &child_subsplit) const;
+  // Add an adjacent node pair to the DAG
+  // and maintain the following indexing conventions for nodes and edges:
+  // - Tips have ids 0 to taxon_count_.
+  // - Parents have higher ids than their children.
+  // - The DAG root node has highest id.
+  // - Edges descending from the same node clade have contiguous idxs.
+  // - There are no gaps in node ids or edge idxs.
+  // Get the new_node_ids, new_edge_idxs, node_reindexer, and edge_reindexer.
+  // Note: if both nodes already existed in the DAG, then new_node_ids and
+  // new_edge_idxs will be empty.
+  SubsplitDAG::NodeAdditionResult AddNodePair(const Bitset &parent_subsplit,
+                                              const Bitset &child_subsplit);
+  // Get the reindexer for node ids.
+  SizeVector BuildNodeReindexer(const size_t prev_node_count);
+  // Get the reindexer for edges idxs.
+  SizeVector BuildEdgeReindexer(const size_t prev_edge_count);
+  // Remap all node ids according to the node_reindexer.
+  void RemapNodeIds(const SizeVector &node_reindexer);
+  // Remap all edge idxs according to the edge_reindexer.
+  void RemapEdgeIdxs(const SizeVector &edge_reindexer);
+
  protected:
   size_t taxon_count_;
   size_t gpcsp_count_without_fake_subsplits_;
@@ -210,7 +255,7 @@ class SubsplitDAG {
   // it includes single element range for fake subsplits.
   BitsetSizePairMap parent_to_range_;
 
-  // A map from node id pairs to gpcsp idxes.
+  // A map from node id pairs to gpcsp idxs.
   std::map<SizePair, size_t> dag_edges_;
 
   // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
@@ -239,9 +284,9 @@ class SubsplitDAG {
   std::tuple<BitsetSizeMap, SizeBitsetMap, BitsetVector> ProcessTopologyCounter(
       const Node::TopologyCounter &topology_counter);
   void CreateAndInsertNode(const Bitset &subsplit);
-  // Connect the `idx` node to its children, and its children to it, rotating as needed.
-  void ConnectNodes(const SizeBitsetMap &index_to_child, size_t id, bool rotated);
-
+  void CreateAndInsertEdge(const size_t parent_id, const size_t child_id, bool rotated);
+  void ConnectGivenNodes(const size_t parent_id, const size_t child_id, bool rotated);
+  void ConnectNodes(const SizeBitsetMap &index_to_child, size_t node_id, bool rotated);
   void BuildNodesDepthFirst(const SizeBitsetMap &index_to_child, const Bitset &subsplit,
                             std::unordered_set<Bitset> &visited_subsplits);
   void BuildNodes(const SizeBitsetMap &index_to_child, const BitsetVector &rootsplits);
@@ -250,11 +295,29 @@ class SubsplitDAG {
   void CountTopologies();
   // Expand dag_edges_ and parent_to_range_ with fake subsplits at the end.
   void AddFakeSubsplitsToDAGEdgesAndParentToRange();
-  void LeafwardDepthFirst(size_t id, SizeVector &visit_order,
+  void LeafwardDepthFirst(size_t node_id, SizeVector &visit_order,
                           std::unordered_set<size_t> &visited_nodes) const;
-  void RootwardDepthFirst(size_t id, SizeVector &visit_order,
+  void RootwardDepthFirst(size_t node_id, SizeVector &visit_order,
                           std::unordered_set<size_t> &visited_nodes) const;
-  Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated);
+  Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated) const;
+
+  // Note: the below methods are helper funcions for AddNodePair.
+  // Connect the child to all of its children and update new_edge_idxs.
+  void ConnectChildToAllChildren(const Bitset &child_subsplit,
+                                 SizeVector &new_edge_idxs);
+  // Connect the parent to all of its children except for the given child node and
+  // update new_edge_idxs.
+  void ConnectParentToAllChildrenExcept(const Bitset &parent_subsplit,
+                                        const Bitset &child_subsplit,
+                                        SizeVector &new_edge_idxs);
+  // Connect the child to all of its parents except for the given parent node and update
+  // new_edge_idxs.
+  void ConnectChildToAllParentsExcept(const Bitset &parent_subsplit,
+                                      const Bitset &child_subsplit,
+                                      SizeVector &new_edge_idxs);
+  // Connect the parent to all of its parents and update new_edge_idxs.
+  void ConnectParentToAllParents(const Bitset &parent_subsplit,
+                                 SizeVector &new_edge_idxs);
 };
 
 #endif  // SRC_SUBSPLIT_DAG_HPP_

@@ -3,7 +3,7 @@
 
 #include "subsplit_dag_node.hpp"
 
-std::string GetNeighborString(std::vector<size_t> neighbors) {
+std::string GetNeighborString(SizeVector neighbors) {
   std::string str;
   for (size_t i : neighbors) {
     str += std::to_string(i) + " ";
