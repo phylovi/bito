@@ -17,6 +17,7 @@
 #define SRC_SUBSPLIT_DAG_NODE_HPP_
 
 #include "bitset.hpp"
+#include "reindexer.hpp"
 #include "sugar.hpp"
 
 class SubsplitDAGNode {
@@ -49,12 +50,19 @@ class SubsplitDAGNode {
   const SizeVector &GetRootward(bool rotated) const {
     return rotated ? GetRootwardRotated() : GetRootwardSorted();
   }
+  void RemapNodeIds(const SizeVector node_reindexer) {
+    id_ = node_reindexer.at(id_);
+    Reindexer::RemapIdVector(leafward_rotated_, node_reindexer);
+    Reindexer::RemapIdVector(leafward_sorted_, node_reindexer);
+    Reindexer::RemapIdVector(rootward_rotated_, node_reindexer);
+    Reindexer::RemapIdVector(rootward_sorted_, node_reindexer);
+  }
 
   std::string ToString() const;
 
  private:
   size_t id_;
-  Bitset subsplit_;
+  const Bitset subsplit_;
 
   SizeVector leafward_rotated_;
   SizeVector leafward_sorted_;

@@ -23,17 +23,17 @@ TidySubsplitDAG::TidySubsplitDAG(size_t taxon_count,
   dirty_sorted_ = EigenArrayXb::Zero(node_count);
 
   SubsplitDAG::DepthFirstWithAction(
-      true, SubsplitDAGTraversalAction(
-                // BeforeNode
-                [](size_t node_id) {},
-                // AfterNode
-                [](size_t node_id) {},
-                // BeforeNodeClade
-                [](size_t node_id, bool rotated) {},
-                // VisitEdge
-                [this](size_t node_id, size_t child_id, bool rotated) {
-                  SetBelow(node_id, rotated, child_id);
-                }));
+      {DAGRootNodeId()}, SubsplitDAGTraversalAction(
+                             // BeforeNode
+                             [](size_t node_id) {},
+                             // AfterNode
+                             [](size_t node_id) {},
+                             // BeforeNodeClade
+                             [](size_t node_id, bool rotated) {},
+                             // VisitEdge
+                             [this](size_t node_id, size_t child_id, bool rotated) {
+                               SetBelow(node_id, rotated, child_id);
+                             }));
 }
 
 EigenArrayXb TidySubsplitDAG::BelowNode(size_t node_id) {
@@ -140,25 +140,26 @@ std::string TidySubsplitDAG::RecordTraversal() {
   std::stringstream result;
   result << std::boolalpha;
   DepthFirstWithTidyAction(
-      true, TidySubsplitDAGTraversalAction(
-                // BeforeNode
-                [](size_t node_id) {},
-                // AfterNode
-                [](size_t node_id) {},
-                // BeforeNodeClade
-                [&result](size_t node_id, bool rotated) {
-                  result << "descending along " << node_id << ", " << rotated << "\n";
-                },
-                // ModifyEdge
-                [this, &result](size_t node_id, size_t child_id, bool rotated) {
-                  result << "modifying: ";
-                  result << node_id << ", " << child_id << ", " << rotated << "\n";
-                },
-                // UpdateEdge
-                [this, &result](size_t node_id, size_t child_id, bool rotated) {
-                  result << "updating:  ";
-                  result << node_id << ", " << child_id << ", " << rotated << "\n";
-                }));
+      {DAGRootNodeId()},
+      TidySubsplitDAGTraversalAction(
+          // BeforeNode
+          [](size_t node_id) {},
+          // AfterNode
+          [](size_t node_id) {},
+          // BeforeNodeClade
+          [&result](size_t node_id, bool rotated) {
+            result << "descending along " << node_id << ", " << rotated << "\n";
+          },
+          // ModifyEdge
+          [this, &result](size_t node_id, size_t child_id, bool rotated) {
+            result << "modifying: ";
+            result << node_id << ", " << child_id << ", " << rotated << "\n";
+          },
+          // UpdateEdge
+          [this, &result](size_t node_id, size_t child_id, bool rotated) {
+            result << "updating:  ";
+            result << node_id << ", " << child_id << ", " << rotated << "\n";
+          }));
   return result.str();
 }
 
