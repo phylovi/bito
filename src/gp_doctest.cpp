@@ -66,7 +66,7 @@ GPInstance MakeFiveTaxonInstance() {
 // trimmed to 500 sites by using seqmagick convert with `--cut 500:1000`.
 // The DAG obtained by `inst.SubsplitDAGToDot("_ignore/ds1-reduced-5.dot");` can be seen
 // at
-// https://user-images.githubusercontent.com/112708/106355238-8a0d7700-62ab-11eb-8830-f5e3cb6790e1.png
+// https://user-images.githubusercontent.com/62405940/129260508-c798c594-b1ed-4198-9712-088fbb2a4010.png
 GPInstance MakeDS1Reduced5Instance() {
   auto inst = GPInstanceOfFiles("data/ds1-reduced-5.fasta", "data/ds1-reduced-5.nwk");
   return inst;
@@ -211,8 +211,7 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
 TEST_CASE("GPInstance: marginal likelihood on seven taxa and four trees") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // #349: Update images to match tests.
-  // https://github.com/phylovi/libsbn/issues/323#issuecomment-783349464
+  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897225623
   TestCompositeMarginal(
       GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal-all-trees.nwk"),
       fasta_path);
@@ -224,7 +223,6 @@ TEST_CASE("GPInstance: gradient calculation") {
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-
   size_t rootsplit_id = rootsplit;
   size_t child_id = jupiter;
   size_t hello_node_count_without_dag_root_node = 5;
@@ -425,8 +423,7 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
   auto inst =
       GPInstanceOfFiles("data/five_taxon.fasta", "data/five_taxon_rooted_more_2.nwk");
   // See the DAG and the uniform probabilities at
-  // #349: Update images to match tests.
-  // https://github.com/phylovi/libsbn/issues/323#issuecomment-785410551
+  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897266149
   const auto& dag = inst.GetDAG();
   EigenVectorXd normalized_sbn_parameters = dag.BuildUniformOnTopologicalSupportPrior();
   EigenVectorXd node_probabilities =
@@ -495,8 +492,7 @@ TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   // Because the branch lengths contain the GPCSP index, we can check that the indices
   // correspond to what we see in the GPCSP DAG in
-  // #349: Update images to match tests.
-  // https://github.com/phylovi/libsbn/issues/323#issuecomment-787451356
+  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897233859
   CHECK_EQ(inst.GenerateCompleteRootedTreeCollection().Newick(),
            "((0:7,1:9):3,(2:11,(3:12,4:13):5):2):0;\n"
            "(1:10,(0:8,(2:11,(3:12,4:13):5):6):4):0;\n");
@@ -528,8 +524,7 @@ EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
 TEST_CASE("GPInstance: simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // #349: Update images to match tests.
-  // https://github.com/phylovi/libsbn/issues/323#issuecomment-783349464
+  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897225623
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   // Branch lengths generated from Python via
@@ -566,8 +561,7 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
 TEST_CASE("GPInstance: second simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // #349: Update images to match tests.
-  // https://github.com/phylovi/libsbn/issues/323#issuecomment-787963552
+  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897237046
   auto inst = GPInstanceOfFiles(fasta_path, "data/second-simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   // Branch lengths generated from Python via

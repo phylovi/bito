@@ -219,6 +219,7 @@ class SubsplitDAG {
   // A map from Bitset to the corresponding index in dag_nodes_.
   // The first entries are reserved for fake subsplits.
   // The last entries are reserved for rootsplits.
+  // The DAG root node has the highest node id.
   BitsetSizeMap subsplit_to_id_;
   std::vector<std::unique_ptr<SubsplitDAGNode>> dag_nodes_;
 
