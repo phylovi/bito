@@ -36,15 +36,13 @@ class TidySubsplitDAG : public SubsplitDAG {
 
   std::string AboveMatricesAsString() const;
 
-  // From ((0,1)2)
-  // #349: Update images to match tests.
-  // https://github.com/phylovi/libsbn/issues/307#issuecomment-766137769
+  // From ((0,1),2)
+  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897963382
   static TidySubsplitDAG TrivialExample();
   // The same DAG, built by hand for the test.
   static TidySubsplitDAG ManualTrivialExample();
   // From (0,(1,(2,3))) and ((0,(2,3)),1)
-  // #349: Update images to match tests.
-  // See https://github.com/phylovi/libsbn/issues/307#issuecomment-765901588
+  // See https://github.com/phylovi/libsbn/issues/349#issuecomment-897980459
   // Update during #288 #321
   static TidySubsplitDAG MotivatingExample();
 

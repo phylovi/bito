@@ -201,8 +201,7 @@ TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
   inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
-  // #349: Update images to match tests.
-  // See diagram at https://github.com/phylovi/libsbn/issues/323#issuecomment-785080187
+  // See diagram at https://github.com/phylovi/libsbn/issues/349#issuecomment-898022916
   // Numbering in comments is...                               node: subsplit.
   StringDoubleMap correct_parameters({{"1100000111", 0.5},  // 10: 01|234
                                       {"1000001111", 0.3},  // 15: 0|1234
@@ -212,13 +211,13 @@ TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
                                       {"0111000001", 0.2},  // 13: 123|4
                                       {"0101000100", 0.2},  // 12: 13|2
                                       {"1000001001", 0.2},  // 17: 0|14
-                                      {"0010000011", 0.4},  //  7: 2|34
-                                      {"0011000001", 0.2},  //  9: 23|4
-                                      {"1000001000", 0.5},  //  5: 0|1
+                                      {"0010000011", 0.4},  //  8: 2|34
+                                      {"0011000001", 0.2},  //  6: 23|4
+                                      {"1000001000", 0.5},  //  9: 0|1
                                       {"0100000010", 0.2},  // 11: 1|3
                                       {"0100000001", 0.2},  // 16: 1|4
-                                      {"0010000010", 0.2},  //  6: 2|3
-                                      {"0001000001", 0.4}}  //  8: 3|4
+                                      {"0010000010", 0.2},  //  5: 2|3
+                                      {"0001000001", 0.4}}  //  7: 3|4
   );
 
   auto subsplit_probabilities = inst.UnconditionalSubsplitProbabilities();

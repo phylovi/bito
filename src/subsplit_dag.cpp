@@ -292,9 +292,6 @@ void SubsplitDAG::IterateOverLeafwardEdgesAndChildren(
 
 void SubsplitDAG::IterateOverRootwardEdges(const SubsplitDAGNode *node,
                                            const EdgeDestinationLambda &f) const {
-  // #349 Can we think a little about this IsRootsplit test? It seems a little
-  // counter-intuitive given the name. Removing it makes some tests break, but I'd like
-  // to look a little more into how and why.
   if (not node->IsRootsplit()) {
     for (bool rotated : {false, true}) {
       for (const size_t parent_id : node->GetRootward(rotated)) {
