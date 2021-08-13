@@ -2,8 +2,8 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 //
 // The purpose of this class is to hold a DAG that we use to build up the operations for
-// the generalized pruning operations. Note that rootsplit PCSPs and the DAG root node are
-// excluded from operations.
+// the generalized pruning operations. Note that rootsplit PCSPs and the DAG root node
+// are excluded from operations.
 
 #ifndef SRC_GP_DAG_HPP_
 #define SRC_GP_DAG_HPP_
