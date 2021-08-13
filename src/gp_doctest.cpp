@@ -34,8 +34,7 @@ GPInstance GPInstanceOfFiles(const std::string& fasta_path,
 // Our tree is (see check below)
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
-// #349: Update image to match tests.
-// https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
+// https://github.com/phylovi/libsbn/issues/349#issuecomment-898672399
 GPInstance MakeHelloGPInstance(const std::string& fasta_path) {
   auto inst = GPInstanceOfFiles(fasta_path, "data/hello_rooted.nwk");
   EigenVectorXd branch_lengths(5);
