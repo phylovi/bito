@@ -518,6 +518,8 @@ PhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
       BranchGradientInternals(tree.Topology(), branch_lengths, dQ);
 
   GradientMap gradient;
+
+  gradient["branch_lengths"] = branch_gradient;
   // Calculate substitution model parameter gradient, if needed.
   if (phylo_model_->GetSubstitutionModel()->GetRates().size() > 0) {
     FatBeagle *mutable_this = const_cast<FatBeagle *>(this);
