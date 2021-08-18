@@ -89,7 +89,12 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
       true, SubsplitDAGTraversalAction(
                 // BeforeNode
                 [this, &string_stream, &show_index_labels](size_t node_id) {
-                  auto bs = GetDAGNode(node_id)->GetBitset();
+                  const auto &node = GetDAGNode(node_id);
+                  if (node->IsDAGRootNode()) {
+                    string_stream << node_id << " [label=\"<f0>&rho;\"]\n";
+                    return;
+                  }
+                  auto bs = node->GetBitset();
                   string_stream << node_id << " [label=\"<f0>"
                                 << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>";
                   if (show_index_labels) {
@@ -116,9 +121,18 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
                   if (show_index_labels) {
                     string_stream << " [label=\"" << GPCSPIndexOfIds(node_id, child_id);
                     if (rotated) {
-                      string_stream << "\", color=1, fontcolor=1]";
+                      string_stream << "\", color=1, fontcolor=1";
                     } else {
-                      string_stream << "\", color=3, fontcolor=3]";
+                      string_stream << "\", color=3, fontcolor=3";
+                    }
+                    if (GetDAGNode(node_id)->IsDAGRootNode()) {
+                      string_stream << ",style=dashed]";
+                    } else {
+                      string_stream << "]";
+                    }
+                  } else {
+                    if (GetDAGNode(node_id)->IsDAGRootNode()) {
+                      string_stream << "[style=dashed]";
                     }
                   }
                   string_stream << "\n";

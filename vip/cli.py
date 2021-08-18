@@ -5,11 +5,11 @@ import click
 
 
 @click.group()
-def cli():
+def cli_benchmark():
     pass
 
 
-@cli.command()
+@cli_benchmark.command(name="benchmark")
 @click.option(
     "--branch-model",
     type=click.Choice(["split", "psp"]),
@@ -91,3 +91,65 @@ def benchmark(
         opt_trace.to_csv(out_prefix + "_opt_trace.csv")
         fitting_results.to_csv(out_prefix + "_fitting_results.csv")
     pprint.pprint(run_details)
+
+
+@click.group()
+def cli_dag_to_dot():
+    pass
+
+
+@cli_dag_to_dot.command(name="dag-to-dot")
+@click.option(
+    "-fasta",
+    "--fasta-path",
+    required=True,
+    prompt=True,
+    type=click.Path(exists=True),
+    help="File path to fasta file.",
+)
+@click.option(
+    "-newick",
+    "--newick-path",
+    required=True,
+    prompt=True,
+    type=click.Path(exists=True),
+    help="File path to newick file.",
+)
+@click.option(
+    "-output",
+    "--output-path",
+    required=True,
+    prompt=True,
+    type=click.Path(),
+    help="Path to write output dot and SVG file.",
+)
+@click.option(
+    "-edges",
+    "--edge-labels",
+    default=False,
+    show_default=True,
+    help="Specify whether or not edge labels will appear in output.",
+)
+def dag_to_dot(fasta_path, newick_path, output_path, edge_labels):
+    """Convert a subsplit DAG to a .dot and .svg file.
+
+    Provide file paths relative to the directory where the command is run.
+
+    The command will output the .dot file and render it with graphviz into a .svg file.
+    """
+    import libsbn
+    import tempfile
+    import graphviz
+
+    mmap_file = tempfile.mkstemp(suffix=".data")[1]
+
+    inst = libsbn.gp_instance(mmap_file)
+    inst.read_fasta_file(fasta_path)
+    inst.read_newick_file(newick_path)
+    inst.make_engine()
+    inst.subsplit_dag_to_dot(output_path, edge_labels)
+
+    graphviz.render("dot", "svg", output_path)
+
+
+cli = click.CommandCollection(sources=[cli_benchmark, cli_dag_to_dot])

@@ -27,3 +27,4 @@ dependencies:
       - sphinx-rtd-theme
       - tensorflow
       - tensorflow-probability
+      - graphviz
