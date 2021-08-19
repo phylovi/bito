@@ -165,4 +165,25 @@ DoublePair NewtonRaphsonOptimization(
     ++iter_idx;
   }
 }
+
+DoublePair LogSpaceNewtonRaphsonOptimization(
+    std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
+    double x, const double tolerance, const double epsilon, const double min_x,
+    const size_t max_iter) {
+  size_t iter_idx = 0;
+  while (true) {
+    auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
+    double y = log(x);
+    double f_prime_y = x * f_prime_x;
+    double f_double_prime_y = f_prime_y + x * x * f_double_prime_y;
+    const double new_y = y - f_prime_y / f_double_prime_y;
+    const double new_x = exp(new_y);
+    x = std::max(new_x, min_x);
+    if (fabs(f_prime_x) < fabs(f_x) * tolerance || fabs(f_double_prime_y) < epsilon ||
+        iter_idx == max_iter) {
+      return {x, f_x};
+    }
+    ++iter_idx;
+  }
+}
 }  // namespace Optimization
