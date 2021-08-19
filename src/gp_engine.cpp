@@ -126,7 +126,7 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
   if (use_gradients_ == true) {
-    NewtonOptimization(op);
+    LogSpaceNewtonOptimization(op);
   } else {
     BrentOptimization(op);
   }
@@ -430,6 +430,18 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
     return this->LogLikelihoodAndFirstTwoDerivatives(op);
   };
   const auto [branch_length, log_likelihood] = Optimization::NewtonRaphsonOptimization(
+      log_likelihood_and_first_two_derivatives, branch_lengths_(op.gpcsp_),
+      relative_tolerance_for_optimization_, denominator_tolerance_for_newton_,
+      exp(min_log_branch_length_), max_iter_for_optimization_);
+  branch_lengths_(op.gpcsp_) = branch_length;
+}
+
+void GPEngine::LogSpaceNewtonOptimization(const GPOperations::OptimizeBranchLength& op) {
+  auto log_likelihood_and_first_two_derivatives = [this, &op](double branch_length) {
+    branch_lengths_(op.gpcsp_) = branch_length;
+    return this->LogLikelihoodAndFirstTwoDerivatives(op);
+  };
+  const auto [branch_length, log_likelihood] = Optimization::LogSpaceNewtonRaphsonOptimization(
       log_likelihood_and_first_two_derivatives, branch_lengths_(op.gpcsp_),
       relative_tolerance_for_optimization_, denominator_tolerance_for_newton_,
       exp(min_log_branch_length_), max_iter_for_optimization_);
