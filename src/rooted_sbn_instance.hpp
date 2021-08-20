@@ -403,8 +403,7 @@ TEST_CASE("RootedSBNInstance: parsing dates") {
 
 TEST_CASE("RootedSBNInstance: uninitialized time trees raise an exception") {
   auto inst = MakeFluInstance(false);
-  // Uncomment once #281 is fixed.
-  // CHECK_THROWS(inst.PhyloGradients());
+  CHECK_THROWS(inst.PhyloGradients());
 }
 
 TEST_CASE("RootedSBNInstance: reading SBN parameters from a CSV") {

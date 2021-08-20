@@ -137,7 +137,8 @@ std::vector<TOut> FatBeagleParallelize(
   }
   Assert(tree_collection.TreeCount() == param_matrix.rows(),
          "We param_matrix needs as many rows as we have trees.");
-  TaskProcessor<FatBeagle *, size_t> task_processor(
+
+  TaskProcessor<FatBeagle *, size_t>(
       std::move(fat_beagle_queue), std::move(tree_number_queue),
       [&results, &tree_collection, &param_matrix, &rescaling, &f](FatBeagle *fat_beagle,
                                                                   size_t tree_number) {
@@ -145,6 +146,7 @@ std::vector<TOut> FatBeagleParallelize(
         fat_beagle->SetRescaling(rescaling);
         results[tree_number] = f(fat_beagle, tree_collection.GetTree(tree_number));
       });
+
   return results;
 }
 
