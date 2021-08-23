@@ -362,22 +362,32 @@ void GPInstance::SubsplitDAGToDot(const std::string &out_path, bool show_index_l
   out_stream.close();
 }
 
-void GPInstance::SerializeAsBytes(const std::ofstream) {
+void GPInstance::SerializeAsBytes(const std::ofstream& ofs) {
   // TODO: Write GPInstance to data outstream
 
 }
 
-void GPInstance::DeserializeAsBytes(const std::ifstream) {
+void GPInstance::DeserializeAsBytes(const std::ifstream& ifs) {
   // TODO: Read GPInstance from data instream
 
 }
 
-void GPInstance::SerializeAsText(const std::ofstream) {
+void GPInstance::SerializeAsText(const std::ofstream& ofs) {
   // TODO: Write GPInstance to data outstream
 
 }
 
-void GPInstance::DeserializeAsText(const std::ifstream) {
+void GPInstance::DeserializeAsText(const std::ifstream& ifs) {
+  // TODO: Read GPInstance from data instream
+
+}
+
+void GPInstance::SerializeViaProtocolBuffer(const std::ofstream& ofs) {
+  // TODO: Write GPInstance to data outstream
+  
+}
+
+void GPInstance::DeserializeViaProtocolBuffer(const std::ifstream& ifs) {
   // TODO: Read GPInstance from data instream
 
 }

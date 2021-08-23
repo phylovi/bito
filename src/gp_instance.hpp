@@ -83,6 +83,8 @@ class GPInstance {
   void DeserializeAsBytes(const std::ifstream& ifs);
   void SerializeAsText(const std::ofstream& ofs);
   void DeserializeAsText(const std::ifstream& ifs);
+  void GPInstance::SerializeViaProtocolBuffer(const std::ofstream& ofs);
+  void GPInstance::DeserializeViaProtocolBuffer(const std::ifstream& ifs);
 
  private:
   std::string mmap_file_path_;
