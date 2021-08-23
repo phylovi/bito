@@ -78,6 +78,12 @@ class GPInstance {
   // Export the subsplit DAG as a DOT file.
   void SubsplitDAGToDot(const std::string &out_path, bool show_index_labels = true);
 
+  // Serialize / De-serialize GPInstance object for saving .
+  void SerializeAsBytes(const std::ofstream& ofs);
+  void DeserializeAsBytes(const std::ifstream& ifs);
+  void SerializeAsText(const std::ofstream& ofs);
+  void DeserializeAsText(const std::ifstream& ifs);
+
  private:
   std::string mmap_file_path_;
   Alignment alignment_;
@@ -85,6 +91,8 @@ class GPInstance {
   RootedTreeCollection tree_collection_;
   GPDAG dag_;
   static constexpr size_t plv_count_per_node_ = 6;
+  // Format id signifies the 
+  static const std::string format_id_ = "0.1"
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;

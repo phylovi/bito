@@ -613,3 +613,11 @@ TEST_CASE("GPInstance: test rootsplits") {
     CHECK(rootsplit_node->IsRootsplit());
   }
 }
+
+TEST_CASE("GPInstance: test Serialize/Deserialize") {
+  // TODO: Test which creates a GPInstance, serializes it, then deserializes it into another GPInstance.
+  // The two GPInstances are compared for equality.
+  std::cerr << "GPInstance Serializer TEST" << std::endl;
+
+  GPInstance inst
+}

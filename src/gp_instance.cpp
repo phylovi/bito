@@ -361,3 +361,23 @@ void GPInstance::SubsplitDAGToDot(const std::string &out_path, bool show_index_l
   }
   out_stream.close();
 }
+
+void GPInstance::SerializeAsBytes(const std::ofstream) {
+  // TODO: Write GPInstance to data outstream
+
+}
+
+void GPInstance::DeserializeAsBytes(const std::ifstream) {
+  // TODO: Read GPInstance from data instream
+
+}
+
+void GPInstance::SerializeAsText(const std::ofstream) {
+  // TODO: Write GPInstance to data outstream
+
+}
+
+void GPInstance::DeserializeAsText(const std::ifstream) {
+  // TODO: Read GPInstance from data instream
+
+}
