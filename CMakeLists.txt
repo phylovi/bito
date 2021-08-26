@@ -24,7 +24,7 @@ ExternalProject_Add(pybind11
 	INSTALL_DIR		pybind11/install
 )
 
-add_library(bito SHARED
+add_library(sbn-core SHARED
 	src/alignment.cpp
 	src/bitset.cpp
 	src/block_model.cpp
@@ -69,30 +69,74 @@ add_library(bito SHARED
 	src/unrooted_tree_collection.cpp
 	src/zlib_stream.cpp
 )
-target_compile_options(bito PUBLIC -std=c++17)
-target_link_options(bito PUBLIC -pthread -Wl,-rpath,beagle-lib/install/lib)
-target_link_libraries(bito PUBLIC hmsbeagle hmsbeagle-cpu z)
-target_include_directories(bito PUBLIC
+target_compile_options(sbn-core PUBLIC -std=c++17)
+target_link_options(sbn-core PUBLIC -pthread -Wl,-rpath,beagle-lib/install/lib)
+target_link_libraries(sbn-core PUBLIC hmsbeagle hmsbeagle-cpu z)
+target_include_directories(sbn-core PUBLIC
 	lib/eigen
 	${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
 )
-target_link_directories(bito PUBLIC
+target_link_directories(sbn-core PUBLIC
 	${PROJECT_BINARY_DIR}/beagle-lib/install/lib
 )
-add_dependencies(bito beagle-lib)
+add_dependencies(sbn-core beagle-lib)
 
 
 
-add_library(bito-python SHARED
+add_library(sbn SHARED
 	src/pylibsbn.cpp
 )
-target_compile_options(bito-python PUBLIC -std=c++17)
-target_include_directories(bito-python PUBLIC
+target_compile_options(sbn PUBLIC -std=c++17)
+target_include_directories(sbn PUBLIC
 	${Python_INCLUDE_DIRS}
 	${PROJECT_BINARY_DIR}/pybind11/install/include
 	${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
 	lib/eigen
 )
-add_dependencies(bito-python bito pybind11)
+target_link_options(sbn PUBLIC -Wl,-rpath,.)
+target_link_libraries(sbn PUBLIC sbn-core)
+add_dependencies(sbn sbn-core pybind11)
+
+
+
+add_executable(doctest 
+	src/doctest.cpp
+)
+target_compile_options(doctest PUBLIC -std=c++17)
+target_include_directories(doctest PUBLIC
+	${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
+	lib/eigen
+)
+target_link_options(doctest PUBLIC -Wl,-rpath,.)
+target_link_libraries(doctest PUBLIC sbn-core)
+add_dependencies(doctest sbn-core)
+
+
+
+add_executable(gp_doctest 
+	src/gp_doctest.cpp
+)
+target_compile_options(gp_doctest PUBLIC -std=c++17)
+target_include_directories(gp_doctest PUBLIC
+	${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
+	lib/eigen
+)
+target_link_options(gp_doctest PUBLIC -Wl,-rpath,.)
+target_link_libraries(gp_doctest PUBLIC sbn-core)
+add_dependencies(gp_doctest sbn-core)
+
+
+add_executable(noodle 
+	src/noodle.cpp
+)
+target_compile_options(noodle PUBLIC -std=c++17)
+target_include_directories(noodle PUBLIC
+	${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
+	lib/eigen
+)
+target_link_options(noodle PUBLIC -Wl,-rpath,.)
+target_link_libraries(noodle PUBLIC sbn-core)
+add_dependencies(noodle sbn-core)
+
 
 set(CMAKE_SKIP_RPATH ON)
