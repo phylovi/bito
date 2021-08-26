@@ -56,6 +56,8 @@ class TaskProcessor {
     for (size_t i = 0; i < threads_.size(); i++) {
       threads_[i] = std::thread(&TaskProcessor::thread_handler, this);
     }
+
+    Wait();
   }
 
   // Delete (copy + move) x (constructor + assignment)
@@ -64,8 +66,7 @@ class TaskProcessor {
   TaskProcessor &operator=(const TaskProcessor &) = delete;
   TaskProcessor &operator=(const TaskProcessor &&) = delete;
 
-  // Ensure that all tasks are done before destructor returns.
-  ~TaskProcessor() { Wait(); }
+  ~TaskProcessor() {}
 
   void Wait() {
     condition_variable_.notify_all();
@@ -74,6 +75,10 @@ class TaskProcessor {
       if (threads_[i].joinable()) {
         threads_[i].join();
       }
+    }
+    threads_rejoined_ = true;
+    if (exception_ptr_ != nullptr) {
+      std::rethrow_exception(exception_ptr_);
     }
   }
 
@@ -84,13 +89,26 @@ class TaskProcessor {
   std::vector<std::thread> threads_;
   std::mutex lock_;
   std::condition_variable condition_variable_;
+  bool threads_rejoined_ = false;
+
+  std::exception_ptr exception_ptr_ = nullptr;
+  std::mutex exception_lock_;
 
   void thread_handler() {
     std::unique_lock<std::mutex> lock(lock_);
+    bool exception_occurred = false;
+    // Continue allocating free executors for work until no more work.
     while (work_queue_.size()) {
+      // Check if any thread has recorded an exception. If so, end work.
+      exception_lock_.lock();
+      exception_occurred = (exception_ptr_ != nullptr);
+      exception_lock_.unlock();
+      if (exception_occurred) {
+        break;
+      }
       // Wait until we have an executor available. This right here is the key of
       // the whole implementation, giving a nice way to wait until the resources
-      // are avaiable to run the next thing in the queue.
+      // are available to run the next thing in the queue.
       condition_variable_.wait(lock, [this] { return executor_queue_.size(); });
       // After wait, we own the lock.
       if (work_queue_.size()) {
@@ -101,7 +119,17 @@ class TaskProcessor {
         // Unlock now that we're done messing with the queues.
         lock.unlock();
         // Run task.
-        task_(executor, work);
+        try {
+          task_(executor, work);
+        } catch (...) {
+          // If the task throws an exception, make record it for the master thread.
+          exception_lock_.lock();
+          if (exception_ptr_ == nullptr) {
+            exception_ptr_ = std::current_exception();
+          }
+          exception_lock_.unlock();
+        }
+
         // Lock again so that we can mess with the queues.
         lock.lock();
         // We're done with the executor so we can put it back on the queue.
