@@ -79,6 +79,7 @@ Please see our detailed [contribution guidelines](CONTRIBUTING.md).
 * Anna Kooperberg ([@annakooperberg](https://github.com/annakooperberg)): refactoring the subsplit DAG
 * Sho Kiami ([@shokiami](https://github.com/shokiami)): refactoring the subsplit DAG
 * Tanvi Ganapathy ([@tanviganapathy](https://github.com/tanviganapathy)): refactoring the subsplit DAG
+* Lucy Yang ([@lucyyang01](https://github.com/lucyyang01)): subsplit DAG visualization
 * Ognian Milanov ([@ognian-](https://github.com/ognian-)): C++ wisdom, compressed files
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design

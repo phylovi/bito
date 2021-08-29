@@ -600,6 +600,7 @@ TEST_CASE("GPInstance: test GPCSP indexes") {
 TEST_CASE("GPInstance: test rootsplits") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
+  inst.SubsplitDAGToDot("_ignore/outtest.dot", true);
   auto& dag = inst.GetDAG();
   for (const auto& rootsplit_id : dag.RootsplitIds()) {
     const auto rootsplit_node = dag.GetDAGNode(rootsplit_id);

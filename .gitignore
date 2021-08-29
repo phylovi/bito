@@ -45,6 +45,7 @@ _modules
 _sources
 .RData
 .Rhistory
+.vscode
 
 # Python packaging
 build/
