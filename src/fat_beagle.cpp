@@ -8,7 +8,6 @@
 #include <vector>
 
 #include "rooted_gradient_transforms.hpp"
-#include "stick_breaking_transform.hpp"
 
 FatBeagle::FatBeagle(const PhyloModelSpecification &specification,
                      const SitePattern &site_pattern,
@@ -402,7 +401,16 @@ std::vector<double> FatBeagle::SubstitutionModelGradientFiniteDifference(
     std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
     const TTree &tree, SubstitutionModel *subst_model, const std::string &parameter_key,
     EigenVectorXd param_vector, double delta) const {
-  StickBreakingTransform transform;
+  return SubstitutionModelGradientFiniteDifference(f, fat_beagle, tree, subst_model,
+                                                   parameter_key, param_vector, delta,
+                                                   IdentityTransform());
+}
+
+template <typename TTree>
+std::vector<double> FatBeagle::SubstitutionModelGradientFiniteDifference(
+    std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
+    const TTree &tree, SubstitutionModel *subst_model, const std::string &parameter_key,
+    EigenVectorXd param_vector, double delta, const Transform &transform) const {
   auto [parameter_start, parameter_length] =
       subst_model->GetBlockSpecification().GetMap().at(parameter_key);
 
@@ -454,13 +462,19 @@ std::vector<double> FatBeagle::SubstitutionModelGradient(
   double delta = 1.e-6;
   std::vector<double> frequencies_grad = SubstitutionModelGradientFiniteDifference(
       f, fat_beagle, tree, subst_model, SubstitutionModel::frequencies_key_,
-      param_vector, delta);
+      param_vector, delta, StickBreakingTransform());
 
-  std::vector<double> rates_grad = SubstitutionModelGradientFiniteDifference(
-      f, fat_beagle, tree, subst_model, SubstitutionModel::rates_key_, param_vector,
-      delta);
-
-  std::vector<double> gradient = rates_grad;
+  std::vector<double> gradient;
+  // Rates in the GTR model are constrained to sum to 1
+  if (subst_model->GetRates().size() == 6) {
+    gradient = SubstitutionModelGradientFiniteDifference(
+        f, fat_beagle, tree, subst_model, SubstitutionModel::rates_key_, param_vector,
+        delta, StickBreakingTransform());
+  } else {
+    gradient = SubstitutionModelGradientFiniteDifference(
+        f, fat_beagle, tree, subst_model, SubstitutionModel::rates_key_, param_vector,
+        delta);
+  }
   gradient.insert(gradient.end(), frequencies_grad.begin(), frequencies_grad.end());
   return gradient;
 }

@@ -13,6 +13,7 @@
 #include "phylo_model.hpp"
 #include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
+#include "stick_breaking_transform.hpp"
 #include "task_processor.hpp"
 #include "tree_gradient.hpp"
 #include "unrooted_tree_collection.hpp"
@@ -63,6 +64,12 @@ class FatBeagle {
   static PhyloGradient StaticRootedGradient(FatBeagle *fat_beagle,
                                             const RootedTree &in_tree);
 
+  template <typename TTree>
+  std::vector<double> SubstitutionModelGradientFiniteDifference(
+      std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
+      const TTree &tree, SubstitutionModel *subst_model,
+      const std::string &parameter_key, EigenVectorXd param_vector, double delta,
+      const Transform &transform) const;
   template <typename TTree>
   std::vector<double> SubstitutionModelGradientFiniteDifference(
       std::function<double(FatBeagle *, const TTree &)> f, FatBeagle *fat_beagle,
