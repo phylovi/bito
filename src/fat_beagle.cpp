@@ -444,20 +444,21 @@ std::vector<double> FatBeagle::SubstitutionModelGradient(
   auto subst_model = phylo_model_->GetSubstitutionModel();
   EigenVectorXd param_vector(subst_model->GetBlockSpecification().ParameterCount());
   auto subst_map = subst_model->GetBlockSpecification().GetMap();
-  param_vector.segment(subst_map.at(GTRModel::frequencies_key_).first,
-                       subst_map.at(GTRModel::frequencies_key_).second) =
+  param_vector.segment(subst_map.at(SubstitutionModel::frequencies_key_).first,
+                       subst_map.at(SubstitutionModel::frequencies_key_).second) =
       phylo_model_->GetSubstitutionModel()->GetFrequencies();
-  param_vector.segment(subst_map.at(GTRModel::rates_key_).first,
-                       subst_map.at(GTRModel::rates_key_).second) =
+  param_vector.segment(subst_map.at(SubstitutionModel::rates_key_).first,
+                       subst_map.at(SubstitutionModel::rates_key_).second) =
       phylo_model_->GetSubstitutionModel()->GetRates();
   // #324: make delta part of a gradient request
   double delta = 1.e-6;
   std::vector<double> frequencies_grad = SubstitutionModelGradientFiniteDifference(
-      f, fat_beagle, tree, subst_model, GTRModel::frequencies_key_, param_vector,
-      delta);
+      f, fat_beagle, tree, subst_model, SubstitutionModel::frequencies_key_,
+      param_vector, delta);
 
   std::vector<double> rates_grad = SubstitutionModelGradientFiniteDifference(
-      f, fat_beagle, tree, subst_model, GTRModel::rates_key_, param_vector, delta);
+      f, fat_beagle, tree, subst_model, SubstitutionModel::rates_key_, param_vector,
+      delta);
 
   std::vector<double> gradient = rates_grad;
   gradient.insert(gradient.end(), frequencies_grad.begin(), frequencies_grad.end());
