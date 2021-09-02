@@ -359,6 +359,37 @@ TEST_CASE("RootedSBNInstance: GTR gradients") {
   CHECK_LT(fabs(gradients[0].log_likelihood_ - phylotorch_ll), 0.001);
 }
 
+TEST_CASE("RootedSBNInstance: HKY gradients") {
+  auto inst = MakeFluInstance(true);
+  PhyloModelSpecification specification{"HKY", "constant", "strict"};
+  inst.PrepareForPhyloLikelihood(specification, 1);
+  for (auto& tree : inst.tree_collection_.trees_) {
+    tree.rates_.assign(tree.rates_.size(), 0.001);
+  }
+  auto param_block_map = inst.GetPhyloModelParamBlockMap();
+  EigenVectorXdRef frequencies =
+      param_block_map.at(SubstitutionModel::frequencies_key_);
+  EigenVectorXdRef rates = param_block_map.at(SubstitutionModel::rates_key_);
+  frequencies << 0.1, 0.2, 0.3, 0.4;
+  rates << 3.0;
+
+  auto likelihood = inst.LogLikelihoods();
+  double phylotorch_ll = -4931.770106816288;
+  double physher_jacobian = -9.25135166;
+  double expected_ll_jacobian = phylotorch_ll + physher_jacobian;
+  CHECK_LT(fabs(expected_ll_jacobian - likelihood[0]), 0.001);
+
+  auto gradients = inst.PhyloGradients();
+  std::vector<double> phylotorch_gradients = {18.218397759598506, 309.56536079428355,
+                                              47.15713892857574, 42.98132033283943};
+  for (size_t i = 0; i < phylotorch_gradients.size(); i++) {
+    CHECK_LT(
+        fabs(gradients[0].gradient_["substitution_model"][i] - phylotorch_gradients[i]),
+        0.001);
+  }
+  CHECK_LT(fabs(phylotorch_ll - gradients[0].log_likelihood_), 0.0001);
+}
+
 TEST_CASE("RootedSBNInstance: Weibull gradients") {
   auto inst = MakeFluInstance(true);
   PhyloModelSpecification weibull_specification{"JC69", "weibull+4", "strict"};
