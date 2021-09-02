@@ -159,7 +159,7 @@ TEST_CASE("SubstitutionModel") {
   hky_kappa.setConstant(3.0);
   hky_model->SetParameters(hky_param_vector);
   frequencies << 0.1, 0.2, 0.3, 0.4;
-  rates << 1.0, 3.0, 1.0, 1.0, 3.0, 10.0;
+  rates << 0.1, 0.3, 0.1, 0.1, 0.3, 0.1;
   gtr_model->SetParameters(param_vector);
   CheckEigenvalueEquality(gtr_model->GetEigenvalues(), hky_model->GetEigenvalues());
   CHECK(gtr_model->GetQMatrix().isApprox(hky_model->GetQMatrix()));
