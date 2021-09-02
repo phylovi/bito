@@ -54,23 +54,24 @@ class DNAModel : public SubstitutionModel {
     eigenvalues_.resize(4);
     Q_.resize(4, 4);
   }
+
+ protected:
+  virtual void UpdateEigenDecomposition();
+  virtual void UpdateQMatrix() = 0;
+  void Update();
 };
 
 class JC69Model : public DNAModel {
  public:
   JC69Model() : DNAModel({}) {
     frequencies_ << 0.25, 0.25, 0.25, 0.25;
-    eigenvectors_ << 1.0, 2.0, 0.0, 0.5, 1.0, -2.0, 0.5, 0.0, 1.0, 2.0, 0.0, -0.5, 1.0,
-        -2.0, -0.5, 0.0;
-    inverse_eigenvectors_ << 0.25, 0.25, 0.25, 0.25, 0.125, -0.125, 0.125, -0.125, 0.0,
-        1.0, 0.0, -1.0, 1.0, 0.0, -1.0, 0.0;
-    eigenvalues_ << 0.0, -1.3333333333333333, -1.3333333333333333, -1.3333333333333333;
-    Q_ << -1.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, -1.0, 1.0 / 3.0, 1.0 / 3.0,
-        1.0 / 3.0, 1.0 / 3.0, -1.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, -1.0;
+    Update();
   }
 
   // No parameters to set for JC!
-  void SetParameters(const EigenVectorXdRef){};  // NOLINT
+  void SetParameters(const EigenVectorXdRef) override{};  // NOLINT
+  virtual void UpdateEigenDecomposition() override;
+  void UpdateQMatrix() override;
 };
 
 class GTRModel : public DNAModel {
@@ -87,10 +88,30 @@ class GTRModel : public DNAModel {
   inline const static std::string frequencies_key_ = "frequencies";
 
  protected:
-  void UpdateQMatrix();
-  // Update the Q matrix _and_ the eigendecomposition.
-  void Update();
+  // Update the Q matrix
+  void UpdateQMatrix() override;
 };
+
+class HKYModel : public DNAModel {
+ public:
+  explicit HKYModel() : DNAModel({{rates_key_, 1}, {frequencies_key_, 4}}) {
+    rates_.resize(1);
+    rates_.setConstant(1.0);
+    frequencies_ << 0.25, 0.25, 0.25, 0.25;
+    Update();
+  }
+  void SetParameters(const EigenVectorXdRef param_vector) override;
+
+  inline const static std::string rates_key_ = "HKY rates";
+  inline const static std::string frequencies_key_ = "frequencies";
+
+ protected:
+  // Update the Q matrix
+  void UpdateQMatrix() override;
+};
+
+std::tuple<EigenMatrixXd, EigenMatrixXd, EigenVectorXd> CalculateEigenDecomposition(
+    const EigenVectorXd& frequencies, const EigenMatrixXd& Q);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 #include <algorithm>
