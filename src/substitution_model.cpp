@@ -74,6 +74,48 @@ void HKYModel::UpdateQMatrix() {
   Q_ /= total_substitution_rate;
 }
 
+// Analytical eigen decomposition
+void HKYModel::UpdateEigenDecomposition() {
+  double kappa = rates_[0];
+
+  double pi_a = frequencies_[0];
+  double pi_c = frequencies_[1];
+  double pi_g = frequencies_[2];
+  double pi_t = frequencies_[3];
+
+  double pi_r = pi_a + pi_g;
+  double pi_y = pi_c + pi_t;
+
+  double beta = -1.0 / (2.0 * (pi_r * pi_y + kappa * (pi_a * pi_g + pi_c * pi_t)));
+  eigenvalues_[0] = 0;
+  eigenvalues_[1] = beta;
+  eigenvalues_[2] = beta * (1 + pi_y * (kappa - 1));
+  eigenvalues_[3] = beta * (1 + pi_r * (kappa - 1));
+
+  inverse_eigenvectors_.setZero();
+  eigenvectors_.setZero();
+
+  inverse_eigenvectors_.row(0) << pi_a, pi_c, pi_g, pi_t;
+
+  inverse_eigenvectors_.row(1) << pi_a * pi_y, -pi_c * pi_r, pi_g * pi_y, -pi_t * pi_r;
+
+  inverse_eigenvectors_(2, 1) = 1;
+  inverse_eigenvectors_(2, 3) = -1;
+
+  inverse_eigenvectors_(3, 0) = 1;
+  inverse_eigenvectors_(3, 2) = -1;
+
+  eigenvectors_.col(0).setOnes();
+
+  eigenvectors_.col(1) << 1. / pi_r, -1. / pi_y, 1. / pi_r, -1. / pi_y;
+
+  eigenvectors_(1, 2) = pi_t / pi_y;
+  eigenvectors_(3, 2) = -pi_c / pi_y;
+
+  eigenvectors_(0, 3) = pi_g / pi_r;
+  eigenvectors_(2, 3) = -pi_a / pi_r;
+}
+
 void GTRModel::SetParameters(const EigenVectorXdRef param_vector) {
   GetBlockSpecification().CheckParameterVectorSize(param_vector);
   rates_ = ExtractSegment(param_vector, rates_key_);

@@ -103,6 +103,7 @@ class HKYModel : public DNAModel {
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
  protected:
+  virtual void UpdateEigenDecomposition() override;
   // Update the Q matrix
   void UpdateQMatrix() override;
 };
