@@ -161,11 +161,15 @@ DoublePair NewtonRaphsonOptimization(
   size_t iter_idx = 0;
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
-    const double new_x = x - f_prime_x / f_double_prime_x;
-    x = std::max(new_x, min_x);
-    if (fabs(f_prime_x) < fabs(f_x) * tolerance || fabs(f_double_prime_x) < epsilon ||
-        iter_idx == max_iter) {
+    double new_x = x - f_prime_x / f_double_prime_x;
+    new_x = fmax(new_x, min_x);
+
+    double delta = fabs(x - new_x);
+
+    if (delta < tolerance || fabs(f_double_prime_x) < epsilon || iter_idx == max_iter) {
       return {x, f_x};
+    } else {
+      x = new_x;
     }
     ++iter_idx;
   }
@@ -178,15 +182,19 @@ DoublePair LogSpaceNewtonRaphsonOptimization(
   size_t iter_idx = 0;
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
+
     double y = log(x);
     double f_prime_y = x * f_prime_x;
-    double f_double_prime_y = f_prime_y + x * x * f_double_prime_y;
+    double f_double_prime_y = f_prime_y + pow(x, 2) * f_double_prime_x;
+
     const double new_y = y - f_prime_y / f_double_prime_y;
-    const double new_x = exp(new_y);
-    x = std::max(new_x, min_x);
-    if (fabs(f_prime_x) < fabs(f_x) * tolerance || fabs(f_double_prime_y) < epsilon ||
-        iter_idx == max_iter) {
+    double new_x = fmax(exp(new_y), min_x);
+    double delta = fabs(x - new_x);
+
+    if (delta < tolerance || fabs(f_double_prime_y) < epsilon || iter_idx == max_iter) {
       return {x, f_x};
+    } else {
+      x = new_x;
     }
     ++iter_idx;
   }
