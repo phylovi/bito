@@ -106,7 +106,7 @@ GPEngine *GPInstance::GetEngine() const {
 
 bool GPInstance::HasEngine() const { return engine_ != nullptr; }
 
-const GPDAG &GPInstance::GetDAG() { return dag_; }
+GPDAG &GPInstance::GetDAG() { return dag_; }
 
 void GPInstance::PrintDAG() { dag_.Print(); }
 
@@ -218,28 +218,30 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
     size_t node_count = 2 * root_node->LeafCount() - 1;
     std::vector<double> branch_lengths(node_count);
 
-    root_node->RootedPCSPPreorder([this, &branch_lengths,
-                                   &gpcsp_indexed_branch_lengths](
-                                      const Node *sister, const Node *focal,
-                                      const Node *child0, const Node *child1) {
-      Bitset parent_subsplit = sister->Leaves() + focal->Leaves();
-      Bitset child_subsplit = child0->Leaves() + child1->Leaves();
-      size_t gpcsp_idx = dag_.GetGPCSPIndex(parent_subsplit, child_subsplit);
-      branch_lengths[focal->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+    root_node->RootedPCSPPreorder(
+        [this, &branch_lengths, &gpcsp_indexed_branch_lengths](
+            const Node *sister, const Node *focal, const Node *child0,
+            const Node *child1) {
+          Bitset parent_subsplit =
+              Bitset::SubsplitOfPair(sister->Leaves(), focal->Leaves());
+          Bitset child_subsplit =
+              Bitset::SubsplitOfPair(child0->Leaves(), child1->Leaves());
+          size_t gpcsp_idx = dag_.GetGPCSPIndex(parent_subsplit, child_subsplit);
+          branch_lengths[focal->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
 
-      if (sister->IsLeaf()) {
-        gpcsp_idx = GetGPCSPIndexForLeafNode(parent_subsplit.RotateSubsplit(), sister);
-        branch_lengths[sister->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
-      }
-      if (child0->IsLeaf()) {
-        gpcsp_idx = GetGPCSPIndexForLeafNode(child_subsplit.RotateSubsplit(), child0);
-        branch_lengths[child0->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
-      }
-      if (child1->IsLeaf()) {
-        gpcsp_idx = GetGPCSPIndexForLeafNode(child_subsplit, child1);
-        branch_lengths[child1->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
-      }
-    });
+          if (sister->IsLeaf()) {
+            gpcsp_idx = GetGPCSPIndexForLeafNode(parent_subsplit, sister);
+            branch_lengths[sister->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+          }
+          if (child0->IsLeaf()) {
+            gpcsp_idx = GetGPCSPIndexForLeafNode(child_subsplit, child0);
+            branch_lengths[child0->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+          }
+          if (child1->IsLeaf()) {
+            gpcsp_idx = GetGPCSPIndexForLeafNode(child_subsplit, child1);
+            branch_lengths[child1->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+          }
+        });
 
     tree_vector.emplace_back(root_node, std::move(branch_lengths));
   }
