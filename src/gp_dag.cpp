@@ -51,7 +51,7 @@ GPOperation GPDAG::RUpdateOfRotated(size_t node_id, bool rotated) const {
 GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
   GPOperationVector operations;
   SubsplitDAG::DepthFirstWithAction(
-      RootsplitIds(),
+      false,
       SubsplitDAGTraversalAction(
           // BeforeNode
           [this, &operations](size_t node_id) {
@@ -98,7 +98,7 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
 GPOperationVector GPDAG::BranchLengthOptimization() {
   GPOperationVector operations;
   DepthFirstWithTidyAction(
-      RootsplitIds(),
+      false,
       TidySubsplitDAGTraversalAction(
           // BeforeNode
           [this, &operations](size_t node_id) {
@@ -389,7 +389,8 @@ QuartetHybridRequest GPDAG::QuartetHybridRequestOf(size_t parent_id, bool rotate
         const auto sister_id = sister_node->Id();
         sister_tips.emplace_back(
             sister_id, GetPLVIndex(PLVType::P, sister_id),
-            GetGPCSPIndex(parent_node->GetBitset(), sister_node->GetBitset()));
+            GetGPCSPIndex(parent_node->GetBitset(is_edge_to_sister_rotated),
+                          sister_node->GetBitset()));
       });
 
   QuartetTipVector rotated_tips;

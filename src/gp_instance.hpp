@@ -28,7 +28,7 @@ class GPInstance {
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;
-  GPDAG &GetDAG();
+  const GPDAG &GetDAG();
   void PrintDAG();
   void PrintGPCSPIndexer();
   void ProcessOperations(const GPOperationVector &operations);

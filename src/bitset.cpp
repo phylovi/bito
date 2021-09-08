@@ -142,19 +142,7 @@ bool Bitset::Any() const {
   return false;
 }
 
-bool Bitset::None() const { return !Any(); }
-
 bool Bitset::IsSingleton() const { return SingletonOption().has_value(); }
-
-bool Bitset::IsDisjoint(const Bitset& other) const {
-  Assert(size() == other.size(), "Size mismatch in Bitset::IsDisjoint.");
-  for (size_t i = 0; i < size(); i++) {
-    if (value_[i] && other.value_[i]) {
-      return false;
-    }
-  }
-  return true;
-}
 
 void Bitset::Minorize() {
   Assert(!(value_.empty()), "Can't Bitset::Minorize an empty bitset.");
@@ -249,6 +237,8 @@ std::string Bitset::SubsplitToIndexSetString() const {
   return str;
 }
 
+bool Bitset::SubsplitIsFake() const { return !SubsplitChunk(1).Any(); }
+
 size_t Bitset::SubsplitChunkSize() const {
   Assert(size() % 2 == 0, "Size isn't 0 mod 2 in Bitset::SubsplitChunkSize.");
   return size() / 2;
@@ -265,33 +255,17 @@ Bitset Bitset::SubsplitChunk(size_t i) const {
 Bitset Bitset::SubsplitGetChild(size_t i) const {
   Assert(i < 2, "SubsplitGetChild index too large.");
   // The children appear in reverse order; see header file for details.
-  Bitset child_1 = SubsplitChunk(0);
-  Bitset child_0 = SubsplitChunk(1);
+  Bitset child_1(SubsplitChunk(0));
+  Bitset child_0(SubsplitChunk(1));
   Assert(child_1 > child_0,
          "Subsplit child 1 should be larger than child 0 in Bitset::SubsplitGetChild.");
   return i == 0 ? child_0 : child_1;
 }
 
-bool Bitset::SubsplitIsLeaf() const {
-  return SubsplitChunk(0).IsSingleton() && SubsplitChunk(1).None();
-}
-
 bool Bitset::SubsplitIsRootsplit() const {
-  return SubsplitChunkUnion().All() && SubsplitChunk(0).IsDisjoint(SubsplitChunk(1)) &&
-         !SubsplitChunk(0).All();
-}
-
-bool Bitset::SubsplitIsRotatedChildOf(const Bitset& other) const {
-  return size() == other.size() && SubsplitChunkUnion() == other.SubsplitChunk(0);
-}
-
-bool Bitset::SubsplitIsSortedChildOf(const Bitset& other) const {
-  return size() == other.size() && SubsplitChunkUnion() == other.SubsplitChunk(1);
-}
-
-Bitset Bitset::SubsplitChunkUnion() const {
-  Assert(size() % 2 == 0, "Size isn't 0 mod 2 in Bitset::SubsplitChunkUnion.");
-  return SubsplitChunk(0) | SubsplitChunk(1);
+  const auto subsplit_union = SubsplitChunk(0) | SubsplitChunk(1);
+  return subsplit_union.All() && Count() == SubsplitChunkSize() &&
+         !SubsplitGetChild(1).All();
 }
 
 size_t Bitset::PCSPChunkSize() const {
@@ -308,14 +282,14 @@ Bitset Bitset::PCSPChunk(size_t i) const {
 }
 
 Bitset Bitset::PCSPParentSubsplit() const {
-  Bitset sister = PCSPChunk(0);
-  Bitset focal = PCSPChunk(1);
+  Bitset sister(PCSPChunk(0));
+  Bitset focal(PCSPChunk(1));
   return sister > focal ? sister + focal : focal + sister;
 }
 
 Bitset Bitset::PCSPChildSubsplit() const {
-  Bitset focal = PCSPChunk(1);
-  Bitset child_0 = PCSPChunk(2);
+  Bitset focal(PCSPChunk(1));
+  Bitset child_0(PCSPChunk(2));
   Bitset child_1(child_0.size());
   for (size_t i = 0; i < child_0.size(); i++) {
     child_1.value_[i] = focal.value_[i] && !child_0.value_[i];
@@ -329,20 +303,20 @@ bool Bitset::PCSPIsValid() const {
   if (size() % 3 != 0) {
     return false;
   }
-  Bitset sister = PCSPChunk(0);
-  Bitset focal = PCSPChunk(1);
-  Bitset child_0 = PCSPChunk(2);
+  Bitset uncut_parent = PCSPChunk(0);
+  Bitset cut_parent = PCSPChunk(1);
+  Bitset child = PCSPChunk(2);
   // The parents should be disjoint.
-  if (!sister.IsDisjoint(focal)) {
+  if ((uncut_parent & cut_parent).Any()) {
     return false;
   }
-  // The child should split the focal clade of the parent,
-  // so the taxa of child_0 should be a subset of those of focal clade.
-  if (!child_0.IsDisjoint(~focal)) {
+  // The child should split the cut_parent, so the taxa of child should be a
+  // subset of those of cut_parent.
+  if ((child & (~cut_parent)).Any()) {
     return false;
   }
   // Something has to be set in each chunk.
-  if (sister.None() || focal.None() || child_0.None()) {
+  if (!uncut_parent.Any() || !cut_parent.Any() || !child.Any()) {
     return false;
   }
   return true;
@@ -350,7 +324,7 @@ bool Bitset::PCSPIsValid() const {
 
 bool Bitset::PCSPIsFake() const {
   Assert(size() % 3 == 0, "Size isn't 0 mod 3 in Bitset::PCSPIsFake.");
-  return PCSPChunk(2).None();
+  return !PCSPChunk(2).Any();
 }
 
 bool Bitset::PCSPParentIsRootsplit() const {
@@ -377,25 +351,50 @@ Bitset Bitset::Singleton(size_t n, size_t which_on) {
   return singleton;
 }
 
-Bitset Bitset::SubsplitOfPair(const Bitset& chunk_0, const Bitset& chunk_1) {
-  Assert(chunk_0.IsDisjoint(chunk_1),
-         "SubsplitOfPair: given bitsets are not a valid chunk pair.");
-  return chunk_1 > chunk_0 ? chunk_1 + chunk_0 : chunk_0 + chunk_1;
+Bitset Bitset::PCSPOfPair(const Bitset& parent_subsplit, const Bitset& child_subsplit,
+                          bool assert_validity) {
+  Assert(parent_subsplit.size() == child_subsplit.size(),
+         "Size mismatch in Bitset::PCSPOfPair.");
+  Assert(parent_subsplit.size() % 2 == 0,
+         "Bitset::PCSPOfPair requires an even-sized bitsets.");
+  size_t taxon_count = parent_subsplit.size() / 2;
+  Bitset child_0 = child_subsplit.SubsplitGetChild(0);
+  Bitset child_1 = child_subsplit.SubsplitGetChild(1);
+  bool focal_clade_is_first =
+      IsDisjointUnion(parent_subsplit.SubsplitChunk(0), child_0, child_1);
+  bool focal_clade_is_second =
+      IsDisjointUnion(parent_subsplit.SubsplitChunk(1), child_0, child_1);
+  if (assert_validity) {
+    Assert((focal_clade_is_first || focal_clade_is_second) &&
+               !(focal_clade_is_first && focal_clade_is_second),
+           "PCSPOfPair: given bitsets are not valid parent/child pair.");
+  }
+  Bitset pcsp(3 * taxon_count);
+  pcsp.CopyFrom(
+      (focal_clade_is_first ? parent_subsplit.RotateSubsplit() : parent_subsplit), 0,
+      false);
+  pcsp.CopyFrom(std::min(child_0, child_1), 2 * taxon_count, false);
+  return pcsp;
 }
 
-Bitset Bitset::PCSPOfPair(const Bitset& parent_subsplit, const Bitset& child_subsplit) {
-  Assert(
-      (child_subsplit.SubsplitIsRotatedChildOf(parent_subsplit) ||
-       child_subsplit.SubsplitIsSortedChildOf(parent_subsplit)) &&
-          child_subsplit.SubsplitChunk(0).IsDisjoint(child_subsplit.SubsplitChunk(1)),
-      "PCSPOfPair: given bitsets are not a valid parent/child pair.");
-  Bitset pcsp(3 * parent_subsplit.size() / 2);
-  pcsp.CopyFrom((child_subsplit.SubsplitIsRotatedChildOf(parent_subsplit)
-                     ? parent_subsplit.RotateSubsplit()
-                     : parent_subsplit),
-                0, false);
-  pcsp.CopyFrom(child_subsplit.SubsplitGetChild(0), parent_subsplit.size(), false);
-  return pcsp;
+bool Bitset::IsDisjointUnion(const Bitset& should_be_union, const Bitset& set_1,
+                             const Bitset& set_2) {
+  Assert(should_be_union.size() == set_1.size(),
+         "AssertIsDisjointUnion: size mismatch.");
+  Assert(set_1.size() == set_2.size(), "AssertIsDisjointUnion: size mismatch.");
+
+  for (size_t i = 0; i < should_be_union.size(); i++) {
+    if (should_be_union[i]) {
+      if (!(set_1[i] || set_2[i]) || !(set_1[i] ^ set_2[i])) {
+        return false;
+      }
+    } else {
+      if (set_1[i] || set_2[i]) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 Bitset Bitset::FakeSubsplit(const Bitset& nonzero_contents) {

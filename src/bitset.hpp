@@ -60,12 +60,8 @@ class Bitset {
   bool All() const;
   // Are any of the bits 1?
   bool Any() const;
-  // Are all of the bits 0?
-  bool None() const;
   // Is exactly one of the bits 1?
   bool IsSingleton() const;
-  // Is this disjoint with the given subsplit?
-  bool IsDisjoint(const Bitset &other) const;
   // Take the minimum of the bitset and its complement.
   void Minorize();
   // Copy all of the bits from another bitset into this bitset, starting at
@@ -74,7 +70,7 @@ class Bitset {
   // If the bitset only has one bit on, then we return the location of that bit.
   // Otherwise, return nullopt.
   std::optional<uint32_t> SingletonOption() const;
-  // Get the number of 1s.
+  // Get the number of bits set to be 1;
   size_t Count() const;
   std::string ToIndexSetString() const;
 
@@ -87,24 +83,20 @@ class Bitset {
   size_t SubsplitChunkSize() const;
   // Get the ith chunk of the subsplit.
   Bitset SubsplitChunk(size_t i) const;
-  // Get "child 0" (the child bitset with the smaller binary representation)
+  // Returns "child 0" (the child bitset with the smaller binary representation)
   // or "child 1" (the child bitset with the larger binary representation).
   Bitset SubsplitGetChild(size_t i) const;
-  // Get a string of the bitset in the specified number of chunks, with each chunk
+  // Return a string of the bitset in the specified number of chunks, with each chunk
   // separated by a "|".
   std::string ToStringChunked(size_t chunk_count) const;
   std::string SubsplitToString() const;
   std::string SubsplitToIndexSetString() const;
-  // Is this the subsplit of a leaf node.
-  bool SubsplitIsLeaf() const;
-  // Is this the subsplit of a rootsplit.
+  // Is the right hand chunk all zero?
+  bool SubsplitIsFake() const;
+  // Is every taxon included exactly once in the subsplit?
+  // Exclude the DAG root node where every taxon is present in one half
+  // of the subsplit.
   bool SubsplitIsRootsplit() const;
-  // Is this the rotated child of the given subsplit?
-  bool SubsplitIsRotatedChildOf(const Bitset &other) const;
-  // Is this the sorted child of the given subsplit?
-  bool SubsplitIsSortedChildOf(const Bitset &other) const;
-  // Get the union of the two chunks.
-  Bitset SubsplitChunkUnion() const;
 
   // These functions require the bitset to be a "PCSP bitset" with three
   // equal-sized "chunks".
@@ -143,10 +135,9 @@ class Bitset {
   // ** Static methods
   // Make a bitset with only the specified entry turned on.
   static Bitset Singleton(size_t n, size_t which_on);
-  // Build a Subsplit bitset out of a compatible pair of chunks.
-  static Bitset SubsplitOfPair(const Bitset &chunk_0, const Bitset &chunk_1);
   // Build a PCSP bitset out of a compatible parent-child pair of bitsets.
-  static Bitset PCSPOfPair(const Bitset &parent_subsplit, const Bitset &child_subsplit);
+  static Bitset PCSPOfPair(const Bitset &parent_subsplit, const Bitset &child_subsplit,
+                           bool assert_validity = true);
   // Make a "fake" subsplit, which pads the nonzero contents on the right with zero to
   // have double the width.
   static Bitset FakeSubsplit(const Bitset &nonzero_contents);
@@ -171,6 +162,9 @@ class Bitset {
 
  private:
   std::vector<bool> value_;
+
+  static bool IsDisjointUnion(const Bitset &should_be_union, const Bitset &set_1,
+                              const Bitset &set_2);
 };
 
 // This is how we inject a hash routine and a custom comparator into the std
@@ -242,8 +236,6 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset(4, true).All(), true);
   CHECK_EQ(a.Any(), true);
   CHECK_EQ(Bitset(4, false).Any(), false);
-  CHECK_EQ(a.None(), false);
-  CHECK_EQ(Bitset(4, false).None(), true);
 
   a.flip();
   CHECK_EQ(a, Bitset("1011"));
@@ -282,21 +274,12 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("10010110").SubsplitGetChild(0), Bitset("0110"));
   CHECK_EQ(Bitset("10010110").SubsplitGetChild(1), Bitset("1001"));
   CHECK_THROWS(Bitset("01101001").SubsplitGetChild(1));
-  CHECK_EQ(Bitset("11001010").SubsplitChunkUnion(), Bitset("1110"));
 
   CHECK_EQ(Bitset("10011100").RotateSubsplit(), Bitset("11001001"));
   CHECK_EQ(Bitset("010101").SubsplitToIndexSetString(), "1|0,2");
-
-  CHECK_EQ(Bitset("101010").SubsplitIsRotatedChildOf(Bitset("111000")), true);
-  CHECK_EQ(Bitset("00100001").SubsplitIsSortedChildOf(Bitset("11000011")), true);
-  CHECK_EQ(Bitset("010001").SubsplitIsRotatedChildOf(Bitset("110001")), false);
-  CHECK_EQ(Bitset("010001").SubsplitIsSortedChildOf(Bitset("01000011")), false);
-  CHECK_THROWS(Bitset("11010").SubsplitIsRotatedChildOf(Bitset("10101")));
-  CHECK_THROWS(Bitset("11010").SubsplitIsSortedChildOf(Bitset("10101")));
-
   CHECK_EQ(Bitset("101010").SubsplitIsRootsplit(), true);
   CHECK_EQ(Bitset("111000").SubsplitIsRootsplit(), false);
-  CHECK_EQ(Bitset("11000001").SubsplitIsRootsplit(), false);
+  CHECK_EQ(Bitset("00011100").SubsplitIsRootsplit(), false);
 
   CHECK_EQ(Bitset("011101").PCSPIsValid(), false);
   CHECK_EQ(Bitset("000111").PCSPIsValid(), false);
@@ -319,25 +302,23 @@ TEST_CASE("Bitset") {
 
   CHECK_EQ(Bitset::Singleton(4, 2), Bitset("0010"));
 
-  CHECK_EQ(Bitset("100010"), Bitset::SubsplitOfPair(Bitset("100"), Bitset("010")));
-  CHECK_EQ(Bitset("110001"), Bitset::SubsplitOfPair(Bitset("001"), Bitset("110")));
-  // Invalid chunk pair.
-  CHECK_THROWS(Bitset::SubsplitOfPair(Bitset("1100"), Bitset("001")));
-  CHECK_THROWS(Bitset::SubsplitOfPair(Bitset("111"), Bitset("001")));
-
   CHECK_EQ(Bitset("000110010"), Bitset::PCSPOfPair(Bitset("110000"), Bitset("100010")));
-  CHECK_EQ(Bitset("110001000"), Bitset::PCSPOfPair(Bitset("110001"), Bitset("001000")));
-  // Invalid parent-child pair.
-  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("110001"), Bitset("010001")));
-  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("11000101"), Bitset("010001")));
-  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("110001"), Bitset("110100")));
+  CHECK_EQ(Bitset("001110010"), Bitset::PCSPOfPair(Bitset("001110"), Bitset("100010")));
+  // Missing a left child.
+  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("000010")));
+  // Missing a right child.
+  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100000")));
+  // Not a disjoint union.
+  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100110")));
+  // Not a union at all.
+  CHECK_THROWS(Bitset::PCSPOfPair(Bitset("000110"), Bitset("100001")));
 
   CHECK_EQ(Bitset::RootsplitOfHalf(Bitset("0011")), Bitset("11000011"));
   CHECK_EQ(Bitset::PCSPOfRootsplit(Bitset("11000011")), Bitset("000011110011"));
 
-  CHECK_EQ(Bitset("010000").SubsplitIsLeaf(), true);
-  CHECK_EQ(Bitset("010010").SubsplitIsLeaf(), false);
-  CHECK_EQ(Bitset("111000").SubsplitIsLeaf(), false);
+  CHECK_EQ(true, Bitset("010000").SubsplitIsFake());
+  CHECK_EQ(false, Bitset("010010").SubsplitIsFake());
+  CHECK_EQ(true, Bitset("").SubsplitIsFake());
   CHECK_EQ(Bitset::FakeSubsplit(Bitset("010")), Bitset("010000"));
   CHECK_EQ(Bitset::FakeChildSubsplit(Bitset("100001")), Bitset("001000"));
   CHECK_THROWS(Bitset::FakeChildSubsplit(Bitset("100011")));

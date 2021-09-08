@@ -50,6 +50,7 @@ class TidySubsplitDAG : public SubsplitDAG {
 
   // Apply a TidySubsplitDAGTraversalAction via a depth first traversal. Do not visit
   // leaf nodes.
+  // Has option to include the DAG root node in the traversal.
   // We assume that ModifyEdge leaves (node_id, rotated) in a clean state, however, each
   // ModifyEdge dirties all of the nodes above it. These nodes must be cleaned by
   // UpdateEdge before they are ready to be used. See TidySubslitDAGTraversalAction for
@@ -66,11 +67,15 @@ class TidySubsplitDAG : public SubsplitDAG {
   //         * Apply VisitEdge to the edge
   // * Apply AfterNode
   template <typename TidyTraversalActionT>
-  void DepthFirstWithTidyAction(const SizeVector &starting_nodes,
+  void DepthFirstWithTidyAction(const bool include_dag_root_node,
                                 const TidyTraversalActionT &action) {
     std::unordered_set<size_t> visited_nodes;
-    for (const auto &node_id : starting_nodes) {
-      DepthFirstWithTidyActionForNode(action, node_id, visited_nodes);
+    if (include_dag_root_node) {
+      DepthFirstWithTidyActionForNode(action, DAGRootNodeId(), visited_nodes);
+    } else {
+      for (const auto &rootsplit_id : RootsplitIds()) {
+        DepthFirstWithTidyActionForNode(action, rootsplit_id, visited_nodes);
+      }
     }
   };
 
