@@ -213,24 +213,25 @@ inline int sign(const T z) {
 }
 
 template <class F, class T>
-void handle_zero_derivative(F f, T last_f0, const T f0, T delta, T result, T guess,
+void handle_zero_derivative(F f, T last_f1, const T f1, T delta, T result, T guess,
                             const T min, const T max) {
-  // if(last_f0 == 0)
-  // {
-  //    // this must be the first iteration, pretend that we had a
-  //    // previous one at either min or max:
-  //    if(result == min)
-  //    {
-  //       guess = max;
-  //    }
-  //    else
-  //    {
-  //       guess = min;
-  //    }
-  //    unpack_0(f(guess), last_f0);
-  //    delta = guess - result;
-  // }
-  if (sign(last_f0) * sign(f0) < 0) {
+  if(last_f1 == 0)
+  {
+      // this must be the first iteration, pretend that we had a
+      // previous one at either min or max:
+      if(result == min)
+      {
+         guess = max;
+      }
+      else
+      {
+         guess = min;
+      }
+      // unpack_0(f(guess), last_f0);
+      last_f1 = std::get<1>(f(guess));
+      delta = guess - result;
+   }
+  if (sign(last_f1) * sign(f1) < 0) {
     // we've crossed over so move in opposite direction to last step:
     if (delta < 0) {
       delta = (result - min) / 2;
