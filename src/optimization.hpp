@@ -245,9 +245,8 @@ void handle_zero_derivative(F f, T last_f0, const T f0, T delta, T result, T gue
 template <class F, class T>
 std::pair<T, T> NewtonRaphsonIterate(F f, T guess, T min, T max, int significant_digits,
                                      size_t max_iter) {
+  T f1(0), f2, last_f1(0);
   T result = guess;
-  T last_f1 = 0;
-  auto [f0, f1, f2] = f(result);  // Initializing function values and derivatives
 
   T factor = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T delta = 1;
@@ -257,52 +256,41 @@ std::pair<T, T> NewtonRaphsonIterate(F f, T guess, T min, T max, int significant
   size_t count = max_iter;
 
   do {
+    last_f1 = f1;
     delta2 = delta1;
     delta1 = delta;
-    // if (f1 == 0) break;
-    // if (f2 == 0) {
-    //  handle_zero_derivative(f, last_f1, f1, delta, result, guess, min, max);
-    //}
-    // else {
-    delta = f1 / f2;
-    // }
-
-    // if (fabs(delta * 2) > fabs(delta2)) {
-    //   // last two steps haven't converged, try bisection:
-    //   delta = (delta > 0) ? (result - min) / 2 : (result - max) / 2;
-    // }
+    auto [f0, f1, f2] = f(result);
+    if (0 == f1) break;
+    if (f2 == 0) {
+      // Oops zero derivative!!!
+      handle_zero_derivative(f, last_f1, f1, delta, result, guess, min, max);
+    } else {
+      delta = f1 / f2;
+    }
+    if (fabs(delta * 2) > fabs(delta2)) {
+      // last two steps haven't converged, try bisection:
+      delta = (delta > 0) ? (result - min) / 2 : (result - max) / 2;
+    }
     guess = result;
     result -= delta;
-    result = fmax(result, min);
-    // if (result <= min) {
-    //   delta = 0.5F * (guess - min);
-    //   result = guess - delta;
-    //   if ((result == min) || (result == max)) {
-    //     auto [f0, f1, f2] = f(result);
-    //     break;
-    //   }
-    // }
-    if (result >= max) {
+    if (result <= min) {
+      delta = 0.5F * (guess - min);
+      result = guess - delta;
+      if ((result == min) || (result == max)) break;
+    } else if (result >= max) {
       delta = 0.5F * (guess - max);
       result = guess - delta;
-      if ((result == min) || (result == max)) {
-        auto [f0, f1, f2] = f(result);
-        break;
-      }
+      if ((result == min) || (result == max)) break;
     }
-    // update function values based on new result
-    last_f1 = f1;
-    auto [f0, f1, f2] = f(result);
     // update brackets:
-    // if (delta > 0)
-    //   max = guess;
-    // else
-    //   min = guess;
+    if (delta > 0)
+      max = guess;
+    else
+      min = guess;
   } while (--count && (fabs(result * factor) < fabs(delta)));
 
   max_iter -= count;
 
-  return std::make_pair(result, f0);
+  return std::make_pair(result, std::get<0>(f(result)));
 }
-
 }  // namespace Optimization
