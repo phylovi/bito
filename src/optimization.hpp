@@ -152,14 +152,19 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
 DoublePair NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
     double x, const double tolerance, const double epsilon, const double min_x,
-    const size_t max_iter) {
+    const double max_x, const size_t max_iter) {
   size_t iter_idx = 0;
+  double new_x, delta;
+
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
-    double new_x = x - f_prime_x / f_double_prime_x;
+    new_x = x - f_prime_x / f_double_prime_x;
     new_x = fmax(new_x, min_x);
+    if (new_x >= max_x) {
+      new_x = x - 0.5 * (x - max_x);
+    }
 
-    double delta = fabs(x - new_x);
+    delta = fabs(x - new_x);
 
     if (delta < tolerance || fabs(f_double_prime_x) < epsilon || iter_idx == max_iter) {
       return {x, f_x};
@@ -194,4 +199,110 @@ DoublePair LogSpaceNewtonRaphsonOptimization(
     ++iter_idx;
   }
 }
+
+// All below adapted from boost
+//
+template <class T>
+inline int sign(const T z) {
+  return (z == 0) ? 0 : std::signbit(z) ? -1 : 1;
+}
+
+template <class F, class T>
+void handle_zero_derivative(F f, T last_f0, const T f0, T delta, T result, T guess,
+                            const T min, const T max) {
+  // if(last_f0 == 0)
+  // {
+  //    // this must be the first iteration, pretend that we had a
+  //    // previous one at either min or max:
+  //    if(result == min)
+  //    {
+  //       guess = max;
+  //    }
+  //    else
+  //    {
+  //       guess = min;
+  //    }
+  //    unpack_0(f(guess), last_f0);
+  //    delta = guess - result;
+  // }
+  if (sign(last_f0) * sign(f0) < 0) {
+    // we've crossed over so move in opposite direction to last step:
+    if (delta < 0) {
+      delta = (result - min) / 2;
+    } else {
+      delta = (result - max) / 2;
+    }
+  } else {
+    // move in same direction as last step:
+    if (delta < 0) {
+      delta = (result - max) / 2;
+    } else {
+      delta = (result - min) / 2;
+    }
+  }
+}
+
+template <class F, class T>
+std::pair<T, T> NewtonRaphsonIterate(F f, T guess, T min, T max, int significant_digits,
+                                     size_t max_iter) {
+  T result = guess;
+  T last_f1 = 0;
+  auto [f0, f1, f2] = f(result);  // Initializing function values and derivatives
+
+  T factor = static_cast<T>(ldexp(1.0, 1 - significant_digits));
+  T delta = 1;
+  T delta1 = std::numeric_limits<double>::max();
+  T delta2 = std::numeric_limits<double>::max();
+
+  size_t count = max_iter;
+
+  do {
+    delta2 = delta1;
+    delta1 = delta;
+    // if (f1 == 0) break;
+    // if (f2 == 0) {
+    //  handle_zero_derivative(f, last_f1, f1, delta, result, guess, min, max);
+    //}
+    // else {
+    delta = f1 / f2;
+    // }
+
+    // if (fabs(delta * 2) > fabs(delta2)) {
+    //   // last two steps haven't converged, try bisection:
+    //   delta = (delta > 0) ? (result - min) / 2 : (result - max) / 2;
+    // }
+    guess = result;
+    result -= delta;
+    result = fmax(result, min);
+    // if (result <= min) {
+    //   delta = 0.5F * (guess - min);
+    //   result = guess - delta;
+    //   if ((result == min) || (result == max)) {
+    //     auto [f0, f1, f2] = f(result);
+    //     break;
+    //   }
+    // }
+    if (result >= max) {
+      delta = 0.5F * (guess - max);
+      result = guess - delta;
+      if ((result == min) || (result == max)) {
+        auto [f0, f1, f2] = f(result);
+        break;
+      }
+    }
+    // update function values based on new result
+    last_f1 = f1;
+    auto [f0, f1, f2] = f(result);
+    // update brackets:
+    // if (delta > 0)
+    //   max = guess;
+    // else
+    //   min = guess;
+  } while (--count && (fabs(result * factor) < fabs(delta)));
+
+  max_iter -= count;
+
+  return std::make_pair(result, f0);
+}
+
 }  // namespace Optimization

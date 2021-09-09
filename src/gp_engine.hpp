@@ -187,7 +187,6 @@ class GPEngine {
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void NewtonOptimization(const GPOperations::OptimizeBranchLength& op);
-  void LogSpaceNewtonOptimization(const GPOperations::OptimizeBranchLength& op);
 
   inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
                                                                      size_t src2_idx) {
