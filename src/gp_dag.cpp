@@ -1,7 +1,8 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #include "gp_dag.hpp"
+
 #include "numerical_utils.hpp"
 
 using namespace GPOperations;  // NOLINT

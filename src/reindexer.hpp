@@ -1,13 +1,13 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #ifndef SRC_REINDEX_HPP_
 #define SRC_REINDEX_HPP_
 
+#include <numeric>
+
 #include "eigen_sugar.hpp"
 #include "sugar.hpp"
-
-#include <numeric>
 
 namespace Reindexer {
 // These operations are for working with reindexers.

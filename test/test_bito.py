@@ -1,4 +1,4 @@
-"""Some basic testing and demo code for the libsbn module.
+"""Some basic testing and demo code for the bito module.
 
 If you want to see the results of the print statements, use `pytest -s`.
 """
@@ -7,10 +7,10 @@ import json
 import pprint
 import pytest
 import numpy as np
-import libsbn
-import libsbn.beagle_flags as beagle_flags
+import bito
+import bito.beagle_flags as beagle_flags
 
-SIMPLE_SPECIFICATION = libsbn.PhyloModelSpecification(
+SIMPLE_SPECIFICATION = bito.PhyloModelSpecification(
     substitution="JC69", site="constant", clock="none"
 )
 
@@ -23,9 +23,9 @@ def convert_dict_to_int(dictionary):
 def hello_demo():
     """Demonstrate basic phylogenetic likelihood calculation using the "hello"
     data set."""
-    inst = libsbn.unrooted_instance("charlie")
-    inst.tree_collection = libsbn.UnrootedTreeCollection(
-        [libsbn.UnrootedTree.of_parent_id_vector([3, 3, 3])],
+    inst = bito.unrooted_instance("charlie")
+    inst.tree_collection = bito.UnrootedTreeCollection(
+        [bito.UnrootedTree.of_parent_id_vector([3, 3, 3])],
         ["mars", "saturn", "jupiter"],
     )
     inst.read_fasta_file("data/hello.fasta")
@@ -48,7 +48,7 @@ def sampling_and_indexers_demo():
     structures, and then sampling from the SBN with arbitrarily-set
     parameters.
     """
-    inst = libsbn.unrooted_instance("charlie")
+    inst = bito.unrooted_instance("charlie")
     inst.read_newick_file("data/five_taxon_unrooted.nwk")
     assert inst.tree_count() == 4
     # Showing off tree sampling.
@@ -72,7 +72,7 @@ def sampling_and_indexers_demo():
 
 def ds1_support_test():
     """Check the subplit support calculation on DS1."""
-    inst = libsbn.unrooted_instance("DS1")
+    inst = bito.unrooted_instance("DS1")
     # Checking split supports
     inst.read_nexus_file("data/DS1.subsampled_10.t.reordered")
     inst.process_loaded_trees()
@@ -84,7 +84,7 @@ def ds1_support_test():
             ss: convert_dict_to_int(d)
             for ss, d in supports["subsplit_supp_dict"].items()
         }
-    # vbpi and libsbn differ a little concerning how they compute the values of
+    # vbpi and bito differ a little concerning how they compute the values of
     # the subsplit support dictionaries. However, we primarily care about the
     # actual support, so that's compared here using a call to keys.
     assert rootsplit_support.keys() == vbpi_rootsplit_supp_dict.keys()
@@ -104,7 +104,7 @@ def ds1_phylo_model_demo(inst):
     jc69_likelihood = np.array(inst.log_likelihoods())
 
     # Showing off phylo_model_param_block_map.
-    gtr_specification = libsbn.PhyloModelSpecification(
+    gtr_specification = bito.PhyloModelSpecification(
         substitution="GTR", site="constant", clock="none"
     )
     inst.prepare_for_phylo_likelihood(gtr_specification, 2)
@@ -128,7 +128,7 @@ def rootings_indexer_test():
     rootsplit) we have the same _set_ of PCSPs (the order within PCSP
     sets doesn't matter).
     """
-    inst = libsbn.unrooted_instance("rootings")
+    inst = bito.unrooted_instance("rootings")
     inst.read_newick_file("data/many_rootings.nwk")
     inst.process_loaded_trees()
     # First we turn the PCSP sets into actual Python sets for unordered comparison.
@@ -151,7 +151,7 @@ def rootings_indexer_test():
 
 
 def test_sbn_unrooted_instance():
-    """Test the libsbn unrooted_instance."""
+    """Test the bito unrooted_instance."""
 
     hello_demo()
     sampling_and_indexers_demo()

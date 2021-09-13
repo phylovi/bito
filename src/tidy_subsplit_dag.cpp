@@ -1,5 +1,5 @@
-// Copyright 2019-2020 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2020 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #include "tidy_subsplit_dag.hpp"
 
@@ -121,7 +121,7 @@ TidySubsplitDAG TidySubsplitDAG::ManualTrivialExample() {
   auto manual_dag = TidySubsplitDAG(6);
 
   // The tree ((0,1)3,2)4:
-  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897963382
+  // https://github.com/phylovi/bito/issues/349#issuecomment-897963382
   manual_dag.SetBelow(3, true, 0);
   manual_dag.SetBelow(3, false, 1);
   manual_dag.SetBelow(4, false, 2);

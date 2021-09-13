@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // Perform training of an SBN based on a sample of trees.
 //
@@ -73,7 +73,7 @@ double SumOf(EigenConstVectorXdRef vec, const SizeVector& indices,
 #ifdef DOCTEST_LIBRARY_INCLUDED
    // Here we hardcode in "ground truth" values from
    // https://github.com/zcrabbit/sbn.
-   // See https://github.com/phylovi/libsbn/pull/167 for details on how this code was
+   // See https://github.com/phylovi/bito/pull/167 for details on how this code was
    // run.
 
 EigenVectorXd ExpectedSAVector() {

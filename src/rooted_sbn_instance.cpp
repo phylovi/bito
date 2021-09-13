@@ -1,7 +1,8 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #include "rooted_sbn_instance.hpp"
+
 #include "subsplit_dag.hpp"
 
 StringSet RootedSBNInstance::StringIndexerRepresentationOf(

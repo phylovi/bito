@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #include "psp_indexer.hpp"
 
@@ -44,14 +44,14 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) con
   SizeVector rootsplit_result(topology->Id(), first_empty_index_);
   SizeVector psp_result_down(topology->Id(), first_empty_index_);
   SizeVector psp_result_up(topology->Id(), first_empty_index_);
-  auto rootsplit_index = [& indexer = this->indexer_](const Node* node) {
+  auto rootsplit_index = [&indexer = this->indexer_](const Node* node) {
     return indexer.at(Bitset::RootsplitOfHalf(node->Leaves()));
   };
   // Here we use the terminology in the 2019 ICLR paper (screenshotted in
-  // https://github.com/phylovi/libsbn/issues/95) looking at the right-hand case
+  // https://github.com/phylovi/bito/issues/95) looking at the right-hand case
   // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
   // we use analogous notation.
-  auto psp_index = [& indexer = this->indexer_](const Bitset& z1, const Bitset& z2) {
+  auto psp_index = [&indexer = this->indexer_](const Bitset& z1, const Bitset& z2) {
     return indexer.at(Bitset::SubsplitOfPair(z1, z2));
   };
   topology->TriplePreorder(

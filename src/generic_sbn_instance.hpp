@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // This is a shared parent class for the rooted and unrooted SBN instances, templated on
 // the type of trees and SBN support we need.
@@ -221,7 +221,7 @@ class GenericSBNInstance {
   Eigen::Ref<EigenMatrixXd> GetPhyloModelParams() { return phylo_model_params_; }
 
   // The phylogenetic model parameters broken down into blocks according to
-  // model structure. See test_libsbn.py for an example of what this does.
+  // model structure. See test_bito.py for an example of what this does.
   BlockSpecification::ParameterBlockMap GetPhyloModelParamBlockMap() {
     return GetEngine()->GetPhyloModelBlockSpecification().ParameterBlockMapOf(
         phylo_model_params_);
@@ -280,7 +280,7 @@ class GenericSBNInstance {
   void SetAlignment(Alignment &&alignment) { alignment_ = alignment; }
 
  protected:
-  // The name of our libsbn instance.
+  // The name of our bito instance.
   std::string name_;
   // Our phylogenetic likelihood computation engine.
   std::unique_ptr<Engine> engine_;

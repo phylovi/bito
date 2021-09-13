@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #ifndef SRC_ROOTED_SBN_INSTANCE_HPP_
 #define SRC_ROOTED_SBN_INSTANCE_HPP_
@@ -201,7 +201,7 @@ TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
   inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
-  // See diagram at https://github.com/phylovi/libsbn/issues/349#issuecomment-898022916
+  // See diagram at https://github.com/phylovi/bito/issues/349#issuecomment-898022916
   // Numbering in comments is...                               node: subsplit.
   StringDoubleMap correct_parameters({{"1100000111", 0.5},  // 10: 01|234
                                       {"1000001111", 0.3},  // 15: 0|1234

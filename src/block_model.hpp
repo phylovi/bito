@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // A BlockModel is an abstract class to enable us to have parameter vectors that
 // get subdivided and used. To understand the structure of BlockModels, read the

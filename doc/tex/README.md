@@ -3,7 +3,7 @@
 This tex document contains a full derivation of the algorithms implemented in the code.
 Thus is only of interest for people wishing to understand the inner workings of the algorithms, such as to read and/or work on the code.
 
-For API documentation see [phylovi.github.io/libsbn/](https://phylovi.github.io/libsbn/).
+For API documentation see [phylovi.github.io/bito/](https://phylovi.github.io/bito/).
 
 
 ## Compilation

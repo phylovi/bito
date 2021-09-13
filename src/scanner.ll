@@ -1,7 +1,7 @@
 %{
 /*
-Copyright 2019-2021 libsbn project contributors.
-libsbn is free software under the GPLv3; see LICENSE file for details.
+Copyright 2019-2021 bito project contributors.
+bito is free software under the GPLv3; see LICENSE file for details.
 
 Based on
 https://www.gnu.org/software/bison/manual/html_node/Calc_002b_002b-Scanner.html#Calc_002b_002b-Scanner
