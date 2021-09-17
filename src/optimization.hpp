@@ -26,6 +26,8 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
   T fu, fv, fw, fx;  // function evaluations at u, v, w, x
   T mid;             // midpoint of min and max
   T fract1, fract2;  // minimal relative movement in x
+  T abs_min, abs_max; // absolute min and min allowed.
+
 
   static const T golden =
       0.3819660f;  // golden ratio, don't need too much precision here!
@@ -36,9 +38,49 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
 
   size_t count = max_iter;
 
+  // initialize midpoint.
+  abs_min = min;
+  abs_max = max;
+  mid = (min + max) / 2;
+  std::cout << "MID_INIT(" << min << "," << max << "): " << mid << std::endl;
+  bool first_pass = true;
+  
   do {
     // get midpoint
     mid = (min + max) / 2;
+
+    // update brackets: expansion search via binary search.
+    size_t brackets_iter = 0;
+    size_t brackets_iter_max = 100;
+    T brackets_tol = tolerance;
+    bool brackets_contain_optimal;
+    bool min_updated, max_updated;
+    do {
+      // update max bracket if it does not contain optimal value
+      if ( (f(max) - f(mid) >= -brackets_tol) == false ) { 
+        max = (max + abs_max) / 2; 
+        max_updated = true;
+      };
+      // update min bracket if it does not contain optimal value
+      if ( (f(min) - f(mid) >= -brackets_tol) == false ) { 
+        min = (min + abs_min) / 2; 
+        min_updated = true;
+      };
+      brackets_iter++;
+      std::cout << "ITER: " << brackets_iter << " | ";
+      std::cout << "MID: " << mid << " " << f(mid) << " | "; 
+      std::cout << (min_updated ? "*" : "") << "MIN: " << min << " " << f(min) << " | "; 
+      std::cout << (max_updated ? "*" : "") << "MAX: " << max << " " << f(max) << std::endl; 
+      if (brackets_iter >= brackets_iter_max) { 
+        std::cout << "SEARCH TIMED OUT!" << std::endl;
+        break;
+      }
+      min_updated = false;
+      max_updated = false;
+      // continue until brackets contain optimal value (within tolerance)
+      brackets_contain_optimal = ((f(max) - f(mid) >= -brackets_tol) && (f(min) - f(mid) >= -brackets_tol));
+    } while (brackets_contain_optimal == false);
+
     // work out if we're done already:
     fract1 = tolerance * fabs(x) + tolerance / 4;
     fract2 = 2 * fract1;
@@ -117,6 +159,7 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
 
   max_iter -= count;
 
+  std::cout << "MINIMUM FOUND: " << x << " " << fx << std::endl;
   return std::make_pair(x, fx);
 }
 
