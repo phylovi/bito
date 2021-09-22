@@ -17,7 +17,7 @@ std::unique_ptr<SubstitutionModel> SubstitutionModel::OfSpecification(
   Failwith("Substitution model not known: " + specification);
 }
 
-void JC69Model::UpdateEigenDecomposition() {
+void JC69Model::UpdateEigendecomposition() {
   eigenvectors_ << 1.0, 2.0, 0.0, 0.5, 1.0, -2.0, 0.5, 0.0, 1.0, 2.0, 0.0, -0.5, 1.0,
       -2.0, -0.5, 0.0;
   inverse_eigenvectors_ << 0.25, 0.25, 0.25, 0.25, 0.125, -0.125, 0.125, -0.125, 0.0,
@@ -74,8 +74,9 @@ void HKYModel::UpdateQMatrix() {
   Q_ /= total_substitution_rate;
 }
 
-// Analytical eigen decomposition
-void HKYModel::UpdateEigenDecomposition() {
+// Analytical eigendecomposition.
+// See Hasegawa, Kishino, and Yano, 1985 for details.
+void HKYModel::UpdateEigendecomposition() {
   double kappa = rates_[0];
 
   double pi_a = frequencies_[0];
@@ -164,7 +165,7 @@ void GTRModel::UpdateQMatrix() {
   Q_ /= total_substitution_rate;
 }
 
-void DNAModel::UpdateEigenDecomposition() {
+void DNAModel::UpdateEigendecomposition() {
   Eigen::Map<const Eigen::Array4d> tmp(&frequencies_[0]);
   EigenMatrixXd sqrt_frequencies = EigenMatrixXd(tmp.sqrt().matrix().asDiagonal());
   EigenMatrixXd sqrt_frequencies_inv = EigenMatrixXd(sqrt_frequencies.inverse());
@@ -182,5 +183,5 @@ void DNAModel::UpdateEigenDecomposition() {
 
 void DNAModel::Update() {
   UpdateQMatrix();
-  UpdateEigenDecomposition();
+  UpdateEigendecomposition();
 }

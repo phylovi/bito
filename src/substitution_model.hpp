@@ -59,7 +59,7 @@ class DNAModel : public SubstitutionModel {
   }
 
  protected:
-  virtual void UpdateEigenDecomposition();
+  virtual void UpdateEigendecomposition();
   virtual void UpdateQMatrix() = 0;
   void Update();
 };
@@ -73,7 +73,7 @@ class JC69Model : public DNAModel {
 
   // No parameters to set for JC!
   void SetParameters(const EigenVectorXdRef) override{};  // NOLINT
-  virtual void UpdateEigenDecomposition() override;
+  virtual void UpdateEigendecomposition() override;
   void UpdateQMatrix() override;
 };
 
@@ -88,10 +88,15 @@ class GTRModel : public DNAModel {
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
  protected:
-  // Update the Q matrix
   void UpdateQMatrix() override;
 };
 
+// The Hasegawa, Kishino and Yano (HKY) susbtitution model.
+//
+// Reference:
+// Hasegawa, M., Kishino, H. and Yano, T.A., 1985. Dating of the human-ape splitting
+// by a molecular clock of mitochondrial DNA. Journal of molecular evolution, 22(2),
+// pp.160-174.
 class HKYModel : public DNAModel {
  public:
   explicit HKYModel() : DNAModel({{rates_key_, 1}, {frequencies_key_, 4}}) {
@@ -103,13 +108,9 @@ class HKYModel : public DNAModel {
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
  protected:
-  virtual void UpdateEigenDecomposition() override;
-  // Update the Q matrix
+  virtual void UpdateEigendecomposition() override;
   void UpdateQMatrix() override;
 };
-
-std::tuple<EigenMatrixXd, EigenMatrixXd, EigenVectorXd> CalculateEigenDecomposition(
-    const EigenVectorXd& frequencies, const EigenMatrixXd& Q);
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 #include <algorithm>
