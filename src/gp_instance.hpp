@@ -52,14 +52,18 @@ class GPInstance {
   // #348: A lot of code duplication here with things in SBNInstance.
   StringVector PrettyIndexer() const;
   EigenConstVectorXdRef GetSBNParameters();
+  EigenConstMatrixXdRef GetPerGPCSPLogLikelihoodsMatrix();
   StringDoubleVector PrettyIndexedSBNParameters();
   StringDoubleVector PrettyIndexedBranchLengths();
   StringDoubleVector PrettyIndexedPerGPCSPLogLikelihoods();
   StringDoubleVector PrettyIndexedPerGPCSPComponentsOfFullLogMarginal();
+  std::vector<std::pair<std::string, EigenVectorXd>>
+  PrettyIndexedPerGPCSPLikelihoodMatrix();
 
   void SBNParametersToCSV(const std::string &file_path);
   void SBNPriorToCSV(const std::string &file_path);
   void BranchLengthsToCSV(const std::string &file_path);
+  void PerGPCSPLogLikelihoodsToCSV(const std::string &file_path);
 
   // Generate a version of the topologies in the current tree collection that use the
   // current GP branch lengths.
