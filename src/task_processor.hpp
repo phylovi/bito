@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 // This code started life as the example from the excellent blog post at
 // https://embeddedartistry.com/blog/2017/2/1/c11-implementing-a-dispatch-queue-using-stdfunction

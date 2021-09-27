@@ -1,7 +1,8 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #include "subsplit_dag.hpp"
+
 #include "combinatorics.hpp"
 #include "numerical_utils.hpp"
 #include "sbn_probability.hpp"
@@ -93,57 +94,57 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
   string_stream << "node [shape=record];\n";
   string_stream << "edge [colorscheme=dark23];\n";
   DepthFirstWithAction(
-      {DAGRootNodeId()}, SubsplitDAGTraversalAction(
-                // BeforeNode
-                [this, &string_stream, &show_index_labels](size_t node_id) {
-                  const auto &node = GetDAGNode(node_id);
-                  if (node->IsDAGRootNode()) {
-                    string_stream << node_id << " [label=\"<f0>&rho;\"]\n";
-                    return;
-                  }
-                  auto bs = node->GetBitset();
-                  string_stream << node_id << " [label=\"<f0>"
-                                << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>";
-                  if (show_index_labels) {
-                    string_stream << node_id;
-                  }
-                  string_stream << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString()
-                                << "\"]\n";
-                },
-                // AfterNode
-                [](size_t node_id) {},
-                // BeforeNodeClade
-                [](size_t node_id, bool rotated) {},
-                // VisitEdge
-                [this, &string_stream, &show_index_labels](
-                    size_t node_id, size_t child_id, bool rotated) {
-                  if (GetDAGNode(child_id)->IsLeaf()) {
-                    string_stream << child_id << " [label=\"<f1>" << child_id
-                                  << "\"]\n";
-                  }
-                  string_stream << "\"" << node_id << "\":";
-                  string_stream << (rotated ? "f0" : "f2");
-                  string_stream << "->\"";
-                  string_stream << child_id << "\":f1";
-                  if (show_index_labels) {
-                    string_stream << " [label=\"" << GPCSPIndexOfIds(node_id, child_id);
-                    if (rotated) {
-                      string_stream << "\", color=1, fontcolor=1";
-                    } else {
-                      string_stream << "\", color=3, fontcolor=3";
-                    }
-                    if (GetDAGNode(node_id)->IsDAGRootNode()) {
-                      string_stream << ",style=dashed]";
-                    } else {
-                      string_stream << "]";
-                    }
-                  } else {
-                    if (GetDAGNode(node_id)->IsDAGRootNode()) {
-                      string_stream << "[style=dashed]";
-                    }
-                  }
-                  string_stream << "\n";
-                }));
+      {DAGRootNodeId()},
+      SubsplitDAGTraversalAction(
+          // BeforeNode
+          [this, &string_stream, &show_index_labels](size_t node_id) {
+            const auto &node = GetDAGNode(node_id);
+            if (node->IsDAGRootNode()) {
+              string_stream << node_id << " [label=\"<f0>&rho;\"]\n";
+              return;
+            }
+            auto bs = node->GetBitset();
+            string_stream << node_id << " [label=\"<f0>"
+                          << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>";
+            if (show_index_labels) {
+              string_stream << node_id;
+            }
+            string_stream << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString()
+                          << "\"]\n";
+          },
+          // AfterNode
+          [](size_t node_id) {},
+          // BeforeNodeClade
+          [](size_t node_id, bool rotated) {},
+          // VisitEdge
+          [this, &string_stream, &show_index_labels](size_t node_id, size_t child_id,
+                                                     bool rotated) {
+            if (GetDAGNode(child_id)->IsLeaf()) {
+              string_stream << child_id << " [label=\"<f1>" << child_id << "\"]\n";
+            }
+            string_stream << "\"" << node_id << "\":";
+            string_stream << (rotated ? "f0" : "f2");
+            string_stream << "->\"";
+            string_stream << child_id << "\":f1";
+            if (show_index_labels) {
+              string_stream << " [label=\"" << GPCSPIndexOfIds(node_id, child_id);
+              if (rotated) {
+                string_stream << "\", color=1, fontcolor=1";
+              } else {
+                string_stream << "\", color=3, fontcolor=3";
+              }
+              if (GetDAGNode(node_id)->IsDAGRootNode()) {
+                string_stream << ",style=dashed]";
+              } else {
+                string_stream << "]";
+              }
+            } else {
+              if (GetDAGNode(node_id)->IsDAGRootNode()) {
+                string_stream << "[style=dashed]";
+              }
+            }
+            string_stream << "\n";
+          }));
   string_stream << "}";
   return string_stream.str();
 }

@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // In our formulation of variational Bayes phylogenetics, we do inference of continuous
 // parameters with respect to a "subsplit support", which is the collection of

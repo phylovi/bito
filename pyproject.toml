@@ -3,18 +3,18 @@ requires = ["pytoml>=0.1", "enscons>=0.23"]
 build-backend = "enscons.api"
 
 [tool.enscons]
-name = "libsbn"
+name = "bito"
 version = "0.1"
 description = "Python-interface C++ library implementing subsplit Bayes networks for Bayesian phylogenetics."
 classifiers = []
 keywords = []
 author = "Erick Matsen"
 author_email = "ematsen@gmail.com"
-url = "https://github.com/phylovi/libsbn/"
+url = "https://github.com/phylovi/bito/"
 license = "GPL v3"
 install_requires = ["setuptools", "wheel"]
 tests_require = ["pytest"]
-packages = ["libsbn", "vip"]
+packages = ["bito", "vip"]
 description_file="README.md"
 
 [tool.enscons.entry_points]

@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
@@ -21,8 +21,9 @@ namespace py = pybind11;
 // Thanks to @eacousineau!
 template <typename PyClass, typename C, typename D>
 void def_read_write_mutable(PyClass &cls, const char *name, D C::*pm) {
-  cls.def_property(name, [pm](C & self) -> auto & { return self.*pm; },
-                   [pm](C &self, const D &value) { self.*pm = value; });
+  cls.def_property(
+      name, [pm](C & self) -> auto & { return self.*pm; },
+      [pm](C &self, const D &value) { self.*pm = value; });
 }
 
 // In order to make vector<double>s available to numpy, we take two steps.
@@ -31,8 +32,8 @@ void def_read_write_mutable(PyClass &cls, const char *name, D C::*pm) {
 PYBIND11_MAKE_OPAQUE(std::vector<double>);
 
 // MODULE
-PYBIND11_MODULE(libsbn, m) {
-  m.doc() = R"raw(Python interface to libsbn.)raw";
+PYBIND11_MODULE(bito, m) {
+  m.doc() = R"raw(Python interface to bito.)raw";
   // Second, we expose them as buffer objects so that we can use them
   // as in-place numpy arrays with np.array(v, copy=False). See
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
@@ -143,12 +144,12 @@ PYBIND11_MODULE(libsbn, m) {
       R"raw(
             Prepare instance for phylogenetic likelihood computation.
 
-            See the ``libsbn.beagle_flags`` online documentation to learn about the allowable flags.
+            See the ``bito.beagle_flags`` online documentation to learn about the allowable flags.
 
             ``use_tip_states`` tells BEAGLE if it should use tip states (versus tip partials).
-            Note that libsbn currently treats degenerate nucleotides as gaps irrespective of this setting.
+            Note that bito currently treats degenerate nucleotides as gaps irrespective of this setting.
 
-            ``tree_count_option`` tells libsbn for how many trees you will be asking for the likelihood
+            ``tree_count_option`` tells bito for how many trees you will be asking for the likelihood
             or gradient at a time. If not specified, this is set to the number of trees currently loaded
             into the instance. This allocates the correct number of slots in the phylogenetic model
             parameter matrices, and it's up to the user to set those model parameters after calling
@@ -436,7 +437,7 @@ PYBIND11_MODULE(libsbn, m) {
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:
-  // `with libsbn.ostream_redirect(stdout=True, stderr=True):`
+  // `with bito.ostream_redirect(stdout=True, stderr=True):`
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/utilities.html#capturing-standard-output-from-ostream
   py::add_ostream_redirect(m, "ostream_redirect");
 

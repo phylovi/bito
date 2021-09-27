@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // This is a rooted tree class that had the extra parameters required to do node height
 // gradients. In fact, because RootedTree also has branch lengths (inherited from Tree)
@@ -107,7 +107,7 @@ class RootedTree : public Tree {
   bool operator==(const RootedTree& other) const;
 
   // The tree `(0:2,(1:1.5,(2:2,3:1):2.5):2.5):0;` as depicted in
-  // https://github.com/phylovi/libsbn/issues/187#issuecomment-618421183
+  // https://github.com/phylovi/bito/issues/187#issuecomment-618421183
   static RootedTree Example();
 
  private:
@@ -123,7 +123,7 @@ inline bool operator!=(const RootedTree& lhs, const RootedTree& rhs) {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("RootedTree") {
   // To understand this test, please see
-  // https://github.com/phylovi/libsbn/issues/187#issuecomment-618421183
+  // https://github.com/phylovi/bito/issues/187#issuecomment-618421183
   auto tree = RootedTree::Example();
   std::vector<double> correct_height_ratios({1. / 3.5, 1.5 / 4., 7.});
   for (size_t i = 0; i < correct_height_ratios.size(); ++i) {

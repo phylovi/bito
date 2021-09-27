@@ -1,7 +1,7 @@
-libsbn.beagle\_flags
+bito.beagle\_flags
 ====================
 
-.. automodule:: libsbn.beagle_flags
+.. automodule:: bito.beagle_flags
 
    
    

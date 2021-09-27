@@ -1,18 +1,18 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // Interface to the zlib compression library
 
 #ifndef SRC_ZLIB_STREAM_HPP_
 #define SRC_ZLIB_STREAM_HPP_
 
+#include <zlib.h>
+
 #include <atomic>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <streambuf>
-
-#include <zlib.h>
 
 namespace zlib {
 

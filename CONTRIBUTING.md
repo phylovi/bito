@@ -1,8 +1,8 @@
-# contributing to `libsbn`
+# contributing to `bito`
 
 Thank you for your contributions!
 
-libsbn is written in C++17.
+bito is written in C++17.
 The associated Python module, `vip`, is targeting Python 3.7.
 
 

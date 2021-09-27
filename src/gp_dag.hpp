@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // The purpose of this class is to hold a DAG that we use to build up the operations for
 // the generalized pruning operations. Note that rootsplit PCSPs and the DAG root node

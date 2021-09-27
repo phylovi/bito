@@ -1,7 +1,7 @@
-libsbn
+bito
 ======
 
-.. automodule:: libsbn
+.. automodule:: bito
 
 
 

@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath(".."))
 
 # -- Project information -----------------------------------------------------
 
-project = "libsbn"
-copyright = "2019, Team PhyloVI"
+project = "bito"
+copyright = "2019-2021, Team PhyloVI"
 author = "Team PhyloVI"
 
 # The full version, including alpha/beta/rc tags

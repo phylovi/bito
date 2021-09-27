@@ -137,13 +137,13 @@ def dag_to_dot(fasta_path, newick_path, output_path, edge_labels):
 
     The command will output the .dot file and render it with graphviz into a .svg file.
     """
-    import libsbn
+    import bito
     import tempfile
     import graphviz
 
     mmap_file = tempfile.mkstemp(suffix=".data")[1]
 
-    inst = libsbn.gp_instance(mmap_file)
+    inst = bito.gp_instance(mmap_file)
     inst.read_fasta_file(fasta_path)
     inst.read_newick_file(newick_path)
     inst.make_engine()

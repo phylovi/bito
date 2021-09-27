@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // The purpose of this class is to hold a DAG built from the parent-child relationships
 // of the subsplits. We wish to have information associated with both the nodes and

@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
@@ -35,7 +35,7 @@ GPInstance GPInstanceOfFiles(const std::string& fasta_path,
 // Our tree is (see check below)
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
-// https://github.com/phylovi/libsbn/issues/349#issuecomment-898672399
+// https://github.com/phylovi/bito/issues/349#issuecomment-898672399
 GPInstance MakeHelloGPInstance(const std::string& fasta_path) {
   auto inst = GPInstanceOfFiles(fasta_path, "data/hello_rooted.nwk");
   EigenVectorXd branch_lengths(5);
@@ -211,7 +211,7 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
 TEST_CASE("GPInstance: marginal likelihood on seven taxa and four trees") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897225623
+  // https://github.com/phylovi/bito/issues/349#issuecomment-897225623
   TestCompositeMarginal(
       GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal-all-trees.nwk"),
       fasta_path);
@@ -423,7 +423,7 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
   auto inst =
       GPInstanceOfFiles("data/five_taxon.fasta", "data/five_taxon_rooted_more_2.nwk");
   // See the DAG and the uniform probabilities at
-  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897266149
+  // https://github.com/phylovi/bito/issues/349#issuecomment-897266149
   const auto& dag = inst.GetDAG();
   EigenVectorXd normalized_sbn_parameters = dag.BuildUniformOnTopologicalSupportPrior();
   EigenVectorXd node_probabilities =
@@ -492,7 +492,7 @@ TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   // Because the branch lengths contain the GPCSP index, we can check that the indices
   // correspond to what we see in the GPCSP DAG in
-  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897233859
+  // https://github.com/phylovi/bito/issues/349#issuecomment-897233859
   CHECK_EQ(inst.GenerateCompleteRootedTreeCollection().Newick(),
            "((0:7,1:9):3,(2:11,(3:12,4:13):5):2):0;\n"
            "(1:10,(0:8,(2:11,(3:12,4:13):5):6):4):0;\n");
@@ -524,7 +524,7 @@ EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
 TEST_CASE("GPInstance: simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897225623
+  // https://github.com/phylovi/bito/issues/349#issuecomment-897225623
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   // Branch lengths generated from Python via
@@ -561,7 +561,7 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
 TEST_CASE("GPInstance: second simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897237046
+  // https://github.com/phylovi/bito/issues/349#issuecomment-897237046
   auto inst = GPInstanceOfFiles(fasta_path, "data/second-simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   // Branch lengths generated from Python via
@@ -609,7 +609,7 @@ TEST_CASE("GPInstance: test rootsplits") {
   }
 }
 
-// See diagram at https://github.com/phylovi/libsbn/issues/351#issuecomment-908707617.
+// See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908707617.
 TEST_CASE("GPInstance: IsValidNewNodePair tests") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
@@ -630,7 +630,7 @@ TEST_CASE("GPInstance: IsValidNewNodePair tests") {
   CHECK(dag.IsValidNewNodePair(Bitset("1111000001"), Bitset("1110000010")));
 }
 
-// See diagram at https://github.com/phylovi/libsbn/issues/351#issuecomment-908708284.
+// See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908708284.
 TEST_CASE("GPInstance: AddNodePair tests") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
@@ -725,7 +725,7 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   CHECK_EQ(dag.TopologyCount(), prev_topology_count + 2);
 }
 
-// See diagram at https://github.com/phylovi/libsbn/issues/351#issuecomment-908709477.
+// See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908709477.
 TEST_CASE("GPInstance: Only add parent node tests") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
@@ -747,7 +747,7 @@ TEST_CASE("GPInstance: Only add parent node tests") {
   CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), true).second, 7);
 }
 
-// See diagram at https://github.com/phylovi/libsbn/issues/351#issuecomment-908711187.
+// See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908711187.
 TEST_CASE("GPInstance: Only add child node tests") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_3.nwk");

@@ -1,5 +1,5 @@
-// Copyright 2019-2020 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2020 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // A "tidy" subsplit DAG has a notion of clean and dirty vectors.
 //
@@ -37,12 +37,12 @@ class TidySubsplitDAG : public SubsplitDAG {
   std::string AboveMatricesAsString() const;
 
   // From ((0,1),2)
-  // https://github.com/phylovi/libsbn/issues/349#issuecomment-897963382
+  // https://github.com/phylovi/bito/issues/349#issuecomment-897963382
   static TidySubsplitDAG TrivialExample();
   // The same DAG, built by hand for the test.
   static TidySubsplitDAG ManualTrivialExample();
   // From (0,(1,(2,3))) and ((0,(2,3)),1)
-  // See https://github.com/phylovi/libsbn/issues/349#issuecomment-897980459
+  // See https://github.com/phylovi/bito/issues/349#issuecomment-897980459
   // Update during #288 #321
   static TidySubsplitDAG MotivatingExample();
 

@@ -6,7 +6,7 @@ Documentation in ``vip.cli``.
 import os
 import timeit
 
-import libsbn
+import bito
 import numpy as np
 import pandas as pd
 
@@ -31,11 +31,11 @@ def fixed(
     fasta_path = os.path.join(data_path, data_id + ".fasta")
     burn_in_fraction = 0.1
     particle_count_for_final_elbo_estimate = 10000
-    phylo_model_specification = libsbn.PhyloModelSpecification(
+    phylo_model_specification = bito.PhyloModelSpecification(
         substitution="JC69", site="constant", clock="strict"
     )
     # Read MCMC run and get split lengths.
-    mcmc_inst = libsbn.unrooted_instance("mcmc_inst")
+    mcmc_inst = bito.unrooted_instance("mcmc_inst")
     mcmc_inst.read_nexus_file(mcmc_nexus_path)
     burn_in_count = int(burn_in_fraction * mcmc_inst.tree_count())
     mcmc_inst.tree_collection.erase(0, burn_in_count)

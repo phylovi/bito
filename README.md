@@ -1,12 +1,13 @@
-# libsbn
+# bito
 
-[![Docker Repository on Quay](https://quay.io/repository/matsengrp/libsbn/status "Docker Repository on Quay")](https://quay.io/repository/matsengrp/libsbn)
-[![Travis CI status](https://travis-ci.org/phylovi/libsbn.svg?branch=main)](https://travis-ci.org/phylovi/libsbn)
+[![Docker Repository on Quay](https://quay.io/repository/matsengrp/bito/status "Docker Repository on Quay")](https://quay.io/repository/matsengrp/bito)
 
-We are building a Python-interface C++ library for phylogenetic variational inference so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let libsbn handle the tree structure and likelihood computations for you.
+`bito`, or "Bayesian Inference of Trees via Optimization", is a Python-interface C++ library for phylogenetic variational inference so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let Bito handle the tree structure and likelihood computations for you.
+"Bito" is also the name of a [tree](https://www.merriam-webster.com/dictionary/bito) native to Africa that produces medicinal oil.
+We pronounce "bito" with a long /e/ sound ("bito" rhymes with "burrito").
 
 This library is in an experimental state.
-
+This library was formerly known as "libsbn".
 
 ## Dependencies
 
@@ -20,7 +21,7 @@ The BEAGLE install process is somewhat in flux, so it's best to look at the [con
 To install additional dependencies, use the associated conda environment file:
 
     conda env create -f environment.yml
-    conda activate libsbn
+    conda activate bito
 
 If you want to specify your compiler manually, set the `CC` and `CXX` shell variables to your desired compiler command.
 
@@ -36,7 +37,7 @@ For your first build, do
 * `git submodule update --init --recursive`
 * `scons`
 * Respond to interactive prompts about where `hmc-clock` BEAGLE is installed
-* `conda activate libsbn` &nbsp; **(this is an important step, even though you are already in the libsbn conda environment)**
+* `conda activate bito` &nbsp; **(this is an important step, even though you are already in the bito conda environment)**
 * `make`
 
 After these steps `make` will build, run tests, and install the Python packages, and this should be the only command you need to run after modifying the code.
@@ -44,7 +45,7 @@ After these steps `make` will build, run tests, and install the Python packages,
 Note that `scons` and `make` accept `-j` flags for multi-core builds: e.g. `-j20` will build with 20 jobs.
 
 The build process will modify the conda environment to point `[DY]LD_LIBRARY_PATH` to where BEAGLE is installed.
-If you get an error about missing BEAGLE, just `conda activate libsbn` again and you should be good.
+If you get an error about missing BEAGLE, just `conda activate bito` again and you should be good.
 If you want to modify your desired BEAGLE installation location, do `unset BEAGLE_PREFIX` and start the steps above again starting at `scons`.
 
 * (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
@@ -60,7 +61,7 @@ The following two papers will explain what this repository is about:
 
 Our documentation consists of:
 
-* [Online documentation](https://phylovi.github.io/libsbn/)
+* [Online documentation](https://phylovi.github.io/bito/)
 * Derivations in `doc/tex`, which explain what's going on in the code.
 
 
@@ -73,6 +74,7 @@ Please see our detailed [contribution guidelines](CONTRIBUTING.md).
 ## Contributors
 
 * Erick Matsen ([@matsen](https://github.com/matsen)): implementation, design, janitorial duties
+* Dave H. Rich ([@DaveRich](https://github.com/davidrich27)): core developer
 * Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation of substitution models and likelihoods/gradients, design
 * Seong-Hwan Jun ([@junseonghwan](https://github.com/junseonghwan)): generalized pruning design and implementation, implementation of SBN gradients, design
 * Hassan Nasif ([@hrnasif](https://github.com/hrnasif)): hot start for generalized pruning; gradient descent for generalized pruning
@@ -87,7 +89,6 @@ Please see our detailed [contribution guidelines](CONTRIBUTING.md).
 * Marc Suchard ([@msuchard](https://github.com/msuchard)): gradient expertise and node height code
 * Michael Karcher ([@mdkarcher](https://github.com/mdkarcher)): SBN expertise
 * Eric J. Isaac ([@EricJIsaac](https://github.com/EricJIsaac)): C++ wisdom
-
 
 ## Citations
 

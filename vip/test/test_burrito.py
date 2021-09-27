@@ -1,6 +1,6 @@
 import numpy as np
 from pytest import approx
-import libsbn
+import bito
 import vip.burrito
 
 
@@ -13,7 +13,7 @@ def test_elbo_innards():
     elbo: -82.449972
     """
 
-    phylo_model_specification = libsbn.PhyloModelSpecification(
+    phylo_model_specification = bito.PhyloModelSpecification(
         substitution="JC69", site="constant", clock="strict"
     )
 

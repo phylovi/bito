@@ -16,7 +16,7 @@ def check_file_exists(path):
 
 if "CONDA_PREFIX" not in os.environ:
     sys.exit(
-        "\nThis SConstruct is meant to be run in the libsbn conda environment; "
+        "\nThis SConstruct is meant to be run in the bito conda environment; "
         "see README for installation process."
     )
 
@@ -60,7 +60,7 @@ For example, if you supply `/usr/local`, then we should find
     /usr/local/include/libhmsbeagle-1/libhmsbeagle/beagle.h
 
 If your compilation works after this configuration step, run
-    conda activate libsbn
+    conda activate bito
 which will mean that you don't have to do this configuration again.
 Note that you also probably need to do this to run the tests.
 
@@ -186,8 +186,8 @@ gp_sources = [
     "_build/gp_operation.cpp",
 ]
 extension = env.SharedLibrary(
-    "libsbn" + os.popen("python3-config --extension-suffix").read().rstrip(),
-    ["_build/pylibsbn.cpp"] + sources + gp_sources,
+    "bito" + os.popen("python3-config --extension-suffix").read().rstrip(),
+    ["_build/pybito.cpp"] + sources + gp_sources,
     SHLIBPREFIX="",
     LIBS=["hmsbeagle", "z"],
 )

@@ -5,7 +5,7 @@ j_flags = $(shell echo "${MAKEFLAGS}" | grep -o -- "-j[0-9]\+" || true)
 default:
 	mkdir -p _ignore  # Needed for test outputs.
 	scons ${j_flags}
-	pip install -U dist/libsbn-*.whl
+	pip install -U dist/bito-*.whl
 
 rungptest:
 	./_build/gp_doctest --test-case-exclude="UnrootedSBNInstance*"
@@ -57,7 +57,7 @@ format:
 	clang-format -i -style=file $(our_files)
 
 clean:
-	rm -rf _build build dist libsbn.*.so $(find . -name __pycache)
+	rm -rf _build build dist bito.*.so $(find . -name __pycache)
 
 # We follow C++ core guidelines by allowing passing by non-const reference.
 lint:

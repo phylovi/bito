@@ -1,5 +1,5 @@
-// Copyright 2019-2021 libsbn project contributors.
-// libsbn is free software under the GPLv3; see LICENSE file for details.
+// Copyright 2019-2021 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
 
 #ifndef SRC_GENERIC_TREE_COLLECTION_HPP_
 #define SRC_GENERIC_TREE_COLLECTION_HPP_

@@ -3,7 +3,7 @@ import click
 import numpy as np
 from scipy.special import logsumexp
 
-import libsbn
+import bito
 import vip.branch_model
 import vip.optimizers
 import vip.priors
@@ -38,7 +38,7 @@ class Burrito:
     ):
         self.particle_count = particle_count
         self.use_vimco = use_vimco
-        self.inst = libsbn.unrooted_instance("burrito")
+        self.inst = bito.unrooted_instance("burrito")
 
         # Read MCMC run to get tree structure.
         self.inst.read_nexus_file(mcmc_nexus_path)
@@ -94,7 +94,7 @@ class Burrito:
             dg_dpsi,
             dlog_qg_dpsi,
         ) = self.branch_model.sample_and_gradients(px_branch_representation)
-        # Put the branch lengths in the libsbn instance trees, and get branch gradients.
+        # Put the branch lengths in the bito instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = px_theta_sample[particle_idx, :]
         phylo_gradients = self.inst.phylo_gradients()
@@ -131,7 +131,7 @@ class Burrito:
         px_branch_representation = self.branch_model.px_branch_representation()
         # Sample continuous variables based on the branch representations.
         px_theta_sample = self.branch_model.sample(px_branch_representation)
-        # Put the branch lengths in the libsbn instance trees, and get branch gradients.
+        # Put the branch lengths in the bito instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = px_theta_sample[particle_idx, :]
         self.inst.resize_phylo_model_params()
@@ -170,7 +170,7 @@ class Burrito:
         px_branch_representation = self.branch_model.px_branch_representation()
         # Sample continuous variables based on the branch representations.
         px_theta_sample = self.branch_model.sample(px_branch_representation)
-        # Put the branch lengths in the libsbn instance trees, and get branch gradients.
+        # Put the branch lengths in the bito instance trees, and get branch gradients.
         for particle_idx, branch_lengths in enumerate(px_branch_lengths):
             branch_lengths[:] = px_theta_sample[particle_idx, :]
         self.inst.resize_phylo_model_params()
