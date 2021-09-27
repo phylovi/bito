@@ -5,6 +5,10 @@ vip.branch\_model
 
    
    
+   
+
+   
+   
    .. rubric:: Functions
 
    .. autosummary::
@@ -20,6 +24,7 @@ vip.branch\_model
    .. autosummary::
    
       BranchModel
+      PSPModel
       SplitModel
    
    
@@ -27,3 +32,6 @@ vip.branch\_model
    
    
    
+
+
+

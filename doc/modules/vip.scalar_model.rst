@@ -5,6 +5,10 @@ vip.scalar\_model
 
    
    
+   
+
+   
+   
    .. rubric:: Functions
 
    .. autosummary::
@@ -32,3 +36,6 @@ vip.scalar\_model
    
    
    
+
+
+

@@ -1,7 +1,11 @@
 bito.beagle\_flags
-====================
+==================
 
 .. automodule:: bito.beagle_flags
+
+   
+   
+   
 
    
    
@@ -20,3 +24,6 @@ bito.beagle\_flags
    
    
    
+
+
+
