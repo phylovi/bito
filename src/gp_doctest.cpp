@@ -372,12 +372,15 @@ TEST_CASE("GPInstance: test populate PLV") {
   auto inst = MakeFiveTaxonInstance();
   inst.EstimateBranchLengths(1e-6, 10, true);
   inst.ComputeLikelihoods();
+  const EigenMatrixXd per_pcsp_marg_lik = inst.GetPerGPCSPLogLikelihoodsMatrix();
+  std::cout << "The matrix is " << per_pcsp_marg_lik << std::endl;
   size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
   const EigenVectorXd log_likelihoods1 =
       inst.GetEngine()->GetPerGPCSPLogLikelihoods(0, length);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+  std::cout << "The last column should be " << log_likelihoods2 << std::endl;
   CheckVectorXdEquality(log_likelihoods1, log_likelihoods2, 1e-6);
 }
 

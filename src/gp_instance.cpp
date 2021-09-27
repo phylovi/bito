@@ -185,6 +185,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
   GPOperationVector populate_plv_operations = dag_.PopulatePLVs();
+  GPOperationVector compute_lik_operations = dag_.ComputeLikelihoods();
 
   our_ostream << "Populating PLVs\n";
   PopulatePLVs();
@@ -192,10 +193,12 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   t_start = now();
   our_ostream << "Computing initial likelihood\n";
   ProcessOperations(marginal_lik_operations);
+  ProcessOperations(compute_lik_operations);
+
   // Initializing per-pcsp marginal likelihood matrix
   size_t gpcsp_count = dag_.BuildGPCSPIndexer().size();
-  EigenMatrixXd per_pcsp_marg_log_lik_(gpcsp_count, 1);
-  per_pcsp_marg_log_lik_.col(0) = GetEngine()->GetPerGPCSPLogLikelihoods();
+  EigenMatrixXd per_pcsp_marg_lik_(gpcsp_count, 1);
+  per_pcsp_marg_lik_.col(0) = GetEngine()->GetPerGPCSPLogLikelihoods();
 
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
   std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
@@ -208,8 +211,9 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
     // #321 Replace with a cleaned up traversal.
     ProcessOperations(populate_plv_operations);
     ProcessOperations(marginal_lik_operations);
-    //per_pcsp_marg_log_lik_.resize(gpcsp_count, i + 1);
-    //per_pcsp_marg_log_lik_.col(i + 1) = GetEngine()->GetPerGPCSPLogLikelihoods();
+    ProcessOperations(compute_lik_operations);
+    //per_pcsp_marg_lik_.conservativeResize(Eigen::NoChange, i+2);
+    //per_pcsp_marg_lik_.col(i+1) = GetEngine()->GetPerGPCSPLogLikelihoods();
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
     our_ostream << "Current marginal log likelihood: ";
     our_ostream << std::setprecision(9) << current_marginal_log_lik << std::endl;
@@ -337,7 +341,7 @@ EigenConstVectorXdRef GPInstance::GetSBNParameters() {
 }
 
 EigenConstMatrixXdRef GPInstance::GetPerGPCSPLogLikelihoodsMatrix() {
-  return per_pcsp_marg_log_lik_;
+  return per_pcsp_marg_lik_;
 }
 
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
@@ -358,7 +362,7 @@ StringDoubleVector GPInstance::PrettyIndexedPerGPCSPComponentsOfFullLogMarginal(
 
 std::vector<std::pair<std::string, EigenVectorXd>>
 GPInstance::PrettyIndexedPerGPCSPLikelihoodMatrix() {
-  return PrettyIndexedMatrix(per_pcsp_marg_log_lik_);
+  return PrettyIndexedMatrix(per_pcsp_marg_lik_);
 }
 
 void GPInstance::SBNParametersToCSV(const std::string &file_path) {
