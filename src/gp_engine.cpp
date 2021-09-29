@@ -627,7 +627,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   };
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
   double current_value = negative_log_likelihood(current_log_branch_length);
-  const auto [log_branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
+  const auto [log_branch_length, neg_log_likelihood] = Optimization::Minimize(
       negative_log_likelihood, min_log_branch_length_, max_log_branch_length_,
       significant_digits_for_optimization_, max_iter_for_optimization_);
 

@@ -12,9 +12,194 @@
 
 namespace Optimization {
 
+// TODO: Selector for testing different implementations
+// #include <boost/iostreams/stream.hpp>
+// #include <boost/iostreams/device/null.hpp>
+
+using FuncAndOneDerivative = std::function<DoublePair(double)>;
+using FuncAndTwoDerivatives = std::function<std::tuple<double, double, double>(double)>;
+
+// Various Minimizing Functions.
+template <class F, class T>
+std::pair<T, T> BrentMinimizeFromBoost(F f, T min, T max, int significant_digits,
+                                      size_t max_iter);
+template <class F, class T>
+std::pair<T, T> BrentMinimizeFromMe(F f, T min, T max, int significant_digits,
+                              size_t max_iter);   
+
+// Write ordered pairs from function at intervals.
+template <class F, class T>
+void FunctionToCSV(F f, T min, T max, T step_size, std::string filepath) {
+  std::ofstream os = std::ofstream(filepath);
+  os << "# x,f(x)" << std::endl;
+  for (int x = min; x < max; x += step_size) {
+    os << x << "," << f(x) << std::endl;
+  }
+  os.close();
+};
+
+// Optimization tool benchmarks.
+int iterations = 0;
+bool is_converged = false;
+
+// This just selects a various minimization functions for comparison.
+template <class F, class T>
+std::pair<T, T> Minimize(F f, T min, T max, int significant_digits,
+                         size_t max_iter) {
+
+  // Brent from Boost.
+  int boost_iter;
+  bool boost_converged;
+  auto results_boost 
+      = BrentMinimizeFromBoost<F,T>(f, min, max, significant_digits, max_iter);
+  boost_iter = iterations;
+  boost_converged = is_converged;
+
+  // Brent from me.
+  int my_iter;
+  bool my_converged;
+  auto results_me 
+      = BrentMinimizeFromMe<F,T>(f, min, max, significant_digits, max_iter);
+  my_iter = iterations;
+  my_converged = is_converged;
+
+  // Output comparison.
+  std::cout << "BRENT_BOOST: " << "(f, fx) = [" << results_boost.first << "," << results_boost.second << "]" << std::endl;
+  std::cout << "BRENT_BOOST: " << "iters: " << boost_iter << ", converged?: " << is_converged << std::endl;
+
+  std::cout << "BRENT_ME: " << "(f, fx) = [" << results_me.first << "," << results_me.second << "]" << std::endl;
+  std::cout << "BRENT_ME: " << "iters: " << my_iter << ", converged?: " << is_converged << std::endl;
+
+  FunctionToCSV<F,T>(f, min, max, (max - min)/10000, "_ignore/function_shape_from_optimization.cs");
+
+  return results_boost;
+}
+
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
-std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
+std::pair<T, T> BrentMinimizeFromBoost(F f, T min, T max, int significant_digits,
+                                      size_t max_iter) {
+  T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
+  T x;               // minima so far
+  T w;               // second best point
+  T v;               // previous value of w
+  T u;               // most recent evaluation point
+  T delta;           // The distance moved in the last step
+  T delta2;          // The distance moved in the step before last
+  T fu, fv, fw, fx;  // function evaluations at u, v, w, x
+  T mid;             // midpoint of min and max
+  T fract1, fract2;  // minimal relative movement in x
+
+  static const T golden =
+      0.3819660f;  // golden ratio, don't need too much precision here!
+
+  x = w = v = max;
+  fw = fv = fx = f(x);
+  delta2 = delta = 0;
+
+  iterations = 0;
+  size_t count = max_iter;
+
+  do {
+    // get midpoint
+    mid = (min + max) / 2;
+
+    // ** Convergence Test:
+    // work out if we're done already:
+    fract1 = tolerance * fabs(x) + tolerance / 4;
+    fract2 = 2 * fract1;
+    if (fabs(x - mid) <= (fract2 - (max - min) / 2)) {
+      break;
+    }
+
+    // ** Parabolic Fit (variant of Inverse Quadratic Interpolation?): 
+    bool use_bisection = true; // only triggers if IQI fails.
+    if (fabs(delta2) > fract1) {
+      // try and construct a parabolic fit:
+      // TODO: where is secant method? what happens when x=v=w and fx=fv=fw?
+      T r = (x - w) * (fx - fv);
+      T q = (x - v) * (fx - fw);
+      T p = (x - v) * q - (x - w) * r;
+      q = 2 * (q - r);
+      if (q > 0) p = -p;
+      q = fabs(q);
+      T td = delta2;
+      delta2 = delta;
+      // determine whether a parabolic step is acceptable or not:
+      // must fail all three threshold tests to be accepted.
+      if ( ((fabs(p) >= fabs(q * td / 2)) == false) 
+           && ((p <= q * (min - x)) == false)
+           && ((p >= q * (max - x)) == false) ) {
+        // whew, parabolic fit:
+        delta = p / q;
+        u = x + delta;
+        if (((u - min) < fract2) || ((max - u) < fract2)) {
+          delta = (mid - x) < 0 ? (T)-fabs(fract1) : (T)fabs(fract1);
+        }
+        // parabolic fit was a success, so don't need bisection.
+        use_bisection = false;
+      }
+    }
+
+    // ** Golden Bisection Method (this is an optimization of traditional Bisection Method)
+    if (use_bisection) {
+      // golden section:
+      delta2 = (x >= mid) ? min - x : max - x;
+      delta = golden * delta2;
+    }
+
+    // ** Update current position:
+    u = (fabs(delta) >= fract1) ? 
+        T(x + delta) : (delta > 0 ? T(x + fabs(fract1)) : T(x - fabs(fract1)));
+    fu = f(u);
+    if (fu <= fx) {
+      // good new point is an improvement!
+      // update brackets (previous guess becomes the new outer bracket):
+      if (u >= x)
+        min = x;
+      else
+        max = x;
+      // update control points:
+      v = w;
+      w = x;
+      x = u;
+      fv = fw;
+      fw = fx;
+      fx = fu;
+    } 
+    else {
+      // Oh dear, point u is worse than what we have already,
+      // even so it *must* be better than one of our endpoints:
+      if (u < x)
+        min = u;
+      else
+        max = u;
+      if ((fu <= fw) || (w == x)) {
+        // however it is at least second best:
+        v = w;
+        w = u;
+        fv = fw;
+        fw = fu;
+      } 
+      else if ((fu <= fv) || (v == x) || (v == w)) {
+        // third best:
+        v = u;
+        fv = fu;
+      }
+    }
+
+  iterations++;
+  } while (--count); // countdown until max iterations.
+
+  // What does this for?
+  max_iter -= count;
+
+  return std::make_pair(x, fx);
+}
+
+// Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
+template <class F, class T>
+std::pair<T, T> BrentMinimizeFromMe(F f, T min, T max, int significant_digits,
                               size_t max_iter) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
@@ -161,6 +346,16 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
 
   std::cout << "MINIMUM FOUND: " << x << " " << fx << std::endl;
   return std::make_pair(x, fx);
+}
+
+// TODO: Implement TOMS 748
+// Docs from https://www.boost.org/doc/libs/1_64_0/libs/math/doc/html/math_toolkit/roots/roots_noderiv/TOMS748.html 
+// Copied from ??
+template <class F, class T, class Tol>
+std::pair<T, T> Toms748Minimize(
+    FuncAndTwoDerivatives f_and_derivatives, 
+    const T& a, const T& b, int significant_digits, size_t max_iter) {
+  
 }
 
 DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
