@@ -24,6 +24,7 @@ Let's all work together to make the code a pleasure to work with.
 
 * Use the [SOLID principles](https://www.youtube.com/watch?v=Ntraj80qN2k&ab_channel=CppCon) as a guide for good design.
 * Factor functionality into functions and methods with logical interfaces.
+* In most cases, each class should get its own file.
 * Functions should be at most a screenful, with a minimum of arguments.
 * Early return is fine at the beginning of a function to avoid wrapping the body of the function in a big if statement. Otherwise strive to have a single return statement in the spirit of [structured programming](https://en.wikipedia.org/wiki/Structured_programming#Early_exit).
 * Multiple if statements in a code block which test for the same thing is an antipattern (the ["if" considered harmful talk](https://www.youtube.com/watch?v=z43bmaMwagI&ab_channel=DevWeekEvents) is thought-provoking but a little exaggerated).
@@ -36,6 +37,7 @@ Let's all work together to make the code a pleasure to work with.
 * Prefer [descriptive identifier names and simple coding practices](https://blog.codinghorror.com/coding-without-comments/) to comments documenting implementation.
   If that means having long identifier names, that's fine!
   However, please write documentation if you can't make the code use and operation inherently obvious.
+* Make names for a single concept consistent across various uses of that concept.
 * Prefer clarity over something-that-might-be-slightly-faster (except for the very performance critical core).
 * DRY, but prefer clarity over compactness.
 * Document methods and functions in header files with comments, unless the method/function name makes its purpose completely obvious.
@@ -67,6 +69,7 @@ We tend towards a modern functional-ish style of C++.
 * Add asserts whenever you can't be 100% sure you know what you're getting.
 * Always use curly braces for the body of conditionals and loops, even if they are one line.
 * Avoid opening namespaces. Never open in header files. Best to open inside a code block such as a function.
+* Don't use universal captures `[=]` and `[&]` in lambdas: this breaks encapsulation and can be dangerous in the case of `[&]`. (This is item 31 of Effective Modern C++.)
 
 #### Keep ownership clear
 
@@ -90,6 +93,7 @@ We tend towards a modern functional-ish style of C++.
 * Don't implement things in non-template header files unless there is a demonstrable performance advantage. One-line accessors are OK.
 * Use `[ ]` to index Eigen vectors, and `( )` to index matrices.
 * Use lambdas for little internal subroutines. They get CamelCase.
+* Use `something_count` vs `num_something`.
 
 
 ## [Code smells](https://www.youtube.com/watch?v=f_tLQl0wLUM&ab_channel=CppCon)
@@ -109,7 +113,7 @@ We tend towards a modern functional-ish style of C++.
 
 ## Formatting
 
-C++ gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html), and Python gets formatted using [Black](https://black.readthedocs.io/en/stable/) and [docformatter](https://pypi.org/project/docformatter/).
+C++ gets formatted using [clang-format](https://clang.llvm.org/docs/ClangFormat.html) version 10 or above, and Python gets formatted using [Black](https://black.readthedocs.io/en/stable/) and [docformatter](https://pypi.org/project/docformatter/).
 See the Makefile for the invocations.
 
 

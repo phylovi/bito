@@ -184,7 +184,7 @@ GPOperationVector GPDAG::OptimizeSBNParameters() const {
   for (size_t &id : LeafwardPassTraversal(false)) {
     const auto node = GetDAGNode(id);
     OptimizeSBNParametersForASubsplit(node->GetBitset(), operations);
-    OptimizeSBNParametersForASubsplit(node->GetBitset().RotateSubsplit(), operations);
+    OptimizeSBNParametersForASubsplit(node->GetBitset().SubsplitRotate(), operations);
   }
   operations.push_back(UpdateSBNProbabilities{0, RootsplitCount()});
   return operations;

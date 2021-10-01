@@ -21,8 +21,8 @@ PSPIndexer::PSPIndexer(BitsetVector rootsplits, BitsetSizeMap in_indexer) {
     // The first condition allows us to skip the rootsplits. We only want the
     // PCSPs here. The second condition is because the "primary" part of Primary
     // Subsplit Pair means that the parent split is a rootsplit.
-    if (iter.second >= rootsplits.size() && pcsp.PCSPParentIsRootsplit()) {
-      SafeInsert(indexer_, pcsp.PCSPChildSubsplit(), index);
+    if (iter.second >= rootsplits.size() && pcsp.PCSPIsParentRootsplit()) {
+      SafeInsert(indexer_, pcsp.PCSPGetChildSubsplit(), index);
       index++;
     }
   }
@@ -44,15 +44,15 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) con
   SizeVector rootsplit_result(topology->Id(), first_empty_index_);
   SizeVector psp_result_down(topology->Id(), first_empty_index_);
   SizeVector psp_result_up(topology->Id(), first_empty_index_);
-  auto rootsplit_index = [& indexer = this->indexer_](const Node* node) {
+  auto rootsplit_index = [&indexer = this->indexer_](const Node* node) {
     return indexer.at(Bitset::RootsplitOfHalf(node->Leaves()));
   };
   // Here we use the terminology in the 2019 ICLR paper (screenshotted in
   // https://github.com/phylovi/bito/issues/95) looking at the right-hand case
   // in blue. The primary subsplit pair has Z_1 and Z_2 splitting apart Z. Here
   // we use analogous notation.
-  auto psp_index = [& indexer = this->indexer_](const Bitset& z1, const Bitset& z2) {
-    return indexer.at(Bitset::SubsplitOfPair(z1, z2));
+  auto psp_index = [&indexer = this->indexer_](const Bitset& z1, const Bitset& z2) {
+    return indexer.at(Bitset::Subsplit(z1, z2));
   };
   topology->TriplePreorder(
       // f_rootsplit

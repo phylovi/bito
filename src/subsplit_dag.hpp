@@ -38,6 +38,7 @@
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 #include "subsplit_dag_action.hpp"
+#include "subsplit_dag_nni.hpp"
 #include "subsplit_dag_node.hpp"
 
 class SubsplitDAG {
@@ -77,6 +78,7 @@ class SubsplitDAG {
   void PrintGPCSPIndexer() const;
   void PrintDAGEdges() const;
   void PrintParentToRange() const;
+  void ToDot(const std::string file_path, bool show_index_labels = true) const;
   std::string ToDot(bool show_index_labels = true) const;
 
   // Create a GPCSPIndexer representing the DAG.
@@ -118,6 +120,10 @@ class SubsplitDAG {
   // the SubsplitDAGNode of the corresponding child.
   void IterateOverRootwardEdgesAndParents(const SubsplitDAGNode *node,
                                           const EdgeAndNodeLambda &f) const;
+  // Iterate over the leafward edges, supplying the parent node id, child node id,
+  // rotation of child, and the GPCSP index of the rootward edge connecting the two.
+  void IterateOverParentAndChildAndLeafwardEdges(
+      const SubsplitDAGNode *node, const ParentRotationChildEdgeLambda &f) const;
 
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllTopologies() const;
@@ -237,8 +243,9 @@ class SubsplitDAG {
   // Get the new_node_ids, new_edge_idxs, node_reindexer, and edge_reindexer.
   // Note: if both nodes already existed in the DAG, then new_node_ids and
   // new_edge_idxs will be empty.
-  SubsplitDAG::NodeAdditionResult AddNodePair(const Bitset &parent_subsplit,
-                                              const Bitset &child_subsplit);
+  NodeAdditionResult AddNodePair(const Bitset &parent_subsplit,
+                                 const Bitset &child_subsplit);
+
   // Get the reindexer for node ids.
   SizeVector BuildNodeReindexer(const size_t prev_node_count);
   // Get the reindexer for edges idxs.
@@ -299,7 +306,8 @@ class SubsplitDAG {
                           std::unordered_set<size_t> &visited_nodes) const;
   void RootwardDepthFirst(size_t node_id, SizeVector &visit_order,
                           std::unordered_set<size_t> &visited_nodes) const;
-  Bitset PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated) const;
+  // Rotates subsplit only if it is out of sorted order (rotated).
+  Bitset PerhapsSubsplitRotate(const Bitset &subsplit, bool rotated) const;
 
   // Note: the below methods are helper funcions for AddNodePair.
   // Connect the child to all of its children and update new_edge_idxs.

@@ -54,3 +54,7 @@ pip-wheel-metadata/
 .mypy_cache
 compile_commands.json
 src/CMakeLists.txt
+
+# OS Metadata
+.DS_Store
+._.DS_Store

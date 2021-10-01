@@ -168,6 +168,7 @@ sources = [
     "_build/stick_breaking_transform.cpp",
     "_build/subsplit_dag.cpp",
     "_build/subsplit_dag_node.cpp",
+    "_build/subsplit_dag_nni.cpp",
     "_build/substitution_model.cpp",
     "_build/taxon_name_munging.cpp",
     "_build/tidy_subsplit_dag.cpp",
