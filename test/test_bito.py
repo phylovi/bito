@@ -109,8 +109,8 @@ def ds1_phylo_model_demo(inst):
     )
     inst.prepare_for_phylo_likelihood(gtr_specification, 2)
     phylo_model_param_block_map = inst.get_phylo_model_param_block_map()
-    phylo_model_param_block_map["GTR rates"][:] = np.repeat(1.0 / 6, 6)
-    phylo_model_param_block_map["frequencies"][:] = 0.25
+    phylo_model_param_block_map["substitution model rates"][:] = np.repeat(1.0 / 6, 6)
+    phylo_model_param_block_map["substitution model frequencies"][:] = 0.25
     print("\nHere's a look at phylo_model_param_block_map:")
     pprint.pprint(phylo_model_param_block_map)
     print("\nWe can see that we are changing the phylo_model_params matrix:")
