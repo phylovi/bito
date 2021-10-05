@@ -6,20 +6,23 @@
 #include "sugar.hpp"
 
 namespace Optimization {
+  // test stream
+  std::ofstream myout = std::cout;
+  // std::ofstream myout = std::ofstream("/dev/null");
 
-// TODO: Selector for testing different implementations
 // #include <boost/iostreams/stream.hpp>
 // #include <boost/iostreams/device/null.hpp>
 
+// TODO: template using?
 using FuncAndOneDerivative = std::function<DoublePair(double)>;
 using FuncAndTwoDerivatives = std::function<std::tuple<double, double, double>(double)>;
 
 // Various Minimizing Functions.
 template <class F, class T>
-std::pair<T, T> BrentMinimizeFromBoost(F f, T min, T max, int significant_digits,
+std::pair<T, T> BrentMinimize_FromBoost(F f, T min, T max, int significant_digits,
                                       size_t max_iter);
 template <class F, class T>
-std::pair<T, T> BrentMinimizeFromMe(F f, T min, T max, int significant_digits,
+std::pair<T, T> BrentMinimize_FromMe(F f, T min, T max, int significant_digits,
                               size_t max_iter);   
 
 // Write ordered pairs from function at intervals.
@@ -37,6 +40,7 @@ void FunctionToCSV(F f, T min, T max, T step_size, std::string filepath) {
 int iterations = 0;
 bool is_converged = false;
 
+// TODO: temp selector / comparator
 // This just selects a various minimization functions for comparison.
 template <class F, class T>
 std::pair<T, T> Minimize(F f, T min, T max, int significant_digits,
@@ -46,7 +50,7 @@ std::pair<T, T> Minimize(F f, T min, T max, int significant_digits,
   int boost_iter;
   bool boost_converged;
   auto results_boost 
-      = BrentMinimizeFromBoost<F,T>(f, min, max, significant_digits, max_iter);
+      = BrentMinimize_FromBoost<F,T>(f, min, max, significant_digits, max_iter);
   boost_iter = iterations;
   boost_converged = is_converged;
 
@@ -54,16 +58,16 @@ std::pair<T, T> Minimize(F f, T min, T max, int significant_digits,
   int my_iter;
   bool my_converged;
   auto results_me 
-      = BrentMinimizeFromMe<F,T>(f, min, max, significant_digits, max_iter);
+      = BrentMinimize_FromMe<F,T>(f, min, max, significant_digits, max_iter);
   my_iter = iterations;
   my_converged = is_converged;
 
   // Output comparison.
-  std::cout << "BRENT_BOOST: " << "(f, fx) = [" << results_boost.first << "," << results_boost.second << "]" << std::endl;
-  std::cout << "BRENT_BOOST: " << "iters: " << boost_iter << ", converged?: " << is_converged << std::endl;
+  myout << "BRENT_BOOST: " << "(f, fx) = [" << results_boost.first << "," << results_boost.second << "]" << std::endl;
+  myout << "BRENT_BOOST: " << "iters: " << boost_iter << ", converged?: " << is_converged << std::endl;
 
-  std::cout << "BRENT_ME: " << "(f, fx) = [" << results_me.first << "," << results_me.second << "]" << std::endl;
-  std::cout << "BRENT_ME: " << "iters: " << my_iter << ", converged?: " << is_converged << std::endl;
+  myout << "BRENT_ME: " << "(f, fx) = [" << results_me.first << "," << results_me.second << "]" << std::endl;
+  myout << "BRENT_ME: " << "iters: " << my_iter << ", converged?: " << is_converged << std::endl;
 
   FunctionToCSV<F,T>(f, min, max, (max - min)/10000, "_ignore/function_shape_from_optimization.cs");
 
@@ -72,7 +76,7 @@ std::pair<T, T> Minimize(F f, T min, T max, int significant_digits,
 
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
-std::pair<T, T> BrentMinimizeFromBoost(F f, T min, T max, int significant_digits,
+std::pair<T, T> BrentMinimize_FromBoost(F f, T min, T max, int significant_digits,
                                       size_t max_iter) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
@@ -194,7 +198,7 @@ std::pair<T, T> BrentMinimizeFromBoost(F f, T min, T max, int significant_digits
 
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
-std::pair<T, T> BrentMinimizeFromMe(F f, T min, T max, int significant_digits,
+std::pair<T, T> BrentMinimize_FromMe(F f, T min, T max, int significant_digits,
                               size_t max_iter) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
@@ -207,7 +211,6 @@ std::pair<T, T> BrentMinimizeFromMe(F f, T min, T max, int significant_digits,
   T mid;             // midpoint of min and max
   T fract1, fract2;  // minimal relative movement in x
   T abs_min, abs_max; // absolute min and min allowed.
-
 
   static const T golden =
       0.3819660f;  // golden ratio, don't need too much precision here!
@@ -222,7 +225,7 @@ std::pair<T, T> BrentMinimizeFromMe(F f, T min, T max, int significant_digits,
   abs_min = min;
   abs_max = max;
   mid = (min + max) / 2;
-  std::cout << "MID_INIT(" << min << "," << max << "): " << mid << std::endl;
+  myout << "MID_INIT(" << min << "," << max << "): " << mid << std::endl;
   bool first_pass = true;
   
   do {
@@ -247,12 +250,12 @@ std::pair<T, T> BrentMinimizeFromMe(F f, T min, T max, int significant_digits,
         min_updated = true;
       };
       brackets_iter++;
-      std::cout << "ITER: " << brackets_iter << " | ";
-      std::cout << "MID: " << mid << " " << f(mid) << " | "; 
-      std::cout << (min_updated ? "*" : "") << "MIN: " << min << " " << f(min) << " | "; 
-      std::cout << (max_updated ? "*" : "") << "MAX: " << max << " " << f(max) << std::endl; 
+      myout << "ITER: " << brackets_iter << " | ";
+      myout << "MID: " << mid << " " << f(mid) << " | "; 
+      myout << (min_updated ? "*" : "") << "MIN: " << min << " " << f(min) << " | "; 
+      myout << (max_updated ? "*" : "") << "MAX: " << max << " " << f(max) << std::endl; 
       if (brackets_iter >= brackets_iter_max) { 
-        std::cout << "SEARCH TIMED OUT!" << std::endl;
+        myout << "SEARCH TIMED OUT!" << std::endl;
         break;
       }
       min_updated = false;
@@ -339,18 +342,50 @@ std::pair<T, T> BrentMinimizeFromMe(F f, T min, T max, int significant_digits,
 
   max_iter -= count;
 
-  std::cout << "MINIMUM FOUND: " << x << " " << fx << std::endl;
+  myout << "MINIMUM FOUND: " << x << " " << fx << std::endl;
   return std::make_pair(x, fx);
 }
 
 // TODO: Implement TOMS 748
 // Docs from https://www.boost.org/doc/libs/1_64_0/libs/math/doc/html/math_toolkit/roots/roots_noderiv/TOMS748.html 
 // Copied from ??
-template <class F, class T, class Tol>
-std::pair<T, T> Toms748Minimize(
-    FuncAndTwoDerivatives f_and_derivatives, 
-    const T& a, const T& b, int significant_digits, size_t max_iter) {
-  
+template <class F, class T>
+std::pair<T, T> TOMS748_RootFinder(
+    std::function<T(T)> f,
+    std::function<std::pair<T,T>(T)> f_and_one_derivative,
+    const T min, const T max, 
+    int significant_digits, size_t max_iter
+) {  
+  T a, fa;
+  T b, fb;
+  T c, fc;
+  T d, fd;
+  T e, fe;
+
+  T tmp1, tmp2;
+  return std::make_pair(tmp1, tmp2);
+};
+
+// TODO: Helper function to convert minimization function to root-finding function.  This could be templated for any rootfinding function for any function that can compute first and second derivative.
+template<class F, class T>
+std::pair<T, T> TOMS748_Minimize(
+    std::function<T(T)> f,
+    std::function<std::pair<T,T>(T)> f_and_one_derivative,
+    std::function<std::tuple<T,T,T>(T)> f_and_two_derivatives,
+    const T min, const T max,
+    int significant_digits, const size_t max_iter
+) {
+  // Treat derivate function as primary function.
+  auto df = [&f_and_one_derivative](T x) {
+    auto [fx, dfx] = f_and_one_derivative(x);
+    return dfx;
+  };
+  auto df_and_one_derivative = [&f_and_two_derivatives](T x) {
+    auto [f, dfx, ddfx] = f_and_two_derivatives(x);
+    return std::make_pair(dfx, ddfx);
+  };
+
+  return TOMS748_RootFinder(df, df_and_one_derivative, min, max, significant_digits, max_iter);
 }
 
 DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
@@ -533,3 +568,5 @@ std::pair<T, T> NewtonRaphsonIterate(F f, T guess, T min, T max, int significant
   return std::make_pair(result, std::get<0>(f(result)));
 }
 }  // namespace Optimization
+
+
