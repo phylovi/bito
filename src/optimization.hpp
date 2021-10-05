@@ -346,46 +346,202 @@ std::pair<T, T> BrentMinimize_FromMe(F f, T min, T max, int significant_digits,
   return std::make_pair(x, fx);
 }
 
-// TODO: Implement TOMS 748
-// Docs from https://www.boost.org/doc/libs/1_64_0/libs/math/doc/html/math_toolkit/roots/roots_noderiv/TOMS748.html 
-// Copied from ??
+
 template <class F, class T>
-std::pair<T, T> TOMS748_RootFinder(
-    std::function<T(T)> f,
-    std::function<std::pair<T,T>(T)> f_and_one_derivative,
-    const T min, const T max, 
-    int significant_digits, size_t max_iter
-) {  
-  T a, fa;
-  T b, fb;
-  T c, fc;
-  T d, fd;
-  T e, fe;
+class TOMS_748 {
+ public:
 
-  T tmp1, tmp2;
-  return std::make_pair(tmp1, tmp2);
-};
-
-// TODO: Helper function to convert minimization function to root-finding function.  This could be templated for any rootfinding function for any function that can compute first and second derivative.
-template<class F, class T>
-std::pair<T, T> TOMS748_Minimize(
-    std::function<T(T)> f,
-    std::function<std::pair<T,T>(T)> f_and_one_derivative,
-    std::function<std::tuple<T,T,T>(T)> f_and_two_derivatives,
-    const T min, const T max,
-    int significant_digits, const size_t max_iter
-) {
-  // Treat derivate function as primary function.
-  auto df = [&f_and_one_derivative](T x) {
-    auto [fx, dfx] = f_and_one_derivative(x);
-    return dfx;
-  };
-  auto df_and_one_derivative = [&f_and_two_derivatives](T x) {
-    auto [f, dfx, ddfx] = f_and_two_derivatives(x);
-    return std::make_pair(dfx, ddfx);
+  // Checks if distance between brackets are less than tolerance.
+  inline bool TestTol(T &min, T &max, T &tol) {
+    return (max - min) < tol;
   };
 
-  return TOMS748_RootFinder(df, df_and_one_derivative, min, max, significant_digits, max_iter);
+  // Return True if values are closer in distance than tolerance.
+  inline bool TestNotDistinct(T &a, T &b, T &min_diff) {
+    return fabs(fa - fb) < min_diff;
+  }
+
+  // TODO: Implement
+  inline T SafeDivision(T num, T denom, T r) {
+    //
+    // return num / denom without overflow,
+    // return r if overflow would occur.
+    //
+  }
+
+  // TODO: Implement
+  inline void Bracket(F f, T &a, T &b, T &d,
+                      T &fa, T &fb, T &fd) {
+    
+  }
+
+  // TODO: Implement
+  // Performs the secant method.
+  inline T SecantInterpolate(const T &a, const T &b, 
+                             const T &fa, const T &fb) {
+    //
+    // Performs standard secant interpolation of [a,b] given
+    // function evaluations f(a) and f(b).  Performs a bisection
+    // if secant interpolation would leave us very close to either
+    // a or b.  Rationale: we only call this function when at least
+    // one other form of interpolation has already failed, so we know
+    // that the function is unlikely to be smooth with a root very
+    // close to a or b.
+    //
+
+
+  };
+
+  // TODO: Implement
+  // Performs the quadratic interpolation method.
+  inline T QuadtraticInterpolate(const T &a, const T &b, const T &d, 
+                                 const T &fa, const T &fb, const T &fd, 
+                                 size_t count) {
+    //
+    // Performs quadratic interpolation to determine the next point,
+    // takes count Newton steps to find the location of the
+    // quadratic polynomial.
+    //
+    // Point d must lie outside of the interval [a,b], it is the third
+    // best approximation to the root, after a and b.
+    //
+    // Note: this does not guarentee to find a root
+    // inside [a, b], so we fall back to a secant step should
+    // the result be out of range.
+    //
+    // Start by obtaining the coefficients of the quadratic polynomial:
+    //
+
+
+  };
+
+  // TODO: Implement
+  // Performs the cubic interpolation method.
+  inline T CubicInterpolate(const T &a, const T &b, const T &d, const T &e,
+                            const T &fa, const T &fb, const T &fd, const T &fe) {
+    //
+    // Uses inverse cubic interpolation of f(x) at points 
+    // [a,b,d,e] to obtain an approximate root of f(x).
+    // Points d and e lie outside the interval [a,b]
+    // and are the third and forth best approximations
+    // to the root that we have found so far.
+    //
+    // Note: this does not guarentee to find a root
+    // inside [a, b], so we fall back to quadratic
+    // interpolation in case of an erroneous result.
+    //
+
+
+  };
+    
+  // TODO: Implement
+  static std::pair<T, T> RootFinder(
+      std::function<T(T)> f,
+      std::function<std::pair<T,T>(T)> f_and_one_derivative,
+      const T &min, const T &max, 
+      int significant_digits, size_t max_iter
+  ) {  
+    //
+    // Main entry point and logic for Toms Algorithm 748
+    // root finder.
+    //
+
+    // Vars
+    T a, fa, a0;
+    T b, fb, b0;
+    T c, fc;
+    T u, fu;
+    T d, fd;
+    T e, fe;
+    // Constants
+    T tol = static_cast<T>(ldexp(1.0, 1 - significant_digits));
+    T min_diff = tol * 32; // TODO: change expression
+    const T mu = 0.5f;
+    // Iteration counter
+    size_t count = max_iter;
+    size_t iter = 0;
+
+    // Initialize a, b, fa, fb.
+    // (guessing these are the min/max vals)
+    a = min;
+    b = max;
+    Assert(a < b, "TOMS_748: Args out of order. <min> cannot be greater than <max>.");
+    fa = f(a);
+    fb = f(b);
+
+    // Check if we have converged on the root.
+    if (TestTol(a,b,tol) || (fa == 0) || (fb == 0) ) {
+      max_iter = 0;
+      if (fa == 0) {
+        b = a;
+      }
+      else if (fb == 0) {
+        a = b;
+      }
+      // Return ordered (x, y=f(x)) pair at point of convergence.
+      T x = (a + b)/2;
+      return std::make_pair(x, f(x));
+    }
+
+    // If f(a) and f(b) properly bracket root, then they should have opposite signs.
+    Assert(fa * fb < 0, "TOMS_748: <min> and <max> don't bracket the root.");
+
+    // Initialize dummy vals for fd, e, fe.
+    fe = e = fd = 1e5f;
+
+    // On first step, use secant method.
+    if (fa != 0) {
+      SecantInterpolate(a, b, fa, fb);
+      Bracket(f, a, b, c, d, fa, fb, fd);
+    }
+    // On second step, use quadratic interpolation method.
+    if ((fa != 0) && (count != 0) && !TestTol(a,b,tol) {
+      c = QuadtraticInterpolate(&a, &b, &d, &fa, &fb, &fd, 2);
+    }
+
+    while (count && (fa != 0) && !TolTest(a,b,tol)) {
+      // save brackets
+      a0 = a;
+      b0 = b;
+      //
+      // Starting with the third step taken
+      // we can use either quadratic or cubic interpolation.
+      // Cubic interpolation requires that all four function values
+      // fa, fb, fd, and fe are distinct, should that not be the case
+      // then variable prof will get set to true, and we'll end up
+      // taking a quadratic step instead.
+      //
+      T min_diff = 
+      // Check if fa,fb,fc,fd all distinct.
+      bool prof = (TestNotDistinct(fa, fb, min_diff) || (fabs(fa - fd) < min_diff) ||  
+    }
+
+    T dummy1, dummy2;
+    return std::make_pair(dummy1, dummy2);
+  };
+
+  // Helper function to convert minimization function to root-finding function.
+  template<class F, class T>
+  std::pair<T, T> Minimize(
+      std::function<T(T)> f,
+      std::function<std::pair<T,T>(T)> f_and_one_derivative,
+      std::function<std::tuple<T,T,T>(T)> f_and_two_derivatives,
+      const T min, const T max,
+      int significant_digits, const size_t max_iter
+  ) {
+    // Treat derivate function as primary function.
+    auto df = [&f_and_one_derivative](T x) {
+      auto [fx, dfx] = f_and_one_derivative(x);
+      return dfx;
+    };
+    auto df_and_one_derivative = [&f_and_two_derivatives](T x) {
+      auto [fx, dfx, ddfx] = f_and_two_derivatives(x);
+      return std::make_pair(dfx, ddfx);
+    };
+
+    return TOMS748_RootFinder(df, df_and_one_derivative, &min, &max, significant_digits, max_iter);
+  };
+
 }
 
 DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
@@ -424,7 +580,9 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
 
 DoublePair NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
-    double x, const double tolerance, const double epsilon, const double min_x,
+    double x, const double tolerance, const    // Main entry point and logic for Toms Algorithm 748
+   // root finder.
+   //double epsilon, const double min_x,
     const double max_x, const size_t max_iter) {
   size_t iter_idx = 0;
   double new_x, delta;
