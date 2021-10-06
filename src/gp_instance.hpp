@@ -52,13 +52,13 @@ class GPInstance {
   // #348: A lot of code duplication here with things in SBNInstance.
   StringVector PrettyIndexer() const;
   EigenConstVectorXdRef GetSBNParameters();
-  EigenConstMatrixXdRef GetPerGPCSPLogLikelihoodsMatrix();
+  EigenMatrixXd GetPerGPCSPLogLikelihoodsFromOptimization();
   StringDoubleVector PrettyIndexedSBNParameters();
   StringDoubleVector PrettyIndexedBranchLengths();
   StringDoubleVector PrettyIndexedPerGPCSPLogLikelihoods();
   StringDoubleVector PrettyIndexedPerGPCSPComponentsOfFullLogMarginal();
   std::vector<std::pair<std::string, EigenVectorXd>>
-  PrettyIndexedPerGPCSPLikelihoodMatrix();
+  PrettyIndexedPerGPCSPLogLikelihoodsFromOptimization();
 
   void SBNParametersToCSV(const std::string &file_path);
   void SBNPriorToCSV(const std::string &file_path);

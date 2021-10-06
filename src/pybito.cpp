@@ -580,6 +580,8 @@ PYBIND11_MODULE(bito, m) {
            R"raw(Write "pretty" formatted SBN parameters for the prior to a CSV.)raw")
       .def("branch_lengths_to_csv", &GPInstance::BranchLengthsToCSV,
            R"raw(Write "pretty" formatted branch lengths to a CSV.)raw")
+      .def("per_gpcsp_llhs_to_csv", &GPInstance::PerGPCSPLogLikelihoodsToCSV,
+           R"raw(Write "pretty" formatted per pcsp likelihoods to CSV.)raw")
       .def("export_trees", &GPInstance::ExportTrees,
            R"raw(Write out currently loaded trees to a Newick file
           (using current GP branch lengths).)raw",
