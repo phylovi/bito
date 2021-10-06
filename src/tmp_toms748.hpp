@@ -279,6 +279,7 @@ T cubic_interpolate(const T& a, const T& b, const T& d,
 
 } // namespace detail
 
+// main
 template <class F, class T, class Tol, class Policy>
 std::pair<T, T> toms748_solve(F f, const T& ax, const T& bx, const T& fax, const T& fbx, Tol tol, boost::uintmax_t& max_iter, const Policy& pol)
 {
@@ -359,7 +360,8 @@ std::pair<T, T> toms748_solve(F f, const T& ax, const T& bx, const T& fax, const
       // taking a quadratic step instead.
       //
       T min_diff = tools::min_value<T>() * 32;
-      bool prof = (fabs(fa - fb) < min_diff) || (fabs(fa - fd) < min_diff) || (fabs(fa - fe) < min_diff) || (fabs(fb - fd) < min_diff) || (fabs(fb - fe) < min_diff) || (fabs(fd - fe) < min_diff);
+      bool prof = (fabs(fa - fb) < min_diff) || (fabs(fa - fd) < min_diff) || (fabs(fa - fe) < min_diff) 
+               || (fabs(fb - fd) < min_diff) || (fabs(fb - fe) < min_diff) || (fabs(fd - fe) < min_diff);
       if(prof)
       {
          c = detail::quadratic_interpolate(a, b, d, fa, fb, fd, 2);
@@ -381,7 +383,8 @@ std::pair<T, T> toms748_solve(F f, const T& ax, const T& bx, const T& fax, const
       //
       // Now another interpolated step:
       //
-      prof = (fabs(fa - fb) < min_diff) || (fabs(fa - fd) < min_diff) || (fabs(fa - fe) < min_diff) || (fabs(fb - fd) < min_diff) || (fabs(fb - fe) < min_diff) || (fabs(fd - fe) < min_diff);
+      prof = (fabs(fa - fb) < min_diff) || (fabs(fa - fd) < min_diff) || (fabs(fa - fe) < min_diff) 
+          || (fabs(fb - fd) < min_diff) || (fabs(fb - fe) < min_diff) || (fabs(fd - fe) < min_diff);
       if(prof)
       {
          c = detail::quadratic_interpolate(a, b, d, fa, fb, fd, 3);
