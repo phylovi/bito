@@ -10,25 +10,26 @@
 
 #include "sugar.hpp"
 
+// TODO: Temporary file.  Remove after use.
+
 namespace Optimization {
   // test stream
-  std::ofstream myout = std::cout;
-  // std::ofstream myout = std::ofstream("/dev/null");
+  std::ostream &myout = std::cout;
+  // std::ostream myout = std::ostream("/dev/null");
 
 // #include <boost/iostreams/stream.hpp>
 // #include <boost/iostreams/device/null.hpp>
-
-// TODO: template using?
+using Func = std::function<double(double)>;
 using FuncAndOneDerivative = std::function<DoublePair(double)>;
 using FuncAndTwoDerivatives = std::function<std::tuple<double, double, double>(double)>;
 
 // Various Minimizing Functions.
 template <class F, class T>
-std::pair<T, T> BrentMinimize_FromBoost(F f, T min, T max, int significant_digits,
-                                      size_t max_iter);
+std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
+                              size_t max_iter);
 template <class F, class T>
 std::pair<T, T> BrentMinimize_FromMe(F f, T min, T max, int significant_digits,
-                              size_t max_iter);   
+                                     size_t max_iter);   
 
 // Write ordered pairs from function at intervals.
 template <class F, class T>
@@ -41,48 +42,15 @@ void FunctionToCSV(F f, T min, T max, T step_size, std::string filepath) {
   os.close();
 };
 
-// Optimization tool benchmarks.
+// TODO: REMOVE THIS
+// Optimization tool global benchmarks.
 int iterations = 0;
 bool is_converged = false;
 
-// TODO: temp selector / comparator
-// This just selects a various minimization functions for comparison.
-template <class F, class T>
-std::pair<T, T> Minimize(F f, T min, T max, int significant_digits,
-                         size_t max_iter) {
-
-  // Brent from Boost.
-  int boost_iter;
-  bool boost_converged;
-  auto results_boost 
-      = BrentMinimize_FromBoost<F,T>(f, min, max, significant_digits, max_iter);
-  boost_iter = iterations;
-  boost_converged = is_converged;
-
-  // Brent from me.
-  int my_iter;
-  bool my_converged;
-  auto results_me 
-      = BrentMinimize_FromMe<F,T>(f, min, max, significant_digits, max_iter);
-  my_iter = iterations;
-  my_converged = is_converged;
-
-  // Output comparison.
-  myout << "BRENT_BOOST: " << "(f, fx) = [" << results_boost.first << "," << results_boost.second << "]" << std::endl;
-  myout << "BRENT_BOOST: " << "iters: " << boost_iter << ", converged?: " << is_converged << std::endl;
-
-  myout << "BRENT_ME: " << "(f, fx) = [" << results_me.first << "," << results_me.second << "]" << std::endl;
-  myout << "BRENT_ME: " << "iters: " << my_iter << ", converged?: " << is_converged << std::endl;
-
-  FunctionToCSV<F,T>(f, min, max, (max - min)/10000, "_ignore/function_shape_from_optimization.cs");
-
-  return results_boost;
-}
-
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
-std::pair<T, T> BrentMinimize_FromBoost(F f, T min, T max, int significant_digits,
-                                      size_t max_iter) {
+std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
+                              size_t max_iter) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point
@@ -201,6 +169,8 @@ std::pair<T, T> BrentMinimize_FromBoost(F f, T min, T max, int significant_digit
   return std::make_pair(x, fx);
 }
 
+// TODO: REMOVE THIS BEFORE MERGING WITH MAIN.
+// Duplicate version with extra notes by drich.
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
 std::pair<T, T> BrentMinimize_FromMe(F f, T min, T max, int significant_digits,
@@ -351,10 +321,20 @@ std::pair<T, T> BrentMinimize_FromMe(F f, T min, T max, int significant_digits,
   return std::make_pair(x, fx);
 }
 
-
+// Boost version of the TOM748 Rootfinding algorithm.
+// Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
 class TOMS_748 {
  public:
+
+  // Returns -1, 1 or 0, depending on the sign.
+  inline int Sign(T &val) {
+    if (val == 0) {
+      return 0;
+    } 
+    // signbit return true if val is negative.
+    return (std::signbit(val) == false) ? 1 : -1;
+  }
 
   // Checks if distance between brackets are less than tolerance.
   inline bool TestTol(T &min, T &max, T &tol) {
@@ -362,26 +342,93 @@ class TOMS_748 {
   };
 
   // Return True if values are closer in distance than tolerance.
-  inline bool TestNotDistinct(T &a, T &b, T &min_diff) {
-    return fabs(fa - fb) < min_diff;
-  }
+  inline bool TestNotDistinct(T &a, T &b) {
+    T min_diff = std::numeric_limits<T>::min_value() * 32;
+    return (fabs(a - b) < min_diff);
+  };
 
-  // TODO: Implement
+  // Return True if not all values are distinct.
+  inline bool TestNotAllDistinct(T &a, T &b, T &c, T &d, T &e) {
+    T min_diff = std::numeric_limits<T>::min_value() * 32;
+    bool not_all_distinct = 
+        (TestNotDistinct(a, b) || TestNotDistinct(a, d) 
+      || TestNotDistinct(a, e) || TestNotDistinct(b, d) 
+      || TestNotDistinct(b, e) || TestNotDistinct(d, e));
+    return not_all_distinct;
+  };
+
+  // Perform division if no over/underflow error occurs.
+  // Otherwise, return r.
   inline T SafeDivision(T num, T denom, T r) {
     //
     // return num / denom without overflow,
     // return r if overflow would occur.
     //
+    const T max_value = std::numeric_limits<T>::max();
+    if(fabs(denom) < 1) {
+      if(fabs(denom * max_value) <= fabs(num)) {
+         return r;
+      }
+   }
+   return num / denom;
   }
 
-  // TODO: Implement
-  inline void Bracket(F f, T &a, T &b, T &d,
-                      T &fa, T &fb, T &fd) {
-    
-  }
+  // Update interval brackets [a,b] with point c, to either [a,c] or [c,b].
+  // Results stored in place.
+  // d and fd updated to the point removed from interval.
+  inline void Bracket(F f, T &a, T &b, T &c,
+                      T &fa, T &fb, T &d, T &fd) {
+    //
+    // Given a point c inside the existing enclosing interval
+    // [a, b] sets a = c if f(c) == 0, otherwise finds the new 
+    // enclosing interval: either [a, c] or [c, b] and sets
+    // d and fd to the point that has just been removed from
+    // the interval.  In other words d is the third best guess
+    // to the root.
+    //
+    T tol = std::numeric_limits<T>::epsilon() * 2;
+    //
+    // If the interval [a,b] is very small, or if c is too close 
+    // to one end of the interval then we need to adjust the
+    // location of c accordingly:
+    //
+    if((b - a) < 2 * tol * a) {
+      c = a + (b - a) / 2;
+    }
+    else if(c <= a + fabs(a) * tol) {
+      c = a + fabs(a) * tol;
+    }
+    else if(c >= b - fabs(b) * tol) {
+      c = b - fabs(a) * tol;
+    }
+    T fc = f(c);
+    // If f(c) is zero, then we have found the exact root.
+    if(fc == 0)
+    {
+      a = c;
+      fa = 0;
+      d = 0;
+      fd = 0;
+      return;
+    }
+    // Otherwise, update the interval to which side of c contains the root.
+    if(Sign(fa) * Sign(fc) < 0)
+    {
+      d = b;
+      fd = fb;
+      b = c;
+      fb = fc;
+    }
+    else
+    {
+      d = a;
+      fd = fa;
+      a = c;
+      fa = fc;
+    }
+  };
 
-  // TODO: Implement
-  // Performs the secant method.
+  // Performs step of the secant method.
   inline T SecantInterpolate(const T &a, const T &b, 
                              const T &fa, const T &fb) {
     //
@@ -393,12 +440,15 @@ class TOMS_748 {
     // that the function is unlikely to be smooth with a root very
     // close to a or b.
     //
-
-
+    T tol = std::numeric_limits<T>::epsilon() * 5;
+    T c = a - (fa / (fb - fa)) * (b - a);
+    if((c <= a + fabs(a) * tol) || (c >= b - fabs(b) * tol)) {
+      return (a + b) / 2;
+    }
+    return c;
   };
 
-  // TODO: Implement
-  // Performs the quadratic interpolation method.
+  // Performs step of the quadratic interpolation method.
   inline T QuadtraticInterpolate(const T &a, const T &b, const T &d, 
                                  const T &fa, const T &fb, const T &fd, 
                                  size_t count) {
@@ -416,12 +466,46 @@ class TOMS_748 {
     //
     // Start by obtaining the coefficients of the quadratic polynomial:
     //
+    T max_value = std::numeric_limits<T>::max_value();
+    T zero = T(0);
 
+    T qA = fd - fb;
+    T dA = d - b;
+    T A = SafeDivision(qA, dA, max_value);
+    T qB = fb - fa;
+    T dB = b - a;
+    T B = SafeDivision(qB, dB, max_value);
+    A = SafeDivision(T(A - B), T(d - a), zero);
 
+    if(a == 0) {
+        // failure to determine coefficients, try a secant step:
+        return SecantInterpolate(a, b, fa, fb);
+    }
+    //
+    // Determine the starting point of the Newton steps:
+    //
+    T c;
+    if(Sign(A) * Sign(fa) > 0) {
+        c = a;
+    }
+    else {
+        c = b;
+    }
+    //
+    // Take the Newton steps:
+    //
+    for(unsigned i = 1; i <= count; ++i) {
+        //c -= SafeDivision(B * c, (B + A * (2 * c - a - b)), 1 + c - a);
+        c -= SafeDivision(T(fa+(B+A*(c-b))*(c-a)), T(B + A * (2 * c - a - b)), T(1 + c - a));
+    }
+    if((c <= a) || (c >= b)) {
+        // Oops, failure, try a secant step:
+        c = SecantInterpolate(a, b, fa, fb);
+    }
+    return c;
   };
 
-  // TODO: Implement
-  // Performs the cubic interpolation method.
+  // Performs step of the cubic interpolation method.
   inline T CubicInterpolate(const T &a, const T &b, const T &d, const T &e,
                             const T &fa, const T &fb, const T &fd, const T &fe) {
     //
@@ -435,22 +519,39 @@ class TOMS_748 {
     // inside [a, b], so we fall back to quadratic
     // interpolation in case of an erroneous result.
     //
+    T q11 = (d - e) * fd / (fe - fd);
+    T q21 = (b - d) * fb / (fd - fb);
+    T q31 = (a - b) * fa / (fb - fa);
+    T d21 = (b - d) * fd / (fd - fb);
+    T d31 = (a - b) * fb / (fb - fa);
+    
+    T q22 = (d21 - q11) * fb / (fe - fb);
+    T q32 = (d31 - q21) * fa / (fd - fa);
+    T d32 = (d31 - q21) * fd / (fd - fa);
+    T q33 = (d32 - q22) * fa / (fe - fa);
+    T c = q31 + q32 + q33 + a;
 
+    // If step goes out of bounds of brackets, fall back to quadratic interpolation:
+    if((c <= a) || (c >= b)) {
+      c = QuadtraticInterpolate(a, b, d, fa, fb, fd, 3);
+    }
+
+   return c;
+  };
+  
+  // Performs step of the bijection method.
+  inline T Bijection() {
 
   };
-    
-  // TODO: Implement
-  static std::pair<T, T> RootFinder(
-      std::function<T(T)> f,
-      std::function<std::pair<T,T>(T)> f_and_one_derivative,
-      const T &min, const T &max, 
-      int significant_digits, size_t max_iter
-  ) {  
-    //
-    // Main entry point and logic for Toms Algorithm 748
-    // root finder.
-    //
 
+  // Main method.
+  static std::pair<T, T> RootFinder(
+      std::function<T(T)> &f,
+      const T &min, const T &max, 
+      int &significant_digits, size_t &max_iter) {  
+    //
+    // Main entry point and logic for Toms Algorithm 748 root finder.
+    //
     // Vars
     T a, fa, a0;
     T b, fb, b0;
@@ -460,9 +561,8 @@ class TOMS_748 {
     T e, fe;
     // Constants
     T tol = static_cast<T>(ldexp(1.0, 1 - significant_digits));
-    T min_diff = tol * 32; // TODO: change expression
     const T mu = 0.5f;
-    // Iteration counter
+    // Iteration countdown counter
     size_t count = max_iter;
     size_t iter = 0;
 
@@ -475,7 +575,7 @@ class TOMS_748 {
     fb = f(b);
 
     // Check if we have converged on the root.
-    if (TestTol(a,b,tol) || (fa == 0) || (fb == 0) ) {
+    if (TestTol(a,b,tol) || (fa == 0) || (fb == 0)) {
       max_iter = 0;
       if (fa == 0) {
         b = a;
@@ -489,7 +589,7 @@ class TOMS_748 {
     }
 
     // If f(a) and f(b) properly bracket root, then they should have opposite signs.
-    Assert(fa * fb < 0, "TOMS_748: <min> and <max> don't bracket the root.");
+    Assert( Sign(fa) * Sign(fb) < 0, "TOMS_748: <min> and <max> don't bracket the root.");
 
     // Initialize dummy vals for fd, e, fe.
     fe = e = fd = 1e5f;
@@ -497,15 +597,21 @@ class TOMS_748 {
     // On first step, use secant method.
     if (fa != 0) {
       SecantInterpolate(a, b, fa, fb);
-      Bracket(f, a, b, c, d, fa, fb, fd);
+      Bracket(f, a, b, c, fa, fb, d, fd);
+      count--;
     }
     // On second step, use quadratic interpolation method.
-    if ((fa != 0) && (count != 0) && !TestTol(a,b,tol) {
+    if ((fa != 0) && (count != 0) && !TestTol(a,b,tol)) {
       c = QuadtraticInterpolate(&a, &b, &d, &fa, &fb, &fd, 2);
+      e = d;
+      fe = fd;
+      Bracket(f, a, b, c, fa, fb, d, fd);
+      count--;
     }
 
-    while (count && (fa != 0) && !TolTest(a,b,tol)) {
-      // save brackets
+    // Loop until convergence.
+    while (((count == 0) || (fa == 0) || TestTol(a,b,tol)) == false) {
+      // Save brackets.
       a0 = a;
       b0 = b;
       //
@@ -516,39 +622,102 @@ class TOMS_748 {
       // then variable prof will get set to true, and we'll end up
       // taking a quadratic step instead.
       //
-      T min_diff = 
-      // Check if fa,fb,fc,fd all distinct.
-      bool prof = (TestNotDistinct(fa, fb, min_diff) || (fabs(fa - fd) < min_diff) ||  
-    }
+      // (1) Take an iterpolation step.
+      // Check if fa,fb,fc,fd are all distinct (greater than min_diff apart).
+      bool prof = TestNotAllDistinct(fa, fb, fc, fd, fe);
+      // If not all values are distinct, then fall back to quadratic interpolation.
+      if (prof) {
+        c = QuadtraticInterpolate(a, b, d, fa, fb, fd, 2);
+      }  
+      // Otherwise, use cubic interpolation.
+      else {
+        c = CubicInterpolate(a, b, d, e, fa, fb, fd, fe);
+      }
+      // Re-bracket and check for convergence.
+      Bracket(f, a, b, c, fa, fb, d, fd);
+      count--;
+      if((count == 0) || (fa == 0) || TestTol(a,b,tol)) {
+        break;
+      }
+      // (2) Take another interpolation step.
+      // Check if fa,fb,fc,fd are all distinct (greater than min_diff apart).
+      prof  = TestNotAllDistinct(fa, fb, fc, fd, fe);
+      // If not all values are distinct, then fall back to quadratic interpolation.
+      if (prof) {
+        c = QuadraticInterpolate(a, b, d, fa, fb, fd, 3);
+      }
+      // Otherwise, use cubic interpolation.
+      else {
+        c = CubicInterpolate(a, b, d, e, fa, fb, fd, fe);
+      }
+      // Re-bracket and check for convergence.
+      Bracket(f, a, b, c, fa, fb, d, fd);
+      count--;
+      if((count == 0) || (fa == 0) || TestTol(a,b,tol)) {
+        break;
+      }
+      // (3) Take a double-length secant step.
+      if (fabs(fa) < fabs(fb)) {
+        u = a;
+        fu = fa;
+      }
+      else {
+        u = b;
+        fu = fb;
+      }
+      c = u - 2 * (fu / (fb - fa)) * (b - a);
+      if (fabs(c - u) > (b - a)/2) {
+        c = a + (b - a) / 2;
+      }
+      // Re-bracket and check for convergence.
+      Bracket(f, a, b, c, fa, fb, d, fd);
+      count--;
+      if((count == 0) || (fa == 0) || TestTol(a,b,tol)) {
+        break;
+      }
+      // (4) If not converging quickly enough, then take a bijection step.
+      // If search space hasn't shrunk by at least a factor of mu, then use bijection.
+      if ((b - a) >= mu * (b0 - a0)) {
+        continue;
+      }
+      // Re-bracket again on a bisection.
+      e = d;
+      fe = fd;
+      T mid = a + ((b - a) / 2);
+      Bracket(f, a, b, mid, fa, fb, d, fd);
+      count--;
+    };
 
-    T dummy1, dummy2;
-    return std::make_pair(dummy1, dummy2);
+    // Final output and check if root found. 
+    max_iter -= count;
+    if (fa == 0) {
+      b = a;
+    }
+    else if (fb == 0) {
+      a = b;
+    }
+    return std::make_pair(a, b);
   };
 
   // Helper function to convert minimization function to root-finding function.
-  template<class F, class T>
-  std::pair<T, T> Minimize(
+  static std::pair<T, T> Minimize(
       std::function<T(T)> f,
-      std::function<std::pair<T,T>(T)> f_and_one_derivative,
-      std::function<std::tuple<T,T,T>(T)> f_and_two_derivatives,
+      std::function<std::pair<T,T>(T)> f_and_df,
       const T min, const T max,
       int significant_digits, const size_t max_iter
   ) {
     // Treat derivate function as primary function.
-    auto df = [&f_and_one_derivative](T x) {
-      auto [fx, dfx] = f_and_one_derivative(x);
+    auto df = [&f_and_df](T x) {
+      auto [fx, dfx] = f_and_df(x);
       return dfx;
     };
-    auto df_and_one_derivative = [&f_and_two_derivatives](T x) {
-      auto [fx, dfx, ddfx] = f_and_two_derivatives(x);
-      return std::make_pair(dfx, ddfx);
-    };
 
-    return TOMS748_RootFinder(df, df_and_one_derivative, &min, &max, significant_digits, max_iter);
+    return TOMS_748<std::function<T(T)>, T>::RootFinder(&df, &min, &max, &significant_digits, &max_iter);
   };
 
-}
+};
 
+//
 DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
                           const double tolerance, const double step_size,
                           const double min_x, const size_t max_iter) {
@@ -564,6 +733,7 @@ DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, doubl
   }
 }
 
+//
 DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prime,
                                   double x, const double tolerance,
                                   const double log_space_step_size, const double min_x,
@@ -583,11 +753,10 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
   }
 }
 
+//
 DoublePair NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
-    double x, const double tolerance, const    // Main entry point and logic for Toms Algorithm 748
-   // root finder.
-   //double epsilon, const double min_x,
+    double x, const double tolerance, const double epsilon, const double min_x,
     const double max_x, const size_t max_iter) {
   size_t iter_idx = 0;
   double new_x, delta;
@@ -730,6 +899,42 @@ std::pair<T, T> NewtonRaphsonIterate(F f, T guess, T min, T max, int significant
 
   return std::make_pair(result, std::get<0>(f(result)));
 }
+
+// TODO: REMOVE THIS BEFORE MERGING WITH MAIN.
+// This just selects a various minimization functions for comparison.
+template <class F, class T>
+std::pair<T, T> Optimize_RunAll(F f, F neg_f, 
+                                FuncAndOneDerivative f_and_df,
+                                FuncAndTwoDerivatives f_and_df_and_ddf,
+                                T min, T max, int significant_digits,
+                                size_t max_iter) {
+  int iters;
+  bool converged;
+  std::pair<T,T> results;
+  std::pair<T,T> results_final;
+
+  auto report_results = [&](std::string method_name, bool use_results = false){
+    iters = iterations;
+    converged = is_converged;
+
+    myout << method_name << ": (f,fx) = [" << results.first << "," << results.second << "]" << std::endl;
+    myout << method_name << ": " << "iters: " << iterations << ", converged?: " << is_converged << std::endl;
+  };
+
+  // Run Brent Minimization.
+  results = BrentMinimize<F,T>(neg_f, min, max, significant_digits, max_iter);
+  report_results("Brent_Minimize", true);
+
+  // Run TOMS748 Minimization.
+  results = TOMS_748<F,T>::Minimize(f, f_and_df, min, max, significant_digits, max_iter);
+  report_results("TOMS_748");
+
+  // Run Newton-Raphson Optimization.
+  // results = NewtonRaphsonOptimization()
+
+  return results;
+}
+
 }  // namespace Optimization
 
 

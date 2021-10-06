@@ -620,15 +620,72 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
 }
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
-  auto negative_log_likelihood = [this, &op](double log_branch_length) {
-    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
-    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
-    return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-  };
+  using FuncAndOneDerivative = std::function<DoublePair(double)>;
+
+  auto negative_log_likelihood = 
+      [this, &op](double log_branch_length) {
+        SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
+        PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
+        return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+      };
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
   double current_value = negative_log_likelihood(current_log_branch_length);
-  const auto [log_branch_length, neg_log_likelihood] = Optimization::Minimize(
-      negative_log_likelihood, min_log_branch_length_, max_log_branch_length_,
+  const auto [log_branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
+      negative_log_likelihood, 
+      min_log_branch_length_, max_log_branch_length_,
+      significant_digits_for_optimization_, max_iter_for_optimization_);
+
+  // Numerical optimization sometimes yields new nllk > current nllk.
+  // In this case, we reset the branch length to the previous value.
+  if (neg_log_likelihood > current_value) {
+    branch_lengths_(op.gpcsp_) = exp(current_log_branch_length);
+  } else {
+    branch_lengths_(op.gpcsp_) = exp(log_branch_length);
+  }
+}
+
+// TODO: REMOVE THIS
+void GPEngine::Optimize_RUNALL(const GPOperations::OptimizeBranchLength& op) {
+  using Func = std::function<double(double)>;
+  using FuncAndOneDerivative = std::function<DoublePair(double)>;
+  using FuncAndTwoDerivatives = std::function<std::tuple<double, double, double>(double)>;
+
+  // function (for maximization functions)
+  auto log_likelihood = 
+      [this, &op](double branch_length) {
+        branch_lengths_(op.gpcsp_) = branch_length;
+        return this->LogLikelihoodAndDerivative(op).first;
+      };
+  // negative of function (for minimization functions)
+  auto negative_log_likelihood = 
+      [this, &op](double log_branch_length) {
+        SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
+        PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
+        return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+      };
+  // first derivative (for gradient and rootfinding functions)
+  auto log_likelihood_and_derivative = 
+      [this, &op](double branch_length) {
+        branch_lengths_(op.gpcsp_) = branch_length;
+        return this->LogLikelihoodAndDerivative(op);
+      };
+  // first and second derivative (for Newton-Raphson)
+  auto log_likelihood_and_first_two_derivatives = 
+      [this, &op](double log_branch_length) {
+        double x = exp(log_branch_length);
+        branch_lengths_(op.gpcsp_) = x;
+        auto [f_x, f_prime_x, f_double_prime_x] =
+            this->LogLikelihoodAndFirstTwoDerivatives(op);
+        double f_prime_y = x * f_prime_x;
+        double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
+        return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
+      };
+  double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
+  double current_value = negative_log_likelihood(current_log_branch_length);
+  const auto [log_branch_length, neg_log_likelihood] = Optimization::Optimize_RunAll<Func, double>(
+      log_likelihood, negative_log_likelihood, 
+      log_likelihood_and_derivative, log_likelihood_and_first_two_derivatives,
+      min_log_branch_length_, max_log_branch_length_,
       significant_digits_for_optimization_, max_iter_for_optimization_);
 
   // Numerical optimization sometimes yields new nllk > current nllk.
