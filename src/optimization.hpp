@@ -546,6 +546,7 @@ namespace TOMS_748 {
   };
 
   // Main method.
+  // Return is a bracketed range containing the root.
   template <class F, class T>
   std::pair<T, T> RootFinder(
       F f,
@@ -718,7 +719,7 @@ namespace TOMS_748 {
       const T &min, const T &max,
       int &significant_digits, size_t &max_iter) {
 
-    // Treat derivate function as primary function.
+    // Treat derivative function as primary function.
     auto df = [&f_and_df](T x) {
       auto [fx, dfx] = f_and_df(x);
       return dfx;
@@ -940,7 +941,6 @@ std::pair<T, T> Optimize_RunAll(F f, F neg_f,
     auto fx = (use_log_lengths ? results.second : results.second);
 
     myout << method_name << ": (x,fx) = [" << x << ", " << fx << "]" << std::endl;
-    // check value 
     myout << method_name << ": (x-,x+) = [" << f(abs_min) << ", " << f(2*x) << "]" << std::endl;
     myout << method_name << ": " << "iters: " << iterations << ", converged?: " << is_converged << std::endl;
   };
@@ -951,20 +951,25 @@ std::pair<T, T> Optimize_RunAll(F f, F neg_f,
   };
 
   // Print out ordered pair to get shape of function.
-  auto print_pairs = [&](F func, std::string function_name, bool use_log_lengths = false) {
+  auto print_func_pairs = [&](F func, std::string function_name, bool use_log_lengths = false, int num_steps = 100) {
     T my_min = (use_log_lengths ? log_min : min);
+    T my_abs_min = (use_log_lengths ? log(abs_min) : abs_min);
+    my_min = my_abs_min;
     T my_max = (use_log_lengths ? log_max : max);
-    T step_size = (max - min)/100.0;
+    T step_size = (max - min)/T(num_steps);
     std::cout << function_name << ":: (Min,Max): " << my_min << ", " << my_max << ", Dist: " << my_max - my_min << ", Stepsize: " << step_size << std::endl;
     int per_line = 5;
     int step_cnt = 1;
-    for (T i = min; i < max; i += step_size ) {
+    for (T i = my_min; i < my_max; i += step_size ) {
       std::cout << "[" << step_cnt << "](" << i << ", " << func(i) << ") ";
 
       if (step_cnt % per_line == 0) {
         std::cout << std::endl;
       }
       step_cnt++;
+      if (step_cnt > 100) {
+        break;
+      }
     }
     std::cout << std::endl;
   };
@@ -974,9 +979,9 @@ std::pair<T, T> Optimize_RunAll(F f, F neg_f,
   std::cout << "OPTIMIZE_RUNALL:: df[" << min << ", " << max << "] = (" << df(min) << ", " << df(max) << ")" << std::endl;
   std::cout << "OPTIMIZE_RUNALL:: df[" << abs_min << "] = (" << df(abs_min) << ")" << std::endl;
 
-  print_pairs(neg_f, "neg. log_likelihood w/ log_lengths");
-  print_pairs(f, "log_likelihood");
-  print_pairs(df, "deriv. log_likelihood");
+  print_func_pairs(neg_f, "neg. log_likelihood w/ log_lengths", true);
+  print_func_pairs(f, "log_likelihood");
+  print_func_pairs(df, "deriv. log_likelihood");
 
   // Run Brent Minimization.
   results = BrentMinimize<F,T>(neg_f, log_min, log_max, significant_digits, max_iter);
@@ -987,7 +992,8 @@ std::pair<T, T> Optimize_RunAll(F f, F neg_f,
   report_results("TOMS_748", false);
 
   // Run Newton-Raphson Optimization.
-  // results = NewtonRaphsonOptimization()
+  // results = NewtonRaphsonOptimization();
+  // report_results("NewtonRaphson", false);
 
   return results;
 }
