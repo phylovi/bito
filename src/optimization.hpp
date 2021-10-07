@@ -10,8 +10,6 @@
 
 #include "sugar.hpp"
 
-// TODO: Temporary file.  Remove after use.
-
 namespace Optimization {
   // test stream
   std::ostream &myout = std::cout;
@@ -22,14 +20,6 @@ namespace Optimization {
 using Func = std::function<double(double)>;
 using FuncAndOneDerivative = std::function<DoublePair(double)>;
 using FuncAndTwoDerivatives = std::function<std::tuple<double, double, double>(double)>;
-
-// Various Minimizing Functions.
-template <class F, class T>
-std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
-                              size_t max_iter);
-template <class F, class T>
-std::pair<T, T> BrentMinimize_FromMe(F f, T min, T max, int significant_digits,
-                                     size_t max_iter);   
 
 // Write ordered pairs from function at intervals.
 template <class F, class T>
@@ -42,7 +32,7 @@ void FunctionToCSV(F f, T min, T max, T step_size, std::string filepath) {
   os.close();
 };
 
-// TODO: REMOVE THIS
+// TODO: REMOVE THIS BEFORE MERGING WITH MAIN.
 // Optimization tool global benchmarks.
 int iterations = 0;
 bool is_converged = false;
@@ -62,14 +52,13 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
   T mid;             // midpoint of min and max
   T fract1, fract2;  // minimal relative movement in x
 
-  static const T golden =
-      0.3819660f;  // golden ratio, don't need too much precision here!
+  // golden ratio, don't need too much precision here!
+  static const T golden = 0.3819660f;  
 
   x = w = v = max;
   fw = fv = fx = f(x);
   delta2 = delta = 0;
 
-  iterations = 0;
   size_t count = max_iter;
 
   do {
@@ -87,8 +76,8 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
     // ** Parabolic Fit (variant of Inverse Quadratic Interpolation?): 
     bool use_bisection = true; // only triggers if IQI fails.
     if (fabs(delta2) > fract1) {
-      // try and construct a parabolic fit:
-      // TODO: where is secant method? what happens when x=v=w and fx=fv=fw?
+      // Try and construct a parabolic fit:
+      // TODO: where is secant method? 
       T r = (x - w) * (fx - fv);
       T q = (x - v) * (fx - fw);
       T p = (x - v) * q - (x - w) * r;
@@ -97,7 +86,7 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
       q = fabs(q);
       T td = delta2;
       delta2 = delta;
-      // determine whether a parabolic step is acceptable or not:
+      // Determine whether a parabolic step is acceptable or not:
       // must fail all three threshold tests to be accepted.
       if ( ((fabs(p) >= fabs(q * td / 2)) == false) 
            && ((p <= q * (min - x)) == false)
@@ -163,7 +152,7 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
   iterations++;
   } while (--count); // countdown until max iterations.
 
-  // What does this for?
+  // What is this for?
   max_iter -= count;
 
   return std::make_pair(x, fx);
@@ -323,11 +312,10 @@ std::pair<T, T> BrentMinimize_FromMe(F f, T min, T max, int significant_digits,
 
 // Boost version of the TOM748 Rootfinding algorithm.
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
-template <class F, class T>
-class TOMS_748 {
- public:
-
+// template <class F, class T>
+namespace TOMS_748 {
   // Returns -1, 1 or 0, depending on the sign.
+  template <class T>
   inline int Sign(T &val) {
     if (val == 0) {
       return 0;
@@ -337,19 +325,22 @@ class TOMS_748 {
   }
 
   // Checks if distance between brackets are less than tolerance.
+  template <class T>
   inline bool TestTol(T &min, T &max, T &tol) {
     return (max - min) < tol;
   };
 
   // Return True if values are closer in distance than tolerance.
+  template <class T>
   inline bool TestNotDistinct(T &a, T &b) {
-    T min_diff = std::numeric_limits<T>::min_value() * 32;
+    T min_diff = std::numeric_limits<T>::min() * 32;
     return (fabs(a - b) < min_diff);
   };
 
   // Return True if not all values are distinct.
+  template <class T>
   inline bool TestNotAllDistinct(T &a, T &b, T &c, T &d, T &e) {
-    T min_diff = std::numeric_limits<T>::min_value() * 32;
+    T min_diff = std::numeric_limits<T>::min() * 32;
     bool not_all_distinct = 
         (TestNotDistinct(a, b) || TestNotDistinct(a, d) 
       || TestNotDistinct(a, e) || TestNotDistinct(b, d) 
@@ -359,6 +350,7 @@ class TOMS_748 {
 
   // Perform division if no over/underflow error occurs.
   // Otherwise, return r.
+  template <class T>
   inline T SafeDivision(T num, T denom, T r) {
     //
     // return num / denom without overflow,
@@ -376,6 +368,7 @@ class TOMS_748 {
   // Update interval brackets [a,b] with point c, to either [a,c] or [c,b].
   // Results stored in place.
   // d and fd updated to the point removed from interval.
+  template <class F, class T>
   inline void Bracket(F f, T &a, T &b, T &c,
                       T &fa, T &fb, T &d, T &fd) {
     //
@@ -429,6 +422,7 @@ class TOMS_748 {
   };
 
   // Performs step of the secant method.
+  template <class T>
   inline T SecantInterpolate(const T &a, const T &b, 
                              const T &fa, const T &fb) {
     //
@@ -449,6 +443,7 @@ class TOMS_748 {
   };
 
   // Performs step of the quadratic interpolation method.
+  template <class T>
   inline T QuadtraticInterpolate(const T &a, const T &b, const T &d, 
                                  const T &fa, const T &fb, const T &fd, 
                                  size_t count) {
@@ -466,7 +461,7 @@ class TOMS_748 {
     //
     // Start by obtaining the coefficients of the quadratic polynomial:
     //
-    T max_value = std::numeric_limits<T>::max_value();
+    T max_value = std::numeric_limits<T>::max();
     T zero = T(0);
 
     T qA = fd - fb;
@@ -506,6 +501,7 @@ class TOMS_748 {
   };
 
   // Performs step of the cubic interpolation method.
+  template <class T>
   inline T CubicInterpolate(const T &a, const T &b, const T &d, const T &e,
                             const T &fa, const T &fb, const T &fd, const T &fe) {
     //
@@ -540,13 +536,19 @@ class TOMS_748 {
   };
   
   // Performs step of the bijection method.
-  inline T Bijection() {
-
+  template <class T>
+  inline void Bijection(const T &a, const T &b, const T &d, const T &e, 
+                     const T &fa, const T &fb, const T &fd, const T &fe) {
+    e = d;
+    fe = fd;
+    T mid = a + ((b - a) / 2);
+    return mid;
   };
 
   // Main method.
-  static std::pair<T, T> RootFinder(
-      std::function<T(T)> &f,
+  template <class F, class T>
+  std::pair<T, T> RootFinder(
+      F f,
       const T &min, const T &max, 
       int &significant_digits, size_t &max_iter) {  
     //
@@ -583,12 +585,15 @@ class TOMS_748 {
       else if (fb == 0) {
         a = b;
       }
-      // Return ordered (x, y=f(x)) pair at point of convergence.
-      T x = (a + b)/2;
-      return std::make_pair(x, f(x));
+      // Meta data
+      iterations = 0;
+      is_converged = true;
+      // Return ordered (min, max) span that contain the root.
+      return std::make_pair(a, b);
     }
 
     // If f(a) and f(b) properly bracket root, then they should have opposite signs.
+    std::cout << "TOMS_748:: f[" << a << "," << b << "] = (" << fa << "," << fb << ")" << std::endl;
     Assert( Sign(fa) * Sign(fb) < 0, "TOMS_748: <min> and <max> don't bracket the root.");
 
     // Initialize dummy vals for fd, e, fe.
@@ -602,7 +607,7 @@ class TOMS_748 {
     }
     // On second step, use quadratic interpolation method.
     if ((fa != 0) && (count != 0) && !TestTol(a,b,tol)) {
-      c = QuadtraticInterpolate(&a, &b, &d, &fa, &fb, &fd, 2);
+      c = QuadtraticInterpolate(a, b, d, fa, fb, fd, 2);
       e = d;
       fe = fd;
       Bracket(f, a, b, c, fa, fb, d, fd);
@@ -644,7 +649,7 @@ class TOMS_748 {
       prof  = TestNotAllDistinct(fa, fb, fc, fd, fe);
       // If not all values are distinct, then fall back to quadratic interpolation.
       if (prof) {
-        c = QuadraticInterpolate(a, b, d, fa, fb, fd, 3);
+        c = QuadtraticInterpolate(a, b, d, fa, fb, fd, 3);
       }
       // Otherwise, use cubic interpolation.
       else {
@@ -688,31 +693,43 @@ class TOMS_748 {
       count--;
     };
 
-    // Final output and check if root found. 
-    max_iter -= count;
+    // If exact root was found, collapse to single point.
     if (fa == 0) {
       b = a;
     }
     else if (fb == 0) {
       a = b;
     }
+
+    // Meta results
+    iterations = max_iter - count;
+    is_converged = TestTol(a,b,tol);
+    // Total iterations taken.
+    max_iter -= count;
+    // Return the span containing the root.
     return std::make_pair(a, b);
   };
 
   // Helper function to convert minimization function to root-finding function.
-  static std::pair<T, T> Minimize(
-      std::function<T(T)> f,
+  template <class F, class T>
+  std::pair<T, T> Minimize(
+      F f,
       std::function<std::pair<T,T>(T)> f_and_df,
-      const T min, const T max,
-      int significant_digits, const size_t max_iter
-  ) {
+      const T &min, const T &max,
+      int &significant_digits, size_t &max_iter) {
+
     // Treat derivate function as primary function.
     auto df = [&f_and_df](T x) {
       auto [fx, dfx] = f_and_df(x);
       return dfx;
     };
 
-    return TOMS_748<std::function<T(T)>, T>::RootFinder(&df, &min, &max, &significant_digits, &max_iter);
+    // Returns a span containing optimal x value.
+    auto [results_min, results_max] = RootFinder<F,T>(df, min, max, significant_digits, max_iter);
+    auto result = (results_min + ((results_max - results_min)/2));
+
+    // return average and function evaluated at average.
+    return std::make_pair(result, f(result));
   };
 
 };
@@ -906,28 +923,68 @@ template <class F, class T>
 std::pair<T, T> Optimize_RunAll(F f, F neg_f, 
                                 FuncAndOneDerivative f_and_df,
                                 FuncAndTwoDerivatives f_and_df_and_ddf,
-                                T min, T max, int significant_digits,
-                                size_t max_iter) {
+                                T min, T max, 
+                                T log_min, T log_max,
+                                int significant_digits, size_t max_iter) {
   int iters;
   bool converged;
   std::pair<T,T> results;
   std::pair<T,T> results_final;
+  T abs_min = std::numeric_limits<T>::min();
 
-  auto report_results = [&](std::string method_name, bool use_results = false){
+  auto report_results = [&](std::string method_name, bool use_log_lengths = false, bool use_results = false) {
     iters = iterations;
     converged = is_converged;
 
-    myout << method_name << ": (f,fx) = [" << results.first << "," << results.second << "]" << std::endl;
+    auto x = (use_log_lengths ? exp(results.first) : results.first);
+    auto fx = (use_log_lengths ? results.second : results.second);
+
+    myout << method_name << ": (x,fx) = [" << x << ", " << fx << "]" << std::endl;
+    // check value 
+    myout << method_name << ": (x-,x+) = [" << f(abs_min) << ", " << f(2*x) << "]" << std::endl;
     myout << method_name << ": " << "iters: " << iterations << ", converged?: " << is_converged << std::endl;
   };
 
+  auto df = [&f_and_df](T x) {
+    auto [fx, dfx] = f_and_df(x);
+    return dfx;
+  };
+
+  // Print out ordered pair to get shape of function.
+  auto print_pairs = [&](F func, std::string function_name, bool use_log_lengths = false) {
+    T my_min = (use_log_lengths ? log_min : min);
+    T my_max = (use_log_lengths ? log_max : max);
+    T step_size = (max - min)/100.0;
+    std::cout << function_name << ":: (Min,Max): " << my_min << ", " << my_max << ", Dist: " << my_max - my_min << ", Stepsize: " << step_size << std::endl;
+    int per_line = 5;
+    int step_cnt = 1;
+    for (T i = min; i < max; i += step_size ) {
+      std::cout << "[" << step_cnt << "](" << i << ", " << func(i) << ") ";
+
+      if (step_cnt % per_line == 0) {
+        std::cout << std::endl;
+      }
+      step_cnt++;
+    }
+    std::cout << std::endl;
+  };
+
+  std::cout << std::endl << std::endl;
+  std::cout << "OPTIMIZE_RUNALL:: f[" << min << ", " << max << "] = (" << f(min) << ", " << f(max) << ")" << std::endl;
+  std::cout << "OPTIMIZE_RUNALL:: df[" << min << ", " << max << "] = (" << df(min) << ", " << df(max) << ")" << std::endl;
+  std::cout << "OPTIMIZE_RUNALL:: df[" << abs_min << "] = (" << df(abs_min) << ")" << std::endl;
+
+  print_pairs(neg_f, "neg. log_likelihood w/ log_lengths");
+  print_pairs(f, "log_likelihood");
+  print_pairs(df, "deriv. log_likelihood");
+
   // Run Brent Minimization.
-  results = BrentMinimize<F,T>(neg_f, min, max, significant_digits, max_iter);
-  report_results("Brent_Minimize", true);
+  results = BrentMinimize<F,T>(neg_f, log_min, log_max, significant_digits, max_iter);
+  report_results("Brent_Minimize", true, true);
 
   // Run TOMS748 Minimization.
-  results = TOMS_748<F,T>::Minimize(f, f_and_df, min, max, significant_digits, max_iter);
-  report_results("TOMS_748");
+  results = TOMS_748::Minimize<F,T>(f, f_and_df, min, max, significant_digits, max_iter);
+  report_results("TOMS_748", false);
 
   // Run Newton-Raphson Optimization.
   // results = NewtonRaphsonOptimization()

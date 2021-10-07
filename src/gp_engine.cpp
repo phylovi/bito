@@ -620,7 +620,8 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
 }
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
-  using FuncAndOneDerivative = std::function<DoublePair(double)>;
+
+  return GPEngine::Optimize_RUNALL(op);
 
   auto negative_log_likelihood = 
       [this, &op](double log_branch_length) {
@@ -649,6 +650,10 @@ void GPEngine::Optimize_RUNALL(const GPOperations::OptimizeBranchLength& op) {
   using Func = std::function<double(double)>;
   using FuncAndOneDerivative = std::function<DoublePair(double)>;
   using FuncAndTwoDerivatives = std::function<std::tuple<double, double, double>(double)>;
+
+  // bounds in non-log space:
+  auto max_branch_length = exp(max_log_branch_length_);
+  auto min_branch_length = exp(min_log_branch_length_);
 
   // function (for maximization functions)
   auto log_likelihood = 
@@ -682,11 +687,14 @@ void GPEngine::Optimize_RUNALL(const GPOperations::OptimizeBranchLength& op) {
       };
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
   double current_value = negative_log_likelihood(current_log_branch_length);
-  const auto [log_branch_length, neg_log_likelihood] = Optimization::Optimize_RunAll<Func, double>(
-      log_likelihood, negative_log_likelihood, 
-      log_likelihood_and_derivative, log_likelihood_and_first_two_derivatives,
-      min_log_branch_length_, max_log_branch_length_,
-      significant_digits_for_optimization_, max_iter_for_optimization_);
+
+  const auto [log_branch_length, neg_log_likelihood] = 
+      Optimization::Optimize_RunAll<Func, double>(
+        log_likelihood, negative_log_likelihood, 
+        log_likelihood_and_derivative, log_likelihood_and_first_two_derivatives,
+        min_branch_length, max_branch_length,
+        min_log_branch_length_, max_log_branch_length_,
+        significant_digits_for_optimization_, max_iter_for_optimization_);
 
   // Numerical optimization sometimes yields new nllk > current nllk.
   // In this case, we reset the branch length to the previous value.
