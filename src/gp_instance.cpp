@@ -196,7 +196,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   ProcessOperations(compute_lik_operations);
 
   size_t gpcsp_count = dag_.GPCSPCountWithFakeSubsplits();
-  per_pcsp_marg_lik_ = EigenMatrixXd::Zero(gpcsp_count,1);
+  per_pcsp_marg_lik_ = EigenMatrixXd::Zero(gpcsp_count, 1);
   per_pcsp_marg_lik_.col(0) = GetEngine()->GetPerGPCSPLogLikelihoods();
 
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
@@ -211,8 +211,8 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
     ProcessOperations(populate_plv_operations);
     ProcessOperations(marginal_lik_operations);
     ProcessOperations(compute_lik_operations);
-    per_pcsp_marg_lik_.conservativeResize(Eigen::NoChange, i+2);
-    per_pcsp_marg_lik_.col(i+1) = GetEngine()->GetPerGPCSPLogLikelihoods();
+    per_pcsp_marg_lik_.conservativeResize(Eigen::NoChange, i + 2);
+    per_pcsp_marg_lik_.col(i + 1) = GetEngine()->GetPerGPCSPLogLikelihoods();
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
     our_ostream << "Current marginal log likelihood: ";
     our_ostream << std::setprecision(9) << current_marginal_log_lik << std::endl;
@@ -379,6 +379,25 @@ void GPInstance::BranchLengthsToCSV(const std::string &file_path) {
 
 void GPInstance::PerGPCSPLogLikelihoodsToCSV(const std::string &file_path) {
   CSV::StringDoubleVectorToCSV(PrettyIndexedPerGPCSPLogLikelihoods(), file_path);
+}
+
+void GPInstance::PerGPCSPLogLikelihoodsFromOptimizationToCSV(
+    const std::string &file_path) {
+  std::ofstream out_stream(file_path);
+  std::vector<std::pair<std::string, EigenVectorXd>> vect =
+      PrettyIndexedPerGPCSPLogLikelihoodsFromOptimization();
+
+  for (const auto &[s, eigen] : vect) {
+    out_stream << s;
+    for (const auto &value : eigen) {
+      out_stream << "," << value;
+    }
+    out_stream << std::endl;
+  }
+  if (out_stream.bad()) {
+    Failwith("Failure writing to " + file_path);
+  }
+  out_stream.close();
 }
 
 RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {

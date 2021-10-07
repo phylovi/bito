@@ -64,9 +64,10 @@ class GPInstance {
   void SBNPriorToCSV(const std::string &file_path);
   void BranchLengthsToCSV(const std::string &file_path);
   void PerGPCSPLogLikelihoodsToCSV(const std::string &file_path);
+  void PerGPCSPLogLikelihoodsFromOptimizationToCSV(const std::string &file_path);
 
-  // Generate a version of the topologies in the current tree collection that use the
-  // current GP branch lengths.
+  // Generate a version of the topologies in the current tree collection that use
+  // the current GP branch lengths.
   RootedTreeCollection CurrentlyLoadedTreesWithGPBranchLengths();
 
   // Subset the currently loaded topologies to those that have a given PCSP, and equip

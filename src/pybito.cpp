@@ -584,7 +584,7 @@ PYBIND11_MODULE(bito, m) {
            R"raw(Write "pretty" formatted per pcsp likelihoods to CSV.)raw")
       .def(
           "per_gpcsp_llhs_from_opt_to_csv",
-          &GPInstance::PrettyIndexedPerGPCSPLogLikelihoodsFromOptimization,
+          &GPInstance::PerGPCSPLogLikelihoodsFromOptimizationToCSV,
           R"raw(Write "pretty" formatted per pcsp likelihoods throughout optimization to CSV.)raw")
       .def("export_trees", &GPInstance::ExportTrees,
            R"raw(Write out currently loaded trees to a Newick file
