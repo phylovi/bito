@@ -1,5 +1,9 @@
 name: Sandbox Demo
 
+on: 
+  schedule:
+    - cron: '0 12 * * MON'
+
 jobs:
   build-and-test-on-linux:
     name: Build with Make, Run Doctests, Run Python test scripts
