@@ -4,7 +4,7 @@ name: (WIP) Build with Docker
 # only on the main branch.
 on: 
   push:
-    branches: [ ]
+    branches: [ main ]
 
 jobs:
   build_and_test:
