@@ -1,23 +1,24 @@
 name: Sandbox Demo
 
 jobs:
-  build_and_test:
+  build-and-test-on-linux:
     name: Build with Make, Run Doctests, Run Python test scripts
     runs-on: ubuntu-latest
       
   steps:
     # load necessary system tools
-    - name: Define Environment
+    - name: Setup system
       uses: actions/checkout@v2
+    - name: Setup python3.8
       uses: actions/setup-python@v2
-        # with:
-        #   python-version: 3.8
+        with:
+          python-version: 3.8
     - run: | 
         python --version
         pip --version
         conda --version
     # install prereq python packages
-    - name: Install Bito Environment
+    - name: Install bito environment
     - run: |
         pip install -e .
         conda env list
