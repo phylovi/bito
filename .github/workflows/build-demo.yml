@@ -7,20 +7,21 @@ jobs:
       
   steps:
     # load necessary system tools
-    - name: Setup system
+    - name: Checkout repository code
       uses: actions/checkout@v2
+    - run: echo "code checked out"
     - name: Setup python3.8
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.8
-    - run: | 
-        python --version
-        pip --version
-        conda --version
-    # install prereq python packages
-    - name: Install bito environment
-    - run: |
-        pip install -e .
-        conda env list
-        conda list
+    #   uses: actions/setup-python@v2
+    #   with:
+    #     python-version: 3.8
+    # - run: | 
+    #     python --version
+    #     pip --version
+    #     conda --version
+    # # install prereq python packages
+    # - name: Install bito environment
+    # - run: |
+    #     pip install -e .
+    #     conda env list
+    #     conda list
       
