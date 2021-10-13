@@ -1,4 +1,4 @@
-name: build_with_make
+name: Sandbox Demo
 
 # Trigger the workflow on push or pull request,
 # only on the main branch.
@@ -7,7 +7,7 @@ on:
     branches: [ ]
 
 jobs:
-  test:
+  build_and_test:
     name: Build with Make, Run Doctests, Run Python test scripts
     runs-on: ubuntu-latest
       

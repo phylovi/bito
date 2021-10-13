@@ -1,0 +1,15 @@
+name: (WIP) Build with Docker
+
+# Trigger the workflow on push or pull request,
+# only on the main branch.
+on: 
+  push:
+    branches: [ ]
+
+jobs:
+  build_and_test:
+    name: Build with Make, Run Doctests, Run Python test scripts
+    runs-on: ubuntu-latest
+
+script:
+  - docker run -v ${PWD}:/bito -t quay.io/matsengrp/bito /bin/bash -c "/opt/conda/bin/conda run -n bito make test -C /bito"

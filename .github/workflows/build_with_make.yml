@@ -1,4 +1,4 @@
-name: build_with_make
+name: (WIP) Build with Make
 
 # Trigger the workflow on push or pull request,
 # only on the main branch.

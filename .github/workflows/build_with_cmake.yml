@@ -1,4 +1,4 @@
-name: build_with_cmake
+name: (WIP) Build with CMake
 
 # Trigger the workflow on push or pull request,
 # only on the main branch.
