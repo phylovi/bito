@@ -5,6 +5,23 @@ jobs:
     name: Build with Make, Run Doctests, Run Python test scripts
     runs-on: ubuntu-latest
       
-  steps:
-    - run: echo "code checked out"
+    steps:
+      # load necessary system tools
+      - name: Checkout repository code
+        uses: actions/checkout@v2
+      - run: echo "code checked out"
+      - name: Setup python3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+      # - run: | 
+      #     python --version
+      #     pip --version
+      #     conda --version
+      # # install prereq python packages
+      # - name: Install bito environment
+      # - run: |
+      #     pip install -e .
+      #     conda env list
+      #     conda list
       
