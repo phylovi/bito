@@ -4,13 +4,17 @@ name: build_with_make
 # only on the main branch.
 on: 
   push:
-    branches: [ main, 361-migrate-from-travis-ci-org ]
-  pull_requests:
     branches: [ main ]
 
 jobs:
-  build:
+  test:
+    name: Build with Make, Run Doctests, Run Python test scripts
     runs-on: ubuntu-latest
-  
-  steps:
-  - uses: 
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: System with Python/Pip
+
+    - name: Build
+
+    
