@@ -12,17 +12,20 @@ jobs:
     runs-on: ubuntu-latest
       
   steps:
-    - uses: actions/checkout@v2
-
-    - name: System with Python/Pip
-    - run: pip --version
-
-    - name: Setup Environment
+    # load necessary system tools
+    - name: Define Environment
+      uses: actions/checkout@v2
+      uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+    - run: | 
+        python --version
+        pip --version
+        conda --version
+    # install prereq python packages
+    - name: Install Bito Environment
     - run: |
         pip install -e .
-    
-    - name: Build 
-    - run: make -j20
-    
-    - name: Run Tests
-    - run: make runtest -j20
+        conda env list
+        conda list
+      
