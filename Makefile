@@ -26,6 +26,9 @@ fasttest:
 
 test:
 	make ${j_flags}
+	make runtest
+
+runtest:
 	make runfasttest
 	./_build/doctest
 
