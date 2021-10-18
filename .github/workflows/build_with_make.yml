@@ -3,9 +3,9 @@ name: Build with Make
 on: 
   workflow_dispatch:
   push:
-    # branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build-with-make:
@@ -23,9 +23,6 @@ jobs:
       
     - name: Get environment info & software versions
       run: |
-        echo "SHELL: $SHELL"
-        echo "PWD: $(pwd)"
-        
         gcc --version
         g++ --version
         python --version
