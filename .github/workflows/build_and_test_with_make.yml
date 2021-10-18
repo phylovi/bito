@@ -1,0 +1,158 @@
+name: Build and Test with Make
+
+on: [workflow_dispatch]
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+
+jobs:
+  build-with-make:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+      
+    - name: Setup python3.8
+      uses: actions/setup-python@v2
+      
+    - name: Get environment info & software versions
+      run: |
+        echo "SHELL: $SHELL"
+        echo "PWD: $(pwd)"
+        sudo apt install gcc-8
+        sudo apt install g++-8
+        
+        gcc --version
+        g++ --version
+        gcc-8 --version
+        g++-8 --version
+        alias gcc='gcc-8'
+        alias g++='g++-8'
+        
+        python --version
+        pip --version
+        conda --version
+        docker --version
+        
+        conda create --name example
+        conda env list
+        CONDA_INITIALIZE() {
+          echo "CONDA_INITIALIZE [BEGIN]"
+          local SHELL=$1
+          # echo "$(${CONDA}/bin/conda 'shell.bash' 'hook')"
+          __conda_setup="$(${CONDA}/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
+          if [ $? -eq 0 ]; then
+            eval "$__conda_setup"
+          else 
+            if [ -f "${CONDA}/etc/profile.d/conda.sh" ]; then
+              . "${CONDA}/etc/profile.d/conda.sh"
+            else
+              export PATH="${CONDA}/bin:$PATH"
+            fi
+          fi
+          unset __conda_setup
+          echo "CONDA_INITIALIZE [END]"
+        }
+        CONDA_INITIALIZE
+        conda activate example
+        conda env list
+    
+    - name: Install Beagle
+      run: |
+          g++ --version
+          
+          # install beagle dependencies
+          conda env list
+          echo "PWD: $(pwd)"
+          sudo apt-get update -q
+          sudo apt-get install -y -q --no-install-recommends \
+            autoconf \
+            automake \
+            build-essential \
+            libtool \
+            pkg-config \
+            zlib1g-dev
+          
+          cd ../ 
+          git clone https://github.com/beagle-dev/beagle-lib.git
+          cd beagle-lib
+          git checkout 3dade2bf55f221a837019c2d80b309291c708704
+          ./autogen.sh
+          ./configure --without-jdk --prefix=$(pwd)/../beagle-out
+          
+          make
+          make install
+          cd ../beagle-out
+          ls *
+        
+    - name: Install bito Conda Environment
+      run: |
+        $CONDA/bin/conda env create -f environment.yml
+        $CONDA/bin/conda env list
+        $CONDA/bin/conda list
+    
+    - name: Build with SCons
+      run: |
+        CONDA_INITIALIZE() {
+          echo "CONDA_INITIALIZE [BEGIN]"
+          local SHELL=$1
+          __conda_setup="$(${CONDA}/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
+          if [ $? -eq 0 ]; then
+            eval "$__conda_setup"
+          else 
+            if [ -f "${CONDA}/etc/profile.d/conda.sh" ]; then
+              . "${CONDA}/etc/profile.d/conda.sh"
+            else
+              export PATH="${CONDA}/bin:$PATH"
+            fi
+          fi
+          unset __conda_setup
+          echo "CONDA_INITIALIZE [END]"
+        }
+        CONDA_INITIALIZE
+        conda activate bito
+        export BEAGLE_PREFIX="$(pwd)/../beagle-out"
+        export LD_LIBRARY_PATH="${BEAGLE_PREFIX}/lib:$LD_LIBRARY_PATH"
+        
+        scons
+        # echo "$(pwd)/../beagle-out" | scons 
+        (echo "BEAGLE_PREFIX: $BEAGLE_PREFIX"; cd $BEAGLE_PREFIX; ls *)
+        make
+      
+    - name: Run tests
+      run: | 
+        CONDA_INITIALIZE() {
+          echo "CONDA_INITIALIZE [BEGIN]"
+          local SHELL=$1
+          __conda_setup="$(${CONDA}/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
+          if [ $? -eq 0 ]; then
+            eval "$__conda_setup"
+          else 
+            if [ -f "${CONDA}/etc/profile.d/conda.sh" ]; then
+              . "${CONDA}/etc/profile.d/conda.sh"
+            else
+              export PATH="${CONDA}/bin:$PATH"
+            fi
+          fi
+          unset __conda_setup
+          echo "CONDA_INITIALIZE [END]"
+        }
+        CONDA_INITIALIZE
+        conda activate bito
+        export BEAGLE_PREFIX="$(pwd)/../beagle-out"
+        export LD_LIBRARY_PATH="${BEAGLE_PREFIX}/include/libhmsbeagle-1/libhmsbeagle:$LD_LIBRARY_PATH"
+        export LD_LIBRARY_PATH="${BEAGLE_PREFIX}/lib:$LD_LIBRARY_PATH"
+        
+        export GCC=gcc-8
+        export GPP=g++-8
+        export GXX=g++-8
+        export LD=g++-8
+        alias gcc='gcc-8'
+        alias g++='g++-8'
+        
+        make test

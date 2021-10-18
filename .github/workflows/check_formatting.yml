@@ -1,0 +1,30 @@
+name: C/C++ CI
+
+on: [workflow_dispatch]
+#   push:
+#     branches: [ main ]
+#   pull_request:
+#     branches: [ main ]
+
+jobs:
+  build-with-make:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository code
+      uses: actions/checkout@v2
+      with:
+        submodules: true
+    
+    - name: Install Dependencies
+      run: |
+        pip install clang-format
+        pip install black
+        pip install docformatter
+        conda list
+
+    - name: Check Formatting
+      run: | 
+        make format
+        git diff
