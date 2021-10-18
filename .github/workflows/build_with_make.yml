@@ -1,8 +1,8 @@
 name: Build with Make
 
 on: [workflow_dispatch]
-#   push:
-#     branches: [ main ]
+  push:
+    # branches: [ main ]
 #   pull_request:
 #     branches: [ main ]
 
@@ -34,8 +34,6 @@ jobs:
     
     - name: Install Beagle
       run: |
-          g++ --version
-          
           # install beagle dependencies
           sudo apt-get update -q
           sudo apt-get install -y -q --no-install-recommends \
@@ -64,6 +62,8 @@ jobs:
     
     - name: Build with SCons
       run: |
+        # required to run `conda init` without starting a new shell
+        # which is required for `conda activate`
         CONDA_INITIALIZE() {
           local SHELL=$1
           __conda_setup="$(${CONDA}/bin/conda 'shell.bash' 'hook' 2> /dev/null)"
@@ -85,6 +85,4 @@ jobs:
         export LD_LIBRARY_PATH="${BEAGLE_PREFIX}/lib:$LD_LIBRARY_PATH"
         
         scons
-        # echo "$(pwd)/../beagle-out" | scons 
-        (echo "BEAGLE_PREFIX: $BEAGLE_PREFIX"; cd $BEAGLE_PREFIX; ls *)
         make

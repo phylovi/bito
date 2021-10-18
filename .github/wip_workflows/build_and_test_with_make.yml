@@ -1,10 +1,11 @@
 name: Build and Test with Make
 
-on: [workflow_dispatch]
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
+on: 
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
 
 jobs:
   build-with-make:

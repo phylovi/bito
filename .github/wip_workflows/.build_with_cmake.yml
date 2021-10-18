@@ -1,12 +1,27 @@
-name: (WIP) Build with CMake
-
-# Trigger the workflow on push or pull request,
-# only on the main branch.
+name: Build with cmake
 on: 
-  push:
-    branches: [ main ]
+  workflow_dispatch:
+  push: 
+    branches: [main]
+  # pull_request:
+  #   branches: [main]
 
 jobs:
-  test:
-    name: Build with Make, Run Doctests, Run Python test scripts
+  build:
     runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+          ref: 356-build-using-cmake
+      - name: Prepare build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential cmake python-pytest
+      - name: Perform cmake build
+        run: |
+          mkdir -p build
+          cd build
+          cmake ..
+          make -j16
