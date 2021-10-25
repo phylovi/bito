@@ -186,6 +186,7 @@ class GPEngine {
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void TOMS748Optimization(const GPOperations::OptimizeBranchLength& op);
   void NewtonOptimization(const GPOperations::OptimizeBranchLength& op);
   // TODO: REMOVE THIS
   void Optimize_RUNALL(const GPOperations::OptimizeBranchLength& op);
