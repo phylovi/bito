@@ -49,9 +49,7 @@ GPInstance MakeHelloGPInstance(const std::string& fasta_path,
   return inst;
 }
 
-GPInstance MakeHelloGPInstance() { 
-	return MakeHelloGPInstance("data/hello.fasta");
-}
+GPInstance MakeHelloGPInstance() { return MakeHelloGPInstance("data/hello.fasta"); }
 
 GPInstance MakeHelloGPInstanceSingleNucleotide() {
   return MakeHelloGPInstance("data/hello_single_nucleotide.fasta");
@@ -280,21 +278,21 @@ GPInstance MakeHelloGPInstanceWithGrads() {
 double ObtainBranchLengthWithOptimization(bool use_gradients) {
   auto inst = use_gradients ? MakeHelloGPInstanceWithGrads() : MakeHelloGPInstance();
   inst.EstimateBranchLengths(0.001, 1000, false);
-  return inst.GetEngine() -> GetBranchLengths()(2);
+  return inst.GetEngine()->GetBranchLengths()(2);
 }
 
 TEST_CASE("GPInstance: Gradient-based optimization") {
   double brent = ObtainBranchLengthWithOptimization(false);
   double grad = ObtainBranchLengthWithOptimization(true);
 
-  // We now compare the branch length estimates b/w brent and gradient-based optimization
-  // We expect gradient optimization to be closer than brent
+  // We now compare the branch length estimates b/w brent and gradient-based
+  // optimization We expect gradient optimization to be closer than brent
   std::cout << "Brent branch lengths are " << brent << std::endl;
   std::cout << "Gradient branch lengths are " << grad << std::endl;
-  
+
   double brent_diff = fabs(brent - 0.0694244266);
   double grad_diff = fabs(grad - 0.0694244266);
-  
+
   CHECK_LT(grad_diff, brent_diff);
   CHECK_LT(grad_diff, 1e-6);
 }

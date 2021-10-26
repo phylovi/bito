@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "rooted_tree_collection.hpp"
+
 #include "csv.hpp"
 #include "taxon_name_munging.hpp"
 

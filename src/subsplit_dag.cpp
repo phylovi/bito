@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "subsplit_dag.hpp"
+
 #include "combinatorics.hpp"
 #include "numerical_utils.hpp"
 #include "sbn_probability.hpp"

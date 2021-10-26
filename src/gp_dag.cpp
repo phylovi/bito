@@ -75,8 +75,7 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
         operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // VisitEdge
-      [this, &operations](size_t node_id, size_t child_id,
-                                          bool rotated) {
+      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
         // #310 this is temporary:
         // We do a full PLV population and then marginal likelihood calculation.
         // GPOperations::AppendGPOperations(operations, PopulatePLVs());
@@ -84,8 +83,7 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
 
         // Optimize each branch for a given node-clade and accumulate the resulting
         // P-hat PLVs in the parent node.
-        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated,
-                                       operations);
+        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
       }));
   return operations;
 }
@@ -120,12 +118,10 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
         operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
       },
       // ModifyEdge
-      [this, &operations] (size_t node_id, size_t child_id,
-                                          bool rotated) {
+      [this, &operations](size_t node_id, size_t child_id, bool rotated) {
         // Optimize each branch for a given node-clade and accumulate the resulting
         // P-hat PLVs in the parent node.
-        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated,
-                                       operations);
+        OptimizeBranchLengthUpdatePHat(node_id, child_id, rotated, operations);
       },
       // UpdateEdge
       [this, &operations](size_t node_id, size_t child_id, bool rotated) {

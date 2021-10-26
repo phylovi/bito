@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "csv.hpp"
+
 #include <fstream>
 
 // Given a headerless 2-column CSV of quoted string keys then double values, this parses

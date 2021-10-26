@@ -85,6 +85,7 @@ class GPInstance {
   GPDAG dag_;
   static constexpr size_t plv_count_per_node_ = 6;
   bool use_gradients_;
+  GPEngine::OptimizationMethod optimization_method_;
 
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesAndTreesLoaded() const;

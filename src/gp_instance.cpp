@@ -67,6 +67,9 @@ void GPInstance::CheckSequencesAndTreesLoaded() const {
 
 void GPInstance::UseGradientOptimization(bool use_gradients) {
   use_gradients_ = use_gradients;
+  optimization_method_ =
+      (use_gradients ? GPEngine::OptimizationMethod::DefaultGradientOptimization
+                     : GPEngine::OptimizationMethod::DefaultNongradientOptimization);
 };
 
 void GPInstance::MakeEngine(double rescaling_threshold) {

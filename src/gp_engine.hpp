@@ -19,6 +19,17 @@
 
 class GPEngine {
  public:
+  // Options for optimization method.
+  enum class OptimizationMethod {
+    DefaultGradientOptimization,
+    DefaultNongradientOptimization,
+    BrentOptimization,
+    GradientAscentOptimization,
+    LogSpaceGradientAscentOptimization,
+    TOMS748Optimization,
+    NewtonOptimization
+  };
+
   GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_count,
            const std::string& mmap_file_path, double rescaling_threshold,
            EigenVectorXd sbn_prior, EigenVectorXd unconditional_node_probabilities,
@@ -33,6 +44,8 @@ class GPEngine {
   void operator()(const GPOperations::Multiply& op);
   void operator()(const GPOperations::Likelihood& op);
   void operator()(const GPOperations::OptimizeBranchLength& op);
+  void operator()(const GPOperations::OptimizeBranchLength& op,
+                  const GPEngine::OptimizationMethod method);
   void operator()(const GPOperations::UpdateSBNProbabilities& op);
   void operator()(const GPOperations::PrepForMarginalization& op);
 
@@ -93,7 +106,8 @@ class GPEngine {
 
  private:
   static constexpr double min_log_branch_length_ = -13.9;
-  static constexpr double max_log_branch_length_ = 1 + std::numeric_limits<double>::min();
+  static constexpr double max_log_branch_length_ =
+      1 + std::numeric_limits<double>::min();
 
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-6;
@@ -183,6 +197,11 @@ class GPEngine {
   void RescalePLVIfNeeded(size_t plv_idx);
   double LogRescalingFor(size_t plv_idx);
 
+  std::optional<OptimizationMethod> optimization_method_ = std::nullopt;
+  void SetOptimizationMethod(const OptimizationMethod method);
+  void Optimization(const GPOperations::OptimizeBranchLength& op);
+  void Optimization(const GPOperations::OptimizeBranchLength& op,
+                    std::optional<OptimizationMethod> os);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);

@@ -2,6 +2,7 @@
 // libsbn is free software under the GPLv3; see LICENSE file for details.
 
 #include "rooted_sbn_instance.hpp"
+
 #include "subsplit_dag.hpp"
 
 StringSet RootedSBNInstance::StringIndexerRepresentationOf(
