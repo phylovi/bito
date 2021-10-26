@@ -643,7 +643,8 @@ void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
   //     return BrentOptimization(op);
   //   }
   // }
-  Assert(os.has_value(), "GPEngine::Optimization(): Optimization method has not been set.");
+  Assert(os.has_value(),
+         "GPEngine::Optimization(): Optimization method has not been set.");
 
   switch (os.value()) {
     // default methods
