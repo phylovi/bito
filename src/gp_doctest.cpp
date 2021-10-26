@@ -269,32 +269,58 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   CHECK_LT(fabs(std::get<2>(log_lik_and_derivatives) - -5.4460787413), 1e-6);
 }
 
-GPInstance MakeHelloGPInstanceWithGrads() {
-  return MakeHelloGPInstance("data/hello.fasta", true);
-}
-
 // We are outputting the branch length for PCSP 011-100-000
 // which has a true branch length of 0.0694244266
-double ObtainBranchLengthWithOptimization(bool use_gradients) {
-  auto inst = use_gradients ? MakeHelloGPInstanceWithGrads() : MakeHelloGPInstance();
+double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
+  GPInstance inst = MakeHelloGPInstance();
+  GPEngine& engine = *inst.GetEngine();
+  engine.SetOptimizationMethod(method);
+
   inst.EstimateBranchLengths(0.001, 1000, false);
   return inst.GetEngine()->GetBranchLengths()(2);
 }
 
 TEST_CASE("GPInstance: Gradient-based optimization") {
-  double brent = ObtainBranchLengthWithOptimization(false);
-  double grad = ObtainBranchLengthWithOptimization(true);
+  double nongradient_length = ObtainBranchLengthWithOptimization(
+      GPEngine::OptimizationMethod::DefaultNongradientOptimization);
+  double gradient_length = ObtainBranchLengthWithOptimization(
+      GPEngine::OptimizationMethod::DefaultGradientOptimization);
 
   // We now compare the branch length estimates b/w brent and gradient-based
   // optimization We expect gradient optimization to be closer than brent
-  std::cout << "Brent branch lengths are " << brent << std::endl;
-  std::cout << "Gradient branch lengths are " << grad << std::endl;
+  std::cout << "Brent branch lengths are " << nongradient_length << std::endl;
+  std::cout << "Gradient branch lengths are " << gradient_length << std::endl;
 
-  double brent_diff = fabs(brent - 0.0694244266);
-  double grad_diff = fabs(grad - 0.0694244266);
+  double golden_length = 0.0694244266;
+  double brent_diff = fabs(nongradient_length - golden_length);
+  double grad_diff = fabs(gradient_length - golden_length);
 
   CHECK_LT(grad_diff, brent_diff);
   CHECK_LT(grad_diff, 1e-6);
+}
+
+// TODO: Work in Progress
+TEST_CASE("GPInstance: Compare all optimization methods") {
+  double golden_length = 0.0694244266;
+  auto OptimizationTest = [&](std::string opt_name, GPEngine::OptimizationMethod method) {
+    double opt_length = ObtainBranchLengthWithOptimization(method);
+    std::cout << opt_name << " branch lengths are: " << opt_length << std::endl;
+    double opt_diff = fabs(opt_length - golden_length);
+    return std::tuple<double,double>(opt_length, opt_diff);
+  };
+
+  auto [brent_length, brent_diff] = OptimizationTest(
+      "Brent", GPEngine::OptimizationMethod::BrentOptimization);
+  auto [newton_length, newton_diff] = OptimizationTest(
+      "Newton", GPEngine::OptimizationMethod::NewtonOptimization);
+  // auto [toms748_length, toms738_diff] = OptimizationTest(
+  //     "TOMS748", GPEngine::OptimizationMethod::TOMS748Optimization);
+  // auto [gradascent_length, gradascent_diff] = OptimizationTest(
+  //     "Gradient Ascent", GPEngine::OptimizationMethod::GradientAscentOptimization);
+  // auto [log_gradascent_length, log_gradascent_diff] = OptimizationTest(
+  //     "Logspace Gradient Ascent", GPEngine::OptimizationMethod::LogSpaceGradientAscentOptimization);
+
+  
 }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {

@@ -51,6 +51,7 @@ class GPEngine {
 
   void ProcessOperations(GPOperationVector operations);
 
+  void SetOptimizationMethod(const OptimizationMethod method);
   void SetTransitionMatrixToHaveBranchLength(double branch_length);
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
@@ -198,7 +199,6 @@ class GPEngine {
   double LogRescalingFor(size_t plv_idx);
 
   std::optional<OptimizationMethod> optimization_method_ = std::nullopt;
-  void SetOptimizationMethod(const OptimizationMethod method);
   void Optimization(const GPOperations::OptimizeBranchLength& op);
   void Optimization(const GPOperations::OptimizeBranchLength& op,
                     std::optional<OptimizationMethod> os);
