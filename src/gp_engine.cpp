@@ -241,6 +241,13 @@ size_t GPEngine::GetTempGPCSPIndex(const size_t gpcsp_offset) const {
   Assert(gpcsp_offset < gpcsp_scratch_size,
          "Requested gpcsp_offset outside of allocated scratch space.");
   return gpcsp_offset + GetGPCSPCount();
+=======
+  optimization_method_ =
+      (use_gradients ? OptimizationMethod::DefaultGradientOptimization
+                     : OptimizationMethod::DefaultNongradientOptimization);
+
+  InitializePLVsWithSitePatterns();
+>>>>>>> Added OptimizationMethod selector and enums.
 }
 
 // ** GPOperations
@@ -323,12 +330,11 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
-  if (use_gradients_ == true) {
-    TOMS748Optimization(op);
-    // NewtonOptimization(op);
-  } else {
-    BrentOptimization(op);
-  }
+  return Optimization(op);
+}
+void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op,
+                          const GPEngine::OptimizationMethod method) {
+  return Optimization(op, method);
 }
 
 EigenVectorXd NormalizedPosteriorOfLogUnnormalized(
@@ -620,9 +626,48 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
   return static_cast<double>(rescaling_counts_(plv_idx)) * log_rescaling_threshold_;
 }
 
-void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
-  //  return GPEngine::Optimize_RUNALL(op);
+void GPEngine::SetOptimizationMethod(const GPEngine::OptimizationMethod method) {
+  optimization_method_ = method;
+}
 
+void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op) {
+  return Optimization(op, optimization_method_);
+}
+
+void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
+                            std::optional<OptimizationMethod> os) {
+  // if (!os.has_value()) {
+  //   if (use_gradients_) {
+  //     return NewtonOptimization(op);
+  //   } else {
+  //     return BrentOptimization(op);
+  //   }
+  // }
+  Assert(os.has_value(), "GPEngine::Optimization(): Optimization method has not been set.");
+
+  switch (os.value()) {
+    // default methods
+    case OptimizationMethod::DefaultGradientOptimization:
+      return NewtonOptimization(op);
+    case OptimizationMethod::DefaultNongradientOptimization:
+      return BrentOptimization(op);
+    // explicit methods
+    case OptimizationMethod::BrentOptimization:
+      return BrentOptimization(op);
+    case OptimizationMethod::GradientAscentOptimization:
+      return GradientAscentOptimization(op);
+    case OptimizationMethod::LogSpaceGradientAscentOptimization:
+      return LogSpaceGradientAscentOptimization(op);
+    case OptimizationMethod::TOMS748Optimization:
+      return TOMS748Optimization(op);
+    case OptimizationMethod::NewtonOptimization:
+      return NewtonOptimization(op);
+    default:
+      Failwith("GPEngine::Optimization(): Invalid OptimizationMethod given.");
+  }
+}
+
+void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
     SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
     PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
