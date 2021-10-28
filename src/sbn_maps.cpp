@@ -91,7 +91,7 @@ IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counte
   Bitset dag_root(Bitset::DAGRootSubsplitOfTaxonCount(taxon_count));
   // Note: dag_root is rotated before being inserted into parent_to_range
   // because the rootsplits are connected to the DAG root via rotated edges.
-  SafeInsert(parent_to_range, dag_root.RotateSubsplit(),
+  SafeInsert(parent_to_range, dag_root.SubsplitRotate(),
              {index, index + rootsplit_counter.size()});
   for (const auto& iter : rootsplit_counter) {
     rootsplits.push_back(iter.first);
@@ -105,7 +105,7 @@ IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counte
     for (const auto& child_iter : child_counter) {
       const auto& pcsp = parent + child_iter.first;
       SafeInsert(indexer, pcsp, index);
-      SafeInsert(index_to_child, index, pcsp.PCSPChildSubsplit());
+      SafeInsert(index_to_child, index, pcsp.PCSPGetChildSubsplit());
       index++;
     }
   }

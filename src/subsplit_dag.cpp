@@ -88,6 +88,12 @@ void SubsplitDAG::PrintParentToRange() const {
   }
 }
 
+void SubsplitDAG::ToDot(const std::string file_path, bool show_index_labels) const {
+  std::ofstream out_file(file_path);
+  out_file << ToDot(show_index_labels);
+  out_file.close();
+}
+
 std::string SubsplitDAG::ToDot(bool show_index_labels) const {
   std::stringstream string_stream;
   string_stream << "digraph g {\n";
@@ -105,11 +111,13 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
             }
             auto bs = node->GetBitset();
             string_stream << node_id << " [label=\"<f0>"
-                          << bs.SubsplitChunk(0).ToIndexSetString() << "|<f1>";
+                          << bs.SubsplitGetClade(0).ToVectorOfSetBitsAsString()
+                          << "|<f1>";
             if (show_index_labels) {
               string_stream << node_id;
             }
-            string_stream << "|<f2>" << bs.SubsplitChunk(1).ToIndexSetString()
+            string_stream << "|<f2>"
+                          << bs.SubsplitGetClade(1).ToVectorOfSetBitsAsString()
                           << "\"]\n";
           },
           // AfterNode
@@ -156,8 +164,7 @@ BitsetSizeMap SubsplitDAG::BuildGPCSPIndexer() const {
                                                         size_t gpcsp_idx) {
     const auto parent_subsplit = GetDAGNode(parent_id)->GetBitset(rotated);
     const auto child_subsplit = GetDAGNode(child_id)->GetBitset();
-    SafeInsert(gpcsp_indexer, Bitset::PCSPOfPair(parent_subsplit, child_subsplit),
-               gpcsp_idx);
+    SafeInsert(gpcsp_indexer, Bitset::PCSP(parent_subsplit, child_subsplit), gpcsp_idx);
   });
   return gpcsp_indexer;
 }
@@ -192,7 +199,7 @@ size_t SubsplitDAG::GPCSPIndexOfIds(size_t parent_id, size_t child_id) const {
 SizePair SubsplitDAG::GetEdgeRange(const Bitset &subsplit, const bool rotated) const {
   Assert(ContainsNode(subsplit),
          "Node with the given subsplit does not exist in SubsplitDAG::GetEdgeRange.");
-  return parent_to_range_.at(PerhapsRotateSubsplit(subsplit, rotated));
+  return parent_to_range_.at(PerhapsSubsplitRotate(subsplit, rotated));
 }
 
 EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
@@ -284,9 +291,10 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   for (const auto &[parent_child_id, gpcsp_idx] : dag_edges_) {
     const auto &[parent_id, child_id] = parent_child_id;
     size_t child0_taxon_count =
-        GetDAGNode(child_id)->GetBitset().SubsplitGetChild(0).Count();
+        GetDAGNode(child_id)->GetBitset().SubsplitGetCladeByBinaryOrder(0).Count();
     size_t child1_taxon_count =
-        GetDAGNode(child_id)->GetBitset().SubsplitGetChild(1).Count();
+        GetDAGNode(child_id)->GetBitset().SubsplitGetCladeByBinaryOrder(1).Count();
+    //
     result(gpcsp_idx) = Combinatorics::LogChildSubsplitCountRatio(child0_taxon_count,
                                                                   child1_taxon_count);
   }
@@ -341,6 +349,14 @@ void SubsplitDAG::IterateOverRootwardEdgesAndParents(const SubsplitDAGNode *node
   IterateOverRootwardEdges(
       node, [this, &node, &f](bool rotated, const SubsplitDAGNode *parent) {
         f(GPCSPIndexOfIds(parent->Id(), node->Id()), rotated, parent->Id());
+      });
+}
+
+void SubsplitDAG::IterateOverParentAndChildAndLeafwardEdges(
+    const SubsplitDAGNode *node, const ParentRotationChildEdgeLambda &f) const {
+  IterateOverLeafwardEdges(
+      node, [this, &node, &f](bool rotated, const SubsplitDAGNode *child) {
+        f(node->Id(), rotated, child->Id(), GPCSPIndexOfIds(node->Id(), child->Id()));
       });
 }
 
@@ -419,7 +435,7 @@ std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const SizeBitsetMap &index_to
     }
   } else if (include_fake_subsplits) {
     // This method is designed to be called before calling
-    // AddFakeSubsplitsToDAGEdgesAndParentToRange. In that case, if the second chunk
+    // AddFakeSubsplitsToDAGEdgesAndParentToRange. In that case, if the second clade
     // of the subsplit is just a single taxon, the subsplit will not map to any value in
     // parent_to_range_.
     //
@@ -486,7 +502,7 @@ void SubsplitDAG::BuildNodesDepthFirst(const SizeBitsetMap &index_to_child,
   visited_subsplits.insert(subsplit);
   for (bool rotated : {false, true}) {
     for (const auto &child_subsplit : GetChildSubsplits(
-             index_to_child, PerhapsRotateSubsplit(subsplit, rotated), false)) {
+             index_to_child, PerhapsSubsplitRotate(subsplit, rotated), false)) {
       if (visited_subsplits.count(child_subsplit) == 0) {
         BuildNodesDepthFirst(index_to_child, child_subsplit, visited_subsplits);
       }
@@ -528,8 +544,8 @@ void SubsplitDAG::BuildDAGEdgesFromGPCSPIndexer(BitsetSizeMap &gpcsp_indexer) {
   for (const auto &[gpcsp, index] : gpcsp_indexer) {
     Assert(gpcsp.size() == 3 * taxon_count_,
            "All edges should be bitsets with size 3 times taxon_count_.");
-    const auto parent_id = GetDAGNodeId(gpcsp.PCSPParentSubsplit());
-    const auto child_id = GetDAGNodeId(gpcsp.PCSPChildSubsplit());
+    const auto parent_id = GetDAGNodeId(gpcsp.PCSPGetParentSubsplit());
+    const auto child_id = GetDAGNodeId(gpcsp.PCSPGetChildSubsplit());
     SafeInsert(dag_edges_, {parent_id, child_id}, index);
   }
 }
@@ -622,8 +638,8 @@ void SubsplitDAG::ReversePostorderIndexTraversal(
   }
 }
 
-Bitset SubsplitDAG::PerhapsRotateSubsplit(const Bitset &subsplit, bool rotated) const {
-  return rotated ? subsplit.RotateSubsplit() : subsplit;
+Bitset SubsplitDAG::PerhapsSubsplitRotate(const Bitset &subsplit, bool rotated) const {
+  return rotated ? subsplit.SubsplitRotate() : subsplit;
 }
 
 bool SubsplitDAG::ContainsNode(const Bitset &subsplit) const {
@@ -689,7 +705,7 @@ void SubsplitDAG::ConnectChildToAllChildren(const Bitset &child_subsplit,
   for (const auto &[children_of_child, rotated] :
        std::vector<std::pair<SizeVector, bool>>{{rotated_children_of_child, true},
                                                 {sorted_children_of_child, false}}) {
-    SafeInsert(parent_to_range_, PerhapsRotateSubsplit(child_subsplit, rotated),
+    SafeInsert(parent_to_range_, PerhapsSubsplitRotate(child_subsplit, rotated),
                {GPCSPCountWithFakeSubsplits(),
                 GPCSPCountWithFakeSubsplits() + children_of_child.size()});
     for (const size_t child_of_child_id : children_of_child) {
@@ -707,7 +723,7 @@ void SubsplitDAG::ConnectParentToAllChildrenExcept(const Bitset &parent_subsplit
   for (const auto &[children_of_parent, rotated] :
        std::vector<std::pair<SizeVector, bool>>{{rotated_children_of_parent, true},
                                                 {sorted_children_of_parent, false}}) {
-    SafeInsert(parent_to_range_, PerhapsRotateSubsplit(parent_subsplit, rotated),
+    SafeInsert(parent_to_range_, PerhapsSubsplitRotate(parent_subsplit, rotated),
                {GPCSPCountWithFakeSubsplits(),
                 GPCSPCountWithFakeSubsplits() + children_of_parent.size()});
     for (const size_t child_of_parent_id : children_of_parent) {

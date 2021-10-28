@@ -222,10 +222,8 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
         [this, &branch_lengths, &gpcsp_indexed_branch_lengths](
             const Node *sister, const Node *focal, const Node *child0,
             const Node *child1) {
-          Bitset parent_subsplit =
-              Bitset::SubsplitOfPair(sister->Leaves(), focal->Leaves());
-          Bitset child_subsplit =
-              Bitset::SubsplitOfPair(child0->Leaves(), child1->Leaves());
+          Bitset parent_subsplit = Bitset::Subsplit(sister->Leaves(), focal->Leaves());
+          Bitset child_subsplit = Bitset::Subsplit(child0->Leaves(), child1->Leaves());
           size_t gpcsp_idx = dag_.GetGPCSPIndex(parent_subsplit, child_subsplit);
           branch_lengths[focal->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
 

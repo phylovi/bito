@@ -12,6 +12,7 @@
 #include "phylo_model.hpp"
 #include "reindexer.hpp"
 #include "rooted_sbn_instance.hpp"
+#include "stopwatch.hpp"
 #include "tidy_subsplit_dag.hpp"
 
 using namespace GPOperations;  // NOLINT
@@ -615,19 +616,26 @@ TEST_CASE("GPInstance: IsValidNewNodePair tests") {
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
   auto& dag = inst.GetDAG();
   // Nodes are not adjacent (12|34 and 2|4).
-  CHECK(!dag.IsValidNewNodePair(Bitset("0110000011"), Bitset("0010000001")));
+  CHECK(!dag.IsValidNewNodePair(Bitset::Subsplit("01100", "00011"),
+                                Bitset::Subsplit("00100", "00001")));
   // Nodes have 5 taxa while the DAG has 4 (12|34 and 1|2).
-  CHECK(!dag.IsValidNewNodePair(Bitset("011000000110"), Bitset("010000001000")));
+  CHECK(!dag.IsValidNewNodePair(Bitset::Subsplit("011000", "000110"),
+                                Bitset::Subsplit("010000", "001000")));
   // Parent node does not have a parent (12|3 and 1|2).
-  CHECK(!dag.IsValidNewNodePair(Bitset("0110000010"), Bitset("0100000100")));
+  CHECK(!dag.IsValidNewNodePair(Bitset::Subsplit("01100", "00010"),
+                                Bitset::Subsplit("01000", "00100")));
   // Rotated clade of the parent node does not have a child (02|134 and 1|34).
-  CHECK(!dag.IsValidNewNodePair(Bitset("1010001011"), Bitset("0100000011")));
+  CHECK(!dag.IsValidNewNodePair(Bitset::Subsplit("10100", "01011"),
+                                Bitset::Subsplit("01000", "00011")));
   // Rotated clade of the child node does not have a child (0123|4 and 023|1).
-  CHECK(!dag.IsValidNewNodePair(Bitset("1111000001"), Bitset("1011001000")));
+  CHECK(!dag.IsValidNewNodePair(Bitset::Subsplit("11110", "00001"),
+                                Bitset::Subsplit("10110", "01000")));
   // Sorted clade of the child node does not have a child (0123|4 and 0|123).
-  CHECK(!dag.IsValidNewNodePair(Bitset("1111000001"), Bitset("1000001110")));
+  CHECK(!dag.IsValidNewNodePair(Bitset::Subsplit("11110", "00001"),
+                                Bitset::Subsplit("10000", "01110")));
   // Valid new node pair (0123|4 and 012|3).
-  CHECK(dag.IsValidNewNodePair(Bitset("1111000001"), Bitset("1110000010")));
+  CHECK(dag.IsValidNewNodePair(Bitset::Subsplit("11110", "00001"),
+                               Bitset::Subsplit("11100", "00010")));
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908708284.
@@ -636,12 +644,13 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
   auto& dag = inst.GetDAG();
   // Check that AddNodePair throws if node pair is invalid (12|34 and 2|4).
-  CHECK_THROWS(dag.AddNodePair(Bitset("0110000011"), Bitset("0010000001")));
+  CHECK_THROWS(dag.AddNodePair(Bitset::Subsplit("01100", "00011"),
+                               Bitset::Subsplit("00100", "00001")));
   // Add 2|34 and 3|4, which are both already in the DAG.
   // Check that AddNodePair returns empty new_node_ids and new_edge_idxs
   // and that node_reindexer and edge_reindexer are the identity reindexers.
-  auto node_addition_result =
-      dag.AddNodePair(Bitset("0010000011"), Bitset("0001000001"));
+  auto node_addition_result = dag.AddNodePair(Bitset::Subsplit("00100", "00011"),
+                                              Bitset::Subsplit("00010", "00001"));
   CHECK(node_addition_result.new_node_ids.empty());
   CHECK(node_addition_result.new_edge_idxs.empty());
   CHECK_EQ(node_addition_result.node_reindexer, Reindexer::IdentityReindexer(16));
@@ -651,8 +660,8 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   size_t prev_edge_count = dag.GPCSPCountWithFakeSubsplits();
   size_t prev_topology_count = dag.TopologyCount();
   // Add nodes 24|3 and 2|4.
-  Bitset parent_subsplit("0010100010");
-  Bitset child_subsplit("0010000001");
+  Bitset parent_subsplit = Bitset::Subsplit("00101", "00010");
+  Bitset child_subsplit = Bitset::Subsplit("00100", "00001");
   node_addition_result = dag.AddNodePair(parent_subsplit, child_subsplit);
   // Check that the node count and edge count was updated.
   CHECK_EQ(dag.NodeCount(), prev_node_count + 2);
@@ -734,11 +743,13 @@ TEST_CASE("GPInstance: Only add parent node tests") {
   size_t prev_node_count = dag.NodeCount();
   size_t prev_edge_count = dag.GPCSPCountWithFakeSubsplits();
   // Add nodes 12|34 and 1|2.
-  dag.AddNodePair(Bitset("0110000011"), Bitset("0100000100"));
+  dag.AddNodePair(Bitset::Subsplit("01100", "00011"),
+                  Bitset::Subsplit("01000", "00100"));
   CHECK_EQ(dag.NodeCount(), prev_node_count + 2);
   CHECK_EQ(dag.GPCSPCountWithFakeSubsplits(), prev_edge_count + 5);
   // Add nodes 0|12 and 1|2 (this should just add 0|12 and associated edges).
-  dag.AddNodePair(Bitset("1000001100"), Bitset("0100000100"));
+  dag.AddNodePair(Bitset::Subsplit("10000", "01100"),
+                  Bitset::Subsplit("01000", "00100"));
   // Check that the node count and edge count was updated.
   CHECK_EQ(dag.NodeCount(), prev_node_count + 3);
   CHECK_EQ(dag.GPCSPCountWithFakeSubsplits(), prev_edge_count + 8);
@@ -756,7 +767,8 @@ TEST_CASE("GPInstance: Only add child node tests") {
   size_t prev_node_count = dag.NodeCount();
   size_t prev_edge_count = dag.GPCSPCountWithFakeSubsplits();
   // Add nodes 1|234 and 24|3 (this should just add 24|3 and associated edges).
-  dag.AddNodePair(Bitset("0100000111"), Bitset("0010100010"));
+  dag.AddNodePair(Bitset::Subsplit("01000", "00111"),
+                  Bitset::Subsplit("00101", "00010"));
   // Check that the node count and edge count was updated.
   CHECK_EQ(dag.NodeCount(), prev_node_count + 1);
   CHECK_EQ(dag.GPCSPCountWithFakeSubsplits(), prev_edge_count + 4);
@@ -765,4 +777,95 @@ TEST_CASE("GPInstance: Only add child node tests") {
   CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), false).second, 11);
   CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11)->GetBitset(), false).first, 3);
   CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11)->GetBitset(), false).second, 5);
+}
+
+TEST_CASE("GPInstance: SubsplitDAG NNI (Nearest Neighbor Interchange)") {
+  // Simple DAG that contains a shared edge, internal leafward fork, and an internal
+  // rootward fork.
+  const std::string fasta_path = "data/six_taxon.fasta";
+  auto inst = GPInstanceOfFiles(fasta_path, "data/six_taxon_rooted_simple.nwk");
+  SubsplitDAG& dag = inst.GetDAG();
+
+  auto set_of_nnis = SetOfNNIs();
+  auto set_of_nnis_2 = SetOfNNIs();
+  auto correct_set_of_nnis = SetOfNNIs();
+
+  // Build NNI Set from current DAG state.
+  SyncSetOfNNIsWithDAG(set_of_nnis, dag);
+
+  // Functions for quick manual insertion/removal for Correct NNI Set.
+  auto InsertNNI = [&correct_set_of_nnis](Bitset parent, Bitset child) {
+    auto nni = NNIOperation(parent, child);
+    correct_set_of_nnis.Insert(nni);
+  };
+  auto RemoveNNI = [&correct_set_of_nnis](Bitset parent, Bitset child) {
+    auto nni = NNIOperation(parent, child);
+    correct_set_of_nnis.Erase(nni);
+  };
+
+  // For images and notes describing this part of the test case, see
+  // https://github.com/phylovi/bito/pull/366#issuecomment-920454401
+  // Add NNIs for edge 4 to NNI Set.
+  InsertNNI(Bitset::Subsplit("010000", "101111"),   //  (parent)-(child)
+            Bitset::Subsplit("100000", "001111"));  // (1|02345)-(0|2345)
+  InsertNNI(Bitset::Subsplit("100000", "011111"),
+            Bitset::Subsplit("010000", "001111"));  // (0|12345)-(1|2345)
+  // Add NNIs for edge 6 to NNI Set.
+  InsertNNI(Bitset::Subsplit("001000", "110111"),
+            Bitset::Subsplit("110000", "000111"));  // (2|01345)-(01|345)
+  InsertNNI(Bitset::Subsplit("000111", "111000"),
+            Bitset::Subsplit("110000", "001000"));  // (345|012)-(01|2)
+  // Add NNIs for edge 7 to NNI Set.
+  InsertNNI(Bitset::Subsplit("000001", "111110"),
+            Bitset::Subsplit("110000", "001110"));  // (5|01234)-(01|234)
+  InsertNNI(Bitset::Subsplit("001110", "110001"),
+            Bitset::Subsplit("110000", "000001"));  // (234|015)-(01|5)
+  // Add NNIs for edge 2 to NNI Set.
+  InsertNNI(Bitset::Subsplit("000110", "001001"),
+            Bitset::Subsplit("001000", "000001"));  // (34|25)-(2|5)
+  // No NNIs to add for edge 5 to NNI Set (see notes).
+  // Add NNIs for edge 3 to NNI Set.
+  InsertNNI(Bitset::Subsplit("000100", "001010"),
+            Bitset::Subsplit("001000", "000010"));  // (3|24)-(2|4)
+  InsertNNI(Bitset::Subsplit("000010", "001100"),
+            Bitset::Subsplit("001000", "000100"));  // (4|23)-(2|3)
+  // Add NNIs for edge 1 to NNI Set.
+  InsertNNI(Bitset::Subsplit("000010", "000101"),
+            Bitset::Subsplit("000100", "000001"));  // (4|35)-(3|5)
+  InsertNNI(Bitset::Subsplit("000100", "000011"),
+            Bitset::Subsplit("000010", "000001"));  // (3|45)-(4|5)
+  // Check that `BuildSetOfNNIs()` added correct set of nnis.
+  CHECK_EQ(set_of_nnis, correct_set_of_nnis);
+
+  // Now we add a node pair to DAG so we can check UpdateSetOfNNIsAfterAddNodePair.
+  // see https://github.com/phylovi/bito/pull/366#issuecomment-922781415
+  auto nni_to_add =
+      std::make_pair(Bitset::Subsplit("000110", "001001"),
+                     Bitset::Subsplit("001000", "000001"));  // (34|25)-(2|5)
+  dag.AddNodePair(nni_to_add.first, nni_to_add.second);
+
+  // Update NNI.
+  UpdateSetOfNNIsAfterDAGAddNodePair(set_of_nnis, dag, nni_to_add.first,
+                                     nni_to_add.second);
+  // Add parents of parent (edge 8) to NNI Set.
+  InsertNNI(Bitset::Subsplit("001001", "110110"),
+            Bitset::Subsplit("110000", "000110"));  // (25|0134)-(01|34)
+  InsertNNI(Bitset::Subsplit("000110", "111001"),
+            Bitset::Subsplit("110000", "001001"));  // (34|0125)-(01|25)
+  // Add children of parent (edge 19) to NNI Set.
+  InsertNNI(Bitset::Subsplit("000100", "001011"),
+            Bitset::Subsplit("001001", "000010"));  // (3|245)-(25|4)
+  InsertNNI(Bitset::Subsplit("000010", "001101"),
+            Bitset::Subsplit("001001", "000100"));  // (4|235)-(25|3)
+  // No parents of child (edge 20) to add to NNI Set (see notes).
+  // These should not be equal, as it has not yet removed the pair just added to DAG.
+  CHECK_NE(set_of_nnis, correct_set_of_nnis);
+  // Remove NNI added to DAG from NNI Set.
+  RemoveNNI(nni_to_add.first, nni_to_add.second);
+  // Check that `UpdateSetOfNNIsAfterAddNodePair()` updated correctly.
+  CHECK_EQ(set_of_nnis, correct_set_of_nnis);
+
+  // Build NNI Set from current DAG state from scratch.
+  SyncSetOfNNIsWithDAG(set_of_nnis_2, dag);
+  CHECK_EQ(set_of_nnis_2, correct_set_of_nnis);
 }

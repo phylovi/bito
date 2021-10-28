@@ -353,7 +353,7 @@ class GenericSBNInstance {
   // The input to this function is a parent subsplit (of length 2n).
   Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const {
     auto process_subsplit = [this](const Bitset &parent) {
-      auto singleton_option = parent.SubsplitChunk(1).SingletonOption();
+      auto singleton_option = parent.SubsplitGetClade(1).SingletonOption();
       if (singleton_option) {
         return Node::Leaf(*singleton_option);
       }  // else
@@ -361,7 +361,7 @@ class GenericSBNInstance {
       return SampleTopology(sbn_support_.IndexToChildAt(child_index));
     };
     return Node::Join(process_subsplit(parent_subsplit),
-                      process_subsplit(parent_subsplit.RotateSubsplit()));
+                      process_subsplit(parent_subsplit.SubsplitRotate()));
   }
 
   // Clear all of the state that depends on the current tree collection.
@@ -384,12 +384,12 @@ class GenericSBNInstance {
     subsplit_ranges.emplace_back(0, sbn_support_.RootsplitCount());
     Bitset root = sbn_support_.RootsplitsAt(rooted_representation[0]);
     PushBackRangeForParentIfAvailable(root, subsplit_ranges);
-    PushBackRangeForParentIfAvailable(root.RotateSubsplit(), subsplit_ranges);
+    PushBackRangeForParentIfAvailable(root.SubsplitRotate(), subsplit_ranges);
     // Starting at 1 here because we took care of the rootsplit above (the 0th element).
     for (size_t i = 1; i < rooted_representation.size(); i++) {
       Bitset child = sbn_support_.IndexToChildAt(rooted_representation[i]);
       PushBackRangeForParentIfAvailable(child, subsplit_ranges);
-      PushBackRangeForParentIfAvailable(child.RotateSubsplit(), subsplit_ranges);
+      PushBackRangeForParentIfAvailable(child.SubsplitRotate(), subsplit_ranges);
     }
     return subsplit_ranges;
   }

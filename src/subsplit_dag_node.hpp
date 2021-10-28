@@ -28,7 +28,7 @@ class SubsplitDAGNode {
   size_t Id() const { return id_; }
   const Bitset &GetBitset() const { return subsplit_; }
   const Bitset GetBitset(bool rotated) const {
-    return rotated ? subsplit_.RotateSubsplit() : subsplit_;
+    return rotated ? subsplit_.SubsplitRotate() : subsplit_;
   }
   bool IsDAGRootNode() const {
     return (rootward_sorted_.empty() && rootward_rotated_.empty());
@@ -40,6 +40,10 @@ class SubsplitDAGNode {
   void AddLeafwardSorted(size_t node_id) { leafward_sorted_.push_back(node_id); }
   void AddRootwardRotated(size_t node_id) { rootward_rotated_.push_back(node_id); }
   void AddRootwardSorted(size_t node_id) { rootward_sorted_.push_back(node_id); }
+  // #350 use enumerated types for rotated?
+  const SizeVector &GetLeafwardOrRootward(bool leafward, bool rotated) const {
+    return leafward ? GetLeafward(rotated) : GetRootward(rotated);
+  };
   const SizeVector &GetLeafwardRotated() const { return leafward_rotated_; }
   const SizeVector &GetLeafwardSorted() const { return leafward_sorted_; }
   const SizeVector &GetLeafward(bool rotated) const {
