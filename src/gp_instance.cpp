@@ -314,7 +314,7 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(int steps) {
   const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
 
   size_t gpcsp_count = optimized_branch_lengths.size();
-  const EigenVectorXd scaling_vector = EigenVectorXd::LinSpaced(steps, 0.01, 5.0);
+  const EigenVectorXd scaling_vector = EigenVectorXd::LinSpaced(steps, 0.01, 10.0);
   per_pcsp_lik_surfaces_ = EigenMatrixXd(gpcsp_count * steps, 2);
 
   for (int gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
@@ -335,6 +335,63 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(int steps) {
           GetEngine()->GetPerGPCSPLogLikelihoods(gpcsp_idx, 1)(0, 0);
     }
   }
+}
+
+StringEigenVectorXdVector GPInstance::TrackValuesFromOptimization() {
+  // We assume this is run after a proper branch length optimization
+  const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
+  const EigenVectorXd optimized_per_pcsp_llhs =
+      GetEngine()->GetPerGPCSPLogLikelihoods();
+
+  size_t gpcsp_count = optimized_branch_lengths.size();
+  EigenVectorXi run_counts = EigenVectorXi::Zero(gpcsp_count);
+  EigenMatrixXd tracked_optimization_values(1, 2);
+
+  const auto pretty_indexer = PrettyIndexer();
+  StringVector pretty_index_vector;
+  GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
+
+  for (int gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
+    double optimized_llh = optimized_per_pcsp_llhs[gpcsp_idx];
+    double current_branch_length = 0.1;
+
+    while (true) {
+      run_counts[gpcsp_idx]++;
+
+      EigenVectorXd new_branch_length_vector = optimized_branch_lengths;
+      new_branch_length_vector[gpcsp_idx] = current_branch_length;
+      GetEngine()->SetBranchLengths(new_branch_length_vector);
+
+      PopulatePLVs();
+      ComputeLikelihoods();
+
+      double current_llh = GetEngine()->GetPerGPCSPLogLikelihoods(gpcsp_idx, 1)(0, 0);
+
+      tracked_optimization_values.row(tracked_optimization_values.rows() - 1)
+          << current_branch_length,
+          current_llh;
+      tracked_optimization_values.conservativeResize(
+          tracked_optimization_values.rows() + 1, Eigen::NoChange);
+
+      if (fabs(current_llh - optimized_llh) < 1e-5 | run_counts[gpcsp_idx] > 4) {
+        break;
+      } else {
+        ProcessOperations(branch_optimization_operations);
+        current_branch_length = GetEngine()->GetBranchLengths()[gpcsp_idx];
+      }
+    }
+    pretty_index_vector.insert(pretty_index_vector.end(), run_counts[gpcsp_idx],
+                               pretty_indexer.at(gpcsp_idx));
+  }
+
+  tracked_optimization_values.conservativeResize(tracked_optimization_values.rows() - 1,
+                                                 Eigen::NoChange);
+  StringEigenVectorXdVector result;
+  result.reserve(tracked_optimization_values.rows());
+  for (size_t i = 0; i < tracked_optimization_values.rows(); i++) {
+    result.push_back({pretty_index_vector.at(i), tracked_optimization_values.row(i)});
+  }
+  return result;
 }
 
 StringVector GPInstance::PrettyIndexer() const {
@@ -362,7 +419,8 @@ StringEigenVectorXdVector GPInstance::PrettyIndexedMatrix(EigenConstMatrixXdRef 
   StringEigenVectorXdVector result;
   result.reserve(m.rows());
   const auto pretty_indexer = PrettyIndexer();
-  // Assert(m.rows() <= pretty_indexer.size(), "m is too long in PrettyIndexedMatrix");
+  // Assert(m.rows() <= pretty_indexer.size(), "m is too long in
+  // PrettyIndexedMatrix");
   for (size_t i = 0; i < m.rows(); i++) {
     int idx = i % pretty_indexer.size();
     result.push_back({pretty_indexer.at(idx), m.row(i)});
@@ -465,6 +523,10 @@ void GPInstance::PerGPCSPLogLikelihoodSurfacesToCSV(const std::string &file_path
     Failwith("Failure writing to " + file_path);
   }
   out_stream.close();
+}
+
+void GPInstance::TrackValuesFromOptimizationToCSV(const std::string &file_path) {
+  return PerPCSPIndexedMatrixToCSV(TrackValuesFromOptimization(), file_path);
 }
 
 RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {
