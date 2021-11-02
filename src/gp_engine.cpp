@@ -383,7 +383,7 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
             branch_lengths_(gpcsp_idx) += tree.BranchLength(focal_node);
             gpcsp_counts(gpcsp_idx)++;
           }
-        });
+        }, true);
   }
   for (Eigen::Index gpcsp_idx = 0; gpcsp_idx < gpcsp_counts.size(); ++gpcsp_idx) {
     if (gpcsp_counts(gpcsp_idx) == 0) {

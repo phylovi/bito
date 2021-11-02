@@ -298,7 +298,7 @@ PCSPCounter RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies
             const Node* child1_node) {
           AddToPCSPCounter(pcsp_dict, topology_count, leaf_count, sister_node, false,
                            focal_node, false, child0_node, false, child1_node, false);
-        });
+        }, false);
   }
   return pcsp_dict;
 }
@@ -319,7 +319,7 @@ SizeVector RootedSBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
         SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
                               child0_node, false, child1_node, false);
     result.push_back(AtWithDefault(indexer, pcsp_bitset, default_index));
-  });
+  }, false);
   return result;
 }
 

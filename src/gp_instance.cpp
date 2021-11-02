@@ -250,7 +250,7 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
             gpcsp_idx = GetGPCSPIndexForLeafNode(child_subsplit, child1);
             branch_lengths[child1->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
           }
-        });
+        }, false);
 
     tree_vector.emplace_back(root_node, std::move(branch_lengths));
   }

@@ -125,7 +125,7 @@ class Node {
   // See the typedef of UnrootedPCSPFun and RootedPCSPFun to understand the argument
   // type to these functions.
   void UnrootedPCSPPreorder(UnrootedPCSPFun f) const;
-  void RootedPCSPPreorder(RootedPCSPFun f) const;
+  void RootedPCSPPreorder(RootedPCSPFun f, bool allow_leaves) const;
   // Iterate over (leaf sister, leaf) pairs in order. Rooted because that's the only
   // case in which we are guaranteed to have a well defined set of such pairs.
   void RootedSisterAndLeafTraversal(TwoNodeFun f) const;
