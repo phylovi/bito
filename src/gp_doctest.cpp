@@ -288,7 +288,7 @@ TEST_CASE("GPInstance: hotstart branch lengths") {
       0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
   double true_mean_internal = hotstart_expected_branch_lengths_internal.array().mean();
   inst.HotStartBranchLengths();
-  CHECK_EQ(true_mean_internal, inst.GetEngine()->GetBranchLengths()(2));
+  CHECK_LT(true_mean_internal - inst.GetEngine()->GetBranchLengths()(2), 1e-8);
 
   // We also want to verify correct assignment for a pendant branch length. Specifically,
   // we are looking at the pendant branch length for z2 with sister z3. So the desired GPCSP is
@@ -304,7 +304,7 @@ TEST_CASE("GPInstance: hotstart branch lengths") {
       0.0894660000, 0.0904620000, 0.0893220000, 0.0902220000, 0.0902000000;
 
   double true_mean_pendant = hotstart_expected_branch_lengths_pendant.array().mean();
-  CHECK_EQ(true_mean_pendant, inst.GetEngine()->GetBranchLengths()(8));
+  CHECK_LT(true_mean_pendant - inst.GetEngine()->GetBranchLengths()(8), 1e-8);
 }
 
 TEST_CASE("GPInstance: generate all trees") {

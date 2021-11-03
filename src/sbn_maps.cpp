@@ -67,15 +67,21 @@ Bitset SBNMaps::PCSPBitsetOf(const size_t leaf_count,  //
   Bitset bitset(3 * leaf_count, false);
   bitset.CopyFrom(sister_node->Leaves(), 0, sister_direction);
   bitset.CopyFrom(focal_node->Leaves(), leaf_count, focal_direction);
-  auto child0_bitset = child0_node->Leaves();
-  if (child0_direction) {
-    child0_bitset.flip();
+  if (child0_node == nullptr || child1_node == nullptr) {
+    Bitset null(leaf_count);
+    bitset.CopyFrom(null, 2 * leaf_count, false);
+  } 
+  else {
+    auto child0_bitset = child0_node->Leaves();
+    if (child0_direction) {
+      child0_bitset.flip();
+    }
+    auto child1_bitset = child1_node->Leaves();
+    if (child1_direction) {
+      child1_bitset.flip();
+    }
+    bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count, false);
   }
-  auto child1_bitset = child1_node->Leaves();
-  if (child1_direction) {
-    child1_bitset.flip();
-  }
-  bitset.CopyFrom(std::min(child0_bitset, child1_bitset), 2 * leaf_count, false);
   return bitset;
 }
 
@@ -298,7 +304,8 @@ PCSPCounter RootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologies
             const Node* child1_node) {
           AddToPCSPCounter(pcsp_dict, topology_count, leaf_count, sister_node, false,
                            focal_node, false, child0_node, false, child1_node, false);
-        }, false);
+        },
+        false);
   }
   return pcsp_dict;
 }
@@ -312,14 +319,16 @@ SizeVector RootedSBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
   const Bitset rootsplit_pcsp = Bitset::PCSPOfRootsplit(Rootsplit(topology.get()));
   result.push_back(AtWithDefault(indexer, rootsplit_pcsp, default_index));
   // Now add the PCSPs.
-  topology->RootedPCSPPreorder([&leaf_count, &indexer, &default_index, &result](
-                                   const Node* sister_node, const Node* focal_node,
-                                   const Node* child0_node, const Node* child1_node) {
-    Bitset pcsp_bitset =
-        SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
-                              child0_node, false, child1_node, false);
-    result.push_back(AtWithDefault(indexer, pcsp_bitset, default_index));
-  }, false);
+  topology->RootedPCSPPreorder(
+      [&leaf_count, &indexer, &default_index, &result](
+          const Node* sister_node, const Node* focal_node, const Node* child0_node,
+          const Node* child1_node) {
+        Bitset pcsp_bitset =
+            SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                                  child0_node, false, child1_node, false);
+        result.push_back(AtWithDefault(indexer, pcsp_bitset, default_index));
+      },
+      false);
   return result;
 }
 
