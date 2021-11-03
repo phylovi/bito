@@ -66,6 +66,7 @@ add_library(bito-core SHARED
 	src/site_pattern.cpp
 	src/stick_breaking_transform.cpp
 	src/subsplit_dag.cpp
+	src/subsplit_dag_nni.cpp
 	src/subsplit_dag_node.cpp
 	src/substitution_model.cpp
 	src/taxon_name_munging.cpp
@@ -86,7 +87,7 @@ target_link_directories(bito-core PUBLIC
 add_dependencies(bito-core beagle-lib)
 
 add_library(bito SHARED
-	src/pylibsbn.cpp
+	src/pybito.cpp
 )
 target_compile_options(bito PUBLIC -std=c++17)
 target_include_directories(bito PUBLIC
