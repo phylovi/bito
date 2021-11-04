@@ -22,7 +22,7 @@ Engine::Engine(const EngineSpecification &engine_specification,
                             std::bit_or<FatBeagle::PackedBeagleFlags>());
   if (beagle_preference_flags & BEAGLE_FLAG_PRECISION_SINGLE
       && beagle_preference_flags & BEAGLE_FLAG_VECTOR_SSE) {
-    Failwith("Single precision not available with vector SSE");
+    Failwith("Single precision not available with SSE vectorization in BEAGLE.");
   }
   for (size_t i = 0; i < engine_specification.thread_count_; i++) {
     fat_beagles_.push_back(std::make_unique<FatBeagle>(
