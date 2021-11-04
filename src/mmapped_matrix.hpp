@@ -104,4 +104,3 @@ TEST_CASE("MmappedMatrix") {
   CHECK_EQ(mmapped_matrix.Get()(rows - 1, cols - 1), 5.);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

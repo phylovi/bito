@@ -47,4 +47,3 @@ class UnrootedSBNSupport : public SBNSupport {
     return UnrootedSBNMaps::PCSPCounterOf(topologies);
   }
 };
-

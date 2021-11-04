@@ -38,4 +38,3 @@ class PhyloModel : public BlockModel {
   std::unique_ptr<SiteModel> site_model_;
   std::unique_ptr<ClockModel> clock_model_;
 };
-

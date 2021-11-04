@@ -221,4 +221,3 @@ TEST_CASE("GPEngine") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

@@ -55,4 +55,3 @@ TEST_CASE("MmappedNucleotidePLV") {
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

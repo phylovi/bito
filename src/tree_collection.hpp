@@ -30,4 +30,3 @@ TEST_CASE("TreeCollection") {
   CHECK_EQ(collection.TreeCount(), 0);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

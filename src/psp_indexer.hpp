@@ -69,4 +69,3 @@ class PSPIndexer {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("PSPIndexer") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

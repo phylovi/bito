@@ -44,4 +44,3 @@ class StrictClockModel : public ClockModel {
  private:
   double rate_;
 };
-

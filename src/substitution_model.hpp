@@ -167,4 +167,3 @@ TEST_CASE("SubstitutionModel") {
   CHECK(gtr_model->GetQMatrix().isApprox(hky_model->GetQMatrix()));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

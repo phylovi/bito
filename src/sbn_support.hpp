@@ -75,4 +75,3 @@ class SBNSupport {
   // convention.
   BitsetSizePairMap parent_to_range_;
 };
-

@@ -132,4 +132,3 @@ std::unordered_map<Key, T> UnorderedMapOf(const std::vector<std::pair<Key, T>> &
   }
   return m;
 }
-

@@ -9,4 +9,3 @@
 const size_t out_of_sample_index = 99999999;
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

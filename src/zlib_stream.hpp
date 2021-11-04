@@ -115,4 +115,3 @@ class ZStringBuf : public std::stringbuf {
 };
 
 }  // namespace zlib
-

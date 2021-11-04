@@ -91,4 +91,3 @@ TEST_CASE(
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

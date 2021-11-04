@@ -37,4 +37,3 @@ TEST_CASE("intpack") {
   CHECK_LT(PackInts(0, 4), PackInts(1, 0));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

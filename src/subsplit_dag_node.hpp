@@ -72,4 +72,3 @@ class SubsplitDAGNode {
   SizeVector rootward_rotated_;
   SizeVector rootward_sorted_;
 };
-

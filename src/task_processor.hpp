@@ -163,4 +163,3 @@ TEST_CASE("TaskProcessor") {
   CHECK_EQ(results, correct_results);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

@@ -16,4 +16,3 @@ struct PhyloGradient {
   double log_likelihood_;
   GradientMap gradient_;
 };
-

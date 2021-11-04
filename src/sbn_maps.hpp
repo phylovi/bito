@@ -179,4 +179,3 @@ TEST_CASE("SBNMaps") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

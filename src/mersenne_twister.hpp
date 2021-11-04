@@ -14,4 +14,3 @@ class MersenneTwister {
   static std::random_device random_device_;
   static std::mt19937 random_generator_;
 };
-

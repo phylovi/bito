@@ -74,4 +74,3 @@ TEST_CASE("DefaultDict") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

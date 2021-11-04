@@ -23,4 +23,3 @@ TEST_CASE("CSV I/O") {
   CHECK_EQ(result, correct_result);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

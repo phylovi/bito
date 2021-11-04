@@ -599,4 +599,3 @@ TEST_CASE("UnrootedSBNInstance: gradient of log q_{phi}(tau) WRT phi") {
   CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-8);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

@@ -255,4 +255,3 @@ struct GPOperationOstream {
 
 std::ostream& operator<<(std::ostream& os, GPOperation const& operation);
 std::ostream& operator<<(std::ostream& os, GPOperationVector const& operation_vector);
-

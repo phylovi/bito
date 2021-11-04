@@ -77,4 +77,3 @@ class GPDAG : public TidySubsplitDAG {
                                       bool rotated,
                                       GPOperationVector &operations) const;
 };
-

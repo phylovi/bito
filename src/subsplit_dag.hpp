@@ -326,4 +326,3 @@ class SubsplitDAG {
   void ConnectParentToAllParents(const Bitset &parent_subsplit,
                                  SizeVector &new_edge_idxs);
 };
-

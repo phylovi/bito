@@ -221,4 +221,3 @@ TEST_CASE("TidySubsplitDAG: slicing") {
   // #321 Add test for Tidy traversal.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

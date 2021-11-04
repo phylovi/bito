@@ -60,4 +60,3 @@ TEST_CASE("SitePattern") {
   CHECK_EQ(symbol_vector, correct_symbol_vector);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

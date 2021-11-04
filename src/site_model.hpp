@@ -106,4 +106,3 @@ TEST_CASE("SiteModel") {
   CHECK_LT(fabs(rates2.dot(proportions) - 1.), 0.0001);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

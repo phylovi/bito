@@ -146,4 +146,3 @@ TEST_CASE("NNIOperation") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

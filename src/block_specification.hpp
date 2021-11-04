@@ -97,4 +97,3 @@ TEST_CASE("BlockSpecification") {
   CHECK_EQ(spec.GetMap(), correct_appended_map);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

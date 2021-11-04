@@ -51,4 +51,3 @@ class Engine {
 
   const FatBeagle *const GetFirstFatBeagle() const;
 };
-

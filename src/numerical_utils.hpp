@@ -111,4 +111,3 @@ TEST_CASE("NumericalUtils") {
            "The following floating point problems have been encountered: FE_DIVBYZERO");
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

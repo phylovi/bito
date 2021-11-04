@@ -19,4 +19,3 @@ class UnrootedTreeCollection : public PreUnrootedTreeCollection {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("UnrootedTreeCollection") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

@@ -47,4 +47,3 @@ TEST_CASE("TaxonNameMunging") {
   // Test of TagDateMapOfTagTaxonMap appears in rooted_sbn_instance.hpp.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

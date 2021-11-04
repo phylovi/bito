@@ -37,4 +37,3 @@ class BlockModel {
 
 //  This is a virtual class so there are no unit tests. See
 //  substitution_model.hpp.
-

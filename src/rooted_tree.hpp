@@ -157,4 +157,3 @@ TEST_CASE("RootedTree") {
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

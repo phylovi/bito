@@ -94,4 +94,3 @@ class GPInstance {
       Node::NodePtrVec &&topologies) const;
   StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
 };
-

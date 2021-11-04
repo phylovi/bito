@@ -217,4 +217,3 @@ TEST_CASE("ReassignAndShift") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

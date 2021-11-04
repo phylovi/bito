@@ -46,4 +46,3 @@ class RootedSBNSupport : public SBNSupport {
     return RootedSBNMaps::PCSPCounterOf(topologies);
   }
 };
-

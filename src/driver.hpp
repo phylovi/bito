@@ -132,4 +132,3 @@ TEST_CASE("Driver") {
   CHECK_EQ(beast_nexus, beast_nexus_gz);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

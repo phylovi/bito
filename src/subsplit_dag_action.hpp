@@ -45,4 +45,3 @@ auto TidySubsplitDAGTraversalAction(Args&&... args) {
   };
   return Impl{std::forward<Args>(args)...};
 }
-

@@ -214,4 +214,3 @@ EigenVectorXd ExpectedEMVectorAlpha05() {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

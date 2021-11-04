@@ -432,4 +432,3 @@ class GenericSBNInstance {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

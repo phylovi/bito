@@ -64,4 +64,3 @@ TEST_CASE("BreakingStickTransform") {
         doctest::Approx(log_abs_det_jacobian_expected).epsilon(1.e-5));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

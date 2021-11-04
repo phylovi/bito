@@ -50,4 +50,3 @@ TEST_CASE("UnrootedTree") {
                   std::runtime_error&);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

@@ -41,4 +41,3 @@ struct QuartetHybridRequest {
 std::ostream& operator<<(std::ostream& os, QuartetTip const& plv_pcsp);
 std::ostream& operator<<(std::ostream& os, QuartetTipVector const& plv_pcsp_vector);
 std::ostream& operator<<(std::ostream& os, QuartetHybridRequest const& request);
-

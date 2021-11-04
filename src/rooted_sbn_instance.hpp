@@ -462,4 +462,3 @@ TEST_CASE("RootedSBNInstance: SBN parameter round trip") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

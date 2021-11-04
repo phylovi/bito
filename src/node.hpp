@@ -318,4 +318,3 @@ TEST_CASE("Node") {
   CHECK_EQ(correct_sisters, sisters);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-

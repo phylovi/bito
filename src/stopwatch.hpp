@@ -271,4 +271,3 @@ TEST_CASE("Stopwatch") {
 };
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
