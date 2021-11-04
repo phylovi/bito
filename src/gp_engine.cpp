@@ -843,6 +843,7 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   }
 }
 
+<<<<<<< HEAD
 SizeDoubleVectorMap GPEngine::GatherBranchLengths(
     const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
   SizeDoubleVectorMap gpcsp_branchlengths_map;
