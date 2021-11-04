@@ -79,6 +79,9 @@ class GPEngine {
   // Use branch lengths from loaded sample as a starting point for optimization.
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                              const BitsetSizeMap& indexer);
+  // Gather branch lengths from loaded sample with their corresponding pcsp.
+  std::vector<std::pair<size_t, double>> GatherBranchLengths(const RootedTreeCollection& tree_collection,
+                                         const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
@@ -175,6 +178,10 @@ class GPEngine {
 
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+
+  void FunctionOverRootedTreeCollection(
+      std::function<void(size_t, const RootedTree&, const Node*)> function_on_tree_node_by_gpcsp,
+      const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer);
 
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
                                                                size_t src2_idx) {

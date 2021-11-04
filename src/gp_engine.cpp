@@ -364,34 +364,60 @@ void GPEngine::GradientAscentOptimization(
 
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                                      const BitsetSizeMap& indexer) {
-  const auto leaf_count = tree_collection.TaxonCount();
-  const size_t default_index = branch_lengths_.size();
   branch_lengths_.setZero();
-  Eigen::VectorXi gpcsp_counts = Eigen::VectorXi::Zero(branch_lengths_.size());
+  EigenVectorXi gpcsp_counts = EigenVectorXi::Zero(branch_lengths_.size());
   // Set the branch length vector to be the total of the branch lengths for each PCSP,
   // and count the number of times we have seen each PCSP (into gpcsp_counts).
-  for (const auto& tree : tree_collection.Trees()) {
-    tree.Topology()->RootedPCSPPreorder(
-        [&leaf_count, &default_index, &indexer, &tree, &gpcsp_counts, this](
-            const Node* sister_node, const Node* focal_node, const Node* child0_node,
-            const Node* child1_node) {
-          Bitset gpcsp_bitset =
-              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
-                                    child0_node, false, child1_node, false);
-          const auto gpcsp_idx = AtWithDefault(indexer, gpcsp_bitset, default_index);
-          if (gpcsp_idx != default_index) {
-            branch_lengths_(gpcsp_idx) += tree.BranchLength(focal_node);
-            gpcsp_counts(gpcsp_idx)++;
-          }
-        }, true);
-  }
-  for (Eigen::Index gpcsp_idx = 0; gpcsp_idx < gpcsp_counts.size(); ++gpcsp_idx) {
+  auto tally_branch_lengths_and_gpcsp_count =
+      [&gpcsp_counts, this](size_t gpcsp_idx, const RootedTree& tree,
+                            const Node* focal_node) {
+        branch_lengths_(gpcsp_idx) += tree.BranchLength(focal_node);
+        gpcsp_counts(gpcsp_idx)++;
+      };
+  FunctionOverRootedTreeCollection(tally_branch_lengths_and_gpcsp_count,
+                                   tree_collection, indexer);
+  for (size_t gpcsp_idx = 0; gpcsp_idx < gpcsp_counts.size(); gpcsp_idx++) {
     if (gpcsp_counts(gpcsp_idx) == 0) {
       branch_lengths_(gpcsp_idx) = default_branch_length_;
     } else {
       // Normalize the branch length total using the counts to get a mean branch length.
       branch_lengths_(gpcsp_idx) /= static_cast<double>(gpcsp_counts(gpcsp_idx));
     }
+  }
+}
+
+std::vector<std::pair<size_t, double>> GPEngine::GatherBranchLengths(
+    const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
+  std::vector<std::pair<size_t, double>> branch_lengths;
+  auto gather_branch_lengths = [&branch_lengths, this](size_t gpcsp_idx,
+                                                       const RootedTree& tree,
+                                                       const Node* focal_node) {
+    branch_lengths.push_back({gpcsp_idx, tree.BranchLength(focal_node)});
+  };
+  FunctionOverRootedTreeCollection(gather_branch_lengths, tree_collection, indexer);
+  return branch_lengths;
+}
+
+void GPEngine::FunctionOverRootedTreeCollection(
+    std::function<void(size_t, const RootedTree&, const Node*)>
+        function_on_tree_node_by_gpcsp,
+    const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
+  const auto leaf_count = tree_collection.TaxonCount();
+  const size_t default_index = branch_lengths_.size();
+  for (const auto& tree : tree_collection.Trees()) {
+    tree.Topology()->RootedPCSPPreorder(
+        [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp,
+         this](const Node* sister_node, const Node* focal_node, const Node* child0_node,
+               const Node* child1_node) {
+          Bitset gpcsp_bitset =
+              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                                    child0_node, false, child1_node, false);
+          const auto gpcsp_idx = AtWithDefault(indexer, gpcsp_bitset, default_index);
+          if (gpcsp_idx != default_index) {
+            function_on_tree_node_by_gpcsp(gpcsp_idx, tree, focal_node);
+          }
+        },
+        true);
   }
 }
 
