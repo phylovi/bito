@@ -257,7 +257,7 @@ TEST_CASE("GPInstance: rescaling") {
   CHECK_LT(fabs(difference), 1e-10);
 }
 
-TEST_CASE("GPInstance: hotstart branch lengths") {
+TEST_CASE("GPInstance: gather and hotstart branch lengths") {
   // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
   // 1 (outgroup,(((z0,z1),z2),z3));
   // 33 (outgroup,((z0,z1),(z2,z3)));
@@ -278,33 +278,48 @@ TEST_CASE("GPInstance: hotstart branch lengths") {
 
   // These branch lengths are obtained by excluding (outgroup,(((z0,z1),z2),z3)) (which
   // doesn't have this PCSP) and grabbing the rest of the branch lengths.
-  EigenVectorXd hotstart_expected_branch_lengths_internal(33);
-  hotstart_expected_branch_lengths_internal << 0.1175370000, 0.1175750000, 0.1195780000,
-      0.0918962000, 0.0918931000, 0.1192590000, 0.0906988000, 0.0906972000,
-      0.0905154000, 0.0903663000, 0.1245620000, 0.1244890000, 0.1245050000,
-      0.1245550000, 0.1245680000, 0.1248920000, 0.1248490000, 0.1164070000,
-      0.1164110000, 0.1164120000, 0.1245670000, 0.1245650000, 0.1245670000,
-      0.1245670000, 0.1240790000, 0.1242540000, 0.1242160000, 0.1242560000,
-      0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
-  double true_mean_internal = hotstart_expected_branch_lengths_internal.array().mean();
+  //
+  // We will first test that gather branch lengths is collecting the correct set of
+  // branches, and then we will test whether hot start is accurately calculating the
+  // mean of these branches.
+
+  EigenVectorXd expected_bls_internal(33);
+  expected_bls_internal << 0.1175370000, 0.1175750000, 0.1195780000, 0.0918962000,
+      0.0918931000, 0.1192590000, 0.0906988000, 0.0906972000, 0.0905154000,
+      0.0903663000, 0.1245620000, 0.1244890000, 0.1245050000, 0.1245550000,
+      0.1245680000, 0.1248920000, 0.1248490000, 0.1164070000, 0.1164110000,
+      0.1164120000, 0.1245670000, 0.1245650000, 0.1245670000, 0.1245670000,
+      0.1240790000, 0.1242540000, 0.1242160000, 0.1242560000, 0.1892030000,
+      0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
+
+  SizeDoubleVector branch_lengths_from_sample = inst.GatherBranchLengths();
+  std::vector<double> vect;
+  for (auto pair : branch_lengths_from_sample) {
+    if (pair.first == 2) {
+      vect.push_back(pair.second);
+    }
+  }
+  EigenVectorXd gathered_bls = Eigen::Map<EigenVectorXd>(vect.data(), vect.size());
+  CheckVectorXdEquality(expected_bls_internal, gathered_bls, 1e-6);
+
+  double true_mean_internal = expected_bls_internal.array().mean();
   inst.HotStartBranchLengths();
-  CHECK_LT(true_mean_internal - inst.GetEngine()->GetBranchLengths()(2), 1e-8);
-
-  // We also want to verify correct assignment for a pendant branch length. Specifically,
-  // we are looking at the pendant branch length for z2 with sister z3. So the desired GPCSP is
-  // 0010001000|0000000000. This corresponds to branch length index 8, and is also found by excluding
-  // (outgroup, (((z0,z1),z2),z3)), which does not have this PCSP.
-  EigenVectorXd hotstart_expected_branch_lengths_pendant(33);
-  hotstart_expected_branch_lengths_pendant << 0.0903520000, 0.0903100000, 0.0911710000,
-      0.0906700000, 0.0906680000, 0.0907450000, 0.0884430000, 0.0883790000,
-      0.0909010000, 0.0865700000, 0.0999870000, 0.0999920000, 0.0999680000,
-      0.0999430000, 0.0999610000, 0.0902300000, 0.0902700000, 0.0905340000,
-      0.0908440000, 0.0901110000, 0.0898580000, 0.0898570000, 0.0909610000,
-      0.0898660000, 0.0906510000, 0.0906750000, 0.0906480000, 0.0906100000,
-      0.0894660000, 0.0904620000, 0.0893220000, 0.0902220000, 0.0902000000;
-
-  double true_mean_pendant = hotstart_expected_branch_lengths_pendant.array().mean();
-  CHECK_LT(true_mean_pendant - inst.GetEngine()->GetBranchLengths()(8), 1e-8);
+  CHECK_LT(fabs(true_mean_internal - inst.GetEngine()->GetBranchLengths()(2)), 1e-8);
+  // We also want to verify correct assignment for a pendant branch length.
+  // Specifically, we are looking at the pendant branch length for z2 with sister z3. So
+  // the desired GPCSP is 0010001000|0000000000. This corresponds to branch length index
+  // 8, and is also found by excluding (outgroup, (((z0,z1),z2),z3)), which does not
+  // have this PCSP.
+  EigenVectorXd expected_bls_pendant(33);
+  expected_bls_pendant << 0.0903520000, 0.0903100000, 0.0911710000, 0.0906700000,
+      0.0906680000, 0.0907450000, 0.0884430000, 0.0883790000, 0.0909010000,
+      0.0865700000, 0.0999870000, 0.0999920000, 0.0999680000, 0.0999430000,
+      0.0999610000, 0.0902300000, 0.0902700000, 0.0905340000, 0.0908440000,
+      0.0901110000, 0.0898580000, 0.0898570000, 0.0909610000, 0.0898660000,
+      0.0906510000, 0.0906750000, 0.0906480000, 0.0906100000, 0.0894660000,
+      0.0904620000, 0.0893220000, 0.0902220000, 0.0902000000;
+  double true_mean_pendant = expected_bls_pendant.array().mean();
+  CHECK_LT(fabs(true_mean_pendant - inst.GetEngine()->GetBranchLengths()(8)), 1e-8);
 }
 
 TEST_CASE("GPInstance: generate all trees") {

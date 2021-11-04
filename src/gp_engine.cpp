@@ -386,9 +386,9 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   }
 }
 
-std::vector<std::pair<size_t, double>> GPEngine::GatherBranchLengths(
+SizeDoubleVector GPEngine::GatherBranchLengths(
     const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
-  std::vector<std::pair<size_t, double>> branch_lengths;
+  SizeDoubleVector branch_lengths;
   auto gather_branch_lengths = [&branch_lengths, this](size_t gpcsp_idx,
                                                        const RootedTree& tree,
                                                        const Node* focal_node) {

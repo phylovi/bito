@@ -80,7 +80,7 @@ class GPEngine {
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                              const BitsetSizeMap& indexer);
   // Gather branch lengths from loaded sample with their corresponding pcsp.
-  std::vector<std::pair<size_t, double>> GatherBranchLengths(const RootedTreeCollection& tree_collection,
+  SizeDoubleVector GatherBranchLengths(const RootedTreeCollection& tree_collection,
                                          const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);

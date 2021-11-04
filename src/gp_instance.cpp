@@ -141,6 +141,16 @@ void GPInstance::HotStartBranchLengths() {
   }
 }
 
+SizeDoubleVector GPInstance::GatherBranchLengths() {
+  if (HasEngine()) {
+    SizeDoubleVector branch_lengths_from_sample =
+        GetEngine()->GatherBranchLengths(tree_collection_, dag_.BuildGPCSPIndexer());
+    return branch_lengths_from_sample;
+  } else {
+    Failwith("Please load and process some trees before calling GatherBranchLengths.");
+  }
+}
+
 void GPInstance::PopulatePLVs() { ProcessOperations(dag_.PopulatePLVs()); }
 
 void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }
@@ -250,7 +260,8 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
             gpcsp_idx = GetGPCSPIndexForLeafNode(child_subsplit, child1);
             branch_lengths[child1->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
           }
-        }, false);
+        },
+        false);
 
     tree_vector.emplace_back(root_node, std::move(branch_lengths));
   }
