@@ -29,8 +29,7 @@
 //
 // Equality is in terms of tree topologies. These mutable members don't matter.
 
-#ifndef SRC_NODE_HPP_
-#define SRC_NODE_HPP_
+#pragma once
 
 #include <functional>
 #include <memory>
@@ -319,4 +318,4 @@ TEST_CASE("Node") {
   CHECK_EQ(correct_sisters, sisters);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_NODE_HPP_
+

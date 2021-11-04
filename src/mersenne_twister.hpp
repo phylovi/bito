@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_MERSENNE_TWISTER_HPP_
-#define SRC_MERSENNE_TWISTER_HPP_
+#pragma once
 
 #include <random>
 
@@ -16,4 +15,3 @@ class MersenneTwister {
   static std::mt19937 random_generator_;
 };
 
-#endif  // SRC_MERSENNE_TWISTER_HPP_

@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_DOCTEST_CONSTANTS_HPP_
-#define SRC_DOCTEST_CONSTANTS_HPP_
+#pragma once
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
@@ -10,4 +9,4 @@
 const size_t out_of_sample_index = 99999999;
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_DOCTEST_CONSTANTS_HPP_
+

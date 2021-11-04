@@ -22,8 +22,7 @@
 // n = time difference between this node's height and that of its earliest descendant E
 // d = time difference between the parent's height and that of E.
 
-#ifndef SRC_ROOTED_TREE_HPP_
-#define SRC_ROOTED_TREE_HPP_
+#pragma once
 
 #include "eigen_sugar.hpp"
 #include "tree.hpp"
@@ -158,4 +157,4 @@ TEST_CASE("RootedTree") {
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_ROOTED_TREE_HPP_
+

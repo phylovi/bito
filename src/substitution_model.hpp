@@ -1,8 +1,8 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_SUBSTITUTION_MODEL_HPP_
-#define SRC_SUBSTITUTION_MODEL_HPP_
+#pragma once
+
 #include <Eigen/Dense>
 #include <memory>
 #include <string>
@@ -168,4 +168,3 @@ TEST_CASE("SubstitutionModel") {
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-#endif  // SRC_SUBSTITUTION_MODEL_HPP_

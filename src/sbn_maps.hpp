@@ -4,8 +4,7 @@
 // A collection of functions to handle the subsplit support and to turn trees into
 // indexer representations.
 
-#ifndef SRC_SBN_MAPS_HPP_
-#define SRC_SBN_MAPS_HPP_
+#pragma once
 
 #include <unordered_map>
 #include <utility>
@@ -180,4 +179,4 @@ TEST_CASE("SBNMaps") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_SBN_MAPS_HPP_
+

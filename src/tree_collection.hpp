@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_TREE_COLLECTION_HPP_
-#define SRC_TREE_COLLECTION_HPP_
+#pragma once
 
 #include "generic_tree_collection.hpp"
 #include "tree.hpp"
@@ -32,4 +31,3 @@ TEST_CASE("TreeCollection") {
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-#endif  // SRC_TREE_COLLECTION_HPP_

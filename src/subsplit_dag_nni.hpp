@@ -17,8 +17,7 @@
 // parent/child pairs currently in the SubsplitDAG, where the output parent/child pair
 // is not also already in the SubpslitDAG.
 
-#ifndef SRC_SUBSPLIT_DAG_NNI_HPP_
-#define SRC_SUBSPLIT_DAG_NNI_HPP_
+#pragma once
 
 #include "bitset.hpp"
 #include "sugar.hpp"
@@ -148,4 +147,3 @@ TEST_CASE("NNIOperation") {
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-#endif  // SRC_SUBSPLIT_DAG_NNI_HPP_

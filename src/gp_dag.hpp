@@ -5,8 +5,7 @@
 // the generalized pruning operations. Note that rootsplit PCSPs and the DAG root node
 // are excluded from operations.
 
-#ifndef SRC_GP_DAG_HPP_
-#define SRC_GP_DAG_HPP_
+#pragma once
 
 #include "gp_engine.hpp"
 #include "quartet_hybrid_request.hpp"
@@ -79,4 +78,3 @@ class GPDAG : public TidySubsplitDAG {
                                       GPOperationVector &operations) const;
 };
 
-#endif  // SRC_GP_DAG_HPP_

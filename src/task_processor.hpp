@@ -30,8 +30,7 @@
 // small (put an integer in a dequeue). The overhead of including a true
 // threading library wouldn't be worth it for this example.
 
-#ifndef SRC_TASK_PROCESSOR_HPP_
-#define SRC_TASK_PROCESSOR_HPP_
+#pragma once
 
 #include <condition_variable>
 #include <functional>
@@ -164,4 +163,4 @@ TEST_CASE("TaskProcessor") {
   CHECK_EQ(results, correct_results);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_TASK_PROCESSOR_HPP_
+

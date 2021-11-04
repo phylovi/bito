@@ -4,8 +4,7 @@
 // A visitor for GPOperations. See
 // https://arne-mertz.de/2018/05/modern-c-features-stdvariant-and-stdvisit/
 
-#ifndef SRC_GP_ENGINE_HPP_
-#define SRC_GP_ENGINE_HPP_
+#pragma once
 
 #include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
@@ -223,4 +222,3 @@ TEST_CASE("GPEngine") {
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-#endif  // SRC_GP_ENGINE_HPP_

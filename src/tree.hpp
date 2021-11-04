@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_TREE_HPP_
-#define SRC_TREE_HPP_
+#pragma once
 
 #include <iostream>
 #include <memory>
@@ -64,4 +63,4 @@ inline bool operator!=(const Tree& lhs, const Tree& rhs) { return !(lhs == rhs);
 // Lots of tests in UnrootedTree and RootedTree.
 TEST_CASE("Tree") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_TREE_HPP_
+

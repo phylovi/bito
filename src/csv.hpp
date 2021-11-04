@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_CSV_HPP_
-#define SRC_CSV_HPP_
+#pragma once
 
 #include "csv.h"
 #include "sugar.hpp"
@@ -25,4 +24,3 @@ TEST_CASE("CSV I/O") {
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-#endif  // SRC_CSV_HPP_

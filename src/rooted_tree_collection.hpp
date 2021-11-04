@@ -4,8 +4,7 @@
 // A rooted tree collection has a notion of sampling date for the tips of the tree, and
 // all taxa are assumed to share those sampling dates.
 
-#ifndef SRC_ROOTED_TREE_COLLECTION_HPP_
-#define SRC_ROOTED_TREE_COLLECTION_HPP_
+#pragma once
 
 #include "generic_tree_collection.hpp"
 #include "rooted_tree.hpp"
@@ -43,4 +42,3 @@ class RootedTreeCollection : public PreRootedTreeCollection {
 TEST_CASE("RootedTreeCollection") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-#endif  // SRC_ROOTED_TREE_COLLECTION_HPP_

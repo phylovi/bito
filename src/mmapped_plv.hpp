@@ -6,8 +6,7 @@
 // This class is to allocate a very large partial likelihood vector in virtual memory
 // and then cut it up (via Subdivide) into a vector of partial likelihood vectors.
 
-#ifndef SRC_MMAPPED_PLV_HPP_
-#define SRC_MMAPPED_PLV_HPP_
+#pragma once
 
 #include "eigen_sugar.hpp"
 #include "mmapped_matrix.hpp"
@@ -57,4 +56,3 @@ TEST_CASE("MmappedNucleotidePLV") {
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-#endif  // SRC_MMAPPED_PLV_HPP_

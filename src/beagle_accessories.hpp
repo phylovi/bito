@@ -5,8 +5,7 @@
 // time given the tree, and remain const througout any operation-gathering tree
 // traversal.
 
-#ifndef SRC_BEAGLE_ACCESSORIES_HPP_
-#define SRC_BEAGLE_ACCESSORIES_HPP_
+#pragma once
 
 #include <numeric>
 #include <vector>
@@ -65,5 +64,3 @@ struct BeagleAccessories {
     return v;
   }
 };
-
-#endif  // SRC_BEAGLE_ACCESSORIES_HPP_

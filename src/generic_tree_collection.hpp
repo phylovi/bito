@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_GENERIC_TREE_COLLECTION_HPP_
-#define SRC_GENERIC_TREE_COLLECTION_HPP_
+#pragma once
 
 #include <fstream>
 #include <memory>
@@ -151,4 +150,3 @@ class GenericTreeCollection {
 
 // Tests appear in non-generic subclasses.
 
-#endif  // SRC_GENERIC_TREE_COLLECTION_HPP_

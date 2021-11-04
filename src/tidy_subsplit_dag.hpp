@@ -10,8 +10,7 @@
 // dirty and clean vectors, and updating_below_ as variables. Perhaps these could be
 // part of the Action?
 
-#ifndef SRC_TIDY_SUBSPLIT_DAG_HPP_
-#define SRC_TIDY_SUBSPLIT_DAG_HPP_
+#pragma once
 
 #include "subsplit_dag.hpp"
 
@@ -223,4 +222,3 @@ TEST_CASE("TidySubsplitDAG: slicing") {
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
 
-#endif  // SRC_TIDY_SUBSPLIT_DAG_HPP_

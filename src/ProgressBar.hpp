@@ -1,7 +1,6 @@
 // Modified slightly from https://github.com/prakhar1989/progress-cpp
 
-#ifndef PROGRESSBAR_PROGRESSBAR_HPP
-#define PROGRESSBAR_PROGRESSBAR_HPP
+#pragma once
 
 #include <chrono>
 #include <iomanip>
@@ -69,5 +68,3 @@ class ProgressBar {
     std::cout.flush();
   }
 };
-
-#endif  // PROGRESSBAR_PROGRESSBAR_HPP

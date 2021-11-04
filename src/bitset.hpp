@@ -11,8 +11,7 @@
 // Note that we can't use std::bitset because we don't know the size of the
 // bitsets at compile time.
 
-#ifndef SRC_BITSET_HPP_
-#define SRC_BITSET_HPP_
+#pragma once
 
 #include <algorithm>
 #include <functional>
@@ -500,5 +499,3 @@ TEST_CASE("Bitset: Subsplit Sort") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_BITSET_HPP_

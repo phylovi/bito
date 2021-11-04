@@ -3,8 +3,7 @@
 //
 // Interface to the zlib compression library
 
-#ifndef SRC_ZLIB_STREAM_HPP_
-#define SRC_ZLIB_STREAM_HPP_
+#pragma once
 
 #include <zlib.h>
 
@@ -117,4 +116,3 @@ class ZStringBuf : public std::stringbuf {
 
 }  // namespace zlib
 
-#endif  // SRC_ZLIB_STREAM_HPP_

@@ -4,8 +4,7 @@
 // "Engine" is short for "phylogenetic likelihood computation engine".
 // This engine has FatBeagles as cylinders.
 
-#ifndef SRC_ENGINE_HPP_
-#define SRC_ENGINE_HPP_
+#pragma once
 
 #include <memory>
 #include <utility>
@@ -53,4 +52,3 @@ class Engine {
   const FatBeagle *const GetFirstFatBeagle() const;
 };
 
-#endif  // SRC_ENGINE_HPP_
