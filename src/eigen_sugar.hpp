@@ -3,8 +3,7 @@
 //
 // Put Eigen "common" code here.
 
-#ifndef SRC_EIGEN_SUGAR_HPP_
-#define SRC_EIGEN_SUGAR_HPP_
+#pragma once
 
 #include <Eigen/Dense>
 #include <fstream>
@@ -92,5 +91,3 @@ TEST_CASE(
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_EIGEN_SUGAR_HPP_

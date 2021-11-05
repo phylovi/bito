@@ -13,8 +13,7 @@
 // sorted parents) or if they split apart the left clade of the parent (in which case
 // they are called rotated parents).
 
-#ifndef SRC_SUBSPLIT_DAG_NODE_HPP_
-#define SRC_SUBSPLIT_DAG_NODE_HPP_
+#pragma once
 
 #include "bitset.hpp"
 #include "reindexer.hpp"
@@ -73,5 +72,3 @@ class SubsplitDAGNode {
   SizeVector rootward_rotated_;
   SizeVector rootward_sorted_;
 };
-
-#endif  // SRC_SUBSPLIT_DAG_NODE_HPP_

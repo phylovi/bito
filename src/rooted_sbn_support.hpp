@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_ROOTED_SBN_SUPPORT_HPP_
-#define SRC_ROOTED_SBN_SUPPORT_HPP_
+#pragma once
 
 #include "sbn_support.hpp"
 
@@ -47,5 +46,3 @@ class RootedSBNSupport : public SBNSupport {
     return RootedSBNMaps::PCSPCounterOf(topologies);
   }
 };
-
-#endif  // SRC_ROOTED_SBN_SUPPORT_HPP_

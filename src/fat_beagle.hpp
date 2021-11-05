@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_FAT_BEAGLE_HPP_
-#define SRC_FAT_BEAGLE_HPP_
+#pragma once
 
 #include <memory>
 #include <queue>
@@ -158,4 +157,3 @@ std::vector<TOut> FatBeagleParallelize(
 }
 
 // Tests live in rooted_sbn_instance.hpp and unrooted_sbn_instance.hpp.
-#endif  // SRC_FAT_BEAGLE_HPP_

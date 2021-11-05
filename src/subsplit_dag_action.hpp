@@ -3,8 +3,7 @@
 //
 // A class to hold actions that we can perform on the subsplit DAG.
 
-#ifndef SRC_SUBSPLIT_DAG_ACTION_HPP_
-#define SRC_SUBSPLIT_DAG_ACTION_HPP_
+#pragma once
 
 #include <tuple>
 
@@ -46,5 +45,3 @@ auto TidySubsplitDAGTraversalAction(Args&&... args) {
   };
   return Impl{std::forward<Args>(args)...};
 }
-
-#endif  // SRC_SUBSPLIT_DAG_ACTION_HPP_

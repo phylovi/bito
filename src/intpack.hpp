@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_INTPACK_HPP_
-#define SRC_INTPACK_HPP_
+#pragma once
 
 #include <cstdint>
 #include <string>
@@ -38,5 +37,3 @@ TEST_CASE("intpack") {
   CHECK_LT(PackInts(0, 4), PackInts(1, 0));
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_INTPACK_HPP_

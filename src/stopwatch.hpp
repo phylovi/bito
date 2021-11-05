@@ -11,8 +11,7 @@
 // stopped watch or Start() on a running watch. Clear() removes all memory and stops
 // watch by default, but can optionally restart watch immediatedly.
 
-#ifndef SRC_STOPWATCH_HPP_
-#define SRC_STOPWATCH_HPP_
+#pragma once
 
 // ** Doctest include must go first for all header tests to run.
 #include "doctest.h"
@@ -272,5 +271,3 @@ TEST_CASE("Stopwatch") {
 };
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_STOPWATCH_HPP_

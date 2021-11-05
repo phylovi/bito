@@ -10,8 +10,7 @@
 // means "not present." This only happens on pendant branches, which do not have
 // a PSP component "below" the pendant branch.
 
-#ifndef SRC_PSP_INDEXER_HPP_
-#define SRC_PSP_INDEXER_HPP_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -70,4 +69,3 @@ class PSPIndexer {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("PSPIndexer") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_PSP_INDEXER_HPP_

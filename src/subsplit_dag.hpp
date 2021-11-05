@@ -31,8 +31,7 @@
 // root node only has rotated children. Children of the DAG root node are called
 // "rootsplits" and partition the whole taxon set.
 
-#ifndef SRC_SUBSPLIT_DAG_HPP_
-#define SRC_SUBSPLIT_DAG_HPP_
+#pragma once
 
 #include "reindexer.hpp"
 #include "rooted_tree_collection.hpp"
@@ -327,5 +326,3 @@ class SubsplitDAG {
   void ConnectParentToAllParents(const Bitset &parent_subsplit,
                                  SizeVector &new_edge_idxs);
 };
-
-#endif  // SRC_SUBSPLIT_DAG_HPP_

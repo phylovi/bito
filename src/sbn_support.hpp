@@ -13,8 +13,7 @@
 // To learn more about these indexer maps, see the unit tests in rooted_sbn_instance.hpp
 // and unrooted_sbn_instance.hpp.
 
-#ifndef SRC_SBN_SUPPORT_HPP_
-#define SRC_SBN_SUPPORT_HPP_
+#pragma once
 
 #include "psp_indexer.hpp"
 #include "sbn_probability.hpp"
@@ -76,5 +75,3 @@ class SBNSupport {
   // convention.
   BitsetSizePairMap parent_to_range_;
 };
-
-#endif  // SRC_SBN_SUPPORT_HPP_

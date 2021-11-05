@@ -5,8 +5,7 @@
 // time given the tree, and remain const througout any operation-gathering tree
 // traversal.
 
-#ifndef SRC_BEAGLE_FLAG_NAMES_HPP_
-#define SRC_BEAGLE_FLAG_NAMES_HPP_
+#pragma once
 
 #include <bitset>
 #include <limits>
@@ -69,5 +68,3 @@ std::string OfBeagleFlags(long flags) {
 }
 
 }  // namespace BeagleFlagNames
-
-#endif  // SRC_BEAGLE_FLAG_NAMES_HPP_

@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_NUMERICAL_UTILS_HPP_
-#define SRC_NUMERICAL_UTILS_HPP_
+#pragma once
 
 #include <fenv.h>
 
@@ -112,5 +111,3 @@ TEST_CASE("NumericalUtils") {
            "The following floating point problems have been encountered: FE_DIVBYZERO");
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif /* SRC_NUMERICAL_UTILS_HPP_ */
