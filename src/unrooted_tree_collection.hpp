@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_UNROOTED_TREE_COLLECTION_HPP_
-#define SRC_UNROOTED_TREE_COLLECTION_HPP_
+#pragma once
 
 #include "tree_collection.hpp"
 #include "unrooted_tree.hpp"
@@ -20,5 +19,3 @@ class UnrootedTreeCollection : public PreUnrootedTreeCollection {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 TEST_CASE("UnrootedTreeCollection") {}
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_UNROOTED_TREE_COLLECTION_HPP_

@@ -9,8 +9,7 @@
 // There is a special key called entire_key_ which gives the entire span of the
 // block.
 
-#ifndef SRC_BLOCK_SPECIFICATION_HPP_
-#define SRC_BLOCK_SPECIFICATION_HPP_
+#pragma once
 
 #include "eigen_sugar.hpp"
 #include "sugar.hpp"
@@ -98,5 +97,3 @@ TEST_CASE("BlockSpecification") {
   CHECK_EQ(spec.GetMap(), correct_appended_map);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_BLOCK_SPECIFICATION_HPP_

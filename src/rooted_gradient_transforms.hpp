@@ -5,6 +5,8 @@
 // https://github.com/beast-dev/beast-mcmc
 // Credit to Xiang Ji and Marc Suchard.
 
+#pragma once
+
 #include <numeric>
 
 #include "rooted_tree.hpp"

@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_ROOTED_SBN_INSTANCE_HPP_
-#define SRC_ROOTED_SBN_INSTANCE_HPP_
+#pragma once
 
 #include "csv.hpp"
 #include "generic_sbn_instance.hpp"
@@ -463,4 +462,3 @@ TEST_CASE("RootedSBNInstance: SBN parameter round trip") {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_ROOTED_SBN_INSTANCE_HPP_

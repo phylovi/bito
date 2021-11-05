@@ -3,8 +3,8 @@
 //
 // This class drives tree parsing.
 
-#ifndef SRC_DRIVER_HPP_
-#define SRC_DRIVER_HPP_
+#pragma once
+
 #include <map>
 #include <memory>
 #include <string>
@@ -132,5 +132,3 @@ TEST_CASE("Driver") {
   CHECK_EQ(beast_nexus, beast_nexus_gz);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_DRIVER_HPP_

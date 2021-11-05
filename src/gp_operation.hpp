@@ -3,8 +3,7 @@
 //
 // These operations are just declarations. We process them with the GPEngine.
 
-#ifndef GP_OPERATION_HPP_
-#define GP_OPERATION_HPP_
+#pragma once
 
 #include <iostream>
 #include <variant>
@@ -256,5 +255,3 @@ struct GPOperationOstream {
 
 std::ostream& operator<<(std::ostream& os, GPOperation const& operation);
 std::ostream& operator<<(std::ostream& os, GPOperationVector const& operation_vector);
-
-#endif  // GP_OPERATION_HPP_

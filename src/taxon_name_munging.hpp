@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_TAXON_NAME_MUNGING_HPP_
-#define SRC_TAXON_NAME_MUNGING_HPP_
+#pragma once
 
 #include <functional>
 
@@ -48,5 +47,3 @@ TEST_CASE("TaxonNameMunging") {
   // Test of TagDateMapOfTagTaxonMap appears in rooted_sbn_instance.hpp.
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_TAXON_NAME_MUNGING_HPP_

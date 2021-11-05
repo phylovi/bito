@@ -9,8 +9,7 @@
 // excludes SBN training, which is different based on if we are thinking of trees as
 // rooted or unrooted.
 
-#ifndef SRC_GENERIC_SBN_INSTANCE_HPP_
-#define SRC_GENERIC_SBN_INSTANCE_HPP_
+#pragma once
 
 #include "ProgressBar.hpp"
 #include "alignment.hpp"
@@ -433,4 +432,3 @@ class GenericSBNInstance {
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_GENERIC_SBN_INSTANCE_HPP_

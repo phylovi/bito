@@ -9,8 +9,7 @@
 // The methods provided just wrap methods in BlockSpecification, so see the
 // corresponding docs for a description of what they do.
 
-#ifndef SRC_BLOCK_MODEL_HPP_
-#define SRC_BLOCK_MODEL_HPP_
+#pragma once
 
 #include "block_specification.hpp"
 
@@ -38,4 +37,3 @@ class BlockModel {
 
 //  This is a virtual class so there are no unit tests. See
 //  substitution_model.hpp.
-#endif  // SRC_BLOCK_MODEL_HPP_

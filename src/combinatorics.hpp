@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_COMBINATORICS_HPP_
-#define SRC_COMBINATORICS_HPP_
+#pragma once
 
 #include <cmath>
 #include <cstddef>
@@ -55,5 +54,3 @@ TEST_CASE("Combinatorics") {
   }
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_COMBINATORICS_HPP_

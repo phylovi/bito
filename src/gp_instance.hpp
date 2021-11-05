@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_GP_INSTANCE_HPP_
-#define SRC_GP_INSTANCE_HPP_
+#pragma once
 
 #include "gp_dag.hpp"
 #include "gp_engine.hpp"
@@ -95,5 +94,3 @@ class GPInstance {
       Node::NodePtrVec &&topologies) const;
   StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
 };
-
-#endif  // SRC_GP_INSTANCE_HPP_

@@ -9,8 +9,7 @@
 // Simple example: https://jameshfisher.com/2017/01/28/mmap-file-write/
 // Most complete example: https://gist.github.com/marcetcheverry/991042
 
-#ifndef SRC_MMAPPED_MATRIX_HPP_
-#define SRC_MMAPPED_MATRIX_HPP_
+#pragma once
 
 #include <errno.h>
 #include <fcntl.h>
@@ -105,5 +104,3 @@ TEST_CASE("MmappedMatrix") {
   CHECK_EQ(mmapped_matrix.Get()(rows - 1, cols - 1), 5.);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-
-#endif  // SRC_MMAPPED_MATRIX_HPP_

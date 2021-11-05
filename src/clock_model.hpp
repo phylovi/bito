@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_CLOCK_MODEL_HPP_
-#define SRC_CLOCK_MODEL_HPP_
+#pragma once
 
 #include <memory>
 #include <string>
@@ -45,4 +44,3 @@ class StrictClockModel : public ClockModel {
  private:
   double rate_;
 };
-#endif  // SRC_CLOCK_MODEL_HPP_

@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_PHYLO_MODEL_HPP_
-#define SRC_PHYLO_MODEL_HPP_
+#pragma once
 
 #include <memory>
 
@@ -39,5 +38,3 @@ class PhyloModel : public BlockModel {
   std::unique_ptr<SiteModel> site_model_;
   std::unique_ptr<ClockModel> clock_model_;
 };
-
-#endif  // SRC_PHYLO_MODEL_HPP_

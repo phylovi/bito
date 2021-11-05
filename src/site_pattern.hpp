@@ -3,8 +3,7 @@
 //
 // A class for an alignment that has been compressed into site patterns.
 
-#ifndef SRC_SITE_PATTERN_HPP_
-#define SRC_SITE_PATTERN_HPP_
+#pragma once
 
 #include <string>
 #include <vector>
@@ -61,4 +60,3 @@ TEST_CASE("SitePattern") {
   CHECK_EQ(symbol_vector, correct_symbol_vector);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_SITE_PATTERN_HPP_

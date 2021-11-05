@@ -6,8 +6,7 @@
 // We assume that readers are familiar with how the sbn_parameters_ vector is laid out:
 // first probabilities of rootsplits, then conditional probabilities of PCSPs.
 
-#ifndef SRC_SBN_PROBABILITY_HPP_
-#define SRC_SBN_PROBABILITY_HPP_
+#pragma once
 
 #include "eigen_sugar.hpp"
 #include "sbn_maps.hpp"
@@ -215,4 +214,3 @@ EigenVectorXd ExpectedEMVectorAlpha05() {
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_SBN_PROBABILITY_HPP_

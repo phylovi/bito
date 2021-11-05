@@ -1,8 +1,7 @@
 // Copyright 2019-2021 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
-#ifndef SRC_UNROOTED_SBN_INSTANCE_HPP_
-#define SRC_UNROOTED_SBN_INSTANCE_HPP_
+#pragma once
 
 #include "generic_sbn_instance.hpp"
 #include "unrooted_sbn_support.hpp"
@@ -600,4 +599,3 @@ TEST_CASE("UnrootedSBNInstance: gradient of log q_{phi}(tau) WRT phi") {
   CheckVectorXdEquality(realized_nabla, expected_nabla, 1e-8);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
-#endif  // SRC_UNROOTED_SBN_INSTANCE_HPP_
