@@ -51,6 +51,13 @@ If you want to modify your desired BEAGLE installation location, do `unset BEAGL
 * (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
 * (Optional) If you modify the test preparation scripts, call `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
 
+To build with cmake, do
+
+* `mkdir build`
+* `cd build`
+* `cmake ..`
+* `make -j16`
+* `../run_tests_cmake.sh`
 
 ## Understanding
 
