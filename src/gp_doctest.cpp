@@ -259,16 +259,16 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
 
-  size_t root_idx = root;
-  size_t child_idx = jupiter;
-  size_t hello_node_count = 5;
-  size_t root_jupiter_idx = 2;
+  size_t rootsplit_id = rootsplit;
+  size_t child_id = jupiter;
+  size_t hello_node_count_without_dag_root_node = 5;
+  size_t rootsplit_jupiter_idx = 2;
 
   size_t leafward_idx =
-      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::P, hello_node_count, child_idx);
+      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::P, hello_node_count_without_dag_root_node, child_id);
   size_t rootward_idx =
-      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::R, hello_node_count, root_idx);
-  OptimizeBranchLength op{leafward_idx, rootward_idx, root_jupiter_idx};
+      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::R_TILDE, hello_node_count_without_dag_root_node, rootsplit_id);
+  OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
   std::tuple<double, double, double> log_lik_and_derivatives =
       engine->LogLikelihoodAndFirstTwoDerivatives(op);
   // Expect log lik: -84.77961943.
@@ -279,7 +279,7 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   CHECK_LT(fabs(std::get<2>(log_lik_and_derivatives) - -5.4460787413), 1e-6);
 }
 
-// We are outputting the branch length for PCSP 011-100-000
+// We are outputting the branch length for PCSP 100-011-001
 // which has a true branch length of 0.0694244266
 double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
   GPInstance inst = MakeHelloGPInstance();
@@ -287,7 +287,12 @@ double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
   engine.SetOptimizationMethod(method);
 
   inst.EstimateBranchLengths(0.001, 1000, false);
-  return inst.GetEngine()->GetBranchLengths()(2);
+  GPDAG& dag = inst.GetDAG();
+  size_t default_index = dag.GPCSPCountWithFakeSubsplits();
+  Bitset gpcsp_bitset = Bitset("100011001");
+
+  size_t index = AtWithDefault(dag.BuildGPCSPIndexer(), gpcsp_bitset, default_index);
+  return inst.GetEngine()->GetBranchLengths()(index);
 }
 
 TEST_CASE("GPInstance: Gradient-based optimization") {
@@ -310,28 +315,28 @@ TEST_CASE("GPInstance: Gradient-based optimization") {
 }
 
 // TODO: Work in Progress
-TEST_CASE("GPInstance: Compare all optimization methods") {
-  double golden_length = 0.0694244266;
-  auto OptimizationTest = [&](std::string opt_name, GPEngine::OptimizationMethod method) {
-    double opt_length = ObtainBranchLengthWithOptimization(method);
-    std::cout << opt_name << " branch lengths are: " << opt_length << std::endl;
-    double opt_diff = fabs(opt_length - golden_length);
-    return std::tuple<double,double>(opt_length, opt_diff);
-  };
-
-  auto [brent_length, brent_diff] = OptimizationTest(
-      "Brent", GPEngine::OptimizationMethod::BrentOptimization);
-  auto [newton_length, newton_diff] = OptimizationTest(
-      "Newton", GPEngine::OptimizationMethod::NewtonOptimization);
-  // auto [toms748_length, toms738_diff] = OptimizationTest(
-  //     "TOMS748", GPEngine::OptimizationMethod::TOMS748Optimization);
-  // auto [gradascent_length, gradascent_diff] = OptimizationTest(
-  //     "Gradient Ascent", GPEngine::OptimizationMethod::GradientAscentOptimization);
-  // auto [log_gradascent_length, log_gradascent_diff] = OptimizationTest(
-  //     "Logspace Gradient Ascent", GPEngine::OptimizationMethod::LogSpaceGradientAscentOptimization);
-
-  
-}
+// TEST_CASE("GPInstance: Compare all optimization methods") {
+//   double golden_length = 0.0694244266;
+//   auto OptimizationTest = [&](std::string opt_name, GPEngine::OptimizationMethod method) {
+//     double opt_length = ObtainBranchLengthWithOptimization(method);
+//     std::cout << opt_name << " branch lengths are: " << opt_length << std::endl;
+//     double opt_diff = fabs(opt_length - golden_length);
+//     return std::tuple<double,double>(opt_length, opt_diff);
+//   };
+// 
+//   auto [brent_length, brent_diff] = OptimizationTest(
+//       "Brent", GPEngine::OptimizationMethod::BrentOptimization);
+//   auto [newton_length, newton_diff] = OptimizationTest(
+//       "Newton", GPEngine::OptimizationMethod::NewtonOptimization);
+//   // auto [toms748_length, toms738_diff] = OptimizationTest(
+//   //     "TOMS748", GPEngine::OptimizationMethod::TOMS748Optimization);
+//   // auto [gradascent_length, gradascent_diff] = OptimizationTest(
+//   //     "Gradient Ascent", GPEngine::OptimizationMethod::GradientAscentOptimization);
+//   // auto [log_gradascent_length, log_gradascent_diff] = OptimizationTest(
+//   //     "Logspace Gradient Ascent", GPEngine::OptimizationMethod::LogSpaceGradientAscentOptimization);
+// 
+//   
+// }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   auto inst = MakeFluAGPInstance(rescaling_threshold);
