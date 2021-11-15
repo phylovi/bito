@@ -25,12 +25,29 @@ ExternalProject_Add(pybind11
 )
 
 function(bito_compile_opts PRODUCT)
-	target_compile_options(${PRODUCT} PUBLIC -std=c++17)
+	target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
+	target_compile_options(${PRODUCT} PUBLIC -Werror)
 	target_include_directories(${PRODUCT} PUBLIC
 		${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
 		lib/eigen
 	)
 endfunction()
+
+function(bito_link_opts PRODUCT)
+	target_link_options(${PRODUCT} PUBLIC -Wl,-rpath,.)
+	target_link_libraries(${PRODUCT} PUBLIC bito-core)
+	add_dependencies(${PRODUCT} bito-core)
+endfunction()
+
+function(bito_executable PRODUCT)
+    add_executable(${PRODUCT} ${ARGN})
+	bito_compile_opts(${PRODUCT})
+	bito_link_opts(${PRODUCT})
+endfunction()
+
+###################
+# libbito-core.so #
+###################
 
 add_library(bito-core SHARED
 	src/alignment.cpp
@@ -86,29 +103,24 @@ target_link_directories(bito-core PUBLIC
 )
 add_dependencies(bito-core beagle-lib)
 
+##############
+# libbito.so #
+##############
+
 add_library(bito SHARED
 	src/pybito.cpp
 )
-target_compile_options(bito PUBLIC -std=c++17)
+bito_compile_opts(bito)
 target_include_directories(bito PUBLIC
 	${Python_INCLUDE_DIRS}
 	${PROJECT_BINARY_DIR}/pybind11/install/include
-	${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
-	lib/eigen
 )
-target_link_options(bito PUBLIC -Wl,-rpath,.)
-target_link_libraries(bito PUBLIC bito-core)
-add_dependencies(bito bito-core pybind11)
+bito_link_opts(bito)
+add_dependencies(bito pybind11)
 
-function(bito_executable PRODUCT)
-    add_executable(${PRODUCT} 
-		${ARGN}
-	)
-	bito_compile_opts(${PRODUCT})
-	target_link_options(${PRODUCT} PUBLIC -Wl,-rpath,.)
-	target_link_libraries(${PRODUCT} PUBLIC bito-core)
-	add_dependencies(${PRODUCT} bito-core)
-endfunction()
+###############
+# executables #
+###############
 
 bito_executable(doctest
 	src/doctest.cpp)
