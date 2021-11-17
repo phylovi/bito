@@ -127,7 +127,7 @@ std::string GenericToString(T x) {
 template <class Key, class T>
 std::unordered_map<Key, T> UnorderedMapOf(const std::vector<std::pair<Key, T>> &v) {
   std::unordered_map<Key, T> m;
-  for (const auto [key, value] : v) {
+  for (const auto& [key, value] : v) {
     SafeInsert(m, key, value);
   }
   return m;

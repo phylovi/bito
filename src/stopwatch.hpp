@@ -81,7 +81,6 @@ class Stopwatch {
     Assert(is_running_,
            "Stopwatch.GetElapsedOfCurrentInterval() cannot be called while Stopwatch "
            "is not running.");
-    time_point now = GetCurrentTime();
     double elapsed_seconds = 0.0;
     size_t start_lap = interval_starts_[interval_starts_.size() - 1];
     for (size_t i = start_lap; i < lap_seconds_.size(); i++) {

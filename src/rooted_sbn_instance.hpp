@@ -221,7 +221,7 @@ TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
 
   auto subsplit_probabilities = inst.UnconditionalSubsplitProbabilities();
   CHECK_EQ(correct_parameters.size(), subsplit_probabilities.size());
-  for (const auto [subsplit, probability] : subsplit_probabilities) {
+  for (const auto& [subsplit, probability] : subsplit_probabilities) {
     CHECK_LT(fabs(correct_parameters.at(subsplit.ToString()) - probability), 1e-8);
   }
 }
