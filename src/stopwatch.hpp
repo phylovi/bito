@@ -13,9 +13,12 @@
 
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
 // ** Doctest include must go first for all header tests to run.
 #include "doctest.h"
 // **
+#pragma GCC diagnostic pop
 
 #include <stdio.h>
 
@@ -44,7 +47,7 @@ class Stopwatch {
   // Option to start stopwatch running upon initialization, defaults to not starting.
   // Option to specify time scale, defaults to milliseconds.
   Stopwatch(bool start_on_init = false, TimeScale scale = TimeScale::MillisecondScale)
-      : scale_(scale), lap_seconds_(), interval_starts_(), is_running_(false) {
+      : is_running_(false), scale_(scale), lap_seconds_(), interval_starts_() {
     interval_starts_.push_back(0);
     if (start_on_init) {
       Start();

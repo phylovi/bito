@@ -2,7 +2,10 @@
 // bito is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
 #include "doctest.h"
+#pragma GCC diagnostic pop
 
 #include <string>
 

@@ -3,9 +3,12 @@
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
 // ** Doctest include must go first for all header tests to run.
 #include "doctest.h"
 // **
+#pragma GCC diagnostic pop
 
 #include "combinatorics.hpp"
 #include "gp_instance.hpp"
