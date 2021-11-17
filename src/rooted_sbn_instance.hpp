@@ -88,7 +88,7 @@ std::vector<std::vector<double>> DerivativeRelaxedClock(RootedSBNInstance& inst)
   for (size_t index = 0; index < edge_count; index++) {
     std::vector<double> gradient;
     std::vector<double> rates;
-    for (int i = 0; i < inst.tree_collection_.TreeCount(); i++) {
+    for (size_t i = 0; i < inst.tree_collection_.TreeCount(); i++) {
       double value = inst.tree_collection_.trees_[i].rates_[index];
       rates.push_back(value);
       inst.tree_collection_.trees_[i].rates_[index] = rates.back() - eps;

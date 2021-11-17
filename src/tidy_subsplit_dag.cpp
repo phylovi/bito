@@ -96,7 +96,7 @@ std::string EigenMatrixXbToString(EigenMatrixXb m) {
   std::stringstream string_stream;
   // I would have thought that we could just do string_stream << m, but this doesn't
   // work.
-  for (size_t i = 0; i < m.rows(); i++) {
+  for (Eigen::Index i = 0; i < m.rows(); i++) {
     string_stream << m.row(i) << "\n";
   }
   return string_stream.str();

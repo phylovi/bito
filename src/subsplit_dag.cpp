@@ -391,7 +391,7 @@ BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
     EigenConstVectorXdRef normalized_sbn_parameters) const {
   auto node_probabilities = UnconditionalNodeProbabilities(normalized_sbn_parameters);
   BitsetDoubleMap subsplit_probability_map;
-  for (size_t node_id = 0; node_id < node_probabilities.size(); node_id++) {
+  for (size_t node_id = 0; static_cast<Eigen::Index>(node_id) < node_probabilities.size(); node_id++) {
     const auto &subsplit_bitset = GetDAGNode(node_id)->GetBitset();
     if (node_id != DAGRootNodeId() && !subsplit_bitset.SubsplitIsLeaf()) {
       SafeInsert(subsplit_probability_map, subsplit_bitset,
@@ -887,7 +887,7 @@ void SubsplitDAG::RemapNodeIds(const SizeVector &node_reindexer) {
   auto dag_nodes_copy = Reindexer::Reindex(dag_nodes_, node_reindexer);
   dag_nodes_.swap(dag_nodes_copy);
   // Update each node's id and leafward/rootward ids.
-  for (int node_id = 0; node_id < NodeCount(); node_id++) {
+  for (size_t node_id = 0; node_id < NodeCount(); node_id++) {
     GetDAGNode(node_id)->RemapNodeIds(node_reindexer);
   }
   // Update `subsplit_to_id_`.

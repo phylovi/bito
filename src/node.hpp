@@ -115,12 +115,12 @@ class Node {
   void TriplePreorderBifurcating(
       std::function<void(const Node*, const Node*, const Node*)> f) const;
   // As above, but getting indices rather than nodes themselves.
-  void TripleIdPreorderBifurcating(std::function<void(int, int, int)> f) const;
+  void TripleIdPreorderBifurcating(std::function<void(size_t, size_t, size_t)> f) const;
 
   // These two functions take functions accepting triples of (node_id,
   // child0_id, child1_id) and apply them according to various traversals.
-  void BinaryIdPreorder(std::function<void(int, int, int)> f) const;
-  void BinaryIdPostorder(std::function<void(int, int, int)> f) const;
+  void BinaryIdPreorder(std::function<void(size_t, size_t, size_t)> f) const;
+  void BinaryIdPostorder(std::function<void(size_t, size_t, size_t)> f) const;
 
   // See the typedef of UnrootedPCSPFun and RootedPCSPFun to understand the argument
   // type to these functions.

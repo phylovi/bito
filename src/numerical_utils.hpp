@@ -83,7 +83,7 @@ TEST_CASE("NumericalUtils") {
 
   EigenVectorXd log_vec(10);
   double log_sum2 = DOUBLE_NEG_INF;
-  for (size_t i = 0; i < log_vec.size(); i++) {
+  for (Eigen::Index i = 0; i < log_vec.size(); i++) {
     log_vec(i) = log(i + 1);
     log_sum2 = NumericalUtils::LogAdd(log_sum2, log_vec(i));
   }
@@ -92,13 +92,13 @@ TEST_CASE("NumericalUtils") {
   CHECK_LT(fabs(log_sum2 - 4.007333), 1e-5);
 
   NumericalUtils::ProbabilityNormalizeInLog(log_vec);
-  for (size_t i = 0; i < log_vec.size(); i++) {
+  for (Eigen::Index i = 0; i < log_vec.size(); i++) {
     CHECK_LT(fabs(log_vec(i) - (log(i + 1) - log_sum)), 1e-5);
   }
 
   NumericalUtils::Exponentiate(log_vec);
   double sum = 0.0;
-  for (size_t i = 0; i < log_vec.size(); i++) {
+  for (Eigen::Index i = 0; i < log_vec.size(); i++) {
     sum += log_vec(i);
   }
   CHECK_LT(fabs(sum - 1), 1e-5);

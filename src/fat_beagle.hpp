@@ -141,7 +141,7 @@ std::vector<TOut> FatBeagleParallelize(
   for (size_t i = 0; i < tree_collection.TreeCount(); i++) {
     tree_number_queue.push(i);
   }
-  Assert(tree_collection.TreeCount() == param_matrix.rows(),
+  Assert(static_cast<Eigen::Index>(tree_collection.TreeCount()) == param_matrix.rows(),
          "We param_matrix needs as many rows as we have trees.");
 
   TaskProcessor<FatBeagle *, size_t>(

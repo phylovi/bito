@@ -82,8 +82,8 @@ double LogDeterminantJacobian(const RootedTree &tree) {
   double log_det_jacobian = 0.0;
   size_t leaf_count = tree.LeafCount();
   tree.Topology()->TripleIdPreorderBifurcating(
-      [&log_det_jacobian, &tree, leaf_count](int node_id, int sister_id,
-                                             int parent_id) {
+      [&log_det_jacobian, &tree, leaf_count](size_t node_id, size_t sister_id,
+                                             size_t parent_id) {
         if (node_id >= leaf_count) {
           log_det_jacobian +=
               std::log(tree.node_heights_[parent_id] - tree.node_bounds_[node_id]);
@@ -263,7 +263,7 @@ void FatBeagle::SetTipStates(const SitePattern &site_pattern) {
 }
 
 void FatBeagle::SetTipPartials(const SitePattern &site_pattern) {
-  for (int i = 0; i < site_pattern.GetPatterns().size(); i++) {
+  for (size_t i = 0; i < site_pattern.GetPatterns().size(); i++) {
     beagleSetTipPartials(beagle_instance_, i, site_pattern.GetPartials(i).data());
   }
   beagleSetPatternWeights(beagle_instance_, site_pattern.GetWeights().data());
@@ -365,7 +365,7 @@ void FatBeagle::AddUpperPartialOperation(BeagleOperationVector &operations,
 // \partial{L}/\partial{r} = \sum_i \partial{L}/\partial{r_i}
 std::vector<double> ClockGradient(const RootedTree &tree,
                                   const std::vector<double> &branch_gradient) {
-  int root_id = static_cast<int>(tree.Topology()->Id());
+  auto root_id = tree.Topology()->Id();
   std::vector<double> rate_gradient(root_id, 0);
   for (size_t i = 0; i < root_id; i++) {
     rate_gradient[i] = branch_gradient[i] * tree.branch_lengths_[i];
@@ -418,7 +418,7 @@ std::vector<double> FatBeagle::SubstitutionModelGradientFiniteDifference(
   EigenVectorXd parameters_reparameterized = transform.inverse(parameters);
 
   std::vector<double> gradient(parameters_reparameterized.size());
-  for (size_t parameter_idx = 0; parameter_idx < parameters_reparameterized.size();
+  for (Eigen::Index parameter_idx = 0; parameter_idx < parameters_reparameterized.size();
        parameter_idx++) {
     double original_parameter_value = parameters_reparameterized[parameter_idx];
     parameters_reparameterized[parameter_idx] += delta;

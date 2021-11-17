@@ -58,7 +58,7 @@ inline EigenVectorXd EigenVectorXdOfStdVectorDouble(std::vector<double> &v) {
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {
-  for (size_t i = 0; i < v.size(); i++) {
+  for (Eigen::Index i = 0; i < v.size(); i++) {
     CHECK_LT(fabs(value - v[i]), tolerance);
   }
 };
@@ -66,7 +66,7 @@ void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance
 void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
                            double tolerance) {
   CHECK_EQ(v1.size(), v2.size());
-  for (size_t i = 0; i < v1.size(); i++) {
+  for (Eigen::Index i = 0; i < v1.size(); i++) {
     double error = fabs(v1[i] - v2[i]);
     if (error > tolerance) {
       std::cerr << "CheckVectorXdEquality failed for index " << i << ": " << v1[i]

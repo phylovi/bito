@@ -54,14 +54,14 @@ template <typename VectorType>
 inline VectorType Reindex(VectorType &old_vector, const SizeVector &reindexer,
                           VectorType &additional_values) {
   Assert(IsValidReindexer(reindexer), "Reindexer must be valid in Reindexer::Reindex.");
-  Assert(old_vector.size() + additional_values.size() == reindexer.size(),
+  Assert(old_vector.size() + additional_values.size() == static_cast<Eigen::Index>(reindexer.size()),
          "Size of the vector and additional values must add up to the reindexer size "
          "in Reindexer::Reindex.");
   VectorType new_vector(reindexer.size());
-  for (size_t idx = 0; idx < old_vector.size(); idx++) {
+  for (Eigen::Index idx = 0; idx < old_vector.size(); idx++) {
     new_vector[reindexer[idx]] = std::move(old_vector[idx]);
   }
-  for (size_t idx = 0; idx < additional_values.size(); idx++) {
+  for (Eigen::Index idx = 0; idx < additional_values.size(); idx++) {
     new_vector[reindexer[old_vector.size() + idx]] = std::move(additional_values[idx]);
   }
   return new_vector;

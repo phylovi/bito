@@ -187,7 +187,7 @@ static std::function<void(const Node*, const Node*, const Node*)> const TripletI
   };
 }
 
-void Node::TripleIdPreorderBifurcating(std::function<void(int, int, int)> f) const {
+void Node::TripleIdPreorderBifurcating(std::function<void(size_t, size_t, size_t)> f) const {
   TriplePreorderBifurcating(TripletIdInfix(f));
 }
 
@@ -202,11 +202,11 @@ static std::function<void(const Node*)> const BinaryIdInfix(
   };
 }
 
-void Node::BinaryIdPreorder(const std::function<void(int, int, int)> f) const {
+void Node::BinaryIdPreorder(const std::function<void(size_t, size_t, size_t)> f) const {
   Preorder(BinaryIdInfix(f));
 }
 
-void Node::BinaryIdPostorder(const std::function<void(int, int, int)> f) const {
+void Node::BinaryIdPostorder(const std::function<void(size_t, size_t, size_t)> f) const {
   Postorder(BinaryIdInfix(f));
 }
 

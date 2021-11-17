@@ -34,7 +34,7 @@ void RootedTree::SetNodeBoundsUsingDates(const TagDoubleMap& tag_date_map) {
     node_bounds_[MaxLeafIDOfTag(tag)] = date;
   }
   Topology()->BinaryIdPostorder(
-      [&leaf_count, this](int node_id, int child0_id, int child1_id) {
+      [&leaf_count, this](size_t node_id, size_t child0_id, size_t child1_id) {
         if (node_id >= leaf_count) {
           node_bounds_[node_id] =
               std::max(node_bounds_[child0_id], node_bounds_[child1_id]);
@@ -49,8 +49,8 @@ void RootedTree::InitializeTimeTreeUsingBranchLengths() {
   height_ratios_.resize(leaf_count - 1);
 
   // Initialize the internal heights.
-  Topology()->BinaryIdPostorder([&leaf_count, this](int node_id, int child0_id,
-                                                    int child1_id) {
+  Topology()->BinaryIdPostorder([&leaf_count, this](size_t node_id, size_t child0_id,
+                                                    size_t child1_id) {
     if (node_id >= leaf_count) {
       node_heights_[node_id] = node_heights_[child0_id] + branch_lengths_[child0_id];
       const auto height_difference =
@@ -70,7 +70,7 @@ void RootedTree::InitializeTimeTreeUsingBranchLengths() {
   // The "height ratio" for the root is the root height.
   height_ratios_[root_id - leaf_count] = node_heights_[root_id];
   Topology()->TripleIdPreorderBifurcating(
-      [&leaf_count, this](int node_id, int, int parent_id) {
+      [&leaf_count, this](size_t node_id, size_t, size_t parent_id) {
         if (node_id >= leaf_count) {
           // See the beginning of the header file for an explanation.
           height_ratios_[node_id - leaf_count] =
@@ -91,7 +91,7 @@ void RootedTree::InitializeTimeTreeUsingHeightRatios(
     height_ratios_[i] = height_ratios(i);
   }
   Topology()->TripleIdPreorderBifurcating([&leaf_count, &height_ratios, this](
-                                              int node_id, int, int parent_id) {
+                                              size_t node_id, size_t, size_t parent_id) {
     if (node_id >= leaf_count) {
       node_heights_[node_id] = node_bounds_[node_id] +
                                height_ratios(node_id - leaf_count) *

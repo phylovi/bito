@@ -51,7 +51,7 @@ void WeibullSiteModel::UpdateRates() {
   mean_rate /= category_count_;
   mean_rate_derivative /= category_count_;
 
-  for (int i = 0; i < category_count_; i++) {
+  for (size_t i = 0; i < category_count_; i++) {
     // Derivative of rate i wrt shape
     // dr_i/dshape = d(ur_i/mean)/dshape = (dur_i* mean - ur_i*dmean)/mean^2
     rate_derivatives_[i] = (deriv_unscaled_rates[i] * mean_rate -

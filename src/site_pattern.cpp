@@ -118,11 +118,11 @@ const std::vector<double> SitePattern::GetPartials(size_t sequence_idx) const {
   // DNA assumption here.
   size_t state_count = 4;
   std::vector<double> partials(state_count * PatternCount(), 0.);
-  for (int pattern_idx = 0; pattern_idx < PatternCount(); pattern_idx++) {
-    if (patterns_[sequence_idx][pattern_idx] < state_count) {
+  for (size_t pattern_idx = 0; pattern_idx < PatternCount(); pattern_idx++) {
+    if (patterns_[sequence_idx][pattern_idx] < static_cast<int>(state_count)) {
       partials[pattern_idx * state_count + patterns_[sequence_idx][pattern_idx]] = 1.0;
     } else {
-      for (int state_idx = 0; state_idx < state_count; state_idx++) {
+      for (size_t state_idx = 0; state_idx < state_count; state_idx++) {
         partials[pattern_idx * state_count + state_idx] = 1.0;
       }
     }

@@ -32,9 +32,9 @@ void IncrementByInLog(EigenVectorXdRef vec, const SizeVectorVector& index_vector
 // of values of length k.
 void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices,
                       const EigenConstVectorXdRef values) {
-  Assert(indices.size() == values.size(),
+  Assert(static_cast<Eigen::Index>(indices.size()) == values.size(),
          "Indices and values don't have matching size.");
-  for (size_t i = 0; i < values.size(); ++i) {
+  for (Eigen::Index i = 0; i < values.size(); ++i) {
     vec[indices[i]] = NumericalUtils::LogAdd(vec[indices[i]], values[i]);
   }
 }
@@ -43,9 +43,9 @@ void IncrementByInLog(EigenVectorXdRef vec, const SizeVector& indices,
 // vector of values.
 void IncrementByInLog(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vector,
                       const EigenConstVectorXdRef values) {
-  Assert(index_vector_vector.size() == values.size(),
+  Assert(static_cast<Eigen::Index>(index_vector_vector.size()) == values.size(),
          "Indices and values don't have matching size.");
-  for (size_t i = 0; i < values.size(); ++i) {
+  for (Eigen::Index i = 0; i < values.size(); ++i) {
     IncrementByInLog(vec, index_vector_vector[i], values[i]);
   }
 }
@@ -69,9 +69,9 @@ void IncrementBy(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vect
 // of values of length k.
 void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices,
                  const EigenConstVectorXdRef values) {
-  Assert(indices.size() == values.size(),
+  Assert(static_cast<Eigen::Index>(indices.size()) == values.size(),
          "Indices and values don't have matching size.");
-  for (size_t i = 0; i < values.size(); ++i) {
+  for (Eigen::Index i = 0; i < values.size(); ++i) {
     vec[indices[i]] += values[i];
   }
 }
@@ -80,9 +80,9 @@ void IncrementBy(EigenVectorXdRef vec, const SizeVector& indices,
 // vector of values.
 void IncrementBy(EigenVectorXdRef vec, const SizeVectorVector& index_vector_vector,
                  const EigenConstVectorXdRef values) {
-  Assert(index_vector_vector.size() == values.size(),
+  Assert(static_cast<Eigen::Index>(index_vector_vector.size()) == values.size(),
          "Indices and values don't have matching size.");
-  for (size_t i = 0; i < values.size(); ++i) {
+  for (Eigen::Index i = 0; i < values.size(); ++i) {
     IncrementBy(vec, index_vector_vector[i], values[i]);
   }
 }
