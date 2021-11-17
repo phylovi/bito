@@ -243,7 +243,7 @@ TagBitsetMap TagLeafSetMapOf(Node::NodePtr topology) {
   TagBitsetMap map;
   auto leaf_count = topology->LeafCount();
   topology->Postorder([&map, leaf_count](const Node* node) {
-    Bitset bitset((size_t)leaf_count);
+    Bitset bitset(static_cast<size_t>(leaf_count));
     if (node->IsLeaf()) {
       bitset.set(node->MaxLeafID());
     } else {

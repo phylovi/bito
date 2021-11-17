@@ -7,13 +7,13 @@
 #include <string>
 
 inline uint64_t PackInts(uint32_t a, uint32_t b) {
-  return (uint64_t)((((uint64_t)a) << 32) + (uint64_t)b);
+  return static_cast<uint64_t>(a) << 32 + static_cast<uint64_t>(b);
 }
 
-inline uint32_t UnpackFirstInt(uint64_t x) { return (uint32_t)(((uint64_t)x) >> 32); }
+inline uint32_t UnpackFirstInt(uint64_t x) { return static_cast<uint32_t>(x >> 32); }
 
 inline uint32_t UnpackSecondInt(uint64_t x) {
-  return (uint32_t)(((uint64_t)x) & 0xffffffff);
+  return static_cast<uint32_t>(x & 0xffffffff);
 }
 
 inline std::string StringOfPackedInt(uint64_t x) {

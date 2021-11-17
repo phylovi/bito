@@ -39,8 +39,8 @@ class ProgressBar {
   }
 
   void display(bool show_hours = false) const {
-    float progress = (float)ticks / total_ticks;
-    int pos = (int)(bar_width * progress);
+    float progress = static_cast<float>(ticks) / total_ticks;
+    int pos = static_cast<int>(bar_width * progress);
     auto seconds_elapsed = calculate_seconds_elapsed();
 
     std::cout << "[";

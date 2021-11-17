@@ -5,7 +5,11 @@
 
 #pragma once
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <Eigen/Dense>
+#pragma GCC diagnostic pop
+
 #include <fstream>
 
 #include "sugar.hpp"

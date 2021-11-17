@@ -528,8 +528,8 @@ int yy_flex_debug = 1;
 
 static const flex_int16_t yy_rule_linenum[12] =
     {   0,
-       72,   73,   75,   76,   77,   78,   79,   80,   81,   82,
-       83
+       75,   76,   78,   79,   80,   81,   82,   83,   84,   85,
+       86
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -560,6 +560,9 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_scanner.l
 # include "driver.hpp"
 # include "parser.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
 // Pacify warnings in yy_init_buffer (observed with Flex 2.6.4)
 // and GCC 6.4.0, 7.3.0.
 #if defined __GNUC__ && !defined __clang__ && 6 <= __GNUC__
@@ -588,13 +591,13 @@ https://en.cppreference.com/w/cpp/string/byte/isprint
 also
 https://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_mono/flex.html#SEC7
 */
-#line 591 "src/scanner.cpp"
+#line 594 "src/scanner.cpp"
 #define YY_NO_INPUT 1
-#line 58 "src/scanner.ll"
+#line 61 "src/scanner.ll"
   // Code run each time a pattern is matched.
   # define YY_USER_ACTION  loc.columns (yyleng);
-#line 596 "src/scanner.cpp"
-#line 597 "src/scanner.cpp"
+#line 599 "src/scanner.cpp"
+#line 600 "src/scanner.cpp"
 
 #define INITIAL 0
 
@@ -872,10 +875,10 @@ YY_DECL
 
 	{
 /* %% [7.0] user's declarations go here */
-#line 62 "src/scanner.ll"
-
-
 #line 65 "src/scanner.ll"
+
+
+#line 68 "src/scanner.ll"
 /* *** Section: rules. */
   // A handy shortcut to the location held by the driver.
   yy::location& loc = drv.location_;
@@ -883,7 +886,7 @@ YY_DECL
   loc.step ();
 
 
-#line 886 "src/scanner.cpp"
+#line 889 "src/scanner.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -961,74 +964,74 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 72 "src/scanner.ll"
+#line 75 "src/scanner.ll"
 loc.step ();
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 73 "src/scanner.ll"
+#line 76 "src/scanner.ll"
 loc.lines (yyleng); loc.step ();
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 75 "src/scanner.ll"
+#line 78 "src/scanner.ll"
 return yy::parser::make_COMMA(loc);
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 76 "src/scanner.ll"
+#line 79 "src/scanner.ll"
 return yy::parser::make_COLON(loc);
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 77 "src/scanner.ll"
+#line 80 "src/scanner.ll"
 return yy::parser::make_SEMICOLON(loc);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 78 "src/scanner.ll"
+#line 81 "src/scanner.ll"
 return yy::parser::make_LPAREN(loc);
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 79 "src/scanner.ll"
+#line 82 "src/scanner.ll"
 return yy::parser::make_RPAREN(loc);
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 80 "src/scanner.ll"
+#line 83 "src/scanner.ll"
 return yy::parser::make_LABEL(yytext, loc);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 81 "src/scanner.ll"
+#line 84 "src/scanner.ll"
 return yy::parser::make_QUOTED(yytext, loc);
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 82 "src/scanner.ll"
+#line 85 "src/scanner.ll"
 return yy::parser::make_BRACKETED_WITH_AMPERSAND(yytext, loc);
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 83 "src/scanner.ll"
+#line 86 "src/scanner.ll"
 {
             throw yy::parser::syntax_error
               (loc, "invalid character: " + std::string(yytext));
 }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 87 "src/scanner.ll"
+#line 90 "src/scanner.ll"
 return yy::parser::make_END (loc);
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 89 "src/scanner.ll"
+#line 92 "src/scanner.ll"
 ECHO;
 	YY_BREAK
-#line 1031 "src/scanner.cpp"
+#line 1034 "src/scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2133,7 +2136,7 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 89 "src/scanner.ll"
+#line 92 "src/scanner.ll"
 
 /* *** Section: user code. It's just regular C++. */
 
@@ -2143,3 +2146,4 @@ Driver::ScanString(const std::string &str) {
   yy_scan_string(str.c_str());
 }
 
+#pragma GCC diagnostic pop

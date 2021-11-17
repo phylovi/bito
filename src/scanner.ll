@@ -17,6 +17,9 @@ https://github.com/tjunier/newick_utils/blob/master/src/newick_scanner.l
 # include "driver.hpp"
 # include "parser.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+
 // Pacify warnings in yy_init_buffer (observed with Flex 2.6.4)
 // and GCC 6.4.0, 7.3.0.
 #if defined __GNUC__ && !defined __clang__ && 6 <= __GNUC__
@@ -93,3 +96,5 @@ Driver::ScanString(const std::string &str) {
   yy_flex_debug = trace_scanning_;
   yy_scan_string(str.c_str());
 }
+
+#pragma GCC diagnostic pop
