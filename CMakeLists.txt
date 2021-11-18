@@ -9,7 +9,7 @@ ExternalProject_Add(beagle-lib
 	GIT_SHALLOW		true
 	GIT_PROGRESS	true
 	UPDATE_DISCONNECTED true
-	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF
+	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H"
 	PREFIX			beagle-lib
 	INSTALL_DIR		beagle-lib/install
 )
@@ -28,7 +28,7 @@ ExternalProject_Add(pybind11
 
 function(bito_compile_opts PRODUCT)
 	target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
-	target_compile_options(${PRODUCT} PUBLIC -Werror)
+	target_compile_options(${PRODUCT} PUBLIC -Werror -Wno-unknown-warning-option)
 	target_include_directories(${PRODUCT} PUBLIC
 		${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
 		lib/eigen
