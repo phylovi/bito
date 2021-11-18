@@ -372,7 +372,7 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
   node_probabilities.setZero();
   node_probabilities[DAGRootNodeId()] = 1.;
 
-  ReversePostorderIndexTraversal([this, &node_probabilities,
+  ReversePostorderIndexTraversal([&node_probabilities,
                                   &normalized_sbn_parameters](
                                      const size_t parent_id, const bool,
                                      const size_t child_id, const size_t gpcsp_idx) {
@@ -843,16 +843,16 @@ SizeVector SubsplitDAG::BuildNodeReindexer(const size_t prev_node_count) {
       {dag_root_node_id},
       SubsplitDAGTraversalAction(
           // BeforeNode
-          [this](size_t node_id) {},
+          [](size_t node_id) {},
           // AfterNode
-          [this, &node_reindexer, &running_traversal_idx](size_t node_id) {
+          [&node_reindexer, &running_traversal_idx](size_t node_id) {
             node_reindexer.at(node_id) = running_traversal_idx;
             running_traversal_idx++;
           },
           // BeforeNodeClade
-          [this](size_t node_id, bool rotated) {},
+          [](size_t node_id, bool rotated) {},
           // VisitEdge
-          [this](size_t node_id, size_t child_id, bool rotated) {}));
+          [](size_t node_id, size_t child_id, bool rotated) {}));
   return node_reindexer;
 }
 

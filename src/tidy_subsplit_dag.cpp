@@ -151,12 +151,12 @@ std::string TidySubsplitDAG::RecordTraversal() {
             result << "descending along " << node_id << ", " << rotated << "\n";
           },
           // ModifyEdge
-          [this, &result](size_t node_id, size_t child_id, bool rotated) {
+          [&result](size_t node_id, size_t child_id, bool rotated) {
             result << "modifying: ";
             result << node_id << ", " << child_id << ", " << rotated << "\n";
           },
           // UpdateEdge
-          [this, &result](size_t node_id, size_t child_id, bool rotated) {
+          [&result](size_t node_id, size_t child_id, bool rotated) {
             result << "updating:  ";
             result << node_id << ", " << child_id << ", " << rotated << "\n";
           }));
