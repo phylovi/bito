@@ -56,8 +56,10 @@ To build with cmake, do
 * `mkdir build`
 * `cd build`
 * `cmake ..`
-* `make -j16`
+* `cmake --build . -j`
 * `../run_tests_cmake.sh`
+
+A minimum cmake version of 3.19 is required.
 
 ## Understanding
 

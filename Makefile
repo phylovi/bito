@@ -7,6 +7,22 @@ default:
 	scons ${j_flags}
 	pip install -U dist/bito-*.whl
 
+cmakebuild:
+	@mkdir -p build
+	@cd build && \
+		cmake .. && \
+		cmake --build . --config Debug --parallel && \
+		ln -sf ../data . && \
+		ln -sf libbito.so bito.so && \
+		mkdir -p _ignore
+
+cmakefasttest: cmakebuild
+	@cd build && \
+		./doctest --test-case-exclude="* tree sampling" && \
+		./gp_doctest --test-case-exclude="UnrootedSBNInstance*" && \
+		PYTHONPATH=. pytest -s ../test/test_bito.py && \
+		./noodle
+
 rungptest:
 	./_build/gp_doctest --test-case-exclude="UnrootedSBNInstance*"
 

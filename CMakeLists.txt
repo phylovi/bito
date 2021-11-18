@@ -8,6 +8,7 @@ ExternalProject_Add(beagle-lib
 	GIT_TAG			origin/hmc-clock
 	GIT_SHALLOW		true
 	GIT_PROGRESS	true
+	UPDATE_DISCONNECTED true
 	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF
 	PREFIX			beagle-lib
 	INSTALL_DIR		beagle-lib/install
@@ -19,6 +20,7 @@ ExternalProject_Add(pybind11
 	GIT_TAG			origin/v2.7
 	GIT_SHALLOW		true
 	GIT_PROGRESS	true
+	UPDATE_DISCONNECTED true
 	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/pybind11/install -DPYBIND11_TEST=OFF
 	PREFIX			pybind11
 	INSTALL_DIR		pybind11/install
