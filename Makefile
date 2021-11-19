@@ -10,7 +10,7 @@ default:
 cmakebuild:
 	@mkdir -p build
 	@cd build && \
-		cmake .. && \
+		cmake -DCMAKE_BUILD_TYPE=Release .. && \
 		cmake --build . --config Debug --parallel && \
 		ln -sf ../data . && \
 		ln -sf libbito.so bito.so && \

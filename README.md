@@ -55,11 +55,13 @@ To build with cmake, do
 
 * `mkdir build`
 * `cd build`
-* `cmake ..`
+* `cmake -DCMAKE_BUILD_TYPE=Release ..`
 * `cmake --build . -j`
 * `../run_tests_cmake.sh`
 
-A minimum cmake version of 3.19 is required.
+A minimum cmake version of 3.19 is required. Debug or release builds can be selected with the `-DCMAKE_BUILD_TYPE=` option.
+Convenience make targets exists for quickly building and testing with cmake. To perform a build, call `make cmakebuild`.
+To run fast tests (and build if needed), call `make cmakefasttest`.
 
 ## Understanding
 
