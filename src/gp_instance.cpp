@@ -311,30 +311,34 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
 }
 
 void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(int steps) {
+  // We assume this is run after a proper branch length optimization
   const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
 
   size_t gpcsp_count = optimized_branch_lengths.size();
   const EigenVectorXd scaling_vector = EigenVectorXd::LinSpaced(steps, 0.01, 10.0);
   per_pcsp_lik_surfaces_ = EigenMatrixXd(gpcsp_count * steps, 2);
 
-  for (int gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
+  for (size_t gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
     EigenVectorXd gpcsp_new_branch_lengths =
         scaling_vector * optimized_branch_lengths[gpcsp_idx];
     EigenVectorXd new_branch_length_vector = optimized_branch_lengths;
 
-    for (int i = 0; i < steps; i++) {
+    for (size_t i = 0; i < steps; i++) {
       new_branch_length_vector[gpcsp_idx] = gpcsp_new_branch_lengths[i];
       GetEngine()->SetBranchLengths(new_branch_length_vector);
       PopulatePLVs();
       ComputeLikelihoods();
 
-      int matrix_position = gpcsp_count * i;
+      size_t matrix_position = gpcsp_count * i;
       per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx, 0) =
           gpcsp_new_branch_lengths[i];
       per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx, 1) =
           GetEngine()->GetPerGPCSPLogLikelihoods(gpcsp_idx, 1)(0, 0);
     }
   }
+  // Reset back to optimized branch lengths
+  GetEngine()->SetBranchLengths(optimized_branch_lengths);
+  PopulatePLVs();
 }
 
 StringEigenVectorXdVector GPInstance::TrackValuesFromOptimization() {
@@ -373,7 +377,7 @@ StringEigenVectorXdVector GPInstance::TrackValuesFromOptimization() {
       tracked_optimization_values.conservativeResize(
           tracked_optimization_values.rows() + 1, Eigen::NoChange);
 
-      if (fabs(current_llh - optimized_llh) < 1e-5 | run_counts[gpcsp_idx] > 4) {
+      if (fabs(current_llh - optimized_llh) < 1e-3 || run_counts[gpcsp_idx] > 4) {
         break;
       } else {
         ProcessOperations(branch_optimization_operations);
@@ -383,6 +387,9 @@ StringEigenVectorXdVector GPInstance::TrackValuesFromOptimization() {
     pretty_index_vector.insert(pretty_index_vector.end(), run_counts[gpcsp_idx],
                                pretty_indexer.at(gpcsp_idx));
   }
+  // Reset back to optimized branch lengths
+  GetEngine()->SetBranchLengths(optimized_branch_lengths);
+  PopulatePLVs();
 
   tracked_optimization_values.conservativeResize(tracked_optimization_values.rows() - 1,
                                                  Eigen::NoChange);
