@@ -506,6 +506,7 @@ PhyloGradient FatBeagle::Gradient(const UnrootedTree &in_tree) const {
                                   phylo_model_->GetSiteModel()->GetRateGradient());
     auto [log_likelihood, unscaled_category_gradient] =
         BranchGradientInternals(tree.Topology(), tree.BranchLengths(), dQ);
+    std::ignore = log_likelihood;
     gradient["site_model"] =
         DiscreteSiteModelGradient(tree.BranchLengths(), unscaled_category_gradient);
   }
@@ -552,6 +553,7 @@ PhyloGradient FatBeagle::Gradient(const RootedTree &tree) const {
                                   phylo_model_->GetSiteModel()->GetRateGradient());
     auto [log_likelihood, unscaled_category_gradient] =
         BranchGradientInternals(tree.Topology(), branch_lengths, dQ);
+    std::ignore = log_likelihood;
     gradient["site_model"] =
         DiscreteSiteModelGradient(branch_lengths, unscaled_category_gradient);
   }

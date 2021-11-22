@@ -94,6 +94,7 @@ BlockSpecification::ParameterSegmentMap BlockSpecification::ParameterSegmentMapO
   CheckParameterVectorSize(param_vector);
   ParameterSegmentMap parameter_segment_map;
   for (const auto& [key, _] : GetMap()) {
+    std::ignore = _;
     SafeInsert(parameter_segment_map, key, ExtractSegment(param_vector, key));
   }
   return parameter_segment_map;
@@ -104,6 +105,7 @@ BlockSpecification::ParameterBlockMap BlockSpecification::ParameterBlockMapOf(
   ParameterBlockMap parameter_block_map;
   CheckParameterMatrixSize(param_matrix);
   for (const auto& [key, _] : GetMap()) {
+    std::ignore = _;
     SafeInsert(parameter_block_map, key, ExtractBlock(param_matrix, key));
   }
   return parameter_block_map;

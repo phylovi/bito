@@ -119,6 +119,7 @@ void ProbabilityNormalizeParams(EigenVectorXdRef vec, size_t rootsplit_count,
                                 const BitsetSizePairMap& parent_to_range) {
   ProbabilityNormalizeRange(vec, {0, rootsplit_count});
   for (const auto& [_, range] : parent_to_range) {
+    std::ignore = _;
     ProbabilityNormalizeRange(vec, range);
   }
 }
@@ -137,6 +138,7 @@ void SBNProbability::ProbabilityNormalizeParamsInLog(
     const BitsetSizePairMap& parent_to_range) {
   ProbabilityNormalizeRangeInLog(vec, {0, rootsplit_count});
   for (const auto& [_, range] : parent_to_range) {
+    std::ignore = _;
     ProbabilityNormalizeRangeInLog(vec, range);
   }
 }

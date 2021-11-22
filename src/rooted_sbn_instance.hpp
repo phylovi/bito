@@ -418,6 +418,7 @@ TEST_CASE("RootedSBNInstance: parsing dates") {
   inst.ParseDatesFromTaxonNames(true);
   std::vector<double> dates;
   for (const auto& [tag, date] : inst.tree_collection_.GetTagDateMap()) {
+    std::ignore = tag;
     dates.push_back(date);
   }
   std::sort(dates.begin(), dates.end());

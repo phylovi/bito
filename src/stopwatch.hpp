@@ -13,12 +13,7 @@
 
 #pragma once
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wclass-memaccess"
-// ** Doctest include must go first for all header tests to run.
-#include "doctest.h"
-// **
-#pragma GCC diagnostic pop
+#include "include_doctest.hpp"
 
 #include <stdio.h>
 

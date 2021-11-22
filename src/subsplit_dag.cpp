@@ -290,6 +290,7 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   EigenVectorXd result = EigenVectorXd::Zero(GPCSPCountWithFakeSubsplits());
   for (const auto &[parent_child_id, gpcsp_idx] : dag_edges_) {
     const auto &[parent_id, child_id] = parent_child_id;
+    std::ignore = parent_id;
     size_t child0_taxon_count =
         GetDAGNode(child_id)->GetBitset().SubsplitGetCladeByBinaryOrder(0).Count();
     size_t child1_taxon_count =
@@ -870,6 +871,7 @@ SizeVector SubsplitDAG::BuildEdgeReindexer(const size_t prev_edge_count) {
            "An edge with given edge_idx did not exist in "
            "SubsplitDAG::BuildEdgeReindexer.");
     const auto &[node_pair, idx] = *element;
+    std::ignore = idx;
     const auto &[parent_id, child_id] = node_pair;
     const Bitset parent_subsplit = GetDAGNode(parent_id)->GetBitset();
     const Bitset child_subsplit = GetDAGNode(child_id)->GetBitset();

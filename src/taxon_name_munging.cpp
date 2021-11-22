@@ -46,9 +46,11 @@ TagStringMap TaxonNameMunging::DequoteTagStringMap(const TagStringMap &tag_strin
 void TaxonNameMunging::MakeDatesRelativeToMaximum(TagDoubleMap &tag_date_map) {
   double max_date = DOUBLE_NEG_INF;
   for (const auto &[_, date] : tag_date_map) {
+    std::ignore = _;
     max_date = std::max(date, max_date);
   }
   for (auto &[id, date] : tag_date_map) {
+    std::ignore = id;
     date = max_date - date;
   }
 }
@@ -56,6 +58,7 @@ void TaxonNameMunging::MakeDatesRelativeToMaximum(TagDoubleMap &tag_date_map) {
 TagDoubleMap TaxonNameMunging::ConstantDatesForTagTaxonMap(TagStringMap tag_taxon_map) {
   TagDoubleMap tag_date_map;
   for (auto &[tag, taxon] : tag_taxon_map) {
+    std::ignore = taxon;
     SafeInsert(tag_date_map, tag, 0.);
   }
   return tag_date_map;

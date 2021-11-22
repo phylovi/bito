@@ -357,6 +357,7 @@ void GPEngine::GradientAscentOptimization(
       log_likelihood_and_derivative, log(branch_lengths_(op.gpcsp_)),
       relative_tolerance_for_optimization_, step_size_for_optimization_,
       min_log_branch_length_, max_iter_for_optimization_);
+  std::ignore = log_likelihood;
   branch_lengths_(op.gpcsp_) = exp(log_branch_length);
 }
 
