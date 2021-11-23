@@ -13,9 +13,7 @@
 
 #pragma once
 
-// ** Doctest include must go first for all header tests to run.
-#include "doctest.h"
-// **
+#include "include_doctest.hpp"
 
 #include <stdio.h>
 
@@ -44,7 +42,7 @@ class Stopwatch {
   // Option to start stopwatch running upon initialization, defaults to not starting.
   // Option to specify time scale, defaults to milliseconds.
   Stopwatch(bool start_on_init = false, TimeScale scale = TimeScale::MillisecondScale)
-      : scale_(scale), lap_seconds_(), interval_starts_(), is_running_(false) {
+      : is_running_(false), scale_(scale), lap_seconds_(), interval_starts_() {
     interval_starts_.push_back(0);
     if (start_on_init) {
       Start();
@@ -81,7 +79,6 @@ class Stopwatch {
     Assert(is_running_,
            "Stopwatch.GetElapsedOfCurrentInterval() cannot be called while Stopwatch "
            "is not running.");
-    time_point now = GetCurrentTime();
     double elapsed_seconds = 0.0;
     size_t start_lap = interval_starts_[interval_starts_.size() - 1];
     for (size_t i = start_lap; i < lap_seconds_.size(); i++) {

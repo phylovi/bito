@@ -53,7 +53,7 @@ class WeibullSiteModel : public SiteModel {
         rate_derivatives_(category_count) {
     category_rates_.resize(category_count);
     category_proportions_.resize(category_count);
-    for (int i = 0; i < category_count; i++) {
+    for (size_t i = 0; i < category_count; i++) {
       category_proportions_[i] = 1.0 / category_count;
     }
     UpdateRates();

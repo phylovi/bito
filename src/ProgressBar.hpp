@@ -39,12 +39,12 @@ class ProgressBar {
   }
 
   void display(bool show_hours = false) const {
-    float progress = (float)ticks / total_ticks;
-    int pos = (int)(bar_width * progress);
+    float progress = static_cast<float>(ticks) / total_ticks;
+    auto pos = static_cast<unsigned>(bar_width * progress);
     auto seconds_elapsed = calculate_seconds_elapsed();
 
     std::cout << "[";
-    for (int i = 0; i < bar_width; ++i) {
+    for (size_t i = 0; i < bar_width; ++i) {
       if (i < pos)
         std::cout << complete_char;
       else if (i == pos)

@@ -125,6 +125,7 @@ TEST_CASE("Driver") {
   CHECK_EQ(beast_nexus.TaxonNames(), beast_taxa);
   // Check that we got the whole tree.
   for (const auto& [topology, count] : beast_nexus.TopologyCounter()) {
+    std::ignore = count;
     CHECK_EQ(topology->LeafCount(), beast_taxa.size());
   }
   auto beast_nexus_gz =

@@ -16,10 +16,10 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include <Eigen/Dense>
 #include <iostream>
 
 #include "sugar.hpp"
+#include "eigen_sugar.hpp"
 
 template <typename EigenDenseMatrixBaseT>
 class MmappedMatrix {

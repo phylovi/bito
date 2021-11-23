@@ -66,7 +66,7 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
         delta = p / q;
         u = x + delta;
         if (((u - min) < fract2) || ((max - u) < fract2))
-          delta = (mid - x) < 0 ? (T)-fabs(fract1) : (T)fabs(fract1);
+          delta = static_cast<T>((mid - x) < 0 ? -fabs(fract1) : fabs(fract1));
       }
     } else {
       // golden section:

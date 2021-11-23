@@ -175,8 +175,8 @@ class GenericSBNInstance {
     StringDoubleVector result;
     result.reserve(v.size());
     const auto pretty_indexer = PrettyIndexer();
-    Assert(v.size() <= pretty_indexer.size(), "v is too long in PrettyIndexedVector");
-    for (size_t i = 0; i < v.size(); i++) {
+    Assert(v.size() <= static_cast<Eigen::Index>(pretty_indexer.size()), "v is too long in PrettyIndexedVector");
+    for (Eigen::Index i = 0; i < v.size(); i++) {
       result.push_back({pretty_indexer.at(i), v(i)});
     }
     return result;
@@ -322,7 +322,7 @@ class GenericSBNInstance {
   // sbn_parameters_.
   size_t SampleIndex(Range range) const {
     const auto &[start, end] = range;
-    Assert(start < end && end <= sbn_parameters_.size(),
+    Assert(start < end && static_cast<Eigen::Index>(end) <= sbn_parameters_.size(),
            "SampleIndex given an invalid range.");
     // We do not want to overwrite sbn_parameters so we make a copy.
     EigenVectorXd sbn_parameters_subrange = sbn_parameters_.segment(start, end - start);

@@ -21,7 +21,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
       unconditional_node_probabilities_(std::move(unconditional_node_probabilities)),
       inverted_sbn_prior_(std::move(inverted_sbn_prior)) {
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
-             plvs_.back().cols() == site_pattern_.PatternCount(),
+             plvs_.back().cols() == static_cast<Eigen::Index>(site_pattern_.PatternCount()),
          "Didn't get the right shape of PLVs out of Subdivide.");
   rescaling_counts_.resize(plv_count_);
   rescaling_counts_.setZero();
@@ -52,7 +52,7 @@ void GPEngine::operator()(const GPOperations::ZeroPLV& op) {
 
 void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
   auto& plv = plvs_.at(op.dest_);
-  for (size_t row_idx = 0; row_idx < plv.rows(); ++row_idx) {
+  for (Eigen::Index row_idx = 0; row_idx < plv.rows(); ++row_idx) {
     // Multiplication by q_ avoids special treatment of the rhat vector for the
     // rootsplits.
     plv.row(row_idx).array() =
@@ -357,6 +357,7 @@ void GPEngine::GradientAscentOptimization(
       log_likelihood_and_derivative, log(branch_lengths_(op.gpcsp_)),
       relative_tolerance_for_optimization_, step_size_for_optimization_,
       min_log_branch_length_, max_iter_for_optimization_);
+  std::ignore = log_likelihood;
   branch_lengths_(op.gpcsp_) = exp(log_branch_length);
 }
 

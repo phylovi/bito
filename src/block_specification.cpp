@@ -13,7 +13,7 @@ void BlockSpecification::Insert(const char* key, Coordinates value) {
 
 BlockSpecification::BlockSpecification(ParamCounts param_counts) {
   size_t next_available_idx = 0;
-  for (const auto [block_name, block_size] : param_counts) {
+  for (const auto& [block_name, block_size] : param_counts) {
     Insert(block_name, {next_available_idx, block_size});
     next_available_idx += block_size;
   }
@@ -36,7 +36,7 @@ void BlockSpecification::InsertEntireKey(Coordinates coordinates) {
 void BlockSpecification::Append(const std::string& sub_entire_key,
                                 BlockSpecification other) {
   const auto our_parameter_count = ParameterCount();
-  for (const auto [block_name, coordinate] : other.GetMap()) {
+  for (const auto& [block_name, coordinate] : other.GetMap()) {
     auto [start_idx, block_size] = coordinate;
     if (block_name == entire_key_) {
       Assert(start_idx == 0, "Start index of entire block isn't zero.");
@@ -54,19 +54,19 @@ void BlockSpecification::Append(const std::string& sub_entire_key,
 
 void BlockSpecification::CheckParameterVectorSize(
     const EigenVectorXdRef param_vector) const {
-  Assert(param_vector.size() == ParameterCount(),
+  Assert(param_vector.size() == static_cast<Eigen::Index>(ParameterCount()),
          "Parameters are the wrong dimension!");
 }
 void BlockSpecification::CheckParameterMatrixSize(
     const EigenMatrixXdRef param_matrix) const {
-  Assert(param_matrix.cols() == ParameterCount(),
+  Assert(param_matrix.cols() == static_cast<Eigen::Index>(ParameterCount()),
          "Parameters are the wrong dimension!");
 }
 
 EigenVectorXdRef BlockSpecification::ExtractSegment(EigenVectorXdRef param_vector,
                                                     std::string key) const {
   auto [start_idx, parameter_count] = Find(key);
-  if (start_idx + parameter_count > param_vector.size()) {
+  if (static_cast<Eigen::Index>(start_idx + parameter_count) > param_vector.size()) {
     Failwith("Model parameter '" + key +
              "' request too long for a param_vector of length " +
              std::to_string(param_vector.size()) + ".");
@@ -77,7 +77,7 @@ EigenVectorXdRef BlockSpecification::ExtractSegment(EigenVectorXdRef param_vecto
 EigenMatrixXdRef BlockSpecification::ExtractBlock(EigenMatrixXdRef param_matrix,
                                                   std::string key) const {
   auto [start_idx, parameter_count] = Find(key);
-  if (start_idx + parameter_count > param_matrix.cols()) {
+  if (static_cast<Eigen::Index>(start_idx + parameter_count) > param_matrix.cols()) {
     Failwith("Model parameter '" + key +
              "' request too long for a param_matrix of width " +
              std::to_string(param_matrix.cols()) + ".");
@@ -93,7 +93,8 @@ BlockSpecification::ParameterSegmentMap BlockSpecification::ParameterSegmentMapO
     EigenVectorXdRef param_vector) const {
   CheckParameterVectorSize(param_vector);
   ParameterSegmentMap parameter_segment_map;
-  for (const auto [key, _] : GetMap()) {
+  for (const auto& [key, _] : GetMap()) {
+    std::ignore = _;
     SafeInsert(parameter_segment_map, key, ExtractSegment(param_vector, key));
   }
   return parameter_segment_map;
@@ -103,7 +104,8 @@ BlockSpecification::ParameterBlockMap BlockSpecification::ParameterBlockMapOf(
     EigenMatrixXdRef param_matrix) const {
   ParameterBlockMap parameter_block_map;
   CheckParameterMatrixSize(param_matrix);
-  for (const auto [key, _] : GetMap()) {
+  for (const auto& [key, _] : GetMap()) {
+    std::ignore = _;
     SafeInsert(parameter_block_map, key, ExtractBlock(param_matrix, key));
   }
   return parameter_block_map;

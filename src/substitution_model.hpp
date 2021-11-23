@@ -3,13 +3,13 @@
 
 #pragma once
 
-#include <Eigen/Dense>
 #include <memory>
 #include <string>
 #include <vector>
 
 #include "block_model.hpp"
 #include "sugar.hpp"
+#include "eigen_sugar.hpp"
 
 class SubstitutionModel : public BlockModel {
  public:

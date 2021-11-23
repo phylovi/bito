@@ -2,10 +2,7 @@
 // bito is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
-
-// ** Doctest include must go first for all header tests to run.
-#include "doctest.h"
-// **
+#include "include_doctest.hpp"
 
 #include "combinatorics.hpp"
 #include "gp_instance.hpp"
@@ -338,10 +335,13 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
 
   auto [log_lik_tree_1, ignored_1] =
       ComputeExactMarginal("data/five_taxon_tree1.nwk", "data/five_taxon.fasta");
+  std::ignore = ignored_1;
   auto [log_lik_tree_2, ignored_2] =
       ComputeExactMarginal("data/five_taxon_tree2.nwk", "data/five_taxon.fasta");
+  std::ignore = ignored_2;
   auto [log_lik_trees_3_4, ignored_3_4] =
       ComputeExactMarginal("data/five_taxon_trees_3_4.nwk", "data/five_taxon.fasta");
+  std::ignore = ignored_3_4;
 
   EigenVectorXd expected_log_lik_vector_at_rootsplits(3);
   expected_log_lik_vector_at_rootsplits << log_lik_tree_1, log_lik_tree_2,

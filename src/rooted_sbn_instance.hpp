@@ -88,7 +88,7 @@ std::vector<std::vector<double>> DerivativeRelaxedClock(RootedSBNInstance& inst)
   for (size_t index = 0; index < edge_count; index++) {
     std::vector<double> gradient;
     std::vector<double> rates;
-    for (int i = 0; i < inst.tree_collection_.TreeCount(); i++) {
+    for (size_t i = 0; i < inst.tree_collection_.TreeCount(); i++) {
       double value = inst.tree_collection_.trees_[i].rates_[index];
       rates.push_back(value);
       inst.tree_collection_.trees_[i].rates_[index] = rates.back() - eps;
@@ -221,7 +221,7 @@ TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
 
   auto subsplit_probabilities = inst.UnconditionalSubsplitProbabilities();
   CHECK_EQ(correct_parameters.size(), subsplit_probabilities.size());
-  for (const auto [subsplit, probability] : subsplit_probabilities) {
+  for (const auto& [subsplit, probability] : subsplit_probabilities) {
     CHECK_LT(fabs(correct_parameters.at(subsplit.ToString()) - probability), 1e-8);
   }
 }
@@ -418,6 +418,7 @@ TEST_CASE("RootedSBNInstance: parsing dates") {
   inst.ParseDatesFromTaxonNames(true);
   std::vector<double> dates;
   for (const auto& [tag, date] : inst.tree_collection_.GetTagDateMap()) {
+    std::ignore = tag;
     dates.push_back(date);
   }
   std::sort(dates.begin(), dates.end());

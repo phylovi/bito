@@ -10,8 +10,8 @@ TidySubsplitDAG::TidySubsplitDAG(const RootedTreeCollection &tree_collection)
 }
 
 TidySubsplitDAG::TidySubsplitDAG(size_t node_count)
-    : above_sorted_(EigenMatrixXb::Identity(node_count, node_count)),
-      above_rotated_(EigenMatrixXb::Identity(node_count, node_count)){};
+    : above_rotated_(EigenMatrixXb::Identity(node_count, node_count)),
+    above_sorted_(EigenMatrixXb::Identity(node_count, node_count)) {};
 
 TidySubsplitDAG::TidySubsplitDAG(size_t taxon_count,
                                  const Node::TopologyCounter &topology_counter)
@@ -96,7 +96,7 @@ std::string EigenMatrixXbToString(EigenMatrixXb m) {
   std::stringstream string_stream;
   // I would have thought that we could just do string_stream << m, but this doesn't
   // work.
-  for (size_t i = 0; i < m.rows(); i++) {
+  for (Eigen::Index i = 0; i < m.rows(); i++) {
     string_stream << m.row(i) << "\n";
   }
   return string_stream.str();
@@ -151,12 +151,12 @@ std::string TidySubsplitDAG::RecordTraversal() {
             result << "descending along " << node_id << ", " << rotated << "\n";
           },
           // ModifyEdge
-          [this, &result](size_t node_id, size_t child_id, bool rotated) {
+          [&result](size_t node_id, size_t child_id, bool rotated) {
             result << "modifying: ";
             result << node_id << ", " << child_id << ", " << rotated << "\n";
           },
           // UpdateEdge
-          [this, &result](size_t node_id, size_t child_id, bool rotated) {
+          [&result](size_t node_id, size_t child_id, bool rotated) {
             result << "updating:  ";
             result << node_id << ", " << child_id << ", " << rotated << "\n";
           }));

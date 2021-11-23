@@ -385,8 +385,7 @@ QuartetHybridRequest GPDAG::QuartetHybridRequestOf(size_t parent_id, bool rotate
   const bool is_edge_to_sister_rotated = !rotated;
   IterateOverLeafwardEdges(
       parent_node, is_edge_to_sister_rotated,
-      [this, &parent_node, &sister_tips,
-       &is_edge_to_sister_rotated](const SubsplitDAGNode *sister_node) {
+      [this, &parent_node, &sister_tips](const SubsplitDAGNode *sister_node) {
         const auto sister_id = sister_node->Id();
         sister_tips.emplace_back(
             sister_id, GetPLVIndex(PLVType::P, sister_id),

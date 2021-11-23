@@ -290,6 +290,7 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   EigenVectorXd result = EigenVectorXd::Zero(GPCSPCountWithFakeSubsplits());
   for (const auto &[parent_child_id, gpcsp_idx] : dag_edges_) {
     const auto &[parent_id, child_id] = parent_child_id;
+    std::ignore = parent_id;
     size_t child0_taxon_count =
         GetDAGNode(child_id)->GetBitset().SubsplitGetCladeByBinaryOrder(0).Count();
     size_t child1_taxon_count =
@@ -372,7 +373,7 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
   node_probabilities.setZero();
   node_probabilities[DAGRootNodeId()] = 1.;
 
-  ReversePostorderIndexTraversal([this, &node_probabilities,
+  ReversePostorderIndexTraversal([&node_probabilities,
                                   &normalized_sbn_parameters](
                                      const size_t parent_id, const bool,
                                      const size_t child_id, const size_t gpcsp_idx) {
@@ -391,7 +392,7 @@ BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
     EigenConstVectorXdRef normalized_sbn_parameters) const {
   auto node_probabilities = UnconditionalNodeProbabilities(normalized_sbn_parameters);
   BitsetDoubleMap subsplit_probability_map;
-  for (size_t node_id = 0; node_id < node_probabilities.size(); node_id++) {
+  for (size_t node_id = 0; static_cast<Eigen::Index>(node_id) < node_probabilities.size(); node_id++) {
     const auto &subsplit_bitset = GetDAGNode(node_id)->GetBitset();
     if (node_id != DAGRootNodeId() && !subsplit_bitset.SubsplitIsLeaf()) {
       SafeInsert(subsplit_probability_map, subsplit_bitset,
@@ -843,16 +844,16 @@ SizeVector SubsplitDAG::BuildNodeReindexer(const size_t prev_node_count) {
       {dag_root_node_id},
       SubsplitDAGTraversalAction(
           // BeforeNode
-          [this](size_t node_id) {},
+          [](size_t node_id) {},
           // AfterNode
-          [this, &node_reindexer, &running_traversal_idx](size_t node_id) {
+          [&node_reindexer, &running_traversal_idx](size_t node_id) {
             node_reindexer.at(node_id) = running_traversal_idx;
             running_traversal_idx++;
           },
           // BeforeNodeClade
-          [this](size_t node_id, bool rotated) {},
+          [](size_t node_id, bool rotated) {},
           // VisitEdge
-          [this](size_t node_id, size_t child_id, bool rotated) {}));
+          [](size_t node_id, size_t child_id, bool rotated) {}));
   return node_reindexer;
 }
 
@@ -870,6 +871,7 @@ SizeVector SubsplitDAG::BuildEdgeReindexer(const size_t prev_edge_count) {
            "An edge with given edge_idx did not exist in "
            "SubsplitDAG::BuildEdgeReindexer.");
     const auto &[node_pair, idx] = *element;
+    std::ignore = idx;
     const auto &[parent_id, child_id] = node_pair;
     const Bitset parent_subsplit = GetDAGNode(parent_id)->GetBitset();
     const Bitset child_subsplit = GetDAGNode(child_id)->GetBitset();
@@ -887,7 +889,7 @@ void SubsplitDAG::RemapNodeIds(const SizeVector &node_reindexer) {
   auto dag_nodes_copy = Reindexer::Reindex(dag_nodes_, node_reindexer);
   dag_nodes_.swap(dag_nodes_copy);
   // Update each node's id and leafward/rootward ids.
-  for (int node_id = 0; node_id < NodeCount(); node_id++) {
+  for (size_t node_id = 0; node_id < NodeCount(); node_id++) {
     GetDAGNode(node_id)->RemapNodeIds(node_reindexer);
   }
   // Update `subsplit_to_id_`.

@@ -16,12 +16,12 @@
 // \partial{b_j}/\partial{t_k}
 std::vector<double> HeightGradient(const RootedTree &tree,
                                    const std::vector<double> &branch_gradient) {
-  int root_id = static_cast<int>(tree.Topology()->Id());
+  auto root_id = tree.Topology()->Id();
   std::vector<double> height_gradient(tree.LeafCount() - 1, 0);
 
   tree.Topology()->BinaryIdPreorder(
       [&root_id, &branch_gradient, &height_gradient, leaf_count = tree.LeafCount(),
-       &rates = tree.GetRates()](int node_id, int child0_id, int child1_id) {
+       &rates = tree.GetRates()](size_t node_id, size_t child0_id, size_t child1_id) {
         if (node_id != root_id) {
           height_gradient[node_id - leaf_count] =
               -branch_gradient[node_id] * rates[node_id];
@@ -83,7 +83,7 @@ std::vector<double> UpdateGradientUnWeightedLogDensity(
   tree.Topology()->BinaryIdPostorder(
       [&gradient_height, &heights = tree.node_heights_, &ratios = tree.height_ratios_,
        &bounds = tree.GetNodeBounds(), &ratiosGradientUnweightedLogDensity, &leaf_count,
-       &root_id](int node_id, int child0_id, int child1_id) {
+       &root_id](size_t node_id, size_t child0_id, size_t child1_id) {
         if (node_id >= leaf_count && node_id != root_id) {
           ratiosGradientUnweightedLogDensity[node_id - leaf_count] +=
               GetNodePartial(node_id, leaf_count, heights, ratios, bounds) *
@@ -109,7 +109,7 @@ double UpdateHeightParameterGradientUnweightedLogDensity(
 
   tree.Topology()->BinaryIdPreorder(
       [&leaf_count, &ratios = tree.height_ratios_, &multiplierArray](
-          int node_id, int child0_id, int child1_id) {
+          size_t node_id, size_t child0_id, size_t child1_id) {
         if (child0_id >= leaf_count) {
           double ratio = ratios[child0_id - leaf_count];
           multiplierArray[child0_id - leaf_count] =
@@ -122,7 +122,7 @@ double UpdateHeightParameterGradientUnweightedLogDensity(
         }
       });
   double sum = 0.0;
-  for (int i = 0; i < gradient.size(); i++) {
+  for (size_t i = 0; i < gradient.size(); i++) {
     sum += gradient[i] * multiplierArray[i];
   }
 
@@ -150,7 +150,7 @@ std::vector<double> RatioGradientOfHeightGradient(
   gradientLogJacobianDeterminant[root_id - leaf_count] =
       UpdateHeightParameterGradientUnweightedLogDensity(tree, log_time);
 
-  for (int i = 0; i < gradientLogDensity.size() - 1; i++) {
+  for (size_t i = 0; i < gradientLogDensity.size() - 1; i++) {
     gradientLogDensity[i] +=
         gradientLogJacobianDeterminant[i] - 1.0 / tree.height_ratios_[i];
   }
@@ -172,7 +172,7 @@ std::vector<double> RatioGradientOfBranchGradient(
 EigenVectorXd RatioGradientOfHeightGradientEigen(
     const RootedTree &tree, EigenConstVectorXdRef height_gradient) {
   std::vector<double> height_gradient_vector(height_gradient.size());
-  for (size_t i = 0; i < height_gradient.size(); ++i) {
+  for (Eigen::Index i = 0; i < height_gradient.size(); ++i) {
     height_gradient_vector[i] = height_gradient(i);
   }
   std::vector<double> vector_output =

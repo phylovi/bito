@@ -406,6 +406,7 @@ TEST_CASE("UnrootedSBNInstance: tree sampling") {
   }
   // These should be equal in the limit when we're training with SA.
   for (const auto &[key, _] : counter_from_file) {
+    std::ignore = _;
     double observed =
         static_cast<double>(counter_from_sampling.at(key)) / sampled_tree_count;
     double expected =
