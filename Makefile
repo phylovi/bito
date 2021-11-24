@@ -16,8 +16,17 @@ cmakebuild:
 		ln -sf libbito.so bito.so && \
 		mkdir -p _ignore
 
-cmakefasttest: cmakebuild
-	@cd build && \
+cmakebuildtest:
+	@mkdir -p build_test
+	@cd build_test && \
+		cmake -DCMAKE_BUILD_TYPE=Debug .. && \
+		cmake --build . --parallel && \
+		ln -sf ../data . && \
+		ln -sf libbito.so bito.so && \
+		mkdir -p _ignore
+
+cmakefasttest: cmakebuildtest
+	@cd build_test && \
 		./doctest --test-case-exclude="* tree sampling" && \
 		./gp_doctest --test-case-exclude="UnrootedSBNInstance*" && \
 		PYTHONPATH=. pytest -s ../test/test_bito.py && \
