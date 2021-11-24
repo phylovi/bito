@@ -11,7 +11,7 @@ cmakebuild:
 	@mkdir -p build
 	@cd build && \
 		cmake -DCMAKE_BUILD_TYPE=Release .. && \
-		cmake --build . --config Debug --parallel && \
+		cmake --build . --parallel && \
 		ln -sf ../data . && \
 		ln -sf libbito.so bito.so && \
 		mkdir -p _ignore

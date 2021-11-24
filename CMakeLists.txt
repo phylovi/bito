@@ -28,7 +28,7 @@ ExternalProject_Add(pybind11
 
 function(bito_compile_opts PRODUCT)
 	target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
-	target_compile_options(${PRODUCT} PUBLIC -Werror -Wno-unknown-warning-option)
+	target_compile_options(${PRODUCT} PUBLIC -Werror -Wno-unknown-warning -Wno-unknown-warning-option -Wall -Wold-style-cast)
 	target_include_directories(${PRODUCT} PUBLIC
 		${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
 		lib/eigen
