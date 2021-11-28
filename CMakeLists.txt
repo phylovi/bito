@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.19)
 project(bito)
 find_package(Python COMPONENTS Development)
+set(BITO_VERSION "0.1")
 
 include(ExternalProject)
 ExternalProject_Add(beagle-lib
@@ -14,7 +15,6 @@ ExternalProject_Add(beagle-lib
 	INSTALL_DIR		beagle-lib/install
 )
 
-include(ExternalProject)
 ExternalProject_Add(pybind11
 	GIT_REPOSITORY	https://github.com/pybind/pybind11.git
 	GIT_TAG			origin/v2.7
@@ -25,6 +25,8 @@ ExternalProject_Add(pybind11
 	PREFIX			pybind11
 	INSTALL_DIR		pybind11/install
 )
+
+set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
 
 function(bito_compile_opts PRODUCT)
 	target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
@@ -98,7 +100,7 @@ add_library(bito-core SHARED
 	src/zlib_stream.cpp
 )
 bito_compile_opts(bito-core)
-target_link_options(bito-core PUBLIC -pthread -Wl,-rpath,beagle-lib/install/lib)
+target_link_options(bito-core PUBLIC -pthread -Wl,-rpath,.)
 target_link_libraries(bito-core PUBLIC hmsbeagle hmsbeagle-cpu z)
 target_link_directories(bito-core PUBLIC
 	${PROJECT_BINARY_DIR}/beagle-lib/install/lib
@@ -133,4 +135,16 @@ bito_executable(gp_doctest
 bito_executable(noodle
 	src/noodle.cpp)
 
-set(CMAKE_SKIP_RPATH ON)
+set(BITO_BINARY_DIR ${PROJECT_BINARY_DIR})
+configure_file(setup.py.in
+	${CMAKE_CURRENT_BINARY_DIR}/setup.py @ONLY
+)
+configure_file(__init__.py.in
+	${CMAKE_CURRENT_BINARY_DIR}/py/__init__.py @ONLY
+)
+file(GLOB beagle_libs RELATIVE ${PROJECT_BINARY_DIR}/beagle-lib/install/lib ${PROJECT_BINARY_DIR}/beagle-lib/install/lib/*)
+foreach(filename ${beagle_libs})
+	file(CREATE_LINK ${PROJECT_BINARY_DIR}/beagle-lib/install/lib/${filename} py/${filename} SYMBOLIC)
+endforeach()
+file(CREATE_LINK ${PROJECT_BINARY_DIR}/libbito-core.so py/libbito-core.so SYMBOLIC)
+file(CREATE_LINK ${PROJECT_BINARY_DIR}/libbito.so py/__init__.so SYMBOLIC)

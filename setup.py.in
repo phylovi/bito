@@ -1,0 +1,11 @@
+#!/usr/bin/env python
+
+from distutils.core import setup
+
+setup(
+    name='bito',
+    version='@BITO_VERSION@',
+    packages=['bito'],
+    package_dir={'bito': '@BITO_BINARY_DIR@/py'},
+    package_data={'bito': ['@BITO_BINARY_DIR@/py/*']},
+)
