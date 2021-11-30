@@ -7,6 +7,7 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
 #include <Eigen/Dense>
 #pragma GCC diagnostic pop
 

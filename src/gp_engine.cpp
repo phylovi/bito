@@ -235,7 +235,7 @@ EigenConstVectorXdRef GPEngine::GetHybridMarginals() const {
 EigenConstVectorXdRef GPEngine::GetSBNParameters() const { return q_; };
 
 void GPEngine::PrintPLV(size_t plv_idx) {
-  for (const auto& row : plvs_[plv_idx].rowwise()) {
+  for (auto&& row : plvs_[plv_idx].rowwise()) {
     std::cout << row << std::endl;
   }
   std::cout << std::endl;
