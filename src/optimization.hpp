@@ -774,7 +774,7 @@ DoublePair NewtonRaphsonOptimization(
 
     if (new_x <= min_x) {
       new_x = x - 0.5 * (x - min_x);
-      // damp_const *= 10.;
+      damp_const *= 10.;
     } else if (new_x >= max_x) {
       new_x = x - 0.5 * (x - max_x);
       damp_const *= 10.;
