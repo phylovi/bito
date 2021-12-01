@@ -761,22 +761,34 @@ DoublePair NewtonRaphsonOptimization(
     const double max_x, const size_t max_iter) {
   size_t iter_idx = 0;
   double new_x, delta;
+  double damp_const = 0.005;
 
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
-    new_x = x - f_prime_x / f_double_prime_x;
-    new_x = fmax(new_x, min_x);
-    if (new_x >= max_x) {
+    if (fabs(f_double_prime_x) < epsilon) {
+      return {x, f_x};
+    }
+    // This method below produces reasonable estimates on single tree DS data
+    //
+    new_x = x - damp_const * f_prime_x / f_double_prime_x;
+
+    if (new_x <= min_x) {
+      new_x = x - 0.5 * (x - min_x);
+      // damp_const *= 10.;
+    } else if (new_x >= max_x) {
       new_x = x - 0.5 * (x - max_x);
+      damp_const *= 10.;
+    } else {
+      // damp_const *= 0.5;
     }
 
     delta = fabs(x - new_x);
 
-    if (delta < tolerance || fabs(f_double_prime_x) < epsilon || iter_idx == max_iter) {
+    if (delta < tolerance || iter_idx == max_iter) {
       return {x, f_x};
-    } else {
-      x = new_x;
     }
+
+    x = new_x;
     ++iter_idx;
   }
 }

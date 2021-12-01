@@ -809,10 +809,11 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
     double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
     return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
   };
-  const auto [log_branch_length, log_likelihood] = Optimization::NewtonRaphsonIterate(
+  const auto [log_branch_length, log_likelihood] = Optimization::NewtonRaphsonOptimization(
       log_likelihood_and_first_two_derivatives, log(branch_lengths_(op.gpcsp_)),
+      relative_tolerance_for_optimization_, denominator_tolerance_for_newton_,
       min_log_branch_length_, max_log_branch_length_,
-      significant_digits_for_optimization_, max_iter_for_optimization_);
+      max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = exp(log_branch_length);
 }
 

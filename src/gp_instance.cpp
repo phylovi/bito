@@ -338,7 +338,6 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(int steps) {
   }
   // Reset back to optimized branch lengths
   GetEngine()->SetBranchLengths(optimized_branch_lengths);
-  PopulatePLVs();
 }
 
 StringEigenVectorXdVector GPInstance::TrackValuesFromOptimization() {
@@ -389,7 +388,6 @@ StringEigenVectorXdVector GPInstance::TrackValuesFromOptimization() {
   }
   // Reset back to optimized branch lengths
   GetEngine()->SetBranchLengths(optimized_branch_lengths);
-  PopulatePLVs();
 
   tracked_optimization_values.conservativeResize(tracked_optimization_values.rows() - 1,
                                                  Eigen::NoChange);
