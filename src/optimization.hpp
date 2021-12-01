@@ -39,8 +39,9 @@ bool is_converged = false;
 
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
-std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
-                              size_t max_iter) {
+std::tuple<T, T, std::vector<T>> BrentMinimize(F f, T min, T max,
+                                               int significant_digits,
+                                               size_t max_iter) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point
@@ -61,6 +62,9 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
 
   size_t count = max_iter;
 
+  std::vector<T> optimization_path;
+  optimization_path.push_back(x);
+
   do {
     // get midpoint
     mid = (min + max) / 2;
@@ -77,7 +81,6 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
     bool use_bisection = true;  // only triggers if IQI fails.
     if (fabs(delta2) > fract1) {
       // Try and construct a parabolic fit:
-      // TODO: where is secant method?
       T r = (x - w) * (fx - fv);
       T q = (x - v) * (fx - fw);
       T p = (x - v) * q - (x - w) * r;
@@ -148,13 +151,13 @@ std::pair<T, T> BrentMinimize(F f, T min, T max, int significant_digits,
       }
     }
 
+    optimization_path.push_back(x);
     iterations++;
   } while (--count);  // countdown until max iterations.
 
-  // What is this for?
   max_iter -= count;
 
-  return std::make_pair(x, fx);
+  return std::make_tuple(x, fx, optimization_path);
 }
 
 // TODO: REMOVE THIS BEFORE MERGING WITH MAIN.
@@ -754,19 +757,22 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
   }
 }
 
-//
-DoublePair NewtonRaphsonOptimization(
+// Modifying the output so that we can plot the optimization path
+// TODO: Change return back to DoublePair before merging to main.
+std::tuple<double, double, std::vector<double>> NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
     double x, const double tolerance, const double epsilon, const double min_x,
     const double max_x, const size_t max_iter) {
   size_t iter_idx = 0;
   double new_x, delta;
   double damp_const = 0.005;
+  std::vector<double> optimization_path;
+  optimization_path.push_back(x);
 
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
     if (fabs(f_double_prime_x) < epsilon) {
-      return {x, f_x};
+      return std::make_tuple(x, f_x, optimization_path);
     }
     // This method below produces reasonable estimates on single tree DS data
     //
@@ -785,10 +791,11 @@ DoublePair NewtonRaphsonOptimization(
     delta = fabs(x - new_x);
 
     if (delta < tolerance || iter_idx == max_iter) {
-      return {x, f_x};
+      return std::make_tuple(x, f_x, optimization_path);
     }
 
     x = new_x;
+    optimization_path.push_back(x);
     ++iter_idx;
   }
 }
@@ -982,8 +989,8 @@ std::pair<T, T> Optimize_RunAll(F f, F neg_f, FuncAndOneDerivative f_and_df,
   print_func_pairs(df, "deriv. log_likelihood");
 
   // Run Brent Minimization.
-  results = BrentMinimize<F, T>(neg_f, log_min, log_max, significant_digits, max_iter);
-  report_results("Brent_Minimize", true, true);
+  // results = BrentMinimize<F, T>(neg_f, log_min, log_max, significant_digits,
+  // max_iter); report_results("Brent_Minimize", true, true);
 
   // Run TOMS748 Minimization.
   results =
