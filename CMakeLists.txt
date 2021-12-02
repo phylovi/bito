@@ -10,7 +10,7 @@ ExternalProject_Add(beagle-lib
 	GIT_SHALLOW		true
 	GIT_PROGRESS	true
 	UPDATE_DISCONNECTED true
-	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H"
+	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H"
 	PREFIX			beagle-lib
 	INSTALL_DIR		beagle-lib/install
 )
@@ -21,7 +21,7 @@ ExternalProject_Add(pybind11
 	GIT_SHALLOW		true
 	GIT_PROGRESS	true
 	UPDATE_DISCONNECTED true
-	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${CMAKE_CURRENT_BINARY_DIR}/pybind11/install -DPYBIND11_TEST=OFF
+	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/pybind11/install -DPYBIND11_TEST=OFF
 	PREFIX			pybind11
 	INSTALL_DIR		pybind11/install
 )
@@ -135,16 +135,18 @@ bito_executable(gp_doctest
 bito_executable(noodle
 	src/noodle.cpp)
 
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/py)
 set(BITO_BINARY_DIR ${PROJECT_BINARY_DIR})
 configure_file(setup.py.in
-	${CMAKE_CURRENT_BINARY_DIR}/setup.py @ONLY
+	${PROJECT_BINARY_DIR}/setup.py @ONLY
 )
 configure_file(__init__.py.in
-	${CMAKE_CURRENT_BINARY_DIR}/py/__init__.py @ONLY
+	${PROJECT_BINARY_DIR}/py/__init__.py @ONLY
 )
-file(GLOB beagle_libs RELATIVE ${PROJECT_BINARY_DIR}/beagle-lib/install/lib ${PROJECT_BINARY_DIR}/beagle-lib/install/lib/*)
-foreach(filename ${beagle_libs})
-	file(CREATE_LINK ${PROJECT_BINARY_DIR}/beagle-lib/install/lib/${filename} py/${filename} SYMBOLIC)
-endforeach()
-file(CREATE_LINK ${PROJECT_BINARY_DIR}/libbito-core.so py/libbito-core.so SYMBOLIC)
-file(CREATE_LINK ${PROJECT_BINARY_DIR}/libbito.so py/__init__.so SYMBOLIC)
+
+add_custom_target(pip ALL
+	COMMAND ln -sf ${PROJECT_BINARY_DIR}/beagle-lib/install/lib/* ${PROJECT_BINARY_DIR}/py
+	COMMAND ln -sf ${PROJECT_BINARY_DIR}/libbito-core.so  ${PROJECT_BINARY_DIR}/py
+	COMMAND ln -sf ${PROJECT_BINARY_DIR}/libbito.so  ${PROJECT_BINARY_DIR}/py/__init__.so
+	DEPENDS bito
+)
