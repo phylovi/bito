@@ -51,6 +51,19 @@ If you want to modify your desired BEAGLE installation location, do `unset BEAGL
 * (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
 * (Optional) If you modify the test preparation scripts, call `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
 
+To build with cmake, do
+
+* `mkdir build`
+* `cd build`
+* `cmake -DCMAKE_BUILD_TYPE=Release ..`
+* `cmake --build . -j`
+* `pip install .`
+
+A minimum cmake version of 3.19 is required. Beagle will be automatically downloaded and built, and will be included in the pip package independently
+of a system-wide installation. Currently GPU acceleration is not enabled for Beagle.
+Debug or release builds can be selected with the `-DCMAKE_BUILD_TYPE=` option.
+Convenience make targets exists for quickly building and testing with cmake. To perform a build, call `make cmakebuild`.
+To run fast tests (and build if needed), call `make cmakefasttest`.
 
 ## Understanding
 

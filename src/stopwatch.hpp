@@ -183,7 +183,7 @@ class Stopwatch {
 
   // Convert a time duration to a double in the specified time scale.
   double DurationToSeconds(time_point &start_time, time_point &end_time) {
-    double seconds;
+    double seconds = 0;
     switch (scale_) {
       case TimeScale::SecondScale:
         seconds = second_double(end_time - start_time).count();

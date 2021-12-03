@@ -203,7 +203,7 @@ struct PrepForMarginalizationVisitor {
 
   GPOperations::PrepForMarginalization ToPrepForMarginalization() {
     Assert(dest_, "Nothing to prep in ToPrepForMarginalization");
-    return GPOperations::PrepForMarginalization{*dest_, src_vector};
+    return GPOperations::PrepForMarginalization{dest_.value(), src_vector};
   }
 };
 

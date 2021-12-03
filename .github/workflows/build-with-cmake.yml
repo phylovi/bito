@@ -1,0 +1,21 @@
+name: Build with cmake
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Prepare build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential cmake python-pytest
+      - name: Perform cmake build
+        run: |
+          make cmakebuild

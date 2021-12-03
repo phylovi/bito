@@ -148,7 +148,7 @@ size_t Bitset::Hash() const { return std::hash<std::vector<bool>>{}(value_); }
 
 std::string Bitset::ToString() const {
   std::string str;
-  for (const auto& bit : value_) {
+  for (auto&& bit : value_) {
     str += (bit ? '1' : '0');
   }
   return str;
@@ -165,7 +165,7 @@ std::vector<size_t> Bitset::ToVectorOfSetBits() const {
 }
 
 bool Bitset::All() const {
-  for (const auto& bit : value_) {
+  for (auto&& bit : value_) {
     if (!bit) {
       return false;
     }
@@ -174,7 +174,7 @@ bool Bitset::All() const {
 }
 
 bool Bitset::Any() const {
-  for (const auto& bit : value_) {
+  for (auto&& bit : value_) {
     if (bit) {
       return true;
     }
