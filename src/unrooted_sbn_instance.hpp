@@ -23,12 +23,10 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
   EigenVectorXd TrainExpectationMaximization(double alpha, size_t max_iter,
                                              double score_epsilon = 0.);
 
-  // Sample a topology from the SBN.
-  using PreUnrootedSBNInstance::SampleTopology;
-  Node::NodePtr SampleTopology() const;
+  bool IsRooted() const override { return true; } //TODO should be false
 
   // Sample trees and store them internally
-  void SampleTrees(size_t count);
+  void SampleTrees(const TopologySampler &sampler, size_t count);
 
   // Get PSP indexer representations of the trees in tree_collection_.
   std::vector<SizeVectorVector> MakePSPIndexerRepresentations() const;
@@ -393,8 +391,9 @@ TEST_CASE("UnrootedSBNInstance: tree sampling") {
   size_t sampled_tree_count = 1'000'000;
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
   ProgressBar progress_bar(sampled_tree_count / 1000);
+  TopologySampler sampler;
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
-    const auto rooted_topology = inst.SampleTopology(true);
+    const auto rooted_topology = sampler.SampleTopology(inst);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
         RootedSBNMaps::IndexerRepresentationOf(inst.SBNSupport().Indexer(),
@@ -555,7 +554,8 @@ TEST_CASE("UnrootedSBNInstance: gradient of log q_{phi}(tau) WRT phi") {
 
   // Now we test the gradient by doing the calculation by hand.
   K = 4;
-  inst.SampleTrees(K);
+  TopologySampler sampler;
+  inst.SampleTrees(sampler, K);
   // Make up some numbers for log_f.
   EigenVectorXd log_f(K);
   log_f << -83, -75, -80, -79;

@@ -23,11 +23,7 @@ EigenVectorXd UnrootedSBNInstance::TrainExpectationMaximization(double alpha,
       sbn_support_.ParentToRange(), alpha, max_iter, score_epsilon);
 }
 
-Node::NodePtr UnrootedSBNInstance::SampleTopology() const {
-  return SampleTopology(false);
-}
-
-void UnrootedSBNInstance::SampleTrees(size_t count) {
+void UnrootedSBNInstance::SampleTrees(const TopologySampler &sampler, size_t count) {
   CheckSBNSupportNonEmpty();
   auto taxon_count = sbn_support_.TaxonCount();
   Assert(taxon_count > 2,
@@ -38,7 +34,7 @@ void UnrootedSBNInstance::SampleTrees(size_t count) {
   for (size_t i = 0; i < count; i++) {
     std::vector<double> branch_lengths(static_cast<size_t>(edge_count));
     tree_collection_.trees_.emplace_back(
-        UnrootedTree(SampleTopology(), std::move(branch_lengths)));
+        UnrootedTree(sampler.SampleTopology(*this), std::move(branch_lengths)));
   }
 }
 

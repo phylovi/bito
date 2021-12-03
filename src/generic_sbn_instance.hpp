@@ -21,10 +21,11 @@
 #include "rooted_sbn_support.hpp"
 #include "sbn_probability.hpp"
 #include "unrooted_sbn_support.hpp"
+#include "topology_sampler.hpp"
 
 template <typename TTreeCollection, typename TSBNSupport,
           typename TIndexerRepresentation>
-class GenericSBNInstance {
+class GenericSBNInstance : public TopologySampler::Input {
   static_assert(
       (std::is_same<TTreeCollection, RootedTreeCollection>::value &&
        std::is_same<TSBNSupport, RootedSBNSupport>::value &&
@@ -58,7 +59,12 @@ class GenericSBNInstance {
   const TagStringMap &TagTaxonMap() const { return tree_collection_.TagTaxonMap(); }
   const StringVector &TaxonNames() const { return sbn_support_.TaxonNames(); }
   const TSBNSupport &SBNSupport() const { return sbn_support_; }
-  EigenConstVectorXdRef SBNParameters() const { return sbn_parameters_; }
+
+  EigenConstVectorXdRef SBNParameters() const override { return sbn_parameters_; }
+  size_t RootsplitCount() const override { return sbn_support_.RootsplitCount(); };
+  const Bitset &RootsplitsAt(size_t rootsplit_idx) const override { return sbn_support_.RootsplitsAt(rootsplit_idx); };
+  const SizePair &ParentToRangeAt(const Bitset &parent) const override { return sbn_support_.ParentToRangeAt(parent); };
+  const Bitset &IndexToChildAt(size_t child_idx) const override { return sbn_support_.IndexToChildAt(child_idx); };
 
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
@@ -301,9 +307,6 @@ class GenericSBNInstance {
   Node::TopologyCounter topology_counter_;
   TSBNSupport sbn_support_;
 
-  MersenneTwister mersenne_twister_;
-  inline void SetSeed(uint64_t seed) { mersenne_twister_.SetSeed(seed); }
-
   // Make a likelihood engine with the given specification.
   void MakeEngine(const EngineSpecification &engine_specification,
                   const PhyloModelSpecification &model_specification) {
@@ -322,52 +325,6 @@ class GenericSBNInstance {
     Failwith(
         "Engine not available. Call PrepareForPhyloLikelihood to make an "
         "engine for phylogenetic likelihood computation computation.");
-  }
-
-  // Sample an integer index in [range.first, range.second) according to
-  // sbn_parameters_.
-  size_t SampleIndex(Range range) const {
-    const auto &[start, end] = range;
-    Assert(start < end && static_cast<Eigen::Index>(end) <= sbn_parameters_.size(),
-           "SampleIndex given an invalid range.");
-    // We do not want to overwrite sbn_parameters so we make a copy.
-    EigenVectorXd sbn_parameters_subrange = sbn_parameters_.segment(start, end - start);
-    NumericalUtils::ProbabilityNormalizeInLog(sbn_parameters_subrange);
-    NumericalUtils::Exponentiate(sbn_parameters_subrange);
-    std::discrete_distribution<> distribution(sbn_parameters_subrange.begin(),
-                                              sbn_parameters_subrange.end());
-    // We have to add on range.first because we have taken a slice of the full
-    // array, and the sampler treats the beginning of this slice as zero.
-    auto result =
-        start + static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
-    Assert(result < end, "SampleIndex sampled a value out of range.");
-    return result;
-  }
-
-  Node::NodePtr SampleTopology(bool rooted) const {
-    // Start by sampling a rootsplit.
-    size_t rootsplit_index =
-        SampleIndex(std::pair<size_t, size_t>(0, sbn_support_.RootsplitCount()));
-    const Bitset &rootsplit = sbn_support_.RootsplitsAt(rootsplit_index);
-    auto topology =
-        rooted ? SampleTopology(rootsplit) : SampleTopology(rootsplit)->Deroot();
-    topology->Polish();
-    return topology;
-  }
-
-  // The input to this function is a parent subsplit (of length 2n).
-  Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const {
-    auto process_subsplit = [this](const Bitset &parent) {
-      auto singleton_option =
-          parent.SubsplitGetClade(Bitset::SubsplitClade::Right).SingletonOption();
-      if (singleton_option) {
-        return Node::Leaf(*singleton_option);
-      }  // else
-      auto child_index = SampleIndex(sbn_support_.ParentToRangeAt(parent));
-      return SampleTopology(sbn_support_.IndexToChildAt(child_index));
-    };
-    return Node::Join(process_subsplit(parent_subsplit),
-                      process_subsplit(parent_subsplit.SubsplitRotate()));
   }
 
   // Clear all of the state that depends on the current tree collection.
