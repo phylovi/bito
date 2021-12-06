@@ -11,18 +11,11 @@ auto now = std::chrono::high_resolution_clock::now;
 
 constexpr size_t out_of_sample_index = 99999999;
 
-void Print(Node::NodePtr node, size_t ident = 0) {
-  for (size_t i = 0; i < ident; ++i) std::cout << "  ";
-  std::cout << node->Id() << "\n";
-  for (auto&& i : node->Children()) Print(i, ident + 1);
-}
-
 void testDAGSampling() {
   UnrootedSBNInstance sbninst("charlie");
   sbninst.ReadNewickFile("data/five_taxon_unrooted.nwk");
   sbninst.ProcessLoadedTrees();
   sbninst.TrainSimpleAverage();
-
 
   Driver driver;
   auto tree_collection =
@@ -88,10 +81,7 @@ void testSBNInstanceSampling() {
   ProgressBar progress_bar(sampled_tree_count / 1000);
   [[maybe_unused]] TopologySampler sampler;
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
-    const auto rooted_topology = 
-      //inst.SampleTopology(true);
-      sampler.SampleTopology(inst);
-    Print(rooted_topology);
+    const auto rooted_topology = sampler.SampleTopology(inst);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
         RootedSBNMaps::IndexerRepresentationOf(inst.SBNSupport().Indexer(),

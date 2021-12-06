@@ -206,7 +206,10 @@ class SubsplitDAG {
     }
 
     const Bitset &IndexToChildAt(size_t child_idx) const override {
-      return dag_.GetDAGNode(child_idx)->GetBitset();
+      for (auto&& i : dag_.dag_edges_) {
+        if (i.second == child_idx) return dag_.GetDAGNode(i.first.second)->GetBitset();
+      }
+      Failwith("Edge not found");
     }
 
   private:

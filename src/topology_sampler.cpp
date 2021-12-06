@@ -37,11 +37,15 @@ size_t TopologySampler::SampleIndex(const Input &input, Range range) const {
 
 // The input to this function is a parent subsplit (of length 2n).
 Node::NodePtr TopologySampler::SampleTopology(const Input &input, const Bitset &parent_subsplit) const {
+  auto singleton_option = parent_subsplit.SubsplitGetClade(0).SingletonOption();
+  if (singleton_option && parent_subsplit.SubsplitGetClade(1).None()) {
+    return Node::Leaf(*singleton_option);
+  }
+  singleton_option = parent_subsplit.SubsplitGetClade(1).SingletonOption();
+  if (singleton_option && parent_subsplit.SubsplitGetClade(0).None()) {
+    return Node::Leaf(*singleton_option);
+  }
   auto process_subsplit = [this, &input](const Bitset &parent) {
-    auto singleton_option = parent.SubsplitGetClade(1).SingletonOption();
-    if (singleton_option) {
-      return Node::Leaf(*singleton_option);
-    }  // else
     auto child_index = SampleIndex(input, input.ParentToRangeAt(parent));
     return SampleTopology(input, input.IndexToChildAt(child_index));
   };
