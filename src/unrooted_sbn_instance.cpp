@@ -9,6 +9,7 @@
 
 #include "eigen_sugar.hpp"
 #include "numerical_utils.hpp"
+#include "topology_sampler.hpp"
 
 // ** Building SBN-related items
 
@@ -23,7 +24,7 @@ EigenVectorXd UnrootedSBNInstance::TrainExpectationMaximization(double alpha,
       sbn_support_.ParentToRange(), alpha, max_iter, score_epsilon);
 }
 
-void UnrootedSBNInstance::SampleTrees(const TopologySampler &sampler, size_t count) {
+void UnrootedSBNInstance::SampleTrees(size_t count) {
   CheckSBNSupportNonEmpty();
   auto taxon_count = sbn_support_.TaxonCount();
   Assert(taxon_count > 2,
@@ -31,10 +32,12 @@ void UnrootedSBNInstance::SampleTrees(const TopologySampler &sampler, size_t cou
   // 2n-2 because trees are unrooted.
   auto edge_count = 2 * static_cast<int>(taxon_count) - 2;
   tree_collection_.trees_.clear();
+  TopologySampler sampler;
+  UnrootedSBNInstanceSamplerInput input{*this};
   for (size_t i = 0; i < count; i++) {
     std::vector<double> branch_lengths(static_cast<size_t>(edge_count));
     tree_collection_.trees_.emplace_back(
-        UnrootedTree(sampler.SampleTopology(*this), std::move(branch_lengths)));
+        UnrootedTree(sampler.SampleTopology(input, false), std::move(branch_lengths)));
   }
 }
 

@@ -15,17 +15,15 @@
 #include "alignment.hpp"
 #include "csv.hpp"
 #include "engine.hpp"
-#include "mersenne_twister.hpp"
 #include "numerical_utils.hpp"
 #include "psp_indexer.hpp"
 #include "rooted_sbn_support.hpp"
 #include "sbn_probability.hpp"
 #include "unrooted_sbn_support.hpp"
-#include "topology_sampler.hpp"
 
 template <typename TTreeCollection, typename TSBNSupport,
           typename TIndexerRepresentation>
-class GenericSBNInstance : public TopologySampler::Input {
+class GenericSBNInstance {
   static_assert(
       (std::is_same<TTreeCollection, RootedTreeCollection>::value &&
        std::is_same<TSBNSupport, RootedSBNSupport>::value &&
@@ -59,12 +57,7 @@ class GenericSBNInstance : public TopologySampler::Input {
   const TagStringMap &TagTaxonMap() const { return tree_collection_.TagTaxonMap(); }
   const StringVector &TaxonNames() const { return sbn_support_.TaxonNames(); }
   const TSBNSupport &SBNSupport() const { return sbn_support_; }
-
-  EigenConstVectorXdRef SBNParameters() const override { return sbn_parameters_; }
-  size_t RootsplitCount() const override { return sbn_support_.RootsplitCount(); };
-  const Bitset &RootsplitsAt(size_t rootsplit_idx) const override { return sbn_support_.RootsplitsAt(rootsplit_idx); };
-  const SizePair &ParentToRangeAt(const Bitset &parent) const override { return sbn_support_.ParentToRangeAt(parent); };
-  const Bitset &IndexToChildAt(size_t child_idx) const override { return sbn_support_.IndexToChildAt(child_idx); };
+  EigenConstVectorXdRef SBNParameters() const { return sbn_parameters_; }
 
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";

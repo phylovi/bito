@@ -16,8 +16,6 @@ class RootedSBNInstance : public PreRootedSBNInstance {
  public:
   using PreRootedSBNInstance::PreRootedSBNInstance;
 
-  bool IsRooted() const override { return true; }
-
   // ** SBN-related items
 
   // Turn an IndexerRepresentation into a string representation of the underlying

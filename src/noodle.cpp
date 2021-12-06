@@ -1,5 +1,7 @@
 #include "unrooted_sbn_instance.hpp"
+#include "rooted_sbn_instance.hpp"
 #include "subsplit_dag.hpp"
+#include "topology_sampler.hpp"
 
 // This is just a place to muck around, and check out performance.
 
@@ -12,8 +14,8 @@ auto now = std::chrono::high_resolution_clock::now;
 constexpr size_t out_of_sample_index = 99999999;
 
 void testDAGSampling() {
-  UnrootedSBNInstance sbninst("charlie");
-  sbninst.ReadNewickFile("data/five_taxon_unrooted.nwk");
+  RootedSBNInstance sbninst("charlie");
+  sbninst.ReadNewickFile("data/five_taxon_rooted.nwk");
   sbninst.ProcessLoadedTrees();
   sbninst.TrainSimpleAverage();
 
@@ -37,9 +39,9 @@ void testDAGSampling() {
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
   ProgressBar progress_bar(sampled_tree_count / 1000);
   TopologySampler sampler;
-  SubsplitDAG::TopologySamplerInput input{dag, normalized_sbn_parameters};
+  SubsplitDAGSamplerInput input{dag, normalized_sbn_parameters};
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
-    const auto rooted_topology = sampler.SampleTopology(input);
+    const auto rooted_topology = sampler.SampleTopology(input, true);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
         RootedSBNMaps::IndexerRepresentationOf(dag.BuildGPCSPIndexer(),
@@ -55,6 +57,7 @@ void testDAGSampling() {
         static_cast<double>(counter_from_sampling.at(key)) / sampled_tree_count;
     double expected =
         static_cast<double>(counter_from_file.at(key)) / rooted_tree_count_from_file;
+    std::cout << "Observed: " << observed << "  Expected: " << expected << "\n";
     Assert(fabs(observed - expected) <= 5e-3, "Failed equality");
   }
   progress_bar.done();
@@ -79,9 +82,10 @@ void testSBNInstanceSampling() {
   size_t sampled_tree_count = 1'000'000;
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
   ProgressBar progress_bar(sampled_tree_count / 1000);
-  [[maybe_unused]] TopologySampler sampler;
+  TopologySampler sampler;
+  UnrootedSBNInstanceSamplerInput input{inst};
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
-    const auto rooted_topology = sampler.SampleTopology(inst);
+    const auto rooted_topology = sampler.SampleTopology(input, true);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
         RootedSBNMaps::IndexerRepresentationOf(inst.SBNSupport().Indexer(),

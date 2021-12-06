@@ -3,14 +3,17 @@
 
 #include "topology_sampler.hpp"
 #include "numerical_utils.hpp"
+#include "unrooted_sbn_instance.hpp"
+#include "rooted_sbn_instance.hpp"
+#include "subsplit_dag.hpp"
 
-Node::NodePtr TopologySampler::SampleTopology(const Input &input) const {
+Node::NodePtr TopologySampler::SampleTopology(const Input &input, bool is_rooted) const {
     // Start by sampling a rootsplit.
     size_t rootsplit_index =
         SampleIndex(input, std::pair<size_t, size_t>(0, input.RootsplitCount()));
     const Bitset &rootsplit = input.RootsplitsAt(rootsplit_index);
     auto topology =
-        input.IsRooted() ? SampleTopology(input, rootsplit) : SampleTopology(input, rootsplit)->Deroot();
+        is_rooted ? SampleTopology(input, rootsplit) : SampleTopology(input, rootsplit)->Deroot();
     topology->Polish();
     return topology;
 }
@@ -51,4 +54,67 @@ Node::NodePtr TopologySampler::SampleTopology(const Input &input, const Bitset &
   };
   return Node::Join(process_subsplit(parent_subsplit),
                     process_subsplit(parent_subsplit.SubsplitRotate()));
+}
+
+size_t UnrootedSBNInstanceSamplerInput::RootsplitCount() const {
+  return inst_.SBNSupport().RootsplitCount();
+}
+
+EigenConstVectorXdRef UnrootedSBNInstanceSamplerInput::SBNParameters() const {
+  return inst_.SBNParameters();
+}
+
+const Bitset& UnrootedSBNInstanceSamplerInput::RootsplitsAt(size_t rootsplit_idx) const {
+  return inst_.SBNSupport().RootsplitsAt(rootsplit_idx);
+}
+
+const SizePair& UnrootedSBNInstanceSamplerInput::ParentToRangeAt(const Bitset &parent) const {
+  return inst_.SBNSupport().ParentToRangeAt(parent);
+}
+
+const Bitset& UnrootedSBNInstanceSamplerInput::IndexToChildAt(size_t child_idx) const {
+  return inst_.SBNSupport().IndexToChildAt(child_idx);
+}
+
+size_t RootedSBNInstanceSamplerInput::RootsplitCount() const {
+  return inst_.SBNSupport().RootsplitCount();
+}
+
+EigenConstVectorXdRef RootedSBNInstanceSamplerInput::SBNParameters() const {
+  return inst_.SBNParameters();
+}
+
+const Bitset& RootedSBNInstanceSamplerInput::RootsplitsAt(size_t rootsplit_idx) const {
+  return inst_.SBNSupport().RootsplitsAt(rootsplit_idx);
+}
+
+const SizePair& RootedSBNInstanceSamplerInput::ParentToRangeAt(const Bitset &parent) const {
+  return inst_.SBNSupport().ParentToRangeAt(parent);
+}
+
+const Bitset& RootedSBNInstanceSamplerInput::IndexToChildAt(size_t child_idx) const {
+  return inst_.SBNSupport().IndexToChildAt(child_idx);
+}
+
+size_t SubsplitDAGSamplerInput::RootsplitCount() const {
+  return dag_.RootsplitCount();
+}
+
+EigenConstVectorXdRef SubsplitDAGSamplerInput::SBNParameters() const {
+  return sbn_parameters_;
+}
+
+const Bitset& SubsplitDAGSamplerInput::RootsplitsAt(size_t rootsplit_idx) const {
+  return dag_.GetDAGNode(dag_.RootsplitIds().at(rootsplit_idx))->GetBitset();;
+}
+
+const SizePair& SubsplitDAGSamplerInput::ParentToRangeAt(const Bitset &parent) const {
+  return dag_.ParentToRange().at(parent);
+}
+
+const Bitset& SubsplitDAGSamplerInput::IndexToChildAt(size_t child_idx) const {
+  for (auto&& i : dag_.DAGEdges()) {
+    if (i.second == child_idx) return dag_.GetDAGNode(i.first.second)->GetBitset();
+  }
+  Failwith("Edge not found");
 }

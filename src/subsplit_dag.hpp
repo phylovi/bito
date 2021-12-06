@@ -40,7 +40,6 @@
 #include "subsplit_dag_action.hpp"
 #include "nni_operation.hpp"
 #include "subsplit_dag_node.hpp"
-#include "topology_sampler.hpp"
 
 class SubsplitDAG {
  public:
@@ -188,35 +187,6 @@ class SubsplitDAG {
   size_t GPCSPCount() const;
   size_t GPCSPCountWithFakeSubsplits() const;
 
-  class TopologySamplerInput : public TopologySampler::Input {
-  public:
-    TopologySamplerInput(const SubsplitDAG& dag, EigenConstVectorXdRef sbn_parameters) :
-      dag_{dag}, sbn_parameters_{sbn_parameters} {}
-
-    bool IsRooted() const override { return true; }
-    size_t RootsplitCount() const override { return dag_.RootsplitCount(); }
-    EigenConstVectorXdRef SBNParameters() const override { return sbn_parameters_; }
-    
-    const Bitset &RootsplitsAt(size_t rootsplit_idx) const override {
-      return dag_.GetDAGNode(dag_.RootsplitIds().at(rootsplit_idx))->GetBitset();;
-    }
-    
-    const SizePair &ParentToRangeAt(const Bitset &parent) const override {
-      return dag_.parent_to_range_.at(parent);
-    }
-
-    const Bitset &IndexToChildAt(size_t child_idx) const override {
-      for (auto&& i : dag_.dag_edges_) {
-        if (i.second == child_idx) return dag_.GetDAGNode(i.first.second)->GetBitset();
-      }
-      Failwith("Edge not found");
-    }
-
-  private:
-    const SubsplitDAG& dag_;
-    EigenConstVectorXdRef sbn_parameters_;
-  };
-
   void Print() const;
   void PrintGPCSPIndexer() const;
   void PrintDAGEdges() const;
@@ -233,6 +203,9 @@ class SubsplitDAG {
   size_t DAGRootNodeId() const;
   // Return the node ids corresponding to the rootsplits.
   const SizeVector &RootsplitIds() const;
+
+  const BitsetSizePairMap& ParentToRange() const;
+  const std::map<SizePair, size_t>& DAGEdges() const;
 
   // Access the GPCSP index from a parent-child pair of DAG nodes.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,
