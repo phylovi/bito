@@ -470,8 +470,12 @@ EigenVectorXd GPEngine::GetTempBranchLengths(const size_t start,
   return GetBranchLengths(GetTempGPCSPIndex(start), length);
 }
 
-DoubleVectorVector GPEngine::GetPerGPCSPOptimizationPaths() const {
-  return per_gpcsp_optimization_paths_;
+DoubleVectorVector GPEngine::GetPerGPCSPOptimizationPathBranchLengths() const {
+  return optimization_path_branch_lengths_;
+};
+
+DoubleVectorVector GPEngine::GetPerGPCSPOptimizationPathLikelihoods() const {
+  return optimization_path_likelihoods_;
 };
 
 EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {
@@ -692,7 +696,8 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   } else {
     branch_lengths_(op.gpcsp_) = exp(log_branch_length);
   }
-  per_gpcsp_optimization_paths_.push_back(optimization_path);
+  optimization_path_branch_lengths_.at(op.gpcsp_) = optimization_path.first;
+  optimization_path_likelihoods_.at(op.gpcsp_) = -optimization_path.second;
 }
 
 // TODO: REMOVE THIS
@@ -821,7 +826,8 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
           relative_tolerance_for_optimization_, denominator_tolerance_for_newton_,
           min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = exp(log_branch_length);
-  per_gpcsp_optimization_paths_.push_back(optimization_path);
+  optimization_path_branch_lengths_.at(op.gpcsp_) = optimization_path;
+  optimization_path_likelihoods_.at(op.gpcsp_) = optimization_path.second;
 }
 
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,

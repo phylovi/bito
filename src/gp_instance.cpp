@@ -340,7 +340,7 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(int steps) {
   GetEngine()->SetBranchLengths(optimized_branch_lengths);
 }
 
-StringEigenVectorXdVector GPInstance::TrackValuesFromOptimization() {
+void GPInstance::TrackValuesFromOptimization() {
   // We assume this is run after a proper branch length optimization
   const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
   const EigenVectorXd optimized_per_pcsp_llhs =
@@ -381,6 +381,18 @@ StringEigenVectorXdVector GPInstance::TrackValuesFromOptimization() {
       } else {
         ProcessOperations(branch_optimization_operations);
         current_branch_length = GetEngine()->GetBranchLengths()[gpcsp_idx];
+
+        EigenVectorXd optimization_path_branch_length_vector =
+            EigenVectorXdOfStdVectorDouble(
+                GetEngine()->GetPerGPCSPOptimizationPathBranchLengths().at(gpcsp_idx));
+        per_gpcsp_optimization_path_branch_lengths_.push_back(
+            {pretty_indexer.at(gpcsp_idx), optimization_path_branch_length_vector});
+
+        EigenVectorXd optimization_path_likelihood_vector =
+            EigenVectorXdOfStdVectorDouble(
+                GetEngine()->GetPerGPCSPOptimizationPathLikelihoods().at(gpcsp_idx));
+        per_gpcsp_optimization_path_likelihoods_.push_back(
+            {pretty_indexer.at(gpcsp_idx), optimization_path_likelihood_vector});
       }
     }
     pretty_index_vector.insert(pretty_index_vector.end(), run_counts[gpcsp_idx],
@@ -391,12 +403,12 @@ StringEigenVectorXdVector GPInstance::TrackValuesFromOptimization() {
 
   tracked_optimization_values.conservativeResize(tracked_optimization_values.rows() - 1,
                                                  Eigen::NoChange);
-  StringEigenVectorXdVector result;
-  result.reserve(tracked_optimization_values.rows());
+
+  tracked_values_after_full_dag_traversal_.reserve(tracked_optimization_values.rows());
   for (size_t i = 0; i < tracked_optimization_values.rows(); i++) {
-    result.push_back({pretty_index_vector.at(i), tracked_optimization_values.row(i)});
+    tracked_values_after_full_dag_traversal_.push_back(
+        {pretty_index_vector.at(i), tracked_optimization_values.row(i)});
   }
-  return result;
 }
 
 StringVector GPInstance::PrettyIndexer() const {
@@ -530,8 +542,19 @@ void GPInstance::PerGPCSPLogLikelihoodSurfacesToCSV(const std::string &file_path
   out_stream.close();
 }
 
-void GPInstance::TrackValuesFromOptimizationToCSV(const std::string &file_path) {
-  return PerPCSPIndexedMatrixToCSV(TrackValuesFromOptimization(), file_path);
+void GPInstance::FullDAGTraversalOptimizationValuesToCSV(const std::string &file_path) {
+  return PerPCSPIndexedMatrixToCSV(tracked_values_after_full_dag_traversal_, file_path);
+}
+
+void GPInstance::PerGPCSPOptimizationPathBranchLengthsToCSV(
+    const std::string &file_path) {
+  return PerPCSPIndexedMatrixToCSV(per_gpcsp_optimization_path_branch_lengths_,
+                                   file_path);
+}
+
+void GPInstance::PerGPCSPOptimizationPathLikelihoodsToCSV(
+    const std::string &file_path) {
+  return PerPCSPIndexedMatrixToCSV(per_gpcsp_optimization_path_likelihoods_, file_path);
 }
 
 RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {

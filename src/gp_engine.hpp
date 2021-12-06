@@ -321,7 +321,8 @@ class GPEngine {
   EigenVectorXd q_;
   EigenVectorXd inverted_sbn_prior_;
   bool use_gradients_;
-  DoubleVectorVector per_gpcsp_optimization_paths_;
+  DoubleVectorVector optimization_path_branch_lengths_;
+  DoubleVectorVector optimization_path_likelihoods_;
 
   // The number of rows is equal to the number of GPCSPs.
   // The number of columns is equal to the number of site patterns.
