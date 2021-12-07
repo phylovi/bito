@@ -33,7 +33,7 @@ void UnrootedSBNInstance::SampleTrees(size_t count) {
   auto edge_count = 2 * static_cast<int>(taxon_count) - 2;
   tree_collection_.trees_.clear();
   TopologySampler sampler;
-  UnrootedSBNInstanceSamplerInput input{*this};
+  SBNInstanceSamplerInput<UnrootedSBNInstance> input{*this};
   for (size_t i = 0; i < count; i++) {
     std::vector<double> branch_lengths(static_cast<size_t>(edge_count));
     tree_collection_.trees_.emplace_back(

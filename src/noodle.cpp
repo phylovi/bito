@@ -42,6 +42,7 @@ void testDAGSampling() {
   SubsplitDAGSamplerInput input{dag, normalized_sbn_parameters};
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
     const auto rooted_topology = sampler.SampleTopology(input, true);
+    // std::cout << rooted_topology->Newick() << "\n";
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
         counter_from_sampling,
         RootedSBNMaps::IndexerRepresentationOf(dag.BuildGPCSPIndexer(),
@@ -83,7 +84,7 @@ void testSBNInstanceSampling() {
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
   ProgressBar progress_bar(sampled_tree_count / 1000);
   TopologySampler sampler;
-  UnrootedSBNInstanceSamplerInput input{inst};
+  SBNInstanceSamplerInput<UnrootedSBNInstance> input{inst};
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
     const auto rooted_topology = sampler.SampleTopology(input, true);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
@@ -109,8 +110,8 @@ void testSBNInstanceSampling() {
 
 int main() {
 
-  testDAGSampling();
-  //testSBNInstanceSampling();
+  //testDAGSampling();
+  testSBNInstanceSampling();
   return 0;
 
   uint32_t leaf_count = 10000;

@@ -340,7 +340,7 @@ PYBIND11_MODULE(bito, m) {
            )raw",
            py::arg("alpha"), py::arg("max_iter"), py::arg("score_epsilon") = 0.)
       .def("sample_trees", &UnrootedSBNInstance::SampleTrees,
-           "Sample trees from the SBN and store them internally.", py::arg("sampler"), py::arg("count"))
+           "Sample trees from the SBN and store them internally.", py::arg("count"))
       .def("make_indexer_representations",
            &UnrootedSBNInstance::MakeIndexerRepresentations,
            R"raw(

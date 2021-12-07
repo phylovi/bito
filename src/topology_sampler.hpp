@@ -31,36 +31,34 @@ private:
   MersenneTwister mersenne_twister_;
 };
 
-class UnrootedSBNInstance;
-class UnrootedSBNInstanceSamplerInput : public TopologySampler::Input {
+template <typename T>
+class SBNInstanceSamplerInput : public TopologySampler::Input {
 public:
-  UnrootedSBNInstanceSamplerInput(const UnrootedSBNInstance& inst) :
+  SBNInstanceSamplerInput(const T &inst) :
     inst_{inst} {}
 
-  size_t RootsplitCount() const override;
-  EigenConstVectorXdRef SBNParameters() const override;
-  const Bitset &RootsplitsAt(size_t rootsplit_idx) const override;
-  const SizePair &ParentToRangeAt(const Bitset &parent) const override;
-  const Bitset &IndexToChildAt(size_t child_idx) const override;
+  size_t RootsplitCount() const override {
+    return inst_.SBNSupport().RootsplitCount();
+  }
 
+  EigenConstVectorXdRef SBNParameters() const override {
+    return inst_.SBNParameters();
+  }
+  
+  const Bitset &RootsplitsAt(size_t rootsplit_idx) const override {
+    return inst_.SBNSupport().RootsplitsAt(rootsplit_idx);
+  }
+  
+  const SizePair &ParentToRangeAt(const Bitset &parent) const override {
+    return inst_.SBNSupport().ParentToRangeAt(parent);
+  }
+  
+  const Bitset &IndexToChildAt(size_t child_idx) const override {
+    return inst_.SBNSupport().IndexToChildAt(child_idx);
+  }
+  
 private:
-  const UnrootedSBNInstance &inst_;
-};
-
-class RootedSBNInstance;
-class RootedSBNInstanceSamplerInput : public TopologySampler::Input {
-public:
-  RootedSBNInstanceSamplerInput(const RootedSBNInstance& inst) :
-    inst_{inst} {}
-
-  size_t RootsplitCount() const override;
-  EigenConstVectorXdRef SBNParameters() const override;
-  const Bitset &RootsplitsAt(size_t rootsplit_idx) const override;
-  const SizePair &ParentToRangeAt(const Bitset &parent) const override;
-  const Bitset &IndexToChildAt(size_t child_idx) const override;
-
-private:
-  const RootedSBNInstance &inst_;
+  const T &inst_;
 };
 
 class SubsplitDAG;
@@ -83,6 +81,7 @@ private:
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 #include "doctest_constants.hpp"
+#include "unrooted_sbn_instance.hpp"
 
 TEST_CASE("TopologySampler: UnrootedSBNInstance tree sampling") {
   UnrootedSBNInstance inst("charlie");
@@ -103,7 +102,7 @@ TEST_CASE("TopologySampler: UnrootedSBNInstance tree sampling") {
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
   ProgressBar progress_bar(sampled_tree_count / 1000);
   TopologySampler sampler;
-  UnrootedSBNInstanceSamplerInput input{inst};
+  SBNInstanceSamplerInput<UnrootedSBNInstance> input{inst};
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
     const auto rooted_topology = sampler.SampleTopology(input, true);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
