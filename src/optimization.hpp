@@ -39,9 +39,8 @@ bool is_converged = false;
 
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
-std::tuple<T, T, std::vector<std::pair<T, T>>> BrentMinimize(F f, T min, T max,
-                                                             int significant_digits,
-                                                             size_t max_iter) {
+std::tuple<T, T, std::pair<std::vector<T>, std::vector<T>>> BrentMinimize(
+    F f, T min, T max, int significant_digits, size_t max_iter) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point
@@ -62,8 +61,11 @@ std::tuple<T, T, std::vector<std::pair<T, T>>> BrentMinimize(F f, T min, T max,
 
   size_t count = max_iter;
 
-  std::vector<std::pair<T, T>> optimization_path;
-  optimization_path.push_back({x, fx});
+  std::vector<T> path_x;
+  std::vector<T> path_fx;
+
+  path_x.push_back(x);
+  path_fx.push_back(fx);
 
   do {
     // get midpoint
@@ -151,13 +153,15 @@ std::tuple<T, T, std::vector<std::pair<T, T>>> BrentMinimize(F f, T min, T max,
       }
     }
 
-    optimization_path.push_back({x, fx});
+    path_x.push_back(x);
+    path_fx.push_back(fx);
+
     iterations++;
   } while (--count);  // countdown until max iterations.
 
   max_iter -= count;
 
-  return std::make_tuple(x, fx, optimization_path);
+  return std::make_tuple(x, fx, std::make_pair(path_x, path_fx));
 }
 
 // TODO: REMOVE THIS BEFORE MERGING WITH MAIN.
@@ -759,21 +763,25 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
 
 // Modifying the output so that we can plot the optimization path
 // TODO: Change return back to DoublePair before merging to main.
-std::tuple<double, double, std::vector<DoublePair>> NewtonRaphsonOptimization(
+std::tuple<double, double, std::pair<std::vector<double>, std::vector<double>>>
+NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
     double x, const double tolerance, const double epsilon, const double min_x,
     const double max_x, const size_t max_iter) {
   size_t iter_idx = 0;
   double new_x, delta;
   double damp_const = 0.005;
-  std::vector<DoublePair> optimization_path;
+
+  std::vector<double> path_x;
+  std::vector<double> path_fx;
 
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
-    optimization_path.push_back({x, f_x});
+    path_x.push_back(x);
+    path_fx.push_back(f_x);
 
     if (fabs(f_double_prime_x) < epsilon) {
-      return std::make_tuple(x, f_x, optimization_path);
+      return std::make_tuple(x, f_x, std::make_pair(path_x, path_fx));
     }
     // This method below produces reasonable estimates on single tree DS data
     //
@@ -792,7 +800,7 @@ std::tuple<double, double, std::vector<DoublePair>> NewtonRaphsonOptimization(
     delta = fabs(x - new_x);
 
     if (delta < tolerance || iter_idx == max_iter) {
-      return std::make_tuple(x, f_x, optimization_path);
+      return std::make_tuple(x, f_x, std::make_pair(path_x, path_fx));
     }
 
     x = new_x;

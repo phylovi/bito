@@ -697,7 +697,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
     branch_lengths_(op.gpcsp_) = exp(log_branch_length);
   }
   optimization_path_branch_lengths_.at(op.gpcsp_) = optimization_path.first;
-  optimization_path_likelihoods_.at(op.gpcsp_) = -optimization_path.second;
+  optimization_path_likelihoods_.at(op.gpcsp_) = optimization_path.second;
 }
 
 // TODO: REMOVE THIS
@@ -826,7 +826,7 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
           relative_tolerance_for_optimization_, denominator_tolerance_for_newton_,
           min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = exp(log_branch_length);
-  optimization_path_branch_lengths_.at(op.gpcsp_) = optimization_path;
+  optimization_path_branch_lengths_.at(op.gpcsp_) = optimization_path.first;
   optimization_path_likelihoods_.at(op.gpcsp_) = optimization_path.second;
 }
 
