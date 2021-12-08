@@ -389,6 +389,8 @@ PYBIND11_MODULE(bito, m) {
   gp_instance_class.def(py::init<const std::string &>())
       .def("print_status", &GPInstance::PrintStatus,
            "Print information about the instance.")
+      .def("dag_summary_statistics", &GPInstance::DAGSummaryStatistics,
+           "Return summary statistics about the DAG.")
       .def("print_dag", &GPInstance::PrintDAG, "Print the generalized pruning DAG.")
 
       // ** I/O

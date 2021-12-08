@@ -17,6 +17,7 @@ class GPInstance {
     }
   };
   void PrintStatus();
+  StringSizeMap DAGSummaryStatistics();
 
   void ReadFastaFile(const std::string &fname);
   void ReadNewickFile(const std::string &fname);

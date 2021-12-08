@@ -36,6 +36,8 @@ void GPInstance::PrintStatus() {
   }
 }
 
+StringSizeMap GPInstance::DAGSummaryStatistics() { return dag_.SummaryStatistics(); }
+
 void GPInstance::ReadFastaFile(const std::string &fname) {
   alignment_ = Alignment::ReadFasta(fname);
 }
