@@ -8,10 +8,9 @@
 #include "eigen_sugar.hpp"
 
 class TopologySampler {
-public:
-
+ public:
   class Input {
-  public:
+   public:
     virtual EigenConstVectorXdRef SBNParameters() const = 0;
     virtual size_t RootsplitCount() const = 0;
     virtual const Bitset &RootsplitsAt(size_t rootsplit_idx) const = 0;
@@ -19,53 +18,48 @@ public:
     virtual const Bitset &IndexToChildAt(size_t child_idx) const = 0;
   };
 
-  Node::NodePtr SampleTopology(const Input& input, bool is_rooted) const;
+  Node::NodePtr SampleTopology(const Input &input, bool is_rooted) const;
   inline void SetSeed(uint64_t seed) { mersenne_twister_.SetSeed(seed); }
 
-private:
+ private:
   using Range = std::pair<size_t, size_t>;
 
   size_t SampleIndex(const Input &input, Range range) const;
   Node::NodePtr SampleTopology(const Input &input, const Bitset &parent_subsplit) const;
-  
+
   MersenneTwister mersenne_twister_;
 };
 
 template <typename T>
 class SBNInstanceSamplerInput : public TopologySampler::Input {
-public:
-  SBNInstanceSamplerInput(const T &inst) :
-    inst_{inst} {}
+ public:
+  SBNInstanceSamplerInput(const T &inst) : inst_{inst} {}
 
-  size_t RootsplitCount() const override {
-    return inst_.SBNSupport().RootsplitCount();
-  }
+  size_t RootsplitCount() const override { return inst_.SBNSupport().RootsplitCount(); }
 
-  EigenConstVectorXdRef SBNParameters() const override {
-    return inst_.SBNParameters();
-  }
-  
+  EigenConstVectorXdRef SBNParameters() const override { return inst_.SBNParameters(); }
+
   const Bitset &RootsplitsAt(size_t rootsplit_idx) const override {
     return inst_.SBNSupport().RootsplitsAt(rootsplit_idx);
   }
-  
+
   const SizePair &ParentToRangeAt(const Bitset &parent) const override {
     return inst_.SBNSupport().ParentToRangeAt(parent);
   }
-  
+
   const Bitset &IndexToChildAt(size_t child_idx) const override {
     return inst_.SBNSupport().IndexToChildAt(child_idx);
   }
-  
-private:
+
+ private:
   const T &inst_;
 };
 
 class SubsplitDAG;
 class SubsplitDAGSamplerInput : public TopologySampler::Input {
-public:
-  SubsplitDAGSamplerInput(const SubsplitDAG& dag, EigenConstVectorXdRef sbn_parameters) :
-    dag_{dag}, sbn_parameters_{sbn_parameters} {}
+ public:
+  SubsplitDAGSamplerInput(const SubsplitDAG &dag, EigenConstVectorXdRef sbn_parameters)
+      : dag_{dag}, sbn_parameters_{sbn_parameters} {}
 
   size_t RootsplitCount() const override;
   EigenConstVectorXdRef SBNParameters() const override;
@@ -73,7 +67,7 @@ public:
   const SizePair &ParentToRangeAt(const Bitset &parent) const override;
   const Bitset &IndexToChildAt(size_t child_idx) const override;
 
-private:
+ private:
   const SubsplitDAG &dag_;
   EigenConstVectorXdRef sbn_parameters_;
 };

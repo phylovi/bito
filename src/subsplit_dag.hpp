@@ -204,8 +204,8 @@ class SubsplitDAG {
   // Return the node ids corresponding to the rootsplits.
   const SizeVector &RootsplitIds() const;
 
-  const BitsetSizePairMap& ParentToRange() const;
-  const std::map<SizePair, size_t>& DAGEdges() const;
+  const BitsetSizePairMap &ParentToRange() const;
+  const std::map<SizePair, size_t> &DAGEdges() const;
 
   // Access the GPCSP index from a parent-child pair of DAG nodes.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,

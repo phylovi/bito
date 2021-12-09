@@ -7,15 +7,16 @@
 #include "rooted_sbn_instance.hpp"
 #include "subsplit_dag.hpp"
 
-Node::NodePtr TopologySampler::SampleTopology(const Input &input, bool is_rooted) const {
-    // Start by sampling a rootsplit.
-    size_t rootsplit_index =
-        SampleIndex(input, std::pair<size_t, size_t>(0, input.RootsplitCount()));
-    const Bitset &rootsplit = input.RootsplitsAt(rootsplit_index);
-    auto topology =
-        is_rooted ? SampleTopology(input, rootsplit) : SampleTopology(input, rootsplit)->Deroot();
-    topology->Polish();
-    return topology;
+Node::NodePtr TopologySampler::SampleTopology(const Input &input,
+                                              bool is_rooted) const {
+  // Start by sampling a rootsplit.
+  size_t rootsplit_index =
+      SampleIndex(input, std::pair<size_t, size_t>(0, input.RootsplitCount()));
+  const Bitset &rootsplit = input.RootsplitsAt(rootsplit_index);
+  auto topology = is_rooted ? SampleTopology(input, rootsplit)
+                            : SampleTopology(input, rootsplit)->Deroot();
+  topology->Polish();
+  return topology;
 }
 
 // Sample an integer index in [range.first, range.second) according to
@@ -23,9 +24,10 @@ Node::NodePtr TopologySampler::SampleTopology(const Input &input, bool is_rooted
 size_t TopologySampler::SampleIndex(const Input &input, Range range) const {
   const auto &[start, end] = range;
   Assert(start < end && static_cast<Eigen::Index>(end) <= input.SBNParameters().size(),
-          "SampleIndex given an invalid range.");
+         "SampleIndex given an invalid range.");
   // We do not want to overwrite sbn_parameters so we make a copy.
-  EigenVectorXd sbn_parameters_subrange = input.SBNParameters().segment(start, end - start);
+  EigenVectorXd sbn_parameters_subrange =
+      input.SBNParameters().segment(start, end - start);
   NumericalUtils::ProbabilityNormalizeInLog(sbn_parameters_subrange);
   NumericalUtils::Exponentiate(sbn_parameters_subrange);
   std::discrete_distribution<> distribution(sbn_parameters_subrange.begin(),
@@ -39,7 +41,8 @@ size_t TopologySampler::SampleIndex(const Input &input, Range range) const {
 }
 
 // The input to this function is a parent subsplit (of length 2n).
-Node::NodePtr TopologySampler::SampleTopology(const Input &input, const Bitset &parent_subsplit) const {
+Node::NodePtr TopologySampler::SampleTopology(const Input &input,
+                                              const Bitset &parent_subsplit) const {
   auto process_subsplit = [this, &input](const Bitset &parent) {
     auto singleton_option = parent.SubsplitGetClade(1).SingletonOption();
     if (singleton_option) {
@@ -52,24 +55,23 @@ Node::NodePtr TopologySampler::SampleTopology(const Input &input, const Bitset &
                     process_subsplit(parent_subsplit.SubsplitRotate()));
 }
 
-size_t SubsplitDAGSamplerInput::RootsplitCount() const {
-  return dag_.RootsplitCount();
-}
+size_t SubsplitDAGSamplerInput::RootsplitCount() const { return dag_.RootsplitCount(); }
 
 EigenConstVectorXdRef SubsplitDAGSamplerInput::SBNParameters() const {
   return sbn_parameters_;
 }
 
-const Bitset& SubsplitDAGSamplerInput::RootsplitsAt(size_t rootsplit_idx) const {
-  return dag_.GetDAGNode(dag_.RootsplitIds().at(rootsplit_idx))->GetBitset();;
+const Bitset &SubsplitDAGSamplerInput::RootsplitsAt(size_t rootsplit_idx) const {
+  return dag_.GetDAGNode(dag_.RootsplitIds().at(rootsplit_idx))->GetBitset();
+  ;
 }
 
-const SizePair& SubsplitDAGSamplerInput::ParentToRangeAt(const Bitset &parent) const {
+const SizePair &SubsplitDAGSamplerInput::ParentToRangeAt(const Bitset &parent) const {
   return dag_.ParentToRange().at(parent);
 }
 
-const Bitset& SubsplitDAGSamplerInput::IndexToChildAt(size_t child_idx) const {
-  for (auto&& i : dag_.DAGEdges()) {
+const Bitset &SubsplitDAGSamplerInput::IndexToChildAt(size_t child_idx) const {
+  for (auto &&i : dag_.DAGEdges()) {
     if (i.second == child_idx) return dag_.GetDAGNode(i.first.second)->GetBitset();
   }
   Failwith("Edge not found");
