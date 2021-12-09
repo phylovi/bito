@@ -39,8 +39,9 @@ bool is_converged = false;
 
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
-std::tuple<T, T, std::pair<std::vector<T>, std::vector<T>>> BrentMinimize(
-    F f, T min, T max, int significant_digits, size_t max_iter) {
+std::tuple<T, T, std::vector<std::pair<T, T>>> BrentMinimize(F f, T min, T max,
+                                                             int significant_digits,
+                                                             size_t max_iter) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point
@@ -800,7 +801,7 @@ NewtonRaphsonOptimization(
     delta = fabs(x - new_x);
 
     if (delta < tolerance || iter_idx == max_iter) {
-      return std::make_tuple(x, f_x, std::make_pair(path_x, path_fx));
+      return std::make_tuple(x, f_x, optimization_path);
     }
 
     x = new_x;

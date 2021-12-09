@@ -333,7 +333,7 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(int steps) {
       per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx, 0) =
           gpcsp_new_branch_lengths[i];
       per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx, 1) =
-          (GetEngine()->GetPerGPCSPLogLikelihoods())(gpcsp_idx);
+          GetEngine()->GetPerGPCSPLogLikelihoods(gpcsp_idx, 1)(0, 0);
     }
   }
   // Reset back to optimized branch lengths
@@ -368,7 +368,7 @@ void GPInstance::TrackValuesFromOptimization() {
       PopulatePLVs();
       ComputeLikelihoods();
 
-      double current_llh = GetEngine()->GetPerGPCSPLogLikelihoods()(gpcsp_idx);
+      double current_llh = GetEngine()->GetPerGPCSPLogLikelihoods(gpcsp_idx, 1)(0, 0);
 
       tracked_optimization_values.row(tracked_optimization_values.rows() - 1)
           << current_branch_length,
