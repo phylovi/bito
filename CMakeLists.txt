@@ -120,6 +120,9 @@ target_include_directories(bito PUBLIC
 	${PROJECT_BINARY_DIR}/pybind11/install/include
 )
 bito_link_opts(bito)
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+	target_link_options(bito PUBLIC -undefined dynamic_lookup)
+endif()
 add_dependencies(bito pybind11)
 
 ###############
