@@ -210,6 +210,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   for (size_t i = 0; i < max_iter; i++) {
     our_ostream << "Iteration: " << (i + 1) << std::endl;
     ProcessOperations(branch_optimization_operations);
+    GetOptimizationPath();
     // #321 Replace with a cleaned up traversal.
     ProcessOperations(populate_plv_operations);
     ProcessOperations(marginal_lik_operations);
@@ -408,6 +409,25 @@ void GPInstance::TrackValuesFromOptimization() {
   for (size_t i = 0; i < tracked_optimization_values.rows(); i++) {
     tracked_values_after_full_dag_traversal_.push_back(
         {pretty_index_vector.at(i), tracked_optimization_values.row(i)});
+  }
+}
+
+void GPInstance::GetOptimizationPath() {
+  size_t gpcsp_count = dag_.GPCSPCountWithFakeSubsplits();
+  const auto pretty_indexer = PrettyIndexer();
+
+  for (size_t i = 0; i < gpcsp_count; i++) {
+    EigenVectorXd optimization_path_branch_length_vector =
+        EigenVectorXdOfStdVectorDouble(
+            GetEngine()->GetPerGPCSPOptimizationPathBranchLengths().at(i));
+
+    EigenVectorXd optimization_path_likelihood_vector = EigenVectorXdOfStdVectorDouble(
+        GetEngine()->GetPerGPCSPOptimizationPathLikelihoods().at(i));
+
+    per_gpcsp_optimization_path_branch_lengths_.push_back(
+        {pretty_indexer.at(i), optimization_path_branch_length_vector});
+    per_gpcsp_optimization_path_likelihoods_.push_back(
+        {pretty_indexer.at(i), optimization_path_likelihood_vector});
   }
 }
 

@@ -123,7 +123,6 @@ class GPInstance {
                                  const Node *leaf_node) const;
   RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
       Node::NodePtrVec &&topologies) const;
-  StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
 
   std::string mmap_file_path_;
   Alignment alignment_;

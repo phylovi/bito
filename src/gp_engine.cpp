@@ -657,7 +657,7 @@ void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
   switch (os.value()) {
     // default methods
     case OptimizationMethod::DefaultGradientOptimization:
-      return NewtonOptimization(op);
+      return BrentNewtonHybridOptimization(op);
     case OptimizationMethod::DefaultNongradientOptimization:
       return BrentOptimization(op);
     // explicit methods
@@ -673,6 +673,15 @@ void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
       return NewtonOptimization(op);
     default:
       Failwith("GPEngine::Optimization(): Invalid OptimizationMethod given.");
+  }
+}
+
+void GPEngine::BrentNewtonHybridOptimization(
+    const GPOperations::OptimizeBranchLength& op) {
+  if (branch_lengths_(op.gpcsp_) == default_branch_length_) {
+    BrentOptimization(op);
+  } else {
+    NewtonOptimization(op);
   }
 }
 
@@ -698,63 +707,6 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   }
   optimization_path_branch_lengths_.at(op.gpcsp_) = optimization_path.first;
   optimization_path_likelihoods_.at(op.gpcsp_) = optimization_path.second;
-}
-
-// TODO: REMOVE THIS
-void GPEngine::Optimize_RUNALL(const GPOperations::OptimizeBranchLength& op) {
-  using Func = std::function<double(double)>;
-  using FuncAndOneDerivative = std::function<DoublePair(double)>;
-  using FuncAndTwoDerivatives =
-      std::function<std::tuple<double, double, double>(double)>;
-
-  // bounds in non-log space:
-  auto max_branch_length = exp(max_log_branch_length_);
-  auto min_branch_length = exp(min_log_branch_length_);
-
-  // function (for maximization functions)
-  auto log_likelihood = [this, &op](double branch_length) {
-    branch_lengths_(op.gpcsp_) = branch_length;
-    return this->LogLikelihoodAndDerivative(op).first;
-  };
-  // negative of function (for minimization functions)
-  auto negative_log_likelihood = [this, &op](double log_branch_length) {
-    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
-    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
-    return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-  };
-  // first derivative (for gradient and rootfinding functions)
-  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
-    branch_lengths_(op.gpcsp_) = branch_length;
-    return this->LogLikelihoodAndDerivative(op);
-  };
-  // first and second derivative (for Newton-Raphson)
-  auto log_likelihood_and_first_two_derivatives = [this,
-                                                   &op](double log_branch_length) {
-    double x = exp(log_branch_length);
-    branch_lengths_(op.gpcsp_) = x;
-    auto [f_x, f_prime_x, f_double_prime_x] =
-        this->LogLikelihoodAndFirstTwoDerivatives(op);
-    double f_prime_y = x * f_prime_x;
-    double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
-    return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
-  };
-  double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
-  double current_value = negative_log_likelihood(current_log_branch_length);
-
-  const auto [log_branch_length, neg_log_likelihood] =
-      Optimization::Optimize_RunAll<Func, double>(
-          log_likelihood, negative_log_likelihood, log_likelihood_and_derivative,
-          log_likelihood_and_first_two_derivatives, min_branch_length,
-          max_branch_length, min_log_branch_length_, max_log_branch_length_,
-          significant_digits_for_optimization_, max_iter_for_optimization_);
-
-  // Numerical optimization sometimes yields new nllk > current nllk.
-  // In this case, we reset the branch length to the previous value.
-  if (neg_log_likelihood > current_value) {
-    branch_lengths_(op.gpcsp_) = exp(current_log_branch_length);
-  } else {
-    branch_lengths_(op.gpcsp_) = exp(log_branch_length);
-  }
 }
 
 void GPEngine::GradientAscentOptimization(
@@ -857,7 +809,6 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   }
 }
 
-<<<<<<< HEAD
 SizeDoubleVectorMap GPEngine::GatherBranchLengths(
     const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
   SizeDoubleVectorMap gpcsp_branchlengths_map;
