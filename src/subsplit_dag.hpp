@@ -327,3 +327,21 @@ class SubsplitDAG {
   void ConnectParentToAllParents(const Bitset &parent_subsplit,
                                  SizeVector &new_edge_idxs);
 };
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+#include "gp_instance.hpp"
+
+GPInstance GPInstanceOfFiles(const std::string &fasta_path,
+                             const std::string &newick_path) {
+  GPInstance inst("_ignore/mmapped_plv.data");
+  inst.ReadFastaFile(fasta_path);
+  inst.ReadNewickFile(newick_path);
+  inst.MakeEngine();
+  return inst;
+}
+
+TEST_CASE("SubsplitDAG") {
+  auto inst = GPInstanceOfFiles("data/hello.fasta", "data/hello_rooted_two_trees.nwk");
+  auto summaries = inst.DAGSummaryStatistics();
+}
+#endif  // DOCTEST_LIBRARY_INCLUDED
