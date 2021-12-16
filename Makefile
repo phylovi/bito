@@ -11,7 +11,7 @@ cmakebuild:
 	@mkdir -p build
 	@cd build && \
 		cmake -DCMAKE_BUILD_TYPE=Release .. && \
-		cmake --build . --parallel && \
+		cmake --build . ${j_flags} && \
 		ln -sf ../data . && \
 		ln -sf libbito.so bito.so && \
 		mkdir -p _ignore
@@ -20,7 +20,7 @@ cmakebuildtest:
 	@mkdir -p build_test
 	@cd build_test && \
 		cmake -DCMAKE_BUILD_TYPE=Debug .. && \
-		cmake --build . --parallel && \
+		cmake --build . ${j_flags} && \
 		ln -sf ../data . && \
 		ln -sf libbito.so bito.so && \
 		mkdir -p _ignore

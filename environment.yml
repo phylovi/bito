@@ -5,23 +5,21 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.7
+  - python >= 3.7
   - bison=3.4
   - flex
   - make
   - numpy
   - pandas
   - pip
-  - pybind11 >=2.3.0
+  - pybind11 >= 2.3.0
   - pytest
-  - scons
   - scipy
   - sphinx >= 2.2.1
   - pip:
       - black
       - click
       - docformatter
-      - enscons
       - flake8
       - sphinx-click
       - sphinx-rtd-theme
