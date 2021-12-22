@@ -478,6 +478,10 @@ DoubleVectorVector GPEngine::GetPerGPCSPOptimizationPathLikelihoods() const {
   return optimization_path_likelihoods_;
 };
 
+DoubleVectorVector GPEngine::GetPerGPCSPOptimizationPathDerivatives() const {
+  return optimization_path_derivatives_;
+};
+
 EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {
   return log_likelihoods_.block(0, 0, gpcsp_count_, log_likelihoods_.cols()) *
          site_pattern_weights_;
@@ -657,7 +661,7 @@ void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
   switch (os.value()) {
     // default methods
     case OptimizationMethod::DefaultGradientOptimization:
-      return BrentNewtonHybridOptimization(op);
+      return NewtonOptimization(op);
     case OptimizationMethod::DefaultNongradientOptimization:
       return BrentOptimization(op);
     // explicit methods
@@ -687,9 +691,11 @@ void GPEngine::BrentNewtonHybridOptimization(
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
-    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
-    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
-    return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+	  double branch_length = exp(log_branch_length);
+    branch_lengths_(op.gpcsp_) = branch_length;
+    auto [log_likelihood, log_likelihood_derivative] =
+        this->LogLikelihoodAndDerivative(op);
+    return std::make_pair(-log_likelihood, branch_length * log_likelihood_derivative);
   };
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
   double current_value = negative_log_likelihood(current_log_branch_length);
@@ -705,8 +711,9 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   } else {
     branch_lengths_(op.gpcsp_) = exp(log_branch_length);
   }
-  optimization_path_branch_lengths_.at(op.gpcsp_) = optimization_path.first;
-  optimization_path_likelihoods_.at(op.gpcsp_) = optimization_path.second;
+  optimization_path_branch_lengths_.at(op.gpcsp_) = std::get<0>(optimization_path);
+  optimization_path_likelihoods_.at(op.gpcsp_) = std::get<1>(optimization_path);
+  optimization_path_derivatives_.at(op.gpcsp_) = std::get<2>(optimization_path);
 }
 
 void GPEngine::GradientAscentOptimization(
@@ -777,6 +784,28 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
           log_likelihood_and_first_two_derivatives, log(branch_lengths_(op.gpcsp_)),
           relative_tolerance_for_optimization_, denominator_tolerance_for_newton_,
           min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
+  branch_lengths_(op.gpcsp_) = exp(log_branch_length);
+  optimization_path_branch_lengths_.at(op.gpcsp_) = std::get<0>(optimization_path);
+  optimization_path_likelihoods_.at(op.gpcsp_) = std::get<1>(optimization_path);
+  optimization_path_derivatives_.at(op.gpcsp_) = std::get<2>(optimization_path);
+}
+
+void GPEngine::BoostNewtonOptimization(const GPOperations::OptimizeBranchLength& op) {
+  auto log_likelihood_and_first_two_derivatives = [this,
+                                                   &op](double log_branch_length) {
+    double x = exp(log_branch_length);
+    branch_lengths_(op.gpcsp_) = x;
+    auto [f_x, f_prime_x, f_double_prime_x] =
+        this->LogLikelihoodAndFirstTwoDerivatives(op);
+    double f_prime_y = x * f_prime_x;
+    double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
+    return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
+  };
+  const auto [log_branch_length, log_likelihood, optimization_path] =
+      Optimization::NewtonRaphsonIterate(log_likelihood_and_first_two_derivatives,
+                                         log(branch_lengths_(op.gpcsp_)),
+                                         min_log_branch_length_, max_log_branch_length_,
+                                         11, max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = exp(log_branch_length);
   optimization_path_branch_lengths_.at(op.gpcsp_) = optimization_path.first;
   optimization_path_likelihoods_.at(op.gpcsp_) = optimization_path.second;

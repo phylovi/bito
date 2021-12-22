@@ -394,6 +394,12 @@ void GPInstance::TrackValuesFromOptimization() {
                 GetEngine()->GetPerGPCSPOptimizationPathLikelihoods().at(gpcsp_idx));
         per_gpcsp_optimization_path_likelihoods_.push_back(
             {pretty_indexer.at(gpcsp_idx), optimization_path_likelihood_vector});
+
+        EigenVectorXd optimization_path_derivative_vector =
+            EigenVectorXdOfStdVectorDouble(
+                GetEngine()->GetPerGPCSPOptimizationPathDerivatives().at(gpcsp_idx));
+        per_gpcsp_optimization_path_derivatives_.push_back(
+            {pretty_indexer.at(gpcsp_idx), optimization_path_derivative_vector});
       }
     }
     pretty_index_vector.insert(pretty_index_vector.end(), run_counts[gpcsp_idx],
@@ -424,10 +430,15 @@ void GPInstance::GetOptimizationPath() {
     EigenVectorXd optimization_path_likelihood_vector = EigenVectorXdOfStdVectorDouble(
         GetEngine()->GetPerGPCSPOptimizationPathLikelihoods().at(i));
 
+    EigenVectorXd optimization_path_derivative_vector = EigenVectorXdOfStdVectorDouble(
+        GetEngine()->GetPerGPCSPOptimizationPathDerivatives().at(i));
+
     per_gpcsp_optimization_path_branch_lengths_.push_back(
         {pretty_indexer.at(i), optimization_path_branch_length_vector});
     per_gpcsp_optimization_path_likelihoods_.push_back(
         {pretty_indexer.at(i), optimization_path_likelihood_vector});
+    per_gpcsp_optimization_path_derivatives_.push_back(
+        {pretty_indexer.at(i), optimization_path_derivative_vector});
   }
 }
 
@@ -575,6 +586,11 @@ void GPInstance::PerGPCSPOptimizationPathBranchLengthsToCSV(
 void GPInstance::PerGPCSPOptimizationPathLikelihoodsToCSV(
     const std::string &file_path) {
   return PerPCSPIndexedMatrixToCSV(per_gpcsp_optimization_path_likelihoods_, file_path);
+}
+
+void GPInstance::PerGPCSPOptimizationPathDerivativesToCSV(
+    const std::string &file_path) {
+  return PerPCSPIndexedMatrixToCSV(per_gpcsp_optimization_path_derivatives_, file_path);
 }
 
 RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {

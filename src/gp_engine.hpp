@@ -248,7 +248,7 @@ class GPEngine {
   // Precision used for checking convergence of branch length optimization.
   int significant_digits_for_optimization_ = 6;
   double relative_tolerance_for_optimization_ = 1e-4;
-  double denominator_tolerance_for_newton_ = 1e-6;
+  double denominator_tolerance_for_newton_ = 1e-10;
   double step_size_for_optimization_ = 5e-4;
   double step_size_for_log_space_optimization_ = 1.0005;
   // Number of iterations allowed for branch length optimization.
@@ -323,6 +323,7 @@ class GPEngine {
   bool use_gradients_;
   DoubleVectorVector optimization_path_branch_lengths_;
   DoubleVectorVector optimization_path_likelihoods_;
+  DoubleVectorVector optimization_path_derivatives_;
 
   // The number of rows is equal to the number of GPCSPs.
   // The number of columns is equal to the number of site patterns.

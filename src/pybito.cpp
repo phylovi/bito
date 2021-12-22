@@ -604,6 +604,9 @@ PYBIND11_MODULE(bito, m) {
       .def("optim_path_llh_to_csv",
            &GPInstance::PerGPCSPOptimizationPathLikelihoodsToCSV,
            R"raw(Write "pretty" formatted per pcsp likelihood optimization paths.)raw")
+      .def("optim_path_deriv_to_csv",
+           &GPInstance::PerGPCSPOptimizationPathDerivativesToCSV,
+           R"raw(Write "pretty" formatted per pcsp likelihood derivative optimization paths.)raw")
       .def("export_trees", &GPInstance::ExportTrees,
            R"raw(Write out currently loaded trees to a Newick file
           (using current GP branch lengths).)raw",

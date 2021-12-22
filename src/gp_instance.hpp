@@ -76,6 +76,7 @@ class GPInstance {
   void FullDAGTraversalOptimizationValuesToCSV(const std::string &file_path);
   void PerGPCSPOptimizationPathBranchLengthsToCSV(const std::string &file_path);
   void PerGPCSPOptimizationPathLikelihoodsToCSV(const std::string &file_path);
+  void PerGPCSPOptimizationPathDerivativesToCSV(const std::string &file_path);
 
   // Generate a version of the topologies in the current tree collection that use
   // the current GP branch lengths.

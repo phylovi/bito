@@ -39,9 +39,8 @@ bool is_converged = false;
 
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
-std::tuple<T, T, std::pair<std::vector<T>, std::vector<T>>> BrentMinimize(F f, T min, T max,
-                                                             int significant_digits,
-                                                             size_t max_iter) {
+std::tuple<T, T, std::tuple<std::vector<T>, std::vector<T>, std::vector<T>>>
+BrentMinimize(F f, T min, T max, int significant_digits, size_t max_iter) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point
@@ -57,16 +56,19 @@ std::tuple<T, T, std::pair<std::vector<T>, std::vector<T>>> BrentMinimize(F f, T
   static const T golden = 0.3819660f;
 
   x = w = v = max;
-  fw = fv = fx = f(x);
+  fw = fv = fx = f(x).first;
+  T f_prime_x = f(x).second;
   delta2 = delta = 0;
 
   size_t count = max_iter;
 
   std::vector<T> path_x;
   std::vector<T> path_fx;
+  std::vector<T> path_fprimex;
 
   path_x.push_back(x);
   path_fx.push_back(fx);
+  path_fprimex.push_back(f_prime_x);
 
   do {
     // get midpoint
@@ -119,7 +121,7 @@ std::tuple<T, T, std::pair<std::vector<T>, std::vector<T>>> BrentMinimize(F f, T
     u = (fabs(delta) >= fract1)
             ? T(x + delta)
             : (delta > 0 ? T(x + fabs(fract1)) : T(x - fabs(fract1)));
-    fu = f(u);
+    fu = f(u).first;
     if (fu <= fx) {
       // good new point is an improvement!
       // update brackets (previous guess becomes the new outer bracket):
@@ -156,13 +158,14 @@ std::tuple<T, T, std::pair<std::vector<T>, std::vector<T>>> BrentMinimize(F f, T
 
     path_x.push_back(x);
     path_fx.push_back(fx);
+    path_fprimex.push_back(f(x).second);
 
     iterations++;
   } while (--count);  // countdown until max iterations.
 
   max_iter -= count;
 
-  return std::make_tuple(x, fx, std::make_pair(path_x, path_fx));
+  return std::make_tuple(x, fx, std::make_tuple(path_x, path_fx, path_fprimex));
 }
 
 // TODO: REMOVE THIS BEFORE MERGING WITH MAIN.
@@ -764,7 +767,8 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
 
 // Modifying the output so that we can plot the optimization path
 // TODO: Change return back to DoublePair before merging to main.
-std::tuple<double, double, std::pair<std::vector<double>, std::vector<double>>>
+std::tuple<double, double,
+           std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>>
 NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
     double x, const double tolerance, const double epsilon, const double min_x,
@@ -775,14 +779,16 @@ NewtonRaphsonOptimization(
 
   std::vector<double> path_x;
   std::vector<double> path_fx;
+  std::vector<double> path_fprimex;
 
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
     path_x.push_back(x);
     path_fx.push_back(f_x);
+    path_fprimex.push_back(f_prime_x);
 
     if (fabs(f_double_prime_x) < epsilon) {
-      return std::make_tuple(x, f_x, std::make_pair(path_x, path_fx));
+      return std::make_tuple(x, f_x, std::make_tuple(path_x, path_fx, path_fprimex));
     }
     // This method below produces reasonable estimates on single tree DS data
     //
@@ -801,7 +807,7 @@ NewtonRaphsonOptimization(
     delta = fabs(x - new_x);
 
     if (delta < tolerance || iter_idx == max_iter) {
-      return std::make_tuple(x, f_x, std::make_pair(path_x, path_fx));
+      return std::make_tuple(x, f_x, std::make_tuple(path_x, path_fx, path_fprimex));
     }
 
     x = new_x;
@@ -874,8 +880,8 @@ void handle_zero_derivative(F f, T last_f1, const T f1, T delta, T result, T gue
 }
 
 template <class F, class T>
-std::pair<T, T> NewtonRaphsonIterate(F f, T guess, T min, T max, int significant_digits,
-                                     size_t max_iter) {
+std::tuple<T, T, std::pair<std::vector<T>, std::vector<T>>> NewtonRaphsonIterate(
+    F f, T guess, T min, T max, int significant_digits, size_t max_iter) {
   T f1(0), f2, last_f1(0);
   T result = guess;
 
@@ -883,6 +889,12 @@ std::pair<T, T> NewtonRaphsonIterate(F f, T guess, T min, T max, int significant
   T delta = 1;
   T delta1 = std::numeric_limits<double>::max();
   T delta2 = std::numeric_limits<double>::max();
+
+  std::vector<T> path_x;
+  std::vector<T> path_fx;
+
+  path_x.push_back(result);
+  path_fx.push_back(std::get<0>(f(result)));
 
   size_t count = max_iter;
 
@@ -918,11 +930,15 @@ std::pair<T, T> NewtonRaphsonIterate(F f, T guess, T min, T max, int significant
       max = guess;
     else
       min = guess;
+
+    path_x.push_back(result);
+    path_fx.push_back(std::get<0>(f(result)));
   } while (--count && (fabs(result * factor) < fabs(delta)));
 
   max_iter -= count;
 
-  return std::make_pair(result, std::get<0>(f(result)));
+  return std::make_tuple(result, std::get<0>(f(result)),
+                         std::make_pair(path_x, path_fx));
 }
 
 // TODO: REMOVE THIS BEFORE MERGING WITH MAIN.
