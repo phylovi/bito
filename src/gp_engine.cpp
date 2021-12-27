@@ -671,8 +671,6 @@ void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
       return GradientAscentOptimization(op);
     case OptimizationMethod::LogSpaceGradientAscentOptimization:
       return LogSpaceGradientAscentOptimization(op);
-    case OptimizationMethod::TOMS748Optimization:
-      return TOMS748Optimization(op);
     case OptimizationMethod::NewtonOptimization:
       return NewtonOptimization(op);
     default:
@@ -691,7 +689,7 @@ void GPEngine::BrentNewtonHybridOptimization(
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
-	  double branch_length = exp(log_branch_length);
+    double branch_length = exp(log_branch_length);
     branch_lengths_(op.gpcsp_) = branch_length;
     auto [log_likelihood, log_likelihood_derivative] =
         this->LogLikelihoodAndDerivative(op);
@@ -701,7 +699,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   double current_value = negative_log_likelihood(current_log_branch_length);
   const auto [log_branch_length, neg_log_likelihood, optimization_path] =
       Optimization::BrentMinimize(
-          negative_log_likelihood, min_log_branch_length_, max_log_branch_length_,
+          negative_log_likelihood, current_log_branch_length, min_log_branch_length_, max_log_branch_length_,
           significant_digits_for_optimization_, max_iter_for_optimization_);
 
   // Numerical optimization sometimes yields new nllk > current nllk.
@@ -747,27 +745,6 @@ void GPEngine::LogSpaceGradientAscentOptimization(
   branch_lengths_(op.gpcsp_) = branch_length;
 }
 
-void GPEngine::TOMS748Optimization(const GPOperations::OptimizeBranchLength& op) {
-  auto pos_log_likelihood = [this, &op](double log_branch_length) {
-    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
-    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
-    return per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-  };
-  auto log_likelihood_and_derivative = [this, &op](double log_branch_length) {
-    double branch_length = exp(log_branch_length);
-    branch_lengths_(op.gpcsp_) = branch_length;
-    auto [f_x, f_prime_x] = LogLikelihoodAndDerivative(op);
-    double f_prime_y = branch_length * f_prime_x;  // Obtaining the log space derivative
-    return std::make_pair(f_x, f_prime_y);
-  };
-  const auto [log_branch_length, log_likelihood] =
-      Optimization::TOMS_748::Minimize<std::function<double(double)>, double>(
-          pos_log_likelihood, log_likelihood_and_derivative, min_log_branch_length_,
-          max_log_branch_length_, significant_digits_for_optimization_,
-          max_iter_for_optimization_);
-  branch_lengths_(op.gpcsp_) = exp(log_branch_length);
-}
-
 void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto log_likelihood_and_first_two_derivatives = [this,
                                                    &op](double log_branch_length) {
@@ -788,27 +765,6 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
   optimization_path_branch_lengths_.at(op.gpcsp_) = std::get<0>(optimization_path);
   optimization_path_likelihoods_.at(op.gpcsp_) = std::get<1>(optimization_path);
   optimization_path_derivatives_.at(op.gpcsp_) = std::get<2>(optimization_path);
-}
-
-void GPEngine::BoostNewtonOptimization(const GPOperations::OptimizeBranchLength& op) {
-  auto log_likelihood_and_first_two_derivatives = [this,
-                                                   &op](double log_branch_length) {
-    double x = exp(log_branch_length);
-    branch_lengths_(op.gpcsp_) = x;
-    auto [f_x, f_prime_x, f_double_prime_x] =
-        this->LogLikelihoodAndFirstTwoDerivatives(op);
-    double f_prime_y = x * f_prime_x;
-    double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
-    return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
-  };
-  const auto [log_branch_length, log_likelihood, optimization_path] =
-      Optimization::NewtonRaphsonIterate(log_likelihood_and_first_two_derivatives,
-                                         log(branch_lengths_(op.gpcsp_)),
-                                         min_log_branch_length_, max_log_branch_length_,
-                                         11, max_iter_for_optimization_);
-  branch_lengths_(op.gpcsp_) = exp(log_branch_length);
-  optimization_path_branch_lengths_.at(op.gpcsp_) = optimization_path.first;
-  optimization_path_likelihoods_.at(op.gpcsp_) = optimization_path.second;
 }
 
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
