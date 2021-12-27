@@ -26,6 +26,7 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
   T fu, fv, fw, fx;  // function evaluations at u, v, w, x
   T mid;             // midpoint of min and max
   T fract1, fract2;  // minimal relative movement in x
+  T f_prime_x;
 
   // golden ratio, don't need too much precision here!
   static const T golden = 0.3819660f;
@@ -34,28 +35,24 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
   std::vector<T> path_fx;
   std::vector<T> path_fprimex;
 
-  x = guess;
 
-  // Check guess value
-  fx = f(x).first;
-  T f_prime_x = f(x).second;
-
-  if (fabs(f_prime_x) < 1e-4) {
-    return std::make_tuple(guess, fx, std::make_tuple(path_x, path_fx, path_fprimex));
-  } else {
-    w = v = x;
-  }
+  w = v = x = guess;
+  fw = fv = fx = f(x).first;
+  delta2 = delta = 0;
 
   path_x.push_back(x);
   path_fx.push_back(fx);
-  path_fprimex.push_back(f_prime_x);
-
-  fw = fv = fx;
-  delta2 = delta = 0;
+  path_fprimex.push_back(f(x).second);
 
   size_t count = max_iter;
 
   do {
+    // Check current value
+    f_prime_x = f(x).second;
+    if (fabs(f_prime_x) < 1e-4) {
+      break;
+    }
+
     // get midpoint
     mid = (min + max) / 2;
 
@@ -151,7 +148,6 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
 
   return std::make_tuple(x, fx, std::make_tuple(path_x, path_fx, path_fprimex));
 }
-
 
 DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
                           const double tolerance, const double step_size,
