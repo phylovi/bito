@@ -1,6 +1,0 @@
-name: bito-cmake
-channels:
-  - conda-forge
-dependencies:
-  - numpy
-  - pytest
