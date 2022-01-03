@@ -1,20 +1,15 @@
 name: bito
 channels:
-  - anaconda
-  - bioconda
   - conda-forge
-  - defaults
 dependencies:
   - python >= 3.7
-  - bison=3.4
+  - bison = 3.4
   - flex
   - make
   - numpy
-  - pandas
   - pip
   - pybind11 >= 2.3.0
   - pytest
-  - scipy
   - sphinx >= 2.2.1
   - pip:
       - black
@@ -23,6 +18,3 @@ dependencies:
       - flake8
       - sphinx-click
       - sphinx-rtd-theme
-      - tensorflow
-      - tensorflow-probability
-      - graphviz
