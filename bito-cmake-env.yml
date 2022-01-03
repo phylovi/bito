@@ -2,11 +2,5 @@ name: bito-cmake
 channels:
   - conda-forge
 dependencies:
-  - cxx-compiler      
-  - make
-  - cmake
-  - zlib
-  - pip
   - numpy
   - pytest
-

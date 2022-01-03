@@ -24,6 +24,7 @@ cmakebuildtest:
 		ln -sf ../data . && \
 		ln -sf libbito.so bito.so && \
 		mkdir -p _ignore
+	pip install ./build_test
 
 cmakefasttest: cmakebuildtest
 	@cd build_test && \
