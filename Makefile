@@ -30,8 +30,8 @@ cmakefasttest: cmakebuildtest
 	@cd build_test && \
 		./doctest --test-case-exclude="* tree sampling" && \
 		./gp_doctest --test-case-exclude="UnrootedSBNInstance*" && \
-		PYTHONPATH=. pytest -s ../test/test_bito.py && \
 		./noodle
+	pytest
 
 rungptest:
 	./_build/gp_doctest --test-case-exclude="UnrootedSBNInstance*"
