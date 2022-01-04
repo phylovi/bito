@@ -11,7 +11,7 @@ TidySubsplitDAG::TidySubsplitDAG(const RootedTreeCollection &tree_collection)
 
 TidySubsplitDAG::TidySubsplitDAG(size_t node_count)
     : above_rotated_(EigenMatrixXb::Identity(node_count, node_count)),
-    above_sorted_(EigenMatrixXb::Identity(node_count, node_count)) {};
+      above_sorted_(EigenMatrixXb::Identity(node_count, node_count)){};
 
 TidySubsplitDAG::TidySubsplitDAG(size_t taxon_count,
                                  const Node::TopologyCounter &topology_counter)

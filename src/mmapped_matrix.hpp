@@ -18,8 +18,8 @@
 
 #include <iostream>
 
-#include "sugar.hpp"
 #include "eigen_sugar.hpp"
+#include "sugar.hpp"
 
 template <typename EigenDenseMatrixBaseT>
 class MmappedMatrix {

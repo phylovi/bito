@@ -418,8 +418,8 @@ std::vector<double> FatBeagle::SubstitutionModelGradientFiniteDifference(
   EigenVectorXd parameters_reparameterized = transform.inverse(parameters);
 
   std::vector<double> gradient(parameters_reparameterized.size());
-  for (Eigen::Index parameter_idx = 0; parameter_idx < parameters_reparameterized.size();
-       parameter_idx++) {
+  for (Eigen::Index parameter_idx = 0;
+       parameter_idx < parameters_reparameterized.size(); parameter_idx++) {
     double original_parameter_value = parameters_reparameterized[parameter_idx];
     parameters_reparameterized[parameter_idx] += delta;
 

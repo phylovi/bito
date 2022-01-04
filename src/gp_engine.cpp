@@ -21,7 +21,8 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
       unconditional_node_probabilities_(std::move(unconditional_node_probabilities)),
       inverted_sbn_prior_(std::move(inverted_sbn_prior)) {
   Assert(plvs_.back().rows() == MmappedNucleotidePLV::base_count_ &&
-             plvs_.back().cols() == static_cast<Eigen::Index>(site_pattern_.PatternCount()),
+             plvs_.back().cols() ==
+                 static_cast<Eigen::Index>(site_pattern_.PatternCount()),
          "Didn't get the right shape of PLVs out of Subdivide.");
   rescaling_counts_.resize(plv_count_);
   rescaling_counts_.setZero();

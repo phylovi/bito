@@ -90,15 +90,16 @@ void RootedTree::InitializeTimeTreeUsingHeightRatios(
   for (size_t i = 0; i < height_ratios_.size(); i++) {
     height_ratios_[i] = height_ratios(i);
   }
-  Topology()->TripleIdPreorderBifurcating([&leaf_count, &height_ratios, this](
-                                              size_t node_id, size_t, size_t parent_id) {
-    if (node_id >= leaf_count) {
-      node_heights_[node_id] = node_bounds_[node_id] +
-                               height_ratios(node_id - leaf_count) *
-                                   (node_heights_[parent_id] - node_bounds_[node_id]);
-    }
-    branch_lengths_[node_id] = node_heights_[parent_id] - node_heights_[node_id];
-  });
+  Topology()->TripleIdPreorderBifurcating(
+      [&leaf_count, &height_ratios, this](size_t node_id, size_t, size_t parent_id) {
+        if (node_id >= leaf_count) {
+          node_heights_[node_id] =
+              node_bounds_[node_id] +
+              height_ratios(node_id - leaf_count) *
+                  (node_heights_[parent_id] - node_bounds_[node_id]);
+        }
+        branch_lengths_[node_id] = node_heights_[parent_id] - node_heights_[node_id];
+      });
 }
 
 TagDoubleMap RootedTree::TagDateMapOfDateVector(std::vector<double> leaf_date_vector) {

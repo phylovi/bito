@@ -13,8 +13,6 @@
 
 #pragma once
 
-#include "include_doctest.hpp"
-
 #include <stdio.h>
 
 #include <chrono>
@@ -23,6 +21,7 @@
 #include <thread>
 #include <vector>
 
+#include "include_doctest.hpp"
 #include "sugar.hpp"
 
 class Stopwatch {
