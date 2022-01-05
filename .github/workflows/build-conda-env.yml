@@ -1,0 +1,29 @@
+name: Build in conda env
+on:
+  workflow_dispatch:
+jobs:
+  conda:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+      - name: Prepare build environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install build-essential cmake zlib1g-dev python3-pip python3-pytest
+      - name: Install conda
+        run: |
+          curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh > Miniconda3-latest-Linux-x86_64.sh
+          bash Miniconda3-latest-Linux-x86_64.sh -b -p ~/miniconda
+          ~/miniconda/bin/conda update -n base -c defaults conda
+      - name: Create conda env
+        run: |
+          source ~/miniconda/etc/profile.d/conda.sh
+          conda env create -f environment.yml
+      - name: Build
+        run: |
+          source ~/miniconda/etc/profile.d/conda.sh
+          conda activate bito
+          make

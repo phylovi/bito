@@ -2,9 +2,10 @@
 // bito is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#include "include_doctest.hpp"
+
 #include <string>
 
-#include "include_doctest.hpp"
 #include "rooted_sbn_instance.hpp"
 #include "stick_breaking_transform.hpp"
 #include "taxon_name_munging.hpp"
