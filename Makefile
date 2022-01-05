@@ -3,56 +3,35 @@ our_files := $(filter-out src/csv.h src/doctest.h src/noodle.cpp src/parser.cpp 
 j_flags = $(shell echo "${MAKEFLAGS}" | grep -o -- "-j[0-9]\+" || true)
 
 default:
-	mkdir -p _ignore  # Needed for test outputs.
-	scons ${j_flags}
-	pip install -U dist/bito-*.whl
+	$(MAKE) buildrelease
 
-cmakebuild:
+buildrelease:
 	@mkdir -p build
 	@cd build && \
 		cmake -DCMAKE_BUILD_TYPE=Release .. && \
-		cmake --build . --parallel && \
-		ln -sf ../data . && \
-		ln -sf libbito.so bito.so && \
-		mkdir -p _ignore
+		cmake --build . ${j_flags} && \
+		ln -sf libbito.so bito.so
+	pip install ./build
 
-cmakebuildtest:
+buildtest:
 	@mkdir -p build_test
 	@cd build_test && \
 		cmake -DCMAKE_BUILD_TYPE=Debug .. && \
-		cmake --build . --parallel && \
+		cmake --build . ${j_flags} && \
 		ln -sf ../data . && \
 		ln -sf libbito.so bito.so && \
 		mkdir -p _ignore
+	pip install ./build_test
 
-cmakefasttest: cmakebuildtest
+fasttest: buildtest
 	@cd build_test && \
 		./doctest --test-case-exclude="* tree sampling" && \
-		./gp_doctest --test-case-exclude="UnrootedSBNInstance*" && \
-		PYTHONPATH=. pytest -s ../test/test_bito.py && \
-		./noodle
-
-rungptest:
-	./_build/gp_doctest --test-case-exclude="UnrootedSBNInstance*"
-
-gptest:
-	make ${j_flags}
-	make rungptest
-
-runfasttest:
-	_build/doctest --test-case-exclude="* tree sampling"
-	make rungptest
+		./gp_doctest --test-case-exclude="UnrootedSBNInstance*"
 	pytest
-	./_build/noodle
 
-fasttest:
-	make ${j_flags}
-	make runfasttest
-
-test:
-	make ${j_flags}
-	make runfasttest
-	./_build/doctest
+test: buildtest
+	@cd build_test && ./doctest && ./gp_doctest
+	pytest
 
 bison: src/parser.yy src/scanner.ll
 	bison -o src/parser.cpp --defines=src/parser.hpp src/parser.yy
@@ -63,13 +42,13 @@ prep:
 	clang-format -i -style=file src/doctest.cpp
 
 docs:
-	make -C doc clean
+	$(MAKE) -C doc clean
 	PYTHONPATH=. sphinx-autogen doc/index.rst
-	make -C doc html
+	$(MAKE) -C doc html
 
 deploy:
-	make
-	make docs
+	$(MAKE)
+	$(MAKE) docs
 	git checkout gh-pages
 	cp -a doc/_build/html/* .
 	git add .
@@ -77,7 +56,7 @@ deploy:
 	git push -f
 
 format:
-	black vip/*py test/*py SConstruct
+	black vip/*py test/*py
 	docformatter --in-place vip/*py test/*py
 	clang-format -i -style=file $(our_files)
 
@@ -89,4 +68,4 @@ lint:
 	cpplint --filter=-runtime/references,-build/c++11 $(our_files) \
 		&& echo "LINTING PASS"
 
-.PHONY: bison prep format clean edit lint deploy docs fasttest runfasttest runtest test
+.PHONY: bison buildrelease buildtest prep format clean lint deploy docs test fasttest runtest test

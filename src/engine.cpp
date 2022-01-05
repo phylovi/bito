@@ -20,8 +20,8 @@ Engine::Engine(const EngineSpecification &engine_specification,
           : std::accumulate(engine_specification.beagle_flag_vector_.begin(),
                             engine_specification.beagle_flag_vector_.end(), 0,
                             std::bit_or<FatBeagle::PackedBeagleFlags>());
-  if (beagle_preference_flags & BEAGLE_FLAG_PRECISION_SINGLE
-      && beagle_preference_flags & BEAGLE_FLAG_VECTOR_SSE) {
+  if (beagle_preference_flags & BEAGLE_FLAG_PRECISION_SINGLE &&
+      beagle_preference_flags & BEAGLE_FLAG_VECTOR_SSE) {
     Failwith("Single precision not available with SSE vectorization in BEAGLE.");
   }
   for (size_t i = 0; i < engine_specification.thread_count_; i++) {

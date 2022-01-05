@@ -263,7 +263,8 @@ StringDoubleVector GPInstance::PrettyIndexedVector(EigenConstVectorXdRef v) {
   StringDoubleVector result;
   result.reserve(v.size());
   const auto pretty_indexer = PrettyIndexer();
-  Assert(v.size() <= static_cast<Eigen::Index>(pretty_indexer.size()), "v is too long in PrettyIndexedVector");
+  Assert(v.size() <= static_cast<Eigen::Index>(pretty_indexer.size()),
+         "v is too long in PrettyIndexedVector");
   for (Eigen::Index i = 0; i < v.size(); i++) {
     result.push_back({pretty_indexer.at(i), v(i)});
   }

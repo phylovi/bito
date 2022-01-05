@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "block_model.hpp"
-#include "sugar.hpp"
 #include "eigen_sugar.hpp"
+#include "sugar.hpp"
 
 class SubstitutionModel : public BlockModel {
  public:

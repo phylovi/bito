@@ -373,8 +373,7 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
   node_probabilities.setZero();
   node_probabilities[DAGRootNodeId()] = 1.;
 
-  ReversePostorderIndexTraversal([&node_probabilities,
-                                  &normalized_sbn_parameters](
+  ReversePostorderIndexTraversal([&node_probabilities, &normalized_sbn_parameters](
                                      const size_t parent_id, const bool,
                                      const size_t child_id, const size_t gpcsp_idx) {
     const double child_probability_given_parent = normalized_sbn_parameters[gpcsp_idx];
@@ -392,7 +391,8 @@ BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
     EigenConstVectorXdRef normalized_sbn_parameters) const {
   auto node_probabilities = UnconditionalNodeProbabilities(normalized_sbn_parameters);
   BitsetDoubleMap subsplit_probability_map;
-  for (size_t node_id = 0; static_cast<Eigen::Index>(node_id) < node_probabilities.size(); node_id++) {
+  for (size_t node_id = 0;
+       static_cast<Eigen::Index>(node_id) < node_probabilities.size(); node_id++) {
     const auto &subsplit_bitset = GetDAGNode(node_id)->GetBitset();
     if (node_id != DAGRootNodeId() && !subsplit_bitset.SubsplitIsLeaf()) {
       SafeInsert(subsplit_probability_map, subsplit_bitset,
@@ -840,20 +840,19 @@ SizeVector SubsplitDAG::BuildNodeReindexer(const size_t prev_node_count) {
   size_t dag_root_node_id = prev_node_count - 1;
   // Build node_reindexer by traversing entire DAG and assigning new ids after child ids
   // are assigned.
-  DepthFirstWithAction(
-      {dag_root_node_id},
-      SubsplitDAGTraversalAction(
-          // BeforeNode
-          [](size_t node_id) {},
-          // AfterNode
-          [&node_reindexer, &running_traversal_idx](size_t node_id) {
-            node_reindexer.at(node_id) = running_traversal_idx;
-            running_traversal_idx++;
-          },
-          // BeforeNodeClade
-          [](size_t node_id, bool rotated) {},
-          // VisitEdge
-          [](size_t node_id, size_t child_id, bool rotated) {}));
+  DepthFirstWithAction({dag_root_node_id},
+                       SubsplitDAGTraversalAction(
+                           // BeforeNode
+                           [](size_t node_id) {},
+                           // AfterNode
+                           [&node_reindexer, &running_traversal_idx](size_t node_id) {
+                             node_reindexer.at(node_id) = running_traversal_idx;
+                             running_traversal_idx++;
+                           },
+                           // BeforeNodeClade
+                           [](size_t node_id, bool rotated) {},
+                           // VisitEdge
+                           [](size_t node_id, size_t child_id, bool rotated) {}));
   return node_reindexer;
 }
 

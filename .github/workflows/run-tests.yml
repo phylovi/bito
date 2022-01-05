@@ -1,11 +1,8 @@
-name: Build with cmake
+name: Run tests
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -15,7 +12,7 @@ jobs:
       - name: Prepare build environment
         run: |
           sudo apt-get update
-          sudo apt-get install build-essential cmake zlib1g-dev python3-pip
-      - name: Perform cmake build
+          sudo apt-get install build-essential cmake zlib1g-dev python3-pip python3-pytest
+      - name: Run test
         run: |
-          make
+          make test

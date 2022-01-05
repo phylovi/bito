@@ -12,7 +12,6 @@
 // watch by default, but can optionally restart watch immediatedly.
 
 #pragma once
-
 #include "include_doctest.hpp"
 
 #include <stdio.h>
