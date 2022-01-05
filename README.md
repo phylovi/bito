@@ -1,6 +1,6 @@
 # bito
 
-![run tests](https://github.com/phylovi/bito/actions/workflows/run-tests.yml/badge.svg)
+![run tests](https://github.com/phylovi/bito/actions/workflows/build-with-cmake.yml/badge.svg)
 
 `bito`, or "Bayesian Inference of Trees via Optimization", is a Python-interface C++ library for phylogenetic variational inference so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let bito handle the tree structure and likelihood computations for you.
 "Bito" is also the name of a [tree](https://www.merriam-webster.com/dictionary/bito) native to Africa that produces medicinal oil.
