@@ -21,8 +21,6 @@ This library was formerly known as "libsbn".
     conda activate bito
 
 (Very optional) The notebooks require R, IRKernel, rpy2 >=3.1.0, and some R packages such as ggplot and cowplot.
-Do not install R via conda.
-Doing so will install the conda compiler toolchain, this will mess up our compilation.
 
 
 ## Building
