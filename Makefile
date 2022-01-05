@@ -10,8 +10,7 @@ buildrelease:
 	@cd build && \
 		cmake -DCMAKE_BUILD_TYPE=Release .. && \
 		cmake --build . ${j_flags} && \
-		ln -sf libbito.so bito.so && \
-		mkdir -p _ignore
+		ln -sf libbito.so bito.so
 	pip install ./build
 
 buildtest:
