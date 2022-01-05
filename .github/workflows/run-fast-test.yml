@@ -1,8 +1,8 @@
-name: Run fast test
+name: Run test
 on:
   workflow_dispatch:
 jobs:
-  fasttest:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -13,6 +13,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install build-essential cmake zlib1g-dev python3-pip python3-pytest
-      - name: Run fast test
+      - name: Run test
         run: |
-          make fasttest
+          make test
