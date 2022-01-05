@@ -2,30 +2,25 @@
 
 [![Docker Repository on Quay](https://quay.io/repository/matsengrp/bito/status "Docker Repository on Quay")](https://quay.io/repository/matsengrp/bito)
 
-`bito`, or "Bayesian Inference of Trees via Optimization", is a Python-interface C++ library for phylogenetic variational inference so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let Bito handle the tree structure and likelihood computations for you.
+`bito`, or "Bayesian Inference of Trees via Optimization", is a Python-interface C++ library for phylogenetic variational inference so that you can express interesting parts of your phylogenetic model in Python/TensorFlow/PyTorch/etc and let bito handle the tree structure and likelihood computations for you.
 "Bito" is also the name of a [tree](https://www.merriam-webster.com/dictionary/bito) native to Africa that produces medicinal oil.
 We pronounce "bito" with a long /e/ sound ("bito" rhymes with "burrito").
 
 This library is in an experimental state.
 This library was formerly known as "libsbn".
 
+
 ## Dependencies
 
 * If you are on linux, install gcc >= 7.5, which is standard in Debian Buster and Ubuntu 18.04
 * If you are on OS X, use a recent version of Xcode and install command line tools
 
-Then, install **the `hmc-clock` branch** of [BEAGLE](https://github.com/beagle-dev/beagle-lib).
-This will require a from-source installation, as in their docs, but you have to do a full `git clone` (no `--depth=1`).
-The BEAGLE install process is somewhat in flux, so it's best to look at the [conda-beagle Dockerfile](https://github.com/matsengrp/conda-beagle/blob/master/Dockerfile) and follow those steps.
-
-To install additional dependencies, use the associated conda environment file:
+(Optional) We suggest using the associated conda environment file, which will nicely install relevant dependencies:
 
     conda env create -f environment.yml
     conda activate bito
 
-If you want to specify your compiler manually, set the `CC` and `CXX` shell variables to your desired compiler command.
-
-The notebooks require R, IRKernel, rpy2 >=3.1.0, and some R packages such as ggplot and cowplot.
+(Very optional) The notebooks require R, IRKernel, rpy2 >=3.1.0, and some R packages such as ggplot and cowplot.
 Do not install R via conda.
 Doing so will install the conda compiler toolchain, this will mess up our compilation.
 
@@ -35,35 +30,17 @@ Doing so will install the conda compiler toolchain, this will mess up our compil
 For your first build, do
 
 * `git submodule update --init --recursive`
-* `scons`
-* Respond to interactive prompts about where `hmc-clock` BEAGLE is installed
-* `conda activate bito` &nbsp; **(this is an important step, even though you are already in the bito conda environment)**
 * `make`
 
-After these steps `make` will build, run tests, and install the Python packages, and this should be the only command you need to run after modifying the code.
+This will install the `bito` Python module.
 
-Note that `scons` and `make` accept `-j` flags for multi-core builds: e.g. `-j20` will build with 20 jobs.
+You can build and run tests using `make test` and `make fasttest` (the latter excludes some slow tests).
 
-The build process will modify the conda environment to point `[DY]LD_LIBRARY_PATH` to where BEAGLE is installed.
-If you get an error about missing BEAGLE, just `conda activate bito` again and you should be good.
-If you want to modify your desired BEAGLE installation location, do `unset BEAGLE_PREFIX` and start the steps above again starting at `scons`.
+Note that `make` accepts `-j` flags for multi-core builds: e.g. `-j20` will build with 20 jobs.
 
-* (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison > 3.4 (`conda install -c conda-forge bison`).
+* (Optional) If you modify the lexer and parser, call `make bison`. This assumes that you have installed Bison >= 3.4 (`conda install -c conda-forge bison`).
 * (Optional) If you modify the test preparation scripts, call `make prep`. This assumes that you have installed ete3 (`conda install -c etetoolkit ete3`).
 
-To build with cmake, do
-
-* `mkdir build`
-* `cd build`
-* `cmake -DCMAKE_BUILD_TYPE=Release ..`
-* `cmake --build . -j`
-* `pip install .`
-
-A minimum cmake version of 3.19 is required. Beagle will be automatically downloaded and built, and will be included in the pip package independently
-of a system-wide installation. Currently GPU acceleration is not enabled for Beagle.
-Debug or release builds can be selected with the `-DCMAKE_BUILD_TYPE=` option.
-Convenience make targets exists for quickly building and testing with cmake. To perform a build, call `make cmakebuild`.
-To run fast tests (and build if needed), call `make cmakefasttest`.
 
 ## Understanding
 
@@ -88,6 +65,7 @@ Please see our detailed [contribution guidelines](CONTRIBUTING.md).
 
 * Erick Matsen ([@matsen](https://github.com/matsen)): implementation, design, janitorial duties
 * Dave H. Rich ([@DaveRich](https://github.com/davidrich27)): core developer
+* Ognian Milanov ([@ognian-](https://github.com/ognian-)): core developer
 * Mathieu Fourment ([@4ment](https://github.com/4ment)): implementation of substitution models and likelihoods/gradients, design
 * Seong-Hwan Jun ([@junseonghwan](https://github.com/junseonghwan)): generalized pruning design and implementation, implementation of SBN gradients, design
 * Hassan Nasif ([@hrnasif](https://github.com/hrnasif)): hot start for generalized pruning; gradient descent for generalized pruning
@@ -95,7 +73,6 @@ Please see our detailed [contribution guidelines](CONTRIBUTING.md).
 * Sho Kiami ([@shokiami](https://github.com/shokiami)): refactoring the subsplit DAG
 * Tanvi Ganapathy ([@tanviganapathy](https://github.com/tanviganapathy)): refactoring the subsplit DAG
 * Lucy Yang ([@lucyyang01](https://github.com/lucyyang01)): subsplit DAG visualization
-* Ognian Milanov ([@ognian-](https://github.com/ognian-)): C++ wisdom, compressed files
 * Cheng Zhang ([@zcrabbit](https://github.com/zcrabbit)): concept, design, algorithms
 * Christiaan Swanepoel ([@christiaanjs](https://github.com/christiaanjs)): design
 * Xiang Ji ([@xji3](https://github.com/xji3)): gradient expertise and node height code
