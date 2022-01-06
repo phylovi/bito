@@ -26,7 +26,8 @@ class TopologySampler {
   using Range = std::pair<size_t, size_t>;
 
   size_t SampleIndex(const Input &input, Range range, bool sbn_parameters_log) const;
-  Node::NodePtr SampleTopology(const Input &input, const Bitset &parent_subsplit, bool sbn_parameters_log) const;
+  Node::NodePtr SampleTopology(const Input &input, const Bitset &parent_subsplit,
+                               bool sbn_parameters_log) const;
 
   MersenneTwister mersenne_twister_;
 };
@@ -84,8 +85,10 @@ class SubsplitDAGSamplerInput : public TopologySampler::Input {
 #include "subsplit_dag.hpp"
 
 template <typename T, typename TIR, typename TIRCount>
-static void TestSampling(const TopologySampler& sampler, const TopologySampler::Input& input, const T& target,
-    const TIR& indexer_representations, const BitsetSizeMap& indexer, TIRCount&& counter) {
+static void TestSampling(const TopologySampler &sampler,
+                         const TopologySampler::Input &input, const T &target,
+                         const TIR &indexer_representations,
+                         const BitsetSizeMap &indexer, TIRCount &&counter) {
   // Count the frequencies of rooted trees in a file.
   size_t rooted_tree_count_from_file = 0;
   RootedIndexerRepresentationSizeDict counter_from_file(0);
@@ -102,8 +105,8 @@ static void TestSampling(const TopologySampler& sampler, const TopologySampler::
   for (size_t sample_idx = 0; sample_idx < sampled_tree_count; ++sample_idx) {
     const auto rooted_topology = sampler.SampleTopology(input, true);
     RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
-        counter_from_sampling,
-        RootedSBNMaps::IndexerRepresentationOf(indexer, rooted_topology, out_of_sample_index));
+        counter_from_sampling, RootedSBNMaps::IndexerRepresentationOf(
+                                   indexer, rooted_topology, out_of_sample_index));
     if (sample_idx % 1000 == 0) {
       ++progress_bar;
       progress_bar.display();
@@ -121,12 +124,13 @@ static void TestSampling(const TopologySampler& sampler, const TopologySampler::
   progress_bar.done();
 }
 
-static void TestSubsplitDAG(const TopologySampler& sampler, const SubsplitDAG& dag,
-    const std::vector<RootedIndexerRepresentation>& indexer_representations,
+static void TestSubsplitDAG(
+    const TopologySampler &sampler, const SubsplitDAG &dag,
+    const std::vector<RootedIndexerRepresentation> &indexer_representations,
     EigenConstVectorXdRef normalized_sbn_parameters) {
-  TestSampling(sampler, SubsplitDAGSamplerInput{dag, normalized_sbn_parameters}, dag, indexer_representations, dag.BuildGPCSPIndexer(), [](auto&&){
-    return 1;
-  });
+  TestSampling(sampler, SubsplitDAGSamplerInput{dag, normalized_sbn_parameters}, dag,
+               indexer_representations, dag.BuildGPCSPIndexer(),
+               [](auto &&) { return 1; });
 }
 
 TEST_CASE("TopologySampler: UnrootedSBNInstance tree sampling") {
@@ -135,10 +139,10 @@ TEST_CASE("TopologySampler: UnrootedSBNInstance tree sampling") {
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
 
-  TestSampling(TopologySampler{}, SBNInstanceSamplerInput{inst}, inst, inst.MakeIndexerRepresentations(), inst.SBNSupport().Indexer(),
-    [](auto&& indexer_representation){
-      return indexer_representation.size();
-    });
+  TestSampling(
+      TopologySampler{}, SBNInstanceSamplerInput{inst}, inst,
+      inst.MakeIndexerRepresentations(), inst.SBNSupport().Indexer(),
+      [](auto &&indexer_representation) { return indexer_representation.size(); });
 }
 
 TEST_CASE("TopologySampler: RootedSBNInstance tree sampling") {
@@ -146,32 +150,35 @@ TEST_CASE("TopologySampler: RootedSBNInstance tree sampling") {
   inst.ReadNewickFile("data/five_taxon_rooted.nwk");
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
-  
-  TestSampling(TopologySampler{}, SBNInstanceSamplerInput{inst}, inst, inst.MakeIndexerRepresentations(), inst.SBNSupport().Indexer(),
-    [](auto&&){
-      return 1;
-    });
+
+  TestSampling(TopologySampler{}, SBNInstanceSamplerInput{inst}, inst,
+               inst.MakeIndexerRepresentations(), inst.SBNSupport().Indexer(),
+               [](auto &&) { return 1; });
 }
 
-TEST_CASE("TopologySampler: SubsplitDAG::BuildUniformOnTopologicalSupportPrior tree sampling") {
+TEST_CASE(
+    "TopologySampler: SubsplitDAG::BuildUniformOnTopologicalSupportPrior tree "
+    "sampling") {
   Driver driver;
-  auto tree_collection = RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile("data/five_taxon_rooted.nwk"));
+  auto tree_collection = RootedTreeCollection::OfTreeCollection(
+      driver.ParseNewickFile("data/five_taxon_rooted.nwk"));
   SubsplitDAG dag(tree_collection);
 
   auto indexer = dag.BuildGPCSPIndexer();
   std::vector<RootedIndexerRepresentation> indexer_representations;
   indexer_representations.reserve(tree_collection.trees_.size());
   for (const auto &tree : tree_collection.trees_) {
-    indexer_representations.push_back(dag.IndexerRepresentationOf(indexer, tree.Topology(), out_of_sample_index));
+    indexer_representations.push_back(
+        dag.IndexerRepresentationOf(indexer, tree.Topology(), out_of_sample_index));
   }
 
-  TestSampling(TopologySampler{}, SubsplitDAGSamplerInput{dag, dag.BuildUniformOnTopologicalSupportPrior()},
-    dag, indexer_representations, dag.BuildGPCSPIndexer(), [](auto&&){
-    return 1;
-  });
+  TestSampling(
+      TopologySampler{},
+      SubsplitDAGSamplerInput{dag, dag.BuildUniformOnTopologicalSupportPrior()}, dag,
+      indexer_representations, dag.BuildGPCSPIndexer(), [](auto &&) { return 1; });
 
   TestSubsplitDAG(TopologySampler{}, dag, indexer_representations,
-    dag.BuildUniformOnTopologicalSupportPrior());
+                  dag.BuildUniformOnTopologicalSupportPrior());
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

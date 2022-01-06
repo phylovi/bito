@@ -11,18 +11,21 @@ Node::NodePtr TopologySampler::SampleTopology(const Input &input,
                                               bool is_rooted) const {
   bool sbn_parameters_log = input.SBNParametersLog();
   // Start by sampling a rootsplit.
-  size_t rootsplit_index =
-      SampleIndex(input, std::pair<size_t, size_t>(0, input.RootsplitCount()), sbn_parameters_log);
+  size_t rootsplit_index = SampleIndex(
+      input, std::pair<size_t, size_t>(0, input.RootsplitCount()), sbn_parameters_log);
   const Bitset &rootsplit = input.RootsplitsAt(rootsplit_index);
   auto topology = SampleTopology(input, rootsplit, sbn_parameters_log);
-  if (!is_rooted) topology = topology->Deroot();
+  if (!is_rooted) {
+    topology = topology->Deroot();
+  }
   topology->Polish();
   return topology;
 }
 
 // Sample an integer index in [range.first, range.second) according to
 // SBNParameters.
-size_t TopologySampler::SampleIndex(const Input &input, Range range, bool sbn_parameters_log) const {
+size_t TopologySampler::SampleIndex(const Input &input, Range range,
+                                    bool sbn_parameters_log) const {
   const auto &[start, end] = range;
   Assert(start < end && static_cast<Eigen::Index>(end) <= input.SBNParameters().size(),
          "SampleIndex given an invalid range.");
@@ -52,7 +55,8 @@ Node::NodePtr TopologySampler::SampleTopology(const Input &input,
     if (singleton_option) {
       return Node::Leaf(*singleton_option);
     }
-    auto child_index = SampleIndex(input, input.ParentToRangeAt(parent), sbn_parameters_log);
+    auto child_index =
+        SampleIndex(input, input.ParentToRangeAt(parent), sbn_parameters_log);
     return SampleTopology(input, input.IndexToChildAt(child_index), sbn_parameters_log);
   };
   return Node::Join(process_subsplit(parent_subsplit),
@@ -65,9 +69,7 @@ EigenConstVectorXdRef SubsplitDAGSamplerInput::SBNParameters() const {
   return sbn_parameters_;
 }
 
-bool SubsplitDAGSamplerInput::SBNParametersLog() const {
-  return true;
-}
+bool SubsplitDAGSamplerInput::SBNParametersLog() const { return true; }
 
 const Bitset &SubsplitDAGSamplerInput::RootsplitsAt(size_t rootsplit_idx) const {
   return dag_.GetDAGNode(dag_.RootsplitIds().at(rootsplit_idx))->GetBitset();
