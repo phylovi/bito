@@ -12,7 +12,6 @@ class TopologySampler {
   class Input {
    public:
     virtual EigenConstVectorXdRef SBNParameters() const = 0;
-    virtual bool SBNParametersLog() const = 0;
     virtual size_t RootsplitCount() const = 0;
     virtual const Bitset &RootsplitsAt(size_t rootsplit_idx) const = 0;
     virtual const SizePair &ParentToRangeAt(const Bitset &parent) const = 0;
@@ -25,9 +24,8 @@ class TopologySampler {
  private:
   using Range = std::pair<size_t, size_t>;
 
-  size_t SampleIndex(const Input &input, Range range, bool sbn_parameters_log) const;
-  Node::NodePtr SampleTopology(const Input &input, const Bitset &parent_subsplit,
-                               bool sbn_parameters_log) const;
+  size_t SampleIndex(const Input &input, Range range) const;
+  Node::NodePtr SampleTopology(const Input &input, const Bitset &parent_subsplit) const;
 
   MersenneTwister mersenne_twister_;
 };
@@ -40,8 +38,6 @@ class SBNInstanceSamplerInput : public TopologySampler::Input {
   size_t RootsplitCount() const override { return inst_.SBNSupport().RootsplitCount(); }
 
   EigenConstVectorXdRef SBNParameters() const override { return inst_.SBNParameters(); }
-
-  bool SBNParametersLog() const override { return false; }
 
   const Bitset &RootsplitsAt(size_t rootsplit_idx) const override {
     return inst_.SBNSupport().RootsplitsAt(rootsplit_idx);
@@ -67,7 +63,6 @@ class SubsplitDAGSamplerInput : public TopologySampler::Input {
 
   size_t RootsplitCount() const override;
   EigenConstVectorXdRef SBNParameters() const override;
-  bool SBNParametersLog() const override;
   const Bitset &RootsplitsAt(size_t rootsplit_idx) const override;
   const SizePair &ParentToRangeAt(const Bitset &parent) const override;
   const Bitset &IndexToChildAt(size_t child_idx) const override;
@@ -124,15 +119,6 @@ static void TestSampling(const TopologySampler &sampler,
   progress_bar.done();
 }
 
-static void TestSubsplitDAG(
-    const TopologySampler &sampler, const SubsplitDAG &dag,
-    const std::vector<RootedIndexerRepresentation> &indexer_representations,
-    EigenConstVectorXdRef normalized_sbn_parameters) {
-  TestSampling(sampler, SubsplitDAGSamplerInput{dag, normalized_sbn_parameters}, dag,
-               indexer_representations, dag.BuildGPCSPIndexer(),
-               [](auto &&) { return 1; });
-}
-
 TEST_CASE("TopologySampler: UnrootedSBNInstance tree sampling") {
   UnrootedSBNInstance inst("charlie");
   inst.ReadNewickFile("data/five_taxon_unrooted.nwk");
@@ -174,11 +160,8 @@ TEST_CASE(
 
   TestSampling(
       TopologySampler{},
-      SubsplitDAGSamplerInput{dag, dag.BuildUniformOnTopologicalSupportPrior()}, dag,
+      SubsplitDAGSamplerInput{dag, dag.BuildUniformOnTopologicalSupportPrior().array().log()}, dag,
       indexer_representations, dag.BuildGPCSPIndexer(), [](auto &&) { return 1; });
-
-  TestSubsplitDAG(TopologySampler{}, dag, indexer_representations,
-                  dag.BuildUniformOnTopologicalSupportPrior());
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
