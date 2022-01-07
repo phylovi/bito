@@ -34,7 +34,7 @@ size_t TopologySampler::SampleIndex(const Input &input, Range range) const {
   NumericalUtils::Exponentiate(sbn_parameters_subrange);
   std::discrete_distribution<> distribution(sbn_parameters_subrange.begin(),
                                             sbn_parameters_subrange.end());
-  // We have to add on range.first because we have taken a slice of the full
+  // We have to add on start because we have taken a slice of the full
   // array, and the sampler treats the beginning of this slice as zero.
   auto result =
       start + static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
