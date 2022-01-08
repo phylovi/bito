@@ -92,8 +92,6 @@ static void TestSampling(const TopologySampler &sampler,
                                                                 indexer_representation);
     rooted_tree_count_from_file += counter(indexer_representation);
   }
-  // Count the frequencies of trees when we sample after training with
-  // SimpleAverage.
   size_t sampled_tree_count = 1'000'000;
   RootedIndexerRepresentationSizeDict counter_from_sampling(0);
   ProgressBar progress_bar(sampled_tree_count / 1000);
@@ -107,7 +105,6 @@ static void TestSampling(const TopologySampler &sampler,
       progress_bar.display();
     }
   }
-  // These should be equal in the limit when we're training with SA.
   for (const auto &[key, _] : counter_from_file) {
     std::ignore = _;
     double observed =
