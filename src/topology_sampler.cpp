@@ -10,8 +10,8 @@
 Node::NodePtr TopologySampler::SampleTopology(const Input &input,
                                               bool is_rooted) const {
   // Start by sampling a rootsplit.
-  size_t rootsplit_index = SampleIndex(
-      input, std::pair<size_t, size_t>(0, input.RootsplitCount()));
+  size_t rootsplit_index =
+      SampleIndex(input, std::pair<size_t, size_t>(0, input.RootsplitCount()));
   const Bitset &rootsplit = input.RootsplitsAt(rootsplit_index);
   auto topology = SampleTopology(input, rootsplit);
   if (!is_rooted) {
@@ -50,8 +50,7 @@ Node::NodePtr TopologySampler::SampleTopology(const Input &input,
     if (singleton_option) {
       return Node::Leaf(*singleton_option);
     }
-    auto child_index =
-        SampleIndex(input, input.ParentToRangeAt(parent));
+    auto child_index = SampleIndex(input, input.ParentToRangeAt(parent));
     return SampleTopology(input, input.IndexToChildAt(child_index));
   };
   return Node::Join(process_subsplit(parent_subsplit),

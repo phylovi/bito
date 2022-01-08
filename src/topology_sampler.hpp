@@ -155,10 +155,11 @@ TEST_CASE(
         dag.IndexerRepresentationOf(indexer, tree.Topology(), out_of_sample_index));
   }
 
-  TestSampling(
-      TopologySampler{},
-      SubsplitDAGSamplerInput{dag, dag.BuildUniformOnTopologicalSupportPrior().array().log()}, dag,
-      indexer_representations, dag.BuildGPCSPIndexer(), [](auto &&) { return 1; });
+  TestSampling(TopologySampler{},
+               SubsplitDAGSamplerInput{
+                   dag, dag.BuildUniformOnTopologicalSupportPrior().array().log()},
+               dag, indexer_representations, dag.BuildGPCSPIndexer(),
+               [](auto &&) { return 1; });
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
