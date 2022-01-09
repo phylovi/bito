@@ -66,24 +66,32 @@ void GPInstance::ReadNexusFileGZ(const std::string &fname) {
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFileGZ(fname));
 }
 
-void GPInstance::CheckSequencesAndTreesLoaded() const {
+void GPInstance::CheckSequencesLoaded() const {
   if (alignment_.SequenceCount() == 0) {
     Failwith(
-        "Load an alignment into your GPInstance on which you wish to "
-        "calculate phylogenetic likelihoods.");
-  }
-  if (tree_collection_.TreeCount() == 0) {
-    Failwith(
-        "Load some trees into your GPInstance on which you wish to "
+        "Load an alignment into your GPInstance with which you wish to "
         "calculate phylogenetic likelihoods.");
   }
 }
 
+void GPInstance::CheckTreesLoaded() const {
+  if (tree_collection_.TreeCount() == 0) {
+    Failwith(
+        "Load some trees into your GPInstance on which you wish to "
+        "build your subsplit DAG.");
+  }
+}
+
+void GPInstance::MakeDAG() {
+  CheckTreesLoaded();
+  dag_ = GPDAG(tree_collection_);
+}
+
 void GPInstance::MakeEngine(double rescaling_threshold) {
-  CheckSequencesAndTreesLoaded();
+  CheckSequencesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
-  dag_ = GPDAG(tree_collection_);
+  MakeDAG();
   auto sbn_prior = dag_.BuildUniformOnTopologicalSupportPrior();
   auto unconditional_node_probabilities =
       dag_.UnconditionalNodeProbabilities(sbn_prior);

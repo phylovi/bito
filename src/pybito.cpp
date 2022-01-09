@@ -391,7 +391,8 @@ PYBIND11_MODULE(bito, m) {
            "Print information about the instance.")
       .def("dag_summary_statistics", &GPInstance::DAGSummaryStatistics,
            "Return summary statistics about the DAG.")
-      .def("print_dag", &GPInstance::PrintDAG, "Print the generalized pruning DAG.")
+      .def("make_dag", &GPInstance::MakeDAG, "Build subsplit DAG.")
+      .def("print_dag", &GPInstance::PrintDAG, "Print the subsplit DAG.")
 
       // ** I/O
       .def("read_newick_file", &GPInstance::ReadNewickFile,

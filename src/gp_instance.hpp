@@ -25,11 +25,12 @@ class GPInstance {
   void ReadNexusFile(const std::string &fname);
   void ReadNexusFileGZ(const std::string &fname);
 
+  void MakeDAG();
+  GPDAG &GetDAG();
+  void PrintDAG();
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;
-  GPDAG &GetDAG();
-  void PrintDAG();
   void PrintGPCSPIndexer();
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();
@@ -87,7 +88,8 @@ class GPInstance {
   static constexpr size_t plv_count_per_node_ = 6;
 
   void ClearTreeCollectionAssociatedState();
-  void CheckSequencesAndTreesLoaded() const;
+  void CheckSequencesLoaded() const;
+  void CheckTreesLoaded() const;
 
   size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
                                   const Node *leaf_node) const;
