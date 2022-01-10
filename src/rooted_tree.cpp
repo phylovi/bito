@@ -122,6 +122,11 @@ RootedTree RootedTree::Example() {
   return tree;
 }
 
+RootedTree RootedTree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
+  topology->Polish();
+  return RootedTree(topology, BranchLengthVector(1 + topology->Id(), 1.));
+}
+
 bool RootedTree::operator==(const RootedTree& other) const {
   return (this->Topology() == other.Topology()) &&
          (this->BranchLengths() == other.BranchLengths());

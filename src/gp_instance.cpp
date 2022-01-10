@@ -221,7 +221,7 @@ size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
 
 RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
     Node::NodePtrVec &&topologies) const {
-  const EigenVectorXd gpcsp_indexed_branch_lengths = engine_->GetBranchLengths();
+  const EigenVectorXd gpcsp_indexed_branch_lengths = GetEngine()->GetBranchLengths();
   RootedTree::RootedTreeVector tree_vector;
 
   for (auto &root_node : topologies) {
@@ -282,7 +282,7 @@ StringDoubleVector GPInstance::PrettyIndexedVector(EigenConstVectorXdRef v) {
 }
 
 EigenConstVectorXdRef GPInstance::GetSBNParameters() {
-  return engine_->GetSBNParameters();
+  return GetEngine()->GetSBNParameters();
 }
 
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
@@ -357,6 +357,16 @@ void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,
 
 void GPInstance::ExportAllGeneratedTrees(const std::string &out_path) {
   auto trees = GenerateCompleteRootedTreeCollection();
+  trees.ToNewickFile(out_path);
+}
+
+void GPInstance::ExportAllGeneratedTopologies(const std::string &out_path) {
+  auto raw_topologies = dag_.GenerateAllTopologies();
+  std::vector<Tree> tree_vector;
+  for (const auto &raw_topology : raw_topologies) {
+    tree_vector.push_back(Tree::UnitBranchLengthTreeOf(raw_topology));
+  }
+  auto trees = TreeCollection(tree_vector);
   trees.ToNewickFile(out_path);
 }
 

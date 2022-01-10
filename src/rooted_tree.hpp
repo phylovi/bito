@@ -108,6 +108,7 @@ class RootedTree : public Tree {
   // The tree `(0:2,(1:1.5,(2:2,3:1):2.5):2.5):0;` as depicted in
   // https://github.com/phylovi/bito/issues/187#issuecomment-618421183
   static RootedTree Example();
+  static RootedTree UnitBranchLengthTreeOf(Node::NodePtr topology);
 
  private:
   // As for SetTipDates, but only set the node bounds. No constraint on supplied
