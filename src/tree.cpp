@@ -45,6 +45,10 @@ std::string Tree::Newick(TagStringMapOption node_labels) const {
   return Topology()->Newick(branch_lengths_, node_labels);
 }
 
+std::string Tree::NewickTopology() const {
+  return Topology()->Newick(std::nullopt, std::nullopt);
+}
+
 double Tree::BranchLength(const Node* node) const {
   Assert(node->Id() < branch_lengths_.size(),
          "Requested id is out of range in Tree::BranchLength.");

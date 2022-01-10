@@ -361,13 +361,8 @@ void GPInstance::ExportAllGeneratedTrees(const std::string &out_path) {
 }
 
 void GPInstance::ExportAllGeneratedTopologies(const std::string &out_path) {
-  auto raw_topologies = dag_.GenerateAllTopologies();
-  std::vector<Tree> tree_vector;
-  for (const auto &raw_topology : raw_topologies) {
-    tree_vector.push_back(Tree::UnitBranchLengthTreeOf(raw_topology));
-  }
-  auto trees = TreeCollection(tree_vector);
-  trees.ToNewickFile(out_path);
+  TreeCollection::UnitBranchLengthTreesOf(dag_.GenerateAllTopologies())
+      .ToNewickTopologyFile(out_path);
 }
 
 void GPInstance::LoadAllGeneratedTrees() {
