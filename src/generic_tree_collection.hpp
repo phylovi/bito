@@ -112,7 +112,7 @@ class GenericTreeCollection {
   void ToNewickTopologyFile(const std::string &out_path) const {
     std::ofstream out_stream(out_path);
     for (const auto &tree : trees_) {
-      out_stream << tree.NewickTopology();
+      out_stream << tree.NewickTopology(tag_taxon_map_) << std::endl;
     }
     out_stream.close();
     if (!out_stream) {
@@ -154,12 +154,12 @@ class GenericTreeCollection {
   }
 
   static GenericTreeCollection UnitBranchLengthTreesOf(
-      std::vector<Node::NodePtr> topologies) {
+      std::vector<Node::NodePtr> topologies, TagStringMap tag_taxon_map) {
     std::vector<TTree> tree_vector;
     for (const auto &topology : topologies) {
       tree_vector.push_back(TTree::UnitBranchLengthTreeOf(topology));
     }
-    return GenericTreeCollection(tree_vector);
+    return GenericTreeCollection(tree_vector, tag_taxon_map);
   }
 
   TTreeVector trees_;

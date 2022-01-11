@@ -25,8 +25,9 @@ void GPInstance::PrintStatus() {
     std::cout << "No trees loaded.\n";
   }
   std::cout << alignment_.Data().size() << " sequences loaded.\n";
-  std::cout << dag_.NodeCount() << " DAG nodes representing " << dag_.TopologyCount()
-            << " trees.\n";
+  std::cout << dag_.NodeCount() << " DAG nodes with "
+            << dag_.GPCSPCountWithFakeSubsplits() << " edges representing "
+            << dag_.TopologyCount() << " trees.\n";
   std::cout << dag_.GPCSPCountWithFakeSubsplits() << " continuous parameters.\n";
   if (HasEngine()) {
     std::cout << "Engine available using " << GetEngine()->PLVByteCount() / 1e9
@@ -361,7 +362,8 @@ void GPInstance::ExportAllGeneratedTrees(const std::string &out_path) {
 }
 
 void GPInstance::ExportAllGeneratedTopologies(const std::string &out_path) {
-  TreeCollection::UnitBranchLengthTreesOf(dag_.GenerateAllTopologies())
+  TreeCollection::UnitBranchLengthTreesOf(dag_.GenerateAllTopologies(),
+                                          tree_collection_.TagTaxonMap())
       .ToNewickTopologyFile(out_path);
 }
 
