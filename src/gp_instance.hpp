@@ -69,8 +69,8 @@ class GPInstance {
   // file.
   void ExportTreesWithAPCSP(const std::string &pcsp_string,
                             const std::string &newick_path);
-  // Export all trees in the span of the subsplit DAG to a Newick file. Does not require
-  // an Engine.
+  // Export all topologies in the span of the subsplit DAG to a Newick file. Does not
+  // require an Engine.
   void ExportAllGeneratedTopologies(const std::string &out_path);
   // Export all trees in the span of the subsplit DAG (with GP branch lengths) to a
   // Newick file. Requires an Engine.
