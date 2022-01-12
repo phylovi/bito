@@ -72,6 +72,7 @@ class SubsplitDAG {
   size_t RootsplitCount() const;
   size_t GPCSPCount() const;
   size_t GPCSPCountWithFakeSubsplits() const;
+  StringSizeMap SummaryStatistics() const;
 
   void Print() const;
   void PrintGPCSPIndexer() const;

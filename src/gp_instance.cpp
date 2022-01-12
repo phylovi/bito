@@ -25,8 +25,9 @@ void GPInstance::PrintStatus() {
     std::cout << "No trees loaded.\n";
   }
   std::cout << alignment_.Data().size() << " sequences loaded.\n";
-  std::cout << dag_.NodeCount() << " DAG nodes representing " << dag_.TopologyCount()
-            << " trees.\n";
+  std::cout << dag_.NodeCount() << " DAG nodes with "
+            << dag_.GPCSPCountWithFakeSubsplits() << " edges representing "
+            << dag_.TopologyCount() << " trees.\n";
   std::cout << dag_.GPCSPCountWithFakeSubsplits() << " continuous parameters.\n";
   if (HasEngine()) {
     std::cout << "Engine available using " << GetEngine()->PLVByteCount() / 1e9
@@ -35,6 +36,8 @@ void GPInstance::PrintStatus() {
     std::cout << "Engine has not been made.\n";
   }
 }
+
+StringSizeMap GPInstance::DAGSummaryStatistics() { return dag_.SummaryStatistics(); }
 
 void GPInstance::ReadFastaFile(const std::string &fname) {
   alignment_ = Alignment::ReadFasta(fname);
@@ -64,24 +67,32 @@ void GPInstance::ReadNexusFileGZ(const std::string &fname) {
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFileGZ(fname));
 }
 
-void GPInstance::CheckSequencesAndTreesLoaded() const {
+void GPInstance::CheckSequencesLoaded() const {
   if (alignment_.SequenceCount() == 0) {
     Failwith(
-        "Load an alignment into your GPInstance on which you wish to "
-        "calculate phylogenetic likelihoods.");
-  }
-  if (tree_collection_.TreeCount() == 0) {
-    Failwith(
-        "Load some trees into your GPInstance on which you wish to "
+        "Load an alignment into your GPInstance with which you wish to "
         "calculate phylogenetic likelihoods.");
   }
 }
 
+void GPInstance::CheckTreesLoaded() const {
+  if (tree_collection_.TreeCount() == 0) {
+    Failwith(
+        "Load some trees into your GPInstance on which you wish to "
+        "build your subsplit DAG.");
+  }
+}
+
+void GPInstance::MakeDAG() {
+  CheckTreesLoaded();
+  dag_ = GPDAG(tree_collection_);
+}
+
 void GPInstance::MakeEngine(double rescaling_threshold) {
-  CheckSequencesAndTreesLoaded();
+  CheckSequencesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
 
-  dag_ = GPDAG(tree_collection_);
+  MakeDAG();
   auto sbn_prior = dag_.BuildUniformOnTopologicalSupportPrior();
   auto unconditional_node_probabilities =
       dag_.UnconditionalNodeProbabilities(sbn_prior);
@@ -211,7 +222,7 @@ size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
 
 RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
     Node::NodePtrVec &&topologies) const {
-  const EigenVectorXd gpcsp_indexed_branch_lengths = engine_->GetBranchLengths();
+  const EigenVectorXd gpcsp_indexed_branch_lengths = GetEngine()->GetBranchLengths();
   RootedTree::RootedTreeVector tree_vector;
 
   for (auto &root_node : topologies) {
@@ -272,7 +283,7 @@ StringDoubleVector GPInstance::PrettyIndexedVector(EigenConstVectorXdRef v) {
 }
 
 EigenConstVectorXdRef GPInstance::GetSBNParameters() {
-  return engine_->GetSBNParameters();
+  return GetEngine()->GetSBNParameters();
 }
 
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
@@ -348,6 +359,12 @@ void GPInstance::ExportTreesWithAPCSP(const std::string &pcsp_string,
 void GPInstance::ExportAllGeneratedTrees(const std::string &out_path) {
   auto trees = GenerateCompleteRootedTreeCollection();
   trees.ToNewickFile(out_path);
+}
+
+void GPInstance::ExportAllGeneratedTopologies(const std::string &out_path) {
+  TreeCollection::UnitBranchLengthTreesOf(dag_.GenerateAllTopologies(),
+                                          tree_collection_.TagTaxonMap())
+      .ToNewickTopologyFile(out_path);
 }
 
 void GPInstance::LoadAllGeneratedTrees() {

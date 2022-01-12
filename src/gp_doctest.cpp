@@ -77,6 +77,12 @@ GPInstance MakeFluAGPInstance(double rescaling_threshold) {
   return inst;
 }
 
+TEST_CASE("DAGSummaryStatistics") {
+  auto inst = MakeHelloGPInstanceTwoTrees();
+  StringSizeMap summaries = {{"edge_count", 10}, {"node_count", 8}};
+  CHECK(summaries == inst.DAGSummaryStatistics());
+}
+
 EigenVectorXd MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths() {
   EigenVectorXd hello_gp_optimal_branch_lengths(10);
   hello_gp_optimal_branch_lengths << 1, 1, 0.066509261, 0.00119570257, 0.00326456973,

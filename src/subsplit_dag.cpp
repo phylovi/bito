@@ -61,6 +61,10 @@ size_t SubsplitDAG::GPCSPCount() const { return gpcsp_count_without_fake_subspli
 
 size_t SubsplitDAG::GPCSPCountWithFakeSubsplits() const { return dag_edges_.size(); }
 
+StringSizeMap SubsplitDAG::SummaryStatistics() const {
+  return {{"node_count", NodeCount()}, {"edge_count", GPCSPCountWithFakeSubsplits()}};
+}
+
 void SubsplitDAG::Print() const {
   for (const auto &dag_node : dag_nodes_) {
     std::cout << dag_node->ToString() << std::endl;

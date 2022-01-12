@@ -17,6 +17,7 @@ class GPInstance {
     }
   };
   void PrintStatus();
+  StringSizeMap DAGSummaryStatistics();
 
   void ReadFastaFile(const std::string &fname);
   void ReadNewickFile(const std::string &fname);
@@ -24,11 +25,12 @@ class GPInstance {
   void ReadNexusFile(const std::string &fname);
   void ReadNexusFileGZ(const std::string &fname);
 
+  void MakeDAG();
+  GPDAG &GetDAG();
+  void PrintDAG();
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;
-  GPDAG &GetDAG();
-  void PrintDAG();
   void PrintGPCSPIndexer();
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();
@@ -67,9 +69,11 @@ class GPInstance {
   // file.
   void ExportTreesWithAPCSP(const std::string &pcsp_string,
                             const std::string &newick_path);
-  // Run CurrentlyLoadedTreesWithGPBranchLengths and export to a Newick file.
+  // Export all topologies in the span of the subsplit DAG to a Newick file. Does not
+  // require an Engine.
+  void ExportAllGeneratedTopologies(const std::string &out_path);
   // Export all trees in the span of the subsplit DAG (with GP branch lengths) to a
-  // Newick file.
+  // Newick file. Requires an Engine.
   void ExportAllGeneratedTrees(const std::string &out_path);
   // Generate all trees spanned by the DAG and load them into the instance.
   void LoadAllGeneratedTrees();
@@ -86,7 +90,8 @@ class GPInstance {
   static constexpr size_t plv_count_per_node_ = 6;
 
   void ClearTreeCollectionAssociatedState();
-  void CheckSequencesAndTreesLoaded() const;
+  void CheckSequencesLoaded() const;
+  void CheckTreesLoaded() const;
 
   size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
                                   const Node *leaf_node) const;

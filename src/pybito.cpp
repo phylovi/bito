@@ -389,7 +389,10 @@ PYBIND11_MODULE(bito, m) {
   gp_instance_class.def(py::init<const std::string &>())
       .def("print_status", &GPInstance::PrintStatus,
            "Print information about the instance.")
-      .def("print_dag", &GPInstance::PrintDAG, "Print the generalized pruning DAG.")
+      .def("dag_summary_statistics", &GPInstance::DAGSummaryStatistics,
+           "Return summary statistics about the DAG.")
+      .def("make_dag", &GPInstance::MakeDAG, "Build subsplit DAG.")
+      .def("print_dag", &GPInstance::PrintDAG, "Print the subsplit DAG.")
 
       // ** I/O
       .def("read_newick_file", &GPInstance::ReadNewickFile,
@@ -412,9 +415,14 @@ PYBIND11_MODULE(bito, m) {
            R"raw(Write out currently loaded trees to a Newick file
           (using current GP branch lengths).)raw",
            py::arg("out_path"))
+      .def(
+          "export_all_generated_topologies", &GPInstance::ExportAllGeneratedTopologies,
+          R"raw(Write out all topologies spanned by the current SBN DAG to a Newick file.
+            Doesn't require an Engine.)raw",
+          py::arg("out_path"))
       .def("export_all_generated_trees", &GPInstance::ExportAllGeneratedTrees,
            R"raw(Write out all trees spanned by the current SBN DAG to a Newick file
-          (using current GP branch lengths).)raw",
+          (using current GP branch lengths). Requires an Engine.)raw",
            py::arg("out_path"))
 
       .def(

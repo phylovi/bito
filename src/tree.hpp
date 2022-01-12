@@ -38,7 +38,8 @@ class Tree {
   bool operator==(const Tree& other) const;
 
   std::string Newick() const { return Newick(std::nullopt); }
-  std::string Newick(TagStringMapOption node_labels) const;
+  std::string Newick(const TagStringMapOption& node_labels) const;
+  std::string NewickTopology(const TagStringMapOption& node_labels) const;
 
   double BranchLength(const Node* node) const;
 

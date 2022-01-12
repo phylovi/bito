@@ -41,8 +41,12 @@ bool Tree::operator==(const Tree& other) const {
          (this->BranchLengths() == other.BranchLengths());
 }
 
-std::string Tree::Newick(TagStringMapOption node_labels) const {
+std::string Tree::Newick(const TagStringMapOption& node_labels) const {
   return Topology()->Newick(branch_lengths_, node_labels);
+}
+
+std::string Tree::NewickTopology(const TagStringMapOption& node_labels) const {
+  return Topology()->Newick(std::nullopt, node_labels);
 }
 
 double Tree::BranchLength(const Node* node) const {
