@@ -49,7 +49,7 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
   do {
     // Check current value
     f_prime_x = f(x).second;
-    if (fabs(f_prime_x) < 1e-4) {
+    if (fabs(f_prime_x) < 1e-5) {
       break;
     }
 
