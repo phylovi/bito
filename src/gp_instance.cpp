@@ -263,8 +263,9 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
 }
 
 StringVector GPInstance::PrettyIndexer() const {
-  StringVector pretty_representation(dag_.BuildGPCSPIndexer().size());
-  for (const auto &[pcsp, idx] : dag_.BuildGPCSPIndexer()) {
+  auto indexer = dag_.BuildGPCSPIndexer();
+  StringVector pretty_representation(indexer.size());
+  for (const auto &[pcsp, idx] : indexer) {
     pretty_representation[idx] = pcsp.PCSPToString();
   }
   return pretty_representation;
