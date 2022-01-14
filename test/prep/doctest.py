@@ -11,7 +11,7 @@ t = ete3.Tree(
 )
 
 preamble = """\
-// Copyright 2019-2021 bito project contributors.
+// Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN

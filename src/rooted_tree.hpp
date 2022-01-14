@@ -1,4 +1,4 @@
-// Copyright 2019-2021 bito project contributors.
+// Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
 // This is a rooted tree class that had the extra parameters required to do node height
