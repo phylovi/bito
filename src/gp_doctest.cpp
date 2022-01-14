@@ -288,9 +288,9 @@ TEST_CASE("GPInstance: hotstart branch lengths") {
       0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
   double true_mean = hotstart_expected_branch_lengths.array().mean();
   inst.HotStartBranchLengths();
+  inst.PrintDAG();
   auto indexer = inst.PrettyIndexer();
   std::cout << indexer << std::endl;
-  // inst.PrintDAG();
   // std::cout << inst.GetEngine()->GetBranchLengths();
   // std::cout << true_mean;
   std::cout << inst.GetDAG().ReversePostorderTraversal() << std::endl;
