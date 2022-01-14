@@ -69,6 +69,7 @@ void SubsplitDAG::Print() const {
   for (const auto &dag_node : dag_nodes_) {
     std::cout << dag_node->ToString() << std::endl;
   }
+  std::cout << "DAG edges\n";
   std::cout << dag_edges_ << std::endl;
 }
 
