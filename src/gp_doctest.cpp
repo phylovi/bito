@@ -289,7 +289,7 @@ TEST_CASE("GPInstance: hotstart branch lengths") {
   double true_mean = hotstart_expected_branch_lengths.array().mean();
   inst.HotStartBranchLengths();
   // inst.PrintDAG();
-  // std::cout << inst.GetDAG().ReversePostorderTraversal() << std::endl;
+  std::cout << inst.GetDAG().ReversePostorderTraversal() << std::endl;
   inst.GetDAG().ReversePostorderIndexTraversal([](size_t parent_id, bool rotated,
                                                   size_t child_id, size_t gpcsp_idx) {
     std::cout << parent_id << " " << rotated << " " << child_id << " " << gpcsp_idx
