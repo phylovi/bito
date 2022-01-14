@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "bito"
-copyright = "2019-2021, Team PhyloVI"
+copyright = "2019-2022, Team PhyloVI"
 author = "Team PhyloVI"
 
 # The full version, including alpha/beta/rc tags
