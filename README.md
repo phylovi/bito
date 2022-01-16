@@ -15,7 +15,7 @@ This library was formerly known as "libsbn".
 * If you are on linux, install gcc >= 7.5, which is standard in Debian Buster and Ubuntu 18.04
 * If you are on OS X, use a recent version of Xcode and install command line tools
 
-(Optional) We suggest using the associated conda environment file, which will nicely install relevant dependencies:
+We suggest using [anaconda](https://docs.conda.io/en/latest/miniconda.html) and the associated conda environment file, which will nicely install relevant dependencies:
 
     conda env create -f environment.yml
     conda activate bito
