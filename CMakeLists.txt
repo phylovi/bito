@@ -16,7 +16,7 @@ ExternalProject_Add(beagle-lib
 	GIT_SHALLOW		true
 	GIT_PROGRESS	true
 	UPDATE_DISCONNECTED true
-	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H" -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,${BITO_RPATH}"
+	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H" -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,.:${BITO_RPATH}"
 	PREFIX			beagle-lib
 	INSTALL_DIR		beagle-lib/install
 )
@@ -42,7 +42,7 @@ function(bito_compile_opts PRODUCT)
 endfunction()
 
 function(bito_link_opts PRODUCT)
-	target_link_options(${PRODUCT} PUBLIC -pthread -Wl,-rpath,${BITO_RPATH})
+	target_link_options(${PRODUCT} PUBLIC -pthread -Wl,-rpath,.:${BITO_RPATH})
 	target_link_libraries(${PRODUCT} PUBLIC bito-core)
 	add_dependencies(${PRODUCT} bito-core)
 endfunction()
@@ -104,7 +104,7 @@ add_library(bito-core SHARED
 	src/zlib_stream.cpp
 )
 bito_compile_opts(bito-core)
-target_link_options(bito-core PUBLIC -pthread -Wl,-rpath,${BITO_RPATH})
+target_link_options(bito-core PUBLIC -pthread -Wl,-rpath,.:${BITO_RPATH})
 target_link_libraries(bito-core PUBLIC hmsbeagle hmsbeagle-cpu z)
 target_link_directories(bito-core PUBLIC
 	${PROJECT_BINARY_DIR}/beagle-lib/install/lib
