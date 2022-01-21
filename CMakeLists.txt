@@ -1,7 +1,13 @@
 cmake_minimum_required(VERSION 3.19)
 project(bito)
-find_package(Python COMPONENTS Development)
+find_package(Python COMPONENTS Interpreter Development)
 set(BITO_VERSION "0.1")
+
+set(CMAKE_SKIP_RPATH ON)
+execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/get_rpath.py
+	OUTPUT_VARIABLE BITO_RPATH
+	COMMAND_ERROR_IS_FATAL ANY
+	OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 include(ExternalProject)
 ExternalProject_Add(beagle-lib
@@ -10,7 +16,7 @@ ExternalProject_Add(beagle-lib
 	GIT_SHALLOW		true
 	GIT_PROGRESS	true
 	UPDATE_DISCONNECTED true
-	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H"
+	CMAKE_ARGS		-DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H" -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,${BITO_RPATH}"
 	PREFIX			beagle-lib
 	INSTALL_DIR		beagle-lib/install
 )
@@ -26,8 +32,6 @@ ExternalProject_Add(pybind11
 	INSTALL_DIR		pybind11/install
 )
 
-set(CMAKE_BUILD_RPATH_USE_ORIGIN ON)
-
 function(bito_compile_opts PRODUCT)
 	target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
 	target_compile_options(${PRODUCT} PUBLIC -Werror -Wno-unknown-warning -Wno-unknown-warning-option -Wall -Wold-style-cast)
@@ -38,7 +42,7 @@ function(bito_compile_opts PRODUCT)
 endfunction()
 
 function(bito_link_opts PRODUCT)
-	target_link_options(${PRODUCT} PUBLIC -Wl,-rpath,.)
+	target_link_options(${PRODUCT} PUBLIC -pthread -Wl,-rpath,${BITO_RPATH})
 	target_link_libraries(${PRODUCT} PUBLIC bito-core)
 	add_dependencies(${PRODUCT} bito-core)
 endfunction()
@@ -100,7 +104,7 @@ add_library(bito-core SHARED
 	src/zlib_stream.cpp
 )
 bito_compile_opts(bito-core)
-target_link_options(bito-core PUBLIC -pthread -Wl,-rpath,.)
+target_link_options(bito-core PUBLIC -pthread -Wl,-rpath,${BITO_RPATH})
 target_link_libraries(bito-core PUBLIC hmsbeagle hmsbeagle-cpu z)
 target_link_directories(bito-core PUBLIC
 	${PROJECT_BINARY_DIR}/beagle-lib/install/lib

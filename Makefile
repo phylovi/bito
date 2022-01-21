@@ -61,7 +61,7 @@ format:
 	clang-format -i -style=file $(our_files)
 
 clean:
-	rm -rf _build build dist bito.*.so $(find . -name __pycache)
+	rm -rf build build_test dist bito.*.so $(find . -name __pycache)
 
 # We follow C++ core guidelines by allowing passing by non-const reference.
 lint:
