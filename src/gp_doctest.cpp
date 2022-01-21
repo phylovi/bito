@@ -257,6 +257,14 @@ TEST_CASE("GPInstance: rescaling") {
   CHECK_LT(fabs(difference), 1e-10);
 }
 
+StringDoubleMap StringDoubleMapOfStringDoubleVector(StringDoubleVector vect) {
+  StringDoubleMap m;
+  for (const auto& [str, x] : vect) {
+    SafeInsert(m, str, x);
+  }
+  return m;
+}
+
 TEST_CASE("GPInstance: hotstart branch lengths") {
   // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
   // 1 (outgroup,(((z0,z1),z2),z3));
@@ -271,10 +279,7 @@ TEST_CASE("GPInstance: hotstart branch lengths") {
   // We are going to verify correct assignment of the PCSP with sister z2, z3 and
   // children z0, z1, which only appears in the tree (outgroup,((z0,z1),(z2,z3))).
   // Vector of taxon names: [outgroup, z2, z3, z1, z0]
-  // So, this below is the desired GPCSP (in full subsplit notation), which corresponds
-  // to sister indices 1, 2, and children 4, 3:
-  // 0110000011|0001000001, 2
-  // Thus we are interested in the branch length index 2.
+  // So, this below is the desired GPCSP: 01100|00011|00001
 
   // These branch lengths are obtained by excluding (outgroup,(((z0,z1),z2),z3)) (which
   // doesn't have this PCSP) and grabbing the rest of the branch lengths.
@@ -288,7 +293,23 @@ TEST_CASE("GPInstance: hotstart branch lengths") {
       0.1892030000, 0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
   double true_mean = hotstart_expected_branch_lengths.array().mean();
   inst.HotStartBranchLengths();
-  CHECK_EQ(true_mean, inst.GetEngine()->GetBranchLengths()(2));
+  auto branch_length_map =
+      StringDoubleMapOfStringDoubleVector(inst.PrettyIndexedBranchLengths());
+  CHECK_EQ(true_mean, branch_length_map.at("01100|00011|00001"));
+}
+
+TEST_CASE("GPInstance: take first branch length") {
+  const std::string tree_path = "data/hotstart_bootstrap_sample.nwk";
+  GPInstance inst("_ignore/mmapped_plv.data");
+  // This is just a dummy fasta file, which is required to make an Engine.
+  inst.ReadFastaFile("data/hotstart.fasta");
+  inst.ReadNewickFile(tree_path);
+  inst.MakeEngine();
+  inst.TakeFirstBranchLength();
+  auto branch_length_map =
+      StringDoubleMapOfStringDoubleVector(inst.PrettyIndexedBranchLengths());
+  CHECK_EQ(0.191715, branch_length_map.at("01000|00011|00001"));
+  CHECK_EQ(0.0874183, branch_length_map.at("00011|01100|00100"));
 }
 
 TEST_CASE("GPInstance: generate all trees") {

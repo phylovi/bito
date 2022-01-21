@@ -79,6 +79,9 @@ class GPEngine {
   // Use branch lengths from loaded sample as a starting point for optimization.
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                              const BitsetSizeMap& indexer);
+  // Take the first branch length encountered for a given edge.
+  void TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
+                             const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
