@@ -11,14 +11,19 @@ auto now = std::chrono::high_resolution_clock::now;
 // gprof2dot -f callgrind callgrind.out.16763 | dot -Tpng -o ~/output.png
 
 int main(int argc, char *argv[]) {
-  Assert(argc == 4,
-         "We need exactly 4 arguments: fasta, unrooted_nwk, rooted_nwk, and out_path.");
-  std::string fasta_path = argv[0];
-  std::string unrooted_nwk_path = argv[1];
-  std::string rooted_nwk_path = argv[2];
-  std::string out_path = argv[3];
+  std::cout << argc << std::endl;
+  if (argc != 5) {
+    std::cout << "We need exactly 4 arguments: fasta, unrooted_nwk, rooted_nwk, and "
+                 "out_path."
+              << std::endl;
+    abort();
+  }
+  std::string fasta_path = argv[1];
+  std::string unrooted_nwk_path = argv[2];
+  std::string rooted_nwk_path = argv[3];
+  std::string out_path = argv[4];
 
-  GPInstance gp_inst("_ignore/mmapped_plv.data");
+  GPInstance gp_inst("mmapped_plv.data");
   gp_inst.ReadNewickFile(rooted_nwk_path);
   gp_inst.ReadFastaFile(fasta_path);
   gp_inst.MakeEngine();
@@ -31,7 +36,7 @@ int main(int argc, char *argv[]) {
     indexer_representations.push_back(
         RootedSBNMaps::IndexerRepresentationOf(indexer, tree.Topology(), SIZE_MAX));
   }
-  std::cout << indexer_representations << std::endl;
+
   UnrootedSBNInstance ur_inst("charlie");
   ur_inst.ReadNewickFile(unrooted_nwk_path);
   ur_inst.ReadFastaFile(fasta_path);
@@ -41,6 +46,7 @@ int main(int argc, char *argv[]) {
   const auto log_likelihoods = ur_inst.UnrootedLogLikelihoods(tree_collection);
 
   std::ofstream out_stream(out_path);
+  out_stream << std::setprecision(12);
   for (size_t which_tree = 0; which_tree < tree_collection.TreeCount(); which_tree++) {
     for (const auto &idx : indexer_representations.at(which_tree)) {
       out_stream << idx << ",";
