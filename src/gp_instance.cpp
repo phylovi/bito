@@ -176,7 +176,8 @@ void GPInstance::ComputeMarginalLikelihood() {
   ProcessOperations(dag_.MarginalLikelihood());
 }
 
-void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) {
+void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
+                                       bool per_pcsp_convg) {
   std::stringstream dev_null;
   auto &our_ostream = quiet ? dev_null : std::cout;
   auto now = std::chrono::high_resolution_clock::now;
@@ -200,7 +201,9 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
   per_pcsp_marg_lik_ = EigenMatrixXd(gpcsp_count, 1);
 
   per_pcsp_branch_lengths_.col(0) = GetEngine()->GetBranchLengths();
-  per_pcsp_marg_lik_.col(0) = GetEngine()->GetPerGPCSPLogLikelihoods();
+  EigenVectorXd current_per_pcsp_marg_likelihoods =
+      GetEngine()->GetPerGPCSPLogLikelihoods();
+  per_pcsp_marg_lik_.col(0) = current_per_pcsp_marg_likelihoods;
 
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
   std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
@@ -220,9 +223,16 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
     per_pcsp_marg_lik_.conservativeResize(Eigen::NoChange, i + 2);
 
     per_pcsp_branch_lengths_.col(i + 1) = GetEngine()->GetBranchLengths();
-    per_pcsp_marg_lik_.col(i + 1) = GetEngine()->GetPerGPCSPLogLikelihoods();
+    EigenVectorXd per_pcsp_marg_likelihoods = GetEngine()->GetPerGPCSPLogLikelihoods();
+    per_pcsp_marg_lik_.col(i + 1) = per_pcsp_marg_likelihoods;
 
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
+    auto avg_abs_change_perpcsp_marg_lik =
+        (per_pcsp_marg_likelihoods - current_per_pcsp_marg_likelihoods)
+            .array()
+            .abs()
+            .minCoeff();
+
     our_ostream << "Current marginal log likelihood: ";
     our_ostream << std::setprecision(9) << current_marginal_log_lik << std::endl;
     our_ostream << "New marginal log likelihood: ";
@@ -230,11 +240,15 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet) 
     if (marginal_log_lik < current_marginal_log_lik) {
       our_ostream << "Marginal log likelihood decreased.\n";
     }
-    if (abs(current_marginal_log_lik - marginal_log_lik) < tol) {
+    if (!per_pcsp_convg & (abs(current_marginal_log_lik - marginal_log_lik) < tol)) {
       our_ostream << "Converged.\n";
+      break;
+    } else if (per_pcsp_convg & (avg_abs_change_perpcsp_marg_lik < tol)) {
+      our_ostream << "Min per pcsp marginal likelihood converged. \n";
       break;
     }
     current_marginal_log_lik = marginal_log_lik;
+    current_per_pcsp_marg_likelihoods = per_pcsp_marg_likelihoods;
   }
   std::chrono::duration<double> optimization_duration = now() - t_start;
   our_ostream << "\n# Timing Report\n";

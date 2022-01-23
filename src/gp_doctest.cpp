@@ -281,12 +281,12 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
 
 // We are outputting the branch length for PCSP 100-011-001
 // which has a true branch length of 0.0694244266
-double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
+double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method, bool per_pcsp_convg) {
   GPInstance inst = MakeHelloGPInstance();
   GPEngine& engine = *inst.GetEngine();
   engine.SetOptimizationMethod(method);
 
-  inst.EstimateBranchLengths(0.001, 1000, false);
+  inst.EstimateBranchLengths(0.001, 1000, false, per_pcsp_convg);
   GPDAG& dag = inst.GetDAG();
   size_t default_index = dag.GPCSPCountWithFakeSubsplits();
   Bitset gpcsp_bitset = Bitset("100011001");
@@ -297,9 +297,28 @@ double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
 
 TEST_CASE("GPInstance: Gradient-based optimization") {
   double nongradient_length = ObtainBranchLengthWithOptimization(
-      GPEngine::OptimizationMethod::DefaultNongradientOptimization);
+      GPEngine::OptimizationMethod::DefaultNongradientOptimization, false);
   double gradient_length = ObtainBranchLengthWithOptimization(
-      GPEngine::OptimizationMethod::DefaultGradientOptimization);
+      GPEngine::OptimizationMethod::DefaultGradientOptimization, false);
+
+  // We now compare the branch length estimates b/w brent and gradient-based
+  // optimization We expect gradient optimization to be closer than brent
+  std::cout << "Brent branch lengths are " << nongradient_length << std::endl;
+  std::cout << "Gradient branch lengths are " << gradient_length << std::endl;
+
+  double golden_length = 0.0694244266;
+  double brent_diff = fabs(nongradient_length - golden_length);
+  double grad_diff = fabs(gradient_length - golden_length);
+
+  CHECK_LT(grad_diff, brent_diff);
+  CHECK_LT(grad_diff, 1e-6);
+}
+
+TEST_CASE("GPInstance: Gradient-based optimization, v2") {
+  double nongradient_length = ObtainBranchLengthWithOptimization(
+      GPEngine::OptimizationMethod::DefaultNongradientOptimization, true);
+  double gradient_length = ObtainBranchLengthWithOptimization(
+      GPEngine::OptimizationMethod::DefaultGradientOptimization, true);
 
   // We now compare the branch length estimates b/w brent and gradient-based
   // optimization We expect gradient optimization to be closer than brent
