@@ -364,24 +364,26 @@ void GPEngine::GradientAscentOptimization(
 
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                                      const BitsetSizeMap& indexer) {
+  size_t unique_gpcsp_count = branch_lengths_.size();
   branch_lengths_.setZero();
-  EigenVectorXi gpcsp_counts = EigenVectorXi::Zero(branch_lengths_.size());
+
+  EigenVectorXi observed_gpcsp_counts = EigenVectorXi::Zero(unique_gpcsp_count);
   // Set the branch length vector to be the total of the branch lengths for each PCSP,
   // and count the number of times we have seen each PCSP (into gpcsp_counts).
   auto tally_branch_lengths_and_gpcsp_count =
-      [&gpcsp_counts, this](size_t gpcsp_idx, const RootedTree& tree,
+      [&observed_gpcsp_counts, this](size_t gpcsp_idx, const RootedTree& tree,
                             const Node* focal_node) {
         branch_lengths_(gpcsp_idx) += tree.BranchLength(focal_node);
-        gpcsp_counts(gpcsp_idx)++;
+        observed_gpcsp_counts(gpcsp_idx)++;
       };
   FunctionOverRootedTreeCollection(tally_branch_lengths_and_gpcsp_count,
                                    tree_collection, indexer);
-  for (size_t gpcsp_idx = 0; gpcsp_idx < gpcsp_counts.size(); gpcsp_idx++) {
-    if (gpcsp_counts(gpcsp_idx) == 0) {
+  for (size_t gpcsp_idx = 0; gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
+    if (observed_gpcsp_counts(gpcsp_idx) == 0) {
       branch_lengths_(gpcsp_idx) = default_branch_length_;
     } else {
       // Normalize the branch length total using the counts to get a mean branch length.
-      branch_lengths_(gpcsp_idx) /= static_cast<double>(gpcsp_counts(gpcsp_idx));
+      branch_lengths_(gpcsp_idx) /= static_cast<double>(observed_gpcsp_counts(gpcsp_idx));
     }
   }
 }
