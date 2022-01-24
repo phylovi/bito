@@ -81,7 +81,7 @@ class GPEngine {
                              const BitsetSizeMap& indexer);
   // Gather branch lengths from loaded sample with their corresponding pcsp.
   SizeDoubleVector GatherBranchLengths(const RootedTreeCollection& tree_collection,
-                                         const BitsetSizeMap& indexer);
+                                       const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
@@ -180,7 +180,8 @@ class GPEngine {
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
 
   void FunctionOverRootedTreeCollection(
-      std::function<void(size_t, const RootedTree&, const Node*)> function_on_tree_node_by_gpcsp,
+      std::function<void(size_t, const RootedTree&, const Node*)>
+          function_on_tree_node_by_gpcsp,
       const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer);
 
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,

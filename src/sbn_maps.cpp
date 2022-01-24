@@ -70,8 +70,7 @@ Bitset SBNMaps::PCSPBitsetOf(const size_t leaf_count,  //
   if (child0_node == nullptr || child1_node == nullptr) {
     Bitset null(leaf_count);
     bitset.CopyFrom(null, 2 * leaf_count, false);
-  } 
-  else {
+  } else {
     auto child0_bitset = child0_node->Leaves();
     if (child0_direction) {
       child0_bitset.flip();

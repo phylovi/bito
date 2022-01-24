@@ -372,7 +372,7 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   // and count the number of times we have seen each PCSP (into gpcsp_counts).
   auto tally_branch_lengths_and_gpcsp_count =
       [&observed_gpcsp_counts, this](size_t gpcsp_idx, const RootedTree& tree,
-                            const Node* focal_node) {
+                                     const Node* focal_node) {
         branch_lengths_(gpcsp_idx) += tree.BranchLength(focal_node);
         observed_gpcsp_counts(gpcsp_idx)++;
       };
@@ -383,7 +383,8 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
       branch_lengths_(gpcsp_idx) = default_branch_length_;
     } else {
       // Normalize the branch length total using the counts to get a mean branch length.
-      branch_lengths_(gpcsp_idx) /= static_cast<double>(observed_gpcsp_counts(gpcsp_idx));
+      branch_lengths_(gpcsp_idx) /=
+          static_cast<double>(observed_gpcsp_counts(gpcsp_idx));
     }
   }
 }
