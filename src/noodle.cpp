@@ -2,6 +2,8 @@
 #include "rooted_sbn_instance.hpp"
 #include "gp_instance.hpp"
 
+#include <thread>
+
 // This is just a place to muck around, and check out performance.
 
 auto now = std::chrono::high_resolution_clock::now;
@@ -22,6 +24,7 @@ int main(int argc, char *argv[]) {
   std::string unrooted_nwk_path = argv[2];
   std::string rooted_nwk_path = argv[3];
   std::string out_path = argv[4];
+  auto thread_count = std::thread::hardware_concurrency();
 
   GPInstance gp_inst("mmapped_plv.data");
   gp_inst.ReadNewickFile(rooted_nwk_path);
@@ -41,7 +44,7 @@ int main(int argc, char *argv[]) {
   ur_inst.ReadNewickFile(unrooted_nwk_path);
   ur_inst.ReadFastaFile(fasta_path);
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
-  ur_inst.PrepareForPhyloLikelihood(simple_specification, 2, {}, true,
+  ur_inst.PrepareForPhyloLikelihood(simple_specification, thread_count, {}, true,
                                     tree_collection.TreeCount());
   const auto log_likelihoods = ur_inst.UnrootedLogLikelihoods(tree_collection);
 
