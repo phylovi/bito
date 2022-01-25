@@ -389,16 +389,16 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   }
 }
 
-SizeDoubleVector GPEngine::GatherBranchLengths(
+SizeDoubleVectorMap GPEngine::GatherBranchLengths(
     const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
-  SizeDoubleVector branch_lengths;
-  auto gather_branch_lengths = [&branch_lengths, this](size_t gpcsp_idx,
-                                                       const RootedTree& tree,
-                                                       const Node* focal_node) {
-    branch_lengths.push_back({gpcsp_idx, tree.BranchLength(focal_node)});
+  SizeDoubleVectorMap gpcsp_branchlengths_map;
+  auto gather_branch_lengths = [&gpcsp_branchlengths_map, this](
+                                   size_t gpcsp_idx, const RootedTree& tree,
+                                   const Node* focal_node) {
+    gpcsp_branchlengths_map[gpcsp_idx].push_back(tree.BranchLength(focal_node));
   };
   FunctionOverRootedTreeCollection(gather_branch_lengths, tree_collection, indexer);
-  return branch_lengths;
+  return gpcsp_branchlengths_map;
 }
 
 void GPEngine::FunctionOverRootedTreeCollection(

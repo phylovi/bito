@@ -292,14 +292,9 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
       0.1240790000, 0.1242540000, 0.1242160000, 0.1242560000, 0.1892030000,
       0.1894900000, 0.1895430000, 0.1896900000, 0.1905710000;
 
-  SizeDoubleVector branch_lengths_from_sample = inst.GatherBranchLengths();
-  std::vector<double> vect;
-  for (auto pair : branch_lengths_from_sample) {
-    if (pair.first == 2) {
-      vect.push_back(pair.second);
-    }
-  }
-  EigenVectorXd gathered_bls = Eigen::Map<EigenVectorXd>(vect.data(), vect.size());
+  SizeDoubleVectorMap branch_lengths_from_sample = inst.GatherBranchLengths();
+  EigenVectorXd gathered_bls =
+      EigenVectorXdOfStdVectorDouble(branch_lengths_from_sample[2]);
   CheckVectorXdEquality(expected_bls_internal, gathered_bls, 1e-6);
 
   double true_mean_internal = expected_bls_internal.array().mean();

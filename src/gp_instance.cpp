@@ -141,9 +141,9 @@ void GPInstance::HotStartBranchLengths() {
   }
 }
 
-SizeDoubleVector GPInstance::GatherBranchLengths() {
+SizeDoubleVectorMap GPInstance::GatherBranchLengths() {
   if (HasEngine()) {
-    SizeDoubleVector branch_lengths_from_sample =
+    SizeDoubleVectorMap branch_lengths_from_sample =
         GetEngine()->GatherBranchLengths(tree_collection_, dag_.BuildGPCSPIndexer());
     return branch_lengths_from_sample;
   } else {
