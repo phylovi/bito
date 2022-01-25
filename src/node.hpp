@@ -125,6 +125,9 @@ class Node {
   // See the typedef of UnrootedPCSPFun and RootedPCSPFun to understand the argument
   // type to these functions.
   void UnrootedPCSPPreorder(UnrootedPCSPFun f) const;
+  // Apply a RootedPCSPFun to the nodes through a preorder traversal. When allow_leaves
+  // is on, the function will be applied on both the internal and leaf nodes. 
+  // Otherwise, it is only applied on the internal nodes.
   void RootedPCSPPreorder(RootedPCSPFun f, bool allow_leaves) const;
   // Iterate over (leaf sister, leaf) pairs in order. Rooted because that's the only
   // case in which we are guaranteed to have a well defined set of such pairs.
