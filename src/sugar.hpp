@@ -35,6 +35,7 @@ using StringVectorVector = std::vector<StringVector>;
 using StringSet = std::unordered_set<std::string>;
 using StringSetVector = std::vector<StringSet>;
 using StringDoubleVector = std::vector<std::pair<std::string, double>>;
+using SizeDoubleVectorMap = std::unordered_map<size_t, std::vector<double>>;
 using DoublePair = std::pair<double, double>;
 using SizePair = std::pair<size_t, size_t>;
 using SizeOptionVector = std::vector<std::optional<size_t>>;

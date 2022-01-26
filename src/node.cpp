@@ -311,10 +311,12 @@ void Node::UnrootedPCSPPreorder(UnrootedPCSPFun f) const {
       });
 }
 
-void Node::RootedPCSPPreorder(RootedPCSPFun f) const {
+void Node::RootedPCSPPreorder(RootedPCSPFun f, bool allow_leaves) const {
   this->TriplePreorderBifurcating(
-      [&f](const Node* node, const Node* sister, const Node* parent) {
-        if (!node->IsLeaf()) {
+      [&f, &allow_leaves](const Node* node, const Node* sister, const Node* parent) {
+        if (node->IsLeaf() && allow_leaves) {
+          f(sister, node, nullptr, nullptr);
+        } else if (!node->IsLeaf()) {
           Assert(node->Children().size() == 2,
                  "RootedPCSPPreorder expects a bifurcating tree.");
           auto child0 = node->Children()[0].get();

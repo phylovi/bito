@@ -438,6 +438,9 @@ PYBIND11_MODULE(bito, m) {
            py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_)
       .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,
            "Use given trees to initialize branch lengths.")
+      .def("gather_branch_lengths", &GPInstance::GatherBranchLengths,
+           "Gather branch lengths into a map keyed by PCSP index for a given tree "
+           "sample.")
       .def("calculate_hybrid_marginals", &GPInstance::CalculateHybridMarginals,
            "Calculate hybrid marginals.")
       .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
