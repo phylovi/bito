@@ -9,6 +9,7 @@
 #include <functional>
 
 #include "basic_graph.hpp"
+#include "bitset.hpp"
 
 enum class Direction { Rootward, Leafward };
 enum class Clade { Left, Right };
@@ -54,19 +55,28 @@ private:
 template <typename Traits>
 class DAGVertex {
 public:
+  using Vertex = typename Traits::Vertex;
 
   VertexId GetId() const { return id_; }
+  Vertex& SetId(VertexId id) { id_ = id; return GetVertex(); }
+  const Bitset& GetSubsplit() const { return subsplit_; };
+  Vertex& SetSubsplit(const Bitset& subsplit) { subsplit_ = subsplit; return GetVertex(); }
 
 private:
 
   template <typename, template <typename> typename ... > friend class BasicVertex;
+
+  constexpr Vertex& GetVertex() {
+    return static_cast<Vertex&>(*this);
+  }
 
   template <typename Line>
   void OnLineChanged(VertexId id, const Line&, LineId) {
     id_ = id;
   }
 
-  VertexId id_;
+  VertexId id_ = NoId;
+  Bitset subsplit_ = Bitset{0};
 };
 
 template <typename Traits>
@@ -125,6 +135,11 @@ public:
     auto& line = GetGraph().GetLines()[id];
     if (line.GetId() == NoId) return {};
     return line;
+  }
+
+  bool ContainsVertex(VertexId id) const {
+      if (id >= GetGraph().GetVertices().size()) return false;
+      return GetGraph().GetVertices()[id].GetId() != NoId;
   }
   
 private:

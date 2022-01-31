@@ -18,57 +18,67 @@
 #include "bitset.hpp"
 #include "reindexer.hpp"
 #include "sugar.hpp"
+#include "subsplit_dag_storage.hpp"
 
 class SubsplitDAGNode {
  public:
-  SubsplitDAGNode(size_t id, Bitset subsplit)
-      : id_(id), subsplit_(std::move(subsplit)) {}
+  SubsplitDAGNode(const DAGTraits::Vertex& storage) : storage_(storage) {}
 
-  size_t Id() const { return id_; }
-  const Bitset &GetBitset() const { return subsplit_; }
+  size_t Id() const { return storage_.GetId(); }
+  const Bitset &GetBitset() const { return storage_.GetSubsplit(); }
   const Bitset GetBitset(bool rotated) const {
-    return rotated ? subsplit_.SubsplitRotate() : subsplit_;
+    return rotated ? GetBitset().SubsplitRotate() : GetBitset();
   }
   bool IsDAGRootNode() const {
-    return (rootward_sorted_.empty() && rootward_rotated_.empty());
+    return (GetRootwardSorted().empty() && GetRootwardRotated().empty());
   }
-  bool IsRootsplit() const { return subsplit_.SubsplitIsRootsplit(); }
-  bool IsLeaf() const { return leafward_rotated_.empty() && leafward_sorted_.empty(); }
+  bool IsRootsplit() const { return GetBitset().SubsplitIsRootsplit(); }
+  bool IsLeaf() const { return GetLeafwardRotated().empty() && GetLeafwardSorted().empty(); }
 
-  void AddLeafwardRotated(size_t node_id) { leafward_rotated_.push_back(node_id); }
-  void AddLeafwardSorted(size_t node_id) { leafward_sorted_.push_back(node_id); }
-  void AddRootwardRotated(size_t node_id) { rootward_rotated_.push_back(node_id); }
-  void AddRootwardSorted(size_t node_id) { rootward_sorted_.push_back(node_id); }
+  // void AddLeafwardRotated(size_t node_id) { leafward_rotated_.push_back(node_id); }
+  // void AddLeafwardSorted(size_t node_id) { leafward_sorted_.push_back(node_id); }
+  // void AddRootwardRotated(size_t node_id) { rootward_rotated_.push_back(node_id); }
+  // void AddRootwardSorted(size_t node_id) { rootward_sorted_.push_back(node_id); }
   // #350 use enumerated types for rotated?
-  const SizeVector &GetLeafwardOrRootward(bool leafward, bool rotated) const {
+  SizeVector GetLeafwardOrRootward(bool leafward, bool rotated) const {
     return leafward ? GetLeafward(rotated) : GetRootward(rotated);
   };
-  const SizeVector &GetLeafwardRotated() const { return leafward_rotated_; }
-  const SizeVector &GetLeafwardSorted() const { return leafward_sorted_; }
-  const SizeVector &GetLeafward(bool rotated) const {
+  SizeVector GetLeafwardRotated() const { return GetIds(Direction::Leafward, Clade::Left); }
+  SizeVector GetLeafwardSorted() const { return GetIds(Direction::Leafward, Clade::Right); }
+  SizeVector GetLeafward(bool rotated) const {
     return rotated ? GetLeafwardRotated() : GetLeafwardSorted();
   }
-  const SizeVector &GetRootwardRotated() const { return rootward_rotated_; }
-  const SizeVector &GetRootwardSorted() const { return rootward_sorted_; }
-  const SizeVector &GetRootward(bool rotated) const {
+  SizeVector GetRootwardRotated() const { return GetIds(Direction::Rootward, Clade::Left); }
+  SizeVector GetRootwardSorted() const { return GetIds(Direction::Rootward, Clade::Right); }
+  SizeVector GetRootward(bool rotated) const {
     return rotated ? GetRootwardRotated() : GetRootwardSorted();
   }
   void RemapNodeIds(const SizeVector node_reindexer) {
-    id_ = node_reindexer.at(id_);
-    Reindexer::RemapIdVector(leafward_rotated_, node_reindexer);
-    Reindexer::RemapIdVector(leafward_sorted_, node_reindexer);
-    Reindexer::RemapIdVector(rootward_rotated_, node_reindexer);
-    Reindexer::RemapIdVector(rootward_sorted_, node_reindexer);
+    throw std::runtime_error("Not implemented");
+    // TODO
+    // id_ = node_reindexer.at(id_);
+    // Reindexer::RemapIdVector(leafward_rotated_, node_reindexer);
+    // Reindexer::RemapIdVector(leafward_sorted_, node_reindexer);
+    // Reindexer::RemapIdVector(rootward_rotated_, node_reindexer);
+    // Reindexer::RemapIdVector(rootward_sorted_, node_reindexer);
   }
 
   std::string ToString() const;
 
  private:
-  size_t id_;
-  const Bitset subsplit_;
 
-  SizeVector leafward_rotated_;
-  SizeVector leafward_sorted_;
-  SizeVector rootward_rotated_;
-  SizeVector rootward_sorted_;
+  SizeVector GetIds(Direction direction, Clade clade) const {
+    SizeVector ids;
+    for (auto& i : storage_.GetNeighbors().Get(direction, clade)) ids.push_back(i.first);
+    return ids;
+  }
+
+  // size_t id_;
+  // const Bitset subsplit_;
+  const DAGTraits::Vertex& storage_;
+
+  // SizeVector leafward_rotated_;
+  // SizeVector leafward_sorted_;
+  // SizeVector rootward_rotated_;
+  // SizeVector rootward_sorted_;
 };

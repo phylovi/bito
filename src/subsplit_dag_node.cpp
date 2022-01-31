@@ -12,10 +12,10 @@ std::string GetNeighborString(SizeVector neighbors) {
 }
 
 std::string SubsplitDAGNode::ToString() const {
-  std::string str = std::to_string(id_) + ": " + GetBitset().SubsplitToString() + "\n";
-  str += "Rootward Sorted: " + GetNeighborString(rootward_sorted_) + "\n";
-  str += "Rootward Rotated: " + GetNeighborString(rootward_rotated_) + "\n";
-  str += "Leafward Sorted: " + GetNeighborString(leafward_sorted_) + "\n";
-  str += "Leafward Rotated: " + GetNeighborString(leafward_rotated_) + "\n";
+  std::string str = std::to_string(Id()) + ": " + GetBitset().SubsplitToString() + "\n";
+  str += "Rootward Sorted: " + GetNeighborString(GetRootwardSorted()) + "\n";
+  str += "Rootward Rotated: " + GetNeighborString(GetRootwardRotated()) + "\n";
+  str += "Leafward Sorted: " + GetNeighborString(GetLeafwardSorted()) + "\n";
+  str += "Leafward Rotated: " + GetNeighborString(GetLeafwardRotated()) + "\n";
   return str;
 }

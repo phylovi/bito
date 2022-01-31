@@ -56,7 +56,7 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
       SubsplitDAGTraversalAction(
           // BeforeNode
           [this, &operations](size_t node_id) {
-            if (!GetDAGNode(node_id)->IsRootsplit()) {
+            if (!GetDAGNode(node_id).IsRootsplit()) {
               // Update R-hat if we're not at the root.
               UpdateRHat(node_id, operations);
             }
@@ -103,7 +103,7 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
       TidySubsplitDAGTraversalAction(
           // BeforeNode
           [this, &operations](size_t node_id) {
-            if (!GetDAGNode(node_id)->IsRootsplit()) {
+            if (!GetDAGNode(node_id).IsRootsplit()) {
               // Update R-hat if we're not at the root.
               UpdateRHat(node_id, operations);
             }
@@ -142,14 +142,14 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
 
 GPOperationVector GPDAG::ComputeLikelihoods() const {
   GPOperationVector operations;
-  IterateOverRealNodes([this, &operations](const SubsplitDAGNode *node) {
+  IterateOverRealNodes([this, &operations](SubsplitDAGNode node) {
     IterateOverLeafwardEdges(
         node, [this, node, &operations](const bool rotated,
-                                        const SubsplitDAGNode *child_node) {
-          const auto gpcsp_idx = GPCSPIndexOfIds(node->Id(), child_node->Id());
+                                        SubsplitDAGNode child_node) {
+          const auto gpcsp_idx = GPCSPIndexOfIds(node.Id(), child_node.Id());
           operations.push_back(Likelihood{gpcsp_idx,
-                                          GetPLVIndex(RPLVType(rotated), node->Id()),
-                                          GetPLVIndex(PLVType::P, child_node->Id())});
+                                          GetPLVIndex(RPLVType(rotated), node.Id()),
+                                          GetPLVIndex(PLVType::P, child_node.Id())});
         });
   });
 
@@ -183,8 +183,8 @@ GPOperationVector GPDAG::OptimizeSBNParameters() const {
   std::unordered_set<size_t> visited_nodes;
   for (size_t &id : LeafwardPassTraversal(false)) {
     const auto node = GetDAGNode(id);
-    OptimizeSBNParametersForASubsplit(node->GetBitset(), operations);
-    OptimizeSBNParametersForASubsplit(node->GetBitset().SubsplitRotate(), operations);
+    OptimizeSBNParametersForASubsplit(node.GetBitset(), operations);
+    OptimizeSBNParametersForASubsplit(node.GetBitset().SubsplitRotate(), operations);
   }
   operations.push_back(UpdateSBNProbabilities{0, RootsplitCount()});
   return operations;
@@ -242,7 +242,7 @@ GPOperationVector GPDAG::RootwardPass(const SizeVector &visit_order) const {
   GPOperationVector operations;
   for (const size_t node_id : visit_order) {
     const auto node = GetDAGNode(node_id);
-    if (!node->IsLeaf()) {
+    if (!node.IsLeaf()) {
       // Build phat(s).
       AddPhatOperations(node, false, operations);
       // Build phat(s_tilde).
@@ -276,13 +276,13 @@ void AppendOperationsAfterPrepForMarginalization(
   }
 }
 
-void GPDAG::AddPhatOperations(const SubsplitDAGNode *node, bool rotated,
+void GPDAG::AddPhatOperations(SubsplitDAGNode node, bool rotated,
                               GPOperationVector &operations) const {
   PLVType plv_type = rotated ? PLVType::P_HAT_TILDE : PLVType::P_HAT;
-  const auto parent_idx = node->Id();
-  const size_t dest_idx = GetPLVIndex(plv_type, node->Id());
+  const auto parent_idx = node.Id();
+  const size_t dest_idx = GetPLVIndex(plv_type, node.Id());
   GPOperationVector new_operations;
-  for (const size_t &child_idx : node->GetLeafward(rotated)) {
+  for (const size_t &child_idx : node.GetLeafward(rotated)) {
     const auto gpcsp_idx = GPCSPIndexOfIds(parent_idx, child_idx);
     new_operations.push_back(IncrementWithWeightedEvolvedPLV{
         dest_idx, gpcsp_idx, GetPLVIndex(PLVType::P, child_idx)});
@@ -290,16 +290,16 @@ void GPDAG::AddPhatOperations(const SubsplitDAGNode *node, bool rotated,
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
-void GPDAG::AddRhatOperations(const SubsplitDAGNode *node,
+void GPDAG::AddRhatOperations(SubsplitDAGNode node,
                               GPOperationVector &operations) const {
   GPOperationVector new_operations;
   IterateOverRootwardEdges(
       node, [this, node, &new_operations](const bool rotated,
-                                          const SubsplitDAGNode *parent_node) {
+                                          SubsplitDAGNode parent_node) {
         new_operations.push_back(IncrementWithWeightedEvolvedPLV{
-            GetPLVIndex(PLVType::R_HAT, node->Id()),
-            GPCSPIndexOfIds(parent_node->Id(), node->Id()),
-            GetPLVIndex(RPLVType(rotated), parent_node->Id())});
+            GetPLVIndex(PLVType::R_HAT, node.Id()),
+            GPCSPIndexOfIds(parent_node.Id(), node.Id()),
+            GetPLVIndex(RPLVType(rotated), parent_node.Id())});
       });
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
@@ -321,7 +321,7 @@ void GPDAG::UpdateRHat(size_t node_id, GPOperationVector &operations) const {
   const auto node = GetDAGNode(node_id);
   for (const bool rotated : {false, true}) {
     PLVType src_plv_type = rotated ? PLVType::R_TILDE : PLVType::R;
-    for (size_t parent_id : node->GetRootward(rotated)) {
+    for (size_t parent_id : node.GetRootward(rotated)) {
       new_operations.push_back(IncrementWithWeightedEvolvedPLV{
           GetPLVIndex(PLVType::R_HAT, node_id), GPCSPIndexOfIds(parent_id, node_id),
           GetPLVIndex(src_plv_type, parent_id)});
@@ -381,15 +381,15 @@ QuartetHybridRequest GPDAG::QuartetHybridRequestOf(size_t parent_id, bool rotate
       });
 
   QuartetTipVector sister_tips;
-  const auto &parent_node = GetDAGNode(parent_id);
+  const auto parent_node = GetDAGNode(parent_id);
   const bool is_edge_to_sister_rotated = !rotated;
   IterateOverLeafwardEdges(
       parent_node, is_edge_to_sister_rotated,
-      [this, &parent_node, &sister_tips](const SubsplitDAGNode *sister_node) {
-        const auto sister_id = sister_node->Id();
+      [this, &parent_node, &sister_tips](SubsplitDAGNode sister_node) {
+        const auto sister_id = sister_node.Id();
         sister_tips.emplace_back(
             sister_id, GetPLVIndex(PLVType::P, sister_id),
-            GetGPCSPIndex(parent_node->GetBitset(), sister_node->GetBitset()));
+            GetGPCSPIndex(parent_node.GetBitset(), sister_node.GetBitset()));
       });
 
   QuartetTipVector rotated_tips;

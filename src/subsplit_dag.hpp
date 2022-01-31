@@ -44,10 +44,10 @@
 class SubsplitDAG {
  public:
   // NodeLambda is for iterating over nodes.
-  using NodeLambda = std::function<void(const SubsplitDAGNode *)>;
+  using NodeLambda = std::function<void(SubsplitDAGNode)>;
   // EdgeDestinationLambda takes in a rotation status (true is rotated, false is not)
   // and a "destination" node. For iterating over DAG edges with a rotation status.
-  using EdgeDestinationLambda = std::function<void(bool, const SubsplitDAGNode *)>;
+  using EdgeDestinationLambda = std::function<void(bool, SubsplitDAGNode)>;
   // EdgeAndNodeLambda takes a GPCSP index of an edge, its rotation status, and an index
   // of the node on the other side of the edge.
   using EdgeAndNodeLambda = std::function<void(const size_t, const bool, const size_t)>;
@@ -86,11 +86,11 @@ class SubsplitDAG {
   // The gpcsp indexer is "expanded" meaning it contains fake PCSPs and rootsplit
   // bitsets are formatted as subsplits: 1110|0001.
   BitsetSizeMap BuildGPCSPIndexer() const;
-  SubsplitDAGNode *GetDAGNode(size_t node_id) const;
+  SubsplitDAGNode GetDAGNode(size_t node_id) const;
   size_t GetDAGNodeId(const Bitset &subsplit) const;
   size_t DAGRootNodeId() const;
   // Return the node ids corresponding to the rootsplits.
-  const SizeVector &RootsplitIds() const;
+  const SizeVector RootsplitIds() const;
   const DAGTraits::Lines& GetEdges() const { return storage_.GetLines(); }
   const BitsetSizePairMap& GetParentToRange() const { return parent_to_range_; }
   // Access the GPCSP index from a parent-child pair of DAG nodes.
@@ -105,27 +105,27 @@ class SubsplitDAG {
   void IterateOverRealNodes(const NodeLambda &f) const;
   // Iterate over the all leafward edges, rotated and sorted, of node using an
   // EdgeDestinationLambda.
-  void IterateOverLeafwardEdges(const SubsplitDAGNode *node,
+  void IterateOverLeafwardEdges(SubsplitDAGNode node,
                                 const EdgeDestinationLambda &f) const;
   // Iterate over only the rotated/sorted leafward edges of node using a NodeLambda.
-  void IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
+  void IterateOverLeafwardEdges(SubsplitDAGNode node, bool rotated,
                                 const NodeLambda &f) const;
   // Iterate over the leafward edges, supplying both the a GPCSP index of the edge and
   // the SubsplitDAGNode of the corresponding child.
-  void IterateOverLeafwardEdgesAndChildren(const SubsplitDAGNode *node,
+  void IterateOverLeafwardEdgesAndChildren(SubsplitDAGNode node,
                                            const EdgeAndNodeLambda &f) const;
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
   // Excludes edges to the DAG root node.
-  void IterateOverRootwardEdges(const SubsplitDAGNode *node,
+  void IterateOverRootwardEdges(SubsplitDAGNode node,
                                 const EdgeDestinationLambda &f) const;
   // Iterate over the rootward edges, supplying both the a GPCSP index of the edge and
   // the SubsplitDAGNode of the corresponding child.
-  void IterateOverRootwardEdgesAndParents(const SubsplitDAGNode *node,
+  void IterateOverRootwardEdgesAndParents(SubsplitDAGNode node,
                                           const EdgeAndNodeLambda &f) const;
   // Iterate over the leafward edges, supplying the parent node id, child node id,
   // rotation of child, and the GPCSP index of the rootward edge connecting the two.
   void IterateOverParentAndChildAndLeafwardEdges(
-      const SubsplitDAGNode *node, const ParentRotationChildEdgeLambda &f) const;
+      SubsplitDAGNode node, const ParentRotationChildEdgeLambda &f) const;
 
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllTopologies() const;
@@ -166,10 +166,10 @@ class SubsplitDAG {
       std::unordered_set<size_t> &visited_nodes) const {
     action.BeforeNodeClade(node_id, rotated);
     const auto node = GetDAGNode(node_id);
-    for (const size_t child_id : node->GetLeafward(rotated)) {
+    for (const size_t child_id : node.GetLeafward(rotated)) {
       if (visited_nodes.count(child_id) == 0) {
         visited_nodes.insert(child_id);
-        if (!GetDAGNode(child_id)->IsLeaf()) {
+        if (!GetDAGNode(child_id).IsLeaf()) {
           DepthFirstWithActionForNode(action, child_id, visited_nodes);
         }
       }
@@ -252,10 +252,11 @@ class SubsplitDAG {
   SizeVector BuildNodeReindexer(const size_t prev_node_count);
   // Get the reindexer for edges idxs.
   SizeVector BuildEdgeReindexer(const size_t prev_edge_count);
-  // Remap all node ids according to the node_reindexer.
-  void RemapNodeIds(const SizeVector &node_reindexer);
-  // Remap all edge idxs according to the edge_reindexer.
-  void RemapEdgeIdxs(const SizeVector &edge_reindexer);
+  // // Remap all node ids according to the node_reindexer.
+  // void RemapNodeIds(const SizeVector &node_reindexer);
+  // // Remap all edge idxs according to the edge_reindexer.
+  // void RemapEdgeIdxs(const SizeVector &edge_reindexer);
+  void RemapIds(const SizeVector &edge_reindexer, const SizeVector &node_reindexer);
 
  protected:
   size_t taxon_count_;
@@ -266,7 +267,6 @@ class SubsplitDAG {
 
   // A map from node id pairs to gpcsp idxs.
   DAGStorage storage_;
-  //std::map<SizePair, size_t> dag_edges_;
   
   // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
   // This corresponds to the analogous concept for topologies.
@@ -276,7 +276,6 @@ class SubsplitDAG {
   // The last entries are reserved for rootsplits.
   // The DAG root node has the highest node id.
   BitsetSizeMap subsplit_to_id_;
-  std::vector<std::unique_ptr<SubsplitDAGNode>> dag_nodes_;
 
   // Total number of topologies spanned by the DAG.
   double topology_count_;
@@ -295,12 +294,9 @@ class SubsplitDAG {
       const Node::TopologyCounter &topology_counter);
   void CreateAndInsertNode(const Bitset &subsplit);
   void CreateAndInsertEdge(const size_t parent_id, const size_t child_id, bool rotated);
-  void ConnectGivenNodes(const size_t parent_id, const size_t child_id, bool rotated);
-  void ConnectNodes(const SizeBitsetMap &index_to_child, size_t node_id, bool rotated);
   void BuildNodesDepthFirst(const SizeBitsetMap &index_to_child, const Bitset &subsplit,
                             std::unordered_set<Bitset> &visited_subsplits);
   void BuildNodes(const SizeBitsetMap &index_to_child, const BitsetVector &rootsplits);
-  void BuildEdges(const SizeBitsetMap &index_to_child);
   void BuildDAGEdgesFromGPCSPIndexer(BitsetSizeMap &gpcsp_indexer);
   void CountTopologies();
   // Expand dag_edges_ and parent_to_range_ with fake subsplits at the end.

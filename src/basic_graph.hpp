@@ -74,6 +74,12 @@ public:
     OnLineChanged(line, id);
     return line;
   }
+
+  const Vertex& AddVertex(VertexId id, const Vertex& newVertex) {
+    auto& vertex = GetOrInsert(vertices_, id);
+    vertex = newVertex;
+    return vertex;
+  }
   
 private:
   

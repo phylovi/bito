@@ -87,13 +87,13 @@ size_t SetOfNNIs::GetSize() const { return set_.size(); }
 void SyncSetOfNNIsWithDAG(SetOfNNIs &set_of_nnis, const SubsplitDAG &dag) {
   set_of_nnis.Clear();
   // Only real node pairs are viable NNIs.
-  dag.IterateOverRealNodes([&set_of_nnis, &dag](const SubsplitDAGNode *node) {
+  dag.IterateOverRealNodes([&set_of_nnis, &dag](SubsplitDAGNode node) {
     dag.IterateOverParentAndChildAndLeafwardEdges(
         node, [&set_of_nnis, &dag](const size_t parent_id, const bool is_rotated,
                                    const size_t child_id, const size_t edge_idx) {
           // Only internal node pairs are viable NNIs.
-          Bitset parent_bitset = dag.GetDAGNode(parent_id)->GetBitset();
-          Bitset child_bitset = dag.GetDAGNode(child_id)->GetBitset();
+          Bitset parent_bitset = dag.GetDAGNode(parent_id).GetBitset();
+          Bitset child_bitset = dag.GetDAGNode(child_id).GetBitset();
           if (!(parent_bitset.SubsplitIsRoot() || child_bitset.SubsplitIsLeaf())) {
             SafeAddOutputNNIsToSetOfNNIs(set_of_nnis, dag, parent_bitset, child_bitset,
                                          is_rotated);
@@ -114,7 +114,7 @@ void UpdateSetOfNNIsAfterDAGAddNodePair(SetOfNNIs &set_of_nnis, const SubsplitDA
     for (const bool is_edge_leafward : {true, false}) {
       // Get nodes adjacent to current node from both leafward and rootward directions.
       for (const bool is_edge_rotated : {true, false}) {
-        SizeVector adjacent_node_ids = dag.GetDAGNode(node_id)->GetLeafwardOrRootward(
+        SizeVector adjacent_node_ids = dag.GetDAGNode(node_id).GetLeafwardOrRootward(
             is_edge_leafward, is_edge_rotated);
         AddAllNNIsFromNodeVectorToSetOfNNIs(set_of_nnis, dag, node_id,
                                             adjacent_node_ids, is_edge_rotated,
@@ -132,7 +132,7 @@ void AddAllNNIsFromNodeVectorToSetOfNNIs(SetOfNNIs &set_of_nnis, const SubsplitD
                                          const SizeVector &adjacent_node_ids,
                                          const bool is_edge_rotated,
                                          const bool is_edge_leafward) {
-  Bitset node_bitset = dag.GetDAGNode(node_id)->GetBitset();
+  Bitset node_bitset = dag.GetDAGNode(node_id).GetBitset();
   // Determine whether node_id corresponds to parent or child of the pair.
   // Add every edge's NNI to NNI Set.
   // If edges are leafward, node_id is the parent to all vector nodes.
@@ -140,14 +140,14 @@ void AddAllNNIsFromNodeVectorToSetOfNNIs(SetOfNNIs &set_of_nnis, const SubsplitD
   if (is_edge_leafward) {
     const Bitset &parent_bitset = node_bitset;
     for (const auto &adjacent_node_id : adjacent_node_ids) {
-      const Bitset child_bitset = dag.GetDAGNode(adjacent_node_id)->GetBitset();
+      const Bitset child_bitset = dag.GetDAGNode(adjacent_node_id).GetBitset();
       SafeAddOutputNNIsToSetOfNNIs(set_of_nnis, dag, parent_bitset, child_bitset,
                                    is_edge_rotated);
     }
   } else {
     const Bitset &child_bitset = node_bitset;
     for (const auto &adjacent_node_id : adjacent_node_ids) {
-      const Bitset parent_bitset = dag.GetDAGNode(adjacent_node_id)->GetBitset();
+      const Bitset parent_bitset = dag.GetDAGNode(adjacent_node_id).GetBitset();
       SafeAddOutputNNIsToSetOfNNIs(set_of_nnis, dag, parent_bitset, child_bitset,
                                    is_edge_rotated);
     }
