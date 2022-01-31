@@ -39,6 +39,7 @@
 #include "subsplit_dag_action.hpp"
 #include "subsplit_dag_nni.hpp"
 #include "subsplit_dag_node.hpp"
+#include "subsplit_dag_storage.hpp"
 
 class SubsplitDAG {
  public:
@@ -90,7 +91,8 @@ class SubsplitDAG {
   size_t DAGRootNodeId() const;
   // Return the node ids corresponding to the rootsplits.
   const SizeVector &RootsplitIds() const;
-
+  const DAGTraits::Lines& GetEdges() const { return storage_.GetLines(); }
+  const BitsetSizePairMap& GetParentToRange() const { return parent_to_range_; }
   // Access the GPCSP index from a parent-child pair of DAG nodes.
   size_t GetGPCSPIndex(const Bitset &parent_subsplit,
                        const Bitset &child_subsplit) const;
@@ -263,8 +265,9 @@ class SubsplitDAG {
   BitsetSizePairMap parent_to_range_;
 
   // A map from node id pairs to gpcsp idxs.
-  std::map<SizePair, size_t> dag_edges_;
-
+  DAGStorage storage_;
+  //std::map<SizePair, size_t> dag_edges_;
+  
   // We will call the index of DAG nodes "ids" to distinguish them from GPCSP indexes.
   // This corresponds to the analogous concept for topologies.
   //
