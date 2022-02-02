@@ -14,38 +14,37 @@
 enum class Direction { Rootward, Leafward };
 enum class Clade { Left, Right };
 
+template <typename T>
+using OptRef = std::optional<std::reference_wrapper<T>>;
+
 template <typename Traits>
 class DAGLine {
-public:
-
   using Line = typename Traits::Line;
+  
+public:
+  constexpr VertexId GetParent() const { return AsLine().GetFirst(); }
+  constexpr VertexId GetChild() const { return AsLine().GetSecond(); }
 
   LineId GetId() const { return id_; }
   Clade GetClade() const { return clade_; }
   
   auto& SetClade(Clade clade) {
     clade_ = clade;
-    return static_cast<typename Traits::Line&>(*this);
+    return AsLine();
   }
   
   std::pair<VertexId, VertexId> GetVertexIds() const {
-    return {GetLine().GetFirst(), GetLine().GetSecond()};
+    return {GetParent(), GetChild()};
   }
 
-  constexpr VertexId GetParent() const { return GetLine().GetFirst(); }
-  constexpr VertexId GetChild() const { return GetLine().GetSecond(); }
-
-private:
-
-  template <typename, template <typename> typename ... > friend class BasicLine;
-
-  constexpr const Line& GetLine() const {
-    return static_cast<const Line&>(*this);
-  }
-
-  template <typename Line>
+protected:
   void OnLineChanged(const Line&, LineId id) {
     id_ = id;
+  }
+
+private:
+  constexpr const Line& AsLine() const {
+    return static_cast<const Line&>(*this);
   }
 
   LineId id_;
@@ -54,25 +53,23 @@ private:
 
 template <typename Traits>
 class DAGVertex {
-public:
+  using Line = typename Traits::Line;
   using Vertex = typename Traits::Vertex;
-
+  
+public:
   VertexId GetId() const { return id_; }
-  Vertex& SetId(VertexId id) { id_ = id; return GetVertex(); }
+  Vertex& SetId(VertexId id) { id_ = id; return AsVertex(); }
   const Bitset& GetSubsplit() const { return subsplit_; };
-  Vertex& SetSubsplit(const Bitset& subsplit) { subsplit_ = subsplit; return GetVertex(); }
+  Vertex& SetSubsplit(const Bitset& subsplit) { subsplit_ = subsplit; return AsVertex(); }
 
-private:
-
-  template <typename, template <typename> typename ... > friend class BasicVertex;
-
-  constexpr Vertex& GetVertex() {
-    return static_cast<Vertex&>(*this);
-  }
-
-  template <typename Line>
+protected:
   void OnLineChanged(VertexId id, const Line&, LineId) {
     id_ = id;
+  }
+
+private:
+  constexpr Vertex& AsVertex() {
+    return static_cast<Vertex&>(*this);
   }
 
   VertexId id_ = NoId;
@@ -81,13 +78,20 @@ private:
 
 template <typename Traits>
 class DAGNeighbors : public Traits {
-public:
-
   using typename Traits::Line;
   using typename Traits::Vertex;
+  friend Vertex;
+  
+public:
+  DAGNeighbors() {
+    data_.insert({{Direction::Rootward, Clade::Left}, {}});
+    data_.insert({{Direction::Rootward, Clade::Right}, {}});
+    data_.insert({{Direction::Leafward, Clade::Left}, {}});
+    data_.insert({{Direction::Leafward, Clade::Right}, {}});
+  }
 
   const std::map<VertexId, LineId>& Get(Direction direction, Clade clade) const {
-    return data_[{direction, clade}];
+    return data_.at({direction, clade});
   }
   
   std::tuple<LineId, Direction, Clade> Find(VertexId id) const {
@@ -99,51 +103,44 @@ public:
   }
 
 private:
-  friend Vertex;
   
   void OnLineChanged(const Vertex&, VertexId vertexId, const Line& line, LineId lineId) {
     Direction direction;
-    if (vertexId == line.GetFirst()) direction = Direction::Leafward;
-    else if (vertexId == line.GetSecond()) direction = Direction::Rootward;
+    if (vertexId == line.GetParent()) direction = Direction::Leafward;
+    else if (vertexId == line.GetChild()) direction = Direction::Rootward;
     else throw std::out_of_range("Vertex doesn't belong to the line");
-    data_[{direction, line.GetClade()}].insert({direction == Direction::Rootward ? line.GetFirst() : line.GetSecond(), lineId});
+    data_.at({direction, line.GetClade()}).insert({direction == Direction::Rootward ? line.GetParent() : line.GetChild(), lineId});
   }
   
-  mutable std::map<std::pair<Direction, Clade>, std::map<VertexId, LineId>> data_;
+  std::map<std::pair<Direction, Clade>, std::map<VertexId, LineId>> data_;
 };
-
-template <typename T, typename Id>
-T& GetOrInsert(std::vector<T>& data, Id id) {
-  if (id >= data.size()) data.resize(id + 1);
-  return data[id];
-}
 
 template <typename Traits>
 class DAGLookup {
-public:
   using Line = typename Traits::Line;
   using Graph = typename Traits::Graph;
   
-  std::optional<std::reference_wrapper<const Line>> GetLine(VertexId parent, VertexId child) const {
-    auto id = std::get<0>(GetGraph().GetVertices()[parent].GetNeighbors().Find(child));
+public:
+  OptRef<const Line> GetLine(VertexId parent, VertexId child) const {
+    auto id = std::get<0>(AsGraph().GetVertices()[parent].GetNeighbors().Find(child));
     if (id == NoId) return {};
-    return GetGraph().GetLines()[id];
+    return AsGraph().GetLines()[id];
   }
   
-  std::optional<std::reference_wrapper<const Line>> GetLine(LineId id) const {
-    if (id >= GetGraph().GetLines().size()) return {};
-    auto& line = GetGraph().GetLines()[id];
+  OptRef<const Line> GetLine(LineId id) const {
+    if (id >= AsGraph().GetLines().size()) return {};
+    auto& line = AsGraph().GetLines()[id];
     if (line.GetId() == NoId) return {};
     return line;
   }
 
   bool ContainsVertex(VertexId id) const {
-      if (id >= GetGraph().GetVertices().size()) return false;
-      return GetGraph().GetVertices()[id].GetId() != NoId;
+      if (id >= AsGraph().GetVertices().size()) return false;
+      return AsGraph().GetVertices()[id].GetId() != NoId;
   }
   
 private:
-  constexpr const Graph& GetGraph() const {
+  constexpr const Graph& AsGraph() const {
     return static_cast<const Graph&>(*this);
   }
 };
@@ -158,3 +155,9 @@ struct DAGTraits {
 };
 
 using DAGStorage = DAGTraits::Graph;
+
+template <typename T, typename Id>
+T& GetOrInsert(std::vector<T>& data, Id id) {
+  if (id >= data.size()) data.resize(id + 1);
+  return data[id];
+}
