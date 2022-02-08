@@ -27,7 +27,7 @@ class SubsplitDAGNode {
   };
   enum class ParentClade : bool {
     LEFTSIDE = 0, /* ROTATED */
-    RIGHTSIDE = 1 /* SORTED */
+    RIGHTSIDE = 1, /* SORTED */
   };
 
   SubsplitDAGNode(size_t id, Bitset subsplit)
@@ -38,15 +38,22 @@ class SubsplitDAGNode {
   const Bitset GetBitset(bool rotated) const {
     return rotated ? subsplit_.SubsplitRotate() : subsplit_;
   }
+
+  // ** Node Types
+
+  // Is the node the DAG root (universal ancestor of the DAG)?
   bool IsDAGRootNode() const {
     return (rootward_rightward_.empty() && rootward_leftward_.empty());
   }
-  //
+  // Is the node a rootsplit (direct descendent of root, dividing entire taxon set)?
   bool IsRootsplit() const { return subsplit_.SubsplitIsRootsplit(); }
+  // Is the node a leaf (has no descendents)?
   bool IsLeaf() const {
     return leafward_leftward_.empty() && leafward_rightward_.empty();
   }
 
+  // ** Edges 
+  
   // Add edge from this node to adjacent_node.
   void AddEdge(size_t adjacent_node_id, bool is_leafward, bool is_rotated) {
     if (is_leafward) {
@@ -67,7 +74,6 @@ class SubsplitDAGNode {
   void AddRootwardLeftward(size_t node_id) { rootward_leftward_.push_back(node_id); }
   void AddRootwardRightward(size_t node_id) { rootward_rightward_.push_back(node_id); }
 
-  // #350 use enumerated types for rotated?
   // Get vector of all adjacent node vectors along the specified direction.
   void GetEdge(bool is_leafward, bool is_rotated) {
     if (is_leafward) {
@@ -94,6 +100,8 @@ class SubsplitDAGNode {
   const SizeVector &GetRootward(bool rotated) const {
     return rotated ? GetRootwardLeftward() : GetRootwardRightward();
   }
+
+  // After modifying parent DAG.  
   void RemapNodeIds(const SizeVector node_reindexer) {
     id_ = node_reindexer.at(id_);
     Reindexer::RemapIdVector(leafward_leftward_, node_reindexer);

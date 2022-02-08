@@ -411,11 +411,13 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   for (const auto &[parent_child_id, edge_idx] : dag_edges_) {
     const auto &[parent_id, child_id] = parent_child_id;
     std::ignore = parent_id;
+    // If child is a leaf and subsplit is sorted, then child0 will have a zero taxon count.
     size_t child0_taxon_count =
-        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(0).Count();
+        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(Bitset::SubsplitClade::LEFT).Count();
+    // As long as subsplit is sorted and nonempty, then child1 will have a nonzero taxon count.
     size_t child1_taxon_count =
-        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(1).Count();
-    // The ordering of this subsplit is flipped so that this ratio will be non-zero in
+        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(Bitset::SubsplitClade::RIGHT).Count();
+    // The ordering of this subsplit is flipped so that this ratio will be nonzero in
     // the denominator in the case of root & leaves.
     result(edge_idx) = Combinatorics::LogChildSubsplitCountRatio(child1_taxon_count,
                                                                  child0_taxon_count);

@@ -457,17 +457,16 @@ class SubsplitDAG {
   void DeleteEdge(const size_t parent_id, const size_t child_id, bool rotated);
   // Add edge between given parent and child nodes to the DAG.
   void ConnectGivenNodes(const size_t parent_id, const size_t child_id, bool rotated);
-  // Add edge between node_id and
+  // Add edges between node_id and all children in map.
   void ConnectNodes(const SizeBitsetMap &index_to_child, size_t node_id, bool rotated);
-  // TODO
-  //
+  // Add nodes for all children in map.
   void BuildNodes(const SizeBitsetMap &index_to_child, const BitsetVector &rootsplits);
-  //
+  // Add nodes in depth first ordering for children in map. 
   void BuildNodesDepthFirst(const SizeBitsetMap &index_to_child, const Bitset &subsplit,
                             std::unordered_set<Bitset> &visited_subsplits);
-  //
+  // Add edges for all nodes according to children in map.
   void BuildEdges(const SizeBitsetMap &index_to_child);
-  //
+  // Add edges to DAG according to node_id pairs in edge indexer.
   void BuildDAGEdgesFromEdgeIndexer(BitsetSizeMap &edge_indexer);
   // Connect the child to all of its children. Push all new edges to
   // added_edge_idxs.
