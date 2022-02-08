@@ -27,13 +27,13 @@ SubsplitDAG::SubsplitDAG(size_t taxon_count,
   AddLeafSubsplitsToDAGEdgesAndParentToRange();
   CountTopologies();
 
-  dag_taxons_ = std::map<std::string, size_t>();
+  dag_taxa_ = std::map<std::string, size_t>();
   // Insert all taxons from tree_collections's map to SubsplitDAG map.
   for (const auto &[tag, name] : tag_taxon_map) {
     // The "tag" key of the tree_collection's taxon_map is 2 bitpacked ints: [id,
     // topology count]. We only care about the id.
     size_t id = static_cast<size_t>(UnpackFirstInt(tag));
-    dag_taxons_.insert(std::make_pair(name, id));
+    dag_taxa_.insert(std::make_pair(name, id));
   }
 }
 
@@ -111,7 +111,7 @@ void SubsplitDAG::CountTopologies() {
   topology_count_ = topology_count_below_[DAGRootNodeId()];
 }
 
-size_t SubsplitDAG::TaxonCount() const { return dag_taxons_.size(); }
+size_t SubsplitDAG::TaxonCount() const { return dag_taxa_.size(); }
 
 size_t SubsplitDAG::NodeCount() const { return dag_nodes_.size(); }
 
@@ -252,7 +252,7 @@ size_t SubsplitDAG::GetTaxonId(const std::string &name) const {
   Assert(
       ContainsTaxon(name),
       "SubsplitDAG::GetTaxonId(): Taxon with given name is not contained in the DAG.");
-  return dag_taxons_.find(name)->second;
+  return dag_taxa_.find(name)->second;
 }
 
 SubsplitDAGNode *SubsplitDAG::GetDAGNode(const size_t node_id) const {
@@ -290,7 +290,7 @@ SizePair SubsplitDAG::GetEdgeRange(const Bitset &subsplit, const bool rotated) c
 
 std::vector<std::string> SubsplitDAG::GetSortedVectorOfTaxonNames() const {
   std::vector<std::string> taxons;
-  for (const auto &name_id : dag_taxons_) {
+  for (const auto &name_id : dag_taxa_) {
     taxons.push_back(name_id.first);
   }
   std::sort(taxons.begin(), taxons.end());
@@ -320,7 +320,7 @@ std::vector<Bitset> SubsplitDAG::GetSortedVectorOfEdgeBitsets() const {
   return edges;
 }
 
-std::map<std::string, size_t> &SubsplitDAG::GetTaxonMap() { return dag_taxons_; }
+std::map<std::string, size_t> &SubsplitDAG::GetTaxonMap() { return dag_taxa_; }
 
 EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
   EigenVectorXd q = EigenVectorXd::Ones(EdgeCountWithLeafSubsplits());
@@ -609,19 +609,6 @@ void SubsplitDAG::CreateAndInsertEdge(const size_t parent_id, const size_t child
   SafeInsert(dag_edges_, {parent_id, child_id}, EdgeCountWithLeafSubsplits());
 }
 
-void SubsplitDAG::DeleteNode(const Bitset &node_subsplit) {
-  Failwith("SubsplitDAG::DeleteNode() is not implemented.");
-  Assert(ContainsNode(node_subsplit),
-         "SubsplitDAG::DeleteNode(): Given edge does not exist");
-}
-
-void SubsplitDAG::DeleteEdge(const size_t parent_id, const size_t child_id,
-                             bool rotated) {
-  Failwith("SubsplitDAG::DeleteNode() is not implemented.");
-  Assert(ContainsEdge(parent_id, child_id),
-         "SubsplitDAG::DeleteEdge(): Given edge does not exist.");
-}
-
 void SubsplitDAG::ConnectGivenNodes(const size_t parent_id, const size_t child_id,
                                     bool rotated) {
   const auto parent_node = GetDAGNode(parent_id);
@@ -850,7 +837,7 @@ Bitset SubsplitDAG::BitsetTranslateViaTaxonTranslationMap(
 }
 
 bool SubsplitDAG::ContainsTaxon(const std::string &name) const {
-  return dag_taxons_.find(name) != dag_taxons_.end();
+  return dag_taxa_.find(name) != dag_taxa_.end();
 }
 
 bool SubsplitDAG::ContainsNode(const Bitset &subsplit) const {

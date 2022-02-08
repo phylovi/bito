@@ -24,11 +24,6 @@ class GPEngine {
            EigenVectorXd sbn_prior, EigenVectorXd unconditional_node_probabilities,
            EigenVectorXd inverted_sbn_prior);
 
-  // Make copy of engine, resize to contain
-  GPEngine CopyEngine(const std::string& new_mmap_file_path,
-                      const std::optional<size_t> plv_count = std::nullopt,
-                      const std::optional<size_t> gpcsp_count = std::nullopt);
-
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
@@ -47,7 +42,6 @@ class GPEngine {
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
   const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
-  //
   void SetBranchLengths(EigenVectorXd branch_lengths);
   void SetBranchLengthsToConstant(double branch_length);
   void ResetLogMarginalLikelihood();

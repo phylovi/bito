@@ -449,10 +449,6 @@ class SubsplitDAG {
   void CreateAndInsertNode(const Bitset &subsplit);
   // Create Edge between given nodes and insert it into the DAG.
   void CreateAndInsertEdge(const size_t parent_id, const size_t child_id, bool rotated);
-  // Delete Node from the DAG.
-  void DeleteNode(const Bitset &subsplit);
-  // Delete Edge from the DAG.
-  void DeleteEdge(const size_t parent_id, const size_t child_id, bool rotated);
   // Add edge between given parent and child nodes to the DAG.
   void ConnectGivenNodes(const size_t parent_id, const size_t child_id, bool rotated);
   // Add edges between node_id and all children in map.
@@ -494,13 +490,13 @@ class SubsplitDAG {
 
   // - Map of Taxon Names
   //    - [ Taxon Name => Taxon Id (position of the "on" bit in the clades) ]
-  std::map<std::string, size_t> dag_taxons_;
+  std::map<std::string, size_t> dag_taxa_;
   // - Vector of DAG Nodes: each Node index in the vector corresponds to their Id.
   // - This can be viewed as a map:
   //    - [ Node Id => Node data structure ]
   std::vector<std::unique_ptr<SubsplitDAGNode>> dag_nodes_;
   // - Map of all DAG Edges:
-  //    - [ (parent_id, child_id) Node Id Pairs => Edge/PCSP Idxs. ]
+  //    - [ (parent_id, child_id) Node Id Pairs => Edge Idxs. ]
   std::map<SizePair, size_t> dag_edges_;
   // - Map of all DAG Nodes:
   //    - [ Node Subsplit (Bitset) => Node Id ]
