@@ -6,7 +6,7 @@
 StringVector SBNSupport::PrettyIndexer() const {
   StringVector pretty_representation(indexer_.size());
   for (const auto& [key, idx] : indexer_) {
-    pretty_representation[idx] = key.EdgeToString();
+    pretty_representation[idx] = key.PCSPToString();
   }
   return pretty_representation;
 }
@@ -32,7 +32,7 @@ std::tuple<StringSizeMap, StringSizePairMap> SBNSupport::GetIndexers() const {
 StringVector SBNSupport::StringReversedIndexer() const {
   StringVector reversed_indexer(indexer_.size());
   for (const auto& [key, idx] : indexer_) {
-    reversed_indexer[idx] = key.EdgeToString();
+    reversed_indexer[idx] = key.PCSPToString();
   }
   return reversed_indexer;
 }

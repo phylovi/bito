@@ -71,7 +71,7 @@ int SubsplitDAG::Compare(const SubsplitDAG &lhs, const SubsplitDAG &rhs) {
   for (size_t i = 0; i < lhs_edges.size(); i++) {
     lhs_edges[i] =
         SubsplitDAG::BitsetTranslateViaTaxonTranslationMap(lhs_edges[i], taxon_map);
-    lhs_edges[i] = lhs_edges[i].EdgeSortClades();
+    lhs_edges[i] = lhs_edges[i].PCSPSortClades();
   }
   std::sort(lhs_edges.begin(), lhs_edges.end());
   if (lhs_edges != rhs_edges) {
@@ -146,7 +146,7 @@ void SubsplitDAG::PrintNodes() const {
 
 void SubsplitDAG::PrintEdgeIndexer() const {
   for (const auto &[edge, idx] : BuildEdgeIndexer()) {
-    std::cout << idx << ": " << edge.EdgeToString() << std::endl;
+    std::cout << idx << ": " << edge.PCSPToString() << std::endl;
   }
 }
 
@@ -243,7 +243,7 @@ BitsetSizeMap SubsplitDAG::BuildEdgeIndexer() const {
                                                  size_t child_id, size_t edge_idx) {
     const auto parent_subsplit = GetDAGNode(parent_id)->GetBitset(rotated);
     const auto child_subsplit = GetDAGNode(child_id)->GetBitset();
-    SafeInsert(edge_indexer, Bitset::Edge(parent_subsplit, child_subsplit), edge_idx);
+    SafeInsert(edge_indexer, Bitset::PCSP(parent_subsplit, child_subsplit), edge_idx);
   });
   return edge_indexer;
 }
@@ -313,7 +313,7 @@ std::vector<Bitset> SubsplitDAG::GetSortedVectorOfEdgeBitsets() const {
     auto id_pair = key_value_pair.first;
     auto parent_bitset = GetDAGNode(id_pair.first)->GetBitset();
     auto child_bitset = GetDAGNode(id_pair.second)->GetBitset();
-    Bitset edge_bitset = Bitset::Edge(parent_bitset, child_bitset);
+    Bitset edge_bitset = Bitset::PCSP(parent_bitset, child_bitset);
     edges.push_back(edge_bitset);
   }
   std::sort(edges.begin(), edges.end());
@@ -411,12 +411,18 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   for (const auto &[parent_child_id, edge_idx] : dag_edges_) {
     const auto &[parent_id, child_id] = parent_child_id;
     std::ignore = parent_id;
-    // If child is a leaf and subsplit is sorted, then child0 will have a zero taxon count.
-    size_t child0_taxon_count =
-        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(Bitset::SubsplitClade::Left).Count();
-    // As long as subsplit is sorted and nonempty, then child1 will have a nonzero taxon count.
-    size_t child1_taxon_count =
-        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(Bitset::SubsplitClade::Right).Count();
+    // If child is a leaf and subsplit is sorted, then child0 will have a zero taxon
+    // count.
+    size_t child0_taxon_count = GetDAGNode(child_id)
+                                    ->GetBitset()
+                                    .SubsplitGetClade(Bitset::SubsplitClade::Left)
+                                    .Count();
+    // As long as subsplit is sorted and nonempty, then child1 will have a nonzero taxon
+    // count.
+    size_t child1_taxon_count = GetDAGNode(child_id)
+                                    ->GetBitset()
+                                    .SubsplitGetClade(Bitset::SubsplitClade::Right)
+                                    .Count();
     // The ordering of this subsplit is flipped so that this ratio will be nonzero in
     // the denominator in the case of root & leaves.
     result(edge_idx) = Combinatorics::LogChildSubsplitCountRatio(child1_taxon_count,
@@ -689,8 +695,8 @@ void SubsplitDAG::BuildDAGEdgesFromEdgeIndexer(BitsetSizeMap &edge_indexer) {
   for (const auto &[edge, index] : edge_indexer) {
     Assert(edge.size() == 3 * taxon_count_,
            "All edges should be bitsets with size 3 times taxon_count_.");
-    const auto parent_id = GetDAGNodeId(edge.EdgeGetParentSubsplit());
-    const auto child_id = GetDAGNodeId(edge.EdgeGetChildSubsplit());
+    const auto parent_id = GetDAGNodeId(edge.PCSPGetParentSubsplit());
+    const auto child_id = GetDAGNodeId(edge.PCSPGetChildSubsplit());
     SafeInsert(dag_edges_, {parent_id, child_id}, index);
   }
 }

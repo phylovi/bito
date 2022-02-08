@@ -26,8 +26,8 @@ class SubsplitDAGNode {
     Leafward = 1,
   };
   enum class ParentClade : bool {
-    Left = 0, 
-    Right = 1, 
+    Left = 0,
+    Right = 1,
   };
 
   SubsplitDAGNode(size_t id, Bitset subsplit)
@@ -48,12 +48,10 @@ class SubsplitDAGNode {
   // Is the node a rootsplit (direct descendent of root, dividing entire taxon set)?
   bool IsRootsplit() const { return subsplit_.SubsplitIsRootsplit(); }
   // Is the node a leaf (has no descendents)?
-  bool IsLeaf() const {
-    return left_leafward_.empty() && right_leafward_.empty();
-  }
+  bool IsLeaf() const { return left_leafward_.empty() && right_leafward_.empty(); }
 
-  // ** Edges 
-  
+  // ** Edges
+
   // Add edge from this node to adjacent_node.
   void AddEdge(size_t adjacent_node_id, bool is_leafward, bool is_rotated) {
     if (is_leafward) {
@@ -103,7 +101,7 @@ class SubsplitDAGNode {
     return rotated ? GetRootwardLeftward() : GetRootwardRightward();
   }
 
-  // After modifying parent DAG.  
+  // After modifying parent DAG.
   void RemapNodeIds(const SizeVector node_reindexer) {
     id_ = node_reindexer.at(id_);
     Reindexer::RemapIdVector(left_leafward_, node_reindexer);

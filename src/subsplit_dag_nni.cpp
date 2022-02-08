@@ -53,7 +53,7 @@ NNIOperation NNIOperation::NNIOperationFromNeighboringSubsplits(
 NNIOperation NNIOperation::NNIOperationFromNeighboringSubsplits(
     const Bitset parent_in, const Bitset child_in,
     const bool swap_which_child_clade_with_sister) {
-  bool which_clade_of_parent = Bitset::SubsplitIsWhichChildOf(parent_in, child_in);
+  bool which_clade_of_parent = Bitset::SubsplitIsChildOfWhichParentClade(parent_in, child_in);
   return NNIOperationFromNeighboringSubsplits(
       parent_in, child_in, swap_which_child_clade_with_sister, which_clade_of_parent);
 }

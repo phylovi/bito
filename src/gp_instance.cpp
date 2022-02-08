@@ -277,7 +277,7 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
 StringVector GPInstance::PrettyIndexer() const {
   StringVector pretty_representation(dag_.BuildEdgeIndexer().size());
   for (const auto &[edge, idx] : dag_.BuildEdgeIndexer()) {
-    pretty_representation[idx] = edge.EdgeToString();
+    pretty_representation[idx] = edge.PCSPToString();
   }
   return pretty_representation;
 }

@@ -166,7 +166,6 @@ class TidySubsplitDAG : public SubsplitDAG {
   // depth-first traversal.
   void SetBelow(size_t dst_id, bool dst_rotated, size_t src_id);
 
- private:
   // If this is set then we are in an "updating mode", where we are updating below the
   // specified node-clade.
   std::optional<std::pair<size_t, bool>> updating_below_;

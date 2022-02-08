@@ -139,16 +139,17 @@ class Bitset {
   std::string MultiCladeToString(const size_t clade_count) const;
 
   // ** Subsplit Methods
-  // These methods require bitset to represent "subsplits".  A subsplit is of even
-  // length, consisting of two equal-sized, disjoint "clades", representing the two
-  // sides of the subsplit. Clades are normally stored in a sorted order wrt to their
+  // These methods require bitset to represent "subsplits".  Subsplits represent nodes
+  // within the SubsplitDAG.  A subsplit are composed of two equal-sized, disjoint "clades",
+  // representing a fork in the DAG and the taxon sets descending from the left and right
+  // sides of the fork. Clades are normally stored in a sorted order wrt to their
   // lexicographic taxon ordering: the smaller "left" (or "sorted") clade stored in the
   // 0-position, and the larger "right" (or "rotated") clade in the 1-position.
 
   static inline size_t SubsplitCladeCount = 2;
   enum class SubsplitClade : bool {
-    Left = 0,  
-    Right = 1, 
+    Left = 0,
+    Right = 1,
   };
 
   // Constructors:
@@ -172,18 +173,19 @@ class Bitset {
   // subsplit is a leaf or root.  A leaf should only have a single member in its
   // non-empty clade, and a root should have the full taxon set in its non-empty clade.
   //
-  // Make a "leaf" subsplit (pairs given nonempty_clade with an empty_clade).
+  // Make a "leaf subsplit" (pairs given nonempty_clade with an empty_clade).
   static Bitset LeafSubsplitOfNonemptyClade(const Bitset &nonempty_clade);
-  // Make a "leaf" child subsplit of a given parent subsplit. The leftside clade of
+  // Make a "leaf subsplit" of a given parent subsplit. The leftside clade of
   // the parent subsplit must be non-empty and the rightside clade must be a singleton.
   static Bitset LeafSubsplitOfParentSubsplit(const Bitset &parent_subsplit);
-  // Make the UCA (universal common ancestor) subsplit of the DAG root node with the given taxon count.
-  // Since subsplit bitsets are always big-small, the DAG root node subsplit
-  // consists of all 1s then 0s (e.g. 5 would return '11111|00000').
+  // Make the UCA (universal common ancestor) subsplit of the DAG root node with the
+  // given taxon count. Since subsplit bitsets are always big-small, the DAG root node
+  // subsplit consists of all 1s then 0s (e.g. 5 would return '11111|00000').
   static Bitset UCASubsplitOfTaxonCount(const size_t taxon_count);
+
   // Get the full rootsplit bitset out of a rootsplit half.
   // Note: the first half of the rootsplit bitset is always larger than the second.
-  static Bitset RootsplitOfClade(const Bitset &clade);
+  static Bitset RootsplitSubsplitOfClade(const Bitset &clade);
   // Comparator:
   // Subsplits are sorting on the following:
   // (1) The number of taxa in each of their subsplits.
@@ -221,7 +223,7 @@ class Bitset {
   Bitset SubsplitCladeUnion() const;
   // Get whether the given child is the sorted (false, 0-position) or rotated (true,
   // 1-position) child to the given parent.
-  static bool SubsplitIsWhichChildOf(const Bitset &parent, const Bitset &child);
+  static bool SubsplitIsChildOfWhichParentClade(const Bitset &parent, const Bitset &child);
   // Check whether subsplits form a child/parent pair.
   static bool SubsplitIsParentChildPair(const Bitset &parent, const Bitset &child);
   // Check whether subsplits are adjacent/related (whether either is the parent of the
@@ -231,77 +233,72 @@ class Bitset {
   // clades).
   bool SubsplitIsValid() const;
 
-  // ** Edge methods
-  // These functions require the bitset to be a "edge bitset"  (also called PCSP, or
-  // parent-child subsplit pair). Edges are composed of three equal-sized "clades". The
-  // first clade represents the sister clade, the second the focal clade, and the third
-  // clade describes the "sorted" clade of the child subsplit. We define "sorted" as the
-  // clade of a child subsplit that has a bitset with the smaller binary representation.
-  // The clades are well defined relative to the cut parent: the other part of
-  // the subsplit, "rotated clade" is the cut parent set, minus the "sorted clade".
+  // ** PCSP methods
+  // These functions require the bitset to be a "PCSP bitset" (parent-child subsplit
+  // pair). PCSP represent edges between nodes within the SubsplitDAG. They are composed of
+  // three equal-sized "clades": (0) sister clade of parent, (1) focal clade of parent, 
+  // (2) the left clade of the child. We define the "left" clade of a child subsplit that has a bitset
+  // with the smaller lexicographic representation. The remaining clade are well-defined relative to the
+  // focal parent subsplit.
   //
   // For example, `100|011|001` is composed of the clades `100`, `011` and `001`.
   // If the taxa are x0, x1, and x2 then this means the parent subsplit is (A,
   // BC) with bitset `100|011`, and the child subsplit is (B, C) with bitset
   // `010|001.` Child_0 is the clade `001` and child_1 is the clade `010.`
   //
-  // For rootsplit Edges where the parent subsplit is the DAG root node, the Edge
+  // For rootsplit PCSPs where the parent subsplit is the DAG root node, the PCSP
   // is the sister clade (all 0s), the focal clade (all 1s), and "clade 0". For
-  // example, `000111010` is the Edge from the DAG root node to the rootsplit (AC, B).
+  // example, `000111010` is the PCSP from the DAG root node to the rootsplit (AC, B).
   // See the unit tests at the bottom for more examples.
 
   static inline size_t PCSPCladeCount = 3;
-  enum class PCSPClade : size_t {
-    Sister = 0,
-    Focal = 1,
-    LeftChild = 2
-  };
+  enum class PCSPClade : size_t { Sister = 0, Focal = 1, LeftChild = 2 };
 
   // Constructors:
-  // Build a Edge bitset from a compatible parent-child pair of
+  // Build a PCSP bitset from a compatible parent-child pair of
   // Subsplit bitsets.
-  static Bitset Edge(const Bitset &parent_subsplit, const Bitset &child_subsplit);
-  // Build a Edge bitset from explicit sister, focal, and sorted-child clades.
-  static Bitset Edge(const Bitset &sister_clade, const Bitset &focal_clade,
+  static Bitset PCSP(const Bitset &parent_subsplit, const Bitset &child_subsplit);
+  // Build a PCSP bitset from explicit sister, focal, and sorted-child clades.
+  static Bitset PCSP(const Bitset &sister_clade, const Bitset &focal_clade,
                      const Bitset &sorted_child_clade);
   // Builds sister, focal, and sorted-child clades from strings of "1" and "0"
   // characters.
-  static Bitset Edge(const std::string sister_clade, const std::string focal_clade,
+  static Bitset PCSP(const std::string sister_clade, const std::string focal_clade,
                      const std::string sorted_child_clade);
   // Special Constructors:
-  // Make a "leaf" Edge of a given parent subsplit; assert that the left-hand clade of
+  // Make a PCSP from parent subsplit to child leaf subsplit. Asserts that the left-hand clade of
   // the parent subsplit is non-empty and that the right-hand clade is a singleton.
   // This leaf subsplit has parent subsplit on the left and all zeroes on the right.
-  static Bitset EdgeToLeaf(const Bitset &parent_subsplit);
-  // Given a rootsplit, get the Edge connecting the DAG root node to that rootsplit
+  static Bitset PCSPFromRightParentCladeToLeaf(const Bitset &parent_subsplit);
+  // Given a rootsplit, get the PCSP connecting the DAG root node to that rootsplit
   // (e.g. '1100|0011' would return '0000|1111|0011').
-  static Bitset EdgeToRootsplit(const Bitset &rootsplit);
-  // Output Edge as string of "1" and "0" characters, with each clade separated by a
+  static Bitset PCSPFromUCAToRootsplit(const Bitset &rootsplit);
+  // Output PCSP as string of "1" and "0" characters, with each clade separated by a
   // "|".
-  std::string EdgeToString() const;
-  // Checks whether bitset represents a valid set of taxon clades for Edge.
-  bool EdgeIsValid() const;
-  // Checks whether the Edge clade-side edge goes to a leaf subsplit.
-  bool EdgeIsLeaf() const;
-  // Sorts Edge so that parent and child are rotated properly so that second clade is
+  std::string PCSPToString() const;
+  // Checks whether bitset represents a valid set of taxon clades for PCSP.
+  bool PCSPIsValid() const;
+  // Checks whether the PCSP child is a leaf subsplit.
+  bool PCSPChildIsLeaf() const;
+  // Sorts PCSP so that parent and child are rotated properly so that second clade is
   // the focal clade of the parent and third clade is the sorted side of the child.
-  Bitset EdgeSortClades() const;
+  Bitset PCSPSortClades() const;
   // Do the sister and focal clades union to the whole taxon set?
-  // Method excludes rootsplit Edges where sister and focal clades
+  // Method excludes rootsplit PCSPs where sister and focal clades
   // also union to the whole taxon set.
-  bool EdgeIsParentRootsplit() const;
+  bool PCSPIsParentRootsplit() const;
   // Gets the size of each of each clade. This is the same as the size of the whole
   // taxon set.
-  size_t EdgeGetCladeSize() const;
-  // Get the ith clade of the Edge.
-  Bitset EdgeGetClade(const size_t which_clade) const;
-  Bitset EdgeGetClade(const PCSPClade which_clade) const;
-  // Get the parent subsplit of the Edge.
-  Bitset EdgeGetParentSubsplit() const;
-  // Get the child subsplit of the Edge.
-  Bitset EdgeGetChildSubsplit() const;
+  size_t PCSPGetCladeSize() const;
+  // Get the ith clade of the PCSP.
+  Bitset PCSPGetClade(const size_t which_clade) const;
+  Bitset PCSPGetClade(const PCSPClade which_clade) const;
+  // Get the parent subsplit of the PCSP.
+  Bitset PCSPGetParentSubsplit() const;
+  // Get the child subsplit of the PCSP.
+  Bitset PCSPGetChildSubsplit() const;
   // Get the number of taxa in each side of the child subsplit.
-  SizePair EdgeGetChildSubsplitTaxonCounts() const;
+  SizePair PCSPGetChildSubsplitTaxonCounts() const;
 
  protected:
   // Vector of bits.
@@ -412,9 +409,9 @@ TEST_CASE("Bitset: Clades, Subsplits, Edges") {
   CHECK_EQ(p.SubsplitGetClade(Bitset::SubsplitClade::Left), Bitset("000"));
   CHECK_EQ(p.SubsplitGetClade(Bitset::SubsplitClade::Right), Bitset("111"));
   // Edge: 00|01|11
-  CHECK_EQ(p.EdgeGetClade(Bitset::PCSPClade::Sister), Bitset("00"));
-  CHECK_EQ(p.EdgeGetClade(Bitset::PCSPClade::Focal), Bitset("01"));
-  CHECK_EQ(p.EdgeGetClade(Bitset::PCSPClade::LeftChild), Bitset("11"));
+  CHECK_EQ(p.PCSPGetClade(Bitset::PCSPClade::Sister), Bitset("00"));
+  CHECK_EQ(p.PCSPGetClade(Bitset::PCSPClade::Focal), Bitset("01"));
+  CHECK_EQ(p.PCSPGetClade(Bitset::PCSPClade::LeftChild), Bitset("11"));
 
   CHECK_EQ(Bitset("11001010").SubsplitCladeUnion(), Bitset("1110"));
 
@@ -422,9 +419,9 @@ TEST_CASE("Bitset: Clades, Subsplits, Edges") {
   CHECK_EQ(Bitset("010101").SubsplitToVectorOfSetBitsAsString(), "1|0,2");
 
   CHECK_EQ(Bitset("101010").SubsplitIsLeftChildOf(Bitset("111000")), true);
-  // CHECK_EQ(Bitset::SubsplitIsWhichChildOf(Bitset("111000"), Bitset("101010")),true);
+  // CHECK_EQ(Bitset::SubsplitIsChildOfWhichParentClade(Bitset("111000"), Bitset("101010")),true);
   CHECK_EQ(Bitset("00100001").SubsplitIsRightChildOf(Bitset("11000011")), true);
-  // CHECK_EQ(Bitset::SubsplitIsWhichChildOf(Bitset("000111"), Bitset("101010")),
+  // CHECK_EQ(Bitset::SubsplitIsChildOfWhichParentClade(Bitset("000111"), Bitset("101010")),
   // false);
   CHECK_EQ(Bitset("010001").SubsplitIsLeftChildOf(Bitset("110001")), false);
   CHECK_EQ(Bitset("010001").SubsplitIsRightChildOf(Bitset("01000011")), false);
@@ -436,24 +433,24 @@ TEST_CASE("Bitset: Clades, Subsplits, Edges") {
   CHECK_EQ(Bitset("111000").SubsplitIsRootsplit(), false);
   CHECK_EQ(Bitset("11000001").SubsplitIsRootsplit(), false);
 
-  CHECK_EQ(Bitset("011101").EdgeIsValid(), false);
-  CHECK_EQ(Bitset("000111").EdgeIsValid(), false);
-  CHECK_EQ(Bitset("100100").EdgeIsValid(), false);
-  CHECK_EQ(Bitset("100011001").EdgeIsValid(), true);
+  CHECK_EQ(Bitset("011101").PCSPIsValid(), false);
+  CHECK_EQ(Bitset("000111").PCSPIsValid(), false);
+  CHECK_EQ(Bitset("100100").PCSPIsValid(), false);
+  CHECK_EQ(Bitset("100011001").PCSPIsValid(), true);
 
-  CHECK_EQ(Bitset("100011001").EdgeIsLeaf(), false);
-  CHECK_EQ(Bitset("100011000").EdgeIsLeaf(), true);
+  CHECK_EQ(Bitset("100011001").PCSPChildIsLeaf(), false);
+  CHECK_EQ(Bitset("100011000").PCSPChildIsLeaf(), true);
 
-  CHECK_EQ(Bitset("000111010").EdgeIsParentRootsplit(), false);
-  CHECK_EQ(Bitset("000111000100").EdgeIsParentRootsplit(), false);
-  CHECK_EQ(Bitset("101010000").EdgeIsParentRootsplit(), true);
+  CHECK_EQ(Bitset("000111010").PCSPIsParentRootsplit(), false);
+  CHECK_EQ(Bitset("000111000100").PCSPIsParentRootsplit(), false);
+  CHECK_EQ(Bitset("101010000").PCSPIsParentRootsplit(), true);
 
-  CHECK_EQ(Bitset("100011001").EdgeGetParentSubsplit(), Bitset("100011"));
-  CHECK_EQ(Bitset("011100001").EdgeGetParentSubsplit(), Bitset("100011"));
-  CHECK_EQ(Bitset("100011001").EdgeGetChildSubsplit(), Bitset("010001"));
-  CHECK_EQ(Bitset("100001110001").EdgeGetChildSubsplit(), Bitset("01100001"));
-  CHECK_EQ(Bitset("100001110001").EdgeGetChildSubsplitTaxonCounts(), SizePair({1, 2}));
-  CHECK_EQ(Bitset("100000111100101").EdgeGetChildSubsplitTaxonCounts(),
+  CHECK_EQ(Bitset("100011001").PCSPGetParentSubsplit(), Bitset("100011"));
+  CHECK_EQ(Bitset("011100001").PCSPGetParentSubsplit(), Bitset("100011"));
+  CHECK_EQ(Bitset("100011001").PCSPGetChildSubsplit(), Bitset("010001"));
+  CHECK_EQ(Bitset("100001110001").PCSPGetChildSubsplit(), Bitset("01100001"));
+  CHECK_EQ(Bitset("100001110001").PCSPGetChildSubsplitTaxonCounts(), SizePair({1, 2}));
+  CHECK_EQ(Bitset("100000111100101").PCSPGetChildSubsplitTaxonCounts(),
            SizePair({2, 2}));
 
   CHECK_EQ(Bitset::Singleton(4, 2), Bitset("0010"));
@@ -464,15 +461,15 @@ TEST_CASE("Bitset: Clades, Subsplits, Edges") {
   CHECK_THROWS(Bitset::Subsplit(Bitset("1100"), Bitset("001")));
   CHECK_THROWS(Bitset::Subsplit(Bitset("111"), Bitset("001")));
 
-  CHECK_EQ(Bitset("000110010"), Bitset::Edge(Bitset("110000"), Bitset("100010")));
-  CHECK_EQ(Bitset("110001000"), Bitset::Edge(Bitset("110001"), Bitset("001000")));
+  CHECK_EQ(Bitset("000110010"), Bitset::PCSP(Bitset("110000"), Bitset("100010")));
+  CHECK_EQ(Bitset("110001000"), Bitset::PCSP(Bitset("110001"), Bitset("001000")));
   // Invalid parent-child pair.
-  CHECK_THROWS(Bitset::Edge(Bitset("110001"), Bitset("010001")));
-  CHECK_THROWS(Bitset::Edge(Bitset("11000101"), Bitset("010001")));
-  CHECK_THROWS(Bitset::Edge(Bitset("110001"), Bitset("110100")));
+  CHECK_THROWS(Bitset::PCSP(Bitset("110001"), Bitset("010001")));
+  CHECK_THROWS(Bitset::PCSP(Bitset("11000101"), Bitset("010001")));
+  CHECK_THROWS(Bitset::PCSP(Bitset("110001"), Bitset("110100")));
 
-  CHECK_EQ(Bitset::RootsplitOfClade(Bitset("0011")), Bitset("11000011"));
-  CHECK_EQ(Bitset::EdgeToRootsplit(Bitset("11000011")), Bitset("000011110011"));
+  CHECK_EQ(Bitset::RootsplitSubsplitOfClade(Bitset("0011")), Bitset("11000011"));
+  CHECK_EQ(Bitset::PCSPFromUCAToRootsplit(Bitset("11000011")), Bitset("000011110011"));
 
   CHECK_EQ(Bitset("010000").SubsplitIsLeaf(), true);
   CHECK_EQ(Bitset("010010").SubsplitIsLeaf(), false);
@@ -480,9 +477,10 @@ TEST_CASE("Bitset: Clades, Subsplits, Edges") {
   CHECK_EQ(Bitset::LeafSubsplitOfNonemptyClade(Bitset("010")), Bitset("010000"));
   CHECK_EQ(Bitset::LeafSubsplitOfParentSubsplit(Bitset("100001")), Bitset("001000"));
   CHECK_THROWS(Bitset::LeafSubsplitOfParentSubsplit(Bitset("100011")));
-  CHECK_EQ(Bitset::EdgeToLeaf(Bitset("100001")), Bitset("100001000"));
-  CHECK_THROWS(Bitset::EdgeToLeaf(Bitset("0000110")));
-  CHECK_THROWS(Bitset::EdgeToLeaf(Bitset("100101")));
+  CHECK_EQ(Bitset::PCSPFromRightParentCladeToLeaf(Bitset("100001")),
+           Bitset("100001000"));
+  CHECK_THROWS(Bitset::PCSPFromRightParentCladeToLeaf(Bitset("0000110")));
+  CHECK_THROWS(Bitset::PCSPFromRightParentCladeToLeaf(Bitset("100101")));
 
   // Restrict a bitset.
   CHECK_EQ(Bitset::Remap(Bitset("10101010101"), {0, 2, 4, 6, 8, 10}), Bitset("111111"));

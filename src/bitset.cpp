@@ -385,7 +385,7 @@ Bitset Bitset::SubsplitGetClade(const SubsplitClade which_clade) const {
 }
 
 bool Bitset::SubsplitIsLeaf() const {
-  // A subsplit is a leaf if left clade has a
+  // A subsplit is a leaf its right clade is empty and its left clade is a singleton.
   bool is_left_clade_singleton =
       SubsplitGetClade(Bitset::SubsplitClade::Left).IsSingleton();
   bool is_right_clade_empty = SubsplitGetClade(Bitset::SubsplitClade::Right).None();
@@ -427,18 +427,18 @@ Bitset Bitset::SubsplitCladeUnion() const {
          SubsplitGetClade(Bitset::SubsplitClade::Right);
 }
 
-bool Bitset::SubsplitIsWhichChildOf(const Bitset& parent, const Bitset& child) {
+bool Bitset::SubsplitIsChildOfWhichParentClade(const Bitset& parent, const Bitset& child) {
   Assert(parent.size() == child.size(),
-         "Bitset::SubsplitIsWhichChildOf() bitsets are different sizes.");
+         "Bitset::SubsplitIsChildOfWhichParentClade() bitsets are different sizes.");
   Bitset child_union = child.SubsplitCladeUnion();
-  for (bool clade : {0, 1}) {
+  for (bool clade : {false, true}) {
     if (child_union == parent.SubsplitGetClade(clade)) {
       return clade;
     }
   }
   // If it reaches the end, then it is not a parent.
   Failwith(
-      "Bitset::SubsplitIsWhichChildOf(): given parent is not a parent of given child.");
+      "Bitset::SubsplitIsChildOfWhichParentClade(): given parent is not a parent of given child.");
 }
 
 bool Bitset::SubsplitIsParentChildPair(const Bitset& parent, const Bitset& child) {
@@ -457,7 +457,7 @@ bool Bitset::SubsplitIsValid() const {
 
 // ** Edge functions
 
-Bitset Bitset::Edge(const Bitset& parent_subsplit, const Bitset& child_subsplit) {
+Bitset Bitset::PCSP(const Bitset& parent_subsplit, const Bitset& child_subsplit) {
   // Assert that:
   // - child_subsplit is either a sorted or rotated child of parent_subsplit.
   // - child_subsplit forms a valid subsplit.
@@ -466,7 +466,7 @@ Bitset Bitset::Edge(const Bitset& parent_subsplit, const Bitset& child_subsplit)
   bool is_pair_valid = child_subsplit.SubsplitIsLeftChildOf(parent_subsplit) ||
                        child_subsplit.SubsplitIsRightChildOf(parent_subsplit);
   Assert(is_parent_valid && is_child_valid && is_pair_valid,
-         "Edge(): given bitsets are not a valid parent/child pair.");
+         "PCSP(): given bitsets are not a valid parent/child pair.");
 
   if (child_subsplit.SubsplitIsLeftChildOf(parent_subsplit)) {
     return parent_subsplit.SubsplitRotate() +
@@ -477,99 +477,100 @@ Bitset Bitset::Edge(const Bitset& parent_subsplit, const Bitset& child_subsplit)
   }
 }
 
-Bitset Bitset::Edge(const Bitset& sister_clade, const Bitset& focal_clade,
+Bitset Bitset::PCSP(const Bitset& sister_clade, const Bitset& focal_clade,
                     const Bitset& sorted_child_clade) {
   Assert(sister_clade.size() == focal_clade.size() &&
              focal_clade.size() == sorted_child_clade.size(),
-         "Edge(): all clades must be of equal size.");
+         "PCSP(): all clades must be of equal size.");
   Bitset pcsp = sister_clade + focal_clade + sorted_child_clade;
-  Assert(pcsp.EdgeIsValid(), "Edge(): given clades form an invalid Edge.");
+  Assert(pcsp.PCSPIsValid(), "PCSP(): given clades form an invalid Edge.");
   return pcsp;
 }
 
-Bitset Bitset::Edge(const std::string sister_clade, const std::string focal_clade,
+Bitset Bitset::PCSP(const std::string sister_clade, const std::string focal_clade,
                     const std::string sorted_child_clade) {
-  return Edge(Bitset(sister_clade), Bitset(focal_clade), Bitset(sorted_child_clade));
+  return PCSP(Bitset(sister_clade), Bitset(focal_clade), Bitset(sorted_child_clade));
 }
 
-size_t Bitset::EdgeGetCladeSize() const { return MultiCladeGetCladeSize(3); }
+size_t Bitset::PCSPGetCladeSize() const { return MultiCladeGetCladeSize(3); }
 
-Bitset Bitset::EdgeGetClade(const size_t which_clade) const {
+Bitset Bitset::PCSPGetClade(const size_t which_clade) const {
   return MultiCladeGetClade(which_clade, 3);
 }
 
-Bitset Bitset::EdgeGetClade(const PCSPClade which_clade) const {
+Bitset Bitset::PCSPGetClade(const PCSPClade which_clade) const {
   size_t which_clade_idx =
       static_cast<std::underlying_type<PCSPClade>::type>(which_clade);
   return MultiCladeGetClade(which_clade_idx, 3);
 }
 
-Bitset Bitset::EdgeGetParentSubsplit() const {
-  Bitset sister = EdgeGetClade(Bitset::PCSPClade::Sister);
-  Bitset focal = EdgeGetClade(Bitset::PCSPClade::Focal);
+Bitset Bitset::PCSPGetParentSubsplit() const {
+  Bitset sister = PCSPGetClade(Bitset::PCSPClade::Sister);
+  Bitset focal = PCSPGetClade(Bitset::PCSPClade::Focal);
   return Bitset::Subsplit(sister, focal);
 }
 
-Bitset Bitset::EdgeGetChildSubsplit() const {
-  Bitset focal = EdgeGetClade(Bitset::PCSPClade::Focal);
-  Bitset child_0 = EdgeGetClade(Bitset::PCSPClade::LeftChild);
-  Bitset child_1 = focal & ~child_0;
-  return Bitset::Subsplit(child_0, child_1);
+Bitset Bitset::PCSPGetChildSubsplit() const {
+  Bitset focal = PCSPGetClade(Bitset::PCSPClade::Focal);
+  Bitset child_left = PCSPGetClade(Bitset::PCSPClade::LeftChild);
+  Bitset child_right = focal & ~child_left;
+  return Bitset::Subsplit(child_left, child_right);
 }
 
-std::string Bitset::EdgeToString() const { return MultiCladeToString(PCSPCladeCount); }
+std::string Bitset::PCSPToString() const { return MultiCladeToString(PCSPCladeCount); }
 
-bool Bitset::EdgeIsValid() const {
+bool Bitset::PCSPIsValid() const {
   if (size() % PCSPCladeCount != 0) {
     return false;
   }
-  Bitset sister = EdgeGetClade(Bitset::PCSPClade::Sister);
-  Bitset focal = EdgeGetClade(Bitset::PCSPClade::Focal);
-  Bitset child_0 = EdgeGetClade(Bitset::PCSPClade::LeftChild);
+  Bitset sister = PCSPGetClade(Bitset::PCSPClade::Sister);
+  Bitset focal = PCSPGetClade(Bitset::PCSPClade::Focal);
+  Bitset child_left = PCSPGetClade(Bitset::PCSPClade::LeftChild);
   // The parent clades should be disjoint.
   if (!sister.IsDisjoint(focal)) {
     return false;
   }
   // The clade should split the focal clade of the parent,
-  // so the taxa of child_0 should be a subset of those of focal clade.
-  if (!child_0.IsDisjoint(~focal)) {
+  // so the taxa of child_left should be a subset of those of focal clade.
+  if (!child_left.IsDisjoint(~focal)) {
     return false;
   }
   // Something has to be set in each clade.
-  if (sister.None() || focal.None() || child_0.None()) {
+  if (sister.None() || focal.None() || child_left.None()) {
     return false;
   }
   return true;
 }
 
-bool Bitset::EdgeIsLeaf() const {
-  Assert(size() % PCSPCladeCount == 0, "Size isn't 0 mod 3 in Bitset::EdgeIsLeaf.");
+bool Bitset::PCSPChildIsLeaf() const {
+  Assert(size() % PCSPCladeCount == 0,
+         "Size isn't 0 mod 3 in Bitset::PCSPChildIsLeaf.");
   // If third clade of Edge is empty, that means that the associated clade's sorted
   // subsplit is empty, so it is leaf.
-  return EdgeGetClade(Bitset::PCSPClade::LeftChild).None();
+  return PCSPGetClade(Bitset::PCSPClade::LeftChild).None();
 }
 
-Bitset Bitset::EdgeSortClades() const {
-  Bitset parent = EdgeGetParentSubsplit();
-  Bitset child = EdgeGetChildSubsplit();
-  return Bitset::Edge(parent, child);
+Bitset Bitset::PCSPSortClades() const {
+  Bitset parent = PCSPGetParentSubsplit();
+  Bitset child = PCSPGetChildSubsplit();
+  return Bitset::PCSP(parent, child);
 }
 
-bool Bitset::EdgeIsParentRootsplit() const {
+bool Bitset::PCSPIsParentRootsplit() const {
   Assert(size() % PCSPCladeCount == 0,
          "Size isn't 0 mod 3 in Bitset::EdgeIsRootsplit.");
-  return EdgeGetParentSubsplit().SubsplitIsRootsplit();
+  return PCSPGetParentSubsplit().SubsplitIsRootsplit();
 }
 
-SizePair Bitset::EdgeGetChildSubsplitTaxonCounts() const {
-  auto clade_size = EdgeGetCladeSize();
+SizePair Bitset::PCSPGetChildSubsplitTaxonCounts() const {
+  auto clade_size = PCSPGetCladeSize();
   auto total_clade_taxon_count =
       std::count(value_.begin() + clade_size,
                  value_.begin() + SubsplitCladeCount * clade_size, true);
   auto clade0_taxon_count =
       std::count(value_.begin() + SubsplitCladeCount * clade_size, value_.end(), true);
   Assert(clade0_taxon_count < total_clade_taxon_count,
-         "EdgeGetChildSubsplitTaxonCounts: not a proper Edge bitset.");
+         "PCSPGetChildSubsplitTaxonCounts: not a proper Edge bitset.");
   return {static_cast<size_t>(clade0_taxon_count),
           static_cast<size_t>(total_clade_taxon_count - clade0_taxon_count)};
 }
@@ -608,7 +609,7 @@ Bitset Bitset::LeafSubsplitOfParentSubsplit(const Bitset& parent_subsplit) {
       parent_subsplit.SubsplitGetClade(Bitset::SubsplitClade::Right));
 }
 
-Bitset Bitset::EdgeToLeaf(const Bitset& parent_subsplit) {
+Bitset Bitset::PCSPFromRightParentCladeToLeaf(const Bitset& parent_subsplit) {
   AssertSubsplitIsLeafAdjacent(parent_subsplit);
   const auto taxon_count = parent_subsplit.SubsplitGetCladeSize();
   Bitset leaf(3 * taxon_count);
@@ -622,16 +623,16 @@ Bitset Bitset::UCASubsplitOfTaxonCount(const size_t taxon_count) {
   return ~zeros + zeros;
 }
 
-Bitset Bitset::RootsplitOfClade(const Bitset& clade) {
+Bitset Bitset::RootsplitSubsplitOfClade(const Bitset& clade) {
   Bitset half = clade;
   half.Minorize();
   return ~half + half;
 }
 
-Bitset Bitset::EdgeToRootsplit(const Bitset& rootsplit) {
+Bitset Bitset::PCSPFromUCAToRootsplit(const Bitset& rootsplit) {
   Assert(rootsplit.SubsplitIsRootsplit(),
          "Given subsplit is not rootsplit in Bitset::EdgeToRootsplit.");
-  return Edge(UCASubsplitOfTaxonCount(rootsplit.size() / 2), rootsplit);
+  return PCSP(UCASubsplitOfTaxonCount(rootsplit.size() / 2), rootsplit);
 }
 
 Bitset Bitset::Remap(const Bitset& bitset, const SizeOptionVector& idx_table) {
