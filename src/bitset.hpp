@@ -140,11 +140,12 @@ class Bitset {
 
   // ** Subsplit Methods
   // These methods require bitset to represent "subsplits".  Subsplits represent nodes
-  // within the SubsplitDAG.  A subsplit are composed of two equal-sized, disjoint "clades",
-  // representing a fork in the DAG and the taxon sets descending from the left and right
-  // sides of the fork. Clades are normally stored in a sorted order wrt to their
-  // lexicographic taxon ordering: the smaller "left" (or "sorted") clade stored in the
-  // 0-position, and the larger "right" (or "rotated") clade in the 1-position.
+  // within the SubsplitDAG.  A subsplit are composed of two equal-sized, disjoint
+  // "clades", representing a fork in the DAG and the taxon sets descending from the
+  // left and right sides of the fork. Clades are normally stored in a sorted order wrt
+  // to their lexicographic taxon ordering: the smaller "left" (or "sorted") clade
+  // stored in the 0-position, and the larger "right" (or "rotated") clade in the
+  // 1-position.
 
   static inline size_t SubsplitCladeCount = 2;
   enum class SubsplitClade : bool {
@@ -223,7 +224,8 @@ class Bitset {
   Bitset SubsplitCladeUnion() const;
   // Get whether the given child is the sorted (false, 0-position) or rotated (true,
   // 1-position) child to the given parent.
-  static bool SubsplitIsChildOfWhichParentClade(const Bitset &parent, const Bitset &child);
+  static bool SubsplitIsChildOfWhichParentClade(const Bitset &parent,
+                                                const Bitset &child);
   // Check whether subsplits form a child/parent pair.
   static bool SubsplitIsParentChildPair(const Bitset &parent, const Bitset &child);
   // Check whether subsplits are adjacent/related (whether either is the parent of the
@@ -235,11 +237,11 @@ class Bitset {
 
   // ** PCSP methods
   // These functions require the bitset to be a "PCSP bitset" (parent-child subsplit
-  // pair). PCSP represent edges between nodes within the SubsplitDAG. They are composed of
-  // three equal-sized "clades": (0) sister clade of parent, (1) focal clade of parent, 
-  // (2) the left clade of the child. We define the "left" clade of a child subsplit that has a bitset
-  // with the smaller lexicographic representation. The remaining clade are well-defined relative to the
-  // focal parent subsplit.
+  // pair). PCSP represent edges between nodes within the SubsplitDAG. They are composed
+  // of three equal-sized "clades": (0) sister clade of parent, (1) focal clade of
+  // parent, (2) the left clade of the child. We define the "left" clade of a child
+  // subsplit that has a bitset with the smaller lexicographic representation. The
+  // remaining clade are well-defined relative to the focal parent subsplit.
   //
   // For example, `100|011|001` is composed of the clades `100`, `011` and `001`.
   // If the taxa are x0, x1, and x2 then this means the parent subsplit is (A,
@@ -266,9 +268,10 @@ class Bitset {
   static Bitset PCSP(const std::string sister_clade, const std::string focal_clade,
                      const std::string sorted_child_clade);
   // Special Constructors:
-  // Make a PCSP from parent subsplit to child leaf subsplit. Asserts that the left-hand clade of
-  // the parent subsplit is non-empty and that the right-hand clade is a singleton.
-  // This leaf subsplit has parent subsplit on the left and all zeroes on the right.
+  // Make a PCSP from parent subsplit to child leaf subsplit. Asserts that the left-hand
+  // clade of the parent subsplit is non-empty and that the right-hand clade is a
+  // singleton. This leaf subsplit has parent subsplit on the left and all zeroes on the
+  // right.
   static Bitset PCSPFromRightParentCladeToLeaf(const Bitset &parent_subsplit);
   // Given a rootsplit, get the PCSP connecting the DAG root node to that rootsplit
   // (e.g. '1100|0011' would return '0000|1111|0011').
@@ -419,10 +422,11 @@ TEST_CASE("Bitset: Clades, Subsplits, Edges") {
   CHECK_EQ(Bitset("010101").SubsplitToVectorOfSetBitsAsString(), "1|0,2");
 
   CHECK_EQ(Bitset("101010").SubsplitIsLeftChildOf(Bitset("111000")), true);
-  // CHECK_EQ(Bitset::SubsplitIsChildOfWhichParentClade(Bitset("111000"), Bitset("101010")),true);
+  // CHECK_EQ(Bitset::SubsplitIsChildOfWhichParentClade(Bitset("111000"),
+  // Bitset("101010")),true);
   CHECK_EQ(Bitset("00100001").SubsplitIsRightChildOf(Bitset("11000011")), true);
-  // CHECK_EQ(Bitset::SubsplitIsChildOfWhichParentClade(Bitset("000111"), Bitset("101010")),
-  // false);
+  // CHECK_EQ(Bitset::SubsplitIsChildOfWhichParentClade(Bitset("000111"),
+  // Bitset("101010")), false);
   CHECK_EQ(Bitset("010001").SubsplitIsLeftChildOf(Bitset("110001")), false);
   CHECK_EQ(Bitset("010001").SubsplitIsRightChildOf(Bitset("01000011")), false);
   // Should throw because Bitsets can't be divided into equal-sized clades.

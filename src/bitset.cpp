@@ -427,7 +427,8 @@ Bitset Bitset::SubsplitCladeUnion() const {
          SubsplitGetClade(Bitset::SubsplitClade::Right);
 }
 
-bool Bitset::SubsplitIsChildOfWhichParentClade(const Bitset& parent, const Bitset& child) {
+bool Bitset::SubsplitIsChildOfWhichParentClade(const Bitset& parent,
+                                               const Bitset& child) {
   Assert(parent.size() == child.size(),
          "Bitset::SubsplitIsChildOfWhichParentClade() bitsets are different sizes.");
   Bitset child_union = child.SubsplitCladeUnion();
@@ -438,7 +439,8 @@ bool Bitset::SubsplitIsChildOfWhichParentClade(const Bitset& parent, const Bitse
   }
   // If it reaches the end, then it is not a parent.
   Failwith(
-      "Bitset::SubsplitIsChildOfWhichParentClade(): given parent is not a parent of given child.");
+      "Bitset::SubsplitIsChildOfWhichParentClade(): given parent is not a parent of "
+      "given child.");
 }
 
 bool Bitset::SubsplitIsParentChildPair(const Bitset& parent, const Bitset& child) {
