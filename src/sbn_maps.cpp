@@ -34,7 +34,7 @@ SizeVector SBNMaps::SplitIndicesOf(const BitsetSizeMap& indexer,
     // Skip the root.
     if (node != topology.get()) {
       const Bitset rootsplit_pcsp =
-          Bitset::PCSPOfRootsplit(Bitset::RootsplitOfHalf(node->Leaves()));
+          Bitset::EdgeToRootsplit(Bitset::RootsplitOfClade(node->Leaves()));
       split_result[node->Id()] = indexer.at(rootsplit_pcsp);
     }
   });
@@ -93,14 +93,14 @@ IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counte
   size_t index = 0;
   // Start by adding the rootsplit PCSPs.
   size_t taxon_count((rootsplit_counter.begin()->first).size() / 2);
-  Bitset dag_root(Bitset::DAGRootSubsplitOfTaxonCount(taxon_count));
+  Bitset dag_root(Bitset::RootSubsplitOfTaxonCount(taxon_count));
   // Note: dag_root is rotated before being inserted into parent_to_range
   // because the rootsplits are connected to the DAG root via rotated edges.
   SafeInsert(parent_to_range, dag_root.SubsplitRotate(),
              {index, index + rootsplit_counter.size()});
   for (const auto& iter : rootsplit_counter) {
     rootsplits.push_back(iter.first);
-    SafeInsert(indexer, Bitset::PCSPOfRootsplit(iter.first), index);
+    SafeInsert(indexer, Bitset::EdgeToRootsplit(iter.first), index);
     SafeInsert(index_to_child, index, iter.first);
     index++;
   }
@@ -110,7 +110,7 @@ IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counte
     for (const auto& child_iter : child_counter) {
       const auto& pcsp = parent + child_iter.first;
       SafeInsert(indexer, pcsp, index);
-      SafeInsert(index_to_child, index, pcsp.PCSPGetChildSubsplit());
+      SafeInsert(index_to_child, index, pcsp.EdgeGetChildSubsplit());
       index++;
     }
   }
@@ -123,7 +123,7 @@ BitsetSizeDict UnrootedSBNMaps::RootsplitCounterOf(
   for (const auto& [topology, topology_count] : topologies) {
     auto Aux = [&rootsplit_counter,
                 &topology_count = topology_count](const Node* node) {
-      const Bitset rootsplit = Bitset::RootsplitOfHalf(node->Leaves());
+      const Bitset rootsplit = Bitset::RootsplitOfClade(node->Leaves());
       rootsplit_counter.increment(std::move(rootsplit), topology_count);
     };
     for (const auto& child : topology->Children()) {
@@ -194,7 +194,7 @@ PCSPCounter UnrootedSBNMaps::PCSPCounterOf(const Node::TopologyCounter& topologi
 Bitset Rootsplit(const Node* rooted_topology) {
   const auto children = rooted_topology->Children();
   Assert(children.size() == 2, "Rootsplit expects a bifurcating tree.");
-  return Bitset::RootsplitOfHalf(children[0]->Leaves());
+  return Bitset::RootsplitOfClade(children[0]->Leaves());
 }
 
 UnrootedIndexerRepresentation UnrootedSBNMaps::IndexerRepresentationOf(
@@ -315,7 +315,7 @@ SizeVector RootedSBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
   const auto leaf_count = topology->LeafCount();
   SizeVector result;
   // First, add the rootsplit PCSPs.
-  const Bitset rootsplit_pcsp = Bitset::PCSPOfRootsplit(Rootsplit(topology.get()));
+  const Bitset rootsplit_pcsp = Bitset::EdgeToRootsplit(Rootsplit(topology.get()));
   result.push_back(AtWithDefault(indexer, rootsplit_pcsp, default_index));
   // Now add the PCSPs.
   topology->RootedPCSPPreorder(

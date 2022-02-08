@@ -55,15 +55,15 @@ class TidySubsplitDAG : public SubsplitDAG {
   // more details.
   //
   // Applied to a given node, we:
-  // * Apply BeforeNode
-  // * For each of the clades of the node, we:
-  //     * Descend into each clade, cleaning up the sister clade with UpdateEdge as
+  // - Apply BeforeNode
+  // - For each of the clades of the node, we:
+  //     - Descend into each clade, cleaning up the sister clade with UpdateEdge as
   //     needed.
-  //     * Apply BeforeNodeClade
-  //     * For each edge descending from that clade, we:
-  //         * Recur into the child node of the clade if it is not a leaf
-  //         * Apply VisitEdge to the edge
-  // * Apply AfterNode
+  //     - Apply BeforeNodeClade
+  //     - For each edge descending from that clade, we:
+  //         - Recur into the child node of the clade if it is not a leaf
+  //         - Apply VisitEdge to the edge
+  // - Apply AfterNode
   template <typename TidyTraversalActionT>
   void DepthFirstWithTidyAction(const SizeVector &starting_nodes,
                                 const TidyTraversalActionT &action) {
@@ -155,6 +155,18 @@ class TidySubsplitDAG : public SubsplitDAG {
   };
 
  private:
+  // This constructor is really just meant for testing.
+  explicit TidySubsplitDAG(size_t node_count);
+
+  TidySubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter,
+                  const TagStringMap &tag_taxon_map);
+
+  // Set the below matrix up to have all of the nodes below src_id below the
+  // subsplit-clade described by (dst_rotated, dst_id). Meant to be used as part of a
+  // depth-first traversal.
+  void SetBelow(size_t dst_id, bool dst_rotated, size_t src_id);
+
+ private:
   // If this is set then we are in an "updating mode", where we are updating below the
   // specified node-clade.
   std::optional<std::pair<size_t, bool>> updating_below_;
@@ -170,16 +182,6 @@ class TidySubsplitDAG : public SubsplitDAG {
   // dirty_rotated_(i) is true iff there has been a calculation below i,false that
   // invalidates the p-hat PLV coming up into it.
   EigenArrayXb dirty_sorted_;
-
-  // This constructor is really just meant for testing.
-  explicit TidySubsplitDAG(size_t node_count);
-
-  TidySubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter);
-
-  // Set the below matrix up to have all of the nodes below src_id below the
-  // subsplit-clade described by (dst_rotated, dst_id). Meant to be used as part of a
-  // depth-first traversal.
-  void SetBelow(size_t dst_id, bool dst_rotated, size_t src_id);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

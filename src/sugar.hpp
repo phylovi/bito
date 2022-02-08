@@ -108,6 +108,8 @@ constexpr void SafeInsert(std::unordered_set<Key, Hash> &set, Key &&k) {
   Assert(set.insert(k).second, "Failed set insertion!");
 }
 
+// Return value associated with key in map.
+// If key does not exist in map, returns default_value.
 template <class Key, class T, class Hash>
 T AtWithDefault(const std::unordered_map<Key, T, Hash> &map, const Key &key,
                 T default_value) {

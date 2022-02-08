@@ -40,7 +40,10 @@ class SitePattern {
   }
 
  private:
+  // The multiple sequence alignments represented by the site pattern, as a collection
+  // of taxon names and sequences.
   Alignment alignment_;
+  // A map from a unique tag to the taxon name.
   TagStringMap tag_taxon_map_;
   // The first index of patterns_ is across sequences, and the second is across site
   // patterns.

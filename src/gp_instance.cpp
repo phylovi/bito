@@ -26,9 +26,9 @@ void GPInstance::PrintStatus() {
   }
   std::cout << alignment_.Data().size() << " sequences loaded.\n";
   std::cout << dag_.NodeCount() << " DAG nodes with "
-            << dag_.GPCSPCountWithFakeSubsplits() << " edges representing "
+            << dag_.EdgeCountWithLeafSubsplits() << " edges representing "
             << dag_.TopologyCount() << " trees.\n";
-  std::cout << dag_.GPCSPCountWithFakeSubsplits() << " continuous parameters.\n";
+  std::cout << dag_.EdgeCountWithLeafSubsplits() << " continuous parameters.\n";
   if (HasEngine()) {
     std::cout << "Engine available using " << GetEngine()->PLVByteCount() / 1e9
               << "G virtual memory.\n";
@@ -100,7 +100,7 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
       dag_.InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
   engine_ = std::make_unique<GPEngine>(
       std::move(site_pattern), plv_count_per_node_ * (dag_.NodeCountWithoutDAGRoot()),
-      dag_.GPCSPCountWithFakeSubsplits(), mmap_file_path_, rescaling_threshold,
+      dag_.EdgeCountWithLeafSubsplits(), mmap_file_path_, rescaling_threshold,
       std::move(sbn_prior), std::move(unconditional_node_probabilities),
       std::move(inverted_sbn_prior));
 }
@@ -121,9 +121,9 @@ GPDAG &GPInstance::GetDAG() { return dag_; }
 
 void GPInstance::PrintDAG() { dag_.Print(); }
 
-void GPInstance::PrintGPCSPIndexer() {
+void GPInstance::PrintEdgeIndexer() {
   std::cout << "Vector of taxon names: " << tree_collection_.TaxonNames() << std::endl;
-  dag_.PrintGPCSPIndexer();
+  dag_.PrintEdgeIndexer();
 }
 
 void GPInstance::ProcessOperations(const GPOperationVector &operations) {
@@ -134,7 +134,7 @@ void GPInstance::ClearTreeCollectionAssociatedState() { dag_ = GPDAG(); }
 
 void GPInstance::HotStartBranchLengths() {
   if (HasEngine()) {
-    GetEngine()->HotStartBranchLengths(tree_collection_, dag_.BuildGPCSPIndexer());
+    GetEngine()->HotStartBranchLengths(tree_collection_, dag_.BuildEdgeIndexer());
   } else {
     Failwith(
         "Please load and process some trees before calling HotStartBranchLengths.");
@@ -144,7 +144,7 @@ void GPInstance::HotStartBranchLengths() {
 SizeDoubleVectorMap GPInstance::GatherBranchLengths() {
   if (HasEngine()) {
     SizeDoubleVectorMap branch_lengths_from_sample =
-        GetEngine()->GatherBranchLengths(tree_collection_, dag_.BuildGPCSPIndexer());
+        GetEngine()->GatherBranchLengths(tree_collection_, dag_.BuildEdgeIndexer());
     return branch_lengths_from_sample;
   } else {
     Failwith("Please load and process some trees before calling GatherBranchLengths.");
@@ -217,17 +217,18 @@ void GPInstance::EstimateSBNParameters() {
 void GPInstance::CalculateHybridMarginals() {
   std::cout << "Calculating hybrid marginals\n";
   PopulatePLVs();
-  dag_.ReversePostorderIndexTraversal([this](const size_t parent_id, const bool rotated,
-                                             const size_t child_id, const size_t) {
+  dag_.TopologicalEdgeTraversal([this](const size_t parent_id, const bool rotated,
+                                       const size_t child_id, const size_t) {
     this->GetEngine()->ProcessQuartetHybridRequest(
         dag_.QuartetHybridRequestOf(parent_id, rotated, child_id));
   });
 }
 
-size_t GPInstance::GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
-                                            const Node *leaf_node) const {
+size_t GPInstance::GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
+                                           const Node *leaf_node) const {
   Assert(leaf_node->IsLeaf(), "Only leaf node is permitted.");
-  return dag_.GetGPCSPIndex(parent_subsplit, Bitset::FakeSubsplit(leaf_node->Leaves()));
+  return dag_.GetEdgeIdx(parent_subsplit,
+                         Bitset::LeafSubsplitOfNonemptyClade(leaf_node->Leaves()));
 }
 
 RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
@@ -245,19 +246,19 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
             const Node *child1) {
           Bitset parent_subsplit = Bitset::Subsplit(sister->Leaves(), focal->Leaves());
           Bitset child_subsplit = Bitset::Subsplit(child0->Leaves(), child1->Leaves());
-          size_t gpcsp_idx = dag_.GetGPCSPIndex(parent_subsplit, child_subsplit);
+          size_t gpcsp_idx = dag_.GetEdgeIdx(parent_subsplit, child_subsplit);
           branch_lengths[focal->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
 
           if (sister->IsLeaf()) {
-            gpcsp_idx = GetGPCSPIndexForLeafNode(parent_subsplit, sister);
+            gpcsp_idx = GetEdgeIndexForLeafNode(parent_subsplit, sister);
             branch_lengths[sister->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
           }
           if (child0->IsLeaf()) {
-            gpcsp_idx = GetGPCSPIndexForLeafNode(child_subsplit, child0);
+            gpcsp_idx = GetEdgeIndexForLeafNode(child_subsplit, child0);
             branch_lengths[child0->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
           }
           if (child1->IsLeaf()) {
-            gpcsp_idx = GetGPCSPIndexForLeafNode(child_subsplit, child1);
+            gpcsp_idx = GetEdgeIndexForLeafNode(child_subsplit, child1);
             branch_lengths[child1->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
           }
         },
@@ -274,9 +275,9 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
 }
 
 StringVector GPInstance::PrettyIndexer() const {
-  StringVector pretty_representation(dag_.BuildGPCSPIndexer().size());
-  for (const auto &[pcsp, idx] : dag_.BuildGPCSPIndexer()) {
-    pretty_representation[idx] = pcsp.PCSPToString();
+  StringVector pretty_representation(dag_.BuildEdgeIndexer().size());
+  for (const auto &[edge, idx] : dag_.BuildEdgeIndexer()) {
+    pretty_representation[idx] = edge.EdgeToString();
   }
   return pretty_representation;
 }
@@ -336,7 +337,7 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {
 
 RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
     const std::string &pcsp_string) {
-  const BitsetSizeMap &indexer = dag_.BuildGPCSPIndexer();
+  const BitsetSizeMap &indexer = dag_.BuildEdgeIndexer();
   Bitset pcsp(pcsp_string);
   auto search = indexer.find(pcsp);
   if (search == indexer.end()) {

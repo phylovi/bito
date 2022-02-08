@@ -32,16 +32,16 @@ class SBNSupport {
   }
   const size_t &IndexerAt(const Bitset &bitset) const { return indexer_.at(bitset); }
   inline bool ParentInSupport(const Bitset &parent) const {
-    return parent_to_range_.count(parent) > 0;
+    return parent_to_child_range_.count(parent) > 0;
   }
   inline const SizePair &ParentToRangeAt(const Bitset &parent) const {
-    return parent_to_range_.at(parent);
+    return parent_to_child_range_.at(parent);
   }
   inline const Bitset &IndexToChildAt(size_t child_idx) const {
     return index_to_child_.at(child_idx);
   }
 
-  const BitsetSizePairMap &ParentToRange() const { return parent_to_range_; }
+  const BitsetSizePairMap &ParentToRange() const { return parent_to_child_range_; }
   const BitsetSizeMap &Indexer() const { return indexer_; }
 
   PSPIndexer BuildPSPIndexer() const { return PSPIndexer(rootsplits_, indexer_); }
@@ -50,7 +50,7 @@ class SBNSupport {
   StringVector PrettyIndexer() const;
   void PrettyPrintIndexer() const;
 
-  // Return indexer_ and parent_to_range_ converted into string-keyed maps.
+  // Return indexer_ and parent_to_child_range_ converted into string-keyed maps.
   std::tuple<StringSizeMap, StringSizePairMap> GetIndexers() const;
 
   // Get the indexer, but reversed and with bitsets appropriately converted to
@@ -73,5 +73,5 @@ class SBNSupport {
   // A map going from a parent subsplit to the range of indices in
   // sbn_parameters_ with its children. See the definition of Range for the indexing
   // convention.
-  BitsetSizePairMap parent_to_range_;
+  BitsetSizePairMap parent_to_child_range_;
 };

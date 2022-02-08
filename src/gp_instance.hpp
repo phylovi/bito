@@ -31,7 +31,7 @@ class GPInstance {
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;
-  void PrintGPCSPIndexer();
+  void PrintEdgeIndexer();
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();
   SizeDoubleVectorMap GatherBranchLengths();
@@ -94,8 +94,8 @@ class GPInstance {
   void CheckSequencesLoaded() const;
   void CheckTreesLoaded() const;
 
-  size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
-                                  const Node *leaf_node) const;
+  size_t GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
+                                 const Node *leaf_node) const;
   RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
       Node::NodePtrVec &&topologies) const;
   StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
