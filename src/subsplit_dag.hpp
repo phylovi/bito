@@ -178,7 +178,7 @@ class SubsplitDAG {
   // Iterate over only the rotated/sorted leafward edges of node using a NodeLambda.
   void IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
                                 const NodeLambda &f) const;
-  // Iterate over the leafward edges, supplying both the a PCSP index of the edge and
+  // Iterate over the leafward edges, supplying both the index of the edge and
   // the SubsplitDAGNode of the corresponding child.
   void IterateOverLeafwardEdgesAndChildren(const SubsplitDAGNode *node,
                                            const EdgeAndNodeLambda &f) const;
@@ -391,7 +391,7 @@ class SubsplitDAG {
   StringSizeMap SummaryStatistics() const;
   // Rotates Node Subsplit only if it is out of sorted order (rotated).
   Bitset SubsplitToSortedOrder(const Bitset &subsplit, bool rotated) const;
-  // Fixes Edge PCSP only if child is out of sorted order (rotated).
+  // Fixes PCSP only if child is out of sorted order (rotated).
   Bitset EdgeToSortedOrder(const Bitset &pcsp) const;
   // Build vector between from SubsplitDAGs dag_a to dag_b corresponding to their taxon
   // ids. Can be treated as a "map" with indices representing keys. Requires that both
