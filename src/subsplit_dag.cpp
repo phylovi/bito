@@ -187,14 +187,14 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
             }
             auto bs = node->GetBitset();
             string_stream << node_id << " [label=\"<f0>"
-                          << bs.SubsplitGetClade(Bitset::SubsplitClade::LEFT)
+                          << bs.SubsplitGetClade(Bitset::SubsplitClade::Left)
                                  .ToVectorOfSetBitsAsString()
                           << "|<f1>";
             if (show_index_labels) {
               string_stream << node_id;
             }
             string_stream << "|<f2>"
-                          << bs.SubsplitGetClade(Bitset::SubsplitClade::RIGHT)
+                          << bs.SubsplitGetClade(Bitset::SubsplitClade::Right)
                                  .ToVectorOfSetBitsAsString()
                           << "\"]\n";
           },
@@ -413,10 +413,10 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
     std::ignore = parent_id;
     // If child is a leaf and subsplit is sorted, then child0 will have a zero taxon count.
     size_t child0_taxon_count =
-        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(Bitset::SubsplitClade::LEFT).Count();
+        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(Bitset::SubsplitClade::Left).Count();
     // As long as subsplit is sorted and nonempty, then child1 will have a nonzero taxon count.
     size_t child1_taxon_count =
-        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(Bitset::SubsplitClade::RIGHT).Count();
+        GetDAGNode(child_id)->GetBitset().SubsplitGetClade(Bitset::SubsplitClade::Right).Count();
     // The ordering of this subsplit is flipped so that this ratio will be nonzero in
     // the denominator in the case of root & leaves.
     result(edge_idx) = Combinatorics::LogChildSubsplitCountRatio(child1_taxon_count,
@@ -622,11 +622,11 @@ void SubsplitDAG::ConnectGivenNodes(const size_t parent_id, const size_t child_i
   const auto child_node = GetDAGNode(child_id);
 
   SubsplitDAGNode::ParentClade parent_clade =
-      (rotated ? SubsplitDAGNode::ParentClade::LEFTSIDE
-               : SubsplitDAGNode::ParentClade::RIGHTSIDE);
-  parent_node->AddEdge(child_node->Id(), SubsplitDAGNode::Direction::LEAFWARD,
+      (rotated ? SubsplitDAGNode::ParentClade::Left
+               : SubsplitDAGNode::ParentClade::Right);
+  parent_node->AddEdge(child_node->Id(), SubsplitDAGNode::Direction::Leafward,
                        parent_clade);
-  child_node->AddEdge(parent_node->Id(), SubsplitDAGNode::Direction::ROOTWARD,
+  child_node->AddEdge(parent_node->Id(), SubsplitDAGNode::Direction::Rootward,
                       parent_clade);
 }
 
@@ -672,7 +672,7 @@ void SubsplitDAG::BuildNodes(const SizeBitsetMap &index_to_child,
     BuildNodesDepthFirst(index_to_child, rootsplit, visited_subsplits);
   }
   // Finally, we add the DAG root node.
-  CreateAndInsertNode(Bitset::RootSubsplitOfTaxonCount(taxon_count_));
+  CreateAndInsertNode(Bitset::UCASubsplitOfTaxonCount(taxon_count_));
 }
 
 void SubsplitDAG::BuildEdges(const SizeBitsetMap &index_to_child) {

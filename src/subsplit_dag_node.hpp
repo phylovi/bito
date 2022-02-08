@@ -22,12 +22,12 @@
 class SubsplitDAGNode {
  public:
   enum class Direction : bool {
-    ROOTWARD = 0,
-    LEAFWARD = 1,
+    Rootward = 0,
+    Leafward = 1,
   };
   enum class ParentClade : bool {
-    LEFTSIDE = 0, /* ROTATED */
-    RIGHTSIDE = 1, /* SORTED */
+    Left = 0, 
+    Right = 1, 
   };
 
   SubsplitDAGNode(size_t id, Bitset subsplit)
@@ -43,13 +43,13 @@ class SubsplitDAGNode {
 
   // Is the node the DAG root (universal ancestor of the DAG)?
   bool IsDAGRootNode() const {
-    return (rootward_rightward_.empty() && rootward_leftward_.empty());
+    return (right_rootward_.empty() && left_rootward_.empty());
   }
   // Is the node a rootsplit (direct descendent of root, dividing entire taxon set)?
   bool IsRootsplit() const { return subsplit_.SubsplitIsRootsplit(); }
   // Is the node a leaf (has no descendents)?
   bool IsLeaf() const {
-    return leafward_leftward_.empty() && leafward_rightward_.empty();
+    return left_leafward_.empty() && right_leafward_.empty();
   }
 
   // ** Edges 
@@ -65,38 +65,40 @@ class SubsplitDAGNode {
     }
   }
   void AddEdge(size_t adjacent_node_id, Direction direction, ParentClade clade) {
-    bool is_leafward = (direction == Direction::LEAFWARD);
-    bool is_rotated = (clade == ParentClade::LEFTSIDE);
+    bool is_leafward = (direction == Direction::Leafward);
+    bool is_rotated = (clade == ParentClade::Left);
     AddEdge(adjacent_node_id, is_leafward, is_rotated);
   }
-  void AddLeafwardLeftward(size_t node_id) { leafward_leftward_.push_back(node_id); }
-  void AddLeafwardRightward(size_t node_id) { leafward_rightward_.push_back(node_id); }
-  void AddRootwardLeftward(size_t node_id) { rootward_leftward_.push_back(node_id); }
-  void AddRootwardRightward(size_t node_id) { rootward_rightward_.push_back(node_id); }
+  void AddLeafwardLeftward(size_t node_id) { left_leafward_.push_back(node_id); }
+  void AddLeafwardRightward(size_t node_id) { right_leafward_.push_back(node_id); }
+  void AddRootwardLeftward(size_t node_id) { left_rootward_.push_back(node_id); }
+  void AddRootwardRightward(size_t node_id) { right_rootward_.push_back(node_id); }
 
   // Get vector of all adjacent node vectors along the specified direction.
-  void GetEdge(bool is_leafward, bool is_rotated) {
+  const SizeVector &GetEdge(bool is_leafward, bool is_rotated) {
     if (is_leafward) {
-      is_rotated ? GetLeafwardLeftward() : GetLeafwardRightward();
+      auto &edges = is_rotated ? GetLeafwardLeftward() : GetLeafwardRightward();
+      return edges;
     } else {
-      is_rotated ? GetRootwardLeftward() : GetRootwardRightward();
+      auto &edges = is_rotated ? GetRootwardLeftward() : GetRootwardRightward();
+      return edges;
     }
   }
-  void GetEdge(Direction direction, ParentClade clade) {
-    bool is_leafward = (direction == Direction::LEAFWARD);
-    bool is_rotated = (clade == ParentClade::LEFTSIDE);
-    GetEdge(is_leafward, is_rotated);
+  const SizeVector &GetEdge(Direction direction, ParentClade clade) {
+    bool is_leafward = (direction == Direction::Leafward);
+    bool is_rotated = (clade == ParentClade::Left);
+    return GetEdge(is_leafward, is_rotated);
   }
   const SizeVector &GetLeafwardOrRootward(bool leafward, bool rotated) const {
     return leafward ? GetLeafward(rotated) : GetRootward(rotated);
   };
-  const SizeVector &GetLeafwardLeftward() const { return leafward_leftward_; }
-  const SizeVector &GetLeafwardRightward() const { return leafward_rightward_; }
+  const SizeVector &GetLeafwardLeftward() const { return left_leafward_; }
+  const SizeVector &GetLeafwardRightward() const { return right_leafward_; }
   const SizeVector &GetLeafward(bool rotated) const {
     return rotated ? GetLeafwardLeftward() : GetLeafwardRightward();
   }
-  const SizeVector &GetRootwardLeftward() const { return rootward_leftward_; }
-  const SizeVector &GetRootwardRightward() const { return rootward_rightward_; }
+  const SizeVector &GetRootwardLeftward() const { return left_rootward_; }
+  const SizeVector &GetRootwardRightward() const { return right_rootward_; }
   const SizeVector &GetRootward(bool rotated) const {
     return rotated ? GetRootwardLeftward() : GetRootwardRightward();
   }
@@ -104,10 +106,10 @@ class SubsplitDAGNode {
   // After modifying parent DAG.  
   void RemapNodeIds(const SizeVector node_reindexer) {
     id_ = node_reindexer.at(id_);
-    Reindexer::RemapIdVector(leafward_leftward_, node_reindexer);
-    Reindexer::RemapIdVector(leafward_rightward_, node_reindexer);
-    Reindexer::RemapIdVector(rootward_leftward_, node_reindexer);
-    Reindexer::RemapIdVector(rootward_rightward_, node_reindexer);
+    Reindexer::RemapIdVector(left_leafward_, node_reindexer);
+    Reindexer::RemapIdVector(right_leafward_, node_reindexer);
+    Reindexer::RemapIdVector(left_rootward_, node_reindexer);
+    Reindexer::RemapIdVector(right_rootward_, node_reindexer);
   }
 
   bool IsValid() const;
@@ -121,8 +123,8 @@ class SubsplitDAGNode {
   const Bitset subsplit_;
 
   // List of adjacent nodes in all directions.
-  SizeVector leafward_leftward_;
-  SizeVector leafward_rightward_;
-  SizeVector rootward_leftward_;
-  SizeVector rootward_rightward_;
+  SizeVector left_leafward_;
+  SizeVector right_leafward_;
+  SizeVector left_rootward_;
+  SizeVector right_rootward_;
 };

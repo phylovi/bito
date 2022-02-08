@@ -129,7 +129,7 @@ class Bitset {
   // taxon representation gives the precise opposite ordering to sorting by binary
   // representation (except in the case of zero/empty set!).
   static int CladeCompare(const Bitset &bitset_a, const Bitset &bitset_b);
-  int CladeCompare(const Bitset &bitset_b) const;
+  int CladeCompare(const Bitset &other) const;
   // For a specified number of clades, return the clade/taxon size.
   size_t MultiCladeGetCladeSize(const size_t clade_count) const;
   // For a specified number of clades, return a bitset of the ith clade.
@@ -147,8 +147,8 @@ class Bitset {
 
   static inline size_t SubsplitCladeCount = 2;
   enum class SubsplitClade : bool {
-    LEFT = 0,  /* ROTATED, LEXICO_SMALLER, BIN_LARGER */
-    RIGHT = 1, /* SORTED, LEXICO_LARGER, BIN_SMALLER */
+    Left = 0,  
+    Right = 1, 
   };
 
   // Constructors:
@@ -167,7 +167,7 @@ class Bitset {
   static Bitset SubsplitFromUnorderedClades(const Bitset &clade_0,
                                             const Bitset &clade_1);
   // Special Constructors:
-  // A "leaf" (formerly "leaf") subsplit is a subsplit where one of the clades is equal
+  // A "leaf subsplit" is a subsplit where one of the clades is equal
   // to the empty set (zero). In practice, these are allowed in only two cases: When
   // subsplit is a leaf or root.  A leaf should only have a single member in its
   // non-empty clade, and a root should have the full taxon set in its non-empty clade.
@@ -177,10 +177,10 @@ class Bitset {
   // Make a "leaf" child subsplit of a given parent subsplit. The leftside clade of
   // the parent subsplit must be non-empty and the rightside clade must be a singleton.
   static Bitset LeafSubsplitOfParentSubsplit(const Bitset &parent_subsplit);
-  // Get the subsplit of the DAG root node with the given taxon count.
+  // Make the UCA (universal common ancestor) subsplit of the DAG root node with the given taxon count.
   // Since subsplit bitsets are always big-small, the DAG root node subsplit
   // consists of all 1s then 0s (e.g. 5 would return '11111|00000').
-  static Bitset RootSubsplitOfTaxonCount(const size_t taxon_count);
+  static Bitset UCASubsplitOfTaxonCount(const size_t taxon_count);
   // Get the full rootsplit bitset out of a rootsplit half.
   // Note: the first half of the rootsplit bitset is always larger than the second.
   static Bitset RootsplitOfClade(const Bitset &clade);
@@ -250,11 +250,11 @@ class Bitset {
   // example, `000111010` is the Edge from the DAG root node to the rootsplit (AC, B).
   // See the unit tests at the bottom for more examples.
 
-  static inline size_t EdgeCladeCount = 3;
-  enum class EdgeClade : size_t {
-    SISTER = 0,
-    FOCAL = 1,
-    LEFT_CHILD = 2 /* ROTATED_CHILD */
+  static inline size_t PCSPCladeCount = 3;
+  enum class PCSPClade : size_t {
+    Sister = 0,
+    Focal = 1,
+    LeftChild = 2
   };
 
   // Constructors:
@@ -295,7 +295,7 @@ class Bitset {
   size_t EdgeGetCladeSize() const;
   // Get the ith clade of the Edge.
   Bitset EdgeGetClade(const size_t which_clade) const;
-  Bitset EdgeGetClade(const EdgeClade which_clade) const;
+  Bitset EdgeGetClade(const PCSPClade which_clade) const;
   // Get the parent subsplit of the Edge.
   Bitset EdgeGetParentSubsplit() const;
   // Get the child subsplit of the Edge.
@@ -409,12 +409,12 @@ TEST_CASE("Bitset") {
 TEST_CASE("Bitset: Clades, Subsplits, Edges") {
   auto p = Bitset("000111");
   // Subsplit: 000|111
-  CHECK_EQ(p.SubsplitGetClade(Bitset::SubsplitClade::LEFT), Bitset("000"));
-  CHECK_EQ(p.SubsplitGetClade(Bitset::SubsplitClade::RIGHT), Bitset("111"));
+  CHECK_EQ(p.SubsplitGetClade(Bitset::SubsplitClade::Left), Bitset("000"));
+  CHECK_EQ(p.SubsplitGetClade(Bitset::SubsplitClade::Right), Bitset("111"));
   // Edge: 00|01|11
-  CHECK_EQ(p.EdgeGetClade(Bitset::EdgeClade::SISTER), Bitset("00"));
-  CHECK_EQ(p.EdgeGetClade(Bitset::EdgeClade::FOCAL), Bitset("01"));
-  CHECK_EQ(p.EdgeGetClade(Bitset::EdgeClade::LEFT_CHILD), Bitset("11"));
+  CHECK_EQ(p.EdgeGetClade(Bitset::PCSPClade::Sister), Bitset("00"));
+  CHECK_EQ(p.EdgeGetClade(Bitset::PCSPClade::Focal), Bitset("01"));
+  CHECK_EQ(p.EdgeGetClade(Bitset::PCSPClade::LeftChild), Bitset("11"));
 
   CHECK_EQ(Bitset("11001010").SubsplitCladeUnion(), Bitset("1110"));
 

@@ -39,9 +39,9 @@ bool SubsplitDAGNode::IsValid() const {
 
 std::string SubsplitDAGNode::ToString() const {
   std::string str = std::to_string(id_) + ": " + GetBitset().SubsplitToString() + "\n";
-  str += "Rootward Rightward: " + GetNeighborString(rootward_rightward_) + "\n";
-  str += "Rootward Leftward: " + GetNeighborString(rootward_leftward_) + "\n";
-  str += "Leafward Rightward: " + GetNeighborString(leafward_rightward_) + "\n";
-  str += "Leafward Leftward: " + GetNeighborString(leafward_leftward_) + "\n";
+  str += "Rootward Rightward: " + GetNeighborString(right_rootward_) + "\n";
+  str += "Rootward Leftward: " + GetNeighborString(left_rootward_) + "\n";
+  str += "Leafward Rightward: " + GetNeighborString(right_leafward_) + "\n";
+  str += "Leafward Leftward: " + GetNeighborString(left_leafward_) + "\n";
   return str;
 }

@@ -446,10 +446,8 @@ class SubsplitDAG {
   // removing old references to deleted objects, etc.
 
   // Create Node and insert it into the DAG.
-  // WARNING: Does not check for redundant nodes.
   void CreateAndInsertNode(const Bitset &subsplit);
   // Create Edge between given nodes and insert it into the DAG.
-  // WARNING: Does not check for redundant edges.
   void CreateAndInsertEdge(const size_t parent_id, const size_t child_id, bool rotated);
   // Delete Node from the DAG.
   void DeleteNode(const Bitset &subsplit);
@@ -495,7 +493,7 @@ class SubsplitDAG {
   // distinguish the two. This corresponds to the analogous concept for topologies.
 
   // - Map of Taxon Names
-  //    - [ Taxon Name => Taxon Id (Bitset Clade Position) ]
+  //    - [ Taxon Name => Taxon Id (position of the "on" bit in the clades) ]
   std::map<std::string, size_t> dag_taxons_;
   // - Vector of DAG Nodes: each Node index in the vector corresponds to their Id.
   // - This can be viewed as a map:
