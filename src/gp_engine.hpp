@@ -11,7 +11,6 @@
 #include "mmapped_plv.hpp"
 #include "numerical_utils.hpp"
 #include "quartet_hybrid_request.hpp"
-#include "reindexer.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 #include "site_pattern.hpp"
