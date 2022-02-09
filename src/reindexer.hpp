@@ -1,5 +1,17 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
+//
+// Reindexers are argsorted index arrays that describe reordering of data due to
+// modifications of data vectors, such as when adding NNI pairs to the SubsplitDAG.
+// These reindexers can then be used to reorder associated data arrays whose indices
+// correspond the ordering of SubsplitDAG data arrays, such as with the node or edge
+// arrays.
+//
+// A reindexer is a SizeVector that can be thought of as a one-to-one function that maps
+// from an old indexing scheme to a new indexing scheme. In other words, if old index
+// `i` maps to new index `j`, then reindexer[`i`] = `j`. For example, if old_vector =
+// [A, B, C] and reindexer = [1, 2, 0], then new_vector = [C, A, B]. Note that
+// old_vector and reindexer must have the same size.
 
 #pragma once
 
@@ -8,13 +20,8 @@
 #include "eigen_sugar.hpp"
 #include "sugar.hpp"
 
-namespace Reindexer {
 // These operations are for working with reindexers.
-// A reindexer is a SizeVector that can be thought of as a function that maps from an
-// old indexing scheme to a new indexing scheme. In other words, if index `i` maps to
-// index `j`, then reindexer[`i`] = `j`. For example, if old_vector = [A, B, C] and
-// reindexer = [1, 2, 0], then new_vector = [C, A, B]. Note that old_vector and
-// reindexer must have the same size.
+namespace Reindexer {
 
 // For each position in a identity reindexer, reindexer[`i`] = `i`.
 // E.g. for size = 5, reindexer = [0, 1, 2, 3, 4].

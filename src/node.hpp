@@ -190,13 +190,18 @@ class Node {
   static size_t SORotate(size_t n, uint32_t c);
 
  private:
+  // Vector of direct child descendents of node in tree topology.
   NodePtrVec children_;
-  // See beginning of file for notes about the id and the leaves.
+  // NOTE: See beginning of file for notes about the id and the leaves.
+  // Unique identifier in tree containing node.
   size_t id_;
+  // Bitset of all leaves below node (alternatively can view a leaf as a member of the
+  // taxon set in the tree).
   Bitset leaves_;
   // The tag_ is a pair of packed integers representing (1) the maximum leaf ID
   // of the leaves below this node, and (2) the number of leaves below the node.
   uint64_t tag_;
+  // Hashkey for node maps.
   size_t hash_;
 
   // Make copy constructors private to eliminate copying.

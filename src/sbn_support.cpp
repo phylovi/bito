@@ -18,10 +18,10 @@ void SBNSupport::PrettyPrintIndexer() const {
   }
 }
 
-// Return indexer_ and parent_to_range_ converted into string-keyed maps.
+// Return indexer_ and parent_to_child_range_ converted into string-keyed maps.
 std::tuple<StringSizeMap, StringSizePairMap> SBNSupport::GetIndexers() const {
   auto str_indexer = StringifyMap(indexer_);
-  auto str_parent_to_range = StringifyMap(parent_to_range_);
+  auto str_parent_to_range = StringifyMap(parent_to_child_range_);
   std::string rootsplit("DAG Root Node");
   SafeInsert(str_parent_to_range, rootsplit, {0, rootsplits_.size()});
   return {str_indexer, str_parent_to_range};
@@ -40,5 +40,5 @@ StringVector SBNSupport::StringReversedIndexer() const {
 void SBNSupport::ProbabilityNormalizeSBNParametersInLog(
     EigenVectorXdRef sbn_parameters) const {
   SBNProbability::ProbabilityNormalizeParamsInLog(sbn_parameters, rootsplits_.size(),
-                                                  parent_to_range_);
+                                                  parent_to_child_range_);
 }

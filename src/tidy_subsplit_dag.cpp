@@ -6,16 +6,17 @@
 TidySubsplitDAG::TidySubsplitDAG() : SubsplitDAG() {}
 
 TidySubsplitDAG::TidySubsplitDAG(const RootedTreeCollection &tree_collection)
-    : TidySubsplitDAG(tree_collection.TaxonCount(), tree_collection.TopologyCounter()) {
-}
+    : TidySubsplitDAG(tree_collection.TaxonCount(), tree_collection.TopologyCounter(),
+                      tree_collection.TagTaxonMap()) {}
 
 TidySubsplitDAG::TidySubsplitDAG(size_t node_count)
     : above_rotated_(EigenMatrixXb::Identity(node_count, node_count)),
       above_sorted_(EigenMatrixXb::Identity(node_count, node_count)){};
 
 TidySubsplitDAG::TidySubsplitDAG(size_t taxon_count,
-                                 const Node::TopologyCounter &topology_counter)
-    : SubsplitDAG(taxon_count, topology_counter) {
+                                 const Node::TopologyCounter &topology_counter,
+                                 const TagStringMap &tag_taxon_map)
+    : SubsplitDAG(taxon_count, topology_counter, tag_taxon_map) {
   auto node_count = NodeCount();
   above_rotated_ = EigenMatrixXb::Identity(node_count, node_count);
   above_sorted_ = EigenMatrixXb::Identity(node_count, node_count);
@@ -112,9 +113,11 @@ std::string TidySubsplitDAG::AboveMatricesAsString() const {
 
 TidySubsplitDAG TidySubsplitDAG::TrivialExample() {
   // ((0,1),2)
-  auto topology = Node::Join(Node::Join(Node::Leaf(0), Node::Leaf(1)), Node::Leaf(2));
+  Node::NodePtr topology =
+      Node::Join(Node::Join(Node::Leaf(0), Node::Leaf(1)), Node::Leaf(2));
   topology->Polish();
-  return TidySubsplitDAG(3, {{topology, 1}});
+  TagStringMap taxon_map = {{0, "x0"}, {1, "x1"}, {2, "x2"}};
+  return TidySubsplitDAG(3, {{topology, 1}}, taxon_map);
 }
 
 TidySubsplitDAG TidySubsplitDAG::ManualTrivialExample() {
@@ -133,7 +136,7 @@ TidySubsplitDAG TidySubsplitDAG::ManualTrivialExample() {
 
 TidySubsplitDAG TidySubsplitDAG::MotivatingExample() {
   auto topologies = Node::ExampleTopologies();
-  return TidySubsplitDAG(4, {{topologies[3], 1}, {topologies[4], 1}});
+  return TidySubsplitDAG(4, {{topologies[3], 1}, {topologies[4], 1}}, TagStringMap());
 }
 
 std::string TidySubsplitDAG::RecordTraversal() {
