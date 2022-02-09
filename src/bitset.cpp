@@ -392,9 +392,9 @@ bool Bitset::SubsplitIsLeaf() const {
   return is_left_clade_singleton && is_right_clade_empty;
 }
 
-bool Bitset::SubsplitIsRoot() const {
-  // A subsplit is a root if the left clade contains all taxons and the right clade
-  // contains no taxons. If subsplit is valid, then we can assume the right clade is
+bool Bitset::SubsplitIsUCA() const {
+  // A subsplit is a root if the left clade contains all taxa and the right clade
+  // contains no taxa. If subsplit is valid, then we can assume the right clade is
   // empty.
   bool is_left_clade_full = SubsplitGetClade(Bitset::SubsplitClade::Left).All();
   return is_left_clade_full;

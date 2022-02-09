@@ -211,13 +211,13 @@ class Bitset {
   std::string SubsplitToVectorOfSetBitsAsString() const;
   // Is this the subsplit of a leaf node?
   bool SubsplitIsLeaf() const;
-  // Is this the subsplit of root node?
-  bool SubsplitIsRoot() const;
+  // Is this the UCA subsplit?
+  bool SubsplitIsUCA() const;
   // Is this the subsplit of a rootsplit?
   bool SubsplitIsRootsplit() const;
-  // Is this the left/rotated clade of the given subsplit?
+  // Is this the left clade of the given subsplit?
   bool SubsplitIsLeftChildOf(const Bitset &parent) const;
-  // Is this the right/sorted clade of the given subsplit?
+  // Is this the right clade of the given subsplit?
   bool SubsplitIsRightChildOf(const Bitset &parent) const;
   // Get the union of the two clades.
   Bitset SubsplitCladeUnion() const;

@@ -95,7 +95,7 @@ void SyncSetOfNNIsWithDAG(SetOfNNIs &set_of_nnis, const SubsplitDAG &dag) {
           // Only internal node pairs are viable NNIs.
           Bitset parent_bitset = dag.GetDAGNode(parent_id)->GetBitset();
           Bitset child_bitset = dag.GetDAGNode(child_id)->GetBitset();
-          if (!(parent_bitset.SubsplitIsRoot() || child_bitset.SubsplitIsLeaf())) {
+          if (!(parent_bitset.SubsplitIsUCA() || child_bitset.SubsplitIsLeaf())) {
             SafeAddOutputNNIsToSetOfNNIs(set_of_nnis, dag, parent_bitset, child_bitset,
                                          is_rotated);
           }
@@ -160,7 +160,7 @@ void SafeAddOutputNNIsToSetOfNNIs(SetOfNNIs &set_of_nnis, const SubsplitDAG &dag
                                   const Bitset &child_bitset,
                                   const bool is_edge_rotated) {
   // Soft assert that parent is not the root and child is not a leaf.
-  if (parent_bitset.SubsplitIsRoot() || child_bitset.SubsplitIsLeaf()) {
+  if (parent_bitset.SubsplitIsUCA() || child_bitset.SubsplitIsLeaf()) {
     return;
   }
   // Input pair is in the DAG, so remove it from the Set if it exists.
