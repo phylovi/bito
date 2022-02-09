@@ -14,6 +14,7 @@
 
 using namespace GPOperations;  // NOLINT
 
+// #350 consider use of GPCSP.
 // GPCSP stands for generalized PCSP-- see text.
 
 // Let the "venus" node be the common ancestor of mars and saturn.

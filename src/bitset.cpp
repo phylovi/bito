@@ -393,7 +393,7 @@ bool Bitset::SubsplitIsLeaf() const {
 }
 
 bool Bitset::SubsplitIsUCA() const {
-  // A subsplit is a root if the left clade contains all taxa and the right clade
+  // A subsplit is a UCA if the left clade contains all taxa and the right clade
   // contains no taxa. If subsplit is valid, then we can assume the right clade is
   // empty.
   bool is_left_clade_full = SubsplitGetClade(Bitset::SubsplitClade::Left).All();
@@ -402,7 +402,7 @@ bool Bitset::SubsplitIsUCA() const {
 
 bool Bitset::SubsplitIsRootsplit() const {
   // A subsplit is a rootsplit if the union of the clades contain all clades.
-  // But is also not the root, meaning both clades are nonempty.
+  // But is also not the UCA, meaning both clades are nonempty.
   bool is_union_of_clades_full = SubsplitCladeUnion().All();
   bool is_left_clade_nonempty = !SubsplitGetClade(Bitset::SubsplitClade::Left).None();
   bool is_right_clade_nonempty = !SubsplitGetClade(Bitset::SubsplitClade::Right).None();
@@ -432,6 +432,7 @@ bool Bitset::SubsplitIsChildOfWhichParentClade(const Bitset& parent,
   Assert(parent.size() == child.size(),
          "Bitset::SubsplitIsChildOfWhichParentClade() bitsets are different sizes.");
   Bitset child_union = child.SubsplitCladeUnion();
+  // #350 why not use the left and right here?
   for (bool clade : {false, true}) {
     if (child_union == parent.SubsplitGetClade(clade)) {
       return clade;
@@ -494,6 +495,9 @@ Bitset Bitset::PCSP(const std::string sister_clade, const std::string focal_clad
   return PCSP(Bitset(sister_clade), Bitset(focal_clade), Bitset(sorted_child_clade));
 }
 
+// #350 I'd argue that if we are going to use SubsplitCladeCount (and I'm not sure about
+// that) then we should use something like that here. Oh wait, there is a
+// PCSPCladeCount.
 size_t Bitset::PCSPGetCladeSize() const { return MultiCladeGetCladeSize(3); }
 
 Bitset Bitset::PCSPGetClade(const size_t which_clade) const {

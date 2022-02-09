@@ -201,6 +201,7 @@ class Bitset {
   // taxon set.
   size_t SubsplitGetCladeSize() const;
   // Get clade according to its taxon ordering.
+  // #350 why do we want these two overloads?
   Bitset SubsplitGetClade(const size_t which_clade) const;
   Bitset SubsplitGetClade(const SubsplitClade which_clade) const;
   // Output subsplit as string of "1" and "0" characters, with each clade separated by a
@@ -405,7 +406,7 @@ TEST_CASE("Bitset") {
   CHECK_EQ(Bitset("0000").ToVectorOfSetBitsAsString(), "");
 }
 
-TEST_CASE("Bitset: Clades, Subsplits, Edges") {
+TEST_CASE("Bitset: Clades, Subsplits, PCSPs") {
   auto p = Bitset("000111");
   // Subsplit: 000|111
   CHECK_EQ(p.SubsplitGetClade(Bitset::SubsplitClade::Left), Bitset("000"));
@@ -421,6 +422,7 @@ TEST_CASE("Bitset: Clades, Subsplits, Edges") {
   CHECK_EQ(Bitset("010101").SubsplitToVectorOfSetBitsAsString(), "1|0,2");
 
   CHECK_EQ(Bitset("101010").SubsplitIsLeftChildOf(Bitset("111000")), true);
+  // #350 commented out code
   // CHECK_EQ(Bitset::SubsplitIsChildOfWhichParentClade(Bitset("111000"),
   // Bitset("101010")),true);
   CHECK_EQ(Bitset("00100001").SubsplitIsRightChildOf(Bitset("11000011")), true);

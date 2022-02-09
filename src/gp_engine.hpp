@@ -154,7 +154,7 @@ class GPEngine {
   // Number of iterations allowed for branch length optimization.
   size_t max_iter_for_optimization_ = 1000;
 
-  // Descriptor containing all taxons and sequence alignments.
+  // Descriptor containing all taxa and sequence alignments.
   SitePattern site_pattern_;
   // Rescaling threshold factor to prevent under/overflow errors.
   const double rescaling_threshold_;
