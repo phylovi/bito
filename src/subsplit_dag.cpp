@@ -901,7 +901,8 @@ void SubsplitDAG::ConnectChildToAllChildren(const Bitset &child_subsplit,
                 EdgeCountWithLeafSubsplits() + children_of_child.size()});
 
     for (const size_t child_of_child_id : children_of_child) {
-      const auto new_edge_idx = CreateAndInsertEdge(GetDAGNodeId(child_subsplit), child_of_child_id, rotated);
+      const auto new_edge_idx =
+          CreateAndInsertEdge(GetDAGNodeId(child_subsplit), child_of_child_id, rotated);
       added_edge_idxs.push_back(new_edge_idx);
     }
   }
@@ -922,7 +923,8 @@ void SubsplitDAG::ConnectParentToAllChildrenExcept(const Bitset &parent_subsplit
 
     for (const size_t child_of_parent_id : children_of_parent) {
       if (child_of_parent_id != GetDAGNodeId(child_subsplit)) {
-        const auto new_edge_idx = CreateAndInsertEdge(GetDAGNodeId(parent_subsplit), child_of_parent_id, rotated);
+        const auto new_edge_idx = CreateAndInsertEdge(GetDAGNodeId(parent_subsplit),
+                                                      child_of_parent_id, rotated);
         added_edge_idxs.push_back(new_edge_idx);
       }
     }
@@ -940,7 +942,8 @@ void SubsplitDAG::ConnectChildToAllParentsExcept(const Bitset &parent_subsplit,
                                                 {right_parents_of_child, false}}) {
     for (const size_t parent_of_child_id : parents_of_child) {
       if (parent_of_child_id != GetDAGNodeId(parent_subsplit)) {
-        const auto new_edge_idx = CreateAndInsertEdge(parent_of_child_id, GetDAGNodeId(child_subsplit), rotated);
+        const auto new_edge_idx = CreateAndInsertEdge(
+            parent_of_child_id, GetDAGNodeId(child_subsplit), rotated);
         added_edge_idxs.push_back(new_edge_idx);
       }
     }
@@ -956,7 +959,8 @@ void SubsplitDAG::ConnectParentToAllParents(const Bitset &parent_subsplit,
        std::vector<std::pair<SizeVector, bool>>{{left_parents_of_parent, true},
                                                 {right_parents_of_parent, false}}) {
     for (const size_t parent_of_parent_id : parents_of_parent) {
-      const auto new_edge_idx = CreateAndInsertEdge(parent_of_parent_id, GetDAGNodeId(parent_subsplit), rotated);
+      const auto new_edge_idx = CreateAndInsertEdge(
+          parent_of_parent_id, GetDAGNodeId(parent_subsplit), rotated);
       added_edge_idxs.push_back(new_edge_idx);
     }
   }
