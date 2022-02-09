@@ -720,22 +720,18 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   const auto child_node = dag.GetDAGNode(dag.GetDAGNodeId(child_subsplit));
   std::map<bool, SizeVector> correct_parents_of_parent{{true, {}}, {false, {16, 14}}};
   std::map<bool, SizeVector> parents_of_parent{
-      {true, parent_node->GetRootwardLeftward()},
-      {false, parent_node->GetRootwardRightward()}};
+      {true, parent_node->GetLeftRootward()}, {false, parent_node->GetRightRootward()}};
   CHECK_EQ(parents_of_parent, correct_parents_of_parent);
   std::map<bool, SizeVector> children_of_parent{
-      {true, parent_node->GetLeafwardLeftward()},
-      {false, parent_node->GetLeafwardRightward()}};
+      {true, parent_node->GetLeftLeafward()}, {false, parent_node->GetRightLeafward()}};
   std::map<bool, SizeVector> correct_children_of_parent{{true, {12}}, {false, {3}}};
   CHECK_EQ(children_of_parent, correct_children_of_parent);
   std::map<bool, SizeVector> parents_of_children{
-      {true, child_node->GetRootwardLeftward()},
-      {false, child_node->GetRootwardRightward()}};
+      {true, child_node->GetLeftRootward()}, {false, child_node->GetRightRootward()}};
   std::map<bool, SizeVector> correct_parents_of_children{{true, {13}}, {false, {}}};
   CHECK_EQ(parents_of_children, correct_parents_of_children);
-  std::map<bool, SizeVector> children_of_child{
-      {true, child_node->GetLeafwardLeftward()},
-      {false, child_node->GetLeafwardRightward()}};
+  std::map<bool, SizeVector> children_of_child{{true, child_node->GetLeftLeafward()},
+                                               {false, child_node->GetRightLeafward()}};
   std::map<bool, SizeVector> correct_children_of_child{{true, {2}}, {false, {4}}};
   CHECK_EQ(children_of_child, correct_children_of_child);
   // Check that node_reindexer and edge_reindexer are correct.
@@ -755,8 +751,8 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   const auto& node_14 = dag.GetDAGNode(14);
   CHECK_EQ(node_14->GetBitset().ToString(), "0100000111");
   // Check that node fields were updated correctly.
-  const auto& sorted_parents_14 = node_14->GetRootwardRightward();
-  const auto& sorted_children_14 = node_14->GetLeafwardRightward();
+  const auto& sorted_parents_14 = node_14->GetRightRootward();
+  const auto& sorted_children_14 = node_14->GetRightLeafward();
   CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 13) ==
         sorted_parents_14.end());
   CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 15) !=

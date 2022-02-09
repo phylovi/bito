@@ -457,7 +457,7 @@ bool Bitset::SubsplitIsValid() const {
       .IsDisjoint(SubsplitGetClade(Bitset::SubsplitClade::Right));
 }
 
-// ** Edge functions
+// ** PCSP functions
 
 Bitset Bitset::PCSP(const Bitset& parent_subsplit, const Bitset& child_subsplit) {
   // Assert that:
@@ -485,7 +485,7 @@ Bitset Bitset::PCSP(const Bitset& sister_clade, const Bitset& focal_clade,
              focal_clade.size() == sorted_child_clade.size(),
          "PCSP(): all clades must be of equal size.");
   Bitset pcsp = sister_clade + focal_clade + sorted_child_clade;
-  Assert(pcsp.PCSPIsValid(), "PCSP(): given clades form an invalid Edge.");
+  Assert(pcsp.PCSPIsValid(), "PCSP(): given clades form an invalid PCSP.");
   return pcsp;
 }
 
@@ -547,7 +547,7 @@ bool Bitset::PCSPIsValid() const {
 bool Bitset::PCSPChildIsLeaf() const {
   Assert(size() % PCSPCladeCount == 0,
          "Size isn't 0 mod 3 in Bitset::PCSPChildIsLeaf.");
-  // If third clade of Edge is empty, that means that the associated clade's sorted
+  // If third clade of PCSP is empty, that means that the associated clade's sorted
   // subsplit is empty, so it is leaf.
   return PCSPGetClade(Bitset::PCSPClade::LeftChild).None();
 }
@@ -560,7 +560,7 @@ Bitset Bitset::PCSPSortClades() const {
 
 bool Bitset::PCSPIsParentRootsplit() const {
   Assert(size() % PCSPCladeCount == 0,
-         "Size isn't 0 mod 3 in Bitset::EdgeIsRootsplit.");
+         "Size isn't 0 mod 3 in Bitset::PCSPIsParentRootsplit.");
   return PCSPGetParentSubsplit().SubsplitIsRootsplit();
 }
 
@@ -572,13 +572,14 @@ SizePair Bitset::PCSPGetChildSubsplitTaxonCounts() const {
   auto clade0_taxon_count =
       std::count(value_.begin() + SubsplitCladeCount * clade_size, value_.end(), true);
   Assert(clade0_taxon_count < total_clade_taxon_count,
-         "PCSPGetChildSubsplitTaxonCounts: not a proper Edge bitset.");
+         "PCSPGetChildSubsplitTaxonCounts: not a proper PCSP bitset.");
   return {static_cast<size_t>(clade0_taxon_count),
           static_cast<size_t>(total_clade_taxon_count - clade0_taxon_count)};
 }
 
 Bitset Bitset::Singleton(size_t n, size_t which_on) {
-  Assert(which_on < n, "which_on too big in Bitset::Singleton.");
+  Assert(which_on < n,
+         "Bitset::Singleton(): selected 'on' bit is out of range for bitset size.");
   Bitset singleton(n);
   singleton.set(which_on);
   return singleton;
@@ -633,7 +634,7 @@ Bitset Bitset::RootsplitSubsplitOfClade(const Bitset& clade) {
 
 Bitset Bitset::PCSPFromUCAToRootsplit(const Bitset& rootsplit) {
   Assert(rootsplit.SubsplitIsRootsplit(),
-         "Given subsplit is not rootsplit in Bitset::EdgeToRootsplit.");
+         "Given subsplit is not rootsplit in Bitset::PCSPFromUCAToRootsplit.");
   return PCSP(UCASubsplitOfTaxonCount(rootsplit.size() / 2), rootsplit);
 }
 

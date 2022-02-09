@@ -120,7 +120,7 @@ class Bitset {
   // specific member of that taxon set.
   //
   // There are bitset "types" composed of multiple clades (here, called a
-  // MultiClade). Subsplits are composed of two clades and Edges are composed of three
+  // MultiClade). Subsplits are composed of two clades and PCSPs are composed of three
   // clades.
 
   // Comparator: Clades are sorted with respect to the lexigraphical representation of
@@ -143,9 +143,8 @@ class Bitset {
   // within the SubsplitDAG.  A subsplit are composed of two equal-sized, disjoint
   // "clades", representing a fork in the DAG and the taxon sets descending from the
   // left and right sides of the fork. Clades are normally stored in a sorted order wrt
-  // to their lexicographic taxon ordering: the smaller "left" (or "sorted") clade
-  // stored in the 0-position, and the larger "right" (or "rotated") clade in the
-  // 1-position.
+  // to their lexicographic taxon ordering: the smaller "left" clade stored in the
+  // 0-position, and the larger "right" clade in the 1-position.
 
   static inline size_t SubsplitCladeCount = 2;
   enum class SubsplitClade : bool {

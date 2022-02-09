@@ -93,10 +93,10 @@ IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counte
   size_t index = 0;
   // Start by adding the rootsplit PCSPs.
   size_t taxon_count((rootsplit_counter.begin()->first).size() / 2);
-  Bitset dag_root(Bitset::UCASubsplitOfTaxonCount(taxon_count));
-  // Note: dag_root is rotated before being inserted into parent_to_range
+  Bitset uca_root(Bitset::UCASubsplitOfTaxonCount(taxon_count));
+  // Note: uca_root is rotated before being inserted into parent_to_range
   // because the rootsplits are connected to the DAG root via rotated edges.
-  SafeInsert(parent_to_range, dag_root.SubsplitRotate(),
+  SafeInsert(parent_to_range, uca_root.SubsplitRotate(),
              {index, index + rootsplit_counter.size()});
   for (const auto& iter : rootsplit_counter) {
     rootsplits.push_back(iter.first);

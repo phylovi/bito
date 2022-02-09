@@ -445,10 +445,14 @@ class SubsplitDAG {
   // state at the end of the function. Do not necessarily handle remapping ids and idxs,
   // removing old references to deleted objects, etc.
 
-  // Create Node and insert it into the DAG.
-  void CreateAndInsertNode(const Bitset &subsplit);
-  // Create Edge between given nodes and insert it into the DAG.
-  void CreateAndInsertEdge(const size_t parent_id, const size_t child_id, bool rotated);
+  // Add taxon map to DAG.
+  void BuildTaxonMap(const TagStringMap &tag_taxon_map);
+  // Create Node and insert it into the DAG.  Returns ID of created node.
+  size_t CreateAndInsertNode(const Bitset &subsplit);
+  // Create Edge between given nodes and insert it into the DAG. Returns ID of created
+  // edge.
+  size_t CreateAndInsertEdge(const size_t parent_id, const size_t child_id,
+                             bool rotated);
   // Add edge between given parent and child nodes to the DAG.
   void ConnectGivenNodes(const size_t parent_id, const size_t child_id, bool rotated);
   // Add edges between node_id and all children in map.
