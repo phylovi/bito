@@ -27,6 +27,14 @@ template <typename T>
 auto& GetStorage(const T& node) {
   return node.node_;
 }
+static inline void RemapNeighbors(NeighborsView neighbors,
+                                  const SizeVector& node_reindexer) {
+  std::map<VertexId, LineId> remapped;
+  for (auto i = neighbors.begin(); i != neighbors.end(); ++i) {
+    remapped[node_reindexer[*i]] = i.GetEdge();
+  }
+  neighbors.SetNeighbors(remapped);
+}
 }  // namespace
 
 template <typename T>
@@ -35,6 +43,12 @@ class GenericSubsplitDAGNode {
   GenericSubsplitDAGNode(T& node) : node_{node} {}
   GenericSubsplitDAGNode(const GenericSubsplitDAGNode<std::remove_const_t<T>>& other)
       : node_{other.node_} {}
+
+  // Compare SubsplitDAGNodes by their ids.
+  static int Compare(const SubsplitDAGNode& node_a, const SubsplitDAGNode& node_b);
+  // Compare SubsplitDAGNodes by their subsplit representations.
+  static int CompareBySubsplit(const SubsplitDAGNode& node_a,
+                               const SubsplitDAGNode& node_b);
 
   size_t Id() const { return node_.GetId(); }
   const Bitset& GetBitset() const { return node_.GetSubsplit(); }
@@ -57,24 +71,49 @@ class GenericSubsplitDAGNode {
 
   // ** Edges
 
-  // Add edge from this node to adjacent_node.
+  void AddEdge(size_t adjacent_node_id, bool is_leafward, bool is_left,
+               LineId edge_id) {
+    if (is_leafward) {
+      is_left ? AddLeftLeafward(adjacent_node_id, edge_id)
+              : AddRightLeafward(adjacent_node_id, edge_id);
+    } else {
+      is_left ? AddLeftRootward(adjacent_node_id, edge_id)
+              : AddRightRootward(adjacent_node_id, edge_id);
+    }
+  }
+  void AddEdge(size_t adjacent_node_id, Direction which_direction, Clade which_clade,
+               LineId edge_id) {
+    bool is_leafward = (which_direction == Direction::Leafward);
+    bool is_left = (which_clade == Clade::Left);
+    AddEdge(adjacent_node_id, is_leafward, is_left, edge_id);
+  }
+  void AddLeftLeafward(size_t node_id, LineId edge_id) {
+    node_.AddNeighbor(Direction::Leafward, Clade::Left, node_id, edge_id);
+  }
+  void AddRightLeafward(size_t node_id, LineId edge_id) {
+    node_.AddNeighbor(Direction::Leafward, Clade::Right, node_id, edge_id);
+  }
+  void AddLeftRootward(size_t node_id, LineId edge_id) {
+    node_.AddNeighbor(Direction::Rootward, Clade::Left, node_id, edge_id);
+  }
+  void AddRightRootward(size_t node_id, LineId edge_id) {
+    node_.AddNeighbor(Direction::Rootward, Clade::Right, node_id, edge_id);
+  }
+
+  // Get a view into all adjacent node vectors along the specified direction.
+  ConstNeighborsView GetEdge(bool is_leafward, bool is_left) const {
+    if (is_leafward) {
+      return is_left ? GetLeftLeafward() : GetRightLeafward();
+    } else {
+      return is_left ? GetLeftRootward() : GetRightRootward();
+    }
+  }
+
   void AddEdge(size_t adjacent_node_id, LineId edge_id, Direction which_direction,
                Clade which_clade) {
     node_.AddNeighbor(which_direction, which_clade, adjacent_node_id, edge_id);
   }
 
-  ConstNeighborsView GetEdge(bool is_leafward, bool is_rotated) const {
-    if (is_leafward) {
-      return is_rotated ? GetLeftLeafward() : GetRightLeafward();
-    } else {
-      return is_rotated ? GetLeftRootward() : GetRightRootward();
-    }
-  }
-  ConstNeighborsView GetEdge(Direction direction, Clade clade) const {
-    bool is_leafward = (direction == Direction::Leafward);
-    bool is_rotated = (clade == Clade::Left);
-    return GetEdge(is_leafward, is_rotated);
-  }
   ConstNeighborsView GetLeafwardOrRootward(bool leafward, bool rotated) const {
     return leafward ? GetLeafward(rotated) : GetRootward(rotated);
   };
@@ -97,17 +136,16 @@ class GenericSubsplitDAGNode {
     return rotated ? GetLeftRootward() : GetRightRootward();
   }
 
-  // After modifying parent DAG.
-  void RemapNodeIds(const SizeVector node_reindexer) {
+  void RemapNodeIds(const SizeVector& node_reindexer) {
     node_.SetId(node_reindexer.at(node_.GetId()));
-    Reindexer::RemapIdVector(node_.GetNeighbors(Direction::Leafward, Clade::Left),
-                             node_reindexer);
-    Reindexer::RemapIdVector(node_.GetNeighbors(Direction::Leafward, Clade::Right),
-                             node_reindexer);
-    Reindexer::RemapIdVector(node_.GetNeighbors(Direction::Rootward, Clade::Left),
-                             node_reindexer);
-    Reindexer::RemapIdVector(node_.GetNeighbors(Direction::Rootward, Clade::Right),
-                             node_reindexer);
+    RemapNeighbors(node_.GetNeighbors(Direction::Leafward, Clade::Left),
+                   node_reindexer);
+    RemapNeighbors(node_.GetNeighbors(Direction::Leafward, Clade::Right),
+                   node_reindexer);
+    RemapNeighbors(node_.GetNeighbors(Direction::Rootward, Clade::Left),
+                   node_reindexer);
+    RemapNeighbors(node_.GetNeighbors(Direction::Rootward, Clade::Right),
+                   node_reindexer);
   }
 
   std::optional<std::tuple<LineId, Direction, Clade>> FindNeighbor(VertexId id) {
@@ -175,6 +213,7 @@ std::string GenericSubsplitDAGNode<T>::ToString() const {
 }
 
 DAGVertex::DAGVertex(SubsplitDAGNode node) : DAGVertex(node.node_) {}
+DAGVertex::DAGVertex(MutableSubsplitDAGNode node) : DAGVertex(node.node_) {}
 
 template <typename T>
 typename GenericVerticesView<T>::view_type GenericVerticesView<T>::Iterator::operator*()
@@ -265,20 +304,6 @@ TEST_CASE("SubsplitDAGStorage: Neighbors iterator") {
                 .GetNeighbors(Direction::Leafward, Clade::Left)
                 .begin(),
            3);
-  CHECK_EQ(GetStorage(storage.GetVertices()[1])
-               .GetNeighbors(Direction::Leafward, Clade::Left)
-               .begin()
-               .GetEdge(),
-           2);
-
-  *GetStorage(storage.GetVertices()[1])
-       .GetNeighbors(Direction::Leafward, Clade::Left)
-       .begin() = 42;
-
-  CHECK_EQ(*GetStorage(storage.GetVertices()[1])
-                .GetNeighbors(Direction::Leafward, Clade::Left)
-                .begin(),
-           42);
   CHECK_EQ(GetStorage(storage.GetVertices()[1])
                .GetNeighbors(Direction::Leafward, Clade::Left)
                .begin()

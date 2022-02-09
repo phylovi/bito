@@ -72,9 +72,12 @@ add_library(bito-core SHARED
   src/gp_engine.cpp
   src/gp_instance.cpp
   src/gp_operation.cpp
+  src/graft_dag.cpp
   src/mersenne_twister.cpp
   src/node.cpp
   src/numerical_utils.cpp
+  src/nni_engine.cpp
+  src/nni_operation.cpp
   src/parser.cpp
   src/phylo_model.cpp
   src/psp_indexer.cpp
@@ -91,7 +94,6 @@ add_library(bito-core SHARED
   src/site_pattern.cpp
   src/stick_breaking_transform.cpp
   src/subsplit_dag.cpp
-  src/subsplit_dag_nni.cpp
   src/substitution_model.cpp
   src/taxon_name_munging.cpp
   src/tidy_subsplit_dag.cpp

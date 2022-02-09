@@ -116,7 +116,7 @@ TidySubsplitDAG TidySubsplitDAG::TrivialExample() {
   Node::NodePtr topology =
       Node::Join(Node::Join(Node::Leaf(0), Node::Leaf(1)), Node::Leaf(2));
   topology->Polish();
-  TagStringMap taxon_map = {{0, "x0"}, {1, "x1"}, {2, "x2"}};
+  TagStringMap taxon_map = TidySubsplitDAG::BuildDummyTagTaxonMap(3);
   return TidySubsplitDAG(3, {{topology, 1}}, taxon_map);
 }
 
@@ -136,7 +136,8 @@ TidySubsplitDAG TidySubsplitDAG::ManualTrivialExample() {
 
 TidySubsplitDAG TidySubsplitDAG::MotivatingExample() {
   auto topologies = Node::ExampleTopologies();
-  return TidySubsplitDAG(4, {{topologies[3], 1}, {topologies[4], 1}}, TagStringMap());
+  TagStringMap taxon_map = TidySubsplitDAG::BuildDummyTagTaxonMap(4);
+  return TidySubsplitDAG(4, {{topologies[3], 1}, {topologies[4], 1}}, taxon_map);
 }
 
 std::string TidySubsplitDAG::RecordTraversal() {

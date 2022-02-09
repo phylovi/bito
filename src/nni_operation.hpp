@@ -11,7 +11,7 @@
 // parent/child pair, there are two possible NNIs: swapping the sister clade with the
 // left child clade, or swapping the sister clade with the right child clade.
 //
-// The `SetOfNNIs` is a set of `NNIOperations` used to account for all "adjacent" NNIs
+// The `NNISet` is a set of `NNIOperations` used to account for all "adjacent" NNIs
 // to a SubsplitDAG.  That is, all output parent/child pairs which can be generated from
 // a single NNI operation on an input parent/child pair taken from the set of all the
 // parent/child pairs currently in the SubsplitDAG, where the output parent/child pair
@@ -22,16 +22,14 @@
 #include "bitset.hpp"
 #include "sugar.hpp"
 
-// Forward declaration for SetOfNNIs methods.
-class SubsplitDAG;
-
-// Nearest Neighbor Interchange Operations
+// * Nearest Neighbor Interchange Operation
 // NNIOperation stores output parent/child pair which are the product of an NNI.
 class NNIOperation {
  public:
+  NNIOperation() : parent_(0), child_(0){};
   NNIOperation(Bitset parent, Bitset child) : parent_(parent), child_(child){};
 
-  // Comparator:
+  // ** Comparator
   // NNIOperations are ordered according to the std::bitset ordering of their parent
   // subsplit, then the std::bitset order their child subsplit.
   static int Compare(const NNIOperation &nni_a, const NNIOperation &nni_b);
@@ -39,12 +37,16 @@ class NNIOperation {
 
   friend bool operator<(const NNIOperation &lhs, const NNIOperation &rhs);
   friend bool operator>(const NNIOperation &lhs, const NNIOperation &rhs);
+  friend bool operator<=(const NNIOperation &lhs, const NNIOperation &rhs);
+  friend bool operator>=(const NNIOperation &lhs, const NNIOperation &rhs);
   friend bool operator==(const NNIOperation &lhs, const NNIOperation &rhs);
   friend bool operator!=(const NNIOperation &lhs, const NNIOperation &rhs);
 
-  // Special Constructors:
+  // ** Special Constructors:
   // Produces the output NNIOperation from an input subsplit pair that results from an
   // NNI Swap according to `swap_which_child_clade_with_sister`.
+  NNIOperation NNIOperationFromNeighboringSubsplits(
+      const bool swap_which_child_clade_with_sister) const;
   static NNIOperation NNIOperationFromNeighboringSubsplits(
       const Bitset parent_in, const Bitset child_in,
       const bool swap_which_child_clade_with_sister, const bool which_child_of_parent);
@@ -54,59 +56,21 @@ class NNIOperation {
       const Bitset parent_in, const Bitset child_in,
       const bool swap_which_child_clade_with_sister);
 
+  // ** Miscellaneous
+
+  bool IsValid() { return Bitset::SubsplitIsParentChildPair(parent_, child_); };
+
+  friend std::ostream &operator<<(std::ostream &os, const NNIOperation &nni) {
+    os << "{" << nni.parent_.SubsplitToString() << ", " << nni.child_.SubsplitToString()
+       << "}";
+    return os;
+  };
+
   Bitset parent_;
   Bitset child_;
 };
 
-// SetOfNNIs contain all NNI output parent/child pairs which are "adjacent" to the
-// current SubsplitDAG. That is, pairs which are the result of an NNI on an input bitset
-// pair that are currently present in the SubsplitDAG.
-class SetOfNNIs {
- public:
-  SetOfNNIs() : set_(){};
-
-  friend bool operator==(const SetOfNNIs &lhs, const SetOfNNIs &rhs);
-  friend bool operator!=(const SetOfNNIs &lhs, const SetOfNNIs &rhs);
-
-  void Insert(NNIOperation nni_op);
-  void Insert(Bitset parent, Bitset child);
-  void Erase(NNIOperation nni_op);
-  void Erase(Bitset parent, Bitset child);
-  void Clear();
-  size_t GetSize() const;
-
- private:
-  std::set<NNIOperation> set_;
-};
-
-// ** NNIEvaluationEngine Methods - Issue #372
-//
-// Maintainence Methods: These maintain SetOfNNIs to stay consistent with the state of
-// associated DAG.
-//
-// Freshly synchonizes SetOfNNIs to match the current state of its DAG. Wipes old NNI
-// data and finds all all parent/child pairs adjacent to DAG by iterating over all
-// internal edges in DAG.
-void SyncSetOfNNIsWithDAG(SetOfNNIs &set_of_nnis, const SubsplitDAG &dag);
-// Updates NNI Set after given parent/child node pair have been added to the DAG.
-// Removes pair from NNI Set and adds adjacent pairs coming from newly created edges.
-void UpdateSetOfNNIsAfterDAGAddNodePair(SetOfNNIs &set_of_nnis, const SubsplitDAG &dag,
-                                        const Bitset &parent_bitset,
-                                        const Bitset &child_bitset);
-// Maintainence Helper Methods:
-//
-// Adds all NNIs from all (node_id, other_id) pairs, where other_id's are elements of
-// the node_id_vector.
-void AddAllNNIsFromNodeVectorToSetOfNNIs(SetOfNNIs &set_of_nnis, const SubsplitDAG &dag,
-                                         const size_t &node_id,
-                                         const SizeVector &adjacent_node_ids,
-                                         const bool is_edge_rotated,
-                                         const bool is_edge_leafward);
-// Based on given input NNIOperation, produces the two possible output NNIOperations
-// and adds those results to the NNI Set (if results are not a member of the DAG).
-void SafeAddOutputNNIsToSetOfNNIs(SetOfNNIs &set_of_nnis, const SubsplitDAG &dag,
-                                  const Bitset &parent_bitset,
-                                  const Bitset &child_bitset, const bool rotated);
+using NNISet = std::set<NNIOperation>;
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
@@ -120,6 +84,7 @@ TEST_CASE("NNIOperation") {
   // Initial Child and Parent.
   Bitset parent_in = Bitset::Subsplit(X, Y | Z);
   Bitset child_in = Bitset::Subsplit(Y, Z);
+  NNIOperation nni_yz = NNIOperation(parent_in, child_in);
   // Correct Solutions.
   Bitset correct_parent_xy = Bitset::Subsplit(Y, X | Z);
   Bitset correct_child_xy = Bitset::Subsplit(X, Z);
@@ -129,20 +94,47 @@ TEST_CASE("NNIOperation") {
   NNIOperation correct_nni_xz = NNIOperation(correct_parent_xz, correct_child_xz);
 
   // Swap X and Y
-  auto nni_xy =
-      NNIOperation::NNIOperationFromNeighboringSubsplits(parent_in, child_in, 0);
+  auto nni_xy = nni_yz.NNIOperationFromNeighboringSubsplits(false);
   CHECK_EQ(correct_nni_xy, nni_xy);
   // Swap X and Z
-  auto nni_xz =
-      NNIOperation::NNIOperationFromNeighboringSubsplits(parent_in, child_in, 1);
+  auto nni_xz = nni_yz.NNIOperationFromNeighboringSubsplits(true);
   CHECK_EQ(correct_nni_xz, nni_xz);
 
   // Relationship is known (child_in is the rotated clade of parent_in)
-  auto nni_xy_2 =
-      NNIOperation::NNIOperationFromNeighboringSubsplits(parent_in, child_in, 0, 1);
+  auto nni_xy_2 = NNIOperation::NNIOperationFromNeighboringSubsplits(
+      parent_in, child_in, false, true);
   CHECK_EQ(correct_nni_xy, nni_xy_2);
-  CHECK_THROWS(
-      NNIOperation::NNIOperationFromNeighboringSubsplits(parent_in, child_in, 0, 0));
+  CHECK_THROWS(NNIOperation::NNIOperationFromNeighboringSubsplits(parent_in, child_in,
+                                                                  false, false));
+};
+
+TEST_CASE("NNISet") {
+  // Clades for NNI.
+  Bitset X("100");
+  Bitset Y("010");
+  Bitset Z("001");
+  // Initial Child and Parent.
+  Bitset parent_in = Bitset::Subsplit(X, Y | Z);
+  Bitset child_in = Bitset::Subsplit(Y, Z);
+  NNIOperation nni_yz = NNIOperation(parent_in, child_in);
+  auto nni_xy = nni_yz.NNIOperationFromNeighboringSubsplits(false);
+  auto nni_xz = nni_yz.NNIOperationFromNeighboringSubsplits(true);
+  // Insert NNIs in various orders.
+  NNISet set_of_nnis_1 = NNISet();
+  set_of_nnis_1.insert(nni_yz);
+  set_of_nnis_1.insert(nni_xy);
+  set_of_nnis_1.insert(nni_xz);
+  NNISet set_of_nnis_2 = NNISet();
+  set_of_nnis_2.insert(nni_xy);
+  set_of_nnis_2.insert(nni_xz);
+  set_of_nnis_2.insert(nni_yz);
+  // Check proper ordering.
+  for (const auto &set_of_nnis : {set_of_nnis_1, set_of_nnis_2}) {
+    NNIOperation prv_nni = *set_of_nnis.begin();
+    for (const auto &nni : set_of_nnis) {
+      CHECK_MESSAGE(nni >= prv_nni, "NNIs not ordered in NNISet.");
+    }
+  }
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

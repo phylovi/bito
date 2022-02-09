@@ -38,7 +38,7 @@
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 #include "subsplit_dag_action.hpp"
-#include "subsplit_dag_nni.hpp"
+#include "nni_operation.hpp"
 #include "subsplit_dag_node.hpp"
 
 class SubsplitDAG {
@@ -49,8 +49,6 @@ class SubsplitDAG {
   SubsplitDAG();
   // Build a Subsplit DAG expressing all tree topologies from tree_collection.
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
-  // Build a Subsplit DAG from
-  // SubsplitDAG();
 
   // ** Comparator methods:
 
@@ -58,15 +56,15 @@ class SubsplitDAG {
   // set of node and edge bitsets.  However, it does ensure that DAGs have the same id
   // and idxs for their respective nodes and edges, only that they contain the
   // same set of nodes and edges (as long as taxon positions in the
-  // clades have the same mapping). Additionally, this compare does not give a proper
-  // ordering.  It only returns zero for equal, nonzero otherwise.
+  // clades have the same mapping).
+  int Compare(const SubsplitDAG &other);
   static int Compare(const SubsplitDAG &lhs, const SubsplitDAG &rhs);
   friend bool operator==(const SubsplitDAG &lhs, const SubsplitDAG &rhs);
   friend bool operator!=(const SubsplitDAG &lhs, const SubsplitDAG &rhs);
 
   // ** Count methods:
 
-  // The total number of individual taxa in the
+  // The total number of individual taxa in the DAG.
   size_t TaxonCount() const;
   // The total number of nodes in the DAG (including the root and leaves).
   size_t NodeCount() const;
@@ -113,9 +111,9 @@ class SubsplitDAG {
   // The edge/PCSP indexer is "expanded", meaning it contains leafs and rootsplits.
   BitsetSizeMap BuildEdgeIndexer() const;
   // Get the rotated and sorted parents of the node with the given subsplit.
-  std::pair<SizeVector, SizeVector> BuildParentIdVector(const Bitset &subsplit) const;
+  std::pair<SizeVector, SizeVector> BuildParentIdVectors(const Bitset &subsplit) const;
   // Get the rotated and sorted children of the node with the given subsplit.
-  std::pair<SizeVector, SizeVector> BuildChildIdVector(const Bitset &subsplit) const;
+  std::pair<SizeVector, SizeVector> BuildChildIdVectors(const Bitset &subsplit) const;
   // Output RootedIndexerRepresentation of DAG (from RootedSBNMaps).
   // RootedIndexerRepresentation is a vector of edge idxs in topological preorder.
   RootedIndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap &indexer,
@@ -150,7 +148,9 @@ class SubsplitDAG {
   // Get set of all edge PCSP bitsets.
   std::vector<Bitset> GetSortedVectorOfEdgeBitsets() const;
   // Get reference to taxon map.
-  std::map<std::string, size_t> &GetTaxonMap();
+  const std::map<std::string, size_t> &GetTaxonMap() const;
+  // Get reference to subsplit-to-id map.
+  const BitsetSizeMap &GetSubsplitToIdMap() const;
 
   // ** DAG Lambda Iterator methods:
   // These methods iterate over the nodes and take lambda functions with arguments
@@ -337,6 +337,7 @@ class SubsplitDAG {
   };
 
   // Add an adjacent node pair to the DAG.
+  ModificationResult AddNodePair(const NNIOperation &nni);
   ModificationResult AddNodePair(const Bitset &parent_subsplit,
                                  const Bitset &child_subsplit);
   // Add all tree topologies in topology_counter to DAG.
@@ -374,9 +375,9 @@ class SubsplitDAG {
   // - Each node is valid. That is, either:
   //    - Node has zero parents and zero children.
   //    - Node has 1+ parents, 1+ sorted children, and 1+ rotated children.
-  // -
   bool IsValid() const;
-  // Check if it is valid to add given node pair. Specifically, check that:
+  // Check if it is valid to add given node pair.
+  // Specifically, check that:
   // - The nodes are adjacent.
   // - The nodes do not add/remove any taxa.
   // - The parent node has at least one parent.
@@ -384,6 +385,10 @@ class SubsplitDAG {
   // - Each clade of the child node has at least 1 child.
   bool IsValidAddNodePair(const Bitset &parent_subsplit,
                           const Bitset &child_subsplit) const;
+  // Check if the taxon map is valid. Specifically, check that:
+  // - No duplicate ids.
+  // - Ids cover all clade bits from 0 to map_size.
+  bool IsValidTaxonMap() const;
 
   // ** Miscellaneous
 
@@ -392,8 +397,6 @@ class SubsplitDAG {
   StringSizeMap SummaryStatistics() const;
   // Rotates Node Subsplit only if it is out of sorted order (rotated).
   Bitset SubsplitToSortedOrder(const Bitset &subsplit, bool rotated) const;
-  // Fixes PCSP only if child is out of sorted order (rotated).
-  Bitset EdgeToSortedOrder(const Bitset &pcsp) const;
   // Build vector between from SubsplitDAGs dag_a to dag_b corresponding to their taxon
   // ids. Can be treated as a "map" with indices representing keys. Requires that both
   // SubsplitDAGs use the same taxon set.
@@ -412,13 +415,11 @@ class SubsplitDAG {
   static Bitset BitsetTranslateViaTaxonTranslationMap(
       const Bitset &bitset, const SizeVector &taxon_map,
       const bool forward_translate = true);
+  // Build a default taxon map for constructor with dummy taxon names:
+  // E.g. {{0, "x0"}, {1, "x1"}, ...}
+  static TagStringMap BuildDummyTagTaxonMap(const size_t taxon_count);
 
  protected:
-  // Build a Subsplit DAG on given number of taxa, expressing all tree topologies from
-  // tree_collection, with trees on the given taxa names/labels.
-  SubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter,
-              const TagStringMap &tag_taxon_map);
-
   // Builds a vector of subsplits of all children , optionally including leaf nodes.
   std::vector<Bitset> GetChildSubsplits(const SizeBitsetMap &index_to_child,
                                         const Bitset &subsplit,
@@ -494,6 +495,11 @@ class SubsplitDAG {
   // NOTE: When using unique identifiers, for DAG nodes (aka Subsplits) we use the term
   // "ids", and for edges (aka PCSPs) we use the term index or "idx", to more easily
   // distinguish the two. This corresponds to the analogous concept for topologies.
+
+  // Build a Subsplit DAG on given number of taxa, expressing all tree topologies from
+  // tree_collection, with trees on the given taxa names/labels.
+  SubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter,
+              const TagStringMap &tag_taxon_map);
 
   // - Map of Taxon Names
   //    - [ Taxon Name => Taxon Id (position of the "on" bit in the clades) ]
