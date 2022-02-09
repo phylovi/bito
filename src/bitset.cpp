@@ -380,6 +380,7 @@ Bitset Bitset::SubsplitGetClade(const size_t which_clade) const {
 
 Bitset Bitset::SubsplitGetClade(const SubsplitClade which_clade) const {
   size_t which_clade_idx =
+      // #350 discuss this cast
       static_cast<std::underlying_type<SubsplitClade>::type>(which_clade);
   return MultiCladeGetClade(which_clade_idx, SubsplitCladeCount);
 }
