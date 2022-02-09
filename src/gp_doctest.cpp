@@ -662,22 +662,22 @@ TEST_CASE("GPInstance: IsValidAddNodePair tests") {
   // Nodes have 5 taxa while the DAG has 4 (12|34 and 1|2).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("011000", "000110"),
                                      Bitset::Subsplit("010000", "001000")));
-  // (NOT_VALID) Parent node does not have a parent (12|3 and 1|2).
+  // Parent node does not have a parent (12|3 and 1|2).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("01100", "00010"),
                                      Bitset::Subsplit("01000", "00100")));
-  // (NOT_VALID) Rotated clade of the parent node does not have a child (02|134 and
+  // Rotated clade of the parent node does not have a child (02|134 and
   // 1|34).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("10100", "01011"),
                                      Bitset::Subsplit("01000", "00011")));
-  // (NOT_VALID) Rotated clade of the child node does not have a child (0123|4 and
+  // Rotated clade of the child node does not have a child (0123|4 and
   // 023|1).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
                                      Bitset::Subsplit("10110", "01000")));
-  // (NOT_VALID) Sorted clade of the child node does not have a child (0123|4 and
+  // Sorted clade of the child node does not have a child (0123|4 and
   // 0|123).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
                                      Bitset::Subsplit("10000", "01110")));
-  // (VALID) Valid new node pair (0123|4 and 012|3).
+  // Valid new node pair (0123|4 and 012|3).
   CHECK(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
                                Bitset::Subsplit("11100", "00010")));
 }
