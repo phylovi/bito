@@ -227,11 +227,8 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
     per_pcsp_marg_lik_.col(i + 1) = per_pcsp_marg_likelihoods;
 
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-    auto avg_abs_change_perpcsp_marg_lik =
-        (per_pcsp_marg_likelihoods - current_per_pcsp_marg_likelihoods)
-            .array()
-            .abs()
-            .minCoeff();
+    auto avg_abs_change_perpcsp_branch_length =
+        (GetEngine()->GetBranchLengthDifferences()).array().mean();
 
     our_ostream << "Current marginal log likelihood: ";
     our_ostream << std::setprecision(9) << current_marginal_log_lik << std::endl;
@@ -243,8 +240,8 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
     if (!per_pcsp_convg & (abs(current_marginal_log_lik - marginal_log_lik) < tol)) {
       our_ostream << "Converged.\n";
       break;
-    } else if (per_pcsp_convg & (avg_abs_change_perpcsp_marg_lik < tol)) {
-      our_ostream << "Min per pcsp marginal likelihood converged. \n";
+    } else if (per_pcsp_convg & (avg_abs_change_perpcsp_branch_length < tol)) {
+      our_ostream << "Average absolute change in branch lengths converged. \n";
       break;
     }
     current_marginal_log_lik = marginal_log_lik;

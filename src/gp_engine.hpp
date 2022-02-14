@@ -388,8 +388,8 @@ class GPEngine {
   void Optimization(const GPOperations::OptimizeBranchLength& op);
   void Optimization(const GPOperations::OptimizeBranchLength& op,
                     std::optional<OptimizationMethod> os);
-  void BrentNewtonHybridOptimization(const GPOperations::OptimizeBranchLength& op);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void BrentOptimizationWithGradient(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void NewtonOptimization(const GPOperations::OptimizeBranchLength& op);
