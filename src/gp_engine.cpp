@@ -652,13 +652,6 @@ void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op) {
 
 void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
                             std::optional<OptimizationMethod> os) {
-  // if (!os.has_value()) {
-  //   if (use_gradients_) {
-  //     return NewtonOptimization(op);
-  //   } else {
-  //     return BrentOptimization(op);
-  //   }
-  // }
   Assert(os.has_value(),
          "GPEngine::Optimization(): Optimization method has not been set.");
 
