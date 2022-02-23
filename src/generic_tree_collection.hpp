@@ -87,6 +87,18 @@ class GenericTreeCollection {
     Erase(0, end_idx);
   }
 
+  GenericTreeCollection<TTree> BuildCollectionByDuplicatingFirst(
+      size_t number_of_times) {
+    TTreeVector tree_vector;
+
+    tree_vector.reserve(number_of_times);
+    for (size_t idx = 0; idx < number_of_times; idx++) {
+      tree_vector.push_back(GetTree(0));
+    }
+
+    return GenericTreeCollection<TTree>(std::move(tree_vector), TagTaxonMap());
+  }
+
   std::string Newick() const {
     std::string str;
     for (const auto &tree : trees_) {

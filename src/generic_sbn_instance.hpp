@@ -279,6 +279,11 @@ class GenericSBNInstance {
   void SetAlignment(const Alignment &alignment) { alignment_ = alignment; }
   void SetAlignment(Alignment &&alignment) { alignment_ = alignment; }
 
+  void LoadDuplicatesOfFirstTree(size_t number_of_times) {
+    tree_collection_ =
+        tree_collection_.BuildCollectionByDuplicatingFirst(number_of_times);
+  }
+
  protected:
   // The name of our bito instance.
   std::string name_;
