@@ -6,6 +6,10 @@
 #include "csv.hpp"
 #include "taxon_name_munging.hpp"
 
+RootedTreeCollection::RootedTreeCollection(
+    const PreRootedTreeCollection& pre_collection, const TagDateMap& tag_date_map)
+    : PreRootedTreeCollection(pre_collection), tag_date_map_(tag_date_map){};
+
 RootedTreeCollection RootedTreeCollection::OfTreeCollection(
     const TreeCollection& trees) {
   TTreeVector rooted_trees;
@@ -14,6 +18,13 @@ RootedTreeCollection RootedTreeCollection::OfTreeCollection(
     rooted_trees.emplace_back(tree);
   }
   return RootedTreeCollection(std::move(rooted_trees), trees.TagTaxonMap());
+}
+
+RootedTreeCollection RootedTreeCollection::BuildCollectionByDuplicatingFirst(
+    size_t number_of_times) {
+  return RootedTreeCollection(
+      PreRootedTreeCollection::BuildCollectionByDuplicatingFirst(number_of_times),
+      tag_date_map_);
 }
 
 void RootedTreeCollection::SetDatesToBeConstant(

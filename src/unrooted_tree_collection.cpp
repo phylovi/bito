@@ -7,6 +7,10 @@
 // https://en.cppreference.com/w/cpp/language/class_template#Explicit_instantiation
 template class GenericTreeCollection<UnrootedTree>;
 
+UnrootedTreeCollection::UnrootedTreeCollection(
+    const PreUnrootedTreeCollection& pre_collection)
+    : PreUnrootedTreeCollection(pre_collection){};
+
 UnrootedTreeCollection UnrootedTreeCollection::OfTreeCollection(
     const TreeCollection& trees) {
   TTreeVector unrooted_trees;

@@ -87,13 +87,16 @@ class GenericTreeCollection {
     Erase(0, end_idx);
   }
 
+  // Build a tree collection by duplicating the first tree loaded.
   GenericTreeCollection<TTree> BuildCollectionByDuplicatingFirst(
       size_t number_of_times) {
     TTreeVector tree_vector;
 
+    Assert(TreeCount() > 0, "Need at least one tree if we are to duplicate the first.");
+
     tree_vector.reserve(number_of_times);
     for (size_t idx = 0; idx < number_of_times; idx++) {
-      tree_vector.push_back(GetTree(0));
+      tree_vector.push_back(GetTree(0).DeepCopy());
     }
 
     return GenericTreeCollection<TTree>(std::move(tree_vector), TagTaxonMap());

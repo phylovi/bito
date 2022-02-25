@@ -35,6 +35,7 @@ class Tree {
   size_t Id() const { return Topology()->Id(); }
   std::vector<size_t> ParentIdVector() const { return Topology()->ParentIdVector(); }
 
+  Tree DeepCopy() const;
   bool operator==(const Tree& other) const;
 
   std::string Newick() const { return Newick(std::nullopt); }

@@ -36,6 +36,10 @@ Tree UnrootedTree::Detrifurcate() const {
   return Tree(rerooted_topology, branch_lengths);
 }
 
+UnrootedTree UnrootedTree::DeepCopy() const {
+  return UnrootedTree(Topology()->DeepCopy(), BranchLengths());
+}
+
 bool UnrootedTree::operator==(const UnrootedTree& other) const {
   return (this->Topology() == other.Topology()) &&
          (this->BranchLengths() == other.BranchLengths());

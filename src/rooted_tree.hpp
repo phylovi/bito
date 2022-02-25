@@ -32,7 +32,14 @@ class RootedTree : public Tree {
   using RootedTreeVector = std::vector<RootedTree>;
 
   RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths);
+  explicit RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths,
+                      std::vector<double> node_bounds,
+                      std::vector<double> height_ratios,
+                      std::vector<double> node_heights, std::vector<double> rates,
+                      size_t rate_count);
   explicit RootedTree(const Tree& tree);
+
+  RootedTree DeepCopy() const;
 
   const std::vector<double>& GetNodeBounds() const {
     EnsureTipDatesHaveBeenSet();
@@ -114,6 +121,8 @@ class RootedTree : public Tree {
   // As for SetTipDates, but only set the node bounds. No constraint on supplied
   // branch lengths.
   void SetNodeBoundsUsingDates(const TagDoubleMap& tag_date_map);
+
+  void AssertTopologyBifurcatingInConstructor(const Node::NodePtr& topology);
 };
 
 inline bool operator!=(const RootedTree& lhs, const RootedTree& rhs) {
