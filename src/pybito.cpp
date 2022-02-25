@@ -203,6 +203,10 @@ PYBIND11_MODULE(bito, m) {
           py::arg("use_tip_states") = true, py::arg("tree_count_option") = std::nullopt)
       .def("resize_phylo_model_params", &RootedSBNInstance::ResizePhyloModelParams,
            "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
+      .def("load_duplicates_of_first_tree",
+           &RootedSBNInstance::LoadDuplicatesOfFirstTree,
+           "Replace all of the loaded trees with duplicates of the first tree.",
+           py::arg("number_of_times"))
       .def("read_fasta_file", &RootedSBNInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
       .def("taxon_names", &RootedSBNInstance::TaxonNames,
@@ -286,6 +290,10 @@ PYBIND11_MODULE(bito, m) {
           py::arg("use_tip_states") = true, py::arg("tree_count_option") = std::nullopt)
       .def("resize_phylo_model_params", &UnrootedSBNInstance::ResizePhyloModelParams,
            "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
+      .def("load_duplicates_of_first_tree",
+           &UnrootedSBNInstance::LoadDuplicatesOfFirstTree,
+           "Replace all of the loaded trees with duplicates of the first tree.",
+           py::arg("number_of_times"))
       .def("read_fasta_file", &UnrootedSBNInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
       .def("taxon_names", &UnrootedSBNInstance::TaxonNames,
