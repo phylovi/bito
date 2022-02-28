@@ -73,7 +73,7 @@ class SubsplitDAG {
   // The total number of nodes in the DAG (excluding the root, but including the
   // leaves).
   size_t NodeCountWithoutDAGRoot() const;
-  // The total number of rootsplits in DAG. These count all direct descendents of the
+  // The total number of rootsplits in DAG. These count all direct descendants of the
   // root (also, the union of each rootsplits clades cover the set of all taxa in the
   // DAG).
   size_t RootsplitCount() const;
@@ -129,13 +129,14 @@ class SubsplitDAG {
   // Get Taxon's bitset clade positional id.
   size_t GetTaxonId(const std::string &name) const;
   // Get node based on node id.
-  SubsplitDAGNode *GetDAGNode(const size_t node_id) const;
+  SubsplitDAGNode GetDAGNode(const size_t node_id) const;
+  MutableSubsplitDAGNode GetDAGNode(const size_t node_id);
   // Get the node id based on the subsplit bitset.
   size_t GetDAGNodeId(const Bitset &subsplit) const;
   // Gets the node id of the DAG root.
   size_t DAGRootNodeId() const;
   // Return the node ids corresponding to the rootsplits.
-  const SizeVector &RootsplitIds() const;
+  ConstNeighborsView RootsplitIds() const;
   // Get the PCSP edge index by its parent-child pair subsplits from the DAG nodes.
   size_t GetEdgeIdx(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
   // Get the PCSP edge index by its parent-child pair id from the DAG nodes.
@@ -156,10 +157,10 @@ class SubsplitDAG {
   // relative to current node.
 
   // NodeLambda is for iterating over nodes.
-  using NodeLambda = std::function<void(const SubsplitDAGNode *)>;
+  using NodeLambda = std::function<void(SubsplitDAGNode)>;
   // EdgeDestinationLambda takes in a rotation status (true is rotated, false is not)
   // and a "destination" node. For iterating over DAG edges with a rotation status.
-  using EdgeDestinationLambda = std::function<void(bool, const SubsplitDAGNode *)>;
+  using EdgeDestinationLambda = std::function<void(bool, SubsplitDAGNode)>;
   // EdgeAndNodeLambda takes a PCSP index of an edge, its rotation status, and an index
   // of the node on the other side of the edge.
   using EdgeAndNodeLambda = std::function<void(const size_t, const bool, const size_t)>;
@@ -173,27 +174,27 @@ class SubsplitDAG {
   void IterateOverRealNodes(const NodeLambda &f) const;
   // Iterate over the all leafward edges, rotated and sorted, of node using an
   // EdgeDestinationLambda.
-  void IterateOverLeafwardEdges(const SubsplitDAGNode *node,
+  void IterateOverLeafwardEdges(SubsplitDAGNode node,
                                 const EdgeDestinationLambda &f) const;
   // Iterate over only the rotated/sorted leafward edges of node using a NodeLambda.
-  void IterateOverLeafwardEdges(const SubsplitDAGNode *node, bool rotated,
+  void IterateOverLeafwardEdges(SubsplitDAGNode node, bool rotated,
                                 const NodeLambda &f) const;
   // Iterate over the leafward edges, supplying both the index of the edge and
   // the SubsplitDAGNode of the corresponding child.
-  void IterateOverLeafwardEdgesAndChildren(const SubsplitDAGNode *node,
+  void IterateOverLeafwardEdgesAndChildren(SubsplitDAGNode node,
                                            const EdgeAndNodeLambda &f) const;
   // Iterate over the rootward edges of node using an EdgeDestinationLambda.
   // Excludes edges to the DAG root node.
-  void IterateOverRootwardEdges(const SubsplitDAGNode *node,
+  void IterateOverRootwardEdges(SubsplitDAGNode node,
                                 const EdgeDestinationLambda &f) const;
   // Iterate over the rootward edges, supplying both the a PCSP index of the edge and
   // the SubsplitDAGNode of the corresponding child.
-  void IterateOverRootwardEdgesAndParents(const SubsplitDAGNode *node,
+  void IterateOverRootwardEdgesAndParents(SubsplitDAGNode node,
                                           const EdgeAndNodeLambda &f) const;
   // Iterate over the leafward edges, supplying the parent node id, child node id,
   // rotation of child, and the PCSP index of the rootward edge connecting the two.
   void IterateOverParentAndChildAndLeafwardEdges(
-      const SubsplitDAGNode *node, const ParentRotationChildEdgeLambda &f) const;
+      SubsplitDAGNode node, const ParentRotationChildEdgeLambda &f) const;
 
   // ** DAG Traversals
   // These perform a traversal of the DAG and takes an argument TraversalActionT.
@@ -238,10 +239,10 @@ class SubsplitDAG {
       std::unordered_set<size_t> &visited_nodes) const {
     action.BeforeNodeClade(node_id, rotated);
     const auto node = GetDAGNode(node_id);
-    for (const size_t child_id : node->GetLeafward(rotated)) {
+    for (const size_t child_id : node.GetLeafward(rotated)) {
       if (visited_nodes.count(child_id) == 0) {
         visited_nodes.insert(child_id);
-        if (!GetDAGNode(child_id)->IsLeaf()) {
+        if (!GetDAGNode(child_id).IsLeaf()) {
           DepthFirstWithActionForNode(action, child_id, visited_nodes);
         }
       }
@@ -454,7 +455,8 @@ class SubsplitDAG {
   size_t CreateAndInsertEdge(const size_t parent_id, const size_t child_id,
                              bool rotated);
   // Add edge between given parent and child nodes to the DAG.
-  void ConnectGivenNodes(const size_t parent_id, const size_t child_id, bool rotated);
+  void ConnectGivenNodes(const size_t parent_id, const size_t child_id, bool rotated,
+                         size_t edge_id);
   // Add edges between node_id and all children in map.
   void ConnectNodes(const SizeBitsetMap &index_to_child, size_t node_id, bool rotated);
   // Add nodes for all children in map.
@@ -488,6 +490,7 @@ class SubsplitDAG {
   void AddLeafSubsplitsToDAGEdgesAndParentToRange();
 
  protected:
+  SubsplitDAGStorage storage_;
   // NOTE: When using unique identifiers, for DAG nodes (aka Subsplits) we use the term
   // "ids", and for edges (aka PCSPs) we use the term index or "idx", to more easily
   // distinguish the two. This corresponds to the analogous concept for topologies.
@@ -495,13 +498,6 @@ class SubsplitDAG {
   // - Map of Taxon Names
   //    - [ Taxon Name => Taxon Id (position of the "on" bit in the clades) ]
   std::map<std::string, size_t> dag_taxa_;
-  // - Vector of DAG Nodes: each Node index in the vector corresponds to their Id.
-  // - This can be viewed as a map:
-  //    - [ Node Id => Node data structure ]
-  std::vector<std::unique_ptr<SubsplitDAGNode>> dag_nodes_;
-  // - Map of all DAG Edges:
-  //    - [ (parent_id, child_id) Node Id Pairs => Edge Idxs. ]
-  std::map<SizePair, size_t> dag_edges_;
   // - Map of all DAG Nodes:
   //    - [ Node Subsplit (Bitset) => Node Id ]
   // A node's id is equivalent to its index in dag_nodes_. The first entries are
@@ -524,4 +520,7 @@ class SubsplitDAG {
   // Storage for the number of topologies below for each node. Each index maps to the
   // count for the corresponding node_id.
   EigenVectorXd topology_count_below_;
+
+ private:
+  void StoreEdgeIds();
 };

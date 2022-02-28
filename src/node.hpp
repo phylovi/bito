@@ -190,7 +190,7 @@ class Node {
   static size_t SORotate(size_t n, uint32_t c);
 
  private:
-  // Vector of direct child descendents of node in tree topology.
+  // Vector of direct child descendants of node in tree topology.
   NodePtrVec children_;
   // NOTE: See beginning of file for notes about the id and the leaves.
   // Unique identifier in tree containing node.

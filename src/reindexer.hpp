@@ -87,7 +87,8 @@ inline SizeVector InvertReindexer(const SizeVector &reindexer) {
 }
 
 // Remaps each of the ids in the vector according to the reindexer.
-inline void RemapIdVector(SizeVector &vector, const SizeVector &reindexer) {
+template <typename Target, typename Reindexer>
+inline void RemapIdVector(Target &&vector, const Reindexer &reindexer) {
   Assert(IsValidReindexer(reindexer),
          "Reindexer must be valid in Reindexer::RemapIdVector.");
   for (size_t id : vector) {

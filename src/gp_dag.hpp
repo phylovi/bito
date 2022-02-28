@@ -68,10 +68,9 @@ class GPDAG : public TidySubsplitDAG {
   [[nodiscard]] GPOperationVector LeafwardPass(const SizeVector &visit_order) const;
   [[nodiscard]] GPOperationVector RootwardPass(const SizeVector &visit_order) const;
 
-  void AddPhatOperations(const SubsplitDAGNode *node, bool rotated,
+  void AddPhatOperations(SubsplitDAGNode node, bool rotated,
                          GPOperationVector &operations) const;
-  void AddRhatOperations(const SubsplitDAGNode *node,
-                         GPOperationVector &operations) const;
+  void AddRhatOperations(SubsplitDAGNode node, GPOperationVector &operations) const;
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
 

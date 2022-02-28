@@ -647,7 +647,7 @@ TEST_CASE("GPInstance: test rootsplits") {
   auto& dag = inst.GetDAG();
   for (const auto& rootsplit_id : dag.RootsplitIds()) {
     const auto rootsplit_node = dag.GetDAGNode(rootsplit_id);
-    CHECK(rootsplit_node->IsRootsplit());
+    CHECK(rootsplit_node.IsRootsplit());
   }
 }
 
@@ -720,19 +720,19 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   const auto parent_node = dag.GetDAGNode(dag.GetDAGNodeId(parent_subsplit));
   const auto child_node = dag.GetDAGNode(dag.GetDAGNodeId(child_subsplit));
   std::map<bool, SizeVector> correct_parents_of_parent{{true, {}}, {false, {16, 14}}};
-  std::map<bool, SizeVector> parents_of_parent{
-      {true, parent_node->GetLeftRootward()}, {false, parent_node->GetRightRootward()}};
+  std::map<bool, SizeVector> parents_of_parent{{true, parent_node.GetLeftRootward()},
+                                               {false, parent_node.GetRightRootward()}};
   CHECK_EQ(parents_of_parent, correct_parents_of_parent);
   std::map<bool, SizeVector> children_of_parent{
-      {true, parent_node->GetLeftLeafward()}, {false, parent_node->GetRightLeafward()}};
+      {true, parent_node.GetLeftLeafward()}, {false, parent_node.GetRightLeafward()}};
   std::map<bool, SizeVector> correct_children_of_parent{{true, {12}}, {false, {3}}};
   CHECK_EQ(children_of_parent, correct_children_of_parent);
   std::map<bool, SizeVector> parents_of_children{
-      {true, child_node->GetLeftRootward()}, {false, child_node->GetRightRootward()}};
+      {true, child_node.GetLeftRootward()}, {false, child_node.GetRightRootward()}};
   std::map<bool, SizeVector> correct_parents_of_children{{true, {13}}, {false, {}}};
   CHECK_EQ(parents_of_children, correct_parents_of_children);
-  std::map<bool, SizeVector> children_of_child{{true, child_node->GetLeftLeafward()},
-                                               {false, child_node->GetRightLeafward()}};
+  std::map<bool, SizeVector> children_of_child{{true, child_node.GetLeftLeafward()},
+                                               {false, child_node.GetRightLeafward()}};
   std::map<bool, SizeVector> correct_children_of_child{{true, {2}}, {false, {4}}};
   CHECK_EQ(children_of_child, correct_children_of_child);
   // Check that node_reindexer and edge_reindexer are correct.
@@ -750,19 +750,19 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   CHECK_EQ(node_addition_result.added_edge_idxs, correct_added_edge_idxs);
   // Check that `dag_nodes` was updated (node 12 -> 14).
   const auto& node_14 = dag.GetDAGNode(14);
-  CHECK_EQ(node_14->GetBitset().ToString(), "0100000111");
+  CHECK_EQ(node_14.GetBitset().ToString(), "0100000111");
   // Check that node fields were updated correctly.
-  const auto& sorted_parents_14 = node_14->GetRightRootward();
-  const auto& sorted_children_14 = node_14->GetRightLeafward();
+  const auto& sorted_parents_14 = node_14.GetRightRootward();
+  const auto& sorted_children_14 = node_14.GetRightLeafward();
   CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 13) ==
         sorted_parents_14.end());
   CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 15) !=
         sorted_parents_14.end());
   CHECK(std::find(sorted_children_14.begin(), sorted_children_14.end(), 11) !=
         sorted_children_14.end());
-  CHECK_EQ(node_14->Id(), 14);
+  CHECK_EQ(node_14.Id(), 14);
   // Check that `subsplit_to_id_` node ids were updated.
-  CHECK_EQ(dag.GetDAGNodeId(node_14->GetBitset()), 14);
+  CHECK_EQ(dag.GetDAGNodeId(node_14.GetBitset()), 14);
   // Check that `dag_edges_` node ids were updated.
   CHECK_EQ(dag.GetEdgeIdx(15, 14), 9);
   // Check that `dag_edges_` edge idxs were updated.
@@ -770,9 +770,9 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   CHECK_EQ(dag.GetEdgeIdx(16, 13), 12);
   CHECK_EQ(dag.GetEdgeIdx(11, 4), 25);
   // Check that `parent_to_child_range_` was updated.
-  CHECK_EQ(dag.GetEdgeRange(node_14->GetBitset(), false).second, 9);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(16)->GetBitset(), false).first, 11);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(16)->GetBitset(), false).second, 13);
+  CHECK_EQ(dag.GetEdgeRange(node_14.GetBitset(), false).second, 9);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(16).GetBitset(), false).first, 11);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(16).GetBitset(), false).second, 13);
   // Check that `topology_count_` was updated.
   CHECK_EQ(dag.TopologyCount(), prev_topology_count + 2);
 }
@@ -799,8 +799,8 @@ TEST_CASE("GPInstance: Only add parent node tests") {
   CHECK_EQ(dag.NodeCount(), prev_node_count + 3);
   CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 8);
   // Check that BuildEdgeReindexer() correctly handles rotated edges.
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), true).first, 5);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), true).second, 7);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10).GetBitset(), true).first, 5);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10).GetBitset(), true).second, 7);
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908711187.
@@ -820,10 +820,10 @@ TEST_CASE("GPInstance: Only add child node tests") {
   CHECK_EQ(dag.NodeCount(), prev_node_count + 1);
   CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 4);
   // Check that new child node is connected to all possible parents.
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), false).first, 9);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10)->GetBitset(), false).second, 11);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11)->GetBitset(), false).first, 3);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11)->GetBitset(), false).second, 5);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10).GetBitset(), false).first, 9);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10).GetBitset(), false).second, 11);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11).GetBitset(), false).first, 3);
+  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11).GetBitset(), false).second, 5);
 }
 
 TEST_CASE("GPInstance: SubsplitDAG NNI (Nearest Neighbor Interchange)") {
