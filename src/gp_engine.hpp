@@ -172,13 +172,13 @@ class GPEngine {
   std::unique_ptr<MmappedNucleotidePLV> mmapped_master_plv_ptr_ = nullptr;
   MmappedNucleotidePLV mmapped_master_plv_;
   // Partial Likelihood Vectors.
-  // plvs_ store the following (see GPDAG::GetPLVIndexStatic):
+  // plvs_ store the following (see PLVHandler::GetPLVIndex):
   // [0, num_nodes): p(s).
-  // [num_nodes, 2*num_nodes): phat(s).
-  // [2*num_nodes, 3*num_nodes): phat(s_tilde).
-  // [3*num_nodes, 4*num_nodes): rhat(s) = rhat(s_tilde).
-  // [4*num_nodes, 5*num_nodes): r(s).
-  // [5*num_nodes, 6*num_nodes): r(s_tilde).
+  // [num_nodes, 2*num_nodes): phat(s_right).
+  // [2*num_nodes, 3*num_nodes): phat(s_left).
+  // [3*num_nodes, 4*num_nodes): rhat(s_right) = rhat(s_left).
+  // [4*num_nodes, 5*num_nodes): r(s_right).
+  // [5*num_nodes, 6*num_nodes): r(s_left).
   NucleotidePLVRefVector plvs_;
   // Rescaling count for each plv.
   EigenVectorXi rescaling_counts_;
