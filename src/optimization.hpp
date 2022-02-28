@@ -27,9 +27,6 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
   T mid;             // midpoint of min and max
   T fract1, fract2;  // minimal relative movement in x
   T f_prime_x;
-  T u_;
-  T fu_;
-  size_t same_value_counter = 0;
 
   // golden ratio, don't need too much precision here!
   static const T golden = 0.3819660f;
@@ -86,7 +83,7 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
         delta = p / q;
         u = x + delta;
         if (((u - min) < fract2) || ((max - u) < fract2)) {
-          delta = (mid - x) < 0 ? (T)-fabs(fract1) : (T)fabs(fract1);
+          delta = (mid - x) < 0 ? static_cast<T>(-fabs(fract1)) : static_cast<T>(fabs(fract1));
         }
         // parabolic fit was a success, so don't need bisection.
         use_bisection = false;
@@ -169,7 +166,6 @@ BrentMinimizeWithGradient(F f, T guess, T min, T max, int significant_digits,
   T f_prime_x;
   T u_;
   T fu_;
-  size_t same_value_counter = 0;
 
   // golden ratio, don't need too much precision here!
   static const T golden = 0.3819660f;
@@ -226,7 +222,7 @@ BrentMinimizeWithGradient(F f, T guess, T min, T max, int significant_digits,
         delta = p / q;
         u = x + delta;
         if (((u - min) < fract2) || ((max - u) < fract2)) {
-          delta = (mid - x) < 0 ? (T)-fabs(fract1) : (T)fabs(fract1);
+          delta = (mid - x) < 0 ? static_cast<T>(-fabs(fract1)) : static_cast<T>(fabs(fract1));
         }
         // parabolic fit was a success, so don't need bisection.
         use_bisection = false;
@@ -352,10 +348,9 @@ std::tuple<double, double,
 NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
     double x, const double tolerance, const double epsilon, const double min_x,
-    const double max_x, const size_t max_iter) {
+    const double max_x, const double damp_const, const size_t max_iter) {
   size_t iter_idx = 0;
   double new_x, delta;
-  double damp_const = 0.005;
 
   std::vector<double> path_x;
   std::vector<double> path_fx;
@@ -376,12 +371,8 @@ NewtonRaphsonOptimization(
 
     if (new_x <= min_x) {
       new_x = x - 0.5 * (x - min_x);
-      damp_const *= 10.;
     } else if (new_x >= max_x) {
       new_x = x - 0.5 * (x - max_x);
-      damp_const *= 10.;
-    } else {
-      // damp_const *= 0.5;
     }
 
     delta = fabs(x - new_x);

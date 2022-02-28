@@ -332,6 +332,7 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
   return Optimization(op);
 }
+
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op,
                           const GPEngine::OptimizationMethod method) {
   return Optimization(op, method);
@@ -720,7 +721,7 @@ void GPEngine::BrentOptimizationWithGradient(
     return;
   }
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
-  double current_value = negative_log_likelihood(current_log_branch_length);
+  double current_value = negative_log_likelihood(current_log_branch_length).first;
   const auto [log_branch_length, neg_log_likelihood, optimization_path] =
       Optimization::BrentMinimizeWithGradient(
           negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
@@ -788,7 +789,8 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
       Optimization::NewtonRaphsonOptimization(
           log_likelihood_and_first_two_derivatives, log(branch_lengths_(op.gpcsp_)),
           relative_tolerance_for_optimization_, denominator_tolerance_for_newton_,
-          min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
+          min_log_branch_length_, max_log_branch_length_, 
+	  dampening_constant_for_newton_, max_iter_for_optimization_);
   branch_lengths_(op.gpcsp_) = exp(log_branch_length);
   optimization_path_branch_lengths_.at(op.gpcsp_) = std::get<0>(optimization_path);
   optimization_path_likelihoods_.at(op.gpcsp_) = std::get<1>(optimization_path);
