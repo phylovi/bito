@@ -165,7 +165,7 @@ class GPEngine {
 
   // Total number of PLVs across entire DAG. Proportional to the number of nodes in DAG.
   // plv_count_ = node_count_without_root * plv_per_node.
-  const size_t plv_count_per_node_ = 6;
+  //const size_t plv_count_per_node_ = 6;
   size_t plv_count_;
   // Master PLV: Large data block of virtual memory for Partial Likelihood Vectors.
   // Subdivided into sections for plvs_.
@@ -195,7 +195,7 @@ class GPEngine {
   // ** Per-Edge Data
 
   // Total number of edges in DAG.
-  size_t gpcsp_count_;
+  //size_t gpcsp_count_;
   // branch_lengths_, q_, etc. are indexed in the same way as sbn_parameters_ in
   // gp_instance.
   EigenVectorXd branch_lengths_;

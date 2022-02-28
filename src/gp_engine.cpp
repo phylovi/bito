@@ -17,7 +17,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
       plv_count_(plv_count),
       mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()),
       plvs_(mmapped_master_plv_.Subdivide(plv_count_)),
-      gpcsp_count_(gpcsp_count),
+      //gpcsp_count_(gpcsp_count),
       q_(std::move(sbn_prior)),
       unconditional_node_probabilities_(std::move(unconditional_node_probabilities)),
       inverted_sbn_prior_(std::move(inverted_sbn_prior)) {
@@ -339,6 +339,9 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   const auto [log_branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
       negative_log_likelihood, min_log_branch_length_, max_log_branch_length_,
       significant_digits_for_optimization_, max_iter_for_optimization_);
+    
+    // Output log_branch_length, neg_log_likelihood
+    std::cout << op.gpcsp_ << ", " << log_branch_length << ", " << neg_log_likelihood << std::endl;
 
   // Numerical optimization sometimes yields new nllk > current nllk.
   // In this case, we reset the branch length to the previous value.
@@ -396,7 +399,7 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 SizeDoubleVectorMap GPEngine::GatherBranchLengths(
     const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
   SizeDoubleVectorMap gpcsp_branchlengths_map;
-  auto gather_branch_lengths = [&gpcsp_branchlengths_map, this](
+  auto gather_branch_lengths = [&gpcsp_branchlengths_map](
                                    size_t gpcsp_idx, const RootedTree& tree,
                                    const Node* focal_node) {
     gpcsp_branchlengths_map[gpcsp_idx].push_back(tree.BranchLength(focal_node));
@@ -413,8 +416,7 @@ void GPEngine::FunctionOverRootedTreeCollection(
   const size_t default_index = branch_lengths_.size();
   for (const auto& tree : tree_collection.Trees()) {
     tree.Topology()->RootedPCSPPreorder(
-        [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp,
-         this](const Node* sister_node, const Node* focal_node, const Node* child0_node,
+        [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp](const Node* sister_node, const Node* focal_node, const Node* child0_node,
                const Node* child1_node) {
           Bitset gpcsp_bitset =
               SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
