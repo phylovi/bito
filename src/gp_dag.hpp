@@ -14,21 +14,16 @@
 #include "sbn_maps.hpp"
 #include "subsplit_dag_node.hpp"
 #include "tidy_subsplit_dag.hpp"
+#include "plv_handler.hpp"
+
+using PLVType = PLVHandler::PLVType;
 
 class GPDAG : public TidySubsplitDAG {
  public:
-  // We store 6 PLVs per subsplit, and index them according to this enum.
-  // The notation is as described in the manuscript, but with a slight shift in the
-  // position of the tilde. For example P_HAT_TILDE for a subsplit s is
-  // \hat{p}(\tilde{s}).
-  enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
-
   using TidySubsplitDAG::TidySubsplitDAG;
 
-  // Get the index of a PLV of a given type and with a given index.
-  static PLVType RPLVType(bool rotated);
-  static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
-  size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
+  // Get the GPEngine index of given PLV type and given node index.
+  size_t GetPLVIndex(PLVType plv_type, size_t node_idx) const;
 
   // ** GPOperations:
   // These methods generate a serial vector of operations, but perform no computation.
