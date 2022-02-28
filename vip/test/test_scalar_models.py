@@ -38,3 +38,9 @@ def test_lognormal_gradients():
     ours = log_normal.sample_and_gradients(px_which_variables, prebaked_sample=sample)
     for (our_item, their_item) in zip(ours, theirs):
         assert our_item == approx(their_item, rel=1e-5)
+
+
+# run tests if called directly
+if __name__ == "__main__":
+    test_lognormal_log_prob()
+    test_lognormal_gradients()

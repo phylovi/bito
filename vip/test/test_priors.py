@@ -9,8 +9,11 @@ tfd = tfp.distributions
 
 SAMPLE = np.array([[1.0, 2.0, 3.0], [0.26097, 0.0286401, 0.113843]])
 
-
 def test_log_exp_prior():
     theirs = np.sum(tfp.distributions.Exponential(10).log_prob(SAMPLE).numpy(), axis=1)
     ours = priors.log_exp_prior(SAMPLE)
     assert ours == approx(theirs)
+
+# run tests if called directly
+if __name__ == "__main__":
+    test_log_exp_prior()

@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "fat_beagle.hpp"
+#include "phylo_flags.hpp"
 #include "phylo_model.hpp"
 #include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
@@ -29,21 +30,35 @@ class Engine {
 
   const BlockSpecification &GetPhyloModelBlockSpecification() const;
 
-  std::vector<double> LogLikelihoods(const UnrootedTreeCollection &tree_collection,
-                                     const EigenMatrixXdRef phylo_model_params,
-                                     const bool rescaling) const;
-  std::vector<double> LogLikelihoods(const RootedTreeCollection &tree_collection,
-                                     const EigenMatrixXdRef phylo_model_params,
-                                     const bool rescaling) const;
+  std::vector<double> LogLikelihoods(
+      const UnrootedTreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+      const std::optional<PhyloFlags> flags = std::nullopt) const;
+  std::vector<double> LogLikelihoods(
+      const RootedTreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+      const std::optional<PhyloFlags> flags = std::nullopt) const;
   std::vector<double> UnrootedLogLikelihoods(
       const RootedTreeCollection &tree_collection,
-      const EigenMatrixXdRef phylo_model_params, const bool rescaling) const;
-  std::vector<PhyloGradient> Gradients(const UnrootedTreeCollection &tree_collection,
-                                       const EigenMatrixXdRef phylo_model_params,
-                                       const bool rescaling) const;
-  std::vector<PhyloGradient> Gradients(const RootedTreeCollection &tree_collection,
-                                       const EigenMatrixXdRef phylo_model_params,
-                                       const bool rescaling) const;
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+      const std::optional<PhyloFlags> flags = std::nullopt) const;
+  std::vector<double> LogDetJacobianHeightTransform(
+      const RootedTreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+      const std::optional<PhyloFlags> flags = std::nullopt) const;
+
+  std::vector<PhyloGradient> Gradients(
+      const UnrootedTreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+      const std::optional<PhyloFlags> flags = std::nullopt) const;
+  std::vector<PhyloGradient> Gradients(
+      const RootedTreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+      const std::optional<PhyloFlags> flags = std::nullopt) const;
+  std::vector<DoubleVector> GradientLogDeterminantJacobian(
+      const RootedTreeCollection &tree_collection,
+      const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+      const std::optional<PhyloFlags> flags = std::nullopt) const;
 
  private:
   SitePattern site_pattern_;

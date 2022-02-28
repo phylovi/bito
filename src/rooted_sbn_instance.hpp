@@ -5,6 +5,8 @@
 
 #include "csv.hpp"
 #include "generic_sbn_instance.hpp"
+#include "phylo_flags.hpp"
+#include "rooted_gradient_transforms.hpp"
 #include "rooted_sbn_support.hpp"
 
 using PreRootedSBNInstance = GenericSBNInstance<RootedTreeCollection, RootedSBNSupport,
@@ -33,10 +35,25 @@ class RootedSBNInstance : public PreRootedSBNInstance {
 
   // ** Phylogenetic likelihood
 
-  std::vector<double> LogLikelihoods();
+  std::vector<double> LogLikelihoods(
+      std::optional<PhyloFlags> external_flags = std::nullopt);
+
+  template <class VectorType>
+  std::vector<double> LogLikelihoods(const VectorType& flag_vec,
+                                     const bool is_run_defaults);
+
   std::vector<double> UnrootedLogLikelihoods();
-  // For each loaded tree, return the phylogenetic gradient.
-  std::vector<PhyloGradient> PhyloGradients();
+
+  std::vector<double> LogDetJacobianHeightTransform();
+
+  std::vector<PhyloGradient> PhyloGradients(
+      std::optional<PhyloFlags> external_flags = std::nullopt);
+
+  template <class VectorType>
+  std::vector<PhyloGradient> PhyloGradients(const VectorType& flag_vec,
+                                            const bool is_run_defaults);
+
+  std::vector<DoubleVector> GradientLogDeterminantJacobian();
 
   // ** I/O
 
@@ -282,9 +299,9 @@ TEST_CASE("RootedSBNInstance: gradients") {
       48.871694, 3.488516,   82.969065, 9.009334,  8.032474,  3.981016,   6.543650,
       53.702423, 37.835952,  2.840831,  7.517186,  19.936861};
   for (size_t i = 0; i < physher_gradients.size(); i++) {
-    CHECK_LT(
-        fabs(gradients[0].gradient_["ratios_root_height"][i] - physher_gradients[i]),
-        0.0001);
+    CHECK_LT(fabs(gradients[0].gradient_[PhyloGradient::ratios_root_height_key_][i] -
+                  physher_gradients[i]),
+             0.0001);
   }
   CHECK_LT(fabs(gradients[0].log_likelihood_ - physher_ll), 0.0001);
 }
@@ -304,7 +321,7 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   // Gradient with a strict clock.
   auto gradients_strict = inst.PhyloGradients();
   std::vector<double> gradients_strict_approx = DerivativeStrictClock(inst);
-  CHECK_LT(fabs(gradients_strict[0].gradient_["clock_model"][0] -
+  CHECK_LT(fabs(gradients_strict[0].gradient_[PhyloGradient::clock_model_key_][0] -
                 gradients_strict_approx[0]),
            0.001);
   CHECK_LT(fabs(gradients_strict[0].log_likelihood_ - physher_ll), 0.001);
@@ -321,7 +338,7 @@ TEST_CASE("RootedSBNInstance: clock gradients") {
   auto gradients_relaxed_approx = DerivativeRelaxedClock(inst);
 
   for (size_t j = 0; j < gradients_relaxed_approx.size(); j++) {
-    CHECK_LT(fabs(gradients_relaxed[0].gradient_["clock_model"][j] -
+    CHECK_LT(fabs(gradients_relaxed[0].gradient_[PhyloGradient::clock_model_key_][j] -
                   gradients_relaxed_approx[j][0]),
              0.001);
   }
@@ -351,9 +368,9 @@ TEST_CASE("RootedSBNInstance: GTR gradients") {
                                               -8.25135661, 75.29759338,  352.56545247,
                                               90.07046995, 30.12301652};
   for (size_t i = 0; i < phylotorch_gradients.size(); i++) {
-    CHECK_LT(
-        fabs(gradients[0].gradient_["substitution_model"][i] - phylotorch_gradients[i]),
-        0.001);
+    CHECK_LT(fabs(gradients[0].gradient_[PhyloGradient::substitution_model_key_][i] -
+                  phylotorch_gradients[i]),
+             0.001);
   }
   CHECK_LT(fabs(gradients[0].log_likelihood_ - phylotorch_ll), 0.001);
 }
@@ -474,6 +491,227 @@ TEST_CASE("RootedSBNInstance: BuildCollectionByDuplicatingFirst") {
   auto& base_flu_tree = inst.tree_collection_.GetTree(0);
   trees = inst.tree_collection_.BuildCollectionByDuplicatingFirst(5);
   CHECK_EQ(base_flu_tree, trees.GetTree(1));
+}
+
+TEST_CASE("RootedSBNInstance: PhyloFlags for Gradient Requests") {
+  // GP Instance default output for gradients.
+  auto CreateNewInstance = []() {
+    auto inst = MakeFluInstance(true);
+    PhyloModelSpecification gtr_specification{"GTR", "constant", "strict"};
+    inst.PrepareForPhyloLikelihood(gtr_specification, 1);
+    for (auto& tree : inst.tree_collection_.trees_) {
+      tree.rates_.assign(tree.rates_.size(), 0.001);
+    }
+    auto param_block_map = inst.GetPhyloModelParamBlockMap();
+    EigenVectorXdRef frequencies = param_block_map.at(GTRModel::frequencies_key_);
+    EigenVectorXdRef rates = param_block_map.at(GTRModel::rates_key_);
+    frequencies << 0.1, 0.2, 0.3, 0.4;
+    rates << 0.05, 0.1, 0.15, 0.20, 0.25, 0.25;
+    return inst;
+  };
+  // "Golden" instance for determining correctness.
+  auto gold_inst = CreateNewInstance();
+  auto gold_likelihoods = gold_inst.LogLikelihoods();
+  auto gold_gradients = gold_inst.PhyloGradients();
+  size_t num_trees = gold_inst.tree_collection_.trees_.size();
+
+  using FlagMap = std::map<PhyloFlagOption, PhyloMapkey>;
+  using FlagVector = std::vector<PhyloFlagOption>;
+  using MapkeyVector = std::vector<PhyloMapkey>;
+  // Split map into keys and values.
+  auto SplitMapIntoKeysAndValues =
+      [](const FlagMap& map) -> std::pair<FlagVector, MapkeyVector> {
+    FlagVector keys;
+    MapkeyVector values;
+    for (const auto& [key, value] : map) {
+      keys.push_back(key);
+      values.push_back(value);
+    }
+    return std::make_pair(keys, values);
+  };
+
+  // Iterate through all flag combinations.
+  auto IterateOverAllCombinations =
+      [](FlagMap& all_flags_mapkeys, FlagVector& all_flags,
+         std::function<void(FlagMap&, FlagMap&, FlagMap&, bool)> func) {
+        size_t num_flags = all_flags_mapkeys.size();
+        size_t num_combinations = pow(2, num_flags);
+        for (size_t i = 0; i < num_combinations; i++) {
+          FlagMap used_flags_mapkeys, unused_flags_mapkeys;
+          // Split between groups of used and unused flags.
+          for (size_t j = 1, k = 0; j < num_combinations; j <<= 1, k += 1) {
+            if ((j & i)) {
+              used_flags_mapkeys.insert(*all_flags_mapkeys.find(all_flags[k]));
+            } else {
+              unused_flags_mapkeys.insert(*all_flags_mapkeys.find(all_flags[k]));
+            }
+          }
+          func(used_flags_mapkeys, unused_flags_mapkeys, all_flags_mapkeys, false);
+          func(used_flags_mapkeys, unused_flags_mapkeys, all_flags_mapkeys, true);
+        }
+      };
+
+  // Test that expected flagged keys are populated with correct data,
+  // and that unflagged keys are not stored in map.
+  auto ComparePhyloGradients =
+      [&CreateNewInstance, &gold_gradients, &SplitMapIntoKeysAndValues, &num_trees](
+          FlagMap& used_flags_mapkeys, FlagMap& unused_flags_mapkeys,
+          FlagMap& all_flags, bool pass_externally = false) {
+        // Create instance and run phylogradients with used_flags.
+        auto inst = CreateNewInstance();
+        const auto [used_flags, used_mapkeys] =
+            SplitMapIntoKeysAndValues(used_flags_mapkeys);
+        const auto [unused_flags, unused_mapkeys] =
+            SplitMapIntoKeysAndValues(unused_flags_mapkeys);
+        std::ignore = unused_flags;
+        std::vector<PhyloGradient> gradients;
+        // pass flags via external arguments
+        if (pass_externally) {
+          PhyloFlags phylo_flags;
+          for (const auto& flag : used_flags) {
+            phylo_flags.SetFlag(flag);
+          }
+          phylo_flags.SetRunDefaultsFlag(false);
+          gradients = inst.PhyloGradients(phylo_flags);
+        }
+        // pass flags via internal instance
+        else {
+          inst.MakePhyloFlags();
+          auto& flags = inst.GetPhyloFlags();
+          for (const auto& flag : used_flags) {
+            flags.SetFlag(flag);
+          }
+          flags.SetRunDefaultsFlag(false);
+          gradients = inst.PhyloGradients();
+          flags.ClearFlags();
+        }
+        // Check that used fields are keyed and populated correctly.
+        for (size_t i = 0; i < num_trees; i++) {
+          auto& grad_map = gradients[i].gradient_;
+          auto& gold_grad_map = gold_gradients[i].gradient_;
+          // Check used fields are not properly populated.
+          for (const auto& used_mapkey : used_mapkeys) {
+            CHECK_MESSAGE(grad_map.find(used_mapkey.GetKey()) != grad_map.end(),
+                          "grad_map does not have a key that should exist.");
+            auto& gold_grad_data = gold_grad_map[used_mapkey.GetKey()];
+            auto& grad_data = grad_map[used_mapkey.GetKey()];
+            DoubleVector abs_diff = DoubleVector(gold_grad_data.size());
+            std::transform(gold_grad_data.begin(), gold_grad_data.end(),
+                           grad_data.begin(), abs_diff.begin(),
+                           [](const double a, const double b) { return abs(a - b); });
+            double max_diff = *std::max_element(abs_diff.begin(), abs_diff.end());
+            CHECK_MESSAGE(max_diff < 0.01,
+                          "gold_grad_map and grad_map did not produce the same data "
+                          "for the same flag.");
+          }
+          // Check unused fields are not populated.
+          for (const auto& unused_mapkey : unused_mapkeys) {
+            CHECK_MESSAGE(grad_map.find(unused_mapkey.GetKey()) == grad_map.end(),
+                          "grad_map has a key that should not exist.");
+          }
+        }
+      };
+
+  // Test gradient "include" options.
+  // Pairs of input flags to output mapkeys.
+  FlagMap gradient_flags_mapkeys;
+  gradient_flags_mapkeys.insert(
+      {PhyloGradientFlagOptions::clock_model_, PhyloGradientMapkeys::clock_model_});
+  gradient_flags_mapkeys.insert({PhyloGradientFlagOptions::ratios_root_height_,
+                                 PhyloGradientMapkeys::ratios_root_height_});
+  gradient_flags_mapkeys.insert({PhyloGradientFlagOptions::substitution_model_,
+                                 PhyloGradientMapkeys::substitution_model_});
+  gradient_flags_mapkeys.insert({PhyloGradientFlagOptions::substitution_model_,
+                                 PhyloGradientMapkeys::substitution_model_rates_});
+  gradient_flags_mapkeys.insert(
+      {PhyloGradientFlagOptions::substitution_model_,
+       PhyloGradientMapkeys::substitution_model_frequencies_});
+
+  auto gradient_flags = SplitMapIntoKeysAndValues(gradient_flags_mapkeys).first;
+  IterateOverAllCombinations(gradient_flags_mapkeys, gradient_flags,
+                             ComparePhyloGradients);
+
+  // Test likelihood "exclude" options.
+  auto LikelihoodExcludeLogDeterminant = [&CreateNewInstance, &gold_likelihoods]() {
+    auto inst = CreateNewInstance();
+    StringBoolVector flag_vector = {
+        {LogLikelihoodFlagOptions::include_log_det_jacobian_likelihood_.GetFlag(),
+         false}};
+    auto flags = PhyloFlags(flag_vector, true);
+    double likelihood_exclude_log_det = inst.LogLikelihoods(flags)[0];
+    double log_det = RootedGradientTransforms::LogDetJacobianHeightTransform(
+        inst.tree_collection_.trees_[0]);
+    double gold_likelihood = gold_likelihoods[0];
+    CHECK_MESSAGE(
+        gold_likelihood != likelihood_exclude_log_det,
+        "LogLikelihood should not be equal to (LogLikelihoodExcludingLogdet.");
+    CHECK_MESSAGE(gold_likelihood == (likelihood_exclude_log_det + log_det),
+                  "LogLikelihood should be equal to (LogLikelihoodExcludingLogdet + "
+                  "LogDetJacobianHeightTransform.");
+  };
+  LikelihoodExcludeLogDeterminant();
+
+  // Test gradient "exclude" options.
+  auto GradientExcludeLogDeterminant = [&CreateNewInstance, &gold_gradients]() {
+    auto inst = CreateNewInstance();
+    StringBoolVector flag_vector = {
+        {PhyloGradientFlagOptions::include_log_det_jacobian_gradient_.GetFlag(),
+         false}};
+    auto flags = PhyloFlags(flag_vector, true);
+    GradientMap grad_map = inst.PhyloGradients(flags)[0].gradient_;
+    DoubleVector exclude_log_det =
+        grad_map[PhyloGradientMapkeys::ratios_root_height_.GetKey()];
+    DoubleVector log_det = RootedGradientTransforms::GradientLogDeterminantJacobian(
+        inst.tree_collection_.trees_[0]);
+    DoubleVector include_log_det =
+        gold_gradients[0].gradient_[PhyloGradientMapkeys::ratios_root_height_.GetKey()];
+
+    double max_diff;
+    DoubleVector abs_diff = DoubleVector(include_log_det.size());
+    std::transform(include_log_det.begin(), include_log_det.end(),
+                   exclude_log_det.begin(), abs_diff.begin(),
+                   [](const double a, const double b) { return abs(a - b); });
+    max_diff = *std::max_element(abs_diff.begin(), abs_diff.end());
+    CHECK_MESSAGE(max_diff > 0.01,
+                  "Gradient should not be equal to GradientExcludingLogDet.");
+    DoubleVector exclude_log_det_plus_log_det = DoubleVector(include_log_det.size());
+    std::transform(exclude_log_det.begin(), exclude_log_det.end(), log_det.begin(),
+                   exclude_log_det_plus_log_det.begin(),
+                   [](const double a, const double b) { return a + b; });
+    std::transform(include_log_det.begin(), include_log_det.end(),
+                   exclude_log_det_plus_log_det.begin(), abs_diff.begin(),
+                   [](const double a, const double b) { return abs(a - b); });
+    max_diff = *std::max_element(abs_diff.begin(), abs_diff.end());
+    CHECK_MESSAGE(max_diff < 0.01,
+                  "Gradient should be equal to (GradientExcludingLogdet + "
+                  "GradientLogDetJacobian).");
+  };
+  GradientExcludeLogDeterminant();
+
+  // Test gradient "set" options.
+  auto GradientSetDelta = [&CreateNewInstance, &gold_gradients]() {
+    auto inst = CreateNewInstance();
+    StringDoubleVector flag_vector = {
+        {PhyloGradientFlagOptions::set_gradient_delta_.GetFlag(), 1.0e1}};
+    auto flags = PhyloFlags(flag_vector, true);
+    GradientMap grad_map = inst.PhyloGradients(flags)[0].gradient_;
+    DoubleVector subst_grad =
+        grad_map[PhyloGradientMapkeys::substitution_model_.GetKey()];
+    // delta = 1.0e-6 (default)
+    DoubleVector gold_subst_grad_1e6 = {49.0649, 151.831, 26.4022, -8.25114,
+                                        75.2975, 352.565, 90.0701, 30.1228};
+    // delta = 1.0e1
+    DoubleVector gold_subst_grad_1e1 = {-73.2611, 25.4074,  -33.2865, -54.0479,
+                                        47.9938,  -2696.06, -84.2954, 6.0563};
+    DoubleVector abs_diff = DoubleVector(subst_grad.size());
+    std::transform(subst_grad.begin(), subst_grad.end(), gold_subst_grad_1e1.begin(),
+                   abs_diff.begin(),
+                   [](const double a, const double b) { return abs(a - b); });
+    double max_diff = *std::max_element(abs_diff.begin(), abs_diff.end());
+    CHECK_MESSAGE(max_diff < 0.01,
+                  "Delta value set by flag did not result in correct gradient values.");
+  };
+  GradientSetDelta();
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

@@ -3,16 +3,19 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+
 #include <pybind11/eigen.h>
 #include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/stl_bind.h>
 #pragma GCC diagnostic pop
 
 #include <string>
 
 #include "gp_instance.hpp"
+#include "phylo_flags.hpp"
 #include "rooted_gradient_transforms.hpp"
 #include "rooted_sbn_instance.hpp"
 #include "unrooted_sbn_instance.hpp"
@@ -29,6 +32,58 @@ void def_read_write_mutable(PyClass &cls, const char *name, D C::*pm) {
       [pm](C &self, const D &value) { self.*pm = value; });
 }
 
+// Helper for adding definitions to class.
+template <typename PyClass, typename... PyArgTypes, typename CppClass, typename RetType,
+          typename... ArgTypes>
+void def_template(PyClass pyclass, const char *name, const char *description,
+                  RetType (CppClass::*func)(ArgTypes...),
+                  std::tuple<PyArgTypes...> pyargs) {
+  std::apply(
+      [&pyclass, &name, &description, &func](auto &&...pyargs) {
+        pyclass.def(
+            name,
+            [func](CppClass &self, ArgTypes... args) { return (self.*func)(args...); },
+            description, pyargs...);
+      },
+      pyargs);
+}
+
+// Define pyclass function for all function overloads (non-const methods).
+template <typename PyClass, typename... PyArgTypes, typename CppFunc,
+          typename... OtherCppFuncs>
+void def_overload(PyClass pyclass, const char *name, const char *description,
+                  std::tuple<CppFunc, std::tuple<PyArgTypes...>> overload_def,
+                  OtherCppFuncs... other_overloads) {
+  // Add definition to class.
+  auto &[func, pyargs] = overload_def;
+  if constexpr (sizeof...(PyArgTypes) > 0) {
+    def_template(pyclass, name, description, func, pyargs);
+  }
+  // Get next function from template list.
+  if constexpr (sizeof...(OtherCppFuncs) > 0) {
+    def_overload(pyclass, name, description, other_overloads...);
+  }
+}
+
+// Use same function name, description, pyargs for multiple functions from multiple
+// classes (non-const methods).
+template <typename PyClass, typename... PyArgTypes, typename CppFunc,
+          typename... OtherClassDefs>
+void def_multiclass(const char *name, const char *description,
+                    std::tuple<PyArgTypes...> pyargs,
+                    std::tuple<PyClass, CppFunc> class_def,
+                    OtherClassDefs... other_defs) {
+  // Add definition to class.
+  auto &[pyclass, func] = class_def;
+  if constexpr (sizeof...(PyArgTypes) > 0) {
+    def_template(pyclass, name, description, func, pyargs);
+  }
+  // Get next function from template list.
+  if constexpr (sizeof...(OtherClassDefs) > 0) {
+    def_multiclass(name, description, pyargs, other_defs...);
+  }
+}
+
 // In order to make vector<double>s available to numpy, we take two steps.
 // First, we make them opaque to pybind11, so that it doesn't do its default
 // conversion of STL types.
@@ -37,6 +92,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<double>);
 // MODULE
 PYBIND11_MODULE(bito, m) {
   m.doc() = R"raw(Python interface to bito.)raw";
+
   // Second, we expose them as buffer objects so that we can use them
   // as in-place numpy arrays with np.array(v, copy=False). See
   // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
@@ -236,6 +292,7 @@ PYBIND11_MODULE(bito, m) {
       .def("calculate_sbn_probabilities", &RootedSBNInstance::CalculateSBNProbabilities,
            R"raw(Calculate the SBN probabilities of the currently loaded trees.)raw")
       // ** END DUPLICATED CODE BLOCK between this and UnrootedSBNInstance
+
       .def("unconditional_subsplit_probabilities_to_csv",
            &RootedSBNInstance::UnconditionalSubsplitProbabilitiesToCSV,
            "Write out the overall probability of seeing each subsplit when we sample a "
@@ -254,12 +311,16 @@ PYBIND11_MODULE(bito, m) {
           py::arg("csv_path"), py::arg("initialize_time_trees_using_branch_lengths"))
 
       // ** Phylogenetic likelihood
-      .def("log_likelihoods", &RootedSBNInstance::LogLikelihoods,
-           "Calculate log likelihoods for the current set of trees.")
+      .def("log_det_jacobian_of_height_transform",
+           &RootedSBNInstance::LogDetJacobianHeightTransform,
+           "Calculate the log det jacobian of the node height transform.")
       .def("set_rescaling", &RootedSBNInstance::SetRescaling,
            "Set whether BEAGLE's likelihood rescaling is used.")
-      .def("phylo_gradients", &RootedSBNInstance::PhyloGradients,
-           "Calculate gradients of parameters for the current set of trees.")
+
+      // ** Phylogenetic gradients
+      .def("gradient_log_det_jacobian_of_height_transform",
+           &RootedSBNInstance::GradientLogDeterminantJacobian,
+           "Obtain the log determinant of the gradient")
 
       // ** I/O
       .def("read_newick_file", &RootedSBNInstance::ReadNewickFile,
@@ -269,6 +330,41 @@ PYBIND11_MODULE(bito, m) {
 
       // ** Member variables
       .def_readwrite("tree_collection", &RootedSBNInstance::tree_collection_);
+
+  def_overload(
+      rooted_sbn_instance_class, "phylo_gradients",
+      "Calculate gradients of parameters for the current set of trees.",
+      std::tuple(static_cast<std::vector<PhyloGradient> (RootedSBNInstance::*)(
+                     std::optional<PhyloFlags>)>(&RootedSBNInstance::PhyloGradients),
+                 std::tuple(py::arg("phylo_flags") = std::nullopt)),
+      std::tuple(&RootedSBNInstance::PhyloGradients<StringVector>,
+                 std::tuple(py::arg("flag_names"), py::arg("use_defaults") = true)),
+      std::tuple(
+          &RootedSBNInstance::PhyloGradients<StringBoolVector>,
+          std::tuple(py::arg("flag_names_and_set"), py::arg("use_defaults") = true)),
+      std::tuple(
+          &RootedSBNInstance::PhyloGradients<StringDoubleVector>,
+          std::tuple(py::arg("flag_names_and_values"), py::arg("use_defaults") = true)),
+      std::tuple(&RootedSBNInstance::PhyloGradients<StringBoolDoubleVector>,
+                 std::tuple(py::arg("flag_names_and_set_and_values"),
+                            py::arg("use_defaults") = true)));
+  def_overload(
+      rooted_sbn_instance_class, "log_likelihoods",
+      "Calculate log likelihoods for the current set of trees.",
+      std::tuple(static_cast<std::vector<double> (RootedSBNInstance::*)(
+                     std::optional<PhyloFlags>)>(&RootedSBNInstance::LogLikelihoods),
+                 std::tuple(py::arg("phylo_flags") = std::nullopt)),
+      std::tuple(&RootedSBNInstance::LogLikelihoods<StringVector>,
+                 std::tuple(py::arg("flag_names"), py::arg("use_defaults") = true)),
+      std::tuple(
+          &RootedSBNInstance::LogLikelihoods<StringBoolVector>,
+          std::tuple(py::arg("flag_names_and_set"), py::arg("use_defaults") = true)),
+      std::tuple(
+          &RootedSBNInstance::LogLikelihoods<StringDoubleVector>,
+          std::tuple(py::arg("flag_names_and_values"), py::arg("use_defaults") = true)),
+      std::tuple(&RootedSBNInstance::LogLikelihoods<StringBoolDoubleVector>,
+                 std::tuple(py::arg("flag_names_and_set_and_values"),
+                            py::arg("use_defaults") = true)));
 
   // CLASS
   // UnrootedSBNInstance
@@ -363,12 +459,15 @@ PYBIND11_MODULE(bito, m) {
            "A testing method to count splits.")
 
       // ** Phylogenetic likelihood
-      .def("log_likelihoods", &UnrootedSBNInstance::LogLikelihoods,
-           "Calculate log likelihoods for the current set of trees.")
       .def("set_rescaling", &UnrootedSBNInstance::SetRescaling,
            "Set whether BEAGLE's likelihood rescaling is used.")
-      .def("phylo_gradients", &UnrootedSBNInstance::PhyloGradients,
-           "Calculate gradients of parameters for the current set of trees.")
+
+      // ** Phylogenetic gradients
+      .def("phylo_gradients",
+           static_cast<std::vector<PhyloGradient> (UnrootedSBNInstance::*)(
+               std::optional<PhyloFlags>)>(&UnrootedSBNInstance::PhyloGradients),
+           "Calculate gradients of parameters for the current set of trees.",
+           py::arg("phylo_flags") = std::nullopt)
       .def("topology_gradients", &UnrootedSBNInstance::TopologyGradients,
            R"raw(Calculate gradients of SBN parameters for the current set of trees.
            Should be called after sampling trees and setting branch lengths.)raw")
@@ -386,9 +485,75 @@ PYBIND11_MODULE(bito, m) {
   def_read_write_mutable(unrooted_sbn_instance_class, "sbn_parameters",
                          &UnrootedSBNInstance::sbn_parameters_);
 
+  def_overload(
+      unrooted_sbn_instance_class, "phylo_gradients",
+      "Calculate gradients of parameters for the current set of trees.",
+      std::tuple(static_cast<std::vector<PhyloGradient> (UnrootedSBNInstance::*)(
+                     std::optional<PhyloFlags>)>(&UnrootedSBNInstance::PhyloGradients),
+                 std::tuple(py::arg("phylo_flags") = std::nullopt)),
+      std::tuple(&UnrootedSBNInstance::PhyloGradients<StringVector>,
+                 std::tuple(py::arg("flag_names"), py::arg("use_defaults") = true)),
+      std::tuple(
+          &UnrootedSBNInstance::PhyloGradients<StringBoolVector>,
+          std::tuple(py::arg("flag_names_and_set"), py::arg("use_defaults") = true)),
+      std::tuple(
+          &UnrootedSBNInstance::PhyloGradients<StringDoubleVector>,
+          std::tuple(py::arg("flag_names_and_values"), py::arg("use_defaults") = true)),
+      std::tuple(&UnrootedSBNInstance::PhyloGradients<StringBoolDoubleVector>,
+                 std::tuple(py::arg("flag_names_and_set_and_values"),
+                            py::arg("use_defaults") = true)));
+  def_overload(
+      unrooted_sbn_instance_class, "log_likelihoods",
+      "Calculate log likelihoods for the current set of trees.",
+      std::tuple(static_cast<std::vector<double> (UnrootedSBNInstance::*)(
+                     std::optional<PhyloFlags>)>(&UnrootedSBNInstance::LogLikelihoods),
+                 std::tuple(py::arg("phylo_flags") = std::nullopt)),
+      std::tuple(&UnrootedSBNInstance::LogLikelihoods<StringVector>,
+                 std::tuple(py::arg("flag_names"), py::arg("use_defaults") = true)),
+      std::tuple(
+          &UnrootedSBNInstance::LogLikelihoods<StringBoolVector>,
+          std::tuple(py::arg("flag_names_and_set"), py::arg("use_defaults") = true)),
+      std::tuple(
+          &UnrootedSBNInstance::LogLikelihoods<StringDoubleVector>,
+          std::tuple(py::arg("flag_names_and_values"), py::arg("use_defaults") = true)),
+      std::tuple(&UnrootedSBNInstance::LogLikelihoods<StringBoolDoubleVector>,
+                 std::tuple(py::arg("flag_names_and_set_and_values"),
+                            py::arg("use_defaults") = true)));
+
+  // ** PhyloFlags -- for RootedSBNInstance and UnrootedSBNInstance
+  def_multiclass(
+      "init_phylo_flags", "Create a PhyloFlags object for instance.", std::tuple<>(),
+      std::tuple(unrooted_sbn_instance_class, &PreRootedSBNInstance::MakePhyloFlags),
+      std::tuple(rooted_sbn_instance_class, &PreRootedSBNInstance::MakePhyloFlags));
+  def_multiclass("set_phylo_defaults", "Set whether to use flag defaults.",
+                 std::tuple(py::arg("use_defaults") = true),
+                 std::tuple(unrooted_sbn_instance_class,
+                            &PreRootedSBNInstance::SetPhyloFlagDefaults),
+                 std::tuple(rooted_sbn_instance_class,
+                            &PreRootedSBNInstance::SetPhyloFlagDefaults));
+  def_multiclass(
+      "clear_phylo_flags", "Unset all flag settings.", std::tuple<>(),
+      std::tuple(unrooted_sbn_instance_class, &PreRootedSBNInstance::ClearPhyloFlags),
+      std::tuple(rooted_sbn_instance_class, &PreRootedSBNInstance::ClearPhyloFlags));
+  unrooted_sbn_instance_class.def(
+      "set_phylo_flag", &PreUnrootedSBNInstance::SetPhyloFlag,
+      "Set function flag for given option.", py::arg("flag_name"),
+      py::arg("set_to") = true, py::arg("set_value") = 1.0);
+  rooted_sbn_instance_class.def("set_phylo_flag", &PreRootedSBNInstance::SetPhyloFlag,
+                                "Set function flag for given option.",
+                                py::arg("flag_name"), py::arg("set_to") = true,
+                                py::arg("set_value") = 1.0);
+
   // FUNCTIONS
-  m.def("ratio_gradient_of_height_gradient", &RatioGradientOfHeightGradientEigen,
+  m.def("ratio_gradient_of_height_gradient",
+        &RootedGradientTransforms::RatioGradientOfHeightGradientEigen,
         "Obtain a ratio gradient from a height gradient.");
+  m.def("log_det_jacobian_of_height_transform",
+        &RootedGradientTransforms::LogDetJacobianHeightTransform,
+        "Obtain the log determinant jacobian of a height transform.");
+  m.def("gradient_log_det_jacobian_of_height_transform",
+        &RootedGradientTransforms::GradientLogDeterminantJacobian,
+        "Obtain the log determinant jacobian of the gradient");
 
   // CLASS
   // GPInstance
@@ -519,4 +684,39 @@ PYBIND11_MODULE(bito, m) {
              "(necessary for partitions; typically performs better for problems with "
              "fewer pattern sites)")
       .export_values();
+
+  // ** Export Keys
+  auto ExportFlagsToModuleAttributes = [](py::module &module,
+                                          const PhyloFlagOptionSet &flag_set) {
+    for (const auto &[name, flag] : flag_set.GetAllNames()) {
+      module.attr(name.c_str()) = py::cast(std::string(flag));
+    }
+  };
+  auto ExportMapkeysToModuleAttributes = [](py::module &module,
+                                            const PhyloMapkeySet &mapkey_set) {
+    for (const auto &[name, mapkey] : mapkey_set.GetAllNames()) {
+      std::ignore = name;
+      module.attr(mapkey.GetName().c_str()) = py::cast(std::string(mapkey.GetKey()));
+    }
+  };
+
+  // * Export PhyloFlagOptions
+  py::module phylo_flags = m.def_submodule("phylo_flags",
+                                           R"raw(
+        Option flags for functions such as ``SBNInstance::phylo_gradient`` and ``SBNInstanct::log_likelihood``.
+      )raw");
+  ExportFlagsToModuleAttributes(phylo_flags, PhyloGradientFlagOptions::set_);
+  ExportFlagsToModuleAttributes(phylo_flags, LogLikelihoodFlagOptions::set_);
+
+  // * Export PhyloMapkeys
+  py::module phylo_model_mapkeys = m.def_submodule("phylo_model_mapkeys",
+                                                   R"raw(
+        Dict keys for accessing the PhyloModel, returned by ``SBNInstance::get_phylo_model_param_block_map``.
+      )raw");
+  ExportMapkeysToModuleAttributes(phylo_model_mapkeys, PhyloModelMapkeys::set_);
+  py::module phylo_gradient_mapkeys = m.def_submodule("phylo_gradient_mapkeys",
+                                                      R"raw(
+        Dict keys for accessing the GradientMap, returned by ``SBNInstance::phylo_gradient``.
+      )raw");
+  ExportMapkeysToModuleAttributes(phylo_gradient_mapkeys, PhyloGradientMapkeys::set_);
 }

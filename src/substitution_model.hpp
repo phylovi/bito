@@ -35,8 +35,8 @@ class SubstitutionModel : public BlockModel {
   static std::unique_ptr<SubstitutionModel> OfSpecification(
       const std::string& specification);
 
-  inline const static std::string rates_key_ = "substitution model rates";
-  inline const static std::string frequencies_key_ = "substitution model frequencies";
+  inline const static std::string rates_key_ = "substitution_model_rates";
+  inline const static std::string frequencies_key_ = "substitution_model_frequencies";
 
  protected:
   EigenVectorXd frequencies_;

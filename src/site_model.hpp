@@ -66,7 +66,7 @@ class WeibullSiteModel : public SiteModel {
 
   void SetParameters(const EigenVectorXdRef param_vector) override;
 
-  inline const static std::string shape_key_ = "Weibull shape";
+  inline const static std::string shape_key_ = "Weibull_shape";
 
  private:
   void UpdateRates();

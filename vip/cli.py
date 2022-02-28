@@ -1,6 +1,5 @@
 """The ``vip`` command line interface."""
 import pprint
-
 import click
 
 

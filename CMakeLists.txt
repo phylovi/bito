@@ -99,6 +99,7 @@ add_library(bito-core SHARED
   src/nni_engine.cpp
   src/nni_operation.cpp
   src/parser.cpp
+  src/phylo_flags.cpp
   src/phylo_model.cpp
   src/psp_indexer.cpp
   src/quartet_hybrid_request.cpp

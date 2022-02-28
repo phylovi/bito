@@ -57,42 +57,65 @@ const BlockSpecification &Engine::GetPhyloModelBlockSpecification() const {
 
 std::vector<double> Engine::LogLikelihoods(
     const UnrootedTreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+    const std::optional<PhyloFlags> flags) const {
   return FatBeagleParallelize<double, UnrootedTree, UnrootedTreeCollection>(
       FatBeagle::StaticUnrootedLogLikelihood, fat_beagles_, tree_collection,
-      phylo_model_params, rescaling);
+      phylo_model_params, rescaling, flags);
 }
 
-std::vector<double> Engine::LogLikelihoods(const RootedTreeCollection &tree_collection,
-                                           const EigenMatrixXdRef phylo_model_params,
-                                           const bool rescaling) const {
+std::vector<double> Engine::LogLikelihoods(
+    const RootedTreeCollection &tree_collection,
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+    const std::optional<PhyloFlags> flags) const {
   return FatBeagleParallelize<double, RootedTree, RootedTreeCollection>(
       FatBeagle::StaticRootedLogLikelihood, fat_beagles_, tree_collection,
-      phylo_model_params, rescaling);
+      phylo_model_params, rescaling, flags);
 }
 
 std::vector<double> Engine::UnrootedLogLikelihoods(
     const RootedTreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+    const std::optional<PhyloFlags> flags) const {
   return FatBeagleParallelize<double, RootedTree, RootedTreeCollection>(
       FatBeagle::StaticUnrootedLogLikelihoodOfRooted, fat_beagles_, tree_collection,
-      phylo_model_params, rescaling);
+      phylo_model_params, rescaling, flags);
+}
+
+std::vector<double> Engine::LogDetJacobianHeightTransform(
+    const RootedTreeCollection &tree_collection,
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+    const std::optional<PhyloFlags> flags) const {
+  return FatBeagleParallelize<double, RootedTree, RootedTreeCollection>(
+      FatBeagle::StaticLogDetJacobianHeightTransform, fat_beagles_, tree_collection,
+      phylo_model_params, rescaling, flags);
 }
 
 std::vector<PhyloGradient> Engine::Gradients(
     const UnrootedTreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+    const std::optional<PhyloFlags> flags) const {
   return FatBeagleParallelize<PhyloGradient, UnrootedTree, UnrootedTreeCollection>(
       FatBeagle::StaticUnrootedGradient, fat_beagles_, tree_collection,
-      phylo_model_params, rescaling);
+      phylo_model_params, rescaling, flags);
 }
 
 std::vector<PhyloGradient> Engine::Gradients(
     const RootedTreeCollection &tree_collection,
-    const EigenMatrixXdRef phylo_model_params, const bool rescaling) const {
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+    const std::optional<PhyloFlags> flags) const {
   return FatBeagleParallelize<PhyloGradient, RootedTree, RootedTreeCollection>(
       FatBeagle::StaticRootedGradient, fat_beagles_, tree_collection,
-      phylo_model_params, rescaling);
+      phylo_model_params, rescaling, flags);
+}
+
+std::vector<DoubleVector> Engine::GradientLogDeterminantJacobian(
+    const RootedTreeCollection &tree_collection,
+    const EigenMatrixXdRef phylo_model_params, const bool rescaling,
+    const std::optional<PhyloFlags> flags) const {
+  return FatBeagleParallelize<DoubleVector, RootedTree, RootedTreeCollection>(
+      FatBeagle::StaticGradientLogDeterminantJacobian, fat_beagles_, tree_collection,
+      phylo_model_params, rescaling, flags);
 }
 
 const FatBeagle *const Engine::GetFirstFatBeagle() const {
