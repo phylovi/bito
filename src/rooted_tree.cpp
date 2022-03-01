@@ -8,14 +8,30 @@ constexpr double BRANCH_LENGTH_TOLERANCE = 1e-4;
 
 RootedTree::RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths)
     : Tree(topology, std::move(branch_lengths)) {
-  Assert(
-      Children().size() == 2,
-      "Failed to create a RootedTree out of a topology that isn't bifurcating at the "
-      "root. Perhaps you are trying to parse unrooted trees into a RootedSBNInstance?");
+  AssertTopologyBifurcatingInConstructor(topology);
 }
 
 RootedTree::RootedTree(const Tree& tree)
     : RootedTree(tree.Topology(), tree.BranchLengths()) {}
+
+RootedTree::RootedTree(const Node::NodePtr& topology, BranchLengthVector branch_lengths,
+                       std::vector<double> node_bounds,
+                       std::vector<double> height_ratios,
+                       std::vector<double> node_heights, std::vector<double> rates,
+                       size_t rate_count)
+    : Tree(topology, std::move(branch_lengths)),
+      node_bounds_(std::move(node_bounds)),
+      height_ratios_(std::move(height_ratios)),
+      node_heights_(std::move(node_heights)),
+      rates_(std::move(rates)),
+      rate_count_(rate_count) {
+  AssertTopologyBifurcatingInConstructor(topology);
+}
+
+RootedTree RootedTree::DeepCopy() const {
+  return RootedTree(Topology()->DeepCopy(), branch_lengths_, node_bounds_,
+                    height_ratios_, node_heights_, rates_, rate_count_);
+};
 
 void RootedTree::SetTipDates(const TagDoubleMap& tag_date_map) {
   node_heights_ = std::vector<double>(Topology()->Id() + 1);
@@ -130,4 +146,11 @@ RootedTree RootedTree::UnitBranchLengthTreeOf(Node::NodePtr topology) {
 bool RootedTree::operator==(const RootedTree& other) const {
   return (this->Topology() == other.Topology()) &&
          (this->BranchLengths() == other.BranchLengths());
+}
+
+void RootedTree::AssertTopologyBifurcatingInConstructor(const Node::NodePtr& topology) {
+  Assert(
+      Children().size() == 2,
+      "Failed to create a RootedTree out of a topology that isn't bifurcating at the "
+      "root. Perhaps you are trying to parse unrooted trees into a RootedSBNInstance?");
 }
