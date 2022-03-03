@@ -16,7 +16,7 @@ ExternalProject_Add(beagle-lib
   GIT_SHALLOW   true
   GIT_PROGRESS  true
   UPDATE_DISCONNECTED true
-  CMAKE_ARGS    -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H" -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath,${BITO_RPATH}"
+  CMAKE_ARGS    -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H" -DCMAKE_SHARED_LINKER_FLAGS="${BITO_RPATH}"
   PREFIX      beagle-lib
   INSTALL_DIR   beagle-lib/install
 )
@@ -32,9 +32,14 @@ ExternalProject_Add(pybind11
   INSTALL_DIR   pybind11/install
 )
 
+option(WERROR "Treat warnings as errors" ON)
+
 function(bito_compile_opts PRODUCT)
   target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
-  target_compile_options(${PRODUCT} PUBLIC -Werror -Wno-unknown-warning -Wno-unknown-warning-option -Wall -Wold-style-cast)
+  target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall -Wold-style-cast)
+  if(${WERROR})
+    target_compile_options(${PRODUCT} PUBLIC -Werror)
+  endif()
   target_include_directories(${PRODUCT} PUBLIC
     ${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
     lib/eigen
@@ -42,7 +47,7 @@ function(bito_compile_opts PRODUCT)
 endfunction()
 
 function(bito_link_opts PRODUCT)
-  target_link_options(${PRODUCT} PUBLIC -pthread -Wl,-rpath,${BITO_RPATH})
+  target_link_options(${PRODUCT} PUBLIC -pthread ${BITO_RPATH})
   target_link_libraries(${PRODUCT} PUBLIC bito-core)
   add_dependencies(${PRODUCT} bito-core)
 endfunction()
@@ -105,7 +110,7 @@ add_library(bito-core SHARED
   src/zlib_stream.cpp
 )
 bito_compile_opts(bito-core)
-target_link_options(bito-core PUBLIC -pthread -Wl,-rpath,${BITO_RPATH})
+target_link_options(bito-core PUBLIC -pthread ${BITO_RPATH})
 target_link_libraries(bito-core PUBLIC hmsbeagle hmsbeagle-cpu z)
 target_link_directories(bito-core PUBLIC
   ${PROJECT_BINARY_DIR}/beagle-lib/install/lib
@@ -154,7 +159,7 @@ configure_file(__init__.py.in
 
 add_custom_target(pip ALL
   COMMAND ln -sf ${PROJECT_BINARY_DIR}/beagle-lib/install/lib/* ${PROJECT_BINARY_DIR}/py
-  COMMAND ln -sf ${PROJECT_BINARY_DIR}/libbito-core.so  ${PROJECT_BINARY_DIR}/py
-  COMMAND ln -sf ${PROJECT_BINARY_DIR}/libbito.so  ${PROJECT_BINARY_DIR}/py/__init__.so
+  COMMAND ln -sf ${PROJECT_BINARY_DIR}/$<TARGET_FILE_NAME:bito-core>  ${PROJECT_BINARY_DIR}/py
+  COMMAND ln -sf ${PROJECT_BINARY_DIR}/$<TARGET_FILE_NAME:bito>  ${PROJECT_BINARY_DIR}/py/__init__.so
   DEPENDS bito
 )

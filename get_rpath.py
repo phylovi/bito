@@ -1,2 +1,2 @@
 import site
-print(".:" + site.getusersitepackages() + "/bito:" + ':'.join(site.getsitepackages()) + "/bito")
+print('-Wl,-rpath,.,-rpath,' + site.getusersitepackages() + '/bito,-rpath,' + ',-rpath,'.join(site.getsitepackages()) + '/bito')

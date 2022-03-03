@@ -136,16 +136,15 @@ class GenericSubsplitDAGNode {
     return rotated ? GetLeftRootward() : GetRightRootward();
   }
 
-  void RemapNodeIds(const SizeVector& node_reindexer) {
+  // After modifying parent DAG.
+  void RemapNodeIds(const SizeVector node_reindexer) {
+    Assert(Reindexer::IsValidReindexer(node_reindexer),
+           "Reindexer must be valid in GenericSubsplitDAGNode::RemapNodeIds.");
     node_.SetId(node_reindexer.at(node_.GetId()));
-    RemapNeighbors(node_.GetNeighbors(Direction::Leafward, Clade::Left),
-                   node_reindexer);
-    RemapNeighbors(node_.GetNeighbors(Direction::Leafward, Clade::Right),
-                   node_reindexer);
-    RemapNeighbors(node_.GetNeighbors(Direction::Rootward, Clade::Left),
-                   node_reindexer);
-    RemapNeighbors(node_.GetNeighbors(Direction::Rootward, Clade::Right),
-                   node_reindexer);
+    node_.GetNeighbors(Direction::Leafward, Clade::Left).RemapIds(node_reindexer);
+    node_.GetNeighbors(Direction::Leafward, Clade::Right).RemapIds(node_reindexer);
+    node_.GetNeighbors(Direction::Rootward, Clade::Left).RemapIds(node_reindexer);
+    node_.GetNeighbors(Direction::Rootward, Clade::Right).RemapIds(node_reindexer);
   }
 
   std::optional<std::tuple<LineId, Direction, Clade>> FindNeighbor(VertexId id) {
@@ -161,7 +160,8 @@ class GenericSubsplitDAGNode {
   friend class DAGVertex;
   template <typename>
   friend class GenericSubsplitDAGNode;
-  friend auto& GetStorage<>(const GenericSubsplitDAGNode&);
+  friend DAGVertex& GetStorage(const GenericSubsplitDAGNode<DAGVertex>&);
+  friend const DAGVertex& GetStorage(const GenericSubsplitDAGNode<const DAGVertex>&);
   T& node_;
 };
 
@@ -231,6 +231,14 @@ typename GenericVerticesView<T>::view_type GenericVerticesView<T>::at(size_t i) 
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+
+inline DAGVertex& GetStorage(const GenericSubsplitDAGNode<DAGVertex>& node) {
+  return node.node_;
+}
+inline const DAGVertex& GetStorage(
+    const GenericSubsplitDAGNode<const DAGVertex>& node) {
+  return node.node_;
+}
 
 /* Create the following topology:
             [0]
