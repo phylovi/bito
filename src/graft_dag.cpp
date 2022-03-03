@@ -96,12 +96,8 @@ void GraftDAG::CreateGraftEdge(const size_t parent_id, const size_t child_id,
   auto parent_node = GetDAGNode(parent_id);
   auto child_node = GetDAGNode(child_id);
 
-  const Bitset &parent_bitset = parent_node.GetBitset();
-  const Bitset &child_bitset = child_node.GetBitset();
-
   // Add edge to grafted edges.
   if (!ContainsEdge(parent_id, child_id)) {
-    const Bitset &edge_bitset = Bitset::PCSP(parent_bitset, child_bitset);
     const size_t &edge_id = EdgeCount();
     graft_storage_.AddLine(
         {edge_id, parent_id, child_id, is_left ? Clade::Left : Clade::Right},
@@ -374,7 +370,7 @@ bool GraftDAG::ContainsNode(const size_t node_id) const {
 }
 
 bool GraftDAG::ContainsGraftEdge(const size_t parent_id, const size_t child_id) const {
-  return graft_storage_.GetLine(parent_id, child_id).has_value();
+  return graft_storage_.GetLine(parent_id, child_id, HostNodeCount(), HostEdgeCount()).has_value();
 }
 
 bool GraftDAG::ContainsEdge(const size_t parent_id, const size_t child_id) const {

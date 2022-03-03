@@ -36,6 +36,7 @@
 _build
 build
 build_test
+build_work
 _ignore
 .clangd
 __pycache__

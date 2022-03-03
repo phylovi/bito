@@ -48,6 +48,9 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   quartet_r_sorted_plv_ = quartet_root_plv_;
 
   InitializePLVsWithSitePatterns();
+
+  std::ignore = plv_count_per_node_;
+  std::ignore = gpcsp_count_;
 }
 
 void GPEngine::operator()(const GPOperations::ZeroPLV& op) {
@@ -396,7 +399,7 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 SizeDoubleVectorMap GPEngine::GatherBranchLengths(
     const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
   SizeDoubleVectorMap gpcsp_branchlengths_map;
-  auto gather_branch_lengths = [&gpcsp_branchlengths_map, this](
+  auto gather_branch_lengths = [&gpcsp_branchlengths_map](
                                    size_t gpcsp_idx, const RootedTree& tree,
                                    const Node* focal_node) {
     gpcsp_branchlengths_map[gpcsp_idx].push_back(tree.BranchLength(focal_node));
@@ -413,8 +416,8 @@ void GPEngine::FunctionOverRootedTreeCollection(
   const size_t default_index = branch_lengths_.size();
   for (const auto& tree : tree_collection.Trees()) {
     tree.Topology()->RootedPCSPPreorder(
-        [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp,
-         this](const Node* sister_node, const Node* focal_node, const Node* child0_node,
+        [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp]
+         (const Node* sister_node, const Node* focal_node, const Node* child0_node,
                const Node* child1_node) {
           Bitset gpcsp_bitset =
               SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,

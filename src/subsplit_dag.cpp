@@ -261,19 +261,19 @@ size_t SubsplitDAG::GetTaxonId(const std::string &name) const {
 
 SubsplitDAGNode SubsplitDAG::GetDAGNode(const size_t node_id) const {
   Assert(ContainsNode(node_id),
-         "Node with the given node_id does not exist in SubsplitDAG::GetDAGNode().");
+         "Node with the given node_id does not exist in DAG.");
   return storage_.GetVertices().at(node_id);
 }
 
 MutableSubsplitDAGNode SubsplitDAG::GetDAGNode(const size_t node_id) {
   Assert(ContainsNode(node_id),
-         "Node with the given node_id does not exist in SubsplitDAG::GetDAGNode().");
+         "Node with the given node_id does not exist in DAG.");
   return storage_.GetVertices().at(node_id);
 }
 
 size_t SubsplitDAG::GetDAGNodeId(const Bitset &subsplit) const {
   Assert(ContainsNode(subsplit),
-         "Node with the given subsplit does not exist in SubsplitDAG::GetDAGNodeId().");
+         "Node with the given subsplit does not exist in DAG.");
   return subsplit_to_id_.at(subsplit);
 }
 
@@ -281,6 +281,12 @@ size_t SubsplitDAG::DAGRootNodeId() const { return NodeCount() - 1; }
 
 ConstNeighborsView SubsplitDAG::RootsplitIds() const {
   return GetDAGNode(DAGRootNodeId()).GetLeftLeafward();
+}
+
+ConstLineView SubsplitDAG::GetDAGEdge(const size_t edge_id) const {
+  Assert(ContainsEdge(edge_id),
+         "Node with the given node_id does not exist in DAG.");
+  return *storage_.GetLine(edge_id);
 }
 
 size_t SubsplitDAG::GetEdgeIdx(const Bitset &parent_subsplit,
@@ -520,7 +526,7 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
   node_probabilities.setZero();
   node_probabilities[DAGRootNodeId()] = 1.;
 
-  TopologicalEdgeTraversal([this, &node_probabilities, &normalized_sbn_parameters](
+  TopologicalEdgeTraversal([&node_probabilities, &normalized_sbn_parameters](
                                const size_t parent_id, const bool,
                                const size_t child_id, const size_t edge_idx) {
     const double child_probability_given_parent = normalized_sbn_parameters[edge_idx];
@@ -913,6 +919,10 @@ bool SubsplitDAG::ContainsEdge(const size_t parent_id, const size_t child_id) co
   return storage_.GetLine(parent_id, child_id).has_value();
 }
 
+bool SubsplitDAG::ContainsEdge(const size_t edge_id) const {
+  return storage_.GetLine(edge_id).has_value();
+}
+
 // ** Build output indexes/vectors
 
 std::pair<SizeVector, SizeVector> SubsplitDAG::BuildParentIdVectors(
@@ -1215,16 +1225,16 @@ SizeVector SubsplitDAG::BuildNodeReindexer(const size_t prev_node_count) {
       {dag_root_node_id},
       SubsplitDAGTraversalAction(
           // BeforeNode
-          [this](size_t node_id) {},
+          [](size_t node_id) {},
           // AfterNode
-          [this, &node_reindexer, &running_traversal_idx](size_t node_id) {
+          [&node_reindexer, &running_traversal_idx](size_t node_id) {
             node_reindexer.at(node_id) = running_traversal_idx;
             running_traversal_idx++;
           },
           // BeforeNodeClade
-          [this](size_t node_id, bool rotated) {},
+          [](size_t node_id, bool rotated) {},
           // VisitEdge
-          [this](size_t node_id, size_t child_id, bool rotated) {}));
+          [](size_t node_id, size_t child_id, bool rotated) {}));
   return node_reindexer;
 }
 

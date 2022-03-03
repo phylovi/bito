@@ -23,8 +23,24 @@ buildtest:
 		mkdir -p _ignore
 	pip install ./build_test
 
+buildwork:
+	@mkdir -p build_work
+	@cd build_work && \
+		cmake -DCMAKE_BUILD_TYPE=Debug -DWERROR=OFF .. && \
+		cmake --build . ${j_flags} && \
+		ln -sf ../data . && \
+		ln -sf libbito.so bito.so && \
+		mkdir -p _ignore
+	pip install ./build_work
+
 fasttest: buildtest
 	@cd build_test && \
+		./doctest --test-case-exclude="* tree sampling" && \
+		./gp_doctest --test-case-exclude="UnrootedSBNInstance*"
+	pytest
+
+work: buildwork
+	@cd build_work && \
 		./doctest --test-case-exclude="* tree sampling" && \
 		./gp_doctest --test-case-exclude="UnrootedSBNInstance*"
 	pytest
@@ -61,7 +77,7 @@ format:
 	clang-format -i -style=file $(our_files)
 
 clean:
-	rm -rf build build_test dist bito.*.so $(find . -name __pycache)
+	rm -rf build build_test build_work dist bito.*.so $(find . -name __pycache)
 
 # We follow C++ core guidelines by allowing passing by non-const reference.
 lint:

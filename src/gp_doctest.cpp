@@ -621,8 +621,9 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
   inst.PopulatePLVs();
   const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
   inst.ExportAllGeneratedTrees(tree_path);
-
-  auto request = dag.QuartetHybridRequestOf(12, true, 11);
+  
+  auto edge = dag.GetDAGEdge(2);
+  auto request = dag.QuartetHybridRequestOf(edge.GetParent(), true, edge.GetChild());
   EigenVectorXd quartet_log_likelihoods =
       inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
 
