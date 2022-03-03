@@ -180,25 +180,7 @@ class GenericNeighborsView {
     bool operator!=(const Iterator& other) const { return i_ != other.i_; }
     bool operator==(const Iterator& other) const { return i_ == other.i_; }
 
-    auto operator*() {
-      if constexpr (std::is_const_v<T>) {
-        return i_->first;
-      } else {
-        struct Modifier {
-          Iterator& iter;
-
-          operator VertexId() const { return iter.i_->first; }
-
-          Modifier& operator=(VertexId id) {
-            std::pair<VertexId, LineId> old = *iter.i_;
-            iter.map_.erase(old.first);
-            iter.map_[id] = old.second;
-            return *this;
-          };
-        };
-        return Modifier{*this};
-      }
-    }
+    VertexId operator*() { return i_->first; }
     LineId GetEdge() const { return i_->second; }
 
    private:
@@ -222,6 +204,8 @@ class GenericNeighborsView {
     return result;
   }
 
+  void SetNeighbors(const T& neighbors) { neighbors_ = neighbors; }
+
  private:
   friend class Iterator;
   template <typename>
@@ -242,6 +226,7 @@ class DAGVertex {
   DAGVertex() = default;
   DAGVertex(const DAGVertex&) = default;
   inline DAGVertex(SubsplitDAGNode node);
+  inline DAGVertex(MutableSubsplitDAGNode node);
   DAGVertex(VertexId id, Bitset subsplit) : id_{id}, subsplit_{std::move(subsplit)} {}
 
   VertexId GetId() const { return id_; }
@@ -388,6 +373,7 @@ class SubsplitDAGStorage {
   LinesView GetLines() { return *this; }
 
   std::optional<ConstLineView> GetLine(VertexId parent, VertexId child) const {
+    if (parent >= vertices_.size() || child >= vertices_.size()) return {};
     auto result = vertices_.at(parent).FindNeighbor(child);
     if (!result.has_value()) return {};
     return lines_.at(std::get<0>(result.value()));
@@ -405,19 +391,19 @@ class SubsplitDAGStorage {
     return vertices_[id].GetId() != NoId;
   }
 
-  DAGLineStorage& AddLine(const DAGLineStorage& newLine) {
+  DAGLineStorage& AddLine(const DAGLineStorage& newLine, size_t offset = 0) {
     if (newLine.GetId() == NoId) Failwith("Set line id before inserting to storage");
     if (newLine.GetClade() == Clade::Unspecified)
       Failwith("Set clade before inserting to storage");
-    auto& line = GetOrInsert(lines_, newLine.GetId());
+    auto& line = GetOrInsert(lines_, newLine.GetId(), offset);
     line = newLine;
     return line;
   }
 
-  DAGVertex& AddVertex(const DAGVertex& newVertex) {
+  DAGVertex& AddVertex(const DAGVertex& newVertex, size_t offset = 0) {
     if (newVertex.GetId() == NoId)
       Failwith("Set vertex id before inserting to storage");
-    auto& vertex = GetOrInsert(vertices_, newVertex.GetId());
+    auto& vertex = GetOrInsert(vertices_, newVertex.GetId(), offset);
     vertex = newVertex;
     return vertex;
   }
@@ -441,7 +427,8 @@ class SubsplitDAGStorage {
   friend class GenericVerticesView<T>::Iterator;
 
   template <typename T, typename Id>
-  static T& GetOrInsert(std::vector<T>& data, Id id) {
+  static T& GetOrInsert(std::vector<T>& data, Id id, size_t offset = 0) {
+    id -= offset;
     if (id >= data.size()) data.resize(id + 1);
     return data[id];
   }

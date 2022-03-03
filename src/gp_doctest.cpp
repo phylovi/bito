@@ -11,21 +11,22 @@
 #include "rooted_sbn_instance.hpp"
 #include "stopwatch.hpp"
 #include "tidy_subsplit_dag.hpp"
+#include "nni_engine.hpp"
 #include "plv_handler.hpp"
 
 using namespace GPOperations;  // NOLINT
 
-// #350 consider use of GPCSP.
-// GPCSP stands for generalized PCSP-- see text.
+// #350 remove all uses of GPCSP.
 
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, rootsplit, root };
 
 // *** GPInstances used for testing ***
 
-GPInstance GPInstanceOfFiles(const std::string& fasta_path,
-                             const std::string& newick_path) {
-  GPInstance inst("_ignore/mmapped_plv.data");
+GPInstance GPInstanceOfFiles(
+    const std::string& fasta_path, const std::string& newick_path,
+    const std::string mmap_filepath = std::string("_ignore/mmapped_plv.data")) {
+  GPInstance inst(mmap_filepath);
   inst.ReadFastaFile(fasta_path);
   inst.ReadNewickFile(newick_path);
   inst.MakeEngine();
@@ -829,28 +830,33 @@ TEST_CASE("GPInstance: Only add child node tests") {
   CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11).GetBitset(), false).second, 5);
 }
 
-TEST_CASE("GPInstance: SubsplitDAG NNI (Nearest Neighbor Interchange)") {
+// This test builds a DAG, tests if engine generates the same set of adjacent NNIs and
+// manually created set. Then adds a node pair to DAG, and tests if engine updates
+// correctly.
+TEST_CASE("NNI Engine: Adjacent NNI Maintenance") {
   // Simple DAG that contains a shared edge, internal leafward fork, and an internal
   // rootward fork.
   const std::string fasta_path = "data/six_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/six_taxon_rooted_simple.nwk");
-  SubsplitDAG& dag = inst.GetDAG();
+  GPDAG& dag = inst.GetDAG();
+  GPEngine& gp_engine = *inst.GetEngine();
 
-  auto set_of_nnis = SetOfNNIs();
-  auto set_of_nnis_2 = SetOfNNIs();
-  auto correct_set_of_nnis = SetOfNNIs();
+  NNISet correct_adjacent_nnis;
 
-  // Build NNI Set from current DAG state.
-  SyncSetOfNNIsWithDAG(set_of_nnis, dag);
+  auto nni_engine = NNIEngine(dag, gp_engine);
+  auto nni_engine_2 = NNIEngine(dag, gp_engine);
+
+  // Build adjacent NNIs from current DAG state.
+  nni_engine.SyncAdjacentNNIsWithDAG();
 
   // Functions for quick manual insertion/removal for Correct NNI Set.
-  auto InsertNNI = [&correct_set_of_nnis](Bitset parent, Bitset child) {
+  auto InsertNNI = [&correct_adjacent_nnis](Bitset parent, Bitset child) {
     auto nni = NNIOperation(parent, child);
-    correct_set_of_nnis.Insert(nni);
+    correct_adjacent_nnis.insert(nni);
   };
-  auto RemoveNNI = [&correct_set_of_nnis](Bitset parent, Bitset child) {
+  auto RemoveNNI = [&correct_adjacent_nnis](Bitset parent, Bitset child) {
     auto nni = NNIOperation(parent, child);
-    correct_set_of_nnis.Erase(nni);
+    correct_adjacent_nnis.erase(nni);
   };
 
   // For images and notes describing this part of the test case, see
@@ -884,19 +890,19 @@ TEST_CASE("GPInstance: SubsplitDAG NNI (Nearest Neighbor Interchange)") {
             Bitset::Subsplit("000100", "000001"));  // (4|35)-(3|5)
   InsertNNI(Bitset::Subsplit("000100", "000011"),
             Bitset::Subsplit("000010", "000001"));  // (3|45)-(4|5)
-  // Check that `BuildSetOfNNIs()` added correct set of nnis.
-  CHECK_EQ(set_of_nnis, correct_set_of_nnis);
 
-  // Now we add a node pair to DAG so we can check UpdateSetOfNNIsAfterAddNodePair.
+  // Check that `BuildNNISet()` added correct set of nnis.
+  auto adjacent_nnis = nni_engine.GetAdjacentNNIs();
+  CHECK_EQ(adjacent_nnis, correct_adjacent_nnis);
+
+  // Now we add a node pair to DAG so we can check UpdateAdjacentNNIsAfterAddNodePair.
   // see https://github.com/phylovi/bito/pull/366#issuecomment-922781415
-  auto nni_to_add =
-      std::make_pair(Bitset::Subsplit("000110", "001001"),
-                     Bitset::Subsplit("001000", "000001"));  // (34|25)-(2|5)
-  dag.AddNodePair(nni_to_add.first, nni_to_add.second);
+  NNIOperation nni_to_add(Bitset::Subsplit("000110", "001001"),
+                          Bitset::Subsplit("001000", "000001"));  // (34|25)-(2|5)
+  dag.AddNodePair(nni_to_add);
 
   // Update NNI.
-  UpdateSetOfNNIsAfterDAGAddNodePair(set_of_nnis, dag, nni_to_add.first,
-                                     nni_to_add.second);
+  nni_engine.UpdateAdjacentNNIsAfterDAGAddNodePair(nni_to_add);
   // Add parents of parent (edge 8) to NNI Set.
   InsertNNI(Bitset::Subsplit("001001", "110110"),
             Bitset::Subsplit("110000", "000110"));  // (25|0134)-(01|34)
@@ -909,13 +915,122 @@ TEST_CASE("GPInstance: SubsplitDAG NNI (Nearest Neighbor Interchange)") {
             Bitset::Subsplit("001001", "000100"));  // (4|235)-(25|3)
   // No parents of child (edge 20) to add to NNI Set (see notes).
   // These should not be equal, as it has not yet removed the pair just added to DAG.
-  CHECK_NE(set_of_nnis, correct_set_of_nnis);
+  CHECK_NE(nni_engine.GetAdjacentNNIs(), correct_adjacent_nnis);
   // Remove NNI added to DAG from NNI Set.
-  RemoveNNI(nni_to_add.first, nni_to_add.second);
-  // Check that `UpdateSetOfNNIsAfterAddNodePair()` updated correctly.
-  CHECK_EQ(set_of_nnis, correct_set_of_nnis);
+  RemoveNNI(nni_to_add.parent_, nni_to_add.child_);
+  // Check that `UpdateAdjacentNNIsAfterAddNodePair()` updated correctly.
+  CHECK_EQ(nni_engine.GetAdjacentNNIs(), correct_adjacent_nnis);
 
   // Build NNI Set from current DAG state from scratch.
-  SyncSetOfNNIsWithDAG(set_of_nnis_2, dag);
-  CHECK_EQ(set_of_nnis_2, correct_set_of_nnis);
+  nni_engine_2.SyncAdjacentNNIsWithDAG();
+  CHECK_EQ(nni_engine_2.GetAdjacentNNIs(), correct_adjacent_nnis);
+}
+
+// Tests DAG equality after adding different NNIs and built from different taxon
+// orderings. Test described at:
+// https://github.com/phylovi/bito/pull/377#issuecomment-1035410447
+TEST_CASE("NNI Engine: Add NNI Test") {
+  // Fasta contains simple sequences for four taxa: x0,x1,x2,x3.
+  const std::string fasta_path = "data/four_taxon.fasta";
+  // dag_A_1 is a DAG that contains pair_1.
+  auto inst_A_1 =
+      GPInstanceOfFiles(fasta_path, "data/four_taxon_simple_before_nni_1.nwk",
+                        "_ignore/mmapped_plv_A_1.data");
+  GPDAG& dag_A_1 = inst_A_1.GetDAG();
+  // dag_A_2 is a DAG that contains pair_2.
+  auto inst_A_2 =
+      GPInstanceOfFiles(fasta_path, "data/four_taxon_simple_before_nni_2.nwk",
+                        "_ignore/mmapped_plv_A_2.data");
+  GPDAG& dag_A_2 = inst_A_2.GetDAG();
+  // dag_A_2b is a DAG that contains pair_2 with a different taxon mapping.
+  auto inst_A_2b =
+      GPInstanceOfFiles(fasta_path, "data/four_taxon_simple_before_nni_2b.nwk",
+                        "_ignore/mmapped_plv_A_2.data");
+  GPDAG& dag_A_2b = inst_A_2b.GetDAG();
+  // dag_B is a DAG containing dag_A_1 after adding node pair_2.
+  auto inst_B = GPInstanceOfFiles(fasta_path, "data/four_taxon_simple_after_nni.nwk",
+                                  "_ignore/mmapped_plv_B.data");
+  GPDAG& dag_B = inst_B.GetDAG();
+  // pair_1: NNI pair missing from dag_A_1.
+  NNIOperation pair_1(Bitset::Subsplit("0110", "0001"),   // 12|3
+                      Bitset::Subsplit("0100", "0010"));  //  1|2
+  // pair_2: NNI pair missing from dag_A_2.
+  NNIOperation pair_2(Bitset::Subsplit("0110", "0001"),   // 12|3
+                      Bitset::Subsplit("0100", "0010"));  //  1|2
+  // pair_2b: NNI pair missing from dag_A_2b.
+  NNIOperation pair_2b(Bitset::Subsplit("0100", "0011"),   //  1|23
+                       Bitset::Subsplit("0010", "0001"));  //  2|3
+  // Before adding missing NNIs, dag_A_2 variants are equal, but dag_A_1 and dag_A_2 are
+  // different.
+  CHECK_EQ(dag_A_1, dag_A_1);
+  CHECK_EQ(dag_A_2, dag_A_2b);
+  CHECK_NE(dag_A_1, dag_A_2);
+  // Add missing NNIs.
+  dag_A_1.AddNodePair(pair_1);
+  dag_A_2.AddNodePair(pair_2);
+  dag_A_2b.AddNodePair(pair_2b);
+  // After adding missing NNIs, all DAGs are equal to dag_B.
+  CHECK_EQ(dag_A_1, dag_B);
+  CHECK_EQ(dag_A_2, dag_B);
+  CHECK_EQ(dag_A_2b, dag_B);
+}
+
+// This compares DAGs after adding NNIs via AddNodePair vs GraftNodePair.
+TEST_CASE("NNI Engine: AddNodePair vs GraftNodePair") {
+  // Access ith NNI from NNI set.
+  auto GetWhichNNIFromSet = [](const NNISet& nni_set, const size_t which_nni) {
+    auto nni_set_ptr = nni_set.begin();
+    for (size_t i = 0; i < which_nni; i++) {
+      nni_set_ptr++;
+    }
+    return *nni_set_ptr;
+  };
+  // Simple DAG that contains a shared edge, internal leafward fork, and an internal
+  // rootward fork.
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  // Instance that will be unaltered.
+  auto pre_inst = GPInstanceOfFiles(fasta_path, newick_path);
+  GPDAG& pre_dag = pre_inst.GetDAG();
+  GPEngine& pre_gp_engine = *pre_inst.GetEngine();
+  // Instance that is used by grafted DAG.
+  auto inst_to_graft = GPInstanceOfFiles(fasta_path, newick_path);
+  GPDAG& dag_to_graft = inst_to_graft.GetDAG();
+  GraftDAG graft_dag = GraftDAG(dag_to_graft);
+  // Find all viable NNIs for DAG.
+  auto nni_engine = NNIEngine(pre_dag, pre_gp_engine);
+  nni_engine.SyncAdjacentNNIsWithDAG();
+  size_t nni_count = nni_engine.GetAdjacentNNICount();
+  // Check DAG and Grafted DAG equal before adding any NNIs.
+  CHECK_MESSAGE(GraftDAG::CompareToDAG(graft_dag, pre_dag) == 0,
+                "GraftDAG not equal to DAG before AddNodePair.");
+  // Test DAGs equivalent after adding NNI individually.
+  for (size_t i = 0; i < nni_count; i++) {
+    auto nni_to_add = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), i);
+    // New temp DAG.
+    auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+    GPDAG& dag = inst.GetDAG();
+    // Add NNI to DAG and GraftDAG and compare results.
+    dag.AddNodePair(nni_to_add.parent_, nni_to_add.child_);
+    graft_dag.AddGraftNodePair(nni_to_add.parent_, nni_to_add.child_);
+    CHECK_MESSAGE(GraftDAG::CompareToDAG(graft_dag, dag) == 0,
+                  "GraftDAG not equal to DAG after adding NNIs.");
+    // Clear NNIs from GraftDAG and compare to initial DAG.
+    graft_dag.RemoveAllGrafts();
+    CHECK_MESSAGE(GraftDAG::CompareToDAG(graft_dag, pre_dag) == 0,
+                  "GraftDAG not equal to initial DAG after removing all NNIs.");
+  }
+  // Test DAGs not equivalent when adding different NNIs.
+  {
+    auto nni_1 = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), 0);
+    auto nni_2 = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), 1);
+    // New temp DAG.
+    auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+    GPDAG& dag = inst.GetDAG();
+    // Add NNI to DAG and GraftDAG and compare results.
+    dag.AddNodePair(nni_1.parent_, nni_1.child_);
+    graft_dag.AddGraftNodePair(nni_2.parent_, nni_2.child_);
+    CHECK_MESSAGE(GraftDAG::CompareToDAG(graft_dag, dag) != 0,
+                  "GraftDAG is equal to DAG after adding different NNIs.");
+  }
 }

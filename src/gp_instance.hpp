@@ -7,6 +7,7 @@
 #include "gp_engine.hpp"
 #include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
+#include "nni_engine.hpp"
 
 class GPInstance {
  public:
@@ -82,14 +83,14 @@ class GPInstance {
   // Export the subsplit DAG as a DOT file.
   void SubsplitDAGToDot(const std::string &out_path, bool show_index_labels = true);
 
- private:
-  std::string mmap_file_path_;
-  Alignment alignment_;
-  std::unique_ptr<GPEngine> engine_;
-  RootedTreeCollection tree_collection_;
-  GPDAG dag_;
-  static constexpr size_t plv_count_per_node_ = 6;
+  // Initialize NNI Evaluation Engine.
+  void MakeNNIEngine();
+  // Get NNI Evaluation Engine.
+  NNIEngine &GetNNIEngine();
+  // Get taxon names.
+  StringVector GetTaxonNames();
 
+ private:
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesLoaded() const;
   void CheckTreesLoaded() const;
@@ -99,4 +100,13 @@ class GPInstance {
   RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
       Node::NodePtrVec &&topologies) const;
   StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
+
+  std::string mmap_file_path_;
+  Alignment alignment_;
+  std::unique_ptr<GPEngine> engine_;
+  RootedTreeCollection tree_collection_;
+  GPDAG dag_;
+  static constexpr size_t plv_count_per_node_ = 6;
+
+  std::unique_ptr<NNIEngine> nni_engine_;
 };

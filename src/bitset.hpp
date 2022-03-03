@@ -175,8 +175,8 @@ class Bitset {
   //
   // Make a "leaf subsplit" (pairs given nonempty_clade with an empty_clade).
   static Bitset LeafSubsplitOfNonemptyClade(const Bitset &nonempty_clade);
-  // Make a "leaf subsplit" of a given parent subsplit. The leftside clade of
-  // the parent subsplit must be non-empty and the rightside clade must be a singleton.
+  // Make a "leaf subsplit" of a given parent subsplit. The left clade of
+  // the parent subsplit must be non-empty and the right clade must be a singleton.
   static Bitset LeafSubsplitOfParentSubsplit(const Bitset &parent_subsplit);
   // Make the UCA (universal common ancestor) subsplit of the DAG root node with the
   // given taxon count. Since subsplit bitsets are always big-small, the DAG root node
@@ -424,7 +424,7 @@ TEST_CASE("Bitset: Clades, Subsplits, PCSPs") {
   CHECK_EQ(Bitset("101010").SubsplitIsLeftChildOf(Bitset("111000")), true);
   // #350 commented out code
   // CHECK_EQ(Bitset::SubsplitIsChildOfWhichParentClade(Bitset("111000"),
-  // Bitset("101010")),true);
+  // Bitset("101010")), true);
   CHECK_EQ(Bitset("00100001").SubsplitIsRightChildOf(Bitset("11000011")), true);
   // CHECK_EQ(Bitset::SubsplitIsChildOfWhichParentClade(Bitset("000111"),
   // Bitset("101010")), false);

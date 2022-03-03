@@ -392,3 +392,14 @@ void GPInstance::SubsplitDAGToDot(const std::string &out_path, bool show_index_l
   }
   out_stream.close();
 }
+
+void GPInstance::MakeNNIEngine() {
+  nni_engine_ = std::make_unique<NNIEngine>(dag_, *engine_);
+}
+
+NNIEngine &GPInstance::GetNNIEngine() {
+  Assert(nni_engine_, "GPInstance::GetNNIEngine() when nni_engine has not been made.");
+  return *nni_engine_;
+}
+
+StringVector GPInstance::GetTaxonNames() { return tree_collection_.TaxonNames(); }
