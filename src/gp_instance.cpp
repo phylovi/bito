@@ -196,7 +196,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
   ProcessOperations(marginal_lik_operations);
   ProcessOperations(compute_lik_operations);
 
-  size_t gpcsp_count = dag_.GPCSPCountWithFakeSubsplits();
+  size_t gpcsp_count = dag_.EdgeCountWithLeafSubsplits();
   per_pcsp_branch_lengths_ = EigenMatrixXd(gpcsp_count, 1);
   per_pcsp_marg_lik_ = EigenMatrixXd(gpcsp_count, 1);
 
@@ -430,7 +430,7 @@ void GPInstance::TrackValuesFromOptimization() {
 }
 
 void GPInstance::GetOptimizationPath() {
-  size_t gpcsp_count = dag_.GPCSPCountWithFakeSubsplits();
+  size_t gpcsp_count = dag_.EdgeCountWithLeafSubsplits();
   const auto pretty_indexer = PrettyIndexer();
 
   for (size_t i = 0; i < gpcsp_count; i++) {
