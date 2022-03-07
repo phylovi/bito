@@ -271,6 +271,10 @@ MutableSubsplitDAGNode SubsplitDAG::GetDAGNode(const size_t node_id) {
   return storage_.GetVertices().at(node_id);
 }
 
+std::optional<ConstLineView> SubsplitDAG::GetDAGEdge(size_t idx) const {
+  return storage_.GetLine(idx);
+}
+
 size_t SubsplitDAG::GetDAGNodeId(const Bitset &subsplit) const {
   Assert(ContainsNode(subsplit),
          "Node with the given subsplit does not exist in SubsplitDAG::GetDAGNodeId().");

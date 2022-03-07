@@ -14,7 +14,7 @@ class TopologySampler {
     virtual EigenConstVectorXdRef SBNParameters() const = 0;
     virtual size_t RootsplitCount() const = 0;
     virtual const Bitset &RootsplitsAt(size_t rootsplit_idx) const = 0;
-    virtual const SizePair &ParentToRangeAt(const Bitset &parent) const = 0;
+    virtual SizePair ParentToRangeAt(const Bitset &parent) const = 0;
     virtual const Bitset &IndexToChildAt(size_t child_idx) const = 0;
   };
 
@@ -43,7 +43,7 @@ class SBNInstanceSamplerInput : public TopologySampler::Input {
     return inst_.SBNSupport().RootsplitsAt(rootsplit_idx);
   }
 
-  const SizePair &ParentToRangeAt(const Bitset &parent) const override {
+  SizePair ParentToRangeAt(const Bitset &parent) const override {
     return inst_.SBNSupport().ParentToRangeAt(parent);
   }
 
@@ -64,7 +64,7 @@ class SubsplitDAGSamplerInput : public TopologySampler::Input {
   size_t RootsplitCount() const override;
   EigenConstVectorXdRef SBNParameters() const override;
   const Bitset &RootsplitsAt(size_t rootsplit_idx) const override;
-  const SizePair &ParentToRangeAt(const Bitset &parent) const override;
+  SizePair ParentToRangeAt(const Bitset &parent) const override;
   const Bitset &IndexToChildAt(size_t child_idx) const override;
 
  private:
@@ -147,7 +147,7 @@ TEST_CASE(
       driver.ParseNewickFile("data/five_taxon_rooted.nwk"));
   SubsplitDAG dag(tree_collection);
 
-  auto indexer = dag.BuildGPCSPIndexer();
+  auto indexer = dag.BuildEdgeIndexer();
   std::vector<RootedIndexerRepresentation> indexer_representations;
   indexer_representations.reserve(tree_collection.trees_.size());
   for (const auto &tree : tree_collection.trees_) {
@@ -158,7 +158,7 @@ TEST_CASE(
   TestSampling(TopologySampler{},
                SubsplitDAGSamplerInput{
                    dag, dag.BuildUniformOnTopologicalSupportPrior().array().log()},
-               dag, indexer_representations, dag.BuildGPCSPIndexer(),
+               dag, indexer_representations, indexer,
                [](auto &&) { return 1; });
 }
 

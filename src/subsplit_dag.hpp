@@ -129,6 +129,8 @@ class SubsplitDAG {
   // Get node based on node id.
   SubsplitDAGNode GetDAGNode(const size_t node_id) const;
   MutableSubsplitDAGNode GetDAGNode(const size_t node_id);
+  // Get edge based on edge idx.
+  std::optional<ConstLineView> GetDAGEdge(size_t idx) const;
   // Get the node id based on the subsplit bitset.
   size_t GetDAGNodeId(const Bitset &subsplit) const;
   // Gets the node id of the DAG root.
@@ -168,53 +170,7 @@ class SubsplitDAG {
   // edge, the child id, and the GCPSP index of the edge.
   using ParentRotationChildEdgeLambda =
       std::function<void(const size_t, const bool, const size_t, const size_t)>;
-
-  // NodeAdditionResult is the return value of SubsplitDAG::AddNodePair.
-  struct NodeAdditionResult {
-    SizeVector new_node_ids, new_edge_idxs, node_reindexer, edge_reindexer;
-  };
-
-  SubsplitDAG();
-  explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
-
-  // The total node count (including the DAG root node).
-  size_t NodeCount() const;
-  size_t NodeCountWithoutDAGRoot() const;
-  // How many topologies can be expressed by the subsplit DAG? Expressed as a double
-  // because this number can be big.
-  double TopologyCount() const;
-  size_t RootsplitCount() const;
-  size_t GPCSPCount() const;
-  size_t GPCSPCountWithFakeSubsplits() const;
-
-  void Print() const;
-  void PrintGPCSPIndexer() const;
-  void PrintDAGEdges() const;
-  void PrintParentToRange() const;
-  void ToDot(const std::string file_path, bool show_index_labels = true) const;
-  std::string ToDot(bool show_index_labels = true) const;
-
-  // Create a GPCSPIndexer representing the DAG.
-  // The gpcsp indexer is "expanded" meaning it contains fake PCSPs and rootsplit
-  // bitsets are formatted as subsplits: 1110|0001.
-  BitsetSizeMap BuildGPCSPIndexer() const;
-  SubsplitDAGNode *GetDAGNode(size_t node_id) const;
-  size_t GetDAGNodeId(const Bitset &subsplit) const;
-  size_t DAGRootNodeId() const;
-  // Return the node ids corresponding to the rootsplits.
-  const SizeVector &RootsplitIds() const;
-
-  const BitsetSizePairMap &ParentToRange() const;
-  const std::map<SizePair, size_t> &DAGEdges() const;
-
-  // Access the GPCSP index from a parent-child pair of DAG nodes.
-  size_t GetGPCSPIndex(const Bitset &parent_subsplit,
-                       const Bitset &child_subsplit) const;
-  // Get the GPCSP index from a parent-child pair of DAG nodes using the dag_edges_.
-  size_t GPCSPIndexOfIds(size_t parent_id, size_t child_id) const;
-  // Get the range of outgoing idxs from the given clade of a subsplit.
-  SizePair GetEdgeRange(const Bitset &subsplit, const bool rotated) const;
-  
+  //
   // Iterate over the "real" nodes, i.e. those that do not correspond to
   // leaf subsplits or the DAG root node.
   void IterateOverRealNodes(const NodeLambda &f) const;
