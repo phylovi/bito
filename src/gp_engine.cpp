@@ -426,28 +426,26 @@ void GPEngine::FunctionOverRootedTreeCollection(
 
 void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
                                      const BitsetSizeMap& indexer) {
-  const auto leaf_count = tree_collection.TaxonCount();
-  const size_t default_index = branch_lengths_.size();
+  size_t unique_gpcsp_count = branch_lengths_.size();
   branch_lengths_.setZero();
-  Eigen::VectorXi gpcsp_counts = Eigen::VectorXi::Zero(branch_lengths_.size());
-  // Set the branch length vector to be the total of the branch lengths for each PCSP,
-  // and count the number of times we have seen each PCSP (into gpcsp_counts).
-  for (const auto& tree : tree_collection.Trees()) {
-    tree.Topology()->RootedPCSPPreorder(
-        [&leaf_count, &default_index, &indexer, &tree, &gpcsp_counts, this](
-            const Node* sister_node, const Node* focal_node, const Node* child0_node,
-            const Node* child1_node) {
-          Bitset gpcsp_bitset =
-              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
-                                    child0_node, false, child1_node, false);
-          const auto gpcsp_idx = AtWithDefault(indexer, gpcsp_bitset, default_index);
-          if (gpcsp_idx != default_index) {
-            if (gpcsp_counts(gpcsp_idx) == 0) {
-              branch_lengths_(gpcsp_idx) = tree.BranchLength(focal_node);
-            }
-            gpcsp_counts(gpcsp_idx)++;
-          }
-        });
+  EigenVectorXi observed_gpcsp_counts = EigenVectorXi::Zero(unique_gpcsp_count);
+  // Set the branch length vector to be the first encountered branch length for each 
+  // PCSP, and make when we have seen each PCSP (into observed_gpcsp_counts).
+  auto set_first_branch_length_and_mark_gpcsp_count =
+      [&observed_gpcsp_counts, this](size_t gpcsp_idx, const RootedTree& tree,
+                                     const Node* focal_node) {
+        if (observed_gpcsp_counts(gpcsp_idx)==0) {
+          branch_lengths_(gpcsp_idx) = tree.BranchLength(focal_node);
+          observed_gpcsp_counts(gpcsp_idx)++;
+        }                                
+      };
+  FunctionOverRootedTreeCollection(set_first_branch_length_and_mark_gpcsp_count,
+                                   tree_collection, indexer);
+  //If a branch length was not set above, set it to the default length.                                 
+  for (size_t gpcsp_idx = 0; gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
+    if (observed_gpcsp_counts(gpcsp_idx) == 0) {
+      branch_lengths_(gpcsp_idx) = default_branch_length_;
+    } 
   }
 }
 

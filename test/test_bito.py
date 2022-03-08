@@ -9,6 +9,7 @@ import pytest
 import numpy as np
 import bito
 import bito.beagle_flags as beagle_flags
+import os
 
 SIMPLE_SPECIFICATION = bito.PhyloModelSpecification(
     substitution="JC69", site="constant", clock="none"
@@ -28,7 +29,12 @@ def hello_demo():
         [bito.UnrootedTree.of_parent_id_vector([3, 3, 3])],
         ["mars", "saturn", "jupiter"],
     )
+
+    cwd = os.getcwd()
+    print("Current working directory: {0}".format(cwd))
+
     inst.read_fasta_file("data/hello.fasta")
+    breakpoint()
     inst.prepare_for_phylo_likelihood(
         SIMPLE_SPECIFICATION, 2, [beagle_flags.VECTOR_SSE]
     )
