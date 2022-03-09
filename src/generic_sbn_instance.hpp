@@ -365,7 +365,7 @@ class GenericSBNInstance {
   Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const {
     auto process_subsplit = [this](const Bitset &parent) {
       auto singleton_option =
-          parent.SubsplitGetClade(Bitset::SubsplitClade::Right).SingletonOption();
+          parent.SubsplitGetClade(SubsplitClade::Right).SingletonOption();
       if (singleton_option) {
         return Node::Leaf(*singleton_option);
       }  // else

@@ -14,12 +14,12 @@
 using StringSizePairVector = std::vector<std::pair<std::string, size_t>>;
 
 // Assume we have:
-// * all PLVs in a data structure such that `plv[idx]` is the `idx`th PLV
-// * branch lengths in a vector `branch_lengths` indexed by PCSPs
-// * log likelihoods in a vector `log_likelihoods` indexed by PCSPs
-// * a vector of SBN probabilities `q` indexed by PCSPs, such that the children of a
+// - all PLVs in a data structure such that `plv[idx]` is the `idx`th PLV
+// - branch lengths in a vector `branch_lengths` indexed by PCSPs
+// - log likelihoods in a vector `log_likelihoods` indexed by PCSPs
+// - a vector of SBN probabilities `q` indexed by PCSPs, such that the children of a
 // given parent are contiguous
-// * a collection of weights from site pattern compression
+// - a collection of weights from site pattern compression
 
 namespace GPOperations {
 

@@ -36,20 +36,9 @@
 #include <memory>
 
 #include "bitset.hpp"
+#include "reindexer.hpp"
 
 enum class Direction { Rootward, Leafward };
-enum class Clade { Unspecified, Left, Right };
-
-inline Clade Opposite(Clade clade) {
-  switch (clade) {
-    case Clade::Left:
-      return Clade::Right;
-    case Clade::Right:
-      return Clade::Left;
-    default:
-      Failwith("Use of unspecified clade");
-  }
-}
 
 using VertexId = size_t;
 using LineId = size_t;
@@ -61,7 +50,7 @@ class DAGLine {
   LineId GetId() const { return storage().id_; }
   VertexId GetParent() const { return storage().parent_; }
   VertexId GetChild() const { return storage().child_; }
-  Clade GetClade() const { return storage().clade_; }
+  SubsplitClade GetSubsplitClade() const { return storage().clade_; }
 
   Derived& SetId(LineId id) {
     storage().id_ = id;
@@ -75,7 +64,7 @@ class DAGLine {
     storage().child_ = id;
     return derived();
   }
-  Derived& SetClade(Clade clade) {
+  Derived& SetSubsplitClade(SubsplitClade clade) {
     storage().clade_ = clade;
     return derived();
   }
@@ -98,7 +87,7 @@ class DAGLineStorage : public DAGLine<DAGLineStorage> {
  public:
   DAGLineStorage() = default;
   DAGLineStorage(const DAGLineStorage&) = default;
-  DAGLineStorage(LineId id, VertexId parent, VertexId child, Clade clade)
+  DAGLineStorage(LineId id, VertexId parent, VertexId child, SubsplitClade clade)
       : id_{id}, parent_{parent}, child_{child}, clade_{clade} {}
 
   template <typename T>
@@ -117,14 +106,14 @@ class DAGLineStorage : public DAGLine<DAGLineStorage> {
   LineId id_ = NoId;
   VertexId parent_ = NoId;
   VertexId child_ = NoId;
-  Clade clade_ = Clade::Unspecified;
+  SubsplitClade clade_ = SubsplitClade::Unspecified;
 };
 
 template <typename T>
 class DAGLineView : public DAGLine<DAGLineView<T>> {
  public:
   DAGLineView(T& line) : line_{line} {
-    Assert(line.GetClade() != Clade::Unspecified, "Uninitialized edge");
+    Assert(line.GetSubsplitClade() != SubsplitClade::Unspecified, "Uninitialized edge");
   }
 
   template <size_t I>
@@ -273,25 +262,25 @@ class DAGVertex {
   VertexId GetId() const { return id_; }
   const Bitset& GetSubsplit() const { return subsplit_; }
 
-  NeighborsView GetNeighbors(Direction direction, Clade clade) {
+  NeighborsView GetNeighbors(Direction direction, SubsplitClade clade) {
     return neighbors_.at({direction, clade});
   }
 
-  ConstNeighborsView GetNeighbors(Direction direction, Clade clade) const {
+  ConstNeighborsView GetNeighbors(Direction direction, SubsplitClade clade) const {
     return neighbors_.at({direction, clade});
   }
 
   bool IsRoot() const {
-    return GetNeighbors(Direction::Rootward, Clade::Left).empty() &&
-           GetNeighbors(Direction::Rootward, Clade::Right).empty();
+    return GetNeighbors(Direction::Rootward, SubsplitClade::Left).empty() &&
+           GetNeighbors(Direction::Rootward, SubsplitClade::Right).empty();
   }
 
   bool IsLeaf() const {
-    return GetNeighbors(Direction::Leafward, Clade::Left).empty() &&
-           GetNeighbors(Direction::Leafward, Clade::Right).empty();
+    return GetNeighbors(Direction::Leafward, SubsplitClade::Left).empty() &&
+           GetNeighbors(Direction::Leafward, SubsplitClade::Right).empty();
   }
 
-  std::optional<std::tuple<LineId, Direction, Clade>> FindNeighbor(
+  std::optional<std::tuple<LineId, Direction, SubsplitClade>> FindNeighbor(
       VertexId neighbor) const {
     for (auto i : neighbors_) {
       auto j = i.second.find(neighbor);
@@ -308,12 +297,12 @@ class DAGVertex {
     subsplit_ = std::move(subsplit);
     return *this;
   }
-  DAGVertex& AddNeighbor(Direction direction, Clade clade, VertexId neighbor,
+  DAGVertex& AddNeighbor(Direction direction, SubsplitClade clade, VertexId neighbor,
                          LineId line) {
     neighbors_.at({direction, clade}).insert({neighbor, line});
     return *this;
   }
-  void RemoveNeighbor(Direction direction, Clade clade, VertexId neighbor) {
+  void RemoveNeighbor(Direction direction, SubsplitClade clade, VertexId neighbor) {
     neighbors_.at({direction, clade}).erase(neighbor);
   }
 
@@ -330,21 +319,22 @@ class DAGVertex {
 
   void ClearNeighbors() {
     neighbors_ = {
-        {{Direction::Rootward, Clade::Left}, {}},
-        {{Direction::Rootward, Clade::Right}, {}},
-        {{Direction::Leafward, Clade::Left}, {}},
-        {{Direction::Leafward, Clade::Right}, {}},
+        {{Direction::Rootward, SubsplitClade::Left}, {}},
+        {{Direction::Rootward, SubsplitClade::Right}, {}},
+        {{Direction::Leafward, SubsplitClade::Left}, {}},
+        {{Direction::Leafward, SubsplitClade::Right}, {}},
     };
   }
 
  private:
   VertexId id_ = NoId;
   Bitset subsplit_ = Bitset{{}};
-  std::map<std::pair<Direction, Clade>, std::map<VertexId, LineId>> neighbors_ = {
-      {{Direction::Rootward, Clade::Left}, {}},
-      {{Direction::Rootward, Clade::Right}, {}},
-      {{Direction::Leafward, Clade::Left}, {}},
-      {{Direction::Leafward, Clade::Right}, {}},
+  std::map<std::pair<Direction, SubsplitClade>, std::map<VertexId, LineId>> neighbors_ =
+      {
+          {{Direction::Rootward, SubsplitClade::Left}, {}},
+          {{Direction::Rootward, SubsplitClade::Right}, {}},
+          {{Direction::Leafward, SubsplitClade::Left}, {}},
+          {{Direction::Leafward, SubsplitClade::Right}, {}},
   };
 };
 
@@ -574,7 +564,7 @@ class SubsplitDAGStorage {
 
   DAGLineStorage& AddLine(const DAGLineStorage& newLine) {
     if (newLine.GetId() == NoId) Failwith("Set line id before inserting to storage");
-    if (newLine.GetClade() == Clade::Unspecified)
+    if (newLine.GetSubsplitClade() == SubsplitClade::Unspecified)
       Failwith("Set clade before inserting to storage");
     auto& line = GetOrInsert(lines_, newLine.GetId());
     line = newLine;
@@ -608,14 +598,14 @@ class SubsplitDAGStorage {
       auto& line = lines_[i];
       if (line.GetParent() >= vertices_.HostSize()) {
         if (line.GetChild() < vertices_.HostSize()) {
-          vertices_[line.GetChild()].RemoveNeighbor(Direction::Rootward,
-                                                    line.GetClade(), line.GetParent());
+          vertices_[line.GetChild()].RemoveNeighbor(
+              Direction::Rootward, line.GetSubsplitClade(), line.GetParent());
         }
       }
       if (line.GetChild() >= vertices_.HostSize()) {
         if (line.GetParent() < vertices_.HostSize()) {
-          vertices_[line.GetParent()].RemoveNeighbor(Direction::Leafward,
-                                                     line.GetClade(), line.GetChild());
+          vertices_[line.GetParent()].RemoveNeighbor(
+              Direction::Leafward, line.GetSubsplitClade(), line.GetChild());
         }
       }
     }
@@ -627,8 +617,10 @@ class SubsplitDAGStorage {
     auto& line = lines_.at(line_id);
     auto& parent = vertices_.at(line.GetParent());
     auto& child = vertices_.at(line.GetChild());
-    parent.AddNeighbor(Direction::Leafward, line.GetClade(), child.GetId(), line_id);
-    child.AddNeighbor(Direction::Rootward, line.GetClade(), parent.GetId(), line_id);
+    parent.AddNeighbor(Direction::Leafward, line.GetSubsplitClade(), child.GetId(),
+                       line_id);
+    child.AddNeighbor(Direction::Rootward, line.GetSubsplitClade(), parent.GetId(),
+                      line_id);
   }
 
   void ConnectAllVertices() {
@@ -649,8 +641,8 @@ class SubsplitDAGStorage {
       if (vertex.GetId() == NoId) {
         continue;
       }
-      if (vertex.GetNeighbors(Direction::Rootward, Clade::Left).empty() &&
-          vertex.GetNeighbors(Direction::Rootward, Clade::Right).empty()) {
+      if (vertex.GetNeighbors(Direction::Rootward, SubsplitClade::Left).empty() &&
+          vertex.GetNeighbors(Direction::Rootward, SubsplitClade::Right).empty()) {
         return vertex;
       }
     }

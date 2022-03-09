@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.19)
 
+# disallow building in same directory as source.
+if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
+  message(WARNING "ERROR: CMake build directory cannot be the same as root source directory. HINT: Can build with `make`.")
+endif()
+set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+
 project(bito)
 find_package(Python COMPONENTS Interpreter Development)
 set(BITO_VERSION "0.1")
@@ -37,9 +44,11 @@ option(WERROR "Treat warnings as errors" ON)
 
 function(bito_compile_opts PRODUCT)
   target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
-  target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall -Wold-style-cast)
+  target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall)
   if(${WERROR})
     target_compile_options(${PRODUCT} PUBLIC -Werror)
+  else()
+    target_compile_options(${PRODUCT} PUBLIC -Wold-style-cast)
   endif()
   target_include_directories(${PRODUCT} PUBLIC
     ${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1

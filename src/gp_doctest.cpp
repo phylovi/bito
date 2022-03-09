@@ -4,6 +4,7 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "include_doctest.hpp"
 
+#include "sugar.hpp"
 #include "combinatorics.hpp"
 #include "gp_instance.hpp"
 #include "phylo_model.hpp"
@@ -237,10 +238,10 @@ TEST_CASE("GPInstance: gradient calculation") {
   size_t hello_node_count_without_dag_root_node = 5;
   size_t rootsplit_jupiter_idx = 2;
 
-  size_t leafward_idx = PLVHandler::GetPLVIndex(
-      PLVType::P, hello_node_count_without_dag_root_node, child_id);
-  size_t rootward_idx = PLVHandler::GetPLVIndex(
-      PLVType::RLeft, hello_node_count_without_dag_root_node, rootsplit_id);
+  size_t leafward_idx = PLVHandler::GetPLVIndex(PLVType::P, child_id,
+                                                hello_node_count_without_dag_root_node);
+  size_t rootward_idx = PLVHandler::GetPLVIndex(PLVType::RLeft, rootsplit_id,
+                                                hello_node_count_without_dag_root_node);
   OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
@@ -1173,16 +1174,18 @@ TEST_CASE("NNI Engine: GraftDAG") {
 
 // Initialize GPInstance, make GPEngine, DAG, and NNIEngine.
 // Perform initial run of GP optimization.
-GPInstance GPInstanceBuildEnginesAndRunGP(const std::string fasta_path,
-                                          const std::string newick_path,
-                                          const std::string mmap_file_path) {
-  auto inst = GPInstanceOfFiles(fasta_path, newick_path, mmap_file_path);
-  inst.EstimateBranchLengths(0.0001, 100, true);
+void GPInstanceRunGP(GPInstance& inst, const bool do_optimize_branch_lengths = true,
+                     const bool do_reinit_priors = true) {
+  if (do_optimize_branch_lengths) {
+    inst.EstimateBranchLengths(0.0001, 100, true);
+  }
+  if (do_reinit_priors) {
+    inst.ReinitializePriors();
+  }
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   inst.ComputeMarginalLikelihood();
-  return inst;
-};
+}
 
 // Adds NNIs to DAG, then resizes and reindexes GPEngine, then checks that the same
 // node and edge bitsets correspond to the same PLVs and branch lengths before and after
@@ -1244,117 +1247,117 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
   };
   // Test that adds nodes to DAG, resizes and reindexes GPEngine and checks that
   // GPEngine reindexed correctly.
-  auto ResizeAndReindexGPEngineTest =
-      [&CheckGPEngineResizeAndReindex, &CheckGPEngineRun](
-          const size_t nni_add_limit, const size_t test_after_every,
-          const bool skip_reindexing, const bool perform_resize_unmodded_test) {
-        BoolVector test_array;
-        const std::string fasta_path = "data/hotstart.fasta";
-        const std::string newick_path = "data/hotstart_bootstrap_sample.nwk";
-        // Instance that will not be modified.
-        auto pre_inst = GPInstanceBuildEnginesAndRunGP(fasta_path, newick_path,
-                                                       "_ignore/mmap_plv_A.data");
-        GPDAG& pre_dag = pre_inst.GetDAG();
-        GPEngine& pre_gpengine = *pre_inst.GetEngine();
-        // Instance that will have DAG and GPEngine modified.
-        auto inst = GPInstanceBuildEnginesAndRunGP(fasta_path, newick_path,
-                                                   "_ignore/mmap_plv_C.data");
-        GPDAG& dag = inst.GetDAG();
-        GPEngine& gpengine = *inst.GetEngine();
-        inst.MakeNNIEngine();
-        NNIEngine& nni_engine = inst.GetNNIEngine();
-        // Run unmodified DAG with resized GPEngine test.
-        if (perform_resize_unmodded_test) {
-          // Verify engine not resized by accessing too big index.
-          size_t plv_idx_out_of_range =
-              (dag.NodeCountWithoutDAGRoot() * 10 * PLVHandler::plv_count_) - 1;
-          CHECK_THROWS(gpengine.GetPLV(plv_idx_out_of_range));
-          // Force bigger reallocation, with no reindexing.
-          gpengine.GrowPLVs(pre_dag.NodeCountWithoutDAGRoot(), std::nullopt,
-                            pre_dag.NodeCountWithoutDAGRoot() * 10);
-          gpengine.GrowGPCSPs(pre_dag.EdgeCountWithLeafSubsplits(), std::nullopt,
-                              pre_dag.EdgeCountWithLeafSubsplits() * 10);
-          // Verify engine was resized by accessing too big index.
-          CHECK_NOTHROW(gpengine.GetPLV(plv_idx_out_of_range));
-          bool gp_run_passes = CheckGPEngineRun(inst, pre_inst);
-          return gp_run_passes;
+  auto ResizeAndReindexGPEngineTest = [&CheckGPEngineResizeAndReindex,
+                                       &CheckGPEngineRun](
+                                          const size_t nni_add_limit,
+                                          const size_t test_after_every,
+                                          const bool skip_reindexing,
+                                          const bool perform_resize_unmodded_test) {
+    BoolVector test_array;
+    bool test_passes = true;
+    const std::string fasta_path = "data/hotstart.fasta";
+    const std::string newick_path = "data/hotstart_bootstrap_sample.nwk";
+    // Instance that will not be modified.
+    auto pre_inst =
+        GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmap_plv_A.data");
+    GPInstanceRunGP(pre_inst);
+    GPDAG& pre_dag = pre_inst.GetDAG();
+    GPEngine& pre_gpengine = *pre_inst.GetEngine();
+    // Instance that will have DAG and GPEngine modified.
+    auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmap_plv_C.data");
+    GPInstanceRunGP(inst);
+    GPDAG& dag = inst.GetDAG();
+    GPEngine& gpengine = *inst.GetEngine();
+    inst.MakeNNIEngine();
+    NNIEngine& nni_engine = inst.GetNNIEngine();
+    // Run unmodified DAG with resized GPEngine test.
+    if (perform_resize_unmodded_test) {
+      // Verify engine not resized yet by accessing too big index.
+      size_t plv_idx_out_of_range =
+          (dag.NodeCountWithoutDAGRoot() * 10 * PLVHandler::plv_count_) - 1;
+      CHECK_THROWS(gpengine.GetPLV(plv_idx_out_of_range));
+      // Force bigger reallocation, with no reindexing.
+      gpengine.GrowPLVs(pre_dag.NodeCountWithoutDAGRoot(), std::nullopt,
+                        pre_dag.NodeCountWithoutDAGRoot() * 10);
+      gpengine.GrowGPCSPs(pre_dag.EdgeCountWithLeafSubsplits(), std::nullopt,
+                          pre_dag.EdgeCountWithLeafSubsplits() * 10);
+      // Verify engine was resized by accessing too big index.
+      CHECK_NOTHROW(gpengine.GetPLV(plv_idx_out_of_range));
+      bool gp_run_passes = CheckGPEngineRun(inst, pre_inst);
+      return gp_run_passes;
+    }
+    // Initialize Maps and Reindexers.
+    Reindexer node_reindexer, node_reindexer_without_root, edge_reindexer;
+    node_reindexer = Reindexer::IdentityReindexer(inst.GetDAG().NodeCount());
+    edge_reindexer =
+        Reindexer::IdentityReindexer(inst.GetDAG().EdgeCountWithLeafSubsplits());
+    // Add NNIs to DAG and check resized and reindexed properly.
+    nni_engine.SyncAdjacentNNIsWithDAG();
+    size_t nni_count = nni_engine.GetAdjacentNNICount();
+    size_t nni_add = 0;
+    while (nni_count > 0) {
+      for (size_t i = 0; i < nni_count; i++) {
+        auto nni = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), i);
+        auto mods = inst.GetDAG().AddNodePair(nni.parent_, nni.child_);
+        node_reindexer = node_reindexer.ComposeWith(mods.node_reindexer);
+        edge_reindexer = edge_reindexer.ComposeWith(mods.edge_reindexer);
+        nni_add++;
+        if (nni_add >= nni_add_limit) {
+          break;
         }
-        // Initialize Maps and Reindexers.
-        Reindexer node_reindexer, node_reindexer_without_root, edge_reindexer;
-        node_reindexer = Reindexer::IdentityReindexer(inst.GetDAG().NodeCount());
-        edge_reindexer =
-            Reindexer::IdentityReindexer(inst.GetDAG().EdgeCountWithLeafSubsplits());
-        // Add NNIs to DAG and check resized and reindexed properly.
-        nni_engine.SyncAdjacentNNIsWithDAG();
-        size_t nni_count = nni_engine.GetAdjacentNNICount();
-        size_t nni_add = 0;
-        while (nni_count > 0) {
-          for (size_t i = 0; i < nni_count; i++) {
-            auto nni = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), i);
-            auto mods = inst.GetDAG().AddNodePair(nni.parent_, nni.child_);
-            node_reindexer = node_reindexer.ComposeWith(mods.node_reindexer);
-            edge_reindexer = edge_reindexer.ComposeWith(mods.edge_reindexer);
-            nni_add++;
-            if (nni_add >= nni_add_limit) {
-              break;
-            }
-            if (nni_add % test_after_every == 0) {
-              node_reindexer_without_root =
-                  node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId());
-              size_t node_count = dag.NodeCountWithoutDAGRoot();
-              size_t edge_count = dag.EdgeCountWithLeafSubsplits();
-              if (!skip_reindexing) {
-                gpengine.GrowPLVs(node_count, node_reindexer_without_root);
-                gpengine.GrowGPCSPs(edge_count, edge_reindexer);
-              } else {
-                gpengine.GrowPLVs(node_count);
-                gpengine.GrowGPCSPs(edge_count);
-              }
-              // Test resizing and reindexing.
-              bool test_passes =
-                  CheckGPEngineResizeAndReindex(dag, gpengine, pre_dag, pre_gpengine);
-              test_array.push_back(test_passes);
-              // Reinitialize reindexers.
-              node_reindexer = Reindexer::IdentityReindexer(dag.NodeCount());
-              edge_reindexer =
-                  Reindexer::IdentityReindexer(dag.EdgeCountWithLeafSubsplits());
-            }
+        if (nni_add % test_after_every == 0) {
+          node_reindexer_without_root =
+              node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId());
+          size_t node_count = dag.NodeCountWithoutDAGRoot();
+          size_t edge_count = dag.EdgeCountWithLeafSubsplits();
+          if (!skip_reindexing) {
+            gpengine.GrowPLVs(node_count, node_reindexer_without_root);
+            gpengine.GrowGPCSPs(edge_count, edge_reindexer);
+          } else {
+            gpengine.GrowPLVs(node_count);
+            gpengine.GrowGPCSPs(edge_count);
           }
-          nni_engine.ClearAdjacentNNIs();
-          nni_engine.SyncAdjacentNNIsWithDAG();
-          nni_count = nni_engine.GetAdjacentNNICount();
+          // Test resizing and reindexing.
+          test_passes =
+              CheckGPEngineResizeAndReindex(dag, gpengine, pre_dag, pre_gpengine);
+          test_array.push_back(test_passes);
+          // Reinitialize reindexers.
+          node_reindexer = Reindexer::IdentityReindexer(dag.NodeCount());
+          edge_reindexer =
+              Reindexer::IdentityReindexer(dag.EdgeCountWithLeafSubsplits());
+        }
+      }
+      nni_engine.ResetAllNNIs();
+      nni_engine.SyncAdjacentNNIsWithDAG();
+      nni_count = nni_engine.GetAdjacentNNICount();
 
-          if (nni_add >= nni_add_limit) {
-            break;
-          }
-        }
-        // Test final resizing and reindexing.
-        node_reindexer_without_root =
-            node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId());
-        if (!skip_reindexing) {
-          gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot(), node_reindexer_without_root);
-          gpengine.GrowGPCSPs(dag.EdgeCountWithLeafSubsplits(), edge_reindexer);
-        } else {
-          gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot());
-          gpengine.GrowGPCSPs(dag.EdgeCountWithLeafSubsplits());
-        }
-        bool test_passes =
-            CheckGPEngineResizeAndReindex(dag, gpengine, pre_dag, pre_gpengine);
-        test_array.push_back(test_passes);
-        // Finally, test run full GP Optimization after all modifications completed.
-        inst.ReinitializePriors();
-        dag.ReinitializeTidyVectors();
-        inst.EstimateBranchLengths(0.0001, 100, true);
-        inst.PopulatePLVs();
-        inst.ComputeLikelihoods();
-        inst.ComputeMarginalLikelihood();
+      if (nni_add >= nni_add_limit) {
+        break;
+      }
+    }
+    // Test final resizing and reindexing.
+    node_reindexer_without_root = node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId());
+    if (!skip_reindexing) {
+      gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot(), node_reindexer_without_root);
+      gpengine.GrowGPCSPs(dag.EdgeCountWithLeafSubsplits(), edge_reindexer);
+    } else {
+      gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot());
+      gpengine.GrowGPCSPs(dag.EdgeCountWithLeafSubsplits());
+    }
+    test_passes = CheckGPEngineResizeAndReindex(dag, gpengine, pre_dag, pre_gpengine);
+    test_array.push_back(test_passes);
+    // Finally, test run full GP Optimization after all modifications completed.
+    inst.ReinitializePriors();
+    dag.ReinitializeTidyVectors();
+    inst.EstimateBranchLengths(0.0001, 100, true);
+    inst.PopulatePLVs();
+    inst.ComputeLikelihoods();
+    inst.ComputeMarginalLikelihood();
 
-        test_passes = true;
-        for (const auto test : test_array) {
-          test_passes &= test;
-        }
-        return test_passes;
-      };
+    test_passes = std::accumulate(test_array.begin(), test_array.end(), true,
+                                  std::logical_and<>());
+    return test_passes;
+  };
 
   // TEST_0: Test that resize and reindex GPEngine works with no modification the DAG.
   auto test_0 = ResizeAndReindexGPEngineTest(0, 1, false, false);
@@ -1394,4 +1397,168 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
   CHECK_MESSAGE(
       test_5,
       "TEST_5: Resized GPEngine with unmodified DAG changed results of GP Run.");
+};
+
+// This test compares NNI likelihoods computed by two different GPInstances.
+// - The true GPInstance adds each NNI individually to the DAG, resizes the GPEngine,
+// repopulates all PLVs in DAG, then recomputes the likelihoods for each NNI.
+// - The NNIEngine version of the GPInstance adds all NNIs to the GraftDAG, then resizes
+// GPEngine for temporary space (two PLVs total, plus one BranchLength and
+// PerGPCSPLogLikelihood per NNI), then generates and processes a GPOperationVector for
+// computing all NNI Likelihoods in series.
+// - Results of each version are then compared by the likelihood of each NNI's central
+// edge, spanning the added parent and child.  All priors are set to 1.0 and all branch
+// lengths set to 0.1 to remove their impact on the computation.
+// - Note: Input DAG is fully connected -- all legal edges between any two subsplits in
+// DAG are added.  This ensures that NNIs via truthDAG using AddNodePair and graftDAG
+// using Pre-NNI references have the same topology.
+TEST_CASE("NNI Engine: NNI Likelihoods") {
+  using NNIOpDoubleMap = std::map<NNIOperation, double>;
+  using NNIOpPLVMap = std::map<NNIOperation, EigenMatrixXd>;
+  // Fetch likelihood from inst.
+  auto GPInstGetNNILikelihood = [](GPInstance& inst, const NNIOperation& nni) {
+    const GPDAG& dag = inst.GetDAG();
+    const auto edge_idx = dag.GetEdgeIdx(nni.parent_, nni.child_);
+
+    Assert(edge_idx < size_t(inst.GetEngine()->GetPerGPCSPLogLikelihoods().size()),
+           "Edge idx out of range for GPInstGetNNILikelihood.");
+    const double likelihood = inst.GetEngine()->GetPerGPCSPLogLikelihoods()[edge_idx];
+    return likelihood;
+  };
+
+  const std::string fasta_path = "data/six_taxon_longer.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  const bool do_optimize_branch_lengths = false;
+
+  // Instance with unaltered DAG.
+  auto pre_inst =
+      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_pre.data");
+  GPDAG& pre_dag = pre_inst.GetDAG();
+  GPEngine& pre_gpengine = *pre_inst.GetEngine();
+  pre_dag.FullyConnect();
+  pre_gpengine.GrowPLVs(pre_dag.NodeCountWithoutDAGRoot());
+  pre_gpengine.GrowGPCSPs(pre_dag.EdgeCountWithLeafSubsplits());
+  pre_gpengine.SetNullPrior();
+  pre_gpengine.SetBranchLengthsToDefault();
+  GPInstanceRunGP(pre_inst, do_optimize_branch_lengths, false);
+  NNIOpDoubleMap prenni_predag_likelihoods;
+
+  // Instance that is used by grafted DAG.
+  auto graft_inst =
+      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_graft.data");
+  graft_inst.MakeNNIEngine();
+  GPEngine& graft_gpengine = *graft_inst.GetEngine();
+  NNIEngine& graft_nni_engine = graft_inst.GetNNIEngine();
+  GPDAG& graft_dag = graft_inst.GetDAG();
+  graft_dag.FullyConnect();
+  graft_gpengine.GrowPLVs(graft_dag.NodeCountWithoutDAGRoot());
+  graft_gpengine.GrowGPCSPs(graft_dag.EdgeCountWithLeafSubsplits());
+  graft_gpengine.SetNullPrior();
+  graft_gpengine.SetBranchLengthsToDefault();
+  GPInstanceRunGP(graft_inst, do_optimize_branch_lengths, false);
+  NNIOpDoubleMap prenni_graftdag_likelihoods;
+  NNIOpDoubleMap nni_graftdag_likelihoods;
+  NNIOpPLVMap nni_graftdag_sister, nni_graftdag_left, nni_graftdag_right,
+      nni_graftdag_child_p, nni_graftdag_parent_rhat, nni_graftdag_parent_rfocal;
+
+  // Instance that adds NNIs one at a time, then recomputes all PLVs and likelihoods.
+  // Used as ground truth.
+  NNIOpDoubleMap prenni_truthdag_likelihoods;
+  NNIOpDoubleMap nni_truthdag_likelihoods;
+  NNIOpPLVMap nni_truthdag_sister, nni_truthdag_left, nni_truthdag_right,
+      nni_truthdag_child_p, nni_truthdag_parent_rhat, nni_truthdag_parent_rfocal;
+
+  // Find all viable NNIs for DAG.
+  size_t nni_count;
+  auto nni_engine = NNIEngine(pre_dag, pre_gpengine);
+  nni_engine.SyncAdjacentNNIsWithDAG();
+  std::map<NNIOperation, NNIOperation> nni_to_prenni_map;
+  // Find pre-NNI that created NNI.
+  for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
+    auto pre_nni = nni_engine.FindNNINeighborInDAG(nni);
+    nni_to_prenni_map.insert({nni, pre_nni});
+  }
+
+  // Compute likelihoods for preDAG.
+  nni_count = 0;
+  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+    std::ignore = nni;
+    const auto likelihood = GPInstGetNNILikelihood(pre_inst, pre_nni);
+    prenni_predag_likelihoods.insert({pre_nni, likelihood});
+    nni_count++;
+  }
+
+  // Compute likelihoods for graftDAG.
+  graft_nni_engine.SyncAdjacentNNIsWithDAG();
+  graft_nni_engine.GraftAdjacentNNIsToDAG();
+  graft_nni_engine.GrowEngineForAdjacentNNILikelihoods(true, true);
+  GPOperationVector graft_ops;
+  nni_count = 0;
+  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+    const auto [prenni_plv_idx, nni_plv_idx] =
+        graft_nni_engine.PassDataFromPreNNIToPostNNIViaReference(pre_nni, nni,
+                                                                 nni_count, true);
+    std::ignore = prenni_plv_idx;
+    GPOperations::AppendGPOperations(
+        graft_ops,
+        graft_nni_engine.BuildGPOperationsForNNILikelihood(nni, nni_plv_idx));
+    nni_count++;
+  }
+  graft_gpengine.SetNullPrior();
+  graft_gpengine.SetBranchLengthsToDefault();
+  graft_gpengine.ProcessOperations(graft_ops);
+  const auto all_likelihoods =
+      graft_gpengine.GetPerGPCSPLogLikelihoods(0, graft_gpengine.GetPaddedGPCSPCount());
+  const auto all_branch_lengths =
+      graft_gpengine.GetBranchLengths(0, graft_gpengine.GetPaddedGPCSPCount());
+  nni_count = 0;
+  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+    auto pre_nni_likelihood = GPInstGetNNILikelihood(graft_inst, pre_nni);
+    prenni_graftdag_likelihoods.insert({pre_nni, pre_nni_likelihood});
+    size_t edge_idx = graft_gpengine.GetTempGPCSPIndex(nni_count);
+    double nni_likelihood = all_likelihoods[edge_idx];
+    nni_graftdag_likelihoods.insert({nni, nni_likelihood});
+    nni_count++;
+  }
+
+  // Compute likelihoods for truthDAG.
+  nni_count = 0;
+  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+    auto truth_inst =
+        GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_truth.data");
+    auto& truth_dag = truth_inst.GetDAG();
+    truth_dag.FullyConnect();
+    auto& truth_gpengine = *truth_inst.GetEngine();
+    auto mods = truth_dag.AddNodePair(nni);
+    auto node_reindexer_without_root =
+        mods.node_reindexer.RemoveNewIndex(truth_dag.GetDAGRootNodeId());
+    truth_gpengine.GrowPLVs(truth_dag.NodeCountWithoutDAGRoot(),
+                            node_reindexer_without_root);
+    truth_gpengine.GrowGPCSPs(truth_dag.EdgeCountWithLeafSubsplits(),
+                              mods.edge_reindexer);
+    truth_gpengine.SetNullPrior();
+    truth_gpengine.SetBranchLengthsToDefault();
+    GPInstanceRunGP(truth_inst, do_optimize_branch_lengths, false);
+    auto pre_nni_likelihood = GPInstGetNNILikelihood(truth_inst, pre_nni);
+    prenni_truthdag_likelihoods.insert({pre_nni, pre_nni_likelihood});
+    auto nni_likelihood = GPInstGetNNILikelihood(truth_inst, nni);
+    nni_truthdag_likelihoods.insert({nni, nni_likelihood});
+    nni_count++;
+  }
+
+  // Tests that GraftDAG produces same likelihood as TruthDAG
+  nni_count = 0;
+  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+    const auto nni_truth = nni_truthdag_likelihoods.at(nni);
+    const auto prenni_truth = prenni_truthdag_likelihoods.at(pre_nni);
+    const auto nni_graft = nni_graftdag_likelihoods.at(nni);
+    const auto prenni_graft = prenni_graftdag_likelihoods.at(pre_nni);
+
+    CHECK_MESSAGE(std::abs(nni_truth - nni_graft) < 1e-3,
+                  "NNI Likelihood from NNI Engine does not match truth.");
+    CHECK_MESSAGE(std::abs(prenni_truth - prenni_graft) < 1e-3,
+                  "Pre-NNI Likelihood from NNI Engine does not match truth.");
+
+    nni_count++;
+  }
 }

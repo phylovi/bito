@@ -9,8 +9,8 @@ Node::NodePtr TopologySampler::Sample(SubsplitDAGNode node, SubsplitDAG& dag,
   SamplingSession session({dag, normalized_sbn_parameters, inverted_probabilities});
   session.result_.AddVertex({node.Id(), node.GetBitset()});
   SampleRootward(session, node);
-  SampleLeafward(session, node, Clade::Left);
-  SampleLeafward(session, node, Clade::Right);
+  SampleLeafward(session, node, SubsplitClade::Left);
+  SampleLeafward(session, node, SubsplitClade::Right);
   session.result_.ConnectAllVertices();
   auto root = session.result_.FindRoot();
   if (!root.has_value()) Failwith("No root found");
@@ -20,16 +20,16 @@ Node::NodePtr TopologySampler::Sample(SubsplitDAGNode node, SubsplitDAG& dag,
 void TopologySampler::SetSeed(uint64_t seed) { mersenne_twister_.SetSeed(seed); }
 
 void TopologySampler::VisitNode(SamplingSession& session, SubsplitDAGNode node,
-                                Direction direction, Clade clade) {
+                                Direction direction, SubsplitClade clade) {
   session.result_.AddVertex({node.Id(), node.GetBitset()});
   switch (direction) {
     case Direction::Rootward:
-      SampleLeafward(session, node, Clade::Left);
-      SampleLeafward(session, node, Clade::Right);
+      SampleLeafward(session, node, SubsplitClade::Left);
+      SampleLeafward(session, node, SubsplitClade::Right);
       break;
     case Direction::Leafward:
       SampleRootward(session, node);
-      SampleLeafward(session, node, Opposite(clade));
+      SampleLeafward(session, node, Bitset::Opposite(clade));
       break;
   }
 }
@@ -43,12 +43,12 @@ void TopologySampler::SampleRootward(SamplingSession& session, SubsplitDAGNode n
   }
   auto [parent_node, parent_edge] = SampleParentNodeAndEdge(session, left, right);
   session.result_.AddLine({parent_edge.GetId(), parent_edge.GetParent(),
-                           parent_edge.GetChild(), parent_edge.GetClade()});
-  VisitNode(session, parent_node, Direction::Leafward, parent_edge.GetClade());
+                           parent_edge.GetChild(), parent_edge.GetSubsplitClade()});
+  VisitNode(session, parent_node, Direction::Leafward, parent_edge.GetSubsplitClade());
 }
 
 void TopologySampler::SampleLeafward(SamplingSession& session, SubsplitDAGNode node,
-                                     Clade clade) {
+                                     SubsplitClade clade) {
   auto neighbors = node.GetNeighbors(Direction::Leafward, clade);
   if (neighbors.empty()) {
     // reached leaf
@@ -56,7 +56,7 @@ void TopologySampler::SampleLeafward(SamplingSession& session, SubsplitDAGNode n
   }
   auto child = SampleChildNodeAndEdge(session, neighbors);
   session.result_.AddLine({child.second.GetId(), child.second.GetParent(),
-                           child.second.GetChild(), child.second.GetClade()});
+                           child.second.GetChild(), child.second.GetSubsplitClade()});
   VisitNode(session, child.first, Direction::Rootward, clade);
 }
 
@@ -102,8 +102,8 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChildNodeAndEdg
 
 Node::NodePtr TopologySampler::BuildTree(SamplingSession& session,
                                          const DAGVertex& node) {
-  auto left = node.GetNeighbors(Direction::Leafward, Clade::Left);
-  auto right = node.GetNeighbors(Direction::Leafward, Clade::Right);
+  auto left = node.GetNeighbors(Direction::Leafward, SubsplitClade::Left);
+  auto right = node.GetNeighbors(Direction::Leafward, SubsplitClade::Right);
   VertexId left_id = NoId, right_id = NoId;
   if (!left.empty()) {
     left_id = left.begin().GetNodeId();

@@ -29,6 +29,10 @@ class GPEngine {
   void InitializePriors(EigenVectorXd sbn_prior,
                         EigenVectorXd unconditional_node_probabilities,
                         EigenVectorXd inverted_sbn_prior);
+  // This sets all priors to 1.0. For testing purposes.
+  void SetNullPrior();
+
+  // ** Resizing and Reindexing
 
   // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option to
   // remap data according to DAG reindexers.  Option to give explicit numver of nodes or
@@ -45,6 +49,14 @@ class GPEngine {
   // Remap node and edge-based data according to reordering of DAG nodes and edges.
   void ReindexPLVs(const Reindexer node_reindexer, const size_t old_node_count);
   void ReindexGPCSPs(const Reindexer gpcsp_reindexer, const size_t old_gpcsp_count);
+  // Grow space for storing temporary computation.
+  void GrowTempPLVs(const size_t new_node_padding);
+  void GrowTempGPCSPs(const size_t new_gpcsp_padding);
+  // Get index according to offset into temporary space.
+  size_t GetTempPLVIndex(const size_t plv_offset) const;
+  size_t GetTempGPCSPIndex(const size_t gpcsp_offset) const;
+
+  // ** GPOperations
 
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
@@ -60,16 +72,29 @@ class GPEngine {
 
   // Apply all operations in vector in order from beginning to end.
   void ProcessOperations(GPOperationVector operations);
+
   void SetTransitionMatrixToHaveBranchLength(double branch_length);
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
-  const Eigen::Matrix4d& GetTransitionMatrix() { return transition_matrix_; };
   void SetBranchLengths(EigenVectorXd branch_lengths);
   void SetBranchLengthsToConstant(double branch_length);
+  void SetBranchLengthsToDefault();
   void ResetLogMarginalLikelihood();
-  double GetLogMarginalLikelihood() const;
 
+  // The purpose of these functions are here to move data associated with the subsplit
+  // DAG from their temporary locations before reindexing to their final locations after
+  // reindexing (though they are more general).
+  void CopyNodeData(const size_t src_node_idx, const size_t dest_node_idx);
+  void CopyPLVData(const size_t src_plv_idx, const size_t dest_plv_idx);
+  void CopyGPCSPData(const size_t src_gpcsp_idx, const size_t dest_gpcsp_idx);
+
+  // ** Getters
+
+  // Get Branch Lengths.
   EigenVectorXd GetBranchLengths() const;
+  EigenVectorXd GetBranchLengths(const size_t start, const size_t length) const;
+  // Get Branch Lengths from temporary space.
+  EigenVectorXd GetTempBranchLengths(const size_t start, const size_t length) const;
   // This function returns a vector indexed by GPCSP such that the i-th entry
   // stores the log of the across-sites product of
   // (the marginal likelihood conditioned on a given GPCSP) *
@@ -80,7 +105,11 @@ class GPEngine {
   EigenVectorXd GetPerGPCSPLogLikelihoods() const;
   // This override of GetPerGPCSPLogLikelihoods computes the marginal log
   // likelihood for GPCSPs in the range [start, start + length).
-  EigenVectorXd GetPerGPCSPLogLikelihoods(size_t start, size_t length) const;
+  EigenVectorXd GetPerGPCSPLogLikelihoods(const size_t start,
+                                          const size_t length = 1) const;
+  // Get PerGPCSPLogLikelihoods from temporary space.
+  EigenVectorXd GetTempPerGPCSPLogLikelihoods(const size_t start,
+                                              const size_t length = 1) const;
   // This is the full marginal likelihood sum restricted to trees containing a PCSP.
   // When we sum the log of eq:PerGPCSPComponentsOfFullMarginal over the sites, we get
   // out a term that is the number of sites times the log of the prior conditional PCSP
@@ -91,14 +120,22 @@ class GPEngine {
   EigenConstVectorXdRef GetHybridMarginals() const;
   EigenConstVectorXdRef GetSBNParameters() const;
 
+  double GetLogMarginalLikelihood() const;
+  const Eigen::Matrix4d& GetTransitionMatrix() const { return transition_matrix_; };
+
+  // Get Partial Likelihood Vector.
+  EigenConstMatrixXdRef GetPLV(size_t plv_index) const { return plvs_.at(plv_index); }
+  EigenConstMatrixXdRef GetTempPLV(size_t plv_index) const {
+    return GetPLV(GetTempPLVIndex(plv_index));
+  }
+
+  // ** Other Operations
+
   // Calculate a vector of likelihoods, one for each summand of the hybrid marginal.
   EigenVectorXd CalculateQuartetHybridLikelihoods(const QuartetHybridRequest& request);
   // Calculate the actual hybrid marginal and store it in the corresponding entry of
   // hybrid_marginal_log_likelihoods_.
   void ProcessQuartetHybridRequest(const QuartetHybridRequest& request);
-
-  EigenMatrixXd GetPLV(size_t plv_index) const;
-  void PrintPLV(size_t plv_idx) const;
 
   // Use branch lengths from loaded sample as a starting point for optimization.
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
@@ -120,17 +157,23 @@ class GPEngine {
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
+  // ** I/O
+
+  // Output PLV to standard output.
+  void PrintPLV(size_t plv_idx) const;
+  // Output PLV to string.
+  std::string PLVToString(size_t plv_idx) const;
+
   // ** Counts
-  // "Count" is the currently occupied by data.
-  // "PaddedCount" is the occupied space plus additional free working space.
-  // "AllocatedCount" is the size of current memory allocation.
 
   double PLVByteCount() const { return mmapped_master_plv_.ByteCount(); };
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
   size_t GetNodeCount() const { return node_count_; };
+  size_t GetTempNodeCount() const { return node_padding_; }
   size_t GetPaddedNodeCount() const { return node_count_ + node_padding_; };
   size_t GetAllocatedNodeCount() const { return node_alloc_; }
   size_t GetPLVCount() const { return GetNodeCount() * plv_count_per_node_; };
+  size_t GetTempPLVCount() const { return GetTempNodeCount() * plv_count_per_node_; };
   size_t GetPaddedPLVCount() const {
     return GetPaddedNodeCount() * plv_count_per_node_;
   };
@@ -138,6 +181,7 @@ class GPEngine {
     return GetAllocatedNodeCount() * plv_count_per_node_;
   }
   size_t GetGPCSPCount() const { return gpcsp_count_; };
+  size_t GetTempGPCSPCount() const { return gpcsp_padding_; };
   size_t GetPaddedGPCSPCount() const { return gpcsp_count_ + gpcsp_padding_; };
   size_t GetAllocatedGPCSPCount() const { return gpcsp_alloc_; };
 
@@ -221,14 +265,14 @@ class GPEngine {
   // Total number of nodes in DAG.
   size_t node_count_ = 0;
   size_t node_alloc_ = 0;
-  const static size_t node_padding_ = 2;
+  size_t node_padding_ = 2;
   // PLV count is proportional to the node_count.
   const size_t plv_count_per_node_ = 6;
   // Total number of edges in DAG. Determines sizes of data vectors stored on edges like
   // branch lengths.
   size_t gpcsp_count_ = 0;
   size_t gpcsp_alloc_ = 0;
-  const static size_t gpcsp_padding_ = 3;
+  size_t gpcsp_padding_ = 3;
   // Growth factor when reallocating data.
   constexpr static double resizing_factor_ = 2.0;
 

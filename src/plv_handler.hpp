@@ -25,10 +25,20 @@ class PLVHandler {
 
   // Get the `GPEngine::plvs_` index of given node's given PLV type from DAG with
   // node_count.
-  static size_t GetPLVIndex(const PLVType plv_type, const size_t node_count,
-                            const size_t node_idx) {
-    return GetPLVIndex(GetPLVTypeIndex(plv_type), node_count, node_idx);
+  static size_t GetPLVIndex(const PLVType plv_type, const size_t node_idx,
+                            const size_t node_count) {
+    return GetPLVIndex(GetPLVTypeIndex(plv_type), node_idx, node_count);
   };
+
+  // Get vector of all node ids for given node.
+  static SizeVector GetPLVIndexVectorForNodeId(const size_t node_idx,
+                                               const size_t node_count) {
+    SizeVector plv_idxs;
+    for (const PLVType plv_type : PLVTypeIterator()) {
+      plv_idxs.push_back(GetPLVIndex(plv_type, node_idx, node_count));
+    }
+    return plv_idxs;
+  }
 
   static PLVType RPLVType(const bool is_on_left) {
     return is_on_left ? PLVType::RLeft : PLVType::RRight;
@@ -41,7 +51,7 @@ class PLVHandler {
   // ** I/O
 
   static std::string PLVTypeToString(const PLVType plv_type) {
-    return "PLVType::" + std::to_string(GetPLVTypeIndex(plv_type));
+    return PLVHandler::plv_labels[PLVHandler::GetPLVTypeIndex(plv_type)];
   };
 
   friend std::ostream &operator<<(std::ostream &os, const PLVType plv_type) {
@@ -54,10 +64,14 @@ class PLVHandler {
     return static_cast<std::underlying_type<PLVType>::type>(plv_type);
   };
 
-  static size_t GetPLVIndex(const size_t plv_type_idx, const size_t node_count,
-                            const size_t node_idx) {
+  static size_t GetPLVIndex(const size_t plv_type_idx, const size_t node_idx,
+                            const size_t node_count) {
     return (plv_type_idx * node_count) + node_idx;
   };
+
+  static inline const StringVector plv_labels = {"PLV::P",        "PLV::PHatRight",
+                                                 "PLV::PHatLeft", "PLV::RHat",
+                                                 "PLV::RRight",   "PLV::RLeft"};
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

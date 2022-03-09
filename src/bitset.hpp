@@ -20,7 +20,6 @@
 #include <vector>
 
 #include "sugar.hpp"
-
 class Bitset {
  public:
   using BitsetPair = std::pair<Bitset, Bitset>;
@@ -149,11 +148,22 @@ class Bitset {
   // to their lexicographic taxon ordering: the smaller "left" clade stored in the
   // 0-position, and the larger "right" clade in the 1-position.
 
+  enum class SubsplitClade : size_t { Left, Right, Unspecified };
   static inline size_t SubsplitCladeCount = 2;
-  enum class SubsplitClade : bool {
-    Left = 0,
-    Right = 1,
-  };
+  // Does not iterate over "unspecified" clade.
+  using SubsplitCladeIterator =
+      EnumIterator<SubsplitClade, SubsplitClade::Left, SubsplitClade::Right>;
+
+  static SubsplitClade Opposite(const SubsplitClade clade) {
+    switch (clade) {
+      case SubsplitClade::Left:
+        return SubsplitClade::Right;
+      case SubsplitClade::Right:
+        return SubsplitClade::Left;
+      default:
+        Failwith("Cannot get Opposite of Unspecified Clade");
+    }
+  }
 
   // Constructors:
   // Each argument represents one of the clade of the subsplit.
@@ -227,8 +237,8 @@ class Bitset {
   Bitset SubsplitCladeUnion() const;
   // Get whether the given child is the sorted (false, 0-position) or rotated (true,
   // 1-position) child to the given parent.
-  static bool SubsplitIsChildOfWhichParentClade(const Bitset &parent,
-                                                const Bitset &child);
+  static SubsplitClade SubsplitIsChildOfWhichParentClade(const Bitset &parent,
+                                                         const Bitset &child);
   // Check whether subsplits form a child/parent pair.
   static bool SubsplitIsParentChildPair(const Bitset &parent, const Bitset &child);
   // Check whether subsplits are adjacent/related (whether either is the parent of the
@@ -258,6 +268,8 @@ class Bitset {
 
   static inline size_t PCSPCladeCount = 3;
   enum class PCSPClade : size_t { Sister = 0, Focal = 1, LeftChild = 2 };
+  using PCSPCladeIterator =
+      EnumIterator<PCSPClade, PCSPClade::Sister, PCSPClade::LeftChild>;
 
   // Constructors:
   // Build a PCSP bitset from a compatible parent-child pair of
@@ -310,6 +322,9 @@ class Bitset {
   // Vector of bits.
   std::vector<bool> value_;
 };
+
+using SubsplitClade = Bitset::SubsplitClade;
+using PCSPClade = Bitset::PCSPClade;
 
 // This is how we inject a hash routine and a custom comparator into the std
 // namespace so that we can use unordered_map and unordered_set.
@@ -412,12 +427,12 @@ TEST_CASE("Bitset") {
 TEST_CASE("Bitset: Clades, Subsplits, PCSPs") {
   auto p = Bitset("000111");
   // Subsplit: 000|111
-  CHECK_EQ(p.SubsplitGetClade(Bitset::SubsplitClade::Left), Bitset("000"));
-  CHECK_EQ(p.SubsplitGetClade(Bitset::SubsplitClade::Right), Bitset("111"));
+  CHECK_EQ(p.SubsplitGetClade(SubsplitClade::Left), Bitset("000"));
+  CHECK_EQ(p.SubsplitGetClade(SubsplitClade::Right), Bitset("111"));
   // Edge: 00|01|11
-  CHECK_EQ(p.PCSPGetClade(Bitset::PCSPClade::Sister), Bitset("00"));
-  CHECK_EQ(p.PCSPGetClade(Bitset::PCSPClade::Focal), Bitset("01"));
-  CHECK_EQ(p.PCSPGetClade(Bitset::PCSPClade::LeftChild), Bitset("11"));
+  CHECK_EQ(p.PCSPGetClade(PCSPClade::Sister), Bitset("00"));
+  CHECK_EQ(p.PCSPGetClade(PCSPClade::Focal), Bitset("01"));
+  CHECK_EQ(p.PCSPGetClade(PCSPClade::LeftChild), Bitset("11"));
 
   CHECK_EQ(Bitset("11001010").SubsplitCladeUnion(), Bitset("1110"));
 

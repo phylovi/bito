@@ -58,24 +58,11 @@ inline EigenVectorXd EigenVectorXdOfStdVectorDouble(std::vector<double> &v) {
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {
   for (Eigen::Index i = 0; i < v.size(); i++) {
     CHECK_LT(fabs(value - v[i]), tolerance);
   }
-};
-
-bool VectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
-                      double tolerance) {
-  if (v1.size() != v2.size()) {
-    return false;
-  }
-  for (Eigen::Index i = 0; i < v1.size(); i++) {
-    double error = fabs(v1[i] - v2[i]);
-    if (error > tolerance) {
-      return false;
-    }
-  }
-  return true;
 };
 
 void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
@@ -89,6 +76,35 @@ void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
     }
     CHECK_LT(error, tolerance);
   }
+};
+
+// Return the maximum absolute difference between any two entries in vector.
+double VectorXdMaxError(const EigenVectorXd v1, const EigenVectorXd v2) {
+  double max_error = 0.;
+  Assert(v1.size() == v2.size(),
+         "Cannot find max error of EigenVectorXd's of different sizes.");
+  for (Eigen::Index i = 0; i < v1.size(); i++) {
+    double error = fabs(v1[i] - v2[i]);
+    if (error > max_error) {
+      max_error = error;
+    }
+  }
+  return max_error;
+}
+
+// Check if vectors are equal, within given tolerance for any two entries in vector.
+bool VectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
+                      double tolerance) {
+  if (v1.size() != v2.size()) {
+    return false;
+  }
+  for (Eigen::Index i = 0; i < v1.size(); i++) {
+    double error = fabs(v1[i] - v2[i]);
+    if (error > tolerance) {
+      return false;
+    }
+  }
+  return true;
 };
 
 void CheckVectorXdEqualityAfterSorting(const EigenVectorXdRef v1,
