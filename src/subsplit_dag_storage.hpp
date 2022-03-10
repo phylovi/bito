@@ -48,8 +48,8 @@ template <typename Derived>
 class DAGLine {
  public:
   LineId GetId() const { return storage().id_; }
-  VertexId GetParent() const { return storage().parent_; }
-  VertexId GetChild() const { return storage().child_; }
+  VertexId GetParentId() const { return storage().parent_; }
+  VertexId GetChildId() const { return storage().child_; }
   Clade GetClade() const { return storage().clade_; }
 
   Derived& SetId(LineId id) {
@@ -70,7 +70,7 @@ class DAGLine {
   }
 
   std::pair<VertexId, VertexId> GetVertexIds() const {
-    return {GetParent(), GetChild()};
+    return {GetParentId(), GetChildId()};
   }
 
  private:
@@ -109,12 +109,29 @@ class DAGLineStorage : public DAGLine<DAGLineStorage> {
   Clade clade_ = Clade::Unspecified;
 };
 
+class SubsplitDAGStorage;
+class DAGVertex;
+template <typename>
+class GenericSubsplitDAGNode;
+using MutableSubsplitDAGNode = GenericSubsplitDAGNode<DAGVertex>;
+using SubsplitDAGNode = GenericSubsplitDAGNode<const DAGVertex>;
+
 template <typename T>
 class DAGLineView : public DAGLine<DAGLineView<T>> {
+  constexpr static bool is_const = std::is_const_v<T>;
+  using storage_type =
+      std::conditional_t<is_const, const SubsplitDAGStorage,
+                         SubsplitDAGStorage>;
+  using node_type =
+      std::conditional_t<is_const, SubsplitDAGNode,
+                         MutableSubsplitDAGNode>;
  public:
-  DAGLineView(T& line) : line_{line} {
+  DAGLineView(T& line, storage_type& dag_storage) : line_{line}, dag_storage_{dag_storage} {
     Assert(line.GetClade() != Clade::Unspecified, "Uninitialized edge");
   }
+
+  node_type GetParentNode() const { return dag_storage_.GetVertices().at(line_.GetParentId()); }
+  node_type GetChildNode() const { return dag_storage_.GetVertices().at(line_.GetChildId()); }
 
   template <size_t I>
   auto get() const {
@@ -131,6 +148,7 @@ class DAGLineView : public DAGLine<DAGLineView<T>> {
   const DAGLineStorage& storage() const { return line_; }
 
   T& line_;
+  storage_type& dag_storage_;
 };
 using LineView = DAGLineView<DAGLineStorage>;
 using ConstLineView = DAGLineView<const DAGLineStorage>;
@@ -161,40 +179,55 @@ struct tuple_element<1, ::ConstLineView> {
 
 template <typename T>
 class GenericNeighborsView {
+  constexpr static bool is_const = std::is_const_v<T>;
   using iterator_type =
-      std::conditional_t<std::is_const_v<T>, std::map<VertexId, LineId>::const_iterator,
+      std::conditional_t<is_const, std::map<VertexId, LineId>::const_iterator,
                          std::map<VertexId, LineId>::iterator>;
   using map_type =
-      std::conditional_t<std::is_const_v<T>, const std::map<VertexId, LineId>,
+      std::conditional_t<is_const, const std::map<VertexId, LineId>,
                          std::map<VertexId, LineId>>;
+
+  using storage_type =
+      std::conditional_t<is_const, const SubsplitDAGStorage,
+                         SubsplitDAGStorage>;
+
+  using node_type =
+      std::conditional_t<is_const, SubsplitDAGNode,
+                         MutableSubsplitDAGNode>;
+
+  using edge_type =
+      std::conditional_t<is_const, ConstLineView,
+                         LineView>;
 
  public:
   class Iterator : public std::iterator<std::forward_iterator_tag, VertexId> {
    public:
-    Iterator(const iterator_type& i, map_type& map) : i_{i}, map_{map} {}
+    Iterator(const iterator_type& i, storage_type& storage) : i_{i}, storage_{storage} {}
 
-    Iterator operator++() {
-      ++i_;
-      return *this;
-    }
+    Iterator& operator++() { ++i_;  return *this; }
     bool operator!=(const Iterator& other) const { return i_ != other.i_; }
     bool operator==(const Iterator& other) const { return i_ == other.i_; }
 
     VertexId operator*() { return i_->first; }
-    LineId GetEdge() const { return i_->second; }
+    LineId GetEdgeId() const { return i_->second; }
+    node_type GetNode() const { return storage_.GetVertices().at(i_->first); }
+    std::optional<edge_type> GetEdge() const { return storage_.GetLine(i_->second); }
+
 
    private:
     iterator_type i_;
-    map_type& map_;
+    storage_type& storage_;
   };
 
-  GenericNeighborsView(map_type& neighbors) : neighbors_{neighbors} {}
+  GenericNeighborsView(map_type& neighbors, storage_type& storage) :
+      neighbors_{neighbors},
+      storage_{storage} {}
   template <typename U>
   GenericNeighborsView(const GenericNeighborsView<U>& other)
-      : neighbors_{other.neighbors_} {}
+      : neighbors_{other.neighbors_}, storage_{other.storage_} {}
 
-  Iterator begin() const { return {neighbors_.begin(), neighbors_}; }
-  Iterator end() const { return {neighbors_.end(), neighbors_}; }
+  Iterator begin() const { return {neighbors_.begin(), storage_}; }
+  Iterator end() const { return {neighbors_.end(), storage_}; }
   size_t size() const { return neighbors_.size(); }
   bool empty() const { return neighbors_.empty(); }
 
@@ -211,15 +244,10 @@ class GenericNeighborsView {
   template <typename>
   friend class ::GenericNeighborsView;
   T& neighbors_;
+  storage_type& storage_;
 };
 using NeighborsView = GenericNeighborsView<std::map<VertexId, LineId>>;
 using ConstNeighborsView = GenericNeighborsView<const std::map<VertexId, LineId>>;
-
-class DAGVertex;
-template <typename>
-class GenericSubsplitDAGNode;
-using MutableSubsplitDAGNode = GenericSubsplitDAGNode<DAGVertex>;
-using SubsplitDAGNode = GenericSubsplitDAGNode<const DAGVertex>;
 
 class DAGVertex {
  public:
@@ -232,12 +260,12 @@ class DAGVertex {
   VertexId GetId() const { return id_; }
   const Bitset& GetSubsplit() const { return subsplit_; }
 
-  NeighborsView GetNeighbors(Direction direction, Clade clade) {
-    return neighbors_.at({direction, clade});
+  NeighborsView GetNeighbors(Direction direction, Clade clade, SubsplitDAGStorage& storage) {
+    return {neighbors_.at({direction, clade}), storage};
   }
 
-  ConstNeighborsView GetNeighbors(Direction direction, Clade clade) const {
-    return neighbors_.at({direction, clade});
+  ConstNeighborsView GetNeighbors(Direction direction, Clade clade, const SubsplitDAGStorage& storage) const {
+    return {neighbors_.at({direction, clade}), storage};
   }
 
   std::optional<std::tuple<LineId, Direction, Clade>> FindNeighbor(
@@ -299,7 +327,7 @@ class GenericLinesView {
       return *this;
     }
     bool operator!=(const Iterator& other) const { return index_ != other.index_; }
-    view_type operator*() const { return view_.storage_.lines_[index_]; }
+    view_type operator*() const { return {view_.storage_.lines_[index_], view_.storage_}; }
 
    private:
     const GenericLinesView& view_;
@@ -317,42 +345,40 @@ class GenericLinesView {
   friend class Iterator;
   T& storage_;
 };
-class SubsplitDAGStorage;
 using LinesView = GenericLinesView<SubsplitDAGStorage>;
 using ConstLinesView = GenericLinesView<const SubsplitDAGStorage>;
 
 template <typename T>
 class GenericVerticesView {
+  constexpr static bool is_const = std::is_const_v<T>;
+
   using view_type =
-      std::conditional_t<std::is_const_v<T>, SubsplitDAGNode, MutableSubsplitDAGNode>;
+      std::conditional_t<is_const, SubsplitDAGNode, MutableSubsplitDAGNode>;
 
  public:
   class Iterator : public std::iterator<std::forward_iterator_tag, view_type> {
    public:
-    Iterator(T& storage, size_t index) : storage_{storage}, index_{index} {}
+    Iterator(const GenericVerticesView& vertices, size_t index) : vertices_{vertices}, index_{index} {}
 
-    Iterator& operator++() {
-      ++index_;
-      return *this;
-    }
-    Iterator operator++(int) { return {storage_, index_++}; }
-    Iterator operator+(size_t i) { return {storage_, index_ + i}; }
-    Iterator operator-(size_t i) { return {storage_, index_ - i}; }
+    Iterator& operator++() { ++index_; return *this; }
+    Iterator operator++(int) { return {vertices_, index_++}; }
+    Iterator operator+(size_t i) { return {vertices_, index_ + i}; }
+    Iterator operator-(size_t i) { return {vertices_, index_ - i}; }
     bool operator<(const Iterator& other) { return index_ < other.index_; }
     bool operator!=(const Iterator& other) const { return index_ != other.index_; }
     view_type operator*() const;
 
    private:
-    T& storage_;
+    const GenericVerticesView& vertices_;
     size_t index_;
   };
 
   GenericVerticesView(T& storage) : storage_{storage} {}
 
-  Iterator begin() const { return {storage_, 0}; }
-  Iterator end() const { return {storage_, storage_.vertices_.size()}; }
-  Iterator cbegin() const { return {storage_, 0}; }
-  Iterator cend() const { return {storage_, storage_.vertices_.size()}; }
+  Iterator begin() const { return {*this, 0}; }
+  Iterator end() const { return {*this, size()}; }
+  Iterator cbegin() const { return {*this, 0}; }
+  Iterator cend() const { return {*this, size()}; }
   size_t size() const { return storage_.vertices_.size(); };
   view_type operator[](size_t i) const;
   view_type at(size_t i) const;
@@ -376,14 +402,14 @@ class SubsplitDAGStorage {
     if (parent >= vertices_.size() || child >= vertices_.size()) return {};
     auto result = vertices_.at(parent).FindNeighbor(child);
     if (!result.has_value()) return {};
-    return lines_.at(std::get<0>(result.value()));
+    return ConstLineView{lines_.at(std::get<0>(result.value())), *this};
   }
 
   std::optional<ConstLineView> GetLine(LineId id) const {
     if (id >= lines_.size()) return {};
     auto& line = lines_[id];
     if (line.GetId() == NoId) return {};
-    return line;
+    return ConstLineView{line, *this};
   }
 
   bool ContainsVertex(VertexId id) const {

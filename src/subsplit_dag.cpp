@@ -326,8 +326,8 @@ std::vector<Bitset> SubsplitDAG::GetSortedVectorOfNodeBitsets() const {
 std::vector<Bitset> SubsplitDAG::GetSortedVectorOfEdgeBitsets() const {
   std::vector<Bitset> edges;
   for (auto i : storage_.GetLines()) {
-    auto parent_bitset = GetDAGNode(i.GetParent()).GetBitset();
-    auto child_bitset = GetDAGNode(i.GetChild()).GetBitset();
+    auto parent_bitset = i.GetParentNode().GetBitset();
+    auto child_bitset = i.GetChildNode().GetBitset();
     Bitset edge_bitset = Bitset::PCSP(parent_bitset, child_bitset);
     edges.push_back(edge_bitset);
   }
@@ -748,10 +748,10 @@ void SubsplitDAG::AddLeafSubsplitsToDAGEdgesAndParentToRange() {
 
 void SubsplitDAG::StoreEdgeIds() {
   for (auto edge : storage_.GetLines()) {
-    auto parent = storage_.GetVertices().at(edge.GetParent());
-    auto child = storage_.GetVertices().at(edge.GetChild());
-    parent.SetLineId(edge.GetChild(), edge.GetId());
-    child.SetLineId(edge.GetParent(), edge.GetId());
+    auto parent = edge.GetParentNode();
+    auto child = edge.GetChildNode();
+    parent.SetLineId(child.Id(), edge.GetId());
+    child.SetLineId(parent.Id(), edge.GetId());
   }
 }
 
@@ -1275,8 +1275,8 @@ void SubsplitDAG::RemapNodeIds(const SizeVector &node_reindexer) {
   }
   // Update edges.
   for (auto i : storage_.GetLines()) {
-    storage_.ReindexLine(i.GetId(), node_reindexer.at(i.GetParent()),
-                         node_reindexer.at(i.GetChild()));
+    storage_.ReindexLine(i.GetId(), node_reindexer.at(i.GetParentId()),
+                         node_reindexer.at(i.GetChildId()));
   }
 }
 

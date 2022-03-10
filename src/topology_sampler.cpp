@@ -65,12 +65,8 @@ EigenConstVectorXdRef SubsplitDAGSamplerInput::SBNParameters() const {
 
 const Bitset &SubsplitDAGSamplerInput::RootsplitsAt(size_t rootsplit_idx) const {
   auto rootsplit = dag_.RootsplitIds().begin();
-  while (rootsplit_idx > 0) {
-    --rootsplit_idx;
-    ++rootsplit;
-  }
-  return dag_.GetDAGNode(*rootsplit).GetBitset();
-  ;
+  std::advance(rootsplit, rootsplit_idx);
+  return rootsplit.GetNode().GetBitset();
 }
 
 SizePair SubsplitDAGSamplerInput::ParentToRangeAt(const Bitset &parent) const {
@@ -80,5 +76,5 @@ SizePair SubsplitDAGSamplerInput::ParentToRangeAt(const Bitset &parent) const {
 const Bitset &SubsplitDAGSamplerInput::IndexToChildAt(size_t child_idx) const {
   auto edge = dag_.GetDAGEdge(child_idx);
   if (!edge.has_value()) Failwith("Edge not found");
-  return dag_.GetDAGNode(edge.value().GetChild()).GetBitset();
+  return edge->GetChildNode().GetBitset();
 }

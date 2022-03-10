@@ -31,7 +31,7 @@ static inline void RemapNeighbors(NeighborsView neighbors,
                                   const SizeVector& node_reindexer) {
   std::map<VertexId, LineId> remapped;
   for (auto i = neighbors.begin(); i != neighbors.end(); ++i) {
-    remapped[node_reindexer[*i]] = i.GetEdge();
+    remapped[node_reindexer[*i]] = i.GetEdgeId();
   }
   neighbors.SetNeighbors(remapped);
 }
@@ -39,10 +39,14 @@ static inline void RemapNeighbors(NeighborsView neighbors,
 
 template <typename T>
 class GenericSubsplitDAGNode {
+  constexpr static bool is_const = std::is_const_v<T>;
+  using dag_storage_type =
+      std::conditional_t<is_const, const SubsplitDAGStorage,
+                         SubsplitDAGStorage>;
  public:
-  GenericSubsplitDAGNode(T& node) : node_{node} {}
+  GenericSubsplitDAGNode(T& node, dag_storage_type& dag_storage) : node_{node}, dag_storage_{dag_storage} {}
   GenericSubsplitDAGNode(const GenericSubsplitDAGNode<std::remove_const_t<T>>& other)
-      : node_{other.node_} {}
+      : node_{other.node_}, dag_storage_{other.dag_storage_} {}
 
   // Compare SubsplitDAGNodes by their ids.
   static int Compare(const SubsplitDAGNode& node_a, const SubsplitDAGNode& node_b);
@@ -118,19 +122,19 @@ class GenericSubsplitDAGNode {
     return leafward ? GetLeafward(rotated) : GetRootward(rotated);
   };
   ConstNeighborsView GetLeftLeafward() const {
-    return node_.GetNeighbors(Direction::Leafward, Clade::Left);
+    return node_.GetNeighbors(Direction::Leafward, Clade::Left, dag_storage_);
   }
   ConstNeighborsView GetRightLeafward() const {
-    return node_.GetNeighbors(Direction::Leafward, Clade::Right);
+    return node_.GetNeighbors(Direction::Leafward, Clade::Right, dag_storage_);
   }
   ConstNeighborsView GetLeafward(bool rotated) const {
     return rotated ? GetLeftLeafward() : GetRightLeafward();
   }
   ConstNeighborsView GetLeftRootward() const {
-    return node_.GetNeighbors(Direction::Rootward, Clade::Left);
+    return node_.GetNeighbors(Direction::Rootward, Clade::Left, dag_storage_);
   }
   ConstNeighborsView GetRightRootward() const {
-    return node_.GetNeighbors(Direction::Rootward, Clade::Right);
+    return node_.GetNeighbors(Direction::Rootward, Clade::Right, dag_storage_);
   }
   ConstNeighborsView GetRootward(bool rotated) const {
     return rotated ? GetLeftRootward() : GetRightRootward();
@@ -138,13 +142,13 @@ class GenericSubsplitDAGNode {
 
   void RemapNodeIds(const SizeVector& node_reindexer) {
     node_.SetId(node_reindexer.at(node_.GetId()));
-    RemapNeighbors(node_.GetNeighbors(Direction::Leafward, Clade::Left),
+    RemapNeighbors(node_.GetNeighbors(Direction::Leafward, Clade::Left, dag_storage_),
                    node_reindexer);
-    RemapNeighbors(node_.GetNeighbors(Direction::Leafward, Clade::Right),
+    RemapNeighbors(node_.GetNeighbors(Direction::Leafward, Clade::Right, dag_storage_),
                    node_reindexer);
-    RemapNeighbors(node_.GetNeighbors(Direction::Rootward, Clade::Left),
+    RemapNeighbors(node_.GetNeighbors(Direction::Rootward, Clade::Left, dag_storage_),
                    node_reindexer);
-    RemapNeighbors(node_.GetNeighbors(Direction::Rootward, Clade::Right),
+    RemapNeighbors(node_.GetNeighbors(Direction::Rootward, Clade::Right, dag_storage_),
                    node_reindexer);
   }
 
@@ -163,6 +167,7 @@ class GenericSubsplitDAGNode {
   friend class GenericSubsplitDAGNode;
   friend auto& GetStorage<>(const GenericSubsplitDAGNode&);
   T& node_;
+  dag_storage_type& dag_storage_;
 };
 
 namespace {
@@ -218,16 +223,16 @@ DAGVertex::DAGVertex(MutableSubsplitDAGNode node) : DAGVertex(node.node_) {}
 template <typename T>
 typename GenericVerticesView<T>::view_type GenericVerticesView<T>::Iterator::operator*()
     const {
-  return storage_.vertices_[index_];
+  return {vertices_.storage_.vertices_[index_], vertices_.storage_};
 }
 template <typename T>
 typename GenericVerticesView<T>::view_type GenericVerticesView<T>::operator[](
     size_t i) const {
-  return storage_.vertices_[i];
+  return {storage_.vertices_[i], storage_};
 }
 template <typename T>
 typename GenericVerticesView<T>::view_type GenericVerticesView<T>::at(size_t i) const {
-  return storage_.vertices_.at(i);
+  return {storage_.vertices_.at(i), storage_};
 }
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
@@ -301,13 +306,13 @@ TEST_CASE("SubsplitDAGStorage: Neighbors iterator") {
   auto storage = MakeStorage();
 
   CHECK_EQ(*GetStorage(storage.GetVertices()[1])
-                .GetNeighbors(Direction::Leafward, Clade::Left)
+                .GetNeighbors(Direction::Leafward, Clade::Left, storage)
                 .begin(),
            3);
   CHECK_EQ(GetStorage(storage.GetVertices()[1])
-               .GetNeighbors(Direction::Leafward, Clade::Left)
+               .GetNeighbors(Direction::Leafward, Clade::Left, storage)
                .begin()
-               .GetEdge(),
+               .GetEdgeId(),
            2);
 }
 
