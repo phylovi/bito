@@ -158,8 +158,7 @@ TEST_CASE(
   TestSampling(TopologySampler{},
                SubsplitDAGSamplerInput{
                    dag, dag.BuildUniformOnTopologicalSupportPrior().array().log()},
-               dag, indexer_representations, indexer,
-               [](auto &&) { return 1; });
+               dag, indexer_representations, indexer, [](auto &&) { return 1; });
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

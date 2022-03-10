@@ -41,10 +41,11 @@ template <typename T>
 class GenericSubsplitDAGNode {
   constexpr static bool is_const = std::is_const_v<T>;
   using dag_storage_type =
-      std::conditional_t<is_const, const SubsplitDAGStorage,
-                         SubsplitDAGStorage>;
+      std::conditional_t<is_const, const SubsplitDAGStorage, SubsplitDAGStorage>;
+
  public:
-  GenericSubsplitDAGNode(T& node, dag_storage_type& dag_storage) : node_{node}, dag_storage_{dag_storage} {}
+  GenericSubsplitDAGNode(T& node, dag_storage_type& dag_storage)
+      : node_{node}, dag_storage_{dag_storage} {}
   GenericSubsplitDAGNode(const GenericSubsplitDAGNode<std::remove_const_t<T>>& other)
       : node_{other.node_}, dag_storage_{other.dag_storage_} {}
 
