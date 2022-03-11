@@ -259,7 +259,7 @@ size_t GraftDAG::GetDAGNodeId(const Bitset &node_subsplit) const {
   return subsplit_to_id_.at(node_subsplit);
 }
 
-size_t GraftDAG::DAGRootNodeId() const { return host_dag_.DAGRootNodeId(); }
+size_t GraftDAG::GetDAGRootNodeId() const { return host_dag_.GetDAGRootNodeId(); }
 
 size_t GraftDAG::GetEdgeIdx(const Bitset &parent_subsplit,
                             const Bitset &child_subsplit) const {

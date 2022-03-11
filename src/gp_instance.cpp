@@ -133,22 +133,17 @@ void GPInstance::ProcessOperations(const GPOperationVector &operations) {
 void GPInstance::ClearTreeCollectionAssociatedState() { dag_ = GPDAG(); }
 
 void GPInstance::HotStartBranchLengths() {
-  if (HasEngine()) {
-    GetEngine()->HotStartBranchLengths(tree_collection_, dag_.BuildEdgeIndexer());
-  } else {
-    Failwith(
-        "Please load and process some trees before calling HotStartBranchLengths.");
-  }
+  Assert(HasEngine(),
+         "Please load and process some trees before calling HotStartBranchLengths.");
+  GetEngine()->HotStartBranchLengths(tree_collection_, dag_.BuildEdgeIndexer());
 }
 
 SizeDoubleVectorMap GPInstance::GatherBranchLengths() {
-  if (HasEngine()) {
-    SizeDoubleVectorMap branch_lengths_from_sample =
-        GetEngine()->GatherBranchLengths(tree_collection_, dag_.BuildEdgeIndexer());
-    return branch_lengths_from_sample;
-  } else {
-    Failwith("Please load and process some trees before calling GatherBranchLengths.");
-  }
+  Assert(HasEngine(),
+         "Please load and process some trees before calling GatherBranchLengths.");
+  SizeDoubleVectorMap branch_lengths_from_sample =
+      GetEngine()->GatherBranchLengths(tree_collection_, dag_.BuildEdgeIndexer());
+  return branch_lengths_from_sample;
 }
 
 void GPInstance::TakeFirstBranchLength() {
@@ -393,7 +388,14 @@ void GPInstance::LoadAllGeneratedTrees() {
   tree_collection_ = GenerateCompleteRootedTreeCollection();
 }
 
-void GPInstance::SubsplitDAGToDot(const std::string &out_path, bool show_index_labels) {
+StringVector GPInstance::GetTaxonNames() const { return tree_collection_.TaxonNames(); }
+
+EigenVectorXd GPInstance::GetBranchLengths() const {
+  return GetEngine()->GetBranchLengths();
+}
+
+void GPInstance::SubsplitDAGToDot(const std::string &out_path,
+                                  bool show_index_labels) const {
   std::ofstream out_stream(out_path);
   out_stream << dag_.ToDot(show_index_labels) << std::endl;
   if (out_stream.bad()) {
@@ -410,5 +412,3 @@ NNIEngine &GPInstance::GetNNIEngine() {
   Assert(nni_engine_, "GPInstance::GetNNIEngine() when nni_engine has not been made.");
   return *nni_engine_;
 }
-
-StringVector GPInstance::GetTaxonNames() { return tree_collection_.TaxonNames(); }

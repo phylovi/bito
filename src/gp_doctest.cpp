@@ -684,7 +684,7 @@ TEST_CASE("GPInstance: test rootsplits") {
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   inst.SubsplitDAGToDot("_ignore/outtest.dot", true);
   auto& dag = inst.GetDAG();
-  for (const auto& rootsplit_id : dag.RootsplitIds()) {
+  for (const auto& rootsplit_id : dag.GetRootsplitNodeIds()) {
     const auto rootsplit_node = dag.GetDAGNode(rootsplit_id);
     CHECK(rootsplit_node.IsRootsplit());
   }
@@ -809,9 +809,9 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   CHECK_EQ(dag.GetEdgeIdx(16, 13), 12);
   CHECK_EQ(dag.GetEdgeIdx(11, 4), 25);
   // Check that `parent_to_child_range_` was updated.
-  CHECK_EQ(dag.GetEdgeRange(node_14.GetBitset(), false).second, 9);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(16).GetBitset(), false).first, 11);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(16).GetBitset(), false).second, 13);
+  CHECK_EQ(dag.GetChildEdgeRange(node_14.GetBitset(), false).second, 9);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).first, 11);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).second, 13);
   // Check that `topology_count_` was updated.
   CHECK_EQ(dag.TopologyCount(), prev_topology_count + 2);
 }
@@ -838,8 +838,8 @@ TEST_CASE("GPInstance: Only add parent node tests") {
   CHECK_EQ(dag.NodeCount(), prev_node_count + 3);
   CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 8);
   // Check that BuildEdgeReindexer() correctly handles rotated edges.
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10).GetBitset(), true).first, 5);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10).GetBitset(), true).second, 7);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).first, 5);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).second, 7);
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908711187.
@@ -859,10 +859,10 @@ TEST_CASE("GPInstance: Only add child node tests") {
   CHECK_EQ(dag.NodeCount(), prev_node_count + 1);
   CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 4);
   // Check that new child node is connected to all possible parents.
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10).GetBitset(), false).first, 9);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(10).GetBitset(), false).second, 11);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11).GetBitset(), false).first, 3);
-  CHECK_EQ(dag.GetEdgeRange(dag.GetDAGNode(11).GetBitset(), false).second, 5);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), false).first, 9);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), false).second, 11);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(11).GetBitset(), false).first, 3);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(11).GetBitset(), false).second, 5);
 }
 
 // This test builds a DAG, tests if engine generates the same set of adjacent NNIs and
