@@ -144,6 +144,8 @@ std::ostream& operator<<(std::ostream& os, const Bitset& bitset) {
 
 void Bitset::Zero() { std::fill(value_.begin(), value_.end(), false); }
 
+std::vector<bool> Bitset::GetData() { return value_; }
+
 size_t Bitset::Hash() const { return std::hash<std::vector<bool>>{}(value_); }
 
 std::string Bitset::ToString() const {

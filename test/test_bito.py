@@ -158,3 +158,26 @@ def test_sbn_unrooted_instance():
     inst = ds1_support_test()
     ds1_phylo_model_demo(inst)
     rootings_indexer_test()
+
+
+def test_gp_tweaks():
+    """ Tests added functionality for gp_instance """
+    inst = bito.gp_instance("_ignore/mmapped_plv_pybito.data")
+    inst.read_fasta_file("data/six_taxon.fasta")
+    inst.read_newick_file("data/six_taxon_rootsplit.nwk")
+    inst.make_engine()
+
+    init_branches = inst.get_branch_lengths()
+    print("init_branch_lengths:", init_branches)
+    inst.estimate_branch_lengths(1e-3, 100, True)
+    estimated_branches = inst.get_branch_lengths()
+    print("estimated_branch_lengths:", estimated_branches)
+
+    edge_idx_to_pcsp_map = inst.build_edge_idx_to_pcsp_map()
+    print("edge_pcsp_map:", edge_idx_to_pcsp_map)
+    pass
+
+
+if __name__ == "__main__":
+    test_sbn_unrooted_instance()
+    test_gp_tweaks()

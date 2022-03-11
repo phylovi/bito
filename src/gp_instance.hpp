@@ -81,15 +81,18 @@ class GPInstance {
   // Generate all trees spanned by the DAG and load them into the instance.
   void LoadAllGeneratedTrees();
 
+  // Get taxon names.
+  StringVector GetTaxonNames() const;
+  // Get branch lengths.
+  EigenVectorXd GetBranchLengths() const;
   // Export the subsplit DAG as a DOT file.
-  void SubsplitDAGToDot(const std::string &out_path, bool show_index_labels = true);
+  void SubsplitDAGToDot(const std::string &out_path,
+                        bool show_index_labels = true) const;
 
   // Initialize NNI Evaluation Engine.
   void MakeNNIEngine();
   // Get NNI Evaluation Engine.
   NNIEngine &GetNNIEngine();
-  // Get taxon names.
-  StringVector GetTaxonNames();
 
  private:
   void ClearTreeCollectionAssociatedState();
