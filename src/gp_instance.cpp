@@ -384,7 +384,14 @@ void GPInstance::LoadAllGeneratedTrees() {
   tree_collection_ = GenerateCompleteRootedTreeCollection();
 }
 
-void GPInstance::SubsplitDAGToDot(const std::string &out_path, bool show_index_labels) {
+StringVector GPInstance::GetTaxonNames() const { return tree_collection_.TaxonNames(); }
+
+EigenVectorXd GPInstance::GetBranchLengths() const {
+  return GetEngine()->GetBranchLengths();
+}
+
+void GPInstance::SubsplitDAGToDot(const std::string &out_path,
+                                  bool show_index_labels) const {
   std::ofstream out_stream(out_path);
   out_stream << dag_.ToDot(show_index_labels) << std::endl;
   if (out_stream.bad()) {
@@ -401,5 +408,3 @@ NNIEngine &GPInstance::GetNNIEngine() {
   Assert(nni_engine_, "GPInstance::GetNNIEngine() when nni_engine has not been made.");
   return *nni_engine_;
 }
-
-StringVector GPInstance::GetTaxonNames() { return tree_collection_.TaxonNames(); }
