@@ -55,11 +55,11 @@ class GraftDAG {
   // Get the node id based on the subsplit bitset.
   size_t GetDAGNodeId(const Bitset &subsplit) const;
   // Gets the node id of the DAG root.
-  size_t DAGRootNodeId() const;
+  size_t GetDAGRootNodeId() const;
   // Get the node based on the nodes id.
   SubsplitDAGNode *GetNode(const size_t node_id) const;
   // Return the node ids corresponding to the rootsplits.
-  const SizeVector &GetRootsplitIds() const;
+  const SizeVector &GetGetRootsplitNodeIds() const;
   // Get the GPCSP/edge index by its parent/child pair.
   size_t GetEdgeIdx(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
   size_t GetEdgeIdx(const size_t parent_id, const size_t child_id) const;

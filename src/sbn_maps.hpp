@@ -18,6 +18,7 @@
 using BitsetVector = std::vector<Bitset>;
 using SizeBitsetMap = std::unordered_map<size_t, Bitset>;
 using BitsetSizeMap = std::unordered_map<Bitset, size_t>;
+using SizeBoolVectorMap = std::unordered_map<size_t, std::vector<bool>>;
 using BitsetSizePairMap = std::unordered_map<Bitset, std::pair<size_t, size_t>>;
 using BitsetSizeDict = DefaultDict<Bitset, size_t>;
 using BitsetDoubleMap = std::unordered_map<Bitset, double>;

@@ -3,6 +3,8 @@
 If you want to see the results of the print statements, use `pytest -s`.
 """
 
+from asyncio import gather
+from gettext import install
 import json
 import pprint
 import pytest
@@ -158,3 +160,36 @@ def test_sbn_unrooted_instance():
     inst = ds1_support_test()
     ds1_phylo_model_demo(inst)
     rootings_indexer_test()
+
+
+def test_gp_tweaks():
+    inst = bito.gp_instance("_ignore/mmapped_plv_pybito.data")
+    inst.read_fasta_file("data/six_taxon.fasta")
+    inst.read_newick_file("data/six_taxon_rootsplit.nwk")
+    inst.make_engine()
+
+    gathered_branch_lengths = inst.gather_branch_lengths()
+    print("gathered_branch_lengths:")
+    for key in gathered_branch_lengths.keys():
+        print(np.array(gathered_branch_lengths[key]))
+
+    init_branches = inst.get_branch_lengths()
+    print("init:", init_branches)
+    inst.estimate_branch_lengths(1e-3, 100, True)
+    estimated_branches = inst.get_branch_lengths()
+    print("estimated:", estimated_branches)
+    inst.hot_start_branch_lengths()
+    hotstart_branches = inst.get_branch_lengths()
+    print("hotstart:", hotstart_branches)
+
+    edge_idx_to_pcsp_map = inst.get_edge_idx_to_pcsp_map()
+    test_rootsplit_branches = []
+    for key in edge_idx_to_pcsp_map.keys():
+        print("pcsp[", key, "]:", edge_idx_to_pcsp_map[key])
+    print("test_rootsplit_branches:", test_rootsplit_branches)
+    pass
+
+
+if __name__ == "__main__":
+    # test_sbn_unrooted_instance()
+    test_gp_tweaks()

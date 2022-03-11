@@ -108,8 +108,10 @@ class SubsplitDAG {
 
   // Create a EdgeIndexer representing the DAG.
   // The EdgeIndexer is a map (edge/PCSP bitset -> edge/PCSP index).
-  // The edge/PCSP indexer is "expanded", meaning it contains leafs and rootsplits.
+  // The edge/PCSP indexer contains leafs and rootsplits.
   BitsetSizeMap BuildEdgeIndexer() const;
+  // Builds inverse of EdgeIndexer map: (edge/PCSP index -> edge/PCSP bitset).
+  SizeBoolVectorMap BuildEdgeIdxToPCSPMap() const;
   // Get the rotated and sorted parents of the node with the given subsplit.
   std::pair<SizeVector, SizeVector> BuildParentIdVectors(const Bitset &subsplit) const;
   // Get the rotated and sorted children of the node with the given subsplit.
@@ -132,17 +134,16 @@ class SubsplitDAG {
   // Get the node id based on the subsplit bitset.
   size_t GetDAGNodeId(const Bitset &subsplit) const;
   // Gets the node id of the DAG root.
-  size_t DAGRootNodeId() const;
+  size_t GetDAGRootNodeId() const;
   // Return the node ids corresponding to the rootsplits.
-  ConstNeighborsView RootsplitIds() const;
+  ConstNeighborsView GetRootsplitNodeIds() const;
   // Get edge based on edge id.
   ConstLineView GetDAGEdge(const size_t edge_id) const;
-  // Get the PCSP edge index by its parent-child pair subsplits from the DAG nodes.
+  // Get the PCSP edge index by its parent-child pair.
   size_t GetEdgeIdx(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
-  // Get the PCSP edge index by its parent-child pair id from the DAG nodes.
   size_t GetEdgeIdx(size_t parent_id, size_t child_id) const;
-  // Get the range of outgoing idxs from the given clade of a subsplit.
-  SizePair GetEdgeRange(const Bitset &subsplit, const bool rotated) const;
+  // Get the range of child edge idxs from the given clade of a subsplit.
+  SizePair GetChildEdgeRange(const Bitset &subsplit, const bool rotated) const;
   // Get set of all taxon names.
   std::vector<std::string> GetSortedVectorOfTaxonNames() const;
   // Get set of all node Subsplit bitsets.
@@ -300,7 +301,7 @@ class SubsplitDAG {
       EigenConstVectorXdRef normalized_sbn_parameters,
       EigenConstVectorXdRef node_probabilities) const;
 
-  // ** Contains
+  // ** Queries
 
   // Does a taxon with the given name exist?
   bool ContainsTaxon(const std::string &name) const;

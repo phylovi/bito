@@ -78,6 +78,9 @@ class Bitset {
   // Sets entire bitset to false.
   void Zero();
 
+  // Get underlying data vector.
+  std::vector<bool> GetData();
+
   // Generates hash value from bitset.
   size_t Hash() const;
   // Outputs bitset as a string of "1" and "0"s.
