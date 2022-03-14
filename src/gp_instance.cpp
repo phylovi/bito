@@ -177,7 +177,7 @@ void GPInstance::ComputeMarginalLikelihood() {
 }
 
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
-                                       bool per_pcsp_convg) {
+                                       bool per_pcsp_convg, bool track_values) {
   std::stringstream dev_null;
   auto &our_ostream = quiet ? dev_null : std::cout;
   auto now = std::chrono::high_resolution_clock::now;
