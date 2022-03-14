@@ -101,7 +101,7 @@ void ZStringBuf::ensure_avail(std::streamsize count) {
           throw std::runtime_error("Preset dictionary is needed");
         }
         if (ret.code == Result::Code::stream_end) {
-          throw std::logic_error("End of stream");
+          break;
         }
         throw std::logic_error("Unexpected result from zlib");
       }

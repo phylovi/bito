@@ -198,6 +198,20 @@ class GenericNeighborsView {
   size_t size() const { return neighbors_.size(); }
   bool empty() const { return neighbors_.empty(); }
 
+  void RemapIds(const SizeVector& reindexer) {
+    for (auto [vertex_id, line_id] : neighbors_) {
+      std::ignore = line_id;
+      Assert(vertex_id < reindexer.size(),
+             "Neighbors cannot contain an id out of bounds of the reindexer in "
+             "GenericNeighborsView::RemapIds.");
+    }
+    T remapped{};
+    for (auto [vertex_id, line_id] : neighbors_) {
+      remapped[reindexer.at(vertex_id)] = line_id;
+    }
+    neighbors_ = remapped;
+  }
+
   operator SizeVector() const {
     SizeVector result;
     for (auto i : neighbors_) result.push_back(i.first);
@@ -372,17 +386,25 @@ class SubsplitDAGStorage {
   ConstLinesView GetLines() const { return *this; }
   LinesView GetLines() { return *this; }
 
-  std::optional<ConstLineView> GetLine(VertexId parent, VertexId child) const {
+  std::optional<ConstLineView> GetLine(VertexId parent, VertexId child,
+                                       size_t vertex_offset = 0,
+                                       size_t line_offset = 0) const {
+    parent -= vertex_offset;
+    child -= vertex_offset;
     if (parent >= vertices_.size() || child >= vertices_.size()) return {};
-    auto result = vertices_.at(parent).FindNeighbor(child);
+    auto result = vertices_.at(parent).FindNeighbor(child + vertex_offset);
     if (!result.has_value()) return {};
-    return lines_.at(std::get<0>(result.value()));
+    return lines_.at(std::get<0>(result.value()) - line_offset);
   }
 
   std::optional<ConstLineView> GetLine(LineId id) const {
-    if (id >= lines_.size()) return {};
+    if (id >= lines_.size()) {
+      return std::nullopt;
+    }
     auto& line = lines_[id];
-    if (line.GetId() == NoId) return {};
+    if (line.GetId() == NoId) {
+      return std::nullopt;
+    }
     return line;
   }
 
@@ -419,12 +441,8 @@ class SubsplitDAGStorage {
  private:
   template <typename>
   friend class GenericLinesView;
-  template <typename T>
-  friend class GenericLinesView<T>::Iterator;
   template <typename>
   friend class GenericVerticesView;
-  template <typename T>
-  friend class GenericVerticesView<T>::Iterator;
 
   template <typename T, typename Id>
   static T& GetOrInsert(std::vector<T>& data, Id id, size_t offset = 0) {

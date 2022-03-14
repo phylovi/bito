@@ -17,3 +17,4 @@ Please double check that you can make your tests fail by perturbing them.
 * [ ] `clang-format` has been run
 * [ ] TODOs have been eliminated from the code
 * [ ] Comments are up to date, document intent, and there are no commented-out code blocks
+* [ ] GitHub CI build on PR branch completed successfully

@@ -135,6 +135,8 @@ class SubsplitDAG {
   size_t DAGRootNodeId() const;
   // Return the node ids corresponding to the rootsplits.
   ConstNeighborsView RootsplitIds() const;
+  // Get edge based on edge id.
+  ConstLineView GetDAGEdge(const size_t edge_id) const;
   // Get the PCSP edge index by its parent-child pair subsplits from the DAG nodes.
   size_t GetEdgeIdx(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
   // Get the PCSP edge index by its parent-child pair id from the DAG nodes.
@@ -308,6 +310,7 @@ class SubsplitDAG {
   bool ContainsNode(const size_t node_id) const;
   // Does an edge that connects the two nodes exist?
   bool ContainsEdge(const size_t parent_id, const size_t child_id) const;
+  bool ContainsEdge(const size_t edge_id) const;
 
   // ** Modify DAG
   // These methods are for directly modifying the DAG by adding or removing nodes and
