@@ -449,6 +449,33 @@ void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection
   }
 }
 
+void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
+                                     const BitsetSizeMap& indexer) {
+  const auto leaf_count = tree_collection.TaxonCount();
+  const size_t default_index = branch_lengths_.size();
+  branch_lengths_.setZero();
+  Eigen::VectorXi gpcsp_counts = Eigen::VectorXi::Zero(branch_lengths_.size());
+  // Set the branch length vector to be the total of the branch lengths for each PCSP,
+  // and count the number of times we have seen each PCSP (into gpcsp_counts).
+  for (const auto& tree : tree_collection.Trees()) {
+    tree.Topology()->RootedPCSPPreorder(
+        [&leaf_count, &default_index, &indexer, &tree, &gpcsp_counts, this](
+            const Node* sister_node, const Node* focal_node, const Node* child0_node,
+            const Node* child1_node) {
+          Bitset gpcsp_bitset =
+              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                                    child0_node, false, child1_node, false);
+          const auto gpcsp_idx = AtWithDefault(indexer, gpcsp_bitset, default_index);
+          if (gpcsp_idx != default_index) {
+            if (gpcsp_counts(gpcsp_idx) == 0) {
+              branch_lengths_(gpcsp_idx) = tree.BranchLength(focal_node);
+            }
+            gpcsp_counts(gpcsp_idx)++;
+          }
+        });
+  }
+}
+
 EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
     const QuartetHybridRequest& request) {
   auto CheckRescaling = [this](size_t plv_idx) {
