@@ -186,7 +186,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
   GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
   GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
   GPOperationVector populate_plv_operations = dag_.PopulatePLVs();
-  GPOperationVector compute_lik_operations = dag_.ComputeLikelihoods();
 
   our_ostream << "Populating PLVs\n";
   PopulatePLVs();
@@ -194,16 +193,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
   t_start = now();
   our_ostream << "Computing initial likelihood\n";
   ProcessOperations(marginal_lik_operations);
-  ProcessOperations(compute_lik_operations);
-
-  size_t gpcsp_count = dag_.EdgeCountWithLeafSubsplits();
-  per_pcsp_branch_lengths_ = EigenMatrixXd(gpcsp_count, 1);
-  per_pcsp_marg_lik_ = EigenMatrixXd(gpcsp_count, 1);
-
-  per_pcsp_branch_lengths_.col(0) = GetEngine()->GetBranchLengths();
-  EigenVectorXd current_per_pcsp_marg_likelihoods =
-      GetEngine()->GetPerGPCSPLogLikelihoods();
-  per_pcsp_marg_lik_.col(0) = current_per_pcsp_marg_likelihoods;
 
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
   std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
@@ -213,21 +202,12 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
   for (size_t i = 0; i < max_iter; i++) {
     our_ostream << "Iteration: " << (i + 1) << std::endl;
     ProcessOperations(branch_optimization_operations);
-    GetOptimizationPath();
     // #321 Replace with a cleaned up traversal.
     ProcessOperations(populate_plv_operations);
     ProcessOperations(marginal_lik_operations);
-    ProcessOperations(compute_lik_operations);
-
-    per_pcsp_branch_lengths_.conservativeResize(Eigen::NoChange, i + 2);
-    per_pcsp_marg_lik_.conservativeResize(Eigen::NoChange, i + 2);
-
-    per_pcsp_branch_lengths_.col(i + 1) = GetEngine()->GetBranchLengths();
-    EigenVectorXd per_pcsp_marg_likelihoods = GetEngine()->GetPerGPCSPLogLikelihoods();
-    per_pcsp_marg_lik_.col(i + 1) = per_pcsp_marg_likelihoods;
 
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-    auto avg_abs_change_perpcsp_branch_length =
+    double avg_abs_change_perpcsp_branch_length =
         (GetEngine()->GetBranchLengthDifferences()).array().mean();
 
     our_ostream << "Current marginal log likelihood: ";
@@ -245,7 +225,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
       break;
     }
     current_marginal_log_lik = marginal_log_lik;
-    current_per_pcsp_marg_likelihoods = per_pcsp_marg_likelihoods;
   }
   std::chrono::duration<double> optimization_duration = now() - t_start;
   our_ostream << "\n# Timing Report\n";
@@ -254,6 +233,21 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
   our_ostream << "optimization: " << optimization_duration.count() << "s or "
               << optimization_duration.count() / 60 << "m\n";
 }
+
+void GPInstance::FullDAGTraversalOptimizationValues() {
+  GPOperationVector compute_lik_operations = dag_.ComputeLikelihoods();
+  ProcessOperations(compute_lik_operations);
+
+  size_t col_idx = per_pcsp_branch_lengths_.cols() - 1;
+  per_pcsp_branch_lengths_.col(col_idx) = GetEngine()->GetBranchLengths();
+  per_pcsp_marg_lik_.col(col_idx) = GetEngine()->GetPerGPCSPLogLikelihoods();
+
+  per_pcsp_branch_lengths_.conservativeResize(Eigen::NoChange, col_idx + 2);
+  per_pcsp_marg_lik_.conservativeResize(Eigen::NoChange, col_idx + 2);
+
+  GetOptimizationPath();
+}
+
 
 void GPInstance::EstimateSBNParameters() {
   std::cout << "Begin SBN parameter optimization\n";
