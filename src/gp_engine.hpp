@@ -79,9 +79,6 @@ class GPEngine {
   // Use branch lengths from loaded sample as a starting point for optimization.
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                              const BitsetSizeMap& indexer);
-  // Take the first branch length encountered for a given edge.
-  void TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
-                             const BitsetSizeMap& indexer);
 
   // Gather branch lengths from loaded sample with their corresponding pcsp.
   SizeDoubleVectorMap GatherBranchLengths(const RootedTreeCollection& tree_collection,
