@@ -34,7 +34,7 @@ def hello_demo():
     print("Current working directory: {0}".format(cwd))
 
     inst.read_fasta_file("data/hello.fasta")
-    breakpoint()
+    
     inst.prepare_for_phylo_likelihood(
         SIMPLE_SPECIFICATION, 2, [beagle_flags.VECTOR_SSE]
     )
