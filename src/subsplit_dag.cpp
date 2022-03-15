@@ -38,6 +38,27 @@ SubsplitDAG::SubsplitDAG(size_t taxon_count,
          "Taxon ids do not cover all indices from 0 to taxon_count.");
 }
 
+SubsplitDAG::SubsplitDAG(SubsplitDAG &host_dag, HostDispatchTag)
+    : storage_{host_dag.storage_, HostDispatchTag()},
+      dag_taxa_{host_dag.dag_taxa_},
+      subsplit_to_id_{host_dag.subsplit_to_id_},
+      parent_to_child_range_{host_dag.parent_to_child_range_},
+      taxon_count_{host_dag.taxon_count_},
+      edge_count_without_leaf_subsplits_{host_dag.edge_count_without_leaf_subsplits_},
+      topology_count_{host_dag.topology_count_},
+      topology_count_below_{host_dag.topology_count_below_} {}
+
+void SubsplitDAG::ResetHostDAG(SubsplitDAG &host_dag) {
+  storage_.ResetHost(host_dag.storage_);
+  dag_taxa_ = host_dag.dag_taxa_;
+  subsplit_to_id_ = host_dag.subsplit_to_id_;
+  parent_to_child_range_ = host_dag.parent_to_child_range_;
+  taxon_count_ = host_dag.taxon_count_;
+  edge_count_without_leaf_subsplits_ = host_dag.edge_count_without_leaf_subsplits_;
+  topology_count_ = host_dag.topology_count_;
+  topology_count_below_ = host_dag.topology_count_below_;
+}
+
 // ** Comparator
 
 int SubsplitDAG::Compare(const SubsplitDAG &other) {
@@ -283,6 +304,10 @@ MutableSubsplitDAGNode SubsplitDAG::GetDAGNode(const size_t node_id) {
 
 size_t SubsplitDAG::GetDAGNodeId(const Bitset &subsplit) const {
   Assert(ContainsNode(subsplit), "Node with the given subsplit does not exist in DAG.");
+  if (storage_.HaveHost()) {
+    auto node = storage_.FindVertex(subsplit);
+    return node->get().GetId();
+  }
   return subsplit_to_id_.at(subsplit);
 }
 
@@ -918,6 +943,9 @@ bool SubsplitDAG::ContainsTaxon(const std::string &name) const {
 }
 
 bool SubsplitDAG::ContainsNode(const Bitset &subsplit) const {
+  if (storage_.HaveHost()) {
+    if (storage_.FindVertex(subsplit).has_value()) return true;
+  }
   return subsplit_to_id_.find(subsplit) != subsplit_to_id_.end();
 }
 
@@ -1109,17 +1137,22 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
     // Reindex these edges.
     ConnectParentToAllParents(parent_subsplit, added_edge_idxs);
   }
-  // Create reindexers.
-  node_reindexer = BuildNodeReindexer(prev_node_count);
-  edge_reindexer = BuildEdgeReindexer(prev_edge_count);
-  // Update the ids in added_node_ids and added_edge_idxs according to the reindexers.
-  Reindexer::RemapIdVector(added_node_ids, node_reindexer);
-  Reindexer::RemapIdVector(added_edge_idxs, edge_reindexer);
-  // Update fields in the Subsplit DAG according to the reindexers.
-  RemapNodeIds(node_reindexer);
-  RemapEdgeIdxs(edge_reindexer);
-  // Recount topologies to update `topology_count_below_`.
-  CountTopologies();
+  if (!storage_.HaveHost()) {
+    // Create reindexers.
+    node_reindexer = BuildNodeReindexer(prev_node_count);
+    edge_reindexer = BuildEdgeReindexer(prev_edge_count);
+
+    // Update the ids in added_node_ids and added_edge_idxs according to the reindexers.
+    Reindexer::RemapIdVector(added_node_ids, node_reindexer);
+    Reindexer::RemapIdVector(added_edge_idxs, edge_reindexer);
+
+    // Update fields in the Subsplit DAG according to the reindexers.
+    RemapNodeIds(node_reindexer);
+    RemapEdgeIdxs(edge_reindexer);
+
+    // Recount topologies to update `topology_count_below_`.
+    CountTopologies();
+  }
 
   return {added_node_ids, added_edge_idxs, node_reindexer, edge_reindexer};
 }

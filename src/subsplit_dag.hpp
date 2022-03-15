@@ -50,6 +50,8 @@ class SubsplitDAG {
   // Build a Subsplit DAG expressing all tree topologies from tree_collection.
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
 
+  SubsplitDAG(const SubsplitDAG &) = default;
+
   // ** Comparator methods:
 
   // This compare ensures that both DAGs have the same topology according to their
@@ -146,9 +148,9 @@ class SubsplitDAG {
   SizePair GetChildEdgeRange(const Bitset &subsplit, const bool rotated) const;
   // Get set of all taxon names.
   std::vector<std::string> GetSortedVectorOfTaxonNames() const;
-  // Get set of all node Subsplit bitsets.
+  // Get sorted vector of all node Subsplit bitsets.
   std::vector<Bitset> GetSortedVectorOfNodeBitsets() const;
-  // Get set of all edge PCSP bitsets.
+  // Get sorted vector of all edge PCSP bitsets.
   std::vector<Bitset> GetSortedVectorOfEdgeBitsets() const;
   // Get reference to taxon map.
   const std::map<std::string, size_t> &GetTaxonMap() const;
@@ -424,6 +426,9 @@ class SubsplitDAG {
   static TagStringMap BuildDummyTagTaxonMap(const size_t taxon_count);
 
  protected:
+  explicit SubsplitDAG(SubsplitDAG &host_dag, HostDispatchTag);
+  void ResetHostDAG(SubsplitDAG &host_dag);
+
   // Builds a vector of subsplits of all children , optionally including leaf nodes.
   std::vector<Bitset> GetChildSubsplits(const SizeBitsetMap &index_to_child,
                                         const Bitset &subsplit,

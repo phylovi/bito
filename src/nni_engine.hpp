@@ -31,7 +31,7 @@ class NNIEngine {
   // Get Reference of DAG.
   const GPDAG &GetGPDAG() const { return dag_; };
   // Get Reference of GraftDAG.
-  const GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); };
+  GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); };
   // Get Reference of GPEngine.
   const GPEngine &GetGPEngine() const { return gp_engine_; }
   // Get Adjacent NNIs to DAG.
