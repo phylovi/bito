@@ -139,8 +139,11 @@ bito_executable(doctest
 bito_executable(gp_doctest
 	src/gp_doctest.cpp)
 
-bito_executable(noodle
-	src/noodle.cpp)
+###################
+# optional extras #
+###################
+
+add_subdirectory(extras)
 
 
 
