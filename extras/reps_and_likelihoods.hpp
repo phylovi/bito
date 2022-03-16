@@ -11,9 +11,9 @@
 
 #pragma once
 
-#include "../src/unrooted_sbn_instance.hpp"
-#include "../src/rooted_sbn_instance.hpp"
-#include "../src/gp_instance.hpp"
+#include "unrooted_sbn_instance.hpp"
+#include "rooted_sbn_instance.hpp"
+#include "gp_instance.hpp"
 #include <thread>
 
 

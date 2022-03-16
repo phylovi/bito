@@ -53,6 +53,11 @@ function(bito_executable PRODUCT)
 	bito_link_opts(${PRODUCT})
 endfunction()
 
+function(bito_extra PRODUCT)
+    bito_executable(${PRODUCT} ${ARGN})
+    target_include_directories(${PRODUCT} PUBLIC ../src)
+endfunction()
+
 ###################
 # libbito-core.so #
 ###################
