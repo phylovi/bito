@@ -431,6 +431,31 @@ void GPEngine::FunctionOverRootedTreeCollection(
   }
 }
 
+void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
+                                     const BitsetSizeMap& indexer) {
+  size_t unique_gpcsp_count = branch_lengths_.size();
+  branch_lengths_.setZero();
+  EigenVectorXi observed_gpcsp_counts = EigenVectorXi::Zero(unique_gpcsp_count);
+  // Set the branch length vector to be the first encountered branch length for each
+  // PCSP, and mark when we have seen each PCSP (into observed_gpcsp_counts).
+  auto set_first_branch_length_and_increment_gpcsp_count =
+      [&observed_gpcsp_counts, this](size_t gpcsp_idx, const RootedTree& tree,
+                                     const Node* focal_node) {
+        if (observed_gpcsp_counts(gpcsp_idx)==0) {
+          branch_lengths_(gpcsp_idx) = tree.BranchLength(focal_node);
+          observed_gpcsp_counts(gpcsp_idx)++;
+        }
+      };
+  FunctionOverRootedTreeCollection(set_first_branch_length_and_increment_gpcsp_count,
+                                   tree_collection, indexer);
+  // If a branch length was not set above, set it to the default length.
+  for (size_t gpcsp_idx = 0; gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
+    if (observed_gpcsp_counts(gpcsp_idx) == 0) {
+      branch_lengths_(gpcsp_idx) = default_branch_length_;
+    }
+  }
+}
+
 EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
     const QuartetHybridRequest& request) {
   auto CheckRescaling = [this](size_t plv_idx) {

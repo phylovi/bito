@@ -58,6 +58,11 @@ function(bito_executable PRODUCT)
   bito_link_opts(${PRODUCT})
 endfunction()
 
+function(bito_extra PRODUCT)
+    bito_executable(${PRODUCT} ${ARGN})
+    target_include_directories(${PRODUCT} PUBLIC ../src)
+endfunction()
+
 ###################
 # libbito-core.so #
 ###################
@@ -145,8 +150,12 @@ bito_executable(doctest
 bito_executable(gp_doctest
   src/gp_doctest.cpp)
 
-bito_executable(noodle
-  src/noodle.cpp)
+###################
+# optional extras #
+###################
+
+add_subdirectory(extras)
+
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/py)
 set(BITO_BINARY_DIR ${PROJECT_BINARY_DIR})

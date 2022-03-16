@@ -36,6 +36,7 @@ class GPInstance {
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();
   SizeDoubleVectorMap GatherBranchLengths();
+  void TakeFirstBranchLength();
   void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false);
   void PopulatePLVs();

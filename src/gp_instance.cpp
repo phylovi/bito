@@ -151,6 +151,15 @@ SizeDoubleVectorMap GPInstance::GatherBranchLengths() {
   }
 }
 
+void GPInstance::TakeFirstBranchLength() {
+  if (HasEngine()) {
+    GetEngine()->TakeFirstBranchLength(tree_collection_, dag_.BuildGPCSPIndexer());
+  } else {
+    Failwith(
+        "Please load and process some trees before calling TakeFirstBranchLength.");
+  }
+}
+
 void GPInstance::PopulatePLVs() { ProcessOperations(dag_.PopulatePLVs()); }
 
 void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }

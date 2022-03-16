@@ -269,6 +269,12 @@ class GenericSBNInstance {
         tree_count, GetEngine()->GetPhyloModelBlockSpecification().ParameterCount());
   }
 
+  std::vector<double> UnrootedLogLikelihoods(
+      const RootedTreeCollection &tree_collection) {
+    return GetEngine()->UnrootedLogLikelihoods(tree_collection, phylo_model_params_,
+                                               true);
+  }
+
   // ** I/O
 
   void ReadFastaFile(const std::string &fname) {

@@ -262,6 +262,14 @@ TEST_CASE("GPInstance: rescaling") {
   CHECK_LT(fabs(difference), 1e-10);
 }
 
+StringDoubleMap StringDoubleMapOfStringDoubleVector(StringDoubleVector vect) {
+  StringDoubleMap m;
+  for (const auto& [str, x] : vect) {
+    SafeInsert(m, str, x);
+  }
+  return m;
+}
+
 TEST_CASE("GPInstance: gather and hotstart branch lengths") {
   // Remove return when fixing #391 for real.
   return;
@@ -278,10 +286,7 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
   // We are going to verify correct assignment of the PCSP with sister z2, z3 and
   // children z0, z1, which only appears in the tree (outgroup,((z0,z1),(z2,z3))).
   // Vector of taxon names: [outgroup, z2, z3, z1, z0]
-  // So, this below is the desired GPCSP (in full subsplit notation), which corresponds
-  // to sister indices 1, 2, and children 4, 3:
-  // 0110000011|0001000001, 2
-  // Thus we are interested in the branch length index 2.
+  // So, this below is the desired GPCSP: 01100|00011|00001
 
   // These branch lengths are obtained by excluding (outgroup,(((z0,z1),z2),z3)) (which
   // doesn't have this PCSP) and grabbing the rest of the branch lengths.
@@ -322,6 +327,35 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
       0.0904620000, 0.0893220000, 0.0902220000, 0.0902000000;
   double true_mean_pendant = expected_bls_pendant.array().mean();
   CHECK_LT(fabs(true_mean_pendant - inst.GetEngine()->GetBranchLengths()(8)), 1e-8);
+}
+
+TEST_CASE("GPInstance: take first branch length") {
+  const std::string tree_path = "data/hotstart_bootstrap_sample.nwk";
+  GPInstance inst("_ignore/mmapped_plv.data");
+  // This is just a dummy fasta file, which is required to make an Engine.
+  inst.ReadFastaFile("data/hotstart.fasta");
+  inst.ReadNewickFile(tree_path);
+  inst.MakeEngine();
+  inst.TakeFirstBranchLength();
+  auto branch_length_map =
+      StringDoubleMapOfStringDoubleVector(inst.PrettyIndexedBranchLengths());
+
+  // Check at the internal branches
+  CHECK_EQ(0.191715, branch_length_map.at("01000|00011|00001")); // pcsp index 1 
+  CHECK_EQ(0.117537, branch_length_map.at("01100|00011|00001")); // pcsp index 2
+  CHECK_EQ(0.0874183, branch_length_map.at("00011|01100|00100")); // pcsp index 3
+  CHECK_EQ(0.129921, branch_length_map.at("10000|01111|00011")); // pcsp index 4
+  CHECK_EQ(0.15936, branch_length_map.at("10000|01111|00100")); // pcsp index 5
+  CHECK_EQ(0.000813992, branch_length_map.at("00100|01011|00011")); // pcsp index 6
+
+  // Check at the branches ending in leaves 
+  CHECK_EQ(0.129921, branch_length_map.at("01111|10000|00000")); // pcsp index 7
+  CHECK_EQ(0.090352, branch_length_map.at("00100|01000|00000")); // pcsp index 8
+  CHECK_EQ(0.099922, branch_length_map.at("00011|01000|00000")); // pcsp index 9
+  CHECK_EQ(0.112125, branch_length_map.at("01000|00100|00000")); // pcsp index 10
+  CHECK_EQ(0.104088, branch_length_map.at("01011|00100|00000")); // pcsp index 11
+  CHECK_EQ(0.113775, branch_length_map.at("00001|00010|00000")); // pcsp index 12
+  CHECK_EQ(0.081634, branch_length_map.at("00010|00001|00000")); // pcsp index 13
 }
 
 TEST_CASE("GPInstance: generate all trees") {

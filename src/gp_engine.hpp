@@ -78,6 +78,7 @@ class GPEngine {
   // Use branch lengths from loaded sample as a starting point for optimization.
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                              const BitsetSizeMap& indexer);
+
   // Gather branch lengths from loaded sample with their corresponding pcsp.
   SizeDoubleVectorMap GatherBranchLengths(const RootedTreeCollection& tree_collection,
                                           const BitsetSizeMap& indexer);
@@ -85,6 +86,12 @@ class GPEngine {
       std::function<void(size_t, const RootedTree&, const Node*)>
           function_on_tree_node_by_gpcsp,
       const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer);
+
+  // Take the first branch length encountered (in the supplied tree collection) for a
+  // given edge for the branch length of the sDAG. Set branch lengths that are not thus
+  // specified to default_branch_length_.
+  void TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
+                             const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
 
