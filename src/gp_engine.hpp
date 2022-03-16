@@ -84,7 +84,9 @@ class GPEngine {
   SizeDoubleVectorMap GatherBranchLengths(const RootedTreeCollection& tree_collection,
                                           const BitsetSizeMap& indexer);
 
-  // Take the first branch length encountered for a given edge.
+  // Take the first branch length encountered (in the supplied tree collection) for a
+  // given edge for the branch length of the sDAG. Set branch lengths that are not thus
+  // specified to default_branch_length_.
   void TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
                              const BitsetSizeMap& indexer);
 

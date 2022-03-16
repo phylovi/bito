@@ -1,7 +1,11 @@
+// Copyright 2019-2022 bito project contributors.
+// bito is free software under the GPLv3; see LICENSE file for details.
+//
+// The purpose of this code is documented in the header.
+
 #include "reps_and_likelihoods.hpp"
 
 int main(int argc, char *argv[]) {
-  // std::cout << argc << std::endl;
   if (argc != 8) {
     std::cout
         << "We need exactly 7 arguments: fasta, rooted_nwk, credible_rooted_nwk,"
