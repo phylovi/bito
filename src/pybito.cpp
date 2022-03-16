@@ -203,6 +203,10 @@ PYBIND11_MODULE(bito, m) {
           py::arg("use_tip_states") = true, py::arg("tree_count_option") = std::nullopt)
       .def("resize_phylo_model_params", &RootedSBNInstance::ResizePhyloModelParams,
            "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
+      .def("load_duplicates_of_first_tree",
+           &RootedSBNInstance::LoadDuplicatesOfFirstTree,
+           "Replace all of the loaded trees with duplicates of the first tree.",
+           py::arg("number_of_times"))
       .def("read_fasta_file", &RootedSBNInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
       .def("taxon_names", &RootedSBNInstance::TaxonNames,
@@ -286,6 +290,10 @@ PYBIND11_MODULE(bito, m) {
           py::arg("use_tip_states") = true, py::arg("tree_count_option") = std::nullopt)
       .def("resize_phylo_model_params", &UnrootedSBNInstance::ResizePhyloModelParams,
            "Resize phylo_model_params.", py::arg("tree_count_option") = std::nullopt)
+      .def("load_duplicates_of_first_tree",
+           &UnrootedSBNInstance::LoadDuplicatesOfFirstTree,
+           "Replace all of the loaded trees with duplicates of the first tree.",
+           py::arg("number_of_times"))
       .def("read_fasta_file", &UnrootedSBNInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
       .def("taxon_names", &UnrootedSBNInstance::TaxonNames,
@@ -447,7 +455,19 @@ PYBIND11_MODULE(bito, m) {
            "Estimate the SBN parameters based on current branch lengths.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.", py::arg("tol"),
-           py::arg("max_iter"), py::arg("quiet") = false);
+           py::arg("max_iter"), py::arg("quiet") = false)
+
+      // ** NNI Engine
+      .def("make_nni_engine", &GPInstance::MakeNNIEngine,
+           R"raw(Initialize NNI Engine.)raw")
+      .def(
+          "sync_adjacent_nnis_with_dag",
+          [](GPInstance &self) { self.GetNNIEngine().SyncAdjacentNNIsWithDAG(); },
+          R"raw(Find all adjacent NNIs of DAG.)raw")
+      .def(
+          "adjacent_nni_count",
+          [](GPInstance &self) { self.GetNNIEngine().GetAdjacentNNICount(); },
+          R"raw(Get number of adjacent NNIs to current DAG.)raw");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:

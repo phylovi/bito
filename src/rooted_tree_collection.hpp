@@ -19,8 +19,12 @@ class RootedTreeCollection : public PreRootedTreeCollection {
  public:
   // Inherit all constructors.
   using PreRootedTreeCollection::PreRootedTreeCollection;
+  RootedTreeCollection(const PreRootedTreeCollection& pre_collection,
+                       const TagDateMap& tag_date_map);
 
   static RootedTreeCollection OfTreeCollection(const TreeCollection& trees);
+  // Build a tree collection by duplicating the first tree.
+  RootedTreeCollection BuildCollectionByDuplicatingFirst(size_t number_of_times);
 
   const TagDateMap& GetTagDateMap() const { return tag_date_map_; };
 

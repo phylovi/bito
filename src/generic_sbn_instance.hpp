@@ -285,6 +285,11 @@ class GenericSBNInstance {
   void SetAlignment(const Alignment &alignment) { alignment_ = alignment; }
   void SetAlignment(Alignment &&alignment) { alignment_ = alignment; }
 
+  void LoadDuplicatesOfFirstTree(size_t number_of_times) {
+    tree_collection_ =
+        tree_collection_.BuildCollectionByDuplicatingFirst(number_of_times);
+  }
+
  protected:
   // The name of our bito instance.
   std::string name_;
@@ -359,7 +364,8 @@ class GenericSBNInstance {
   // The input to this function is a parent subsplit (of length 2n).
   Node::NodePtr SampleTopology(const Bitset &parent_subsplit) const {
     auto process_subsplit = [this](const Bitset &parent) {
-      auto singleton_option = parent.SubsplitGetClade(1).SingletonOption();
+      auto singleton_option =
+          parent.SubsplitGetClade(Bitset::SubsplitClade::Right).SingletonOption();
       if (singleton_option) {
         return Node::Leaf(*singleton_option);
       }  // else

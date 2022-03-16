@@ -12,17 +12,21 @@ class Alignment {
  public:
   Alignment() = default;
   explicit Alignment(StringStringMap data) : data_(std::move(data)) {}
-
+  // Return map of taxon names to sequence alignments.
   StringStringMap Data() const { return data_; }
+  // Number of taxon sequences in data map.
   size_t SequenceCount() const { return data_.size(); }
+  // The length of the sequence alignments.
   size_t Length() const;
+  // Compare if alignments have same name and sequence data.
   bool operator==(const Alignment& other) const { return data_ == other.Data(); }
-
   // Is the alignment non-empty and do all sequences have the same length?
   bool IsValid() const;
+  // Get alignment sequence by taxon name.
   const std::string& at(const std::string& taxon) const;
-
+  // Load fasta file into Alignment.
   static Alignment ReadFasta(const std::string& fname);
+  // Create a new alignment
   Alignment ExtractSingleColumnAlignment(size_t which_column) const;
 
   static Alignment HelloAlignment() {
@@ -32,6 +36,7 @@ class Alignment {
   }
 
  private:
+  // - Map of alignments: [ taxon name -> alignment sequence ]
   StringStringMap data_;
 };
 

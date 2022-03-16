@@ -55,15 +55,15 @@ class TidySubsplitDAG : public SubsplitDAG {
   // more details.
   //
   // Applied to a given node, we:
-  // * Apply BeforeNode
-  // * For each of the clades of the node, we:
-  //     * Descend into each clade, cleaning up the sister clade with UpdateEdge as
+  // - Apply BeforeNode
+  // - For each of the clades of the node, we:
+  //     - Descend into each clade, cleaning up the sister clade with UpdateEdge as
   //     needed.
-  //     * Apply BeforeNodeClade
-  //     * For each edge descending from that clade, we:
-  //         * Recur into the child node of the clade if it is not a leaf
-  //         * Apply VisitEdge to the edge
-  // * Apply AfterNode
+  //     - Apply BeforeNodeClade
+  //     - For each edge descending from that clade, we:
+  //         - Recur into the child node of the clade if it is not a leaf
+  //         - Apply VisitEdge to the edge
+  // - Apply AfterNode
   template <typename TidyTraversalActionT>
   void DepthFirstWithTidyAction(const SizeVector &starting_nodes,
                                 const TidyTraversalActionT &action) {
@@ -106,8 +106,8 @@ class TidySubsplitDAG : public SubsplitDAG {
                                         std::unordered_set<size_t> &visited_nodes) {
     if (IsDirtyBelow(node_id, rotated)) {
       const auto node = GetDAGNode(node_id);
-      for (const size_t child_id : node->GetLeafward(rotated)) {
-        if (!GetDAGNode(child_id)->IsLeaf()) {
+      for (const size_t child_id : node.GetLeafward(rotated)) {
+        if (!GetDAGNode(child_id).IsLeaf()) {
           // #288 Here we are doing true and then false (left and then right).
           DepthFirstWithTidyActionForNodeClade(action, child_id, true, visited_nodes);
           DepthFirstWithTidyActionForNodeClade(action, child_id, false, visited_nodes);
@@ -140,10 +140,10 @@ class TidySubsplitDAG : public SubsplitDAG {
     // When we get to this point, the other clade is clean and we can proceed.
     action.BeforeNodeClade(node_id, rotated);
     const auto node = GetDAGNode(node_id);
-    for (const size_t child_id : node->GetLeafward(rotated)) {
+    for (const size_t child_id : node.GetLeafward(rotated)) {
       if (visited_nodes.count(child_id) == 0) {
         visited_nodes.insert(child_id);
-        if (!GetDAGNode(child_id)->IsLeaf()) {
+        if (!GetDAGNode(child_id).IsLeaf()) {
           DepthFirstWithTidyActionForNode(action, child_id, visited_nodes);
         }
       }
@@ -155,6 +155,17 @@ class TidySubsplitDAG : public SubsplitDAG {
   };
 
  private:
+  // This constructor is really just meant for testing.
+  explicit TidySubsplitDAG(size_t node_count);
+
+  TidySubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter,
+                  const TagStringMap &tag_taxon_map);
+
+  // Set the below matrix up to have all of the nodes below src_id below the
+  // subsplit-clade described by (dst_rotated, dst_id). Meant to be used as part of a
+  // depth-first traversal.
+  void SetBelow(size_t dst_id, bool dst_rotated, size_t src_id);
+
   // If this is set then we are in an "updating mode", where we are updating below the
   // specified node-clade.
   std::optional<std::pair<size_t, bool>> updating_below_;
@@ -170,16 +181,6 @@ class TidySubsplitDAG : public SubsplitDAG {
   // dirty_rotated_(i) is true iff there has been a calculation below i,false that
   // invalidates the p-hat PLV coming up into it.
   EigenArrayXb dirty_sorted_;
-
-  // This constructor is really just meant for testing.
-  explicit TidySubsplitDAG(size_t node_count);
-
-  TidySubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter);
-
-  // Set the below matrix up to have all of the nodes below src_id below the
-  // subsplit-clade described by (dst_rotated, dst_id). Meant to be used as part of a
-  // depth-first traversal.
-  void SetBelow(size_t dst_id, bool dst_rotated, size_t src_id);
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

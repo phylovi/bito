@@ -45,7 +45,7 @@ SizeVectorVector PSPIndexer::RepresentationOf(const Node::NodePtr& topology) con
   SizeVector psp_result_down(topology->Id(), first_empty_index_);
   SizeVector psp_result_up(topology->Id(), first_empty_index_);
   auto rootsplit_index = [&indexer = this->indexer_](const Node* node) {
-    return indexer.at(Bitset::RootsplitOfHalf(node->Leaves()));
+    return indexer.at(Bitset::RootsplitSubsplitOfClade(node->Leaves()));
   };
   // Here we use the terminology in the 2019 ICLR paper (screenshotted in
   // https://github.com/phylovi/bito/issues/95) looking at the right-hand case

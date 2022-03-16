@@ -4,71 +4,319 @@
 // A node in a directed acyclic graph representing a collection of subsplits with their
 // corresponding parent-child relationships.
 //
-// Each node represents a sorted osubsplit, which is stored as a bitset in `subsplit_`.
+// Each node represents a sorted subsplit, which is stored as a bitset in DAGVertex.
 // The leafward edges are divided into two groups based on if they split apart the
 // right clade (in which case they are called sorted children) or if they split apart
 // the left clade (in which case they are called rotated children).
 // Similarly, the rootward edges are divided into two groups based on if the child of
 // the edge splits apart the right clade of the parent (in which case they are called
 // sorted parents) or if they split apart the left clade of the parent (in which case
-// they are called rotated parents).
+// they are called rotated parents). The return type [Const]NeighborsView of querying
+// edges is a view object, that can be used similarly to a vector reference: can be
+// iterated, and checked for size() and empty().
 
 #pragma once
 
 #include "bitset.hpp"
 #include "reindexer.hpp"
 #include "sugar.hpp"
+#include "subsplit_dag_storage.hpp"
 
-class SubsplitDAGNode {
+namespace {
+template <typename T>
+auto& GetStorage(const T& node) {
+  return node.node_;
+}
+static inline void RemapNeighbors(NeighborsView neighbors,
+                                  const SizeVector& node_reindexer) {
+  std::map<VertexId, LineId> remapped;
+  for (auto i = neighbors.begin(); i != neighbors.end(); ++i) {
+    remapped[node_reindexer[*i]] = i.GetEdge();
+  }
+  neighbors.SetNeighbors(remapped);
+}
+}  // namespace
+
+template <typename T>
+class GenericSubsplitDAGNode {
  public:
-  SubsplitDAGNode(size_t id, Bitset subsplit)
-      : id_(id), subsplit_(std::move(subsplit)) {}
+  GenericSubsplitDAGNode(T& node) : node_{node} {}
+  GenericSubsplitDAGNode(const GenericSubsplitDAGNode<std::remove_const_t<T>>& other)
+      : node_{other.node_} {}
 
-  size_t Id() const { return id_; }
-  const Bitset &GetBitset() const { return subsplit_; }
+  // Compare SubsplitDAGNodes by their ids.
+  static int Compare(const SubsplitDAGNode& node_a, const SubsplitDAGNode& node_b);
+  // Compare SubsplitDAGNodes by their subsplit representations.
+  static int CompareBySubsplit(const SubsplitDAGNode& node_a,
+                               const SubsplitDAGNode& node_b);
+
+  size_t Id() const { return node_.GetId(); }
+  const Bitset& GetBitset() const { return node_.GetSubsplit(); }
   const Bitset GetBitset(bool rotated) const {
-    return rotated ? subsplit_.SubsplitRotate() : subsplit_;
+    return rotated ? node_.GetSubsplit().SubsplitRotate() : node_.GetSubsplit();
   }
-  bool IsDAGRootNode() const {
-    return (rootward_sorted_.empty() && rootward_rotated_.empty());
-  }
-  bool IsRootsplit() const { return subsplit_.SubsplitIsRootsplit(); }
-  bool IsLeaf() const { return leafward_rotated_.empty() && leafward_sorted_.empty(); }
 
-  void AddLeafwardRotated(size_t node_id) { leafward_rotated_.push_back(node_id); }
-  void AddLeafwardSorted(size_t node_id) { leafward_sorted_.push_back(node_id); }
-  void AddRootwardRotated(size_t node_id) { rootward_rotated_.push_back(node_id); }
-  void AddRootwardSorted(size_t node_id) { rootward_sorted_.push_back(node_id); }
-  // #350 use enumerated types for rotated?
-  const SizeVector &GetLeafwardOrRootward(bool leafward, bool rotated) const {
+  // ** Node Types
+
+  // Is the node the DAG root (universal ancestor of the DAG)?
+  bool IsDAGRootNode() const {
+    return (GetRightRootward().empty() && GetLeftRootward().empty());
+  }
+  // Is the node a rootsplit (direct descendent of root, dividing entire taxon set)?
+  bool IsRootsplit() const { return node_.GetSubsplit().SubsplitIsRootsplit(); }
+  // Is the node a leaf (has no descendants)?
+  bool IsLeaf() const {
+    return GetLeftLeafward().empty() && GetRightLeafward().empty();
+  }
+
+  // ** Edges
+
+  void AddEdge(size_t adjacent_node_id, bool is_leafward, bool is_left,
+               LineId edge_id) {
+    if (is_leafward) {
+      is_left ? AddLeftLeafward(adjacent_node_id, edge_id)
+              : AddRightLeafward(adjacent_node_id, edge_id);
+    } else {
+      is_left ? AddLeftRootward(adjacent_node_id, edge_id)
+              : AddRightRootward(adjacent_node_id, edge_id);
+    }
+  }
+  void AddEdge(size_t adjacent_node_id, Direction which_direction, Clade which_clade,
+               LineId edge_id) {
+    bool is_leafward = (which_direction == Direction::Leafward);
+    bool is_left = (which_clade == Clade::Left);
+    AddEdge(adjacent_node_id, is_leafward, is_left, edge_id);
+  }
+  void AddLeftLeafward(size_t node_id, LineId edge_id) {
+    node_.AddNeighbor(Direction::Leafward, Clade::Left, node_id, edge_id);
+  }
+  void AddRightLeafward(size_t node_id, LineId edge_id) {
+    node_.AddNeighbor(Direction::Leafward, Clade::Right, node_id, edge_id);
+  }
+  void AddLeftRootward(size_t node_id, LineId edge_id) {
+    node_.AddNeighbor(Direction::Rootward, Clade::Left, node_id, edge_id);
+  }
+  void AddRightRootward(size_t node_id, LineId edge_id) {
+    node_.AddNeighbor(Direction::Rootward, Clade::Right, node_id, edge_id);
+  }
+
+  // Get a view into all adjacent node vectors along the specified direction.
+  ConstNeighborsView GetEdge(bool is_leafward, bool is_left) const {
+    if (is_leafward) {
+      return is_left ? GetLeftLeafward() : GetRightLeafward();
+    } else {
+      return is_left ? GetLeftRootward() : GetRightRootward();
+    }
+  }
+
+  void AddEdge(size_t adjacent_node_id, LineId edge_id, Direction which_direction,
+               Clade which_clade) {
+    node_.AddNeighbor(which_direction, which_clade, adjacent_node_id, edge_id);
+  }
+
+  ConstNeighborsView GetLeafwardOrRootward(bool leafward, bool rotated) const {
     return leafward ? GetLeafward(rotated) : GetRootward(rotated);
   };
-  const SizeVector &GetLeafwardRotated() const { return leafward_rotated_; }
-  const SizeVector &GetLeafwardSorted() const { return leafward_sorted_; }
-  const SizeVector &GetLeafward(bool rotated) const {
-    return rotated ? GetLeafwardRotated() : GetLeafwardSorted();
+  ConstNeighborsView GetLeftLeafward() const {
+    return node_.GetNeighbors(Direction::Leafward, Clade::Left);
   }
-  const SizeVector &GetRootwardRotated() const { return rootward_rotated_; }
-  const SizeVector &GetRootwardSorted() const { return rootward_sorted_; }
-  const SizeVector &GetRootward(bool rotated) const {
-    return rotated ? GetRootwardRotated() : GetRootwardSorted();
+  ConstNeighborsView GetRightLeafward() const {
+    return node_.GetNeighbors(Direction::Leafward, Clade::Right);
   }
-  void RemapNodeIds(const SizeVector node_reindexer) {
-    id_ = node_reindexer.at(id_);
-    Reindexer::RemapIdVector(leafward_rotated_, node_reindexer);
-    Reindexer::RemapIdVector(leafward_sorted_, node_reindexer);
-    Reindexer::RemapIdVector(rootward_rotated_, node_reindexer);
-    Reindexer::RemapIdVector(rootward_sorted_, node_reindexer);
+  ConstNeighborsView GetLeafward(bool rotated) const {
+    return rotated ? GetLeftLeafward() : GetRightLeafward();
+  }
+  ConstNeighborsView GetLeftRootward() const {
+    return node_.GetNeighbors(Direction::Rootward, Clade::Left);
+  }
+  ConstNeighborsView GetRightRootward() const {
+    return node_.GetNeighbors(Direction::Rootward, Clade::Right);
+  }
+  ConstNeighborsView GetRootward(bool rotated) const {
+    return rotated ? GetLeftRootward() : GetRightRootward();
   }
 
+  // After modifying parent DAG.
+  void RemapNodeIds(const SizeVector node_reindexer) {
+    Assert(Reindexer::IsValidReindexer(node_reindexer),
+           "Reindexer must be valid in GenericSubsplitDAGNode::RemapNodeIds.");
+    node_.SetId(node_reindexer.at(node_.GetId()));
+    node_.GetNeighbors(Direction::Leafward, Clade::Left).RemapIds(node_reindexer);
+    node_.GetNeighbors(Direction::Leafward, Clade::Right).RemapIds(node_reindexer);
+    node_.GetNeighbors(Direction::Rootward, Clade::Left).RemapIds(node_reindexer);
+    node_.GetNeighbors(Direction::Rootward, Clade::Right).RemapIds(node_reindexer);
+  }
+
+  std::optional<std::tuple<LineId, Direction, Clade>> FindNeighbor(VertexId id) {
+    return node_.FindNeighbor(id);
+  }
+
+  void SetLineId(VertexId neighbor, LineId line) { node_.SetLineId(neighbor, line); }
+
+  bool IsValid() const;
   std::string ToString() const;
 
  private:
-  size_t id_;
-  const Bitset subsplit_;
-
-  SizeVector leafward_rotated_;
-  SizeVector leafward_sorted_;
-  SizeVector rootward_rotated_;
-  SizeVector rootward_sorted_;
+  friend class DAGVertex;
+  template <typename>
+  friend class GenericSubsplitDAGNode;
+  friend DAGVertex& GetStorage(const GenericSubsplitDAGNode<DAGVertex>&);
+  friend const DAGVertex& GetStorage(const GenericSubsplitDAGNode<const DAGVertex>&);
+  T& node_;
 };
+
+namespace {
+
+static inline std::string GetNeighborString(ConstNeighborsView neighbors) {
+  std::string str;
+  for (auto i = neighbors.begin(); i != neighbors.end(); ++i) {
+    str += std::to_string(*i) + " ";
+  }
+  return str;
+}
+}  // namespace
+
+template <typename T>
+bool GenericSubsplitDAGNode<T>::IsValid() const {
+  // If node is a leaf, then a valid node should have no parents.
+  if (IsLeaf()) {
+    return (GetRightLeafward().size() + GetLeftLeafward().size() == 0);
+  }
+  // If node is a root, then a valid node should have no children.
+  else if (IsDAGRootNode()) {
+    return (GetRightRootward().size() + GetLeftRootward().size() == 0);
+  }
+  // If neither, then node should either have:
+  // (1) Zero parents and zero children.
+  // (2) 1+ parents, 1+ sorted children, and 1+ rotated children.
+  size_t parent_node_count = GetRightRootward().size() + GetLeftRootward().size();
+  if (parent_node_count > 0) {
+    if (GetRightLeafward().size() == 0 || GetLeftLeafward().size() == 0) {
+      return false;
+    }
+  } else {
+    if (GetRightLeafward().size() > 0 || GetLeftLeafward().size() > 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename T>
+std::string GenericSubsplitDAGNode<T>::ToString() const {
+  std::string str = std::to_string(Id()) + ": " + GetBitset().SubsplitToString() + "\n";
+  str += "Right Rootward: " + GetNeighborString(GetRightRootward()) + "\n";
+  str += "Left Rootward: " + GetNeighborString(GetLeftRootward()) + "\n";
+  str += "Right Leafward: " + GetNeighborString(GetRightLeafward()) + "\n";
+  str += "Left Leafward: " + GetNeighborString(GetLeftLeafward()) + "\n";
+  return str;
+}
+
+DAGVertex::DAGVertex(SubsplitDAGNode node) : DAGVertex(node.node_) {}
+DAGVertex::DAGVertex(MutableSubsplitDAGNode node) : DAGVertex(node.node_) {}
+
+template <typename T>
+typename GenericVerticesView<T>::view_type GenericVerticesView<T>::Iterator::operator*()
+    const {
+  return storage_.vertices_[index_];
+}
+template <typename T>
+typename GenericVerticesView<T>::view_type GenericVerticesView<T>::operator[](
+    size_t i) const {
+  return storage_.vertices_[i];
+}
+template <typename T>
+typename GenericVerticesView<T>::view_type GenericVerticesView<T>::at(size_t i) const {
+  return storage_.vertices_.at(i);
+}
+
+#ifdef DOCTEST_LIBRARY_INCLUDED
+
+inline DAGVertex& GetStorage(const GenericSubsplitDAGNode<DAGVertex>& node) {
+  return node.node_;
+}
+inline const DAGVertex& GetStorage(
+    const GenericSubsplitDAGNode<const DAGVertex>& node) {
+  return node.node_;
+}
+
+/* Create the following topology:
+            [0]
+            / \
+           0   1
+          /     \
+        [1]     [2]
+        / \
+       2   3
+      /     \
+    [3]     [4]
+ */
+
+static SubsplitDAGStorage MakeStorage() {
+  SubsplitDAGStorage storage;
+  storage.AddLine({0, 0, 1, Clade::Left});
+  storage.AddLine({1, 0, 2, Clade::Right});
+  storage.AddLine({2, 1, 3, Clade::Left});
+  storage.AddLine({3, 1, 4, Clade::Right});
+
+  storage.AddVertex(DAGVertex{}.SetId(0))
+      .AddNeighbor(Direction::Leafward, Clade::Left, 1, 0)
+      .AddNeighbor(Direction::Leafward, Clade::Right, 2, 1);
+  storage.AddVertex(DAGVertex{}.SetId(1))
+      .AddNeighbor(Direction::Rootward, Clade::Left, 0, 0)
+      .AddNeighbor(Direction::Leafward, Clade::Left, 3, 2)
+      .AddNeighbor(Direction::Leafward, Clade::Right, 4, 3);
+  storage.AddVertex(DAGVertex{}.SetId(2))
+      .AddNeighbor(Direction::Rootward, Clade::Right, 0, 1);
+  storage.AddVertex(DAGVertex{}.SetId(3))
+      .AddNeighbor(Direction::Rootward, Clade::Left, 1, 2);
+  storage.AddVertex(DAGVertex{}.SetId(4))
+      .AddNeighbor(Direction::Rootward, Clade::Right, 1, 3);
+  return storage;
+}
+
+TEST_CASE("SubsplitDAGStorage: LinesView structured binding") {
+  auto storage = MakeStorage();
+
+  size_t i = 0;
+  for (auto [node_ids, line_id] : storage.GetLines()) {
+    std::ignore = line_id;
+    auto [parent_id, child_id] = node_ids;
+    switch (i++) {
+      case 0:
+        CHECK_EQ(parent_id, 0);
+        CHECK_EQ(child_id, 1);
+        break;
+      case 1:
+        CHECK_EQ(parent_id, 0);
+        CHECK_EQ(child_id, 2);
+        break;
+      case 2:
+        CHECK_EQ(parent_id, 1);
+        CHECK_EQ(child_id, 3);
+        break;
+      case 3:
+        CHECK_EQ(parent_id, 1);
+        CHECK_EQ(child_id, 4);
+        break;
+      default:
+        Failwith("More lines than expected");
+    }
+  }
+}
+
+TEST_CASE("SubsplitDAGStorage: Neighbors iterator") {
+  auto storage = MakeStorage();
+
+  CHECK_EQ(*GetStorage(storage.GetVertices()[1])
+                .GetNeighbors(Direction::Leafward, Clade::Left)
+                .begin(),
+           3);
+  CHECK_EQ(GetStorage(storage.GetVertices()[1])
+               .GetNeighbors(Direction::Leafward, Clade::Left)
+               .begin()
+               .GetEdge(),
+           2);
+}
+
+#endif  // DOCTEST_LIBRARY_INCLUDED

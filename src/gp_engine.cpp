@@ -12,11 +12,12 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
                    EigenVectorXd unconditional_node_probabilities,
                    EigenVectorXd inverted_sbn_prior)
     : site_pattern_(std::move(site_pattern)),
-      plv_count_(plv_count),
       rescaling_threshold_(rescaling_threshold),
       log_rescaling_threshold_(log(rescaling_threshold)),
+      plv_count_(plv_count),
       mmapped_master_plv_(mmap_file_path, plv_count_ * site_pattern_.PatternCount()),
       plvs_(mmapped_master_plv_.Subdivide(plv_count_)),
+      gpcsp_count_(gpcsp_count),
       q_(std::move(sbn_prior)),
       unconditional_node_probabilities_(std::move(unconditional_node_probabilities)),
       inverted_sbn_prior_(std::move(inverted_sbn_prior)) {
@@ -24,6 +25,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
              plvs_.back().cols() ==
                  static_cast<Eigen::Index>(site_pattern_.PatternCount()),
          "Didn't get the right shape of PLVs out of Subdivide.");
+  // per-edge data
   rescaling_counts_.resize(plv_count_);
   rescaling_counts_.setZero();
   branch_lengths_.resize(gpcsp_count);
@@ -31,19 +33,24 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t plv_count, size_t gpcsp_coun
   log_marginal_likelihood_.resize(site_pattern_.PatternCount());
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
   log_likelihoods_.resize(gpcsp_count, site_pattern_.PatternCount());
+  hybrid_marginal_log_likelihoods_.resize(gpcsp_count);
+  hybrid_marginal_log_likelihoods_.setConstant(DOUBLE_NEG_INF);
 
+  // site pattern
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ = EigenVectorXdOfStdVectorDouble(weights);
 
+  // per-node data
   quartet_root_plv_ = plvs_.at(0);
   quartet_root_plv_.setZero();
   quartet_r_s_plv_ = quartet_root_plv_;
   quartet_q_s_plv_ = quartet_root_plv_;
   quartet_r_sorted_plv_ = quartet_root_plv_;
-  hybrid_marginal_log_likelihoods_.resize(gpcsp_count);
-  hybrid_marginal_log_likelihoods_.setConstant(DOUBLE_NEG_INF);
 
   InitializePLVsWithSitePatterns();
+
+  std::ignore = plv_count_per_node_;
+  std::ignore = gpcsp_count_;
 }
 
 void GPEngine::operator()(const GPOperations::ZeroPLV& op) {
@@ -392,9 +399,9 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 SizeDoubleVectorMap GPEngine::GatherBranchLengths(
     const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
   SizeDoubleVectorMap gpcsp_branchlengths_map;
-  auto gather_branch_lengths = [&gpcsp_branchlengths_map, this](
-                                   size_t gpcsp_idx, const RootedTree& tree,
-                                   const Node* focal_node) {
+  auto gather_branch_lengths = [&gpcsp_branchlengths_map](size_t gpcsp_idx,
+                                                          const RootedTree& tree,
+                                                          const Node* focal_node) {
     gpcsp_branchlengths_map[gpcsp_idx].push_back(tree.BranchLength(focal_node));
   };
   FunctionOverRootedTreeCollection(gather_branch_lengths, tree_collection, indexer);
@@ -409,9 +416,9 @@ void GPEngine::FunctionOverRootedTreeCollection(
   const size_t default_index = branch_lengths_.size();
   for (const auto& tree : tree_collection.Trees()) {
     tree.Topology()->RootedPCSPPreorder(
-        [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp,
-         this](const Node* sister_node, const Node* focal_node, const Node* child0_node,
-               const Node* child1_node) {
+        [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp](
+            const Node* sister_node, const Node* focal_node, const Node* child0_node,
+            const Node* child1_node) {
           Bitset gpcsp_bitset =
               SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
                                     child0_node, false, child1_node, false);

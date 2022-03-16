@@ -36,6 +36,7 @@
 _build
 build
 build_test
+build_work
 _ignore
 .clangd
 __pycache__
@@ -47,7 +48,6 @@ _modules
 _sources
 .RData
 .Rhistory
-.vscode
 
 # Python packaging
 dist/
@@ -59,3 +59,9 @@ src/CMakeLists.txt
 # OS Metadata
 .DS_Store
 ._.DS_Store
+
+# Developer Tools 
+.vscode
+*.code-workspace
+.gdbinit
+

@@ -12,6 +12,7 @@ class UnrootedTreeCollection : public PreUnrootedTreeCollection {
  public:
   // Inherit all constructors.
   using PreUnrootedTreeCollection::PreUnrootedTreeCollection;
+  UnrootedTreeCollection(const PreUnrootedTreeCollection& pre_collection);
 
   static UnrootedTreeCollection OfTreeCollection(const TreeCollection& trees);
 };

@@ -4,6 +4,7 @@
 // The purpose of this class is to hold a DAG that we use to build up the operations for
 // the generalized pruning operations. Note that rootsplit PCSPs and the DAG root node
 // are excluded from operations.
+// GPOperationVectors are then consumed and calculated by GPEngine::ProcessOperations().
 
 #pragma once
 
@@ -13,20 +14,21 @@
 #include "sbn_maps.hpp"
 #include "subsplit_dag_node.hpp"
 #include "tidy_subsplit_dag.hpp"
+#include "plv_handler.hpp"
+
+using PLVType = PLVHandler::PLVType;
 
 class GPDAG : public TidySubsplitDAG {
  public:
-  // We store 6 PLVs per subsplit, and index them according to this enum.
-  // The notation is as described in the manuscript, but with a slight shift in the
-  // position of the tilde. For example P_HAT_TILDE for a subsplit s is
-  // \hat{p}(\tilde{s}).
-  enum class PLVType { P, P_HAT, P_HAT_TILDE, R_HAT, R, R_TILDE };
-
   using TidySubsplitDAG::TidySubsplitDAG;
 
-  // Get the index of a PLV of a given type and with a given index.
-  static size_t GetPLVIndexStatic(PLVType plv_type, size_t node_count, size_t src_idx);
-  size_t GetPLVIndex(PLVType plv_type, size_t src_idx) const;
+  // Get the GPEngine index of given PLV type and given node index.
+  size_t GetPLVIndex(PLVType plv_type, size_t node_idx) const;
+
+  // ** GPOperations:
+  // These methods generate a serial vector of operations, but perform no computation.
+  // These operation vectors can then be computed and consumed by the
+  // GPEngine::ProcessOperations().
 
   // Optimize branch lengths without handling out of date PLVs.
   [[nodiscard]] GPOperationVector ApproximateBranchLengthOptimization() const;
@@ -61,10 +63,9 @@ class GPDAG : public TidySubsplitDAG {
   [[nodiscard]] GPOperationVector LeafwardPass(const SizeVector &visit_order) const;
   [[nodiscard]] GPOperationVector RootwardPass(const SizeVector &visit_order) const;
 
-  void AddPhatOperations(const SubsplitDAGNode *node, bool rotated,
+  void AddPhatOperations(SubsplitDAGNode node, bool rotated,
                          GPOperationVector &operations) const;
-  void AddRhatOperations(const SubsplitDAGNode *node,
-                         GPOperationVector &operations) const;
+  void AddRhatOperations(SubsplitDAGNode node, GPOperationVector &operations) const;
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
 

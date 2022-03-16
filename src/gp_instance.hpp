@@ -7,6 +7,7 @@
 #include "gp_engine.hpp"
 #include "rooted_tree_collection.hpp"
 #include "site_pattern.hpp"
+#include "nni_engine.hpp"
 
 class GPInstance {
  public:
@@ -31,7 +32,7 @@ class GPInstance {
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;
-  void PrintGPCSPIndexer();
+  void PrintEdgeIndexer();
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();
   SizeDoubleVectorMap GatherBranchLengths();
@@ -83,7 +84,24 @@ class GPInstance {
   // Export the subsplit DAG as a DOT file.
   void SubsplitDAGToDot(const std::string &out_path, bool show_index_labels = true);
 
+  // Initialize NNI Evaluation Engine.
+  void MakeNNIEngine();
+  // Get NNI Evaluation Engine.
+  NNIEngine &GetNNIEngine();
+  // Get taxon names.
+  StringVector GetTaxonNames();
+
  private:
+  void ClearTreeCollectionAssociatedState();
+  void CheckSequencesLoaded() const;
+  void CheckTreesLoaded() const;
+
+  size_t GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
+                                 const Node *leaf_node) const;
+  RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
+      Node::NodePtrVec &&topologies) const;
+  StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
+
   std::string mmap_file_path_;
   Alignment alignment_;
   std::unique_ptr<GPEngine> engine_;
@@ -91,13 +109,5 @@ class GPInstance {
   GPDAG dag_;
   static constexpr size_t plv_count_per_node_ = 6;
 
-  void ClearTreeCollectionAssociatedState();
-  void CheckSequencesLoaded() const;
-  void CheckTreesLoaded() const;
-
-  size_t GetGPCSPIndexForLeafNode(const Bitset &parent_subsplit,
-                                  const Node *leaf_node) const;
-  RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
-      Node::NodePtrVec &&topologies) const;
-  StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
+  std::unique_ptr<NNIEngine> nni_engine_;
 };

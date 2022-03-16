@@ -462,4 +462,18 @@ TEST_CASE("RootedSBNInstance: SBN parameter round trip") {
                         reloaded_normalized_sbn_parameters, 1e-6);
 }
 
+TEST_CASE("RootedSBNInstance: BuildCollectionByDuplicatingFirst") {
+  auto empty_collection = RootedTreeCollection();
+  CHECK_THROWS(empty_collection.BuildCollectionByDuplicatingFirst(5));
+  auto inst = MakeFiveTaxonRootedInstance();
+  auto trees = inst.tree_collection_.BuildCollectionByDuplicatingFirst(5);
+  CHECK_EQ(trees.GetTree(0), trees.GetTree(1));
+  // Check that the trees don't refer to the same place in memory.
+  CHECK_NE(&trees.GetTree(0), &trees.GetTree(1));
+  inst = MakeFluInstance(true);
+  auto& base_flu_tree = inst.tree_collection_.GetTree(0);
+  trees = inst.tree_collection_.BuildCollectionByDuplicatingFirst(5);
+  CHECK_EQ(base_flu_tree, trees.GetTree(1));
+}
+
 #endif  // DOCTEST_LIBRARY_INCLUDED

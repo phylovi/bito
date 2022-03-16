@@ -17,6 +17,8 @@ class UnrootedTree : public Tree {
   explicit UnrootedTree(Tree tree)
       : UnrootedTree(tree.Topology(), std::move(tree.branch_lengths_)){};
 
+  UnrootedTree DeepCopy() const;
+
   bool operator==(const Tree& other) const = delete;
   bool operator==(const UnrootedTree& other) const;
 
