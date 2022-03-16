@@ -17,8 +17,7 @@
 #include <thread>
 
 
-void LoadIndexerRepresentations(
-    std::vector<RootedIndexerRepresentation> &indexer_representations,
+std::vector<RootedIndexerRepresentation> GetIndexerRepresentations(
     PreRootedTreeCollection &trees, BitsetSizeMap &indexer);
 
 void WriteTreesToFile(

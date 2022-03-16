@@ -36,12 +36,15 @@ int main(int argc, char *argv[]) {
   auto cred_trees = cred_r_inst.tree_collection_;
   auto pp_trees = pp_r_inst.tree_collection_;
   auto indexer = all_trees_gp_inst.GetDAG().BuildGPCSPIndexer();
-  std::vector<RootedIndexerRepresentation> all_representations;
-  std::vector<RootedIndexerRepresentation> cred_representations;
-  std::vector<RootedIndexerRepresentation> pp_representations;
-  LoadIndexerRepresentations(all_representations, all_trees, indexer);
-  LoadIndexerRepresentations(cred_representations, cred_trees, indexer);
-  LoadIndexerRepresentations(pp_representations, pp_trees, indexer);
+  //std::vector<RootedIndexerRepresentation> all_representations;
+  //std::vector<RootedIndexerRepresentation> cred_representations;
+  //std::vector<RootedIndexerRepresentation> pp_representations;
+  //LoadIndexerRepresentations(all_representations, all_trees, indexer);
+  //LoadIndexerRepresentations(cred_representations, cred_trees, indexer);
+  //LoadIndexerRepresentations(pp_representations, pp_trees, indexer);
+  auto all_representations = GetIndexerRepresentations(all_trees, indexer);
+  auto cred_representations = GetIndexerRepresentations(cred_trees, indexer);
+  auto pp_representations = GetIndexerRepresentations(pp_trees, indexer);
 
   UnrootedSBNInstance ur_inst("charlie");
   ur_inst.ReadNewickFile(rooted_nwk_path);
@@ -56,14 +59,17 @@ int main(int argc, char *argv[]) {
   WriteTreesToFile(pp_out_path, pp_representations);
 }
 
-void LoadIndexerRepresentations(
-    std::vector<RootedIndexerRepresentation> &indexer_representations,
+
+std::vector<RootedIndexerRepresentation> GetIndexerRepresentations(
     PreRootedTreeCollection &trees, BitsetSizeMap &indexer) {
+  std::vector<RootedIndexerRepresentation> indexer_representations;
   for (const auto &tree : trees.Trees()) {
     indexer_representations.push_back(
         RootedSBNMaps::IndexerRepresentationOf(indexer, tree.Topology(), SIZE_MAX));
   }
+  return indexer_representations;
 }
+
 
 void WriteTreesToFile(
     const std::string &out_path,
