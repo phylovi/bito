@@ -1,4 +1,4 @@
-name: Run tests
+name: Run tests with GCC-7
 on:
   workflow_dispatch:
 jobs:
@@ -12,7 +12,7 @@ jobs:
       - name: Prepare build environment
         run: |
           sudo apt-get update
-          sudo apt-get install build-essential cmake zlib1g-dev python3-pip python3-pytest
+          sudo apt-get install build-essential cmake zlib1g-dev python3-pip python3-pytest g++-7 
           pip install numpy
       - name: Run test
         run: |
@@ -21,6 +21,9 @@ jobs:
             ln -s $(which pytest-3) pytest
           fi
           export PATH="$(pwd):$PATH"
+          # select compiler
+          export CC=gcc-7
+          export CXX=g++-7
           make test
 
 
