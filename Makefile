@@ -1,5 +1,6 @@
 our_files := $(wildcard src/*.cpp) $(wildcard src/*.hpp)
-our_files := $(filter-out src/csv.h src/doctest.h src/noodle.cpp src/parser.cpp src/parser.hpp src/prettyprint.hpp src/scanner.cpp, $(our_files))
+our_extra_files := src/csv.h src/doctest.h src/noodle.cpp src/parser.cpp src/parser.hpp src/prettyprint.hpp src/scanner.cpp
+our_files := $(filter-out $(our_extra_files), $(our_files))
 j_flags = $(shell echo "${MAKEFLAGS}" | grep -o -- "-j[0-9]\+" || true)
 
 default:

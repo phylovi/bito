@@ -441,7 +441,7 @@ void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection
   auto set_first_branch_length_and_increment_gpcsp_count =
       [&observed_gpcsp_counts, this](size_t gpcsp_idx, const RootedTree& tree,
                                      const Node* focal_node) {
-        if (observed_gpcsp_counts(gpcsp_idx)==0) {
+        if (observed_gpcsp_counts(gpcsp_idx) == 0) {
           branch_lengths_(gpcsp_idx) = tree.BranchLength(focal_node);
           observed_gpcsp_counts(gpcsp_idx)++;
         }
