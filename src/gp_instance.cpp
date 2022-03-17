@@ -153,7 +153,7 @@ SizeDoubleVectorMap GPInstance::GatherBranchLengths() {
 
 void GPInstance::TakeFirstBranchLength() {
   if (HasEngine()) {
-    GetEngine()->TakeFirstBranchLength(tree_collection_, dag_.BuildGPCSPIndexer());
+    GetEngine()->TakeFirstBranchLength(tree_collection_, dag_.BuildEdgeIndexer());
   } else {
     Failwith(
         "Please load and process some trees before calling TakeFirstBranchLength.");

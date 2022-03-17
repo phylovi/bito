@@ -1,5 +1,6 @@
 our_files := $(wildcard src/*.cpp) $(wildcard src/*.hpp)
 our_files := $(filter-out src/csv.h src/doctest.h src/noodle.cpp src/parser.cpp src/parser.hpp src/prettyprint.hpp src/scanner.cpp, $(our_files))
+our_extra_files := $(wildcard extras/*.cpp) $(wildcard extras/*.hpp)
 j_flags = $(shell echo "${MAKEFLAGS}" | grep -o -- "-j[0-9]\+" || true)
 
 default:
@@ -75,6 +76,7 @@ format:
 	black vip/*py test/*py
 	docformatter --in-place vip/*py test/*py
 	clang-format -i -style=file $(our_files)
+	clang-format -i -style=file $(our_extra_files)
 
 clean:
 	rm -rf build build_test build_work dist bito.*.so $(find . -name __pycache)

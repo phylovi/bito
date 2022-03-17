@@ -341,21 +341,21 @@ TEST_CASE("GPInstance: take first branch length") {
       StringDoubleMapOfStringDoubleVector(inst.PrettyIndexedBranchLengths());
 
   // Check at the internal branches
-  CHECK_EQ(0.191715, branch_length_map.at("01000|00011|00001")); // pcsp index 1 
-  CHECK_EQ(0.117537, branch_length_map.at("01100|00011|00001")); // pcsp index 2
-  CHECK_EQ(0.0874183, branch_length_map.at("00011|01100|00100")); // pcsp index 3
-  CHECK_EQ(0.129921, branch_length_map.at("10000|01111|00011")); // pcsp index 4
-  CHECK_EQ(0.15936, branch_length_map.at("10000|01111|00100")); // pcsp index 5
-  CHECK_EQ(0.000813992, branch_length_map.at("00100|01011|00011")); // pcsp index 6
+  CHECK_EQ(0.191715, branch_length_map.at("01000|00011|00001"));     // pcsp index 1
+  CHECK_EQ(0.117537, branch_length_map.at("01100|00011|00001"));     // pcsp index 2
+  CHECK_EQ(0.0874183, branch_length_map.at("00011|01100|00100"));    // pcsp index 3
+  CHECK_EQ(0.129921, branch_length_map.at("10000|01111|00011"));     // pcsp index 4
+  CHECK_EQ(0.15936, branch_length_map.at("10000|01111|00100"));      // pcsp index 5
+  CHECK_EQ(0.000813992, branch_length_map.at("00100|01011|00011"));  // pcsp index 6
 
-  // Check at the branches ending in leaves 
-  CHECK_EQ(0.129921, branch_length_map.at("01111|10000|00000")); // pcsp index 7
-  CHECK_EQ(0.090352, branch_length_map.at("00100|01000|00000")); // pcsp index 8
-  CHECK_EQ(0.099922, branch_length_map.at("00011|01000|00000")); // pcsp index 9
-  CHECK_EQ(0.112125, branch_length_map.at("01000|00100|00000")); // pcsp index 10
-  CHECK_EQ(0.104088, branch_length_map.at("01011|00100|00000")); // pcsp index 11
-  CHECK_EQ(0.113775, branch_length_map.at("00001|00010|00000")); // pcsp index 12
-  CHECK_EQ(0.081634, branch_length_map.at("00010|00001|00000")); // pcsp index 13
+  // Check at the branches ending in leaves
+  CHECK_EQ(0.129921, branch_length_map.at("01111|10000|00000"));  // pcsp index 7
+  CHECK_EQ(0.090352, branch_length_map.at("00100|01000|00000"));  // pcsp index 8
+  CHECK_EQ(0.099922, branch_length_map.at("00011|01000|00000"));  // pcsp index 9
+  CHECK_EQ(0.112125, branch_length_map.at("01000|00100|00000"));  // pcsp index 10
+  CHECK_EQ(0.104088, branch_length_map.at("01011|00100|00000"));  // pcsp index 11
+  CHECK_EQ(0.113775, branch_length_map.at("00001|00010|00000"));  // pcsp index 12
+  CHECK_EQ(0.081634, branch_length_map.at("00010|00001|00000"));  // pcsp index 13
 }
 
 TEST_CASE("GPInstance: generate all trees") {

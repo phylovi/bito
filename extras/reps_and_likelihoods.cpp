@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
   auto all_trees = all_trees_gp_inst.GenerateCompleteRootedTreeCollection();
   auto cred_trees = cred_r_inst.tree_collection_;
   auto pp_trees = pp_r_inst.tree_collection_;
-  auto indexer = all_trees_gp_inst.GetDAG().BuildGPCSPIndexer();
+  auto indexer = all_trees_gp_inst.GetDAG().BuildEdgeIndexer();
   auto all_representations = GetIndexerRepresentations(all_trees, indexer);
   auto cred_representations = GetIndexerRepresentations(cred_trees, indexer);
   auto pp_representations = GetIndexerRepresentations(pp_trees, indexer);
@@ -53,7 +53,6 @@ int main(int argc, char *argv[]) {
   WriteTreesToFile(pp_out_path, pp_representations);
 }
 
-
 std::vector<RootedIndexerRepresentation> GetIndexerRepresentations(
     PreRootedTreeCollection &trees, BitsetSizeMap &indexer) {
   std::vector<RootedIndexerRepresentation> indexer_representations;
@@ -64,11 +63,9 @@ std::vector<RootedIndexerRepresentation> GetIndexerRepresentations(
   return indexer_representations;
 }
 
-
-void WriteTreesToFile(
-    const std::string &out_path,
-    const std::vector<RootedIndexerRepresentation> &representations,
-    const std::vector<double> &log_likelihoods) {
+void WriteTreesToFile(const std::string &out_path,
+                      const std::vector<RootedIndexerRepresentation> &representations,
+                      const std::vector<double> &log_likelihoods) {
   std::ofstream out_stream(out_path);
   out_stream << std::setprecision(12);
   const auto write_likelihood = !log_likelihoods.empty();
@@ -83,4 +80,3 @@ void WriteTreesToFile(
   }
   out_stream.close();
 }
-
