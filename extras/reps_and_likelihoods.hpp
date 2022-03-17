@@ -16,11 +16,9 @@
 #include "gp_instance.hpp"
 #include <thread>
 
-
 std::vector<RootedIndexerRepresentation> GetIndexerRepresentations(
     PreRootedTreeCollection &trees, BitsetSizeMap &indexer);
 
-void WriteTreesToFile(
-    const std::string &out_path,
-    const std::vector<RootedIndexerRepresentation> &representations,
-    const std::vector<double> &log_likelihoods = {});
+void WriteTreesToFile(const std::string &out_path,
+                      const std::vector<RootedIndexerRepresentation> &representations,
+                      const std::vector<double> &log_likelihoods = {});
