@@ -326,10 +326,7 @@ std::vector<Bitset> SubsplitDAG::GetSortedVectorOfNodeBitsets() const {
 std::vector<Bitset> SubsplitDAG::GetSortedVectorOfEdgeBitsets() const {
   std::vector<Bitset> edges;
   for (auto i : storage_.GetLines()) {
-    auto parent_bitset = i.GetParentNode().GetBitset();
-    auto child_bitset = i.GetChildNode().GetBitset();
-    Bitset edge_bitset = Bitset::PCSP(parent_bitset, child_bitset);
-    edges.push_back(edge_bitset);
+    edges.push_back(i.GetPCSP());
   }
   std::sort(edges.begin(), edges.end());
   return edges;

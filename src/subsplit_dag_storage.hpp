@@ -136,6 +136,9 @@ class DAGLineView : public DAGLine<DAGLineView<T>> {
   node_type GetChildNode() const {
     return dag_storage_.GetVertices().at(line_.GetChildId());
   }
+  Bitset GetPCSP() const {
+    return Bitset::PCSP(GetParentNode().GetBitset(), GetChildNode().GetBitset());
+  }
 
   template <size_t I>
   auto get() const {

@@ -86,6 +86,7 @@ add_library(bito-core SHARED
   src/rooted_sbn_instance.cpp
   src/rooted_tree.cpp
   src/rooted_tree_collection.cpp
+  src/rootward_sampler.cpp
   src/sbn_maps.cpp
   src/sbn_probability.cpp
   src/sbn_support.cpp
