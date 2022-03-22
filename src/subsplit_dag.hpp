@@ -301,7 +301,7 @@ class SubsplitDAG {
       EigenConstVectorXdRef normalized_sbn_parameters,
       EigenConstVectorXdRef node_probabilities) const;
 
-  // ** Queries
+  // ** Contains
 
   // Does a taxon with the given name exist?
   bool ContainsTaxon(const std::string &name) const;

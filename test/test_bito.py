@@ -3,8 +3,6 @@
 If you want to see the results of the print statements, use `pytest -s`.
 """
 
-from asyncio import gather
-from gettext import install
 import json
 import pprint
 import pytest
@@ -163,6 +161,7 @@ def test_sbn_unrooted_instance():
 
 
 def test_gp_tweaks():
+    """ Tests added functionality for gp_instance """
     inst = bito.gp_instance("_ignore/mmapped_plv_pybito.data")
     inst.read_fasta_file("data/six_taxon.fasta")
     inst.read_newick_file("data/six_taxon_rootsplit.nwk")
@@ -175,21 +174,12 @@ def test_gp_tweaks():
 
     init_branches = inst.get_branch_lengths()
     print("init:", init_branches)
-    inst.estimate_branch_lengths(1e-3, 100, True)
-    estimated_branches = inst.get_branch_lengths()
-    print("estimated:", estimated_branches)
-    inst.hot_start_branch_lengths()
-    hotstart_branches = inst.get_branch_lengths()
-    print("hotstart:", hotstart_branches)
 
     edge_idx_to_pcsp_map = inst.get_edge_idx_to_pcsp_map()
-    test_rootsplit_branches = []
-    for key in edge_idx_to_pcsp_map.keys():
-        print("pcsp[", key, "]:", edge_idx_to_pcsp_map[key])
-    print("test_rootsplit_branches:", test_rootsplit_branches)
+    print("edge_pcsp_map:", edge_idx_to_pcsp_map)
     pass
 
 
 if __name__ == "__main__":
-    # test_sbn_unrooted_instance()
+    test_sbn_unrooted_instance()
     test_gp_tweaks()

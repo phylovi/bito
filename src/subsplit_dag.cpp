@@ -911,7 +911,7 @@ TagStringMap SubsplitDAG::BuildDummyTagTaxonMap(const size_t taxon_count) {
   return tag_taxon_map;
 }
 
-// ** Queries
+// ** Contains
 
 bool SubsplitDAG::ContainsTaxon(const std::string &name) const {
   return dag_taxa_.find(name) != dag_taxa_.end();

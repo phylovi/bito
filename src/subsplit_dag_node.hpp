@@ -89,11 +89,6 @@ class GenericSubsplitDAGNode {
     AddEdge(adjacent_node_id, is_leafward, is_left, edge_id);
   }
 
-  void AddEdge(size_t adjacent_node_id, LineId edge_id, Direction which_direction,
-               Clade which_clade) {
-    node_.AddNeighbor(which_direction, which_clade, adjacent_node_id, edge_id);
-  }
-
   void AddLeftLeafward(size_t node_id, LineId edge_id) {
     node_.AddNeighbor(Direction::Leafward, Clade::Left, node_id, edge_id);
   }
@@ -114,6 +109,11 @@ class GenericSubsplitDAGNode {
     } else {
       return is_left ? GetLeftRootward() : GetRightRootward();
     }
+  }
+
+  void AddEdge(size_t adjacent_node_id, LineId edge_id, Direction which_direction,
+               Clade which_clade) {
+    node_.AddNeighbor(which_direction, which_clade, adjacent_node_id, edge_id);
   }
 
   ConstNeighborsView GetLeafwardOrRootward(bool leafward, bool rotated) const {
