@@ -252,7 +252,7 @@ BitsetSizeMap SubsplitDAG::BuildEdgeIndexer() const {
   return edge_indexer;
 }
 
-SizeBoolVectorMap SubsplitDAG::BuildEdgeIdxToPCSPMap() const {
+SizeBoolVectorMap SubsplitDAG::BuildEdgeIdxToPCSPBoolVectorMap() const {
   auto edge_to_pcsp_map = SizeBoolVectorMap();
   TopologicalEdgeTraversal([this, &edge_to_pcsp_map](size_t parent_id, bool rotated,
                                                      size_t child_id, size_t edge_idx) {

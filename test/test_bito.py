@@ -167,15 +167,13 @@ def test_gp_tweaks():
     inst.read_newick_file("data/six_taxon_rootsplit.nwk")
     inst.make_engine()
 
-    gathered_branch_lengths = inst.gather_branch_lengths()
-    print("gathered_branch_lengths:")
-    for key in gathered_branch_lengths.keys():
-        print(np.array(gathered_branch_lengths[key]))
-
     init_branches = inst.get_branch_lengths()
-    print("init:", init_branches)
+    print("init_branch_lengths:", init_branches)
+    inst.estimate_branch_lengths(1e-3, 100, True)
+    estimated_branches = inst.get_branch_lengths()
+    print("estimated_branch_lengths:", estimated_branches)
 
-    edge_idx_to_pcsp_map = inst.get_edge_idx_to_pcsp_map()
+    edge_idx_to_pcsp_map = inst.build_edge_idx_to_pcsp_map()
     print("edge_pcsp_map:", edge_idx_to_pcsp_map)
     pass
 

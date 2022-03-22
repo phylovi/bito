@@ -442,8 +442,8 @@ PYBIND11_MODULE(bito, m) {
       .def("get_branch_lengths", &GPInstance::GetBranchLengths,
            "Return branch lengths from the GPInstance.")
       .def(
-          "get_edge_idx_to_pcsp_map",
-          [](GPInstance &self) { return self.GetDAG().BuildEdgeIdxToPCSPMap(); },
+          "build_edge_idx_to_pcsp_map",
+          [](GPInstance &self) { return self.GetDAG().BuildEdgeIdxToPCSPBoolVectorMap(); },
           "Build a map from SubsplitDAG edge index to its corresponding PCSP bitset.")
 
       // ** Estimation
