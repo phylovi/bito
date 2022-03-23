@@ -30,7 +30,7 @@ GPOperation GPDAG::RUpdateOfRotated(size_t node_id, bool rotated) const {
 GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
   GPOperationVector operations;
   SubsplitDAG::DepthFirstWithAction(
-      RootsplitIds(),
+      GetRootsplitNodeIds(),
       SubsplitDAGTraversalAction(
           // BeforeNode
           [this, &operations](size_t node_id) {
@@ -77,7 +77,7 @@ GPOperationVector GPDAG::ApproximateBranchLengthOptimization() const {
 GPOperationVector GPDAG::BranchLengthOptimization() {
   GPOperationVector operations;
   DepthFirstWithTidyAction(
-      RootsplitIds(),
+      GetRootsplitNodeIds(),
       TidySubsplitDAGTraversalAction(
           // BeforeNode
           [this, &operations](size_t node_id) {
@@ -142,10 +142,10 @@ GPOperationVector GPDAG::LeafwardPass() const {
 
 GPOperationVector GPDAG::MarginalLikelihood() const {
   GPOperationVector operations = {GPOperations::ResetMarginalLikelihood{}};
-  for (const auto &rootsplit_id : RootsplitIds()) {
+  for (const auto &rootsplit_id : GetRootsplitNodeIds()) {
     operations.push_back(GPOperations::IncrementMarginalLikelihood{
         GetPLVIndex(PLVType::RHat, rootsplit_id),
-        GetEdgeIdx(DAGRootNodeId(), rootsplit_id),
+        GetEdgeIdx(GetDAGRootNodeId(), rootsplit_id),
         GetPLVIndex(PLVType::P, rootsplit_id)});
   }
   return operations;
@@ -179,8 +179,8 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
 
 GPOperationVector GPDAG::SetRhatToStationary() const {
   GPOperationVector operations;
-  for (const auto &rootsplit_id : RootsplitIds()) {
-    size_t root_gpcsp_idx = GetEdgeIdx(DAGRootNodeId(), rootsplit_id);
+  for (const auto &rootsplit_id : GetRootsplitNodeIds()) {
+    size_t root_gpcsp_idx = GetEdgeIdx(GetDAGRootNodeId(), rootsplit_id);
     operations.push_back(SetToStationaryDistribution{
         GetPLVIndex(PLVType::RHat, rootsplit_id), root_gpcsp_idx});
   }

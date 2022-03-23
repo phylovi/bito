@@ -432,7 +432,6 @@ PYBIND11_MODULE(bito, m) {
            R"raw(Write out all trees spanned by the current SBN DAG to a Newick file
           (using current GP branch lengths). Requires an Engine.)raw",
            py::arg("out_path"))
-
       .def(
           "export_trees_with_a_pcsp", &GPInstance::ExportTreesWithAPCSP,
           R"raw(Write out trees with a given PCSP string to a Newick file (using current
@@ -440,6 +439,12 @@ PYBIND11_MODULE(bito, m) {
           py::arg("pcsp_string"), py::arg("newick_path"))
       .def("subsplit_dag_to_dot", &GPInstance::SubsplitDAGToDot,
            R"raw(Write the current subsplit DAG to a DOT format file.)raw")
+      .def("get_branch_lengths", &GPInstance::GetBranchLengths,
+           "Return branch lengths from the GPInstance.")
+      .def(
+          "build_edge_idx_to_pcsp_map",
+          [](GPInstance &self) { return self.GetDAG().BuildEdgeIdxToPCSPBoolVectorMap(); },
+          "Build a map from SubsplitDAG edge index to its corresponding PCSP bitset.")
 
       // ** Estimation
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",

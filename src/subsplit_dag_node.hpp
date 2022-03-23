@@ -81,12 +81,14 @@ class GenericSubsplitDAGNode {
               : AddRightRootward(adjacent_node_id, edge_id);
     }
   }
+
   void AddEdge(size_t adjacent_node_id, Direction which_direction, Clade which_clade,
                LineId edge_id) {
     bool is_leafward = (which_direction == Direction::Leafward);
     bool is_left = (which_clade == Clade::Left);
     AddEdge(adjacent_node_id, is_leafward, is_left, edge_id);
   }
+
   void AddLeftLeafward(size_t node_id, LineId edge_id) {
     node_.AddNeighbor(Direction::Leafward, Clade::Left, node_id, edge_id);
   }
