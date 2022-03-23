@@ -162,9 +162,9 @@ def test_sbn_unrooted_instance():
 
 
 def test_gp_instance():
-    """ Tests added functionality for gp_instance """
+    """Tests added functionality for gp_instance."""
     if not os.path.exists("_ignore"):
-      os.makedirs("_ignore")
+        os.makedirs("_ignore")
     inst = bito.gp_instance("_ignore/mmapped_plv_pybito.data")
     inst.read_fasta_file("data/six_taxon.fasta")
     inst.read_newick_file("data/six_taxon_rootsplit.nwk")

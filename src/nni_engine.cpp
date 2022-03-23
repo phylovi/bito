@@ -86,7 +86,7 @@ void NNIEngine::EvaluateAdjacentNNIs() {
 
 void NNIEngine::GraftAdjacentNNIsToDAG() {
   for (const auto &nni : GetAdjacentNNIs()) {
-    graft_dag_->AddGraftNodePair(nni);
+    graft_dag_->AddNodePair(nni);
   }
 }
 

@@ -1010,16 +1010,17 @@ TEST_CASE("NNI Engine: Add NNI Test") {
   CHECK_EQ(dag_A_2b, dag_B);
 }
 
-// This compares DAGs after adding NNIs via AddNodePair vs GraftNodePair.
-TEST_CASE("NNI Engine: AddNodePair vs GraftNodePair") {
-  // Access ith NNI from NNI set.
-  auto GetWhichNNIFromSet = [](const NNISet& nni_set, const size_t which_nni) {
-    auto nni_set_ptr = nni_set.begin();
-    for (size_t i = 0; i < which_nni; i++) {
-      nni_set_ptr++;
-    }
-    return *nni_set_ptr;
-  };
+NNIOperation GetWhichNNIFromSet(const NNISet& nni_set, const size_t which_nni) {
+  auto nni_set_ptr = nni_set.begin();
+  for (size_t i = 0; i < which_nni; i++) {
+    nni_set_ptr++;
+  }
+  return *nni_set_ptr;
+};
+
+// This compares DAGs after adding NNIs to SubsplitDAG vs GraftDAG.
+// Also tests that Adding all node pairs to DAG gives proper result.
+TEST_CASE("NNI Engine: GraftDAG") {
   // Simple DAG that contains a shared edge, internal leafward fork, and an internal
   // rootward fork.
   const std::string fasta_path = "data/six_taxon.fasta";
@@ -1027,27 +1028,67 @@ TEST_CASE("NNI Engine: AddNodePair vs GraftNodePair") {
   // Instance that will be unaltered.
   auto pre_inst = GPInstanceOfFiles(fasta_path, newick_path);
   GPDAG& pre_dag = pre_inst.GetDAG();
-  GPEngine& pre_gp_engine = *pre_inst.GetEngine();
   // Instance that is used by grafted DAG.
-  auto inst_to_graft = GPInstanceOfFiles(fasta_path, newick_path);
-  GPDAG& dag_to_graft = inst_to_graft.GetDAG();
-  GraftDAG graft_dag = GraftDAG(dag_to_graft);
-  // Find all viable NNIs for DAG.
-  auto nni_engine = NNIEngine(pre_dag, pre_gp_engine);
+  auto graft_inst = GPInstanceOfFiles(fasta_path, newick_path);
+  graft_inst.MakeNNIEngine();
+  NNIEngine& nni_engine = graft_inst.GetNNIEngine();
+  GPDAG& host_dag = graft_inst.GetDAG();
+  GraftDAG& graft_dag = nni_engine.GetGraftDAG();
+  // Find NNIs of DAG.
   nni_engine.SyncAdjacentNNIsWithDAG();
   size_t nni_count = nni_engine.GetAdjacentNNICount();
-  // Check DAG and Grafted DAG equal before adding any NNIs.
+
+  // TEST #0:
+  // Check DAG and GraftDAG equal before adding any NNIs.
   CHECK_MESSAGE(GraftDAG::CompareToDAG(graft_dag, pre_dag) == 0,
                 "GraftDAG not equal to DAG before AddNodePair.");
+  // TEST #1:
+  // Add each NNI pair to GraftDAG, then check that expected nodes and edges are present
+  // in DAG.
+  for (size_t i = 0; i < nni_count; i++) {
+    auto nni = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), i);
+    graft_dag.AddNodePair(nni.parent_, nni.child_);
+    CHECK_MESSAGE(graft_dag.ContainsNode(nni.parent_),
+                  "Cannot find parent node in GraftDAG.");
+    CHECK_MESSAGE(graft_dag.ContainsNode(nni.child_),
+                  "Cannot find child node in GraftDAG.");
+    if (!(graft_dag.ContainsNode(nni.parent_) || graft_dag.ContainsNode(nni.child_))) {
+      graft_dag.RemoveAllGrafts();
+      continue;
+    }
+    size_t neighbor_count = 0;
+    for (const auto is_parent : {true, false}) {
+      const auto& subsplit = (is_parent ? nni.parent_ : nni.child_);
+      const auto node_id = graft_dag.GetDAGNodeId(subsplit);
+      const auto& node = graft_dag.GetDAGNode(node_id);
+      for (const auto direction : {true, false}) {
+        for (const auto clade : {true, false}) {
+          const auto neighbors = node.GetEdge(direction, clade);
+          for (const auto neighbor_id : neighbors) {
+            const size_t parent_id = (is_parent ? node_id : neighbor_id);
+            const size_t child_id = (is_parent ? neighbor_id : node_id);
+            CHECK_MESSAGE(graft_dag.ContainsEdge(parent_id, child_id),
+                          "Cannot find edge in GraftDAG.");
+            CHECK_MESSAGE(graft_dag.ContainsEdge(child_id, parent_id),
+                          "Cannot find edge in GraftDAG.");
+            neighbor_count++;
+          }
+        }
+      }
+    }
+    CHECK_MESSAGE(neighbor_count >= 6, "There were too few neighbors to NNI.");
+  }
+  graft_dag.RemoveAllGrafts();
+  // TEST #2:
   // Test DAGs equivalent after adding NNI individually.
   for (size_t i = 0; i < nni_count; i++) {
-    auto nni_to_add = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), i);
+    auto nni = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), i);
     // New temp DAG.
     auto inst = GPInstanceOfFiles(fasta_path, newick_path);
     GPDAG& dag = inst.GetDAG();
     // Add NNI to DAG and GraftDAG and compare results.
-    dag.AddNodePair(nni_to_add.parent_, nni_to_add.child_);
-    graft_dag.AddGraftNodePair(nni_to_add.parent_, nni_to_add.child_);
+    dag.AddNodePair(nni.parent_, nni.child_);
+    graft_dag.AddNodePair(nni.parent_, nni.child_);
     CHECK_MESSAGE(GraftDAG::CompareToDAG(graft_dag, dag) == 0,
                   "GraftDAG not equal to DAG after adding NNIs.");
     // Clear NNIs from GraftDAG and compare to initial DAG.
@@ -1055,6 +1096,7 @@ TEST_CASE("NNI Engine: AddNodePair vs GraftNodePair") {
     CHECK_MESSAGE(GraftDAG::CompareToDAG(graft_dag, pre_dag) == 0,
                   "GraftDAG not equal to initial DAG after removing all NNIs.");
   }
+  // TEST #3:
   // Test DAGs not equivalent when adding different NNIs.
   {
     auto nni_1 = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), 0);
@@ -1064,8 +1106,30 @@ TEST_CASE("NNI Engine: AddNodePair vs GraftNodePair") {
     GPDAG& dag = inst.GetDAG();
     // Add NNI to DAG and GraftDAG and compare results.
     dag.AddNodePair(nni_1.parent_, nni_1.child_);
-    graft_dag.AddGraftNodePair(nni_2.parent_, nni_2.child_);
+    graft_dag.AddNodePair(nni_2.parent_, nni_2.child_);
     CHECK_MESSAGE(GraftDAG::CompareToDAG(graft_dag, dag) != 0,
                   "GraftDAG is equal to DAG after adding different NNIs.");
+  }
+
+  // TEST #4:
+  // Modify GraftDAG, clear GraftDAG, modify DAG, then modify GraftDAG again.
+  for (size_t i = 0; i < nni_count; i++) {
+    auto nni = GetWhichNNIFromSet(nni_engine.GetAdjacentNNIs(), i);
+    graft_dag.AddNodePair(nni.parent_, nni.child_);
+
+    CHECK_MESSAGE(
+        (graft_dag.ContainsNode(nni.parent_) && graft_dag.ContainsNode(nni.child_)),
+        "Graft DAG does not contain added nodes by the Graft DAG.");
+    graft_dag.RemoveAllGrafts();
+    host_dag.AddNodePair(nni.parent_, nni.child_);
+    CHECK_MESSAGE(
+        (host_dag.ContainsNode(nni.parent_) && host_dag.ContainsNode(nni.child_)),
+        "Host DAG does not contain added nodes added by the Host DAG.");
+    CHECK_MESSAGE(
+        (graft_dag.ContainsNode(nni.parent_) && graft_dag.ContainsNode(nni.child_)),
+        "Graft DAG does not contain added nodes added by the Graft DAG.");
+    CHECK_MESSAGE(
+        graft_dag.GetDAGNodeId(nni.parent_) == host_dag.GetDAGNodeId(nni.parent_),
+        "Graft DAG NodeId does not match Host DAG NodeId.");
   }
 }

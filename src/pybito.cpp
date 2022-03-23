@@ -443,7 +443,9 @@ PYBIND11_MODULE(bito, m) {
            "Return branch lengths from the GPInstance.")
       .def(
           "build_edge_idx_to_pcsp_map",
-          [](GPInstance &self) { return self.GetDAG().BuildEdgeIdxToPCSPBoolVectorMap(); },
+          [](GPInstance &self) {
+            return self.GetDAG().BuildEdgeIdxToPCSPBoolVectorMap();
+          },
           "Build a map from SubsplitDAG edge index to its corresponding PCSP bitset.")
 
       // ** Estimation

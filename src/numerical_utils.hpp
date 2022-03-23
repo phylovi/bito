@@ -105,6 +105,7 @@ TEST_CASE("NumericalUtils") {
 
   // Here we use volatile to avoid GCC optimizing away the variable.
   volatile double d = 4.;
+  std::ignore = d;
   d /= 0.;
   auto fp_description = NumericalUtils::DescribeFloatingPointEnvironmentExceptions();
   CHECK_EQ(*fp_description,

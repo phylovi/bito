@@ -276,6 +276,9 @@ class DAGVertex {
     neighbors_.at({direction, clade}).insert({neighbor, line});
     return *this;
   }
+  void RemoveNeighbor(Direction direction, Clade clade, VertexId neighbor) {
+    neighbors_.at({direction, clade}).erase(neighbor);
+  }
 
   void SetLineId(VertexId neighbor, LineId line) {
     for (auto& i : neighbors_) {
@@ -378,23 +381,116 @@ class GenericVerticesView {
 using VerticesView = GenericVerticesView<SubsplitDAGStorage>;
 using ConstVerticesView = GenericVerticesView<const SubsplitDAGStorage>;
 
+// A vector that can optionally be prepended with host data for Graft purposes.
+// It has no ownership over the host data, so the lifetime of the host data object
+// should be greater than the given HostableVector instance.
+template <typename T>
+class HostableVector {
+ public:
+  explicit HostableVector(HostableVector<T>* host = nullptr)
+      : host_{host ? &host->data_ : nullptr} {}
+
+  T& at(size_t i) {
+    if (!host_) {
+      return data_.at(i);
+    }
+    if (i < host_->size()) {
+      return (*host_)[i];
+    }
+    return data_.at(i - host_->size());
+  }
+
+  const T& at(size_t i) const {
+    if (!host_) {
+      return data_.at(i);
+    }
+    if (i < host_->size()) {
+      return (*host_)[i];
+    }
+    return data_.at(i - host_->size());
+  }
+
+  T& operator[](size_t i) {
+    if (!host_) {
+      return data_[i];
+    }
+    if (i < host_->size()) {
+      return (*host_)[i];
+    }
+    return data_[i - host_->size()];
+  }
+
+  const T& operator[](size_t i) const {
+    if (!host_) {
+      return data_[i];
+    }
+    if (i < host_->size()) {
+      return (*host_)[i];
+    }
+    return data_[i - host_->size()];
+  }
+
+  size_t size() const {
+    if (!host_) {
+      return data_.size();
+    }
+    return host_->size() + data_.size();
+  }
+
+  void resize(size_t new_size) {
+    if (!host_) {
+      data_.resize(new_size);
+    } else {
+      data_.resize(new_size - host_->size());
+    }
+  }
+
+  HostableVector& operator=(const std::vector<T>& data) {
+    data_ = data;
+    return *this;
+  }
+
+  bool HaveHost() const { return host_; }
+
+  size_t HostSize() const {
+    if (!host_) {
+      return 0;
+    }
+    return host_->size();
+  }
+
+  void ResetHost(HostableVector<T>* host) {
+    host_ = host ? &host->data_ : nullptr;
+    data_ = {};
+  }
+
+ private:
+  std::vector<T> data_;
+  std::vector<T>* host_;
+};
+
+// Tag dispatching type to avoid confusion with copy constructor.
+// See https://en.wikibooks.org/wiki/More_C%2B%2B_Idioms/Tag_Dispatching
+struct HostDispatchTag {};
+
 class SubsplitDAGStorage {
  public:
+  SubsplitDAGStorage() = default;
+  SubsplitDAGStorage(const SubsplitDAGStorage&) = default;
+  SubsplitDAGStorage(SubsplitDAGStorage& host, HostDispatchTag)
+      : lines_{&host.lines_}, vertices_{&host.vertices_} {}
+
   ConstVerticesView GetVertices() const { return *this; }
   VerticesView GetVertices() { return *this; }
 
   ConstLinesView GetLines() const { return *this; }
   LinesView GetLines() { return *this; }
 
-  std::optional<ConstLineView> GetLine(VertexId parent, VertexId child,
-                                       size_t vertex_offset = 0,
-                                       size_t line_offset = 0) const {
-    parent -= vertex_offset;
-    child -= vertex_offset;
+  std::optional<ConstLineView> GetLine(VertexId parent, VertexId child) const {
     if (parent >= vertices_.size() || child >= vertices_.size()) return {};
-    auto result = vertices_.at(parent).FindNeighbor(child + vertex_offset);
+    auto result = vertices_.at(parent).FindNeighbor(child);
     if (!result.has_value()) return {};
-    return lines_.at(std::get<0>(result.value()) - line_offset);
+    return lines_.at(std::get<0>(result.value()));
   }
 
   std::optional<ConstLineView> GetLine(LineId id) const {
@@ -413,19 +509,34 @@ class SubsplitDAGStorage {
     return vertices_[id].GetId() != NoId;
   }
 
-  DAGLineStorage& AddLine(const DAGLineStorage& newLine, size_t offset = 0) {
+  std::optional<std::reference_wrapper<DAGVertex>> FindVertex(const Bitset& subsplit) {
+    for (size_t i = 0; i < vertices_.size(); ++i) {
+      if (vertices_[i].GetSubsplit() == subsplit) return vertices_[i];
+    }
+    return std::nullopt;
+  }
+
+  std::optional<std::reference_wrapper<const DAGVertex>> FindVertex(
+      const Bitset& subsplit) const {
+    for (size_t i = 0; i < vertices_.size(); ++i) {
+      if (vertices_[i].GetSubsplit() == subsplit) return vertices_[i];
+    }
+    return std::nullopt;
+  }
+
+  DAGLineStorage& AddLine(const DAGLineStorage& newLine) {
     if (newLine.GetId() == NoId) Failwith("Set line id before inserting to storage");
     if (newLine.GetClade() == Clade::Unspecified)
       Failwith("Set clade before inserting to storage");
-    auto& line = GetOrInsert(lines_, newLine.GetId(), offset);
+    auto& line = GetOrInsert(lines_, newLine.GetId());
     line = newLine;
     return line;
   }
 
-  DAGVertex& AddVertex(const DAGVertex& newVertex, size_t offset = 0) {
+  DAGVertex& AddVertex(const DAGVertex& newVertex) {
     if (newVertex.GetId() == NoId)
       Failwith("Set vertex id before inserting to storage");
-    auto& vertex = GetOrInsert(vertices_, newVertex.GetId(), offset);
+    auto& vertex = GetOrInsert(vertices_, newVertex.GetId());
     vertex = newVertex;
     return vertex;
   }
@@ -438,6 +549,32 @@ class SubsplitDAGStorage {
 
   void SetVertices(const std::vector<DAGVertex>& vertices) { vertices_ = vertices; }
 
+  bool HaveHost() const { return lines_.HaveHost(); }
+
+  size_t HostLinesCount() const { return lines_.HostSize(); }
+
+  size_t HostVerticesCount() const { return vertices_.HostSize(); }
+
+  void ResetHost(SubsplitDAGStorage& host) {
+    for (size_t i = lines_.HostSize(); i < lines_.size(); ++i) {
+      auto& line = lines_[i];
+      if (line.GetParent() >= vertices_.HostSize()) {
+        if (line.GetChild() < vertices_.HostSize()) {
+          vertices_[line.GetChild()].RemoveNeighbor(Direction::Rootward,
+                                                    line.GetClade(), line.GetParent());
+        }
+      }
+      if (line.GetChild() >= vertices_.HostSize()) {
+        if (line.GetParent() < vertices_.HostSize()) {
+          vertices_[line.GetParent()].RemoveNeighbor(Direction::Leafward,
+                                                     line.GetClade(), line.GetChild());
+        }
+      }
+    }
+    lines_.ResetHost(&host.lines_);
+    vertices_.ResetHost(&host.vertices_);
+  }
+
  private:
   template <typename>
   friend class GenericLinesView;
@@ -445,12 +582,11 @@ class SubsplitDAGStorage {
   friend class GenericVerticesView;
 
   template <typename T, typename Id>
-  static T& GetOrInsert(std::vector<T>& data, Id id, size_t offset = 0) {
-    id -= offset;
+  static T& GetOrInsert(HostableVector<T>& data, Id id) {
     if (id >= data.size()) data.resize(id + 1);
     return data[id];
   }
 
-  std::vector<DAGLineStorage> lines_;
-  std::vector<DAGVertex> vertices_;
+  HostableVector<DAGLineStorage> lines_;
+  HostableVector<DAGVertex> vertices_;
 };
