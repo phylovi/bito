@@ -40,6 +40,14 @@
 enum class Direction { Rootward, Leafward };
 enum class Clade { Unspecified, Left, Right };
 
+inline Clade Opposite(Clade clade) {
+  switch (clade) {
+  case Clade::Left: return Clade::Right;
+  case Clade::Right: return Clade::Left;
+  default: Failwith("Use of unspecified clade");
+  }
+}
+
 using VertexId = size_t;
 using LineId = size_t;
 static constexpr size_t NoId = std::numeric_limits<size_t>::max();
@@ -181,6 +189,8 @@ class GenericNeighborsView {
     bool operator==(const Iterator& other) const { return i_ == other.i_; }
 
     VertexId operator*() { return i_->first; }
+    
+    VertexId GetNodeId() const { return i_->first; }
     LineId GetEdge() const { return i_->second; }
 
    private:
@@ -289,6 +299,15 @@ class DAGVertex {
       }
     }
     Failwith("Neighbor not found");
+  }
+
+  void ClearNeighbors() {
+    neighbors_ = {
+      {{Direction::Rootward, Clade::Left}, {}},
+      {{Direction::Rootward, Clade::Right}, {}},
+      {{Direction::Leafward, Clade::Left}, {}},
+      {{Direction::Leafward, Clade::Right}, {}},
+    };
   }
 
  private:
@@ -504,6 +523,10 @@ class SubsplitDAGStorage {
     return line;
   }
 
+  const DAGVertex& GetVertex(VertexId id) const {
+    return vertices_.at(id);
+  }
+
   bool ContainsVertex(VertexId id) const {
     if (id >= vertices_.size()) return false;
     return vertices_[id].GetId() != NoId;
@@ -573,6 +596,40 @@ class SubsplitDAGStorage {
     }
     lines_.ResetHost(&host.lines_);
     vertices_.ResetHost(&host.vertices_);
+  }
+
+  void ConnectVertices(LineId lineId) {
+    auto& line = lines_.at(lineId);
+    auto& parent = vertices_.at(line.GetParent());
+    auto& child = vertices_.at(line.GetChild());
+    parent.AddNeighbor(Direction::Leafward, line.GetClade(), child.GetId(), lineId);
+    child.AddNeighbor(Direction::Rootward, line.GetClade(), parent.GetId(), lineId);
+  }
+
+  void ConnectAllVertices() {
+    for (size_t i = 0; i < vertices_.size(); ++i) {
+      vertices_[i].ClearNeighbors();
+    }
+    for (size_t i = 0; i < lines_.size(); ++i) {
+      if (lines_[i].GetId() == NoId) {
+        continue;
+      }
+      ConnectVertices(lines_[i].GetId());
+    }
+  }
+
+  std::optional<std::reference_wrapper<const DAGVertex>> FindRoot() const {
+    for (size_t i = 0; i < vertices_.size(); ++i) {
+      auto& vertex = vertices_[i];
+      if (vertex.GetId() == NoId) {
+        continue;
+      }
+      if (vertex.GetNeighbors(Direction::Rootward, Clade::Left).empty() &&
+          vertex.GetNeighbors(Direction::Rootward, Clade::Right).empty()) {
+            return vertex;
+          }
+    }
+    return std::nullopt;
   }
 
  private:
