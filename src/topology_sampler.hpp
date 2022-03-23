@@ -41,12 +41,9 @@ class TopologySampler {
 TEST_CASE("TopologySampler") {
   Driver driver;
   auto tree_collection = RootedTreeCollection::OfTreeCollection(
-      driver.ParseNewickFile("data/five_taxon_rooted.nwk"));
+      // driver.ParseNewickFile("data/five_taxon_rooted.nwk"));
+      driver.ParseNewickFile("data/five_taxon_rooted_more_2.nwk"));
   SubsplitDAG dag(tree_collection);
-
-  MersenneTwister mersenne_twister;
-  std::uniform_int_distribution<> distribution(0, dag.TaxonCount());
-  auto leaf = dag.GetDAGNode(distribution(mersenne_twister.GetGenerator()));
 
   EigenVectorXd normalized_sbn_parameters = dag.BuildUniformOnTopologicalSupportPrior();
   EigenVectorXd node_probabilities =
@@ -54,9 +51,26 @@ TEST_CASE("TopologySampler") {
   EigenVectorXd inverted_probabilities =
       dag.InvertedGPCSPProbabilities(normalized_sbn_parameters, node_probabilities);
 
+  SubsplitDAGNode origin = dag.GetDAGNode(5);
+
   TopologySampler sampler;
-  auto tree = sampler.Sample(leaf, dag, normalized_sbn_parameters, inverted_probabilities);
-  std::ignore = tree;
+  std::map<std::string, size_t> counts;
+  const size_t iterations = 10000;
+
+  for (size_t i = 0; i < iterations; ++i) {
+    auto tree = sampler.Sample(origin, dag, normalized_sbn_parameters, inverted_probabilities);
+    ++counts[tree->Newick([](const Node* node) {
+      if (!node->IsLeaf()) return std::string();
+      return std::string("x") + std::to_string(node->Id());
+    })];
+  }
+
+  for (auto& i : counts) {
+    const double observed = static_cast<double>(i.second) / iterations;
+    const double expected = 1.0 / 3.0;
+    std::cout << i.first << " : " << observed << "\n";
+    CHECK_LT(fabs(observed - expected), 5e-2);
+  }
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
