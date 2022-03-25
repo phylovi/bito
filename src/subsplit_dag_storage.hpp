@@ -42,9 +42,12 @@ enum class Clade { Unspecified, Left, Right };
 
 inline Clade Opposite(Clade clade) {
   switch (clade) {
-  case Clade::Left: return Clade::Right;
-  case Clade::Right: return Clade::Left;
-  default: Failwith("Use of unspecified clade");
+    case Clade::Left:
+      return Clade::Right;
+    case Clade::Right:
+      return Clade::Left;
+    default:
+      Failwith("Use of unspecified clade");
   }
 }
 
@@ -189,7 +192,7 @@ class GenericNeighborsView {
     bool operator==(const Iterator& other) const { return i_ == other.i_; }
 
     VertexId operator*() { return i_->first; }
-    
+
     VertexId GetNodeId() const { return i_->first; }
     LineId GetEdge() const { return i_->second; }
 
@@ -303,10 +306,10 @@ class DAGVertex {
 
   void ClearNeighbors() {
     neighbors_ = {
-      {{Direction::Rootward, Clade::Left}, {}},
-      {{Direction::Rootward, Clade::Right}, {}},
-      {{Direction::Leafward, Clade::Left}, {}},
-      {{Direction::Leafward, Clade::Right}, {}},
+        {{Direction::Rootward, Clade::Left}, {}},
+        {{Direction::Rootward, Clade::Right}, {}},
+        {{Direction::Leafward, Clade::Left}, {}},
+        {{Direction::Leafward, Clade::Right}, {}},
     };
   }
 
@@ -523,9 +526,7 @@ class SubsplitDAGStorage {
     return line;
   }
 
-  const DAGVertex& GetVertex(VertexId id) const {
-    return vertices_.at(id);
-  }
+  const DAGVertex& GetVertex(VertexId id) const { return vertices_.at(id); }
 
   bool ContainsVertex(VertexId id) const {
     if (id >= vertices_.size()) return false;
@@ -626,8 +627,8 @@ class SubsplitDAGStorage {
       }
       if (vertex.GetNeighbors(Direction::Rootward, Clade::Left).empty() &&
           vertex.GetNeighbors(Direction::Rootward, Clade::Right).empty()) {
-            return vertex;
-          }
+        return vertex;
+      }
     }
     return std::nullopt;
   }

@@ -4,7 +4,8 @@
 #include "topology_sampler.hpp"
 
 Node::NodePtr TopologySampler::Sample(SubsplitDAGNode node, SubsplitDAG& dag,
-    EigenConstVectorXdRef normalized_sbn_parameters, EigenConstVectorXdRef inverted_probabilities) {
+                                      EigenConstVectorXdRef normalized_sbn_parameters,
+                                      EigenConstVectorXdRef inverted_probabilities) {
   SamplingSession session{dag, normalized_sbn_parameters, inverted_probabilities};
   session.result_.AddVertex({node.Id(), node.GetBitset()});
   SampleRootward(session, node);
@@ -18,7 +19,8 @@ Node::NodePtr TopologySampler::Sample(SubsplitDAGNode node, SubsplitDAG& dag,
 
 void TopologySampler::SetSeed(uint64_t seed) { mersenne_twister_.SetSeed(seed); }
 
-void TopologySampler::VisitNode(SamplingSession& session, SubsplitDAGNode node, Direction direction, Clade clade) {
+void TopologySampler::VisitNode(SamplingSession& session, SubsplitDAGNode node,
+                                Direction direction, Clade clade) {
   session.result_.AddVertex({node.Id(), node.GetBitset()});
   switch (direction) {
     case Direction::Rootward:
@@ -40,22 +42,26 @@ void TopologySampler::SampleRootward(SamplingSession& session, SubsplitDAGNode n
     return;
   }
   auto parent = SampleParent(session, left, right);
-  session.result_.AddLine({parent.second.GetId(), parent.second.GetParent(), parent.second.GetChild(), parent.second.GetClade()});
+  session.result_.AddLine({parent.second.GetId(), parent.second.GetParent(),
+                           parent.second.GetChild(), parent.second.GetClade()});
   VisitNode(session, parent.first, Direction::Leafward, parent.second.GetClade());
 }
 
-void TopologySampler::SampleLeafward(SamplingSession& session, SubsplitDAGNode node, Clade clade) {
+void TopologySampler::SampleLeafward(SamplingSession& session, SubsplitDAGNode node,
+                                     Clade clade) {
   auto neighbors = node.GetNeighbors(Direction::Leafward, clade);
   if (neighbors.empty()) {
     // reached leaf
     return;
   }
   auto child = SampleChild(session, neighbors);
-  session.result_.AddLine({child.second.GetId(), child.second.GetParent(), child.second.GetChild(), child.second.GetClade()});
+  session.result_.AddLine({child.second.GetId(), child.second.GetParent(),
+                           child.second.GetChild(), child.second.GetClade()});
   VisitNode(session, child.first, Direction::Rootward, clade);
 }
 
-std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParent(SamplingSession& session, ConstNeighborsView left, ConstNeighborsView right) {
+std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParent(
+    SamplingSession& session, ConstNeighborsView left, ConstNeighborsView right) {
   std::vector<double> weights;
   weights.resize(left.size() + right.size());
   size_t i = 0;
@@ -68,14 +74,17 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParent(Sampling
   if (i < left.size()) {
     auto parent = left.begin();
     std::advance(parent, i);
-    return {session.dag_.GetDAGNode(parent.GetNodeId()), session.dag_.GetDAGEdge(parent.GetEdge())};
+    return {session.dag_.GetDAGNode(parent.GetNodeId()),
+            session.dag_.GetDAGEdge(parent.GetEdge())};
   }
   auto parent = right.begin();
   std::advance(parent, i - left.size());
-  return {session.dag_.GetDAGNode(parent.GetNodeId()), session.dag_.GetDAGEdge(parent.GetEdge())};
+  return {session.dag_.GetDAGNode(parent.GetNodeId()),
+          session.dag_.GetDAGEdge(parent.GetEdge())};
 }
 
-std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChild(SamplingSession& session, ConstNeighborsView neighbors) {
+std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChild(
+    SamplingSession& session, ConstNeighborsView neighbors) {
   std::vector<double> weights;
   weights.resize(neighbors.size());
   size_t i = 0;
@@ -85,10 +94,12 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChild(SamplingS
   i = static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
   auto child = neighbors.begin();
   std::advance(child, i);
-  return {session.dag_.GetDAGNode(child.GetNodeId()), session.dag_.GetDAGEdge(child.GetEdge())};
+  return {session.dag_.GetDAGNode(child.GetNodeId()),
+          session.dag_.GetDAGEdge(child.GetEdge())};
 }
 
-Node::NodePtr TopologySampler::BuildTree(SamplingSession& session, const DAGVertex& node) {
+Node::NodePtr TopologySampler::BuildTree(SamplingSession& session,
+                                         const DAGVertex& node) {
   auto left = node.GetNeighbors(Direction::Leafward, Clade::Left);
   auto right = node.GetNeighbors(Direction::Leafward, Clade::Right);
   VertexId left_id = NoId, right_id = NoId;
@@ -99,23 +110,17 @@ Node::NodePtr TopologySampler::BuildTree(SamplingSession& session, const DAGVert
     right_id = right.begin().GetNodeId();
   }
   if (left_id != NoId && right_id != NoId) {
-    return Node::Join(
-      BuildTree(session, session.result_.GetVertex(left_id)),
-      BuildTree(session, session.result_.GetVertex(right_id)),
-      node.GetId()
-    );
+    return Node::Join(BuildTree(session, session.result_.GetVertex(left_id)),
+                      BuildTree(session, session.result_.GetVertex(right_id)),
+                      node.GetId());
   }
   if (left_id != NoId) {
-    return Node::Join(
-      {BuildTree(session, session.result_.GetVertex(left_id))},
-      node.GetId()
-    );
+    return Node::Join({BuildTree(session, session.result_.GetVertex(left_id))},
+                      node.GetId());
   }
   if (right_id != NoId) {
-    return Node::Join(
-      {BuildTree(session, session.result_.GetVertex(right_id))},
-      node.GetId()
-    );
+    return Node::Join({BuildTree(session, session.result_.GetVertex(right_id))},
+                      node.GetId());
   }
   return Node::Leaf(node.GetId());
 }
