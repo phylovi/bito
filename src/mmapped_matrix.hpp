@@ -27,31 +27,19 @@ class MmappedMatrix {
 
  public:
   MmappedMatrix(const std::string &file_path, Eigen::Index rows, Eigen::Index cols)
-      : rows_(rows), cols_(cols), byte_count_(rows * cols * sizeof(Scalar)) {
+      : rows_(rows),
+        cols_(cols),
+        byte_count_(rows * cols * sizeof(Scalar)),
+        file_path_(file_path) {
     file_descriptor_ = open(
         file_path.c_str(),
         O_RDWR | O_CREAT,  // Open for reading and writing; create if it doesn't exit.
         S_IRUSR | S_IWUSR  // Make the file readable and writable by the user.
     );
     if (file_descriptor_ == -1) {
-      Failwith("MmappedMatrix could not create a file at " + file_path);
+      Failwith("MmappedMatrix could not create a file at " + file_path_);
     }
-    // Resizes file so it's just right for our vector.
-    auto ftruncate_status = ftruncate(file_descriptor_, byte_count_);
-    if (ftruncate_status != 0) {
-      Failwith("MmappedMatrix could not resize the file at " + file_path);
-    }
-    mmapped_memory_ = static_cast<Scalar *>(mmap(  //
-        NULL,                    // This address is ignored as we are using MAP_SHARED.
-        byte_count_,             // Size of map.
-        PROT_READ | PROT_WRITE,  // We want to read and write.
-        MAP_SHARED,              // We need MAP_SHARED to actually write to memory.
-        file_descriptor_,        // File descriptor.
-        0                        // Offset.
-        ));
-    if (mmapped_memory_ == MAP_FAILED) {
-      throw std::system_error(errno, std::system_category(), "mmap");
-    }
+    InitializeMMap(rows, cols);
   }
 
   ~MmappedMatrix() {
@@ -72,6 +60,68 @@ class MmappedMatrix {
     CheckStatus(close_status, "close");
   }
 
+  // Intialize virtual memory map.
+  void InitializeMMap(Eigen::Index rows, Eigen::Index cols) {
+    // Resizes file so it's just right for our vector.
+    rows_ = rows;
+    cols_ = cols;
+    byte_count_ = rows * cols * sizeof(Scalar);
+    auto ftruncate_status = ftruncate(file_descriptor_, byte_count_);
+
+    if (ftruncate_status != 0) {
+      Failwith("MmappedMatrix could not intialize the file at " + file_path_);
+    }
+    mmapped_memory_ = static_cast<Scalar *>(mmap(  //
+        NULL,                    // This address is ignored as we are using MAP_SHARED.
+        byte_count_,             // Size of map.
+        PROT_READ | PROT_WRITE,  // We want to read and write.
+        MAP_SHARED,              // We need MAP_SHARED to actually write to memory.
+        file_descriptor_,        // File descriptor.
+        0                        // Offset.
+        ));
+    if (mmapped_memory_ == MAP_FAILED) {
+      throw std::system_error(errno, std::system_category(), "mmap");
+    }
+  }
+
+  // Resize virtual memory map. Optional reporting.
+  void ResizeMMap(Eigen::Index rows, Eigen::Index cols, const bool quiet = true) {
+    std::stringstream dev_null;
+    auto &our_ostream = quiet ? dev_null : std::cout;
+    // Resizes file so it's just right for our vector.
+    rows_ = rows;
+    cols_ = cols;
+    const size_t old_byte_count = byte_count_;
+    byte_count_ = rows * cols * sizeof(Scalar);
+    if (byte_count_ == old_byte_count) {
+      return;
+    }
+    auto ftruncate_status = ftruncate(file_descriptor_, byte_count_);
+    void *old_mmapped_memory = static_cast<void *>(mmapped_memory_);
+
+    if (ftruncate_status != 0) {
+      Failwith("MmappedMatrix could not resize the file at " + file_path_);
+    }
+    mmapped_memory_ = static_cast<Scalar *>(mremap(  //
+        static_cast<void *>(mmapped_memory_),        // old address
+        old_byte_count,                              // old size
+        byte_count_,                                 // new size
+        MREMAP_MAYMOVE  // will move virtual memory if necessary.
+        ));
+    if (mmapped_memory_ == MAP_FAILED) {
+      throw std::system_error(errno, std::system_category(), "mremap");
+    }
+
+    // Report if remapping occurred.
+    bool is_remapping_moved =
+        (static_cast<void *>(mmapped_memory_) != old_mmapped_memory);
+    our_ostream << "REMAPPING OCCURRED: " << old_byte_count << " bytes -> "
+                << byte_count_ << " bytes " << std::endl;
+    our_ostream << "REMAPPING DID " << (is_remapping_moved ? "" : "*NOT* ")
+                << "MOVE MEMORY ADDRESS: " << old_mmapped_memory << " "
+                << mmapped_memory_ << std::endl;
+  }
+
   MmappedMatrix(const MmappedMatrix &) = delete;
   MmappedMatrix(const MmappedMatrix &&) = delete;
   MmappedMatrix &operator=(const MmappedMatrix &) = delete;
@@ -88,6 +138,7 @@ class MmappedMatrix {
   Eigen::Index cols_;
   size_t byte_count_;
   int file_descriptor_;
+  std::string file_path_;
   Scalar *mmapped_memory_;
 };
 

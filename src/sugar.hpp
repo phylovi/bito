@@ -18,7 +18,10 @@
 // Put typedefs that are built of STL types here.
 using Tag = uint64_t;
 using SymbolVector = std::vector<int>;
+using BoolVector = std::vector<bool>;
+using IntVector = std::vector<int>;
 using SizeVector = std::vector<size_t>;
+using DoubleVector = std::vector<double>;
 using SizeVectorVector = std::vector<SizeVector>;
 using DoubleVectorVector = std::vector<std::vector<double>>;
 using TagDoubleMap = std::unordered_map<Tag, double>;
@@ -39,6 +42,7 @@ using SizeDoubleMap = std::unordered_map<size_t, double>;
 using SizeDoubleVectorMap = std::unordered_map<size_t, std::vector<double>>;
 using DoublePair = std::pair<double, double>;
 using SizePair = std::pair<size_t, size_t>;
+using SizePairVector = std::vector<std::pair<size_t, size_t>>;
 using SizeOptionVector = std::vector<std::optional<size_t>>;
 
 inline uint32_t MaxLeafIDOfTag(Tag tag) { return UnpackFirstInt(tag); }
@@ -136,3 +140,26 @@ std::unordered_map<Key, T> UnorderedMapOf(const std::vector<std::pair<Key, T>> &
   }
   return m;
 }
+
+// Generic Iterator for enum class types.
+// Requires that enum's underlying types have no gaps.
+template <typename EnumType, EnumType FirstEnum, EnumType LastEnum>
+class EnumIterator {
+  typedef typename std::underlying_type<EnumType>::type val_t;
+  int val;
+
+ public:
+  EnumIterator(const EnumType &f) : val(static_cast<val_t>(f)) {}
+  EnumIterator() : val(static_cast<val_t>(FirstEnum)) {}
+  EnumIterator operator++() {
+    ++val;
+    return *this;
+  }
+  EnumType operator*() { return static_cast<EnumType>(val); }
+  EnumIterator begin() { return *this; }  // default ctor is good
+  EnumIterator end() {
+    static const EnumIterator endIter = ++EnumIterator(LastEnum);  // cache it
+    return endIter;
+  }
+  bool operator!=(const EnumIterator &i) { return val != i.val; }
+};

@@ -38,8 +38,10 @@ class NNIEngine {
   const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; };
   // Get Number of Adjacent NNIs.
   size_t GetAdjacentNNICount() const { return adjacent_nnis_.size(); };
-  // Get Accepted NNIs to DAG.
+  // Get All NNIs that have been accepted into the DAG.
   const std::vector<NNIOperation> &GetAcceptedNNIs() const { return accepted_nnis_; };
+  // Get All NNIs that have been rejected from the DAG.
+  const std::vector<NNIOperation> &GetRejectedNNIs() const { return rejected_nnis_; };
   // Get Number of Accepted NNIs.
   size_t GetAcceptedNNICount() const { return accepted_nnis_.size(); };
   // Get Map of Adjacent NNIs with their score.
@@ -74,13 +76,20 @@ class NNIEngine {
 
   // ** Filtering
 
+  // Function template for filtering adjacent NNI to accepted or rejected.
+  using FilterFunction =
+      std::function<bool(NNIEngine &, GPEngine &, const NNIOperation &)>;
+  static bool NoFilter(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                       const NNIOperation &nni);
+
   // Initialize filter before first NNI sweep.
   void FilterInit();
   // Update filter parameters for each NNI sweep.
   void FilterUpdate();
   // Apply the filtering method to determine whether each Adjacent NNI will be accepted
   // or rejected.
-  void FilterAdjacentNNIsToAcceptedNNIs();
+  // Note: default function accepts all.
+  void FilterAdjacentNNIs();
 
   // ** DAG & GPEngine Maintenance
 
@@ -131,6 +140,8 @@ class NNIEngine {
   void ClearAdjacentNNIs();
   // Remove all accepted nnis from list.
   void ClearAcceptedNNIs();
+  // Remove all rejected nnis from list.
+  void ClearRejectedNNIs();
 
  private:
   GPDAG &dag_;
@@ -141,6 +152,8 @@ class NNIEngine {
   NNISet adjacent_nnis_;
   // NNIs which have passed the filtering threshold, to be added to the DAG.
   std::vector<NNIOperation> accepted_nnis_;
+  // NNIs which have failed the filtering threshold, to be added to the DAG.
+  std::vector<NNIOperation> rejected_nnis_;
   // Map of adjacent NNIs to their score.
   std::map<NNIOperation, double> scored_nnis_;
   // Count number of loops executed by engine.

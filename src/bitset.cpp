@@ -136,7 +136,7 @@ void Bitset::operator|=(const Bitset& other) {
 }
 
 std::ostream& operator<<(std::ostream& os, const Bitset& bitset) {
-  os << bitset.SubsplitToString();
+  os << bitset.ToString();
   return os;
 }
 

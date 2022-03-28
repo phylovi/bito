@@ -17,11 +17,19 @@ TidySubsplitDAG::TidySubsplitDAG(size_t taxon_count,
                                  const Node::TopologyCounter &topology_counter,
                                  const TagStringMap &tag_taxon_map)
     : SubsplitDAG(taxon_count, topology_counter, tag_taxon_map) {
+  ReinitializeTidyVectors();
+}
+
+void TidySubsplitDAG::ReinitializeTidyVectors() {
   auto node_count = NodeCount();
-  above_rotated_ = EigenMatrixXb::Identity(node_count, node_count);
-  above_sorted_ = EigenMatrixXb::Identity(node_count, node_count);
-  dirty_rotated_ = EigenArrayXb::Zero(node_count);
-  dirty_sorted_ = EigenArrayXb::Zero(node_count);
+  above_rotated_.resize(node_count, node_count);
+  above_rotated_.setIdentity();
+  above_sorted_.resize(node_count, node_count);
+  above_sorted_.setIdentity();
+  dirty_rotated_.resize(node_count);
+  dirty_rotated_.setZero();
+  dirty_sorted_.resize(node_count);
+  dirty_sorted_.setZero();
 
   SubsplitDAG::DepthFirstWithAction(
       {GetDAGRootNodeId()}, SubsplitDAGTraversalAction(

@@ -19,6 +19,9 @@ class TidySubsplitDAG : public SubsplitDAG {
   TidySubsplitDAG();
   explicit TidySubsplitDAG(const RootedTreeCollection &tree_collection);
 
+  // Initialize tidy vectors for after initialization or modification of DAG.
+  void ReinitializeTidyVectors();
+
   // What nodes are above or below the specified node? We consider a node to be both
   // above and below itself (this just happens to be handy for the implementation).
   EigenArrayXb BelowNode(size_t node_id);

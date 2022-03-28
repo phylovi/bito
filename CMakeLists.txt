@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
+
 project(bito)
 find_package(Python COMPONENTS Interpreter Development)
 set(BITO_VERSION "0.1")
@@ -92,6 +93,7 @@ add_library(bito-core SHARED
   src/phylo_model.cpp
   src/psp_indexer.cpp
   src/quartet_hybrid_request.cpp
+  src/reindexer.cpp
   src/rooted_gradient_transforms.cpp
   src/rooted_sbn_instance.cpp
   src/rooted_tree.cpp

@@ -33,6 +33,8 @@ class GPInstance {
   GPEngine *GetEngine() const;
   bool HasEngine() const;
   void PrintEdgeIndexer();
+
+  void ReinitializePriors();
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();
   SizeDoubleVectorMap GatherBranchLengths();

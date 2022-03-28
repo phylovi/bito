@@ -198,7 +198,7 @@ class GenericNeighborsView {
   size_t size() const { return neighbors_.size(); }
   bool empty() const { return neighbors_.empty(); }
 
-  void RemapIds(const SizeVector& reindexer) {
+  void RemapNodeIds(const Reindexer& reindexer) {
     for (auto [vertex_id, line_id] : neighbors_) {
       std::ignore = line_id;
       Assert(vertex_id < reindexer.size(),
@@ -207,7 +207,21 @@ class GenericNeighborsView {
     }
     T remapped{};
     for (auto [vertex_id, line_id] : neighbors_) {
-      remapped[reindexer.at(vertex_id)] = line_id;
+      remapped[reindexer.GetNewIndexByOldIndex(vertex_id)] = line_id;
+    }
+    neighbors_ = remapped;
+  }
+
+  void RemapEdgeIdxs(const Reindexer& reindexer) {
+    for (auto [vertex_id, line_id] : neighbors_) {
+      std::ignore = vertex_id;
+      Assert(line_id < reindexer.size(),
+             "Neighbors cannot contain an id out of bounds of the reindexer in "
+             "GenericNeighborsView::RemapIds.");
+    }
+    T remapped{};
+    for (auto [vertex_id, line_id] : neighbors_) {
+      remapped[vertex_id] = reindexer.GetNewIndexByOldIndex(line_id);
     }
     neighbors_ = remapped;
   }

@@ -64,6 +64,20 @@ void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance
   }
 };
 
+bool VectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
+                      double tolerance) {
+  if (v1.size() != v2.size()) {
+    return false;
+  }
+  for (Eigen::Index i = 0; i < v1.size(); i++) {
+    double error = fabs(v1[i] - v2[i]);
+    if (error > tolerance) {
+      return false;
+    }
+  }
+  return true;
+};
+
 void CheckVectorXdEquality(const EigenVectorXd v1, const EigenVectorXd v2,
                            double tolerance) {
   CHECK_EQ(v1.size(), v2.size());
