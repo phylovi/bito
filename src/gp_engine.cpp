@@ -676,6 +676,10 @@ void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
   }
 }
 
+void GPEngine::SetOptimizationTolerance(int optim_tol){
+	significant_digits_for_optimization_ = optim_tol;
+}
+
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
     double branch_length = exp(log_branch_length);
@@ -684,6 +688,10 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
         this->LogLikelihoodAndDerivative(op);
     return std::make_pair(-log_likelihood, -branch_length * log_likelihood_derivative);
   };
+
+  if (branch_length_differences_(op.gpcsp_) < 1e-10) {
+    return;
+  }
 
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
   double current_value = negative_log_likelihood(current_log_branch_length).first;
@@ -701,6 +709,9 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   } else {
     branch_lengths_(op.gpcsp_) = exp(log_branch_length);
   }
+
+  branch_length_differences_(op.gpcsp_) =
+      abs(exp(current_log_branch_length) - branch_lengths_(op.gpcsp_));
 
   optimization_path_branch_lengths_.at(op.gpcsp_) = std::get<0>(optimization_path);
   optimization_path_likelihoods_.at(op.gpcsp_) = std::get<1>(optimization_path);

@@ -177,8 +177,10 @@ void GPInstance::ComputeMarginalLikelihood() {
 }
 
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
-                                       bool per_pcsp_convg, bool track_values) {
+                                       bool per_pcsp_convg, int optim_tol) {
   std::stringstream dev_null;
+  GetEngine()->SetOptimizationTolerance(optim_tol);
+  
   auto &our_ostream = quiet ? dev_null : std::cout;
   auto now = std::chrono::high_resolution_clock::now;
   auto t_start = now();
@@ -195,8 +197,10 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
   ProcessOperations(marginal_lik_operations);
 
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-  std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
+  double current_avg_branch_length_diff =
+      (GetEngine()->GetBranchLengthDifferences()).array().mean();
 
+  std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
   t_start = now();
 
   for (size_t i = 0; i < max_iter; i++) {
@@ -207,25 +211,31 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
     ProcessOperations(marginal_lik_operations);
 
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-    double avg_abs_change_perpcsp_branch_length =
-        (GetEngine()->GetBranchLengthDifferences()).array().mean();
 
     our_ostream << "Current marginal log likelihood: ";
     our_ostream << std::setprecision(9) << current_marginal_log_lik << std::endl;
     our_ostream << "New marginal log likelihood: ";
     our_ostream << std::setprecision(9) << marginal_log_lik << std::endl;
+
+    double avg_abs_change_perpcsp_branch_length =
+        (GetEngine()->GetBranchLengthDifferences()).array().mean();
+
+    our_ostream << "Average absolute change in branch lengths:";
+    our_ostream << std::setprecision(9) << avg_abs_change_perpcsp_branch_length
+                << std::endl;
     if (marginal_log_lik < current_marginal_log_lik) {
       our_ostream << "Marginal log likelihood decreased.\n";
     }
     if (!per_pcsp_convg & (abs(current_marginal_log_lik - marginal_log_lik) < tol)) {
       our_ostream << "Converged.\n";
       break;
-    } else if (per_pcsp_convg & (avg_abs_change_perpcsp_branch_length < tol)) {
+    } else if (per_pcsp_convg & avg_abs_change_perpcsp_branch_length < tol) {
       our_ostream << "Average absolute change in branch lengths converged. \n";
       break;
     }
     current_marginal_log_lik = marginal_log_lik;
   }
+
   std::chrono::duration<double> optimization_duration = now() - t_start;
   our_ostream << "\n# Timing Report\n";
   our_ostream << "warmup: " << warmup_duration.count() << "s\n";
@@ -234,20 +244,19 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
               << optimization_duration.count() / 60 << "m\n";
 }
 
-void GPInstance::FullDAGTraversalOptimizationValues() {
-  GPOperationVector compute_lik_operations = dag_.ComputeLikelihoods();
-  ProcessOperations(compute_lik_operations);
-
-  size_t col_idx = per_pcsp_branch_lengths_.cols() - 1;
-  per_pcsp_branch_lengths_.col(col_idx) = GetEngine()->GetBranchLengths();
-  per_pcsp_marg_lik_.col(col_idx) = GetEngine()->GetPerGPCSPLogLikelihoods();
-
-  per_pcsp_branch_lengths_.conservativeResize(Eigen::NoChange, col_idx + 2);
-  per_pcsp_marg_lik_.conservativeResize(Eigen::NoChange, col_idx + 2);
-
-  GetOptimizationPath();
-}
-
+// void GPInstance::FullDAGTraversalOptimizationValues() {
+//   GPOperationVector compute_lik_operations = dag_.ComputeLikelihoods();
+//   ProcessOperations(compute_lik_operations);
+//
+//   size_t col_idx = per_pcsp_branch_lengths_.cols() - 1;
+//   per_pcsp_branch_lengths_.col(col_idx) = GetEngine()->GetBranchLengths();
+//   per_pcsp_marg_lik_.col(col_idx) = GetEngine()->GetPerGPCSPLogLikelihoods();
+//
+//   per_pcsp_branch_lengths_.conservativeResize(Eigen::NoChange, col_idx + 2);
+//   per_pcsp_marg_lik_.conservativeResize(Eigen::NoChange, col_idx + 2);
+//
+//   GetOptimizationPath();
+// }
 
 void GPInstance::EstimateSBNParameters() {
   std::cout << "Begin SBN parameter optimization\n";
