@@ -182,22 +182,22 @@ class GenericNeighborsView {
  public:
   class Iterator : public std::iterator<std::forward_iterator_tag, VertexId> {
    public:
-    Iterator(const iterator_type& i, map_type& map) : i_{i}, map_{map} {}
+    Iterator(const iterator_type& i, map_type& map) : iter_{i}, map_{map} {}
 
     Iterator operator++() {
-      ++i_;
+      ++iter_;
       return *this;
     }
-    bool operator!=(const Iterator& other) const { return i_ != other.i_; }
-    bool operator==(const Iterator& other) const { return i_ == other.i_; }
+    bool operator!=(const Iterator& other) const { return iter_ != other.iter_; }
+    bool operator==(const Iterator& other) const { return iter_ == other.iter_; }
 
-    VertexId operator*() { return i_->first; }
+    VertexId operator*() { return iter_->first; }
 
-    VertexId GetNodeId() const { return i_->first; }
-    LineId GetEdge() const { return i_->second; }
+    VertexId GetNodeId() const { return iter_->first; }
+    LineId GetEdge() const { return iter_->second; }
 
    private:
-    iterator_type i_;
+    iterator_type iter_;
     map_type& map_;
   };
 
@@ -599,12 +599,12 @@ class SubsplitDAGStorage {
     vertices_.ResetHost(&host.vertices_);
   }
 
-  void ConnectVertices(LineId lineId) {
-    auto& line = lines_.at(lineId);
+  void ConnectVertices(LineId line_id) {
+    auto& line = lines_.at(line_id);
     auto& parent = vertices_.at(line.GetParent());
     auto& child = vertices_.at(line.GetChild());
-    parent.AddNeighbor(Direction::Leafward, line.GetClade(), child.GetId(), lineId);
-    child.AddNeighbor(Direction::Rootward, line.GetClade(), parent.GetId(), lineId);
+    parent.AddNeighbor(Direction::Leafward, line.GetClade(), child.GetId(), line_id);
+    child.AddNeighbor(Direction::Rootward, line.GetClade(), parent.GetId(), line_id);
   }
 
   void ConnectAllVertices() {

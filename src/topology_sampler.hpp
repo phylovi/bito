@@ -1,4 +1,4 @@
-// Copyright 2019-2021 bito project contributors.
+// Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
 // A class that samples one tree topology per call to the Sample() function.
@@ -34,22 +34,21 @@ class TopologySampler {
   };
 
   // Called for each newly sampled node. Direction and clade are pointing to the
-  // previously visited node. 
+  // previously visited node.
   void VisitNode(SamplingSession& session, SubsplitDAGNode node, Direction direction,
                  Clade clade);
-  // Continue sampling in the rootward direction from "node".
+  // Continue sampling in the rootward direction from `node`.
   void SampleRootward(SamplingSession& session, SubsplitDAGNode node);
-  // Continue sampling in the leafward direction and specified "clade" from "node".
+  // Continue sampling in the leafward direction and specified `clade` from `node`.
   void SampleLeafward(SamplingSession& session, SubsplitDAGNode node, Clade clade);
   // Choose a parent node (and return it with the corresponding edge) according to
-  // the values in "inverted_probabilities".
-  std::pair<SubsplitDAGNode, ConstLineView> SampleParent(SamplingSession& session,
-                                                         ConstNeighborsView left,
-                                                         ConstNeighborsView right);
-  // Choose a child node among the "neighbors" clade according to the values
-  // in "normalized_sbn_parameters".
-  std::pair<SubsplitDAGNode, ConstLineView> SampleChild(SamplingSession& session,
-                                                        ConstNeighborsView neighbors);
+  // the values in `inverted_probabilities`.
+  std::pair<SubsplitDAGNode, ConstLineView> SampleParentNodeAndEdge(
+      SamplingSession& session, ConstNeighborsView left, ConstNeighborsView right);
+  // Choose a child node among the `neighbors` clade according to the values
+  // in `normalized_sbn_parameters`.
+  std::pair<SubsplitDAGNode, ConstLineView> SampleChildNodeAndEdge(
+      SamplingSession& session, ConstNeighborsView neighbors);
   // Construct a Node topology from a successful sampling. Recursion is started
   // by passing the root node.
   Node::NodePtr BuildTree(SamplingSession& session, const DAGVertex& node);
@@ -89,7 +88,6 @@ TEST_CASE("TopologySampler") {
   for (auto& i : counts) {
     const double observed = static_cast<double>(i.second) / iterations;
     const double expected = 1.0 / 3.0;
-    std::cout << i.first << " : " << observed << "\n";
     CHECK_LT(fabs(observed - expected), 5e-2);
   }
 }
@@ -130,9 +128,9 @@ TEST_CASE("TopologySampler: Non-uniform prior") {
     })];
   }
 
-  for (auto& i : counts) {
-    const double observed = static_cast<double>(i.second) / iterations;
-    CHECK_LT(fabs(observed - expected[i.first]), 5e-2);
+  for (auto& [tree, count] : counts) {
+    const double observed = static_cast<double>(count) / iterations;
+    CHECK_LT(fabs(observed - expected[tree]), 5e-2);
   }
 }
 

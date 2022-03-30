@@ -1,4 +1,4 @@
-// Copyright 2019-2021 bito project contributors.
+// Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 
 #include "topology_sampler.hpp"
@@ -6,7 +6,7 @@
 Node::NodePtr TopologySampler::Sample(SubsplitDAGNode node, SubsplitDAG& dag,
                                       EigenConstVectorXdRef normalized_sbn_parameters,
                                       EigenConstVectorXdRef inverted_probabilities) {
-  SamplingSession session{dag, normalized_sbn_parameters, inverted_probabilities};
+  SamplingSession session({dag, normalized_sbn_parameters, inverted_probabilities});
   session.result_.AddVertex({node.Id(), node.GetBitset()});
   SampleRootward(session, node);
   SampleLeafward(session, node, Clade::Left);
@@ -41,10 +41,10 @@ void TopologySampler::SampleRootward(SamplingSession& session, SubsplitDAGNode n
     // reached root
     return;
   }
-  auto parent = SampleParent(session, left, right);
-  session.result_.AddLine({parent.second.GetId(), parent.second.GetParent(),
-                           parent.second.GetChild(), parent.second.GetClade()});
-  VisitNode(session, parent.first, Direction::Leafward, parent.second.GetClade());
+  auto [parent_node, parent_edge] = SampleParentNodeAndEdge(session, left, right);
+  session.result_.AddLine({parent_edge.GetId(), parent_edge.GetParent(),
+                           parent_edge.GetChild(), parent_edge.GetClade()});
+  VisitNode(session, parent_node, Direction::Leafward, parent_edge.GetClade());
 }
 
 void TopologySampler::SampleLeafward(SamplingSession& session, SubsplitDAGNode node,
@@ -54,13 +54,13 @@ void TopologySampler::SampleLeafward(SamplingSession& session, SubsplitDAGNode n
     // reached leaf
     return;
   }
-  auto child = SampleChild(session, neighbors);
+  auto child = SampleChildNodeAndEdge(session, neighbors);
   session.result_.AddLine({child.second.GetId(), child.second.GetParent(),
                            child.second.GetChild(), child.second.GetClade()});
   VisitNode(session, child.first, Direction::Rootward, clade);
 }
 
-std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParent(
+std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParentNodeAndEdge(
     SamplingSession& session, ConstNeighborsView left, ConstNeighborsView right) {
   std::vector<double> weights;
   weights.resize(left.size() + right.size());
@@ -70,26 +70,28 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParent(
   for (auto parent = right.begin(); parent != right.end(); ++parent)
     weights[i++] = session.inverted_probabilities_[parent.GetEdge()];
   std::discrete_distribution<> distribution(weights.begin(), weights.end());
-  i = static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
-  if (i < left.size()) {
+  auto sampled_index =
+      static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
+  if (sampled_index < left.size()) {
     auto parent = left.begin();
-    std::advance(parent, i);
+    std::advance(parent, sampled_index);
     return {session.dag_.GetDAGNode(parent.GetNodeId()),
             session.dag_.GetDAGEdge(parent.GetEdge())};
-  }
+  }  // else
   auto parent = right.begin();
-  std::advance(parent, i - left.size());
+  std::advance(parent, sampled_index - left.size());
   return {session.dag_.GetDAGNode(parent.GetNodeId()),
           session.dag_.GetDAGEdge(parent.GetEdge())};
 }
 
-std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChild(
+std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChildNodeAndEdge(
     SamplingSession& session, ConstNeighborsView neighbors) {
   std::vector<double> weights;
   weights.resize(neighbors.size());
   size_t i = 0;
-  for (auto child = neighbors.begin(); child != neighbors.end(); ++child)
+  for (auto child = neighbors.begin(); child != neighbors.end(); ++child) {
     weights[i++] = session.normalized_sbn_parameters_[child.GetEdge()];
+  }
   std::discrete_distribution<> distribution(weights.begin(), weights.end());
   i = static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
   auto child = neighbors.begin();
