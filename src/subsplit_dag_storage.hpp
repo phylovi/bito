@@ -267,6 +267,16 @@ class DAGVertex {
     return neighbors_.at({direction, clade});
   }
 
+  bool IsRoot() const {
+    return GetNeighbors(Direction::Rootward, Clade::Left).empty() &&
+           GetNeighbors(Direction::Rootward, Clade::Right).empty();
+  }
+
+  bool IsLeaf() const {
+    return GetNeighbors(Direction::Leafward, Clade::Left).empty() &&
+           GetNeighbors(Direction::Leafward, Clade::Right).empty();
+  }
+
   std::optional<std::tuple<LineId, Direction, Clade>> FindNeighbor(
       VertexId neighbor) const {
     for (auto i : neighbors_) {

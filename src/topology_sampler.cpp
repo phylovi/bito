@@ -116,13 +116,13 @@ Node::NodePtr TopologySampler::BuildTree(SamplingSession& session,
                       BuildTree(session, session.result_.GetVertex(right_id)),
                       node.GetId());
   }
-  if (left_id != NoId) {
+  if (node.IsLeaf()) {
+    return Node::Leaf(node.GetId());
+  }
+  if (node.IsRoot()) {
+    Assert(left_id != NoId, "Root has no children");
     return Node::Join({BuildTree(session, session.result_.GetVertex(left_id))},
                       node.GetId());
   }
-  if (right_id != NoId) {
-    return Node::Join({BuildTree(session, session.result_.GetVertex(right_id))},
-                      node.GetId());
-  }
-  return Node::Leaf(node.GetId());
+  Failwith("Node can't have only one child");
 }
