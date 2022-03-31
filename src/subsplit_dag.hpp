@@ -36,6 +36,7 @@
 
 #include "reindexer.hpp"
 #include "rooted_tree_collection.hpp"
+#include "unrooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 #include "subsplit_dag_action.hpp"
 #include "nni_operation.hpp"
@@ -49,6 +50,8 @@ class SubsplitDAG {
   SubsplitDAG();
   // Build a Subsplit DAG expressing all tree topologies from tree_collection.
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
+
+  explicit SubsplitDAG(const UnrootedTreeCollection &tree_collection);//TODO
 
   SubsplitDAG(const SubsplitDAG &) = default;
 
@@ -424,6 +427,8 @@ class SubsplitDAG {
   // Build a default taxon map for constructor with dummy taxon names:
   // E.g. {{0, "x0"}, {1, "x1"}, ...}
   static TagStringMap BuildDummyTagTaxonMap(const size_t taxon_count);
+
+  const BitsetSizePairMap &GetParentToChildRange() const;
 
  protected:
   explicit SubsplitDAG(SubsplitDAG &host_dag, HostDispatchTag);

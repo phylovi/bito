@@ -47,6 +47,7 @@ class GenericSBNInstance {
   EigenVectorXd sbn_parameters_;
   // The trees in our SBNInstance.
   TTreeCollection tree_collection_;
+  std::unique_ptr<SubsplitDAG> dag_;
 
   // ** Initialization and status
 
@@ -56,7 +57,7 @@ class GenericSBNInstance {
   size_t TaxonCount() const { return tree_collection_.TaxonCount(); }
   size_t TreeCount() const { return tree_collection_.TreeCount(); }
   const TagStringMap &TagTaxonMap() const { return tree_collection_.TagTaxonMap(); }
-  const StringVector &TaxonNames() const { return sbn_support_.TaxonNames(); }
+  StringVector TaxonNames() const { return sbn_support_.TaxonNames(); }
   const TSBNSupport &SBNSupport() const { return sbn_support_; }
   EigenConstVectorXdRef SBNParameters() const { return sbn_parameters_; }
 
@@ -95,7 +96,8 @@ class GenericSBNInstance {
   void ProcessLoadedTrees() {
     ClearTreeCollectionAssociatedState();
     topology_counter_ = TopologyCounter();
-    SetSBNSupport(TSBNSupport(topology_counter_, tree_collection_.TaxonNames()));
+    dag_ = std::make_unique<SubsplitDAG>(tree_collection_);
+    SetSBNSupport(TSBNSupport(dag_.get()));
   };
 
   // Set the SBN parameters using a "pretty" map of SBNs.

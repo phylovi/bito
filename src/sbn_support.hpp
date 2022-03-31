@@ -17,34 +17,54 @@
 
 #include "psp_indexer.hpp"
 #include "sbn_probability.hpp"
+#include "subsplit_dag.hpp"
 
 class SBNSupport {
  public:
-  explicit SBNSupport(StringVector taxon_names)
-      : taxon_names_(std::move(taxon_names)){};
-  inline size_t GPCSPCount() const { return gpcsp_count_; }
+  explicit SBNSupport(SubsplitDAG* dag) : dag_{dag} {}
+  inline size_t GPCSPCount() const { return dag_->EdgeCountWithLeafSubsplits(); }
   inline bool Empty() const { return GPCSPCount() == 0; }
-  inline size_t TaxonCount() const { return taxon_names_.size(); }
-  inline const StringVector &TaxonNames() const { return taxon_names_; }
-  inline size_t RootsplitCount() const { return rootsplits_.size(); }
+  inline size_t TaxonCount() const { return dag_->TaxonCount(); }
+  inline StringVector TaxonNames() const { return dag_->GetSortedVectorOfTaxonNames(); }
+  inline size_t RootsplitCount() const { return dag_->RootsplitCount(); }
   const Bitset &RootsplitsAt(size_t rootsplit_idx) const {
-    return rootsplits_.at(rootsplit_idx);
+    auto iter = dag_->GetRootsplitNodeIds().begin();
+    std::advance(iter, rootsplit_idx);
+    return dag_->GetDAGNode(*iter).GetBitset();
   }
-  const size_t &IndexerAt(const Bitset &bitset) const { return indexer_.at(bitset); }
+  const size_t &IndexerAt(const Bitset &bitset) const { return dag_->GetSubsplitToIdMap().at(bitset); }
   inline bool ParentInSupport(const Bitset &parent) const {
-    return parent_to_child_range_.count(parent) > 0;
+    return dag_->GetParentToChildRange().count(parent) > 0;
   }
   inline const SizePair &ParentToRangeAt(const Bitset &parent) const {
-    return parent_to_child_range_.at(parent);
+    return dag_->GetParentToChildRange().at(parent);
   }
   inline const Bitset &IndexToChildAt(size_t child_idx) const {
-    return index_to_child_.at(child_idx);
+    auto edge = dag_->GetDAGEdge(child_idx);
+    return dag_->GetDAGNode(edge.GetChild()).GetBitset();
   }
 
-  const BitsetSizePairMap &ParentToRange() const { return parent_to_child_range_; }
-  const BitsetSizeMap &Indexer() const { return indexer_; }
+  const BitsetSizePairMap &ParentToRange() const { return dag_->GetParentToChildRange(); }
 
-  PSPIndexer BuildPSPIndexer() const { return PSPIndexer(rootsplits_, indexer_); }
+  BitsetSizeMap Indexer() const {
+    BitsetSizeMap result;
+    for (size_t edge_id = 0; edge_id < dag_->EdgeCount(); ++edge_id) {
+      auto edge = dag_->GetDAGEdge(edge_id);
+      auto parent = dag_->GetDAGNode(edge.GetParent());
+      auto child = dag_->GetDAGNode(edge.GetChild());
+      auto pcsp = Bitset::PCSP(parent.GetBitset(), child.GetBitset());
+      result[pcsp] = edge_id;
+    }
+    return result;
+  }
+
+  PSPIndexer BuildPSPIndexer() const {
+    BitsetVector rootsplits;
+    for (auto id : dag_->GetRootsplitNodeIds()) {
+      rootsplits.push_back(dag_->GetDAGNode(id).GetBitset());
+    }
+    return PSPIndexer(rootsplits, Indexer());
+  }
 
   // "Pretty" string representation of the indexer.
   StringVector PrettyIndexer() const;
@@ -60,18 +80,5 @@ class SBNSupport {
   void ProbabilityNormalizeSBNParametersInLog(EigenVectorXdRef sbn_parameters) const;
 
  protected:
-  // A vector of the taxon names.
-  StringVector taxon_names_;
-  // The total number of rootsplits and PCSPs.
-  size_t gpcsp_count_ = 0;
-  // The master indexer for SBN parameters.
-  BitsetSizeMap indexer_;
-  // The collection of rootsplits, with the same indexing as in the indexer_.
-  BitsetVector rootsplits_;
-  // A map going from the index of a PCSP to its child.
-  SizeBitsetMap index_to_child_;
-  // A map going from a parent subsplit to the range of indices in
-  // sbn_parameters_ with its children. See the definition of Range for the indexing
-  // convention.
-  BitsetSizePairMap parent_to_child_range_;
+  SubsplitDAG* dag_;
 };

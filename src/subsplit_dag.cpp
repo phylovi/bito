@@ -16,6 +16,10 @@ SubsplitDAG::SubsplitDAG(const RootedTreeCollection &tree_collection)
     : SubsplitDAG(tree_collection.TaxonCount(), tree_collection.TopologyCounter(),
                   tree_collection.TagTaxonMap()) {}
 
+SubsplitDAG::SubsplitDAG(const UnrootedTreeCollection &tree_collection)
+    : SubsplitDAG(tree_collection.TaxonCount(), tree_collection.TopologyCounter(),
+                  tree_collection.TagTaxonMap()) {}
+
 SubsplitDAG::SubsplitDAG(size_t taxon_count,
                          const Node::TopologyCounter &topology_counter,
                          const TagStringMap &tag_taxon_map)
@@ -934,6 +938,10 @@ TagStringMap SubsplitDAG::BuildDummyTagTaxonMap(const size_t taxon_count) {
     tag_taxon_map.insert(std::make_pair(PackInts(i, 0), name));
   }
   return tag_taxon_map;
+}
+
+const BitsetSizePairMap &SubsplitDAG::GetParentToChildRange() const {
+  return parent_to_child_range_;
 }
 
 // ** Contains
