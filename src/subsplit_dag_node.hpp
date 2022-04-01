@@ -111,6 +111,10 @@ class GenericSubsplitDAGNode {
     }
   }
 
+  ConstNeighborsView GetNeighbors(Direction direction, Clade clade) const {
+    return node_.GetNeighbors(direction, clade);
+  }
+
   void AddEdge(size_t adjacent_node_id, LineId edge_id, Direction which_direction,
                Clade which_clade) {
     node_.AddNeighbor(which_direction, which_clade, adjacent_node_id, edge_id);
