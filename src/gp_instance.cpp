@@ -99,10 +99,24 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
   auto inverted_sbn_prior =
       dag_.InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
   engine_ = std::make_unique<GPEngine>(
-      std::move(site_pattern), plv_count_per_node_ * (dag_.NodeCountWithoutDAGRoot()),
+      std::move(site_pattern), dag_.NodeCountWithoutDAGRoot(), plv_count_per_node_,
       dag_.EdgeCountWithLeafSubsplits(), mmap_file_path_, rescaling_threshold,
-      std::move(sbn_prior), std::move(unconditional_node_probabilities),
+      std::move(sbn_prior),
+      std::move(
+          unconditional_node_probabilities.segment(0, dag_.NodeCountWithoutDAGRoot())),
       std::move(inverted_sbn_prior));
+}
+
+void GPInstance::ReinitializePriors() {
+  auto sbn_prior = dag_.BuildUniformOnTopologicalSupportPrior();
+  auto unconditional_node_probabilities =
+      dag_.UnconditionalNodeProbabilities(sbn_prior);
+  auto inverted_sbn_prior =
+      dag_.InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
+  engine_->InitializePriors(std::move(sbn_prior),
+                            std::move(unconditional_node_probabilities.segment(
+                                0, dag_.NodeCountWithoutDAGRoot())),
+                            std::move(inverted_sbn_prior));
 }
 
 GPEngine *GPInstance::GetEngine() const {

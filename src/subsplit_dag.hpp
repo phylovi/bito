@@ -143,8 +143,9 @@ class SubsplitDAG {
   ConstLineView GetDAGEdge(const size_t edge_id) const;
   // Get the PCSP edge index by its parent-child pair.
   size_t GetEdgeIdx(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
-  size_t GetEdgeIdx(size_t parent_id, size_t child_id) const;
-  // Get the range of child edge idxs from the given clade of a subsplit.
+  size_t GetEdgeIdx(const size_t parent_id, const size_t child_id) const;
+  size_t GetEdgeIdx(const Bitset &edge_pcsp) const;
+  // Get the range of outgoing idxs from the given clade of a subsplit.
   SizePair GetChildEdgeRange(const Bitset &subsplit, const bool rotated) const;
   // Get set of all taxon names.
   std::vector<std::string> GetSortedVectorOfTaxonNames() const;
@@ -154,8 +155,10 @@ class SubsplitDAG {
   std::vector<Bitset> GetSortedVectorOfEdgeBitsets() const;
   // Get reference to taxon map.
   const std::map<std::string, size_t> &GetTaxonMap() const;
-  // Get reference to subsplit-to-id map.
+  // Get reference to subsplit -> node_id map.
   const BitsetSizeMap &GetSubsplitToIdMap() const;
+  // Get reference to parent_node -> child_edge_range map.
+  const BitsetSizePairMap &GetParentNodeToChildEdgeRangeMap() const;
 
   // ** DAG Lambda Iterator methods:
   // These methods iterate over the nodes and take lambda functions with arguments
@@ -309,10 +312,11 @@ class SubsplitDAG {
   bool ContainsTaxon(const std::string &name) const;
   // Does a node with the given subsplit exist?
   bool ContainsNode(const Bitset &subsplit) const;
-  // Does a node with the given id exist?
   bool ContainsNode(const size_t node_id) const;
   // Does an edge that connects the two nodes exist?
+  bool ContainsEdge(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
   bool ContainsEdge(const size_t parent_id, const size_t child_id) const;
+  bool ContainsEdge(const Bitset &edge_subsplit) const;
   bool ContainsEdge(const size_t edge_id) const;
 
   // ** Modify DAG
@@ -337,9 +341,9 @@ class SubsplitDAG {
     // Edges that were added or removed by modification.
     SizeVector added_edge_idxs;
     // New ordering of node ids relative to their ordering before DAG modification.
-    SizeVector node_reindexer;
+    Reindexer node_reindexer;
     // New ordering of edge idxs relative to their ordering before DAG modification.
-    SizeVector edge_reindexer;
+    Reindexer edge_reindexer;
   };
 
   // Add an adjacent node pair to the DAG.
@@ -358,13 +362,13 @@ class SubsplitDAG {
   // transform on data vectors,
 
   // Uses a depth first DAG traversal to build a reindexer for node_ids.
-  SizeVector BuildNodeReindexer(const size_t prev_node_count);
+  Reindexer BuildNodeReindexer(const size_t prev_node_count);
   // Get the reindexer for edges idxs.
-  SizeVector BuildEdgeReindexer(const size_t prev_edge_count);
+  Reindexer BuildEdgeReindexer(const size_t prev_edge_count);
   // Remap all node ids according to the node_reindexer.
-  void RemapNodeIds(const SizeVector &node_reindexer);
+  void RemapNodeIds(const Reindexer &node_reindexer);
   // Remap all edge idxs according to the edge_reindexer.
-  void RemapEdgeIdxs(const SizeVector &edge_reindexer);
+  void RemapEdgeIdxs(const Reindexer &edge_reindexer);
 
   // ** Validation Tests
   // These methods are used to assert that a DAG is in a valid state or that given
@@ -373,8 +377,9 @@ class SubsplitDAG {
   // Checks if SubsplitDAG's corresponding data is consistent and up-to-date.
   // Specifically, checks that:
   // - subsplit_to_id_ map consistent with nodes in dag_nodes_.
-  // - parent_to_child_range_ map consistent with nodes in dag_nodes_'s (adjacent.
-  // - parent_to_child_range_ map matches each edge in dag_edges_.
+  // - parent_to_child_range_ map consistent with each parent and child node's
+  // neighbors.
+  // - parent_to_child_range_ map consistent with each parent's edges.
   bool IsConsistent() const;
   // Checks if SubsplitDAG is in a valid state (assumes that DAG is consistent).
   // Specifically, checks that:

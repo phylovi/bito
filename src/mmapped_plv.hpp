@@ -22,6 +22,10 @@ class MmappedNucleotidePLV {
   MmappedNucleotidePLV(const std::string &file_path, Eigen::Index total_plv_length)
       : mmapped_matrix_(file_path, base_count_, total_plv_length){};
 
+  void Resize(Eigen::Index total_plv_length) {
+    mmapped_matrix_.ResizeMMap(base_count_, total_plv_length);
+  }
+
   NucleotidePLVRefVector Subdivide(size_t into_count) {
     Assert(into_count > 0, "into_count is zero in MmappedNucleotidePLV::Subdivide.");
     auto entire_plv = mmapped_matrix_.Get();

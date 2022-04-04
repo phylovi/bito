@@ -142,15 +142,24 @@ class GenericSubsplitDAGNode {
     return rotated ? GetLeftRootward() : GetRightRootward();
   }
 
-  // After modifying parent DAG.
-  void RemapNodeIds(const SizeVector node_reindexer) {
-    Assert(Reindexer::IsValidReindexer(node_reindexer),
+  // Remap node ids modifying parent DAG.
+  void RemapNodeIds(const Reindexer& node_reindexer) {
+    Assert(node_reindexer.IsValid(),
            "Reindexer must be valid in GenericSubsplitDAGNode::RemapNodeIds.");
-    node_.SetId(node_reindexer.at(node_.GetId()));
-    node_.GetNeighbors(Direction::Leafward, Clade::Left).RemapIds(node_reindexer);
-    node_.GetNeighbors(Direction::Leafward, Clade::Right).RemapIds(node_reindexer);
-    node_.GetNeighbors(Direction::Rootward, Clade::Left).RemapIds(node_reindexer);
-    node_.GetNeighbors(Direction::Rootward, Clade::Right).RemapIds(node_reindexer);
+    node_.SetId(node_reindexer.GetNewIndexByOldIndex(node_.GetId()));
+    node_.GetNeighbors(Direction::Leafward, Clade::Left).RemapNodeIds(node_reindexer);
+    node_.GetNeighbors(Direction::Leafward, Clade::Right).RemapNodeIds(node_reindexer);
+    node_.GetNeighbors(Direction::Rootward, Clade::Left).RemapNodeIds(node_reindexer);
+    node_.GetNeighbors(Direction::Rootward, Clade::Right).RemapNodeIds(node_reindexer);
+  }
+  // Remap edge ids after modifying parent DAG.
+  void RemapEdgeIdxs(const Reindexer& edge_reindexer) {
+    Assert(edge_reindexer.IsValid(),
+           "Reindexer must be valid in GenericSubsplitDAGNode::RemapNodeIds.");
+    node_.GetNeighbors(Direction::Leafward, Clade::Left).RemapEdgeIdxs(edge_reindexer);
+    node_.GetNeighbors(Direction::Leafward, Clade::Right).RemapEdgeIdxs(edge_reindexer);
+    node_.GetNeighbors(Direction::Rootward, Clade::Left).RemapEdgeIdxs(edge_reindexer);
+    node_.GetNeighbors(Direction::Rootward, Clade::Right).RemapEdgeIdxs(edge_reindexer);
   }
 
   std::optional<std::tuple<LineId, Direction, Clade>> FindNeighbor(VertexId id) {

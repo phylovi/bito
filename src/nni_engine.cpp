@@ -45,7 +45,7 @@ void NNIEngine::RunMainLoop() {
   // (2) Compute marginal likelihoods for each adjacent NNI.
   EvaluateAdjacentNNIs();
   // (3) Select whether to accept or reject adjacent NNIs via filter.
-  FilterAdjacentNNIsToAcceptedNNIs();
+  FilterAdjacentNNIs();
   // (4) Add accepted NNIs to permanent DAG.
   AddAcceptedNNIsToDAG();
 
@@ -115,9 +115,13 @@ void NNIEngine::FilterUpdate() {
   // !ISSUE #405: Need to implement filtering scheme
 }
 
-void NNIEngine::FilterAdjacentNNIsToAcceptedNNIs() {
-  Failwith(
-      "Currently no implementation for NNIEngine::FilterAdjacentNNIsToAcceptedNNIs().");
+bool NNIEngine::NoFilter(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                         const NNIOperation &nni) {
+  return true;
+}
+
+void NNIEngine::FilterAdjacentNNIs() {
+  Failwith("Currently no implementation for NNIEngine::FilterAdjacentNNIs().");
   // !ISSUE #405: Need to implement filtering scheme
 }
 
@@ -260,3 +264,5 @@ void NNIEngine::ClearAdjacentNNIs() {
 }
 
 void NNIEngine::ClearAcceptedNNIs() { accepted_nnis_.clear(); }
+
+void NNIEngine::ClearRejectedNNIs() { rejected_nnis_.clear(); }
