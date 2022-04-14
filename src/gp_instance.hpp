@@ -29,11 +29,13 @@ class GPInstance {
   void MakeDAG();
   GPDAG &GetDAG();
   void PrintDAG();
+
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;
-  void PrintEdgeIndexer();
+  void ResizeEngineForDAG();
 
+  void PrintEdgeIndexer();
   void ReinitializePriors();
   void ProcessOperations(const GPOperationVector &operations);
   void HotStartBranchLengths();

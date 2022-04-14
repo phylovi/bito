@@ -58,6 +58,11 @@ class GraftDAG : public SubsplitDAG {
   bool ContainsGraftNode(const size_t node_id) const;
   // Checks whether the edge is in the graft only.
   bool ContainsGraftEdge(const size_t parent_id, const size_t child_id) const;
+  bool ContainsGraftEdge(const size_t edge_id) const;
+
+  // ** Miscellaneous
+
+  size_t GetPLVIndex(PLVType plv_type, size_t node_idx) const;
 
  protected:
   // DAG that the graft is proposed to be connected to.

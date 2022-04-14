@@ -19,15 +19,25 @@
 
 #pragma once
 
-#include "bitset.hpp"
 #include "sugar.hpp"
+#include "bitset.hpp"
+#include "subsplit_dag_storage.hpp"
 
 // * Nearest Neighbor Interchange Operation
 // NNIOperation stores output parent/child pair which are the product of an NNI.
 class NNIOperation {
  public:
-  NNIOperation() : parent_(0), child_(0){};
-  NNIOperation(Bitset parent, Bitset child) : parent_(parent), child_(child){};
+  NNIOperation() : parent_(0), child_(0), is_focal_clade_on_right_(){};
+
+  NNIOperation(Bitset parent, Bitset child) : parent_(parent), child_(child) {
+    const SubsplitClade clade =
+        Bitset::SubsplitIsChildOfWhichParentClade(parent_, child_);
+    is_focal_clade_on_right_ = (clade == SubsplitClade::Right);
+  };
+
+  static const inline size_t NNICladeCount = 4;
+  enum class NNIClade : size_t { ParentFocal, ParentSister, ChildLeft, ChildRight };
+  using NNICladeArray = EnumArray<NNIClade, NNICladeCount, NNIClade>;
 
   // ** Comparator
   // NNIOperations are ordered according to the std::bitset ordering of their parent
@@ -42,37 +52,97 @@ class NNIOperation {
   friend bool operator==(const NNIOperation &lhs, const NNIOperation &rhs);
   friend bool operator!=(const NNIOperation &lhs, const NNIOperation &rhs);
 
-  // ** Special Constructors:
+  // ** Special Constructors
+
   // Produces the output NNIOperation from an input subsplit pair that results from an
   // NNI Swap according to `swap_which_child_clade_with_sister`.
   NNIOperation NNIOperationFromNeighboringSubsplits(
-      const bool swap_which_child_clade_with_sister) const;
+      const bool is_sister_swapped_with_right_child) const;
   static NNIOperation NNIOperationFromNeighboringSubsplits(
       const Bitset parent_in, const Bitset child_in,
-      const bool swap_which_child_clade_with_sister, const bool which_child_of_parent);
+      const bool is_sister_swapped_with_right_child, const bool which_child_of_parent);
   // If it is not known whether the child is sorted/rotated, it can be inferred by
   // this overload.
   static NNIOperation NNIOperationFromNeighboringSubsplits(
       const Bitset parent_in, const Bitset child_in,
-      const bool swap_which_child_clade_with_sister);
+      const bool is_sister_swapped_with_right_child);
+
+  // ** Getters
+
+  bool WhichParentCladeIsFocalClade() const { return is_focal_clade_on_right_; };
+  Bitset GetClade(const NNIClade &nni_clade) const {
+    switch (nni_clade) {
+      case NNIClade::ParentFocal:
+        return GetFocalClade();
+      case NNIClade::ParentSister:
+        return GetSisterClade();
+      case NNIClade::ChildLeft:
+        return GetLeftChildClade();
+      case NNIClade::ChildRight:
+        return GetRightChildClade();
+      default:
+        Failwith("Invalid NNIClade given.");
+    }
+  };
+  const Bitset &GetParent() const { return parent_; };
+  const Bitset &GetChild() const { return child_; };
+  Bitset GetCentralEdgePCSP() const { return Bitset::PCSP(GetParent(), GetChild()); }
+  Bitset GetFocalClade() const {
+    return GetParent().SubsplitGetClade(WhichCladeIsFocal());
+  };
+  Bitset GetSisterClade() const {
+    return GetParent().SubsplitGetClade(WhichCladeIsSister());
+  }
+  Bitset GetLeftChildClade() const {
+    return GetChild().SubsplitGetClade(SubsplitClade::Left);
+  }
+  Bitset GetRightChildClade() const {
+    return GetChild().SubsplitGetClade(SubsplitClade::Right);
+  }
+
+  // ** Query
+
+  SubsplitClade WhichCladeIsFocal() const {
+    return (is_focal_clade_on_right_ ? SubsplitClade::Right : SubsplitClade::Left);
+  }
+
+  SubsplitClade WhichCladeIsSister() const {
+    return (is_focal_clade_on_right_ ? SubsplitClade::Left : SubsplitClade::Right);
+  }
+
+  // Checks whether two NNIs are neighbors. That is whether one is the result of an NNI
+  // operation on the other.
+  static bool AreNNIOperationsNeighbors(const NNIOperation &nni_a,
+                                        const NNIOperation &nni_b);
+
+  // #350: use SubsplitClade instead of bools
+  // Given two neighboring NNIs returns which child clade can be swapped with the
+  // sister clade in the `pre_nni` to produce the `post_nni`.
+  static bool WhichCladeSwapWithSisterToCreatePostNNI(const NNIOperation &pre_nni,
+                                                      const NNIOperation &post_nni);
 
   // ** Miscellaneous
 
-  bool IsValid() { return Bitset::SubsplitIsParentChildPair(parent_, child_); };
+  // Finds mappings of sister, left child, and right child clades from Pre-NNI to NNI.
+  static NNICladeArray BuildNNICladeMapFromPreNNIToNNI(const NNIOperation &pre_nni,
+                                                       const NNIOperation &post_nni);
+  // Checks that NNI Operation is in valid state.
+  // - Parent and Child are adjacent Subsplits.
+  bool IsValid();
 
-  friend std::ostream &operator<<(std::ostream &os, const NNIOperation &nni) {
-    os << "{" << nni.parent_.SubsplitToString() << ", " << nni.child_.SubsplitToString()
-       << "}";
-    return os;
-  };
+  friend std::ostream &operator<<(std::ostream &os, const NNIOperation &nni);
 
   Bitset parent_;
   Bitset child_;
+  bool is_focal_clade_on_right_;
 };
 
 using NNISet = std::set<NNIOperation>;
+using NNIVector = std::vector<NNIOperation>;
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
+
+using NNIClade = NNIOperation::NNIClade;
 
 // See tree diagram at:
 // https://user-images.githubusercontent.com/31897211/136849710-de0dcbe3-dc2b-42b7-b3de-dd9b1a60aaf4.gif
@@ -108,7 +178,7 @@ TEST_CASE("NNIOperation") {
                                                                   false, false));
 };
 
-TEST_CASE("NNISet") {
+TEST_CASE("NNIOperation: NNISet") {
   // Clades for NNI.
   Bitset X("100");
   Bitset Y("010");
@@ -133,6 +203,49 @@ TEST_CASE("NNISet") {
     NNIOperation prv_nni = *set_of_nnis.begin();
     for (const auto &nni : set_of_nnis) {
       CHECK_MESSAGE(nni >= prv_nni, "NNIs not ordered in NNISet.");
+    }
+  }
+}
+
+TEST_CASE("NNIOperation: NNI Clade Mapping") {
+  // Clades for NNI.
+  std::vector<Bitset> clades = {Bitset("100"), Bitset("010"), Bitset("001")};
+  // Iterate over all possible assignments of {X,Y,Z} clades to {sister, left, right}.
+  std::vector<std::array<size_t, 3>> assignments;
+  for (size_t x = 0; x < 3; x++) {
+    for (size_t y = 0; y < 3; y++) {
+      if (y == x) {
+        continue;
+      }
+      for (size_t z = 0; z < 3; z++) {
+        if ((z == x) || (z == y)) {
+          continue;
+        }
+        assignments.push_back({x, y, z});
+      }
+    }
+  }
+  // For each possible pre-NNI, check that NNI produces the correct mapping.
+  for (const auto assign : assignments) {
+    const Bitset X(clades[assign[0]]);
+    const Bitset Y(clades[assign[1]]);
+    const Bitset Z(clades[assign[2]]);
+    const Bitset parent = Bitset::Subsplit(X, Y | Z);
+    const Bitset child = Bitset::Subsplit(Y, Z);
+    const NNIOperation pre_nni(parent, child);
+
+    for (const auto which_clade_swap : {true, false}) {
+      const auto post_nni =
+          pre_nni.NNIOperationFromNeighboringSubsplits(which_clade_swap);
+      const auto clade_map =
+          NNIOperation::BuildNNICladeMapFromPreNNIToNNI(pre_nni, post_nni);
+      for (const auto pre_clade_type :
+           {NNIClade::ParentSister, NNIClade::ChildLeft, NNIClade::ChildRight}) {
+        const auto post_clade_type = clade_map[pre_clade_type];
+        CHECK_MESSAGE(
+            pre_nni.GetClade(pre_clade_type) == post_nni.GetClade(post_clade_type),
+            "NNI Clade Map did not produce a proper mapping.");
+      }
     }
   }
 }

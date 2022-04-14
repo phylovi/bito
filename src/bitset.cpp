@@ -350,15 +350,15 @@ int Bitset::SubsplitCompare(const Bitset& subsplit_b) const {
 
 Bitset Bitset::SubsplitRotate() const {
   Assert(size() % 2 == 0, "Bitset::SubsplitRotate requires an even-size bitset.");
-  Bitset clade_0 = SubsplitGetClade(Bitset::SubsplitClade::Left);
-  Bitset clade_1 = SubsplitGetClade(Bitset::SubsplitClade::Right);
+  Bitset clade_0 = SubsplitGetClade(SubsplitClade::Left);
+  Bitset clade_1 = SubsplitGetClade(SubsplitClade::Right);
   return clade_1 + clade_0;
 }
 
 Bitset Bitset::SubsplitSortClades() const {
   Assert(size() % 2 == 0, "Bitset::SubsplitRotate requires an even-size bitset.");
-  Bitset clade_0 = SubsplitGetClade(Bitset::SubsplitClade::Left);
-  Bitset clade_1 = SubsplitGetClade(Bitset::SubsplitClade::Right);
+  Bitset clade_0 = SubsplitGetClade(SubsplitClade::Left);
+  Bitset clade_1 = SubsplitGetClade(SubsplitClade::Right);
   return SubsplitFromUnorderedClades(clade_0, clade_1);
 }
 
@@ -366,9 +366,9 @@ std::string Bitset::SubsplitToString() const { return MultiCladeToString(2); }
 
 std::string Bitset::SubsplitToVectorOfSetBitsAsString() const {
   std::string str;
-  str += SubsplitGetClade(Bitset::SubsplitClade::Left).ToVectorOfSetBitsAsString();
+  str += SubsplitGetClade(SubsplitClade::Left).ToVectorOfSetBitsAsString();
   str += "|";
-  str += SubsplitGetClade(Bitset::SubsplitClade::Right).ToVectorOfSetBitsAsString();
+  str += SubsplitGetClade(SubsplitClade::Right).ToVectorOfSetBitsAsString();
   return str;
 }
 
@@ -381,17 +381,18 @@ Bitset Bitset::SubsplitGetClade(const size_t which_clade) const {
 }
 
 Bitset Bitset::SubsplitGetClade(const SubsplitClade which_clade) const {
+  Assert(which_clade != SubsplitClade::Unspecified,
+         "Cannot SubsplitGetClade for unspecified clade.");
+  // #350 discuss this cast
   size_t which_clade_idx =
-      // #350 discuss this cast
       static_cast<std::underlying_type<SubsplitClade>::type>(which_clade);
   return MultiCladeGetClade(which_clade_idx, SubsplitCladeCount);
 }
 
 bool Bitset::SubsplitIsLeaf() const {
   // A subsplit is a leaf its right clade is empty and its left clade is a singleton.
-  bool is_left_clade_singleton =
-      SubsplitGetClade(Bitset::SubsplitClade::Left).IsSingleton();
-  bool is_right_clade_empty = SubsplitGetClade(Bitset::SubsplitClade::Right).None();
+  bool is_left_clade_singleton = SubsplitGetClade(SubsplitClade::Left).IsSingleton();
+  bool is_right_clade_empty = SubsplitGetClade(SubsplitClade::Right).None();
   return is_left_clade_singleton && is_right_clade_empty;
 }
 
@@ -399,7 +400,7 @@ bool Bitset::SubsplitIsUCA() const {
   // A subsplit is a UCA if the left clade contains all taxa and the right clade
   // contains no taxa. If subsplit is valid, then we can assume the right clade is
   // empty.
-  bool is_left_clade_full = SubsplitGetClade(Bitset::SubsplitClade::Left).All();
+  bool is_left_clade_full = SubsplitGetClade(SubsplitClade::Left).All();
   return is_left_clade_full;
 }
 
@@ -407,36 +408,36 @@ bool Bitset::SubsplitIsRootsplit() const {
   // A subsplit is a rootsplit if the union of the clades contain all clades.
   // But is also not the UCA, meaning both clades are nonempty.
   bool is_union_of_clades_full = SubsplitCladeUnion().All();
-  bool is_left_clade_nonempty = !SubsplitGetClade(Bitset::SubsplitClade::Left).None();
-  bool is_right_clade_nonempty = !SubsplitGetClade(Bitset::SubsplitClade::Right).None();
+  bool is_left_clade_nonempty = !SubsplitGetClade(SubsplitClade::Left).None();
+  bool is_right_clade_nonempty = !SubsplitGetClade(SubsplitClade::Right).None();
   return is_union_of_clades_full && is_left_clade_nonempty && is_right_clade_nonempty;
 }
 
 bool Bitset::SubsplitIsLeftChildOf(const Bitset& parent) const {
   return (size() == parent.size()) &&
-         (SubsplitCladeUnion() == parent.SubsplitGetClade(Bitset::SubsplitClade::Left));
+         (SubsplitCladeUnion() == parent.SubsplitGetClade(SubsplitClade::Left) &&
+          (*this != parent));
 }
 
 bool Bitset::SubsplitIsRightChildOf(const Bitset& parent) const {
   return (size() == parent.size()) &&
-         (SubsplitCladeUnion() ==
-          parent.SubsplitGetClade(Bitset::SubsplitClade::Right));
+         (SubsplitCladeUnion() == parent.SubsplitGetClade(SubsplitClade::Right) &&
+          (*this != parent));
 }
 
 Bitset Bitset::SubsplitCladeUnion() const {
   Assert(size() % SubsplitCladeCount == 0,
          "Size isn't 0 mod 2 in Bitset::SubsplitCladeUnion.");
-  return SubsplitGetClade(Bitset::SubsplitClade::Left) |
-         SubsplitGetClade(Bitset::SubsplitClade::Right);
+  return SubsplitGetClade(SubsplitClade::Left) | SubsplitGetClade(SubsplitClade::Right);
 }
 
-bool Bitset::SubsplitIsChildOfWhichParentClade(const Bitset& parent,
-                                               const Bitset& child) {
+SubsplitClade Bitset::SubsplitIsChildOfWhichParentClade(const Bitset& parent,
+                                                        const Bitset& child) {
   Assert(parent.size() == child.size(),
          "Bitset::SubsplitIsChildOfWhichParentClade() bitsets are different sizes.");
   Bitset child_union = child.SubsplitCladeUnion();
   // #350 why not use the left and right here?
-  for (bool clade : {false, true}) {
+  for (SubsplitClade clade : {SubsplitClade::Left, SubsplitClade::Right}) {
     if (child_union == parent.SubsplitGetClade(clade)) {
       return clade;
     }
@@ -457,8 +458,8 @@ bool Bitset::SubsplitIsAdjacent(const Bitset& subsplit_a, const Bitset& subsplit
 }
 
 bool Bitset::SubsplitIsValid() const {
-  return SubsplitGetClade(Bitset::SubsplitClade::Left)
-      .IsDisjoint(SubsplitGetClade(Bitset::SubsplitClade::Right));
+  return SubsplitGetClade(SubsplitClade::Left)
+      .IsDisjoint(SubsplitGetClade(SubsplitClade::Right));
 }
 
 // ** PCSP functions
@@ -476,10 +477,9 @@ Bitset Bitset::PCSP(const Bitset& parent_subsplit, const Bitset& child_subsplit)
 
   if (child_subsplit.SubsplitIsLeftChildOf(parent_subsplit)) {
     return parent_subsplit.SubsplitRotate() +
-           child_subsplit.SubsplitGetClade(Bitset::SubsplitClade::Right);
+           child_subsplit.SubsplitGetClade(SubsplitClade::Right);
   } else {
-    return parent_subsplit +
-           child_subsplit.SubsplitGetClade(Bitset::SubsplitClade::Right);
+    return parent_subsplit + child_subsplit.SubsplitGetClade(SubsplitClade::Right);
   }
 }
 
@@ -514,14 +514,14 @@ Bitset Bitset::PCSPGetClade(const PCSPClade which_clade) const {
 }
 
 Bitset Bitset::PCSPGetParentSubsplit() const {
-  Bitset sister = PCSPGetClade(Bitset::PCSPClade::Sister);
-  Bitset focal = PCSPGetClade(Bitset::PCSPClade::Focal);
+  Bitset sister = PCSPGetClade(PCSPClade::Sister);
+  Bitset focal = PCSPGetClade(PCSPClade::Focal);
   return Bitset::Subsplit(sister, focal);
 }
 
 Bitset Bitset::PCSPGetChildSubsplit() const {
-  Bitset focal = PCSPGetClade(Bitset::PCSPClade::Focal);
-  Bitset child_left = PCSPGetClade(Bitset::PCSPClade::LeftChild);
+  Bitset focal = PCSPGetClade(PCSPClade::Focal);
+  Bitset child_left = PCSPGetClade(PCSPClade::LeftChild);
   Bitset child_right = focal & ~child_left;
   return Bitset::Subsplit(child_left, child_right);
 }
@@ -532,9 +532,9 @@ bool Bitset::PCSPIsValid() const {
   if (size() % PCSPCladeCount != 0) {
     return false;
   }
-  Bitset sister = PCSPGetClade(Bitset::PCSPClade::Sister);
-  Bitset focal = PCSPGetClade(Bitset::PCSPClade::Focal);
-  Bitset child_left = PCSPGetClade(Bitset::PCSPClade::LeftChild);
+  Bitset sister = PCSPGetClade(PCSPClade::Sister);
+  Bitset focal = PCSPGetClade(PCSPClade::Focal);
+  Bitset child_left = PCSPGetClade(PCSPClade::LeftChild);
   // The parent clades should be disjoint.
   if (!sister.IsDisjoint(focal)) {
     return false;
@@ -556,7 +556,7 @@ bool Bitset::PCSPChildIsLeaf() const {
          "Size isn't 0 mod 3 in Bitset::PCSPChildIsLeaf.");
   // If third clade of PCSP is empty, that means that the associated clade's sorted
   // subsplit is empty, so it is leaf.
-  return PCSPGetClade(Bitset::PCSPClade::LeftChild).None();
+  return PCSPGetClade(PCSPClade::LeftChild).None();
 }
 
 Bitset Bitset::PCSPSortClades() const {
@@ -601,10 +601,9 @@ Bitset Bitset::LeafSubsplitOfNonemptyClade(const Bitset& nonempty_clade) {
 
 void AssertSubsplitIsLeafAdjacent(const Bitset& subsplit) {
   // For subsplit to be adjacent to
-  bool is_left_clade_nonempty =
-      subsplit.SubsplitGetClade(Bitset::SubsplitClade::Left).Any();
+  bool is_left_clade_nonempty = subsplit.SubsplitGetClade(SubsplitClade::Left).Any();
   bool is_right_clade_singleton =
-      subsplit.SubsplitGetClade(Bitset::SubsplitClade::Right).IsSingleton();
+      subsplit.SubsplitGetClade(SubsplitClade::Right).IsSingleton();
   Assert(is_left_clade_nonempty && is_right_clade_singleton,
          "Assertion SisterAndLeafSubsplit failed: we want the left-hand clade of the "
          "subsplit be "
@@ -616,7 +615,7 @@ Bitset Bitset::LeafSubsplitOfParentSubsplit(const Bitset& parent_subsplit) {
   // Put the right-hand clade of the subsplit as the nonzero contents of the leaf
   // subsplit.
   return LeafSubsplitOfNonemptyClade(
-      parent_subsplit.SubsplitGetClade(Bitset::SubsplitClade::Right));
+      parent_subsplit.SubsplitGetClade(SubsplitClade::Right));
 }
 
 Bitset Bitset::PCSPFromRightParentCladeToLeaf(const Bitset& parent_subsplit) {

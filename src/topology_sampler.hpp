@@ -36,11 +36,12 @@ class TopologySampler {
   // Called for each newly sampled node. Direction and clade are pointing to the
   // previously visited node.
   void VisitNode(SamplingSession& session, SubsplitDAGNode node, Direction direction,
-                 Clade clade);
+                 SubsplitClade clade);
   // Continue sampling in the rootward direction from `node`.
   void SampleRootward(SamplingSession& session, SubsplitDAGNode node);
   // Continue sampling in the leafward direction and specified `clade` from `node`.
-  void SampleLeafward(SamplingSession& session, SubsplitDAGNode node, Clade clade);
+  void SampleLeafward(SamplingSession& session, SubsplitDAGNode node,
+                      SubsplitClade clade);
   // Choose a parent node (and return it with the corresponding edge) according to
   // the values in `inverted_probabilities`.
   std::pair<SubsplitDAGNode, ConstLineView> SampleParentNodeAndEdge(

@@ -106,7 +106,7 @@ class SubsplitDAG {
   // Output DOT format graph of DAG to a string.
   std::string ToDot(bool show_index_labels = true) const;
 
-  // ** Build output indexes/vectors
+  // ** Build Output Indexers/Vectors
 
   // Create a EdgeIndexer representing the DAG.
   // The EdgeIndexer is a map (edge/PCSP bitset -> edge/PCSP index).
@@ -126,7 +126,7 @@ class SubsplitDAG {
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllTopologies() const;
 
-  // ** Getter methods:
+  // ** Getters
 
   // Get Taxon's bitset clade positional id.
   size_t GetTaxonId(const std::string &name) const;
@@ -160,7 +160,7 @@ class SubsplitDAG {
   // Get reference to parent_node -> child_edge_range map.
   const BitsetSizePairMap &GetParentNodeToChildEdgeRangeMap() const;
 
-  // ** DAG Lambda Iterator methods:
+  // ** DAG Lambda Iterators
   // These methods iterate over the nodes and take lambda functions with arguments
   // relative to current node.
 
@@ -306,7 +306,7 @@ class SubsplitDAG {
       EigenConstVectorXdRef normalized_sbn_parameters,
       EigenConstVectorXdRef node_probabilities) const;
 
-  // ** Contains
+  // ** Query DAG
 
   // Does a taxon with the given name exist?
   bool ContainsTaxon(const std::string &name) const;
@@ -350,6 +350,12 @@ class SubsplitDAG {
   ModificationResult AddNodePair(const NNIOperation &nni);
   ModificationResult AddNodePair(const Bitset &parent_subsplit,
                                  const Bitset &child_subsplit);
+
+  // Add all pontential edges to DAG. Building DAGs from a collection of trees can
+  // result in a DAG that is not fully connected, in which one or more potentially
+  // adjacent nodes in the DAG do not have an edge between them.
+  ModificationResult FullyConnect();
+
   // Add all tree topologies in topology_counter to DAG.
   std::tuple<BitsetSizeMap, SizeBitsetMap, BitsetVector> ProcessTopologyCounter(
       const Node::TopologyCounter &topology_counter);
@@ -468,12 +474,13 @@ class SubsplitDAG {
   // Create Edge between given nodes and insert it into the DAG. Returns ID of created
   // edge.
   size_t CreateAndInsertEdge(const size_t parent_id, const size_t child_id,
-                             bool rotated);
+                             const bool rotated);
   // Add edge between given parent and child nodes to the DAG.
-  void ConnectGivenNodes(const size_t parent_id, const size_t child_id, bool rotated,
-                         size_t edge_id);
+  void ConnectGivenNodes(const size_t parent_id, const size_t child_id,
+                         const bool rotated, const size_t edge_id);
   // Add edges between node_id and all children in map.
-  void ConnectNodes(const SizeBitsetMap &index_to_child, size_t node_id, bool rotated);
+  void ConnectNodes(const SizeBitsetMap &index_to_child, const size_t node_id,
+                    const bool rotated);
   // Add nodes for all children in map.
   void BuildNodes(const SizeBitsetMap &index_to_child, const BitsetVector &rootsplits);
   // Add nodes in depth first ordering for children in map.

@@ -3,9 +3,6 @@
 
 #include "graft_dag.hpp"
 
-#include "gp_dag.hpp"
-#include "subsplit_dag.hpp"
-
 // ** Constructors
 
 GraftDAG::GraftDAG(SubsplitDAG &dag)
@@ -111,4 +108,16 @@ bool GraftDAG::ContainsGraftEdge(const size_t parent_id, const size_t child_id) 
   auto edge = storage_.GetLine(parent_id, child_id);
   if (!edge.has_value()) return false;
   return !IsEdgeFromHost(edge.value().GetId());
+}
+
+bool GraftDAG::ContainsGraftEdge(const size_t edge_idx) const {
+  auto edge = storage_.GetLine(edge_idx);
+  if (!edge.has_value()) return false;
+  return !IsEdgeFromHost(edge.value().GetId());
+}
+
+// ** Miscellaneous
+
+size_t GraftDAG::GetPLVIndex(PLVHandler::PLVType plv_type, size_t node_idx) const {
+  return PLVHandler::GetPLVIndex(plv_type, node_idx, NodeCountWithoutDAGRoot());
 }

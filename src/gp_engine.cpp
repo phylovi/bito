@@ -6,6 +6,7 @@
 #include "plv_handler.hpp"
 #include "optimization.hpp"
 #include "sugar.hpp"
+#include "plv_handler.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
                    size_t plv_count_per_node, size_t gpcsp_count,
@@ -57,6 +58,10 @@ void GPEngine::InitializePriors(EigenVectorXd sbn_prior,
   inverted_sbn_prior_.segment(0, gpcsp_count_) = inverted_sbn_prior;
 }
 
+void GPEngine::SetNullPrior() { q_.setConstant(1.0); }
+
+// ** Resize and Reindex
+
 void GPEngine::GrowPLVs(const size_t new_node_count,
                         std::optional<const Reindexer> node_reindexer,
                         std::optional<const size_t> explicit_allocation,
@@ -80,7 +85,11 @@ void GPEngine::GrowPLVs(const size_t new_node_count,
   }
   // Resize to fit without deallocating unused memory.
   rescaling_counts_.conservativeResize(GetPaddedPLVCount());
-  unconditional_node_probabilities_.conservativeResize(GetNodeCount());
+  if (on_initialization) {
+    unconditional_node_probabilities_.conservativeResize(GetNodeCount());
+  } else {
+    unconditional_node_probabilities_.conservativeResize(GetPaddedNodeCount());
+  }
   // Initialize new work space.
   Assert((plvs_.back().rows() == MmappedNucleotidePLV::base_count_) &&
              (plvs_.back().cols() ==
@@ -128,8 +137,13 @@ void GPEngine::GrowGPCSPs(const size_t new_gpcsp_count,
   hybrid_marginal_log_likelihoods_.conservativeResize(GetPaddedGPCSPCount());
   log_likelihoods_.conservativeResize(GetPaddedGPCSPCount(),
                                       site_pattern_.PatternCount());
-  q_.conservativeResize(GetGPCSPCount());
-  inverted_sbn_prior_.conservativeResize(GetGPCSPCount());
+  if (on_initialization) {
+    q_.conservativeResize(GetGPCSPCount());
+    inverted_sbn_prior_.conservativeResize(GetGPCSPCount());
+  } else {
+    q_.conservativeResize(GetPaddedGPCSPCount());
+    inverted_sbn_prior_.conservativeResize(GetPaddedGPCSPCount());
+  }
   // Initialize new work space.
   for (size_t i = old_gpcsp_count; i < GetPaddedGPCSPCount(); i++) {
     branch_lengths_[i] = default_branch_length_;
@@ -164,13 +178,13 @@ void GPEngine::ReindexPLVs(const Reindexer node_reindexer,
       // irrelevant, so just get next available index).
       size_t old_plv_idx;
       if (old_node_idx < old_node_count) {
-        old_plv_idx = PLVHandler::GetPLVIndex(plv_type, old_node_count, old_node_idx);
+        old_plv_idx = PLVHandler::GetPLVIndex(plv_type, old_node_idx, old_node_count);
       } else {
         old_plv_idx = new_data_idx;
         new_data_idx++;
       }
       const size_t new_plv_idx =
-          PLVHandler::GetPLVIndex(plv_type, node_count_, new_node_idx);
+          PLVHandler::GetPLVIndex(plv_type, new_node_idx, node_count_);
       plv_reindexer.SetReindex(old_plv_idx, new_plv_idx);
     }
   }
@@ -200,6 +214,36 @@ void GPEngine::ReindexGPCSPs(const Reindexer gpcsp_reindexer,
   Reindexer::ReindexInPlace<EigenVectorXd, double>(inverted_sbn_prior_, gpcsp_reindexer,
                                                    GetGPCSPCount());
 }
+
+void GPEngine::GrowTempPLVs(const size_t new_node_padding) {
+  if (new_node_padding > node_padding_) {
+    node_padding_ = new_node_padding;
+    GrowPLVs(node_count_);
+  }
+}
+
+void GPEngine::GrowTempGPCSPs(const size_t new_gpcsp_padding) {
+  if (new_gpcsp_padding > gpcsp_padding_) {
+    gpcsp_padding_ = new_gpcsp_padding;
+    GrowGPCSPs(gpcsp_count_);
+  }
+}
+
+size_t GPEngine::GetTempPLVIndex(const size_t plv_offset) const {
+  const size_t plv_scratch_size = GetPaddedPLVCount() - GetPLVCount();
+  Assert(plv_offset < plv_scratch_size,
+         "Requested plv_offset outside of allocated scratch space.");
+  return plv_offset + GetPLVCount();
+}
+
+size_t GPEngine::GetTempGPCSPIndex(const size_t gpcsp_offset) const {
+  const size_t gpcsp_scratch_size = GetPaddedGPCSPCount() - GetGPCSPCount();
+  Assert(gpcsp_offset < gpcsp_scratch_size,
+         "Requested gpcsp_offset outside of allocated scratch space.");
+  return gpcsp_offset + GetGPCSPCount();
+}
+
+// ** GPOperations
 
 void GPEngine::operator()(const GPOperations::ZeroPLV& op) {
   plvs_.at(op.dest_).setZero();
@@ -356,9 +400,39 @@ void GPEngine::SetBranchLengthsToConstant(double branch_length) {
   branch_lengths_.setConstant(branch_length);
 };
 
+void GPEngine::SetBranchLengthsToDefault() {
+  branch_lengths_.setConstant(default_branch_length_);
+};
+
 void GPEngine::ResetLogMarginalLikelihood() {
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
 }
+
+void GPEngine::CopyNodeData(const size_t src_node_idx, const size_t dest_node_idx) {
+  Assert(
+      (src_node_idx < GetPaddedNodeCount()) && (dest_node_idx < GetPaddedNodeCount()),
+      "Cannot copy node data with src or dest index out-of-range.");
+  unconditional_node_probabilities_[dest_node_idx] =
+      unconditional_node_probabilities_[src_node_idx];
+}
+
+void GPEngine::CopyPLVData(const size_t src_plv_idx, const size_t dest_plv_idx) {
+  Assert((src_plv_idx < GetPaddedPLVCount()) && (dest_plv_idx < GetPaddedPLVCount()),
+         "Cannot copy PLV data with src or dest index out-of-range.");
+  plvs_.at(dest_plv_idx) = plvs_.at(src_plv_idx);
+  rescaling_counts_[dest_plv_idx] = rescaling_counts_[src_plv_idx];
+}
+
+void GPEngine::CopyGPCSPData(const size_t src_gpcsp_idx, const size_t dest_gpcsp_idx) {
+  Assert((src_gpcsp_idx < GetPaddedGPCSPCount()) &&
+             (dest_gpcsp_idx < GetPaddedGPCSPCount()),
+         "Cannot copy PLV data with src or dest index out-of-range.");
+  branch_lengths_[dest_gpcsp_idx] = branch_lengths_[src_gpcsp_idx];
+  q_[dest_gpcsp_idx] = branch_lengths_[src_gpcsp_idx];
+  inverted_sbn_prior_[dest_gpcsp_idx] = inverted_sbn_prior_[src_gpcsp_idx];
+}
+
+// ** Getters
 
 double GPEngine::GetLogMarginalLikelihood() const {
   return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
@@ -368,15 +442,35 @@ EigenVectorXd GPEngine::GetBranchLengths() const {
   return branch_lengths_.segment(0, gpcsp_count_);
 };
 
+EigenVectorXd GPEngine::GetBranchLengths(const size_t start,
+                                         const size_t length) const {
+  Assert(start + length <= GetPaddedGPCSPCount(),
+         "Requested range of BranchLengths is out-of-range.");
+  return branch_lengths_.segment(start, length);
+};
+
+EigenVectorXd GPEngine::GetTempBranchLengths(const size_t start,
+                                             const size_t length) const {
+  return GetBranchLengths(GetTempGPCSPIndex(start), length);
+}
+
 EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {
   return log_likelihoods_.block(0, 0, gpcsp_count_, log_likelihoods_.cols()) *
          site_pattern_weights_;
 };
 
-EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(size_t start, size_t length) const {
+EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(const size_t start,
+                                                  const size_t length) const {
+  Assert(start + length <= GetPaddedGPCSPCount(),
+         "Requested range of PerGPCSPLogLikelihoods is out-of-range.");
   return log_likelihoods_.block(start, 0, length, log_likelihoods_.cols()) *
          site_pattern_weights_;
 };
+
+EigenVectorXd GPEngine::GetTempPerGPCSPLogLikelihoods(const size_t start,
+                                                      const size_t length) const {
+  return GetPerGPCSPLogLikelihoods(GetTempGPCSPIndex(start), length);
+}
 
 EigenVectorXd GPEngine::GetPerGPCSPComponentsOfFullLogMarginal() const {
   return GetPerGPCSPLogLikelihoods().array() +
@@ -393,14 +487,7 @@ EigenConstVectorXdRef GPEngine::GetHybridMarginals() const {
 
 EigenConstVectorXdRef GPEngine::GetSBNParameters() const { return q_; };
 
-EigenMatrixXd GPEngine::GetPLV(size_t plv_index) const { return plvs_.at(plv_index); }
-
-void GPEngine::PrintPLV(size_t plv_idx) const {
-  for (auto&& row : plvs_[plv_idx].rowwise()) {
-    std::cout << row << std::endl;
-  }
-  std::cout << std::endl;
-}
+// ** Other Operations
 
 DoublePair GPEngine::LogLikelihoodAndDerivative(
     const GPOperations::OptimizeBranchLength& op) {
@@ -673,4 +760,18 @@ void GPEngine::ProcessQuartetHybridRequest(const QuartetHybridRequest& request) 
     hybrid_marginal_log_likelihoods_[request.central_gpcsp_idx_] =
         NumericalUtils::LogSum(hybrid_log_likelihoods);
   }
+}
+
+// ** I/O
+
+std::string GPEngine::PLVToString(size_t plv_idx) const {
+  std::stringstream out;
+  for (auto&& row : plvs_[plv_idx].rowwise()) {
+    out << row << std::endl;
+  }
+  return out.str();
+}
+
+void GPEngine::PrintPLV(size_t plv_idx) const {
+  std::cout << PLVToString(plv_idx) << std::endl;
 }

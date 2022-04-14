@@ -10,7 +10,7 @@ using namespace GPOperations;  // NOLINT
 using PLVType = PLVHandler::PLVType;
 
 size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t node_idx) const {
-  return PLVHandler::GetPLVIndex(plv_type, NodeCountWithoutDAGRoot(), node_idx);
+  return PLVHandler::GetPLVIndex(plv_type, node_idx, NodeCountWithoutDAGRoot());
 }
 
 // The R PLV update that corresponds to our rotation status.
@@ -203,11 +203,11 @@ GPOperationVector GPDAG::LeafwardPass(const SizeVector &visit_order) const {
     auto node = GetDAGNode(node_id);
     // Build rhat(s) via rhat(s) += \sum_t q(s|t) P'(s|t) r(t)
     AddRhatOperations(node, operations);
-    // Multiply to get r(s) = rhat(s) \circ phat(s_tilde).
+    // Multiply to get r(s_right) = rhat(s) \circ phat(s_left).
     operations.push_back(Multiply{GetPLVIndex(PLVType::RRight, node_id),
                                   GetPLVIndex(PLVType::RHat, node_id),
                                   GetPLVIndex(PLVType::PHatLeft, node_id)});
-    // Multiply to get r(s_tilde) = rhat(s) \circ phat(s).
+    // Multiply to get r(s_left) = rhat(s) \circ phat(s_right).
     operations.push_back(Multiply{GetPLVIndex(PLVType::RLeft, node_id),
                                   GetPLVIndex(PLVType::RHat, node_id),
                                   GetPLVIndex(PLVType::PHatRight, node_id)});
@@ -220,11 +220,11 @@ GPOperationVector GPDAG::RootwardPass(const SizeVector &visit_order) const {
   for (const size_t node_id : visit_order) {
     const auto node = GetDAGNode(node_id);
     if (!node.IsLeaf()) {
-      // Build phat(s).
+      // Build phat(s_right).
       AddPhatOperations(node, false, operations);
-      // Build phat(s_tilde).
+      // Build phat(s_left).
       AddPhatOperations(node, true, operations);
-      // Multiply to get p(s) = phat(s) \circ phat(s_tilde).
+      // Multiply to get p(s) = phat(s_left) \circ phat(s_right).
       operations.push_back(Multiply{node_id, GetPLVIndex(PLVType::PHatRight, node_id),
                                     GetPLVIndex(PLVType::PHatLeft, node_id)});
     }
@@ -255,7 +255,7 @@ void AppendOperationsAfterPrepForMarginalization(
 
 void GPDAG::AddPhatOperations(SubsplitDAGNode node, bool rotated,
                               GPOperationVector &operations) const {
-  PLVType plv_type = rotated ? PLVType::PHatLeft : PLVType::PHatRight;
+  PLVType plv_type = PLVHandler::PPLVType(rotated);
   const auto parent_idx = node.Id();
   const size_t dest_idx = GetPLVIndex(plv_type, node.Id());
   GPOperationVector new_operations;

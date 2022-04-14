@@ -88,6 +88,10 @@ void GPInstance::MakeDAG() {
   dag_ = GPDAG(tree_collection_);
 }
 
+GPDAG &GPInstance::GetDAG() { return dag_; }
+
+void GPInstance::PrintDAG() { dag_.Print(); }
+
 void GPInstance::MakeEngine(double rescaling_threshold) {
   CheckSequencesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
@@ -120,20 +124,19 @@ void GPInstance::ReinitializePriors() {
 }
 
 GPEngine *GPInstance::GetEngine() const {
-  if (engine_ != nullptr) {
-    return engine_.get();
-  }
-  // else
-  Failwith(
-      "Engine not available. Call MakeEngine to make an engine for phylogenetic "
-      "likelihood computation.");
+  Assert(HasEngine(),
+         "Engine not available. Call MakeEngine to make an engine for phylogenetic "
+         "likelihood computation.");
+  return engine_.get();
+}
+
+void GPInstance::ResizeEngineForDAG() {
+  Assert(HasEngine(), "Engine not available. Call MakeEngine before resizing.");
+  GetEngine()->GrowPLVs(GetDAG().NodeCountWithoutDAGRoot());
+  GetEngine()->GrowGPCSPs(GetDAG().EdgeCountWithLeafSubsplits());
 }
 
 bool GPInstance::HasEngine() const { return engine_ != nullptr; }
-
-GPDAG &GPInstance::GetDAG() { return dag_; }
-
-void GPInstance::PrintDAG() { dag_.Print(); }
 
 void GPInstance::PrintEdgeIndexer() {
   std::cout << "Vector of taxon names: " << tree_collection_.TaxonNames() << std::endl;

@@ -23,6 +23,7 @@ using IntVector = std::vector<int>;
 using SizeVector = std::vector<size_t>;
 using DoubleVector = std::vector<double>;
 using SizeVectorVector = std::vector<SizeVector>;
+using DoubleVector = std::vector<double>;
 using DoubleVectorVector = std::vector<std::vector<double>>;
 using TagDoubleMap = std::unordered_map<Tag, double>;
 using TagSizeMap = std::unordered_map<Tag, size_t>;
@@ -162,4 +163,23 @@ class EnumIterator {
     return endIter;
   }
   bool operator!=(const EnumIterator &i) { return val != i.val; }
+};
+
+// Generic Array for using class enum for index access.
+template <class EnumType, size_t EnumCount, class DataType>
+class EnumArray {
+ public:
+  EnumArray() = default;
+  EnumArray(DataType fill_value) { array_.fill(fill_value); }
+  EnumArray(std::array<DataType, EnumCount> array) : array_(std::move(array)) {}
+
+  DataType &operator[](const EnumType i) { return array_[static_cast<int>(i)]; }
+  const DataType &operator[](const EnumType i) const {
+    return array_[static_cast<int>(i)];
+  }
+
+  int size() const { return array_.size(); }
+
+ private:
+  std::array<DataType, EnumCount> array_;
 };
