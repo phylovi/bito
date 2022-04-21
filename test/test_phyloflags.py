@@ -14,7 +14,20 @@ import bito.phylo_model_mapkeys as model_keys
 import bito.phylo_gradient_mapkeys as gradient_keys
 import sys
 
-# DEMO
+
+def create_instance():
+    inst = bito.rooted_instance("cheese")
+    inst.read_newick_file("data/fluA.tree")
+    inst.read_fasta_file("data/fluA.fa")
+    inst.parse_dates_from_taxon_names(True)
+    spec = bito.PhyloModelSpecification(
+        substitution="GTR", site="weibull+4", clock="strict"
+    )
+    inst.prepare_for_phylo_likelihood(spec, 1, [beagle_flags.VECTOR_SSE], False)
+    return inst
+
+
+""" DEMO """
 
 
 def gradients_with_flags_demo():
@@ -104,7 +117,7 @@ def gradients_with_flags_demo():
     return
 
 
-# TESTS
+""" TESTS """
 
 
 unflagged_keys = [gradient_keys.BRANCH_LENGTHS]
@@ -129,18 +142,6 @@ exclude_flags = [
 ]
 
 setvalue_flags = [flags.SET_GRADIENT_DELTA]
-
-
-def create_instance():
-    inst = bito.rooted_instance("cheese")
-    inst.read_newick_file("data/fluA.tree")
-    inst.read_fasta_file("data/fluA.fa")
-    inst.parse_dates_from_taxon_names(True)
-    spec = bito.PhyloModelSpecification(
-        substitution="GTR", site="weibull+4", clock="strict"
-    )
-    inst.prepare_for_phylo_likelihood(spec, 1, [beagle_flags.VECTOR_SSE], False)
-    return inst
 
 
 def initialize_model_parameters(inst):

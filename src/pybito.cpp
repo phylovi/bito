@@ -56,9 +56,7 @@ void def_overload(PyClass pyclass, const char *name, const char *description,
                   OtherCppFuncs... other_overloads) {
   // Add definition to class.
   auto &[func, pyargs] = overload_def;
-  if constexpr (sizeof...(PyArgTypes) > 0) {
-    def_template(pyclass, name, description, func, pyargs);
-  }
+  def_template(pyclass, name, description, func, pyargs);
   // Get next function from template list.
   if constexpr (sizeof...(OtherCppFuncs) > 0) {
     def_overload(pyclass, name, description, other_overloads...);
@@ -75,9 +73,7 @@ void def_multiclass(const char *name, const char *description,
                     OtherClassDefs... other_defs) {
   // Add definition to class.
   auto &[pyclass, func] = class_def;
-  if constexpr (sizeof...(PyArgTypes) > 0) {
-    def_template(pyclass, name, description, func, pyargs);
-  }
+  def_template(pyclass, name, description, func, pyargs);
   // Get next function from template list.
   if constexpr (sizeof...(OtherClassDefs) > 0) {
     def_multiclass(name, description, pyargs, other_defs...);
