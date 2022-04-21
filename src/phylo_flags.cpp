@@ -283,7 +283,7 @@ void PhyloFlags::SetFlag(const PhyloFlagOption &flag, const bool is_set,
   // Add given flag.
   AddFlagToMap(flag, is_set, value);
   // Add all child flags of given flag.
-  for (const auto child_flag : flag.GetChildFlags()) {
+  for (const auto &child_flag : flag.GetChildFlags()) {
     SetFlag(child_flag, value);
   }
   // If flag being set is the special run_defaults_ flag.

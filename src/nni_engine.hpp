@@ -329,7 +329,7 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
 
   // Set NNI plvs to their corresponding Pre-NNI plvs.
   post_key_idx[KeyIndex::Parent_RHat] = pre_key_idx[KeyIndex::Parent_RHat];
-  for (const auto [pre_key_type, post_key_type] : key_map) {
+  for (const auto &[pre_key_type, post_key_type] : key_map) {
     post_key_idx[post_key_type] = pre_key_idx[pre_key_type];
   }
 
