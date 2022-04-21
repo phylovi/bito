@@ -38,7 +38,10 @@ def gradients_with_flags_demo():
     # SUBSTITUTION_MODEL_FREQUENCIES, SUBSTITUTION_MODEL_RATES
     bito_grad = inst.phylo_gradients(
         # explicit flags: For flags that don't have associated values, can just be a list.
-        [flags.RATIOS_ROOT_HEIGHT, flags.SUBSTITUTION_MODEL,],
+        [
+            flags.RATIOS_ROOT_HEIGHT,
+            flags.SUBSTITUTION_MODEL,
+        ],
         # run_with_default_flags:
         # (1) If set to true, all fields of phylo_model_block_map are populated unless overriden by explicit flag.
         # (2) If set to false, no fields of phylo_model_block_map are populated unless overriden by explicit flag.
@@ -61,7 +64,9 @@ def gradients_with_flags_demo():
     # above works if only boolean flags are used, otherwise:
     bito_grad = inst.phylo_gradients(
         # explicit flags: For SET flags that require value, use ordered tuples. Non-SET flags just take boolean.
-        [(flags.SET_GRADIENT_DELTA, 5.0),],
+        [
+            (flags.SET_GRADIENT_DELTA, 5.0),
+        ],
         # run_with_default_flags
         True,
     )[0]
