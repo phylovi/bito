@@ -102,12 +102,29 @@ class MmappedMatrix {
     if (ftruncate_status != 0) {
       Failwith("MmappedMatrix could not resize the file at " + file_path_);
     }
+
+// OSX mman and mman-win32 do not implement mremap or MREMAP_MAYMOVE.
+#ifndef MREMAP_MAYMOVE
+    if (munmap(mmapped_memory_, old_byte_count) == -1) {
+      throw std::system_error(errno, std::system_category(), "mremap");
+    }
+
+    mmapped_memory_ = static_cast<Scalar *>(mmap(  //
+        NULL,                    // This address is ignored as we are using MAP_SHARED.
+        byte_count_,             // Size of map.
+        PROT_READ | PROT_WRITE,  // We want to read and write.
+        MAP_SHARED,              // We need MAP_SHARED to actually write to memory.
+        file_descriptor_,        // File descriptor.
+        0                        // Offset.
+        ));
+#else
     mmapped_memory_ = static_cast<Scalar *>(mremap(  //
         static_cast<void *>(mmapped_memory_),        // old address
         old_byte_count,                              // old size
         byte_count_,                                 // new size
         MREMAP_MAYMOVE  // will move virtual memory if necessary.
         ));
+#endif
     if (mmapped_memory_ == MAP_FAILED) {
       throw std::system_error(errno, std::system_category(), "mremap");
     }
