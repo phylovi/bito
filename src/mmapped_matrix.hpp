@@ -106,7 +106,7 @@ class MmappedMatrix {
 // OSX mman and mman-win32 do not implement mremap or MREMAP_MAYMOVE.
 #ifndef MREMAP_MAYMOVE
     if (munmap(mmapped_memory_, old_byte_count) == -1) {
-      throw std::system_error(errno, std::system_category(), "mremap");
+      throw std::system_error(errno, std::system_category(), "munmap");
     }
 
     mmapped_memory_ = static_cast<Scalar *>(mmap(  //
