@@ -172,7 +172,7 @@ void GPEngine::ReindexPLVs(const Reindexer node_reindexer,
   size_t new_data_idx = old_node_count * plv_count_per_node_;
   for (size_t i = 0; i < node_count_; i++) {
     const size_t old_node_idx = i;
-    const size_t new_node_idx = node_reindexer.GetNewIndexByOldIndex(old_node_idx);
+    const size_t new_node_idx = node_reindexer.GetOutputIndexByInputIndex(old_node_idx);
     for (const auto plv_type : PLVHandler::PLVTypeIterator()) {
       // Either get input plv_index from old plvs, or get new plv_index (new data is
       // irrelevant, so just get next available index).

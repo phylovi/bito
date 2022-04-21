@@ -146,7 +146,7 @@ class GenericSubsplitDAGNode {
   void RemapNodeIds(const Reindexer& node_reindexer) {
     Assert(node_reindexer.IsValid(),
            "Reindexer must be valid in GenericSubsplitDAGNode::RemapNodeIds.");
-    node_.SetId(node_reindexer.GetNewIndexByOldIndex(node_.GetId()));
+    node_.SetId(node_reindexer.GetOutputIndexByInputIndex(node_.GetId()));
     node_.GetNeighbors(Direction::Leafward, SubsplitClade::Left)
         .RemapNodeIds(node_reindexer);
     node_.GetNeighbors(Direction::Leafward, SubsplitClade::Right)

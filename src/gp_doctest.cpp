@@ -832,13 +832,13 @@ TEST_CASE("GPInstance: Reindexers for AddNodePair") {
   for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
     auto mods = dag.AddNodePair(nni);
     for (size_t old_idx = 0; old_idx < pre_dag.NodeCount(); old_idx++) {
-      size_t new_idx = mods.node_reindexer.GetNewIndexByOldIndex(old_idx);
+      size_t new_idx = mods.node_reindexer.GetOutputIndexByInputIndex(old_idx);
       Bitset old_node = pre_dag.GetDAGNode(old_idx).GetBitset();
       Bitset new_node = dag.GetDAGNode(new_idx).GetBitset();
       CHECK_EQ(old_node, new_node);
     }
     for (size_t old_idx = 0; old_idx < pre_dag.EdgeCount(); old_idx++) {
-      size_t new_idx = mods.edge_reindexer.GetNewIndexByOldIndex(old_idx);
+      size_t new_idx = mods.edge_reindexer.GetOutputIndexByInputIndex(old_idx);
       Bitset old_parent =
           pre_dag.GetDAGNode(pre_dag.GetDAGEdge(old_idx).GetParent()).GetBitset();
       Bitset old_child =
@@ -1308,7 +1308,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
         if (nni_add % test_after_every == 0) {
           std::cout << "inner_test: " << nni_add << std::endl;
           node_reindexer_without_root = Reindexer(node_reindexer);
-          node_reindexer_without_root.RemoveNewIndex(dag.GetDAGRootNodeId());
+          node_reindexer_without_root.RemoveOutputIndex(dag.GetDAGRootNodeId());
           std::cout << "inner_test: " << nni_add << std::endl;
           size_t node_count = dag.NodeCountWithoutDAGRoot();
           size_t edge_count = dag.EdgeCountWithLeafSubsplits();
@@ -1345,7 +1345,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     std::cout << "inner_test_last: " << node_reindexer_without_root.size() << " "
               << node_reindexer_without_root << std::endl;
     std::cout << "DAGRoot: " << dag.GetDAGRootNodeId() << std::endl;
-    node_reindexer_without_root.RemoveNewIndex(dag.GetDAGRootNodeId());
+    node_reindexer_without_root.RemoveOutputIndex(dag.GetDAGRootNodeId());
     std::cout << "inner_test_last: " << node_reindexer_without_root.size() << " "
               << node_reindexer_without_root << std::endl;
     if (!skip_reindexing) {
@@ -1548,7 +1548,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
     auto& truth_gpengine = *truth_inst.GetEngine();
     auto mods = truth_dag.AddNodePair(nni);
     auto node_reindexer_without_root = Reindexer(mods.node_reindexer);
-    node_reindexer_without_root.RemoveNewIndex(truth_dag.GetDAGRootNodeId());
+    node_reindexer_without_root.RemoveOutputIndex(truth_dag.GetDAGRootNodeId());
     truth_gpengine.GrowPLVs(truth_dag.NodeCountWithoutDAGRoot(),
                             node_reindexer_without_root);
     truth_gpengine.GrowGPCSPs(truth_dag.EdgeCountWithLeafSubsplits(),

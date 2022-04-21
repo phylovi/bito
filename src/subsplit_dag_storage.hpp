@@ -209,7 +209,7 @@ class GenericNeighborsView {
     }
     T remapped{};
     for (auto [vertex_id, line_id] : neighbors_) {
-      remapped[reindexer.GetNewIndexByOldIndex(vertex_id)] = line_id;
+      remapped[reindexer.GetOutputIndexByInputIndex(vertex_id)] = line_id;
     }
     neighbors_ = remapped;
   }
@@ -223,7 +223,7 @@ class GenericNeighborsView {
     }
     T remapped{};
     for (auto [vertex_id, line_id] : neighbors_) {
-      remapped[vertex_id] = reindexer.GetNewIndexByOldIndex(line_id);
+      remapped[vertex_id] = reindexer.GetOutputIndexByInputIndex(line_id);
     }
     neighbors_ = remapped;
   }

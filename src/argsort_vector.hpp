@@ -38,12 +38,12 @@ class ArgsortVector {
 
   // Get sorted index by given unsorted index.
   size_t GetSortedIndexByUnsortedIndex(const size_t unsorted_idx) const {
-    return reindexer_.GetNewIndexByOldIndex(old_idx);
+    return reindexer_.GetOutputIndexByInputIndex(old_idx);
   };
   // Get unsorted index by given sorted index.
   // Note: This uses linear search.
   size_t GetUnsortedIndexBySortedIndex(const size_t sorted_idx) const {
-    return reindexer_.GetOldIndexByNewIndex(i);
+    return reindexer_.GetInputIndexByOutputIndex(i);
   };
 
   // Get data by unsorted index.

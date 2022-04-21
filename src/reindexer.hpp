@@ -9,7 +9,7 @@
 //
 // A reindexer is a one-to-one function that maps from an old indexing scheme to a new
 // indexing scheme. In other words, if old index `i` maps to new index `j`, then
-// reindexer.GetNewIndexByOldIndex(`i`) = `j`. This is implemented by an underlying
+// reindexer.GetOutputIndexByInputIndex(`i`) = `j`. This is implemented by an underlying
 // SizeVector.  For example, if old_vector = [A, B, C] and reindexer = [1, 2, 0], then
 // new_vector = [C, A, B]. Note that old_vector and reindexer must have the same size.
 
@@ -44,17 +44,18 @@ class Reindexer {
 
   size_t size() const { return data_.size(); }
   void reserve(const size_t size) { data_.reserve(size); }
+  // Set mapping from input to output index.
   void SetReindex(const size_t old_index, const size_t new_index) {
     data_.at(old_index) = new_index;
   }
   // Find mapped new/output index corresponding to given old/input index.
-  size_t GetNewIndexByOldIndex(const size_t old_index) const {
+  size_t GetOutputIndexByInputIndex(const size_t old_index) const {
     return data_.at(old_index);
   }
   // Find mapped old/input index corresponding to new/output index.
   // Note: This uses a linear search. If doing many old lookups, do new lookups on
   // inverted reindexer instead.
-  size_t GetOldIndexByNewIndex(
+  size_t GetInputIndexByOutputIndex(
       const size_t new_index,
       std::optional<Reindexer> inverted_reindexer = std::nullopt) const;
 
@@ -68,28 +69,29 @@ class Reindexer {
   // new_id and shift over the ids strictly between old_id and new_id to ensure that
   // the reindexer remains valid. For example if old_id = 1 and new_id = 4, this
   // method would shift 1 -> 4, 4 -> 3, 3 -> 2, and 2 -> 1.
-  void ReassignAndShift(const size_t old_id, const size_t new_id);
+  void ReassignOutputIndexAndShift(const size_t old_output_idx,
+                                   const size_t new_output_idx);
 
   // Append next append_count ordered indices to reindexer.
   void AppendNextIndex(const size_t append_count = 1);
   // Append given index to reindexer.
-  void AppendNewIndex(const size_t new_idx);
+  void AppendOutputIndex(const size_t output_idx);
 
   // Builds new reindexer by removing an element identified by its index and shifting
   // other idx to maintain valid reindexer.
-  void RemoveOldIndex(const size_t old_idx_to_remove);
-  void RemoveNewIndex(const size_t new_idx_to_remove);
+  void RemoveInputIndex(const size_t input_idx_to_remove);
+  void RemoveOutputIndex(const size_t output_idx_to_remove);
   // Remove vector of indices.
-  void RemoveOldIndex(SizeVector &old_idx_to_remove);
-  void RemoveNewIndex(SizeVector &new_idx_to_remove,
-                      std::optional<Reindexer> inverted_reindexer = std::nullopt);
+  void RemoveInputIndex(SizeVector &input_idx_to_remove);
+  void RemoveOutputIndex(SizeVector &output_idx_to_remove,
+                         std::optional<Reindexer> inverted_reindexer = std::nullopt);
 
   // Append index and insert into specified positions.
-  void InsertOldIndex(const size_t old_idx_to_add);
-  void InsertNewIndex(const size_t new_idx_to_add);
+  void InsertInputIndex(const size_t input_idx_to_add);
+  void InsertOutputIndex(const size_t output_idx_to_add);
   // Insert vector of indices.
-  void InsertOldIndex(SizeVector &sorted_old_idxs_to_add);
-  void InsertNewIndex(SizeVector &sorted_new_idxs_to_add);
+  void InsertInputIndex(SizeVector &sorted_input_idxs_to_add);
+  void InsertOutputIndex(SizeVector &sorted_output_idxs_to_add);
 
   // ** Transform
 
@@ -124,7 +126,8 @@ class Reindexer {
     VectorType new_vector(old_vector.size());
     // Data to reindex.
     for (size_t idx = 0; idx < reindex_size; idx++) {
-      new_vector[reindexer.GetNewIndexByOldIndex(idx)] = std::move(old_vector[idx]);
+      new_vector[reindexer.GetOutputIndexByInputIndex(idx)] =
+          std::move(old_vector[idx]);
     }
     // Data to copy over.
     for (size_t idx = reindex_size; idx < size_t(new_vector.size()); idx++) {
@@ -145,11 +148,12 @@ class Reindexer {
     VectorType new_vector(reindexer.size());
     // Data to reindex.
     for (Eigen::Index idx = 0; idx < old_vector.size(); idx++) {
-      new_vector[reindexer.GetNewIndexByOldIndex(idx)] = std::move(old_vector[idx]);
+      new_vector[reindexer.GetOutputIndexByInputIndex(idx)] =
+          std::move(old_vector[idx]);
     }
     // Data to copy over.
     for (Eigen::Index idx = 0; idx < additional_values.size(); idx++) {
-      new_vector[reindexer.GetNewIndexByOldIndex(old_vector.size() + idx)] =
+      new_vector[reindexer.GetOutputIndexByInputIndex(old_vector.size() + idx)] =
           std::move(additional_values[idx]);
     }
     return new_vector;
@@ -165,10 +169,10 @@ class Reindexer {
            "reindexer wrong size for Reindexer::ReindexVectorInPlace.");
     BoolVector updated_idx = BoolVector(length, false);
     for (size_t i = 0; i < length; i++) {
-      size_t old_idx = i;
-      size_t new_idx = reindexer.GetNewIndexByOldIndex(i);
-      if (old_idx == new_idx) {
-        updated_idx[old_idx] = true;
+      size_t input_idx = i;
+      size_t output_idx = reindexer.GetOutputIndexByInputIndex(i);
+      if (input_idx == output_idx) {
+        updated_idx[input_idx] = true;
         continue;
       }
       // Because reindexing is one-to-one function, starting at any given index in the
@@ -177,24 +181,25 @@ class Reindexer {
       // index. This avoid allocating a second data array to perform the reindex, as
       // only two temporary values are needed. Only a boolean array is needed to check
       // for already updated indexes.
-      bool is_current_node_updated = updated_idx[new_idx];
-      temp1 = std::move(data_vector[old_idx]);
+      bool is_current_node_updated = updated_idx[output_idx];
+      temp1 = std::move(data_vector[input_idx]);
       while (is_current_node_updated == false) {
-        // copy data at old_idx to new_idx, and store data at new_idx in temporary.
-        temp2 = std::move(data_vector[new_idx]);
-        data_vector[new_idx] = std::move(temp1);
+        // copy data at input_idx to output_idx, and store data at output_idx in
+        // temporary.
+        temp2 = std::move(data_vector[output_idx]);
+        data_vector[output_idx] = std::move(temp1);
         temp1 = std::move(temp2);
         // update to next idx in cycle.
-        updated_idx[new_idx] = true;
-        old_idx = new_idx;
-        new_idx = reindexer.GetNewIndexByOldIndex(old_idx);
-        is_current_node_updated = updated_idx[new_idx];
+        updated_idx[output_idx] = true;
+        input_idx = output_idx;
+        output_idx = reindexer.GetOutputIndexByInputIndex(input_idx);
+        is_current_node_updated = updated_idx[output_idx];
       }
     }
   };
 
   // Reindex data vector in place.
-  // Overload provides its own temporaries values for moving data if none provided.
+  // Overload provides its own temporary data for moving data if none provided.
   template <typename VectorType, typename DataType>
   static void ReindexVectorInPlace(VectorType &data_vector, const Reindexer &reindexer,
                                    size_t length) {
@@ -212,8 +217,8 @@ class Reindexer {
              "Reindexer::RemapIdVector.");
     }
     std::transform(vector.begin(), vector.end(), vector.begin(),
-                   [reindexer](size_t old_idx) {
-                     return reindexer.GetNewIndexByOldIndex(old_idx);
+                   [reindexer](size_t input_idx) {
+                     return reindexer.GetOutputIndexByInputIndex(input_idx);
                    });
   };
 
@@ -235,7 +240,7 @@ class Reindexer {
     VectorType new_vector(old_vector.size());
     // Data to reindex.
     for (size_t idx = 0; idx < reindex_size; idx++) {
-      new_vector[idx] = old_vector[reindexer.GetNewIndexByOldIndex(idx)];
+      new_vector[idx] = old_vector[reindexer.GetOutputIndexByInputIndex(idx)];
     }
     // Data to copy over.
     for (size_t idx = reindex_size; idx < size_t(new_vector.size()); idx++) {
@@ -323,26 +328,26 @@ TEST_CASE("Reindexer: RemapIdVector") {
   CHECK_EQ(size_vector, correct_size_vector);
 }
 
-TEST_CASE("Reindexer: ReassignAndShift") {
-  // Check that ReassignAndShift returns correctly when old_id > new_id.
+TEST_CASE("Reindexer: ReassignOutputIndexAndShift") {
+  // Check that ReassignOutputIndexAndShift returns correctly when old_id > new_id.
   Reindexer reindexer({0, 1, 2, 3, 4, 5, 6});
-  reindexer.ReassignAndShift(4, 1);
+  reindexer.ReassignOutputIndexAndShift(4, 1);
   Reindexer correct_reindexer({0, 2, 3, 4, 1, 5, 6});
   CHECK_EQ(reindexer, correct_reindexer);
-  reindexer.ReassignAndShift(5, 2);
+  reindexer.ReassignOutputIndexAndShift(5, 2);
   correct_reindexer = Reindexer({0, 3, 4, 5, 1, 2, 6});
   CHECK_EQ(reindexer, correct_reindexer);
-  reindexer.ReassignAndShift(1, 3);
+  reindexer.ReassignOutputIndexAndShift(1, 3);
   correct_reindexer = Reindexer({0, 2, 4, 5, 3, 1, 6});
   CHECK_EQ(reindexer, correct_reindexer);
-  // Check that ReassignAndShift returns correctly when old_id = new_id.
+  // Check that ReassignOutputIndexAndShift returns correctly when old_id = new_id.
   reindexer = Reindexer({1, 0, 4, 6, 5, 3, 2});
-  reindexer.ReassignAndShift(4, 4);
+  reindexer.ReassignOutputIndexAndShift(4, 4);
   correct_reindexer = Reindexer({1, 0, 4, 6, 5, 3, 2});
   CHECK_EQ(reindexer, correct_reindexer);
-  // Check that ReassignAndShift returns correctly when old_id < new_id.
+  // Check that ReassignOutputIndexAndShift returns correctly when old_id < new_id.
   reindexer = Reindexer({6, 0, 4, 1, 5, 3, 2});
-  reindexer.ReassignAndShift(1, 5);
+  reindexer.ReassignOutputIndexAndShift(1, 5);
   correct_reindexer = Reindexer({6, 0, 3, 5, 4, 2, 1});
   CHECK_EQ(reindexer, correct_reindexer);
 }

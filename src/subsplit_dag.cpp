@@ -1344,8 +1344,8 @@ Reindexer SubsplitDAG::BuildEdgeReindexer(const size_t prev_edge_count) {
     const auto idx_range = GetChildEdgeRange(
         parent_subsplit, child_subsplit.SubsplitIsLeftChildOf(parent_subsplit));
     // New edge is added to the end of the range.
-    const size_t new_idx = edge_reindexer.GetNewIndexByOldIndex(idx_range.second);
-    edge_reindexer.ReassignAndShift(edge_idx, new_idx);
+    const size_t new_idx = edge_reindexer.GetOutputIndexByInputIndex(idx_range.second);
+    edge_reindexer.ReassignOutputIndexAndShift(edge_idx, new_idx);
   }
   return edge_reindexer;
 }
@@ -1362,12 +1362,13 @@ void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
   }
   // Update `subsplit_to_id_`.
   for (const auto &[subsplit, node_id] : subsplit_to_id_) {
-    subsplit_to_id_.at(subsplit) = node_reindexer.GetNewIndexByOldIndex(node_id);
+    subsplit_to_id_.at(subsplit) = node_reindexer.GetOutputIndexByInputIndex(node_id);
   }
   // Update edges.
   for (auto i : storage_.GetLines()) {
-    storage_.ReindexLine(i.GetId(), node_reindexer.GetNewIndexByOldIndex(i.GetParent()),
-                         node_reindexer.GetNewIndexByOldIndex(i.GetChild()));
+    storage_.ReindexLine(i.GetId(),
+                         node_reindexer.GetOutputIndexByInputIndex(i.GetParent()),
+                         node_reindexer.GetOutputIndexByInputIndex(i.GetChild()));
   }
 }
 
@@ -1375,7 +1376,7 @@ void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
   // Update edges.
   std::vector<DAGLineStorage> edges_copy(storage_.GetLines().size());
   for (auto i : storage_.GetLines()) {
-    LineId new_idx = edge_reindexer.GetNewIndexByOldIndex(i.GetId());
+    LineId new_idx = edge_reindexer.GetOutputIndexByInputIndex(i.GetId());
     edges_copy[new_idx] = i;
     edges_copy[new_idx].SetId(new_idx);
   }
@@ -1386,7 +1387,7 @@ void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
   // Update `parent_to_child_range_`.
   for (const auto &[subsplit, idx_range] : parent_to_child_range_) {
     parent_to_child_range_.at(subsplit) = {
-        edge_reindexer.GetNewIndexByOldIndex(idx_range.first),
-        edge_reindexer.GetNewIndexByOldIndex(idx_range.second - 1) + 1};
+        edge_reindexer.GetOutputIndexByInputIndex(idx_range.first),
+        edge_reindexer.GetOutputIndexByInputIndex(idx_range.second - 1) + 1};
   }
 }
