@@ -137,9 +137,7 @@ class Burrito:
         self.inst.resize_phylo_model_params()
         px_phylo_log_like = np.array(self.inst.log_likelihoods(), copy=False)
         return self.elbo_of_sample(
-            px_phylo_log_like,
-            px_theta_sample,
-            px_branch_representation,
+            px_phylo_log_like, px_theta_sample, px_branch_representation,
         )
 
     def elbo_of_sample(
