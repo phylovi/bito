@@ -35,16 +35,26 @@ using StringDoubleMap = std::unordered_map<std::string, double>;
 using DoubleVectorOption = std::optional<std::vector<double>>;
 using TagStringMapOption = std::optional<TagStringMap>;
 using StringVector = std::vector<std::string>;
+using CStringVector = std::vector<const char *>;
 using StringVectorVector = std::vector<StringVector>;
 using StringSet = std::unordered_set<std::string>;
 using StringSetVector = std::vector<StringSet>;
 using StringDoubleVector = std::vector<std::pair<std::string, double>>;
 using SizeDoubleMap = std::unordered_map<size_t, double>;
+using StringBoolVector = std::vector<std::pair<std::string, bool>>;
+using StringBoolDoubleVector = std::vector<std::tuple<std::string, bool, double>>;
+using StringPairVector = std::vector<std::pair<std::string, std::string>>;
 using SizeDoubleVectorMap = std::unordered_map<size_t, std::vector<double>>;
 using DoublePair = std::pair<double, double>;
 using SizePair = std::pair<size_t, size_t>;
 using SizePairVector = std::vector<std::pair<size_t, size_t>>;
 using SizeOptionVector = std::vector<std::optional<size_t>>;
+using BoolVector = std::vector<bool>;
+using DoubleVector = std::vector<double>;
+using DoubleVectorPair = std::pair<DoubleVector, DoubleVector>;
+
+template <size_t L>
+using CStringArray = std::array<const char *, L>;
 
 inline uint32_t MaxLeafIDOfTag(Tag tag) { return UnpackFirstInt(tag); }
 inline uint32_t LeafCountOfTag(Tag tag) { return UnpackSecondInt(tag); }

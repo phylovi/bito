@@ -9,8 +9,10 @@
 
 #include <numeric>
 
+#include "phylo_flags.hpp"
 #include "rooted_tree.hpp"
 
+namespace RootedGradientTransforms {
 // \partial{L}/\partial{t_k} = \sum_j \partial{L}/\partial{b_j}
 // \partial{b_j}/\partial{t_k}
 std::vector<double> HeightGradient(const RootedTree &tree,
@@ -34,6 +36,8 @@ std::vector<double> GetLogTimeArray(const RootedTree &tree);
 std::vector<double> UpdateGradientUnWeightedLogDensity(
     const RootedTree &tree, const std::vector<double> &gradient_height);
 
+std::vector<double> GradientLogDeterminantJacobian(const RootedTree &tree);
+
 double UpdateHeightParameterGradientUnweightedLogDensity(
     const RootedTree &tree, const std::vector<double> &gradient);
 
@@ -43,6 +47,14 @@ std::vector<double> RatioGradientOfHeightGradient(
 std::vector<double> RatioGradientOfBranchGradient(
     const RootedTree &tree, const std::vector<double> &branch_gradient);
 
+std::vector<double> RatioGradientOfBranchGradient(
+    const RootedTree &tree, const std::vector<double> &branch_gradient,
+    const std::optional<PhyloFlags> flags = std::nullopt);
+
 // This should go away with #205.
 EigenVectorXd RatioGradientOfHeightGradientEigen(const RootedTree &tree,
                                                  EigenConstVectorXdRef height_gradient);
+
+// Computes the Log Determinant Jacobian of the Height Transform.
+double LogDetJacobianHeightTransform(const RootedTree &tree);
+}  // namespace RootedGradientTransforms

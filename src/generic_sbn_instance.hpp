@@ -21,6 +21,9 @@
 #include "rooted_sbn_support.hpp"
 #include "sbn_probability.hpp"
 #include "unrooted_sbn_support.hpp"
+#include "phylo_flags.hpp"
+#include "phylo_model.hpp"
+#include "phylo_gradient.hpp"
 
 template <typename TTreeCollection, typename TSBNSupport,
           typename TIndexerRepresentation>
@@ -290,11 +293,63 @@ class GenericSBNInstance {
         tree_collection_.BuildCollectionByDuplicatingFirst(number_of_times);
   }
 
+  // ** PhyloFlags
+  // This is an object for passing option flags to functions.
+
+  bool HasPhyloFlags() { return (phylo_flags_ != nullptr); }
+
+  void MakePhyloFlags() {
+    Assert(!HasPhyloFlags(),
+           "Attempted to make PhyloFlags when instance already exists.");
+    phylo_flags_ = std::make_unique<PhyloFlags>();
+  }
+
+  PhyloFlags &GetPhyloFlags() {
+    Assert(HasPhyloFlags(),
+           "Attempted to get PhyloFlags when instance does not exist.");
+    return *phylo_flags_.get();
+  }
+
+  std::optional<PhyloFlags> GetPhyloFlagsIfExists() {
+    if (HasPhyloFlags()) {
+      return GetPhyloFlags();
+    }
+    return std::nullopt;
+  }
+
+  void SetPhyloFlag(const std::string &flag_name, const bool set_to = true,
+                    const double set_value = 1.0f) {
+    GetPhyloFlags().SetFlag(flag_name, set_to, set_value);
+  }
+
+  void SetPhyloFlagDefaults(const bool is_set_defaults) {
+    GetPhyloFlags().SetRunDefaultsFlag(is_set_defaults);
+  }
+
+  void ClearPhyloFlags() { GetPhyloFlags().ClearFlags(); }
+
+  // Merge external and internal flags into single unified flag set.
+  std::optional<PhyloFlags> CollectPhyloFlags(
+      std::optional<PhyloFlags> external_flags = std::nullopt) {
+    std::optional<PhyloFlags> internal_flags = GetPhyloFlagsIfExists();
+    std::optional<PhyloFlags> flags;
+    // If there are both external and internal flags, combine them.
+    if (internal_flags && external_flags) {
+      flags = external_flags;
+      flags.value().AddPhyloFlags(internal_flags, false);
+      return flags;
+    }
+    // Otherwise, return the existing flags (or null).
+    return internal_flags ? internal_flags : external_flags;
+  }
+
  protected:
   // The name of our bito instance.
   std::string name_;
   // Our phylogenetic likelihood computation engine.
   std::unique_ptr<Engine> engine_;
+  // Option flags for passing to likelihood computation engine.
+  std::unique_ptr<PhyloFlags> phylo_flags_ = nullptr;
   // Whether we use likelihood vector rescaling.
   bool rescaling_;
   // The multiple sequence alignment.

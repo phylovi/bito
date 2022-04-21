@@ -39,7 +39,7 @@ class StrictClockModel : public ClockModel {
 
   void SetParameters(const EigenVectorXdRef parameters) override;
 
-  inline const static std::string rate_key_ = "clock rate";
+  inline const static std::string rate_key_ = "clock_rate";
 
  private:
   double rate_;

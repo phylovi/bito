@@ -40,17 +40,65 @@ void RootedSBNInstance::UnconditionalSubsplitProbabilitiesToCSV(
       SBNMaps::StringDoubleVectorOf(UnconditionalSubsplitProbabilities()), csv_path);
 }
 
-std::vector<double> RootedSBNInstance::LogLikelihoods() {
-  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_);
+std::vector<double> RootedSBNInstance::LogLikelihoods(
+    std::optional<PhyloFlags> external_flags) {
+  auto flags = CollectPhyloFlags(external_flags);
+  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_,
+                                     flags);
 }
+
+template <class VectorType>
+std::vector<double> RootedSBNInstance::LogLikelihoods(const VectorType &flag_vec,
+                                                      const bool is_run_defaults) {
+  PhyloFlags external_flags = PhyloFlags(flag_vec, is_run_defaults);
+  return LogLikelihoods(external_flags);
+};
+// Explicit templates for Pybind API.
+template DoubleVector RootedSBNInstance::LogLikelihoods(const StringVector &,
+                                                        const bool);
+template DoubleVector RootedSBNInstance::LogLikelihoods(const StringBoolVector &,
+                                                        const bool);
+template DoubleVector RootedSBNInstance::LogLikelihoods(const StringDoubleVector &,
+                                                        const bool);
+template DoubleVector RootedSBNInstance::LogLikelihoods(const StringBoolDoubleVector &,
+                                                        const bool);
 
 std::vector<double> RootedSBNInstance::UnrootedLogLikelihoods() {
   return GetEngine()->UnrootedLogLikelihoods(tree_collection_, phylo_model_params_,
                                              rescaling_);
 }
 
-std::vector<PhyloGradient> RootedSBNInstance::PhyloGradients() {
-  return GetEngine()->Gradients(tree_collection_, phylo_model_params_, rescaling_);
+std::vector<double> RootedSBNInstance::LogDetJacobianHeightTransform() {
+  return GetEngine()->LogDetJacobianHeightTransform(tree_collection_,
+                                                    phylo_model_params_, rescaling_);
+}
+
+std::vector<PhyloGradient> RootedSBNInstance::PhyloGradients(
+    std::optional<PhyloFlags> external_flags) {
+  auto flags = CollectPhyloFlags(external_flags);
+  return GetEngine()->Gradients(tree_collection_, phylo_model_params_, rescaling_,
+                                flags);
+}
+
+template <class VectorType>
+std::vector<PhyloGradient> RootedSBNInstance::PhyloGradients(
+    const VectorType &flag_vec, const bool is_run_defaults) {
+  PhyloFlags external_flags = PhyloFlags(flag_vec, is_run_defaults);
+  return PhyloGradients(external_flags);
+};
+// Explicit templates for Pybind API.
+template std::vector<PhyloGradient> RootedSBNInstance::PhyloGradients(
+    const StringVector &, const bool);
+template std::vector<PhyloGradient> RootedSBNInstance::PhyloGradients(
+    const StringBoolVector &, const bool);
+template std::vector<PhyloGradient> RootedSBNInstance::PhyloGradients(
+    const StringDoubleVector &, const bool);
+template std::vector<PhyloGradient> RootedSBNInstance::PhyloGradients(
+    const StringBoolDoubleVector &, const bool);
+
+std::vector<DoubleVector> RootedSBNInstance::GradientLogDeterminantJacobian() {
+  return GetEngine()->GradientLogDeterminantJacobian(tree_collection_,
+                                                     phylo_model_params_, rescaling_);
 }
 
 void RootedSBNInstance::ReadNewickFile(const std::string &fname) {

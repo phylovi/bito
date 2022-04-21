@@ -52,10 +52,21 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
 
   // ** Phylogenetic likelihood
 
-  std::vector<double> LogLikelihoods();
+  std::vector<double> LogLikelihoods(
+      std::optional<PhyloFlags> external_flags = std::nullopt);
+
+  template <class VectorType>
+  std::vector<double> LogLikelihoods(const VectorType &flag_vec,
+                                     const bool is_run_defaults);
 
   // For each loaded tree, return the phylogenetic gradient.
-  std::vector<PhyloGradient> PhyloGradients();
+  std::vector<PhyloGradient> PhyloGradients(
+      std::optional<PhyloFlags> external_flags = std::nullopt);
+
+  template <class VectorType>
+  std::vector<PhyloGradient> PhyloGradients(const VectorType &flag_vec,
+                                            const bool is_run_defaults);
+
   // Topology gradient for unrooted trees.
   // Assumption: This function is called from Python side
   // after the trees (both the topology and the branch lengths) are sampled.

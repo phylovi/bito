@@ -91,13 +91,51 @@ void UnrootedSBNInstance::ReadNexusFile(const std::string &fname) {
 
 // ** Phylogenetic likelihood
 
-std::vector<double> UnrootedSBNInstance::LogLikelihoods() {
-  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_);
+std::vector<double> UnrootedSBNInstance::LogLikelihoods(
+    std::optional<PhyloFlags> external_flags) {
+  auto flags = CollectPhyloFlags(external_flags);
+  return GetEngine()->LogLikelihoods(tree_collection_, phylo_model_params_, rescaling_,
+                                     flags);
 }
 
-std::vector<PhyloGradient> UnrootedSBNInstance::PhyloGradients() {
-  return GetEngine()->Gradients(tree_collection_, phylo_model_params_, rescaling_);
+template <class VectorType>
+std::vector<double> UnrootedSBNInstance::LogLikelihoods(const VectorType &flag_vec,
+                                                        const bool is_run_defaults) {
+  std::optional<PhyloFlags> flags = PhyloFlags(flag_vec, is_run_defaults);
+  return LogLikelihoods(flags);
 }
+// Explicit instantiation for Pybind API.
+template DoubleVector UnrootedSBNInstance::LogLikelihoods(const StringVector &,
+                                                          const bool);
+template DoubleVector UnrootedSBNInstance::LogLikelihoods(const StringBoolVector &,
+                                                          const bool);
+template DoubleVector UnrootedSBNInstance::LogLikelihoods(const StringDoubleVector &,
+                                                          const bool);
+template DoubleVector UnrootedSBNInstance::LogLikelihoods(
+    const StringBoolDoubleVector &, const bool);
+
+std::vector<PhyloGradient> UnrootedSBNInstance::PhyloGradients(
+    std::optional<PhyloFlags> external_flags) {
+  auto flags = CollectPhyloFlags(external_flags);
+  return GetEngine()->Gradients(tree_collection_, phylo_model_params_, rescaling_,
+                                flags);
+}
+
+template <class VectorType>
+std::vector<PhyloGradient> UnrootedSBNInstance::PhyloGradients(
+    const VectorType &flag_vec, const bool is_run_defaults) {
+  std::optional<PhyloFlags> flags = PhyloFlags(flag_vec, is_run_defaults);
+  return PhyloGradients(flags);
+}
+// Explicit instantiation for Pybind API.
+template std::vector<PhyloGradient> UnrootedSBNInstance::PhyloGradients(
+    const StringVector &, const bool);
+template std::vector<PhyloGradient> UnrootedSBNInstance::PhyloGradients(
+    const StringBoolVector &, const bool);
+template std::vector<PhyloGradient> UnrootedSBNInstance::PhyloGradients(
+    const StringDoubleVector &, const bool);
+template std::vector<PhyloGradient> UnrootedSBNInstance::PhyloGradients(
+    const StringBoolDoubleVector &, const bool);
 
 void UnrootedSBNInstance::PushBackRangeForParentIfAvailable(
     const Bitset &parent, UnrootedSBNInstance::RangeVector &range_vector) {

@@ -10,6 +10,7 @@ import pytest
 import numpy as np
 import bito
 import bito.beagle_flags as beagle_flags
+import bito.phylo_model_mapkeys as model_keys
 
 SIMPLE_SPECIFICATION = bito.PhyloModelSpecification(
     substitution="JC69", site="constant", clock="none"
@@ -110,8 +111,10 @@ def ds1_phylo_model_demo(inst):
     )
     inst.prepare_for_phylo_likelihood(gtr_specification, 2)
     phylo_model_param_block_map = inst.get_phylo_model_param_block_map()
-    phylo_model_param_block_map["substitution model rates"][:] = np.repeat(1.0 / 6, 6)
-    phylo_model_param_block_map["substitution model frequencies"][:] = 0.25
+    phylo_model_param_block_map[model_keys.SUBSTITUTION_MODEL_RATES][:] = np.repeat(
+        1.0 / 6, 6
+    )
+    phylo_model_param_block_map[model_keys.SUBSTITUTION_MODEL_FREQUENCIES][:] = 0.25
     print("\nHere's a look at phylo_model_param_block_map:")
     pprint.pprint(phylo_model_param_block_map)
     print("\nWe can see that we are changing the phylo_model_params matrix:")
@@ -153,7 +156,6 @@ def rootings_indexer_test():
 
 def test_sbn_unrooted_instance():
     """Test the bito unrooted_instance."""
-
     hello_demo()
     sampling_and_indexers_demo()
     inst = ds1_support_test()

@@ -50,3 +50,8 @@ def test_elbo_innards():
     assert burro.branch_model.log_prob(
         px_theta_sample, px_branch_representation
     ) == approx(5.330697, rel=1e-5)
+
+
+# run tests if called directly
+if __name__ == "__main__":
+    test_elbo_innards()
