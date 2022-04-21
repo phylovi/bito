@@ -41,6 +41,8 @@
 #include "nni_operation.hpp"
 #include "subsplit_dag_node.hpp"
 
+using BitsetSizeVectorMap = std::unordered_map<Bitset, SizeVector>;
+
 class SubsplitDAG {
  public:
   // ** Constructor methods:
@@ -536,6 +538,13 @@ class SubsplitDAG {
   // This indexer is an expanded version of parent_to_child_range_ in sbn_instance:
   // It includes single element range for leaf subsplits.
   BitsetSizePairMap parent_to_child_range_;
+  // Clades:
+  // - Map of all clades of all DAG Nodes:
+  //    - [ Node Subsplit Clade (Bitset) ] => [ Ids of Nodes with that Subsplit Clade ]
+  BitsetSizeVectorMap clade_subsplit_to_id_;
+  // - Map of all DAG Nodes:
+  //    - [ Union of Node's Subsplit Clades ] => [ Ids of Nodes with that Clade Union ]
+  BitsetSizeVectorMap clade_union_to_id_;
   // The number of taxa in the DAG. This is equivalent to the size of the clades in each
   // subsplit. Also equivalent to the number of leaf nodes in the DAG.
   size_t taxon_count_;

@@ -359,7 +359,7 @@ void NNIEngine::AddAcceptedNNIsToDAG() {
     edge_reindexer_.ComposeWith(mods.edge_reindexer);
   }
   // Remove DAGRoot from node reindexing.
-  node_reindexer_ = node_reindexer_.RemoveNewIndex(dag_.GetDAGRootNodeId());
+  node_reindexer_.RemoveNewIndex(dag_.GetDAGRootNodeId());
   // Grow GPEngine to fit accepted NNIs.
   Assert(dag_.NodeCountWithoutDAGRoot() == node_reindexer_.size(),
          "Node reindexer is the wrong size.");

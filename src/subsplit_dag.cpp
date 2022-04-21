@@ -1124,7 +1124,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
     // Don't reindex these edges.
     ConnectChildToAllChildren(child_subsplit, added_edge_idxs);
   }
-  // If parent node is new, add node it to all its children (except )
+  // If parent node is new, add node it to all its children (except new_child).
   if (parent_is_new) {
     CreateAndInsertNode(parent_subsplit);
     added_node_ids.push_back(GetDAGNodeId(parent_subsplit));
@@ -1353,7 +1353,7 @@ Reindexer SubsplitDAG::BuildEdgeReindexer(const size_t prev_edge_count) {
 void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
   std::vector<DAGVertex> nodes = {storage_.GetVertices().begin(),
                                   storage_.GetVertices().end()};
-  std::vector<DAGVertex> nodes_copy = Reindexer::Reindex(nodes, node_reindexer);
+  std::vector<DAGVertex> nodes_copy = Reindexer::ReindexVector(nodes, node_reindexer);
   storage_.SetVertices(nodes_copy);
 
   // Update each node's id and leafward/rootward ids.

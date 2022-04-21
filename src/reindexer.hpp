@@ -16,6 +16,7 @@
 #pragma once
 
 #include <numeric>
+#include <type_traits>
 
 #include "eigen_sugar.hpp"
 #include "sugar.hpp"
@@ -27,6 +28,7 @@ class Reindexer {
   Reindexer(SizeVector data) : data_(std::move(data)){};
 
   // ** Special Constructors
+
   // For each position in a identity reindexer, reindexer[`i`] = `i`.
   // E.g. for size = 5, reindexer = [0, 1, 2, 3, 4].
   static Reindexer IdentityReindexer(const size_t size);
@@ -38,6 +40,8 @@ class Reindexer {
     return lhs.GetData() != rhs.GetData();
   }
 
+  // ** Access
+
   size_t size() const { return data_.size(); }
   void reserve(const size_t size) { data_.reserve(size); }
   void SetReindex(const size_t old_index, const size_t new_index) {
@@ -48,57 +52,75 @@ class Reindexer {
     return data_.at(old_index);
   }
   // Find mapped old/input index corresponding to new/output index.
-  size_t GetOldIndexByNewIndex(const size_t new_index) const {
-    return size_t(std::find(GetData().begin(), GetData().end(), new_index) -
-                  GetData().begin());
-  }
-  // Add new index to end of reindexer.
-  void AppendNewIndex() { data_.push_back(size()); }
-  void AppendNewIndex(const size_t new_index) { data_.push_back(new_index); }
+  // Note: This uses a linear search. If doing many old lookups, do new lookups on
+  // inverted reindexer instead.
+  size_t GetOldIndexByNewIndex(
+      const size_t new_index,
+      std::optional<Reindexer> inverted_reindexer = std::nullopt) const;
+
   // Get underlying index vector from reindexer.
   const SizeVector &GetData() const { return data_; }
   SizeVector &GetData() { return data_; }
 
-  // Check if reindexer is in a valid state (contains every index exactly once,
-  // ranging from 0 to reindexer_size - 1).
-  bool IsValid(std::optional<size_t> length = std::nullopt) const;
+  // ** Modify
 
-  // ** Modification Operations
+  // In a given reindexer, take the old_id in the reindexer and reassign it to the
+  // new_id and shift over the ids strictly between old_id and new_id to ensure that
+  // the reindexer remains valid. For example if old_id = 1 and new_id = 4, this
+  // method would shift 1 -> 4, 4 -> 3, 3 -> 2, and 2 -> 1.
+  void ReassignAndShift(const size_t old_id, const size_t new_id);
 
-  // Builds new inverse reindexer of a given reindexer, such that input->output becomes
-  // output->input.
-  Reindexer InvertReindexer() const;
+  // Append next append_count ordered indices to reindexer.
+  void AppendNextIndex(const size_t append_count = 1);
+  // Append given index to reindexer.
+  void AppendNewIndex(const size_t new_idx);
 
   // Builds new reindexer by removing an element identified by its index and shifting
   // other idx to maintain valid reindexer.
-  Reindexer RemoveOldIndex(const size_t remove_old_idx);
-  Reindexer RemoveNewIndex(const size_t remove_new_idx);
+  void RemoveOldIndex(const size_t old_idx_to_remove);
+  void RemoveNewIndex(const size_t new_idx_to_remove);
+  // Remove vector of indices.
+  void RemoveOldIndex(SizeVector &old_idx_to_remove);
+  void RemoveNewIndex(SizeVector &new_idx_to_remove,
+                      std::optional<Reindexer> inverted_reindexer = std::nullopt);
+
+  // Append index and insert into specified positions.
+  void InsertOldIndex(const size_t old_idx_to_add);
+  void InsertNewIndex(const size_t new_idx_to_add);
+  // Insert vector of indices.
+  void InsertOldIndex(SizeVector &sorted_old_idxs_to_add);
+  void InsertNewIndex(SizeVector &sorted_new_idxs_to_add);
+
+  // ** Transform
+
+  // Make indexer into IdentityReindexer.
+  void IdentityReindexer();
+
+  // Builds new inverse reindexer of a given reindexer, such that input->output
+  // becomes output->input.
+  Reindexer InvertReindexer() const;
 
   // Builds a reindexer composing apply_reindexer onto a base_reindexer. Resulting
   // reindexer contains both reindexing operations combined.
   Reindexer ComposeWith(const Reindexer &apply_reindexer);
 
-  // In a given reindexer, take the old_id in the reindexer and reassign it to the
-  // new_id and shift over the ids strictly between old_id and new_id to ensure that the
-  // reindexer remains valid. For example if old_id = 1 and new_id = 4, this method
-  // would shift 1 -> 4, 4 -> 3, 3 -> 2, and 2 -> 1.
-  void ReassignAndShift(const size_t old_id, const size_t new_id);
-
-  // ** Apply Operations
+  // ** Apply to Data Vector
+  // Applies reindexing to a supplied data vector of VectorType.
+  // Note: Expects VectorType to have `operator[]` accessor and `size()`.
 
   // Reindexes the given data vector according to the reindexer.
   template <typename VectorType>
-  static VectorType Reindex(VectorType &old_vector, const Reindexer &reindexer,
-                            std::optional<size_t> length = std::nullopt) {
+  static VectorType ReindexVector(VectorType &old_vector, const Reindexer &reindexer,
+                                  std::optional<size_t> length = std::nullopt) {
     size_t reindex_size = (length.has_value() ? length.value() : old_vector.size());
-    Assert(
-        size_t(old_vector.size()) >= reindex_size,
-        "The vector must be at least as long as reindex_size in Reindexer::Reindex.");
+    Assert(size_t(old_vector.size()) >= reindex_size,
+           "The vector must be at least as long as reindex_size in "
+           "Reindexer::ReindexVector.");
     Assert(size_t(reindexer.size()) >= reindex_size,
            "The reindexer must be at least as long as reindex_size in "
-           "Reindexer::Reindex.");
+           "Reindexer::ReindexVector.");
     Assert(reindexer.IsValid(reindex_size),
-           "Reindexer must be valid in Reindexer::Reindex.");
+           "Reindexer must be valid in Reindexer::ReindexVector.");
     VectorType new_vector(old_vector.size());
     // Data to reindex.
     for (size_t idx = 0; idx < reindex_size; idx++) {
@@ -113,13 +135,13 @@ class Reindexer {
 
   // Reindexes the given data vector concatenated with additional data values.
   template <typename VectorType>
-  static VectorType Reindex(VectorType &old_vector, const Reindexer &reindexer,
-                            VectorType &additional_values) {
-    Assert(reindexer.IsValid(), "Reindexer must be valid in Reindexer::Reindex.");
+  static VectorType ReindexVector(VectorType &old_vector, const Reindexer &reindexer,
+                                  VectorType &additional_values) {
+    Assert(reindexer.IsValid(), "Reindexer must be valid in Reindexer::ReindexVector.");
     Assert(old_vector.size() + additional_values.size() ==
                static_cast<Eigen::Index>(reindexer.size()),
            "Size of the vector and additional values must add up to the reindexer size "
-           "in Reindexer::Reindex.");
+           "in Reindexer::ReindexVector.");
     VectorType new_vector(reindexer.size());
     // Data to reindex.
     for (Eigen::Index idx = 0; idx < old_vector.size(); idx++) {
@@ -133,15 +155,14 @@ class Reindexer {
     return new_vector;
   };
 
-  // Reindex data vector in-place. Expects VectorType to have `operator[]` accessor and
-  // `size()`.
+  // Reindex data vector in place.
   template <typename VectorType, typename DataType>
-  static void ReindexInPlace(VectorType &data_vector, const Reindexer &reindexer,
-                             size_t length, DataType &temp1, DataType &temp2) {
+  static void ReindexVectorInPlace(VectorType &data_vector, const Reindexer &reindexer,
+                                   size_t length, DataType &temp1, DataType &temp2) {
     Assert(size_t(data_vector.size()) >= length,
-           "data_vector wrong size for Reindexer::ReindexInPlace.");
+           "data_vector wrong size for Reindexer::ReindexVectorInPlace.");
     Assert(size_t(reindexer.size()) >= length,
-           "reindexer wrong size for Reindexer::ReindexInPlace.");
+           "reindexer wrong size for Reindexer::ReindexVectorInPlace.");
     BoolVector updated_idx = BoolVector(length, false);
     for (size_t i = 0; i < length; i++) {
       size_t old_idx = i;
@@ -151,18 +172,18 @@ class Reindexer {
         continue;
       }
       // Because reindexing is one-to-one function, starting at any given index in the
-      // the vector, if we follow the chain of remappings from each old index to its new
-      // index, we will eventually form a cycle that returns to the initial old index.
-      // This avoid allocating a second data array to perform the reindex, as only two
-      // temporary values are needed. Only a boolean array is needed to check for
-      // already updated indexes.
+      // the vector, if we follow the chain of remappings from each old index to its
+      // new index, we will eventually form a cycle that returns to the initial old
+      // index. This avoid allocating a second data array to perform the reindex, as
+      // only two temporary values are needed. Only a boolean array is needed to check
+      // for already updated indexes.
       bool is_current_node_updated = updated_idx[new_idx];
-      temp1 = data_vector[old_idx];
+      temp1 = std::move(data_vector[old_idx]);
       while (is_current_node_updated == false) {
         // copy data at old_idx to new_idx, and store data at new_idx in temporary.
-        temp2 = data_vector[new_idx];
-        data_vector[new_idx] = temp1;
-        temp1 = temp2;
+        temp2 = std::move(data_vector[new_idx]);
+        data_vector[new_idx] = std::move(temp1);
+        temp1 = std::move(temp2);
         // update to next idx in cycle.
         updated_idx[new_idx] = true;
         old_idx = new_idx;
@@ -172,13 +193,13 @@ class Reindexer {
     }
   };
 
-  // Reindex id vector. Expects VectorType to have `operator[]` accessor and
-  // `size()`.
+  // Reindex data vector in place.
+  // Overload provides its own temporaries values for moving data if none provided.
   template <typename VectorType, typename DataType>
-  static void ReindexInPlace(VectorType &data_vector, const Reindexer &reindexer,
-                             size_t length) {
+  static void ReindexVectorInPlace(VectorType &data_vector, const Reindexer &reindexer,
+                                   size_t length) {
     DataType temp1, temp2;
-    Reindexer::ReindexInPlace(data_vector, reindexer, length, temp1, temp2);
+    Reindexer::ReindexVectorInPlace(data_vector, reindexer, length, temp1, temp2);
   }
 
   // Remaps each of the ids in the vector according to the reindexer.
@@ -196,14 +217,44 @@ class Reindexer {
                    });
   };
 
-  // ** I/O
-
-  friend std::ostream &operator<<(std::ostream &os, const Reindexer &reindexer) {
-    os << reindexer.GetData();
-    return os;
+  // Builds vector reindexed according to reindexer.
+  // Leaves original data vector unmodified.
+  template <typename VectorType>
+  static VectorType BuildReindexedVector(const VectorType &old_vector,
+                                         const Reindexer &reindexer,
+                                         std::optional<size_t> length = std::nullopt) {
+    size_t reindex_size = (length.has_value() ? length.value() : old_vector.size());
+    Assert(size_t(old_vector.size()) >= reindex_size,
+           "The vector must be at least as long as reindex_size in "
+           "Reindexer::ReindexVector.");
+    Assert(size_t(reindexer.size()) >= reindex_size,
+           "The reindexer must be at least as long as reindex_size in "
+           "Reindexer::ReindexVector.");
+    Assert(reindexer.IsValid(reindex_size),
+           "Reindexer must be valid in Reindexer::ReindexVector.");
+    VectorType new_vector(old_vector.size());
+    // Data to reindex.
+    for (size_t idx = 0; idx < reindex_size; idx++) {
+      new_vector[idx] = old_vector[reindexer.GetNewIndexByOldIndex(idx)];
+    }
+    // Data to copy over.
+    for (size_t idx = reindex_size; idx < size_t(new_vector.size()); idx++) {
+      new_vector[idx] = old_vector[idx];
+    }
+    return new_vector;
   };
 
+  // ** Miscellaneous
+
+  friend std::ostream &operator<<(std::ostream &os, const Reindexer &reindexer);
+
+  // Check if reindexer is in a valid state (contains every index exactly once,
+  // ranging from 0 to reindexer_size - 1).
+  bool IsValid(std::optional<size_t> length = std::nullopt) const;
+
  private:
+  // Stores reindexing as a mapping of index-to-value pairs in vector.
+  // (old index = data_'s position) -> (new index = data_'s value)
   SizeVector data_;
 };
 
@@ -228,10 +279,10 @@ TEST_CASE("Reindexer: Reindex") {
   // sizes.
   SizeVector old_size_vector{7, 8, 9};
   Reindexer reindexer({2, 0, 3, 1});
-  CHECK_THROWS(Reindexer::Reindex(old_size_vector, reindexer));
+  CHECK_THROWS(Reindexer::ReindexVector(old_size_vector, reindexer));
   // Check that Reindex returns correctly.
   reindexer = Reindexer({2, 0, 1});
-  SizeVector new_size_vector = Reindexer::Reindex(old_size_vector, reindexer);
+  SizeVector new_size_vector = Reindexer::ReindexVector(old_size_vector, reindexer);
   SizeVector correct_new_size_vector{8, 9, 7};
   CHECK_EQ(new_size_vector, correct_new_size_vector);
   // Check that Reindex also works with EigenVectorXd and additional values.
@@ -241,7 +292,7 @@ TEST_CASE("Reindexer: Reindex") {
   additional_values << 10, 11;
   reindexer = Reindexer({2, 4, 0, 3, 1});
   EigenVectorXd new_eigen_vector =
-      Reindexer::Reindex(old_eigen_vector, reindexer, additional_values);
+      Reindexer::ReindexVector(old_eigen_vector, reindexer, additional_values);
   EigenVectorXd correct_new_eigen_vector(5);
   correct_new_eigen_vector << 9, 11, 7, 10, 8;
   CHECK_EQ(new_eigen_vector, correct_new_eigen_vector);
@@ -309,6 +360,13 @@ TEST_CASE("Reindexer: ComposeWith") {
   composed_reindexer = composed_reindexer.ComposeWith(pairswap_reindexer);
   correct_reindexer = Reindexer({4, 5, 2, 3, 0, 1});
   CHECK_EQ(composed_reindexer, correct_reindexer);
+}
+
+TEST_CASE("Reindexer: Insert/Remove") {
+  Reindexer reindexer = Reindexer({2, 3, 0, 1});
+  StringVector strings = StringVector({"c", "d", "a", "b"});
+  StringVector golden_strings = StringVector({"a", "b", "c", "d"});
+  // Reindexer::ReindexVectorInPlace(strings, reindexer, strings.size());
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

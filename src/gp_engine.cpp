@@ -190,12 +190,12 @@ void GPEngine::ReindexPLVs(const Reindexer node_reindexer,
   }
   Assert(plv_reindexer.IsValid(GetPLVCount()), "PLV Reindexer is not valid.");
   // Reindex data vectors
-  Reindexer::ReindexInPlace(plvs_, plv_reindexer, GetPLVCount(),
-                            plvs_.at(GetPLVCount()), plvs_.at(GetPLVCount() + 1));
-  Reindexer::ReindexInPlace<EigenVectorXi, int>(rescaling_counts_, plv_reindexer,
-                                                GetPLVCount());
-  Reindexer::ReindexInPlace<EigenVectorXd, double>(unconditional_node_probabilities_,
-                                                   node_reindexer, GetNodeCount());
+  Reindexer::ReindexVectorInPlace(plvs_, plv_reindexer, GetPLVCount(),
+                                  plvs_.at(GetPLVCount()), plvs_.at(GetPLVCount() + 1));
+  Reindexer::ReindexVectorInPlace<EigenVectorXi, int>(rescaling_counts_, plv_reindexer,
+                                                      GetPLVCount());
+  Reindexer::ReindexVectorInPlace<EigenVectorXd, double>(
+      unconditional_node_probabilities_, node_reindexer, GetNodeCount());
 }
 
 void GPEngine::ReindexGPCSPs(const Reindexer gpcsp_reindexer,
@@ -205,14 +205,14 @@ void GPEngine::ReindexGPCSPs(const Reindexer gpcsp_reindexer,
   Assert(gpcsp_reindexer.IsValid(gpcsp_count_),
          "GPCSP Reindexer is not valid for GPEngine size.");
   // Reindex data vectors.
-  Reindexer::ReindexInPlace<EigenVectorXd, double>(branch_lengths_, gpcsp_reindexer,
-                                                   GetGPCSPCount());
-  Reindexer::ReindexInPlace<EigenVectorXd, double>(hybrid_marginal_log_likelihoods_,
-                                                   gpcsp_reindexer, GetGPCSPCount());
-  Reindexer::ReindexInPlace<EigenVectorXd, double>(q_, gpcsp_reindexer,
-                                                   GetGPCSPCount());
-  Reindexer::ReindexInPlace<EigenVectorXd, double>(inverted_sbn_prior_, gpcsp_reindexer,
-                                                   GetGPCSPCount());
+  Reindexer::ReindexVectorInPlace<EigenVectorXd, double>(
+      branch_lengths_, gpcsp_reindexer, GetGPCSPCount());
+  Reindexer::ReindexVectorInPlace<EigenVectorXd, double>(
+      hybrid_marginal_log_likelihoods_, gpcsp_reindexer, GetGPCSPCount());
+  Reindexer::ReindexVectorInPlace<EigenVectorXd, double>(q_, gpcsp_reindexer,
+                                                         GetGPCSPCount());
+  Reindexer::ReindexVectorInPlace<EigenVectorXd, double>(
+      inverted_sbn_prior_, gpcsp_reindexer, GetGPCSPCount());
 }
 
 void GPEngine::GrowTempPLVs(const size_t new_node_padding) {
