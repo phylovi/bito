@@ -106,8 +106,7 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
       std::move(site_pattern), dag_.NodeCountWithoutDAGRoot(), plv_count_per_node_,
       dag_.EdgeCountWithLeafSubsplits(), mmap_file_path_, rescaling_threshold,
       std::move(sbn_prior),
-      std::move(
-          unconditional_node_probabilities.segment(0, dag_.NodeCountWithoutDAGRoot())),
+      unconditional_node_probabilities.segment(0, dag_.NodeCountWithoutDAGRoot()),
       std::move(inverted_sbn_prior));
 }
 
