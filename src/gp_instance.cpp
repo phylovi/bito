@@ -411,7 +411,16 @@ EigenVectorXd GPInstance::GetBranchLengths() const {
 void GPInstance::SubsplitDAGToDot(const std::string &out_path,
                                   bool show_index_labels) const {
   std::ofstream out_stream(out_path);
-  out_stream << dag_.ToDot(show_index_labels) << std::endl;
+  out_stream << dag_.ExportToDot(show_index_labels) << std::endl;
+  if (out_stream.bad()) {
+    Failwith("Failure writing to " + out_path);
+  }
+  out_stream.close();
+}
+
+void GPInstance::SubsplitDAGExportToJSON(const std::string &out_path) const {
+  std::ofstream out_stream(out_path);
+  out_stream << dag_.ExportToJSON() << std::endl;
   if (out_stream.bad()) {
     Failwith("Failure writing to " + out_path);
   }

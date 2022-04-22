@@ -1562,3 +1562,13 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
     nni_count++;
   }
 }
+
+TEST_CASE("SubsplitDAG: Export to JSON") {
+  const std::string fasta_path = "data/six_taxon_longer.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.data");
+  auto& dag = inst.GetDAG();
+
+  std::cout << dag.ExportToJSON() << std::endl;
+  dag.ExportToJSON("_ignore/dag_to_json.json");
+}

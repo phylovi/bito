@@ -608,6 +608,8 @@ PYBIND11_MODULE(bito, m) {
             return self.GetDAG().BuildEdgeIdxToPCSPBoolVectorMap();
           },
           "Build a map from SubsplitDAG edge index to its corresponding PCSP bitset.")
+      .def("export_dag_to_json", &GPInstance::SubsplitDAGExportToJSON,
+           R"raw(Write out SubsplitDAG to JSON format file.)raw", py::arg("out_path"))
 
       // ** Estimation
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",

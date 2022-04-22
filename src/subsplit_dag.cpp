@@ -7,6 +7,10 @@
 #include "numerical_utils.hpp"
 #include "sbn_probability.hpp"
 
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+
 // ** Constructor methods:
 
 SubsplitDAG::SubsplitDAG()
@@ -111,7 +115,7 @@ bool operator!=(const SubsplitDAG &lhs, const SubsplitDAG &rhs) {
   return (SubsplitDAG::Compare(lhs, rhs) != 0);
 }
 
-// ** Count methods:
+// ** Count
 
 void SubsplitDAG::CountTopologies() {
   topology_count_below_ = EigenVectorXd::Ones(NodeCount());
@@ -150,7 +154,7 @@ size_t SubsplitDAG::EdgeCountWithLeafSubsplits() const {
   return storage_.GetLines().size();
 }
 
-// ** Output methods:
+// ** I/O
 
 StringSizeMap SubsplitDAG::SummaryStatistics() const {
   return {{"node_count", NodeCount()}, {"edge_count", EdgeCountWithLeafSubsplits()}};
@@ -189,36 +193,39 @@ void SubsplitDAG::PrintParentToRange() const {
   }
 }
 
-void SubsplitDAG::ToDot(const std::string file_path, bool show_index_labels) const {
+// ** File Import/Export
+
+void SubsplitDAG::ExportToDot(const std::string file_path,
+                              const bool show_index_labels) const {
   std::ofstream out_file(file_path);
-  out_file << ToDot(show_index_labels);
+  out_file << ExportToDot(show_index_labels);
   out_file.close();
 }
 
-std::string SubsplitDAG::ToDot(bool show_index_labels) const {
-  std::stringstream string_stream;
-  string_stream << "digraph g {\n";
-  string_stream << "node [shape=record];\n";
-  string_stream << "edge [colorscheme=dark23];\n";
+std::string SubsplitDAG::ExportToDot(const bool show_index_labels) const {
+  std::stringstream stream;
+  stream << "digraph g {\n";
+  stream << "node [shape=record];\n";
+  stream << "edge [colorscheme=dark23];\n";
   DepthFirstWithAction(
       {GetDAGRootNodeId()},
       SubsplitDAGTraversalAction(
           // BeforeNode
-          [this, &string_stream, &show_index_labels](size_t node_id) {
+          [this, &stream, &show_index_labels](size_t node_id) {
             const auto &node = GetDAGNode(node_id);
             if (node.IsDAGRootNode()) {
-              string_stream << node_id << " [label=\"<f0>&rho;\"]\n";
+              stream << node_id << " [label=\"<f0>&rho;\"]\n";
               return;
             }
             auto bs = node.GetBitset();
-            string_stream
+            stream
                 << node_id << " [label=\"<f0>"
                 << bs.SubsplitGetClade(SubsplitClade::Left).ToVectorOfSetBitsAsString()
                 << "|<f1>";
             if (show_index_labels) {
-              string_stream << node_id;
+              stream << node_id;
             }
-            string_stream
+            stream
                 << "|<f2>"
                 << bs.SubsplitGetClade(SubsplitClade::Right).ToVectorOfSetBitsAsString()
                 << "\"]\n";
@@ -228,39 +235,135 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
           // BeforeNodeClade
           [](size_t node_id, bool rotated) {},
           // VisitEdge
-          [this, &string_stream, &show_index_labels](size_t node_id, size_t child_id,
-                                                     bool rotated) {
+          [this, &stream, &show_index_labels](size_t node_id, size_t child_id,
+                                              bool rotated) {
             if (GetDAGNode(child_id).IsLeaf()) {
-              string_stream << child_id << " [label=\"<f1>" << child_id << "\"]\n";
+              stream << child_id << " [label=\"<f1>" << child_id << "\"]\n";
             }
-            string_stream << "\"" << node_id << "\":";
-            string_stream << (rotated ? "f0" : "f2");
-            string_stream << "->\"";
-            string_stream << child_id << "\":f1";
+            stream << "\"" << node_id << "\":";
+            stream << (rotated ? "f0" : "f2");
+            stream << "->\"";
+            stream << child_id << "\":f1";
             if (show_index_labels) {
-              string_stream << " [label=\"" << GetEdgeIdx(node_id, child_id);
+              stream << " [label=\"" << GetEdgeIdx(node_id, child_id);
               if (rotated) {
-                string_stream << "\", color=1, fontcolor=1";
+                stream << "\", color=1, fontcolor=1";
               } else {
-                string_stream << "\", color=3, fontcolor=3";
+                stream << "\", color=3, fontcolor=3";
               }
               if (GetDAGNode(node_id).IsDAGRootNode()) {
-                string_stream << ",style=dashed]";
+                stream << ",style=dashed]";
               } else {
-                string_stream << "]";
+                stream << "]";
               }
             } else {
               if (GetDAGNode(node_id).IsDAGRootNode()) {
-                string_stream << "[style=dashed]";
+                stream << "[style=dashed]";
               }
             }
-            string_stream << "\n";
+            stream << "\n";
           }));
-  string_stream << "}";
-  return string_stream.str();
+  stream << "}" << std::endl;
+  return stream.str();
 }
 
-// ** Build output indexes/vectors methods:
+void SubsplitDAG::ExportToNewick(const std::string &file_path) const {
+  std::ofstream out_file(file_path);
+  out_file << ExportToNewick();
+  out_file.close();
+}
+
+std::string SubsplitDAG::ExportToNewick() const {
+  std::stringstream stream;
+
+  return stream.str();
+}
+
+void SubsplitDAG::ExportToJSON(const std::string &file_path) const {
+  std::ofstream out_file(file_path);
+  out_file << ExportToJSON();
+  out_file.close();
+}
+
+std::string SubsplitDAG::ExportToJSON() const {
+  std::stringstream stream;
+  bool first_loop;
+
+  // JSON begin
+  stream << "{" << std::endl;
+
+  // Name field
+  stream << std::quoted("name") << ": " << std::quoted("") << "," << std::endl;
+  // Taxon Count field
+  stream << std::quoted("taxon_count") << ": " << TaxonCount() << "," << std::endl;
+
+  // Taxon Names field
+  stream << std::quoted("taxon_names") << ": [" << std::endl;
+  StringVector taxon_names(TaxonCount());
+  for (const auto &[taxon_name, taxon_id] : GetTaxonMap()) {
+    taxon_names[taxon_id] = taxon_name;
+  }
+  first_loop = true;
+  for (const auto &taxon_name : taxon_names) {
+    if (!first_loop) {
+      stream << "," << std::endl;
+    } else {
+      first_loop = false;
+    }
+    stream << "\t" << std::quoted(taxon_name);
+  }
+  stream << std::endl << "]," << std::endl;
+
+  // Rootsplit Field
+  stream << std::quoted("rootsplit_support_list") << ": [" << std::endl;
+  first_loop = true;
+  for (const auto &rootsplit_id : GetRootsplitNodeIds()) {
+    const auto &rootsplit_bitset = GetDAGNode(rootsplit_id).GetBitset();
+    if (!first_loop) {
+      stream << "," << std::endl;
+    } else {
+      first_loop = false;
+    }
+    stream << "\t" << std::quoted(rootsplit_bitset.ToString());
+  }
+  stream << "]," << std::endl;
+
+  // PCSP Field
+  stream << std::quoted("subsplit_support_dict") << ": {" << std::endl;
+  bool first_loop_outer = true;
+  for (const auto &[parent_bitset, parent_id] : GetSubsplitToIdMap()) {
+    const auto &parent_node = GetDAGNode(parent_id);
+    if (!first_loop_outer) {
+      stream << "," << std::endl;
+    } else {
+      first_loop_outer = false;
+    }
+    stream << "\t" << std::quoted(parent_bitset.ToString()) << ": [" << std::endl;
+    bool first_loop_inner = true;
+    for (const auto &clade : {SubsplitClade::Left, SubsplitClade::Right}) {
+      for (const auto &child_id :
+           parent_node.GetNeighbors(Direction::Leafward, clade)) {
+        const auto &left_child_bitset =
+            GetDAGNode(child_id).GetBitset().SubsplitGetClade(SubsplitClade::Left);
+        if (!first_loop_inner) {
+          stream << "," << std::endl;
+        } else {
+          first_loop_inner = false;
+        }
+        stream << "\t\t" << std::quoted(left_child_bitset.ToString());
+      }
+    }
+    stream << std::endl << "\t]";
+  }
+  stream << "}" << std::endl;
+
+  // JSON end
+  stream << std::endl << "}" << std::endl;
+
+  return stream.str();
+}
+
+// ** Build Output Indexers/Vectors
 
 BitsetSizeMap SubsplitDAG::BuildEdgeIndexer() const {
   auto edge_indexer = BitsetSizeMap();
@@ -382,6 +485,8 @@ const std::map<std::string, size_t> &SubsplitDAG::GetTaxonMap() const {
 }
 
 const BitsetSizeMap &SubsplitDAG::GetSubsplitToIdMap() const { return subsplit_to_id_; }
+
+// ** Priors
 
 EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
   EigenVectorXd q = EigenVectorXd::Ones(EdgeCountWithLeafSubsplits());
@@ -638,7 +743,7 @@ std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const SizeBitsetMap &index_to
   return children_subsplits;
 }
 
-// ** Modify DAG methods:
+// ** Modify
 
 std::tuple<BitsetSizeMap, SizeBitsetMap, BitsetVector>
 SubsplitDAG::ProcessTopologyCounter(const Node::TopologyCounter &topology_counter) {
