@@ -1219,7 +1219,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     passes_resized &= (gpengine.GetNodeCount() == dag.NodeCountWithoutDAGRoot());
     passes_resized &= (gpengine.GetGPCSPCount() == dag.EdgeCountWithLeafSubsplits());
     // Check PLVs reindexing properly.
-    for (const auto& bitset : pre_dag.GetSortedVectorOfNodeBitsets()) {
+    for (const auto& bitset : pre_dag.BuildSortedVectorOfNodeBitsets()) {
       if (bitset.SubsplitIsUCA()) {
         continue;
       }
@@ -1234,7 +1234,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     // Check branch length reindexing properly.
     auto pre_branch_lengths = pre_gpengine.GetBranchLengths();
     auto branch_lengths = gpengine.GetBranchLengths();
-    for (const auto& bitset : pre_dag.GetSortedVectorOfEdgeBitsets()) {
+    for (const auto& bitset : pre_dag.BuildSortedVectorOfEdgeBitsets()) {
       const size_t edge_idx = dag.GetEdgeIdx(bitset);
       const size_t pre_edge_idx = pre_dag.GetEdgeIdx(bitset);
       const auto branch_a = branch_lengths[edge_idx];

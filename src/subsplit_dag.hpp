@@ -113,10 +113,6 @@ class SubsplitDAG {
                    const bool show_index_labels = true) const;
   std::string ExportToDot(const bool show_index_labels = true) const;
 
-  // Export SubsplitDAG to Newick file.
-  void ExportToNewick(const std::string &file_path) const;
-  std::string ExportToNewick() const;
-
   // Export SubsplitDAG to JSON file.
   void ExportToJSON(const std::string &file_path) const;
   std::string ExportToJSON() const;
@@ -141,11 +137,11 @@ class SubsplitDAG {
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllTopologies() const;
   // Get set of all taxon names.
-  std::vector<std::string> GetSortedVectorOfTaxonNames() const;
+  std::vector<std::string> BuildSortedVectorOfTaxonNames() const;
   // Get sorted vector of all node Subsplit bitsets.
-  std::vector<Bitset> GetSortedVectorOfNodeBitsets() const;
+  std::vector<Bitset> BuildSortedVectorOfNodeBitsets() const;
   // Get sorted vector of all edge PCSP bitsets.
-  std::vector<Bitset> GetSortedVectorOfEdgeBitsets() const;
+  std::vector<Bitset> BuildSortedVectorOfEdgeBitsets() const;
 
   // ** Access
 

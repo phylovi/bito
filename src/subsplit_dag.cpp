@@ -79,8 +79,8 @@ int SubsplitDAG::Compare(const SubsplitDAG &lhs, const SubsplitDAG &rhs) {
   // Create translation map (lhs->rhs) for bitset clades.
   auto taxon_map = SubsplitDAG::BuildTaxonTranslationMap(lhs, rhs);
   // (2) Compare Subsplit Nodes.
-  auto lhs_nodes = lhs.GetSortedVectorOfNodeBitsets();
-  auto rhs_nodes = rhs.GetSortedVectorOfNodeBitsets();
+  auto lhs_nodes = lhs.BuildSortedVectorOfNodeBitsets();
+  auto rhs_nodes = rhs.BuildSortedVectorOfNodeBitsets();
   // Translate to account for different Taxon mappings and sort output.
   for (size_t i = 0; i < lhs_nodes.size(); i++) {
     lhs_nodes[i] =
@@ -92,8 +92,8 @@ int SubsplitDAG::Compare(const SubsplitDAG &lhs, const SubsplitDAG &rhs) {
     return (lhs_nodes < rhs_nodes) ? -1 : 1;
   }
   // (3) Compare PCSP Edges.
-  auto lhs_edges = lhs.GetSortedVectorOfEdgeBitsets();
-  auto rhs_edges = rhs.GetSortedVectorOfEdgeBitsets();
+  auto lhs_edges = lhs.BuildSortedVectorOfEdgeBitsets();
+  auto rhs_edges = rhs.BuildSortedVectorOfEdgeBitsets();
   // Translate to account for different Taxon mappings and sort output.
   for (size_t i = 0; i < lhs_edges.size(); i++) {
     lhs_edges[i] =
@@ -267,18 +267,6 @@ std::string SubsplitDAG::ExportToDot(const bool show_index_labels) const {
   return stream.str();
 }
 
-void SubsplitDAG::ExportToNewick(const std::string &file_path) const {
-  std::ofstream out_file(file_path);
-  out_file << ExportToNewick();
-  out_file.close();
-}
-
-std::string SubsplitDAG::ExportToNewick() const {
-  std::stringstream stream;
-
-  return stream.str();
-}
-
 void SubsplitDAG::ExportToJSON(const std::string &file_path) const {
   std::ofstream out_file(file_path);
   out_file << ExportToJSON();
@@ -338,9 +326,13 @@ std::string SubsplitDAG::ExportToJSON() const {
     } else {
       first_loop_outer = false;
     }
-    stream << "\t" << std::quoted(parent_bitset.ToString()) << ": [" << std::endl;
-    bool first_loop_inner = true;
     for (const auto &clade : {SubsplitClade::Left, SubsplitClade::Right}) {
+      // Assure that focal clade is on the lhs of bitset.
+      const auto focalized_bitset =
+          parent_bitset.SubsplitGetClade(Bitset::Opposite(clade)) +
+          parent_bitset.SubsplitGetClade(clade);
+      stream << "\t" << std::quoted(focalized_bitset.ToString()) << ": [" << std::endl;
+      bool first_loop_inner = true;
       for (const auto &child_id :
            parent_node.GetNeighbors(Direction::Leafward, clade)) {
         const auto &left_child_bitset =
@@ -352,8 +344,8 @@ std::string SubsplitDAG::ExportToJSON() const {
         }
         stream << "\t\t" << std::quoted(left_child_bitset.ToString());
       }
+      stream << std::endl << "\t]";
     }
-    stream << std::endl << "\t]";
   }
   stream << "}" << std::endl;
 
@@ -449,7 +441,7 @@ SizePair SubsplitDAG::GetChildEdgeRange(const Bitset &subsplit,
   return parent_to_child_range_.at(SubsplitToSortedOrder(subsplit, rotated));
 }
 
-std::vector<std::string> SubsplitDAG::GetSortedVectorOfTaxonNames() const {
+std::vector<std::string> SubsplitDAG::BuildSortedVectorOfTaxonNames() const {
   std::vector<std::string> taxa;
   for (const auto &name_id : dag_taxa_) {
     taxa.push_back(name_id.first);
@@ -458,7 +450,7 @@ std::vector<std::string> SubsplitDAG::GetSortedVectorOfTaxonNames() const {
   return taxa;
 }
 
-std::vector<Bitset> SubsplitDAG::GetSortedVectorOfNodeBitsets() const {
+std::vector<Bitset> SubsplitDAG::BuildSortedVectorOfNodeBitsets() const {
   std::vector<Bitset> nodes;
   for (size_t i = 0; i < NodeCount(); i++) {
     Bitset node_bitset = GetDAGNode(i).GetBitset();
@@ -468,7 +460,7 @@ std::vector<Bitset> SubsplitDAG::GetSortedVectorOfNodeBitsets() const {
   return nodes;
 }
 
-std::vector<Bitset> SubsplitDAG::GetSortedVectorOfEdgeBitsets() const {
+std::vector<Bitset> SubsplitDAG::BuildSortedVectorOfEdgeBitsets() const {
   std::vector<Bitset> edges;
   for (auto i : storage_.GetLines()) {
     auto parent_bitset = GetDAGNode(i.GetParent()).GetBitset();
@@ -989,8 +981,8 @@ Bitset SubsplitDAG::SubsplitToSortedOrder(const Bitset &subsplit, bool rotated) 
 
 SizeVector SubsplitDAG::BuildTaxonTranslationMap(const SubsplitDAG &dag_a,
                                                  const SubsplitDAG &dag_b) {
-  auto names_a = dag_a.GetSortedVectorOfTaxonNames();
-  auto names_b = dag_b.GetSortedVectorOfTaxonNames();
+  auto names_a = dag_a.BuildSortedVectorOfTaxonNames();
+  auto names_b = dag_b.BuildSortedVectorOfTaxonNames();
   Assert(names_a == names_b,
          "SubsplitDAG::BuildTaxonTranslationMap(): SubsplitDAGs do not cover the same "
          "taxon set.");
