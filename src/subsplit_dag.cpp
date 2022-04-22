@@ -321,16 +321,17 @@ std::string SubsplitDAG::ExportToJSON() const {
   bool first_loop_outer = true;
   for (const auto &[parent_bitset, parent_id] : GetSubsplitToIdMap()) {
     const auto &parent_node = GetDAGNode(parent_id);
-    if (!first_loop_outer) {
-      stream << "," << std::endl;
-    } else {
-      first_loop_outer = false;
-    }
+
     for (const auto &clade : {SubsplitClade::Left, SubsplitClade::Right}) {
       // Assure that focal clade is on the lhs of bitset.
       const auto focalized_bitset =
           parent_bitset.SubsplitGetClade(Bitset::Opposite(clade)) +
           parent_bitset.SubsplitGetClade(clade);
+      if (!first_loop_outer) {
+        stream << "," << std::endl;
+      } else {
+        first_loop_outer = false;
+      }
       stream << "\t" << std::quoted(focalized_bitset.ToString()) << ": [" << std::endl;
       bool first_loop_inner = true;
       for (const auto &child_id :
