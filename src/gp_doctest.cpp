@@ -1481,7 +1481,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 
   // Compute likelihoods for preDAG.
   nni_count = 0;
-  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     std::ignore = nni;
     const auto likelihood = GPInstGetNNILikelihood(pre_inst, pre_nni);
     prenni_predag_likelihoods.insert({pre_nni, likelihood});
@@ -1494,7 +1494,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
   graft_nni_engine.GrowEngineForAdjacentNNILikelihoods(true, true);
   GPOperationVector graft_ops;
   nni_count = 0;
-  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     const auto [prenni_plv_idx, nni_plv_idx] =
         graft_nni_engine.PassDataFromPreNNIToPostNNIViaReference(pre_nni, nni,
                                                                  nni_count, true);
@@ -1512,7 +1512,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
   const auto all_branch_lengths =
       graft_gpengine.GetBranchLengths(0, graft_gpengine.GetPaddedGPCSPCount());
   nni_count = 0;
-  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     auto pre_nni_likelihood = GPInstGetNNILikelihood(graft_inst, pre_nni);
     prenni_graftdag_likelihoods.insert({pre_nni, pre_nni_likelihood});
     size_t edge_idx = graft_gpengine.GetTempGPCSPIndex(nni_count);
@@ -1523,7 +1523,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 
   // Compute likelihoods for truthDAG.
   nni_count = 0;
-  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     auto truth_inst =
         GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_truth.data");
     auto& truth_dag = truth_inst.GetDAG();
@@ -1548,7 +1548,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 
   // Tests that GraftDAG produces same likelihood as TruthDAG
   nni_count = 0;
-  for (const auto [nni, pre_nni] : nni_to_prenni_map) {
+  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     const auto nni_truth = nni_truthdag_likelihoods.at(nni);
     const auto prenni_truth = prenni_truthdag_likelihoods.at(pre_nni);
     const auto nni_graft = nni_graftdag_likelihoods.at(nni);

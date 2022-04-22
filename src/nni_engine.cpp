@@ -131,7 +131,7 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaCopy(
   // Copy over pre-NNI plvs to NNI plvs.
   gp_engine_.CopyPLVData(pre_key_idx[KeyIndex::Parent_RHat],
                          post_key_idx[KeyIndex::Parent_RHat]);
-  for (const auto [pre_key_type, post_key_type] : key_type_map) {
+  for (const auto &[pre_key_type, post_key_type] : key_type_map) {
     gp_engine_.CopyPLVData(pre_key_idx[post_key_type], post_key_idx[pre_key_type]);
   }
 

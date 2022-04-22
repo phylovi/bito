@@ -62,8 +62,8 @@ bool PhyloMapkeySet::ContainsMapkey(const PhyloMapkey &mapkey) {
 
 std::string PhyloMapkeySet::ToString() const {
   std::stringstream str;
-  for (const auto name_mapkey : all_mapkeys_) {
-    const auto mapkey = name_mapkey.second;
+  for (const auto &[name, mapkey] : all_mapkeys_) {
+    std::ignore = name;
     str << mapkey.GetName() << " | " << mapkey.GetKey() << std::endl;
   }
   return str.str();
@@ -249,7 +249,7 @@ std::string PhyloFlagOptionSet::ToString() const {
   std::stringstream str;
   str << "NAME:" << GetName() << std::endl;
   str << "FLAGS:" << std::endl;
-  for (const auto [name, option] : all_options_) {
+  for (const auto &[name, option] : all_options_) {
     std::ignore = name;
     str << option.GetName() << " | " << option.GetFlag() << " | "
         << option.GetChildFlags() << std::endl;
@@ -283,7 +283,7 @@ void PhyloFlags::SetFlag(const PhyloFlagOption &flag, const bool is_set,
   // Add given flag.
   AddFlagToMap(flag, is_set, value);
   // Add all child flags of given flag.
-  for (const auto child_flag : flag.GetChildFlags()) {
+  for (const auto &child_flag : flag.GetChildFlags()) {
     SetFlag(child_flag, value);
   }
   // If flag being set is the special run_defaults_ flag.

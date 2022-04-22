@@ -690,6 +690,7 @@ TEST_CASE("RootedSBNInstance: PhyloFlags for Gradient Requests") {
 
   // Test gradient "set" options.
   auto GradientSetDelta = [&CreateNewInstance, &gold_gradients]() {
+    std::ignore = gold_gradients;
     auto inst = CreateNewInstance();
     StringDoubleVector flag_vector = {
         {PhyloGradientFlagOptions::set_gradient_delta_.GetFlag(), 1.0e1}};
