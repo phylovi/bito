@@ -180,6 +180,11 @@ def test_gp_instance():
 
     edge_idx_to_pcsp_map = inst.build_edge_idx_to_pcsp_map()
     print("edge_pcsp_map:", edge_idx_to_pcsp_map)
+
+    inst.export_dag_to_json("_ignore/dag.json")
+    json_fp = open("_ignore/dag.json")
+    dag_json = json.load(json_fp)
+    json_fp.close()
     pass
 
 

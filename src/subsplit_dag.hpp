@@ -50,6 +50,10 @@ class SubsplitDAG {
   // Build a Subsplit DAG expressing all tree topologies from tree_collection.
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
 
+  // Build a Subsplit DAG from a JSON file.
+  static SubsplitDAG ImportSubsplitDAGFromJSON(const std::string &file_in);
+  static SubsplitDAG ImportSubsplitDAGFromJSONLiteral(const std::string &json_string);
+
   SubsplitDAG(const SubsplitDAG &) = default;
 
   // ** Comparators

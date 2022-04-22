@@ -11,7 +11,7 @@
 #include <iomanip>
 #include <sstream>
 
-// ** Constructor methods:
+// ** Constructors
 
 SubsplitDAG::SubsplitDAG()
     : taxon_count_(0), edge_count_without_leaf_subsplits_(0), topology_count_(0.) {}
@@ -61,6 +61,16 @@ void SubsplitDAG::ResetHostDAG(SubsplitDAG &host_dag) {
   edge_count_without_leaf_subsplits_ = host_dag.edge_count_without_leaf_subsplits_;
   topology_count_ = host_dag.topology_count_;
   topology_count_below_ = host_dag.topology_count_below_;
+}
+
+SubsplitDAG ImportSubsplitDAGFromJSON(const std::string &file_in) {
+  SubsplitDAG dag = SubsplitDAG();
+  return dag;
+}
+
+SubsplitDAG ImportSubsplitDAGFromJSONLiteral(const std::string &json_string) {
+  SubsplitDAG dag = SubsplitDAG();
+  return dag;
 }
 
 // ** Comparator
@@ -280,8 +290,6 @@ std::string SubsplitDAG::ExportToJSON() const {
   // JSON begin
   stream << "{" << std::endl;
 
-  // Name field
-  stream << std::quoted("name") << ": " << std::quoted("") << "," << std::endl;
   // Taxon Count field
   stream << std::quoted("taxon_count") << ": " << TaxonCount() << "," << std::endl;
 
