@@ -14,9 +14,9 @@ namespace Optimization {
 
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
-std::tuple<T, T, std::tuple<std::vector<T>, std::vector<T>, std::vector<T>>>
-BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_iter) {
-  T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
+std::tuple<T, T> BrentMinimize(F f, T guess, T min, T max, int significant_digits,
+                               size_t max_iter) {
+  T tolerance = static_cast<T>(std::pow(10, -significant_digits));
   T x;               // minima so far
   T w;               // second best point
   T v;               // previous value of w
@@ -26,32 +26,17 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
   T fu, fv, fw, fx;  // function evaluations at u, v, w, x
   T mid;             // midpoint of min and max
   T fract1, fract2;  // minimal relative movement in x
-  T f_prime_x;
 
   // golden ratio, don't need too much precision here!
   static const T golden = 0.3819660f;
 
-  std::vector<T> path_x;
-  std::vector<T> path_fx;
-  std::vector<T> path_fprimex;
-
   w = v = x = guess;
-  fw = fv = fx = f(x).first;
+  fw = fv = fx = f(x);
   delta2 = delta = 0;
-
-  path_x.push_back(x);
-  path_fx.push_back(fx);
-  path_fprimex.push_back(f(x).second);
 
   size_t count = max_iter;
 
   do {
-    // Check current value
-    f_prime_x = f(x).second;
-    if (fabs(f_prime_x) < 1e-5) {
-      break;
-    }
-
     // get midpoint
     mid = (min + max) / 2;
 
@@ -83,7 +68,8 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
         delta = p / q;
         u = x + delta;
         if (((u - min) < fract2) || ((max - u) < fract2)) {
-          delta = (mid - x) < 0 ? static_cast<T>(-fabs(fract1)) : static_cast<T>(fabs(fract1));
+          delta = (mid - x) < 0 ? static_cast<T>(-fabs(fract1))
+                                : static_cast<T>(fabs(fract1));
         }
         // parabolic fit was a success, so don't need bisection.
         use_bisection = false;
@@ -102,7 +88,7 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
     u = (fabs(delta) >= fract1)
             ? T(x + delta)
             : (delta > 0 ? T(x + fabs(fract1)) : T(x - fabs(fract1)));
-    fu = f(u).first;
+    fu = f(u);
 
     if (fu <= fx) {
       // good new point is an improvement!
@@ -138,22 +124,17 @@ BrentMinimize(F f, T guess, T min, T max, int significant_digits, size_t max_ite
       }
     }
 
-    path_x.push_back(x);
-    path_fx.push_back(fx);
-    path_fprimex.push_back(f(x).second);
-
   } while (--count);  // countdown until max iterations.
 
   max_iter -= count;
 
-  return std::make_tuple(x, fx, std::make_tuple(path_x, path_fx, path_fprimex));
+  return std::make_tuple(x, fx);
 }
 
 template <class F, class T>
-std::tuple<T, T, std::tuple<std::vector<T>, std::vector<T>, std::vector<T>>>
-BrentMinimizeWithGradient(F f, T guess, T min, T max, int significant_digits,
-                          size_t max_iter) {
-  T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
+std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
+                                           int significant_digits, size_t max_iter) {
+  T tolerance = static_cast<T>(std::pow(10, -significant_digits));
   T x;               // minima so far
   T w;               // second best point
   T v;               // previous value of w
@@ -163,24 +144,16 @@ BrentMinimizeWithGradient(F f, T guess, T min, T max, int significant_digits,
   T fu, fv, fw, fx;  // function evaluations at u, v, w, x
   T mid;             // midpoint of min and max
   T fract1, fract2;  // minimal relative movement in x
-  T f_prime_x;
+  T f_prime_x;       // derivative of f at x
   T u_;
   T fu_;
 
   // golden ratio, don't need too much precision here!
   static const T golden = 0.3819660f;
 
-  std::vector<T> path_x;
-  std::vector<T> path_fx;
-  std::vector<T> path_fprimex;
-
   w = v = x = guess;
   fw = fv = fx = f(x).first;
   delta2 = delta = 0;
-
-  path_x.push_back(x);
-  path_fx.push_back(fx);
-  path_fprimex.push_back(f(x).second);
 
   size_t count = max_iter;
 
@@ -222,7 +195,8 @@ BrentMinimizeWithGradient(F f, T guess, T min, T max, int significant_digits,
         delta = p / q;
         u = x + delta;
         if (((u - min) < fract2) || ((max - u) < fract2)) {
-          delta = (mid - x) < 0 ? static_cast<T>(-fabs(fract1)) : static_cast<T>(fabs(fract1));
+          delta = (mid - x) < 0 ? static_cast<T>(-fabs(fract1))
+                                : static_cast<T>(fabs(fract1));
         }
         // parabolic fit was a success, so don't need bisection.
         use_bisection = false;
@@ -295,20 +269,17 @@ BrentMinimizeWithGradient(F f, T guess, T min, T max, int significant_digits,
       }
     }
 
-    path_x.push_back(x);
-    path_fx.push_back(fx);
-    path_fprimex.push_back(f(x).second);
-
   } while (--count);  // countdown until max iterations.
 
   max_iter -= count;
 
-  return std::make_tuple(x, fx, std::make_tuple(path_x, path_fx, path_fprimex));
+  return std::make_tuple(x, fx);
 }
 
 DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
-                          const double tolerance, const double step_size,
+                          const int significant_digits, const double step_size,
                           const double min_x, const size_t max_iter) {
+  double tolerance = std::pow(10, -significant_digits);
   size_t iter_idx = 0;
   while (true) {
     auto [f_x, f_prime_x] = f_and_f_prime(x);
@@ -323,9 +294,10 @@ DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, doubl
 
 //
 DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prime,
-                                  double x, const double tolerance,
+                                  double x, const int significant_digits,
                                   const double log_space_step_size, const double min_x,
                                   const size_t max_iter) {
+  double tolerance = static_cast<double>(std::pow(10, -significant_digits));
   size_t iter_idx = 0;
   while (true) {
     double y = log(x);
@@ -341,29 +313,19 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
   }
 }
 
-// Modifying the output so that we can plot the optimization path
-// TODO: Change return back to DoublePair before merging to main.
-std::tuple<double, double,
-           std::tuple<std::vector<double>, std::vector<double>, std::vector<double>>>
-NewtonRaphsonOptimization(
+DoublePair NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
-    double x, const double tolerance, const double epsilon, const double min_x,
+    double x, const int significant_digits, const double epsilon, const double min_x,
     const double max_x, const double damp_const, const size_t max_iter) {
+  double tolerance = std::pow(10.0, -significant_digits);
   size_t iter_idx = 0;
   double new_x, delta;
 
-  std::vector<double> path_x;
-  std::vector<double> path_fx;
-  std::vector<double> path_fprimex;
-
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
-    path_x.push_back(x);
-    path_fx.push_back(f_x);
-    path_fprimex.push_back(f_prime_x);
 
     if (fabs(f_double_prime_x) < epsilon) {
-      return std::make_tuple(x, f_x, std::make_tuple(path_x, path_fx, path_fprimex));
+      return {x, f_x};
     }
     // This method below produces reasonable estimates on single tree DS data
     //
@@ -378,37 +340,11 @@ NewtonRaphsonOptimization(
     delta = fabs(x - new_x);
 
     if (delta < tolerance || iter_idx == max_iter) {
-      return std::make_tuple(x, f_x, std::make_tuple(path_x, path_fx, path_fprimex));
+      return {x, f_x};
     }
 
     x = new_x;
     ++iter_idx;
   }
 }
-
-DoublePair LogSpaceNewtonRaphsonOptimization(
-    std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
-    double x, const double tolerance, const double epsilon, const double min_x,
-    const size_t max_iter) {
-  size_t iter_idx = 0;
-  while (true) {
-    auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
-
-    double y = log(x);
-    double f_prime_y = x * f_prime_x;
-    double f_double_prime_y = f_prime_y + pow(x, 2) * f_double_prime_x;
-
-    const double new_y = y - f_prime_y / f_double_prime_y;
-    double new_x = fmax(exp(new_y), min_x);
-    double delta = fabs(x - new_x);
-
-    if (delta < tolerance || fabs(f_double_prime_y) < epsilon || iter_idx == max_iter) {
-      return {x, f_x};
-    } else {
-      x = new_x;
-    }
-    ++iter_idx;
-  }
-}
-
 }  // namespace Optimization

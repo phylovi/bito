@@ -45,7 +45,8 @@ class GPInstance {
   SizeDoubleVectorMap GatherBranchLengths();
   void TakeFirstBranchLength();
   void EstimateSBNParameters();
-  void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false, bool per_pcsp_convg = false, int optim_tol = 6);
+  void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false,
+                             bool per_pcsp_convg = false, int optim_tol = 4);
   void PopulatePLVs();
   void ComputeLikelihoods();
   void ComputeMarginalLikelihood();
@@ -74,9 +75,6 @@ class GPInstance {
   void PerGPCSPLogLikelihoodsFromOptimizationToCSV(const std::string &file_path);
   void PerGPCSPLogLikelihoodSurfacesToCSV(const std::string &file_path);
   void FullDAGTraversalOptimizationValuesToCSV(const std::string &file_path);
-  void PerGPCSPOptimizationPathBranchLengthsToCSV(const std::string &file_path);
-  void PerGPCSPOptimizationPathLikelihoodsToCSV(const std::string &file_path);
-  void PerGPCSPOptimizationPathDerivativesToCSV(const std::string &file_path);
 
   // Generate a version of the topologies in the current tree collection that use
   // the current GP branch lengths.
@@ -132,5 +130,6 @@ class GPInstance {
   GPDAG dag_;
   static constexpr size_t plv_count_per_node_ = 6;
 
-  std::unique_ptr<NNIEngine> nni_engine_;
+  // For optimization tracking
+  StringEigenVectorXdVector tracked_values_after_full_dag_traversal_;
 };

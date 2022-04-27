@@ -597,16 +597,6 @@ PYBIND11_MODULE(bito, m) {
           "full_dag_optim_values_to_csv",
           &GPInstance::FullDAGTraversalOptimizationValuesToCSV,
           R"raw(Write "pretty" formatted per pcsp branch lengths and llh values from optimization to CSV.)raw")
-      .def(
-          "optim_path_bl_to_csv",
-          &GPInstance::PerGPCSPOptimizationPathBranchLengthsToCSV,
-          R"raw(Write "pretty" formatted per pcsp branch length optimization paths.)raw")
-      .def("optim_path_llh_to_csv",
-           &GPInstance::PerGPCSPOptimizationPathLikelihoodsToCSV,
-           R"raw(Write "pretty" formatted per pcsp likelihood optimization paths.)raw")
-      .def("optim_path_deriv_to_csv",
-           &GPInstance::PerGPCSPOptimizationPathDerivativesToCSV,
-           R"raw(Write "pretty" formatted per pcsp likelihood derivative optimization paths.)raw")
       .def("export_trees", &GPInstance::ExportTrees,
            R"raw(Write out currently loaded trees to a Newick file
           (using current GP branch lengths).)raw",

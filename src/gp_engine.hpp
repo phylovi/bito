@@ -334,9 +334,6 @@ class GPEngine {
   // Stored in log space.
   EigenVectorXd q_;
   EigenVectorXd inverted_sbn_prior_;
-  DoubleVectorVector optimization_path_branch_lengths_;
-  DoubleVectorVector optimization_path_likelihoods_;
-  DoubleVectorVector optimization_path_derivatives_;
 
   // The number of rows is equal to the number of GPCSPs.
   // The number of columns is equal to the number of site patterns.
