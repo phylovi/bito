@@ -7,11 +7,12 @@
 // correspond the ordering of SubsplitDAG data arrays, such as with the node or edge
 // arrays.
 //
-// A reindexer is a one-to-one function that maps from an old indexing scheme to a new
-// indexing scheme. In other words, if old index `i` maps to new index `j`, then
-// reindexer.GetOutputIndexByInputIndex(`i`) = `j`. This is implemented by an underlying
-// SizeVector.  For example, if old_vector = [A, B, C] and reindexer = [1, 2, 0], then
-// new_vector = [C, A, B]. Note that old_vector and reindexer must have the same size.
+// A reindexer is a one-to-one function that maps from an input indexing scheme to an
+// output indexing scheme. In other words, if input index `i` maps to output index `j`,
+// then reindexer.GetOutputIndexByInputIndex(`i`) = `j`. This is implemented by an
+// underlying SizeVector.  For example, if input_vector = [A, B, C] and reindexer = [1,
+// 2, 0], then output_vector = [C, A, B]. Note that input_vector and reindexer must have
+// the same size.
 
 #pragma once
 
@@ -45,18 +46,18 @@ class Reindexer {
   size_t size() const { return data_.size(); }
   void reserve(const size_t size) { data_.reserve(size); }
   // Set mapping from input to output index.
-  void SetReindex(const size_t old_index, const size_t new_index) {
-    data_.at(old_index) = new_index;
+  void SetReindex(const size_t input_idx, const size_t output_idx) {
+    data_.at(input_idx) = output_idx;
   }
   // Find mapped new/output index corresponding to given old/input index.
-  size_t GetOutputIndexByInputIndex(const size_t old_index) const {
-    return data_.at(old_index);
+  size_t GetOutputIndexByInputIndex(const size_t input_idx) const {
+    return data_.at(input_idx);
   }
   // Find mapped old/input index corresponding to new/output index.
-  // Note: This uses a linear search. If doing many old lookups, do new lookups on
+  // Note: This uses a linear search. If doing many lookups, do lookup on
   // inverted reindexer instead.
   size_t GetInputIndexByOutputIndex(
-      const size_t new_index,
+      const size_t output_idx,
       std::optional<Reindexer> inverted_reindexer = std::nullopt) const;
 
   // Get underlying index vector from reindexer.
@@ -65,10 +66,11 @@ class Reindexer {
 
   // ** Modify
 
-  // In a given reindexer, take the old_id in the reindexer and reassign it to the
-  // new_id and shift over the ids strictly between old_id and new_id to ensure that
-  // the reindexer remains valid. For example if old_id = 1 and new_id = 4, this
-  // method would shift 1 -> 4, 4 -> 3, 3 -> 2, and 2 -> 1.
+  // Ressigns input_idx from associated input_idx->old_output_idx mapping to
+  // the input_idx->new_output_idx mapping, while maintaining relative output ordering
+  // of all other input_idxs.
+  // - For example, for old_output_idx = 1 and new_output_idx = 4, this will shift
+  // output_idxs: 1 -> 4, 4 -> 3, 3 -> 2, and 2 -> 1.
   void ReassignOutputIndexAndShift(const size_t old_output_idx,
                                    const size_t new_output_idx);
 
@@ -368,10 +370,16 @@ TEST_CASE("Reindexer: ComposeWith") {
 }
 
 TEST_CASE("Reindexer: Insert/Remove") {
-  Reindexer reindexer = Reindexer({2, 3, 0, 1});
-  StringVector strings = StringVector({"c", "d", "a", "b"});
-  StringVector golden_strings = StringVector({"a", "b", "c", "d"});
-  // Reindexer::ReindexVectorInPlace(strings, reindexer, strings.size());
+  std::cout << "Reindexer: Insert/Remove" << std::endl;
+  Reindexer reindexer = Reindexer({2, 3, 6, 4, 1, 5, 0});
+  Reindexer reindexer_test = Reindexer(reindexer);
+  std::cout << "Before remove: " << reindexer << std::endl;
+  reindexer.RemoveOutputIndex(4);
+  std::cout << "After remove: " << reindexer << std::endl;
+  reindexer_test = Reindexer(reindexer);
+  std::cout << "Before remove: " << reindexer << std::endl;
+  reindexer.RemoveInputIndex(4);
+  std::cout << "After remove: " << reindexer << std::endl;
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

@@ -12,12 +12,15 @@ Reindexer Reindexer::IdentityReindexer(const size_t size) {
 // ** Access
 
 size_t Reindexer::GetInputIndexByOutputIndex(
-    const size_t new_index, std::optional<Reindexer> inverted_reindexer) const {
+    const size_t output_idx, std::optional<Reindexer> inverted_reindexer) const {
   if (inverted_reindexer.has_value()) {
-    return inverted_reindexer.value().GetOutputIndexByInputIndex(new_index);
+    return inverted_reindexer.value().GetOutputIndexByInputIndex(output_idx);
   }
-  return size_t(std::find(GetData().begin(), GetData().end(), new_index) -
-                GetData().begin());
+  size_t input_idx = size_t(std::find(GetData().begin(), GetData().end(), output_idx) -
+                            GetData().begin());
+  Assert(input_idx < data_.size(),
+         "Output Index not found in reindexer: " + std::to_string(output_idx));
+  return input_idx;
 }
 
 // ** Modify
@@ -58,29 +61,28 @@ void Reindexer::AppendNextIndex(const size_t append_count) {
   }
 }
 
-void Reindexer::AppendOutputIndex(const size_t new_index) {
-  data_.push_back(new_index);
+void Reindexer::AppendOutputIndex(const size_t output_idx) {
+  data_.push_back(output_idx);
 }
 
 void Reindexer::RemoveInputIndex(const size_t input_idx_to_remove) {
   const size_t output_idx_to_remove = GetOutputIndexByInputIndex(input_idx_to_remove);
-  for (size_t idx = 0; idx < size(); idx++) {
+  for (size_t input_idx = 0; input_idx < size(); input_idx++) {
     // Skip index we are removing.
-    if (idx == input_idx_to_remove) {
+    if (input_idx == input_idx_to_remove) {
       continue;
     }
     // Close gap for old and new indices if we are past the removed index.
-    const size_t input_idx = (idx - (input_idx > input_idx_to_remove));
     const size_t output_idx = GetOutputIndexByInputIndex(input_idx);
-    data_[input_idx] = (output_idx - (output_idx > output_idx_to_remove));
+    const size_t new_input_idx = (input_idx - (input_idx > input_idx_to_remove));
+    const size_t new_output_idx = (output_idx - (output_idx > output_idx_to_remove));
+    SetReindex(new_input_idx, new_output_idx);
   }
   data_.pop_back();
 }
 
 void Reindexer::RemoveOutputIndex(const size_t output_idx_to_remove) {
   const size_t input_idx_to_remove = GetInputIndexByOutputIndex(output_idx_to_remove);
-  std::cout << "input_idx->output_idx_to_remove: " << input_idx_to_remove << " "
-            << output_idx_to_remove << std::endl;
   return RemoveInputIndex(input_idx_to_remove);
 }
 
@@ -225,7 +227,12 @@ Reindexer Reindexer::ComposeWith(const Reindexer &apply_reindexer) {
 // ** Miscellaneous
 
 std::ostream &operator<<(std::ostream &os, const Reindexer &reindexer) {
-  os << reindexer.GetData();
+  os << "{";
+  for (size_t input_idx = 0; input_idx < reindexer.size(); input_idx++) {
+    size_t output_idx = reindexer.GetOutputIndexByInputIndex(input_idx);
+    os << "{" << input_idx << ", " << output_idx << "}, ";
+  }
+  os << "}";
   return os;
 };
 
