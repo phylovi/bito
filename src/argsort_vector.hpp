@@ -2,7 +2,10 @@
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
 // Argsort Vectors are an associated reindexer on a reference data vector.
-// The
+// This maintain the relationship between reindexer and data. Can maintain a proxy sort
+// of the data vector, which can then support sorted inserts into.  Rearranging elements
+// in the reindexer can avoid the heavy cost of copying heavier data objects in the
+// vector. Can also be used for bidirectional or multimaps.
 
 #pragma once
 
@@ -86,7 +89,7 @@ class ArgsortVector {
 
   // Append data_to_insert to data_vector, and insert into sorted reindexer.
   void SortedInsert(DataType &data_to_insert) {
-    // Add data element.
+    // Append data element.
     data_vector_.push_back(data_to_insert);
     reindexer_.AppendNextIndex();
     // Find insert position in sorted reindexer.

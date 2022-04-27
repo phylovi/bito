@@ -34,6 +34,8 @@ class Reindexer {
   // E.g. for size = 5, reindexer = [0, 1, 2, 3, 4].
   static Reindexer IdentityReindexer(const size_t size);
 
+  // ** Comparator
+
   friend bool operator==(const Reindexer &lhs, const Reindexer &rhs) {
     return lhs.GetData() == rhs.GetData();
   }
@@ -370,16 +372,16 @@ TEST_CASE("Reindexer: ComposeWith") {
 }
 
 TEST_CASE("Reindexer: Insert/Remove") {
-  std::cout << "Reindexer: Insert/Remove" << std::endl;
   Reindexer reindexer = Reindexer({2, 3, 6, 4, 1, 5, 0});
-  Reindexer reindexer_test = Reindexer(reindexer);
-  std::cout << "Before remove: " << reindexer << std::endl;
-  reindexer.RemoveOutputIndex(4);
-  std::cout << "After remove: " << reindexer << std::endl;
+  Reindexer reindexer_test, reindexer_golden;
   reindexer_test = Reindexer(reindexer);
-  std::cout << "Before remove: " << reindexer << std::endl;
-  reindexer.RemoveInputIndex(4);
-  std::cout << "After remove: " << reindexer << std::endl;
+  reindexer_test.RemoveOutputIndex(4);
+  reindexer_golden = Reindexer({2, 3, 5, 1, 4, 0});
+  CHECK_EQ(reindexer_test, reindexer_golden);
+  reindexer_test = Reindexer(reindexer);
+  reindexer_test.RemoveInputIndex(4);
+  reindexer_golden = Reindexer({1, 2, 5, 3, 4, 0});
+  CHECK_EQ(reindexer_test, reindexer_golden);
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

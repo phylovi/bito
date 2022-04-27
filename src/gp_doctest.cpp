@@ -1228,8 +1228,6 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
       const auto& plv_a = gpengine.GetPLV(node_idx);
       const auto& plv_b = pre_gpengine.GetPLV(pre_node_idx);
       if (plv_a.norm() != plv_b.norm()) {
-        std::cout << "plv_failed_at (" << pre_node_idx << ", " << node_idx
-                  << "): " << plv_a.norm() << ", " << plv_b.norm() << std::endl;
         passes_plv_reindexed = false;
       }
     }
@@ -1242,8 +1240,6 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
       const auto branch_a = branch_lengths[edge_idx];
       const auto branch_b = pre_branch_lengths[pre_edge_idx];
       if (branch_a != branch_b) {
-        std::cout << "branch_failed_at (" << pre_edge_idx << ", " << edge_idx
-                  << "): " << branch_a << ", " << branch_b << std::endl;
         passes_gpcsp_reindexed = false;
       }
     }
@@ -1259,7 +1255,6 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
                                           const bool perform_resize_unmodded_test) {
     BoolVector test_array;
     bool test_passes = true;
-    size_t old_dagroot_id;
     const std::string fasta_path = "data/hotstart.fasta";
     const std::string newick_path = "data/hotstart_bootstrap_sample.nwk";
     // Instance that will not be modified.
@@ -1296,7 +1291,6 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     node_reindexer = Reindexer::IdentityReindexer(inst.GetDAG().NodeCount());
     edge_reindexer =
         Reindexer::IdentityReindexer(inst.GetDAG().EdgeCountWithLeafSubsplits());
-    old_dagroot_id = dag.GetDAGRootNodeId();
     // Add NNIs to DAG and check resized and reindexed properly.
     nni_engine.SyncAdjacentNNIsWithDAG();
     size_t nni_count = nni_engine.GetAdjacentNNICount();
@@ -1313,15 +1307,8 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
         }
         if (nni_add % test_after_every == 0) {
           node_reindexer_without_root = Reindexer(node_reindexer);
-          const size_t dagroot_id =
-              node_reindexer.GetInputIndexByOutputIndex(dag.GetDAGRootNodeId());
-          std::cout << "DAGROOT_ID: " << old_dagroot_id << " " << dagroot_id << " "
-                    << dag.GetDAGRootNodeId() << std::endl;
-          std::cout << "(BEFORE*) node_reindexer: " << node_reindexer_without_root
-                    << std::endl;
+          const size_t dagroot_id = dag.GetDAGRootNodeId();
           node_reindexer_without_root.RemoveOutputIndex(dagroot_id);
-          std::cout << "(AFTER*) node_reindexer: " << node_reindexer_without_root
-                    << std::endl;
           size_t node_count = dag.NodeCountWithoutDAGRoot();
           size_t edge_count = dag.EdgeCountWithLeafSubsplits();
           if (!skip_reindexing) {
@@ -1339,7 +1326,6 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
           node_reindexer = Reindexer::IdentityReindexer(dag.NodeCount());
           edge_reindexer =
               Reindexer::IdentityReindexer(dag.EdgeCountWithLeafSubsplits());
-          old_dagroot_id = dag.GetDAGRootNodeId();
         }
       }
       nni_engine.ResetAllNNIs();
@@ -1352,8 +1338,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     }
     // Test final resizing and reindexing.
     node_reindexer_without_root = Reindexer(node_reindexer);
-    const size_t dagroot_id =
-        node_reindexer.GetInputIndexByOutputIndex(dag.GetDAGRootNodeId());
+    const size_t dagroot_id = dag.GetDAGRootNodeId();
     node_reindexer_without_root.RemoveOutputIndex(dagroot_id);
     if (!skip_reindexing) {
       gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot(), node_reindexer_without_root);
@@ -1374,52 +1359,43 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
 
     test_passes = std::accumulate(test_array.begin(), test_array.end(), true,
                                   std::logical_and<>());
-    if (!test_passes) {
-      std::cout << "test_array: " << test_array << std::endl;
-    }
     return test_passes;
   };
 
   // TEST_0: Test that resize and reindex GPEngine works with no modification the DAG.
-  std::cout << "TEST_0" << std::endl;
   auto test_0 = ResizeAndReindexGPEngineTest(0, 1, false, false);
   CHECK_MESSAGE(test_0,
                 "TEST_0: Resize and reindex GPEngine fails when no modifications are "
                 "made to DAG.");
   // TEST_1: Test resize and reindex GPEngine works when adding a single node pair to
   // DAG.
-  std::cout << "TEST_1" << std::endl;
   auto test_1 = ResizeAndReindexGPEngineTest(2, 2, false, false);
   CHECK_MESSAGE(
       test_1,
       "TEST_1: Resize and reindex GPEngine fails after single AddNodePair to DAG.");
   // TEST_2: Test that improper mapping occurs when not reindexing GPEngine when adding
   // a single node pair to DAG.
-  // std::cout << "TEST_2" << std::endl;
-  // auto test_2 = ResizeAndReindexGPEngineTest(10, 1, true, false);
-  // CHECK_FALSE_MESSAGE(test_2,
-  //                     "TEST_2: Resize and reindex GPEngine is not incorrect when not
-  //                     " "reindexing after single AddNodePair to DAG.");
+  auto test_2 = ResizeAndReindexGPEngineTest(10, 1, true, false);
+  CHECK_FALSE_MESSAGE(test_2,
+                      "TEST_2: Resize and reindex GPEngine is not incorrect when not"
+                      "reindexing after single AddNodePair to DAG.");
   // TEST_3: Test resize and reindex GPEngine works when adding a many node pairs,
   // performing resizing and reindexing for each modification of DAG.
-  std::cout << "TEST_3" << std::endl;
-  auto test_3 = ResizeAndReindexGPEngineTest(3, 1, false, false);
+  auto test_3 = ResizeAndReindexGPEngineTest(100, 1, false, false);
   CHECK_MESSAGE(test_3,
                 "TEST_3: Resize and reindex GPEngine fails after multiple AddNodePair, "
                 "reindexed individually.");
 
   // TEST_4: Test resize and reindex GPEngine works when adding a many node pairs,
   // composing multiple modifications of DAG into single reindexing operation.
-  // std::cout << "TEST_4" << std::endl;
-  // auto test_4 = ResizeAndReindexGPEngineTest(100, 10, false, false);
-  // CHECK_MESSAGE(
-  //     test_4,
-  //     "TEST_4: Resize and reindex GPEngine fails after multiple AddNodePair to DAG, "
-  //     "reindexed in batches.");
+  auto test_4 = ResizeAndReindexGPEngineTest(100, 10, false, false);
+  CHECK_MESSAGE(
+      test_4,
+      "TEST_4: Resize and reindex GPEngine fails after multiple AddNodePair to DAG, "
+      "reindexed in batches.");
 
   // TEST_5: Resizes GPEngine without modifying the DAG.  Then tests that resized
   // GPEngine and unmodified GPEngine produce same GP run results.
-  std::cout << "TEST_5" << std::endl;
   auto test_5 = ResizeAndReindexGPEngineTest(1, 1, true, true);
   CHECK_MESSAGE(
       test_5,
