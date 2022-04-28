@@ -6,40 +6,50 @@
 #include "reps_and_likelihoods.hpp"
 
 int main(int argc, char *argv[]) {
-  if (argc != 8) {
+  if (argc <= 3 || argc % 2 !=0) {
     std::cout
-        << "We need exactly 7 arguments: fasta, rooted_nwk, credible_rooted_nwk,"
-           "pp_rooted_nwk, repr_out_path, credible_repr_out_path, and pp_repr_out_path"
-        << std::endl;
+        << "We need at least 3 arguments: fasta, rooted_nwk, and repr_out_path." 
+        << std::endl
+        << "Additional arguments must come in pairs: extra_rooted_nwk, "
+        << "extra_repr_out_path." << std::endl;
     abort();
   }
   std::string fasta_path = argv[1];
   std::string rooted_nwk_path = argv[2];
-  std::string credible_rooted_nwk_path = argv[3];
-  std::string pp_rooted_nwk_path = argv[4];
-  std::string out_path = argv[5];
-  std::string credible_out_path = argv[6];
-  std::string pp_out_path = argv[7];
+  std::string out_path = argv[3];
+  std::vector<std::string> extra_nwk_paths;
+  std::vector<std::string> extra_out_paths;
+  for (int arg_index = 4; arg_index < argc; arg_index+=2) {
+    extra_nwk_paths.push_back(argv[arg_index]);
+    extra_out_paths.push_back(argv[arg_index+1]);
+  }
+  const auto extras_count = extra_nwk_paths.size();
   auto thread_count = std::thread::hardware_concurrency();
 
   GPInstance all_trees_gp_inst("mmapped_plv.data");
-  RootedSBNInstance cred_r_inst("cred_trees");
-  RootedSBNInstance pp_r_inst("pp_trees");
   all_trees_gp_inst.ReadNewickFile(rooted_nwk_path);
   all_trees_gp_inst.ReadFastaFile(fasta_path);
   all_trees_gp_inst.MakeEngine();
   all_trees_gp_inst.TakeFirstBranchLength();
-  cred_r_inst.ReadNewickFile(credible_rooted_nwk_path);
-  pp_r_inst.ReadNewickFile(pp_rooted_nwk_path);
+  std::vector<RootedSBNInstance> extra_r_insts;
+  for (size_t i=0; i<extras_count; i++) {
+    extra_r_insts.push_back( RootedSBNInstance("extra_trees"+std::to_string(i)) );
+    extra_r_insts.at(i).ReadNewickFile(extra_nwk_paths.at(i));
+  }
+
+  const auto taxa_order = all_trees_gp_inst.GetTaxonNames();
+  for (const auto &r_inst : extra_r_insts) {
+    if (r_inst.tree_collection_.TaxonNames() != taxa_order)
+    {
+    std::cout << "The first tree of each newick file must have the taxa appearing in "
+      << "the same order. Insert a dummy tree if needed." << std::endl;
+    abort();
+    }
+  }
 
   auto all_trees = all_trees_gp_inst.GenerateCompleteRootedTreeCollection();
-  auto cred_trees = cred_r_inst.tree_collection_;
-  auto pp_trees = pp_r_inst.tree_collection_;
   auto indexer = all_trees_gp_inst.GetDAG().BuildEdgeIndexer();
   auto all_representations = GetIndexerRepresentations(all_trees, indexer);
-  auto cred_representations = GetIndexerRepresentations(cred_trees, indexer);
-  auto pp_representations = GetIndexerRepresentations(pp_trees, indexer);
-
   UnrootedSBNInstance ur_inst("charlie");
   ur_inst.ReadNewickFile(rooted_nwk_path);
   ur_inst.ReadFastaFile(fasta_path);
@@ -47,10 +57,14 @@ int main(int argc, char *argv[]) {
   ur_inst.PrepareForPhyloLikelihood(simple_specification, thread_count, {}, true,
                                     all_trees.TreeCount());
   const auto log_likelihoods = ur_inst.UnrootedLogLikelihoods(all_trees);
-
   WriteTreesToFile(out_path, all_representations, log_likelihoods);
-  WriteTreesToFile(credible_out_path, cred_representations);
-  WriteTreesToFile(pp_out_path, pp_representations);
+
+  for (size_t i=0; i<extras_count; i++) {
+    WriteTreesToFile(
+      extra_out_paths.at(i),
+      GetIndexerRepresentations( extra_r_insts.at(i).tree_collection_, indexer ) 
+    ); 
+  }
 }
 
 std::vector<RootedIndexerRepresentation> GetIndexerRepresentations(
