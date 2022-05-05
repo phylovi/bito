@@ -16,7 +16,7 @@ namespace Optimization {
 template <class F, class T>
 std::tuple<T, T> BrentMinimize(F f, T guess, T min, T max, int significant_digits,
                                size_t max_iter) {
-  T tolerance = static_cast<T>(std::pow(10, -significant_digits));
+  T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point
   T v;               // previous value of w
@@ -134,7 +134,7 @@ std::tuple<T, T> BrentMinimize(F f, T guess, T min, T max, int significant_digit
 template <class F, class T>
 std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
                                            int significant_digits, size_t max_iter) {
-  T tolerance = static_cast<T>(std::pow(10, -significant_digits));
+  T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point
   T v;               // previous value of w
@@ -160,7 +160,7 @@ std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
   do {
     // Check current value
     f_prime_x = f(x).second;
-    if (fabs(f_prime_x) < 1e-5) {
+    if (fabs(f_prime_x) < 1e-10) {
       break;
     }
 
@@ -218,7 +218,7 @@ std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
     fu = f(u).first;
 
     // Considering update using gradient descent:
-    u_ = x - 1.001 * f_prime_x;
+    u_ = x - 1.0005 * f_prime_x;
     fu_ = f(u_).first;
 
     if (fu <= fx) {
@@ -316,32 +316,47 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
 DoublePair NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
     double x, const int significant_digits, const double epsilon, const double min_x,
-    const double max_x, const double damp_const, const size_t max_iter) {
-  double tolerance = std::pow(10.0, -significant_digits);
+    const double max_x, const size_t max_iter) {
+  double tolerance = ldexp(1.0, 1 - significant_digits);
   size_t iter_idx = 0;
-  double new_x, delta;
+  double new_x, delta, mid, fract1, fract2;
+  double min = min_x;
+  double max = max_x;
 
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
 
-    if (fabs(f_double_prime_x) < epsilon) {
+    // get midpoint
+    mid = (min + max) / 2;
+
+    // ** Convergence Test:
+    // work out if we're done already:
+    fract1 = tolerance * fabs(x) + tolerance / 4;
+    fract2 = 2 * fract1;
+
+    if ((fabs(x - mid) <= (fract2 - (max - min) / 2)) ||
+        fabs(f_double_prime_x) < epsilon) {
       return {x, f_x};
     }
     // This method below produces reasonable estimates on single tree DS data
     //
-    new_x = x - damp_const * f_prime_x / f_double_prime_x;
+    new_x = x - f_prime_x / f_double_prime_x;
 
-    if (new_x <= min_x) {
-      new_x = x - 0.5 * (x - min_x);
-    } else if (new_x >= max_x) {
-      new_x = x - 0.5 * (x - max_x);
+    if (new_x <= min || new_x >= max) {
+      new_x = x + 1.001 * f_prime_x;
+    }
+
+    if (new_x < x) {
+      max = x;
+    } else {
+      min = x;
     }
 
     delta = fabs(x - new_x);
 
-    if (delta < tolerance || iter_idx == max_iter) {
-      return {x, f_x};
-    }
+    // if (delta < tolerance || iter_idx == max_iter) {
+    //   return {x, f_x};
+    // }
 
     x = new_x;
     ++iter_idx;

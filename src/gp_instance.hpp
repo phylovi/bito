@@ -46,7 +46,7 @@ class GPInstance {
   void TakeFirstBranchLength();
   void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false,
-                             bool per_pcsp_convg = false, int optim_tol = 4);
+                             bool per_pcsp_convg = false, int optim_tol = 10);
   void PopulatePLVs();
   void ComputeLikelihoods();
   void ComputeMarginalLikelihood();
