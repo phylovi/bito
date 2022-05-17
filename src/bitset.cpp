@@ -498,6 +498,28 @@ Bitset Bitset::PCSP(const std::string sister_clade, const std::string focal_clad
   return PCSP(Bitset(sister_clade), Bitset(focal_clade), Bitset(sorted_child_clade));
 }
 
+int Bitset::PCSPCompare(const Bitset& pcsp_a, const Bitset& pcsp_b) {
+  Assert(pcsp_a.size() == pcsp_b.size(),
+         "Bitset::PCSPCompare requires Bitsets be the same size.");
+  // (1) Compare the parent subsplits.
+  const auto parent_a = pcsp_a.PCSPGetParentSubsplit();
+  const auto parent_b = pcsp_b.PCSPGetParentSubsplit();
+  const auto compare_parents = Bitset::SubsplitCompare(parent_a, parent_b);
+  if (compare_parents != 0) {
+    return compare_parents;
+  }
+  // (2) Compare the child subsplits.
+  const auto child_a = pcsp_a.PCSPGetChildSubsplit();
+  const auto child_b = pcsp_b.PCSPGetChildSubsplit();
+  const auto compare_children = Bitset::SubsplitCompare(child_a, child_b);
+  return compare_children;
+}
+
+int Bitset::PCSPCompare(const Bitset& pcsp_b) const {
+  const Bitset& pcsp_a = *this;
+  return PCSPCompare(pcsp_a, pcsp_b);
+}
+
 // #350 I'd argue that if we are going to use SubsplitCladeCount (and I'm not sure about
 // that) then we should use something like that here. Oh wait, there is a
 // PCSPCladeCount.

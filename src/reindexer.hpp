@@ -66,6 +66,13 @@ class Reindexer {
   const SizeVector &GetData() const { return data_; }
   SizeVector &GetData() { return data_; }
 
+  // ** Iterator
+
+  // SizeVector::iterator begin() { return GetData().begin(); }
+  // SizeVector::iterator end() { return GetData().end(); }
+  // const SizeVector::iterator begin() const { return GetData().begin(); }
+  // const SizeVector::iterator end() const { return GetData().end(); }
+
   // ** Modify
 
   // Ressigns input_idx from associated input_idx->old_output_idx mapping to
@@ -90,10 +97,10 @@ class Reindexer {
   void RemoveOutputIndex(SizeVector &output_idx_to_remove,
                          std::optional<Reindexer> inverted_reindexer = std::nullopt);
 
-  // Append index and insert into specified positions.
+  // Insert next available input indices into specified output indices.
   void InsertInputIndex(const size_t input_idx_to_add);
   void InsertOutputIndex(const size_t output_idx_to_add);
-  // Insert vector of indices.
+  // Insert next available input indices into specified output indices.
   void InsertInputIndex(SizeVector &sorted_input_idxs_to_add);
   void InsertOutputIndex(SizeVector &sorted_output_idxs_to_add);
 
@@ -175,7 +182,8 @@ class Reindexer {
     for (size_t i = 0; i < length; i++) {
       size_t input_idx = i;
       size_t output_idx = reindexer.GetOutputIndexByInputIndex(i);
-      if (input_idx == output_idx) {
+      bool is_current_node_updated = updated_idx[output_idx];
+      if ((input_idx == output_idx) || is_current_node_updated) {
         updated_idx[input_idx] = true;
         continue;
       }
@@ -185,7 +193,6 @@ class Reindexer {
       // index. This avoid allocating a second data array to perform the reindex, as
       // only two temporary values are needed. Only a boolean array is needed to check
       // for already updated indexes.
-      bool is_current_node_updated = updated_idx[output_idx];
       temp1 = std::move(data_vector[input_idx]);
       while (is_current_node_updated == false) {
         // copy data at input_idx to output_idx, and store data at output_idx in
@@ -208,7 +215,8 @@ class Reindexer {
   static void ReindexVectorInPlace(VectorType &data_vector, const Reindexer &reindexer,
                                    size_t length) {
     DataType temp1, temp2;
-    Reindexer::ReindexVectorInPlace(data_vector, reindexer, length, temp1, temp2);
+    Reindexer::ReindexVectorInPlace<VectorType, DataType>(data_vector, reindexer,
+                                                          length, temp1, temp2);
   }
 
   // Remaps each of the ids in the vector according to the reindexer.

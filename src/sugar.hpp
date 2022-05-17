@@ -21,6 +21,7 @@ using SymbolVector = std::vector<int>;
 using BoolVector = std::vector<bool>;
 using IntVector = std::vector<int>;
 using SizeVector = std::vector<size_t>;
+using SizeSet = std::set<size_t>;
 using DoubleVector = std::vector<double>;
 using SizeVectorVector = std::vector<SizeVector>;
 using DoubleVector = std::vector<double>;

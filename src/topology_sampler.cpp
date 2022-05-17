@@ -29,7 +29,7 @@ void TopologySampler::VisitNode(SamplingSession& session, SubsplitDAGNode node,
       break;
     case Direction::Leafward:
       SampleRootward(session, node);
-      SampleLeafward(session, node, Bitset::Opposite(clade));
+      SampleLeafward(session, node, Bitset::SubsplitCladeOpposite(clade));
       break;
   }
 }

@@ -35,6 +35,7 @@
 #pragma once
 
 #include "reindexer.hpp"
+#include "argsort_vector.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
 #include "subsplit_dag_action.hpp"
@@ -128,13 +129,16 @@ class SubsplitDAG {
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllTopologies() const;
 
-  // ** Getters
+  // ** Access
 
   // Get Taxon's bitset clade positional id.
   size_t GetTaxonId(const std::string &name) const;
   // Get node based on node id.
   SubsplitDAGNode GetDAGNode(const size_t node_id) const;
   MutableSubsplitDAGNode GetDAGNode(const size_t node_id);
+  // Get node based on node subsplit.
+  SubsplitDAGNode GetDAGNode(const Bitset &node_subsplit) const;
+  MutableSubsplitDAGNode GetDAGNode(const Bitset &node_subsplit);
   // Get the node id based on the subsplit bitset.
   size_t GetDAGNodeId(const Bitset &subsplit) const;
   // Gets the node id of the DAG root.
@@ -338,6 +342,14 @@ class SubsplitDAG {
   // Contains the output needed to update all related data to reflect modifications to
   // DAG.
   struct ModificationResult {
+    ModificationResult(const size_t node_count, const size_t edge_count,
+                       const bool init_identity = true) {
+      if (init_identity) {
+        node_reindexer = Reindexer::IdentityReindexer(node_count);
+        edge_reindexer = Reindexer::IdentityReindexer(edge_count);
+      }
+    }
+
     // Nodes that were added or removed by modification.
     SizeVector added_node_ids;
     // Edges that were added or removed by modification.
@@ -349,9 +361,23 @@ class SubsplitDAG {
   };
 
   // Add an adjacent node pair to the DAG.
-  ModificationResult AddNodePair(const NNIOperation &nni);
-  ModificationResult AddNodePair(const Bitset &parent_subsplit,
-                                 const Bitset &child_subsplit);
+  ModificationResult AddNodePair(
+      const NNIOperation &nni,
+      std::optional<ModificationResult> opt_mods = std::nullopt);
+  ModificationResult AddNodePair(
+      const Bitset &parent_subsplit, const Bitset &child_subsplit,
+      std::optional<ModificationResult> opt_mods = std::nullopt);
+  // Add collection of nodes to DAG.
+  ModificationResult AddNodes(
+      const BitsetVector &node_subsplits, const bool enforce_validity = true,
+      std::optional<ModificationResult> opt_mods = std::nullopt);
+  // Add collection of nodes to DAG.
+  ModificationResult RemoveNodes(
+      const SizeVector &node_ids, const bool enforce_validity = true,
+      std::optional<ModificationResult> opt_mods = std::nullopt);
+  ModificationResult RemoveNodes(
+      const BitsetVector &node_subsplits, const bool enforce_validity = true,
+      std::optional<ModificationResult> opt_mods = std::nullopt);
 
   // Add all pontential edges to DAG. Building DAGs from a collection of trees can
   // result in a DAG that is not fully connected, in which one or more potentially
@@ -382,7 +408,7 @@ class SubsplitDAG {
   // These methods are used to assert that a DAG is in a valid state or that given
   // operation will result in a valid DAG.
 
-  // Checks if SubsplitDAG's corresponding data is consistent and up-to-date.
+  // Checks if SubsplitDAG's redundant data is consistent and up-to-date.
   // Specifically, checks that:
   // - subsplit_to_id_ map consistent with nodes in dag_nodes_.
   // - parent_to_child_range_ map consistent with each parent and child node's
@@ -391,10 +417,15 @@ class SubsplitDAG {
   bool IsConsistent() const;
   // Checks if SubsplitDAG is in a valid state (assumes that DAG is consistent).
   // Specifically, checks that:
-  // - Each node is valid. That is, either:
-  //    - Node has zero parents and zero children.
-  //    - Node has 1+ parents, 1+ sorted children, and 1+ rotated children.
+  // - Each node is valid. That is, check one of the following is true:
+  //    - (a) Node has zero parents and zero children.
+  //    - (b) Node has 1+ parents, 1+ left children, and 1+ right children.
+  //    - (c) Node is a leaf or a root.
   bool IsValid() const;
+  // Check if nodes are in a topologically sorted order.
+  // Spdcifically, checks that:
+  // - Each node's child nodes have a smaller ID.
+  bool IsTopologicallySorted() const;
   // Check if it is valid to add given node pair.
   // Specifically, check that:
   // - The nodes are adjacent.
@@ -404,6 +435,8 @@ class SubsplitDAG {
   // - Each clade of the child node has at least 1 child.
   bool IsValidAddNodePair(const Bitset &parent_subsplit,
                           const Bitset &child_subsplit) const;
+  bool IsValidAddNodes(const BitsetVector &node_subsplit) const;
+  bool IsValidRemoveNodes(const SizeVector &node_ids) const;
   // Check if the taxon map is valid. Specifically, check that:
   // - No duplicate ids.
   // - Ids cover all clade bits from 0 to map_size.
@@ -492,24 +525,14 @@ class SubsplitDAG {
   void BuildEdges(const SizeBitsetMap &index_to_child);
   // Add edges to DAG according to node_id pairs in edge indexer.
   void BuildDAGEdgesFromEdgeIndexer(BitsetSizeMap &edge_indexer);
-  // Connect the child to all of its children. Push all new edges to
-  // added_edge_idxs.
-  void ConnectChildToAllChildren(const Bitset &child_subsplit,
-                                 SizeVector &added_edge_idxs);
-  // Connect the parent to all of its children except for the given child node. Insert
-  // all new edges to added_edge_idxs vector.
-  void ConnectParentToAllChildrenExcept(const Bitset &parent_subsplit,
-                                        const Bitset &child_subsplit,
-                                        SizeVector &added_edge_idxs);
-  // Connect the child to all of its parents except for the given parent node. Insert
-  // all new edge to added_edge_idxs vector.
-  void ConnectChildToAllParentsExcept(const Bitset &parent_subsplit,
-                                      const Bitset &child_subsplit,
-                                      SizeVector &added_edge_idxs);
-  // Connect the parent to all of its parents. Insert all new edges to
-  // added_edge_idxs vector.
-  void ConnectParentToAllParents(const Bitset &parent_subsplit,
-                                 SizeVector &added_edge_idxs);
+
+  // Connect the node to all of its neighbors in specified direction (rootward option
+  // connects to parents of node, leafward option connects to children of node).  Option
+  // to ignore and not connect specific node. Push all new edges to added_edge_idxs.
+  template <Direction direction>
+  void ConnectNodeToAllDirectedNeighbors(
+      const Bitset &node_subsplit, SizeVector &added_edge_idxs,
+      std::optional<const Bitset> ignored_subsplit = std::nullopt);
   // Expand dag_edges_ and parent_to_child_range_ with leaf subsplits at the end.
   void AddLeafSubsplitsToDAGEdgesAndParentToRange();
 

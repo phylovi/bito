@@ -35,7 +35,7 @@ void Reindexer::ReassignOutputIndexAndShift(const size_t old_output_idx,
   if (old_output_idx == new_output_idx) {
     return;
   }
-  // Find position with value old_output_idx.
+  // Find position with value old_output_inew_output_iSTRINGSdxdx.
   const size_t old_input_idx = GetInputIndexByOutputIndex(old_output_idx);
   // Shift.
   if (old_output_idx > new_output_idx) {
@@ -129,11 +129,6 @@ void Reindexer::RemoveOutputIndex(SizeVector &output_idx_to_remove,
   return RemoveInputIndex(input_idx_to_remove);
 }
 
-void Reindexer::InsertInputIndex(const size_t input_idx_to_add) {
-  SizeVector input_idx_to_add_vec({input_idx_to_add});
-  InsertInputIndex(input_idx_to_add_vec);
-}
-
 void Reindexer::InsertOutputIndex(const size_t output_idx_to_add) {
   SizeVector output_idx_to_add_vec({output_idx_to_add});
   InsertOutputIndex(output_idx_to_add_vec);
@@ -151,16 +146,22 @@ void Reindexer::InsertOutputIndex(SizeVector &sorted_output_idxs_to_add) {
   // Allocate space for new indices.
   AppendNextIndex(sorted_output_idxs_to_add.size());
   // Pad out space for new indices.
-  for (size_t i = padding_vector.size() - 2; i >= 1; i--) {
-    const size_t padding = i + 1;
-    for (size_t j = padding_vector[i + 1] - 1; j >= padding_vector[i]; j--) {
+  for (size_t i = padding_vector.size() - 1; i > 0; i--) {
+    const size_t padding = i;
+    for (size_t j = padding_vector[i] - 1; j >= padding_vector[i - 1]; j--) {
+      // std::cout << "padding_move: " << j << " " << padding << std::endl;
       data_[j + padding] = data_[j];
     }
   }
-  // Insert new values.
+  // Insert  what about the bearnew values.
   for (size_t i = 0; i < sorted_output_idxs_to_add.size(); i++) {
-    data_[sorted_output_idxs_to_add[i]] = old_size + i;
+    data_[sorted_output_idxs_to_add[i] + i] = old_size + i;
   }
+}
+
+void Reindexer::InsertInputIndex(const size_t input_idx_to_add) {
+  SizeVector input_idx_to_add_vec({input_idx_to_add});
+  InsertInputIndex(input_idx_to_add_vec);
 }
 
 void Reindexer::InsertInputIndex(SizeVector &sorted_input_idxs_to_add) {

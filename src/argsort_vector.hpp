@@ -1,7 +1,7 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// Argsort Vectors are an associated reindexer on a reference data vector.
+// Argsort Vectors are an associated reindexer for a reference data vector.
 // This maintain the relationship between reindexer and data. Can maintain a proxy sort
 // of the data vector, which can then support sorted inserts into.  Rearranging elements
 // in the reindexer can avoid the heavy cost of copying heavier data objects in the
@@ -11,15 +11,30 @@
 
 #include "reindexer.hpp"
 
+/*
+TODO: Remove this later
+  AccessFunction access_fn = [](VectorType &data, const size_t i) { return data[i]; },
+  ReindexFunction sort_fn =
+      [](VectorType &data, const Reindexer &reindexer) {
+        Reindexer::ReindexVectorInPlace<VectorType, DataType>(
+            data, reindexer, data.size());
+      },
+*/
+
 // Reindexer that holds a reference data vector.  The reindexer maintains a sort by
 // proxy on the underlying data.
 template <typename DataType, typename VectorType = std::vector<DataType>>
 class ArgsortVector {
  public:
+  using GetVectorFunction = std::function<VectorType &(void)>;
+  using AccessFunction = std::function<DataType &(VectorType &, const size_t)>;
+  using ReindexFunction = std::function<void(VectorType &, const Reindexer &)>;
+  using LessThanFunction = std::function<bool(const DataType &, const DataType &)>;
+
   ArgsortVector(
       VectorType &data_vector,
-      std::function<bool(const DataType &, const DataType &)> lessthan_fn =
-          [](const DataType &lhs, const DataType &rhs) { return lhs < rhs; },
+      LessThanFunction lessthan_fn = [](const DataType &lhs,
+                                        const DataType &rhs) { return lhs < rhs; },
       bool is_sorted = false)
       : reindexer_(Reindexer::IdentityReindexer(data_vector.size())),
         data_vector_(data_vector),
@@ -36,22 +51,24 @@ class ArgsortVector {
   bool IsSorted() const { return is_sorted_; };
   size_t Size() const { return data_vector_.size(); };
 
+  // VectorType &GetDataVector() { return data_vector_; }
   const VectorType &GetDataVector() const { return data_vector_; };
+  // Reindexer &GetReindexer() { return reindexer_; }
   const Reindexer &GetReindexer() const { return reindexer_; };
 
   // Get sorted index by given unsorted index.
   size_t GetSortedIndexByUnsortedIndex(const size_t unsorted_idx) const {
-    return reindexer_.GetOutputIndexByInputIndex(old_idx);
+    return reindexer_.GetOutputIndexByInputIndex(unsorted_idx);
   };
   // Get unsorted index by given sorted index.
   // Note: This uses linear search.
   size_t GetUnsortedIndexBySortedIndex(const size_t sorted_idx) const {
-    return reindexer_.GetInputIndexByOutputIndex(i);
+    return reindexer_.GetInputIndexByOutputIndex(sorted_idx);
   };
 
   // Get data by unsorted index.
   const DataType &GetDataByUnsortedIndex(const size_t unsorted_idx) const {
-    return data_[unsorted_idx];
+    return data_vector_[unsorted_idx];
   }
   // Get data by sorted index.
   // Note: This uses linear search.
@@ -62,16 +79,66 @@ class ArgsortVector {
 
   // ** Query
 
-  size_t FindFirstSortedIndex(const DataType &data) const {
-    return std::lower_bound(
-        reindexer_.begin(), reindexer_.end(), data,
-        [this, &data](const size_t unsorted_idx, const DataType &data) -> bool {
-          return lessthan_fn_(GetDataByUnsortedIndex(sorted_idx), )
-        });
-    return 0;
+  template <class ForwardIt>
+  ForwardIt LowerBound(ForwardIt first, ForwardIt last, const DataType &query) const {
+    ForwardIt it;
+    typename std::iterator_traits<ForwardIt>::difference_type count, step;
+    count = std::distance(first, last);
+
+    while (count > 0) {
+      it = first;
+      step = count / 2;
+      std::advance(it, step);
+      auto current_value = *it;
+      if (lessthan_fn_(GetDataByUnsortedIndex(current_value), query)) {
+        first = ++it;
+        count -= step + 1;
+      } else
+        count = step;
+    }
+    return first;
+  }
+
+  template <class ForwardIt>
+  ForwardIt UpperBound(ForwardIt first, ForwardIt last, const DataType &query) const {
+    ForwardIt it;
+    typename std::iterator_traits<ForwardIt>::difference_type count, step;
+    count = std::distance(first, last);
+
+    while (count > 0) {
+      it = first;
+      step = count / 2;
+      std::advance(it, step);
+      auto current_value = *it;
+      if (!lessthan_fn_(query, GetDataByUnsortedIndex(current_value))) {
+        first = ++it;
+        count -= step + 1;
+      } else
+        count = step;
+    }
+    return first;
+  }
+
+  size_t FindFirstSortedIndex(const DataType query) const {
+    auto lower_bound =
+        LowerBound(reindexer_.GetData().begin(), reindexer_.GetData().end(), query);
+    Assert(lower_bound != reindexer_.GetData().end(),
+           "Searched data does not exist in data_vector.");
+    return lower_bound - reindexer_.GetData().begin();
   };
 
-  size_t FindLastSortedIndex(const DataType &data) const { return 0; };
+  size_t FindLastSortedIndex(const DataType query) const {
+    auto upper_bound =
+        UpperBound(reindexer_.GetData().begin(), reindexer_.GetData().end(), query);
+    Assert(upper_bound != reindexer_.GetData().end(),
+           "Searched data does not exist in data_vector.");
+    return upper_bound - reindexer_.GetData().begin();
+  };
+
+  // Find data in
+  size_t FindUniqueSortedIndex(const DataType &data) const {
+    return FindFirstSortedIndex(data);
+  }
 
   SizePair FindRangeSortedIndex(const DataType &data) const {
     size_t range_begin = FindFirstSortedIndex(data);
@@ -82,55 +149,64 @@ class ArgsortVector {
   // Construct a sorted version of the data vector, without modifying the underlying
   // data.
   VectorType BuildSortedDataVector() const {
-    return Reindexer::BuildReindexedVector(data_vector_, reindexer_);
+    VectorType sorted_vector =
+        Reindexer::BuildReindexedVector(data_vector_, reindexer_);
+    return sorted_vector;
   };
 
   // ** Modify
 
-  // Append data_to_insert to data_vector, and insert into sorted reindexer.
-  void SortedInsert(DataType &data_to_insert) {
-    // Append data element.
-    data_vector_.push_back(data_to_insert);
-    reindexer_.AppendNextIndex();
-    // Find insert position in sorted reindexer.
-    // reindexer_.GetData().insert();
-    // reindexer_.GetData().insert(std::upper_bound(
-    //     reindexer_.GetData().begin(), reindexer_.GetData().end(),
-    //     [this](const int left, const int right) {
-    //       return lessthan_fn_(reindexer_.GetData()[left],
-    //       reindexer_.GetData()[right]);
-    //     }));
-  };
-
   // Append data_to_insert_vector to data_vector, then insert into sorted reindexer.
-  void SortedInsert(VectorType &data_to_insert_vector) {
+  void SortedInsert(VectorType &data_to_insert_vector,
+                    std::optional<bool> do_single_insert = std::nullopt) {
+    if (data_to_insert_vector.empty()) {
+      return;
+    }
+    // sort and append new data to data_vector.
+    std::sort(data_to_insert_vector.begin(), data_to_insert_vector.end(), lessthan_fn_);
+    data_vector_.insert(data_vector_.end(), data_to_insert_vector.begin(),
+                        data_to_insert_vector.end());
     // Rough estimate -- if quantity of new data being added is more than log(N), then
     // we are better off incurring the cost of a full vector resort than doing
     // individual inserts.
-    if (data_to_insert_vector.size() < log(data_vector_.size())) {
-      std::sort(data_to_insert_vector.begin(), data_to_insert_vector.end(),
-                lessthan_fn_);
-      SizeVector sorted_new_ids_to_add;
-      for (const auto &data : data_to_insert_vector) {
-      }
+    if (!do_single_insert.has_value()) {
+      do_single_insert = (data_to_insert_vector.size() < log(data_vector_.size()));
     }
-    // Add data_to_insert_vector and re-sort.
-    reindexer_.AppendNextIndex(data_to_insert_vector.size());
-    data_vector_.insert(data_vector_.begin(), data_to_insert_vector.begin(),
-                        data_to_insert_vector.end());
-    SortReindexer();
+    if (do_single_insert.value()) {
+      SizeVector sorted_output_idxs_to_add;
+      for (const auto &data : data_to_insert_vector) {
+        sorted_output_idxs_to_add.push_back(FindLastSortedIndex(data));
+      }
+      reindexer_.InsertOutputIndex(sorted_output_idxs_to_add);
+    } else {
+      // Add data_to_insert_vector and re-sort.
+      reindexer_.AppendNextIndex(data_to_insert_vector.size());
+      SortReindexer();
+    }
   };
 
-  void SortedDelete(DataType &data_to_delete){
-
+  void SortedDelete(const DataType &data_to_delete) {
+    size_t id_to_delete = FindUniqueSortedIndex(data_to_delete);
+    return SortedDeleteById(id_to_delete);
   };
 
-  void SortedDelete(VectorType &data_to_delete_vector){
-
+  void SortedDelete(const VectorType &data_to_delete_vector) {
+    SizeVector ids_to_delete;
+    for (size_t i = 0; i < data_to_delete_vector.size(); i++) {
+      ids_to_delete.push_back(FindUniqueSortedIndex(data_to_delete_vector[i]));
+    }
+    return SortedDeleteById(ids_to_delete);
   };
 
-  void SortedDeleteById(size_t id_to_delete){};
-  void SortedDeleteById(SizeVector &ids_to_delete){};
+  void SortedDeleteById(const size_t id_to_delete) {
+    reindexer_.ReassignOutputIndexAndShift(id_to_delete, reindexer_.size() - 1);
+  };
+
+  void SortedDeleteById(const SizeVector &ids_to_delete) {
+    for (const auto &id_to_delete : ids_to_delete) {
+      SortedDeleteById(id_to_delete);
+    }
+  };
 
   // ** Transform
 
@@ -146,48 +222,80 @@ class ArgsortVector {
   // Sort data according to the reindexer ordering.
   // Reindexer is updated to identity after sorting.
   void SortDataVector() {
-    Reindexer::ReindexVectorInPlace<VectorType, DataType>(data_vector_, reindexer_,
-                                                          data_vector_.size());
+    // reindex_fn_(data_vector_, reindexer_.InvertReindexer());
+    Reindexer::ReindexVectorInPlace<VectorType, DataType>(
+        data_vector_, reindexer_.InvertReindexer(), data_vector_.size());
     reindexer_ = Reindexer::IdentityReindexer(data_vector_.size());
   };
-
-  // ** Iterator
 
  private:
   Reindexer reindexer_;
   std::optional<Reindexer> inverted_reindexer_ = std::nullopt;
   VectorType &data_vector_;
   bool is_sorted_ = false;
-  std::function<bool(const DataType &, const DataType &)> lessthan_fn_;
+  size_t occupancy = 0;
+
+  AccessFunction access_fn_;
+  LessThanFunction lessthan_fn_;
+  ReindexFunction reindex_fn_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("ArgsortVector") {
-  StringVector strings = {"d", "a", "c", "a", "b", "g", "e", "f", "i"};
+  StringVector strings = {"d", "a", "a", "b", "g", "f", "i", "j"};
   StringVector golden_strings = StringVector(strings);
   std::sort(golden_strings.begin(), golden_strings.end());
   StringVector argsort_strings = StringVector(strings);
   ArgsortVector<std::string> argsort(argsort_strings);
 
-  CHECK_NE(golden_strings, strings);
-  CHECK_EQ(strings, argsort.GetDataVector());
-  CHECK_EQ(golden_strings, argsort.BuildSortedDataVector());
+  // TEST_0: Check initial sort on build.
+  CHECK_MESSAGE(golden_strings != strings, "TEST_0 failed.");
+  CHECK_MESSAGE(strings == argsort.GetDataVector(), "TEST_0 failed.");
+  CHECK_MESSAGE(golden_strings == argsort.BuildSortedDataVector(), "TEST_0 failed.");
 
-  StringVector append_strings = {"a", "e", "c"};
+  StringVector append_strings;
+  std::string append_string;
+
+  // TEST_1: Multiple insert in order (as).
+  append_strings = {"b", "d"};
   strings.insert(strings.end(), append_strings.begin(), append_strings.end());
   golden_strings.insert(golden_strings.end(), append_strings.begin(),
                         append_strings.end());
   std::sort(golden_strings.begin(), golden_strings.end());
+  argsort.SortedInsert(append_strings, true);
+  CHECK_MESSAGE(golden_strings != argsort.GetDataVector(), "TEST_1 failed.");
+  CHECK_MESSAGE(golden_strings == argsort.BuildSortedDataVector(), "TEST_1 failed.");
 
+  // TEST_2: Multiple insert not in order (as batch).
+  append_strings = {"a", "c", "g", "c"};
+  strings.insert(strings.end(), append_strings.begin(), append_strings.end());
+  golden_strings.insert(golden_strings.end(), append_strings.begin(),
+                        append_strings.end());
+  std::sort(golden_strings.begin(), golden_strings.end());
+  argsort.SortedInsert(append_strings, false);
+  CHECK_MESSAGE(golden_strings != argsort.GetDataVector(), "TEST_2 failed.");
+  CHECK_MESSAGE(golden_strings == argsort.BuildSortedDataVector(), "TEST_2 failed.");
+
+  // TEST_4: Single insert.
+  append_strings = {"c"};
+  strings.insert(strings.end(), append_strings.begin(), append_strings.end());
+  golden_strings.insert(golden_strings.end(), append_strings.begin(),
+                        append_strings.end());
+  std::sort(golden_strings.begin(), golden_strings.end());
   argsort.SortedInsert(append_strings);
+  CHECK_MESSAGE(golden_strings != argsort.GetDataVector(), "TEST_3 failed.");
+  CHECK_MESSAGE(golden_strings == argsort.BuildSortedDataVector(), "TEST_3 failed.");
 
-  CHECK_NE(golden_strings, argsort.GetDataVector());
-  CHECK_EQ(golden_strings, argsort.BuildSortedDataVector());
-
-  argsort.SortDataVector();
-
-  CHECK_EQ(golden_strings, argsort.GetDataVector());
+  // TEST_4: Empty insert.
+  append_strings = {};
+  strings.insert(strings.end(), append_strings.begin(), append_strings.end());
+  golden_strings.insert(golden_strings.end(), append_strings.begin(),
+                        append_strings.end());
+  std::sort(golden_strings.begin(), golden_strings.end());
+  argsort.SortedInsert(append_strings);
+  CHECK_MESSAGE(golden_strings != argsort.GetDataVector(), "TEST_4 failed.");
+  CHECK_MESSAGE(golden_strings == argsort.BuildSortedDataVector(), "TEST_4 failed.");
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

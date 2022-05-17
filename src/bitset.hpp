@@ -154,7 +154,7 @@ class Bitset {
   using SubsplitCladeIterator =
       EnumIterator<SubsplitClade, SubsplitClade::Left, SubsplitClade::Right>;
 
-  static SubsplitClade Opposite(const SubsplitClade clade) {
+  static SubsplitClade SubsplitCladeOpposite(const SubsplitClade clade) {
     switch (clade) {
       case SubsplitClade::Left:
         return SubsplitClade::Right;
@@ -199,6 +199,7 @@ class Bitset {
   // Get the full rootsplit bitset out of a rootsplit half.
   // Note: the first half of the rootsplit bitset is always larger than the second.
   static Bitset RootsplitSubsplitOfClade(const Bitset &clade);
+
   // Comparator:
   // Subsplits are sorting on the following:
   // (1) The number of taxa in each of their subsplits.
@@ -206,6 +207,7 @@ class Bitset {
   // (3) The std::bitset ordering of each or their sorted clades.
   static int SubsplitCompare(const Bitset &subsplit_a, const Bitset &subsplit_b);
   int SubsplitCompare(const Bitset &other) const;
+
   // Flip the order of the two clades of a subsplit.
   Bitset SubsplitRotate() const;
   // Sorts clades of subsplit so that they are ordered by their taxon representation.
@@ -291,6 +293,14 @@ class Bitset {
   // Given a rootsplit, get the PCSP connecting the DAG root node to that rootsplit
   // (e.g. '1100|0011' would return '0000|1111|0011').
   static Bitset PCSPFromUCAToRootsplit(const Bitset &rootsplit);
+
+  // Comparator:
+  // PCSP are sorted on the following:
+  // (1) Compare the parent nodes of the PCSPs.
+  // (2) Compare the child nodes of the PCSPs.
+  static int PCSPCompare(const Bitset &pcsp_a, const Bitset &pcsp_b);
+  int PCSPCompare(const Bitset &other) const;
+
   // Output PCSP as string of "1" and "0" characters, with each clade separated by a
   // "|".
   std::string PCSPToString() const;

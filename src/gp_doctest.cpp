@@ -9,6 +9,7 @@
 #include "gp_instance.hpp"
 #include "phylo_model.hpp"
 #include "reindexer.hpp"
+#include "argsort_vector.hpp"
 #include "rooted_sbn_instance.hpp"
 #include "stopwatch.hpp"
 #include "tidy_subsplit_dag.hpp"
@@ -692,7 +693,7 @@ TEST_CASE("GPInstance: test rootsplits") {
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908707617.
-TEST_CASE("GPInstance: IsValidAddNodePair tests") {
+TEST_CASE("GPInstance: IsValidAddNodePair") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
   auto& dag = inst.GetDAG();
@@ -724,101 +725,174 @@ TEST_CASE("GPInstance: IsValidAddNodePair tests") {
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908708284.
-TEST_CASE("GPInstance: AddNodePair tests") {
-  // Remove return when fixing #391 for real.
-  return;
+TEST_CASE("SubsplitDAG: AddNodePair") {
+  using Neighborhood = std::pair<Direction, SubsplitClade>;
+  using NeighborMap = std::map<Neighborhood, SizeVector>;
+  using NeighborBitsetMap = std::map<Neighborhood, BitsetVector>;
+  using NeighborMapPair = std::tuple<NeighborMap, NeighborBitsetMap, size_t>;
+  std::cerr << "SubsplitDAG: AddNodePair tests" << std::endl;
+
   const std::string fasta_path = "data/five_taxon.fasta";
-  auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
+  const std::string newick_path = "data/five_taxon_rooted_more_2.nwk";
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
   auto& dag = inst.GetDAG();
+  auto pre_inst = GPInstanceOfFiles(fasta_path, newick_path);
+  auto& pre_dag = pre_inst.GetDAG();
+
+  // TEST_0:
   // Check that AddNodePair throws if node pair is invalid (12|34 and 2|4).
-  CHECK_THROWS(dag.AddNodePair(Bitset::Subsplit("01100", "00011"),
-                               Bitset::Subsplit("00100", "00001")));
-  // Add 2|34 and 3|4, which are both already in the DAG.
+  Bitset parent_subsplit = Bitset::Subsplit("01100", "00011");
+  Bitset child_subsplit = Bitset::Subsplit("00100", "00001");
+  CHECK_THROWS(dag.AddNodePair(parent_subsplit, child_subsplit));
+
+  // TEST_1:
+  // Add (2|34) and (3|4), which are both already in the DAG.
   // Check that AddNodePair returns empty added_node_ids and added_edge_idxs
   // and that node_reindexer and edge_reindexer are the identity reindexers.
-  auto node_addition_result = dag.AddNodePair(Bitset::Subsplit("00100", "00011"),
-                                              Bitset::Subsplit("00010", "00001"));
-  CHECK(node_addition_result.added_node_ids.empty());
-  CHECK(node_addition_result.added_edge_idxs.empty());
-  CHECK_EQ(node_addition_result.node_reindexer, Reindexer::IdentityReindexer(16));
-  CHECK_EQ(node_addition_result.edge_reindexer, Reindexer::IdentityReindexer(24));
+  parent_subsplit = Bitset::Subsplit("00100", "00011");
+  child_subsplit = Bitset::Subsplit("00010", "00001");
+  auto mods = dag.AddNodePair(parent_subsplit, child_subsplit);
+  CHECK(mods.added_node_ids.empty());
+  CHECK(mods.added_edge_idxs.empty());
+  CHECK_EQ(mods.node_reindexer, Reindexer::IdentityReindexer(16));
+  CHECK_EQ(mods.edge_reindexer, Reindexer::IdentityReindexer(24));
+
+  // TEST_2:
+  // Add (24|3) and (2|4) to the DAG, which is valid and neither node are yet in the
+  // DAG. Check that all proper nodes are added and all edges are added to the DAG and
+  // individual nodes.
   // Before adding any nodes.
   size_t prev_node_count = dag.NodeCount();
   size_t prev_edge_count = dag.EdgeCountWithLeafSubsplits();
   size_t prev_topology_count = dag.TopologyCount();
   // Add nodes 24|3 and 2|4.
-  Bitset parent_subsplit = Bitset::Subsplit("00101", "00010");
-  Bitset child_subsplit = Bitset::Subsplit("00100", "00001");
-  node_addition_result = dag.AddNodePair(parent_subsplit, child_subsplit);
+  parent_subsplit = Bitset::Subsplit("00101", "00010");
+  child_subsplit = Bitset::Subsplit("00100", "00001");
+
+  mods = dag.AddNodePair(parent_subsplit, child_subsplit);
   // Check that the node count and edge count was updated.
-  CHECK_EQ(dag.NodeCount(), prev_node_count + 2);
-  CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 6);
+  size_t new_node_count = 2;
+  size_t new_edge_count = 6;
+  CHECK_EQ(dag.NodeCount(), prev_node_count + new_node_count);
+  CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + new_edge_count);
   // Check that both nodes now exist.
   CHECK(dag.ContainsNode(parent_subsplit));
   CHECK(dag.ContainsNode(child_subsplit));
   // Check that all necessary edges were created.
   const auto parent_node = dag.GetDAGNode(dag.GetDAGNodeId(parent_subsplit));
   const auto child_node = dag.GetDAGNode(dag.GetDAGNodeId(child_subsplit));
-  std::map<bool, SizeVector> correct_parents_of_parent{{true, {}}, {false, {16, 14}}};
-  std::map<bool, SizeVector> parents_of_parent{{true, parent_node.GetLeftRootward()},
-                                               {false, parent_node.GetRightRootward()}};
-  CHECK_EQ(parents_of_parent, correct_parents_of_parent);
-  std::map<bool, SizeVector> children_of_parent{
-      {true, parent_node.GetLeftLeafward()}, {false, parent_node.GetRightLeafward()}};
-  std::map<bool, SizeVector> correct_children_of_parent{{true, {12}}, {false, {3}}};
-  CHECK_EQ(children_of_parent, correct_children_of_parent);
-  std::map<bool, SizeVector> parents_of_children{
-      {true, child_node.GetLeftRootward()}, {false, child_node.GetRightRootward()}};
-  std::map<bool, SizeVector> correct_parents_of_children{{true, {13}}, {false, {}}};
-  CHECK_EQ(parents_of_children, correct_parents_of_children);
-  std::map<bool, SizeVector> children_of_child{{true, child_node.GetLeftLeafward()},
-                                               {false, child_node.GetRightLeafward()}};
-  std::map<bool, SizeVector> correct_children_of_child{{true, {2}}, {false, {4}}};
-  CHECK_EQ(children_of_child, correct_children_of_child);
-  // Check that node_reindexer and edge_reindexer are correct.
-  Reindexer correct_node_reindexer(
-      {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15, 16, 17, 12, 13});
-  CHECK_EQ(node_addition_result.node_reindexer, correct_node_reindexer);
-  Reindexer correct_edge_reindexer({0,  1,  2,  3,  4,  5,  6,  7,  9,  10,
-                                    11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-                                    22, 23, 24, 25, 26, 27, 28, 29, 12, 8});
-  CHECK_EQ(node_addition_result.edge_reindexer, correct_edge_reindexer);
-  // Check that added_node_ids and added_edge_idxs are correct.
-  SizeVector correct_added_node_ids{12, 13};
-  CHECK_EQ(node_addition_result.added_node_ids, correct_added_node_ids);
-  SizeVector correct_added_edge_idxs{26, 27, 28, 29, 12, 8};
-  CHECK_EQ(node_addition_result.added_edge_idxs, correct_added_edge_idxs);
-  // Check that `dag_nodes` was updated (node 12 -> 14).
-  const auto& node_14 = dag.GetDAGNode(14);
-  CHECK_EQ(node_14.GetBitset().ToString(), "0100000111");
-  // Check that node fields were updated correctly.
-  const auto& sorted_parents_14 = node_14.GetRightRootward();
-  const auto& sorted_children_14 = node_14.GetRightLeafward();
-  CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 13) ==
-        sorted_parents_14.end());
-  CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 15) !=
-        sorted_parents_14.end());
-  CHECK(std::find(sorted_children_14.begin(), sorted_children_14.end(), 11) !=
-        sorted_children_14.end());
-  CHECK_EQ(node_14.Id(), 14);
-  // Check that `subsplit_to_id_` node ids were updated.
-  CHECK_EQ(dag.GetDAGNodeId(node_14.GetBitset()), 14);
-  // Check that `dag_edges_` node ids were updated.
-  CHECK_EQ(dag.GetEdgeIdx(15, 14), 9);
-  // Check that `dag_edges_` edge idxs were updated.
-  CHECK_EQ(dag.GetEdgeIdx(14, 13), 8);
-  CHECK_EQ(dag.GetEdgeIdx(16, 13), 12);
-  CHECK_EQ(dag.GetEdgeIdx(11, 4), 25);
-  // Check that `parent_to_child_range_` was updated.
-  CHECK_EQ(dag.GetChildEdgeRange(node_14.GetBitset(), false).second, 9);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).first, 11);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).second, 13);
+  // Neighbors of parent.
+  NeighborBitsetMap correct_neighbor_bitsets_of_parent{
+      {{Direction::Rootward, SubsplitClade::Left}, {}},
+      {{Direction::Rootward, SubsplitClade::Right},
+       {Bitset::Subsplit("11000", "00111"), Bitset::Subsplit("01000", "00111")}},
+      {{Direction::Leafward, SubsplitClade::Left},
+       {Bitset::Subsplit("00100", "00001")}},
+      {{Direction::Leafward, SubsplitClade::Right},
+       {Bitset::Subsplit("00010", "00000")}}};
+  NeighborMap neighbors_of_parent{
+      {{Direction::Rootward, SubsplitClade::Left}, parent_node.GetLeftRootward()},
+      {{Direction::Rootward, SubsplitClade::Right}, parent_node.GetRightRootward()},
+      {{Direction::Leafward, SubsplitClade::Left}, parent_node.GetLeftLeafward()},
+      {{Direction::Leafward, SubsplitClade::Right}, parent_node.GetRightLeafward()}};
+  NeighborMapPair neighbor_pair_parent{
+      neighbors_of_parent, correct_neighbor_bitsets_of_parent, parent_node.Id()};
+  // Neigbors of child.
+  NeighborBitsetMap correct_neighbor_bitsets_of_child{
+      {{Direction::Rootward, SubsplitClade::Left},
+       {Bitset::Subsplit("00101", "00010")}},
+      {{Direction::Rootward, SubsplitClade::Right}, {}},
+      {{Direction::Leafward, SubsplitClade::Left},
+       {Bitset::Subsplit("00100", "00000")}},
+      {{Direction::Leafward, SubsplitClade::Right},
+       {Bitset::Subsplit("00001", "00000")}}};
+  NeighborMap neighbors_of_child{
+      {{Direction::Rootward, SubsplitClade::Left}, child_node.GetLeftRootward()},
+      {{Direction::Rootward, SubsplitClade::Right}, child_node.GetRightRootward()},
+      {{Direction::Leafward, SubsplitClade::Left}, child_node.GetLeftLeafward()},
+      {{Direction::Leafward, SubsplitClade::Right}, child_node.GetRightLeafward()}};
+  NeighborMapPair neighbor_pair_child{
+      neighbors_of_child, correct_neighbor_bitsets_of_child, child_node.Id()};
+  // Check that parent and child nodes have their expected neighbors.
+  for (const auto& [neighbors, correct_neighbor_bitsets, node_id] :
+       {neighbor_pair_parent, neighbor_pair_child}) {
+    for (const auto& direction : {Direction::Leafward, Direction::Rootward}) {
+      for (const auto& clade : {SubsplitClade::Left, SubsplitClade::Right}) {
+        SizeVector correct_neighbor;
+        for (const auto& bitset : correct_neighbor_bitsets.at({direction, clade})) {
+          correct_neighbor.push_back(dag.GetDAGNodeId(bitset));
+        }
+        SizeVector neighbor = neighbors.at({direction, clade});
+        std::sort(neighbor.begin(), neighbor.end());
+        std::sort(correct_neighbor.begin(), correct_neighbor.end());
+        CHECK_MESSAGE(neighbor == correct_neighbor,
+                      "DAG Node does not have expected neighbors.");
+        for (const auto& adj_node_id : correct_neighbor) {
+          const auto& parent_id =
+              (direction == Direction::Rootward) ? adj_node_id : node_id;
+          const auto& child_id =
+              (direction == Direction::Rootward) ? node_id : adj_node_id;
+          CHECK_MESSAGE(dag.ContainsEdge(parent_id, child_id),
+                        "Expected DAG Edge does not exist.");
+        }
+      }
+    }
+  }
+
+  // Check that node reindexer maps pre_dag to post_dag nodes correctly.
+  CHECK_MESSAGE(dag.NodeCount() == (pre_dag.NodeCount() + new_node_count),
+                "Node Reindexer is not the expected length.");
+  CHECK_MESSAGE(mods.node_reindexer.size() == (pre_dag.NodeCount() + new_node_count),
+                "Node Reindexer is not the expected length.");
+  for (size_t input_idx = 0; input_idx < mods.node_reindexer.size(); input_idx++) {
+    size_t output_idx = mods.node_reindexer.GetOutputIndexByInputIndex(input_idx);
+    if (input_idx < pre_dag.NodeCount()) {
+      Bitset input_bitset = pre_dag.GetDAGNode(input_idx).GetBitset();
+      Bitset output_bitset = dag.GetDAGNode(output_idx).GetBitset();
+      CHECK_MESSAGE(input_bitset == output_bitset,
+                    "Reindexer does not map nodes correctly.");
+    }
+  }
+  // Check that edge reindexer maps pre_dag to post_dag edges correctly.
+  CHECK_MESSAGE(dag.EdgeCountWithLeafSubsplits() ==
+                    (pre_dag.EdgeCountWithLeafSubsplits() + new_edge_count),
+                "Edge Reindexer is not the expected length.");
+  CHECK_MESSAGE(mods.edge_reindexer.size() ==
+                    (pre_dag.EdgeCountWithLeafSubsplits() + new_edge_count),
+                "Edge Reindexer is not the expected length.");
+  for (size_t input_idx = 0; input_idx < mods.edge_reindexer.size(); input_idx++) {
+    size_t output_idx = mods.edge_reindexer.GetOutputIndexByInputIndex(input_idx);
+
+    if (input_idx < pre_dag.EdgeCount()) {
+      auto input_parent_id =
+          pre_dag.GetDAGNode(pre_dag.GetDAGEdge(input_idx).GetParent()).Id();
+      auto input_parent = pre_dag.GetDAGNode(input_parent_id).GetBitset();
+      auto input_child_id =
+          pre_dag.GetDAGNode(pre_dag.GetDAGEdge(input_idx).GetChild()).Id();
+      auto input_child = pre_dag.GetDAGNode(input_child_id).GetBitset();
+
+      auto output_parent_id =
+          dag.GetDAGNode(dag.GetDAGEdge(output_idx).GetParent()).Id();
+      auto output_parent = dag.GetDAGNode(output_parent_id).GetBitset();
+      auto output_child_id = dag.GetDAGNode(dag.GetDAGEdge(output_idx).GetChild()).Id();
+      auto output_child = dag.GetDAGNode(output_child_id).GetBitset();
+
+      CHECK_MESSAGE(input_child == output_child,
+                    "Reindexer does not map edges correctly (incorrect child).");
+      CHECK_MESSAGE(input_parent == output_parent,
+                    "Reindexer does not map edges correctly (incorrect parent).");
+    }
+  }
+  // Check that dag is valid, consistent, and nodes are topologically sorted.
+  CHECK_MESSAGE(dag.IsConsistent(), "DAG data is not stored consistently.");
+  CHECK_MESSAGE(dag.IsValid(), "DAG is not in a valid state.");
+  CHECK_MESSAGE(dag.IsTopologicallySorted(), "DAG nodes are not in topological order.");
   // Check that `topology_count_` was updated.
   CHECK_EQ(dag.TopologyCount(), prev_topology_count + 2);
 }
 
 // Tests that reindexers match the remapped node_ids and edge_idxs after AddNodePair.
-TEST_CASE("GPInstance: Reindexers for AddNodePair") {
+TEST_CASE("SubsplitDAG: Reindexers for AddNodePair") {
   const std::string fasta_path = "data/five_taxon.fasta";
   const std::string newick_path = "data/five_taxon_rooted_more_2.nwk";
   auto pre_inst = GPInstanceOfFiles(fasta_path, newick_path);
@@ -829,13 +903,15 @@ TEST_CASE("GPInstance: Reindexers for AddNodePair") {
   auto& nni_engine = inst.GetNNIEngine();
   nni_engine.SyncAdjacentNNIsWithDAG();
 
+  // Add node pairs to DAG one at a time, compare mappings to DAG before adding nodes.
   for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
     auto mods = dag.AddNodePair(nni);
     for (size_t old_idx = 0; old_idx < pre_dag.NodeCount(); old_idx++) {
       size_t new_idx = mods.node_reindexer.GetOutputIndexByInputIndex(old_idx);
       Bitset old_node = pre_dag.GetDAGNode(old_idx).GetBitset();
       Bitset new_node = dag.GetDAGNode(new_idx).GetBitset();
-      CHECK_EQ(old_node, new_node);
+      CHECK_MESSAGE(old_node == new_node,
+                    "Node reindexer does not map nodes correctly.");
     }
     for (size_t old_idx = 0; old_idx < pre_dag.EdgeCount(); old_idx++) {
       size_t new_idx = mods.edge_reindexer.GetOutputIndexByInputIndex(old_idx);
@@ -846,8 +922,10 @@ TEST_CASE("GPInstance: Reindexers for AddNodePair") {
       Bitset new_parent =
           dag.GetDAGNode(dag.GetDAGEdge(new_idx).GetParent()).GetBitset();
       Bitset new_child = dag.GetDAGNode(dag.GetDAGEdge(new_idx).GetChild()).GetBitset();
-      CHECK_EQ(old_parent, new_parent);
-      CHECK_EQ(old_child, new_child);
+      CHECK_MESSAGE(old_parent == new_parent,
+                    "Edge Reindexer does not map edges correctly (incorrect parent).");
+      CHECK_MESSAGE(old_child == new_child,
+                    "Edge Reindexer does not map edges correctly (incorrect child).");
     }
     pre_dag.AddNodePair(nni);
   }
