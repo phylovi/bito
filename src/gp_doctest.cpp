@@ -730,7 +730,6 @@ TEST_CASE("SubsplitDAG: AddNodePair") {
   using NeighborMap = std::map<Neighborhood, SizeVector>;
   using NeighborBitsetMap = std::map<Neighborhood, BitsetVector>;
   using NeighborMapPair = std::tuple<NeighborMap, NeighborBitsetMap, size_t>;
-  std::cerr << "SubsplitDAG: AddNodePair tests" << std::endl;
 
   const std::string fasta_path = "data/five_taxon.fasta";
   const std::string newick_path = "data/five_taxon_rooted_more_2.nwk";
@@ -928,6 +927,36 @@ TEST_CASE("SubsplitDAG: Reindexers for AddNodePair") {
                     "Edge Reindexer does not map edges correctly (incorrect child).");
     }
     pre_dag.AddNodePair(nni);
+  }
+}
+
+TEST_CASE("SubsplitDAG: AddNodes and RemoveNodes") {
+  std::cout << "SubsplitDAG: AddNodes and RemoveNodes" << std::endl;
+  const std::string fasta_path = "data/five_taxon.fasta";
+  const std::string newick_path = "data/five_taxon_rooted_more_2.nwk";
+  auto pre_inst = GPInstanceOfFiles(fasta_path, newick_path);
+  auto& pre_dag = pre_inst.GetDAG();
+  pre_inst.MakeNNIEngine();
+  auto& nni_engine = pre_inst.GetNNIEngine();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+
+  auto inst_a = GPInstanceOfFiles(fasta_path, newick_path);
+  auto& dag_a = inst_a.GetDAG();
+
+  auto inst_b = GPInstanceOfFiles(fasta_path, newick_path);
+  auto& dag_b = inst_b.GetDAG();
+
+  // Add node pairs to DAG one at a time, compare mappings to DAG before adding
+  // nodes.
+  for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
+    auto mods_a = dag_a.AddNodePair(nni);
+    BitsetVector bitsets({nni.GetParent(), nni.GetChild()});
+    auto mods_b = dag_b.AddNodes(bitsets, false);
+
+    auto dag_compare = SubsplitDAG::Compare(dag_a, dag_b);
+    std::cout << "Compare: " << dag_compare << std::endl;
+
+    break;
   }
 }
 

@@ -194,3 +194,14 @@ class EnumArray {
  private:
   std::array<DataType, EnumCount> array_;
 };
+
+// Returns if template type is a reference or not.
+
+template <typename T>
+struct IsReference {
+  static bool const result = false;
+};
+template <typename T>
+struct IsReference<T &> {
+  static bool const result = true;
+};

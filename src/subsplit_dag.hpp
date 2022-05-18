@@ -369,7 +369,7 @@ class SubsplitDAG {
       std::optional<ModificationResult> opt_mods = std::nullopt);
   // Add collection of nodes to DAG.
   ModificationResult AddNodes(
-      const BitsetVector &node_subsplits, const bool enforce_validity = true,
+      BitsetVector &node_subsplits, const bool enforce_validity = true,
       std::optional<ModificationResult> opt_mods = std::nullopt);
   // Add collection of nodes to DAG.
   ModificationResult RemoveNodes(
@@ -505,11 +505,13 @@ class SubsplitDAG {
   // Add taxon map to DAG.
   void BuildTaxonMap(const TagStringMap &tag_taxon_map);
   // Create Node and insert it into the DAG.  Returns ID of created node.
-  size_t CreateAndInsertNode(const Bitset &subsplit);
+  size_t CreateAndInsertNode(const Bitset &subsplit,
+                             std::optional<ModificationResult> opt_mod = std::nullopt);
   // Create Edge between given nodes and insert it into the DAG. Returns ID of created
   // edge.
   size_t CreateAndInsertEdge(const size_t parent_id, const size_t child_id,
-                             const bool rotated);
+                             const bool rotated,
+                             std::optional<ModificationResult> opt_mod = std::nullopt);
   // Add edge between given parent and child nodes to the DAG.
   void ConnectGivenNodes(const size_t parent_id, const size_t child_id,
                          const bool rotated, const size_t edge_id);

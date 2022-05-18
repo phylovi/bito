@@ -23,23 +23,50 @@ TODO: Remove this later
 
 // Reindexer that holds a reference data vector.  The reindexer maintains a sort by
 // proxy on the underlying data.
-template <typename DataType, typename VectorType = std::vector<DataType>>
+
+// ** Default Functions
+
+template <typename DataType>
+bool ArgsortLessThanFunction(const DataType &lhs, const DataType &rhs) {
+  return lhs < rhs;
+}
+
+template <typename VectorType, typename DataType>
+const DataType &ArgsortAccessFunction(VectorType data_vector, const size_t i) {
+  return data_vector[i];
+}
+
+template <typename VectorType, typename DataType>
+void ArgsortReindexFunction(VectorType data_vector, const Reindexer &reindexer) {
+  Reindexer::ReindexVectorInPlace<VectorType, DataType>(
+      data_vector, reindexer.InvertReindexer(), data_vector.size());
+}
+
+template <typename VectorType, typename DataType>
+void ArgsortAddDataFunction(VectorType data_vector, VectorType data_to_add) {}
+
+template <typename DataType, typename VectorType = std::vector<DataType>,
+          typename RefVectorType = VectorType &>
 class ArgsortVector {
  public:
-  using GetVectorFunction = std::function<VectorType &(void)>;
-  using AccessFunction = std::function<DataType &(VectorType &, const size_t)>;
-  using ReindexFunction = std::function<void(VectorType &, const Reindexer &)>;
+  using AccessFunction = std::function<const DataType &(RefVectorType, const size_t)>;
+  using ReindexFunction = std::function<void(RefVectorType, const Reindexer &)>;
   using LessThanFunction = std::function<bool(const DataType &, const DataType &)>;
 
   ArgsortVector(
-      VectorType &data_vector,
-      LessThanFunction lessthan_fn = [](const DataType &lhs,
-                                        const DataType &rhs) { return lhs < rhs; },
+      RefVectorType data_vector, std::optional<Reindexer> reindexer,
+      LessThanFunction lessthan_fn = ArgsortLessThanFunction<DataType>,
+      AccessFunction access_fn = ArgsortAccessFunction<RefVectorType, DataType>,
+      ReindexFunction reindex_fn = ArgsortReindexFunction<RefVectorType, DataType>,
       bool is_sorted = false)
-      : reindexer_(Reindexer::IdentityReindexer(data_vector.size())),
-        data_vector_(data_vector),
+      : data_vector_(data_vector),
         is_sorted_(is_sorted),
+        access_fn_(access_fn),
+        reindex_fn_(reindex_fn),
         lessthan_fn_(lessthan_fn) {
+    reindexer_ = reindexer.has_value()
+                     ? reindexer.value()
+                     : Reindexer::IdentityReindexer(data_vector.size());
     if (!is_sorted_) {
       SortReindexer();
     }
@@ -52,7 +79,7 @@ class ArgsortVector {
   size_t Size() const { return data_vector_.size(); };
 
   // VectorType &GetDataVector() { return data_vector_; }
-  const VectorType &GetDataVector() const { return data_vector_; };
+  const RefVectorType GetDataVector() const { return data_vector_; };
   // Reindexer &GetReindexer() { return reindexer_; }
   const Reindexer &GetReindexer() const { return reindexer_; };
 
@@ -68,7 +95,7 @@ class ArgsortVector {
 
   // Get data by unsorted index.
   const DataType &GetDataByUnsortedIndex(const size_t unsorted_idx) const {
-    return data_vector_[unsorted_idx];
+    return access_fn_(data_vector_, unsorted_idx);
   }
   // Get data by sorted index.
   // Note: This uses linear search.
@@ -84,7 +111,6 @@ class ArgsortVector {
     ForwardIt it;
     typename std::iterator_traits<ForwardIt>::difference_type count, step;
     count = std::distance(first, last);
-
     while (count > 0) {
       it = first;
       step = count / 2;
@@ -157,7 +183,7 @@ class ArgsortVector {
   // ** Modify
 
   // Append data_to_insert_vector to data_vector, then insert into sorted reindexer.
-  void SortedInsert(VectorType &data_to_insert_vector,
+  void SortedInsert(RefVectorType data_to_insert_vector,
                     std::optional<bool> do_single_insert = std::nullopt) {
     if (data_to_insert_vector.empty()) {
       return;
@@ -172,6 +198,7 @@ class ArgsortVector {
     if (!do_single_insert.has_value()) {
       do_single_insert = (data_to_insert_vector.size() < log(data_vector_.size()));
     }
+
     if (do_single_insert.value()) {
       SizeVector sorted_output_idxs_to_add;
       for (const auto &data : data_to_insert_vector) {
@@ -190,7 +217,7 @@ class ArgsortVector {
     return SortedDeleteById(id_to_delete);
   };
 
-  void SortedDelete(const VectorType &data_to_delete_vector) {
+  void SortedDelete(const RefVectorType data_to_delete_vector) {
     SizeVector ids_to_delete;
     for (size_t i = 0; i < data_to_delete_vector.size(); i++) {
       ids_to_delete.push_back(FindUniqueSortedIndex(data_to_delete_vector[i]));
@@ -214,7 +241,8 @@ class ArgsortVector {
   void SortReindexer() {
     std::sort(reindexer_.GetData().begin(), reindexer_.GetData().end(),
               [this](int left, int right) -> bool {
-                return lessthan_fn_(data_vector_[left], data_vector_[right]);
+                return lessthan_fn_(access_fn_(data_vector_, left),
+                                    access_fn_(data_vector_, right));
               });
     is_sorted_ = true;
   };
@@ -223,15 +251,16 @@ class ArgsortVector {
   // Reindexer is updated to identity after sorting.
   void SortDataVector() {
     // reindex_fn_(data_vector_, reindexer_.InvertReindexer());
-    Reindexer::ReindexVectorInPlace<VectorType, DataType>(
-        data_vector_, reindexer_.InvertReindexer(), data_vector_.size());
+    reindex_fn_(data_vector_, reindexer_);
     reindexer_ = Reindexer::IdentityReindexer(data_vector_.size());
   };
 
+  // ** Default Functions
+
  private:
+  RefVectorType data_vector_;
   Reindexer reindexer_;
   std::optional<Reindexer> inverted_reindexer_ = std::nullopt;
-  VectorType &data_vector_;
   bool is_sorted_ = false;
   size_t occupancy = 0;
 
@@ -247,7 +276,7 @@ TEST_CASE("ArgsortVector") {
   StringVector golden_strings = StringVector(strings);
   std::sort(golden_strings.begin(), golden_strings.end());
   StringVector argsort_strings = StringVector(strings);
-  ArgsortVector<std::string> argsort(argsort_strings);
+  ArgsortVector<std::string> argsort(argsort_strings, std::nullopt);
 
   // TEST_0: Check initial sort on build.
   CHECK_MESSAGE(golden_strings != strings, "TEST_0 failed.");
