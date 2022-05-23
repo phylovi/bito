@@ -191,7 +191,7 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
 // IMPORTANT: See the note about appropriate tree file input to that function, as the
 // same applies here.
 void TestCompositeMarginal(GPInstance inst, const std::string& fasta_path) {
-  inst.EstimateBranchLengths(0.0001, 100, true);
+  inst.EstimateBranchLengths(0.00001, 100, true);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   inst.ComputeMarginalLikelihood();
@@ -255,6 +255,7 @@ TEST_CASE("GPInstance: gradient calculation") {
 TEST_CASE("GPInstance: multi-site gradient calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
+  inst.PrintEdgeIndexer();
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
@@ -264,10 +265,10 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   size_t hello_node_count_without_dag_root_node = 5;
   size_t rootsplit_jupiter_idx = 2;
 
-  size_t leafward_idx =
-      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::P, hello_node_count_without_dag_root_node, child_id);
-  size_t rootward_idx =
-      GPDAG::GetPLVIndexStatic(GPDAG::PLVType::R_TILDE, hello_node_count_without_dag_root_node, rootsplit_id);
+  size_t leafward_idx = GPDAG::GetPLVIndexStatic(
+      GPDAG::PLVType::P, hello_node_count_without_dag_root_node, child_id);
+  size_t rootward_idx = GPDAG::GetPLVIndexStatic(
+      GPDAG::PLVType::R_TILDE, hello_node_count_without_dag_root_node, rootsplit_id);
   OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
   std::tuple<double, double, double> log_lik_and_derivatives =
       engine->LogLikelihoodAndFirstTwoDerivatives(op);
@@ -281,12 +282,12 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
 
 // We are outputting the branch length for PCSP 100-011-001
 // which has a true branch length of 0.0694244266
-double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method, bool per_pcsp_convg) {
+double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
   GPInstance inst = MakeHelloGPInstance();
   GPEngine& engine = *inst.GetEngine();
   engine.SetOptimizationMethod(method);
 
-  inst.EstimateBranchLengths(0.001, 1000, false, per_pcsp_convg);
+  inst.EstimateBranchLengths(0.001, 1000, false);
   GPDAG& dag = inst.GetDAG();
   size_t default_index = dag.EdgeCountWithLeafSubsplits();
   Bitset gpcsp_bitset = Bitset("100011001");
@@ -297,41 +298,22 @@ double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method, b
 
 TEST_CASE("GPInstance: Gradient-based optimization") {
   double nongradient_length = ObtainBranchLengthWithOptimization(
-      GPEngine::OptimizationMethod::DefaultNongradientOptimization, false);
+      GPEngine::OptimizationMethod::DefaultNongradientOptimization);
   double gradient_length = ObtainBranchLengthWithOptimization(
-      GPEngine::OptimizationMethod::DefaultGradientOptimization, false);
+      GPEngine::OptimizationMethod::NewtonOptimization);
 
   // We now compare the branch length estimates b/w brent and gradient-based
   // optimization We expect gradient optimization to be closer than brent
   std::cout << "Brent branch lengths are " << nongradient_length << std::endl;
   std::cout << "Gradient branch lengths are " << gradient_length << std::endl;
 
-  double golden_length = 0.0694244266;
-  double brent_diff = fabs(nongradient_length - golden_length);
-  double grad_diff = fabs(gradient_length - golden_length);
+  double true_length = 0.0694244266;
+  double brent_diff = abs(nongradient_length - true_length);
+  double grad_diff = abs(gradient_length - true_length);
 
   CHECK_LT(grad_diff, brent_diff);
   CHECK_LT(grad_diff, 1e-6);
 }
-
-// TEST_CASE("GPInstance: Gradient-based optimization, v2") {
-//   double nongradient_length = ObtainBranchLengthWithOptimization(
-//       GPEngine::OptimizationMethod::DefaultNongradientOptimization, true);
-//   double gradient_length = ObtainBranchLengthWithOptimization(
-//       GPEngine::OptimizationMethod::DefaultGradientOptimization, true);
-// 
-//   // We now compare the branch length estimates b/w brent and gradient-based
-//   // optimization We expect gradient optimization to be closer than brent
-//   std::cout << "Brent branch lengths are " << nongradient_length << std::endl;
-//   std::cout << "Gradient branch lengths are " << gradient_length << std::endl;
-// 
-//   double golden_length = 0.0694244266;
-//   double brent_diff = fabs(nongradient_length - golden_length);
-//   double grad_diff = fabs(gradient_length - golden_length);
-// 
-//   CHECK_LT(grad_diff, brent_diff);
-//   CHECK_LT(grad_diff, 1e-6);
-// }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   auto inst = MakeFluAGPInstance(rescaling_threshold);

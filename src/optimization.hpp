@@ -133,7 +133,8 @@ std::tuple<T, T> BrentMinimize(F f, T guess, T min, T max, int significant_digit
 
 template <class F, class T>
 std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
-                                           int significant_digits, size_t max_iter) {
+                                           int significant_digits, size_t max_iter,
+                                           T step_size) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point
@@ -218,7 +219,7 @@ std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
     fu = f(u).first;
 
     // Considering update using gradient descent:
-    u_ = x - 1.0005 * f_prime_x;
+    u_ = x - step_size * f_prime_x;
     fu_ = f(u_).first;
 
     if (fu <= fx) {

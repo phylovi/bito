@@ -177,7 +177,7 @@ void GPInstance::ComputeMarginalLikelihood() {
 }
 
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
-                                       bool per_pcsp_convg, int optim_tol) {
+                                       int optim_tol) {
   std::stringstream dev_null;
   GetEngine()->SetOptimizationTolerance(optim_tol);
 
@@ -212,7 +212,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
 
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
     // Commenting out unless we want to keep track of values during optimization
-    // FullDAGTraversalOptimizationValues;
+    // FullDAGTraversalOptimizationValues();
 
     our_ostream << "Current marginal log likelihood: ";
     our_ostream << std::setprecision(9) << current_marginal_log_lik << std::endl;
@@ -228,10 +228,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
     if (marginal_log_lik < current_marginal_log_lik) {
       our_ostream << "Marginal log likelihood decreased.\n";
     }
-    if (!per_pcsp_convg & (abs(current_marginal_log_lik - marginal_log_lik) < tol)) {
-      our_ostream << "Converged.\n";
-      break;
-    } else if (per_pcsp_convg & avg_abs_change_perpcsp_branch_length < tol) {
+    if (avg_abs_change_perpcsp_branch_length < tol) {
       our_ostream << "Average absolute change in branch lengths converged. \n";
       break;
     }

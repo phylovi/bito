@@ -675,7 +675,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
     return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   };
 
-  if (branch_length_differences_(op.gpcsp_) < 1e-10) {
+  if (branch_length_differences_(op.gpcsp_) < 1e-15) {
     return;
   }
 
@@ -693,10 +693,9 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
     branch_lengths_(op.gpcsp_) = exp(current_log_branch_length);
   } else {
     branch_lengths_(op.gpcsp_) = exp(log_branch_length);
+    branch_length_differences_(op.gpcsp_) =
+        abs(exp(current_log_branch_length) - branch_lengths_(op.gpcsp_));
   }
-
-  branch_length_differences_(op.gpcsp_) =
-      abs(exp(current_log_branch_length) - branch_lengths_(op.gpcsp_));
 }
 
 void GPEngine::BrentOptimizationWithGradient(
@@ -709,7 +708,7 @@ void GPEngine::BrentOptimizationWithGradient(
     return std::make_pair(-log_likelihood, -branch_length * log_likelihood_derivative);
   };
 
-  if (branch_length_differences_(op.gpcsp_) < 1e-10) {
+  if (branch_length_differences_(op.gpcsp_) < 1e-15) {
     return;
   }
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
@@ -718,18 +717,15 @@ void GPEngine::BrentOptimizationWithGradient(
       Optimization::BrentMinimizeWithGradient(
           negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
           max_log_branch_length_, significant_digits_for_optimization_,
-          max_iter_for_optimization_);
+          max_iter_for_optimization_, step_size_for_log_space_optimization_);
 
-  // Numerical optimization sometimes yields new nllk > current nllk.
-  // In this case, we reset the branch length to the previous value.
   if (neg_log_likelihood > current_value) {
     branch_lengths_(op.gpcsp_) = exp(current_log_branch_length);
   } else {
     branch_lengths_(op.gpcsp_) = exp(log_branch_length);
+    branch_length_differences_(op.gpcsp_) =
+        abs(exp(current_log_branch_length) - branch_lengths_(op.gpcsp_));
   }
-
-  branch_length_differences_(op.gpcsp_) =
-      abs(exp(current_log_branch_length) - branch_lengths_(op.gpcsp_));
 }
 
 void GPEngine::GradientAscentOptimization(
