@@ -118,8 +118,11 @@ class SubsplitDAG {
   std::string ExportToDot(const bool show_index_labels = true) const;
 
   // Export SubsplitDAG to JSON file.
-  void ExportToJSON(const std::string &file_path) const;
-  std::string ExportToJSON() const;
+  void ExportToJSON(
+      const std::string &file_path,
+      std::optional<const EigenVectorXd> branch_lengths = std::nullopt) const;
+  std::string ExportToJSON(
+      std::optional<const EigenVectorXd> branch_lengths = std::nullopt) const;
 
   // ** Build Output Indexers/Vectors
 

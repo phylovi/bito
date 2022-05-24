@@ -277,13 +277,16 @@ std::string SubsplitDAG::ExportToDot(const bool show_index_labels) const {
   return stream.str();
 }
 
-void SubsplitDAG::ExportToJSON(const std::string &file_path) const {
+void SubsplitDAG::ExportToJSON(
+    const std::string &file_path,
+    std::optional<const EigenVectorXd> branch_lengths) const {
   std::ofstream out_file(file_path);
-  out_file << ExportToJSON();
+  out_file << ExportToJSON(branch_lengths);
   out_file.close();
 }
 
-std::string SubsplitDAG::ExportToJSON() const {
+std::string SubsplitDAG::ExportToJSON(
+    std::optional<const EigenVectorXd> branch_lengths) const {
   std::stringstream stream;
   bool first_loop;
 
@@ -356,7 +359,22 @@ std::string SubsplitDAG::ExportToJSON() const {
       stream << std::endl << "\t]";
     }
   }
-  stream << "}" << std::endl;
+  stream << "}" << (branch_lengths.has_value() ? "," : "") << std::endl;
+
+  // Branch Length field
+  if (branch_lengths.has_value()) {
+    stream << std::quoted("branch_lengths") << ": [" << std::endl;
+    first_loop = true;
+    for (size_t i = 0; i < size_t(branch_lengths.value().size()); i++) {
+      if (!first_loop) {
+        stream << "," << std::endl;
+      } else {
+        first_loop = false;
+      }
+      stream << "\t" << branch_lengths.value()[i];
+    }
+    stream << "]";
+  }
 
   // JSON end
   stream << std::endl << "}" << std::endl;

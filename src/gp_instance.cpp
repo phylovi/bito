@@ -419,8 +419,9 @@ void GPInstance::SubsplitDAGToDot(const std::string &out_path,
 }
 
 void GPInstance::SubsplitDAGExportToJSON(const std::string &out_path) const {
+  const EigenVectorXd branch_lengths = GetBranchLengths();
   std::ofstream out_stream(out_path);
-  out_stream << dag_.ExportToJSON() << std::endl;
+  out_stream << dag_.ExportToJSON(branch_lengths) << std::endl;
   if (out_stream.bad()) {
     Failwith("Failure writing to " + out_path);
   }

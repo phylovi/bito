@@ -1566,9 +1566,13 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 TEST_CASE("SubsplitDAG: Export to JSON") {
   const std::string fasta_path = "data/six_taxon_longer.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  const std::string json_output = "_ignore/dag_to_json.json";
   auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.data");
+  auto gp_engine = inst.GetEngine();
   auto& dag = inst.GetDAG();
+  gp_engine->ProcessOperations(dag.BranchLengthOptimization());
+  const EigenVectorXd branch_lengths = inst.GetBranchLengths();
 
-  std::cout << dag.ExportToJSON() << std::endl;
-  dag.ExportToJSON("_ignore/dag_to_json.json");
+  std::cout << dag.ExportToJSON(branch_lengths) << std::endl;
+  inst.SubsplitDAGExportToJSON(json_output);
 }
