@@ -161,7 +161,7 @@ std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
   do {
     // Check current value
     f_prime_x = f(x).second;
-    if (fabs(f_prime_x) < 1e-10) {
+    if (fabs(f_prime_x) < 1e-15) {
       break;
     }
 
@@ -317,7 +317,7 @@ double NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
     double x, const int significant_digits, const double epsilon, const double min_x,
     const double max_x, const size_t max_iter) {
-  double tolerance = ldexp(1.0, 1 - significant_digits);
+  double tolerance = pow(10, -significant_digits);
   size_t iter_idx = 0;
   double new_x, delta;
   double min = min_x;
@@ -333,11 +333,9 @@ double NewtonRaphsonOptimization(
 
     if (new_x < min_x) {
       new_x = x - 0.5 * (x - min);
-      max = x;
     }
     if (new_x > max_x) {
       new_x = x - 0.5 * (x - max);
-      min = x;
     }
 
     delta = fabs(x - new_x);

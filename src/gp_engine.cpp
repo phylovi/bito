@@ -156,7 +156,7 @@ void GPEngine::GrowGPCSPs(const size_t new_gpcsp_count,
     branch_lengths_[i] = default_branch_length_;
 
     // Initialize branch length difference, with dag root node equal 0
-    if (i == 0) {
+    if (i == old_gpcsp_count) {
       branch_length_differences_[i] = 0;
     } else {
       branch_length_differences_[i] = default_branch_length_;
@@ -221,6 +221,8 @@ void GPEngine::ReindexGPCSPs(const Reindexer gpcsp_reindexer,
   // Reindex data vectors.
   Reindexer::ReindexInPlace<EigenVectorXd, double>(branch_lengths_, gpcsp_reindexer,
                                                    GetGPCSPCount());
+  Reindexer::ReindexInPlace<EigenVectorXd, double>(branch_length_differences_,
+                                                   gpcsp_reindexer, GetGPCSPCount());
   Reindexer::ReindexInPlace<EigenVectorXd, double>(hybrid_marginal_log_likelihoods_,
                                                    gpcsp_reindexer, GetGPCSPCount());
   Reindexer::ReindexInPlace<EigenVectorXd, double>(q_, gpcsp_reindexer,
@@ -480,7 +482,7 @@ EigenVectorXd GPEngine::GetTempBranchLengths(const size_t start,
 }
 
 EigenVectorXd GPEngine::GetBranchLengthDifferences() const {
-  return branch_length_differences_;
+  return branch_length_differences_.segment(0, gpcsp_count_);
 };
 
 EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {

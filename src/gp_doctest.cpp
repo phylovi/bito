@@ -293,6 +293,8 @@ double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
   Bitset gpcsp_bitset = Bitset("100011001");
 
   size_t index = AtWithDefault(dag.BuildEdgeIndexer(), gpcsp_bitset, default_index);
+  std::cout << "Differences are " << inst.GetEngine()->GetBranchLengthDifferences()
+            << std::endl;
   return inst.GetEngine()->GetBranchLengths()(index);
 }
 
