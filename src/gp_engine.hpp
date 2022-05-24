@@ -23,7 +23,7 @@ class GPEngine {
            size_t gpcsp_count, const std::string& mmap_file_path,
            double rescaling_threshold, EigenVectorXd sbn_prior,
            EigenVectorXd unconditional_node_probabilities,
-           EigenVectorXd inverted_sbn_prior);
+           EigenVectorXd inverted_sbn_prior, bool use_gradients);
 
   // Initialize prior with given starting values.
   void InitializePriors(EigenVectorXd sbn_prior,
@@ -58,6 +58,16 @@ class GPEngine {
 
   // ** GPOperations
 
+  // Options for optimization method.
+  enum class OptimizationMethod {
+    DefaultGradientOptimization,
+    DefaultNongradientOptimization,
+    BrentOptimization,
+    GradientAscentOptimization,
+    LogSpaceGradientAscentOptimization,
+    NewtonOptimization
+  };
+
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
@@ -75,7 +85,8 @@ class GPEngine {
   // Apply all operations in vector in order from beginning to end.
   void ProcessOperations(GPOperationVector operations);
 
-  void SetOptimizationMethod(const OptimizationMethod method);
+  void SetOptimizationMethod(const GPEngine::OptimizationMethod method);
+  void SetOptimizationTolerance(int optim_tol);
   void SetTransitionMatrixToHaveBranchLength(double branch_length);
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
@@ -98,6 +109,8 @@ class GPEngine {
   EigenVectorXd GetBranchLengths(const size_t start, const size_t length) const;
   // Get Branch Lengths from temporary space.
   EigenVectorXd GetTempBranchLengths(const size_t start, const size_t length) const;
+  // Get differences for branch lengths during optimization to assess convergence.
+  EigenVectorXd GetBranchLengthDifferences() const;
   // This function returns a vector indexed by GPCSP such that the i-th entry
   // stores the log of the across-sites product of
   // (the marginal likelihood conditioned on a given GPCSP) *
@@ -329,6 +342,7 @@ class GPEngine {
   // branch_lengths_, q_, etc. are indexed in the same way as sbn_parameters_ in
   // gp_instance.
   EigenVectorXd branch_lengths_;
+  EigenVectorXd branch_length_differences_;
   // During initialization, stores the SBN prior.
   // After UpdateSBNProbabilities(), stores the SBN probabilities.
   // Stored in log space.

@@ -277,9 +277,9 @@ std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
   return std::make_tuple(x, fx);
 }
 
-DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
-                          const int significant_digits, const double step_size,
-                          const double min_x, const size_t max_iter) {
+double GradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
+                      const int significant_digits, const double step_size,
+                      const double min_x, const size_t max_iter) {
   double tolerance = std::pow(10, -significant_digits);
   size_t iter_idx = 0;
   while (true) {
@@ -287,17 +287,16 @@ DoublePair GradientAscent(std::function<DoublePair(double)> f_and_f_prime, doubl
     const double new_x = x + f_prime_x * step_size;
     x = std::max(new_x, min_x);
     if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
-      return {x, f_x};
+      return x;
     }
     ++iter_idx;
   }
 }
 
-//
-DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prime,
-                                  double x, const int significant_digits,
-                                  const double log_space_step_size, const double min_x,
-                                  const size_t max_iter) {
+double LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prime, double x,
+                              const int significant_digits,
+                              const double log_space_step_size, const double min_x,
+                              const size_t max_iter) {
   double tolerance = static_cast<double>(std::pow(10, -significant_digits));
   size_t iter_idx = 0;
   while (true) {
@@ -308,56 +307,45 @@ DoublePair LogSpaceGradientAscent(std::function<DoublePair(double)> f_and_f_prim
     const double new_x = exp(new_y);
     x = std::max(new_x, min_x);
     if (fabs(f_prime_x) < fabs(f_x) * tolerance || iter_idx >= max_iter) {
-      return {x, f_x};
+      return x;
     }
     ++iter_idx;
   }
 }
 
-DoublePair NewtonRaphsonOptimization(
+double NewtonRaphsonOptimization(
     std::function<std::tuple<double, double, double>(double)> f_and_derivatives,
     double x, const int significant_digits, const double epsilon, const double min_x,
     const double max_x, const size_t max_iter) {
   double tolerance = ldexp(1.0, 1 - significant_digits);
   size_t iter_idx = 0;
-  double new_x, delta, mid, fract1, fract2;
+  double new_x, delta;
   double min = min_x;
   double max = max_x;
 
   while (true) {
     auto [f_x, f_prime_x, f_double_prime_x] = f_and_derivatives(x);
 
-    // get midpoint
-    mid = (min + max) / 2;
-
-    // ** Convergence Test:
-    // work out if we're done already:
-    fract1 = tolerance * fabs(x) + tolerance / 4;
-    fract2 = 2 * fract1;
-
-    if ((fabs(x - mid) <= (fract2 - (max - min) / 2)) ||
-        fabs(f_double_prime_x) < epsilon) {
-      return {x, f_x};
+    if (fabs(f_double_prime_x) < epsilon) {
+      return x;
     }
-    // This method below produces reasonable estimates on single tree DS data
-    //
     new_x = x - f_prime_x / f_double_prime_x;
 
-    if (new_x <= min || new_x >= max) {
-      new_x = x + 1.001 * f_prime_x;
-    }
-
-    if (new_x < x) {
+    if (new_x < min_x) {
+      new_x = x - 0.5 * (x - min);
       max = x;
-    } else {
+    }
+    if (new_x > max_x) {
+      new_x = x - 0.5 * (x - max);
       min = x;
     }
 
     delta = fabs(x - new_x);
 
-    // if (delta < tolerance || iter_idx == max_iter) {
-    //   return {x, f_x};
-    // }
+    if (delta < tolerance || fabs(f_prime_x) < fabs(f_x) * tolerance ||
+        iter_idx == max_iter) {
+      return x;
+    }
 
     x = new_x;
     ++iter_idx;

@@ -28,6 +28,7 @@ enum HelloGPCSP { jupiter, mars, saturn, venus, rootsplit, root };
 
 GPInstance GPInstanceOfFiles(
     const std::string& fasta_path, const std::string& newick_path,
+    const bool use_gradients = false,
     const std::string mmap_filepath = std::string("_ignore/mmapped_plv.data")) {
   GPInstance inst(mmap_filepath);
   inst.ReadFastaFile(fasta_path);
@@ -41,9 +42,8 @@ GPInstance GPInstanceOfFiles(
 // (jupiter:0.113,(mars:0.15,saturn:0.1)venus:0.22):0.;
 // You can see a helpful diagram at
 // https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
-GPInstance MakeHelloGPInstance(const std::string& fasta_path,
-                               bool use_gradients = false) {
-  auto inst = GPInstanceOfFiles(fasta_path, "data/hello_rooted.nwk", use_gradients);
+GPInstance MakeHelloGPInstance(const std::string& fasta_path) {
+  auto inst = GPInstanceOfFiles(fasta_path, "data/hello_rooted.nwk", false);
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
   branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
@@ -265,10 +265,10 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   size_t hello_node_count_without_dag_root_node = 5;
   size_t rootsplit_jupiter_idx = 2;
 
-  size_t leafward_idx = GPDAG::GetPLVIndexStatic(
-      GPDAG::PLVType::P, hello_node_count_without_dag_root_node, child_id);
-  size_t rootward_idx = GPDAG::GetPLVIndexStatic(
-      GPDAG::PLVType::R_TILDE, hello_node_count_without_dag_root_node, rootsplit_id);
+  size_t leafward_idx = PLVHandler::GetPLVIndex(PLVType::P, child_id,
+                                                hello_node_count_without_dag_root_node);
+  size_t rootward_idx = PLVHandler::GetPLVIndex(PLVType::RLeft, rootsplit_id,
+                                                hello_node_count_without_dag_root_node);
   OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
   std::tuple<double, double, double> log_lik_and_derivatives =
       engine->LogLikelihoodAndFirstTwoDerivatives(op);
@@ -287,7 +287,7 @@ double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
   GPEngine& engine = *inst.GetEngine();
   engine.SetOptimizationMethod(method);
 
-  inst.EstimateBranchLengths(0.001, 1000, false);
+  inst.EstimateBranchLengths(0.0001, 10, false);
   GPDAG& dag = inst.GetDAG();
   size_t default_index = dag.EdgeCountWithLeafSubsplits();
   Bitset gpcsp_bitset = Bitset("100011001");

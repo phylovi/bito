@@ -32,6 +32,7 @@ class GPInstance {
   void MakeDAG();
   GPDAG &GetDAG();
   void PrintDAG();
+  void UseGradientOptimization(bool use_gradients = false);
 
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
@@ -51,7 +52,7 @@ class GPInstance {
   void ComputeLikelihoods();
   void ComputeMarginalLikelihood();
   void CalculateHybridMarginals();
-  void GetPerGPCSPLogLikelihoodSurfaces(int steps);
+  void GetPerGPCSPLogLikelihoodSurfaces(size_t steps);
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
 
   // #348: A lot of code duplication here with things in SBNInstance.
@@ -117,11 +118,16 @@ class GPInstance {
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesLoaded() const;
   void CheckTreesLoaded() const;
+  void FullDAGTraversalOptimizationValues();
 
   size_t GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
                                  const Node *leaf_node) const;
   RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
       Node::NodePtrVec &&topologies) const;
+  StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
+  StringEigenVectorXdVector PrettyIndexedMatrix(EigenConstMatrixXdRef m);
+  void PerPCSPIndexedMatrixToCSV(StringEigenVectorXdVector per_pcsp_indexed_matrix,
+                                 const std::string &file_path);
 
   std::string mmap_file_path_;
   Alignment alignment_;
@@ -130,6 +136,15 @@ class GPInstance {
   GPDAG dag_;
   static constexpr size_t plv_count_per_node_ = 6;
 
+  size_t gpcsp_count_ = dag_.EdgeCountWithLeafSubsplits();
+  bool use_gradients_;
+  GPEngine::OptimizationMethod optimization_method_;
+
   // For optimization tracking
   StringEigenVectorXdVector tracked_values_after_full_dag_traversal_;
+  EigenMatrixXd per_pcsp_branch_lengths_ = EigenMatrixXd(gpcsp_count_, 1);
+  EigenMatrixXd per_pcsp_marg_lik_ = EigenMatrixXd(gpcsp_count_, 1);
+  EigenMatrixXd per_pcsp_lik_surfaces_;
+
+  std::unique_ptr<NNIEngine> nni_engine_;
 };

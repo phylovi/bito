@@ -643,7 +643,7 @@ PYBIND11_MODULE(bito, m) {
            "Estimate the SBN parameters based on current branch lengths.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.", py::arg("tol"),
-           py::arg("max_iter"), py::arg("quiet") = false)
+           py::arg("max_iter"), py::arg("quiet") = false, py::arg("optim_tol") = 10)
 
       // ** NNI Engine
       .def("make_nni_engine", &GPInstance::MakeNNIEngine,

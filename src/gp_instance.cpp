@@ -92,6 +92,13 @@ GPDAG &GPInstance::GetDAG() { return dag_; }
 
 void GPInstance::PrintDAG() { dag_.Print(); }
 
+void GPInstance::UseGradientOptimization(bool use_gradients) {
+  use_gradients_ = use_gradients;
+  optimization_method_ =
+      (use_gradients ? GPEngine::OptimizationMethod::DefaultGradientOptimization
+                     : GPEngine::OptimizationMethod::DefaultNongradientOptimization);
+};
+
 void GPInstance::MakeEngine(double rescaling_threshold) {
   CheckSequencesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
@@ -107,7 +114,7 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
       dag_.EdgeCountWithLeafSubsplits(), mmap_file_path_, rescaling_threshold,
       std::move(sbn_prior),
       unconditional_node_probabilities.segment(0, dag_.NodeCountWithoutDAGRoot()),
-      std::move(inverted_sbn_prior));
+      std::move(inverted_sbn_prior), use_gradients_);
 }
 
 void GPInstance::ReinitializePriors() {
@@ -197,8 +204,6 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
   ProcessOperations(marginal_lik_operations);
 
   double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-  double current_avg_branch_length_diff =
-      (GetEngine()->GetBranchLengthDifferences()).array().mean();
 
   std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
   t_start = now();
@@ -322,7 +327,7 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   return TreesWithGPBranchLengthsOfTopologies(dag_.GenerateAllTopologies());
 }
 
-void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(int steps) {
+void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps) {
   // We assume this is run after a proper branch length optimization
   const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
 
@@ -366,7 +371,7 @@ void GPInstance::TrackValuesFromOptimization() {
   StringVector pretty_index_vector;
   GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
 
-  for (int gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
+  for (size_t gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
     double optimized_llh = optimized_per_pcsp_llhs[gpcsp_idx];
     double current_branch_length = 0.1;
 
@@ -405,7 +410,7 @@ void GPInstance::TrackValuesFromOptimization() {
                                                  Eigen::NoChange);
 
   tracked_values_after_full_dag_traversal_.reserve(tracked_optimization_values.rows());
-  for (size_t i = 0; i < tracked_optimization_values.rows(); i++) {
+  for (int i = 0; i < tracked_optimization_values.rows(); i++) {
     tracked_values_after_full_dag_traversal_.push_back(
         {pretty_index_vector.at(i), tracked_optimization_values.row(i)});
   }
@@ -438,7 +443,7 @@ StringEigenVectorXdVector GPInstance::PrettyIndexedMatrix(EigenConstMatrixXdRef 
   const auto pretty_indexer = PrettyIndexer();
   // Assert(m.rows() <= pretty_indexer.size(), "m is too long in
   // PrettyIndexedMatrix");
-  for (size_t i = 0; i < m.rows(); i++) {
+  for (int i = 0; i < m.rows(); i++) {
     int idx = i % pretty_indexer.size();
     result.push_back({pretty_indexer.at(idx), m.row(i)});
   }
