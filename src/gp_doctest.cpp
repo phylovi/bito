@@ -28,8 +28,8 @@ enum HelloGPCSP { jupiter, mars, saturn, venus, rootsplit, root };
 
 GPInstance GPInstanceOfFiles(
     const std::string& fasta_path, const std::string& newick_path,
-    const bool use_gradients = false,
-    const std::string mmap_filepath = std::string("_ignore/mmapped_plv.data")) {
+    const std::string mmap_filepath = std::string("_ignore/mmapped_plv.data"),
+    const bool use_gradients = false) {
   GPInstance inst(mmap_filepath);
   inst.ReadFastaFile(fasta_path);
   inst.ReadNewickFile(newick_path);
@@ -43,7 +43,7 @@ GPInstance GPInstanceOfFiles(
 // You can see a helpful diagram at
 // https://github.com/phylovi/libsbn/issues/213#issuecomment-624195267
 GPInstance MakeHelloGPInstance(const std::string& fasta_path) {
-  auto inst = GPInstanceOfFiles(fasta_path, "data/hello_rooted.nwk", false);
+  auto inst = GPInstanceOfFiles(fasta_path, "data/hello_rooted.nwk");
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
   branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
@@ -255,7 +255,6 @@ TEST_CASE("GPInstance: gradient calculation") {
 TEST_CASE("GPInstance: multi-site gradient calculation") {
   auto inst = MakeHelloGPInstance();
   auto engine = inst.GetEngine();
-  inst.PrintEdgeIndexer();
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
@@ -272,9 +271,9 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
   std::tuple<double, double, double> log_lik_and_derivatives =
       engine->LogLikelihoodAndFirstTwoDerivatives(op);
-  // Expect log lik: -84.77961943.
-  // Expect log lik gradient: -18.22479569.
-  // Expect log lik hessian: -5.4460787413.
+  // Expect log likelihood: -84.77961943.
+  // Expect log llh first derivative: -18.22479569.
+  // Expect log llh second derivative: -5.4460787413.
   CHECK_LT(fabs(std::get<0>(log_lik_and_derivatives) - -84.77961943), 1e-6);
   CHECK_LT(fabs(std::get<1>(log_lik_and_derivatives) - -18.22479569), 1e-6);
   CHECK_LT(fabs(std::get<2>(log_lik_and_derivatives) - -5.4460787413), 1e-6);
@@ -287,27 +286,20 @@ double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
   GPEngine& engine = *inst.GetEngine();
   engine.SetOptimizationMethod(method);
 
-  inst.EstimateBranchLengths(0.0001, 10, false);
+  inst.EstimateBranchLengths(0.0001, 100, true);
   GPDAG& dag = inst.GetDAG();
   size_t default_index = dag.EdgeCountWithLeafSubsplits();
   Bitset gpcsp_bitset = Bitset("100011001");
 
   size_t index = AtWithDefault(dag.BuildEdgeIndexer(), gpcsp_bitset, default_index);
-  std::cout << "Differences are " << inst.GetEngine()->GetBranchLengthDifferences()
-            << std::endl;
   return inst.GetEngine()->GetBranchLengths()(index);
 }
 
-TEST_CASE("GPInstance: Gradient-based optimization") {
+TEST_CASE("GPInstance: Gradient-based optimization with Newton's Method") {
   double nongradient_length = ObtainBranchLengthWithOptimization(
       GPEngine::OptimizationMethod::DefaultNongradientOptimization);
   double gradient_length = ObtainBranchLengthWithOptimization(
       GPEngine::OptimizationMethod::NewtonOptimization);
-
-  // We now compare the branch length estimates b/w brent and gradient-based
-  // optimization We expect gradient optimization to be closer than brent
-  std::cout << "Brent branch lengths are " << nongradient_length << std::endl;
-  std::cout << "Gradient branch lengths are " << gradient_length << std::endl;
 
   double true_length = 0.0694244266;
   double brent_diff = abs(nongradient_length - true_length);

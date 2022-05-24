@@ -583,20 +583,18 @@ PYBIND11_MODULE(bito, m) {
       .def("per_gpcsp_llhs_to_csv", &GPInstance::PerGPCSPLogLikelihoodsToCSV,
            R"raw(Write "pretty" formatted per pcsp likelihoods to CSV.)raw")
       .def(
-          "per_gpcsp_bls_from_opt_to_csv",
-          &GPInstance::PerGPCSPBranchLengthsFromOptimizationToCSV,
+          "intermediate_bls_to_csv", &GPInstance::IntermediateBranchLengthsToCSV,
           R"raw(Write "pretty" formatted per pcsp branch lengths throughout optimization to CSV.)raw")
       .def(
-          "per_gpcsp_llhs_from_opt_to_csv",
-          &GPInstance::PerGPCSPLogLikelihoodsFromOptimizationToCSV,
+          "intermediate_per_gpcsp_llhs_to_csv",
+          &GPInstance::IntermediatePerGPCSPLogLikelihoodsToCSV,
           R"raw(Write "pretty" formatted per pcsp log likelihoods throughout optimization to CSV.)raw")
       .def("per_gpcsp_llh_surfaces_to_csv",
            &GPInstance::PerGPCSPLogLikelihoodSurfacesToCSV,
            R"raw(Write "pretty" formatted per pcsp log likelihood surfaces to CSV.)raw")
       .def(
-          "full_dag_optim_values_to_csv",
-          &GPInstance::FullDAGTraversalOptimizationValuesToCSV,
-          R"raw(Write "pretty" formatted per pcsp branch lengths and llh values from optimization to CSV.)raw")
+          "tracked_optim_values_to_csv", &GPInstance::TrackedOptimizationValuesToCSV,
+          R"raw(Write "pretty" formatted per pcsp branch lengths and llh values tracked from optimization to CSV.)raw")
       .def("export_trees", &GPInstance::ExportTrees,
            R"raw(Write out currently loaded trees to a Newick file
           (using current GP branch lengths).)raw",
@@ -643,7 +641,13 @@ PYBIND11_MODULE(bito, m) {
            "Estimate the SBN parameters based on current branch lengths.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.", py::arg("tol"),
-           py::arg("max_iter"), py::arg("quiet") = false, py::arg("optim_tol") = 10)
+           py::arg("max_iter"), py::arg("quiet") = false,
+           py::arg("intermediate") = false)
+      .def("get_perpcsp_llh_surface", &GPInstance::GetPerGPCSPLogLikelihoodSurfaces,
+           "Scan the likelihood surface for the pcsps in the GPInstance.",
+           py::arg("steps"), py::arg("min_scale"), py::arg("max_scale"))
+      .def("track_optimization_values", &GPInstance::TrackValuesFromOptimization,
+           "Reinitiate optimization and track branch length and per pcsp likelihoods/")
 
       // ** NNI Engine
       .def("make_nni_engine", &GPInstance::MakeNNIEngine,

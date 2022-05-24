@@ -184,9 +184,8 @@ void GPInstance::ComputeMarginalLikelihood() {
 }
 
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
-                                       int optim_tol) {
+                                       bool intermediate) {
   std::stringstream dev_null;
-  GetEngine()->SetOptimizationTolerance(optim_tol);
 
   auto &our_ostream = quiet ? dev_null : std::cout;
   auto now = std::chrono::high_resolution_clock::now;
@@ -216,8 +215,10 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
     ProcessOperations(marginal_lik_operations);
 
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-    // Commenting out unless we want to keep track of values during optimization
-    // FullDAGTraversalOptimizationValues();
+
+    if (intermediate) {
+      IntermediateOptimizationValues();
+    }
 
     our_ostream << "Current marginal log likelihood: ";
     our_ostream << std::setprecision(9) << current_marginal_log_lik << std::endl;
@@ -248,7 +249,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
               << optimization_duration.count() / 60 << "m\n";
 }
 
-void GPInstance::FullDAGTraversalOptimizationValues() {
+void GPInstance::IntermediateOptimizationValues() {
   GPOperationVector compute_lik_operations = dag_.ComputeLikelihoods();
   ProcessOperations(compute_lik_operations);
 
@@ -327,12 +328,13 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   return TreesWithGPBranchLengthsOfTopologies(dag_.GenerateAllTopologies());
 }
 
-void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps) {
-  // We assume this is run after a proper branch length optimization
+void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double min_scale,
+                                                  double max_scale) {
   const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
 
   size_t gpcsp_count = optimized_branch_lengths.size();
-  const EigenVectorXd scaling_vector = EigenVectorXd::LinSpaced(steps, 0.000001, 2);
+  const EigenVectorXd scaling_vector =
+      EigenVectorXd::LinSpaced(steps, min_scale, max_scale);
   per_pcsp_lik_surfaces_ = EigenMatrixXd(gpcsp_count * steps, 2);
 
   for (size_t gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
@@ -358,7 +360,6 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps) {
 }
 
 void GPInstance::TrackValuesFromOptimization() {
-  // We assume this is run after a proper branch length optimization
   const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
   const EigenVectorXd optimized_per_pcsp_llhs =
       GetEngine()->GetPerGPCSPLogLikelihoods();
@@ -393,7 +394,7 @@ void GPInstance::TrackValuesFromOptimization() {
       tracked_optimization_values.conservativeResize(
           tracked_optimization_values.rows() + 1, Eigen::NoChange);
 
-      if (fabs(current_llh - optimized_llh) < 1e-3 || run_counts[gpcsp_idx] > 4) {
+      if (fabs(current_llh - optimized_llh) < 1e-3 || run_counts[gpcsp_idx] > 5) {
         break;
       } else {
         ProcessOperations(branch_optimization_operations);
@@ -470,13 +471,12 @@ StringDoubleVector GPInstance::PrettyIndexedPerGPCSPComponentsOfFullLogMarginal(
   return PrettyIndexedVector(GetEngine()->GetPerGPCSPComponentsOfFullLogMarginal());
 }
 
-StringEigenVectorXdVector
-GPInstance::PrettyIndexedPerGPCSPBranchLengthsFromOptimization() {
+StringEigenVectorXdVector GPInstance::PrettyIndexedIntermediateBranchLengths() {
   return PrettyIndexedMatrix(per_pcsp_branch_lengths_);
 }
 
 StringEigenVectorXdVector
-GPInstance::PrettyIndexedPerGPCSPLogLikelihoodsFromOptimization() {
+GPInstance::PrettyIndexedIntermediatePerGPCSPLogLikelihoods() {
   return PrettyIndexedMatrix(per_pcsp_marg_lik_);
 }
 
@@ -518,16 +518,13 @@ void GPInstance::PerPCSPIndexedMatrixToCSV(
   out_stream.close();
 }
 
-void GPInstance::PerGPCSPBranchLengthsFromOptimizationToCSV(
-    const std::string &file_path) {
-  return PerPCSPIndexedMatrixToCSV(PrettyIndexedPerGPCSPBranchLengthsFromOptimization(),
-                                   file_path);
+void GPInstance::IntermediateBranchLengthsToCSV(const std::string &file_path) {
+  return PerPCSPIndexedMatrixToCSV(PrettyIndexedIntermediateBranchLengths(), file_path);
 }
 
-void GPInstance::PerGPCSPLogLikelihoodsFromOptimizationToCSV(
-    const std::string &file_path) {
-  return PerPCSPIndexedMatrixToCSV(
-      PrettyIndexedPerGPCSPLogLikelihoodsFromOptimization(), file_path);
+void GPInstance::IntermediatePerGPCSPLogLikelihoodsToCSV(const std::string &file_path) {
+  return PerPCSPIndexedMatrixToCSV(PrettyIndexedIntermediatePerGPCSPLogLikelihoods(),
+                                   file_path);
 }
 
 void GPInstance::PerGPCSPLogLikelihoodSurfacesToCSV(const std::string &file_path) {
@@ -547,7 +544,7 @@ void GPInstance::PerGPCSPLogLikelihoodSurfacesToCSV(const std::string &file_path
   out_stream.close();
 }
 
-void GPInstance::FullDAGTraversalOptimizationValuesToCSV(const std::string &file_path) {
+void GPInstance::TrackedOptimizationValuesToCSV(const std::string &file_path) {
   return PerPCSPIndexedMatrixToCSV(tracked_values_after_full_dag_traversal_, file_path);
 }
 

@@ -47,12 +47,23 @@ class GPInstance {
   void TakeFirstBranchLength();
   void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false,
-                             int optim_tol = 10);
+                             bool intermediate = false);
   void PopulatePLVs();
   void ComputeLikelihoods();
   void ComputeMarginalLikelihood();
   void CalculateHybridMarginals();
-  void GetPerGPCSPLogLikelihoodSurfaces(size_t steps);
+
+  // This scans the PCSP likelihood surface by calculating the per pcsp likelihood
+  // values at different branch length values. The currently set branch lengths are
+  // scaled by a vector of size "steps" that ranges linearly from "min_scale" to
+  // "max_scale".
+  void GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double min_scale,
+                                        double max_scale);
+  // This is for tracking branch length optimization, when assuming all other branch
+  // lengths are optimal. We set branch lengths for each pcsp to the default value of
+  // 0.1 and then branch length and per pcsp likelihood values until the likelihood
+  // converges to the optimal value or the number of DAG traversals exceeds 5.
+  void TrackValuesFromOptimization();
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
 
   // #348: A lot of code duplication here with things in SBNInstance.
@@ -63,19 +74,18 @@ class GPInstance {
   StringDoubleVector PrettyIndexedPerGPCSPLogLikelihoods();
   StringDoubleVector PrettyIndexedPerGPCSPComponentsOfFullLogMarginal();
 
-  StringEigenVectorXdVector PrettyIndexedPerGPCSPBranchLengthsFromOptimization();
-  StringEigenVectorXdVector PrettyIndexedPerGPCSPLogLikelihoodsFromOptimization();
+  StringEigenVectorXdVector PrettyIndexedIntermediateBranchLengths();
+  StringEigenVectorXdVector PrettyIndexedIntermediatePerGPCSPLogLikelihoods();
   StringEigenVectorXdVector PrettyIndexedPerGPCSPLogLikelihoodSurfaces();
-  void TrackValuesFromOptimization();
 
   void SBNParametersToCSV(const std::string &file_path);
   void SBNPriorToCSV(const std::string &file_path);
   void BranchLengthsToCSV(const std::string &file_path);
   void PerGPCSPLogLikelihoodsToCSV(const std::string &file_path);
-  void PerGPCSPBranchLengthsFromOptimizationToCSV(const std::string &file_path);
-  void PerGPCSPLogLikelihoodsFromOptimizationToCSV(const std::string &file_path);
+  void IntermediateBranchLengthsToCSV(const std::string &file_path);
+  void IntermediatePerGPCSPLogLikelihoodsToCSV(const std::string &file_path);
   void PerGPCSPLogLikelihoodSurfacesToCSV(const std::string &file_path);
-  void FullDAGTraversalOptimizationValuesToCSV(const std::string &file_path);
+  void TrackedOptimizationValuesToCSV(const std::string &file_path);
 
   // Generate a version of the topologies in the current tree collection that use
   // the current GP branch lengths.
@@ -118,7 +128,11 @@ class GPInstance {
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesLoaded() const;
   void CheckTreesLoaded() const;
-  void FullDAGTraversalOptimizationValues();
+
+  // Method for calculating and storing the intermediate per pcsp branch length and
+  // likelihood values during branch length estimation, so that they can be output to
+  // CSV.
+  void IntermediateOptimizationValues();
 
   size_t GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
                                  const Node *leaf_node) const;
