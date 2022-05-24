@@ -33,43 +33,88 @@ void NNIEngine::RunInit() {
   // Initialize Adjacent NNIs based on starting state of DAG.
   ResetAllNNIs();
   SyncAdjacentNNIsWithDAG();
-  PrepGPEngineForLikelihoods();
   FilterInit();
 }
 
 void NNIEngine::RunMainLoop() {
   // (1) Add all adjacent NNIs to the GraftDAG.
+  GPEngineUpdate();
   GraftAdjacentNNIsToDAG();
-  // (2) Evaluate each adjacent NNI.
+  // (2) Select whether to accept or reject adjacent NNIs via filter.
   FilterPreUpdate();
-  FilterEvaluateAdjacentNNIs();
-  FilterPostUpdate();
-  // (3) Select whether to accept or reject adjacent NNIs via filter.
   FilterProcessAdjacentNNIs();
-  // (4) Add accepted NNIs to permanent DAG.
-  AddAcceptedNNIsToDAG();
+  FilterPostUpdate();
 
   sweep_count_++;
 }
 
 void NNIEngine::RunPostLoop() {
-  // (5) Update Adjacent NNIs to reflect added NNI.
-  UpdateAdjacentNNIs(false);
-  // (6) Reset Accepted NNIs and GraftDAG and save results.
-  UpdateAcceptedNNIs(true);
-  UpdateRejectedNNIs(true);
+  // (3) Add accepted NNIs to permanent DAG.
+  AddAcceptedNNIsToDAG();
+  // (4) Update Adjacent NNIs to reflect added NNI.
+  UpdateAdjacentNNIs();
+  // (5) Reset Accepted NNIs and GraftDAG and save results.
+  UpdateAcceptedNNIs();
+  UpdateRejectedNNIs();
 }
 
-// ** Filter Functions
+// ** Static Filter Functions
 
-double NNIEngine::NoEvaluate(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                             GraftDAG &this_graft_dag, const NNIOperation &nni) {
-  return 0.0;
+void NNIEngine::NoInit(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                       GraftDAG &this_graft_dag) {}
+
+void NNIEngine::NoUpdate(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                         GraftDAG &this_graft_dag) {}
+
+double NNIEngine::GetBestPreNNILikelihood(const NNIOperation &nni) {
+  size_t prenni_edge_idx = NoId;
+  double prenni_likelihood = -INFINITY;
+  SizeVector prenni_idxs;
+  DoubleVector prenni_likelihoods;
+  for (const SubsplitClade clade_to_swap :
+       {SubsplitClade::Right, SubsplitClade::Left}) {
+    NNIOperation pre_nni = nni.NNIOperationFromNeighboringSubsplits(
+        (clade_to_swap == SubsplitClade::Right));
+    if (dag_.ContainsNode(pre_nni.GetParent()) &&
+        dag_.ContainsNode(pre_nni.GetChild())) {
+      const auto &parent_id = dag_.GetDAGNodeId(pre_nni.GetParent());
+      const auto &child_id = dag_.GetDAGNodeId(pre_nni.GetChild());
+      if (dag_.ContainsEdge(parent_id, child_id)) {
+        const auto &edge_idx = dag_.GetEdgeIdx(parent_id, child_id);
+        const auto likelihood = GetDAGEdgeLikelihood(edge_idx);
+        if (prenni_likelihood < likelihood) {
+          prenni_likelihood = likelihood;
+          prenni_edge_idx = edge_idx;
+        }
+        prenni_idxs.push_back(edge_idx);
+        prenni_likelihoods.push_back(likelihood);
+      }
+    }
+  }
+  Assert(prenni_edge_idx != NoId,
+         "Pre-NNI could not be found in DAG based on Post-NNI.");
+  return prenni_likelihood;
 }
 
-bool NNIEngine::NoFilter(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                         GraftDAG &this_graft_dag, const NNIOperation &nni) {
-  return true;
+double NNIEngine::GetPostNNILikelihood(const NNIOperation &nni) {
+  return scored_nnis_[nni];
+}
+
+void NNIEngine::UpdateScoreAdjacentNNIsByLikelihood(NNIEngine &this_nni_engine,
+                                                    GPEngine &this_gp_engine,
+                                                    GraftDAG &this_graft_dag) {
+  this_nni_engine.ScoreAdjacentNNIsByLikelihood();
+}
+
+bool NNIEngine::FilterPostNNIBetterThanPreNNI(NNIEngine &this_nni_engine,
+                                              GPEngine &this_gp_engine,
+                                              GraftDAG &this_graft_dag,
+                                              const NNIOperation &nni) {
+  const double postnni_likelihood = this_nni_engine.GetPostNNILikelihood(nni);
+  const double prenni_likelihood = this_nni_engine.GetBestPreNNILikelihood(nni);
+  const double diff = postnni_likelihood - prenni_likelihood;
+  const bool accept = (diff > 0.0);
+  return accept;
 }
 
 // ** NNI Likelihoods
@@ -179,7 +224,6 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaCopy(
       }
     }
   }
-
   return {pre_key_idx, post_key_idx};
 }
 
@@ -278,53 +322,21 @@ void NNIEngine::ScoreAdjacentNNIsByLikelihood() {
       gp_engine_.GetTempPerGPCSPLogLikelihoods(0, GetAdjacentNNICount());
   for (const auto &nni : GetAdjacentNNIs()) {
     scored_nnis_[nni] = likelihoods[nni_count];
+    nni_count++;
   }
 }
 
-// ** Filtering
+// ** Runner Subroutines
 
-void NNIEngine::FilterInit(std::optional<StaticFilterInitFunction> FilterInitFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
-  if (FilterInitFn.has_value()) {
-    (*FilterInitFn)(*this, gp_engine_, GetGraftDAG());
-  }
+void NNIEngine::FilterInit() { filter_init_fn_(*this, gp_engine_, GetGraftDAG()); }
+
+void NNIEngine::FilterPreUpdate() {
+  filter_pre_update_fn_(*this, gp_engine_, GetGraftDAG());
 }
 
-void NNIEngine::FilterPreUpdate(
-    std::optional<StaticFilterUpdateFunction> FilterUpdateFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
-  if (FilterUpdateFn.has_value()) {
-    (*FilterUpdateFn)(*this, gp_engine_, GetGraftDAG());
-  }
-}
-
-void NNIEngine::FilterEvaluateAdjacentNNIs(
-    std::optional<StaticFilterEvaluateFunction> FilterEvaluateFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
+void NNIEngine::FilterProcessAdjacentNNIs() {
   for (const auto &nni : GetAdjacentNNIs()) {
-    const double nni_score = (*FilterEvaluateFn)(*this, gp_engine_, GetGraftDAG(), nni);
-    AddScoreForNNI(nni, nni_score);
-  }
-}
-
-void NNIEngine::FilterPostUpdate(
-    std::optional<StaticFilterUpdateFunction> FilterUpdateFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
-  if (FilterUpdateFn.has_value()) {
-    (*FilterUpdateFn)(*this, gp_engine_, GetGraftDAG());
-  }
-}
-
-void NNIEngine::FilterProcessAdjacentNNIs(
-    std::optional<StaticFilterProcessFunction> FilterProcessFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
-  for (const auto &nni : GetAdjacentNNIs()) {
-    const bool accept_nni = (*FilterProcessFn)(*this, gp_engine_, GetGraftDAG(), nni);
+    const bool accept_nni = filter_process_fn_(*this, gp_engine_, GetGraftDAG(), nni);
     if (accept_nni) {
       accepted_nnis_.insert(nni);
     } else {
@@ -333,23 +345,81 @@ void NNIEngine::FilterProcessAdjacentNNIs(
   }
 }
 
+void NNIEngine::FilterPostUpdate() {
+  filter_post_update_fn_(*this, gp_engine_, GetGraftDAG());
+}
+
+// ** Set Filtering Scheme
+
+void NNIEngine::SetFilteringCustom(StaticFilterInitFunction init_fn,
+                                   StaticFilterUpdateFunction pre_update_fn,
+                                   StaticFilterProcessFunction process_fn,
+                                   StaticFilterUpdateFunction post_update_fn) {
+  filter_init_fn_ = init_fn;
+  filter_pre_update_fn_ = pre_update_fn;
+  filter_process_fn_ = process_fn;
+  filter_post_update_fn_ = post_update_fn;
+}
+
+void NNIEngine::SetFilteringNone() {
+  filter_init_fn_ = NoInit;
+  filter_pre_update_fn_ = NoUpdate;
+  filter_process_fn_ = NoFilter<true>;
+  filter_post_update_fn_ = NoUpdate;
+}
+
+void NNIEngine::SetFilteringHillclimb() {
+  filter_init_fn_ = NoInit;
+  filter_pre_update_fn_ = UpdateScoreAdjacentNNIsByLikelihood;
+  filter_process_fn_ = FilterPostNNIBetterThanPreNNI;
+  filter_post_update_fn_ = NoUpdate;
+}
+
+void NNIEngine::SetFilteringLossThreshold(const double loss_tolerance) {
+  filter_init_fn_ = NoInit;
+  filter_pre_update_fn_ = UpdateScoreAdjacentNNIsByLikelihood;
+  filter_process_fn_ = [loss_tolerance](
+                           NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                           GraftDAG &this_graft_dag, const NNIOperation &nni) -> bool {
+    const double postnni_likelihood = this_nni_engine.GetPostNNILikelihood(nni);
+    const double prenni_likelihood = this_nni_engine.GetBestPreNNILikelihood(nni);
+    const double diff = postnni_likelihood - prenni_likelihood;
+    return diff >= loss_tolerance;
+  };
+  filter_post_update_fn_ = NoUpdate;
+}
+
+void NNIEngine::SetFilteringCutoffThreshold(const double cutoff_threshold) {
+  filter_init_fn_ = NoInit;
+  filter_pre_update_fn_ = UpdateScoreAdjacentNNIsByLikelihood;
+  filter_process_fn_ = [cutoff_threshold](
+                           NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                           GraftDAG &this_graft_dag, const NNIOperation &nni) -> bool {
+    const double postnni_likelihood = this_nni_engine.GetPostNNILikelihood(nni);
+    return postnni_likelihood >= cutoff_threshold;
+  };
+  filter_post_update_fn_ = NoUpdate;
+}
+
 // ** DAG & GPEngine Maintenance
 
-void NNIEngine::InitGPEngine() {
+void NNIEngine::GPEngineInit() { GPEngineUpdate(); }
+
+void NNIEngine::GPEngineUpdate() {
   gp_engine_.GrowPLVs(dag_.NodeCountWithoutDAGRoot());
   gp_engine_.GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits());
   gp_engine_.ProcessOperations(dag_.PopulatePLVs());
+  if (do_optimitize_branch_lengths_) {
+    gp_engine_.ProcessOperations(dag_.BranchLengthOptimization());
+  }
   gp_engine_.ProcessOperations(dag_.ComputeLikelihoods());
-}
-
-void NNIEngine::PrepGPEngineForLikelihoods() {
-  gp_engine_.ProcessOperations(dag_.PopulatePLVs());
-  gp_engine_.ProcessOperations(dag_.ComputeLikelihoods());
+  dag_likelihoods_ = std::make_unique<EigenVectorXd>(
+      gp_engine_.GetPerGPCSPLogLikelihoods(0, dag_.EdgeCountWithLeafSubsplits()));
 }
 
 void NNIEngine::AddAcceptedNNIsToDAG() {
   // Make sure all grafted nodes have been removed from the DAG
-  graft_dag_->RemoveAllGrafts();
+  RemoveAllGraftedNNIsFromDAG();
   // Initialize reindexers for remapping after adding nodes.
   node_reindexer_ = Reindexer::IdentityReindexer(dag_.NodeCount());
   edge_reindexer_ = Reindexer::IdentityReindexer(dag_.EdgeCountWithLeafSubsplits());
@@ -370,6 +440,7 @@ void NNIEngine::AddAcceptedNNIsToDAG() {
 }
 
 void NNIEngine::GraftAdjacentNNIsToDAG() {
+  RemoveAllGraftedNNIsFromDAG();
   for (const auto &nni : GetAdjacentNNIs()) {
     graft_dag_->AddNodePair(nni);
   }
@@ -389,10 +460,7 @@ void NNIEngine::SyncAdjacentNNIsWithDAG() {
           // Only internal node pairs are viable NNIs.
           const Bitset &parent_bitset = dag_.GetDAGNode(parent_id).GetBitset();
           const Bitset &child_bitset = dag_.GetDAGNode(child_id).GetBitset();
-          if (!(parent_bitset.SubsplitIsUCA() || child_bitset.SubsplitIsLeaf())) {
-            SafeAddOutputNNIsToAdjacentNNIs(parent_bitset, child_bitset,
-                                            is_edge_on_left);
-          }
+          SafeAddOutputNNIsToAdjacentNNIs(parent_bitset, child_bitset, is_edge_on_left);
         });
   });
 }
@@ -486,35 +554,48 @@ double NNIEngine::GetScoreForNNI(const NNIOperation &nni) const {
   return score;
 }
 
-void NNIEngine::UpdateAdjacentNNIs(const bool reevaluate_rejected_nnis) {
+void NNIEngine::UpdateAdjacentNNIs() {
   adjacent_nnis_.clear();
-  if (reevaluate_rejected_nnis) {
+  if (reevaluate_rejected_nnis_) {
     adjacent_nnis_.insert(rejected_nnis_.begin(), rejected_nnis_.end());
   }
+
   for (const auto &nni : GetAcceptedNNIs()) {
-    const auto focal_clade =
-        Bitset::SubsplitIsChildOfWhichParentClade(nni.parent_, nni.child_);
-    const bool is_edge_on_left = (focal_clade == SubsplitClade::Left);
-    SafeAddOutputNNIsToAdjacentNNIs(nni.parent_, nni.child_, is_edge_on_left);
+    for (const auto &node_subsplit : {nni.GetParent(), nni.GetChild()}) {
+      const auto &node = dag_.GetDAGNode(dag_.GetDAGNodeId(node_subsplit));
+      for (const auto &direction : {Direction::Rootward, Direction::Leafward}) {
+        for (const auto &focal_clade : {SubsplitClade::Left, SubsplitClade::Right}) {
+          const auto &neighbors = node.GetNeighbors(direction, focal_clade);
+          for (const auto &adj_node_id : neighbors) {
+            const auto &adj_node = dag_.GetDAGNode(adj_node_id);
+            const auto &parent = (direction == Direction::Rootward) ? adj_node : node;
+            const auto &child = (direction == Direction::Rootward) ? node : adj_node;
+            const bool is_edge_on_left = (focal_clade == SubsplitClade::Left);
+            SafeAddOutputNNIsToAdjacentNNIs(parent.GetBitset(), child.GetBitset(),
+                                            is_edge_on_left);
+          }
+        }
+      }
+    }
   }
 }
 
-void NNIEngine::UpdateAcceptedNNIs(const bool save_past_nnis) {
-  if (save_past_nnis) {
+void NNIEngine::UpdateAcceptedNNIs() {
+  if (keep_accepted_past_nnis_) {
     accepted_past_nnis_.insert(accepted_nnis_.begin(), accepted_nnis_.end());
   }
   accepted_nnis_.clear();
 }
 
-void NNIEngine::UpdateRejectedNNIs(const bool save_past_nnis) {
-  if (save_past_nnis) {
+void NNIEngine::UpdateRejectedNNIs() {
+  if (keep_rejected_past_nnis_) {
     rejected_past_nnis_.insert(rejected_nnis_.begin(), rejected_nnis_.end());
   }
   rejected_nnis_.clear();
 }
 
-void NNIEngine::UpdateScoredNNIs(const bool save_past_nnis) {
-  if (save_past_nnis) {
+void NNIEngine::UpdateScoredNNIs() {
+  if (keep_scored_past_nnis_) {
     scored_past_nnis_.insert(scored_nnis_.begin(), scored_nnis_.end());
   }
   scored_nnis_.clear();
@@ -535,11 +616,6 @@ NNIOperation NNIEngine::FindNNINeighborInDAG(const NNIOperation &nni) {
     const auto &swapped_nni = nni.NNIOperationFromNeighboringSubsplits(which_swap);
     if (dag_.ContainsNode(swapped_nni.parent_) &&
         dag_.ContainsNode(swapped_nni.child_)) {
-      auto parent_id = dag_.GetDAGNodeId(swapped_nni.parent_);
-      auto child_id = dag_.GetDAGNodeId(swapped_nni.child_);
-      if (parent_id > dag_.NodeCount() || child_id > dag_.NodeCount()) {
-        std::cout << "ERROR: found NNI Neighbor from the GraftDAG!" << std::endl;
-      }
       return swapped_nni;
     }
   }

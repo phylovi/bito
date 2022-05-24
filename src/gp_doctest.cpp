@@ -1219,7 +1219,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     passes_resized &= (gpengine.GetNodeCount() == dag.NodeCountWithoutDAGRoot());
     passes_resized &= (gpengine.GetGPCSPCount() == dag.EdgeCountWithLeafSubsplits());
     // Check PLVs reindexing properly.
-    for (const auto& bitset : pre_dag.GetSortedVectorOfNodeBitsets()) {
+    for (const auto& bitset : pre_dag.BuildSortedVectorOfNodeBitsets()) {
       if (bitset.SubsplitIsUCA()) {
         continue;
       }
@@ -1234,7 +1234,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     // Check branch length reindexing properly.
     auto pre_branch_lengths = pre_gpengine.GetBranchLengths();
     auto branch_lengths = gpengine.GetBranchLengths();
-    for (const auto& bitset : pre_dag.GetSortedVectorOfEdgeBitsets()) {
+    for (const auto& bitset : pre_dag.BuildSortedVectorOfEdgeBitsets()) {
       const size_t edge_idx = dag.GetEdgeIdx(bitset);
       const size_t pre_edge_idx = pre_dag.GetEdgeIdx(bitset);
       const auto branch_a = branch_lengths[edge_idx];
@@ -1488,7 +1488,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
     nni_count++;
   }
 
-  // Compute likelihoods for graftDAG.
+  // Compute likelihoods for GraftDAG.
   graft_nni_engine.SyncAdjacentNNIsWithDAG();
   graft_nni_engine.GraftAdjacentNNIsToDAG();
   graft_nni_engine.GrowEngineForAdjacentNNILikelihoods(true, true);
@@ -1521,7 +1521,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
     nni_count++;
   }
 
-  // Compute likelihoods for truthDAG.
+  // Compute likelihoods for TruthDAG.
   nni_count = 0;
   for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     auto truth_inst =
@@ -1560,5 +1560,150 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
                   "Pre-NNI Likelihood from NNI Engine does not match truth.");
 
     nni_count++;
+  }
+}
+
+// Builds the set all valid node subsplit bitsets present in a complete SubsplitDAG of
+// given taxon count. Enumerates all possible subsplits for given taxon_count by
+// recursively building a string and assigning each taxon element as either a member of
+// the (0) outgroup, (1) left_clade, or (2) right_clade. Once all taxa have been
+// assigned, a bitset is generated from the string and added to the set.
+void CompleteDAGSubsplits(std::set<Bitset>& subsplits, size_t taxon_count,
+                          std::string assignment = "",
+                          bool first_left_subsplit = false) {
+  // If all bit positions have been assigned, generate clades.
+  if (taxon_count == 0) {
+    std::string left_clade = "";
+    std::string right_clade = "";
+    for (size_t i = 0; i < assignment.size(); i++) {
+      if (assignment[i] == '0') {
+        left_clade += "0";
+        right_clade += "0";
+      } else if (assignment[i] == '1') {
+        left_clade += "1";
+        right_clade += "0";
+      } else if (assignment[i] == '2') {
+        left_clade += "0";
+        right_clade += "1";
+      }
+    }
+    Bitset left_subsplit = Bitset(left_clade);
+    Bitset right_subsplit = Bitset(right_clade);
+    Bitset subsplit = Bitset::Subsplit(left_clade, right_clade);
+    // Only illegal bitsets: one clade is empty and the other clade is not a singleton
+    // (leaf) or all (universal ancestor).
+    if (left_subsplit.None() || right_subsplit.None()) {
+      if (!(left_subsplit.IsSingleton() || right_subsplit.IsSingleton())) {
+        if (!(left_subsplit.All() || right_subsplit.All())) {
+          return;
+        }
+      }
+    }
+    subsplits.insert(subsplit);
+    return;
+  }
+  // If there are still unassigned taxa, recurse:
+  // Right Subsplit.
+  CompleteDAGSubsplits(subsplits, taxon_count - 1, assignment + "0",
+                       first_left_subsplit);
+  // Left Subsplit.
+  CompleteDAGSubsplits(subsplits, taxon_count - 1, assignment + "1", true);
+  // Right Subsplit (the first non-outgroup must be assigned to the Left Subpslit, to
+  // remove rotated duplicates).
+  if (first_left_subsplit) {
+    CompleteDAGSubsplits(subsplits, taxon_count - 1, assignment + "2", true);
+  }
+}
+
+// Builds a vector of all edge PCSPs present in a fully connected graph on
+// the given vector of Subsplit bitsets. That is, a PCSP for all possible valid edges
+// between any two subsplit nodes in the vector.
+std::vector<Bitset> ConnectAllDAGSubsplitsToPCSPs(
+    std::vector<Bitset>& subsplit_bitsets) {
+  std::vector<Bitset> pcsp_bitsets;
+  for (size_t i = 0; i < subsplit_bitsets.size(); i++) {
+    const auto subsplit_a = subsplit_bitsets[i];
+    for (size_t j = i + 1; j < subsplit_bitsets.size(); j++) {
+      const auto subsplit_b = subsplit_bitsets[j];
+      if (subsplit_a.SubsplitIsLeftChildOf(subsplit_b) ||
+          subsplit_a.SubsplitIsRightChildOf(subsplit_b)) {
+        pcsp_bitsets.push_back(Bitset::PCSP(subsplit_b, subsplit_a));
+      } else if (subsplit_b.SubsplitIsLeftChildOf(subsplit_a) ||
+                 subsplit_b.SubsplitIsRightChildOf(subsplit_a)) {
+        pcsp_bitsets.push_back(Bitset::PCSP(subsplit_a, subsplit_b));
+      }
+    }
+  }
+  std::sort(pcsp_bitsets.begin(), pcsp_bitsets.end());
+  return pcsp_bitsets;
+}
+
+// Performs a complete run of NNI Engine with no filter. Tests that it results in a
+// complete SubsplitDAG with all possible nodes and edges.
+TEST_CASE("NNI Engine: Complete Run NNI Engine with No Filter") {
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  auto inst =
+      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_graft.data");
+  auto& dag = inst.GetDAG();
+  inst.MakeNNIEngine();
+  auto& nni_engine = inst.GetNNIEngine();
+  nni_engine.SetFilteringNone();
+  nni_engine.SetKeepAcceptedNNIs(true);
+  nni_engine.SetKeepRejectedNNIs(true);
+  nni_engine.Run();
+
+  // Build set of Subsplits and PCSPs at end of NNI Engine run.
+  std::vector<Bitset> nni_subsplits, nni_pcsps;
+  nni_subsplits = dag.BuildSortedVectorOfNodeBitsets();
+  nni_pcsps = dag.BuildSortedVectorOfEdgeBitsets();
+
+  // Build set of Subsplits and PCSPs in complete SubsplitDAG.
+  std::vector<Bitset> complete_subsplits, complete_pcsps;
+  std::set<Bitset> complete_subsplits_set;
+  CompleteDAGSubsplits(complete_subsplits_set, dag.TaxonCount());
+  for (const auto& subsplit : complete_subsplits_set) {
+    complete_subsplits.push_back(subsplit);
+  }
+  complete_pcsps = ConnectAllDAGSubsplitsToPCSPs(complete_subsplits);
+
+  CHECK_MESSAGE(nni_subsplits == complete_subsplits,
+                "No filter NNI Engine run did not result in a Completed SubsplitDAG: "
+                "Wrong subsplits.");
+  CHECK_MESSAGE(dag.NodeCount() == complete_subsplits.size(),
+                "No filter NNI Engine run did not result in a Completed SubsplitDAG: "
+                "Wrong node counts.");
+  CHECK_MESSAGE(nni_pcsps == complete_pcsps,
+                "No filter NNI Engine run did not result in a Completed SubsplitDAG: "
+                "Wrong PCSPs.");
+  CHECK_MESSAGE(dag.EdgeCountWithLeafSubsplits() == complete_pcsps.size(),
+                "No filter NNI Engine run did not result in a Completed SubsplitDAG: "
+                "Wrong edge counts.");
+}
+
+// Performs a complete run of NNI Engine with Hillclimbing. Tests that all NNIs added to
+// the DAG and a higher likelihood than their Pre-NNI.
+TEST_CASE("NNI Engine: Run Hillclimbing") {
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  auto inst =
+      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_graft.data");
+  inst.MakeNNIEngine();
+  auto& nni_engine = inst.GetNNIEngine();
+  nni_engine.SetFilteringHillclimb();
+  nni_engine.SetKeepAcceptedNNIs(true);
+  nni_engine.SetKeepRejectedNNIs(true);
+
+  nni_engine.RunInit();
+  while (nni_engine.GetAdjacentNNICount() > 0) {
+    nni_engine.RunMainLoop();
+    for (const auto& nni : nni_engine.GetAcceptedNNIs()) {
+      const auto prenni_likelihood = nni_engine.GetBestPreNNILikelihood(nni);
+      const auto postnni_likelihood = nni_engine.GetPostNNILikelihood(nni);
+      CHECK_MESSAGE(
+          postnni_likelihood >= prenni_likelihood,
+          "Accepted Post-NNI did not have a higher likelihood than Pre-NNI (new).");
+    }
+    nni_engine.RunPostLoop();
   }
 }

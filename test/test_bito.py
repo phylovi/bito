@@ -170,7 +170,9 @@ def test_gp_instance():
     inst = bito.gp_instance("_ignore/mmapped_plv_pybito.data")
     inst.read_fasta_file("data/six_taxon.fasta")
     inst.read_newick_file("data/six_taxon_rootsplit.nwk")
+    inst.make_dag()
     inst.make_engine()
+    inst.make_nni_engine()
 
     init_branches = inst.get_branch_lengths()
     print("init_branch_lengths:", init_branches)
@@ -180,7 +182,16 @@ def test_gp_instance():
 
     edge_idx_to_pcsp_map = inst.build_edge_idx_to_pcsp_map()
     print("edge_pcsp_map:", edge_idx_to_pcsp_map)
-    pass
+
+    nni_engine = inst.get_nni_engine()
+    nni_engine.run_init()
+    adj_nni_count = nni_engine.get_adjacent_nni_count()
+    nni_engine.run()
+
+    dag = inst.get_dag()
+    node_count = dag.get_node_count()
+    edge_count = dag.get_edge_count()
+    print("dag_counts: ", node_count, edge_count)
 
 
 if __name__ == "__main__":
