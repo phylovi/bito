@@ -1219,7 +1219,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     passes_resized &= (gpengine.GetNodeCount() == dag.NodeCountWithoutDAGRoot());
     passes_resized &= (gpengine.GetGPCSPCount() == dag.EdgeCountWithLeafSubsplits());
     // Check PLVs reindexing properly.
-    for (const auto& bitset : pre_dag.GetSortedVectorOfNodeBitsets()) {
+    for (const auto& bitset : pre_dag.BuildSortedVectorOfNodeBitsets()) {
       if (bitset.SubsplitIsUCA()) {
         continue;
       }
@@ -1234,7 +1234,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     // Check branch length reindexing properly.
     auto pre_branch_lengths = pre_gpengine.GetBranchLengths();
     auto branch_lengths = gpengine.GetBranchLengths();
-    for (const auto& bitset : pre_dag.GetSortedVectorOfEdgeBitsets()) {
+    for (const auto& bitset : pre_dag.BuildSortedVectorOfEdgeBitsets()) {
       const size_t edge_idx = dag.GetEdgeIdx(bitset);
       const size_t pre_edge_idx = pre_dag.GetEdgeIdx(bitset);
       const auto branch_a = branch_lengths[edge_idx];
@@ -1561,4 +1561,18 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 
     nni_count++;
   }
+}
+
+TEST_CASE("SubsplitDAG: Export to JSON") {
+  const std::string fasta_path = "data/six_taxon_longer.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  const std::string json_output = "_ignore/dag_to_json.json";
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.data");
+  auto gp_engine = inst.GetEngine();
+  auto& dag = inst.GetDAG();
+  gp_engine->ProcessOperations(dag.BranchLengthOptimization());
+  const EigenVectorXd branch_lengths = inst.GetBranchLengths();
+
+  std::cout << dag.ExportToJSON(branch_lengths) << std::endl;
+  inst.SubsplitDAGExportToJSON(json_output);
 }

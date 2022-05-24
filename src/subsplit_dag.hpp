@@ -43,16 +43,20 @@
 
 class SubsplitDAG {
  public:
-  // ** Constructor methods:
+  // ** Constructors
 
   // Build empty Subsplit DAG with no topologies and no taxa.
   SubsplitDAG();
   // Build a Subsplit DAG expressing all tree topologies from tree_collection.
   explicit SubsplitDAG(const RootedTreeCollection &tree_collection);
 
+  // Build a Subsplit DAG from a JSON file.
+  static SubsplitDAG ImportSubsplitDAGFromJSON(const std::string &file_in);
+  static SubsplitDAG ImportSubsplitDAGFromJSONLiteral(const std::string &json_string);
+
   SubsplitDAG(const SubsplitDAG &) = default;
 
-  // ** Comparator methods:
+  // ** Comparators
 
   // This compare ensures that both DAGs have the same topology according to their
   // set of node and edge bitsets.  However, it does ensure that DAGs have the same id
@@ -64,7 +68,7 @@ class SubsplitDAG {
   friend bool operator==(const SubsplitDAG &lhs, const SubsplitDAG &rhs);
   friend bool operator!=(const SubsplitDAG &lhs, const SubsplitDAG &rhs);
 
-  // ** Count methods:
+  // ** Count
 
   // The total number of individual taxa in the DAG.
   size_t TaxonCount() const;
@@ -86,7 +90,7 @@ class SubsplitDAG {
   // The total number of tree topologies expressable by the DAG.
   double TopologyCount() const;
 
-  // ** Print
+  // ** I/O
 
   // Print all nodes:
   // - One line is given for (node_id | subsplit_bitset).
@@ -101,10 +105,24 @@ class SubsplitDAG {
   void PrintDAGEdges() const;
   // Print all nodes, as (bitset | range_begin | range_end)
   void PrintParentToRange() const;
-  // Output DOT format graph of DAG to file.
-  void ToDot(const std::string file_path, bool show_index_labels = true) const;
-  // Output DOT format graph of DAG to a string.
-  std::string ToDot(bool show_index_labels = true) const;
+
+  // Creates a dictionary of summary statistics for DAG.
+  // Includes node_count and edge_count.
+  StringSizeMap SummaryStatistics() const;
+
+  // ** File Import/Export
+
+  // Export SubsplitDAG to DOT format graph file.
+  void ExportToDot(const std::string file_path,
+                   const bool show_index_labels = true) const;
+  std::string ExportToDot(const bool show_index_labels = true) const;
+
+  // Export SubsplitDAG to JSON file.
+  void ExportToJSON(
+      const std::string &file_path,
+      std::optional<const EigenVectorXd> branch_lengths = std::nullopt) const;
+  std::string ExportToJSON(
+      std::optional<const EigenVectorXd> branch_lengths = std::nullopt) const;
 
   // ** Build Output Indexers/Vectors
 
@@ -125,8 +143,14 @@ class SubsplitDAG {
                                                       size_t default_index) const;
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllTopologies() const;
+  // Get set of all taxon names.
+  std::vector<std::string> BuildSortedVectorOfTaxonNames() const;
+  // Get sorted vector of all node Subsplit bitsets.
+  std::vector<Bitset> BuildSortedVectorOfNodeBitsets() const;
+  // Get sorted vector of all edge PCSP bitsets.
+  std::vector<Bitset> BuildSortedVectorOfEdgeBitsets() const;
 
-  // ** Getters
+  // ** Access
 
   // Get Taxon's bitset clade positional id.
   size_t GetTaxonId(const std::string &name) const;
@@ -147,12 +171,6 @@ class SubsplitDAG {
   size_t GetEdgeIdx(const Bitset &edge_pcsp) const;
   // Get the range of outgoing idxs from the given clade of a subsplit.
   SizePair GetChildEdgeRange(const Bitset &subsplit, const bool rotated) const;
-  // Get set of all taxon names.
-  std::vector<std::string> GetSortedVectorOfTaxonNames() const;
-  // Get sorted vector of all node Subsplit bitsets.
-  std::vector<Bitset> GetSortedVectorOfNodeBitsets() const;
-  // Get sorted vector of all edge PCSP bitsets.
-  std::vector<Bitset> GetSortedVectorOfEdgeBitsets() const;
   // Get reference to taxon map.
   const std::map<std::string, size_t> &GetTaxonMap() const;
   // Get reference to subsplit -> node_id map.
@@ -409,9 +427,6 @@ class SubsplitDAG {
 
   // ** Miscellaneous
 
-  // Creates a dictionary of summary statistics for DAG.
-  // Includes node_count and edge_count.
-  StringSizeMap SummaryStatistics() const;
   // Rotates Node Subsplit only if it is out of sorted order (rotated).
   Bitset SubsplitToSortedOrder(const Bitset &subsplit, bool rotated) const;
   // Build vector between from SubsplitDAGs dag_a to dag_b corresponding to their taxon
@@ -510,6 +525,8 @@ class SubsplitDAG {
                                  SizeVector &added_edge_idxs);
   // Expand dag_edges_ and parent_to_child_range_ with leaf subsplits at the end.
   void AddLeafSubsplitsToDAGEdgesAndParentToRange();
+
+  // ** I/O
 
  protected:
   SubsplitDAGStorage storage_;

@@ -70,6 +70,8 @@ class GPInstance {
   RootedTreeCollection CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
       const std::string &pcsp_string);
 
+  // ** Export/Import Files
+
   // Run CurrentlyLoadedTreesWithGPBranchLengths and export to a Newick file.
   void ExportTrees(const std::string &out_path);
   // Run CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths and export to a Newick
@@ -85,13 +87,16 @@ class GPInstance {
   // Generate all trees spanned by the DAG and load them into the instance.
   void LoadAllGeneratedTrees();
 
+  // Export the subsplit DAG as a DOT file.
+  void SubsplitDAGToDot(const std::string &out_path,
+                        bool show_index_labels = true) const;
+  // Export the subspli DAG as a JSON file.
+  void SubsplitDAGExportToJSON(const std::string &out_path) const;
+
   // Get taxon names.
   StringVector GetTaxonNames() const;
   // Get branch lengths.
   EigenVectorXd GetBranchLengths() const;
-  // Export the subsplit DAG as a DOT file.
-  void SubsplitDAGToDot(const std::string &out_path,
-                        bool show_index_labels = true) const;
 
   // Initialize NNI Evaluation Engine.
   void MakeNNIEngine();
