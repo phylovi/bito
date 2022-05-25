@@ -106,8 +106,18 @@ class SubsplitDAG {
   // Output DOT format graph of DAG to a string.
   std::string ToDot(bool show_index_labels = true) const;
 
-  // ** Build Output Indexers/Vectors
+  // ** Build
 
+  // Get set of all taxon names.
+  std::vector<std::string> BuildSortedVectorOfTaxonNames() const;
+  // Get sorted vector of all node Subsplit bitsets.
+  std::vector<Bitset> BuildSortedVectorOfNodeBitsets() const;
+  // Get sorted vector of all edge PCSP bitsets.
+  std::vector<Bitset> BuildSortedVectorOfEdgeBitsets() const;
+  // Get sorted vector of all node clade bitsets.
+  std::vector<Bitset> BuildSortedVectorOfCladeBitsets() const;
+  // Get sorted vector of all node clade bitsets.
+  std::map<Bitset, SizeVector> BuildCladeMap() const;
   // Create a EdgeIndexer representing the DAG.
   // The EdgeIndexer is a map (edge/PCSP bitset -> edge/PCSP index).
   // The edge/PCSP indexer contains leafs and rootsplits.
@@ -126,7 +136,7 @@ class SubsplitDAG {
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllTopologies() const;
 
-  // ** Getters
+  // ** Access
 
   // Get Taxon's bitset clade positional id.
   size_t GetTaxonId(const std::string &name) const;
@@ -147,18 +157,12 @@ class SubsplitDAG {
   size_t GetEdgeIdx(const Bitset &edge_pcsp) const;
   // Get the range of outgoing idxs from the given clade of a subsplit.
   SizePair GetChildEdgeRange(const Bitset &subsplit, const bool rotated) const;
-  // Get set of all taxon names.
-  std::vector<std::string> GetSortedVectorOfTaxonNames() const;
-  // Get sorted vector of all node Subsplit bitsets.
-  std::vector<Bitset> GetSortedVectorOfNodeBitsets() const;
-  // Get sorted vector of all edge PCSP bitsets.
-  std::vector<Bitset> GetSortedVectorOfEdgeBitsets() const;
   // Get reference to taxon map.
   const std::map<std::string, size_t> &GetTaxonMap() const;
   // Get reference to subsplit -> node_id map.
   const BitsetSizeMap &GetSubsplitToIdMap() const;
-  // Get reference to parent_node -> child_edge_range map.
-  const BitsetSizePairMap &GetParentNodeToChildEdgeRangeMap() const;
+  // Get reference to DAGStorage.
+  const SubsplitDAGStorage &GetStorage() const;
 
   // ** DAG Lambda Iterators
   // These methods iterate over the nodes and take lambda functions with arguments
@@ -439,6 +443,8 @@ class SubsplitDAG {
  protected:
   explicit SubsplitDAG(SubsplitDAG &host_dag, HostDispatchTag);
   void ResetHostDAG(SubsplitDAG &host_dag);
+
+  // ** Build
 
   // Builds a vector of subsplits of all children , optionally including leaf nodes.
   std::vector<Bitset> GetChildSubsplits(const SizeBitsetMap &index_to_child,

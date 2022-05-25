@@ -23,14 +23,14 @@ int GraftDAG::Compare(const GraftDAG &lhs, const GraftDAG &rhs) {
     return host_diff;
   }
   // (2) Compare graft nodes.
-  BitsetVector lhs_nodes = lhs.GetSortedVectorOfNodeBitsets();
-  BitsetVector rhs_nodes = rhs.GetSortedVectorOfNodeBitsets();
+  BitsetVector lhs_nodes = lhs.BuildSortedVectorOfNodeBitsets();
+  BitsetVector rhs_nodes = rhs.BuildSortedVectorOfNodeBitsets();
   if (lhs_nodes != rhs_nodes) {
     return (lhs_nodes < rhs_nodes) ? -1 : 1;
   }
   // (3) Compare graft edges.
-  BitsetVector lhs_edges = lhs.GetSortedVectorOfEdgeBitsets();
-  BitsetVector rhs_edges = rhs.GetSortedVectorOfEdgeBitsets();
+  BitsetVector lhs_edges = lhs.BuildSortedVectorOfEdgeBitsets();
+  BitsetVector rhs_edges = rhs.BuildSortedVectorOfEdgeBitsets();
   if (lhs_edges != rhs_edges) {
     return (lhs_edges < rhs_edges) ? -1 : 1;
   }
@@ -48,14 +48,14 @@ int GraftDAG::CompareToDAG(const GraftDAG &lhs, const SubsplitDAG &rhs) {
     return taxon_diff;
   }
   // Compare nodes.
-  BitsetVector lhs_nodes = lhs.GetSortedVectorOfNodeBitsets();
-  BitsetVector rhs_nodes = rhs.GetSortedVectorOfNodeBitsets();
+  BitsetVector lhs_nodes = lhs.BuildSortedVectorOfNodeBitsets();
+  BitsetVector rhs_nodes = rhs.BuildSortedVectorOfNodeBitsets();
   if (lhs_nodes != rhs_nodes) {
     return (lhs_nodes < rhs_nodes) ? -1 : 1;
   }
   // Compare edges.
-  BitsetVector lhs_edges = lhs.GetSortedVectorOfEdgeBitsets();
-  BitsetVector rhs_edges = rhs.GetSortedVectorOfEdgeBitsets();
+  BitsetVector lhs_edges = lhs.BuildSortedVectorOfEdgeBitsets();
+  BitsetVector rhs_edges = rhs.BuildSortedVectorOfEdgeBitsets();
   if (lhs_edges != rhs_edges) {
     return (lhs_edges < rhs_edges) ? -1 : 1;
   }
