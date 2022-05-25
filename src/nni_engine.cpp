@@ -112,9 +112,7 @@ bool NNIEngine::FilterPostNNIBetterThanPreNNI(NNIEngine &this_nni_engine,
                                               const NNIOperation &nni) {
   const double postnni_likelihood = this_nni_engine.GetPostNNILikelihood(nni);
   const double prenni_likelihood = this_nni_engine.GetBestPreNNILikelihood(nni);
-  const double diff = postnni_likelihood - prenni_likelihood;
-  const bool accept = (diff > 0.0);
-  return accept;
+  return postnni_likelihood > prenni_likelihood;
 }
 
 // ** NNI Likelihoods
