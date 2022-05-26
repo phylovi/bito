@@ -1072,7 +1072,8 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(
     std::optional<ModificationResult> opt_mods) {
   // Check that node pair will create a valid SubsplitDAG.
   Assert(
-      IsValidAddNodePair(parent_subsplit, child_subsplit),
+      // IsValidAddNodePair(parent_subsplit, child_subsplit),
+      IsValidAddNodes({parent_subsplit, child_subsplit}),
       "The given pair of nodes is incompatible with DAG in SubsplitDAG::AddNodePair.");
 
   ModificationResult mods =
@@ -1172,11 +1173,12 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
           ? opt_mods.value()
           : ModificationResult(NodeCount(), EdgeCountWithLeafSubsplits());
 
+  // Put nodes to be added in sorted order.
   std::sort(node_subsplits.begin(), node_subsplits.end(),
             [](const Bitset &bitset_a, const Bitset &bitset_b) {
               return Bitset::SubsplitCompare(bitset_a, bitset_b) < 0;
             });
-
+  // Initialize argsort wrapper for nodes
   ArgsortVector<DAGVertex, VerticesView, VerticesView> node_argsort(
       storage_.GetVertices(), Reindexer::IdentityReindexer(NodeCount()),
       [](const DAGVertex &lhs, const DAGVertex &rhs) -> bool {
@@ -1188,7 +1190,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
       [this](VerticesView data_vector, const Reindexer &reindexer) -> void {
         RemapNodeIds(reindexer);
       });
-
+  // Initialize argsort wrapper for edges.
   // ArgsortVector<DAGLine, LinesView, LinesView> edge_argsort(
   //     storage_.GetLines(),
   //     Reindexer::IdentityReindexer(EdgeCountWithLeafSubsplits()),
@@ -1428,13 +1430,98 @@ bool SubsplitDAG::IsValidAddNodePair(const Bitset &parent_subsplit,
 }
 
 bool SubsplitDAG::IsValidAddNodes(const BitsetVector &node_subsplits) const {
-  Failwith("IsValidAddNodes not implemented.");
-  return false;
+  BoolVector has_parent(node_subsplits.size(), false);
+  BoolVector has_left_child(node_subsplits.size(), false);
+  BoolVector has_right_child(node_subsplits.size(), false);
+  // Account for relationships between added nodes.
+  for (size_t i = 0; i < node_subsplits.size(); i++) {
+    const auto &focal_bitset = node_subsplits[i];
+    for (size_t j = i + 1; j < node_subsplits.size(); j++) {
+      const auto &adj_bitset = node_subsplits[j];
+      for (const bool is_focal_parent : {true, false}) {
+        const auto &parent_bitset = (is_focal_parent ? focal_bitset : adj_bitset);
+        const auto &parent_id = (is_focal_parent ? i : j);
+        const auto &child_bitset = (is_focal_parent ? adj_bitset : focal_bitset);
+        const auto &child_id = (is_focal_parent ? j : i);
+        if (child_bitset.SubsplitIsLeftChildOf(parent_bitset)) {
+          has_parent[child_id] = true;
+          has_left_child[parent_id] = true;
+        } else if (child_bitset.SubsplitIsRightChildOf(parent_bitset)) {
+          has_parent[child_id] = true;
+          has_right_child[parent_id] = true;
+        }
+      }
+    }
+  }
+  // Account for relationships between added nodes and nodes already in DAG.
+  for (size_t i = 0; i < node_subsplits.size(); i++) {
+    const auto &focal_bitset = node_subsplits[i];
+    const auto &[left_parents, right_parents] = BuildParentIdVectors(focal_bitset);
+    bool focal_has_parent = ((left_parents.size() > 0) || (right_parents.size() > 0));
+    has_parent[i] = (has_parent[i] || focal_has_parent);
+    const auto &[left_children, right_children] = BuildChildIdVectors(focal_bitset);
+    bool focal_has_left_child = (left_children.size() > 0);
+    has_left_child[i] = (has_left_child[i] || focal_has_left_child);
+    bool focal_has_right_child = (right_children.size() > 0);
+    has_right_child[i] = (has_right_child[i] || focal_has_right_child);
+  }
+  // Check that each node has at least one parent, left_child and right_child.
+  for (size_t i = 0; i < node_subsplits.size(); i++) {
+    if (!(has_parent[i] && has_left_child[i] && has_right_child[i])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool SubsplitDAG::IsValidRemoveNodes(const SizeVector &node_ids) const {
-  Failwith("IsValidAddNodes not implemented.");
-  return false;
+  std::set<size_t> node_ids_set(node_ids.begin(), node_ids.end());
+  std::set<size_t> neighbor_node_ids_set;
+  // Find all nodes neighboring nodes to be removed.
+  for (const auto &node_id : node_ids) {
+    for (const auto direction : {Direction::Leafward, Direction::Rootward}) {
+      for (const auto clade : {SubsplitClade::Left, SubsplitClade::Right}) {
+        const auto &adj_node_ids = GetDAGNode(node_id).GetNeighbors(direction, clade);
+        for (const auto &adj_node_id : adj_node_ids) {
+          neighbor_node_ids_set.insert(adj_node_id);
+        }
+      }
+    }
+  }
+  // Find parents, left_children and right_children for neighboring nodes.
+  SizeVector neighbor_node_ids(neighbor_node_ids_set.begin(),
+                               neighbor_node_ids_set.end());
+  BoolVector has_parent(neighbor_node_ids_set.size(), false);
+  BoolVector has_left_child(neighbor_node_ids_set.size(), false);
+  BoolVector has_right_child(neighbor_node_ids_set.size(), false);
+  size_t i = 0;
+  for (const auto &focal_id : neighbor_node_ids_set) {
+    for (const auto direction : {Direction::Leafward, Direction::Rootward}) {
+      for (const auto clade : {SubsplitClade::Left, SubsplitClade::Right}) {
+        const auto &adj_node_ids = GetDAGNode(focal_id).GetNeighbors(direction, clade);
+        auto &counts =
+            (direction == Direction::Rootward)
+                ? has_parent
+                : ((clade == SubsplitClade::Left) ? has_left_child : has_right_child);
+        for (const auto &adj_node_id : adj_node_ids) {
+          // If neighbor found that will not be removed, then requirement is satisfied.
+          if (node_ids_set.find(adj_node_id) == node_ids_set.end()) {
+            counts[i] = true;
+            break;
+          }
+        }
+      }
+    }
+    i++;
+  }
+  // Check that all neighboring nodes have at least one parent, left_child and
+  // right_child.
+  for (size_t i = 0; i < neighbor_node_ids_set.size(); i++) {
+    if (!(has_parent[i] && has_left_child[i] && has_right_child[i])) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool SubsplitDAG::IsValidTaxonMap() const {

@@ -117,9 +117,11 @@ class SubsplitDAG {
   BitsetSizeMap BuildEdgeIndexer() const;
   // Builds inverse of EdgeIndexer map: (edge/PCSP index -> edge/PCSP bitset).
   SizeBoolVectorMap BuildEdgeIdxToPCSPBoolVectorMap() const;
-  // Get the rotated and sorted parents of the node with the given subsplit.
+  // Get the eligible left and right parents of node with given subsplit,  Subsplit can
+  // be currently present in DAG or not.
   std::pair<SizeVector, SizeVector> BuildParentIdVectors(const Bitset &subsplit) const;
-  // Get the rotated and sorted children of the node with the given subsplit.
+  // Get the eligible left and right children of node with given subsplit,  Subsplit can
+  // be currently present in DAG or not.
   std::pair<SizeVector, SizeVector> BuildChildIdVectors(const Bitset &subsplit) const;
   // Output RootedIndexerRepresentation of DAG (from RootedSBNMaps).
   // RootedIndexerRepresentation is a vector of edge idxs in topological preorder.
