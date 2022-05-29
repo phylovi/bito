@@ -645,7 +645,7 @@ PYBIND11_MODULE(bito, m) {
            py::arg("intermediate") = false)
       .def("get_perpcsp_llh_surface", &GPInstance::GetPerGPCSPLogLikelihoodSurfaces,
            "Scan the likelihood surface for the pcsps in the GPInstance.",
-           py::arg("steps"), py::arg("min_scale"), py::arg("max_scale"))
+           py::arg("steps"), py::arg("scale_min"), py::arg("scale_max"))
       .def("track_optimization_values", &GPInstance::TrackValuesFromOptimization,
            "Reinitiate optimization and track branch length and per pcsp likelihoods/")
 

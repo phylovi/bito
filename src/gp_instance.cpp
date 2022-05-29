@@ -328,13 +328,13 @@ RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
   return TreesWithGPBranchLengthsOfTopologies(dag_.GenerateAllTopologies());
 }
 
-void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double min_scale,
-                                                  double max_scale) {
+void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double scale_min,
+                                                  double scale_max) {
   const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
 
   size_t gpcsp_count = optimized_branch_lengths.size();
   const EigenVectorXd scaling_vector =
-      EigenVectorXd::LinSpaced(steps, min_scale, max_scale);
+      EigenVectorXd::LinSpaced(steps, scale_min, scale_max);
   per_pcsp_lik_surfaces_ = EigenMatrixXd(gpcsp_count * steps, 2);
 
   for (size_t gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {

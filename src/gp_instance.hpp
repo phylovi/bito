@@ -55,10 +55,10 @@ class GPInstance {
 
   // This scans the PCSP likelihood surface by calculating the per pcsp likelihood
   // values at different branch length values. The currently set branch lengths are
-  // scaled by a vector of size "steps" that ranges linearly from "min_scale" to
-  // "max_scale".
-  void GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double min_scale,
-                                        double max_scale);
+  // scaled by a vector of size "steps" that ranges linearly from "scale_min" to
+  // "scale_max".
+  void GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double scale_min,
+                                        double scale_max);
   // This is for tracking branch length optimization, when assuming all other branch
   // lengths are optimal. We set branch lengths for each pcsp to the default value of
   // 0.1 and then branch length and per pcsp likelihood values until the likelihood
