@@ -217,6 +217,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
     double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
 
     if (intermediate) {
+      our_ostream << "Getting intermediate values" << std::endl;
       IntermediateOptimizationValues();
     }
 
