@@ -693,35 +693,35 @@ TEST_CASE("GPInstance: test rootsplits") {
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908707617.
-TEST_CASE("GPInstance: IsValidAddNodePair") {
+TEST_CASE("GPInstance: IsValidAddNodes") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
   auto& dag = inst.GetDAG();
 
   // Nodes are not adjacent (12|34 and 2|4).
-  CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("01100", "00011"),
-                                     Bitset::Subsplit("00100", "00001")));
+  CHECK_FALSE(dag.IsValidAddNodes(
+      {Bitset::Subsplit("01100", "00011"), Bitset::Subsplit("00100", "00001")}));
   // Nodes have 5 taxa while the DAG has 4 (12|34 and 1|2).
-  CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("011000", "000110"),
-                                     Bitset::Subsplit("010000", "001000")));
+  CHECK_FALSE(dag.IsValidAddNodes(
+      {Bitset::Subsplit("011000", "000110"), Bitset::Subsplit("010000", "001000")}));
   // Parent node does not have a parent (12|3 and 1|2).
-  CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("01100", "00010"),
-                                     Bitset::Subsplit("01000", "00100")));
+  CHECK_FALSE(dag.IsValidAddNodes(
+      {Bitset::Subsplit("01100", "00010"), Bitset::Subsplit("01000", "00100")}));
   // Rotated clade of the parent node does not have a child (02|134 and
   // 1|34).
-  CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("10100", "01011"),
-                                     Bitset::Subsplit("01000", "00011")));
+  CHECK_FALSE(dag.IsValidAddNodes(
+      {Bitset::Subsplit("10100", "01011"), Bitset::Subsplit("01000", "00011")}));
   // Rotated clade of the child node does not have a child (0123|4 and
   // 023|1).
-  CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
-                                     Bitset::Subsplit("10110", "01000")));
+  CHECK_FALSE(dag.IsValidAddNodes(
+      {Bitset::Subsplit("11110", "00001"), Bitset::Subsplit("10110", "01000")}));
   // Sorted clade of the child node does not have a child (0123|4 and
   // 0|123).
-  CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
-                                     Bitset::Subsplit("10000", "01110")));
+  CHECK_FALSE(dag.IsValidAddNodes(
+      {Bitset::Subsplit("11110", "00001"), Bitset::Subsplit("10000", "01110")}));
   // Valid new node pair (0123|4 and 012|3).
-  CHECK(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
-                               Bitset::Subsplit("11100", "00010")));
+  CHECK(dag.IsValidAddNodes(
+      {Bitset::Subsplit("11110", "00001"), Bitset::Subsplit("11100", "00010")}));
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908708284.
@@ -943,54 +943,24 @@ TEST_CASE("SubsplitDAG: AddNodes and RemoveNodes") {
 
   auto inst_a = GPInstanceOfFiles(fasta_path, newick_path);
   auto& dag_a = inst_a.GetDAG();
-
   auto inst_b = GPInstanceOfFiles(fasta_path, newick_path);
   auto& dag_b = inst_b.GetDAG();
+
+  CHECK_MESSAGE(SubsplitDAG::Compare(dag_a, dag_b) == 0,
+                "DAGs are not equal before modifying DAG.");
 
   // Add node pairs to DAG one at a time, compare mappings to DAG before adding
   // nodes.
   for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
     auto mods_a = dag_a.AddNodePair(nni);
-    BitsetVector bitsets({nni.GetParent(), nni.GetChild()});
-    auto mods_b = dag_b.AddNodes(bitsets, false);
+    BitsetVector nni_subsplits = {nni.GetParent(), nni.GetChild()};
+    auto mods_b = dag_b.AddNodes(nni_subsplits, false);
 
     auto dag_compare = SubsplitDAG::Compare(dag_a, dag_b);
-    std::cout << "Compare: " << dag_compare << std::endl;
+    CHECK_MESSAGE(dag_compare == 0, "DAGs are not equal after adding NNI.");
 
     break;
   }
-}
-
-// See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908707617.
-TEST_CASE("GPInstance: IsValidAddNodes") {
-  const std::string fasta_path = "data/five_taxon.fasta";
-  auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
-  auto& dag = inst.GetDAG();
-
-  // Nodes are not adjacent (12|34 and 2|4).
-  CHECK_FALSE(dag.IsValidAddNodes(
-      {Bitset::Subsplit("01100", "00011"), Bitset::Subsplit("00100", "00001")}));
-  // Nodes have 5 taxa while the DAG has 4 (12|34 and 1|2).
-  CHECK_FALSE(dag.IsValidAddNodes(
-      {Bitset::Subsplit("011000", "000110"), Bitset::Subsplit("010000", "001000")}));
-  // Parent node does not have a parent (12|3 and 1|2).
-  CHECK_FALSE(dag.IsValidAddNodes(
-      {Bitset::Subsplit("01100", "00010"), Bitset::Subsplit("01000", "00100")}));
-  // Rotated clade of the parent node does not have a child (02|134 and
-  // 1|34).
-  CHECK_FALSE(dag.IsValidAddNodes(
-      {Bitset::Subsplit("10100", "01011"), Bitset::Subsplit("01000", "00011")}));
-  // Rotated clade of the child node does not have a child (0123|4 and
-  // 023|1).
-  CHECK_FALSE(dag.IsValidAddNodes(
-      {Bitset::Subsplit("11110", "00001"), Bitset::Subsplit("10110", "01000")}));
-  // Sorted clade of the child node does not have a child (0123|4 and
-  // 0|123).
-  CHECK_FALSE(dag.IsValidAddNodes(
-      {Bitset::Subsplit("11110", "00001"), Bitset::Subsplit("10000", "01110")}));
-  // Valid new node pair (0123|4 and 012|3).
-  CHECK(dag.IsValidAddNodes(
-      {Bitset::Subsplit("11110", "00001"), Bitset::Subsplit("11100", "00010")}));
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908707617.

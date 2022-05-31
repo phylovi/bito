@@ -67,7 +67,6 @@ int SubsplitDAG::Compare(const SubsplitDAG &lhs, const SubsplitDAG &rhs) {
   // (1) Compare Taxon Sizes.
   int taxon_diff = lhs.TaxonCount() - rhs.TaxonCount();
   if (taxon_diff != 0) {
-    // #350 let's talk about -100 vs -200 here.
     return taxon_diff;
   }
   // Create translation map (lhs->rhs) for bitset clades.
@@ -83,6 +82,9 @@ int SubsplitDAG::Compare(const SubsplitDAG &lhs, const SubsplitDAG &rhs) {
   }
   std::sort(lhs_nodes.begin(), lhs_nodes.end());
   if (lhs_nodes != rhs_nodes) {
+    // std::cout << "nodes_diff[0]: " << lhs_nodes.size() << " " << rhs_nodes.size()
+    //           << std::endl;
+    // std::cout << "nodes_diff[1]: " << lhs_nodes << " " << rhs_nodes << std::endl;
     return (lhs_nodes < rhs_nodes) ? -1 : 1;
   }
   // (3) Compare PCSP Edges.
@@ -1072,7 +1074,6 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(
     std::optional<ModificationResult> opt_mods) {
   // Check that node pair will create a valid SubsplitDAG.
   Assert(
-      // IsValidAddNodePair(parent_subsplit, child_subsplit),
       IsValidAddNodes({parent_subsplit, child_subsplit}),
       "The given pair of nodes is incompatible with DAG in SubsplitDAG::AddNodePair.");
 
@@ -1162,8 +1163,8 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
     BitsetVector &node_subsplits, const bool enforce_validity,
     std::optional<ModificationResult> opt_mods) {
   std::cout << "[BEGIN] AddNodes: " << node_subsplits << std::endl;
-  // Assert(!enforce_validity || IsValidAddNodes(node_ids),
-  //        "Adding given nodes would result in an invalid DAG.");
+  Assert(!enforce_validity || IsValidAddNodes(node_subsplits),
+         "Adding given nodes would result in an invalid DAG.");
 
   const size_t prev_node_count = NodeCount();
   const size_t prev_edge_count = EdgeCountWithLeafSubsplits();
@@ -1173,13 +1174,16 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
           ? opt_mods.value()
           : ModificationResult(NodeCount(), EdgeCountWithLeafSubsplits());
 
+  std::cout << "[MID_0]" << std::endl;
   // Put nodes to be added in sorted order.
   std::sort(node_subsplits.begin(), node_subsplits.end(),
             [](const Bitset &bitset_a, const Bitset &bitset_b) {
               return Bitset::SubsplitCompare(bitset_a, bitset_b) < 0;
             });
+
+  std::cout << "[MID_1]" << std::endl;
   // Initialize argsort wrapper for nodes
-  ArgsortVector<DAGVertex, VerticesView, VerticesView> node_argsort(
+  auto node_argsort = ArgsortVector<DAGVertex, VerticesView, VerticesView>(
       storage_.GetVertices(), Reindexer::IdentityReindexer(NodeCount()),
       [](const DAGVertex &lhs, const DAGVertex &rhs) -> bool {
         return Bitset::SubsplitCompare(lhs.GetSubsplit(), rhs.GetSubsplit()) < 0;
@@ -1190,8 +1194,9 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
       [this](VerticesView data_vector, const Reindexer &reindexer) -> void {
         RemapNodeIds(reindexer);
       });
+
   // Initialize argsort wrapper for edges.
-  // ArgsortVector<DAGLine, LinesView, LinesView> edge_argsort(
+  // auto edge_argsort = ArgsortVector<DAGLine, LinesView, LinesView> (
   //     storage_.GetLines(),
   //     Reindexer::IdentityReindexer(EdgeCountWithLeafSubsplits()),
   //     [](const DAGLine lhs, const DAGLine rhs) -> bool {
@@ -1206,15 +1211,17 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
   //     [this](LinesView data_vector, const Reindexer &reindexer) -> void {
   //       RemapEdgeIdxs(reindexer);
   //     });
-
+  std::cout << "[MID_2]" << std::endl;
   for (size_t i = 0; i < node_subsplits.size(); i++) {
     const auto &node_subsplit = node_subsplits[i];
     if (!ContainsNode(node_subsplit)) {
       const auto node_id = CreateAndInsertNode(node_subsplit);
       mods.added_node_ids.push_back(node_id);
 
+      std::cout << "[CONNECT_0]" << std::endl;
       ConnectNodeToAllDirectedNeighbors<Direction::Rootward>(node_subsplit,
                                                              mods.added_edge_idxs);
+      std::cout << "[CONNECT_1]" << std::endl;
       ConnectNodeToAllDirectedNeighbors<Direction::Leafward>(node_subsplit,
                                                              mods.added_edge_idxs);
     } else {
@@ -1224,6 +1231,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
     }
   }
 
+  std::cout << "[HOST_0]" << std::endl;
   // If SubsplitDAG does not have a graft.
   if (!storage_.HaveHost()) {
     // Create reindexers.
@@ -1231,17 +1239,17 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
     mods.node_reindexer = node_reindexer;
     Reindexer edge_reindexer = BuildEdgeReindexer(prev_edge_count);
     mods.edge_reindexer = edge_reindexer;
-    // Update the ids in added_node_ids and added_edge_idxs according to the reindexers.
-    Reindexer::RemapIdVector(mods.added_node_ids, node_reindexer);
-    Reindexer::RemapIdVector(mods.added_edge_idxs, edge_reindexer);
-    // Update fields in the Subsplit DAG according to the reindexers.
-    RemapNodeIds(node_reindexer);
-    RemapEdgeIdxs(edge_reindexer);
+    // // Update the ids in added_node_ids and added_edge_idxs according to the
+    // reindexers. Reindexer::RemapIdVector(mods.added_node_ids, node_reindexer);
+    // Reindexer::RemapIdVector(mods.added_edge_idxs, edge_reindexer);
+    // // Update fields in the Subsplit DAG according to the reindexers.
+    // RemapNodeIds(node_reindexer);
+    // RemapEdgeIdxs(edge_reindexer);
     // Recount topologies.
-    CountTopologies();
+    // CountTopologies();
   }
 
-  std::cout << "[END] AddNodes: " << node_subsplits << std::endl;
+  // std::cout << "[END] AddNodes: " << node_subsplits << std::endl;
   return mods;
 }
 
@@ -1372,59 +1380,6 @@ bool SubsplitDAG::IsTopologicallySorted() const {
         }
       }
     }
-  }
-  return true;
-}
-
-bool SubsplitDAG::IsValidAddNodePair(const Bitset &parent_subsplit,
-                                     const Bitset &child_subsplit) const {
-  // Get the number of adjacent nodes in the given direction.
-  auto GetNodeCounts = [this](const Bitset &subsplit, const bool is_rootward) {
-    const auto [left, right] =
-        is_rootward ? BuildParentIdVectors(subsplit) : BuildChildIdVectors(subsplit);
-    SizePair sides = {left.size(), right.size()};
-    return sides;
-  };
-  // Get all adjacent nodes, not including parent and child.
-  auto [left_rootward_of_parent, right_rootward_of_parent] =
-      GetNodeCounts(parent_subsplit, true);
-  auto [left_leafward_of_parent, right_leafward_of_parent] =
-      GetNodeCounts(parent_subsplit, false);
-  auto [left_leafward_of_child, right_leafward_of_child] =
-      GetNodeCounts(child_subsplit, false);
-  // Add child to parent's adjacent nodes.
-  const bool is_left_child = child_subsplit.SubsplitIsLeftChildOf(parent_subsplit);
-  if (is_left_child) {
-    left_leafward_of_parent++;
-  } else {
-    right_leafward_of_parent++;
-  }
-
-  // (1) Added nodes are parent/child pair.
-  if (Bitset::SubsplitIsParentChildPair(parent_subsplit, child_subsplit) == false) {
-    return false;
-  }
-  // (2) Nodes do not add or remove taxa.
-  if ((parent_subsplit.size() != 2 * taxon_count_) ||
-      (child_subsplit.size() != 2 * taxon_count_)) {
-    return false;
-  }
-  // (3) The parent node has at least one parent, and at least one left and right
-  // child (including the added child node).
-  const bool parent_has_parent =
-      (left_rootward_of_parent > 0) || (right_rootward_of_parent > 0);
-  const bool parent_has_children =
-      (left_leafward_of_parent > 0) && (right_leafward_of_parent > 0);
-  if ((parent_has_parent && parent_has_children) == false) {
-    return false;
-  }
-  // (4) The child node has at least one parent, and at least one rotated and sorted
-  // child.
-  // (* we know child node has a parent node, so only need to check children)
-  const bool child_has_children =
-      (left_leafward_of_child > 0) && (right_leafward_of_child > 0);
-  if (child_has_children == false) {
-    return false;
   }
   return true;
 }

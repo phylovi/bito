@@ -428,15 +428,9 @@ class SubsplitDAG {
   // Spdcifically, checks that:
   // - Each node's child nodes have a smaller ID.
   bool IsTopologicallySorted() const;
-  // Check if it is valid to add given node pair.
+  // Check if operation will result in a valid SubsplitDAG.
   // Specifically, check that:
-  // - The nodes are adjacent.
-  // - The nodes do not add/remove any taxa.
-  // - The parent node has at least one parent.
-  // - Including the child node, each clade of the parent node has at least one child.
-  // - Each clade of the child node has at least 1 child.
-  bool IsValidAddNodePair(const Bitset &parent_subsplit,
-                          const Bitset &child_subsplit) const;
+  // - Resulting nodes will have
   bool IsValidAddNodes(const BitsetVector &node_subsplit) const;
   bool IsValidRemoveNodes(const SizeVector &node_ids) const;
   // Check if the taxon map is valid. Specifically, check that:

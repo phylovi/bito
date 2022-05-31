@@ -325,6 +325,8 @@ TEST_CASE("ArgsortVector") {
   argsort.SortedInsert(append_strings);
   CHECK_MESSAGE(golden_strings != argsort.GetDataVector(), "TEST_4 failed.");
   CHECK_MESSAGE(golden_strings == argsort.BuildSortedDataVector(), "TEST_4 failed.");
+
+  // TEST_5: Single delete.
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
