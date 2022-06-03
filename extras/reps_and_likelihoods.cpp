@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
   std::vector<std::string> extra_out_paths;
   for (int arg_index = 5; arg_index < argc; arg_index+=2) {
     extra_nwk_paths.push_back(argv[arg_index]);
-    extra_out_paths.push_back(argv[arg_index+1]);
+    extra_out_paths.push_back(argv[arg_index + 1]);
   }
   const auto extras_count = extra_nwk_paths.size();
   auto thread_count = std::thread::hardware_concurrency();
@@ -34,18 +34,17 @@ int main(int argc, char *argv[]) {
   all_trees_gp_inst.MakeEngine();
   all_trees_gp_inst.TakeFirstBranchLength();
   std::vector<RootedSBNInstance> extra_r_insts;
-  for (size_t i=0; i<extras_count; i++) {
-    extra_r_insts.push_back( RootedSBNInstance("extra_trees"+std::to_string(i)) );
+  for (size_t i = 0; i < extras_count; i++) {
+    extra_r_insts.push_back(RootedSBNInstance("extra_trees" + std::to_string(i)));
     extra_r_insts.at(i).ReadNewickFile(extra_nwk_paths.at(i));
   }
 
   const auto taxa_order = all_trees_gp_inst.GetTaxonNames();
   for (const auto &r_inst : extra_r_insts) {
-    if (r_inst.tree_collection_.TaxonNames() != taxa_order)
-    {
-    std::cout << "The first tree of each newick file must have the taxa appearing in "
-      << "the same order. Insert a dummy tree if needed." << std::endl;
-    abort();
+    if (r_inst.tree_collection_.TaxonNames() != taxa_order) {
+      std::cout << "The first tree of each newick file must have the taxa appearing in "
+                << "the same order. Insert a dummy tree if needed." << std::endl;
+      abort();
     }
   }
 
@@ -62,11 +61,10 @@ int main(int argc, char *argv[]) {
   WriteTreesToFile(out_path, all_representations, log_likelihoods);
   WriteNewickToFile(nwk_out_path, all_trees);
   
-  for (size_t i=0; i<extras_count; i++) {
+  for (size_t i = 0; i < extras_count; i++) {
     WriteTreesToFile(
-      extra_out_paths.at(i),
-      GetIndexerRepresentations( extra_r_insts.at(i).tree_collection_, indexer ) 
-    ); 
+        extra_out_paths.at(i),
+        GetIndexerRepresentations(extra_r_insts.at(i).tree_collection_, indexer));
   }
 }
 
