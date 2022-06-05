@@ -280,6 +280,7 @@ class GPEngine {
   double step_size_for_log_space_optimization_ = 1.0005;
   // Number of iterations allowed for branch length optimization.
   size_t max_iter_for_optimization_ = 1000;
+  double branch_length_difference_threshold_ = 1e-15;
 
   // Descriptor containing all taxa and sequence alignments.
   SitePattern site_pattern_;

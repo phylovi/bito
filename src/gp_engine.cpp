@@ -685,7 +685,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
     return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   };
 
-  if (branch_length_differences_(op.gpcsp_) < 1e-15) {
+  if (branch_length_differences_(op.gpcsp_) < branch_length_difference_threshold_) {
     return;
   }
 
@@ -718,7 +718,7 @@ void GPEngine::BrentOptimizationWithGradient(
     return std::make_pair(-log_likelihood, -branch_length * log_likelihood_derivative);
   };
 
-  if (branch_length_differences_(op.gpcsp_) < 1e-15) {
+  if (branch_length_differences_(op.gpcsp_) < branch_length_difference_threshold_) {
     return;
   }
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
@@ -751,7 +751,6 @@ void GPEngine::GradientAscentOptimization(
   branch_lengths_(op.gpcsp_) = branch_length;
 }
 
-// Fixes log-space branch length gradient ascient optimization
 void GPEngine::LogSpaceGradientAscentOptimization(
     const GPOperations::OptimizeBranchLength& op) {
   auto log_likelihood_and_derivative = [this, &op](double branch_length) {
@@ -778,7 +777,7 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
     return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
   };
 
-  if (branch_length_differences_(op.gpcsp_) < 1e-15) {
+  if (branch_length_differences_(op.gpcsp_) < branch_length_difference_threshold_) {
     return;
   }
 
