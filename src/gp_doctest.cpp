@@ -297,7 +297,7 @@ double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
 
 TEST_CASE("GPInstance: Gradient-based optimization with Newton's Method") {
   double nongradient_length = ObtainBranchLengthWithOptimization(
-      GPEngine::OptimizationMethod::DefaultNongradientOptimization);
+      GPEngine::OptimizationMethod::BrentOptimization);
   double gradient_length = ObtainBranchLengthWithOptimization(
       GPEngine::OptimizationMethod::NewtonOptimization);
 

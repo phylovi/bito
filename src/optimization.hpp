@@ -15,7 +15,7 @@ namespace Optimization {
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
 std::tuple<T, T> BrentMinimize(F f, T guess, T min, T max, int significant_digits,
-                               size_t max_iter, bool use_gradients) {
+                               size_t max_iter) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point

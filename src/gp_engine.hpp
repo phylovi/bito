@@ -60,9 +60,8 @@ class GPEngine {
 
   // Options for optimization method.
   enum class OptimizationMethod {
-    DefaultGradientOptimization,
-    DefaultNongradientOptimization,
     BrentOptimization,
+    BrentOptimizationWithGradients,
     GradientAscentOptimization,
     LogSpaceGradientAscentOptimization,
     NewtonOptimization
@@ -220,7 +219,7 @@ class GPEngine {
   void Optimization(const GPOperations::OptimizeBranchLength& op,
                     std::optional<OptimizationMethod> os);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
-  void BrentOptimizationWithGradient(const GPOperations::OptimizeBranchLength& op);
+  void BrentOptimizationWithGradients(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void NewtonOptimization(const GPOperations::OptimizeBranchLength& op);

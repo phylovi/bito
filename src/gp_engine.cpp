@@ -43,8 +43,8 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
   quartet_r_sorted_plv_ = quartet_root_plv_;
 
   optimization_method_ =
-      (use_gradients ? OptimizationMethod::DefaultGradientOptimization
-                     : OptimizationMethod::DefaultNongradientOptimization);
+      (use_gradients ? OptimizationMethod::BrentOptimizationWithGradients
+                     : OptimizationMethod::BrentOptimization);
 }
 
 void GPEngine::InitializePriors(EigenVectorXd sbn_prior,
@@ -655,14 +655,10 @@ void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
          "GPEngine::Optimization(): Optimization method has not been set.");
 
   switch (os.value()) {
-    // default methods
-    case OptimizationMethod::DefaultGradientOptimization:
-      return BrentOptimizationWithGradient(op);
-    case OptimizationMethod::DefaultNongradientOptimization:
-      return BrentOptimization(op);
-    // explicit methods
     case OptimizationMethod::BrentOptimization:
       return BrentOptimization(op);
+    case OptimizationMethod::BrentOptimizationWithGradients:
+      return BrentOptimizationWithGradients(op);
     case OptimizationMethod::GradientAscentOptimization:
       return GradientAscentOptimization(op);
     case OptimizationMethod::LogSpaceGradientAscentOptimization:
@@ -708,7 +704,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
       abs(exp(current_log_branch_length) - branch_lengths_(op.gpcsp_));
 }
 
-void GPEngine::BrentOptimizationWithGradient(
+void GPEngine::BrentOptimizationWithGradients(
     const GPOperations::OptimizeBranchLength& op) {
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
     double branch_length = exp(log_branch_length);
