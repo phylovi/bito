@@ -646,8 +646,10 @@ PYBIND11_MODULE(bito, m) {
       .def("get_perpcsp_llh_surface", &GPInstance::GetPerGPCSPLogLikelihoodSurfaces,
            "Scan the likelihood surface for the pcsps in the GPInstance.",
            py::arg("steps"), py::arg("scale_min"), py::arg("scale_max"))
-      .def("track_optimization_values", &GPInstance::TrackValuesFromOptimization,
-           "Reinitiate optimization and track branch length and per pcsp likelihoods/")
+      .def("perturb_and_track_optimization_values",
+           &GPInstance::PerturbAndTrackValuesFromOptimization,
+           "Reinitiate optimization, perturbing one branch length at a time,  and "
+           "track branch length and per pcsp likelihoods/")
 
       // ** NNI Engine
       .def("make_nni_engine", &GPInstance::MakeNNIEngine,

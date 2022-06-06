@@ -9,8 +9,10 @@
 #include "site_pattern.hpp"
 #include "nni_engine.hpp"
 
-// New typedef
-using StringEigenVectorXdVector = std::vector<std::pair<std::string, EigenVectorXd>>;
+// New typedef used for storing/outputting intermediate or perturbed+tracked values
+// from branch length estimation.
+using VectorOfStringAndEigenVectorXdPairs =
+    std::vector<std::pair<std::string, EigenVectorXd>>;
 
 class GPInstance {
  public:
@@ -47,7 +49,7 @@ class GPInstance {
   void TakeFirstBranchLength();
   void EstimateSBNParameters();
   void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false,
-                             bool intermediate = false);
+                             bool track_intermediate_iterations = false);
   void PopulatePLVs();
   void ComputeLikelihoods();
   void ComputeMarginalLikelihood();
@@ -59,11 +61,12 @@ class GPInstance {
   // "scale_max".
   void GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double scale_min,
                                         double scale_max);
-  // This is for tracking branch length optimization, when assuming all other branch
-  // lengths are optimal. We set branch lengths for each pcsp to the default value of
-  // 0.1 and then branch length and per pcsp likelihood values until the likelihood
-  // converges to the optimal value or the number of DAG traversals exceeds 5.
-  void TrackValuesFromOptimization();
+  // This is for tracking branch length optimization following perturbation of a single
+  // branch length, when assuming all other branch lengths are optimal. We perturb
+  // branch lengths for each pcsp to the default value of 0.1 and then track branch
+  // length and per pcsp likelihood values until the likelihood converges to the optimal
+  // value or the number of DAG traversals exceeds 5.
+  void PerturbAndTrackValuesFromOptimization();
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
 
   // #348: A lot of code duplication here with things in SBNInstance.
@@ -74,9 +77,9 @@ class GPInstance {
   StringDoubleVector PrettyIndexedPerGPCSPLogLikelihoods();
   StringDoubleVector PrettyIndexedPerGPCSPComponentsOfFullLogMarginal();
 
-  StringEigenVectorXdVector PrettyIndexedIntermediateBranchLengths();
-  StringEigenVectorXdVector PrettyIndexedIntermediatePerGPCSPLogLikelihoods();
-  StringEigenVectorXdVector PrettyIndexedPerGPCSPLogLikelihoodSurfaces();
+  VectorOfStringAndEigenVectorXdPairs PrettyIndexedIntermediateBranchLengths();
+  VectorOfStringAndEigenVectorXdPairs PrettyIndexedIntermediatePerGPCSPLogLikelihoods();
+  VectorOfStringAndEigenVectorXdPairs PrettyIndexedPerGPCSPLogLikelihoodSurfaces();
 
   void SBNParametersToCSV(const std::string &file_path);
   void SBNPriorToCSV(const std::string &file_path);
@@ -129,9 +132,8 @@ class GPInstance {
   void CheckSequencesLoaded() const;
   void CheckTreesLoaded() const;
 
-  // Method for calculating and storing the intermediate per pcsp branch length and
-  // likelihood values during branch length estimation, so that they can be output to
-  // CSV.
+  // Calculate and store the intermediate per pcsp branch length and likelihood values
+  // during branch length estimation, so that they can be output to CSV.
   void IntermediateOptimizationValues();
 
   size_t GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
@@ -139,9 +141,10 @@ class GPInstance {
   RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
       Node::NodePtrVec &&topologies) const;
   StringDoubleVector PrettyIndexedVector(EigenConstVectorXdRef v);
-  StringEigenVectorXdVector PrettyIndexedMatrix(EigenConstMatrixXdRef m);
-  void PerPCSPIndexedMatrixToCSV(StringEigenVectorXdVector per_pcsp_indexed_matrix,
-                                 const std::string &file_path);
+  VectorOfStringAndEigenVectorXdPairs PrettyIndexedMatrix(EigenConstMatrixXdRef m);
+  void PerPCSPIndexedMatrixToCSV(
+      VectorOfStringAndEigenVectorXdPairs per_pcsp_indexed_matrix,
+      const std::string &file_path);
 
   std::string mmap_file_path_;
   Alignment alignment_;
@@ -154,11 +157,17 @@ class GPInstance {
   bool use_gradients_;
   GPEngine::OptimizationMethod optimization_method_;
 
-  // For optimization tracking
-  StringEigenVectorXdVector tracked_values_after_full_dag_traversal_;
+  // For storing intermediate optimization branch length and per pcsp log
+  // likelihood values. Only used if track_intermediate_iterations in
+  // EstimateBranchLengths is true.
   EigenMatrixXd per_pcsp_branch_lengths_ = EigenMatrixXd(gpcsp_count_, 1);
-  EigenMatrixXd per_pcsp_marg_lik_ = EigenMatrixXd(gpcsp_count_, 1);
+  EigenMatrixXd per_pcsp_log_lik_ = EigenMatrixXd(gpcsp_count_, 1);
+  // For storing branch length and log likelihood values when finding the log likelihood
+  // surface for each pcsp
   EigenMatrixXd per_pcsp_lik_surfaces_;
+  // For storing outputs after perturbing and then tracking branch length and per pcsp
+  // log likelihoods
+  VectorOfStringAndEigenVectorXdPairs tracked_values_after_perturbing_;
 
   std::unique_ptr<NNIEngine> nni_engine_;
 };

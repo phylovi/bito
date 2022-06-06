@@ -15,7 +15,7 @@ namespace Optimization {
 // Copied from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <class F, class T>
 std::tuple<T, T> BrentMinimize(F f, T guess, T min, T max, int significant_digits,
-                               size_t max_iter) {
+                               size_t max_iter, bool use_gradients) {
   T tolerance = static_cast<T>(ldexp(1.0, 1 - significant_digits));
   T x;               // minima so far
   T w;               // second best point
@@ -218,10 +218,6 @@ std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
             : (delta > 0 ? T(x + fabs(fract1)) : T(x - fabs(fract1)));
     fu = f(u).first;
 
-    // Considering update using gradient descent:
-    u_ = x - step_size * f_prime_x;
-    fu_ = f(u_).first;
-
     if (fu <= fx) {
       // good new point is an improvement!
       // update brackets (previous guess becomes the new outer bracket):
@@ -236,40 +232,44 @@ std::tuple<T, T> BrentMinimizeWithGradient(F f, T guess, T min, T max,
       fv = fw;
       fw = fx;
       fx = fu;
-    } else if (fu_ <= fx) {
-      // good new point using gradient is an improvement!
-      // update brackets (previous guess becomes the new outer bracket):
-      if (u_ >= x)
-        min = x;
-      else
-        max = x;
-      // update control points:
-      v = w;
-      w = x;
-      x = u_;
-      fv = fw;
-      fw = fx;
-      fx = fu_;
     } else {
-      // Oh dear, point u is worse than what we have already,
-      // even so it *must* be better than one of our endpoints:
-      if (u < x)
-        min = u;
-      else
-        max = u;
-      if ((fu <= fw) || (w == x)) {
-        // however it is at least second best:
+      // Considering update using gradient descent
+      u_ = x - step_size * f_prime_x;
+      fu_ = f(u_).first;
+      if (fu_ <= fx) {
+        // good new point using gradient is an improvement!
+        // update brackets (previous guess becomes the new outer bracket):
+        if (u_ >= x)
+          min = x;
+        else
+          max = x;
+        // update control points:
         v = w;
-        w = u;
+        w = x;
+        x = u_;
         fv = fw;
-        fw = fu;
-      } else if ((fu <= fv) || (v == x) || (v == w)) {
-        // third best:
-        v = u;
-        fv = fu;
+        fw = fx;
+        fx = fu_;
+      } else {
+        // Oh dear, point u is worse than what we have already,
+        // even so it *must* be better than one of our endpoints:
+        if (u < x)
+          min = u;
+        else
+          max = u;
+        if ((fu <= fw) || (w == x)) {
+          // however it is at least second best:
+          v = w;
+          w = u;
+          fv = fw;
+          fw = fu;
+        } else if ((fu <= fv) || (v == x) || (v == w)) {
+          // third best:
+          v = u;
+          fv = fu;
+        }
       }
     }
-
   } while (--count);  // countdown until max iterations.
 
   max_iter -= count;
