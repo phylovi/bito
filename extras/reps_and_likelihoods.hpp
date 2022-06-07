@@ -19,9 +19,8 @@
 std::vector<RootedIndexerRepresentation> GetIndexerRepresentations(
     PreRootedTreeCollection &trees, BitsetSizeMap &indexer);
 
-void WriteTreesToFile(const std::string &out_path, 
+void WriteTreesToFile(const std::string &out_path,
                       const std::vector<RootedIndexerRepresentation> &representations,
                       const std::vector<double> &log_likelihoods = {});
-
 
 void WriteNewickToFile(const std::string &out_path, const RootedTreeCollection &trees);
