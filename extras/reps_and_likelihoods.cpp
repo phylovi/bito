@@ -6,9 +6,9 @@
 #include "reps_and_likelihoods.hpp"
 
 int main(int argc, char *argv[]) {
-  if (argc <= 3 || argc % 2 != 0) {
-    std::cout << "We need at least 3 arguments: fasta, rooted_nwk, and repr_out_path."
-              << std::endl
+  if (argc <= 4 || argc % 2 != 1) {
+    std::cout << "We need at least 4 arguments: fasta, rooted_nwk, repr_out_path, "
+              << "and nwk_out_path." << std::endl
               << "Additional arguments must come in pairs: extra_rooted_nwk, "
               << "extra_repr_out_path." << std::endl;
     abort();
@@ -16,9 +16,10 @@ int main(int argc, char *argv[]) {
   std::string fasta_path = argv[1];
   std::string rooted_nwk_path = argv[2];
   std::string out_path = argv[3];
+  std::string nwk_out_path = argv[4];
   std::vector<std::string> extra_nwk_paths;
   std::vector<std::string> extra_out_paths;
-  for (int arg_index = 4; arg_index < argc; arg_index += 2) {
+  for (int arg_index = 5; arg_index < argc; arg_index += 2) {
     extra_nwk_paths.push_back(argv[arg_index]);
     extra_out_paths.push_back(argv[arg_index + 1]);
   }
@@ -56,6 +57,7 @@ int main(int argc, char *argv[]) {
                                     all_trees.TreeCount());
   const auto log_likelihoods = ur_inst.UnrootedLogLikelihoods(all_trees);
   WriteTreesToFile(out_path, all_representations, log_likelihoods);
+  WriteNewickToFile(nwk_out_path, all_trees);
 
   for (size_t i = 0; i < extras_count; i++) {
     WriteTreesToFile(
@@ -88,6 +90,15 @@ void WriteTreesToFile(const std::string &out_path,
       out_stream << log_likelihoods.at(which_tree);
     }
     out_stream << "\n";
+  }
+  out_stream.close();
+}
+
+void WriteNewickToFile(const std::string &out_path, const RootedTreeCollection &trees) {
+  const auto node_labels = trees.TagTaxonMap();
+  std::ofstream out_stream(out_path);
+  for (const auto &tree : trees.Trees()) {
+    out_stream << tree.NewickTopology(node_labels) << std::endl;
   }
   out_stream.close();
 }

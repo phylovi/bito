@@ -561,8 +561,6 @@ PYBIND11_MODULE(bito, m) {
       .def("dag_summary_statistics", &GPInstance::DAGSummaryStatistics,
            "Return summary statistics about the DAG.")
       .def("make_dag", &GPInstance::MakeDAG, "Build subsplit DAG.")
-      .def("get_dag", &GPInstance::GetDAG, py::return_value_policy::reference,
-           "Get subsplit DAG.")
       .def("print_dag", &GPInstance::PrintDAG, "Print the subsplit DAG.")
 
       // ** I/O
@@ -626,53 +624,18 @@ PYBIND11_MODULE(bito, m) {
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.", py::arg("tol"),
            py::arg("max_iter"), py::arg("quiet") = false)
+
+      // ** NNI Engine
       .def("make_nni_engine", &GPInstance::MakeNNIEngine,
            R"raw(Initialize NNI Engine.)raw")
-      .def("get_nni_engine", &GPInstance::GetNNIEngine,
-           py::return_value_policy::reference, R"raw(Get Reference to NNI Engine.)raw");
-
-  // CLASS
-  // GPDAG
-  py::class_<GPDAG> gp_dag_class(m, "gp_dag", R"raw(SubsplitDAG for GPInstance.)raw");
-  gp_dag_class.def("get_node_count", &SubsplitDAG::NodeCount, "Number of nodes in DAG.")
-      .def("get_edge_count", &SubsplitDAG::EdgeCountWithLeafSubsplits,
-           "Number of edges in DAG.");
-
-  // CLASS
-  // NNI Engine
-  py::class_<NNIEngine> nni_engine_class(
-      m, "nni_engine",
-      R"raw(NNI Engine for a performing a systematic search on GPInstance.)raw");
-  nni_engine_class
-      .def("get_adjacent_nni_count", &NNIEngine::GetAdjacentNNICount,
-           R"raw(Get number of adjacent NNIs in current DAG.)raw")
-      .def("get_accepted_nni_count", &NNIEngine::GetAcceptedNNICount,
-           R"raw(Get number of accepted NNIs during current search.)raw")
-      .def("get_past_accepted_nni_count", &NNIEngine::GetAcceptedNNICount,
-           R"raw(Get number of past accepted NNIs during current search.)raw")
-      .def("get_rejected_nni_count", &NNIEngine::GetRejectedNNICount,
-           R"raw(Get number of rejected NNIs during current search.)raw")
-      .def("get_past_rejected_nni_count", &NNIEngine::GetRejectedNNICount,
-           R"raw(Get number of past rejected NNIs during current search.)raw")
-      .def("sync_adjacent_nnis_with_dag", &NNIEngine::SyncAdjacentNNIsWithDAG,
-           R"raw(Find all adjacent NNIs of DAG.)raw")
-      .def("run", &NNIEngine::Run,
-           R"raw(Run NNI search until no more NNIs are accepted.)raw")
-      .def("run_init", &NNIEngine::RunInit,
-           R"raw(Run initialization step of NNI search.)raw")
-      .def("run_main_loop", &NNIEngine::RunMainLoop,
-           R"raw(Run single iteration of main loop step of NNI search.)raw")
-      .def("run_post_loop", &NNIEngine::RunPostLoop,
-           R"raw(Run single iteration of post loop step of NNI search.)raw")
       .def(
-          "set_filtering_none", &NNIEngine::SetFilteringNone,
-          R"raw(Set filtering scheme to filter none, and accept all proposed NNIs.)raw")
+          "sync_adjacent_nnis_with_dag",
+          [](GPInstance &self) { self.GetNNIEngine().SyncAdjacentNNIsWithDAG(); },
+          R"raw(Find all adjacent NNIs of DAG.)raw")
       .def(
-          "set_filtering_loss_threshold", &NNIEngine::SetFilteringLossThreshold,
-          R"raw(Set filtering scheme to accept Post-NNIs which have a loss of likelihood relative to its Pre-NNI less than the loss_tolerance.)raw")
-      .def(
-          "set_filtering_cutoff_threshold", &NNIEngine::SetFilteringCutoffThreshold,
-          R"raw(Set filtering scheme to accept all NNIs above given cutoff threshold.)raw");
+          "adjacent_nni_count",
+          [](GPInstance &self) { self.GetNNIEngine().GetAdjacentNNICount(); },
+          R"raw(Get number of adjacent NNIs to current DAG.)raw");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:

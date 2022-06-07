@@ -30,62 +30,32 @@ class NNIEngine {
   // Constructors:
   NNIEngine(GPDAG &dag, GPEngine &gp_engine);
 
-  // ** Access
+  // ** Getters
 
   // Get Reference of DAG.
-  const GPDAG &GetGPDAG() const { return dag_; }
+  const GPDAG &GetGPDAG() const { return dag_; };
   // Get Reference of GraftDAG.
-  GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); }
+  GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); };
   // Get Reference of GPEngine.
   const GPEngine &GetGPEngine() const { return gp_engine_; }
   // Get Adjacent NNIs to DAG.
-  const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; }
+  const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; };
   // Get Number of Adjacent NNIs.
-  size_t GetAdjacentNNICount() const { return adjacent_nnis_.size(); }
+  size_t GetAdjacentNNICount() const { return adjacent_nnis_.size(); };
   // Get NNIs that have been accepted into the DAG on current pass.
-  const NNISet &GetAcceptedNNIs() const { return accepted_nnis_; }
-  // Get Number of Accepted NNIs.
-  size_t GetAcceptedNNICount() const { return accepted_nnis_.size(); }
+  const NNISet &GetAcceptedNNIs() const { return accepted_nnis_; };
   // Get all past NNIs that have been accepted into the DAG during run.
-  const NNISet &GetPastAcceptedNNIs() const { return accepted_past_nnis_; }
-  // Get Number of Past Accepted NNIs.
-  size_t GetPastAcceptedNNICount() const { return accepted_past_nnis_.size(); }
+  const NNISet &GetPastAcceptedNNIs() const { return accepted_past_nnis_; };
   // Get NNIs that have been rejected from the DAG on current pass.
-  const NNISet &GetRejectedNNIs() const { return rejected_nnis_; }
-  // Get Number of Rejected NNIs.
-  size_t GetRejectedNNICount() const { return rejected_nnis_.size(); }
+  const NNISet &GetRejectedNNIs() const { return rejected_nnis_; };
   // Get all past NNIs that have been rejected from the DAG during run.
-  const NNISet &GetPastRejectedNNIs() const { return rejected_past_nnis_; }
-  // Get Number of Past Rejected NNIs.
-  size_t GetPastRejectedNNICount() const { return rejected_past_nnis_.size(); }
+  const NNISet &GetPastRejectedNNIs() const { return rejected_past_nnis_; };
+  // Get Number of Accepted NNIs during the current pass.
+  size_t GetAcceptedNNICount() const { return accepted_nnis_.size(); };
   // Get Map of proposed NNIs with their score.
-  const NNIDoubleMap &GetScoredNNIs() const { return scored_nnis_; }
-  // Get number of iterations of NNI engine.
-  size_t GetSweepCount() const { return sweep_count_; }
-  // Get DAG likelihoods.
-  const EigenVectorXd &GetDAGLikelihoods() const { return *dag_likelihoods_; }
-  // Get DAG likelihoods for
-  double GetDAGEdgeLikelihood(const size_t edge_idx) const {
-    const auto &dag_likelihoods = GetDAGLikelihoods();
-    Assert(edge_idx < size_t(dag_likelihoods.size()),
-           "Requested likelihood for edge index is out-of-range.");
-    return dag_likelihoods[edge_idx];
-  }
-
-  // ** Setters
-
-  // Set whether to track accepted past NNIs.
-  void SetKeepAcceptedNNIs(const bool keep_accepted_past_nnis) {
-    keep_accepted_past_nnis_ = keep_accepted_past_nnis;
-  }
-  // Set whether to track rejected past NNIs.
-  void SetKeepRejectedNNIs(const bool keep_rejected_past_nnis) {
-    keep_rejected_past_nnis_ = keep_rejected_past_nnis;
-  }
-  // Set whether to re-evalute rejected past NNIs.
-  void SetReevaluateRejecteddNNIs(const bool reevaluate_rejected_nnis) {
-    reevaluate_rejected_nnis_ = reevaluate_rejected_nnis;
-  }
+  const NNIDoubleMap &GetScoredNNIs() const { return scored_nnis_; };
+  // Get number of runs of NNI engine.
+  size_t GetSweepCount() const { return sweep_count_; };
 
   // ** Runners
   // These start the engine, which procedurally ranks and adds (and maybe removes) NNIs
@@ -95,70 +65,36 @@ class NNIEngine {
   void Run();
   // Runner subroutines.
   void RunInit();
-  // Graft Adjacent NNIs to GraftDAG. Evaluate and Accept or Reject Adjacent NNIs.
   void RunMainLoop();
-  // Remove Graft and add Accepted NNIs to HostDAG. Update Adjacent NNIs to account for
-  // new Accepted NNIs.  Update Accepted and Rejected NNI lists.
   void RunPostLoop();
 
-  // ** Runner Subroutines
+  // ** Filter Functions
 
-  // Initialize filter before first NNI sweep.
-  void FilterInit();
-  // Update filter parameters for each NNI sweep (before evaluation).
-  void FilterPreUpdate();
-  // Apply the filtering method to determine whether each Adjacent NNI will be added
-  // to Accepted NNI or Rejected NNI.
-  void FilterProcessAdjacentNNIs();
-  // Update filter parameters for each NNI sweep (after evaluation).
-  void FilterPostUpdate();
-
-  // ** Static Filter Functions
-
-  // Initialization step for filter before beginning engine run.
+  // Initialization step for filter before beginning
   using StaticFilterInitFunction =
       std::function<void(NNIEngine &, GPEngine &, GraftDAG &)>;
   // Update step for any filter computation work to be done at start of each sweep.
   using StaticFilterUpdateFunction =
       std::function<void(NNIEngine &, GPEngine &, GraftDAG &)>;
+  // Function template for computational evaluation to be performed on an adjacent NNI.
+  using StaticFilterEvaluateFunction =
+      std::function<double(NNIEngine &, GPEngine &, GraftDAG &, const NNIOperation &)>;
   // Function template for processing an adjacent NNI to be accepted or rejected.
   using StaticFilterProcessFunction =
       std::function<bool(NNIEngine &, GPEngine &, GraftDAG &, const NNIOperation &)>;
 
-  // This StaticFilterInitFunction does nothing.
-  static void NoInit(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                     GraftDAG &this_graft_dag);
-  // This StaticFilterUpdateFunction does nothing.
-  static void NoUpdate(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                       GraftDAG &this_graft_dag);
-  // This StaticFilterProcessFunction accepts all or rejects all NNIs, according to
-  // templated parameter.
-  template <bool accept = true>
+  // StaticFilterEvaluateFunction: dummy function that assigns all score of 0.0.
+  static double NoEvaluate(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                           GraftDAG &this_graft_dag, const NNIOperation &nni);
+  // StaticFilterProcessFunction: dummy function that accepts all NNIs.
   static bool NoFilter(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                       GraftDAG &this_graft_dag, const NNIOperation &nni) {
-    return accept;
-  }
-  // This StaticFilterProcessFunction is for Hill-climbing, only accepting a proposed
-  // NNI if it has an improved likelihood over Pre-NNI.
-  static bool FilterPostNNIBetterThanPreNNI(NNIEngine &this_nni_engine,
-                                            GPEngine &this_gp_engine,
-                                            GraftDAG &this_graft_dag,
-                                            const NNIOperation &nni);
-  // This StaticFilterUpdateFunction computes likelihood for all proposed NNIs.
-  static void UpdateScoreAdjacentNNIsByLikelihood(NNIEngine &this_nni_engine,
-                                                  GPEngine &this_gp_engine,
-                                                  GraftDAG &this_graft_dag);
-
-  // Finds best Pre-NNI likelihood in DAG for given NNI in HostDAG.  For use in
-  // hill-climbing filtering scheme.
-  // - NOTE: For any proposed NNI in the GraftDAG, there are two possible NNIs which
-  // could have produced it, depending on which child clade is swapped with the parent
-  // sister clade.  One or both of those Pre-NNIs could be present in the HostDAG.  This
-  // function checks for both, and if both are present, selects the one with the highest
-  // likelihood.
-  double GetBestPreNNILikelihood(const NNIOperation &nni);
-  // Get Post-NNI likelihood for proposed NNI in GraftDAG.
-  double GetPostNNILikelihood(const NNIOperation &nni);
+                       GraftDAG &this_graft_dag, const NNIOperation &nni);
+  // StaticFilterEvaluateFunction: estimate an NNI's per GPCSP Likelihood using the
+  // Pre-NNI in the DAG.
+  static double EstimateNNILikelihoodViaPreNNI(NNIEngine &this_nni_engine,
+                                               GPEngine &this_gp_engine,
+                                               GraftDAG &this_graft_dag,
+                                               const NNIOperation &nni);
 
   // ** NNI Likelihoods
   // Functions for computation or estimating likelihood of NNIs.
@@ -186,8 +122,8 @@ class NNIEngine {
   using NNIClade = NNIOperation::NNIClade;
   static KeyIndex NNICladeToPHatPLV(NNIClade clade_type);
 
-  // Builds an array containing a mapping of plvs from Pre-NNI to Post-NNI, according
-  // to remapping of the NNI clades (sister, right_child, left_child).
+  // Builds an array containing a mapping of plvs from Pre-NNI to Post-NNI, according to
+  // remapping of the NNI clades (sister, right_child, left_child).
   static KeyIndexPairArray BuildKeyIndexTypePairsFromPreNNIToPostNNI(
       const NNIOperation &pre_nni, const NNIOperation &post_nni);
 
@@ -213,8 +149,8 @@ class NNIEngine {
   KeyIndexMapPair PassDataFromPreNNIToPostNNIViaReference(
       const NNIOperation &pre_nni, const NNIOperation &post_nni,
       const size_t nni_count = 0, const bool use_unique_temps = false);
-  // Fetches Data from Pre-NNI for Post-NNI. Can be used for initial values when
-  // moving accepted NNIs from Graft to Host DAG.
+  // Fetches Data from Pre-NNI for Post-NNI. Can be used for initial values when moving
+  // accepted NNIs from Graft to Host DAG.
   KeyIndexMapPair PassDataFromPreNNIToPostNNIViaCopy(const NNIOperation &pre_nni,
                                                      const NNIOperation &post_nni);
 
@@ -227,8 +163,8 @@ class NNIEngine {
       const bool via_reference = true);
   // Grow engine to handle computing NNI Likelihoods for all adjacent NNIs.
   // Option to grow engine for computing likelihoods via reference or via copy. If
-  // computing via reference, option whether to use unique temporaries (for testing
-  // and computing in parallel).
+  // computing via reference, option whether to use unique temporaries (for testing and
+  // computing in parallel).
   void GrowEngineForAdjacentNNILikelihoods(const bool via_reference = true,
                                            const bool use_unique_temps = false);
   // Performs entire likelihood computation for all Adjacent NNIs.
@@ -236,33 +172,31 @@ class NNIEngine {
   // GPOperationVector, then retrieves results and stores in Scored NNIs.
   void ScoreAdjacentNNIsByLikelihood();
 
-  // ** Set Filtering Scheme
+  // ** Filtering
+  // !ISSUE #429: Need filtering scheme.
 
-  // Set custom functions for filtering NNIs.
-  void SetFilteringCustom(StaticFilterInitFunction init_fn,
-                          StaticFilterUpdateFunction pre_update_fn,
-                          StaticFilterProcessFunction process_fn,
-                          StaticFilterUpdateFunction post_update_fn);
-  // Set no filters for NNIs. Accept parameter determines whether to accept or reject
-  // all NNIs.
-  void SetFilteringNone();
-  // Set filter to accept only Post-NNIs which are an improvement over Pre-NNIs.
-  void SetFilteringHillclimb();
-  // Set filter to compare Pre-NNI likelihood to Post-NNI likelihood.  Accept Post-NNIs
-  // whose loss in likelihood relative to its Pre-NNI is less than the loss_tolerance.
-  // A loss_tolerance of zero is equivalent to hill-climbing.
-  void SetFilteringLossThreshold(const double loss_tolerance);
-  // Set filter to have a hard cutoff for accepted Post-NNI likelihood.
-  void SetFilteringCutoffThreshold(const double cutoff_threshold);
+  // Initialize filter before first NNI sweep.
+  void FilterInit(std::optional<StaticFilterInitFunction> FilterInitFn = std::nullopt);
+  // Update filter parameters for each NNI sweep (before evaluation).
+  void FilterPreUpdate(
+      std::optional<StaticFilterUpdateFunction> FilterUpdateFn = std::nullopt);
+  // Perform computation on each Adjacent NNI.
+  void FilterEvaluateAdjacentNNIs(
+      std::optional<StaticFilterEvaluateFunction> FilterEvaluateFn = std::nullopt);
+  // Update filter parameters for each NNI sweep (after evaluation).
+  void FilterPostUpdate(
+      std::optional<StaticFilterUpdateFunction> FilterUpdateFn = std::nullopt);
+  // Apply the filtering method to determine whether each Adjacent NNI will be added to
+  // Accepted NNI or Rejected NNI.
+  void FilterProcessAdjacentNNIs(
+      std::optional<StaticFilterProcessFunction> FilterProcessFn = NoFilter);
 
   // ** DAG & GPEngine Maintenance
 
   // Initial GPEngine for use with GraftDAG.
-  void GPEngineInit();
-  // Resize GPEngine for use with GraftDAG, Populate PLVs and Compute Likelihoods for
-  // HostDAG.
-  void GPEngineUpdate();
-
+  void InitGPEngine();
+  // Populate PLVs so that
+  void PrepGPEngineForLikelihoods();
   // Add all Accepted NNIs to Main DAG.
   void AddAcceptedNNIsToDAG();
   // Add all Adjacent NNIs to Graft DAG.
@@ -278,15 +212,14 @@ class NNIEngine {
   // internal edges in the DAG. (For each internal edges, two NNIs are possible.)
   void SyncAdjacentNNIsWithDAG();
   // Updates NNI Set after given parent/child node pair have been added to the DAG.
-  // Removes pair from NNI Set and adds adjacent pairs coming from newly created
-  // edges.
+  // Removes pair from NNI Set and adds adjacent pairs coming from newly created edges.
   void UpdateAdjacentNNIsAfterDAGAddNodePair(const NNIOperation &nni);
   void UpdateAdjacentNNIsAfterDAGAddNodePair(const Bitset &parent_bitset,
                                              const Bitset &child_bitset);
-  // Adds all NNIs from all (node_id, other_id) pairs, where other_id's are elements
-  // of the adjacent_node_ids vector. is_edge_leafward tells whether node_id is the
-  // child or parent. is_edge_edgeclade determines which side of parent the child
-  // descends from.
+  // Adds all NNIs from all (node_id, other_id) pairs, where other_id's are elements of
+  // the adjacent_node_ids vector. is_edge_leafward tells whether node_id is the child
+  // or parent. is_edge_edgeclade determines which side of parent the child descends
+  // from.
   void AddAllNNIsFromNodeVectorToAdjacentNNIs(const size_t &node_id,
                                               const SizeVector &adjacent_node_ids,
                                               const bool is_edge_on_left,
@@ -304,15 +237,15 @@ class NNIEngine {
   double GetScoreForNNI(const NNIOperation &nni) const;
 
   // Update adjacent NNIs at end of current sweep. If not re-evaluating rejected NNIs,
-  // then current adjacent NNIs are removed. Then NNIs that are adjacent to last
-  // sweep's accepted NNIs are added.
-  void UpdateAdjacentNNIs();
+  // then current adjacent NNIs are removed. Then NNIs that are adjacent to last sweep's
+  // accepted NNIs are added.
+  void UpdateAdjacentNNIs(const bool reevaluate_rejected_nnis = false);
   // Remove all accepted NNIs and optionally save to past NNIs.
-  void UpdateAcceptedNNIs();
+  void UpdateAcceptedNNIs(const bool save_past_nnis = true);
   // Remove all rejected NNIs and optionally save to past NNIs.
-  void UpdateRejectedNNIs();
+  void UpdateRejectedNNIs(const bool save_past_nnis = true);
   // Remove all scored NNIs and optionally save to past NNIs.
-  void UpdateScoredNNIs();
+  void UpdateScoredNNIs(const bool save_past_nnis = false);
   // Reset all NNIs, current and past.
   void ResetAllNNIs();
 
@@ -327,9 +260,8 @@ class NNIEngine {
   std::unique_ptr<GraftDAG> graft_dag_;
   // Un-owned reference GPEngine.
   GPEngine &gp_engine_;
-  // Tracks node modifications to the DAG.
+  // Tracks modifications to the DAG.
   Reindexer node_reindexer_;
-  // Tracks edge modifications to the DAG.
   Reindexer edge_reindexer_;
 
   // Set of NNIs to be evaluated, which are a single NNI.
@@ -338,38 +270,15 @@ class NNIEngine {
   NNISet accepted_nnis_;
   // NNIs which have been accepted in a previous sweep of the search.
   NNISet accepted_past_nnis_;
-  // Determines whether past accepted NNIs are tracked.
-  bool keep_accepted_past_nnis_ = false;
   // NNIs which have failed the filtering threshold, not to be added to the DAG.
   NNISet rejected_nnis_;
   // NNIs which have been rejected in a previous sweep of the search.
   NNISet rejected_past_nnis_;
-  // Determines whether past rejected NNIs are tracked.
-  bool keep_rejected_past_nnis_ = false;
-  // Determines whether to keep rejected NNIs in Adjacent NNI list for re-evaluation.
-  bool reevaluate_rejected_nnis_ = false;
 
   // Map of adjacent NNIs to their score.
   NNIDoubleMap scored_nnis_;
   // Map of previous rejected NNIs to their score.
   NNIDoubleMap scored_past_nnis_;
-  // Determines whether past scored NNIs are tracked.
-  bool keep_scored_past_nnis_ = false;
-
-  // DAG Likelihoods.
-  std::unique_ptr<EigenVectorXd> dag_likelihoods_ = nullptr;
-
-  // Determines whether branch lengths are optimized when updating DAG likelihoods.
-  bool do_optimitize_branch_lengths_ = false;
-
-  // Initial step before running any sweep iterations.
-  StaticFilterInitFunction filter_init_fn_ = NoInit;
-  // Update step for any filter computation work to be done at start of each sweep.
-  StaticFilterUpdateFunction filter_pre_update_fn_ = NoUpdate;
-  // Update step for any filter computation work to be done at end of each sweep.
-  StaticFilterUpdateFunction filter_post_update_fn_ = NoUpdate;
-  // Processing an adjacent NNI to be accepted or rejected.
-  StaticFilterProcessFunction filter_process_fn_ = NoFilter<true>;
 
   // Count number of loops executed by engine.
   size_t sweep_count_ = 0;
