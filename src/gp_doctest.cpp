@@ -949,6 +949,18 @@ TEST_CASE("SubsplitDAG: AddNodes and RemoveNodes") {
   CHECK_MESSAGE(SubsplitDAG::Compare(dag_a, dag_b) == 0,
                 "DAGs are not equal before modifying DAG.");
 
+  BoolVector nodes_sorted;
+  // for (size_t i = 1; i < dag_b.NodeCount(); i++) {
+  //   const auto& node_0 = dag_b.GetDAGNode(i - 1).GetBitset();
+  //   const auto& node_1 = dag_b.GetDAGNode(i).GetBitset();
+  //   std::cout << "BITSET_COMPARE: " << node_0.SubsplitToString() << " "
+  //             << node_1.SubsplitToString() << " -> "
+  //             << Bitset::SubsplitCompare(node_0, node_1) << std::endl;
+  //   const bool node_sorted = Bitset::SubsplitCompare(node_0, node_1) < 0;
+  //   nodes_sorted.push_back(node_sorted);
+  // }
+  // std::cout << "NODES_ORDERED: " << nodes_sorted << std::endl;
+
   // Add node pairs to DAG one at a time, compare mappings to DAG before adding
   // nodes.
   for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
@@ -956,11 +968,23 @@ TEST_CASE("SubsplitDAG: AddNodes and RemoveNodes") {
     BitsetVector nni_subsplits = {nni.GetParent(), nni.GetChild()};
     auto mods_b = dag_b.AddNodes(nni_subsplits, false);
 
-    auto dag_compare = SubsplitDAG::Compare(dag_a, dag_b);
+    auto dag_compare = SubsplitDAG::Compare(dag_a, dag_b, false);
     CHECK_MESSAGE(dag_compare == 0, "DAGs are not equal after adding NNI.");
 
     break;
   }
+
+  // nodes_sorted.empty();
+  // for (size_t i = 1; i < dag_b.NodeCount(); i++) {
+  //   const auto& node_0 = dag_b.GetDAGNode(i - 1).GetBitset();
+  //   const auto& node_1 = dag_b.GetDAGNode(i).GetBitset();
+  //   std::cout << "BITSET_COMPARE: " << node_0.SubsplitToString() << " "
+  //             << node_1.SubsplitToString() << " -> "
+  //             << Bitset::SubsplitCompare(node_0, node_1) << std::endl;
+  //   const bool node_sorted = Bitset::SubsplitCompare(node_0, node_1) < 0;
+  //   nodes_sorted.push_back(node_sorted);
+  // }
+  // std::cout << "NODES_ORDERED: " << nodes_sorted << std::endl;
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908707617.

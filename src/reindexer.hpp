@@ -174,6 +174,9 @@ class Reindexer {
   template <typename VectorType, typename DataType>
   static void ReindexVectorInPlace(VectorType &data_vector, const Reindexer &reindexer,
                                    size_t length, DataType &temp1, DataType &temp2) {
+    auto access_fn = [](VectorType &vec, const size_t i) -> DataType & {
+      return vec[i];
+    };
     Assert(size_t(data_vector.size()) >= length,
            "data_vector wrong size for Reindexer::ReindexVectorInPlace.");
     Assert(size_t(reindexer.size()) >= length,
@@ -193,12 +196,12 @@ class Reindexer {
       // index. This avoid allocating a second data array to perform the reindex, as
       // only two temporary values are needed. Only a boolean array is needed to check
       // for already updated indexes.
-      temp1 = std::move(data_vector[input_idx]);
+      temp1 = std::move(access_fn(data_vector, input_idx));
       while (is_current_node_updated == false) {
         // copy data at input_idx to output_idx, and store data at output_idx in
         // temporary.
         temp2 = std::move(data_vector[output_idx]);
-        data_vector[output_idx] = std::move(temp1);
+        access_fn(data_vector, output_idx) = std::move(temp1);
         temp1 = std::move(temp2);
         // update to next idx in cycle.
         updated_idx[output_idx] = true;

@@ -27,7 +27,7 @@ TODO: Remove this later
 // ** Default Functions
 
 template <typename DataType>
-bool ArgsortLessThanFunction(const DataType &lhs, const DataType &rhs) {
+bool ArgsortLessThanFunction(DataType lhs, DataType rhs) {
   return lhs < rhs;
 }
 
@@ -43,27 +43,33 @@ void ArgsortReindexFunction(VectorType data_vector, const Reindexer &reindexer) 
 }
 
 template <typename VectorType, typename DataType>
-void ArgsortAddDataFunction(VectorType data_vector, VectorType data_to_add) {}
+void ArgsortAppendDataFunction(VectorType data_vector, DataType data_to_add) {
+  data_vector.push_back(data_to_add);
+}
 
-template <typename DataType, typename VectorType = std::vector<DataType>,
+template <typename DataType, typename ConstRefDataType = const DataType &,
+          typename VectorType = std::vector<DataType>,
           typename RefVectorType = VectorType &>
 class ArgsortVector {
  public:
-  using AccessFunction = std::function<const DataType &(RefVectorType, const size_t)>;
+  using LessThanFunction = std::function<bool(ConstRefDataType, ConstRefDataType)>;
+  using AccessFunction = std::function<ConstRefDataType(RefVectorType, const size_t)>;
+  using AppendFunction = std::function<void(RefVectorType, ConstRefDataType)>;
   using ReindexFunction = std::function<void(RefVectorType, const Reindexer &)>;
-  using LessThanFunction = std::function<bool(const DataType &, const DataType &)>;
 
   ArgsortVector(
       RefVectorType data_vector, std::optional<Reindexer> reindexer,
-      LessThanFunction lessthan_fn = ArgsortLessThanFunction<DataType>,
+      LessThanFunction lessthan_fn = ArgsortLessThanFunction<ConstRefDataType>,
       AccessFunction access_fn = ArgsortAccessFunction<RefVectorType, DataType>,
+      AppendFunction append_fn = ArgsortAppendDataFunction<RefVectorType, DataType>,
       ReindexFunction reindex_fn = ArgsortReindexFunction<RefVectorType, DataType>,
       bool is_sorted = false)
       : data_vector_(data_vector),
         is_sorted_(is_sorted),
+        lessthan_fn_(lessthan_fn),
         access_fn_(access_fn),
-        reindex_fn_(reindex_fn),
-        lessthan_fn_(lessthan_fn) {
+        append_fn_(append_fn),
+        reindex_fn_(reindex_fn) {
     reindexer_ = reindexer.has_value()
                      ? reindexer.value()
                      : Reindexer::IdentityReindexer(data_vector.size());
@@ -145,6 +151,7 @@ class ArgsortVector {
     return first;
   }
 
+  // Find given data's first sorted position in sorted data vector.
   size_t FindFirstSortedIndex(const DataType query) const {
     auto lower_bound =
         LowerBound(reindexer_.GetData().begin(), reindexer_.GetData().end(), query);
@@ -153,6 +160,7 @@ class ArgsortVector {
     return lower_bound - reindexer_.GetData().begin();
   };
 
+  // Find given data's last sorted position in sorted data vector.
   size_t FindLastSortedIndex(const DataType query) const {
     auto upper_bound =
         UpperBound(reindexer_.GetData().begin(), reindexer_.GetData().end(), query);
@@ -161,11 +169,13 @@ class ArgsortVector {
     return upper_bound - reindexer_.GetData().begin();
   };
 
-  // Find data in
+  // Find given data's sorted position in sorted data vector. Assumes data vector
+  // contains no duplicate values.
   size_t FindUniqueSortedIndex(const DataType &data) const {
     return FindFirstSortedIndex(data);
   }
 
+  // Find first and last sorted positions into sorted data vector.
   SizePair FindRangeSortedIndex(const DataType &data) const {
     size_t range_begin = FindFirstSortedIndex(data);
     size_t range_end = FindLastSortedIndex(data);
@@ -174,24 +184,32 @@ class ArgsortVector {
 
   // Construct a sorted version of the data vector, without modifying the underlying
   // data.
-  VectorType BuildSortedDataVector() const {
-    VectorType sorted_vector =
-        Reindexer::BuildReindexedVector(data_vector_, reindexer_);
+  std::vector<DataType> BuildSortedDataVector() const {
+    std::vector<DataType> sorted_vector =
+        Reindexer::BuildReindexedVector<VectorType>(data_vector_, reindexer_, Size());
     return sorted_vector;
+
+    // std::vector<DataType> sorted_vector(Size());
+    // for (size_t sorted_idx = 0; sorted_idx < Size(); sorted_idx++) {
+    //   const auto &data = GetDataBySortedIndex(sorted_idx);
+    //   sorted_vector[sorted_idx] = data;
+    // }
+    // return sorted_vector;
   };
 
   // ** Modify
 
   // Append data_to_insert_vector to data_vector, then insert into sorted reindexer.
-  void SortedInsert(RefVectorType data_to_insert_vector,
+  void SortedInsert(std::vector<DataType> data_to_insert_vector,
                     std::optional<bool> do_single_insert = std::nullopt) {
     if (data_to_insert_vector.empty()) {
       return;
     }
     // sort and append new data to data_vector.
     std::sort(data_to_insert_vector.begin(), data_to_insert_vector.end(), lessthan_fn_);
-    data_vector_.insert(data_vector_.end(), data_to_insert_vector.begin(),
-                        data_to_insert_vector.end());
+    for (const auto &data : data_to_insert_vector) {
+      append_fn_(data_vector_, data);
+    }
     // Rough estimate -- if quantity of new data being added is more than log(N), then
     // we are better off incurring the cost of a full vector resort than doing
     // individual inserts.
@@ -212,11 +230,13 @@ class ArgsortVector {
     }
   };
 
+  //
   void SortedDelete(const DataType &data_to_delete) {
     size_t id_to_delete = FindUniqueSortedIndex(data_to_delete);
     return SortedDeleteById(id_to_delete);
   };
 
+  //
   void SortedDelete(const RefVectorType data_to_delete_vector) {
     SizeVector ids_to_delete;
     for (size_t i = 0; i < data_to_delete_vector.size(); i++) {
@@ -225,10 +245,12 @@ class ArgsortVector {
     return SortedDeleteById(ids_to_delete);
   };
 
+  //
   void SortedDeleteById(const size_t id_to_delete) {
     reindexer_.ReassignOutputIndexAndShift(id_to_delete, reindexer_.size() - 1);
   };
 
+  //
   void SortedDeleteById(const SizeVector &ids_to_delete) {
     for (const auto &id_to_delete : ids_to_delete) {
       SortedDeleteById(id_to_delete);
@@ -237,7 +259,7 @@ class ArgsortVector {
 
   // ** Transform
 
-  // Sort reindexer using data vector ordering.
+  // Sort reindexer referencing indexes from data vector ordering.
   void SortReindexer() {
     std::sort(reindexer_.GetData().begin(), reindexer_.GetData().end(),
               [this](int left, int right) -> bool {
@@ -250,8 +272,8 @@ class ArgsortVector {
   // Sort data according to the reindexer ordering.
   // Reindexer is updated to identity after sorting.
   void SortDataVector() {
-    // reindex_fn_(data_vector_, reindexer_.InvertReindexer());
-    reindex_fn_(data_vector_, reindexer_);
+    reindex_fn_(data_vector_, reindexer_.InvertReindexer());
+    // reindex_fn_(data_vector_, reindexer_);
     reindexer_ = Reindexer::IdentityReindexer(data_vector_.size());
   };
 
@@ -262,10 +284,11 @@ class ArgsortVector {
   Reindexer reindexer_;
   std::optional<Reindexer> inverted_reindexer_ = std::nullopt;
   bool is_sorted_ = false;
-  size_t occupancy = 0;
+  size_t occupancy_ = 0;
 
-  AccessFunction access_fn_;
   LessThanFunction lessthan_fn_;
+  AccessFunction access_fn_;
+  AppendFunction append_fn_;
   ReindexFunction reindex_fn_;
 };
 

@@ -62,8 +62,9 @@ class SubsplitDAG {
   // and idxs for their respective nodes and edges, only that they contain the
   // same set of nodes and edges (as long as taxon positions in the
   // clades have the same mapping).
-  int Compare(const SubsplitDAG &other);
-  static int Compare(const SubsplitDAG &lhs, const SubsplitDAG &rhs);
+  int Compare(const SubsplitDAG &other, const bool quiet = true);
+  static int Compare(const SubsplitDAG &lhs, const SubsplitDAG &rhs,
+                     const bool quiet = true);
   friend bool operator==(const SubsplitDAG &lhs, const SubsplitDAG &rhs);
   friend bool operator!=(const SubsplitDAG &lhs, const SubsplitDAG &rhs);
 
@@ -326,6 +327,8 @@ class SubsplitDAG {
   bool ContainsEdge(const size_t parent_id, const size_t child_id) const;
   bool ContainsEdge(const Bitset &edge_subsplit) const;
   bool ContainsEdge(const size_t edge_id) const;
+  // Is SubsplitDAG have a graft?
+  bool ContainsGraft() const;
 
   // ** Modify DAG
   // These methods are for directly modifying the DAG by adding or removing nodes and
@@ -470,6 +473,10 @@ class SubsplitDAG {
  protected:
   explicit SubsplitDAG(SubsplitDAG &host_dag, HostDispatchTag);
   void ResetHostDAG(SubsplitDAG &host_dag);
+  // Build a Subsplit DAG on given number of taxa, expressing all tree topologies from
+  // tree_collection, with trees on the given taxa names/labels.
+  SubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter,
+              const TagStringMap &tag_taxon_map);
 
   // Builds a vector of subsplits of all children , optionally including leaf nodes.
   std::vector<Bitset> GetChildSubsplits(const SizeBitsetMap &index_to_child,
@@ -535,16 +542,12 @@ class SubsplitDAG {
   void AddLeafSubsplitsToDAGEdgesAndParentToRange();
 
  protected:
-  SubsplitDAGStorage storage_;
   // NOTE: When using unique identifiers, for DAG nodes (aka Subsplits) we use the term
   // "ids", and for edges (aka PCSPs) we use the term index or "idx", to more easily
   // distinguish the two. This corresponds to the analogous concept for topologies.
 
-  // Build a Subsplit DAG on given number of taxa, expressing all tree topologies from
-  // tree_collection, with trees on the given taxa names/labels.
-  SubsplitDAG(size_t taxon_count, const Node::TopologyCounter &topology_counter,
-              const TagStringMap &tag_taxon_map);
-
+  //
+  SubsplitDAGStorage storage_;
   // - Map of Taxon Names
   //    - [ Taxon Name => Taxon Id (position of the "on" bit in the clades) ]
   std::map<std::string, size_t> dag_taxa_;
@@ -577,6 +580,7 @@ class SubsplitDAG {
   // Storage for the number of topologies below for each node. Each index maps to the
   // count for the corresponding node_id.
   EigenVectorXd topology_count_below_;
+  // Argsorted vectors for nodes
 
  private:
   void StoreEdgeIds();
