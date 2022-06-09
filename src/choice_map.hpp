@@ -129,9 +129,8 @@ class ChoiceMap {
   }
 
   // ** TreeMask
-
-  // A TreeMask is a vector of IDs, which represent a tree contained in the DAG, from a
-  // selected subset of DAG nodes and edges.
+  // A TreeMask is a vector of edge Ids, which represent a tree contained in the DAG,
+  // from the selected subset of DAG edges.
   using TreeMask = std::vector<size_t>;
 
   // Convert stack to a vector.
