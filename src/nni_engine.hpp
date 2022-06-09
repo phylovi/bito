@@ -22,6 +22,7 @@
 #include "sugar.hpp"
 #include "gp_operation.hpp"
 #include "reindexer.hpp"
+#include "choice_map.hpp"
 
 using NNIDoubleMap = std::map<NNIOperation, double>;
 
@@ -173,7 +174,6 @@ class NNIEngine {
   void ScoreAdjacentNNIsByLikelihood();
 
   // ** Filtering
-  // !ISSUE #429: Need filtering scheme.
 
   // Initialize filter before first NNI sweep.
   void FilterInit(std::optional<StaticFilterInitFunction> FilterInitFn = std::nullopt);

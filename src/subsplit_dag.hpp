@@ -318,6 +318,14 @@ class SubsplitDAG {
   bool ContainsEdge(const size_t parent_id, const size_t child_id) const;
   bool ContainsEdge(const Bitset &edge_subsplit) const;
   bool ContainsEdge(const size_t edge_id) const;
+  // Is node the root?
+  bool IsNodeRoot(const size_t node_id) const;
+  // Is node a leaf?
+  bool IsNodeLeaf(const size_t node_id) const;
+  // Does edge connect to the root node?
+  bool IsEdgeRoot(const size_t edge_id) const;
+  // Does edge connect to a leaf node?
+  bool IsEdgeLeaf(const size_t edge_id) const;
 
   // ** Modify DAG
   // These methods are for directly modifying the DAG by adding or removing nodes and

@@ -976,6 +976,24 @@ bool SubsplitDAG::ContainsEdge(const size_t edge_id) const {
   return storage_.GetLine(edge_id).has_value();
 }
 
+bool SubsplitDAG::IsNodeRoot(const size_t node_id) const {
+  return (node_id == GetDAGRootNodeId());
+}
+
+bool SubsplitDAG::IsNodeLeaf(const size_t node_id) const {
+  return (node_id < TaxonCount());
+}
+
+bool SubsplitDAG::IsEdgeRoot(const size_t edge_id) const {
+  const auto parent_id = GetDAGEdge(edge_id).GetParent();
+  return IsNodeRoot(parent_id);
+}
+
+bool SubsplitDAG::IsEdgeLeaf(const size_t edge_id) const {
+  const auto child_id = GetDAGEdge(edge_id).GetChild();
+  return IsNodeLeaf(child_id);
+}
+
 // ** Build Output Indexers/Vectors
 
 std::pair<SizeVector, SizeVector> SubsplitDAG::BuildParentIdVectors(

@@ -1562,3 +1562,31 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
     nni_count++;
   }
 }
+
+// Builds a SubsplitDAG. Uses a naive method that picks the first listed neighbor for
+// each parent, sister, left and right child. Tests that results is a valid selection
+// (all edges have mapped valid edge choices, except for root and leaves).  Then creates
+// TreeMasks for each edge in DAG, a list of edge ids which represent a embedded tree in
+// the DAG.  Tests that each TreeMask contains its central edge and is valid (tree spans
+// root and all leaf nodes, each node reached by tree has one parent, one left child and
+// one right child)..
+TEST_CASE("NNI Engine: Choice Map") {
+  const std::string fasta_path = "data/six_taxon_longer.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  auto inst =
+      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_pre.data");
+  auto dag = inst.GetDAG();
+
+  auto choice_map = ChoiceMap(dag);
+  choice_map.SelectFirstEdge();
+  CHECK_MESSAGE(choice_map.SelectionIsValid(false), "ChoiceMap selection is invalid.");
+
+  for (size_t edge_idx = 0; edge_idx < dag.EdgeCountWithLeafSubsplits(); edge_idx++) {
+    const auto tree_mask = choice_map.ExtractTreeMask(edge_idx);
+    CHECK_MESSAGE(
+        std::find(tree_mask.begin(), tree_mask.end(), edge_idx) != tree_mask.end(),
+        "TreeMask did not contain given central edge.");
+    CHECK_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, false),
+                  "Edge resulted in an invalid TreeMask.");
+  }
+}
