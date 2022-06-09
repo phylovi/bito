@@ -53,7 +53,7 @@ class ChoiceMap {
       const SizeVector &right_children =
           child_node.GetNeighbors(Direction::Leafward, SubsplitClade::Right);
 
-      // If neighbor lists are non-empty, find the associated edges.
+      // If neighbor lists are non-empty, get first edge from list.
       if (!left_parents.empty()) {
         edge_choice.parent_edge_id = dag_.GetEdgeIdx(left_parents[0], parent_node.Id());
       } else if (!right_parents.empty()) {
@@ -75,11 +75,11 @@ class ChoiceMap {
   }
 
   // Check if choice selection is valid.
-  // Specifically, checks that
-  // - Every edge choice vector has a valid id for all options, unless
-  //   - Edge goes to root (NoId for sister and parent)
-  //   - Edge goes to leaf (NoId for left and right child)
-  // - Edges reach every leaf and root.
+  // Specifically, checks that:
+  // - Every edge choice vector has a valid id for all options, unless...
+  //   - Edge goes to root (NoId for sister and parent).
+  //   - Edge goes to leaf (NoId for left and right child).
+  // - Edges span every leaf and root node.
   bool SelectionIsValid(const bool is_quiet = true) const {
     size_t edge_limit = dag_.EdgeCountWithLeafSubsplits();
     for (size_t edge_idx = 0; edge_idx < edge_choice_vector_.size(); edge_idx++) {
@@ -197,9 +197,9 @@ class ChoiceMap {
   // Checks that TreeMask represents a valid, complete tree in the DAG.
   // Specifically, checks that:
   // - There is a single edge that goes to the root.
-  // - There is a single edge to each leave in the DAG.
-  // - For each internal node reached by the mask, there is a single parent, left and
-  // right child.
+  // - There is a single edge that goes to each leaf.
+  // - For each node in mask, there is a single parent, left and right child.
+  //   - Unless node is root (no parent) or leaf (no children).
   bool TreeMaskIsValid(const TreeMask &tree_mask, const bool is_quiet = true) const {
     SizeVector node_ids;
     bool root_check = false;
@@ -249,6 +249,7 @@ class ChoiceMap {
     for (const auto &[node_id, connections] : nodemap_check) {
       // Check children.
       if (!(connections[0] || connections[1])) {
+        // If one child is not connected, neither should be.
         if (connections[0] ^ connections[1]) {
           return false;
         }
@@ -267,7 +268,7 @@ class ChoiceMap {
     return true;
   }
 
-  // ** Printing
+  // ** I/O
 
   // Output edge choice to string.
   static std::string EdgeChoiceToString(const EdgeChoice &edge_choice) {
