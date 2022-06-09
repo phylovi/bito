@@ -203,7 +203,7 @@ class ChoiceMap {
     SizeVector node_ids;
     bool root_check = false;
     BoolVector leaf_check(dag_.TaxonCount(), false);
-    // Node map for checking connectivity: Array is an ordered as [left_child,
+    // Node map for checking node connectivity: Array is ordered as [left_child,
     // right_child, parent].
     using NodeMap = std::map<size_t, std::array<bool, 3>>;
     NodeMap nodemap_check;
@@ -227,7 +227,7 @@ class ChoiceMap {
         }
         leaf_check.at(taxon_id) = true;
       }
-      // Update node map. If a node already has parent or child, invalid tree.
+      // Update node map. If a node already has parent or child, it is an invalid tree.
       for (const auto node_id : {parent_node.Id(), child_node.Id()}) {
         if (nodemap_check.find(node_id) == nodemap_check.end()) {
           nodemap_check.insert({node_id, {false, false, false}});

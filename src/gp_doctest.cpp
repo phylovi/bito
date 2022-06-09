@@ -1568,9 +1568,9 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 // (all edges have mapped valid edge choices, except for root and leaves).  Then creates
 // TreeMasks for each edge in DAG, a list of edge ids which represent a embedded tree in
 // the DAG.  Tests that each TreeMask contains its central edge and is valid (tree spans
-// root and all leaf nodes, and every node in tree has one parent, one left child and
-// one right child)..
-TEST_CASE("NNI Engine: Choice Map") {
+// root and all leaf nodes, and every node in tree has a single parent, left child and
+// right child).
+TEST_CASE("Top-Pruning: ChoiceMap") {
   const std::string fasta_path = "data/six_taxon_longer.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
   auto inst =
