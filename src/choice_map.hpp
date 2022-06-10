@@ -131,11 +131,11 @@ class ChoiceMap {
   // ** TreeMask
   // A TreeMask is an unordered vector of edge Ids, which represent a tree contained in
   // the DAG, from the selected subset of DAG edges.
-  using TreeMask = std::vector<size_t>;
+  using TreeMask = std::unordered_set<size_t>;
 
   // Convert stack to a vector.
   template <typename T>
-  static std::vector<T> StackToVector(std::stack<T> &stack) {
+  static std::set<T> StackToVector(std::stack<T> &stack) {
     T *end = &stack.top() + 1;
     T *begin = end - stack.size();
     std::vector<T> stack_contents(begin, end);
@@ -302,22 +302,15 @@ class ChoiceMap {
     return os.str();
   }
 
-  // Output edge choice vector to string.
-  static std::string EdgeChoiceVectorToString(
-      const EdgeChoiceVector &edge_choice_vector) {
-    std::stringstream os;
-    os << "[ " << std::endl;
-    for (size_t i = 0; i < edge_choice_vector.size(); i++) {
-      const auto &edge_choice = edge_choice_vector[i];
-      os << "\t" << EdgeChoiceToString(edge_choice) << ", " << std::endl;
-    }
-    os << "]";
-    return os.str();
+  // Output edge choice map to iostream.
+  friend std::ostream &operator<<(std::ostream &os, const EdgeChoice &edge_choice) {
+    os << EdgeChoiceToString(edge_choice);
+    return os;
   }
 
   // Output edge choice map to iostream.
   friend std::ostream &operator<<(std::ostream &os, const ChoiceMap &choice_map) {
-    os << EdgeChoiceVectorToString(choice_map.edge_choice_vector_);
+    os << choice_map.edge_choice_vector_;
     return os;
   }
 
