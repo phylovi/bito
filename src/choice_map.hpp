@@ -81,12 +81,12 @@ class ChoiceMap {
   //   - Edge goes to leaf (NoId for left and right child).
   // - Edges span every leaf and root node.
   bool SelectionIsValid(const bool is_quiet = true) const {
-    size_t edge_limit = dag_.EdgeCountWithLeafSubsplits();
+    size_t edge_max_id = dag_.EdgeIdxRange().second;
     for (size_t edge_idx = 0; edge_idx < edge_choice_vector_.size(); edge_idx++) {
       const auto &edge_choice = edge_choice_vector_[edge_idx];
       // If edge id is outside valid range.
-      if ((edge_choice.parent_edge_id > edge_limit) ||
-          (edge_choice.sister_edge_id > edge_limit)) {
+      if ((edge_choice.parent_edge_id > edge_max_id) ||
+          (edge_choice.sister_edge_id > edge_max_id)) {
         // If they are not NoId, then it is an invalid edge_id.
         if ((edge_choice.parent_edge_id != NoId) ||
             (edge_choice.sister_edge_id != NoId)) {
@@ -107,7 +107,7 @@ class ChoiceMap {
       for (const auto &child_edge_id :
            {edge_choice.left_child_edge_id, edge_choice.right_child_edge_id}) {
         // If edge id is outside valid range.
-        if (child_edge_id > edge_limit) {
+        if (child_edge_id > edge_max_id) {
           // If they are not NoId, then it is an invalid edge_id.
           if (child_edge_id != NoId) {
             if (!is_quiet) {
@@ -153,13 +153,16 @@ class ChoiceMap {
   // Extract TreeMask from DAG based on edge choices to find best tree with given
   // central edge.
   // - Makes two passes:
-  //   - The first pass goes up the DAG to the root, adding each edge it encounters.
-  //   - The second pass goes leafward, descending to the leaf edges from the sister of
-  //   each edge in the rootward pass and the child edges from the central edge.
+  //   - The first pass goes up along the chosen edges of the DAG to the root, adding
+  //   each edge it encounters.
+  //   - The second pass goes leafward, descending along the chosen edges to the leaf
+  //   edges from the sister of each edge in the rootward pass and the child edges from
+  //   the central edge.
   TreeMask ExtractTreeMask(size_t central_edge_id) const {
     TreeMask tree_mask;
     std::stack<size_t> rootward_stack, leafward_stack;
     const size_t root_node_id = dag_.GetDAGRootNodeId();
+    const auto edge_max_id = dag_.EdgeIdxRange().second;
 
     // Rootward Pass: Capture parent and sister edges above focal edge.
     // For central edge, add children to stack for leafward pass.
@@ -170,6 +173,8 @@ class ChoiceMap {
     // Follow parentage upward until root.
     bool at_root = false;
     while (!at_root) {
+      Assert(focal_edge_id < edge_max_id,
+             "Focal edge idx is outside valid edge idx range.");
       tree_mask.push_back(focal_edge_id);
       const auto &focal_choices = edge_choice_vector_.at(focal_edge_id);
       // End upward pass if we are at the root.
