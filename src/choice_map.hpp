@@ -244,7 +244,7 @@ class ChoiceMap {
       }
       nodemap_check[child_node.Id()][2] = true;
     }
-    // Final check if all nodes are fully connected.
+    // Check if all nodes are fully connected.
     for (const auto &[node_id, connections] : nodemap_check) {
       // Check children.
       if (!(connections[0] || connections[1])) {
@@ -261,6 +261,15 @@ class ChoiceMap {
         if (!dag_.IsNodeRoot(node_id)) {
           return false;
         }
+      }
+    }
+    // Check if spans root and all leaf nodes.
+    if (!root_check) {
+      return false;
+    }
+    for (size_t i = 0; i < leaf_check.size(); i++) {
+      if (!leaf_check[i]) {
+        return false;
       }
     }
 
