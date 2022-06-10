@@ -129,46 +129,57 @@ class ChoiceMap {
   }
 
   // ** TreeMask
-  // A TreeMask is a vector of edge Ids, which represent a tree contained in the DAG,
-  // from the selected subset of DAG edges.
+  // A TreeMask is an unordered vector of edge Ids, which represent a tree contained in
+  // the DAG, from the selected subset of DAG edges.
   using TreeMask = std::vector<size_t>;
 
   // Convert stack to a vector.
   template <typename T>
-  static std::vector<T> StackToVector(std::stack<T> stack) {
+  static std::vector<T> StackToVector(std::stack<T> &stack) {
     T *end = &stack.top() + 1;
     T *begin = end - stack.size();
     std::vector<T> stack_contents(begin, end);
     return stack_contents;
   }
 
+  // Push Id to Stack if it is not NoId.
+  template <typename T>
+  static void StackPushIfValidId(std::stack<T> &stack, size_t id) {
+    if (id != NoId) {
+      stack.push(id);
+    }
+  }
+
   // Extract TreeMask from DAG based on edge choices to find best tree with given
   // central edge.
+  // - Makes two passes:
+  //   - The first pass goes up the DAG to the root, adding each edge it encounters.
+  //   - The second pass goes leafward, descending to the leaf edges from the sister of
+  //   each edge in the rootward pass and the child edges from the central edge.
   TreeMask ExtractTreeMask(size_t central_edge_id) const {
     TreeMask tree_mask;
     std::stack<size_t> rootward_stack, leafward_stack;
+    const size_t root_node_id = dag_.GetDAGRootNodeId();
 
     // Rootward Pass: Capture parent and sister edges above focal edge.
     // For central edge, add children to stack for leafward pass.
     size_t focal_edge_id = central_edge_id;
-    const auto &focal_choices = edge_choice_vector_[focal_edge_id];
-    if (focal_choices.left_child_edge_id != NoId) {
-      rootward_stack.push(focal_choices.left_child_edge_id);
-    }
-    if (focal_choices.right_child_edge_id != NoId) {
-      rootward_stack.push(focal_choices.right_child_edge_id);
-    }
+    const auto &focal_choices = edge_choice_vector_.at(focal_edge_id);
+    StackPushIfValidId(rootward_stack, focal_choices.left_child_edge_id);
+    StackPushIfValidId(rootward_stack, focal_choices.right_child_edge_id);
     // Follow parentage upward until root.
-    while (true) {
+    bool at_root = false;
+    while (!at_root) {
       tree_mask.push_back(focal_edge_id);
-      const auto &focal_choices = edge_choice_vector_[focal_edge_id];
+      const auto &focal_choices = edge_choice_vector_.at(focal_edge_id);
       // End upward pass if we are at the root.
-      focal_edge_id = focal_choices.parent_edge_id;
-      if (focal_edge_id == NoId) {
-        break;
+      if (dag_.GetDAGEdge(focal_edge_id).GetParent() == root_node_id) {
+        at_root = true;
+      } else {
+        // If not at root, add sister for leafward pass.
+        focal_edge_id = focal_choices.parent_edge_id;
+        rootward_stack.push(focal_choices.sister_edge_id);
       }
-      // If not at root, add sister for leafward pass.
-      rootward_stack.push(focal_choices.sister_edge_id);
     }
 
     // Leafward Pass: Capture all children from parentage.
@@ -181,13 +192,9 @@ class ChoiceMap {
       const auto edge_id = leafward_stack.top();
       leafward_stack.pop();
       tree_mask.push_back(edge_id);
-      const auto edge_choice = edge_choice_vector_[edge_id];
-      if (edge_choice.left_child_edge_id != NoId) {
-        leafward_stack.push(edge_choice.left_child_edge_id);
-      }
-      if (edge_choice.right_child_edge_id != NoId) {
-        leafward_stack.push(edge_choice.right_child_edge_id);
-      }
+      const auto edge_choice = edge_choice_vector_.at(edge_id);
+      StackPushIfValidId(leafward_stack, edge_choice.left_child_edge_id);
+      StackPushIfValidId(leafward_stack, edge_choice.right_child_edge_id);
     }
 
     return tree_mask;

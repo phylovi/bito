@@ -73,6 +73,8 @@ class SubsplitDAG {
   // The total number of nodes in the DAG (excluding the root, but including the
   // leaves).
   size_t NodeCountWithoutDAGRoot() const;
+  // The current minimum and maximum node Id values.
+  SizePair NodeIdRange() const;
   // The total number of rootsplits in DAG. These count all direct descendants of the
   // root (also, the union of each rootsplits clades cover the set of all taxa in the
   // DAG).
@@ -83,6 +85,8 @@ class SubsplitDAG {
   // The total number of edges in the DAG (including edges which terminat at a root of
   // leaf node).
   size_t EdgeCountWithLeafSubsplits() const;
+  // The current minimum and maximum edge Idx values.
+  SizePair EdgeIdxRange() const;
   // The total number of tree topologies expressable by the DAG.
   double TopologyCount() const;
 

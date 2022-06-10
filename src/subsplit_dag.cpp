@@ -140,7 +140,7 @@ size_t SubsplitDAG::NodeCount() const { return storage_.GetVertices().size(); }
 
 size_t SubsplitDAG::NodeCountWithoutDAGRoot() const { return NodeCount() - 1; }
 
-double SubsplitDAG::TopologyCount() const { return topology_count_; }
+SizePair SubsplitDAG::NodeIdRange() const { return {0, NodeCount()}; }
 
 size_t SubsplitDAG::RootsplitCount() const { return GetRootsplitNodeIds().size(); }
 
@@ -149,6 +149,10 @@ size_t SubsplitDAG::EdgeCount() const { return edge_count_without_leaf_subsplits
 size_t SubsplitDAG::EdgeCountWithLeafSubsplits() const {
   return storage_.GetLines().size();
 }
+
+SizePair SubsplitDAG::EdgeIdxRange() const { return {0, EdgeCountWithLeafSubsplits()}; }
+
+double SubsplitDAG::TopologyCount() const { return topology_count_; }
 
 // ** Output methods:
 

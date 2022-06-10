@@ -1563,13 +1563,13 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
   }
 }
 
-// Builds a SubsplitDAG. Uses a naive method that picks the first listed neighbor for
-// each parent, sister, left and right child. Tests that results is a valid selection
-// (all edges have mapped valid edge choices, except for root and leaves).  Then creates
-// TreeMasks for each edge in DAG, a list of edge ids which represent a embedded tree in
-// the DAG.  Tests that each TreeMask contains its central edge and is valid (tree spans
-// root and all leaf nodes, and every node in tree has a single parent, left child and
-// right child).
+// Initializes a ChoiceMap for a DAG. Then uses a naive method that picks the first
+// listed neighbor for each parent, sister, left and right child. Tests that results is
+// a valid selection (all edges have mapped valid edge choices, except for root and
+// leaves). Then creates TreeMasks for each edge in DAG, a list of edge ids which
+// represent a embedded tree in the DAG.  Tests that each TreeMask contains its central
+// edge and is valid (tree spans root and all leaf nodes, and every node in tree has a
+// single parent, left child and right child).
 TEST_CASE("Top-Pruning: ChoiceMap") {
   const std::string fasta_path = "data/six_taxon_longer.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
@@ -1628,7 +1628,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   }
   CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask),
                       "TreeMask is incorrectly valid when missing internal edge.");
-  // Additional edge.
+  // Tree contains additional edge.
   tree_mask = choice_map.ExtractTreeMask(0);
   for (size_t i = 0; i < dag.EdgeCountWithLeafSubsplits(); i++) {
     const auto contains_edge =
@@ -1646,9 +1646,8 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
       }
     }
   }
-  CHECK_FALSE_MESSAGE(
-      choice_map.TreeMaskIsValid(tree_mask),
-      "TreeMask is incorrectly valid when containing an extra unconnected edge.");
+  CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask),
+                      "TreeMask is incorrectly valid when containing an extra edge.");
 
   // Test TreeMasks created from all DAG edges result in valid tree.
   for (size_t edge_idx = 0; edge_idx < dag.EdgeCountWithLeafSubsplits(); edge_idx++) {
