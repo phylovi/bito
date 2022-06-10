@@ -688,10 +688,11 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
   double current_value = negative_log_likelihood(current_log_branch_length);
 
-  const auto [log_branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
-      negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
-      max_log_branch_length_, significant_digits_for_optimization_,
-      max_iter_for_optimization_);
+  const auto [log_branch_length, neg_log_likelihood] =
+      Optimization::BrentMinimize<false>(
+          negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
+          max_log_branch_length_, significant_digits_for_optimization_,
+          max_iter_for_optimization_, step_size_for_log_space_optimization_);
 
   // Numerical optimization sometimes yields new nllk > current nllk.
   // In this case, we reset the branch length to the previous value.
@@ -720,7 +721,7 @@ void GPEngine::BrentOptimizationWithGradients(
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
   double current_value = negative_log_likelihood(current_log_branch_length).first;
   const auto [log_branch_length, neg_log_likelihood] =
-      Optimization::BrentMinimizeWithGradient(
+      Optimization::BrentMinimize<true>(
           negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
           max_log_branch_length_, significant_digits_for_optimization_,
           max_iter_for_optimization_, step_size_for_log_space_optimization_);
