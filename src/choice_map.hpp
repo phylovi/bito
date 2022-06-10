@@ -290,21 +290,14 @@ class ChoiceMap {
 
   // ** I/O
 
-  // Output edge choice to string.
-  static std::string EdgeChoiceToString(const EdgeChoice &edge_choice) {
-    std::stringstream os;
+  // Output edge choice map to iostream.
+  friend std::ostream &operator<<(std::ostream &os, const EdgeChoice &edge_choice) {
     os << "{ ";
     os << "parent: " << edge_choice.parent_edge_id << ", ";
     os << "sister: " << edge_choice.sister_edge_id << ", ";
     os << "left_child: " << edge_choice.left_child_edge_id << ", ";
     os << "right_child: " << edge_choice.right_child_edge_id;
     os << " }";
-    return os.str();
-  }
-
-  // Output edge choice map to iostream.
-  friend std::ostream &operator<<(std::ostream &os, const EdgeChoice &edge_choice) {
-    os << EdgeChoiceToString(edge_choice);
     return os;
   }
 
