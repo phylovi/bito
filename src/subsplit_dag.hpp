@@ -73,6 +73,8 @@ class SubsplitDAG {
   // The total number of nodes in the DAG (excluding the root, but including the
   // leaves).
   size_t NodeCountWithoutDAGRoot() const;
+  // The current minimum and maximum node Id values.
+  SizePair NodeIdRange() const;
   // The total number of rootsplits in DAG. These count all direct descendants of the
   // root (also, the union of each rootsplits clades cover the set of all taxa in the
   // DAG).
@@ -83,6 +85,8 @@ class SubsplitDAG {
   // The total number of edges in the DAG (including edges which terminat at a root of
   // leaf node).
   size_t EdgeCountWithLeafSubsplits() const;
+  // The current minimum and maximum edge Idx values.
+  SizePair EdgeIdxRange() const;
   // The total number of tree topologies expressable by the DAG.
   double TopologyCount() const;
 
@@ -318,6 +322,14 @@ class SubsplitDAG {
   bool ContainsEdge(const size_t parent_id, const size_t child_id) const;
   bool ContainsEdge(const Bitset &edge_subsplit) const;
   bool ContainsEdge(const size_t edge_id) const;
+  // Is node the root?
+  bool IsNodeRoot(const size_t node_id) const;
+  // Is node a leaf?
+  bool IsNodeLeaf(const size_t node_id) const;
+  // Does edge connect to the root node?
+  bool IsEdgeRoot(const size_t edge_id) const;
+  // Does edge connect to a leaf node?
+  bool IsEdgeLeaf(const size_t edge_id) const;
 
   // ** Modify DAG
   // These methods are for directly modifying the DAG by adding or removing nodes and

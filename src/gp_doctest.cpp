@@ -1562,3 +1562,100 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
     nni_count++;
   }
 }
+
+// Initializes a ChoiceMap for a DAG. Then uses a naive method that picks the first
+// listed neighbor for each parent, sister, left and right child. Tests that results is
+// a valid selection (all edges have mapped valid edge choices, except for root and
+// leaves). Then creates TreeMasks for each edge in DAG, a list of edge ids which
+// represent a embedded tree in the DAG.  Tests that each TreeMask contains its central
+// edge and is valid (tree spans root and all leaf nodes, and every node in tree has a
+// single parent, left child and right child).
+TEST_CASE("Top-Pruning: ChoiceMap") {
+  const std::string fasta_path = "data/six_taxon_longer.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  auto inst =
+      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_pre.data");
+  auto dag = inst.GetDAG();
+
+  auto choice_map = ChoiceMap(dag);
+  CHECK_FALSE_MESSAGE(choice_map.SelectionIsValid(), "ChoiceMap selection is invalid.");
+  choice_map.SelectFirstEdge();
+  CHECK_MESSAGE(choice_map.SelectionIsValid(), "ChoiceMap selection is invalid.");
+
+  // Test for fail states for invalid TreeMasks.
+  ChoiceMap::TreeMask tree_mask;
+  SizeVector tree_nodes;
+  for (size_t i = 0; i < tree_mask.size(); i++) {
+    tree_nodes.push_back(dag.GetDAGEdge(i).GetParent());
+    tree_nodes.push_back(dag.GetDAGEdge(i).GetChild());
+  }
+  // Empty tree.
+  CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask),
+                      "TreeMask is incorrectly valid when empty.");
+  // Complete DAG.
+  for (size_t i = 0; i < dag.EdgeCountWithLeafSubsplits(); i++) {
+    tree_mask.push_back(i);
+  }
+  CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask),
+                      "TreeMask is incorrectly valid when mask is full DAG.");
+  // Tree missing root node.
+  tree_mask = choice_map.ExtractTreeMask(0);
+  for (size_t i = 0; i < tree_mask.size(); i++) {
+    if (dag.IsEdgeRoot(tree_mask[i])) {
+      tree_mask.erase(tree_mask.begin() + i);
+      break;
+    }
+  }
+  CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask),
+                      "TreeMask is incorrectly valid when missing root edge.");
+  // Tree missing leaf node.
+  tree_mask = choice_map.ExtractTreeMask(0);
+  for (size_t i = 0; i < tree_mask.size(); i++) {
+    if (dag.IsEdgeLeaf(tree_mask[i])) {
+      tree_mask.erase(tree_mask.begin() + i);
+      break;
+    }
+  }
+  CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask),
+                      "TreeMask is incorrectly valid when missing leaf edge.");
+  // Tree missing internal edge.
+  tree_mask = choice_map.ExtractTreeMask(0);
+  for (size_t i = 0; i < tree_mask.size(); i++) {
+    if (!dag.IsEdgeLeaf(tree_mask[i]) && !dag.IsEdgeLeaf(tree_mask[i])) {
+      tree_mask.erase(tree_mask.begin() + i);
+      break;
+    }
+  }
+  CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask),
+                      "TreeMask is incorrectly valid when missing internal edge.");
+  // Tree contains additional edge.
+  tree_mask = choice_map.ExtractTreeMask(0);
+  for (size_t i = 0; i < dag.EdgeCountWithLeafSubsplits(); i++) {
+    const auto contains_edge =
+        (std::find(tree_mask.begin(), tree_mask.end(), i) != tree_mask.end());
+    if (!contains_edge) {
+      const auto& parent_id = dag.GetDAGEdge(i).GetParent();
+      const auto contains_parent = (std::find(tree_nodes.begin(), tree_nodes.end(),
+                                              parent_id) != tree_nodes.end());
+      const auto& child_id = dag.GetDAGEdge(i).GetChild();
+      const auto contains_child = (std::find(tree_nodes.begin(), tree_nodes.end(),
+                                             child_id) != tree_nodes.end());
+      if (!contains_parent && !contains_child) {
+        tree_mask.push_back(i);
+        break;
+      }
+    }
+  }
+  CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask),
+                      "TreeMask is incorrectly valid when containing an extra edge.");
+
+  // Test TreeMasks created from all DAG edges result in valid tree.
+  for (size_t edge_idx = 0; edge_idx < dag.EdgeCountWithLeafSubsplits(); edge_idx++) {
+    const auto tree_mask = choice_map.ExtractTreeMask(edge_idx);
+    CHECK_MESSAGE(
+        std::find(tree_mask.begin(), tree_mask.end(), edge_idx) != tree_mask.end(),
+        "TreeMask did not contain given central edge.");
+    CHECK_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, false),
+                  "Edge resulted in an invalid TreeMask.");
+  }
+}
