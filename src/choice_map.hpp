@@ -131,7 +131,7 @@ class ChoiceMap {
   // ** TreeMask
   // A TreeMask is an unordered vector of edge Ids, which represent a tree contained in
   // the DAG, from the selected subset of DAG edges.
-  using TreeMask = std::unordered_set<size_t>;
+  using TreeMask = std::vector<size_t>;
 
   // Convert stack to a vector.
   template <typename T>
