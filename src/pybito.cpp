@@ -642,7 +642,7 @@ PYBIND11_MODULE(bito, m) {
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.", py::arg("tol"),
            py::arg("max_iter"), py::arg("quiet") = false,
-           py::arg("intermediate") = false)
+           py::arg("track_intermediate_iterations") = false)
       .def("get_perpcsp_llh_surface", &GPInstance::GetPerGPCSPLogLikelihoodSurfaces,
            "Scan the likelihood surface for the pcsps in the GPInstance.",
            py::arg("steps"), py::arg("scale_min"), py::arg("scale_max"))

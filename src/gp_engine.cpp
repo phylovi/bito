@@ -154,17 +154,13 @@ void GPEngine::GrowGPCSPs(const size_t new_gpcsp_count,
   // Initialize new work space.
   for (size_t i = old_gpcsp_count; i < GetPaddedGPCSPCount(); i++) {
     branch_lengths_[i] = default_branch_length_;
-
-    // Initialize branch length difference, with dag root node equal 0
-    if (i == old_gpcsp_count) {
-      branch_length_differences_[i] = 0;
-    } else {
-      branch_length_differences_[i] = default_branch_length_;
-    }
+    branch_length_differences_[i] = default_branch_length_;
     hybrid_marginal_log_likelihoods_[i] = DOUBLE_NEG_INF;
   }
-  for (size_t i = old_gpcsp_count; i < GetGPCSPCount(); i++) {
-    if (!on_initialization) {
+  if (on_initialization) {
+    branch_length_differences_[old_gpcsp_count] = 0;
+  } else {
+    for (size_t i = old_gpcsp_count; i < GetGPCSPCount(); i++) {
       q_[i] = 1.;
       inverted_sbn_prior_[i] = 1.;
     }
@@ -341,11 +337,6 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
   return Optimization(op);
-}
-
-void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op,
-                          const GPEngine::OptimizationMethod method) {
-  return Optimization(op, method);
 }
 
 EigenVectorXd NormalizedPosteriorOfLogUnnormalized(
@@ -646,15 +637,7 @@ void GPEngine::SetOptimizationMethod(const GPEngine::OptimizationMethod method) 
 }
 
 void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op) {
-  return Optimization(op, optimization_method_);
-}
-
-void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op,
-                            std::optional<GPEngine::OptimizationMethod> os) {
-  Assert(os.has_value(),
-         "GPEngine::Optimization(): Optimization method has not been set.");
-
-  switch (os.value()) {
+  switch (optimization_method_) {
     case OptimizationMethod::BrentOptimization:
       return BrentOptimization(op);
     case OptimizationMethod::BrentOptimizationWithGradients:

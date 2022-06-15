@@ -76,8 +76,6 @@ class GPEngine {
   void operator()(const GPOperations::Multiply& op);
   void operator()(const GPOperations::Likelihood& op);
   void operator()(const GPOperations::OptimizeBranchLength& op);
-  void operator()(const GPOperations::OptimizeBranchLength& op,
-                  const GPEngine::OptimizationMethod method);
   void operator()(const GPOperations::UpdateSBNProbabilities& op);
   void operator()(const GPOperations::PrepForMarginalization& op);
 
@@ -214,10 +212,8 @@ class GPEngine {
   void RescalePLVIfNeeded(size_t plv_idx);
   double LogRescalingFor(size_t plv_idx);
 
-  std::optional<OptimizationMethod> optimization_method_ = std::nullopt;
+  GPEngine::OptimizationMethod optimization_method_;
   void Optimization(const GPOperations::OptimizeBranchLength& op);
-  void Optimization(const GPOperations::OptimizeBranchLength& op,
-                    std::optional<OptimizationMethod> os);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void BrentOptimizationWithGradients(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
