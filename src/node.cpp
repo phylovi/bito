@@ -322,7 +322,7 @@ void Node::RootedPCSPPreorder(RootedPCSPFun f, bool allow_leaves) const {
           auto child0 = node->Children()[0].get();
           auto child1 = node->Children()[1].get();
           f(sister, node, child0, child1);
-        } 
+        }
       });
 }
 
