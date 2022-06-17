@@ -561,3 +561,31 @@ SizeVectorVector Node::IdsAbove() const {
       [&mutable_ids](const Node*) { mutable_ids.pop_back(); });
   return ids_above;
 }
+
+std::string Node::ToString() const {
+  std::stringstream os;
+  os << "{ id: " << Id();
+  os << ", leaves: " << Leaves();
+  SizeVector child_ids;
+  for (const auto child : children_) {
+    child_ids.push_back(child.get()->Id());
+  }
+  os << ", children: " << child_ids << " }";
+  return os.str();
+}
+
+std::string Node::TopologyToString() const {
+  std::stringstream os;
+  os << "[ " << std::endl;
+
+  DepthFirst(
+      // pre function
+      [&os](const Node* node_ptr) {
+        os << "\t" << node_ptr->ToString() << ", " << std::endl;
+      },
+      // post function
+      [&os](const Node* node_ptr) {});
+
+  os << " ]" << std::endl;
+  return os.str();
+}

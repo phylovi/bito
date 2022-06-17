@@ -189,6 +189,11 @@ class Node {
   // https://stackoverflow.com/a/776523/467327
   static size_t SORotate(size_t n, uint32_t c);
 
+  // Output single node to string.
+  std::string ToString() const;
+  // Output entire topology below node to string.
+  std::string TopologyToString() const;
+
  private:
   // Vector of direct child descendants of node in tree topology.
   NodePtrVec children_;
