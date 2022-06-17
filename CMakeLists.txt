@@ -108,6 +108,7 @@ add_library(bito-core SHARED
   src/psp_indexer.cpp
   src/quartet_hybrid_request.cpp
   src/reindexer.cpp
+  src/sankoff_handler.cpp
   src/rooted_gradient_transforms.cpp
   src/rooted_sbn_instance.cpp
   src/rooted_tree.cpp
