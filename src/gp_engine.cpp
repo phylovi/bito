@@ -556,7 +556,7 @@ std::tuple<double, double, double> GPEngine::LogLikelihoodAndFirstTwoDerivatives
       per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
 
   // Second derivative is calculated the same way, but has an extra term due to
-  // the product rule
+  // the product rule.
 
   PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(op.rootward_, op.leafward_);
 
