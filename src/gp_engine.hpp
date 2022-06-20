@@ -83,7 +83,7 @@ class GPEngine {
   void ProcessOperations(GPOperationVector operations);
 
   void SetOptimizationMethod(const GPEngine::OptimizationMethod method);
-  void SetOptimizationTolerance(int optim_tol);
+  void SetSignificantDigitsForOptimization(int significant_digits);
   void SetTransitionMatrixToHaveBranchLength(double branch_length);
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
@@ -268,6 +268,17 @@ class GPEngine {
   // space).
   static constexpr double max_log_branch_length_ = 1.1;
   // Precision used for checking convergence of branch length optimization.
+  // In the non-Brent optimization methods, significant digits will be used to
+  // determine convergence through relative tolerance, i.e. measuring difference
+  // from previous branch length values until the absolute difference is below
+  // 10^(-significant_digits_for_optimization_).
+  // Brent optimization does not define convergence through relative tolerance,
+  // rather convergence based on tightness of the brackets that it adapts during
+  // optimization. This variable thus represents the "number of bits precision to which
+  // the minima should be found". When testing on sample datasets, we found that setting
+  // the value to 10 was a good compromise between speed and precision for Brent.
+  // See more on Brent optimization here:
+  // https://www.boost.org/doc/libs/1_79_0/libs/math/doc/html/math_toolkit/brent_minima.html
   int significant_digits_for_optimization_ = 10;
   double relative_tolerance_for_optimization_ = 1e-4;
   double denominator_tolerance_for_newton_ = 1e-10;

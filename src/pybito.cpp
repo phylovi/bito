@@ -649,7 +649,7 @@ PYBIND11_MODULE(bito, m) {
       .def("perturb_and_track_optimization_values",
            &GPInstance::PerturbAndTrackValuesFromOptimization,
            "Reinitiate optimization, perturbing one branch length at a time,  and "
-           "track branch length and per pcsp likelihoods/")
+           "track branch length and per pcsp likelihoods.")
 
       // ** NNI Engine
       .def("make_nni_engine", &GPInstance::MakeNNIEngine,

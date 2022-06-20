@@ -10,6 +10,18 @@
 
 #include "sugar.hpp"
 
+// We tested both gradient and gradient-free based methods for branch length
+// optimization using generalized pruning. We found that gradient-based, particularly
+// Newton's method, works well on small test cases, but fails compared to gradient-free
+// methods in real data. We tried a "hybrid" approach, where ran Brent for the first
+// round or 2 of optimization (on the full DAG), and then handed off to Newton's method,
+// but these didn't show improvements over Newton's method.
+//
+// We made improvements on Brent's method, adapted from the Boost C++ library, for
+// our purposes. First, we introduced a "guess" as the initial value, when previously
+// the initial value was always set to the input "max" bracket value. We also introduced
+// the option to take small gradient steps in the case that the initial algorithm fails
+// to improve on the current best argmin value (turned on with use_gradients).
 namespace Optimization {
 
 // Adapted from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
