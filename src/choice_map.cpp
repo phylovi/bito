@@ -47,8 +47,8 @@ void ChoiceMap::SelectFirstEdge() {
 }
 
 bool ChoiceMap::SelectionIsValid(const bool is_quiet) const {
-  std::ofstream devnull("/dev/null");
-  std::ostream &os = (is_quiet ? devnull : std::cerr);
+  std::stringstream dev_null;
+  std::ostream &os = (is_quiet ? dev_null : std::cerr);
 
   size_t edge_max_id = dag_.EdgeIdxRange().second;
   for (size_t edge_idx = 0; edge_idx < edge_choice_vector_.size(); edge_idx++) {
@@ -108,9 +108,6 @@ ChoiceMap::ExpandedTreeMask ChoiceMap::ExtractExpandedTreeMask(
     for (const auto &node_id : {parent_id, child_id}) {
       if (tree_mask_ext.find(node_id) == tree_mask_ext.end()) {
         tree_mask_ext.insert({node_id, AdjacentNodeArray<size_t>(NoId)});
-        if (tree_mask_ext[node_id][AdjacentNode::Parent] != NoId) {
-          std::cout << "ERROR NOT NO_ID!!!!!!" << std::endl;
-        }
       }
     }
     // Add adjacent nodes to map.
@@ -197,8 +194,8 @@ ChoiceMap::ExpandedTreeMask ChoiceMap::ExtractExpandedTreeMask(
 }
 
 bool ChoiceMap::TreeMaskIsValid(const TreeMask &tree_mask, const bool is_quiet) const {
-  std::ofstream devnull("/dev/null");
-  std::ostream &os = (is_quiet ? devnull : std::cerr);
+  std::stringstream dev_null;
+  std::ostream &os = (is_quiet ? dev_null : std::cerr);
 
   SizeVector node_ids;
   bool root_check = false;
@@ -396,18 +393,18 @@ Node::Topology ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const
 
 bool ChoiceMap::TopologyIsValid(const Node::Topology &topology,
                                 const bool is_quiet) const {
-  std::ofstream devnull("/dev/null");
-  std::ostream &os = (is_quiet ? devnull : std::cerr);
+  std::stringstream dev_null;
+  std::ostream &os = (is_quiet ? dev_null : std::cerr);
   bool is_tree_valid = true;
 
   Bitset leaves = topology->Leaves();
   BoolVector visited_leaves(leaves.size(), false);
   if (leaves.size() != dag_.TaxonCount()) {
-    os << "Invalid Tree: tree does not cover all taxa.";
+    os << "Invalid Tree: tree does not cover all taxa." << std::endl;
     return false;
   }
   if (!leaves.All()) {
-    os << "Invalid Tree: root does not span all taxa.";
+    os << "Invalid Tree: root does not span all taxa." << std::endl;
     return false;
   }
   topology->Preorder(

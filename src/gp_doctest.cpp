@@ -1587,7 +1587,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
 
   // Test for fail states for invalid TreeMasks.
   ChoiceMap::TreeMask tree_mask;
-  Node::Topology tree;
+  Node::Topology topology;
   SizeVector tree_nodes;
   bool quiet_errors = true;
   for (const auto edge_id : tree_mask) {
@@ -1645,7 +1645,6 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                        "Tree is incorrectly valid when missing internal edge.");
   // Tree contains additional edge.
   tree_mask = choice_map.ExtractTreeMask(0);
-  tree = choice_map.ExtractTopology(tree_mask);
   for (size_t edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
     const auto contains_edge = (tree_mask.find(edge_id) != tree_mask.end());
     if (!contains_edge) {
@@ -1665,16 +1664,46 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                       "TreeMask is incorrectly valid when containing an extra edge.");
   CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when containing an extra edge.");
+  // Tree with Multifurcating Edge.
+  topology = Node::Join(std::vector<Node::NodePtr>(
+      {Node::Join(Node::Leaf(0), Node::Leaf(1)),
+       Node::Join(Node::Join(Node::Leaf(2), Node::Leaf(3)),
+                  Node::Join(Node::Leaf(4), Node::Leaf(5)))}));
+  topology->Polish();
+  CHECK_MESSAGE(choice_map.TopologyIsValid(topology, false),
+                "Topology is incorrectly invalid.");
+  // Tree with Multifurcating Edge.
+  topology = Node::Join(std::vector<Node::NodePtr>(
+      {Node::Leaf(0), Node::Leaf(1), Node::Join(Node::Leaf(2), Node::Leaf(3)),
+       Node::Join(Node::Leaf(4), Node::Leaf(5))}));
+  topology->Polish();
+  CHECK_FALSE_MESSAGE(
+      choice_map.TopologyIsValid(topology, false),
+      "Topology is incorrectly valid when containing a multifurcating node.");
+  // Tree with Missing Leaves.
+  topology = Node::Join(std::vector<Node::NodePtr>(
+      {Node::Leaf(0), Node::Leaf(1), Node::Join(Node::Leaf(2), Node::Leaf(3)),
+       Node::Leaf(4)}));
+  topology->Polish();
+  CHECK_FALSE_MESSAGE(choice_map.TopologyIsValid(topology, false),
+                      "Topology is incorrectly valid when not spanning all leaves.");
+  // Tree with Missing Leaves.
+  topology = Node::Join(std::vector<Node::NodePtr>(
+      {Node::Leaf(0), Node::Leaf(1), Node::Join(Node::Leaf(2), Node::Leaf(3)),
+       Node::Join(Node::Leaf(4), Node::Leaf(5))}));
+  topology->Polish();
+  CHECK_FALSE_MESSAGE(choice_map.TopologyIsValid(topology, false),
+                      "Topology is incorrectly valid when not spanning all leaves.");
 
   // Test TreeMasks created from all DAG edges result in valid tree.
-  for (size_t edge_idx = 0; edge_idx < dag.EdgeCountWithLeafSubsplits(); edge_idx++) {
-    const auto tree_mask = choice_map.ExtractTreeMask(edge_idx);
-    const auto tree = choice_map.ExtractTopology(edge_idx);
-    CHECK_MESSAGE(tree_mask.find(edge_idx) != tree_mask.end(),
+  for (size_t edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
+    const auto tree_mask = choice_map.ExtractTreeMask(edge_id);
+    const auto topology = choice_map.ExtractTopology(edge_id);
+    CHECK_MESSAGE(tree_mask.find(edge_id) != tree_mask.end(),
                   "TreeMask did not contain given central edge.");
     CHECK_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                   "Edge resulted in an invalid TreeMask.");
-    CHECK_MESSAGE(choice_map.TopologyIsValid(tree, quiet_errors),
+    CHECK_MESSAGE(choice_map.TopologyIsValid(topology, quiet_errors),
                   "Edge resulted in an invalid Tree.");
   }
 }
