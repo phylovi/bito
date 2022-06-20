@@ -63,16 +63,10 @@ class ChoiceMap {
 
   // Extract Topology from DAG based on edge choices to find best tree with given
   // central edge.
-  // - Makes two passes:
-  //   - The first pass goes up along the chosen edges of the DAG to the root, adding
-  //   each edge it encounters.
-  //   - The second pass goes leafward, descending along the chosen edges to the leaf
-  //   edges from the sister of each edge in the rootward pass and the child edges from
-  //   the central edge.
   Node::Topology ExtractTopology(const size_t central_edge_id) const;
   Node::Topology ExtractTopology(const TreeMask &tree_mask) const;
   // Checks that tree is a valid tree in DAG that spans the root and all leaf nodes in
-  // the DAG, and
+  // the DAG.
   bool TopologyIsValid(const Node::Topology &topology,
                        const bool is_quiet = true) const;
 

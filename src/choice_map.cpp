@@ -313,8 +313,14 @@ std::string ChoiceMap::ExpandedTreeMaskToString(
   return os.str();
 }
 
-// ** Tree
+// ** Topology
 
+// - Makes two passes:
+//   - The first pass goes up along the chosen edges of the DAG to the root, adding
+//   each edge it encounters.
+//   - The second pass goes leafward, descending along the chosen edges to the leaf
+//   edges from the sister of each edge in the rootward pass and the child edges from
+//   the central edge.
 Node::Topology ChoiceMap::ExtractTopology(const size_t central_edge_id) const {
   return ExtractTopology(ExtractTreeMask(central_edge_id));
 }
