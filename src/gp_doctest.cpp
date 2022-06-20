@@ -1569,7 +1569,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 // a valid selection (all edges have mapped valid edge choices, except for root and
 // leaves). Then creates TreeMasks for each edge in DAG, a list of edge ids which
 // represent a embedded tree in the DAG.
-// - Tests that invalid TreeMasks and Trees are found in invalid.
+// - Tests that invalid TreeMasks and Trees are found to be invalid.
 // - Tests that each TreeMask contains its central edge and is valid (tree spans root
 // and all leaf nodes, and every node in tree has a single parent, left child and right
 // child).

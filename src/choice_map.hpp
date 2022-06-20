@@ -48,21 +48,15 @@ class ChoiceMap {
   enum class AdjacentNode { Parent, LeftChild, RightChild };
   template <typename T>
   using AdjacentNodeArray = EnumArray<AdjacentNode, 3, T>;
+  // The ExpandedTreeMask contains a map from all the nodes of a TreeMask to their
+  // associated parent, left and right child.
   using ExpandedTreeMask = std::map<size_t, AdjacentNodeArray<size_t>>;
 
   // Extract TreeMask from DAG based on edge choices to find best tree with given
   // central edge.
-  // - Makes two passes:
-  //   - The first pass goes up along the chosen edges of the DAG to the root, adding
-  //   each edge it encounters.
-  //   - The second pass goes leafward, descending along the chosen edges to the leaf
-  //   edges from the sister of each edge in the rootward pass and the child edges from
-  //   the central edge.
   TreeMask ExtractTreeMask(const size_t central_edge_id) const;
 
-  // Expand a TreeMask into a ExpandedTreeMask.  Rather than containing all the edges in
-  // the tree, the ExpandedTreeMask contains all the nodes in the tree in a map
-  // associated with their parent, left and right child.
+  // Extract an ExpandedTreeMask from DAG based on a central edge or previous TreeMask.
   ExpandedTreeMask ExtractExpandedTreeMask(const size_t central_edge_id) const;
   ExpandedTreeMask ExtractExpandedTreeMask(const TreeMask &tree_mask) const;
 
@@ -92,7 +86,8 @@ class ChoiceMap {
   Tree ExtractTree(const TreeMask &tree_mask) const;
   Tree ExtractTree(ExpandedTreeMask &tree_mask_ext) const;
 
-  // Checks that tree is a valid tree in DAG that spans the
+  // Checks that tree is a valid tree in DAG that spans the root and all leaf nodes in
+  // the DAG, and
   bool TreeIsValid(const Tree &tree, const bool is_quiet = true) const;
 
   // ** I/O

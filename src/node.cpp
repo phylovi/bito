@@ -562,7 +562,7 @@ SizeVectorVector Node::IdsAbove() const {
   return ids_above;
 }
 
-std::string Node::ToString() const {
+std::string Node::NodeIdAndLeavesToString() const {
   std::stringstream os;
   os << "{ id: " << Id();
   os << ", leaves: " << Leaves();
@@ -574,17 +574,15 @@ std::string Node::ToString() const {
   return os.str();
 }
 
-std::string Node::TopologyToString() const {
+std::string Node::NodeIdAndLeavesToStringForTopology() const {
   std::stringstream os;
   os << "[ " << std::endl;
 
-  DepthFirst(
+  Preorder(
       // pre function
       [&os](const Node* node_ptr) {
-        os << "\t" << node_ptr->ToString() << ", " << std::endl;
-      },
-      // post function
-      [&os](const Node* node_ptr) {});
+        os << "\t" << node_ptr->NodeIdAndLeavesToString() << ", " << std::endl;
+      });
 
   os << " ]" << std::endl;
   return os.str();

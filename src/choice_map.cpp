@@ -90,6 +90,43 @@ bool ChoiceMap::SelectionIsValid(const bool is_quiet) const {
 
 // ** TreeMask
 
+// - Makes two passes:
+//   - The first pass goes up along the chosen edges of the DAG to the root, adding
+//   each edge it encounters.
+//   - The second pass goes leafward, descending along the chosen edges to the leaf
+//   edges from the sister of each edge in the rootward pass and the child edges from
+//   the central edge.
+ChoiceMap::ExpandedTreeMask ChoiceMap::ExtractExpandedTreeMask(
+    const TreeMask &tree_mask) const {
+  ExpandedTreeMask tree_mask_ext;
+  for (const auto edge_id : tree_mask) {
+    const auto &edge = dag_.GetDAGEdge(edge_id);
+    const auto focal_clade = edge.GetSubsplitClade();
+    const auto parent_id = edge.GetParent();
+    const auto child_id = edge.GetChild();
+    // Add nodes to map if they don't already exist.
+    for (const auto &node_id : {parent_id, child_id}) {
+      if (tree_mask_ext.find(node_id) == tree_mask_ext.end()) {
+        tree_mask_ext.insert({node_id, AdjacentNodeArray<size_t>(NoId)});
+        if (tree_mask_ext[node_id][AdjacentNode::Parent] != NoId) {
+          std::cout << "ERROR NOT NO_ID!!!!!!" << std::endl;
+        }
+      }
+    }
+    // Add adjacent nodes to map.
+    const auto which_node = (focal_clade == SubsplitClade::Left)
+                                ? AdjacentNode::LeftChild
+                                : AdjacentNode::RightChild;
+    Assert(tree_mask_ext[parent_id][which_node] == NoId,
+           "Invalid TreeMask: Cannot reassign adjacent node.");
+    tree_mask_ext[parent_id][which_node] = child_id;
+    Assert(tree_mask_ext[child_id][AdjacentNode::Parent] == NoId,
+           "Invalid TreeMask: Cannot reassign adjacent node.");
+    tree_mask_ext[child_id][AdjacentNode::Parent] = parent_id;
+  }
+  return tree_mask_ext;
+}
+
 // Convert stack to a vector.
 template <typename T>
 static std::set<T> StackToVector(std::stack<T> &stack) {
@@ -157,37 +194,6 @@ ChoiceMap::TreeMask ChoiceMap::ExtractTreeMask(const size_t central_edge_id) con
 ChoiceMap::ExpandedTreeMask ChoiceMap::ExtractExpandedTreeMask(
     const size_t central_edge_id) const {
   return ExtractExpandedTreeMask(ExtractTreeMask(central_edge_id));
-}
-
-ChoiceMap::ExpandedTreeMask ChoiceMap::ExtractExpandedTreeMask(
-    const TreeMask &tree_mask) const {
-  ExpandedTreeMask tree_mask_ext;
-  for (const auto edge_id : tree_mask) {
-    const auto &edge = dag_.GetDAGEdge(edge_id);
-    const auto focal_clade = edge.GetSubsplitClade();
-    const auto parent_id = edge.GetParent();
-    const auto child_id = edge.GetChild();
-    // Add nodes to map if they don't already exist.
-    for (const auto &node_id : {parent_id, child_id}) {
-      if (tree_mask_ext.find(node_id) == tree_mask_ext.end()) {
-        tree_mask_ext.insert({node_id, {{NoId, NoId, NoId}}});
-        tree_mask_ext[node_id][AdjacentNode::Parent] = NoId;
-        tree_mask_ext[node_id][AdjacentNode::LeftChild] = NoId;
-        tree_mask_ext[node_id][AdjacentNode::RightChild] = NoId;
-      }
-    }
-    // Add adjacent nodes to map.
-    const auto which_node = (focal_clade == SubsplitClade::Left)
-                                ? AdjacentNode::LeftChild
-                                : AdjacentNode::RightChild;
-    Assert(tree_mask_ext[parent_id][which_node] == NoId,
-           "Invalid TreeMask: Cannot reassign adjacent node.");
-    tree_mask_ext[parent_id][which_node] = child_id;
-    Assert(tree_mask_ext[child_id][AdjacentNode::Parent] == NoId,
-           "Invalid TreeMask: Cannot reassign adjacent node.");
-    tree_mask_ext[child_id][AdjacentNode::Parent] = parent_id;
-  }
-  return tree_mask_ext;
 }
 
 bool ChoiceMap::TreeMaskIsValid(const TreeMask &tree_mask, const bool is_quiet) const {
@@ -398,8 +404,7 @@ bool ChoiceMap::TreeIsValid(const Tree &tree, const bool is_quiet) const {
     os << "Invalid Tree: root does not span all taxa.";
     return false;
   }
-  tree.Topology()->DepthFirst(
-      // pre function
+  tree.Topology()->Preorder(
       [this, &os, &visited_leaves, &is_tree_valid](const Node *node_ptr) {
         if (node_ptr->IsLeaf()) {
           if (visited_leaves[node_ptr->Id()]) {
@@ -416,10 +421,6 @@ bool ChoiceMap::TreeIsValid(const Tree &tree, const bool is_quiet) const {
              << std::endl;
           is_tree_valid = false;
         }
-      },
-      // post function
-      [](const Node *node_ptr) {
-
       });
   return is_tree_valid;
 }
