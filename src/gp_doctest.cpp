@@ -1587,7 +1587,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
 
   // Test for fail states for invalid TreeMasks.
   ChoiceMap::TreeMask tree_mask;
-  Tree tree;
+  Node::Topology tree;
   SizeVector tree_nodes;
   bool quiet_errors = true;
   for (const auto edge_id : tree_mask) {
@@ -1597,7 +1597,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   // Empty tree.
   CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                       "TreeMask is incorrectly valid when empty.");
-  CHECK_THROWS_MESSAGE(choice_map.ExtractTree(tree_mask),
+  CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when empty.");
   // Complete DAG.
   for (size_t edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
@@ -1605,7 +1605,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   }
   CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                       "TreeMask is incorrectly valid with full DAG.");
-  CHECK_THROWS_MESSAGE(choice_map.ExtractTree(tree_mask),
+  CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when missing root edge.");
   // Tree missing root node.
   tree_mask = choice_map.ExtractTreeMask(0);
@@ -1617,7 +1617,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   }
   CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                       "TreeMask is incorrectly valid when missing root edge.");
-  CHECK_THROWS_MESSAGE(choice_map.ExtractTree(tree_mask),
+  CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when missing root edge.");
   // Tree missing leaf node.
   tree_mask = choice_map.ExtractTreeMask(0);
@@ -1629,7 +1629,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   }
   CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                       "TreeMask is incorrectly valid when missing leaf edge.");
-  CHECK_THROWS_MESSAGE(choice_map.ExtractTree(tree_mask),
+  CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when missing leaf edge.");
   // Tree missing internal edge.
   tree_mask = choice_map.ExtractTreeMask(0);
@@ -1641,11 +1641,11 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   }
   CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                       "TreeMask is incorrectly valid when missing internal edge.");
-  CHECK_THROWS_MESSAGE(choice_map.ExtractTree(tree_mask),
+  CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when missing internal edge.");
   // Tree contains additional edge.
   tree_mask = choice_map.ExtractTreeMask(0);
-  tree = choice_map.ExtractTree(tree_mask);
+  tree = choice_map.ExtractTopology(tree_mask);
   for (size_t edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
     const auto contains_edge = (tree_mask.find(edge_id) != tree_mask.end());
     if (!contains_edge) {
@@ -1663,18 +1663,18 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   }
   CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                       "TreeMask is incorrectly valid when containing an extra edge.");
-  CHECK_THROWS_MESSAGE(choice_map.ExtractTree(tree_mask),
+  CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when containing an extra edge.");
 
   // Test TreeMasks created from all DAG edges result in valid tree.
   for (size_t edge_idx = 0; edge_idx < dag.EdgeCountWithLeafSubsplits(); edge_idx++) {
     const auto tree_mask = choice_map.ExtractTreeMask(edge_idx);
-    const auto tree = choice_map.ExtractTree(edge_idx);
+    const auto tree = choice_map.ExtractTopology(edge_idx);
     CHECK_MESSAGE(tree_mask.find(edge_idx) != tree_mask.end(),
                   "TreeMask did not contain given central edge.");
     CHECK_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                   "Edge resulted in an invalid TreeMask.");
-    CHECK_MESSAGE(choice_map.TreeIsValid(tree, quiet_errors),
+    CHECK_MESSAGE(choice_map.TopologyIsValid(tree, quiet_errors),
                   "Edge resulted in an invalid Tree.");
   }
 }

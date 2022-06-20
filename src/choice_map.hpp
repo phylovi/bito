@@ -42,24 +42,13 @@ class ChoiceMap {
   bool SelectionIsValid(const bool is_quiet = true) const;
 
   // ** TreeMask
+
   // A TreeMask is a set of edge Ids, which represent a tree contained in
   // the DAG, from the selected subset of DAG edges.
   using TreeMask = std::set<size_t>;
-  enum class AdjacentNode { Parent, LeftChild, RightChild };
-  template <typename T>
-  using AdjacentNodeArray = EnumArray<AdjacentNode, 3, T>;
-  // The ExpandedTreeMask contains a map from all the nodes of a TreeMask to their
-  // associated parent, left and right child.
-  using ExpandedTreeMask = std::map<size_t, AdjacentNodeArray<size_t>>;
-
   // Extract TreeMask from DAG based on edge choices to find best tree with given
   // central edge.
   TreeMask ExtractTreeMask(const size_t central_edge_id) const;
-
-  // Extract an ExpandedTreeMask from DAG based on a central edge or previous TreeMask.
-  ExpandedTreeMask ExtractExpandedTreeMask(const size_t central_edge_id) const;
-  ExpandedTreeMask ExtractExpandedTreeMask(const TreeMask &tree_mask) const;
-
   // Checks that TreeMask represents a valid, complete tree in the DAG.
   // Specifically, checks that:
   // - There is a single edge that goes to the root.
@@ -67,14 +56,12 @@ class ChoiceMap {
   // - For each node in mask, there is a single parent, left and right child.
   //   - Unless node is root (no parent) or leaf (no children).
   bool TreeMaskIsValid(const TreeMask &tree_mask, const bool is_quiet = true) const;
-
   // Output TreeMask to string.
   std::string TreeMaskToString(const TreeMask &tree_mask) const;
-  std::string ExpandedTreeMaskToString(const ExpandedTreeMask &tree_mask) const;
 
-  // ** Tree
+  // ** Topology
 
-  // Extract Tree from DAG based on edge choices to find best tree with given
+  // Extract Topology from DAG based on edge choices to find best tree with given
   // central edge.
   // - Makes two passes:
   //   - The first pass goes up along the chosen edges of the DAG to the root, adding
@@ -82,13 +69,12 @@ class ChoiceMap {
   //   - The second pass goes leafward, descending along the chosen edges to the leaf
   //   edges from the sister of each edge in the rootward pass and the child edges from
   //   the central edge.
-  Tree ExtractTree(const size_t central_edge_id) const;
-  Tree ExtractTree(const TreeMask &tree_mask) const;
-  Tree ExtractTree(ExpandedTreeMask &tree_mask_ext) const;
-
+  Node::Topology ExtractTopology(const size_t central_edge_id) const;
+  Node::Topology ExtractTopology(const TreeMask &tree_mask) const;
   // Checks that tree is a valid tree in DAG that spans the root and all leaf nodes in
   // the DAG, and
-  bool TreeIsValid(const Tree &tree, const bool is_quiet = true) const;
+  bool TopologyIsValid(const Node::Topology &topology,
+                       const bool is_quiet = true) const;
 
   // ** I/O
 
@@ -98,6 +84,22 @@ class ChoiceMap {
   friend std::ostream &operator<<(std::ostream &os, const ChoiceMap &choice_map);
 
  private:
+  // ** ExpandedTreeMask
+  // The ExpandedTreeMask contains a map from all the nodes of a TreeMask to their
+  // associated parent, left and right child.
+  enum class AdjacentNode { Parent, LeftChild, RightChild };
+  template <typename T>
+  using AdjacentNodeArray = EnumArray<AdjacentNode, 3, T>;
+  using ExpandedTreeMask = std::map<size_t, AdjacentNodeArray<size_t>>;
+
+  // Extract an ExpandedTreeMask from DAG based on a central edge or previous TreeMask.
+  ExpandedTreeMask ExtractExpandedTreeMask(const size_t central_edge_id) const;
+  ExpandedTreeMask ExtractExpandedTreeMask(const TreeMask &tree_mask) const;
+  // Extract Tree based on given ExpandedTreeMask.
+  Node::Topology ExtractTopology(ExpandedTreeMask &tree_mask_ext) const;
+  // Output ExpandedTreeMask to a string.
+  std::string ExpandedTreeMaskToString(const ExpandedTreeMask &tree_mask) const;
+
   // Un-owned reference DAG.
   GPDAG &dag_;
   // A vector that stores a map of each edge's best adjacent edges.

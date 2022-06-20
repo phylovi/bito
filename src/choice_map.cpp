@@ -315,16 +315,16 @@ std::string ChoiceMap::ExpandedTreeMaskToString(
 
 // ** Tree
 
-Tree ChoiceMap::ExtractTree(const size_t central_edge_id) const {
-  return ExtractTree(ExtractTreeMask(central_edge_id));
+Node::Topology ChoiceMap::ExtractTopology(const size_t central_edge_id) const {
+  return ExtractTopology(ExtractTreeMask(central_edge_id));
 }
 
-Tree ChoiceMap::ExtractTree(const TreeMask &tree_mask) const {
+Node::Topology ChoiceMap::ExtractTopology(const TreeMask &tree_mask) const {
   ExpandedTreeMask tree_mask_ext = ExtractExpandedTreeMask(tree_mask);
-  return ExtractTree(tree_mask_ext);
+  return ExtractTopology(tree_mask_ext);
 }
 
-Tree ChoiceMap::ExtractTree(ExpandedTreeMask &tree_mask_ext) const {
+Node::Topology ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const {
   const auto dag_root_id = dag_.GetDAGRootNodeId();
   Assert(tree_mask_ext.find(dag_root_id) != tree_mask_ext.end(),
          "DAG Root Id does not exist in ExpandedTreeMask map.");
@@ -384,17 +384,17 @@ Tree ChoiceMap::ExtractTree(ExpandedTreeMask &tree_mask_ext) const {
   Assert((nodes.size() + 1) == tree_mask_ext.size(),
          "Invalid TreeMask-to-Tree: Topology did not span every node in "
          "the TreeMask.");
-  Tree tree(topology, Tree::BranchLengthVector(nodes.size()));
 
-  return tree;
+  return topology;
 }
 
-bool ChoiceMap::TreeIsValid(const Tree &tree, const bool is_quiet) const {
+bool ChoiceMap::TopologyIsValid(const Node::Topology &topology,
+                                const bool is_quiet) const {
   std::ofstream devnull("/dev/null");
   std::ostream &os = (is_quiet ? devnull : std::cerr);
   bool is_tree_valid = true;
 
-  Bitset leaves = tree.Topology()->Leaves();
+  Bitset leaves = topology->Leaves();
   BoolVector visited_leaves(leaves.size(), false);
   if (leaves.size() != dag_.TaxonCount()) {
     os << "Invalid Tree: tree does not cover all taxa.";
@@ -404,7 +404,7 @@ bool ChoiceMap::TreeIsValid(const Tree &tree, const bool is_quiet) const {
     os << "Invalid Tree: root does not span all taxa.";
     return false;
   }
-  tree.Topology()->Preorder(
+  topology->Preorder(
       [this, &os, &visited_leaves, &is_tree_valid](const Node *node_ptr) {
         if (node_ptr->IsLeaf()) {
           if (visited_leaves[node_ptr->Id()]) {

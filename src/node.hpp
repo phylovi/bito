@@ -45,6 +45,7 @@
 class Node {
  public:
   using NodePtr = std::shared_ptr<Node>;
+  using Topology = NodePtr;
   using NodePtrVec = std::vector<NodePtr>;
   using NodePtrVecPtr = std::shared_ptr<NodePtrVec>;
   using TopologyCounter = std::unordered_map<NodePtr, uint32_t>;
