@@ -399,28 +399,30 @@ bool ChoiceMap::TopologyIsValid(const Node::Topology &topology,
 
   Bitset leaves = topology->Leaves();
   BoolVector visited_leaves(leaves.size(), false);
-  if (leaves.size() != dag_.TaxonCount()) {
-    os << "Invalid Tree: tree does not cover all taxa." << std::endl;
+  if (dag_.TaxonCount() != leaves.size()) {
+    int taxon_diff = dag_.TaxonCount() - leaves.size();
+    os << "Invalid Topology: " << (taxon_diff < 0 ? "fewer" : "more")
+       << " leaves in tree than leaf nodes in DAG." << std::endl;
     return false;
   }
   if (!leaves.All()) {
-    os << "Invalid Tree: root does not span all taxa." << std::endl;
+    os << "Invalid Topology: root does not span all leaf nodes in DAG." << std::endl;
     return false;
   }
   topology->Preorder(
       [this, &os, &visited_leaves, &is_tree_valid](const Node *node_ptr) {
         if (node_ptr->IsLeaf()) {
           if (visited_leaves[node_ptr->Id()]) {
-            os << "Invalid Tree: visits a leaf more than once." << std::endl;
+            os << "Invalid Topology: visits a leaf more than once." << std::endl;
             is_tree_valid = false;
           }
           visited_leaves[node_ptr->Id()] = true;
           if (!(node_ptr->Leaves().IsSingleton())) {
-            os << "Invalid Tree: leaf contains more than one taxon." << std::endl;
+            os << "Invalid Topology: leaf contains more than one taxon." << std::endl;
             is_tree_valid = false;
           }
         } else if (node_ptr->Children().size() != 2) {
-          os << "Invalid Tree: non-leaf node does not have exactly two children."
+          os << "Invalid Topology: non-leaf node does not have exactly two children."
              << std::endl;
           is_tree_valid = false;
         }
