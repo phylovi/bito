@@ -240,11 +240,11 @@ class PhyloFlags {
   // If passed SetFlag with tuples or pairs, unbind and forward.
   template <typename... PairTypes>
   void SetFlag(const std::pair<PairTypes...> pair) {
-    std::apply([this](auto &&...args) { return this->SetFlag(args...); }, pair);
+    std::apply([this](auto &&... args) { return this->SetFlag(args...); }, pair);
   };
   template <typename... TupleTypes>
   void SetFlag(const std::tuple<TupleTypes...> tuple) {
-    std::apply([this](auto &&...args) { return this->SetFlag(args...); }, tuple);
+    std::apply([this](auto &&... args) { return this->SetFlag(args...); }, tuple);
   };
 
   // Add in all flags from a vector.

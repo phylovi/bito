@@ -28,10 +28,12 @@ enum HelloGPCSP { jupiter, mars, saturn, venus, rootsplit, root };
 
 GPInstance GPInstanceOfFiles(
     const std::string& fasta_path, const std::string& newick_path,
-    const std::string mmap_filepath = std::string("_ignore/mmapped_plv.data")) {
+    const std::string mmap_filepath = std::string("_ignore/mmapped_plv.data"),
+    const bool use_gradients = false) {
   GPInstance inst(mmap_filepath);
   inst.ReadFastaFile(fasta_path);
   inst.ReadNewickFile(newick_path);
+  inst.UseGradientOptimization(use_gradients);
   inst.MakeEngine();
   return inst;
 }
@@ -189,7 +191,7 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
 // IMPORTANT: See the note about appropriate tree file input to that function, as the
 // same applies here.
 void TestCompositeMarginal(GPInstance inst, const std::string& fasta_path) {
-  inst.EstimateBranchLengths(0.0001, 100, true);
+  inst.EstimateBranchLengths(0.00001, 100, true);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   inst.ComputeMarginalLikelihood();
@@ -248,6 +250,63 @@ TEST_CASE("GPInstance: gradient calculation") {
   // Expect log lik derivative: -0.6109379521.
   CHECK_LT(fabs(log_lik_and_derivative.first - -4.806671945), 1e-6);
   CHECK_LT(fabs(log_lik_and_derivative.second - -0.6109379521), 1e-6);
+}
+
+TEST_CASE("GPInstance: multi-site gradient calculation") {
+  auto inst = MakeHelloGPInstance();
+  auto engine = inst.GetEngine();
+
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+
+  size_t rootsplit_id = rootsplit;
+  size_t child_id = jupiter;
+  size_t hello_node_count_without_dag_root_node = 5;
+  size_t rootsplit_jupiter_idx = 2;
+
+  size_t leafward_idx = PLVHandler::GetPLVIndex(PLVType::P, child_id,
+                                                hello_node_count_without_dag_root_node);
+  size_t rootward_idx = PLVHandler::GetPLVIndex(PLVType::RLeft, rootsplit_id,
+                                                hello_node_count_without_dag_root_node);
+  OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
+  std::tuple<double, double, double> log_lik_and_derivatives =
+      engine->LogLikelihoodAndFirstTwoDerivatives(op);
+  // Expect log likelihood: -84.77961943.
+  // Expect log llh first derivative: -18.22479569.
+  // Expect log llh second derivative: -5.4460787413.
+  CHECK_LT(fabs(std::get<0>(log_lik_and_derivatives) - -84.77961943), 1e-6);
+  CHECK_LT(fabs(std::get<1>(log_lik_and_derivatives) - -18.22479569), 1e-6);
+  CHECK_LT(fabs(std::get<2>(log_lik_and_derivatives) - -5.4460787413), 1e-6);
+}
+
+// We are outputting the branch length for PCSP 100-011-001
+// which has a true branch length of 0.0694244266
+double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
+  GPInstance inst = MakeHelloGPInstance();
+  GPEngine& engine = *inst.GetEngine();
+  engine.SetOptimizationMethod(method);
+
+  inst.EstimateBranchLengths(0.0001, 100, true);
+  GPDAG& dag = inst.GetDAG();
+  size_t default_index = dag.EdgeCountWithLeafSubsplits();
+  Bitset gpcsp_bitset = Bitset("100011001");
+
+  size_t index = AtWithDefault(dag.BuildEdgeIndexer(), gpcsp_bitset, default_index);
+  return inst.GetEngine()->GetBranchLengths()(index);
+}
+
+TEST_CASE("GPInstance: Gradient-based optimization with Newton's Method") {
+  double nongradient_length = ObtainBranchLengthWithOptimization(
+      GPEngine::OptimizationMethod::BrentOptimization);
+  double gradient_length = ObtainBranchLengthWithOptimization(
+      GPEngine::OptimizationMethod::NewtonOptimization);
+
+  double true_length = 0.0694244266;
+  double brent_diff = abs(nongradient_length - true_length);
+  double grad_diff = abs(gradient_length - true_length);
+
+  CHECK_LT(grad_diff, brent_diff);
+  CHECK_LT(grad_diff, 1e-6);
 }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
@@ -399,8 +458,8 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   // To test this, we are going to compute P(y_k | \tau) for {\tau : s \in \tau} and
   // multiply this by q(\tau) = 1/4 since we are assuming a uniform prior.
 
-  // The collection of trees that we are looking at has 3 rootplits where one root split
-  // generates two trees and the other 2 root splits generating one tree each
+  // The collection of trees that we are looking at has 3 rootplits where one root
+  // split generates two trees and the other 2 root splits generating one tree each
   // for the total of 4 trees.
 
   // We will compare the values against the 3 rootsplits, since we cannot assume
@@ -427,10 +486,10 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
 
   inst.EstimateSBNParameters();
   EigenVectorXd realized_q = inst.GetEngine()->GetSBNParameters().segment(0, 3);
-  // The expected values for the SBN parameters: q[s] \propto log_lik[s] + log_prior[s].
-  // The SBN params are initialized so that we get a uniform distribution over the
-  // trees. For the rootsplits, the values are (1/4, 1/4, 2/4) corresponding to the
-  // entries in expected_log_lik_vector_at_rootsplits.
+  // The expected values for the SBN parameters: q[s] \propto log_lik[s] +
+  // log_prior[s]. The SBN params are initialized so that we get a uniform
+  // distribution over the trees. For the rootsplits, the values are (1/4, 1/4, 2/4)
+  // corresponding to the entries in expected_log_lik_vector_at_rootsplits.
   EigenVectorXd log_prior(3);
   log_prior << log(1. / 4), log(1. / 4), log(2. / 4);
   EigenVectorXd expected_q = expected_log_lik_vector_at_rootsplits + log_prior;
@@ -599,8 +658,8 @@ EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
 
 // This is the simplest hybrid marginal that has tree uncertainty above and below the
 // focal PCSP. Note that this test and the next one are set up so that the quartets
-// reach far enough out that there is no uncertainty in the part of the tree outside of
-// the quartet. In this case the hybrid marginal will be the same as the sum of
+// reach far enough out that there is no uncertainty in the part of the tree outside
+// of the quartet. In this case the hybrid marginal will be the same as the sum of
 // classical likelihoods.
 TEST_CASE("GPInstance: simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
@@ -663,8 +722,9 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
       inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
 
   inst.LoadAllGeneratedTrees();
-  // We restrict to only the trees that contain the DAG edge 6 (which goes between node
-  // 12 and node 11). We get the bitset representation using inst.PrintGPCSPIndexer();
+  // We restrict to only the trees that contain the DAG edge 6 (which goes between
+  // node 12 and node 11). We get the bitset representation using
+  // inst.PrintGPCSPIndexer();
   inst.ExportTreesWithAPCSP("000000100111100001110", tree_path);
   EigenVectorXd manual_log_likelihoods = ClassicalLikelihoodOf(tree_path, fasta_path);
   CheckVectorXdEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
