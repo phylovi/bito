@@ -63,12 +63,11 @@ class ChoiceMap {
 
   // Extract Topology from DAG based on edge choices to find best tree with given
   // central edge.
-  Node::Topology ExtractTopology(const size_t central_edge_id) const;
-  Node::Topology ExtractTopology(const TreeMask &tree_mask) const;
+  Node::NodePtr ExtractTopology(const size_t central_edge_id) const;
+  Node::NodePtr ExtractTopology(const TreeMask &tree_mask) const;
   // Checks that tree is a valid tree in DAG that spans the root and all leaf nodes in
   // the DAG, and only bifurcating.
-  bool TopologyIsValid(const Node::Topology &topology,
-                       const bool is_quiet = true) const;
+  bool TopologyIsValid(const Node::NodePtr &topology, const bool is_quiet = true) const;
 
   // ** I/O
 
@@ -90,7 +89,7 @@ class ChoiceMap {
   ExpandedTreeMask ExtractExpandedTreeMask(const size_t central_edge_id) const;
   ExpandedTreeMask ExtractExpandedTreeMask(const TreeMask &tree_mask) const;
   // Extract Tree based on given ExpandedTreeMask.
-  Node::Topology ExtractTopology(ExpandedTreeMask &tree_mask_ext) const;
+  Node::NodePtr ExtractTopology(ExpandedTreeMask &tree_mask_ext) const;
   // Output ExpandedTreeMask to a string.
   std::string ExpandedTreeMaskToString(const ExpandedTreeMask &tree_mask) const;
 

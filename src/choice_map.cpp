@@ -318,16 +318,16 @@ std::string ChoiceMap::ExpandedTreeMaskToString(
 //   - The second pass goes leafward, descending along the chosen edges to the leaf
 //   edges from the sister of each edge in the rootward pass and the child edges from
 //   the central edge.
-Node::Topology ChoiceMap::ExtractTopology(const size_t central_edge_id) const {
+Node::NodePtr ChoiceMap::ExtractTopology(const size_t central_edge_id) const {
   return ExtractTopology(ExtractTreeMask(central_edge_id));
 }
 
-Node::Topology ChoiceMap::ExtractTopology(const TreeMask &tree_mask) const {
+Node::NodePtr ChoiceMap::ExtractTopology(const TreeMask &tree_mask) const {
   ExpandedTreeMask tree_mask_ext = ExtractExpandedTreeMask(tree_mask);
   return ExtractTopology(tree_mask_ext);
 }
 
-Node::Topology ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const {
+Node::NodePtr ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const {
   const auto dag_root_id = dag_.GetDAGRootNodeId();
   Assert(tree_mask_ext.find(dag_root_id) != tree_mask_ext.end(),
          "DAG Root Id does not exist in ExpandedTreeMask map.");
@@ -370,7 +370,8 @@ Node::Topology ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const
     }
     // If node is a leaf, return up the the tree
     else if (dag_.IsNodeLeaf(current_node_id)) {
-      nodes[current_node_id] = Node::Leaf(current_node_id);
+      nodes[current_node_id] = Node::Leaf(
+          current_node_id, Bitset::Singleton(dag_.TaxonCount(), current_node_id));
       next_node_id = tree_mask_ext[current_node_id][AdjacentNode::Parent];
     }
     // If neither left or right child has been visited, go down the left branch.
@@ -391,7 +392,7 @@ Node::Topology ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const
   return topology;
 }
 
-bool ChoiceMap::TopologyIsValid(const Node::Topology &topology,
+bool ChoiceMap::TopologyIsValid(const Node::NodePtr &topology,
                                 const bool is_quiet) const {
   std::stringstream dev_null;
   std::ostream &os = (is_quiet ? dev_null : std::cerr);

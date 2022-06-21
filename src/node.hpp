@@ -137,7 +137,7 @@ class Node {
   // This function prepares the id_ and leaves_ member variables as described at
   // the start of this document. It returns a map that maps the tags to their
   // indices. It's the verb, not the nationality.
-  TagSizeMap Polish();
+  TagSizeMap Polish(const bool reassign_leaf_ids = true);
 
   // Return a vector such that the ith component describes the indices for nodes
   // above the current node.
