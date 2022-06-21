@@ -23,7 +23,7 @@ class GPEngine {
            size_t gpcsp_count, const std::string& mmap_file_path,
            double rescaling_threshold, EigenVectorXd sbn_prior,
            EigenVectorXd unconditional_node_probabilities,
-           EigenVectorXd inverted_sbn_prior);
+           EigenVectorXd inverted_sbn_prior, bool use_gradients);
 
   // Initialize prior with given starting values.
   void InitializePriors(EigenVectorXd sbn_prior,
@@ -58,6 +58,15 @@ class GPEngine {
 
   // ** GPOperations
 
+  // Options for optimization method.
+  enum class OptimizationMethod {
+    BrentOptimization,
+    BrentOptimizationWithGradients,
+    GradientAscentOptimization,
+    LogSpaceGradientAscentOptimization,
+    NewtonOptimization
+  };
+
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
@@ -73,6 +82,8 @@ class GPEngine {
   // Apply all operations in vector in order from beginning to end.
   void ProcessOperations(GPOperationVector operations);
 
+  void SetOptimizationMethod(const GPEngine::OptimizationMethod method);
+  void SetSignificantDigitsForOptimization(int significant_digits);
   void SetTransitionMatrixToHaveBranchLength(double branch_length);
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
   void SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_length);
@@ -95,6 +106,8 @@ class GPEngine {
   EigenVectorXd GetBranchLengths(const size_t start, const size_t length) const;
   // Get Branch Lengths from temporary space.
   EigenVectorXd GetTempBranchLengths(const size_t start, const size_t length) const;
+  // Get differences for branch lengths during optimization to assess convergence.
+  EigenVectorXd GetBranchLengthDifferences() const;
   // This function returns a vector indexed by GPCSP such that the i-th entry
   // stores the log of the across-sites product of
   // (the marginal likelihood conditioned on a given GPCSP) *
@@ -156,6 +169,8 @@ class GPEngine {
                              const BitsetSizeMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
+  std::tuple<double, double, double> LogLikelihoodAndFirstTwoDerivatives(
+      const GPOperations::OptimizeBranchLength& op);
 
   // ** I/O
 
@@ -197,9 +212,21 @@ class GPEngine {
   void RescalePLVIfNeeded(size_t plv_idx);
   double LogRescalingFor(size_t plv_idx);
 
+  GPEngine::OptimizationMethod optimization_method_;
+  void Optimization(const GPOperations::OptimizeBranchLength& op);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void BrentOptimizationWithGradients(const GPOperations::OptimizeBranchLength& op);
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void NewtonOptimization(const GPOperations::OptimizeBranchLength& op);
 
+  inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
+                                                                     size_t src2_idx) {
+    per_pattern_likelihood_second_derivatives_ =
+        (plvs_.at(src1_idx).transpose() * hessian_matrix_ * plvs_.at(src2_idx))
+            .diagonal()
+            .array();
+  }
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
                                                                size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
@@ -241,13 +268,25 @@ class GPEngine {
   // space).
   static constexpr double max_log_branch_length_ = 1.1;
   // Precision used for checking convergence of branch length optimization.
-  int significant_digits_for_optimization_ = 6;
-  //
-  double relative_tolerance_for_optimization_ = 1e-2;
-  // Step size used for gradient-based branch length optimization.
+  // In the non-Brent optimization methods, significant digits will be used to
+  // determine convergence through relative tolerance, i.e. measuring difference
+  // from previous branch length values until the absolute difference is below
+  // 10^(-significant_digits_for_optimization_).
+  // Brent optimization does not define convergence through relative tolerance,
+  // rather convergence based on tightness of the brackets that it adapts during
+  // optimization. This variable thus represents the "number of bits precision to which
+  // the minima should be found". When testing on sample datasets, we found that setting
+  // the value to 10 was a good compromise between speed and precision for Brent.
+  // See more on Brent optimization here:
+  // https://www.boost.org/doc/libs/1_79_0/libs/math/doc/html/math_toolkit/brent_minima.html
+  int significant_digits_for_optimization_ = 10;
+  double relative_tolerance_for_optimization_ = 1e-4;
+  double denominator_tolerance_for_newton_ = 1e-10;
   double step_size_for_optimization_ = 5e-4;
+  double step_size_for_log_space_optimization_ = 1.0005;
   // Number of iterations allowed for branch length optimization.
   size_t max_iter_for_optimization_ = 1000;
+  double branch_length_difference_threshold_ = 1e-15;
 
   // Descriptor containing all taxa and sequence alignments.
   SitePattern site_pattern_;
@@ -310,11 +349,13 @@ class GPEngine {
   // branch_lengths_, q_, etc. are indexed in the same way as sbn_parameters_ in
   // gp_instance.
   EigenVectorXd branch_lengths_;
+  EigenVectorXd branch_length_differences_;
   // During initialization, stores the SBN prior.
   // After UpdateSBNProbabilities(), stores the SBN probabilities.
   // Stored in log space.
   EigenVectorXd q_;
   EigenVectorXd inverted_sbn_prior_;
+
   // The number of rows is equal to the number of GPCSPs.
   // The number of columns is equal to the number of site patterns.
   // The rows are indexed in the same way as branch_lengths_ and q_.
@@ -334,6 +375,8 @@ class GPEngine {
   EigenVectorXd per_pattern_likelihoods_;
   EigenVectorXd per_pattern_likelihood_derivatives_;
   EigenVectorXd per_pattern_likelihood_derivative_ratios_;
+  EigenVectorXd per_pattern_likelihood_second_derivatives_;
+  EigenVectorXd per_pattern_likelihood_second_derivative_ratios_;
 
   // ** Model
 
@@ -348,6 +391,7 @@ class GPEngine {
   Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
   Eigen::Matrix4d transition_matrix_;
   Eigen::Matrix4d derivative_matrix_;
+  Eigen::Matrix4d hessian_matrix_;
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
 };
@@ -359,7 +403,7 @@ TEST_CASE("GPEngine") {
   SitePattern hello_site_pattern = SitePattern::HelloSitePattern();
   GPEngine engine(hello_site_pattern, 5, 6, 5, "_ignore/mmapped_plv.data",
                   GPEngine::default_rescaling_threshold_, empty_vector, empty_vector,
-                  empty_vector);
+                  empty_vector, false);
   engine.SetTransitionMatrixToHaveBranchLength(0.75);
   // Computed directly:
   // https://en.wikipedia.org/wiki/Models_of_DNA_evolution#JC69_model_%28Jukes_and_Cantor_1969%29

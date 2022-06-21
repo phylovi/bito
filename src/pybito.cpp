@@ -580,6 +580,21 @@ PYBIND11_MODULE(bito, m) {
            R"raw(Write "pretty" formatted SBN parameters for the prior to a CSV.)raw")
       .def("branch_lengths_to_csv", &GPInstance::BranchLengthsToCSV,
            R"raw(Write "pretty" formatted branch lengths to a CSV.)raw")
+      .def("per_gpcsp_llhs_to_csv", &GPInstance::PerGPCSPLogLikelihoodsToCSV,
+           R"raw(Write "pretty" formatted per pcsp likelihoods to CSV.)raw")
+      .def(
+          "intermediate_bls_to_csv", &GPInstance::IntermediateBranchLengthsToCSV,
+          R"raw(Write "pretty" formatted per pcsp branch lengths throughout optimization to CSV.)raw")
+      .def(
+          "intermediate_per_gpcsp_llhs_to_csv",
+          &GPInstance::IntermediatePerGPCSPLogLikelihoodsToCSV,
+          R"raw(Write "pretty" formatted per pcsp log likelihoods throughout optimization to CSV.)raw")
+      .def("per_gpcsp_llh_surfaces_to_csv",
+           &GPInstance::PerGPCSPLogLikelihoodSurfacesToCSV,
+           R"raw(Write "pretty" formatted per pcsp log likelihood surfaces to CSV.)raw")
+      .def(
+          "tracked_optim_values_to_csv", &GPInstance::TrackedOptimizationValuesToCSV,
+          R"raw(Write "pretty" formatted per pcsp branch lengths and llh values tracked from optimization to CSV.)raw")
       .def("export_trees", &GPInstance::ExportTrees,
            R"raw(Write out currently loaded trees to a Newick file
           (using current GP branch lengths).)raw",
@@ -610,6 +625,9 @@ PYBIND11_MODULE(bito, m) {
           "Build a map from SubsplitDAG edge index to its corresponding PCSP bitset.")
 
       // ** Estimation
+      .def("use_gradient_optimization", &GPInstance::UseGradientOptimization,
+           "Use gradients for branch length optimization?",
+           py::arg("use_gradients") = false)
       .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",
            py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_)
       .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,
@@ -623,7 +641,15 @@ PYBIND11_MODULE(bito, m) {
            "Estimate the SBN parameters based on current branch lengths.")
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.", py::arg("tol"),
-           py::arg("max_iter"), py::arg("quiet") = false)
+           py::arg("max_iter"), py::arg("quiet") = false,
+           py::arg("track_intermediate_iterations") = false)
+      .def("get_perpcsp_llh_surface", &GPInstance::GetPerGPCSPLogLikelihoodSurfaces,
+           "Scan the likelihood surface for the pcsps in the GPInstance.",
+           py::arg("steps"), py::arg("scale_min"), py::arg("scale_max"))
+      .def("perturb_and_track_optimization_values",
+           &GPInstance::PerturbAndTrackValuesFromOptimization,
+           "Reinitiate optimization, perturbing one branch length at a time,  and "
+           "track branch length and per pcsp likelihoods.")
 
       // ** NNI Engine
       .def("make_nni_engine", &GPInstance::MakeNNIEngine,
