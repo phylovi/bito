@@ -1697,14 +1697,14 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                  NodeLeaf(6, 7));
   CHECK_FALSE_MESSAGE(choice_map.TopologyIsValid(topology, quiet_errors),
                       "Topology is incorrectly valid when more taxa than in DAG.");
-  // Topology with an duplicate leaf.
+  // Topology with a duplicate leaf.
   topology =
       Node::Join(Node::Join(Node::Join(NodeLeaf(0, 7), NodeLeaf(1, 7)),
                             Node::Join(Node::Join(NodeLeaf(2, 7), NodeLeaf(3, 7)),
                                        Node::Join(NodeLeaf(4, 7), NodeLeaf(5, 7)))),
                  NodeLeaf(0, 7));
   CHECK_FALSE_MESSAGE(choice_map.TopologyIsValid(topology, quiet_errors),
-                      "Topology is incorrectly valid when more taxa than in DAG.");
+                      "Topology is incorrectly valid when duplicate leaf in DAG.");
   // Topology with a branch that terminates at a non-leaf.
   topology = Node::Join(Node::Join(NodeLeaf(0, 6), NodeLeaf(1, 6)),
                         Node::Join(std::make_shared<Node>(2, Bitset("001100")),

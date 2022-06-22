@@ -342,17 +342,15 @@ void Node::RootedSisterAndLeafTraversal(TwoNodeFun f) const {
 // the number of nodes in the tree.
 //
 // This function returns a map that maps the tags to their ids.
-TagSizeMap Node::Polish(const bool reassign_leaf_ids) {
+TagSizeMap Node::Polish() {
   TagSizeMap tag_id_map;
   const size_t leaf_count = MaxLeafID() + 1;
   size_t next_id = leaf_count;
   MutablePostorder(
       [&tag_id_map, &next_id, &leaf_count, &reassign_leaf_ids](Node* node) {
         if (node->IsLeaf()) {
-          if (reassign_leaf_ids) {
-            node->id_ = node->MaxLeafID();
-            node->leaves_ = Bitset::Singleton(leaf_count, node->id_);
-          }
+          node->id_ = node->MaxLeafID();
+          node->leaves_ = Bitset::Singleton(leaf_count, node->id_);
         } else {
           node->id_ = next_id;
           next_id++;
