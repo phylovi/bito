@@ -65,9 +65,7 @@ class ChoiceMap {
   // central edge.
   Node::NodePtr ExtractTopology(const size_t central_edge_id) const;
   Node::NodePtr ExtractTopology(const TreeMask &tree_mask) const;
-  // Checks that tree is a valid tree in DAG that spans the root and all leaf nodes in
-  // the DAG, and only bifurcating.
-  bool TopologyIsValid(const Node::NodePtr &topology, const bool is_quiet = true) const;
+  Node::NodePtr ExtractTopology2(const size_t central_edge_id) const;
 
   // ** I/O
 

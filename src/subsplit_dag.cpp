@@ -1003,10 +1003,19 @@ bool SubsplitDAG::ContainsTopology(const Node::NodePtr topology,
   std::stringstream dev_null;
   std::ostream &os = (is_quiet ? dev_null : std::cerr);
   bool contains_topology = true;
+  BoolVector leaf_check(TaxonCount(), false);
   // iterate over rest of topology.
-  topology->Preorder([this, &os, &contains_topology](const Node *node) {
+  topology->Preorder([this, &os, &leaf_check, &contains_topology](const Node *node) {
     // Skip if already found topology not in DAG.
     if (!contains_topology) {
+      return;
+    }
+    // Check that topology covers entire taxon set.
+    if (node->Leaves().size() != TaxonCount()) {
+      os << "DoesNotContainTopology: Number of topology leaves different size than "
+            "taxon set."
+         << std::endl;
+      contains_topology = false;
       return;
     }
     // If node is a child, make sure it is a singleton and check the leaf bit.

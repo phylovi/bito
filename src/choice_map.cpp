@@ -383,7 +383,6 @@ Node::NodePtr ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const 
   }
 
   Node::NodePtr topology = nodes[dag_rootsplit_id];
-  topology->Polish();
   Assert((nodes.size() + 1) == tree_mask_ext.size(),
          "Invalid TreeMask-to-Tree: Topology did not span every node in "
          "the TreeMask.");
@@ -391,43 +390,25 @@ Node::NodePtr ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const 
   return topology;
 }
 
-bool ChoiceMap::TopologyIsValid(const Node::NodePtr &topology,
-                                const bool is_quiet) const {
-  std::stringstream dev_null;
-  std::ostream &os = (is_quiet ? dev_null : std::cerr);
-  bool is_tree_valid = true;
+Node::NodePtr ChoiceMap::ExtractTopology2(const size_t central_edge_id) const {
+  std::vector<size_t> parent_ids;
+  std::vector<size_t> sister_ids;
+  const size_t root_node_id = dag_.GetDAGRootNodeId();
+  const auto edge_max_id = dag_.EdgeIdxRange().second;
 
-  Bitset leaves = topology->Leaves();
-  BoolVector visited_leaves(leaves.size(), false);
-  if (dag_.TaxonCount() != leaves.size()) {
-    int taxon_diff = dag_.TaxonCount() - leaves.size();
-    os << "Invalid Topology: " << (taxon_diff < 0 ? "fewer" : "more")
-       << " leaves in tree than leaf nodes in DAG." << std::endl;
-    return false;
+  // Rootward Pass: Capture parent and sister edges above focal edge.
+  // For central edge, add children to stack for leafward pass.
+  size_t focal_edge_id = central_edge_id;
+  while (focal_edge_id != root_node_id) {
+    parent_ids.push_back(edge_choice_vector_[focal_edge_id].parent_edge_id);
+    sister_ids.push_back(edge_choice_vector_[focal_edge_id].sister_edge_id);
+    focal_edge_id = edge_choice_vector_[focal_edge_id].parent_edge_id;
   }
-  if (!leaves.All()) {
-    os << "Invalid Topology: root does not span all leaf nodes in DAG." << std::endl;
-    return false;
-  }
-  topology->Preorder(
-      [this, &os, &visited_leaves, &is_tree_valid](const Node *node_ptr) {
-        if (node_ptr->IsLeaf()) {
-          if (visited_leaves[node_ptr->Id()]) {
-            os << "Invalid Topology: visits a leaf more than once." << std::endl;
-            is_tree_valid = false;
-          }
-          visited_leaves[node_ptr->Id()] = true;
-          if (!(node_ptr->Leaves().IsSingleton())) {
-            os << "Invalid Topology: leaf contains more than one taxon." << std::endl;
-            is_tree_valid = false;
-          }
-        } else if (node_ptr->Children().size() != 2) {
-          os << "Invalid Topology: non-leaf node does not have exactly two children."
-             << std::endl;
-          is_tree_valid = false;
-        }
-      });
-  return is_tree_valid;
+
+  Node::NodePtr topology = Node::Leaf(root_node_id);
+  Node::NodePtr head = topology;
+
+  return topology;
 }
 
 // ** I/O
