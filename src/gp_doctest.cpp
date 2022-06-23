@@ -1664,51 +1664,47 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                       "TreeMask is incorrectly valid when containing an extra edge.");
   CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when containing an extra edge.");
-
-  auto NodeLeaf = [](const size_t id, const size_t taxon_count) -> Node::NodePtr {
-    return Node::Leaf(id, Bitset::Singleton(taxon_count, id));
-  };
   // Correct Topology.
-  topology = Node::Join(Node::Join(NodeLeaf(0, 6), NodeLeaf(1, 6)),
-                        Node::Join(Node::Join(NodeLeaf(2, 6), NodeLeaf(3, 6)),
-                                   Node::Join(NodeLeaf(4, 6), NodeLeaf(5, 6))));
+  topology = Node::Join(Node::Join(Node::Leaf(0, 6), Node::Leaf(1, 6)),
+                        Node::Join(Node::Join(Node::Leaf(2, 6), Node::Leaf(3, 6)),
+                                   Node::Join(Node::Leaf(4, 6), Node::Leaf(5, 6))));
   CHECK_MESSAGE(choice_map.TopologyIsValid(topology, false),
                 "Topology is incorrectly invalid.");
   // Topology with a multifurcating node.
   topology = Node::Join(std::vector<Node::NodePtr>(
-      {NodeLeaf(0, 6), NodeLeaf(1, 6),
-       Node::Join(Node::Join(NodeLeaf(2, 6), NodeLeaf(3, 6)),
-                  Node::Join(NodeLeaf(4, 6), NodeLeaf(5, 6)))}));
+      {Node::Leaf(0, 6), Node::Leaf(1, 6),
+       Node::Join(Node::Join(Node::Leaf(2, 6), Node::Leaf(3, 6)),
+                  Node::Join(Node::Leaf(4, 6), Node::Leaf(5, 6)))}));
   CHECK_FALSE_MESSAGE(
       choice_map.TopologyIsValid(topology, quiet_errors),
       "Topology is incorrectly valid when containing a 3+ multifurcating node.");
   // Topology with a missing leaf.
-  topology =
-      Node::Join(Node::Leaf(0), Node::Join(Node::Join(Node::Leaf(2), Node::Leaf(3)),
-                                           Node::Join(Node::Leaf(4), Node::Leaf(5))));
+  topology = Node::Join(Node::Leaf(0, 6),
+                        Node::Join(Node::Join(Node::Leaf(2, 6), Node::Leaf(3, 6)),
+                                   Node::Join(Node::Leaf(4, 6), Node::Leaf(5, 6))));
   CHECK_FALSE_MESSAGE(
       choice_map.TopologyIsValid(topology, quiet_errors),
       "Topology is incorrectly valid when not spanning all leaves in DAG.");
   // Topology with an extra leaf.
   topology =
-      Node::Join(Node::Join(Node::Join(NodeLeaf(0, 7), NodeLeaf(1, 7)),
-                            Node::Join(Node::Join(NodeLeaf(2, 7), NodeLeaf(3, 7)),
-                                       Node::Join(NodeLeaf(4, 7), NodeLeaf(5, 7)))),
-                 NodeLeaf(6, 7));
+      Node::Join(Node::Join(Node::Join(Node::Leaf(0, 7), Node::Leaf(1, 7)),
+                            Node::Join(Node::Join(Node::Leaf(2, 7), Node::Leaf(3, 7)),
+                                       Node::Join(Node::Leaf(4, 7), Node::Leaf(5, 7)))),
+                 Node::Leaf(6, 7));
   CHECK_FALSE_MESSAGE(choice_map.TopologyIsValid(topology, quiet_errors),
                       "Topology is incorrectly valid when more taxa than in DAG.");
   // Topology with a duplicate leaf.
   topology =
-      Node::Join(Node::Join(Node::Join(NodeLeaf(0, 7), NodeLeaf(1, 7)),
-                            Node::Join(Node::Join(NodeLeaf(2, 7), NodeLeaf(3, 7)),
-                                       Node::Join(NodeLeaf(4, 7), NodeLeaf(5, 7)))),
-                 NodeLeaf(0, 7));
+      Node::Join(Node::Join(Node::Join(Node::Leaf(0, 7), Node::Leaf(1, 7)),
+                            Node::Join(Node::Join(Node::Leaf(2, 7), Node::Leaf(3, 7)),
+                                       Node::Join(Node::Leaf(4, 7), Node::Leaf(5, 7)))),
+                 Node::Leaf(0, 7));
   CHECK_FALSE_MESSAGE(choice_map.TopologyIsValid(topology, quiet_errors),
                       "Topology is incorrectly valid when duplicate leaf in DAG.");
   // Topology with a branch that terminates at a non-leaf.
-  topology = Node::Join(Node::Join(NodeLeaf(0, 6), NodeLeaf(1, 6)),
+  topology = Node::Join(Node::Join(Node::Leaf(0, 6), Node::Leaf(1, 6)),
                         Node::Join(std::make_shared<Node>(2, Bitset("001100")),
-                                   Node::Join(NodeLeaf(4, 6), NodeLeaf(5, 6))));
+                                   Node::Join(Node::Leaf(4, 6), Node::Leaf(5, 6))));
   CHECK_FALSE_MESSAGE(choice_map.TopologyIsValid(topology, quiet_errors),
                       "Topology is incorrectly valid when there is a branch which "
                       "terminates at a non-leaf.");
@@ -1721,7 +1717,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                   "TreeMask did not contain given central edge.");
     CHECK_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                   "Edge resulted in an invalid TreeMask.");
-    CHECK_MESSAGE(choice_map.TopologyIsValid(topology, quiet_errors),
-                  "Edge resulted in an invalid Tree.");
+    CHECK_MESSAGE(dag.ContainsTopology(topology, false),
+                  "Edge resulted in an invalid Topology not contained in DAG.");
   }
 }

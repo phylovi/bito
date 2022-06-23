@@ -370,8 +370,7 @@ Node::NodePtr ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const 
     }
     // If node is a leaf, return up the the tree
     else if (dag_.IsNodeLeaf(current_node_id)) {
-      nodes[current_node_id] = Node::Leaf(
-          current_node_id, Bitset::Singleton(dag_.TaxonCount(), current_node_id));
+      nodes[current_node_id] = Node::Leaf(current_node_id, dag_.TaxonCount());
       next_node_id = tree_mask_ext[current_node_id][AdjacentNode::Parent];
     }
     // If neither left or right child has been visited, go down the left branch.

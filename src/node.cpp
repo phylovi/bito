@@ -346,18 +346,17 @@ TagSizeMap Node::Polish() {
   TagSizeMap tag_id_map;
   const size_t leaf_count = MaxLeafID() + 1;
   size_t next_id = leaf_count;
-  MutablePostorder(
-      [&tag_id_map, &next_id, &leaf_count, &reassign_leaf_ids](Node* node) {
-        if (node->IsLeaf()) {
-          node->id_ = node->MaxLeafID();
-          node->leaves_ = Bitset::Singleton(leaf_count, node->id_);
-        } else {
-          node->id_ = next_id;
-          next_id++;
-          node->leaves_ = Node::LeavesOf(node->Children());
-        }
-        SafeInsert(tag_id_map, node->Tag(), node->id_);
-      });
+  MutablePostorder([&tag_id_map, &next_id, &leaf_count](Node* node) {
+    if (node->IsLeaf()) {
+      node->id_ = node->MaxLeafID();
+      node->leaves_ = Bitset::Singleton(leaf_count, node->id_);
+    } else {
+      node->id_ = next_id;
+      next_id++;
+      node->leaves_ = Node::LeavesOf(node->Children());
+    }
+    SafeInsert(tag_id_map, node->Tag(), node->id_);
+  });
   return tag_id_map;
 }
 
@@ -456,6 +455,9 @@ Bitset Node::LeavesOf(const Node::NodePtrVec& children) {
 // Class methods
 Node::NodePtr Node::Leaf(uint32_t id, Bitset leaves) {
   return std::make_shared<Node>(id, leaves);
+}
+Node::NodePtr Node::Leaf(uint32_t id, size_t taxon_count) {
+  return Node::Leaf(id, Bitset::Singleton(taxon_count, id));
 }
 Node::NodePtr Node::Join(NodePtrVec children, size_t id) {
   return std::make_shared<Node>(children, id, Node::LeavesOf(children));

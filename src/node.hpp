@@ -137,7 +137,7 @@ class Node {
   // This function prepares the id_ and leaves_ member variables as described at
   // the start of this document. It returns a map that maps the tags to their
   // indices. It's the verb, not the nationality.
-  TagSizeMap Polish(const bool reassign_leaf_ids = true);
+  TagSizeMap Polish();
 
   // Return a vector such that the ith component describes the indices for nodes
   // above the current node.
@@ -158,7 +158,12 @@ class Node {
   NodePtr Deroot();
 
   // ** Static methods
+  // Constructs a leaf node with given id, and an empty taxon clade by default for its
+  // leaves.
   static NodePtr Leaf(uint32_t id, Bitset leaves = Bitset(0));
+  // Constructs a leaf node with given id, and a single taxon clade with a length of
+  // taxon_count for its leaves.
+  static NodePtr Leaf(uint32_t id, size_t taxon_count);
   // Join builds a Node with the given descendants, or-ing the leaves_ of the
   // descendants.
   static NodePtr Join(NodePtrVec children, size_t id = SIZE_MAX);

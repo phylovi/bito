@@ -40,6 +40,7 @@
 #include "subsplit_dag_action.hpp"
 #include "nni_operation.hpp"
 #include "subsplit_dag_node.hpp"
+#include "node.hpp"
 
 class SubsplitDAG {
  public:
@@ -330,6 +331,9 @@ class SubsplitDAG {
   bool IsEdgeRoot(const size_t edge_id) const;
   // Does edge connect to a leaf node?
   bool IsEdgeLeaf(const size_t edge_id) const;
+
+  // Does the DAG contain the given topology?
+  bool ContainsTopology(const Node::NodePtr topology, const bool is_quiet = true) const;
 
   // ** Modify DAG
   // These methods are for directly modifying the DAG by adding or removing nodes and
