@@ -1590,7 +1590,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   ChoiceMap::TreeMask tree_mask;
   Node::NodePtr topology;
   SizeVector tree_nodes;
-  bool quiet_errors = false;
+  bool quiet_errors = true;
   for (const auto edge_id : tree_mask) {
     tree_nodes.push_back(dag.GetDAGEdge(edge_id).GetParent());
     tree_nodes.push_back(dag.GetDAGEdge(edge_id).GetChild());
