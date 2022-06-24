@@ -3,8 +3,8 @@
 //
 // A ChoiceMap is a per-edge map of the best adjacent edges applied to a SubsplitDAG
 // for Top-Pruning. Used for selecting, updating, and extracting the top tree from the
-// DAG. A ChoiceMap can generate a TreeMask, which is a list of edge ids which express a
-// single, complete tree embedded in the DAG.
+// DAG. A ChoiceMap can be used to generate a TreeMask, which is a list of edge ids
+// which express a single, complete tree embedded in the DAG, or a Node Topology.
 
 #pragma once
 
@@ -65,8 +65,6 @@ class ChoiceMap {
   // central edge.
   Node::NodePtr ExtractTopology(const size_t central_edge_id) const;
   Node::NodePtr ExtractTopology(const TreeMask &tree_mask) const;
-  // TODO: ExtractTopology without TreeMask.
-  Node::NodePtr ExtractTopologyAlt(const size_t central_edge_id) const;
 
   // ** I/O
 

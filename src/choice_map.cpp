@@ -391,47 +391,6 @@ Node::NodePtr ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const 
   return topology;
 }
 
-// TODO: ExtractTopology without TreeMask
-Node::NodePtr ChoiceMap::ExtractTopologyAlt(const size_t central_edge_id) const {
-  std::vector<size_t> parent_ids;
-  std::vector<size_t> sister_ids;
-  std::vector<Node::NodePtr> child_nodes;
-  const size_t root_node_id = dag_.GetDAGRootNodeId();
-  const auto edge_max_id = dag_.EdgeIdxRange().second;
-
-  // Rootward Pass: Capture parent and sister edges above focal edge.
-  // For central edge, add children to stack for leafward pass.
-  size_t focal_edge_id = central_edge_id;
-  while (focal_edge_id != root_node_id) {
-    parent_ids.push_back(edge_choice_vector_[focal_edge_id].parent_edge_id);
-    sister_ids.push_back(edge_choice_vector_[focal_edge_id].sister_edge_id);
-    focal_edge_id = edge_choice_vector_[focal_edge_id].parent_edge_id;
-  }
-
-  Node::NodePtr topology = Node::Leaf(root_node_id);
-  Node::NodePtr head = topology;
-
-  // Leafward Pass from Root-to-CentralEdge: Build Topology
-  for (size_t i = parent_ids.size() - 1; i > 0; i++) {
-    // TODO: Need method for adding children.
-    Node::NodePtr focal_child = std::make_shared<Node>(
-        parent_ids[i], dag_.GetDAGNode(parent_ids[i]).GetBitset().SubsplitCladeUnion());
-    Node::NodePtr sister_child = std::make_shared<Node>(
-        sister_ids[i], dag_.GetDAGNode(sister_ids[i]).GetBitset().SubsplitCladeUnion());
-    // head->AddChild(focal_child);
-    // head->AddChild(sister_child);
-    child_nodes.push_back(sister_child);
-  }
-
-  // Leafward Pass from Sisters-to-Leaves:
-  for (const auto &node : child_nodes) {
-    if (dag_.GetDAGNode(node->Id()).IsLeaf()) {
-    }
-  }
-
-  return topology;
-}
-
 // ** I/O
 
 std::ostream &operator<<(std::ostream &os, const ChoiceMap::EdgeChoice &edge_choice) {
