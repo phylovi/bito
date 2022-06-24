@@ -1582,9 +1582,11 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   auto dag = inst.GetDAG();
 
   auto choice_map = ChoiceMap(dag);
-  CHECK_FALSE_MESSAGE(choice_map.SelectionIsValid(), "ChoiceMap selection is invalid.");
+  CHECK_FALSE_MESSAGE(choice_map.SelectionIsValid(),
+                      "ChoiceMap selection was incorrectly found valid.");
   choice_map.SelectFirstEdge();
-  CHECK_MESSAGE(choice_map.SelectionIsValid(), "ChoiceMap selection is invalid.");
+  CHECK_MESSAGE(choice_map.SelectionIsValid(),
+                "ChoiceMap selection was found invalid.");
 
   // Test for fail states for invalid TreeMasks.
   ChoiceMap::TreeMask tree_mask;

@@ -11,7 +11,7 @@
 #include <stack>
 #include "sugar.hpp"
 #include "gp_dag.hpp"
-#include "rooted_tree.hpp"
+#include "node.hpp"
 
 class ChoiceMap {
  public:
