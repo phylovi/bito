@@ -29,7 +29,8 @@ void ChoiceMap::SelectFirstEdge() {
     // If neighbor lists are non-empty, get first edge from list.
     if (!left_parents.empty()) {
       edge_choice.parent_edge_id = dag_.GetEdgeIdx(left_parents[0], parent_node.Id());
-    } else if (!right_parents.empty()) {
+    }
+    if (!right_parents.empty()) {
       edge_choice.parent_edge_id = dag_.GetEdgeIdx(right_parents[0], parent_node.Id());
     }
     if (!sisters.empty()) {
@@ -390,9 +391,11 @@ Node::NodePtr ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const 
   return topology;
 }
 
-Node::NodePtr ChoiceMap::ExtractTopology2(const size_t central_edge_id) const {
+// TODO: ExtractTopology without TreeMask
+Node::NodePtr ChoiceMap::ExtractTopologyAlt(const size_t central_edge_id) const {
   std::vector<size_t> parent_ids;
   std::vector<size_t> sister_ids;
+  std::vector<Node::NodePtr> child_nodes;
   const size_t root_node_id = dag_.GetDAGRootNodeId();
   const auto edge_max_id = dag_.EdgeIdxRange().second;
 
@@ -407,6 +410,24 @@ Node::NodePtr ChoiceMap::ExtractTopology2(const size_t central_edge_id) const {
 
   Node::NodePtr topology = Node::Leaf(root_node_id);
   Node::NodePtr head = topology;
+
+  // Leafward Pass from Root-to-CentralEdge: Build Topology
+  for (size_t i = parent_ids.size() - 1; i > 0; i++) {
+    // TODO: Need method for adding children.
+    Node::NodePtr focal_child = std::make_shared<Node>(
+        parent_ids[i], dag_.GetDAGNode(parent_ids[i]).GetBitset().SubsplitCladeUnion());
+    Node::NodePtr sister_child = std::make_shared<Node>(
+        sister_ids[i], dag_.GetDAGNode(sister_ids[i]).GetBitset().SubsplitCladeUnion());
+    // head->AddChild(focal_child);
+    // head->AddChild(sister_child);
+    child_nodes.push_back(sister_child);
+  }
+
+  // Leafward Pass from Sisters-to-Leaves:
+  for (const auto &node : child_nodes) {
+    if (dag_.GetDAGNode(node->Id()).IsLeaf()) {
+    }
+  }
 
   return topology;
 }

@@ -65,7 +65,8 @@ class ChoiceMap {
   // central edge.
   Node::NodePtr ExtractTopology(const size_t central_edge_id) const;
   Node::NodePtr ExtractTopology(const TreeMask &tree_mask) const;
-  Node::NodePtr ExtractTopology2(const size_t central_edge_id) const;
+  // TODO: ExtractTopology without TreeMask.
+  Node::NodePtr ExtractTopologyAlt(const size_t central_edge_id) const;
 
   // ** I/O
 

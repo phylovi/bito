@@ -1567,12 +1567,13 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 // Initializes a ChoiceMap for a DAG. Then uses a naive method that picks the first
 // listed neighbor for each parent, sister, left and right child. Tests that results is
 // a valid selection (all edges have mapped valid edge choices, except for root and
-// leaves). Then creates TreeMasks for each edge in DAG, a list of edge ids which
+// leaves).
+// - Tests that invalid TreeMask are found invalid.
+// - Tests that invalid TreeMasks causes Topology to throw exception.
+// - Creates TreeMask and Node Topology for each edge in DAG, a list of edge ids which
 // represent a embedded tree in the DAG.
-// - Tests that invalid TreeMasks and Trees are found to be invalid.
-// - Tests that each TreeMask contains its central edge and is valid (tree spans root
-// and all leaf nodes, and every node in tree has a single parent, left child and right
-// child).
+//    - Tests that TreeMask is valid state for the DAG.
+//    - Tests that resulting Topology exists in the DAG.
 TEST_CASE("Top-Pruning: ChoiceMap") {
   const std::string fasta_path = "data/six_taxon_longer.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
@@ -1589,7 +1590,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   ChoiceMap::TreeMask tree_mask;
   Node::NodePtr topology;
   SizeVector tree_nodes;
-  bool quiet_errors = true;
+  bool quiet_errors = false;
   for (const auto edge_id : tree_mask) {
     tree_nodes.push_back(dag.GetDAGEdge(edge_id).GetParent());
     tree_nodes.push_back(dag.GetDAGEdge(edge_id).GetChild());
@@ -1643,7 +1644,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                       "TreeMask is incorrectly valid when missing internal edge.");
   CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when missing internal edge.");
-  // Tree contains additional edge.
+  // Tree contains extra edge.
   tree_mask = choice_map.ExtractTreeMask(0);
   for (size_t edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
     const auto contains_edge = (tree_mask.find(edge_id) != tree_mask.end());
@@ -1664,7 +1665,37 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                       "TreeMask is incorrectly valid when containing an extra edge.");
   CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when containing an extra edge.");
-
+  // Valid topology that exists in the DAG.
+  // ((x0,x1),(x2,((x3,x4),x5)));
+  topology = Node::Join(
+      Node::Join(Node::Leaf(0, 6), Node::Leaf(1, 6)),
+      Node::Join(
+          Node::Join(Node::Leaf(2, 6), Node::Join(Node::Leaf(3, 6), Node::Leaf(4, 6))),
+          Node::Leaf(5, 6)));
+  CHECK_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
+                "Incorrectly could not find topology that exists in DAG.");
+  // Valid topology that does not exist in the DAG.
+  // (((x0,x1),(x2,x3)),(x4, x5))
+  topology = Node::Join(Node::Join(Node::Join(Node::Leaf(0, 6), Node::Leaf(1, 6)),
+                                   Node::Join(Node::Leaf(2, 6), Node::Leaf(3, 6))),
+                        Node::Join(Node::Leaf(4, 6), Node::Leaf(5, 6)));
+  CHECK_FALSE_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
+                      "Incorrectly found topology that does not exist in DAG.");
+  // Incomplete topology -- does not terminate at a leaf.
+  // ((x0,x1),(x2,x3_4),x5)));
+  topology = Node::Join(
+      Node::Join(Node::Leaf(0, 6), Node::Leaf(1, 6)),
+      Node::Join(Node::Join(Node::Leaf(2, 6), Node::Leaf(34, Bitset("000110"))),
+                 Node::Leaf(5, 6)));
+  CHECK_FALSE_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
+                      "Incorrectly found incomplete topology in DAG.");
+  // Incomplete topology -- subtree with missing taxa.
+  // (x2,((x3,x4),x5))
+  topology = Node::Join(
+      Node::Join(Node::Leaf(2, 6), Node::Join(Node::Leaf(3, 6), Node::Leaf(4, 6))),
+      Node::Leaf(5, 6));
+  CHECK_FALSE_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
+                      "Incorrectly found subtree topology in DAG.");
   // Test TreeMasks created from all DAG edges result in valid tree.
   for (size_t edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
     const auto tree_mask = choice_map.ExtractTreeMask(edge_id);
@@ -1673,7 +1704,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                   "TreeMask did not contain given central edge.");
     CHECK_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
                   "Edge resulted in an invalid TreeMask.");
-    CHECK_MESSAGE(dag.ContainsTopology(topology, false),
+    CHECK_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
                   "Edge resulted in an invalid Topology not contained in DAG.");
   }
 }

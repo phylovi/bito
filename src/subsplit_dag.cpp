@@ -1020,11 +1020,14 @@ bool SubsplitDAG::ContainsTopology(const Node::NodePtr topology,
     }
     // If node is a child, make sure it is a singleton and check the leaf bit.
     if (node->IsLeaf()) {
-      if (!node->Leaves().IsSingleton()) {
-        os << "DoesNotContainTopology: Leaf node is not a singleton." << std::endl;
+      const auto singleton = node->Leaves().SingletonOption();
+      if (!singleton.has_value()) {
+        os << "DoesNotContainTopology: Leaf node is not a singleton. -- "
+           << node->Leaves() << std::endl;
         contains_topology = false;
         return;
       }
+      leaf_check[singleton.value()] = true;
     }
     // Otherwise, find both child PCSPs from node and check that they are in the DAG.
     else {
@@ -1055,7 +1058,18 @@ bool SubsplitDAG::ContainsTopology(const Node::NodePtr topology,
       }
     }
   });
-  return contains_topology;
+  if (!contains_topology) {
+    return false;
+  }
+  // Check that every leaf node has been visited.
+  bool all_leaves = std::all_of(leaf_check.begin(), leaf_check.end(),
+                                [](bool all_true) { return all_true; });
+  if (!all_leaves) {
+    os << "DoesNotContainTopology: Topology does not span every leaf -- " << leaf_check
+       << std::endl;
+    return false;
+  }
+  return true;
 }
 
 // ** Build Output Indexers/Vectors
