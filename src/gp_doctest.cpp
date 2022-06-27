@@ -1575,10 +1575,10 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 //    - Tests that TreeMask is valid state for the DAG.
 //    - Tests that resulting Topology exists in the DAG.
 TEST_CASE("Top-Pruning: ChoiceMap") {
+  std::cout << "TOP_PRUNING" << std::endl;
   const std::string fasta_path = "data/six_taxon_longer.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
-  auto inst =
-      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_pre.data");
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.data");
   auto dag = inst.GetDAG();
 
   auto choice_map = ChoiceMap(dag);
@@ -1709,4 +1709,30 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
     CHECK_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
                   "Edge resulted in an invalid Topology not contained in DAG.");
   }
+}
+
+TEST_CASE("IndexerRepresentationOf") {
+  std::cout << "=== INDEXER_REPRESENTATION_TEST ===" << std::endl;
+  const std::string fasta_path = "data/six_taxon_longer.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.data");
+  auto dag = inst.GetDAG();
+  auto edge_indexer = dag.BuildEdgeIndexer();
+  auto good_topology = Node::Join(
+      Node::Join(Node::Leaf(0, 6), Node::Leaf(1, 6)),
+      Node::Join(
+          Node::Join(Node::Leaf(2, 6), Node::Join(Node::Leaf(3, 6), Node::Leaf(4, 6))),
+          Node::Leaf(5, 6)));
+  auto bad_topology =
+      Node::Join(Node::Join(Node::Join(Node::Leaf(0, 6), Node::Leaf(1, 6)),
+                            Node::Join(Node::Leaf(2, 6), Node::Leaf(3, 6))),
+                 Node::Join(Node::Leaf(4, 6), Node::Leaf(5, 6)));
+  size_t default_index = dag.GetDAGRootNodeId();
+  std::cout << "sizes: " << dag.EdgeCount() << " " << dag.NodeCount() << std::endl;
+  auto good_indexer_rep =
+      dag.IndexerRepresentationOf(edge_indexer, good_topology, default_index);
+  std::cout << "good_indexer: " << good_indexer_rep << std::endl;
+  auto bad_indexer_rep =
+      dag.IndexerRepresentationOf(edge_indexer, bad_topology, default_index);
+  std::cout << "bad_indexer: " << bad_indexer_rep << std::endl;
 }

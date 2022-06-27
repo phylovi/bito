@@ -329,6 +329,9 @@ SizeVector RootedSBNMaps::IndexerRepresentationOf(const BitsetSizeMap& indexer,
         result.push_back(AtWithDefault(indexer, pcsp_bitset, default_index));
       },
       false);
+  std::cout << "INDEXER_REPRESENTATION_OF: " << std::endl;
+  std::cout << "TOPOLOGY: " << result.size() << ", INDEXER: " << indexer.size()
+            << std::endl;
   return result;
 }
 
