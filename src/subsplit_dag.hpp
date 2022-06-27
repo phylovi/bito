@@ -559,8 +559,8 @@ class SubsplitDAG {
   // leaf).
   size_t edge_count_without_leaf_subsplits_;
   // Total number of tree topologies spanned by the DAG.
-  
-    
+  double topology_count_;
+
   // Storage for the number of topologies below for each node. Each index maps to the
   // count for the corresponding node_id.
   EigenVectorXd topology_count_below_;

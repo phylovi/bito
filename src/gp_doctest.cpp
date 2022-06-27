@@ -1575,7 +1575,6 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 //    - Tests that TreeMask is valid state for the DAG.
 //    - Tests that resulting Topology exists in the DAG.
 TEST_CASE("Top-Pruning: ChoiceMap") {
-  std::cout << "TOP_PRUNING" << std::endl;
   const std::string fasta_path = "data/six_taxon_longer.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
   auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.data");
