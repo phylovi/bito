@@ -131,8 +131,6 @@ TEST_CASE("TopologySampler: Non-uniform prior") {
 
   for (auto& [tree, count] : counts) {
     const double observed = static_cast<double>(count) / iterations;
-    // TG TODO: fix error and remove print statement
-    // std::cout << observed << " " << tree << " " << expected[tree] << " " << observed - expected[tree] << std::endl;
     CHECK_LT(fabs(observed - expected[tree]), 5e-2);
   }
 }

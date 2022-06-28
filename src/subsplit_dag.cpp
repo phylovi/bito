@@ -1373,6 +1373,7 @@ Reindexer SubsplitDAG::BuildEdgeReindexer(const size_t prev_edge_count) {
 }
 
 void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
+  // no need to reindex if no changes were made
   if (node_reindexer != Reindexer::IdentityReindexer(node_reindexer.size())) {
     std::vector<DAGVertex> nodes = {storage_.GetVertices().begin(),
                                     storage_.GetVertices().end()};
@@ -1396,6 +1397,7 @@ void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
 }
 
 void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
+  // no need to reindex if no changes were made
   if (edge_reindexer != Reindexer::IdentityReindexer(edge_reindexer.size())) { 
     // Update edges.
     std::vector<DAGLineStorage> edges_copy(storage_.GetLines().size());
