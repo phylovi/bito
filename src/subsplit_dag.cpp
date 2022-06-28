@@ -1392,8 +1392,6 @@ void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
       storage_.ReindexLine(i.GetId(), node_reindexer.GetNewIndexByOldIndex(i.GetParent()),
                           node_reindexer.GetNewIndexByOldIndex(i.GetChild()));
     }
-  } else {
-    std::cout << "NODE REINDEXING HAPPENING FOR NO REASON" << std::endl;
   }
 }
 

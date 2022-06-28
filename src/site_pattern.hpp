@@ -61,23 +61,5 @@ TEST_CASE("SitePattern") {
   SymbolVector symbol_vector = SitePattern::SymbolVectorOf(symbol_table, "-tgcaTGCA?");
   SymbolVector correct_symbol_vector = {4, 3, 2, 1, 0, 3, 2, 1, 0, 4};
   CHECK_EQ(symbol_vector, correct_symbol_vector);
-
-  // TG TODO: for debugging, remove before PR
-  // SitePattern site_pattern = SitePattern::HelloSitePattern();
-  // for (const auto &compressed_sequence : site_pattern.GetPatterns()) {
-  //   std::cout << compressed_sequence << std::endl;
-  // }
-  // std::cout << "Weights: " << std::endl;
-  // std::cout << site_pattern.GetWeights() << std::endl;
-
-  // for (size_t sequence = 0; sequence < 3; sequence++) {
-  //   std::cout << "new sequence partials: " << std::endl;
-  //   auto partials = site_pattern.GetPartials(sequence);
-  //   for (size_t i = 0; i < partials.size()/4; i++) {
-  //     std::cout << i+1 << " " << partials[i*4] << " " << partials[i*4 + 1] << " " << partials[i*4 + 2] << " " << partials[i*4+3] << std::endl;
-  //   }
-  // }
-
-
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

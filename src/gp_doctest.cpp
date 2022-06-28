@@ -70,7 +70,7 @@ GPInstance MakeFiveTaxonInstance() {
 // trimmed to 500 sites by using seqmagick convert with `--cut 500:1000`.
 // The DAG obtained by `inst.SubsplitDAGToDot("_ignore/ds1-reduced-5.dot");` can be seen
 // at
-// https://github.com/phylovi/bito/issues/349#issuecomment-897924835
+// https://github.com/phylovi/bito/issues/391#issuecomment-1169048568
 GPInstance MakeDS1Reduced5Instance() {
   auto inst = GPInstanceOfFiles("data/ds1-reduced-5.fasta", "data/ds1-reduced-5.nwk");
   return inst;
@@ -221,7 +221,7 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
 TEST_CASE("GPInstance: marginal likelihood on seven taxa and four trees") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // https://github.com/phylovi/bito/issues/349#issuecomment-897225623
+  // https://github.com/phylovi/bito/issues/391#issuecomment-1169053191
   TestCompositeMarginal(
       GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal-all-trees.nwk"),
       fasta_path);
@@ -272,8 +272,6 @@ StringDoubleMap StringDoubleMapOfStringDoubleVector(StringDoubleVector vect) {
 }
 
 TEST_CASE("GPInstance: gather and hotstart branch lengths") {
-  // Remove return when fixing #391 for real.
-  return;
   // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
   // 1 (outgroup,(((z0,z1),z2),z3));
   // 33 (outgroup,((z0,z1),(z2,z3)));
@@ -307,14 +305,12 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
 
   SizeDoubleVectorMap branch_lengths_from_sample = inst.GatherBranchLengths();
   EigenVectorXd gathered_bls =
-      EigenVectorXdOfStdVectorDouble(branch_lengths_from_sample[2]);
-  std::cout << expected_bls_internal << std::endl;
-  std::cout << gathered_bls << std::endl;
+      EigenVectorXdOfStdVectorDouble(branch_lengths_from_sample[4]);
   CheckVectorXdEquality(expected_bls_internal, gathered_bls, 1e-6);
 
   double true_mean_internal = expected_bls_internal.array().mean();
   inst.HotStartBranchLengths();
-  CHECK_LT(fabs(true_mean_internal - inst.GetEngine()->GetBranchLengths()(2)), 1e-8);
+  CHECK_LT(fabs(true_mean_internal - inst.GetEngine()->GetBranchLengths()(4)), 1e-8);
   // We also want to verify correct assignment for a pendant branch length.
   // Specifically, we are looking at the pendant branch length for z2 with sister z3. So
   // the desired GPCSP is 0010001000|0000000000. This corresponds to branch length index
@@ -601,7 +597,7 @@ EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
 TEST_CASE("GPInstance: simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // https://github.com/phylovi/bito/issues/349#issuecomment-897225623
+  // https://github.com/phylovi/bito/issues/391#issuecomment-1169053191
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   // Branch lengths generated from Python via
@@ -638,7 +634,7 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
 TEST_CASE("GPInstance: second simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // https://github.com/phylovi/bito/issues/349#issuecomment-897237046
+  // https://github.com/phylovi/bito/issues/391#issuecomment-1169056581
   auto inst = GPInstanceOfFiles(fasta_path, "data/second-simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   // Branch lengths generated from Python via
