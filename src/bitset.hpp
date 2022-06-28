@@ -266,11 +266,10 @@ class Bitset {
   // example, `000111010` is the PCSP from the DAG root node to the rootsplit (AC, B).
   // See the unit tests at the bottom for more examples.
 
-  // TG TODO: fix --> should be RightChild = 2
   static inline size_t PCSPCladeCount = 3;
-  enum class PCSPClade : size_t { Sister = 0, Focal = 1, LeftChild = 2 };
+  enum class PCSPClade : size_t { Sister = 0, Focal = 1, RightChild = 2 };
   using PCSPCladeIterator =
-      EnumIterator<PCSPClade, PCSPClade::Sister, PCSPClade::LeftChild>;
+      EnumIterator<PCSPClade, PCSPClade::Sister, PCSPClade::RightChild>;
 
   // Constructors:
   // Build a PCSP bitset from a compatible parent-child pair of
@@ -433,7 +432,7 @@ TEST_CASE("Bitset: Clades, Subsplits, PCSPs") {
   // Edge: 00|01|11
   CHECK_EQ(p.PCSPGetClade(PCSPClade::Sister), Bitset("00"));
   CHECK_EQ(p.PCSPGetClade(PCSPClade::Focal), Bitset("01"));
-  CHECK_EQ(p.PCSPGetClade(PCSPClade::LeftChild), Bitset("11"));
+  CHECK_EQ(p.PCSPGetClade(PCSPClade::RightChild), Bitset("11"));
 
   CHECK_EQ(Bitset("11001010").SubsplitCladeUnion(), Bitset("1110"));
 

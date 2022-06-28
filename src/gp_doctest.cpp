@@ -692,21 +692,21 @@ TEST_CASE("GPInstance: IsValidAddNodePair tests") {
   // Nodes are not adjacent (12|34 and 2|4).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("01100", "00011"),
                                      Bitset::Subsplit("00100", "00001")));
-  // Nodes have 5 taxa while the DAG has 4 (12|34 and 1|2).
+  // Nodes have 6 taxa while the DAG has 5 (12|34 and 1|2).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("011000", "000110"),
                                      Bitset::Subsplit("010000", "001000")));
   // Parent node does not have a parent (12|3 and 1|2).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("01100", "00010"),
                                      Bitset::Subsplit("01000", "00100")));
-  // Rotated clade of the parent node does not have a child (02|134 and
+  // Left clade of the parent node does not have a child (02|134 and
   // 1|34).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("10100", "01011"),
                                      Bitset::Subsplit("01000", "00011")));
-  // Rotated clade of the child node does not have a child (0123|4 and
+  // Left clade of the child node does not have a child (0123|4 and
   // 023|1).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
                                      Bitset::Subsplit("10110", "01000")));
-  // Sorted clade of the child node does not have a child (0123|4 and
+  // Right clade of the child node does not have a child (0123|4 and
   // 0|123).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
                                      Bitset::Subsplit("10000", "01110")));
@@ -783,14 +783,14 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   const auto& node_14 = dag.GetDAGNode(14);
   CHECK_EQ(node_14.GetBitset().ToString(), "0100000111");
   // Check that node fields were updated correctly.
-  const auto& sorted_parents_14 = node_14.GetRightRootward();
-  const auto& sorted_children_14 = node_14.GetRightLeafward();
-  CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 13) ==
-        sorted_parents_14.end());
-  CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 15) !=
-        sorted_parents_14.end());
-  CHECK(std::find(sorted_children_14.begin(), sorted_children_14.end(), 11) !=
-        sorted_children_14.end());
+  const auto& right_parents_14 = node_14.GetRightRootward();
+  const auto& right_children_14 = node_14.GetRightLeafward();
+  CHECK(std::find(right_parents_14.begin(), right_parents_14.end(), 13) ==
+        right_parents_14.end());
+  CHECK(std::find(right_parents_14.begin(), right_parents_14.end(), 15) !=
+        right_parents_14.end());
+  CHECK(std::find(right_children_14.begin(), right_children_14.end(), 11) !=
+        right_children_14.end());
   CHECK_EQ(node_14.Id(), 14);
   // Check that `subsplit_to_id_` node ids were updated.
   CHECK_EQ(dag.GetDAGNodeId(node_14.GetBitset()), 14);
@@ -863,7 +863,7 @@ TEST_CASE("GPInstance: Only add parent node tests") {
   // Check that the node count and edge count was updated.
   CHECK_EQ(dag.NodeCount(), prev_node_count + 3);
   CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 8);
-  // Check that BuildEdgeReindexer() correctly handles rotated edges.
+  // Check that BuildEdgeReindexer() correctly handles left edges.
   CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).first, 4);
   CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).second, 6);
 }
