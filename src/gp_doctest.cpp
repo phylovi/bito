@@ -24,6 +24,18 @@ using PLVType = PLVHandler::PLVType;
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, rootsplit, root };
 
+void CreateDOTForTesting() {
+  std::string fasta_file = "data/five_taxon.fasta";
+  std::string newick_file = "data/five_taxon_rooted_more_2.nwk";
+
+  GPInstance inst("_ignore/mmapped_plv.data");
+  inst.ReadFastaFile(fasta_file);
+  inst.ReadNewickFile(newick_file);
+  inst.MakeEngine();
+  std::cout << "Creating DOT For Testing" << std::endl;
+  inst.SubsplitDAGToDot("_ignore/out.dot", true);
+}
+
 // *** GPInstances used for testing ***
 
 GPInstance GPInstanceOfFiles(
