@@ -98,8 +98,6 @@ class GPInstance {
   // Get NNI Evaluation Engine.
   NNIEngine &GetNNIEngine();
 
-  void AddNodePair(const std::string parent_first, const std::string parent_second, const std::string child_first, const std::string child_second);
-
  private:
   void ClearTreeCollectionAssociatedState();
   void CheckSequencesLoaded() const;

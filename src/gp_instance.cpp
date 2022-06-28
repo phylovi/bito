@@ -91,10 +91,6 @@ void GPInstance::MakeDAG() {
 
 GPDAG &GPInstance::GetDAG() { return dag_; }
 
-void GPInstance::AddNodePair(const std::string parent_first, const std::string parent_second, const std::string child_first, const std::string child_second) {
-  dag_.AddNodePair(Bitset::Subsplit(parent_first, parent_second), Bitset::Subsplit(child_first, child_second)); 
-}
-
 void GPInstance::PrintDAG() { dag_.Print(); }
 
 void GPInstance::MakeEngine(double rescaling_threshold) {
