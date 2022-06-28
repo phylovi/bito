@@ -600,6 +600,8 @@ PYBIND11_MODULE(bito, m) {
           py::arg("pcsp_string"), py::arg("newick_path"))
       .def("subsplit_dag_to_dot", &GPInstance::SubsplitDAGToDot,
            R"raw(Write the current subsplit DAG to a DOT format file.)raw")
+      .def("add_node_pair", &GPInstance::AddNodePair, 
+          "Add node pair to gp instance dag.")
       .def("get_branch_lengths", &GPInstance::GetBranchLengths,
            "Return branch lengths from the GPInstance.")
       .def(

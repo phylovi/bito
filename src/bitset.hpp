@@ -252,8 +252,8 @@ class Bitset {
   // These functions require the bitset to be a "PCSP bitset" (parent-child subsplit
   // pair). PCSP represent edges between nodes within the SubsplitDAG. They are composed
   // of three equal-sized "clades": (0) sister clade of parent, (1) focal clade of
-  // parent, (2) the left clade of the child. We define the "left" clade of a child
-  // subsplit that has a bitset with the smaller lexicographic representation. The
+  // parent, (2) the right clade of the child. We define the "right" clade of a child
+  // subsplit that has a bitset with the larger lexicographic representation. The
   // remaining clade are well-defined relative to the focal parent subsplit.
   //
   // For example, `100|011|001` is composed of the clades `100`, `011` and `001`.
@@ -266,6 +266,7 @@ class Bitset {
   // example, `000111010` is the PCSP from the DAG root node to the rootsplit (AC, B).
   // See the unit tests at the bottom for more examples.
 
+  // TG TODO: fix --> should be RightChild = 2
   static inline size_t PCSPCladeCount = 3;
   enum class PCSPClade : size_t { Sister = 0, Focal = 1, LeftChild = 2 };
   using PCSPCladeIterator =

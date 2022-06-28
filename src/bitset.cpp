@@ -466,7 +466,7 @@ bool Bitset::SubsplitIsValid() const {
 
 Bitset Bitset::PCSP(const Bitset& parent_subsplit, const Bitset& child_subsplit) {
   // Assert that:
-  // - child_subsplit is either a sorted or rotated child of parent_subsplit.
+  // - child_subsplit is either a right or left child of parent_subsplit.
   // - child_subsplit forms a valid subsplit.
   bool is_parent_valid = parent_subsplit.SubsplitIsValid();
   bool is_child_valid = child_subsplit.SubsplitIsValid();

@@ -1373,42 +1373,48 @@ Reindexer SubsplitDAG::BuildEdgeReindexer(const size_t prev_edge_count) {
 }
 
 void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
-  std::vector<DAGVertex> nodes = {storage_.GetVertices().begin(),
-                                  storage_.GetVertices().end()};
-  std::vector<DAGVertex> nodes_copy = Reindexer::Reindex(nodes, node_reindexer);
-  storage_.SetVertices(nodes_copy);
+  if (node_reindexer != Reindexer::IdentityReindexer(node_reindexer.size())) {
+    std::vector<DAGVertex> nodes = {storage_.GetVertices().begin(),
+                                    storage_.GetVertices().end()};
+    std::vector<DAGVertex> nodes_copy = Reindexer::Reindex(nodes, node_reindexer);
+    storage_.SetVertices(nodes_copy);
 
-  // Update each node's id and leafward/rootward ids.
-  for (size_t node_id = 0; node_id < NodeCount(); node_id++) {
-    GetDAGNode(node_id).RemapNodeIds(node_reindexer);
-  }
-  // Update `subsplit_to_id_`.
-  for (const auto &[subsplit, node_id] : subsplit_to_id_) {
-    subsplit_to_id_.at(subsplit) = node_reindexer.GetNewIndexByOldIndex(node_id);
-  }
-  // Update edges.
-  for (auto i : storage_.GetLines()) {
-    storage_.ReindexLine(i.GetId(), node_reindexer.GetNewIndexByOldIndex(i.GetParent()),
-                         node_reindexer.GetNewIndexByOldIndex(i.GetChild()));
+    // Update each node's id and leafward/rootward ids.
+    for (size_t node_id = 0; node_id < NodeCount(); node_id++) {
+      GetDAGNode(node_id).RemapNodeIds(node_reindexer);
+    }
+    // Update `subsplit_to_id_`.
+    for (const auto &[subsplit, node_id] : subsplit_to_id_) {
+      subsplit_to_id_.at(subsplit) = node_reindexer.GetNewIndexByOldIndex(node_id);
+    }
+    // Update edges.
+    for (auto i : storage_.GetLines()) {
+      storage_.ReindexLine(i.GetId(), node_reindexer.GetNewIndexByOldIndex(i.GetParent()),
+                          node_reindexer.GetNewIndexByOldIndex(i.GetChild()));
+    }
+  } else {
+    std::cout << "NODE REINDEXING HAPPENING FOR NO REASON" << std::endl;
   }
 }
 
 void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
-  // Update edges.
-  std::vector<DAGLineStorage> edges_copy(storage_.GetLines().size());
-  for (auto i : storage_.GetLines()) {
-    LineId new_idx = edge_reindexer.GetNewIndexByOldIndex(i.GetId());
-    edges_copy[new_idx] = i;
-    edges_copy[new_idx].SetId(new_idx);
-  }
-  storage_.SetLines(edges_copy);
-  for (size_t node_id = 0; node_id < NodeCount(); node_id++) {
-    GetDAGNode(node_id).RemapEdgeIdxs(edge_reindexer);
-  }
-  // Update `parent_to_child_range_`.
-  for (const auto &[subsplit, idx_range] : parent_to_child_range_) {
-    parent_to_child_range_.at(subsplit) = {
-        edge_reindexer.GetNewIndexByOldIndex(idx_range.first),
-        edge_reindexer.GetNewIndexByOldIndex(idx_range.second - 1) + 1};
+  if (edge_reindexer != Reindexer::IdentityReindexer(edge_reindexer.size())) { 
+    // Update edges.
+    std::vector<DAGLineStorage> edges_copy(storage_.GetLines().size());
+    for (auto i : storage_.GetLines()) {
+      LineId new_idx = edge_reindexer.GetNewIndexByOldIndex(i.GetId());
+      edges_copy[new_idx] = i;
+      edges_copy[new_idx].SetId(new_idx);
+    }
+    storage_.SetLines(edges_copy);
+    for (size_t node_id = 0; node_id < NodeCount(); node_id++) {
+      GetDAGNode(node_id).RemapEdgeIdxs(edge_reindexer);
+    }
+    // Update `parent_to_child_range_`.
+    for (const auto &[subsplit, idx_range] : parent_to_child_range_) {
+      parent_to_child_range_.at(subsplit) = {
+          edge_reindexer.GetNewIndexByOldIndex(idx_range.first),
+          edge_reindexer.GetNewIndexByOldIndex(idx_range.second)};
+    }
   }
 }
