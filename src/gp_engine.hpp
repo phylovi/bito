@@ -47,8 +47,8 @@ class GPEngine {
                   std::optional<const size_t> explicit_allocation = std::nullopt,
                   const bool on_intialization = false);
   // Remap node and edge-based data according to reordering of DAG nodes and edges.
-  void ReindexPLVs(const Reindexer node_reindexer, const size_t old_node_count);
-  void ReindexGPCSPs(const Reindexer gpcsp_reindexer, const size_t old_gpcsp_count);
+  void ReindexPLVs(const Reindexer& node_reindexer, const size_t old_node_count);
+  void ReindexGPCSPs(const Reindexer& gpcsp_reindexer, const size_t old_gpcsp_count);
   // Grow space for storing temporary computation.
   void GrowTempPLVs(const size_t new_node_padding);
   void GrowTempGPCSPs(const size_t new_gpcsp_padding);

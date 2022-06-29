@@ -171,34 +171,14 @@ void GPEngine::GrowGPCSPs(const size_t new_gpcsp_count,
   }
 }
 
-void GPEngine::ReindexPLVs(const Reindexer node_reindexer,
+void GPEngine::ReindexPLVs(const Reindexer& node_reindexer,
                            const size_t old_node_count) {
   Assert(node_reindexer.size() == node_count_,
          "Node Reindexer is the wrong size for GPEngine.");
   Assert(node_reindexer.IsValid(node_count_), "Node Reindexer is not valid.");
 
   // Expand node_reindexer into plv_reindexer.
-  Reindexer plv_reindexer(node_count_ * plv_count_per_node_);
-  size_t new_data_idx = old_node_count * plv_count_per_node_;
-  for (size_t i = 0; i < node_count_; i++) {
-    const size_t old_node_idx = i;
-    const size_t new_node_idx = node_reindexer.GetNewIndexByOldIndex(old_node_idx);
-    for (const auto plv_type : PLVHandler::PLVTypeIterator()) {
-      // Either get input plv_index from old plvs, or get new plv_index (new data is
-      // irrelevant, so just get next available index).
-      size_t old_plv_idx;
-      if (old_node_idx < old_node_count) {
-        old_plv_idx = PLVHandler::GetPLVIndex(plv_type, old_node_idx, old_node_count);
-      } else {
-        old_plv_idx = new_data_idx;
-        new_data_idx++;
-      }
-      const size_t new_plv_idx =
-          PLVHandler::GetPLVIndex(plv_type, new_node_idx, node_count_);
-      plv_reindexer.SetReindex(old_plv_idx, new_plv_idx);
-    }
-  }
-  Assert(plv_reindexer.IsValid(GetPLVCount()), "PLV Reindexer is not valid.");
+  Reindexer plv_reindexer = PLVHandler::BuildPLVReindexer(node_reindexer);
   // Reindex data vectors
   Reindexer::ReindexInPlace(plvs_, plv_reindexer, GetPLVCount(),
                             plvs_.at(GetPLVCount()), plvs_.at(GetPLVCount() + 1));
@@ -208,7 +188,7 @@ void GPEngine::ReindexPLVs(const Reindexer node_reindexer,
                                                    node_reindexer, GetNodeCount());
 }
 
-void GPEngine::ReindexGPCSPs(const Reindexer gpcsp_reindexer,
+void GPEngine::ReindexGPCSPs(const Reindexer& gpcsp_reindexer,
                              const size_t old_gpcsp_count) {
   Assert(gpcsp_reindexer.size() == gpcsp_count_,
          "GPCSP Reindexer is the wrong size for GPEngine.");
