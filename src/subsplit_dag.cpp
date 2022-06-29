@@ -998,6 +998,79 @@ bool SubsplitDAG::IsEdgeLeaf(const size_t edge_id) const {
   return IsNodeLeaf(child_id);
 }
 
+bool SubsplitDAG::ContainsTopology(const Node::NodePtr topology,
+                                   const bool is_quiet) const {
+  std::stringstream dev_null;
+  std::ostream &os = (is_quiet ? dev_null : std::cerr);
+  bool contains_topology = true;
+  BoolVector leaf_check(TaxonCount(), false);
+  // iterate over rest of topology.
+  topology->Preorder([this, &os, &leaf_check, &contains_topology](const Node *node) {
+    // Skip if already found topology not in DAG.
+    if (!contains_topology) {
+      return;
+    }
+    // Check that topology covers entire taxon set.
+    if (node->Leaves().size() != TaxonCount()) {
+      os << "DoesNotContainTopology: Number of topology leaves different size than "
+            "taxon set."
+         << std::endl;
+      contains_topology = false;
+      return;
+    }
+    // If node is a child, make sure it is a singleton and check the leaf bit.
+    if (node->IsLeaf()) {
+      const auto singleton = node->Leaves().SingletonOption();
+      if (!singleton.has_value()) {
+        os << "DoesNotContainTopology: Leaf node is not a singleton. -- "
+           << node->Leaves() << std::endl;
+        contains_topology = false;
+        return;
+      }
+      leaf_check[singleton.value()] = true;
+    }
+    // Otherwise, find both child PCSPs from node and check that they are in the DAG.
+    else {
+      const auto child_nodes = node->Children();
+      if (child_nodes.size() != 2) {
+        os << "DoesNotContainTopology: Non-leaf node does not have 2 children."
+           << std::endl;
+        contains_topology = false;
+        return;
+      }
+      const auto parent_subsplit =
+          Bitset::Subsplit(child_nodes[0]->Leaves(), child_nodes[1]->Leaves());
+      for (const auto child_node : child_nodes) {
+        const auto grandchild_nodes = child_node->Children();
+        const auto child_subsplit =
+            (child_node->IsLeaf())
+                ? Bitset::Subsplit(child_node->Leaves(), Bitset(TaxonCount(), false))
+                : Bitset::Subsplit(grandchild_nodes[0]->Leaves(),
+                                   grandchild_nodes[1]->Leaves());
+        if (!ContainsEdge(parent_subsplit, child_subsplit)) {
+          os << "DoesNotContainTopology: Edge in topology not found in DAG -- "
+             << Bitset::PCSP(parent_subsplit, child_subsplit).PCSPToString()
+             << std::endl;
+          contains_topology = false;
+          return;
+        }
+      }
+    }
+  });
+  if (!contains_topology) {
+    return false;
+  }
+  // Check that every leaf node has been visited.
+  bool all_leaves = std::all_of(leaf_check.begin(), leaf_check.end(),
+                                [](bool all_true) { return all_true; });
+  if (!all_leaves) {
+    os << "DoesNotContainTopology: Topology does not span every leaf -- " << leaf_check
+       << std::endl;
+    return false;
+  }
+  return true;
+}
+
 // ** Build Output Indexers/Vectors
 
 std::pair<SizeVector, SizeVector> SubsplitDAG::BuildParentIdVectors(
@@ -1113,18 +1186,18 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const NNIOperation &nni
 SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_subsplit,
                                                          const Bitset &child_subsplit) {
   // Check that node pair will create a valid SubsplitDAG.
-  Assert(
-      IsValidAddNodePair(parent_subsplit, child_subsplit),
-      "The given pair of nodes is incompatible with DAG in SubsplitDAG::AddNodePair.");
+  Assert(IsValidAddNodePair(parent_subsplit, child_subsplit),
+         "The given pair of nodes is incompatible with DAG in "
+         "SubsplitDAG::AddNodePair.");
   // Initialize output vectors.
   SizeVector added_node_ids, added_edge_idxs;
   Reindexer node_reindexer, edge_reindexer;
   // Check if either parent or child don't already exist in the DAG.
   const bool parent_is_new = !ContainsNode(parent_subsplit);
   const bool child_is_new = !ContainsNode(child_subsplit);
-  // Soft assert: This allows for parent-child pair to exist in the DAG, but no work is
-  // done. If both the parent and child already exist in DAG, return added_node_ids and
-  // added_edge_idxs as empty, and node_reindexer and edge_reindexer as identity
+  // Soft assert: This allows for parent-child pair to exist in the DAG, but no work
+  // is done. If both the parent and child already exist in DAG, return added_node_ids
+  // and added_edge_idxs as empty, and node_reindexer and edge_reindexer as identity
   // reindexers.
   if (!parent_is_new && !child_is_new) {
     // Return default reindexers if both nodes already exist.
@@ -1179,7 +1252,8 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
     // Create reindexers.
     node_reindexer = BuildNodeReindexer(prev_node_count);
     edge_reindexer = BuildEdgeReindexer(prev_edge_count);
-    // Update the ids in added_node_ids and added_edge_idxs according to the reindexers.
+    // Update the ids in added_node_ids and added_edge_idxs according to the
+    // reindexers.
     Reindexer::RemapIdVector(added_node_ids, node_reindexer);
     Reindexer::RemapIdVector(added_edge_idxs, edge_reindexer);
     // Update fields in the Subsplit DAG according to the reindexers.
@@ -1327,9 +1401,9 @@ Reindexer SubsplitDAG::BuildNodeReindexer(const size_t prev_node_count) {
   // Begin reindex values at taxon count to account for ...leaves?
   size_t running_traversal_idx = taxon_count_;
   size_t dag_root_node_id = prev_node_count - 1;
-  // Build node_reindexer by using post-order traversal (topological sort) of entire DAG
-  // to assign new ids, where the index is the "before" node_id (stored in the node
-  // object), and the value is the "after" node_id.
+  // Build node_reindexer by using post-order traversal (topological sort) of entire
+  // DAG to assign new ids, where the index is the "before" node_id (stored in the
+  // node object), and the value is the "after" node_id.
   DepthFirstWithAction({dag_root_node_id},
                        SubsplitDAGTraversalAction(
                            // BeforeNode
