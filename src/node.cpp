@@ -456,6 +456,9 @@ Bitset Node::LeavesOf(const Node::NodePtrVec& children) {
 Node::NodePtr Node::Leaf(uint32_t id, Bitset leaves) {
   return std::make_shared<Node>(id, leaves);
 }
+Node::NodePtr Node::Leaf(uint32_t id, size_t taxon_count) {
+  return Node::Leaf(id, Bitset::Singleton(taxon_count, id));
+}
 Node::NodePtr Node::Join(NodePtrVec children, size_t id) {
   return std::make_shared<Node>(children, id, Node::LeavesOf(children));
 }
@@ -560,4 +563,30 @@ SizeVectorVector Node::IdsAbove() const {
       // Going back up the tree, so remove the current node's id.
       [&mutable_ids](const Node*) { mutable_ids.pop_back(); });
   return ids_above;
+}
+
+std::string Node::NodeIdAndLeavesToString() const {
+  std::stringstream os;
+  os << "{ id: " << Id();
+  os << ", leaves: " << Leaves();
+  SizeVector child_ids;
+  for (const auto child : children_) {
+    child_ids.push_back(child.get()->Id());
+  }
+  os << ", children: " << child_ids << " }";
+  return os.str();
+}
+
+std::string Node::NodeIdAndLeavesToStringForTopology() const {
+  std::stringstream os;
+  os << "[ " << std::endl;
+
+  Preorder(
+      // pre function
+      [&os](const Node* node_ptr) {
+        os << "\t" << node_ptr->NodeIdAndLeavesToString() << ", " << std::endl;
+      });
+
+  os << " ]" << std::endl;
+  return os.str();
 }

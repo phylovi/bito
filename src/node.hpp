@@ -45,6 +45,7 @@
 class Node {
  public:
   using NodePtr = std::shared_ptr<Node>;
+  using Topology = NodePtr;
   using NodePtrVec = std::vector<NodePtr>;
   using NodePtrVecPtr = std::shared_ptr<NodePtrVec>;
   using TopologyCounter = std::unordered_map<NodePtr, uint32_t>;
@@ -157,7 +158,12 @@ class Node {
   NodePtr Deroot();
 
   // ** Static methods
+  // Constructs a leaf node with given id, and an empty taxon clade by default for its
+  // leaves.
   static NodePtr Leaf(uint32_t id, Bitset leaves = Bitset(0));
+  // Constructs a leaf node with given id, and a single taxon clade with a length of
+  // taxon_count for its leaves.
+  static NodePtr Leaf(uint32_t id, size_t taxon_count);
   // Join builds a Node with the given descendants, or-ing the leaves_ of the
   // descendants.
   static NodePtr Join(NodePtrVec children, size_t id = SIZE_MAX);
@@ -188,6 +194,11 @@ class Node {
   // c is the amount by which we rotate.
   // https://stackoverflow.com/a/776523/467327
   static size_t SORotate(size_t n, uint32_t c);
+
+  // Outputs this node's id, adjacent leaf ids, and leaf clade bitset to string.
+  std::string NodeIdAndLeavesToString() const;
+  // Outputs `NodeIdAndLeavesToString` for all entire topology below this node.
+  std::string NodeIdAndLeavesToStringForTopology() const;
 
  private:
   // Vector of direct child descendants of node in tree topology.

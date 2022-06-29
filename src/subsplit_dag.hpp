@@ -40,6 +40,7 @@
 #include "subsplit_dag_action.hpp"
 #include "nni_operation.hpp"
 #include "subsplit_dag_node.hpp"
+#include "node.hpp"
 
 class SubsplitDAG {
  public:
@@ -331,6 +332,9 @@ class SubsplitDAG {
   // Does edge connect to a leaf node?
   bool IsEdgeLeaf(const size_t edge_id) const;
 
+  // Does the DAG contain the given topology?
+  bool ContainsTopology(const Node::NodePtr topology, const bool is_quiet = true) const;
+
   // ** Modify DAG
   // These methods are for directly modifying the DAG by adding or removing nodes and
   // edges. All these methods promise that all data owned by the SubsplitDAG will be
@@ -556,6 +560,7 @@ class SubsplitDAG {
   size_t edge_count_without_leaf_subsplits_;
   // Total number of tree topologies spanned by the DAG.
   double topology_count_;
+
   // Storage for the number of topologies below for each node. Each index maps to the
   // count for the corresponding node_id.
   EigenVectorXd topology_count_below_;

@@ -22,7 +22,6 @@
 #include "sugar.hpp"
 #include "gp_operation.hpp"
 #include "reindexer.hpp"
-#include "choice_map.hpp"
 
 using NNIDoubleMap = std::map<NNIOperation, double>;
 
