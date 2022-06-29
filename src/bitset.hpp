@@ -125,7 +125,7 @@ class Bitset {
   // MultiClade). Subsplits are composed of two clades and PCSPs are composed of three
   // clades.
 
-  // Comparator: Clades are sorted with respect to the lexigraphical representation of
+  // Comparator: Clades are ordered with respect to the lexigraphical representation of
   // their taxon subset. (e.g. If two clades are "010" and "101", then their taxon
   // subsets are {b} and {a,c}. "b" > "a", therefore "010" > "101".) Note: Sorting by
   // taxon representation gives the precise opposite ordering to sorting by binary
@@ -203,7 +203,7 @@ class Bitset {
   // Subsplits are sorting on the following:
   // (1) The number of taxa in each of their subsplits.
   // (2) The std::bitset ordering of each of their respective unions.
-  // (3) The std::bitset ordering of each or their sorted clades.
+  // (3) The std::bitset ordering of each of their left clades.
   static int SubsplitCompare(const Bitset &subsplit_a, const Bitset &subsplit_b);
   int SubsplitCompare(const Bitset &other) const;
   // Flip the order of the two clades of a subsplit.
@@ -235,8 +235,7 @@ class Bitset {
   bool SubsplitIsRightChildOf(const Bitset &parent) const;
   // Get the union of the two clades.
   Bitset SubsplitCladeUnion() const;
-  // Get whether the given child is the sorted (false, 0-position) or rotated (true,
-  // 1-position) child to the given parent.
+  // Get whether the given child is the left or right child to the given parent.
   static SubsplitClade SubsplitIsChildOfWhichParentClade(const Bitset &parent,
                                                          const Bitset &child);
   // Check whether subsplits form a child/parent pair.
@@ -275,13 +274,13 @@ class Bitset {
   // Build a PCSP bitset from a compatible parent-child pair of
   // Subsplit bitsets.
   static Bitset PCSP(const Bitset &parent_subsplit, const Bitset &child_subsplit);
-  // Build a PCSP bitset from explicit sister, focal, and sorted-child clades.
+  // Build a PCSP bitset from explicit sister, focal, and right child clades.
   static Bitset PCSP(const Bitset &sister_clade, const Bitset &focal_clade,
-                     const Bitset &sorted_child_clade);
-  // Builds sister, focal, and sorted-child clades from strings of "1" and "0"
+                     const Bitset &right_child_clade);
+  // Builds sister, focal, and right child clades from strings of "1" and "0"
   // characters.
   static Bitset PCSP(const std::string sister_clade, const std::string focal_clade,
-                     const std::string sorted_child_clade);
+                     const std::string right_child_clade);
   // Special Constructors:
   // Make a PCSP from parent subsplit to child leaf subsplit. Asserts that the left-hand
   // clade of the parent subsplit is non-empty and that the right-hand clade is a
@@ -298,8 +297,8 @@ class Bitset {
   bool PCSPIsValid() const;
   // Checks whether the PCSP child is a leaf subsplit.
   bool PCSPChildIsLeaf() const;
-  // Sorts PCSP so that parent and child are rotated properly so that second clade is
-  // the focal clade of the parent and third clade is the sorted side of the child.
+  // Sorts PCSP so that parent and child are arranged properly so that second clade is
+  // the focal clade of the parent and third clade is the right side of the child.
   Bitset PCSPSortClades() const;
   // Do the sister and focal clades union to the whole taxon set?
   // Method excludes rootsplit PCSPs where sister and focal clades
