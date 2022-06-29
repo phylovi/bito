@@ -484,18 +484,18 @@ Bitset Bitset::PCSP(const Bitset& parent_subsplit, const Bitset& child_subsplit)
 }
 
 Bitset Bitset::PCSP(const Bitset& sister_clade, const Bitset& focal_clade,
-                    const Bitset& sorted_child_clade) {
+                    const Bitset& right_child_clade) {
   Assert(sister_clade.size() == focal_clade.size() &&
-             focal_clade.size() == sorted_child_clade.size(),
+             focal_clade.size() == right_child_clade.size(),
          "PCSP(): all clades must be of equal size.");
-  Bitset pcsp = sister_clade + focal_clade + sorted_child_clade;
+  Bitset pcsp = sister_clade + focal_clade + right_child_clade;
   Assert(pcsp.PCSPIsValid(), "PCSP(): given clades form an invalid PCSP.");
   return pcsp;
 }
 
 Bitset Bitset::PCSP(const std::string sister_clade, const std::string focal_clade,
-                    const std::string sorted_child_clade) {
-  return PCSP(Bitset(sister_clade), Bitset(focal_clade), Bitset(sorted_child_clade));
+                    const std::string right_child_clade) {
+  return PCSP(Bitset(sister_clade), Bitset(focal_clade), Bitset(right_child_clade));
 }
 
 // #350 I'd argue that if we are going to use SubsplitCladeCount (and I'm not sure about
@@ -554,7 +554,7 @@ bool Bitset::PCSPIsValid() const {
 bool Bitset::PCSPChildIsLeaf() const {
   Assert(size() % PCSPCladeCount == 0,
          "Size isn't 0 mod 3 in Bitset::PCSPChildIsLeaf.");
-  // If third clade of PCSP is empty, that means that the associated clade's sorted
+  // If third clade of PCSP is empty, that means that the associated clade's right
   // subsplit is empty, so it is leaf.
   return PCSPGetClade(PCSPClade::RightChild).None();
 }
