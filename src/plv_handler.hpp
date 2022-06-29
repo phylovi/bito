@@ -11,6 +11,7 @@
 #include "site_pattern.hpp"
 #include "reindexer.hpp"
 
+// Enumerated Types for Partial Vectors.
 namespace PartialVectorType {
 // PLV: Partial Likelihood Vectors
 enum class PLVType : size_t {
@@ -66,7 +67,9 @@ class PSVTypeEnum : public EnumWrapper<PSVType, PSVCount, PSVType::PRight, PSVTy
 };  // namespace PartialVectorType
 
 using PLVType = PartialVectorType::PLVType;
+using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
 using PSVType = PartialVectorType::PSVType;
+using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
 
 template <class PVType, class PVTypeEnum>
 class PVHandler {
@@ -84,8 +87,7 @@ class PVHandler {
         resizing_factor_(resizing_factor),
         mmapped_master_plv_(mmap_file_path_,
                             (node_count + node_padding_) * plv_count_per_node_ *
-                                size_t(resizing_factor_) * pattern_count),
-  {}
+                                size_t(resizing_factor_) * pattern_count) {}
 
   // ** Counts
 
@@ -104,53 +106,33 @@ class PVHandler {
     return GetAllocatedNodeCount() * plv_count_per_node_;
   }
 
-  // ** Access
-
   // ** Resize
 
-  // Resize PVHandler to accomodate DAG with given number of nodes.  Option to
-  // remap data according to DAG reindexers.
-  void Grow(const size_t new_node_count, std::optional<const Reindexer> node_reindexer,
-            std::optional<const size_t> explicit_allocation,
-            const bool on_initializtion) {
+  // Resize PVHandler to accomodate DAG with given number of nodes.
+  void Resize(const size_t node_alloc) {
     const size_t old_node_count = GetNodeCount();
     const size_t old_plv_count = GetPLVCount();
     node_count_ = new_node_count;
-    // Reallocate more space if needed.
-    if ((GetPaddedNodeCount() > GetAllocatedNodeCount()) ||
-        explicit_allocation.has_value()) {
-      node_alloc_ = size_t(ceil(double(GetPaddedNodeCount()) * resizing_factor_));
-      if (explicit_allocation.has_value()) {
-        Assert(explicit_allocation.value() >= GetNodeCount(),
-               "Attempted to reallocate space smaller than node_count.");
-        node_alloc_ = explicit_allocation.value() + node_padding_;
-      }
-
-      mmapped_master_plv_.Resize(GetAllocatedPLVCount() * site_pattern_.PatternCount());
-      plvs_ = mmapped_master_plv_.Subdivide(GetAllocatedPLVCount());
-    }
+    mmapped_master_plv_.Resize(GetAllocatedPLVCount() * pattern_count_);
+    plvs_ = mmapped_master_plv_.Subdivide(GetAllocatedPLVCount());
     // Initialize new work space.
     Assert((plvs_.back().rows() == MmappedNucleotidePLV::base_count_) &&
-               (plvs_.back().cols() ==
-                static_cast<Eigen::Index>(site_pattern_.PatternCount())) &&
+               (plvs_.back().cols() == static_cast<Eigen::Index>(pattern_count_)) &&
                (size_t(plvs_.size()) == GetAllocatedPLVCount()),
            "Didn't get the right shape of PLVs out of Subdivide.");
     for (size_t i = old_plv_count; i < GetPaddedPLVCount(); i++) {
       plvs_.at(i).setZero();
     }
-    // Reindex work space to realign with DAG.
-    if (node_reindexer.has_value()) {
-      ReindexPLVs(node_reindexer.value(), old_node_count);
-    }
   }
 
+  // Reindex PV according to plv_reindexer.
   void GPEngine::Reindex(const Reindexer plv_reindexer, const size_t old_node_count) {
     Reindexer::ReindexInPlace(plvs_, plv_reindexer, GetPLVCount(),
                               plvs_.at(GetPLVCount()), plvs_.at(GetPLVCount() + 1));
   }
 
   // Expand node_reindexer into plv_reindexer.
-  static Reindexer BuildPLVReindexer(const Reindexer &node_reindexer) {
+  Reindexer BuildPLVReindexer(const Reindexer &node_reindexer) {
     Reindexer plv_reindexer(node_count_ * plv_count_per_node_);
     size_t new_data_idx = old_node_count * plv_count_per_node_;
     for (size_t i = 0; i < node_count_; i++) {
@@ -175,8 +157,14 @@ class PVHandler {
     return plv_reindexer;
   }
 
-  // Get the `GPEngine::plvs_` index of given node's given PLV type from DAG with
-  // node_count.
+  // ** Access
+
+  //
+  NucleotidePLVRefVector &Get() { return data_; }
+  //
+  NucleotidePLVRef &Get(const size_t offset) { return data_.at(offset); };
+
+  // Get total offset into PLVs, indexed based on size of underlying DAG.
   static size_t GetPLVIndex(const PVType plv_type, const size_t node_idx,
                             const size_t node_count) {
     return GetPLVIndex(PVTypeEnum::GetIndex(plv_type), node_idx, node_count);
@@ -193,13 +181,26 @@ class PVHandler {
   };
 
  protected:
+  // Get total offset into PLVs.
   static size_t GetPLVIndex(const size_t plv_type_idx, const size_t node_idx,
                             const size_t node_count) {
     return (plv_type_idx * node_count) + node_idx;
   };
 
-  // File path
+  // File path to data map.
   std::string mmap_file_path_;
+  // Master PLV: Large data block of virtual memory for Partial Likelihood Vectors.
+  // Subdivided into sections for plvs_.
+  MmappedNucleotidePLV mmapped_master_data_;
+  // Partial Likelihood Vectors.
+  // plvs_ store the following:
+  // [0, num_nodes): p(s).
+  // [num_nodes, 2*num_nodes): phat(s_right).
+  // [2*num_nodes, 3*num_nodes): phat(s_left).
+  // [3*num_nodes, 4*num_nodes): rhat(s_right) = rhat(s_left).
+  // [4*num_nodes, 5*num_nodes): r(s_right).
+  // [5*num_nodes, 6*num_nodes): r(s_left).
+  NucleotidePLVRefVector data_;
 
   // Size of Site Pattern.
   size_t pattern_count_ = 0;
@@ -211,29 +212,23 @@ class PVHandler {
   size_t node_padding_ = 2;
   // Number of PLVs for each node in DAG.
   const size_t plv_count_per_node_ = 6;
+  // When size exceeds current allocation, ratio to grow new allocation.
   double resizing_factor_ = 2.0;
-
-  // Master PLV: Large data block of virtual memory for Partial Likelihood Vectors.
-  // Subdivided into sections for plvs_.
-  MmappedNucleotidePLV mmapped_master_plv_;
-  // Partial Likelihood Vectors.
-  // plvs_ store the following (see PLVHandler::GetPLVIndex):
-  // [0, num_nodes): p(s).
-  // [num_nodes, 2*num_nodes): phat(s_right).
-  // [2*num_nodes, 3*num_nodes): phat(s_left).
-  // [3*num_nodes, 4*num_nodes): rhat(s_right) = rhat(s_left).
-  // [4*num_nodes, 5*num_nodes): r(s_right).
-  // [5*num_nodes, 6*num_nodes): r(s_left).
-  NucleotidePLVRefVector plvs_;
 };
 
 // PLVHandler: Partial Likelihood Vector Handler
 class PLVHandler
     : public PVHandler<PartialVectorType::PLVType, PartialVectorType::PLVTypeEnum> {
  public:
-  using PLVType = PartialVectorType::PLVTypeEnum::Type;
-  using PLVTypeIterator = PartialVectorType::PLVTypeEnum::Iterator;
-  static const inline size_t plv_count_ = PartialVectorType::PLVTypeEnum::Count;
+  using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
+  using PLVType = PLVTypeEnum::Type;
+  using PLVTypeIterator = PLVTypeEnum::Iterator;
+  static const inline size_t plv_count_ = PLVTypeEnum::Count;
+
+  PLVHandler(const std::string &mmap_file_path, const size_t node_count,
+             const size_t pattern_count, const double resizing_factor)
+      : PVHandler<PartialVectorType::PLVType, PartialVectorType::PLVTypeEnum>(
+            mmap_file_path, node_count, pattern_count, PLVTypeEnum::Count){};
 
   static Type RPLVType(const bool is_on_left) {
     return is_on_left ? PLVType::RLeft : PLVType::RRight;
@@ -248,8 +243,9 @@ class PLVHandler
 class PSVHandler
     : public PVHandler<PartialVectorType::PSVType, PartialVectorType::PSVTypeEnum> {
  public:
-  using PSVType = PartialVectorType::PSVTypeEnum::Type;
-  using PSVTypeIterator = PartialVectorType::PSVTypeEnum::Iterator;
+  using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
+  using PSVType = PSVTypeEnum::Type;
+  using PSVTypeIterator = PSVTypeEnum::Iterator;
   static const inline size_t psv_count_ = PartialVectorType::PSVTypeEnum::Count;
 
   static Type PPLVType(const bool is_on_left) {

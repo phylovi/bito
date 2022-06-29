@@ -8,7 +8,7 @@
 
 #include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
-#include "mmapped_plv.hpp"
+#include "plv_handler.hpp"
 #include "numerical_utils.hpp"
 #include "quartet_hybrid_request.hpp"
 #include "rooted_tree_collection.hpp"
@@ -181,7 +181,6 @@ class GPEngine {
 
   // ** Counts
 
-  double PLVByteCount() const { return mmapped_master_plv_.ByteCount(); };
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
   size_t GetNodeCount() const { return node_count_; };
   size_t GetTempNodeCount() const { return node_padding_; }
@@ -307,8 +306,8 @@ class GPEngine {
   size_t node_padding_ = 2;
   // PLV count is proportional to the node_count.
   const size_t plv_count_per_node_ = 6;
-  // Total number of edges in DAG. Determines sizes of data vectors stored on edges like
-  // branch lengths.
+  // Total number of edges in DAG. Determines sizes of data vectors indexed on edges
+  // like branch lengths.
   size_t gpcsp_count_ = 0;
   size_t gpcsp_alloc_ = 0;
   size_t gpcsp_padding_ = 3;
@@ -317,19 +316,9 @@ class GPEngine {
 
   // ** Per-Node Data
 
-  // Master PLV: Large data block of virtual memory for Partial Likelihood Vectors.
-  // Subdivided into sections for plvs_.
-  std::string mmap_file_path_;
-  MmappedNucleotidePLV mmapped_master_plv_;
-  // Partial Likelihood Vectors.
-  // plvs_ store the following (see PLVHandler::GetPLVIndex):
-  // [0, num_nodes): p(s).
-  // [num_nodes, 2*num_nodes): phat(s_right).
-  // [2*num_nodes, 3*num_nodes): phat(s_left).
-  // [3*num_nodes, 4*num_nodes): rhat(s_right) = rhat(s_left).
-  // [4*num_nodes, 5*num_nodes): r(s_right).
-  // [5*num_nodes, 6*num_nodes): r(s_left).
-  NucleotidePLVRefVector plvs_;
+  // Partial Likelihood Vector Handler.
+  PLVHandler plv_handler_;
+  // Unconditional probabilites for each node in DAG.
   EigenVectorXd unconditional_node_probabilities_;
   // Rescaling count for each plv.
   EigenVectorXi rescaling_counts_;
