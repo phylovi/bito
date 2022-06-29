@@ -13,7 +13,6 @@
 #include "numerical_utils.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_probability.hpp"
-#include "bitset.hpp"
 
 using namespace GPOperations;  // NOLINT
 
