@@ -217,20 +217,6 @@ void GPEngine::GrowTempGPCSPs(const size_t new_gpcsp_padding) {
   }
 }
 
-size_t GPEngine::GetTempPLVIndex(const size_t plv_offset) const {
-  const size_t plv_scratch_size = GetPaddedPLVCount() - GetPLVCount();
-  Assert(plv_offset < plv_scratch_size,
-         "Requested plv_offset outside of allocated scratch space.");
-  return plv_offset + GetPLVCount();
-}
-
-size_t GPEngine::GetTempGPCSPIndex(const size_t gpcsp_offset) const {
-  const size_t gpcsp_scratch_size = GetPaddedGPCSPCount() - GetGPCSPCount();
-  Assert(gpcsp_offset < gpcsp_scratch_size,
-         "Requested gpcsp_offset outside of allocated scratch space.");
-  return gpcsp_offset + GetGPCSPCount();
-}
-
 // ** GPOperations
 
 void GPEngine::operator()(const GPOperations::ZeroPLV& op) {

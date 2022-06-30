@@ -52,9 +52,6 @@ class GPEngine {
   // Grow space for storing temporary computation.
   void GrowTempPLVs(const size_t new_node_padding);
   void GrowTempGPCSPs(const size_t new_gpcsp_padding);
-  // Get index according to offset into temporary space.
-  size_t GetTempPLVIndex(const size_t plv_offset) const;
-  size_t GetTempGPCSPIndex(const size_t gpcsp_offset) const;
 
   // ** GPOperations
 
@@ -199,6 +196,9 @@ class GPEngine {
   size_t GetAllocatedPLVCount() const {
     return GetAllocatedNodeCount() * GetPLVCountPerNode();
   }
+  size_t GetTempPLVIndex(const size_t plv_index) const {
+    return plv_handler_.GetTempPLVIndex(plv_index);
+  }
 
   void SetNodeCount(const size_t node_count) { plv_handler_.SetNodeCount(node_count); }
   void SetTempNodeCount(const size_t node_padding) {
@@ -212,6 +212,12 @@ class GPEngine {
   size_t GetTempGPCSPCount() const { return gpcsp_padding_; };
   size_t GetAllocatedGPCSPCount() const { return gpcsp_alloc_; };
   size_t GetPaddedGPCSPCount() const { return GetGPCSPCount() + GetTempGPCSPCount(); };
+  size_t GetTempGPCSPIndex(const size_t gpcsp_offset) const {
+    const size_t gpcsp_scratch_size = GetPaddedGPCSPCount() - GetGPCSPCount();
+    Assert(gpcsp_offset < gpcsp_scratch_size,
+           "Requested gpcsp_offset outside of allocated scratch space.");
+    return gpcsp_offset + GetGPCSPCount();
+  }
 
   void SetGPCSPCount(const size_t gpcsp_count) { gpcsp_count_ = gpcsp_count; }
   void SetTempGPCSPCount(const size_t gpcsp_padding) { gpcsp_padding_ = gpcsp_padding; }

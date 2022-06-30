@@ -2,6 +2,7 @@
 #include "rooted_sbn_instance.hpp"
 #include "unrooted_sbn_instance.hpp"
 #include "stopwatch.hpp"
+#include "rooted_tree_collection.hpp"
 
 // This is just a place to muck around, and check out performance.
 
@@ -12,6 +13,7 @@ auto now = std::chrono::high_resolution_clock::now;
 // gprof2dot -f callgrind callgrind.out.16763 | dot -Tpng -o ~/output.png
 
 int main() {
+  std::cout << "RUNNING NOODLE" << std::endl;
   uint32_t leaf_count = 10000;
 
   Node::NodePtr topology = Node::Ladder(leaf_count);
