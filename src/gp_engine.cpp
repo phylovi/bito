@@ -78,7 +78,7 @@ void GPEngine::GrowPLVs(const size_t new_node_count,
              "Attempted to reallocate space smaller than node_count.");
       node_alloc_ = explicit_allocation.value() + node_padding_;
     }
-    plv_handler_.Resize(new_node_count);
+    plv_handler_.Resize(new_node_count, node_alloc_);
     rescaling_counts_.conservativeResize(GetAllocatedPLVCount());
     unconditional_node_probabilities_.conservativeResize(GetAllocatedNodeCount());
   }
@@ -174,7 +174,7 @@ void GPEngine::ReindexPLVs(const Reindexer& node_reindexer,
 
   // Expand node_reindexer into plv_reindexer.
   Reindexer plv_reindexer =
-      plv_handler_.BuildPLVReindexer(node_reindexer, old_node_count);
+      plv_handler_.BuildPLVReindexer(node_reindexer, old_node_count, node_count_);
   // Reindex data vectors
   Reindexer::ReindexInPlace<EigenVectorXi, int>(rescaling_counts_, plv_reindexer,
                                                 GetPLVCount());

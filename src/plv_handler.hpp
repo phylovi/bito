@@ -109,9 +109,10 @@ class PVHandler {
   // ** Resize
 
   // Resize PVHandler to accomodate DAG with given number of nodes.
-  void Resize(const size_t new_node_count) {
+  void Resize(const size_t new_node_count, const size_t new_node_alloc) {
     const size_t old_plv_count = GetPLVCount();
     node_count_ = new_node_count;
+    node_alloc_ = new_node_alloc;
     // Allocate mmapped data block.
     mmapped_master_plvs_.Resize(GetAllocatedPLVCount() * pattern_count_);
     // Subdivide mmapped data in individual PLVs.
@@ -134,7 +135,9 @@ class PVHandler {
 
   // Expand node_reindexer into plv_reindexer.
   Reindexer BuildPLVReindexer(const Reindexer &node_reindexer,
-                              const size_t old_node_count) {
+                              const size_t old_node_count,
+                              const size_t new_node_count) {
+    node_count_ = new_node_count;
     Reindexer plv_reindexer(node_count_ * plv_count_per_node_);
     size_t new_plvs_idx = old_node_count * plv_count_per_node_;
     for (size_t i = 0; i < node_count_; i++) {
@@ -154,6 +157,9 @@ class PVHandler {
         plv_reindexer.SetReindex(old_plv_idx, new_plv_idx);
       }
     }
+    std::cout << "PLV_REINDEXER: " << plv_reindexer.size() << std::endl
+              << node_reindexer << std::endl
+              << plv_reindexer << std::endl;
     Assert(plv_reindexer.IsValid(GetPLVCount()), "PLV Reindexer is not valid.");
     return plv_reindexer;
   }
