@@ -15,7 +15,6 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
     : site_pattern_(std::move(site_pattern)),
       rescaling_threshold_(rescaling_threshold),
       log_rescaling_threshold_(log(rescaling_threshold)),
-      plv_count_per_node_(plv_count_per_node),
       plv_handler_(mmap_file_path, node_count, site_pattern_.PatternCount(),
                    resizing_factor_),
       unconditional_node_probabilities_(std::move(unconditional_node_probabilities)),
@@ -176,10 +175,7 @@ void GPEngine::ReindexPLVs(const Reindexer& node_reindexer,
   Reindexer plv_reindexer =
       plv_handler_.BuildPLVReindexer(node_reindexer, old_node_count, node_count_);
   // Reindex data vectors
-  // plv_handler_.Reindex(plv_reindexer);
-  Reindexer::ReindexInPlace(plv_handler_.GetPLVs(), plv_reindexer, GetPLVCount(),
-                            plv_handler_.GetPLV(GetPLVCount()),
-                            plv_handler_.GetPLV(GetPLVCount() + 1));
+  plv_handler_.Reindex(plv_reindexer);
   Reindexer::ReindexInPlace<EigenVectorXi, int>(rescaling_counts_, plv_reindexer,
                                                 GetPLVCount());
   Reindexer::ReindexInPlace<EigenVectorXd, double>(unconditional_node_probabilities_,

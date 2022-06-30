@@ -185,18 +185,19 @@ class GPEngine {
 
   // ** Counts
 
+  size_t GetPLVCountPerNode() const { return plv_handler_.GetPLVCountPerNode(); }
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
   size_t GetNodeCount() const { return node_count_; };
   size_t GetTempNodeCount() const { return node_padding_; }
   size_t GetPaddedNodeCount() const { return node_count_ + node_padding_; };
   size_t GetAllocatedNodeCount() const { return node_alloc_; }
-  size_t GetPLVCount() const { return GetNodeCount() * plv_count_per_node_; };
-  size_t GetTempPLVCount() const { return GetTempNodeCount() * plv_count_per_node_; };
+  size_t GetPLVCount() const { return GetNodeCount() * GetPLVCountPerNode(); };
+  size_t GetTempPLVCount() const { return GetTempNodeCount() * GetPLVCountPerNode(); };
   size_t GetPaddedPLVCount() const {
-    return GetPaddedNodeCount() * plv_count_per_node_;
+    return GetPaddedNodeCount() * GetPLVCountPerNode();
   };
   size_t GetAllocatedPLVCount() const {
-    return GetAllocatedNodeCount() * plv_count_per_node_;
+    return GetAllocatedNodeCount() * GetPLVCountPerNode();
   }
   size_t GetGPCSPCount() const { return gpcsp_count_; };
   size_t GetTempGPCSPCount() const { return gpcsp_padding_; };

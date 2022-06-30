@@ -214,6 +214,15 @@ class EnumWrapper {
     return static_cast<UnderlyingType>(i);
   }
 
+  static std::array<Type, Count> TypeArray() {
+    std::array<Type, Count> arr;
+    size_t i = 0;
+    for (const auto e : Iterator()) {
+      arr[i++] = e;
+    }
+    return arr;
+  }
+
   static std::string ToString(const EnumType i) {
     std::stringstream os;
     os << "Enum::" << std::to_string(GetIndex(i));

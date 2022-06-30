@@ -30,14 +30,8 @@ class PLVTypeEnum
                                                     "PLV::PHatLeft", "PLV::RHat",
                                                     "PLV::RRight", "PLV::RLeft"}};
 
-  static std::string ToString(const Type e) {
-    std::stringstream os;
-    os << "PLV::" << Labels[e];
-    return os.str();
-  };
-
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
-    os << ToString(e);
+    os << "PLV::" << Labels[e];
     return os;
   };
 };
@@ -55,14 +49,8 @@ class PSVTypeEnum
   static inline const Array<std::string> Labels = {
       {"PSV::PRight", "PSV::PLeft", "PSV::Q"}};
 
-  static std::string ToString(const Type e) {
-    std::stringstream os;
-    os << "PSV::" << Labels[e];
-    return os.str();
-  };
-
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
-    os << ToString(e);
+    os << "PSV::" << Labels[e];
     return os;
   };
 };
@@ -84,7 +72,6 @@ class PVHandler {
             const double resizing_factor)
       : pattern_count_(pattern_count),
         node_count_(node_count),
-        plv_count_per_node_(plv_count_per_node),
         resizing_factor_(resizing_factor),
         mmap_file_path_(mmap_file_path),
         mmapped_master_plvs_(mmap_file_path_,
@@ -93,19 +80,20 @@ class PVHandler {
 
   // ** Counts
 
-  double GetByteCount() const { return mmapped_master_plvs_.ByteCount(); };
-  size_t GetSitePatternCount() const { return pattern_count_; };
-  size_t GetNodeCount() const { return node_count_; };
+  double GetByteCount() const { return mmapped_master_plvs_.ByteCount(); }
+  size_t GetPLVCountPerNode() const { return plv_count_per_node_; }
+  size_t GetSitePatternCount() const { return pattern_count_; }
+  size_t GetNodeCount() const { return node_count_; }
   size_t GetTempNodeCount() const { return node_padding_; }
-  size_t GetPaddedNodeCount() const { return node_count_ + node_padding_; };
+  size_t GetPaddedNodeCount() const { return node_count_ + node_padding_; }
   size_t GetAllocatedNodeCount() const { return node_alloc_; }
-  size_t GetPLVCount() const { return GetNodeCount() * plv_count_per_node_; };
-  size_t GetTempPLVCount() const { return GetTempNodeCount() * plv_count_per_node_; };
+  size_t GetPLVCount() const { return GetNodeCount() * GetPLVCountPerNode(); }
+  size_t GetTempPLVCount() const { return GetTempNodeCount() * GetPLVCountPerNode(); }
   size_t GetPaddedPLVCount() const {
-    return GetPaddedNodeCount() * plv_count_per_node_;
-  };
+    return GetPaddedNodeCount() * GetPLVCountPerNode();
+  }
   size_t GetAllocatedPLVCount() const {
-    return GetAllocatedNodeCount() * plv_count_per_node_;
+    return GetAllocatedNodeCount() * GetPLVCountPerNode();
   }
 
   // ** Resize
@@ -131,8 +119,8 @@ class PVHandler {
 
   // Reindex PV according to plv_reindexer.
   void Reindex(const Reindexer plv_reindexer) {
-    Reindexer::ReindexInPlace(plvs_, plv_reindexer, GetPLVCount(), Get(GetPLVCount()),
-                              Get(GetPLVCount() + 1));
+    Reindexer::ReindexInPlace(plvs_, plv_reindexer, GetPLVCount(),
+                              GetPLV(GetPLVCount()), GetPLV(GetPLVCount() + 1));
   }
 
   // Expand node_reindexer into plv_reindexer.
@@ -140,9 +128,9 @@ class PVHandler {
                               const size_t old_node_count,
                               const size_t new_node_count) {
     node_count_ = new_node_count;
-    Reindexer plv_reindexer(node_count_ * plv_count_per_node_);
+    Reindexer plv_reindexer(new_node_count * plv_count_per_node_);
     size_t new_plvs_idx = old_node_count * plv_count_per_node_;
-    for (size_t i = 0; i < node_count_; i++) {
+    for (size_t i = 0; i < new_node_count; i++) {
       const size_t old_node_idx = i;
       const size_t new_node_idx = node_reindexer.GetNewIndexByOldIndex(old_node_idx);
       for (const auto plv_type : typename PVTypeEnum::Iterator()) {
@@ -155,7 +143,7 @@ class PVHandler {
           old_plv_idx = new_plvs_idx;
           new_plvs_idx++;
         }
-        const size_t new_plv_idx = GetPLVIndex(plv_type, new_node_idx, node_count_);
+        const size_t new_plv_idx = GetPLVIndex(plv_type, new_node_idx, new_node_count);
         plv_reindexer.SetReindex(old_plv_idx, new_plv_idx);
       }
     }
@@ -173,6 +161,13 @@ class PVHandler {
   const NucleotidePLVRef &GetPLV(const size_t plv_id) const {
     return plvs_.at(plv_id);
   };
+  // Get Temporary PLV by index from the vector of Partial Vectors.
+  NucleotidePLVRef &GetTempPLV(const size_t plv_id) {
+    return plvs_.at(GetTempPLVIndex(plv_id));
+  };
+  const NucleotidePLVRef &GetTempPLV(const size_t plv_id) const {
+    return plvs_.at(GetTempPLVIndex(plv_id));
+  };
 
   // Get total offset into PLVs, indexed based on size of underlying DAG.
   static size_t GetPLVIndex(const PVType plv_type, const size_t node_idx,
@@ -180,6 +175,13 @@ class PVHandler {
     // return GetPLVIndex(PVTypeEnum::GetIndex(plv_type), node_idx, node_count);
     return GetPLVIndex(GetPLVTypeIndex(plv_type), node_idx, node_count);
   };
+
+  size_t GetTempPLVIndex(const size_t plv_id) const {
+    const size_t plv_scratch_size = GetPaddedPLVCount() - GetPLVCount();
+    Assert(plv_id < plv_scratch_size,
+           "Requested temporary plv_id outside of allocated scratch space.");
+    return plv_id + GetPLVCount();
+  }
 
   // Get vector of all node ids for given node.
   static SizeVector GetPLVIndexVectorForNodeId(const size_t node_idx,
@@ -211,7 +213,7 @@ class PVHandler {
   // Number of nodes of additional padding for temporary graft nodes in DAG.
   size_t node_padding_ = 2;
   // Number of PLVs for each node in DAG.
-  const size_t plv_count_per_node_ = 6;
+  const size_t plv_count_per_node_ = PVTypeEnum::Count;
   // When size exceeds current allocation, ratio to grow new allocation.
   double resizing_factor_ = 2.0;
 
@@ -221,13 +223,14 @@ class PVHandler {
   // Subdivided into sections for plvs_.
   MmappedNucleotidePLV mmapped_master_plvs_;
   // Partial Likelihood Vectors.
-  // Divides mmapped_master_plvs_ the following:
-  // [0, num_nodes): p(s).
-  // [num_nodes, 2*num_nodes): phat(s_right).
-  // [2*num_nodes, 3*num_nodes): phat(s_left).
-  // [3*num_nodes, 4*num_nodes): rhat(s_right) = rhat(s_left).
-  // [4*num_nodes, 5*num_nodes): r(s_right).
-  // [5*num_nodes, 6*num_nodes): r(s_left).
+  // Divides mmapped_master_plvs_.
+  // For example, GP PLVs are divided in the following:
+  // - [0, num_nodes): p(s).
+  // - [num_nodes, 2*num_nodes): phat(s_right).
+  // - [2*num_nodes, 3*num_nodes): phat(s_left).
+  // - [3*num_nodes, 4*num_nodes): rhat(s_right) = rhat(s_left).
+  // - [4*num_nodes, 5*num_nodes): r(s_right).
+  // - [5*num_nodes, 6*num_nodes): r(s_left).
   NucleotidePLVRefVector plvs_;
 };
 
@@ -274,9 +277,7 @@ class PSVHandler
 // Check that PLV iterator iterates over all PLVs exactly once.
 TEST_CASE("PLVHandler: EnumIterator") {
   using namespace PartialVectorType;
-  const std::array<PLVType, PLVTypeEnum::Count> plv_types = {
-      {PLVType::P, PLVType::PHatRight, PLVType::PHatLeft, PLVType::RHat,
-       PLVType::RRight, PLVType::RLeft}};
+  const auto plv_types = PLVTypeEnum::TypeArray();
   std::map<PLVType, size_t> plv_visited_map;
   // Iterate using vector.
   for (const PLVType plv_type : plv_types) {
@@ -295,25 +296,6 @@ TEST_CASE("PLVHandler: EnumIterator") {
     CHECK_FALSE_MESSAGE(visit_count > 1,
                         "One or more PLVs in visited more than once by EnumIterator.");
   }
-}
-
-TEST_CASE("PartialVector") {
-  std::cout << "PARTIAL_VECTOR" << std::endl;
-  using namespace PartialVectorType;
-
-  std::cout << "PLV_TYPE" << std::endl;
-  for (const auto plv : PLVTypeEnum::Iterator()) {
-    std::cout << PLVTypeEnum::ToString(plv) << " " << PLVTypeEnum::GetIndex(plv)
-              << ", ";
-  }
-  std::cout << "total=" << PLVTypeEnum::Count << std::endl;
-
-  std::cout << "PSV_TYPE" << std::endl;
-  for (const auto psv : PSVTypeEnum::Iterator()) {
-    std::cout << PSVTypeEnum::ToString(psv) << " " << PSVTypeEnum::GetIndex(psv)
-              << ", ";
-  }
-  std::cout << "total=" << PSVTypeEnum::Count << std::endl;
 }
 
 #endif  // DOCTEST_LIBRARY_INCLUDED
