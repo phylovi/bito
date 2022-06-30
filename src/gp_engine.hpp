@@ -99,7 +99,7 @@ class GPEngine {
   void CopyPLVData(const size_t src_plv_idx, const size_t dest_plv_idx);
   void CopyGPCSPData(const size_t src_gpcsp_idx, const size_t dest_gpcsp_idx);
 
-  // ** Getters
+  // ** Access
 
   // Get Branch Lengths.
   EigenVectorXd GetBranchLengths() const;
@@ -136,14 +136,13 @@ class GPEngine {
   double GetLogMarginalLikelihood() const;
   const Eigen::Matrix4d& GetTransitionMatrix() const { return transition_matrix_; };
 
-  // Get Partial Likelihood Vector Handler.
+  // Partial Likelihood Vector Handler.
   const PLVHandler& GetPLVHandler() const { return plv_handler_; }
-  // Get Partial Likelihood Vector.
   EigenConstMatrixXdRef GetPLV(size_t plv_index) const {
     return plv_handler_.GetPLV(plv_index);
   }
   EigenConstMatrixXdRef GetTempPLV(size_t plv_index) const {
-    return GetPLV(GetTempPLVIndex(plv_index));
+    return plv_handler_.GetTempPLV(plv_index);
   }
 
   // ** Other Operations
@@ -187,10 +186,11 @@ class GPEngine {
 
   size_t GetPLVCountPerNode() const { return plv_handler_.GetPLVCountPerNode(); }
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
-  size_t GetNodeCount() const { return node_count_; };
-  size_t GetTempNodeCount() const { return node_padding_; }
-  size_t GetPaddedNodeCount() const { return node_count_ + node_padding_; };
-  size_t GetAllocatedNodeCount() const { return node_alloc_; }
+
+  size_t GetNodeCount() const { return plv_handler_.GetNodeCount(); };
+  size_t GetTempNodeCount() const { return plv_handler_.GetTempNodeCount(); }
+  size_t GetAllocatedNodeCount() const { return plv_handler_.GetAllocatedNodeCount(); }
+  size_t GetPaddedNodeCount() const { return GetNodeCount() + GetTempNodeCount(); };
   size_t GetPLVCount() const { return GetNodeCount() * GetPLVCountPerNode(); };
   size_t GetTempPLVCount() const { return GetTempNodeCount() * GetPLVCountPerNode(); };
   size_t GetPaddedPLVCount() const {
@@ -199,10 +199,23 @@ class GPEngine {
   size_t GetAllocatedPLVCount() const {
     return GetAllocatedNodeCount() * GetPLVCountPerNode();
   }
+
+  void SetNodeCount(const size_t node_count) { plv_handler_.SetNodeCount(node_count); }
+  void SetTempNodeCount(const size_t node_padding) {
+    plv_handler_.SetTempNodeCount(node_padding);
+  }
+  void SetAllocatedNodeCount(const size_t node_alloc) {
+    plv_handler_.SetAllocatedNodeCount(node_alloc);
+  }
+
   size_t GetGPCSPCount() const { return gpcsp_count_; };
   size_t GetTempGPCSPCount() const { return gpcsp_padding_; };
-  size_t GetPaddedGPCSPCount() const { return gpcsp_count_ + gpcsp_padding_; };
   size_t GetAllocatedGPCSPCount() const { return gpcsp_alloc_; };
+  size_t GetPaddedGPCSPCount() const { return GetGPCSPCount() + GetTempGPCSPCount(); };
+
+  void SetGPCSPCount(const size_t gpcsp_count) { gpcsp_count_ = gpcsp_count; }
+  void SetTempGPCSPCount(const size_t gpcsp_padding) { gpcsp_padding_ = gpcsp_padding; }
+  void SetAllocatedGPCSPCount(const size_t gpcsp_alloc) { gpcsp_alloc_ = gpcsp_alloc; }
 
  private:
   // Initialize PLVs and populate leaf PLVs with taxon site data.
@@ -307,13 +320,8 @@ class GPEngine {
   // "Padding" is the amount of free working space added to end of occupied space.
   // "Alloc" is the total current memory allocation.
   // "Resizing factor" is the amount of extra storage allocated for when resizing.
+  // Note: All node and PLV counts are handled by the PLVHandler.
 
-  // Total number of nodes in DAG.
-  size_t node_count_ = 0;
-  size_t node_alloc_ = 0;
-  size_t node_padding_ = 2;
-  // PLV count is proportional to the node_count.
-  const size_t plv_count_per_node_ = 6;
   // Total number of edges in DAG. Determines sizes of data vectors indexed on edges
   // like branch lengths.
   size_t gpcsp_count_ = 0;

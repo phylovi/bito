@@ -70,8 +70,8 @@ class PVHandler {
   PVHandler(const std::string &mmap_file_path, const size_t node_count,
             const size_t pattern_count, const size_t plv_count_per_node,
             const double resizing_factor)
-      : pattern_count_(pattern_count),
-        node_count_(node_count),
+      : node_count_(node_count),
+        pattern_count_(pattern_count),
         resizing_factor_(resizing_factor),
         mmap_file_path_(mmap_file_path),
         mmapped_master_plvs_(mmap_file_path_,
@@ -85,8 +85,8 @@ class PVHandler {
   size_t GetSitePatternCount() const { return pattern_count_; }
   size_t GetNodeCount() const { return node_count_; }
   size_t GetTempNodeCount() const { return node_padding_; }
-  size_t GetPaddedNodeCount() const { return node_count_ + node_padding_; }
   size_t GetAllocatedNodeCount() const { return node_alloc_; }
+  size_t GetPaddedNodeCount() const { return GetNodeCount() + GetTempNodeCount(); }
   size_t GetPLVCount() const { return GetNodeCount() * GetPLVCountPerNode(); }
   size_t GetTempPLVCount() const { return GetTempNodeCount() * GetPLVCountPerNode(); }
   size_t GetPaddedPLVCount() const {
@@ -95,6 +95,10 @@ class PVHandler {
   size_t GetAllocatedPLVCount() const {
     return GetAllocatedNodeCount() * GetPLVCountPerNode();
   }
+
+  void SetNodeCount(const size_t node_count) { node_count_ = node_count; }
+  void SetTempNodeCount(const size_t node_padding) { node_padding_ = node_padding; }
+  void SetAllocatedNodeCount(const size_t node_alloc) { node_alloc_ = node_alloc; }
 
   // ** Resize
 
@@ -204,14 +208,20 @@ class PVHandler {
     return static_cast<typename std::underlying_type<PVType>::type>(plv_type);
   };
 
-  // Size of Site Pattern.
-  size_t pattern_count_ = 0;
+  // ** Data Sizing
+  // "Count" is the currently occupied by data.
+  // "Padding" is the amount of free working space added to end of occupied space.
+  // "Alloc" is the total current memory allocation.
+  // "Resizing factor" is the amount of extra storage allocated for when resizing.
+
   // Number of nodes in DAG.
   size_t node_count_ = 0;
-  // Number of nodes allocated for in PLVHandler.
-  size_t node_alloc_ = 0;
   // Number of nodes of additional padding for temporary graft nodes in DAG.
   size_t node_padding_ = 2;
+  // Number of nodes allocated for in PLVHandler.
+  size_t node_alloc_ = 0;
+  // Size of Site Pattern.
+  size_t pattern_count_ = 0;
   // Number of PLVs for each node in DAG.
   const size_t plv_count_per_node_ = PVTypeEnum::Count;
   // When size exceeds current allocation, ratio to grow new allocation.

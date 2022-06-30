@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.19)
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
   message(WARNING "ERROR: CMake build directory cannot be the same as root source directory. HINT: Can build with `make`.")
 endif()
+
 set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
@@ -19,25 +20,25 @@ execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/get_rpath.py
 
 include(ExternalProject)
 ExternalProject_Add(beagle-lib
-  GIT_REPOSITORY  https://github.com/beagle-dev/beagle-lib.git
-  GIT_TAG     origin/hmc-clock
-  GIT_SHALLOW   true
-  GIT_PROGRESS  true
+  GIT_REPOSITORY https://github.com/beagle-dev/beagle-lib.git
+  GIT_TAG origin/hmc-clock
+  GIT_SHALLOW true
+  GIT_PROGRESS true
   UPDATE_DISCONNECTED true
-  CMAKE_ARGS    -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H" -DCMAKE_SHARED_LINKER_FLAGS="${BITO_RPATH}"
-  PREFIX      beagle-lib
-  INSTALL_DIR   beagle-lib/install
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H" -DCMAKE_SHARED_LINKER_FLAGS="${BITO_RPATH}"
+  PREFIX beagle-lib
+  INSTALL_DIR beagle-lib/install
 )
 
 ExternalProject_Add(pybind11
-  GIT_REPOSITORY  https://github.com/pybind/pybind11.git
-  GIT_TAG     origin/v2.7
-  GIT_SHALLOW   true
-  GIT_PROGRESS  true
+  GIT_REPOSITORY https://github.com/pybind/pybind11.git
+  GIT_TAG origin/v2.7
+  GIT_SHALLOW true
+  GIT_PROGRESS true
   UPDATE_DISCONNECTED true
-  CMAKE_ARGS    -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/pybind11/install -DPYBIND11_TEST=OFF
-  PREFIX      pybind11
-  INSTALL_DIR   pybind11/install
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/pybind11/install -DPYBIND11_TEST=OFF
+  PREFIX pybind11
+  INSTALL_DIR pybind11/install
 )
 
 option(WERROR "Treat warnings as errors" ON)
@@ -45,11 +46,13 @@ option(WERROR "Treat warnings as errors" ON)
 function(bito_compile_opts PRODUCT)
   target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
   target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall)
+
   if(${WERROR})
     target_compile_options(${PRODUCT} PUBLIC -Werror)
   else()
     target_compile_options(${PRODUCT} PUBLIC -Wold-style-cast)
   endif()
+
   target_include_directories(${PRODUCT} PUBLIC
     ${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
     lib/eigen
@@ -63,20 +66,19 @@ function(bito_link_opts PRODUCT)
 endfunction()
 
 function(bito_executable PRODUCT)
-    add_executable(${PRODUCT} ${ARGN})
+  add_executable(${PRODUCT} ${ARGN})
   bito_compile_opts(${PRODUCT})
   bito_link_opts(${PRODUCT})
 endfunction()
 
 function(bito_extra PRODUCT)
-    bito_executable(${PRODUCT} ${ARGN})
-    target_include_directories(${PRODUCT} PUBLIC ../src)
+  bito_executable(${PRODUCT} ${ARGN})
+  target_include_directories(${PRODUCT} PUBLIC ../src)
 endfunction()
 
-###################
+# ##################
 # libbito-core.so #
-###################
-
+# ##################
 add_library(bito-core SHARED
   src/alignment.cpp
   src/bitset.cpp
@@ -101,6 +103,7 @@ add_library(bito-core SHARED
   src/parser.cpp
   src/phylo_flags.cpp
   src/phylo_model.cpp
+  src/plv_handler.cpp
   src/psp_indexer.cpp
   src/quartet_hybrid_request.cpp
   src/reindexer.cpp
@@ -135,10 +138,9 @@ target_link_directories(bito-core PUBLIC
 )
 add_dependencies(bito-core beagle-lib)
 
-##############
+# #############
 # libbito.so #
-##############
-
+# #############
 add_library(bito SHARED
   src/pybito.cpp
 )
@@ -148,27 +150,26 @@ target_include_directories(bito PUBLIC
   ${PROJECT_BINARY_DIR}/pybind11/install/include
 )
 bito_link_opts(bito)
+
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
   target_link_options(bito PUBLIC -undefined dynamic_lookup)
 endif()
+
 add_dependencies(bito pybind11)
 
-###############
+# ##############
 # executables #
-###############
-
+# ##############
 bito_executable(doctest
   src/doctest.cpp)
 
 bito_executable(gp_doctest
   src/gp_doctest.cpp)
 
-###################
+# ##################
 # optional extras #
-###################
-
+# ##################
 add_subdirectory(extras)
-
 
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/py)
 set(BITO_BINARY_DIR ${PROJECT_BINARY_DIR})
@@ -181,7 +182,7 @@ configure_file(__init__.py.in
 
 add_custom_target(pip ALL
   COMMAND ln -sf ${PROJECT_BINARY_DIR}/beagle-lib/install/lib/* ${PROJECT_BINARY_DIR}/py
-  COMMAND ln -sf ${PROJECT_BINARY_DIR}/$<TARGET_FILE_NAME:bito-core>  ${PROJECT_BINARY_DIR}/py
-  COMMAND ln -sf ${PROJECT_BINARY_DIR}/$<TARGET_FILE_NAME:bito>  ${PROJECT_BINARY_DIR}/py/__init__.so
+  COMMAND ln -sf ${PROJECT_BINARY_DIR}/$<TARGET_FILE_NAME:bito-core> ${PROJECT_BINARY_DIR}/py
+  COMMAND ln -sf ${PROJECT_BINARY_DIR}/$<TARGET_FILE_NAME:bito> ${PROJECT_BINARY_DIR}/py/__init__.so
   DEPENDS bito
 )
