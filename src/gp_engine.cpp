@@ -176,6 +176,10 @@ void GPEngine::ReindexPLVs(const Reindexer& node_reindexer,
   Reindexer plv_reindexer =
       plv_handler_.BuildPLVReindexer(node_reindexer, old_node_count, node_count_);
   // Reindex data vectors
+  // plv_handler_.Reindex(plv_reindexer);
+  Reindexer::ReindexInPlace(plv_handler_.GetPLVs(), plv_reindexer, GetPLVCount(),
+                            plv_handler_.GetPLV(GetPLVCount()),
+                            plv_handler_.GetPLV(GetPLVCount() + 1));
   Reindexer::ReindexInPlace<EigenVectorXi, int>(rescaling_counts_, plv_reindexer,
                                                 GetPLVCount());
   Reindexer::ReindexInPlace<EigenVectorXd, double>(unconditional_node_probabilities_,

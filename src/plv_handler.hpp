@@ -23,7 +23,8 @@ enum class PLVType : size_t {
   RLeft,      // r(s_left)
 };
 static inline const size_t PLVCount = 6;
-class PLVTypeEnum : public EnumWrapper<PLVType, PLVCount, PLVType::P, PLVType::RLeft> {
+class PLVTypeEnum
+    : public EnumWrapper<PLVType, size_t, PLVCount, PLVType::P, PLVType::RLeft> {
  public:
   static inline const Array<std::string> Labels = {{"PLV::P", "PLV::PHatRight",
                                                     "PLV::PHatLeft", "PLV::RHat",
@@ -48,7 +49,8 @@ enum class PSVType : size_t {
   Q        // q(s)
 };
 static inline const size_t PSVCount = 3;
-class PSVTypeEnum : public EnumWrapper<PSVType, PSVCount, PSVType::PRight, PSVType::Q> {
+class PSVTypeEnum
+    : public EnumWrapper<PSVType, size_t, PSVCount, PSVType::PRight, PSVType::Q> {
  public:
   static inline const Array<std::string> Labels = {
       {"PSV::PRight", "PSV::PLeft", "PSV::Q"}};
@@ -157,9 +159,6 @@ class PVHandler {
         plv_reindexer.SetReindex(old_plv_idx, new_plv_idx);
       }
     }
-    std::cout << "PLV_REINDEXER: " << plv_reindexer.size() << std::endl
-              << node_reindexer << std::endl
-              << plv_reindexer << std::endl;
     Assert(plv_reindexer.IsValid(GetPLVCount()), "PLV Reindexer is not valid.");
     return plv_reindexer;
   }
@@ -178,7 +177,8 @@ class PVHandler {
   // Get total offset into PLVs, indexed based on size of underlying DAG.
   static size_t GetPLVIndex(const PVType plv_type, const size_t node_idx,
                             const size_t node_count) {
-    return GetPLVIndex(PVTypeEnum::GetIndex(plv_type), node_idx, node_count);
+    // return GetPLVIndex(PVTypeEnum::GetIndex(plv_type), node_idx, node_count);
+    return GetPLVIndex(GetPLVTypeIndex(plv_type), node_idx, node_count);
   };
 
   // Get vector of all node ids for given node.
@@ -196,6 +196,10 @@ class PVHandler {
   static size_t GetPLVIndex(const size_t plv_type_idx, const size_t node_idx,
                             const size_t node_count) {
     return (plv_type_idx * node_count) + node_idx;
+  };
+  // Get index for given PLV enum.
+  static size_t GetPLVTypeIndex(const PLVType plv_type) {
+    return static_cast<typename std::underlying_type<PVType>::type>(plv_type);
   };
 
   // Size of Site Pattern.
@@ -299,13 +303,15 @@ TEST_CASE("PartialVector") {
 
   std::cout << "PLV_TYPE" << std::endl;
   for (const auto plv : PLVTypeEnum::Iterator()) {
-    std::cout << "PLVType=>" << PLVTypeEnum::ToString(plv) << ", ";
+    std::cout << PLVTypeEnum::ToString(plv) << " " << PLVTypeEnum::GetIndex(plv)
+              << ", ";
   }
   std::cout << "total=" << PLVTypeEnum::Count << std::endl;
 
   std::cout << "PSV_TYPE" << std::endl;
   for (const auto psv : PSVTypeEnum::Iterator()) {
-    std::cout << "PSVType=>" << PSVTypeEnum::ToString(psv) << ", ";
+    std::cout << PSVTypeEnum::ToString(psv) << " " << PSVTypeEnum::GetIndex(psv)
+              << ", ";
   }
   std::cout << "total=" << PSVTypeEnum::Count << std::endl;
 }
