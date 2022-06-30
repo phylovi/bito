@@ -46,7 +46,8 @@ TEST_CASE("Alignment") {
   CHECK_EQ(alignment, Alignment::HelloAlignment());
   CHECK(alignment.IsValid());
   CHECK_THROWS(alignment.ExtractSingleColumnAlignment(31));
-  auto first_col_expected = Alignment({{"mars", "C"}, {"saturn", "G"}, {"jupiter", "G"}});
+  auto first_col_expected =
+      Alignment({{"mars", "C"}, {"saturn", "G"}, {"jupiter", "G"}});
   CHECK_EQ(alignment.ExtractSingleColumnAlignment(0), first_col_expected);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED

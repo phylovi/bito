@@ -74,7 +74,8 @@ Alignment Alignment::ReadFasta(const std::string &fname) {
 
 Alignment Alignment::ExtractSingleColumnAlignment(size_t which_column) const {
   Assert(which_column < Length(),
-         "Alignment::ExtractSingleColumnAlignment: Given column is longer than length of sequence.");
+         "Alignment::ExtractSingleColumnAlignment: Given column is longer than length "
+         "of sequence.");
   StringStringMap out_map;
   for (const auto &[taxon_name, sequence] : data_) {
     SafeInsert(out_map, taxon_name, sequence.substr(which_column, 1));

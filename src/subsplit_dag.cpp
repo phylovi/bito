@@ -1393,13 +1393,13 @@ void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
   // Update edges.
   for (auto i : storage_.GetLines()) {
     storage_.ReindexLine(i.GetId(), node_reindexer.GetNewIndexByOldIndex(i.GetParent()),
-                        node_reindexer.GetNewIndexByOldIndex(i.GetChild()));
+                         node_reindexer.GetNewIndexByOldIndex(i.GetChild()));
   }
 }
 
 void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
   // no need to reindex if no changes were made
-  if (edge_reindexer == Reindexer::IdentityReindexer(edge_reindexer.size())) { 
+  if (edge_reindexer == Reindexer::IdentityReindexer(edge_reindexer.size())) {
     return;
   }
   // Update edges.
