@@ -136,8 +136,12 @@ class GPEngine {
   double GetLogMarginalLikelihood() const;
   const Eigen::Matrix4d& GetTransitionMatrix() const { return transition_matrix_; };
 
+  // Get Partial Likelihood Vector Handler.
+  const PLVHandler& GetPLVHandler() const { return plv_handler_; }
   // Get Partial Likelihood Vector.
-  EigenConstMatrixXdRef GetPLV(size_t plv_index) const { return plvs_.at(plv_index); }
+  EigenConstMatrixXdRef GetPLV(size_t plv_index) const {
+    return plv_handler_.GetPLV(plv_index);
+  }
   EigenConstMatrixXdRef GetTempPLV(size_t plv_index) const {
     return GetPLV(GetTempPLVIndex(plv_index));
   }
@@ -222,23 +226,25 @@ class GPEngine {
   inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
                                                                      size_t src2_idx) {
     per_pattern_likelihood_second_derivatives_ =
-        (plvs_.at(src1_idx).transpose() * hessian_matrix_ * plvs_.at(src2_idx))
+        (plv_handler_.GetPLV(src1_idx).transpose() * hessian_matrix_ *
+         plv_handler_.GetPLV(src2_idx))
             .diagonal()
             .array();
   }
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
                                                                size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
-        (plvs_.at(src1_idx).transpose() * derivative_matrix_ * plvs_.at(src2_idx))
+        (plv_handler_.GetPLV(src1_idx).transpose() * derivative_matrix_ *
+         plv_handler_.GetPLV(src2_idx))
             .diagonal()
             .array();
   }
 
   inline void PrepareUnrescaledPerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
-    per_pattern_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
-            .diagonal()
-            .array();
+    per_pattern_likelihoods_ = (plv_handler_.GetPLV(src1_idx).transpose() *
+                                transition_matrix_ * plv_handler_.GetPLV(src2_idx))
+                                   .diagonal()
+                                   .array();
   }
 
   // This function is used to compute the marginal log likelihood over all trees that
@@ -246,12 +252,13 @@ class GPEngine {
   // and src2_idx are the two PLV indices on either side of the PCSP.
   inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t src1_idx,
                                                       size_t src2_idx) {
-    per_pattern_log_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
-            .diagonal()
-            .array()
-            .log() +
-        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
+    per_pattern_log_likelihoods_ = (plv_handler_.GetPLV(src1_idx).transpose() *
+                                    transition_matrix_ * plv_handler_.GetPLV(src2_idx))
+                                       .diagonal()
+                                       .array()
+                                       .log() +
+                                   LogRescalingFor(src1_idx) +
+                                   LogRescalingFor(src2_idx);
   }
 
  public:
