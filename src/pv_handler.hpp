@@ -1,8 +1,9 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// PLVHandler is used by GPOperations to get index location of PLVs stored on the
-// GPEngine.
+// PLVHandler is used for storing and manipulating Partial Vectors.  Partial Vector are
+// intermediate computations, such as likelihoods or other cost matrices, used for
+// performing dynamic programming on a tree or DAG.
 
 #pragma once
 
@@ -103,57 +104,12 @@ class PVHandler {
   // ** Resize
 
   // Resize PVHandler to accomodate DAG with given number of nodes.
-  void Resize(const size_t new_node_count, const size_t new_node_alloc) {
-    const size_t old_plv_count = GetPLVCount();
-    node_count_ = new_node_count;
-    node_alloc_ = new_node_alloc;
-    // Allocate mmapped data block.
-    mmapped_master_plvs_.Resize(GetAllocatedPLVCount() * pattern_count_);
-    // Subdivide mmapped data in individual PLVs.
-    plvs_ = mmapped_master_plvs_.Subdivide(GetAllocatedPLVCount());
-    // Initialize new work space.
-    Assert((plvs_.back().rows() == MmappedNucleotidePLV::base_count_) &&
-               (plvs_.back().cols() == static_cast<Eigen::Index>(pattern_count_)) &&
-               (size_t(plvs_.size()) == GetAllocatedPLVCount()),
-           "Didn't get the right shape of PLVs out of Subdivide.");
-    for (size_t i = old_plv_count; i < GetPaddedPLVCount(); i++) {
-      plvs_.at(i).setZero();
-    }
-  }
-
+  void Resize(const size_t new_node_count, const size_t new_node_alloc);
   // Reindex PV according to plv_reindexer.
-  void Reindex(const Reindexer plv_reindexer) {
-    Reindexer::ReindexInPlace(plvs_, plv_reindexer, GetPLVCount(),
-                              GetPLV(GetPLVCount()), GetPLV(GetPLVCount() + 1));
-  }
-
+  void Reindex(const Reindexer plv_reindexer);
   // Expand node_reindexer into plv_reindexer.
   Reindexer BuildPLVReindexer(const Reindexer &node_reindexer,
-                              const size_t old_node_count,
-                              const size_t new_node_count) {
-    node_count_ = new_node_count;
-    Reindexer plv_reindexer(new_node_count * plv_count_per_node_);
-    size_t new_plvs_idx = old_node_count * plv_count_per_node_;
-    for (size_t i = 0; i < new_node_count; i++) {
-      const size_t old_node_idx = i;
-      const size_t new_node_idx = node_reindexer.GetNewIndexByOldIndex(old_node_idx);
-      for (const auto plv_type : typename PVTypeEnum::Iterator()) {
-        // Either get input plv_index from old plvs, or get new plv_index (new data is
-        // irrelevant, so just get next available index).
-        size_t old_plv_idx;
-        if (old_node_idx < old_node_count) {
-          old_plv_idx = GetPLVIndex(plv_type, old_node_idx, old_node_count);
-        } else {
-          old_plv_idx = new_plvs_idx;
-          new_plvs_idx++;
-        }
-        const size_t new_plv_idx = GetPLVIndex(plv_type, new_node_idx, new_node_count);
-        plv_reindexer.SetReindex(old_plv_idx, new_plv_idx);
-      }
-    }
-    Assert(plv_reindexer.IsValid(GetPLVCount()), "PLV Reindexer is not valid.");
-    return plv_reindexer;
-  }
+                              const size_t old_node_count, const size_t new_node_count);
 
   // ** Access
 
@@ -191,7 +147,7 @@ class PVHandler {
   static SizeVector GetPLVIndexVectorForNodeId(const size_t node_idx,
                                                const size_t node_count) {
     SizeVector plv_idxs;
-    for (const auto plv_type : PVTypeEnum::Iterator()) {
+    for (const auto plv_type : typename PVTypeEnum::Iterator()) {
       plv_idxs.push_back(GetPLVIndex(plv_type, node_idx, node_count));
     }
     return plv_idxs;
@@ -204,7 +160,7 @@ class PVHandler {
     return (plv_type_idx * node_count) + node_idx;
   };
   // Get index for given PLV enum.
-  static size_t GetPLVTypeIndex(const PLVType plv_type) {
+  static size_t GetPLVTypeIndex(const PVType plv_type) {
     return static_cast<typename std::underlying_type<PVType>::type>(plv_type);
   };
 
@@ -232,7 +188,7 @@ class PVHandler {
   // Master PLV: Large data block of virtual memory for Partial Likelihood Vectors.
   // Subdivided into sections for plvs_.
   MmappedNucleotidePLV mmapped_master_plvs_;
-  // Partial Likelihood Vectors.
+  // Partial Vectors.
   // Divides mmapped_master_plvs_.
   // For example, GP PLVs are divided in the following:
   // - [0, num_nodes): p(s).

@@ -4,7 +4,6 @@
 #include "gp_dag.hpp"
 
 #include "numerical_utils.hpp"
-#include "plv_handler.hpp"
 
 using namespace GPOperations;  // NOLINT
 using PLVType = PLVHandler::PLVType;

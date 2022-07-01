@@ -103,7 +103,7 @@ add_library(bito-core SHARED
   src/parser.cpp
   src/phylo_flags.cpp
   src/phylo_model.cpp
-  src/plv_handler.cpp
+  src/pv_handler.cpp
   src/psp_indexer.cpp
   src/quartet_hybrid_request.cpp
   src/reindexer.cpp

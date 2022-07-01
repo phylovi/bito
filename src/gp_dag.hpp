@@ -14,7 +14,7 @@
 #include "sbn_maps.hpp"
 #include "subsplit_dag_node.hpp"
 #include "tidy_subsplit_dag.hpp"
-#include "plv_handler.hpp"
+#include "pv_handler.hpp"
 
 using PLVType = PLVHandler::PLVType;
 
