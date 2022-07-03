@@ -119,5 +119,5 @@ bool GraftDAG::ContainsGraftEdge(const size_t edge_idx) const {
 // ** Miscellaneous
 
 size_t GraftDAG::GetPLVIndex(PLVHandler::PLVType plv_type, size_t node_idx) const {
-  return PLVHandler::GetPLVIndex(plv_type, node_idx, NodeCountWithoutDAGRoot());
+  return PLVHandler::GetPVIndex(plv_type, node_idx, NodeCountWithoutDAGRoot());
 }

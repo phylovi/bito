@@ -135,11 +135,20 @@ class GPEngine {
 
   // Partial Likelihood Vector Handler.
   const PLVHandler& GetPLVHandler() const { return plv_handler_; }
-  EigenConstMatrixXdRef GetPLV(size_t plv_index) const {
-    return plv_handler_.GetPLV(plv_index);
+  NucleotidePLVRefVector& GetPLVs() { return plv_handler_.GetPVs(); }
+  const NucleotidePLVRefVector& GetPLVs() const { return plv_handler_.GetPVs(); }
+  NucleotidePLVRef& GetPLV(size_t plv_index) { return plv_handler_.GetPV(plv_index); }
+  const NucleotidePLVRef& GetPLV(size_t plv_index) const {
+    return plv_handler_.GetPV(plv_index);
   }
-  EigenConstMatrixXdRef GetTempPLV(size_t plv_index) const {
-    return plv_handler_.GetTempPLV(plv_index);
+  NucleotidePLVRef& GetTempPLV(size_t plv_index) {
+    return plv_handler_.GetTempPV(plv_index);
+  }
+  const NucleotidePLVRef& GetTempPLV(size_t plv_index) const {
+    return plv_handler_.GetTempPV(plv_index);
+  }
+  size_t GetTempPLVIndex(const size_t plv_index) const {
+    return plv_handler_.GetTempPVIndex(plv_index);
   }
 
   // ** Other Operations
@@ -181,7 +190,7 @@ class GPEngine {
 
   // ** Counts
 
-  size_t GetPLVCountPerNode() const { return plv_handler_.GetPLVCountPerNode(); }
+  size_t GetPLVCountPerNode() const { return plv_handler_.GetPVCountPerNode(); }
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
 
   size_t GetNodeCount() const { return plv_handler_.GetNodeCount(); };
@@ -195,9 +204,6 @@ class GPEngine {
   };
   size_t GetAllocatedPLVCount() const {
     return GetAllocatedNodeCount() * GetPLVCountPerNode();
-  }
-  size_t GetTempPLVIndex(const size_t plv_index) const {
-    return plv_handler_.GetTempPLVIndex(plv_index);
   }
 
   void SetNodeCount(const size_t node_count) { plv_handler_.SetNodeCount(node_count); }
@@ -246,25 +252,23 @@ class GPEngine {
   inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
                                                                      size_t src2_idx) {
     per_pattern_likelihood_second_derivatives_ =
-        (plv_handler_.GetPLV(src1_idx).transpose() * hessian_matrix_ *
-         plv_handler_.GetPLV(src2_idx))
+        (GetPLV(src1_idx).transpose() * hessian_matrix_ * GetPLV(src2_idx))
             .diagonal()
             .array();
   }
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
                                                                size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
-        (plv_handler_.GetPLV(src1_idx).transpose() * derivative_matrix_ *
-         plv_handler_.GetPLV(src2_idx))
+        (GetPLV(src1_idx).transpose() * derivative_matrix_ * GetPLV(src2_idx))
             .diagonal()
             .array();
   }
 
   inline void PrepareUnrescaledPerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
-    per_pattern_likelihoods_ = (plv_handler_.GetPLV(src1_idx).transpose() *
-                                transition_matrix_ * plv_handler_.GetPLV(src2_idx))
-                                   .diagonal()
-                                   .array();
+    per_pattern_likelihoods_ =
+        (GetPLV(src1_idx).transpose() * transition_matrix_ * GetPLV(src2_idx))
+            .diagonal()
+            .array();
   }
 
   // This function is used to compute the marginal log likelihood over all trees that
@@ -272,13 +276,12 @@ class GPEngine {
   // and src2_idx are the two PLV indices on either side of the PCSP.
   inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t src1_idx,
                                                       size_t src2_idx) {
-    per_pattern_log_likelihoods_ = (plv_handler_.GetPLV(src1_idx).transpose() *
-                                    transition_matrix_ * plv_handler_.GetPLV(src2_idx))
-                                       .diagonal()
-                                       .array()
-                                       .log() +
-                                   LogRescalingFor(src1_idx) +
-                                   LogRescalingFor(src2_idx);
+    per_pattern_log_likelihoods_ =
+        (GetPLV(src1_idx).transpose() * transition_matrix_ * GetPLV(src2_idx))
+            .diagonal()
+            .array()
+            .log() +
+        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
   }
 
  public:

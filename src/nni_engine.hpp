@@ -298,17 +298,17 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni
   key_idx_map[KeyIndex::Child_Id] = child_id;
   key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id);
   key_idx_map[KeyIndex::Parent_RHat] =
-      PLVHandler::GetPLVIndex(PLVType::RHat, parent_id, node_count);
-  key_idx_map[KeyIndex::Parent_RFocal] = PLVHandler::GetPLVIndex(
+      PLVHandler::GetPVIndex(PLVType::RHat, parent_id, node_count);
+  key_idx_map[KeyIndex::Parent_RFocal] = PLVHandler::GetPVIndex(
       PLVHandler::RPLVType(!is_left_clade_sister), parent_id, node_count);
-  key_idx_map[KeyIndex::Parent_PHatSister] = PLVHandler::GetPLVIndex(
+  key_idx_map[KeyIndex::Parent_PHatSister] = PLVHandler::GetPVIndex(
       PLVHandler::PPLVType(is_left_clade_sister), parent_id, node_count);
   key_idx_map[KeyIndex::Child_P] =
-      PLVHandler::GetPLVIndex(PLVType::P, child_id, node_count);
+      PLVHandler::GetPVIndex(PLVType::P, child_id, node_count);
   key_idx_map[KeyIndex::Child_PHatLeft] =
-      PLVHandler::GetPLVIndex(PLVType::PHatLeft, child_id, node_count);
+      PLVHandler::GetPVIndex(PLVType::PHatLeft, child_id, node_count);
   key_idx_map[KeyIndex::Child_PHatRight] =
-      PLVHandler::GetPLVIndex(PLVType::PHatRight, child_id, node_count);
+      PLVHandler::GetPVIndex(PLVType::PHatRight, child_id, node_count);
 
   return key_idx_map;
 }
