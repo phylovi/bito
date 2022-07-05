@@ -196,15 +196,11 @@ class GPEngine {
   size_t GetNodeCount() const { return plv_handler_.GetNodeCount(); };
   size_t GetTempNodeCount() const { return plv_handler_.GetTempNodeCount(); }
   size_t GetAllocatedNodeCount() const { return plv_handler_.GetAllocatedNodeCount(); }
-  size_t GetPaddedNodeCount() const { return GetNodeCount() + GetTempNodeCount(); };
-  size_t GetPLVCount() const { return GetNodeCount() * GetPLVCountPerNode(); };
-  size_t GetTempPLVCount() const { return GetTempNodeCount() * GetPLVCountPerNode(); };
-  size_t GetPaddedPLVCount() const {
-    return GetPaddedNodeCount() * GetPLVCountPerNode();
-  };
-  size_t GetAllocatedPLVCount() const {
-    return GetAllocatedNodeCount() * GetPLVCountPerNode();
-  }
+  size_t GetPaddedNodeCount() const { return plv_handler_.GetPaddedNodeCount(); };
+  size_t GetPLVCount() const { return plv_handler_.GetPVCount(); };
+  size_t GetTempPLVCount() const { return plv_handler_.GetTempPVCount(); };
+  size_t GetPaddedPLVCount() const { return plv_handler_.GetPaddedPVCount(); };
+  size_t GetAllocatedPLVCount() const { return plv_handler_.GetAllocatedPVCount(); }
 
   void SetNodeCount(const size_t node_count) { plv_handler_.SetNodeCount(node_count); }
   void SetTempNodeCount(const size_t node_padding) {

@@ -124,13 +124,17 @@ class PartialVectorHandler {
     return pvs_.at(GetTempPVIndex(pv_idx));
   };
 
-  // Get total offset into PVs, indexed based on size of underlying DAG.
+  // Get total offset into PVs, indexed based on underlying DAG.
   static size_t GetPVIndex(const PVType pv_type, const size_t node_idx,
                            const size_t node_count) {
     // return GetPVIndex(PVTypeEnum::GetIndex(pv_type), node_idx, node_count);
     return GetPVIndex(GetPVTypeIndex(pv_type), node_idx, node_count);
   };
+  size_t GetPVIndex(const PVType pv_type, const size_t node_idx) const {
+    return GetPVIndex(pv_type, node_idx, GetNodeCount());
+  }
 
+  // Get total offset into temporary PVs, indexed based on underlying grafted DAG.
   size_t GetTempPVIndex(const size_t pv_idx) const {
     const size_t pv_scratch_size = GetPaddedPVCount() - GetPVCount();
     Assert(pv_idx < pv_scratch_size,
