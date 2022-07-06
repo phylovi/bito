@@ -534,8 +534,9 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
       2. / 3.,                       // 5
       0.5,                           // 6
       0.5,                           // 7
-      // We have the 0.5 coming from node 12, but that's split evenly between the two
-      // descendants, so we have 0.25 from each. Thus even weights.
+      // We have 0.5 from node 9, but that's split proportionally to the probability
+      // of each potential parent. Nodes 12 and 14 are equally likely parents of node 9, so we
+      // have 0.5 for the inverted PCSP probability.
       0.5,      // 8
       1.,       // 9
       1.,       // 10
