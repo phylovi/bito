@@ -47,9 +47,8 @@ TEST_CASE("Alignment") {
   CHECK(alignment.IsValid());
 
   CHECK_THROWS(alignment.ExtractSingleColumnAlignment(31));
-  Alignment first_col_expected = Alignment({{"mars", "C"},       //
-                                            {"saturn", "G"},     //
-                                            {"jupiter", "G"}});  //
+  Alignment first_col_expected =
+      Alignment({{"mars", "C"}, {"saturn", "G"}, {"jupiter", "G"}});
   CHECK_EQ(alignment.ExtractSingleColumnAlignment(0), first_col_expected);
 }
 #endif  // DOCTEST_LIBRARY_INCLUDED
