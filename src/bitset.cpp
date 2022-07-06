@@ -466,7 +466,7 @@ bool Bitset::SubsplitIsValid() const {
 
 Bitset Bitset::PCSP(const Bitset& parent_subsplit, const Bitset& child_subsplit) {
   // Assert that:
-  // - child_subsplit is either a sorted or rotated child of parent_subsplit.
+  // - child_subsplit is either a right or left child of parent_subsplit.
   // - child_subsplit forms a valid subsplit.
   bool is_parent_valid = parent_subsplit.SubsplitIsValid();
   bool is_child_valid = child_subsplit.SubsplitIsValid();
@@ -484,18 +484,18 @@ Bitset Bitset::PCSP(const Bitset& parent_subsplit, const Bitset& child_subsplit)
 }
 
 Bitset Bitset::PCSP(const Bitset& sister_clade, const Bitset& focal_clade,
-                    const Bitset& sorted_child_clade) {
+                    const Bitset& right_child_clade) {
   Assert(sister_clade.size() == focal_clade.size() &&
-             focal_clade.size() == sorted_child_clade.size(),
+             focal_clade.size() == right_child_clade.size(),
          "PCSP(): all clades must be of equal size.");
-  Bitset pcsp = sister_clade + focal_clade + sorted_child_clade;
+  Bitset pcsp = sister_clade + focal_clade + right_child_clade;
   Assert(pcsp.PCSPIsValid(), "PCSP(): given clades form an invalid PCSP.");
   return pcsp;
 }
 
 Bitset Bitset::PCSP(const std::string sister_clade, const std::string focal_clade,
-                    const std::string sorted_child_clade) {
-  return PCSP(Bitset(sister_clade), Bitset(focal_clade), Bitset(sorted_child_clade));
+                    const std::string right_child_clade) {
+  return PCSP(Bitset(sister_clade), Bitset(focal_clade), Bitset(right_child_clade));
 }
 
 // #350 I'd argue that if we are going to use SubsplitCladeCount (and I'm not sure about
@@ -521,8 +521,8 @@ Bitset Bitset::PCSPGetParentSubsplit() const {
 
 Bitset Bitset::PCSPGetChildSubsplit() const {
   Bitset focal = PCSPGetClade(PCSPClade::Focal);
-  Bitset child_left = PCSPGetClade(PCSPClade::LeftChild);
-  Bitset child_right = focal & ~child_left;
+  Bitset child_right = PCSPGetClade(PCSPClade::RightChild);
+  Bitset child_left = focal & ~child_right;
   return Bitset::Subsplit(child_left, child_right);
 }
 
@@ -534,18 +534,18 @@ bool Bitset::PCSPIsValid() const {
   }
   Bitset sister = PCSPGetClade(PCSPClade::Sister);
   Bitset focal = PCSPGetClade(PCSPClade::Focal);
-  Bitset child_left = PCSPGetClade(PCSPClade::LeftChild);
+  Bitset child_right = PCSPGetClade(PCSPClade::RightChild);
   // The parent clades should be disjoint.
   if (!sister.IsDisjoint(focal)) {
     return false;
   }
   // The clade should split the focal clade of the parent,
   // so the taxa of child_left should be a subset of those of focal clade.
-  if (!child_left.IsDisjoint(~focal)) {
+  if (!child_right.IsDisjoint(~focal)) {
     return false;
   }
   // Something has to be set in each clade.
-  if (sister.None() || focal.None() || child_left.None()) {
+  if (sister.None() || focal.None() || child_right.None()) {
     return false;
   }
   return true;
@@ -554,9 +554,9 @@ bool Bitset::PCSPIsValid() const {
 bool Bitset::PCSPChildIsLeaf() const {
   Assert(size() % PCSPCladeCount == 0,
          "Size isn't 0 mod 3 in Bitset::PCSPChildIsLeaf.");
-  // If third clade of PCSP is empty, that means that the associated clade's sorted
+  // If third clade of PCSP is empty, that means that the associated clade's right
   // subsplit is empty, so it is leaf.
-  return PCSPGetClade(PCSPClade::LeftChild).None();
+  return PCSPGetClade(PCSPClade::RightChild).None();
 }
 
 Bitset Bitset::PCSPSortClades() const {
