@@ -75,7 +75,7 @@ class PartialVectorHandler {
         resizing_factor_(resizing_factor),
         mmap_file_path_(mmap_file_path),
         mmapped_master_pvs_(mmap_file_path_,
-                            (node_count + node_padding_) * pv_count_per_node_ *
+                            (node_count + node_spare_count_) * pv_count_per_node_ *
                                 size_t(resizing_factor_) * pattern_count) {}
 
   // ** Counts
@@ -84,18 +84,20 @@ class PartialVectorHandler {
   size_t GetPVCountPerNode() const { return pv_count_per_node_; }
   size_t GetSitePatternCount() const { return pattern_count_; }
   size_t GetNodeCount() const { return node_count_; }
-  size_t GetTempNodeCount() const { return node_padding_; }
+  size_t GetSpareNodeCount() const { return node_spare_count_; }
   size_t GetAllocatedNodeCount() const { return node_alloc_; }
-  size_t GetPaddedNodeCount() const { return GetNodeCount() + GetTempNodeCount(); }
+  size_t GetPaddedNodeCount() const { return GetNodeCount() + GetSpareNodeCount(); }
   size_t GetPVCount() const { return GetNodeCount() * GetPVCountPerNode(); }
-  size_t GetTempPVCount() const { return GetTempNodeCount() * GetPVCountPerNode(); }
+  size_t GetSparePVCount() const { return GetSpareNodeCount() * GetPVCountPerNode(); }
   size_t GetPaddedPVCount() const { return GetPaddedNodeCount() * GetPVCountPerNode(); }
   size_t GetAllocatedPVCount() const {
     return GetAllocatedNodeCount() * GetPVCountPerNode();
   }
 
   void SetNodeCount(const size_t node_count) { node_count_ = node_count; }
-  void SetTempNodeCount(const size_t node_padding) { node_padding_ = node_padding; }
+  void SetSpareNodeCount(const size_t node_spare_count) {
+    node_spare_count_ = node_spare_count;
+  }
   void SetAllocatedNodeCount(const size_t node_alloc) { node_alloc_ = node_alloc; }
 
   // ** Resize
@@ -116,12 +118,12 @@ class PartialVectorHandler {
   // Get PV by index from the vector of Partial Vectors.
   NucleotidePLVRef &GetPV(const size_t pv_idx) { return pvs_.at(pv_idx); };
   const NucleotidePLVRef &GetPV(const size_t pv_idx) const { return pvs_.at(pv_idx); };
-  // Get Temporary PV by index from the vector of Partial Vectors.
-  NucleotidePLVRef &GetTempPV(const size_t pv_idx) {
-    return pvs_.at(GetTempPVIndex(pv_idx));
+  // Get Spare PV by index from the vector of Partial Vectors.
+  NucleotidePLVRef &GetSparePV(const size_t pv_idx) {
+    return pvs_.at(GetSparePVIndex(pv_idx));
   };
-  const NucleotidePLVRef &GetTempPV(const size_t pv_idx) const {
-    return pvs_.at(GetTempPVIndex(pv_idx));
+  const NucleotidePLVRef &GetSparePV(const size_t pv_idx) const {
+    return pvs_.at(GetSparePVIndex(pv_idx));
   };
 
   // Get total offset into PVs, indexed based on underlying DAG.
@@ -135,7 +137,7 @@ class PartialVectorHandler {
   }
 
   // Get total offset into temporary PVs, indexed based on underlying grafted DAG.
-  size_t GetTempPVIndex(const size_t pv_idx) const {
+  size_t GetSparePVIndex(const size_t pv_idx) const {
     const size_t pv_scratch_size = GetPaddedPVCount() - GetPVCount();
     Assert(pv_idx < pv_scratch_size,
            "Requested temporary pv_idx outside of allocated scratch space.");
@@ -171,8 +173,8 @@ class PartialVectorHandler {
 
   // Number of nodes in DAG.
   size_t node_count_ = 0;
-  // Number of nodes of additional padding for temporary graft nodes in DAG.
-  size_t node_padding_ = 2;
+  // Number of nodes of additional space for temporary graft nodes in DAG.
+  size_t node_spare_count_ = 2;
   // Number of nodes allocated for in PVHandler.
   size_t node_alloc_ = 0;
   // Size of Site Pattern.

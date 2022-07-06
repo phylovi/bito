@@ -50,8 +50,8 @@ class GPEngine {
   void ReindexPLVs(const Reindexer& node_reindexer, const size_t old_node_count);
   void ReindexGPCSPs(const Reindexer& gpcsp_reindexer, const size_t old_gpcsp_count);
   // Grow space for storing temporary computation.
-  void GrowTempPLVs(const size_t new_node_padding);
-  void GrowTempGPCSPs(const size_t new_gpcsp_padding);
+  void GrowSparePLVs(const size_t new_node_spare_count);
+  void GrowSpareGPCSPs(const size_t new_gpcsp_spare_count);
 
   // ** GPOperations
 
@@ -102,7 +102,7 @@ class GPEngine {
   EigenVectorXd GetBranchLengths() const;
   EigenVectorXd GetBranchLengths(const size_t start, const size_t length) const;
   // Get Branch Lengths from temporary space.
-  EigenVectorXd GetTempBranchLengths(const size_t start, const size_t length) const;
+  EigenVectorXd GetSpareBranchLengths(const size_t start, const size_t length) const;
   // Get differences for branch lengths during optimization to assess convergence.
   EigenVectorXd GetBranchLengthDifferences() const;
   // This function returns a vector indexed by GPCSP such that the i-th entry
@@ -118,8 +118,8 @@ class GPEngine {
   EigenVectorXd GetPerGPCSPLogLikelihoods(const size_t start,
                                           const size_t length = 1) const;
   // Get PerGPCSPLogLikelihoods from temporary space.
-  EigenVectorXd GetTempPerGPCSPLogLikelihoods(const size_t start,
-                                              const size_t length = 1) const;
+  EigenVectorXd GetSparePerGPCSPLogLikelihoods(const size_t start,
+                                               const size_t length = 1) const;
   // This is the full marginal likelihood sum restricted to trees containing a PCSP.
   // When we sum the log of eq:PerGPCSPComponentsOfFullMarginal over the sites, we get
   // out a term that is the number of sites times the log of the prior conditional PCSP
@@ -141,14 +141,14 @@ class GPEngine {
   const NucleotidePLVRef& GetPLV(size_t plv_index) const {
     return plv_handler_.GetPV(plv_index);
   }
-  NucleotidePLVRef& GetTempPLV(size_t plv_index) {
-    return plv_handler_.GetTempPV(plv_index);
+  NucleotidePLVRef& GetSparePLV(size_t plv_index) {
+    return plv_handler_.GetSparePV(plv_index);
   }
-  const NucleotidePLVRef& GetTempPLV(size_t plv_index) const {
-    return plv_handler_.GetTempPV(plv_index);
+  const NucleotidePLVRef& GetSparePLV(size_t plv_index) const {
+    return plv_handler_.GetSparePV(plv_index);
   }
-  size_t GetTempPLVIndex(const size_t plv_index) const {
-    return plv_handler_.GetTempPVIndex(plv_index);
+  size_t GetSparePLVIndex(const size_t plv_index) const {
+    return plv_handler_.GetSparePVIndex(plv_index);
   }
 
   // ** Other Operations
@@ -194,27 +194,27 @@ class GPEngine {
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
 
   size_t GetNodeCount() const { return plv_handler_.GetNodeCount(); };
-  size_t GetTempNodeCount() const { return plv_handler_.GetTempNodeCount(); }
+  size_t GetSpareNodeCount() const { return plv_handler_.GetSpareNodeCount(); }
   size_t GetAllocatedNodeCount() const { return plv_handler_.GetAllocatedNodeCount(); }
   size_t GetPaddedNodeCount() const { return plv_handler_.GetPaddedNodeCount(); };
   size_t GetPLVCount() const { return plv_handler_.GetPVCount(); };
-  size_t GetTempPLVCount() const { return plv_handler_.GetTempPVCount(); };
+  size_t GetSparePLVCount() const { return plv_handler_.GetSparePVCount(); };
   size_t GetPaddedPLVCount() const { return plv_handler_.GetPaddedPVCount(); };
   size_t GetAllocatedPLVCount() const { return plv_handler_.GetAllocatedPVCount(); }
 
   void SetNodeCount(const size_t node_count) { plv_handler_.SetNodeCount(node_count); }
-  void SetTempNodeCount(const size_t node_padding) {
-    plv_handler_.SetTempNodeCount(node_padding);
+  void SetSpareNodeCount(const size_t node_spare_count) {
+    plv_handler_.SetSpareNodeCount(node_spare_count);
   }
   void SetAllocatedNodeCount(const size_t node_alloc) {
     plv_handler_.SetAllocatedNodeCount(node_alloc);
   }
 
   size_t GetGPCSPCount() const { return gpcsp_count_; };
-  size_t GetTempGPCSPCount() const { return gpcsp_padding_; };
+  size_t GetSpareGPCSPCount() const { return gpcsp_spare_count_; };
   size_t GetAllocatedGPCSPCount() const { return gpcsp_alloc_; };
-  size_t GetPaddedGPCSPCount() const { return GetGPCSPCount() + GetTempGPCSPCount(); };
-  size_t GetTempGPCSPIndex(const size_t gpcsp_offset) const {
+  size_t GetPaddedGPCSPCount() const { return GetGPCSPCount() + GetSpareGPCSPCount(); };
+  size_t GetSpareGPCSPIndex(const size_t gpcsp_offset) const {
     const size_t gpcsp_scratch_size = GetPaddedGPCSPCount() - GetGPCSPCount();
     Assert(gpcsp_offset < gpcsp_scratch_size,
            "Requested gpcsp_offset outside of allocated scratch space.");
@@ -222,7 +222,9 @@ class GPEngine {
   }
 
   void SetGPCSPCount(const size_t gpcsp_count) { gpcsp_count_ = gpcsp_count; }
-  void SetTempGPCSPCount(const size_t gpcsp_padding) { gpcsp_padding_ = gpcsp_padding; }
+  void SetSpareGPCSPCount(const size_t gpcsp_spare_count) {
+    gpcsp_spare_count_ = gpcsp_spare_count;
+  }
   void SetAllocatedGPCSPCount(const size_t gpcsp_alloc) { gpcsp_alloc_ = gpcsp_alloc; }
 
  private:
@@ -331,7 +333,7 @@ class GPEngine {
   // like branch lengths.
   size_t gpcsp_count_ = 0;
   size_t gpcsp_alloc_ = 0;
-  size_t gpcsp_padding_ = 3;
+  size_t gpcsp_spare_count_ = 3;
   // Growth factor when reallocating data.
   constexpr static double resizing_factor_ = 2.0;
 

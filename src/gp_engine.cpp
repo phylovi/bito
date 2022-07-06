@@ -15,8 +15,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
     : site_pattern_(std::move(site_pattern)),
       rescaling_threshold_(rescaling_threshold),
       log_rescaling_threshold_(log(rescaling_threshold)),
-      plv_handler_(mmap_file_path, size_t(0), site_pattern_.PatternCount(),
-                   resizing_factor_),
+      plv_handler_(mmap_file_path, 0, site_pattern_.PatternCount(), resizing_factor_),
       unconditional_node_probabilities_(std::move(unconditional_node_probabilities)),
       q_(std::move(sbn_prior)),
       inverted_sbn_prior_(std::move(inverted_sbn_prior)) {
@@ -76,7 +75,7 @@ void GPEngine::GrowPLVs(const size_t new_node_count,
     if (explicit_allocation.has_value()) {
       Assert(explicit_allocation.value() >= GetNodeCount(),
              "Attempted to reallocate space smaller than node_count.");
-      SetAllocatedNodeCount(explicit_allocation.value() + GetTempNodeCount());
+      SetAllocatedNodeCount(explicit_allocation.value() + GetSpareNodeCount());
     }
     plv_handler_.Resize(new_node_count, GetAllocatedNodeCount());
     rescaling_counts_.conservativeResize(GetAllocatedPLVCount());
@@ -124,7 +123,7 @@ void GPEngine::GrowGPCSPs(const size_t new_gpcsp_count,
     if (explicit_allocation.has_value()) {
       Assert(explicit_allocation.value() >= GetNodeCount(),
              "Attempted to reallocate space smaller than node_count.");
-      SetAllocatedGPCSPCount(explicit_allocation.value() + GetTempGPCSPCount());
+      SetAllocatedGPCSPCount(explicit_allocation.value() + GetSpareGPCSPCount());
     }
     branch_lengths_.conservativeResize(GetAllocatedGPCSPCount());
     branch_length_differences_.conservativeResize(GetAllocatedGPCSPCount());
@@ -204,16 +203,16 @@ void GPEngine::ReindexGPCSPs(const Reindexer& gpcsp_reindexer,
                                                    GetGPCSPCount());
 }
 
-void GPEngine::GrowTempPLVs(const size_t new_node_padding) {
-  if (new_node_padding > GetTempNodeCount()) {
-    SetTempNodeCount(new_node_padding);
+void GPEngine::GrowSparePLVs(const size_t new_node_spare_count) {
+  if (new_node_spare_count > GetSpareNodeCount()) {
+    SetSpareNodeCount(new_node_spare_count);
     GrowPLVs(GetNodeCount());
   }
 }
 
-void GPEngine::GrowTempGPCSPs(const size_t new_gpcsp_padding) {
-  if (new_gpcsp_padding > GetTempGPCSPCount()) {
-    SetTempGPCSPCount(new_gpcsp_padding);
+void GPEngine::GrowSpareGPCSPs(const size_t new_gpcsp_spare_count) {
+  if (new_gpcsp_spare_count > GetSpareGPCSPCount()) {
+    SetSpareGPCSPCount(new_gpcsp_spare_count);
     GrowGPCSPs(GetGPCSPCount());
   }
 }
@@ -430,9 +429,9 @@ EigenVectorXd GPEngine::GetBranchLengths(const size_t start,
   return branch_lengths_.segment(start, length);
 };
 
-EigenVectorXd GPEngine::GetTempBranchLengths(const size_t start,
-                                             const size_t length) const {
-  return GetBranchLengths(GetTempGPCSPIndex(start), length);
+EigenVectorXd GPEngine::GetSpareBranchLengths(const size_t start,
+                                              const size_t length) const {
+  return GetBranchLengths(GetSpareGPCSPIndex(start), length);
 }
 
 EigenVectorXd GPEngine::GetBranchLengthDifferences() const {
@@ -452,9 +451,9 @@ EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(const size_t start,
          site_pattern_weights_;
 };
 
-EigenVectorXd GPEngine::GetTempPerGPCSPLogLikelihoods(const size_t start,
-                                                      const size_t length) const {
-  return GetPerGPCSPLogLikelihoods(GetTempGPCSPIndex(start), length);
+EigenVectorXd GPEngine::GetSparePerGPCSPLogLikelihoods(const size_t start,
+                                                       const size_t length) const {
+  return GetPerGPCSPLogLikelihoods(GetSpareGPCSPIndex(start), length);
 }
 
 EigenVectorXd GPEngine::GetPerGPCSPComponentsOfFullLogMarginal() const {

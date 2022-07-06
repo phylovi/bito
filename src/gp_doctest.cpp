@@ -1575,7 +1575,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
   for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     auto pre_nni_likelihood = GPInstGetNNILikelihood(graft_inst, pre_nni);
     prenni_graftdag_likelihoods.insert({pre_nni, pre_nni_likelihood});
-    size_t edge_idx = graft_gpengine.GetTempGPCSPIndex(nni_count);
+    size_t edge_idx = graft_gpengine.GetSpareGPCSPIndex(nni_count);
     double nni_likelihood = all_likelihoods[edge_idx];
     nni_graftdag_likelihoods.insert({nni, nni_likelihood});
     nni_count++;
