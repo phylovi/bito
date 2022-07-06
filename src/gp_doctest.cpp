@@ -73,7 +73,7 @@ GPInstance MakeFiveTaxonInstance() {
 // trimmed to 500 sites by using seqmagick convert with `--cut 500:1000`.
 // The DAG obtained by `inst.SubsplitDAGToDot("_ignore/ds1-reduced-5.dot");` can be seen
 // at
-// https://user-images.githubusercontent.com/62405940/129260508-c798c594-b1ed-4198-9712-088fbb2a4010.png
+// https://github.com/phylovi/bito/issues/391#issuecomment-1169048568
 GPInstance MakeDS1Reduced5Instance() {
   auto inst = GPInstanceOfFiles("data/ds1-reduced-5.fasta", "data/ds1-reduced-5.nwk");
   return inst;
@@ -224,7 +224,7 @@ TEST_CASE("GPInstance: DS1-reduced-5 marginal likelihood calculation") {
 TEST_CASE("GPInstance: marginal likelihood on seven taxa and four trees") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // https://github.com/phylovi/bito/issues/349#issuecomment-897225623
+  // https://github.com/phylovi/bito/issues/391#issuecomment-1169053191
   TestCompositeMarginal(
       GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal-all-trees.nwk"),
       fasta_path);
@@ -332,8 +332,6 @@ StringDoubleMap StringDoubleMapOfStringDoubleVector(StringDoubleVector vect) {
 }
 
 TEST_CASE("GPInstance: gather and hotstart branch lengths") {
-  // Remove return when fixing #391 for real.
-  return;
   // » nw_topology data/hotstart_bootstrap_sample.nwk | nw_order - | sort | uniq -c
   // 1 (outgroup,(((z0,z1),z2),z3));
   // 33 (outgroup,((z0,z1),(z2,z3)));
@@ -367,12 +365,12 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
 
   SizeDoubleVectorMap branch_lengths_from_sample = inst.GatherBranchLengths();
   EigenVectorXd gathered_bls =
-      EigenVectorXdOfStdVectorDouble(branch_lengths_from_sample[2]);
+      EigenVectorXdOfStdVectorDouble(branch_lengths_from_sample[4]);
   CheckVectorXdEquality(expected_bls_internal, gathered_bls, 1e-6);
 
   double true_mean_internal = expected_bls_internal.array().mean();
   inst.HotStartBranchLengths();
-  CHECK_LT(fabs(true_mean_internal - inst.GetEngine()->GetBranchLengths()(2)), 1e-8);
+  CHECK_LT(fabs(true_mean_internal - inst.GetEngine()->GetBranchLengths()(4)), 1e-8);
   // We also want to verify correct assignment for a pendant branch length.
   // Specifically, we are looking at the pendant branch length for z2 with sister z3. So
   // the desired GPCSP is 0010001000|0000000000. This corresponds to branch length index
@@ -523,8 +521,6 @@ TEST_CASE("GPInstance: CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths") {
 }
 
 TEST_CASE("GPInstance: Priors") {
-  // Remove return when fixing #391 for real.
-  return;
   auto inst = GPInstanceOfFiles("data/four-numbered-taxa.fasta",
                                 "data/four-taxon-two-tree-rootsplit-uncertainty.nwk");
   // Here are the trees:
@@ -533,15 +529,15 @@ TEST_CASE("GPInstance: Priors") {
   // ((1,2),(3,4));
   //
   // Here's the interesting part of the indexer:
-  // 0001|1110,      0
-  // 0011|1100,      1
-  // 0001|1110|0110, 4
-  // 0001|1110|0010, 5
+  // 0000|1111|0001,    0
+  // 0000|1111|0011,    1
+  // 0001|1110|0110,    2
+  // 0001|1110|0010,    3
   auto support = inst.GetDAG().BuildUniformOnTopologicalSupportPrior();
   CHECK_LT(fabs(support[0] - 2. / 3.), 1e-10);
   CHECK_LT(fabs(support[1] - 1. / 3.), 1e-10);
-  CHECK_LT(fabs(support[4] - 1. / 2.), 1e-10);
-  CHECK_LT(fabs(support[5] - 1. / 2.), 1e-10);
+  CHECK_LT(fabs(support[2] - 1. / 2.), 1e-10);
+  CHECK_LT(fabs(support[3] - 1. / 2.), 1e-10);
   auto all = inst.GetDAG().BuildUniformOnAllTopologiesPrior();
   // There are 15 topologies on 4 taxa.
   // There are 3 topologies on 3 taxa, so there are 3 topologies with rootsplit
@@ -550,19 +546,17 @@ TEST_CASE("GPInstance: Priors") {
   // There is only 1 topology with rootsplit 0011|1100.
   CHECK_LT(fabs(all[1] - 1. / 15.), 1e-10);
   // There are 3 topologies on 3 taxa.
-  CHECK_LT(fabs(all[4] - 1. / 3.), 1e-10);
-  CHECK_LT(fabs(all[5] - 1. / 3.), 1e-10);
+  CHECK_LT(fabs(all[2] - 1. / 3.), 1e-10);
+  CHECK_LT(fabs(all[3] - 1. / 3.), 1e-10);
 }
 
 TEST_CASE("GPInstance: inverted GPCSP probabilities") {
-  // Remove return when fixing #391 for real.
-  return;
   // Note that just for fun, I have duplicated the first tree, but that doesn't matter
   // because we are looking at uniform over topological support.
   auto inst =
       GPInstanceOfFiles("data/five_taxon.fasta", "data/five_taxon_rooted_more_2.nwk");
   // See the DAG and the uniform probabilities at
-  // https://github.com/phylovi/bito/issues/349#issuecomment-897266149
+  // https://github.com/phylovi/bito/issues/391#issuecomment-1168046752
   const auto& dag = inst.GetDAG();
   EigenVectorXd normalized_sbn_parameters = dag.BuildUniformOnTopologicalSupportPrior();
   EigenVectorXd node_probabilities =
@@ -595,18 +589,19 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
       1.,                            // 0 (rootsplit)
       1.,                            // 1 (rootsplit)
       1.,                            // 2 (rootsplit)
-      1. / 3.,                       // 3
-      0.5,                           // 4
-      1.,                            // 5
-      // We have the 0.5 coming from node 12, but that's split evenly between the two
-      // descendants, so we have 0.25 from each. Thus even weights.
-      0.5,      // 6
-      1.,       // 7
-      1.,       // 8
+      1.,                            // 3
+      1.,                            // 4
+      2. / 3.,                       // 5
+      0.5,                           // 6
+      0.5,                           // 7
+      // We have 0.5 from node 9, but that's split proportionally to the probability
+      // of each potential parent. Nodes 12 and 14 are equally likely parents of node 9, so we
+      // have 0.5 for the inverted PCSP probability.
+      0.5,      // 8
       1.,       // 9
-      0.5,      // 10 (analogous to 6)
-      2. / 3.,  // 11
-      0.5,      // 12
+      1.,       // 10
+      0.5,      // 11 (analogous to 8)
+      1. / 3.,  // 12
       0.5,      // 13
       0.5,      // 14
       0.5,      // 15
@@ -622,8 +617,6 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
 }
 
 TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
-  // Remove return when fixing #391 for real.
-  return;
   const std::string fasta_path = "data/5-taxon-slice-of-ds1.fasta";
   auto inst =
       GPInstanceOfFiles(fasta_path, "data/5-taxon-only-rootward-uncertainty.nwk");
@@ -633,10 +626,10 @@ TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
   inst.GetEngine()->SetBranchLengths(branch_lengths);
   // Because the branch lengths contain the GPCSP index, we can check that the indices
   // correspond to what we see in the GPCSP DAG in
-  // https://github.com/phylovi/bito/issues/349#issuecomment-897233859
+  // https://github.com/phylovi/bito/issues/391#issuecomment-1168048090
   CHECK_EQ(inst.GenerateCompleteRootedTreeCollection().Newick(),
-           "((0:7,1:9):3,(2:11,(3:12,4:13):5):2):0;\n"
-           "(1:10,(0:8,(2:11,(3:12,4:13):5):6):4):0;\n");
+           "((0:7,1:9):3,(2:11,(3:12,4:13):2):6):0;\n"
+           "(1:10,(0:8,(2:11,(3:12,4:13):2):5):4):0;\n");
 }
 
 EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
@@ -665,7 +658,7 @@ EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
 TEST_CASE("GPInstance: simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // https://github.com/phylovi/bito/issues/349#issuecomment-897225623
+  // https://github.com/phylovi/bito/issues/391#issuecomment-1169053191
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   // Branch lengths generated from Python via
@@ -702,7 +695,7 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
 TEST_CASE("GPInstance: second simplest hybrid marginal") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   // See the DAG at
-  // https://github.com/phylovi/bito/issues/349#issuecomment-897237046
+  // https://github.com/phylovi/bito/issues/391#issuecomment-1169056581
   auto inst = GPInstanceOfFiles(fasta_path, "data/second-simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
   // Branch lengths generated from Python via
@@ -752,7 +745,7 @@ TEST_CASE("GPInstance: test rootsplits") {
   }
 }
 
-// See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908707617.
+// See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168046752.
 TEST_CASE("GPInstance: IsValidAddNodePair tests") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
@@ -761,21 +754,21 @@ TEST_CASE("GPInstance: IsValidAddNodePair tests") {
   // Nodes are not adjacent (12|34 and 2|4).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("01100", "00011"),
                                      Bitset::Subsplit("00100", "00001")));
-  // Nodes have 5 taxa while the DAG has 4 (12|34 and 1|2).
+  // Nodes have 6 taxa while the DAG has 5 (12|34 and 1|2).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("011000", "000110"),
                                      Bitset::Subsplit("010000", "001000")));
   // Parent node does not have a parent (12|3 and 1|2).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("01100", "00010"),
                                      Bitset::Subsplit("01000", "00100")));
-  // Rotated clade of the parent node does not have a child (02|134 and
+  // Left clade of the parent node does not have a child (02|134 and
   // 1|34).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("10100", "01011"),
                                      Bitset::Subsplit("01000", "00011")));
-  // Rotated clade of the child node does not have a child (0123|4 and
+  // Left clade of the child node does not have a child (0123|4 and
   // 023|1).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
                                      Bitset::Subsplit("10110", "01000")));
-  // Sorted clade of the child node does not have a child (0123|4 and
+  // Right clade of the child node does not have a child (0123|4 and
   // 0|123).
   CHECK_FALSE(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
                                      Bitset::Subsplit("10000", "01110")));
@@ -784,13 +777,12 @@ TEST_CASE("GPInstance: IsValidAddNodePair tests") {
                                Bitset::Subsplit("11100", "00010")));
 }
 
-// See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908708284.
+// See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168059272.
 TEST_CASE("GPInstance: AddNodePair tests") {
-  // Remove return when fixing #391 for real.
-  return;
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
   auto& dag = inst.GetDAG();
+
   // Check that AddNodePair throws if node pair is invalid (12|34 and 2|4).
   CHECK_THROWS(dag.AddNodePair(Bitset::Subsplit("01100", "00011"),
                                Bitset::Subsplit("00100", "00001")));
@@ -820,7 +812,7 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   // Check that all necessary edges were created.
   const auto parent_node = dag.GetDAGNode(dag.GetDAGNodeId(parent_subsplit));
   const auto child_node = dag.GetDAGNode(dag.GetDAGNodeId(child_subsplit));
-  std::map<bool, SizeVector> correct_parents_of_parent{{true, {}}, {false, {16, 14}}};
+  std::map<bool, SizeVector> correct_parents_of_parent{{true, {}}, {false, {14, 16}}};
   std::map<bool, SizeVector> parents_of_parent{{true, parent_node.GetLeftRootward()},
                                                {false, parent_node.GetRightRootward()}};
   CHECK_EQ(parents_of_parent, correct_parents_of_parent);
@@ -840,40 +832,40 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   Reindexer correct_node_reindexer(
       {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 14, 15, 16, 17, 12, 13});
   CHECK_EQ(node_addition_result.node_reindexer, correct_node_reindexer);
-  Reindexer correct_edge_reindexer({0,  1,  2,  3,  4,  5,  6,  7,  9,  10,
-                                    11, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-                                    22, 23, 24, 25, 26, 27, 28, 29, 12, 8});
+  Reindexer correct_edge_reindexer({0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+                                    11, 12, 14, 15, 16, 17, 18, 19, 20, 21,
+                                    22, 23, 24, 25, 26, 27, 28, 29, 13, 10});
   CHECK_EQ(node_addition_result.edge_reindexer, correct_edge_reindexer);
   // Check that added_node_ids and added_edge_idxs are correct.
   SizeVector correct_added_node_ids{12, 13};
   CHECK_EQ(node_addition_result.added_node_ids, correct_added_node_ids);
-  SizeVector correct_added_edge_idxs{26, 27, 28, 29, 12, 8};
+  SizeVector correct_added_edge_idxs{26, 27, 28, 29, 13, 10};
   CHECK_EQ(node_addition_result.added_edge_idxs, correct_added_edge_idxs);
   // Check that `dag_nodes` was updated (node 12 -> 14).
   const auto& node_14 = dag.GetDAGNode(14);
   CHECK_EQ(node_14.GetBitset().ToString(), "0100000111");
   // Check that node fields were updated correctly.
-  const auto& sorted_parents_14 = node_14.GetRightRootward();
-  const auto& sorted_children_14 = node_14.GetRightLeafward();
-  CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 13) ==
-        sorted_parents_14.end());
-  CHECK(std::find(sorted_parents_14.begin(), sorted_parents_14.end(), 15) !=
-        sorted_parents_14.end());
-  CHECK(std::find(sorted_children_14.begin(), sorted_children_14.end(), 11) !=
-        sorted_children_14.end());
+  const auto& right_parents_14 = node_14.GetRightRootward();
+  const auto& right_children_14 = node_14.GetRightLeafward();
+  CHECK(std::find(right_parents_14.begin(), right_parents_14.end(), 13) ==
+        right_parents_14.end());
+  CHECK(std::find(right_parents_14.begin(), right_parents_14.end(), 15) !=
+        right_parents_14.end());
+  CHECK(std::find(right_children_14.begin(), right_children_14.end(), 11) !=
+        right_children_14.end());
   CHECK_EQ(node_14.Id(), 14);
   // Check that `subsplit_to_id_` node ids were updated.
   CHECK_EQ(dag.GetDAGNodeId(node_14.GetBitset()), 14);
   // Check that `dag_edges_` node ids were updated.
-  CHECK_EQ(dag.GetEdgeIdx(15, 14), 9);
+  CHECK_EQ(dag.GetEdgeIdx(15, 14), 11);
   // Check that `dag_edges_` edge idxs were updated.
-  CHECK_EQ(dag.GetEdgeIdx(14, 13), 8);
-  CHECK_EQ(dag.GetEdgeIdx(16, 13), 12);
+  CHECK_EQ(dag.GetEdgeIdx(14, 13), 10);
+  CHECK_EQ(dag.GetEdgeIdx(16, 13), 13);
   CHECK_EQ(dag.GetEdgeIdx(11, 4), 25);
   // Check that `parent_to_child_range_` was updated.
-  CHECK_EQ(dag.GetChildEdgeRange(node_14.GetBitset(), false).second, 9);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).first, 11);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).second, 13);
+  CHECK_EQ(dag.GetChildEdgeRange(node_14.GetBitset(), false).second, 11);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).first, 12);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).second, 14);
   // Check that `topology_count_` was updated.
   CHECK_EQ(dag.TopologyCount(), prev_topology_count + 2);
 }
@@ -914,10 +906,8 @@ TEST_CASE("GPInstance: Reindexers for AddNodePair") {
   }
 }
 
-// See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908709477.
+// See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168061363.
 TEST_CASE("GPInstance: Only add parent node tests") {
-  // Remove return when fixing #391 for real.
-  return;
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
   auto& dag = inst.GetDAG();
@@ -935,15 +925,13 @@ TEST_CASE("GPInstance: Only add parent node tests") {
   // Check that the node count and edge count was updated.
   CHECK_EQ(dag.NodeCount(), prev_node_count + 3);
   CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 8);
-  // Check that BuildEdgeReindexer() correctly handles rotated edges.
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).first, 5);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).second, 7);
+  // Check that BuildEdgeReindexer() correctly handles left edges.
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).first, 4);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).second, 6);
 }
 
-// See diagram at https://github.com/phylovi/bito/issues/351#issuecomment-908711187.
+// See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168064347.
 TEST_CASE("GPInstance: Only add child node tests") {
-  // Remove return when fixing #391 for real.
-  return;
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_3.nwk");
   auto& dag = inst.GetDAG();
@@ -957,10 +945,10 @@ TEST_CASE("GPInstance: Only add child node tests") {
   CHECK_EQ(dag.NodeCount(), prev_node_count + 1);
   CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 4);
   // Check that new child node is connected to all possible parents.
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), false).first, 9);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), false).second, 11);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(11).GetBitset(), false).first, 3);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(11).GetBitset(), false).second, 5);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), false).first, 10);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), false).second, 12);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(11).GetBitset(), false).first, 5);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(11).GetBitset(), false).second, 7);
 }
 
 // This test builds a DAG, tests if engine generates the same set of adjacent NNIs and

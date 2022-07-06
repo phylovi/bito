@@ -1447,6 +1447,10 @@ Reindexer SubsplitDAG::BuildEdgeReindexer(const size_t prev_edge_count) {
 }
 
 void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
+  // no need to reindex if no changes were made
+  if (node_reindexer == Reindexer::IdentityReindexer(node_reindexer.size())) {
+    return;
+  }
   std::vector<DAGVertex> nodes = {storage_.GetVertices().begin(),
                                   storage_.GetVertices().end()};
   std::vector<DAGVertex> nodes_copy = Reindexer::Reindex(nodes, node_reindexer);
@@ -1468,6 +1472,10 @@ void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
 }
 
 void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
+  // no need to reindex if no changes were made
+  if (edge_reindexer == Reindexer::IdentityReindexer(edge_reindexer.size())) {
+    return;
+  }
   // Update edges.
   std::vector<DAGLineStorage> edges_copy(storage_.GetLines().size());
   for (auto i : storage_.GetLines()) {
@@ -1483,6 +1491,6 @@ void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
   for (const auto &[subsplit, idx_range] : parent_to_child_range_) {
     parent_to_child_range_.at(subsplit) = {
         edge_reindexer.GetNewIndexByOldIndex(idx_range.first),
-        edge_reindexer.GetNewIndexByOldIndex(idx_range.second - 1) + 1};
+        edge_reindexer.GetNewIndexByOldIndex(idx_range.second)};
   }
 }
