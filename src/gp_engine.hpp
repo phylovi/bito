@@ -137,9 +137,9 @@ class GPEngine {
   const PLVHandler& GetPLVHandler() const { return plv_handler_; }
   NucleotidePLVRefVector& GetPLVs() { return plv_handler_.GetPVs(); }
   const NucleotidePLVRefVector& GetPLVs() const { return plv_handler_.GetPVs(); }
-  NucleotidePLVRef& GetPLV(size_t plv_index) { return plv_handler_.GetPV(plv_index); }
+  NucleotidePLVRef& GetPLV(size_t plv_index) { return plv_handler_(plv_index); }
   const NucleotidePLVRef& GetPLV(size_t plv_index) const {
-    return plv_handler_.GetPV(plv_index);
+    return plv_handler_(plv_index);
   }
   NucleotidePLVRef& GetSparePLV(size_t plv_index) {
     return plv_handler_.GetSparePV(plv_index);
