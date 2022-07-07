@@ -149,7 +149,11 @@ class Bitset {
   // 0-position, and the larger "right" clade in the 1-position.
 
   enum class SubsplitClade : size_t { Left, Right, Unspecified };
-  static inline size_t SubsplitCladeCount = 2;
+  class SubsplitCladeEnum
+      : public EnumWrapper<SubsplitClade, size_t, 2, SubsplitClade::Left,
+                           SubsplitClade::Right> {};
+
+  static const inline size_t SubsplitCladeCount = 2;
   // Does not iterate over "unspecified" clade.
   using SubsplitCladeIterator =
       EnumIterator<SubsplitClade, SubsplitClade::Left, SubsplitClade::Right>;

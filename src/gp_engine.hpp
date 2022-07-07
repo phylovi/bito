@@ -8,7 +8,7 @@
 
 #include "eigen_sugar.hpp"
 #include "gp_operation.hpp"
-#include "mmapped_plv.hpp"
+#include "pv_handler.hpp"
 #include "numerical_utils.hpp"
 #include "quartet_hybrid_request.hpp"
 #include "rooted_tree_collection.hpp"
@@ -47,14 +47,11 @@ class GPEngine {
                   std::optional<const size_t> explicit_allocation = std::nullopt,
                   const bool on_intialization = false);
   // Remap node and edge-based data according to reordering of DAG nodes and edges.
-  void ReindexPLVs(const Reindexer node_reindexer, const size_t old_node_count);
-  void ReindexGPCSPs(const Reindexer gpcsp_reindexer, const size_t old_gpcsp_count);
+  void ReindexPLVs(const Reindexer& node_reindexer, const size_t old_node_count);
+  void ReindexGPCSPs(const Reindexer& gpcsp_reindexer, const size_t old_gpcsp_count);
   // Grow space for storing temporary computation.
-  void GrowTempPLVs(const size_t new_node_padding);
-  void GrowTempGPCSPs(const size_t new_gpcsp_padding);
-  // Get index according to offset into temporary space.
-  size_t GetTempPLVIndex(const size_t plv_offset) const;
-  size_t GetTempGPCSPIndex(const size_t gpcsp_offset) const;
+  void GrowSparePLVs(const size_t new_node_spare_count);
+  void GrowSpareGPCSPs(const size_t new_gpcsp_spare_count);
 
   // ** GPOperations
 
@@ -99,13 +96,13 @@ class GPEngine {
   void CopyPLVData(const size_t src_plv_idx, const size_t dest_plv_idx);
   void CopyGPCSPData(const size_t src_gpcsp_idx, const size_t dest_gpcsp_idx);
 
-  // ** Getters
+  // ** Access
 
   // Get Branch Lengths.
   EigenVectorXd GetBranchLengths() const;
   EigenVectorXd GetBranchLengths(const size_t start, const size_t length) const;
   // Get Branch Lengths from temporary space.
-  EigenVectorXd GetTempBranchLengths(const size_t start, const size_t length) const;
+  EigenVectorXd GetSpareBranchLengths(const size_t start, const size_t length) const;
   // Get differences for branch lengths during optimization to assess convergence.
   EigenVectorXd GetBranchLengthDifferences() const;
   // This function returns a vector indexed by GPCSP such that the i-th entry
@@ -121,8 +118,8 @@ class GPEngine {
   EigenVectorXd GetPerGPCSPLogLikelihoods(const size_t start,
                                           const size_t length = 1) const;
   // Get PerGPCSPLogLikelihoods from temporary space.
-  EigenVectorXd GetTempPerGPCSPLogLikelihoods(const size_t start,
-                                              const size_t length = 1) const;
+  EigenVectorXd GetSparePerGPCSPLogLikelihoods(const size_t start,
+                                               const size_t length = 1) const;
   // This is the full marginal likelihood sum restricted to trees containing a PCSP.
   // When we sum the log of eq:PerGPCSPComponentsOfFullMarginal over the sites, we get
   // out a term that is the number of sites times the log of the prior conditional PCSP
@@ -136,10 +133,22 @@ class GPEngine {
   double GetLogMarginalLikelihood() const;
   const Eigen::Matrix4d& GetTransitionMatrix() const { return transition_matrix_; };
 
-  // Get Partial Likelihood Vector.
-  EigenConstMatrixXdRef GetPLV(size_t plv_index) const { return plvs_.at(plv_index); }
-  EigenConstMatrixXdRef GetTempPLV(size_t plv_index) const {
-    return GetPLV(GetTempPLVIndex(plv_index));
+  // Partial Likelihood Vector Handler.
+  const PLVHandler& GetPLVHandler() const { return plv_handler_; }
+  NucleotidePLVRefVector& GetPLVs() { return plv_handler_.GetPVs(); }
+  const NucleotidePLVRefVector& GetPLVs() const { return plv_handler_.GetPVs(); }
+  NucleotidePLVRef& GetPLV(size_t plv_index) { return plv_handler_(plv_index); }
+  const NucleotidePLVRef& GetPLV(size_t plv_index) const {
+    return plv_handler_(plv_index);
+  }
+  NucleotidePLVRef& GetSparePLV(size_t plv_index) {
+    return plv_handler_.GetSparePV(plv_index);
+  }
+  const NucleotidePLVRef& GetSparePLV(size_t plv_index) const {
+    return plv_handler_.GetSparePV(plv_index);
+  }
+  size_t GetSparePLVIndex(const size_t plv_index) const {
+    return plv_handler_.GetSparePVIndex(plv_index);
   }
 
   // ** Other Operations
@@ -181,24 +190,42 @@ class GPEngine {
 
   // ** Counts
 
-  double PLVByteCount() const { return mmapped_master_plv_.ByteCount(); };
+  size_t GetPLVCountPerNode() const { return plv_handler_.GetPVCountPerNode(); }
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
-  size_t GetNodeCount() const { return node_count_; };
-  size_t GetTempNodeCount() const { return node_padding_; }
-  size_t GetPaddedNodeCount() const { return node_count_ + node_padding_; };
-  size_t GetAllocatedNodeCount() const { return node_alloc_; }
-  size_t GetPLVCount() const { return GetNodeCount() * plv_count_per_node_; };
-  size_t GetTempPLVCount() const { return GetTempNodeCount() * plv_count_per_node_; };
-  size_t GetPaddedPLVCount() const {
-    return GetPaddedNodeCount() * plv_count_per_node_;
-  };
-  size_t GetAllocatedPLVCount() const {
-    return GetAllocatedNodeCount() * plv_count_per_node_;
+
+  size_t GetNodeCount() const { return plv_handler_.GetNodeCount(); };
+  size_t GetSpareNodeCount() const { return plv_handler_.GetSpareNodeCount(); }
+  size_t GetAllocatedNodeCount() const { return plv_handler_.GetAllocatedNodeCount(); }
+  size_t GetPaddedNodeCount() const { return plv_handler_.GetPaddedNodeCount(); };
+  size_t GetPLVCount() const { return plv_handler_.GetPVCount(); };
+  size_t GetSparePLVCount() const { return plv_handler_.GetSparePVCount(); };
+  size_t GetPaddedPLVCount() const { return plv_handler_.GetPaddedPVCount(); };
+  size_t GetAllocatedPLVCount() const { return plv_handler_.GetAllocatedPVCount(); }
+
+  void SetNodeCount(const size_t node_count) { plv_handler_.SetNodeCount(node_count); }
+  void SetSpareNodeCount(const size_t node_spare_count) {
+    plv_handler_.SetSpareNodeCount(node_spare_count);
   }
+  void SetAllocatedNodeCount(const size_t node_alloc) {
+    plv_handler_.SetAllocatedNodeCount(node_alloc);
+  }
+
   size_t GetGPCSPCount() const { return gpcsp_count_; };
-  size_t GetTempGPCSPCount() const { return gpcsp_padding_; };
-  size_t GetPaddedGPCSPCount() const { return gpcsp_count_ + gpcsp_padding_; };
+  size_t GetSpareGPCSPCount() const { return gpcsp_spare_count_; };
   size_t GetAllocatedGPCSPCount() const { return gpcsp_alloc_; };
+  size_t GetPaddedGPCSPCount() const { return GetGPCSPCount() + GetSpareGPCSPCount(); };
+  size_t GetSpareGPCSPIndex(const size_t gpcsp_offset) const {
+    const size_t gpcsp_scratch_size = GetPaddedGPCSPCount() - GetGPCSPCount();
+    Assert(gpcsp_offset < gpcsp_scratch_size,
+           "Requested gpcsp_offset outside of allocated scratch space.");
+    return gpcsp_offset + GetGPCSPCount();
+  }
+
+  void SetGPCSPCount(const size_t gpcsp_count) { gpcsp_count_ = gpcsp_count; }
+  void SetSpareGPCSPCount(const size_t gpcsp_spare_count) {
+    gpcsp_spare_count_ = gpcsp_spare_count;
+  }
+  void SetAllocatedGPCSPCount(const size_t gpcsp_alloc) { gpcsp_alloc_ = gpcsp_alloc; }
 
  private:
   // Initialize PLVs and populate leaf PLVs with taxon site data.
@@ -223,21 +250,21 @@ class GPEngine {
   inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
                                                                      size_t src2_idx) {
     per_pattern_likelihood_second_derivatives_ =
-        (plvs_.at(src1_idx).transpose() * hessian_matrix_ * plvs_.at(src2_idx))
+        (GetPLV(src1_idx).transpose() * hessian_matrix_ * GetPLV(src2_idx))
             .diagonal()
             .array();
   }
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
                                                                size_t src2_idx) {
     per_pattern_likelihood_derivatives_ =
-        (plvs_.at(src1_idx).transpose() * derivative_matrix_ * plvs_.at(src2_idx))
+        (GetPLV(src1_idx).transpose() * derivative_matrix_ * GetPLV(src2_idx))
             .diagonal()
             .array();
   }
 
   inline void PrepareUnrescaledPerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
     per_pattern_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
+        (GetPLV(src1_idx).transpose() * transition_matrix_ * GetPLV(src2_idx))
             .diagonal()
             .array();
   }
@@ -248,7 +275,7 @@ class GPEngine {
   inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t src1_idx,
                                                       size_t src2_idx) {
     per_pattern_log_likelihoods_ =
-        (plvs_.at(src1_idx).transpose() * transition_matrix_ * plvs_.at(src2_idx))
+        (GetPLV(src1_idx).transpose() * transition_matrix_ * GetPLV(src2_idx))
             .diagonal()
             .array()
             .log() +
@@ -300,36 +327,21 @@ class GPEngine {
   // "Padding" is the amount of free working space added to end of occupied space.
   // "Alloc" is the total current memory allocation.
   // "Resizing factor" is the amount of extra storage allocated for when resizing.
+  // Note: All node and PLV counts are handled by the PLVHandler.
 
-  // Total number of nodes in DAG.
-  size_t node_count_ = 0;
-  size_t node_alloc_ = 0;
-  size_t node_padding_ = 2;
-  // PLV count is proportional to the node_count.
-  const size_t plv_count_per_node_ = 6;
-  // Total number of edges in DAG. Determines sizes of data vectors stored on edges like
-  // branch lengths.
+  // Total number of edges in DAG. Determines sizes of data vectors indexed on edges
+  // like branch lengths.
   size_t gpcsp_count_ = 0;
   size_t gpcsp_alloc_ = 0;
-  size_t gpcsp_padding_ = 3;
+  size_t gpcsp_spare_count_ = 3;
   // Growth factor when reallocating data.
   constexpr static double resizing_factor_ = 2.0;
 
   // ** Per-Node Data
 
-  // Master PLV: Large data block of virtual memory for Partial Likelihood Vectors.
-  // Subdivided into sections for plvs_.
-  std::string mmap_file_path_;
-  MmappedNucleotidePLV mmapped_master_plv_;
-  // Partial Likelihood Vectors.
-  // plvs_ store the following (see PLVHandler::GetPLVIndex):
-  // [0, num_nodes): p(s).
-  // [num_nodes, 2*num_nodes): phat(s_right).
-  // [2*num_nodes, 3*num_nodes): phat(s_left).
-  // [3*num_nodes, 4*num_nodes): rhat(s_right) = rhat(s_left).
-  // [4*num_nodes, 5*num_nodes): r(s_right).
-  // [5*num_nodes, 6*num_nodes): r(s_left).
-  NucleotidePLVRefVector plvs_;
+  // Partial Likelihood Vector Handler.
+  PLVHandler plv_handler_;
+  // Unconditional probabilites for each node in DAG.
   EigenVectorXd unconditional_node_probabilities_;
   // Rescaling count for each plv.
   EigenVectorXi rescaling_counts_;

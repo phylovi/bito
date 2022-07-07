@@ -30,7 +30,8 @@ void GPInstance::PrintStatus() {
             << dag_.TopologyCount() << " trees.\n";
   std::cout << dag_.EdgeCountWithLeafSubsplits() << " continuous parameters.\n";
   if (HasEngine()) {
-    std::cout << "Engine available using " << GetEngine()->PLVByteCount() / 1e9
+    std::cout << "Engine available using "
+              << GetEngine()->GetPLVHandler().GetByteCount() / 1e9
               << "G virtual memory.\n";
   } else {
     std::cout << "Engine has not been made.\n";

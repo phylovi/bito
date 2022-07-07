@@ -13,7 +13,7 @@
 #include "stopwatch.hpp"
 #include "tidy_subsplit_dag.hpp"
 #include "nni_engine.hpp"
-#include "plv_handler.hpp"
+#include "pv_handler.hpp"
 #include "topology_sampler.hpp"
 #include "choice_map.hpp"
 
@@ -241,10 +241,10 @@ TEST_CASE("GPInstance: gradient calculation") {
   size_t hello_node_count_without_dag_root_node = 5;
   size_t rootsplit_jupiter_idx = 2;
 
-  size_t leafward_idx = PLVHandler::GetPLVIndex(PLVType::P, child_id,
-                                                hello_node_count_without_dag_root_node);
-  size_t rootward_idx = PLVHandler::GetPLVIndex(PLVType::RLeft, rootsplit_id,
-                                                hello_node_count_without_dag_root_node);
+  size_t leafward_idx = PLVHandler::GetPVIndex(PLVType::P, child_id,
+                                               hello_node_count_without_dag_root_node);
+  size_t rootward_idx = PLVHandler::GetPVIndex(PLVType::RLeft, rootsplit_id,
+                                               hello_node_count_without_dag_root_node);
   OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
@@ -265,10 +265,10 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   size_t hello_node_count_without_dag_root_node = 5;
   size_t rootsplit_jupiter_idx = 2;
 
-  size_t leafward_idx = PLVHandler::GetPLVIndex(PLVType::P, child_id,
-                                                hello_node_count_without_dag_root_node);
-  size_t rootward_idx = PLVHandler::GetPLVIndex(PLVType::RLeft, rootsplit_id,
-                                                hello_node_count_without_dag_root_node);
+  size_t leafward_idx = PLVHandler::GetPVIndex(PLVType::P, child_id,
+                                               hello_node_count_without_dag_root_node);
+  size_t rootward_idx = PLVHandler::GetPVIndex(PLVType::RLeft, rootsplit_id,
+                                               hello_node_count_without_dag_root_node);
   OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
   std::tuple<double, double, double> log_lik_and_derivatives =
       engine->LogLikelihoodAndFirstTwoDerivatives(op);
@@ -1564,7 +1564,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
   for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     auto pre_nni_likelihood = GPInstGetNNILikelihood(graft_inst, pre_nni);
     prenni_graftdag_likelihoods.insert({pre_nni, pre_nni_likelihood});
-    size_t edge_idx = graft_gpengine.GetTempGPCSPIndex(nni_count);
+    size_t edge_idx = graft_gpengine.GetSpareGPCSPIndex(nni_count);
     double nni_likelihood = all_likelihoods[edge_idx];
     nni_graftdag_likelihoods.insert({nni, nni_likelihood});
     nni_count++;
