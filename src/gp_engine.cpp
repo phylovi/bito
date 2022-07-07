@@ -3,10 +3,8 @@
 
 #include "gp_engine.hpp"
 
-#include "plv_handler.hpp"
 #include "optimization.hpp"
 #include "sugar.hpp"
-#include "plv_handler.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
                    size_t plv_count_per_node, size_t gpcsp_count,
@@ -17,11 +15,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
     : site_pattern_(std::move(site_pattern)),
       rescaling_threshold_(rescaling_threshold),
       log_rescaling_threshold_(log(rescaling_threshold)),
-      plv_count_per_node_(plv_count_per_node),
-      mmap_file_path_(mmap_file_path),
-      mmapped_master_plv_(mmap_file_path_,
-                          (node_count + node_padding_) * plv_count_per_node_ *
-                              size_t(resizing_factor_) * site_pattern_.PatternCount()),
+      plv_handler_(mmap_file_path, 0, site_pattern_.PatternCount(), resizing_factor_),
       unconditional_node_probabilities_(std::move(unconditional_node_probabilities)),
       q_(std::move(sbn_prior)),
       inverted_sbn_prior_(std::move(inverted_sbn_prior)) {
@@ -36,7 +30,7 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
   // Initialize edge-based data
   GrowGPCSPs(gpcsp_count, std::nullopt, std::nullopt, true);
   // Initialize PLV temporaries.
-  quartet_root_plv_ = plvs_.at(0);
+  quartet_root_plv_ = GetPLV(0);
   quartet_root_plv_.setZero();
   quartet_r_s_plv_ = quartet_root_plv_;
   quartet_q_s_plv_ = quartet_root_plv_;
@@ -50,16 +44,16 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
 void GPEngine::InitializePriors(EigenVectorXd sbn_prior,
                                 EigenVectorXd unconditional_node_probabilities,
                                 EigenVectorXd inverted_sbn_prior) {
-  Assert(size_t(unconditional_node_probabilities.size()) == node_count_,
+  Assert(size_t(unconditional_node_probabilities.size()) == GetNodeCount(),
          "unconditional_node_probabilities is wrong size for GPEngine.");
-  Assert(size_t(sbn_prior.size()) == gpcsp_count_,
+  Assert(size_t(sbn_prior.size()) == GetGPCSPCount(),
          "sbn_prior is wrong size for GPEngine.");
-  Assert(size_t(inverted_sbn_prior.size()) == gpcsp_count_,
+  Assert(size_t(inverted_sbn_prior.size()) == GetGPCSPCount(),
          "inverted_sbn_prior is wrong size for GPEngine.");
-  unconditional_node_probabilities_.segment(0, node_count_) =
+  unconditional_node_probabilities_.segment(0, GetNodeCount()) =
       unconditional_node_probabilities;
-  q_.segment(0, gpcsp_count_) = sbn_prior;
-  inverted_sbn_prior_.segment(0, gpcsp_count_) = inverted_sbn_prior;
+  q_.segment(0, GetGPCSPCount()) = sbn_prior;
+  inverted_sbn_prior_.segment(0, GetGPCSPCount()) = inverted_sbn_prior;
 }
 
 void GPEngine::SetNullPrior() { q_.setConstant(1.0); }
@@ -72,18 +66,18 @@ void GPEngine::GrowPLVs(const size_t new_node_count,
                         const bool on_initialization) {
   const size_t old_node_count = GetNodeCount();
   const size_t old_plv_count = GetPLVCount();
-  node_count_ = new_node_count;
+  SetNodeCount(new_node_count);
   // Reallocate more space if needed.
   if ((GetPaddedNodeCount() > GetAllocatedNodeCount()) ||
       explicit_allocation.has_value()) {
-    node_alloc_ = size_t(ceil(double(GetPaddedNodeCount()) * resizing_factor_));
+    SetAllocatedNodeCount(
+        size_t(ceil(double(GetPaddedNodeCount()) * resizing_factor_)));
     if (explicit_allocation.has_value()) {
       Assert(explicit_allocation.value() >= GetNodeCount(),
              "Attempted to reallocate space smaller than node_count.");
-      node_alloc_ = explicit_allocation.value() + node_padding_;
+      SetAllocatedNodeCount(explicit_allocation.value() + GetSpareNodeCount());
     }
-    mmapped_master_plv_.Resize(GetAllocatedPLVCount() * site_pattern_.PatternCount());
-    plvs_ = mmapped_master_plv_.Subdivide(GetAllocatedPLVCount());
+    plv_handler_.Resize(new_node_count, GetAllocatedNodeCount());
     rescaling_counts_.conservativeResize(GetAllocatedPLVCount());
     unconditional_node_probabilities_.conservativeResize(GetAllocatedNodeCount());
   }
@@ -95,14 +89,14 @@ void GPEngine::GrowPLVs(const size_t new_node_count,
     unconditional_node_probabilities_.conservativeResize(GetPaddedNodeCount());
   }
   // Initialize new work space.
-  Assert((plvs_.back().rows() == MmappedNucleotidePLV::base_count_) &&
-             (plvs_.back().cols() ==
+  Assert((GetPLVs().back().rows() == MmappedNucleotidePLV::base_count_) &&
+             (GetPLVs().back().cols() ==
               static_cast<Eigen::Index>(site_pattern_.PatternCount())) &&
-             (size_t(plvs_.size()) == GetAllocatedPLVCount()),
+             (size_t(GetPLVs().size()) == GetAllocatedPLVCount()),
          "Didn't get the right shape of PLVs out of Subdivide.");
   for (size_t i = old_plv_count; i < GetPaddedPLVCount(); i++) {
     rescaling_counts_[i] = 0;
-    plvs_.at(i).setZero();
+    GetPLV(i).setZero();
   }
   for (size_t i = old_node_count; i < GetNodeCount(); i++) {
     if (!on_initialization) {
@@ -119,15 +113,17 @@ void GPEngine::GrowGPCSPs(const size_t new_gpcsp_count,
                           std::optional<const Reindexer> gpcsp_reindexer,
                           std::optional<const size_t> explicit_allocation,
                           const bool on_initialization) {
-  const size_t old_gpcsp_count = gpcsp_count_;
-  gpcsp_count_ = new_gpcsp_count;
+  const size_t old_gpcsp_count = GetGPCSPCount();
+  SetGPCSPCount(new_gpcsp_count);
   // Reallocate more space if needed.
-  if ((GetPaddedGPCSPCount() > gpcsp_alloc_) || explicit_allocation.has_value()) {
-    gpcsp_alloc_ = size_t(ceil(double(GetPaddedGPCSPCount()) * resizing_factor_));
+  if ((GetPaddedGPCSPCount() > GetAllocatedGPCSPCount()) ||
+      explicit_allocation.has_value()) {
+    SetAllocatedGPCSPCount(
+        size_t(ceil(double(GetPaddedGPCSPCount()) * resizing_factor_)));
     if (explicit_allocation.has_value()) {
       Assert(explicit_allocation.value() >= GetNodeCount(),
              "Attempted to reallocate space smaller than node_count.");
-      gpcsp_alloc_ = explicit_allocation.value() + gpcsp_padding_;
+      SetAllocatedGPCSPCount(explicit_allocation.value() + GetSpareGPCSPCount());
     }
     branch_lengths_.conservativeResize(GetAllocatedGPCSPCount());
     branch_length_differences_.conservativeResize(GetAllocatedGPCSPCount());
@@ -171,48 +167,28 @@ void GPEngine::GrowGPCSPs(const size_t new_gpcsp_count,
   }
 }
 
-void GPEngine::ReindexPLVs(const Reindexer node_reindexer,
+void GPEngine::ReindexPLVs(const Reindexer& node_reindexer,
                            const size_t old_node_count) {
-  Assert(node_reindexer.size() == node_count_,
+  Assert(node_reindexer.size() == GetNodeCount(),
          "Node Reindexer is the wrong size for GPEngine.");
-  Assert(node_reindexer.IsValid(node_count_), "Node Reindexer is not valid.");
+  Assert(node_reindexer.IsValid(GetNodeCount()), "Node Reindexer is not valid.");
 
   // Expand node_reindexer into plv_reindexer.
-  Reindexer plv_reindexer(node_count_ * plv_count_per_node_);
-  size_t new_data_idx = old_node_count * plv_count_per_node_;
-  for (size_t i = 0; i < node_count_; i++) {
-    const size_t old_node_idx = i;
-    const size_t new_node_idx = node_reindexer.GetNewIndexByOldIndex(old_node_idx);
-    for (const auto plv_type : PLVHandler::PLVTypeIterator()) {
-      // Either get input plv_index from old plvs, or get new plv_index (new data is
-      // irrelevant, so just get next available index).
-      size_t old_plv_idx;
-      if (old_node_idx < old_node_count) {
-        old_plv_idx = PLVHandler::GetPLVIndex(plv_type, old_node_idx, old_node_count);
-      } else {
-        old_plv_idx = new_data_idx;
-        new_data_idx++;
-      }
-      const size_t new_plv_idx =
-          PLVHandler::GetPLVIndex(plv_type, new_node_idx, node_count_);
-      plv_reindexer.SetReindex(old_plv_idx, new_plv_idx);
-    }
-  }
-  Assert(plv_reindexer.IsValid(GetPLVCount()), "PLV Reindexer is not valid.");
+  Reindexer plv_reindexer =
+      plv_handler_.BuildPVReindexer(node_reindexer, old_node_count, GetNodeCount());
   // Reindex data vectors
-  Reindexer::ReindexInPlace(plvs_, plv_reindexer, GetPLVCount(),
-                            plvs_.at(GetPLVCount()), plvs_.at(GetPLVCount() + 1));
+  plv_handler_.Reindex(plv_reindexer);
   Reindexer::ReindexInPlace<EigenVectorXi, int>(rescaling_counts_, plv_reindexer,
                                                 GetPLVCount());
   Reindexer::ReindexInPlace<EigenVectorXd, double>(unconditional_node_probabilities_,
                                                    node_reindexer, GetNodeCount());
 }
 
-void GPEngine::ReindexGPCSPs(const Reindexer gpcsp_reindexer,
+void GPEngine::ReindexGPCSPs(const Reindexer& gpcsp_reindexer,
                              const size_t old_gpcsp_count) {
-  Assert(gpcsp_reindexer.size() == gpcsp_count_,
+  Assert(gpcsp_reindexer.size() == GetGPCSPCount(),
          "GPCSP Reindexer is the wrong size for GPEngine.");
-  Assert(gpcsp_reindexer.IsValid(gpcsp_count_),
+  Assert(gpcsp_reindexer.IsValid(GetGPCSPCount()),
          "GPCSP Reindexer is not valid for GPEngine size.");
   // Reindex data vectors.
   Reindexer::ReindexInPlace<EigenVectorXd, double>(branch_lengths_, gpcsp_reindexer,
@@ -227,43 +203,29 @@ void GPEngine::ReindexGPCSPs(const Reindexer gpcsp_reindexer,
                                                    GetGPCSPCount());
 }
 
-void GPEngine::GrowTempPLVs(const size_t new_node_padding) {
-  if (new_node_padding > node_padding_) {
-    node_padding_ = new_node_padding;
-    GrowPLVs(node_count_);
+void GPEngine::GrowSparePLVs(const size_t new_node_spare_count) {
+  if (new_node_spare_count > GetSpareNodeCount()) {
+    SetSpareNodeCount(new_node_spare_count);
+    GrowPLVs(GetNodeCount());
   }
 }
 
-void GPEngine::GrowTempGPCSPs(const size_t new_gpcsp_padding) {
-  if (new_gpcsp_padding > gpcsp_padding_) {
-    gpcsp_padding_ = new_gpcsp_padding;
-    GrowGPCSPs(gpcsp_count_);
+void GPEngine::GrowSpareGPCSPs(const size_t new_gpcsp_spare_count) {
+  if (new_gpcsp_spare_count > GetSpareGPCSPCount()) {
+    SetSpareGPCSPCount(new_gpcsp_spare_count);
+    GrowGPCSPs(GetGPCSPCount());
   }
-}
-
-size_t GPEngine::GetTempPLVIndex(const size_t plv_offset) const {
-  const size_t plv_scratch_size = GetPaddedPLVCount() - GetPLVCount();
-  Assert(plv_offset < plv_scratch_size,
-         "Requested plv_offset outside of allocated scratch space.");
-  return plv_offset + GetPLVCount();
-}
-
-size_t GPEngine::GetTempGPCSPIndex(const size_t gpcsp_offset) const {
-  const size_t gpcsp_scratch_size = GetPaddedGPCSPCount() - GetGPCSPCount();
-  Assert(gpcsp_offset < gpcsp_scratch_size,
-         "Requested gpcsp_offset outside of allocated scratch space.");
-  return gpcsp_offset + GetGPCSPCount();
 }
 
 // ** GPOperations
 
 void GPEngine::operator()(const GPOperations::ZeroPLV& op) {
-  plvs_.at(op.dest_).setZero();
+  GetPLV(op.dest_).setZero();
   rescaling_counts_(op.dest_) = 0;
 }
 
 void GPEngine::operator()(const GPOperations::SetToStationaryDistribution& op) {
-  auto& plv = plvs_.at(op.dest_);
+  auto& plv = GetPLV(op.dest_);
   for (Eigen::Index row_idx = 0; row_idx < plv.rows(); ++row_idx) {
     // Multiplication by q_ avoids special treatment of the rhat vector for the
     // rootsplits.
@@ -290,8 +252,8 @@ void GPEngine::operator()(const GPOperations::IncrementWithWeightedEvolvedPLV& o
   // adding together things of radically different rescaling amounts. This appears
   // unavoidable without special-purpose truncation code, which doesn't seem
   // worthwhile.
-  plvs_.at(op.dest_) +=
-      rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * plvs_.at(op.src_);
+  GetPLV(op.dest_) +=
+      rescaling_factor * q_(op.gpcsp_) * transition_matrix_ * GetPLV(op.src_);
 }
 
 void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {  // NOLINT
@@ -308,7 +270,7 @@ void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
   // per-site marginal likelihood. It's an unconditional contribution because our
   // stationary distribution incorporates the prior on rootsplits.
   log_likelihoods_.row(op.rootsplit_) =
-      (plvs_.at(op.stationary_times_prior_).transpose() * plvs_.at(op.p_))
+      (GetPLV(op.stationary_times_prior_).transpose() * GetPLV(op.p_))
           .diagonal()
           .array()
           .log() +
@@ -322,7 +284,7 @@ void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
 }
 
 void GPEngine::operator()(const GPOperations::Multiply& op) {
-  plvs_.at(op.dest_).array() = plvs_.at(op.src1_).array() * plvs_.at(op.src2_).array();
+  GetPLV(op.dest_).array() = GetPLV(op.src1_).array() * GetPLV(op.src2_).array();
   rescaling_counts_(op.dest_) =
       rescaling_counts_(op.src1_) + rescaling_counts_(op.src2_);
   AssertPLVIsFinite(op.dest_, "Multiply dest_ is not finite");
@@ -409,9 +371,9 @@ void GPEngine::SetTransitionMatrixToHaveBranchLengthAndTranspose(double branch_l
 }
 
 void GPEngine::SetBranchLengths(EigenVectorXd branch_lengths) {
-  Assert(size_t(branch_lengths.size()) == gpcsp_count_,
+  Assert(size_t(branch_lengths.size()) == GetGPCSPCount(),
          "Size mismatch in GPEngine::SetBranchLengths.");
-  branch_lengths_.segment(0, gpcsp_count_) = branch_lengths;
+  branch_lengths_.segment(0, GetGPCSPCount()) = branch_lengths;
 };
 
 void GPEngine::SetBranchLengthsToConstant(double branch_length) {
@@ -437,7 +399,7 @@ void GPEngine::CopyNodeData(const size_t src_node_idx, const size_t dest_node_id
 void GPEngine::CopyPLVData(const size_t src_plv_idx, const size_t dest_plv_idx) {
   Assert((src_plv_idx < GetPaddedPLVCount()) && (dest_plv_idx < GetPaddedPLVCount()),
          "Cannot copy PLV data with src or dest index out-of-range.");
-  plvs_.at(dest_plv_idx) = plvs_.at(src_plv_idx);
+  GetPLV(dest_plv_idx) = GetPLV(src_plv_idx);
   rescaling_counts_[dest_plv_idx] = rescaling_counts_[src_plv_idx];
 }
 
@@ -457,7 +419,7 @@ double GPEngine::GetLogMarginalLikelihood() const {
 }
 
 EigenVectorXd GPEngine::GetBranchLengths() const {
-  return branch_lengths_.segment(0, gpcsp_count_);
+  return branch_lengths_.segment(0, GetGPCSPCount());
 };
 
 EigenVectorXd GPEngine::GetBranchLengths(const size_t start,
@@ -467,17 +429,17 @@ EigenVectorXd GPEngine::GetBranchLengths(const size_t start,
   return branch_lengths_.segment(start, length);
 };
 
-EigenVectorXd GPEngine::GetTempBranchLengths(const size_t start,
-                                             const size_t length) const {
-  return GetBranchLengths(GetTempGPCSPIndex(start), length);
+EigenVectorXd GPEngine::GetSpareBranchLengths(const size_t start,
+                                              const size_t length) const {
+  return GetBranchLengths(GetSpareGPCSPIndex(start), length);
 }
 
 EigenVectorXd GPEngine::GetBranchLengthDifferences() const {
-  return branch_length_differences_.segment(0, gpcsp_count_);
+  return branch_length_differences_.segment(0, GetGPCSPCount());
 };
 
 EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {
-  return log_likelihoods_.block(0, 0, gpcsp_count_, log_likelihoods_.cols()) *
+  return log_likelihoods_.block(0, 0, GetGPCSPCount(), log_likelihoods_.cols()) *
          site_pattern_weights_;
 };
 
@@ -489,9 +451,9 @@ EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods(const size_t start,
          site_pattern_weights_;
 };
 
-EigenVectorXd GPEngine::GetTempPerGPCSPLogLikelihoods(const size_t start,
-                                                      const size_t length) const {
-  return GetPerGPCSPLogLikelihoods(GetTempGPCSPIndex(start), length);
+EigenVectorXd GPEngine::GetSparePerGPCSPLogLikelihoods(const size_t start,
+                                                       const size_t length) const {
+  return GetPerGPCSPLogLikelihoods(GetSpareGPCSPIndex(start), length);
 }
 
 EigenVectorXd GPEngine::GetPerGPCSPComponentsOfFullLogMarginal() const {
@@ -500,7 +462,7 @@ EigenVectorXd GPEngine::GetPerGPCSPComponentsOfFullLogMarginal() const {
 };
 
 EigenConstMatrixXdRef GPEngine::GetLogLikelihoodMatrix() const {
-  return log_likelihoods_.block(0, 0, gpcsp_count_, log_likelihoods_.cols());
+  return log_likelihoods_.block(0, 0, GetGPCSPCount(), log_likelihoods_.cols());
 };
 
 EigenConstVectorXdRef GPEngine::GetHybridMarginals() const {
@@ -575,7 +537,7 @@ std::tuple<double, double, double> GPEngine::LogLikelihoodAndFirstTwoDerivatives
 }
 
 void GPEngine::InitializePLVsWithSitePatterns() {
-  for (auto& plv : plvs_) {
+  for (auto& plv : GetPLVs()) {
     plv.setZero();
   }
   size_t taxon_idx = 0;
@@ -584,9 +546,9 @@ void GPEngine::InitializePLVsWithSitePatterns() {
     for (const int symbol : pattern) {
       Assert(symbol >= 0, "Negative symbol!");
       if (symbol == MmappedNucleotidePLV::base_count_) {  // Gap character.
-        plvs_.at(taxon_idx).col(site_idx).setConstant(1.);
+        GetPLV(taxon_idx).col(site_idx).setConstant(1.);
       } else if (symbol < MmappedNucleotidePLV::base_count_) {
-        plvs_.at(taxon_idx)(symbol, site_idx) = 1.;
+        GetPLV(taxon_idx)(symbol, site_idx) = 1.;
       }
       site_idx++;
     }
@@ -600,16 +562,16 @@ void GPEngine::RescalePLV(size_t plv_idx, int rescaling_count) {
   }
   // else
   Assert(rescaling_count >= 0, "Negative rescaling count in RescalePLV.");
-  plvs_.at(plv_idx) /= pow(rescaling_threshold_, static_cast<double>(rescaling_count));
+  GetPLV(plv_idx) /= pow(rescaling_threshold_, static_cast<double>(rescaling_count));
   rescaling_counts_(plv_idx) += rescaling_count;
 }
 
 void GPEngine::AssertPLVIsFinite(size_t plv_idx, const std::string& message) const {
-  Assert(plvs_.at(plv_idx).array().isFinite().all(), message);
+  Assert(GetPLV(plv_idx).array().isFinite().all(), message);
 }
 
 std::pair<double, double> GPEngine::PLVMinMax(size_t plv_idx) const {
-  return {plvs_.at(plv_idx).minCoeff(), plvs_.at(plv_idx).maxCoeff()};
+  return {GetPLV(plv_idx).minCoeff(), GetPLV(plv_idx).maxCoeff()};
 }
 
 void GPEngine::RescalePLVIfNeeded(size_t plv_idx) {
@@ -880,14 +842,14 @@ EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
     // #328 note that for the general case we should transpose the transition matrix
     // when coming down the tree.
     SetTransitionMatrixToHaveBranchLength(branch_lengths_[rootward_tip.gpcsp_idx_]);
-    quartet_root_plv_ = transition_matrix_ * plvs_.at(rootward_tip.plv_idx_);
+    quartet_root_plv_ = transition_matrix_ * GetPLV(rootward_tip.plv_idx_);
     for (const auto& sister_tip : request.sister_tips_) {
       CheckRescaling(sister_tip.plv_idx_);
       // Form the PLV on the root side of the central edge.
       SetTransitionMatrixToHaveBranchLength(branch_lengths_[sister_tip.gpcsp_idx_]);
       quartet_r_s_plv_.array() =
           quartet_root_plv_.array() *
-          (transition_matrix_ * plvs_.at(sister_tip.plv_idx_)).array();
+          (transition_matrix_ * GetPLV(sister_tip.plv_idx_)).array();
       // Advance it along the edge.
       SetTransitionMatrixToHaveBranchLength(
           branch_lengths_[request.central_gpcsp_idx_]);
@@ -898,7 +860,7 @@ EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
         SetTransitionMatrixToHaveBranchLength(branch_lengths_[rotated_tip.gpcsp_idx_]);
         quartet_r_sorted_plv_.array() =
             quartet_q_s_plv_.array() *
-            (transition_matrix_ * plvs_.at(rotated_tip.plv_idx_)).array();
+            (transition_matrix_ * GetPLV(rotated_tip.plv_idx_)).array();
         for (const auto& sorted_tip : request.sorted_tips_) {
           CheckRescaling(sorted_tip.plv_idx_);
           // P(sigma_{ijkl} | \eta)
@@ -909,7 +871,7 @@ EigenVectorXd GPEngine::CalculateQuartetHybridLikelihoods(
           SetTransitionMatrixToHaveBranchLength(branch_lengths_[sorted_tip.gpcsp_idx_]);
           per_pattern_log_likelihoods_ =
               (quartet_r_sorted_plv_.transpose() * transition_matrix_ *
-               plvs_.at(sorted_tip.plv_idx_))
+               GetPLV(sorted_tip.plv_idx_))
                   .diagonal()
                   .array()
                   .log();
@@ -935,7 +897,7 @@ void GPEngine::ProcessQuartetHybridRequest(const QuartetHybridRequest& request) 
 
 std::string GPEngine::PLVToString(size_t plv_idx) const {
   std::stringstream out;
-  for (auto&& row : plvs_[plv_idx].rowwise()) {
+  for (auto&& row : GetPLV(plv_idx).rowwise()) {
     out << row << std::endl;
   }
   return out.str();

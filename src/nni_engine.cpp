@@ -202,9 +202,9 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaReference(
     temp_offset_1 = 0;
     temp_offset_2 = 1;
   }
-  post_key_idx[KeyIndex::Parent_RFocal] = gp_engine_.GetTempPLVIndex(temp_offset_1);
-  post_key_idx[KeyIndex::Child_P] = gp_engine_.GetTempPLVIndex(temp_offset_2);
-  post_key_idx[KeyIndex::Edge] = gp_engine_.GetTempGPCSPIndex(nni_count);
+  post_key_idx[KeyIndex::Parent_RFocal] = gp_engine_.GetSparePLVIndex(temp_offset_1);
+  post_key_idx[KeyIndex::Child_P] = gp_engine_.GetSparePLVIndex(temp_offset_2);
+  post_key_idx[KeyIndex::Edge] = gp_engine_.GetSpareGPCSPIndex(nni_count);
 
   // Copy over central edge data.
   for (const auto idx_type : {KeyIndex::Edge}) {
@@ -257,11 +257,11 @@ void NNIEngine::GrowEngineForAdjacentNNILikelihoods(const bool via_reference,
                                                     const bool use_unique_temps) {
   if (via_reference) {
     if (use_unique_temps) {
-      gp_engine_.GrowTempPLVs(2 * GetAdjacentNNICount());
+      gp_engine_.GrowSparePLVs(2 * GetAdjacentNNICount());
     } else {
-      gp_engine_.GrowTempPLVs(2);
+      gp_engine_.GrowSparePLVs(2);
     }
-    gp_engine_.GrowTempGPCSPs(GetAdjacentNNICount());
+    gp_engine_.GrowSpareGPCSPs(GetAdjacentNNICount());
   } else {
     gp_engine_.GrowPLVs(GetGraftDAG().NodeCountWithoutDAGRoot());
     gp_engine_.GrowGPCSPs(GetGraftDAG().EdgeCountWithLeafSubsplits());
@@ -275,7 +275,7 @@ void NNIEngine::ScoreAdjacentNNIsByLikelihood() {
   // Retrieve results from GPEngine and store in Scored NNIs.
   size_t nni_count = 0;
   const auto likelihoods =
-      gp_engine_.GetTempPerGPCSPLogLikelihoods(0, GetAdjacentNNICount());
+      gp_engine_.GetSparePerGPCSPLogLikelihoods(0, GetAdjacentNNICount());
   for (const auto &nni : GetAdjacentNNIs()) {
     scored_nnis_[nni] = likelihoods[nni_count];
   }

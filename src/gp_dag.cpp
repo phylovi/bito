@@ -4,13 +4,12 @@
 #include "gp_dag.hpp"
 
 #include "numerical_utils.hpp"
-#include "plv_handler.hpp"
 
 using namespace GPOperations;  // NOLINT
 using PLVType = PLVHandler::PLVType;
 
 size_t GPDAG::GetPLVIndex(PLVType plv_type, size_t node_idx) const {
-  return PLVHandler::GetPLVIndex(plv_type, node_idx, NodeCountWithoutDAGRoot());
+  return PLVHandler::GetPVIndex(plv_type, node_idx, NodeCountWithoutDAGRoot());
 }
 
 // The R PLV update that corresponds to our rotation status.

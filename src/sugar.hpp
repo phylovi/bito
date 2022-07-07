@@ -193,3 +193,39 @@ class EnumArray {
  private:
   std::array<DataType, EnumCount> array_;
 };
+
+// Generic Wrapper with collection of static functions for using class enum with
+// common data structures.
+template <class EnumType, class UnderlyingType, size_t EnumCount, EnumType FirstEnum,
+          EnumType LastEnum>
+class EnumWrapper {
+ public:
+  using Type = EnumType;
+  using Iterator = EnumIterator<EnumType, FirstEnum, LastEnum>;
+
+  template <class DataType>
+  using Array = EnumArray<EnumType, EnumCount, DataType>;
+
+  static inline const EnumType First = FirstEnum;
+  static inline const EnumType Last = LastEnum;
+  static inline const size_t Count = EnumCount;
+
+  static UnderlyingType GetIndex(const EnumType i) {
+    return static_cast<UnderlyingType>(i);
+  }
+
+  static std::array<Type, Count> TypeArray() {
+    std::array<Type, Count> arr;
+    size_t i = 0;
+    for (const auto e : Iterator()) {
+      arr[i++] = e;
+    }
+    return arr;
+  }
+
+  static std::string ToString(const EnumType i) {
+    std::stringstream os;
+    os << "Enum::" << std::to_string(GetIndex(i));
+    return os.str();
+  }
+};
