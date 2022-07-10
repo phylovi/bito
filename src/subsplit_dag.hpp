@@ -42,6 +42,16 @@
 #include "subsplit_dag_node.hpp"
 #include "node.hpp"
 
+struct NodeId : public IdType {
+  using IdType::IdType;
+};
+struct EdgeId : public IdType {
+  using IdType::IdType;
+};
+struct TaxonId : public IdType {
+  using IdType::IdType;
+};
+
 class SubsplitDAG {
  public:
   // ** Constructor methods:
@@ -131,10 +141,10 @@ class SubsplitDAG {
   // Each node in a topology is constructed with SubsplitDAGNode ID as Node ID.
   Node::NodePtrVec GenerateAllTopologies() const;
 
-  // ** Getters
+  // ** Access
 
   // Get Taxon's bitset clade positional id.
-  size_t GetTaxonId(const std::string &name) const;
+  TaxonId GetTaxonId(const std::string &name) const;
   // Get node based on node id.
   SubsplitDAGNode GetDAGNode(const size_t node_id) const;
   MutableSubsplitDAGNode GetDAGNode(const size_t node_id);
@@ -159,7 +169,7 @@ class SubsplitDAG {
   // Get sorted vector of all edge PCSP bitsets.
   std::vector<Bitset> GetSortedVectorOfEdgeBitsets() const;
   // Get reference to taxon map.
-  const std::map<std::string, size_t> &GetTaxonMap() const;
+  const std::map<std::string, TaxonId> &GetTaxonMap() const;
   // Get reference to subsplit -> node_id map.
   const BitsetSizeMap &GetSubsplitToIdMap() const;
   // Get reference to parent_node -> child_edge_range map.
@@ -540,7 +550,7 @@ class SubsplitDAG {
 
   // - Map of Taxon Names
   //    - [ Taxon Name => Taxon Id (position of the "on" bit in the clades) ]
-  std::map<std::string, size_t> dag_taxa_;
+  std::map<std::string, TaxonId> dag_taxa_;
   // - Map of all DAG Nodes:
   //    - [ Node Subsplit (Bitset) => Node Id ]
   // A node's id is equivalent to its index in dag_nodes_. The first entries are

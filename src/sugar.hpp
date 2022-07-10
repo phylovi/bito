@@ -152,6 +152,39 @@ std::unordered_map<Key, T> UnorderedMapOf(const std::vector<std::pair<Key, T>> &
   return m;
 }
 
+// Wrapper for strong typing of primitive types
+template <typename T>
+struct NamedType {
+  explicit NamedType(const T &value) : value_(value) {}
+
+  operator T &() { return value_; }
+  operator T() const { return value_; }
+
+  // Outputs Bitset string representation to stream.
+  friend std::ostream &operator<<(std::ostream &os, const NamedType<T> &t) {
+    os << t.value_;
+    return os;
+  }
+
+  T value_;
+};
+
+struct IdType : public NamedType<size_t> {
+  using NamedType<size_t>::NamedType;
+
+  // Outputs string representation to stream.
+  friend std::ostream &operator<<(std::ostream &os, const IdType &t) {
+    if (t.value_ == NoId) {
+      os << "NoId";
+    } else {
+      os << t.value_;
+    }
+    return os;
+  }
+
+  static constexpr size_t NoId = std::numeric_limits<size_t>::max();
+};
+
 // Generic Iterator for enum class types.
 // Requires that enum's underlying types have no gaps.
 template <typename EnumType, EnumType FirstEnum, EnumType LastEnum>

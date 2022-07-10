@@ -289,11 +289,11 @@ SizeBoolVectorMap SubsplitDAG::BuildEdgeIdxToPCSPBoolVectorMap() const {
   return edge_to_pcsp_map;
 }
 
-size_t SubsplitDAG::GetTaxonId(const std::string &name) const {
+TaxonId SubsplitDAG::GetTaxonId(const std::string &name) const {
   Assert(
       ContainsTaxon(name),
       "SubsplitDAG::GetTaxonId(): Taxon with given name is not contained in the DAG.");
-  return dag_taxa_.find(name)->second;
+  return TaxonId(dag_taxa_.find(name)->second);
 }
 
 SubsplitDAGNode SubsplitDAG::GetDAGNode(const size_t node_id) const {
@@ -381,7 +381,7 @@ std::vector<Bitset> SubsplitDAG::GetSortedVectorOfEdgeBitsets() const {
   return edges;
 }
 
-const std::map<std::string, size_t> &SubsplitDAG::GetTaxonMap() const {
+const std::map<std::string, TaxonId> &SubsplitDAG::GetTaxonMap() const {
   return dag_taxa_;
 }
 
@@ -661,7 +661,7 @@ void SubsplitDAG::BuildTaxonMap(const TagStringMap &tag_taxon_map) {
   for (const auto &[tag, name] : tag_taxon_map) {
     // The "tag" key of the tree_collection's taxon_map is 2 bitpacked ints: [id,
     // topology count]. We only care about the id.
-    size_t id = static_cast<size_t>(UnpackFirstInt(tag));
+    TaxonId id = TaxonId(static_cast<size_t>(UnpackFirstInt(tag)));
     dag_taxa_.insert(std::make_pair(name, id));
   }
 }
@@ -1373,8 +1373,8 @@ bool SubsplitDAG::IsValidAddNodePair(const Bitset &parent_subsplit,
 bool SubsplitDAG::IsValidTaxonMap() const {
   std::vector<bool> id_exists(TaxonCount());
   // Get all ids from map.
-  for (const auto &name_id : dag_taxa_) {
-    size_t taxon_id = name_id.second;
+  for (const auto &[name, taxon_id] : dag_taxa_) {
+    std::ignore = name;
     if (taxon_id > id_exists.size()) {
       return false;
     }
