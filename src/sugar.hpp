@@ -169,6 +169,16 @@ struct NamedType {
   T value_;
 };
 
+// Hash functions for NamedType.
+namespace std {
+template <typename T>
+struct hash<NamedType<T>> {
+  size_t operator()(const NamedType<T> &id) const noexcept {
+    return std::hash<T>(id.value_);
+  }
+};
+}  // namespace std
+
 struct IdType : public NamedType<size_t> {
   using NamedType<size_t>::NamedType;
 

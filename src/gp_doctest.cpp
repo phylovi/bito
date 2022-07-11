@@ -595,8 +595,8 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
       0.5,                           // 6
       0.5,                           // 7
       // We have 0.5 from node 9, but that's split proportionally to the probability
-      // of each potential parent. Nodes 12 and 14 are equally likely parents of node 9, so we
-      // have 0.5 for the inverted PCSP probability.
+      // of each potential parent. Nodes 12 and 14 are equally likely parents of node 9,
+      // so we have 0.5 for the inverted PCSP probability.
       0.5,      // 8
       1.,       // 9
       1.,       // 10
@@ -1756,4 +1756,12 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
     CHECK_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
                   "Edge resulted in an invalid Topology not contained in DAG.");
   }
+}
+
+// Simple tests for Ids.
+TEST_CASE("Strict Ids") {
+  // Test that implicit conversions are not allowed.
+  // Test that comparisons against primitives are allowed.
+  // Test that comparisons against IdTypes are not allowed.
+  // Test that ordered and unordered hash maps work.
 }
