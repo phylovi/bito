@@ -1760,8 +1760,24 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
 
 // Simple tests for Ids.
 TEST_CASE("Strict Ids") {
+  std::cout << "Strict Ids" << std::endl;
+  EdgeId edge_id(42);
+  NodeId node_id(42);
+  TaxonId taxon_id(42);
+  size_t size_id = 42;
   // Test that implicit conversions are not allowed.
+
   // Test that comparisons against primitives are allowed.
   // Test that comparisons against IdTypes are not allowed.
+  CHECK((edge_id == node_id));
+  CHECK((size_id == edge_id));
+
   // Test that ordered and unordered hash maps work.
+  auto id_hash = std::hash<IdType>()(node_id);
+  std::cout << "Node Hash: " << node_id << " -- " << id_hash << std::endl;
+
+  // auto node_hash = std::hash<NodeId>()(node_id);
+  // std::cout << "Node Hash: " << node_id << " -- " << node_hash << std::endl;
+
+  // std::unordered_map<NodeId, EdgeId> bitset_node_map;
 }

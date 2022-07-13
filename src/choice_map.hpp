@@ -17,10 +17,10 @@ class ChoiceMap {
  public:
   // Per-edge choices of best adjacent edges.
   struct EdgeChoice {
-    size_t parent_edge_id = NoId;
-    size_t sister_edge_id = NoId;
-    size_t left_child_edge_id = NoId;
-    size_t right_child_edge_id = NoId;
+    EdgeId parent_edge_id = EdgeId(NoId);
+    EdgeId sister_edge_id = EdgeId(NoId);
+    EdgeId left_child_edge_id = EdgeId(NoId);
+    EdgeId right_child_edge_id = EdgeId(NoId);
     double tree_likelihood = -INFINITY;
   };
   using EdgeChoiceVector = std::vector<EdgeChoice>;
@@ -45,10 +45,10 @@ class ChoiceMap {
 
   // A TreeMask is a set of edge Ids, which represent a tree contained in
   // the DAG, from the selected subset of DAG edges.
-  using TreeMask = std::set<size_t>;
+  using TreeMask = std::set<EdgeId>;
   // Extract TreeMask from DAG based on edge choices to find best tree with given
   // central edge.
-  TreeMask ExtractTreeMask(const size_t central_edge_id) const;
+  TreeMask ExtractTreeMask(const EdgeId central_edge_id) const;
   // Checks that TreeMask represents a valid, complete tree in the DAG.
   // Specifically, checks that:
   // - There is a single edge that goes to the root.
@@ -63,7 +63,7 @@ class ChoiceMap {
 
   // Extract Topology from DAG based on edge choices to find best tree with given
   // central edge.
-  Node::NodePtr ExtractTopology(const size_t central_edge_id) const;
+  Node::NodePtr ExtractTopology(const EdgeId central_edge_id) const;
   Node::NodePtr ExtractTopology(const TreeMask &tree_mask) const;
 
   // ** I/O
@@ -80,10 +80,10 @@ class ChoiceMap {
   enum class AdjacentNode { Parent, LeftChild, RightChild };
   template <typename T>
   using AdjacentNodeArray = EnumArray<AdjacentNode, 3, T>;
-  using ExpandedTreeMask = std::map<size_t, AdjacentNodeArray<size_t>>;
+  using ExpandedTreeMask = std::map<NodeId, AdjacentNodeArray<NodeId>>;
 
   // Extract an ExpandedTreeMask from DAG based on a central edge or previous TreeMask.
-  ExpandedTreeMask ExtractExpandedTreeMask(const size_t central_edge_id) const;
+  ExpandedTreeMask ExtractExpandedTreeMask(const EdgeId central_edge_id) const;
   ExpandedTreeMask ExtractExpandedTreeMask(const TreeMask &tree_mask) const;
   // Extract Tree based on given ExpandedTreeMask.
   Node::NodePtr ExtractTopology(ExpandedTreeMask &tree_mask_ext) const;

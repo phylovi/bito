@@ -24,16 +24,16 @@ class TidySubsplitDAG : public SubsplitDAG {
 
   // What nodes are above or below the specified node? We consider a node to be both
   // above and below itself (this just happens to be handy for the implementation).
-  EigenArrayXb BelowNode(size_t node_id);
+  EigenArrayXb BelowNode(NodeId node_id);
   // These use a different convention of rotated, then node id, reflecting that we are
   // asking the question "which `rotated` nodes are above node_id"?
-  EigenArrayXbRef BelowNode(bool rotated, size_t node_id);
-  EigenArrayXb AboveNode(size_t node_id) const;
-  EigenArrayXb AboveNode(bool rotated, size_t node_id) const;
+  EigenArrayXbRef BelowNode(bool is_edge_on_left, NodeId node_id);
+  EigenArrayXb AboveNode(NodeId node_id) const;
+  EigenArrayXb AboveNode(bool is_edge_on_left, NodeId node_id) const;
 
-  EigenArrayXbRef DirtyVector(bool rotated);
-  bool IsDirtyBelow(size_t node_id, bool rotated);
-  void SetDirtyStrictlyAbove(size_t node_id);
+  EigenArrayXbRef DirtyVector(bool is_edge_on_left);
+  bool IsDirtyBelow(NodeId node_id, bool is_edge_on_left);
+  void SetDirtyStrictlyAbove(NodeId node_id);
   void SetClean();
 
   std::string AboveMatricesAsString() const;
@@ -70,17 +70,17 @@ class TidySubsplitDAG : public SubsplitDAG {
   template <typename TidyTraversalActionT>
   void DepthFirstWithTidyAction(const SizeVector &starting_nodes,
                                 const TidyTraversalActionT &action) {
-    std::unordered_set<size_t> visited_nodes;
+    std::unordered_set<NodeId> visited_nodes;
     for (const auto &node_id : starting_nodes) {
-      DepthFirstWithTidyActionForNode(action, node_id, visited_nodes);
+      DepthFirstWithTidyActionForNode(action, NodeId(node_id), visited_nodes);
     }
   };
 
   // The portion of the traversal that is below a given node.
   template <typename TidyTraversalActionT>
   void DepthFirstWithTidyActionForNode(const TidyTraversalActionT &action,
-                                       size_t node_id,
-                                       std::unordered_set<size_t> &visited_nodes) {
+                                       NodeId node_id,
+                                       std::unordered_set<NodeId> &visited_nodes) {
     action.BeforeNode(node_id);
     // #288 #321 Here we are doing true and then false (left and then right).
     // This means that we get an update with the MotivatingExample as coded.
@@ -93,35 +93,37 @@ class TidySubsplitDAG : public SubsplitDAG {
   // Do not recur into leaf nodes.
   template <typename TidyTraversalActionT>
   void DepthFirstWithTidyActionForNodeClade(const TidyTraversalActionT &action,
-                                            size_t node_id, bool rotated,
-                                            std::unordered_set<size_t> &visited_nodes) {
+                                            NodeId node_id, bool is_edge_on_left,
+                                            std::unordered_set<NodeId> &visited_nodes) {
     if (updating_below_) {
-      UpdateWithTidyActionForNodeClade(action, node_id, rotated, visited_nodes);
+      UpdateWithTidyActionForNodeClade(action, node_id, is_edge_on_left, visited_nodes);
     } else {
-      ModifyWithTidyActionForNodeClade(action, node_id, rotated, visited_nodes);
+      ModifyWithTidyActionForNodeClade(action, node_id, is_edge_on_left, visited_nodes);
     }
   };
 
   // Recursively perform updates under this node-clade.
   template <typename TidyTraversalActionT>
   void UpdateWithTidyActionForNodeClade(const TidyTraversalActionT &action,
-                                        size_t node_id, bool rotated,
-                                        std::unordered_set<size_t> &visited_nodes) {
-    if (IsDirtyBelow(node_id, rotated)) {
+                                        NodeId node_id, bool is_edge_on_left,
+                                        std::unordered_set<NodeId> &visited_nodes) {
+    if (IsDirtyBelow(node_id, is_edge_on_left)) {
       const auto node = GetDAGNode(node_id);
-      for (const size_t child_id : node.GetLeafward(rotated)) {
-        if (!GetDAGNode(child_id).IsLeaf()) {
+      for (const auto child_id : node.GetLeafward(is_edge_on_left)) {
+        if (!GetDAGNode(NodeId(child_id)).IsLeaf()) {
           // #288 Here we are doing true and then false (left and then right).
-          DepthFirstWithTidyActionForNodeClade(action, child_id, true, visited_nodes);
-          DepthFirstWithTidyActionForNodeClade(action, child_id, false, visited_nodes);
-          action.AfterNode(child_id);
+          DepthFirstWithTidyActionForNodeClade(action, NodeId(child_id), true,
+                                               visited_nodes);
+          DepthFirstWithTidyActionForNodeClade(action, NodeId(child_id), false,
+                                               visited_nodes);
+          action.AfterNode(NodeId(child_id));
         }
-        action.UpdateEdge(node_id, child_id, rotated);
-        DirtyVector(rotated)[node_id] = false;
+        action.UpdateEdge(node_id, NodeId(child_id), is_edge_on_left);
+        DirtyVector(is_edge_on_left)[node_id] = false;
       }
     }
     // When we get to this point, everything is clean below node_id,rotated.
-    if (*updating_below_ == std::make_pair(node_id, rotated)) {
+    if (*updating_below_ == std::make_pair(node_id, is_edge_on_left)) {
       // We have completed updating our original goal of updating, and can turn off
       // updating mode.
       updating_below_ = std::nullopt;
@@ -132,28 +134,29 @@ class TidySubsplitDAG : public SubsplitDAG {
   // appropriate.
   template <typename TidyTraversalActionT>
   void ModifyWithTidyActionForNodeClade(const TidyTraversalActionT &action,
-                                        size_t node_id, bool rotated,
-                                        std::unordered_set<size_t> &visited_nodes) {
+                                        NodeId node_id, bool is_edge_on_left,
+                                        std::unordered_set<NodeId> &visited_nodes) {
     // We are in modifying mode.
     // If the _other_ clade is dirty, then go into updating mode and recur into it.
-    if (IsDirtyBelow(node_id, !rotated)) {
-      updating_below_ = {node_id, !rotated};
-      UpdateWithTidyActionForNodeClade(action, node_id, !rotated, visited_nodes);
+    if (IsDirtyBelow(node_id, !is_edge_on_left)) {
+      updating_below_ = {node_id, !is_edge_on_left};
+      UpdateWithTidyActionForNodeClade(action, node_id, !is_edge_on_left,
+                                       visited_nodes);
     }
     // When we get to this point, the other clade is clean and we can proceed.
-    action.BeforeNodeClade(node_id, rotated);
+    action.BeforeNodeClade(node_id, is_edge_on_left);
     const auto node = GetDAGNode(node_id);
-    for (const size_t child_id : node.GetLeafward(rotated)) {
-      if (visited_nodes.count(child_id) == 0) {
-        visited_nodes.insert(child_id);
-        if (!GetDAGNode(child_id).IsLeaf()) {
-          DepthFirstWithTidyActionForNode(action, child_id, visited_nodes);
+    for (const auto child_id : node.GetLeafward(is_edge_on_left)) {
+      if (visited_nodes.count(NodeId(child_id)) == 0) {
+        visited_nodes.insert(NodeId(child_id));
+        if (!GetDAGNode(NodeId(child_id)).IsLeaf()) {
+          DepthFirstWithTidyActionForNode(action, NodeId(child_id), visited_nodes);
         }
       }
-      action.ModifyEdge(node_id, child_id, rotated);
+      action.ModifyEdge(node_id, NodeId(child_id), is_edge_on_left);
       SetDirtyStrictlyAbove(node_id);
       // We assume that ModifyEdge leaves (node_id, rotated) in a clean state.
-      DirtyVector(rotated)[node_id] = false;
+      DirtyVector(is_edge_on_left)[node_id] = false;
     }
   };
 
@@ -167,11 +170,11 @@ class TidySubsplitDAG : public SubsplitDAG {
   // Set the below matrix up to have all of the nodes below src_id below the
   // subsplit-clade described by (dst_rotated, dst_id). Meant to be used as part of a
   // depth-first traversal.
-  void SetBelow(size_t dst_id, bool dst_rotated, size_t src_id);
+  void SetBelow(NodeId dst_id, bool dst_on_left, NodeId src_id);
 
   // If this is set then we are in an "updating mode", where we are updating below the
   // specified node-clade.
-  std::optional<std::pair<size_t, bool>> updating_below_;
+  std::optional<std::pair<NodeId, bool>> updating_below_;
 
   // above_rotated_(i,j) is true iff i,true is above j.
   EigenMatrixXb above_rotated_;

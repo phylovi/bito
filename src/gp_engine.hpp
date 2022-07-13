@@ -16,6 +16,7 @@
 #include "site_pattern.hpp"
 #include "substitution_model.hpp"
 #include "reindexer.hpp"
+#include "subsplit_dag_storage.hpp"
 
 class GPEngine {
  public:
@@ -161,13 +162,14 @@ class GPEngine {
 
   // Use branch lengths from loaded sample as a starting point for optimization.
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
-                             const BitsetSizeMap& indexer);
+                             const BitsetEdgeIdMap& indexer);
 
   // Gather branch lengths from loaded sample with their corresponding pcsp.
   SizeDoubleVectorMap GatherBranchLengths(const RootedTreeCollection& tree_collection,
-                                          const BitsetSizeMap& indexer);
+                                          const BitsetEdgeIdMap& indexer);
+  //
   void FunctionOverRootedTreeCollection(
-      std::function<void(size_t, const RootedTree&, const Node*)>
+      std::function<void(EdgeId, const RootedTree&, const Node*)>
           function_on_tree_node_by_gpcsp,
       const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer);
 

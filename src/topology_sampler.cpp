@@ -75,13 +75,13 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParentNodeAndEd
   if (sampled_index < left.size()) {
     auto parent = left.begin();
     std::advance(parent, sampled_index);
-    return {session.dag_.GetDAGNode(parent.GetNodeId()),
-            session.dag_.GetDAGEdge(parent.GetEdge())};
+    return {session.dag_.GetDAGNode(NodeId(parent.GetNodeId())),
+            session.dag_.GetDAGEdge(EdgeId(parent.GetEdge()))};
   }  // else
   auto parent = right.begin();
   std::advance(parent, sampled_index - left.size());
-  return {session.dag_.GetDAGNode(parent.GetNodeId()),
-          session.dag_.GetDAGEdge(parent.GetEdge())};
+  return {session.dag_.GetDAGNode(NodeId(parent.GetNodeId())),
+          session.dag_.GetDAGEdge(EdgeId(parent.GetEdge()))};
 }
 
 std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChildNodeAndEdge(
@@ -96,8 +96,8 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChildNodeAndEdg
   i = static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
   auto child = neighbors.begin();
   std::advance(child, i);
-  return {session.dag_.GetDAGNode(child.GetNodeId()),
-          session.dag_.GetDAGEdge(child.GetEdge())};
+  return {session.dag_.GetDAGNode(NodeId(child.GetNodeId())),
+          session.dag_.GetDAGEdge(EdgeId(child.GetEdge()))};
 }
 
 Node::NodePtr TopologySampler::BuildTree(SamplingSession& session,

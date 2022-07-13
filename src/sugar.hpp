@@ -152,49 +152,6 @@ std::unordered_map<Key, T> UnorderedMapOf(const std::vector<std::pair<Key, T>> &
   return m;
 }
 
-// Wrapper for strong typing of primitive types
-template <typename T>
-struct NamedType {
-  explicit NamedType(const T &value) : value_(value) {}
-
-  operator T &() { return value_; }
-  operator T() const { return value_; }
-
-  // Outputs Bitset string representation to stream.
-  friend std::ostream &operator<<(std::ostream &os, const NamedType<T> &t) {
-    os << t.value_;
-    return os;
-  }
-
-  T value_;
-};
-
-// Hash functions for NamedType.
-namespace std {
-template <typename T>
-struct hash<NamedType<T>> {
-  size_t operator()(const NamedType<T> &id) const noexcept {
-    return std::hash<T>(id.value_);
-  }
-};
-}  // namespace std
-
-struct IdType : public NamedType<size_t> {
-  using NamedType<size_t>::NamedType;
-
-  // Outputs string representation to stream.
-  friend std::ostream &operator<<(std::ostream &os, const IdType &t) {
-    if (t.value_ == NoId) {
-      os << "NoId";
-    } else {
-      os << t.value_;
-    }
-    return os;
-  }
-
-  static constexpr size_t NoId = std::numeric_limits<size_t>::max();
-};
-
 // Generic Iterator for enum class types.
 // Requires that enum's underlying types have no gaps.
 template <typename EnumType, EnumType FirstEnum, EnumType LastEnum>
@@ -222,7 +179,7 @@ class EnumIterator {
 template <class EnumType, size_t EnumCount, class DataType>
 class EnumArray {
  public:
-  EnumArray() = default;
+  EnumArray() : array_() {}
   EnumArray(DataType fill_value) { array_.fill(fill_value); }
   EnumArray(std::array<DataType, EnumCount> array) : array_(std::move(array)) {}
 
@@ -272,3 +229,88 @@ class EnumWrapper {
     return os.str();
   }
 };
+
+// TODO: Clean up StrongTypes to match FluentC --
+// https://www.fluentcpp.com/2017/05/30/implementing-a-hash-function-for-strong-types/
+
+// // Generic Strong Type (Wrapper for primitive).
+// // https://www.fluentcpp.com/2016/12/08/strong-types-for-strong-interfaces/
+// template <typename T, typename Parameter>
+// class NamedType {
+//  public:
+//   explicit NamedType(T const &value) : value_(value) {}
+//   explicit NamedType(T &&value) : value_(std::move(value)) {}
+//   T &get() { return value_; }
+//   T const &get() const { return value_; }
+//   explicit operator T &() { return value_; }
+//   explicit operator T() const { return value_; }
+
+//  private:
+//   T value_;
+// };
+
+// // Hashable attribute.
+// template <typename T>
+// struct Hashable {
+//   static constexpr bool is_hashable = true;
+// };
+
+// // Generic StrongType Hash Function.
+// namespace std {
+// template <typename T, typename Parameter, typename Converter,
+//           template <typename> class... Skills>
+// struct hash<NamedTypeImpl<T, Parameter, Converter, Skills...>> {
+//   using NamedType = NamedTypeImpl<T, Parameter, Converter, Skills...>;
+//   using checkIfHashable = typename std::enable_if<NamedType::is_hashable,
+//   void>::type;
+
+//   size_t operator()(NamedTypeImpl<T, Parameter, Converter, Skills...> const &x) const
+//   {
+//     return std::hash<T>()(x.get());
+//   }
+// };
+// }  // namespace std
+
+// Wrapper for strict typing of primitive types
+template <typename T>
+struct StrictType {
+  explicit StrictType(const T &value) : value_(value) {}
+
+  operator T &() { return value_; }
+  operator T() const { return value_; }
+
+  // Outputs Bitset string representation to stream.
+  friend std::ostream &operator<<(std::ostream &os, const StrictType<T> &t) {
+    os << t.value_;
+    return os;
+  }
+
+  T value_;
+};
+
+struct IdType : public StrictType<size_t> {
+  using StrictType<size_t>::StrictType;
+
+  // Outputs string representation to stream.
+  friend std::ostream &operator<<(std::ostream &os, const IdType &t) {
+    if (t.value_ == NoId) {
+      os << "NoId";
+    } else {
+      os << t.value_;
+    }
+    return os;
+  }
+
+  static constexpr size_t NoId = std::numeric_limits<size_t>::max();
+};
+
+// Hash functions for StrictType.
+namespace std {
+template <>
+struct hash<IdType> {
+  std::size_t operator()(const IdType &id) const noexcept {
+    std::size_t value_hash = std::hash<size_t>()(id.value_);
+    return value_hash;
+  }
+};
+}  // namespace std

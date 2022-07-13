@@ -99,18 +99,18 @@ bool GraftDAG::ContainsGraftNode(const Bitset node_subsplit) const {
   return !IsNodeFromHost(GetDAGNodeId(node_subsplit));
 }
 
-bool GraftDAG::ContainsGraftNode(const size_t node_id) const {
+bool GraftDAG::ContainsGraftNode(const NodeId node_id) const {
   if (IsNodeFromHost(node_id)) return false;
   return ContainsNode(node_id);
 }
 
-bool GraftDAG::ContainsGraftEdge(const size_t parent_id, const size_t child_id) const {
+bool GraftDAG::ContainsGraftEdge(const NodeId parent_id, const NodeId child_id) const {
   auto edge = storage_.GetLine(parent_id, child_id);
   if (!edge.has_value()) return false;
   return !IsEdgeFromHost(edge.value().GetId());
 }
 
-bool GraftDAG::ContainsGraftEdge(const size_t edge_idx) const {
+bool GraftDAG::ContainsGraftEdge(const EdgeId edge_idx) const {
   auto edge = storage_.GetLine(edge_idx);
   if (!edge.has_value()) return false;
   return !IsEdgeFromHost(edge.value().GetId());
@@ -118,6 +118,6 @@ bool GraftDAG::ContainsGraftEdge(const size_t edge_idx) const {
 
 // ** Miscellaneous
 
-size_t GraftDAG::GetPLVIndex(PLVHandler::PLVType plv_type, size_t node_idx) const {
-  return PLVHandler::GetPVIndex(plv_type, node_idx, NodeCountWithoutDAGRoot());
+size_t GraftDAG::GetPLVIndex(PLVHandler::PLVType plv_type, NodeId node_id) const {
+  return PLVHandler::GetPVIndex(plv_type, node_id, NodeCountWithoutDAGRoot());
 }

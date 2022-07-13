@@ -31,7 +31,7 @@ static inline void RemapNeighbors(NeighborsView neighbors,
                                   const SizeVector& node_reindexer) {
   std::map<VertexId, LineId> remapped;
   for (auto i = neighbors.begin(); i != neighbors.end(); ++i) {
-    remapped[node_reindexer[*i]] = i.GetEdge();
+    remapped[node_reindexer[*i]] = size_t(i.GetEdge());
   }
   neighbors.SetNeighbors(remapped);
 }
@@ -50,7 +50,7 @@ class GenericSubsplitDAGNode {
   static int CompareBySubsplit(const SubsplitDAGNode& node_a,
                                const SubsplitDAGNode& node_b);
 
-  size_t Id() const { return node_.GetId(); }
+  NodeId Id() const { return NodeId(node_.GetId()); }
   const Bitset& GetBitset() const { return node_.GetSubsplit(); }
   const Bitset GetBitset(bool rotated) const {
     return rotated ? node_.GetSubsplit().SubsplitRotate() : node_.GetSubsplit();
@@ -71,7 +71,7 @@ class GenericSubsplitDAGNode {
 
   // ** Edges
 
-  void AddEdge(size_t adjacent_node_id, bool is_leafward, bool is_left,
+  void AddEdge(NodeId adjacent_node_id, bool is_leafward, bool is_left,
                LineId edge_id) {
     if (is_leafward) {
       is_left ? AddLeftLeafward(adjacent_node_id, edge_id)
@@ -82,23 +82,23 @@ class GenericSubsplitDAGNode {
     }
   }
 
-  void AddEdge(size_t adjacent_node_id, Direction which_direction,
+  void AddEdge(NodeId adjacent_node_id, Direction which_direction,
                SubsplitClade which_clade, LineId edge_id) {
     bool is_leafward = (which_direction == Direction::Leafward);
     bool is_left = (which_clade == SubsplitClade::Left);
     AddEdge(adjacent_node_id, is_leafward, is_left, edge_id);
   }
 
-  void AddLeftLeafward(size_t node_id, LineId edge_id) {
+  void AddLeftLeafward(NodeId node_id, LineId edge_id) {
     node_.AddNeighbor(Direction::Leafward, SubsplitClade::Left, node_id, edge_id);
   }
-  void AddRightLeafward(size_t node_id, LineId edge_id) {
+  void AddRightLeafward(NodeId node_id, LineId edge_id) {
     node_.AddNeighbor(Direction::Leafward, SubsplitClade::Right, node_id, edge_id);
   }
-  void AddLeftRootward(size_t node_id, LineId edge_id) {
+  void AddLeftRootward(NodeId node_id, LineId edge_id) {
     node_.AddNeighbor(Direction::Rootward, SubsplitClade::Left, node_id, edge_id);
   }
-  void AddRightRootward(size_t node_id, LineId edge_id) {
+  void AddRightRootward(NodeId node_id, LineId edge_id) {
     node_.AddNeighbor(Direction::Rootward, SubsplitClade::Right, node_id, edge_id);
   }
 
@@ -115,7 +115,7 @@ class GenericSubsplitDAGNode {
     return node_.GetNeighbors(direction, clade);
   }
 
-  void AddEdge(size_t adjacent_node_id, LineId edge_id, Direction which_direction,
+  void AddEdge(NodeId adjacent_node_id, LineId edge_id, Direction which_direction,
                SubsplitClade which_clade) {
     node_.AddNeighbor(which_direction, which_clade, adjacent_node_id, edge_id);
   }

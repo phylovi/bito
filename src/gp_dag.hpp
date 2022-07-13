@@ -23,7 +23,7 @@ class GPDAG : public TidySubsplitDAG {
   using TidySubsplitDAG::TidySubsplitDAG;
 
   // Get the GPEngine index of given PLV type and given node index.
-  size_t GetPLVIndex(PLVType plv_type, size_t node_idx) const;
+  size_t GetPLVIndex(PLVType plv_type, NodeId node_id) const;
 
   // ** GPOperations:
   // These methods generate a serial vector of operations, but perform no computation.
@@ -56,25 +56,26 @@ class GPDAG : public TidySubsplitDAG {
   // Set p-PLVs to zero.
   [[nodiscard]] GPOperationVector SetRootwardZero() const;
 
-  QuartetHybridRequest QuartetHybridRequestOf(size_t parent_id, bool rotated,
-                                              size_t child_id) const;
+  QuartetHybridRequest QuartetHybridRequestOf(NodeId parent_id, bool is_edge_on_left,
+                                              NodeId child_id) const;
 
  private:
-  [[nodiscard]] GPOperationVector LeafwardPass(const SizeVector &visit_order) const;
-  [[nodiscard]] GPOperationVector RootwardPass(const SizeVector &visit_order) const;
+  [[nodiscard]] GPOperationVector LeafwardPass(const NodeIdVector &visit_order) const;
+  [[nodiscard]] GPOperationVector RootwardPass(const NodeIdVector &visit_order) const;
 
-  void AddPhatOperations(SubsplitDAGNode node, bool rotated,
+  void AddPhatOperations(SubsplitDAGNode node, bool is_edge_on_left,
                          GPOperationVector &operations) const;
   void AddRhatOperations(SubsplitDAGNode node, GPOperationVector &operations) const;
   void OptimizeSBNParametersForASubsplit(const Bitset &subsplit,
                                          GPOperationVector &operations) const;
 
-  GPOperation RUpdateOfRotated(size_t node_id, bool rotated) const;
+  GPOperation RUpdateOfRotated(NodeId node_id, bool rotated) const;
   // Compute R_HAT(s) = \sum_{t : s < t} P'(s|t) r(t) prior(s|t)
-  void UpdateRHat(size_t node_id, GPOperationVector &operations) const;
-  void UpdatePHatComputeLikelihood(size_t node_id, size_t child_node_id, bool rotated,
+  void UpdateRHat(NodeId node_id, GPOperationVector &operations) const;
+  void UpdatePHatComputeLikelihood(NodeId node_id, NodeId child_node_id,
+                                   bool is_edge_on_left,
                                    GPOperationVector &operations) const;
-  void OptimizeBranchLengthUpdatePHat(size_t node_id, size_t child_node_id,
-                                      bool rotated,
+  void OptimizeBranchLengthUpdatePHat(NodeId node_id, NodeId child_node_id,
+                                      bool is_edge_on_left,
                                       GPOperationVector &operations) const;
 };

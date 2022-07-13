@@ -38,6 +38,59 @@
 #include "bitset.hpp"
 #include "reindexer.hpp"
 
+struct NodeId : public IdType {
+  using IdType::IdType;
+};
+namespace std {
+template <>
+struct hash<NodeId> {
+  std::size_t operator()(const IdType& id) const noexcept {
+    std::size_t value_hash = std::hash<size_t>()(id.value_);
+    return value_hash;
+  }
+};
+}  // namespace std
+
+struct EdgeId : public IdType {
+  using IdType::IdType;
+};
+namespace std {
+template <>
+struct hash<EdgeId> {
+  std::size_t operator()(const IdType& id) const noexcept {
+    std::size_t value_hash = std::hash<size_t>()(id.value_);
+    return value_hash;
+  }
+};
+}  // namespace std
+
+struct TaxonId : public IdType {
+  using IdType::IdType;
+};
+namespace std {
+template <>
+struct hash<TaxonId> {
+  std::size_t operator()(const IdType& id) const noexcept {
+    std::size_t value_hash = std::hash<size_t>()(id.value_);
+    return value_hash;
+  }
+};
+}  // namespace std
+
+using StringTaxonIdMap = std::unordered_map<std::string, TaxonId>;
+using BitsetNodeIdMap = std::unordered_map<Bitset, NodeId>;
+using NodeIdBitsetMap = std::unordered_map<NodeId, Bitset>;
+using EdgeIdPair = std::pair<EdgeId, EdgeId>;
+using NodeIdPair = std::pair<NodeId, NodeId>;
+using NodeIdEdgeIdPairMap = std::unordered_map<NodeId, EdgeIdPair>;
+using NodeIdVector = std::vector<NodeId>;
+using EdgeIdVector = std::vector<EdgeId>;
+using TaxonIdVector = std::vector<TaxonId>;
+using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
+using EdgeIdBitsetMap = std::unordered_map<EdgeId, Bitset>;
+using BitsetEdgeIdPairMap = std::unordered_map<Bitset, EdgeIdPair>;
+using NodeIdVectorPair = std::pair<NodeIdVector, NodeIdVector>;
+
 enum class Direction { Rootward, Leafward };
 
 using VertexId = size_t;

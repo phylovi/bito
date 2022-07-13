@@ -740,7 +740,7 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
 }
 
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
-                                     const BitsetSizeMap& indexer) {
+                                     const BitsetEdgeIdMap& indexer) {
   size_t unique_gpcsp_count = branch_lengths_.size();
   branch_lengths_.setZero();
 
@@ -748,14 +748,14 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   // Set the branch length vector to be the total of the branch lengths for each PCSP,
   // and count the number of times we have seen each PCSP (into gpcsp_counts).
   auto tally_branch_lengths_and_gpcsp_count =
-      [&observed_gpcsp_counts, this](size_t gpcsp_idx, const RootedTree& tree,
+      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const RootedTree& tree,
                                      const Node* focal_node) {
         branch_lengths_(gpcsp_idx) += tree.BranchLength(focal_node);
         observed_gpcsp_counts(gpcsp_idx)++;
       };
   FunctionOverRootedTreeCollection(tally_branch_lengths_and_gpcsp_count,
                                    tree_collection, indexer);
-  for (size_t gpcsp_idx = 0; gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
+  for (EdgeId gpcsp_idx = EdgeId(0); gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
     if (observed_gpcsp_counts(gpcsp_idx) == 0) {
       branch_lengths_(gpcsp_idx) = default_branch_length_;
     } else {
@@ -768,9 +768,9 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 }
 
 SizeDoubleVectorMap GPEngine::GatherBranchLengths(
-    const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
+    const RootedTreeCollection& tree_collection, const BitsetEdgeIdMap& indexer) {
   SizeDoubleVectorMap gpcsp_branchlengths_map;
-  auto gather_branch_lengths = [&gpcsp_branchlengths_map](size_t gpcsp_idx,
+  auto gather_branch_lengths = [&gpcsp_branchlengths_map](EdgeId gpcsp_idx,
                                                           const RootedTree& tree,
                                                           const Node* focal_node) {
     gpcsp_branchlengths_map[gpcsp_idx].push_back(tree.BranchLength(focal_node));
@@ -780,9 +780,9 @@ SizeDoubleVectorMap GPEngine::GatherBranchLengths(
 }
 
 void GPEngine::FunctionOverRootedTreeCollection(
-    std::function<void(size_t, const RootedTree&, const Node*)>
+    std::function<void(EdgeId, const RootedTree&, const Node*)>
         function_on_tree_node_by_gpcsp,
-    const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
+    const RootedTreeCollection& tree_collection, const BitsetEdgeIdMap& indexer) {
   const auto leaf_count = tree_collection.TaxonCount();
   const size_t default_index = branch_lengths_.size();
   for (const auto& tree : tree_collection.Trees()) {
@@ -803,14 +803,14 @@ void GPEngine::FunctionOverRootedTreeCollection(
 }
 
 void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
-                                     const BitsetSizeMap& indexer) {
+                                     const BitsetEdgeIdMap& indexer) {
   size_t unique_gpcsp_count = branch_lengths_.size();
   branch_lengths_.setZero();
   EigenVectorXi observed_gpcsp_counts = EigenVectorXi::Zero(unique_gpcsp_count);
   // Set the branch length vector to be the first encountered branch length for each
   // PCSP, and mark when we have seen each PCSP (into observed_gpcsp_counts).
   auto set_first_branch_length_and_increment_gpcsp_count =
-      [&observed_gpcsp_counts, this](size_t gpcsp_idx, const RootedTree& tree,
+      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const RootedTree& tree,
                                      const Node* focal_node) {
         if (observed_gpcsp_counts(gpcsp_idx) == 0) {
           branch_lengths_(gpcsp_idx) = tree.BranchLength(focal_node);
@@ -820,7 +820,7 @@ void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection
   FunctionOverRootedTreeCollection(set_first_branch_length_and_increment_gpcsp_count,
                                    tree_collection, indexer);
   // If a branch length was not set above, set it to the default length.
-  for (size_t gpcsp_idx = 0; gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
+  for (EdgeId gpcsp_idx = EdgeId(0); gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
     if (observed_gpcsp_counts(gpcsp_idx) == 0) {
       branch_lengths_(gpcsp_idx) = default_branch_length_;
     }

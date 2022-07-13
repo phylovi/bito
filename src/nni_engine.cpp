@@ -151,8 +151,8 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaCopy(
   // Copy over associated non-central edge data.
   // Gather common ancestors and descendents of Pre-NNI and Post-NNI.
   for (const auto key_index : {KeyIndex::Parent_Id, KeyIndex::Child_Id}) {
-    const auto pre_node = GetGraftDAG().GetDAGNode(pre_key_idx[key_index]);
-    const auto post_node = GetGraftDAG().GetDAGNode(post_key_idx[key_index]);
+    const auto pre_node = GetGraftDAG().GetDAGNode(NodeId(pre_key_idx[key_index]));
+    const auto post_node = GetGraftDAG().GetDAGNode(NodeId(post_key_idx[key_index]));
     for (const auto direction : {Direction::Rootward, Direction::Leafward}) {
       // Ignore parents of child node.
       if ((key_index == KeyIndex::Child_Id) && (direction == Direction::Rootward)) {
@@ -168,11 +168,11 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaCopy(
                                                      : pre_nni.WhichCladeIsSister());
         for (const auto &adj_node_id : pre_node.GetNeighbors(direction, prenni_clade)) {
           // If edge from Pre-NNI also exists in Post-NNI, copy data over.
-          if (GetGraftDAG().ContainsEdge(post_node.Id(), adj_node_id)) {
+          if (GetGraftDAG().ContainsEdge(post_node.Id(), NodeId(adj_node_id))) {
             const auto pre_edge_idx =
-                GetGraftDAG().GetEdgeIdx(pre_node.Id(), adj_node_id);
+                GetGraftDAG().GetEdgeIdx(pre_node.Id(), NodeId(adj_node_id));
             const auto post_edge_idx =
-                GetGraftDAG().GetEdgeIdx(post_node.Id(), adj_node_id);
+                GetGraftDAG().GetEdgeIdx(post_node.Id(), NodeId(adj_node_id));
             gp_engine_.CopyGPCSPData(pre_edge_idx, post_edge_idx);
           }
         }
@@ -384,8 +384,8 @@ void NNIEngine::SyncAdjacentNNIsWithDAG() {
   // Only real node pairs are viable NNIs.
   dag_.IterateOverRealNodes([this](SubsplitDAGNode node) {
     dag_.IterateOverParentAndChildAndLeafwardEdges(
-        node, [this](const size_t parent_id, const bool is_edge_on_left,
-                     const size_t child_id, const size_t edge_idx) {
+        node, [this](const NodeId parent_id, const bool is_edge_on_left,
+                     const NodeId child_id, const EdgeId edge_idx) {
           // Only internal node pairs are viable NNIs.
           const Bitset &parent_bitset = dag_.GetDAGNode(parent_id).GetBitset();
           const Bitset &child_bitset = dag_.GetDAGNode(child_id).GetBitset();
@@ -403,11 +403,11 @@ void NNIEngine::UpdateAdjacentNNIsAfterDAGAddNodePair(const NNIOperation &nni) {
 
 void NNIEngine::UpdateAdjacentNNIsAfterDAGAddNodePair(const Bitset &parent_bitset,
                                                       const Bitset &child_bitset) {
-  const size_t parent_id = dag_.GetDAGNodeId(parent_bitset);
-  const size_t child_id = dag_.GetDAGNodeId(child_bitset);
+  const auto parent_id = dag_.GetDAGNodeId(parent_bitset);
+  const auto child_id = dag_.GetDAGNodeId(child_bitset);
   // Every new edge added is a potential new NNI.
   // Iterate over the parent and child node of the new pair.
-  for (const size_t &node_id : {parent_id, child_id}) {
+  for (const auto &node_id : {parent_id, child_id}) {
     // Get nodes adjacent to current node from both left and right edges.
     for (const bool is_edge_leafward : {true, false}) {
       // Get nodes adjacent to current node from both leafward and rootward
@@ -426,7 +426,7 @@ void NNIEngine::UpdateAdjacentNNIsAfterDAGAddNodePair(const Bitset &parent_bitse
 }
 
 void NNIEngine::AddAllNNIsFromNodeVectorToAdjacentNNIs(
-    const size_t &node_id, const SizeVector &adjacent_node_ids,
+    const NodeId node_id, const SizeVector &adjacent_node_ids,
     const bool is_edge_on_left, const bool is_edge_leafward) {
   Bitset node_bitset = dag_.GetDAGNode(node_id).GetBitset();
   // Determine whether node_id corresponds to parent or child of the pair.
@@ -436,13 +436,14 @@ void NNIEngine::AddAllNNIsFromNodeVectorToAdjacentNNIs(
   if (is_edge_leafward) {
     const Bitset &parent_bitset = node_bitset;
     for (const auto &adjacent_node_id : adjacent_node_ids) {
-      const Bitset child_bitset = dag_.GetDAGNode(adjacent_node_id).GetBitset();
+      const Bitset child_bitset = dag_.GetDAGNode(NodeId(adjacent_node_id)).GetBitset();
       SafeAddOutputNNIsToAdjacentNNIs(parent_bitset, child_bitset, is_edge_on_left);
     }
   } else {
     const Bitset &child_bitset = node_bitset;
     for (const auto &adjacent_node_id : adjacent_node_ids) {
-      const Bitset parent_bitset = dag_.GetDAGNode(adjacent_node_id).GetBitset();
+      const Bitset parent_bitset =
+          dag_.GetDAGNode(NodeId(adjacent_node_id)).GetBitset();
       SafeAddOutputNNIsToAdjacentNNIs(parent_bitset, child_bitset, is_edge_on_left);
     }
   }
@@ -465,8 +466,8 @@ void NNIEngine::SafeAddOutputNNIsToAdjacentNNIs(const Bitset &parent_bitset,
     // If DAG already contains output parent and child nodes, and an edge between
     // them, then don't add it to the adjacent_nnis.
     if (dag_.ContainsNode(new_nni.parent_) && dag_.ContainsNode(new_nni.child_)) {
-      const size_t parent_id = dag_.GetDAGNodeId(new_nni.parent_);
-      const size_t child_id = dag_.GetDAGNodeId(new_nni.child_);
+      const auto parent_id = dag_.GetDAGNodeId(new_nni.parent_);
+      const auto child_id = dag_.GetDAGNodeId(new_nni.child_);
       is_in_dag = dag_.ContainsEdge(parent_id, child_id);
     }
     if (!is_in_dag) {

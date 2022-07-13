@@ -219,7 +219,7 @@ class NNIEngine {
   // the adjacent_node_ids vector. is_edge_leafward tells whether node_id is the child
   // or parent. is_edge_edgeclade determines which side of parent the child descends
   // from.
-  void AddAllNNIsFromNodeVectorToAdjacentNNIs(const size_t &node_id,
+  void AddAllNNIsFromNodeVectorToAdjacentNNIs(const NodeId node_id,
                                               const SizeVector &adjacent_node_ids,
                                               const bool is_edge_on_left,
                                               const bool is_edge_leafward);

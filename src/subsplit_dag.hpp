@@ -42,16 +42,6 @@
 #include "subsplit_dag_node.hpp"
 #include "node.hpp"
 
-struct NodeId : public IdType {
-  using IdType::IdType;
-};
-struct EdgeId : public IdType {
-  using IdType::IdType;
-};
-struct TaxonId : public IdType {
-  using IdType::IdType;
-};
-
 class SubsplitDAG {
  public:
   // ** Constructor methods:
@@ -85,7 +75,7 @@ class SubsplitDAG {
   // leaves).
   size_t NodeCountWithoutDAGRoot() const;
   // The current minimum and maximum node Id values.
-  SizePair NodeIdRange() const;
+  NodeIdPair NodeIdRange() const;
   // The total number of rootsplits in DAG. These count all direct descendants of the
   // root (also, the union of each rootsplits clades cover the set of all taxa in the
   // DAG).
@@ -97,7 +87,7 @@ class SubsplitDAG {
   // leaf node).
   size_t EdgeCountWithLeafSubsplits() const;
   // The current minimum and maximum edge Idx values.
-  SizePair EdgeIdxRange() const;
+  EdgeIdPair EdgeIdxRange() const;
   // The total number of tree topologies expressable by the DAG.
   double TopologyCount() const;
 
@@ -126,13 +116,13 @@ class SubsplitDAG {
   // Create a EdgeIndexer representing the DAG.
   // The EdgeIndexer is a map (edge/PCSP bitset -> edge/PCSP index).
   // The edge/PCSP indexer contains leafs and rootsplits.
-  BitsetSizeMap BuildEdgeIndexer() const;
+  BitsetEdgeIdMap BuildEdgeIndexer() const;
   // Builds inverse of EdgeIndexer map: (edge/PCSP index -> edge/PCSP bitset).
-  SizeBoolVectorMap BuildEdgeIdxToPCSPBoolVectorMap() const;
+  EdgeIdBitsetMap BuildInverseEdgeIndexer() const;
   // Get the rotated and sorted parents of the node with the given subsplit.
-  std::pair<SizeVector, SizeVector> BuildParentIdVectors(const Bitset &subsplit) const;
+  NodeIdVectorPair BuildParentIdVectors(const Bitset &subsplit) const;
   // Get the rotated and sorted children of the node with the given subsplit.
-  std::pair<SizeVector, SizeVector> BuildChildIdVectors(const Bitset &subsplit) const;
+  NodeIdVectorPair BuildChildIdVectors(const Bitset &subsplit) const;
   // Output RootedIndexerRepresentation of DAG (from RootedSBNMaps).
   // RootedIndexerRepresentation is a vector of edge idxs in topological preorder.
   RootedIndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap &indexer,
@@ -146,34 +136,35 @@ class SubsplitDAG {
   // Get Taxon's bitset clade positional id.
   TaxonId GetTaxonId(const std::string &name) const;
   // Get node based on node id.
-  SubsplitDAGNode GetDAGNode(const size_t node_id) const;
-  MutableSubsplitDAGNode GetDAGNode(const size_t node_id);
+  SubsplitDAGNode GetDAGNode(const NodeId node_id) const;
+  MutableSubsplitDAGNode GetDAGNode(const NodeId node_id);
   // Get the node id based on the subsplit bitset.
-  size_t GetDAGNodeId(const Bitset &subsplit) const;
+  NodeId GetDAGNodeId(const Bitset &subsplit) const;
   // Gets the node id of the DAG root.
-  size_t GetDAGRootNodeId() const;
+  NodeId GetDAGRootNodeId() const;
   // Return the node ids corresponding to the rootsplits.
   ConstNeighborsView GetRootsplitNodeIds() const;
   // Get edge based on edge id.
-  ConstLineView GetDAGEdge(const size_t edge_id) const;
+  ConstLineView GetDAGEdge(const EdgeId edge_id) const;
   // Get the PCSP edge index by its parent-child pair.
-  size_t GetEdgeIdx(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
-  size_t GetEdgeIdx(const size_t parent_id, const size_t child_id) const;
-  size_t GetEdgeIdx(const Bitset &edge_pcsp) const;
+  EdgeId GetEdgeIdx(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
+  EdgeId GetEdgeIdx(const NodeId parent_id, const NodeId child_id) const;
+  EdgeId GetEdgeIdx(const Bitset &edge_pcsp) const;
   // Get the range of outgoing idxs from the given clade of a subsplit.
-  SizePair GetChildEdgeRange(const Bitset &subsplit, const bool rotated) const;
+  EdgeIdPair GetChildEdgeRange(const Bitset &subsplit,
+                               const bool is_edge_on_left) const;
   // Get set of all taxon names.
-  std::vector<std::string> GetSortedVectorOfTaxonNames() const;
+  StringVector GetSortedVectorOfTaxonNames() const;
   // Get sorted vector of all node Subsplit bitsets.
-  std::vector<Bitset> GetSortedVectorOfNodeBitsets() const;
+  BitsetVector GetSortedVectorOfNodeBitsets() const;
   // Get sorted vector of all edge PCSP bitsets.
-  std::vector<Bitset> GetSortedVectorOfEdgeBitsets() const;
+  BitsetVector GetSortedVectorOfEdgeBitsets() const;
   // Get reference to taxon map.
-  const std::map<std::string, TaxonId> &GetTaxonMap() const;
+  const StringTaxonIdMap &GetTaxonMap() const;
   // Get reference to subsplit -> node_id map.
-  const BitsetSizeMap &GetSubsplitToIdMap() const;
+  const BitsetNodeIdMap &GetSubsplitToIdMap() const;
   // Get reference to parent_node -> child_edge_range map.
-  const BitsetSizePairMap &GetParentNodeToChildEdgeRangeMap() const;
+  const NodeIdEdgeIdPairMap &GetParentNodeToChildEdgeRangeMap() const;
 
   // ** DAG Lambda Iterators
   // These methods iterate over the nodes and take lambda functions with arguments
@@ -186,11 +177,11 @@ class SubsplitDAG {
   using EdgeDestinationLambda = std::function<void(bool, SubsplitDAGNode)>;
   // EdgeAndNodeLambda takes a PCSP index of an edge, its rotation status, and an index
   // of the node on the other side of the edge.
-  using EdgeAndNodeLambda = std::function<void(const size_t, const bool, const size_t)>;
+  using EdgeAndNodeLambda = std::function<void(const EdgeId, const bool, const NodeId)>;
   // ParentEdgeChildLambda takes: the parent id in the DAG, the rotation status of the
   // edge, the child id, and the GCPSP index of the edge.
   using ParentRotationChildEdgeLambda =
-      std::function<void(const size_t, const bool, const size_t, const size_t)>;
+      std::function<void(const NodeId, const bool, const NodeId, const EdgeId)>;
   //
   // Iterate over the "real" nodes, i.e. those that do not correspond to
   // leaf subsplits or the DAG root node.
@@ -240,15 +231,15 @@ class SubsplitDAG {
   template <typename TraversalActionT>
   void DepthFirstWithAction(const SizeVector &starting_nodes,
                             const TraversalActionT &action) const {
-    std::unordered_set<size_t> visited_nodes;
+    std::unordered_set<NodeId> visited_nodes;
     for (const auto &node_id : starting_nodes) {
-      DepthFirstWithActionForNode(action, node_id, visited_nodes);
+      DepthFirstWithActionForNode(action, NodeId(node_id), visited_nodes);
     }
   };
   // The portion of the traversal that is below a given node.
   template <typename TraversalActionT>
-  void DepthFirstWithActionForNode(const TraversalActionT &action, size_t node_id,
-                                   std::unordered_set<size_t> &visited_nodes) const {
+  void DepthFirstWithActionForNode(const TraversalActionT &action, NodeId node_id,
+                                   std::unordered_set<NodeId> &visited_nodes) const {
     action.BeforeNode(node_id);
     DepthFirstWithActionForNodeClade(action, node_id, false, visited_nodes);
     DepthFirstWithActionForNodeClade(action, node_id, true, visited_nodes);
@@ -258,18 +249,18 @@ class SubsplitDAG {
   // Does not recurse into leaf nodes.
   template <typename TraversalActionT>
   void DepthFirstWithActionForNodeClade(
-      const TraversalActionT &action, size_t node_id, bool rotated,
-      std::unordered_set<size_t> &visited_nodes) const {
-    action.BeforeNodeClade(node_id, rotated);
+      const TraversalActionT &action, NodeId node_id, bool is_edge_on_left,
+      std::unordered_set<NodeId> &visited_nodes) const {
+    action.BeforeNodeClade(node_id, is_edge_on_left);
     const auto node = GetDAGNode(node_id);
-    for (const size_t child_id : node.GetLeafward(rotated)) {
-      if (visited_nodes.count(child_id) == 0) {
-        visited_nodes.insert(child_id);
-        if (!GetDAGNode(child_id).IsLeaf()) {
-          DepthFirstWithActionForNode(action, child_id, visited_nodes);
+    for (const auto child_id : node.GetLeafward(is_edge_on_left)) {
+      if (visited_nodes.count(NodeId(child_id)) == 0) {
+        visited_nodes.insert(NodeId(child_id));
+        if (!GetDAGNode(NodeId(child_id)).IsLeaf()) {
+          DepthFirstWithActionForNode(action, NodeId(child_id), visited_nodes);
         }
       }
-      action.VisitEdge(node_id, child_id, rotated);
+      action.VisitEdge(node_id, NodeId(child_id), is_edge_on_left);
     }
   };
 
@@ -279,14 +270,16 @@ class SubsplitDAG {
 
   // Creates a vector of edge idxs representing a leafward DFS postorder traversal of
   // the DAG.
-  [[nodiscard]] SizeVector LeafwardEdgeTraversalTrace(bool include_dag_root_node) const;
+  [[nodiscard]] NodeIdVector LeafwardEdgeTraversalTrace(
+      bool include_dag_root_node) const;
   // Creates a vector of edge idxs representing a rootward DFS postorder traversal of
   // the DAG.
-  [[nodiscard]] SizeVector RootwardEdgeTraversalTrace(bool include_dag_root_node) const;
+  [[nodiscard]] NodeIdVector RootwardEdgeTraversalTrace(
+      bool include_dag_root_node) const;
   // Creates a vector of edge idxs representing a reverse DFS postorder, leafward
   // traversal of the DAG. NOTE: A reverse postorder traversal represents a topological
   // sort.
-  [[nodiscard]] SizeVector TopologicalEdgeTraversalTrace() const;
+  [[nodiscard]] NodeIdVector TopologicalEdgeTraversalTrace() const;
 
   // ** DAG Edge Traversals with Action
 
@@ -327,20 +320,20 @@ class SubsplitDAG {
   bool ContainsTaxon(const std::string &name) const;
   // Does a node with the given subsplit exist?
   bool ContainsNode(const Bitset &subsplit) const;
-  bool ContainsNode(const size_t node_id) const;
+  bool ContainsNode(const NodeId node_id) const;
   // Does an edge that connects the two nodes exist?
   bool ContainsEdge(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
-  bool ContainsEdge(const size_t parent_id, const size_t child_id) const;
+  bool ContainsEdge(const NodeId parent_id, const NodeId child_id) const;
   bool ContainsEdge(const Bitset &edge_subsplit) const;
-  bool ContainsEdge(const size_t edge_id) const;
+  bool ContainsEdge(const EdgeId edge_id) const;
   // Is node the root?
-  bool IsNodeRoot(const size_t node_id) const;
+  bool IsNodeRoot(const NodeId node_id) const;
   // Is node a leaf?
-  bool IsNodeLeaf(const size_t node_id) const;
+  bool IsNodeLeaf(const NodeId node_id) const;
   // Does edge connect to the root node?
-  bool IsEdgeRoot(const size_t edge_id) const;
+  bool IsEdgeRoot(const EdgeId edge_id) const;
   // Does edge connect to a leaf node?
-  bool IsEdgeLeaf(const size_t edge_id) const;
+  bool IsEdgeLeaf(const EdgeId edge_id) const;
 
   // Does the DAG contain the given topology?
   bool ContainsTopology(const Node::NodePtr topology, const bool is_quiet = true) const;
@@ -363,9 +356,9 @@ class SubsplitDAG {
   // DAG.
   struct ModificationResult {
     // Nodes that were added or removed by modification.
-    SizeVector added_node_ids;
+    NodeIdVector added_node_ids;
     // Edges that were added or removed by modification.
-    SizeVector added_edge_idxs;
+    EdgeIdVector added_edge_idxs;
     // New ordering of node ids relative to their ordering before DAG modification.
     Reindexer node_reindexer;
     // New ordering of edge idxs relative to their ordering before DAG modification.
@@ -383,6 +376,7 @@ class SubsplitDAG {
   ModificationResult FullyConnect();
 
   // Add all tree topologies in topology_counter to DAG.
+  //
   std::tuple<BitsetSizeMap, SizeBitsetMap, BitsetVector> ProcessTopologyCounter(
       const Node::TopologyCounter &topology_counter);
 
@@ -467,9 +461,9 @@ class SubsplitDAG {
   void ResetHostDAG(SubsplitDAG &host_dag);
 
   // Builds a vector of subsplits of all children , optionally including leaf nodes.
-  std::vector<Bitset> GetChildSubsplits(const SizeBitsetMap &index_to_child,
-                                        const Bitset &subsplit,
-                                        bool include_leaf_subsplits = false);
+  BitsetVector GetChildSubsplits(const SizeBitsetMap &index_to_child,
+                                 const Bitset &subsplit,
+                                 bool include_leaf_subsplits = false);
 
   // ** Count
 
@@ -482,11 +476,11 @@ class SubsplitDAG {
   //        - visited_nodes is a set of all node ids reached by traversal.
 
   // Creates vector of node ids in leafward depth first post-order traversal of DAG.
-  void LeafwardDepthFirst(size_t node_id, SizeVector &visit_order,
-                          std::unordered_set<size_t> &visited_nodes) const;
+  void LeafwardDepthFirst(NodeId node_id, NodeIdVector &visit_order,
+                          std::unordered_set<NodeId> &visited_nodes) const;
   // Create vector of node ids in rootward depth first post-order traversal of DAG.
-  void RootwardDepthFirst(size_t node_id, SizeVector &visit_order,
-                          std::unordered_set<size_t> &visited_nodes) const;
+  void RootwardDepthFirst(NodeId node_id, NodeIdVector &visit_order,
+                          std::unordered_set<NodeId> &visited_nodes) const;
 
   // ** Modify DAG Helpers
   // These methods help calling functions to modify the DAG, but do NOT ensure a valid
@@ -496,44 +490,44 @@ class SubsplitDAG {
   // Add taxon map to DAG.
   void BuildTaxonMap(const TagStringMap &tag_taxon_map);
   // Create Node and insert it into the DAG.  Returns ID of created node.
-  size_t CreateAndInsertNode(const Bitset &subsplit);
+  NodeId CreateAndInsertNode(const Bitset &subsplit);
   // Create Edge between given nodes and insert it into the DAG. Returns ID of created
   // edge.
-  size_t CreateAndInsertEdge(const size_t parent_id, const size_t child_id,
-                             const bool rotated);
+  EdgeId CreateAndInsertEdge(const NodeId parent_id, const NodeId child_id,
+                             const bool is_edge_on_left);
   // Add edge between given parent and child nodes to the DAG.
-  void ConnectGivenNodes(const size_t parent_id, const size_t child_id,
-                         const bool rotated, const size_t edge_id);
+  void ConnectGivenNodes(const NodeId parent_id, const NodeId child_id,
+                         const bool is_edge_on_left, const EdgeId edge_id);
   // Add edges between node_id and all children in map.
-  void ConnectNodes(const SizeBitsetMap &index_to_child, const size_t node_id,
-                    const bool rotated);
+  void ConnectNodes(const SizeBitsetMap &index_to_child, const NodeId node_id,
+                    const bool is_edge_on_left);
   // Add nodes for all children in map.
   void BuildNodes(const SizeBitsetMap &index_to_child, const BitsetVector &rootsplits);
   // Add nodes in depth first ordering for children in map.
   void BuildNodesDepthFirst(const SizeBitsetMap &index_to_child, const Bitset &subsplit,
                             std::unordered_set<Bitset> &visited_subsplits);
-  // Add edges for all nodes according to children in map.
+  // Add edges from all parent nodes according to child nodes in map.
   void BuildEdges(const SizeBitsetMap &index_to_child);
   // Add edges to DAG according to node_id pairs in edge indexer.
   void BuildDAGEdgesFromEdgeIndexer(BitsetSizeMap &edge_indexer);
   // Connect the child to all of its children. Push all new edges to
   // added_edge_idxs.
   void ConnectChildToAllChildren(const Bitset &child_subsplit,
-                                 SizeVector &added_edge_idxs);
+                                 EdgeIdVector &added_edge_idxs);
   // Connect the parent to all of its children except for the given child node. Insert
   // all new edges to added_edge_idxs vector.
   void ConnectParentToAllChildrenExcept(const Bitset &parent_subsplit,
                                         const Bitset &child_subsplit,
-                                        SizeVector &added_edge_idxs);
+                                        EdgeIdVector &added_edge_idxs);
   // Connect the child to all of its parents except for the given parent node. Insert
   // all new edge to added_edge_idxs vector.
   void ConnectChildToAllParentsExcept(const Bitset &parent_subsplit,
                                       const Bitset &child_subsplit,
-                                      SizeVector &added_edge_idxs);
+                                      EdgeIdVector &added_edge_idxs);
   // Connect the parent to all of its parents. Insert all new edges to
   // added_edge_idxs vector.
   void ConnectParentToAllParents(const Bitset &parent_subsplit,
-                                 SizeVector &added_edge_idxs);
+                                 EdgeIdVector &added_edge_idxs);
   // Expand dag_edges_ and parent_to_child_range_ with leaf subsplits at the end.
   void AddLeafSubsplitsToDAGEdgesAndParentToRange();
 
@@ -550,18 +544,18 @@ class SubsplitDAG {
 
   // - Map of Taxon Names
   //    - [ Taxon Name => Taxon Id (position of the "on" bit in the clades) ]
-  std::map<std::string, TaxonId> dag_taxa_;
+  StringTaxonIdMap dag_taxa_;
   // - Map of all DAG Nodes:
   //    - [ Node Subsplit (Bitset) => Node Id ]
   // A node's id is equivalent to its index in dag_nodes_. The first entries are
   // reserved for leaf subsplits. The last entries are reserved for rootsplits. The DAG
   // root node has the highest node id.
-  BitsetSizeMap subsplit_to_id_;
+  BitsetNodeIdMap subsplit_to_id_;
   // - Map of all DAG Nodes:
   //    - [ Node Subsplit (Bitset) => (begin, end) Range of Child Ids ]
   // This indexer is an expanded version of parent_to_child_range_ in sbn_instance:
   // It includes single element range for leaf subsplits.
-  BitsetSizePairMap parent_to_child_range_;
+  BitsetEdgeIdPairMap parent_to_child_range_;
   // The number of taxa in the DAG. This is equivalent to the size of the clades in each
   // subsplit. Also equivalent to the number of leaf nodes in the DAG.
   size_t taxon_count_;
