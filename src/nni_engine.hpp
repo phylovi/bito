@@ -320,8 +320,9 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
   KeyIndexMap post_key_idx(NoId);
   post_key_idx[KeyIndex::Parent_Id] = dag.GetDAGNodeId(post_nni.GetParent());
   post_key_idx[KeyIndex::Child_Id] = dag.GetDAGNodeId(post_nni.GetChild());
-  post_key_idx[KeyIndex::Edge] = dag.GetEdgeIdx(post_key_idx[KeyIndex::Parent_Id],
-                                                post_key_idx[KeyIndex::Child_Id]);
+  post_key_idx[KeyIndex::Edge] =
+      dag.GetEdgeIdx(NodeId(post_key_idx[KeyIndex::Parent_Id]),
+                     NodeId(post_key_idx[KeyIndex::Child_Id]));
 
   // Array for mapping from pre-NNI plvs to post-NNI plvs.
   const auto key_map = BuildKeyIndexTypePairsFromPreNNIToPostNNI(pre_nni, post_nni);

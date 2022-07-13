@@ -185,8 +185,8 @@ class Reindexer {
   template <typename VectorType>
   static void RemapIdVector(VectorType &&vector, const Reindexer &reindexer) {
     Assert(reindexer.IsValid(), "Reindexer must be valid in Reindexer::RemapIdVector.");
-    for (size_t id : vector) {
-      Assert(id < reindexer.size(),
+    for (const auto id : vector) {
+      Assert(size_t(id) < reindexer.size(),
              "The vector cannot contain an id out of bounds of the reindexer in "
              "Reindexer::RemapIdVector.");
     }

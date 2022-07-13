@@ -180,7 +180,7 @@ template <class EnumType, size_t EnumCount, class DataType>
 class EnumArray {
  public:
   EnumArray() : array_() {}
-  EnumArray(DataType fill_value) { array_.fill(fill_value); }
+  EnumArray(DataType fill_value) : array_() { array_.fill(fill_value); }
   EnumArray(std::array<DataType, EnumCount> array) : array_(std::move(array)) {}
 
   DataType &operator[](const EnumType i) { return array_[static_cast<int>(i)]; }
@@ -275,6 +275,11 @@ class EnumWrapper {
 template <typename T>
 struct StrictType {
   explicit StrictType(const T &value) : value_(value) {}
+
+  StrictType &operator=(size_t new_value) {
+    value_ = new_value;
+    return *this;
+  }
 
   operator T &() { return value_; }
   operator T() const { return value_; }

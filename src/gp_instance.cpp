@@ -270,10 +270,11 @@ void GPInstance::EstimateSBNParameters() {
 void GPInstance::CalculateHybridMarginals() {
   std::cout << "Calculating hybrid marginals\n";
   PopulatePLVs();
-  dag_.TopologicalEdgeTraversal([this](const size_t parent_id, const bool rotated,
-                                       const size_t child_id, const size_t) {
+  dag_.TopologicalEdgeTraversal([this](const NodeId parent_id,
+                                       const bool is_edge_on_left,
+                                       const NodeId child_id, const EdgeId edge_idx) {
     this->GetEngine()->ProcessQuartetHybridRequest(
-        dag_.QuartetHybridRequestOf(parent_id, rotated, child_id));
+        dag_.QuartetHybridRequestOf(parent_id, is_edge_on_left, child_id));
   });
 }
 
@@ -336,7 +337,7 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double scale_min
       EigenVectorXd::LinSpaced(steps, scale_min, scale_max);
   per_pcsp_lik_surfaces_ = EigenMatrixXd(gpcsp_count * steps, 2);
 
-  for (size_t gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
+  for (EdgeId gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
     EigenVectorXd gpcsp_new_branch_lengths =
         scaling_vector * optimized_branch_lengths[gpcsp_idx];
     EigenVectorXd new_branch_length_vector = optimized_branch_lengths;

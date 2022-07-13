@@ -177,7 +177,7 @@ class GPEngine {
   // given edge for the branch length of the sDAG. Set branch lengths that are not thus
   // specified to default_branch_length_.
   void TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
-                             const BitsetSizeMap& indexer);
+                             const BitsetEdgeIdMap& indexer);
 
   DoublePair LogLikelihoodAndDerivative(const GPOperations::OptimizeBranchLength& op);
   std::tuple<double, double, double> LogLikelihoodAndFirstTwoDerivatives(

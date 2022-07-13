@@ -784,7 +784,7 @@ void GPEngine::FunctionOverRootedTreeCollection(
         function_on_tree_node_by_gpcsp,
     const RootedTreeCollection& tree_collection, const BitsetEdgeIdMap& indexer) {
   const auto leaf_count = tree_collection.TaxonCount();
-  const size_t default_index = branch_lengths_.size();
+  const auto default_index = branch_lengths_.size();
   for (const auto& tree : tree_collection.Trees()) {
     tree.Topology()->RootedPCSPPreorder(
         [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp](
