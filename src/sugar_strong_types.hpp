@@ -1,5 +1,13 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
+//
+// Templates for a strong typing. Creates a lightweight wrapper for primitive types.
+// Enforces explicit casting between differenct strong types and the underlying
+// primitive. Also includes template for inheriting primitive's hashing function for use
+// in stl types. For more information, read:
+// https://www.fluentcpp.com/2016/12/08/strong-types-for-strong-interfaces/
+//
+// Templates for enumerated types. Creates a wrapper class for a base enum class.
 
 #pragma once
 
@@ -11,9 +19,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-// TODO: Clean up StrongTypes to match FluentC --
-// https://www.fluentcpp.com/2017/05/30/implementing-a-hash-function-for-strong-types/
 
 // // Generic Strong Type (Wrapper for primitive).
 // // https://www.fluentcpp.com/2016/12/08/strong-types-for-strong-interfaces/
@@ -70,8 +75,38 @@ struct StrictType {
   T value_;
 };
 
+static constexpr size_t NoId = std::numeric_limits<size_t>::max();
+
 struct IdType : public StrictType<size_t> {
   using StrictType<size_t>::StrictType;
+
+  // Can implicitly assign IdType to size_t.
+  IdType &operator=(const size_t &new_value) {
+    value_ = new_value;
+    return *this;
+  }
+
+  // Can implcitly use bracket operator for vector access.
+  // template <typename VectorTypeRef>
+  // friend DataType &operator[](VectorTypeRef vector, const StrictType i) {
+  //   return vector[static_cast<int>(i)];
+  // }
+
+  // template <typename VectorTypeRef>
+  // const DataType &operator[](const VectorTypeRef vector, const StrictType i) const {
+  //   return vector[static_cast<int>(i)];
+  // }
+
+  //   // Can implcitly use bracket operator for vector access.
+  // template <typename VectorTypeRef>
+  // friend DataType &operator[](VectorTypeRef vector, const EnumType i) {
+  //   return vector[static_cast<int>(i)];
+  // }
+
+  // template <typename VectorTypeRef>
+  // const DataType &operator[](const VectorTypeRef vector, const EnumType i) const {
+  //   return vector[static_cast<int>(i)];
+  // }
 
   // Outputs string representation to stream.
   friend std::ostream &operator<<(std::ostream &os, const IdType &t) {
@@ -82,8 +117,6 @@ struct IdType : public StrictType<size_t> {
     }
     return os;
   }
-
-  static constexpr size_t NoId = std::numeric_limits<size_t>::max();
 };
 
 // Hash functions for StrictType.
@@ -125,13 +158,14 @@ template <class EnumType, size_t EnumCount, class DataType>
 class EnumArray {
  public:
   EnumArray() = default;
-  EnumArray(DataType fill_value) { array_.fill(fill_value); }
   EnumArray(std::array<DataType, EnumCount> array) : array_(std::move(array)) {}
 
   DataType &operator[](const EnumType i) { return array_[static_cast<int>(i)]; }
   const DataType &operator[](const EnumType i) const {
     return array_[static_cast<int>(i)];
   }
+
+  void fill(DataType fill_value) { array_.fill(fill_value); }
 
   int size() const { return array_.size(); }
 

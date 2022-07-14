@@ -111,7 +111,9 @@ ChoiceMap::ExpandedTreeMask ChoiceMap::ExtractExpandedTreeMask(
     // Add nodes to map if they don't already exist.
     for (const auto &node_id : {parent_id, child_id}) {
       if (tree_mask_ext.find(node_id) == tree_mask_ext.end()) {
-        tree_mask_ext.insert({node_id, AdjacentNodeArray<NodeId>(NodeId(NoId))});
+        AdjacentNodeArray<NodeId> adj_nodes;
+        adj_nodes.fill(NodeId(NoId));
+        tree_mask_ext.insert({node_id, adj_nodes});
       }
     }
     // Add adjacent nodes to map.

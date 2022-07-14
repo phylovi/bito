@@ -292,7 +292,8 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni
   const auto child_id = dag.GetDAGNodeId(nni.GetChild());
   const bool is_left_clade_sister = nni.WhichParentCladeIsFocalClade();
   // Find key indices for NNI.
-  KeyIndexMap key_idx_map(NoId);
+  KeyIndexMap key_idx_map;
+  key_idx_map.fill(NoId);
   key_idx_map[KeyIndex::Parent_Id] = parent_id;
   key_idx_map[KeyIndex::Child_Id] = child_id;
   key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id);
@@ -317,7 +318,8 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
     const NNIOperation &pre_nni, const NNIOperation &post_nni,
     const NNIEngine::KeyIndexMap &pre_key_idx, const DAGType &dag) {
   // Unpopulated key indices will left as NoId.
-  KeyIndexMap post_key_idx(NoId);
+  KeyIndexMap post_key_idx;
+  post_key_idx.fill(NoId);
   post_key_idx[KeyIndex::Parent_Id] = dag.GetDAGNodeId(post_nni.GetParent());
   post_key_idx[KeyIndex::Child_Id] = dag.GetDAGNodeId(post_nni.GetChild());
   post_key_idx[KeyIndex::Edge] =

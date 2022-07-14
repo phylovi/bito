@@ -337,7 +337,7 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double scale_min
       EigenVectorXd::LinSpaced(steps, scale_min, scale_max);
   per_pcsp_lik_surfaces_ = EigenMatrixXd(gpcsp_count * steps, 2);
 
-  for (EdgeId gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
+  for (EdgeId gpcsp_idx = EdgeId(0); gpcsp_idx < gpcsp_count; gpcsp_idx++) {
     EigenVectorXd gpcsp_new_branch_lengths =
         scaling_vector * optimized_branch_lengths[gpcsp_idx];
     EigenVectorXd new_branch_length_vector = optimized_branch_lengths;

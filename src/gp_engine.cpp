@@ -740,7 +740,7 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
 }
 
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
-                                     const BitsetEdgeIdMap& indexer) {
+                                     const BitsetSizeMap& indexer) {
   size_t unique_gpcsp_count = branch_lengths_.size();
   branch_lengths_.setZero();
 
@@ -750,41 +750,42 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   auto tally_branch_lengths_and_gpcsp_count =
       [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const RootedTree& tree,
                                      const Node* focal_node) {
-        branch_lengths_(gpcsp_idx) += tree.BranchLength(focal_node);
-        observed_gpcsp_counts(gpcsp_idx)++;
+        size_t gpcsp_id = size_t(gpcsp_idx);
+        branch_lengths_(gpcsp_id) += tree.BranchLength(focal_node);
+        observed_gpcsp_counts(gpcsp_id)++;
       };
   FunctionOverRootedTreeCollection(tally_branch_lengths_and_gpcsp_count,
                                    tree_collection, indexer);
   for (EdgeId gpcsp_idx = EdgeId(0); gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
-    if (observed_gpcsp_counts(gpcsp_idx) == 0) {
-      branch_lengths_(gpcsp_idx) = default_branch_length_;
+    size_t gpcsp_id = size_t(gpcsp_idx);
+    if (observed_gpcsp_counts(gpcsp_id) == 0) {
+      branch_lengths_(gpcsp_id) = default_branch_length_;
     } else {
       // Normalize the branch length total using the counts to get a mean branch
       // length.
-      branch_lengths_(gpcsp_idx) /=
-          static_cast<double>(observed_gpcsp_counts(gpcsp_idx));
+      branch_lengths_(gpcsp_id) /= static_cast<double>(observed_gpcsp_counts(gpcsp_id));
     }
   }
 }
 
 SizeDoubleVectorMap GPEngine::GatherBranchLengths(
-    const RootedTreeCollection& tree_collection, const BitsetEdgeIdMap& indexer) {
+    const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
   SizeDoubleVectorMap gpcsp_branchlengths_map;
   auto gather_branch_lengths = [&gpcsp_branchlengths_map](EdgeId gpcsp_idx,
                                                           const RootedTree& tree,
                                                           const Node* focal_node) {
-    gpcsp_branchlengths_map[gpcsp_idx].push_back(tree.BranchLength(focal_node));
+    size_t gpcsp_id = size_t(gpcsp_idx);
+    gpcsp_branchlengths_map[gpcsp_id].push_back(tree.BranchLength(focal_node));
   };
   FunctionOverRootedTreeCollection(gather_branch_lengths, tree_collection, indexer);
   return gpcsp_branchlengths_map;
 }
 
 void GPEngine::FunctionOverRootedTreeCollection(
-    std::function<void(EdgeId, const RootedTree&, const Node*)>
-        function_on_tree_node_by_gpcsp,
-    const RootedTreeCollection& tree_collection, const BitsetEdgeIdMap& indexer) {
+    FunctionOnTreeNodeByGPCSP function_on_tree_node_by_gpcsp,
+    const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
   const auto leaf_count = tree_collection.TaxonCount();
-  const auto default_index = branch_lengths_.size();
+  const size_t default_index = branch_lengths_.size();
   for (const auto& tree : tree_collection.Trees()) {
     tree.Topology()->RootedPCSPPreorder(
         [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp](
@@ -795,7 +796,7 @@ void GPEngine::FunctionOverRootedTreeCollection(
                                     child0_node, false, child1_node, false);
           const auto gpcsp_idx = AtWithDefault(indexer, gpcsp_bitset, default_index);
           if (gpcsp_idx != default_index) {
-            function_on_tree_node_by_gpcsp(gpcsp_idx, tree, focal_node);
+            function_on_tree_node_by_gpcsp(EdgeId(gpcsp_idx), tree, focal_node);
           }
         },
         true);
@@ -803,7 +804,7 @@ void GPEngine::FunctionOverRootedTreeCollection(
 }
 
 void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
-                                     const BitsetEdgeIdMap& indexer) {
+                                     const BitsetSizeMap& indexer) {
   size_t unique_gpcsp_count = branch_lengths_.size();
   branch_lengths_.setZero();
   EigenVectorXi observed_gpcsp_counts = EigenVectorXi::Zero(unique_gpcsp_count);
@@ -812,17 +813,19 @@ void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection
   auto set_first_branch_length_and_increment_gpcsp_count =
       [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const RootedTree& tree,
                                      const Node* focal_node) {
-        if (observed_gpcsp_counts(gpcsp_idx) == 0) {
-          branch_lengths_(gpcsp_idx) = tree.BranchLength(focal_node);
-          observed_gpcsp_counts(gpcsp_idx)++;
+        size_t gpcsp_id = size_t(gpcsp_idx);
+        if (observed_gpcsp_counts(gpcsp_id) == 0) {
+          branch_lengths_(gpcsp_id) = tree.BranchLength(focal_node);
+          observed_gpcsp_counts(gpcsp_id)++;
         }
       };
   FunctionOverRootedTreeCollection(set_first_branch_length_and_increment_gpcsp_count,
                                    tree_collection, indexer);
   // If a branch length was not set above, set it to the default length.
   for (EdgeId gpcsp_idx = EdgeId(0); gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
-    if (observed_gpcsp_counts(gpcsp_idx) == 0) {
-      branch_lengths_(gpcsp_idx) = default_branch_length_;
+    size_t gpcsp_id = size_t(gpcsp_idx);
+    if (observed_gpcsp_counts(gpcsp_id) == 0) {
+      branch_lengths_(gpcsp_id) = default_branch_length_;
     }
   }
 }

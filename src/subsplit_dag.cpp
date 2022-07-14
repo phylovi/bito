@@ -268,25 +268,26 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
 
 // ** Build output indexes/vectors methods:
 
-BitsetEdgeIdMap SubsplitDAG::BuildEdgeIndexer() const {
-  auto edge_indexer = BitsetEdgeIdMap();
+BitsetSizeMap SubsplitDAG::BuildEdgeIndexer() const {
+  auto edge_indexer = BitsetSizeMap();
   TopologicalEdgeTraversal([this, &edge_indexer](NodeId parent_id, bool is_edge_on_left,
                                                  NodeId child_id, EdgeId edge_idx) {
     const auto parent_subsplit = GetDAGNode(parent_id).GetBitset(is_edge_on_left);
     const auto child_subsplit = GetDAGNode(child_id).GetBitset();
-    SafeInsert(edge_indexer, Bitset::PCSP(parent_subsplit, child_subsplit), edge_idx);
+    SafeInsert(edge_indexer, Bitset::PCSP(parent_subsplit, child_subsplit),
+               size_t(edge_idx));
   });
   return edge_indexer;
 }
 
-EdgeIdBitsetMap SubsplitDAG::BuildInverseEdgeIndexer() const {
-  auto edge_to_pcsp_map = EdgeIdBitsetMap();
+SizeBitsetMap SubsplitDAG::BuildInverseEdgeIndexer() const {
+  auto edge_to_pcsp_map = SizeBitsetMap();
   TopologicalEdgeTraversal([this, &edge_to_pcsp_map](NodeId parent_id,
                                                      bool is_edge_on_left,
                                                      NodeId child_id, EdgeId edge_idx) {
     const auto parent_subsplit = GetDAGNode(parent_id).GetBitset(is_edge_on_left);
     const auto child_subsplit = GetDAGNode(child_id).GetBitset();
-    SafeInsert(edge_to_pcsp_map, edge_idx,
+    SafeInsert(edge_to_pcsp_map, size_t(edge_idx),
                Bitset::PCSP(parent_subsplit, child_subsplit));
   });
   return edge_to_pcsp_map;
@@ -664,8 +665,9 @@ SubsplitDAG::ProcessTopologyCounter(const Node::TopologyCounter &topology_counte
   BitsetVector rootsplits;
   std::tie(rootsplits, edge_indexer, index_to_child, parent_to_child_range_,
            edge_count_without_leaf_subsplits_) =
-      SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),
-                                  RootedSBNMaps::PCSPCounterOf(topology_counter));
+      SBNMaps::BuildIndexerBundleForDAG(
+          RootedSBNMaps::RootsplitCounterOf(topology_counter),
+          RootedSBNMaps::PCSPCounterOf(topology_counter));
   return {edge_indexer, index_to_child, rootsplits};
 }
 

@@ -117,6 +117,42 @@ IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counte
   return {rootsplits, indexer, index_to_child, parent_to_range, index};
 }
 
+// TODO:
+// #387
+IndexerBundleForDAG SBNMaps::BuildIndexerBundleForDAG(
+    const BitsetSizeDict& rootsplit_counter, const PCSPCounter& pcsp_counter) {
+  BitsetVector rootsplits;
+  BitsetSizeMap indexer;
+  SizeBitsetMap index_to_child;
+  BitsetEdgeIdPairMap parent_to_range;
+  size_t index = 0;
+  // Start by adding the rootsplit PCSPs.
+  size_t taxon_count((rootsplit_counter.begin()->first).size() / 2);
+  Bitset uca_root(Bitset::UCASubsplitOfTaxonCount(taxon_count));
+  // Note: uca_root is rotated before being inserted into parent_to_range
+  // because the rootsplits are connected to the DAG root via rotated edges.
+  SafeInsert(parent_to_range, uca_root.SubsplitRotate(),
+             {EdgeId(index), EdgeId(index + rootsplit_counter.size())});
+  for (const auto& iter : rootsplit_counter) {
+    rootsplits.push_back(iter.first);
+    SafeInsert(indexer, Bitset::PCSPFromUCAToRootsplit(iter.first), index);
+    SafeInsert(index_to_child, index, iter.first);
+    index++;
+  }
+  // Now add the PCSPs.
+  for (const auto& [parent, child_counter] : pcsp_counter) {
+    SafeInsert(parent_to_range, parent,
+               {EdgeId(index), EdgeId(index + child_counter.size())});
+    for (const auto& child_iter : child_counter) {
+      const auto& pcsp = parent + child_iter.first;
+      SafeInsert(indexer, pcsp, index);
+      SafeInsert(index_to_child, index, pcsp.PCSPGetChildSubsplit());
+      index++;
+    }
+  }
+  return {rootsplits, indexer, index_to_child, parent_to_range, index};
+}
+
 BitsetSizeDict UnrootedSBNMaps::RootsplitCounterOf(
     const Node::TopologyCounter& topologies) {
   BitsetSizeDict rootsplit_counter(0);
