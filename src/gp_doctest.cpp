@@ -674,7 +674,7 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   inst.ExportAllGeneratedTrees(tree_path);
 
   // requests are printable to stdout if you're keen.
-  auto request = dag.QuartetHybridRequestOf(12, false, 11);
+  auto request = dag.QuartetHybridRequestOf(NodeId(12), false, NodeId(11));
   EigenVectorXd quartet_log_likelihoods =
       inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
 
@@ -685,9 +685,12 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   CheckVectorXdEquality(quartet_log_likelihoods, manual_log_likelihoods, 1e-12);
 
   CHECK_EQ(request.IsFullyFormed(), true);
-  CHECK_EQ(dag.QuartetHybridRequestOf(14, true, 13).IsFullyFormed(), false);
-  CHECK_EQ(dag.QuartetHybridRequestOf(14, false, 0).IsFullyFormed(), false);
-  CHECK_EQ(dag.QuartetHybridRequestOf(8, true, 4).IsFullyFormed(), false);
+  CHECK_EQ(dag.QuartetHybridRequestOf(NodeId(14), true, NodeId(13)).IsFullyFormed(),
+           false);
+  CHECK_EQ(dag.QuartetHybridRequestOf(NodeId(14), false, NodeId(0)).IsFullyFormed(),
+           false);
+  CHECK_EQ(dag.QuartetHybridRequestOf(NodeId(8), true, NodeId(4)).IsFullyFormed(),
+           false);
 }
 
 // This is a slightly more complex test, that has a rotation status of true, and has
@@ -710,8 +713,9 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
   const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
   inst.ExportAllGeneratedTrees(tree_path);
 
-  auto edge = dag.GetDAGEdge(2);
-  auto request = dag.QuartetHybridRequestOf(edge.GetParent(), true, edge.GetChild());
+  auto edge = dag.GetDAGEdge(EdgeId(2));
+  auto request = dag.QuartetHybridRequestOf(NodeId(edge.GetParent()), true,
+                                            NodeId(edge.GetChild()));
   EigenVectorXd quartet_log_likelihoods =
       inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
 
@@ -728,10 +732,10 @@ TEST_CASE("GPInstance: test GPCSP indexes") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   auto& dag = inst.GetDAG();
-  dag.TopologicalEdgeTraversal(
-      [&dag](size_t parent_id, bool rotated, size_t child_id, size_t gpcsp_idx) {
-        CHECK_EQ(dag.GetEdgeIdx(parent_id, child_id), gpcsp_idx);
-      });
+  dag.TopologicalEdgeTraversal([&dag](NodeId parent_id, bool is_edge_on_left,
+                                      NodeId child_id, EdgeId gpcsp_idx) {
+    CHECK_EQ(dag.GetEdgeIdx(parent_id, child_id), gpcsp_idx);
+  });
 }
 
 TEST_CASE("GPInstance: test rootsplits") {
@@ -740,7 +744,7 @@ TEST_CASE("GPInstance: test rootsplits") {
   inst.SubsplitDAGToDot("_ignore/outtest.dot", true);
   auto& dag = inst.GetDAG();
   for (const auto& rootsplit_id : dag.GetRootsplitNodeIds()) {
-    const auto rootsplit_node = dag.GetDAGNode(rootsplit_id);
+    const auto rootsplit_node = dag.GetDAGNode(NodeId(rootsplit_id));
     CHECK(rootsplit_node.IsRootsplit());
   }
 }
@@ -775,6 +779,15 @@ TEST_CASE("GPInstance: IsValidAddNodePair tests") {
   // Valid new node pair (0123|4 and 012|3).
   CHECK(dag.IsValidAddNodePair(Bitset::Subsplit("11110", "00001"),
                                Bitset::Subsplit("11100", "00010")));
+}
+
+template <typename T>
+std::vector<T> ConvertIdVector(const SizeVector& vec_in) {
+  std::vector<T> vec_out;
+  for (const auto i : vec_in) {
+    vec_out.push_back(T(i));
+  }
+  return vec_out;
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168059272.
@@ -837,12 +850,13 @@ TEST_CASE("GPInstance: AddNodePair tests") {
                                     22, 23, 24, 25, 26, 27, 28, 29, 13, 10});
   CHECK_EQ(node_addition_result.edge_reindexer, correct_edge_reindexer);
   // Check that added_node_ids and added_edge_idxs are correct.
-  SizeVector correct_added_node_ids{12, 13};
+  NodeIdVector correct_added_node_ids = ConvertIdVector<NodeId>({12, 13});
   CHECK_EQ(node_addition_result.added_node_ids, correct_added_node_ids);
-  SizeVector correct_added_edge_idxs{26, 27, 28, 29, 13, 10};
+  EdgeIdVector correct_added_edge_idxs =
+      ConvertIdVector<EdgeId>({26, 27, 28, 29, 13, 10});
   CHECK_EQ(node_addition_result.added_edge_idxs, correct_added_edge_idxs);
   // Check that `dag_nodes` was updated (node 12 -> 14).
-  const auto& node_14 = dag.GetDAGNode(14);
+  const auto& node_14 = dag.GetDAGNode(NodeId(14));
   CHECK_EQ(node_14.GetBitset().ToString(), "0100000111");
   // Check that node fields were updated correctly.
   const auto& right_parents_14 = node_14.GetRightRootward();
@@ -855,17 +869,19 @@ TEST_CASE("GPInstance: AddNodePair tests") {
         right_children_14.end());
   CHECK_EQ(node_14.Id(), 14);
   // Check that `subsplit_to_id_` node ids were updated.
-  CHECK_EQ(dag.GetDAGNodeId(node_14.GetBitset()), 14);
+  CHECK_EQ(dag.GetDAGNodeId(node_14.GetBitset()), NodeId(14));
   // Check that `dag_edges_` node ids were updated.
-  CHECK_EQ(dag.GetEdgeIdx(15, 14), 11);
+  CHECK_EQ(dag.GetEdgeIdx(NodeId(15), NodeId(14)), EdgeId(11));
   // Check that `dag_edges_` edge idxs were updated.
-  CHECK_EQ(dag.GetEdgeIdx(14, 13), 10);
-  CHECK_EQ(dag.GetEdgeIdx(16, 13), 13);
-  CHECK_EQ(dag.GetEdgeIdx(11, 4), 25);
+  CHECK_EQ(dag.GetEdgeIdx(NodeId(14), NodeId(13)), EdgeId(10));
+  CHECK_EQ(dag.GetEdgeIdx(NodeId(16), NodeId(13)), EdgeId(13));
+  CHECK_EQ(dag.GetEdgeIdx(NodeId(11), NodeId(4)), EdgeId(25));
   // Check that `parent_to_child_range_` was updated.
-  CHECK_EQ(dag.GetChildEdgeRange(node_14.GetBitset(), false).second, 11);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).first, 12);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(16).GetBitset(), false).second, 14);
+  CHECK_EQ(dag.GetChildEdgeRange(node_14.GetBitset(), false).second, EdgeId(11));
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(NodeId(16)).GetBitset(), false).first,
+           EdgeId(12));
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(NodeId(16)).GetBitset(), false).second,
+           EdgeId(14));
   // Check that `topology_count_` was updated.
   CHECK_EQ(dag.TopologyCount(), prev_topology_count + 2);
 }
@@ -884,8 +900,8 @@ TEST_CASE("GPInstance: Reindexers for AddNodePair") {
 
   for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
     auto mods = dag.AddNodePair(nni);
-    for (size_t old_idx = 0; old_idx < pre_dag.NodeCount(); old_idx++) {
-      size_t new_idx = mods.node_reindexer.GetNewIndexByOldIndex(old_idx);
+    for (NodeId old_idx = NodeId(0); old_idx < pre_dag.NodeCount(); old_idx++) {
+      NodeId new_idx = NodeId(mods.node_reindexer.GetNewIndexByOldIndex(old_idx));
       Bitset old_node = pre_dag.GetDAGNode(old_idx).GetBitset();
       Bitset new_node = dag.GetDAGNode(new_idx).GetBitset();
       CHECK_EQ(old_node, new_node);
@@ -893,12 +909,17 @@ TEST_CASE("GPInstance: Reindexers for AddNodePair") {
     for (size_t old_idx = 0; old_idx < pre_dag.EdgeCount(); old_idx++) {
       size_t new_idx = mods.edge_reindexer.GetNewIndexByOldIndex(old_idx);
       Bitset old_parent =
-          pre_dag.GetDAGNode(pre_dag.GetDAGEdge(old_idx).GetParent()).GetBitset();
+          pre_dag.GetDAGNode(NodeId(pre_dag.GetDAGEdge(EdgeId(old_idx)).GetParent()))
+              .GetBitset();
       Bitset old_child =
-          pre_dag.GetDAGNode(pre_dag.GetDAGEdge(old_idx).GetChild()).GetBitset();
+          pre_dag.GetDAGNode(NodeId(pre_dag.GetDAGEdge(EdgeId(old_idx)).GetChild()))
+              .GetBitset();
       Bitset new_parent =
-          dag.GetDAGNode(dag.GetDAGEdge(new_idx).GetParent()).GetBitset();
-      Bitset new_child = dag.GetDAGNode(dag.GetDAGEdge(new_idx).GetChild()).GetBitset();
+          dag.GetDAGNode(NodeId(dag.GetDAGEdge(EdgeId(new_idx)).GetParent()))
+              .GetBitset();
+      Bitset new_child =
+          dag.GetDAGNode(NodeId(dag.GetDAGEdge(EdgeId(new_idx)).GetChild()))
+              .GetBitset();
       CHECK_EQ(old_parent, new_parent);
       CHECK_EQ(old_child, new_child);
     }
@@ -926,8 +947,10 @@ TEST_CASE("GPInstance: Only add parent node tests") {
   CHECK_EQ(dag.NodeCount(), prev_node_count + 3);
   CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 8);
   // Check that BuildEdgeReindexer() correctly handles left edges.
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).first, 4);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), true).second, 6);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(NodeId(10)).GetBitset(), true).first,
+           EdgeId(4));
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(NodeId(10)).GetBitset(), true).second,
+           EdgeId(6));
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168064347.
@@ -945,10 +968,14 @@ TEST_CASE("GPInstance: Only add child node tests") {
   CHECK_EQ(dag.NodeCount(), prev_node_count + 1);
   CHECK_EQ(dag.EdgeCountWithLeafSubsplits(), prev_edge_count + 4);
   // Check that new child node is connected to all possible parents.
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), false).first, 10);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(10).GetBitset(), false).second, 12);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(11).GetBitset(), false).first, 5);
-  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(11).GetBitset(), false).second, 7);
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(NodeId(10)).GetBitset(), false).first,
+           EdgeId(10));
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(NodeId(10)).GetBitset(), false).second,
+           EdgeId(12));
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(NodeId(11)).GetBitset(), false).first,
+           EdgeId(5));
+  CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(NodeId(11)).GetBitset(), false).second,
+           EdgeId(7));
 }
 
 // This test builds a DAG, tests if engine generates the same set of adjacent NNIs and
@@ -1152,8 +1179,8 @@ TEST_CASE("NNI Engine: GraftDAG") {
         for (const auto clade : {true, false}) {
           const auto neighbors = node.GetEdge(direction, clade);
           for (const auto neighbor_id : neighbors) {
-            const size_t parent_id = (is_parent ? node_id : neighbor_id);
-            const size_t child_id = (is_parent ? neighbor_id : node_id);
+            const auto parent_id = NodeId(is_parent ? node_id : neighbor_id);
+            const auto child_id = NodeId(is_parent ? neighbor_id : node_id);
             CHECK_MESSAGE(graft_dag.ContainsEdge(parent_id, child_id),
                           "Cannot find edge in GraftDAG.");
             CHECK_MESSAGE(graft_dag.ContainsEdge(child_id, parent_id),
@@ -1650,7 +1677,8 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when empty.");
   // Complete DAG.
-  for (size_t edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
+  for (EdgeId edge_id = EdgeId(0); edge_id < dag.EdgeCountWithLeafSubsplits();
+       edge_id++) {
     tree_mask.insert(edge_id);
   }
   CHECK_FALSE_MESSAGE(choice_map.TreeMaskIsValid(tree_mask, quiet_errors),
@@ -1658,7 +1686,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when missing root edge.");
   // Tree missing root node.
-  tree_mask = choice_map.ExtractTreeMask(0);
+  tree_mask = choice_map.ExtractTreeMask(EdgeId(0));
   for (const auto edge_id : tree_mask) {
     if (dag.IsEdgeRoot(edge_id)) {
       tree_mask.erase(tree_mask.find(edge_id));
@@ -1670,7 +1698,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when missing root edge.");
   // Tree missing leaf node.
-  tree_mask = choice_map.ExtractTreeMask(0);
+  tree_mask = choice_map.ExtractTreeMask(EdgeId(0));
   for (const auto edge_id : tree_mask) {
     if (dag.IsEdgeLeaf(edge_id)) {
       tree_mask.erase(tree_mask.find(edge_id));
@@ -1682,7 +1710,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when missing leaf edge.");
   // Tree missing internal edge.
-  tree_mask = choice_map.ExtractTreeMask(0);
+  tree_mask = choice_map.ExtractTreeMask(EdgeId(0));
   for (const auto edge_id : tree_mask) {
     if (!dag.IsEdgeLeaf(edge_id) && !dag.IsEdgeLeaf(edge_id)) {
       tree_mask.erase(tree_mask.find(edge_id));
@@ -1694,8 +1722,9 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   CHECK_THROWS_MESSAGE(choice_map.ExtractTopology(tree_mask),
                        "Tree is incorrectly valid when missing internal edge.");
   // Tree contains extra edge.
-  tree_mask = choice_map.ExtractTreeMask(0);
-  for (size_t edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
+  tree_mask = choice_map.ExtractTreeMask(EdgeId(0));
+  for (EdgeId edge_id = EdgeId(0); edge_id < dag.EdgeCountWithLeafSubsplits();
+       edge_id++) {
     const auto contains_edge = (tree_mask.find(edge_id) != tree_mask.end());
     if (!contains_edge) {
       const auto& parent_id = dag.GetDAGEdge(edge_id).GetParent();
@@ -1746,7 +1775,8 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   CHECK_FALSE_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
                       "Incorrectly found subtree topology in DAG.");
   // Test TreeMasks created from all DAG edges result in valid tree.
-  for (size_t edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
+  for (EdgeId edge_id = EdgeId(0); edge_id < dag.EdgeCountWithLeafSubsplits();
+       edge_id++) {
     const auto tree_mask = choice_map.ExtractTreeMask(edge_id);
     const auto topology = choice_map.ExtractTopology(edge_id);
     CHECK_MESSAGE(tree_mask.find(edge_id) != tree_mask.end(),
@@ -1756,28 +1786,4 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
     CHECK_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
                   "Edge resulted in an invalid Topology not contained in DAG.");
   }
-}
-
-// Simple tests for Ids.
-TEST_CASE("Strict Ids") {
-  std::cout << "Strict Ids" << std::endl;
-  EdgeId edge_id(42);
-  NodeId node_id(42);
-  TaxonId taxon_id(42);
-  size_t size_id = 42;
-  // Test that implicit conversions are not allowed.
-
-  // Test that comparisons against primitives are allowed.
-  // Test that comparisons against IdTypes are not allowed.
-  CHECK((edge_id == node_id));
-  CHECK((size_id == edge_id));
-
-  // Test that ordered and unordered hash maps work.
-  auto id_hash = std::hash<IdType>()(node_id);
-  std::cout << "Node Hash: " << node_id << " -- " << id_hash << std::endl;
-
-  // auto node_hash = std::hash<NodeId>()(node_id);
-  // std::cout << "Node Hash: " << node_id << " -- " << node_hash << std::endl;
-
-  // std::unordered_map<NodeId, EdgeId> bitset_node_map;
 }

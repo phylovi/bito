@@ -117,8 +117,7 @@ IndexerBundle SBNMaps::BuildIndexerBundle(const BitsetSizeDict& rootsplit_counte
   return {rootsplits, indexer, index_to_child, parent_to_range, index};
 }
 
-// TODO:
-// #387
+// TODO: #387
 IndexerBundleForDAG SBNMaps::BuildIndexerBundleForDAG(
     const BitsetSizeDict& rootsplit_counter, const PCSPCounter& pcsp_counter) {
   BitsetVector rootsplits;

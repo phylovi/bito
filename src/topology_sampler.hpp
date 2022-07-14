@@ -71,7 +71,7 @@ TEST_CASE("TopologySampler") {
   EigenVectorXd inverted_probabilities =
       dag.InvertedGPCSPProbabilities(normalized_sbn_parameters, node_probabilities);
 
-  SubsplitDAGNode origin = dag.GetDAGNode(5);
+  SubsplitDAGNode origin = dag.GetDAGNode(NodeId(5));
 
   TopologySampler sampler;
   std::map<std::string, size_t> counts;
@@ -109,7 +109,7 @@ TEST_CASE("TopologySampler: Non-uniform prior") {
   EigenVectorXd inverted_probabilities =
       dag.InvertedGPCSPProbabilities(normalized_sbn_parameters, node_probabilities);
 
-  SubsplitDAGNode origin = dag.GetDAGNode(5);
+  SubsplitDAGNode origin = dag.GetDAGNode(NodeId(5));
 
   TopologySampler sampler;
   std::map<std::string, size_t> counts;
