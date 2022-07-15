@@ -1787,3 +1787,26 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                   "Edge resulted in an invalid Topology not contained in DAG.");
   }
 }
+
+// TODO: Remove this.
+TEST_CASE("StrongType") {
+  NodeId node_id(42);
+  EdgeId edge_id(42);
+
+  std::cout << "NODE_ID: " << node_id << std::endl;
+  std::cout << "IS_EQUAL?: " << (node_id == edge_id) << std::endl;
+
+  std::vector<double> test_1;
+  EigenVectorXd test_2;
+  test_2.conservativeResize(42);
+  for (size_t i = 0; i < 42; i++) {
+    test_1.push_back((1 * i) + 1.5);
+    test_2(i) = ((2 * i) + 1.5);
+  }
+
+  for (EdgeId e(0); e < 42; e++) {
+    std::cout << "EDGE: " << e << " " << test_1[e] << std::endl;
+    std::cout << "NODE: " << e << " " << test_2(e.get()) << std::endl;
+    break;
+  }
+}

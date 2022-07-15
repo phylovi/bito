@@ -14,6 +14,7 @@
 
 #include "intpack.hpp"
 #include "prettyprint.hpp"
+#include "sugar_strong_types.hpp"
 
 // Put typedefs that are built of STL types here.
 using Tag = uint64_t;
@@ -151,5 +152,3 @@ std::unordered_map<Key, T> UnorderedMapOf(const std::vector<std::pair<Key, T>> &
   }
   return m;
 }
-
-#include "sugar_strong_types.hpp"

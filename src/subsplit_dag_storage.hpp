@@ -37,111 +37,11 @@
 
 #include "bitset.hpp"
 #include "reindexer.hpp"
+#include "sugar.hpp"
 
-struct NodeId {
-  using T = size_t;
-  NodeId() = default;
-  explicit NodeId(const T& value) : value_(value) {}
-
-  operator T&() { return value_; }
-  operator T() const { return value_; }
-
-  NodeId& operator=(const size_t new_value) {
-    value_ = new_value;
-    return *this;
-  }
-
-  // Outputs string representation to stream.
-  friend std::ostream& operator<<(std::ostream& os, const NodeId& t) {
-    if (t.value_ == NoId) {
-      os << "NoId";
-    } else {
-      os << t.value_;
-    }
-    return os;
-  }
-
-  T value_;
-};
-namespace std {
-template <>
-struct hash<NodeId> {
-  std::size_t operator()(const NodeId& id) const noexcept {
-    std::size_t value_hash = std::hash<size_t>()(id.value_);
-    return value_hash;
-  }
-};
-}  // namespace std
-
-struct EdgeId {
-  using T = size_t;
-  EdgeId() = default;
-  explicit EdgeId(const T& value) : value_(value) {}
-
-  operator T&() { return value_; }
-  operator T() const { return value_; }
-
-  EdgeId& operator=(const size_t new_value) {
-    value_ = new_value;
-    return *this;
-  }
-
-  // Outputs string representation to stream.
-  friend std::ostream& operator<<(std::ostream& os, const EdgeId& t) {
-    if (t.value_ == NoId) {
-      os << "NoId";
-    } else {
-      os << t.value_;
-    }
-    return os;
-  }
-
-  T value_;
-};
-namespace std {
-template <>
-struct hash<EdgeId> {
-  std::size_t operator()(const EdgeId& id) const noexcept {
-    std::size_t value_hash = std::hash<size_t>()(id.value_);
-    return value_hash;
-  }
-};
-}  // namespace std
-
-struct TaxonId {
-  using T = size_t;
-  TaxonId() = default;
-  explicit TaxonId(const T& value) : value_(value) {}
-
-  operator T&() { return value_; }
-  operator T() const { return value_; }
-
-  TaxonId& operator=(const size_t new_value) {
-    value_ = new_value;
-    return *this;
-  }
-
-  // Outputs string representation to stream.
-  friend std::ostream& operator<<(std::ostream& os, const TaxonId& t) {
-    if (t.value_ == NoId) {
-      os << "NoId";
-    } else {
-      os << t.value_;
-    }
-    return os;
-  }
-
-  T value_;
-};
-namespace std {
-template <>
-struct hash<TaxonId> {
-  std::size_t operator()(const TaxonId& id) const noexcept {
-    std::size_t value_hash = std::hash<size_t>()(id.value_);
-    return value_hash;
-  }
-};
-}  // namespace std
+using NodeId = GenericId<struct NodeIdTag>;
+using EdgeId = GenericId<struct EdgeIdTag>;
+using TaxonId = GenericId<struct TaxonIdTag>;
 
 using StringTaxonIdMap = std::unordered_map<std::string, TaxonId>;
 using BitsetNodeIdMap = std::unordered_map<Bitset, NodeId>;

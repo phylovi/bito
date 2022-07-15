@@ -739,6 +739,11 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
       abs(exp(current_log_branch_length) - branch_lengths_(op.gpcsp_));
 }
 
+// double& operator()(EigenVectorXd& vec, const EdgeId i) { return vec[size_t(i)]; }
+// const double& operator()(const EigenVectorXd& vec, const EdgeId i) {
+//   return vec[size_t(i)];
+// }
+
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,
                                      const BitsetSizeMap& indexer) {
   size_t unique_gpcsp_count = branch_lengths_.size();

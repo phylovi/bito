@@ -8,6 +8,7 @@
 // https://www.fluentcpp.com/2016/12/08/strong-types-for-strong-interfaces/
 //
 // Templates for enumerated types. Creates a wrapper class for a base enum class.
+// Includes using enums to access stl storage classes.
 
 #pragma once
 
@@ -19,111 +20,86 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <type_traits>
 
-// // Generic Strong Type (Wrapper for primitive).
-// // https://www.fluentcpp.com/2016/12/08/strong-types-for-strong-interfaces/
-// template <typename T, typename Parameter>
-// class NamedType {
-//  public:
-//   explicit NamedType(T const &value) : value_(value) {}
-//   explicit NamedType(T &&value) : value_(std::move(value)) {}
-//   T &get() { return value_; }
-//   T const &get() const { return value_; }
-//   explicit operator T &() { return value_; }
-//   explicit operator T() const { return value_; }
+// Wrapper for strong typing of primitive types
+template <typename Type, typename TypeNameTag>
+struct StrongType {
+  // Wrapped primitive type.
+  using UnderlyingType = Type;
 
-//  private:
-//   T value_;
-// };
+  explicit StrongType(UnderlyingType const &value) : value_(value) {}
+  // Template constructor for reference type wrappers.
+  template <typename T_ = UnderlyingType>
+  explicit StrongType(
+      UnderlyingType &&value,
+      typename std::enable_if<!std::is_reference<T_>{}, std::nullptr_t>::type = nullptr)
+      : value_(std::move(value)) {}
 
-// // Hashable attribute.
-// template <typename T>
-// struct Hashable {
-//   static constexpr bool is_hashable = true;
-// };
+  explicit StrongType(UnderlyingType &&value) : value_(std::move(value)) {}
 
-// // Generic StrongType Hash Function.
-// namespace std {
-// template <typename T, typename Parameter, typename Converter,
-//           template <typename> class... Skills>
-// struct hash<NamedTypeImpl<T, Parameter, Converter, Skills...>> {
-//   using NamedType = NamedTypeImpl<T, Parameter, Converter, Skills...>;
-//   using checkIfHashable = typename std::enable_if<NamedType::is_hashable,
-//   void>::type;
+  UnderlyingType &get() { return value_; }
+  UnderlyingType const &get() const { return value_; }
+  operator UnderlyingType &() { return value_; }
+  operator UnderlyingType() const { return value_; }
 
-//   size_t operator()(NamedTypeImpl<T, Parameter, Converter, Skills...> const &x) const
-//   {
-//     return std::hash<T>()(x.get());
-//   }
-// };
-// }  // namespace std
-
-// Wrapper for strict typing of primitive types
-template <typename T>
-struct StrictType {
-  explicit StrictType(const T &value) : value_(value) {}
-
-  operator T &() { return value_; }
-  operator T() const { return value_; }
-
-  // Outputs Bitset string representation to stream.
-  friend std::ostream &operator<<(std::ostream &os, const StrictType<T> &t) {
-    os << t.value_;
+  // Outputs string representation to stream.
+  friend std::ostream &operator<<(std::ostream &os,
+                                  const StrongType<Type, TypeNameTag> &obj) {
+    os << obj.value_;
     return os;
   }
 
-  T value_;
+  Type value_;
 };
 
-static constexpr size_t NoId = std::numeric_limits<size_t>::max();
+// Generic hash function for strong types.
+namespace std {
+template <typename Type, typename TypeNameTag>
+struct hash<StrongType<Type, TypeNameTag>> {
+  std::size_t operator()(const StrongType<Type, TypeNameTag> &id) const noexcept {
+    std::size_t value_hash = std::hash<Type>()(id.value_);
+    return value_hash;
+  }
+};
+}  // namespace std
 
-struct IdType : public StrictType<size_t> {
-  using StrictType<size_t>::StrictType;
+template <typename TypeNameTag>
+struct GenericId : public StrongType<size_t, struct GenericIdTag> {
+  explicit GenericId() : StrongType(NoId) {}
+  explicit GenericId(UnderlyingType const &value) : StrongType(value) {}
+  explicit GenericId(UnderlyingType &&value) : StrongType(std::move(value)) {}
 
-  // Can implicitly assign IdType to size_t.
-  IdType &operator=(const size_t &new_value) {
+  // Can implicitly assign GenericId to size_t.
+  GenericId &operator=(const UnderlyingType &new_value) {
     value_ = new_value;
     return *this;
   }
 
-  // Can implcitly use bracket operator for vector access.
-  // template <typename VectorTypeRef>
-  // friend DataType &operator[](VectorTypeRef vector, const StrictType i) {
-  //   return vector[static_cast<int>(i)];
-  // }
+  // ** I/O
 
-  // template <typename VectorTypeRef>
-  // const DataType &operator[](const VectorTypeRef vector, const StrictType i) const {
-  //   return vector[static_cast<int>(i)];
-  // }
+  std::string ToString(const bool include_prefix = true) const {
+    std::stringstream os;
+    os << (include_prefix ? "ID::" : "")
+       << ((value_ == NoId) ? "NoId" : std::to_string(value_));
+    return os.str();
+  }
 
-  //   // Can implcitly use bracket operator for vector access.
-  // template <typename VectorTypeRef>
-  // friend DataType &operator[](VectorTypeRef vector, const EnumType i) {
-  //   return vector[static_cast<int>(i)];
-  // }
-
-  // template <typename VectorTypeRef>
-  // const DataType &operator[](const VectorTypeRef vector, const EnumType i) const {
-  //   return vector[static_cast<int>(i)];
-  // }
-
-  // Outputs string representation to stream.
-  friend std::ostream &operator<<(std::ostream &os, const IdType &t) {
-    if (t.value_ == NoId) {
-      os << "NoId";
-    } else {
-      os << t.value_;
-    }
+  friend std::ostream &operator<<(std::ostream &os, const GenericId &obj) {
+    os << obj.ToString(true);
     return os;
   }
+
+  static constexpr size_t NoId = std::numeric_limits<size_t>::max();
 };
 
-// Hash functions for StrictType.
+constexpr size_t NoId = GenericId<struct NoTag>::NoId;
+
+// Generic hash function for GenericIds.
 namespace std {
-template <>
-struct hash<IdType> {
-  std::size_t operator()(const IdType &id) const noexcept {
+template <typename TypeNameTag>
+struct hash<GenericId<TypeNameTag>> {
+  std::size_t operator()(const GenericId<TypeNameTag> &id) const noexcept {
     std::size_t value_hash = std::hash<size_t>()(id.value_);
     return value_hash;
   }
