@@ -31,7 +31,7 @@ static inline void RemapNeighbors(NeighborsView neighbors,
                                   const SizeVector& node_reindexer) {
   std::map<VertexId, LineId> remapped;
   for (auto i = neighbors.begin(); i != neighbors.end(); ++i) {
-    remapped[node_reindexer[*i]] = size_t(i.GetEdge());
+    remapped[node_reindexer[*i]] = i.GetEdge().value_;
   }
   neighbors.SetNeighbors(remapped);
 }

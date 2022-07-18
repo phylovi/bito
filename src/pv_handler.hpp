@@ -27,9 +27,8 @@ static inline const size_t PLVCount = 6;
 class PLVTypeEnum
     : public EnumWrapper<PLVType, size_t, PLVCount, PLVType::P, PLVType::RLeft> {
  public:
-  static inline const Array<std::string> Labels = {{"PLV::P", "PLV::PHatRight",
-                                                    "PLV::PHatLeft", "PLV::RHat",
-                                                    "PLV::RRight", "PLV::RLeft"}};
+  static inline const Array<std::string> Labels = {
+      {"P", "PHatRight", "PHatLeft", "RHat", "RRight", "RLeft"}};
 
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
     os << "PLV::" << Labels[e];
@@ -47,8 +46,7 @@ static inline const size_t PSVCount = 3;
 class PSVTypeEnum
     : public EnumWrapper<PSVType, size_t, PSVCount, PSVType::PRight, PSVType::Q> {
  public:
-  static inline const Array<std::string> Labels = {
-      {"PSV::PRight", "PSV::PLeft", "PSV::Q"}};
+  static inline const Array<std::string> Labels = {{"PRight", "PLeft", "Q"}};
 
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
     os << "PSV::" << Labels[e];

@@ -20,6 +20,7 @@
 #include <vector>
 
 #include "sugar.hpp"
+
 class Bitset {
  public:
   using BitsetPair = std::pair<Bitset, Bitset>;

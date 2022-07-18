@@ -275,7 +275,7 @@ BitsetSizeMap SubsplitDAG::BuildEdgeIndexer() const {
     const auto parent_subsplit = GetDAGNode(parent_id).GetBitset(is_edge_on_left);
     const auto child_subsplit = GetDAGNode(child_id).GetBitset();
     SafeInsert(edge_indexer, Bitset::PCSP(parent_subsplit, child_subsplit),
-               size_t(edge_idx));
+               edge_idx.value_);
   });
   return edge_indexer;
 }
@@ -287,7 +287,7 @@ SizeBitsetMap SubsplitDAG::BuildInverseEdgeIndexer() const {
                                                      NodeId child_id, EdgeId edge_idx) {
     const auto parent_subsplit = GetDAGNode(parent_id).GetBitset(is_edge_on_left);
     const auto child_subsplit = GetDAGNode(child_id).GetBitset();
-    SafeInsert(edge_to_pcsp_map, size_t(edge_idx),
+    SafeInsert(edge_to_pcsp_map, edge_idx.value_,
                Bitset::PCSP(parent_subsplit, child_subsplit));
   });
   return edge_to_pcsp_map;

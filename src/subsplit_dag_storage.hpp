@@ -39,9 +39,21 @@
 #include "reindexer.hpp"
 #include "sugar.hpp"
 
+struct NodeIdType {
+  size_t value_;
+};
+struct EdgeIdType {
+  size_t value_;
+} struct TaxonIdType {
+  size_t value_;
+}
+
 using NodeId = GenericId<struct NodeIdTag>;
 using EdgeId = GenericId<struct EdgeIdTag>;
 using TaxonId = GenericId<struct TaxonIdTag>;
+
+using VertexId = size_t;
+using LineId = size_t;
 
 using StringTaxonIdMap = std::unordered_map<std::string, TaxonId>;
 using BitsetNodeIdMap = std::unordered_map<Bitset, NodeId>;
@@ -58,10 +70,6 @@ using BitsetEdgeIdPairMap = std::unordered_map<Bitset, EdgeIdPair>;
 using NodeIdVectorPair = std::pair<NodeIdVector, NodeIdVector>;
 
 enum class Direction { Rootward, Leafward };
-
-using VertexId = size_t;
-using LineId = size_t;
-// static constexpr size_t NoId = std::numeric_limits<size_t>::max();
 
 template <typename Derived>
 class DAGLine {

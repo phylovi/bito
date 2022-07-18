@@ -78,10 +78,12 @@ struct GenericId : public StrongType<size_t, struct GenericIdTag> {
 
   // ** I/O
 
+  std::string PrefixToString() { return "Id"; }
+
   std::string ToString(const bool include_prefix = true) const {
     std::stringstream os;
-    os << (include_prefix ? "ID::" : "")
-       << ((value_ == NoId) ? "NoId" : std::to_string(value_));
+    os << (include_prefix ? PrefixToString() : "")
+       << "::" << ((value_ == NoId) ? "NoId" : std::to_string(value_));
     return os.str();
   }
 
@@ -93,7 +95,7 @@ struct GenericId : public StrongType<size_t, struct GenericIdTag> {
   static constexpr size_t NoId = std::numeric_limits<size_t>::max();
 };
 
-constexpr size_t NoId = GenericId<struct NoTag>::NoId;
+constexpr size_t NoId = GenericId<struct NoNameTag>::NoId;
 
 // Generic hash function for GenericIds.
 namespace std {
