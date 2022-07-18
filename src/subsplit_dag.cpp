@@ -452,7 +452,7 @@ Node::NodePtrVec SubsplitDAG::GenerateAllTopologies() const {
       topology_below.at(node_id).push_back(Node::Leaf(node_id));
     } else {
       auto [rotated_topologies, sorted_topologies] = GetSubtopologies(node);
-      topology_below[node_id] =
+      topology_below[node_id.value_] =
           MergeTopologies(node_id, rotated_topologies, sorted_topologies);
     }
   }
@@ -581,12 +581,14 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
   TopologicalEdgeTraversal([&node_probabilities, &normalized_sbn_parameters](
                                const NodeId parent_id, const bool is_edge_on_left,
                                const NodeId child_id, const EdgeId edge_idx) {
-    const double child_probability_given_parent = normalized_sbn_parameters[edge_idx];
+    const double child_probability_given_parent =
+        normalized_sbn_parameters[edge_idx.value_];
     Assert(child_probability_given_parent >= 0. && child_probability_given_parent <= 1.,
            "UnconditionalNodeProbabilities: got an out-of-range probability. Are these "
            "normalized and in linear space?");
-    const double parent_probability = node_probabilities[parent_id];
-    node_probabilities[child_id] += parent_probability * child_probability_given_parent;
+    const double parent_probability = node_probabilities[parent_id.value_];
+    node_probabilities[child_id.value_] +=
+        parent_probability * child_probability_given_parent;
   });
 
   return node_probabilities;
@@ -601,7 +603,7 @@ BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
     const auto &subsplit_bitset = GetDAGNode(node_id).GetBitset();
     if (node_id != GetDAGRootNodeId() && !subsplit_bitset.SubsplitIsLeaf()) {
       SafeInsert(subsplit_probability_map, subsplit_bitset,
-                 node_probabilities[node_id]);
+                 node_probabilities[node_id.value_]);
     }
   }
   return subsplit_probability_map;
@@ -621,10 +623,10 @@ EigenVectorXd SubsplitDAG::InvertedGPCSPProbabilities(
         // (there is only one "parent" of a rootsplit).
         if (parent_id != GetDAGRootNodeId()) {
           // For a PCSP t -> s:
-          inverted_probabilities[edge_idx] =         // P(t|s)
-              node_probabilities[parent_id] *        // P(t)
-              normalized_sbn_parameters[edge_idx] /  // P(s|t)
-              node_probabilities[child_id];          // P(s)
+          inverted_probabilities[edge_idx.value_] =         // P(t|s)
+              node_probabilities[parent_id.value_] *        // P(t)
+              normalized_sbn_parameters[edge_idx.value_] /  // P(s|t)
+              node_probabilities[child_id.value_];          // P(s)
         }
       });
   return inverted_probabilities;
@@ -676,7 +678,7 @@ void SubsplitDAG::BuildTaxonMap(const TagStringMap &tag_taxon_map) {
   for (const auto &[tag, name] : tag_taxon_map) {
     // The "tag" key of the tree_collection's taxon_map is 2 bitpacked ints: [id,
     // topology count]. We only care about the id.
-    TaxonId id = TaxonId(static_cast<size_t>(UnpackFirstInt(tag)));
+    TaxonId id = TaxonId{static_cast<size_t>(UnpackFirstInt(tag))};
     dag_taxa_.insert(std::make_pair(name, id));
   }
 }
@@ -921,7 +923,7 @@ SizeVector SubsplitDAG::BuildTaxonTranslationMap(const SubsplitDAG &dag_a,
 
   SizeVector taxon_map(names_a.size());
   for (const auto &name : names_a) {
-    taxon_map[static_cast<size_t>(dag_a.GetTaxonId(name))] = dag_b.GetTaxonId(name);
+    taxon_map[dag_a.GetTaxonId(name).value_] = dag_b.GetTaxonId(name).value_;
   }
   return taxon_map;
 }
@@ -1398,13 +1400,13 @@ bool SubsplitDAG::IsValidTaxonMap() const {
   // Get all ids from map.
   for (const auto &[name, taxon_id] : dag_taxa_) {
     std::ignore = name;
-    if (taxon_id > id_exists.size()) {
+    if (taxon_id.value_ > id_exists.size()) {
       return false;
     }
-    if (id_exists[taxon_id]) {
+    if (id_exists[taxon_id.value_]) {
       return false;
     } else {
-      id_exists[taxon_id] = true;
+      id_exists[taxon_id.value_] = true;
     }
   }
   // Taxon map should cover the all ids from 0 to taxon_count-1.

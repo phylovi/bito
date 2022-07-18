@@ -22,10 +22,11 @@
 #include <vector>
 #include <type_traits>
 
+// Is Comparable
+
 // Wrapper for strong typing of primitive types
 template <typename Type, typename TypeNameTag>
 struct StrongType {
-  // Wrapped primitive type.
   using UnderlyingType = Type;
 
   explicit StrongType(UnderlyingType const &value) : value_(value) {}
@@ -43,6 +44,31 @@ struct StrongType {
   operator UnderlyingType &() { return value_; }
   operator UnderlyingType() const { return value_; }
 
+  // Can implicitly assign GenericId to size_t.
+  StrongType<Type, TypeNameTag> &operator=(const UnderlyingType &new_value) {
+    value_ = new_value;
+    return *this;
+  }
+
+  // Compare to its own type.
+  int Compare(const StrongType<Type, TypeNameTag> &other) const {
+    return Compare(other.value_);
+  }
+  bool operator==(const StrongType<Type, TypeNameTag> &other) const {
+    return Compare(other) == 0;
+  }
+  bool operator>(const StrongType<Type, TypeNameTag> &other) const {
+    return Compare(other) > 0;
+  }
+  bool operator<(const StrongType<Type, TypeNameTag> &other) const {
+    return Compare(other) < 0;
+  }
+  // Compare to its underlying type.
+  int Compare(const UnderlyingType &other) const { return value_ - other; }
+  bool operator==(const UnderlyingType &other) const { return Compare(other) == 0; }
+  bool operator>(const UnderlyingType &other) const { return Compare(other) > 0; }
+  bool operator<(const UnderlyingType &other) const { return Compare(other) < 0; }
+
   // Outputs string representation to stream.
   friend std::ostream &operator<<(std::ostream &os,
                                   const StrongType<Type, TypeNameTag> &obj) {
@@ -53,7 +79,7 @@ struct StrongType {
   Type value_;
 };
 
-// Generic hash function for strong types.
+// Generic hash function for StrongType.
 namespace std {
 template <typename Type, typename TypeNameTag>
 struct hash<StrongType<Type, TypeNameTag>> {
@@ -64,21 +90,22 @@ struct hash<StrongType<Type, TypeNameTag>> {
 };
 }  // namespace std
 
+//
 template <typename TypeNameTag>
-struct GenericId : public StrongType<size_t, struct GenericIdTag> {
+struct GenericId : public StrongType<size_t, TypeNameTag> {
+  using NameTag = TypeNameTag;
+  using UnderlyingType = size_t;
+
   explicit GenericId() : StrongType(NoId) {}
   explicit GenericId(UnderlyingType const &value) : StrongType(value) {}
-  explicit GenericId(UnderlyingType &&value) : StrongType(std::move(value)) {}
+  // Template constructor for reference type wrappers.
+  template <typename T_ = UnderlyingType>
+  explicit GenericId(
+      UnderlyingType &&value,
+      typename std::enable_if<!std::is_reference<T_>{}, std::nullptr_t>::type = nullptr)
+      : StrongType(std::move(value)) {}
 
-  // Can implicitly assign GenericId to size_t.
-  GenericId &operator=(const UnderlyingType &new_value) {
-    value_ = new_value;
-    return *this;
-  }
-
-  // ** I/O
-
-  std::string PrefixToString() { return "Id"; }
+  static std::string PrefixToString() { return "Id"; }
 
   std::string ToString(const bool include_prefix = true) const {
     std::stringstream os;
@@ -87,7 +114,27 @@ struct GenericId : public StrongType<size_t, struct GenericIdTag> {
     return os.str();
   }
 
-  friend std::ostream &operator<<(std::ostream &os, const GenericId &obj) {
+  // Can implicitly assign GenericId to size_t.
+  GenericId<TypeNameTag> &operator=(const UnderlyingType &new_value) {
+    value_ = new_value;
+    return *this;
+  }
+
+  // Compare to its own type.
+  int Compare(const GenericId<TypeNameTag> &other) const {
+    return Compare(other.value_);
+  }
+  bool operator==(const GenericId<TypeNameTag> &other) const {
+    return Compare(other) == 0;
+  }
+  bool operator>(const GenericId<TypeNameTag> &other) const {
+    return Compare(other) > 0;
+  }
+  bool operator<(const GenericId<TypeNameTag> &other) const {
+    return Compare(other) < 0;
+  }
+
+  friend std::ostream &operator<<(std::ostream &os, const GenericId<TypeNameTag> &obj) {
     os << obj.ToString(true);
     return os;
   }

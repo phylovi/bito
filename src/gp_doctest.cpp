@@ -1788,12 +1788,32 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   }
 }
 
+std::ostream& operator<<(std::ostream& os, const NodeIdType& obj) {
+  os << obj.value_;
+  return os;
+};
+
+std::ostream& operator<<(std::ostream& os, const EdgeIdType& obj) {
+  os << obj.value_;
+  return os;
+};
+
+std::ostream& operator<<(std::ostream& os, const TaxonIdType& obj) {
+  os << obj.value_;
+  return os;
+};
+
 // TODO: Remove this.
 TEST_CASE("StrongType") {
+  struct NodeIdType2 : public GenericId<struct NodeIdTag> {};
+  struct EdgeIdType2 : public GenericId<struct EdgeIdTag> {};
+
   NodeId node_id(42);
   EdgeId edge_id(42);
+  node_id = edge_id;
 
   std::cout << "NODE_ID: " << node_id << std::endl;
+  std::cout << "EDGE_ID: " << edge_id << std::endl;
   std::cout << "IS_EQUAL?: " << (node_id == edge_id) << std::endl;
 
   std::vector<double> test_1;
@@ -1809,4 +1829,25 @@ TEST_CASE("StrongType") {
     std::cout << "NODE: " << e << " " << test_2(e.get()) << std::endl;
     break;
   }
+
+  // NodeIdType node_id_test{43};
+  // EdgeIdType edge_id_test{43};
+  // EdgeIdType edge_id_test2{45};
+  // const EdgeIdType new_edge1{2};
+  // const EdgeIdType new_edge2{2};
+
+  // std::cout << "EDGE_TEST: " << edge_id_test << std::endl;
+  // std::cout << "NODE_TEST: " << node_id_test << std::endl;
+  // std::cout << "IS_EQUAL?: " << (node_id_test == edge_id_test) << std::endl;
+  // std::cout << "IS_EQUAL?: " << (edge_id_test == edge_id_test2) << std::endl;
+
+  // node_id_test.value_ = edge_id_test2.value_;
+  // edge_id_test = edge_id_test2;
+
+  // std::unordered_map<EdgeIdType, size_t> test_map;
+  // for (EdgeIdType id{0}; id.value_ < 10; id.value_++) {
+  //   test_map.insert({id, id.value_});
+  // }
+
+  // std::cout << "TEST_MAP: " << test_map << std::endl;
 }

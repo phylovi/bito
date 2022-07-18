@@ -44,13 +44,58 @@ struct NodeIdType {
 };
 struct EdgeIdType {
   size_t value_;
-} struct TaxonIdType {
+};
+struct TaxonIdType {
   size_t value_;
-}
+};
+
+// Generic hash function for IdTypes.
+namespace std {
+template <>
+struct hash<EdgeIdType> {
+  std::size_t operator()(const EdgeIdType& id) const noexcept {
+    std::size_t value_hash = std::hash<size_t>()(id.value_);
+    return value_hash;
+  }
+};
+template <>
+struct hash<NodeIdType> {
+  std::size_t operator()(const NodeIdType& id) const noexcept {
+    std::size_t value_hash = std::hash<size_t>()(id.value_);
+    return value_hash;
+  }
+};
+template <>
+struct hash<TaxonIdType> {
+  std::size_t operator()(const TaxonIdType& id) const noexcept {
+    std::size_t value_hash = std::hash<size_t>()(id.value_);
+    return value_hash;
+  }
+};
+}  // namespace std
+
+// std::ostream& operator<<(std::ostream& os, const NodeIdType& obj) {
+//   os << obj.value_;
+//   return os;
+// };
+
+// std::ostream& operator<<(std::ostream& os, const EdgeIdType& obj) {
+//   os << obj.value_;
+//   return os;
+// };
+
+// std::ostream& operator<<(std::ostream& os, const TaxonIdType& obj) {
+//   os << obj.value_;
+//   return os;
+// };
 
 using NodeId = GenericId<struct NodeIdTag>;
 using EdgeId = GenericId<struct EdgeIdTag>;
 using TaxonId = GenericId<struct TaxonIdTag>;
+
+// using NodeId = GenericId<struct NodeIdTag>;
+// using EdgeId = EdgeIdType;
+// using TaxonId = TaxonIdType;
 
 using VertexId = size_t;
 using LineId = size_t;
