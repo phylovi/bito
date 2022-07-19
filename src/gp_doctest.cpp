@@ -520,35 +520,35 @@ TEST_CASE("GPInstance: CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths") {
            "(x0:0.9,(x1:0.9,((x2:0.9,x3:0.9):0.9,x4:0.9):0.9):0.9):0;\n");
 }
 
-// TEST_CASE("GPInstance: Priors") {
-//   auto inst = GPInstanceOfFiles("data/four-numbered-taxa.fasta",
-//                                 "data/four-taxon-two-tree-rootsplit-uncertainty.nwk");
-//   // Here are the trees:
-//   // (((1,2),3),4);
-//   // ((1,(2,3)),4);
-//   // ((1,2),(3,4));
-//   //
-//   // Here's the interesting part of the indexer:
-//   // 0000|1111|0001,    0
-//   // 0000|1111|0011,    1
-//   // 0001|1110|0110,    2
-//   // 0001|1110|0010,    3
-//   auto support = inst.GetDAG().BuildUniformOnTopologicalSupportPrior();
-//   CHECK_LT(fabs(support[0] - 2. / 3.), 1e-10);
-//   CHECK_LT(fabs(support[1] - 1. / 3.), 1e-10);
-//   CHECK_LT(fabs(support[2] - 1. / 2.), 1e-10);
-//   CHECK_LT(fabs(support[3] - 1. / 2.), 1e-10);
-//   auto all = inst.GetDAG().BuildUniformOnAllTopologiesPrior();
-//   // There are 15 topologies on 4 taxa.
-//   // There are 3 topologies on 3 taxa, so there are 3 topologies with rootsplit
-//   // 0001|1110.
-//   CHECK_LT(fabs(all[0] - 3. / 15.), 1e-10);
-//   // There is only 1 topology with rootsplit 0011|1100.
-//   CHECK_LT(fabs(all[1] - 1. / 15.), 1e-10);
-//   // There are 3 topologies on 3 taxa.
-//   CHECK_LT(fabs(all[2] - 1. / 3.), 1e-10);
-//   CHECK_LT(fabs(all[3] - 1. / 3.), 1e-10);
-// }
+TEST_CASE("GPInstance: Priors") {
+  auto inst = GPInstanceOfFiles("data/four-numbered-taxa.fasta",
+                                "data/four-taxon-two-tree-rootsplit-uncertainty.nwk");
+  // Here are the trees:
+  // (((1,2),3),4);
+  // ((1,(2,3)),4);
+  // ((1,2),(3,4));
+  //
+  // Here's the interesting part of the indexer:
+  // 0000|1111|0001,    0
+  // 0000|1111|0011,    1
+  // 0001|1110|0110,    2
+  // 0001|1110|0010,    3
+  auto support = inst.GetDAG().BuildUniformOnTopologicalSupportPrior();
+  CHECK_LT(fabs(support[0] - 2. / 3.), 1e-10);
+  CHECK_LT(fabs(support[1] - 1. / 3.), 1e-10);
+  CHECK_LT(fabs(support[2] - 1. / 2.), 1e-10);
+  CHECK_LT(fabs(support[3] - 1. / 2.), 1e-10);
+  auto all = inst.GetDAG().BuildUniformOnAllTopologiesPrior();
+  // There are 15 topologies on 4 taxa.
+  // There are 3 topologies on 3 taxa, so there are 3 topologies with rootsplit
+  // 0001|1110.
+  CHECK_LT(fabs(all[0] - 3. / 15.), 1e-10);
+  // There is only 1 topology with rootsplit 0011|1100.
+  CHECK_LT(fabs(all[1] - 1. / 15.), 1e-10);
+  // There are 3 topologies on 3 taxa.
+  CHECK_LT(fabs(all[2] - 1. / 3.), 1e-10);
+  CHECK_LT(fabs(all[3] - 1. / 3.), 1e-10);
+}
 
 // TEST_CASE("GPInstance: inverted GPCSP probabilities") {
 //   // Note that just for fun, I have duplicated the first tree, but that doesn't
