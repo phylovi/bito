@@ -497,7 +497,7 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
     // The ordering of this subsplit is flipped so that this ratio will be nonzero in
     // the denominator in the case of root & leaves.
     result(size_t(edge_idx)) = Combinatorics::LogChildSubsplitCountRatio(
-        child_left_taxon_count, child_right_taxon_count);
+        child_right_taxon_count, child_left_taxon_count);
   }
   NumericalUtils::Exponentiate(result);
 
