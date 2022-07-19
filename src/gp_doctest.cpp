@@ -520,101 +520,105 @@ TEST_CASE("GPInstance: CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths") {
            "(x0:0.9,(x1:0.9,((x2:0.9,x3:0.9):0.9,x4:0.9):0.9):0.9):0;\n");
 }
 
-TEST_CASE("GPInstance: Priors") {
-  auto inst = GPInstanceOfFiles("data/four-numbered-taxa.fasta",
-                                "data/four-taxon-two-tree-rootsplit-uncertainty.nwk");
-  // Here are the trees:
-  // (((1,2),3),4);
-  // ((1,(2,3)),4);
-  // ((1,2),(3,4));
-  //
-  // Here's the interesting part of the indexer:
-  // 0000|1111|0001,    0
-  // 0000|1111|0011,    1
-  // 0001|1110|0110,    2
-  // 0001|1110|0010,    3
-  auto support = inst.GetDAG().BuildUniformOnTopologicalSupportPrior();
-  CHECK_LT(fabs(support[0] - 2. / 3.), 1e-10);
-  CHECK_LT(fabs(support[1] - 1. / 3.), 1e-10);
-  CHECK_LT(fabs(support[2] - 1. / 2.), 1e-10);
-  CHECK_LT(fabs(support[3] - 1. / 2.), 1e-10);
-  auto all = inst.GetDAG().BuildUniformOnAllTopologiesPrior();
-  // There are 15 topologies on 4 taxa.
-  // There are 3 topologies on 3 taxa, so there are 3 topologies with rootsplit
-  // 0001|1110.
-  CHECK_LT(fabs(all[0] - 3. / 15.), 1e-10);
-  // There is only 1 topology with rootsplit 0011|1100.
-  CHECK_LT(fabs(all[1] - 1. / 15.), 1e-10);
-  // There are 3 topologies on 3 taxa.
-  CHECK_LT(fabs(all[2] - 1. / 3.), 1e-10);
-  CHECK_LT(fabs(all[3] - 1. / 3.), 1e-10);
-}
+// TEST_CASE("GPInstance: Priors") {
+//   auto inst = GPInstanceOfFiles("data/four-numbered-taxa.fasta",
+//                                 "data/four-taxon-two-tree-rootsplit-uncertainty.nwk");
+//   // Here are the trees:
+//   // (((1,2),3),4);
+//   // ((1,(2,3)),4);
+//   // ((1,2),(3,4));
+//   //
+//   // Here's the interesting part of the indexer:
+//   // 0000|1111|0001,    0
+//   // 0000|1111|0011,    1
+//   // 0001|1110|0110,    2
+//   // 0001|1110|0010,    3
+//   auto support = inst.GetDAG().BuildUniformOnTopologicalSupportPrior();
+//   CHECK_LT(fabs(support[0] - 2. / 3.), 1e-10);
+//   CHECK_LT(fabs(support[1] - 1. / 3.), 1e-10);
+//   CHECK_LT(fabs(support[2] - 1. / 2.), 1e-10);
+//   CHECK_LT(fabs(support[3] - 1. / 2.), 1e-10);
+//   auto all = inst.GetDAG().BuildUniformOnAllTopologiesPrior();
+//   // There are 15 topologies on 4 taxa.
+//   // There are 3 topologies on 3 taxa, so there are 3 topologies with rootsplit
+//   // 0001|1110.
+//   CHECK_LT(fabs(all[0] - 3. / 15.), 1e-10);
+//   // There is only 1 topology with rootsplit 0011|1100.
+//   CHECK_LT(fabs(all[1] - 1. / 15.), 1e-10);
+//   // There are 3 topologies on 3 taxa.
+//   CHECK_LT(fabs(all[2] - 1. / 3.), 1e-10);
+//   CHECK_LT(fabs(all[3] - 1. / 3.), 1e-10);
+// }
 
-TEST_CASE("GPInstance: inverted GPCSP probabilities") {
-  // Note that just for fun, I have duplicated the first tree, but that doesn't matter
-  // because we are looking at uniform over topological support.
-  auto inst =
-      GPInstanceOfFiles("data/five_taxon.fasta", "data/five_taxon_rooted_more_2.nwk");
-  // See the DAG and the uniform probabilities at
-  // https://github.com/phylovi/bito/issues/391#issuecomment-1168046752
-  const auto& dag = inst.GetDAG();
-  EigenVectorXd normalized_sbn_parameters = dag.BuildUniformOnTopologicalSupportPrior();
-  EigenVectorXd node_probabilities =
-      dag.UnconditionalNodeProbabilities(normalized_sbn_parameters);
-  EigenVectorXd correct_node_probabilities(16);
-  correct_node_probabilities <<  //
-      1.,                        // 0
-      1.,                        // 1
-      1.,                        // 2
-      1.,                        // 3
-      1.,                        // 4
-      0.75,                      // 5
-      0.5,                       // 6
-      0.25,                      // 7
-      0.25,                      // 8
-      0.5,                       // 9
-      0.25,                      // 10
-      0.25,                      // 11
-      0.5,                       // 12
-      0.5,                       // 13
-      0.25,                      // 14
-      1.;                        // 15 (DAG root node)
-  CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
+// TEST_CASE("GPInstance: inverted GPCSP probabilities") {
+//   // Note that just for fun, I have duplicated the first tree, but that doesn't
+//   matter
+//   // because we are looking at uniform over topological support.
+//   auto inst =
+//       GPInstanceOfFiles("data/five_taxon.fasta",
+//       "data/five_taxon_rooted_more_2.nwk");
+//   // See the DAG and the uniform probabilities at
+//   // https://github.com/phylovi/bito/issues/391#issuecomment-1168046752
+//   const auto& dag = inst.GetDAG();
+//   EigenVectorXd normalized_sbn_parameters =
+//   dag.BuildUniformOnTopologicalSupportPrior(); EigenVectorXd node_probabilities =
+//       dag.UnconditionalNodeProbabilities(normalized_sbn_parameters);
+//   EigenVectorXd correct_node_probabilities(16);
+//   correct_node_probabilities <<  //
+//       1.,                        // 0
+//       1.,                        // 1
+//       1.,                        // 2
+//       1.,                        // 3
+//       1.,                        // 4
+//       0.75,                      // 5
+//       0.5,                       // 6
+//       0.25,                      // 7
+//       0.25,                      // 8
+//       0.5,                       // 9
+//       0.25,                      // 10
+//       0.25,                      // 11
+//       0.5,                       // 12
+//       0.5,                       // 13
+//       0.25,                      // 14
+//       1.;                        // 15 (DAG root node)
+//   CheckVectorXdEquality(node_probabilities, correct_node_probabilities, 1e-12);
 
-  EigenVectorXd inverted_probabilities =
-      dag.InvertedGPCSPProbabilities(normalized_sbn_parameters, node_probabilities);
-  EigenVectorXd correct_inverted_probabilities(24);
-  correct_inverted_probabilities <<  //
-                                     //
-      1.,                            // 0 (rootsplit)
-      1.,                            // 1 (rootsplit)
-      1.,                            // 2 (rootsplit)
-      1.,                            // 3
-      1.,                            // 4
-      2. / 3.,                       // 5
-      0.5,                           // 6
-      0.5,                           // 7
-      // We have 0.5 from node 9, but that's split proportionally to the probability
-      // of each potential parent. Nodes 12 and 14 are equally likely parents of node 9,
-      // so we have 0.5 for the inverted PCSP probability.
-      0.5,      // 8
-      1.,       // 9
-      1.,       // 10
-      0.5,      // 11 (analogous to 8)
-      1. / 3.,  // 12
-      0.5,      // 13
-      0.5,      // 14
-      0.5,      // 15
-      0.5,      // 16
-      0.25,     // 17
-      0.5,      // 18
-      0.25,     // 19
-      0.25,     // 20
-      0.75,     // 21
-      0.75,     // 22
-      0.25;     // 23
-  CheckVectorXdEquality(inverted_probabilities, correct_inverted_probabilities, 1e-12);
-}
+//   EigenVectorXd inverted_probabilities =
+//       dag.InvertedGPCSPProbabilities(normalized_sbn_parameters, node_probabilities);
+//   EigenVectorXd correct_inverted_probabilities(24);
+//   correct_inverted_probabilities <<  //
+//                                      //
+//       1.,                            // 0 (rootsplit)
+//       1.,                            // 1 (rootsplit)
+//       1.,                            // 2 (rootsplit)
+//       1.,                            // 3
+//       1.,                            // 4
+//       2. / 3.,                       // 5
+//       0.5,                           // 6
+//       0.5,                           // 7
+//       // We have 0.5 from node 9, but that's split proportionally to the probability
+//       // of each potential parent. Nodes 12 and 14 are equally likely parents of node
+//       9,
+//       // so we have 0.5 for the inverted PCSP probability.
+//       0.5,      // 8
+//       1.,       // 9
+//       1.,       // 10
+//       0.5,      // 11 (analogous to 8)
+//       1. / 3.,  // 12
+//       0.5,      // 13
+//       0.5,      // 14
+//       0.5,      // 15
+//       0.5,      // 16
+//       0.25,     // 17
+//       0.5,      // 18
+//       0.25,     // 19
+//       0.25,     // 20
+//       0.75,     // 21
+//       0.75,     // 22
+//       0.25;     // 23
+//   CheckVectorXdEquality(inverted_probabilities, correct_inverted_probabilities,
+//   1e-12);
+// }
 
 TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
   const std::string fasta_path = "data/5-taxon-slice-of-ds1.fasta";

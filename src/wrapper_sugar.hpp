@@ -22,11 +22,10 @@
 #include <vector>
 #include <type_traits>
 
-// Is Comparable
-
 // Wrapper for strong typing of primitive types
 template <typename Type, typename TypeNameTag>
 struct StrongType {
+  using MyStrongType = StrongType<Type, TypeNameTag>;
   using UnderlyingType = Type;
 
   explicit StrongType(UnderlyingType const &value) : value_(value) {}
@@ -90,9 +89,10 @@ struct hash<StrongType<Type, TypeNameTag>> {
 };
 }  // namespace std
 
-//
+// Wrapper for ID types.
 template <typename TypeNameTag>
-struct GenericId : public StrongType<size_t, TypeNameTag> {
+struct GenericId : public StrongType<size_t, struct GenericIdTag> {
+  using BaseType = StrongType<size_t, struct GenericIdType>;
   using NameTag = TypeNameTag;
   using UnderlyingType = size_t;
 
@@ -122,7 +122,7 @@ struct GenericId : public StrongType<size_t, TypeNameTag> {
 
   // Compare to its own type.
   int Compare(const GenericId<TypeNameTag> &other) const {
-    return Compare(other.value_);
+    return StrongType<size_t, struct GenericIdTag>::Compare(other.value_);
   }
   bool operator==(const GenericId<TypeNameTag> &other) const {
     return Compare(other) == 0;

@@ -104,7 +104,7 @@ Node::NodePtr TopologySampler::BuildTree(SamplingSession& session,
                                          const DAGVertex& node) {
   auto left = node.GetNeighbors(Direction::Leafward, SubsplitClade::Left);
   auto right = node.GetNeighbors(Direction::Leafward, SubsplitClade::Right);
-  VertexId left_id = NoId, right_id = NoId;
+  VertexId left_id = VertexId(NoId), right_id = VertexId(NoId);
   if (!left.empty()) {
     left_id = left.begin().GetNodeId();
   }

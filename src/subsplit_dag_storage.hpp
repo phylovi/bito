@@ -97,8 +97,8 @@ using TaxonId = GenericId<struct TaxonIdTag>;
 // using EdgeId = EdgeIdType;
 // using TaxonId = TaxonIdType;
 
-using VertexId = size_t;
-using LineId = size_t;
+using VertexId = NodeId;
+using LineId = EdgeId;
 
 using StringTaxonIdMap = std::unordered_map<std::string, TaxonId>;
 using BitsetNodeIdMap = std::unordered_map<Bitset, NodeId>;
@@ -175,9 +175,9 @@ class DAGLineStorage : public DAGLine<DAGLineStorage> {
   DAGLineStorage& storage() { return *this; }
   const DAGLineStorage& storage() const { return *this; }
 
-  LineId id_ = NoId;
-  VertexId parent_ = NoId;
-  VertexId child_ = NoId;
+  LineId id_ = LineId(NoId);
+  VertexId parent_ = VertexId(NoId);
+  VertexId child_ = VertexId(NoId);
   SubsplitClade clade_ = SubsplitClade::Unspecified;
 };
 
@@ -281,7 +281,7 @@ class GenericNeighborsView {
     }
     T remapped{};
     for (auto [vertex_id, line_id] : neighbors_) {
-      remapped[reindexer.GetNewIndexByOldIndex(vertex_id)] = line_id;
+      remapped[VertexId(reindexer.GetNewIndexByOldIndex(size_t(vertex_id)))] = line_id;
     }
     neighbors_ = remapped;
   }
@@ -302,7 +302,17 @@ class GenericNeighborsView {
 
   operator SizeVector() const {
     SizeVector result;
-    for (auto i : neighbors_) result.push_back(i.first);
+    for (auto i : neighbors_) {
+      result.push_back(size_t(i.first));
+    }
+    return result;
+  }
+
+  operator NodeIdVector() const {
+    NodeIdVector result;
+    for (auto i : neighbors_) {
+      result.push_back(i.first);
+    }
     return result;
   }
 
@@ -399,7 +409,7 @@ class DAGVertex {
   }
 
  private:
-  VertexId id_ = NoId;
+  VertexId id_ = VertexId(NoId);
   Bitset subsplit_ = Bitset{{}};
   std::map<std::pair<Direction, SubsplitClade>, std::map<VertexId, LineId>> neighbors_ =
       {
@@ -606,7 +616,7 @@ class SubsplitDAGStorage {
       return std::nullopt;
     }
     auto& line = lines_[id];
-    if (line.GetId() == NoId) {
+    if (line.GetId() == LineId(NoId)) {
       return std::nullopt;
     }
     return line;
@@ -616,7 +626,7 @@ class SubsplitDAGStorage {
 
   bool ContainsVertex(VertexId id) const {
     if (id >= vertices_.size()) return false;
-    return vertices_[id].GetId() != NoId;
+    return vertices_[id].GetId() != VertexId(NoId);
   }
 
   std::optional<std::reference_wrapper<DAGVertex>> FindVertex(const Bitset& subsplit) {
@@ -635,7 +645,8 @@ class SubsplitDAGStorage {
   }
 
   DAGLineStorage& AddLine(const DAGLineStorage& newLine) {
-    if (newLine.GetId() == NoId) Failwith("Set line id before inserting to storage");
+    if (newLine.GetId() == LineId(NoId))
+      Failwith("Set line id before inserting to storage");
     if (newLine.GetSubsplitClade() == SubsplitClade::Unspecified)
       Failwith("Set clade before inserting to storage");
     auto& line = GetOrInsert(lines_, newLine.GetId());
@@ -644,7 +655,7 @@ class SubsplitDAGStorage {
   }
 
   DAGVertex& AddVertex(const DAGVertex& newVertex) {
-    if (newVertex.GetId() == NoId)
+    if (newVertex.GetId() == VertexId(NoId))
       Failwith("Set vertex id before inserting to storage");
     auto& vertex = GetOrInsert(vertices_, newVertex.GetId());
     vertex = newVertex;
@@ -700,7 +711,7 @@ class SubsplitDAGStorage {
       vertices_[i].ClearNeighbors();
     }
     for (size_t i = 0; i < lines_.size(); ++i) {
-      if (lines_[i].GetId() == NoId) {
+      if (lines_[i].GetId() == LineId(NoId)) {
         continue;
       }
       ConnectVertices(lines_[i].GetId());

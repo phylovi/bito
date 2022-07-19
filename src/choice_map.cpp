@@ -57,18 +57,25 @@ bool ChoiceMap::SelectionIsValid(const bool is_quiet) const {
   EdgeId edge_max_id = dag_.EdgeIdxRange().second;
   for (EdgeId edge_idx = EdgeId(0); edge_idx < edge_choice_vector_.size(); edge_idx++) {
     const auto &edge_choice = edge_choice_vector_[edge_idx];
+    if ((edge_choice.parent_edge_id == NoId) && (edge_choice.sister_edge_id == NoId) &&
+        (edge_choice.left_child_edge_id == NoId) &&
+        (edge_choice.right_child_edge_id == NoId)) {
+      os << "Invalid Selection: Edge Choice is empty." << std::endl;
+      return false;
+    }
     // If edge id is outside valid range.
     if ((edge_choice.parent_edge_id > edge_max_id) ||
         (edge_choice.sister_edge_id > edge_max_id)) {
       // If they are not NoId, then it is an invalid edge_id.
       if ((edge_choice.parent_edge_id != NoId) ||
           (edge_choice.sister_edge_id != NoId)) {
-        os << "Parent or Sister has invalid edge id." << std::endl;
+        os << "Invalid Selection: Parent or Sister has invalid edge id." << std::endl;
         return false;
       }
       // NoId is valid only if edge goes to a root.
       if (!dag_.IsEdgeRoot(edge_idx)) {
-        os << "Parent or Sister has NoId when edge is not a root." << std::endl;
+        os << "Invalid Selection: Parent or Sister has NoId when edge is not a root."
+           << std::endl;
         return false;
       }
     }
@@ -78,12 +85,13 @@ bool ChoiceMap::SelectionIsValid(const bool is_quiet) const {
       if (child_edge_id > edge_max_id) {
         // If they are not NoId, then it is an invalid edge_id.
         if (child_edge_id != NoId) {
-          os << "Child has invalid edge id." << std::endl;
+          os << "Invalid Selection: Child has invalid edge id." << std::endl;
           return false;
         }
         // NoId is valid only if edge goes to a leaf.
         if (!dag_.IsEdgeLeaf(edge_idx)) {
-          os << "Child has NoId when edge is not a leaf." << std::endl;
+          os << "Invalid Selection: Child has NoId when edge is not a leaf."
+             << std::endl;
           return false;
         }
       }
@@ -209,7 +217,7 @@ bool ChoiceMap::TreeMaskIsValid(const TreeMask &tree_mask, const bool is_quiet) 
   // Node map for checking node connectivity.
   using NodeMap = std::map<NodeId, AdjacentNodeArray<bool>>;
   NodeMap nodemap_check;
-
+  // Check each edge in tree mask.
   for (const auto edge_id : tree_mask) {
     const auto &edge = dag_.GetDAGEdge(edge_id);
     const auto &parent_node = dag_.GetDAGNode(NodeId(edge.GetParent()));
@@ -276,11 +284,12 @@ bool ChoiceMap::TreeMaskIsValid(const TreeMask &tree_mask, const bool is_quiet) 
       }
     }
   }
-  // Check if spans root and all leaf nodes.
+  // Check if spans root.
   if (!root_check) {
     os << "Invalid TreeMask: Tree does not span root." << std::endl;
     return false;
   }
+  // Check if spans all leaf nodes.
   for (size_t i = 0; i < leaf_check.size(); i++) {
     if (!leaf_check[i]) {
       os << "Invalid TreeMask: Tree does not span all leaves." << std::endl;
