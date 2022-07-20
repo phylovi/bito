@@ -330,13 +330,6 @@ class Bitset {
 using SubsplitClade = Bitset::SubsplitClade;
 using PCSPClade = Bitset::PCSPClade;
 
-class Subsplit : public Bitset {
-  using Bitset::Bitset;
-};
-class PCSP : public Bitset {
-  using Bitset::Bitset;
-};
-
 // This is how we inject a hash routine and a custom comparator into the std
 // namespace so that we can use unordered_map and unordered_set.
 // https://en.cppreference.com/w/cpp/container/unordered_map
