@@ -806,8 +806,8 @@ void SubsplitDAG::StoreEdgeIds() {
   for (auto edge : storage_.GetLines()) {
     auto parent = storage_.GetVertices().at(edge.GetParent().value_);
     auto child = storage_.GetVertices().at(edge.GetChild().value_);
-    parent.SetLineId(edge.GetChild(), edge.GetId());
-    child.SetLineId(edge.GetParent(), edge.GetId());
+    parent.SetEdgeId(edge.GetChild(), edge.GetId());
+    child.SetEdgeId(edge.GetParent(), edge.GetId());
   }
 }
 
@@ -1484,8 +1484,8 @@ void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
   // Update edges.
   for (auto i : storage_.GetLines()) {
     storage_.ReindexLine(
-        i.GetId(), VertexId(node_reindexer.GetNewIndexByOldIndex(i.GetParent().value_)),
-        VertexId(node_reindexer.GetNewIndexByOldIndex(i.GetChild().value_)));
+        i.GetId(), NodeId(node_reindexer.GetNewIndexByOldIndex(i.GetParent().value_)),
+        NodeId(node_reindexer.GetNewIndexByOldIndex(i.GetChild().value_)));
   }
 }
 
@@ -1497,7 +1497,7 @@ void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
   // Update edges.
   std::vector<DAGLineStorage> edges_copy(storage_.GetLines().size());
   for (auto i : storage_.GetLines()) {
-    LineId new_idx = LineId(edge_reindexer.GetNewIndexByOldIndex(i.GetId().value_));
+    EdgeId new_idx = EdgeId(edge_reindexer.GetNewIndexByOldIndex(i.GetId().value_));
     edges_copy[new_idx.value_] = i;
     edges_copy[new_idx.value_].SetId(new_idx);
   }

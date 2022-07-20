@@ -4,7 +4,7 @@
 // Templates for a strong typing. Creates a lightweight wrapper for primitive types.
 // Enforces explicit casting between differenct strong types and the underlying
 // primitive. Also includes template for inheriting primitive's hashing function for use
-// in stl types. For more information, read:
+// in stl types.
 // https://www.fluentcpp.com/2016/12/08/strong-types-for-strong-interfaces/
 //
 // Templates for enumerated types. Creates a wrapper class for a base enum class.
@@ -21,6 +21,8 @@
 #include <unordered_set>
 #include <vector>
 #include <type_traits>
+
+// ** Strongly Typed Wrappers
 
 // Wrapper for ID types.
 template <typename TypeNameTag>
@@ -47,13 +49,13 @@ struct GenericId {
   bool operator!=(const SelfType &other) const { return Compare(other) != 0; }
   bool operator>(const SelfType &other) const { return Compare(other) > 0; }
   bool operator<(const SelfType &other) const { return Compare(other) < 0; }
-  // Compare to its underlying type.
+  // Compare to its primitive.
   int Compare(const UnderlyingType &other) const { return value_ - other; }
   bool operator==(const UnderlyingType &other) const { return Compare(other) == 0; }
   bool operator!=(const UnderlyingType &other) const { return Compare(other) != 0; }
   bool operator>(const UnderlyingType &other) const { return Compare(other) > 0; }
   bool operator<(const UnderlyingType &other) const { return Compare(other) < 0; }
-  // Increment/Decrement
+  // Increment
   SelfType &operator++() {
     value_++;
     return *this;
@@ -92,6 +94,8 @@ struct hash<GenericId<TypeNameTag>> {
   }
 };
 }  // namespace std
+
+// ** Enumerated Type Wrappers
 
 // Generic Iterator for enum class types.
 // Requires that enum's underlying types have no gaps.
