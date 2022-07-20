@@ -30,20 +30,13 @@ struct GenericId {
 
   GenericId() = default;
   explicit GenericId(UnderlyingType const &value) : value_(value) {}
-  // Template constructor for reference type wrappers.
   template <typename T_ = UnderlyingType>
   GenericId(
       UnderlyingType &&value,
       typename std::enable_if<!std::is_reference<T_>{}, std::nullptr_t>::type = nullptr)
       : value_(std::move(value)) {}
 
-  // Can implicitly assign GenericId to size_t.
-  SelfType &operator=(const UnderlyingType &new_value) {
-    value_ = new_value;
-    return *this;
-  }
-
-  // Explicit conversion
+  // Explicit cast to primitive.
   explicit operator UnderlyingType &() { return value_; }
   explicit operator UnderlyingType() const { return value_; }
 
