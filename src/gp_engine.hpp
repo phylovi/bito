@@ -93,9 +93,9 @@ class GPEngine {
   // The purpose of these functions are here to move data associated with the subsplit
   // DAG from their temporary locations before reindexing to their final locations after
   // reindexing (though they are more general).
-  void CopyNodeData(const size_t src_node_idx, const size_t dest_node_idx);
+  void CopyNodeData(const NodeId src_node_idx, const NodeId dest_node_idx);
   void CopyPLVData(const size_t src_plv_idx, const size_t dest_plv_idx);
-  void CopyGPCSPData(const size_t src_gpcsp_idx, const size_t dest_gpcsp_idx);
+  void CopyGPCSPData(const EdgeId src_gpcsp_idx, const EdgeId dest_gpcsp_idx);
 
   // ** Access
 

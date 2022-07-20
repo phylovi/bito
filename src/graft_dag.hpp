@@ -47,9 +47,9 @@ class GraftDAG : public SubsplitDAG {
   // Total number of edges in host DAG only.
   size_t HostEdgeCount() const;
   // Check if a node is from the host, otherwise from the graft.
-  bool IsNodeFromHost(size_t node_id) const;
+  bool IsNodeFromHost(NodeId node_id) const;
   // Check if an edge is from the host, otherwise from the graft.
-  bool IsEdgeFromHost(size_t edge_id) const;
+  bool IsEdgeFromHost(EdgeId edge_id) const;
 
   // ** Contains
 

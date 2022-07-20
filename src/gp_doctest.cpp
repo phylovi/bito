@@ -236,16 +236,16 @@ TEST_CASE("GPInstance: gradient calculation") {
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-  size_t rootsplit_id = rootsplit;
-  size_t child_id = jupiter;
+  NodeId rootsplit_id = rootsplit;
+  NodeId child_id = jupiter;
+  NodeId rootsplit_jupiter_idx = 2;
   size_t hello_node_count_without_dag_root_node = 5;
-  size_t rootsplit_jupiter_idx = 2;
 
   size_t leafward_idx = PLVHandler::GetPVIndex(PLVType::P, child_id,
                                                hello_node_count_without_dag_root_node);
   size_t rootward_idx = PLVHandler::GetPVIndex(PLVType::RLeft, rootsplit_id,
                                                hello_node_count_without_dag_root_node);
-  OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
+  OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx.value_};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
   // Expect log lik derivative: -0.6109379521.
@@ -259,17 +259,16 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-
-  size_t rootsplit_id = rootsplit;
-  size_t child_id = jupiter;
+  NodeId rootsplit_id = rootsplit;
+  NodeId child_id = jupiter;
+  NodeId rootsplit_jupiter_idx = 2;
   size_t hello_node_count_without_dag_root_node = 5;
-  size_t rootsplit_jupiter_idx = 2;
 
   size_t leafward_idx = PLVHandler::GetPVIndex(PLVType::P, child_id,
                                                hello_node_count_without_dag_root_node);
   size_t rootward_idx = PLVHandler::GetPVIndex(PLVType::RLeft, rootsplit_id,
                                                hello_node_count_without_dag_root_node);
-  OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx};
+  OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx.value_};
   std::tuple<double, double, double> log_lik_and_derivatives =
       engine->LogLikelihoodAndFirstTwoDerivatives(op);
   // Expect log likelihood: -84.77961943.
@@ -289,11 +288,12 @@ double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
 
   inst.EstimateBranchLengths(0.0001, 100, true);
   GPDAG& dag = inst.GetDAG();
-  size_t default_index = dag.EdgeCountWithLeafSubsplits();
+  EdgeId default_index = EdgeId(dag.EdgeCountWithLeafSubsplits());
   Bitset gpcsp_bitset = Bitset("100011001");
 
-  size_t index = AtWithDefault(dag.BuildEdgeIndexer(), gpcsp_bitset, default_index);
-  return inst.GetEngine()->GetBranchLengths()(index);
+  EdgeId index =
+      AtWithDefault(dag.BuildEdgeIndexer(), gpcsp_bitset, default_index.value_);
+  return inst.GetEngine()->GetBranchLengths()(index.value_);
 }
 
 TEST_CASE("GPInstance: Gradient-based optimization with Newton's Method") {
@@ -585,6 +585,7 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
       dag.InvertedGPCSPProbabilities(normalized_sbn_parameters, node_probabilities);
   EigenVectorXd correct_inverted_probabilities(24);
   correct_inverted_probabilities <<  //
+                                     //
       1.,                            // 0 (rootsplit)
       1.,                            // 1 (rootsplit)
       1.,                            // 2 (rootsplit)
@@ -594,8 +595,7 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
       0.5,                           // 6
       0.5,                           // 7
       // We have 0.5 from node 9, but that's split proportionally to the probability
-      // of each potential parent. Nodes 12 and 14 are equally likely parents of node
-      9,
+      // of each potential parent. Nodes 12 and 14 are equally likely parents of node 9,
       // so we have 0.5 for the inverted PCSP probability.
       0.5,      // 8
       1.,       // 9
@@ -613,8 +613,7 @@ TEST_CASE("GPInstance: inverted GPCSP probabilities") {
       0.75,     // 21
       0.75,     // 22
       0.25;     // 23
-  // CheckVectorXdEquality(inverted_probabilities, correct_inverted_probabilities,
-  // 1e-12);
+  CheckVectorXdEquality(inverted_probabilities, correct_inverted_probabilities, 1e-12);
 }
 
 TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
@@ -902,7 +901,8 @@ TEST_CASE("GPInstance: Reindexers for AddNodePair") {
   for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
     auto mods = dag.AddNodePair(nni);
     for (NodeId old_idx = NodeId(0); old_idx < pre_dag.NodeCount(); old_idx++) {
-      NodeId new_idx = NodeId(mods.node_reindexer.GetNewIndexByOldIndex(old_idx));
+      NodeId new_idx =
+          NodeId(mods.node_reindexer.GetNewIndexByOldIndex(old_idx.value_));
       Bitset old_node = pre_dag.GetDAGNode(old_idx).GetBitset();
       Bitset new_node = dag.GetDAGNode(new_idx).GetBitset();
       CHECK_EQ(old_node, new_node);
@@ -1300,22 +1300,27 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
       if (bitset.SubsplitIsUCA()) {
         continue;
       }
-      const size_t node_idx = dag.GetDAGNodeId(bitset);
-      const size_t pre_node_idx = pre_dag.GetDAGNodeId(bitset);
-      const auto& plv_a = gpengine.GetPLV(node_idx);
-      const auto& plv_b = pre_gpengine.GetPLV(pre_node_idx);
-      if (plv_a.norm() != plv_b.norm()) {
-        passes_plv_reindexed = false;
+      const auto node_idx = dag.GetDAGNodeId(bitset);
+      const auto pre_node_idx = pre_dag.GetDAGNodeId(bitset);
+      for (const auto plv_type : PLVTypeEnum::Iterator()) {
+        const auto plv_idx_a = gpengine.GetPLVHandler().GetPVIndex(plv_type, node_idx);
+        const auto& plv_a = gpengine.GetPLV(plv_idx_a);
+        const auto plv_idx_b =
+            pre_gpengine.GetPLVHandler().GetPVIndex(plv_type, pre_node_idx);
+        const auto& plv_b = pre_gpengine.GetPLV(plv_idx_b);
+        if (plv_a.norm() != plv_b.norm()) {
+          passes_plv_reindexed = false;
+        }
       }
     }
     // Check branch length reindexing properly.
     auto pre_branch_lengths = pre_gpengine.GetBranchLengths();
     auto branch_lengths = gpengine.GetBranchLengths();
     for (const auto& bitset : pre_dag.GetSortedVectorOfEdgeBitsets()) {
-      const size_t edge_idx = dag.GetEdgeIdx(bitset);
-      const size_t pre_edge_idx = pre_dag.GetEdgeIdx(bitset);
-      const auto branch_a = branch_lengths[edge_idx];
-      const auto branch_b = pre_branch_lengths[pre_edge_idx];
+      const auto edge_idx = dag.GetEdgeIdx(bitset);
+      const auto pre_edge_idx = pre_dag.GetEdgeIdx(bitset);
+      const auto branch_a = branch_lengths[edge_idx.value_];
+      const auto branch_b = pre_branch_lengths[pre_edge_idx.value_];
       if (branch_a != branch_b) {
         passes_gpcsp_reindexed = false;
       }
@@ -1384,7 +1389,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
         }
         if (nni_add % test_after_every == 0) {
           node_reindexer_without_root =
-              node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId());
+              node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId().value_);
           size_t node_count = dag.NodeCountWithoutDAGRoot();
           size_t edge_count = dag.EdgeCountWithLeafSubsplits();
           if (!skip_reindexing) {
@@ -1413,7 +1418,8 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
       }
     }
     // Test final resizing and reindexing.
-    node_reindexer_without_root = node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId());
+    node_reindexer_without_root =
+        node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId().value_);
     if (!skip_reindexing) {
       gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot(), node_reindexer_without_root);
       gpengine.GrowGPCSPs(dag.EdgeCountWithLeafSubsplits(), edge_reindexer);
@@ -1499,7 +1505,8 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 
     Assert(edge_idx < size_t(inst.GetEngine()->GetPerGPCSPLogLikelihoods().size()),
            "Edge idx out of range for GPInstGetNNILikelihood.");
-    const double likelihood = inst.GetEngine()->GetPerGPCSPLogLikelihoods()[edge_idx];
+    const double likelihood =
+        inst.GetEngine()->GetPerGPCSPLogLikelihoods()[edge_idx.value_];
     return likelihood;
   };
 
@@ -1608,7 +1615,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
     auto& truth_gpengine = *truth_inst.GetEngine();
     auto mods = truth_dag.AddNodePair(nni);
     auto node_reindexer_without_root =
-        mods.node_reindexer.RemoveNewIndex(truth_dag.GetDAGRootNodeId());
+        mods.node_reindexer.RemoveNewIndex(truth_dag.GetDAGRootNodeId().value_);
     truth_gpengine.GrowPLVs(truth_dag.NodeCountWithoutDAGRoot(),
                             node_reindexer_without_root);
     truth_gpengine.GrowGPCSPs(truth_dag.EdgeCountWithLeafSubsplits(),
@@ -1666,7 +1673,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   // Test for fail states for invalid TreeMasks.
   ChoiceMap::TreeMask tree_mask;
   Node::NodePtr topology;
-  SizeVector tree_nodes;
+  NodeIdVector tree_nodes;
   bool quiet_errors = true;
   for (const auto edge_id : tree_mask) {
     tree_nodes.push_back(dag.GetDAGEdge(edge_id).GetParent());
@@ -1806,30 +1813,27 @@ std::ostream& operator<<(std::ostream& os, const TaxonIdType& obj) {
 
 // TODO: Remove this.
 TEST_CASE("StrongType") {
-  struct NodeIdType2 : public GenericId<struct NodeIdTag> {};
-  struct EdgeIdType2 : public GenericId<struct EdgeIdTag> {};
+  // NodeId node_id(42);
+  // EdgeId edge_id(42);
+  // node_id = edge_id;
 
-  NodeId node_id(42);
-  EdgeId edge_id(42);
-  node_id = edge_id;
+  // std::cout << "NODE_ID: " << node_id << std::endl;
+  // std::cout << "EDGE_ID: " << edge_id << std::endl;
+  // std::cout << "IS_EQUAL?: " << (node_id == edge_id) << std::endl;
 
-  std::cout << "NODE_ID: " << node_id << std::endl;
-  std::cout << "EDGE_ID: " << edge_id << std::endl;
-  std::cout << "IS_EQUAL?: " << (node_id == edge_id) << std::endl;
+  // std::vector<double> test_1;
+  // EigenVectorXd test_2;
+  // test_2.conservativeResize(42);
+  // for (size_t i = 0; i < 42; i++) {
+  //   test_1.push_back((1 * i) + 1.5);
+  //   test_2(i) = ((2 * i) + 1.5);
+  // }
 
-  std::vector<double> test_1;
-  EigenVectorXd test_2;
-  test_2.conservativeResize(42);
-  for (size_t i = 0; i < 42; i++) {
-    test_1.push_back((1 * i) + 1.5);
-    test_2(i) = ((2 * i) + 1.5);
-  }
-
-  for (EdgeId e(0); e < 42; e++) {
-    std::cout << "EDGE: " << e << " " << test_1[e] << std::endl;
-    std::cout << "NODE: " << e << " " << test_2(e.get()) << std::endl;
-    break;
-  }
+  // for (EdgeId e(0); e < 42; e++) {
+  //   std::cout << "EDGE: " << e << " " << test_1[e] << std::endl;
+  //   std::cout << "NODE: " << e << " " << test_2(e.get()) << std::endl;
+  //   break;
+  // }
 
   // NodeIdType node_id_test{43};
   // EdgeIdType edge_id_test{43};

@@ -182,17 +182,17 @@ class Reindexer {
   }
 
   // Remaps each of the ids in the vector according to the reindexer.
-  template <typename VectorType>
-  static void RemapIdVector(VectorType &&vector, const Reindexer &reindexer) {
+  template <typename DataType, typename VectorType = std::vector<DataType>>
+  static void RemapIdVector(VectorType &&data_vec, const Reindexer &reindexer) {
     Assert(reindexer.IsValid(), "Reindexer must be valid in Reindexer::RemapIdVector.");
-    for (const auto id : vector) {
+    for (const auto id : data_vec) {
       Assert(size_t(id) < reindexer.size(),
              "The vector cannot contain an id out of bounds of the reindexer in "
              "Reindexer::RemapIdVector.");
     }
-    std::transform(vector.begin(), vector.end(), vector.begin(),
-                   [reindexer](size_t old_idx) {
-                     return reindexer.GetNewIndexByOldIndex(old_idx);
+    std::transform(data_vec.begin(), data_vec.end(), data_vec.begin(),
+                   [reindexer](DataType &old_idx) {
+                     return DataType(reindexer.GetNewIndexByOldIndex(size_t(old_idx)));
                    });
   };
 
@@ -263,11 +263,11 @@ TEST_CASE("Reindexer: RemapIdVector") {
   // reindexer.
   SizeVector size_vector{3, 5};
   Reindexer reindexer({2, 0, 3, 1});
-  CHECK_THROWS(Reindexer::RemapIdVector(size_vector, reindexer));
+  CHECK_THROWS(Reindexer::RemapIdVector<size_t>(size_vector, reindexer));
   // Check that RemapIdVector returns correctly.
   size_vector = {3, 5};
   reindexer = Reindexer({2, 0, 3, 1, 6, 4, 5});
-  Reindexer::RemapIdVector(size_vector, reindexer);
+  Reindexer::RemapIdVector<size_t>(size_vector, reindexer);
   SizeVector correct_size_vector = {1, 4};
   CHECK_EQ(size_vector, correct_size_vector);
 }

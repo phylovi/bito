@@ -30,8 +30,8 @@ auto& GetStorage(const T& node) {
 static inline void RemapNeighbors(NeighborsView neighbors,
                                   const SizeVector& node_reindexer) {
   std::map<VertexId, LineId> remapped;
-  for (auto i = neighbors.begin(); i != neighbors.end(); ++i) {
-    remapped[VertexId(node_reindexer[*i])] = LineId(i.GetEdge());
+  for (auto id = neighbors.begin(); id != neighbors.end(); ++id) {
+    remapped[VertexId(node_reindexer[(*id).value_])] = LineId(id.GetEdge());
   }
   neighbors.SetNeighbors(remapped);
 }
@@ -194,7 +194,7 @@ namespace {
 static inline std::string GetNeighborString(ConstNeighborsView neighbors) {
   std::string str;
   for (auto i = neighbors.begin(); i != neighbors.end(); ++i) {
-    str += std::to_string(*i) + " ";
+    str += std::to_string((*i).value_) + " ";
   }
   return str;
 }
@@ -228,7 +228,8 @@ bool GenericSubsplitDAGNode<T>::IsValid() const {
 
 template <typename T>
 std::string GenericSubsplitDAGNode<T>::ToString() const {
-  std::string str = std::to_string(Id()) + ": " + GetBitset().SubsplitToString() + "\n";
+  std::string str =
+      std::to_string(Id().value_) + ": " + GetBitset().SubsplitToString() + "\n";
   str += "Right Rootward: " + GetNeighborString(GetRightRootward()) + "\n";
   str += "Left Rootward: " + GetNeighborString(GetLeftRootward()) + "\n";
   str += "Right Leafward: " + GetNeighborString(GetRightLeafward()) + "\n";

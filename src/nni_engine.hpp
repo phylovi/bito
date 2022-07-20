@@ -294,9 +294,9 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni
   // Find key indices for NNI.
   KeyIndexMap key_idx_map;
   key_idx_map.fill(NoId);
-  key_idx_map[KeyIndex::Parent_Id] = parent_id;
-  key_idx_map[KeyIndex::Child_Id] = child_id;
-  key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id);
+  key_idx_map[KeyIndex::Parent_Id] = parent_id.value_;
+  key_idx_map[KeyIndex::Child_Id] = child_id.value_;
+  key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
   key_idx_map[KeyIndex::Parent_RHat] =
       PLVHandler::GetPVIndex(PLVType::RHat, parent_id, node_count);
   key_idx_map[KeyIndex::Parent_RFocal] = PLVHandler::GetPVIndex(
@@ -318,13 +318,13 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
     const NNIOperation &pre_nni, const NNIOperation &post_nni,
     const NNIEngine::KeyIndexMap &pre_key_idx, const DAGType &dag) {
   // Unpopulated key indices will left as NoId.
+  NodeId parent_id = dag.GetDAGNodeId(post_nni.GetParent());
+  NodeId child_id = dag.GetDAGNodeId(post_nni.GetChild());
   KeyIndexMap post_key_idx;
   post_key_idx.fill(NoId);
-  post_key_idx[KeyIndex::Parent_Id] = dag.GetDAGNodeId(post_nni.GetParent());
-  post_key_idx[KeyIndex::Child_Id] = dag.GetDAGNodeId(post_nni.GetChild());
-  post_key_idx[KeyIndex::Edge] =
-      dag.GetEdgeIdx(NodeId(post_key_idx[KeyIndex::Parent_Id]),
-                     NodeId(post_key_idx[KeyIndex::Child_Id]));
+  post_key_idx[KeyIndex::Parent_Id] = parent_id.value_;
+  post_key_idx[KeyIndex::Child_Id] = child_id.value_;
+  post_key_idx[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
 
   // Array for mapping from pre-NNI plvs to post-NNI plvs.
   const auto key_map = BuildKeyIndexTypePairsFromPreNNIToPostNNI(pre_nni, post_nni);

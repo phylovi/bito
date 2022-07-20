@@ -52,9 +52,9 @@ EigenArrayXb TidySubsplitDAG::BelowNode(NodeId node_id) {
 
 EigenArrayXbRef TidySubsplitDAG::BelowNode(bool is_edge_on_left, NodeId node_id) {
   if (is_edge_on_left) {
-    return above_rotated_.col(node_id).array();
+    return above_rotated_.col(node_id.value_).array();
   } else {
-    return above_sorted_.col(node_id).array();
+    return above_sorted_.col(node_id.value_).array();
   }
 }
 
@@ -64,9 +64,9 @@ EigenArrayXb TidySubsplitDAG::AboveNode(NodeId node_id) const {
 
 EigenArrayXb TidySubsplitDAG::AboveNode(bool is_edge_on_left, NodeId node_id) const {
   if (is_edge_on_left) {
-    return above_rotated_.row(node_id).array();
+    return above_rotated_.row(node_id.value_).array();
   } else {
-    return above_sorted_.row(node_id).array();
+    return above_sorted_.row(node_id.value_).array();
   }
 }
 
@@ -91,7 +91,7 @@ void TidySubsplitDAG::SetDirtyStrictlyAbove(NodeId node_id) {
     EigenArrayXbRef dirty = DirtyVector(is_edge_on_left);
     EigenArrayXb to_make_dirty = AboveNode(is_edge_on_left, node_id);
     // We are only dirtying things that are strictly above us.
-    to_make_dirty[node_id] = false;
+    to_make_dirty[node_id.value_] = false;
     // We use `max` as a way of getting "or": we want to maintain anything that's
     // already dirty as dirty, while adding all nodes strictly above us.
     dirty = dirty.max(to_make_dirty);
@@ -158,9 +158,9 @@ std::string TidySubsplitDAG::RecordTraversal() {
       {GetDAGRootNodeId()},
       TidySubsplitDAGTraversalAction(
           // BeforeNode
-          [](size_t node_id) {},
+          [](NodeId node_id) {},
           // AfterNode
-          [](size_t node_id) {},
+          [](NodeId node_id) {},
           // BeforeNodeClade
           [&result](NodeId node_id, bool is_edge_on_left) {
             result << "descending along " << node_id << ", " << is_edge_on_left << "\n";

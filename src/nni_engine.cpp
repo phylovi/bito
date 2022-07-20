@@ -137,14 +137,14 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaCopy(
 
   // Copy over associated node data.
   for (const auto id_type : {KeyIndex::Parent_Id, KeyIndex::Child_Id}) {
-    const auto pre_node_id = pre_key_idx[id_type];
-    const auto post_node_id = post_key_idx[id_type];
+    const auto pre_node_id = NodeId(pre_key_idx[id_type]);
+    const auto post_node_id = NodeId(post_key_idx[id_type]);
     gp_engine_.CopyNodeData(pre_node_id, post_node_id);
   }
   // Copy over central edge data.
   for (const auto idx_type : {KeyIndex::Edge}) {
-    const auto pre_edge_idx = pre_key_idx[idx_type];
-    const auto post_edge_idx = post_key_idx[idx_type];
+    const auto pre_edge_idx = EdgeId(pre_key_idx[idx_type]);
+    const auto post_edge_idx = EdgeId(post_key_idx[idx_type]);
     gp_engine_.CopyGPCSPData(pre_edge_idx, post_edge_idx);
   }
 
@@ -208,8 +208,8 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaReference(
 
   // Copy over central edge data.
   for (const auto idx_type : {KeyIndex::Edge}) {
-    const auto pre_edge_idx = pre_key_idx[idx_type];
-    const auto post_edge_idx = post_key_idx[idx_type];
+    const auto pre_edge_idx = EdgeId(pre_key_idx[idx_type]);
+    const auto post_edge_idx = EdgeId(post_key_idx[idx_type]);
     gp_engine_.CopyGPCSPData(pre_edge_idx, post_edge_idx);
   }
 
@@ -359,7 +359,7 @@ void NNIEngine::AddAcceptedNNIsToDAG() {
     edge_reindexer_.ComposeWith(mods.edge_reindexer);
   }
   // Remove DAGRoot from node reindexing.
-  node_reindexer_ = node_reindexer_.RemoveNewIndex(dag_.GetDAGRootNodeId());
+  node_reindexer_ = node_reindexer_.RemoveNewIndex(dag_.GetDAGRootNodeId().value_);
   // Grow GPEngine to fit accepted NNIs.
   Assert(dag_.NodeCountWithoutDAGRoot() == node_reindexer_.size(),
          "Node reindexer is the wrong size.");

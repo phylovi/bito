@@ -229,7 +229,7 @@ class SubsplitDAG {
   //         - Apply VisitEdge() to the edge
   // - Apply AfterNode()
   template <typename TraversalActionT>
-  void DepthFirstWithAction(const SizeVector &starting_nodes,
+  void DepthFirstWithAction(const NodeIdVector &starting_nodes,
                             const TraversalActionT &action) const {
     std::unordered_set<NodeId> visited_nodes;
     for (const auto &node_id : starting_nodes) {

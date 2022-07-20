@@ -68,7 +68,7 @@ class TidySubsplitDAG : public SubsplitDAG {
   //         - Apply VisitEdge to the edge
   // - Apply AfterNode
   template <typename TidyTraversalActionT>
-  void DepthFirstWithTidyAction(const SizeVector &starting_nodes,
+  void DepthFirstWithTidyAction(const NodeIdVector &starting_nodes,
                                 const TidyTraversalActionT &action) {
     std::unordered_set<NodeId> visited_nodes;
     for (const auto &node_id : starting_nodes) {
@@ -119,7 +119,7 @@ class TidySubsplitDAG : public SubsplitDAG {
           action.AfterNode(NodeId(child_id));
         }
         action.UpdateEdge(node_id, NodeId(child_id), is_edge_on_left);
-        DirtyVector(is_edge_on_left)[node_id] = false;
+        DirtyVector(is_edge_on_left)[node_id.value_] = false;
       }
     }
     // When we get to this point, everything is clean below node_id,rotated.
@@ -156,7 +156,7 @@ class TidySubsplitDAG : public SubsplitDAG {
       action.ModifyEdge(node_id, NodeId(child_id), is_edge_on_left);
       SetDirtyStrictlyAbove(node_id);
       // We assume that ModifyEdge leaves (node_id, rotated) in a clean state.
-      DirtyVector(is_edge_on_left)[node_id] = false;
+      DirtyVector(is_edge_on_left)[node_id.value_] = false;
     }
   };
 

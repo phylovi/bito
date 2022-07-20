@@ -388,12 +388,12 @@ void GPEngine::ResetLogMarginalLikelihood() {
   log_marginal_likelihood_.setConstant(DOUBLE_NEG_INF);
 }
 
-void GPEngine::CopyNodeData(const size_t src_node_idx, const size_t dest_node_idx) {
+void GPEngine::CopyNodeData(const NodeId src_node_idx, const NodeId dest_node_idx) {
   Assert(
       (src_node_idx < GetPaddedNodeCount()) && (dest_node_idx < GetPaddedNodeCount()),
       "Cannot copy node data with src or dest index out-of-range.");
-  unconditional_node_probabilities_[dest_node_idx] =
-      unconditional_node_probabilities_[src_node_idx];
+  unconditional_node_probabilities_[dest_node_idx.value_] =
+      unconditional_node_probabilities_[src_node_idx.value_];
 }
 
 void GPEngine::CopyPLVData(const size_t src_plv_idx, const size_t dest_plv_idx) {
@@ -403,13 +403,14 @@ void GPEngine::CopyPLVData(const size_t src_plv_idx, const size_t dest_plv_idx) 
   rescaling_counts_[dest_plv_idx] = rescaling_counts_[src_plv_idx];
 }
 
-void GPEngine::CopyGPCSPData(const size_t src_gpcsp_idx, const size_t dest_gpcsp_idx) {
+void GPEngine::CopyGPCSPData(const EdgeId src_gpcsp_idx, const EdgeId dest_gpcsp_idx) {
   Assert((src_gpcsp_idx < GetPaddedGPCSPCount()) &&
              (dest_gpcsp_idx < GetPaddedGPCSPCount()),
          "Cannot copy PLV data with src or dest index out-of-range.");
-  branch_lengths_[dest_gpcsp_idx] = branch_lengths_[src_gpcsp_idx];
-  q_[dest_gpcsp_idx] = branch_lengths_[src_gpcsp_idx];
-  inverted_sbn_prior_[dest_gpcsp_idx] = inverted_sbn_prior_[src_gpcsp_idx];
+  branch_lengths_[dest_gpcsp_idx.value_] = branch_lengths_[src_gpcsp_idx.value_];
+  q_[dest_gpcsp_idx.value_] = branch_lengths_[src_gpcsp_idx.value_];
+  inverted_sbn_prior_[dest_gpcsp_idx.value_] =
+      inverted_sbn_prior_[src_gpcsp_idx.value_];
 }
 
 // ** Getters
@@ -750,13 +751,13 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   auto tally_branch_lengths_and_gpcsp_count =
       [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const RootedTree& tree,
                                      const Node* focal_node) {
-        size_t gpcsp_id = gpcsp_idx.value_;
-        branch_lengths_(gpcsp_id) += tree.BranchLength(focal_node);
-        observed_gpcsp_counts(gpcsp_id)++;
+        branch_lengths_(gpcsp_idx.value_) += tree.BranchLength(focal_node);
+        observed_gpcsp_counts(gpcsp_idx.value_)++;
       };
   FunctionOverRootedTreeCollection(tally_branch_lengths_and_gpcsp_count,
                                    tree_collection, indexer);
-  for (EdgeId gpcsp_idx = EdgeId(0); gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
+  for (EdgeId gpcsp_idx = 0; gpcsp_idx.value_ < unique_gpcsp_count;
+       gpcsp_idx.value_++) {
     if (observed_gpcsp_counts(gpcsp_idx.value_) == 0) {
       branch_lengths_(gpcsp_idx.value_) = default_branch_length_;
     } else {
@@ -820,7 +821,7 @@ void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection
   FunctionOverRootedTreeCollection(set_first_branch_length_and_increment_gpcsp_count,
                                    tree_collection, indexer);
   // If a branch length was not set above, set it to the default length.
-  for (EdgeId gpcsp_idx = EdgeId(0); gpcsp_idx < unique_gpcsp_count; gpcsp_idx++) {
+  for (EdgeId gpcsp_idx = 0; gpcsp_idx < unique_gpcsp_count; gpcsp_idx.value_++) {
     if (observed_gpcsp_counts(gpcsp_idx.value_) == 0) {
       branch_lengths_(gpcsp_idx.value_) = default_branch_length_;
     }

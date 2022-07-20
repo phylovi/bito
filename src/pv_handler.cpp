@@ -39,8 +39,9 @@ Reindexer PartialVectorHandler<PVType, PVTypeEnum>::BuildPVReindexer(
   Reindexer pv_reindexer(new_node_count * pv_count_per_node_);
   size_t new_pvs_idx = old_node_count * pv_count_per_node_;
   for (size_t i = 0; i < new_node_count; i++) {
-    const size_t old_node_idx = i;
-    const size_t new_node_idx = node_reindexer.GetNewIndexByOldIndex(old_node_idx);
+    const NodeId old_node_idx = NodeId(i);
+    const NodeId new_node_idx =
+        NodeId(node_reindexer.GetNewIndexByOldIndex(old_node_idx.value_));
     for (const auto pv_type : typename PVTypeEnum::Iterator()) {
       // Either get input pv_index from old pvs, or get new pv_index (new data is
       // irrelevant, so just get next available index).

@@ -84,11 +84,11 @@ size_t GraftDAG::GraftEdgeCount() const {
 
 size_t GraftDAG::HostEdgeCount() const { return storage_.HostLinesCount(); }
 
-bool GraftDAG::IsNodeFromHost(size_t node_id) const {
+bool GraftDAG::IsNodeFromHost(NodeId node_id) const {
   return node_id < HostNodeCount();
 }
 
-bool GraftDAG::IsEdgeFromHost(size_t edge_id) const {
+bool GraftDAG::IsEdgeFromHost(EdgeId edge_id) const {
   return edge_id < HostEdgeCount();
 }
 

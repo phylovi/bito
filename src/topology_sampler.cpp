@@ -66,9 +66,9 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParentNodeAndEd
   weights.resize(left.size() + right.size());
   size_t i = 0;
   for (auto parent = left.begin(); parent != left.end(); ++parent)
-    weights[i++] = session.inverted_probabilities_[parent.GetEdge()];
+    weights[i++] = session.inverted_probabilities_[parent.GetEdge().value_];
   for (auto parent = right.begin(); parent != right.end(); ++parent)
-    weights[i++] = session.inverted_probabilities_[parent.GetEdge()];
+    weights[i++] = session.inverted_probabilities_[parent.GetEdge().value_];
   std::discrete_distribution<> distribution(weights.begin(), weights.end());
   auto sampled_index =
       static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
@@ -90,7 +90,7 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChildNodeAndEdg
   weights.resize(neighbors.size());
   size_t i = 0;
   for (auto child = neighbors.begin(); child != neighbors.end(); ++child) {
-    weights[i++] = session.normalized_sbn_parameters_[child.GetEdge()];
+    weights[i++] = session.normalized_sbn_parameters_[child.GetEdge().value_];
   }
   std::discrete_distribution<> distribution(weights.begin(), weights.end());
   i = static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
@@ -114,15 +114,15 @@ Node::NodePtr TopologySampler::BuildTree(SamplingSession& session,
   if (left_id != NoId && right_id != NoId) {
     return Node::Join(BuildTree(session, session.result_.GetVertex(left_id)),
                       BuildTree(session, session.result_.GetVertex(right_id)),
-                      node.GetId());
+                      node.GetId().value_);
   }
   if (node.IsLeaf()) {
-    return Node::Leaf(node.GetId());
+    return Node::Leaf(node.GetId().value_);
   }
   if (node.IsRoot()) {
     Assert(left_id != NoId, "Root has no children");
     return Node::Join({BuildTree(session, session.result_.GetVertex(left_id))},
-                      node.GetId());
+                      node.GetId().value_);
   }
   Failwith("Node can't have only one child");
 }

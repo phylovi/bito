@@ -11,6 +11,7 @@
 #include "mmapped_plv.hpp"
 #include "site_pattern.hpp"
 #include "reindexer.hpp"
+#include "subsplit_dag_storage.hpp"
 
 // Enumerated Types for Partial Vectors.
 namespace PartialVectorType {
@@ -122,17 +123,17 @@ class PartialVectorHandler {
     return GetPV(pv_idx);
   };
   // Get PV by PV type and node index from the vector of Partial Vectors.
-  NucleotidePLVRef &GetPV(const PVType pv_type, const size_t node_idx) {
+  NucleotidePLVRef &GetPV(const PVType pv_type, const NodeId node_idx) {
     return pvs_.at(GetPVIndex(pv_type, node_idx));
   };
-  const NucleotidePLVRef &GetPV(const PVType pv_type, const size_t node_idx) const {
+  const NucleotidePLVRef &GetPV(const PVType pv_type, const NodeId node_idx) const {
     return pvs_.at(GetPVIndex(pv_type, node_idx));
   };
-  NucleotidePLVRef &operator()(const PVType pv_type, const size_t node_idx) {
+  NucleotidePLVRef &operator()(const PVType pv_type, const NodeId node_idx) {
     return GetPV(GetPVIndex(pv_type, node_idx));
   };
   const NucleotidePLVRef &operator()(const PVType pv_type,
-                                     const size_t node_idx) const {
+                                     const NodeId node_idx) const {
     return GetPV(GetPVIndex(pv_type, node_idx));
   };
   // Get Spare PV by index from the vector of Partial Vectors.
@@ -144,12 +145,12 @@ class PartialVectorHandler {
   };
 
   // Get total offset into PVs, indexed based on underlying DAG.
-  static size_t GetPVIndex(const PVType pv_type, const size_t node_idx,
+  static size_t GetPVIndex(const PVType pv_type, const NodeId node_idx,
                            const size_t node_count) {
     // return GetPVIndex(PVTypeEnum::GetIndex(pv_type), node_idx, node_count);
     return GetPVIndex(GetPVTypeIndex(pv_type), node_idx, node_count);
   };
-  size_t GetPVIndex(const PVType pv_type, const size_t node_idx) const {
+  size_t GetPVIndex(const PVType pv_type, const NodeId node_idx) const {
     return GetPVIndex(pv_type, node_idx, GetNodeCount());
   }
 
@@ -162,7 +163,7 @@ class PartialVectorHandler {
   }
 
   // Get vector of all node ids for given node.
-  static SizeVector GetPVIndexVectorForNodeId(const size_t node_idx,
+  static SizeVector GetPVIndexVectorForNodeId(const NodeId node_idx,
                                               const size_t node_count) {
     SizeVector pv_idxs;
     for (const auto pv_type : typename TypeEnum::Iterator()) {
@@ -173,9 +174,9 @@ class PartialVectorHandler {
 
  protected:
   // Get total offset into PVs.
-  static size_t GetPVIndex(const size_t pv_type_idx, const size_t node_idx,
+  static size_t GetPVIndex(const size_t pv_type_idx, const NodeId node_idx,
                            const size_t node_count) {
-    return (pv_type_idx * node_count) + node_idx;
+    return (pv_type_idx * node_count) + node_idx.value_;
   };
   // Get index for given PV enum.
   static size_t GetPVTypeIndex(const PVType pv_type) {

@@ -56,7 +56,7 @@ bool ChoiceMap::SelectionIsValid(const bool is_quiet) const {
 
   EdgeId edge_max_id = dag_.EdgeIdxRange().second;
   for (EdgeId edge_idx = EdgeId(0); edge_idx < edge_choice_vector_.size(); edge_idx++) {
-    const auto &edge_choice = edge_choice_vector_[edge_idx];
+    const auto &edge_choice = edge_choice_vector_[edge_idx.value_];
     if ((edge_choice.parent_edge_id == NoId) && (edge_choice.sister_edge_id == NoId) &&
         (edge_choice.left_child_edge_id == NoId) &&
         (edge_choice.right_child_edge_id == NoId)) {
@@ -79,8 +79,8 @@ bool ChoiceMap::SelectionIsValid(const bool is_quiet) const {
         return false;
       }
     }
-    for (const auto &child_edge_id :
-         {edge_choice.left_child_edge_id, edge_choice.right_child_edge_id}) {
+    for (const auto &child_edge_id : EdgeIdVector(
+             {edge_choice.left_child_edge_id, edge_choice.right_child_edge_id})) {
       // If edge id is outside valid range.
       if (child_edge_id > edge_max_id) {
         // If they are not NoId, then it is an invalid edge_id.
@@ -164,7 +164,7 @@ ChoiceMap::TreeMask ChoiceMap::ExtractTreeMask(const EdgeId central_edge_id) con
   // Rootward Pass: Capture parent and sister edges above focal edge.
   // For central edge, add children to stack for leafward pass.
   auto focal_edge_id = central_edge_id;
-  const auto &focal_choices = edge_choice_vector_.at(focal_edge_id);
+  const auto &focal_choices = edge_choice_vector_.at(focal_edge_id.value_);
   StackPushIfValidId(rootward_stack, focal_choices.left_child_edge_id);
   StackPushIfValidId(rootward_stack, focal_choices.right_child_edge_id);
   // Follow parentage upward until root.
@@ -173,7 +173,7 @@ ChoiceMap::TreeMask ChoiceMap::ExtractTreeMask(const EdgeId central_edge_id) con
     Assert(focal_edge_id < edge_max_id,
            "Focal edge idx is outside valid edge idx range.");
     tree_mask.insert(focal_edge_id);
-    const auto &focal_choices = edge_choice_vector_.at(focal_edge_id);
+    const auto &focal_choices = edge_choice_vector_.at(focal_edge_id.value_);
     // End upward pass if we are at the root.
     if (dag_.GetDAGEdge(focal_edge_id).GetParent() == root_node_id) {
       at_root = true;
@@ -194,7 +194,7 @@ ChoiceMap::TreeMask ChoiceMap::ExtractTreeMask(const EdgeId central_edge_id) con
     const auto edge_id = leafward_stack.top();
     leafward_stack.pop();
     tree_mask.insert(edge_id);
-    const auto edge_choice = edge_choice_vector_.at(edge_id);
+    const auto edge_choice = edge_choice_vector_.at(edge_id.value_);
     StackPushIfValidId(leafward_stack, edge_choice.left_child_edge_id);
     StackPushIfValidId(leafward_stack, edge_choice.right_child_edge_id);
   }
@@ -233,11 +233,11 @@ bool ChoiceMap::TreeMaskIsValid(const TreeMask &tree_mask, const bool is_quiet) 
     // Check if edge goes to each leaf exactly once.
     if (dag_.IsNodeLeaf(child_node.Id())) {
       const auto taxon_id = child_node.Id();
-      if (leaf_check.at(taxon_id)) {
+      if (leaf_check.at(taxon_id.value_)) {
         os << "Invalid TreeMask: Multiple edges going to a tree leaf." << std::endl;
         return false;
       }
-      leaf_check.at(taxon_id) = true;
+      leaf_check.at(taxon_id.value_) = true;
     }
     // Update node map. If a node already has parent or child, it is an invalid
     // tree.
@@ -361,8 +361,8 @@ Node::NodePtr ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const 
   }
 
   size_t node_id_counter = dag_.TaxonCount();
-  auto next_node_id = NoId;
-  auto current_node_id = dag_root_id;
+  NodeId next_node_id = NodeId(NoId);
+  NodeId current_node_id = dag_root_id;
   // Continue until left and right children of rootsplit node have been visited.
   nodes[dag_rootsplit_id] = nullptr;
   while (nodes[dag_rootsplit_id] == nullptr) {
@@ -385,7 +385,7 @@ Node::NodePtr ChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) const 
     }
     // If node is a leaf, return up the the tree
     else if (dag_.IsNodeLeaf(current_node_id)) {
-      nodes[current_node_id] = Node::Leaf(current_node_id, dag_.TaxonCount());
+      nodes[current_node_id] = Node::Leaf(current_node_id.value_, dag_.TaxonCount());
       next_node_id = tree_mask_ext[current_node_id][AdjacentNode::Parent];
     }
     // If neither left or right child has been visited, go down the left branch.

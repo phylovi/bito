@@ -14,8 +14,6 @@
 #include "default_dict.hpp"
 #include "driver.hpp"
 #include "node.hpp"
-
-// TODO: #387
 #include "subsplit_dag_storage.hpp"
 
 using BitsetVector = std::vector<Bitset>;

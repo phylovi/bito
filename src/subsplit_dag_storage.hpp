@@ -39,63 +39,9 @@
 #include "reindexer.hpp"
 #include "sugar.hpp"
 
-struct NodeIdType {
-  size_t value_;
-};
-struct EdgeIdType {
-  size_t value_;
-};
-struct TaxonIdType {
-  size_t value_;
-};
-
-// Generic hash function for IdTypes.
-namespace std {
-template <>
-struct hash<EdgeIdType> {
-  std::size_t operator()(const EdgeIdType& id) const noexcept {
-    std::size_t value_hash = std::hash<size_t>()(id.value_);
-    return value_hash;
-  }
-};
-template <>
-struct hash<NodeIdType> {
-  std::size_t operator()(const NodeIdType& id) const noexcept {
-    std::size_t value_hash = std::hash<size_t>()(id.value_);
-    return value_hash;
-  }
-};
-template <>
-struct hash<TaxonIdType> {
-  std::size_t operator()(const TaxonIdType& id) const noexcept {
-    std::size_t value_hash = std::hash<size_t>()(id.value_);
-    return value_hash;
-  }
-};
-}  // namespace std
-
-// std::ostream& operator<<(std::ostream& os, const NodeIdType& obj) {
-//   os << obj.value_;
-//   return os;
-// };
-
-// std::ostream& operator<<(std::ostream& os, const EdgeIdType& obj) {
-//   os << obj.value_;
-//   return os;
-// };
-
-// std::ostream& operator<<(std::ostream& os, const TaxonIdType& obj) {
-//   os << obj.value_;
-//   return os;
-// };
-
 using NodeId = GenericId<struct NodeIdTag>;
 using EdgeId = GenericId<struct EdgeIdTag>;
 using TaxonId = GenericId<struct TaxonIdTag>;
-
-// using NodeId = GenericId<struct NodeIdTag>;
-// using EdgeId = EdgeIdType;
-// using TaxonId = TaxonIdType;
 
 using VertexId = NodeId;
 using LineId = EdgeId;
@@ -295,7 +241,7 @@ class GenericNeighborsView {
     }
     T remapped{};
     for (auto [vertex_id, line_id] : neighbors_) {
-      remapped[vertex_id] = reindexer.GetNewIndexByOldIndex(line_id);
+      remapped[vertex_id] = reindexer.GetNewIndexByOldIndex(size_t(line_id));
     }
     neighbors_ = remapped;
   }
@@ -605,41 +551,49 @@ class SubsplitDAGStorage {
   LinesView GetLines() { return *this; }
 
   std::optional<ConstLineView> GetLine(VertexId parent, VertexId child) const {
-    if (parent >= vertices_.size() || child >= vertices_.size()) return {};
-    auto result = vertices_.at(parent).FindNeighbor(child);
-    if (!result.has_value()) return {};
-    return lines_.at(std::get<0>(result.value()));
+    if (parent.value_ >= vertices_.size() || child.value_ >= vertices_.size()) {
+      return {};
+    }
+    auto result = vertices_.at(parent.value_).FindNeighbor(child);
+    if (!result.has_value()) {
+      return {};
+    }
+    return lines_.at(std::get<0>(result.value()).value_);
   }
 
   std::optional<ConstLineView> GetLine(LineId id) const {
-    if (id >= lines_.size()) {
+    if (id.value_ >= lines_.size()) {
       return std::nullopt;
     }
-    auto& line = lines_[id];
+    auto& line = lines_[id.value_];
     if (line.GetId() == LineId(NoId)) {
       return std::nullopt;
     }
     return line;
   }
 
-  const DAGVertex& GetVertex(VertexId id) const { return vertices_.at(id); }
+  const DAGVertex& GetVertex(VertexId id) const { return vertices_.at(id.value_); }
 
   bool ContainsVertex(VertexId id) const {
-    if (id >= vertices_.size()) return false;
-    return vertices_[id].GetId() != VertexId(NoId);
+    if (id.value_ >= vertices_.size()) return false;
+    return vertices_[id.value_].GetId() != VertexId(NoId);
   }
 
   std::optional<std::reference_wrapper<DAGVertex>> FindVertex(const Bitset& subsplit) {
-    for (size_t i = 0; i < vertices_.size(); ++i) {
-      if (vertices_[i].GetSubsplit() == subsplit) return vertices_[i];
+    for (VertexId id = 0; id < vertices_.size(); ++id.value_) {
+      if (vertices_[id.value_].GetSubsplit() == subsplit) {
+        return vertices_[id.value_];
+      }
     }
     return std::nullopt;
   }
 
   std::optional<std::reference_wrapper<const DAGVertex>> FindVertex(
       const Bitset& subsplit) const {
-    for (size_t i = 0; i < vertices_.size(); ++i) {
-      if (vertices_[i].GetSubsplit() == subsplit) return vertices_[i];
+    for (VertexId id = 0; id.value_ < vertices_.size(); ++id.value_) {
+      if (vertices_[id.value_].GetSubsplit() == subsplit) {
+        return vertices_[id.value_];
+      }
     }
     return std::nullopt;
   }
@@ -663,7 +617,7 @@ class SubsplitDAGStorage {
   }
 
   void ReindexLine(LineId line, VertexId parent, VertexId child) {
-    lines_.at(line).SetParent(parent).SetChild(child);
+    lines_.at(line.value_).SetParent(parent).SetChild(child);
   }
 
   void SetLines(const std::vector<DAGLineStorage>& lines) { lines_ = lines; }
@@ -677,17 +631,17 @@ class SubsplitDAGStorage {
   size_t HostVerticesCount() const { return vertices_.HostSize(); }
 
   void ResetHost(SubsplitDAGStorage& host) {
-    for (size_t i = lines_.HostSize(); i < lines_.size(); ++i) {
-      auto& line = lines_[i];
-      if (line.GetParent() >= vertices_.HostSize()) {
-        if (line.GetChild() < vertices_.HostSize()) {
-          vertices_[line.GetChild()].RemoveNeighbor(
+    for (VertexId id = lines_.HostSize(); id < lines_.size(); ++id) {
+      auto& line = lines_[id.value_];
+      if (line.GetParent().value_ >= vertices_.HostSize()) {
+        if (line.GetChild().value_ < vertices_.HostSize()) {
+          vertices_[line.GetChild().value_].RemoveNeighbor(
               Direction::Rootward, line.GetSubsplitClade(), line.GetParent());
         }
       }
-      if (line.GetChild() >= vertices_.HostSize()) {
-        if (line.GetParent() < vertices_.HostSize()) {
-          vertices_[line.GetParent()].RemoveNeighbor(
+      if (line.GetChild().value_ >= vertices_.HostSize()) {
+        if (line.GetParent().value_ < vertices_.HostSize()) {
+          vertices_[line.GetParent().value_].RemoveNeighbor(
               Direction::Leafward, line.GetSubsplitClade(), line.GetChild());
         }
       }
@@ -697,9 +651,9 @@ class SubsplitDAGStorage {
   }
 
   void ConnectVertices(LineId line_id) {
-    auto& line = lines_.at(line_id);
-    auto& parent = vertices_.at(line.GetParent());
-    auto& child = vertices_.at(line.GetChild());
+    auto& line = lines_.at(line_id.value_);
+    auto& parent = vertices_.at(line.GetParent().value_);
+    auto& child = vertices_.at(line.GetChild().value_);
     parent.AddNeighbor(Direction::Leafward, line.GetSubsplitClade(), child.GetId(),
                        line_id);
     child.AddNeighbor(Direction::Rootward, line.GetSubsplitClade(), parent.GetId(),
@@ -740,8 +694,10 @@ class SubsplitDAGStorage {
 
   template <typename T, typename Id>
   static T& GetOrInsert(HostableVector<T>& data, Id id) {
-    if (id >= data.size()) data.resize(id + 1);
-    return data[id];
+    if (id.value_ >= data.size()) {
+      data.resize(id.value_ + 1);
+    }
+    return data[id.value_];
   }
 
   HostableVector<DAGLineStorage> lines_;
