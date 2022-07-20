@@ -27,6 +27,7 @@ template <typename TypeNameTag>
 struct GenericId {
   using SelfType = GenericId<TypeNameTag>;
   using UnderlyingType = size_t;
+  static constexpr size_t NoId = std::numeric_limits<size_t>::max();
 
   GenericId() = default;
   explicit GenericId(UnderlyingType const &value) : value_(value) {}
@@ -63,7 +64,7 @@ struct GenericId {
     return temp;
   }
 
-  // Output to stream.
+  // I/O
   static std::string PrefixToString() { return "Id"; }
   std::string ToString(const bool include_prefix = true) const {
     std::stringstream os;
@@ -76,11 +77,10 @@ struct GenericId {
     return os;
   }
 
-  static constexpr size_t NoId = std::numeric_limits<size_t>::max();
   UnderlyingType value_;
 };
 
-constexpr size_t NoId = GenericId<struct NoNameTag>::NoId;
+constexpr size_t NoId = std::numeric_limits<size_t>::max();
 
 // Generic hash function for GenericIds.
 namespace std {

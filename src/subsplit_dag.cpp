@@ -365,8 +365,8 @@ StringVector SubsplitDAG::GetSortedVectorOfTaxonNames() const {
 
 std::vector<Bitset> SubsplitDAG::GetSortedVectorOfNodeBitsets() const {
   std::vector<Bitset> nodes;
-  for (NodeId i = NodeId(0); i < NodeCount(); i++) {
-    Bitset node_bitset = GetDAGNode(i).GetBitset();
+  for (NodeId node_id = NodeId(0); node_id < NodeCount(); node_id++) {
+    Bitset node_bitset = GetDAGNode(node_id).GetBitset();
     nodes.push_back(node_bitset);
   }
   std::sort(nodes.begin(), nodes.end());

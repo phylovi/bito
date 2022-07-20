@@ -172,10 +172,10 @@ GPOperationVector GPDAG::OptimizeSBNParameters() const {
 
 GPOperationVector GPDAG::SetLeafwardZero() const {
   GPOperationVector operations;
-  for (NodeId i = NodeId(0); i < NodeCountWithoutDAGRoot(); i++) {
-    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::RHat, i)});
-    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::RRight, i)});
-    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::RLeft, i)});
+  for (NodeId node_id = NodeId(0); node_id < NodeCountWithoutDAGRoot(); node_id++) {
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::RHat, node_id)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::RRight, node_id)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::RLeft, node_id)});
   }
   return operations;
 }
@@ -193,10 +193,11 @@ GPOperationVector GPDAG::SetRhatToStationary() const {
 
 GPOperationVector GPDAG::SetRootwardZero() const {
   GPOperationVector operations;
-  for (NodeId i = NodeId(TaxonCount()); i < NodeCountWithoutDAGRoot(); i++) {
-    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P, i)});
-    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::PHatRight, i)});
-    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::PHatLeft, i)});
+  for (NodeId node_id = NodeId(TaxonCount()); node_id < NodeCountWithoutDAGRoot();
+       node_id++) {
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::P, node_id)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::PHatRight, node_id)});
+    operations.push_back(ZeroPLV{GetPLVIndex(PLVType::PHatLeft, node_id)});
   }
   return operations;
 }
