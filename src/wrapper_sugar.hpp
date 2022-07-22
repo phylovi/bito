@@ -79,7 +79,7 @@ struct GenericId {
     return os;
   }
 
-  UnderlyingType value_;
+  UnderlyingType value_ = NoId;
 };
 
 constexpr size_t NoId = std::numeric_limits<size_t>::max();

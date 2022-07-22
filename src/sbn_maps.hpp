@@ -41,8 +41,6 @@ using StringPCSPMap =
 // An ensemble of indexing data structures needed for an SBNSupport.
 using IndexerBundle =
     std::tuple<BitsetVector, BitsetSizeMap, SizeBitsetMap, BitsetSizePairMap, size_t>;
-using IndexerBundleForDAG =
-    std::tuple<BitsetVector, BitsetSizeMap, SizeBitsetMap, BitsetEdgeIdPairMap, size_t>;
 
 namespace SBNMaps {
 // Make a map from each Tag to the bitset representing the ids below the Tag.
@@ -65,8 +63,6 @@ Bitset PCSPBitsetOf(size_t leaf_count,  //
 // actual counts don't matter: we are just using the support here.
 IndexerBundle BuildIndexerBundle(const BitsetSizeDict& rootsplit_counter,
                                  const PCSPCounter& pcsp_counter);
-IndexerBundleForDAG BuildIndexerBundleForDAG(const BitsetSizeDict& rootsplit_counter,
-                                             const PCSPCounter& pcsp_counter);
 }  // namespace SBNMaps
 
 namespace UnrootedSBNMaps {

@@ -655,16 +655,28 @@ BitsetVector SubsplitDAG::GetChildSubsplits(const SizeBitsetMap &index_to_child,
 
 // ** Modify DAG methods:
 
+BitsetEdgeIdPairMap BitsetSizePairMapToBitsetEdgeIdPairMap(
+    BitsetSizePairMap &bitset_size_map) {
+  BitsetEdgeIdPairMap bitset_edgeid_map;
+  for (const auto &[bitset, id_pair] : bitset_size_map) {
+    const auto &[begin_id, end_id] = id_pair;
+    bitset_edgeid_map[bitset] = {EdgeId(begin_id), EdgeId(end_id)};
+  }
+  return bitset_edgeid_map;
+}
+
 std::tuple<BitsetSizeMap, SizeBitsetMap, BitsetVector>
 SubsplitDAG::ProcessTopologyCounter(const Node::TopologyCounter &topology_counter) {
   BitsetSizeMap edge_indexer;
   SizeBitsetMap index_to_child;
   BitsetVector rootsplits;
-  std::tie(rootsplits, edge_indexer, index_to_child, parent_to_child_range_,
+  BitsetSizePairMap parent_to_child_range;
+  std::tie(rootsplits, edge_indexer, index_to_child, parent_to_child_range,
            edge_count_without_leaf_subsplits_) =
-      SBNMaps::BuildIndexerBundleForDAG(
-          RootedSBNMaps::RootsplitCounterOf(topology_counter),
-          RootedSBNMaps::PCSPCounterOf(topology_counter));
+      SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),
+                                  RootedSBNMaps::PCSPCounterOf(topology_counter));
+  parent_to_child_range_ =
+      BitsetSizePairMapToBitsetEdgeIdPairMap(parent_to_child_range);
   return {edge_indexer, index_to_child, rootsplits};
 }
 
