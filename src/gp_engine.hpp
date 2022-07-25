@@ -197,16 +197,11 @@ class GPEngine {
 
   size_t GetPLVCountPerNode() const { return plv_handler_.GetPVCountPerNode(); }
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
-
+  // Node Counts.
   size_t GetNodeCount() const { return plv_handler_.GetNodeCount(); };
   size_t GetSpareNodeCount() const { return plv_handler_.GetSpareNodeCount(); }
   size_t GetAllocatedNodeCount() const { return plv_handler_.GetAllocatedNodeCount(); }
   size_t GetPaddedNodeCount() const { return plv_handler_.GetPaddedNodeCount(); };
-  size_t GetPLVCount() const { return plv_handler_.GetPVCount(); };
-  size_t GetSparePLVCount() const { return plv_handler_.GetSparePVCount(); };
-  size_t GetPaddedPLVCount() const { return plv_handler_.GetPaddedPVCount(); };
-  size_t GetAllocatedPLVCount() const { return plv_handler_.GetAllocatedPVCount(); }
-
   void SetNodeCount(const size_t node_count) { plv_handler_.SetNodeCount(node_count); }
   void SetSpareNodeCount(const size_t node_spare_count) {
     plv_handler_.SetSpareNodeCount(node_spare_count);
@@ -214,7 +209,12 @@ class GPEngine {
   void SetAllocatedNodeCount(const size_t node_alloc) {
     plv_handler_.SetAllocatedNodeCount(node_alloc);
   }
-
+  // PLV Counts.
+  size_t GetPLVCount() const { return plv_handler_.GetPVCount(); };
+  size_t GetSparePLVCount() const { return plv_handler_.GetSparePVCount(); };
+  size_t GetPaddedPLVCount() const { return plv_handler_.GetPaddedPVCount(); };
+  size_t GetAllocatedPLVCount() const { return plv_handler_.GetAllocatedPVCount(); }
+  // GPCSP Counts.
   size_t GetGPCSPCount() const { return gpcsp_count_; };
   size_t GetSpareGPCSPCount() const { return gpcsp_spare_count_; };
   size_t GetAllocatedGPCSPCount() const { return gpcsp_alloc_; };
@@ -225,7 +225,6 @@ class GPEngine {
            "Requested gpcsp_offset outside of allocated scratch space.");
     return gpcsp_offset + GetGPCSPCount();
   }
-
   void SetGPCSPCount(const size_t gpcsp_count) { gpcsp_count_ = gpcsp_count; }
   void SetSpareGPCSPCount(const size_t gpcsp_spare_count) {
     gpcsp_spare_count_ = gpcsp_spare_count;

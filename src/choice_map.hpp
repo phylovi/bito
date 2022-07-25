@@ -15,6 +15,10 @@
 
 class ChoiceMap {
  public:
+  // Types of Adjacent Nodes
+  enum class AdjacentNode { Parent, LeftChild, RightChild };
+  // Types of Adjacent Edges
+  enum class AdjacentEdge { Parent, Sister, LeftChild, RightChild };
   // Per-edge choices of best adjacent edges.
   struct EdgeChoice {
     EdgeId parent_edge_id = EdgeId(NoId);
@@ -27,6 +31,32 @@ class ChoiceMap {
 
   ChoiceMap(GPDAG &dag)
       : dag_(dag), edge_choice_vector_(dag.EdgeCountWithLeafSubsplits()){};
+
+  // ** Access
+
+  const EdgeChoice &GetEdgeChoice(const size_t edge_id) const {
+    return edge_choice_vector_[edge_id];
+  }
+
+  void SetEdgeChoice(const EdgeId edge_id, const AdjacentEdge edge_choice_type,
+                     const EdgeId new_edge_choice) {
+    switch (edge_choice_type) {
+      case AdjacentEdge::Parent:
+        edge_choice_vector_[edge_id.value_].parent_edge_id = new_edge_choice;
+        break;
+      case AdjacentEdge::Sister:
+        edge_choice_vector_[edge_id.value_].sister_edge_id = new_edge_choice;
+        break;
+      case AdjacentEdge::LeftChild:
+        edge_choice_vector_[edge_id.value_].left_child_edge_id = new_edge_choice;
+        break;
+      case AdjacentEdge::RightChild:
+        edge_choice_vector_[edge_id.value_].right_child_edge_id = new_edge_choice;
+        break;
+      default:
+        Failwith("Invalid edge choice type.");
+    }
+  }
 
   // ** Selectors
 
@@ -77,7 +107,6 @@ class ChoiceMap {
   // ** ExpandedTreeMask
   // The ExpandedTreeMask contains a map from all the nodes of a TreeMask to their
   // associated parent, left and right child.
-  enum class AdjacentNode { Parent, LeftChild, RightChild };
   template <typename T>
   using AdjacentNodeArray = EnumArray<AdjacentNode, 3, T>;
   using ExpandedTreeMask = std::map<NodeId, AdjacentNodeArray<NodeId>>;
