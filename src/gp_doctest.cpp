@@ -15,7 +15,7 @@
 #include "nni_engine.hpp"
 #include "pv_handler.hpp"
 #include "topology_sampler.hpp"
-#include "choice_map.hpp"
+#include "tp_engine.hpp"
 
 using namespace GPOperations;  // NOLINT
 using PLVType = PLVHandler::PLVType;
@@ -1793,5 +1793,40 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                   "Edge resulted in an invalid TreeMask.");
     CHECK_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
                   "Edge resulted in an invalid Topology not contained in DAG.");
+  }
+}
+
+// Initializes the TPEngine choice map and retrieves the top tree for each edge in DAG.
+// Then finds all trees contained in the DAG and verifies that each top tree produced is
+// a tree from the DAG.
+TEST_CASE("Top-Pruning: Initialize TPEngine and ChoiceMap") {
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  // GPEngine& gpengine = *inst.GetEngine();
+  GPDAG& dag = inst.GetDAG();
+  inst.EstimateBranchLengths(0.00001, 100, true);
+  auto all_trees = inst.GenerateCompleteRootedTreeCollection();
+  SitePattern site_pattern = inst.MakeSitePattern();
+  TPEngine tpengine = TPEngine(dag, site_pattern.PatternCount(),
+                               "_ignore/mmapped_plv.data", true, true);
+  tpengine.InitializeChoiceMap();
+
+  auto TopologyExistsInTreeCollection = [](const Node::NodePtr tree_topology,
+                                           RootedTreeCollection& tree_collection) {
+    for (const auto& tree : tree_collection.Trees()) {
+      if (tree.Topology() == tree_topology) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  for (EdgeId edge_id = EdgeId(0); edge_id < dag.EdgeCountWithLeafSubsplits();
+       edge_id++) {
+    auto top_tree_topology = tpengine.GetTopTreeTopologyWithEdge(edge_id);
+    auto exists = TopologyExistsInTreeCollection(top_tree_topology, all_trees);
+    CHECK_MESSAGE(exists, "Top Tree does not exist in DAG.");
   }
 }

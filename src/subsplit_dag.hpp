@@ -138,6 +138,8 @@ class SubsplitDAG {
   // Get node based on node id.
   SubsplitDAGNode GetDAGNode(const NodeId node_id) const;
   MutableSubsplitDAGNode GetDAGNode(const NodeId node_id);
+  // Get the subsplit bitset for the given node.
+  Bitset GetDAGNodeBitset(const NodeId node_id) const;
   // Get the node id based on the subsplit bitset.
   NodeId GetDAGNodeId(const Bitset &subsplit) const;
   // Gets the node id of the DAG root.
@@ -146,6 +148,8 @@ class SubsplitDAG {
   ConstNeighborsView GetRootsplitNodeIds() const;
   // Get edge based on edge id.
   ConstLineView GetDAGEdge(const EdgeId edge_id) const;
+  // Get the PCSP bitset for the given edge.
+  Bitset GetDAGEdgeBitset(const EdgeId edge_id) const;
   // Get the PCSP edge index by its parent-child pair.
   EdgeId GetEdgeIdx(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
   EdgeId GetEdgeIdx(const NodeId parent_id, const NodeId child_id) const;

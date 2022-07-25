@@ -124,6 +124,7 @@ add_library(bito-core SHARED
   src/taxon_name_munging.cpp
   src/tidy_subsplit_dag.cpp
   src/topology_sampler.cpp
+  src/tp_engine.cpp
   src/tree.cpp
   src/tree_collection.cpp
   src/unrooted_sbn_instance.cpp

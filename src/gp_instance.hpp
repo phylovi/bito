@@ -36,6 +36,7 @@ class GPInstance {
   void PrintDAG();
   void UseGradientOptimization(bool use_gradients = false);
 
+  SitePattern MakeSitePattern();
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;

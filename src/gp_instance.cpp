@@ -97,9 +97,14 @@ void GPInstance::UseGradientOptimization(bool use_gradients) {
   use_gradients_ = use_gradients;
 };
 
-void GPInstance::MakeEngine(double rescaling_threshold) {
+SitePattern GPInstance::MakeSitePattern() {
   CheckSequencesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
+  return site_pattern;
+}
+
+void GPInstance::MakeEngine(double rescaling_threshold) {
+  auto site_pattern = MakeSitePattern();
 
   MakeDAG();
   auto sbn_prior = dag_.BuildUniformOnTopologicalSupportPrior();
