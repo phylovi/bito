@@ -1804,7 +1804,6 @@ TEST_CASE("Top-Pruning: Initialize TPEngine and ChoiceMap") {
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
 
   auto inst = GPInstanceOfFiles(fasta_path, newick_path);
-  // GPEngine& gpengine = *inst.GetEngine();
   GPDAG& dag = inst.GetDAG();
   inst.EstimateBranchLengths(0.00001, 100, true);
   auto all_trees = inst.GenerateCompleteRootedTreeCollection();
