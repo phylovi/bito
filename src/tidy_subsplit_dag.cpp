@@ -32,63 +32,66 @@ void TidySubsplitDAG::ReinitializeTidyVectors() {
   dirty_sorted_.setZero();
 
   SubsplitDAG::DepthFirstWithAction(
-      {GetDAGRootNodeId()}, SubsplitDAGTraversalAction(
-                                // BeforeNode
-                                [](size_t node_id) {},
-                                // AfterNode
-                                [](size_t node_id) {},
-                                // BeforeNodeClade
-                                [](size_t node_id, bool rotated) {},
-                                // VisitEdge
-                                [this](size_t node_id, size_t child_id, bool rotated) {
-                                  SetBelow(node_id, rotated, child_id);
-                                }));
+      {GetDAGRootNodeId()},
+      SubsplitDAGTraversalAction(
+          // BeforeNode
+          [](NodeId node_id) {},
+          // AfterNode
+          [](NodeId node_id) {},
+          // BeforeNodeClade
+          [](NodeId node_id, bool is_edge_on_left) {},
+          // VisitEdge
+          [this](NodeId node_id, NodeId child_id, bool is_edge_on_left) {
+            SetBelow(node_id, is_edge_on_left, child_id);
+          }));
 }
 
-EigenArrayXb TidySubsplitDAG::BelowNode(size_t node_id) {
+EigenArrayXb TidySubsplitDAG::BelowNode(NodeId node_id) {
   return BelowNode(false, node_id).max(BelowNode(true, node_id));
 }
 
-EigenArrayXbRef TidySubsplitDAG::BelowNode(bool rotated, size_t node_id) {
-  if (rotated) {
-    return above_rotated_.col(node_id).array();
+EigenArrayXbRef TidySubsplitDAG::BelowNode(bool is_edge_on_left, NodeId node_id) {
+  if (is_edge_on_left) {
+    return above_rotated_.col(node_id.value_).array();
   } else {
-    return above_sorted_.col(node_id).array();
+    return above_sorted_.col(node_id.value_).array();
   }
 }
 
-EigenArrayXb TidySubsplitDAG::AboveNode(size_t node_id) const {
+EigenArrayXb TidySubsplitDAG::AboveNode(NodeId node_id) const {
   return AboveNode(false, node_id).max(AboveNode(true, node_id));
 }
 
-EigenArrayXb TidySubsplitDAG::AboveNode(bool rotated, size_t node_id) const {
-  if (rotated) {
-    return above_rotated_.row(node_id).array();
+EigenArrayXb TidySubsplitDAG::AboveNode(bool is_edge_on_left, NodeId node_id) const {
+  if (is_edge_on_left) {
+    return above_rotated_.row(node_id.value_).array();
   } else {
-    return above_sorted_.row(node_id).array();
+    return above_sorted_.row(node_id.value_).array();
   }
 }
 
-EigenArrayXbRef TidySubsplitDAG::DirtyVector(bool rotated) {
-  if (rotated) {
+EigenArrayXbRef TidySubsplitDAG::DirtyVector(bool is_edge_on_left) {
+  if (is_edge_on_left) {
     return dirty_rotated_;
   } else {
     return dirty_sorted_;
   }
 }
 
-bool TidySubsplitDAG::IsDirtyBelow(size_t node_id, bool rotated) {
+bool TidySubsplitDAG::IsDirtyBelow(NodeId node_id, bool is_edge_on_left) {
   // We use `min` as a way of getting "and": we want to find if there are any dirty
   // node-clades below us.
-  return BelowNode(rotated, node_id).min(DirtyVector(rotated)).maxCoeff();
+  return BelowNode(is_edge_on_left, node_id)
+      .min(DirtyVector(is_edge_on_left))
+      .maxCoeff();
 }
 
-void TidySubsplitDAG::SetDirtyStrictlyAbove(size_t node_id) {
-  for (const bool rotated : {false, true}) {
-    EigenArrayXbRef dirty = DirtyVector(rotated);
-    EigenArrayXb to_make_dirty = AboveNode(rotated, node_id);
+void TidySubsplitDAG::SetDirtyStrictlyAbove(NodeId node_id) {
+  for (const bool is_edge_on_left : {false, true}) {
+    EigenArrayXbRef dirty = DirtyVector(is_edge_on_left);
+    EigenArrayXb to_make_dirty = AboveNode(is_edge_on_left, node_id);
     // We are only dirtying things that are strictly above us.
-    to_make_dirty[node_id] = false;
+    to_make_dirty[node_id.value_] = false;
     // We use `max` as a way of getting "or": we want to maintain anything that's
     // already dirty as dirty, while adding all nodes strictly above us.
     dirty = dirty.max(to_make_dirty);
@@ -133,11 +136,11 @@ TidySubsplitDAG TidySubsplitDAG::ManualTrivialExample() {
 
   // The tree ((0,1)3,2)4:
   // https://github.com/phylovi/bito/issues/349#issuecomment-897963382
-  manual_dag.SetBelow(3, true, 0);
-  manual_dag.SetBelow(3, false, 1);
-  manual_dag.SetBelow(4, false, 2);
-  manual_dag.SetBelow(4, true, 3);
-  manual_dag.SetBelow(5, true, 4);
+  manual_dag.SetBelow(NodeId(3), true, NodeId(0));
+  manual_dag.SetBelow(NodeId(3), false, NodeId(1));
+  manual_dag.SetBelow(NodeId(4), false, NodeId(2));
+  manual_dag.SetBelow(NodeId(4), true, NodeId(3));
+  manual_dag.SetBelow(NodeId(5), true, NodeId(4));
 
   return manual_dag;
 }
@@ -155,27 +158,28 @@ std::string TidySubsplitDAG::RecordTraversal() {
       {GetDAGRootNodeId()},
       TidySubsplitDAGTraversalAction(
           // BeforeNode
-          [](size_t node_id) {},
+          [](NodeId node_id) {},
           // AfterNode
-          [](size_t node_id) {},
+          [](NodeId node_id) {},
           // BeforeNodeClade
-          [&result](size_t node_id, bool rotated) {
-            result << "descending along " << node_id << ", " << rotated << "\n";
+          [&result](NodeId node_id, bool is_edge_on_left) {
+            result << "descending along " << node_id << ", " << is_edge_on_left << "\n";
           },
           // ModifyEdge
-          [&result](size_t node_id, size_t child_id, bool rotated) {
+          [&result](NodeId node_id, NodeId child_id, bool is_edge_on_left) {
             result << "modifying: ";
-            result << node_id << ", " << child_id << ", " << rotated << "\n";
+            result << node_id << ", " << child_id << ", " << is_edge_on_left << "\n";
           },
           // UpdateEdge
-          [&result](size_t node_id, size_t child_id, bool rotated) {
+          [&result](NodeId node_id, NodeId child_id, bool is_edge_on_left) {
             result << "updating:  ";
-            result << node_id << ", " << child_id << ", " << rotated << "\n";
+            result << node_id << ", " << child_id << ", " << is_edge_on_left << "\n";
           }));
   return result.str();
 }
 
-void TidySubsplitDAG::SetBelow(size_t parent_id, bool parent_rotated, size_t child_id) {
-  BelowNode(parent_rotated, parent_id) =
-      BelowNode(parent_rotated, parent_id).max(BelowNode(child_id));
+void TidySubsplitDAG::SetBelow(NodeId parent_id, bool is_edge_on_left,
+                               NodeId child_id) {
+  BelowNode(is_edge_on_left, parent_id) =
+      BelowNode(is_edge_on_left, parent_id).max(BelowNode(child_id));
 }

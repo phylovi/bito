@@ -11,6 +11,7 @@
 #include "mmapped_plv.hpp"
 #include "site_pattern.hpp"
 #include "reindexer.hpp"
+#include "subsplit_dag_storage.hpp"
 
 // Enumerated Types for Partial Vectors.
 namespace PartialVectorType {
@@ -27,9 +28,8 @@ static inline const size_t PLVCount = 6;
 class PLVTypeEnum
     : public EnumWrapper<PLVType, size_t, PLVCount, PLVType::P, PLVType::RLeft> {
  public:
-  static inline const Array<std::string> Labels = {{"PLV::P", "PLV::PHatRight",
-                                                    "PLV::PHatLeft", "PLV::RHat",
-                                                    "PLV::RRight", "PLV::RLeft"}};
+  static inline const Array<std::string> Labels = {
+      {"P", "PHatRight", "PHatLeft", "RHat", "RRight", "RLeft"}};
 
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
     os << "PLV::" << Labels[e];
@@ -47,8 +47,7 @@ static inline const size_t PSVCount = 3;
 class PSVTypeEnum
     : public EnumWrapper<PSVType, size_t, PSVCount, PSVType::PRight, PSVType::Q> {
  public:
-  static inline const Array<std::string> Labels = {
-      {"PSV::PRight", "PSV::PLeft", "PSV::Q"}};
+  static inline const Array<std::string> Labels = {{"PRight", "PLeft", "Q"}};
 
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
     os << "PSV::" << Labels[e];
@@ -61,6 +60,7 @@ using PLVType = PartialVectorType::PLVType;
 using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
 using PSVType = PartialVectorType::PSVType;
 using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
+using PVId = GenericId<struct PVIdTag>;
 
 template <typename PVType, typename PVTypeEnum>
 class PartialVectorHandler {
@@ -123,17 +123,17 @@ class PartialVectorHandler {
     return GetPV(pv_idx);
   };
   // Get PV by PV type and node index from the vector of Partial Vectors.
-  NucleotidePLVRef &GetPV(const PVType pv_type, const size_t node_idx) {
+  NucleotidePLVRef &GetPV(const PVType pv_type, const NodeId node_idx) {
     return pvs_.at(GetPVIndex(pv_type, node_idx));
   };
-  const NucleotidePLVRef &GetPV(const PVType pv_type, const size_t node_idx) const {
+  const NucleotidePLVRef &GetPV(const PVType pv_type, const NodeId node_idx) const {
     return pvs_.at(GetPVIndex(pv_type, node_idx));
   };
-  NucleotidePLVRef &operator()(const PVType pv_type, const size_t node_idx) {
+  NucleotidePLVRef &operator()(const PVType pv_type, const NodeId node_idx) {
     return GetPV(GetPVIndex(pv_type, node_idx));
   };
   const NucleotidePLVRef &operator()(const PVType pv_type,
-                                     const size_t node_idx) const {
+                                     const NodeId node_idx) const {
     return GetPV(GetPVIndex(pv_type, node_idx));
   };
   // Get Spare PV by index from the vector of Partial Vectors.
@@ -145,12 +145,12 @@ class PartialVectorHandler {
   };
 
   // Get total offset into PVs, indexed based on underlying DAG.
-  static size_t GetPVIndex(const PVType pv_type, const size_t node_idx,
+  static size_t GetPVIndex(const PVType pv_type, const NodeId node_idx,
                            const size_t node_count) {
     // return GetPVIndex(PVTypeEnum::GetIndex(pv_type), node_idx, node_count);
     return GetPVIndex(GetPVTypeIndex(pv_type), node_idx, node_count);
   };
-  size_t GetPVIndex(const PVType pv_type, const size_t node_idx) const {
+  size_t GetPVIndex(const PVType pv_type, const NodeId node_idx) const {
     return GetPVIndex(pv_type, node_idx, GetNodeCount());
   }
 
@@ -163,7 +163,7 @@ class PartialVectorHandler {
   }
 
   // Get vector of all node ids for given node.
-  static SizeVector GetPVIndexVectorForNodeId(const size_t node_idx,
+  static SizeVector GetPVIndexVectorForNodeId(const NodeId node_idx,
                                               const size_t node_count) {
     SizeVector pv_idxs;
     for (const auto pv_type : typename TypeEnum::Iterator()) {
@@ -174,9 +174,9 @@ class PartialVectorHandler {
 
  protected:
   // Get total offset into PVs.
-  static size_t GetPVIndex(const size_t pv_type_idx, const size_t node_idx,
+  static size_t GetPVIndex(const size_t pv_type_idx, const NodeId node_idx,
                            const size_t node_count) {
-    return (pv_type_idx * node_count) + node_idx;
+    return (pv_type_idx * node_count) + node_idx.value_;
   };
   // Get index for given PV enum.
   static size_t GetPVTypeIndex(const PVType pv_type) {
@@ -262,30 +262,6 @@ class PSVHandler : public PartialVectorHandler<PartialVectorType::PSVType,
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-
-// Check that PLV iterator iterates over all PLVs exactly once.
-TEST_CASE("PLVHandler: EnumIterator") {
-  using namespace PartialVectorType;
-  const auto plv_types = PLVTypeEnum::TypeArray();
-  std::map<PLVType, size_t> plv_visited_map;
-  // Iterate using vector.
-  for (const PLVType plv_type : plv_types) {
-    plv_visited_map.insert({plv_type, 0});
-  }
-  // Iterate using EnumIterator.
-  for (const PLVType plv_type : PLVTypeEnum::Iterator()) {
-    CHECK_MESSAGE(plv_visited_map.find(plv_type) != plv_visited_map.end(),
-                  "Iterator has PLV not in plv_vector.");
-    plv_visited_map.at(plv_type) += 1;
-  }
-  // Check that each was visited only once.
-  for (const auto [plv_type, visit_count] : plv_visited_map) {
-    std::ignore = plv_type;
-    CHECK_FALSE_MESSAGE(visit_count < 1, "One or more PLVs skipped by EnumIterator.");
-    CHECK_FALSE_MESSAGE(visit_count > 1,
-                        "One or more PLVs in visited more than once by EnumIterator.");
-  }
-}
 
 // Check that PLV iterator iterates over all PLVs exactly once.
 TEST_CASE("PLVHandler: EnumIterator") {

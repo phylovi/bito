@@ -219,7 +219,7 @@ class NNIEngine {
   // the adjacent_node_ids vector. is_edge_leafward tells whether node_id is the child
   // or parent. is_edge_edgeclade determines which side of parent the child descends
   // from.
-  void AddAllNNIsFromNodeVectorToAdjacentNNIs(const size_t &node_id,
+  void AddAllNNIsFromNodeVectorToAdjacentNNIs(const NodeId node_id,
                                               const SizeVector &adjacent_node_ids,
                                               const bool is_edge_on_left,
                                               const bool is_edge_leafward);
@@ -292,10 +292,11 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni
   const auto child_id = dag.GetDAGNodeId(nni.GetChild());
   const bool is_left_clade_sister = nni.WhichParentCladeIsFocalClade();
   // Find key indices for NNI.
-  KeyIndexMap key_idx_map(NoId);
-  key_idx_map[KeyIndex::Parent_Id] = parent_id;
-  key_idx_map[KeyIndex::Child_Id] = child_id;
-  key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id);
+  KeyIndexMap key_idx_map;
+  key_idx_map.fill(NoId);
+  key_idx_map[KeyIndex::Parent_Id] = parent_id.value_;
+  key_idx_map[KeyIndex::Child_Id] = child_id.value_;
+  key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
   key_idx_map[KeyIndex::Parent_RHat] =
       PLVHandler::GetPVIndex(PLVType::RHat, parent_id, node_count);
   key_idx_map[KeyIndex::Parent_RFocal] = PLVHandler::GetPVIndex(
@@ -317,11 +318,13 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
     const NNIOperation &pre_nni, const NNIOperation &post_nni,
     const NNIEngine::KeyIndexMap &pre_key_idx, const DAGType &dag) {
   // Unpopulated key indices will left as NoId.
-  KeyIndexMap post_key_idx(NoId);
-  post_key_idx[KeyIndex::Parent_Id] = dag.GetDAGNodeId(post_nni.GetParent());
-  post_key_idx[KeyIndex::Child_Id] = dag.GetDAGNodeId(post_nni.GetChild());
-  post_key_idx[KeyIndex::Edge] = dag.GetEdgeIdx(post_key_idx[KeyIndex::Parent_Id],
-                                                post_key_idx[KeyIndex::Child_Id]);
+  NodeId parent_id = dag.GetDAGNodeId(post_nni.GetParent());
+  NodeId child_id = dag.GetDAGNodeId(post_nni.GetChild());
+  KeyIndexMap post_key_idx;
+  post_key_idx.fill(NoId);
+  post_key_idx[KeyIndex::Parent_Id] = parent_id.value_;
+  post_key_idx[KeyIndex::Child_Id] = child_id.value_;
+  post_key_idx[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
 
   // Array for mapping from pre-NNI plvs to post-NNI plvs.
   const auto key_map = BuildKeyIndexTypePairsFromPreNNIToPostNNI(pre_nni, post_nni);

@@ -136,7 +136,7 @@ class GPInstance {
   // during branch length estimation, so that they can be output to CSV.
   void IntermediateOptimizationValues();
 
-  size_t GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
+  EdgeId GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
                                  const Node *leaf_node) const;
   RootedTreeCollection TreesWithGPBranchLengthsOfTopologies(
       Node::NodePtrVec &&topologies) const;

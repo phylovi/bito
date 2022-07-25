@@ -14,6 +14,7 @@
 #include "default_dict.hpp"
 #include "driver.hpp"
 #include "node.hpp"
+#include "subsplit_dag_storage.hpp"
 
 using BitsetVector = std::vector<Bitset>;
 using SizeBitsetMap = std::unordered_map<size_t, Bitset>;
