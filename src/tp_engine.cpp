@@ -38,7 +38,32 @@ double TPEngine::GetScoreOfTopTree(const EdgeId edge_id) const {
 
 // ** Scoring by Likelihood
 
+void TPEngine::PopulateRootwardPVLikelihoodForNode(const NodeId node_id) {
+  // const auto node = dag_.GetDAGNode(node_id);
+
+  // likelihood_pvs_.GetPV(PSVType::PLeft, node_id) = left_likelihood;
+  // likelihood_pvs_.GetPV(PSVType::PRight, node_id) = right_likelihood;
+}
+
+void TPEngine::PopulateLeafwardPVLikelihoodForNode(const NodeId node_id) {
+  // const auto node = dag_.GetDAGNode(node_id);
+
+  // likelihood_pvs_.GetPV(PSVType::PLeft, node_id) = left_likelihood;
+  // likelihood_pvs_.GetPV(PSVType::PRight, node_id) = right_likelihood;
+}
+
 void TPEngine::InitializeLikelihood() {
+  // Rootward Pass (populate P-pvs)
+  const auto rootward_node_ids = dag_.RootwardNodeTraversalTrace(true);
+  for (const auto node_id : rootward_node_ids) {
+    PopulateRootwardPVLikelihoodForNode(node_id);
+  }
+  // Leafward Pass (populate Q-pvs)
+  const auto leafward_node_ids = dag_.LeafwardNodeTraversalTrace(true);
+  for (const auto node_id : leafward_node_ids) {
+    PopulateLeafwardPVLikelihoodForNode(node_id);
+  }
+
   // !ISSUE #440
   Failwith("Currently no implementation.");
 }

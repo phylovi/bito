@@ -126,6 +126,11 @@ class TPEngine {
   EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
 
  protected:
+  // ** Likelihoods
+
+  void PopulateRootwardPVLikelihoodForNode(const NodeId node_id);
+  void PopulateLeafwardPVLikelihoodForNode(const NodeId node_id);
+
   // ** DAG
   // Un-owned reference DAG.
   GPDAG &dag_;
