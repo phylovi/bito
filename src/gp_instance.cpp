@@ -270,14 +270,15 @@ void GPInstance::EstimateSBNParameters() {
 void GPInstance::CalculateHybridMarginals() {
   std::cout << "Calculating hybrid marginals\n";
   PopulatePLVs();
-  dag_.TopologicalEdgeTraversal([this](const size_t parent_id, const bool rotated,
-                                       const size_t child_id, const size_t) {
+  dag_.TopologicalEdgeTraversal([this](const NodeId parent_id,
+                                       const bool is_edge_on_left,
+                                       const NodeId child_id, const EdgeId edge_idx) {
     this->GetEngine()->ProcessQuartetHybridRequest(
-        dag_.QuartetHybridRequestOf(parent_id, rotated, child_id));
+        dag_.QuartetHybridRequestOf(parent_id, is_edge_on_left, child_id));
   });
 }
 
-size_t GPInstance::GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
+EdgeId GPInstance::GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
                                            const Node *leaf_node) const {
   Assert(leaf_node->IsLeaf(), "Only leaf node is permitted.");
   return dag_.GetEdgeIdx(parent_subsplit,
@@ -299,20 +300,23 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
             const Node *child1) {
           Bitset parent_subsplit = Bitset::Subsplit(sister->Leaves(), focal->Leaves());
           Bitset child_subsplit = Bitset::Subsplit(child0->Leaves(), child1->Leaves());
-          size_t gpcsp_idx = dag_.GetEdgeIdx(parent_subsplit, child_subsplit);
-          branch_lengths[focal->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+          EdgeId gpcsp_idx = dag_.GetEdgeIdx(parent_subsplit, child_subsplit);
+          branch_lengths[focal->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx.value_];
 
           if (sister->IsLeaf()) {
             gpcsp_idx = GetEdgeIndexForLeafNode(parent_subsplit, sister);
-            branch_lengths[sister->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+            branch_lengths[sister->Id()] =
+                gpcsp_indexed_branch_lengths[gpcsp_idx.value_];
           }
           if (child0->IsLeaf()) {
             gpcsp_idx = GetEdgeIndexForLeafNode(child_subsplit, child0);
-            branch_lengths[child0->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+            branch_lengths[child0->Id()] =
+                gpcsp_indexed_branch_lengths[gpcsp_idx.value_];
           }
           if (child1->IsLeaf()) {
             gpcsp_idx = GetEdgeIndexForLeafNode(child_subsplit, child1);
-            branch_lengths[child1->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx];
+            branch_lengths[child1->Id()] =
+                gpcsp_indexed_branch_lengths[gpcsp_idx.value_];
           }
         },
         false);
@@ -336,22 +340,22 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double scale_min
       EigenVectorXd::LinSpaced(steps, scale_min, scale_max);
   per_pcsp_lik_surfaces_ = EigenMatrixXd(gpcsp_count * steps, 2);
 
-  for (size_t gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
+  for (EdgeId gpcsp_idx = EdgeId(0); gpcsp_idx < gpcsp_count; gpcsp_idx++) {
     EigenVectorXd gpcsp_new_branch_lengths =
-        scaling_vector * optimized_branch_lengths[gpcsp_idx];
+        scaling_vector * optimized_branch_lengths[gpcsp_idx.value_];
     EigenVectorXd new_branch_length_vector = optimized_branch_lengths;
 
     for (size_t i = 0; i < steps; i++) {
-      new_branch_length_vector[gpcsp_idx] = gpcsp_new_branch_lengths[i];
+      new_branch_length_vector[gpcsp_idx.value_] = gpcsp_new_branch_lengths[i];
       GetEngine()->SetBranchLengths(new_branch_length_vector);
       PopulatePLVs();
       ComputeLikelihoods();
 
       size_t matrix_position = gpcsp_count * i;
-      per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx, 0) =
+      per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx.value_, 0) =
           gpcsp_new_branch_lengths[i];
-      per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx, 1) =
-          GetEngine()->GetPerGPCSPLogLikelihoods(gpcsp_idx, 1)(0, 0);
+      per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx.value_, 1) =
+          GetEngine()->GetPerGPCSPLogLikelihoods(gpcsp_idx.value_, 1)(0, 0);
     }
   }
   // Reset back to optimized branch lengths

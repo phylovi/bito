@@ -14,6 +14,7 @@
 
 #include "intpack.hpp"
 #include "prettyprint.hpp"
+#include "wrapper_sugar.hpp"
 
 // Put typedefs that are built of STL types here.
 using Tag = uint64_t;
@@ -151,81 +152,3 @@ std::unordered_map<Key, T> UnorderedMapOf(const std::vector<std::pair<Key, T>> &
   }
   return m;
 }
-
-// Generic Iterator for enum class types.
-// Requires that enum's underlying types have no gaps.
-template <typename EnumType, EnumType FirstEnum, EnumType LastEnum>
-class EnumIterator {
-  typedef typename std::underlying_type<EnumType>::type val_t;
-  int val;
-
- public:
-  EnumIterator(const EnumType &f) : val(static_cast<val_t>(f)) {}
-  EnumIterator() : val(static_cast<val_t>(FirstEnum)) {}
-  EnumIterator operator++() {
-    ++val;
-    return *this;
-  }
-  EnumType operator*() { return static_cast<EnumType>(val); }
-  EnumIterator begin() { return *this; }  // default ctor is good
-  EnumIterator end() {
-    static const EnumIterator endIter = ++EnumIterator(LastEnum);  // cache it
-    return endIter;
-  }
-  bool operator!=(const EnumIterator &i) { return val != i.val; }
-};
-
-// Generic Array for using class enum for index access.
-template <class EnumType, size_t EnumCount, class DataType>
-class EnumArray {
- public:
-  EnumArray() = default;
-  EnumArray(DataType fill_value) { array_.fill(fill_value); }
-  EnumArray(std::array<DataType, EnumCount> array) : array_(std::move(array)) {}
-
-  DataType &operator[](const EnumType i) { return array_[static_cast<int>(i)]; }
-  const DataType &operator[](const EnumType i) const {
-    return array_[static_cast<int>(i)];
-  }
-
-  int size() const { return array_.size(); }
-
- private:
-  std::array<DataType, EnumCount> array_;
-};
-
-// Generic Wrapper with collection of static functions for using class enum with
-// common data structures.
-template <class EnumType, class UnderlyingType, size_t EnumCount, EnumType FirstEnum,
-          EnumType LastEnum>
-class EnumWrapper {
- public:
-  using Type = EnumType;
-  using Iterator = EnumIterator<EnumType, FirstEnum, LastEnum>;
-
-  template <class DataType>
-  using Array = EnumArray<EnumType, EnumCount, DataType>;
-
-  static inline const EnumType First = FirstEnum;
-  static inline const EnumType Last = LastEnum;
-  static inline const size_t Count = EnumCount;
-
-  static UnderlyingType GetIndex(const EnumType i) {
-    return static_cast<UnderlyingType>(i);
-  }
-
-  static std::array<Type, Count> TypeArray() {
-    std::array<Type, Count> arr;
-    size_t i = 0;
-    for (const auto e : Iterator()) {
-      arr[i++] = e;
-    }
-    return arr;
-  }
-
-  static std::string ToString(const EnumType i) {
-    std::stringstream os;
-    os << "Enum::" << std::to_string(GetIndex(i));
-    return os.str();
-  }
-};

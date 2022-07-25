@@ -124,14 +124,14 @@ void SubsplitDAG::CountTopologies() {
       double per_rotated_count = node.GetLeafward(rotated).empty() ? 1. : 0.;
       // Sum options across the possible children.
       for (const auto &child_id : node.GetLeafward(rotated)) {
-        per_rotated_count += topology_count_below_[child_id];
+        per_rotated_count += topology_count_below_[child_id.value_];
       }
       // Take the product across the number of options for the left and right branches
       // of the tree.
-      topology_count_below_[node_id] *= per_rotated_count;
+      topology_count_below_[node_id.value_] *= per_rotated_count;
     }
   }
-  topology_count_ = topology_count_below_[GetDAGRootNodeId()];
+  topology_count_ = topology_count_below_[GetDAGRootNodeId().value_];
 }
 
 size_t SubsplitDAG::TaxonCount() const { return dag_taxa_.size(); }
@@ -140,7 +140,7 @@ size_t SubsplitDAG::NodeCount() const { return storage_.GetVertices().size(); }
 
 size_t SubsplitDAG::NodeCountWithoutDAGRoot() const { return NodeCount() - 1; }
 
-SizePair SubsplitDAG::NodeIdRange() const { return {0, NodeCount()}; }
+NodeIdPair SubsplitDAG::NodeIdRange() const { return {NodeId(0), NodeId(NodeCount())}; }
 
 size_t SubsplitDAG::RootsplitCount() const { return GetRootsplitNodeIds().size(); }
 
@@ -150,7 +150,9 @@ size_t SubsplitDAG::EdgeCountWithLeafSubsplits() const {
   return storage_.GetLines().size();
 }
 
-SizePair SubsplitDAG::EdgeIdxRange() const { return {0, EdgeCountWithLeafSubsplits()}; }
+EdgeIdPair SubsplitDAG::EdgeIdxRange() const {
+  return {EdgeId(0), EdgeId(EdgeCountWithLeafSubsplits())};
+}
 
 double SubsplitDAG::TopologyCount() const { return topology_count_; }
 
@@ -208,7 +210,7 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
       {GetDAGRootNodeId()},
       SubsplitDAGTraversalAction(
           // BeforeNode
-          [this, &string_stream, &show_index_labels](size_t node_id) {
+          [this, &string_stream, &show_index_labels](NodeId node_id) {
             const auto &node = GetDAGNode(node_id);
             if (node.IsDAGRootNode()) {
               string_stream << node_id << " [label=\"<f0>&rho;\"]\n";
@@ -228,22 +230,22 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
                 << "\"]\n";
           },
           // AfterNode
-          [](size_t node_id) {},
+          [](NodeId node_id) {},
           // BeforeNodeClade
-          [](size_t node_id, bool rotated) {},
+          [](NodeId node_id, bool is_edge_on_left) {},
           // VisitEdge
-          [this, &string_stream, &show_index_labels](size_t node_id, size_t child_id,
-                                                     bool rotated) {
+          [this, &string_stream, &show_index_labels](NodeId node_id, NodeId child_id,
+                                                     bool is_edge_on_left) {
             if (GetDAGNode(child_id).IsLeaf()) {
               string_stream << child_id << " [label=\"<f1>" << child_id << "\"]\n";
             }
             string_stream << "\"" << node_id << "\":";
-            string_stream << (rotated ? "f0" : "f2");
+            string_stream << (is_edge_on_left ? "f0" : "f2");
             string_stream << "->\"";
             string_stream << child_id << "\":f1";
             if (show_index_labels) {
               string_stream << " [label=\"" << GetEdgeIdx(node_id, child_id);
-              if (rotated) {
+              if (is_edge_on_left) {
                 string_stream << "\", color=1, fontcolor=1";
               } else {
                 string_stream << "\", color=3, fontcolor=3";
@@ -268,90 +270,92 @@ std::string SubsplitDAG::ToDot(bool show_index_labels) const {
 
 BitsetSizeMap SubsplitDAG::BuildEdgeIndexer() const {
   auto edge_indexer = BitsetSizeMap();
-  TopologicalEdgeTraversal([this, &edge_indexer](size_t parent_id, bool rotated,
-                                                 size_t child_id, size_t edge_idx) {
-    const auto parent_subsplit = GetDAGNode(parent_id).GetBitset(rotated);
+  TopologicalEdgeTraversal([this, &edge_indexer](NodeId parent_id, bool is_edge_on_left,
+                                                 NodeId child_id, EdgeId edge_idx) {
+    const auto parent_subsplit = GetDAGNode(parent_id).GetBitset(is_edge_on_left);
     const auto child_subsplit = GetDAGNode(child_id).GetBitset();
-    SafeInsert(edge_indexer, Bitset::PCSP(parent_subsplit, child_subsplit), edge_idx);
+    SafeInsert(edge_indexer, Bitset::PCSP(parent_subsplit, child_subsplit),
+               edge_idx.value_);
   });
   return edge_indexer;
 }
 
-SizeBoolVectorMap SubsplitDAG::BuildEdgeIdxToPCSPBoolVectorMap() const {
-  auto edge_to_pcsp_map = SizeBoolVectorMap();
-  TopologicalEdgeTraversal([this, &edge_to_pcsp_map](size_t parent_id, bool rotated,
-                                                     size_t child_id, size_t edge_idx) {
-    const auto parent_subsplit = GetDAGNode(parent_id).GetBitset(rotated);
+SizeBitsetMap SubsplitDAG::BuildInverseEdgeIndexer() const {
+  auto edge_to_pcsp_map = SizeBitsetMap();
+  TopologicalEdgeTraversal([this, &edge_to_pcsp_map](NodeId parent_id,
+                                                     bool is_edge_on_left,
+                                                     NodeId child_id, EdgeId edge_idx) {
+    const auto parent_subsplit = GetDAGNode(parent_id).GetBitset(is_edge_on_left);
     const auto child_subsplit = GetDAGNode(child_id).GetBitset();
-    SafeInsert(edge_to_pcsp_map, edge_idx,
-               Bitset::PCSP(parent_subsplit, child_subsplit).GetData());
+    SafeInsert(edge_to_pcsp_map, edge_idx.value_,
+               Bitset::PCSP(parent_subsplit, child_subsplit));
   });
   return edge_to_pcsp_map;
 }
 
-size_t SubsplitDAG::GetTaxonId(const std::string &name) const {
+TaxonId SubsplitDAG::GetTaxonId(const std::string &name) const {
   Assert(
       ContainsTaxon(name),
       "SubsplitDAG::GetTaxonId(): Taxon with given name is not contained in the DAG.");
-  return dag_taxa_.find(name)->second;
+  return TaxonId(dag_taxa_.find(name)->second);
 }
 
-SubsplitDAGNode SubsplitDAG::GetDAGNode(const size_t node_id) const {
+SubsplitDAGNode SubsplitDAG::GetDAGNode(const NodeId node_id) const {
   Assert(ContainsNode(node_id), "Node with the given node_id does not exist in DAG.");
-  return storage_.GetVertices().at(node_id);
+  return storage_.GetVertices().at(node_id.value_);
 }
 
-MutableSubsplitDAGNode SubsplitDAG::GetDAGNode(const size_t node_id) {
+MutableSubsplitDAGNode SubsplitDAG::GetDAGNode(const NodeId node_id) {
   Assert(ContainsNode(node_id), "Node with the given node_id does not exist in DAG.");
-  return storage_.GetVertices().at(node_id);
+  return storage_.GetVertices().at(node_id.value_);
 }
 
-size_t SubsplitDAG::GetDAGNodeId(const Bitset &subsplit) const {
+NodeId SubsplitDAG::GetDAGNodeId(const Bitset &subsplit) const {
   Assert(ContainsNode(subsplit), "Node with the given subsplit does not exist in DAG.");
   if (storage_.HaveHost()) {
     auto node = storage_.FindVertex(subsplit);
-    return node->get().GetId();
+    return NodeId(node->get().GetId());
   }
   return subsplit_to_id_.at(subsplit);
 }
 
-size_t SubsplitDAG::GetDAGRootNodeId() const { return NodeCount() - 1; }
+NodeId SubsplitDAG::GetDAGRootNodeId() const { return NodeId(NodeCount() - 1); }
 
 ConstNeighborsView SubsplitDAG::GetRootsplitNodeIds() const {
   return GetDAGNode(GetDAGRootNodeId()).GetLeftLeafward();
 }
 
-ConstLineView SubsplitDAG::GetDAGEdge(const size_t edge_id) const {
+ConstLineView SubsplitDAG::GetDAGEdge(const EdgeId edge_id) const {
   Assert(ContainsEdge(edge_id), "Node with the given node_id does not exist in DAG.");
   return storage_.GetLine(edge_id).value();
 }
 
-size_t SubsplitDAG::GetEdgeIdx(const Bitset &parent_subsplit,
+EdgeId SubsplitDAG::GetEdgeIdx(const Bitset &parent_subsplit,
                                const Bitset &child_subsplit) const {
   return GetEdgeIdx(GetDAGNodeId(parent_subsplit), GetDAGNodeId(child_subsplit));
 }
 
-size_t SubsplitDAG::GetEdgeIdx(const size_t parent_id, const size_t child_id) const {
+EdgeId SubsplitDAG::GetEdgeIdx(const NodeId parent_id, const NodeId child_id) const {
   auto edge = storage_.GetLine(parent_id, child_id);
   if (!edge.has_value()) Failwith("Edge not found");
-  return edge.value().GetId();
+  return EdgeId(edge.value().GetId());
 }
 
-size_t SubsplitDAG::GetEdgeIdx(const Bitset &edge_pcsp) const {
+EdgeId SubsplitDAG::GetEdgeIdx(const Bitset &edge_pcsp) const {
   return GetEdgeIdx(edge_pcsp.PCSPGetParentSubsplit(),
                     edge_pcsp.PCSPGetChildSubsplit());
 }
 
-SizePair SubsplitDAG::GetChildEdgeRange(const Bitset &subsplit,
-                                        const bool rotated) const {
+EdgeIdPair SubsplitDAG::GetChildEdgeRange(const Bitset &subsplit,
+                                          const bool is_edge_on_left) const {
   Assert(
       ContainsNode(subsplit),
       "Node with the given subsplit does not exist in SubsplitDAG::GetChildEdgeRange.");
-  return parent_to_child_range_.at(SubsplitToSortedOrder(subsplit, rotated));
+  return parent_to_child_range_.at(SubsplitToSortedOrder(subsplit, is_edge_on_left));
 }
 
-std::vector<std::string> SubsplitDAG::GetSortedVectorOfTaxonNames() const {
-  std::vector<std::string> taxa;
+StringVector SubsplitDAG::GetSortedVectorOfTaxonNames() const {
+  StringVector taxa;
   for (const auto &name_id : dag_taxa_) {
     taxa.push_back(name_id.first);
   }
@@ -361,8 +365,8 @@ std::vector<std::string> SubsplitDAG::GetSortedVectorOfTaxonNames() const {
 
 std::vector<Bitset> SubsplitDAG::GetSortedVectorOfNodeBitsets() const {
   std::vector<Bitset> nodes;
-  for (size_t i = 0; i < NodeCount(); i++) {
-    Bitset node_bitset = GetDAGNode(i).GetBitset();
+  for (NodeId node_id = NodeId(0); node_id < NodeCount(); node_id++) {
+    Bitset node_bitset = GetDAGNode(node_id).GetBitset();
     nodes.push_back(node_bitset);
   }
   std::sort(nodes.begin(), nodes.end());
@@ -372,8 +376,8 @@ std::vector<Bitset> SubsplitDAG::GetSortedVectorOfNodeBitsets() const {
 std::vector<Bitset> SubsplitDAG::GetSortedVectorOfEdgeBitsets() const {
   std::vector<Bitset> edges;
   for (auto i : storage_.GetLines()) {
-    auto parent_bitset = GetDAGNode(i.GetParent()).GetBitset();
-    auto child_bitset = GetDAGNode(i.GetChild()).GetBitset();
+    auto parent_bitset = GetDAGNode(NodeId(i.GetParent())).GetBitset();
+    auto child_bitset = GetDAGNode(NodeId(i.GetChild())).GetBitset();
     Bitset edge_bitset = Bitset::PCSP(parent_bitset, child_bitset);
     edges.push_back(edge_bitset);
   }
@@ -381,11 +385,11 @@ std::vector<Bitset> SubsplitDAG::GetSortedVectorOfEdgeBitsets() const {
   return edges;
 }
 
-const std::map<std::string, size_t> &SubsplitDAG::GetTaxonMap() const {
-  return dag_taxa_;
-}
+const StringTaxonIdMap &SubsplitDAG::GetTaxonMap() const { return dag_taxa_; }
 
-const BitsetSizeMap &SubsplitDAG::GetSubsplitToIdMap() const { return subsplit_to_id_; }
+const BitsetNodeIdMap &SubsplitDAG::GetSubsplitToIdMap() const {
+  return subsplit_to_id_;
+}
 
 EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
   EigenVectorXd q = EigenVectorXd::Ones(EdgeCountWithLeafSubsplits());
@@ -396,11 +400,12 @@ EigenVectorXd SubsplitDAG::BuildUniformOnTopologicalSupportPrior() const {
       if (!node.GetLeafward(rotated).empty()) {
         double per_rotated_count = 0.;
         for (auto child_id : node.GetLeafward(rotated)) {
-          per_rotated_count += topology_count_below_[child_id];
+          per_rotated_count += topology_count_below_[child_id.value_];
         }
         for (auto child_id : node.GetLeafward(rotated)) {
-          size_t edge_idx = GetEdgeIdx(node.Id(), child_id);
-          q(edge_idx) = topology_count_below_(child_id) / per_rotated_count;
+          auto edge_idx = GetEdgeIdx(node.Id(), NodeId(child_id));
+          q(size_t(edge_idx)) =
+              topology_count_below_(child_id.value_) / per_rotated_count;
         }
       }
     }
@@ -415,7 +420,7 @@ Node::NodePtrVec SubsplitDAG::GenerateAllTopologies() const {
     Node::NodePtrVec rotated_subtopologies, sorted_subtopologies;
     for (const bool rotated : {false, true}) {
       for (const auto &child_id : node.GetLeafward(rotated)) {
-        for (const auto &subtopology : topology_below.at(child_id)) {
+        for (const auto &subtopology : topology_below.at(child_id.value_)) {
           rotated ? rotated_subtopologies.push_back(subtopology)
                   : sorted_subtopologies.push_back(subtopology);
         }
@@ -424,13 +429,13 @@ Node::NodePtrVec SubsplitDAG::GenerateAllTopologies() const {
     return std::make_pair(rotated_subtopologies, sorted_subtopologies);
   };
 
-  auto MergeTopologies = [this](size_t node_id, Node::NodePtrVec &rotated_subtopologies,
+  auto MergeTopologies = [this](NodeId node_id, Node::NodePtrVec &rotated_subtopologies,
                                 Node::NodePtrVec &sorted_subtopologies) {
     Node::NodePtrVec topologies;
     for (const auto &rotated_subtopology : rotated_subtopologies) {
       for (const auto &sorted_subtopology : sorted_subtopologies) {
         Node::NodePtr new_topology =
-            Node::Join(sorted_subtopology, rotated_subtopology, node_id);
+            Node::Join(sorted_subtopology, rotated_subtopology, node_id.value_);
         topologies.push_back(new_topology);
       }
     }
@@ -445,15 +450,15 @@ Node::NodePtrVec SubsplitDAG::GenerateAllTopologies() const {
   for (const auto &node_id : RootwardEdgeTraversalTrace(true)) {
     const auto &node = GetDAGNode(node_id);
     if (node.IsLeaf()) {
-      topology_below.at(node_id).push_back(Node::Leaf(node_id));
+      topology_below.at(node_id.value_).push_back(Node::Leaf(node_id.value_));
     } else {
       auto [rotated_topologies, sorted_topologies] = GetSubtopologies(node);
-      topology_below[node_id] =
+      topology_below[node_id.value_] =
           MergeTopologies(node_id, rotated_topologies, sorted_topologies);
     }
   }
 
-  const auto &topologies = topology_below.at(GetDAGRootNodeId());
+  const auto &topologies = topology_below.at(GetDAGRootNodeId().value_);
   Assert(topologies.size() == TopologyCount(),
          "The realized number of topologies does not match the expected count.");
 
@@ -478,18 +483,19 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
     std::ignore = parent_id;
     // If child is a leaf and subsplit is sorted, then child0 will have a zero taxon
     // count.
-    size_t child0_taxon_count =
+    auto child_left_taxon_count =
         GetDAGNode(child_id).GetBitset().SubsplitGetClade(SubsplitClade::Left).Count();
     // As long as subsplit is sorted and nonempty, then child1 will have a nonzero taxon
     // count.
-    size_t child1_taxon_count =
+    auto child_right_taxon_count =
         GetDAGNode(child_id).GetBitset().SubsplitGetClade(SubsplitClade::Right).Count();
     // The ordering of this subsplit is flipped so that this ratio will be nonzero in
     // the denominator in the case of root & leaves.
-    result(edge_idx) = Combinatorics::LogChildSubsplitCountRatio(child1_taxon_count,
-                                                                 child0_taxon_count);
+    result(size_t(edge_idx)) = Combinatorics::LogChildSubsplitCountRatio(
+        child_right_taxon_count, child_left_taxon_count);
   }
   NumericalUtils::Exponentiate(result);
+
   return result;
 }
 
@@ -505,34 +511,34 @@ void SubsplitDAG::IterateOverRealNodes(const NodeLambda &f) const {
 
 void SubsplitDAG::IterateOverLeafwardEdges(SubsplitDAGNode node, bool rotated,
                                            const NodeLambda &f) const {
-  for (const size_t child_id : node.GetLeafward(rotated)) {
+  for (const auto child_id : node.GetLeafward(rotated)) {
     f(GetDAGNode(child_id));
   }
 }
 
 void SubsplitDAG::IterateOverLeafwardEdges(SubsplitDAGNode node,
                                            const EdgeDestinationLambda &f) const {
-  for (bool rotated : {false, true}) {
-    for (const size_t child_id : node.GetLeafward(rotated)) {
-      f(rotated, GetDAGNode(child_id));
+  for (bool is_edge_on_left : {false, true}) {
+    for (const auto child_id : node.GetLeafward(is_edge_on_left)) {
+      f(is_edge_on_left, GetDAGNode(child_id));
     }
   }
 }
 
 void SubsplitDAG::IterateOverLeafwardEdgesAndChildren(
     SubsplitDAGNode node, const EdgeAndNodeLambda &f) const {
-  IterateOverLeafwardEdges(node,
-                           [this, &node, &f](bool rotated, SubsplitDAGNode child) {
-                             f(GetEdgeIdx(node.Id(), child.Id()), rotated, child.Id());
-                           });
+  IterateOverLeafwardEdges(
+      node, [this, &node, &f](bool is_edge_on_left, SubsplitDAGNode child) {
+        f(GetEdgeIdx(node.Id(), child.Id()), is_edge_on_left, child.Id());
+      });
 }
 
 void SubsplitDAG::IterateOverRootwardEdges(SubsplitDAGNode node,
                                            const EdgeDestinationLambda &f) const {
   if (!node.IsRootsplit()) {
-    for (bool rotated : {false, true}) {
-      for (const size_t parent_id : node.GetRootward(rotated)) {
-        f(rotated, GetDAGNode(parent_id));
+    for (bool is_edge_on_left : {false, true}) {
+      for (const auto parent_id : node.GetRootward(is_edge_on_left)) {
+        f(is_edge_on_left, GetDAGNode(parent_id));
       }
     }
   }
@@ -549,8 +555,8 @@ void SubsplitDAG::IterateOverRootwardEdgesAndParents(SubsplitDAGNode node,
 void SubsplitDAG::IterateOverParentAndChildAndLeafwardEdges(
     SubsplitDAGNode node, const ParentRotationChildEdgeLambda &f) const {
   IterateOverLeafwardEdges(
-      node, [this, &node, &f](bool rotated, SubsplitDAGNode child) {
-        f(node.Id(), rotated, child.Id(), GetEdgeIdx(node.Id(), child.Id()));
+      node, [this, &node, &f](bool is_edge_on_left, SubsplitDAGNode child) {
+        f(node.Id(), is_edge_on_left, child.Id(), GetEdgeIdx(node.Id(), child.Id()));
       });
 }
 
@@ -564,17 +570,19 @@ EigenVectorXd SubsplitDAG::UnconditionalNodeProbabilities(
     EigenConstVectorXdRef normalized_sbn_parameters) const {
   EigenVectorXd node_probabilities(NodeCount());
   node_probabilities.setZero();
-  node_probabilities[GetDAGRootNodeId()] = 1.;
+  node_probabilities[GetDAGRootNodeId().value_] = 1.;
 
   TopologicalEdgeTraversal([&node_probabilities, &normalized_sbn_parameters](
-                               const size_t parent_id, const bool,
-                               const size_t child_id, const size_t edge_idx) {
-    const double child_probability_given_parent = normalized_sbn_parameters[edge_idx];
+                               const NodeId parent_id, const bool is_edge_on_left,
+                               const NodeId child_id, const EdgeId edge_idx) {
+    const double child_probability_given_parent =
+        normalized_sbn_parameters[edge_idx.value_];
     Assert(child_probability_given_parent >= 0. && child_probability_given_parent <= 1.,
            "UnconditionalNodeProbabilities: got an out-of-range probability. Are these "
            "normalized and in linear space?");
-    const double parent_probability = node_probabilities[parent_id];
-    node_probabilities[child_id] += parent_probability * child_probability_given_parent;
+    const double parent_probability = node_probabilities[parent_id.value_];
+    node_probabilities[child_id.value_] +=
+        parent_probability * child_probability_given_parent;
   });
 
   return node_probabilities;
@@ -584,12 +592,13 @@ BitsetDoubleMap SubsplitDAG::UnconditionalSubsplitProbabilities(
     EigenConstVectorXdRef normalized_sbn_parameters) const {
   auto node_probabilities = UnconditionalNodeProbabilities(normalized_sbn_parameters);
   BitsetDoubleMap subsplit_probability_map;
-  for (size_t node_id = 0;
-       static_cast<Eigen::Index>(node_id) < node_probabilities.size(); node_id++) {
+  for (NodeId node_id = NodeId(0);
+       static_cast<Eigen::Index>(node_id.value_) < node_probabilities.size();
+       node_id++) {
     const auto &subsplit_bitset = GetDAGNode(node_id).GetBitset();
     if (node_id != GetDAGRootNodeId() && !subsplit_bitset.SubsplitIsLeaf()) {
       SafeInsert(subsplit_probability_map, subsplit_bitset,
-                 node_probabilities[node_id]);
+                 node_probabilities[node_id.value_]);
     }
   }
   return subsplit_probability_map;
@@ -601,34 +610,36 @@ EigenVectorXd SubsplitDAG::InvertedGPCSPProbabilities(
   EigenVectorXd inverted_probabilities =
       EigenVectorXd(normalized_sbn_parameters.size());
   inverted_probabilities.setOnes();
-  TopologicalEdgeTraversal([this, &node_probabilities, &normalized_sbn_parameters,
-                            &inverted_probabilities](const size_t parent_id, const bool,
-                                                     const size_t child_id,
-                                                     const size_t edge_idx) {
-    // The traversal doesn't set the rootsplit probabilities, but those are always 1
-    // (there is only one "parent" of a rootsplit).
-    if (parent_id != GetDAGRootNodeId()) {
-      // For a PCSP t -> s:
-      inverted_probabilities[edge_idx] =         // P(t|s)
-          node_probabilities[parent_id] *        // P(t)
-          normalized_sbn_parameters[edge_idx] /  // P(s|t)
-          node_probabilities[child_id];          // P(s)
-    }
-  });
+  TopologicalEdgeTraversal(
+      [this, &node_probabilities, &normalized_sbn_parameters, &inverted_probabilities](
+          const NodeId parent_id, const bool is_edge_on_left, const NodeId child_id,
+          const EdgeId edge_idx) {
+        // The traversal doesn't set the rootsplit probabilities, but those are always 1
+        // (there is only one "parent" of a rootsplit).
+        if (parent_id != GetDAGRootNodeId()) {
+          // For a PCSP t -> s:
+          inverted_probabilities[edge_idx.value_] =         // P(t|s)
+              node_probabilities[parent_id.value_] *        // P(t)
+              normalized_sbn_parameters[edge_idx.value_] /  // P(s|t)
+              node_probabilities[child_id.value_];          // P(s)
+        }
+      });
   return inverted_probabilities;
 }
 
-std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const SizeBitsetMap &index_to_child,
-                                                   const Bitset &parent_subsplit,
-                                                   bool include_leaf_subsplits) {
-  std::vector<Bitset> children_subsplits;
-  // Add all child subsplit bitsets to vector.
+BitsetVector SubsplitDAG::GetChildSubsplits(const SizeBitsetMap &index_to_child,
+                                            const Bitset &parent_subsplit,
+                                            bool include_leaf_subsplits) {
+  BitsetVector children_subsplits;
+  // Add all non-leaf child subsplit bitsets.
   if (parent_to_child_range_.count(parent_subsplit) > 0) {
     const auto [start, stop] = parent_to_child_range_.at(parent_subsplit);
     for (auto idx = start; idx < stop; idx++) {
-      children_subsplits.push_back(index_to_child.at(idx));
+      children_subsplits.push_back(index_to_child.at(idx.value_));
     }
-  } else if (include_leaf_subsplits) {
+  }
+  // Optionally add leaf child subsplit bitsets.
+  else if (include_leaf_subsplits) {
     // This method is designed to be called before calling
     // AddLeafSubsplitsToDAGEdgesAndParentToRange. In that case, if the second clade
     // of the subsplit is just a single taxon, the subsplit will not map to any value in
@@ -644,15 +655,28 @@ std::vector<Bitset> SubsplitDAG::GetChildSubsplits(const SizeBitsetMap &index_to
 
 // ** Modify DAG methods:
 
+BitsetEdgeIdPairMap BitsetSizePairMapToBitsetEdgeIdPairMap(
+    BitsetSizePairMap &bitset_size_map) {
+  BitsetEdgeIdPairMap bitset_edgeid_map;
+  for (const auto &[bitset, id_pair] : bitset_size_map) {
+    const auto &[begin_id, end_id] = id_pair;
+    bitset_edgeid_map[bitset] = {EdgeId(begin_id), EdgeId(end_id)};
+  }
+  return bitset_edgeid_map;
+}
+
 std::tuple<BitsetSizeMap, SizeBitsetMap, BitsetVector>
 SubsplitDAG::ProcessTopologyCounter(const Node::TopologyCounter &topology_counter) {
   BitsetSizeMap edge_indexer;
   SizeBitsetMap index_to_child;
   BitsetVector rootsplits;
-  std::tie(rootsplits, edge_indexer, index_to_child, parent_to_child_range_,
+  BitsetSizePairMap parent_to_child_range;
+  std::tie(rootsplits, edge_indexer, index_to_child, parent_to_child_range,
            edge_count_without_leaf_subsplits_) =
       SBNMaps::BuildIndexerBundle(RootedSBNMaps::RootsplitCounterOf(topology_counter),
                                   RootedSBNMaps::PCSPCounterOf(topology_counter));
+  parent_to_child_range_ =
+      BitsetSizePairMapToBitsetEdgeIdPairMap(parent_to_child_range);
   return {edge_indexer, index_to_child, rootsplits};
 }
 
@@ -661,53 +685,53 @@ void SubsplitDAG::BuildTaxonMap(const TagStringMap &tag_taxon_map) {
   for (const auto &[tag, name] : tag_taxon_map) {
     // The "tag" key of the tree_collection's taxon_map is 2 bitpacked ints: [id,
     // topology count]. We only care about the id.
-    size_t id = static_cast<size_t>(UnpackFirstInt(tag));
+    TaxonId id = TaxonId{static_cast<size_t>(UnpackFirstInt(tag))};
     dag_taxa_.insert(std::make_pair(name, id));
   }
 }
 
-size_t SubsplitDAG::CreateAndInsertNode(const Bitset &subsplit) {
-  size_t node_id = NodeCount();
+NodeId SubsplitDAG::CreateAndInsertNode(const Bitset &subsplit) {
+  NodeId node_id = NodeId(NodeCount());
   storage_.AddVertex({node_id, subsplit});
   SafeInsert(subsplit_to_id_, subsplit, node_id);
   return node_id;
 }
 
-size_t SubsplitDAG::CreateAndInsertEdge(const size_t parent_id, const size_t child_id,
-                                        const bool rotated) {
+EdgeId SubsplitDAG::CreateAndInsertEdge(const NodeId parent_id, const NodeId child_id,
+                                        const bool is_edge_on_left) {
   Assert(ContainsNode(parent_id), "Node with the given parent_id does not exist.");
   Assert(ContainsNode(child_id), "Node with the given child_id does not exist.");
   // Insert edge between parent and child.
-  size_t edge_idx = EdgeCountWithLeafSubsplits();
-  ConnectGivenNodes(parent_id, child_id, rotated, edge_idx);
+  EdgeId edge_idx = EdgeId(EdgeCountWithLeafSubsplits());
+  ConnectGivenNodes(parent_id, child_id, is_edge_on_left, edge_idx);
   storage_.AddLine({edge_idx, parent_id, child_id,
-                    rotated ? SubsplitClade::Left : SubsplitClade::Right});
+                    is_edge_on_left ? SubsplitClade::Left : SubsplitClade::Right});
   return edge_idx;
 }
 
-void SubsplitDAG::ConnectGivenNodes(const size_t parent_id, const size_t child_id,
-                                    const bool rotated, const size_t edge_id) {
+void SubsplitDAG::ConnectGivenNodes(const NodeId parent_id, const NodeId child_id,
+                                    const bool is_edge_on_left, const EdgeId edge_id) {
   auto parent_node = GetDAGNode(parent_id);
   auto child_node = GetDAGNode(child_id);
 
   SubsplitClade which_parent_clade =
-      (rotated ? SubsplitClade::Left : SubsplitClade::Right);
+      (is_edge_on_left ? SubsplitClade::Left : SubsplitClade::Right);
   parent_node.AddEdge(child_node.Id(), edge_id, Direction::Leafward,
                       which_parent_clade);
   child_node.AddEdge(parent_node.Id(), edge_id, Direction::Rootward,
                      which_parent_clade);
 }
 
-void SubsplitDAG::ConnectNodes(const SizeBitsetMap &index_to_child, size_t node_id,
-                               bool rotated) {
-  // #350 look for "rotation / rotated" in the code and fix.
+void SubsplitDAG::ConnectNodes(const SizeBitsetMap &index_to_child, NodeId node_id,
+                               bool is_edge_on_left) {
   // Get bitset of parent node according to its rotation.
-  const Bitset subsplit = GetDAGNode(node_id).GetBitset(rotated);
+  const auto subsplit = GetDAGNode(node_id).GetBitset(is_edge_on_left);
   // Build vector of child node's subsplits.
   const auto children = GetChildSubsplits(index_to_child, subsplit, true);
   // Connect parent node to all child nodes.
   for (const auto &child_subsplit : children) {
-    ConnectGivenNodes(node_id, GetDAGNodeId(child_subsplit), rotated, NoId);
+    ConnectGivenNodes(node_id, GetDAGNodeId(child_subsplit), is_edge_on_left,
+                      EdgeId(NoId));
   }
 }
 
@@ -747,7 +771,7 @@ void SubsplitDAG::BuildNodesDepthFirst(const SizeBitsetMap &index_to_child,
 
 void SubsplitDAG::BuildEdges(const SizeBitsetMap &index_to_child) {
   // Connect every node except for the DAG root node.
-  for (size_t node_id = taxon_count_; node_id < GetDAGRootNodeId(); node_id++) {
+  for (NodeId node_id = NodeId(taxon_count_); node_id < GetDAGRootNodeId(); node_id++) {
     ConnectNodes(index_to_child, node_id, true);
     ConnectNodes(index_to_child, node_id, false);
   }
@@ -770,48 +794,49 @@ void SubsplitDAG::BuildDAGEdgesFromEdgeIndexer(BitsetSizeMap &edge_indexer) {
       Assert(std::find(right.begin(), right.end(), child_id) != right.end(),
              "Parent has no connection to child");
     }
-    storage_.AddLine({index, parent_id, child_id, clade});
+    storage_.AddLine({EdgeId(index), parent_id, child_id, clade});
   }
 }
 
 void SubsplitDAG::AddLeafSubsplitsToDAGEdgesAndParentToRange() {
-  for (size_t node_id = 0; node_id < taxon_count_; node_id++) {
+  for (NodeId node_id = NodeId(0); node_id < taxon_count_; node_id++) {
     const auto current_bitset(GetDAGNode(node_id).GetBitset());
-    IterateOverRootwardEdges(
-        GetDAGNode(node_id),
-        [this, current_bitset](const bool rotated, SubsplitDAGNode node) {
-          SafeInsert(parent_to_child_range_, node.GetBitset(rotated),
-                     {EdgeCountWithLeafSubsplits(), EdgeCountWithLeafSubsplits() + 1});
-          storage_.AddLine({EdgeCountWithLeafSubsplits(), node.Id(),
-                            GetDAGNodeId(current_bitset),
-                            rotated ? SubsplitClade::Left : SubsplitClade::Right});
-        });
+    IterateOverRootwardEdges(GetDAGNode(node_id), [this, current_bitset](
+                                                      const bool is_edge_on_left,
+                                                      SubsplitDAGNode node) {
+      SafeInsert(parent_to_child_range_, node.GetBitset(is_edge_on_left),
+                 {EdgeId(EdgeCountWithLeafSubsplits()),
+                  EdgeId(EdgeCountWithLeafSubsplits() + 1)});
+      storage_.AddLine({EdgeId(EdgeCountWithLeafSubsplits()), node.Id(),
+                        GetDAGNodeId(current_bitset),
+                        is_edge_on_left ? SubsplitClade::Left : SubsplitClade::Right});
+    });
   }
 }
 
 void SubsplitDAG::StoreEdgeIds() {
   for (auto edge : storage_.GetLines()) {
-    auto parent = storage_.GetVertices().at(edge.GetParent());
-    auto child = storage_.GetVertices().at(edge.GetChild());
-    parent.SetLineId(edge.GetChild(), edge.GetId());
-    child.SetLineId(edge.GetParent(), edge.GetId());
+    auto parent = storage_.GetVertices().at(edge.GetParent().value_);
+    auto child = storage_.GetVertices().at(edge.GetChild().value_);
+    parent.SetEdgeId(edge.GetChild(), edge.GetId());
+    child.SetEdgeId(edge.GetParent(), edge.GetId());
   }
 }
 
-void SubsplitDAG::RootwardDepthFirst(size_t node_id, SizeVector &visit_order,
-                                     std::unordered_set<size_t> &visited_nodes) const {
+void SubsplitDAG::RootwardDepthFirst(NodeId node_id, NodeIdVector &visit_order,
+                                     std::unordered_set<NodeId> &visited_nodes) const {
   // Add to set of all visited nodes.
   SafeInsert(visited_nodes, node_id);
   // #350: Look for sorted/rotated and update.
   // Recurse on sorted children.
   const auto &node = GetDAGNode(node_id);
-  for (size_t parent_id : node.GetRightRootward()) {
+  for (auto parent_id : node.GetRightRootward()) {
     if (visited_nodes.count(parent_id) == 0) {
       RootwardDepthFirst(parent_id, visit_order, visited_nodes);
     }
   }
   // Recurse on rotated children.
-  for (size_t parent_id : node.GetLeftRootward()) {
+  for (auto parent_id : node.GetLeftRootward()) {
     if (visited_nodes.count(parent_id) == 0) {
       RootwardDepthFirst(parent_id, visit_order, visited_nodes);
     }
@@ -820,18 +845,18 @@ void SubsplitDAG::RootwardDepthFirst(size_t node_id, SizeVector &visit_order,
   visit_order.push_back(node_id);
 }
 
-void SubsplitDAG::LeafwardDepthFirst(size_t node_id, SizeVector &visit_order,
-                                     std::unordered_set<size_t> &visited_nodes) const {
+void SubsplitDAG::LeafwardDepthFirst(NodeId node_id, NodeIdVector &visit_order,
+                                     std::unordered_set<NodeId> &visited_nodes) const {
   // Add to set of all visited nodes.
   SafeInsert(visited_nodes, node_id);
   // Recurse on right/sorted children.
-  for (size_t child_id : GetDAGNode(node_id).GetRightLeafward()) {
+  for (auto child_id : GetDAGNode(node_id).GetRightLeafward()) {
     if (visited_nodes.count(child_id) == 0) {
       LeafwardDepthFirst(child_id, visit_order, visited_nodes);
     }
   }
   // Recurse on left/rotated children.
-  for (size_t child_id : GetDAGNode(node_id).GetLeftLeafward()) {
+  for (auto child_id : GetDAGNode(node_id).GetLeftLeafward()) {
     if (visited_nodes.count(child_id) == 0) {
       LeafwardDepthFirst(child_id, visit_order, visited_nodes);
     }
@@ -840,21 +865,21 @@ void SubsplitDAG::LeafwardDepthFirst(size_t node_id, SizeVector &visit_order,
   visit_order.push_back(node_id);
 }
 
-SizeVector SubsplitDAG::LeafwardEdgeTraversalTrace(bool include_dag_root_node) const {
-  SizeVector visit_order;
-  std::unordered_set<size_t> visited_nodes;
+NodeIdVector SubsplitDAG::LeafwardEdgeTraversalTrace(bool include_dag_root_node) const {
+  NodeIdVector visit_order;
+  std::unordered_set<NodeId> visited_nodes;
   if (!include_dag_root_node) {
     SafeInsert(visited_nodes, GetDAGRootNodeId());
   }
-  for (size_t leaf_id = 0; leaf_id < taxon_count_; leaf_id++) {
+  for (NodeId leaf_id = NodeId(0); leaf_id < taxon_count_; leaf_id++) {
     RootwardDepthFirst(leaf_id, visit_order, visited_nodes);
   }
   return visit_order;
 }
 
-SizeVector SubsplitDAG::RootwardEdgeTraversalTrace(bool include_dag_root_node) const {
-  SizeVector visit_order;
-  std::unordered_set<size_t> visited_nodes;
+NodeIdVector SubsplitDAG::RootwardEdgeTraversalTrace(bool include_dag_root_node) const {
+  NodeIdVector visit_order;
+  std::unordered_set<NodeId> visited_nodes;
   for (const auto &rootsplit_id : GetRootsplitNodeIds()) {
     LeafwardDepthFirst(rootsplit_id, visit_order, visited_nodes);
   }
@@ -864,7 +889,7 @@ SizeVector SubsplitDAG::RootwardEdgeTraversalTrace(bool include_dag_root_node) c
   return visit_order;
 }
 
-SizeVector SubsplitDAG::TopologicalEdgeTraversalTrace() const {
+NodeIdVector SubsplitDAG::TopologicalEdgeTraversalTrace() const {
   auto visit_order = RootwardEdgeTraversalTrace(true);
   std::reverse(visit_order.begin(), visit_order.end());
   return visit_order;
@@ -873,9 +898,10 @@ SizeVector SubsplitDAG::TopologicalEdgeTraversalTrace() const {
 void SubsplitDAG::TopologicalEdgeTraversal(ParentRotationChildEdgeLambda f) const {
   for (const auto node_id : TopologicalEdgeTraversalTrace()) {
     IterateOverLeafwardEdgesAndChildren(
-        GetDAGNode(node_id), [&f, &node_id](const size_t edge_idx, const bool rotated,
-                                            const size_t child_id) {
-          f(node_id, rotated, child_id, edge_idx);
+        GetDAGNode(node_id),
+        [&f, &node_id](const EdgeId edge_idx, const bool is_edge_on_left,
+                       const NodeId child_id) {
+          f(node_id, is_edge_on_left, child_id, edge_idx);
         });
   }
 }
@@ -899,7 +925,7 @@ SizeVector SubsplitDAG::BuildTaxonTranslationMap(const SubsplitDAG &dag_a,
 
   SizeVector taxon_map(names_a.size());
   for (const auto &name : names_a) {
-    taxon_map[dag_a.GetTaxonId(name)] = dag_b.GetTaxonId(name);
+    taxon_map[dag_a.GetTaxonId(name).value_] = dag_b.GetTaxonId(name).value_;
   }
   return taxon_map;
 }
@@ -955,7 +981,7 @@ bool SubsplitDAG::ContainsNode(const Bitset &subsplit) const {
   return subsplit_to_id_.find(subsplit) != subsplit_to_id_.end();
 }
 
-bool SubsplitDAG::ContainsNode(const size_t node_id) const {
+bool SubsplitDAG::ContainsNode(const NodeId node_id) const {
   return node_id < NodeCount();
 }
 
@@ -967,7 +993,7 @@ bool SubsplitDAG::ContainsEdge(const Bitset &parent_subsplit,
   return ContainsEdge(GetDAGNodeId(parent_subsplit), GetDAGNodeId(child_subsplit));
 }
 
-bool SubsplitDAG::ContainsEdge(const size_t parent_id, const size_t child_id) const {
+bool SubsplitDAG::ContainsEdge(const NodeId parent_id, const NodeId child_id) const {
   return storage_.GetLine(parent_id, child_id).has_value();
 }
 
@@ -976,25 +1002,25 @@ bool SubsplitDAG::ContainsEdge(const Bitset &edge_pcsp) const {
                       edge_pcsp.PCSPGetChildSubsplit());
 }
 
-bool SubsplitDAG::ContainsEdge(const size_t edge_id) const {
+bool SubsplitDAG::ContainsEdge(const EdgeId edge_id) const {
   return storage_.GetLine(edge_id).has_value();
 }
 
-bool SubsplitDAG::IsNodeRoot(const size_t node_id) const {
+bool SubsplitDAG::IsNodeRoot(const NodeId node_id) const {
   return (node_id == GetDAGRootNodeId());
 }
 
-bool SubsplitDAG::IsNodeLeaf(const size_t node_id) const {
+bool SubsplitDAG::IsNodeLeaf(const NodeId node_id) const {
   return (node_id < TaxonCount());
 }
 
-bool SubsplitDAG::IsEdgeRoot(const size_t edge_id) const {
-  const auto parent_id = GetDAGEdge(edge_id).GetParent();
+bool SubsplitDAG::IsEdgeRoot(const EdgeId edge_id) const {
+  const auto parent_id = NodeId(GetDAGEdge(edge_id).GetParent());
   return IsNodeRoot(parent_id);
 }
 
-bool SubsplitDAG::IsEdgeLeaf(const size_t edge_id) const {
-  const auto child_id = GetDAGEdge(edge_id).GetChild();
+bool SubsplitDAG::IsEdgeLeaf(const EdgeId edge_id) const {
+  const auto child_id = NodeId(GetDAGEdge(edge_id).GetChild());
   return IsNodeLeaf(child_id);
 }
 
@@ -1073,9 +1099,8 @@ bool SubsplitDAG::ContainsTopology(const Node::NodePtr topology,
 
 // ** Build Output Indexers/Vectors
 
-std::pair<SizeVector, SizeVector> SubsplitDAG::BuildParentIdVectors(
-    const Bitset &subsplit) const {
-  SizeVector left_parents, right_parents;
+NodeIdVectorPair SubsplitDAG::BuildParentIdVectors(const Bitset &subsplit) const {
+  NodeIdVector left_parents, right_parents;
   // Linear search for all parents.
   for (const auto &[potential_parent_subsplit, node_id] : subsplit_to_id_) {
     if (subsplit.SubsplitIsLeftChildOf(potential_parent_subsplit)) {
@@ -1087,9 +1112,8 @@ std::pair<SizeVector, SizeVector> SubsplitDAG::BuildParentIdVectors(
   return {left_parents, right_parents};
 }
 
-std::pair<SizeVector, SizeVector> SubsplitDAG::BuildChildIdVectors(
-    const Bitset &subsplit) const {
-  SizeVector left_children, right_children;
+NodeIdVectorPair SubsplitDAG::BuildChildIdVectors(const Bitset &subsplit) const {
+  NodeIdVector left_children, right_children;
   // Linear search for all children.
   for (const auto &[potential_child_subsplit, node_id] : subsplit_to_id_) {
     if (potential_child_subsplit.SubsplitIsLeftChildOf(subsplit)) {
@@ -1102,18 +1126,18 @@ std::pair<SizeVector, SizeVector> SubsplitDAG::BuildChildIdVectors(
 }
 
 void SubsplitDAG::ConnectChildToAllChildren(const Bitset &child_subsplit,
-                                            SizeVector &added_edge_idxs) {
+                                            EdgeIdVector &added_edge_idxs) {
   const auto [left_leafward_of_child, right_leafward_of_child] =
       BuildChildIdVectors(child_subsplit);
 
   for (const auto &[children_of_child, rotated] :
-       std::vector<std::pair<SizeVector, bool>>{{left_leafward_of_child, true},
-                                                {right_leafward_of_child, false}}) {
+       std::vector<std::pair<NodeIdVector, bool>>{{left_leafward_of_child, true},
+                                                  {right_leafward_of_child, false}}) {
     SafeInsert(parent_to_child_range_, SubsplitToSortedOrder(child_subsplit, rotated),
-               {EdgeCountWithLeafSubsplits(),
-                EdgeCountWithLeafSubsplits() + children_of_child.size()});
+               {EdgeId(EdgeCountWithLeafSubsplits()),
+                EdgeId(EdgeCountWithLeafSubsplits() + children_of_child.size())});
 
-    for (const size_t child_of_child_id : children_of_child) {
+    for (const auto child_of_child_id : children_of_child) {
       const auto new_edge_idx =
           CreateAndInsertEdge(GetDAGNodeId(child_subsplit), child_of_child_id, rotated);
       added_edge_idxs.push_back(new_edge_idx);
@@ -1123,21 +1147,22 @@ void SubsplitDAG::ConnectChildToAllChildren(const Bitset &child_subsplit,
 
 void SubsplitDAG::ConnectParentToAllChildrenExcept(const Bitset &parent_subsplit,
                                                    const Bitset &child_subsplit,
-                                                   SizeVector &added_edge_idxs) {
+                                                   EdgeIdVector &added_edge_idxs) {
   const auto [left_leafward_of_parent, right_leafward_of_parent] =
       BuildChildIdVectors(parent_subsplit);
 
-  for (const auto &[children_of_parent, rotated] :
-       std::vector<std::pair<SizeVector, bool>>{{left_leafward_of_parent, true},
-                                                {right_leafward_of_parent, false}}) {
-    SafeInsert(parent_to_child_range_, SubsplitToSortedOrder(parent_subsplit, rotated),
-               {EdgeCountWithLeafSubsplits(),
-                EdgeCountWithLeafSubsplits() + children_of_parent.size()});
+  for (const auto &[children_of_parent, is_edge_on_left] :
+       std::vector<std::pair<NodeIdVector, bool>>{{left_leafward_of_parent, true},
+                                                  {right_leafward_of_parent, false}}) {
+    SafeInsert(parent_to_child_range_,
+               SubsplitToSortedOrder(parent_subsplit, is_edge_on_left),
+               {EdgeId(EdgeCountWithLeafSubsplits()),
+                EdgeId(EdgeCountWithLeafSubsplits() + children_of_parent.size())});
 
-    for (const size_t child_of_parent_id : children_of_parent) {
+    for (const auto child_of_parent_id : children_of_parent) {
       if (child_of_parent_id != GetDAGNodeId(child_subsplit)) {
-        const auto new_edge_idx = CreateAndInsertEdge(GetDAGNodeId(parent_subsplit),
-                                                      child_of_parent_id, rotated);
+        const auto new_edge_idx = CreateAndInsertEdge(
+            GetDAGNodeId(parent_subsplit), child_of_parent_id, is_edge_on_left);
         added_edge_idxs.push_back(new_edge_idx);
       }
     }
@@ -1146,14 +1171,14 @@ void SubsplitDAG::ConnectParentToAllChildrenExcept(const Bitset &parent_subsplit
 
 void SubsplitDAG::ConnectChildToAllParentsExcept(const Bitset &parent_subsplit,
                                                  const Bitset &child_subsplit,
-                                                 SizeVector &added_edge_idxs) {
+                                                 EdgeIdVector &added_edge_idxs) {
   const auto [left_rootward_of_child, right_rootward_of_child] =
       BuildParentIdVectors(child_subsplit);
 
   for (const auto &[parents_of_child, rotated] :
-       std::vector<std::pair<SizeVector, bool>>{{left_rootward_of_child, true},
-                                                {right_rootward_of_child, false}}) {
-    for (const size_t parent_of_child_id : parents_of_child) {
+       std::vector<std::pair<NodeIdVector, bool>>{{left_rootward_of_child, true},
+                                                  {right_rootward_of_child, false}}) {
+    for (const auto parent_of_child_id : parents_of_child) {
       if (parent_of_child_id != GetDAGNodeId(parent_subsplit)) {
         const auto new_edge_idx = CreateAndInsertEdge(
             parent_of_child_id, GetDAGNodeId(child_subsplit), rotated);
@@ -1164,14 +1189,14 @@ void SubsplitDAG::ConnectChildToAllParentsExcept(const Bitset &parent_subsplit,
 }
 
 void SubsplitDAG::ConnectParentToAllParents(const Bitset &parent_subsplit,
-                                            SizeVector &added_edge_idxs) {
+                                            EdgeIdVector &added_edge_idxs) {
   const auto [left_rootward_of_parent, right_rootward_of_parent] =
       BuildParentIdVectors(parent_subsplit);
 
   for (const auto &[parents_of_parent, rotated] :
-       std::vector<std::pair<SizeVector, bool>>{{left_rootward_of_parent, true},
-                                                {right_rootward_of_parent, false}}) {
-    for (const size_t parent_of_parent_id : parents_of_parent) {
+       std::vector<std::pair<NodeIdVector, bool>>{{left_rootward_of_parent, true},
+                                                  {right_rootward_of_parent, false}}) {
+    for (const auto parent_of_parent_id : parents_of_parent) {
       const auto new_edge_idx = CreateAndInsertEdge(
           parent_of_parent_id, GetDAGNodeId(parent_subsplit), rotated);
       added_edge_idxs.push_back(new_edge_idx);
@@ -1190,7 +1215,8 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
          "The given pair of nodes is incompatible with DAG in "
          "SubsplitDAG::AddNodePair.");
   // Initialize output vectors.
-  SizeVector added_node_ids, added_edge_idxs;
+  NodeIdVector added_node_ids;
+  EdgeIdVector added_edge_idxs;
   Reindexer node_reindexer, edge_reindexer;
   // Check if either parent or child don't already exist in the DAG.
   const bool parent_is_new = !ContainsNode(parent_subsplit);
@@ -1233,7 +1259,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
   // contiguous idxs).
   size_t prev_edge_count = EdgeCountWithLeafSubsplits();
   // Connect the given parent node to the given child node.
-  added_edge_idxs.push_back(EdgeCountWithLeafSubsplits());
+  added_edge_idxs.push_back(EdgeId(EdgeCountWithLeafSubsplits()));
   CreateAndInsertEdge(GetDAGNodeId(parent_subsplit), GetDAGNodeId(child_subsplit),
                       child_subsplit.SubsplitIsLeftChildOf(parent_subsplit));
   // Don't reindex the edge between the given parent and child if the parent is new.
@@ -1254,8 +1280,8 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
     edge_reindexer = BuildEdgeReindexer(prev_edge_count);
     // Update the ids in added_node_ids and added_edge_idxs according to the
     // reindexers.
-    Reindexer::RemapIdVector(added_node_ids, node_reindexer);
-    Reindexer::RemapIdVector(added_edge_idxs, edge_reindexer);
+    Reindexer::RemapIdVector<NodeId>(added_node_ids, node_reindexer);
+    Reindexer::RemapIdVector<EdgeId>(added_edge_idxs, edge_reindexer);
     // Update fields in the Subsplit DAG according to the reindexers.
     RemapNodeIds(node_reindexer);
     RemapEdgeIdxs(edge_reindexer);
@@ -1267,7 +1293,8 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
 }
 
 SubsplitDAG::ModificationResult SubsplitDAG::FullyConnect() {
-  SizeVector added_node_ids, added_edge_idxs;
+  NodeIdVector added_node_ids;
+  EdgeIdVector added_edge_idxs;
   Reindexer node_reindexer, edge_reindexer;
   node_reindexer = Reindexer::IdentityReindexer(NodeCount());
   size_t prv_edge_count = EdgeCountWithLeafSubsplits();
@@ -1289,7 +1316,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::FullyConnect() {
   }
   // Create reindexer and update fields.
   edge_reindexer = BuildEdgeReindexer(prv_edge_count);
-  Reindexer::RemapIdVector(added_edge_idxs, edge_reindexer);
+  Reindexer::RemapIdVector<EdgeId>(added_edge_idxs, edge_reindexer);
   RemapEdgeIdxs(edge_reindexer);
   // Recount topologies.
   CountTopologies();
@@ -1297,7 +1324,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::FullyConnect() {
   return {added_node_ids, added_edge_idxs, node_reindexer, edge_reindexer};
 }
 
-// ** Validation Test methods:
+// ** Validation Tests
 
 bool SubsplitDAG::IsConsistent() const {
   Failwith("SubsplitDAG::IsConsistent() is not yet implemented.");
@@ -1307,7 +1334,7 @@ bool SubsplitDAG::IsConsistent() const {
 bool SubsplitDAG::IsValid() const {
   size_t correct_id = 0;
   for (auto node : storage_.GetVertices()) {
-    if (correct_id++ != node.Id()) {
+    if (correct_id++ != node.Id().value_) {
       return false;
     }
     if (!node.IsValid()) {
@@ -1373,15 +1400,15 @@ bool SubsplitDAG::IsValidAddNodePair(const Bitset &parent_subsplit,
 bool SubsplitDAG::IsValidTaxonMap() const {
   std::vector<bool> id_exists(TaxonCount());
   // Get all ids from map.
-  for (const auto &name_id : dag_taxa_) {
-    size_t taxon_id = name_id.second;
-    if (taxon_id > id_exists.size()) {
+  for (const auto &[name, taxon_id] : dag_taxa_) {
+    std::ignore = name;
+    if (taxon_id.value_ > id_exists.size()) {
       return false;
     }
-    if (id_exists[taxon_id]) {
+    if (id_exists[taxon_id.value_]) {
       return false;
     } else {
-      id_exists[taxon_id] = true;
+      id_exists[taxon_id.value_] = true;
     }
   }
   // Taxon map should cover the all ids from 0 to taxon_count-1.
@@ -1400,23 +1427,24 @@ Reindexer SubsplitDAG::BuildNodeReindexer(const size_t prev_node_count) {
   Reindexer node_reindexer = Reindexer::IdentityReindexer(NodeCount());
   // Begin reindex values at taxon count to account for ...leaves?
   size_t running_traversal_idx = taxon_count_;
-  size_t dag_root_node_id = prev_node_count - 1;
+  NodeId dag_root_node_id = NodeId(prev_node_count - 1);
   // Build node_reindexer by using post-order traversal (topological sort) of entire
   // DAG to assign new ids, where the index is the "before" node_id (stored in the
   // node object), and the value is the "after" node_id.
-  DepthFirstWithAction({dag_root_node_id},
-                       SubsplitDAGTraversalAction(
-                           // BeforeNode
-                           [](size_t node_id) {},
-                           // AfterNode
-                           [&node_reindexer, &running_traversal_idx](size_t node_id) {
-                             node_reindexer.SetReindex(node_id, running_traversal_idx);
-                             running_traversal_idx++;
-                           },
-                           // BeforeNodeClade
-                           [](size_t node_id, bool rotated) {},
-                           // VisitEdge
-                           [](size_t node_id, size_t child_id, bool rotated) {}));
+  DepthFirstWithAction(
+      {dag_root_node_id},
+      SubsplitDAGTraversalAction(
+          // BeforeNode
+          [](NodeId node_id) {},
+          // AfterNode
+          [&node_reindexer, &running_traversal_idx](NodeId node_id) {
+            node_reindexer.SetReindex(node_id.value_, running_traversal_idx);
+            running_traversal_idx++;
+          },
+          // BeforeNodeClade
+          [](NodeId node_id, bool is_edge_on_left) {},
+          // VisitEdge
+          [](NodeId node_id, NodeId child_id, bool is_edge_on_left) {}));
   return node_reindexer;
 }
 
@@ -1424,24 +1452,24 @@ Reindexer SubsplitDAG::BuildEdgeReindexer(const size_t prev_edge_count) {
   Reindexer edge_reindexer = Reindexer::IdentityReindexer(EdgeCountWithLeafSubsplits());
   // Only edges from an existing parent node to a new child node need to be reindexed.
   // See SubsplitDAG::AddNodePair().
-  for (size_t edge_idx = prev_edge_count; edge_idx < EdgeCountWithLeafSubsplits();
-       edge_idx++) {
+  for (EdgeId edge_idx = EdgeId(prev_edge_count);
+       edge_idx < EdgeCountWithLeafSubsplits(); edge_idx++) {
     // Find edge with given idx.
     auto element = storage_.GetLine(edge_idx);
     Assert(element.has_value(),
            "An edge with given edge_idx did not exist in "
            "SubsplitDAG::BuildEdgeReindexer.");
-    //
     auto [node_pair, idx] = element.value();
     std::ignore = idx;
-    const auto &[parent_id, child_id] = node_pair;
-    const Bitset parent_subsplit = GetDAGNode(parent_id).GetBitset();
-    const Bitset child_subsplit = GetDAGNode(child_id).GetBitset();
+    const auto &[parent_id, child_id] = std::pair<NodeId, NodeId>(node_pair);
+    const Bitset parent_subsplit = GetDAGNode(NodeId(parent_id)).GetBitset();
+    const Bitset child_subsplit = GetDAGNode(NodeId(child_id)).GetBitset();
     const auto idx_range = GetChildEdgeRange(
         parent_subsplit, child_subsplit.SubsplitIsLeftChildOf(parent_subsplit));
     // New edge is added to the end of the range.
-    const size_t new_idx = edge_reindexer.GetNewIndexByOldIndex(idx_range.second);
-    edge_reindexer.ReassignAndShift(edge_idx, new_idx);
+    const auto new_idx =
+        EdgeId(edge_reindexer.GetNewIndexByOldIndex(idx_range.second.value_));
+    edge_reindexer.ReassignAndShift(edge_idx.value_, new_idx.value_);
   }
   return edge_reindexer;
 }
@@ -1457,17 +1485,19 @@ void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
   storage_.SetVertices(nodes_copy);
 
   // Update each node's id and leafward/rootward ids.
-  for (size_t node_id = 0; node_id < NodeCount(); node_id++) {
+  for (NodeId node_id = NodeId(0); node_id < NodeCount(); node_id++) {
     GetDAGNode(node_id).RemapNodeIds(node_reindexer);
   }
   // Update `subsplit_to_id_`.
   for (const auto &[subsplit, node_id] : subsplit_to_id_) {
-    subsplit_to_id_.at(subsplit) = node_reindexer.GetNewIndexByOldIndex(node_id);
+    subsplit_to_id_.at(subsplit) =
+        NodeId(node_reindexer.GetNewIndexByOldIndex(node_id.value_));
   }
   // Update edges.
   for (auto i : storage_.GetLines()) {
-    storage_.ReindexLine(i.GetId(), node_reindexer.GetNewIndexByOldIndex(i.GetParent()),
-                         node_reindexer.GetNewIndexByOldIndex(i.GetChild()));
+    storage_.ReindexLine(
+        i.GetId(), NodeId(node_reindexer.GetNewIndexByOldIndex(i.GetParent().value_)),
+        NodeId(node_reindexer.GetNewIndexByOldIndex(i.GetChild().value_)));
   }
 }
 
@@ -1479,18 +1509,18 @@ void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
   // Update edges.
   std::vector<DAGLineStorage> edges_copy(storage_.GetLines().size());
   for (auto i : storage_.GetLines()) {
-    LineId new_idx = edge_reindexer.GetNewIndexByOldIndex(i.GetId());
-    edges_copy[new_idx] = i;
-    edges_copy[new_idx].SetId(new_idx);
+    EdgeId new_idx = EdgeId(edge_reindexer.GetNewIndexByOldIndex(i.GetId().value_));
+    edges_copy[new_idx.value_] = i;
+    edges_copy[new_idx.value_].SetId(new_idx);
   }
   storage_.SetLines(edges_copy);
-  for (size_t node_id = 0; node_id < NodeCount(); node_id++) {
+  for (NodeId node_id = NodeId(0); node_id < NodeCount(); node_id++) {
     GetDAGNode(node_id).RemapEdgeIdxs(edge_reindexer);
   }
   // Update `parent_to_child_range_`.
   for (const auto &[subsplit, idx_range] : parent_to_child_range_) {
     parent_to_child_range_.at(subsplit) = {
-        edge_reindexer.GetNewIndexByOldIndex(idx_range.first),
-        edge_reindexer.GetNewIndexByOldIndex(idx_range.second)};
+        EdgeId(edge_reindexer.GetNewIndexByOldIndex(idx_range.first.value_)),
+        EdgeId(edge_reindexer.GetNewIndexByOldIndex(idx_range.second.value_))};
   }
 }

@@ -105,7 +105,8 @@ NNIOperation::NNICladeArray NNIOperation::BuildNNICladeMapFromPreNNIToNNI(
   Assert(AreNNIOperationsNeighbors(pre_nni, post_nni),
          "Given NNIs must be neighbors to find clade map.");
   NNICladeArray nni_clade_map;
-  EnumArray<NNIClade, NNICladeCount, bool> mapped_post_clades(false);
+  EnumArray<NNIClade, NNICladeCount, bool> mapped_post_clades;
+  mapped_post_clades.fill(false);
   const std::array<NNIClade, 3> mappable_clades = {
       NNIClade::ParentSister, NNIClade::ChildLeft, NNIClade::ChildRight};
   for (const NNIClade pre_nni_clade_type : mappable_clades) {

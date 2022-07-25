@@ -31,7 +31,7 @@ class GraftDAG : public SubsplitDAG {
   // Clear all nodes and edges from graft for reuse.
   void RemoveAllGrafts();
 
-  // ** Getters
+  // ** Access
 
   // Get pointer to the host DAG.
   const SubsplitDAG &GetHostDAG() const;
@@ -47,22 +47,22 @@ class GraftDAG : public SubsplitDAG {
   // Total number of edges in host DAG only.
   size_t HostEdgeCount() const;
   // Check if a node is from the host, otherwise from the graft.
-  bool IsNodeFromHost(size_t node_id) const;
+  bool IsNodeFromHost(NodeId node_id) const;
   // Check if an edge is from the host, otherwise from the graft.
-  bool IsEdgeFromHost(size_t edge_id) const;
+  bool IsEdgeFromHost(EdgeId edge_id) const;
 
   // ** Contains
 
   // Checks whether the node is in the graft only.
   bool ContainsGraftNode(const Bitset node_subsplit) const;
-  bool ContainsGraftNode(const size_t node_id) const;
+  bool ContainsGraftNode(const NodeId node_id) const;
   // Checks whether the edge is in the graft only.
-  bool ContainsGraftEdge(const size_t parent_id, const size_t child_id) const;
-  bool ContainsGraftEdge(const size_t edge_id) const;
+  bool ContainsGraftEdge(const NodeId parent_id, const NodeId child_id) const;
+  bool ContainsGraftEdge(const EdgeId edge_id) const;
 
   // ** Miscellaneous
 
-  size_t GetPLVIndex(PLVType plv_type, size_t node_idx) const;
+  size_t GetPLVIndex(PLVType plv_type, NodeId node_id) const;
 
  protected:
   // DAG that the graft is proposed to be connected to.

@@ -39,7 +39,7 @@ void def_template(PyClass pyclass, const char *name, const char *description,
                   RetType (CppClass::*func)(ArgTypes...),
                   std::tuple<PyArgTypes...> pyargs) {
   std::apply(
-      [&pyclass, &name, &description, &func](auto &&... pyargs) {
+      [&pyclass, &name, &description, &func](auto &&...pyargs) {
         pyclass.def(
             name,
             [func](CppClass &self, ArgTypes... args) { return (self.*func)(args...); },
@@ -619,9 +619,7 @@ PYBIND11_MODULE(bito, m) {
            "Return branch lengths from the GPInstance.")
       .def(
           "build_edge_idx_to_pcsp_map",
-          [](GPInstance &self) {
-            return self.GetDAG().BuildEdgeIdxToPCSPBoolVectorMap();
-          },
+          [](GPInstance &self) { return self.GetDAG().BuildInverseEdgeIndexer(); },
           "Build a map from SubsplitDAG edge index to its corresponding PCSP bitset.")
 
       // ** Estimation
