@@ -310,6 +310,10 @@ MutableSubsplitDAGNode SubsplitDAG::GetDAGNode(const NodeId node_id) {
   return storage_.GetVertices().at(node_id.value_);
 }
 
+Bitset SubsplitDAG::GetDAGNodeBitset(const NodeId node_id) const {
+  return GetDAGNode(node_id).GetBitset();
+}
+
 NodeId SubsplitDAG::GetDAGNodeId(const Bitset &subsplit) const {
   Assert(ContainsNode(subsplit), "Node with the given subsplit does not exist in DAG.");
   if (storage_.HaveHost()) {
@@ -328,6 +332,13 @@ ConstNeighborsView SubsplitDAG::GetRootsplitNodeIds() const {
 ConstLineView SubsplitDAG::GetDAGEdge(const EdgeId edge_id) const {
   Assert(ContainsEdge(edge_id), "Node with the given node_id does not exist in DAG.");
   return storage_.GetLine(edge_id).value();
+}
+
+Bitset SubsplitDAG::GetDAGEdgeBitset(const EdgeId edge_id) const {
+  auto edge = GetDAGEdge(edge_id);
+  Bitset parent = GetDAGNodeBitset(edge.GetParent());
+  Bitset child = GetDAGNodeBitset(edge.GetChild());
+  return Bitset::PCSP(parent, child);
 }
 
 EdgeId SubsplitDAG::GetEdgeIdx(const Bitset &parent_subsplit,
