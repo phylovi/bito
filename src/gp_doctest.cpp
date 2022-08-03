@@ -16,6 +16,9 @@
 #include "pv_handler.hpp"
 #include "topology_sampler.hpp"
 #include "tp_engine.hpp"
+#include "choice_map.hpp"
+#include "sankoff_matrix.hpp"
+#include "sankoff_handler.hpp"
 
 using namespace GPOperations;  // NOLINT
 using PLVType = PLVHandler::PLVType;

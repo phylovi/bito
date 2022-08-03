@@ -24,9 +24,14 @@ class SitePattern {
   static SymbolVector SymbolVectorOf(const CharIntMap& symbol_table,
                                      const std::string& str);
 
+  Alignment GetAlignment() const { return alignment_; }
   const std::vector<SymbolVector>& GetPatterns() const { return patterns_; }
   size_t PatternCount() const { return patterns_.at(0).size(); }
+  size_t GetPatternSymbol(size_t sequence_idx, size_t pattern_idx) const {
+    return patterns_[sequence_idx][pattern_idx];
+  };
   size_t SequenceCount() const { return patterns_.size(); }
+  size_t TaxonCount() const { return tag_taxon_map_.size(); }
   size_t SiteCount() const { return alignment_.Length(); }
   const std::vector<double>& GetWeights() const { return weights_; }
   // Make a flattened partial likelihood vector for a given sequence, where anything
