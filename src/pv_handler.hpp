@@ -31,8 +31,14 @@ class PLVTypeEnum
   static inline const Array<std::string> Labels = {
       {"P", "PHatRight", "PHatLeft", "RHat", "RRight", "RLeft"}};
 
+  static std::string ToString(const Type e) {
+    std::stringstream ss;
+    ss << "PLV::" << Labels[e];
+    return ss.str();
+  }
+
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
-    os << "PLV::" << Labels[e];
+    os << ToString(e);
     return os;
   };
 };
@@ -49,8 +55,14 @@ class PSVTypeEnum
  public:
   static inline const Array<std::string> Labels = {{"PRight", "PLeft", "Q"}};
 
+  static std::string ToString(const Type e) {
+    std::stringstream ss;
+    ss << "PSV::" << Labels[e];
+    return ss.str();
+  }
+
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
-    os << "PSV::" << Labels[e];
+    os << ToString(e);
     return os;
   };
 };
@@ -60,7 +72,7 @@ using PLVType = PartialVectorType::PLVType;
 using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
 using PSVType = PartialVectorType::PSVType;
 using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
-using PVId = GenericId<struct PVIdTag>;
+// using PVId = GenericId<struct PVIdTag>;
 
 template <typename PVType, typename PVTypeEnum>
 class PartialVectorHandler {
@@ -171,6 +183,28 @@ class PartialVectorHandler {
     }
     return pv_idxs;
   };
+
+  // ** I/O
+
+  // Output data to string.
+  std::string ToString(const size_t pv_idx) const {
+    std::stringstream out;
+    for (auto &&row : GetPV(pv_idx).rowwise()) {
+      out << row << std::endl;
+    }
+    return out.str();
+  }
+
+  // Print data to console.
+  void Print(const size_t pv_idx) const {
+    std::cout << "PV[" << pv_idx << "]: " << std::endl << ToString(pv_idx) << std::endl;
+  }
+  void Print(const PVType pv_type, const NodeId node_id) const {
+    auto pv_idx = GetPVIndex(pv_type, node_id);
+    std::cout << "PV[" << PVTypeEnum::ToString(pv_type) << ", Node" << node_id
+              << ", PVId::" << pv_idx << "]: " << std::endl
+              << ToString(pv_idx) << std::endl;
+  }
 
  protected:
   // Get total offset into PVs.

@@ -263,7 +263,7 @@ void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {  //
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
   Assert(rescaling_counts_(op.stationary_times_prior_) == 0,
          "Surprise! Rescaled stationary distribution in IncrementMarginalLikelihood");
-  // This operation does two things: imcrement the overall per-site log marginal
+  // This operation does two things: increment the overall per-site log marginal
   // likelihood, and also set the conditional per-rootsplit marginal likelihood.
   //
   // We first calculate the unconditional contribution of the rootsplit to the overall
@@ -413,7 +413,7 @@ void GPEngine::CopyGPCSPData(const EdgeId src_gpcsp_idx, const EdgeId dest_gpcsp
       inverted_sbn_prior_[src_gpcsp_idx.value_];
 }
 
-// ** Getters
+// ** Access
 
 double GPEngine::GetLogMarginalLikelihood() const {
   return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
@@ -897,13 +897,7 @@ void GPEngine::ProcessQuartetHybridRequest(const QuartetHybridRequest& request) 
 // ** I/O
 
 std::string GPEngine::PLVToString(size_t plv_idx) const {
-  std::stringstream out;
-  for (auto&& row : GetPLV(plv_idx).rowwise()) {
-    out << row << std::endl;
-  }
-  return out.str();
+  return plv_handler_.ToString(plv_idx);
 }
 
-void GPEngine::PrintPLV(size_t plv_idx) const {
-  std::cout << PLVToString(plv_idx) << std::endl;
-}
+void GPEngine::PrintPLV(size_t plv_idx) const { plv_handler_.Print(plv_idx); }

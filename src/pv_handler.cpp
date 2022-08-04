@@ -33,7 +33,7 @@ void PartialVectorHandler<PVType, PVTypeEnum>::Reindex(const Reindexer pv_reinde
 
 template <class PVType, class PVTypeEnum>
 Reindexer PartialVectorHandler<PVType, PVTypeEnum>::BuildPVReindexer(
-    const Reindexer &node_reindexer, const size_t old_node_count,
+    const Reindexer& node_reindexer, const size_t old_node_count,
     const size_t new_node_count) {
   node_count_ = new_node_count;
   Reindexer pv_reindexer(new_node_count * pv_count_per_node_);
@@ -60,7 +60,7 @@ Reindexer PartialVectorHandler<PVType, PVTypeEnum>::BuildPVReindexer(
   return pv_reindexer;
 }
 
-// explicit instatiation
+// explicit instantiation
 template class PartialVectorHandler<PartialVectorType::PLVType,
                                     PartialVectorType::PLVTypeEnum>;
 template class PartialVectorHandler<PartialVectorType::PSVType,

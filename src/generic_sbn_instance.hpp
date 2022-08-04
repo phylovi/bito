@@ -63,6 +63,17 @@ class GenericSBNInstance {
   const TSBNSupport &SBNSupport() const { return sbn_support_; }
   EigenConstVectorXdRef SBNParameters() const { return sbn_parameters_; }
 
+  // Return a raw pointer to the engine if it's available.
+  Engine *GetEngine() const {
+    if (engine_ != nullptr) {
+      return engine_.get();
+    }
+    // else
+    Failwith(
+        "Engine not available. Call PrepareForPhyloLikelihood to make an "
+        "engine for phylogenetic likelihood computation computation.");
+  }
+
   void PrintStatus() {
     std::cout << "Status for instance '" << name_ << "':\n";
     if (TreeCount()) {
@@ -372,17 +383,6 @@ class GenericSBNInstance {
     SitePattern site_pattern(alignment_, TagTaxonMap());
     engine_ = std::make_unique<Engine>(engine_specification, model_specification,
                                        site_pattern);
-  }
-
-  // Return a raw pointer to the engine if it's available.
-  Engine *GetEngine() const {
-    if (engine_ != nullptr) {
-      return engine_.get();
-    }
-    // else
-    Failwith(
-        "Engine not available. Call PrepareForPhyloLikelihood to make an "
-        "engine for phylogenetic likelihood computation computation.");
   }
 
   // Sample an integer index in [range.first, range.second) according to

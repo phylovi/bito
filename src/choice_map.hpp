@@ -34,8 +34,8 @@ class ChoiceMap {
 
   // ** Access
 
-  const EdgeChoice &GetEdgeChoice(const size_t edge_id) const {
-    return edge_choice_vector_[edge_id];
+  const EdgeChoice &GetEdgeChoice(const EdgeId edge_id) const {
+    return edge_choice_vector_[edge_id.value_];
   }
 
   void SetEdgeChoice(const EdgeId edge_id, const AdjacentEdge edge_choice_type,

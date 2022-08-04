@@ -60,9 +60,9 @@ class Engine {
       const EigenMatrixXdRef phylo_model_params, const bool rescaling,
       const std::optional<PhyloFlags> flags = std::nullopt) const;
 
+  const FatBeagle *const GetFirstFatBeagle() const;
+
  private:
   SitePattern site_pattern_;
   std::vector<std::unique_ptr<FatBeagle>> fat_beagles_;
-
-  const FatBeagle *const GetFirstFatBeagle() const;
 };
