@@ -73,8 +73,6 @@ class TPEngine {
   // that have a given PCSP. We assume that transition_matrix_ is as desired, and
   // src1_idx and src2_idx are the two PLV indices on either side of the PCSP.
   void PreparePerPatternLogLikelihoodsForEdge(const PVId src1_id, const PVId src2_id);
-  //
-  double LogRescalingFor(const PVId pv_id);
 
   // ** Parameters
 
@@ -170,7 +168,7 @@ class TPEngine {
 
   // ** Access
 
-  PSVHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
+  PLVHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
   PSVHandler &GetParsimonyPVs() { return parsimony_pvs_; }
   EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
 
@@ -230,7 +228,7 @@ class TPEngine {
 
   // ** Scoring
   // Partial Vector for storing Likelihood scores.
-  PSVHandler likelihood_pvs_;
+  PLVHandler likelihood_pvs_;
   bool using_likelihoods_;
   // Partial Vector for storing Parsimony scores.
   PSVHandler parsimony_pvs_;

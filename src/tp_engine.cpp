@@ -36,15 +36,15 @@ TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
 
 void TPEngine::InitializeLikelihoodPVsWithSitePatterns() {
   auto &pvs = likelihood_pvs_;
-  for (auto &pv : pvs.GetPVs()) {
-    pv.setZero();
+  for (PVId pv_id = 0; pv_id < pvs.GetPVCount(); pv_id++) {
+    pvs.GetPV(pv_id).setZero();
   }
   NodeId taxon_idx = 0;
   for (const auto &pattern : site_pattern_.GetPatterns()) {
     size_t site_idx = 0;
     for (const int symbol : pattern) {
       Assert(symbol >= 0, "Negative symbol!");
-      for (const auto pv_type : PSVTypeEnum::Iterator()) {
+      for (const auto pv_type : PLVTypeEnum::Iterator()) {
         if (symbol == MmappedNucleotidePLV::base_count_) {  // Gap character.
           pvs.GetPV(pvs.GetPVIndex(pv_type, taxon_idx)).col(site_idx).setConstant(1.);
         } else if (symbol < MmappedNucleotidePLV::base_count_) {
@@ -111,21 +111,20 @@ void TPEngine::PopulateRootwardPVLikelihoodForNode(const NodeId node_id) {
       const auto edge_id = dag_.GetEdgeIdx(node_id, rootward_node_id);
       const auto edge = dag_.GetDAGEdge(edge_id);
       const auto edge_choice = choice_map_.GetEdgeChoice(edge_id);
+      const PVId pv_center_index = likelihood_pvs_.GetPVIndex(PLVType::P, node_id);
+      const PVId pv_left_index = likelihood_pvs_.GetPVIndex(PLVType::PHatLeft, node_id);
+      const PVId pv_right_index =
+          likelihood_pvs_.GetPVIndex(PLVType::PHatRight, node_id);
 
       // Evolve up from left child.
       const EdgeId left_child_edge_id = edge_choice.left_child_edge_id;
       if (left_child_edge_id != NoId) {
         const auto left_child_edge = dag_.GetDAGEdge(left_child_edge_id);
         const NodeId left_child_node_id = left_child_edge.GetChild();
-        const PVId pv_left_index = likelihood_pvs_.GetPVIndex(PSVType::PLeft, node_id);
-        // left_child_p(s_left)
-        const PVId pv_left_child_left_index =
-            likelihood_pvs_.GetPVIndex(PSVType::PLeft, left_child_node_id);
-        // left_child_p(s_right)
-        const PVId pv_left_child_right_index =
-            likelihood_pvs_.GetPVIndex(PSVType::PRight, left_child_node_id);
-        MultiplyAndEvolvePV(pv_left_index, left_child_edge_id, pv_left_child_left_index,
-                            pv_left_child_right_index);
+        // left_child_p(s)
+        const PVId pv_left_child_index =
+            likelihood_pvs_.GetPVIndex(PLVType::P, left_child_node_id);
+        SetToEvolvedPV(pv_left_index, left_child_edge_id, pv_left_child_index);
       }
 
       // Evolve up from right child.
@@ -133,17 +132,13 @@ void TPEngine::PopulateRootwardPVLikelihoodForNode(const NodeId node_id) {
       if (right_child_edge_id != NoId) {
         const auto right_child_edge = dag_.GetDAGEdge(right_child_edge_id);
         const NodeId right_child_node_id = right_child_edge.GetChild();
-        const PVId pv_right_index =
-            likelihood_pvs_.GetPVIndex(PSVType::PRight, node_id);
-        // right_child_p(s_left)
-        const PVId pv_right_child_left_index =
-            likelihood_pvs_.GetPVIndex(PSVType::PLeft, right_child_node_id);
-        // right_child_p(s_right)
-        const PVId pv_right_child_right_index =
-            likelihood_pvs_.GetPVIndex(PSVType::PRight, right_child_node_id);
-        MultiplyAndEvolvePV(pv_right_index, right_child_edge_id,
-                            pv_right_child_left_index, pv_right_child_right_index);
+        // right_child_p(s)
+        const PVId pv_right_child_index =
+            likelihood_pvs_.GetPVIndex(PLVType::P, right_child_node_id);
+        SetToEvolvedPV(pv_right_index, right_child_edge_id, pv_right_child_index);
       }
+
+      Multiply(pv_center_index, pv_left_index, pv_right_index);
     }
   }
   std::cout << "option_count [rootward]: " << node_id << " " << option_count
@@ -157,54 +152,52 @@ void TPEngine::PopulateLeafwardPVLikelihoodForNode(const NodeId node_id) {
   const auto node = dag_.GetDAGNode(node_id);
   // Iterate over all edges where the given node is the child_node of the edge.
   size_t option_count = 0;
-  double best_likelihood = DOUBLE_NEG_INF;
   for (const auto focal_clade : {SubsplitClade::Left, SubsplitClade::Right}) {
     for (const auto rootward_node_id :
          node.GetNeighbors(Direction::Rootward, focal_clade)) {
       // Build q(s).
-      const PVId pv_index = likelihood_pvs_.GetPVIndex(PSVType::Q, node_id);
-      // Store previous best PV.
-      pvs.GetSparePV(0) = pvs.GetPV(pv_index);
-      option_count++;
-
+      const PLVType focal_pv =
+          (focal_clade == SubsplitClade::Left) ? PLVType::RLeft : PLVType::RRight;
+      const PLVType sister_pv =
+          (focal_clade == SubsplitClade::Left) ? PLVType::RRight : PLVType::RLeft;
+      const PVId pv_center_index =
+          likelihood_pvs_.GetPVIndex(PLVType::RHat, rootward_node_id);
+      const PVId pv_sister_index =
+          likelihood_pvs_.GetPVIndex(sister_pv, rootward_node_id);
       const auto edge_id = dag_.GetEdgeIdx(node_id, rootward_node_id);
       const auto edge = dag_.GetDAGEdge(edge_id);
       const auto edge_choice = choice_map_.GetEdgeChoice(edge_id);
 
-      // Evolve down from parent.
+      // Evolve down parent from parent's parent to parent's child.
       const auto parent_edge_id = edge_choice.parent_edge_id;
       if (parent_edge_id != NoId) {
         const auto parent_edge = dag_.GetDAGEdge(parent_edge_id);
-        const NodeId parent_node_id = parent_edge.GetParent();
         // parent_q(s)
-        const PVId pv_parent_index =
-            likelihood_pvs_.GetPVIndex(PSVType::Q, parent_node_id);
-        SetToEvolvedPV(pv_index, parent_edge_id, pv_parent_index);
+        const PVId pv_parent_parent_index =
+            likelihood_pvs_.GetPVIndex(PLVType::RHat, parent_edge.GetParent());
+        const PVId pv_parent_child_index =
+            likelihood_pvs_.GetPVIndex(PLVType::RHat, parent_edge.GetChild());
+        SetToEvolvedPV(pv_center_index, parent_edge_id, pv_parent_parent_index);
       }
 
-      // Evolve up from sister.
+      // Evolve up from sister from sister's parent to parent's child.
       const auto sister_edge_id = edge_choice.sister_edge_id;
       if (sister_edge_id != NoId) {
         const auto sister_edge = dag_.GetDAGEdge(sister_edge_id);
         const NodeId sister_node_id = sister_edge.GetChild();
-        const PVId pv_index = likelihood_pvs_.GetPVIndex(PSVType::Q, node_id);
-        // sister_p(s_left)
-        const PVId pv_sister_left_index =
-            likelihood_pvs_.GetPVIndex(PSVType::PLeft, sister_node_id);
-        // sister_p(s_right)
-        const PVId pv_sister_right_index =
-            likelihood_pvs_.GetPVIndex(PSVType::PRight, sister_node_id);
-        MultiplyAndEvolvePV(pv_index, sister_edge_id, pv_sister_left_index,
-                            pv_sister_right_index);
+        // sister_p(s)
+        const PVId pv_sister_child_index =
+            likelihood_pvs_.GetPVIndex(sister_pv, sister_node_id);
+        SetToEvolvedPV(pv_sister_index, sister_edge_id, pv_sister_child_index);
+        Multiply(pv_sister_index, pv_sister_index, pv_center_index);
       }
 
-      // Update only if the highest likelihood seen so far.
-      PreparePerPatternLogLikelihoodsForEdge(pv_index, pv_index);
-      double new_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
-      if (new_likelihood >= best_likelihood) {
-        best_likelihood = new_likelihood;
-      } else {
-        pvs.GetPV(pv_index) = pvs.GetSparePV(0);
+      // If at the root, set to stationary distribution.
+      if (parent_edge_id == NoId && sister_edge_id == NoId) {
+        auto &pv = likelihood_pvs_.GetPV(pv_center_index);
+        for (Eigen::Index row_idx = 0; row_idx < pv.rows(); ++row_idx) {
+          pv.row(row_idx).array() = stationary_distribution_(row_idx);
+        }
       }
     }
   }
@@ -235,16 +228,23 @@ void TPEngine::InitializeLikelihood() {
   // Set all Leafward P_PVs to Zero
   for (NodeId node_id = dag_.TaxonCount(); node_id < dag_.NodeCountWithoutDAGRoot();
        node_id++) {
-    likelihood_pvs_.GetPV(PSVType::PLeft, node_id).setZero();
-    likelihood_pvs_.GetPV(PSVType::PRight, node_id).setZero();
+    likelihood_pvs_.GetPV(PLVType::PHatLeft, node_id).setZero();
+    likelihood_pvs_.GetPV(PLVType::PHatRight, node_id).setZero();
+    likelihood_pvs_.GetPV(PLVType::P, node_id).setZero();
   }
-  // Set all Rootward Q_PVs to Zero
+  // Set all Rootward RHat_PVs to Zero
   for (NodeId node_id = 0; node_id < dag_.NodeCountWithoutDAGRoot(); node_id++) {
-    likelihood_pvs_.GetPV(PSVType::Q, node_id).setZero();
+    likelihood_pvs_.GetPV(PLVType::RHat, node_id).setZero();
+    likelihood_pvs_.GetPV(PLVType::RLeft, node_id).setZero();
+    likelihood_pvs_.GetPV(PLVType::RRight, node_id).setZero();
   }
   // Set Rootsplit Q_PVs to Stationary Distribution
+  auto &pv = likelihood_pvs_.GetPV(PLVType::RHat, dag_.GetDAGRootNodeId());
+  for (Eigen::Index row_idx = 0; row_idx < pv.rows(); ++row_idx) {
+    pv.row(row_idx).array() = stationary_distribution_(row_idx);
+  }
   for (const auto &node_id : dag_.GetRootsplitNodeIds()) {
-    auto &pv = likelihood_pvs_.GetPV(PSVType::Q, node_id);
+    auto &pv = likelihood_pvs_.GetPV(PLVType::RHat, node_id);
     for (Eigen::Index row_idx = 0; row_idx < pv.rows(); ++row_idx) {
       pv.row(row_idx).array() = stationary_distribution_(row_idx);
     }
@@ -330,25 +330,12 @@ void TPEngine::MultiplyAndEvolvePV(const PVId dest_id, const EdgeId edge_id,
 
 void TPEngine::PreparePerPatternLogLikelihoodsForEdge(const PVId src1_id,
                                                       const PVId src2_id) {
-  // per_pattern_log_likelihoods_ =
-  //     (GetPV(src1.value_).transpose() * transition_matrix_ * GetPV(src2.value_))
-  //         .diagonal()
-  //         .array()
-  //         .log() +
-  //     LogRescalingFor(src1.value_) + LogRescalingFor(src2.value_);
-
   auto &pvs = likelihood_pvs_;
   per_pattern_log_likelihoods_ =
       (pvs.GetPV(src1_id).transpose() * transition_matrix_ * pvs.GetPV(src2_id))
           .diagonal()
           .array()
           .log();
-}
-
-double TPEngine::LogRescalingFor(const PVId plv_id) {
-  // return static_cast<double>(rescaling_counts_(plv_idx)) *
-  // log_rescaling_threshold_;
-  return 0.0f;
 }
 
 // ** Parameters

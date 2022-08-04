@@ -1809,7 +1809,7 @@ TEST_CASE("Top-Pruning: Initialize TPEngine and ChoiceMap") {
   auto all_trees = inst.GenerateCompleteRootedTreeCollection();
   SitePattern site_pattern = inst.MakeSitePattern();
   TPEngine tpengine =
-      TPEngine(dag, site_pattern, "_ignore/mmapped_plv.data", true, true);
+      TPEngine(dag, site_pattern, "_ignore/mmapped_plv.data", false, false);
   tpengine.InitializeChoiceMap();
 
   auto TopologyExistsInTreeCollection = [](const Node::NodePtr tree_topology,
@@ -1854,7 +1854,8 @@ TEST_CASE("Top-Pruning: Likelihoods") {
 
   // Input files.
   const std::string fasta_path = "data/six_taxon.fasta";
-  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  const std::string newick_path = "data/six_taxon_rooted_single.nwk";
+  // const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
 
   // GPInstance and TPEngine
   auto inst = GPInstanceOfFiles(fasta_path, newick_path);
@@ -1864,7 +1865,7 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   SitePattern site_pattern = inst.MakeSitePattern();
   TPEngine tpengine =
       TPEngine(dag, site_pattern, "_ignore/mmapped_plv.data", true, true);
-  tpengine.InitializeChoiceMap();
+  // tpengine.InitializeChoiceMap();
 
   // Populate tree vector.
   for (const auto tree : tree_collection) {
@@ -1919,18 +1920,29 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   }
 
   auto& pvs = tpengine.GetLikelihoodPVs();
-  std::cout << "LIKELIHOOD_PVS [PLeft]: " << std::endl;
+  std::cout << "LIKELIHOOD_PVS [PHatLeft]: " << std::endl;
   for (NodeId i = 0; i < dag.NodeCount(); i++) {
-    pvs.Print(PSVType::PLeft, i);
+    pvs.Print(PLVType::PHatLeft, i);
   }
-  std::cout << "LIKELIHOOD_PVS [PRight]: " << std::endl;
+  std::cout << "LIKELIHOOD_PVS [PHatRight]: " << std::endl;
   for (NodeId i = 0; i < dag.NodeCount(); i++) {
-    pvs.Print(PSVType::PRight, i);
+    pvs.Print(PLVType::PHatRight, i);
   }
-  std::cout << "LIKELIHOOD_PVS [Q]: " << std::endl;
+  std::cout << "LIKELIHOOD_PVS [RHat]: " << std::endl;
   for (NodeId i = 0; i < dag.NodeCount(); i++) {
-    pvs.Print(PSVType::Q, i);
+    pvs.Print(PLVType::RHat, i);
   }
+
+  std::cout << "ROOTSPLIT_EDGES: ";
+  NodeId root_node_id = dag.GetDAGRootNodeId();
+  for (const auto clade : {SubsplitClade::Left, SubsplitClade::Right}) {
+    for (const auto node_id :
+         dag.GetDAGNode(root_node_id).GetNeighbors(Direction::Leafward, clade)) {
+      EdgeId edge_id = dag.GetEdgeIdx(root_node_id, node_id);
+      std::cout << edge_id << "_(" << root_node_id << ", " << node_id << "), ";
+    }
+  }
+  std::cout << std::endl;
 
   std::cout << "TOP_PRUNING [END]" << std::endl;
 }
