@@ -58,7 +58,9 @@ class TPEngine {
   //
   void SetTransitionMatrixToHaveBranchLength(const double branch_length);
 
-  void Multiply(const PVId dest, const PVId src1, const PVId src2);
+  void Set(const PVId dest_id, const PVId src_id);
+
+  void Multiply(const PVId dest_id, const PVId src1_id, const PVId src2_id);
 
   void ComputeLikelihood(const EdgeId dest_id, const PVId child_id,
                          const PVId parent_id);

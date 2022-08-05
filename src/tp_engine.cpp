@@ -93,18 +93,16 @@ void TPEngine::InitializeLikelihood() {
   // Populate Rootsplit with Stationary Distribution.
   PopulateRootLikelihoodPVsWithStationaryDistribution();
   // Rootward Pass (populate P PVs)
-  const auto rootward_node_ids = dag_.RootwardNodeTraversalTrace(true);
+  const auto rootward_node_ids = dag_.RootwardNodeTraversalTrace(false);
+  std::cout << "rootward_trace: " << rootward_node_ids << std::endl;
   for (const auto node_id : rootward_node_ids) {
     PopulateRootwardLikelihoodPVForNode(node_id);
   }
   // Leafward Pass (populate R PVs)
-  const auto leafward_node_ids = dag_.LeafwardNodeTraversalTrace(true);
+  const auto leafward_node_ids = dag_.LeafwardNodeTraversalTrace(false);
   for (const auto node_id : leafward_node_ids) {
     PopulateLeafwardLikelihoodPVForNode(node_id);
   }
-
-  std::cout << "TEST_PV0: " << std::endl
-            << GetLikelihoodPVs().ToString(52) << std::endl;
 
   std::cout << "INIT_LIKELIHOOD [END]" << std::endl;
 }
@@ -134,6 +132,8 @@ void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
       const PVId pv_right_index =
           likelihood_pvs_.GetPVIndex(PLVType::PHatRight, node_id);
 
+      std::cout << "ROOTWARD: " << node_id << std::endl << edge_choice << std::endl;
+
       // Evolve up from left child.
       const EdgeId left_child_edge_id = edge_choice.left_child_edge_id;
       if (left_child_edge_id != NoId) {
@@ -156,11 +156,19 @@ void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
         SetToEvolvedPV(pv_right_index, right_child_edge_id, pv_right_child_index);
       }
 
-      Multiply(pv_center_index, pv_left_index, pv_right_index);
+      if (right_child_edge_id != NoId && left_child_edge_id != NoId) {
+        Multiply(pv_center_index, pv_left_index, pv_right_index);
+      } else if (right_child_edge_id != NoId) {
+        Set(pv_center_index, pv_right_index);
+      } else if (left_child_edge_id != NoId) {
+        Set(pv_center_index, pv_left_index);
+      } else {
+        std::cout << "NO_MAPPING: " << node_id << std::endl;
+      }
     }
   }
-  // std::cout << "option_count [leafward]: " << node_id << " " << option_count
-  //           << std::endl;
+  std::cout << "option_count [leafward]: " << node_id << " " << option_count
+            << std::endl;
 }
 
 // For leafward traversal. Compute the likelihood PV for a given node, by using the
@@ -169,11 +177,11 @@ void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
   auto &pvs = likelihood_pvs_;
   EdgeIdVector central_edge_ids;
   const auto node = dag_.GetDAGNode(node_id);
-  // Iterate over all edges where the given node is the child_node of the edge.
+  // Iterate over all edges where the given node is the parent_node of the edge.
   size_t option_count = 0;
   for (const auto focal_clade : {SubsplitClade::Left, SubsplitClade::Right}) {
     for (const auto rootward_node_id :
-         node.GetNeighbors(Direction::Rootward, focal_clade)) {
+         node.GetNeighbors(Direction::Leafward, focal_clade)) {
       option_count++;
 
       const PLVType focal_pv =
@@ -182,6 +190,8 @@ void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
           (focal_clade == SubsplitClade::Left) ? PLVType::RRight : PLVType::RLeft;
       const PVId pv_center_index =
           likelihood_pvs_.GetPVIndex(PLVType::RHat, rootward_node_id);
+      const PVId pv_focal_index =
+          likelihood_pvs_.GetPVIndex(focal_pv, rootward_node_id);
       const PVId pv_sister_index =
           likelihood_pvs_.GetPVIndex(sister_pv, rootward_node_id);
       const auto edge_id = dag_.GetEdgeIdx(node_id, rootward_node_id);
@@ -251,7 +261,6 @@ void TPEngine::PopulateRootLikelihoodPVsWithStationaryDistribution() {
 
 void TPEngine::ComputeLikelihoods() {
   std::cout << "ComputeLikelihoods [BEGIN]" << std::endl;
-  std::cout << "TEST_PV2: " << std::endl << likelihood_pvs_.ToString(52) << std::endl;
   dag_.IterateOverRealNodes([this](SubsplitDAGNode node) {
     dag_.IterateOverLeafwardEdges(
         node, [this, node](const bool is_edge_on_left, SubsplitDAGNode child_node) {
@@ -293,6 +302,11 @@ void TPEngine::SetTransitionMatrixToHaveBranchLength(const double branch_length)
   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
 }
 
+void TPEngine::Set(const PVId dest_id, const PVId src_id) {
+  auto &pvs = likelihood_pvs_;
+  pvs.GetPV(dest_id).array() = pvs.GetPV(src_id).array();
+}
+
 void TPEngine::Multiply(const PVId dest_id, const PVId src1_id, const PVId src2_id) {
   auto &pvs = likelihood_pvs_;
   pvs.GetPV(dest_id).array() = pvs.GetPV(src1_id).array() * pvs.GetPV(src2_id).array();
@@ -307,13 +321,14 @@ void TPEngine::ComputeLikelihood(const EdgeId dest_id, const PVId child_id,
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(dest_id.value_));
   PreparePerPatternLogLikelihoodsForEdge(parent_id, child_id);
   log_likelihoods_.row(dest_id.value_) = per_pattern_log_likelihoods_;
-  std::cout << "TP_LIKE: " << branch_lengths_(dest_id.value_) << " " << dest_id << " "
-            << parent_id << " " << child_id << " " << per_pattern_log_likelihoods_
-            << " " << transition_matrix_.norm() << std::endl;
-  std::cout << "TP_PARENT_PV: " << std::endl
-            << likelihood_pvs_.ToString(parent_id) << std::endl;
-  std::cout << "TP_CHILD_PV: " << std::endl
-            << likelihood_pvs_.ToString(child_id) << std::endl;
+  // std::cout << "TP_LIKE: " << branch_lengths_(dest_id.value_) << " " << dest_id << "
+  // "
+  //           << parent_id << " " << child_id << " " << per_pattern_log_likelihoods_
+  //           << " " << transition_matrix_.norm() << std::endl;
+  // std::cout << "TP_PARENT_PV: " << parent_id << std::endl
+  //           << likelihood_pvs_.ToString(parent_id) << std::endl;
+  // std::cout << "TP_CHILD_PV: " << child_id << std::endl
+  //           << likelihood_pvs_.ToString(child_id) << std::endl;
 }
 
 void TPEngine::SetToEvolvedPV(const PVId dest_id, const EdgeId edge_id,

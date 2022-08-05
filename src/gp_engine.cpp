@@ -295,13 +295,13 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_));
   PreparePerPatternLogLikelihoodsForGPCSP(op.parent_, op.child_);
   log_likelihoods_.row(op.dest_) = per_pattern_log_likelihoods_;
-  std::cout << "GP_LIKE: " << branch_lengths_(op.dest_) << " " << op.dest_ << " "
-            << op.parent_ << " " << op.child_ << " " << per_pattern_log_likelihoods_
-            << " " << transition_matrix_.norm() << std::endl;
-  std::cout << "GP_PARENT_PV: " << std::endl
-            << plv_handler_.ToString(op.parent_) << std::endl;
-  std::cout << "GP_CHILD_PV: " << std::endl
-            << plv_handler_.ToString(op.child_) << std::endl;
+  // std::cout << "GP_LIKE: " << branch_lengths_(op.dest_) << " " << op.dest_ << " "
+  //           << op.parent_ << " " << op.child_ << " " << per_pattern_log_likelihoods_
+  //           << " " << transition_matrix_.norm() << std::endl;
+  // std::cout << "GP_PARENT_PV: " << op.parent_ << std::endl
+  //           << plv_handler_.ToString(op.parent_) << std::endl;
+  // std::cout << "GP_CHILD_PV: " << op.child_ << std::endl
+  //           << plv_handler_.ToString(op.child_) << std::endl;
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {

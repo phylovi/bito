@@ -1854,12 +1854,14 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   std::unordered_map<EdgeId, double> gp_likelihood_map;
 
   // Input files.
-  const std::string fasta_path = "data/six_taxon.fasta";
-  const std::string newick_path = "data/six_taxon_rooted_single.nwk";
+  const std::string fasta_path = "data/hello_short.fasta";
+  const std::string newick_path = "data/hello_rooted.nwk";
+  // const std::string fasta_path = "data/six_taxon.fasta";
+  // const std::string newick_path = "data/six_taxon_rooted_single.nwk";
   // const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
 
   // GPInstance and TPEngine
-  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.gp.data");
   inst.MakeEngine();
   GPEngine& gpengine = *inst.GetEngine();
   GPDAG& dag = inst.GetDAG();
@@ -1869,7 +1871,7 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
   SitePattern site_pattern = inst.MakeSitePattern();
   TPEngine tpengine =
-      TPEngine(dag, site_pattern, "_ignore/mmapped_plv.data", true, true);
+      TPEngine(dag, site_pattern, "_ignore/mmapped_plv.tp.data", true, true);
   // tpengine.InitializeChoiceMap();
 
   // Populate tree vector.
@@ -1938,28 +1940,28 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   auto& tp_pvs = tpengine.GetLikelihoodPVs();
   auto& gp_pvs = gpengine.GetPLVHandler();
 
-  // for (const auto& plv_type : PLVTypeEnum::Iterator()) {
-  //   std::string plv_name = PLVTypeEnum::Labels[plv_type];
-  //   std::cout << "====== LIKELIHOOD_PVS [" << plv_name << "]: " << std::endl;
-  //   for (NodeId i = 0; i < dag.NodeCount(); i++) {
-  //     bool is_equal = (tp_pvs.GetPV(plv_type, i) == gp_pvs.GetPV(plv_type, i));
-  //     if (!is_equal) {
-  //       std::cout << "!!! *** NOT EQUAL ***" << std::endl;
-  //     } else {
-  //       // std::cout << "*** EQUAL ***" << std::endl;
-  //       // std::cout << "[" << PLVTypeEnum::Labels[plv_type] << ", " << i << "]"
-  //       //           << std::endl;
-  //     }
-  //     if (!is_equal || true) {
-  //       auto pv_index = tp_pvs.GetPVIndex(plv_type, i);
-  //       std::cout << "TP_";
-  //       tp_pvs.Print(plv_type, i);
-  //       tp_pvs.Print(pv_index);
-  //       std::cout << "GP_";
-  //       gpengine.PrintPLV(pv_index);
-  //     }
-  //   }
-  // }
+  for (const auto& plv_type : PLVTypeEnum::Iterator()) {
+    std::string plv_name = PLVTypeEnum::Labels[plv_type];
+    std::cout << "====== LIKELIHOOD_PVS [" << plv_name << "]: " << std::endl;
+    for (NodeId i = 0; i < dag.NodeCount(); i++) {
+      bool is_equal = (tp_pvs.GetPV(plv_type, i) == gp_pvs.GetPV(plv_type, i));
+      std::cout << "=> PLV: " << plv_name << ", " << i << " <=" << std::endl;
+      if (!is_equal) {
+        std::cout << "!!! *** NOT EQUAL ***" << std::endl;
+      } else {
+        std::cout << "*** EQUAL ***" << std::endl;
+        // std::cout << "[" << PLVTypeEnum::Labels[plv_type] << ", " << i << "]"
+        //           << std::endl;
+      }
+      if (!is_equal || true) {
+        auto pv_index = tp_pvs.GetPVIndex(plv_type, i);
+        std::cout << "TP_";
+        tp_pvs.Print(plv_type, i);
+        std::cout << "GP_";
+        gp_pvs.Print(plv_type, i);
+      }
+    }
+  }
 
   std::cout << "ROOTSPLIT_EDGES: ";
   NodeId root_node_id = dag.GetDAGRootNodeId();
@@ -1971,14 +1973,7 @@ TEST_CASE("Top-Pruning: Likelihoods") {
     }
   }
   std::cout << std::endl;
-
-  std::cout << "GPEngine LogLikelihood Matrix: " << std::endl;
-  const auto gp_mx = gpengine.GetLogLikelihoodMatrix();
-  std::cout << gp_mx(1, 1) << std::endl;
-
-  std::cout << "TPEngine LogLikelihood Matrix: " << std::endl;
-  const auto tp_mx = tpengine.GetLikelihoodMatrix();
-  std::cout << tp_mx(1, 1) << std::endl;
+  std::cout << "ROOT_NODE_ID: " << dag.GetDAGRootNodeId() << std::endl;
 
   std::cout << "TOP_PRUNING [END]" << std::endl;
 }

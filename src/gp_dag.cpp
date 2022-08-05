@@ -120,7 +120,6 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
 }
 
 GPOperationVector GPDAG::ComputeLikelihoods() const {
-  std::cout << "GP_ComputeLikelihoods [BEGIN]" << std::endl;
   GPOperationVector operations;
   IterateOverRealNodes([this, &operations](SubsplitDAGNode node) {
     IterateOverLeafwardEdges(
@@ -137,7 +136,6 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
   const auto marginal_likelihood_operations = MarginalLikelihood();
   operations.insert(operations.end(), marginal_likelihood_operations.begin(),
                     marginal_likelihood_operations.end());
-  std::cout << "ComputeLikelihoods [END]" << std::endl;
 
   return operations;
 }
