@@ -44,6 +44,8 @@ class TPEngine {
   // Fetch computed likelihoods.
   double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
 
+  void ComputeLikelihoods();
+
   // ** Scoring by Parsimony
 
   // Initialize ChoiceMap for entire DAG by Parsimony.
@@ -168,9 +170,16 @@ class TPEngine {
 
   // ** Access
 
+  EigenConstMatrixXdRef GetLikelihoodMatrix() { return log_likelihoods_; }
   PLVHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
   PSVHandler &GetParsimonyPVs() { return parsimony_pvs_; }
   EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
+
+  void SetBranchLengths(EigenVectorXd branch_lengths) {
+    Assert(size_t(branch_lengths.size()) == dag_.EdgeCountWithLeafSubsplits(),
+           "Size mismatch in GPEngine::SetBranchLengths.");
+    branch_lengths_.segment(0, dag_.EdgeCountWithLeafSubsplits()) = branch_lengths;
+  }
 
   // ** I/O
 
@@ -181,15 +190,16 @@ class TPEngine {
   void PrintPVLikelihood(const PVId pv_id) const { likelihood_pvs_.Print(pv_id); }
 
  protected:
-  // ** Initialization
-
-  void InitializeLikelihoodPVsWithSitePatterns();
-  void InitializeParsimonyPVsWithSitePatterns();
-
   // ** Likelihoods
 
-  void PopulateRootwardPVLikelihoodForNode(const NodeId node_id);
-  void PopulateLeafwardPVLikelihoodForNode(const NodeId node_id);
+  void PopulateRootwardLikelihoodPVForNode(const NodeId node_id);
+  void PopulateLeafwardLikelihoodPVForNode(const NodeId node_id);
+  void PopulateLeafLikelihoodPVsWithSitePatterns();
+  void PopulateRootLikelihoodPVsWithStationaryDistribution();
+
+  // ** Parsimony
+
+  void PopulateLeafParsimonyPVsWithSitePatterns();
 
   // ** DAG
   // Un-owned reference DAG.
@@ -209,8 +219,10 @@ class TPEngine {
   // Growth factor when reallocating data.
   constexpr static double resizing_factor_ = 2.0;
 
-  // Likelihoods
+  // Tree likelihoods matrix across all sites.
   EigenMatrixXd log_likelihoods_;
+  // Top tree log likelihood per edge.
+  EigenVectorXd top_tree_log_likelihoods_per_edge_;
 
   // Branch length parameters for DAG.
   EigenVectorXd branch_lengths_;

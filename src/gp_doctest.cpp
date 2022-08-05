@@ -1851,6 +1851,7 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   std::unordered_map<EdgeId, size_t> tree_id_map;
   std::unordered_map<EdgeId, double> likelihood_map;
   std::unordered_map<EdgeId, double> golden_likelihood_map;
+  std::unordered_map<EdgeId, double> gp_likelihood_map;
 
   // Input files.
   const std::string fasta_path = "data/six_taxon.fasta";
@@ -1859,8 +1860,12 @@ TEST_CASE("Top-Pruning: Likelihoods") {
 
   // GPInstance and TPEngine
   auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  inst.MakeEngine();
+  GPEngine& gpengine = *inst.GetEngine();
   GPDAG& dag = inst.GetDAG();
   inst.EstimateBranchLengths(0.00001, 100, true);
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
   auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
   SitePattern site_pattern = inst.MakeSitePattern();
   TPEngine tpengine =
@@ -1905,7 +1910,9 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   std::cout << "GOLDEN_LIKELIHOODS: " << golden_likelihood_map << std::endl;
 
   // Compute likelihoods with TPEngine.
+  tpengine.SetBranchLengths(gpengine.GetBranchLengths());
   tpengine.InitializeLikelihood();
+  tpengine.ComputeLikelihoods();
   for (const auto& [edge_id, tree_id] : tree_id_map) {
     std::ignore = tree_id;
     auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
@@ -1913,25 +1920,46 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   }
   std::cout << "LIKELIHOODS: " << likelihood_map << std::endl;
 
+  // Compute likelihoods with GPEngine.
+  auto gp_likelihoods = gpengine.GetPerGPCSPLogLikelihoods();
+  for (const auto& [edge_id, tree_id] : tree_id_map) {
+    std::ignore = tree_id;
+    auto likelihood = gp_likelihoods[edge_id.value_];
+    gp_likelihood_map[edge_id] = likelihood;
+  }
+  std::cout << "GP_LIKELIHOODS: " << gp_likelihood_map << std::endl;
+
   // Compare likelihoods.
   for (const auto& [edge_id, tree_id] : tree_id_map) {
     std::ignore = tree_id;
     // std::cout << "Compare: " << edge_id << std::endl;
   }
 
-  auto& pvs = tpengine.GetLikelihoodPVs();
-  std::cout << "LIKELIHOOD_PVS [PHatLeft]: " << std::endl;
-  for (NodeId i = 0; i < dag.NodeCount(); i++) {
-    pvs.Print(PLVType::PHatLeft, i);
-  }
-  std::cout << "LIKELIHOOD_PVS [PHatRight]: " << std::endl;
-  for (NodeId i = 0; i < dag.NodeCount(); i++) {
-    pvs.Print(PLVType::PHatRight, i);
-  }
-  std::cout << "LIKELIHOOD_PVS [RHat]: " << std::endl;
-  for (NodeId i = 0; i < dag.NodeCount(); i++) {
-    pvs.Print(PLVType::RHat, i);
-  }
+  auto& tp_pvs = tpengine.GetLikelihoodPVs();
+  auto& gp_pvs = gpengine.GetPLVHandler();
+
+  // for (const auto& plv_type : PLVTypeEnum::Iterator()) {
+  //   std::string plv_name = PLVTypeEnum::Labels[plv_type];
+  //   std::cout << "====== LIKELIHOOD_PVS [" << plv_name << "]: " << std::endl;
+  //   for (NodeId i = 0; i < dag.NodeCount(); i++) {
+  //     bool is_equal = (tp_pvs.GetPV(plv_type, i) == gp_pvs.GetPV(plv_type, i));
+  //     if (!is_equal) {
+  //       std::cout << "!!! *** NOT EQUAL ***" << std::endl;
+  //     } else {
+  //       // std::cout << "*** EQUAL ***" << std::endl;
+  //       // std::cout << "[" << PLVTypeEnum::Labels[plv_type] << ", " << i << "]"
+  //       //           << std::endl;
+  //     }
+  //     if (!is_equal || true) {
+  //       auto pv_index = tp_pvs.GetPVIndex(plv_type, i);
+  //       std::cout << "TP_";
+  //       tp_pvs.Print(plv_type, i);
+  //       tp_pvs.Print(pv_index);
+  //       std::cout << "GP_";
+  //       gpengine.PrintPLV(pv_index);
+  //     }
+  //   }
+  // }
 
   std::cout << "ROOTSPLIT_EDGES: ";
   NodeId root_node_id = dag.GetDAGRootNodeId();
@@ -1943,6 +1971,14 @@ TEST_CASE("Top-Pruning: Likelihoods") {
     }
   }
   std::cout << std::endl;
+
+  std::cout << "GPEngine LogLikelihood Matrix: " << std::endl;
+  const auto gp_mx = gpengine.GetLogLikelihoodMatrix();
+  std::cout << gp_mx(1, 1) << std::endl;
+
+  std::cout << "TPEngine LogLikelihood Matrix: " << std::endl;
+  const auto tp_mx = tpengine.GetLikelihoodMatrix();
+  std::cout << tp_mx(1, 1) << std::endl;
 
   std::cout << "TOP_PRUNING [END]" << std::endl;
 }

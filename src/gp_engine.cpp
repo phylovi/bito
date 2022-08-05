@@ -295,6 +295,13 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_));
   PreparePerPatternLogLikelihoodsForGPCSP(op.parent_, op.child_);
   log_likelihoods_.row(op.dest_) = per_pattern_log_likelihoods_;
+  std::cout << "GP_LIKE: " << branch_lengths_(op.dest_) << " " << op.dest_ << " "
+            << op.parent_ << " " << op.child_ << " " << per_pattern_log_likelihoods_
+            << " " << transition_matrix_.norm() << std::endl;
+  std::cout << "GP_PARENT_PV: " << std::endl
+            << plv_handler_.ToString(op.parent_) << std::endl;
+  std::cout << "GP_CHILD_PV: " << std::endl
+            << plv_handler_.ToString(op.child_) << std::endl;
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
@@ -440,6 +447,11 @@ EigenVectorXd GPEngine::GetBranchLengthDifferences() const {
 };
 
 EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {
+  std::cout << "GP_LIKELIHOODS: "
+            << log_likelihoods_.block(0, 0, GetGPCSPCount(), log_likelihoods_.cols()) *
+                   site_pattern_weights_
+            << std::endl;
+  std::cout << "GP_SITE_PATTERN: " << site_pattern_weights_ << std::endl;
   return log_likelihoods_.block(0, 0, GetGPCSPCount(), log_likelihoods_.cols()) *
          site_pattern_weights_;
 };
@@ -541,15 +553,17 @@ void GPEngine::InitializePLVsWithSitePatterns() {
   for (auto& plv : GetPLVs()) {
     plv.setZero();
   }
-  size_t taxon_idx = 0;
+  NodeId taxon_idx = 0;
   for (const auto& pattern : site_pattern_.GetPatterns()) {
     size_t site_idx = 0;
     for (const int symbol : pattern) {
       Assert(symbol >= 0, "Negative symbol!");
       if (symbol == MmappedNucleotidePLV::base_count_) {  // Gap character.
-        GetPLV(taxon_idx).col(site_idx).setConstant(1.);
+        // plv_handler_.GetPV(PLVType::P, taxon_idx).col(site_idx).setConstant(1.);
+        GetPLV(taxon_idx.value_).col(site_idx).setConstant(1.);
       } else if (symbol < MmappedNucleotidePLV::base_count_) {
-        GetPLV(taxon_idx)(symbol, site_idx) = 1.;
+        // plv_handler_.GetPV(PLVType::P, taxon_idx)(symbol, site_idx) = 1.;
+        GetPLV(taxon_idx.value_)(symbol, site_idx) = 1.;
       }
       site_idx++;
     }

@@ -40,7 +40,7 @@ class PLVTypeEnum
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
     os << ToString(e);
     return os;
-  };
+  }
 };
 
 // PSV: Partial Sankoff Vectors
@@ -64,7 +64,7 @@ class PSVTypeEnum
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
     os << ToString(e);
     return os;
-  };
+  }
 };
 };  // namespace PartialVectorType
 
