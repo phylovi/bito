@@ -93,12 +93,14 @@ void TPEngine::InitializeLikelihood() {
   // Populate Rootsplit with Stationary Distribution.
   PopulateRootLikelihoodPVsWithStationaryDistribution();
   // Rootward Pass (populate P PVs)
+  std::cout << "ROOTWARD_PASS" << std::endl;
   const auto rootward_node_ids = dag_.RootwardNodeTraversalTrace(false);
   std::cout << "rootward_trace: " << rootward_node_ids << std::endl;
   for (const auto node_id : rootward_node_ids) {
     PopulateRootwardLikelihoodPVForNode(node_id);
   }
   // Leafward Pass (populate R PVs)
+  std::cout << "LEAFWARD_PASS" << std::endl;
   const auto leafward_node_ids = dag_.LeafwardNodeTraversalTrace(false);
   for (const auto node_id : leafward_node_ids) {
     PopulateLeafwardLikelihoodPVForNode(node_id);
@@ -115,6 +117,9 @@ void TPEngine::UpdateDAGAfterAddNodePairByLikelihood(const NNIOperation &nni_op)
 // For rootward traversal. Compute the likelihood PV for a given node, by using
 // the left and right child edges from the choice map of the edge below node.
 void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
+  if (node_id == dag_.GetDAGRootNodeId()) {
+    return;
+  }
   EdgeIdVector central_edge_ids;
   const auto node = dag_.GetDAGNode(node_id);
   // Iterate over all edges where the given node is the child_node of the edge.
@@ -131,8 +136,6 @@ void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
       const PVId pv_left_index = likelihood_pvs_.GetPVIndex(PLVType::PHatLeft, node_id);
       const PVId pv_right_index =
           likelihood_pvs_.GetPVIndex(PLVType::PHatRight, node_id);
-
-      std::cout << "ROOTWARD: " << node_id << std::endl << edge_choice << std::endl;
 
       // Evolve up from left child.
       const EdgeId left_child_edge_id = edge_choice.left_child_edge_id;
@@ -174,55 +177,95 @@ void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
 // For leafward traversal. Compute the likelihood PV for a given node, by using the
 // parent and sister edges from the choice map of the edge above node.
 void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
+  std::cout << "TP_VISIT_NODE: " << node_id << std::endl;
   auto &pvs = likelihood_pvs_;
   EdgeIdVector central_edge_ids;
   const auto node = dag_.GetDAGNode(node_id);
-  // Iterate over all edges where the given node is the parent_node of the edge.
+
+  // Iterate over all edges where the given node is the parent_node.
+  // Find the parent edge.
   size_t option_count = 0;
+  size_t best_tree_source = tree_count_;
   for (const auto focal_clade : {SubsplitClade::Left, SubsplitClade::Right}) {
-    for (const auto rootward_node_id :
+    for (const auto leafward_node_id :
          node.GetNeighbors(Direction::Leafward, focal_clade)) {
       option_count++;
-
-      const PLVType focal_pv =
+      const PLVType focal_rpv =
           (focal_clade == SubsplitClade::Left) ? PLVType::RLeft : PLVType::RRight;
-      const PLVType sister_pv =
+      const PLVType sister_rpv =
           (focal_clade == SubsplitClade::Left) ? PLVType::RRight : PLVType::RLeft;
-      const PVId pv_center_index =
-          likelihood_pvs_.GetPVIndex(PLVType::RHat, rootward_node_id);
-      const PVId pv_focal_index =
-          likelihood_pvs_.GetPVIndex(focal_pv, rootward_node_id);
-      const PVId pv_sister_index =
-          likelihood_pvs_.GetPVIndex(sister_pv, rootward_node_id);
-      const auto edge_id = dag_.GetEdgeIdx(node_id, rootward_node_id);
+      const PLVType focal_ppv =
+          (focal_clade == SubsplitClade::Left) ? PLVType::PHatLeft : PLVType::PHatRight;
+      const PLVType sister_ppv =
+          (focal_clade == SubsplitClade::Left) ? PLVType::PHatRight : PLVType::PHatLeft;
+      const PVId pv_center_index = likelihood_pvs_.GetPVIndex(PLVType::RHat, node_id);
+      const PVId pv_focal_index = likelihood_pvs_.GetPVIndex(focal_rpv, node_id);
+      const PVId pv_sister_index = likelihood_pvs_.GetPVIndex(sister_rpv, node_id);
+
+      const auto edge_id = dag_.GetEdgeIdx(leafward_node_id, node_id);
       const auto edge = dag_.GetDAGEdge(edge_id);
       const auto edge_choice = choice_map_.GetEdgeChoice(edge_id);
+      // Only update if it is the best edge seen.
+      std::cout << "NEW_TREE_SOURCE: " << tree_source_[edge_id.value_]
+                << " OLD_TREE_SOURCE: " << best_tree_source << std::endl;
+      if (best_tree_source < tree_source_[edge_id.value_]) {
+        continue;
+      } else {
+        best_tree_source = tree_source_[edge_id.value_];
+      }
 
       // Evolve down parent.
       const auto parent_edge_id = edge_choice.parent_edge_id;
       if (parent_edge_id != NoId) {
         const auto parent_edge = dag_.GetDAGEdge(parent_edge_id);
+        if (parent_edge.GetParent() == dag_.GetDAGRootNodeId()) {
+          break;
+        }
         // parent_q(s)
+        const PLVType parent_focal_rpv =
+            (parent_edge.GetSubsplitClade() == SubsplitClade::Left) ? PLVType::RLeft
+                                                                    : PLVType::RRight;
         const PVId pv_parent_parent_index =
-            likelihood_pvs_.GetPVIndex(PLVType::RHat, parent_edge.GetParent());
-        const PVId pv_parent_child_index =
-            likelihood_pvs_.GetPVIndex(PLVType::RHat, parent_edge.GetChild());
+            likelihood_pvs_.GetPVIndex(parent_focal_rpv, parent_edge.GetParent());
         SetToEvolvedPV(pv_center_index, parent_edge_id, pv_parent_parent_index);
-      }
-
-      // Evolve up from sister.
-      const auto sister_edge_id = edge_choice.sister_edge_id;
-      if (sister_edge_id != NoId) {
-        const auto sister_edge = dag_.GetDAGEdge(sister_edge_id);
-        const NodeId sister_node_id = sister_edge.GetChild();
-        // sister_p(s)
-        const PVId pv_sister_child_index =
-            likelihood_pvs_.GetPVIndex(sister_pv, sister_node_id);
-        SetToEvolvedPV(pv_sister_index, sister_edge_id, pv_sister_child_index);
-        Multiply(pv_sister_index, pv_sister_index, pv_center_index);
+        std::cout << "TP_RHAT: " << node_id << " " << pv_center_index << " "
+                  << parent_edge_id << " " << pv_parent_parent_index << std::endl;
       }
     }
   }
+
+  // If node is leaf.
+  if (dag_.IsNodeLeaf(node_id)) {
+    auto node = dag_.GetDAGNode(node_id);
+    dag_.IterateOverRootwardEdges(node, [this, node](const bool is_edge_on_left,
+                                                     SubsplitDAGNode parent_node) {
+      const PLVType focal_rpv = (is_edge_on_left) ? PLVType::RLeft : PLVType::RRight;
+      const PVId pv_center_index = likelihood_pvs_.GetPVIndex(PLVType::RHat, node.Id());
+      const EdgeId parent_edge_id = dag_.GetEdgeIdx(parent_node.Id(), node.Id());
+      const PVId pv_parent_parent_index =
+          likelihood_pvs_.GetPVIndex(focal_rpv, parent_node.Id());
+      SetToEvolvedPV(pv_center_index, parent_edge_id, pv_parent_parent_index);
+      std::cout << "TP_RHAT [leaf]: " << node.Id() << " " << pv_center_index << " "
+                << parent_edge_id << " " << pv_parent_parent_index << std::endl;
+    });
+  }
+
+  // Evolve with sister.
+  const PLVType left_rpv = PLVType::RLeft;
+  const PLVType right_rpv = PLVType::RRight;
+  const PLVType left_ppv = PLVType::PHatLeft;
+  const PLVType right_ppv = PLVType::PHatRight;
+  const PVId pv_center_index = likelihood_pvs_.GetPVIndex(PLVType::RHat, node_id);
+  const PVId pv_left_index = likelihood_pvs_.GetPVIndex(left_rpv, node_id);
+  const PVId pv_right_index = likelihood_pvs_.GetPVIndex(right_rpv, node_id);
+  const PVId pv_left_child_index = likelihood_pvs_.GetPVIndex(left_ppv, node_id);
+  const PVId pv_right_child_index = likelihood_pvs_.GetPVIndex(right_ppv, node_id);
+  Multiply(pv_left_index, pv_right_child_index, pv_center_index);
+  // std::cout << "TP_MULT_1: " << node_id << " " << pv_left_index << " "
+  //           << pv_right_child_index << " " << pv_center_index << std::endl;
+  Multiply(pv_right_index, pv_left_child_index, pv_center_index);
+  // std::cout << "TP_MULT_2: " << node_id << " " << pv_right_index << " "
+  //           << pv_left_child_index << " " << pv_center_index << std::endl;
   // std::cout << "option_count [leafward]: " << node_id << " " << option_count
   //           << std::endl;
 }
@@ -251,6 +294,10 @@ void TPEngine::PopulateLeafLikelihoodPVsWithSitePatterns() {
 }
 
 void TPEngine::PopulateRootLikelihoodPVsWithStationaryDistribution() {
+  auto &pv = likelihood_pvs_.GetPV(PLVType::RHat, dag_.GetDAGRootNodeId());
+  for (Eigen::Index row_idx = 0; row_idx < pv.rows(); ++row_idx) {
+    pv.row(row_idx).array() = stationary_distribution_(row_idx);
+  }
   for (const auto &node_id : dag_.GetRootsplitNodeIds()) {
     auto &pv = likelihood_pvs_.GetPV(PLVType::RHat, node_id);
     for (Eigen::Index row_idx = 0; row_idx < pv.rows(); ++row_idx) {
@@ -477,9 +524,10 @@ void TPEngine::FunctionOverRootedTreeCollection(
     const RootedTreeCollection &tree_collection, const BitsetSizeMap &edge_indexer) {
   const auto leaf_count = tree_collection.TaxonCount();
   const size_t default_index = branch_lengths_.size();
+  size_t tree_id = 0;
   for (const auto &tree : tree_collection.Trees()) {
     tree.Topology()->RootedPCSPPreorder(
-        [&leaf_count, &default_index, &edge_indexer, &tree,
+        [&leaf_count, &default_index, &edge_indexer, &tree, &tree_id,
          &function_on_tree_node_by_edge](
             const Node *sister_node, const Node *focal_node,
             const Node *left_child_node, const Node *right_child_node) {
@@ -488,34 +536,95 @@ void TPEngine::FunctionOverRootedTreeCollection(
                                     left_child_node, false, right_child_node, false);
           const auto edge_idx = AtWithDefault(edge_indexer, edge_bitset, default_index);
           if (edge_idx != default_index) {
-            function_on_tree_node_by_edge(EdgeId(edge_idx), tree, focal_node);
+            function_on_tree_node_by_edge(EdgeId(edge_idx), edge_bitset, tree, tree_id,
+                                          focal_node);
+          } else {
+            std::cout << "DEFAULT_INDEX: " << default_index << std::endl;
           }
         },
         true);
+    tree_id++;
   }
 }
 
 void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
                                          const BitsetSizeMap &edge_indexer) {
-  size_t unique_edge_count = GetEdgeCount();
-  branch_lengths_.setZero();
-  EigenVectorXi observed_edge_counts = EigenVectorXi::Zero(unique_edge_count);
-  auto set_choice_map_and_increment_edge_count =
-      [&observed_edge_counts, this](const EdgeId edge_idx, const RootedTree &tree,
-                                    const Node *focal_node) {
-        branch_lengths_(edge_idx.value_) += tree.BranchLength(focal_node);
-        observed_edge_counts(edge_idx.value_)++;
-      };
-  FunctionOverRootedTreeCollection(set_choice_map_and_increment_edge_count,
-                                   tree_collection, edge_indexer);
-  for (EdgeId edge_idx = 0; edge_idx < unique_edge_count; edge_idx++) {
-    if (observed_edge_counts(edge_idx.value_) == 0) {
-      branch_lengths_(edge_idx.value_) = default_branch_length_;
-    } else {
-      // Normalize the branch length total using the counts to get a mean branch
-      // length.
-      branch_lengths_(edge_idx.value_) /=
-          static_cast<double>(observed_edge_counts(edge_idx.value_));
+  const TreeId tree_id_max = tree_collection.TreeCount();
+  tree_source_.resize(GetEdgeCount(), tree_id_max);
+  std::fill(tree_source_.begin(), tree_source_.end(), tree_id_max);
+  std::cout << "TREE_SOURCE: " << tree_source_ << std::endl;
+  std::cout << "EDGE_INDEXER: " << std::endl << edge_indexer << std::endl;
+  // Set tree source map for each edge in DAG.
+  auto set_tree_source = [tree_id_max, this](
+                             const EdgeId edge_idx, const Bitset &edge_bitset,
+                             const RootedTree &tree, const size_t tree_id,
+                             const Node *focal_node) {
+    std::cout << "EDGE_ID: " << edge_idx
+              << " EDGE_BITSET: " << edge_bitset.PCSPToString()
+              << " TREE_ID: " << tree_id << std::endl;
+    if (tree_source_[edge_idx.value_] == tree_id_max) {
+      tree_source_[edge_idx.value_] = tree_id;
+    }
+  };
+  std::cout << "BUILD TREE SOURCE" << std::endl;
+  FunctionOverRootedTreeCollection(set_tree_source, tree_collection, edge_indexer);
+  std::cout << "VALIDATE TREE SOURCE" << std::endl;
+  std::cout << "TREE_SOURCE: " << tree_source_ << std::endl;
+  // Validate tree source map.
+  // for (EdgeId edge_id = 0; edge_id < GetEdgeCount(); edge_id++) {
+  //   Assert((tree_source_[edge_id.value_] == tree_id_max),
+  //          "TreeCollection did not cover all edges in DAG.");
+  // }
+  std::cout << "BUILD CHOICE MAP" << std::endl;
+  // Build choice map from tree source.
+  for (EdgeId edge_id = 0; edge_id < GetEdgeCount(); edge_id++) {
+    std::cout << "EDGE_ID: " << edge_id << std::endl;
+    const auto edge = dag_.GetDAGEdge(edge_id);
+    const auto parent = dag_.GetDAGNode(edge.GetParent());
+    const auto child = dag_.GetDAGNode(edge.GetChild());
+    const auto focal_clade = edge.GetSubsplitClade();
+    const auto sister_clade = Bitset::Opposite(focal_clade);
+    TreeId best_tree_id;
+    // Get parent EdgeChoice.
+    best_tree_id = tree_id_max;
+    for (const auto clade : {SubsplitClade::Left, SubsplitClade::Right}) {
+      for (const auto neighbor_id : parent.GetNeighbors(Direction::Rootward, clade)) {
+        const auto neighbor_edge_id = dag_.GetEdgeIdx(neighbor_id, parent.Id());
+        if (best_tree_id >= tree_source_[neighbor_edge_id.value_]) {
+          choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::Parent,
+                                    neighbor_edge_id);
+        }
+      }
+    }
+    // Get sister EdgeChoice.
+    best_tree_id = tree_id_max;
+    for (const auto neighbor_id :
+         parent.GetNeighbors(Direction::Leafward, sister_clade)) {
+      const auto neighbor_edge_id = dag_.GetEdgeIdx(parent.Id(), neighbor_id);
+      if (best_tree_id >= tree_source_[neighbor_edge_id.value_]) {
+        choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::Sister,
+                                  neighbor_edge_id);
+      }
+    }
+    // Get left child EdgeChoice.
+    best_tree_id = tree_id_max;
+    for (const auto neighbor_id :
+         child.GetNeighbors(Direction::Leafward, SubsplitClade::Left)) {
+      const auto neighbor_edge_id = dag_.GetEdgeIdx(child.Id(), neighbor_id);
+      if (best_tree_id >= tree_source_[neighbor_edge_id.value_]) {
+        choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::LeftChild,
+                                  neighbor_edge_id);
+      }
+    }
+    // Get right child EdgeChoice.
+    best_tree_id = tree_id_max;
+    for (const auto neighbor_id :
+         child.GetNeighbors(Direction::Leafward, SubsplitClade::Right)) {
+      const auto neighbor_edge_id = dag_.GetEdgeIdx(child.Id(), neighbor_id);
+      if (best_tree_id >= tree_source_[neighbor_edge_id.value_]) {
+        choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::RightChild,
+                                  neighbor_edge_id);
+      }
     }
   }
 }
@@ -524,23 +633,23 @@ void TPEngine::SetBranchLengthByTakingFirst(const RootedTreeCollection &tree_col
                                             const BitsetSizeMap &edge_indexer) {
   // Unique edges in collection should be the same as the number of total edges in DAG
   // created from collection.
-  size_t unique_edge_count = GetEdgeCount();
   branch_lengths_.setZero();
-  EigenVectorXi observed_edge_counts = EigenVectorXi::Zero(unique_edge_count);
+  EigenVectorXi observed_edge_counts = EigenVectorXi::Zero(GetEdgeCount());
   // Set branch lengths on first occurance.
-  auto set_first_branch_length_and_increment_edge_count =
-      [&observed_edge_counts, this](const EdgeId edge_idx, const RootedTree &tree,
-                                    const Node *focal_node) {
-        if (observed_edge_counts(edge_idx.value_) == 0) {
-          branch_lengths_(edge_idx.value_) = tree.BranchLength(focal_node);
-          observed_edge_counts(edge_idx.value_)++;
-        }
-      };
-  FunctionOverRootedTreeCollection(set_first_branch_length_and_increment_edge_count,
-                                   tree_collection, edge_indexer);
+  auto set_first_branch_length = [&observed_edge_counts, this](
+                                     const EdgeId edge_idx, const Bitset &edge_bitset,
+                                     const RootedTree &tree, const size_t tree_id,
+                                     const Node *focal_node) {
+    if (observed_edge_counts(edge_idx.value_) == 0) {
+      branch_lengths_(edge_idx.value_) = tree.BranchLength(focal_node);
+      observed_edge_counts(edge_idx.value_)++;
+    }
+  };
+  FunctionOverRootedTreeCollection(set_first_branch_length, tree_collection,
+                                   edge_indexer);
   // Either set branch length to the first occurance if edge exists in collection,
   // otherwise set length to default.
-  for (EdgeId edge_idx = 0; edge_idx < unique_edge_count; edge_idx++) {
+  for (EdgeId edge_idx = 0; edge_idx < GetEdgeCount(); edge_idx++) {
     if (observed_edge_counts(edge_idx.value_) == 0) {
       branch_lengths_(edge_idx.value_) = default_branch_length_;
     }

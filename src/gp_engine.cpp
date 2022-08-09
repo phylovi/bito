@@ -447,11 +447,6 @@ EigenVectorXd GPEngine::GetBranchLengthDifferences() const {
 };
 
 EigenVectorXd GPEngine::GetPerGPCSPLogLikelihoods() const {
-  std::cout << "GP_LIKELIHOODS: "
-            << log_likelihoods_.block(0, 0, GetGPCSPCount(), log_likelihoods_.cols()) *
-                   site_pattern_weights_
-            << std::endl;
-  std::cout << "GP_SITE_PATTERN: " << site_pattern_weights_ << std::endl;
   return log_likelihoods_.block(0, 0, GetGPCSPCount(), log_likelihoods_.cols()) *
          site_pattern_weights_;
 };

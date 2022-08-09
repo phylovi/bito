@@ -14,6 +14,7 @@
 #include "nni_operation.hpp"
 
 using PVId = size_t;
+using TreeId = size_t;
 
 class TPEngine {
  public:
@@ -103,12 +104,15 @@ class TPEngine {
 
   // Apply function to edges descending from each node on each rooted tree for all trees
   // in collection.
-  using FunctionOnTreeNodeByEdge =
-      std::function<void(const EdgeId, const RootedTree &, const Node *)>;
+  using FunctionOnTreeNodeByEdge = std::function<void(
+      const EdgeId, const Bitset &, const RootedTree &, const size_t, const Node *)>;
   void FunctionOverRootedTreeCollection(
       FunctionOnTreeNodeByEdge function_on_tree_node_by_edge,
       const RootedTreeCollection &tree_collection, const BitsetSizeMap &indexer);
 
+  // Set tree source map from tree collection by assigning
+  void SetTreeSourceMap(const RootedTreeCollection &tree_collection,
+                        const BitsetSizeMap &edge_indexer);
   // Set choice map by taking the first occurrance of each PCSP edge from collection.
   void SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
                                  const BitsetSizeMap &edge_indexer);
@@ -188,7 +192,6 @@ class TPEngine {
   std::string PVLikelihoodToString(const PVId pv_id) const {
     return likelihood_pvs_.ToString(pv_id);
   }
-
   void PrintPVLikelihood(const PVId pv_id) const { likelihood_pvs_.Print(pv_id); }
 
  protected:
@@ -218,6 +221,8 @@ class TPEngine {
   size_t edge_count_ = 0;
   size_t edge_alloc_ = 0;
   size_t edge_spare_count_ = 3;
+  // Total number of trees used to construct the DAG.
+  size_t tree_count_ = 0;
   // Growth factor when reallocating data.
   constexpr static double resizing_factor_ = 2.0;
 
@@ -239,6 +244,11 @@ class TPEngine {
 
   // Observed leave states.
   SitePattern site_pattern_;
+
+  // Tree id where branch_length and choice_map is sourced.
+  // TreeCollection is expected to be ordered from highest to lowest scoring, so lower
+  // ID means higher priority tree.
+  std::vector<TreeId> tree_source_;
 
   // ** Scoring
   // Partial Vector for storing Likelihood scores.
