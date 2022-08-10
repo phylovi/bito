@@ -14,7 +14,6 @@
 #include "nni_operation.hpp"
 
 using PVId = size_t;
-using TreeId = size_t;
 
 class TPEngine {
  public:
@@ -180,7 +179,7 @@ class TPEngine {
   PLVHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
   PSVHandler &GetParsimonyPVs() { return parsimony_pvs_; }
   EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
-  std::vector<TreeId> &GetTreeSource() { return tree_source_; }
+  std::vector<size_t> &GetTreeSource() { return tree_source_; }
 
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     Assert(size_t(branch_lengths.size()) == dag_.EdgeCountWithLeafSubsplits(),
@@ -262,8 +261,7 @@ class TPEngine {
   // Tree id where branch_length and choice_map is sourced.
   // TreeCollection is expected to be ordered from highest to lowest scoring, so lower
   // ID means higher priority tree.
-  std::vector<TreeId> tree_source_;
-  // std::unordered_map<EdgeId, TreeId> tree_source_;
+  std::vector<size_t> tree_source_;
 
   // ** Scoring
   // Partial Vector for storing Likelihood scores.

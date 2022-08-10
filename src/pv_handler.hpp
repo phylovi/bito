@@ -162,11 +162,7 @@ class PartialVectorHandler {
     return GetPVIndex(GetPVTypeIndex(pv_type), node_idx, node_count);
   };
   size_t GetPVIndex(const PVType pv_type, const NodeId node_idx) const {
-    if (node_idx.value_ >= GetNodeCount()) {
-      std::cout << "_ERROR_: node_idx out-of-range: " << node_idx << " of "
-                << GetNodeCount() << std::endl;
-    }
-    // Assert(node_idx.value_ < GetNodeCount(), "Requested node_idx is out-of-range.");
+    Assert(node_idx.value_ < GetNodeCount(), "Requested node_idx is out-of-range.");
     return GetPVIndex(pv_type, node_idx, GetNodeCount());
   }
 

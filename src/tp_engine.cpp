@@ -491,7 +491,7 @@ void TPEngine::FunctionOverRootedTreeCollection(
 void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
                                          const BitsetSizeMap &edge_indexer) {
   tree_count_ = tree_collection.TreeCount();
-  const TreeId tree_id_max = GetTreeCount();
+  const size_t tree_id_max = GetTreeCount();
   tree_source_.resize(GetEdgeCount(), tree_id_max);
   std::fill(tree_source_.begin(), tree_source_.end(), tree_id_max);
   // Set tree source map for each edge in DAG.
@@ -509,7 +509,7 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
   for (const auto rootsplit_node_id : dag_.GetRootsplitNodeIds()) {
     const auto rootsplit_node = dag_.GetDAGNode(rootsplit_node_id);
     const auto rootsplit_edge_id = dag_.GetEdgeIdx(root_node.Id(), rootsplit_node.Id());
-    TreeId best_tree_source = tree_id_max;
+    size_t best_tree_source = tree_id_max;
     dag_.IterateOverLeafwardEdges(
         rootsplit_node, [this, &rootsplit_node, &rootsplit_edge_id, &best_tree_source](
                             bool is_edge_on_left, SubsplitDAGNode child_node) {
@@ -527,7 +527,7 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
     const auto child = dag_.GetDAGNode(edge.GetChild());
     const auto focal_clade = edge.GetSubsplitClade();
     const auto sister_clade = Bitset::Opposite(focal_clade);
-    TreeId best_tree_id;
+    size_t best_tree_id;
     // Get parent EdgeChoice.
     best_tree_id = tree_id_max;
     for (const auto clade : {SubsplitClade::Left, SubsplitClade::Right}) {

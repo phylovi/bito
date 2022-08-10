@@ -295,13 +295,6 @@ void GPEngine::operator()(const GPOperations::Likelihood& op) {
   SetTransitionMatrixToHaveBranchLength(branch_lengths_(op.dest_));
   PreparePerPatternLogLikelihoodsForGPCSP(op.parent_, op.child_);
   log_likelihoods_.row(op.dest_) = per_pattern_log_likelihoods_;
-  // std::cout << "GP_LIKE: " << branch_lengths_(op.dest_) << " " << op.dest_ << " "
-  //           << op.parent_ << " " << op.child_ << " " << per_pattern_log_likelihoods_
-  //           << " " << transition_matrix_.norm() << std::endl;
-  // std::cout << "GP_PARENT_PV: " << op.parent_ << std::endl
-  //           << plv_handler_.ToString(op.parent_) << std::endl;
-  // std::cout << "GP_CHILD_PV: " << op.child_ << std::endl
-  //           << plv_handler_.ToString(op.child_) << std::endl;
 }
 
 void GPEngine::operator()(const GPOperations::OptimizeBranchLength& op) {
@@ -554,10 +547,8 @@ void GPEngine::InitializePLVsWithSitePatterns() {
     for (const int symbol : pattern) {
       Assert(symbol >= 0, "Negative symbol!");
       if (symbol == MmappedNucleotidePLV::base_count_) {  // Gap character.
-        // plv_handler_.GetPV(PLVType::P, taxon_idx).col(site_idx).setConstant(1.);
         GetPLV(taxon_idx.value_).col(site_idx).setConstant(1.);
       } else if (symbol < MmappedNucleotidePLV::base_count_) {
-        // plv_handler_.GetPV(PLVType::P, taxon_idx)(symbol, site_idx) = 1.;
         GetPLV(taxon_idx.value_)(symbol, site_idx) = 1.;
       }
       site_idx++;
