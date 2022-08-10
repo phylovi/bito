@@ -293,11 +293,6 @@ void TPEngine::UpdateDAGAfterAddNodePairByParsimony(const NNIOperation &nni_op) 
 
 // ** Operations
 
-void TPEngine::SetTransitionMatrixToHaveBranchLength(const double branch_length) {
-  diagonal_matrix_.diagonal() = (branch_length * eigenvalues_).array().exp();
-  transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
-}
-
 void TPEngine::Set(const PVId dest_id, const PVId src_id) {
   auto &pvs = likelihood_pvs_;
   pvs.GetPV(dest_id).array() = pvs.GetPV(src_id).array();
@@ -334,12 +329,9 @@ void TPEngine::MultiplyWithEvolvedPV(const PVId dest_id, const EdgeId edge_id,
       pvs.GetPV(dest_id).array() * (transition_matrix_ * pvs.GetPV(src_id)).array();
 }
 
-void TPEngine::MultiplyAndEvolvePV(const PVId dest_id, const EdgeId edge_id,
-                                   const PVId src1_id, const PVId src2_id) {
-  auto &pvs = likelihood_pvs_;
-  SetTransitionMatrixToHaveBranchLength(branch_lengths_(edge_id.value_));
-  Multiply(dest_id, src1_id, src2_id);
-  pvs.GetPV(dest_id).array() = (transition_matrix_ * pvs.GetPV(dest_id)).array();
+void TPEngine::SetTransitionMatrixToHaveBranchLength(const double branch_length) {
+  diagonal_matrix_.diagonal() = (branch_length * eigenvalues_).array().exp();
+  transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
 }
 
 void TPEngine::PreparePerPatternLogLikelihoodsForEdge(const PVId src1_id,

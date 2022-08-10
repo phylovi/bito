@@ -35,12 +35,11 @@ class TPEngine {
   void InitializeLikelihood();
   // Update ChoiceMap with NNI.
   void UpdateDAGAfterAddNodePairByLikelihood(const NNIOperation &nni_op);
-
-  // Compute likelihood for a given tree. Performs full computation.
-  double ComputeTreeLikelihood(const Tree &tree) const;
-  // Fetch computed likelihoods.
+  // Fetch likelihood of top tree with given edge.  Assumed likelihoods have already
+  // been computed.
   double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
-
+  // Compute top tree likelihoods for all edges in DAG. Result stored in
+  // log_likelihoods_ matrix.
   void ComputeLikelihoods();
 
   // ** Scoring by Parsimony
@@ -50,29 +49,25 @@ class TPEngine {
   // Update ChoiceMap with NNI.
   void UpdateDAGAfterAddNodePairByParsimony(const NNIOperation &nni_op);
 
-  // ** Operations
+  // ** Partial Vector Operations
 
-  //
-  void SetTransitionMatrixToHaveBranchLength(const double branch_length);
-
+  // Assign PV at src_id to dest_id.
   void Set(const PVId dest_id, const PVId src_id);
-
+  // PV omponent-wise multiplication of PVs src1 and src2, result stored in dest_id.
   void Multiply(const PVId dest_id, const PVId src1_id, const PVId src2_id);
-
+  // Compute Likelihood by taking up-to-date parent R-PLV and child P-PLV.
   void ComputeLikelihood(const EdgeId dest_id, const PVId child_id,
                          const PVId parent_id);
-
-  void IncrementWithWeightedEvolvedPV(const PVId dest, const EdgeId edge_id,
-                                      const PVId src);
+  // Evolve src_id along the branch edge_id and store at dest_id.
   void SetToEvolvedPV(const PVId dest_id, const EdgeId edge_id, const PVId src_id);
+  // Evolve src_id along the branch edge_id and multiply with contents of dest_id.
   void MultiplyWithEvolvedPV(const PVId dest_id, const EdgeId edge_id,
                              const PVId src_id);
-  void MultiplyAndEvolvePV(const PVId dest_id, const EdgeId edge_id, const PVId src1_id,
-                           const PVId src2_id);
-
-  // This function is used to compute the marginal log likelihood over all trees
-  // that have a given PCSP. We assume that transition_matrix_ is as desired, and
-  // src1_idx and src2_idx are the two PLV indices on either side of the PCSP.
+  // Prepare to evolve along given branch length. Stored in temporary variables
+  // diagonal_matrix_ and transition_matrix_.
+  void SetTransitionMatrixToHaveBranchLength(const double branch_length);
+  // Intermediate likelihood computation step. Stored in temporary variable
+  // per_pattern_log_likelihoods_.
   void PreparePerPatternLogLikelihoodsForEdge(const PVId src1_id, const PVId src2_id);
 
   // ** Parameters

@@ -1891,7 +1891,6 @@ TEST_CASE("Top-Pruning: Likelihoods") {
     for (const auto tree : tree_collection) {
       tree_vector.push_back(tree);
     }
-    // Populate edge-to-tree_id map.
     for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
       tree_id_map[edge_id] = tree_source[edge_id.value_];
     }
