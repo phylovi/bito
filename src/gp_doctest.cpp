@@ -1865,7 +1865,6 @@ TEST_CASE("Top-Pruning: Likelihoods") {
     std::vector<RootedTree> tree_vector;
     std::unordered_map<EdgeId, size_t> tree_id_map;
     std::unordered_map<size_t, double> golden_tree_likelihood_map;
-    std::unordered_map<EdgeId, double> golden_edge_likelihood_map;
     std::unordered_map<EdgeId, double> tp_likelihood_map;
 
     // GPInstance and TPEngine
@@ -1966,7 +1965,7 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   const std::string fasta_path_six = "data/six_taxon.fasta";
   const std::string newick_path_six_single = "data/six_taxon_rooted_single.nwk";
   const std::string newick_path_six_simple = "data/six_taxon_rooted_simple.nwk";
-
+  // Test cases.
   const auto test_1 =
       TestTPEngineLikelihoodsAndPVs(fasta_path_hello, newick_path_hello, true, false);
   CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
@@ -1976,6 +1975,4 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   const auto test_3 = TestTPEngineLikelihoodsAndPVs(
       fasta_path_six, newick_path_six_simple, false, false);
   CHECK_MESSAGE(test_3, "Siz Taxa Multi Tree failed.");
-
-  std::cout << "TOP_PRUNING [END]" << std::endl;
 }

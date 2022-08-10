@@ -103,7 +103,6 @@ void TPEngine::UpdateDAGAfterAddNodePairByLikelihood(const NNIOperation &nni_op)
 // For rootward traversal. Compute the likelihood PV for a given node, by using
 // the left and right child edges from the choice map of the edge below node.
 void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
-  auto &pvs = likelihood_pvs_;
   const auto node = dag_.GetDAGNode(node_id);
   // Iterate over all rootward edges to find the edge from the best source tree.
   EdgeId best_edge_id = EdgeId(NoId);
@@ -118,7 +117,6 @@ void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
       }
     }
   }
-  const auto edge = dag_.GetDAGEdge(best_edge_id);
   const auto edge_choice = choice_map_.GetEdgeChoice(best_edge_id);
   const PVId pv_center_index = likelihood_pvs_.GetPVIndex(PLVType::P, node_id);
   const PVId pv_left_index = likelihood_pvs_.GetPVIndex(PLVType::PHatLeft, node_id);
@@ -158,14 +156,12 @@ void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
 // For leafward traversal. Compute the likelihood PV for a given node, by using the
 // parent and sister edges from the choice map of the edge above node.
 void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
-  auto &pvs = likelihood_pvs_;
   const auto node = dag_.GetDAGNode(node_id);
   // If node is not a leaf.
   if (!dag_.IsNodeLeaf(node_id)) {
     // Iterate over all leafward edges to find the edge from the best source tree.
     EdgeId best_edge_id = EdgeId(NoId);
     size_t best_tree_source = GetTreeCount();
-    SubsplitClade best_focal_clade = SubsplitClade::Left;
     for (const auto focal_clade : {SubsplitClade::Left, SubsplitClade::Right}) {
       for (const auto leafward_node_id :
            node.GetNeighbors(Direction::Leafward, focal_clade)) {
@@ -173,19 +169,11 @@ void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
         if (best_tree_source > tree_source_[edge_id.value_]) {
           best_tree_source = tree_source_[edge_id.value_];
           best_edge_id = edge_id;
-          best_focal_clade = focal_clade;
         }
       }
     }
-    const auto edge = dag_.GetDAGEdge(best_edge_id);
     const auto edge_choice = choice_map_.GetEdgeChoice(best_edge_id);
-    const PLVType focal_rpv =
-        (best_focal_clade == SubsplitClade::Left) ? PLVType::RLeft : PLVType::RRight;
-    const PLVType sister_rpv =
-        (best_focal_clade == SubsplitClade::Left) ? PLVType::RRight : PLVType::RLeft;
     const PVId pv_center_index = likelihood_pvs_.GetPVIndex(PLVType::RHat, node_id);
-    const PVId pv_focal_index = likelihood_pvs_.GetPVIndex(focal_rpv, node_id);
-    const PVId pv_sister_index = likelihood_pvs_.GetPVIndex(sister_rpv, node_id);
 
     // Evolve down parent.
     const auto parent_edge_id = edge_choice.parent_edge_id;
@@ -278,7 +266,6 @@ void TPEngine::ComputeLikelihoods() {
         node, [this, node](const bool is_edge_on_left, SubsplitDAGNode child_node) {
           auto &pvs = likelihood_pvs_;
           const EdgeId edge_id = dag_.GetEdgeIdx(node.Id(), child_node.Id());
-          const auto edge = dag_.GetDAGEdge(edge_id);
           const PVId parent_pv_index =
               pvs.GetPVIndex(PLVHandler::RPLVType(is_edge_on_left), node.Id());
           const PVId child_pv_index = pvs.GetPVIndex(PLVType::P, child_node.Id());
