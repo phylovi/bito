@@ -19,7 +19,7 @@ TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ = EigenVectorXdOfStdVectorDouble(weights);
   // Initialize node-based data
-  GrowNodeData(dag_.NodeCountWithoutDAGRoot(), std::nullopt, std::nullopt, true);
+  GrowNodeData(dag_.NodeCount(), std::nullopt, std::nullopt, true);
   // Initialize edge-based data
   GrowEdgeData(dag_.EdgeCountWithLeafSubsplits(), std::nullopt, std::nullopt, true);
   // Initialize scores.
@@ -66,14 +66,6 @@ double TPEngine::GetTopTreeScore(const EdgeId edge_id) const {
 }
 
 // ** Scoring by Likelihood
-
-void TPEngine::ComputeTopTreeLikelihoodWithEdge(const EdgeId edge_id) {
-  // const auto edge = dag_.GetDAGEdge(edge_id);
-  // SetTransitionMatrixToHaveBranchLength(branch_lengths_(edge_id.value_));
-  // PreparePerPatternLogLikelihoodsForEdge(edge.GetParent().value_,
-  //                                        edge.GetChild().value_);
-  // log_likelihoods_.row(edge_id.value_) = per_pattern_log_likelihoods_;
-}
 
 double TPEngine::GetTopTreeLikelihoodWithEdge(const EdgeId edge_id) {
   return top_tree_log_likelihoods_per_edge_[edge_id.value_];
@@ -207,8 +199,6 @@ void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
         const PVId pv_parent_parent_index =
             likelihood_pvs_.GetPVIndex(parent_focal_rpv, parent_edge.GetParent());
         SetToEvolvedPV(pv_center_index, parent_edge_id, pv_parent_parent_index);
-        // std::cout << "TP_RHAT: " << node_id << " " << pv_center_index << " "
-        //           << parent_edge_id << " " << pv_parent_parent_index << std::endl;
       }
     }
   }
@@ -224,8 +214,6 @@ void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
       const PVId pv_parent_parent_index =
           likelihood_pvs_.GetPVIndex(focal_rpv, parent_node.Id());
       SetToEvolvedPV(pv_center_index, parent_edge_id, pv_parent_parent_index);
-      // std::cout << "TP_RHAT [leaf]: " << node.Id() << " " << pv_center_index << " "
-      //           << parent_edge_id << " " << pv_parent_parent_index << std::endl;
     });
   }
 

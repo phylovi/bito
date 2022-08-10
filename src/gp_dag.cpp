@@ -284,12 +284,6 @@ void GPDAG::AddRhatOperations(SubsplitDAGNode node,
             GetPLVIndex(PLVType::RHat, node.Id()),
             GetEdgeIdx(parent_node.Id(), node.Id()).value_,
             GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left), parent_node.Id())});
-        // std::cout << "GP_RHAT: " << node.Id() << " "
-        //           << GetPLVIndex(PLVType::RHat, node.Id()) << " "
-        //           << GetEdgeIdx(parent_node.Id(), node.Id()).value_ << " "
-        //           << GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left),
-        //           parent_node.Id())
-        //           << std::endl;
       });
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }

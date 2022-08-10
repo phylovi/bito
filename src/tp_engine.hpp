@@ -39,9 +39,6 @@ class TPEngine {
 
   // Compute likelihood for a given tree. Performs full computation.
   double ComputeTreeLikelihood(const Tree &tree) const;
-  // Compute likelihood of best tree in DAG with the given edge, using partial vectors
-  // for constant time computation.
-  void ComputeTopTreeLikelihoodWithEdge(const EdgeId edge_id);
   // Fetch computed likelihoods.
   double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
 
