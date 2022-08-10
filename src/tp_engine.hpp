@@ -49,27 +49,6 @@ class TPEngine {
   // Update ChoiceMap with NNI.
   void UpdateDAGAfterAddNodePairByParsimony(const NNIOperation &nni_op);
 
-  // ** Partial Vector Operations
-
-  // Assign PV at src_id to dest_id.
-  void Set(const PVId dest_id, const PVId src_id);
-  // PV omponent-wise multiplication of PVs src1 and src2, result stored in dest_id.
-  void Multiply(const PVId dest_id, const PVId src1_id, const PVId src2_id);
-  // Compute Likelihood by taking up-to-date parent R-PLV and child P-PLV.
-  void ComputeLikelihood(const EdgeId dest_id, const PVId child_id,
-                         const PVId parent_id);
-  // Evolve src_id along the branch edge_id and store at dest_id.
-  void SetToEvolvedPV(const PVId dest_id, const EdgeId edge_id, const PVId src_id);
-  // Evolve src_id along the branch edge_id and multiply with contents of dest_id.
-  void MultiplyWithEvolvedPV(const PVId dest_id, const EdgeId edge_id,
-                             const PVId src_id);
-  // Prepare to evolve along given branch length. Stored in temporary variables
-  // diagonal_matrix_ and transition_matrix_.
-  void SetTransitionMatrixToHaveBranchLength(const double branch_length);
-  // Intermediate likelihood computation step. Stored in temporary variable
-  // per_pattern_log_likelihoods_.
-  void PreparePerPatternLogLikelihoodsForEdge(const PVId src1_id, const PVId src2_id);
-
   // ** Parameters
 
   // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option to
@@ -184,35 +163,43 @@ class TPEngine {
 
   // ** I/O
 
-  std::string LikelihoodPVToString(const PVId pv_id) const {
-    return likelihood_pvs_.ToString(pv_id);
-  }
-  std::string LogLikelihoodMatrixToString() const {
-    std::stringstream out;
-    for (Eigen::Index i = 0; i < log_likelihoods_.rows(); i++) {
-      for (Eigen::Index j = 0; j < log_likelihoods_.cols(); j++) {
-        out << "[" << i << "," << j << "]: " << log_likelihoods_(i, j) << "\t";
-      }
-      out << std::endl;
-    }
-    return out.str();
-  }
-
-  std::string ParsimonyPVToString(const PVId pv_id) const {
-    return parsimony_pvs_.ToString(pv_id);
-  }
+  std::string LikelihoodPVToString(const PVId pv_id) const;
+  std::string LogLikelihoodMatrixToString() const;
+  std::string ParsimonyPVToString(const PVId pv_id) const;
 
  protected:
-  // ** Likelihoods
+  // ** Scoring by Likelihoods
 
   void PopulateRootwardLikelihoodPVForNode(const NodeId node_id);
   void PopulateLeafwardLikelihoodPVForNode(const NodeId node_id);
   void PopulateLeafLikelihoodPVsWithSitePatterns();
   void PopulateRootLikelihoodPVsWithStationaryDistribution();
+  EdgeId BestEdgeAdjacentToNode(const NodeId node_id, const Direction direction) const;
 
-  // ** Parsimony
+  // ** Scoring by Parsimony
 
   void PopulateLeafParsimonyPVsWithSitePatterns();
+
+  // ** Partial Vector Operations
+
+  // Assign PV at src_id to dest_id.
+  void Set(const PVId dest_id, const PVId src_id);
+  // PV omponent-wise multiplication of PVs src1 and src2, result stored in dest_id.
+  void Multiply(const PVId dest_id, const PVId src1_id, const PVId src2_id);
+  // Compute Likelihood by taking up-to-date parent R-PLV and child P-PLV.
+  void ComputeLikelihood(const EdgeId edge_id, const PVId child_id,
+                         const PVId parent_id);
+  // Evolve src_id along the branch edge_id and store at dest_id.
+  void SetToEvolvedPV(const PVId dest_id, const EdgeId edge_id, const PVId src_id);
+  // Evolve src_id along the branch edge_id and multiply with contents of dest_id.
+  void MultiplyWithEvolvedPV(const PVId dest_id, const EdgeId edge_id,
+                             const PVId src_id);
+  // Prepare to evolve along given branch length. Stored in temporary variables
+  // diagonal_matrix_ and transition_matrix_.
+  void SetTransitionMatrixToHaveBranchLength(const double branch_length);
+  // Intermediate likelihood computation step. Stored in temporary variable
+  // per_pattern_log_likelihoods_.
+  void PreparePerPatternLogLikelihoodsForEdge(const PVId src1_id, const PVId src2_id);
 
   // ** DAG
   // Un-owned reference DAG.
