@@ -188,10 +188,10 @@ class GPEngine {
 
   // ** I/O
 
-  // Output PLV to standard output.
-  void PrintPLV(size_t plv_idx) const;
   // Output PLV to string.
   std::string PLVToString(size_t plv_idx) const;
+  // Output LogLikelihood to string.
+  std::string LogLikelihoodMatrixToString() const;
 
   // ** Counts
 

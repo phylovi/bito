@@ -167,19 +167,23 @@ class TPEngine {
            "Requested edge_offset outside of allocated scratch space.");
     return edge_offset + GetEdgeCount();
   }
-
   void SetEdgeCount(const size_t edge_count) { edge_count_ = edge_count; }
   void SetSpareEdgeCount(const size_t edge_spare_count) {
     edge_spare_count_ = edge_spare_count;
   }
   void SetAllocatedEdgeCount(const size_t edge_alloc) { edge_alloc_ = edge_alloc; }
 
+  size_t GetTreeCount() const { return tree_count_; }
+
   // ** Access
 
-  EigenConstMatrixXdRef GetLikelihoodMatrix() { return log_likelihoods_; }
+  EigenConstMatrixXdRef GetLikelihoodMatrix() {
+    return log_likelihoods_.block(0, 0, GetNodeCount(), log_likelihoods_.cols());
+  }
   PLVHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
   PSVHandler &GetParsimonyPVs() { return parsimony_pvs_; }
   EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
+  std::vector<TreeId> &GetTreeSource() { return tree_source_; }
 
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     Assert(size_t(branch_lengths.size()) == dag_.EdgeCountWithLeafSubsplits(),
@@ -189,10 +193,23 @@ class TPEngine {
 
   // ** I/O
 
-  std::string PVLikelihoodToString(const PVId pv_id) const {
+  std::string LikelihoodPVToString(const PVId pv_id) const {
     return likelihood_pvs_.ToString(pv_id);
   }
-  void PrintPVLikelihood(const PVId pv_id) const { likelihood_pvs_.Print(pv_id); }
+  std::string LogLikelihoodMatrixToString() const {
+    std::stringstream out;
+    for (Eigen::Index i = 0; i < log_likelihoods_.rows(); i++) {
+      for (Eigen::Index j = 0; j < log_likelihoods_.cols(); j++) {
+        out << "[" << i << "," << j << "]: " << log_likelihoods_(i, j) << "\t";
+      }
+      out << std::endl;
+    }
+    return out.str();
+  }
+
+  std::string ParsimonyPVToString(const PVId pv_id) const {
+    return parsimony_pvs_.ToString(pv_id);
+  }
 
  protected:
   // ** Likelihoods
@@ -249,6 +266,7 @@ class TPEngine {
   // TreeCollection is expected to be ordered from highest to lowest scoring, so lower
   // ID means higher priority tree.
   std::vector<TreeId> tree_source_;
+  // std::unordered_map<EdgeId, TreeId> tree_source_;
 
   // ** Scoring
   // Partial Vector for storing Likelihood scores.

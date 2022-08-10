@@ -1843,141 +1843,174 @@ RootedSBNInstance MakeRootedSBNInstance(const std::string& newick_path,
   return inst;
 };
 
+std::ostream& operator<<(std::ostream& os, EigenConstMatrixXdRef mx) {
+  for (Eigen::Index i = 0; i < mx.rows(); i++) {
+    for (Eigen::Index j = 0; j < mx.cols(); j++) {
+      os << "[" << i << "," << j << "]: " << mx(i, j) << "\t";
+    }
+    os << std::endl;
+  }
+  return os;
+}
+
 TEST_CASE("Top-Pruning: Likelihoods") {
   std::cout << "TOP_PRUNING [BEGIN]" << std::endl;
 
-  // Map of trees and likelihoods.
-  std::vector<RootedTree> tree_vector;
-  std::unordered_map<EdgeId, size_t> tree_id_map;
-  std::unordered_map<EdgeId, double> likelihood_map;
-  std::unordered_map<EdgeId, double> golden_likelihood_map;
-  std::unordered_map<EdgeId, double> gp_likelihood_map;
+  auto TestTPEngineLikelihoodsAndPVs = [](const std::string fasta_path,
+                                          const std::string newick_path,
+                                          const bool compare_gp_pvs = false,
+                                          const bool is_quiet = true) {
+    bool test_passes = true;
+    std::stringstream dev_null;
+    std::ostream& os = (is_quiet ? dev_null : std::cerr);
+    // Map of trees and likelihoods.
+    std::vector<RootedTree> tree_vector;
+    std::unordered_map<EdgeId, size_t> tree_id_map;
+    std::unordered_map<EdgeId, double> tp_likelihood_map;
+    std::unordered_map<EdgeId, double> golden_likelihood_map;
+    std::unordered_map<EdgeId, double> gp_likelihood_map;
 
-  // Input files.
-  // const std::string fasta_path = "data/hello_short.fasta";
-  // const std::string newick_path = "data/hello_rooted.nwk";
-  const std::string fasta_path = "data/six_taxon.fasta";
-  // const std::string newick_path = "data/six_taxon_rooted_single.nwk";
-  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+    // GPInstance and TPEngine
+    auto inst =
+        GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.gp.data");
+    inst.MakeEngine();
+    GPEngine& gpengine = *inst.GetEngine();
+    GPDAG& dag = inst.GetDAG();
+    inst.EstimateBranchLengths(0.00001, 100, true);
+    inst.PopulatePLVs();
+    inst.ComputeLikelihoods();
+    auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
+    auto edge_indexer = dag.BuildEdgeIndexer();
+    SitePattern site_pattern = inst.MakeSitePattern();
+    TPEngine tpengine =
+        TPEngine(dag, site_pattern, "_ignore/mmapped_plv.tp.data", true, true);
 
-  auto TestTPEnginePopulatePVs = [](const bool) {};
-  // GPInstance and TPEngine
-  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.gp.data");
-  inst.MakeEngine();
-  GPEngine& gpengine = *inst.GetEngine();
-  GPDAG& dag = inst.GetDAG();
-  inst.EstimateBranchLengths(0.00001, 100, true);
-  inst.PopulatePLVs();
-  inst.ComputeLikelihoods();
-  auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
-  auto edge_indexer = dag.BuildEdgeIndexer();
-  SitePattern site_pattern = inst.MakeSitePattern();
-  TPEngine tpengine =
-      TPEngine(dag, site_pattern, "_ignore/mmapped_plv.tp.data", true, true);
-  // tpengine.InitializeChoiceMap();
-
-  // Populate tree vector.
-  for (const auto tree : tree_collection) {
-    tree_vector.push_back(tree);
-  }
-  // Populate edge-to-tree_id map.
-  for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
-    auto topology = tpengine.GetTopTreeTopologyWithEdge(edge_id);
-    bool match_found = false;
-    for (size_t tree_id = 0; tree_id < tree_vector.size(); tree_id++) {
-      if (topology == tree_vector[tree_id].Topology()) {
-        tree_id_map[edge_id] = tree_id;
-        match_found = true;
-        break;
+    // Populate tree vector.
+    for (const auto tree : tree_collection) {
+      tree_vector.push_back(tree);
+    }
+    // Populate edge-to-tree_id map.
+    for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
+      auto topology = tpengine.GetTopTreeTopologyWithEdge(edge_id);
+      bool match_found = false;
+      for (size_t tree_id = 0; tree_id < tree_vector.size(); tree_id++) {
+        if (topology == tree_vector[tree_id].Topology()) {
+          tree_id_map[edge_id] = tree_id;
+          match_found = true;
+          break;
+        }
+      }
+      if (!match_found) {
+        Failwith("No Topology found to match Tree.");
       }
     }
-    if (!match_found) {
-      Failwith("No Topology found to match Tree.");
+
+    // BEAGLE Engine for "golden" tree likelihoods.
+    PhyloModelSpecification simple_spec{"JC69", "constant", "strict"};
+    auto rooted_sbn_inst = MakeRootedSBNInstance(newick_path, fasta_path, simple_spec);
+    auto& beagle_engine = *rooted_sbn_inst.GetEngine();
+    const auto& first_beagle = *beagle_engine.GetFirstFatBeagle();
+
+    // Compute likelihoods with BEAGLE Engine.
+    for (const auto& [edge_id, tree_id] : tree_id_map) {
+      const auto& tree = tree_vector[tree_id];
+      auto likelihood = first_beagle.UnrootedLogLikelihood(tree);
+      golden_likelihood_map[edge_id] = likelihood;
     }
-  }
 
-  // BEAGLE Engine for "golden" tree likelihoods.
-  PhyloModelSpecification simple_spec{"JC69", "constant", "strict"};
-  PhyloModelSpecification gtr_spec{"GTR", "constant", "strict"};
-  PhyloModelSpecification hky_spec{"HKY", "constant", "strict"};
-  PhyloModelSpecification weibull_spec{"JC69", "weibull+4", "strict"};
-  auto rooted_sbn_inst = MakeRootedSBNInstance(newick_path, fasta_path, simple_spec);
-  auto& beagle_engine = *rooted_sbn_inst.GetEngine();
-  const auto& first_beagle = *beagle_engine.GetFirstFatBeagle();
-
-  // Compute likelihoods with BEAGLE Engine.
-  for (const auto& [edge_id, tree_id] : tree_id_map) {
-    const auto& tree = tree_vector[tree_id];
-    auto likelihood = first_beagle.UnrootedLogLikelihood(tree);
-    golden_likelihood_map[edge_id] = likelihood;
-  }
-  std::cout << "GOLDEN_LIKELIHOODS: " << golden_likelihood_map << std::endl;
-
-  // Compute likelihoods with TPEngine.
-  tpengine.SetBranchLengths(gpengine.GetBranchLengths());
-  tpengine.SetChoiceMapByTakingFirst(tree_collection, edge_indexer);
-  tpengine.InitializeLikelihood();
-  tpengine.ComputeLikelihoods();
-  for (const auto& [edge_id, tree_id] : tree_id_map) {
-    std::ignore = tree_id;
-    auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
-    likelihood_map[edge_id] = likelihood;
-  }
-  std::cout << "LIKELIHOODS: " << likelihood_map << std::endl;
-
-  // Compute likelihoods with GPEngine.
-  auto gp_likelihoods = gpengine.GetPerGPCSPLogLikelihoods();
-  for (const auto& [edge_id, tree_id] : tree_id_map) {
-    std::ignore = tree_id;
-    auto likelihood = gp_likelihoods[edge_id.value_];
-    gp_likelihood_map[edge_id] = likelihood;
-  }
-  std::cout << "GP_LIKELIHOODS: " << gp_likelihood_map << std::endl;
-
-  // Compare likelihoods.
-  for (const auto& [edge_id, tree_id] : tree_id_map) {
-    std::ignore = tree_id;
-    // std::cout << "Compare: " << edge_id << std::endl;
-  }
-
-  auto& tp_pvs = tpengine.GetLikelihoodPVs();
-  auto& gp_pvs = gpengine.GetPLVHandler();
-
-  // std::vector<PLVType> plv_types = {PLVType::RHat, PLVType::RLeft, PLVType::RRight};
-  // for (const auto& plv_type : PLVTypeEnum::Iterator()) {
-  //   std::string plv_name = PLVTypeEnum::Labels[plv_type];
-  //   std::cout << "====== LIKELIHOOD_PVS [" << plv_name << "]: " << std::endl;
-  //   for (NodeId i = 0; i < gp_pvs.GetNodeCount(); i++) {
-  //     bool is_equal = (tp_pvs.GetPV(plv_type, i) == gp_pvs.GetPV(plv_type, i));
-  //     std::cout << "=> PLV: " << plv_name << ", " << i << " <=" << std::endl;
-  //     if (!is_equal) {
-  //       std::cout << "!!! *** NOT EQUAL ***" << std::endl;
-  //     } else {
-  //       std::cout << "*** EQUAL ***" << std::endl;
-  //       // std::cout << "[" << PLVTypeEnum::Labels[plv_type] << ", " << i << "]"
-  //       //           << std::endl;
-  //     }
-  //     if (!is_equal) {
-  //       auto pv_index = tp_pvs.GetPVIndex(plv_type, i);
-  //       std::cout << "TP_";
-  //       tp_pvs.Print(plv_type, i);
-  //       std::cout << "GP_";
-  //       gp_pvs.Print(plv_type, i);
-  //     }
-  //   }
-  // }
-
-  std::cout << "ROOTSPLIT_EDGES: ";
-  NodeId root_node_id = dag.GetDAGRootNodeId();
-  for (const auto clade : {SubsplitClade::Left, SubsplitClade::Right}) {
-    for (const auto node_id :
-         dag.GetDAGNode(root_node_id).GetNeighbors(Direction::Leafward, clade)) {
-      EdgeId edge_id = dag.GetEdgeIdx(root_node_id, node_id);
-      std::cout << edge_id << "_(" << root_node_id << ", " << node_id << "), ";
+    // Compute likelihoods with TPEngine.
+    tpengine.SetBranchLengths(gpengine.GetBranchLengths());
+    tpengine.SetChoiceMapByTakingFirst(tree_collection, edge_indexer);
+    tpengine.InitializeLikelihood();
+    tpengine.ComputeLikelihoods();
+    for (const auto& [edge_id, tree_id] : tree_id_map) {
+      std::ignore = tree_id;
+      auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
+      tp_likelihood_map[edge_id] = likelihood;
     }
-  }
-  std::cout << std::endl;
-  std::cout << "ROOT_NODE_ID: " << dag.GetDAGRootNodeId() << std::endl;
+
+    // Compute likelihoods with GPEngine.
+    auto gp_likelihoods = gpengine.GetPerGPCSPLogLikelihoods();
+    for (const auto& [edge_id, tree_id] : tree_id_map) {
+      std::ignore = tree_id;
+      auto likelihood = gp_likelihoods[edge_id.value_];
+      gp_likelihood_map[edge_id] = likelihood;
+    }
+
+    // Compare likelihoods.
+    std::cout << "GOLDEN_LIKELIHOODS: " << golden_likelihood_map << std::endl;
+    std::cout << "TP_LIKELIHOODS: " << tp_likelihood_map << std::endl;
+    std::cout << "GP_LIKELIHOODS: " << gp_likelihood_map << std::endl;
+    std::cout << "TP_TREE_SOURCE: " << tpengine.GetTreeSource() << std::endl;
+
+    // std::cout << "TP_LOGLIKELIHOOD_MATRIX: " << std::endl;
+    // std::cout << gpengine.LogLikelihoodMatrixToString() << std::endl;
+    // std::cout << "GP_LOGLIKELIHOOD_MATRIX: " << std::endl;
+    // std::cout << gpengine.LogLikelihoodMatrixToString() << std::endl;
+    auto gp_likelihood_mx = gpengine.GetLogLikelihoodMatrix();
+    auto tp_likelihood_mx = tpengine.GetLikelihoodMatrix();
+    std::cout << "GP_LOGLIKELIHOOD_MATRIX: " << std::endl;
+    std::cout << gp_likelihood_mx << std::endl;
+    std::cout << "TP_LOGLIKELIHOOD_MATRIX: " << std::endl;
+    std::cout << tp_likelihood_mx << std::endl;
+
+    for (const auto& [edge_id, tree_id] : tree_id_map) {
+      std::ignore = tree_id;
+      const auto golden_likelihood = golden_likelihood_map[edge_id];
+      const auto tp_likelihood = tp_likelihood_map[edge_id];
+      if (abs(golden_likelihood - tp_likelihood) > 1e-3) {
+        test_passes = false;
+        if (!is_quiet) {
+          std::cout << "FAILURE: EdgeId = " << edge_id
+                    << ", TP_Likelihood: " << tp_likelihood
+                    << ", Golden_Likelihood: " << golden_likelihood << std::endl;
+        }
+      }
+    }
+
+    // Compare PVs.
+    auto& tp_pvs = tpengine.GetLikelihoodPVs();
+    auto& gp_pvs = gpengine.GetPLVHandler();
+    if (compare_gp_pvs) {
+      std::vector<PLVType> plv_types = {PLVType::RHat, PLVType::RLeft, PLVType::RRight};
+      for (const auto& plv_type : PLVTypeEnum::Iterator()) {
+        std::string plv_name = PLVTypeEnum::Labels[plv_type];
+        os << "====== LIKELIHOOD_PVS [" << plv_name << "]: " << std::endl;
+        for (NodeId i = 0; i < gp_pvs.GetNodeCount(); i++) {
+          bool is_equal = (tp_pvs.GetPV(plv_type, i) == gp_pvs.GetPV(plv_type, i));
+          if (!is_equal) {
+            test_passes = false;
+          }
+          if (!is_equal) {
+            os << "=> PLV: " << plv_name << ", " << i << " <=" << std::endl;
+            os << "!!! *** NOT EQUAL ***" << std::endl;
+            auto pv_index = tp_pvs.GetPVIndex(plv_type, i);
+            os << "TP_" << tp_pvs.ToString(plv_type, i);
+            os << "GP_" << gp_pvs.ToString(plv_type, i);
+          }
+        }
+      }
+    }
+
+    return test_passes;
+  };
+
+  // Input files.
+  const std::string fasta_path_hello = "data/hello_short.fasta";
+  const std::string newick_path_hello = "data/hello_rooted.nwk";
+  const std::string fasta_path_six = "data/six_taxon.fasta";
+  const std::string newick_path_six_single = "data/six_taxon_rooted_single.nwk";
+  const std::string newick_path_six_simple = "data/six_taxon_rooted_simple.nwk";
+
+  const auto test_1 =
+      TestTPEngineLikelihoodsAndPVs(fasta_path_hello, newick_path_hello, true, false);
+  CHECK_MESSAGE(test_1, "TEST_1 failed.");
+  const auto test_2 = TestTPEngineLikelihoodsAndPVs(
+      fasta_path_six, newick_path_six_single, true, false);
+  CHECK_MESSAGE(test_2, "TEST_2 failed.");
+  const auto test_3 = TestTPEngineLikelihoodsAndPVs(
+      fasta_path_six, newick_path_six_simple, false, false);
+  CHECK_MESSAGE(test_3, "TEST_3 failed.");
 
   std::cout << "TOP_PRUNING [END]" << std::endl;
 }

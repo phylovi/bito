@@ -191,23 +191,32 @@ class PartialVectorHandler {
   // ** I/O
 
   // Output data to string.
-  std::string ToString(const size_t pv_idx) const {
+  std::string ToString(const size_t pv_idx, const bool show_labels = false) const {
     std::stringstream out;
+    out << "PV[" << pv_idx << "]: " << std::endl;
     for (auto &&row : GetPV(pv_idx).rowwise()) {
       out << row << std::endl;
     }
     return out.str();
   }
-
-  // Print data to console.
-  void Print(const size_t pv_idx) const {
-    std::cout << "PV[" << pv_idx << "]: " << std::endl << ToString(pv_idx) << std::endl;
+  std::string ToString(const PVType pv_type, const NodeId node_idx,
+                       const bool show_labels = false) const {
+    std::stringstream out;
+    out << "PV[" << PVTypeEnum::ToString(pv_type) << ", Node" << node_idx
+        << ", PVId::" << GetPVIndex(pv_type, node_idx) << "]: " << std::endl;
+    for (auto &&row : GetPV(pv_type, node_idx).rowwise()) {
+      out << row << std::endl;
+    }
+    return out.str();
   }
-  void Print(const PVType pv_type, const NodeId node_id) const {
-    auto pv_idx = GetPVIndex(pv_type, node_id);
-    std::cout << "PV[" << PVTypeEnum::ToString(pv_type) << ", Node" << node_id
-              << ", PVId::" << pv_idx << "]: " << std::endl
-              << ToString(pv_idx) << std::endl;
+  std::string AllToString(const bool show_labels = false) {
+    std::stringstream out;
+    for (const auto pv_type : typename PVTypeEnum::Iterator()) {
+      for (NodeId node_id = 0; node_id < GetNodeCount(); node_id++) {
+        out << ToString(pv_type, node_id, show_labels);
+      }
+    }
+    return out.str();
   }
 
  protected:

@@ -909,4 +909,13 @@ std::string GPEngine::PLVToString(size_t plv_idx) const {
   return plv_handler_.ToString(plv_idx);
 }
 
-void GPEngine::PrintPLV(size_t plv_idx) const { plv_handler_.Print(plv_idx); }
+std::string GPEngine::LogLikelihoodMatrixToString() const {
+  std::stringstream out;
+  for (Eigen::Index i = 0; i < log_likelihoods_.rows(); i++) {
+    for (Eigen::Index j = 0; j < log_likelihoods_.cols(); j++) {
+      out << "[" << i << "," << j << "]: " << log_likelihoods_(i, j) << "\t";
+    }
+    out << std::endl;
+  }
+  return out.str();
+}

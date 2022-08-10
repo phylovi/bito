@@ -206,7 +206,6 @@ GPOperationVector GPDAG::SetRootwardZero() const {
 GPOperationVector GPDAG::LeafwardPass(const NodeIdVector &visit_order) const {
   GPOperationVector operations;
   for (const auto node_id : visit_order) {
-    // std::cout << "GP_VISIT_NODE: " << node_id << std::endl;
     auto node = GetDAGNode(node_id);
     // Build rhat(s) via rhat(s) += \sum_t q(s|t) P'(s|t) r(t)
     AddRhatOperations(node, operations);
@@ -214,18 +213,10 @@ GPOperationVector GPDAG::LeafwardPass(const NodeIdVector &visit_order) const {
     operations.push_back(Multiply{GetPLVIndex(PLVType::RRight, node_id),
                                   GetPLVIndex(PLVType::RHat, node_id),
                                   GetPLVIndex(PLVType::PHatLeft, node_id)});
-    // std::cout << "GP_MULT_1: " << node_id << " "
-    //           << GetPLVIndex(PLVType::RRight, node_id) << " "
-    //           << GetPLVIndex(PLVType::RHat, node_id) << " "
-    //           << GetPLVIndex(PLVType::PHatLeft, node_id) << std::endl;
     // Multiply to get r(s_left) = rhat(s) \circ phat(s_right).
     operations.push_back(Multiply{GetPLVIndex(PLVType::RLeft, node_id),
                                   GetPLVIndex(PLVType::RHat, node_id),
                                   GetPLVIndex(PLVType::PHatRight, node_id)});
-    // std::cout << "GP_MULT_2: " << node_id << " " << GetPLVIndex(PLVType::RLeft,
-    // node_id)
-    //           << " " << GetPLVIndex(PLVType::RHat, node_id) << " "
-    //           << GetPLVIndex(PLVType::PHatRight, node_id) << std::endl;
   }
   return operations;
 }
@@ -286,19 +277,20 @@ void GPDAG::AddPhatOperations(SubsplitDAGNode node, bool is_edge_on_left,
 void GPDAG::AddRhatOperations(SubsplitDAGNode node,
                               GPOperationVector &operations) const {
   GPOperationVector new_operations;
-  IterateOverRootwardEdges(node, [this, node, &new_operations](
-                                     const bool is_edge_on_left,
-                                     SubsplitDAGNode parent_node) {
-    new_operations.push_back(IncrementWithWeightedEvolvedPLV{
-        GetPLVIndex(PLVType::RHat, node.Id()),
-        GetEdgeIdx(parent_node.Id(), node.Id()).value_,
-        GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left), parent_node.Id())});
-    std::cout << "GP_RHAT: " << node.Id() << " "
-              << GetPLVIndex(PLVType::RHat, node.Id()) << " "
-              << GetEdgeIdx(parent_node.Id(), node.Id()).value_ << " "
-              << GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left), parent_node.Id())
-              << std::endl;
-  });
+  IterateOverRootwardEdges(
+      node, [this, node, &new_operations](const bool is_edge_on_left,
+                                          SubsplitDAGNode parent_node) {
+        new_operations.push_back(IncrementWithWeightedEvolvedPLV{
+            GetPLVIndex(PLVType::RHat, node.Id()),
+            GetEdgeIdx(parent_node.Id(), node.Id()).value_,
+            GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left), parent_node.Id())});
+        // std::cout << "GP_RHAT: " << node.Id() << " "
+        //           << GetPLVIndex(PLVType::RHat, node.Id()) << " "
+        //           << GetEdgeIdx(parent_node.Id(), node.Id()).value_ << " "
+        //           << GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left),
+        //           parent_node.Id())
+        //           << std::endl;
+      });
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
 
