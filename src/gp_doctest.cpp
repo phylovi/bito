@@ -1936,8 +1936,8 @@ TEST_CASE("Top-Pruning: Likelihoods") {
         }
       }
     }
-    // Compare GP and TP PVs. Note, this is only relevant for single trees, as GP sums
-    // over all edges, while TP only considers the edge from the best tree.
+    // Compare GP and TP partial vectors. Note, this test is only relevant with single
+    // trees, as GP and TP PVs are only equal in the case of single tree DAGs.
     auto& tp_pvs = tpengine.GetLikelihoodPVs();
     auto& gp_pvs = gpengine.GetPLVHandler();
     if (compare_gp_pvs) {
