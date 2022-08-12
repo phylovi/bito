@@ -1973,5 +1973,5 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   CHECK_MESSAGE(test_2, "Six Taxa Single Tree failed.");
   const auto test_3 = TestTPEngineLikelihoodsAndPVs(
       fasta_path_six, newick_path_six_simple, false, false);
-  CHECK_MESSAGE(test_3, "Siz Taxa Multi Tree failed.");
+  CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
 }

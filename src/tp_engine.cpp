@@ -26,31 +26,6 @@ TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
   InitializeChoiceMap();
 }
 
-// ** Initialization
-
-void TPEngine::PopulateLeafParsimonyPVsWithSitePatterns() {
-  auto &pvs = parsimony_pvs_;
-  for (auto &pv : pvs.GetPVs()) {
-    pv.setZero();
-  }
-  NodeId taxon_idx = 0;
-  for (const auto &pattern : site_pattern_.GetPatterns()) {
-    size_t site_idx = 0;
-    for (const int symbol : pattern) {
-      Assert(symbol >= 0, "Negative symbol!");
-      for (const auto pv_type : {PSVType::PLeft, PSVType::PRight}) {
-        if (symbol == MmappedNucleotidePLV::base_count_) {  // Gap character.
-          pvs.GetPV(pvs.GetPVIndex(pv_type, taxon_idx)).col(site_idx).setConstant(1.);
-        } else if (symbol < MmappedNucleotidePLV::base_count_) {
-          pvs.GetPV(pvs.GetPVIndex(pv_type, taxon_idx))(symbol, site_idx) = 1.;
-        }
-      }
-      site_idx++;
-    }
-    taxon_idx++;
-  }
-}
-
 // ** General Scoring
 
 void TPEngine::InitializeChoiceMap() { choice_map_.SelectFirstEdge(); }
@@ -265,6 +240,29 @@ void TPEngine::EvolveLikelihoodRPVDownEdge(const EdgeId edge_id) {
 }
 
 // ** Scoring by Parsimony
+
+void TPEngine::PopulateLeafParsimonyPVsWithSitePatterns() {
+  auto &pvs = parsimony_pvs_;
+  for (auto &pv : pvs.GetPVs()) {
+    pv.setZero();
+  }
+  NodeId taxon_idx = 0;
+  for (const auto &pattern : site_pattern_.GetPatterns()) {
+    size_t site_idx = 0;
+    for (const int symbol : pattern) {
+      Assert(symbol >= 0, "Negative symbol!");
+      for (const auto pv_type : {PSVType::PLeft, PSVType::PRight}) {
+        if (symbol == MmappedNucleotidePLV::base_count_) {  // Gap character.
+          pvs.GetPV(pvs.GetPVIndex(pv_type, taxon_idx)).col(site_idx).setConstant(1.);
+        } else if (symbol < MmappedNucleotidePLV::base_count_) {
+          pvs.GetPV(pvs.GetPVIndex(pv_type, taxon_idx))(symbol, site_idx) = 1.;
+        }
+      }
+      site_idx++;
+    }
+    taxon_idx++;
+  }
+}
 
 void TPEngine::InitializeParsimony() {
   // !ISSUE #440
