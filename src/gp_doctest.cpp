@@ -1894,7 +1894,7 @@ TEST_CASE("Top-Pruning: Likelihoods") {
     for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
       tree_id_map[edge_id] = tree_source[edge_id.value_];
     }
-    // BEAGLE Engine for "golden" tree likelihoods.
+    // BEAGLE Engine for "golden", i.e. correct, tree likelihoods.
     PhyloModelSpecification simple_spec{"JC69", "constant", "strict"};
     auto rooted_sbn_inst = MakeRootedSBNInstance(newick_path, fasta_path, simple_spec);
     auto& beagle_engine = *rooted_sbn_inst.GetEngine();

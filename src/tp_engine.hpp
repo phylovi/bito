@@ -175,6 +175,8 @@ class TPEngine {
   void PopulateLeafLikelihoodPVsWithSitePatterns();
   void PopulateRootLikelihoodPVsWithStationaryDistribution();
   EdgeId BestEdgeAdjacentToNode(const NodeId node_id, const Direction direction) const;
+  void EvolveLikelihoodPPVUpEdge(const EdgeId edge_id);
+  void EvolveLikelihoodRPVDownEdge(const EdgeId edge_id);
 
   // ** Scoring by Parsimony
 
@@ -258,8 +260,6 @@ class TPEngine {
   // ** Temporaries
   // Stores intermediate values for computation.
   EigenVectorXd per_pattern_log_likelihoods_;
-  // EigenVectorXd per_pattern_likelihoods_;
-  EigenVectorXd left_pattern_log_likelihoods_;
 
   // ** Substitution Model
   // When we change from JC69Model, check that we are actually doing transpose in

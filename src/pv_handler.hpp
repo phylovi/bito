@@ -28,6 +28,13 @@ static inline const size_t PLVCount = 6;
 class PLVTypeEnum
     : public EnumWrapper<PLVType, size_t, PLVCount, PLVType::P, PLVType::RLeft> {
  public:
+  static Type PPLVType(const bool is_on_left) {
+    return is_on_left ? PLVType::PHatLeft : PLVType::PHatRight;
+  };
+  static Type RPLVType(const bool is_on_left) {
+    return is_on_left ? PLVType::RLeft : PLVType::RRight;
+  };
+
   static inline const Array<std::string> Labels = {
       {"P", "PHatRight", "PHatLeft", "RHat", "RRight", "RLeft"}};
 
@@ -36,7 +43,6 @@ class PLVTypeEnum
     ss << "PLV::" << Labels[e];
     return ss.str();
   }
-
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
     os << ToString(e);
     return os;
@@ -60,7 +66,6 @@ class PSVTypeEnum
     ss << "PSV::" << Labels[e];
     return ss.str();
   }
-
   friend std::ostream &operator<<(std::ostream &os, const Type e) {
     os << ToString(e);
     return os;
@@ -72,7 +77,6 @@ using PLVType = PartialVectorType::PLVType;
 using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
 using PSVType = PartialVectorType::PSVType;
 using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
-// using PVId = GenericId<struct PVIdTag>;
 
 template <typename PVType, typename PVTypeEnum>
 class PartialVectorHandler {
@@ -128,39 +132,39 @@ class PartialVectorHandler {
   NucleotidePLVRefVector &GetPVs() { return pvs_; }
   const NucleotidePLVRefVector &GetPVs() const { return pvs_; }
   // Get PV by absolute index from the vector of Partial Vectors.
-  NucleotidePLVRef &GetPV(const size_t pv_idx) { return pvs_.at(pv_idx); };
-  const NucleotidePLVRef &GetPV(const size_t pv_idx) const { return pvs_.at(pv_idx); };
-  NucleotidePLVRef &operator()(const size_t pv_idx) { return GetPV(pv_idx); };
+  NucleotidePLVRef &GetPV(const size_t pv_idx) { return pvs_.at(pv_idx); }
+  const NucleotidePLVRef &GetPV(const size_t pv_idx) const { return pvs_.at(pv_idx); }
+  NucleotidePLVRef &operator()(const size_t pv_idx) { return GetPV(pv_idx); }
   const NucleotidePLVRef &operator()(const size_t pv_idx) const {
     return GetPV(pv_idx);
-  };
+  }
   // Get PV by PV type and node index from the vector of Partial Vectors.
   NucleotidePLVRef &GetPV(const PVType pv_type, const NodeId node_idx) {
     return pvs_.at(GetPVIndex(pv_type, node_idx));
-  };
+  }
   const NucleotidePLVRef &GetPV(const PVType pv_type, const NodeId node_idx) const {
     return pvs_.at(GetPVIndex(pv_type, node_idx));
-  };
+  }
   NucleotidePLVRef &operator()(const PVType pv_type, const NodeId node_idx) {
     return GetPV(GetPVIndex(pv_type, node_idx));
-  };
+  }
   const NucleotidePLVRef &operator()(const PVType pv_type,
                                      const NodeId node_idx) const {
     return GetPV(GetPVIndex(pv_type, node_idx));
-  };
+  }
   // Get Spare PV by index from the vector of Partial Vectors.
   NucleotidePLVRef &GetSparePV(const size_t pv_idx) {
     return pvs_.at(GetSparePVIndex(pv_idx));
-  };
+  }
   const NucleotidePLVRef &GetSparePV(const size_t pv_idx) const {
     return pvs_.at(GetSparePVIndex(pv_idx));
-  };
+  }
 
   // Get total offset into PVs, indexed based on underlying DAG.
   static size_t GetPVIndex(const PVType pv_type, const NodeId node_idx,
                            const size_t node_count) {
     return GetPVIndex(GetPVTypeIndex(pv_type), node_idx, node_count);
-  };
+  }
   size_t GetPVIndex(const PVType pv_type, const NodeId node_idx) const {
     Assert(node_idx.value_ < GetNodeCount(), "Requested node_idx is out-of-range.");
     return GetPVIndex(pv_type, node_idx, GetNodeCount());
@@ -182,7 +186,7 @@ class PartialVectorHandler {
       pv_idxs.push_back(GetPVIndex(pv_type, node_idx, node_count));
     }
     return pv_idxs;
-  };
+  }
 
   // ** I/O
 
@@ -220,11 +224,11 @@ class PartialVectorHandler {
   static size_t GetPVIndex(const size_t pv_type_idx, const NodeId node_idx,
                            const size_t node_count) {
     return (pv_type_idx * node_count) + node_idx.value_;
-  };
+  }
   // Get index for given PV enum.
   static size_t GetPVTypeIndex(const PVType pv_type) {
     return TypeEnum::GetIndex(pv_type);
-  };
+  }
 
   // ** Data Sizing
   // "Count" is the currently occupied by data.
@@ -276,13 +280,18 @@ class PLVHandler : public PartialVectorHandler<PartialVectorType::PLVType,
       : PartialVectorHandler(mmap_file_path, node_count, pattern_count,
                              resizing_factor){};
 
-  static Type RPLVType(const bool is_on_left) {
-    return is_on_left ? PLVType::RLeft : PLVType::RRight;
-  };
-
   static Type PPLVType(const bool is_on_left) {
     return is_on_left ? PLVType::PHatLeft : PLVType::PHatRight;
-  };
+  }
+  static Type RPLVType(const bool is_on_left) {
+    return is_on_left ? PLVType::RLeft : PLVType::RRight;
+  }
+  static Type PPLVType(const SubsplitClade clade) {
+    return (clade == SubsplitClade::Left) ? PLVType::PHatLeft : PLVType::PHatRight;
+  }
+  static Type RPLVType(const SubsplitClade clade) {
+    return (clade == SubsplitClade::Left) ? PLVType::RLeft : PLVType::RRight;
+  }
 };
 
 // PSVHandler: Partial Sankoff Vector Handler
