@@ -1912,7 +1912,7 @@ TEST_CASE("Top-Pruning: Likelihoods") {
       auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
       tp_likelihood_map[edge_id] = likelihood;
     }
-    // Check that likelihoods from TPEngine matches a tree likelihood from BEAGLE.
+    // Check that likelihoods from TPEngine match a tree likelihood from BEAGLE.
     for (const auto& [edge_id, tree_id] : tree_id_map) {
       std::ignore = tree_id;
       const auto tp_likelihood = tp_likelihood_map[edge_id];

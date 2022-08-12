@@ -143,7 +143,7 @@ class TPEngine {
   }
   void SetAllocatedEdgeCount(const size_t edge_alloc) { edge_alloc_ = edge_alloc; }
 
-  size_t GetTreeCount() const { return tree_count_; }
+  size_t GetInputTreeCount() const { return input_tree_count_; }
 
   // ** Access
 
@@ -219,7 +219,7 @@ class TPEngine {
   size_t edge_alloc_ = 0;
   size_t edge_spare_count_ = 3;
   // Total number of trees used to construct the DAG.
-  size_t tree_count_ = 0;
+  size_t input_tree_count_ = 0;
   // Growth factor when reallocating data.
   constexpr static double resizing_factor_ = 2.0;
 

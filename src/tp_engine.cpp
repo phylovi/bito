@@ -208,7 +208,7 @@ EdgeId TPEngine::BestEdgeAdjacentToNode(const NodeId node_id,
                                         const Direction direction) const {
   const auto node = dag_.GetDAGNode(node_id);
   EdgeId best_edge_id = EdgeId(NoId);
-  size_t best_tree_source = GetTreeCount();
+  size_t best_tree_source = GetInputTreeCount();
   for (const auto focal_clade : {SubsplitClade::Left, SubsplitClade::Right}) {
     for (const auto rootward_node_id : node.GetNeighbors(direction, focal_clade)) {
       const auto edge_id = dag_.GetEdgeIdx(rootward_node_id, node_id);
@@ -467,8 +467,8 @@ void TPEngine::FunctionOverRootedTreeCollection(
 
 void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
                                          const BitsetSizeMap &edge_indexer) {
-  tree_count_ = tree_collection.TreeCount();
-  const size_t tree_id_max = GetTreeCount();
+  input_tree_count_ = tree_collection.TreeCount();
+  const size_t tree_id_max = GetInputTreeCount();
   tree_source_.resize(GetEdgeCount(), tree_id_max);
   std::fill(tree_source_.begin(), tree_source_.end(), tree_id_max);
   // Set tree source map for each edge in DAG.
