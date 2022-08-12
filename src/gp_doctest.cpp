@@ -1912,7 +1912,9 @@ TEST_CASE("Top-Pruning: Likelihoods") {
       auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
       tp_likelihood_map[edge_id] = likelihood;
     }
-    // Check that likelihoods from TPEngine match a tree likelihood from BEAGLE.
+    // Check that likelihoods from TPEngine match a tree likelihood from BEAGLE.  Note,
+    // if the test only contains a single tree, then this amounts to checking if each
+    // edge's likelihood matches that one tree.
     for (const auto& [edge_id, tree_id] : tree_id_map) {
       std::ignore = tree_id;
       const auto tp_likelihood = tp_likelihood_map[edge_id];
@@ -1934,7 +1936,8 @@ TEST_CASE("Top-Pruning: Likelihoods") {
         }
       }
     }
-    // Compare GP and TP PVs.
+    // Compare GP and TP PVs. Note, this is only relevant for single trees, as GP sums
+    // over all edges, while TP only considers the edge from the best tree.
     auto& tp_pvs = tpengine.GetLikelihoodPVs();
     auto& gp_pvs = gpengine.GetPLVHandler();
     if (compare_gp_pvs) {
