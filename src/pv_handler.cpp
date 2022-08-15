@@ -60,7 +60,7 @@ Reindexer PartialVectorHandler<PVType, PVTypeEnum>::BuildPVReindexer(
   return pv_reindexer;
 }
 
-// explicit instantiation
+// ** Explicit Instantiation
 template class PartialVectorHandler<PartialVectorType::PLVType,
                                     PartialVectorType::PLVTypeEnum>;
 template class PartialVectorHandler<PartialVectorType::PSVType,
