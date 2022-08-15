@@ -284,10 +284,6 @@ void TPEngine::Set(const PVId dest_id, const PVId src_id) {
 void TPEngine::Multiply(const PVId dest_id, const PVId src1_id, const PVId src2_id) {
   auto &pvs = likelihood_pvs_;
   pvs.GetPV(dest_id).array() = pvs.GetPV(src1_id).array() * pvs.GetPV(src2_id).array();
-  // rescaling_counts_(op.dest_) =
-  //     rescaling_counts_(op.src1_) + rescaling_counts_(op.src2_);
-  // AssertPLVIsFinite(op.dest_, "Multiply dest_ is not finite");
-  // RescalePLVIfNeeded(op.dest_);
 }
 
 void TPEngine::ComputeLikelihood(const EdgeId dest_id, const PVId child_id,
