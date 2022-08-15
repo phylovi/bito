@@ -269,7 +269,7 @@ class SubsplitDAG {
   };
 
   // ** DAG Node Traversal Traces
-  // These function produce a vector of node IDs representing an ordered traversal
+  // These functions produce a vector of node IDs representing an ordered traversal
   // of the DAG.
 
   // Creates a vector of node IDs representing a leafward DFS postorder traversal of
