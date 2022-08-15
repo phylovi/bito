@@ -4,6 +4,7 @@
 
 #include "tp_engine.hpp"
 #include "gp_engine.hpp"
+#include "sbn_maps.hpp"
 
 TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
                    const std::string &mmap_file_path, bool using_likelihoods,
@@ -450,32 +451,6 @@ void TPEngine::GrowSpareEdgeData(const size_t new_edge_spare_count) {
 
 // ** Tree Collection
 
-void TPEngine::FunctionOverRootedTreeCollection(
-    FunctionOnTreeNodeByEdge function_on_tree_node_by_edge,
-    const RootedTreeCollection &tree_collection, const BitsetSizeMap &edge_indexer) {
-  const auto leaf_count = tree_collection.TaxonCount();
-  const size_t default_index = branch_lengths_.size();
-  size_t tree_id = 0;
-  for (const auto &tree : tree_collection.Trees()) {
-    tree.Topology()->RootedPCSPPreorder(
-        [&leaf_count, &default_index, &edge_indexer, &tree, &tree_id,
-         &function_on_tree_node_by_edge](
-            const Node *sister_node, const Node *focal_node,
-            const Node *left_child_node, const Node *right_child_node) {
-          Bitset edge_bitset =
-              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
-                                    left_child_node, false, right_child_node, false);
-          const auto edge_idx = AtWithDefault(edge_indexer, edge_bitset, default_index);
-          if (edge_idx != default_index) {
-            function_on_tree_node_by_edge(EdgeId(edge_idx), edge_bitset, tree, tree_id,
-                                          focal_node);
-          }
-        },
-        true);
-    tree_id++;
-  }
-}
-
 void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
                                          const BitsetSizeMap &edge_indexer) {
   input_tree_count_ = tree_collection.TreeCount();
@@ -491,7 +466,8 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
       tree_source_[edge_idx.value_] = tree_id;
     }
   };
-  FunctionOverRootedTreeCollection(set_tree_source, tree_collection, edge_indexer);
+  RootedSBNMaps::FunctionOverRootedTreeCollection(set_tree_source, tree_collection,
+                                                  edge_indexer, branch_lengths_.size());
   // Set tree source map for rootsplit edges from the best tree.
   const auto root_node = dag_.GetDAGNode(dag_.GetDAGRootNodeId());
   for (const auto rootsplit_node_id : dag_.GetRootsplitNodeIds()) {
@@ -549,8 +525,8 @@ void TPEngine::SetBranchLengthByTakingFirst(const RootedTreeCollection &tree_col
       observed_edge_counts(edge_idx.value_)++;
     }
   };
-  FunctionOverRootedTreeCollection(set_first_branch_length, tree_collection,
-                                   edge_indexer);
+  RootedSBNMaps::FunctionOverRootedTreeCollection(
+      set_first_branch_length, tree_collection, edge_indexer, branch_lengths_.size());
   // Either set branch length to the first occurance if edge exists in collection,
   // otherwise set length to default.
   for (EdgeId edge_idx = 0; edge_idx < GetEdgeCount(); edge_idx++) {

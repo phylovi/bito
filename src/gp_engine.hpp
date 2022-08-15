@@ -164,14 +164,6 @@ class GPEngine {
   SizeDoubleVectorMap GatherBranchLengths(const RootedTreeCollection& tree_collection,
                                           const BitsetSizeMap& indexer);
 
-  // Apply function to edges descending from each node on each rooted tree for all trees
-  // in collection.
-  using FunctionOnTreeNodeByGPCSP =
-      std::function<void(EdgeId, const RootedTree&, const Node*)>;
-  void FunctionOverRootedTreeCollection(
-      FunctionOnTreeNodeByGPCSP function_on_tree_node_by_gpcsp,
-      const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer);
-
   // Use branch lengths from loaded sample as a starting point for optimization. Use the
   // mean branch length found for a given edge.
   void HotStartBranchLengths(const RootedTreeCollection& tree_collection,

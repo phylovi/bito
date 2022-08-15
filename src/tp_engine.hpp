@@ -72,14 +72,6 @@ class TPEngine {
 
   // ** Tree Collection
 
-  // Apply function to edges descending from each node on each rooted tree for all trees
-  // in collection.
-  using FunctionOnTreeNodeByEdge = std::function<void(
-      const EdgeId, const Bitset &, const RootedTree &, const size_t, const Node *)>;
-  void FunctionOverRootedTreeCollection(
-      FunctionOnTreeNodeByEdge function_on_tree_node_by_edge,
-      const RootedTreeCollection &tree_collection, const BitsetSizeMap &indexer);
-
   // Set choice map by taking the first occurrence of each PCSP edge from collection.
   void SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
                                  const BitsetSizeMap &edge_indexer);

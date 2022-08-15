@@ -5,6 +5,7 @@
 
 #include "optimization.hpp"
 #include "sugar.hpp"
+#include "sbn_maps.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
                    size_t plv_count_per_node, size_t gpcsp_count,
@@ -749,13 +750,15 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   // Set the branch length vector to be the total of the branch lengths for each PCSP,
   // and count the number of times we have seen each PCSP (into gpcsp_counts).
   auto tally_branch_lengths_and_gpcsp_count =
-      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const RootedTree& tree,
+      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const Bitset& bitset,
+                                     const RootedTree& tree, const size_t tree_id,
                                      const Node* focal_node) {
         branch_lengths_(gpcsp_idx.value_) += tree.BranchLength(focal_node);
         observed_gpcsp_counts(gpcsp_idx.value_)++;
       };
-  FunctionOverRootedTreeCollection(tally_branch_lengths_and_gpcsp_count,
-                                   tree_collection, indexer);
+  RootedSBNMaps::FunctionOverRootedTreeCollection(tally_branch_lengths_and_gpcsp_count,
+                                                  tree_collection, indexer,
+                                                  branch_lengths_.size());
   for (EdgeId gpcsp_idx = 0; gpcsp_idx.value_ < unique_gpcsp_count;
        gpcsp_idx.value_++) {
     if (observed_gpcsp_counts(gpcsp_idx.value_) == 0) {
@@ -772,35 +775,15 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 SizeDoubleVectorMap GPEngine::GatherBranchLengths(
     const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
   SizeDoubleVectorMap gpcsp_branchlengths_map;
-  auto gather_branch_lengths = [&gpcsp_branchlengths_map](EdgeId gpcsp_idx,
-                                                          const RootedTree& tree,
-                                                          const Node* focal_node) {
+  auto gather_branch_lengths = [&gpcsp_branchlengths_map](
+                                   EdgeId gpcsp_idx, const Bitset& bitset,
+                                   const RootedTree& tree, const size_t tree_id,
+                                   const Node* focal_node) {
     gpcsp_branchlengths_map[gpcsp_idx.value_].push_back(tree.BranchLength(focal_node));
   };
-  FunctionOverRootedTreeCollection(gather_branch_lengths, tree_collection, indexer);
+  RootedSBNMaps::FunctionOverRootedTreeCollection(
+      gather_branch_lengths, tree_collection, indexer, branch_lengths_.size());
   return gpcsp_branchlengths_map;
-}
-
-void GPEngine::FunctionOverRootedTreeCollection(
-    FunctionOnTreeNodeByGPCSP function_on_tree_node_by_gpcsp,
-    const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
-  const auto leaf_count = tree_collection.TaxonCount();
-  const size_t default_index = branch_lengths_.size();
-  for (const auto& tree : tree_collection.Trees()) {
-    tree.Topology()->RootedPCSPPreorder(
-        [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp](
-            const Node* sister_node, const Node* focal_node, const Node* child0_node,
-            const Node* child1_node) {
-          Bitset gpcsp_bitset =
-              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
-                                    child0_node, false, child1_node, false);
-          const auto gpcsp_idx = AtWithDefault(indexer, gpcsp_bitset, default_index);
-          if (gpcsp_idx != default_index) {
-            function_on_tree_node_by_gpcsp(EdgeId(gpcsp_idx), tree, focal_node);
-          }
-        },
-        true);
-  }
 }
 
 void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
@@ -811,15 +794,17 @@ void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection
   // Set the branch length vector to be the first encountered branch length for each
   // PCSP, and mark when we have seen each PCSP (into observed_gpcsp_counts).
   auto set_first_branch_length_and_increment_gpcsp_count =
-      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const RootedTree& tree,
+      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const Bitset& bitset,
+                                     const RootedTree& tree, const size_t tree_id,
                                      const Node* focal_node) {
         if (observed_gpcsp_counts(gpcsp_idx.value_) == 0) {
           branch_lengths_(gpcsp_idx.value_) = tree.BranchLength(focal_node);
           observed_gpcsp_counts(gpcsp_idx.value_)++;
         }
       };
-  FunctionOverRootedTreeCollection(set_first_branch_length_and_increment_gpcsp_count,
-                                   tree_collection, indexer);
+  RootedSBNMaps::FunctionOverRootedTreeCollection(
+      set_first_branch_length_and_increment_gpcsp_count, tree_collection, indexer,
+      branch_lengths_.size());
   // If a branch length was not set above, set it to the default length.
   for (EdgeId gpcsp_idx = 0; gpcsp_idx < unique_gpcsp_count; gpcsp_idx.value_++) {
     if (observed_gpcsp_counts(gpcsp_idx.value_) == 0) {
