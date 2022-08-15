@@ -13,7 +13,7 @@
 #include "reindexer.hpp"
 #include "subsplit_dag_storage.hpp"
 
-// Enumerated Types for Partial Vectors.
+// Helper Enumerated Types for Partial Vectors.
 namespace PartialVectorType {
 // PLV: Partial Likelihood Vectors
 enum class PLVType : size_t {
@@ -38,12 +38,12 @@ class PLVTypeEnum
   static inline const Array<std::string> Labels = {
       {"P", "PHatRight", "PHatLeft", "RHat", "RRight", "RLeft"}};
 
-  static std::string ToString(const Type e) {
+  static std::string ToString(const PLVType e) {
     std::stringstream ss;
     ss << "PLV::" << Labels[e];
     return ss.str();
   }
-  friend std::ostream &operator<<(std::ostream &os, const Type e) {
+  friend std::ostream &operator<<(std::ostream &os, const PLVType e) {
     os << ToString(e);
     return os;
   }
@@ -61,12 +61,12 @@ class PSVTypeEnum
  public:
   static inline const Array<std::string> Labels = {{"PRight", "PLeft", "Q"}};
 
-  static std::string ToString(const Type e) {
+  static std::string ToString(const PSVType e) {
     std::stringstream ss;
     ss << "PSV::" << Labels[e];
     return ss.str();
   }
-  friend std::ostream &operator<<(std::ostream &os, const Type e) {
+  friend std::ostream &operator<<(std::ostream &os, const PSVType e) {
     os << ToString(e);
     return os;
   }
