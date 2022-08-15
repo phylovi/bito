@@ -170,7 +170,7 @@ class TPEngine {
   // Find the edge from the highest scoring tree that is adjacent to given node in
   // the given direction.
   // Accomplished by iterating over all adjacent edges using tree_source_ edge map,
-  // which gives the best tree id that uses any given edge. Adjacent edge that comes
+  // which gives the best tree id using a given edge. Adjacent edge that comes
   // from the best tree is chosen.
   EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id,
                                     const Direction direction) const;
