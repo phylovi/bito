@@ -187,7 +187,7 @@ class TPEngine {
   // Assign PV at src_id to dest_id.
   void TakePVValue(const PVId dest_id, const PVId src_id);
   // PV component-wise multiplication of PVs src1 and src2, result stored in dest_id.
-  void Multiply(const PVId dest_id, const PVId src1_id, const PVId src2_id);
+  void MultiplyPVs(const PVId dest_id, const PVId src1_id, const PVId src2_id);
   // Compute Likelihood by taking up-to-date parent R-PLV and child P-PLV.
   void ComputeLikelihood(const EdgeId edge_id, const PVId child_id,
                          const PVId parent_id);
