@@ -28,10 +28,10 @@ static inline const size_t PLVCount = 6;
 class PLVTypeEnum
     : public EnumWrapper<PLVType, size_t, PLVCount, PLVType::P, PLVType::RLeft> {
  public:
-  static Type PPLVType(const bool is_on_left) {
+  static PLVType PPLVType(const bool is_on_left) {
     return is_on_left ? PLVType::PHatLeft : PLVType::PHatRight;
   };
-  static Type RPLVType(const bool is_on_left) {
+  static PLVType RPLVType(const bool is_on_left) {
     return is_on_left ? PLVType::RLeft : PLVType::RRight;
   };
 
@@ -209,7 +209,7 @@ class PartialVectorHandler {
     }
     return out.str();
   }
-  std::string AllToString(const bool show_labels = false) {
+  std::string AllPVsToString(const bool show_labels = false) {
     std::stringstream out;
     for (const auto pv_type : typename PVTypeEnum::Iterator()) {
       for (NodeId node_id = 0; node_id < GetNodeCount(); node_id++) {

@@ -97,11 +97,11 @@ void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
   const PVId pv_phatleft = pvs.GetPVIndex(PLVType::PHatLeft, node_id);
   const PVId pv_phatright = pvs.GetPVIndex(PLVType::PHatRight, node_id);
   if (right_child_edge_id != NoId && left_child_edge_id != NoId) {
-    Multiply(pv_p, pv_phatleft, pv_phatright);
+    MultiplyPVs(pv_p, pv_phatleft, pv_phatright);
   } else if (right_child_edge_id != NoId) {
-    Set(pv_p, pv_phatright);
+    TakePVValue(pv_p, pv_phatright);
   } else if (left_child_edge_id != NoId) {
-    Set(pv_p, pv_phatleft);
+    TakePVValue(pv_p, pv_phatleft);
   }
 }
 
@@ -140,8 +140,8 @@ void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
   const PVId pv_right_index = pvs.GetPVIndex(PLVType::RRight, node_id);
   const PVId pv_left_child_index = pvs.GetPVIndex(PLVType::PHatLeft, node_id);
   const PVId pv_right_child_index = pvs.GetPVIndex(PLVType::PHatRight, node_id);
-  Multiply(pv_left_index, pv_right_child_index, pv_center_index);
-  Multiply(pv_right_index, pv_left_child_index, pv_center_index);
+  MultiplyPVs(pv_left_index, pv_right_child_index, pv_center_index);
+  MultiplyPVs(pv_right_index, pv_left_child_index, pv_center_index);
 }
 
 void TPEngine::PopulateLeafLikelihoodPVsWithSitePatterns() {
@@ -276,12 +276,12 @@ void TPEngine::UpdateDAGAfterAddNodePairByParsimony(const NNIOperation &nni_op) 
 
 // ** Partial Vector Operations
 
-void TPEngine::Set(const PVId dest_id, const PVId src_id) {
+void TPEngine::TakePVValue(const PVId dest_id, const PVId src_id) {
   auto &pvs = likelihood_pvs_;
   pvs.GetPV(dest_id).array() = pvs.GetPV(src_id).array();
 }
 
-void TPEngine::Multiply(const PVId dest_id, const PVId src1_id, const PVId src2_id) {
+void TPEngine::MultiplyPVs(const PVId dest_id, const PVId src1_id, const PVId src2_id) {
   auto &pvs = likelihood_pvs_;
   pvs.GetPV(dest_id).array() = pvs.GetPV(src1_id).array() * pvs.GetPV(src2_id).array();
   // #462: Need to add rescaling to PVs.
