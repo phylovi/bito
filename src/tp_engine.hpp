@@ -1,5 +1,5 @@
 // Copyright 2019-2022 bito project contributors.
-// bito is free software under the GPV3; see LICENSE file for details.
+// bito is free software under the GPLv3; see LICENSE file for details.
 //
 // TPEngine runs the Top-Pruning method for systematic exploration. This method
 // procedurally explores NNIs adjacent to the DAG in tree space.  NNIs are then
@@ -167,8 +167,11 @@ class TPEngine {
   void PopulateLeafLikelihoodPVsWithSitePatterns();
   // Set the R-PVs to the stationary distribution at the root and rootsplits.
   void PopulateRootLikelihoodPVsWithStationaryDistribution();
-  // Find the edge from the highest likelihood tree that is adjacent to given node in
+  // Find the edge from the highest scoring tree that is adjacent to given node in
   // the given direction.
+  // Accomplished by iterating over all adjacent edges using tree_source_ edge map,
+  // which gives the best tree id that uses any given edge. Adjacent edge that comes
+  // from the best tree is chosen.
   EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id,
                                     const Direction direction) const;
   EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id, const Direction direction,
@@ -244,7 +247,7 @@ class TPEngine {
 
   // Tree id where branch_length and choice_map is sourced.
   // TreeCollection is expected to be ordered from highest to lowest scoring, so lower
-  // ID means higher priority tree.
+  // tree id means better scoring tree.
   std::vector<size_t> tree_source_;
 
   // ** Scoring
