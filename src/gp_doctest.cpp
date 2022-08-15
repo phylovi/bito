@@ -1858,7 +1858,7 @@ std::ostream& operator<<(std::ostream& os, EigenConstMatrixXdRef mx) {
 // likelihoods against the tree's likelihood computed using BEAGLE engine.
 TEST_CASE("Top-Pruning: Likelihoods") {
   // Compare TPEngine's top tree likelihoods to BEAGLE and, in the single tree cases,
-  // compares it's PLVs to GPEngine's.
+  // compares its PLVs to GPEngine's.
   // Note: The input newick file does not need to contain every possible tree
   // expressible in the DAG.  The input tree collection only needs to be ordered in
   // terms of likelihood.  The DAG edges will then each be assigned according to the
