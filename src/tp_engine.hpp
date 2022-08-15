@@ -13,9 +13,11 @@
 #include "choice_map.hpp"
 #include "nni_operation.hpp"
 
+using PVId = size_t;
+
 class TPEngine {
  public:
-  TPEngine(GPDAG &dag, size_t site_pattern_count, const std::string &mmap_file_path,
+  TPEngine(GPDAG &dag, SitePattern &site_pattern, const std::string &mmap_file_path,
            bool using_likelihood, bool using_parsimony);
 
   // ** General Scoring
@@ -25,7 +27,7 @@ class TPEngine {
   // Get top-scoring tree in DAG containing given edge.
   Node::NodePtr GetTopTreeTopologyWithEdge(const EdgeId edge_id) const;
   // Get score of top-scoring tree in DAG containing given edge.
-  double GetScoreOfTopTree(const EdgeId edge_id) const;
+  double GetTopTreeScore(const EdgeId edge_id) const;
 
   // ** Scoring by Likelihood
 
@@ -33,6 +35,12 @@ class TPEngine {
   void InitializeLikelihood();
   // Update ChoiceMap with NNI.
   void UpdateDAGAfterAddNodePairByLikelihood(const NNIOperation &nni_op);
+  // Fetch likelihood of top tree with given edge.  Assumed likelihoods have already
+  // been computed.
+  double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
+  // Compute top tree likelihoods for all edges in DAG. Result stored in
+  // log_likelihoods_ matrix.
+  void ComputeLikelihoods();
 
   // ** Scoring by Parsimony
 
@@ -62,9 +70,15 @@ class TPEngine {
   void GrowSpareNodeData(const size_t new_node_spare_count);
   void GrowSpareEdgeData(const size_t new_edge_spare_count);
 
-  // Initialize branch lengths by taking the first occurrance of subsplit.
-  void InitializeBranchLengthsByTakingFirst(const RootedTreeCollection &tree_collection,
-                                            const BitsetSizeMap &edge_indexer);
+  // ** Tree Collection
+
+  // Set choice map by taking the first occurrence of each PCSP edge from collection.
+  void SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
+                                 const BitsetSizeMap &edge_indexer);
+  // Set branch lengths by taking the first occurrance of each PCSP edge from
+  // collection.
+  void SetBranchLengthByTakingFirst(const RootedTreeCollection &tree_collection,
+                                    const BitsetSizeMap &edge_indexer);
 
   // ** Counts
 
@@ -112,20 +126,87 @@ class TPEngine {
            "Requested edge_offset outside of allocated scratch space.");
     return edge_offset + GetEdgeCount();
   }
-
   void SetEdgeCount(const size_t edge_count) { edge_count_ = edge_count; }
   void SetSpareEdgeCount(const size_t edge_spare_count) {
     edge_spare_count_ = edge_spare_count;
   }
   void SetAllocatedEdgeCount(const size_t edge_alloc) { edge_alloc_ = edge_alloc; }
 
+  size_t GetInputTreeCount() const { return input_tree_count_; }
+
   // ** Access
 
-  NucleotidePLVRefVector &GetLikelihoodPVs() { return likelihood_pvs_.GetPVs(); }
-  NucleotidePLVRefVector &GetParsimonyPVs() { return parsimony_pvs_.GetPVs(); }
+  EigenConstMatrixXdRef GetLikelihoodMatrix() {
+    return log_likelihoods_.block(0, 0, GetNodeCount(), log_likelihoods_.cols());
+  }
+  PLVHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
+  PSVHandler &GetParsimonyPVs() { return parsimony_pvs_; }
   EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
+  std::vector<size_t> &GetTreeSource() { return tree_source_; }
+
+  void SetBranchLengths(EigenVectorXd branch_lengths) {
+    Assert(size_t(branch_lengths.size()) == dag_.EdgeCountWithLeafSubsplits(),
+           "Size mismatch in GPEngine::SetBranchLengths.");
+    branch_lengths_.segment(0, dag_.EdgeCountWithLeafSubsplits()) = branch_lengths;
+  }
+
+  // ** I/O
+
+  std::string LikelihoodPVToString(const PVId pv_id) const;
+  std::string LogLikelihoodMatrixToString() const;
+  std::string ParsimonyPVToString(const PVId pv_id) const;
 
  protected:
+  // ** Scoring by Likelihoods
+
+  // Compute the rootward P-PVs for given node.
+  void PopulateRootwardLikelihoodPVForNode(const NodeId node_id);
+  // Compute the leafward R-PVs for given node.
+  void PopulateLeafwardLikelihoodPVForNode(const NodeId node_id);
+  // Set the P-PVs to match the observed site patterns at the leaves.
+  void PopulateLeafLikelihoodPVsWithSitePatterns();
+  // Set the R-PVs to the stationary distribution at the root and rootsplits.
+  void PopulateRootLikelihoodPVsWithStationaryDistribution();
+  // Find the edge from the best scoring tree that is adjacent to given node in
+  // the given direction.
+  // Accomplished by iterating over all adjacent edges using tree_source_ edge
+  // map, which gives the best tree id using a given edge. The best tree is
+  // expected to be the earliest found in the tree collection, aka smallest
+  // tree id. The adjacent edge that comes from the best tree is chosen.
+  EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id,
+                                    const Direction direction) const;
+  EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id, const Direction direction,
+                                    const SubsplitClade clade) const;
+  // Evolve up the given edge to compute the P-PV of its parent node.
+  void EvolveLikelihoodPPVUpEdge(const EdgeId edge_id);
+  // Evolve down the given edge to compute the R-PV of its child node.
+  void EvolveLikelihoodRPVDownEdge(const EdgeId edge_id);
+
+  // ** Scoring by Parsimony
+
+  void PopulateLeafParsimonyPVsWithSitePatterns();
+
+  // ** Partial Vector Operations
+
+  // Assign PV at src_id to dest_id.
+  void TakePVValue(const PVId dest_id, const PVId src_id);
+  // PV component-wise multiplication of PVs src1 and src2, result stored in dest_id.
+  void MultiplyPVs(const PVId dest_id, const PVId src1_id, const PVId src2_id);
+  // Compute Likelihood by taking up-to-date parent R-PV and child P-PV.
+  void ComputeLikelihood(const EdgeId edge_id, const PVId child_id,
+                         const PVId parent_id);
+  // Evolve src_id along the branch edge_id and store at dest_id.
+  void SetToEvolvedPV(const PVId dest_id, const EdgeId edge_id, const PVId src_id);
+  // Evolve src_id along the branch edge_id and multiply with contents of dest_id.
+  void MultiplyWithEvolvedPV(const PVId dest_id, const EdgeId edge_id,
+                             const PVId src_id);
+  // Prepare to evolve along given branch length. Stored in temporary variables
+  // diagonal_matrix_ and transition_matrix_.
+  void SetTransitionMatrixToHaveBranchLength(const double branch_length);
+  // Intermediate likelihood computation step. Stored in temporary variable
+  // per_pattern_log_likelihoods_.
+  void PreparePerPatternLogLikelihoodsForEdge(const PVId src1_id, const PVId src2_id);
+
   // ** DAG
   // Un-owned reference DAG.
   GPDAG &dag_;
@@ -141,8 +222,15 @@ class TPEngine {
   size_t edge_count_ = 0;
   size_t edge_alloc_ = 0;
   size_t edge_spare_count_ = 3;
+  // Total number of trees used to construct the DAG.
+  size_t input_tree_count_ = 0;
   // Growth factor when reallocating data.
   constexpr static double resizing_factor_ = 2.0;
+
+  // Tree likelihoods matrix across all sites.
+  EigenMatrixXd log_likelihoods_;
+  // Top tree log likelihood per edge.
+  EigenVectorXd top_tree_log_likelihoods_per_edge_;
 
   // Branch length parameters for DAG.
   EigenVectorXd branch_lengths_;
@@ -155,9 +243,17 @@ class TPEngine {
   // space).
   static constexpr double max_log_branch_length_ = 1.1;
 
+  // Observed leave states.
+  SitePattern site_pattern_;
+
+  // Tree id where branch_length and choice_map is sourced.
+  // TreeCollection is expected to be ordered from highest to lowest scoring, so lower
+  // tree id means better scoring tree.
+  std::vector<size_t> tree_source_;
+
   // ** Scoring
   // Partial Vector for storing Likelihood scores.
-  PSVHandler likelihood_pvs_;
+  PLVHandler likelihood_pvs_;
   bool using_likelihoods_;
   // Partial Vector for storing Parsimony scores.
   PSVHandler parsimony_pvs_;

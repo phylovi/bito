@@ -15,6 +15,7 @@
 #include "driver.hpp"
 #include "node.hpp"
 #include "subsplit_dag_storage.hpp"
+#include "rooted_tree_collection.hpp"
 
 using BitsetVector = std::vector<Bitset>;
 using SizeBitsetMap = std::unordered_map<size_t, Bitset>;
@@ -128,6 +129,14 @@ void IncrementRootedIndexerRepresentationSizeDict(
     RootedIndexerRepresentationSizeDict& dict,
     const UnrootedIndexerRepresentation& indexer_representation);
 
+// Apply function to edges descending from each node on each rooted tree for all trees
+// in collection.
+using FunctionOnTreeNodeByGPCSP = std::function<void(
+    EdgeId, const Bitset&, const RootedTree&, const size_t, const Node*)>;
+void FunctionOverRootedTreeCollection(
+    FunctionOnTreeNodeByGPCSP function_on_tree_node_by_gpcsp,
+    const RootedTreeCollection& tree_collection, const BitsetSizeMap& edge_indexer,
+    const size_t default_index);
 }  // namespace RootedSBNMaps
 
 // Turn a <Key, T> map into a <std::string, T> map for any Key type that has

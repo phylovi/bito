@@ -160,22 +160,14 @@ class GPEngine {
   // hybrid_marginal_log_likelihoods_.
   void ProcessQuartetHybridRequest(const QuartetHybridRequest& request);
 
-  // Use branch lengths from loaded sample as a starting point for optimization.
-  void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
-                             const BitsetSizeMap& indexer);
-
   // Gather branch lengths from loaded sample with their corresponding pcsp.
   SizeDoubleVectorMap GatherBranchLengths(const RootedTreeCollection& tree_collection,
                                           const BitsetSizeMap& indexer);
 
-  // Apply function to edges descending from each node on each rooted tree for all trees
-  // in collection.
-  using FunctionOnTreeNodeByGPCSP =
-      std::function<void(EdgeId, const RootedTree&, const Node*)>;
-  void FunctionOverRootedTreeCollection(
-      FunctionOnTreeNodeByGPCSP function_on_tree_node_by_gpcsp,
-      const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer);
-
+  // Use branch lengths from loaded sample as a starting point for optimization. Use the
+  // mean branch length found for a given edge.
+  void HotStartBranchLengths(const RootedTreeCollection& tree_collection,
+                             const BitsetSizeMap& indexer);
   // Take the first branch length encountered (in the supplied tree collection) for a
   // given edge for the branch length of the sDAG. Set branch lengths that are not thus
   // specified to default_branch_length_.
@@ -188,10 +180,10 @@ class GPEngine {
 
   // ** I/O
 
-  // Output PLV to standard output.
-  void PrintPLV(size_t plv_idx) const;
   // Output PLV to string.
   std::string PLVToString(size_t plv_idx) const;
+  // Output LogLikelihood to string.
+  std::string LogLikelihoodMatrixToString() const;
 
   // ** Counts
 

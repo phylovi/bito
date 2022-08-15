@@ -373,3 +373,29 @@ void RootedSBNMaps::IncrementRootedIndexerRepresentationSizeDict(
     IncrementRootedIndexerRepresentationSizeDict(dict, rooted_indexer_representation);
   }
 }
+
+void RootedSBNMaps::FunctionOverRootedTreeCollection(
+    FunctionOnTreeNodeByGPCSP function_on_tree_node_by_gpcsp,
+    const RootedTreeCollection& tree_collection, const BitsetSizeMap& edge_indexer,
+    const size_t default_index) {
+  const auto leaf_count = tree_collection.TaxonCount();
+  size_t tree_id = 0;
+  for (const auto& tree : tree_collection.Trees()) {
+    tree.Topology()->RootedPCSPPreorder(
+        [&leaf_count, &default_index, &edge_indexer, &tree, &tree_id,
+         &function_on_tree_node_by_gpcsp](
+            const Node* sister_node, const Node* focal_node,
+            const Node* left_child_node, const Node* right_child_node) {
+          Bitset edge_bitset =
+              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
+                                    left_child_node, false, right_child_node, false);
+          const auto edge_idx = AtWithDefault(edge_indexer, edge_bitset, default_index);
+          if (edge_idx != default_index) {
+            function_on_tree_node_by_gpcsp(EdgeId(edge_idx), edge_bitset, tree, tree_id,
+                                          focal_node);
+          }
+        },
+        true);
+    tree_id++;
+  }
+}

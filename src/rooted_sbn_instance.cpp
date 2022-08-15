@@ -53,7 +53,7 @@ std::vector<double> RootedSBNInstance::LogLikelihoods(const VectorType &flag_vec
   PhyloFlags external_flags = PhyloFlags(flag_vec, is_run_defaults);
   return LogLikelihoods(external_flags);
 };
-// Explicit templates for Pybind API.
+// Explicit instantiation for Pybito.
 template DoubleVector RootedSBNInstance::LogLikelihoods(const StringVector &,
                                                         const bool);
 template DoubleVector RootedSBNInstance::LogLikelihoods(const StringBoolVector &,
