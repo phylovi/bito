@@ -284,6 +284,7 @@ void TPEngine::Set(const PVId dest_id, const PVId src_id) {
 void TPEngine::Multiply(const PVId dest_id, const PVId src1_id, const PVId src2_id) {
   auto &pvs = likelihood_pvs_;
   pvs.GetPV(dest_id).array() = pvs.GetPV(src1_id).array() * pvs.GetPV(src2_id).array();
+  // #462: Need to add rescaling to PVs.
 }
 
 void TPEngine::ComputeLikelihood(const EdgeId dest_id, const PVId child_id,
@@ -452,8 +453,6 @@ void TPEngine::FunctionOverRootedTreeCollection(
           if (edge_idx != default_index) {
             function_on_tree_node_by_edge(EdgeId(edge_idx), edge_bitset, tree, tree_id,
                                           focal_node);
-          } else {
-            std::cout << "DEFAULT_INDEX: " << default_index << std::endl;
           }
         },
         true);
