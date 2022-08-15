@@ -1853,7 +1853,16 @@ std::ostream& operator<<(std::ostream& os, EigenConstMatrixXdRef mx) {
   return os;
 }
 
+// Builds a TPEngine instance from a set of input trees. Then populates TPEngine's PVs
+// and computes the top tree likelihood for each edge in the DAG.  Compares these
+// likelihoods against the tree's likelihood computed using BEAGLE engine.
 TEST_CASE("Top-Pruning: Likelihoods") {
+  // Compare TPEngine's top tree likelihoods to BEAGLE and, in the single tree cases,
+  // compares it's PLVs to GPEngine's.
+  // Note: The input newick file does not need to contain every possible tree
+  // expressible in the DAG.  The input tree collection only needs to be ordered in
+  // terms of likelihood.  The DAG edges will then each be assigned according to the
+  // best/first tree containing the given edge.
   auto TestTPEngineLikelihoodsAndPVs = [](const std::string fasta_path,
                                           const std::string newick_path,
                                           const bool compare_gp_pvs = false,
@@ -1960,7 +1969,6 @@ TEST_CASE("Top-Pruning: Likelihoods") {
 
     return test_passes;
   };
-
   // Input files.
   const std::string fasta_path_hello = "data/hello_short.fasta";
   const std::string newick_path_hello = "data/hello_rooted.nwk";
