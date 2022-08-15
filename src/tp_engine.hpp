@@ -167,11 +167,12 @@ class TPEngine {
   void PopulateLeafLikelihoodPVsWithSitePatterns();
   // Set the R-PVs to the stationary distribution at the root and rootsplits.
   void PopulateRootLikelihoodPVsWithStationaryDistribution();
-  // Find the edge from the highest scoring tree that is adjacent to given node in
+  // Find the edge from the best scoring tree that is adjacent to given node in
   // the given direction.
-  // Accomplished by iterating over all adjacent edges using tree_source_ edge map,
-  // which gives the best tree id using a given edge. Adjacent edge that comes
-  // from the best tree is chosen.
+  // Accomplished by iterating over all adjacent edges using tree_source_ edge
+  // map, which gives the best tree id using a given edge. The best tree is
+  // expected to be the earliest found in the tree collection, aka smallest
+  // tree id. The adjacent edge that comes from the best tree is chosen.
   EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id,
                                     const Direction direction) const;
   EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id, const Direction direction,
