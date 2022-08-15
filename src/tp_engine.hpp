@@ -80,9 +80,6 @@ class TPEngine {
       FunctionOnTreeNodeByEdge function_on_tree_node_by_edge,
       const RootedTreeCollection &tree_collection, const BitsetSizeMap &indexer);
 
-  // Set tree source map from tree collection by assigning
-  void SetTreeSourceMap(const RootedTreeCollection &tree_collection,
-                        const BitsetSizeMap &edge_indexer);
   // Set choice map by taking the first occurrance of each PCSP edge from collection.
   void SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
                                  const BitsetSizeMap &edge_indexer);
