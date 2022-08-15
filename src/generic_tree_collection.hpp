@@ -177,6 +177,9 @@ class GenericTreeCollection {
     return GenericTreeCollection(tree_vector, tag_taxon_map);
   }
 
+  auto begin() const { return trees_.begin(); }
+  auto end() const { return trees_.end(); }
+
   TTreeVector trees_;
 
  protected:

@@ -268,22 +268,22 @@ class SubsplitDAG {
     }
   };
 
-  // ** DAG Edge Traversal Traces
-  // These function produce a vector of edge indexes representing an ordered traversal
+  // ** DAG Node Traversal Traces
+  // These functions produce a vector of node IDs representing an ordered traversal
   // of the DAG.
 
-  // Creates a vector of edge idxs representing a leafward DFS postorder traversal of
+  // Creates a vector of node IDs representing a leafward DFS postorder traversal of
   // the DAG.
-  [[nodiscard]] NodeIdVector LeafwardEdgeTraversalTrace(
+  [[nodiscard]] NodeIdVector LeafwardNodeTraversalTrace(
       bool include_dag_root_node) const;
-  // Creates a vector of edge idxs representing a rootward DFS postorder traversal of
+  // Creates a vector of node IDs representing a rootward DFS postorder traversal of
   // the DAG.
-  [[nodiscard]] NodeIdVector RootwardEdgeTraversalTrace(
+  [[nodiscard]] NodeIdVector RootwardNodeTraversalTrace(
       bool include_dag_root_node) const;
-  // Creates a vector of edge idxs representing a reverse DFS postorder, leafward
-  // traversal of the DAG. NOTE: A reverse postorder traversal represents a topological
-  // sort.
-  [[nodiscard]] NodeIdVector TopologicalEdgeTraversalTrace() const;
+  // Creates a vector of node IDs representing a reverse DFS postorder, leafward
+  // traversal of the DAG. NOTE: A reverse postorder traversal represents a leafward
+  // topological sort.
+  [[nodiscard]] NodeIdVector TopologicalNodeTraversalTrace() const;
 
   // ** DAG Edge Traversals with Action
 

@@ -5,6 +5,7 @@
 
 #include "optimization.hpp"
 #include "sugar.hpp"
+#include "sbn_maps.hpp"
 
 GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
                    size_t plv_count_per_node, size_t gpcsp_count,
@@ -263,7 +264,7 @@ void GPEngine::operator()(const GPOperations::ResetMarginalLikelihood& op) {  //
 void GPEngine::operator()(const GPOperations::IncrementMarginalLikelihood& op) {
   Assert(rescaling_counts_(op.stationary_times_prior_) == 0,
          "Surprise! Rescaled stationary distribution in IncrementMarginalLikelihood");
-  // This operation does two things: imcrement the overall per-site log marginal
+  // This operation does two things: increment the overall per-site log marginal
   // likelihood, and also set the conditional per-rootsplit marginal likelihood.
   //
   // We first calculate the unconditional contribution of the rootsplit to the overall
@@ -413,7 +414,7 @@ void GPEngine::CopyGPCSPData(const EdgeId src_gpcsp_idx, const EdgeId dest_gpcsp
       inverted_sbn_prior_[src_gpcsp_idx.value_];
 }
 
-// ** Getters
+// ** Access
 
 double GPEngine::GetLogMarginalLikelihood() const {
   return (log_marginal_likelihood_.array() * site_pattern_weights_.array()).sum();
@@ -541,15 +542,15 @@ void GPEngine::InitializePLVsWithSitePatterns() {
   for (auto& plv : GetPLVs()) {
     plv.setZero();
   }
-  size_t taxon_idx = 0;
+  NodeId taxon_idx = 0;
   for (const auto& pattern : site_pattern_.GetPatterns()) {
     size_t site_idx = 0;
     for (const int symbol : pattern) {
       Assert(symbol >= 0, "Negative symbol!");
       if (symbol == MmappedNucleotidePLV::base_count_) {  // Gap character.
-        GetPLV(taxon_idx).col(site_idx).setConstant(1.);
+        GetPLV(taxon_idx.value_).col(site_idx).setConstant(1.);
       } else if (symbol < MmappedNucleotidePLV::base_count_) {
-        GetPLV(taxon_idx)(symbol, site_idx) = 1.;
+        GetPLV(taxon_idx.value_)(symbol, site_idx) = 1.;
       }
       site_idx++;
     }
@@ -744,13 +745,15 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
   // Set the branch length vector to be the total of the branch lengths for each PCSP,
   // and count the number of times we have seen each PCSP (into gpcsp_counts).
   auto tally_branch_lengths_and_gpcsp_count =
-      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const RootedTree& tree,
+      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const Bitset& bitset,
+                                     const RootedTree& tree, const size_t tree_id,
                                      const Node* focal_node) {
         branch_lengths_(gpcsp_idx.value_) += tree.BranchLength(focal_node);
         observed_gpcsp_counts(gpcsp_idx.value_)++;
       };
-  FunctionOverRootedTreeCollection(tally_branch_lengths_and_gpcsp_count,
-                                   tree_collection, indexer);
+  RootedSBNMaps::FunctionOverRootedTreeCollection(tally_branch_lengths_and_gpcsp_count,
+                                                  tree_collection, indexer,
+                                                  branch_lengths_.size());
   for (EdgeId gpcsp_idx = 0; gpcsp_idx.value_ < unique_gpcsp_count;
        gpcsp_idx.value_++) {
     if (observed_gpcsp_counts(gpcsp_idx.value_) == 0) {
@@ -767,35 +770,15 @@ void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection
 SizeDoubleVectorMap GPEngine::GatherBranchLengths(
     const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
   SizeDoubleVectorMap gpcsp_branchlengths_map;
-  auto gather_branch_lengths = [&gpcsp_branchlengths_map](EdgeId gpcsp_idx,
-                                                          const RootedTree& tree,
-                                                          const Node* focal_node) {
+  auto gather_branch_lengths = [&gpcsp_branchlengths_map](
+                                   EdgeId gpcsp_idx, const Bitset& bitset,
+                                   const RootedTree& tree, const size_t tree_id,
+                                   const Node* focal_node) {
     gpcsp_branchlengths_map[gpcsp_idx.value_].push_back(tree.BranchLength(focal_node));
   };
-  FunctionOverRootedTreeCollection(gather_branch_lengths, tree_collection, indexer);
+  RootedSBNMaps::FunctionOverRootedTreeCollection(
+      gather_branch_lengths, tree_collection, indexer, branch_lengths_.size());
   return gpcsp_branchlengths_map;
-}
-
-void GPEngine::FunctionOverRootedTreeCollection(
-    FunctionOnTreeNodeByGPCSP function_on_tree_node_by_gpcsp,
-    const RootedTreeCollection& tree_collection, const BitsetSizeMap& indexer) {
-  const auto leaf_count = tree_collection.TaxonCount();
-  const size_t default_index = branch_lengths_.size();
-  for (const auto& tree : tree_collection.Trees()) {
-    tree.Topology()->RootedPCSPPreorder(
-        [&leaf_count, &default_index, &indexer, &tree, &function_on_tree_node_by_gpcsp](
-            const Node* sister_node, const Node* focal_node, const Node* child0_node,
-            const Node* child1_node) {
-          Bitset gpcsp_bitset =
-              SBNMaps::PCSPBitsetOf(leaf_count, sister_node, false, focal_node, false,
-                                    child0_node, false, child1_node, false);
-          const auto gpcsp_idx = AtWithDefault(indexer, gpcsp_bitset, default_index);
-          if (gpcsp_idx != default_index) {
-            function_on_tree_node_by_gpcsp(EdgeId(gpcsp_idx), tree, focal_node);
-          }
-        },
-        true);
-  }
 }
 
 void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection,
@@ -806,15 +789,17 @@ void GPEngine::TakeFirstBranchLength(const RootedTreeCollection& tree_collection
   // Set the branch length vector to be the first encountered branch length for each
   // PCSP, and mark when we have seen each PCSP (into observed_gpcsp_counts).
   auto set_first_branch_length_and_increment_gpcsp_count =
-      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const RootedTree& tree,
+      [&observed_gpcsp_counts, this](EdgeId gpcsp_idx, const Bitset& bitset,
+                                     const RootedTree& tree, const size_t tree_id,
                                      const Node* focal_node) {
         if (observed_gpcsp_counts(gpcsp_idx.value_) == 0) {
           branch_lengths_(gpcsp_idx.value_) = tree.BranchLength(focal_node);
           observed_gpcsp_counts(gpcsp_idx.value_)++;
         }
       };
-  FunctionOverRootedTreeCollection(set_first_branch_length_and_increment_gpcsp_count,
-                                   tree_collection, indexer);
+  RootedSBNMaps::FunctionOverRootedTreeCollection(
+      set_first_branch_length_and_increment_gpcsp_count, tree_collection, indexer,
+      branch_lengths_.size());
   // If a branch length was not set above, set it to the default length.
   for (EdgeId gpcsp_idx = 0; gpcsp_idx < unique_gpcsp_count; gpcsp_idx.value_++) {
     if (observed_gpcsp_counts(gpcsp_idx.value_) == 0) {
@@ -892,13 +877,16 @@ void GPEngine::ProcessQuartetHybridRequest(const QuartetHybridRequest& request) 
 // ** I/O
 
 std::string GPEngine::PLVToString(size_t plv_idx) const {
-  std::stringstream out;
-  for (auto&& row : GetPLV(plv_idx).rowwise()) {
-    out << row << std::endl;
-  }
-  return out.str();
+  return plv_handler_.ToString(plv_idx);
 }
 
-void GPEngine::PrintPLV(size_t plv_idx) const {
-  std::cout << PLVToString(plv_idx) << std::endl;
+std::string GPEngine::LogLikelihoodMatrixToString() const {
+  std::stringstream out;
+  for (Eigen::Index i = 0; i < log_likelihoods_.rows(); i++) {
+    for (Eigen::Index j = 0; j < log_likelihoods_.cols(); j++) {
+      out << "[" << i << "," << j << "]: " << log_likelihoods_(i, j) << "\t";
+    }
+    out << std::endl;
+  }
+  return out.str();
 }
