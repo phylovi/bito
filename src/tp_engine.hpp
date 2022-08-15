@@ -1,5 +1,5 @@
 // Copyright 2019-2022 bito project contributors.
-// bito is free software under the GPLv3; see LICENSE file for details.
+// bito is free software under the GPV3; see LICENSE file for details.
 //
 // TPEngine runs the Top-Pruning method for systematic exploration. This method
 // procedurally explores NNIs adjacent to the DAG in tree space.  NNIs are then
@@ -167,12 +167,23 @@ class TPEngine {
  protected:
   // ** Scoring by Likelihoods
 
+  // Compute the rootward P-PVs for given node.
   void PopulateRootwardLikelihoodPVForNode(const NodeId node_id);
+  // Compute the leafward R-PVs for given node.
   void PopulateLeafwardLikelihoodPVForNode(const NodeId node_id);
+  // Set the P-PVs to match the observed site patterns at the leaves.
   void PopulateLeafLikelihoodPVsWithSitePatterns();
+  // Set the R-PVs to the stationary distribution at the root and rootsplits.
   void PopulateRootLikelihoodPVsWithStationaryDistribution();
-  EdgeId BestEdgeAdjacentToNode(const NodeId node_id, const Direction direction) const;
+  // Find the edge from the highest likelihood tree that is adjacent to given node in
+  // the given direction.
+  EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id,
+                                    const Direction direction) const;
+  EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id, const Direction direction,
+                                    const SubsplitClade clade) const;
+  // Evolve up the given edge to compute the P-PV of its parent node.
   void EvolveLikelihoodPPVUpEdge(const EdgeId edge_id);
+  // Evolve down the given edge to compute the R-PV of its child node.
   void EvolveLikelihoodRPVDownEdge(const EdgeId edge_id);
 
   // ** Scoring by Parsimony
@@ -185,7 +196,7 @@ class TPEngine {
   void TakePVValue(const PVId dest_id, const PVId src_id);
   // PV component-wise multiplication of PVs src1 and src2, result stored in dest_id.
   void MultiplyPVs(const PVId dest_id, const PVId src1_id, const PVId src2_id);
-  // Compute Likelihood by taking up-to-date parent R-PLV and child P-PLV.
+  // Compute Likelihood by taking up-to-date parent R-PV and child P-PV.
   void ComputeLikelihood(const EdgeId edge_id, const PVId child_id,
                          const PVId parent_id);
   // Evolve src_id along the branch edge_id and store at dest_id.

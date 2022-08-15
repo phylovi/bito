@@ -80,7 +80,7 @@ void TPEngine::UpdateDAGAfterAddNodePairByLikelihood(const NNIOperation &nni_op)
 void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
   auto &pvs = likelihood_pvs_;
   // Iterate over all rootward edges to find the edge from the best source tree.
-  EdgeId best_edge_id = BestEdgeAdjacentToNode(node_id, Direction::Rootward);
+  EdgeId best_edge_id = FindBestEdgeAdjacentToNode(node_id, Direction::Rootward);
   const auto edge_choice = choice_map_.GetEdgeChoice(best_edge_id);
   // Evolve up from left child.
   const EdgeId left_child_edge_id = edge_choice.left_child_edge_id;
@@ -113,7 +113,7 @@ void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
   // If node is not a leaf, find best edge from leafward edge's choicemap.
   EdgeId best_edge_id = EdgeId(NoId);
   if (!dag_.IsNodeLeaf(node_id)) {
-    best_edge_id = BestEdgeAdjacentToNode(node_id, Direction::Leafward);
+    best_edge_id = FindBestEdgeAdjacentToNode(node_id, Direction::Leafward);
     const auto edge_choice = choice_map_.GetEdgeChoice(best_edge_id);
     const auto parent_edge_id = edge_choice.parent_edge_id;
     if (parent_edge_id != NoId) {
@@ -125,7 +125,7 @@ void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
   }
   // If node is a leaf, find best edge from rootward edge's choicemap.
   else {
-    best_edge_id = BestEdgeAdjacentToNode(node_id, Direction::Rootward);
+    best_edge_id = FindBestEdgeAdjacentToNode(node_id, Direction::Rootward);
     const auto edge = dag_.GetDAGEdge(best_edge_id);
     best_edge_id = choice_map_.GetEdgeChoice(best_edge_id).parent_edge_id;
     best_edge_id = (edge.GetSubsplitClade() == SubsplitClade::Left)
@@ -204,8 +204,8 @@ void TPEngine::ComputeLikelihoods() {
       site_pattern_weights_;
 }
 
-EdgeId TPEngine::BestEdgeAdjacentToNode(const NodeId node_id,
-                                        const Direction direction) const {
+EdgeId TPEngine::FindBestEdgeAdjacentToNode(const NodeId node_id,
+                                            const Direction direction) const {
   const auto node = dag_.GetDAGNode(node_id);
   EdgeId best_edge_id = EdgeId(NoId);
   size_t best_tree_source = GetInputTreeCount();
@@ -216,6 +216,22 @@ EdgeId TPEngine::BestEdgeAdjacentToNode(const NodeId node_id,
         best_tree_source = tree_source_[edge_id.value_];
         best_edge_id = edge_id;
       }
+    }
+  }
+  return best_edge_id;
+}
+
+EdgeId TPEngine::FindBestEdgeAdjacentToNode(const NodeId node_id,
+                                            const Direction direction,
+                                            const SubsplitClade clade) const {
+  const auto node = dag_.GetDAGNode(node_id);
+  EdgeId best_edge_id = EdgeId(NoId);
+  size_t best_tree_source = GetInputTreeCount();
+  for (const auto rootward_node_id : node.GetNeighbors(direction, clade)) {
+    const auto edge_id = dag_.GetEdgeIdx(rootward_node_id, node_id);
+    if (best_tree_source > tree_source_[edge_id.value_]) {
+      best_tree_source = tree_source_[edge_id.value_];
+      best_edge_id = edge_id;
     }
   }
   return best_edge_id;
@@ -495,52 +511,25 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
   // Build choice map from tree source.
   for (EdgeId edge_id = 0; edge_id < GetEdgeCount(); edge_id++) {
     const auto edge = dag_.GetDAGEdge(edge_id);
-    const auto parent = dag_.GetDAGNode(edge.GetParent());
-    const auto child = dag_.GetDAGNode(edge.GetChild());
-    const auto focal_clade = edge.GetSubsplitClade();
-    const auto sister_clade = Bitset::Opposite(focal_clade);
-    size_t best_tree_id;
+    EdgeId best_edge_id;
     // Get parent EdgeChoice.
-    best_tree_id = tree_id_max;
-    for (const auto clade : {SubsplitClade::Left, SubsplitClade::Right}) {
-      for (const auto neighbor_id : parent.GetNeighbors(Direction::Rootward, clade)) {
-        const auto neighbor_edge_id = dag_.GetEdgeIdx(neighbor_id, parent.Id());
-        if (best_tree_id >= tree_source_[neighbor_edge_id.value_]) {
-          choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::Parent,
-                                    neighbor_edge_id);
-        }
-      }
-    }
+    best_edge_id = FindBestEdgeAdjacentToNode(edge.GetParent(), Direction::Rootward);
+    choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::Parent, best_edge_id);
     // Get sister EdgeChoice.
-    best_tree_id = tree_id_max;
-    for (const auto neighbor_id :
-         parent.GetNeighbors(Direction::Leafward, sister_clade)) {
-      const auto neighbor_edge_id = dag_.GetEdgeIdx(parent.Id(), neighbor_id);
-      if (best_tree_id >= tree_source_[neighbor_edge_id.value_]) {
-        choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::Sister,
-                                  neighbor_edge_id);
-      }
-    }
+    best_edge_id =
+        FindBestEdgeAdjacentToNode(edge.GetParent(), Direction::Leafward,
+                                   Bitset::Opposite(edge.GetSubsplitClade()));
+    choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::Sister, best_edge_id);
     // Get left child EdgeChoice.
-    best_tree_id = tree_id_max;
-    for (const auto neighbor_id :
-         child.GetNeighbors(Direction::Leafward, SubsplitClade::Left)) {
-      const auto neighbor_edge_id = dag_.GetEdgeIdx(child.Id(), neighbor_id);
-      if (best_tree_id >= tree_source_[neighbor_edge_id.value_]) {
-        choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::LeftChild,
-                                  neighbor_edge_id);
-      }
-    }
+    best_edge_id = FindBestEdgeAdjacentToNode(edge.GetChild(), Direction::Leafward,
+                                              SubsplitClade::Left);
+    choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::LeftChild,
+                              best_edge_id);
     // Get right child EdgeChoice.
-    best_tree_id = tree_id_max;
-    for (const auto neighbor_id :
-         child.GetNeighbors(Direction::Leafward, SubsplitClade::Right)) {
-      const auto neighbor_edge_id = dag_.GetEdgeIdx(child.Id(), neighbor_id);
-      if (best_tree_id >= tree_source_[neighbor_edge_id.value_]) {
-        choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::RightChild,
-                                  neighbor_edge_id);
-      }
-    }
+    best_edge_id = FindBestEdgeAdjacentToNode(edge.GetChild(), Direction::Leafward,
+                                              SubsplitClade::Right);
+    choice_map_.SetEdgeChoice(edge_id, ChoiceMap::AdjacentEdge::RightChild,
+                              best_edge_id);
   }
 }
 
