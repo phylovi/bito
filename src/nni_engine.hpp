@@ -13,6 +13,7 @@
 #pragma once
 
 #include "gp_engine.hpp"
+#include "tp_engine.hpp"
 #include "gp_dag.hpp"
 
 #include "bitset.hpp"
@@ -28,16 +29,20 @@ using NNIDoubleMap = std::map<NNIOperation, double>;
 class NNIEngine {
  public:
   // Constructors:
-  NNIEngine(GPDAG &dag, GPEngine &gp_engine);
+  NNIEngine(GPDAG &dag, GPEngine *gp_engine = nullptr, TPEngine *tp_engine = nullptr);
 
-  // ** Getters
+  // ** Access
 
   // Get Reference of DAG.
   const GPDAG &GetGPDAG() const { return dag_; };
   // Get Reference of GraftDAG.
   GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); };
   // Get Reference of GPEngine.
-  const GPEngine &GetGPEngine() const { return gp_engine_; }
+  const GPEngine &GetGPEngine() const { return *gp_engine_; }
+  bool IsUsingGPEngine() { return gp_engine_ != nullptr; }
+  // Get Reference of TPEngine.
+  const TPEngine &GetTPEngine() const { return *tp_engine_; }
+  bool IsUsingTPEngine() { return tp_engine_ != nullptr; }
   // Get Adjacent NNIs to DAG.
   const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; };
   // Get Number of Adjacent NNIs.
@@ -57,47 +62,89 @@ class NNIEngine {
   // Get number of runs of NNI engine.
   size_t GetSweepCount() const { return sweep_count_; };
 
+  // Set GP Engine.
+  void SetGPEngine(GPEngine *gp_engine) { gp_engine_ = gp_engine; }
+  // Set TP Engine.
+  void SetTPEngine(TPEngine *tp_engine) { tp_engine_ = tp_engine; }
+
   // ** Runners
   // These start the engine, which procedurally ranks and adds (and maybe removes) NNIs
   // to the DAG, until some termination criteria has been satisfied.
 
-  // Primary Runner using GraftDAG.
+  // Primary Runner for NNI Engine.
   void Run();
-  // Runner subroutines.
+  // Initialization step run before loop.
   void RunInit();
+  // Step that finds adjacent NNIs, evaluates, tehn accepts or rejects them.
   void RunMainLoop();
+  // Step that runs at the end of each loop, preps for next loop.
   void RunPostLoop();
 
   // ** Filter Functions
 
   // Initialization step for filter before beginning
   using StaticFilterInitFunction =
-      std::function<void(NNIEngine &, GPEngine &, GraftDAG &)>;
+      std::function<void(NNIEngine &, GPEngine &, TPEngine &, GraftDAG &)>;
   // Update step for any filter computation work to be done at start of each sweep.
   using StaticFilterUpdateFunction =
-      std::function<void(NNIEngine &, GPEngine &, GraftDAG &)>;
+      std::function<void(NNIEngine &, GPEngine &, TPEngine &, GraftDAG &)>;
   // Function template for computational evaluation to be performed on an adjacent NNI.
-  using StaticFilterEvaluateFunction =
-      std::function<double(NNIEngine &, GPEngine &, GraftDAG &, const NNIOperation &)>;
+  using StaticFilterEvaluateFunction = std::function<double(
+      NNIEngine &, GPEngine &, TPEngine &, GraftDAG &, const NNIOperation &)>;
   // Function template for processing an adjacent NNI to be accepted or rejected.
   using StaticFilterProcessFunction =
-      std::function<bool(NNIEngine &, GPEngine &, GraftDAG &, const NNIOperation &)>;
+      std::function<bool(NNIEngine &, GPEngine &, TPEngine &, GraftDAG &,
+                         const NNIOperation &, const double)>;
 
-  // StaticFilterEvaluateFunction: dummy function that assigns all score of 0.0.
-  static double NoEvaluate(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                           GraftDAG &this_graft_dag, const NNIOperation &nni);
-  // StaticFilterProcessFunction: dummy function that accepts all NNIs.
-  static bool NoFilter(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                       GraftDAG &this_graft_dag, const NNIOperation &nni);
-  // StaticFilterEvaluateFunction: estimate an NNI's per GPCSP Likelihood using the
-  // Pre-NNI in the DAG.
-  static double EstimateNNILikelihoodViaPreNNI(NNIEngine &this_nni_engine,
-                                               GPEngine &this_gp_engine,
-                                               GraftDAG &this_graft_dag,
-                                               const NNIOperation &nni);
+  // Set to evaluate all NNIs to 0.
+  void SetNoEvaluate();
+  // Set filter to accept/deny all adjacent NNIs.
+  void SetNoFilter(const bool set_nni_to_pass = true);
+  // Set cutoff filter to constant cutoff.
+  void SetScoreCutoff(const double score_cutoff);
 
-  // ** NNI Likelihoods
-  // Functions for computation or estimating likelihood of NNIs.
+  // ** Filtering
+
+  // Initialize filter before first NNI sweep.
+  void FilterInit();
+  // Update filter parameters for each NNI sweep (before evaluation).
+  void FilterPreUpdate();
+  // Perform computation on each Adjacent NNI.
+  void FilterEvaluateAdjacentNNIs();
+  // Update filter parameters for each NNI sweep (after evaluation).
+  void FilterPostUpdate();
+  // Apply the filtering method to determine whether each Adjacent NNI will be added to
+  // Accepted NNI or Rejected NNI.
+  void FilterProcessAdjacentNNIs();
+
+  // ** Filtering Schemes
+
+  // Set filter initialization function. Called at the beginning of NNI engine run,
+  // before main loop.
+  void SetFilterInitFunction(StaticFilterInitFunction filter_init_fn);
+  // Set filter pre-eval update step.  Performed once each loop before the filter
+  // evaluvation step.
+  void SetFilterPreUpdateFunction(StaticFilterUpdateFunction filter_pre_update_fn);
+  // Set filter evaluation step.  Evaluation step is performed on each proposed adjacent
+  // NNI individually, and returns a score for that NNI.
+  void SetFilterEvalFunction(StaticFilterEvaluateFunction filter_eval_fn);
+  // Set filter post-eval update step. Performed once each loop after the filter
+  // evaluvation step.
+  void SetFilterPostUpdateFunction(StaticFilterUpdateFunction filter_post_update_fn);
+  // Set filter processing step.  Processing step is performed on each proposed adjacent
+  // NNI individually, taking in its NNI score and outputting a boolean whether to
+  // accept or reject the NNI.
+  void SetFilterProcessFunction(StaticFilterProcessFunction filter_process_fn);
+
+  // Set filtering scheme to use GP likelihoods.
+  void SetGPLikelihoodFilteringScheme(const double score_cutoff);
+  // Set filtering scheme to use TP likelihoods.
+  void SetTPLikelihoodFilteringScheme(const double score_cutoff);
+  // Set filtering scheme to use TP parsimony.
+  void SetTPParsimonyFilteringScheme(const double score_cutoff);
+
+  // ** Key Indexing
+  // These function finds mapping from current NNIs contained in DAG to proposed NNI.
 
   // Map for storing important key indices for NNI Likelihood computation.
   enum class KeyIndex : size_t {
@@ -143,19 +190,23 @@ class NNIEngine {
       const NNIOperation &pre_nni, const NNIOperation &post_nni,
       const KeyIndexMap &pre_key_idx);
 
+  // ** Scoring via GP Likelihood
+  // Functions for computation or estimating likelihood of NNIs.
+
   // Fetches Pre-NNI data to prep Post-NNI for likelihood computation. Method stores
   // intermediate values in the GPEngine temp space (expects GPEngine has already been
   // resized).
-  KeyIndexMapPair PassDataFromPreNNIToPostNNIViaReference(
+  KeyIndexMapPair PassGPEngineDataFromPreNNIToPostNNIViaReference(
       const NNIOperation &pre_nni, const NNIOperation &post_nni,
       const size_t nni_count = 0, const bool use_unique_temps = false);
   // Fetches Data from Pre-NNI for Post-NNI. Can be used for initial values when moving
   // accepted NNIs from Graft to Host DAG.
-  KeyIndexMapPair PassDataFromPreNNIToPostNNIViaCopy(const NNIOperation &pre_nni,
-                                                     const NNIOperation &post_nni);
+  KeyIndexMapPair PassGPEngineDataFromPreNNIToPostNNIViaCopy(
+      const NNIOperation &pre_nni, const NNIOperation &post_nni);
 
   // Build GPOperation vector for computing NNI Likelihood. For NNIs that are not in
-  // the DAG, must create KeyIndexMap through PassDataFromPreNNIToPostNNIViaReference.
+  // the DAG, must create KeyIndexMap through
+  // PassGPEngineDataFromPreNNIToPostNNIViaReference.
   GPOperationVector BuildGPOperationsForNNILikelihood(
       const NNIOperation &nni, const KeyIndexMap &nni_key_idx) const;
   // Build GPOperation vector for computing NNI Likelihood for all adjacent NNIs.
@@ -165,30 +216,23 @@ class NNIEngine {
   // Option to grow engine for computing likelihoods via reference or via copy. If
   // computing via reference, option whether to use unique temporaries (for testing and
   // computing in parallel).
-  void GrowEngineForAdjacentNNILikelihoods(const bool via_reference = true,
-                                           const bool use_unique_temps = false);
-  // Performs entire likelihood computation for all Adjacent NNIs.
+  void GrowGPEngineForAdjacentNNILikelihoods(const bool via_reference = true,
+                                             const bool use_unique_temps = false);
+  // Performs entire GP likelihood computation for all Adjacent NNIs.
   // Allocates necessary extra space on GPEngine, generates and processes
   // GPOperationVector, then retrieves results and stores in Scored NNIs.
-  void ScoreAdjacentNNIsByLikelihood();
+  void ScoreAdjacentNNIsByGPLikelihood();
 
-  // ** Filtering
+  // ** Scoring via TP Likelihood
 
-  // Initialize filter before first NNI sweep.
-  void FilterInit(std::optional<StaticFilterInitFunction> FilterInitFn = std::nullopt);
-  // Update filter parameters for each NNI sweep (before evaluation).
-  void FilterPreUpdate(
-      std::optional<StaticFilterUpdateFunction> FilterUpdateFn = std::nullopt);
-  // Perform computation on each Adjacent NNI.
-  void FilterEvaluateAdjacentNNIs(
-      std::optional<StaticFilterEvaluateFunction> FilterEvaluateFn = std::nullopt);
-  // Update filter parameters for each NNI sweep (after evaluation).
-  void FilterPostUpdate(
-      std::optional<StaticFilterUpdateFunction> FilterUpdateFn = std::nullopt);
-  // Apply the filtering method to determine whether each Adjacent NNI will be added to
-  // Accepted NNI or Rejected NNI.
-  void FilterProcessAdjacentNNIs(
-      std::optional<StaticFilterProcessFunction> FilterProcessFn = NoFilter);
+  // Performs entire TP likelihood computation for all Adjacent NNIs.
+  // Allocates necessary extra space on TPEngine, computes and retrieves results and
+  // stores in Scored NNIs.
+  void ScoreAdjacentNNIsByTPLikelihood();
+
+  // ** Scoring via TP Parsimony
+
+  void ScoreAdjacentNNIsByTPParsimony();
 
   // ** DAG & GPEngine Maintenance
 
@@ -253,12 +297,22 @@ class NNIEngine {
   NNIOperation FindNNINeighborInDAG(const NNIOperation &nni);
 
  private:
+  // ** Access
+
+  // Get Reference of GPEngine.
+  GPEngine &GetGPEngine() { return *gp_engine_; }
+  // Get Reference of GPEngine.
+  TPEngine &GetTPEngine() { return *tp_engine_; }
+
+ private:
   // Un-owned reference DAG.
   GPDAG &dag_;
   // For adding temporary NNIs to DAG.
   std::unique_ptr<GraftDAG> graft_dag_;
   // Un-owned reference GPEngine.
-  GPEngine &gp_engine_;
+  GPEngine *gp_engine_ = nullptr;
+  // Un-owned reference TPEngine.
+  TPEngine *tp_engine_ = nullptr;
   // Tracks modifications to the DAG.
   Reindexer node_reindexer_;
   Reindexer edge_reindexer_;
@@ -279,61 +333,13 @@ class NNIEngine {
   // Map of previous rejected NNIs to their score.
   NNIDoubleMap scored_past_nnis_;
 
+  // Steps of filtering scheme.
+  StaticFilterInitFunction filter_init_fn_ = nullptr;
+  StaticFilterUpdateFunction filter_pre_update_fn_ = nullptr;
+  StaticFilterEvaluateFunction filter_eval_fn_ = nullptr;
+  StaticFilterUpdateFunction filter_post_update_fn_ = nullptr;
+  StaticFilterProcessFunction filter_process_fn_ = nullptr;
+
   // Count number of loops executed by engine.
   size_t sweep_count_ = 0;
 };
-
-template <typename DAGType>
-NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni,
-                                                         const DAGType &dag,
-                                                         const size_t node_count) {
-  // Find NNI nodes.
-  const auto parent_id = dag.GetDAGNodeId(nni.GetParent());
-  const auto child_id = dag.GetDAGNodeId(nni.GetChild());
-  const bool is_left_clade_sister = nni.WhichParentCladeIsFocalClade();
-  // Find key indices for NNI.
-  KeyIndexMap key_idx_map;
-  key_idx_map.fill(NoId);
-  key_idx_map[KeyIndex::Parent_Id] = parent_id.value_;
-  key_idx_map[KeyIndex::Child_Id] = child_id.value_;
-  key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
-  key_idx_map[KeyIndex::Parent_RHat] =
-      PLVHandler::GetPVIndex(PLVType::RHat, parent_id, node_count);
-  key_idx_map[KeyIndex::Parent_RFocal] = PLVHandler::GetPVIndex(
-      PLVHandler::RPLVType(!is_left_clade_sister), parent_id, node_count);
-  key_idx_map[KeyIndex::Parent_PHatSister] = PLVHandler::GetPVIndex(
-      PLVHandler::PPLVType(is_left_clade_sister), parent_id, node_count);
-  key_idx_map[KeyIndex::Child_P] =
-      PLVHandler::GetPVIndex(PLVType::P, child_id, node_count);
-  key_idx_map[KeyIndex::Child_PHatLeft] =
-      PLVHandler::GetPVIndex(PLVType::PHatLeft, child_id, node_count);
-  key_idx_map[KeyIndex::Child_PHatRight] =
-      PLVHandler::GetPVIndex(PLVType::PHatRight, child_id, node_count);
-
-  return key_idx_map;
-}
-
-template <typename DAGType>
-NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
-    const NNIOperation &pre_nni, const NNIOperation &post_nni,
-    const NNIEngine::KeyIndexMap &pre_key_idx, const DAGType &dag) {
-  // Unpopulated key indices will left as NoId.
-  NodeId parent_id = dag.GetDAGNodeId(post_nni.GetParent());
-  NodeId child_id = dag.GetDAGNodeId(post_nni.GetChild());
-  KeyIndexMap post_key_idx;
-  post_key_idx.fill(NoId);
-  post_key_idx[KeyIndex::Parent_Id] = parent_id.value_;
-  post_key_idx[KeyIndex::Child_Id] = child_id.value_;
-  post_key_idx[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
-
-  // Array for mapping from pre-NNI plvs to post-NNI plvs.
-  const auto key_map = BuildKeyIndexTypePairsFromPreNNIToPostNNI(pre_nni, post_nni);
-
-  // Set NNI plvs to their corresponding Pre-NNI plvs.
-  post_key_idx[KeyIndex::Parent_RHat] = pre_key_idx[KeyIndex::Parent_RHat];
-  for (const auto &[pre_key_type, post_key_type] : key_map) {
-    post_key_idx[post_key_type] = pre_key_idx[pre_key_type];
-  }
-
-  return post_key_idx;
-}
