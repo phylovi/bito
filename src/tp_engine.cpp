@@ -130,17 +130,6 @@ void TPEngine::CopyOverEdgeDataFromPreNNIToPostNNI(const NNIOperation &post_nni,
                                           Direction::Leafward, SubsplitClade::Right);
 }
 
-void TPEngine::PopulateLikelihoodPVsAfterDAGAddNodePair(const NNIOperation &post_nni,
-                                                        const NNIOperation &pre_nni) {
-  // Update child node.
-  const auto pre_child_id = dag_.GetDAGNodeId(pre_nni.GetChild());
-  const auto post_child_id = dag_.GetDAGNodeId(post_nni.GetChild());
-
-  // Update parent node.
-  const auto pre_parent_id = dag_.GetDAGNodeId(pre_nni.GetParent());
-  const auto post_parent_id = dag_.GetDAGNodeId(post_nni.GetParent());
-}
-
 double TPEngine::GetTopTreeLikelihoodWithProposedNNI(const NNIOperation &post_nni,
                                                      const NNIOperation &pre_nni) {
   using NNIClade = NNIOperation::NNIClade;
@@ -162,10 +151,8 @@ double TPEngine::GetTopTreeLikelihoodWithProposedNNI(const NNIOperation &post_nn
   pre_id_map[NNIClade::ChildRight] = pvs.GetPVIndex(PLVType::PHatRight, pre_child_id);
 
   // Compute P-PLV of post-child node.
-  auto &child_phat_pv = likelihood_pvs_.GetSparePV(0);
   auto child_phat_pvid = likelihood_pvs_.GetSparePVIndex(0);
   // Compute R-PLV of post-parent node.
-  auto &parent_rfocal_pv = likelihood_pvs_.GetSparePV(1);
   auto parent_rfocal_pvid = likelihood_pvs_.GetSparePVIndex(1);
   // Get temp central edge.
   auto post_edge_id = EdgeId(dag_.EdgeCountWithLeafSubsplits() + 1);

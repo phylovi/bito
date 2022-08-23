@@ -1988,7 +1988,11 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
 }
 
-//
+// Builds a TPEngine for two DAGs: a two-tree DAG, and a DAG formed from the original
+// DAG plus all its adjacent NNIs. Both DAGs PVs are populated and their edge TP
+// likelihoods are computed.  Then the first DAG's adjacent proposed NNI likelihoods are
+// computed using only its own PVs.  Then compares the results of proposed NNIs from the
+// first DAG with the known likelihoods from the second DAG.
 TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
   auto MakeTPEngine = [](const std::string& fasta_path, const std::string& newick_path,
                          const std::string& tp_mmap_path,
@@ -2043,10 +2047,10 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
   auto inst_with_nni =
       MakeTPEngine(fasta_path_with_nni, newick_path_with_nni,
                    "_ignore/mmapped_plv.tp.2.data", "_ignore/mmapped_plv.gp.2.data");
-  auto& tpengine_with_nni = inst_with_nni.GetTPEngine();
   auto likelihoods_with_nni = BuildEdgeLikelihoodMap(inst_with_nni);
   std::set<double> likelihoods_set;
   for (const auto& [edge_id, likelihood] : likelihoods_with_nni) {
+    std::ignore = edge_id;
     likelihoods_set.insert(likelihood);
   }
 
@@ -2059,13 +2063,11 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
   auto likelihoods_without_nni = BuildEdgeLikelihoodMap(inst_without_nni);
 
   // Get adjacent NNIs and likelihoods.
-  auto& dag = inst_without_nni.GetDAG();
   auto& tpengine_without_nni = inst_without_nni.GetTPEngine();
   auto& nni_engine = inst_without_nni.GetNNIEngine();
   nni_engine.SyncAdjacentNNIsWithDAG();
 
   int nni_count = 0;
-  std::unordered_map<int, double> likelihood_diffs;
   for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
     const auto& pre_nni = nni_engine.FindNNINeighborInDAG(nni);
     double likelihood =
@@ -2077,7 +2079,6 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
         min_diff = diff;
       }
     }
-    likelihood_diffs[nni_count] = min_diff;
     CHECK_MESSAGE(min_diff <= 1e-2,
                   "Likelihood of proposed NNI in DAG without NNIs was not found in DAG "
                   "with NNIs.");

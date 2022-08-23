@@ -191,10 +191,6 @@ class TPEngine {
   void EvolveLikelihoodPPVUpEdge(const EdgeId edge_id);
   // Evolve down the given edge to compute the R-PV of its child node.
   void EvolveLikelihoodRPVDownEdge(const EdgeId edge_id);
-
-  //
-  void PopulateLikelihoodPVsAfterDAGAddNodePair(const NNIOperation &post_nni,
-                                                const NNIOperation &pre_nni);
   // Update branch lengths by copying over
   void CopyOverEdgeDataFromPreNNIToPostNNI(
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
