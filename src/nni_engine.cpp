@@ -483,10 +483,16 @@ void NNIEngine::ScoreAdjacentNNIsByTPParsimony() {
 // ** DAG & Engine Maintenance
 
 void NNIEngine::InitGPEngine() {
-  GetGPEngine().GrowPLVs(dag_.NodeCountWithoutDAGRoot());
-  GetGPEngine().GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits());
-  GetGPEngine().ProcessOperations(dag_.PopulatePLVs());
-  GetGPEngine().ProcessOperations(dag_.ComputeLikelihoods());
+  if (gp_engine_) {
+    GetGPEngine().GrowPLVs(dag_.NodeCountWithoutDAGRoot());
+    GetGPEngine().GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits());
+    GetGPEngine().ProcessOperations(dag_.PopulatePLVs());
+    GetGPEngine().ProcessOperations(dag_.ComputeLikelihoods());
+  }
+  if (tp_engine_) {
+    GetTPEngine().GrowNodeData(dag_.NodeCount());
+    GetTPEngine().GrowEdgeData(dag_.EdgeCountWithLeafSubsplits());
+  }
 }
 
 void NNIEngine::PrepGPEngineForLikelihoods() {
@@ -512,6 +518,7 @@ void NNIEngine::AddAcceptedNNIsToDAG() {
          "Node reindexer is the wrong size.");
   Assert(dag_.EdgeCountWithLeafSubsplits() == edge_reindexer_.size(),
          "Edge reindexer is the wrong size.");
+  // Resize engines.
   if (gp_engine_) {
     GetGPEngine().GrowPLVs(dag_.NodeCountWithoutDAGRoot(), node_reindexer_);
     GetGPEngine().GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits(), edge_reindexer_);

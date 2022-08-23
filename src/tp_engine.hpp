@@ -35,7 +35,9 @@ class TPEngine {
 
   // Initialize ChoiceMap for entire DAG by Likelihood.
   void InitializeLikelihood();
-  // Update ChoiceMap with NNI.
+  // Find the likelihood of a proposed NNI (an NNI not currently stored in the DAG but
+  // adjacent to nodes in the current DAG).  Computations are done in place, leveraging
+  // pre-existing PVs.
   double GetTopTreeLikelihoodWithProposedNNI(const NNIOperation &post_nni,
                                              const NNIOperation &pre_nni);
   // Fetch likelihood of top tree with given edge.  Assumed likelihoods have already
@@ -58,9 +60,6 @@ class TPEngine {
 
   // ** Parameter Data
 
-  // After adding or removing nodes and edges from DAG, update parameter data.
-  void UpdateDataAfterModifyingDAG(const Reindexer node_reindexer,
-                                   const Reindexer edge_reindexer);
   // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option to
   // remap data according to DAG reindexers.  Option to give explicit number of nodes or
   // edges to allocate memory for (this is the only way memory allocation will be

@@ -41,7 +41,7 @@ class NNIEngine {
   // Get Reference of GPEngine.
   const GPEngine &GetGPEngine() const { return *gp_engine_; }
   bool &IsUsingGPEngine() { return using_gp_engine_; }
-  // Get Reference of GPEngine.
+  // Get Reference of TPEngine.
   const TPEngine &GetTPEngine() const { return *tp_engine_; }
   bool &IsUsingTPEngine() { return using_tp_engine_; }
   // Get Adjacent NNIs to DAG.
@@ -328,7 +328,7 @@ class NNIEngine {
   // Map of previous rejected NNIs to their score.
   NNIDoubleMap scored_past_nnis_;
 
-  // ** Filtering functions
+  // Steps of filtering scheme.
   StaticFilterInitFunction filter_init_fn_ = nullptr;
   StaticFilterUpdateFunction filter_pre_update_fn_ = nullptr;
   StaticFilterEvaluateFunction filter_eval_fn_ = nullptr;

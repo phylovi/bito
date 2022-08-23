@@ -1988,11 +1988,11 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
 }
 
-// Builds a TPEngine for two DAGs: a two-tree DAG, and a DAG formed from the original
-// DAG plus all its adjacent NNIs. Both DAGs PVs are populated and their edge TP
-// likelihoods are computed.  Then the first DAG's adjacent proposed NNI likelihoods are
-// computed using only its own PVs.  Then compares the results of proposed NNIs from the
-// first DAG with the known likelihoods from the second DAG.
+// Runs an instance of TPEngine for two DAGs: DAG_1, a simple DAG, and DAG_2, a DAG
+// formed from DAG_1 plus all of its adjacent NNIs. Both DAGs PVs are populated and
+// their edge TP likelihoods are computed.  Then DAG_1's adjacent proposed NNI
+// likelihoods are computed using only its own PVs. Then we compare the results of
+// the proposed NNIs from DAG_1 with the known likelihoods of DAG_2.
 TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
   auto MakeTPEngine = [](const std::string& fasta_path, const std::string& newick_path,
                          const std::string& tp_mmap_path,
@@ -2002,7 +2002,6 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
     auto& dag = inst.GetDAG();
     inst.MakeEngine();
     GPEngine& gpengine = *inst.GetEngine();
-    // inst.EstimateBranchLengths(0.00001, 100, true);
     auto edge_indexer = dag.BuildEdgeIndexer();
     inst.MakeTPEngine(tp_mmap_path, true, true);
     inst.MakeNNIEngine();
@@ -2024,7 +2023,7 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
     auto& tpengine = inst.GetTPEngine();
     auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
     const auto tree_source = tpengine.GetTreeSource();
-    // Populate tree vector.
+    // Populate tree vector and edge map.
     for (const auto tree : tree_collection) {
       tree_vector.push_back(tree);
     }
@@ -2072,14 +2071,14 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
     const auto& pre_nni = nni_engine.FindNNINeighborInDAG(nni);
     double likelihood =
         tpengine_without_nni.GetTopTreeLikelihoodWithProposedNNI(nni, pre_nni);
-    double min_diff = 1000.0;
+    double min_diff = std::numeric_limits<double>::max();
     for (const auto& other_likelihood : likelihoods_set) {
       double diff = std::abs(other_likelihood - likelihood);
       if (min_diff > diff) {
         min_diff = diff;
       }
     }
-    CHECK_MESSAGE(min_diff <= 1e-2,
+    CHECK_MESSAGE(min_diff <= 1e-3,
                   "Likelihood of proposed NNI in DAG without NNIs was not found in DAG "
                   "with NNIs.");
     nni_count++;

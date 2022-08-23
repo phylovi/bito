@@ -74,8 +74,10 @@ void TPEngine::InitializeLikelihood() {
 void TPEngine::UpdateLikelihoodsAfterDAGAddNodePair(const NNIOperation &post_nni,
                                                     const NNIOperation &pre_nni,
                                                     std::optional<size_t> new_tree_id) {
-  // Copy over branch lengths and .
+  // Copy over branch lengths.
+  CopyOverEdgeDataFromPreNNIToPostNNI(post_nni, pre_nni, new_tree_id);
   // Populate PLVs.
+  InitializeLikelihood();
 }
 
 void TPEngine::CopyOverEdgeDataFromPreNNIToPostNNI(const NNIOperation &post_nni,
