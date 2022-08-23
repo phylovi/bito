@@ -4,19 +4,20 @@
 
 #include "nni_engine.hpp"
 
-#include "gp_engine.hpp"
-#include "gp_dag.hpp"
-
-#include "bitset.hpp"
-#include "subsplit_dag.hpp"
-#include "nni_operation.hpp"
-#include "graft_dag.hpp"
-#include "sugar.hpp"
-
 using PLVType = PLVHandler::PLVType;
 
-NNIEngine::NNIEngine(GPDAG &dag, GPEngine &gp_engine)
-    : dag_(dag), graft_dag_(std::make_unique<GraftDAG>(dag)), gp_engine_(gp_engine) {}
+NNIEngine::NNIEngine(GPDAG &dag, std::optional<GPEngine *> gp_engine,
+                     std::optional<TPEngine *> tp_engine)
+    : dag_(dag), graft_dag_(std::make_unique<GraftDAG>(dag)) {
+  if (gp_engine.has_value()) {
+    using_gp_engine_ = true;
+    gp_engine_ = gp_engine.value();
+  }
+  if (tp_engine.has_value()) {
+    using_tp_engine_ = true;
+    tp_engine_ = tp_engine.value();
+  }
+}
 
 // ** Runners
 
@@ -62,17 +63,128 @@ void NNIEngine::RunPostLoop() {
 
 // ** Filter Functions
 
-double NNIEngine::NoEvaluate(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                             GraftDAG &this_graft_dag, const NNIOperation &nni) {
-  return 0.0;
+void NNIEngine::SetNoEvaluate() {
+  // NNI Evaluation function
+  filter_process_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                          TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
+                          const NNIOperation &nni) -> double { return 0.0; };
 }
 
-bool NNIEngine::NoFilter(NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                         GraftDAG &this_graft_dag, const NNIOperation &nni) {
-  return true;
+void NNIEngine::SetNoFilter(const bool set_nni_to_pass) {
+  // NNI Processing function
+  filter_process_fn_ = [set_nni_to_pass](
+                           NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                           TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
+                           const NNIOperation &nni) -> bool { return set_nni_to_pass; };
 }
 
-// ** NNI Likelihoods
+void NNIEngine::SetScoreCutoff(const double score_cutoff) {
+  // NNI Processing function
+  filter_process_fn_ = [score_cutoff](
+                           NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                           TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
+                           const NNIOperation &nni) -> bool {
+    double nni_score = (*this_nni_engine.GetScoredNNIs().find(nni)).second;
+    bool nni_passes = (nni_score >= score_cutoff);
+    return nni_passes;
+  };
+}
+
+// ** Filtering
+
+void NNIEngine::FilterInit() {
+  if (filter_init_fn_) {
+    (filter_init_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG());
+  }
+}
+
+void NNIEngine::FilterPreUpdate() {
+  if (filter_pre_update_fn_) {
+    (filter_pre_update_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG());
+  }
+}
+
+void NNIEngine::FilterEvaluateAdjacentNNIs() {
+  if (!filter_eval_fn_) return;
+  for (const auto &nni : GetAdjacentNNIs()) {
+    const double nni_score =
+        (filter_eval_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG(), nni);
+    AddScoreForNNI(nni, nni_score);
+  }
+}
+
+void NNIEngine::FilterPostUpdate() {
+  if (filter_post_update_fn_) {
+    (filter_post_update_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG());
+  }
+}
+
+void NNIEngine::FilterProcessAdjacentNNIs() {
+  Assert(filter_process_fn_, "Must assign a filter process function.");
+  for (const auto &nni : GetAdjacentNNIs()) {
+    const bool accept_nni =
+        (filter_process_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG(), nni);
+    if (accept_nni) {
+      accepted_nnis_.insert(nni);
+    } else {
+      rejected_nnis_.insert(nni);
+    }
+  }
+}
+
+// ** Filtering Scheme
+
+void NNIEngine::SetFilteringScheme(
+    std::optional<StaticFilterInitFunction> filter_init_fn,
+    std::optional<StaticFilterUpdateFunction> filter_pre_update_fn,
+    std::optional<StaticFilterEvaluateFunction> filter_eval_fn,
+    std::optional<StaticFilterUpdateFunction> filter_post_update_fn,
+    std::optional<StaticFilterProcessFunction> filter_process_fn) {
+  if (filter_init_fn.has_value()) {
+    filter_init_fn_ = filter_init_fn.value();
+  }
+  if (filter_pre_update_fn.has_value()) {
+    filter_pre_update_fn_ = filter_pre_update_fn.value();
+  }
+  if (filter_eval_fn.has_value()) {
+    filter_eval_fn_ = filter_eval_fn.value();
+  }
+  if (filter_post_update_fn.has_value()) {
+    filter_post_update_fn_ = filter_post_update_fn.value();
+  }
+  if (filter_process_fn.has_value()) {
+    filter_process_fn_ = filter_process_fn.value();
+  }
+}
+
+void NNIEngine::SetGPLikelihoodFilteringScheme(const double score_cutoff) {
+  // Pre-Update Evaluation function
+  filter_pre_update_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                             TPEngine &this_tp_engine, GraftDAG &this_graft_dag) {
+    this_nni_engine.ScoreAdjacentNNIsByGPLikelihood();
+  };
+  SetScoreCutoff(score_cutoff);
+}
+
+void NNIEngine::SetTPLikelihoodFilteringScheme(const double score_cutoff) {
+  // Pre-Update Evaluation function
+  filter_pre_update_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                             TPEngine &this_tp_engine, GraftDAG &this_graft_dag) {
+    this_nni_engine.ScoreAdjacentNNIsByTPLikelihood();
+  };
+  SetScoreCutoff(score_cutoff);
+}
+
+void NNIEngine::SetTPParsimonyFilteringScheme(const double score_cutoff) {
+  // Pre-Update Evaluation function
+  filter_pre_update_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                             TPEngine &this_tp_engine, GraftDAG &this_graft_dag) {
+    this_nni_engine.ScoreAdjacentNNIsByTPParsimony();
+  };
+  SetScoreCutoff(score_cutoff);
+}
+
+// ** Key Indexing
 
 NNIEngine::KeyIndex NNIEngine::NNICladeToPHatPLV(NNIClade clade_type) {
   switch (clade_type) {
@@ -116,7 +228,76 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
       pre_nni, post_nni, pre_key_idx, GetGraftDAG());
 }
 
-NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaCopy(
+template <typename DAGType>
+NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni,
+                                                         const DAGType &dag,
+                                                         const size_t node_count) {
+  // Find NNI nodes.
+  const auto parent_id = dag.GetDAGNodeId(nni.GetParent());
+  const auto child_id = dag.GetDAGNodeId(nni.GetChild());
+  const bool is_left_clade_sister = nni.WhichParentCladeIsFocalClade();
+  // Find key indices for NNI.
+  KeyIndexMap key_idx_map;
+  key_idx_map.fill(NoId);
+  key_idx_map[KeyIndex::Parent_Id] = parent_id.value_;
+  key_idx_map[KeyIndex::Child_Id] = child_id.value_;
+  key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
+  key_idx_map[KeyIndex::Parent_RHat] =
+      PLVHandler::GetPVIndex(PLVType::RHat, parent_id, node_count);
+  key_idx_map[KeyIndex::Parent_RFocal] = PLVHandler::GetPVIndex(
+      PLVHandler::RPLVType(!is_left_clade_sister), parent_id, node_count);
+  key_idx_map[KeyIndex::Parent_PHatSister] = PLVHandler::GetPVIndex(
+      PLVHandler::PPLVType(is_left_clade_sister), parent_id, node_count);
+  key_idx_map[KeyIndex::Child_P] =
+      PLVHandler::GetPVIndex(PLVType::P, child_id, node_count);
+  key_idx_map[KeyIndex::Child_PHatLeft] =
+      PLVHandler::GetPVIndex(PLVType::PHatLeft, child_id, node_count);
+  key_idx_map[KeyIndex::Child_PHatRight] =
+      PLVHandler::GetPVIndex(PLVType::PHatRight, child_id, node_count);
+
+  return key_idx_map;
+}
+// Explicit Instantiation
+template NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(
+    const NNIOperation &nni, const GPDAG &dag, const size_t node_count);
+template NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(
+    const NNIOperation &nni, const GraftDAG &dag, const size_t node_count);
+
+template <typename DAGType>
+NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
+    const NNIOperation &pre_nni, const NNIOperation &post_nni,
+    const NNIEngine::KeyIndexMap &pre_key_idx, const DAGType &dag) {
+  // Unpopulated key indices will left as NoId.
+  NodeId parent_id = dag.GetDAGNodeId(post_nni.GetParent());
+  NodeId child_id = dag.GetDAGNodeId(post_nni.GetChild());
+  KeyIndexMap post_key_idx;
+  post_key_idx.fill(NoId);
+  post_key_idx[KeyIndex::Parent_Id] = parent_id.value_;
+  post_key_idx[KeyIndex::Child_Id] = child_id.value_;
+  post_key_idx[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
+
+  // Array for mapping from pre-NNI plvs to post-NNI plvs.
+  const auto key_map = BuildKeyIndexTypePairsFromPreNNIToPostNNI(pre_nni, post_nni);
+
+  // Set NNI plvs to their corresponding Pre-NNI plvs.
+  post_key_idx[KeyIndex::Parent_RHat] = pre_key_idx[KeyIndex::Parent_RHat];
+  for (const auto &[pre_key_type, post_key_type] : key_map) {
+    post_key_idx[post_key_type] = pre_key_idx[pre_key_type];
+  }
+
+  return post_key_idx;
+}
+// Explicit Instantiation
+template NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
+    const NNIOperation &pre_nni, const NNIOperation &post_nni,
+    const NNIEngine::KeyIndexMap &pre_key_idx, const GPDAG &dag);
+template NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferencePreNNI(
+    const NNIOperation &pre_nni, const NNIOperation &post_nni,
+    const NNIEngine::KeyIndexMap &pre_key_idx, const GraftDAG &dag);
+
+// ** Scoring via NNI Likelihood
+
+NNIEngine::KeyIndexMapPair NNIEngine::PassGPEngineDataFromPreNNIToPostNNIViaCopy(
     const NNIOperation &pre_nni, const NNIOperation &post_nni) {
   // Find data in pre-NNI.
   const auto pre_key_idx =
@@ -129,23 +310,23 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaCopy(
   const auto key_type_map =
       BuildKeyIndexTypePairsFromPreNNIToPostNNI(pre_nni, post_nni);
   // Copy over pre-NNI plvs to NNI plvs.
-  gp_engine_.CopyPLVData(pre_key_idx[KeyIndex::Parent_RHat],
-                         post_key_idx[KeyIndex::Parent_RHat]);
+  GetGPEngine().CopyPLVData(pre_key_idx[KeyIndex::Parent_RHat],
+                            post_key_idx[KeyIndex::Parent_RHat]);
   for (const auto &[pre_key_type, post_key_type] : key_type_map) {
-    gp_engine_.CopyPLVData(pre_key_idx[post_key_type], post_key_idx[pre_key_type]);
+    GetGPEngine().CopyPLVData(pre_key_idx[post_key_type], post_key_idx[pre_key_type]);
   }
 
   // Copy over associated node data.
   for (const auto id_type : {KeyIndex::Parent_Id, KeyIndex::Child_Id}) {
     const auto pre_node_id = NodeId(pre_key_idx[id_type]);
     const auto post_node_id = NodeId(post_key_idx[id_type]);
-    gp_engine_.CopyNodeData(pre_node_id, post_node_id);
+    GetGPEngine().CopyNodeData(pre_node_id, post_node_id);
   }
   // Copy over central edge data.
   for (const auto idx_type : {KeyIndex::Edge}) {
     const auto pre_edge_idx = EdgeId(pre_key_idx[idx_type]);
     const auto post_edge_idx = EdgeId(post_key_idx[idx_type]);
-    gp_engine_.CopyGPCSPData(pre_edge_idx, post_edge_idx);
+    GetGPEngine().CopyGPCSPData(pre_edge_idx, post_edge_idx);
   }
 
   // Copy over associated non-central edge data.
@@ -173,7 +354,7 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaCopy(
                 GetGraftDAG().GetEdgeIdx(pre_node.Id(), NodeId(adj_node_id));
             const auto post_edge_idx =
                 GetGraftDAG().GetEdgeIdx(post_node.Id(), NodeId(adj_node_id));
-            gp_engine_.CopyGPCSPData(pre_edge_idx, post_edge_idx);
+            GetGPEngine().CopyGPCSPData(pre_edge_idx, post_edge_idx);
           }
         }
       }
@@ -183,7 +364,7 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaCopy(
   return {pre_key_idx, post_key_idx};
 }
 
-NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaReference(
+NNIEngine::KeyIndexMapPair NNIEngine::PassGPEngineDataFromPreNNIToPostNNIViaReference(
     const NNIOperation &pre_nni, const NNIOperation &post_nni, const size_t nni_count,
     const bool use_unique_temps) {
   // Find data in pre-NNI.
@@ -202,15 +383,15 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassDataFromPreNNIToPostNNIViaReference(
     temp_offset_1 = 0;
     temp_offset_2 = 1;
   }
-  post_key_idx[KeyIndex::Parent_RFocal] = gp_engine_.GetSparePLVIndex(temp_offset_1);
-  post_key_idx[KeyIndex::Child_P] = gp_engine_.GetSparePLVIndex(temp_offset_2);
-  post_key_idx[KeyIndex::Edge] = gp_engine_.GetSpareGPCSPIndex(nni_count);
+  post_key_idx[KeyIndex::Parent_RFocal] = GetGPEngine().GetSparePLVIndex(temp_offset_1);
+  post_key_idx[KeyIndex::Child_P] = GetGPEngine().GetSparePLVIndex(temp_offset_2);
+  post_key_idx[KeyIndex::Edge] = GetGPEngine().GetSpareGPCSPIndex(nni_count);
 
   // Copy over central edge data.
   for (const auto idx_type : {KeyIndex::Edge}) {
     const auto pre_edge_idx = EdgeId(pre_key_idx[idx_type]);
     const auto post_edge_idx = EdgeId(post_key_idx[idx_type]);
-    gp_engine_.CopyGPCSPData(pre_edge_idx, post_edge_idx);
+    GetGPEngine().CopyGPCSPData(pre_edge_idx, post_edge_idx);
   }
 
   return {pre_key_idx, post_key_idx};
@@ -237,14 +418,14 @@ GPOperationVector NNIEngine::BuildGPOperationsForNNILikelihood(
 GPOperationVector NNIEngine::BuildGPOperationsForAdjacentNNILikelihoods(
     const bool via_reference) {
   GPOperationVector operations = GPOperationVector();
-  GrowEngineForAdjacentNNILikelihoods(via_reference);
+  GrowGPEngineForAdjacentNNILikelihoods(via_reference);
   size_t nni_count = 0;
   for (const auto &nni : GetAdjacentNNIs()) {
     const auto pre_nni = FindNNINeighborInDAG(nni);
     const auto [prenni_key_idx, nni_key_idx] =
-        (via_reference
-             ? PassDataFromPreNNIToPostNNIViaReference(pre_nni, nni, nni_count, false)
-             : PassDataFromPreNNIToPostNNIViaCopy(pre_nni, nni));
+        (via_reference ? PassGPEngineDataFromPreNNIToPostNNIViaReference(
+                             pre_nni, nni, nni_count, false)
+                       : PassGPEngineDataFromPreNNIToPostNNIViaCopy(pre_nni, nni));
     std::ignore = prenni_key_idx;
     GPOperations::AppendGPOperations(
         operations, BuildGPOperationsForNNILikelihood(nni, nni_key_idx));
@@ -253,98 +434,64 @@ GPOperationVector NNIEngine::BuildGPOperationsForAdjacentNNILikelihoods(
   return operations;
 }
 
-void NNIEngine::GrowEngineForAdjacentNNILikelihoods(const bool via_reference,
-                                                    const bool use_unique_temps) {
+void NNIEngine::GrowGPEngineForAdjacentNNILikelihoods(const bool via_reference,
+                                                      const bool use_unique_temps) {
   if (via_reference) {
     if (use_unique_temps) {
-      gp_engine_.GrowSparePLVs(2 * GetAdjacentNNICount());
+      GetGPEngine().GrowSparePLVs(2 * GetAdjacentNNICount());
     } else {
-      gp_engine_.GrowSparePLVs(2);
+      GetGPEngine().GrowSparePLVs(2);
     }
-    gp_engine_.GrowSpareGPCSPs(GetAdjacentNNICount());
+    GetGPEngine().GrowSpareGPCSPs(GetAdjacentNNICount());
   } else {
-    gp_engine_.GrowPLVs(GetGraftDAG().NodeCountWithoutDAGRoot());
-    gp_engine_.GrowGPCSPs(GetGraftDAG().EdgeCountWithLeafSubsplits());
+    GetGPEngine().GrowPLVs(GetGraftDAG().NodeCountWithoutDAGRoot());
+    GetGPEngine().GrowGPCSPs(GetGraftDAG().EdgeCountWithLeafSubsplits());
   }
 }
 
-void NNIEngine::ScoreAdjacentNNIsByLikelihood() {
+void NNIEngine::ScoreAdjacentNNIsByGPLikelihood() {
   // Compute Likelihoods
   const GPOperationVector operations = BuildGPOperationsForAdjacentNNILikelihoods(true);
-  gp_engine_.ProcessOperations(operations);
+  GetGPEngine().ProcessOperations(operations);
   // Retrieve results from GPEngine and store in Scored NNIs.
+  const auto proposed_nni_likelihoods =
+      GetGPEngine().GetSparePerGPCSPLogLikelihoods(0, GetAdjacentNNICount());
   size_t nni_count = 0;
-  const auto likelihoods =
-      gp_engine_.GetSparePerGPCSPLogLikelihoods(0, GetAdjacentNNICount());
   for (const auto &nni : GetAdjacentNNIs()) {
-    scored_nnis_[nni] = likelihoods[nni_count];
+    scored_nnis_[nni] = proposed_nni_likelihoods[nni_count];
+    nni_count++;
   }
 }
 
-// ** Filtering
+// ** Scoring via TP Likelihood
 
-void NNIEngine::FilterInit(std::optional<StaticFilterInitFunction> FilterInitFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
-  if (FilterInitFn.has_value()) {
-    (*FilterInitFn)(*this, gp_engine_, GetGraftDAG());
-  }
-}
-
-void NNIEngine::FilterPreUpdate(
-    std::optional<StaticFilterUpdateFunction> FilterUpdateFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
-  if (FilterUpdateFn.has_value()) {
-    (*FilterUpdateFn)(*this, gp_engine_, GetGraftDAG());
-  }
-}
-
-void NNIEngine::FilterEvaluateAdjacentNNIs(
-    std::optional<StaticFilterEvaluateFunction> FilterEvaluateFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
+void NNIEngine::ScoreAdjacentNNIsByTPLikelihood() {
+  // Retrieve results from TPEngine and store in Scored NNIs.
   for (const auto &nni : GetAdjacentNNIs()) {
-    const double nni_score = (*FilterEvaluateFn)(*this, gp_engine_, GetGraftDAG(), nni);
-    AddScoreForNNI(nni, nni_score);
+    const auto pre_nni = FindNNINeighborInDAG(nni);
+    scored_nnis_[nni] = GetTPEngine().GetTopTreeLikelihoodWithProposedNNI(nni, pre_nni);
   }
 }
 
-void NNIEngine::FilterPostUpdate(
-    std::optional<StaticFilterUpdateFunction> FilterUpdateFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
-  if (FilterUpdateFn.has_value()) {
-    (*FilterUpdateFn)(*this, gp_engine_, GetGraftDAG());
-  }
+// ** Scoring via TP Parsimony
+
+void NNIEngine::ScoreAdjacentNNIsByTPParsimony() {
+  // !ISSUE: Implement Parsimony Score
+  Failwith("Error: No implementation.");
 }
 
-void NNIEngine::FilterProcessAdjacentNNIs(
-    std::optional<StaticFilterProcessFunction> FilterProcessFn) {
-  // !ISSUE #429: Need to implement.
-  Failwith("Currently no implementation.");
-  for (const auto &nni : GetAdjacentNNIs()) {
-    const bool accept_nni = (*FilterProcessFn)(*this, gp_engine_, GetGraftDAG(), nni);
-    if (accept_nni) {
-      accepted_nnis_.insert(nni);
-    } else {
-      rejected_nnis_.insert(nni);
-    }
-  }
-}
-
-// ** DAG & GPEngine Maintenance
+// ** DAG & Engine Maintenance
 
 void NNIEngine::InitGPEngine() {
-  gp_engine_.GrowPLVs(dag_.NodeCountWithoutDAGRoot());
-  gp_engine_.GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits());
-  gp_engine_.ProcessOperations(dag_.PopulatePLVs());
-  gp_engine_.ProcessOperations(dag_.ComputeLikelihoods());
+  GetGPEngine().GrowPLVs(dag_.NodeCountWithoutDAGRoot());
+  GetGPEngine().GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits());
+  GetGPEngine().ProcessOperations(dag_.PopulatePLVs());
+  GetGPEngine().ProcessOperations(dag_.ComputeLikelihoods());
 }
 
 void NNIEngine::PrepGPEngineForLikelihoods() {
-  gp_engine_.ProcessOperations(dag_.PopulatePLVs());
-  gp_engine_.ProcessOperations(dag_.ComputeLikelihoods());
+  GetGPEngine().ProcessOperations(dag_.PopulatePLVs());
+  GetGPEngine().ProcessOperations(dag_.ComputeLikelihoods());
 }
 
 void NNIEngine::AddAcceptedNNIsToDAG() {
@@ -365,8 +512,14 @@ void NNIEngine::AddAcceptedNNIsToDAG() {
          "Node reindexer is the wrong size.");
   Assert(dag_.EdgeCountWithLeafSubsplits() == edge_reindexer_.size(),
          "Edge reindexer is the wrong size.");
-  gp_engine_.GrowPLVs(dag_.NodeCountWithoutDAGRoot(), node_reindexer_);
-  gp_engine_.GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits(), edge_reindexer_);
+  if (gp_engine_) {
+    GetGPEngine().GrowPLVs(dag_.NodeCountWithoutDAGRoot(), node_reindexer_);
+    GetGPEngine().GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits(), edge_reindexer_);
+  }
+  if (tp_engine_) {
+    GetTPEngine().GrowNodeData(dag_.NodeCount(), node_reindexer_);
+    GetTPEngine().GrowEdgeData(dag_.EdgeCountWithLeafSubsplits(), edge_reindexer_);
+  }
 }
 
 void NNIEngine::GraftAdjacentNNIsToDAG() {

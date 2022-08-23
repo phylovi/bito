@@ -13,6 +13,8 @@
 #include "choice_map.hpp"
 #include "nni_operation.hpp"
 
+#pragma once
+
 using PVId = size_t;
 
 class TPEngine {
@@ -34,13 +36,18 @@ class TPEngine {
   // Initialize ChoiceMap for entire DAG by Likelihood.
   void InitializeLikelihood();
   // Update ChoiceMap with NNI.
-  void UpdateDAGAfterAddNodePairByLikelihood(const NNIOperation &nni_op);
+  double GetTopTreeLikelihoodWithProposedNNI(const NNIOperation &post_nni,
+                                             const NNIOperation &pre_nni);
   // Fetch likelihood of top tree with given edge.  Assumed likelihoods have already
   // been computed.
   double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
   // Compute top tree likelihoods for all edges in DAG. Result stored in
   // log_likelihoods_ matrix.
   void ComputeLikelihoods();
+  //
+  void UpdateLikelihoodsAfterDAGAddNodePair(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      std::optional<size_t> new_tree_id = std::nullopt);
 
   // ** Scoring by Parsimony
 
@@ -49,8 +56,11 @@ class TPEngine {
   // Update ChoiceMap with NNI.
   void UpdateDAGAfterAddNodePairByParsimony(const NNIOperation &nni_op);
 
-  // ** Parameters
+  // ** Parameter Data
 
+  // After adding or removing nodes and edges from DAG, update parameter data.
+  void UpdateDataAfterModifyingDAG(const Reindexer node_reindexer,
+                                   const Reindexer edge_reindexer);
   // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option to
   // remap data according to DAG reindexers.  Option to give explicit number of nodes or
   // edges to allocate memory for (this is the only way memory allocation will be
@@ -182,6 +192,14 @@ class TPEngine {
   // Evolve down the given edge to compute the R-PV of its child node.
   void EvolveLikelihoodRPVDownEdge(const EdgeId edge_id);
 
+  //
+  void PopulateLikelihoodPVsAfterDAGAddNodePair(const NNIOperation &post_nni,
+                                                const NNIOperation &pre_nni);
+  // Update branch lengths by copying over
+  void CopyOverEdgeDataFromPreNNIToPostNNI(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      std::optional<size_t> new_tree_id = std::nullopt);
+
   // ** Scoring by Parsimony
 
   void PopulateLeafParsimonyPVsWithSitePatterns();
@@ -222,8 +240,6 @@ class TPEngine {
   size_t edge_count_ = 0;
   size_t edge_alloc_ = 0;
   size_t edge_spare_count_ = 3;
-  // Total number of trees used to construct the DAG.
-  size_t input_tree_count_ = 0;
   // Growth factor when reallocating data.
   constexpr static double resizing_factor_ = 2.0;
 
@@ -250,6 +266,8 @@ class TPEngine {
   // TreeCollection is expected to be ordered from highest to lowest scoring, so lower
   // tree id means better scoring tree.
   std::vector<size_t> tree_source_;
+  // Total number of trees used to construct the DAG.
+  size_t input_tree_count_ = 0;
 
   // ** Scoring
   // Partial Vector for storing Likelihood scores.

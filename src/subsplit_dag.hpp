@@ -460,8 +460,13 @@ class SubsplitDAG {
   // E.g. {{0, "x0"}, {1, "x1"}, ...}
   static TagStringMap BuildDummyTagTaxonMap(const size_t taxon_count);
 
+  // Builds a vector of all NNIs that are contained in Post DAG that are not in Pre DAG.
+  static std::vector<NNIOperation> DifferingNNIsFromPreDAGToPostDAG(
+      const SubsplitDAG &pre_dag, const SubsplitDAG &post_dag);
+
  protected:
   explicit SubsplitDAG(SubsplitDAG &host_dag, HostDispatchTag);
+  // Remove Graft nodes and edges from Host DAG.
   void ResetHostDAG(SubsplitDAG &host_dag);
 
   // Builds a vector of subsplits of all children , optionally including leaf nodes.

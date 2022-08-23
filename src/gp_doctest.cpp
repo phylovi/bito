@@ -995,8 +995,8 @@ TEST_CASE("NNI Engine: Adjacent NNI Maintenance") {
 
   NNISet correct_adjacent_nnis;
 
-  auto nni_engine = NNIEngine(dag, gp_engine);
-  auto nni_engine_2 = NNIEngine(dag, gp_engine);
+  auto nni_engine = NNIEngine(dag, &gp_engine);
+  auto nni_engine_2 = NNIEngine(dag, &gp_engine);
 
   // Build adjacent NNIs from current DAG state.
   nni_engine.SyncAdjacentNNIsWithDAG();
@@ -1557,7 +1557,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 
   // Find all viable NNIs for DAG.
   size_t nni_count;
-  auto nni_engine = NNIEngine(pre_dag, pre_gpengine);
+  auto nni_engine = NNIEngine(pre_dag, &pre_gpengine);
   nni_engine.SyncAdjacentNNIsWithDAG();
   std::map<NNIOperation, NNIOperation> nni_to_prenni_map;
   // Find pre-NNI that created NNI.
@@ -1578,13 +1578,13 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
   // Compute likelihoods for graftDAG.
   graft_nni_engine.SyncAdjacentNNIsWithDAG();
   graft_nni_engine.GraftAdjacentNNIsToDAG();
-  graft_nni_engine.GrowEngineForAdjacentNNILikelihoods(true, true);
+  graft_nni_engine.GrowGPEngineForAdjacentNNILikelihoods(true, true);
   GPOperationVector graft_ops;
   nni_count = 0;
   for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     const auto [prenni_plv_idx, nni_plv_idx] =
-        graft_nni_engine.PassDataFromPreNNIToPostNNIViaReference(pre_nni, nni,
-                                                                 nni_count, true);
+        graft_nni_engine.PassGPEngineDataFromPreNNIToPostNNIViaReference(
+            pre_nni, nni, nni_count, true);
     std::ignore = prenni_plv_idx;
     GPOperations::AppendGPOperations(
         graft_ops,
@@ -1878,8 +1878,7 @@ TEST_CASE("Top-Pruning: Likelihoods") {
     std::unordered_map<EdgeId, size_t> tree_id_map;
     std::unordered_map<size_t, double> golden_tree_likelihood_map;
     std::unordered_map<EdgeId, double> tp_likelihood_map;
-
-    // GPInstance and TPEngine
+    // Make GPInstance and TPEngine.
     auto inst =
         GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.gp.data");
     inst.MakeEngine();
@@ -1898,7 +1897,6 @@ TEST_CASE("Top-Pruning: Likelihoods") {
     tpengine.InitializeLikelihood();
     tpengine.ComputeLikelihoods();
     const auto tree_source = tpengine.GetTreeSource();
-
     // Populate tree vector.
     for (const auto tree : tree_collection) {
       tree_vector.push_back(tree);
@@ -1988,4 +1986,101 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   const auto test_3 = TestTPEngineLikelihoodsAndPVs(
       fasta_path_six, newick_path_six_simple, false, false);
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
+}
+
+//
+TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
+  auto MakeTPEngine = [](const std::string& fasta_path, const std::string& newick_path,
+                         const std::string& tp_mmap_path,
+                         const std::string& gp_mmap_path) {
+    // Make GPInstance and TPEngine.
+    auto inst = GPInstanceOfFiles(fasta_path, newick_path, gp_mmap_path);
+    auto& dag = inst.GetDAG();
+    inst.MakeEngine();
+    GPEngine& gpengine = *inst.GetEngine();
+    // inst.EstimateBranchLengths(0.00001, 100, true);
+    auto edge_indexer = dag.BuildEdgeIndexer();
+    inst.MakeTPEngine(tp_mmap_path, true, true);
+    inst.MakeNNIEngine();
+    TPEngine& tpengine = inst.GetTPEngine();
+    tpengine.SetBranchLengths(gpengine.GetBranchLengths());
+    auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
+    tpengine.SetChoiceMapByTakingFirst(tree_collection, edge_indexer);
+    tpengine.InitializeLikelihood();
+    tpengine.ComputeLikelihoods();
+    return inst;
+  };
+
+  auto BuildEdgeLikelihoodMap = [](GPInstance& inst) {
+    std::vector<RootedTree> tree_vector;
+    std::unordered_map<EdgeId, size_t> tree_id_map;
+    std::unordered_map<EdgeId, double> tp_likelihood_map;
+
+    auto& dag = inst.GetDAG();
+    auto& tpengine = inst.GetTPEngine();
+    auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
+    const auto tree_source = tpengine.GetTreeSource();
+    // Populate tree vector.
+    for (const auto tree : tree_collection) {
+      tree_vector.push_back(tree);
+    }
+    for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
+      tree_id_map[edge_id] = tree_source[edge_id.value_];
+    }
+    // Compute likelihoods with TPEngine.
+    for (const auto& [edge_id, tree_id] : tree_id_map) {
+      std::ignore = tree_id;
+      auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
+      tp_likelihood_map[edge_id] = likelihood;
+    }
+    return tp_likelihood_map;
+  };
+
+  // Build NNIEngine from DAG that includes NNIs.
+  const std::string fasta_path_with_nni = "data/six_taxon.fasta";
+  const std::string newick_path_with_nni =
+      "data/six_taxon_rooted_simple_plus_adj_nnis.nwk";
+  auto inst_with_nni =
+      MakeTPEngine(fasta_path_with_nni, newick_path_with_nni,
+                   "_ignore/mmapped_plv.tp.2.data", "_ignore/mmapped_plv.gp.2.data");
+  auto& tpengine_with_nni = inst_with_nni.GetTPEngine();
+  auto likelihoods_with_nni = BuildEdgeLikelihoodMap(inst_with_nni);
+  std::set<double> likelihoods_set;
+  for (const auto& [edge_id, likelihood] : likelihoods_with_nni) {
+    likelihoods_set.insert(likelihood);
+  }
+
+  // Build NNIEngine from DAG that does not include NNIs.
+  const std::string fasta_path_without_nni = "data/six_taxon.fasta";
+  const std::string newick_path_without_nni = "data/six_taxon_rooted_simple.nwk";
+  auto inst_without_nni =
+      MakeTPEngine(fasta_path_without_nni, newick_path_without_nni,
+                   "_ignore/mmapped_plv.tp.1.data", "_ignore/mmapped_plv.gp.1.data");
+  auto likelihoods_without_nni = BuildEdgeLikelihoodMap(inst_without_nni);
+
+  // Get adjacent NNIs and likelihoods.
+  auto& dag = inst_without_nni.GetDAG();
+  auto& tpengine_without_nni = inst_without_nni.GetTPEngine();
+  auto& nni_engine = inst_without_nni.GetNNIEngine();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+
+  int nni_count = 0;
+  std::unordered_map<int, double> likelihood_diffs;
+  for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
+    const auto& pre_nni = nni_engine.FindNNINeighborInDAG(nni);
+    double likelihood =
+        tpengine_without_nni.GetTopTreeLikelihoodWithProposedNNI(nni, pre_nni);
+    double min_diff = 1000.0;
+    for (const auto& other_likelihood : likelihoods_set) {
+      double diff = std::abs(other_likelihood - likelihood);
+      if (min_diff > diff) {
+        min_diff = diff;
+      }
+    }
+    likelihood_diffs[nni_count] = min_diff;
+    CHECK_MESSAGE(min_diff <= 1e-2,
+                  "Likelihood of proposed NNI in DAG without NNIs was not found in DAG "
+                  "with NNIs.");
+    nni_count++;
+  }
 }
