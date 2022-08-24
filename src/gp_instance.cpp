@@ -642,7 +642,7 @@ void GPInstance::MakeTPEngine(const std::string mmap_file_path,
 }
 
 TPEngine &GPInstance::GetTPEngine() {
-  Assert(tp_engine_, "GPInstance::GetTPEngine() when tp_engine has not been made.");
+  Assert(tp_engine_, "TpEngine not available. Call MakeTPEngine when tp_engine has not been made.");
   return *tp_engine_;
 }
 
