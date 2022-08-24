@@ -10,11 +10,9 @@ NNIEngine::NNIEngine(GPDAG &dag, std::optional<GPEngine *> gp_engine,
                      std::optional<TPEngine *> tp_engine)
     : dag_(dag), graft_dag_(std::make_unique<GraftDAG>(dag)) {
   if (gp_engine.has_value()) {
-    using_gp_engine_ = true;
     gp_engine_ = gp_engine.value();
   }
   if (tp_engine.has_value()) {
-    using_tp_engine_ = true;
     tp_engine_ = tp_engine.value();
   }
 }

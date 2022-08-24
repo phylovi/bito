@@ -40,10 +40,10 @@ class NNIEngine {
   GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); };
   // Get Reference of GPEngine.
   const GPEngine &GetGPEngine() const { return *gp_engine_; }
-  bool &IsUsingGPEngine() { return using_gp_engine_; }
+  bool &IsUsingGPEngine() { return gp_engine_ != nullptr; }
   // Get Reference of TPEngine.
   const TPEngine &GetTPEngine() const { return *tp_engine_; }
-  bool &IsUsingTPEngine() { return using_tp_engine_; }
+  bool &IsUsingTPEngine() { return tp_engine_ != nullptr; }
   // Get Adjacent NNIs to DAG.
   const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; };
   // Get Number of Adjacent NNIs.
@@ -300,12 +300,8 @@ class NNIEngine {
   GPDAG &dag_;
   // For adding temporary NNIs to DAG.
   std::unique_ptr<GraftDAG> graft_dag_;
-  // Whether NNIEngine is using or maintaining GPEngine.
-  bool using_gp_engine_ = false;
   // Un-owned reference GPEngine.
   GPEngine *gp_engine_ = nullptr;
-  // Whether NNIEngine is using or maintaining GPEngine.
-  bool using_tp_engine_ = false;
   // Un-owned reference TPEngine.
   TPEngine *tp_engine_ = nullptr;
   // Tracks modifications to the DAG.

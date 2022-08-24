@@ -1991,9 +1991,12 @@ TEST_CASE("Top-Pruning: Likelihoods") {
 // Runs an instance of TPEngine for two DAGs: DAG_1, a simple DAG, and DAG_2, a DAG
 // formed from DAG_1 plus all of its adjacent NNIs. Both DAGs PVs are populated and
 // their edge TP likelihoods are computed.  Then DAG_1's adjacent proposed NNI
-// likelihoods are computed using only its own PVs. Then we compare the results of
-// the proposed NNIs from DAG_1 with the known likelihoods of DAG_2.
-TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
+// likelihoods are computed using only PVs from the pre-NNI already contained in DAG_1.
+// Finally, we compare the results of the proposed NNIs from DAG_1 with the known
+// likelihoods of the actual NNIs already contained in DAG_2. This verifies we generate
+// the same result from adding NNIs to the DAG and updating as we do from using the
+// pre-NNI computation.
+TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
   auto MakeTPEngine = [](const std::string& fasta_path, const std::string& newick_path,
                          const std::string& tp_mmap_path,
                          const std::string& gp_mmap_path) {
@@ -2047,10 +2050,10 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
       MakeTPEngine(fasta_path_with_nni, newick_path_with_nni,
                    "_ignore/mmapped_plv.tp.2.data", "_ignore/mmapped_plv.gp.2.data");
   auto likelihoods_with_nni = BuildEdgeLikelihoodMap(inst_with_nni);
-  std::set<double> likelihoods_set;
+  std::set<double> likelihoods_set_with_nni;
   for (const auto& [edge_id, likelihood] : likelihoods_with_nni) {
     std::ignore = edge_id;
-    likelihoods_set.insert(likelihood);
+    likelihoods_set_with_nni.insert(likelihood);
   }
 
   // Build NNIEngine from DAG that does not include NNIs.
@@ -2060,6 +2063,11 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
       MakeTPEngine(fasta_path_without_nni, newick_path_without_nni,
                    "_ignore/mmapped_plv.tp.1.data", "_ignore/mmapped_plv.gp.1.data");
   auto likelihoods_without_nni = BuildEdgeLikelihoodMap(inst_without_nni);
+  std::set<double> likelihoods_set_without_nni;
+  for (const auto& [edge_id, likelihood] : likelihoods_without_nni) {
+    std::ignore = edge_id;
+    likelihoods_set_without_nni.insert(likelihood);
+  }
 
   // Get adjacent NNIs and likelihoods.
   auto& tpengine_without_nni = inst_without_nni.GetTPEngine();
@@ -2071,8 +2079,9 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
     const auto& pre_nni = nni_engine.FindNNINeighborInDAG(nni);
     double likelihood =
         tpengine_without_nni.GetTopTreeLikelihoodWithProposedNNI(nni, pre_nni);
+    likelihoods_set_without_nni.insert(likelihood);
     double min_diff = std::numeric_limits<double>::max();
-    for (const auto& other_likelihood : likelihoods_set) {
+    for (const auto& other_likelihood : likelihoods_set_with_nni) {
       double diff = std::abs(other_likelihood - likelihood);
       if (min_diff > diff) {
         min_diff = diff;
@@ -2083,4 +2092,5 @@ TEST_CASE("Top-Pruning: Likelihoods with NNIs") {
                   "with NNIs.");
     nni_count++;
   }
+  std::cout << "likelihoods: " <<
 }
