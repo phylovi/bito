@@ -70,15 +70,15 @@ void NNIEngine::SetNoFilter(const bool set_nni_to_pass) {
   filter_process_fn_ = [set_nni_to_pass](
                            NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
                            TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
-                           const NNIOperation &nni) -> bool { return set_nni_to_pass; };
+                           const NNIOperation &nni,
+                           const double nni_score) -> bool { return set_nni_to_pass; };
 }
 
 void NNIEngine::SetScoreCutoff(const double score_cutoff) {
   filter_process_fn_ = [score_cutoff](
                            NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
                            TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
-                           const NNIOperation &nni) -> bool {
-    double nni_score = (*this_nni_engine.GetScoredNNIs().find(nni)).second;
+                           const NNIOperation &nni, const double nni_score) -> bool {
     bool nni_passes = (nni_score >= score_cutoff);
     return nni_passes;
   };
@@ -116,8 +116,9 @@ void NNIEngine::FilterPostUpdate() {
 void NNIEngine::FilterProcessAdjacentNNIs() {
   Assert(filter_process_fn_, "Must assign a filter process function.");
   for (const auto &nni : GetAdjacentNNIs()) {
-    const bool accept_nni =
-        (filter_process_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG(), nni);
+    double nni_score = (*GetScoredNNIs().find(nni)).second;
+    const bool accept_nni = (filter_process_fn_)(*this, GetGPEngine(), GetTPEngine(),
+                                                 GetGraftDAG(), nni, nni_score);
     if (accept_nni) {
       accepted_nnis_.insert(nni);
     } else {
@@ -128,27 +129,23 @@ void NNIEngine::FilterProcessAdjacentNNIs() {
 
 // ** Filtering Scheme
 
-void NNIEngine::SetFilteringScheme(
-    std::optional<StaticFilterInitFunction> filter_init_fn,
-    std::optional<StaticFilterUpdateFunction> filter_pre_update_fn,
-    std::optional<StaticFilterEvaluateFunction> filter_eval_fn,
-    std::optional<StaticFilterUpdateFunction> filter_post_update_fn,
-    std::optional<StaticFilterProcessFunction> filter_process_fn) {
-  if (filter_init_fn.has_value()) {
-    filter_init_fn_ = filter_init_fn.value();
-  }
-  if (filter_pre_update_fn.has_value()) {
-    filter_pre_update_fn_ = filter_pre_update_fn.value();
-  }
-  if (filter_eval_fn.has_value()) {
-    filter_eval_fn_ = filter_eval_fn.value();
-  }
-  if (filter_post_update_fn.has_value()) {
-    filter_post_update_fn_ = filter_post_update_fn.value();
-  }
-  if (filter_process_fn.has_value()) {
-    filter_process_fn_ = filter_process_fn.value();
-  }
+void NNIEngine::SetFilterInitFunction(StaticFilterInitFunction filter_init_fn) {
+  filter_init_fn_ = filter_init_fn;
+}
+void NNIEngine::SetFilterPreUpdateFunction(
+    StaticFilterUpdateFunction filter_pre_update_fn) {
+  filter_pre_update_fn_ = filter_pre_update_fn;
+}
+void NNIEngine::SetFilterEvalFunction(StaticFilterEvaluateFunction filter_eval_fn) {
+  filter_eval_fn_ = filter_eval_fn;
+}
+void NNIEngine::SetFilterPostUpdateFunction(
+    StaticFilterUpdateFunction filter_post_update_fn) {
+  filter_post_update_fn_ = filter_post_update_fn;
+}
+void NNIEngine::SetFilterProcessFunction(
+    StaticFilterProcessFunction filter_process_fn) {
+  filter_process_fn_ = filter_process_fn;
 }
 
 void NNIEngine::SetGPLikelihoodFilteringScheme(const double score_cutoff) {

@@ -92,8 +92,9 @@ class NNIEngine {
   using StaticFilterEvaluateFunction = std::function<double(
       NNIEngine &, GPEngine &, TPEngine &, GraftDAG &, const NNIOperation &)>;
   // Function template for processing an adjacent NNI to be accepted or rejected.
-  using StaticFilterProcessFunction = std::function<bool(
-      NNIEngine &, GPEngine &, TPEngine &, GraftDAG &, const NNIOperation &)>;
+  using StaticFilterProcessFunction =
+      std::function<bool(NNIEngine &, GPEngine &, TPEngine &, GraftDAG &,
+                         const NNIOperation &, const double)>;
 
   // Set to evaluate all NNIs to 0.
   void SetNoEvaluate();
@@ -118,13 +119,22 @@ class NNIEngine {
 
   // ** Filtering Schemes
 
-  // Set custom filtering scheme functions.
-  void SetFilteringScheme(
-      std::optional<StaticFilterInitFunction> filter_init_fn = std::nullopt,
-      std::optional<StaticFilterUpdateFunction> filter_pre_update_fn = std::nullopt,
-      std::optional<StaticFilterEvaluateFunction> filter_eval_fn = std::nullopt,
-      std::optional<StaticFilterUpdateFunction> filter_post_update_fn = std::nullopt,
-      std::optional<StaticFilterProcessFunction> filter_process_fn = std::nullopt);
+  // Set filter initialization function. Called at the beginning of NNI engine run,
+  // before main loop.
+  void SetFilterInitFunction(StaticFilterInitFunction filter_init_fn);
+  // Set filter pre-eval update step.  Performed once each loop before the filter
+  // evaluvation step.
+  void SetFilterPreUpdateFunction(StaticFilterUpdateFunction filter_pre_update_fn);
+  // Set filter evaluation step.  Evaluation step is performed on each proposed adjacent
+  // NNI individually, and returns a score for that NNI.
+  void SetFilterEvalFunction(StaticFilterEvaluateFunction filter_eval_fn);
+  // Set filter post-eval update step. Performed once each loop after the filter
+  // evaluvation step.
+  void SetFilterPostUpdateFunction(StaticFilterUpdateFunction filter_post_update_fn);
+  // Set filter processing step.  Processing step is performed on each proposed adjacent
+  // NNI individually, taking in its NNI score and outputting a boolean whether to
+  // accept or reject the NNI.
+  void SetFilterProcessFunction(StaticFilterProcessFunction filter_process_fn);
 
   // Set filtering scheme to use GP likelihoods.
   void SetGPLikelihoodFilteringScheme(const double score_cutoff);
