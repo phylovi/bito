@@ -29,8 +29,7 @@ using NNIDoubleMap = std::map<NNIOperation, double>;
 class NNIEngine {
  public:
   // Constructors:
-  NNIEngine(GPDAG &dag, std::optional<GPEngine *> gp_engine = std::nullopt,
-            std::optional<TPEngine *> tp_engine = std::nullopt);
+  NNIEngine(GPDAG &dag, GPEngine *gp_engine = nullptr, TPEngine *tp_engine = nullptr);
 
   // ** Access
 

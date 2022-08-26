@@ -2042,7 +2042,8 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
     }
     return tp_likelihood_map;
   };
-  // Compare likelihoods from TPEngine. DAG_1 must be a subset of DAG_2.
+  // Compare likelihoods from TPEngine. Every edge in DAG_1 must yield a tree likelihood
+  // shared by at least one edge in DAG_2.
   auto EqualityTestLikelihoodsFromTPEngine =
       [](std::unordered_map<EdgeId, double>& likelihood_map_1, GPDAG& dag_1,
          std::unordered_map<EdgeId, double>& likelihood_map_2, GPDAG& dag_2) {
@@ -2068,46 +2069,44 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
       };
 
   // Build NNIEngine from DAG that includes NNIs.
-  const std::string fasta_path_with_nni = "data/six_taxon.fasta";
-  const std::string newick_path_with_nni =
-      "data/six_taxon_rooted_simple_plus_adj_nnis.nwk";
-  auto inst_with_nni =
-      MakeTPEngine(fasta_path_with_nni, newick_path_with_nni,
-                   "_ignore/mmapped_plv.tp.2.data", "_ignore/mmapped_plv.gp.2.data");
-  auto likelihoods_with_nni = BuildEdgeLikelihoodMap(inst_with_nni);
-  auto dag_with_nni = inst_with_nni.GetDAG();
+  const std::string fasta_path_2 = "data/six_taxon.fasta";
+  const std::string newick_path_2 = "data/six_taxon_rooted_simple_plus_adj_nnis.nwk";
+  auto inst_2 =
+      MakeTPEngine(fasta_path_2, newick_path_2, "_ignore/mmapped_plv.tp.2.data",
+                   "_ignore/mmapped_plv.gp.2.data");
+  auto likelihoods_2 = BuildEdgeLikelihoodMap(inst_2);
+  auto dag_2 = inst_2.GetDAG();
 
   // Build NNIEngine from DAG that does not include NNIs.
-  const std::string fasta_path_without_nni = "data/six_taxon.fasta";
-  const std::string newick_path_without_nni = "data/six_taxon_rooted_simple.nwk";
-  auto inst_without_nni =
-      MakeTPEngine(fasta_path_without_nni, newick_path_without_nni,
-                   "_ignore/mmapped_plv.tp.1.data", "_ignore/mmapped_plv.gp.1.data");
-  auto likelihoods_without_nni = BuildEdgeLikelihoodMap(inst_without_nni);
-  auto dag_without_nni = inst_without_nni.GetDAG();
+  const std::string fasta_path_1 = "data/six_taxon.fasta";
+  const std::string newick_path_1 = "data/six_taxon_rooted_simple.nwk";
+  auto inst_1 =
+      MakeTPEngine(fasta_path_1, newick_path_1, "_ignore/mmapped_plv.tp.1.data",
+                   "_ignore/mmapped_plv.gp.1.data");
+  auto likelihoods_1 = BuildEdgeLikelihoodMap(inst_1);
+  auto dag_1 = inst_1.GetDAG();
 
   // Get adjacent NNIs and compute proposed likelihoods.
-  std::unordered_map<EdgeId, double> new_likelihoods_without_nni;
-  auto& tpengine_without_nni = inst_without_nni.GetTPEngine();
-  auto& nni_engine = inst_without_nni.GetNNIEngine();
+  std::unordered_map<EdgeId, double> proposed_likelihoods_1;
+  auto& tpengine_1 = inst_1.GetTPEngine();
+  auto& nni_engine = inst_1.GetNNIEngine();
   nni_engine.SyncAdjacentNNIsWithDAG();
   for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
     const auto& pre_nni = nni_engine.FindNNINeighborInDAG(nni);
-    double likelihood =
-        tpengine_without_nni.GetTopTreeLikelihoodWithProposedNNI(nni, pre_nni);
-    auto parent_id = dag_with_nni.GetDAGNodeId(nni.GetParent());
-    auto child_id = dag_with_nni.GetDAGNodeId(nni.GetChild());
-    auto edge_id = dag_with_nni.GetEdgeIdx(parent_id, child_id);
-    new_likelihoods_without_nni[edge_id] = likelihood;
+    double likelihood = tpengine_1.GetTopTreeLikelihoodWithProposedNNI(nni, pre_nni);
+    auto parent_id = dag_2.GetDAGNodeId(nni.GetParent());
+    auto child_id = dag_2.GetDAGNodeId(nni.GetChild());
+    auto edge_id = dag_2.GetEdgeIdx(parent_id, child_id);
+    proposed_likelihoods_1[edge_id] = likelihood;
   }
 
-  auto test_contained_nnis = EqualityTestLikelihoodsFromTPEngine(
-      likelihoods_without_nni, dag_without_nni, likelihoods_with_nni, dag_with_nni);
+  auto test_contained_nnis =
+      EqualityTestLikelihoodsFromTPEngine(likelihoods_1, dag_1, likelihoods_2, dag_2);
   CHECK_MESSAGE(test_contained_nnis,
                 "Likelihoods from contained NNIs in smaller DAG do not match "
                 "likelihoods in larger DAG.");
   auto test_proposed_nnis = EqualityTestLikelihoodsFromTPEngine(
-      new_likelihoods_without_nni, dag_without_nni, likelihoods_with_nni, dag_with_nni);
+      proposed_likelihoods_1, dag_1, likelihoods_2, dag_2);
   CHECK_MESSAGE(test_proposed_nnis,
                 "Likelihoods from proposed NNIs in smaller DAG do not match "
                 "likelihoods in larger DAG.");

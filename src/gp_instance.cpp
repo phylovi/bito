@@ -642,14 +642,15 @@ void GPInstance::MakeTPEngine(const std::string mmap_file_path,
 }
 
 TPEngine &GPInstance::GetTPEngine() {
-  Assert(tp_engine_, "TpEngine not available. Call MakeTPEngine when tp_engine has not been made.");
+  Assert(tp_engine_,
+         "TpEngine not available. Call MakeTPEngine when tp_engine has not been made.");
   return *tp_engine_;
 }
 
 // ** NNI Engine
 
 void GPInstance::MakeNNIEngine() {
-  nni_engine_ = std::make_unique<NNIEngine>(dag_, std::nullopt, std::nullopt);
+  nni_engine_ = std::make_unique<NNIEngine>(dag_, nullptr, nullptr);
   if (gp_engine_ != nullptr) {
     nni_engine_->SetGPEngine(gp_engine_.get());
   }

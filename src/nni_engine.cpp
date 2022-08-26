@@ -6,14 +6,13 @@
 
 using PLVType = PLVHandler::PLVType;
 
-NNIEngine::NNIEngine(GPDAG &dag, std::optional<GPEngine *> gp_engine,
-                     std::optional<TPEngine *> tp_engine)
+NNIEngine::NNIEngine(GPDAG &dag, GPEngine *gp_engine, TPEngine *tp_engine)
     : dag_(dag), graft_dag_(std::make_unique<GraftDAG>(dag)) {
-  if (gp_engine.has_value()) {
-    gp_engine_ = gp_engine.value();
+  if (gp_engine) {
+    gp_engine_ = gp_engine;
   }
-  if (tp_engine.has_value()) {
-    tp_engine_ = tp_engine.value();
+  if (tp_engine) {
+    tp_engine_ = tp_engine;
   }
 }
 
@@ -62,14 +61,12 @@ void NNIEngine::RunPostLoop() {
 // ** Filter Functions
 
 void NNIEngine::SetNoEvaluate() {
-  // NNI Evaluation function
-  filter_process_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                          TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
-                          const NNIOperation &nni) -> double { return 0.0; };
+  filter_eval_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
+                       TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
+                       const NNIOperation &nni) -> double { return 0.0; };
 }
 
 void NNIEngine::SetNoFilter(const bool set_nni_to_pass) {
-  // NNI Processing function
   filter_process_fn_ = [set_nni_to_pass](
                            NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
                            TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
@@ -77,7 +74,6 @@ void NNIEngine::SetNoFilter(const bool set_nni_to_pass) {
 }
 
 void NNIEngine::SetScoreCutoff(const double score_cutoff) {
-  // NNI Processing function
   filter_process_fn_ = [score_cutoff](
                            NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
                            TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
