@@ -11,7 +11,7 @@ void SankoffHandler::GenerateLeafPartials() {
          "the number of leaf nodes in the site_pattern_.");
 
   // Iterate over all leaf nodes to instantiate each with P partial values
-  for (size_t leaf_node = 0; leaf_node < site_pattern_.TaxonCount(); leaf_node++) {
+  for (NodeId leaf_node = 0; leaf_node < site_pattern_.TaxonCount(); leaf_node++) {
     SankoffPartial node_partials(state_count_, site_pattern_.PatternCount());
     // set leaf node partial to have big_double_ infinity substitute
     node_partials.block(0, 0, state_count_, site_pattern_.PatternCount())
@@ -19,7 +19,7 @@ void SankoffHandler::GenerateLeafPartials() {
     // now fill in appropriate entries of the leaf-partial where non-infinite
     for (size_t pattern_idx = 0; pattern_idx < site_pattern_.PatternCount();
          pattern_idx++) {
-      auto site_val = site_pattern_.GetPatternSymbol(leaf_node, pattern_idx);
+      auto site_val = site_pattern_.GetPatternSymbol(leaf_node.value_, pattern_idx);
       if (site_val < state_count_) {
         node_partials(site_val, pattern_idx) = 0.;
       } else if (site_val == state_count_) {
@@ -57,7 +57,7 @@ EigenVectorXd SankoffHandler::ParentPartial(EigenVectorXd child_partials) {
   return parent_partials;
 }
 
-EigenVectorXd SankoffHandler::TotalPPartial(size_t node_id, size_t site_idx) {
+EigenVectorXd SankoffHandler::TotalPPartial(NodeId node_id, size_t site_idx) {
   return psv_handler_.GetPV(PSVType::PLeft, node_id).col(site_idx) +
          psv_handler_.GetPV(PSVType::PRight, node_id).col(site_idx);
 }
@@ -112,7 +112,7 @@ void SankoffHandler::RunSankoff(Node::NodePtr topology) {
   });
 }
 
-double SankoffHandler::ParsimonyScore(size_t node_id) {
+double SankoffHandler::ParsimonyScore(NodeId node_id) {
   auto weights = site_pattern_.GetWeights();
   double total_parsimony = 0.;
   for (size_t pattern = 0; pattern < site_pattern_.PatternCount(); pattern++) {

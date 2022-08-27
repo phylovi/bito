@@ -31,12 +31,15 @@ class GPInstance {
   void ReadNexusFile(const std::string &fname);
   void ReadNexusFileGZ(const std::string &fname);
 
+  // ** DAG
   void MakeDAG();
   GPDAG &GetDAG();
   void PrintDAG();
   void UseGradientOptimization(bool use_gradients = false);
 
   SitePattern MakeSitePattern();
+
+  // ** GP Engine
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
   bool HasEngine() const;
@@ -123,6 +126,14 @@ class GPInstance {
   void SubsplitDAGToDot(const std::string &out_path,
                         bool show_index_labels = true) const;
 
+  // ** TP Engine
+  // Initialize Top-Pruning Engine.
+  void MakeTPEngine(const std::string mmap_file_path, const bool using_likelihoods,
+                    const bool using_parsimony);
+  // Get Top-Pruning Engine.
+  TPEngine &GetTPEngine();
+
+  // ** NNI Engine
   // Initialize NNI Evaluation Engine.
   void MakeNNIEngine();
   // Get NNI Evaluation Engine.
@@ -149,7 +160,7 @@ class GPInstance {
 
   std::string mmap_file_path_;
   Alignment alignment_;
-  std::unique_ptr<GPEngine> engine_;
+  std::unique_ptr<GPEngine> gp_engine_;
   RootedTreeCollection tree_collection_;
   GPDAG dag_;
   static constexpr size_t plv_count_per_node_ = 6;
@@ -170,5 +181,6 @@ class GPInstance {
   // log likelihoods
   VectorOfStringAndEigenVectorXdPairs tracked_values_after_perturbing_;
 
+  std::unique_ptr<TPEngine> tp_engine_;
   std::unique_ptr<NNIEngine> nni_engine_;
 };

@@ -37,6 +37,8 @@ class NNIOperation {
 
   static const inline size_t NNICladeCount = 4;
   enum class NNIClade : size_t { ParentFocal, ParentSister, ChildLeft, ChildRight };
+  using NNICladeEnum = EnumWrapper<NNIClade, size_t, NNICladeCount,
+                                   NNIClade::ParentFocal, NNIClade::ChildRight>;
   using NNICladeArray = EnumArray<NNIClade, NNICladeCount, NNIClade>;
 
   // ** Comparator
@@ -126,6 +128,21 @@ class NNIOperation {
   // Finds mappings of sister, left child, and right child clades from Pre-NNI to NNI.
   static NNICladeArray BuildNNICladeMapFromPreNNIToNNI(const NNIOperation &pre_nni,
                                                        const NNIOperation &post_nni);
+  std::pair<Direction, SubsplitClade> GetDirectionAndSubsplitCladeByNNIClade(
+      const NNIClade &nni_clade) {
+    switch (nni_clade) {
+      case NNIClade::ParentFocal:
+        return {Direction::Rootward, WhichCladeIsFocal()};
+      case NNIClade::ParentSister:
+        return {Direction::Rootward, WhichCladeIsSister()};
+      case NNIClade::ChildLeft:
+        return {Direction::Leafward, SubsplitClade::Left};
+      case NNIClade::ChildRight:
+        return {Direction::Leafward, SubsplitClade::Right};
+      default:
+        Failwith("Invalid NNIClade given.");
+    }
+  }
   // Checks that NNI Operation is in valid state.
   // - Parent and Child are adjacent Subsplits.
   bool IsValid();
@@ -135,6 +152,7 @@ class NNIOperation {
   Bitset parent_;
   Bitset child_;
   bool is_focal_clade_on_right_;
+  SubsplitClade focal_clade_;
 };
 
 using NNISet = std::set<NNIOperation>;

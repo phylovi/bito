@@ -103,6 +103,8 @@ SitePattern GPInstance::MakeSitePattern() {
   return site_pattern;
 }
 
+// ** GP Engine
+
 void GPInstance::MakeEngine(double rescaling_threshold) {
   auto site_pattern = MakeSitePattern();
 
@@ -112,7 +114,7 @@ void GPInstance::MakeEngine(double rescaling_threshold) {
       dag_.UnconditionalNodeProbabilities(sbn_prior);
   auto inverted_sbn_prior =
       dag_.InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
-  engine_ = std::make_unique<GPEngine>(
+  gp_engine_ = std::make_unique<GPEngine>(
       std::move(site_pattern), dag_.NodeCountWithoutDAGRoot(), plv_count_per_node_,
       dag_.EdgeCountWithLeafSubsplits(), mmap_file_path_, rescaling_threshold,
       std::move(sbn_prior),
@@ -126,17 +128,17 @@ void GPInstance::ReinitializePriors() {
       dag_.UnconditionalNodeProbabilities(sbn_prior);
   auto inverted_sbn_prior =
       dag_.InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
-  engine_->InitializePriors(std::move(sbn_prior),
-                            std::move(unconditional_node_probabilities.segment(
-                                0, dag_.NodeCountWithoutDAGRoot())),
-                            std::move(inverted_sbn_prior));
+  gp_engine_->InitializePriors(std::move(sbn_prior),
+                               std::move(unconditional_node_probabilities.segment(
+                                   0, dag_.NodeCountWithoutDAGRoot())),
+                               std::move(inverted_sbn_prior));
 }
 
 GPEngine *GPInstance::GetEngine() const {
   Assert(HasEngine(),
          "Engine not available. Call MakeEngine to make an engine for phylogenetic "
          "likelihood computation.");
-  return engine_.get();
+  return gp_engine_.get();
 }
 
 void GPInstance::ResizeEngineForDAG() {
@@ -145,7 +147,7 @@ void GPInstance::ResizeEngineForDAG() {
   GetEngine()->GrowGPCSPs(GetDAG().EdgeCountWithLeafSubsplits());
 }
 
-bool GPInstance::HasEngine() const { return engine_ != nullptr; }
+bool GPInstance::HasEngine() const { return gp_engine_ != nullptr; }
 
 void GPInstance::PrintEdgeIndexer() {
   std::cout << "Vector of taxon names: " << tree_collection_.TaxonNames() << std::endl;
@@ -631,8 +633,30 @@ void GPInstance::SubsplitDAGToDot(const std::string &out_path,
   out_stream.close();
 }
 
+void GPInstance::MakeTPEngine(const std::string mmap_file_path,
+                              const bool using_likelihoods,
+                              const bool using_parsimony) {
+  auto site_pattern = MakeSitePattern();
+  tp_engine_ =
+      std::make_unique<TPEngine>(dag_, site_pattern, mmap_file_path, true, true);
+}
+
+TPEngine &GPInstance::GetTPEngine() {
+  Assert(tp_engine_,
+         "TpEngine not available. Call MakeTPEngine when tp_engine has not been made.");
+  return *tp_engine_;
+}
+
+// ** NNI Engine
+
 void GPInstance::MakeNNIEngine() {
-  nni_engine_ = std::make_unique<NNIEngine>(dag_, *engine_);
+  nni_engine_ = std::make_unique<NNIEngine>(dag_, nullptr, nullptr);
+  if (gp_engine_ != nullptr) {
+    nni_engine_->SetGPEngine(gp_engine_.get());
+  }
+  if (tp_engine_ != nullptr) {
+    nni_engine_->SetTPEngine(tp_engine_.get());
+  }
 }
 
 NNIEngine &GPInstance::GetNNIEngine() {
