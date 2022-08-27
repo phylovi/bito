@@ -118,7 +118,7 @@ void TPEngine::CopyOverEdgeDataFromPreNNIToPostNNI(const NNIOperation &post_nni,
   NodeId post_leftchild_id;
   NodeId post_rightchild_id;
   if (pre_nni.GetSisterClade() == post_nni.GetLeftChildClade()) {
-    // If post_nni swapped pre_nni sister swapped with pre_nni left child.
+    // If post_nni swapped pre_nni sister with pre_nni left child.
     post_leftchild_id = post_parent_id;
     post_rightchild_id = post_child_id;
   } else {
