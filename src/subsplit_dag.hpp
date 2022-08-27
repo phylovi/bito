@@ -462,6 +462,7 @@ class SubsplitDAG {
 
  protected:
   explicit SubsplitDAG(SubsplitDAG &host_dag, HostDispatchTag);
+  // Remove Graft nodes and edges from Host DAG.
   void ResetHostDAG(SubsplitDAG &host_dag);
 
   // Builds a vector of subsplits of all children , optionally including leaf nodes.

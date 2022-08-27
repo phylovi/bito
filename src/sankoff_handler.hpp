@@ -81,8 +81,8 @@ class SankoffHandler {
   // Partial Sankoff Vector Handler.
   SankoffPartialVec PartialsAtPattern(PSVType psv_type, size_t pattern_idx) {
     SankoffPartialVec partials_at_pattern(psv_handler_.GetNodeCount());
-    for (size_t node = 0; node < psv_handler_.GetNodeCount(); node++) {
-      partials_at_pattern[node] = psv_handler_(psv_type, node).col(pattern_idx);
+    for (NodeId node = 0; node < psv_handler_.GetNodeCount(); node++) {
+      partials_at_pattern[node.value_] = psv_handler_(psv_type, node).col(pattern_idx);
     }
     return partials_at_pattern;
   }
@@ -90,7 +90,7 @@ class SankoffHandler {
   // sum p-partials for right and left children of node 'node_id'
   // In this case, we get the full p-partial of the given node after all p-partials
   // have been concatenated into one SankoffPartialVector
-  EigenVectorXd TotalPPartial(size_t node_id, size_t site_idx);
+  EigenVectorXd TotalPPartial(NodeId node_id, size_t site_idx);
 
   // fill in leaf-values for P partials
   void GenerateLeafPartials();
@@ -103,7 +103,7 @@ class SankoffHandler {
   void RunSankoff(Node::NodePtr topology);
 
   // Calculates parsimony score on given node across all sites.
-  double ParsimonyScore(size_t node_id);
+  double ParsimonyScore(NodeId node_id);
 
  private:
   SankoffMatrix mutation_costs_;
@@ -234,7 +234,7 @@ TEST_CASE("SankoffHandler: RunSankoff and ParsimonyScore Tests") {
   double parsimony_score_correct = 75.;
   default_sh.RunSankoff(topology);
 
-  for (size_t node_id = 0; node_id < topology->Id() + 1; node_id++) {
+  for (NodeId node_id = 0; node_id < topology->Id() + 1; node_id++) {
     CHECK_LT(fabs(default_sh.ParsimonyScore(node_id) - parsimony_score_correct), 1e-10);
   }
 }
