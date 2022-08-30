@@ -44,6 +44,7 @@ class SankoffHandler {
     psv_handler_.Resize(site_pattern_.TaxonCount(),
                         psv_handler_.GetAllocatedNodeCount());
   }
+
   SankoffHandler(CostMatrix cost_matrix, SitePattern site_pattern,
                  const std::string &mmap_file_path, double resizing_factor = 2.0)
       : mutation_costs_(SankoffMatrix(cost_matrix)),

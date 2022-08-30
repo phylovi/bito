@@ -2111,3 +2111,9 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
                 "Likelihoods from proposed NNIs in smaller DAG do not match "
                 "likelihoods in larger DAG.");
 }
+
+TEST_CASE("Top-Pruning: Parsimony") {
+  auto fasta_file = "data/parsimony_leaf_seqs.fasta";
+  auto newick_file = "data/parsimony_tree_0_score_75.0.nwk";
+  double parsimony_score_correct = 75.;
+}

@@ -46,7 +46,7 @@ class TPEngine {
   // Compute top tree likelihoods for all edges in DAG. Result stored in
   // log_likelihoods_ matrix.
   void ComputeLikelihoods();
-  //
+  // After adding an NNI to the DAG, update the likelihoods over the
   void UpdateLikelihoodsAfterDAGAddNodePair(
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
       std::optional<size_t> new_tree_id = std::nullopt);
