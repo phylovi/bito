@@ -128,7 +128,8 @@ class GPInstance {
 
   // ** TP Engine
   // Initialize Top-Pruning Engine.
-  void MakeTPEngine(const std::string mmap_file_path, const bool using_likelihoods,
+  void MakeTPEngine(const std::string mmap_likelihood_path,
+                    const bool using_likelihoods, const std::string mmap_parsimony_path,
                     const bool using_parsimony);
   // Get Top-Pruning Engine.
   TPEngine &GetTPEngine();

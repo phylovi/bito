@@ -3,6 +3,13 @@
 
 #include "sankoff_handler.hpp"
 
+void SankoffHandler::Resize(const size_t new_node_count) {
+  psv_handler_.SetNodeCount(new_node_count);
+  psv_handler_.SetAllocatedNodeCount(
+      size_t(ceil(double(psv_handler_.GetPaddedNodeCount()) * resizing_factor_)));
+  psv_handler_.Resize(new_node_count, psv_handler_.GetAllocatedNodeCount());
+}
+
 void SankoffHandler::GenerateLeafPartials() {
   // first check that the psv_handler has been resized to deal with the leaf labels
   Assert(psv_handler_.GetNodeCount() >= site_pattern_.TaxonCount(),
@@ -62,11 +69,42 @@ EigenVectorXd SankoffHandler::TotalPPartial(NodeId node_id, size_t site_idx) {
          psv_handler_.GetPV(PSVType::PRight, node_id).col(site_idx);
 }
 
+void SankoffHandler::PopulateRootwardParsimonyPVForNode(const NodeId parent_id,
+                                                        const NodeId left_child_id,
+                                                        const NodeId right_child_id) {
+  for (size_t pattern_idx = 0; pattern_idx < site_pattern_.PatternCount();
+       pattern_idx++) {
+    // Which child partial is in right or left doesn't actually matter because they
+    // are summed when calculating q_partials. In DAG case, will want to ensure that
+    // left children partials are in p_partials_left
+    psv_handler_.GetPV(PSVType::PLeft, parent_id).col(pattern_idx) =
+        ParentPartial(TotalPPartial(left_child_id, pattern_idx));
+
+    psv_handler_.GetPV(PSVType::PRight, parent_id).col(pattern_idx) =
+        ParentPartial(TotalPPartial(right_child_id, pattern_idx));
+  }
+}
+
+void SankoffHandler::PopulateLeafwardParsimonyPVForNode(const NodeId parent_id,
+                                                        const NodeId left_child_id,
+                                                        const NodeId right_child_id) {
+  for (size_t pattern_idx = 0; pattern_idx < site_pattern_.PatternCount();
+       pattern_idx++) {
+    auto partials_from_parent =
+        ParentPartial(psv_handler_.GetPV(PSVType::Q, parent_id).col(pattern_idx));
+    for (const auto child_id : {left_child_id, right_child_id}) {
+      NodeId sister_id = ((child_id == left_child_id) ? right_child_id : left_child_id);
+      auto partials_from_sister = ParentPartial(TotalPPartial(sister_id, pattern_idx));
+      psv_handler_.GetPV(PSVType::Q, child_id).col(pattern_idx) =
+          partials_from_sister + partials_from_parent;
+    }
+  }
+}
+
 void SankoffHandler::RunSankoff(Node::NodePtr topology) {
-  psv_handler_.SetNodeCount(topology->Id() + 1);
-  psv_handler_.SetAllocatedNodeCount(
-      size_t(ceil(double(psv_handler_.GetPaddedNodeCount()) * resizing_factor_)));
-  psv_handler_.Resize(topology->Id() + 1, psv_handler_.GetAllocatedNodeCount());
+  // Resize PVs to fit topology.
+  size_t node_count = topology->Id() + 1;
+  Resize(node_count);
 
   // fill in leaf node partials for PSV (stored in PLeft in PSVHandler instance)
   GenerateLeafPartials();
@@ -76,17 +114,9 @@ void SankoffHandler::RunSankoff(Node::NodePtr topology) {
     if (!node->IsLeaf()) {
       Assert(node->Children().size() == 2,
              "Error in SankoffHandler::RunSankoff: Tree should be bifurcating.");
-      for (size_t pattern_idx = 0; pattern_idx < site_pattern_.PatternCount();
-           pattern_idx++) {
-        // Which child partial is in right or left doesn't actually matter because they
-        // are summed when calculating q_partials. In DAG case, will want to ensure that
-        // left children partials are in p_partials_left
-        psv_handler_.GetPV(PSVType::PLeft, node->Id()).col(pattern_idx) =
-            ParentPartial(TotalPPartial(node->Children()[0]->Id(), pattern_idx));
-
-        psv_handler_.GetPV(PSVType::PRight, node->Id()).col(pattern_idx) =
-            ParentPartial(TotalPPartial(node->Children()[1]->Id(), pattern_idx));
-      }
+      PopulateRootwardParsimonyPVForNode(NodeId(node->Id()),
+                                         NodeId(node->Children()[0]->Id()),
+                                         NodeId(node->Children()[1]->Id()));
     }
   });
 
@@ -95,19 +125,9 @@ void SankoffHandler::RunSankoff(Node::NodePtr topology) {
     if (!node->IsLeaf()) {
       Assert(node->Children().size() == 2,
              "Error in SankoffHandler::RunSankoff: Tree should be bifurcating.");
-
-      for (size_t pattern_idx = 0; pattern_idx < site_pattern_.PatternCount();
-           pattern_idx++) {
-        auto partials_from_parent =
-            ParentPartial(psv_handler_.GetPV(PSVType::Q, node->Id()).col(pattern_idx));
-        for (size_t child = 0; child < 2; child++) {
-          size_t sister_idx = child == 0 ? 1 : 0;
-          auto partials_from_sister = ParentPartial(
-              TotalPPartial(node->Children()[sister_idx]->Id(), pattern_idx));
-          psv_handler_.GetPV(PSVType::Q, node->Children()[child]->Id())
-              .col(pattern_idx) = partials_from_sister + partials_from_parent;
-        }
-      }
+      PopulateLeafwardParsimonyPVForNode(NodeId(node->Id()),
+                                         NodeId(node->Children()[0]->Id()),
+                                         NodeId(node->Children()[1]->Id()));
     }
   });
 }

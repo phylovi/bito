@@ -32,7 +32,7 @@ enum HelloGPCSP { jupiter, mars, saturn, venus, rootsplit, root };
 
 GPInstance GPInstanceOfFiles(
     const std::string& fasta_path, const std::string& newick_path,
-    const std::string mmap_filepath = std::string("_ignore/mmapped_plv.data"),
+    const std::string mmap_filepath = std::string("_ignore/mmapped_pv.data"),
     const bool use_gradients = false) {
   GPInstance inst(mmap_filepath);
   inst.ReadFastaFile(fasta_path);
@@ -339,7 +339,7 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
   // 1 (outgroup,(((z0,z1),z2),z3));
   // 33 (outgroup,((z0,z1),(z2,z3)));
   const std::string tree_path = "data/hotstart_bootstrap_sample.nwk";
-  GPInstance inst("_ignore/mmapped_plv.data");
+  GPInstance inst("_ignore/mmapped_pv.data");
   // This is just a dummy fasta file, which is required to make an Engine.
   inst.ReadFastaFile("data/hotstart.fasta");
   inst.ReadNewickFile(tree_path);
@@ -393,7 +393,7 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
 
 TEST_CASE("GPInstance: take first branch length") {
   const std::string tree_path = "data/hotstart_bootstrap_sample.nwk";
-  GPInstance inst("_ignore/mmapped_plv.data");
+  GPInstance inst("_ignore/mmapped_pv.data");
   // This is just a dummy fasta file, which is required to make an Engine.
   inst.ReadFastaFile("data/hotstart.fasta");
   inst.ReadNewickFile(tree_path);
@@ -510,7 +510,7 @@ TEST_CASE("GPInstance: CurrentlyLoadedTreesWithGPBranchLengths") {
 }
 
 TEST_CASE("GPInstance: CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths") {
-  GPInstance inst("_ignore/mmapped_plv.data");
+  GPInstance inst("_ignore/mmapped_pv.data");
   inst.ReadFastaFile("data/five_taxon.fasta");
   inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
   inst.MakeEngine();
@@ -1087,21 +1087,21 @@ TEST_CASE("NNI Engine: Add NNI Test") {
   // dag_A_1 is a DAG that contains pair_1.
   auto inst_A_1 =
       GPInstanceOfFiles(fasta_path, "data/four_taxon_simple_before_nni_1.nwk",
-                        "_ignore/mmapped_plv_A_1.data");
+                        "_ignore/mmapped_pv_A_1.data");
   GPDAG& dag_A_1 = inst_A_1.GetDAG();
   // dag_A_2 is a DAG that contains pair_2.
   auto inst_A_2 =
       GPInstanceOfFiles(fasta_path, "data/four_taxon_simple_before_nni_2.nwk",
-                        "_ignore/mmapped_plv_A_2.data");
+                        "_ignore/mmapped_pv_A_2.data");
   GPDAG& dag_A_2 = inst_A_2.GetDAG();
   // dag_A_2b is a DAG that contains pair_2 with a different taxon mapping.
   auto inst_A_2b =
       GPInstanceOfFiles(fasta_path, "data/four_taxon_simple_before_nni_2b.nwk",
-                        "_ignore/mmapped_plv_A_2.data");
+                        "_ignore/mmapped_pv_A_2.data");
   GPDAG& dag_A_2b = inst_A_2b.GetDAG();
   // dag_B is a DAG containing dag_A_1 after adding node pair_2.
   auto inst_B = GPInstanceOfFiles(fasta_path, "data/four_taxon_simple_after_nni.nwk",
-                                  "_ignore/mmapped_plv_B.data");
+                                  "_ignore/mmapped_pv_B.data");
   GPDAG& dag_B = inst_B.GetDAG();
   // pair_1: NNI pair missing from dag_A_1.
   NNIOperation pair_1(Bitset::Subsplit("0110", "0001"),   // 12|3
@@ -1519,7 +1519,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 
   // Instance with unaltered DAG.
   auto pre_inst =
-      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_pre.data");
+      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv_pre.data");
   GPDAG& pre_dag = pre_inst.GetDAG();
   GPEngine& pre_gpengine = *pre_inst.GetEngine();
   pre_dag.FullyConnect();
@@ -1532,7 +1532,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 
   // Instance that is used by grafted DAG.
   auto graft_inst =
-      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_graft.data");
+      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv_graft.data");
   graft_inst.MakeNNIEngine();
   GPEngine& graft_gpengine = *graft_inst.GetEngine();
   NNIEngine& graft_nni_engine = graft_inst.GetNNIEngine();
@@ -1612,7 +1612,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
   nni_count = 0;
   for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     auto truth_inst =
-        GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv_truth.data");
+        GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv_truth.data");
     auto& truth_dag = truth_inst.GetDAG();
     truth_dag.FullyConnect();
     auto& truth_gpengine = *truth_inst.GetEngine();
@@ -1663,7 +1663,7 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
 TEST_CASE("Top-Pruning: ChoiceMap") {
   const std::string fasta_path = "data/six_taxon_longer.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
-  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.data");
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv.data");
   auto dag = inst.GetDAG();
 
   auto choice_map = ChoiceMap(dag);
@@ -1811,8 +1811,8 @@ TEST_CASE("Top-Pruning: Initialize TPEngine and ChoiceMap") {
   inst.EstimateBranchLengths(0.00001, 100, true);
   auto all_trees = inst.GenerateCompleteRootedTreeCollection();
   SitePattern site_pattern = inst.MakeSitePattern();
-  TPEngine tpengine =
-      TPEngine(dag, site_pattern, "_ignore/mmapped_plv.data", false, false);
+  TPEngine tpengine = TPEngine(dag, site_pattern, "_ignore/mmapped_pv.tpl.data", false,
+                               "_ignore/mmapped_pv.tpp.data", false);
   tpengine.InitializeChoiceMap();
 
   auto TopologyExistsInTreeCollection = [](const Node::NodePtr tree_topology,
@@ -1856,120 +1856,200 @@ std::ostream& operator<<(std::ostream& os, EigenConstMatrixXdRef mx) {
   return os;
 }
 
-// Builds a TPEngine instance from a set of input trees. Then populates TPEngine's PVs
-// and computes the top tree likelihood for each edge in the DAG.  Compares these
-// likelihoods against the tree's likelihood computed using BEAGLE engine.
-TEST_CASE("Top-Pruning: Likelihoods") {
-  // Compare TPEngine's top tree likelihoods to BEAGLE and, in the single tree cases,
-  // compares its PLVs to GPEngine's.
-  // Note: The input newick file does not need to contain every possible tree
-  // expressible in the DAG.  The input tree collection only needs to be ordered in
-  // terms of likelihood.  The DAG edges will then each be assigned according to the
-  // best/first tree containing the given edge.
-  auto TestTPEngineLikelihoodsAndPVs = [](const std::string fasta_path,
-                                          const std::string newick_path,
-                                          const bool compare_gp_pvs = false,
-                                          const bool is_quiet = true) {
-    bool test_passes = true;
-    std::stringstream dev_null;
-    std::ostream& os = (is_quiet ? dev_null : std::cerr);
-    // Map of trees and likelihoods.
-    std::vector<RootedTree> tree_vector;
-    std::unordered_map<EdgeId, size_t> tree_id_map;
-    std::unordered_map<size_t, double> golden_tree_likelihood_map;
-    std::unordered_map<EdgeId, double> tp_likelihood_map;
-    // Make GPInstance and TPEngine.
-    auto inst =
-        GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_plv.gp.data");
-    inst.MakeEngine();
-    GPEngine& gpengine = *inst.GetEngine();
-    GPDAG& dag = inst.GetDAG();
-    inst.EstimateBranchLengths(0.00001, 100, true);
-    inst.PopulatePLVs();
-    inst.ComputeLikelihoods();
-    auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
-    auto edge_indexer = dag.BuildEdgeIndexer();
-    SitePattern site_pattern = inst.MakeSitePattern();
-    TPEngine tpengine =
-        TPEngine(dag, site_pattern, "_ignore/mmapped_plv.tp.data", true, true);
-    tpengine.SetBranchLengths(gpengine.GetBranchLengths());
-    tpengine.SetChoiceMapByTakingFirst(tree_collection, edge_indexer);
-    tpengine.InitializeLikelihood();
-    tpengine.ComputeLikelihoods();
-    const auto tree_source = tpengine.GetTreeSource();
-    // Populate tree vector.
-    for (const auto tree : tree_collection) {
-      tree_vector.push_back(tree);
-    }
-    for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
+// Compare TPEngine's top tree to true tree and, in the single tree cases,
+// compares its PLVs to GPEngine's.
+// Note: The input newick file does not need to contain every possible tree
+// expressible in the DAG.  The input tree collection only needs to be ordered in
+// terms of likelihood.  The DAG edges will then each be assigned according to the
+// best/first tree containing the given edge.
+bool TestTPEngineScoresAndPVs(const std::string fasta_path,
+                              const std::string newick_path,
+                              const bool test_likelihood = true,
+                              const bool test_parsimony = true,
+                              const bool test_pvs = false, const bool is_quiet = true,
+                              const bool print_all = false) {
+  bool test_passes = true;
+  std::stringstream dev_null;
+  std::ostream& os = (is_quiet ? dev_null : std::cerr);
+  // Map of trees and likelihoods / parsimony.
+  std::vector<RootedTree> tree_vector;
+  std::unordered_map<EdgeId, size_t> tree_id_map;
+  // Make GPInstance and TPEngine.
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv.gp.data");
+  inst.MakeEngine();
+  GPEngine& gpengine = *inst.GetEngine();
+  GPDAG& dag = inst.GetDAG();
+  inst.EstimateBranchLengths(0.00001, 100, true);
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+  auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
+  auto edge_indexer = dag.BuildEdgeIndexer();
+  SitePattern site_pattern = inst.MakeSitePattern();
+  inst.MakeTPEngine("_ignore/mmapped_pv.tpl.data", true, "_ignore/mmapped_pv.tpp.data",
+                    true);
+  // Make TPEngine.
+  TPEngine& tpengine = inst.GetTPEngine();
+  tpengine.SetBranchLengths(gpengine.GetBranchLengths());
+  tpengine.SetChoiceMapByTakingFirst(tree_collection, edge_indexer);
+  const auto tree_source = tpengine.GetTreeSource();
+  // Populate tree vector.
+  for (const auto tree : tree_collection) {
+    tree_vector.push_back(tree);
+  }
+  for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
+    if (!dag.IsEdgeRoot(edge_id)) {
       tree_id_map[edge_id] = tree_source[edge_id.value_];
     }
+  }
+
+  // Check that scores from TPEngine match the golden scores from the individual trees.
+  // Note, if the test only contains a single tree, then this amounts to checking if
+  // each edge's likelihood matches that one tree.
+  auto TestMatchingScores =
+      [is_quiet, print_all, &tree_id_map, &test_passes](
+          const std::string& test_name,
+          std::unordered_map<size_t, double>& golden_tree_score_map,
+          std::unordered_map<EdgeId, double>& tp_score_map) {
+        for (const auto& [edge_id, tree_id] : tree_id_map) {
+          std::ignore = tree_id;
+          const auto tp_score = tp_score_map[edge_id];
+          bool match_found = false;
+          double min_error = std::numeric_limits<double>::max();
+          for (const auto& [tree_id, golden_score] : golden_tree_score_map) {
+            std::ignore = tree_id;
+            double error = abs(golden_score - tp_score);
+            if (min_error > error) {
+              min_error = error;
+              if (error < 1e-3) {
+                match_found = true;
+                break;
+              }
+            }
+          }
+          if (!match_found) {
+            test_passes = false;
+          }
+          if ((!match_found && !is_quiet) || print_all) {
+            std::cout << "::" << test_name << (!match_found ? "_FAILURE" : "")
+                      << ":: EdgeId: " << edge_id
+                      << ", TP_Score: " << tp_score_map[edge_id]
+                      << ", Golden_Score: " << golden_tree_score_map[tree_id]
+                      << ", Error: " << min_error << std::endl;
+          }
+        }
+        if ((!test_passes && !is_quiet) || print_all) {
+          std::cout << "TestMatchingScore: " << tp_score_map.size() << std::endl;
+          std::cout << "TP_Scores: " << tp_score_map.size() << " " << tp_score_map
+                    << std::endl;
+          std::cout << "Golden_Score: " << golden_tree_score_map.size() << " "
+                    << golden_tree_score_map << std::endl;
+        }
+      };
+
+  if (test_likelihood) {
+    std::unordered_map<size_t, double> golden_tree_likelihood_map;
+    std::unordered_map<EdgeId, double> tp_likelihood_map;
     // BEAGLE Engine for "golden", i.e. correct, tree likelihoods.
     PhyloModelSpecification simple_spec{"JC69", "constant", "strict"};
     auto rooted_sbn_inst = MakeRootedSBNInstance(newick_path, fasta_path, simple_spec);
-    auto& beagle_engine = *rooted_sbn_inst.GetEngine();
-    const auto& first_beagle = *beagle_engine.GetFirstFatBeagle();
-    // Compute likelihoods with BEAGLE Engine.
+    auto& beagle_engine = *rooted_sbn_inst.GetEngine()->GetFirstFatBeagle();
     size_t tree_id = 0;
     for (const auto& tree : tree_collection) {
-      auto likelihood = first_beagle.UnrootedLogLikelihood(tree);
-      golden_tree_likelihood_map[tree_id] = likelihood;
+      auto golden_likelihood = beagle_engine.UnrootedLogLikelihood(tree);
+      golden_tree_likelihood_map[tree_id] = golden_likelihood;
       tree_id++;
     }
     // Compute likelihoods with TPEngine.
+    tpengine.InitializeLikelihood();
+    tpengine.ComputeLikelihoods();
     for (const auto& [edge_id, tree_id] : tree_id_map) {
       std::ignore = tree_id;
       auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
       tp_likelihood_map[edge_id] = likelihood;
     }
-    // Check that likelihoods from TPEngine match a tree likelihood from BEAGLE.  Note,
-    // if the test only contains a single tree, then this amounts to checking if each
-    // edge's likelihood matches that one tree.
-    for (const auto& [edge_id, tree_id] : tree_id_map) {
-      std::ignore = tree_id;
-      const auto tp_likelihood = tp_likelihood_map[edge_id];
-      bool match_found = false;
-      for (const auto& [tree_id, golden_likelihood] : golden_tree_likelihood_map) {
-        std::ignore = tree_id;
-        if (abs(golden_likelihood - tp_likelihood) < 1e-3) {
-          match_found = true;
-          break;
-        }
-      }
-      if (!match_found) {
-        test_passes = false;
-        if (!is_quiet) {
-          std::cout << "FAILURE: EdgeId = " << edge_id
-                    << ", TP_Likelihood: " << tp_likelihood_map[edge_id]
-                    << ", Golden_Likelihood: " << golden_tree_likelihood_map[tree_id]
-                    << std::endl;
-        }
-      }
-    }
+    // Check that scores from TPEngine match the golden scores from the individual
+    // trees computed by BEAGLE engine.
+    TestMatchingScores(std::string("LIKELIHOODS"), golden_tree_likelihood_map,
+                       tp_likelihood_map);
     // Compare GP and TP partial vectors. Note, this test is only relevant with single
     // trees, as GP and TP PVs are only equal in the case of single tree DAGs.
     auto& tp_pvs = tpengine.GetLikelihoodPVs();
     auto& gp_pvs = gpengine.GetPLVHandler();
-    if (compare_gp_pvs) {
-      std::vector<PLVType> plv_types = {PLVType::RHat, PLVType::RLeft, PLVType::RRight};
-      for (const auto& plv_type : PLVTypeEnum::Iterator()) {
-        std::string plv_name = PLVTypeEnum::Labels[plv_type];
+    if (test_pvs) {
+      std::vector<PLVType> pv_types = {PLVType::RHat, PLVType::RLeft, PLVType::RRight};
+      for (const auto& pv_type : PLVTypeEnum::Iterator()) {
+        std::string pv_name = PLVTypeEnum::Labels[pv_type];
         for (NodeId i = 0; i < gp_pvs.GetNodeCount(); i++) {
-          bool is_equal = (tp_pvs.GetPV(plv_type, i) == gp_pvs.GetPV(plv_type, i));
+          bool is_equal = (tp_pvs.GetPV(pv_type, i) == gp_pvs.GetPV(pv_type, i));
           if (!is_equal) {
             test_passes = false;
           }
           if (!is_equal) {
-            os << "!!! *** NOT EQUAL ***" << std::endl;
-            os << "TP_" << tp_pvs.ToString(plv_type, i);
-            os << "GP_" << gp_pvs.ToString(plv_type, i);
+            os << "!!! *** " << (!is_equal ? "NOT_EQUAL" : "EQUAL") << " ***"
+               << std::endl;
+            os << "TP_" << tp_pvs.ToString(pv_type, i);
+            os << "GP_" << gp_pvs.ToString(pv_type, i);
           }
         }
       }
     }
+  }
 
-    return test_passes;
-  };
+  if (test_parsimony) {
+    std::unordered_map<size_t, double> golden_tree_parsimony_map;
+    std::unordered_map<EdgeId, double> tp_parsimony_map;
+    // Sankoff Handler for "golden", i.e. correct, tree parsimonies.
+    SankoffHandler sankoff_engine(site_pattern, "_ignore.mmapped_pv.sankoff.data");
+    size_t tree_id = 0;
+    for (const auto& tree : tree_collection) {
+      sankoff_engine.RunSankoff(tree.Topology());
+      auto golden_parsimony = sankoff_engine.ParsimonyScore(tree.Topology()->Id());
+      golden_tree_parsimony_map[tree_id] = golden_parsimony;
+      tree_id++;
+    }
+    // Compute parsimonies with TPEngine.
+    tpengine.InitializeParsimony();
+    tpengine.ComputeParsimonies();
+    for (const auto& [edge_id, tree_id] : tree_id_map) {
+      std::ignore = tree_id;
+      auto parsimony = tpengine.GetTopTreeParsimonyWithEdge(edge_id);
+      tp_parsimony_map[edge_id] = parsimony;
+    }
+    // Check that scores from TPEngine match the golden scores from the individual
+    // trees computed by BEAGLE engine.
+    TestMatchingScores(std::string("PARSIMONY"), golden_tree_parsimony_map,
+                       tp_parsimony_map);
+    // Compare GP and TP partial vectors. Note, this test is only relevant with single
+    // trees, as GP and TP PVs are only equal in the case of single tree DAGs.
+    auto& tp_pvs = tpengine.GetParsimonyPVs();
+    auto& sankoff_pvs = sankoff_engine.GetPSVHandler();
+    if (test_pvs) {
+      std::vector<PSVType> plv_types = {PSVType::Q, PSVType::PLeft, PSVType::PRight};
+      for (const auto& pv_type : PSVTypeEnum::Iterator()) {
+        std::string pv_name = PSVTypeEnum::Labels[pv_type];
+        for (NodeId i = 0; i < sankoff_pvs.GetNodeCount(); i++) {
+          bool is_equal = (tp_pvs.GetPV(pv_type, i) == sankoff_pvs.GetPV(pv_type, i));
+          if (!is_equal) {
+            test_passes = false;
+          }
+          if (!is_equal || print_all) {
+            os << "!!! *** " << (!is_equal ? "NOT EQUAL" : "EQUAL") << " ***"
+               << std::endl;
+            os << "TP_" << tp_pvs.ToString(pv_type, i);
+            os << "SANK_" << sankoff_pvs.ToString(pv_type, i);
+          }
+        }
+      }
+    }
+  }
+
+  return test_passes;
+};
+
+// Builds a TPEngine instance from a set of input trees. Then populates TPEngine's PVs
+// and computes the top tree likelihood for each edge in the DAG.  Compares these
+// likelihoods against the tree's likelihood computed using BEAGLE engine.
+TEST_CASE("Top-Pruning: Likelihoods") {
   // Input files.
   const std::string fasta_path_hello = "data/hello_short.fasta";
   const std::string newick_path_hello = "data/hello_rooted.nwk";
@@ -1977,14 +2057,14 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   const std::string newick_path_six_single = "data/six_taxon_rooted_single.nwk";
   const std::string newick_path_six_simple = "data/six_taxon_rooted_simple.nwk";
   // Test cases.
-  const auto test_1 =
-      TestTPEngineLikelihoodsAndPVs(fasta_path_hello, newick_path_hello, true, false);
+  const auto test_1 = TestTPEngineScoresAndPVs(fasta_path_hello, newick_path_hello,
+                                               true, false, true, false, false);
   CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
-  const auto test_2 = TestTPEngineLikelihoodsAndPVs(
-      fasta_path_six, newick_path_six_single, true, false);
+  const auto test_2 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six_single,
+                                               true, false, false, false, false);
   CHECK_MESSAGE(test_2, "Six Taxa Single Tree failed.");
-  const auto test_3 = TestTPEngineLikelihoodsAndPVs(
-      fasta_path_six, newick_path_six_simple, false, false);
+  const auto test_3 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six_simple,
+                                               true, false, false, false, false);
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
 }
 
@@ -1999,7 +2079,8 @@ TEST_CASE("Top-Pruning: Likelihoods") {
 TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
   // Build GPInstance with TPEngine and NNIEngine.
   auto MakeTPEngine = [](const std::string& fasta_path, const std::string& newick_path,
-                         const std::string& tp_mmap_path,
+                         const std::string& tpl_mmap_path,
+                         const std::string& tpp_mmap_path,
                          const std::string& gp_mmap_path) {
     // Make GPInstance and TPEngine.
     auto inst = GPInstanceOfFiles(fasta_path, newick_path, gp_mmap_path);
@@ -2007,7 +2088,7 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
     inst.MakeEngine();
     GPEngine& gpengine = *inst.GetEngine();
     auto edge_indexer = dag.BuildEdgeIndexer();
-    inst.MakeTPEngine(tp_mmap_path, true, true);
+    inst.MakeTPEngine(tpl_mmap_path, true, tpp_mmap_path, true);
     inst.MakeNNIEngine();
     TPEngine& tpengine = inst.GetTPEngine();
     tpengine.SetBranchLengths(gpengine.GetBranchLengths());
@@ -2072,8 +2153,8 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
   const std::string fasta_path_2 = "data/six_taxon.fasta";
   const std::string newick_path_2 = "data/six_taxon_rooted_simple_plus_adj_nnis.nwk";
   auto inst_2 =
-      MakeTPEngine(fasta_path_2, newick_path_2, "_ignore/mmapped_plv.tp.2.data",
-                   "_ignore/mmapped_plv.gp.2.data");
+      MakeTPEngine(fasta_path_2, newick_path_2, "_ignore/mmapped_pv.tpl.2.data",
+                   "_ignore/mmapped_pv.tpp.2.data", "_ignore/mmapped_pv.gp.2.data");
   auto likelihoods_2 = BuildEdgeLikelihoodMap(inst_2);
   auto dag_2 = inst_2.GetDAG();
 
@@ -2081,8 +2162,8 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
   const std::string fasta_path_1 = "data/six_taxon.fasta";
   const std::string newick_path_1 = "data/six_taxon_rooted_simple.nwk";
   auto inst_1 =
-      MakeTPEngine(fasta_path_1, newick_path_1, "_ignore/mmapped_plv.tp.1.data",
-                   "_ignore/mmapped_plv.gp.1.data");
+      MakeTPEngine(fasta_path_1, newick_path_1, "_ignore/mmapped_pv.tpl.1.data",
+                   "_ignore/mmapped_pv.tpp.1.data", "_ignore/mmapped_pv.gp.1.data");
   auto likelihoods_1 = BuildEdgeLikelihoodMap(inst_1);
   auto dag_1 = inst_1.GetDAG();
 
@@ -2112,8 +2193,24 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
                 "likelihoods in larger DAG.");
 }
 
+// Builds a TPEngine instance from a set of input trees. Then populates TPEngine's PVs
+// and computes the top tree parsimony for each edge in the DAG.  Compares these
+// likelihoods against the tree's likelihood computed using the `sankoff handler`.
 TEST_CASE("Top-Pruning: Parsimony") {
-  auto fasta_file = "data/parsimony_leaf_seqs.fasta";
-  auto newick_file = "data/parsimony_tree_0_score_75.0.nwk";
-  double parsimony_score_correct = 75.;
+  auto fasta_path_1 = "data/parsimony_leaf_seqs.fasta";
+  auto newick_path_1 = "data/parsimony_tree_0_score_75.0.nwk";
+  const std::string fasta_path_hello = "data/hello_short.fasta";
+  const std::string newick_path_hello = "data/hello_rooted.nwk";
+  const std::string fasta_path_six = "data/six_taxon.fasta";
+  const std::string newick_path_six_single = "data/six_taxon_rooted_single.nwk";
+  // Test cases.
+  const auto test_0 = TestTPEngineScoresAndPVs(fasta_path_1, newick_path_1, false, true,
+                                               false, false, false);
+  CHECK_MESSAGE(test_0, "Parsimony Test Case Tree failed.");
+  const auto test_1 = TestTPEngineScoresAndPVs(fasta_path_hello, newick_path_hello,
+                                               false, true, false, false, false);
+  CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
+  const auto test_2 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six_single,
+                                               false, true, false, false, false);
+  CHECK_MESSAGE(test_2, "Six Taxa Tree failed.");
 }

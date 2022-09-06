@@ -7,13 +7,14 @@
 #include "sbn_maps.hpp"
 
 TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
-                   const std::string &mmap_file_path, bool using_likelihoods,
-                   bool using_parsimony)
+                   const std::string &mmap_likelihood_path, bool using_likelihoods,
+                   const std::string &mmap_parsimony_path, bool using_parsimony)
     : dag_(dag),
       site_pattern_(site_pattern),
-      likelihood_pvs_(mmap_file_path, 0, site_pattern_.PatternCount(), 2.0),
+      likelihood_pvs_(mmap_likelihood_path, 0, site_pattern_.PatternCount(), 2.0),
       using_likelihoods_(using_likelihoods),
-      parsimony_pvs_(mmap_file_path, 0, site_pattern_.PatternCount(), 2.0),
+      sankoff_handler_(site_pattern, mmap_parsimony_path),
+      parsimony_pvs_(sankoff_handler_.GetPSVHandler()),
       using_parsimony_(using_parsimony),
       choice_map_(dag) {
   // Initialize site pattern-based data.
@@ -192,7 +193,7 @@ void TPEngine::PopulateRootwardLikelihoodPVForNode(const NodeId node_id) {
     EvolveLikelihoodPPVUpEdge(left_child_edge_id);
   }
   // Evolve up from right child.
-  const auto right_child_edge_id = edge_choice.right_child_edge_id;
+  const EdgeId right_child_edge_id = edge_choice.right_child_edge_id;
   if (right_child_edge_id != NoId) {
     EvolveLikelihoodPPVUpEdge(right_child_edge_id);
   }
@@ -218,8 +219,7 @@ void TPEngine::PopulateLeafwardLikelihoodPVForNode(const NodeId node_id) {
   EdgeId best_edge_id = EdgeId(NoId);
   if (!dag_.IsNodeLeaf(node_id)) {
     best_edge_id = FindBestEdgeAdjacentToNode(node_id, Direction::Leafward);
-    const auto edge_choice = choice_map_.GetEdgeChoice(best_edge_id);
-    const auto parent_edge_id = edge_choice.parent_edge_id;
+    const auto parent_edge_id = choice_map_.GetEdgeChoice(best_edge_id).parent_edge_id;
     if (parent_edge_id != NoId) {
       const auto parent_edge = dag_.GetDAGEdge(parent_edge_id);
       if (parent_edge.GetParent() != dag_.GetDAGRootNodeId()) {
@@ -361,6 +361,10 @@ void TPEngine::EvolveLikelihoodRPVDownEdge(const EdgeId edge_id) {
 
 // ** Scoring by Parsimony
 
+double TPEngine::GetTopTreeParsimonyWithEdge(const EdgeId edge_id) {
+  return top_tree_parsimony_per_edge_[edge_id.value_];
+}
+
 void TPEngine::PopulateLeafParsimonyPVsWithSitePatterns() {
   auto &pvs = parsimony_pvs_;
   for (auto &pv : pvs.GetPVs()) {
@@ -385,8 +389,75 @@ void TPEngine::PopulateLeafParsimonyPVsWithSitePatterns() {
 }
 
 void TPEngine::InitializeParsimony() {
-  // !ISSUE #440
-  Failwith("Currently no implementation.");
+  auto &pvs = parsimony_pvs_;
+  sankoff_handler_.Resize(dag_.NodeCount());
+  // Set all PVs to Zero
+  for (NodeId node_id = 0; node_id < pvs.GetNodeCount(); node_id++) {
+    for (const auto pv_type : PSVTypeEnum::Iterator()) {
+      pvs.GetPV(pv_type, node_id).setZero();
+    }
+  }
+  // Populate Leaves with Site Patterns.
+  sankoff_handler_.GenerateLeafPartials();
+
+  // Rootward Pass (populate P PVs)
+  const auto rootward_node_ids = dag_.RootwardNodeTraversalTrace(false);
+  for (const auto node_id : rootward_node_ids) {
+    PopulateRootwardParsimonyPVForNode(node_id);
+  }
+  // Leafward Pass (populate R PVs)
+  const auto leafward_node_ids = dag_.LeafwardNodeTraversalTrace(false);
+  for (const auto node_id : leafward_node_ids) {
+    PopulateLeafwardParsimonyPVForNode(node_id);
+  }
+}
+
+void TPEngine::PopulateRootwardParsimonyPVForNode(const NodeId node_id) {
+  // Iterate over all rootward edges to find the edge from the best source tree.
+  EdgeId best_edge_id = FindBestEdgeAdjacentToNode(node_id, Direction::Rootward);
+  if (!dag_.IsNodeLeaf(node_id)) {
+    const auto edge_choice = choice_map_.GetEdgeChoice(best_edge_id);
+    // Accumulate parsimony from left and right child.
+    const EdgeId left_child_edge_id = edge_choice.left_child_edge_id;
+    const NodeId left_child_node_id = dag_.GetDAGEdge(left_child_edge_id).GetChild();
+    const EdgeId right_child_edge_id = edge_choice.right_child_edge_id;
+    const NodeId right_child_node_id = dag_.GetDAGEdge(right_child_edge_id).GetChild();
+
+    sankoff_handler_.PopulateRootwardParsimonyPVForNode(node_id, left_child_node_id,
+                                                        right_child_node_id);
+  }
+}
+
+void TPEngine::PopulateLeafwardParsimonyPVForNode(const NodeId node_id) {
+  // Evolve down parent.
+  // If node is not a leaf, find best edge from leafward edge's choicemap.
+  EdgeId best_edge_id = EdgeId(NoId);
+  if (!dag_.IsNodeLeaf(node_id)) {
+    best_edge_id = FindBestEdgeAdjacentToNode(node_id, Direction::Leafward);
+    const auto best_edge = dag_.GetDAGEdge(best_edge_id);
+    const NodeId parent_node_id = best_edge.GetParent();
+    const NodeId focal_node_id = best_edge.GetChild();
+    const EdgeId sister_edge_id =
+        choice_map_.GetEdgeChoice(best_edge_id).sister_edge_id;
+    const NodeId sister_node_id = dag_.GetDAGEdge(sister_edge_id).GetChild();
+    const NodeId left_child_node_id =
+        (best_edge.GetSubsplitClade() == SubsplitClade::Left) ? focal_node_id
+                                                              : sister_node_id;
+    const NodeId right_child_node_id =
+        (best_edge.GetSubsplitClade() == SubsplitClade::Left) ? sister_node_id
+                                                              : focal_node_id;
+
+    sankoff_handler_.PopulateLeafwardParsimonyPVForNode(node_id, left_child_node_id,
+                                                        right_child_node_id);
+  }
+}
+
+void TPEngine::ComputeParsimonies() {
+  for (EdgeId edge_id = 0; edge_id < dag_.EdgeCountWithLeafSubsplits(); edge_id++) {
+    NodeId node_id = dag_.GetDAGEdge(edge_id).GetChild();
+    top_tree_parsimony_per_edge_[node_id.value_] =
+        sankoff_handler_.ParsimonyScore(node_id);
+  }
 }
 
 void TPEngine::UpdateDAGAfterAddNodePairByParsimony(const NNIOperation &nni_op) {
@@ -495,12 +566,14 @@ void TPEngine::GrowEdgeData(const size_t new_edge_count,
     log_likelihoods_.conservativeResize(GetAllocatedEdgeCount(),
                                         site_pattern_.PatternCount());
     top_tree_log_likelihoods_per_edge_.conservativeResize(GetAllocatedEdgeCount());
+    top_tree_parsimony_per_edge_.conservativeResize(GetAllocatedEdgeCount());
   }
   // Resize to fit without deallocating unused memory.
   branch_lengths_.conservativeResize(GetPaddedEdgeCount());
   log_likelihoods_.conservativeResize(GetPaddedEdgeCount(),
                                       site_pattern_.PatternCount());
   top_tree_log_likelihoods_per_edge_.conservativeResize(GetPaddedEdgeCount());
+  top_tree_parsimony_per_edge_.conservativeResize(GetPaddedEdgeCount());
 
   // Initialize new work space.
   for (size_t i = old_edge_count; i < GetPaddedEdgeCount(); i++) {

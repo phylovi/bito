@@ -12,6 +12,7 @@
 #include "pv_handler.hpp"
 #include "choice_map.hpp"
 #include "nni_operation.hpp"
+#include "sankoff_handler.hpp"
 
 #pragma once
 
@@ -19,8 +20,16 @@ using PVId = size_t;
 
 class TPEngine {
  public:
-  TPEngine(GPDAG &dag, SitePattern &site_pattern, const std::string &mmap_file_path,
-           bool using_likelihood, bool using_parsimony);
+  TPEngine(GPDAG &dag, SitePattern &site_pattern,
+           const std::string &mmap_likelihood_path, bool using_likelihood,
+           const std::string &mmap_parsimony_path, bool using_parsimony);
+
+  // ** Access
+
+  EigenVectorXd &GetTopTreeLikelihoodsPerEdge() {
+    return top_tree_log_likelihoods_per_edge_;
+  }
+  EigenVectorXd &GetTopTreeParsimonyPerEdge() { return top_tree_parsimony_per_edge_; }
 
   // ** General Scoring
 
@@ -44,9 +53,9 @@ class TPEngine {
   // been computed.
   double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
   // Compute top tree likelihoods for all edges in DAG. Result stored in
-  // log_likelihoods_ matrix.
+  // log_likelihoods_per_edge_ vector..
   void ComputeLikelihoods();
-  // After adding an NNI to the DAG, update the likelihoods over the
+  // After adding an NNI to the DAG, update the out-of-date likelihoods.
   void UpdateLikelihoodsAfterDAGAddNodePair(
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
       std::optional<size_t> new_tree_id = std::nullopt);
@@ -55,8 +64,14 @@ class TPEngine {
 
   // Initialize ChoiceMap for entire DAG by Parsimony.
   void InitializeParsimony();
-  // Update ChoiceMap with NNI.
+  // After adding an NNI to the DAG, update the out-of-date parsimony.
   void UpdateDAGAfterAddNodePairByParsimony(const NNIOperation &nni_op);
+  // Fetch parsimony of top tree with given edge.  Assumed parsimony have already
+  // been computed.
+  double GetTopTreeParsimonyWithEdge(const EdgeId edge_id);
+  // Compute top tree parsimony for all edges in DAG. Result stored in
+  // log_parsimony_per_edge_ vector..
+  void ComputeParsimonies();
 
   // ** Parameter Data
 
@@ -197,6 +212,11 @@ class TPEngine {
 
   // ** Scoring by Parsimony
 
+  //
+  void PopulateRootwardParsimonyPVForNode(const NodeId node_id);
+  //
+  void PopulateLeafwardParsimonyPVForNode(const NodeId node_id);
+  //
   void PopulateLeafParsimonyPVsWithSitePatterns();
 
   // ** Partial Vector Operations
@@ -243,6 +263,11 @@ class TPEngine {
   // Top tree log likelihood per edge.
   EigenVectorXd top_tree_log_likelihoods_per_edge_;
 
+  // Tree parsimonies across all sites.
+  EigenMatrixXd parsimonies_;
+  // Top tree parsimony per edge.
+  EigenVectorXd top_tree_parsimony_per_edge_;
+
   // Branch length parameters for DAG.
   EigenVectorXd branch_lengths_;
   // Initial branch length during first branch length opimization.
@@ -269,7 +294,8 @@ class TPEngine {
   PLVHandler likelihood_pvs_;
   bool using_likelihoods_;
   // Partial Vector for storing Parsimony scores.
-  PSVHandler parsimony_pvs_;
+  SankoffHandler sankoff_handler_;
+  PSVHandler &parsimony_pvs_;
   bool using_parsimony_;
   // ChoiceMap for find top-scoring tree containing any given branch.
   ChoiceMap choice_map_;
