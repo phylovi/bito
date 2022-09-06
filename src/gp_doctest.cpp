@@ -2202,7 +2202,7 @@ TEST_CASE("Top-Pruning: Parsimony") {
   const std::string fasta_path_hello = "data/hello_short.fasta";
   const std::string newick_path_hello = "data/hello_rooted.nwk";
   const std::string fasta_path_six = "data/six_taxon.fasta";
-  const std::string newick_path_six_single = "data/six_taxon_rooted_single.nwk";
+  const std::string newick_path_six = "data/six_taxon_rooted_single.nwk";
   // Test cases.
   const auto test_0 = TestTPEngineScoresAndPVs(fasta_path_1, newick_path_1, false, true,
                                                false, false, false);
@@ -2210,7 +2210,7 @@ TEST_CASE("Top-Pruning: Parsimony") {
   const auto test_1 = TestTPEngineScoresAndPVs(fasta_path_hello, newick_path_hello,
                                                false, true, false, false, false);
   CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
-  const auto test_2 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six_single,
-                                               false, true, false, false, false);
+  const auto test_2 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six, false,
+                                               true, false, false, false);
   CHECK_MESSAGE(test_2, "Six Taxa Tree failed.");
 }

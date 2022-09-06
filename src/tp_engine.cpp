@@ -435,7 +435,6 @@ void TPEngine::PopulateLeafwardParsimonyPVForNode(const NodeId node_id) {
   if (!dag_.IsNodeLeaf(node_id)) {
     best_edge_id = FindBestEdgeAdjacentToNode(node_id, Direction::Leafward);
     const auto best_edge = dag_.GetDAGEdge(best_edge_id);
-    const NodeId parent_node_id = best_edge.GetParent();
     const NodeId focal_node_id = best_edge.GetChild();
     const EdgeId sister_edge_id =
         choice_map_.GetEdgeChoice(best_edge_id).sister_edge_id;
