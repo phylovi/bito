@@ -1856,14 +1856,15 @@ std::ostream& operator<<(std::ostream& os, EigenConstMatrixXdRef mx) {
   return os;
 }
 
-// Compare TPEngine's top tree to verfied ture tree and, in the single tree cases,
-// compares the partial vectors of verified method vs TPEngine method.
-// Note: The input newick file does not need to contain every possible tree
-// expressible in the DAG.  The input tree collection only needs to be ordered in
-// terms of score.  The DAG edges will then each be assigned according to the
-// best/first tree containing the given edge.
-bool TestTPEngineScoresAndPVs(const std::string fasta_path,
-                              const std::string newick_path,
+// Compare TPEngine's top tree score (likelihood or parsimony) in DAG for each edge to
+// the collection of verified true tree scores that come from the collection of trees
+// that created the DAG. In the single tree cases, can compare the partial vectors of
+// verified method vs TPEngine method. Note: The input newick file does not need to
+// contain every possible tree expressible in the DAG.  The input tree collection only
+// needs to be ordered in terms of score.  The DAG edges will then each be assigned
+// according to the best/first tree containing the given edge.
+bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
+                              const std::string& newick_path,
                               const bool test_likelihood = true,
                               const bool test_parsimony = true,
                               const bool test_pvs = false, const bool is_quiet = true) {
@@ -1905,7 +1906,7 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
   // Note, if the test only contains a single tree, then this amounts to checking if
   // each edge's likelihood matches that one tree.
   auto TestMatchingScores =
-      [is_quiet, print_all, &tree_id_map, &test_passes](
+      [is_quiet, &tree_id_map, &test_passes](
           const std::string& test_name,
           std::unordered_map<size_t, double>& correct_tree_score_map,
           std::unordered_map<EdgeId, double>& tp_score_map) {
@@ -1942,6 +1943,8 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
         }
       };
 
+  // Run tests comparing TPEngine infastructure for computing likelihood vs. true tree
+  // via BEAGLE Engine.
   if (test_likelihood) {
     std::unordered_map<size_t, double> correct_tree_likelihood_map;
     std::unordered_map<EdgeId, double> tp_likelihood_map;
@@ -1988,6 +1991,10 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
     }
   }
 
+  // Run tests comparing TPEngine infastructure for computing parsimony over DAG via
+  // Sankoff vs. true trees via Sankoff Handler.  (Sankoff Handler tests are already
+  // been tested on full trees in these doctests using trees with known parsimonies, so
+  // we can trust it to generate correct tree parsimonies for testing the TPEngine.)
   if (test_parsimony) {
     std::unordered_map<size_t, double> correct_tree_parsimony_map;
     std::unordered_map<EdgeId, double> tp_parsimony_map;
@@ -2040,6 +2047,12 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
 // and computes the top tree likelihood for each edge in the DAG.  Compares these
 // likelihoods against the tree's likelihood computed using BEAGLE engine.
 TEST_CASE("Top-Pruning: Likelihoods") {
+  auto TestTPLikelihoods = [](const std::string& fasta_path,
+                              const std::string& newick_path,
+                              const bool test_pvs) -> bool {
+    return TestTPEngineScoresAndPVs(fasta_path, newick_path, true, false, test_pvs,
+                                    true);
+  };
   // Input files.
   const std::string fasta_path_hello = "data/hello_short.fasta";
   const std::string newick_path_hello = "data/hello_rooted.nwk";
@@ -2047,14 +2060,11 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   const std::string newick_path_six_single = "data/six_taxon_rooted_single.nwk";
   const std::string newick_path_six_simple = "data/six_taxon_rooted_simple.nwk";
   // Test cases.
-  const auto test_1 = TestTPEngineScoresAndPVs(fasta_path_hello, newick_path_hello,
-                                               true, false, true, false);
+  const auto test_1 = TestTPLikelihoods(fasta_path_hello, newick_path_hello, true);
   CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
-  const auto test_2 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six_single,
-                                               true, false, false, false);
+  const auto test_2 = TestTPLikelihoods(fasta_path_six, newick_path_six_single, true);
   CHECK_MESSAGE(test_2, "Six Taxa Single Tree failed.");
-  const auto test_3 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six_simple,
-                                               true, false, false, false);
+  const auto test_3 = TestTPLikelihoods(fasta_path_six, newick_path_six_simple, false);
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
 }
 
@@ -2187,20 +2197,23 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
 // and computes the top tree parsimony for each edge in the DAG.  Compares these
 // likelihoods against the tree's likelihood computed using the `sankoff handler`.
 TEST_CASE("Top-Pruning: Parsimony") {
-  auto fasta_path_1 = "data/parsimony_leaf_seqs.fasta";
-  auto newick_path_1 = "data/parsimony_tree_0_score_75.0.nwk";
+  auto TestTPParsimonies = [](const std::string& fasta_path,
+                              const std::string& newick_path,
+                              const bool test_pvs) -> bool {
+    return TestTPEngineScoresAndPVs(fasta_path, newick_path, false, true, test_pvs,
+                                    true);
+  };
+  const std::string fasta_path_1 = "data/parsimony_leaf_seqs.fasta";
+  const std::string newick_path_1 = "data/parsimony_tree_0_score_75.0.nwk";
   const std::string fasta_path_hello = "data/hello_short.fasta";
   const std::string newick_path_hello = "data/hello_rooted.nwk";
   const std::string fasta_path_six = "data/six_taxon.fasta";
   const std::string newick_path_six = "data/six_taxon_rooted_single.nwk";
   // Test cases.
-  const auto test_0 =
-      TestTPEngineScoresAndPVs(fasta_path_1, newick_path_1, false, true, false, false);
+  const auto test_0 = TestTPParsimonies(fasta_path_1, newick_path_1, false);
   CHECK_MESSAGE(test_0, "Parsimony Test Case Tree failed.");
-  const auto test_1 = TestTPEngineScoresAndPVs(fasta_path_hello, newick_path_hello,
-                                               false, true, false, false);
+  const auto test_1 = TestTPParsimonies(fasta_path_hello, newick_path_hello, false);
   CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
-  const auto test_2 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six, false,
-                                               true, false, false);
+  const auto test_2 = TestTPParsimonies(fasta_path_six, newick_path_six, false);
   CHECK_MESSAGE(test_2, "Six Taxa Tree failed.");
 }
