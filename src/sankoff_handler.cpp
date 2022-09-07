@@ -75,8 +75,7 @@ void SankoffHandler::PopulateRootwardParsimonyPVForNode(const NodeId parent_id,
   for (size_t pattern_idx = 0; pattern_idx < site_pattern_.PatternCount();
        pattern_idx++) {
     // Which child partial is in right or left doesn't actually matter because they
-    // are summed when calculating q_partials. In DAG case, will want to ensure that
-    // left children partials are in p_partials_left
+    // are summed when calculating q_partials.
     psv_handler_.GetPV(PSVType::PLeft, parent_id).col(pattern_idx) =
         ParentPartial(TotalPPartial(left_child_id, pattern_idx));
 
