@@ -2016,7 +2016,7 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
       tp_parsimony_map[edge_id] = parsimony;
     }
     // Check that scores from TPEngine match the correct scores from the individual
-    // trees computed by BEAGLE engine.
+    // trees computed by Sankoff Handler.
     TestMatchingScores(std::string("PARSIMONY"), correct_tree_parsimony_map,
                        tp_parsimony_map);
     // Compare GP and TP partial vectors. Note, this test is only relevant with single
