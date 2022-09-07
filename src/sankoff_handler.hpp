@@ -12,6 +12,7 @@
 #include "node.hpp"
 #include "driver.hpp"
 #include "pv_handler.hpp"
+#include "gp_dag.hpp"
 
 // Partial vector for one node across all sites
 using SankoffPartial = NucleotidePLV;
@@ -27,7 +28,7 @@ class SankoffHandler {
   static constexpr size_t state_count_ = 4;
   static constexpr double big_double_ = static_cast<double>(INT_MAX);
 
-  // constructors
+  // Constructors
   SankoffHandler(SitePattern site_pattern, const std::string &mmap_file_path,
                  double resizing_factor = 2.0)
       : mutation_costs_(SankoffMatrix()),
@@ -44,6 +45,7 @@ class SankoffHandler {
     psv_handler_.Resize(site_pattern_.TaxonCount(),
                         psv_handler_.GetAllocatedNodeCount());
   }
+
   SankoffHandler(CostMatrix cost_matrix, SitePattern site_pattern,
                  const std::string &mmap_file_path, double resizing_factor = 2.0)
       : mutation_costs_(SankoffMatrix(cost_matrix)),
@@ -78,6 +80,12 @@ class SankoffHandler {
                         psv_handler_.GetAllocatedNodeCount());
   }
 
+  PSVHandler &GetPSVHandler() { return psv_handler_; }
+  SankoffMatrix &GetCostMatrix() { return mutation_costs_; }
+
+  // Resize PVs to fit model.
+  void Resize(const size_t new_node_count);
+
   // Partial Sankoff Vector Handler.
   SankoffPartialVec PartialsAtPattern(PSVType psv_type, size_t pattern_idx) {
     SankoffPartialVec partials_at_pattern(psv_handler_.GetNodeCount());
@@ -87,19 +95,28 @@ class SankoffHandler {
     return partials_at_pattern;
   }
 
-  // sum p-partials for right and left children of node 'node_id'
+  // Fill in leaf-values for P partials.
+  void GenerateLeafPartials();
+
+  // Sum p-partials for right and left children of node 'node_id'
   // In this case, we get the full p-partial of the given node after all p-partials
   // have been concatenated into one SankoffPartialVector
   EigenVectorXd TotalPPartial(NodeId node_id, size_t site_idx);
 
-  // fill in leaf-values for P partials
-  void GenerateLeafPartials();
-
-  // calculate the partial for a given parent-child pair
+  // Calculate the partial for a given parent-child pair
   EigenVectorXd ParentPartial(EigenVectorXd child_partials);
 
+  // Populate rootward parsimony PV for node.
+  void PopulateRootwardParsimonyPVForNode(const NodeId parent_id,
+                                          const NodeId left_child_id,
+                                          const NodeId right_child_id);
+  // Populate leafward parsimony PV for node.
+  void PopulateLeafwardParsimonyPVForNode(const NodeId parent_id,
+                                          const NodeId left_child_id,
+                                          const NodeId right_child_id);
+
   // Calculates left p_partials, right p_partials, and q_partials for all nodes at all
-  // sites.
+  // sites in tree topology.
   void RunSankoff(Node::NodePtr topology);
 
   // Calculates parsimony score on given node across all sites.

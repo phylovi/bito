@@ -633,12 +633,13 @@ void GPInstance::SubsplitDAGToDot(const std::string &out_path,
   out_stream.close();
 }
 
-void GPInstance::MakeTPEngine(const std::string mmap_file_path,
+void GPInstance::MakeTPEngine(const std::string mmap_likelihood_path,
                               const bool using_likelihoods,
+                              const std::string mmap_parsimony_path,
                               const bool using_parsimony) {
   auto site_pattern = MakeSitePattern();
-  tp_engine_ =
-      std::make_unique<TPEngine>(dag_, site_pattern, mmap_file_path, true, true);
+  tp_engine_ = std::make_unique<TPEngine>(dag_, site_pattern, mmap_likelihood_path,
+                                          true, mmap_parsimony_path, true);
 }
 
 TPEngine &GPInstance::GetTPEngine() {
