@@ -1902,22 +1902,22 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
     }
   }
 
-  // Check that scores from TPEngine match the golden scores from the individual trees.
+  // Check that scores from TPEngine match the correct scores from the individual trees.
   // Note, if the test only contains a single tree, then this amounts to checking if
   // each edge's likelihood matches that one tree.
   auto TestMatchingScores =
       [is_quiet, print_all, &tree_id_map, &test_passes](
           const std::string& test_name,
-          std::unordered_map<size_t, double>& golden_tree_score_map,
+          std::unordered_map<size_t, double>& correct_tree_score_map,
           std::unordered_map<EdgeId, double>& tp_score_map) {
         for (const auto& [edge_id, tree_id] : tree_id_map) {
           std::ignore = tree_id;
           const auto tp_score = tp_score_map[edge_id];
           bool match_found = false;
           double min_error = std::numeric_limits<double>::max();
-          for (const auto& [tree_id, golden_score] : golden_tree_score_map) {
+          for (const auto& [tree_id, correct_score] : correct_tree_score_map) {
             std::ignore = tree_id;
-            double error = abs(golden_score - tp_score);
+            double error = abs(correct_score - tp_score);
             if (min_error > error) {
               min_error = error;
               if (error < 1e-3) {
@@ -1933,7 +1933,7 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
             std::cout << "::" << test_name << (!match_found ? "_FAILURE" : "")
                       << ":: EdgeId: " << edge_id
                       << ", TP_Score: " << tp_score_map[edge_id]
-                      << ", Golden_Score: " << golden_tree_score_map[tree_id]
+                      << ", Correct_Score: " << correct_tree_score_map[tree_id]
                       << ", Error: " << min_error << std::endl;
           }
         }
@@ -1941,22 +1941,22 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
           std::cout << "TestMatchingScore: " << tp_score_map.size() << std::endl;
           std::cout << "TP_Scores: " << tp_score_map.size() << " " << tp_score_map
                     << std::endl;
-          std::cout << "Golden_Score: " << golden_tree_score_map.size() << " "
-                    << golden_tree_score_map << std::endl;
+          std::cout << "correct_Score: " << correct_tree_score_map.size() << " "
+                    << correct_tree_score_map << std::endl;
         }
       };
 
   if (test_likelihood) {
-    std::unordered_map<size_t, double> golden_tree_likelihood_map;
+    std::unordered_map<size_t, double> correct_tree_likelihood_map;
     std::unordered_map<EdgeId, double> tp_likelihood_map;
-    // BEAGLE Engine for "golden", i.e. correct, tree likelihoods.
+    // BEAGLE Engine for correct tree likelihoods.
     PhyloModelSpecification simple_spec{"JC69", "constant", "strict"};
     auto rooted_sbn_inst = MakeRootedSBNInstance(newick_path, fasta_path, simple_spec);
     auto& beagle_engine = *rooted_sbn_inst.GetEngine()->GetFirstFatBeagle();
     size_t tree_id = 0;
     for (const auto& tree : tree_collection) {
-      auto golden_likelihood = beagle_engine.UnrootedLogLikelihood(tree);
-      golden_tree_likelihood_map[tree_id] = golden_likelihood;
+      auto correct_likelihood = beagle_engine.UnrootedLogLikelihood(tree);
+      correct_tree_likelihood_map[tree_id] = correct_likelihood;
       tree_id++;
     }
     // Compute likelihoods with TPEngine.
@@ -1967,9 +1967,9 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
       auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
       tp_likelihood_map[edge_id] = likelihood;
     }
-    // Check that scores from TPEngine match the golden scores from the individual
+    // Check that scores from TPEngine match the correct scores from the individual
     // trees computed by BEAGLE engine.
-    TestMatchingScores(std::string("LIKELIHOODS"), golden_tree_likelihood_map,
+    TestMatchingScores(std::string("LIKELIHOODS"), correct_tree_likelihood_map,
                        tp_likelihood_map);
     // Compare GP and TP partial vectors. Note, this test is only relevant with single
     // trees, as GP and TP PVs are only equal in the case of single tree DAGs.
@@ -1996,15 +1996,15 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
   }
 
   if (test_parsimony) {
-    std::unordered_map<size_t, double> golden_tree_parsimony_map;
+    std::unordered_map<size_t, double> correct_tree_parsimony_map;
     std::unordered_map<EdgeId, double> tp_parsimony_map;
-    // Sankoff Handler for "golden", i.e. correct, tree parsimonies.
+    // Sankoff Handler for correct tree parsimonies.
     SankoffHandler sankoff_engine(site_pattern, "_ignore.mmapped_pv.sankoff.data");
     size_t tree_id = 0;
     for (const auto& tree : tree_collection) {
       sankoff_engine.RunSankoff(tree.Topology());
-      auto golden_parsimony = sankoff_engine.ParsimonyScore(tree.Topology()->Id());
-      golden_tree_parsimony_map[tree_id] = golden_parsimony;
+      auto correct_parsimony = sankoff_engine.ParsimonyScore(tree.Topology()->Id());
+      correct_tree_parsimony_map[tree_id] = correct_parsimony;
       tree_id++;
     }
     // Compute parsimonies with TPEngine.
@@ -2015,9 +2015,9 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
       auto parsimony = tpengine.GetTopTreeParsimonyWithEdge(edge_id);
       tp_parsimony_map[edge_id] = parsimony;
     }
-    // Check that scores from TPEngine match the golden scores from the individual
+    // Check that scores from TPEngine match the correct scores from the individual
     // trees computed by BEAGLE engine.
-    TestMatchingScores(std::string("PARSIMONY"), golden_tree_parsimony_map,
+    TestMatchingScores(std::string("PARSIMONY"), correct_tree_parsimony_map,
                        tp_parsimony_map);
     // Compare GP and TP partial vectors. Note, this test is only relevant with single
     // trees, as GP and TP PVs are only equal in the case of single tree DAGs.
