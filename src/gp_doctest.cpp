@@ -1856,18 +1856,17 @@ std::ostream& operator<<(std::ostream& os, EigenConstMatrixXdRef mx) {
   return os;
 }
 
-// Compare TPEngine's top tree to true tree and, in the single tree cases,
-// compares its PLVs to GPEngine's.
+// Compare TPEngine's top tree to verfied ture tree and, in the single tree cases,
+// compares the partial vectors of verified method vs TPEngine method.
 // Note: The input newick file does not need to contain every possible tree
 // expressible in the DAG.  The input tree collection only needs to be ordered in
-// terms of likelihood.  The DAG edges will then each be assigned according to the
+// terms of score.  The DAG edges will then each be assigned according to the
 // best/first tree containing the given edge.
 bool TestTPEngineScoresAndPVs(const std::string fasta_path,
                               const std::string newick_path,
                               const bool test_likelihood = true,
                               const bool test_parsimony = true,
-                              const bool test_pvs = false, const bool is_quiet = true,
-                              const bool print_all = false) {
+                              const bool test_pvs = false, const bool is_quiet = true) {
   bool test_passes = true;
   std::stringstream dev_null;
   std::ostream& os = (is_quiet ? dev_null : std::cerr);
@@ -1928,20 +1927,17 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
           }
           if (!match_found) {
             test_passes = false;
-          }
-          if ((!match_found && !is_quiet) || print_all) {
-            std::cout << "::" << test_name << (!match_found ? "_FAILURE" : "")
-                      << ":: EdgeId: " << edge_id
+            std::cout << "::" << test_name << "_FAILURE:: EdgeId: " << edge_id
                       << ", TP_Score: " << tp_score_map[edge_id]
                       << ", Correct_Score: " << correct_tree_score_map[tree_id]
                       << ", Error: " << min_error << std::endl;
           }
         }
-        if ((!test_passes && !is_quiet) || print_all) {
+        if (!test_passes) {
           std::cout << "TestMatchingScore: " << tp_score_map.size() << std::endl;
           std::cout << "TP_Scores: " << tp_score_map.size() << " " << tp_score_map
                     << std::endl;
-          std::cout << "correct_Score: " << correct_tree_score_map.size() << " "
+          std::cout << "Correct_Score: " << correct_tree_score_map.size() << " "
                     << correct_tree_score_map << std::endl;
         }
       };
@@ -1983,10 +1979,7 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
           bool is_equal = (tp_pvs.GetPV(pv_type, i) == gp_pvs.GetPV(pv_type, i));
           if (!is_equal) {
             test_passes = false;
-          }
-          if (!is_equal) {
-            os << "!!! *** " << (!is_equal ? "NOT_EQUAL" : "EQUAL") << " ***"
-               << std::endl;
+            os << "!!! *** NOT EQUAL ***" << std::endl;
             os << "TP_" << tp_pvs.ToString(pv_type, i);
             os << "GP_" << gp_pvs.ToString(pv_type, i);
           }
@@ -2031,10 +2024,7 @@ bool TestTPEngineScoresAndPVs(const std::string fasta_path,
           bool is_equal = (tp_pvs.GetPV(pv_type, i) == sankoff_pvs.GetPV(pv_type, i));
           if (!is_equal) {
             test_passes = false;
-          }
-          if (!is_equal || print_all) {
-            os << "!!! *** " << (!is_equal ? "NOT EQUAL" : "EQUAL") << " ***"
-               << std::endl;
+            os << "!!! *** NOT EQUAL ***" << std::endl;
             os << "TP_" << tp_pvs.ToString(pv_type, i);
             os << "SANK_" << sankoff_pvs.ToString(pv_type, i);
           }
@@ -2058,13 +2048,13 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   const std::string newick_path_six_simple = "data/six_taxon_rooted_simple.nwk";
   // Test cases.
   const auto test_1 = TestTPEngineScoresAndPVs(fasta_path_hello, newick_path_hello,
-                                               true, false, true, false, false);
+                                               true, false, true, false);
   CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
   const auto test_2 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six_single,
-                                               true, false, false, false, false);
+                                               true, false, false, false);
   CHECK_MESSAGE(test_2, "Six Taxa Single Tree failed.");
   const auto test_3 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six_simple,
-                                               true, false, false, false, false);
+                                               true, false, false, false);
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
 }
 
@@ -2204,13 +2194,13 @@ TEST_CASE("Top-Pruning: Parsimony") {
   const std::string fasta_path_six = "data/six_taxon.fasta";
   const std::string newick_path_six = "data/six_taxon_rooted_single.nwk";
   // Test cases.
-  const auto test_0 = TestTPEngineScoresAndPVs(fasta_path_1, newick_path_1, false, true,
-                                               false, false, false);
+  const auto test_0 =
+      TestTPEngineScoresAndPVs(fasta_path_1, newick_path_1, false, true, false, false);
   CHECK_MESSAGE(test_0, "Parsimony Test Case Tree failed.");
   const auto test_1 = TestTPEngineScoresAndPVs(fasta_path_hello, newick_path_hello,
-                                               false, true, false, false, false);
+                                               false, true, false, false);
   CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
   const auto test_2 = TestTPEngineScoresAndPVs(fasta_path_six, newick_path_six, false,
-                                               true, false, false, false);
+                                               true, false, false);
   CHECK_MESSAGE(test_2, "Six Taxa Tree failed.");
 }
