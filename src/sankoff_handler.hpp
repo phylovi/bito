@@ -126,7 +126,7 @@ class SankoffHandler {
   SankoffMatrix mutation_costs_;
   SitePattern site_pattern_;
   double resizing_factor_;
-  PSVHandler psv_handler_;
+  PSVNodeHandler psv_handler_;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

@@ -6,11 +6,31 @@
 // ** Resize
 
 template <class PVType, class PVTypeEnum>
-void PartialVectorHandler<PVType, PVTypeEnum>::Resize(const size_t new_node_count,
-                                                      const size_t new_node_alloc) {
+void PVNodeHandler<PVType, PVTypeEnum>::Resize(const size_t new_node_count,
+                                               const size_t new_node_alloc) {
   const size_t old_pv_count = GetPVCount();
-  node_count_ = new_node_count;
-  node_alloc_ = new_node_alloc;
+  SetNodeCount(new_node_count);
+  SetAllocatedNodeCount(new_node_alloc);
+  // Allocate mmapped data block.
+  mmapped_master_pvs_.Resize(GetAllocatedPVCount() * pattern_count_);
+  // Subdivide mmapped data in individual PVs.
+  pvs_ = mmapped_master_pvs_.Subdivide(GetAllocatedPVCount());
+  // Initialize new work space.
+  Assert((pvs_.back().rows() == MmappedNucleotidePLV::base_count_) &&
+             (pvs_.back().cols() == static_cast<Eigen::Index>(pattern_count_)) &&
+             (size_t(pvs_.size()) == GetAllocatedPVCount()),
+         "Didn't get the right shape of PVs out of Subdivide.");
+  for (size_t i = old_pv_count; i < GetPaddedPVCount(); i++) {
+    pvs_.at(i).setZero();
+  }
+}
+
+template <class PVType, class PVTypeEnum>
+void PVEdgeHandler<PVType, PVTypeEnum>::Resize(const size_t new_edge_count,
+                                               const size_t new_edge_alloc) {
+  const size_t old_pv_count = GetPVCount();
+  SetEdgeCount(new_edge_count);
+  SetAllocatedEdgeCount(new_edge_alloc);
   // Allocate mmapped data block.
   mmapped_master_pvs_.Resize(GetAllocatedPVCount() * pattern_count_);
   // Subdivide mmapped data in individual PVs.

@@ -138,14 +138,14 @@ class GPEngine {
   const PLVHandler& GetPLVHandler() const { return plv_handler_; }
   NucleotidePLVRefVector& GetPLVs() { return plv_handler_.GetPVs(); }
   const NucleotidePLVRefVector& GetPLVs() const { return plv_handler_.GetPVs(); }
-  NucleotidePLVRef& GetPLV(size_t plv_index) { return plv_handler_(plv_index); }
-  const NucleotidePLVRef& GetPLV(size_t plv_index) const {
+  NucleotidePLVRef& GetPLV(const PVId plv_index) { return plv_handler_(plv_index); }
+  const NucleotidePLVRef& GetPLV(const PVId plv_index) const {
     return plv_handler_(plv_index);
   }
-  NucleotidePLVRef& GetSparePLV(size_t plv_index) {
+  NucleotidePLVRef& GetSparePLV(const PVId plv_index) {
     return plv_handler_.GetSparePV(plv_index);
   }
-  const NucleotidePLVRef& GetSparePLV(size_t plv_index) const {
+  const NucleotidePLVRef& GetSparePLV(const PVId plv_index) const {
     return plv_handler_.GetSparePV(plv_index);
   }
   size_t GetSparePLVIndex(const size_t plv_index) const {
@@ -246,23 +246,23 @@ class GPEngine {
   inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
                                                                      size_t src2_idx) {
     per_pattern_likelihood_second_derivatives_ =
-        (GetPLV(src1_idx).transpose() * hessian_matrix_ * GetPLV(src2_idx))
+        (GetPLV(PVId(src1_idx)).transpose() * hessian_matrix_ * GetPLV(PVId(src2_idx)))
             .diagonal()
             .array();
   }
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
                                                                size_t src2_idx) {
-    per_pattern_likelihood_derivatives_ =
-        (GetPLV(src1_idx).transpose() * derivative_matrix_ * GetPLV(src2_idx))
-            .diagonal()
-            .array();
+    per_pattern_likelihood_derivatives_ = (GetPLV(PVId(src1_idx)).transpose() *
+                                           derivative_matrix_ * GetPLV(PVId(src2_idx)))
+                                              .diagonal()
+                                              .array();
   }
 
   inline void PrepareUnrescaledPerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
-    per_pattern_likelihoods_ =
-        (GetPLV(src1_idx).transpose() * transition_matrix_ * GetPLV(src2_idx))
-            .diagonal()
-            .array();
+    per_pattern_likelihoods_ = (GetPLV(PVId(src1_idx)).transpose() *
+                                transition_matrix_ * GetPLV(PVId(src2_idx)))
+                                   .diagonal()
+                                   .array();
   }
 
   // This function is used to compute the marginal log likelihood over all trees that
@@ -270,12 +270,13 @@ class GPEngine {
   // and src2_idx are the two PLV indices on either side of the PCSP.
   inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t src1_idx,
                                                       size_t src2_idx) {
-    per_pattern_log_likelihoods_ =
-        (GetPLV(src1_idx).transpose() * transition_matrix_ * GetPLV(src2_idx))
-            .diagonal()
-            .array()
-            .log() +
-        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
+    per_pattern_log_likelihoods_ = (GetPLV(PVId(src1_idx)).transpose() *
+                                    transition_matrix_ * GetPLV(PVId(src2_idx)))
+                                       .diagonal()
+                                       .array()
+                                       .log() +
+                                   LogRescalingFor(src1_idx) +
+                                   LogRescalingFor(src2_idx);
   }
 
  public:
@@ -336,7 +337,7 @@ class GPEngine {
   // ** Per-Node Data
 
   // Partial Likelihood Vector Handler.
-  PLVHandler plv_handler_;
+  PLVNodeHandler plv_handler_;
   // Unconditional probabilites for each node in DAG.
   EigenVectorXd unconditional_node_probabilities_;
   // Rescaling count for each plv.

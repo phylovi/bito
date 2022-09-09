@@ -16,8 +16,6 @@
 
 #pragma once
 
-using PVId = size_t;
-
 class TPEngine {
  public:
   TPEngine(GPDAG &dag, SitePattern &site_pattern,
@@ -291,11 +289,11 @@ class TPEngine {
 
   // ** Scoring
   // Partial Vector for storing Likelihood scores.
-  PLVHandler likelihood_pvs_;
+  PLVNodeHandler likelihood_pvs_;
   bool using_likelihoods_;
   // Partial Vector for storing Parsimony scores.
   SankoffHandler sankoff_handler_;
-  PSVHandler &parsimony_pvs_;
+  PSVNodeHandler &parsimony_pvs_;
   bool using_parsimony_;
   // ChoiceMap for find top-scoring tree containing any given branch.
   ChoiceMap choice_map_;
