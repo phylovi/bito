@@ -39,11 +39,10 @@ class SankoffHandler {
     Assert(site_pattern_.SequenceCount() == site_pattern_.TaxonCount(),
            "Error in SankoffHandler constructor 1: Every sequence should be associated "
            "with a node.");
-    psv_handler_.SetNodeCount(site_pattern_.TaxonCount());
-    psv_handler_.SetAllocatedNodeCount(
-        size_t(ceil(double(psv_handler_.GetPaddedNodeCount()) * resizing_factor_)));
-    psv_handler_.Resize(site_pattern_.TaxonCount(),
-                        psv_handler_.GetAllocatedNodeCount());
+    psv_handler_.SetCount(site_pattern_.TaxonCount());
+    psv_handler_.SetAllocatedCount(
+        size_t(ceil(double(psv_handler_.GetPaddedCount()) * resizing_factor_)));
+    psv_handler_.Resize(site_pattern_.TaxonCount(), psv_handler_.GetAllocatedCount());
   }
 
   SankoffHandler(CostMatrix cost_matrix, SitePattern site_pattern,
@@ -56,11 +55,10 @@ class SankoffHandler {
     Assert(site_pattern_.SequenceCount() == site_pattern_.TaxonCount(),
            "Error in SankoffHandler constructor 2: Every sequence should be associated "
            "with a node.");
-    psv_handler_.SetNodeCount(site_pattern_.TaxonCount());
-    psv_handler_.SetAllocatedNodeCount(
-        size_t(ceil(double(psv_handler_.GetPaddedNodeCount()) * resizing_factor_)));
-    psv_handler_.Resize(site_pattern_.TaxonCount(),
-                        psv_handler_.GetAllocatedNodeCount());
+    psv_handler_.SetCount(site_pattern_.TaxonCount());
+    psv_handler_.SetAllocatedCount(
+        size_t(ceil(double(psv_handler_.GetPaddedCount()) * resizing_factor_)));
+    psv_handler_.Resize(site_pattern_.TaxonCount(), psv_handler_.GetAllocatedCount());
   }
 
   SankoffHandler(SankoffMatrix sankoff_matrix, SitePattern site_pattern,
@@ -73,14 +71,13 @@ class SankoffHandler {
     Assert(site_pattern_.SequenceCount() == site_pattern_.TaxonCount(),
            "Error in SankoffHandler constructor 3: Every sequence should be associated "
            "with a node.");
-    psv_handler_.SetNodeCount(site_pattern_.TaxonCount());
-    psv_handler_.SetAllocatedNodeCount(
-        size_t(ceil(double(psv_handler_.GetPaddedNodeCount()) * resizing_factor_)));
-    psv_handler_.Resize(site_pattern_.TaxonCount(),
-                        psv_handler_.GetAllocatedNodeCount());
+    psv_handler_.SetCount(site_pattern_.TaxonCount());
+    psv_handler_.SetAllocatedCount(
+        size_t(ceil(double(psv_handler_.GetPaddedCount()) * resizing_factor_)));
+    psv_handler_.Resize(site_pattern_.TaxonCount(), psv_handler_.GetAllocatedCount());
   }
 
-  PSVHandler &GetPSVHandler() { return psv_handler_; }
+  PSVNodeHandler &GetPSVHandler() { return psv_handler_; }
   SankoffMatrix &GetCostMatrix() { return mutation_costs_; }
 
   // Resize PVs to fit model.
@@ -88,8 +85,8 @@ class SankoffHandler {
 
   // Partial Sankoff Vector Handler.
   SankoffPartialVec PartialsAtPattern(PSVType psv_type, size_t pattern_idx) {
-    SankoffPartialVec partials_at_pattern(psv_handler_.GetNodeCount());
-    for (NodeId node = 0; node < psv_handler_.GetNodeCount(); node++) {
+    SankoffPartialVec partials_at_pattern(psv_handler_.GetCount());
+    for (NodeId node = 0; node < psv_handler_.GetCount(); node++) {
       partials_at_pattern[node.value_] = psv_handler_(psv_type, node).col(pattern_idx);
     }
     return partials_at_pattern;

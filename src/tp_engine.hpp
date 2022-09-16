@@ -112,28 +112,28 @@ class TPEngine {
   void SetNodeCount(const size_t node_count) {
     node_count_ = node_count;
     if (using_likelihoods_) {
-      likelihood_pvs_.SetNodeCount(node_count);
+      likelihood_pvs_.SetCount(node_count);
     }
     if (using_parsimony_) {
-      parsimony_pvs_.SetNodeCount(node_count);
+      parsimony_pvs_.SetCount(node_count);
     }
   }
   void SetSpareNodeCount(const size_t node_spare_count) {
     node_spare_count_ = node_spare_count;
     if (using_likelihoods_) {
-      likelihood_pvs_.SetSpareNodeCount(node_spare_count);
+      likelihood_pvs_.SetSpareCount(node_spare_count);
     }
     if (using_parsimony_) {
-      parsimony_pvs_.SetSpareNodeCount(node_spare_count);
+      parsimony_pvs_.SetSpareCount(node_spare_count);
     }
   }
   void SetAllocatedNodeCount(const size_t node_alloc) {
     node_alloc_ = node_alloc;
     if (using_likelihoods_) {
-      likelihood_pvs_.SetAllocatedNodeCount(node_alloc);
+      likelihood_pvs_.SetAllocatedCount(node_alloc);
     }
     if (using_parsimony_) {
-      parsimony_pvs_.SetAllocatedNodeCount(node_alloc);
+      parsimony_pvs_.SetAllocatedCount(node_alloc);
     }
   }
 
@@ -161,8 +161,8 @@ class TPEngine {
   EigenConstMatrixXdRef GetLikelihoodMatrix() {
     return log_likelihoods_.block(0, 0, GetNodeCount(), log_likelihoods_.cols());
   }
-  PLVHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
-  PSVHandler &GetParsimonyPVs() { return parsimony_pvs_; }
+  PLVNodeHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
+  PSVNodeHandler &GetParsimonyPVs() { return parsimony_pvs_; }
   EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
   std::vector<size_t> &GetTreeSource() { return tree_source_; }
 

@@ -135,7 +135,7 @@ class GPEngine {
   const Eigen::Matrix4d& GetTransitionMatrix() const { return transition_matrix_; };
 
   // Partial Likelihood Vector Handler.
-  const PLVHandler& GetPLVHandler() const { return plv_handler_; }
+  const PLVNodeHandler& GetPLVHandler() const { return plv_handler_; }
   NucleotidePLVRefVector& GetPLVs() { return plv_handler_.GetPVs(); }
   const NucleotidePLVRefVector& GetPLVs() const { return plv_handler_.GetPVs(); }
   NucleotidePLVRef& GetPLV(const PVId plv_index) { return plv_handler_(plv_index); }
@@ -187,19 +187,19 @@ class GPEngine {
 
   // ** Counts
 
-  size_t GetPLVCountPerNode() const { return plv_handler_.GetPVCountPerNode(); }
+  size_t GetPLVCountPerNode() const { return plv_handler_.GetPVCountPer(); }
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
   // Node Counts.
-  size_t GetNodeCount() const { return plv_handler_.GetNodeCount(); };
-  size_t GetSpareNodeCount() const { return plv_handler_.GetSpareNodeCount(); }
-  size_t GetAllocatedNodeCount() const { return plv_handler_.GetAllocatedNodeCount(); }
-  size_t GetPaddedNodeCount() const { return plv_handler_.GetPaddedNodeCount(); };
-  void SetNodeCount(const size_t node_count) { plv_handler_.SetNodeCount(node_count); }
+  size_t GetNodeCount() const { return plv_handler_.GetCount(); };
+  size_t GetSpareNodeCount() const { return plv_handler_.GetSpareCount(); }
+  size_t GetAllocatedNodeCount() const { return plv_handler_.GetAllocatedCount(); }
+  size_t GetPaddedNodeCount() const { return plv_handler_.GetPaddedCount(); };
+  void SetNodeCount(const size_t node_count) { plv_handler_.SetCount(node_count); }
   void SetSpareNodeCount(const size_t node_spare_count) {
-    plv_handler_.SetSpareNodeCount(node_spare_count);
+    plv_handler_.SetSpareCount(node_spare_count);
   }
   void SetAllocatedNodeCount(const size_t node_alloc) {
-    plv_handler_.SetAllocatedNodeCount(node_alloc);
+    plv_handler_.SetAllocatedCount(node_alloc);
   }
   // PLV Counts.
   size_t GetPLVCount() const { return plv_handler_.GetPVCount(); };
@@ -324,7 +324,7 @@ class GPEngine {
   // "Padding" is the amount of free working space added to end of occupied space.
   // "Alloc" is the total current memory allocation.
   // "Resizing factor" is the amount of extra storage allocated for when resizing.
-  // Note: All node and PLV counts are handled by the PLVHandler.
+  // Note: All node and PLV counts are handled by the PLVNodeHandler.
 
   // Total number of edges in DAG. Determines sizes of data vectors indexed on edges
   // like branch lengths.

@@ -51,7 +51,7 @@ double TPEngine::GetTopTreeLikelihoodWithEdge(const EdgeId edge_id) {
 void TPEngine::InitializeLikelihood() {
   auto &pvs = likelihood_pvs_;
   // Set all PVs to Zero
-  for (NodeId node_id = 0; node_id < pvs.GetNodeCount(); node_id++) {
+  for (NodeId node_id = 0; node_id < pvs.GetCount(); node_id++) {
     for (const auto pv_type : PLVTypeEnum::Iterator()) {
       pvs.GetPV(pv_type, node_id).setZero();
     }
@@ -296,7 +296,7 @@ void TPEngine::ComputeLikelihoods() {
           auto &pvs = likelihood_pvs_;
           const EdgeId edge_id = dag_.GetEdgeIdx(node.Id(), child_node.Id());
           const PVId parent_pvid =
-              pvs.GetPVIndex(PLVHandler::RPLVType(is_edge_on_left), node.Id());
+              pvs.GetPVIndex(PLVNodeHandler::RPLVType(is_edge_on_left), node.Id());
           const PVId child_pvid = pvs.GetPVIndex(PLVType::P, child_node.Id());
           ComputeLikelihood(edge_id, parent_pvid, child_pvid);
         });
@@ -344,8 +344,8 @@ EdgeId TPEngine::FindBestEdgeAdjacentToNode(const NodeId node_id,
 void TPEngine::EvolveLikelihoodPPVUpEdge(const EdgeId edge_id) {
   auto &pvs = likelihood_pvs_;
   const auto edge = dag_.GetDAGEdge(edge_id);
-  const PVId pv_parent_index =
-      pvs.GetPVIndex(PLVHandler::PPLVType(edge.GetSubsplitClade()), edge.GetParent());
+  const PVId pv_parent_index = pvs.GetPVIndex(
+      PLVNodeHandler::PPLVType(edge.GetSubsplitClade()), edge.GetParent());
   const PVId pv_child_index = pvs.GetPVIndex(PLVType::P, edge.GetChild());
   SetToEvolvedPV(pv_parent_index, edge_id, pv_child_index);
 }
@@ -353,7 +353,7 @@ void TPEngine::EvolveLikelihoodPPVUpEdge(const EdgeId edge_id) {
 void TPEngine::EvolveLikelihoodRPVDownEdge(const EdgeId edge_id) {
   auto &pvs = likelihood_pvs_;
   const auto edge = dag_.GetDAGEdge(edge_id);
-  const PLVType parent_focal_rpv = PLVHandler::RPLVType(edge.GetSubsplitClade());
+  const PLVType parent_focal_rpv = PLVNodeHandler::RPLVType(edge.GetSubsplitClade());
   const PVId pv_parent_index = pvs.GetPVIndex(parent_focal_rpv, edge.GetParent());
   const PVId pv_child_index = pvs.GetPVIndex(PLVType::RHat, edge.GetChild());
   SetToEvolvedPV(pv_child_index, edge_id, pv_parent_index);
@@ -392,7 +392,7 @@ void TPEngine::InitializeParsimony() {
   auto &pvs = parsimony_pvs_;
   sankoff_handler_.Resize(dag_.NodeCount());
   // Set all PVs to Zero
-  for (NodeId node_id = 0; node_id < pvs.GetNodeCount(); node_id++) {
+  for (NodeId node_id = 0; node_id < pvs.GetCount(); node_id++) {
     for (const auto pv_type : PSVTypeEnum::Iterator()) {
       pvs.GetPV(pv_type, node_id).setZero();
     }

@@ -4,7 +4,7 @@
 
 #include "nni_engine.hpp"
 
-using PLVType = PLVHandler::PLVType;
+using PLVType = PLVNodeHandler::PLVType;
 
 NNIEngine::NNIEngine(GPDAG &dag, GPEngine *gp_engine, TPEngine *tp_engine)
     : dag_(dag), graft_dag_(std::make_unique<GraftDAG>(dag)) {
@@ -234,17 +234,17 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni
   key_idx_map[KeyIndex::Child_Id] = child_id.value_;
   key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
   key_idx_map[KeyIndex::Parent_RHat] =
-      PLVHandler::GetPVIndex(PLVType::RHat, parent_id, node_count);
-  key_idx_map[KeyIndex::Parent_RFocal] = PLVHandler::GetPVIndex(
-      PLVHandler::RPLVType(!is_left_clade_sister), parent_id, node_count);
-  key_idx_map[KeyIndex::Parent_PHatSister] = PLVHandler::GetPVIndex(
-      PLVHandler::PPLVType(is_left_clade_sister), parent_id, node_count);
+      PLVNodeHandler::GetPVIndex(PLVType::RHat, parent_id, node_count);
+  key_idx_map[KeyIndex::Parent_RFocal] = PLVNodeHandler::GetPVIndex(
+      PLVNodeHandler::RPLVType(!is_left_clade_sister), parent_id, node_count);
+  key_idx_map[KeyIndex::Parent_PHatSister] = PLVNodeHandler::GetPVIndex(
+      PLVNodeHandler::PPLVType(is_left_clade_sister), parent_id, node_count);
   key_idx_map[KeyIndex::Child_P] =
-      PLVHandler::GetPVIndex(PLVType::P, child_id, node_count);
+      PLVNodeHandler::GetPVIndex(PLVType::P, child_id, node_count);
   key_idx_map[KeyIndex::Child_PHatLeft] =
-      PLVHandler::GetPVIndex(PLVType::PHatLeft, child_id, node_count);
+      PLVNodeHandler::GetPVIndex(PLVType::PHatLeft, child_id, node_count);
   key_idx_map[KeyIndex::Child_PHatRight] =
-      PLVHandler::GetPVIndex(PLVType::PHatRight, child_id, node_count);
+      PLVNodeHandler::GetPVIndex(PLVType::PHatRight, child_id, node_count);
 
   return key_idx_map;
 }

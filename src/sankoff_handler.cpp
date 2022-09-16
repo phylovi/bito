@@ -4,15 +4,15 @@
 #include "sankoff_handler.hpp"
 
 void SankoffHandler::Resize(const size_t new_node_count) {
-  psv_handler_.SetNodeCount(new_node_count);
-  psv_handler_.SetAllocatedNodeCount(
-      size_t(ceil(double(psv_handler_.GetPaddedNodeCount()) * resizing_factor_)));
-  psv_handler_.Resize(new_node_count, psv_handler_.GetAllocatedNodeCount());
+  psv_handler_.SetCount(new_node_count);
+  psv_handler_.SetAllocatedCount(
+      size_t(ceil(double(psv_handler_.GetPaddedCount()) * resizing_factor_)));
+  psv_handler_.Resize(new_node_count, psv_handler_.GetAllocatedCount());
 }
 
 void SankoffHandler::GenerateLeafPartials() {
   // first check that the psv_handler has been resized to deal with the leaf labels
-  Assert(psv_handler_.GetNodeCount() >= site_pattern_.TaxonCount(),
+  Assert(psv_handler_.GetCount() >= site_pattern_.TaxonCount(),
          "Error in SankoffHandler::GenerateLeafPartials: "
          "psv_handler_ should be initialized to accomodate"
          "the number of leaf nodes in the site_pattern_.");

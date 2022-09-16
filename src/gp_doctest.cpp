@@ -21,7 +21,7 @@
 #include "sankoff_handler.hpp"
 
 using namespace GPOperations;  // NOLINT
-using PLVType = PLVHandler::PLVType;
+using PLVType = PLVNodeHandler::PLVType;
 
 // #350 remove all uses of GPCSP.
 
@@ -244,10 +244,10 @@ TEST_CASE("GPInstance: gradient calculation") {
   NodeId rootsplit_jupiter_idx = 2;
   size_t hello_node_count_without_dag_root_node = 5;
 
-  size_t leafward_idx = PLVHandler::GetPVIndex(PLVType::P, child_id,
-                                               hello_node_count_without_dag_root_node);
-  size_t rootward_idx = PLVHandler::GetPVIndex(PLVType::RLeft, rootsplit_id,
-                                               hello_node_count_without_dag_root_node);
+  size_t leafward_idx = PLVNodeHandler::GetPVIndex(
+      PLVType::P, child_id, hello_node_count_without_dag_root_node);
+  size_t rootward_idx = PLVNodeHandler::GetPVIndex(
+      PLVType::RLeft, rootsplit_id, hello_node_count_without_dag_root_node);
   OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx.value_};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
@@ -267,10 +267,10 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   NodeId rootsplit_jupiter_idx = 2;
   size_t hello_node_count_without_dag_root_node = 5;
 
-  size_t leafward_idx = PLVHandler::GetPVIndex(PLVType::P, child_id,
-                                               hello_node_count_without_dag_root_node);
-  size_t rootward_idx = PLVHandler::GetPVIndex(PLVType::RLeft, rootsplit_id,
-                                               hello_node_count_without_dag_root_node);
+  size_t leafward_idx = PLVNodeHandler::GetPVIndex(
+      PLVType::P, child_id, hello_node_count_without_dag_root_node);
+  size_t rootward_idx = PLVNodeHandler::GetPVIndex(
+      PLVType::RLeft, rootsplit_id, hello_node_count_without_dag_root_node);
   OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx.value_};
   std::tuple<double, double, double> log_lik_and_derivatives =
       engine->LogLikelihoodAndFirstTwoDerivatives(op);
@@ -1359,7 +1359,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     if (perform_resize_unmodded_test) {
       // Verify engine not resized yet by accessing too big index.
       size_t plv_idx_out_of_range =
-          (dag.NodeCountWithoutDAGRoot() * 10 * PLVHandler::plv_count_) - 1;
+          (dag.NodeCountWithoutDAGRoot() * 10 * PLVNodeHandler::plv_count_) - 1;
       CHECK_THROWS(gpengine.GetPLV(plv_idx_out_of_range));
       // Force bigger reallocation, with no reindexing.
       gpengine.GrowPLVs(pre_dag.NodeCountWithoutDAGRoot(), std::nullopt,
@@ -1395,13 +1395,18 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
               node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId().value_);
           size_t node_count = dag.NodeCountWithoutDAGRoot();
           size_t edge_count = dag.EdgeCountWithLeafSubsplits();
+          std::cout << "Reindexing before... " << skip_reindexing << std::endl;
           if (!skip_reindexing) {
             gpengine.GrowPLVs(node_count, node_reindexer_without_root);
+            std::cout << "Reindexing middle..." << std::endl;
             gpengine.GrowGPCSPs(edge_count, edge_reindexer);
           } else {
             gpengine.GrowPLVs(node_count);
+            std::cout << "Reindexing middle..." << std::endl;
             gpengine.GrowGPCSPs(edge_count);
           }
+          std::cout << "Reindexing after..." << std::endl;
+
           // Test resizing and reindexing.
           test_passes =
               CheckGPEngineResizeAndReindex(dag, gpengine, pre_dag, pre_gpengine);
@@ -1423,6 +1428,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     // Test final resizing and reindexing.
     node_reindexer_without_root =
         node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId().value_);
+    std::cout << "Reindexing before... " << skip_reindexing << std::endl;
     if (!skip_reindexing) {
       gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot(), node_reindexer_without_root);
       gpengine.GrowGPCSPs(dag.EdgeCountWithLeafSubsplits(), edge_reindexer);
@@ -1430,6 +1436,7 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
       gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot());
       gpengine.GrowGPCSPs(dag.EdgeCountWithLeafSubsplits());
     }
+    std::cout << "Reindexing after..." << std::endl;
     test_passes = CheckGPEngineResizeAndReindex(dag, gpengine, pre_dag, pre_gpengine);
     test_array.push_back(test_passes);
     // Finally, test run full GP Optimization after all modifications completed.
@@ -1446,24 +1453,28 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
   };
 
   // TEST_0: Test that resize and reindex GPEngine works with no modification the DAG.
+  std::cout << "GPEngine Resize Test: 0" << std::endl;
   auto test_0 = ResizeAndReindexGPEngineTest(0, 1, false, false);
   CHECK_MESSAGE(test_0,
                 "TEST_0: Resize and reindex GPEngine fails when no modifications are "
                 "made to DAG.");
   // TEST_1: Test resize and reindex GPEngine works when adding a single node pair to
   // DAG.
+  std::cout << "GPEngine Resize Test: 1" << std::endl;
   auto test_1 = ResizeAndReindexGPEngineTest(1, 1, false, false);
   CHECK_MESSAGE(
       test_1,
       "TEST_1: Resize and reindex GPEngine fails after single AddNodePair to DAG.");
   // TEST_2: Test that improper mapping occurs when not reindexing GPEngine when adding
   // a single node pair to DAG.
+  std::cout << "GPEngine Resize Test: 2" << std::endl;
   auto test_2 = ResizeAndReindexGPEngineTest(10, 1, true, false);
   CHECK_FALSE_MESSAGE(test_2,
                       "TEST_2: Resize and reindex GPEngine is not incorrect when not "
                       "reindexing after single AddNodePair to DAG.");
   // TEST_3: Test resize and reindex GPEngine works when adding a many node pairs,
   // performing resizing and reindexing for each modification of DAG.
+  std::cout << "GPEngine Resize Test: 3" << std::endl;
   auto test_3 = ResizeAndReindexGPEngineTest(100, 1, false, false);
   CHECK_MESSAGE(test_3,
                 "TEST_3: Resize and reindex GPEngine fails after multiple AddNodePair, "
@@ -1978,7 +1989,7 @@ bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
       std::vector<PLVType> pv_types = {PLVType::RHat, PLVType::RLeft, PLVType::RRight};
       for (const auto& pv_type : PLVTypeEnum::Iterator()) {
         std::string pv_name = PLVTypeEnum::Labels[pv_type];
-        for (NodeId i = 0; i < gp_pvs.GetNodeCount(); i++) {
+        for (NodeId i = 0; i < gp_pvs.GetCount(); i++) {
           bool is_equal = (tp_pvs.GetPV(pv_type, i) == gp_pvs.GetPV(pv_type, i));
           if (!is_equal) {
             test_passes = false;
@@ -2027,7 +2038,7 @@ bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
       std::vector<PSVType> plv_types = {PSVType::Q, PSVType::PLeft, PSVType::PRight};
       for (const auto& pv_type : PSVTypeEnum::Iterator()) {
         std::string pv_name = PSVTypeEnum::Labels[pv_type];
-        for (NodeId i = 0; i < sankoff_pvs.GetNodeCount(); i++) {
+        for (NodeId i = 0; i < sankoff_pvs.GetCount(); i++) {
           bool is_equal = (tp_pvs.GetPV(pv_type, i) == sankoff_pvs.GetPV(pv_type, i));
           if (!is_equal) {
             test_passes = false;
