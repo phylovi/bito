@@ -65,14 +65,12 @@ void GPEngine::GrowPLVs(const size_t new_node_count,
                         std::optional<const Reindexer> node_reindexer,
                         std::optional<const size_t> explicit_allocation,
                         const bool on_initialization) {
-  std::cout << "GrowPLV" << std::endl;
   const size_t old_node_count = GetNodeCount();
   const size_t old_plv_count = GetPLVCount();
   SetNodeCount(new_node_count);
   // Reallocate more space if needed.
   if ((GetPaddedNodeCount() > GetAllocatedNodeCount()) ||
       explicit_allocation.has_value()) {
-    std::cout << "GrowPLV -> Realloc" << std::endl;
     SetAllocatedNodeCount(
         size_t(ceil(double(GetPaddedNodeCount()) * resizing_factor_)));
     if (explicit_allocation.has_value()) {

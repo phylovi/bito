@@ -238,7 +238,7 @@ class NNIEngine {
 
   // Initial GPEngine for use with GraftDAG.
   void InitGPEngine();
-  // Populate PLVs so that
+  // Populate PLVs for quick lookup of likelihoods.
   void PrepGPEngineForLikelihoods();
   // Add all Accepted NNIs to Main DAG.
   void AddAcceptedNNIsToDAG();

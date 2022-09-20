@@ -146,6 +146,8 @@ class SubsplitDAG {
   NodeId GetDAGRootNodeId() const;
   // Return the node ids corresponding to the rootsplits.
   ConstNeighborsView GetRootsplitNodeIds() const;
+  // Return the node ids corresponding to the leaves.
+  NodeIdVector GetLeafNodeIds() const;
   // Get edge based on edge id.
   ConstLineView GetDAGEdge(const EdgeId edge_id) const;
   // Get the PCSP bitset for the given edge.

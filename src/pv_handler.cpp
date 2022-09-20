@@ -9,8 +9,8 @@ template <class PVType, class PVTypeEnum, class DAGElementId>
 void PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::Resize(
     const size_t new_element_count, const size_t new_element_alloc) {
   const size_t old_pv_count = GetPVCount();
-  SetCount(new_element_count);
-  SetAllocatedCount(new_element_alloc);
+  element_count_ = new_element_count;
+  element_alloc_ = new_element_alloc;
   // Allocate mmapped data block.
   mmapped_master_pvs_.Resize(GetAllocatedPVCount() * pattern_count_);
   // Subdivide mmapped data in individual PVs.
@@ -23,8 +23,6 @@ void PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::Resize(
   for (size_t i = old_pv_count; i < GetPaddedPVCount(); i++) {
     pvs_.at(i).setZero();
   }
-  std::cout << "PVHandler_Resize: " << GetCount() << " " << GetAllocatedCount()
-            << " == " << GetPVCount() << " " << GetAllocatedPVCount() << std::endl;
 }
 
 template <class PVType, class PVTypeEnum, class DAGElementId>
@@ -64,11 +62,7 @@ Reindexer PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::BuildPVReindex
 }
 
 // ** Explicit Instantiation
-template class PartialVectorHandler<PartialVectorType::PLVType,
-                                    PartialVectorType::PLVTypeEnum, NodeId>;
-template class PartialVectorHandler<PartialVectorType::PLVType,
-                                    PartialVectorType::PLVTypeEnum, EdgeId>;
-template class PartialVectorHandler<PartialVectorType::PSVType,
-                                    PartialVectorType::PSVTypeEnum, NodeId>;
-template class PartialVectorHandler<PartialVectorType::PSVType,
-                                    PartialVectorType::PSVTypeEnum, EdgeId>;
+template class PartialVectorHandler<PLVType, PLVTypeEnum, NodeId>;
+template class PartialVectorHandler<PLVType, PLVTypeEnum, EdgeId>;
+template class PartialVectorHandler<PSVType, PSVTypeEnum, NodeId>;
+template class PartialVectorHandler<PSVType, PSVTypeEnum, EdgeId>;

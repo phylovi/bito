@@ -139,7 +139,6 @@ double SankoffHandler::ParsimonyScore(NodeId node_id) {
     // them together will give the same minimum parsimony score, but doesn't give
     // correct Sankoff Partial vector for the new rooting
     auto total_tree = ParentPartial(TotalPPartial(node_id, pattern));
-
     total_tree += ParentPartial(psv_handler_.GetPV(PSVType::Q, node_id).col(pattern));
 
     // If node_id is the root node, calculating the total_tree vector like so does not

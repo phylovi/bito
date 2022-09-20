@@ -1395,17 +1395,13 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
               node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId().value_);
           size_t node_count = dag.NodeCountWithoutDAGRoot();
           size_t edge_count = dag.EdgeCountWithLeafSubsplits();
-          std::cout << "Reindexing before... " << skip_reindexing << std::endl;
           if (!skip_reindexing) {
             gpengine.GrowPLVs(node_count, node_reindexer_without_root);
-            std::cout << "Reindexing middle..." << std::endl;
             gpengine.GrowGPCSPs(edge_count, edge_reindexer);
           } else {
             gpengine.GrowPLVs(node_count);
-            std::cout << "Reindexing middle..." << std::endl;
             gpengine.GrowGPCSPs(edge_count);
           }
-          std::cout << "Reindexing after..." << std::endl;
 
           // Test resizing and reindexing.
           test_passes =
@@ -1428,7 +1424,6 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     // Test final resizing and reindexing.
     node_reindexer_without_root =
         node_reindexer.RemoveNewIndex(dag.GetDAGRootNodeId().value_);
-    std::cout << "Reindexing before... " << skip_reindexing << std::endl;
     if (!skip_reindexing) {
       gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot(), node_reindexer_without_root);
       gpengine.GrowGPCSPs(dag.EdgeCountWithLeafSubsplits(), edge_reindexer);
@@ -1436,7 +1431,6 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
       gpengine.GrowPLVs(dag.NodeCountWithoutDAGRoot());
       gpengine.GrowGPCSPs(dag.EdgeCountWithLeafSubsplits());
     }
-    std::cout << "Reindexing after..." << std::endl;
     test_passes = CheckGPEngineResizeAndReindex(dag, gpengine, pre_dag, pre_gpengine);
     test_array.push_back(test_passes);
     // Finally, test run full GP Optimization after all modifications completed.
@@ -1453,28 +1447,24 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
   };
 
   // TEST_0: Test that resize and reindex GPEngine works with no modification the DAG.
-  std::cout << "GPEngine Resize Test: 0" << std::endl;
   auto test_0 = ResizeAndReindexGPEngineTest(0, 1, false, false);
   CHECK_MESSAGE(test_0,
                 "TEST_0: Resize and reindex GPEngine fails when no modifications are "
                 "made to DAG.");
   // TEST_1: Test resize and reindex GPEngine works when adding a single node pair to
   // DAG.
-  std::cout << "GPEngine Resize Test: 1" << std::endl;
   auto test_1 = ResizeAndReindexGPEngineTest(1, 1, false, false);
   CHECK_MESSAGE(
       test_1,
       "TEST_1: Resize and reindex GPEngine fails after single AddNodePair to DAG.");
   // TEST_2: Test that improper mapping occurs when not reindexing GPEngine when adding
   // a single node pair to DAG.
-  std::cout << "GPEngine Resize Test: 2" << std::endl;
   auto test_2 = ResizeAndReindexGPEngineTest(10, 1, true, false);
   CHECK_FALSE_MESSAGE(test_2,
                       "TEST_2: Resize and reindex GPEngine is not incorrect when not "
                       "reindexing after single AddNodePair to DAG.");
   // TEST_3: Test resize and reindex GPEngine works when adding a many node pairs,
   // performing resizing and reindexing for each modification of DAG.
-  std::cout << "GPEngine Resize Test: 3" << std::endl;
   auto test_3 = ResizeAndReindexGPEngineTest(100, 1, false, false);
   CHECK_MESSAGE(test_3,
                 "TEST_3: Resize and reindex GPEngine fails after multiple AddNodePair, "
@@ -1891,6 +1881,7 @@ bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
   GPEngine& gpengine = *inst.GetEngine();
   GPDAG& dag = inst.GetDAG();
   inst.EstimateBranchLengths(0.00001, 100, true);
+  // Compute likelihoods with GPEngine.
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
@@ -1898,6 +1889,7 @@ bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
   SitePattern site_pattern = inst.MakeSitePattern();
   inst.MakeTPEngine("_ignore/mmapped_pv.tpl.data", true, "_ignore/mmapped_pv.tpp.data",
                     true);
+
   // Make TPEngine.
   TPEngine& tpengine = inst.GetTPEngine();
   tpengine.SetBranchLengths(gpengine.GetBranchLengths());
@@ -1922,22 +1914,10 @@ bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
           std::unordered_map<size_t, double>& correct_tree_score_map,
           std::unordered_map<EdgeId, double>& tp_score_map) {
         for (const auto& [edge_id, tree_id] : tree_id_map) {
-          std::ignore = tree_id;
           const auto tp_score = tp_score_map[edge_id];
-          bool match_found = false;
-          double min_error = std::numeric_limits<double>::max();
-          for (const auto& [tree_id, correct_score] : correct_tree_score_map) {
-            std::ignore = tree_id;
-            double error = abs(correct_score - tp_score);
-            if (min_error > error) {
-              min_error = error;
-              if (error < 1e-3) {
-                match_found = true;
-                break;
-              }
-            }
-          }
-          if (!match_found) {
+          const auto correct_score = correct_tree_score_map[tree_id];
+          double min_error = abs(tp_score - correct_score);
+          if (min_error > 1e-3) {
             test_passes = false;
             std::cout << "::" << test_name << "_FAILURE:: EdgeId: " << edge_id
                       << ", TP_Score: " << tp_score_map[edge_id]
@@ -1986,16 +1966,16 @@ bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
     auto& tp_pvs = tpengine.GetLikelihoodPVs();
     auto& gp_pvs = gpengine.GetPLVHandler();
     if (test_pvs) {
-      std::vector<PLVType> pv_types = {PLVType::RHat, PLVType::RLeft, PLVType::RRight};
       for (const auto& pv_type : PLVTypeEnum::Iterator()) {
-        std::string pv_name = PLVTypeEnum::Labels[pv_type];
-        for (NodeId i = 0; i < gp_pvs.GetCount(); i++) {
-          bool is_equal = (tp_pvs.GetPV(pv_type, i) == gp_pvs.GetPV(pv_type, i));
+        for (EdgeId edge_id = 0; edge_id < tp_pvs.GetCount(); edge_id++) {
+          NodeId child_id = dag.GetDAGEdge(edge_id).GetChild();
+          bool is_equal =
+              (tp_pvs.GetPV(pv_type, edge_id) == gp_pvs.GetPV(pv_type, child_id));
           if (!is_equal) {
             test_passes = false;
             os << "!!! *** NOT EQUAL ***" << std::endl;
-            os << "TP_" << tp_pvs.ToString(pv_type, i);
-            os << "GP_" << gp_pvs.ToString(pv_type, i);
+            os << "TP_" << tp_pvs.ToString(pv_type, edge_id);
+            os << "GP_" << gp_pvs.ToString(pv_type, child_id);
           }
         }
       }
@@ -2035,16 +2015,16 @@ bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
     auto& tp_pvs = tpengine.GetParsimonyPVs();
     auto& sankoff_pvs = sankoff_engine.GetPSVHandler();
     if (test_pvs) {
-      std::vector<PSVType> plv_types = {PSVType::Q, PSVType::PLeft, PSVType::PRight};
       for (const auto& pv_type : PSVTypeEnum::Iterator()) {
-        std::string pv_name = PSVTypeEnum::Labels[pv_type];
-        for (NodeId i = 0; i < sankoff_pvs.GetCount(); i++) {
-          bool is_equal = (tp_pvs.GetPV(pv_type, i) == sankoff_pvs.GetPV(pv_type, i));
+        for (EdgeId edge_id = 0; edge_id < tp_pvs.GetCount(); edge_id++) {
+          NodeId child_id = dag.GetDAGEdge(edge_id).GetChild();
+          bool is_equal =
+              (tp_pvs.GetPV(pv_type, edge_id) == sankoff_pvs.GetPV(pv_type, child_id));
           if (!is_equal) {
             test_passes = false;
             os << "!!! *** NOT EQUAL ***" << std::endl;
-            os << "TP_" << tp_pvs.ToString(pv_type, i);
-            os << "SANK_" << sankoff_pvs.ToString(pv_type, i);
+            os << "TP_" << tp_pvs.ToString(pv_type, edge_id);
+            os << "SANKOFF_" << sankoff_pvs.ToString(pv_type, child_id);
           }
         }
       }
@@ -2082,11 +2062,12 @@ TEST_CASE("Top-Pruning: Likelihoods") {
 // Runs an instance of TPEngine for two DAGs: DAG_1, a simple DAG, and DAG_2, a DAG
 // formed from DAG_1 plus all of its adjacent NNIs. Both DAGs PVs are populated and
 // their edge TP likelihoods are computed.  Then DAG_1's adjacent proposed NNI
-// likelihoods are computed using only PVs from the pre-NNI already contained in DAG_1.
+// likelihoods are computed using only PVs from the pre-NNI already contained in
+// DAG_1.
 // Finally, we compare the results of the proposed NNIs from DAG_1 with the known
-// likelihoods of the actual NNIs already contained in DAG_2. This verifies we generate
-// the same result from adding NNIs to the DAG and updating as we do from using the
-// pre-NNI computation.
+// likelihoods of the actual NNIs already contained in DAG_2. This verifies we
+// generate the same result from adding NNIs to the DAG and updating as we do from using
+// the pre-NNI computation.
 TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
   // Build GPInstance with TPEngine and NNIEngine.
   auto MakeTPEngine = [](const std::string& fasta_path, const std::string& newick_path,
