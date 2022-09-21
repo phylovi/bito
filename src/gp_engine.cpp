@@ -95,13 +95,13 @@ void GPEngine::GrowPLVs(const size_t new_node_count,
               static_cast<Eigen::Index>(site_pattern_.PatternCount())) &&
              (size_t(GetPLVs().size()) == GetAllocatedPLVCount()),
          "Didn't get the right shape of PLVs out of Subdivide.");
-  for (size_t i = old_plv_count; i < GetPaddedPLVCount(); i++) {
-    rescaling_counts_[i] = 0;
-    GetPLV(i).setZero();
+  for (PVId pv_id = PVId(old_plv_count); pv_id < GetPaddedPLVCount(); pv_id++) {
+    rescaling_counts_[pv_id.value_] = 0;
+    GetPLV(pv_id).setZero();
   }
-  for (size_t i = old_node_count; i < GetNodeCount(); i++) {
+  for (NodeId node_id = NodeId(old_node_count); node_id < GetNodeCount(); node_id++) {
     if (!on_initialization) {
-      unconditional_node_probabilities_[i] = 1.;
+      unconditional_node_probabilities_[node_id.value_] = 1.;
     }
   }
   // Reindex work space to realign with DAG.
@@ -883,7 +883,7 @@ void GPEngine::ProcessQuartetHybridRequest(const QuartetHybridRequest& request) 
 
 // ** I/O
 
-std::string GPEngine::PLVToString(size_t plv_idx) const {
+std::string GPEngine::PLVToString(const PVId plv_idx) const {
   return plv_handler_.ToString(plv_idx);
 }
 

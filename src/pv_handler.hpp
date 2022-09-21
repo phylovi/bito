@@ -73,7 +73,9 @@ class PSVTypeEnum
 };
 };  // namespace PartialVectorType
 
-using PVId = size_t;
+using PVId = GenericId<struct PVIdTag>;
+using PVIdVector = std::vector<PVId>;
+
 using PLVType = PartialVectorType::PLVType;
 using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
 using PSVType = PartialVectorType::PSVType;
@@ -135,17 +137,19 @@ class PartialVectorHandler {
   NucleotidePLVRefVector &GetPVs() { return pvs_; }
   const NucleotidePLVRefVector &GetPVs() const { return pvs_; }
   // Get PV by absolute index from the vector of Partial Vectors.
-  NucleotidePLVRef &GetPV(const PVId pv_idx) { return pvs_.at(pv_idx); }
-  const NucleotidePLVRef &GetPV(const PVId pv_idx) const { return pvs_.at(pv_idx); }
+  NucleotidePLVRef &GetPV(const PVId pv_idx) { return pvs_.at(pv_idx.value_); }
+  const NucleotidePLVRef &GetPV(const PVId pv_idx) const {
+    return pvs_.at(pv_idx.value_);
+  }
   NucleotidePLVRef &operator()(const PVId pv_idx) { return GetPV(pv_idx); }
   const NucleotidePLVRef &operator()(const PVId pv_idx) const { return GetPV(pv_idx); }
   // Get PV by PV type and node index from the vector of Partial Vectors.
   NucleotidePLVRef &GetPV(const PVType pv_type, const DAGElementId element_idx) {
-    return pvs_.at(GetPVIndex(pv_type, element_idx));
+    return GetPV(GetPVIndex(pv_type, element_idx));
   }
   const NucleotidePLVRef &GetPV(const PVType pv_type,
                                 const DAGElementId element_idx) const {
-    return pvs_.at(GetPVIndex(pv_type, element_idx));
+    return GetPV(GetPVIndex(pv_type, element_idx));
   }
   NucleotidePLVRef &operator()(const PVType pv_type, const DAGElementId element_idx) {
     return GetPV(GetPVIndex(pv_type, element_idx));
@@ -156,16 +160,16 @@ class PartialVectorHandler {
   }
   // Get Spare PV by index from the vector of Partial Vectors.
   NucleotidePLVRef &GetSparePV(const PVId pv_idx) {
-    return pvs_.at(GetSparePVIndex(pv_idx));
+    return GetPV(GetSparePVIndex(pv_idx));
   }
   const NucleotidePLVRef &GetSparePV(const PVId pv_idx) const {
-    return pvs_.at(GetSparePVIndex(pv_idx));
+    return GetPV(GetSparePVIndex(pv_idx));
   }
 
   // Get total offset into PVs, indexed based on underlying DAG.
   static PVId GetPVIndex(const PVType pv_type, const DAGElementId element_idx,
                          const size_t element_count) {
-    return GetPVIndex(GetPVTypeIndex(pv_type), element_idx, element_count);
+    return GetPVIndex(TypeEnum::GetIndex(pv_type), element_idx, element_count);
   }
   PVId GetPVIndex(const PVType pv_type, const DAGElementId element_idx) const {
     Assert(element_idx.value_ < GetCount(), "Requested element_idx is out-of-range.");
@@ -176,12 +180,12 @@ class PartialVectorHandler {
     const size_t pv_scratch_size = GetPaddedPVCount() - GetPVCount();
     Assert(pv_idx < pv_scratch_size,
            "Requested temporary pv_idx outside of allocated scratch space.");
-    return pv_idx + GetPVCount();
+    return PVId(pv_idx.value_ + GetPVCount());
   }
   // Get vector of all node ids for given node.
-  static std::vector<PVId> GetPVIndexVectorForElementId(const DAGElementId element_idx,
-                                                        const size_t element_count) {
-    SizeVector pv_idxs;
+  static PVIdVector GetPVIndexVectorForElementId(const DAGElementId element_idx,
+                                                 const size_t element_count) {
+    PVIdVector pv_idxs;
     for (const auto pv_type : typename TypeEnum::Iterator()) {
       pv_idxs.push_back(GetPVIndex(pv_type, element_idx, element_count));
     }
@@ -221,8 +225,8 @@ class PartialVectorHandler {
 
  protected:
   // Get total offset into PVs.
-  static size_t GetPVIndex(const size_t pv_type_idx, const DAGElementId element_idx,
-                           const size_t element_count) {
+  static PVId GetPVIndex(const size_t pv_type_idx, const DAGElementId element_idx,
+                         const size_t element_count) {
     return (pv_type_idx * element_count) + element_idx.value_;
   }
   // Get index for given PV enum.

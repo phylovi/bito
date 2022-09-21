@@ -234,17 +234,21 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni
   key_idx_map[KeyIndex::Child_Id] = child_id.value_;
   key_idx_map[KeyIndex::Edge] = dag.GetEdgeIdx(parent_id, child_id).value_;
   key_idx_map[KeyIndex::Parent_RHat] =
-      PLVNodeHandler::GetPVIndex(PLVType::RHat, parent_id, node_count);
-  key_idx_map[KeyIndex::Parent_RFocal] = PLVNodeHandler::GetPVIndex(
-      PLVNodeHandler::RPLVType(!is_left_clade_sister), parent_id, node_count);
-  key_idx_map[KeyIndex::Parent_PHatSister] = PLVNodeHandler::GetPVIndex(
-      PLVNodeHandler::PPLVType(is_left_clade_sister), parent_id, node_count);
+      PLVNodeHandler::GetPVIndex(PLVType::RHat, parent_id, node_count).value_;
+  key_idx_map[KeyIndex::Parent_RFocal] =
+      PLVNodeHandler::GetPVIndex(PLVNodeHandler::RPLVType(!is_left_clade_sister),
+                                 parent_id, node_count)
+          .value_;
+  key_idx_map[KeyIndex::Parent_PHatSister] =
+      PLVNodeHandler::GetPVIndex(PLVNodeHandler::PPLVType(is_left_clade_sister),
+                                 parent_id, node_count)
+          .value_;
   key_idx_map[KeyIndex::Child_P] =
-      PLVNodeHandler::GetPVIndex(PLVType::P, child_id, node_count);
+      PLVNodeHandler::GetPVIndex(PLVType::P, child_id, node_count).value_;
   key_idx_map[KeyIndex::Child_PHatLeft] =
-      PLVNodeHandler::GetPVIndex(PLVType::PHatLeft, child_id, node_count);
+      PLVNodeHandler::GetPVIndex(PLVType::PHatLeft, child_id, node_count).value_;
   key_idx_map[KeyIndex::Child_PHatRight] =
-      PLVNodeHandler::GetPVIndex(PLVType::PHatRight, child_id, node_count);
+      PLVNodeHandler::GetPVIndex(PLVType::PHatRight, child_id, node_count).value_;
 
   return key_idx_map;
 }
@@ -374,8 +378,10 @@ NNIEngine::KeyIndexMapPair NNIEngine::PassGPEngineDataFromPreNNIToPostNNIViaRefe
     temp_offset_1 = 0;
     temp_offset_2 = 1;
   }
-  post_key_idx[KeyIndex::Parent_RFocal] = GetGPEngine().GetSparePLVIndex(temp_offset_1);
-  post_key_idx[KeyIndex::Child_P] = GetGPEngine().GetSparePLVIndex(temp_offset_2);
+  post_key_idx[KeyIndex::Parent_RFocal] =
+      GetGPEngine().GetPLVHandler().GetSparePVIndex(PVId(temp_offset_1)).value_;
+  post_key_idx[KeyIndex::Child_P] =
+      GetGPEngine().GetPLVHandler().GetSparePVIndex(PVId(temp_offset_2)).value_;
   post_key_idx[KeyIndex::Edge] = GetGPEngine().GetSpareGPCSPIndex(nni_count);
 
   // Copy over central edge data.

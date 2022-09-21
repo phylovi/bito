@@ -38,7 +38,7 @@ Reindexer PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::BuildPVReindex
     const size_t new_element_count) {
   element_count_ = new_element_count;
   Reindexer pv_reindexer(new_element_count * pv_count_per_element_);
-  size_t new_pvs_idx = old_element_count * pv_count_per_element_;
+  PVId new_pvs_idx = PVId(old_element_count * pv_count_per_element_);
   for (size_t i = 0; i < new_element_count; i++) {
     const DAGElementId old_element_idx = DAGElementId(i);
     const DAGElementId new_element_idx =
@@ -46,15 +46,15 @@ Reindexer PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::BuildPVReindex
     for (const auto pv_type : typename PVTypeEnum::Iterator()) {
       // Either get input pv_index from old pvs, or get new pv_index (new data is
       // irrelevant, so just get next available index).
-      size_t old_pv_idx;
+      PVId old_pv_idx;
       if (old_element_idx < old_element_count) {
         old_pv_idx = GetPVIndex(pv_type, old_element_idx, old_element_count);
       } else {
         old_pv_idx = new_pvs_idx;
         new_pvs_idx++;
       }
-      const size_t new_pv_idx = GetPVIndex(pv_type, new_element_idx, new_element_count);
-      pv_reindexer.SetReindex(old_pv_idx, new_pv_idx);
+      const PVId new_pv_idx = GetPVIndex(pv_type, new_element_idx, new_element_count);
+      pv_reindexer.SetReindex(old_pv_idx.value_, new_pv_idx.value_);
     }
   }
   Assert(pv_reindexer.IsValid(GetPVCount()), "PV Reindexer is not valid.");

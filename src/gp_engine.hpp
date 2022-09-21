@@ -148,7 +148,7 @@ class GPEngine {
   const NucleotidePLVRef& GetSparePLV(const PVId plv_index) const {
     return plv_handler_.GetSparePV(plv_index);
   }
-  size_t GetSparePLVIndex(const size_t plv_index) const {
+  PVId GetSparePLVIndex(const PVId plv_index) const {
     return plv_handler_.GetSparePVIndex(plv_index);
   }
 
@@ -181,7 +181,7 @@ class GPEngine {
   // ** I/O
 
   // Output PLV to string.
-  std::string PLVToString(size_t plv_idx) const;
+  std::string PLVToString(const PVId plv_idx) const;
   // Output LogLikelihood to string.
   std::string LogLikelihoodMatrixToString() const;
 

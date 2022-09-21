@@ -9,7 +9,8 @@ using namespace GPOperations;  // NOLINT
 using PLVType = PLVNodeHandler::PLVType;
 
 size_t GPDAG::GetPLVIndex(PLVType plv_type, NodeId node_id) const {
-  return PLVNodeHandler::GetPVIndex(plv_type, node_id, NodeCountWithoutDAGRoot());
+  return PLVNodeHandler::GetPVIndex(plv_type, node_id, NodeCountWithoutDAGRoot())
+      .value_;
 }
 
 // The R PLV update that corresponds to our rotation status.

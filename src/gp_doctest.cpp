@@ -244,11 +244,12 @@ TEST_CASE("GPInstance: gradient calculation") {
   NodeId rootsplit_jupiter_idx = 2;
   size_t hello_node_count_without_dag_root_node = 5;
 
-  size_t leafward_idx = PLVNodeHandler::GetPVIndex(
+  PVId leafward_idx = PLVNodeHandler::GetPVIndex(
       PLVType::P, child_id, hello_node_count_without_dag_root_node);
-  size_t rootward_idx = PLVNodeHandler::GetPVIndex(
+  PVId rootward_idx = PLVNodeHandler::GetPVIndex(
       PLVType::RLeft, rootsplit_id, hello_node_count_without_dag_root_node);
-  OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx.value_};
+  OptimizeBranchLength op{leafward_idx.value_, rootward_idx.value_,
+                          rootsplit_jupiter_idx.value_};
   DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
   // Expect log lik derivative: -0.6109379521.
@@ -267,11 +268,12 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   NodeId rootsplit_jupiter_idx = 2;
   size_t hello_node_count_without_dag_root_node = 5;
 
-  size_t leafward_idx = PLVNodeHandler::GetPVIndex(
+  PVId leafward_idx = PLVNodeHandler::GetPVIndex(
       PLVType::P, child_id, hello_node_count_without_dag_root_node);
-  size_t rootward_idx = PLVNodeHandler::GetPVIndex(
+  PVId rootward_idx = PLVNodeHandler::GetPVIndex(
       PLVType::RLeft, rootsplit_id, hello_node_count_without_dag_root_node);
-  OptimizeBranchLength op{leafward_idx, rootward_idx, rootsplit_jupiter_idx.value_};
+  OptimizeBranchLength op{leafward_idx.value_, rootward_idx.value_,
+                          rootsplit_jupiter_idx.value_};
   std::tuple<double, double, double> log_lik_and_derivatives =
       engine->LogLikelihoodAndFirstTwoDerivatives(op);
   // Expect log likelihood: -84.77961943.
@@ -1358,8 +1360,8 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     // Run unmodified DAG with resized GPEngine test.
     if (perform_resize_unmodded_test) {
       // Verify engine not resized yet by accessing too big index.
-      size_t plv_idx_out_of_range =
-          (dag.NodeCountWithoutDAGRoot() * 10 * PLVNodeHandler::plv_count_) - 1;
+      PVId plv_idx_out_of_range =
+          PVId((dag.NodeCountWithoutDAGRoot() * 10 * PLVNodeHandler::plv_count_) - 1);
       CHECK_THROWS(gpengine.GetPLV(plv_idx_out_of_range));
       // Force bigger reallocation, with no reindexing.
       gpengine.GrowPLVs(pre_dag.NodeCountWithoutDAGRoot(), std::nullopt,
@@ -2045,17 +2047,17 @@ TEST_CASE("Top-Pruning: Likelihoods") {
                                     true);
   };
   // Input files.
-  const std::string fasta_path_hello = "data/hello_short.fasta";
-  const std::string newick_path_hello = "data/hello_rooted.nwk";
-  const std::string fasta_path_six = "data/six_taxon.fasta";
-  const std::string newick_path_six_single = "data/six_taxon_rooted_single.nwk";
-  const std::string newick_path_six_simple = "data/six_taxon_rooted_simple.nwk";
+  const std::string fasta_hello = "data/hello_short.fasta";
+  const std::string newick_hello = "data/hello_rooted.nwk";
+  const std::string fasta_six = "data/six_taxon.fasta";
+  const std::string newick_six_single = "data/six_taxon_rooted_single.nwk";
+  const std::string newick_six_simple = "data/six_taxon_rooted_simple.nwk";
   // Test cases.
-  const auto test_1 = TestTPLikelihoods(fasta_path_hello, newick_path_hello, true);
+  const auto test_1 = TestTPLikelihoods(fasta_hello, newick_hello, true);
   CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
-  const auto test_2 = TestTPLikelihoods(fasta_path_six, newick_path_six_single, true);
+  const auto test_2 = TestTPLikelihoods(fasta_six, newick_six_single, true);
   CHECK_MESSAGE(test_2, "Six Taxa Single Tree failed.");
-  const auto test_3 = TestTPLikelihoods(fasta_path_six, newick_path_six_simple, false);
+  const auto test_3 = TestTPLikelihoods(fasta_six, newick_six_simple, false);
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
 }
 
@@ -2195,20 +2197,25 @@ TEST_CASE("Top-Pruning: Parsimony") {
     return TestTPEngineScoresAndPVs(fasta_path, newick_path, false, true, test_pvs,
                                     true);
   };
-  const std::string fasta_path_1 = "data/parsimony_leaf_seqs.fasta";
-  const std::string newick_path_1 = "data/parsimony_tree_0_score_75.0.nwk";
-  const std::string fasta_path_hello = "data/hello_short.fasta";
-  const std::string newick_path_hello = "data/hello_rooted.nwk";
-  const std::string fasta_path_six = "data/six_taxon.fasta";
-  const std::string newick_path_six_single = "data/six_taxon_rooted_single.nwk";
-  const std::string newick_path_six_simple = "data/six_taxon_rooted_simple.nwk";
+  const std::string fasta_ex = "data/parsimony_leaf_seqs.fasta";
+  const std::string newick_ex = "data/parsimony_tree_0_score_75.0.nwk";
+  const std::string fasta_hello = "data/hello_short.fasta";
+  const std::string newick_hello = "data/hello_rooted.nwk";
+  const std::string fasta_six = "data/six_taxon.fasta";
+  const std::string newick_six_single = "data/six_taxon_rooted_single.nwk";
+  const std::string newick_six_simple = "data/six_taxon_rooted_simple.nwk";
+  const std::string fasta_five = "data/five_taxon.fasta";
+  const std::string newick_five_more = "data/five_taxon_rooted_more.nwk";
+
   // Test cases.
-  const auto test_0 = TestTPParsimonies(fasta_path_1, newick_path_1, false);
+  const auto test_0 = TestTPParsimonies(fasta_ex, newick_ex, false);
   CHECK_MESSAGE(test_0, "Parsimony Test Case Tree failed.");
-  const auto test_1 = TestTPParsimonies(fasta_path_hello, newick_path_hello, false);
+  const auto test_1 = TestTPParsimonies(fasta_hello, newick_hello, false);
   CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
-  const auto test_2 = TestTPParsimonies(fasta_path_six, newick_path_six_single, false);
+  const auto test_2 = TestTPParsimonies(fasta_six, newick_six_single, false);
   CHECK_MESSAGE(test_2, "Six Taxa Tree failed.");
-  const auto test_3 = TestTPParsimonies(fasta_path_six, newick_path_six_simple, false);
+  const auto test_3 = TestTPParsimonies(fasta_six, newick_six_simple, false);
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
+  const auto test_4 = TestTPParsimonies(fasta_six, newick_six_simple, false);
+  CHECK_MESSAGE(test_4, "Five Taxa Many Trees failed.");
 }
