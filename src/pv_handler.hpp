@@ -4,6 +4,11 @@
 // PLVHandler is used for storing and manipulating Partial Vectors.  Partial Vector are
 // intermediate computations, such as likelihoods or other cost matrices, used for
 // performing dynamic programming on a tree or DAG.
+//
+// PSVHandler is used to perform the Sankoff algorithm. There are 3 partial vectors:
+// PLeft, PRight, and Q. PLeft and Pright corresponds to Sankoff vectors for the left
+// and right child respectively, and Q corresponds to the value of the partial vector
+// pointing leaf-ward.
 
 #pragma once
 
