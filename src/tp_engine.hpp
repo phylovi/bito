@@ -228,7 +228,7 @@ class TPEngine {
   EigenVectorXd ParentPartial(EigenVectorXd child_partials);
   // Sum p-partials for right and left children of node 'node_id'
   // In this case, we get the full p-partial of the given node after all p-partials
-  // have been concatenated into one SankoffPartialVector
+  // have been concatenated into one SankoffPartialVector.
   EigenVectorXd TotalPPartial(EdgeId edge_id, size_t site_idx);
   // Populate rootward R-PVs for given edge.
   void PopulateRootwardParsimonyPVForEdge(const EdgeId parent_id,
