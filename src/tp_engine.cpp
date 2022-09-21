@@ -168,51 +168,50 @@ void TPEngine::UpdateLikelihoodsAfterDAGAddNodePair(const NNIOperation &post_nni
 
 double TPEngine::GetTopTreeLikelihoodWithProposedNNI(const NNIOperation &post_nni,
                                                      const NNIOperation &pre_nni) {
-  // using NNIClade = NNIOperation::NNIClade;
-  // using NNICladeEnum = NNIOperation::NNICladeEnum;
-  // auto &pvs = likelihood_pvs_;
+  using NNIClade = NNIOperation::NNIClade;
+  using NNICladeEnum = NNIOperation::NNICladeEnum;
+  auto &pvs = likelihood_pvs_;
 
-  // // Node ids from pre-NNI in DAG.
-  // NNICladeEnum::Array<PVId> pre_id_map;
-  // const auto pre_parent_id = dag_.GetDAGNodeId(pre_nni.GetParent());
-  // const auto pre_child_id = dag_.GetDAGNodeId(pre_nni.GetChild());
-  // const auto pre_edge_id = dag_.GetEdgeIdx(pre_parent_id, pre_child_id);
-  // const auto pre_sister_clade =
-  //     Bitset::Opposite(dag_.GetDAGEdge(pre_edge_id).GetSubsplitClade());
-  // // PLV ids from pre-NNI in DAG.
-  // pre_id_map[NNIClade::ParentFocal] = pvs.GetPVIndex(PLVType::RHat, pre_parent_id);
-  // pre_id_map[NNIClade::ParentSister] =
-  //     pvs.GetPVIndex(pvs.PPLVType(pre_sister_clade), pre_parent_id);
-  // pre_id_map[NNIClade::ChildLeft] = pvs.GetPVIndex(PLVType::PHatLeft, pre_child_id);
-  // pre_id_map[NNIClade::ChildRight] = pvs.GetPVIndex(PLVType::PHatRight,
-  // pre_child_id);
+  // Node ids from pre-NNI in DAG.
+  NNICladeEnum::Array<PVId> pre_id_map;
+  const auto pre_parent_id = dag_.GetDAGNodeId(pre_nni.GetParent());
+  const auto pre_child_id = dag_.GetDAGNodeId(pre_nni.GetChild());
+  const auto pre_edge_id = dag_.GetEdgeIdx(pre_parent_id, pre_child_id);
+  const auto pre_sister_clade =
+      Bitset::Opposite(dag_.GetDAGEdge(pre_edge_id).GetSubsplitClade());
 
-  // // Compute P-PLV of post-child node.
-  // auto child_phat_pvid = likelihood_pvs_.GetSparePVIndex(0);
-  // // Compute R-PLV of post-parent node.
-  // auto parent_rfocal_pvid = likelihood_pvs_.GetSparePVIndex(1);
-  // // Get temp central edge.
-  // auto post_edge_id = EdgeId(dag_.EdgeCountWithLeafSubsplits() + 1);
+  // PLV ids from pre-NNI in DAG.
+  pre_id_map[NNIClade::ParentFocal] = pvs.GetPVIndex(PLVType::RHat, pre_edge_id);
+  pre_id_map[NNIClade::ParentSister] =
+      pvs.GetPVIndex(pvs.PPLVType(pre_sister_clade), pre_edge_id);
+  pre_id_map[NNIClade::ChildLeft] = pvs.GetPVIndex(PLVType::PHatLeft, pre_edge_id);
+  pre_id_map[NNIClade::ChildRight] = pvs.GetPVIndex(PLVType::PHatRight, pre_edge_id);
 
-  // const auto clade_map =
-  //     NNIOperation::BuildNNICladeMapFromPreNNIToNNI(pre_nni, post_nni);
+  // Compute P-PLV of post-child node.
+  auto child_phat_pvid = likelihood_pvs_.GetSparePVIndex(0);
+  // Compute R-PLV of post-parent node.
+  auto parent_rfocal_pvid = likelihood_pvs_.GetSparePVIndex(1);
+  // Get temp central edge.
+  auto post_edge_id = EdgeId(dag_.EdgeCountWithLeafSubsplits() + 1);
 
-  // // Evolve post-leftchild with post-rightchild together.
-  // MultiplyPVs(child_phat_pvid, pre_id_map[clade_map[NNIClade::ChildLeft]],
-  //             pre_id_map[clade_map[NNIClade::ChildRight]]);
-  // // Evolve post-parent with post-sister together.
-  // MultiplyPVs(parent_rfocal_pvid, pre_id_map[NNIClade::ParentFocal],
-  //             pre_id_map[clade_map[NNIClade::ParentSister]]);
+  const auto clade_map =
+      NNIOperation::BuildNNICladeMapFromPreNNIToNNI(pre_nni, post_nni);
 
-  // // Get likelihood by evolving up from child to parent.
-  // SetTransitionMatrixToHaveBranchLength(branch_lengths_(pre_edge_id.value_));
-  // PreparePerPatternLogLikelihoodsForEdge(parent_rfocal_pvid, child_phat_pvid);
-  // log_likelihoods_.row(post_edge_id.value_) = per_pattern_log_likelihoods_;
-  // auto top_tree_log_likelihood_ =
-  //     log_likelihoods_.block(post_edge_id.value_, 0, 1, log_likelihoods_.cols()) *
-  //     site_pattern_weights_;
-  // return top_tree_log_likelihood_[0];
-  return 0.0f;
+  // Evolve post-leftchild with post-rightchild together.
+  MultiplyPVs(child_phat_pvid, pre_id_map[clade_map[NNIClade::ChildLeft]],
+              pre_id_map[clade_map[NNIClade::ChildRight]]);
+  // Evolve post-parent with post-sister together.
+  MultiplyPVs(parent_rfocal_pvid, pre_id_map[NNIClade::ParentFocal],
+              pre_id_map[clade_map[NNIClade::ParentSister]]);
+
+  // Get likelihood by evolving up from child to parent.
+  SetTransitionMatrixToHaveBranchLength(branch_lengths_(pre_edge_id.value_));
+  PreparePerPatternLogLikelihoodsForEdge(parent_rfocal_pvid, child_phat_pvid);
+  log_likelihoods_.row(post_edge_id.value_) = per_pattern_log_likelihoods_;
+  auto top_tree_log_likelihood_ =
+      log_likelihoods_.block(post_edge_id.value_, 0, 1, log_likelihoods_.cols()) *
+      site_pattern_weights_;
+  return top_tree_log_likelihood_[0];
 }
 
 // For rootward traversal. Compute the likelihood PV for a given node, by using
@@ -403,8 +402,7 @@ void TPEngine::PopulateLeafParsimonyPVsWithSitePatterns() {
           } else {
             Failwith(
                 "Error in SankoffHandler::GenerateLeafPartials: Invalid nucleotide "
-                "state "
-                "in sequence alignment.");
+                "state in sequence alignment.");
           }
         }
         parsimony_pvs_.GetPV(PSVType::PLeft, edge_id) = leaf_partials;

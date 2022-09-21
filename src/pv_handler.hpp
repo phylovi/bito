@@ -1,9 +1,10 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// PLVHandler is used for storing and manipulating Partial Vectors.  Partial Vector are
-// intermediate computations, such as likelihoods or other cost matrices, used for
-// performing dynamic programming on a tree or DAG.
+// PVHandler is used for storing and manipulating Partial Vectors.  Partial Vector are
+// intermediate computations, such as likelihoods or parsimonies or other cost matrices,
+// used for performing dynamic programming on a tree or DAG. Partial Vectors can be
+// "stored on" different elements of the DAG: either on the edges or the nodes.
 
 #pragma once
 
@@ -15,6 +16,7 @@
 
 // Helper Enumerated Types for Partial Vectors.
 namespace PartialVectorType {
+
 // PLV: Partial Likelihood Vectors
 enum class PLVType : size_t {
   P,          // p(s)
@@ -81,6 +83,7 @@ using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
 using PSVType = PartialVectorType::PSVType;
 using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
 
+// Note: DAGElementId decides whether indexing PVs according to DAG's nodes or edges.
 template <class PVType, class PVTypeEnum, class DAGElementId>
 class PartialVectorHandler {
  public:

@@ -2061,6 +2061,39 @@ TEST_CASE("Top-Pruning: Likelihoods") {
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
 }
 
+// Builds a TPEngine instance from a set of input trees. Then populates TPEngine's PVs
+// and computes the top tree parsimony for each edge in the DAG.  Compares these
+// likelihoods against the tree's likelihood computed using the `sankoff handler`.
+TEST_CASE("Top-Pruning: Parsimony") {
+  auto TestTPParsimonies = [](const std::string& fasta_path,
+                              const std::string& newick_path,
+                              const bool test_pvs) -> bool {
+    return TestTPEngineScoresAndPVs(fasta_path, newick_path, false, true, test_pvs,
+                                    true);
+  };
+  const std::string fasta_ex = "data/parsimony_leaf_seqs.fasta";
+  const std::string newick_ex = "data/parsimony_tree_0_score_75.0.nwk";
+  const std::string fasta_hello = "data/hello_short.fasta";
+  const std::string newick_hello = "data/hello_rooted.nwk";
+  const std::string fasta_six = "data/six_taxon.fasta";
+  const std::string newick_six_single = "data/six_taxon_rooted_single.nwk";
+  const std::string newick_six_simple = "data/six_taxon_rooted_simple.nwk";
+  const std::string fasta_five = "data/five_taxon.fasta";
+  const std::string newick_five_more = "data/five_taxon_rooted_more.nwk";
+
+  // Test cases.
+  const auto test_0 = TestTPParsimonies(fasta_ex, newick_ex, false);
+  CHECK_MESSAGE(test_0, "Parsimony Test Case Tree failed.");
+  const auto test_1 = TestTPParsimonies(fasta_hello, newick_hello, false);
+  CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
+  const auto test_2 = TestTPParsimonies(fasta_six, newick_six_single, false);
+  CHECK_MESSAGE(test_2, "Six Taxa Tree failed.");
+  const auto test_3 = TestTPParsimonies(fasta_six, newick_six_simple, false);
+  CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
+  const auto test_4 = TestTPParsimonies(fasta_six, newick_six_simple, false);
+  CHECK_MESSAGE(test_4, "Five Taxa Many Trees failed.");
+}
+
 // Runs an instance of TPEngine for two DAGs: DAG_1, a simple DAG, and DAG_2, a DAG
 // formed from DAG_1 plus all of its adjacent NNIs. Both DAGs PVs are populated and
 // their edge TP likelihoods are computed.  Then DAG_1's adjacent proposed NNI
@@ -2120,23 +2153,25 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
   // Compare likelihoods from TPEngine. Every edge in DAG_1 must yield a tree likelihood
   // shared by at least one edge in DAG_2.
   auto EqualityTestLikelihoodsFromTPEngine =
-      [](std::unordered_map<EdgeId, double>& likelihood_map_1, GPDAG& dag_1,
-         std::unordered_map<EdgeId, double>& likelihood_map_2, GPDAG& dag_2) {
+      [](std::unordered_map<EdgeId, double>& likelihood_map_test, GPDAG& dag_test,
+         std::unordered_map<EdgeId, double>& likelihood_map_correct, GPDAG& dag_correct,
+         const bool is_quiet = true) {
         bool is_equal = true;
-        for (const auto [edge_id_1, likelihood_1] : likelihood_map_1) {
-          std::ignore = edge_id_1;
-          auto min_diff = std::numeric_limits<double>::max();
-          for (const auto [edge_id_2, likelihood_2] : likelihood_map_2) {
-            std::ignore = edge_id_2;
-            auto diff = std::abs(likelihood_1 - likelihood_2);
-            if (min_diff > diff) {
-              min_diff = diff;
-            }
-          }
-          if (min_diff > 1e-3) {
+        std::stringstream dev_null;
+        std::ostream& os = (is_quiet ? dev_null : std::cerr);
+        for (const auto [edge_id_test, likelihood_test] : likelihood_map_test) {
+          const auto edge_bitset_test = dag_test.GetDAGEdgeBitset(edge_id_test);
+          const auto edge_id_correct = dag_correct.GetEdgeIdx(edge_bitset_test);
+          const auto likelihood_correct = likelihood_map_correct[edge_id_correct];
+          const auto diff = abs(likelihood_test - likelihood_correct);
+          if (diff > 1e-3) {
             is_equal = false;
+            os << ":: NNI_LIKELIHOOD_FAIL :: Error: " << diff << std::endl;
+            os << "Correct: " << edge_id_correct << ": " << likelihood_correct
+               << std::endl;
+            os << "Test: " << edge_id_test << ": " << likelihood_test << std::endl;
           }
-          CHECK_MESSAGE(min_diff <= 1e-3,
+          CHECK_MESSAGE(diff <= 1e-3,
                         "Likelihood of NNI in smaller DAG without NNIs did not match "
                         "likelihood from larger DAG.");
         }
@@ -2175,47 +2210,25 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
     proposed_likelihoods_1[edge_id] = likelihood;
   }
 
-  auto test_contained_nnis =
-      EqualityTestLikelihoodsFromTPEngine(likelihoods_1, dag_1, likelihoods_2, dag_2);
+  auto test_contained_nnis = EqualityTestLikelihoodsFromTPEngine(
+      likelihoods_1, dag_1, likelihoods_2, dag_2, false);
   CHECK_MESSAGE(test_contained_nnis,
                 "Likelihoods from contained NNIs in smaller DAG do not match "
                 "likelihoods in larger DAG.");
   auto test_proposed_nnis = EqualityTestLikelihoodsFromTPEngine(
-      proposed_likelihoods_1, dag_1, likelihoods_2, dag_2);
+      proposed_likelihoods_1, dag_1, likelihoods_2, dag_2, false);
   CHECK_MESSAGE(test_proposed_nnis,
                 "Likelihoods from proposed NNIs in smaller DAG do not match "
                 "likelihoods in larger DAG.");
 }
 
-// Builds a TPEngine instance from a set of input trees. Then populates TPEngine's PVs
-// and computes the top tree parsimony for each edge in the DAG.  Compares these
-// likelihoods against the tree's likelihood computed using the `sankoff handler`.
-TEST_CASE("Top-Pruning: Parsimony") {
-  auto TestTPParsimonies = [](const std::string& fasta_path,
-                              const std::string& newick_path,
-                              const bool test_pvs) -> bool {
-    return TestTPEngineScoresAndPVs(fasta_path, newick_path, false, true, test_pvs,
-                                    true);
-  };
-  const std::string fasta_ex = "data/parsimony_leaf_seqs.fasta";
-  const std::string newick_ex = "data/parsimony_tree_0_score_75.0.nwk";
-  const std::string fasta_hello = "data/hello_short.fasta";
-  const std::string newick_hello = "data/hello_rooted.nwk";
-  const std::string fasta_six = "data/six_taxon.fasta";
-  const std::string newick_six_single = "data/six_taxon_rooted_single.nwk";
-  const std::string newick_six_simple = "data/six_taxon_rooted_simple.nwk";
-  const std::string fasta_five = "data/five_taxon.fasta";
-  const std::string newick_five_more = "data/five_taxon_rooted_more.nwk";
-
-  // Test cases.
-  const auto test_0 = TestTPParsimonies(fasta_ex, newick_ex, false);
-  CHECK_MESSAGE(test_0, "Parsimony Test Case Tree failed.");
-  const auto test_1 = TestTPParsimonies(fasta_hello, newick_hello, false);
-  CHECK_MESSAGE(test_1, "Hello Example Single Tree failed.");
-  const auto test_2 = TestTPParsimonies(fasta_six, newick_six_single, false);
-  CHECK_MESSAGE(test_2, "Six Taxa Tree failed.");
-  const auto test_3 = TestTPParsimonies(fasta_six, newick_six_simple, false);
-  CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
-  const auto test_4 = TestTPParsimonies(fasta_six, newick_six_simple, false);
-  CHECK_MESSAGE(test_4, "Five Taxa Many Trees failed.");
-}
+// Runs an instance of TPEngine for two DAGs: DAG_1, a simple DAG, and DAG_2, a DAG
+// formed from DAG_1 plus all of its adjacent NNIs. Both DAGs PVs are populated and
+// their edge TP likelihoods are computed.  Then DAG_1's adjacent proposed NNI
+// likelihoods are computed using only PVs from the pre-NNI already contained in
+// DAG_1.
+// Finally, we compare the results of the proposed NNIs from DAG_1 with the known
+// likelihoods of the actual NNIs already contained in DAG_2. This verifies we
+// generate the same result from adding NNIs to the DAG and updating as we do from using
+// the pre-NNI computation.
+TEST_CASE("Top-Pruning: Parsimonies with Proposed NNIs") {}
