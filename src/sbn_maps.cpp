@@ -392,7 +392,7 @@ void RootedSBNMaps::FunctionOverRootedTreeCollection(
           const auto edge_idx = AtWithDefault(edge_indexer, edge_bitset, default_index);
           if (edge_idx != default_index) {
             function_on_tree_node_by_gpcsp(EdgeId(edge_idx), edge_bitset, tree, tree_id,
-                                          focal_node);
+                                           focal_node);
           }
         },
         true);

@@ -1,9 +1,15 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// PLVHandler is used for storing and manipulating Partial Vectors.  Partial Vector are
-// intermediate computations, such as likelihoods or other cost matrices, used for
-// performing dynamic programming on a tree or DAG.
+// PVHandler is used for storing and manipulating Partial Vectors.  Partial Vectors are
+// intermediate computations, such as in likelihoods or parsimonies, used for performing
+// dynamic programming on a tree or DAG. Partial Vectors can be "stored on" and indexed
+// according to different elements of the DAG: either by the edges or the nodes.
+//
+// PSVHandler is used to perform the Sankoff algorithm. There are 3 partial vectors:
+// PLeft, PRight, and Q. PLeft and Pright corresponds to Sankoff vectors for the left
+// and right child respectively, and Q corresponds to the value of the partial vector
+// pointing leaf-ward.
 
 #pragma once
 
@@ -15,6 +21,7 @@
 
 // Helper Enumerated Types for Partial Vectors.
 namespace PartialVectorType {
+
 // PLV: Partial Likelihood Vectors
 enum class PLVType : size_t {
   P,          // p(s)
@@ -30,10 +37,16 @@ class PLVTypeEnum
  public:
   static PLVType PPLVType(const bool is_on_left) {
     return is_on_left ? PLVType::PHatLeft : PLVType::PHatRight;
-  };
+  }
   static PLVType RPLVType(const bool is_on_left) {
     return is_on_left ? PLVType::RLeft : PLVType::RRight;
-  };
+  }
+  static PLVType PPLVType(const SubsplitClade clade) {
+    return (clade == SubsplitClade::Left) ? PLVType::PHatLeft : PLVType::PHatRight;
+  }
+  static PLVType RPLVType(const SubsplitClade clade) {
+    return (clade == SubsplitClade::Left) ? PLVType::RLeft : PLVType::RRight;
+  }
 
   static inline const Array<std::string> Labels = {
       {"P", "PHatRight", "PHatLeft", "RHat", "RRight", "RLeft"}};
@@ -59,6 +72,13 @@ static inline const size_t PSVCount = 3;
 class PSVTypeEnum
     : public EnumWrapper<PSVType, size_t, PSVCount, PSVType::PRight, PSVType::Q> {
  public:
+  static PSVType PPSVType(const bool is_on_left) {
+    return is_on_left ? PSVType::PLeft : PSVType::PRight;
+  }
+  static PSVType PPSVType(const SubsplitClade clade) {
+    return (clade == SubsplitClade::Left) ? PSVType::PLeft : PSVType::PRight;
+  }
+
   static inline const Array<std::string> Labels = {{"PRight", "PLeft", "Q"}};
 
   static std::string ToString(const PSVType e) {
@@ -73,58 +93,66 @@ class PSVTypeEnum
 };
 };  // namespace PartialVectorType
 
+using PVId = GenericId<struct PVIdTag>;
+using PVIdVector = std::vector<PVId>;
+
 using PLVType = PartialVectorType::PLVType;
 using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
 using PSVType = PartialVectorType::PSVType;
 using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
 
-template <typename PVType, typename PVTypeEnum>
+// PVTypeEnum determines which PV types need to be stored on each element of the
+// PVHandler (e.g. P-PVs, Q-PVs, R-PVs). DAGElementId decides whether indexing PVs
+// according to DAG's nodes or edges.
+template <class PVTypeEnum, class DAGElementId>
 class PartialVectorHandler {
  public:
-  using Type = PVType;
   using TypeEnum = PVTypeEnum;
+  using PVType = typename TypeEnum::Type;
 
-  PartialVectorHandler(const std::string &mmap_file_path, const size_t node_count,
+  PartialVectorHandler(const std::string &mmap_file_path, const size_t element_count,
                        const size_t pattern_count, const double resizing_factor)
-      : node_count_(node_count),
+      : element_count_(element_count),
         pattern_count_(pattern_count),
         resizing_factor_(resizing_factor),
         mmap_file_path_(mmap_file_path),
-        mmapped_master_pvs_(mmap_file_path_,
-                            (node_count + node_spare_count_) * pv_count_per_node_ *
-                                size_t(resizing_factor_) * pattern_count) {}
+        mmapped_master_pvs_(mmap_file_path_, (element_count + element_spare_count_) *
+                                                 pv_count_per_element_ *
+                                                 size_t(resizing_factor_) *
+                                                 pattern_count) {}
 
   // ** Counts
 
   double GetByteCount() const { return mmapped_master_pvs_.ByteCount(); }
-  size_t GetPVCountPerNode() const { return pv_count_per_node_; }
+  size_t GetPVCountPer() const { return pv_count_per_element_; }
   size_t GetSitePatternCount() const { return pattern_count_; }
-  size_t GetNodeCount() const { return node_count_; }
-  size_t GetSpareNodeCount() const { return node_spare_count_; }
-  size_t GetAllocatedNodeCount() const { return node_alloc_; }
-  size_t GetPaddedNodeCount() const { return GetNodeCount() + GetSpareNodeCount(); }
-  size_t GetPVCount() const { return GetNodeCount() * GetPVCountPerNode(); }
-  size_t GetSparePVCount() const { return GetSpareNodeCount() * GetPVCountPerNode(); }
-  size_t GetPaddedPVCount() const { return GetPaddedNodeCount() * GetPVCountPerNode(); }
-  size_t GetAllocatedPVCount() const {
-    return GetAllocatedNodeCount() * GetPVCountPerNode();
-  }
+  // DAG element counts.
+  size_t GetCount() const { return element_count_; }
+  size_t GetSpareCount() const { return element_spare_count_; }
+  size_t GetAllocatedCount() const { return element_alloc_; }
+  size_t GetPaddedCount() const { return GetCount() + GetSpareCount(); }
+  // PV counts.
+  size_t GetPVCount() const { return GetCount() * GetPVCountPer(); }
+  size_t GetSparePVCount() const { return GetSpareCount() * GetPVCountPer(); }
+  size_t GetPaddedPVCount() const { return GetPaddedCount() * GetPVCountPer(); }
+  size_t GetAllocatedPVCount() const { return GetAllocatedCount() * GetPVCountPer(); }
 
-  void SetNodeCount(const size_t node_count) { node_count_ = node_count; }
-  void SetSpareNodeCount(const size_t node_spare_count) {
-    node_spare_count_ = node_spare_count;
+  void SetCount(const size_t element_count) { element_count_ = element_count; }
+  void SetSpareCount(const size_t element_spare_count) {
+    element_spare_count_ = element_spare_count;
   }
-  void SetAllocatedNodeCount(const size_t node_alloc) { node_alloc_ = node_alloc; }
+  void SetAllocatedCount(const size_t element_alloc) { element_alloc_ = element_alloc; }
 
   // ** Resize
 
   // Resize PVHandler to accomodate DAG with given number of nodes.
-  void Resize(const size_t new_node_count, const size_t new_node_alloc);
+  void Resize(const size_t new_element_count, const size_t new_element_alloc);
   // Reindex PV according to pv_reindexer.
   void Reindex(const Reindexer pv_reindexer);
-  // Expand node_reindexer into pv_reindexer.
-  Reindexer BuildPVReindexer(const Reindexer &node_reindexer,
-                             const size_t old_node_count, const size_t new_node_count);
+  // Expand element_reindexer into pv_reindexer.
+  Reindexer BuildPVReindexer(const Reindexer &element_reindexer,
+                             const size_t old_element_count,
+                             const size_t new_element_count);
 
   // ** Access
 
@@ -132,58 +160,57 @@ class PartialVectorHandler {
   NucleotidePLVRefVector &GetPVs() { return pvs_; }
   const NucleotidePLVRefVector &GetPVs() const { return pvs_; }
   // Get PV by absolute index from the vector of Partial Vectors.
-  NucleotidePLVRef &GetPV(const size_t pv_idx) { return pvs_.at(pv_idx); }
-  const NucleotidePLVRef &GetPV(const size_t pv_idx) const { return pvs_.at(pv_idx); }
-  NucleotidePLVRef &operator()(const size_t pv_idx) { return GetPV(pv_idx); }
-  const NucleotidePLVRef &operator()(const size_t pv_idx) const {
-    return GetPV(pv_idx);
+  NucleotidePLVRef &GetPV(const PVId pv_idx) { return pvs_.at(pv_idx.value_); }
+  const NucleotidePLVRef &GetPV(const PVId pv_idx) const {
+    return pvs_.at(pv_idx.value_);
   }
+  NucleotidePLVRef &operator()(const PVId pv_idx) { return GetPV(pv_idx); }
+  const NucleotidePLVRef &operator()(const PVId pv_idx) const { return GetPV(pv_idx); }
   // Get PV by PV type and node index from the vector of Partial Vectors.
-  NucleotidePLVRef &GetPV(const PVType pv_type, const NodeId node_idx) {
-    return pvs_.at(GetPVIndex(pv_type, node_idx));
+  NucleotidePLVRef &GetPV(const PVType pv_type, const DAGElementId element_idx) {
+    return GetPV(GetPVIndex(pv_type, element_idx));
   }
-  const NucleotidePLVRef &GetPV(const PVType pv_type, const NodeId node_idx) const {
-    return pvs_.at(GetPVIndex(pv_type, node_idx));
+  const NucleotidePLVRef &GetPV(const PVType pv_type,
+                                const DAGElementId element_idx) const {
+    return GetPV(GetPVIndex(pv_type, element_idx));
   }
-  NucleotidePLVRef &operator()(const PVType pv_type, const NodeId node_idx) {
-    return GetPV(GetPVIndex(pv_type, node_idx));
+  NucleotidePLVRef &operator()(const PVType pv_type, const DAGElementId element_idx) {
+    return GetPV(GetPVIndex(pv_type, element_idx));
   }
   const NucleotidePLVRef &operator()(const PVType pv_type,
-                                     const NodeId node_idx) const {
-    return GetPV(GetPVIndex(pv_type, node_idx));
+                                     const DAGElementId element_idx) const {
+    return GetPV(GetPVIndex(pv_type, element_idx));
   }
   // Get Spare PV by index from the vector of Partial Vectors.
-  NucleotidePLVRef &GetSparePV(const size_t pv_idx) {
-    return pvs_.at(GetSparePVIndex(pv_idx));
+  NucleotidePLVRef &GetSparePV(const PVId pv_idx) {
+    return GetPV(GetSparePVIndex(pv_idx));
   }
-  const NucleotidePLVRef &GetSparePV(const size_t pv_idx) const {
-    return pvs_.at(GetSparePVIndex(pv_idx));
+  const NucleotidePLVRef &GetSparePV(const PVId pv_idx) const {
+    return GetPV(GetSparePVIndex(pv_idx));
   }
 
   // Get total offset into PVs, indexed based on underlying DAG.
-  static size_t GetPVIndex(const PVType pv_type, const NodeId node_idx,
-                           const size_t node_count) {
-    return GetPVIndex(GetPVTypeIndex(pv_type), node_idx, node_count);
+  static PVId GetPVIndex(const PVType pv_type, const DAGElementId element_idx,
+                         const size_t element_count) {
+    return GetPVIndex(TypeEnum::GetIndex(pv_type), element_idx, element_count);
   }
-  size_t GetPVIndex(const PVType pv_type, const NodeId node_idx) const {
-    Assert(node_idx.value_ < GetNodeCount(), "Requested node_idx is out-of-range.");
-    return GetPVIndex(pv_type, node_idx, GetNodeCount());
+  PVId GetPVIndex(const PVType pv_type, const DAGElementId element_idx) const {
+    Assert(element_idx.value_ < GetCount(), "Requested element_idx is out-of-range.");
+    return GetPVIndex(pv_type, element_idx, GetCount());
   }
-
   // Get total offset into temporary PVs, indexed based on underlying grafted DAG.
-  size_t GetSparePVIndex(const size_t pv_idx) const {
+  PVId GetSparePVIndex(const PVId pv_idx) const {
     const size_t pv_scratch_size = GetPaddedPVCount() - GetPVCount();
     Assert(pv_idx < pv_scratch_size,
            "Requested temporary pv_idx outside of allocated scratch space.");
-    return pv_idx + GetPVCount();
+    return PVId(pv_idx.value_ + GetPVCount());
   }
-
   // Get vector of all node ids for given node.
-  static SizeVector GetPVIndexVectorForNodeId(const NodeId node_idx,
-                                              const size_t node_count) {
-    SizeVector pv_idxs;
+  static PVIdVector GetPVIndexVectorForElementId(const DAGElementId element_idx,
+                                                 const size_t element_count) {
+    PVIdVector pv_idxs;
     for (const auto pv_type : typename TypeEnum::Iterator()) {
-      pv_idxs.push_back(GetPVIndex(pv_type, node_idx, node_count));
+      pv_idxs.push_back(GetPVIndex(pv_type, element_idx, element_count));
     }
     return pv_idxs;
   }
@@ -191,7 +218,7 @@ class PartialVectorHandler {
   // ** I/O
 
   // Output data to string.
-  std::string ToString(const size_t pv_idx, const bool show_labels = false) const {
+  std::string ToString(const PVId pv_idx, const bool show_labels = false) const {
     std::stringstream out;
     out << "PV[" << pv_idx << "]: " << std::endl;
     for (auto &&row : GetPV(pv_idx).rowwise()) {
@@ -199,21 +226,21 @@ class PartialVectorHandler {
     }
     return out.str();
   }
-  std::string ToString(const PVType pv_type, const NodeId node_idx,
+  std::string ToString(const PVType pv_type, const DAGElementId element_idx,
                        const bool show_labels = false) const {
     std::stringstream out;
-    out << "PV[" << PVTypeEnum::ToString(pv_type) << ", Node" << node_idx
-        << ", PVId::" << GetPVIndex(pv_type, node_idx) << "]: " << std::endl;
-    for (auto &&row : GetPV(pv_type, node_idx).rowwise()) {
+    out << "PV[" << PVTypeEnum::ToString(pv_type) << ", Element" << element_idx
+        << ", PVId::" << GetPVIndex(pv_type, element_idx) << "]: " << std::endl;
+    for (auto &&row : GetPV(pv_type, element_idx).rowwise()) {
       out << row << std::endl;
     }
     return out.str();
   }
-  std::string AllPVsToString(const bool show_labels = false) {
+  std::string AllPVsToString(const bool show_labels = false) const {
     std::stringstream out;
     for (const auto pv_type : typename PVTypeEnum::Iterator()) {
-      for (NodeId node_id = 0; node_id < GetNodeCount(); node_id++) {
-        out << ToString(pv_type, node_id, show_labels);
+      for (DAGElementId element_id = 0; element_id < GetCount(); element_id++) {
+        out << ToString(pv_type, element_id, show_labels);
       }
     }
     return out.str();
@@ -221,9 +248,9 @@ class PartialVectorHandler {
 
  protected:
   // Get total offset into PVs.
-  static size_t GetPVIndex(const size_t pv_type_idx, const NodeId node_idx,
-                           const size_t node_count) {
-    return (pv_type_idx * node_count) + node_idx.value_;
+  static PVId GetPVIndex(const size_t pv_type_idx, const DAGElementId element_idx,
+                         const size_t element_count) {
+    return (pv_type_idx * element_count) + element_idx.value_;
   }
   // Get index for given PV enum.
   static size_t GetPVTypeIndex(const PVType pv_type) {
@@ -237,15 +264,15 @@ class PartialVectorHandler {
   // "Resizing factor" is the amount of extra storage allocated for when resizing.
 
   // Number of nodes in DAG.
-  size_t node_count_ = 0;
+  size_t element_count_ = 0;
   // Number of nodes of additional space for temporary graft nodes in DAG.
-  size_t node_spare_count_ = 2;
+  size_t element_spare_count_ = 2;
   // Number of nodes allocated for in PVHandler.
-  size_t node_alloc_ = 0;
+  size_t element_alloc_ = 0;
   // Size of Site Pattern.
   size_t pattern_count_ = 0;
   // Number of PVs for each node in DAG.
-  const size_t pv_count_per_node_ = PVTypeEnum::Count;
+  const size_t pv_count_per_element_ = PVTypeEnum::Count;
   // When size exceeds current allocation, ratio to grow new allocation.
   double resizing_factor_ = 2.0;
 
@@ -267,51 +294,41 @@ class PartialVectorHandler {
 };
 
 // PLVHandler: Partial Likelihood Vector Handler
-class PLVHandler : public PartialVectorHandler<PartialVectorType::PLVType,
-                                               PartialVectorType::PLVTypeEnum> {
+template <class DAGElementId>
+class PLVHandler
+    : public PartialVectorHandler<PartialVectorType::PLVTypeEnum, DAGElementId> {
  public:
+  using PLVType = PartialVectorType::PLVType;
   using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
-  using PLVType = PLVTypeEnum::Type;
   using PLVTypeIterator = PLVTypeEnum::Iterator;
   static const inline size_t plv_count_ = PLVTypeEnum::Count;
 
-  PLVHandler(const std::string &mmap_file_path, const size_t node_count,
+  PLVHandler(const std::string &mmap_file_path, const size_t element_count,
              const size_t pattern_count, const double resizing_factor)
-      : PartialVectorHandler(mmap_file_path, node_count, pattern_count,
-                             resizing_factor){};
-
-  static Type PPLVType(const bool is_on_left) {
-    return is_on_left ? PLVType::PHatLeft : PLVType::PHatRight;
-  }
-  static Type RPLVType(const bool is_on_left) {
-    return is_on_left ? PLVType::RLeft : PLVType::RRight;
-  }
-  static Type PPLVType(const SubsplitClade clade) {
-    return (clade == SubsplitClade::Left) ? PLVType::PHatLeft : PLVType::PHatRight;
-  }
-  static Type RPLVType(const SubsplitClade clade) {
-    return (clade == SubsplitClade::Left) ? PLVType::RLeft : PLVType::RRight;
-  }
+      : PartialVectorHandler<PLVTypeEnum, DAGElementId>(
+            mmap_file_path, element_count, pattern_count, resizing_factor) {}
 };
 
 // PSVHandler: Partial Sankoff Vector Handler
-class PSVHandler : public PartialVectorHandler<PartialVectorType::PSVType,
-                                               PartialVectorType::PSVTypeEnum> {
+template <class DAGElementId>
+class PSVHandler
+    : public PartialVectorHandler<PartialVectorType::PSVTypeEnum, DAGElementId> {
  public:
+  using PSVType = PartialVectorType::PSVType;
   using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
-  using PSVType = PSVTypeEnum::Type;
   using PSVTypeIterator = PSVTypeEnum::Iterator;
   static const inline size_t psv_count_ = PartialVectorType::PSVTypeEnum::Count;
 
-  PSVHandler(const std::string &mmap_file_path, const size_t node_count,
+  PSVHandler(const std::string &mmap_file_path, const size_t element_count,
              const size_t pattern_count, const double resizing_factor)
-      : PartialVectorHandler(mmap_file_path, node_count, pattern_count,
-                             resizing_factor){};
-
-  static Type PPLVType(const bool is_on_left) {
-    return is_on_left ? PSVType::PLeft : PSVType::PRight;
-  }
+      : PartialVectorHandler<PSVTypeEnum, DAGElementId>(
+            mmap_file_path, element_count, pattern_count, resizing_factor) {}
 };
+
+using PLVNodeHandler = PLVHandler<NodeId>;
+using PLVEdgeHandler = PLVHandler<EdgeId>;
+using PSVNodeHandler = PSVHandler<NodeId>;
+using PSVEdgeHandler = PSVHandler<EdgeId>;
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
 

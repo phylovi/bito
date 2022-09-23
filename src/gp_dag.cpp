@@ -6,10 +6,11 @@
 #include "numerical_utils.hpp"
 
 using namespace GPOperations;  // NOLINT
-using PLVType = PLVHandler::PLVType;
+using PLVType = PLVTypeEnum::Type;
 
 size_t GPDAG::GetPLVIndex(PLVType plv_type, NodeId node_id) const {
-  return PLVHandler::GetPVIndex(plv_type, node_id, NodeCountWithoutDAGRoot());
+  return PLVNodeHandler::GetPVIndex(plv_type, node_id, NodeCountWithoutDAGRoot())
+      .value_;
 }
 
 // The R PLV update that corresponds to our rotation status.
@@ -128,7 +129,7 @@ GPOperationVector GPDAG::ComputeLikelihoods() const {
           const auto gpcsp_idx = GetEdgeIdx(node.Id(), child_node.Id());
           operations.push_back(
               Likelihood{gpcsp_idx.value_,
-                         GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left), node.Id()),
+                         GetPLVIndex(PLVTypeEnum::RPLVType(is_edge_on_left), node.Id()),
                          GetPLVIndex(PLVType::P, child_node.Id())});
         });
   });
@@ -262,7 +263,7 @@ void AppendOperationsAfterPrepForMarginalization(
 
 void GPDAG::AddPhatOperations(SubsplitDAGNode node, bool is_edge_on_left,
                               GPOperationVector &operations) const {
-  PLVType plv_type = PLVHandler::PPLVType(is_edge_on_left);
+  PLVType plv_type = PLVTypeEnum::PPLVType(is_edge_on_left);
   const auto parent_id = node.Id();
   const auto dest_idx = GetPLVIndex(plv_type, node.Id());
   GPOperationVector new_operations;
@@ -283,7 +284,7 @@ void GPDAG::AddRhatOperations(SubsplitDAGNode node,
         new_operations.push_back(IncrementWithWeightedEvolvedPLV{
             GetPLVIndex(PLVType::RHat, node.Id()),
             GetEdgeIdx(parent_node.Id(), node.Id()).value_,
-            GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left), parent_node.Id())});
+            GetPLVIndex(PLVTypeEnum::RPLVType(is_edge_on_left), parent_node.Id())});
       });
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
@@ -329,7 +330,7 @@ void GPDAG::UpdatePHatComputeLikelihood(NodeId node_id, NodeId child_node_id,
       GetPLVIndex(PLVType::P, child_node_id),
   });
   new_operations.push_back(Likelihood{
-      gpcsp_idx.value_, GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left), node_id),
+      gpcsp_idx.value_, GetPLVIndex(PLVTypeEnum::RPLVType(is_edge_on_left), node_id),
       GetPLVIndex(PLVType::P, child_node_id)});
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
@@ -340,7 +341,7 @@ void GPDAG::OptimizeBranchLengthUpdatePHat(NodeId node_id, NodeId child_node_id,
   EdgeId gpcsp_idx = GetEdgeIdx(node_id, child_node_id);
   operations.push_back(OptimizeBranchLength{
       GetPLVIndex(PLVType::P, child_node_id),
-      GetPLVIndex(PLVHandler::RPLVType(is_edge_on_left), node_id), gpcsp_idx.value_});
+      GetPLVIndex(PLVTypeEnum::RPLVType(is_edge_on_left), node_id), gpcsp_idx.value_});
   // Update p_hat(s)
   GPOperationVector new_operations;
   new_operations.push_back(IncrementWithWeightedEvolvedPLV{
@@ -361,7 +362,7 @@ QuartetHybridRequest GPDAG::QuartetHybridRequestOf(NodeId parent_id,
                              const NodeId grandparent_id) {
         rootward_tips.emplace_back(
             grandparent_id.value_,
-            GetPLVIndex(PLVHandler::RPLVType(is_rootward_on_left), grandparent_id),
+            GetPLVIndex(PLVTypeEnum::RPLVType(is_rootward_on_left), grandparent_id),
             gpcsp_idx.value_);
       });
 

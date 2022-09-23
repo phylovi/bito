@@ -16,7 +16,7 @@
 #include "tidy_subsplit_dag.hpp"
 #include "pv_handler.hpp"
 
-using PLVType = PLVHandler::PLVType;
+using PLVType = PLVNodeHandler::PLVType;
 
 class GPDAG : public TidySubsplitDAG {
  public:

@@ -329,6 +329,14 @@ ConstNeighborsView SubsplitDAG::GetRootsplitNodeIds() const {
   return GetDAGNode(GetDAGRootNodeId()).GetLeftLeafward();
 }
 
+NodeIdVector SubsplitDAG::GetLeafNodeIds() const {
+  NodeIdVector leaf_node_ids;
+  for (NodeId node_id = 0; node_id < TaxonCount(); node_id++) {
+    leaf_node_ids.push_back(node_id);
+  }
+  return leaf_node_ids;
+}
+
 ConstLineView SubsplitDAG::GetDAGEdge(const EdgeId edge_id) const {
   Assert(ContainsEdge(edge_id), "Node with the given node_id does not exist in DAG.");
   return storage_.GetLine(edge_id).value();

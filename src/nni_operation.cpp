@@ -128,6 +128,7 @@ NNIOperation::NNICladeArray NNIOperation::BuildNNICladeMapFromPreNNIToNNI(
            "Unexpected Error: Was not able to find a clade mapping from pre_nni to "
            "post_nni.");
   }
+  nni_clade_map[NNIClade::ParentFocal] = NNIClade::ParentFocal;
   return nni_clade_map;
 };
 
