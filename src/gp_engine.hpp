@@ -135,20 +135,20 @@ class GPEngine {
   const Eigen::Matrix4d& GetTransitionMatrix() const { return transition_matrix_; };
 
   // Partial Likelihood Vector Handler.
-  const PLVHandler& GetPLVHandler() const { return plv_handler_; }
+  const PLVNodeHandler& GetPLVHandler() const { return plv_handler_; }
   NucleotidePLVRefVector& GetPLVs() { return plv_handler_.GetPVs(); }
   const NucleotidePLVRefVector& GetPLVs() const { return plv_handler_.GetPVs(); }
-  NucleotidePLVRef& GetPLV(size_t plv_index) { return plv_handler_(plv_index); }
-  const NucleotidePLVRef& GetPLV(size_t plv_index) const {
+  NucleotidePLVRef& GetPLV(const PVId plv_index) { return plv_handler_(plv_index); }
+  const NucleotidePLVRef& GetPLV(const PVId plv_index) const {
     return plv_handler_(plv_index);
   }
-  NucleotidePLVRef& GetSparePLV(size_t plv_index) {
+  NucleotidePLVRef& GetSparePLV(const PVId plv_index) {
     return plv_handler_.GetSparePV(plv_index);
   }
-  const NucleotidePLVRef& GetSparePLV(size_t plv_index) const {
+  const NucleotidePLVRef& GetSparePLV(const PVId plv_index) const {
     return plv_handler_.GetSparePV(plv_index);
   }
-  size_t GetSparePLVIndex(const size_t plv_index) const {
+  PVId GetSparePLVIndex(const PVId plv_index) const {
     return plv_handler_.GetSparePVIndex(plv_index);
   }
 
@@ -181,25 +181,25 @@ class GPEngine {
   // ** I/O
 
   // Output PLV to string.
-  std::string PLVToString(size_t plv_idx) const;
+  std::string PLVToString(const PVId plv_idx) const;
   // Output LogLikelihood to string.
   std::string LogLikelihoodMatrixToString() const;
 
   // ** Counts
 
-  size_t GetPLVCountPerNode() const { return plv_handler_.GetPVCountPerNode(); }
+  size_t GetPLVCountPerNode() const { return plv_handler_.GetPVCountPer(); }
   size_t GetSitePatternCount() const { return site_pattern_.PatternCount(); };
   // Node Counts.
-  size_t GetNodeCount() const { return plv_handler_.GetNodeCount(); };
-  size_t GetSpareNodeCount() const { return plv_handler_.GetSpareNodeCount(); }
-  size_t GetAllocatedNodeCount() const { return plv_handler_.GetAllocatedNodeCount(); }
-  size_t GetPaddedNodeCount() const { return plv_handler_.GetPaddedNodeCount(); };
-  void SetNodeCount(const size_t node_count) { plv_handler_.SetNodeCount(node_count); }
+  size_t GetNodeCount() const { return plv_handler_.GetCount(); };
+  size_t GetSpareNodeCount() const { return plv_handler_.GetSpareCount(); }
+  size_t GetAllocatedNodeCount() const { return plv_handler_.GetAllocatedCount(); }
+  size_t GetPaddedNodeCount() const { return plv_handler_.GetPaddedCount(); };
+  void SetNodeCount(const size_t node_count) { plv_handler_.SetCount(node_count); }
   void SetSpareNodeCount(const size_t node_spare_count) {
-    plv_handler_.SetSpareNodeCount(node_spare_count);
+    plv_handler_.SetSpareCount(node_spare_count);
   }
   void SetAllocatedNodeCount(const size_t node_alloc) {
-    plv_handler_.SetAllocatedNodeCount(node_alloc);
+    plv_handler_.SetAllocatedCount(node_alloc);
   }
   // PLV Counts.
   size_t GetPLVCount() const { return plv_handler_.GetPVCount(); };
@@ -246,23 +246,23 @@ class GPEngine {
   inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
                                                                      size_t src2_idx) {
     per_pattern_likelihood_second_derivatives_ =
-        (GetPLV(src1_idx).transpose() * hessian_matrix_ * GetPLV(src2_idx))
+        (GetPLV(PVId(src1_idx)).transpose() * hessian_matrix_ * GetPLV(PVId(src2_idx)))
             .diagonal()
             .array();
   }
   inline void PrepareUnrescaledPerPatternLikelihoodDerivatives(size_t src1_idx,
                                                                size_t src2_idx) {
-    per_pattern_likelihood_derivatives_ =
-        (GetPLV(src1_idx).transpose() * derivative_matrix_ * GetPLV(src2_idx))
-            .diagonal()
-            .array();
+    per_pattern_likelihood_derivatives_ = (GetPLV(PVId(src1_idx)).transpose() *
+                                           derivative_matrix_ * GetPLV(PVId(src2_idx)))
+                                              .diagonal()
+                                              .array();
   }
 
   inline void PrepareUnrescaledPerPatternLikelihoods(size_t src1_idx, size_t src2_idx) {
-    per_pattern_likelihoods_ =
-        (GetPLV(src1_idx).transpose() * transition_matrix_ * GetPLV(src2_idx))
-            .diagonal()
-            .array();
+    per_pattern_likelihoods_ = (GetPLV(PVId(src1_idx)).transpose() *
+                                transition_matrix_ * GetPLV(PVId(src2_idx)))
+                                   .diagonal()
+                                   .array();
   }
 
   // This function is used to compute the marginal log likelihood over all trees that
@@ -270,12 +270,13 @@ class GPEngine {
   // and src2_idx are the two PLV indices on either side of the PCSP.
   inline void PreparePerPatternLogLikelihoodsForGPCSP(size_t src1_idx,
                                                       size_t src2_idx) {
-    per_pattern_log_likelihoods_ =
-        (GetPLV(src1_idx).transpose() * transition_matrix_ * GetPLV(src2_idx))
-            .diagonal()
-            .array()
-            .log() +
-        LogRescalingFor(src1_idx) + LogRescalingFor(src2_idx);
+    per_pattern_log_likelihoods_ = (GetPLV(PVId(src1_idx)).transpose() *
+                                    transition_matrix_ * GetPLV(PVId(src2_idx)))
+                                       .diagonal()
+                                       .array()
+                                       .log() +
+                                   LogRescalingFor(src1_idx) +
+                                   LogRescalingFor(src2_idx);
   }
 
  public:
@@ -323,7 +324,7 @@ class GPEngine {
   // "Padding" is the amount of free working space added to end of occupied space.
   // "Alloc" is the total current memory allocation.
   // "Resizing factor" is the amount of extra storage allocated for when resizing.
-  // Note: All node and PLV counts are handled by the PLVHandler.
+  // Note: All node and PLV counts are handled by the PLVNodeHandler.
 
   // Total number of edges in DAG. Determines sizes of data vectors indexed on edges
   // like branch lengths.
@@ -336,7 +337,7 @@ class GPEngine {
   // ** Per-Node Data
 
   // Partial Likelihood Vector Handler.
-  PLVHandler plv_handler_;
+  PLVNodeHandler plv_handler_;
   // Unconditional probabilites for each node in DAG.
   EigenVectorXd unconditional_node_probabilities_;
   // Rescaling count for each plv.

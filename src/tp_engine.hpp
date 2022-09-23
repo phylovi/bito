@@ -16,8 +16,6 @@
 
 #pragma once
 
-using PVId = size_t;
-
 class TPEngine {
  public:
   TPEngine(GPDAG &dag, SitePattern &site_pattern,
@@ -42,13 +40,8 @@ class TPEngine {
 
   // ** Scoring by Likelihood
 
-  // Initialize ChoiceMap for entire DAG by Likelihood.
+  // Initialize ChoiceMap and populate PVs for entire DAG by Likelihood.
   void InitializeLikelihood();
-  // Find the likelihood of a proposed NNI (an NNI not currently stored in the DAG but
-  // adjacent to nodes in the current DAG).  Computations are done in place, leveraging
-  // pre-existing PVs.
-  double GetTopTreeLikelihoodWithProposedNNI(const NNIOperation &post_nni,
-                                             const NNIOperation &pre_nni);
   // Fetch likelihood of top tree with given edge.  Assumed likelihoods have already
   // been computed.
   double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
@@ -59,19 +52,27 @@ class TPEngine {
   void UpdateLikelihoodsAfterDAGAddNodePair(
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
       std::optional<size_t> new_tree_id = std::nullopt);
+  // Find the likelihood of a proposed NNI (an NNI not currently stored in the DAG but
+  // adjacent to nodes in the current DAG).  Computations are done in place, leveraging
+  // pre-existing PVs.
+  double GetTopTreeLikelihoodWithProposedNNI(const NNIOperation &post_nni,
+                                             const NNIOperation &pre_nni,
+                                             const size_t spare_offset = 0);
 
   // ** Scoring by Parsimony
 
-  // Initialize ChoiceMap for entire DAG by Parsimony.
+  // Initialize ChoiceMap and populate PVs for entire DAG by Parsimony.
   void InitializeParsimony();
-  // After adding an NNI to the DAG, update the out-of-date parsimony.
-  void UpdateDAGAfterAddNodePairByParsimony(const NNIOperation &nni_op);
   // Fetch parsimony of top tree with given edge.  Assumed parsimony have already
   // been computed.
   double GetTopTreeParsimonyWithEdge(const EdgeId edge_id);
   // Compute top tree parsimony for all edges in DAG. Result stored in
-  // log_parsimony_per_edge_ vector..
+  // log_parsimony_per_edge_ vector.
   void ComputeParsimonies();
+  // After adding an NNI to the DAG, update the out-of-date likelihoods.
+  void UpdateParsimoniesAfterDAGAddNodePair(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      std::optional<size_t> new_tree_id = std::nullopt);
 
   // ** Parameter Data
 
@@ -114,28 +115,28 @@ class TPEngine {
   void SetNodeCount(const size_t node_count) {
     node_count_ = node_count;
     if (using_likelihoods_) {
-      likelihood_pvs_.SetNodeCount(node_count);
+      likelihood_pvs_.SetCount(node_count);
     }
     if (using_parsimony_) {
-      parsimony_pvs_.SetNodeCount(node_count);
+      parsimony_pvs_.SetCount(node_count);
     }
   }
   void SetSpareNodeCount(const size_t node_spare_count) {
     node_spare_count_ = node_spare_count;
     if (using_likelihoods_) {
-      likelihood_pvs_.SetSpareNodeCount(node_spare_count);
+      likelihood_pvs_.SetSpareCount(node_spare_count);
     }
     if (using_parsimony_) {
-      parsimony_pvs_.SetSpareNodeCount(node_spare_count);
+      parsimony_pvs_.SetSpareCount(node_spare_count);
     }
   }
   void SetAllocatedNodeCount(const size_t node_alloc) {
     node_alloc_ = node_alloc;
     if (using_likelihoods_) {
-      likelihood_pvs_.SetAllocatedNodeCount(node_alloc);
+      likelihood_pvs_.SetAllocatedCount(node_alloc);
     }
     if (using_parsimony_) {
-      parsimony_pvs_.SetAllocatedNodeCount(node_alloc);
+      parsimony_pvs_.SetAllocatedCount(node_alloc);
     }
   }
 
@@ -163,10 +164,12 @@ class TPEngine {
   EigenConstMatrixXdRef GetLikelihoodMatrix() {
     return log_likelihoods_.block(0, 0, GetNodeCount(), log_likelihoods_.cols());
   }
-  PLVHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
-  PSVHandler &GetParsimonyPVs() { return parsimony_pvs_; }
+  PLVEdgeHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
+  PSVEdgeHandler &GetParsimonyPVs() { return parsimony_pvs_; }
   EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
   std::vector<size_t> &GetTreeSource() { return tree_source_; }
+  EigenVectorXd &GetTopTreeLikelihoods() { return top_tree_log_likelihoods_per_edge_; }
+  EigenVectorXd &GetTopTreeParsimonies() { return top_tree_parsimony_per_edge_; }
 
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     Assert(size_t(branch_lengths.size()) == dag_.EdgeCountWithLeafSubsplits(),
@@ -181,16 +184,12 @@ class TPEngine {
   std::string ParsimonyPVToString(const PVId pv_id) const;
 
  protected:
-  // ** Scoring by Likelihoods
+  // ** Scoring
 
-  // Compute the rootward P-PVs for given node.
-  void PopulateRootwardLikelihoodPVForNode(const NodeId node_id);
-  // Compute the leafward R-PVs for given node.
-  void PopulateLeafwardLikelihoodPVForNode(const NodeId node_id);
-  // Set the P-PVs to match the observed site patterns at the leaves.
-  void PopulateLeafLikelihoodPVsWithSitePatterns();
-  // Set the R-PVs to the stationary distribution at the root and rootsplits.
-  void PopulateRootLikelihoodPVsWithStationaryDistribution();
+  // Update edge and node data by copying over from pre-NNI to post-NNI.
+  void CopyOverEdgeDataFromPreNNIToPostNNI(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      std::optional<size_t> new_tree_id = std::nullopt);
   // Find the edge from the best scoring tree that is adjacent to given node in
   // the given direction.
   // Accomplished by iterating over all adjacent edges using tree_source_ edge
@@ -201,25 +200,50 @@ class TPEngine {
                                     const Direction direction) const;
   EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id, const Direction direction,
                                     const SubsplitClade clade) const;
+
+  // ** Scoring by Likelihoods
+
+  // Compute the rootward P-PVs for given node.
+  void PopulateRootwardLikelihoodPVForNode(const NodeId node_id);
+  // Compute the leafward R-PVs for given node.
+  void PopulateLeafwardLikelihoodPVForNode(const NodeId node_id);
+  // Set the P-PVs to match the observed site patterns at the leaves.
+  void PopulateLeafLikelihoodPVsWithSitePatterns();
+  // Set the R-PVs to the stationary distribution at the root and rootsplits.
+  void PopulateRootLikelihoodPVsWithStationaryDistribution();
   // Evolve up the given edge to compute the P-PV of its parent node.
-  void EvolveLikelihoodPPVUpEdge(const EdgeId edge_id);
+  void EvolveLikelihoodPPVUpEdge(const EdgeId parent_edge_id,
+                                 const EdgeId child_edge_id);
   // Evolve down the given edge to compute the R-PV of its child node.
-  void EvolveLikelihoodRPVDownEdge(const EdgeId edge_id);
-  // Update branch lengths by copying over
-  void CopyOverEdgeDataFromPreNNIToPostNNI(
-      const NNIOperation &post_nni, const NNIOperation &pre_nni,
-      std::optional<size_t> new_tree_id = std::nullopt);
+  void EvolveLikelihoodRPVDownEdge(const EdgeId parent_edge_id,
+                                   const EdgeId child_edge_id);
 
   // ** Scoring by Parsimony
 
-  //
+  // Compute the rootward P-PVs for given node.
   void PopulateRootwardParsimonyPVForNode(const NodeId node_id);
-  //
+  // Compute the leafward R-PVs for given node.
   void PopulateLeafwardParsimonyPVForNode(const NodeId node_id);
-  //
+  // Set the P-PVs to match the observed site patterns at the leaves.
   void PopulateLeafParsimonyPVsWithSitePatterns();
+  // Calculate the PV for a given parent-child pair.
+  EigenVectorXd ParentPartial(EigenVectorXd child_partials);
+  // Sum P-PVs for right and left children of node 'node_id'
+  // In this case, we get the full P-PVs of the given node after all P-PVs
+  // have been concatenated into one SankoffPartialVector.
+  EigenVectorXd TotalPPartial(EdgeId edge_id, size_t site_idx);
+  // Populate rootward R-PVs for given edge.
+  void PopulateRootwardParsimonyPVForEdge(const EdgeId parent_id,
+                                          const EdgeId left_child_id,
+                                          const EdgeId right_child_id);
+  // Populate leafward P-PVs for given edge.
+  void PopulateLeafwardParsimonyPVForEdge(const EdgeId parent_id,
+                                          const EdgeId left_child_id,
+                                          const EdgeId right_child_id);
+  // Calculates parsimony score on given edge across all sites.
+  double ParsimonyScore(const EdgeId edge_id);
 
-  // ** Partial Vector Operations
+  // ** PV Operations for Likelihoods
 
   // Assign PV at src_id to dest_id.
   void TakePVValue(const PVId dest_id, const PVId src_id);
@@ -291,11 +315,11 @@ class TPEngine {
 
   // ** Scoring
   // Partial Vector for storing Likelihood scores.
-  PLVHandler likelihood_pvs_;
+  PLVEdgeHandler likelihood_pvs_;
   bool using_likelihoods_;
   // Partial Vector for storing Parsimony scores.
-  SankoffHandler sankoff_handler_;
-  PSVHandler &parsimony_pvs_;
+  PSVEdgeHandler parsimony_pvs_;
+  SankoffMatrix parsimony_cost_matrix_;
   bool using_parsimony_;
   // ChoiceMap for find top-scoring tree containing any given branch.
   ChoiceMap choice_map_;
@@ -317,4 +341,7 @@ class TPEngine {
   Eigen::Matrix4d transition_matrix_;
   Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
   EigenVectorXd site_pattern_weights_;
+
+  static constexpr size_t state_count_ = 4;
+  static constexpr double big_double_ = static_cast<double>(INT_MAX);
 };
