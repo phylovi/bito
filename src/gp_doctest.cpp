@@ -2104,7 +2104,6 @@ TEST_CASE("Top-Pruning: Parsimony") {
 // generate the same result from adding NNIs to the DAG and updating as we do from using
 // the pre-NNI computation.
 TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
-  // void temp_func() {
   // Build GPInstance with TPEngine and NNIEngine.
   auto MakeTPEngine = [](const std::string& fasta_path, const std::string& newick_path,
                          const std::string& tpl_mmap_path,
