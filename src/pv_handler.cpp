@@ -5,8 +5,8 @@
 
 // ** Resize
 
-template <class PVType, class PVTypeEnum, class DAGElementId>
-void PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::Resize(
+template <class PVTypeEnum, class DAGElementId>
+void PartialVectorHandler<PVTypeEnum, DAGElementId>::Resize(
     const size_t new_element_count, const size_t new_element_alloc) {
   const size_t old_pv_count = GetPVCount();
   element_count_ = new_element_count;
@@ -25,15 +25,15 @@ void PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::Resize(
   }
 }
 
-template <class PVType, class PVTypeEnum, class DAGElementId>
-void PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::Reindex(
+template <class PVTypeEnum, class DAGElementId>
+void PartialVectorHandler<PVTypeEnum, DAGElementId>::Reindex(
     const Reindexer pv_reindexer) {
   Reindexer::ReindexInPlace(pvs_, pv_reindexer, GetPVCount(), GetPV(GetPVCount()),
                             GetPV(GetPVCount() + 1));
 }
 
-template <class PVType, class PVTypeEnum, class DAGElementId>
-Reindexer PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::BuildPVReindexer(
+template <class PVTypeEnum, class DAGElementId>
+Reindexer PartialVectorHandler<PVTypeEnum, DAGElementId>::BuildPVReindexer(
     const Reindexer& element_reindexer, const size_t old_element_count,
     const size_t new_element_count) {
   element_count_ = new_element_count;
@@ -62,7 +62,7 @@ Reindexer PartialVectorHandler<PVType, PVTypeEnum, DAGElementId>::BuildPVReindex
 }
 
 // ** Explicit Instantiation
-template class PartialVectorHandler<PLVType, PLVTypeEnum, NodeId>;
-template class PartialVectorHandler<PLVType, PLVTypeEnum, EdgeId>;
-template class PartialVectorHandler<PSVType, PSVTypeEnum, NodeId>;
-template class PartialVectorHandler<PSVType, PSVTypeEnum, EdgeId>;
+template class PartialVectorHandler<PLVTypeEnum, NodeId>;
+template class PartialVectorHandler<PLVTypeEnum, EdgeId>;
+template class PartialVectorHandler<PSVTypeEnum, NodeId>;
+template class PartialVectorHandler<PSVTypeEnum, EdgeId>;

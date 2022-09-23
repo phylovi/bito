@@ -236,12 +236,12 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni
   key_idx_map[KeyIndex::Parent_RHat] =
       PLVNodeHandler::GetPVIndex(PLVType::RHat, parent_id, node_count).value_;
   key_idx_map[KeyIndex::Parent_RFocal] =
-      PLVNodeHandler::GetPVIndex(PLVNodeHandler::RPLVType(!is_left_clade_sister),
+      PLVNodeHandler::GetPVIndex(PLVTypeEnum::RPLVType(!is_left_clade_sister),
                                  parent_id, node_count)
           .value_;
   key_idx_map[KeyIndex::Parent_PHatSister] =
-      PLVNodeHandler::GetPVIndex(PLVNodeHandler::PPLVType(is_left_clade_sister),
-                                 parent_id, node_count)
+      PLVNodeHandler::GetPVIndex(PLVTypeEnum::PPLVType(is_left_clade_sister), parent_id,
+                                 node_count)
           .value_;
   key_idx_map[KeyIndex::Child_P] =
       PLVNodeHandler::GetPVIndex(PLVType::P, child_id, node_count).value_;

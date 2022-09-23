@@ -37,10 +37,16 @@ class PLVTypeEnum
  public:
   static PLVType PPLVType(const bool is_on_left) {
     return is_on_left ? PLVType::PHatLeft : PLVType::PHatRight;
-  };
+  }
   static PLVType RPLVType(const bool is_on_left) {
     return is_on_left ? PLVType::RLeft : PLVType::RRight;
-  };
+  }
+  static PLVType PPLVType(const SubsplitClade clade) {
+    return (clade == SubsplitClade::Left) ? PLVType::PHatLeft : PLVType::PHatRight;
+  }
+  static PLVType RPLVType(const SubsplitClade clade) {
+    return (clade == SubsplitClade::Left) ? PLVType::RLeft : PLVType::RRight;
+  }
 
   static inline const Array<std::string> Labels = {
       {"P", "PHatRight", "PHatLeft", "RHat", "RRight", "RLeft"}};
@@ -66,6 +72,13 @@ static inline const size_t PSVCount = 3;
 class PSVTypeEnum
     : public EnumWrapper<PSVType, size_t, PSVCount, PSVType::PRight, PSVType::Q> {
  public:
+  static PSVType PPSVType(const bool is_on_left) {
+    return is_on_left ? PSVType::PLeft : PSVType::PRight;
+  }
+  static PSVType PPSVType(const SubsplitClade clade) {
+    return (clade == SubsplitClade::Left) ? PSVType::PLeft : PSVType::PRight;
+  }
+
   static inline const Array<std::string> Labels = {{"PRight", "PLeft", "Q"}};
 
   static std::string ToString(const PSVType e) {
@@ -89,11 +102,11 @@ using PSVType = PartialVectorType::PSVType;
 using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
 
 // Note: DAGElementId decides whether indexing PVs according to DAG's nodes or edges.
-template <class PVType, class PVTypeEnum, class DAGElementId>
+template <class PVTypeEnum, class DAGElementId>
 class PartialVectorHandler {
  public:
-  using Type = PVType;
   using TypeEnum = PVTypeEnum;
+  using PVType = typename TypeEnum::Type;
 
   PartialVectorHandler(const std::string &mmap_file_path, const size_t element_count,
                        const size_t pattern_count, const double resizing_factor)
@@ -281,8 +294,7 @@ class PartialVectorHandler {
 // PLVHandler: Partial Likelihood Vector Handler
 template <class DAGElementId>
 class PLVHandler
-    : public PartialVectorHandler<PLVTypeEnum::Type, PartialVectorType::PLVTypeEnum,
-                                  DAGElementId> {
+    : public PartialVectorHandler<PartialVectorType::PLVTypeEnum, DAGElementId> {
  public:
   using PLVType = PartialVectorType::PLVType;
   using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
@@ -291,28 +303,14 @@ class PLVHandler
 
   PLVHandler(const std::string &mmap_file_path, const size_t element_count,
              const size_t pattern_count, const double resizing_factor)
-      : PartialVectorHandler<PLVType, PLVTypeEnum, DAGElementId>(
-            mmap_file_path, element_count, pattern_count, resizing_factor){};
-
-  static PLVType PPLVType(const bool is_on_left) {
-    return is_on_left ? PLVType::PHatLeft : PLVType::PHatRight;
-  }
-  static PLVType RPLVType(const bool is_on_left) {
-    return is_on_left ? PLVType::RLeft : PLVType::RRight;
-  }
-  static PLVType PPLVType(const SubsplitClade clade) {
-    return (clade == SubsplitClade::Left) ? PLVType::PHatLeft : PLVType::PHatRight;
-  }
-  static PLVType RPLVType(const SubsplitClade clade) {
-    return (clade == SubsplitClade::Left) ? PLVType::RLeft : PLVType::RRight;
-  }
+      : PartialVectorHandler<PLVTypeEnum, DAGElementId>(
+            mmap_file_path, element_count, pattern_count, resizing_factor) {}
 };
 
 // PSVHandler: Partial Sankoff Vector Handler
 template <class DAGElementId>
 class PSVHandler
-    : public PartialVectorHandler<PSVTypeEnum::Type, PartialVectorType::PSVTypeEnum,
-                                  DAGElementId> {
+    : public PartialVectorHandler<PartialVectorType::PSVTypeEnum, DAGElementId> {
  public:
   using PSVType = PartialVectorType::PSVType;
   using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
@@ -321,15 +319,8 @@ class PSVHandler
 
   PSVHandler(const std::string &mmap_file_path, const size_t element_count,
              const size_t pattern_count, const double resizing_factor)
-      : PartialVectorHandler<PSVType, PSVTypeEnum, DAGElementId>(
-            mmap_file_path, element_count, pattern_count, resizing_factor){};
-
-  static PSVType PPSVType(const bool is_on_left) {
-    return is_on_left ? PSVType::PLeft : PSVType::PRight;
-  }
-  static PSVType PPSVType(const SubsplitClade clade) {
-    return (clade == SubsplitClade::Left) ? PSVType::PLeft : PSVType::PRight;
-  }
+      : PartialVectorHandler<PSVTypeEnum, DAGElementId>(
+            mmap_file_path, element_count, pattern_count, resizing_factor) {}
 };
 
 using PLVNodeHandler = PLVHandler<NodeId>;

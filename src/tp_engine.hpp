@@ -56,7 +56,8 @@ class TPEngine {
   // adjacent to nodes in the current DAG).  Computations are done in place, leveraging
   // pre-existing PVs.
   double GetTopTreeLikelihoodWithProposedNNI(const NNIOperation &post_nni,
-                                             const NNIOperation &pre_nni);
+                                             const NNIOperation &pre_nni,
+                                             const size_t spare_offset = 0);
 
   // ** Scoring by Parsimony
 
@@ -165,9 +166,10 @@ class TPEngine {
   }
   PLVEdgeHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
   PSVEdgeHandler &GetParsimonyPVs() { return parsimony_pvs_; }
-  // SankoffMatrix &GetParsimonyCostMatrix() { return parsimony_cost_matrix_; }
   EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
   std::vector<size_t> &GetTreeSource() { return tree_source_; }
+  EigenVectorXd &GetTopTreeLikelihoods() { return top_tree_log_likelihoods_per_edge_; }
+  EigenVectorXd &GetTopTreeParsimonies() { return top_tree_parsimony_per_edge_; }
 
   void SetBranchLengths(EigenVectorXd branch_lengths) {
     Assert(size_t(branch_lengths.size()) == dag_.EdgeCountWithLeafSubsplits(),
