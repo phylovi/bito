@@ -101,7 +101,9 @@ using PLVTypeEnum = PartialVectorType::PLVTypeEnum;
 using PSVType = PartialVectorType::PSVType;
 using PSVTypeEnum = PartialVectorType::PSVTypeEnum;
 
-// Note: DAGElementId decides whether indexing PVs according to DAG's nodes or edges.
+// PVTypeEnum determines which PV types need to be stored on each element of the
+// PVHandler (e.g. P-PVs, Q-PVs, R-PVs). DAGElementId decides whether indexing PVs
+// according to DAG's nodes or edges.
 template <class PVTypeEnum, class DAGElementId>
 class PartialVectorHandler {
  public:
