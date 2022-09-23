@@ -1,10 +1,10 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// PVHandler is used for storing and manipulating Partial Vectors.  Partial Vector are
-// intermediate computations, such as likelihoods or parsimonies or other cost matrices,
-// used for performing dynamic programming on a tree or DAG. Partial Vectors can be
-// "stored on" different elements of the DAG: either on the edges or the nodes.
+// PVHandler is used for storing and manipulating Partial Vectors.  Partial Vectors are
+// intermediate computations, such as in likelihoods or parsimonies, used for performing
+// dynamic programming on a tree or DAG. Partial Vectors can be "stored on" and indexed
+// according to different elements of the DAG: either by the edges or the nodes.
 //
 // PSVHandler is used to perform the Sankoff algorithm. There are 3 partial vectors:
 // PLeft, PRight, and Q. PLeft and Pright corresponds to Sankoff vectors for the left
