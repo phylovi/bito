@@ -226,10 +226,10 @@ class TPEngine {
   void PopulateLeafwardParsimonyPVForNode(const NodeId node_id);
   // Set the P-PVs to match the observed site patterns at the leaves.
   void PopulateLeafParsimonyPVsWithSitePatterns();
-  // Calculate the partial for a given parent-child pair.
+  // Calculate the PV for a given parent-child pair.
   EigenVectorXd ParentPartial(EigenVectorXd child_partials);
-  // Sum p-partials for right and left children of node 'node_id'
-  // In this case, we get the full p-partial of the given node after all p-partials
+  // Sum P-PVs for right and left children of node 'node_id'
+  // In this case, we get the full P-PVs of the given node after all P-PVs
   // have been concatenated into one SankoffPartialVector.
   EigenVectorXd TotalPPartial(EdgeId edge_id, size_t site_idx);
   // Populate rootward R-PVs for given edge.
