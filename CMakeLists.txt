@@ -43,11 +43,11 @@ ExternalProject_Add(pybind11
 
 option(WERROR "Treat warnings as errors" ON)
 
-function(bito_compile_opts PRODUCT)
+function(bito_compile_opts PRODUCT _WERROR)
   target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
   target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall)
 
-  if(${WERROR})
+  if(${_WERROR})
     target_compile_options(${PRODUCT} PUBLIC -Werror)
   else()
     target_compile_options(${PRODUCT} PUBLIC -Wold-style-cast)
@@ -67,12 +67,14 @@ endfunction()
 
 function(bito_executable PRODUCT)
   add_executable(${PRODUCT} ${ARGN})
-  bito_compile_opts(${PRODUCT})
+  bito_compile_opts(${PRODUCT} ${WERROR})
   bito_link_opts(${PRODUCT})
 endfunction()
 
 function(bito_extra PRODUCT)
-  bito_executable(${PRODUCT} ${ARGN})
+  add_executable(${PRODUCT} ${ARGN})
+  bito_compile_opts(${PRODUCT} "")
+  bito_link_opts(${PRODUCT})
   target_include_directories(${PRODUCT} PUBLIC ../src)
 endfunction()
 
@@ -133,7 +135,7 @@ add_library(bito-core SHARED
   src/unrooted_tree_collection.cpp
   src/zlib_stream.cpp
 )
-bito_compile_opts(bito-core)
+bito_compile_opts(bito-core ${WERROR})
 target_link_options(bito-core PUBLIC -pthread ${BITO_RPATH})
 target_link_libraries(bito-core PUBLIC hmsbeagle hmsbeagle-cpu z)
 target_link_directories(bito-core PUBLIC
@@ -147,7 +149,7 @@ add_dependencies(bito-core beagle-lib)
 add_library(bito SHARED
   src/pybito.cpp
 )
-bito_compile_opts(bito)
+bito_compile_opts(bito ${WERROR})
 target_include_directories(bito PUBLIC
   ${Python_INCLUDE_DIRS}
   ${PROJECT_BINARY_DIR}/pybind11/install/include

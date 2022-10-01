@@ -2230,14 +2230,3 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
                 "Likelihoods from proposed NNIs in smaller DAG do not match "
                 "likelihoods in larger DAG.");
 }
-
-// Runs an instance of TPEngine for two DAGs: DAG_1, a simple DAG, and DAG_2, a DAG
-// formed from DAG_1 plus all of its adjacent NNIs. Both DAGs PVs are populated and
-// their edge TP likelihoods are computed.  Then DAG_1's adjacent proposed NNI
-// likelihoods are computed using only PVs from the pre-NNI already contained in
-// DAG_1.
-// Finally, we compare the results of the proposed NNIs from DAG_1 with the known
-// likelihoods of the actual NNIs already contained in DAG_2. This verifies we
-// generate the same result from adding NNIs to the DAG and updating as we do from using
-// the pre-NNI computation.
-TEST_CASE("Top-Pruning: Parsimonies with Proposed NNIs") {}
