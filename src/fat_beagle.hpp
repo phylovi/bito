@@ -22,7 +22,7 @@ class FatBeagle {
  public:
   using PackedBeagleFlags = long;
 
-  // This constructor makes the beagle_instance_;
+  // This constructor makes the beagle_instance_
   FatBeagle(const PhyloModelSpecification &specification,
             const SitePattern &site_pattern,
             const PackedBeagleFlags beagle_preference_flags, bool use_tip_states);

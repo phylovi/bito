@@ -107,6 +107,19 @@ PYBIND11_MODULE(bito, m) {
   // RootedTree
   py::class_<RootedTree>(m, "RootedTree", "A rooted tree with branch lengths.",
                          py::buffer_protocol())
+      .def("__eq__", [](const RootedTree &self,
+                        const RootedTree &other) { return self == other; })
+      .def("compare_by_topology",
+           [](const RootedTree &self, const RootedTree &other) {
+             return self.Topology() == other.Topology();
+           })
+      .def(
+          "to_newick", [](const RootedTree &self) { return self.Newick(); },
+          "Output to Newick string with branch lengths.")
+      .def(
+          "to_newick_topology",
+          [](const RootedTree &self) { return self.NewickTopology(std::nullopt); },
+          "Output to Newick string without branch lengths.")
       .def("parent_id_vector", &RootedTree::ParentIdVector)
       .def("initialize_time_tree_using_height_ratios",
            &RootedTree::InitializeTimeTreeUsingHeightRatios)
@@ -116,7 +129,39 @@ PYBIND11_MODULE(bito, m) {
       .def_readwrite("height_ratios", &RootedTree::height_ratios_)
       .def_readwrite("node_heights", &RootedTree::node_heights_)
       .def_readwrite("node_bounds", &RootedTree::node_bounds_)
-      .def_readwrite("rates", &RootedTree::rates_);
+      .def_readwrite("rates", &RootedTree::rates_)
+      .def(
+          "topology", [](const RootedTree &self) { return self.Topology(); },
+          py::return_value_policy::reference)
+      .def(
+          "id", [](const RootedTree &self) { return self.Topology()->Id(); },
+          "Unique node id within topology.")
+      .def(
+          "to_leaves", [](const RootedTree &self) { return self.Topology()->Leaves(); },
+          "Output node to leave bitset.")
+      .def(
+          "build_subsplit",
+          [](const RootedTree &self) { return self.Topology()->BuildSubsplit(); },
+          "Build subsplit node bitset of node.")
+      .def(
+          "build_pcsp",
+          [](const RootedTree &self, const size_t child_id) {
+            Assert(child_id < 2, "child_count must be 0 (left) or 1 (right).");
+            auto child_clade =
+                (child_id == 0) ? SubsplitClade::Left : SubsplitClade::Right;
+            return self.Topology()->BuildPCSP(child_clade);
+          },
+          "Build PCSP edge bitset of edge below node.")
+      .def(
+          "build_vector_of_subsplits",
+          [](const RootedTree &self) {
+            return self.Topology()->BuildVectorOfSubsplits();
+          },
+          "Build a vector of all subsplit bitsets for all nodes in topology.")
+      .def(
+          "build_vector_of_pcsps",
+          [](const RootedTree &self) { return self.Topology()->BuildVectorOfPCSPs(); },
+          "Build vector of all PCSP edge bitsets for all edges in topology.");
 
   // CLASS
   // RootedTreeCollection
@@ -144,6 +189,15 @@ PYBIND11_MODULE(bito, m) {
   // UnrootedTree
   py::class_<UnrootedTree>(m, "UnrootedTree", "An unrooted tree with branch lengths.",
                            py::buffer_protocol())
+      .def("__eq__", [](const UnrootedTree &self,
+                        const UnrootedTree &other) { return self == other; })
+      .def(
+          "to_newick", [](const UnrootedTree &self) { return self.Newick(); },
+          "Output to Newick string with branch lengths.")
+      .def(
+          "to_newick_topology",
+          [](const UnrootedTree &self) { return self.NewickTopology(std::nullopt); },
+          "Output to Newick string without branch lengths.")
       .def("parent_id_vector", &UnrootedTree::ParentIdVector)
       .def_static("of_parent_id_vector", &UnrootedTree::OfParentIdVector)
       .def_readwrite("branch_lengths", &UnrootedTree::branch_lengths_);
@@ -366,7 +420,7 @@ PYBIND11_MODULE(bito, m) {
   // UnrootedSBNInstance
   py::class_<PreUnrootedSBNInstance>(m, "PreUnrootedSBNInstance");
   py::class_<UnrootedSBNInstance, PreUnrootedSBNInstance> unrooted_sbn_instance_class(
-      m, "unrooted_instance", R"raw(A unrooted SBN instance.)raw");
+      m, "unrooted_instance", R"raw(An unrooted SBN instance.)raw");
   unrooted_sbn_instance_class
       .def(py::init<const std::string &>())
 
@@ -599,6 +653,12 @@ PYBIND11_MODULE(bito, m) {
            R"raw(Write out currently loaded trees to a Newick file
           (using current GP branch lengths).)raw",
            py::arg("out_path"))
+      .def("currently_loaded_trees_with_gp_branch_lengths",
+           &GPInstance::CurrentlyLoadedTreesWithGPBranchLengths,
+           "Collection of all rooted trees loaded into DAG.")
+      .def("generate_complete_rooted_tree_collection",
+           &GPInstance::GenerateCompleteRootedTreeCollection,
+           "Generate collection of all rooted trees expressed in DAG.")
       .def(
           "export_all_generated_topologies", &GPInstance::ExportAllGeneratedTopologies,
           R"raw(Write out all topologies spanned by the current SBN DAG to a Newick file.
@@ -620,14 +680,12 @@ PYBIND11_MODULE(bito, m) {
       .def(
           "build_edge_idx_to_pcsp_map",
           [](GPInstance &self) { return self.GetDAG().BuildInverseEdgeIndexer(); },
-          "Build a map from SubsplitDAG edge index to its corresponding PCSP bitset.")
+          "Build a map from DAG edge index to its corresponding PCSP bitset.")
 
       // ** Estimation
       .def("use_gradient_optimization", &GPInstance::UseGradientOptimization,
            "Use gradients for branch length optimization?",
            py::arg("use_gradients") = false)
-      .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",
-           py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_)
       .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,
            "Use given trees to initialize branch lengths.")
       .def("gather_branch_lengths", &GPInstance::GatherBranchLengths,
@@ -637,10 +695,13 @@ PYBIND11_MODULE(bito, m) {
            "Calculate hybrid marginals.")
       .def("estimate_sbn_parameters", &GPInstance::EstimateSBNParameters,
            "Estimate the SBN parameters based on current branch lengths.")
+      .def("hot_start_branch_length", &GPInstance::HotStartBranchLengths)
+      .def("take_first_branch_length", &GPInstance::TakeFirstBranchLength)
       .def("estimate_branch_lengths", &GPInstance::EstimateBranchLengths,
            "Estimate branch lengths for the GPInstance.", py::arg("tol"),
            py::arg("max_iter"), py::arg("quiet") = false,
-           py::arg("track_intermediate_iterations") = false)
+           py::arg("track_intermediate_iterations") = false,
+           py::arg("optimization_method") = std::nullopt)
       .def("get_perpcsp_llh_surface", &GPInstance::GetPerGPCSPLogLikelihoodSurfaces,
            "Scan the likelihood surface for the pcsps in the GPInstance.",
            py::arg("steps"), py::arg("scale_min"), py::arg("scale_max"))
@@ -649,17 +710,416 @@ PYBIND11_MODULE(bito, m) {
            "Reinitiate optimization, perturbing one branch length at a time,  and "
            "track branch length and per pcsp likelihoods.")
 
-      // ** NNI Engine
-      .def("make_nni_engine", &GPInstance::MakeNNIEngine,
-           R"raw(Initialize NNI Engine.)raw")
+      // ** GP Likelihoods
+      .def("populate_plvs", &GPInstance::PopulatePLVs, "Populate PLVs.")
+      .def("compute_likelihoods", &GPInstance::ComputeLikelihoods,
+           "Compute Likelihoods.")
+      .def("get_per_pcsp_log_likelihoods", &GPInstance::GetPerPCSPLogLikelihoods,
+           "Get Per-PCSP Log Likelihoods.")
+
+      // ** DAG
+      .def("make_dag", &GPInstance::MakeDAG, "Initialize Subsplit DAG.")
       .def(
-          "sync_adjacent_nnis_with_dag",
-          [](GPInstance &self) { self.GetNNIEngine().SyncAdjacentNNIsWithDAG(); },
-          R"raw(Find all adjacent NNIs of DAG.)raw")
+          "get_dag", [](GPInstance &self) -> GPDAG * { return &self.GetDAG(); },
+          py::return_value_policy::reference, "Get Subsplit DAG.")
+
+      // ** DAG Engines
+      .def("make_gp_engine", &GPInstance::MakeGPEngine, "Initialize GP Engine.",
+           py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_,
+           py::arg("use_gradients") = false)
+      .def("get_gp_engine", &GPInstance::GetGPEngine,
+           py::return_value_policy::reference, "Get GP Engine.")
+      .def("make_nni_engine", &GPInstance::MakeNNIEngine, "Initialize NNI Engine.")
+      .def("get_nni_engine", &GPInstance::GetNNIEngine,
+           py::return_value_policy::reference, "Get NNI Engine.")
+      .def("make_tp_engine", &GPInstance::MakeTPEngine, "Initialize TP Engine.")
+      .def("get_tp_engine", &GPInstance::GetTPEngine,
+           py::return_value_policy::reference, "Get TP Engine.")
+      .def("tp_engine_set_branch_lengths_by_taking_first",
+           &GPInstance::TPEngineSetBranchLengthsByTakingFirst)
+      .def("tp_engine_set_choice_map_by_taking_first",
+           &GPInstance::TPEngineSetChoiceMapByTakingFirst,
+           py::arg("use_subsplit_method") = true)
+
+      // ** Tree Engines
+      .def("get_likelihood_tree_engine", &GPInstance::GetLikelihoodTreeEngine,
+           py::return_value_policy::reference)
+      .def("get_parsimony_tree_engine", &GPInstance::GetParsimonyTreeEngine,
+           py::return_value_policy::reference)
+      .def("compute_tree_likelihood",
+           [](const GPInstance &self, const RootedTree &tree) {
+             auto beagle_pref_flags = BEAGLE_FLAG_VECTOR_SSE;
+             PhyloModelSpecification model_spec{"JC69", "constant", "strict"};
+             SitePattern site_pattern = self.MakeSitePattern();
+             bool use_tip_states = true;
+             auto tree_engine =
+                 FatBeagle(model_spec, site_pattern, beagle_pref_flags, use_tip_states);
+             return tree_engine.UnrootedLogLikelihood(tree);
+           })
+      .def("compute_tree_parsimony",
+           [](const GPInstance &self, const RootedTree &tree) {
+             auto site_pattern = self.MakeSitePattern();
+             auto mmap_file_path = self.GetMMapFilePath() + ".sankoff";
+             auto tree_engine = SankoffHandler(site_pattern, mmap_file_path);
+             tree_engine.RunSankoff(tree.Topology());
+             return tree_engine.ParsimonyScore();
+           });
+
+  // ** DAGs
+
+  py::class_<GPDAG> dag_class(m, "dag", "Subsplit DAG for performing GPOperations.");
+  dag_class.def("__eq__", [](const GPDAG &self, const GPDAG &other) { self == other; })
+      .def("node_count", &GPDAG::NodeCount, "Get number of nodes contained in DAG.")
+      .def("edge_count", &GPDAG::EdgeCountWithLeafSubsplits,
+           "Get number of edges contained in DAG.")
+      .def("taxon_count", &GPDAG::TaxonCount, "Get number of taxa in DAG.")
+      .def("topology_count", &GPDAG::TopologyCount,
+           "Get number of unique topologies contained in DAG.")
+      .def("get_nni", &GPDAG::GetNNI, "Get NNI for the given DAG edge.")
+      .def("get_node_id",
+           [](const GPDAG &self, const Bitset &bitset) {
+             return self.GetDAGNodeId(bitset);
+           })
+      .def("get_edge_id", [](const GPDAG &self,
+                             const Bitset &bitset) { return self.GetEdgeIdx(bitset); })
+      .def("get_edge_id", [](const GPDAG &self,
+                             const NNIOperation &nni) { return self.GetEdgeIdx(nni); })
+      .def("get_taxon_map", &GPDAG::GetTaxonMap,
+           "Get map of taxon names contained in DAG.")
+      .def("build_sorted_vector_of_node_bitsets",
+           &GPDAG::BuildSortedVectorOfNodeBitsets,
+           "Build a sorted vector of node Subsplit bitsets contained in DAG.")
+      .def("build_sorted_vector_of_edge_bitsets",
+           &GPDAG::BuildSortedVectorOfEdgeBitsets,
+           "Build a sorted vector of edge PCSP bitsets contained in DAG.")
+      .def("contains_node",
+           [](const GPDAG &self, const Bitset &bitset) {
+             return self.ContainsNode(bitset);
+           })
+      .def("contains_edge",
+           [](const GPDAG &self, const Bitset &bitset) {
+             return self.ContainsEdge(bitset);
+           })
+      .def("contains_nni", &GPDAG::ContainsNNI)
+      .def("contains_tree", &GPDAG::ContainsTree, "Check whether DAG contains tree.",
+           py::arg("tree"), py::arg("is_quiet") = true)
+      .def("contains_topology", &GPDAG::ContainsTopology,
+           "Check whether DAG contains topology.")
+      .def("is_valid_add_node_pair", &GPDAG::IsValidAddNodePair,
+           "Checks whether a given parent/child subsplit pair is valid to be added to "
+           "the DAG.")
       .def(
-          "adjacent_nni_count",
-          [](GPInstance &self) { self.GetNNIEngine().GetAdjacentNNICount(); },
-          R"raw(Get number of adjacent NNIs to current DAG.)raw");
+          "add_node_pair",
+          [](GPDAG &self, const Bitset &parent, const Bitset &child) {
+            self.AddNodePair(parent, child);
+          },
+          "Add parent/child subsplit pair to DAG.")
+      .def("fully_connect", &GPDAG::FullyConnect,
+           "Adds all valid edges with present nodes to the DAG.")
+      .def("tree_to_newick_topology", &GPDAG::TreeToNewickTopology)
+      .def("tree_to_newick_tree", &GPDAG::TreeToNewickTree)
+      .def("topology_to_newick_topology", &GPDAG::TopologyToNewickTopology)
+      .def("generate_all_topologies", &GPDAG::GenerateAllTopologies);
+
+  py::class_<GraftDAG> graft_dag_class(m, "graft_dag",
+                                       "Subsplit DAG for grafting nodes and edges.");
+  graft_dag_class
+      .def("compare_to_dag",
+           [](const GraftDAG &self, const GPDAG &other) { self.CompareToDAG(other); })
+      .def("graft_node_count", &GraftDAG::GraftNodeCount,
+           "Get number of graft nodes appended to DAG.")
+      .def("graft_edge_count", &GraftDAG::GraftEdgeCount,
+           "Get number of graft edges appended to DAG.")
+      .def("host_node_count", &GraftDAG::HostNodeCount,
+           "Get number of host nodes contained in DAG.")
+      .def("host_edge_count", &GraftDAG::HostEdgeCount,
+           "Get number of host edges contained in DAG.")
+      .def("get_host_dag", &GraftDAG::GetHostDAG, py::return_value_policy::reference,
+           "Get underlying Host DAG.")
+      .def("is_valid_add_node_pair", &GraftDAG::IsValidAddNodePair,
+           "Checks whether a given parent/child subsplit pair is valid to be added to "
+           "the DAG.")
+      .def(
+          "add_node_pair",
+          [](GraftDAG &self, const Bitset &parent, const Bitset &child) {
+            self.AddNodePair(parent, child);
+          },
+          "Add parent/child subsplit pair to DAG.");
+
+  // ** Engines for DAGs
+
+  py::class_<GPEngine> gp_engine_class(m, "gp_engine",
+                                       "An engine for computing Generalized Pruning.");
+  gp_engine_class.def("node_count", &GPEngine::GetNodeCount, "Get number of nodes.")
+      .def("plv_count", &GPEngine::GetPLVCount, "Get number of PLVs.")
+      .def("edge_count", &GPEngine::GetGPCSPCount, "Get number of edges.");
+
+  py::class_<TPEngine> tp_engine_class(m, "tp_engine",
+                                       "An engine for computing Top Pruning.");
+  tp_engine_class.def("node_count", &TPEngine::GetNodeCount, "Get number of nodes.")
+      .def("edge_count", &TPEngine::GetEdgeCount, "Get number of edges.")
+      .def("get_top_tree_with_edge", &TPEngine::GetTopTreeWithEdge,
+           "Output the top tree of tree containing given edge.")
+      .def("get_top_tree_likelihood_with_edge", &TPEngine::GetTopTreeLikelihood,
+           "Output the top tree likelihood containing given edge.")
+      .def("get_top_tree_parsimony_with_edge", &TPEngine::GetTopTreeParsimony,
+           "Output the top tree parsimony containing given edge.")
+      .def("get_top_tree_topology_with_edge", &TPEngine::GetTopTreeTopologyWithEdge,
+           "Output the top tree of tree containing given edge.")
+      // ** Branch Length Optimization
+      .def("get_branch_lengths", [](TPEngine &self) { self.GetBranchLengths(); })
+      .def("optimize_branch_lengths", &TPEngine::OptimizeBranchLengths,
+           py::arg("check_branch_convergence") = std::nullopt)
+      // ** I/O
+      .def("build_map_of_tree_id_to_top_tree_topologies",
+           &TPEngine::BuildMapOfTreeIdToTopTreeTopologies);
+
+  py::class_<TPChoiceMap> tp_choice_map_class(
+      m, "tp_choice_map", "An choice map for finding the top tree in TPEngine.");
+  tp_choice_map_class.def("__str__", &TPChoiceMap::ToString)
+      .def(
+          "edge_choice_to_string",
+          [](const TPChoiceMap &self, const EdgeId edge_id) {
+            return self.EdgeChoiceToString(edge_id);
+          },
+          "Output the edge choice map for a given edge in DAG.");
+
+  py::class_<NNIEngine> nni_engine_class(
+      m, "nni_engine", "An engine for computing NNI Systematic Search.");
+  nni_engine_class
+      // Getters
+      .def(
+          "get_graft_dag", [](NNIEngine &self) { return self.GetGraftDAG(); },
+          py::return_value_policy::reference, "Get the Graft DAG.")
+      .def(
+          "adjacent_nnis", [](NNIEngine &self) { return self.GetAdjacentNNIs(); },
+          "Get NNIs adjacent to DAG.")
+      .def(
+          "accepted_nnis", [](NNIEngine &self) { return self.GetAcceptedNNIs(); },
+          "Get NNIs accepted into DAG.")
+      .def(
+          "rejected_nnis", [](NNIEngine &self) { return self.GetRejectedNNIs(); },
+          "Get NNIs rejected from DAG.")
+      .def(
+          "scored_nnis", [](const NNIEngine &self) { return self.GetScoredNNIs(); },
+          "Get Scored NNIs of current iteration.")
+      // Counts
+      .def("adjacent_nni_count", &NNIEngine::GetAdjacentNNICount,
+           "Get number of NNIs adjacent to DAG.")
+      .def("accepted_nni_count", &NNIEngine::GetAcceptedNNICount,
+           "Get number of adjacent NNIs were accepted by the filter on current "
+           "iteration.")
+      .def("rejected_nni_count", &NNIEngine::GetRejectedNNICount,
+           "Get number of adjacent NNIs were rejected by the filter on current "
+           "iteration.")
+      .def("past_accepted_nni_count", &NNIEngine::GetPastAcceptedNNICount,
+           "Get number of adjacent NNIs were accepted by the filter on all previous "
+           "iterations.")
+      .def("past_rejected_nni_count", &NNIEngine::GetPastRejectedNNICount,
+           "Get number of adjacent NNIs were rejected by the filter on all previous "
+           "iterations.")
+      .def("past_scored_nnis", &NNIEngine::GetPastScoredNNIs,
+           "Get scores from NNIs from previous iterations.")
+      .def("iter_count", &NNIEngine::GetIterationCount,
+           "Get number of iterations of NNI search run.")
+      // Search primary routines
+      .def("run", &NNIEngine::Run, "Primary runner for NNI systematic search.",
+           py::arg("is_quiet") = false)
+      .def("run_init", &NNIEngine::RunInit, "Run initialization step of NNI search.",
+           py::arg("is_quiet") = false)
+      .def("run_main_loop", &NNIEngine::RunMainLoop, "Run main loop of NNI search.",
+           py::arg("is_quiet") = false)
+      .def("run_post_loop", &NNIEngine::RunPostLoop, "Run post loop of NNI search.",
+           py::arg("is_quiet") = false)
+      // Search subroutines
+      // Init
+      .def("reset_all_nnis", &NNIEngine::ResetAllNNIs)
+      .def("sync_adjacent_nnis_with_dag", &NNIEngine::SyncAdjacentNNIsWithDAG)
+      .def("prep_eval_engine", &NNIEngine::PrepEvalEngine)
+      .def("filter_init", &NNIEngine::FilterInit)
+      // Main Loop
+      .def("graft_adjacent_nnis_to_dag", &NNIEngine::GraftAdjacentNNIsToDAG)
+      .def("filter_pre_update", &NNIEngine::FilterPreUpdate)
+      .def("filter_eval_adjacent_nnis", &NNIEngine::FilterEvaluateAdjacentNNIs)
+      .def("filter_post_update", &NNIEngine::FilterPostUpdate)
+      .def("filter_process_adjacent_nnis", &NNIEngine::FilterProcessAdjacentNNIs)
+      .def("remove_all_graft_nnis_from_dag", &NNIEngine::RemoveAllGraftedNNIsFromDAG)
+      .def("add_accepted_nnis_to_dag", &NNIEngine::AddAcceptedNNIsToDAG)
+      // Post Loop
+      .def("update_adjacent_nnis", &NNIEngine::UpdateAdjacentNNIs)
+      .def("update_accepted_nnis", &NNIEngine::UpdateAcceptedNNIs)
+      .def("update_rejected_nnis", &NNIEngine::UpdateRejectedNNIs)
+      .def("update_scored_nnis", &NNIEngine::UpdateScoredNNIs)
+      // Filtering schemes
+      .def("set_no_filter", &NNIEngine::SetNoFilter,
+           "Set filter to either accept (True) or deny (False) all NNIs.",
+           py::arg("set_all_nni_to_accept"))
+      .def("set_gp_likelihood_cutoff_filtering_scheme",
+           &NNIEngine::SetGPLikelihoodCutoffFilteringScheme,
+           "Set filtering scheme to use Generalized Pruning based on constant score "
+           "cutoff.")
+      .def("set_tp_likelihood_cutoff_filtering_scheme",
+           &NNIEngine::SetTPLikelihoodCutoffFilteringScheme,
+           "Set filtering scheme to use Top Pruning with Likelihoods based on constant "
+           "score cutoff.")
+      .def("set_tp_parsimony_cutoff_filtering_scheme",
+           &NNIEngine::SetTPParsimonyCutoffFilteringScheme,
+           "Set filtering scheme to use Top Pruning with Parsimony based on constant "
+           "score cutoff.")
+      .def("set_gp_likelihood_drop_filtering_scheme",
+           &NNIEngine::SetGPLikelihoodDropFilteringScheme,
+           "Set filtering scheme to use Generalized Pruning based on based on drop "
+           "from best score.")
+      .def("set_tp_likelihood_drop_filtering_scheme",
+           &NNIEngine::SetTPLikelihoodDropFilteringScheme,
+           "Set filtering scheme to use Top Pruning with Likelihoods based on drop "
+           "from best score.")
+      .def("set_tp_parsimony_drop_filtering_scheme",
+           &NNIEngine::SetTPParsimonyDropFilteringScheme,
+           "Set filtering scheme to use Top Pruning with Parsimony based on drop from "
+           "best score.")
+      .def("set_top_n_score_filtering_scheme", &NNIEngine::SetTopNScoreFilteringScheme,
+           "Set filter scheme that accepts the top N best-scoring NNIs.",
+           py::arg("top_n"), py::arg("max_is_best") = true)
+      // Options
+      .def("set_include_rootsplits", &NNIEngine::SetIncludeRootsplitNNIs,
+           "Set whether to include rootsplits in adjacent NNIs")
+      // Scoring
+      .def("get_score_by_nni", &NNIEngine::GetScoreByNNI, "Get score by NNI.")
+      .def("get_score_by_edge", &NNIEngine::GetScoreByEdge, "Get score by EdgeId.");
+
+  py::class_<SankoffHandler> parsimony_engine_class(
+      m, "parsimony_tree_engine",
+      "An engine that computes parsimonies for tree topologies.");
+  parsimony_engine_class.def("compute_parsimony",
+                             [](SankoffHandler &self, const RootedTree &tree) {
+                               self.RunSankoff(tree.Topology());
+                               return self.ParsimonyScore();
+                             });
+
+  py::class_<FatBeagle> likelihood_engine_class(
+      m, "likelihood_tree_engine",
+      "An engine that computes likelihoods for tree topologies.");
+  likelihood_engine_class.def("compute_likelihood",
+                              [](FatBeagle &self, const RootedTree &tree) {
+                                return self.UnrootedLogLikelihood(tree);
+                              });
+
+  // ** Node Topology
+
+  py::class_<Node::Topology> topology_class(
+      m, "node_topology", "A node in a node topology representing a tree.");
+  topology_class.def("__str__", [](const Node::Topology &self) { self->Leaves(); })
+      .def(
+          "id", [](const Node::Topology &self) { return self->Id(); },
+          "Unique node id within topology.")
+      .def(
+          "to_leaves", [](const Node::Topology &self) { return self->Leaves(); },
+          "Output node to leave bitset.")
+      .def(
+          "build_subsplit",
+          [](const Node::Topology &self) { return self->BuildSubsplit(); },
+          "Build subsplit node bitset of node.")
+      .def(
+          "build_pcsp",
+          [](const Node::Topology &self, const size_t child_id) {
+            Assert(child_id < 2, "child_count must be 0 (left) or 1 (right).");
+            auto child_clade =
+                (child_id == 0) ? SubsplitClade::Left : SubsplitClade::Right;
+            return self->BuildPCSP(child_clade);
+          },
+          "Build PCSP edge bitset of edge below node.")
+      .def(
+          "build_vector_of_subsplits",
+          [](const Node::Topology &self) { return self->BuildVectorOfSubsplits(); },
+          "Build a vector of all subsplit bitsets for all nodes in topology.")
+      .def(
+          "build_vector_of_pcsps",
+          [](const Node::Topology &self) { return self->BuildVectorOfPCSPs(); },
+          "Build vector of all PCSP edge bitsets for all edges in topology.")
+      .def(
+          "to_newick", [](const Node::Topology &self) { return self->Newick(); },
+          "Output to Newick string.");
+
+  // ** Bitsets, Subsplits, PCSPs, NNIs, etc
+
+  py::class_<Bitset> bitset_class(
+      m, "bitset", "A bitset representing the taxon membership of a Subsplit or PCSP.");
+  bitset_class.def(py::init<const std::string &>())
+      .def("__str__", &Bitset::ToString)
+      .def("__eq__",
+           [](const Bitset &self, const Bitset &other) { return self == other; })
+      .def("__hash__", &Bitset::Hash)
+      .def("to_string", &Bitset::ToString, "Output to bitset string.")
+      .def("clade_get_count", &Bitset::Count)
+      .def("subsplit_get_clade",
+           [](const Bitset &self, const size_t i) {
+             SubsplitClade clade =
+                 (i == 0) ? SubsplitClade::Left : SubsplitClade::Right;
+             return self.SubsplitGetClade(clade);
+           })
+      .def("subsplit_to_string", &Bitset::SubsplitToString,
+           "Output as Subsplit-style string.")
+      .def("pcsp_to_string", &Bitset::PCSPToString, "Output as PCSP-style string.")
+      .def("pcsp_get_parent_subsplit", &Bitset::PCSPGetParentSubsplit,
+           "Get parent subsplit from PCSP.")
+      .def("pcsp_get_child_subsplit", &Bitset::PCSPGetChildSubsplit,
+           "Get child subsplit from PCSP.");
+  m.def(
+      "subsplit",
+      [](const std::string &left_clade, const std::string &right_clade) {
+        return Bitset::Subsplit(left_clade, right_clade);
+      },
+      "A Subsplit Bitset constructed from two Bitset Clades.");
+  m.def(
+      "pcsp",
+      [](const Bitset &parent, const Bitset &child) {
+        return Bitset::PCSP(parent, child);
+      },
+      "A PCSP Bitset constructed from two Bitset Subsplits.");
+
+  py::class_<NodeId> node_id_class(m, "node_id",
+                                   "An ID representing a unique node within a DAG.");
+  node_id_class.def(py::init<const size_t>())
+      .def("__str__", [](const NodeId self) { return self.ToString(); })
+      .def("__eq__", [](const NodeId lhs, const NodeId rhs) { return lhs == rhs; })
+      .def("value", [](const NodeId &self) -> int { return self.value_; });
+
+  py::class_<EdgeId> edge_id_class(m, "edge_id",
+                                   "An ID representing a unique edge within a DAG.");
+  edge_id_class.def(py::init<const size_t>())
+      .def("__str__", [](const EdgeId self) { return self.ToString(); })
+      .def("__eq__", [](const EdgeId lhs, const EdgeId rhs) { return lhs == rhs; })
+      .def("value", [](const EdgeId &self) -> int { return self.value_; });
+
+  py::class_<TaxonId> taxon_id_class(m, "taxon_id",
+                                     "An ID representing a unique edge within a DAG.");
+  taxon_id_class.def(py::init<const size_t>())
+      .def("__str__", [](const TaxonId self) { return self.ToString(); })
+      .def("__eq__", [](const TaxonId lhs, const TaxonId rhs) { return lhs == rhs; })
+      .def("value", [](const TaxonId &self) -> int { return self.value_; });
+
+  py::class_<TreeId> tree_id_class(m, "tree_id", "An ID representing a unique tree.");
+  tree_id_class.def(py::init<const size_t>())
+      .def("__str__", [](const TreeId self) { return self.ToString(); })
+      .def("__eq__", [](const TreeId lhs, const TreeId rhs) { return lhs == rhs; })
+      .def("value", [](const TreeId &self) -> int { return self.value_; });
+
+  py::class_<NNIOperation> nni_op_class(
+      m, "nni_op",
+      "A proposed NNI Operation for the DAG. Repesents the PCSP to be added.");
+  nni_op_class.def(py::init<const std::string &, const std::string &>())
+      .def("__str__", &NNIOperation::ToString)
+      .def("__eq__",
+           [](const NNIOperation &lhs, const NNIOperation &rhs) { return lhs == rhs; })
+      .def("__hash__", &NNIOperation::Hash)
+      .def("to_string", &NNIOperation::ToString, "Output to string")
+      .def("get_parent", &NNIOperation::GetParent, "Get parent Subsplit of PCSP.")
+      .def("get_child", &NNIOperation::GetChild, "Get child Subsplit of PCSP.")
+      .def("get_central_edge_pcsp", &NNIOperation::GetCentralEdgePCSP,
+           "Get central edge PCSP.")
+      .def("is_valid", &NNIOperation::IsValid,
+           "Checks that NNI Operation is a valid PCSP.");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:

@@ -16,14 +16,26 @@
 #include "pv_handler.hpp"
 #include "topology_sampler.hpp"
 #include "tp_engine.hpp"
-#include "choice_map.hpp"
+#include "tp_choice_map.hpp"
 #include "sankoff_matrix.hpp"
 #include "sankoff_handler.hpp"
+#include "dag_data.hpp"
+#include "optimization.hpp"
 
 using namespace GPOperations;  // NOLINT
 using PLVType = PLVNodeHandler::PLVType;
 
 // #350 remove all uses of GPCSP.
+
+std::ostream& operator<<(std::ostream& os, EigenConstMatrixXdRef mx) {
+  for (Eigen::Index i = 0; i < mx.rows(); i++) {
+    for (Eigen::Index j = 0; j < mx.cols(); j++) {
+      os << "[" << i << "," << j << "]: " << mx(i, j) << "\t";
+    }
+    os << std::endl;
+  }
+  return os;
+}
 
 // Let the "venus" node be the common ancestor of mars and saturn.
 enum HelloGPCSP { jupiter, mars, saturn, venus, rootsplit, root };
@@ -37,8 +49,9 @@ GPInstance GPInstanceOfFiles(
   GPInstance inst(mmap_filepath);
   inst.ReadFastaFile(fasta_path);
   inst.ReadNewickFile(newick_path);
+  inst.MakeDAG();
+  inst.MakeGPEngine();
   inst.UseGradientOptimization(use_gradients);
-  inst.MakeEngine();
   return inst;
 }
 
@@ -51,7 +64,7 @@ GPInstance MakeHelloGPInstance(const std::string& fasta_path) {
   EigenVectorXd branch_lengths(5);
   // Order set by HelloGPCSP.
   branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
-  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.GetGPEngine().SetBranchLengths(branch_lengths);
   CHECK_EQ(inst.GenerateCompleteRootedTreeCollection().Newick(),
            "(jupiter:0.113,(mars:0.15,saturn:0.1):0.22):0;\n");
   return inst;
@@ -84,8 +97,8 @@ GPInstance MakeDS1Reduced5Instance() {
 
 GPInstance MakeFluAGPInstance(double rescaling_threshold) {
   auto inst = GPInstanceOfFiles("data/fluA.fa", "data/fluA.tree");
-  inst.MakeEngine(rescaling_threshold);
-  inst.GetEngine()->SetBranchLengthsToConstant(0.01);
+  inst.MakeGPEngine(rescaling_threshold);
+  inst.GetGPEngine().SetBranchLengthsToConstant(0.01);
   return inst;
 }
 
@@ -105,16 +118,16 @@ EigenVectorXd MakeHelloGPInstanceMarginalLikelihoodTestBranchLengths() {
 
 TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
   auto inst = MakeHelloGPInstance();
-  auto engine = inst.GetEngine();
+  auto& engine = inst.GetGPEngine();
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
 
   EigenVectorXd realized_log_likelihoods =
-      inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+      inst.GetGPEngine().GetPerGPCSPLogLikelihoods();
   CheckVectorXdEquality(-84.77961943, realized_log_likelihoods, 1e-6);
 
-  CHECK_LT(fabs(engine->GetLogMarginalLikelihood() - -84.77961943), 1e-6);
+  CHECK_LT(fabs(engine.GetLogMarginalLikelihood() - -84.77961943), 1e-6);
 }
 
 // Compute the exact marginal likelihood via brute force to compare with generalized
@@ -196,6 +209,7 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
 // same applies here.
 void TestCompositeMarginal(GPInstance inst, const std::string& fasta_path) {
   inst.EstimateBranchLengths(0.00001, 100, true);
+
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   inst.ComputeMarginalLikelihood();
@@ -205,10 +219,17 @@ void TestCompositeMarginal(GPInstance inst, const std::string& fasta_path) {
 
   auto [exact_log_likelihood, exact_per_pcsp_log_marginal] =
       ComputeExactMarginal(tree_path, fasta_path);
-  double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
+  double gp_marginal_log_likelihood = inst.GetGPEngine().GetLogMarginalLikelihood();
   auto gp_per_pcsp_log_marginal =
       inst.PrettyIndexedPerGPCSPComponentsOfFullLogMarginal();
-  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
+
+  double tolerance = 1e-6;
+  if (fabs(gp_marginal_log_likelihood - exact_log_likelihood) > tolerance) {
+    std::cout << "gp_marginal_log_likelihood: " << gp_marginal_log_likelihood
+              << std::endl;
+    std::cout << "exact_log_likelihood: " << exact_log_likelihood << std::endl;
+  }
+  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), tolerance);
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
 }
 
@@ -235,7 +256,7 @@ TEST_CASE("GPInstance: marginal likelihood on seven taxa and four trees") {
 
 TEST_CASE("GPInstance: gradient calculation") {
   auto inst = MakeHelloGPInstanceSingleNucleotide();
-  auto engine = inst.GetEngine();
+  auto& engine = inst.GetGPEngine();
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
@@ -250,7 +271,7 @@ TEST_CASE("GPInstance: gradient calculation") {
       PLVType::RLeft, rootsplit_id, hello_node_count_without_dag_root_node);
   OptimizeBranchLength op{leafward_idx.value_, rootward_idx.value_,
                           rootsplit_jupiter_idx.value_};
-  DoublePair log_lik_and_derivative = engine->LogLikelihoodAndDerivative(op);
+  DoublePair log_lik_and_derivative = engine.LogLikelihoodAndDerivative(op);
   // Expect log lik: -4.806671945.
   // Expect log lik derivative: -0.6109379521.
   CHECK_LT(fabs(log_lik_and_derivative.first - -4.806671945), 1e-6);
@@ -259,7 +280,7 @@ TEST_CASE("GPInstance: gradient calculation") {
 
 TEST_CASE("GPInstance: multi-site gradient calculation") {
   auto inst = MakeHelloGPInstance();
-  auto engine = inst.GetEngine();
+  auto& engine = inst.GetGPEngine();
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
@@ -275,7 +296,7 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
   OptimizeBranchLength op{leafward_idx.value_, rootward_idx.value_,
                           rootsplit_jupiter_idx.value_};
   std::tuple<double, double, double> log_lik_and_derivatives =
-      engine->LogLikelihoodAndFirstTwoDerivatives(op);
+      engine.LogLikelihoodAndFirstTwoDerivatives(op);
   // Expect log likelihood: -84.77961943.
   // Expect log llh first derivative: -18.22479569.
   // Expect log llh second derivative: -5.4460787413.
@@ -286,40 +307,49 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
 
 // We are outputting the branch length for PCSP 100-011-001
 // which has a true branch length of 0.0694244266
-double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
+double ObtainBranchLengthWithOptimization(const OptimizationMethod method,
+                                          bool is_quiet = true) {
   GPInstance inst = MakeHelloGPInstance();
-  GPEngine& engine = *inst.GetEngine();
+  GPEngine& engine = inst.GetGPEngine();
   engine.SetOptimizationMethod(method);
+  inst.EstimateBranchLengths(0.0001, 100, is_quiet);
 
-  inst.EstimateBranchLengths(0.0001, 100, true);
+  inst.MakeDAG();
   GPDAG& dag = inst.GetDAG();
   EdgeId default_index = EdgeId(dag.EdgeCountWithLeafSubsplits());
   Bitset gpcsp_bitset = Bitset("100011001");
-
   EdgeId index =
       AtWithDefault(dag.BuildEdgeIndexer(), gpcsp_bitset, default_index.value_);
-  return inst.GetEngine()->GetBranchLengths()(index.value_);
+  return inst.GetGPEngine().GetBranchLengths()(index.value_);
 }
 
 TEST_CASE("GPInstance: Gradient-based optimization with Newton's Method") {
-  double nongradient_length = ObtainBranchLengthWithOptimization(
-      GPEngine::OptimizationMethod::BrentOptimization);
-  double gradient_length = ObtainBranchLengthWithOptimization(
-      GPEngine::OptimizationMethod::NewtonOptimization);
+  double nongradient_length =
+      ObtainBranchLengthWithOptimization(OptimizationMethod::BrentOptimization);
+  double gradient_length =
+      ObtainBranchLengthWithOptimization(OptimizationMethod::NewtonOptimization);
 
   double true_length = 0.0694244266;
-  double brent_diff = abs(nongradient_length - true_length);
+  double nongrad_diff = abs(nongradient_length - true_length);
   double grad_diff = abs(gradient_length - true_length);
+  double tol = 1e-6;
 
-  CHECK_LT(grad_diff, brent_diff);
-  CHECK_LT(grad_diff, 1e-6);
+  if (grad_diff > nongrad_diff || grad_diff > tol) {
+    std::cout << "nongrad_diff: " << nongrad_diff << std::endl;
+    std::cout << "grad_diff: " << grad_diff << std::endl;
+    std::cout << "nongradient_length: " << nongradient_length << std::endl;
+    std::cout << "gradient_length: " << gradient_length << std::endl;
+    std::cout << "true_length: " << true_length << std::endl;
+  }
+  CHECK_LT(grad_diff, nongrad_diff);
+  CHECK_LT(grad_diff, tol);
 }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {
   auto inst = MakeFluAGPInstance(rescaling_threshold);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-  return inst.GetEngine()->GetLogMarginalLikelihood();
+  return inst.GetGPEngine().GetLogMarginalLikelihood();
 }
 
 TEST_CASE("GPInstance: rescaling") {
@@ -345,7 +375,7 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
   // This is just a dummy fasta file, which is required to make an Engine.
   inst.ReadFastaFile("data/hotstart.fasta");
   inst.ReadNewickFile(tree_path);
-  inst.MakeEngine();
+  inst.MakeGPEngine();
 
   // We are going to verify correct assignment of the PCSP with sister z2, z3 and
   // children z0, z1, which only appears in the tree (outgroup,((z0,z1),(z2,z3))).
@@ -375,7 +405,7 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
 
   double true_mean_internal = expected_bls_internal.array().mean();
   inst.HotStartBranchLengths();
-  CHECK_LT(fabs(true_mean_internal - inst.GetEngine()->GetBranchLengths()(4)), 1e-8);
+  CHECK_LT(fabs(true_mean_internal - inst.GetGPEngine().GetBranchLengths()(4)), 1e-8);
   // We also want to verify correct assignment for a pendant branch length.
   // Specifically, we are looking at the pendant branch length for z2 with sister z3. So
   // the desired GPCSP is 0010001000|0000000000. This corresponds to branch length index
@@ -390,7 +420,7 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
       0.0906510000, 0.0906750000, 0.0906480000, 0.0906100000, 0.0894660000,
       0.0904620000, 0.0893220000, 0.0902220000, 0.0902000000;
   double true_mean_pendant = expected_bls_pendant.array().mean();
-  CHECK_LT(fabs(true_mean_pendant - inst.GetEngine()->GetBranchLengths()(8)), 1e-8);
+  CHECK_LT(fabs(true_mean_pendant - inst.GetGPEngine().GetBranchLengths()(8)), 1e-8);
 }
 
 TEST_CASE("GPInstance: take first branch length") {
@@ -399,7 +429,7 @@ TEST_CASE("GPInstance: take first branch length") {
   // This is just a dummy fasta file, which is required to make an Engine.
   inst.ReadFastaFile("data/hotstart.fasta");
   inst.ReadNewickFile(tree_path);
-  inst.MakeEngine();
+  inst.MakeGPEngine();
   inst.TakeFirstBranchLength();
   auto branch_length_map =
       StringDoubleMapOfStringDoubleVector(inst.PrettyIndexedBranchLengths());
@@ -435,24 +465,24 @@ TEST_CASE("GPInstance: test populate PLV") {
   auto inst = MakeFiveTaxonInstance();
   inst.EstimateBranchLengths(1e-6, 10, true);
   inst.ComputeLikelihoods();
-  size_t length = inst.GetEngine()->GetLogLikelihoodMatrix().rows();
+  size_t length = inst.GetGPEngine().GetLogLikelihoodMatrix().rows();
   const EigenVectorXd log_likelihoods1 =
-      inst.GetEngine()->GetPerGPCSPLogLikelihoods(0, length);
+      inst.GetGPEngine().GetPerGPCSPLogLikelihoods(0, length);
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
-  const EigenVectorXd log_likelihoods2 = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+  const EigenVectorXd log_likelihoods2 = inst.GetGPEngine().GetPerGPCSPLogLikelihoods();
   CheckVectorXdEquality(log_likelihoods1, log_likelihoods2, 1e-6);
 }
 
 TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
   auto inst = MakeFiveTaxonInstance();
-  inst.GetEngine()->SetBranchLengthsToConstant(0.1);
+  inst.GetGPEngine().SetBranchLengthsToConstant(0.1);
   inst.PopulatePLVs();
   // We need to call ComputeLikelihoods to populate the likelihood matrix.
   // Note: EstimateBranchLengths doesn't populate the likelihood matrix.
   inst.ComputeLikelihoods();
 
-  EigenVectorXd log_likelihood_vector = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+  EigenVectorXd log_likelihood_vector = inst.GetGPEngine().GetPerGPCSPLogLikelihoods();
 
   // Let s be a subsplit and k be the site. Then,
   // log_likelihood_matrix.row(s)[k] =
@@ -489,7 +519,7 @@ TEST_CASE("GPInstance: SBN root split probabilities on five taxa") {
                                     expected_log_lik_vector_at_rootsplits, 1e-6);
 
   inst.EstimateSBNParameters();
-  EigenVectorXd realized_q = inst.GetEngine()->GetSBNParameters().segment(0, 3);
+  EigenVectorXd realized_q = inst.GetGPEngine().GetSBNParameters().segment(0, 3);
   // The expected values for the SBN parameters: q[s] \propto log_lik[s] +
   // log_prior[s]. The SBN params are initialized so that we get a uniform
   // distribution over the trees. For the rootsplits, the values are (1/4, 1/4, 2/4)
@@ -506,7 +536,7 @@ TEST_CASE("GPInstance: CurrentlyLoadedTreesWithGPBranchLengths") {
   auto inst = MakeHelloGPInstanceSingleNucleotide();
   EigenVectorXd branch_lengths(5);
   branch_lengths << 0, 0.1, 0.2, 0.3, 0.4;
-  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.GetGPEngine().SetBranchLengths(branch_lengths);
   auto trees = inst.CurrentlyLoadedTreesWithGPBranchLengths();
   CHECK_EQ(trees.Newick(), "(jupiter:0.2,(mars:0.3,saturn:0.4):0.1):0;\n");
 }
@@ -515,8 +545,8 @@ TEST_CASE("GPInstance: CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths") {
   GPInstance inst("_ignore/mmapped_pv.data");
   inst.ReadFastaFile("data/five_taxon.fasta");
   inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
-  inst.MakeEngine();
-  inst.GetEngine()->SetBranchLengthsToConstant(0.9);
+  inst.MakeGPEngine();
+  inst.GetGPEngine().SetBranchLengthsToConstant(0.9);
   // Only take trees that have (x4,(x2,x3)).
   auto trees =
       inst.CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths("000010011000010");
@@ -628,7 +658,7 @@ TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
   EigenVectorXd branch_lengths(14);
   // The branch lengths contain the index of this GPCSP-indexed vector.
   branch_lengths << 0., 1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13.;
-  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.GetGPEngine().SetBranchLengths(branch_lengths);
   // Because the branch lengths contain the GPCSP index, we can check that the indices
   // correspond to what we see in the GPCSP DAG in
   // https://github.com/phylovi/bito/issues/391#issuecomment-1168048090
@@ -673,7 +703,7 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   branch_lengths << 0.058, 0.044, 0.006, 0.099, 0.078, 0.036, 0.06, 0.073, 0.004, 0.041,
       0.088, 0.033, 0.043, 0.096, 0.027, 0.039, 0.043, 0.023, 0.064, 0.032, 0.03, 0.085,
       0.034;
-  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.GetGPEngine().SetBranchLengths(branch_lengths);
   inst.PopulatePLVs();
   const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
   inst.ExportAllGeneratedTrees(tree_path);
@@ -681,7 +711,7 @@ TEST_CASE("GPInstance: simplest hybrid marginal") {
   // requests are printable to stdout if you're keen.
   auto request = dag.QuartetHybridRequestOf(NodeId(12), false, NodeId(11));
   EigenVectorXd quartet_log_likelihoods =
-      inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
+      inst.GetGPEngine().CalculateQuartetHybridLikelihoods(request);
 
   // Note that we aren't sorting likelihoods here, though we might have to do so for
   // more complex tests. I don't think that there's any guarantee that the hybrid log
@@ -713,7 +743,7 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
   branch_lengths << 0.09, 0.064, 0.073, 0.062, 0.051, 0.028, 0.077, 0.097, 0.089, 0.061,
       0.036, 0.049, 0.085, 0.01, 0.099, 0.027, 0.07, 0.023, 0.043, 0.056, 0.043, 0.026,
       0.058, 0.015, 0.093, 0.01, 0.011, 0.007, 0.022, 0.009, 0.037, 0.017;
-  inst.GetEngine()->SetBranchLengths(branch_lengths);
+  inst.GetGPEngine().SetBranchLengths(branch_lengths);
   inst.PopulatePLVs();
   const std::string tree_path = "_ignore/simplest-hybrid-marginal-trees.nwk";
   inst.ExportAllGeneratedTrees(tree_path);
@@ -722,7 +752,7 @@ TEST_CASE("GPInstance: second simplest hybrid marginal") {
   auto request = dag.QuartetHybridRequestOf(NodeId(edge.GetParent()), true,
                                             NodeId(edge.GetChild()));
   EigenVectorXd quartet_log_likelihoods =
-      inst.GetEngine()->CalculateQuartetHybridLikelihoods(request);
+      inst.GetGPEngine().CalculateQuartetHybridLikelihoods(request);
 
   inst.LoadAllGeneratedTrees();
   // We restrict to only the trees that contain the DAG edge 6 (which goes between
@@ -984,16 +1014,60 @@ TEST_CASE("GPInstance: Only add child node tests") {
            EdgeId(7));
 }
 
+// ** NNIEngine tests **
+
+using NodeMap = std::unordered_map<NodeId, NodeId>;
+using EdgeMap = std::unordered_map<EdgeId, EdgeId>;
+using TreeIdMap = std::unordered_map<TreeId, RootedTree>;
+using TreeEdgeMap = std::unordered_map<EdgeId, TreeId>;
+using EdgeScoreMap = std::unordered_map<EdgeId, double>;
+using TreeScoreMap = std::unordered_map<TreeId, double>;
+using NNIScoreMap = std::map<NNIOperation, double>;
+using BranchLengths = EigenVectorXd;
+using NNIBranchLengthsMap = std::map<NNIOperation, EigenVectorXd>;
+using BranchMap = DAGBranchHandler::BranchLengthMap;
+using NNIBranchMapMap = std::map<NNIOperation, DAGBranchHandler::BranchLengthMap>;
+
+// Builds a mapping from node and edge elements from pre-DAG to post-DAG.  If pre-DAG
+// element does not exist in post-DAG, return NoId.
+std::pair<NodeMap, EdgeMap> BuildNodeAndEdgeMapsFromPreDAGToPostDAG(GPDAG& pre_dag,
+                                                                    GPDAG& post_dag) {
+  NodeMap node_map;
+  for (const auto& bitset : pre_dag.BuildSortedVectorOfNodeBitsets()) {
+    if (bitset.SubsplitIsUCA()) {
+      continue;
+    }
+    const auto pre_id = pre_dag.GetDAGNodeId(bitset);
+    auto post_id = NodeId(NodeId::NoId);
+    if (post_dag.ContainsNode(bitset)) {
+      post_id = post_dag.GetDAGNodeId(bitset);
+    }
+    node_map[pre_id] = post_id;
+  }
+
+  EdgeMap edge_map;
+  for (const auto& bitset : pre_dag.BuildSortedVectorOfEdgeBitsets()) {
+    const auto pre_id = pre_dag.GetEdgeIdx(bitset);
+    auto post_id = EdgeId(EdgeId::NoId);
+    if (post_dag.ContainsEdge(bitset)) {
+      post_id = post_dag.GetEdgeIdx(bitset);
+    }
+    edge_map[pre_id] = post_id;
+  }
+
+  return std::make_pair(node_map, edge_map);
+}
+
 // This test builds a DAG, tests if engine generates the same set of adjacent NNIs and
 // manually created set. Then adds a node pair to DAG, and tests if engine updates
 // correctly.
-TEST_CASE("NNI Engine: Adjacent NNI Maintenance") {
+TEST_CASE("NNIEngine: Adjacent NNI Maintenance") {
   // Simple DAG that contains a shared edge, internal leafward fork, and an internal
   // rootward fork.
   const std::string fasta_path = "data/six_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/six_taxon_rooted_simple.nwk");
   GPDAG& dag = inst.GetDAG();
-  GPEngine& gp_engine = *inst.GetEngine();
+  GPEngine& gp_engine = inst.GetGPEngine();
 
   NNISet correct_adjacent_nnis;
 
@@ -1083,7 +1157,7 @@ TEST_CASE("NNI Engine: Adjacent NNI Maintenance") {
 // Tests DAG equality after adding different NNIs and built from different taxon
 // orderings. Test described at:
 // https://github.com/phylovi/bito/pull/377#issuecomment-1035410447
-TEST_CASE("NNI Engine: Add NNI Test") {
+TEST_CASE("NNIEngine: Add NNI Test") {
   // Fasta contains simple sequences for four taxa: x0,x1,x2,x3.
   const std::string fasta_path = "data/four_taxon.fasta";
   // dag_A_1 is a DAG that contains pair_1.
@@ -1129,6 +1203,139 @@ TEST_CASE("NNI Engine: Add NNI Test") {
   CHECK_EQ(dag_A_2b, dag_B);
 }
 
+// Starts with a DAG built from a single tree. Iteratively finds all adjacent NNIs and
+// adds them to the DAG, until there are no more adjacent NNIs to DAG.
+// (1) Tests that resulting DAG is equal to the complete DAG, containing all possible
+// subsplits. (2) Reruns with "include rootsplit" option off.  Checks that
+// resulting DAG contains only edges reachable from the initial rootsplit.
+TEST_CASE("NNIEngine: Build Complete DAG by Adding NNIs (include/exclude rootsplit)") {
+  auto BuildCompleteDAGSubsplits = [](const size_t taxon_count) {
+    auto BuildSubsplitsFromAllTaxonAssignment =
+        [](std::set<Bitset>& all_subsplits, Bitset& subsplit, const size_t i,
+           auto&& BuildSubsplitsFromAllTaxonAssignment) {
+          if (i == subsplit.SubsplitGetCladeSize()) {
+            auto subsplit_out =
+                Bitset::Subsplit(subsplit.SubsplitGetClade(SubsplitClade::Left),
+                                 subsplit.SubsplitGetClade(SubsplitClade::Right));
+            if (subsplit_out.SubsplitGetClade(SubsplitClade::Right).None() ||
+                subsplit_out.SubsplitGetClade(SubsplitClade::Left).None()) {
+              return;
+            }
+            all_subsplits.insert(subsplit_out);
+            return;
+          }
+          for (size_t j = 0; j < 3; j++) {
+            if (j == 0) {
+              subsplit.set(i, true);
+              subsplit.set(subsplit.SubsplitGetCladeSize() + i, false);
+            } else if (j == 1) {
+              subsplit.set(i, false);
+              subsplit.set(subsplit.SubsplitGetCladeSize() + i, true);
+            } else {
+              subsplit.set(i, false);
+              subsplit.set(subsplit.SubsplitGetCladeSize() + i, false);
+            }
+            BuildSubsplitsFromAllTaxonAssignment(all_subsplits, subsplit, i + 1,
+                                                 BuildSubsplitsFromAllTaxonAssignment);
+          }
+        };
+
+    std::set<Bitset> subsplits;
+    Bitset subsplit(taxon_count * 2, false);
+    BuildSubsplitsFromAllTaxonAssignment(subsplits, subsplit, 0,
+                                         BuildSubsplitsFromAllTaxonAssignment);
+    for (size_t i = 0; i < taxon_count; i++) {
+      subsplits.insert(
+          Bitset::LeafSubsplitOfNonemptyClade(Bitset::Singleton(taxon_count, i)));
+    }
+    subsplits.insert(Bitset::UCASubsplitOfTaxonCount(taxon_count));
+
+    return subsplits;
+  };
+
+  auto TestCompleteDAG = [&BuildCompleteDAGSubsplits](
+                             const std::string& fasta_path,
+                             const std::string& newick_path,
+                             const bool include_rootsplits = true) {
+    auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+    auto& dag = inst.GetDAG();
+    std::set<Bitset> rootsplit_subsplits;
+    for (const auto& node_id : dag.GetRootsplitNodeIds()) {
+      const auto& subsplit = dag.GetDAGNodeBitset(node_id);
+      rootsplit_subsplits.insert(subsplit);
+    }
+
+    inst.MakeNNIEngine();
+    auto& nniengine = inst.GetNNIEngine();
+    nniengine.SetIncludeRootsplitNNIs(include_rootsplits);
+    nniengine.SyncAdjacentNNIsWithDAG();
+    while (nniengine.GetAdjacentNNICount() > 0) {
+      for (const auto nni : nniengine.GetAdjacentNNIs()) {
+        dag.AddNodePair(nni.GetParent(), nni.GetChild());
+      }
+      nniengine.SyncAdjacentNNIsWithDAG();
+    }
+
+    auto subsplits = BuildCompleteDAGSubsplits(dag.TaxonCount());
+    if (!include_rootsplits) {
+      std::set<Bitset> tmp_rootsplit_subsplits;
+      for (const auto& node_id : dag.GetRootsplitNodeIds()) {
+        const auto& subsplit = dag.GetDAGNodeBitset(node_id);
+        tmp_rootsplit_subsplits.insert(subsplit);
+      }
+      CHECK_MESSAGE(
+          rootsplit_subsplits == tmp_rootsplit_subsplits,
+          "Rootsplit NNIs were added when NNIEngine flagged to exclude rootsplits.");
+
+      std::set<Bitset> tmp_subsplits;
+      for (const auto& ancestor : rootsplit_subsplits) {
+        tmp_subsplits.insert(ancestor);
+      }
+      for (const auto& descendant : subsplits) {
+        for (const auto& ancestor : rootsplit_subsplits) {
+          if (Bitset::SubsplitIsAncestorDescendantPair(ancestor, descendant,
+                                                       SubsplitClade::Left) ||
+              Bitset::SubsplitIsAncestorDescendantPair(ancestor, descendant,
+                                                       SubsplitClade::Right)) {
+            tmp_subsplits.insert(descendant);
+            break;
+          }
+        }
+      }
+      tmp_subsplits.insert(Bitset::UCASubsplitOfTaxonCount(dag.TaxonCount()));
+      subsplits = tmp_subsplits;
+    }
+
+    bool contains_all_subsplits = true;
+    for (const auto& subsplit : subsplits) {
+      contains_all_subsplits &= dag.ContainsNode(subsplit);
+      if (!contains_all_subsplits) {
+        std::cout << "Missing subsplit from complete DAG: "
+                  << subsplit.SubsplitToString() << std::endl;
+        break;
+      }
+    }
+    contains_all_subsplits &= (subsplits.size() == dag.NodeCount());
+    CHECK_MESSAGE(subsplits.size() == dag.NodeCount(),
+                  "DAG node count is not equal to number of nodes in Complete DAG.");
+    return contains_all_subsplits;
+  };
+
+  const std::string fasta_path_0 = "data/hello.fasta";
+  const std::string newick_path_0 = "data/hello_rooted_diff_branches.nwk";
+  CHECK_MESSAGE(TestCompleteDAG(fasta_path_0, newick_path_0, true),
+                "Complete DAG test for Hello.");
+  CHECK_MESSAGE(TestCompleteDAG(fasta_path_0, newick_path_0, false),
+                "Complete DAG test for Hello when excluding rootsplits.");
+
+  const std::string fasta_path_1 = "data/five_taxon.fasta";
+  const std::string newick_path_1 = "data/five_taxon_trees_3_4_diff_branches.nwk";
+  CHECK_MESSAGE(TestCompleteDAG(fasta_path_1, newick_path_1, true),
+                "Complete DAG test for Five Taxon.");
+  CHECK_MESSAGE(TestCompleteDAG(fasta_path_1, newick_path_1, false),
+                "Complete DAG test for Five Taxon when excluding rootsplits.");
+}
+
 // Access ith NNI from NNI set.
 NNIOperation GetWhichNNIFromSet(const NNISet& nni_set, const size_t which_nni) {
   auto nni_set_ptr = nni_set.begin();
@@ -1140,7 +1347,7 @@ NNIOperation GetWhichNNIFromSet(const NNISet& nni_set, const size_t which_nni) {
 
 // This compares DAGs after adding NNIs to SubsplitDAG vs GraftDAG.
 // Also tests that Adding all node pairs to DAG gives proper result.
-TEST_CASE("NNI Engine: GraftDAG") {
+TEST_CASE("NNIEngine: GraftDAG") {
   // Simple DAG that contains a shared edge, internal leafward fork, and an internal
   // rootward fork.
   const std::string fasta_path = "data/six_taxon.fasta";
@@ -1257,7 +1464,11 @@ TEST_CASE("NNI Engine: GraftDAG") {
 // Initialize GPInstance, make GPEngine, DAG, and NNIEngine.
 // Perform initial run of GP optimization.
 void GPInstanceRunGP(GPInstance& inst, const bool do_optimize_branch_lengths = true,
+                     const bool do_fixed_branch_lengths = false,
                      const bool do_reinit_priors = true) {
+  if (do_fixed_branch_lengths) {
+    inst.GetGPEngine().SetBranchLengthsToDefault();
+  }
   if (do_optimize_branch_lengths) {
     inst.EstimateBranchLengths(0.0001, 100, true);
   }
@@ -1272,7 +1483,7 @@ void GPInstanceRunGP(GPInstance& inst, const bool do_optimize_branch_lengths = t
 // Adds NNIs to DAG, then resizes and reindexes GPEngine, then checks that the same
 // node and edge bitsets correspond to the same PLVs and branch lengths before and after
 // AddNodePair.
-TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
+TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
   // Check that two GPInstances produce the same results after GP run.
   auto CheckGPEngineRun = [](GPInstance& inst, GPInstance& pre_inst) {
     bool passes_gp_run = true;
@@ -1280,12 +1491,12 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     inst.PopulatePLVs();
     inst.ComputeLikelihoods();
     inst.ComputeMarginalLikelihood();
-    auto likelihoods = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+    auto likelihoods = inst.GetGPEngine().GetPerGPCSPLogLikelihoods();
     pre_inst.EstimateBranchLengths(0.0001, 100, true);
     pre_inst.PopulatePLVs();
     pre_inst.ComputeLikelihoods();
     pre_inst.ComputeMarginalLikelihood();
-    auto pre_likelihoods = inst.GetEngine()->GetPerGPCSPLogLikelihoods();
+    auto pre_likelihoods = inst.GetGPEngine().GetPerGPCSPLogLikelihoods();
     if (!VectorXdEquality(likelihoods, pre_likelihoods, 1e-3)) {
       return false;
     };
@@ -1300,33 +1511,26 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
     // Check resizing GPEngine properly.
     passes_resized &= (gpengine.GetNodeCount() == dag.NodeCountWithoutDAGRoot());
     passes_resized &= (gpengine.GetGPCSPCount() == dag.EdgeCountWithLeafSubsplits());
-    // Check PLVs reindexing properly.
-    for (const auto& bitset : pre_dag.GetSortedVectorOfNodeBitsets()) {
-      if (bitset.SubsplitIsUCA()) {
-        continue;
-      }
-      const auto node_idx = dag.GetDAGNodeId(bitset);
-      const auto pre_node_idx = pre_dag.GetDAGNodeId(bitset);
+    // Check that elements reindexed properly.
+    const auto& [node_map, edge_map] =
+        BuildNodeAndEdgeMapsFromPreDAGToPostDAG(pre_dag, dag);
+    // Check PLVs reindexed properly.
+    for (const auto& [pre_node_id, node_id] : node_map) {
       for (const auto plv_type : PLVTypeEnum::Iterator()) {
-        const auto plv_idx_a = gpengine.GetPLVHandler().GetPVIndex(plv_type, node_idx);
-        const auto& plv_a = gpengine.GetPLV(plv_idx_a);
-        const auto plv_idx_b =
-            pre_gpengine.GetPLVHandler().GetPVIndex(plv_type, pre_node_idx);
-        const auto& plv_b = pre_gpengine.GetPLV(plv_idx_b);
-        if (plv_a.norm() != plv_b.norm()) {
+        const auto& plv_a = gpengine.GetPLVHandler().GetPV(plv_type, node_id);
+        const auto& plv_b = pre_gpengine.GetPLVHandler().GetPV(plv_type, pre_node_id);
+        if (PLVNodeHandler::MaxDifference(plv_a, plv_b) > 1e-3) {
           passes_plv_reindexed = false;
         }
       }
     }
-    // Check branch length reindexing properly.
-    auto pre_branch_lengths = pre_gpengine.GetBranchLengths();
-    auto branch_lengths = gpengine.GetBranchLengths();
-    for (const auto& bitset : pre_dag.GetSortedVectorOfEdgeBitsets()) {
-      const auto edge_idx = dag.GetEdgeIdx(bitset);
-      const auto pre_edge_idx = pre_dag.GetEdgeIdx(bitset);
-      const auto branch_a = branch_lengths[edge_idx.value_];
-      const auto branch_b = pre_branch_lengths[pre_edge_idx.value_];
-      if (branch_a != branch_b) {
+    // Check branch length reindexed properly.
+    auto& pre_branch_lengths = pre_gpengine.GetBranchLengthHandler();
+    auto& branch_lengths = gpengine.GetBranchLengthHandler();
+    for (const auto& [pre_edge_id, edge_id] : edge_map) {
+      const auto branch_a = branch_lengths.Get(edge_id);
+      const auto branch_b = pre_branch_lengths.Get(pre_edge_id);
+      if (abs(branch_a - branch_b) > 1e-3) {
         passes_gpcsp_reindexed = false;
       }
     }
@@ -1349,12 +1553,12 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
         GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmap_plv_A.data");
     GPInstanceRunGP(pre_inst);
     GPDAG& pre_dag = pre_inst.GetDAG();
-    GPEngine& pre_gpengine = *pre_inst.GetEngine();
+    GPEngine& pre_gpengine = pre_inst.GetGPEngine();
     // Instance that will have DAG and GPEngine modified.
     auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmap_plv_C.data");
     GPInstanceRunGP(inst);
     GPDAG& dag = inst.GetDAG();
-    GPEngine& gpengine = *inst.GetEngine();
+    GPEngine& gpengine = inst.GetGPEngine();
     inst.MakeNNIEngine();
     NNIEngine& nni_engine = inst.GetNNIEngine();
     // Run unmodified DAG with resized GPEngine test.
@@ -1471,7 +1675,6 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
   CHECK_MESSAGE(test_3,
                 "TEST_3: Resize and reindex GPEngine fails after multiple AddNodePair, "
                 "reindexed individually.");
-
   // TEST_4: Test resize and reindex GPEngine works when adding a many node pairs,
   // composing multiple modifications of DAG into single reindexing operation.
   auto test_4 = ResizeAndReindexGPEngineTest(100, 10, false, false);
@@ -1501,175 +1704,668 @@ TEST_CASE("GPEngine: Resize and Reindex GPEngine after AddNodePair") {
 // - Note: Input DAG is fully connected -- all legal edges between any two subsplits in
 // DAG are added.  This ensures that NNIs via truthDAG using AddNodePair and graftDAG
 // using Pre-NNI references have the same topology.
-TEST_CASE("NNI Engine: NNI Likelihoods") {
-  using NNIOpDoubleMap = std::map<NNIOperation, double>;
-  using NNIOpPLVMap = std::map<NNIOperation, EigenMatrixXd>;
-  // Fetch likelihood from inst.
+TEST_CASE("NNIEngine via GPEngine: Proposed NNI vs DAG NNI GPLikelihoods") {
+  // Fetch likelihood from instance.
   auto GPInstGetNNILikelihood = [](GPInstance& inst, const NNIOperation& nni) {
     const GPDAG& dag = inst.GetDAG();
     const auto edge_idx = dag.GetEdgeIdx(nni.parent_, nni.child_);
-
-    Assert(edge_idx < size_t(inst.GetEngine()->GetPerGPCSPLogLikelihoods().size()),
+    Assert(edge_idx < size_t(inst.GetGPEngine().GetPerGPCSPLogLikelihoods().size()),
            "Edge idx out of range for GPInstGetNNILikelihood.");
     const double likelihood =
-        inst.GetEngine()->GetPerGPCSPLogLikelihoods()[edge_idx.value_];
+        inst.GetGPEngine().GetPerGPCSPLogLikelihoods()[edge_idx.value_];
     return likelihood;
   };
 
-  const std::string fasta_path = "data/six_taxon_longer.fasta";
-  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
-  const bool do_optimize_branch_lengths = false;
+  auto CompareGPLikelihoodsOfProposedNNIsVsDAGNNIs =
+      [&GPInstGetNNILikelihood](const std::string& fasta_path,
+                                const std::string& newick_path,
+                                const bool do_optimize_new_branch_lengths = false,
+                                const bool do_fixed_branch_lengths = false) {
+        bool passes_test = true;
+        bool do_optimize_branch_lengths = !do_fixed_branch_lengths;
 
-  // Instance with unaltered DAG.
-  auto pre_inst =
-      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv_pre.data");
-  GPDAG& pre_dag = pre_inst.GetDAG();
-  GPEngine& pre_gpengine = *pre_inst.GetEngine();
-  pre_dag.FullyConnect();
-  pre_gpengine.GrowPLVs(pre_dag.NodeCountWithoutDAGRoot());
-  pre_gpengine.GrowGPCSPs(pre_dag.EdgeCountWithLeafSubsplits());
-  pre_gpengine.SetNullPrior();
-  pre_gpengine.SetBranchLengthsToDefault();
-  GPInstanceRunGP(pre_inst, do_optimize_branch_lengths, false);
-  NNIOpDoubleMap prenni_predag_likelihoods;
+        // Likelihoods.
+        NNIScoreMap prenni_predag_likelihoods;
+        NNIScoreMap prenni_graftdag_likelihoods;
+        NNIScoreMap nni_graftdag_likelihoods;
+        NNIScoreMap prenni_truthdag_likelihoods;
+        NNIScoreMap nni_truthdag_likelihoods;
+        // Branch Lengths.
+        BranchLengths predag_branchlengths;
+        NNIBranchLengthsMap graftdag_branchlengths;
+        NNIBranchLengthsMap truthdag_branchlengths;
+        // Branch Map.
+        BranchMap predag_branchmap;
+        NNIBranchMapMap graftdag_branchmaps;
+        NNIBranchMapMap truthdag_branchmaps;
 
-  // Instance that is used by grafted DAG.
-  auto graft_inst =
-      GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv_graft.data");
-  graft_inst.MakeNNIEngine();
-  GPEngine& graft_gpengine = *graft_inst.GetEngine();
-  NNIEngine& graft_nni_engine = graft_inst.GetNNIEngine();
-  GPDAG& graft_dag = graft_inst.GetDAG();
-  graft_dag.FullyConnect();
-  graft_gpengine.GrowPLVs(graft_dag.NodeCountWithoutDAGRoot());
-  graft_gpengine.GrowGPCSPs(graft_dag.EdgeCountWithLeafSubsplits());
-  graft_gpengine.SetNullPrior();
-  graft_gpengine.SetBranchLengthsToDefault();
-  GPInstanceRunGP(graft_inst, do_optimize_branch_lengths, false);
-  NNIOpDoubleMap prenni_graftdag_likelihoods;
-  NNIOpDoubleMap nni_graftdag_likelihoods;
-  NNIOpPLVMap nni_graftdag_sister, nni_graftdag_left, nni_graftdag_right,
-      nni_graftdag_child_p, nni_graftdag_parent_rhat, nni_graftdag_parent_rfocal;
+        // PreDAG Instance: unaltered DAG.
+        auto pre_inst =
+            GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv_pre.data");
+        pre_inst.MakeNNIEngine();
+        GPDAG& pre_dag = pre_inst.GetDAG();
+        GPEngine& pre_gpengine = pre_inst.GetGPEngine();
+        NNIEngine& nniengine = pre_inst.GetNNIEngine();
+        pre_dag.FullyConnect();
+        pre_gpengine.GrowPLVs(pre_dag.NodeCountWithoutDAGRoot());
+        pre_gpengine.GrowGPCSPs(pre_dag.EdgeCountWithLeafSubsplits());
+        pre_gpengine.SetNullPrior();
+        const bool do_init_branch_lengths = false;
+        GPInstanceRunGP(pre_inst,
+                        (do_optimize_branch_lengths || do_init_branch_lengths),
+                        do_fixed_branch_lengths, false);
 
-  // Instance that adds NNIs one at a time, then recomputes all PLVs and likelihoods.
-  // Used as ground truth.
-  NNIOpDoubleMap prenni_truthdag_likelihoods;
-  NNIOpDoubleMap nni_truthdag_likelihoods;
-  NNIOpPLVMap nni_truthdag_sister, nni_truthdag_left, nni_truthdag_right,
-      nni_truthdag_child_p, nni_truthdag_parent_rhat, nni_truthdag_parent_rfocal;
+        predag_branchmap =
+            pre_gpengine.GetBranchLengthHandler().BuildBranchLengthMap(pre_dag);
+        const auto pre_branches =
+            pre_gpengine.GetBranchLengths(0, pre_gpengine.GetPaddedGPCSPCount());
+        predag_branchlengths = pre_branches;
+        nniengine.SyncAdjacentNNIsWithDAG();
 
-  // Find all viable NNIs for DAG.
-  size_t nni_count;
-  auto nni_engine = NNIEngine(pre_dag, &pre_gpengine);
-  nni_engine.SyncAdjacentNNIsWithDAG();
-  std::map<NNIOperation, NNIOperation> nni_to_prenni_map;
-  // Find pre-NNI that created NNI.
-  for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
-    auto pre_nni = nni_engine.FindNNINeighborInDAG(nni);
-    nni_to_prenni_map.insert({nni, pre_nni});
-  }
+        // Map from pre-NNI to NNI that created NNI.
+        std::map<NNIOperation, NNIOperation> nni_to_prenni_map;
+        for (const auto& nni : nniengine.GetAdjacentNNIs()) {
+          auto pre_nni = nniengine.GetDAG().FindNNINeighborInDAG(nni);
+          nni_to_prenni_map.insert({nni, pre_nni});
+        }
 
-  // Compute likelihoods for preDAG.
-  nni_count = 0;
-  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
-    std::ignore = nni;
-    const auto likelihood = GPInstGetNNILikelihood(pre_inst, pre_nni);
-    prenni_predag_likelihoods.insert({pre_nni, likelihood});
-    nni_count++;
-  }
+        // Compute likelihoods for preDAG.
+        for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
+          std::ignore = nni;
+          const auto likelihood = GPInstGetNNILikelihood(pre_inst, pre_nni);
+          prenni_predag_likelihoods.insert({pre_nni, likelihood});
+        }
 
-  // Compute likelihoods for graftDAG.
-  graft_nni_engine.SyncAdjacentNNIsWithDAG();
-  graft_nni_engine.GraftAdjacentNNIsToDAG();
-  graft_nni_engine.GrowGPEngineForAdjacentNNILikelihoods(true, true);
-  GPOperationVector graft_ops;
-  nni_count = 0;
-  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
-    const auto [prenni_plv_idx, nni_plv_idx] =
-        graft_nni_engine.PassGPEngineDataFromPreNNIToPostNNIViaReference(
-            pre_nni, nni, nni_count, true);
-    std::ignore = prenni_plv_idx;
-    GPOperations::AppendGPOperations(
-        graft_ops,
-        graft_nni_engine.BuildGPOperationsForNNILikelihood(nni, nni_plv_idx));
-    nni_count++;
-  }
-  graft_gpengine.SetNullPrior();
-  graft_gpengine.SetBranchLengthsToDefault();
-  graft_gpengine.ProcessOperations(graft_ops);
-  const auto all_likelihoods =
-      graft_gpengine.GetPerGPCSPLogLikelihoods(0, graft_gpengine.GetPaddedGPCSPCount());
-  const auto all_branch_lengths =
-      graft_gpengine.GetBranchLengths(0, graft_gpengine.GetPaddedGPCSPCount());
-  nni_count = 0;
-  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
-    auto pre_nni_likelihood = GPInstGetNNILikelihood(graft_inst, pre_nni);
-    prenni_graftdag_likelihoods.insert({pre_nni, pre_nni_likelihood});
-    size_t edge_idx = graft_gpengine.GetSpareGPCSPIndex(nni_count);
-    double nni_likelihood = all_likelihoods[edge_idx];
-    nni_graftdag_likelihoods.insert({nni, nni_likelihood});
-    nni_count++;
-  }
+        // Instance that is used by graftDAG.
+        auto graft_inst =
+            GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv_graft.data");
+        graft_inst.MakeNNIEngine();
+        GPDAG& graft_dag = graft_inst.GetDAG();
+        GPEngine& graft_gpengine = graft_inst.GetGPEngine();
+        NNIEngine& graft_nniengine = graft_inst.GetNNIEngine();
+        graft_dag.FullyConnect();
+        graft_gpengine.GrowPLVs(graft_dag.NodeCountWithoutDAGRoot());
+        graft_gpengine.GrowGPCSPs(graft_dag.EdgeCountWithLeafSubsplits());
+        graft_gpengine.SetNullPrior();
+        graft_inst.GetNNIEngine().GetGPEvalEngine().SetOptimizeNewEdges(
+            do_optimize_new_branch_lengths);
+        graft_gpengine.GetBranchLengthHandler().ApplyBranchLengthMap(predag_branchmap,
+                                                                     graft_dag);
+        GPInstanceRunGP(graft_inst, false, do_fixed_branch_lengths, false);
 
-  // Compute likelihoods for truthDAG.
-  nni_count = 0;
-  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
-    auto truth_inst =
-        GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv_truth.data");
-    auto& truth_dag = truth_inst.GetDAG();
-    truth_dag.FullyConnect();
-    auto& truth_gpengine = *truth_inst.GetEngine();
-    auto mods = truth_dag.AddNodePair(nni);
-    auto node_reindexer_without_root =
-        mods.node_reindexer.RemoveNewIndex(truth_dag.GetDAGRootNodeId().value_);
-    truth_gpengine.GrowPLVs(truth_dag.NodeCountWithoutDAGRoot(),
-                            node_reindexer_without_root);
-    truth_gpengine.GrowGPCSPs(truth_dag.EdgeCountWithLeafSubsplits(),
-                              mods.edge_reindexer);
-    truth_gpengine.SetNullPrior();
-    truth_gpengine.SetBranchLengthsToDefault();
-    GPInstanceRunGP(truth_inst, do_optimize_branch_lengths, false);
-    auto pre_nni_likelihood = GPInstGetNNILikelihood(truth_inst, pre_nni);
-    prenni_truthdag_likelihoods.insert({pre_nni, pre_nni_likelihood});
-    auto nni_likelihood = GPInstGetNNILikelihood(truth_inst, nni);
-    nni_truthdag_likelihoods.insert({nni, nni_likelihood});
-    nni_count++;
-  }
+        // Compute likelihoods for graftDAG.
+        graft_nniengine.SyncAdjacentNNIsWithDAG();
+        graft_nniengine.GraftAdjacentNNIsToDAG();
+        graft_nniengine.GrowEvalEngineForAdjacentNNIs(true, true);
+        graft_gpengine.SetNullPrior();
+        graft_nniengine.GetGPEvalEngine().SetOptimizationMaxIteration(20);
+        for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
+          std::ignore = nni;
+          auto pre_nni_llh = GPInstGetNNILikelihood(graft_inst, pre_nni);
+          prenni_graftdag_likelihoods.insert({pre_nni, pre_nni_llh});
+        }
 
-  // Tests that GraftDAG produces same likelihood as TruthDAG
-  nni_count = 0;
-  for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
-    const auto nni_truth = nni_truthdag_likelihoods.at(nni);
-    const auto prenni_truth = prenni_truthdag_likelihoods.at(pre_nni);
-    const auto nni_graft = nni_graftdag_likelihoods.at(nni);
-    const auto prenni_graft = prenni_graftdag_likelihoods.at(pre_nni);
+        for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
+          // GraftDAG Instance.
+          const auto [graft_llh, _] =
+              graft_nniengine.GetGPEvalEngine().ComputeAdjacentNNILikelihood(nni);
+          std::ignore = _;
+          nni_graftdag_likelihoods.insert({nni, graft_llh});
+          const auto graft_branchmap =
+              graft_gpengine.GetBranchLengthHandler().BuildBranchLengthMap(graft_dag);
+          graftdag_branchmaps[nni] = graft_branchmap;
+          const auto graft_branches =
+              graft_gpengine.GetBranchLengths(0, graft_gpengine.GetPaddedGPCSPCount());
+          graftdag_branchlengths[nni] = graft_branches;
 
-    CHECK_MESSAGE(std::abs(nni_truth - nni_graft) < 1e-3,
-                  "NNI Likelihood from NNI Engine does not match truth.");
-    CHECK_MESSAGE(std::abs(prenni_truth - prenni_graft) < 1e-3,
-                  "Pre-NNI Likelihood from NNI Engine does not match truth.");
+          // TruthDAG Instance.
+          auto truth_inst = GPInstanceOfFiles(fasta_path, newick_path,
+                                              "_ignore/mmapped_pv_truth.data");
+          truth_inst.MakeNNIEngine();
+          auto& truth_dag = truth_inst.GetDAG();
+          auto& truth_nniengine = truth_inst.GetNNIEngine();
+          truth_dag.FullyConnect();
+          auto& truth_gpengine = truth_inst.GetGPEngine();
+          auto mods = truth_dag.AddNodePair(nni);
+          auto node_reindexer_without_root =
+              mods.node_reindexer.RemoveNewIndex(truth_dag.GetDAGRootNodeId().value_);
+          truth_gpengine.GrowPLVs(truth_dag.NodeCountWithoutDAGRoot(),
+                                  node_reindexer_without_root);
+          truth_gpengine.GrowGPCSPs(truth_dag.EdgeCountWithLeafSubsplits(),
+                                    mods.edge_reindexer);
+          truth_gpengine.SetNullPrior();
+          GPInstanceRunGP(truth_inst, false, do_fixed_branch_lengths, false);
+          truth_gpengine.GetBranchLengthHandler().ApplyBranchLengthMap(predag_branchmap,
+                                                                       truth_dag);
+          if (!do_fixed_branch_lengths) {
+            truth_nniengine.GetGPEvalEngine().CopyGPEngineDataAfterAddingNNI(pre_nni,
+                                                                             nni);
+          }
+          if (do_optimize_new_branch_lengths) {
+            truth_nniengine.GetGPEvalEngine().NNIBranchLengthOptimization(nni);
+          }
+          truth_inst.PopulatePLVs();
+          truth_inst.ComputeLikelihoods();
+          truth_inst.ComputeMarginalLikelihood();
 
-    nni_count++;
-  }
+          const auto truth_branchmap =
+              truth_gpengine.GetBranchLengthHandler().BuildBranchLengthMap(truth_dag);
+          truthdag_branchmaps[nni] = truth_branchmap;
+          const auto truth_branches =
+              truth_gpengine.GetBranchLengths(0, truth_gpengine.GetGPCSPCount());
+          truthdag_branchlengths[nni] = truth_branches;
+
+          auto pre_nni_llh = GPInstGetNNILikelihood(truth_inst, pre_nni);
+          prenni_truthdag_likelihoods.insert({pre_nni, pre_nni_llh});
+          auto truth_llh = GPInstGetNNILikelihood(truth_inst, nni);
+          nni_truthdag_likelihoods.insert({nni, truth_llh});
+        }
+
+        // Tests that pre-NNIs that created new NNIs were unaltered.
+        const double tolerance = 1e-3;
+        for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
+          std::ignore = nni;
+          const auto prenni_truth = prenni_truthdag_likelihoods.at(pre_nni);
+          const auto prenni_graft = prenni_graftdag_likelihoods.at(pre_nni);
+          const auto diff = std::abs(prenni_truth - prenni_graft);
+          const auto passes_current_test = (diff < tolerance);
+          passes_test = (passes_test & passes_current_test);
+          CHECK_MESSAGE(diff < tolerance,
+                        "Pre-NNI Likelihood from NNI Engine does not match truth.");
+        }
+        // Tests that adding new NNIs via GraftDAG produces same likelihood as
+        // TruthDAG.
+        for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
+          std::ignore = pre_nni;
+          const auto nni_truth = nni_truthdag_likelihoods.at(nni);
+          const auto nni_graft = nni_graftdag_likelihoods.at(nni);
+          const auto diff = std::abs(nni_truth - nni_graft);
+          const auto passes_current_test = (diff < tolerance);
+          if (!passes_current_test) {
+            std::cout << "FAIL " << nni_truth << " " << nni_graft << std::endl;
+          }
+          passes_test = (passes_test & passes_current_test);
+          CHECK_MESSAGE(diff < tolerance,
+                        "NNI Likelihood from NNI Engine does not match truth.");
+        }
+        return passes_test;
+      };
+
+  // Test_0
+  const std::string fasta_path_0 = "data/hello.fasta";
+  const std::string newick_path_0 = "data/hello_rooted_diff_branches.nwk";
+  CHECK_MESSAGE(CompareGPLikelihoodsOfProposedNNIsVsDAGNNIs(fasta_path_0, newick_path_0,
+                                                            false, true),
+                "Test_0a: Hello (with default branch lengths) failed.");
+  CHECK_MESSAGE(CompareGPLikelihoodsOfProposedNNIsVsDAGNNIs(fasta_path_0, newick_path_0,
+                                                            false, false),
+                "Test_0b: Hello (without optimized branch lengths) failed.");
+  CHECK_MESSAGE(CompareGPLikelihoodsOfProposedNNIsVsDAGNNIs(fasta_path_0, newick_path_0,
+                                                            true, false),
+                "Test_0c: Hello (with optimized branch lengths) failed.");
+
+  // Test_1
+  const std::string fasta_path_1 = "data/six_taxon_longer.fasta";
+  const std::string newick_path_1 = "data/six_taxon_rooted_simple.nwk";
+  CHECK_MESSAGE(CompareGPLikelihoodsOfProposedNNIsVsDAGNNIs(fasta_path_1, newick_path_1,
+                                                            false, true),
+                "Test_1a: Six Taxon (with default branch lengths) failed.");
+  CHECK_MESSAGE(CompareGPLikelihoodsOfProposedNNIsVsDAGNNIs(fasta_path_1, newick_path_1,
+                                                            false, false),
+                "Test_1b: Six Taxon (without optimized branch lengths) failed.");
+  CHECK_MESSAGE(CompareGPLikelihoodsOfProposedNNIsVsDAGNNIs(fasta_path_1, newick_path_1,
+                                                            false, false),
+                "Test_1c: Six Taxon (with optimized branch lengths) failed.");
 }
 
+// ** TPEngine tests **
+
+// Makes and returns an SBNInstance. Used for truth test vs TPEngine likelihoods.
+RootedSBNInstance MakeRootedSBNInstance(const std::string& newick_path,
+                                        const std::string& fasta_path,
+                                        PhyloModelSpecification& specification,
+                                        const bool init_time_trees = true,
+                                        const size_t thread_count = 1) {
+  RootedSBNInstance inst("demo_instance");
+  inst.ReadNewickFile(newick_path);
+  inst.ReadFastaFile(fasta_path);
+  inst.ProcessLoadedTrees();
+  // make engine and set phylo model parameters
+  inst.PrepareForPhyloLikelihood(specification, thread_count);
+  return inst;
+};
+
+// Build GPInstance with TPEngine and NNIEngine.
+GPInstance MakeGPInstanceWithTPEngine(const std::string& fasta_path,
+                                      const std::string& newick_path,
+                                      const std::string& mmap_path) {
+  // Make GPInstance and TPEngine.
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path, mmap_path);
+  auto& dag = inst.GetDAG();
+  inst.MakeGPEngine();
+  auto edge_indexer = dag.BuildEdgeIndexer();
+  inst.MakeTPEngine();
+  inst.MakeNNIEngine();
+  TPEngine& tpengine = inst.GetTPEngine();
+  tpengine.GetLikelihoodEvalEngine()
+      .GetDAGBranchHandler()
+      .GetBranchLengths()
+      .FillWithDefault();
+  // Set choice map according to subsplit method or pcsp method.
+  const bool use_subsplit_method = true;
+  inst.TPEngineSetChoiceMapByTakingFirst(use_subsplit_method);
+  tpengine.GetLikelihoodEvalEngine().Initialize();
+  tpengine.GetLikelihoodEvalEngine().ComputeScores();
+  return inst;
+}
+
+// Builds maps from tree_id->tree and edge_id->tree_id. TreeEdgeMap is determined by
+// extracting the TPEngine's choicemap's topology for the given edge.
+std::pair<TreeIdMap, TreeEdgeMap>
+BuildTreeIdMapAndTreeEdgeMapFromGPInstanceAndChoiceMap(
+    GPInstance& inst, bool apply_branch_lengths = false) {
+  TreeIdMap final_tree_id_map;
+  TreeIdMap tree_id_map;
+  TreeEdgeMap tree_edge_map;
+  const auto& tp_engine = inst.GetTPEngine();
+  for (EdgeId edge_id(0); edge_id < inst.GetDAG().EdgeCountWithLeafSubsplits();
+       edge_id++) {
+    auto tree = tp_engine.GetTopTreeWithEdge(edge_id);
+    tree_id_map.insert({TreeId(edge_id.value_), tree});
+  }
+  // Build tree_edge_map from tree_id_map.
+  for (const EdgeId edge_id : inst.GetDAG().LeafwardEdgeTraversalTrace(false)) {
+    if (inst.GetDAG().IsEdgeRoot(edge_id)) {
+      continue;
+    }
+    // Get tree topology from TPEngine's choice map.
+    auto topology = tp_engine.GetTopTreeTopologyWithEdge(edge_id);
+    bool is_found = false;
+    for (const auto& [tree_id, tree] : tree_id_map) {
+      if (topology == tree.Topology()) {
+        tree_edge_map[edge_id] = tree_id;
+        if (apply_branch_lengths) {
+          auto& branch_handler =
+              inst.GetTPEngine().GetLikelihoodEvalEngine().GetDAGBranchHandler();
+          auto final_tree = DAGBranchHandler::BuildTreeWithBranchLengthsFromTopology(
+              inst.GetDAG(), branch_handler, tree.Topology());
+          final_tree_id_map.insert({tree_id, final_tree});
+        } else {
+          final_tree_id_map.insert({tree_id, tree});
+        }
+        is_found = true;
+        break;
+      }
+    }
+    Assert(is_found, "Could not find TPEngine topology in TreeCollection.");
+  }
+  return std::make_pair(final_tree_id_map, tree_edge_map);
+}
+
+// Build map from an edge in DAG to its TPEngine score, where each edge corresponds to
+// "top tree" topology according to TPEngine's choicemap.
+EdgeScoreMap BuildEdgeTPScoreMapFromInstance(GPInstance& inst,
+                                             const TPEvalEngineType score_method) {
+  EdgeScoreMap tp_score_map;
+  auto& tpengine = inst.GetTPEngine();
+  // Populate tree vector and edge map.
+  const auto& [tree_id_map, tree_edge_map] =
+      BuildTreeIdMapAndTreeEdgeMapFromGPInstanceAndChoiceMap(inst);
+  std::ignore = tree_id_map;
+  // Compute likelihoods with TPEngine.
+  if (score_method == TPEvalEngineType::LikelihoodEvalEngine) {
+    auto& llh_engine = tpengine.GetLikelihoodEvalEngine();
+    // llh_engine.Initialize();
+    llh_engine.ComputeScores();
+    for (const auto& [edge_id, tree_id] : tree_edge_map) {
+      std::ignore = tree_id;
+      auto score = llh_engine.GetTopTreeScoreWithEdge(edge_id);
+      tp_score_map[edge_id] = score;
+    }
+  }
+  // Compute parsimonies with TPEngine.
+  else if (score_method == TPEvalEngineType::ParsimonyEvalEngine) {
+    auto& parsimony_engine = tpengine.GetParsimonyEvalEngine();
+    parsimony_engine.Initialize();
+    parsimony_engine.ComputeScores();
+    for (const auto& [edge_id, tree_id] : tree_edge_map) {
+      std::ignore = tree_id;
+      auto score = parsimony_engine.GetTopTreeScoreWithEdge(edge_id);
+      tp_score_map[edge_id] = score;
+    }
+  } else {
+    Failwith("Given TPEvalEngineType is not valid.");
+  }
+
+  return tp_score_map;
+};
+
+// Build map from an edge in the DAG to its TPEngine proposed NNI score, where each edge
+// is from the "Post-DAG", a DAG which already contains all proposed NNIs.
+EdgeScoreMap BuildProposedEdgeTPScoreMapFromInstance(
+    GPInstance& inst, GPInstance& post_inst, const TPEvalEngineType score_method) {
+  EdgeScoreMap tp_score_map;
+  auto& nni_engine = inst.GetNNIEngine();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+  auto& tpengine = inst.GetTPEngine();
+  auto& pre_dag = inst.GetDAG();
+  auto& post_dag = post_inst.GetDAG();
+  auto pre_node_map = SubsplitDAG::BuildNodeIdMapBetweenDAGs(pre_dag, post_dag);
+  auto pre_edge_map = SubsplitDAG::BuildEdgeIdMapBetweenDAGs(pre_dag, post_dag);
+  auto post_edge_map = SubsplitDAG::BuildEdgeIdMapBetweenDAGs(post_dag, pre_dag);
+
+  if (score_method == TPEvalEngineType::LikelihoodEvalEngine) {
+    auto& llh_engine = tpengine.GetLikelihoodEvalEngine();
+    llh_engine.Initialize();
+    llh_engine.ComputeScores();
+    auto best_edge_map =
+        tpengine.BuildBestEdgeMapOverNNIs(nni_engine.GetAdjacentNNIs());
+    for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
+      const auto pre_nni = tpengine.FindHighestPriorityNeighborNNIInDAG(nni);
+      const auto post_edge_id = post_dag.GetEdgeIdx(nni);
+      double score =
+          llh_engine.GetTopTreeScoreWithProposedNNI(nni, pre_nni, 0, best_edge_map);
+      tp_score_map[post_edge_id] = score;
+    }
+  }
+  if (score_method == TPEvalEngineType::ParsimonyEvalEngine) {
+    auto& parsimony_engine = tpengine.GetParsimonyEvalEngine();
+    parsimony_engine.Initialize();
+    parsimony_engine.ComputeScores();
+    for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
+      const auto& pre_nni = nni_engine.GetDAG().FindNNINeighborInDAG(nni);
+      double score = parsimony_engine.GetTopTreeScoreWithProposedNNI(nni, pre_nni);
+      auto edge_id = post_dag.GetEdgeIdx(nni);
+      tp_score_map[edge_id] = score;
+    }
+  }
+
+  return tp_score_map;
+}
+
+// Build map from an edge in DAG to its score, where each edge corresponds
+// to "top tree" topology according to TPEngine's choicemap, and its score is
+// computed using a BEAGLE likelihood engine.
+EdgeScoreMap BuildEdgeScoreMapFromInstanceUsingBeagleEngine(
+    GPInstance& inst, TreeIdMap& tree_id_map, TreeEdgeMap& tree_edge_map) {
+  EdgeScoreMap score_map;
+  const std::string newick_path = inst.GetNewickSourcePath();
+  const std::string fasta_path = inst.GetFastaSourcePath();
+  PhyloModelSpecification simple_spec{"JC69", "constant", "strict"};
+  auto rooted_sbn_inst = MakeRootedSBNInstance(newick_path, fasta_path, simple_spec);
+  auto& beagle_engine = *rooted_sbn_inst.GetEngine()->GetFirstFatBeagle();
+  for (auto& [edge_id, tree_id] : tree_edge_map) {
+    auto score = beagle_engine.UnrootedLogLikelihood(tree_id_map.at(tree_id));
+    score_map[edge_id] = score;
+  }
+
+  return score_map;
+}
+
+// Build map from an edge in DAG to its score, where each edge corresponds
+// to "top tree" topology according to TPEngine's choicemap, and its score is
+// computed using a Sankoff Handler parsimony engine.
+EdgeScoreMap BuildEdgeScoreMapFromInstanceUsingSankoffHandler(
+    GPInstance& inst, TreeIdMap& tree_id_map, TreeEdgeMap& tree_edge_map) {
+  EdgeScoreMap score_map;
+  auto site_pattern = inst.MakeSitePattern();
+  auto sankoff_engine = SankoffHandler(site_pattern, "_ignore/sankoff_handler.data");
+  for (auto& [edge_id, tree_id] : tree_edge_map) {
+    sankoff_engine.RunSankoff(tree_id_map.at(tree_id).Topology());
+    auto score = sankoff_engine.ParsimonyScore();
+    score_map[edge_id] = score;
+  }
+
+  return score_map;
+}
+
+bool TestCompareEdgeScoreMapToCorrectEdgeScoreMap(EdgeScoreMap& score_map_test,
+                                                  GPDAG& dag_test,
+                                                  EdgeScoreMap& score_map_correct,
+                                                  GPDAG& dag_correct,
+                                                  const bool is_quiet = true) {
+  bool is_equal = true;
+  std::stringstream dev_null;
+  std::ostream& os = (is_quiet ? dev_null : std::cerr);
+  const double tolerance = 1e-3;
+  for (const auto [edge_id_test, score_test] : score_map_test) {
+    double min_diff = abs(score_test - score_map_correct[edge_id_test]);
+    double min_score_correct = score_map_correct[edge_id_test];
+    EdgeId min_edge_id_correct = edge_id_test;
+    // Check all edge scores in correct map for corresponding match in test map.
+    for (const auto [edge_id_correct, score_correct] : score_map_correct) {
+      const auto diff = abs(score_test - score_correct);
+      if (min_diff > diff) {
+        min_diff = diff;
+        min_score_correct = score_correct;
+        min_edge_id_correct = edge_id_correct;
+      }
+    }
+    if (min_diff > tolerance) {
+      is_equal = false;
+      os << ":: NNI_SCORE_FAIL :: Error: " << min_diff << std::endl;
+      os << "CORRECT: " << min_edge_id_correct << ": " << min_score_correct
+         << std::endl;
+      os << "TEST: " << edge_id_test << ": " << score_test << std::endl;
+    }
+    CHECK_MESSAGE(min_diff <= tolerance,
+                  "Score of Proposed NNIs in smaller DAG without NNIs did not match "
+                  "score from larger DAG.");
+  }
+  if (!is_equal) {
+    os << "NOT_EQUAL: " << std::endl;
+    os << "CORRECT: " << score_map_correct << std::endl;
+    os << "TEST: " << score_map_test << std::endl;
+  }
+  return is_equal;
+}
+
+// Compares the TPEngine's top tree scores for each given edge in the DAG.
+// Tests likelihoods by comparing to the likelihoods from BEAGLE engine.
+// Tests parsimonies by comparing to the parsimonies from Sankoff handler.
+bool CheckAllTPEngineScores(GPInstance& inst, const bool test_likelihood = true,
+                            const bool test_parsimony = true,
+                            const bool test_pvs = false, const bool is_quiet = true) {
+  bool test_passes = true;
+  std::stringstream dev_null;
+  std::ostream& os = (is_quiet ? dev_null : std::cerr);
+  const double tolerance = 1e5;
+
+  auto& dag = inst.GetDAG();
+  auto& gpengine = inst.GetGPEngine();
+  auto& tpengine = inst.GetTPEngine();
+  auto site_pattern = inst.MakeSitePattern();
+  const auto& [tree_id_map, tree_edge_map] =
+      BuildTreeIdMapAndTreeEdgeMapFromGPInstanceAndChoiceMap(inst);
+
+  // Check that scores from TPEngine match the correct scores from the individual
+  // trees. Note, if the test only contains a single tree, then this amounts to
+  // checking if each edge's likelihood matches that one tree.
+  auto TestMatchingScores = [&os, is_quiet, &tree_edge_map, &test_passes, &tolerance](
+                                const std::string& test_name,
+                                TreeScoreMap& correct_tree_score_map,
+                                EdgeScoreMap& tp_score_map) {
+    for (const auto& [edge_id, tree_id] : tree_edge_map) {
+      const auto tp_score = tp_score_map[edge_id];
+      const auto correct_score = correct_tree_score_map[tree_id];
+      double min_error = abs(tp_score - correct_score);
+      CHECK_LT(min_error, tolerance);
+      if (min_error > tolerance) {
+        test_passes = false;
+        os << "::" << test_name << "_FAILURE:: EdgeId: " << edge_id
+           << ", TP_Score: " << tp_score_map[edge_id]
+           << ", Correct_Score: " << correct_tree_score_map[tree_id]
+           << ", Error: " << min_error << std::endl;
+      }
+    }
+    if (!test_passes) {
+      os << "TestMatchingScore: " << tp_score_map.size() << std::endl;
+      os << "TP_Scores: " << tp_score_map.size() << " " << tp_score_map << std::endl;
+      os << "Correct_Score: " << correct_tree_score_map.size() << " "
+         << correct_tree_score_map << std::endl;
+    }
+  };
+
+  // Run tests comparing TPEngine for computing likelihood vs. true tree
+  // likelihood computed via BEAGLE Engine.
+  if (test_likelihood) {
+    TreeScoreMap correct_tree_likelihood_map;
+    EdgeScoreMap tp_likelihood_map;
+    // BEAGLE Engine for correct tree likelihoods.
+    const std::string newick_path = inst.GetNewickSourcePath();
+    const std::string fasta_path = inst.GetFastaSourcePath();
+    PhyloModelSpecification simple_spec{"JC69", "constant", "strict"};
+    auto rooted_sbn_inst = MakeRootedSBNInstance(newick_path, fasta_path, simple_spec);
+    auto& beagle_engine = *rooted_sbn_inst.GetEngine()->GetFirstFatBeagle();
+    for (const auto& [tree_id, tree] : tree_id_map) {
+      auto correct_likelihood = beagle_engine.UnrootedLogLikelihood(tree);
+      correct_tree_likelihood_map[tree_id] = correct_likelihood;
+    }
+    // Check against likelihoods with TPEngine.
+    for (const auto& [edge_id, tree_id] : tree_edge_map) {
+      std::ignore = tree_id;
+      auto likelihood =
+          tpengine.GetLikelihoodEvalEngine().GetTopTreeScoreWithEdge(edge_id);
+      tp_likelihood_map[edge_id] = likelihood;
+    }
+    // Check that scores from TPEngine match the correct scores from the individual
+    // trees computed by BEAGLE engine.
+    TestMatchingScores(std::string("LIKELIHOODS"), correct_tree_likelihood_map,
+                       tp_likelihood_map);
+    // Compare GP and TP partial vectors. Note, this test is only relevant with single
+    // trees, as GP and TP PVs are only equal in the case of single tree DAGs.
+    if (test_likelihood && test_pvs) {
+      auto& tp_pvs = tpengine.GetLikelihoodPVs();
+      auto& gp_pvs = gpengine.GetPLVHandler();
+      if (test_pvs) {
+        test_passes = (tp_pvs.GetCount() == gp_pvs.GetCount());
+        for (const auto& pv_type : PLVTypeEnum::Iterator()) {
+          for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits();
+               edge_id++) {
+            NodeId child_id = dag.GetDAGEdge(edge_id).GetChild();
+            bool is_equal =
+                (tp_pvs.GetPV(pv_type, edge_id) == gp_pvs.GetPV(pv_type, child_id));
+            if (!is_equal) {
+              test_passes = false;
+              os << "!!! *** NOT EQUAL ***" << std::endl;
+              os << "TP_" << tp_pvs.ToString(pv_type, edge_id);
+              os << "GP_" << gp_pvs.ToString(pv_type, child_id);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Run tests comparing TPEngine infastructure for computing parsimony over DAG via
+  // Sankoff vs. true trees via Sankoff Handler.  (Sankoff Handler tests are already
+  // been tested on full trees in these doctests using trees with known parsimonies,
+  // so we can trust it to generate correct tree parsimonies for testing the
+  // TPEngine.)
+  if (test_parsimony) {
+    TreeScoreMap correct_tree_parsimony_map;
+    EdgeScoreMap tp_parsimony_map;
+    // Sankoff Handler for correct tree parsimonies.
+    SankoffHandler sankoff_engine(site_pattern, "_ignore/mmapped_pv.sankoff.data");
+    for (const auto& [tree_id, tree] : tree_id_map) {
+      sankoff_engine.RunSankoff(tree.Topology());
+      auto correct_parsimony = sankoff_engine.ParsimonyScore(tree.Topology()->Id());
+      correct_tree_parsimony_map[tree_id] = correct_parsimony;
+    }
+    // Compute parsimonies with TPEngine.
+    for (const auto& [edge_id, tree_id] : tree_edge_map) {
+      std::ignore = tree_id;
+      auto parsimony =
+          tpengine.GetParsimonyEvalEngine().GetTopTreeScoreWithEdge(edge_id);
+      tp_parsimony_map[edge_id] = parsimony;
+    }
+    // Check that scores from TPEngine match the correct scores from the individual
+    // trees computed by Sankoff Handler.
+    TestMatchingScores(std::string("PARSIMONY"), correct_tree_parsimony_map,
+                       tp_parsimony_map);
+    // Compare GP and TP partial vectors. Note, this test is only relevant with single
+    // trees, as GP and TP PVs are only equal in the case of single tree DAGs.
+    if (test_pvs) {
+      auto& tp_pvs = tpengine.GetParsimonyPVs();
+      auto& sankoff_pvs = sankoff_engine.GetPSVHandler();
+      for (const auto& pv_type : PSVTypeEnum::Iterator()) {
+        for (EdgeId edge_id = 0; edge_id < tp_pvs.GetCount(); edge_id++) {
+          NodeId child_id = dag.GetDAGEdge(edge_id).GetChild();
+          bool is_equal =
+              (tp_pvs.GetPV(pv_type, edge_id) == sankoff_pvs.GetPV(pv_type, child_id));
+          if (!is_equal) {
+            test_passes = false;
+            os << "!!! *** NOT EQUAL ***" << std::endl;
+            os << "TP_" << tp_pvs.ToString(pv_type, edge_id);
+            os << "SANKOFF_" << sankoff_pvs.ToString(pv_type, child_id);
+          }
+        }
+      }
+    }
+  }
+
+  return test_passes;
+}
+
+// Compare TPEngine's top tree score (likelihood or parsimony) in DAG for each edge to
+// the collection of verified true tree scores that come from the collection of trees
+// that created the DAG. In the single tree cases, can compare the partial vectors of
+// verified method vs TPEngine method. Note: The input newick file does not need to
+// contain every possible tree expressible in the DAG.  The input tree collection only
+// needs to be ordered in terms of score.  The DAG edges will then each be assigned
+// according to the best/first tree containing the given edge.
+bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
+                              const std::string& newick_path,
+                              const bool test_likelihood = true,
+                              const bool test_parsimony = true,
+                              const bool test_pvs = false, const bool is_quiet = true) {
+  // Make GPInstance and TPEngine.
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv.data");
+  inst.MakeDAG();
+  inst.MakeGPEngine();
+  inst.MakeTPEngine();
+  auto& dag = inst.GetDAG();
+  auto& gpengine = inst.GetGPEngine();
+  auto& tpengine = inst.GetTPEngine();
+  auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
+  auto edge_indexer = dag.BuildEdgeIndexer();
+  // Compute likelihoods with GPEngine.
+  inst.EstimateBranchLengths(0.00001, 100, true);
+  inst.PopulatePLVs();
+  inst.ComputeLikelihoods();
+  // Perform computations for TPEngine.
+  tpengine.SetBranchLengths(gpengine.GetBranchLengths());
+  tpengine.SetChoiceMapByTakingFirst(tree_collection, edge_indexer);
+  if (test_likelihood) {
+    tpengine.GetLikelihoodEvalEngine().Initialize();
+    tpengine.GetLikelihoodEvalEngine().ComputeScores();
+  }
+  if (test_parsimony) {
+    tpengine.GetParsimonyEvalEngine().Initialize();
+    tpengine.GetParsimonyEvalEngine().ComputeScores();
+  }
+  // Test resulting scores against those by computed by individual trees.
+  return CheckAllTPEngineScores(inst, test_likelihood, test_parsimony, test_pvs,
+                                is_quiet);
+};
+
 // Initializes a ChoiceMap for a DAG. Then uses a naive method that picks the first
-// listed neighbor for each parent, sister, left and right child. Tests that results is
-// a valid selection (all edges have mapped valid edge choices, except for root and
-// leaves).
+// listed neighbor for each parent, sister, left and right child. Tests that results
+// is a valid selection (all edges have mapped valid edge choices, except for root
+// and leaves).
 // - Tests that invalid TreeMask are found invalid.
 // - Tests that invalid TreeMasks causes Topology to throw exception.
-// - Creates TreeMask and Node Topology for each edge in DAG, a list of edge ids which
-// represent a embedded tree in the DAG.
+// - Creates TreeMask and Node Topology for each edge in DAG, a list of edge ids
+// which represent a embedded tree in the DAG.
 //    - Tests that TreeMask is valid state for the DAG.
 //    - Tests that resulting Topology exists in the DAG.
-TEST_CASE("Top-Pruning: ChoiceMap") {
+TEST_CASE("TPEngine: ChoiceMap") {
   const std::string fasta_path = "data/six_taxon_longer.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
   auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv.data");
   auto dag = inst.GetDAG();
 
-  auto choice_map = ChoiceMap(dag);
+  auto choice_map = TPChoiceMap(dag);
   CHECK_FALSE_MESSAGE(choice_map.SelectionIsValid(),
                       "ChoiceMap selection was incorrectly found valid.");
   choice_map.SelectFirstEdge();
@@ -1677,7 +2373,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
                 "ChoiceMap selection was found invalid.");
 
   // Test for fail states for invalid TreeMasks.
-  ChoiceMap::TreeMask tree_mask;
+  TPChoiceMap::TreeMask tree_mask;
   Node::NodePtr topology;
   NodeIdVector tree_nodes;
   bool quiet_errors = true;
@@ -1788,6 +2484,7 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
       Node::Leaf(5, 6));
   CHECK_FALSE_MESSAGE(dag.ContainsTopology(topology, quiet_errors),
                       "Incorrectly found subtree topology in DAG.");
+
   // Test TreeMasks created from all DAG edges result in valid tree.
   for (EdgeId edge_id = EdgeId(0); edge_id < dag.EdgeCountWithLeafSubsplits();
        edge_id++) {
@@ -1802,10 +2499,10 @@ TEST_CASE("Top-Pruning: ChoiceMap") {
   }
 }
 
-// Initializes the TPEngine choice map and retrieves the top tree for each edge in DAG.
-// Then finds all trees contained in the DAG and verifies that each top tree produced is
-// a tree from the DAG.
-TEST_CASE("Top-Pruning: Initialize TPEngine and ChoiceMap") {
+// Initializes the TPEngine choice map and retrieves the top tree for each edge in
+// DAG. Then finds all trees contained in the DAG and verifies that each top tree
+// produced is a tree from the DAG.
+TEST_CASE("TPEngine: Initialize TPEngine and ChoiceMap") {
   const std::string fasta_path = "data/six_taxon.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
 
@@ -1814,8 +2511,8 @@ TEST_CASE("Top-Pruning: Initialize TPEngine and ChoiceMap") {
   inst.EstimateBranchLengths(0.00001, 100, true);
   auto all_trees = inst.GenerateCompleteRootedTreeCollection();
   SitePattern site_pattern = inst.MakeSitePattern();
-  TPEngine tpengine = TPEngine(dag, site_pattern, "_ignore/mmapped_pv.tpl.data", false,
-                               "_ignore/mmapped_pv.tpp.data", false);
+  TPEngine tpengine = TPEngine(dag, site_pattern, "_ignore/mmapped_pv.tpl.data",
+                               "_ignore/mmapped_pv.tpp.data");
   tpengine.InitializeChoiceMap();
 
   auto TopologyExistsInTreeCollection = [](const Node::NodePtr tree_topology,
@@ -1835,216 +2532,15 @@ TEST_CASE("Top-Pruning: Initialize TPEngine and ChoiceMap") {
   }
 }
 
-RootedSBNInstance MakeRootedSBNInstance(const std::string& newick_path,
-                                        const std::string& fasta_path,
-                                        PhyloModelSpecification& specification,
-                                        const bool init_time_trees = true,
-                                        const size_t thread_count = 1) {
-  RootedSBNInstance inst("demo_instance");
-  inst.ReadNewickFile(newick_path);
-  inst.ReadFastaFile(fasta_path);
-  inst.ProcessLoadedTrees();
-  // make engine and set phylo model parameters
-  inst.PrepareForPhyloLikelihood(specification, thread_count);
-  return inst;
-};
-
-std::ostream& operator<<(std::ostream& os, EigenConstMatrixXdRef mx) {
-  for (Eigen::Index i = 0; i < mx.rows(); i++) {
-    for (Eigen::Index j = 0; j < mx.cols(); j++) {
-      os << "[" << i << "," << j << "]: " << mx(i, j) << "\t";
-    }
-    os << std::endl;
-  }
-  return os;
-}
-
-// Compare TPEngine's top tree score (likelihood or parsimony) in DAG for each edge to
-// the collection of verified true tree scores that come from the collection of trees
-// that created the DAG. In the single tree cases, can compare the partial vectors of
-// verified method vs TPEngine method. Note: The input newick file does not need to
-// contain every possible tree expressible in the DAG.  The input tree collection only
-// needs to be ordered in terms of score.  The DAG edges will then each be assigned
-// according to the best/first tree containing the given edge.
-bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
-                              const std::string& newick_path,
-                              const bool test_likelihood = true,
-                              const bool test_parsimony = true,
-                              const bool test_pvs = false, const bool is_quiet = true) {
-  bool test_passes = true;
-  std::stringstream dev_null;
-  std::ostream& os = (is_quiet ? dev_null : std::cerr);
-  // Map of trees and likelihoods / parsimony.
-  std::vector<RootedTree> tree_vector;
-  std::unordered_map<EdgeId, size_t> tree_id_map;
-  // Make GPInstance and TPEngine.
-  auto inst = GPInstanceOfFiles(fasta_path, newick_path, "_ignore/mmapped_pv.gp.data");
-  inst.MakeEngine();
-  GPEngine& gpengine = *inst.GetEngine();
-  GPDAG& dag = inst.GetDAG();
-  inst.EstimateBranchLengths(0.00001, 100, true);
-  // Compute likelihoods with GPEngine.
-  inst.PopulatePLVs();
-  inst.ComputeLikelihoods();
-  auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
-  auto edge_indexer = dag.BuildEdgeIndexer();
-  SitePattern site_pattern = inst.MakeSitePattern();
-  inst.MakeTPEngine("_ignore/mmapped_pv.tpl.data", true, "_ignore/mmapped_pv.tpp.data",
-                    true);
-
-  // Make TPEngine.
-  TPEngine& tpengine = inst.GetTPEngine();
-  tpengine.SetBranchLengths(gpengine.GetBranchLengths());
-  tpengine.SetChoiceMapByTakingFirst(tree_collection, edge_indexer);
-  const auto tree_source = tpengine.GetTreeSource();
-  // Populate tree vector.
-  for (const auto tree : tree_collection) {
-    tree_vector.push_back(tree);
-  }
-  for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
-    if (!dag.IsEdgeRoot(edge_id)) {
-      tree_id_map[edge_id] = tree_source[edge_id.value_];
-    }
-  }
-
-  // Check that scores from TPEngine match the correct scores from the individual trees.
-  // Note, if the test only contains a single tree, then this amounts to checking if
-  // each edge's likelihood matches that one tree.
-  auto TestMatchingScores =
-      [is_quiet, &tree_id_map, &test_passes](
-          const std::string& test_name,
-          std::unordered_map<size_t, double>& correct_tree_score_map,
-          std::unordered_map<EdgeId, double>& tp_score_map) {
-        for (const auto& [edge_id, tree_id] : tree_id_map) {
-          const auto tp_score = tp_score_map[edge_id];
-          const auto correct_score = correct_tree_score_map[tree_id];
-          double min_error = abs(tp_score - correct_score);
-          if (min_error > 1e-3) {
-            test_passes = false;
-            std::cout << "::" << test_name << "_FAILURE:: EdgeId: " << edge_id
-                      << ", TP_Score: " << tp_score_map[edge_id]
-                      << ", Correct_Score: " << correct_tree_score_map[tree_id]
-                      << ", Error: " << min_error << std::endl;
-          }
-        }
-        if (!test_passes) {
-          std::cout << "TestMatchingScore: " << tp_score_map.size() << std::endl;
-          std::cout << "TP_Scores: " << tp_score_map.size() << " " << tp_score_map
-                    << std::endl;
-          std::cout << "Correct_Score: " << correct_tree_score_map.size() << " "
-                    << correct_tree_score_map << std::endl;
-        }
-      };
-
-  // Run tests comparing TPEngine infastructure for computing likelihood vs. true tree
-  // via BEAGLE Engine.
-  if (test_likelihood) {
-    std::unordered_map<size_t, double> correct_tree_likelihood_map;
-    std::unordered_map<EdgeId, double> tp_likelihood_map;
-    // BEAGLE Engine for correct tree likelihoods.
-    PhyloModelSpecification simple_spec{"JC69", "constant", "strict"};
-    auto rooted_sbn_inst = MakeRootedSBNInstance(newick_path, fasta_path, simple_spec);
-    auto& beagle_engine = *rooted_sbn_inst.GetEngine()->GetFirstFatBeagle();
-    size_t tree_id = 0;
-    for (const auto& tree : tree_collection) {
-      auto correct_likelihood = beagle_engine.UnrootedLogLikelihood(tree);
-      correct_tree_likelihood_map[tree_id] = correct_likelihood;
-      tree_id++;
-    }
-    // Compute likelihoods with TPEngine.
-    tpengine.InitializeLikelihood();
-    tpengine.ComputeLikelihoods();
-    for (const auto& [edge_id, tree_id] : tree_id_map) {
-      std::ignore = tree_id;
-      auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
-      tp_likelihood_map[edge_id] = likelihood;
-    }
-    // Check that scores from TPEngine match the correct scores from the individual
-    // trees computed by BEAGLE engine.
-    TestMatchingScores(std::string("LIKELIHOODS"), correct_tree_likelihood_map,
-                       tp_likelihood_map);
-    // Compare GP and TP partial vectors. Note, this test is only relevant with single
-    // trees, as GP and TP PVs are only equal in the case of single tree DAGs.
-    auto& tp_pvs = tpengine.GetLikelihoodPVs();
-    auto& gp_pvs = gpengine.GetPLVHandler();
-    if (test_pvs) {
-      for (const auto& pv_type : PLVTypeEnum::Iterator()) {
-        for (EdgeId edge_id = 0; edge_id < tp_pvs.GetCount(); edge_id++) {
-          NodeId child_id = dag.GetDAGEdge(edge_id).GetChild();
-          bool is_equal =
-              (tp_pvs.GetPV(pv_type, edge_id) == gp_pvs.GetPV(pv_type, child_id));
-          if (!is_equal) {
-            test_passes = false;
-            os << "!!! *** NOT EQUAL ***" << std::endl;
-            os << "TP_" << tp_pvs.ToString(pv_type, edge_id);
-            os << "GP_" << gp_pvs.ToString(pv_type, child_id);
-          }
-        }
-      }
-    }
-  }
-
-  // Run tests comparing TPEngine infastructure for computing parsimony over DAG via
-  // Sankoff vs. true trees via Sankoff Handler.  (Sankoff Handler tests are already
-  // been tested on full trees in these doctests using trees with known parsimonies, so
-  // we can trust it to generate correct tree parsimonies for testing the TPEngine.)
-  if (test_parsimony) {
-    std::unordered_map<size_t, double> correct_tree_parsimony_map;
-    std::unordered_map<EdgeId, double> tp_parsimony_map;
-    // Sankoff Handler for correct tree parsimonies.
-    SankoffHandler sankoff_engine(site_pattern, "_ignore.mmapped_pv.sankoff.data");
-    size_t tree_id = 0;
-    for (const auto& tree : tree_collection) {
-      sankoff_engine.RunSankoff(tree.Topology());
-      auto correct_parsimony = sankoff_engine.ParsimonyScore(tree.Topology()->Id());
-      correct_tree_parsimony_map[tree_id] = correct_parsimony;
-      tree_id++;
-    }
-    // Compute parsimonies with TPEngine.
-    tpengine.InitializeParsimony();
-    tpengine.ComputeParsimonies();
-    for (const auto& [edge_id, tree_id] : tree_id_map) {
-      std::ignore = tree_id;
-      auto parsimony = tpengine.GetTopTreeParsimonyWithEdge(edge_id);
-      tp_parsimony_map[edge_id] = parsimony;
-    }
-    // Check that scores from TPEngine match the correct scores from the individual
-    // trees computed by Sankoff Handler.
-    TestMatchingScores(std::string("PARSIMONY"), correct_tree_parsimony_map,
-                       tp_parsimony_map);
-    // Compare GP and TP partial vectors. Note, this test is only relevant with single
-    // trees, as GP and TP PVs are only equal in the case of single tree DAGs.
-    auto& tp_pvs = tpengine.GetParsimonyPVs();
-    auto& sankoff_pvs = sankoff_engine.GetPSVHandler();
-    if (test_pvs) {
-      for (const auto& pv_type : PSVTypeEnum::Iterator()) {
-        for (EdgeId edge_id = 0; edge_id < tp_pvs.GetCount(); edge_id++) {
-          NodeId child_id = dag.GetDAGEdge(edge_id).GetChild();
-          bool is_equal =
-              (tp_pvs.GetPV(pv_type, edge_id) == sankoff_pvs.GetPV(pv_type, child_id));
-          if (!is_equal) {
-            test_passes = false;
-            os << "!!! *** NOT EQUAL ***" << std::endl;
-            os << "TP_" << tp_pvs.ToString(pv_type, edge_id);
-            os << "SANKOFF_" << sankoff_pvs.ToString(pv_type, child_id);
-          }
-        }
-      }
-    }
-  }
-
-  return test_passes;
-};
-
 // Builds a TPEngine instance from a set of input trees. Then populates TPEngine's PVs
 // and computes the top tree likelihood for each edge in the DAG.  Compares these
 // likelihoods against the tree's likelihood computed using BEAGLE engine.
-TEST_CASE("Top-Pruning: Likelihoods") {
+TEST_CASE("TPEngine: TPEngine Likelihood scores vs BEAGLE Likelihood scores") {
   auto TestTPLikelihoods = [](const std::string& fasta_path,
                               const std::string& newick_path,
                               const bool test_pvs) -> bool {
     return TestTPEngineScoresAndPVs(fasta_path, newick_path, true, false, test_pvs,
-                                    true);
+                                    false);
   };
   // Input files.
   const std::string fasta_hello = "data/hello_short.fasta";
@@ -2064,13 +2560,14 @@ TEST_CASE("Top-Pruning: Likelihoods") {
 // Builds a TPEngine instance from a set of input trees. Then populates TPEngine's PVs
 // and computes the top tree parsimony for each edge in the DAG.  Compares these
 // likelihoods against the tree's likelihood computed using the `sankoff handler`.
-TEST_CASE("Top-Pruning: Parsimony") {
+TEST_CASE("TPEngine: TPEngine Parsimony scores vs SankoffHandler Parsimony scores") {
   auto TestTPParsimonies = [](const std::string& fasta_path,
                               const std::string& newick_path,
                               const bool test_pvs) -> bool {
     return TestTPEngineScoresAndPVs(fasta_path, newick_path, false, true, test_pvs,
-                                    true);
+                                    false);
   };
+  // Input files.
   const std::string fasta_ex = "data/parsimony_leaf_seqs.fasta";
   const std::string newick_ex = "data/parsimony_tree_0_score_75.0.nwk";
   const std::string fasta_hello = "data/hello_short.fasta";
@@ -2080,7 +2577,6 @@ TEST_CASE("Top-Pruning: Parsimony") {
   const std::string newick_six_simple = "data/six_taxon_rooted_simple.nwk";
   const std::string fasta_five = "data/five_taxon.fasta";
   const std::string newick_five_more = "data/five_taxon_rooted_more.nwk";
-
   // Test cases.
   const auto test_0 = TestTPParsimonies(fasta_ex, newick_ex, false);
   CHECK_MESSAGE(test_0, "Parsimony Test Case Tree failed.");
@@ -2090,154 +2586,266 @@ TEST_CASE("Top-Pruning: Parsimony") {
   CHECK_MESSAGE(test_2, "Six Taxa Tree failed.");
   const auto test_3 = TestTPParsimonies(fasta_six, newick_six_simple, false);
   CHECK_MESSAGE(test_3, "Six Taxa Multi Tree failed.");
-  const auto test_4 = TestTPParsimonies(fasta_six, newick_six_simple, false);
+  const auto test_4 = TestTPParsimonies(fasta_five, newick_five_more, false);
   CHECK_MESSAGE(test_4, "Five Taxa Many Trees failed.");
 }
 
-// Runs an instance of TPEngine for two DAGs: DAG_1, a simple DAG, and DAG_2, a DAG
+// Creates an instance of TPEngine for two DAGs: DAG_1, a simple DAG, and DAG_2, a DAG
 // formed from DAG_1 plus all of its adjacent NNIs. Both DAGs PVs are populated and
 // their edge TP likelihoods are computed.  Then DAG_1's adjacent proposed NNI
 // likelihoods are computed using only PVs from the pre-NNI already contained in
 // DAG_1.
 // Finally, we compare the results of the proposed NNIs from DAG_1 with the known
 // likelihoods of the actual NNIs already contained in DAG_2. This verifies we
-// generate the same result from adding NNIs to the DAG and updating as we do from using
-// the pre-NNI computation.
-TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
-  // Build GPInstance with TPEngine and NNIEngine.
-  auto MakeTPEngine = [](const std::string& fasta_path, const std::string& newick_path,
-                         const std::string& tpl_mmap_path,
-                         const std::string& tpp_mmap_path,
-                         const std::string& gp_mmap_path) {
-    // Make GPInstance and TPEngine.
-    auto inst = GPInstanceOfFiles(fasta_path, newick_path, gp_mmap_path);
-    auto& dag = inst.GetDAG();
-    inst.MakeEngine();
-    GPEngine& gpengine = *inst.GetEngine();
-    gpengine.SetBranchLengthsToDefault();
-    auto edge_indexer = dag.BuildEdgeIndexer();
-    inst.MakeTPEngine(tpl_mmap_path, true, tpp_mmap_path, true);
-    inst.MakeNNIEngine();
-    TPEngine& tpengine = inst.GetTPEngine();
-    tpengine.SetBranchLengths(gpengine.GetBranchLengths());
-    auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
-    tpengine.SetChoiceMapByTakingFirst(tree_collection, edge_indexer);
-    tpengine.InitializeLikelihood();
-    tpengine.ComputeLikelihoods();
-    return inst;
-  };
-  // Build map from likelihood to edge in DAG.
-  auto BuildEdgeLikelihoodMap = [](GPInstance& inst) {
-    std::vector<RootedTree> tree_vector;
-    std::unordered_map<EdgeId, size_t> tree_id_map;
-    std::unordered_map<EdgeId, double> tp_likelihood_map;
+// generate the same result from adding NNIs to the DAG and updating as we do from
+// using the pre-NNI computation.
+TEST_CASE("NNIEngine via TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
+  // Build NNIEngine from DAG that does not include NNIs. Compute likelihoods.
+  auto CompareProposedNNIvsDAGNNIvsBEAGLE =
+      [](const std::string& fasta_path, const std::string& newick_path,
+         const bool optimize_branch_lengths = true,
+         const bool take_first_branch_lengths = true) {
+        bool test_passes = true;
+        const double tol = 1e-5;
+        // Instance for computing proposed scores.
+        auto inst_1 = MakeGPInstanceWithTPEngine(fasta_path, newick_path,
+                                                 "_ignore/mmapped_pv.1.data");
+        // Instance for computing internal DAG scores for comparison.
+        auto inst_2 = MakeGPInstanceWithTPEngine(fasta_path, newick_path,
+                                                 "_ignore/mmapped_pv.2.data");
 
-    auto& dag = inst.GetDAG();
-    auto& tpengine = inst.GetTPEngine();
-    auto tree_collection = inst.GenerateCompleteRootedTreeCollection();
-    const auto tree_source = tpengine.GetTreeSource();
-    // Populate tree vector and edge map.
-    for (const auto tree : tree_collection) {
-      tree_vector.push_back(tree);
-    }
-    for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
-      tree_id_map[edge_id] = tree_source[edge_id.value_];
-    }
-    // Compute likelihoods with TPEngine.
-    for (const auto& [edge_id, tree_id] : tree_id_map) {
-      std::ignore = tree_id;
-      auto likelihood = tpengine.GetTopTreeLikelihoodWithEdge(edge_id);
-      tp_likelihood_map[edge_id] = likelihood;
-    }
-    return tp_likelihood_map;
-  };
-  // Compare likelihoods from TPEngine. Every edge in DAG_1 must yield a tree likelihood
-  // shared by at least one edge in DAG_2.
-  auto EqualityTestLikelihoodsFromTPEngine =
-      [](std::unordered_map<EdgeId, double>& likelihood_map_test, GPDAG& dag_test,
-         std::unordered_map<EdgeId, double>& likelihood_map_correct, GPDAG& dag_correct,
-         const bool is_quiet = true) {
-        bool is_equal = true;
-        std::stringstream dev_null;
-        std::ostream& os = (is_quiet ? dev_null : std::cerr);
-        for (const auto [edge_id_test, likelihood_test] : likelihood_map_test) {
-          double min_diff = std::numeric_limits<double>::max();
-          double min_likelihood_correct = std::numeric_limits<double>::max();
-          EdgeId min_edge_id_correct = EdgeId(NoId);
-          for (const auto [edge_id_correct, likelihood_correct] :
-               likelihood_map_correct) {
-            const auto diff = abs(likelihood_test - likelihood_correct);
-            if (min_diff > diff) {
-              min_diff = diff;
-              min_likelihood_correct = likelihood_correct;
-              min_edge_id_correct = edge_id_correct;
-            }
-          }
-          if (min_diff > 1e-3) {
-            is_equal = false;
-            os << ":: NNI_LIKELIHOOD_FAIL :: Error: " << min_diff << std::endl;
-            os << "Correct: " << min_edge_id_correct << ": " << min_likelihood_correct
-               << std::endl;
-            os << "Test: " << edge_id_test << ": " << likelihood_test << std::endl;
-          }
-          CHECK_MESSAGE(min_diff <= 1e-3,
-                        "Likelihood of NNI in smaller DAG without NNIs did not match "
-                        "likelihood from larger DAG.");
+        auto& dag_2 = inst_2.GetDAG();
+        auto& nni_engine_2 = inst_2.GetNNIEngine();
+        auto& tpengine_2 = inst_2.GetTPEngine();
+
+        // Add all NNIs to post-DAG.
+        if (take_first_branch_lengths) {
+          inst_1.TPEngineSetBranchLengthsByTakingFirst();
+          inst_2.TPEngineSetBranchLengthsByTakingFirst();
+          inst_1.TPEngineSetChoiceMapByTakingFirst();
+          inst_2.TPEngineSetChoiceMapByTakingFirst();
         }
-        return is_equal;
+        inst_1.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizeNewEdges(
+            optimize_branch_lengths);
+        inst_2.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizeNewEdges(
+            optimize_branch_lengths);
+
+        nni_engine_2.SetNoFilter(true);
+        nni_engine_2.RunInit(true);
+        CHECK_MESSAGE(tpengine_2.GetChoiceMap().SelectionIsValid(false),
+                      "ChoiceMap is not valid before adding NNIs.");
+        nni_engine_2.RunMainLoop(true);
+        nni_engine_2.RunPostLoop(true);
+        CHECK_MESSAGE(tpengine_2.GetChoiceMap().SelectionIsValid(false),
+                      "ChoiceMap is not valid after adding NNIs.");
+
+        // Report all NNIs.
+        auto& nni_engine = inst_1.GetNNIEngine();
+        nni_engine.SyncAdjacentNNIsWithDAG();
+
+        // Likelihoods and Parsimonies of expanded DAG with proposed NNIs.
+        auto likelihoods_post = BuildEdgeTPScoreMapFromInstance(
+            inst_2, TPEvalEngineType::LikelihoodEvalEngine);
+        // Likelihoods and Parsimonies of base DAG.
+        auto likelihoods_pre = BuildEdgeTPScoreMapFromInstance(
+            inst_1, TPEvalEngineType::LikelihoodEvalEngine);
+
+        // Likelihoods and Parsimonies of DAG's adjacent proposed NNIs.
+        auto likelihoods_proposed = BuildProposedEdgeTPScoreMapFromInstance(
+            inst_1, inst_2, TPEvalEngineType::LikelihoodEvalEngine);
+
+        // Compute top tree scores using BEAGLE and Sankoff engines.
+        auto [tree_id_map, edge_id_map] =
+            BuildTreeIdMapAndTreeEdgeMapFromGPInstanceAndChoiceMap(inst_2, true);
+        auto beagle = BuildEdgeScoreMapFromInstanceUsingBeagleEngine(
+            inst_2, tree_id_map, edge_id_map);
+
+        std::unordered_map<TreeId, std::string> newick_id_map;
+        for (const auto& [tree_id, tree] : tree_id_map) {
+          newick_id_map[tree_id] = dag_2.TreeToNewickTree(tree);
+        }
+
+        // Compare likelihoods by edge_id.
+        for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
+          auto edge_id = dag_2.GetEdgeIdx(nni);
+          auto score_proposed = likelihoods_proposed[edge_id];
+          auto score_dag = likelihoods_post[edge_id];
+          auto score_tree = beagle[edge_id];
+          bool matches_score_dag = (abs(score_proposed - score_dag) < tol);
+          bool matches_score_tree = (abs(score_proposed - score_tree) < tol);
+          bool matches_dag_tree = (abs(score_dag - score_tree) < tol);
+
+          test_passes &= matches_score_dag;
+          test_passes &= matches_score_tree;
+          test_passes &= matches_dag_tree;
+        }
+
+        return test_passes;
       };
 
-  // Build NNIEngine from DAG that does not include NNIs.
-  const std::string fasta_path_1 = "data/six_taxon.fasta";
-  const std::string newick_path_1 = "data/six_taxon_rooted_simple.nwk";
-  auto inst_1 =
-      MakeTPEngine(fasta_path_1, newick_path_1, "_ignore/mmapped_pv.tpl.1.data",
-                   "_ignore/mmapped_pv.tpp.1.data", "_ignore/mmapped_pv.gp.1.data");
-  auto likelihoods_1 = BuildEdgeLikelihoodMap(inst_1);
-  auto dag_1 = inst_1.GetDAG();
+  const std::string fasta_path_0 = "data/hello.fasta";
+  const std::string newick_path_0 = "data/hello_rooted_diff_branches.nwk";
+  CHECK_MESSAGE(
+      CompareProposedNNIvsDAGNNIvsBEAGLE(fasta_path_0, newick_path_0, false, false),
+      "Test_0a: hello (with fixed branch lengths) failed.");
+  CHECK_MESSAGE(
+      CompareProposedNNIvsDAGNNIvsBEAGLE(fasta_path_0, newick_path_0, false, true),
+      "Test_0b: hello (without optimized branch lengths) failed.");
+  CHECK_MESSAGE(
+      CompareProposedNNIvsDAGNNIvsBEAGLE(fasta_path_0, newick_path_0, true, true),
+      "Test_0c: hello (with optimized branch lengths) failed.");
 
-  // Build NNIEngine from DAG that includes NNIs.
-  const std::string fasta_path_2 = "data/six_taxon.fasta";
-  const std::string newick_path_2 = "data/six_taxon_rooted_simple_plus_adj_nnis.nwk";
-  auto inst_2 =
-      MakeTPEngine(fasta_path_2, newick_path_2, "_ignore/mmapped_pv.tpl.2.data",
-                   "_ignore/mmapped_pv.tpp.2.data", "_ignore/mmapped_pv.gp.2.data");
-  auto likelihoods_2 = BuildEdgeLikelihoodMap(inst_2);
-  auto dag_2 = inst_2.GetDAG();
-
-  // Get adjacent NNIs and compute proposed likelihoods.
-  std::unordered_map<EdgeId, double> proposed_likelihoods_1;
-  auto& tpengine_1 = inst_1.GetTPEngine();
-  auto& nni_engine = inst_1.GetNNIEngine();
-  nni_engine.SyncAdjacentNNIsWithDAG();
-  for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
-    const auto& pre_nni = nni_engine.FindNNINeighborInDAG(nni);
-    double likelihood = tpengine_1.GetTopTreeLikelihoodWithProposedNNI(nni, pre_nni);
-    auto parent_id = dag_2.GetDAGNodeId(nni.GetParent());
-    auto child_id = dag_2.GetDAGNodeId(nni.GetChild());
-    auto edge_id = dag_2.GetEdgeIdx(parent_id, child_id);
-    proposed_likelihoods_1[edge_id] = likelihood;
-  }
-
-  auto test_contained_nnis = EqualityTestLikelihoodsFromTPEngine(
-      likelihoods_1, dag_1, likelihoods_2, dag_2, false);
-  CHECK_MESSAGE(test_contained_nnis,
-                "Likelihoods from contained NNIs in smaller DAG do not match "
-                "likelihoods in larger DAG.");
-  auto test_proposed_nnis = EqualityTestLikelihoodsFromTPEngine(
-      proposed_likelihoods_1, dag_1, likelihoods_2, dag_2, false);
-  CHECK_MESSAGE(test_proposed_nnis,
-                "Likelihoods from proposed NNIs in smaller DAG do not match "
-                "likelihoods in larger DAG.");
+  const std::string fasta_path_1 = "data/five_taxon.fasta";
+  const std::string newick_path_1 = "data/five_taxon_trees_3_4_diff_branches.nwk";
+  CHECK_MESSAGE(
+      CompareProposedNNIvsDAGNNIvsBEAGLE(fasta_path_1, newick_path_1, false, false),
+      "Test_1a: five_taxon_simple (with fixed branch lengths) failed.");
+  CHECK_MESSAGE(
+      CompareProposedNNIvsDAGNNIvsBEAGLE(fasta_path_1, newick_path_1, false, true),
+      "Test_1b: five_taxon_simple (without optimized branch lengths) failed.");
+  CHECK_MESSAGE(CompareProposedNNIvsDAGNNIvsBEAGLE(fasta_path_1, newick_path_1, true),
+                "Test_1c: five_taxon_simple (with optimized branch lengths) failed.");
 }
 
-// Runs an instance of TPEngine for two DAGs: DAG_1, a simple DAG, and DAG_2, a DAG
-// formed from DAG_1 plus all of its adjacent NNIs. Both DAGs PVs are populated and
-// their edge TP likelihoods are computed.  Then DAG_1's adjacent proposed NNI
-// likelihoods are computed using only PVs from the pre-NNI already contained in
-// DAG_1.
-// Finally, we compare the results of the proposed NNIs from DAG_1 with the known
-// likelihoods of the actual NNIs already contained in DAG_2. This verifies we
-// generate the same result from adding NNIs to the DAG and updating as we do from using
-// the pre-NNI computation.
-TEST_CASE("Top-Pruning: Parsimonies with Proposed NNIs") {}
+// Builds TPEngine from single tree DAG, then run branch length optimization.
+// Compares results to GPEngine's branch length optimized on the same tree (GP is
+// equivalent to traditional likelihood in the single tree case).
+TEST_CASE("TPEngine: Branch Length Optimization") {
+  GPInstance inst = MakeHelloGPInstance();
+  EigenVectorXd seed_branch_lengths(5);
+  seed_branch_lengths << 0, 0.22, 0.113, 0.15, 0.1;
+  OptimizationMethod method = OptimizationMethod::BrentOptimization;
+  bool is_quiet = true;
+  bool track_intermediate_values = false;
+  // GPEngine
+  GPEngine& gp_engine = inst.GetGPEngine();
+  inst.GetGPEngine().SetBranchLengths(seed_branch_lengths);
+  inst.EstimateBranchLengths(0.0001, 100, is_quiet, track_intermediate_values, method);
+  // TPEngine
+  inst.MakeTPEngine();
+  TPEngine& tp_engine = inst.GetTPEngine();
+  tp_engine.GetLikelihoodEvalEngine().GetDAGBranchHandler().SetBranchLengths(
+      seed_branch_lengths);
+  inst.EstimateTPBranchLengths(0.0001, 100, is_quiet, track_intermediate_values,
+                               method);
+  // Capture Results.
+  const auto& gpengine_data = gp_engine.GetBranchLengths();
+  const auto& tpengine_data = tp_engine.GetBranchLengths();
+  // Compare TPEngine results to GPEngine results.
+  double tol = 1e-3;
+  double max_diff = 0;
+  for (size_t i = 0; i < size_t(gpengine_data.size()); i++) {
+    if (double diff = abs(tpengine_data[i] - gpengine_data[i]); max_diff < diff) {
+      max_diff = diff;
+    }
+  }
+
+  // Report results.
+  if (max_diff > tol) {
+    std::cout << "=== TEST FAILED ===" << std::endl;
+    std::cout << "max_diff: " << max_diff << std::endl;
+    std::cout << "tpengine_lengths:" << tpengine_data << std::endl;
+    std::cout << "gpengine_lengths:" << gpengine_data << std::endl;
+    std::cout << "tp_likelihood " << tp_engine.GetTopTreeLikelihood(EdgeId(1))
+              << std::endl;
+    std::cout << "gp_likelihood: " << gp_engine.GetLogMarginalLikelihood() << std::endl;
+    auto gp_lengths = gp_engine.GetBranchLengths();
+    tp_engine.GetLikelihoodEvalEngine().GetDAGBranchHandler().SetBranchLengths(
+        gp_lengths);
+    tp_engine.InitializeScores();
+    tp_engine.ComputeScores();
+    std::cout << "tp_likelihood_using_gp: " << tp_engine.GetTopTreeLikelihoods()
+              << std::endl;
+  }
+  CHECK_LT(max_diff, tol);
+}
+
+// ** DAGData tests **
+
+// Builds DAGData vectors from the nodes and edges of a DAG. Checks that data is
+// resized and reindexed properly after modifying reference DAG.
+TEST_CASE("DAGData: Resize and Reindex") {
+  std::string fasta_path = "data/five_taxon.fasta";
+  std::string newick_path = "data/five_taxon_rooted.nwk";
+  std::string mmap_path_1 = "_ignore/mmap.1.data";
+  std::string mmap_path_2 = "_ignore/mmap.2.data";
+
+  GPInstance pre_inst =
+      MakeGPInstanceWithTPEngine(fasta_path, newick_path, mmap_path_1);
+  auto& pre_dag = pre_inst.GetDAG();
+  auto& pre_llh_engine =
+      pre_inst.GetNNIEngine().GetTPEvalEngine().GetTPEngine().GetLikelihoodEvalEngine();
+  pre_llh_engine.Initialize();
+
+  GPInstance inst = MakeGPInstanceWithTPEngine(fasta_path, newick_path, mmap_path_2);
+  auto& dag = inst.GetDAG();
+  auto& llh_engine =
+      inst.GetNNIEngine().GetTPEvalEngine().GetTPEngine().GetLikelihoodEvalEngine();
+  llh_engine.Initialize();
+
+  int default_val = -1;
+  DAGNodeIntData node_data(dag, default_val);
+  DAGEdgeIntData edge_data(dag, default_val);
+
+  // Resize to fit dag.
+  size_t spare_count = 10;
+  node_data.Resize(dag.NodeCount(), spare_count, std::nullopt, std::nullopt);
+  edge_data.Resize(dag.EdgeCountWithLeafSubsplits(), spare_count, std::nullopt,
+                   std::nullopt);
+
+  // Check that counts match the size of the DAG.
+  CHECK_EQ(node_data.GetCount(), dag.NodeCount());
+  CHECK_EQ(edge_data.GetCount(), dag.EdgeCountWithLeafSubsplits());
+  // Check that padded size matches spare_count.
+  CHECK_EQ(node_data.GetSpareCount(), spare_count);
+  CHECK_EQ(edge_data.GetSpareCount(), spare_count);
+  // Check that new data is filled with default.
+  for (NodeId i = node_data.GetCount(); i < node_data.GetPaddedCount(); i++) {
+    CHECK_EQ(node_data(i), default_val);
+  }
+
+  // Check that no exceptions thrown while accessing elements in range.
+  // Assign each to their index value.
+  for (NodeId i = 0; i < node_data.GetPaddedCount(); i++) {
+    CHECK_NOTHROW(node_data(NodeId(i)) = i.value_);
+  }
+  for (EdgeId i = 0; i < edge_data.GetPaddedCount(); i++) {
+    CHECK_NOTHROW(edge_data(EdgeId(i)) = i.value_);
+  }
+
+  // Grow DAG by adding all adjacent NNIs.
+  DAGNodeIntData pre_node_data(node_data);
+  DAGEdgeIntData pre_edge_data(edge_data);
+  inst.MakeNNIEngine();
+  auto& nni_engine = inst.GetNNIEngine();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+  auto node_reindexer = Reindexer::IdentityReindexer(dag.NodeCount());
+  auto edge_reindexer = Reindexer::IdentityReindexer(dag.EdgeCountWithLeafSubsplits());
+  for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
+    auto mods = dag.AddNodePair(nni);
+    node_reindexer = node_reindexer.ComposeWith(mods.node_reindexer);
+    edge_reindexer = edge_reindexer.ComposeWith(mods.edge_reindexer);
+  }
+  // Resize and Reindex the data vectors.
+  node_data.Resize(dag, std::nullopt, node_reindexer);
+  edge_data.Resize(dag, std::nullopt, edge_reindexer);
+  // Grow engine for data.
+  llh_engine.GrowEdgeData(edge_reindexer.size(), edge_reindexer);
+
+  // Check that counts match the size of the DAG.
+  CHECK_EQ(node_data.GetCount(), dag.NodeCount());
+  CHECK_EQ(edge_data.GetCount(), dag.EdgeCountWithLeafSubsplits());
+  // Check that padded size matches spare_count.
+  CHECK_EQ(node_data.GetSpareCount(), spare_count);
+  CHECK_EQ(edge_data.GetSpareCount(), spare_count);
+
+  // Check that node and edge data was reindexed properly.
+  const auto& [node_map, edge_map] =
+      BuildNodeAndEdgeMapsFromPreDAGToPostDAG(pre_dag, dag);
+  for (const auto& [pre_id, post_id] : node_map) {
+    CHECK_EQ(node_data(post_id), pre_node_data(pre_id));
+  }
+  for (const auto& [pre_id, post_id] : edge_map) {
+    CHECK_EQ(edge_data(post_id), pre_edge_data(pre_id));
+  }
+}

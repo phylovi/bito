@@ -47,7 +47,7 @@ class Reindexer {
   size_t GetNewIndexByOldIndex(const size_t old_index) const {
     return data_.at(old_index);
   }
-  // Find mapped old/input index corresponding to new/output index.
+  // Find mapped old/input index corresponding to new/output index. Via linear search.
   size_t GetOldIndexByNewIndex(const size_t new_index) const {
     return size_t(std::find(GetData().begin(), GetData().end(), new_index) -
                   GetData().begin());

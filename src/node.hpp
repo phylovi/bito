@@ -70,6 +70,10 @@ class Node {
   using RootedPCSPFun =
       std::function<void(const Node*, const Node*, const Node*, const Node*)>;
   using TwoNodeFun = std::function<void(const Node*, const Node*)>;
+  // A function that takes the following node arguments: grandparent, parent, sister,
+  // child0, child1.
+  using NeighborFun = std::function<void(const Node*, const Node*, const Node*,
+                                         const Node*, const Node*)>;
 
  public:
   explicit Node(uint32_t leaf_id, Bitset leaves);
@@ -84,6 +88,17 @@ class Node {
   size_t Hash() const { return hash_; }
   bool IsLeaf() const { return children_.empty(); }
   const NodePtrVec& Children() const { return children_; }
+
+  // Creates a subsplit bitset from given node. Requires tree must be bifurcating.
+  Bitset BuildSubsplit() const;
+  // Creates an edge PCSP from edge below given clade's side. Requires tree must be
+  // bifurcating.
+  Bitset BuildPCSP(const SubsplitClade clade) const;
+
+  // Creates a vector of all subsplit bitsets for all nodes in topology.
+  std::vector<Bitset> BuildVectorOfSubsplits() const;
+  // Creates a vector of all PCSP bitsets for all edges in topology.
+  std::vector<Bitset> BuildVectorOfPCSPs() const;
 
   bool operator==(const Node& other) const;
 
@@ -139,13 +154,20 @@ class Node {
   // indices. It's the verb, not the nationality.
   TagSizeMap Polish();
 
+  NodePtr Deroot();
+
+  // ** I/O
+
   // Return a vector such that the ith component describes the indices for nodes
   // above the current node.
   SizeVectorVector IdsAbove() const;
+  // Build a map from each node's id to its parent node. For rootward traversal of tree.
+  std::unordered_map<size_t, const Node*> BuildParentNodeMap() const;
 
+  // Output as Newick string, with option for branch lengths.
   std::string Newick(std::function<std::string(const Node*)> node_labeler,
                      const DoubleVectorOption& branch_lengths = std::nullopt) const;
-
+  // Output as Newick string, with options for branch lengths and labels.
   std::string Newick(const DoubleVectorOption& branch_lengths = std::nullopt,
                      const TagStringMapOption& node_labels = std::nullopt,
                      bool show_tags = false) const;
@@ -155,11 +177,15 @@ class Node {
   // root has the largest id.
   std::vector<size_t> ParentIdVector() const;
 
-  NodePtr Deroot();
+  // Outputs this node's id, adjacent leaf ids, and leaf clade bitset to string.
+  std::string NodeIdAndLeavesToString() const;
+  // Outputs `NodeIdAndLeavesToString` for all entire topology below this node.
+  std::string NodeIdAndLeavesToStringForTopology() const;
 
   // ** Static methods
-  // Constructs a leaf node with given id, and an empty taxon clade by default for its
-  // leaves.
+
+  // Constructs a leaf node with given id, and an empty taxon clade by default for
+  // its leaves.
   static NodePtr Leaf(uint32_t id, Bitset leaves = Bitset(0));
   // Constructs a leaf node with given id, and a single taxon clade with a length of
   // taxon_count for its leaves.
@@ -194,11 +220,6 @@ class Node {
   // c is the amount by which we rotate.
   // https://stackoverflow.com/a/776523/467327
   static size_t SORotate(size_t n, uint32_t c);
-
-  // Outputs this node's id, adjacent leaf ids, and leaf clade bitset to string.
-  std::string NodeIdAndLeavesToString() const;
-  // Outputs `NodeIdAndLeavesToString` for all entire topology below this node.
-  std::string NodeIdAndLeavesToStringForTopology() const;
 
  private:
   // Vector of direct child descendants of node in tree topology.

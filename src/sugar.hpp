@@ -54,6 +54,10 @@ using BoolVector = std::vector<bool>;
 using DoubleVector = std::vector<double>;
 using DoubleVectorPair = std::pair<DoubleVector, DoubleVector>;
 
+template <typename T>
+using Tuple2 = std::tuple<T, T>;
+template <typename T>
+using Tuple3 = std::tuple<T, T, T>;
 template <size_t L>
 using CStringArray = std::array<const char *, L>;
 

@@ -265,7 +265,7 @@ class GenericSBNInstance {
       const std::optional<size_t> &tree_count_option = std::nullopt) {
     const EngineSpecification engine_specification{thread_count, beagle_flag_vector,
                                                    use_tip_states};
-    MakeEngine(engine_specification, model_specification);
+    MakeGPEngine(engine_specification, model_specification);
     ResizePhyloModelParams(tree_count_option);
   }
 
@@ -377,8 +377,8 @@ class GenericSBNInstance {
   inline void SetSeed(uint64_t seed) { mersenne_twister_.SetSeed(seed); }
 
   // Make a likelihood engine with the given specification.
-  void MakeEngine(const EngineSpecification &engine_specification,
-                  const PhyloModelSpecification &model_specification) {
+  void MakeGPEngine(const EngineSpecification &engine_specification,
+                    const PhyloModelSpecification &model_specification) {
     CheckSequencesAndTreesLoaded();
     SitePattern site_pattern(alignment_, TagTaxonMap());
     engine_ = std::make_unique<Engine>(engine_specification, model_specification,

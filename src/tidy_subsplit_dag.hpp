@@ -22,6 +22,17 @@ class TidySubsplitDAG : public SubsplitDAG {
   // Initialize tidy vectors for after initialization or modification of DAG.
   void ReinitializeTidyVectors();
 
+  // Add an adjacent node pair to the DAG.
+  virtual ModificationResult AddNodePair(const NNIOperation &nni) {
+    return AddNodePair(nni.GetParent(), nni.GetChild());
+  }
+  virtual ModificationResult AddNodePair(const Bitset &parent_subsplit,
+                                         const Bitset &child_subsplit) {
+    auto mods = SubsplitDAG::AddNodePair(parent_subsplit, child_subsplit);
+    ReinitializeTidyVectors();
+    return mods;
+  }
+
   // What nodes are above or below the specified node? We consider a node to be both
   // above and below itself (this just happens to be handy for the implementation).
   EigenArrayXb BelowNode(NodeId node_id);

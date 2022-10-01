@@ -35,6 +35,9 @@ class NNIOperation {
     is_focal_clade_on_right_ = (clade == SubsplitClade::Right);
   };
 
+  NNIOperation(const std::string &parent, const std::string child)
+      : NNIOperation(Bitset(parent), Bitset(child)) {}
+
   static const inline size_t NNICladeCount = 4;
   enum class NNIClade : size_t { ParentFocal, ParentSister, ChildLeft, ChildRight };
   using NNICladeEnum = EnumWrapper<NNIClade, size_t, NNICladeCount,
@@ -107,7 +110,6 @@ class NNIOperation {
   SubsplitClade WhichCladeIsFocal() const {
     return (is_focal_clade_on_right_ ? SubsplitClade::Right : SubsplitClade::Left);
   }
-
   SubsplitClade WhichCladeIsSister() const {
     return (is_focal_clade_on_right_ ? SubsplitClade::Left : SubsplitClade::Right);
   }
@@ -125,9 +127,12 @@ class NNIOperation {
 
   // ** Miscellaneous
 
+  size_t Hash() const { return GetParent().Hash() & GetChild().Hash(); }
+
   // Finds mappings of sister, left child, and right child clades from Pre-NNI to NNI.
   static NNICladeArray BuildNNICladeMapFromPreNNIToNNI(const NNIOperation &pre_nni,
                                                        const NNIOperation &post_nni);
+
   std::pair<Direction, SubsplitClade> GetDirectionAndSubsplitCladeByNNIClade(
       const NNIClade &nni_clade) {
     switch (nni_clade) {
@@ -147,6 +152,7 @@ class NNIOperation {
   // - Parent and Child are adjacent Subsplits.
   bool IsValid();
 
+  std::string ToString() const;
   friend std::ostream &operator<<(std::ostream &os, const NNIOperation &nni);
 
   Bitset parent_;
@@ -157,10 +163,26 @@ class NNIOperation {
 
 using NNISet = std::set<NNIOperation>;
 using NNIVector = std::vector<NNIOperation>;
+using NNIClade = NNIOperation::NNIClade;
+using NNICladeEnum = NNIOperation::NNICladeEnum;
+
+// This is how we inject a hash routine and a custom comparator into the std
+// namespace so that we can use unordered_map and unordered_set.
+// https://en.cppreference.com/w/cpp/container/unordered_map
+namespace std {
+template <>
+struct hash<NNIOperation> {
+  size_t operator()(const NNIOperation &x) const { return x.Hash(); }
+};
+template <>
+struct equal_to<NNIOperation> {
+  bool operator()(const NNIOperation &lhs, const NNIOperation &rhs) const {
+    return lhs == rhs;
+  }
+};
+}  // namespace std
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
-
-using NNIClade = NNIOperation::NNIClade;
 
 // See tree diagram at:
 // https://user-images.githubusercontent.com/31897211/136849710-de0dcbe3-dc2b-42b7-b3de-dd9b1a60aaf4.gif

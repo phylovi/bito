@@ -45,16 +45,23 @@ struct GenericId {
 
   // Compare to its own type.
   int Compare(const SelfType &other) const { return Compare(other.value_); }
-  bool operator==(const SelfType &other) const { return Compare(other) == 0; }
-  bool operator!=(const SelfType &other) const { return Compare(other) != 0; }
-  bool operator>(const SelfType &other) const { return Compare(other) > 0; }
-  bool operator<(const SelfType &other) const { return Compare(other) < 0; }
+  bool operator==(const SelfType &other) const { return value_ == other.value_; }
+  bool operator!=(const SelfType &other) const { return value_ != other.value_; }
+  bool operator>(const SelfType &other) const { return value_ > other.value_; }
+  bool operator<(const SelfType &other) const { return value_ < other.value_; }
+  bool operator>=(const SelfType &other) const { return value_ >= other.value_; }
+  bool operator<=(const SelfType &other) const { return value_ <= other.value_; }
   // Compare to its primitive.
-  int Compare(const UnderlyingType &other) const { return value_ - other; }
-  bool operator==(const UnderlyingType &other) const { return Compare(other) == 0; }
-  bool operator!=(const UnderlyingType &other) const { return Compare(other) != 0; }
-  bool operator>(const UnderlyingType &other) const { return Compare(other) > 0; }
-  bool operator<(const UnderlyingType &other) const { return Compare(other) < 0; }
+  int Compare(const UnderlyingType &other) const {
+    return (value_ > other) ? value_ - other : other - value_;
+  }
+  bool operator==(const UnderlyingType &other) const { return value_ == other; }
+  bool operator!=(const UnderlyingType &other) const { return value_ != other; }
+  bool operator>(const UnderlyingType &other) const { return value_ > other; }
+  bool operator<(const UnderlyingType &other) const { return value_ < other; }
+  bool operator>=(const UnderlyingType &other) const { return value_ >= other; }
+  bool operator<=(const UnderlyingType &other) const { return value_ <= other; }
+
   // Increment
   SelfType &operator++() {
     value_++;
@@ -133,7 +140,6 @@ class EnumArray {
   }
 
   void fill(DataType fill_value) { array_.fill(fill_value); }
-
   int size() const { return array_.size(); }
 
  private:

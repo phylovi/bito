@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "gp_engine.hpp"
+#include "gp_operation.hpp"
 #include "quartet_hybrid_request.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"
@@ -34,6 +34,10 @@ class GPDAG : public TidySubsplitDAG {
   [[nodiscard]] GPOperationVector ApproximateBranchLengthOptimization() const;
   // Schedule branch length, updating PLVs so they are always up to date.
   [[nodiscard]] GPOperationVector BranchLengthOptimization();
+  // Schedule branch length, only updating explicit node_ids, updating PLVs so they are
+  // always up to date.
+  [[nodiscard]] GPOperationVector BranchLengthOptimization(
+      const std::set<EdgeId> &edges_to_optimize);
   // Compute likelihood values l(s|t) for each child subsplit s by visiting
   // parent subsplit t and generating Likelihood operations for each PCSP s|t.
   // Compute likelihood values l(s) for each rootsplit s by calling
@@ -77,5 +81,6 @@ class GPDAG : public TidySubsplitDAG {
                                    GPOperationVector &operations) const;
   void OptimizeBranchLengthUpdatePHat(NodeId node_id, NodeId child_node_id,
                                       bool is_edge_on_left,
-                                      GPOperationVector &operations) const;
+                                      GPOperationVector &operations,
+                                      bool do_optimize_branch_length = true) const;
 };

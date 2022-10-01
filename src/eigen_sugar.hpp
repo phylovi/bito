@@ -57,6 +57,21 @@ inline EigenVectorXd EigenVectorXdOfStdVectorDouble(std::vector<double> &v) {
   return Eigen::Map<EigenVectorXd, Eigen::Unaligned>(v.data(), v.size());
 }
 
+template <typename EigenMatrix>
+std::string EigenMatrixToString(const EigenMatrix &mx) {
+  std::stringstream os;
+  os << "[";
+  for (int i = 0; i < mx.rows(); i++) {
+    os << "[";
+    for (int j = 0; j < mx.cols(); j++) {
+      os << mx(i, j) << ((j < mx.cols() - 1) ? ", " : "");
+    }
+    os << "]" << ((i < mx.rows() - 1) ? ", " : "") << std::endl;
+  }
+  os << "]";
+  return os.str();
+}
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 void CheckVectorXdEquality(double value, const EigenVectorXd v, double tolerance) {

@@ -9,6 +9,9 @@
 #include "site_pattern.hpp"
 #include "nni_engine.hpp"
 
+#include "fat_beagle.hpp"
+#include "phylo_model.hpp"
+
 // New typedef used for storing/outputting intermediate or perturbed+tracked values
 // from branch length estimation.
 using VectorOfStringAndEigenVectorXdPairs =
@@ -22,8 +25,11 @@ class GPInstance {
       Failwith("GPInstance needs a legal path as a constructor argument.");
     }
   };
+
   void PrintStatus();
   StringSizeMap DAGSummaryStatistics();
+
+  // ** I/O
 
   void ReadFastaFile(const std::string &fname);
   void ReadNewickFile(const std::string &fname);
@@ -31,18 +37,36 @@ class GPInstance {
   void ReadNexusFile(const std::string &fname);
   void ReadNexusFileGZ(const std::string &fname);
 
+  std::string GetFastaSourcePath() const {
+    Assert(fasta_path_.has_value(), "No fasta source file has been read.");
+    return fasta_path_.value();
+  }
+  std::string GetNewickSourcePath() const {
+    Assert(newick_path_.has_value(), "No newick source file has been read.");
+    return newick_path_.value();
+  }
+  std::string GetNexusSourcePath() const {
+    Assert(nexus_path_.has_value(), "No nexus source file has been read.");
+    return nexus_path_.value();
+  }
+  std::string GetMMapFilePath() const { return mmap_file_path_.value(); }
+
   // ** DAG
+
   void MakeDAG();
   GPDAG &GetDAG();
+  const GPDAG &GetDAG() const;
+  bool HasDAG() const;
   void PrintDAG();
-  void UseGradientOptimization(bool use_gradients = false);
 
-  SitePattern MakeSitePattern();
+  SitePattern MakeSitePattern() const;
 
   // ** GP Engine
-  void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
-  GPEngine *GetEngine() const;
-  bool HasEngine() const;
+
+  void MakeGPEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_,
+                    bool use_gradients = false);
+  GPEngine &GetGPEngine() const;
+  bool HasGPEngine() const;
   void ResizeEngineForDAG();
 
   void PrintEdgeIndexer();
@@ -52,8 +76,18 @@ class GPInstance {
   SizeDoubleVectorMap GatherBranchLengths();
   void TakeFirstBranchLength();
   void EstimateSBNParameters();
+  void SetOptimizationMethod(const OptimizationMethod method);
+  void UseGradientOptimization(const bool use_gradients);
+
+  // Estimate branch lengths using GPEngine. For testing purposes.
   void EstimateBranchLengths(double tol, size_t max_iter, bool quiet = false,
-                             bool track_intermediate_iterations = false);
+                             bool track_intermediate_iterations = false,
+                             std::optional<OptimizationMethod> method = std::nullopt);
+  // Estimate branch lengths using TPEngine. For testing purposes.
+  void EstimateTPBranchLengths(double tol, size_t max_iter, bool quiet = false,
+                               bool track_intermediate_iterations = false,
+                               std::optional<OptimizationMethod> method = std::nullopt);
+
   void PopulatePLVs();
   void ComputeLikelihoods();
   void ComputeMarginalLikelihood();
@@ -94,10 +128,17 @@ class GPInstance {
   void PerGPCSPLogLikelihoodSurfacesToCSV(const std::string &file_path);
   void TrackedOptimizationValuesToCSV(const std::string &file_path);
 
+  // ** Trees
+
+  // Get a reference to collection of currently loaded trees.
+  const RootedTreeCollection &GetCurrentlyLoadedTrees() const {
+    return tree_collection_;
+  };
+  //
+  RootedTreeCollection GetCurrentlyLoadedTreeAn() const;
   // Generate a version of the topologies in the current tree collection that use
   // the current GP branch lengths.
   RootedTreeCollection CurrentlyLoadedTreesWithGPBranchLengths();
-
   // Subset the currently loaded topologies to those that have a given PCSP, and equip
   // them with current GP branch lengths.
   RootedTreeCollection CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
@@ -122,23 +163,48 @@ class GPInstance {
   StringVector GetTaxonNames() const;
   // Get branch lengths.
   EigenVectorXd GetBranchLengths() const;
+  // Get per PCSP log likelihoods
+  EigenVectorXd GetPerPCSPLogLikelihoods() const;
   // Export the subsplit DAG as a DOT file.
   void SubsplitDAGToDot(const std::string &out_path,
                         bool show_index_labels = true) const;
 
-  // ** TP Engine
-  // Initialize Top-Pruning Engine.
-  void MakeTPEngine(const std::string mmap_likelihood_path,
-                    const bool using_likelihoods, const std::string mmap_parsimony_path,
-                    const bool using_parsimony);
-  // Get Top-Pruning Engine.
+  // ** Top-Pruning Engine.
+  void MakeTPEngine();
   TPEngine &GetTPEngine();
 
-  // ** NNI Engine
-  // Initialize NNI Evaluation Engine.
+  void TPEngineSetChoiceMapByTakingFirst(const bool use_subsplit_method = true);
+  void TPEngineSetBranchLengthsByTakingFirst();
+
+  // ** NNI Evaluation Engine.
   void MakeNNIEngine();
-  // Get NNI Evaluation Engine.
   NNIEngine &GetNNIEngine();
+
+  // ** Tree Engines.
+
+  void MakeLikelihoodTreeEngine() {
+    auto beagle_pref_flags = BEAGLE_FLAG_VECTOR_SSE;
+    PhyloModelSpecification model_spec{"JC69", "constant", "strict"};
+    SitePattern site_pattern = MakeSitePattern();
+    bool use_tip_states = true;
+    likelihood_tree_engine_ = std::make_unique<FatBeagle>(
+        model_spec, site_pattern, beagle_pref_flags, use_tip_states);
+  }
+  FatBeagle &GetLikelihoodTreeEngine() {
+    Assert(likelihood_tree_engine_, "LikelihoodTreeEngine not available.");
+    return *likelihood_tree_engine_;
+  }
+
+  void MakeParsimonyTreeEngine() {
+    auto site_pattern = MakeSitePattern();
+    auto mmap_file_path = GetMMapFilePath() + ".sankoff";
+    parsimony_tree_engine_ =
+        std::make_unique<SankoffHandler>(site_pattern, mmap_file_path);
+  }
+  SankoffHandler &GetParsimonyTreeEngine() {
+    Assert(parsimony_tree_engine_, "ParsimonyTreeEngine not available..");
+    return *parsimony_tree_engine_;
+  }
 
  private:
   void ClearTreeCollectionAssociatedState();
@@ -159,17 +225,29 @@ class GPInstance {
       VectorOfStringAndEigenVectorXdPairs per_pcsp_indexed_matrix,
       const std::string &file_path);
 
-  std::string mmap_file_path_;
-  Alignment alignment_;
-  std::unique_ptr<GPEngine> gp_engine_;
+  // ** Data
+
+  std::optional<std::string> fasta_path_ = std::nullopt;
+  std::optional<std::string> newick_path_ = std::nullopt;
+  std::optional<std::string> nexus_path_ = std::nullopt;
   RootedTreeCollection tree_collection_;
-  GPDAG dag_;
-  static constexpr size_t plv_count_per_node_ = 6;
+  Alignment alignment_;
+  std::unique_ptr<GPDAG> dag_ = nullptr;
+  // Root filepath for storing mmapped data.
+  std::optional<std::string> mmap_file_path_ = std::nullopt;
 
-  size_t gpcsp_count_ = dag_.EdgeCountWithLeafSubsplits();
-  bool use_gradients_;
-  GPEngine::OptimizationMethod optimization_method_;
+  // ** Engines
 
+  std::unique_ptr<GPEngine> gp_engine_ = nullptr;
+  std::unique_ptr<TPEngine> tp_engine_ = nullptr;
+  std::unique_ptr<NNIEngine> nni_engine_ = nullptr;
+
+  std::unique_ptr<FatBeagle> likelihood_tree_engine_ = nullptr;
+  std::unique_ptr<SankoffHandler> parsimony_tree_engine_ = nullptr;
+
+  // ** Branch Length Optimization
+
+  size_t gpcsp_count_ = 0;
   // For storing intermediate optimization branch length and per pcsp log
   // likelihood values. Only used if track_intermediate_iterations in
   // EstimateBranchLengths is true.
@@ -181,7 +259,4 @@ class GPInstance {
   // For storing outputs after perturbing and then tracking branch length and per pcsp
   // log likelihoods
   VectorOfStringAndEigenVectorXdPairs tracked_values_after_perturbing_;
-
-  std::unique_ptr<TPEngine> tp_engine_;
-  std::unique_ptr<NNIEngine> nni_engine_;
 };

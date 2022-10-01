@@ -58,6 +58,44 @@ Node::Node(NodePtrVec children, size_t id, Bitset leaves)
   hash_ = SORotate(hash_, 1);
 }
 
+Bitset Node::BuildSubsplit() const {
+  if (IsLeaf()) {
+    return Bitset::Subsplit(Leaves(), Bitset(Leaves().size()));
+  }
+  Assert(Children().size() == 2,
+         "For a valid subsplit, non-leaf nodes must be bifurcating.");
+  return Bitset::Subsplit(Children()[0]->Leaves(), Children()[1]->Leaves());
+}
+
+Bitset Node::BuildPCSP(const SubsplitClade clade) const {
+  Assert(Children().size() == 2,
+         "To build PCSP Edge Bitset, node must be non-leaf and bifurcating.");
+  Bitset parent_subsplit = BuildSubsplit();
+  auto child_node = (clade == SubsplitClade::Left) ? Children()[0] : Children()[1];
+  Bitset child_subsplit = child_node->BuildSubsplit();
+  return Bitset::PCSP(parent_subsplit, child_subsplit);
+}
+
+std::vector<Bitset> Node::BuildVectorOfSubsplits() const {
+  std::vector<Bitset> subsplit_bitsets;
+  Preorder([this, &subsplit_bitsets](const Node* node) {
+    subsplit_bitsets.push_back(node->BuildSubsplit());
+  });
+  return subsplit_bitsets;
+}
+
+std::vector<Bitset> Node::BuildVectorOfPCSPs() const {
+  std::vector<Bitset> pcsp_bitsets;
+  Preorder([this, &pcsp_bitsets](const Node* node) {
+    if (!node->IsLeaf()) {
+      for (const auto clade : {SubsplitClade::Left, SubsplitClade::Right}) {
+        pcsp_bitsets.push_back(node->BuildPCSP(clade));
+      }
+    }
+  });
+  return pcsp_bitsets;
+}
+
 bool Node::operator==(const Node& other) const {
   if (this->Hash() != other.Hash()) {
     return false;
@@ -452,7 +490,8 @@ Bitset Node::LeavesOf(const Node::NodePtrVec& children) {
   return leaves;
 }
 
-// Class methods
+// ** Class methods
+
 Node::NodePtr Node::Leaf(uint32_t id, Bitset leaves) {
   return std::make_shared<Node>(id, leaves);
 }
@@ -563,6 +602,18 @@ SizeVectorVector Node::IdsAbove() const {
       // Going back up the tree, so remove the current node's id.
       [&mutable_ids](const Node*) { mutable_ids.pop_back(); });
   return ids_above;
+}
+
+std::unordered_map<size_t, const Node*> Node::BuildParentNodeMap() const {
+  std::unordered_map<size_t, const Node*> parent_map;
+  DepthFirst(
+      [this, &parent_map](const Node* parent_node) {
+        for (const auto child_node : parent_node->Children()) {
+          parent_map[child_node->Id()] = parent_node;
+        }
+      },
+      [](const Node* parent_node) {});
+  return parent_map;
 }
 
 std::string Node::NodeIdAndLeavesToString() const {

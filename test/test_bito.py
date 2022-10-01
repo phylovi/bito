@@ -170,7 +170,7 @@ def test_gp_instance():
     inst = bito.gp_instance("_ignore/mmapped_plv_pybito.data")
     inst.read_fasta_file("data/six_taxon.fasta")
     inst.read_newick_file("data/six_taxon_rootsplit.nwk")
-    inst.make_engine()
+    inst.make_gp_engine()
 
     init_branches = inst.get_branch_lengths()
     print("init_branch_lengths:", init_branches)
