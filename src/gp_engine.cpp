@@ -38,8 +38,8 @@ GPEngine::GPEngine(SitePattern site_pattern, size_t node_count,
   quartet_r_sorted_plv_ = quartet_root_plv_;
 
   optimization_method_ =
-      (use_gradients ? OptimizationMethod::BrentOptimizationWithGradients
-                     : OptimizationMethod::BrentOptimization);
+      (use_gradients ? Optimization::OptimizationMethod::BrentOptimizationWithGradients
+                     : Optimization::OptimizationMethod::BrentOptimization);
 }
 
 void GPEngine::InitializePriors(EigenVectorXd sbn_prior,
@@ -598,21 +598,23 @@ double GPEngine::LogRescalingFor(size_t plv_idx) {
   return static_cast<double>(rescaling_counts_(plv_idx)) * log_rescaling_threshold_;
 }
 
-void GPEngine::SetOptimizationMethod(const GPEngine::OptimizationMethod method) {
+// ** Branch Length Optimization
+
+void GPEngine::SetOptimizationMethod(const Optimization::OptimizationMethod method) {
   optimization_method_ = method;
 }
 
 void GPEngine::Optimization(const GPOperations::OptimizeBranchLength& op) {
   switch (optimization_method_) {
-    case OptimizationMethod::BrentOptimization:
+    case Optimization::OptimizationMethod::BrentOptimization:
       return BrentOptimization(op);
-    case OptimizationMethod::BrentOptimizationWithGradients:
+    case Optimization::OptimizationMethod::BrentOptimizationWithGradients:
       return BrentOptimizationWithGradients(op);
-    case OptimizationMethod::GradientAscentOptimization:
+    case Optimization::OptimizationMethod::GradientAscentOptimization:
       return GradientAscentOptimization(op);
-    case OptimizationMethod::LogSpaceGradientAscentOptimization:
+    case Optimization::OptimizationMethod::LogSpaceGradientAscentOptimization:
       return LogSpaceGradientAscentOptimization(op);
-    case OptimizationMethod::NewtonOptimization:
+    case Optimization::OptimizationMethod::NewtonOptimization:
       return NewtonOptimization(op);
     default:
       Failwith("GPEngine::Optimization(): Invalid OptimizationMethod given.");

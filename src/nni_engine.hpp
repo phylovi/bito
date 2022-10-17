@@ -23,12 +23,13 @@
 #include "sugar.hpp"
 #include "gp_operation.hpp"
 #include "reindexer.hpp"
+#include "nni_computation_engine.hpp"
 
 using NNIDoubleMap = std::map<NNIOperation, double>;
 
 class NNIEngine {
  public:
-  // Constructors:
+  // Constructors
   NNIEngine(GPDAG &dag, GPEngine *gp_engine = nullptr, TPEngine *tp_engine = nullptr);
 
   // ** Access
@@ -37,6 +38,8 @@ class NNIEngine {
   const GPDAG &GetGPDAG() const { return dag_; };
   // Get Reference of GraftDAG.
   GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); };
+  // Get Reference of Evaluation Engine.
+  NNIEvaluationEngine &GetNNIEvaluationEngine() { return *eval_engine_; }
   // Get Reference of GPEngine.
   const GPEngine &GetGPEngine() const { return *gp_engine_; }
   bool IsUsingGPEngine() { return gp_engine_ != nullptr; }
@@ -232,6 +235,9 @@ class NNIEngine {
 
   // ** Scoring via TP Parsimony
 
+  // Performs entire TP likelihood computation for all Adjacent NNIs.
+  // Allocates necessary extra space on TPEngine, computes and retrieves results and
+  // stores in Scored NNIs.
   void ScoreAdjacentNNIsByTPParsimony();
 
   // ** DAG & GPEngine Maintenance
@@ -299,9 +305,11 @@ class NNIEngine {
  private:
   // ** Access
 
-  // Get Reference of GPEngine.
+  // Get In-Use Evaluation Engine.
+  NNIEvaluationEngine &GetEvaluationEngine() { return *eval_engine_; }
+  // Get Reference of GP Engine.
   GPEngine &GetGPEngine() { return *gp_engine_; }
-  // Get Reference of GPEngine.
+  // Get Reference of TP Engine.
   TPEngine &GetTPEngine() { return *tp_engine_; }
 
  private:
@@ -309,13 +317,17 @@ class NNIEngine {
   GPDAG &dag_;
   // For adding temporary NNIs to DAG.
   std::unique_ptr<GraftDAG> graft_dag_;
+  // Tracks modifications to the DAG.
+  Reindexer node_reindexer_;
+  Reindexer edge_reindexer_;
+
+  // Un-owned reference to NNI Evaluation Engine. Can be used to evaluate NNIs according
+  // to Generalized Pruning, Likelihood, Parsimony, etc.
+  NNIEvaluationEngine *eval_engine_ = nullptr;
   // Un-owned reference GPEngine.
   GPEngine *gp_engine_ = nullptr;
   // Un-owned reference TPEngine.
   TPEngine *tp_engine_ = nullptr;
-  // Tracks modifications to the DAG.
-  Reindexer node_reindexer_;
-  Reindexer edge_reindexer_;
 
   // Set of NNIs to be evaluated, which are a single NNI.
   NNISet adjacent_nnis_;

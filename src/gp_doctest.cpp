@@ -19,6 +19,7 @@
 #include "choice_map.hpp"
 #include "sankoff_matrix.hpp"
 #include "sankoff_handler.hpp"
+#include "dag_data.hpp"
 
 using namespace GPOperations;  // NOLINT
 using PLVType = PLVNodeHandler::PLVType;

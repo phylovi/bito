@@ -6,6 +6,8 @@
 // evaluated by finding the best scoring tree contained in the DAG which has a
 // given edge.  Scoring of trees can be done through likelihoods or parsimony.
 
+#pragma once
+
 #include "sugar.hpp"
 #include "gp_dag.hpp"
 #include "graft_dag.hpp"
@@ -13,14 +15,15 @@
 #include "choice_map.hpp"
 #include "nni_operation.hpp"
 #include "sankoff_handler.hpp"
-
-#pragma once
+#include "dag_data.hpp"
+#include "optimization.hpp"
 
 class TPEngine {
  public:
   TPEngine(GPDAG &dag, SitePattern &site_pattern,
            const std::string &mmap_likelihood_path, bool using_likelihood,
-           const std::string &mmap_parsimony_path, bool using_parsimony);
+           const std::string &mmap_parsimony_path, bool using_parsimony,
+           bool use_gradients = true);
 
   // ** Access
 
@@ -74,12 +77,22 @@ class TPEngine {
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
       std::optional<size_t> new_tree_id = std::nullopt);
 
+  // ** Branch Length Optimization
+
+  void SetOptimizationMethod(const Optimization::OptimizationMethod method);
+  void Optimization(const EdgeId edge_id);
+  void SetSignificantDigitsForOptimization(int significant_digits);
+  void BrentOptimization(const EdgeId edge_id);
+  void BrentOptimizationWithGradients(const EdgeId edge_id);
+  void GradientAscentOptimization(const EdgeId edge_id);
+  void NewtonOptimization(const EdgeId edge_id);
+
   // ** Parameter Data
 
-  // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option to
-  // remap data according to DAG reindexers.  Option to give explicit number of nodes or
-  // edges to allocate memory for (this is the only way memory allocation will be
-  // decreased).
+  // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option
+  // to remap data according to DAG reindexers.  Option to give explicit number of
+  // nodes or edges to allocate memory for (this is the only way memory allocation
+  // will be decreased).
   void GrowNodeData(const size_t node_count,
                     std::optional<const Reindexer> node_reindexer = std::nullopt,
                     std::optional<const size_t> explicit_allocation = std::nullopt,
@@ -292,8 +305,9 @@ class TPEngine {
   // Top tree parsimony per edge.
   EigenVectorXd top_tree_parsimony_per_edge_;
 
-  // Branch length parameters for DAG.
+  // ** Branch length parameters for DAG.
   EigenVectorXd branch_lengths_;
+  EigenVectorXd branch_length_differences_;
   // Initial branch length during first branch length opimization.
   static constexpr double default_branch_length_ = 0.1;
   // Absolute lower bound for possible branch lengths during optimization (in log
@@ -302,6 +316,28 @@ class TPEngine {
   // Absolute upper bound for possible branch lengths during optimization (in log
   // space).
   static constexpr double max_log_branch_length_ = 1.1;
+  // Method used for performing optimization.
+  Optimization::OptimizationMethod optimization_method_;
+  // Precision used for checking convergence of branch length optimization.
+  // In the non-Brent optimization methods, significant digits will be used to
+  // determine convergence through relative tolerance, i.e. measuring difference
+  // from previous branch length values until the absolute difference is below
+  // 10^(-significant_digits_for_optimization_).
+  // Brent optimization does not define convergence through relative tolerance,
+  // rather convergence based on tightness of the brackets that it adapts during
+  // optimization. This variable thus represents the "number of bits precision to which
+  // the minima should be found". When testing on sample datasets, we found that setting
+  // the value to 10 was a good compromise between speed and precision for Brent.
+  // See more on Brent optimization here:
+  // https://www.boost.org/doc/libs/1_79_0/libs/math/doc/html/math_toolkit/brent_minima.html
+  int significant_digits_for_optimization_ = 10;
+  double relative_tolerance_for_optimization_ = 1e-4;
+  double denominator_tolerance_for_newton_ = 1e-10;
+  double step_size_for_optimization_ = 5e-4;
+  double step_size_for_log_space_optimization_ = 1.0005;
+  // Number of iterations allowed for branch length optimization.
+  size_t max_iter_for_optimization_ = 1000;
+  double branch_length_difference_threshold_ = 1e-15;
 
   // Observed leave states.
   SitePattern site_pattern_;

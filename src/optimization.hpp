@@ -24,6 +24,15 @@
 // to improve on the current best argmin value (turned on with use_gradients).
 namespace Optimization {
 
+// Options for optimization method.
+enum class OptimizationMethod {
+  BrentOptimization,
+  BrentOptimizationWithGradients,
+  GradientAscentOptimization,
+  LogSpaceGradientAscentOptimization,
+  NewtonOptimization
+};
+
 // Adapted from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <bool use_gradients, class F, class T>
 std::tuple<T, T> BrentMinimize(F f, T guess, T min, T max, int significant_digits,

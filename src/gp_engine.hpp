@@ -56,15 +56,6 @@ class GPEngine {
 
   // ** GPOperations
 
-  // Options for optimization method.
-  enum class OptimizationMethod {
-    BrentOptimization,
-    BrentOptimizationWithGradients,
-    GradientAscentOptimization,
-    LogSpaceGradientAscentOptimization,
-    NewtonOptimization
-  };
-
   // These operators mean that we can invoke this class on each of the operations.
   void operator()(const GPOperations::ZeroPLV& op);
   void operator()(const GPOperations::SetToStationaryDistribution& op);
@@ -80,7 +71,7 @@ class GPEngine {
   // Apply all operations in vector in order from beginning to end.
   void ProcessOperations(GPOperationVector operations);
 
-  void SetOptimizationMethod(const GPEngine::OptimizationMethod method);
+  void SetOptimizationMethod(const Optimization::OptimizationMethod method);
   void SetSignificantDigitsForOptimization(int significant_digits);
   void SetTransitionMatrixToHaveBranchLength(double branch_length);
   void SetTransitionAndDerivativeMatricesToHaveBranchLength(double branch_length);
@@ -235,7 +226,7 @@ class GPEngine {
   void RescalePLVIfNeeded(size_t plv_idx);
   double LogRescalingFor(size_t plv_idx);
 
-  GPEngine::OptimizationMethod optimization_method_;
+  Optimization::OptimizationMethod optimization_method_;
   void Optimization(const GPOperations::OptimizeBranchLength& op);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
   void BrentOptimizationWithGradients(const GPOperations::OptimizeBranchLength& op);

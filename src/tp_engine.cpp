@@ -5,10 +5,12 @@
 #include "tp_engine.hpp"
 #include "gp_engine.hpp"
 #include "sbn_maps.hpp"
+#include "optimization.hpp"
 
 TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
                    const std::string &mmap_likelihood_path, bool using_likelihoods,
-                   const std::string &mmap_parsimony_path, bool using_parsimony)
+                   const std::string &mmap_parsimony_path, bool using_parsimony,
+                   bool use_gradients)
     : dag_(dag),
       site_pattern_(site_pattern),
       likelihood_pvs_(mmap_likelihood_path, 0, site_pattern_.PatternCount(), 2.0),
@@ -26,6 +28,11 @@ TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
   GrowEdgeData(dag_.EdgeCountWithLeafSubsplits(), std::nullopt, std::nullopt, true);
   // Initialize scores.
   InitializeChoiceMap();
+
+  // Set Branch Length Optimization Method.
+  optimization_method_ =
+      (use_gradients ? Optimization::OptimizationMethod::BrentOptimizationWithGradients
+                     : Optimization::OptimizationMethod::BrentOptimization);
 }
 
 // ** General Scoring
@@ -625,7 +632,155 @@ void TPEngine::PreparePerPatternLogLikelihoodsForEdge(const PVId src1_id,
           .log();
 }
 
-// ** Parameters
+// ** Branch Length Optimization
+
+void TPEngine::SetOptimizationMethod(const Optimization::OptimizationMethod method) {
+  optimization_method_ = method;
+}
+
+void TPEngine::Optimization(const EdgeId edge_id) {
+  switch (optimization_method_) {
+    case Optimization::OptimizationMethod::BrentOptimization:
+      return BrentOptimization(op);
+    case Optimization::OptimizationMethod::BrentOptimizationWithGradients:
+      return BrentOptimizationWithGradients(op);
+    case Optimization::OptimizationMethod::GradientAscentOptimization:
+      return GradientAscentOptimization(op);
+    case Optimization::OptimizationMethod::LogSpaceGradientAscentOptimization:
+      return LogSpaceGradientAscentOptimization(op);
+    case Optimization::OptimizationMethod::NewtonOptimization:
+      return NewtonOptimization(op);
+    default:
+      Failwith("TPEngine::Optimization(): Invalid OptimizationMethod given.");
+  }
+}
+
+void TPEngine::SetSignificantDigitsForOptimization(int significant_digits) {
+  significant_digits_for_optimization_ = significant_digits;
+}
+
+void TPEngine::BrentOptimization(const EdgeId edge_id) {
+  if (branch_length_differences_(edge_id.value_) <
+      branch_length_difference_threshold_) {
+    return;
+  }
+
+  auto edge = dag_.GetDAGEdge(edge_id);
+
+  auto negative_log_likelihood = [this, &op](double log_branch_length) {
+    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
+    PreparePerPatternLogLikelihoodsForGPCSP(edge.GetParent(), edge.GetChild());
+    return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  };
+
+  double current_log_branch_length = log(branch_lengths_(edge_id.value_));
+  double current_neg_log_likelihood =
+      negative_log_likelihood(current_log_branch_length);
+
+  const auto [log_branch_length, neg_log_likelihood] =
+      Optimization::BrentMinimize<false>(
+          negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
+          max_log_branch_length_, significant_digits_for_optimization_,
+          max_iter_for_optimization_, step_size_for_log_space_optimization_);
+
+  // Numerical optimization sometimes yields new nllk > current nllk.
+  // In this case, we reset the branch length to the previous value.
+  if (neg_log_likelihood > current_neg_log_likelihood) {
+    branch_lengths_(edge_id.value_) = exp(current_log_branch_length);
+  } else {
+    branch_lengths_(edge_id.value_) = exp(log_branch_length);
+  }
+  branch_length_differences_(edge_id.value_) =
+      abs(exp(current_log_branch_length) - branch_lengths_(edge_id.value_));
+}
+
+void TPEngine::BrentOptimizationWithGradients(const EdgeId edge_id) {
+  if (branch_length_differences_(edge_id.value_) <
+      branch_length_difference_threshold_) {
+    return;
+  }
+
+  auto negative_log_likelihood_and_derivative = [this, &op](double log_branch_length) {
+    double branch_length = exp(log_branch_length);
+    branch_lengths_(edge_id.value_) = branch_length;
+    auto [log_likelihood, log_likelihood_derivative] =
+        this->LogLikelihoodAndDerivative(op);
+    return std::make_pair(-log_likelihood, -branch_length * log_likelihood_derivative);
+  };
+
+  double current_log_branch_length = log(branch_lengths_(edge_id.value_));
+  double current_neg_log_likelihood =
+      negative_log_likelihood_and_derivative(current_log_branch_length).first;
+  const auto [log_branch_length, neg_log_likelihood] =
+      Optimization::BrentMinimize<true>(
+          negative_log_likelihood_and_derivative, current_log_branch_length,
+          min_log_branch_length_, max_log_branch_length_,
+          significant_digits_for_optimization_, max_iter_for_optimization_,
+          step_size_for_log_space_optimization_);
+
+  if (neg_log_likelihood > current_neg_log_likelihood) {
+    branch_lengths_(edge_id.value_) = exp(current_log_branch_length);
+  } else {
+    branch_lengths_(edge_id.value_) = exp(log_branch_length);
+  }
+  branch_length_differences_(edge_id.value_) =
+      abs(exp(current_log_branch_length) - branch_lengths_(edge_id.value_));
+}
+
+void TPEngine::GradientAscentOptimization(const EdgeId edge_id) {
+  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
+    branch_lengths_(op.gpcsp_) = branch_length;
+    return this->LogLikelihoodAndDerivative(op);
+  };
+  const auto branch_length = Optimization::GradientAscent(
+      log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
+      significant_digits_for_optimization_, step_size_for_optimization_,
+      min_log_branch_length_, max_iter_for_optimization_);
+  branch_lengths_(op.gpcsp_) = branch_length;
+}
+
+void TPEngine::LogSpaceGradientAscentOptimization(const EdgeId edge_id) {
+  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
+    branch_lengths_(op.gpcsp_) = branch_length;
+    return this->LogLikelihoodAndDerivative(op);
+  };
+  const auto branch_length = Optimization::LogSpaceGradientAscent(
+      log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
+      significant_digits_for_optimization_, step_size_for_log_space_optimization_,
+      exp(min_log_branch_length_), max_iter_for_optimization_);
+  branch_lengths_(op.gpcsp_) = branch_length;
+}
+
+void TPEngine::NewtonOptimization(const EdgeId edge_id) {
+  if (branch_length_differences_(op.gpcsp_) < branch_length_difference_threshold_) {
+    return;
+  }
+
+  auto log_likelihood_and_first_two_derivatives = [this,
+                                                   &op](double log_branch_length) {
+    double x = exp(log_branch_length);
+    branch_lengths_(op.gpcsp_) = x;
+    auto [f_x, f_prime_x, f_double_prime_x] =
+        this->LogLikelihoodAndFirstTwoDerivatives(op);
+    // x = exp(y) --> f'(exp(y)) = exp(y) * f'(exp(y)) = x * f'(x)
+    double f_prime_y = x * f_prime_x;
+    double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
+    return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
+  };
+
+  double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
+  const auto log_branch_length = Optimization::NewtonRaphsonOptimization(
+      log_likelihood_and_first_two_derivatives, current_log_branch_length,
+      significant_digits_for_optimization_, denominator_tolerance_for_newton_,
+      min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
+
+  branch_lengths_(op.gpcsp_) = exp(log_branch_length);
+
+  branch_length_differences_(op.gpcsp_) =
+      abs(exp(current_log_branch_length) - branch_lengths_(op.gpcsp_));
+}
+
+// ** Parameter Data
 
 void TPEngine::GrowNodeData(const size_t new_node_count,
                             std::optional<const Reindexer> node_reindexer,
@@ -698,16 +853,16 @@ void TPEngine::GrowEdgeData(const size_t new_edge_count,
 void TPEngine::ReindexNodeData(const Reindexer &node_reindexer,
                                const size_t old_node_count) {
   Assert(node_reindexer.size() == GetNodeCount(),
-         "Node Reindexer is the wrong size for GPEngine.");
+         "Node Reindexer is the wrong size for TPEngine.");
   Assert(node_reindexer.IsValid(GetNodeCount()), "Node Reindexer is not valid.");
 }
 
 void TPEngine::ReindexEdgeData(const Reindexer &edge_reindexer,
                                const size_t old_edge_count) {
   Assert(edge_reindexer.size() == GetEdgeCount(),
-         "Edge Reindexer is the wrong size for GPEngine.");
+         "Edge Reindexer is the wrong size for TPEngine.");
   Assert(edge_reindexer.IsValid(GetEdgeCount()),
-         "Edge Reindexer is not valid for GPEngine size.");
+         "Edge Reindexer is not valid for TPEngine size.");
   // Reindex data vectors.
   Reindexer::ReindexInPlace<EigenVectorXd, double>(branch_lengths_, edge_reindexer,
                                                    GetEdgeCount());
