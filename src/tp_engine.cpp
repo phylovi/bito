@@ -667,9 +667,9 @@ void TPEngine::BrentOptimization(const EdgeId edge_id) {
 
   auto edge = dag_.GetDAGEdge(edge_id);
 
-  auto negative_log_likelihood = [this, &op](double log_branch_length) {
+  auto negative_log_likelihood = [this, edge](double log_branch_length) {
     SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
-    PreparePerPatternLogLikelihoodsForGPCSP(edge.GetParent(), edge.GetChild());
+    PreparePerPatternLogLikelihoodsForEdge(edge.GetParent(), edge.GetChild());
     return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   };
 
@@ -700,11 +700,12 @@ void TPEngine::BrentOptimizationWithGradients(const EdgeId edge_id) {
     return;
   }
 
-  auto negative_log_likelihood_and_derivative = [this, &op](double log_branch_length) {
+  auto negative_log_likelihood_and_derivative = [this,
+                                                 edge_id](double log_branch_length) {
     double branch_length = exp(log_branch_length);
     branch_lengths_(edge_id.value_) = branch_length;
     auto [log_likelihood, log_likelihood_derivative] =
-        this->LogLikelihoodAndDerivative(op);
+        this->LogLikelihoodAndDerivative(edge_id);
     return std::make_pair(-log_likelihood, -branch_length * log_likelihood_derivative);
   };
 
@@ -740,44 +741,45 @@ void TPEngine::GradientAscentOptimization(const EdgeId edge_id) {
 }
 
 void TPEngine::LogSpaceGradientAscentOptimization(const EdgeId edge_id) {
-  auto log_likelihood_and_derivative = [this, &op](double branch_length) {
-    branch_lengths_(op.gpcsp_) = branch_length;
-    return this->LogLikelihoodAndDerivative(op);
+  auto log_likelihood_and_derivative = [this, edge_id](double branch_length) {
+    branch_lengths_(edge_id.value_) = branch_length;
+    return this->LogLikelihoodAndDerivative(edge_id);
   };
   const auto branch_length = Optimization::LogSpaceGradientAscent(
-      log_likelihood_and_derivative, branch_lengths_(op.gpcsp_),
+      log_likelihood_and_derivative, branch_lengths_(edge_id.value_),
       significant_digits_for_optimization_, step_size_for_log_space_optimization_,
       exp(min_log_branch_length_), max_iter_for_optimization_);
-  branch_lengths_(op.gpcsp_) = branch_length;
+  branch_lengths_(edge_id.value_) = branch_length;
 }
 
 void TPEngine::NewtonOptimization(const EdgeId edge_id) {
-  if (branch_length_differences_(op.gpcsp_) < branch_length_difference_threshold_) {
+  if (branch_length_differences_(edge_id.value_) <
+      branch_length_difference_threshold_) {
     return;
   }
 
   auto log_likelihood_and_first_two_derivatives = [this,
-                                                   &op](double log_branch_length) {
+                                                   edge_id](double log_branch_length) {
     double x = exp(log_branch_length);
-    branch_lengths_(op.gpcsp_) = x;
+    branch_lengths_(edge_id.value_) = x;
     auto [f_x, f_prime_x, f_double_prime_x] =
-        this->LogLikelihoodAndFirstTwoDerivatives(op);
+        this->LogLikelihoodAndFirstTwoDerivatives(edge_id);
     // x = exp(y) --> f'(exp(y)) = exp(y) * f'(exp(y)) = x * f'(x)
     double f_prime_y = x * f_prime_x;
     double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
     return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
   };
 
-  double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
+  double current_log_branch_length = log(branch_lengths_(edge_id.value_));
   const auto log_branch_length = Optimization::NewtonRaphsonOptimization(
       log_likelihood_and_first_two_derivatives, current_log_branch_length,
       significant_digits_for_optimization_, denominator_tolerance_for_newton_,
       min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
 
-  branch_lengths_(op.gpcsp_) = exp(log_branch_length);
+  branch_lengths_(edge_id.value_) = exp(log_branch_length);
 
-  branch_length_differences_(op.gpcsp_) =
-      abs(exp(current_log_branch_length) - branch_lengths_(op.gpcsp_));
+  branch_length_differences_(edge_id.value_) =
+      abs(exp(current_log_branch_length) - branch_lengths_(edge_id.value_));
 }
 
 // ** Parameter Data

@@ -85,6 +85,7 @@ class TPEngine {
   void BrentOptimization(const EdgeId edge_id);
   void BrentOptimizationWithGradients(const EdgeId edge_id);
   void GradientAscentOptimization(const EdgeId edge_id);
+  void LogSpaceGradientAscentOptimization(const EdgeId edge_id);
   void NewtonOptimization(const EdgeId edge_id);
 
   // ** Parameter Data
