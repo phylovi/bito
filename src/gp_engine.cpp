@@ -631,9 +631,11 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   }
 
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
-    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
-    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
-    return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+    double branch_length = exp(log_branch_length);
+    branch_lengths_(op.gpcsp_) = branch_length;
+    auto [log_likelihood, log_likelihood_derivative] =
+        this->LogLikelihoodAndDerivative(op);
+    return -log_likelihood;
   };
 
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));

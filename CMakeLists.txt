@@ -90,6 +90,7 @@ add_library(bito-core SHARED
   src/clock_model.cpp
   src/combinatorics.cpp
   src/csv.cpp
+  src/dag_branch_lengths.cpp
   src/driver.cpp
   src/engine.cpp
   src/fat_beagle.cpp
@@ -103,6 +104,7 @@ add_library(bito-core SHARED
   src/numerical_utils.cpp
   src/nni_engine.cpp
   src/nni_operation.cpp
+  src/optimization.cpp
   src/parser.cpp
   src/phylo_flags.cpp
   src/phylo_model.cpp
@@ -127,6 +129,7 @@ add_library(bito-core SHARED
   src/taxon_name_munging.cpp
   src/tidy_subsplit_dag.cpp
   src/topology_sampler.cpp
+  src/tp_computation_engine.cpp
   src/tp_engine.cpp
   src/tree.cpp
   src/tree_collection.cpp

@@ -9,6 +9,8 @@
 #include "gp_dag.hpp"
 #include "nni_engine.hpp"
 
+using NNIDoubleMap = std::map<NNIOperation, double>;
+
 class NNIEvaluationEngine {
  public:
   explicit NNIEvaluationEngine(GPDAG &dag) : dag_(&dag) {}
@@ -24,15 +26,28 @@ class NNIEvaluationEngine {
 
   // Get reference DAG.
   GPDAG &GetDAG() { return *dag_; }
+  const GPDAG &GetDAG() const { return *dag_; }
   // Get all Scored NNIs.
   NNIDoubleMap &GetScoredNNIs() { return *scored_nnis_; }
+  const NNIDoubleMap &GetScoredNNIs() const { return *scored_nnis_; }
 
   // Retrieve Score for given NNI.
   double GetScoreByNNI(const NNIOperation &nni) const {
     return GetScoredNNIs().find(nni)->second;
   }
   // Retrieve Score for given edge in DAG.
-  double GetScoreByEdge(const EdgeId edge_id) const {}
+  double GetScoreByEdge(const EdgeId edge_id) const {
+    const auto &edge = GetDAG().GetDAGEdge(edge_id);
+    const auto parent_subsplit = GetDAG().GetDAGNodeBitset(edge.GetParent());
+    const auto child_subsplit = GetDAG().GetDAGNodeBitset(edge.GetParent());
+    NNIOperation nni = NNIOperation(parent_subsplit, child_subsplit);
+    return GetScoreByNNI(nni);
+  }
+
+  // //
+  // EdgeId GetEdgeIdFromNNI(const NNIOperation &nni) const {}
+  // //
+  // NNIOperation GetNNIFromEdgeId(const EdgeId edge_id) const {}
 
   GPDAG *dag_;
   NNIDoubleMap *scored_nnis_;
@@ -40,7 +55,7 @@ class NNIEvaluationEngine {
 
 class NNIEvaluationEngineViaGP : public NNIEvaluationEngine {
  public:
-  explicit NNIEvaluationEngineViaGP(GPDAG &dag, GPEngine &gp_engine)
+  NNIEvaluationEngineViaGP(GPDAG &dag, GPEngine &gp_engine)
       : NNIEvaluationEngine(dag), gp_engine_(&gp_engine) {}
 
   // Initialize Evaluation Engine.
@@ -67,7 +82,7 @@ class NNIEvaluationEngineViaGP : public NNIEvaluationEngine {
 
 class NNIEvaluationEngineViaTP : public NNIEvaluationEngine {
  public:
-  NNIEvaluationEngineViaGP(GPDAG &dag, GPEngine &tp_engine)
+  NNIEvaluationEngineViaTP(GPDAG &dag, TPEngine &tp_engine)
       : NNIEvaluationEngine(dag), tp_engine_(&tp_engine) {}
 
   // Initialize Evaluation Engine.
@@ -79,6 +94,10 @@ class NNIEvaluationEngineViaTP : public NNIEvaluationEngine {
   virtual void Prep() {}
   // Compute scores for all NNIs adjacent to current DAG.
   virtual void ScoreAdjacentNNIs() {}
+
+  // ** Access
+
+  TPEngine &GetTPEngine() { return *tp_engine_; }
 
   TPEngine *tp_engine_;
 };

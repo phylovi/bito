@@ -23,7 +23,7 @@
 #include "sugar.hpp"
 #include "gp_operation.hpp"
 #include "reindexer.hpp"
-#include "nni_computation_engine.hpp"
+#include "nni_evaluation_engine.hpp"
 
 using NNIDoubleMap = std::map<NNIOperation, double>;
 

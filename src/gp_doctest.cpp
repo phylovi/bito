@@ -287,7 +287,8 @@ TEST_CASE("GPInstance: multi-site gradient calculation") {
 
 // We are outputting the branch length for PCSP 100-011-001
 // which has a true branch length of 0.0694244266
-double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
+double ObtainBranchLengthWithOptimization(
+    const Optimization::OptimizationMethod method) {
   GPInstance inst = MakeHelloGPInstance();
   GPEngine& engine = *inst.GetEngine();
   engine.SetOptimizationMethod(method);
@@ -304,9 +305,9 @@ double ObtainBranchLengthWithOptimization(GPEngine::OptimizationMethod method) {
 
 TEST_CASE("GPInstance: Gradient-based optimization with Newton's Method") {
   double nongradient_length = ObtainBranchLengthWithOptimization(
-      GPEngine::OptimizationMethod::BrentOptimization);
+      Optimization::OptimizationMethod::BrentOptimization);
   double gradient_length = ObtainBranchLengthWithOptimization(
-      GPEngine::OptimizationMethod::NewtonOptimization);
+      Optimization::OptimizationMethod::NewtonOptimization);
 
   double true_length = 0.0694244266;
   double brent_diff = abs(nongradient_length - true_length);
@@ -2232,7 +2233,8 @@ TEST_CASE("Top-Pruning: Likelihoods with Proposed NNIs") {
                 "likelihoods in larger DAG.");
 }
 
-TEST_CASE("Top-Pruning: Branch Length Optimization of Likelihoods") {
+// Use branch length optimization on Top-Pruning algorithm using likelihoods.
+TEST_CASE("Top-Pruning: Branch Length Optimization with Likelihoods") {
   // Build GPInstance with TPEngine and NNIEngine.
   auto MakeTPEngine = [](const std::string& fasta_path, const std::string& newick_path,
                          const std::string& tpl_mmap_path,

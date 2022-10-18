@@ -77,17 +77,6 @@ class TPEngine {
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
       std::optional<size_t> new_tree_id = std::nullopt);
 
-  // ** Branch Length Optimization
-
-  void SetOptimizationMethod(const Optimization::OptimizationMethod method);
-  void Optimization(const EdgeId edge_id);
-  void SetSignificantDigitsForOptimization(int significant_digits);
-  void BrentOptimization(const EdgeId edge_id);
-  void BrentOptimizationWithGradients(const EdgeId edge_id);
-  void GradientAscentOptimization(const EdgeId edge_id);
-  void LogSpaceGradientAscentOptimization(const EdgeId edge_id);
-  void NewtonOptimization(const EdgeId edge_id);
-
   // ** Parameter Data
 
   // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option

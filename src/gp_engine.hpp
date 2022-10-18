@@ -17,6 +17,7 @@
 #include "substitution_model.hpp"
 #include "reindexer.hpp"
 #include "subsplit_dag_storage.hpp"
+#include "optimization.hpp"
 
 class GPEngine {
  public:

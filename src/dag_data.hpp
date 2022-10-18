@@ -6,8 +6,8 @@
 
 #pragma once
 
+#include "reindexer.hpp"
 #include "gp_dag.hpp"
-// #include "optimization.hpp"
 
 template <class VectorType, class DataType, class DAGElementId,
           size_t DataPerElement = 1>
@@ -16,6 +16,7 @@ class DAGData {
   DAGData(GPDAG &dag, const size_t count) : data_vec_(count), dag_(&dag) {}
 
   // ** Counts
+
   size_t GetCount() { return count_; }
   size_t GetSpareCount() { return spare_count_; }
   size_t GetPaddedCount() { return count_ + spare_count_; }
@@ -33,10 +34,12 @@ class DAGData {
     return data_vec_[element_id.value_ + GetCount()];
   }
 
+  const bool HasDAG() const { return dag_ != nullptr; }
   const GPDAG &GetDAG() const { return *dag_; }
-  const VectorType &GetData() const { return data_vec_; }
+  VectorType &GetData() { return data_vec_; }
 
   // ** Maintanence
+
   virtual void Resize(std::optional<const Reindexer> reindexer = std::nullopt,
                       std::optional<const size_t> explicit_alloc = std::nullopt);
   void Resize(const size_t new_count,
@@ -116,14 +119,3 @@ class DAGEdgeData : public DAGData<VectorType, DataType, EdgeId> {
 
 using DAGNodeDoubleData = DAGNodeData<EigenVectorXd, double>;
 using DAGEdgeDoubleData = DAGEdgeData<EigenVectorXd, double>;
-
-class DAGBranchLengths : public DAGEdgeDoubleData {
- public:
-  explicit DAGBranchLengths(GPDAG &dag) : DAGEdgeDoubleData(dag) {}
-};
-
-#ifdef DOCTEST_LIBRARY_INCLUDED
-
-TEST_CASE("DAG Data") { std::cout << " === DAG Data TEST_CASE ===" << std::endl; }
-
-#endif  // DOCTEST_LIBRARY_INCLUDED
