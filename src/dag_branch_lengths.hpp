@@ -22,23 +22,48 @@ class DAGBranchLengths {
   using NegLogLikelihoodAndDerivativeFunc =
       std::function<DoublePair(EdgeId, NodeId, NodeId, double)>;
 
-  explicit DAGBranchLengths(
+  DAGBranchLengths(
+      const size_t count,
+      std::optional<Optimization::OptimizationMethod> method = std::nullopt)
+      : branch_lengths_(count), branch_length_differences_(count) {
+    if (method.has_value()) {
+      SetOptimizationMethod(method.value());
+    }
+    branch_lengths_.SetDefaultValue(default_branch_length_);
+    branch_length_differences_.SetDefaultValue(default_branch_length_);
+  }
+  DAGBranchLengths(
       GPDAG& dag, std::optional<Optimization::OptimizationMethod> method = std::nullopt)
       : branch_lengths_(dag), branch_length_differences_(dag) {
     if (method.has_value()) {
       SetOptimizationMethod(method.value());
     }
+    branch_lengths_.SetDefaultValue(default_branch_length_);
+    branch_length_differences_.SetDefaultValue(default_branch_length_);
   }
 
   // ** Access
 
+  // Get the size of the data vector.
+  size_t size() { return branch_lengths_.GetData().size(); }
+
+  // Get full data vectors.
+  DAGEdgeDoubleData& GetBranchLengths() { return branch_lengths_; }
+  const DAGEdgeDoubleData& GetBranchLengths() const { return branch_lengths_; }
+  DAGEdgeDoubleData& GetBranchDifferences() { return branch_length_differences_; }
+  const DAGEdgeDoubleData& GetBranchDifferences() const {
+    return branch_length_differences_;
+  }
+
+  // Access elements in data vector.
   double& Get(const EdgeId edge_id) { return branch_lengths_(edge_id); }
   double& operator()(const EdgeId edge_id) { return Get(edge_id); }
-
   double& GetBranchDifference(const EdgeId edge_id) {
     return branch_length_differences_(edge_id);
   }
 
+  // Check if there is a reference vector.
+  const bool HasDAG() const { return branch_lengths_.HasDAG(); }
   const GPDAG& GetDAG() const { return branch_lengths_.GetDAG(); }
 
   void SetOptimizationMethod(const Optimization::OptimizationMethod method) {
@@ -69,6 +94,13 @@ class DAGBranchLengths {
 
   // ** Resize
 
+  void Resize(const size_t count,
+              std::optional<const Reindexer> reindexer = std::nullopt,
+              std::optional<const size_t> explicit_alloc = std::nullopt) {
+    branch_lengths_.Resize(count, reindexer, explicit_alloc);
+    branch_length_differences_.Resize(count, reindexer, explicit_alloc);
+  }
+
   void Resize(std::optional<const Reindexer> reindexer = std::nullopt,
               std::optional<const size_t> explicit_alloc = std::nullopt) {
     branch_lengths_.Resize(reindexer, explicit_alloc);
@@ -77,6 +109,19 @@ class DAGBranchLengths {
 
   // ** Optimization
 
+  void Optimization(const EdgeId edge_id, const NodeId parent_id,
+                    const NodeId child_id);
+  void BrentOptimization(const EdgeId edge_id, const NodeId parent_id,
+                         const NodeId child_id);
+  void BrentOptimizationWithGradients(const EdgeId edge_id, const NodeId parent_id,
+                                      const NodeId child_id);
+  void GradientAscentOptimization(const EdgeId edge_id, const NodeId parent_id,
+                                  const NodeId child_id);
+  void LogSpaceGradientAscentOptimization(const EdgeId edge_id, const NodeId parent_id,
+                                          const NodeId child_id);
+  void NewtonOptimization(const EdgeId edge_id, const NodeId parent_id,
+                          const NodeId child_id);
+
   void Optimization(const EdgeId edge_id);
   void BrentOptimization(const EdgeId edge_id);
   void BrentOptimizationWithGradients(const EdgeId edge_id);
@@ -84,12 +129,20 @@ class DAGBranchLengths {
   void LogSpaceGradientAscentOptimization(const EdgeId edge_id);
   void NewtonOptimization(const EdgeId edge_id);
 
+  // Optimization Helper functions
+  LogLikelihoodAndDerivativeFunc llh_f_and_df_ = nullptr;
+  LogLikelihoodAndFirstTwoDerivativesFunc llh_f_and_df_and_ddf_ = nullptr;
+  NegLogLikelihoodFunc neg_llh_f_ = nullptr;
+  NegLogLikelihoodAndDerivativeFunc neg_llh_f_and_df_ = nullptr;
+
  protected:
   // Branch lengths.
   DAGEdgeDoubleData branch_lengths_;
-  // Tracks differences between branch length over different iterations of optimization
-  // to test for convergence.
+  // Tracks differences between branch length over different iterations of
+  // optimization to test for convergence.
   DAGEdgeDoubleData branch_length_differences_;
+  // Value to initialize new branch lengths to.
+  double default_branch_length_ = 0.1;
 
   // Method used in branch length optimization.
   Optimization::OptimizationMethod optimization_method_;
@@ -106,10 +159,10 @@ class DAGBranchLengths {
   // 10^(-significant_digits_for_optimization_).
   // Brent optimization does not define convergence through relative tolerance,
   // rather convergence based on tightness of the brackets that it adapts during
-  // optimization. This variable thus represents the "number of bits precision to which
-  // the minima should be found". When testing on sample datasets, we found that setting
-  // the value to 10 was a good compromise between speed and precision for Brent.
-  // See more on Brent optimization here:
+  // optimization. This variable thus represents the "number of bits precision to
+  // which the minima should be found". When testing on sample datasets, we found that
+  // setting the value to 10 was a good compromise between speed and precision for
+  // Brent. See more on Brent optimization here:
   // https://www.boost.org/doc/libs/1_79_0/libs/math/doc/html/math_toolkit/brent_minima.html
   int significant_digits_for_optimization_ = 10;
   double relative_tolerance_for_optimization_ = 1e-4;
@@ -119,12 +172,6 @@ class DAGBranchLengths {
   // Number of iterations allowed for branch length optimization.
   size_t max_iter_for_optimization_ = 1000;
   double branch_length_difference_threshold_ = 1e-15;
-
-  // Optimization Helper functions
-  LogLikelihoodAndDerivativeFunc llh_f_and_df_ = nullptr;
-  LogLikelihoodAndFirstTwoDerivativesFunc llh_f_and_df_and_ddf_ = nullptr;
-  NegLogLikelihoodFunc neg_llh_f_ = nullptr;
-  NegLogLikelihoodAndDerivativeFunc neg_llh_f_and_df_ = nullptr;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

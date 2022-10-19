@@ -24,6 +24,32 @@ void DAGBranchLengths::Optimization(const EdgeId edge_id) {
 }
 
 void DAGBranchLengths::BrentOptimization(const EdgeId edge_id) {
+  const auto& edge = GetDAG().GetDAGEdge(edge_id);
+  BrentOptimization(edge.GetId(), edge.GetParent(), edge.GetChild());
+}
+
+void DAGBranchLengths::BrentOptimizationWithGradients(const EdgeId edge_id) {
+  const auto& edge = GetDAG().GetDAGEdge(edge_id);
+  BrentOptimizationWithGradients(edge.GetId(), edge.GetParent(), edge.GetChild());
+}
+
+void DAGBranchLengths::GradientAscentOptimization(const EdgeId edge_id) {
+  const auto& edge = GetDAG().GetDAGEdge(edge_id);
+  GradientAscentOptimization(edge.GetId(), edge.GetParent(), edge.GetChild());
+}
+
+void DAGBranchLengths::LogSpaceGradientAscentOptimization(const EdgeId edge_id) {
+  const auto& edge = GetDAG().GetDAGEdge(edge_id);
+  LogSpaceGradientAscentOptimization(edge.GetId(), edge.GetParent(), edge.GetChild());
+}
+
+void DAGBranchLengths::NewtonOptimization(const EdgeId edge_id) {
+  const auto& edge = GetDAG().GetDAGEdge(edge_id);
+  NewtonOptimization(edge.GetId(), edge.GetParent(), edge.GetChild());
+}
+
+void DAGBranchLengths::BrentOptimization(const EdgeId edge_id, const NodeId parent_id,
+                                         const NodeId child_id) {
   Assert(neg_llh_f_ != nullptr,
          "NegativeLogLikelihoodFunction must be assigned before calling Brent.");
 
@@ -59,7 +85,9 @@ void DAGBranchLengths::BrentOptimization(const EdgeId edge_id) {
       abs(exp(current_log_branch_length) - branch_lengths_(edge_id));
 }
 
-void DAGBranchLengths::BrentOptimizationWithGradients(const EdgeId edge_id) {
+void DAGBranchLengths::BrentOptimizationWithGradients(const EdgeId edge_id,
+                                                      const NodeId parent_id,
+                                                      const NodeId child_id) {
   Assert(neg_llh_f_and_df_ != nullptr,
          "NegativeLogLikelihoodAndDerivativeFunction must be assigned before calling "
          "BrentWithGradients.");
@@ -94,7 +122,9 @@ void DAGBranchLengths::BrentOptimizationWithGradients(const EdgeId edge_id) {
       abs(exp(current_log_branch_length) - branch_lengths_(edge_id));
 }
 
-void DAGBranchLengths::GradientAscentOptimization(const EdgeId edge_id) {
+void DAGBranchLengths::GradientAscentOptimization(const EdgeId edge_id,
+                                                  const NodeId parent_id,
+                                                  const NodeId child_id) {
   Assert(llh_f_and_df_ != nullptr,
          "LogLikelihoodAndDerivativeFunction must be assigned before calling "
          "GradientAscent.");
@@ -112,7 +142,9 @@ void DAGBranchLengths::GradientAscentOptimization(const EdgeId edge_id) {
   branch_lengths_(edge_id) = branch_length;
 }
 
-void DAGBranchLengths::LogSpaceGradientAscentOptimization(const EdgeId edge_id) {
+void DAGBranchLengths::LogSpaceGradientAscentOptimization(const EdgeId edge_id,
+                                                          const NodeId parent_id,
+                                                          const NodeId child_id) {
   Assert(llh_f_and_df_ != nullptr,
          "LogLikelihoodAndDerivativeFunction must be assigned before calling "
          "LogSpaceGradientAscent.");
@@ -130,7 +162,8 @@ void DAGBranchLengths::LogSpaceGradientAscentOptimization(const EdgeId edge_id) 
   branch_lengths_(edge_id) = branch_length;
 }
 
-void DAGBranchLengths::NewtonOptimization(const EdgeId edge_id) {
+void DAGBranchLengths::NewtonOptimization(const EdgeId edge_id, const NodeId parent_id,
+                                          const NodeId child_id) {
   Assert(llh_f_and_df_ != nullptr,
          "LogLikelihoodAndDerivativeFunction must be assigned before calling "
          "GradientAscent.");

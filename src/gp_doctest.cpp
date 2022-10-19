@@ -196,7 +196,13 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
 // IMPORTANT: See the note about appropriate tree file input to that function, as the
 // same applies here.
 void TestCompositeMarginal(GPInstance inst, const std::string& fasta_path) {
+  std::cout << "Estimate Branch Lengths [BEG" << std::endl;
+  std::cout
+      << inst.GetEngine()->GetBranchLengthData().GetBranchLengths().GetData().size()
+      << std::endl;
   inst.EstimateBranchLengths(0.00001, 100, true);
+  std::cout << "Estimate Branch Lengths [END" << std::endl;
+
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
   inst.ComputeMarginalLikelihood();

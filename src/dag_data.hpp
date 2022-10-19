@@ -13,38 +13,54 @@ template <class VectorType, class DataType, class DAGElementId,
           size_t DataPerElement = 1>
 class DAGData {
  public:
-  DAGData(GPDAG &dag, const size_t count) : data_vec_(count), dag_(&dag) {}
+  explicit DAGData(const size_t count = 0) : data_vec_() { Resize(count); }
+  DAGData(GPDAG &dag, const size_t count = 0) : data_vec_(), dag_(&dag) {
+    Resize(count);
+  }
 
   // ** Counts
 
+  // Get data size.
   size_t GetCount() { return count_; }
   size_t GetSpareCount() { return spare_count_; }
   size_t GetPaddedCount() { return count_ + spare_count_; }
   size_t GetAllocCount() { return alloc_count_; }
 
+  // Set data size.
   void SetCount(const size_t count) { count_ = count; }
   void SetSpareCount(const size_t spare_count) { spare_count_ = spare_count; }
   void SetAllocCount(const size_t alloc_count) { alloc_count_ = alloc_count; }
 
   // ** Access
 
+  // Access element in data.
   DataType &Get(const DAGElementId element_id) { return data_vec_[element_id.value_]; }
   DataType &operator()(const DAGElementId element_id) { return Get(element_id); }
   DataType &GetSpare(const DAGElementId element_id) {
     return data_vec_[element_id.value_ + GetCount()];
   }
 
+  // Check if there is an assigned reference DAG.
   const bool HasDAG() const { return dag_ != nullptr; }
+  // Access reference DAG.
   const GPDAG &GetDAG() const { return *dag_; }
+
+  // Get full data vector.
   VectorType &GetData() { return data_vec_; }
+  const VectorType &GetData() const { return data_vec_; }
+
+  // Set value newly added elements to be set to.
+  void SetDefaultValue(const DataType default_value) { default_value_ = default_value; }
 
   // ** Maintanence
 
   virtual void Resize(std::optional<const Reindexer> reindexer = std::nullopt,
-                      std::optional<const size_t> explicit_alloc = std::nullopt);
-  void Resize(const size_t new_count,
-              std::optional<const Reindexer> reindexer = std::nullopt,
-              std::optional<const size_t> explicit_alloc = std::nullopt) {
+                      std::optional<const size_t> explicit_alloc = std::nullopt) {
+    Failwith("Cannot call base Resize without explicit count.");
+  }
+  virtual void Resize(const size_t new_count,
+                      std::optional<const Reindexer> reindexer = std::nullopt,
+                      std::optional<const size_t> explicit_alloc = std::nullopt) {
     size_t old_count = GetCount();
     SetCount(new_count);
     if (GetPaddedCount() > GetAllocCount()) {
@@ -91,13 +107,21 @@ template <class VectorType, class DataType>
 class DAGNodeData : public DAGData<VectorType, DataType, NodeId> {
  public:
   using DAGNodeDataParent = DAGData<VectorType, DataType, NodeId>;
+  explicit DAGNodeData<VectorType, DataType>(const size_t count = 0)
+      : DAGData<VectorType, DataType, NodeId>(count) {}
   explicit DAGNodeData<VectorType, DataType>(GPDAG &dag)
       : DAGData<VectorType, DataType, NodeId>(dag, dag.NodeCount()) {}
 
-  void Resize(std::optional<const Reindexer> reindexer = std::nullopt,
-              std::optional<const size_t> explicit_alloc = std::nullopt) {
-    DAGNodeDataParent::Resize(DAGNodeDataParent::GetDAG().NodeCount(), reindexer,
-                              explicit_alloc.value());
+  virtual void Resize(const size_t new_count,
+                      std::optional<const Reindexer> reindexer = std::nullopt,
+                      std::optional<const size_t> explicit_alloc = std::nullopt) {
+    DAGNodeDataParent::Resize(new_count, reindexer, explicit_alloc);
+  }
+  virtual void Resize(std::optional<const Reindexer> reindexer = std::nullopt,
+                      std::optional<const size_t> explicit_alloc = std::nullopt) {
+    Assert(DAGNodeDataParent::HasDAG(),
+           "Must assign DAG if calling Resize without explicit count.");
+    Resize(DAGNodeDataParent::GetDAG().NodeCount(), reindexer, explicit_alloc);
   }
 };
 
@@ -105,15 +129,22 @@ template <class VectorType, class DataType>
 class DAGEdgeData : public DAGData<VectorType, DataType, EdgeId> {
  public:
   using DAGEdgeDataParent = DAGData<VectorType, DataType, EdgeId>;
+  explicit DAGEdgeData<VectorType, DataType>(const size_t count = 0)
+      : DAGData<VectorType, DataType, EdgeId>(count) {}
   explicit DAGEdgeData<VectorType, DataType>(GPDAG &dag)
-      : DAGData<VectorType, DataType, EdgeId>(dag, dag.EdgeCountWithLeafSubsplits()) {
-    Resize();
-  }
+      : DAGData<VectorType, DataType, EdgeId>(dag, dag.EdgeCountWithLeafSubsplits()) {}
 
-  void Resize(std::optional<const Reindexer> reindexer = std::nullopt,
-              std::optional<const size_t> explicit_alloc = std::nullopt) {
-    DAGEdgeDataParent::Resize(DAGEdgeDataParent::GetDAG().NodeCount(), reindexer,
-                              explicit_alloc.value());
+  virtual void Resize(const size_t new_count,
+                      std::optional<const Reindexer> reindexer = std::nullopt,
+                      std::optional<const size_t> explicit_alloc = std::nullopt) {
+    DAGEdgeDataParent::Resize(new_count, reindexer, explicit_alloc);
+  }
+  virtual void Resize(std::optional<const Reindexer> reindexer = std::nullopt,
+                      std::optional<const size_t> explicit_alloc = std::nullopt) {
+    Assert(DAGEdgeDataParent::HasDAG(),
+           "Must assign DAG if calling Resize without explicit count.");
+    Resize(DAGEdgeDataParent::GetDAG().EdgeCountWithLeafSubsplits(), reindexer,
+           explicit_alloc);
   }
 };
 

@@ -18,6 +18,7 @@
 #include "reindexer.hpp"
 #include "subsplit_dag_storage.hpp"
 #include "optimization.hpp"
+#include "dag_branch_lengths.hpp"
 
 class GPEngine {
  public:
@@ -92,6 +93,7 @@ class GPEngine {
   // ** Access
 
   // Get Branch Lengths.
+  const DAGBranchLengths& GetBranchLengthData() const;
   EigenVectorXd GetBranchLengths() const;
   EigenVectorXd GetBranchLengths(const size_t start, const size_t length) const;
   // Get Branch Lengths from temporary space.
@@ -349,8 +351,7 @@ class GPEngine {
 
   // branch_lengths_, q_, etc. are indexed in the same way as sbn_parameters_ in
   // gp_instance.
-  EigenVectorXd branch_lengths_;
-  EigenVectorXd branch_length_differences_;
+  DAGBranchLengths branch_lengths_;
   // During initialization, stores the SBN prior.
   // After UpdateSBNProbabilities(), stores the SBN probabilities.
   // Stored in log space.

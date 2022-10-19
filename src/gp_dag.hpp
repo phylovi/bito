@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "gp_engine.hpp"
+#include "gp_operation.hpp"
 #include "quartet_hybrid_request.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_maps.hpp"

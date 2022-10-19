@@ -17,6 +17,7 @@
 #include "sankoff_handler.hpp"
 #include "dag_data.hpp"
 #include "optimization.hpp"
+#include "substitution_model.hpp"
 
 class TPEngine {
  public:
