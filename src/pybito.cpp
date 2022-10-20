@@ -626,8 +626,6 @@ PYBIND11_MODULE(bito, m) {
       .def("use_gradient_optimization", &GPInstance::UseGradientOptimization,
            "Use gradients for branch length optimization?",
            py::arg("use_gradients") = false)
-      .def("make_engine", &GPInstance::MakeEngine, "Prepare for optimization.",
-           py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_)
       .def("hot_start_branch_lengths", &GPInstance::HotStartBranchLengths,
            "Use given trees to initialize branch lengths.")
       .def("gather_branch_lengths", &GPInstance::GatherBranchLengths,
@@ -649,17 +647,33 @@ PYBIND11_MODULE(bito, m) {
            "Reinitiate optimization, perturbing one branch length at a time,  and "
            "track branch length and per pcsp likelihoods.")
 
-      // ** NNI Engine
+      // ** Engines
       .def("make_nni_engine", &GPInstance::MakeNNIEngine,
            R"raw(Initialize NNI Engine.)raw")
-      .def(
-          "sync_adjacent_nnis_with_dag",
-          [](GPInstance &self) { self.GetNNIEngine().SyncAdjacentNNIsWithDAG(); },
-          R"raw(Find all adjacent NNIs of DAG.)raw")
-      .def(
-          "adjacent_nni_count",
-          [](GPInstance &self) { self.GetNNIEngine().GetAdjacentNNICount(); },
-          R"raw(Get number of adjacent NNIs to current DAG.)raw");
+      .def("get_nni_engine", &GPInstance::GetNNIEngine, R"raw(Get NNI Engine.)raw")
+      .def("make_tp_engine", &GPInstance::MakeTPEngine,
+           R"raw(Initialize TP Engine.)raw")
+      .def("get_tp_engine", &GPInstance::GetTPEngine, R"raw(Get TP Engine.)raw");
+
+  // ** GP Engine
+
+  py::class_<GPEngine> gp_engine_class(
+      m, "gp_engine", R"raw(An engine for computing Generalized Pruning.)raw");
+
+  // ** NNI Engine
+
+  py::class_<NNIEngine> nni_engine_class(
+      m, "nni_engine", R"raw(An engine for computing NNI Systematic Search.)raw");
+  nni_engine_class
+      .def("adjacent_nni_count", &NNIEngine::GetAdjacentNNICount,
+           R"raw(Get number of NNIs adjacent to DAG.)raw")
+      .def("sync_adjacent_nnis_with_dag", &NNIEngine::SyncAdjacentNNIsWithDAG,
+           R"raw(Update adjacent NNIs to sync with current DAG.)raw");
+
+  // ** TP Engine
+
+  py::class_<TPEngine> tp_engine_class(m, "tp_engine",
+                                       R"raw(An engine for computing Top Pruning.)raw");
 
   // If you want to be sure to get all of the stdout and cerr messages, put your
   // Python code in a context like so:

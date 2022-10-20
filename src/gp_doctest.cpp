@@ -196,12 +196,7 @@ void CheckExactMapVsGPVector(const StringDoubleMap& exact_map,
 // IMPORTANT: See the note about appropriate tree file input to that function, as the
 // same applies here.
 void TestCompositeMarginal(GPInstance inst, const std::string& fasta_path) {
-  std::cout << "Estimate Branch Lengths [BEG" << std::endl;
-  std::cout
-      << inst.GetEngine()->GetBranchLengthData().GetBranchLengths().GetData().size()
-      << std::endl;
   inst.EstimateBranchLengths(0.00001, 100, true);
-  std::cout << "Estimate Branch Lengths [END" << std::endl;
 
   inst.PopulatePLVs();
   inst.ComputeLikelihoods();
@@ -215,7 +210,14 @@ void TestCompositeMarginal(GPInstance inst, const std::string& fasta_path) {
   double gp_marginal_log_likelihood = inst.GetEngine()->GetLogMarginalLikelihood();
   auto gp_per_pcsp_log_marginal =
       inst.PrettyIndexedPerGPCSPComponentsOfFullLogMarginal();
-  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), 1e-6);
+
+  double tolerance = 1e-6;
+  if (fabs(gp_marginal_log_likelihood - exact_log_likelihood) > tolerance) {
+    std::cout << "gp_marginal_log_likelihood: " << gp_marginal_log_likelihood
+              << std::endl;
+    std::cout << "exact_log_likelihood: " << exact_log_likelihood << std::endl;
+  }
+  CHECK_LT(fabs(gp_marginal_log_likelihood - exact_log_likelihood), tolerance);
   CheckExactMapVsGPVector(exact_per_pcsp_log_marginal, gp_per_pcsp_log_marginal);
 }
 
@@ -318,9 +320,17 @@ TEST_CASE("GPInstance: Gradient-based optimization with Newton's Method") {
   double true_length = 0.0694244266;
   double brent_diff = abs(nongradient_length - true_length);
   double grad_diff = abs(gradient_length - true_length);
+  double tol = 1e-6;
 
+  if (grad_diff < brent_diff || grad_diff < tol) {
+    std::cout << "grad_diff: " << grad_diff << std::endl;
+    std::cout << "brent_diff: " << brent_diff << std::endl;
+    std::cout << "nongradient_length: " << nongradient_length << std::endl;
+    std::cout << "gradient_length: " << gradient_length << std::endl;
+    std::cout << "true_length: " << true_length << std::endl;
+  }
   CHECK_LT(grad_diff, brent_diff);
-  CHECK_LT(grad_diff, 1e-6);
+  CHECK_LT(grad_diff, tol);
 }
 
 double MakeAndRunFluAGPInstance(double rescaling_threshold) {

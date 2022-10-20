@@ -205,6 +205,7 @@ void GPEngine::GrowSparePLVs(const size_t new_node_spare_count) {
 void GPEngine::GrowSpareGPCSPs(const size_t new_gpcsp_spare_count) {
   if (new_gpcsp_spare_count > GetSpareGPCSPCount()) {
     SetSpareGPCSPCount(new_gpcsp_spare_count);
+    branch_lengths_.SetSpareCount(new_gpcsp_spare_count);
     GrowGPCSPs(GetGPCSPCount());
   }
 }

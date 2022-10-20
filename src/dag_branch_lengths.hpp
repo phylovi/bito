@@ -42,6 +42,25 @@ class DAGBranchLengths {
     branch_length_differences_.SetDefaultValue(default_branch_length_);
   }
 
+  // ** Counts
+
+  size_t GetCount() { return GetBranchLengths().GetCount(); }
+  size_t GetSpareCount() { return GetBranchLengths().GetSpareCount(); }
+  size_t GetAllocCount() { return GetBranchLengths().GetAllocCount(); }
+
+  void SetCount(const size_t count) {
+    GetBranchLengths().SetCount(count);
+    GetBranchDifferences().SetCount(count);
+  }
+  void SetSpareCount(const size_t count) {
+    GetBranchLengths().SetSpareCount(count);
+    GetBranchDifferences().SetSpareCount(count);
+  }
+  void SetAllocCount(const size_t count) {
+    GetBranchLengths().SetAllocCount(count);
+    GetBranchDifferences().SetAllocCount(count);
+  }
+
   // ** Access
 
   // Get the size of the data vector.
@@ -109,6 +128,7 @@ class DAGBranchLengths {
 
   // ** Optimization
 
+  // These optimization functions can be called without an assigned reference DAG.
   void Optimization(const EdgeId edge_id, const NodeId parent_id,
                     const NodeId child_id);
   void BrentOptimization(const EdgeId edge_id, const NodeId parent_id,
@@ -122,18 +142,13 @@ class DAGBranchLengths {
   void NewtonOptimization(const EdgeId edge_id, const NodeId parent_id,
                           const NodeId child_id);
 
+  // These optimization functions require an assigned reference DAG.
   void Optimization(const EdgeId edge_id);
   void BrentOptimization(const EdgeId edge_id);
   void BrentOptimizationWithGradients(const EdgeId edge_id);
   void GradientAscentOptimization(const EdgeId edge_id);
   void LogSpaceGradientAscentOptimization(const EdgeId edge_id);
   void NewtonOptimization(const EdgeId edge_id);
-
-  // Optimization Helper functions
-  LogLikelihoodAndDerivativeFunc llh_f_and_df_ = nullptr;
-  LogLikelihoodAndFirstTwoDerivativesFunc llh_f_and_df_and_ddf_ = nullptr;
-  NegLogLikelihoodFunc neg_llh_f_ = nullptr;
-  NegLogLikelihoodAndDerivativeFunc neg_llh_f_and_df_ = nullptr;
 
  protected:
   // Branch lengths.
@@ -172,6 +187,12 @@ class DAGBranchLengths {
   // Number of iterations allowed for branch length optimization.
   size_t max_iter_for_optimization_ = 1000;
   double branch_length_difference_threshold_ = 1e-15;
+
+  // Optimization Helper functions
+  LogLikelihoodAndDerivativeFunc llh_f_and_df_ = nullptr;
+  LogLikelihoodAndFirstTwoDerivativesFunc llh_f_and_df_and_ddf_ = nullptr;
+  NegLogLikelihoodFunc neg_llh_f_ = nullptr;
+  NegLogLikelihoodAndDerivativeFunc neg_llh_f_and_df_ = nullptr;
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED
