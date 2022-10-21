@@ -141,6 +141,13 @@ GPEngine *GPInstance::GetEngine() const {
   return gp_engine_.get();
 }
 
+GPEngine &GPInstance::GetGPEngine() const {
+  Assert(HasEngine(),
+         "Engine not available. Call MakeEngine to make an engine for phylogenetic "
+         "likelihood computation.");
+  return *gp_engine_.get();
+}
+
 void GPInstance::ResizeEngineForDAG() {
   Assert(HasEngine(), "Engine not available. Call MakeEngine before resizing.");
   GetEngine()->GrowPLVs(GetDAG().NodeCountWithoutDAGRoot());
@@ -643,8 +650,7 @@ void GPInstance::MakeTPEngine(const std::string mmap_likelihood_path,
 }
 
 TPEngine &GPInstance::GetTPEngine() {
-  Assert(tp_engine_,
-         "TpEngine not available. Call MakeTPEngine when tp_engine has not been made.");
+  Assert(tp_engine_, "TPEngine not available. Call MakeTPEngine before GetTPEngine.");
   return *tp_engine_;
 }
 
@@ -661,6 +667,7 @@ void GPInstance::MakeNNIEngine() {
 }
 
 NNIEngine &GPInstance::GetNNIEngine() {
-  Assert(nni_engine_, "GPInstance::GetNNIEngine() when nni_engine has not been made.");
+  Assert(nni_engine_,
+         "NNIEngine not available. Call MakeNNIEngine before GetNNIEngine.");
   return *nni_engine_;
 }

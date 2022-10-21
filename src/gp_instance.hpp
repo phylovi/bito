@@ -42,6 +42,7 @@ class GPInstance {
   // ** GP Engine
   void MakeEngine(double rescaling_threshold = GPEngine::default_rescaling_threshold_);
   GPEngine *GetEngine() const;
+  GPEngine &GetGPEngine() const;
   bool HasEngine() const;
   void ResizeEngineForDAG();
 

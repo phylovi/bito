@@ -229,6 +229,8 @@ class GPEngine {
   void RescalePLVIfNeeded(size_t plv_idx);
   double LogRescalingFor(size_t plv_idx);
 
+  // ** Optimization
+
   Optimization::OptimizationMethod optimization_method_;
   void Optimization(const GPOperations::OptimizeBranchLength& op);
   void BrentOptimization(const GPOperations::OptimizeBranchLength& op);
@@ -236,6 +238,14 @@ class GPEngine {
   void GradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void LogSpaceGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
   void NewtonOptimization(const GPOperations::OptimizeBranchLength& op);
+
+  // TODO: Remove this!
+  void OldBrentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void OldBrentOptimizationWithGradients(const GPOperations::OptimizeBranchLength& op);
+  void OldGradientAscentOptimization(const GPOperations::OptimizeBranchLength& op);
+  void OldLogSpaceGradientAscentOptimization(
+      const GPOperations::OptimizeBranchLength& op);
+  void OldNewtonOptimization(const GPOperations::OptimizeBranchLength& op);
 
   inline void PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(size_t src1_idx,
                                                                      size_t src2_idx) {

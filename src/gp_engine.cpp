@@ -622,22 +622,95 @@ void GPEngine::SetSignificantDigitsForOptimization(int significant_digits) {
   significant_digits_for_optimization_ = significant_digits;
 }
 
+// TODO: Remove this!
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
+  EdgeId edge_id = EdgeId(op.gpcsp_);
+  auto branch_length_differences_ = branch_lengths_.GetBranchDifferences();
+
+  if (branch_length_differences_(edge_id) < branch_length_difference_threshold_) {
+    return;
+  }
+
+  // Sets transition matrix to have normal branch lengths.
+  auto negative_log_likelihood = [this, &op, &edge_id](double log_branch_length) {
+    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
+    PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
+    return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+  };
+
+  double current_log_branch_length = log(branch_lengths_(edge_id));
+  double current_neg_log_likelihood =
+      negative_log_likelihood(current_log_branch_length);
+
+  const auto [log_branch_length, neg_log_likelihood] =
+      Optimization::BrentMinimize<false>(
+          negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
+          max_log_branch_length_, significant_digits_for_optimization_,
+          max_iter_for_optimization_, step_size_for_log_space_optimization_);
+
+  // Numerical optimization sometimes yields new nllk > current nllk.
+  // In this case, we reset the branch length to the previous value.
+  if (neg_log_likelihood > current_neg_log_likelihood) {
+    branch_lengths_(edge_id) = exp(current_log_branch_length);
+  } else {
+    branch_lengths_(edge_id) = exp(log_branch_length);
+  }
+  branch_length_differences_(edge_id) =
+      abs(exp(current_log_branch_length) - branch_lengths_(edge_id));
+}
+
+void GPEngine::OldBrentOptimization(const GPOperations::OptimizeBranchLength& op) {
   DAGBranchLengths::NegLogLikelihoodFunc negative_log_likelihood =
       [this, &op](EdgeId edge_id, NodeId parent_id, NodeId child_id,
                   double log_branch_length) {
-        double branch_length = exp(log_branch_length);
-        branch_lengths_(edge_id) = branch_length;
-        auto [log_likelihood, log_likelihood_derivative] =
-            this->LogLikelihoodAndDerivative(op);
-        return -log_likelihood;
+        SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
+        PreparePerPatternLogLikelihoodsForGPCSP(parent_id.value_, child_id.value_);
+        return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
       };
   branch_lengths_.SetNegLogLikelihoodFunc(negative_log_likelihood);
   branch_lengths_.BrentOptimization(EdgeId(op.gpcsp_), NodeId(op.rootward_),
                                     NodeId(op.leafward_));
 }
 
+// TODO: Remove this!
 void GPEngine::BrentOptimizationWithGradients(
+    const GPOperations::OptimizeBranchLength& op) {
+  EdgeId edge_id = EdgeId(op.gpcsp_);
+  auto branch_length_differences_ = branch_lengths_.GetBranchDifferences();
+
+  if (branch_length_differences_(edge_id) < branch_length_difference_threshold_) {
+    return;
+  }
+
+  auto negative_log_likelihood_and_derivative = [this, &op,
+                                                 &edge_id](double log_branch_length) {
+    double branch_length = exp(log_branch_length);
+    branch_lengths_(edge_id) = branch_length;
+    auto [log_likelihood, log_likelihood_derivative] =
+        this->LogLikelihoodAndDerivative(op);
+    return std::make_pair(-log_likelihood, -branch_length * log_likelihood_derivative);
+  };
+
+  double current_log_branch_length = log(branch_lengths_(edge_id));
+  double current_neg_log_likelihood =
+      negative_log_likelihood_and_derivative(current_log_branch_length).first;
+  const auto [log_branch_length, neg_log_likelihood] =
+      Optimization::BrentMinimize<true>(
+          negative_log_likelihood_and_derivative, current_log_branch_length,
+          min_log_branch_length_, max_log_branch_length_,
+          significant_digits_for_optimization_, max_iter_for_optimization_,
+          step_size_for_log_space_optimization_);
+
+  if (neg_log_likelihood > current_neg_log_likelihood) {
+    branch_lengths_(edge_id) = exp(current_log_branch_length);
+  } else {
+    branch_lengths_(edge_id) = exp(log_branch_length);
+  }
+  branch_length_differences_(edge_id) =
+      abs(exp(current_log_branch_length) - branch_lengths_(edge_id));
+}
+
+void GPEngine::OldBrentOptimizationWithGradients(
     const GPOperations::OptimizeBranchLength& op) {
   DAGBranchLengths::NegLogLikelihoodAndDerivativeFunc
       negative_log_likelihood_and_derivative =
@@ -682,25 +755,69 @@ void GPEngine::LogSpaceGradientAscentOptimization(
       EdgeId(op.gpcsp_), NodeId(op.rootward_), NodeId(op.leafward_));
 }
 
+// TODO: Remove this!
 void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) {
-  DAGBranchLengths::LogLikelihoodAndFirstTwoDerivativesFunc
-      log_likelihood_and_first_two_derivatives =
-          [this, &op](EdgeId edge_id, NodeId parent_id, NodeId child_id,
-                      double log_branch_length) {
-            double x = exp(log_branch_length);
-            branch_lengths_(EdgeId(op.gpcsp_)) = x;
-            auto [f_x, f_prime_x, f_double_prime_x] =
-                this->LogLikelihoodAndFirstTwoDerivatives(op);
-            // x = exp(y) --> f'(exp(y)) = exp(y) * f'(exp(y)) = x * f'(x)
-            double f_prime_y = x * f_prime_x;
-            double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
+  EdgeId edge_id = EdgeId(op.gpcsp_);
+  auto branch_length_differences_ = branch_lengths_.GetBranchDifferences();
 
-            return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
-          };
-  branch_lengths_.SetLogLikelihoodAndFirstTwoDerivativesFunc(
-      log_likelihood_and_first_two_derivatives);
-  branch_lengths_.NewtonOptimization(EdgeId(op.gpcsp_), NodeId(op.rootward_),
-                                     NodeId(op.leafward_));
+  if (branch_length_differences_(edge_id) < branch_length_difference_threshold_) {
+    return;
+  }
+
+  auto log_likelihood_and_first_two_derivatives = [this, &op,
+                                                   &edge_id](double log_branch_length) {
+    double x = exp(log_branch_length);
+    branch_lengths_(edge_id) = x;
+    auto [f_x, f_prime_x, f_double_prime_x] =
+        this->LogLikelihoodAndFirstTwoDerivatives(op);
+    // x = exp(y) --> f'(exp(y)) = exp(y) * f'(exp(y)) = x * f'(x)
+    double f_prime_y = x * f_prime_x;
+    double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
+    return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
+  };
+
+  double current_log_branch_length = log(branch_lengths_(edge_id));
+  const auto log_branch_length = Optimization::NewtonRaphsonOptimization(
+      log_likelihood_and_first_two_derivatives, current_log_branch_length,
+      significant_digits_for_optimization_, denominator_tolerance_for_newton_,
+      min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
+
+  branch_lengths_(edge_id) = exp(log_branch_length);
+
+  branch_length_differences_(edge_id) =
+      abs(exp(current_log_branch_length) - branch_lengths_(edge_id));
+}
+
+void GPEngine::OldNewtonOptimization(const GPOperations::OptimizeBranchLength& op) {
+  EdgeId edge_id = EdgeId(op.gpcsp_);
+  auto branch_length_differences_ = branch_lengths_.GetBranchDifferences();
+
+  if (branch_length_differences_(edge_id) < branch_length_difference_threshold_) {
+    return;
+  }
+
+  auto log_likelihood_and_first_two_derivatives = [this, &op,
+                                                   &edge_id](double log_branch_length) {
+    double x = exp(log_branch_length);
+    branch_lengths_(edge_id) = x;
+    auto [f_x, f_prime_x, f_double_prime_x] =
+        this->LogLikelihoodAndFirstTwoDerivatives(op);
+    // x = exp(y) --> f'(exp(y)) = exp(y) * f'(exp(y)) = x * f'(x)
+    double f_prime_y = x * f_prime_x;
+    double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
+    return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
+  };
+
+  double current_log_branch_length = log(branch_lengths_(edge_id));
+  const auto log_branch_length = Optimization::NewtonRaphsonOptimization(
+      log_likelihood_and_first_two_derivatives, current_log_branch_length,
+      significant_digits_for_optimization_, denominator_tolerance_for_newton_,
+      min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
+
+  branch_lengths_(edge_id) = exp(log_branch_length);
+
+  branch_length_differences_(edge_id) =
+      abs(exp(current_log_branch_length) - branch_lengths_(edge_id));
 }
 
 void GPEngine::HotStartBranchLengths(const RootedTreeCollection& tree_collection,

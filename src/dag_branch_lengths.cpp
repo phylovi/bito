@@ -196,6 +196,7 @@ void DAGBranchLengths::NewtonOptimization(const EdgeId edge_id, const NodeId par
       log_likelihood_and_first_two_derivatives, current_log_branch_length,
       significant_digits_for_optimization_, denominator_tolerance_for_newton_,
       min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
+  branch_lengths_(edge_id) = exp(log_branch_length);
 
   branch_length_differences_(edge_id) =
       abs(exp(current_log_branch_length) - branch_lengths_(edge_id));
@@ -218,21 +219,25 @@ void DAGBranchLengths::NewtonOptimization(const EdgeId edge_id, const NodeId par
 // }
 
 //   DoublePair DAGBranchLengths::LogLikelihoodAndDerivative(
-//     const EdgeId edge_id, const NodeId parent_id, const NodeId child_id, const double log_branch_length) {
+//     const EdgeId edge_id, const NodeId parent_id, const NodeId child_id, const double
+//     log_branch_length) {
 //   SetTransitionAndDerivativeMatricesToHaveBranchLength(
 //       branch_lengths_(edge_id));
 //   PreparePerPatternLogLikelihoodsForGPCSP(parent_id.value_, child_id.value_);
 //   // The prior is expressed using the current value of q_.
-//   // The phylogenetic component of the likelihood is weighted with the number of times
+//   // The phylogenetic component of the likelihood is weighted with the number of
+//   times
 //   // we see the site patterns.
-//   const double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+//   const double log_likelihood =
+//   per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
 //   // The per-site likelihood derivative is calculated in the same way as the per-site
 //   // likelihood, but using the derivative matrix instead of the transition matrix.
 //   // We first prepare two useful vectors _without_ likelihood rescaling, because the
 //   // rescalings cancel out in the ratio below.
-//   PrepareUnrescaledPerPatternLikelihoodDerivatives(parent_id.value_, child_id.value_);
-//   PrepareUnrescaledPerPatternLikelihoods(parent_id.value_, child_id.value_);
+//   PrepareUnrescaledPerPatternLikelihoodDerivatives(parent_id.value_,
+//   child_id.value_); PrepareUnrescaledPerPatternLikelihoods(parent_id.value_,
+//   child_id.value_);
 //   // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
 //   // of l_i divided by l_i.
 //   per_pattern_likelihood_derivative_ratios_ =
@@ -242,20 +247,24 @@ void DAGBranchLengths::NewtonOptimization(const EdgeId edge_id, const NodeId par
 //   return {log_likelihood, log_likelihood_derivative};
 // }
 
-// std::tuple<double, double, double> DAGBranchLengths::LogLikelihoodAndFirstTwoDerivatives(
-//     const EdgeId edge_id, const NodeId parent_id, const NodeId child_id, const double log_branch_length) {
+// std::tuple<double, double, double>
+// DAGBranchLengths::LogLikelihoodAndFirstTwoDerivatives(
+//     const EdgeId edge_id, const NodeId parent_id, const NodeId child_id, const double
+//     log_branch_length) {
 //   SetTransitionAndDerivativeMatricesToHaveBranchLength(
 //       branch_lengths_(edge_id));
 //   PreparePerPatternLogLikelihoodsForGPCSP(parent_id.value_, child_id.value_);
 
-//   const double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+//   const double log_likelihood =
+//   per_pattern_log_likelihoods_.dot(site_pattern_weights_);
 
 //   // The per-site likelihood derivative is calculated in the same way as the per-site
 //   // likelihood, but using the derivative matrix instead of the transition matrix.
 //   // We first prepare two useful vectors _without_ likelihood rescaling, because the
 //   // rescalings cancel out in the ratio below.
-//   PrepareUnrescaledPerPatternLikelihoodDerivatives(parent_id.value_, child_id.value_);
-//   PrepareUnrescaledPerPatternLikelihoods(parent_id.value_, child_id.value_);
+//   PrepareUnrescaledPerPatternLikelihoodDerivatives(parent_id.value_,
+//   child_id.value_); PrepareUnrescaledPerPatternLikelihoods(parent_id.value_,
+//   child_id.value_);
 //   // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
 //   // of l_i divided by l_i.
 //   per_pattern_likelihood_derivative_ratios_ =
@@ -266,7 +275,8 @@ void DAGBranchLengths::NewtonOptimization(const EdgeId edge_id, const NodeId par
 //   // Second derivative is calculated the same way, but has an extra term due to
 //   // the product rule.
 
-//   PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(parent_id.value_, child_id.value_);
+//   PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(parent_id.value_,
+//   child_id.value_);
 
 //   per_pattern_likelihood_second_derivative_ratios_ =
 //       (per_pattern_likelihood_second_derivatives_.array() *

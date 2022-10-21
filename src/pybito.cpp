@@ -648,6 +648,8 @@ PYBIND11_MODULE(bito, m) {
            "track branch length and per pcsp likelihoods.")
 
       // ** Engines
+      .def("make_gp_engine", &GPInstance::MakeEngine, R"raw(Initialize GP Engine.)raw")
+      .def("get_gp_engine", &GPInstance::GetGPEngine, R"raw(Get GP Engine.)raw")
       .def("make_nni_engine", &GPInstance::MakeNNIEngine,
            R"raw(Initialize NNI Engine.)raw")
       .def("get_nni_engine", &GPInstance::GetNNIEngine, R"raw(Get NNI Engine.)raw")
@@ -665,10 +667,32 @@ PYBIND11_MODULE(bito, m) {
   py::class_<NNIEngine> nni_engine_class(
       m, "nni_engine", R"raw(An engine for computing NNI Systematic Search.)raw");
   nni_engine_class
-      .def("adjacent_nni_count", &NNIEngine::GetAdjacentNNICount,
+      .def("accepted_nni_count", &NNIEngine::GetAdjacentNNICount,
            R"raw(Get number of NNIs adjacent to DAG.)raw")
+      // ** Primary Runners
+      .def("run", &NNIEngine::Run, R"raw(Primary runner for NNI systematic search.)raw")
+      .def("run_init", &NNIEngine::RunInit,
+           R"raw(Run initialization step of NNI search.)raw")
+      .def("run_main_loop", &NNIEngine::RunMainLoop,
+           R"raw(Run main loop of NNI search.)raw")
+      .def("run_post_loop", &NNIEngine::RunPostLoop,
+           R"raw(Run post loop of NNI search.)raw")
+      // ** Filtering schemes
+      .def("set_gp_likelihood_filtering_scheme",
+           &NNIEngine::SetGPLikelihoodFilteringScheme, R"raw(.)raw")
+      .def("set_tp_likelihood_filtering_scheme",
+           &NNIEngine::SetTPLikelihoodFilteringScheme, R"raw(.)raw")
+      .def("set_tp_parsimony_filtering_scheme",
+           &NNIEngine::SetTPParsimonyFilteringScheme, R"raw(.)raw")
+      // ** Runner subroutines
+      .def("reset_all_nnis", &NNIEngine::ResetAllNNIs, R"raw(.)raw")
       .def("sync_adjacent_nnis_with_dag", &NNIEngine::SyncAdjacentNNIsWithDAG,
-           R"raw(Update adjacent NNIs to sync with current DAG.)raw");
+           R"raw(Update adjacent NNIs to sync with current DAG.)raw")
+      // TODO: Generalize to all eval engines.
+      .def("prep_eval_engine", &NNIEngine::PrepGPEngineForLikelihoods, R"raw(.)raw")
+      .def("filter_init", &NNIEngine::FilterInit, R"raw(.)raw")
+      .def("graft_adjacent_nnis_to_dag", &NNIEngine::GraftAdjacentNNIsToDAG,
+           R"raw(.)raw");
 
   // ** TP Engine
 
