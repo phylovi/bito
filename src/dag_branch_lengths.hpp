@@ -9,6 +9,7 @@
 #include "gp_dag.hpp"
 #include "dag_data.hpp"
 #include "optimization.hpp"
+#include "substitution_model.hpp"
 
 class DAGBranchLengths {
  public:
@@ -150,6 +151,15 @@ class DAGBranchLengths {
   void LogSpaceGradientAscentOptimization(const EdgeId edge_id);
   void NewtonOptimization(const EdgeId edge_id);
 
+  // ** Optimization Helpers
+
+void SetTransitionAndDerivativeMatricesToHaveBranchLength(
+    double branch_length);
+  DoublePair LogLikelihoodAndDerivative(
+    EdgeId edge_id, NodeId parent_id, NodeId child_id, double log_branch_length);
+std::tuple<double, double, double> LogLikelihoodAndFirstTwoDerivatives(
+    EdgeId edge_id, NodeId parent_id, NodeId child_id, double log_branch_length);
+
  protected:
   // Branch lengths.
   DAGEdgeDoubleData branch_lengths_;
@@ -187,6 +197,23 @@ class DAGBranchLengths {
   // Number of iterations allowed for branch length optimization.
   size_t max_iter_for_optimization_ = 1000;
   double branch_length_difference_threshold_ = 1e-15;
+
+  // ** Model
+
+  // When we change from JC69Model, check that we are actually doing transpose in
+  // leafward calculations.
+  // JC69Model substitution_model_;
+  // Eigen::Matrix4d eigenmatrix_ = substitution_model_.GetEigenvectors().reshaped(4, 4);
+  // Eigen::Matrix4d inverse_eigenmatrix_ =
+  //     substitution_model_.GetInverseEigenvectors().reshaped(4, 4);
+  // Eigen::Vector4d eigenvalues_ = substitution_model_.GetEigenvalues();
+  // Eigen::Vector4d diagonal_vector_;
+  // Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
+  // Eigen::Matrix4d transition_matrix_;
+  // Eigen::Matrix4d derivative_matrix_;
+  // Eigen::Matrix4d hessian_matrix_;
+  // Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
+  // EigenVectorXd site_pattern_weights_;
 
   // Optimization Helper functions
   LogLikelihoodAndDerivativeFunc llh_f_and_df_ = nullptr;

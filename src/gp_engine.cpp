@@ -471,8 +471,6 @@ EigenConstVectorXdRef GPEngine::GetHybridMarginals() const {
 
 EigenConstVectorXdRef GPEngine::GetSBNParameters() const { return q_; };
 
-// ** Other Operations
-
 DoublePair GPEngine::LogLikelihoodAndDerivative(
     const GPOperations::OptimizeBranchLength& op) {
   SetTransitionAndDerivativeMatricesToHaveBranchLength(
@@ -696,6 +694,7 @@ void GPEngine::NewtonOptimization(const GPOperations::OptimizeBranchLength& op) 
             // x = exp(y) --> f'(exp(y)) = exp(y) * f'(exp(y)) = x * f'(x)
             double f_prime_y = x * f_prime_x;
             double f_double_prime_y = f_prime_y + std::pow(x, 2) * f_double_prime_x;
+
             return std::make_tuple(f_x, f_prime_y, f_double_prime_y);
           };
   branch_lengths_.SetLogLikelihoodAndFirstTwoDerivativesFunc(

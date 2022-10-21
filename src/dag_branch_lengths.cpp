@@ -6,6 +6,8 @@
 
 #include "dag_branch_lengths.hpp"
 
+// ** Optimization
+
 void DAGBranchLengths::Optimization(const EdgeId edge_id) {
   Assert(HasDAG(), "DAG must be set to call optimization without only edge_id.");
   const auto& edge = GetDAG().GetDAGEdge(edge_id);
@@ -195,8 +197,87 @@ void DAGBranchLengths::NewtonOptimization(const EdgeId edge_id, const NodeId par
       significant_digits_for_optimization_, denominator_tolerance_for_newton_,
       min_log_branch_length_, max_log_branch_length_, max_iter_for_optimization_);
 
-  branch_lengths_(edge_id) = exp(log_branch_length);
-
   branch_length_differences_(edge_id) =
       abs(exp(current_log_branch_length) - branch_lengths_(edge_id));
 }
+
+// ** Optimization Helpers
+
+// void DAGBranchLengths::SetTransitionAndDerivativeMatricesToHaveBranchLength(
+//     double branch_length) {
+//   diagonal_vector_ = (branch_length * eigenvalues_).array().exp();
+//   diagonal_matrix_.diagonal() = diagonal_vector_;
+//   transition_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+//   // Now calculating derivative matrix
+//   diagonal_matrix_.diagonal() = eigenvalues_.array() * diagonal_vector_.array();
+//   derivative_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+//   // Now calculating hessian matrix
+//   diagonal_matrix_.diagonal() =
+//       eigenvalues_.array() * eigenvalues_.array() * diagonal_vector_.array();
+//   hessian_matrix_ = eigenmatrix_ * diagonal_matrix_ * inverse_eigenmatrix_;
+// }
+
+//   DoublePair DAGBranchLengths::LogLikelihoodAndDerivative(
+//     const EdgeId edge_id, const NodeId parent_id, const NodeId child_id, const double log_branch_length) {
+//   SetTransitionAndDerivativeMatricesToHaveBranchLength(
+//       branch_lengths_(edge_id));
+//   PreparePerPatternLogLikelihoodsForGPCSP(parent_id.value_, child_id.value_);
+//   // The prior is expressed using the current value of q_.
+//   // The phylogenetic component of the likelihood is weighted with the number of times
+//   // we see the site patterns.
+//   const double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+
+//   // The per-site likelihood derivative is calculated in the same way as the per-site
+//   // likelihood, but using the derivative matrix instead of the transition matrix.
+//   // We first prepare two useful vectors _without_ likelihood rescaling, because the
+//   // rescalings cancel out in the ratio below.
+//   PrepareUnrescaledPerPatternLikelihoodDerivatives(parent_id.value_, child_id.value_);
+//   PrepareUnrescaledPerPatternLikelihoods(parent_id.value_, child_id.value_);
+//   // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
+//   // of l_i divided by l_i.
+//   per_pattern_likelihood_derivative_ratios_ =
+//       per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
+//   const double log_likelihood_derivative =
+//       per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
+//   return {log_likelihood, log_likelihood_derivative};
+// }
+
+// std::tuple<double, double, double> DAGBranchLengths::LogLikelihoodAndFirstTwoDerivatives(
+//     const EdgeId edge_id, const NodeId parent_id, const NodeId child_id, const double log_branch_length) {
+//   SetTransitionAndDerivativeMatricesToHaveBranchLength(
+//       branch_lengths_(edge_id));
+//   PreparePerPatternLogLikelihoodsForGPCSP(parent_id.value_, child_id.value_);
+
+//   const double log_likelihood = per_pattern_log_likelihoods_.dot(site_pattern_weights_);
+
+//   // The per-site likelihood derivative is calculated in the same way as the per-site
+//   // likelihood, but using the derivative matrix instead of the transition matrix.
+//   // We first prepare two useful vectors _without_ likelihood rescaling, because the
+//   // rescalings cancel out in the ratio below.
+//   PrepareUnrescaledPerPatternLikelihoodDerivatives(parent_id.value_, child_id.value_);
+//   PrepareUnrescaledPerPatternLikelihoods(parent_id.value_, child_id.value_);
+//   // If l_i is the per-site likelihood, the derivative of log(l_i) is the derivative
+//   // of l_i divided by l_i.
+//   per_pattern_likelihood_derivative_ratios_ =
+//       per_pattern_likelihood_derivatives_.array() / per_pattern_likelihoods_.array();
+//   const double log_likelihood_gradient =
+//       per_pattern_likelihood_derivative_ratios_.dot(site_pattern_weights_);
+
+//   // Second derivative is calculated the same way, but has an extra term due to
+//   // the product rule.
+
+//   PrepareUnrescaledPerPatternLikelihoodSecondDerivatives(parent_id.value_, child_id.value_);
+
+//   per_pattern_likelihood_second_derivative_ratios_ =
+//       (per_pattern_likelihood_second_derivatives_.array() *
+//            per_pattern_likelihoods_.array() -
+//        per_pattern_likelihood_derivatives_.array() *
+//            per_pattern_likelihood_derivatives_.array()) /
+//       (per_pattern_likelihoods_.array() * per_pattern_likelihoods_.array());
+
+//   const double log_likelihood_hessian =
+//       per_pattern_likelihood_second_derivative_ratios_.dot(site_pattern_weights_);
+
+//   return std::make_tuple(log_likelihood, log_likelihood_gradient,
+//                          log_likelihood_hessian);
+// }
