@@ -152,7 +152,21 @@ class Bitset {
   enum class SubsplitClade : size_t { Left, Right, Unspecified };
   class SubsplitCladeEnum
       : public EnumWrapper<SubsplitClade, size_t, 2, SubsplitClade::Left,
-                           SubsplitClade::Right> {};
+                           SubsplitClade::Right> {
+   public:
+    static inline const std::string Prefix = "SubsplitClade";
+    static inline const Array<std::string> Labels = {{"Left", "Right"}};
+
+    static std::string ToString(const SubsplitClade e) {
+      std::stringstream ss;
+      ss << Prefix << "::" << Labels[e];
+      return ss.str();
+    }
+    friend std::ostream &operator<<(std::ostream &os, const SubsplitClade e) {
+      os << ToString(e);
+      return os;
+    }
+  };
 
   static const inline size_t SubsplitCladeCount = 2;
   // Does not iterate over "unspecified" clade.

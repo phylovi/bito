@@ -35,11 +35,14 @@ class NNIEngine {
   // ** Access
 
   // Get Reference of DAG.
+  GPDAG &GetGPDAG() { return dag_; };
   const GPDAG &GetGPDAG() const { return dag_; };
   // Get Reference of GraftDAG.
-  GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); };
+  GraftDAG &GetGraftDAG() { return *graft_dag_.get(); };
+  const GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); };
   // Get Reference of Evaluation Engine.
   NNIEvaluationEngine &GetNNIEvaluationEngine() { return *eval_engine_; }
+  NNIEvaluationEngine SetNNIEvaluationEngine() {}
   // Get Reference of GPEngine.
   const GPEngine &GetGPEngine() const { return *gp_engine_; }
   bool IsUsingGPEngine() { return gp_engine_ != nullptr; }
@@ -66,9 +69,15 @@ class NNIEngine {
   size_t GetSweepCount() const { return sweep_count_; };
 
   // Set GP Engine.
-  void SetGPEngine(GPEngine *gp_engine) { gp_engine_ = gp_engine; }
+  void SetGPEngine(GPEngine *gp_engine) {
+    gp_engine_ = gp_engine;
+    eval_engines_["gp_engine"] = &NNIEvaluationEngineViaGP(*this, *gp_engine_);
+  }
   // Set TP Engine.
-  void SetTPEngine(TPEngine *tp_engine) { tp_engine_ = tp_engine; }
+  void SetTPEngine(TPEngine *tp_engine) {
+    tp_engine_ = tp_engine;
+    eval_engines_["tp_engine"] = &NNIEvaluationEngineViaTP(*this, *tp_engine_);
+  }
 
   // ** Runners
   // These start the engine, which procedurally ranks and adds (and maybe removes) NNIs
@@ -87,16 +96,16 @@ class NNIEngine {
 
   // Initialization step for filter before beginning
   using StaticFilterInitFunction =
-      std::function<void(NNIEngine &, GPEngine &, TPEngine &, GraftDAG &)>;
+      std::function<void(NNIEngine &, NNIEvaluationEngine &, GraftDAG &)>;
   // Update step for any filter computation work to be done at start of each sweep.
   using StaticFilterUpdateFunction =
-      std::function<void(NNIEngine &, GPEngine &, TPEngine &, GraftDAG &)>;
+      std::function<void(NNIEngine &, NNIEvaluationEngine &, GraftDAG &)>;
   // Function template for computational evaluation to be performed on an adjacent NNI.
   using StaticFilterEvaluateFunction = std::function<double(
-      NNIEngine &, GPEngine &, TPEngine &, GraftDAG &, const NNIOperation &)>;
+      NNIEngine &, GPEngine &, NNIEvaluationEngine &, const NNIOperation &)>;
   // Function template for processing an adjacent NNI to be accepted or rejected.
   using StaticFilterProcessFunction =
-      std::function<bool(NNIEngine &, GPEngine &, TPEngine &, GraftDAG &,
+      std::function<bool(NNIEngine &, NNIEvaluationEngine &, GraftDAG &,
                          const NNIOperation &, const double)>;
 
   // Set to evaluate all NNIs to 0.
@@ -215,37 +224,27 @@ class NNIEngine {
   // Build GPOperation vector for computing NNI Likelihood for all adjacent NNIs.
   GPOperationVector BuildGPOperationsForAdjacentNNILikelihoods(
       const bool via_reference = true);
-  // Grow engine to handle computing NNI Likelihoods for all adjacent NNIs.
-  // Option to grow engine for computing likelihoods via reference or via copy. If
-  // computing via reference, option whether to use unique temporaries (for testing and
-  // computing in parallel).
-  void GrowGPEngineForAdjacentNNILikelihoods(const bool via_reference = true,
-                                             const bool use_unique_temps = false);
-  // Performs entire GP likelihood computation for all Adjacent NNIs.
-  // Allocates necessary extra space on GPEngine, generates and processes
-  // GPOperationVector, then retrieves results and stores in Scored NNIs.
-  void ScoreAdjacentNNIsByGPLikelihood();
 
-  // ** Scoring via TP Likelihood
-
-  // Performs entire TP likelihood computation for all Adjacent NNIs.
-  // Allocates necessary extra space on TPEngine, computes and retrieves results and
-  // stores in Scored NNIs.
-  void ScoreAdjacentNNIsByTPLikelihood();
-
-  // ** Scoring via TP Parsimony
-
-  // Performs entire TP likelihood computation for all Adjacent NNIs.
-  // Allocates necessary extra space on TPEngine, computes and retrieves results and
-  // stores in Scored NNIs.
-  void ScoreAdjacentNNIsByTPParsimony();
-
-  // ** DAG & GPEngine Maintenance
+  // ** Evaluation Engine Maintenance
 
   // Initial GPEngine for use with GraftDAG.
-  void InitGPEngine();
+  void InitEvaluationEngine();
   // Populate PLVs for quick lookup of likelihoods.
-  void PrepGPEngineForLikelihoods();
+  void PrepEvaluationEngine();
+  // Resize Engine for modified DAG.
+  void GrowEvaluationEngineForDAG(std::optional<Reindexer> node_reindexer,
+                                  std::optional<Reindexer> edge_reindexer);
+  // Fetches Pre-NNI data to prep Post-NNI for likelihood computation. Method stores
+  // intermediate values in the GPEngine temp space (expects GPEngine has already been
+  // resized).
+  void GrowEvaluationEngineForAdjacentNNIs(const bool via_reference = true,
+                                           const bool use_unique_temps = false);
+  // Performs entire scoring computation for all Adjacent NNIs.
+  // Allocates necessary extra space on Evaluation Engine.
+  void ScoreAdjacentNNIs();
+
+  // DAG Maintenance
+
   // Add all Accepted NNIs to Main DAG.
   void AddAcceptedNNIsToDAG();
   // Add all Adjacent NNIs to Graft DAG.
@@ -324,6 +323,7 @@ class NNIEngine {
   // Un-owned reference to NNI Evaluation Engine. Can be used to evaluate NNIs according
   // to Generalized Pruning, Likelihood, Parsimony, etc.
   NNIEvaluationEngine *eval_engine_ = nullptr;
+  std::unordered_map<std::string, NNIEvaluationEngine *> eval_engines_;
   // Un-owned reference GPEngine.
   GPEngine *gp_engine_ = nullptr;
   // Un-owned reference TPEngine.

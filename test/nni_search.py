@@ -25,9 +25,9 @@ def nni_search(fasta_file: text, newick_file: text):
     nni_engine = inst.get_nni_engine()
 
     # run
-    inst.sync_adjacent_nnis_with_dag()
+    nni_engine.sync_adjacent_nnis_with_dag()
     iter_count = 0
-    while inst.adjacent_nni_count() > 0:
+    while nni_engine.get_adjacent_nni_count() > 0:
         for i in range(len(inst.adjacent_nni_count())):
 
             iter_count += 1
@@ -45,4 +45,3 @@ if __name__ == "__main__":
     fasta_file = sys.argv[1]
     newick_file = sys.argv[2]
     nni_search(fasta_file, newick_file)
-

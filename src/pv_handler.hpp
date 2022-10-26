@@ -48,12 +48,13 @@ class PLVTypeEnum
     return (clade == SubsplitClade::Left) ? PLVType::RLeft : PLVType::RRight;
   }
 
+  static inline const std::string Prefix = "PLV";
   static inline const Array<std::string> Labels = {
       {"P", "PHatRight", "PHatLeft", "RHat", "RRight", "RLeft"}};
 
   static std::string ToString(const PLVType e) {
     std::stringstream ss;
-    ss << "PLV::" << Labels[e];
+    ss << Prefix << "::" << Labels[e];
     return ss.str();
   }
   friend std::ostream &operator<<(std::ostream &os, const PLVType e) {
@@ -79,11 +80,12 @@ class PSVTypeEnum
     return (clade == SubsplitClade::Left) ? PSVType::PLeft : PSVType::PRight;
   }
 
+  static inline const std::string Prefix = "PSV";
   static inline const Array<std::string> Labels = {{"PRight", "PLeft", "Q"}};
 
   static std::string ToString(const PSVType e) {
     std::stringstream ss;
-    ss << "PSV::" << Labels[e];
+    ss << Prefix << "::" << Labels[e];
     return ss.str();
   }
   friend std::ostream &operator<<(std::ostream &os, const PSVType e) {

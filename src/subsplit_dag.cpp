@@ -365,6 +365,32 @@ EdgeId SubsplitDAG::GetEdgeIdx(const Bitset &edge_pcsp) const {
                     edge_pcsp.PCSPGetChildSubsplit());
 }
 
+EdgeId SubsplitDAG::GetEdgeIdx(const NNIOperation &nni) const {
+  return GetEdgeIdx(nni.GetParent(), nni.GetChild());
+}
+
+NNIOperation SubsplitDAG::GetNNI(const EdgeId edge_id) const {
+  const auto &edge = GetDAGEdge(edge_id);
+  Bitset parent = GetDAGNodeBitset(edge.GetParent());
+  Bitset child = GetDAGNodeBitset(edge.GetChild());
+  return NNIOperation(parent, child);
+}
+
+NNIOperation SubsplitDAG::FindNNINeighborInDAG(const NNIOperation &nni) const {
+  for (const auto which_swap : {true, false}) {
+    const auto &swapped_nni = nni.NNIOperationFromNeighboringSubsplits(which_swap);
+    if (ContainsNode(swapped_nni.GetParent()) && ContainsNode(swapped_nni.GetChild())) {
+      auto parent_id = GetDAGNodeId(swapped_nni.GetParent());
+      auto child_id = GetDAGNodeId(swapped_nni.GetChild());
+      if (parent_id > NodeCount() || child_id > NodeCount()) {
+        std::cout << "ERROR: found NNI Neighbor from the GraftDAG!" << std::endl;
+      }
+      return swapped_nni;
+    }
+  }
+  Failwith("NNIOperation has no neighbors found in the DAG.");
+}
+
 EdgeIdPair SubsplitDAG::GetChildEdgeRange(const Bitset &subsplit,
                                           const bool is_edge_on_left) const {
   Assert(

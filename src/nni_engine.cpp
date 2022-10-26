@@ -290,221 +290,37 @@ template NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForPostNNIViaReferenc
     const NNIOperation &pre_nni, const NNIOperation &post_nni,
     const NNIEngine::KeyIndexMap &pre_key_idx, const GraftDAG &dag);
 
-// ** Scoring via NNI Likelihood
+// ** Evaluation Engine Maintenance
 
-NNIEngine::KeyIndexMapPair NNIEngine::PassGPEngineDataFromPreNNIToPostNNIViaCopy(
-    const NNIOperation &pre_nni, const NNIOperation &post_nni) {
-  // Find data in pre-NNI.
-  const auto pre_key_idx =
-      BuildKeyIndexMapForNNI(pre_nni, GetGraftDAG().NodeCount() - 1);
-  // Find data in NNI.
-  const auto &post_key_idx =
-      BuildKeyIndexMapForNNI(post_nni, GetGraftDAG().NodeCount() - 1);
-
-  // Array for mapping from pre-NNI plvs to post-NNI plvs.
-  const auto key_type_map =
-      BuildKeyIndexTypePairsFromPreNNIToPostNNI(pre_nni, post_nni);
-  // Copy over pre-NNI plvs to NNI plvs.
-  GetGPEngine().CopyPLVData(pre_key_idx[KeyIndex::Parent_RHat],
-                            post_key_idx[KeyIndex::Parent_RHat]);
-  for (const auto &[pre_key_type, post_key_type] : key_type_map) {
-    GetGPEngine().CopyPLVData(pre_key_idx[post_key_type], post_key_idx[pre_key_type]);
-  }
-
-  // Copy over associated node data.
-  for (const auto id_type : {KeyIndex::Parent_Id, KeyIndex::Child_Id}) {
-    const auto pre_node_id = NodeId(pre_key_idx[id_type]);
-    const auto post_node_id = NodeId(post_key_idx[id_type]);
-    GetGPEngine().CopyNodeData(pre_node_id, post_node_id);
-  }
-  // Copy over central edge data.
-  for (const auto idx_type : {KeyIndex::Edge}) {
-    const auto pre_edge_idx = EdgeId(pre_key_idx[idx_type]);
-    const auto post_edge_idx = EdgeId(post_key_idx[idx_type]);
-    GetGPEngine().CopyGPCSPData(pre_edge_idx, post_edge_idx);
-  }
-
-  // Copy over associated non-central edge data.
-  // Gather common ancestors and descendents of Pre-NNI and Post-NNI.
-  for (const auto key_index : {KeyIndex::Parent_Id, KeyIndex::Child_Id}) {
-    const auto pre_node = GetGraftDAG().GetDAGNode(NodeId(pre_key_idx[key_index]));
-    const auto post_node = GetGraftDAG().GetDAGNode(NodeId(post_key_idx[key_index]));
-    for (const auto direction : {Direction::Rootward, Direction::Leafward}) {
-      // Ignore parents of child node.
-      if ((key_index == KeyIndex::Child_Id) && (direction == Direction::Rootward)) {
-        continue;
-      }
-      for (const auto is_focal_clade : {true, false}) {
-        // Ignore focal children of parent node.
-        if ((key_index == KeyIndex::Parent_Id) && (direction == Direction::Leafward) &&
-            is_focal_clade) {
-          continue;
-        }
-        SubsplitClade prenni_clade = (is_focal_clade ? pre_nni.WhichCladeIsFocal()
-                                                     : pre_nni.WhichCladeIsSister());
-        for (const auto &adj_node_id : pre_node.GetNeighbors(direction, prenni_clade)) {
-          // If edge from Pre-NNI also exists in Post-NNI, copy data over.
-          if (GetGraftDAG().ContainsEdge(post_node.Id(), NodeId(adj_node_id))) {
-            const auto pre_edge_idx =
-                GetGraftDAG().GetEdgeIdx(pre_node.Id(), NodeId(adj_node_id));
-            const auto post_edge_idx =
-                GetGraftDAG().GetEdgeIdx(post_node.Id(), NodeId(adj_node_id));
-            GetGPEngine().CopyGPCSPData(pre_edge_idx, post_edge_idx);
-          }
-        }
-      }
-    }
-  }
-
-  return {pre_key_idx, post_key_idx};
-}
-
-NNIEngine::KeyIndexMapPair NNIEngine::PassGPEngineDataFromPreNNIToPostNNIViaReference(
-    const NNIOperation &pre_nni, const NNIOperation &post_nni, const size_t nni_count,
-    const bool use_unique_temps) {
-  // Find data in pre-NNI.
-  KeyIndexMap pre_key_idx =
-      BuildKeyIndexMapForNNI(pre_nni, GetGPDAG().NodeCountWithoutDAGRoot());
-  // Find data in post-NNI.
-  KeyIndexMap post_key_idx =
-      BuildKeyIndexMapForPostNNIViaReferencePreNNI(pre_nni, post_nni, pre_key_idx);
-
-  // Assign temporary place in engine to store intermediate values.
-  size_t temp_offset_1, temp_offset_2;
-  if (use_unique_temps) {
-    temp_offset_1 = nni_count * 2;
-    temp_offset_2 = (nni_count * 2) + 1;
-  } else {
-    temp_offset_1 = 0;
-    temp_offset_2 = 1;
-  }
-  post_key_idx[KeyIndex::Parent_RFocal] =
-      GetGPEngine().GetPLVHandler().GetSparePVIndex(PVId(temp_offset_1)).value_;
-  post_key_idx[KeyIndex::Child_P] =
-      GetGPEngine().GetPLVHandler().GetSparePVIndex(PVId(temp_offset_2)).value_;
-  post_key_idx[KeyIndex::Edge] = GetGPEngine().GetSpareGPCSPIndex(nni_count);
-
-  // Copy over central edge data.
-  for (const auto idx_type : {KeyIndex::Edge}) {
-    const auto pre_edge_idx = EdgeId(pre_key_idx[idx_type]);
-    const auto post_edge_idx = EdgeId(post_key_idx[idx_type]);
-    GetGPEngine().CopyGPCSPData(pre_edge_idx, post_edge_idx);
-  }
-
-  return {pre_key_idx, post_key_idx};
-}
-
-GPOperationVector NNIEngine::BuildGPOperationsForNNILikelihood(
-    const NNIOperation &nni, const KeyIndexMap &nni_key_idx) const {
-  GPOperationVector ops;
-  // p(parent_focal) = rhat(parent) \circ phat(parent_sister)
-  ops.push_back(GPOperations::Multiply{nni_key_idx[KeyIndex::Parent_RFocal],
-                                       nni_key_idx[KeyIndex::Parent_RHat],
-                                       nni_key_idx[KeyIndex::Parent_PHatSister]});
-  // p(child) = phat(child_left) \circ phat(child_right)
-  ops.push_back(GPOperations::Multiply{nni_key_idx[KeyIndex::Child_P],
-                                       nni_key_idx[KeyIndex::Child_PHatLeft],
-                                       nni_key_idx[KeyIndex::Child_PHatRight]});
-  // compute likelihood on edge between r(parent_focal) and p(child)
-  ops.push_back(GPOperations::Likelihood{nni_key_idx[KeyIndex::Edge],
-                                         nni_key_idx[KeyIndex::Parent_RFocal],
-                                         nni_key_idx[KeyIndex::Child_P]});
-  return ops;
-}
-
-GPOperationVector NNIEngine::BuildGPOperationsForAdjacentNNILikelihoods(
-    const bool via_reference) {
-  GPOperationVector operations = GPOperationVector();
-  GrowGPEngineForAdjacentNNILikelihoods(via_reference);
-  size_t nni_count = 0;
-  for (const auto &nni : GetAdjacentNNIs()) {
-    const auto pre_nni = FindNNINeighborInDAG(nni);
-    const auto [prenni_key_idx, nni_key_idx] =
-        (via_reference ? PassGPEngineDataFromPreNNIToPostNNIViaReference(
-                             pre_nni, nni, nni_count, false)
-                       : PassGPEngineDataFromPreNNIToPostNNIViaCopy(pre_nni, nni));
-    std::ignore = prenni_key_idx;
-    GPOperations::AppendGPOperations(
-        operations, BuildGPOperationsForNNILikelihood(nni, nni_key_idx));
-    nni_count++;
-  }
-  return operations;
-}
-
-void NNIEngine::GrowGPEngineForAdjacentNNILikelihoods(const bool via_reference,
-                                                      const bool use_unique_temps) {
-  if (via_reference) {
-    if (use_unique_temps) {
-      GetGPEngine().GrowSparePLVs(2 * GetAdjacentNNICount());
-    } else {
-      GetGPEngine().GrowSparePLVs(2);
-    }
-    GetGPEngine().GrowSpareGPCSPs(GetAdjacentNNICount());
-  } else {
-    GetGPEngine().GrowPLVs(GetGraftDAG().NodeCountWithoutDAGRoot());
-    GetGPEngine().GrowGPCSPs(GetGraftDAG().EdgeCountWithLeafSubsplits());
+void NNIEngine::InitEvaluationEngine() {
+  for (auto &[engine_name, eval_engine] : eval_engines_) {
+    eval_engine->Init();
   }
 }
 
-void NNIEngine::ScoreAdjacentNNIsByGPLikelihood() {
-  // Compute Likelihoods
-  const GPOperationVector operations = BuildGPOperationsForAdjacentNNILikelihoods(true);
-  GetGPEngine().ProcessOperations(operations);
-  // Retrieve results from GPEngine and store in Scored NNIs.
-  const auto proposed_nni_likelihoods =
-      GetGPEngine().GetSparePerGPCSPLogLikelihoods(0, GetAdjacentNNICount());
-  size_t nni_count = 0;
-  for (const auto &nni : GetAdjacentNNIs()) {
-    scored_nnis_[nni] = proposed_nni_likelihoods[nni_count];
-    nni_count++;
+void NNIEngine::PrepEvaluationEngine() {
+  for (auto &[engine_name, eval_engine] : eval_engines_) {
+    eval_engine->Prep();
   }
 }
 
-// ** Scoring via TP Likelihood
-
-void NNIEngine::ScoreAdjacentNNIsByTPLikelihood() {
-  // Retrieve results from TPEngine and store in Scored NNIs.
-  for (const auto &nni : GetAdjacentNNIs()) {
-    const auto pre_nni = FindNNINeighborInDAG(nni);
-    scored_nnis_[nni] = GetTPEngine().GetTopTreeLikelihoodWithProposedNNI(nni, pre_nni);
+void NNIEngine::ScoreAdjacentNNIs() {
+  for (auto &[engine_name, eval_engine] : eval_engines_) {
+    eval_engine->ScoreAdjacentNNIs(GetAdjacentNNIs());
   }
 }
 
-// ** Scoring via TP Parsimony
-
-void NNIEngine::ScoreAdjacentNNIsByTPParsimony() {
-  // !ISSUE: Implement Parsimony Score
-  Failwith("Error: No implementation.");
-}
-
-// ** DAG & Engine Maintenance
-
-void NNIEngine::InitGPEngine() {
-  if (gp_engine_) {
-    GetGPEngine().GrowPLVs(dag_.NodeCountWithoutDAGRoot());
-    GetGPEngine().GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits());
-    GetGPEngine().ProcessOperations(dag_.PopulatePLVs());
-    GetGPEngine().ProcessOperations(dag_.ComputeLikelihoods());
-  }
-  if (tp_engine_) {
-    GetTPEngine().GrowNodeData(dag_.NodeCount());
-    GetTPEngine().GrowEdgeData(dag_.EdgeCountWithLeafSubsplits());
-  }
-}
-
-void NNIEngine::PrepGPEngineForLikelihoods() {
-  GetGPEngine().ProcessOperations(dag_.PopulatePLVs());
-  GetGPEngine().ProcessOperations(dag_.ComputeLikelihoods());
-}
+// DAG Maintenance
 
 void NNIEngine::AddAcceptedNNIsToDAG() {
   // Make sure all grafted nodes have been removed from the DAG
-  graft_dag_->RemoveAllGrafts();
+  GetGraftDAG().RemoveAllGrafts();
   // Initialize reindexers for remapping after adding nodes.
-  node_reindexer_ = Reindexer::IdentityReindexer(dag_.NodeCount());
-  edge_reindexer_ = Reindexer::IdentityReindexer(dag_.EdgeCountWithLeafSubsplits());
+  node_reindexer_ = Reindexer::IdentityReindexer(GetGPDAG().NodeCount());
+  edge_reindexer_ =
+      Reindexer::IdentityReindexer(GetGPDAG().EdgeCountWithLeafSubsplits());
   for (const auto &nni : accepted_nnis_) {
-    auto mods = dag_.AddNodePair(nni);
+    auto mods = GetGPDAG().AddNodePair(nni);
     node_reindexer_.ComposeWith(mods.node_reindexer);
     edge_reindexer_.ComposeWith(mods.edge_reindexer);
   }
@@ -516,13 +332,8 @@ void NNIEngine::AddAcceptedNNIsToDAG() {
   Assert(dag_.EdgeCountWithLeafSubsplits() == edge_reindexer_.size(),
          "Edge reindexer is the wrong size.");
   // Resize engines.
-  if (gp_engine_) {
-    GetGPEngine().GrowPLVs(dag_.NodeCountWithoutDAGRoot(), node_reindexer_);
-    GetGPEngine().GrowGPCSPs(dag_.EdgeCountWithLeafSubsplits(), edge_reindexer_);
-  }
-  if (tp_engine_) {
-    GetTPEngine().GrowNodeData(dag_.NodeCount(), node_reindexer_);
-    GetTPEngine().GrowEdgeData(dag_.EdgeCountWithLeafSubsplits(), edge_reindexer_);
+  for (auto &[engine_name, eval_engine] : eval_engines_) {
+    eval_engine->GrowEngineForDAG(node_reindexer_, edge_reindexer_);
   }
 }
 

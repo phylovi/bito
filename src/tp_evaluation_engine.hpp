@@ -1,13 +1,13 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// TP Computation Engine
+// TP Evaluation Engine
 
 #pragma once
 
 #include "tp_engine.hpp"
 
-class TPComputationEngine {
+class TPEvaluationEngine {
  public:
   // Initialize Computation Engine.
   virtual void Init();
@@ -16,10 +16,10 @@ class TPComputationEngine {
                                       const NNIOperation &pre_nni,
                                       std::optional<size_t> new_tree_id);
   // Get the Top Tree from the DAG with the given edge.
-  virtual double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
+  virtual double GetTopTreeWithEdge(const EdgeId edge_id);
 };
 
-class TPComputationEngineViaLikelihood : public TPComputationEngine {
+class TPEvaluationEngineViaLikelihood : public TPEvaluationEngine {
  public:
   // Initialize Computation Engine.
   virtual void Init();
@@ -28,7 +28,7 @@ class TPComputationEngineViaLikelihood : public TPComputationEngine {
                                       const NNIOperation &pre_nni,
                                       std::optional<size_t> new_tree_id);
   // Get the Top Tree from the DAG with the given edge.
-  virtual double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
+  virtual double GetTopTreeWithEdge(const EdgeId edge_id);
 
   // ** Scoring by Likelihood
 
@@ -95,7 +95,7 @@ class TPComputationEngineViaLikelihood : public TPComputationEngine {
   EigenVectorXd top_tree_log_likelihoods_per_edge_;
 };
 
-class TPComputationEngineViaParsimony : public TPComputationEngine {
+class TPEvaluationEngineViaParsimony : public TPEvaluationEngine {
  public:
   // Initialize Computation Engine.
   virtual void Init();
@@ -104,7 +104,7 @@ class TPComputationEngineViaParsimony : public TPComputationEngine {
                                       const NNIOperation &pre_nni,
                                       std::optional<size_t> new_tree_id);
   // Get the Top Tree from the DAG with the given edge.
-  virtual double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
+  virtual double GetTopTreeWithEdge(const EdgeId edge_id);
 
   // ** Scoring by Parsimony
 

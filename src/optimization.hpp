@@ -33,6 +33,28 @@ enum class OptimizationMethod {
   NewtonOptimization
 };
 
+class OptimizationMethodEnum
+    : public EnumWrapper<OptimizationMethod, size_t, 5,
+                         OptimizationMethod::BrentOptimization,
+                         OptimizationMethod::NewtonOptimization> {
+ public:
+  static inline const std::string Prefix = "OptimizationMethod";
+  static inline const Array<std::string> Labels = {
+      {"BrentOptimization", "BrentOptimizationWithGradients",
+       "GradientAscentOptimization", "LogSpaceGradientAscentOptimization",
+       "NewtonOptimization"}};
+
+  static std::string ToString(const OptimizationMethod e) {
+    std::stringstream ss;
+    ss << Prefix << "::" << Labels[e];
+    return ss.str();
+  }
+  friend std::ostream &operator<<(std::ostream &os, const OptimizationMethod e) {
+    os << ToString(e);
+    return os;
+  }
+};
+
 // Adapted from https://www.boost.org/doc/libs/1_73_0/boost/math/tools/minima.hpp
 template <bool use_gradients, class F, class T>
 std::tuple<T, T> BrentMinimize(F f, T guess, T min, T max, int significant_digits,

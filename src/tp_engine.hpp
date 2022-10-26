@@ -18,6 +18,7 @@
 #include "dag_data.hpp"
 #include "optimization.hpp"
 #include "substitution_model.hpp"
+#include "tp_evaluation_engine.hpp"
 
 class TPEngine {
  public:
@@ -285,6 +286,11 @@ class TPEngine {
   size_t edge_spare_count_ = 3;
   // Growth factor when reallocating data.
   constexpr static double resizing_factor_ = 2.0;
+
+  // Un-owned reference to TP Evaluation Engine. Can be used to evaluate Top Trees
+  // according to Likelihood, Parsimony, etc.
+  TPEvaluationEngine *eval_engine_;
+  std::unordered_map<std::string, TPEvaluationEngine *> eval_engines_;
 
   // Tree likelihoods matrix across all sites.
   EigenMatrixXd log_likelihoods_;

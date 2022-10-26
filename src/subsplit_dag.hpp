@@ -156,6 +156,10 @@ class SubsplitDAG {
   EdgeId GetEdgeIdx(const Bitset &parent_subsplit, const Bitset &child_subsplit) const;
   EdgeId GetEdgeIdx(const NodeId parent_id, const NodeId child_id) const;
   EdgeId GetEdgeIdx(const Bitset &edge_pcsp) const;
+  EdgeId GetEdgeIdx(const NNIOperation &nni) const;
+  // Get NNI from edge index.
+  NNIOperation GetNNI(const EdgeId edge_id) const;
+  NNIOperation FindNNINeighborInDAG(const NNIOperation &nni) const;
   // Get the range of outgoing idxs from the given clade of a subsplit.
   EdgeIdPair GetChildEdgeRange(const Bitset &subsplit,
                                const bool is_edge_on_left) const;
