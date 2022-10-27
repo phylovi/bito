@@ -1,44 +1,40 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// The NNI Evaluation Engine is an interface between the NNI Engine, that performs the
-// NNI systematic search over the DAG, finding
+// The NNI Evaluation Engine is an interface between the NNI Engine, providing different
+// methods for scoring NNIs.
 
 #pragma once
 
 #include "gp_dag.hpp"
-#include "nni_engine.hpp"
 
 using NNIDoubleMap = std::map<NNIOperation, double>;
 
+class NNIEngine;
+class KeyIndexMap;
+class KeyIndexMapPair;
+
 class NNIEvaluationEngine {
  public:
-  using KeyIndex = NNIEngine::KeyIndex;
-  using KeyIndexMap = NNIEngine::KeyIndexMap;
-  using KeyIndexMapPair = NNIEngine::KeyIndexMapPair;
-
-  explicit NNIEvaluationEngine(NNIEngine &nni_engine)
-      : nni_engine_(&nni_engine),
-        dag_(&nni_engine.GetGPDAG()),
-        graft_dag_(&nni_engine.GetGraftDAG()) {}
+  explicit NNIEvaluationEngine(NNIEngine &nni_engine);
 
   // Initialize Evaluation Engine.
-  virtual void Init();
+  virtual void Init() {}
   // Prepare Evaluation Engine for NNI Engine loop.
-  virtual void Prep();
+  virtual void Prep() {}
   // Resize Engine for modified DAG.
   virtual void GrowEngineForDAG(std::optional<Reindexer> node_reindexer,
-                                std::optional<Reindexer> edge_reindexer);
+                                std::optional<Reindexer> edge_reindexer) {}
   // Grow engine to handle computing NNIs for all adjacent NNIs.
   // Option to grow engine for computing via reference or via copy. If computing via
   // reference, option whether to use unique temporaries (for testing and computing in
   // parallel).
   virtual void GrowEngineForAdjacentNNILikelihoods(const NNISet &adjacent_nnis,
                                                    const bool via_reference,
-                                                   const bool use_unique_temps);
+                                                   const bool use_unique_temps) {}
   // Grow Evaluation Engine to account for
   // Compute scores for all NNIs adjacent to current DAG.
-  virtual void ScoreAdjacentNNIs(const NNISet &adjacent_nnis);
+  virtual void ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {}
 
   // ** Access
 
@@ -63,7 +59,7 @@ class NNIEvaluationEngine {
     return GetScoreByNNI(nni);
   }
 
- private:
+ protected:
   // Un-owned reference to NNIEngine.
   NNIEngine *nni_engine_ = nullptr;
   // Un-owned reference to DAG.
@@ -76,8 +72,7 @@ class NNIEvaluationEngine {
 
 class NNIEvaluationEngineViaGP : public NNIEvaluationEngine {
  public:
-  NNIEvaluationEngineViaGP(NNIEngine &nni_engine, GPEngine &gp_engine)
-      : NNIEvaluationEngine(nni_engine), gp_engine_(&gp_engine) {}
+  NNIEvaluationEngineViaGP(NNIEngine &nni_engine, GPEngine &gp_engine);
 
   // Initialize Evaluation Engine.
   virtual void Init();
@@ -97,15 +92,11 @@ class NNIEvaluationEngineViaGP : public NNIEvaluationEngine {
 
   // ** Helpers
 
-  // Fetches Data from Pre-NNI for Post-NNI. Can be used for initial values when moving
-  // accepted NNIs from Graft to Host DAG.
-  GPOperationVector BuildGPOperationsForAdjacentNNILikelihoods(
-      const NNISet &adjacent_nnis, const bool via_reference);
   // Build GPOperation vector for computing NNI Likelihood. For NNIs that are not in
   // the DAG, must create KeyIndexMap through
   // PassGPEngineDataFromPreNNIToPostNNIViaReference.
   GPOperationVector BuildGPOperationsForNNILikelihood(
-      const NNIOperation &nni, const NNIEngine::KeyIndexMap &nni_key_idx) const;
+      const NNIOperation &nni, const KeyIndexMap &nni_key_idx) const;
   // Build GPOperation vector for computing NNI Likelihood for all adjacent NNIs.
   GPOperationVector BuildGPOperationsForAdjacentNNILikelihoods(
       const NNISet &adjacent_nnis, const bool via_reference);
@@ -131,15 +122,12 @@ class NNIEvaluationEngineViaGP : public NNIEvaluationEngine {
 
   GPEngine &GetGPEngine() { return *gp_engine_; }
 
- private:
+ protected:
   GPEngine *gp_engine_ = nullptr;
 };
 
 class NNIEvaluationEngineViaTP : public NNIEvaluationEngine {
  public:
-  using KeyIndex = NNIEngine::KeyIndex;
-  using KeyIndexMap = NNIEngine::KeyIndexMap;
-
   NNIEvaluationEngineViaTP(NNIEngine &nni_engine, TPEngine &tp_engine)
       : NNIEvaluationEngine(nni_engine), tp_engine_(&tp_engine) {}
 
@@ -163,6 +151,6 @@ class NNIEvaluationEngineViaTP : public NNIEvaluationEngine {
 
   TPEngine &GetTPEngine() { return *tp_engine_; }
 
- private:
+ protected:
   TPEngine *tp_engine_;
 };

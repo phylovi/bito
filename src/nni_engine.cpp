@@ -6,13 +6,14 @@
 
 using PLVType = PLVNodeHandler::PLVType;
 
-NNIEngine::NNIEngine(GPDAG &dag, GPEngine *gp_engine, TPEngine *tp_engine)
+NNIEngine::NNIEngine(GPDAG &dag, std::optional<GPEngine *> gp_engine,
+                     std::optional<TPEngine *> tp_engine)
     : dag_(dag), graft_dag_(std::make_unique<GraftDAG>(dag)) {
-  if (gp_engine) {
-    gp_engine_ = gp_engine;
+  if (gp_engine.has_value()) {
+    SetGPEngine(gp_engine.value());
   }
-  if (tp_engine) {
-    tp_engine_ = tp_engine;
+  if (tp_engine.has_value()) {
+    SetTPEngine(tp_engine.value());
   }
 }
 
@@ -31,7 +32,7 @@ void NNIEngine::RunInit() {
   // Initialize Adjacent NNIs based on starting state of DAG.
   ResetAllNNIs();
   SyncAdjacentNNIsWithDAG();
-  PrepGPEngineForLikelihoods();
+  PrepEvaluationEngine();
   FilterInit();
 }
 
@@ -61,24 +62,24 @@ void NNIEngine::RunPostLoop() {
 // ** Filter Functions
 
 void NNIEngine::SetNoEvaluate() {
-  filter_eval_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                       TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
+  filter_eval_fn_ = [](NNIEngine &this_nni_engine,
+                       NNIEvaluationEngine &this_eval_engine, GraftDAG &this_graft_dag,
                        const NNIOperation &nni) -> double { return 0.0; };
 }
 
 void NNIEngine::SetNoFilter(const bool set_nni_to_pass) {
   filter_process_fn_ = [set_nni_to_pass](
-                           NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                           TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
-                           const NNIOperation &nni,
+                           NNIEngine &this_nni_engine,
+                           NNIEvaluationEngine &this_eval_engine,
+                           GraftDAG &this_graft_dag, const NNIOperation &nni,
                            const double nni_score) -> bool { return set_nni_to_pass; };
 }
 
 void NNIEngine::SetScoreCutoff(const double score_cutoff) {
-  filter_process_fn_ = [score_cutoff](
-                           NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                           TPEngine &this_tp_engine, GraftDAG &this_graft_dag,
-                           const NNIOperation &nni, const double nni_score) -> bool {
+  filter_process_fn_ = [score_cutoff](NNIEngine &this_nni_engine,
+                                      NNIEvaluationEngine &this_eval_engine,
+                                      GraftDAG &this_graft_dag, const NNIOperation &nni,
+                                      const double nni_score) -> bool {
     bool nni_passes = (nni_score >= score_cutoff);
     return nni_passes;
   };
@@ -88,13 +89,13 @@ void NNIEngine::SetScoreCutoff(const double score_cutoff) {
 
 void NNIEngine::FilterInit() {
   if (filter_init_fn_) {
-    (filter_init_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG());
+    (filter_init_fn_)(*this, GetEvaluationEngine(), GetGraftDAG());
   }
 }
 
 void NNIEngine::FilterPreUpdate() {
   if (filter_pre_update_fn_) {
-    (filter_pre_update_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG());
+    (filter_pre_update_fn_)(*this, GetEvaluationEngine(), GetGraftDAG());
   }
 }
 
@@ -102,14 +103,14 @@ void NNIEngine::FilterEvaluateAdjacentNNIs() {
   if (!filter_eval_fn_) return;
   for (const auto &nni : GetAdjacentNNIs()) {
     const double nni_score =
-        (filter_eval_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG(), nni);
+        (filter_eval_fn_)(*this, GetEvaluationEngine(), GetGraftDAG(), nni);
     AddScoreForNNI(nni, nni_score);
   }
 }
 
 void NNIEngine::FilterPostUpdate() {
   if (filter_post_update_fn_) {
-    (filter_post_update_fn_)(*this, GetGPEngine(), GetTPEngine(), GetGraftDAG());
+    (filter_post_update_fn_)(*this, GetEvaluationEngine(), GetGraftDAG());
   }
 }
 
@@ -117,7 +118,7 @@ void NNIEngine::FilterProcessAdjacentNNIs() {
   Assert(filter_process_fn_, "Must assign a filter process function.");
   for (const auto &nni : GetAdjacentNNIs()) {
     double nni_score = (*GetScoredNNIs().find(nni)).second;
-    const bool accept_nni = (filter_process_fn_)(*this, GetGPEngine(), GetTPEngine(),
+    const bool accept_nni = (filter_process_fn_)(*this, GetEvaluationEngine(),
                                                  GetGraftDAG(), nni, nni_score);
     if (accept_nni) {
       accepted_nnis_.insert(nni);
@@ -150,28 +151,25 @@ void NNIEngine::SetFilterProcessFunction(
 
 void NNIEngine::SetGPLikelihoodFilteringScheme(const double score_cutoff) {
   // Pre-Update Evaluation function
-  filter_pre_update_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                             TPEngine &this_tp_engine, GraftDAG &this_graft_dag) {
-    this_nni_engine.ScoreAdjacentNNIsByGPLikelihood();
-  };
+  filter_pre_update_fn_ =
+      [](NNIEngine &this_nni_engine, NNIEvaluationEngine &this_eval_engine,
+         GraftDAG &this_graft_dag) { this_nni_engine.ScoreAdjacentNNIs(); };
   SetScoreCutoff(score_cutoff);
 }
 
 void NNIEngine::SetTPLikelihoodFilteringScheme(const double score_cutoff) {
   // Pre-Update Evaluation function
-  filter_pre_update_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                             TPEngine &this_tp_engine, GraftDAG &this_graft_dag) {
-    this_nni_engine.ScoreAdjacentNNIsByTPLikelihood();
-  };
+  filter_pre_update_fn_ =
+      [](NNIEngine &this_nni_engine, NNIEvaluationEngine &this_eval_engine,
+         GraftDAG &this_graft_dag) { this_nni_engine.ScoreAdjacentNNIs(); };
   SetScoreCutoff(score_cutoff);
 }
 
 void NNIEngine::SetTPParsimonyFilteringScheme(const double score_cutoff) {
   // Pre-Update Evaluation function
-  filter_pre_update_fn_ = [](NNIEngine &this_nni_engine, GPEngine &this_gp_engine,
-                             TPEngine &this_tp_engine, GraftDAG &this_graft_dag) {
-    this_nni_engine.ScoreAdjacentNNIsByTPParsimony();
-  };
+  filter_pre_update_fn_ =
+      [](NNIEngine &this_nni_engine, NNIEvaluationEngine &this_eval_engine,
+         GraftDAG &this_graft_dag) { this_nni_engine.ScoreAdjacentNNIs(); };
   SetScoreCutoff(score_cutoff);
 }
 

@@ -1557,6 +1557,8 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
   graft_inst.MakeNNIEngine();
   GPEngine& graft_gpengine = *graft_inst.GetEngine();
   NNIEngine& graft_nni_engine = graft_inst.GetNNIEngine();
+  NNIEvaluationEngineViaGP& nni_eval_engine_via_gp =
+      graft_nni_engine.SetGPEngine(&graft_gpengine);
   GPDAG& graft_dag = graft_inst.GetDAG();
   graft_dag.FullyConnect();
   graft_gpengine.GrowPLVs(graft_dag.NodeCountWithoutDAGRoot());
@@ -1599,17 +1601,17 @@ TEST_CASE("NNI Engine: NNI Likelihoods") {
   // Compute likelihoods for graftDAG.
   graft_nni_engine.SyncAdjacentNNIsWithDAG();
   graft_nni_engine.GraftAdjacentNNIsToDAG();
-  graft_nni_engine.GrowGPEngineForAdjacentNNILikelihoods(true, true);
+  graft_nni_engine.GrowEvaluationEngineForAdjacentNNIs(true, true);
   GPOperationVector graft_ops;
   nni_count = 0;
   for (const auto& [nni, pre_nni] : nni_to_prenni_map) {
     const auto [prenni_plv_idx, nni_plv_idx] =
-        graft_nni_engine.PassGPEngineDataFromPreNNIToPostNNIViaReference(
+        nni_eval_engine_via_gp.PassGPEngineDataFromPreNNIToPostNNIViaReference(
             pre_nni, nni, nni_count, true);
     std::ignore = prenni_plv_idx;
     GPOperations::AppendGPOperations(
         graft_ops,
-        graft_nni_engine.BuildGPOperationsForNNILikelihood(nni, nni_plv_idx));
+        nni_eval_engine_via_gp.BuildGPOperationsForNNILikelihood(nni, nni_plv_idx));
     nni_count++;
   }
   graft_gpengine.SetNullPrior();

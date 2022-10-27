@@ -30,7 +30,8 @@ using NNIDoubleMap = std::map<NNIOperation, double>;
 class NNIEngine {
  public:
   // Constructors
-  NNIEngine(GPDAG &dag, GPEngine *gp_engine = nullptr, TPEngine *tp_engine = nullptr);
+  NNIEngine(GPDAG &dag, std::optional<GPEngine *> gp_engine = std::nullopt,
+            std::optional<TPEngine *> tp_engine = std::nullopt);
 
   // ** Access
 
@@ -42,7 +43,6 @@ class NNIEngine {
   const GraftDAG &GetGraftDAG() const { return *graft_dag_.get(); };
   // Get Reference of Evaluation Engine.
   NNIEvaluationEngine &GetNNIEvaluationEngine() { return *eval_engine_; }
-  NNIEvaluationEngine SetNNIEvaluationEngine() {}
   // Get Reference of GPEngine.
   const GPEngine &GetGPEngine() const { return *gp_engine_; }
   bool IsUsingGPEngine() { return gp_engine_ != nullptr; }
@@ -69,14 +69,28 @@ class NNIEngine {
   size_t GetSweepCount() const { return sweep_count_; };
 
   // Set GP Engine.
-  void SetGPEngine(GPEngine *gp_engine) {
+  NNIEvaluationEngineViaGP &SetGPEngine(GPEngine *gp_engine) {
     gp_engine_ = gp_engine;
-    eval_engines_["gp_engine"] = &NNIEvaluationEngineViaGP(*this, *gp_engine_);
+    eval_engine_via_gp_ = NNIEvaluationEngineViaGP(*this, *gp_engine_);
+    eval_engines_["gp_engine"] =
+        std::make_unique<NNIEvaluationEngine>(eval_engine_via_gp_.value());
+    SelectEvaluationEngine("gp_engine");
+    return eval_engine_via_gp_.value();
   }
   // Set TP Engine.
-  void SetTPEngine(TPEngine *tp_engine) {
+  NNIEvaluationEngineViaTP &SetTPEngine(TPEngine *tp_engine) {
     tp_engine_ = tp_engine;
-    eval_engines_["tp_engine"] = &NNIEvaluationEngineViaTP(*this, *tp_engine_);
+    eval_engine_via_tp_ = NNIEvaluationEngineViaTP(*this, *tp_engine_);
+    eval_engines_["tp_engine"] =
+        std::make_unique<NNIEvaluationEngine>(eval_engine_via_tp_.value());
+    SelectEvaluationEngine("tp_engine");
+    return eval_engine_via_tp_.value();
+  }
+  // Set which evaluation engine to use in runner.
+  void SelectEvaluationEngine(const std::string &eval_engine_label) {
+    Assert(eval_engines_.find(eval_engine_label) != eval_engines_.end(),
+           "Evaluation Engine with given label has not been set.");
+    eval_engine_ = eval_engines_[eval_engine_label].get();
   }
 
   // ** Runners
@@ -102,7 +116,7 @@ class NNIEngine {
       std::function<void(NNIEngine &, NNIEvaluationEngine &, GraftDAG &)>;
   // Function template for computational evaluation to be performed on an adjacent NNI.
   using StaticFilterEvaluateFunction = std::function<double(
-      NNIEngine &, GPEngine &, NNIEvaluationEngine &, const NNIOperation &)>;
+      NNIEngine &, NNIEvaluationEngine &, GraftDAG &, const NNIOperation &)>;
   // Function template for processing an adjacent NNI to be accepted or rejected.
   using StaticFilterProcessFunction =
       std::function<bool(NNIEngine &, NNIEvaluationEngine &, GraftDAG &,
@@ -202,29 +216,6 @@ class NNIEngine {
       const NNIOperation &pre_nni, const NNIOperation &post_nni,
       const KeyIndexMap &pre_key_idx);
 
-  // ** Scoring via GP Likelihood
-  // Functions for computation or estimating likelihood of NNIs.
-
-  // Fetches Pre-NNI data to prep Post-NNI for likelihood computation. Method stores
-  // intermediate values in the GPEngine temp space (expects GPEngine has already been
-  // resized).
-  KeyIndexMapPair PassGPEngineDataFromPreNNIToPostNNIViaReference(
-      const NNIOperation &pre_nni, const NNIOperation &post_nni,
-      const size_t nni_count = 0, const bool use_unique_temps = false);
-  // Fetches Data from Pre-NNI for Post-NNI. Can be used for initial values when moving
-  // accepted NNIs from Graft to Host DAG.
-  KeyIndexMapPair PassGPEngineDataFromPreNNIToPostNNIViaCopy(
-      const NNIOperation &pre_nni, const NNIOperation &post_nni);
-
-  // Build GPOperation vector for computing NNI Likelihood. For NNIs that are not in
-  // the DAG, must create KeyIndexMap through
-  // PassGPEngineDataFromPreNNIToPostNNIViaReference.
-  GPOperationVector BuildGPOperationsForNNILikelihood(
-      const NNIOperation &nni, const KeyIndexMap &nni_key_idx) const;
-  // Build GPOperation vector for computing NNI Likelihood for all adjacent NNIs.
-  GPOperationVector BuildGPOperationsForAdjacentNNILikelihoods(
-      const bool via_reference = true);
-
   // ** Evaluation Engine Maintenance
 
   // Initial GPEngine for use with GraftDAG.
@@ -311,7 +302,6 @@ class NNIEngine {
   // Get Reference of TP Engine.
   TPEngine &GetTPEngine() { return *tp_engine_; }
 
- private:
   // Un-owned reference DAG.
   GPDAG &dag_;
   // For adding temporary NNIs to DAG.
@@ -323,11 +313,13 @@ class NNIEngine {
   // Un-owned reference to NNI Evaluation Engine. Can be used to evaluate NNIs according
   // to Generalized Pruning, Likelihood, Parsimony, etc.
   NNIEvaluationEngine *eval_engine_ = nullptr;
-  std::unordered_map<std::string, NNIEvaluationEngine *> eval_engines_;
+  std::unordered_map<std::string, std::unique_ptr<NNIEvaluationEngine>> eval_engines_;
   // Un-owned reference GPEngine.
   GPEngine *gp_engine_ = nullptr;
+  std::optional<NNIEvaluationEngineViaGP> eval_engine_via_gp_ = std::nullopt;
   // Un-owned reference TPEngine.
   TPEngine *tp_engine_ = nullptr;
+  std::optional<NNIEvaluationEngineViaTP> eval_engine_via_tp_ = std::nullopt;
 
   // Set of NNIs to be evaluated, which are a single NNI.
   NNISet adjacent_nnis_;

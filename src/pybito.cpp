@@ -687,12 +687,7 @@ PYBIND11_MODULE(bito, m) {
       // ** Runner subroutines
       .def("reset_all_nnis", &NNIEngine::ResetAllNNIs, R"raw(.)raw")
       .def("sync_adjacent_nnis_with_dag", &NNIEngine::SyncAdjacentNNIsWithDAG,
-           R"raw(Update adjacent NNIs to sync with current DAG.)raw")
-      // TODO: Generalize to all eval engines.
-      .def("prep_eval_engine", &NNIEngine::PrepGPEngineForLikelihoods, R"raw(.)raw")
-      .def("filter_init", &NNIEngine::FilterInit, R"raw(.)raw")
-      .def("graft_adjacent_nnis_to_dag", &NNIEngine::GraftAdjacentNNIsToDAG,
-           R"raw(.)raw");
+           R"raw(Update adjacent NNIs to sync with current DAG.)raw");
 
   // ** TP Engine
 

@@ -3,7 +3,22 @@
 
 #include "nni_evaluation_engine.hpp"
 
+using KeyIndex = NNIEngine::KeyIndex;
+using KeyIndexMap = NNIEngine::KeyIndexMap;
+using KeyIndexMapPair = NNIEngine::KeyIndexMapPair;
+
+// ** NNIEvaluationEngine
+
+explicit NNIEvaluationEngine::NNIEvaluationEngine(NNIEngine &nni_engine)
+    : nni_engine_(&nni_engine),
+      dag_(&nni_engine.GetGPDAG()),
+      graft_dag_(&nni_engine.GetGraftDAG()) {}
+
 // ** NNIEvaluationEngineViaGP
+
+NNIEvaluationEngineViaGP::NNIEvaluationEngineViaGP(NNIEngine &nni_engine,
+                                                   GPEngine &gp_engine)
+    : NNIEvaluationEngine(nni_engine), gp_engine_(&gp_engine) {}
 
 void NNIEvaluationEngineViaGP::Init() {
   GetGPEngine().GrowPLVs(GetDAG().NodeCountWithoutDAGRoot());
@@ -126,8 +141,7 @@ void NNIEvaluationEngineViaGP::GrowGPEngineForAdjacentNNILikelihoods(
   }
 }
 
-NNIEvaluationEngine::KeyIndexMapPair
-NNIEvaluationEngineViaGP::PassGPEngineDataFromPreNNIToPostNNIViaCopy(
+KeyIndexMapPair NNIEvaluationEngineViaGP::PassGPEngineDataFromPreNNIToPostNNIViaCopy(
     const NNIOperation &pre_nni, const NNIOperation &post_nni) {
   // Find data in pre-NNI.
   const auto pre_key_idx =
@@ -194,7 +208,7 @@ NNIEvaluationEngineViaGP::PassGPEngineDataFromPreNNIToPostNNIViaCopy(
   return {pre_key_idx, post_key_idx};
 }
 
-NNIEvaluationEngine::KeyIndexMapPair
+KeyIndexMapPair
 NNIEvaluationEngineViaGP::PassGPEngineDataFromPreNNIToPostNNIViaReference(
     const NNIOperation &pre_nni, const NNIOperation &post_nni, const size_t nni_count,
     const bool use_unique_temps) {

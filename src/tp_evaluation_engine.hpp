@@ -1,22 +1,55 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// TP Evaluation Engine
+// TP Evaluation Engine is an interface between the TP Engine, providing different
+// methods for scoring Top Trees.
 
 #pragma once
 
+#include
 #include "tp_engine.hpp"
 
 class TPEvaluationEngine {
  public:
   // Initialize Computation Engine.
-  virtual void Init();
+  virtual void Init(TPEngine &tp_engine) {}
   // Update the Computation Engine after adding Node Pairs to the DAG.
   virtual void UpdateAfterDAGNodePair(const NNIOperation &post_nni,
                                       const NNIOperation &pre_nni,
-                                      std::optional<size_t> new_tree_id);
+                                      std::optional<size_t> new_tree_id) {}
   // Get the Top Tree from the DAG with the given edge.
-  virtual double GetTopTreeWithEdge(const EdgeId edge_id);
+  virtual double GetTopTreeWithEdge(const EdgeId edge_id) { return 0.0; }
+
+  // ** Access
+
+  // Get reference NNIEngine.
+  NNIEngine &GetNNIEngine() { return *nni_engine_; }
+  const NNIEngine &GetNNIEngine() const { return *nni_engine_; }
+  // Get reference DAG.
+  const GPDAG &GetDAG() const { return *dag_; }
+  // Get reference GraftDAG.
+  const GraftDAG &GetGraftDAG() const { return *graft_dag_; }
+  // Get all Scored NNIs.
+  NNIDoubleMap &GetScoredNNIs() { return scored_nnis_; }
+  const NNIDoubleMap &GetScoredNNIs() const { return scored_nnis_; }
+
+  // Retrieve Score for given NNI.
+  double GetScoreByNNI(const NNIOperation &nni) const {
+    return GetScoredNNIs().find(nni)->second;
+  }
+  // Retrieve Score for given edge in DAG.
+  double GetScoreByEdge(const EdgeId edge_id) const {
+    auto nni = GetDAG().GetNNI(edge_id);
+    return GetScoreByNNI(nni);
+  }
+
+ protected:
+  // Un-owned reference to NNIEngine.
+  TPEngine *tp_engine_ = nullptr;
+  // Un-owned reference to DAG.
+  const GPDAG *dag_ = nullptr;
+  // Un-owned reference to GraftDAG.
+  const GraftDAG *graft_dag_ = nullptr;
 };
 
 class TPEvaluationEngineViaLikelihood : public TPEvaluationEngine {
@@ -30,7 +63,7 @@ class TPEvaluationEngineViaLikelihood : public TPEvaluationEngine {
   // Get the Top Tree from the DAG with the given edge.
   virtual double GetTopTreeWithEdge(const EdgeId edge_id);
 
-  // ** Scoring by Likelihood
+  // ** Helpers
 
   // Initialize ChoiceMap and populate PVs for entire DAG by Likelihood.
   void InitializeLikelihood();
@@ -51,7 +84,8 @@ class TPEvaluationEngineViaLikelihood : public TPEvaluationEngine {
                                              const NNIOperation &pre_nni,
                                              const size_t spare_offset = 0);
 
-  // ** Scoring by Likelihoods
+ protected:
+  // ** Helpers
 
   // Compute the rootward P-PVs for given node.
   void PopulateRootwardLikelihoodPVForNode(const NodeId node_id);
