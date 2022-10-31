@@ -151,11 +151,11 @@ class GPEngine {
   static constexpr double min_log_branch_length_ = -13.9;
   // Absolute upper bound for possible branch lengths during optimization (in log
   // space).
-  static constexpr double max_log_branch_length_ = 1.1;
+  static constexpr double max_log_branch_length_ = 0;
   // Precision used for checking convergence of branch length optimization.
-  int significant_digits_for_optimization_ = 6;
+  int significant_digits_for_optimization_ = 10;
   //
-  double relative_tolerance_for_optimization_ = 1e-2;
+  double relative_tolerance_for_optimization_ = 1e-12;
   // Step size used for gradient-based branch length optimization.
   double step_size_for_optimization_ = 5e-4;
   // Number of iterations allowed for branch length optimization.

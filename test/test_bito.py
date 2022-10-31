@@ -3,6 +3,7 @@
 If you want to see the results of the print statements, use `pytest -s`.
 """
 
+import os
 import json
 import pprint
 import pytest
@@ -160,8 +161,15 @@ def test_sbn_unrooted_instance():
     rootings_indexer_test()
 
 
+<<<<<<< HEAD
 def test_gp_tweaks():
     """ Tests added functionality for gp_instance """
+=======
+def test_gp_instance():
+    """ Tests added functionality for gp_instance """
+    if not os.path.exists("_ignore"):
+      os.makedirs("_ignore")
+>>>>>>> 95e0d15cb7cb325d2037d1b1d25952a7c713461d
     inst = bito.gp_instance("_ignore/mmapped_plv_pybito.data")
     inst.read_fasta_file("data/six_taxon.fasta")
     inst.read_newick_file("data/six_taxon_rootsplit.nwk")
@@ -180,4 +188,5 @@ def test_gp_tweaks():
 
 if __name__ == "__main__":
     test_sbn_unrooted_instance()
-    test_gp_tweaks()
+    #test_gp_tweaks()
+    test_gp_instance()
