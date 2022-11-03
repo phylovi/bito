@@ -658,29 +658,27 @@ void GPEngine::SetSignificantDigitsForOptimization(int significant_digits) {
 }
 
 void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
-  if (branch_length_differences_(op.gpcsp_) < branch_length_difference_threshold_) {
-    return;
-  }
-
   auto negative_log_likelihood = [this, &op](double log_branch_length) {
-    SetTransitionMatrixToHaveBranchLength(exp(log_branch_length));
+    SetTransitionAndDerivativeMatricesToHaveBranchLength(exp(log_branch_length));
     PreparePerPatternLogLikelihoodsForGPCSP(op.rootward_, op.leafward_);
     return -per_pattern_log_likelihoods_.dot(site_pattern_weights_);
   };
 
-  double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
-  double current_neg_log_likelihood =
-      negative_log_likelihood(current_log_branch_length);
+  if (branch_length_differences_(op.gpcsp_) < branch_length_difference_threshold_) {
+    return;
+  }
 
-  const auto [log_branch_length, neg_log_likelihood] =
-      Optimization::BrentMinimize<false>(
-          negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
-          max_log_branch_length_, significant_digits_for_optimization_,
-          max_iter_for_optimization_, step_size_for_log_space_optimization_);
+  double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
+  double current_value = negative_log_likelihood(current_log_branch_length);
+
+  const auto [log_branch_length, neg_log_likelihood] = Optimization::BrentMinimize(
+      negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
+      max_log_branch_length_, significant_digits_for_optimization_,
+      max_iter_for_optimization_);
 
   // Numerical optimization sometimes yields new nllk > current nllk.
   // In this case, we reset the branch length to the previous value.
-  if (neg_log_likelihood > current_neg_log_likelihood) {
+  if (neg_log_likelihood > current_value) {
     branch_lengths_(op.gpcsp_) = exp(current_log_branch_length);
   } else {
     branch_lengths_(op.gpcsp_) = exp(log_branch_length);
@@ -691,11 +689,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
 
 void GPEngine::BrentOptimizationWithGradients(
     const GPOperations::OptimizeBranchLength& op) {
-  if (branch_length_differences_(op.gpcsp_) < branch_length_difference_threshold_) {
-    return;
-  }
-
-  auto negative_log_likelihood_and_derivative = [this, &op](double log_branch_length) {
+  auto negative_log_likelihood = [this, &op](double log_branch_length) {
     double branch_length = exp(log_branch_length);
     branch_lengths_(op.gpcsp_) = branch_length;
     auto [log_likelihood, log_likelihood_derivative] =
@@ -703,17 +697,18 @@ void GPEngine::BrentOptimizationWithGradients(
     return std::make_pair(-log_likelihood, -branch_length * log_likelihood_derivative);
   };
 
+  if (branch_length_differences_(op.gpcsp_) < branch_length_difference_threshold_) {
+    return;
+  }
   double current_log_branch_length = log(branch_lengths_(op.gpcsp_));
-  double current_neg_log_likelihood =
-      negative_log_likelihood_and_derivative(current_log_branch_length).first;
+  double current_value = negative_log_likelihood(current_log_branch_length).first;
   const auto [log_branch_length, neg_log_likelihood] =
-      Optimization::BrentMinimize<true>(
-          negative_log_likelihood_and_derivative, current_log_branch_length,
-          min_log_branch_length_, max_log_branch_length_,
-          significant_digits_for_optimization_, max_iter_for_optimization_,
-          step_size_for_log_space_optimization_);
+      Optimization::BrentMinimizeWithGradient(
+          negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
+          max_log_branch_length_, significant_digits_for_optimization_,
+          max_iter_for_optimization_, step_size_for_log_space_optimization_);
 
-  if (neg_log_likelihood > current_neg_log_likelihood) {
+  if (neg_log_likelihood > current_value) {
     branch_lengths_(op.gpcsp_) = exp(current_log_branch_length);
   } else {
     branch_lengths_(op.gpcsp_) = exp(log_branch_length);
