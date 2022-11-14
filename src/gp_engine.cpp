@@ -639,7 +639,7 @@ void GPEngine::BrentOptimization(const GPOperations::OptimizeBranchLength& op) {
       negative_log_likelihood(current_log_branch_length);
 
   const auto [log_branch_length, neg_log_likelihood] =
-      Optimization::BrentMinimize<false>(
+      Optimization::BrentMinimize(
           negative_log_likelihood, current_log_branch_length, min_log_branch_length_,
           max_log_branch_length_, significant_digits_for_optimization_,
           max_iter_for_optimization_, step_size_for_log_space_optimization_);
@@ -673,7 +673,7 @@ void GPEngine::BrentOptimizationWithGradients(
   double current_neg_log_likelihood =
       negative_log_likelihood_and_derivative(current_log_branch_length).first;
   const auto [log_branch_length, neg_log_likelihood] =
-      Optimization::BrentMinimize<true>(
+      Optimization::BrentMinimizeWithGradients(
           negative_log_likelihood_and_derivative, current_log_branch_length,
           min_log_branch_length_, max_log_branch_length_,
           significant_digits_for_optimization_, max_iter_for_optimization_,
