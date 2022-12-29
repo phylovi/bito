@@ -25,14 +25,14 @@ ExternalProject_Add(beagle-lib
   GIT_SHALLOW true
   GIT_PROGRESS true
   UPDATE_DISCONNECTED true
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H" -DCMAKE_SHARED_LINKER_FLAGS="${BITO_RPATH}"
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${PROJECT_BINARY_DIR}/beagle-lib/install -DBUILD_CUDA=OFF -DBUILD_OPENCL=OFF -DBUILD_JNI=OFF -DCMAKE_CXX_FLAGS="-DHAVE_CPUID_H" -DCMAKE_SHARED_LINKER_FLAGS="${BITO_RPATH}" 
   PREFIX beagle-lib
   INSTALL_DIR beagle-lib/install
 )
 
 ExternalProject_Add(pybind11
   GIT_REPOSITORY https://github.com/pybind/pybind11.git
-  GIT_TAG origin/v2.7
+  GIT_TAG origin/v2.10
   GIT_SHALLOW true
   GIT_PROGRESS true
   UPDATE_DISCONNECTED true
@@ -45,7 +45,7 @@ option(WERROR "Treat warnings as errors" ON)
 
 function(bito_compile_opts PRODUCT)
   target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
-  target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall)
+  target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall -Wno-range-loop-construct -Wno-unused-but-set-variable -Wno-deprecated-declarations)
 
   if(${WERROR})
     target_compile_options(${PRODUCT} PUBLIC -Werror)

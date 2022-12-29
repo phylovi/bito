@@ -39,6 +39,9 @@
 #include "reindexer.hpp"
 #include "sugar.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
 using NodeId = GenericId<struct NodeIdTag>;
 using EdgeId = GenericId<struct EdgeIdTag>;
 using TaxonId = GenericId<struct TaxonIdTag>;
@@ -697,3 +700,6 @@ class SubsplitDAGStorage {
   HostableVector<DAGLineStorage> lines_;
   HostableVector<DAGVertex> vertices_;
 };
+
+#pragma GCC diagnostic pop
+

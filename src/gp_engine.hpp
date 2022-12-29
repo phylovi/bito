@@ -304,7 +304,7 @@ class GPEngine {
   // See more on Brent optimization here:
   // https://www.boost.org/doc/libs/1_79_0/libs/math/doc/html/math_toolkit/brent_minima.html
   int significant_digits_for_optimization_ = 10;
-  double relative_tolerance_for_optimization_ = 1e-4;
+  // double relative_tolerance_for_optimization_ = 1e-4;
   double denominator_tolerance_for_newton_ = 1e-10;
   double step_size_for_optimization_ = 5e-4;
   double step_size_for_log_space_optimization_ = 1.0005;

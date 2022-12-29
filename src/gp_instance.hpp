@@ -168,7 +168,7 @@ class GPInstance {
 
   size_t gpcsp_count_ = dag_.EdgeCountWithLeafSubsplits();
   bool use_gradients_;
-  GPEngine::OptimizationMethod optimization_method_;
+  // GPEngine::OptimizationMethod optimization_method_;
 
   // For storing intermediate optimization branch length and per pcsp log
   // likelihood values. Only used if track_intermediate_iterations in

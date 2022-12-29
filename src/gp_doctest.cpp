@@ -1911,7 +1911,7 @@ bool TestTPEngineScoresAndPVs(const std::string& fasta_path,
   // Note, if the test only contains a single tree, then this amounts to checking if
   // each edge's likelihood matches that one tree.
   auto TestMatchingScores =
-      [is_quiet, &tree_id_map, &test_passes](
+      [&tree_id_map, &test_passes](
           const std::string& test_name,
           std::unordered_map<size_t, double>& correct_tree_score_map,
           std::unordered_map<EdgeId, double>& tp_score_map) {

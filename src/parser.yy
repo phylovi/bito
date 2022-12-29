@@ -29,6 +29,8 @@ https://beast.community/nexus_metacomments
   #include <string>
   #include "sugar.hpp"
   #include "tree.hpp"
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-but-set-variable"
   class Driver;
 }
 
@@ -146,3 +148,5 @@ yy::parser::error (const location_type& l, const std::string& m)
 {
   std::cerr << l << ": " << m << '\n';
 }
+
+#pragma GCC diagnostic pop
