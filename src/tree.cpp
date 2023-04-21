@@ -31,9 +31,13 @@ Tree::Tree(const Node::NodePtr& topology, TagDoubleMap branch_lengths)
 
 Tree::Tree(const Node::NodePtr& topology, BranchLengthVector branch_lengths)
     : branch_lengths_(std::move(branch_lengths)), topology_(topology) {
-  Assert(topology->Id() + 1 == branch_lengths_.size(),
-         "Root id is too large relative to the branch_lengths size in "
-         "Tree::Tree.");
+  if (topology->Id() + 1 != branch_lengths_.size()) {
+    Failwith(
+        "Root id is too large relative to the branch_lengths size in "
+        "Tree::Tree: " +
+        std::to_string(topology->Id() + 1) + " vs " +
+        std::to_string(branch_lengths_.size()));
+  }
 }
 
 bool Tree::operator==(const Tree& other) const {

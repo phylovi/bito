@@ -120,6 +120,60 @@ GPOperationVector GPDAG::BranchLengthOptimization() {
   return operations;
 }
 
+// After this traversal, we will have optimized branch lengths, but we cannot assume
+// that all of the PLVs are in a valid state.
+//
+// Update the terminology in this function as part of #288.
+GPOperationVector GPDAG::BranchLengthOptimization(
+    const std::set<EdgeId> &edges_to_optimize) {
+  GPOperationVector operations;
+  DepthFirstWithTidyAction(
+      GetRootsplitNodeIds(),
+      TidySubsplitDAGTraversalAction(
+          // BeforeNode
+          [this, &operations](NodeId node_id) {
+            if (!GetDAGNode(node_id).IsRootsplit()) {
+              // Update R-hat if we're not at the root.
+              UpdateRHat(node_id, operations);
+            }
+          },
+          // AfterNode
+          [this, &operations](NodeId node_id) {
+            // Make P the elementwise product ("o") of the two P PLVs for the
+            // node-clades.
+            operations.push_back(Multiply{GetPLVIndex(PLVType::P, node_id),
+                                          GetPLVIndex(PLVType::PHatRight, node_id),
+                                          GetPLVIndex(PLVType::PHatLeft, node_id)});
+          },
+          // BeforeNodeClade
+          [this, &operations](NodeId node_id, bool is_edge_on_left) {
+            const PLVType p_hat_plv_type =
+                is_edge_on_left ? PLVType::PHatLeft : PLVType::PHatRight;
+            // Update the R PLV corresponding to our rotation status.
+            operations.push_back(RUpdateOfRotated(node_id, is_edge_on_left));
+            // Zero out the node-clade PLV so we can fill it as part of VisitEdge.
+            operations.push_back(ZeroPLV{GetPLVIndex(p_hat_plv_type, node_id)});
+          },
+          // ModifyEdge
+          [this, &operations, &edges_to_optimize](NodeId node_id, NodeId child_id,
+                                                  bool is_edge_on_left) {
+            // Optimize each branch for a given node-clade and accumulate the resulting
+            // P-hat PLVs in the parent node.
+            const auto edge_id = GetEdgeIdx(node_id, child_id);
+            const bool do_optimize_branch_length =
+                (edges_to_optimize.find(edge_id) != edges_to_optimize.end());
+            OptimizeBranchLengthUpdatePHat(node_id, child_id, is_edge_on_left,
+                                           operations, do_optimize_branch_length);
+          },
+          // UpdateEdge
+          [this, &operations](NodeId node_id, NodeId child_id, bool is_edge_on_left) {
+            // Accumulate all P-hat PLVs in the parent node without optimization.
+            // #321 I don't think we need this Likelihood call... just the update PHat.
+            UpdatePHatComputeLikelihood(node_id, child_id, is_edge_on_left, operations);
+          }));
+  return operations;
+}
+
 GPOperationVector GPDAG::ComputeLikelihoods() const {
   GPOperationVector operations;
   IterateOverRealNodes([this, &operations](SubsplitDAGNode node) {
@@ -264,13 +318,14 @@ void AppendOperationsAfterPrepForMarginalization(
 void GPDAG::AddPhatOperations(SubsplitDAGNode node, bool is_edge_on_left,
                               GPOperationVector &operations) const {
   PLVType plv_type = PLVTypeEnum::PPLVType(is_edge_on_left);
-  const auto parent_id = node.Id();
-  const auto dest_idx = GetPLVIndex(plv_type, node.Id());
+  const NodeId parent_id = node.Id();
+  const PVId dest_pvid = GetPLVIndex(plv_type, node.Id());
   GPOperationVector new_operations;
   for (const auto &child_id : node.GetLeafward(is_edge_on_left)) {
-    const auto gpcsp_idx = GetEdgeIdx(parent_id, NodeId(child_id));
+    const EdgeId edge_id = GetEdgeIdx(parent_id, NodeId(child_id));
+    const PVId child_pvid = GetPLVIndex(PLVType::P, NodeId(child_id));
     new_operations.push_back(IncrementWithWeightedEvolvedPLV{
-        dest_idx, gpcsp_idx.value_, GetPLVIndex(PLVType::P, NodeId(child_id))});
+        dest_pvid.value_, edge_id.value_, child_pvid.value_});
   }
   AppendOperationsAfterPrepForMarginalization(operations, new_operations);
 }
@@ -337,11 +392,15 @@ void GPDAG::UpdatePHatComputeLikelihood(NodeId node_id, NodeId child_node_id,
 
 void GPDAG::OptimizeBranchLengthUpdatePHat(NodeId node_id, NodeId child_node_id,
                                            bool is_edge_on_left,
-                                           GPOperationVector &operations) const {
+                                           GPOperationVector &operations,
+                                           bool do_optimize_branch_length) const {
   EdgeId gpcsp_idx = GetEdgeIdx(node_id, child_node_id);
-  operations.push_back(OptimizeBranchLength{
-      GetPLVIndex(PLVType::P, child_node_id),
-      GetPLVIndex(PLVTypeEnum::RPLVType(is_edge_on_left), node_id), gpcsp_idx.value_});
+  if (do_optimize_branch_length) {
+    operations.push_back(OptimizeBranchLength{
+        GetPLVIndex(PLVType::P, child_node_id),
+        GetPLVIndex(PLVTypeEnum::RPLVType(is_edge_on_left), node_id),
+        gpcsp_idx.value_});
+  }
   // Update p_hat(s)
   GPOperationVector new_operations;
   new_operations.push_back(IncrementWithWeightedEvolvedPLV{

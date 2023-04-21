@@ -42,15 +42,20 @@ ExternalProject_Add(pybind11
 )
 
 option(WERROR "Treat warnings as errors" ON)
+option(PROFILING "Compile with debugger and profiling symbols" OFF)
 
-function(bito_compile_opts PRODUCT)
+function(bito_compile_opts PRODUCT WERROR_)
   target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
   target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall)
 
-  if(${WERROR})
+  if(${WERROR_})
     target_compile_options(${PRODUCT} PUBLIC -Werror)
   else()
     target_compile_options(${PRODUCT} PUBLIC -Wold-style-cast)
+  endif()
+
+  if(${PROFILING})
+    target_compile_options(${PRODUCT} PUBLIC -pg)
   endif()
 
   target_include_directories(${PRODUCT} PUBLIC
@@ -67,12 +72,14 @@ endfunction()
 
 function(bito_executable PRODUCT)
   add_executable(${PRODUCT} ${ARGN})
-  bito_compile_opts(${PRODUCT})
+  bito_compile_opts(${PRODUCT} ${WERROR})
   bito_link_opts(${PRODUCT})
 endfunction()
 
 function(bito_extra PRODUCT)
-  bito_executable(${PRODUCT} ${ARGN})
+  add_executable(${PRODUCT} ${ARGN})
+  bito_compile_opts(${PRODUCT} "")
+  bito_link_opts(${PRODUCT})
   target_include_directories(${PRODUCT} PUBLIC ../src)
 endfunction()
 
@@ -84,10 +91,10 @@ add_library(bito-core SHARED
   src/bitset.cpp
   src/block_model.cpp
   src/block_specification.cpp
-  src/choice_map.cpp
   src/clock_model.cpp
   src/combinatorics.cpp
   src/csv.cpp
+  src/dag_branch_handler.cpp
   src/driver.cpp
   src/engine.cpp
   src/fat_beagle.cpp
@@ -100,6 +107,7 @@ add_library(bito-core SHARED
   src/node.cpp
   src/numerical_utils.cpp
   src/nni_engine.cpp
+  src/nni_evaluation_engine.cpp
   src/nni_operation.cpp
   src/parser.cpp
   src/phylo_flags.cpp
@@ -125,7 +133,9 @@ add_library(bito-core SHARED
   src/taxon_name_munging.cpp
   src/tidy_subsplit_dag.cpp
   src/topology_sampler.cpp
+  src/tp_choice_map.cpp
   src/tp_engine.cpp
+  src/tp_evaluation_engine.cpp
   src/tree.cpp
   src/tree_collection.cpp
   src/unrooted_sbn_instance.cpp
@@ -133,7 +143,7 @@ add_library(bito-core SHARED
   src/unrooted_tree_collection.cpp
   src/zlib_stream.cpp
 )
-bito_compile_opts(bito-core)
+bito_compile_opts(bito-core ${WERROR})
 target_link_options(bito-core PUBLIC -pthread ${BITO_RPATH})
 target_link_libraries(bito-core PUBLIC hmsbeagle hmsbeagle-cpu z)
 target_link_directories(bito-core PUBLIC
@@ -147,7 +157,7 @@ add_dependencies(bito-core beagle-lib)
 add_library(bito SHARED
   src/pybito.cpp
 )
-bito_compile_opts(bito)
+bito_compile_opts(bito ${WERROR})
 target_include_directories(bito PUBLIC
   ${Python_INCLUDE_DIRS}
   ${PROJECT_BINARY_DIR}/pybind11/install/include

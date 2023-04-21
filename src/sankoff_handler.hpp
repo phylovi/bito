@@ -117,7 +117,7 @@ class SankoffHandler {
   void RunSankoff(Node::NodePtr topology);
 
   // Calculates parsimony score on given node across all sites.
-  double ParsimonyScore(NodeId node_id);
+  double ParsimonyScore(NodeId node_id = NodeId(0));
 
  private:
   SankoffMatrix mutation_costs_;

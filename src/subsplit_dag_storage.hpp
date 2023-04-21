@@ -58,6 +58,23 @@ using BitsetEdgeIdPairMap = std::unordered_map<Bitset, EdgeIdPair>;
 using NodeIdVectorPair = std::pair<NodeIdVector, NodeIdVector>;
 
 enum class Direction { Rootward, Leafward };
+static const inline size_t DirectionCount = 2;
+class DirectionEnum : public EnumWrapper<Direction, size_t, DirectionCount,
+                                         Direction::Rootward, Direction::Leafward> {
+ public:
+  static inline const std::string Prefix = "Direction";
+  static inline const Array<std::string> Labels = {{"Rootward", "Leafward"}};
+
+  static std::string ToString(const Direction e) {
+    std::stringstream ss;
+    ss << Prefix << "::" << Labels[e];
+    return ss.str();
+  }
+  friend std::ostream& operator<<(std::ostream& os, const Direction e) {
+    os << ToString(e);
+    return os;
+  }
+};
 
 template <typename Derived>
 class DAGLine {

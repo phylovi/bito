@@ -48,6 +48,7 @@ class Tree {
   // branch has zero branch length. Modifies tree in place.
   void SlideRootPosition();
 
+  // Build a tree from a topology using unit branch lengths.
   static Tree UnitBranchLengthTreeOf(Node::NodePtr topology);
   static Tree OfParentIdVector(const std::vector<size_t>& indices);
   static TreeVector ExampleTrees();

@@ -33,13 +33,3 @@ int main() {
   std::chrono::duration<double> duration = now() - t_start;
   std::cout << "time: " << duration.count() << " seconds\n";
 }
-
-void MyTest() {
-  Stopwatch timer;
-  timer.Start();
-
-  timer.Lap();
-
-  double time = timer.Stop();
-  DoubleVector laps = timer.GetLaps();
-}

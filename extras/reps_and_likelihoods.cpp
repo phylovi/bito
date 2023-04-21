@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
   GPInstance all_trees_gp_inst("mmapped_plv.data");
   all_trees_gp_inst.ReadNewickFile(rooted_nwk_path);
   all_trees_gp_inst.ReadFastaFile(fasta_path);
-  all_trees_gp_inst.MakeEngine();
+  all_trees_gp_inst.MakeGPEngine();
   all_trees_gp_inst.TakeFirstBranchLength();
   std::vector<RootedSBNInstance> extra_r_insts;
   for (size_t i = 0; i < extras_count; i++) {

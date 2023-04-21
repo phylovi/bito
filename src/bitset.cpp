@@ -452,6 +452,14 @@ bool Bitset::SubsplitIsParentChildPair(const Bitset& parent, const Bitset& child
   return child.SubsplitIsLeftChildOf(parent) || child.SubsplitIsRightChildOf(parent);
 }
 
+bool Bitset::SubsplitIsAncestorDescendantPair(const Bitset& ancestor,
+                                              const Bitset& descendant,
+                                              const SubsplitClade clade_type) {
+  const auto ancestor_clade = ancestor.SubsplitGetClade(clade_type);
+  const auto descendant_clade = descendant.SubsplitCladeUnion();
+  return (~ancestor_clade & descendant_clade).None();
+}
+
 bool Bitset::SubsplitIsAdjacent(const Bitset& subsplit_a, const Bitset& subsplit_b) {
   return SubsplitIsParentChildPair(subsplit_a, subsplit_b) ||
          SubsplitIsParentChildPair(subsplit_b, subsplit_a);
@@ -584,6 +592,11 @@ SizePair Bitset::PCSPGetChildSubsplitTaxonCounts() const {
           static_cast<size_t>(total_clade_taxon_count - clade0_taxon_count)};
 }
 
+bool Bitset::PCSPIsParentChildPair(const Bitset& parent_pcsp,
+                                   const Bitset& child_pcsp) {
+  return parent_pcsp.PCSPGetChildSubsplit() == child_pcsp.PCSPGetParentSubsplit();
+}
+
 Bitset Bitset::Singleton(size_t n, size_t which_on) {
   Assert(which_on < n,
          "Bitset::Singleton(): selected 'on' bit is out of range for bitset size.");
@@ -606,8 +619,7 @@ void AssertSubsplitIsLeafAdjacent(const Bitset& subsplit) {
       subsplit.SubsplitGetClade(SubsplitClade::Right).IsSingleton();
   Assert(is_left_clade_nonempty && is_right_clade_singleton,
          "Assertion SisterAndLeafSubsplit failed: we want the left-hand clade of the "
-         "subsplit be "
-         "non-empty and the right-hand clade be a singleton.");
+         "subsplit be non-empty and the right-hand clade be a singleton.");
 }
 
 Bitset Bitset::LeafSubsplitOfParentSubsplit(const Bitset& parent_subsplit) {

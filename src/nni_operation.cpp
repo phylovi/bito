@@ -136,8 +136,13 @@ bool NNIOperation::IsValid() {
   return Bitset::SubsplitIsParentChildPair(parent_, child_);
 };
 
+std::string NNIOperation::ToString() const {
+  std::stringstream os;
+  os << "{ P:" << parent_.SubsplitToString() << ", C:" << child_.SubsplitToString()
+     << " }";
+  return os.str();
+}
+
 std::ostream &operator<<(std::ostream &os, const NNIOperation &nni) {
-  os << "{" << nni.parent_.SubsplitToString() << ", " << nni.child_.SubsplitToString()
-     << "}";
-  return os;
+  return os << nni.ToString();
 };

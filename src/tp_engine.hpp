@@ -1,92 +1,272 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// TPEngine runs the Top-Pruning method for systematic exploration. This method
-// procedurally explores NNIs adjacent to the DAG in tree space.  NNIs are then
-// evaluated by finding the best scoring tree contained in the DAG which has a
-// given edge.  Scoring of trees can be done through likelihoods or parsimony.
+// TPEngine uses the Top-Pruning method for evaluating the edges of the DAG. Each edge
+// is evaluated according to its representative "Top Tree", that is, the best scoring
+// tree of all possible trees contained within the DAG that include that edge.  The
+// topology of each Top Tree is stored per edge in the choice map. Tree/edge scoring is
+// facilitated by the helper TPEvalEngine class.
+
+#pragma once
 
 #include "sugar.hpp"
 #include "gp_dag.hpp"
 #include "graft_dag.hpp"
 #include "pv_handler.hpp"
-#include "choice_map.hpp"
+#include "tp_choice_map.hpp"
 #include "nni_operation.hpp"
-#include "sankoff_handler.hpp"
+#include "dag_branch_handler.hpp"
+#include "optimization.hpp"
+#include "substitution_model.hpp"
+#include "tp_evaluation_engine.hpp"
 
-#pragma once
+enum class TPEvalEngineType { LikelihoodEvalEngine, ParsimonyEvalEngine };
+static const inline size_t TPEvalEngineTypeCount = 2;
+class TPEvalEngineTypeEnum
+    : public EnumWrapper<TPEvalEngineType, size_t, TPEvalEngineTypeCount,
+                         TPEvalEngineType::LikelihoodEvalEngine,
+                         TPEvalEngineType::ParsimonyEvalEngine> {
+ public:
+  static inline const std::string Prefix = "TPEvalEngineType";
+  static inline const Array<std::string> Labels = {
+      {"LikelihoodEvalEngine", "ParsimonyEvalEngine"}};
+
+  static std::string ToString(const TPEvalEngineType e) {
+    std::stringstream ss;
+    ss << Prefix << "::" << Labels[e];
+    return ss.str();
+  }
+  friend std::ostream &operator<<(std::ostream &os, const TPEvalEngineType e) {
+    os << ToString(e);
+    return os;
+  }
+};
+
+using TreeId = GenericId<struct TreeIdTag>;
+using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 
 class TPEngine {
  public:
+  TPEngine(GPDAG &dag, SitePattern &site_pattern);
   TPEngine(GPDAG &dag, SitePattern &site_pattern,
-           const std::string &mmap_likelihood_path, bool using_likelihood,
-           const std::string &mmap_parsimony_path, bool using_parsimony);
+           std::optional<std::string> mmap_likelihood_path,
+           std::optional<std::string> mmap_parsimony_path);
 
   // ** Access
 
-  EigenVectorXd &GetTopTreeLikelihoodsPerEdge() {
-    return top_tree_log_likelihoods_per_edge_;
-  }
-  EigenVectorXd &GetTopTreeParsimonyPerEdge() { return top_tree_parsimony_per_edge_; }
+  GPDAG &GetDAG() { return *dag_; }
+  const GPDAG &GetDAG() const { return *dag_; }
+  GraftDAG &GetGraftDAG() { return *graft_dag_; }
+  const GraftDAG &GetGraftDAG() const { return *graft_dag_; }
+  SitePattern &GetSitePattern() { return site_pattern_; }
+  const SitePattern &GetSitePattern() const { return site_pattern_; }
+  EigenVectorXd &GetSitePatternWeights() { return site_pattern_weights_; }
+  const EigenVectorXd &GetSitePatternWeights() const { return site_pattern_weights_; }
 
-  // ** General Scoring
+  TPChoiceMap &GetChoiceMap() { return choice_map_; }
+  const TPChoiceMap &GetChoiceMap() const { return choice_map_; }
+  TPChoiceMap::EdgeChoice &GetChoiceMap(const EdgeId edge_id) {
+    return GetChoiceMap().GetEdgeChoice(edge_id);
+  }
+  const TPChoiceMap::EdgeChoice &GetChoiceMap(const EdgeId edge_id) const {
+    return GetChoiceMap().GetEdgeChoice(edge_id);
+  }
+  std::vector<TreeId> &GetTreeSource() { return tree_source_; }
+  const std::vector<TreeId> &GetTreeSource() const { return tree_source_; }
+  void SetTreeSource(const std::vector<TreeId> tree_source) {
+    tree_source_ = tree_source;
+  }
+  TreeId &GetTreeSource(const EdgeId edge_id) {
+    return GetTreeSource()[edge_id.value_];
+  }
+  const TreeId &GetTreeSource(const EdgeId edge_id) const {
+    return GetTreeSource()[edge_id.value_];
+  }
+
+  // ** Maintenance
+
+  // Initialize engine parts: choice map, eval engine, etc.
+  void Initialize();
+  // Update engine after updating the DAG.
+  void UpdateAfterModifyingDAG(
+      const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
+      const size_t prev_node_count, const Reindexer &node_reindexer,
+      const size_t prev_edge_count, const Reindexer &edge_reindexer);
+
+  // ** Tree/Topology Builder
+
+  // Get top-scoring tree in DAG containing given edge.
+  RootedTree GetTopTreeWithEdge(const EdgeId edge_id) const;
+  // Get top-scoring topology in DAG containing given edge.
+  Node::Topology GetTopTreeTopologyWithEdge(const EdgeId edge_id) const;
+
+  // Get resulting top-scoring tree containing proposed NNI.
+  RootedTree GetTopTreeProposedWithNNI(const NNIOperation &nni) const;
+  // Get resulting top-scoring topology with proposed NNI.
+  Node::Topology GetTopTreeTopologyProposedWithNNI(const NNIOperation &nni) const;
+
+  // Build the set of edge_ids in DAG that represent the embedded top tree.
+  std::set<EdgeId> BuildSetOfEdgesRepresentingTopology(
+      const Node::Topology &topology) const;
+  // Find the top tree's TreeId using the given edge id representation of the tree in
+  // the DAG.
+  TreeId FindTopTreeIdInTreeEdgeVector(const std::vector<EdgeId> tree_edge_ids) const;
+  // Use branch lengths to build tree from a topology that is contained in the DAG.
+  RootedTree BuildTreeFromTopologyInDAG(const Node::Topology &topology) const;
+
+  // Build map containing all unique top tree topologies. Matched against all an edge_id
+  // which results in given top tree.
+  std::vector<std::pair<std::vector<EdgeId>, Node::Topology>>
+  BuildMapOfEdgeIdToTopTreeTopologies() const;
+  // Build map containing all unique top tree topologies. Matched against tree_id,
+  // which ranks trees according to input ordering into the DAG.
+  std::unordered_map<TreeId, Node::Topology> BuildMapOfTreeIdToTopTreeTopologies()
+      const;
+  // Build map containing all unique top trees. Matched against tree_id, which ranks
+  // trees according to input ordering into the DAG.
+  std::unordered_map<TreeId, RootedTree> BuildMapOfTreeIdToTopTrees() const;
+
+  // Build PCSPs for all edges adjacent to proposed NNI.
+  TPChoiceMap::EdgeChoicePCSPs BuildAdjacentPCSPsToProposedNNI(
+      const NNIOperation &nni,
+      const TPChoiceMap::EdgeChoiceNodeIds &adj_node_ids) const;
+
+  // ** Choice Map / Tree Source
 
   // Intialize choice map naively by setting first encountered edge for each
   void InitializeChoiceMap();
-  // Get top-scoring tree in DAG containing given edge.
-  Node::NodePtr GetTopTreeTopologyWithEdge(const EdgeId edge_id) const;
+  // Update choice map after modifying DAG.
+  void UpdateChoiceMapAfterModifyingDAG(
+      const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
+      const size_t prev_node_count, const Reindexer &node_reindexer,
+      const size_t prev_edge_count, const Reindexer &edge_reindexer);
+
+  // Set tree source for each edge, by taking the first occurrence of each PCSP edge
+  // from input trees.
+  void SetTreeSourceByTakingFirst(const RootedTreeCollection &tree_collection,
+                                  const BitsetSizeMap &edge_indexer);
+  // Set each edge's choice map, by either:
+  // True: the PCSP heuristic, False: the Subsplit heuristic.
+  void SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
+                                 const BitsetSizeMap &edge_indexer,
+                                 const bool use_subsplit_heuristic = true);
+
+  // Update an individual edge's choice map using the tree source. Naively takes first
+  // adjacent edge.
+  void UpdateEdgeChoiceByTakingFirstTree(const EdgeId edge_id);
+  // Update an individual edge's choice map using the tree source. Trees added to the
+  // DAG first recieve highest priority.
+  void UpdateEdgeChoiceByTakingHighestPriorityTree(const EdgeId edge_id);
+  // Update an individual edge's choice map using the tree source. Examines all
+  // available edge combinations an takes adjacent edge that results in max score.
+  void UpdateEdgeChoiceByTakingHighestScoringTree(const EdgeId edge_id);
+
+  // Get highest priority pre-NNI in DAG for given post-NNI.
+  NNIOperation FindHighestPriorityNeighborNNIInDAG(const NNIOperation &nni) const;
+  // Builds a map of adjacent edges from pre-NNI to post-NNI.
+  std::unordered_map<EdgeId, EdgeId> BuildAdjacentEdgeMapFromPostNNIToPreNNI(
+      const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
+
+  // Map edge ids in pre-NNI edge choice according to the swap in post-NNI clade map.
+  TPChoiceMap::EdgeChoice RemapEdgeChoiceFromPreNNIToPostNNI(
+      const TPChoiceMap::EdgeChoice &pre_choice,
+      const NNIOperation::NNICladeArray &clade_map) const;
+  // Create remapped edge choices from pre-NNI to post-NNI.
+  TPChoiceMap::EdgeChoice GetRemappedEdgeChoiceFromPreNNIToPostNNI(
+      const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
+
+  double GetAvgLengthOfAdjEdges(
+      const NodeId parent_node_id, const NodeId child_node_id,
+      const std::optional<size_t> prev_node_count = std::nullopt,
+      const std::optional<Reindexer> node_reindexer = std::nullopt,
+      const std::optional<size_t> prev_edge_count = std::nullopt,
+      const std::optional<Reindexer> edge_reindexer = std::nullopt) const;
+
+  // Create map from new NNI pcsp bitset edges to best reference edge in DAG.
+  BitsetEdgeIdMap BuildBestEdgeMapOverNNIs(
+      const NNISet &nnis, std::optional<const size_t> prev_edge_count = std::nullopt,
+      std::optional<const Reindexer> edge_reindexer = std::nullopt) const;
+
+  // ** Branch Lengths
+
+  // Set branch lengths to default.
+  void SetBranchLengthsToDefault();
+  // Set branch lengths by taking the first occurrance of each PCSP edge from
+  // tree collection (requires likelihood evaluation engine).
+  void SetBranchLengthsByTakingFirst(const RootedTreeCollection &tree_collection,
+                                     const BitsetSizeMap &edge_indexer,
+                                     const bool set_uninitialized_to_default = false);
+  // Find optimized branch lengths.
+  void OptimizeBranchLengths(
+      std::optional<bool> check_branch_convergence = std::nullopt);
+
+  // ** TP Evaluation Engine
+
+  // Initialize likelihood evaluation engine.
+  void MakeLikelihoodEvalEngine(const std::string &mmap_likelihood_path);
+  // Initialize parsimony evaluation engine.
+  void MakeParsimonyEvalEngine(const std::string &mmap_parsimony_path);
+  // Remove all evaluation engines from use.
+  void ClearEvalEngineInUse();
+  // Check if evaluation engine is currently in use.
+  bool IsEvalEngineInUse(const TPEvalEngineType eval_engine_type) {
+    return eval_engine_in_use_[eval_engine_type];
+  }
+  // Set evaluation engine type for use in runner.
+  void SelectEvalEngine(const TPEvalEngineType eval_engine_type);
+  // Set likelihood evaluation engine as engine for future computation.
+  void SelectLikelihoodEvalEngine();
+  // Set parsimony evaluation engine as engine for future computation.
+  void SelectParsimonyEvalEngine();
+
+  // ** Scoring
+
   // Get score of top-scoring tree in DAG containing given edge.
-  double GetTopTreeScore(const EdgeId edge_id) const;
+  double GetTopTreeScore(const EdgeId edge_id) const {
+    return GetEvalEngine().GetTopTreeScoreWithEdge(edge_id);
+  }
+  // Get likelihood of top-scoring tree in DAG containing given edge.
+  double GetTopTreeLikelihood(const EdgeId edge_id) const {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    return GetLikelihoodEvalEngine().GetTopTreeScoreWithEdge(edge_id);
+  }
+  // Get parsimony of top-scoring tree in DAG containing given edge.
+  double GetTopTreeParsimony(const EdgeId edge_id) const {
+    Assert(HasParsimonyEvalEngine(), "Must MakeParsimonyEvalEngine before access.");
+    return GetParsimonyEvalEngine().GetTopTreeScoreWithEdge(edge_id);
+  }
+  // Get the Top Tree from the DAG containing the proposed NNI.
+  double GetTopTreeScoreWithProposedNNI(const NNIOperation &post_nni,
+                                        const NNIOperation &pre_nni,
+                                        const size_t spare_offset = 0);
 
-  // ** Scoring by Likelihood
-
-  // Initialize ChoiceMap and populate PVs for entire DAG by Likelihood.
-  void InitializeLikelihood();
-  // Fetch likelihood of top tree with given edge.  Assumed likelihoods have already
-  // been computed.
-  double GetTopTreeLikelihoodWithEdge(const EdgeId edge_id);
-  // Compute top tree likelihoods for all edges in DAG. Result stored in
-  // log_likelihoods_per_edge_ vector..
-  void ComputeLikelihoods();
-  // After adding an NNI to the DAG, update the out-of-date likelihoods.
-  void UpdateLikelihoodsAfterDAGAddNodePair(
-      const NNIOperation &post_nni, const NNIOperation &pre_nni,
-      std::optional<size_t> new_tree_id = std::nullopt);
-  // Find the likelihood of a proposed NNI (an NNI not currently stored in the DAG but
-  // adjacent to nodes in the current DAG).  Computations are done in place, leveraging
-  // pre-existing PVs.
-  double GetTopTreeLikelihoodWithProposedNNI(const NNIOperation &post_nni,
-                                             const NNIOperation &pre_nni,
-                                             const size_t spare_offset = 0);
-
-  // ** Scoring by Parsimony
-
-  // Initialize ChoiceMap and populate PVs for entire DAG by Parsimony.
-  void InitializeParsimony();
-  // Fetch parsimony of top tree with given edge.  Assumed parsimony have already
-  // been computed.
-  double GetTopTreeParsimonyWithEdge(const EdgeId edge_id);
-  // Compute top tree parsimony for all edges in DAG. Result stored in
-  // log_parsimony_per_edge_ vector.
-  void ComputeParsimonies();
-  // After adding an NNI to the DAG, update the out-of-date likelihoods.
-  void UpdateParsimoniesAfterDAGAddNodePair(
-      const NNIOperation &post_nni, const NNIOperation &pre_nni,
-      std::optional<size_t> new_tree_id = std::nullopt);
+  // Initialize EvalEngine.
+  void InitializeScores();
+  // Final Score Computation after Initialization or Update.
+  void ComputeScores();
+  // Update the EvalEngine after adding Node Pairs to the DAG.
+  void UpdateScoresAfterDAGAddNodePair(const NNIOperation &post_nni,
+                                       const NNIOperation &pre_nni,
+                                       std::optional<size_t> new_tree_id);
+  // Update PVs after modifying the DAG.
+  void UpdateEvalEngineAfterModifyingDAG(
+      const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
+      const size_t prev_node_count, const Reindexer &node_reindexer,
+      const size_t prev_edge_count, const Reindexer &edge_reindexer);
 
   // ** Parameter Data
 
-  // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option to
-  // remap data according to DAG reindexers.  Option to give explicit number of nodes or
-  // edges to allocate memory for (this is the only way memory allocation will be
-  // decreased).
+  // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option
+  // to remap data according to DAG reindexers.  Option to give explicit number of
+  // nodes or edges to allocate memory for (this is the only way memory allocation
+  // will be decreased).
   void GrowNodeData(const size_t node_count,
                     std::optional<const Reindexer> node_reindexer = std::nullopt,
-                    std::optional<const size_t> explicit_allocation = std::nullopt,
-                    const bool on_initialization = false);
+                    std::optional<const size_t> explicit_alloc = std::nullopt,
+                    const bool on_init = false);
   void GrowEdgeData(const size_t edge_count,
                     std::optional<const Reindexer> edge_reindexer = std::nullopt,
-                    std::optional<const size_t> explicit_allocation = std::nullopt,
+                    std::optional<const size_t> explicit_alloc = std::nullopt,
                     const bool on_intialization = false);
   // Remap node and edge-based data according to reordering of DAG nodes and edges.
   void ReindexNodeData(const Reindexer &node_reindexer, const size_t old_node_count);
@@ -95,15 +275,12 @@ class TPEngine {
   void GrowSpareNodeData(const size_t new_node_spare_count);
   void GrowSpareEdgeData(const size_t new_edge_spare_count);
 
-  // ** Tree Collection
-
-  // Set choice map by taking the first occurrence of each PCSP edge from collection.
-  void SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collection,
-                                 const BitsetSizeMap &edge_indexer);
-  // Set branch lengths by taking the first occurrance of each PCSP edge from
-  // collection.
-  void SetBranchLengthByTakingFirst(const RootedTreeCollection &tree_collection,
-                                    const BitsetSizeMap &edge_indexer);
+  // Update edge and node data by copying over from pre-NNI to post-NNI.
+  using CopyEdgeDataFunc = std::function<void(const EdgeId, const EdgeId)>;
+  void CopyOverEdgeDataFromPreNNIToPostNNI(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      CopyEdgeDataFunc copy_data_func,
+      std::optional<size_t> new_tree_id = std::nullopt);
 
   // ** Counts
 
@@ -112,33 +289,11 @@ class TPEngine {
   size_t GetSpareNodeCount() const { return node_spare_count_; }
   size_t GetAllocatedNodeCount() const { return node_alloc_; }
   size_t GetPaddedNodeCount() const { return GetNodeCount() + GetSpareNodeCount(); };
-  void SetNodeCount(const size_t node_count) {
-    node_count_ = node_count;
-    if (using_likelihoods_) {
-      likelihood_pvs_.SetCount(node_count);
-    }
-    if (using_parsimony_) {
-      parsimony_pvs_.SetCount(node_count);
-    }
-  }
+  void SetNodeCount(const size_t node_count) { node_count_ = node_count; }
   void SetSpareNodeCount(const size_t node_spare_count) {
     node_spare_count_ = node_spare_count;
-    if (using_likelihoods_) {
-      likelihood_pvs_.SetSpareCount(node_spare_count);
-    }
-    if (using_parsimony_) {
-      parsimony_pvs_.SetSpareCount(node_spare_count);
-    }
   }
-  void SetAllocatedNodeCount(const size_t node_alloc) {
-    node_alloc_ = node_alloc;
-    if (using_likelihoods_) {
-      likelihood_pvs_.SetAllocatedCount(node_alloc);
-    }
-    if (using_parsimony_) {
-      parsimony_pvs_.SetAllocatedCount(node_alloc);
-    }
-  }
+  void SetAllocatedNodeCount(const size_t node_alloc) { node_alloc_ = node_alloc; }
 
   // Edge Counts
   size_t GetEdgeCount() const { return edge_count_; };
@@ -157,24 +312,84 @@ class TPEngine {
   }
   void SetAllocatedEdgeCount(const size_t edge_alloc) { edge_alloc_ = edge_alloc; }
 
+  size_t GetSpareNodesPerNNI() const { return spare_nodes_per_nni_; }
+  size_t GetSpareEdgesPerNNI() const { return spare_edges_per_nni_; }
+
+  double GetResizingFactor() const { return resizing_factor_; }
   size_t GetInputTreeCount() const { return input_tree_count_; }
+  TreeId GetNextTreeId() const { return TreeId(GetInputTreeCount()); }
 
-  // ** Access
+  // ** TP Eval Engine
 
-  EigenConstMatrixXdRef GetLikelihoodMatrix() {
-    return log_likelihoods_.block(0, 0, GetNodeCount(), log_likelihoods_.cols());
+  TPEvalEngine &GetEvalEngine() { return *eval_engine_; }
+  const TPEvalEngine &GetEvalEngine() const { return *eval_engine_; }
+  TPEvalEngineViaLikelihood &GetLikelihoodEvalEngine() { return *likelihood_engine_; }
+  const TPEvalEngineViaLikelihood &GetLikelihoodEvalEngine() const {
+    return *likelihood_engine_;
   }
-  PLVEdgeHandler &GetLikelihoodPVs() { return likelihood_pvs_; }
-  PSVEdgeHandler &GetParsimonyPVs() { return parsimony_pvs_; }
-  EigenVectorXd &GetBranchLengths() { return branch_lengths_; }
-  std::vector<size_t> &GetTreeSource() { return tree_source_; }
-  EigenVectorXd &GetTopTreeLikelihoods() { return top_tree_log_likelihoods_per_edge_; }
-  EigenVectorXd &GetTopTreeParsimonies() { return top_tree_parsimony_per_edge_; }
+  bool HasLikelihoodEvalEngine() const { return likelihood_engine_ != nullptr; }
+  TPEvalEngineViaParsimony &GetParsimonyEvalEngine() { return *parsimony_engine_; }
+  const TPEvalEngineViaParsimony &GetParsimonyEvalEngine() const {
+    return *parsimony_engine_;
+  }
+  bool HasParsimonyEvalEngine() const { return parsimony_engine_ != nullptr; }
+  EigenConstMatrixXdRef GetLikelihoodMatrix() {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    auto &log_likelihoods =
+        GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
+    return log_likelihoods.block(0, 0, GetEdgeCount(), log_likelihoods.cols());
+  }
 
-  void SetBranchLengths(EigenVectorXd branch_lengths) {
-    Assert(size_t(branch_lengths.size()) == dag_.EdgeCountWithLeafSubsplits(),
-           "Size mismatch in GPEngine::SetBranchLengths.");
-    branch_lengths_.segment(0, dag_.EdgeCountWithLeafSubsplits()) = branch_lengths;
+  PLVEdgeHandler &GetLikelihoodPVs() {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    return GetLikelihoodEvalEngine().GetPVs();
+  }
+  const PLVEdgeHandler &GetLikelihoodPVs() const {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    return GetLikelihoodEvalEngine().GetPVs();
+  }
+  PSVEdgeHandler &GetParsimonyPVs() {
+    Assert(HasParsimonyEvalEngine(), "Must MakeParsimonyEvalEngine before access.");
+    return GetParsimonyEvalEngine().GetPVs();
+  }
+  const PSVEdgeHandler &GetParsimonyPVs() const {
+    Assert(HasParsimonyEvalEngine(), "Must MakeParsimonyEvalEngine before access.");
+    return GetParsimonyEvalEngine().GetPVs();
+  }
+  EigenVectorXd &GetBranchLengths() {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    return GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
+  }
+  const EigenVectorXd &GetBranchLengths() const {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    return GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
+  }
+  DAGBranchHandler &GetDAGBranchHandler() {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    return GetLikelihoodEvalEngine().GetDAGBranchHandler();
+  }
+  const DAGBranchHandler &GetDAGBranchHandler() const {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    return GetLikelihoodEvalEngine().GetDAGBranchHandler();
+  }
+  EigenVectorXd &GetTopTreeLikelihoods() {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    return GetLikelihoodEvalEngine().GetTopTreeScores();
+  }
+  const EigenVectorXd &GetTopTreeLikelihoods() const {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    return GetLikelihoodEvalEngine().GetTopTreeScores();
+  }
+  EigenVectorXd &GetTopTreeParsimonies() {
+    Assert(HasParsimonyEvalEngine(), "Must MakeParsimonyEvalEngine before access.");
+    return GetParsimonyEvalEngine().GetTopTreeScores();
+  }
+  const EigenVectorXd &GetTopTreeParsimonies() const {
+    Assert(HasParsimonyEvalEngine(), "Must MakeParsimonyEvalEngine before access.");
+    return GetParsimonyEvalEngine().GetTopTreeScores();
+  }
+  void SetBranchLengths(EigenVectorXd new_branch_lengths) {
+    GetDAGBranchHandler().SetBranchLengths(new_branch_lengths);
   }
 
   // ** I/O
@@ -182,166 +397,75 @@ class TPEngine {
   std::string LikelihoodPVToString(const PVId pv_id) const;
   std::string LogLikelihoodMatrixToString() const;
   std::string ParsimonyPVToString(const PVId pv_id) const;
+  std::string ChoiceMapToString() const { return GetChoiceMap().ToString(); };
+  std::string TreeSourceToString() const;
 
  protected:
-  // ** Scoring
+  // ** Choice Map Helpers
 
-  // Update edge and node data by copying over from pre-NNI to post-NNI.
-  void CopyOverEdgeDataFromPreNNIToPostNNI(
-      const NNIOperation &post_nni, const NNIOperation &pre_nni,
-      std::optional<size_t> new_tree_id = std::nullopt);
-  // Find the edge from the best scoring tree that is adjacent to given node in
+  // Find the edge from the highest priority tree that is adjacent to given node in
   // the given direction.
   // Accomplished by iterating over all adjacent edges using tree_source_ edge
   // map, which gives the best tree id using a given edge. The best tree is
   // expected to be the earliest found in the tree collection, aka smallest
   // tree id. The adjacent edge that comes from the best tree is chosen.
-  EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id,
-                                    const Direction direction) const;
-  EdgeId FindBestEdgeAdjacentToNode(const NodeId node_id, const Direction direction,
-                                    const SubsplitClade clade) const;
+  EdgeId FindHighestPriorityEdgeAdjacentToNode(const NodeId node_id,
+                                               const Direction direction) const;
+  EdgeId FindHighestPriorityEdgeAdjacentToNode(const NodeId node_id,
+                                               const Direction direction,
+                                               const SubsplitClade clade) const;
 
-  // ** Scoring by Likelihoods
+  // ChoiceMap for find top-scoring tree containing any given branch.
+  TPChoiceMap choice_map_;
 
-  // Compute the rootward P-PVs for given node.
-  void PopulateRootwardLikelihoodPVForNode(const NodeId node_id);
-  // Compute the leafward R-PVs for given node.
-  void PopulateLeafwardLikelihoodPVForNode(const NodeId node_id);
-  // Set the P-PVs to match the observed site patterns at the leaves.
-  void PopulateLeafLikelihoodPVsWithSitePatterns();
-  // Set the R-PVs to the stationary distribution at the root and rootsplits.
-  void PopulateRootLikelihoodPVsWithStationaryDistribution();
-  // Evolve up the given edge to compute the P-PV of its parent node.
-  void EvolveLikelihoodPPVUpEdge(const EdgeId parent_edge_id,
-                                 const EdgeId child_edge_id);
-  // Evolve down the given edge to compute the R-PV of its child node.
-  void EvolveLikelihoodRPVDownEdge(const EdgeId parent_edge_id,
-                                   const EdgeId child_edge_id);
-
-  // ** Scoring by Parsimony
-
-  // Compute the rootward P-PVs for given node.
-  void PopulateRootwardParsimonyPVForNode(const NodeId node_id);
-  // Compute the leafward R-PVs for given node.
-  void PopulateLeafwardParsimonyPVForNode(const NodeId node_id);
-  // Set the P-PVs to match the observed site patterns at the leaves.
-  void PopulateLeafParsimonyPVsWithSitePatterns();
-  // Calculate the PV for a given parent-child pair.
-  EigenVectorXd ParentPartial(EigenVectorXd child_partials);
-  // Sum P-PVs for right and left children of node 'node_id'
-  // In this case, we get the full P-PVs of the given node after all P-PVs
-  // have been concatenated into one SankoffPartialVector.
-  EigenVectorXd TotalPPartial(EdgeId edge_id, size_t site_idx);
-  // Populate rootward R-PVs for given edge.
-  void PopulateRootwardParsimonyPVForEdge(const EdgeId parent_id,
-                                          const EdgeId left_child_id,
-                                          const EdgeId right_child_id);
-  // Populate leafward P-PVs for given edge.
-  void PopulateLeafwardParsimonyPVForEdge(const EdgeId parent_id,
-                                          const EdgeId left_child_id,
-                                          const EdgeId right_child_id);
-  // Calculates parsimony score on given edge across all sites.
-  double ParsimonyScore(const EdgeId edge_id);
-
-  // ** PV Operations for Likelihoods
-
-  // Assign PV at src_id to dest_id.
-  void TakePVValue(const PVId dest_id, const PVId src_id);
-  // PV component-wise multiplication of PVs src1 and src2, result stored in dest_id.
-  void MultiplyPVs(const PVId dest_id, const PVId src1_id, const PVId src2_id);
-  // Compute Likelihood by taking up-to-date parent R-PV and child P-PV.
-  void ComputeLikelihood(const EdgeId edge_id, const PVId child_id,
-                         const PVId parent_id);
-  // Evolve src_id along the branch edge_id and store at dest_id.
-  void SetToEvolvedPV(const PVId dest_id, const EdgeId edge_id, const PVId src_id);
-  // Evolve src_id along the branch edge_id and multiply with contents of dest_id.
-  void MultiplyWithEvolvedPV(const PVId dest_id, const EdgeId edge_id,
-                             const PVId src_id);
-  // Prepare to evolve along given branch length. Stored in temporary variables
-  // diagonal_matrix_ and transition_matrix_.
-  void SetTransitionMatrixToHaveBranchLength(const double branch_length);
-  // Intermediate likelihood computation step. Stored in temporary variable
-  // per_pattern_log_likelihoods_.
-  void PreparePerPatternLogLikelihoodsForEdge(const PVId src1_id, const PVId src2_id);
-
-  // ** DAG
-  // Un-owned reference DAG.
-  GPDAG &dag_;
-  // For adding temporary NNIs to DAG.
-  std::unique_ptr<GraftDAG> graft_dag_;
-
-  // ** Parameters
-  // Total number of nodes in DAG. Determines sizes of data vectors indexed on nodes.
-  size_t node_count_ = 0;
-  size_t node_alloc_ = 0;
-  size_t node_spare_count_ = 2;
-  // Total number of edges in DAG. Determines sizes of data vectors indexed on edges.
-  size_t edge_count_ = 0;
-  size_t edge_alloc_ = 0;
-  size_t edge_spare_count_ = 3;
-  // Growth factor when reallocating data.
-  constexpr static double resizing_factor_ = 2.0;
-
-  // Tree likelihoods matrix across all sites.
-  EigenMatrixXd log_likelihoods_;
-  // Top tree log likelihood per edge.
-  EigenVectorXd top_tree_log_likelihoods_per_edge_;
-
-  // Tree parsimonies across all sites.
-  EigenMatrixXd parsimonies_;
-  // Top tree parsimony per edge.
-  EigenVectorXd top_tree_parsimony_per_edge_;
-
-  // Branch length parameters for DAG.
-  EigenVectorXd branch_lengths_;
-  // Initial branch length during first branch length opimization.
-  static constexpr double default_branch_length_ = 0.1;
-  // Absolute lower bound for possible branch lengths during optimization (in log
-  // space).
-  static constexpr double min_log_branch_length_ = -13.9;
-  // Absolute upper bound for possible branch lengths during optimization (in log
-  // space).
-  static constexpr double max_log_branch_length_ = 1.1;
-
-  // Observed leave states.
-  SitePattern site_pattern_;
+  // Map of tree ids to topologies. The tree id gives the ranking of the best scoring
+  // of inserted trees into the DAG.
+  std::map<TreeId, Node::Topology> tree_id_map_;
+  std::map<TreeId, double> tree_score_map_;
 
   // Tree id where branch_length and choice_map is sourced.
   // TreeCollection is expected to be ordered from highest to lowest scoring, so lower
   // tree id means better scoring tree.
-  std::vector<size_t> tree_source_;
+  std::vector<TreeId> tree_source_;
+
+  // Leaf labels.
+  SitePattern site_pattern_;
+  EigenVectorXd site_pattern_weights_;
   // Total number of trees used to construct the DAG.
   size_t input_tree_count_ = 0;
+  // The number of top trees in DAG.
+  size_t tree_counter_ = 0;
 
-  // ** Scoring
-  // Partial Vector for storing Likelihood scores.
-  PLVEdgeHandler likelihood_pvs_;
-  bool using_likelihoods_;
-  // Partial Vector for storing Parsimony scores.
-  PSVEdgeHandler parsimony_pvs_;
-  SankoffMatrix parsimony_cost_matrix_;
-  bool using_parsimony_;
-  // ChoiceMap for find top-scoring tree containing any given branch.
-  ChoiceMap choice_map_;
+  // ** Parameters
 
-  // ** Temporaries
-  // Stores intermediate values for computation.
-  EigenVectorXd per_pattern_log_likelihoods_;
+  size_t spare_nodes_per_nni_ = 15;
+  size_t spare_edges_per_nni_ = 6;
+  // Total number of nodes in DAG. Determines sizes of data vectors indexed on
+  // nodes.
+  size_t node_count_ = 0;
+  size_t node_alloc_ = 0;
+  size_t node_spare_count_ = spare_nodes_per_nni_;
+  // Total number of edges in DAG. Determines sizes of data vectors indexed on edges.
+  size_t edge_count_ = 0;
+  size_t edge_alloc_ = 0;
+  size_t edge_spare_count_ = spare_nodes_per_nni_;
+  // Growth factor when reallocating data.
+  constexpr static double resizing_factor_ = 2.0;
 
-  // ** Substitution Model
-  // When we change from JC69Model, check that we are actually doing transpose in
-  // leafward calculations.
-  JC69Model substitution_model_;
-  Eigen::Matrix4d eigenmatrix_ = substitution_model_.GetEigenvectors().reshaped(4, 4);
-  Eigen::Matrix4d inverse_eigenmatrix_ =
-      substitution_model_.GetInverseEigenvectors().reshaped(4, 4);
-  Eigen::Vector4d eigenvalues_ = substitution_model_.GetEigenvalues();
-  Eigen::Vector4d diagonal_vector_;
-  Eigen::DiagonalMatrix<double, 4> diagonal_matrix_;
-  Eigen::Matrix4d transition_matrix_;
-  Eigen::Vector4d stationary_distribution_ = substitution_model_.GetFrequencies();
-  EigenVectorXd site_pattern_weights_;
+  // Un-owned reference to DAG.
+  GPDAG *dag_ = nullptr;
+  // Un-owned reference to GraftDAG.
+  GraftDAG *graft_dag_ = nullptr;
 
-  static constexpr size_t state_count_ = 4;
-  static constexpr double big_double_ = static_cast<double>(INT_MAX);
+  // A map showing which Evaluation Engines are "in use".  Several engines may be
+  // instatiated, but may or may not be currently used for computation, and therefore
+  // may not need to be upkept.
+  TPEvalEngineTypeEnum::Array<bool> eval_engine_in_use_;
+  // Un-owned reference to TP Evaluation Engine. Can be used to evaluate Top Trees
+  // according to Likelihood, Parsimony, etc.
+  TPEvalEngine *eval_engine_ = nullptr;
+  // Engine evaluates top trees using likelihoods.
+  std::unique_ptr<TPEvalEngineViaLikelihood> likelihood_engine_ = nullptr;
+  // Engine evaluates top trees using parsimony.
+  std::unique_ptr<TPEvalEngineViaParsimony> parsimony_engine_ = nullptr;
 };

@@ -27,7 +27,7 @@ buildtest:
 buildwork:
 	@mkdir -p build_work
 	@cd build_work && \
-		cmake -DCMAKE_BUILD_TYPE=Debug -DWERROR=OFF .. && \
+		cmake -DCMAKE_BUILD_TYPE=Debug -DWERROR=OFF -DPROFILING=ON .. && \
 		cmake --build . ${j_flags} && \
 		ln -sf ../data . && \
 		ln -sf libbito.so bito.so && \
@@ -86,4 +86,4 @@ lint:
 	cpplint --filter=-runtime/references,-build/c++11 $(our_files) \
 		&& echo "LINTING PASS"
 
-.PHONY: bison buildrelease buildtest prep format clean lint deploy docs test fasttest runtest test
+.PHONY: bison buildrelease buildtest prep format clean lint deploy docs test fasttest

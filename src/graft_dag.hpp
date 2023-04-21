@@ -28,6 +28,15 @@ class GraftDAG : public SubsplitDAG {
 
   // ** Modify GraftDAG
 
+  // Graft node pair to DAG.
+  virtual ModificationResult AddNodePair(const NNIOperation &nni) {
+    return AddNodePair(nni.parent_, nni.child_);
+  }
+  virtual ModificationResult AddNodePair(const Bitset &parent_subsplit,
+                                         const Bitset &child_subsplit) {
+    GetHostDAG().IsValidAddNodePair(parent_subsplit, child_subsplit);
+    return SubsplitDAG::AddNodePairInternals(parent_subsplit, child_subsplit);
+  }
   // Clear all nodes and edges from graft for reuse.
   void RemoveAllGrafts();
 

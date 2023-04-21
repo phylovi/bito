@@ -13,6 +13,7 @@
 #include "numerical_utils.hpp"
 #include "rooted_tree_collection.hpp"
 #include "sbn_probability.hpp"
+#include "stopwatch.hpp"
 
 using namespace GPOperations;  // NOLINT
 
@@ -25,47 +26,54 @@ void GPInstance::PrintStatus() {
     std::cout << "No trees loaded.\n";
   }
   std::cout << alignment_.Data().size() << " sequences loaded.\n";
-  std::cout << dag_.NodeCount() << " DAG nodes with "
-            << dag_.EdgeCountWithLeafSubsplits() << " edges representing "
-            << dag_.TopologyCount() << " trees.\n";
-  std::cout << dag_.EdgeCountWithLeafSubsplits() << " continuous parameters.\n";
-  if (HasEngine()) {
+  std::cout << GetDAG().NodeCount() << " DAG nodes with "
+            << GetDAG().EdgeCountWithLeafSubsplits() << " edges representing "
+            << GetDAG().TopologyCount() << " trees.\n";
+  std::cout << GetDAG().EdgeCountWithLeafSubsplits() << " continuous parameters.\n";
+  if (HasGPEngine()) {
     std::cout << "Engine available using "
-              << GetEngine()->GetPLVHandler().GetByteCount() / 1e9
+              << GetGPEngine().GetPLVHandler().GetByteCount() / 1e9
               << "G virtual memory.\n";
   } else {
     std::cout << "Engine has not been made.\n";
   }
 }
 
-StringSizeMap GPInstance::DAGSummaryStatistics() { return dag_.SummaryStatistics(); }
+StringSizeMap GPInstance::DAGSummaryStatistics() {
+  return GetDAG().SummaryStatistics();
+}
 
 void GPInstance::ReadFastaFile(const std::string &fname) {
   alignment_ = Alignment::ReadFasta(fname);
+  fasta_path_ = fname;
 }
 
 void GPInstance::ReadNewickFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
+  newick_path_ = fname;
 }
 
 void GPInstance::ReadNewickFileGZ(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFileGZ(fname));
+  newick_path_ = fname;
 }
 
 void GPInstance::ReadNexusFile(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
+  nexus_path_ = fname;
 }
 
 void GPInstance::ReadNexusFileGZ(const std::string &fname) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFileGZ(fname));
+  nexus_path_ = fname;
 }
 
 void GPInstance::CheckSequencesLoaded() const {
@@ -86,18 +94,24 @@ void GPInstance::CheckTreesLoaded() const {
 
 void GPInstance::MakeDAG() {
   CheckTreesLoaded();
-  dag_ = GPDAG(tree_collection_);
+  dag_ = std::make_unique<GPDAG>(tree_collection_);
 }
 
-GPDAG &GPInstance::GetDAG() { return dag_; }
+GPDAG &GPInstance::GetDAG() {
+  Assert(HasDAG(), "DAG not available. Call MakeDAG.");
+  return *dag_.get();
+}
 
-void GPInstance::PrintDAG() { dag_.Print(); }
+const GPDAG &GPInstance::GetDAG() const {
+  Assert(HasDAG(), "DAG not available. Call MakeDAG.");
+  return *dag_.get();
+}
 
-void GPInstance::UseGradientOptimization(bool use_gradients) {
-  use_gradients_ = use_gradients;
-};
+bool GPInstance::HasDAG() const { return dag_ != nullptr; }
 
-SitePattern GPInstance::MakeSitePattern() {
+void GPInstance::PrintDAG() { GetDAG().Print(); }
+
+SitePattern GPInstance::MakeSitePattern() const {
   CheckSequencesLoaded();
   SitePattern site_pattern(alignment_, tree_collection_.TagTaxonMap());
   return site_pattern;
@@ -105,112 +119,120 @@ SitePattern GPInstance::MakeSitePattern() {
 
 // ** GP Engine
 
-void GPInstance::MakeEngine(double rescaling_threshold) {
+void GPInstance::MakeGPEngine(double rescaling_threshold, bool use_gradients) {
+  std::string mmap_gp_path = mmap_file_path_.value() + ".gp";
   auto site_pattern = MakeSitePattern();
-
-  MakeDAG();
-  auto sbn_prior = dag_.BuildUniformOnTopologicalSupportPrior();
+  if (!HasDAG()) {
+    MakeDAG();
+  }
+  auto sbn_prior = GetDAG().BuildUniformOnTopologicalSupportPrior();
   auto unconditional_node_probabilities =
-      dag_.UnconditionalNodeProbabilities(sbn_prior);
+      GetDAG().UnconditionalNodeProbabilities(sbn_prior);
   auto inverted_sbn_prior =
-      dag_.InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
+      GetDAG().InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
+
   gp_engine_ = std::make_unique<GPEngine>(
-      std::move(site_pattern), dag_.NodeCountWithoutDAGRoot(), plv_count_per_node_,
-      dag_.EdgeCountWithLeafSubsplits(), mmap_file_path_, rescaling_threshold,
+      std::move(site_pattern), GetDAG().NodeCountWithoutDAGRoot(),
+      GetDAG().EdgeCountWithLeafSubsplits(), mmap_gp_path, rescaling_threshold,
       std::move(sbn_prior),
-      unconditional_node_probabilities.segment(0, dag_.NodeCountWithoutDAGRoot()),
-      std::move(inverted_sbn_prior), use_gradients_);
+      unconditional_node_probabilities.segment(0, GetDAG().NodeCountWithoutDAGRoot()),
+      std::move(inverted_sbn_prior), use_gradients);
 }
 
 void GPInstance::ReinitializePriors() {
-  auto sbn_prior = dag_.BuildUniformOnTopologicalSupportPrior();
+  auto sbn_prior = GetDAG().BuildUniformOnTopologicalSupportPrior();
   auto unconditional_node_probabilities =
-      dag_.UnconditionalNodeProbabilities(sbn_prior);
+      GetDAG().UnconditionalNodeProbabilities(sbn_prior);
   auto inverted_sbn_prior =
-      dag_.InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
-  gp_engine_->InitializePriors(std::move(sbn_prior),
-                               std::move(unconditional_node_probabilities.segment(
-                                   0, dag_.NodeCountWithoutDAGRoot())),
-                               std::move(inverted_sbn_prior));
+      GetDAG().InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
+  GetGPEngine().InitializePriors(std::move(sbn_prior),
+                                 std::move(unconditional_node_probabilities.segment(
+                                     0, GetDAG().NodeCountWithoutDAGRoot())),
+                                 std::move(inverted_sbn_prior));
 }
 
-GPEngine *GPInstance::GetEngine() const {
-  Assert(HasEngine(),
-         "Engine not available. Call MakeEngine to make an engine for phylogenetic "
+GPEngine &GPInstance::GetGPEngine() const {
+  Assert(HasGPEngine(),
+         "Engine not available. Call MakeGPEngine to make an engine for phylogenetic "
          "likelihood computation.");
-  return gp_engine_.get();
+  return *gp_engine_.get();
 }
 
 void GPInstance::ResizeEngineForDAG() {
-  Assert(HasEngine(), "Engine not available. Call MakeEngine before resizing.");
-  GetEngine()->GrowPLVs(GetDAG().NodeCountWithoutDAGRoot());
-  GetEngine()->GrowGPCSPs(GetDAG().EdgeCountWithLeafSubsplits());
+  Assert(HasGPEngine(), "Engine not available. Call MakeGPEngine before resizing.");
+  GetGPEngine().GrowPLVs(GetDAG().NodeCountWithoutDAGRoot());
+  GetGPEngine().GrowGPCSPs(GetDAG().EdgeCountWithLeafSubsplits());
 }
 
-bool GPInstance::HasEngine() const { return gp_engine_ != nullptr; }
+bool GPInstance::HasGPEngine() const { return gp_engine_ != nullptr; }
 
 void GPInstance::PrintEdgeIndexer() {
   std::cout << "Vector of taxon names: " << tree_collection_.TaxonNames() << std::endl;
-  dag_.PrintEdgeIndexer();
+  GetDAG().PrintEdgeIndexer();
 }
 
 void GPInstance::ProcessOperations(const GPOperationVector &operations) {
-  GetEngine()->ProcessOperations(operations);
+  GetGPEngine().ProcessOperations(operations);
 }
 
-void GPInstance::ClearTreeCollectionAssociatedState() { dag_ = GPDAG(); }
+void GPInstance::ClearTreeCollectionAssociatedState() { GetDAG() = GPDAG(); }
 
 void GPInstance::HotStartBranchLengths() {
-  Assert(HasEngine(),
+  Assert(HasGPEngine(),
          "Please load and process some trees before calling HotStartBranchLengths.");
-  GetEngine()->HotStartBranchLengths(tree_collection_, dag_.BuildEdgeIndexer());
+  GetGPEngine().HotStartBranchLengths(tree_collection_, GetDAG().BuildEdgeIndexer());
 }
 
 SizeDoubleVectorMap GPInstance::GatherBranchLengths() {
-  Assert(HasEngine(),
+  Assert(HasGPEngine(),
          "Please load and process some trees before calling GatherBranchLengths.");
   SizeDoubleVectorMap branch_lengths_from_sample =
-      GetEngine()->GatherBranchLengths(tree_collection_, dag_.BuildEdgeIndexer());
+      GetGPEngine().GatherBranchLengths(tree_collection_, GetDAG().BuildEdgeIndexer());
   return branch_lengths_from_sample;
 }
 
 void GPInstance::TakeFirstBranchLength() {
-  Assert(HasEngine(),
+  Assert(HasGPEngine(),
          "Please load and process some trees before calling TakeFirstBranchLength.");
-  GetEngine()->TakeFirstBranchLength(tree_collection_, dag_.BuildEdgeIndexer());
+  GetGPEngine().TakeFirstBranchLength(tree_collection_, GetDAG().BuildEdgeIndexer());
 }
 
-void GPInstance::PopulatePLVs() { ProcessOperations(dag_.PopulatePLVs()); }
+void GPInstance::PopulatePLVs() { ProcessOperations(GetDAG().PopulatePLVs()); }
 
-void GPInstance::ComputeLikelihoods() { ProcessOperations(dag_.ComputeLikelihoods()); }
+void GPInstance::ComputeLikelihoods() {
+  ProcessOperations(GetDAG().ComputeLikelihoods());
+}
 
 void GPInstance::ComputeMarginalLikelihood() {
-  ProcessOperations(dag_.MarginalLikelihood());
+  ProcessOperations(GetDAG().MarginalLikelihood());
 }
 
 void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
-                                       bool track_intermediate_iterations) {
+                                       bool track_intermediate_iterations,
+                                       std::optional<OptimizationMethod> method) {
   std::stringstream dev_null;
-
   auto &our_ostream = quiet ? dev_null : std::cout;
-  auto now = std::chrono::high_resolution_clock::now;
-  auto t_start = now();
+  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
+
+  if (method.has_value()) {
+    GetGPEngine().SetOptimizationMethod(method.value());
+  }
+  GetGPEngine().ResetOptimizationCount();
+
   our_ostream << "Begin branch optimization\n";
-  GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
-  GPOperationVector marginal_lik_operations = dag_.MarginalLikelihood();
-  GPOperationVector populate_plv_operations = dag_.PopulatePLVs();
+  // GetDAG().ReinitializeTidyVectors();
+  GPOperationVector branch_optimization_operations =
+      GetDAG().BranchLengthOptimization();
+  GPOperationVector marginal_lik_operations = GetDAG().MarginalLikelihood();
+  GPOperationVector populate_plv_operations = GetDAG().PopulatePLVs();
 
   our_ostream << "Populating PLVs\n";
   PopulatePLVs();
-  std::chrono::duration<double> warmup_duration = now() - t_start;
-  t_start = now();
+  auto warmup_duration = timer.Lap();
   our_ostream << "Computing initial likelihood\n";
   ProcessOperations(marginal_lik_operations);
-
-  double current_marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
-
-  std::chrono::duration<double> initial_likelihood_duration = now() - t_start;
-  t_start = now();
+  double current_marginal_log_lik = GetGPEngine().GetLogMarginalLikelihood();
+  auto initial_likelihood_duration = timer.Lap();
 
   for (size_t i = 0; i < max_iter; i++) {
     our_ostream << "Iteration: " << (i + 1) << std::endl;
@@ -218,8 +240,7 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
     // #321 Replace with a cleaned up traversal.
     ProcessOperations(populate_plv_operations);
     ProcessOperations(marginal_lik_operations);
-
-    double marginal_log_lik = GetEngine()->GetLogMarginalLikelihood();
+    double marginal_log_lik = GetGPEngine().GetLogMarginalLikelihood();
 
     if (track_intermediate_iterations) {
       our_ostream << "Tracking intermediate optimization values" << std::endl;
@@ -230,10 +251,8 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
     our_ostream << std::setprecision(9) << current_marginal_log_lik << std::endl;
     our_ostream << "New marginal log likelihood: ";
     our_ostream << std::setprecision(9) << marginal_log_lik << std::endl;
-
     double avg_abs_change_perpcsp_branch_length =
-        (GetEngine()->GetBranchLengthDifferences()).array().mean();
-
+        GetGPEngine().GetBranchLengthDifferences().array().mean();
     our_ostream << "Average absolute change in branch lengths:";
     our_ostream << std::setprecision(9) << avg_abs_change_perpcsp_branch_length
                 << std::endl;
@@ -245,23 +264,104 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
       break;
     }
     current_marginal_log_lik = marginal_log_lik;
+    GetGPEngine().IncrementOptimizationCount();
   }
 
-  std::chrono::duration<double> optimization_duration = now() - t_start;
+  timer.Stop();
+  auto optimization_duration = timer.GetTotal();
   our_ostream << "\n# Timing Report\n";
-  our_ostream << "warmup: " << warmup_duration.count() << "s\n";
-  our_ostream << "initial likelihood: " << initial_likelihood_duration.count() << "s\n";
-  our_ostream << "optimization: " << optimization_duration.count() << "s or "
-              << optimization_duration.count() / 60 << "m\n";
+  our_ostream << "warmup: " << warmup_duration << "s\n";
+  our_ostream << "initial likelihood: " << initial_likelihood_duration << "s\n";
+  our_ostream << "optimization: " << optimization_duration << "s or "
+              << optimization_duration / 60 << "m\n";
+}
+
+void GPInstance::EstimateTPBranchLengths(double tol, size_t max_iter, bool quiet,
+                                         bool track_intermediate_iterations,
+                                         std::optional<OptimizationMethod> method) {
+  std::stringstream dev_null;
+  auto &our_ostream = quiet ? dev_null : std::cout;
+
+  auto &tp_engine = GetTPEngine();
+  auto &dag = GetDAG();
+  auto &branch_handler = GetTPEngine().GetLikelihoodEvalEngine().GetDAGBranchHandler();
+  auto &diffs = branch_handler.GetBranchDifferences().GetData();
+  auto &branches = branch_handler.GetBranchLengths().GetData();
+  if (method.has_value()) {
+    tp_engine.GetDAGBranchHandler().SetOptimizationMethod(method.value());
+  }
+  tp_engine.GetLikelihoodEvalEngine().ResetOptimizationCount();
+
+  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
+
+  our_ostream << "Begin branch optimization\n";
+  tp_engine.GetLikelihoodEvalEngine().InitializeBranchLengthHandler();
+
+  our_ostream << "Computing Likelihoods\n";
+  tp_engine.GetLikelihoodEvalEngine().Initialize();
+  tp_engine.GetLikelihoodEvalEngine().ComputeScores();
+  our_ostream << "Likelihoods: " << std::endl
+              << tp_engine.GetTopTreeLikelihoods() << std::endl;
+  auto cur_likelihoods = branches.segment(1, dag.EdgeCountWithLeafSubsplits()).mean();
+  auto prv_likelihoods = cur_likelihoods;
+  auto warmup_duration = timer.Lap();
+  auto initial_likelihood_duration = timer.Lap();
+
+  for (size_t i = 0; i < max_iter; i++) {
+    tp_engine.GetLikelihoodEvalEngine().BranchLengthOptimization();
+    tp_engine.GetLikelihoodEvalEngine().ComputeScores();
+    auto cur_likelihoods = tp_engine.GetTopTreeLikelihoods()
+                               .segment(0, GetDAG().EdgeCountWithLeafSubsplits())
+                               .mean();
+
+    our_ostream << "Iteration: " << (i + 1) << std::endl;
+
+    our_ostream << "Previous likelihoods: ";
+    our_ostream << std::setprecision(9) << prv_likelihoods << std::endl;
+    our_ostream << "Current likelihoods: ";
+    our_ostream << std::setprecision(9) << cur_likelihoods << std::endl;
+
+    double avg_abs_change_perpcsp_branch_length =
+        diffs.segment(1, dag.EdgeCountWithLeafSubsplits()).mean();
+
+    our_ostream << "Average absolute change in branch lengths:";
+    our_ostream << std::setprecision(9) << avg_abs_change_perpcsp_branch_length
+                << std::endl;
+    if (prv_likelihoods < cur_likelihoods) {
+      our_ostream << "Marginal log likelihood decreased.\n";
+    }
+    if (avg_abs_change_perpcsp_branch_length < tol) {
+      our_ostream << "Average absolute change in branch lengths converged. \n";
+      break;
+    }
+    prv_likelihoods = cur_likelihoods;
+
+    tp_engine.GetLikelihoodEvalEngine().IncrementOptimizationCount();
+  }
+
+  auto optimization_duration = timer.GetTotal();
+  our_ostream << "\n# Timing Report\n";
+  our_ostream << "warmup: " << warmup_duration << "s\n";
+  our_ostream << "initial likelihood: " << initial_likelihood_duration << "s\n";
+  our_ostream << "optimization: " << optimization_duration << "s or "
+              << optimization_duration / 60 << "m\n";
+}
+
+void GPInstance::SetOptimizationMethod(const OptimizationMethod method) {
+  GetGPEngine().SetOptimizationMethod(method);
+}
+
+void GPInstance::UseGradientOptimization(const bool use_gradients) {
+  GetGPEngine().UseGradientOptimization(use_gradients);
 }
 
 void GPInstance::IntermediateOptimizationValues() {
-  GPOperationVector compute_lik_operations = dag_.ComputeLikelihoods();
+  GPOperationVector compute_lik_operations = GetDAG().ComputeLikelihoods();
   ProcessOperations(compute_lik_operations);
 
   size_t col_idx = per_pcsp_branch_lengths_.cols() - 1;
-  per_pcsp_branch_lengths_.col(col_idx) = GetEngine()->GetBranchLengths();
-  per_pcsp_log_lik_.col(col_idx) = GetEngine()->GetPerGPCSPLogLikelihoods();
+  per_pcsp_branch_lengths_.col(col_idx) = GetGPEngine().GetBranchLengths();
+  per_pcsp_log_lik_.col(col_idx) = GetGPEngine().GetPerGPCSPLogLikelihoods();
 
   per_pcsp_branch_lengths_.conservativeResize(Eigen::NoChange, col_idx + 2);
   per_pcsp_log_lik_.conservativeResize(Eigen::NoChange, col_idx + 2);
@@ -271,30 +371,30 @@ void GPInstance::EstimateSBNParameters() {
   std::cout << "Begin SBN parameter optimization\n";
   PopulatePLVs();
   ComputeLikelihoods();
-  ProcessOperations(dag_.OptimizeSBNParameters());
+  ProcessOperations(GetDAG().OptimizeSBNParameters());
 }
 
 void GPInstance::CalculateHybridMarginals() {
   std::cout << "Calculating hybrid marginals\n";
   PopulatePLVs();
-  dag_.TopologicalEdgeTraversal([this](const NodeId parent_id,
-                                       const bool is_edge_on_left,
-                                       const NodeId child_id, const EdgeId edge_idx) {
-    this->GetEngine()->ProcessQuartetHybridRequest(
-        dag_.QuartetHybridRequestOf(parent_id, is_edge_on_left, child_id));
-  });
+  GetDAG().TopologicalEdgeTraversal(
+      [this](const NodeId parent_id, const bool is_edge_on_left, const NodeId child_id,
+             const EdgeId edge_idx) {
+        this->GetGPEngine().ProcessQuartetHybridRequest(
+            GetDAG().QuartetHybridRequestOf(parent_id, is_edge_on_left, child_id));
+      });
 }
 
 EdgeId GPInstance::GetEdgeIndexForLeafNode(const Bitset &parent_subsplit,
                                            const Node *leaf_node) const {
   Assert(leaf_node->IsLeaf(), "Only leaf node is permitted.");
-  return dag_.GetEdgeIdx(parent_subsplit,
-                         Bitset::LeafSubsplitOfNonemptyClade(leaf_node->Leaves()));
+  return GetDAG().GetEdgeIdx(parent_subsplit,
+                             Bitset::LeafSubsplitOfNonemptyClade(leaf_node->Leaves()));
 }
 
 RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
     Node::NodePtrVec &&topologies) const {
-  const EigenVectorXd gpcsp_indexed_branch_lengths = GetEngine()->GetBranchLengths();
+  const EigenVectorXd gpcsp_indexed_branch_lengths = GetGPEngine().GetBranchLengths();
   RootedTree::RootedTreeVector tree_vector;
 
   for (auto &root_node : topologies) {
@@ -307,7 +407,7 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
             const Node *child1) {
           Bitset parent_subsplit = Bitset::Subsplit(sister->Leaves(), focal->Leaves());
           Bitset child_subsplit = Bitset::Subsplit(child0->Leaves(), child1->Leaves());
-          EdgeId gpcsp_idx = dag_.GetEdgeIdx(parent_subsplit, child_subsplit);
+          EdgeId gpcsp_idx = GetDAG().GetEdgeIdx(parent_subsplit, child_subsplit);
           branch_lengths[focal->Id()] = gpcsp_indexed_branch_lengths[gpcsp_idx.value_];
 
           if (sister->IsLeaf()) {
@@ -335,12 +435,12 @@ RootedTreeCollection GPInstance::TreesWithGPBranchLengthsOfTopologies(
 }
 
 RootedTreeCollection GPInstance::GenerateCompleteRootedTreeCollection() {
-  return TreesWithGPBranchLengthsOfTopologies(dag_.GenerateAllTopologies());
+  return TreesWithGPBranchLengthsOfTopologies(GetDAG().GenerateAllTopologies());
 }
 
 void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double scale_min,
                                                   double scale_max) {
-  const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
+  const EigenVectorXd optimized_branch_lengths = GetGPEngine().GetBranchLengths();
 
   size_t gpcsp_count = optimized_branch_lengths.size();
   const EigenVectorXd scaling_vector =
@@ -354,7 +454,7 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double scale_min
 
     for (size_t i = 0; i < steps; i++) {
       new_branch_length_vector[gpcsp_idx.value_] = gpcsp_new_branch_lengths[i];
-      GetEngine()->SetBranchLengths(new_branch_length_vector);
+      GetGPEngine().SetBranchLengths(new_branch_length_vector);
       PopulatePLVs();
       ComputeLikelihoods();
 
@@ -362,17 +462,17 @@ void GPInstance::GetPerGPCSPLogLikelihoodSurfaces(size_t steps, double scale_min
       per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx.value_, 0) =
           gpcsp_new_branch_lengths[i];
       per_pcsp_lik_surfaces_(matrix_position + gpcsp_idx.value_, 1) =
-          GetEngine()->GetPerGPCSPLogLikelihoods(gpcsp_idx.value_, 1)(0, 0);
+          GetGPEngine().GetPerGPCSPLogLikelihoods(gpcsp_idx.value_, 1)(0, 0);
     }
   }
   // Reset back to optimized branch lengths
-  GetEngine()->SetBranchLengths(optimized_branch_lengths);
+  GetGPEngine().SetBranchLengths(optimized_branch_lengths);
 }
 
 void GPInstance::PerturbAndTrackValuesFromOptimization() {
-  const EigenVectorXd optimized_branch_lengths = GetEngine()->GetBranchLengths();
+  const EigenVectorXd optimized_branch_lengths = GetGPEngine().GetBranchLengths();
   const EigenVectorXd optimized_per_pcsp_llhs =
-      GetEngine()->GetPerGPCSPLogLikelihoods();
+      GetGPEngine().GetPerGPCSPLogLikelihoods();
 
   size_t gpcsp_count = optimized_branch_lengths.size();
   EigenVectorXi run_counts = EigenVectorXi::Zero(gpcsp_count);
@@ -380,7 +480,8 @@ void GPInstance::PerturbAndTrackValuesFromOptimization() {
 
   const auto pretty_indexer = PrettyIndexer();
   StringVector pretty_index_vector;
-  GPOperationVector branch_optimization_operations = dag_.BranchLengthOptimization();
+  GPOperationVector branch_optimization_operations =
+      GetDAG().BranchLengthOptimization();
 
   for (size_t gpcsp_idx = 0; gpcsp_idx < gpcsp_count; gpcsp_idx++) {
     double optimized_llh = optimized_per_pcsp_llhs[gpcsp_idx];
@@ -391,12 +492,12 @@ void GPInstance::PerturbAndTrackValuesFromOptimization() {
 
       EigenVectorXd new_branch_length_vector = optimized_branch_lengths;
       new_branch_length_vector[gpcsp_idx] = current_branch_length;
-      GetEngine()->SetBranchLengths(new_branch_length_vector);
+      GetGPEngine().SetBranchLengths(new_branch_length_vector);
 
       PopulatePLVs();
       ComputeLikelihoods();
 
-      double current_llh = GetEngine()->GetPerGPCSPLogLikelihoods(gpcsp_idx, 1)(0, 0);
+      double current_llh = GetGPEngine().GetPerGPCSPLogLikelihoods(gpcsp_idx, 1)(0, 0);
 
       tracked_optimization_values.row(tracked_optimization_values.rows() - 1)
           << current_branch_length,
@@ -408,14 +509,14 @@ void GPInstance::PerturbAndTrackValuesFromOptimization() {
         break;
       } else {
         ProcessOperations(branch_optimization_operations);
-        current_branch_length = GetEngine()->GetBranchLengths()[gpcsp_idx];
+        current_branch_length = GetGPEngine().GetBranchLengths()[gpcsp_idx];
       }
     }
     pretty_index_vector.insert(pretty_index_vector.end(), run_counts[gpcsp_idx],
                                pretty_indexer.at(gpcsp_idx));
   }
   // Reset back to optimized branch lengths
-  GetEngine()->SetBranchLengths(optimized_branch_lengths);
+  GetGPEngine().SetBranchLengths(optimized_branch_lengths);
 
   tracked_optimization_values.conservativeResize(tracked_optimization_values.rows() - 1,
                                                  Eigen::NoChange);
@@ -428,9 +529,9 @@ void GPInstance::PerturbAndTrackValuesFromOptimization() {
 }
 
 StringVector GPInstance::PrettyIndexer() const {
-  StringVector pretty_representation(dag_.BuildEdgeIndexer().size());
+  StringVector pretty_representation(GetDAG().BuildEdgeIndexer().size());
   // #350 consider use of edge vs pcsp here.
-  for (const auto &[edge, idx] : dag_.BuildEdgeIndexer()) {
+  for (const auto &[edge, idx] : GetDAG().BuildEdgeIndexer()) {
     pretty_representation[idx] = edge.PCSPToString();
   }
   return pretty_representation;
@@ -461,7 +562,7 @@ VectorOfStringAndEigenVectorXdPairs GPInstance::PrettyIndexedMatrix(
 }
 
 EigenConstVectorXdRef GPInstance::GetSBNParameters() {
-  return GetEngine()->GetSBNParameters();
+  return GetGPEngine().GetSBNParameters();
 }
 
 StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
@@ -469,15 +570,15 @@ StringDoubleVector GPInstance::PrettyIndexedSBNParameters() {
 }
 
 StringDoubleVector GPInstance::PrettyIndexedBranchLengths() {
-  return PrettyIndexedVector(GetEngine()->GetBranchLengths());
+  return PrettyIndexedVector(GetGPEngine().GetBranchLengths());
 }
 
 StringDoubleVector GPInstance::PrettyIndexedPerGPCSPLogLikelihoods() {
-  return PrettyIndexedVector(GetEngine()->GetPerGPCSPLogLikelihoods());
+  return PrettyIndexedVector(GetGPEngine().GetPerGPCSPLogLikelihoods());
 }
 
 StringDoubleVector GPInstance::PrettyIndexedPerGPCSPComponentsOfFullLogMarginal() {
-  return PrettyIndexedVector(GetEngine()->GetPerGPCSPComponentsOfFullLogMarginal());
+  return PrettyIndexedVector(GetGPEngine().GetPerGPCSPComponentsOfFullLogMarginal());
 }
 
 VectorOfStringAndEigenVectorXdPairs
@@ -501,7 +602,7 @@ void GPInstance::SBNParametersToCSV(const std::string &file_path) {
 
 void GPInstance::SBNPriorToCSV(const std::string &file_path) {
   CSV::StringDoubleVectorToCSV(
-      PrettyIndexedVector(dag_.BuildUniformOnTopologicalSupportPrior()), file_path);
+      PrettyIndexedVector(GetDAG().BuildUniformOnTopologicalSupportPrior()), file_path);
 }
 
 void GPInstance::BranchLengthsToCSV(const std::string &file_path) {
@@ -571,7 +672,7 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithGPBranchLengths() {
 
 RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths(
     const std::string &pcsp_string) {
-  const BitsetSizeMap &indexer = dag_.BuildEdgeIndexer();
+  const BitsetSizeMap &indexer = GetDAG().BuildEdgeIndexer();
   Bitset pcsp(pcsp_string);
   auto search = indexer.find(pcsp);
   if (search == indexer.end()) {
@@ -581,7 +682,7 @@ RootedTreeCollection GPInstance::CurrentlyLoadedTreesWithAPCSPStringAndGPBranchL
 
   Node::NodePtrVec topologies;
   for (const auto &tree : tree_collection_.Trees()) {
-    auto indexer_representation = dag_.IndexerRepresentationOf(
+    auto indexer_representation = GetDAG().IndexerRepresentationOf(
         indexer, tree.Topology(), std::numeric_limits<size_t>::max());
     if (std::find(indexer_representation.begin(), indexer_representation.end(),
                   pcsp_index) != indexer_representation.end()) {
@@ -608,7 +709,7 @@ void GPInstance::ExportAllGeneratedTrees(const std::string &out_path) {
 }
 
 void GPInstance::ExportAllGeneratedTopologies(const std::string &out_path) {
-  TreeCollection::UnitBranchLengthTreesOf(dag_.GenerateAllTopologies(),
+  TreeCollection::UnitBranchLengthTreesOf(GetDAG().GenerateAllTopologies(),
                                           tree_collection_.TagTaxonMap())
       .ToNewickTopologyFile(out_path);
 }
@@ -620,47 +721,63 @@ void GPInstance::LoadAllGeneratedTrees() {
 StringVector GPInstance::GetTaxonNames() const { return tree_collection_.TaxonNames(); }
 
 EigenVectorXd GPInstance::GetBranchLengths() const {
-  return GetEngine()->GetBranchLengths();
+  return GetGPEngine().GetBranchLengths();
+}
+
+EigenVectorXd GPInstance::GetPerPCSPLogLikelihoods() const {
+  return GetGPEngine().GetPerGPCSPLogLikelihoods();
 }
 
 void GPInstance::SubsplitDAGToDot(const std::string &out_path,
                                   bool show_index_labels) const {
   std::ofstream out_stream(out_path);
-  out_stream << dag_.ToDot(show_index_labels) << std::endl;
+  out_stream << GetDAG().ToDot(show_index_labels) << std::endl;
   if (out_stream.bad()) {
     Failwith("Failure writing to " + out_path);
   }
   out_stream.close();
 }
 
-void GPInstance::MakeTPEngine(const std::string mmap_likelihood_path,
-                              const bool using_likelihoods,
-                              const std::string mmap_parsimony_path,
-                              const bool using_parsimony) {
+// ** TP Engine
+
+void GPInstance::MakeTPEngine() {
   auto site_pattern = MakeSitePattern();
-  tp_engine_ = std::make_unique<TPEngine>(dag_, site_pattern, mmap_likelihood_path,
-                                          true, mmap_parsimony_path, true);
+  std::string mmap_likelihood_path = mmap_file_path_.value() + ".tp_lik";
+  std::string mmap_parsimony_path = mmap_file_path_.value() + ".tp_pars";
+  tp_engine_ = std::make_unique<TPEngine>(GetDAG(), site_pattern, mmap_likelihood_path,
+                                          mmap_parsimony_path);
 }
 
 TPEngine &GPInstance::GetTPEngine() {
   Assert(tp_engine_,
-         "TpEngine not available. Call MakeTPEngine when tp_engine has not been made.");
+         "TPEngine not available. Call MakeTPEngine before accessing TPEngine.");
   return *tp_engine_;
+}
+
+void GPInstance::TPEngineSetChoiceMapByTakingFirst(const bool use_subsplit_method) {
+  GetTPEngine().SetChoiceMapByTakingFirst(
+      GetCurrentlyLoadedTrees(), GetDAG().BuildEdgeIndexer(), use_subsplit_method);
+}
+
+void GPInstance::TPEngineSetBranchLengthsByTakingFirst() {
+  GetTPEngine().SetBranchLengthsByTakingFirst(GetCurrentlyLoadedTrees(),
+                                              GetDAG().BuildEdgeIndexer());
 }
 
 // ** NNI Engine
 
 void GPInstance::MakeNNIEngine() {
-  nni_engine_ = std::make_unique<NNIEngine>(dag_, nullptr, nullptr);
+  nni_engine_ = std::make_unique<NNIEngine>(GetDAG(), nullptr, nullptr);
   if (gp_engine_ != nullptr) {
-    nni_engine_->SetGPEngine(gp_engine_.get());
+    GetNNIEngine().MakeGPEvalEngine(gp_engine_.get());
   }
   if (tp_engine_ != nullptr) {
-    nni_engine_->SetTPEngine(tp_engine_.get());
+    GetNNIEngine().MakeTPEvalEngine(tp_engine_.get());
   }
 }
 
 NNIEngine &GPInstance::GetNNIEngine() {
-  Assert(nni_engine_, "GPInstance::GetNNIEngine() when nni_engine has not been made.");
+  Assert(nni_engine_,
+         "NNIEngine not available. Call MakeNNIEngine before accessing NNIEngine.");
   return *nni_engine_;
 }

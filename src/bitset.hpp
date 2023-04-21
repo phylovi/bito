@@ -24,6 +24,7 @@
 class Bitset {
  public:
   using BitsetPair = std::pair<Bitset, Bitset>;
+  // Builds Bitset from boolean vector.
   explicit Bitset(std::vector<bool> value);
   // Fills entire Bitset of size `n` with `initial_value`.
   explicit Bitset(size_t n, bool initial_value = false);
@@ -51,6 +52,7 @@ class Bitset {
   // Note: There are alternative comparators in the Bitset class.
   static int Compare(const Bitset &bitset_a, const Bitset &bitset_b);
   int Compare(const Bitset &other) const;
+
   // All comparator operator behavior is consistent with std::bitset.
   bool operator==(const Bitset &x) const;
   bool operator!=(const Bitset &x) const;
@@ -66,6 +68,7 @@ class Bitset {
   Bitset operator+(const Bitset &x) const;
   void operator&=(const Bitset &other);
   void operator|=(const Bitset &other);
+
   // Outputs Bitset string representation to stream.
   friend std::ostream &operator<<(std::ostream &os, const Bitset &bitset);
 
@@ -133,6 +136,7 @@ class Bitset {
   // representation (except in the case of zero/empty set!).
   static int CladeCompare(const Bitset &bitset_a, const Bitset &bitset_b);
   int CladeCompare(const Bitset &other) const;
+
   // For a specified number of clades, return the clade/taxon size.
   size_t MultiCladeGetCladeSize(const size_t clade_count) const;
   // For a specified number of clades, return a bitset of the ith clade.
@@ -150,11 +154,24 @@ class Bitset {
   // 0-position, and the larger "right" clade in the 1-position.
 
   enum class SubsplitClade : size_t { Left, Right, Unspecified };
-  class SubsplitCladeEnum
-      : public EnumWrapper<SubsplitClade, size_t, 2, SubsplitClade::Left,
-                           SubsplitClade::Right> {};
-
   static const inline size_t SubsplitCladeCount = 2;
+  class SubsplitCladeEnum
+      : public EnumWrapper<SubsplitClade, size_t, SubsplitCladeCount,
+                           SubsplitClade::Left, SubsplitClade::Right> {
+   public:
+    static inline const std::string Prefix = "SubsplitClade";
+    static inline const Array<std::string> Labels = {{"Left", "Right"}};
+
+    static std::string ToString(const SubsplitClade e) {
+      std::stringstream ss;
+      ss << Prefix << "::" << Labels[e];
+      return ss.str();
+    }
+    friend std::ostream &operator<<(std::ostream &os, const SubsplitClade e) {
+      os << ToString(e);
+      return os;
+    }
+  };
   // Does not iterate over "unspecified" clade.
   using SubsplitCladeIterator =
       EnumIterator<SubsplitClade, SubsplitClade::Left, SubsplitClade::Right>;
@@ -248,8 +265,13 @@ class Bitset {
   // Check whether subsplits are adjacent/related (whether either is the parent of the
   // other).
   static bool SubsplitIsAdjacent(const Bitset &subsplit_a, const Bitset &subsplit_b);
-  // Check whether bitset represents valid Subsplit (contains two equal-sized, disjoint
-  // clades).
+  // Check whether subsplits are potentially related (ancestor/descendant) pair (union
+  // of descendant is a subset of one of clades of ancestor).
+  static bool SubsplitIsAncestorDescendantPair(const Bitset &ancestor,
+                                               const Bitset &descendant,
+                                               const SubsplitClade clade_type);
+  // Check whether bitset represents valid Subsplit (contains two equal-sized,
+  // disjoint clades).
   bool SubsplitIsValid() const;
 
   // ** PCSP methods
@@ -271,7 +293,7 @@ class Bitset {
   // See the unit tests at the bottom for more examples.
 
   static inline size_t PCSPCladeCount = 3;
-  enum class PCSPClade : size_t { Sister = 0, Focal = 1, RightChild = 2 };
+  enum class PCSPClade : size_t { Sister, Focal, RightChild };
   using PCSPCladeIterator =
       EnumIterator<PCSPClade, PCSPClade::Sister, PCSPClade::RightChild>;
 
@@ -321,13 +343,20 @@ class Bitset {
   Bitset PCSPGetChildSubsplit() const;
   // Get the number of taxa in each side of the child subsplit.
   SizePair PCSPGetChildSubsplitTaxonCounts() const;
+  // Checks if PCSP are adjacent. In other words, PCSPs share a common node.
+  static bool PCSPIsParentChildPair(const Bitset &parent_pcsp,
+                                    const Bitset &child_pcsp);
 
  protected:
   // Vector of bits.
   std::vector<bool> value_;
 };
 
+using Subsplit = Bitset;
+using PCSP = Bitset;
+
 using SubsplitClade = Bitset::SubsplitClade;
+using SubsplitCladeEnum = Bitset::SubsplitCladeEnum;
 using PCSPClade = Bitset::PCSPClade;
 
 // This is how we inject a hash routine and a custom comparator into the std

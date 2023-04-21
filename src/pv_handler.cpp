@@ -7,10 +7,16 @@
 
 template <class PVTypeEnum, class DAGElementId>
 void PartialVectorHandler<PVTypeEnum, DAGElementId>::Resize(
-    const size_t new_element_count, const size_t new_element_alloc) {
+    const size_t new_element_count, const size_t new_element_alloc,
+    std::optional<size_t> new_element_spare) {
   const size_t old_pv_count = GetPVCount();
-  element_count_ = new_element_count;
-  element_alloc_ = new_element_alloc;
+  SetCount(new_element_count);
+  if (new_element_spare.has_value()) {
+    SetSpareCount(new_element_spare.value());
+  }
+  SetAllocatedCount(new_element_alloc + GetSpareCount());
+  Assert(GetPaddedCount() < GetAllocatedCount(),
+         "Padded count cannot exceed allocated count.");
   // Allocate mmapped data block.
   mmapped_master_pvs_.Resize(GetAllocatedPVCount() * pattern_count_);
   // Subdivide mmapped data in individual PVs.
@@ -36,6 +42,8 @@ template <class PVTypeEnum, class DAGElementId>
 Reindexer PartialVectorHandler<PVTypeEnum, DAGElementId>::BuildPVReindexer(
     const Reindexer& element_reindexer, const size_t old_element_count,
     const size_t new_element_count) {
+  Assert(old_element_count <= new_element_count,
+         "Cannot build a PVReindexer with a shrinking element count.");
   element_count_ = new_element_count;
   Reindexer pv_reindexer(new_element_count * pv_count_per_element_);
   PVId new_pvs_idx = PVId(old_element_count * pv_count_per_element_);
