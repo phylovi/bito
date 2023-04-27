@@ -496,7 +496,3 @@ class GenericSBNInstance {
     return multiplicative_factors;
   }
 };
-
-#ifdef DOCTEST_LIBRARY_INCLUDED
-
-#endif  // DOCTEST_LIBRARY_INCLUDED

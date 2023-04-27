@@ -174,10 +174,10 @@ add_dependencies(bito pybind11)
 # executables #
 # ##############
 bito_executable(doctest
-  src/doctest.cpp)
+  doctest/doctest.cpp)
 
 bito_executable(gp_doctest
-  src/gp_doctest.cpp)
+  doctest/gp_doctest.cpp)
 
 # ##################
 # optional extras #

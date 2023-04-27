@@ -40,8 +40,3 @@ class RootedTreeCollection : public PreRootedTreeCollection {
   void ProcessTreeDates(bool initialize_time_trees_using_branch_lengths);
   void ParseDatesFromCSVButDontInitializeTimeTrees(const std::string& csv_path);
 };
-
-#ifdef DOCTEST_LIBRARY_INCLUDED
-// Test of ParseDatesFromTaxonNames appears in rooted_sbn_instance.hpp.
-TEST_CASE("RootedTreeCollection") {}
-#endif  // DOCTEST_LIBRARY_INCLUDED
