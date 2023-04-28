@@ -65,7 +65,3 @@ class PSPIndexer {
   size_t after_rootsplits_index_;
   size_t first_empty_index_;
 };
-
-#ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("PSPIndexer") {}
-#endif  // DOCTEST_LIBRARY_INCLUDED

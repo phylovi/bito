@@ -16,7 +16,3 @@ class UnrootedTreeCollection : public PreUnrootedTreeCollection {
 
   static UnrootedTreeCollection OfTreeCollection(const TreeCollection& trees);
 };
-
-#ifdef DOCTEST_LIBRARY_INCLUDED
-TEST_CASE("UnrootedTreeCollection") {}
-#endif  // DOCTEST_LIBRARY_INCLUDED

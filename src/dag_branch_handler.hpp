@@ -357,7 +357,3 @@ class DAGBranchHandler {
   LogLikelihoodAndDerivativeFunc logspace_gradient_ascent_func_ = nullptr;
   LogLikelihoodAndFirstTwoDerivativesFunc newton_raphson_func_ = nullptr;
 };
-
-#ifdef DOCTEST_LIBRARY_INCLUDED
-
-#endif  // DOCTEST_LIBRARY_INCLUDED
