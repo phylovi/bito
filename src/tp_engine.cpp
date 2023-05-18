@@ -519,10 +519,9 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
         }
       }
       // Find grandchild nodes.
-      for (const auto& grandchild_node : child_node->Children()) {
-        grandchild0_node = child_node->Children()[0].get();
-        grandchild1_node = child_node->Children()[1].get();
-      }
+      grandchild0_node = child_node->Children()[0].get();
+      grandchild1_node = child_node->Children()[1].get();
+
       SetEdgeChoice(grandparent_node, parent_node, sister_node, child_node,
                     grandchild0_node, grandchild1_node);
     };
