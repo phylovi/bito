@@ -132,6 +132,9 @@ class GenericSubsplitDAGNode {
   ConstNeighborsView GetLeafward(bool rotated) const {
     return rotated ? GetLeftLeafward() : GetRightLeafward();
   }
+  ConstNeighborsView GetLeafward(SubsplitClade clade) const {
+    return (clade == SubsplitClade::Left) ? GetLeftLeafward() : GetRightLeafward();
+  }
   ConstNeighborsView GetLeftRootward() const {
     return node_.GetNeighbors(Direction::Rootward, SubsplitClade::Left);
   }
@@ -140,6 +143,9 @@ class GenericSubsplitDAGNode {
   }
   ConstNeighborsView GetRootward(bool rotated) const {
     return rotated ? GetLeftRootward() : GetRightRootward();
+  }
+  ConstNeighborsView GetRootward(SubsplitClade clade) const {
+    return (clade == SubsplitClade::Left) ? GetLeftRootward() : GetRightRootward();
   }
 
   // Remap node ids modifying parent DAG.

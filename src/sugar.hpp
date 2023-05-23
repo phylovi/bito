@@ -63,6 +63,17 @@ using CStringArray = std::array<const char *, L>;
 
 inline uint32_t MaxLeafIDOfTag(Tag tag) { return UnpackFirstInt(tag); }
 inline uint32_t LeafCountOfTag(Tag tag) { return UnpackSecondInt(tag); }
+inline std::string TagTaxonMapToString(const TagStringMap &tag_taxon_map) {
+  std::stringstream str;
+  str << "{ ";
+  for (const auto &[tag, name] : tag_taxon_map) {
+    const auto id = MaxLeafIDOfTag(tag);
+    const auto count = LeafCountOfTag(tag);
+    str << "{ (" << id << ", " << count << "), " << name << " } ";
+  }
+  str << "} ";
+  return str.str();
+}
 
 // We implement problems in terms of exceptions. That means that they work great
 // in Jupyter notebooks.

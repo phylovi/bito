@@ -39,6 +39,8 @@ void GPInstance::PrintStatus() {
   }
 }
 
+// ** I/O
+
 StringSizeMap GPInstance::DAGSummaryStatistics() {
   return GetDAG().SummaryStatistics();
 }
@@ -79,6 +81,23 @@ void GPInstance::ReadNexusFileGZ(const std::string &fname, const bool sort_taxa)
   nexus_path_ = fname;
 }
 
+std::string GPInstance::GetFastaSourcePath() const {
+  Assert(fasta_path_.has_value(), "No fasta source file has been read.");
+  return fasta_path_.value();
+}
+
+std::string GPInstance::GetNewickSourcePath() const {
+  Assert(newick_path_.has_value(), "No newick source file has been read.");
+  return newick_path_.value();
+}
+
+std::string GPInstance::GetNexusSourcePath() const {
+  Assert(nexus_path_.has_value(), "No nexus source file has been read.");
+  return nexus_path_.value();
+}
+
+std::string GPInstance::GetMMapFilePath() const { return mmap_file_path_.value(); }
+
 void GPInstance::CheckSequencesLoaded() const {
   if (alignment_.SequenceCount() == 0) {
     Failwith(
@@ -94,6 +113,8 @@ void GPInstance::CheckTreesLoaded() const {
         "build your subsplit DAG.");
   }
 }
+
+// ** DAG
 
 void GPInstance::MakeDAG() {
   CheckTreesLoaded();
@@ -154,7 +175,14 @@ void GPInstance::ReinitializePriors() {
                                  std::move(inverted_sbn_prior));
 }
 
-GPEngine &GPInstance::GetGPEngine() const {
+GPEngine &GPInstance::GetGPEngine() {
+  Assert(HasGPEngine(),
+         "Engine not available. Call MakeGPEngine to make an engine for phylogenetic "
+         "likelihood computation.");
+  return *gp_engine_.get();
+}
+
+const GPEngine &GPInstance::GetGPEngine() const {
   Assert(HasGPEngine(),
          "Engine not available. Call MakeGPEngine to make an engine for phylogenetic "
          "likelihood computation.");
@@ -279,9 +307,9 @@ void GPInstance::EstimateBranchLengths(double tol, size_t max_iter, bool quiet,
               << optimization_duration / 60 << "m\n";
 }
 
-void GPInstance::EstimateTPBranchLengths(double tol, size_t max_iter, bool quiet,
-                                         bool track_intermediate_iterations,
-                                         std::optional<OptimizationMethod> method) {
+void GPInstance::TPEngineEstimateBranchLengths(
+    double tol, size_t max_iter, bool quiet, bool track_intermediate_iterations,
+    std::optional<OptimizationMethod> method) {
   std::stringstream dev_null;
   auto &our_ostream = quiet ? dev_null : std::cout;
 
@@ -721,8 +749,6 @@ void GPInstance::LoadAllGeneratedTrees() {
   tree_collection_ = GenerateCompleteRootedTreeCollection();
 }
 
-StringVector GPInstance::GetTaxonNames() const { return tree_collection_.TaxonNames(); }
-
 EigenVectorXd GPInstance::GetBranchLengths() const {
   return GetGPEngine().GetBranchLengths();
 }
@@ -741,17 +767,45 @@ void GPInstance::SubsplitDAGToDot(const std::string &out_path,
   out_stream.close();
 }
 
+void GPInstance::ExportSpanningTreesWithGPBranchLengths(
+    const std::string &out_path) const {
+  const auto trees = GetDAG().GenerateSpanningTrees(GetGPEngine().GetBranchLengths());
+  std::ofstream out_file;
+  out_file.open(out_path);
+  for (auto tree : trees) {
+    out_file << tree.Newick() << std::endl;
+  }
+  out_file.close();
+}
+
+void GPInstance::ExportTopTreesWithTPBranchLengths(const std::string &out_path) const {
+  const auto newick_str = GetTPEngine().ToNewickOfTopTrees();
+  std::ofstream out_file;
+  out_file.open(out_path);
+  out_file << newick_str << std::endl;
+  out_file.close();
+}
+
 // ** TP Engine
 
 void GPInstance::MakeTPEngine() {
   auto site_pattern = MakeSitePattern();
   std::string mmap_likelihood_path = mmap_file_path_.value() + ".tp_lik";
   std::string mmap_parsimony_path = mmap_file_path_.value() + ".tp_pars";
-  tp_engine_ = std::make_unique<TPEngine>(GetDAG(), site_pattern, mmap_likelihood_path,
-                                          mmap_parsimony_path);
+  const auto &loaded_trees = GetCurrentlyLoadedTrees();
+  const auto edge_indexer = GetDAG().BuildEdgeIndexer();
+  tp_engine_ =
+      std::make_unique<TPEngine>(GetDAG(), site_pattern, mmap_likelihood_path,
+                                 mmap_parsimony_path, loaded_trees, edge_indexer);
 }
 
 TPEngine &GPInstance::GetTPEngine() {
+  Assert(tp_engine_,
+         "TPEngine not available. Call MakeTPEngine before accessing TPEngine.");
+  return *tp_engine_;
+}
+
+const TPEngine &GPInstance::GetTPEngine() const {
   Assert(tp_engine_,
          "TPEngine not available. Call MakeTPEngine before accessing TPEngine.");
   return *tp_engine_;
@@ -765,6 +819,32 @@ void GPInstance::TPEngineSetChoiceMapByTakingFirst(const bool use_subsplit_metho
 void GPInstance::TPEngineSetBranchLengthsByTakingFirst() {
   GetTPEngine().SetBranchLengthsByTakingFirst(GetCurrentlyLoadedTrees(),
                                               GetDAG().BuildEdgeIndexer());
+}
+
+std::vector<RootedTree> GPInstance::TPEngineGenerateSpanningTrees() {
+  return GetDAG().GenerateSpanningTrees(GetTPEngine().GetBranchLengths());
+}
+
+TPEngine::TreeIdTreeMap GPInstance::TPEngineGenerateTopRootedTrees() {
+  return GetTPEngine().BuildMapOfTreeIdToTopTrees();
+}
+
+void GPInstance::TPEngineExportSpanningTrees(const std::string &out_path) {
+  std::ofstream file_out;
+  file_out.open(out_path);
+  auto trees = GetDAG().GenerateSpanningTrees(GetTPEngine().GetBranchLengths());
+  for (const auto &tree : trees) {
+    file_out << tree.Newick() << std::endl;
+  }
+  file_out.close();
+}
+
+void GPInstance::TPEngineExportTopTrees(const std::string &out_path) {
+  std::ofstream file_out;
+  file_out.open(out_path);
+  auto newick = GetTPEngine().ToNewickOfTopTrees();
+  file_out << newick;
+  file_out.close();
 }
 
 // ** NNI Engine
@@ -784,3 +864,45 @@ NNIEngine &GPInstance::GetNNIEngine() {
          "NNIEngine not available. Call MakeNNIEngine before accessing NNIEngine.");
   return *nni_engine_;
 }
+
+const NNIEngine &GPInstance::GetNNIEngine() const {
+  Assert(nni_engine_,
+         "NNIEngine not available. Call MakeNNIEngine before accessing NNIEngine.");
+  return *nni_engine_;
+}
+
+// ** Tree Engines
+
+void GPInstance::MakeLikelihoodTreeEngine() {
+  auto beagle_pref_flags = BEAGLE_FLAG_VECTOR_SSE;
+  PhyloModelSpecification model_spec{"JC69", "constant", "strict"};
+  SitePattern site_pattern = MakeSitePattern();
+  bool use_tip_states = true;
+  likelihood_tree_engine_ = std::make_unique<FatBeagle>(
+      model_spec, site_pattern, beagle_pref_flags, use_tip_states);
+}
+
+FatBeagle &GPInstance::GetLikelihoodTreeEngine() {
+  Assert(likelihood_tree_engine_, "LikelihoodTreeEngine not available.");
+  return *likelihood_tree_engine_;
+}
+
+void GPInstance::MakeParsimonyTreeEngine() {
+  auto site_pattern = MakeSitePattern();
+  auto mmap_file_path = GetMMapFilePath() + ".sankoff";
+  parsimony_tree_engine_ =
+      std::make_unique<SankoffHandler>(site_pattern, mmap_file_path);
+}
+
+SankoffHandler &GPInstance::GetParsimonyTreeEngine() {
+  Assert(parsimony_tree_engine_, "ParsimonyTreeEngine not available..");
+  return *parsimony_tree_engine_;
+}
+
+// ** Taxon Map
+
+const TagStringMap &GPInstance::GetTaxonMap() const {
+  return tree_collection_.TagTaxonMap();
+}
+
+StringVector GPInstance::GetTaxonNames() const { return tree_collection_.TaxonNames(); }

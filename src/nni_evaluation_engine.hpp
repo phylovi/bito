@@ -323,8 +323,12 @@ class NNIEvalEngineViaGP : public NNIEvalEngine {
   // Unowned reference to GPEngine.
   GPEngine *gp_engine_ = nullptr;
 
+  // Spare work space for NNI search.
   size_t spare_nodes_per_nni_ = 2;
   size_t spare_edges_per_nni_ = 5;
+
+  // Whether to use uniform SBN parameters
+  bool use_null_priors_ = false;
 };
 
 // NNIEngine helper for evaluating NNIs by using Top Pruning.  Calls TPEngine

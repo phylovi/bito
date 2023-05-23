@@ -71,8 +71,8 @@ class Reindexer {
 
   // Builds new reindexer by removing an element identified by its index and shifting
   // other idx to maintain valid reindexer.
-  Reindexer RemoveOldIndex(const size_t remove_old_idx);
-  Reindexer RemoveNewIndex(const size_t remove_new_idx);
+  Reindexer RemoveOldIndex(const size_t remove_old_idx) const;
+  Reindexer RemoveNewIndex(const size_t remove_new_idx) const;
 
   // Builds a reindexer composing apply_reindexer onto a base_reindexer. Resulting
   // reindexer contains both reindexing operations combined.

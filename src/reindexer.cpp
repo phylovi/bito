@@ -36,7 +36,7 @@ Reindexer Reindexer::InvertReindexer() const {
   return inverted_reindexer;
 }
 
-Reindexer Reindexer::RemoveOldIndex(const size_t remove_old_idx) {
+Reindexer Reindexer::RemoveOldIndex(const size_t remove_old_idx) const {
   Assert(IsValid(), "Reindexer must be valid in Reindexer::RemoveOldIndex.");
   Reindexer result_reindexer;
   result_reindexer.reserve(size() - 1);
@@ -51,7 +51,7 @@ Reindexer Reindexer::RemoveOldIndex(const size_t remove_old_idx) {
   return result_reindexer;
 }
 
-Reindexer Reindexer::RemoveNewIndex(const size_t remove_new_idx) {
+Reindexer Reindexer::RemoveNewIndex(const size_t remove_new_idx) const {
   const size_t remove_old_idx = GetOldIndexByNewIndex(remove_new_idx);
   return RemoveOldIndex(remove_old_idx);
 }

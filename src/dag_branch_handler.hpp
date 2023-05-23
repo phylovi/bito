@@ -37,6 +37,23 @@ class DAGBranchHandler {
     differences_.FillWithDefault();
   }
 
+  // ** Comparators
+
+  static int Compare(const DAGBranchHandler& lhs, const DAGBranchHandler& rhs) {
+    if (lhs.size() != rhs.size()) {
+      return lhs.size() - rhs.size();
+    }
+    for (EdgeId edge_id{0}; edge_id < lhs.size(); edge_id++) {
+      if (lhs.Get(edge_id) != rhs.Get(edge_id)) {
+        return lhs.Get(edge_id) - rhs.Get(edge_id);
+      }
+    }
+    return 0;
+  }
+  friend bool operator==(const DAGBranchHandler& lhs, const DAGBranchHandler& rhs) {
+    return Compare(lhs, rhs) == 0;
+  }
+
   // ** Counts
 
   size_t GetCount() { return GetBranchLengths().GetCount(); }
@@ -71,7 +88,7 @@ class DAGBranchHandler {
   // ** Access
 
   // Get the size of the data vector.
-  size_t size() { return branch_lengths_.size(); }
+  size_t size() const { return branch_lengths_.size(); }
 
   // Get underlying DAGData objects for Branch Lengths.
   DAGEdgeDoubleData& GetBranchLengths() { return branch_lengths_; }

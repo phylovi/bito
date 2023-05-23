@@ -50,7 +50,17 @@ class TPEngine {
   TPEngine(GPDAG &dag, SitePattern &site_pattern);
   TPEngine(GPDAG &dag, SitePattern &site_pattern,
            std::optional<std::string> mmap_likelihood_path,
-           std::optional<std::string> mmap_parsimony_path);
+           std::optional<std::string> mmap_parsimony_path,
+           std::optional<const RootedTreeCollection> tree_collection = std::nullopt,
+           std::optional<const BitsetSizeMap> edge_indexer = std::nullopt);
+
+  // ** Comparators
+
+  // Compares DAG and EdgeChoices. Note: only tests for equality, not a well-ordered
+  // comparator.
+  static int Compare(const TPEngine &lhs, const TPEngine &rhs,
+                     const bool is_quiet = true);
+  friend bool operator==(const TPEngine &lhs, const TPEngine &rhs);
 
   // ** Access
 
@@ -95,10 +105,10 @@ class TPEngine {
 
   // ** Tree/Topology Builder
 
+  // Get top-scoring topology in DAG containing given edge.
+  Node::Topology GetTopTopologyWithEdge(const EdgeId edge_id) const;
   // Get top-scoring tree in DAG containing given edge.
   RootedTree GetTopTreeWithEdge(const EdgeId edge_id) const;
-  // Get top-scoring topology in DAG containing given edge.
-  Node::Topology GetTopTreeTopologyWithEdge(const EdgeId edge_id) const;
 
   // Get resulting top-scoring tree containing proposed NNI.
   RootedTree GetTopTreeProposedWithNNI(const NNIOperation &nni) const;
@@ -110,21 +120,26 @@ class TPEngine {
       const Node::Topology &topology) const;
   // Find the top tree's TreeId using the given edge id representation of the tree in
   // the DAG.
-  TreeId FindTopTreeIdInTreeEdgeVector(const std::vector<EdgeId> tree_edge_ids) const;
+  std::set<TreeId> FindTreeIdsInTreeEdgeVector(const std::set<EdgeId> edge_ids) const;
   // Use branch lengths to build tree from a topology that is contained in the DAG.
   RootedTree BuildTreeFromTopologyInDAG(const Node::Topology &topology) const;
 
-  // Build map containing all unique top tree topologies. Matched against all an edge_id
-  // which results in given top tree.
-  std::vector<std::pair<std::vector<EdgeId>, Node::Topology>>
-  BuildMapOfEdgeIdToTopTreeTopologies() const;
+  using EdgeIdTopologyMap = std::vector<std::pair<std::set<EdgeId>, Node::Topology>>;
+  using TreeIdTopologyMap = std::map<TreeId, std::vector<Node::Topology>>;
+  using TreeIdTreeMap = std::map<TreeId, std::vector<RootedTree>>;
+  // Build map containing all unique top tree topologies. Matched against all an
+  // edge_id which results in given top tree.
+  EdgeIdTopologyMap BuildMapOfEdgeIdToTopTopologies() const;
   // Build map containing all unique top tree topologies. Matched against tree_id,
   // which ranks trees according to input ordering into the DAG.
-  std::unordered_map<TreeId, Node::Topology> BuildMapOfTreeIdToTopTreeTopologies()
-      const;
+  TreeIdTopologyMap BuildMapOfTreeIdToTopTopologies() const;
   // Build map containing all unique top trees. Matched against tree_id, which ranks
   // trees according to input ordering into the DAG.
-  std::unordered_map<TreeId, RootedTree> BuildMapOfTreeIdToTopTrees() const;
+  TreeIdTreeMap BuildMapOfTreeIdToTopTrees() const;
+
+  // Output TPEngine DAG as a newick of top trees, ordered by priority.
+  std::string ToNewickOfTopTopologies() const;
+  std::string ToNewickOfTopTrees() const;
 
   // Build PCSPs for all edges adjacent to proposed NNI.
   TPChoiceMap::EdgeChoicePCSPs BuildAdjacentPCSPsToProposedNNI(
@@ -317,6 +332,7 @@ class TPEngine {
 
   double GetResizingFactor() const { return resizing_factor_; }
   size_t GetInputTreeCount() const { return input_tree_count_; }
+  TreeId GetMaxTreeId() const { return TreeId(tree_counter_); }
   TreeId GetNextTreeId() const { return TreeId(GetInputTreeCount()); }
 
   // ** TP Eval Engine

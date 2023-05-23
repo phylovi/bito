@@ -60,6 +60,7 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
   using namespace GPOperations;
   const bool copy_branch_lengths = false;
+
   auto &branch_handler = GetGPEngine().GetBranchLengthHandler();
   // Find all new edge ids.
   std::set<EdgeId> new_edge_ids;
@@ -81,6 +82,20 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
       CopyGPEngineDataAfterAddingNNI(pre_nni, nni);
     }
   }
+  // Update SBN Priors.
+  auto sbn_prior = GetDAG().BuildUniformOnTopologicalSupportPrior();
+  auto unconditional_node_probabilities =
+      GetDAG().UnconditionalNodeProbabilities(sbn_prior);
+  auto inverted_sbn_prior =
+      GetDAG().InvertedGPCSPProbabilities(sbn_prior, unconditional_node_probabilities);
+  GetGPEngine().InitializePriors(std::move(sbn_prior),
+                                 std::move(unconditional_node_probabilities.segment(
+                                     0, GetDAG().NodeCountWithoutDAGRoot())),
+                                 std::move(inverted_sbn_prior));
+  if (use_null_priors_) {
+    GetGPEngine().SetNullPrior();
+  }
+  // Update PLVs.
   GetGPEngine().ProcessOperations(GetDAG().PopulatePLVs());
 
   // Optimize branch lengths.
@@ -90,8 +105,9 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
       NNIBranchLengthOptimization(nni, new_edge_ids);
     }
     GetGPEngine().ProcessOperations(GetDAG().PopulatePLVs());
-    GetGPEngine().ProcessOperations(GetDAG().ComputeLikelihoods());
   }
+
+  GetGPEngine().ProcessOperations(GetDAG().ComputeLikelihoods());
   auto likelihoods = GetGPEngine().GetPerGPCSPLogLikelihoods();
 }
 
@@ -154,9 +170,6 @@ void NNIEvalEngineViaGP::CopyGPEngineDataAfterAddingNNI(const NNIOperation &pre_
 
 void NNIEvalEngineViaGP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
   ComputeAdjacentNNILikelihoods(adjacent_nnis, true);
-  std::cout << "ScoredAdjacentNNIs: " << adjacent_nnis.size() << " "
-            << GetScoredNNIs().size() << std::endl;
-  std::cout << GetScoredNNIs() << std::endl;
 }
 
 double NNIEvalEngineViaGP::ScoreInternalNNIByNNI(const NNIOperation &nni) const {
@@ -193,6 +206,13 @@ std::pair<double, size_t> NNIEvalEngineViaGP::ComputeAdjacentNNILikelihood(
   GPOperationVector ops;
   auto &pvs = GetGPEngine().GetPLVHandler();
   const NNIOperation pre_nni = GetDAG().FindNNINeighborInDAG(nni);
+
+  // const std::set<NodeId> rootsplit_node_ids{GetDAG().GetRootsplitNodeIds().begin(),
+  //                                           GetDAG().GetRootsplitNodeIds().end()};
+  std::set<NodeId> rootsplit_node_ids;
+  for (const auto node_id : GetDAG().GetRootsplitNodeIds()) {
+    rootsplit_node_ids.insert(node_id);
+  }
 
   // Get temp PVs for adjacent NNI.
   const auto pv_ids = GetTempAdjPVIds();
@@ -390,6 +410,11 @@ std::pair<double, size_t> NNIEvalEngineViaGP::ComputeAdjacentNNILikelihood(
 
   // Branch Length Optimization.
   if (IsOptimizeNewEdges()) {
+    NNIRootwardPass();
+    NNILeafwardPass();
+    GetGPEngine().ProcessOperations(ops);
+    ops.clear();
+
     NNIBranchLengthOptimization();
     NNILeafwardPass();
     for (size_t iter = 0; iter < GetOptimizationMaxIteration(); iter++) {
@@ -982,12 +1007,7 @@ void NNIEvalEngineViaGP::NNIBranchLengthOptimization(const NNIOperation &nni) {
 
 // ** NNIEvalEngineViaTP
 
-void NNIEvalEngineViaTP::Init() {
-  GetTPEngine().GrowNodeData(GetDAG().NodeCount());
-  GetTPEngine().GrowEdgeData(GetDAG().EdgeCountWithLeafSubsplits());
-  GetTPEngine().InitializeChoiceMap();
-  GetTPEngine().InitializeScores();
-}
+void NNIEvalEngineViaTP::Init() { GetTPEngine().Initialize(); }
 
 void NNIEvalEngineViaTP::Prep() {
   GetTPEngine().InitializeChoiceMap();
@@ -1030,7 +1050,15 @@ void NNIEvalEngineViaTP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
   const auto best_edge_map = GetTPEngine().BuildBestEdgeMapOverNNIs(adjacent_nnis);
   for (const auto &nni : adjacent_nnis) {
     const auto pre_nni = GetDAG().FindNNINeighborInDAG(nni);
-    GetScoredNNIs()[nni] = GetTPEngine().GetTopTreeScoreWithProposedNNI(nni, pre_nni);
+    bool is_new_nni = (GetNNIEngine().GetPastScoredNNIs().find(nni) ==
+                       GetNNIEngine().GetPastScoredNNIs().end());
+    bool do_rescore_nni = GetNNIEngine().GetRescoreRejectedNNIs();
+    bool do_reeval_nni = GetNNIEngine().GetReevaluateRejectedNNIs();
+    if (is_new_nni || (do_reeval_nni && do_rescore_nni)) {
+      GetScoredNNIs()[nni] = GetTPEngine().GetTopTreeScoreWithProposedNNI(nni, pre_nni);
+    } else if (do_reeval_nni) {
+      GetScoredNNIs()[nni] = GetNNIEngine().GetPastScoredNNIs().find(nni)->second;
+    }
   }
 }
 

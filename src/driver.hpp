@@ -67,6 +67,8 @@ class Driver {
   void Clear();
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
   TagStringMap TagTaxonMap();
+  // Set taxa map.
+  void SetTaxa(const std::map<std::string, uint32_t> taxa);
 
   // Set whether to sort taxon IDs in map according to taxon names.
   void SetSortTaxa(const bool taxa_sorted) { sort_taxa_ = taxa_sorted; }

@@ -51,6 +51,8 @@ class GenericTreeCollection {
   size_t TreeCount() const { return trees_.size(); }
   const TTreeVector &Trees() const { return trees_; }
   const TTree &GetTree(size_t i) const { return trees_.at(i); }
+  // A tag is a packed int of two values: (1) node id, (2) leaf count below node.  For
+  // taxons, the node id is the taxon id and the leaf count is 1.
   const TagStringMap &TagTaxonMap() const { return tag_taxon_map_; }
   size_t TaxonCount() const { return tag_taxon_map_.size(); }
 

@@ -238,11 +238,10 @@ GPOperationVector GPDAG::SetLeafwardZero() const {
 
 GPOperationVector GPDAG::SetRhatToStationary() const {
   GPOperationVector operations;
-  for (const auto &rootsplit_id : GetRootsplitNodeIds()) {
-    auto rootsplit_node_id = NodeId(rootsplit_id);
-    auto root_gpcsp_idx = GetEdgeIdx(GetDAGRootNodeId(), rootsplit_node_id);
+  for (const auto &rootsplit_node_id : GetRootsplitNodeIds()) {
+    auto rootsplit_gpcsp_idx = GetEdgeIdx(GetDAGRootNodeId(), rootsplit_node_id);
     operations.push_back(SetToStationaryDistribution{
-        GetPLVIndex(PLVType::RHat, rootsplit_node_id), root_gpcsp_idx.value_});
+        GetPLVIndex(PLVType::RHat, rootsplit_node_id), rootsplit_gpcsp_idx.value_});
   }
   return operations;
 }

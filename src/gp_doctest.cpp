@@ -1033,7 +1033,7 @@ using NNIBranchMapMap = std::map<NNIOperation, DAGBranchHandler::BranchLengthMap
 std::pair<NodeMap, EdgeMap> BuildNodeAndEdgeMapsFromPreDAGToPostDAG(GPDAG& pre_dag,
                                                                     GPDAG& post_dag) {
   NodeMap node_map;
-  for (const auto& bitset : pre_dag.BuildSortedVectorOfNodeBitsets()) {
+  for (const auto& bitset : pre_dag.BuildSetOfNodeBitsets()) {
     if (bitset.SubsplitIsUCA()) {
       continue;
     }
@@ -1046,7 +1046,7 @@ std::pair<NodeMap, EdgeMap> BuildNodeAndEdgeMapsFromPreDAGToPostDAG(GPDAG& pre_d
   }
 
   EdgeMap edge_map;
-  for (const auto& bitset : pre_dag.BuildSortedVectorOfEdgeBitsets()) {
+  for (const auto& bitset : pre_dag.BuildSetOfEdgeBitsets()) {
     const auto pre_id = pre_dag.GetEdgeIdx(bitset);
     auto post_id = EdgeId(EdgeId::NoId);
     if (post_dag.ContainsEdge(bitset)) {
@@ -1979,7 +1979,7 @@ BuildTreeIdMapAndTreeEdgeMapFromGPInstanceAndChoiceMap(
       continue;
     }
     // Get tree topology from TPEngine's choice map.
-    auto topology = tp_engine.GetTopTreeTopologyWithEdge(edge_id);
+    auto topology = tp_engine.GetTopTopologyWithEdge(edge_id);
     bool is_found = false;
     for (const auto& [tree_id, tree] : tree_id_map) {
       if (topology == tree.Topology()) {
@@ -2526,7 +2526,7 @@ TEST_CASE("TPEngine: Initialize TPEngine and ChoiceMap") {
   };
 
   for (EdgeId edge_id = 0; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
-    auto top_tree_topology = tpengine.GetTopTreeTopologyWithEdge(edge_id);
+    auto top_tree_topology = tpengine.GetTopTopologyWithEdge(edge_id);
     auto exists = TopologyExistsInTreeCollection(top_tree_topology, all_trees);
     CHECK_MESSAGE(exists, "Top Tree does not exist in DAG.");
   }
@@ -2726,8 +2726,8 @@ TEST_CASE("TPEngine: Branch Length Optimization") {
   TPEngine& tp_engine = inst.GetTPEngine();
   tp_engine.GetLikelihoodEvalEngine().GetDAGBranchHandler().SetBranchLengths(
       seed_branch_lengths);
-  inst.EstimateTPBranchLengths(0.0001, 100, is_quiet, track_intermediate_values,
-                               method);
+  inst.TPEngineEstimateBranchLengths(0.0001, 100, is_quiet, track_intermediate_values,
+                                     method);
   // Capture Results.
   const auto& gpengine_data = gp_engine.GetBranchLengths();
   const auto& tpengine_data = tp_engine.GetBranchLengths();
@@ -2758,6 +2758,203 @@ TEST_CASE("TPEngine: Branch Length Optimization") {
               << std::endl;
   }
   CHECK_LT(max_diff, tol);
+}
+
+// Builds a TPEngine with DAG, adds a subset of NNIs and produces an ordered Newick of
+// the Top Trees. Then builds a new DAG from the resulting Newick and tests that it
+// matches the original DAG.
+TEST_CASE("TPEngine: Exporting Newicks") {
+  const std::string fasta_path = "data/five_taxon.fasta";
+  const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
+  const std::string newick_path_2 = "data/five_taxon_rooted_shuffled.nwk";
+
+  auto BuildTopTreeMapViaBruteForce = [](GPInstance& inst) {
+    std::vector<RootedTree> tree_map;
+    for (TreeId tree_id(0); tree_id < inst.GetTPEngine().GetMaxTreeId(); tree_id++) {
+      std::vector<RootedTree> temp_trees;
+      for (EdgeId edge_id{0}; edge_id < inst.GetDAG().EdgeCountWithLeafSubsplits();
+           edge_id++) {
+        if (inst.GetTPEngine().GetTreeSource(edge_id) != tree_id) {
+          continue;
+        }
+        auto tree = inst.GetTPEngine().GetTopTreeWithEdge(edge_id);
+        bool tree_found = false;
+        for (size_t i = 0; i < temp_trees.size(); i++) {
+          if (tree == temp_trees[i]) {
+            tree_found = true;
+            break;
+          }
+        }
+        if (!tree_found) {
+          temp_trees.push_back(tree);
+        }
+      }
+      for (const auto& tree : temp_trees) {
+        bool tree_found = false;
+        for (const auto& old_tree : tree_map) {
+          if (tree == old_tree) {
+            tree_found = true;
+            break;
+          }
+        }
+        if (!tree_found) {
+          tree_map.push_back(tree);
+        }
+      }
+    }
+    return tree_map;
+  };
+
+  // Build all top trees in the TPEngine using brute force.  Check that it matches the
+  // top trees from the method.
+  auto BuildTopTreesTest = [&BuildTopTreeMapViaBruteForce](GPInstance& inst) {
+    std::vector<RootedTree> tree_map_1, tree_map_2;
+    tree_map_1 = BuildTopTreeMapViaBruteForce(inst);
+    auto tree_edge_map_2 = inst.GetTPEngine().BuildMapOfTreeIdToTopTrees();
+    for (TreeId tree_id(0); tree_id < inst.GetTPEngine().GetMaxTreeId(); tree_id++) {
+      if (tree_edge_map_2.find(tree_id) == tree_edge_map_2.end()) {
+        continue;
+      }
+      const auto& trees = tree_edge_map_2.find(tree_id)->second;
+      for (auto& tree : trees) {
+        bool tree_found = false;
+        for (size_t i = 0; i < tree_map_2.size(); i++) {
+          if (tree == tree_map_2[i]) {
+            tree_found = true;
+            break;
+          }
+        }
+        if (!tree_found) {
+          tree_map_2.push_back(tree);
+        }
+      }
+    }
+
+    std::string newick_1;
+    for (auto& tree : tree_map_1) {
+      newick_1 += tree.Topology()->Newick() + "\n";
+    }
+    std::string newick_2;
+    for (auto& tree : tree_map_2) {
+      newick_2 += tree.Topology()->Newick() + "\n";
+    }
+    std::cout << "compare_tree_map: " << (newick_1 == newick_2) << std::endl;
+  };
+
+  // Export a spanning newick file from TPEngine, then build new DAG from that file.
+  // Compare to the input DAG.
+  auto BuildSpanningNewickAndCompareNewDAG = [](GPInstance& inst_1) {
+    const std::string temp_newick_path = "_ignore/temp.newick";
+    std::ofstream file_out;
+    file_out.open(temp_newick_path);
+    file_out << inst_1.GetDAG().ToNewickOfSpanningTopologies() << std::endl;
+    file_out.close();
+
+    auto inst_2 = GPInstanceOfFiles(inst_1.GetFastaSourcePath(), temp_newick_path,
+                                    "_ignore/mmapped_pv.data1");
+    return SubsplitDAG::Compare(inst_1.GetDAG(), inst_2.GetDAG(), false);
+  };
+
+  // Export a top tree newick file from TPEngine, then build new TPEngine from that
+  // file. Compare to the input TPEngine.
+  auto BuildTopTreeNewickAndCompareNewTPEngine =
+      [&BuildTopTreeMapViaBruteForce](GPInstance& inst_1) {
+        std::ofstream file_out;
+        const std::string temp_newick_path_1 = "_ignore/temp_1.newick";
+        file_out.open(temp_newick_path_1);
+        file_out << inst_1.GetTPEngine().ToNewickOfTopTrees() << std::endl;
+        file_out.close();
+        const std::string temp_newick_path_2 = "_ignore/temp_1.newick";
+        file_out.open(temp_newick_path_2);
+        const auto tree_map = BuildTopTreeMapViaBruteForce(inst_1);
+        for (const auto& tree : tree_map) {
+          file_out << inst_1.GetDAG().TreeToNewickTopology(tree) << std::endl;
+        }
+        file_out.close();
+
+        auto inst_2 = GPInstanceOfFiles(inst_1.GetFastaSourcePath(), temp_newick_path_2,
+                                        "_ignore/mmapped_pv.data1");
+        inst_2.MakeTPEngine();
+        inst_2.MakeNNIEngine();
+
+        // std::cout << "=== NewickOfTopTrees: " << std::endl
+        //           << inst_1.GetTPEngine().ToNewickOfTopTopologies() << std::endl;
+        // std::cout << "=== NewickOfTreeCollection: " << std::endl;
+        // for (const auto& tree : inst_2.GetCurrentlyLoadedTrees()) {
+        //   std::cout << inst_2.GetDAG().TreeToNewickTopology(tree) << std::endl;
+        // }
+
+        // auto edge_map =
+        //     SubsplitDAG::BuildEdgeIdMapBetweenDAGs(inst_1.GetDAG(), inst_2.GetDAG());
+        // std::cout << "edge_map: " << edge_map << std::endl;
+        // auto tree_source_1 = inst_1.GetTPEngine().GetTreeSource();
+        // tree_source_1.resize(inst_1.GetDAG().EdgeCountWithLeafSubsplits());
+        // std::cout << "lhs_tree_source: " << tree_source_1 << std::endl;
+        // std::cout << "rhs_tree_source: " << inst_2.GetTPEngine().GetTreeSource()
+        //           << std::endl;
+        return TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), false);
+      };
+
+  auto inst_1 =
+      GPInstanceOfFiles(fasta_path, newick_path_1, "_ignore/mmapped_pv.data1");
+  auto inst_2 =
+      GPInstanceOfFiles(fasta_path, newick_path_2, "_ignore/mmapped_pv.data2");
+  inst_1.MakeTPEngine();
+  inst_1.MakeNNIEngine();
+  auto& tp_engine = inst_1.GetTPEngine();
+  auto& nni_engine = inst_1.GetNNIEngine();
+  inst_2.MakeTPEngine();
+  inst_2.MakeNNIEngine();
+
+  // CHECK_MESSAGE(
+  //     TPEngine::Compare(inst_1.GetTPEngine(), inst_1.GetTPEngine(), false) == 0,
+  //     "TPEngines not equal to self.");
+  // CHECK_MESSAGE(SubsplitDAG::Compare(inst_1.GetDAG(), inst_2.GetDAG(), true) == 0,
+  //               "DAGs formed from shuffled Newicks not equal.");
+  // CHECK_MESSAGE(
+  //     TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), true) != 0,
+  //     "TPEngines formed from shuffled Newicks are incorrectly equal.");
+
+  // CHECK_MESSAGE(BuildSpanningNewickAndCompareNewDAG(inst_1) == 0,
+  //               "DAG built from Spanning Newick not equal to the DAG that build it "
+  //               "(before adding NNIs).");
+  // CHECK_MESSAGE(
+  //     BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
+  //     "TPEngine built from Top Tree Newick not equal to the TPEngine that build it "
+  //     "(before adding NNIs).");
+  // BuildTopTreesTest(inst_1);
+
+  size_t optimization_count = 2;
+  tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(optimization_count);
+  tp_engine.GetLikelihoodEvalEngine().BranchLengthOptimization(false);
+  nni_engine.SetTPLikelihoodCutoffFilteringScheme(0.0);
+  nni_engine.SetTopNScoreFilteringScheme(1);
+  nni_engine.SetReevaluateRejectedNNIs(true);
+  nni_engine.RunInit(false);
+
+  for (size_t iter = 0; iter < 9; iter++) {
+    nni_engine.RunMainLoop();
+    // if (iter == 7) break;
+    if (iter == 7) {
+      std::cout << "iter 7:" << std::endl;
+      std::cout << "dag:" << inst_1.GetDAG().NodeCount() << " "
+                << inst_1.GetDAG().EdgeCountWithLeafSubsplits() << std::endl;
+    }
+    nni_engine.RunPostLoop();
+
+    // CHECK_MESSAGE(BuildSpanningNewickAndCompareNewDAG(inst_1) == 0,
+    //               "DAG built from Spanning Newick not equal to the DAG that build it
+    //               "
+    //               "(after adding NNIs).");
+    // CHECK_MESSAGE(
+    //     BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
+    //     "TPEngine built from Top Tree Newick not equal to the TPEngine that build it
+    //     "
+    //     "(after adding NNIs).");
+    // BuildTopTreesTest(inst_1);
+    std::cout << "iter [end]" << std::endl;
+  }
+  std::cout << "[end]" << std::endl;
 }
 
 // ** DAGData tests **
@@ -2871,4 +3068,3 @@ TEST_CASE("GPInstance: Taxon Sorted Tree Collection") {
       CHECK_MESSAGE(tree_1 != tree_2, "Trees incorrectly found equal.");
     }
   }
-}
