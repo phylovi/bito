@@ -1270,7 +1270,7 @@ TEST_CASE("NNIEngine: Build Complete DAG by Adding NNIs (include/exclude rootspl
     nniengine.SetIncludeRootsplitNNIs(include_rootsplits);
     nniengine.SyncAdjacentNNIsWithDAG();
     while (nniengine.GetAdjacentNNICount() > 0) {
-      for (const auto nni : nniengine.GetAdjacentNNIs()) {
+      for (const auto& nni : nniengine.GetAdjacentNNIs()) {
         dag.AddNodePair(nni.GetParent(), nni.GetChild());
       }
       nniengine.SyncAdjacentNNIsWithDAG();

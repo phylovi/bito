@@ -513,16 +513,15 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
         grandparent_node = parent_map[parent_node->Id()];
       }
       // Find sister node.
-      for (const auto childx_node : parent_node->Children()) {
+      for (const auto& childx_node : parent_node->Children()) {
         if (childx_node->Id() != child_node->Id()) {
           sister_node = childx_node.get();
         }
       }
       // Find grandchild nodes.
-      for (const auto grandchild_node : child_node->Children()) {
-        grandchild0_node = child_node->Children()[0].get();
-        grandchild1_node = child_node->Children()[1].get();
-      }
+      grandchild0_node = child_node->Children()[0].get();
+      grandchild1_node = child_node->Children()[1].get();
+
       SetEdgeChoice(grandparent_node, parent_node, sister_node, child_node,
                     grandchild0_node, grandchild1_node);
     };
@@ -776,7 +775,7 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
   };
 
   // Iterate over NNIs to find best branches.
-  for (const auto post_nni : nnis) {
+  for (const auto& post_nni : nnis) {
     // Get pre_nni and build map between them.
     const NNIOperation pre_nni = FindHighestPriorityNeighborNNIInDAG(post_nni);
     const auto pre_edge_id = GetDAG().GetEdgeIdx(pre_nni);

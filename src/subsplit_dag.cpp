@@ -1286,7 +1286,7 @@ bool SubsplitDAG::ContainsTopology(const Node::Topology &topology,
         return;
       }
       const auto parent_subsplit = node->BuildSubsplit();
-      for (const auto child_node : child_nodes) {
+      for (const auto &child_node : child_nodes) {
         const auto child_subsplit = child_node->BuildSubsplit();
         if (!ContainsEdge(parent_subsplit, child_subsplit)) {
           os << "DoesNotContainTopology: Edge in topology not found in DAG -- "

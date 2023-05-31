@@ -608,7 +608,7 @@ std::unordered_map<size_t, const Node*> Node::BuildParentNodeMap() const {
   std::unordered_map<size_t, const Node*> parent_map;
   DepthFirst(
       [this, &parent_map](const Node* parent_node) {
-        for (const auto child_node : parent_node->Children()) {
+        for (const auto& child_node : parent_node->Children()) {
           parent_map[child_node->Id()] = parent_node;
         }
       },
@@ -621,7 +621,7 @@ std::string Node::NodeIdAndLeavesToString() const {
   os << "{ id: " << Id();
   os << ", leaves: " << Leaves();
   SizeVector child_ids;
-  for (const auto child : children_) {
+  for (const auto& child : children_) {
     child_ids.push_back(child.get()->Id());
   }
   os << ", children: " << child_ids << " }";
