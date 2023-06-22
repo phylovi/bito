@@ -64,6 +64,8 @@ class Driver {
   void Clear();
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
   TagStringMap TagTaxonMap();
+  // Set taxa map.
+  void SetTaxa(const std::map<std::string, uint32_t> taxa);
 
  private:
   // Scan a string with flex.
@@ -76,6 +78,8 @@ class Driver {
   TreeCollection ParseAndDequoteNewick(std::istream& in);
   // Run the parser on a Nexus stream.
   TreeCollection ParseNexus(std::istream& in);
+  // Sort taxa map so that IDs correspond to name's sorted order.
+  void InitializeTaxa();
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

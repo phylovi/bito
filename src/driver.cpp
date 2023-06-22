@@ -50,6 +50,12 @@ TreeCollection Driver::ParseNewick(std::istream &in) {
     if (!line.empty() && tree_start != std::string::npos) {
       // Erase any characters before the first '('.
       line.erase(0, tree_start);
+      // For initializing the taxon map, we first pull taxon names from an initial dummy
+      // tree.
+      if (!taxa_complete_) {
+        ParseString(&parser_instance, line);
+        InitializeTaxa();
+      }
       trees.push_back(ParseString(&parser_instance, line));
     }
   }
@@ -199,6 +205,21 @@ TagStringMap Driver::TagTaxonMap() {
     m[PackInts(iter.second, 1)] = iter.first;
   }
   return m;
+}
+
+void Driver::SetTaxa(const std::map<std::string, uint32_t> taxa) {
+  taxa_ = taxa;
+  taxa_complete_ = true;
+}
+void Driver::InitializeTaxa() {
+  std::map<std::string, uint32_t> taxa;
+  uint32_t new_id = 0;
+  for (const auto &[name, old_id] : taxa_) {
+    taxa[name] = new_id;
+    new_id++;
+  }
+  taxa_ = taxa;
+  taxa_complete_ = true;
 }
 
 // Note that a number of Driver methods are implemented in scanner.ll.

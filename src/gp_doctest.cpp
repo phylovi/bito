@@ -2849,3 +2849,20 @@ TEST_CASE("DAGData: Resize and Reindex") {
     CHECK_EQ(edge_data(post_id), pre_edge_data(pre_id));
   }
 }
+
+// Checks that two identical Newick trees with different orderings yield the same
+// tree.
+TEST_CASE("GPInstance: Taxon Sorted Tree Collection") {
+  GPInstance inst_1("_ignore/mmap.1.data");
+  inst_1.ReadFastaFile("data/three_taxon.fasta");
+  inst_1.ReadNewickFile("data/three_taxon_1.newick");
+  GPInstance inst_2("_ignore/mmap.2.data");
+  inst_2.ReadFastaFile("data/three_taxon.fasta");
+  inst_2.ReadNewickFile("data/three_taxon_2.newick");
+
+  auto& trees_1 = inst_1.GetCurrentlyLoadedTrees();
+  auto& trees_2 = inst_2.GetCurrentlyLoadedTrees();
+  auto& tree_1 = trees_1.GetTree(0);
+  auto& tree_2 = trees_2.GetTree(0);
+  CHECK_MESSAGE(tree_1 != tree_2, "Trees incorrectly found equal.");
+}
