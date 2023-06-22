@@ -82,8 +82,8 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
 
   // ** I/O
 
-  void ReadNewickFile(const std::string &fname);
-  void ReadNexusFile(const std::string &fname);
+  void ReadNewickFile(const std::string &fname, const bool sort_taxa = true);
+  void ReadNexusFile(const std::string &fname, const bool sort_taxa = true);
 
  protected:
   void PushBackRangeForParentIfAvailable(
@@ -98,7 +98,7 @@ class UnrootedSBNInstance : public PreUnrootedSBNInstance {
 
 TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
   UnrootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/five_taxon_unrooted.nwk");
+  inst.ReadNewickFile("data/five_taxon_unrooted.nwk", false);
   inst.ProcessLoadedTrees();
   auto pretty_indexer = inst.PrettyIndexer();
   // The indexer_ is to index the sbn_parameters_. Note that neither of these
@@ -235,14 +235,14 @@ TEST_CASE("UnrootedSBNInstance: indexer and PSP representations") {
 
 TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
   UnrootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/hello.nwk");
+  inst.ReadNewickFile("data/hello.nwk", false);
   inst.ReadFastaFile("data/hello.fasta");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
   inst.PrepareForPhyloLikelihood(simple_specification, 2);
   for (auto ll : inst.LogLikelihoods()) {
     CHECK_LT(fabs(ll - -84.852358), 0.000001);
   }
-  inst.ReadNexusFile("data/DS1.subsampled_10.t");
+  inst.ReadNexusFile("data/DS1.subsampled_10.t", false);
   inst.ReadFastaFile("data/DS1.fasta");
   std::vector<BeagleFlags> vector_flag_options{BEAGLE_FLAG_VECTOR_NONE,
                                                BEAGLE_FLAG_VECTOR_SSE};
@@ -314,7 +314,7 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient") {
 TEST_CASE("UnrootedSBNInstance: likelihood and gradient with Weibull") {
   UnrootedSBNInstance inst("charlie");
   PhyloModelSpecification simple_specification{"JC69", "weibull+4", "strict"};
-  inst.ReadNexusFile("data/DS1.subsampled_10.t");
+  inst.ReadNexusFile("data/DS1.subsampled_10.t", false);
   inst.ReadFastaFile("data/DS1.fasta");
 
   std::vector<double> physher_likelihoods(
@@ -366,7 +366,7 @@ TEST_CASE("UnrootedSBNInstance: likelihood and gradient with Weibull") {
 
 TEST_CASE("UnrootedSBNInstance: SBN training") {
   UnrootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/DS1.100_topologies.nwk");
+  inst.ReadNewickFile("data/DS1.100_topologies.nwk", false);
   inst.ProcessLoadedTrees();
   // These "Expected" functions are defined in sbn_probability.hpp.
   const auto expected_SA = ExpectedSAVector();
@@ -388,7 +388,7 @@ TEST_CASE("UnrootedSBNInstance: SBN training") {
 
 TEST_CASE("UnrootedSBNInstance: tree sampling") {
   UnrootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/five_taxon_unrooted.nwk");
+  inst.ReadNewickFile("data/five_taxon_unrooted.nwk", false);
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
   // Count the frequencies of rooted trees in a file.

@@ -48,7 +48,7 @@ GPInstance GPInstanceOfFiles(
     const bool use_gradients = false) {
   GPInstance inst(mmap_filepath);
   inst.ReadFastaFile(fasta_path);
-  inst.ReadNewickFile(newick_path);
+  inst.ReadNewickFile(newick_path, false);
   inst.MakeDAG();
   inst.MakeGPEngine();
   inst.UseGradientOptimization(use_gradients);
@@ -140,7 +140,7 @@ TEST_CASE("GPInstance: straightforward classical likelihood calculation") {
 std::pair<double, StringDoubleMap> ComputeExactMarginal(const std::string& newick_path,
                                                         const std::string& fasta_path) {
   RootedSBNInstance sbn_instance("charlie");
-  sbn_instance.ReadNewickFile(newick_path);
+  sbn_instance.ReadNewickFile(newick_path, false);
   sbn_instance.ProcessLoadedTrees();
   const Alignment alignment = Alignment::ReadFasta(fasta_path);
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
@@ -374,7 +374,7 @@ TEST_CASE("GPInstance: gather and hotstart branch lengths") {
   GPInstance inst("_ignore/mmapped_pv.data");
   // This is just a dummy fasta file, which is required to make an Engine.
   inst.ReadFastaFile("data/hotstart.fasta");
-  inst.ReadNewickFile(tree_path);
+  inst.ReadNewickFile(tree_path, false);
   inst.MakeGPEngine();
 
   // We are going to verify correct assignment of the PCSP with sister z2, z3 and
@@ -428,7 +428,7 @@ TEST_CASE("GPInstance: take first branch length") {
   GPInstance inst("_ignore/mmapped_pv.data");
   // This is just a dummy fasta file, which is required to make an Engine.
   inst.ReadFastaFile("data/hotstart.fasta");
-  inst.ReadNewickFile(tree_path);
+  inst.ReadNewickFile(tree_path, false);
   inst.MakeGPEngine();
   inst.TakeFirstBranchLength();
   auto branch_length_map =
@@ -544,7 +544,7 @@ TEST_CASE("GPInstance: CurrentlyLoadedTreesWithGPBranchLengths") {
 TEST_CASE("GPInstance: CurrentlyLoadedTreesWithAPCSPStringAndGPBranchLengths") {
   GPInstance inst("_ignore/mmapped_pv.data");
   inst.ReadFastaFile("data/five_taxon.fasta");
-  inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
+  inst.ReadNewickFile("data/five_taxon_rooted_more.nwk", false);
   inst.MakeGPEngine();
   inst.GetGPEngine().SetBranchLengthsToConstant(0.9);
   // Only take trees that have (x4,(x2,x3)).
@@ -670,7 +670,7 @@ TEST_CASE("GPInstance: GenerateCompleteRootedTreeCollection") {
 EigenVectorXd ClassicalLikelihoodOf(const std::string& tree_path,
                                     const std::string& fasta_path) {
   RootedSBNInstance sbn_instance("charlie");
-  sbn_instance.ReadNewickFile(tree_path);
+  sbn_instance.ReadNewickFile(tree_path, false);
   sbn_instance.ProcessLoadedTrees();
   const Alignment alignment = Alignment::ReadFasta(fasta_path);
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
@@ -1927,7 +1927,7 @@ RootedSBNInstance MakeRootedSBNInstance(const std::string& newick_path,
                                         const bool init_time_trees = true,
                                         const size_t thread_count = 1) {
   RootedSBNInstance inst("demo_instance");
-  inst.ReadNewickFile(newick_path);
+  inst.ReadNewickFile(newick_path, false);
   inst.ReadFastaFile(fasta_path);
   inst.ProcessLoadedTrees();
   // make engine and set phylo model parameters
@@ -2853,16 +2853,22 @@ TEST_CASE("DAGData: Resize and Reindex") {
 // Checks that two identical Newick trees with different orderings yield the same
 // tree.
 TEST_CASE("GPInstance: Taxon Sorted Tree Collection") {
-  GPInstance inst_1("_ignore/mmap.1.data");
-  inst_1.ReadFastaFile("data/three_taxon.fasta");
-  inst_1.ReadNewickFile("data/three_taxon_1.newick");
-  GPInstance inst_2("_ignore/mmap.2.data");
-  inst_2.ReadFastaFile("data/three_taxon.fasta");
-  inst_2.ReadNewickFile("data/three_taxon_2.newick");
+  for (const bool sort_taxa : {false, true}) {
+    GPInstance inst_1("_ignore/mmap.1.data");
+    inst_1.ReadFastaFile("data/three_taxon.fasta");
+    inst_1.ReadNewickFile("data/three_taxon_1.nwk", sort_taxa);
+    GPInstance inst_2("_ignore/mmap.2.data");
+    inst_2.ReadFastaFile("data/three_taxon.fasta");
+    inst_2.ReadNewickFile("data/three_taxon_2.nwk", sort_taxa);
 
-  auto& trees_1 = inst_1.GetCurrentlyLoadedTrees();
-  auto& trees_2 = inst_2.GetCurrentlyLoadedTrees();
-  auto& tree_1 = trees_1.GetTree(0);
-  auto& tree_2 = trees_2.GetTree(0);
-  CHECK_MESSAGE(tree_1 != tree_2, "Trees incorrectly found equal.");
+    auto& trees_1 = inst_1.GetCurrentlyLoadedTrees();
+    auto& trees_2 = inst_2.GetCurrentlyLoadedTrees();
+    auto& tree_1 = trees_1.GetTree(0);
+    auto& tree_2 = trees_2.GetTree(0);
+    if (sort_taxa) {
+      CHECK_MESSAGE(tree_1 == tree_2, "Trees incorrectly found not equal.");
+    } else {
+      CHECK_MESSAGE(tree_1 != tree_2, "Trees incorrectly found equal.");
+    }
+  }
 }

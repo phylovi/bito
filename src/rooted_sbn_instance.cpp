@@ -101,14 +101,16 @@ std::vector<DoubleVector> RootedSBNInstance::GradientLogDeterminantJacobian() {
                                                      phylo_model_params_, rescaling_);
 }
 
-void RootedSBNInstance::ReadNewickFile(const std::string &fname) {
+void RootedSBNInstance::ReadNewickFile(const std::string &fname, const bool sort_taxa) {
   Driver driver;
+  driver.SetSortTaxa(sort_taxa);
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
 }
 
-void RootedSBNInstance::ReadNexusFile(const std::string &fname) {
+void RootedSBNInstance::ReadNexusFile(const std::string &fname, const bool sort_taxa) {
   Driver driver;
+  driver.SetSortTaxa(sort_taxa);
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
 }

@@ -19,6 +19,7 @@
 
 Driver::Driver()
     : next_id_(0),
+      taxa_sorted_(false),
       taxa_complete_(false),
       trace_parsing_(0),
       trace_scanning_(false),
@@ -50,11 +51,13 @@ TreeCollection Driver::ParseNewick(std::istream &in) {
     if (!line.empty() && tree_start != std::string::npos) {
       // Erase any characters before the first '('.
       line.erase(0, tree_start);
-      // For initializing the taxon map, we first pull taxon names from an initial dummy
-      // tree.
-      if (!taxa_complete_) {
-        ParseString(&parser_instance, line);
-        InitializeTaxa();
+      // If taxon map has not be initialized, we first pull taxon names and build
+      // alphabetized map from an initial dummy tree.
+      if (!taxa_complete_ && taxa_sorted_) {
+        auto tree = ParseString(&parser_instance, line);
+        std::cout << "dummy_tree: " << tree.NewickTopology(std::nullopt) << std::endl;
+        SortTaxa();
+        taxa_complete_ = true;
       }
       trees.push_back(ParseString(&parser_instance, line));
     }
@@ -211,7 +214,8 @@ void Driver::SetTaxa(const std::map<std::string, uint32_t> taxa) {
   taxa_ = taxa;
   taxa_complete_ = true;
 }
-void Driver::InitializeTaxa() {
+
+void Driver::SortTaxa() {
   std::map<std::string, uint32_t> taxa;
   uint32_t new_id = 0;
   for (const auto &[name, old_id] : taxa_) {
@@ -219,7 +223,6 @@ void Driver::InitializeTaxa() {
     new_id++;
   }
   taxa_ = taxa;
-  taxa_complete_ = true;
 }
 
 // Note that a number of Driver methods are implemented in scanner.ll.

@@ -57,8 +57,8 @@ class RootedSBNInstance : public PreRootedSBNInstance {
 
   // ** I/O
 
-  void ReadNewickFile(const std::string& fname);
-  void ReadNexusFile(const std::string& fname);
+  void ReadNewickFile(const std::string& fname, const bool sort_taxa = true);
+  void ReadNexusFile(const std::string& fname, const bool sort_taxa = true);
 
   void SetDatesToBeConstant(bool initialize_time_trees_using_branch_lengths);
   void ParseDatesFromTaxonNames(bool initialize_time_trees_using_branch_lengths);
@@ -129,7 +129,7 @@ std::vector<std::vector<double>> DerivativeRelaxedClock(RootedSBNInstance& inst)
 
 RootedSBNInstance MakeFiveTaxonRootedInstance() {
   RootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/five_taxon_rooted.nwk");
+  inst.ReadNewickFile("data/five_taxon_rooted.nwk", false);
   inst.ProcessLoadedTrees();
   return inst;
 }
@@ -214,7 +214,7 @@ TEST_CASE("RootedSBNInstance: subsplit support and TrainSimpleAverage") {
 
 TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
   RootedSBNInstance inst("rooted instance");
-  inst.ReadNewickFile("data/five_taxon_rooted_more.nwk");
+  inst.ReadNewickFile("data/five_taxon_rooted_more.nwk", false);
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
   // See diagram at https://github.com/phylovi/bito/issues/349#issuecomment-898022916
@@ -246,7 +246,7 @@ TEST_CASE("RootedSBNInstance: UnconditionalSubsplitProbabilities") {
 // Instance SA-trained on a sample of 20-taxon trees.
 RootedSBNInstance MakeRootedSimpleAverageInstance() {
   RootedSBNInstance inst("rooted instance");
-  inst.ReadNewickFile("data/rooted_simple_average.nwk");
+  inst.ReadNewickFile("data/rooted_simple_average.nwk", false);
   inst.ProcessLoadedTrees();
   inst.TrainSimpleAverage();
   return inst;
@@ -266,7 +266,7 @@ TEST_CASE("RootedSBNInstance: TrainSimpleAverage on 20 taxa") {
 
 RootedSBNInstance MakeFluInstance(bool initialize_time_trees) {
   RootedSBNInstance inst("charlie");
-  inst.ReadNewickFile("data/fluA.tree");
+  inst.ReadNewickFile("data/fluA.tree", false);
   inst.ParseDatesFromTaxonNames(initialize_time_trees);
   inst.ReadFastaFile("data/fluA.fa");
   PhyloModelSpecification simple_specification{"JC69", "constant", "strict"};
@@ -431,7 +431,7 @@ TEST_CASE("RootedSBNInstance: Weibull gradients") {
 
 TEST_CASE("RootedSBNInstance: parsing dates") {
   RootedSBNInstance inst("charlie");
-  inst.ReadNexusFile("data/test_beast_tree_parsing.nexus");
+  inst.ReadNexusFile("data/test_beast_tree_parsing.nexus", false);
   inst.ParseDatesFromTaxonNames(true);
   std::vector<double> dates;
   for (const auto& [tag, date] : inst.tree_collection_.GetTagDateMap()) {
@@ -443,7 +443,7 @@ TEST_CASE("RootedSBNInstance: parsing dates") {
   CHECK_EQ(dates.back(), 80.0);
 
   RootedSBNInstance alt_inst("betty");
-  alt_inst.ReadNexusFile("data/test_beast_tree_parsing.nexus");
+  alt_inst.ReadNexusFile("data/test_beast_tree_parsing.nexus", false);
   alt_inst.tree_collection_.ParseDatesFromCSV("data/test_beast_tree_parsing.csv", true);
   CHECK_EQ(inst.tree_collection_.GetTagDateMap(),
            alt_inst.tree_collection_.GetTagDateMap());
