@@ -56,7 +56,6 @@ TreeCollection Driver::ParseNewick(std::istream &in) {
       if (!taxa_complete_ && taxa_sorted_) {
         auto tree = ParseString(&parser_instance, line);
         SortTaxa();
-        taxa_complete_ = true;
       }
       trees.push_back(ParseString(&parser_instance, line));
     }
@@ -222,7 +221,7 @@ void Driver::SortTaxa() {
     taxa[name] = new_id;
     new_id++;
   }
-  taxa_ = taxa;
+  SetTaxa(taxa);
 }
 
 // Note that a number of Driver methods are implemented in scanner.ll.
