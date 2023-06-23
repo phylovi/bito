@@ -51,10 +51,10 @@ TreeCollection Driver::ParseNewick(std::istream &in) {
     if (!line.empty() && tree_start != std::string::npos) {
       // Erase any characters before the first '('.
       line.erase(0, tree_start);
-      // If taxon map has not be initialized, we first pull taxon names and build
-      // alphabetized map from an initial dummy tree.
+      // If taxon map has not be initialized, we parse the first tree temporarily to get
+      // the taxon names.  We will re-parse this tree after assigning sorted taxon IDs.
       if (!taxa_complete_ && sort_taxa_) {
-        auto tree = ParseString(&parser_instance, line);
+        ParseString(&parser_instance, line);
         SortTaxa();
       }
       trees.push_back(ParseString(&parser_instance, line));
