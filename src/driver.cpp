@@ -55,7 +55,6 @@ TreeCollection Driver::ParseNewick(std::istream &in) {
       // alphabetized map from an initial dummy tree.
       if (!taxa_complete_ && taxa_sorted_) {
         auto tree = ParseString(&parser_instance, line);
-        std::cout << "dummy_tree: " << tree.NewickTopology(std::nullopt) << std::endl;
         SortTaxa();
         taxa_complete_ = true;
       }
@@ -219,6 +218,7 @@ void Driver::SortTaxa() {
   std::map<std::string, uint32_t> taxa;
   uint32_t new_id = 0;
   for (const auto &[name, old_id] : taxa_) {
+    std::ignore = old_id;
     taxa[name] = new_id;
     new_id++;
   }
