@@ -34,7 +34,7 @@ class Driver {
   uint32_t next_id_;
   // Do we want to enforce taxa IDs to be alphabetically sorted according to their
   // names?
-  bool taxa_sorted_;
+  bool sort_taxa_;
   // Do we already have the taxon names in taxa_? If not, they get initialized with the
   // first tree parsed.
   bool taxa_complete_;
@@ -69,7 +69,7 @@ class Driver {
   TagStringMap TagTaxonMap();
 
   // Set whether to sort taxon IDs in map according to taxon names.
-  void SetSortTaxa(const bool taxa_sorted) { taxa_sorted_ = taxa_sorted; }
+  void SetSortTaxa(const bool taxa_sorted) { sort_taxa_ = taxa_sorted; }
   // Set taxon map.
   void SetTaxa(const std::map<std::string, uint32_t> taxa);
 

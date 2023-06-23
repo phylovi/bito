@@ -19,7 +19,7 @@
 
 Driver::Driver()
     : next_id_(0),
-      taxa_sorted_(false),
+      sort_taxa_(false),
       taxa_complete_(false),
       trace_parsing_(0),
       trace_scanning_(false),
@@ -53,7 +53,7 @@ TreeCollection Driver::ParseNewick(std::istream &in) {
       line.erase(0, tree_start);
       // If taxon map has not be initialized, we first pull taxon names and build
       // alphabetized map from an initial dummy tree.
-      if (!taxa_complete_ && taxa_sorted_) {
+      if (!taxa_complete_ && sort_taxa_) {
         auto tree = ParseString(&parser_instance, line);
         SortTaxa();
       }
