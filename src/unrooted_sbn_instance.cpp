@@ -77,14 +77,18 @@ std::pair<StringSizeMap, StringPCSPMap> UnrootedSBNInstance::SplitCounters() con
 
 // ** I/O
 
-void UnrootedSBNInstance::ReadNewickFile(const std::string &fname) {
+void UnrootedSBNInstance::ReadNewickFile(const std::string &fname,
+                                         const bool sort_taxa) {
   Driver driver;
+  driver.SetSortTaxa(sort_taxa);
   tree_collection_ =
       UnrootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
 }
 
-void UnrootedSBNInstance::ReadNexusFile(const std::string &fname) {
+void UnrootedSBNInstance::ReadNexusFile(const std::string &fname,
+                                        const bool sort_taxa) {
   Driver driver;
+  driver.SetSortTaxa(sort_taxa);
   tree_collection_ =
       UnrootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
 }

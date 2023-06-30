@@ -32,6 +32,9 @@ class Driver {
 
   // The next available id for parsing the first tree.
   uint32_t next_id_;
+  // Do we want to enforce taxa IDs to be alphabetically sorted according to their
+  // names?
+  bool sort_taxa_;
   // Do we already have the taxon names in taxa_? If not, they get initialized with the
   // first tree parsed.
   bool taxa_complete_;
@@ -65,6 +68,11 @@ class Driver {
   // Make the map from the edge tags of the tree to the taxon names from taxa_.
   TagStringMap TagTaxonMap();
 
+  // Set whether to sort taxon IDs in map according to taxon names.
+  void SetSortTaxa(const bool taxa_sorted) { sort_taxa_ = taxa_sorted; }
+  // Set taxon map.
+  void SetTaxa(const std::map<std::string, uint32_t> taxa);
+
  private:
   // Scan a string with flex.
   void ScanString(const std::string& str);
@@ -76,6 +84,8 @@ class Driver {
   TreeCollection ParseAndDequoteNewick(std::istream& in);
   // Run the parser on a Nexus stream.
   TreeCollection ParseNexus(std::istream& in);
+  // Sort taxa map so that IDs correspond to name's sorted order.
+  void SortTaxa();
 };
 
 #ifdef DOCTEST_LIBRARY_INCLUDED

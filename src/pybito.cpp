@@ -373,10 +373,10 @@ PYBIND11_MODULE(bito, m) {
            "Obtain the log determinant of the gradient")
 
       // ** I/O
-      .def("read_newick_file", &RootedSBNInstance::ReadNewickFile,
-           "Read trees from a Newick file.")
-      .def("read_nexus_file", &RootedSBNInstance::ReadNexusFile,
-           "Read trees from a Nexus file.")
+      .def("read_newick_file", &RootedSBNInstance::ReadNewickFile, py::arg("path"),
+           py::arg("sort_taxa") = true, "Read trees from a Newick file.")
+      .def("read_nexus_file", &RootedSBNInstance::ReadNexusFile, py::arg("path"),
+           py::arg("sort_taxa") = true, "Read trees from a Nexus file.")
 
       // ** Member variables
       .def_readwrite("tree_collection", &RootedSBNInstance::tree_collection_);
@@ -523,10 +523,10 @@ PYBIND11_MODULE(bito, m) {
            Should be called after sampling trees and setting branch lengths.)raw")
 
       // ** I/O
-      .def("read_newick_file", &UnrootedSBNInstance::ReadNewickFile,
-           "Read trees from a Newick file.")
-      .def("read_nexus_file", &UnrootedSBNInstance::ReadNexusFile,
-           "Read trees from a Nexus file.")
+      .def("read_newick_file", &UnrootedSBNInstance::ReadNewickFile, py::arg("path"),
+           py::arg("sort_taxa") = true, "Read trees from a Newick file.")
+      .def("read_nexus_file", &UnrootedSBNInstance::ReadNexusFile, py::arg("path"),
+           py::arg("sort_taxa") = true, "Read trees from a Nexus file.")
 
       // ** Member variables
       .def_readonly("psp_indexer", &UnrootedSBNInstance::psp_indexer_)
@@ -618,14 +618,14 @@ PYBIND11_MODULE(bito, m) {
       .def("print_dag", &GPInstance::PrintDAG, "Print the subsplit DAG.")
 
       // ** I/O
-      .def("read_newick_file", &GPInstance::ReadNewickFile,
-           "Read trees from a Newick file.")
-      .def("read_newick_file_gz", &GPInstance::ReadNewickFileGZ,
-           "Read trees from a gzip-ed Newick file.")
-      .def("read_nexus_file", &GPInstance::ReadNexusFile,
-           "Read trees from a Nexus file.")
-      .def("read_nexus_file_gz", &GPInstance::ReadNexusFileGZ,
-           "Read trees from a gzip-ed Nexus file.")
+      .def("read_newick_file", &GPInstance::ReadNewickFile, py::arg("path"),
+           py::arg("sort_taxa") = true, "Read trees from a Newick file.")
+      .def("read_newick_file_gz", &GPInstance::ReadNewickFileGZ, py::arg("path"),
+           py::arg("sort_taxa") = true, "Read trees from a gzip-ed Newick file.")
+      .def("read_nexus_file", &GPInstance::ReadNexusFile, py::arg("path"),
+           py::arg("sort_taxa") = true, "Read trees from a Nexus file.")
+      .def("read_nexus_file_gz", &GPInstance::ReadNexusFileGZ, py::arg("path"),
+           py::arg("sort_taxa") = true, "Read trees from a gzip-ed Nexus file.")
       .def("read_fasta_file", &GPInstance::ReadFastaFile,
            "Read a sequence alignment from a FASTA file.")
       .def("sbn_parameters_to_csv", &GPInstance::SBNParametersToCSV,

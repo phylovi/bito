@@ -32,10 +32,10 @@ class GPInstance {
   // ** I/O
 
   void ReadFastaFile(const std::string &fname);
-  void ReadNewickFile(const std::string &fname);
-  void ReadNewickFileGZ(const std::string &fname);
-  void ReadNexusFile(const std::string &fname);
-  void ReadNexusFileGZ(const std::string &fname);
+  void ReadNewickFile(const std::string &fname, const bool sort_taxa = true);
+  void ReadNewickFileGZ(const std::string &fname, const bool sort_taxa = true);
+  void ReadNexusFile(const std::string &fname, const bool sort_taxa = true);
+  void ReadNexusFileGZ(const std::string &fname, const bool sort_taxa = true);
 
   std::string GetFastaSourcePath() const {
     Assert(fasta_path_.has_value(), "No fasta source file has been read.");

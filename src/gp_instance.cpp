@@ -48,28 +48,31 @@ void GPInstance::ReadFastaFile(const std::string &fname) {
   fasta_path_ = fname;
 }
 
-void GPInstance::ReadNewickFile(const std::string &fname) {
+void GPInstance::ReadNewickFile(const std::string &fname, const bool sort_taxa) {
   Driver driver;
+  driver.SetSortTaxa(sort_taxa);
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFile(fname));
   newick_path_ = fname;
 }
 
-void GPInstance::ReadNewickFileGZ(const std::string &fname) {
+void GPInstance::ReadNewickFileGZ(const std::string &fname, const bool sort_taxa) {
   Driver driver;
+  driver.SetSortTaxa(sort_taxa);
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNewickFileGZ(fname));
   newick_path_ = fname;
 }
 
-void GPInstance::ReadNexusFile(const std::string &fname) {
+void GPInstance::ReadNexusFile(const std::string &fname, const bool sort_taxa) {
   Driver driver;
+  driver.SetSortTaxa(sort_taxa);
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFile(fname));
   nexus_path_ = fname;
 }
 
-void GPInstance::ReadNexusFileGZ(const std::string &fname) {
+void GPInstance::ReadNexusFileGZ(const std::string &fname, const bool sort_taxa) {
   Driver driver;
   tree_collection_ =
       RootedTreeCollection::OfTreeCollection(driver.ParseNexusFileGZ(fname));
