@@ -3068,3 +3068,4 @@ TEST_CASE("GPInstance: Taxon Sorted Tree Collection") {
       CHECK_MESSAGE(tree_1 != tree_2, "Trees incorrectly found equal.");
     }
   }
+}

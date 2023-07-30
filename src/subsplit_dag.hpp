@@ -42,6 +42,7 @@
 #include "nni_operation.hpp"
 #include "subsplit_dag_node.hpp"
 #include "node.hpp"
+#include "stopwatch.hpp"
 
 class SubsplitDAG {
  public:

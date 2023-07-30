@@ -7,6 +7,7 @@
 #include "gp_engine.hpp"
 #include "sbn_maps.hpp"
 #include "optimization.hpp"
+#include "stopwatch.hpp"
 
 TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
                    std::optional<std::string> mmap_likelihood_path,
@@ -186,17 +187,23 @@ void TPEngine::UpdateAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
+  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   UpdateChoiceMapAfterModifyingDAG(nni_to_pre_nni, prev_node_count, node_reindexer,
                                    prev_edge_count, edge_reindexer);
-  if (HasLikelihoodEvalEngine()) {
+  std::cout << "UpdateAfterModifying::ChoiceMap: " << timer.Lap() << std::endl;
+  if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().UpdateEngineAfterModifyingDAG(
         nni_to_pre_nni, prev_node_count, node_reindexer, prev_edge_count,
         edge_reindexer);
+    std::cout << "UpdateAfterModifying::LikelihoodEvalEngine: " << timer.Lap()
+              << std::endl;
   }
-  if (HasParsimonyEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine)) {
     GetParsimonyEvalEngine().UpdateEngineAfterModifyingDAG(
         nni_to_pre_nni, prev_node_count, node_reindexer, prev_edge_count,
         edge_reindexer);
+    std::cout << "UpdateAfterModifying::ParsimonyEvalEngine: " << timer.Lap()
+              << std::endl;
   }
 }
 
@@ -358,6 +365,10 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
+  // std::cout << "UpdateChoiceMap [begin]" << std::endl;
+  Stopwatch full_timer(true, Stopwatch::TimeScale::SecondScale);
+  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
+
   const size_t new_edge_count = edge_reindexer.size();
   // Tree counter for assigning a unique tree id for each NNI added to the DAG.
   tree_counter_++;
@@ -474,6 +485,8 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
     UpdateChoice(choice.left_child_edge_id, AdjacentEdge::Parent, post_edge_id);
     UpdateChoice(choice.right_child_edge_id, AdjacentEdge::Parent, post_edge_id);
   }
+
+  // std::cout << "Update ChoiceMap [end]: " << timer.Lap() << std::endl;
 }
 
 void TPEngine::UpdateEdgeChoiceByTakingFirstTree(const EdgeId edge_id) {
@@ -713,7 +726,7 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
         grandparent_node = parent_map[parent_node->Id()];
       }
       // Find sister node.
-      for (const auto& childx_node : parent_node->Children()) {
+      for (const auto &childx_node : parent_node->Children()) {
         if (childx_node->Id() != child_node->Id()) {
           sister_node = childx_node.get();
         }
@@ -975,7 +988,7 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
   };
 
   // Iterate over NNIs to find best branches.
-  for (const auto& post_nni : nnis) {
+  for (const auto &post_nni : nnis) {
     // Get pre_nni and build map between them.
     const NNIOperation pre_nni = FindHighestPriorityNeighborNNIInDAG(post_nni);
     const auto pre_edge_id = GetDAG().GetEdgeIdx(pre_nni);

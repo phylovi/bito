@@ -179,12 +179,15 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
 
 void NNIEngine::ScoreAdjacentNNIs() {
   if (IsEvalEngineInUse(NNIEvalEngineType::GPEvalEngine)) {
+    std::cout << "GPLikelihood::AdjNNIs: " << GetAdjacentNNIs().size() << std::endl;
     GetGPEvalEngine().ScoreAdjacentNNIs(GetAdjacentNNIs());
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaLikelihood)) {
+    std::cout << "TPLikelihood::AdjNNIs: " << GetAdjacentNNIs().size() << std::endl;
     GetTPEvalEngine().ScoreAdjacentNNIs(GetAdjacentNNIs());
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaParsimony)) {
+    std::cout << "TPParsimony::AdjNNIs: " << GetAdjacentNNIs().size() << std::endl;
     GetTPEvalEngine().ScoreAdjacentNNIs(GetAdjacentNNIs());
   }
 }
@@ -217,13 +220,13 @@ void NNIEngine::RunInit(const bool is_quiet) {
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   // Initialize Adjacent NNIs based on starting state of DAG.
   ResetAllNNIs();
-  os << "RunInit()->ResetAllNNIs(): " << timer.Lap() << std::endl;
+  os << "RunInit::ResetAllNNIs: " << timer.Lap() << std::endl;
   SyncAdjacentNNIsWithDAG();
-  os << "RunInit()->SyncAdjacentNNIsWithDAG(): " << timer.Lap() << std::endl;
+  os << "RunInit::SyncAdjacentNNIsWithDAG: " << timer.Lap() << std::endl;
   PrepEvalEngine();
-  os << "RunInit()->PrepEvalEngine(): " << timer.Lap() << std::endl;
+  os << "RunInit::PrepEvalEngine: " << timer.Lap() << std::endl;
   FilterInit();
-  os << "RunInit()->FilterInit(): " << timer.Lap() << std::endl;
+  os << "RunInit::FilterInit: " << timer.Lap() << std::endl;
 }
 
 void NNIEngine::RunMainLoop(const bool is_quiet) {

@@ -199,22 +199,6 @@ TreeCollection Driver::ParseString(const std::string &str) {
                         TaxonNameMunging::DequoteTagStringMap(this->TagTaxonMap()));
 }
 
-void Driver::SetTaxa(const std::map<std::string, uint32_t> taxa) {
-  taxa_ = taxa;
-  taxa_complete_ = true;
-}
-
-void Driver::InitializeTaxa() {
-  std::map<std::string, uint32_t> taxa;
-  uint32_t new_id = 0;
-  for (const auto &[name, old_id] : taxa_) {
-    taxa[name] = new_id;
-    new_id++;
-  }
-  taxa_ = taxa;
-  taxa_complete_ = true;
-}
-
 TagStringMap Driver::TagTaxonMap() {
   TagStringMap m;
   for (const auto &iter : taxa_) {
