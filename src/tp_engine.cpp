@@ -136,26 +136,24 @@ int TPEngine::Compare(const TPEngine &lhs, const TPEngine &rhs, const bool is_qu
         const auto &node = hs.GetDAG().GetDAGNode(node_id);
         for (const auto clade : SubsplitCladeEnum::Iterator()) {
           const auto &adj_node_ids = node.GetNeighbors(dir, clade);
-          std::cout << "hs::" << DirectionEnum::ToString(dir) << ":"
-                    << SubsplitCladeEnum::ToString(clade) << ": ";
+          os << "hs::" << DirectionEnum::ToString(dir) << ":"
+             << SubsplitCladeEnum::ToString(clade) << ": ";
           for (const auto adj_node_id : adj_node_ids) {
             auto edge_id = (dir == Direction::Leafward)
                                ? hs.GetDAG().GetEdgeIdx(node.Id(), adj_node_id)
                                : hs.GetDAG().GetEdgeIdx(adj_node_id, node.Id());
-            std::cout << "Edge" << edge_id << "->"
-                      << "Tree" << hs.GetTreeSource(edge_id) << " => ";
-            std::cout << "Edge" << edge_map.find(edge_id)->second << "->"
-                      << "Tree" << hs2.GetTreeSource(edge_map.find(edge_id)->second)
-                      << ", ";
+            os << "Edge" << edge_id << "->"
+               << "Tree" << hs.GetTreeSource(edge_id) << " => ";
+            os << "Edge" << edge_map.find(edge_id)->second << "->"
+               << "Tree" << hs2.GetTreeSource(edge_map.find(edge_id)->second) << ", ";
           }
-          std::cout << std::endl;
+          os << std::endl;
         }
       }
 
       final_diff = choice_diff;
     }
   }
-
   if (lhs.HasLikelihoodEvalEngine() && rhs.HasLikelihoodEvalEngine()) {
     auto branch_diff =
         DAGBranchHandler::Compare(lhs.GetLikelihoodEvalEngine().GetDAGBranchHandler(),
@@ -165,6 +163,7 @@ int TPEngine::Compare(const TPEngine &lhs, const TPEngine &rhs, const bool is_qu
       final_diff = branch_diff;
     }
   }
+
   return final_diff;
 }
 

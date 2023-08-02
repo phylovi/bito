@@ -2767,6 +2767,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   const std::string fasta_path = "data/five_taxon.fasta";
   const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
   const std::string newick_path_2 = "data/five_taxon_rooted_shuffled.nwk";
+  std::cout << "[begin] Exporting Newicks" << std::endl;
 
   auto BuildTopTreeMapViaBruteForce = [](GPInstance& inst) {
     std::vector<RootedTree> tree_map;
@@ -2838,7 +2839,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
     for (auto& tree : tree_map_2) {
       newick_2 += tree.Topology()->Newick() + "\n";
     }
-    std::cout << "compare_tree_map: " << (newick_1 == newick_2) << std::endl;
+    return (newick_1 == newick_2);
   };
 
   // Export a spanning newick file from TPEngine, then build new DAG from that file.
@@ -2906,23 +2907,22 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   inst_2.MakeTPEngine();
   inst_2.MakeNNIEngine();
 
-  // CHECK_MESSAGE(
-  //     TPEngine::Compare(inst_1.GetTPEngine(), inst_1.GetTPEngine(), false) == 0,
-  //     "TPEngines not equal to self.");
-  // CHECK_MESSAGE(SubsplitDAG::Compare(inst_1.GetDAG(), inst_2.GetDAG(), true) == 0,
-  //               "DAGs formed from shuffled Newicks not equal.");
-  // CHECK_MESSAGE(
-  //     TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), true) != 0,
-  //     "TPEngines formed from shuffled Newicks are incorrectly equal.");
-
-  // CHECK_MESSAGE(BuildSpanningNewickAndCompareNewDAG(inst_1) == 0,
-  //               "DAG built from Spanning Newick not equal to the DAG that build it "
-  //               "(before adding NNIs).");
-  // CHECK_MESSAGE(
-  //     BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
-  //     "TPEngine built from Top Tree Newick not equal to the TPEngine that build it "
-  //     "(before adding NNIs).");
-  // BuildTopTreesTest(inst_1);
+  CHECK_MESSAGE(
+      TPEngine::Compare(inst_1.GetTPEngine(), inst_1.GetTPEngine(), false) == 0,
+      "TPEngines not equal to self.");
+  CHECK_MESSAGE(SubsplitDAG::Compare(inst_1.GetDAG(), inst_2.GetDAG(), true) == 0,
+                "DAGs formed from shuffled Newicks not equal.");
+  CHECK_MESSAGE(
+      TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), true) != 0,
+      "TPEngines formed from shuffled Newicks are incorrectly equal.");
+  CHECK_MESSAGE(BuildSpanningNewickAndCompareNewDAG(inst_1) == 0,
+                "DAG built from Spanning Newick not equal to the DAG that build it "
+                "(before adding NNIs).");
+  CHECK_MESSAGE(
+      BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
+      "TPEngine built from Top Tree Newick not equal to the TPEngine that build it "
+      "(before adding NNIs).");
+  BuildTopTreesTest(inst_1);
 
   size_t optimization_count = 2;
   tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(optimization_count);
@@ -2930,29 +2930,34 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   nni_engine.SetTPLikelihoodCutoffFilteringScheme(0.0);
   nni_engine.SetTopNScoreFilteringScheme(1);
   nni_engine.SetReevaluateRejectedNNIs(true);
-  nni_engine.RunInit(false);
+  nni_engine.RunInit(true);
 
-  for (size_t iter = 0; iter < 9; iter++) {
+  std::cout << "NEWICK_FROM_NNI: [begin]" << std::endl;
+  size_t last_iter = 6;
+  for (size_t iter = 0; iter < 7; iter++) {
+    std::cout << "iter [begin]: " << iter << std::endl;
     nni_engine.RunMainLoop();
-    // if (iter == 7) break;
-    if (iter == 7) {
-      std::cout << "iter 7:" << std::endl;
+    std::cout << "iter [mid1]: " << iter << std::endl;
+    // if (iter == last_iter) break;
+    if (iter == last_iter) {
+      std::cout << "last_iter: " << iter << std::endl;
       std::cout << "dag:" << inst_1.GetDAG().NodeCount() << " "
                 << inst_1.GetDAG().EdgeCountWithLeafSubsplits() << std::endl;
     }
     nni_engine.RunPostLoop();
+    std::cout << "iter [mid2]: " << iter << std::endl;
 
-    // CHECK_MESSAGE(BuildSpanningNewickAndCompareNewDAG(inst_1) == 0,
-    //               "DAG built from Spanning Newick not equal to the DAG that build it
-    //               "
-    //               "(after adding NNIs).");
-    // CHECK_MESSAGE(
-    //     BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
-    //     "TPEngine built from Top Tree Newick not equal to the TPEngine that build it
-    //     "
-    //     "(after adding NNIs).");
-    // BuildTopTreesTest(inst_1);
-    std::cout << "iter [end]" << std::endl;
+    std::cout << "spanning_newick_test [begin]: " << iter << std::endl;
+    CHECK_MESSAGE(BuildSpanningNewickAndCompareNewDAG(inst_1) == 0,
+                  "DAG built from Spanning Newick not equal to the DAG that build it "
+                  "(after adding NNIs).");
+    std::cout << "top_tree_newick_test [begin]: " << iter << std::endl;
+    CHECK_MESSAGE(
+        BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
+        "TPEngine built from Top Tree Newick not equal to the TPEngine that build it "
+        "(after adding NNIs).");
+    CHECK_MESSAGE(BuildTopTreesTest(inst_1), "");
+    std::cout << "iter [end]: " << iter << std::endl;
   }
   std::cout << "[end]" << std::endl;
 }
