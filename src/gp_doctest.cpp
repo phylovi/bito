@@ -2876,22 +2876,6 @@ TEST_CASE("TPEngine: Exporting Newicks") {
                                         "_ignore/mmapped_pv.data1");
         inst_2.MakeTPEngine();
         inst_2.MakeNNIEngine();
-
-        // std::cout << "=== NewickOfTopTrees: " << std::endl
-        //           << inst_1.GetTPEngine().ToNewickOfTopTopologies() << std::endl;
-        // std::cout << "=== NewickOfTreeCollection: " << std::endl;
-        // for (const auto& tree : inst_2.GetCurrentlyLoadedTrees()) {
-        //   std::cout << inst_2.GetDAG().TreeToNewickTopology(tree) << std::endl;
-        // }
-
-        // auto edge_map =
-        //     SubsplitDAG::BuildEdgeIdMapBetweenDAGs(inst_1.GetDAG(), inst_2.GetDAG());
-        // std::cout << "edge_map: " << edge_map << std::endl;
-        // auto tree_source_1 = inst_1.GetTPEngine().GetTreeSource();
-        // tree_source_1.resize(inst_1.GetDAG().EdgeCountWithLeafSubsplits());
-        // std::cout << "lhs_tree_source: " << tree_source_1 << std::endl;
-        // std::cout << "rhs_tree_source: " << inst_2.GetTPEngine().GetTreeSource()
-        //           << std::endl;
         return TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), false);
       };
 

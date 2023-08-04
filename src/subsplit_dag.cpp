@@ -479,7 +479,7 @@ EdgeId SubsplitDAG::GetEdgeIdx(const Bitset &parent_subsplit,
 EdgeId SubsplitDAG::GetEdgeIdx(const NodeId parent_id, const NodeId child_id) const {
   auto edge = storage_.GetLine(parent_id, child_id);
   if (!edge.has_value()) {
-    std::cout << "Edge not found: Node" << parent_id << ", Node" << child_id
+    std::cerr << "Edge not found: Node" << parent_id << ", Node" << child_id
               << std::endl;
   }
   Assert(edge.has_value(), "Edge not found in DAG.");
@@ -828,8 +828,6 @@ std::ostream &operator<<(std::ostream &os,
 
 Node::Topology SubsplitDAG::BuildTopologyFromNodeIdMap(ParentToChildNodeIdMap &tree_map,
                                                        NodeId rootsplit_id) const {
-  // std::cout << "tree_map: " << tree_map.size() << " " << TaxonCount() << std::endl
-  //           << tree_map << std::endl;
   std::unordered_map<NodeId, Node::NodePtr> id_to_nodes;
   // Initialize parent nodes.
   for (const auto &[parent_id, child_ids] : tree_map) {
@@ -1782,8 +1780,6 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
     // Don't reindex these edges.
     ConnectChildToAllChildren(child_subsplit, added_edge_idxs);
   }
-  // std::cout << "SubsplitDAG::" << (!storage_.HaveHost() ? "Add" : "Graft")
-  //           << "NodePair::ChildToChildren: " << timer.Lap() << std::endl;
   // If parent node is new, add node it to all its children (except )
   if (parent_is_new) {
     CreateAndInsertNode(parent_subsplit);
@@ -1791,8 +1787,6 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
     // Don't reindex these edges.
     ConnectParentToAllChildrenExcept(parent_subsplit, child_subsplit, added_edge_idxs);
   }
-  // std::cout << "SubsplitDAG::" << (!storage_.HaveHost() ? "Add" : "Graft")
-  //           << "NodePair::ParentToChildren: " << timer.Lap() << std::endl;
 
   // Note: `prev_edge_count` is a marker conveying where we need to start
   // reindexing edge idxs.
@@ -1812,14 +1806,10 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
     // Reindex these edges.
     ConnectChildToAllParentsExcept(parent_subsplit, child_subsplit, added_edge_idxs);
   }
-  // std::cout << "SubsplitDAG::" << (!storage_.HaveHost() ? "Add" : "Graft")
-  //           << "NodePair::ChildToParents: " << timer.Lap() << std::endl;
   if (parent_is_new) {
     // Reindex these edges.
     ConnectParentToAllParents(parent_subsplit, added_edge_idxs);
   }
-  // std::cout << "SubsplitDAG::" << (!storage_.HaveHost() ? "Add" : "Graft")
-  //           << "NodePair::ParentToParents: " << timer.Lap() << std::endl;
 
   // If GraftDAG, does not perform reindexing.
   if (!storage_.HaveHost()) {
@@ -1837,8 +1827,6 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
     CountTopologies();
     CountEdgesWithoutLeafSubsplits();
   }
-  // std::cout << "SubsplitDAG::" << (!storage_.HaveHost() ? "Add" : "Graft")
-  //           << "NodePair : " << timer.GetTotal() << std::endl;
 
   size_t cur_node_count = NodeCount();
   size_t cur_edge_count = EdgeCountWithLeafSubsplits();

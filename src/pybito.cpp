@@ -732,15 +732,11 @@ PYBIND11_MODULE(bito, m) {
           [](GPInstance &self) -> GPEngine * { return &self.GetGPEngine(); },
           py::return_value_policy::reference, "Get GP Engine.")
       .def("make_nni_engine", &GPInstance::MakeNNIEngine, "Initialize NNI Engine.")
-      // .def("get_nni_engine", &GPInstance::GetNNIEngine,
-      //      py::return_value_policy::reference, "Get NNI Engine.")
       .def(
           "get_nni_engine",
           [](GPInstance &self) -> NNIEngine * { return &self.GetNNIEngine(); },
           py::return_value_policy::reference, "Get Subsplit DAG.")
       .def("make_tp_engine", &GPInstance::MakeTPEngine, "Initialize TP Engine.")
-      // .def("get_tp_engine", &GPInstance::GetTPEngine,
-      //      py::return_value_policy::reference, "Get TP Engine.")
       .def(
           "get_tp_engine",
           [](GPInstance &self) -> TPEngine * { return &self.GetTPEngine(); },
