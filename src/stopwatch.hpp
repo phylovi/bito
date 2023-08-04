@@ -206,6 +206,14 @@ class Stopwatch {
   std::vector<size_t> interval_starts_;
 };
 
+template <typename F, typename... Args>
+auto TIME_IT(F &&fn, Args &&...args) {
+  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
+  auto ret = fn(std::forward<Args>(args)...);
+  std::cout << "# Timed function: " << timer.Lap() << " sec" << std::endl;
+  return ret;
+};
+
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 TEST_CASE("Stopwatch") {
@@ -263,6 +271,15 @@ TEST_CASE("Stopwatch") {
 
   CHECK_EQ(doctest::Approx(sum_laps), total);
   CHECK_EQ(doctest::Approx(sum_intervals), total);
+
+  auto sleep_twice_func = [](size_t first_sleep, size_t second_sleep) {
+    Stopwatch::Sleep(first_sleep);
+    Stopwatch::Sleep(second_sleep);
+    return 7;
+  };
+
+  auto ret1 = TIME_IT(sleep_twice_func, 2000, 5000);
+  CHECK_EQ(ret1, 7);
 };
 
 #endif  // DOCTEST_LIBRARY_INCLUDED

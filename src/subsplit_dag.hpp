@@ -120,6 +120,8 @@ class SubsplitDAG {
   void PrintDAGEdges() const;
   // Print all nodes, as (bitset | range_begin | range_end)
   void PrintParentToRange() const;
+  // Print DAG Storage contents.
+  void PrintStorage() const { storage_.Print(); }
   // Output DOT format graph of DAG to file.
   void ToDot(const std::string file_path, bool show_index_labels = true) const;
   // Output DOT format graph of DAG to a string.
@@ -694,6 +696,7 @@ class SubsplitDAG {
   //    - [ Taxon Name => Taxon Id (position of the "on" bit in the clades) ]
   StringTaxonIdMap dag_taxa_;
   const TagStringMap *tag_taxon_map_ = nullptr;
+
   // - Map of all DAG Nodes:
   //    - [ Node Subsplit (Bitset) => Node Id ]
   // A node's id is equivalent to its index in dag_nodes_. The first entries are
@@ -705,6 +708,7 @@ class SubsplitDAG {
   // This indexer is an expanded version of parent_to_child_range_ in sbn_instance:
   // It includes single element range for leaf subsplits.
   BitsetEdgeIdPairMap parent_to_child_range_;
+
   // The number of taxa in the DAG. This is equivalent to the size of the clades in each
   // subsplit. Also equivalent to the number of leaf nodes in the DAG.
   size_t taxon_count_;

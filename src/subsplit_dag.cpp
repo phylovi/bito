@@ -7,7 +7,7 @@
 #include "numerical_utils.hpp"
 #include "sbn_probability.hpp"
 
-// ** Constructor methods:
+// ** Constructors
 
 SubsplitDAG::SubsplitDAG()
     : taxon_count_(0), edge_count_without_leaf_subsplits_(0), topology_count_(0.) {}
@@ -59,7 +59,7 @@ void SubsplitDAG::ResetHostDAG(SubsplitDAG &host_dag) {
   topology_count_below_ = host_dag.topology_count_below_;
 }
 
-// ** Comparator
+// ** Comparators
 
 int SubsplitDAG::Compare(const SubsplitDAG &other, const bool quiet) const {
   return SubsplitDAG::Compare(*this, other, quiet);
@@ -175,7 +175,7 @@ bool operator!=(const SubsplitDAG &lhs, const SubsplitDAG &rhs) {
   return (SubsplitDAG::Compare(lhs, rhs) != 0);
 }
 
-// ** Count methods:
+// ** Counts
 
 void SubsplitDAG::CountTopologies() {
   topology_count_below_ = EigenVectorXd::Ones(NodeCount());
@@ -877,7 +877,7 @@ EigenVectorXd SubsplitDAG::BuildUniformOnAllTopologiesPrior() const {
   return result;
 }
 
-// ** DAG Lambda Iterator methods:
+// ** DAG Lambda Iterators
 
 void SubsplitDAG::IterateOverRealNodes(const NodeLambda &f) const {
   Assert(taxon_count_ < NodeCount(), "No real DAG nodes!");
@@ -1446,7 +1446,6 @@ bool SubsplitDAG::ContainsEdge(const Bitset &parent_subsplit,
 }
 
 bool SubsplitDAG::ContainsEdge(const NodeId parent_id, const NodeId child_id) const {
-  // std::cout << "contains_edge: " << parent_id << " " << child_id << std::endl;
   return storage_.GetLine(parent_id, child_id).has_value();
 }
 

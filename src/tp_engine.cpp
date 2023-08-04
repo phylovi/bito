@@ -364,7 +364,6 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
-  // std::cout << "UpdateChoiceMap [begin]" << std::endl;
   Stopwatch full_timer(true, Stopwatch::TimeScale::SecondScale);
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
 
@@ -403,10 +402,10 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
   std::unordered_map<EdgeId, EdgeId> best_edge_map;
   for (const auto &[pcsp, pre_edge_id] : best_pcsp_edge_map) {
     if (!GetDAG().ContainsEdge(pcsp)) {
-      std::cout << "PCSP not found in DAG: " << pcsp.PCSPToString() << std::endl;
-      std::cout << "NNIs: " << std::endl;
+      std::cerr << "PCSP not found in DAG: " << pcsp.PCSPToString() << std::endl;
+      std::cerr << "NNIs: " << std::endl;
       for (const auto &[post_nni, pre_nni] : nni_to_pre_nni) {
-        std::cout << post_nni.GetCentralEdgePCSP().PCSPToString() << std::endl;
+        std::cerr << post_nni.GetCentralEdgePCSP().PCSPToString() << std::endl;
       }
     }
     const auto post_edge_id = GetDAG().GetEdgeIdx(pcsp);
@@ -484,8 +483,6 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
     UpdateChoice(choice.left_child_edge_id, AdjacentEdge::Parent, post_edge_id);
     UpdateChoice(choice.right_child_edge_id, AdjacentEdge::Parent, post_edge_id);
   }
-
-  // std::cout << "Update ChoiceMap [end]: " << timer.Lap() << std::endl;
 }
 
 void TPEngine::UpdateEdgeChoiceByTakingFirstTree(const EdgeId edge_id) {
@@ -536,40 +533,41 @@ void TPEngine::UpdateEdgeChoiceByTakingHighestPriorityTree(const EdgeId edge_id)
   const auto edge = GetDAG().GetDAGEdge(EdgeId(edge_id));
   // GetChoiceMap().ResetEdgeChoice(edge_id);
 
-  auto GetBestEdgeIdByHighestPriorityTree =
-      [this, edge_id](const NodeId node_id, const Direction direction,
-                      const SubsplitClade clade, TreeId *opt_tree_id = nullptr) {
-        auto best_tree_id = TreeId(NoId);
-        auto best_edge_id = EdgeId(NoId);
-        if (!GetDAG().ContainsNode(node_id)) {
-          std::cout << "Encountered invalid node id during edge choice update: Edge"
-                    << edge_id << " Node" << node_id << std::endl;
-        }
-        const auto &node = GetDAG().GetDAGNode(node_id);
-        bool has_first_edge = false;
-        for (const auto adj_node_id : node.GetNeighbors(direction, clade)) {
-          const auto parent_node_id =
-              (direction == Direction::Rootward) ? adj_node_id : node_id;
-          const auto child_node_id =
-              (direction == Direction::Rootward) ? node_id : adj_node_id;
-          const auto adj_edge_id = GetDAG().GetEdgeIdx(parent_node_id, child_node_id);
-          auto adj_tree_id = GetTreeSource()[adj_edge_id.value_];
-          if ((best_tree_id > adj_tree_id) || !has_first_edge) {
-            best_tree_id = adj_tree_id;
-            best_edge_id = adj_edge_id;
-            has_first_edge = true;
-          }
-        }
-        if (opt_tree_id) {
-          *opt_tree_id = best_tree_id;
-        }
-        return best_edge_id;
-      };
+  auto GetBestEdgeIdByHighestPriorityTree = [this, edge_id](
+                                                const NodeId node_id,
+                                                const Direction direction,
+                                                const SubsplitClade clade,
+                                                TreeId *opt_tree_id = nullptr) {
+    auto best_tree_id = TreeId(NoId);
+    auto best_edge_id = EdgeId(NoId);
+    if (!GetDAG().ContainsNode(node_id)) {
+      std::cerr << "ERROR: Encountered invalid node id during edge choice update: Edge"
+                << edge_id << " Node" << node_id << std::endl;
+    }
+    const auto &node = GetDAG().GetDAGNode(node_id);
+    bool has_first_edge = false;
+    for (const auto adj_node_id : node.GetNeighbors(direction, clade)) {
+      const auto parent_node_id =
+          (direction == Direction::Rootward) ? adj_node_id : node_id;
+      const auto child_node_id =
+          (direction == Direction::Rootward) ? node_id : adj_node_id;
+      const auto adj_edge_id = GetDAG().GetEdgeIdx(parent_node_id, child_node_id);
+      auto adj_tree_id = GetTreeSource()[adj_edge_id.value_];
+      if ((best_tree_id > adj_tree_id) || !has_first_edge) {
+        best_tree_id = adj_tree_id;
+        best_edge_id = adj_edge_id;
+        has_first_edge = true;
+      }
+    }
+    if (opt_tree_id) {
+      *opt_tree_id = best_tree_id;
+    }
+    return best_edge_id;
+  };
 
   auto best_edge_id = EdgeId(NoId);
   auto best_tree_id = TreeId(NoId);
   // Select parent.
-  // std::cout << "select_parent" << std::endl;
   for (const auto clade : SubsplitCladeEnum::Iterator()) {
     TreeId clade_tree_id = TreeId(NoId);
     const auto clade_edge_id = GetBestEdgeIdByHighestPriorityTree(
@@ -581,17 +579,14 @@ void TPEngine::UpdateEdgeChoiceByTakingHighestPriorityTree(const EdgeId edge_id)
   }
   GetChoiceMap().SetEdgeChoice(edge_id, AdjacentEdge::Parent, best_edge_id);
   // Select sister.
-  // std::cout << "select_sister" << std::endl;
   best_edge_id = GetBestEdgeIdByHighestPriorityTree(
       edge.GetParent(), Direction::Leafward, Bitset::Opposite(edge.GetSubsplitClade()));
   GetChoiceMap().SetEdgeChoice(edge_id, AdjacentEdge::Sister, best_edge_id);
   // Select left child.
-  // std::cout << "select_leftchild" << std::endl;
   best_edge_id = GetBestEdgeIdByHighestPriorityTree(
       edge.GetChild(), Direction::Leafward, SubsplitClade::Left);
   GetChoiceMap().SetEdgeChoice(edge_id, AdjacentEdge::LeftChild, best_edge_id);
   // Select right child.
-  // std::cout << "select_rightchild" << std::endl;
   best_edge_id = GetBestEdgeIdByHighestPriorityTree(
       edge.GetChild(), Direction::Leafward, SubsplitClade::Right);
   GetChoiceMap().SetEdgeChoice(edge_id, AdjacentEdge::RightChild, best_edge_id);
@@ -955,7 +950,7 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
   std::unordered_map<Bitset, EdgeId> best_edge_ids;
   // Stores the best edge's tree id.
   std::unordered_map<Bitset, TreeId> best_tree_ids;
-  // Checks if edge is a most recent addition.
+  // Checks if edge was added by most recent iteration.
   auto IsEdgeOld = [this, &prev_edge_count, &edge_reindexer](const EdgeId edge_id) {
     if (!prev_edge_count.has_value()) {
       return true;
@@ -969,7 +964,7 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
   // Update map if better edge is found.
   auto AssignBestEdge = [this, &best_edge_ids, &best_tree_ids, &IsEdgeOld](
                             const Bitset &pcsp, const EdgeId proposed_edge_id) {
-    // If edge was not recently added, ref itself with the highest priority,
+    // If edge was not recently added, reference itself with the highest priority,
     if (GetDAG().ContainsEdge(pcsp)) {
       const auto edge_id = GetDAG().GetEdgeIdx(pcsp);
       if (IsEdgeOld(edge_id)) {
@@ -1003,7 +998,7 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
         (adj_node_ids.sister_node_id == NoId) &&
         (adj_node_ids.left_child_node_id == NoId) &&
         (adj_node_ids.right_child_node_id == NoId)) {
-      std::cout << "WARNING: Skipped NNI -- " << post_nni << std::endl;
+      std::cerr << "WARNING: Skipped NNI -- " << post_nni << std::endl;
       continue;
     }
     // Parent edge.

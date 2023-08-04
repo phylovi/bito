@@ -224,8 +224,6 @@ class NNIEvalEngineViaGP : public NNIEvalEngine {
   // likelihood and last NNI's offset (number of edges adjacent to NNI).
   std::pair<double, size_t> ComputeAdjacentNNILikelihood(const NNIOperation &nni,
                                                          const size_t offset = 0);
-  std::pair<double, size_t> ComputeAdjacentNNILikelihood_New(const NNIOperation &nni,
-                                                             const size_t offset = 0);
 
   template <typename T>
   struct AdjEdges {

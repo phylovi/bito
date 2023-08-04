@@ -179,15 +179,12 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
 
 void NNIEngine::ScoreAdjacentNNIs() {
   if (IsEvalEngineInUse(NNIEvalEngineType::GPEvalEngine)) {
-    std::cout << "GPLikelihood::AdjNNIs: " << GetAdjacentNNIs().size() << std::endl;
     GetGPEvalEngine().ScoreAdjacentNNIs(GetAdjacentNNIs());
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaLikelihood)) {
-    std::cout << "TPLikelihood::AdjNNIs: " << GetAdjacentNNIs().size() << std::endl;
     GetTPEvalEngine().ScoreAdjacentNNIs(GetAdjacentNNIs());
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaParsimony)) {
-    std::cout << "TPParsimony::AdjNNIs: " << GetAdjacentNNIs().size() << std::endl;
     GetTPEvalEngine().ScoreAdjacentNNIs(GetAdjacentNNIs());
   }
 }
