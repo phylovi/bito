@@ -1735,8 +1735,8 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
   auto results = AddNodePairInternals(parent_subsplit, child_subsplit);
   // Check that node pair was added correctly.
   if (!ContainsEdge(parent_subsplit, child_subsplit)) {
-    std::cout << "contains_parent: " << ContainsNode(parent_subsplit) << std::endl;
-    std::cout << "contains_child: " << ContainsNode(child_subsplit) << std::endl;
+    std::cerr << "contains_parent: " << ContainsNode(parent_subsplit) << std::endl;
+    std::cerr << "contains_child: " << ContainsNode(child_subsplit) << std::endl;
   }
   Assert(ContainsEdge(parent_subsplit, child_subsplit),
          "AddNodePair failed to add given node pair.");
