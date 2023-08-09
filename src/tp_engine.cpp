@@ -185,24 +185,24 @@ void TPEngine::Initialize() {
 void TPEngine::UpdateAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
-    const size_t prev_edge_count, const Reindexer &edge_reindexer) {
+    const size_t prev_edge_count, const Reindexer &edge_reindexer, bool is_quiet) {
+  std::stringstream dev_null;
+  std::ostream &os = (is_quiet ? dev_null : std::cout);
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   UpdateChoiceMapAfterModifyingDAG(nni_to_pre_nni, prev_node_count, node_reindexer,
                                    prev_edge_count, edge_reindexer);
-  std::cout << "UpdateAfterModifying::ChoiceMap: " << timer.Lap() << std::endl;
+  os << "UpdateAfterModifying::ChoiceMap: " << timer.Lap() << std::endl;
   if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().UpdateEngineAfterModifyingDAG(
         nni_to_pre_nni, prev_node_count, node_reindexer, prev_edge_count,
         edge_reindexer);
-    std::cout << "UpdateAfterModifying::LikelihoodEvalEngine: " << timer.Lap()
-              << std::endl;
+    os << "UpdateAfterModifying::LikelihoodEvalEngine: " << timer.Lap() << std::endl;
   }
   if (IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine)) {
     GetParsimonyEvalEngine().UpdateEngineAfterModifyingDAG(
         nni_to_pre_nni, prev_node_count, node_reindexer, prev_edge_count,
         edge_reindexer);
-    std::cout << "UpdateAfterModifying::ParsimonyEvalEngine: " << timer.Lap()
-              << std::endl;
+    os << "UpdateAfterModifying::ParsimonyEvalEngine: " << timer.Lap() << std::endl;
   }
 }
 

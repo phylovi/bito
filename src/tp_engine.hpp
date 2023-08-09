@@ -101,7 +101,8 @@ class TPEngine {
   void UpdateAfterModifyingDAG(
       const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
       const size_t prev_node_count, const Reindexer &node_reindexer,
-      const size_t prev_edge_count, const Reindexer &edge_reindexer);
+      const size_t prev_edge_count, const Reindexer &edge_reindexer,
+      bool is_quiet = true);
 
   // ** Tree/Topology Builder
 

@@ -260,12 +260,11 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
-  bool is_quiet = false;
+  bool is_quiet = true;
   std::stringstream dev_null;
   std::ostream &os = (is_quiet ? dev_null : std::cout);
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
 
-  os << "UpdateEngineAfterModifyingDAG::begin" << std::endl;
   // Populate Leaves with Site Patterns.
   PopulateLeafPVsWithSitePatterns();
   // Populate Rootsplit with Stationary Distribution.
