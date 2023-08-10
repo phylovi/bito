@@ -2843,11 +2843,11 @@ TEST_CASE("TPEngine: Exporting Newicks") {
 
   // Export a spanning newick file from TPEngine, then build new DAG from that file.
   // Compare to the input DAG.
-  auto BuildSpanningNewickAndCompareNewDAG = [](GPInstance& inst_1) {
+  auto BuildCoveringNewickAndCompareNewDAG = [](GPInstance& inst_1) {
     const std::string temp_newick_path = "_ignore/temp.newick";
     std::ofstream file_out;
     file_out.open(temp_newick_path);
-    file_out << inst_1.GetDAG().ToNewickOfSpanningTopologies() << std::endl;
+    file_out << inst_1.GetDAG().ToNewickOfCoveringTopologies() << std::endl;
     file_out.close();
 
     auto inst_2 = GPInstanceOfFiles(inst_1.GetFastaSourcePath(), temp_newick_path,
@@ -2898,8 +2898,8 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   CHECK_MESSAGE(
       TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), true) != 0,
       "TPEngines formed from shuffled Newicks are incorrectly equal.");
-  CHECK_MESSAGE(BuildSpanningNewickAndCompareNewDAG(inst_1) == 0,
-                "DAG built from Spanning Newick not equal to the DAG that build it "
+  CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1) == 0,
+                "DAG built from Covering Newick not equal to the DAG that build it "
                 "(before adding NNIs).");
   CHECK_MESSAGE(
       BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
@@ -2922,15 +2922,15 @@ TEST_CASE("TPEngine: Exporting Newicks") {
     // nni_engine.GetDAG().PrintStorage();
 
     // if (iter == 7) break;
-    // Issue #xxx: this creates an unknown problem on iteration 7.
+    // Issue #479: this creates an unknown problem on iteration 7.
     // Error occurs during GetLine() in subsplit_dag_storage.hpp:564.
     // Parent-child vertice pair references a line outside range of DAG.
     // (May be an issue with graft addition/removal process?)
 
     nni_engine.RunPostLoop(true);
 
-    CHECK_MESSAGE(BuildSpanningNewickAndCompareNewDAG(inst_1) == 0,
-                  "DAG built from Spanning Newick not equal to the DAG that build it"
+    CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1) == 0,
+                  "DAG built from Covering Newick not equal to the DAG that build it"
                   "(after adding NNIs).");
     CHECK_MESSAGE(
         BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,

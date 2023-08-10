@@ -705,7 +705,7 @@ std::string SubsplitDAG::ToNewickOfAllTopologies() const {
   return str.str();
 }
 
-Node::NodePtrVec SubsplitDAG::GenerateSpanningTopologies() const {
+Node::NodePtrVec SubsplitDAG::GenerateCoveringTopologies() const {
   Node::NodePtrVec topologies;
   std::vector<bool> visited_edges(EdgeCountWithLeafSubsplits(), false);
   std::vector<bool> visited_edges_below_node(NodeCount(), false);
@@ -793,11 +793,11 @@ Node::NodePtrVec SubsplitDAG::GenerateSpanningTopologies() const {
   return topologies;
 }
 
-std::vector<RootedTree> SubsplitDAG::GenerateSpanningTrees(
+std::vector<RootedTree> SubsplitDAG::GenerateCoveringTrees(
     const EigenVectorXd &dag_branch_lengths) const {
   Assert(size_t(dag_branch_lengths.size()) == EdgeCountWithLeafSubsplits(),
          "dag_branch_lengths is the wrong size.");
-  auto topologies = GenerateSpanningTopologies();
+  auto topologies = GenerateCoveringTopologies();
   std::vector<RootedTree> trees;
   for (const auto &topology : topologies) {
     auto tree = BuildTreeFromTopology(topology, dag_branch_lengths);
@@ -806,9 +806,9 @@ std::vector<RootedTree> SubsplitDAG::GenerateSpanningTrees(
   return trees;
 }
 
-std::string SubsplitDAG::ToNewickOfSpanningTopologies() const {
+std::string SubsplitDAG::ToNewickOfCoveringTopologies() const {
   std::stringstream str;
-  auto topologies = GenerateSpanningTopologies();
+  auto topologies = GenerateCoveringTopologies();
   for (const auto &topology : topologies) {
     str << topology->Newick(std::nullopt, GetTagTaxonMap()) << std::endl;
   }

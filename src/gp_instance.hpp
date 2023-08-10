@@ -115,7 +115,7 @@ class GPInstance {
   // value or the number of DAG traversals exceeds 5.
   void PerturbAndTrackValuesFromOptimization();
   RootedTreeCollection GenerateCompleteRootedTreeCollection();
-  RootedTreeCollection GenerateSpanningRootedTreeCollection();
+  RootedTreeCollection GenerateCoveringRootedTreeCollection();
 
   void PrintEdgeIndexer();
   // #348: A lot of code duplication here with things in SBNInstance.
@@ -175,7 +175,7 @@ class GPInstance {
   void ExportAllGeneratedTrees(const std::string &out_path);
 
   // Export spanning set of trees with GP branch lengths.
-  void ExportSpanningTreesWithGPBranchLengths(const std::string &out_path) const;
+  void ExportCoveringTreesWithGPBranchLengths(const std::string &out_path) const;
   // Export spanning set of trees with TP branch lengths.
   void ExportTopTreesWithTPBranchLengths(const std::string &out_path) const;
 
@@ -191,10 +191,10 @@ class GPInstance {
       bool track_intermediate_iterations = false,
       std::optional<OptimizationMethod> method = std::nullopt);
 
-  std::vector<RootedTree> TPEngineGenerateSpanningTrees();
+  std::vector<RootedTree> TPEngineGenerateCoveringTrees();
   TPEngine::TreeIdTreeMap TPEngineGenerateTopRootedTrees();
 
-  void TPEngineExportSpanningTrees(const std::string &out_path);
+  void TPEngineExportCoveringTrees(const std::string &out_path);
   void TPEngineExportTopTrees(const std::string &out_path);
 
   // ** NNI Evaluation Engine

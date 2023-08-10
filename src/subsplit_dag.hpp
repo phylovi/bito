@@ -439,10 +439,10 @@ class SubsplitDAG {
   std::string ToNewickOfAllTopologies() const;
 
   // Generate a set of tree topologies that span all nodes and edges in the DAG.
-  Node::NodePtrVec GenerateSpanningTopologies() const;
-  std::vector<RootedTree> GenerateSpanningTrees(
+  Node::NodePtrVec GenerateCoveringTopologies() const;
+  std::vector<RootedTree> GenerateCoveringTrees(
       const EigenVectorXd &dag_branch_length) const;
-  std::string ToNewickOfSpanningTopologies() const;
+  std::string ToNewickOfCoveringTopologies() const;
 
   // ** Modify DAG
   // These methods are for directly modifying the DAG by adding or removing nodes and

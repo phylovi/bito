@@ -45,6 +45,7 @@ using TaxonId = GenericId<struct TaxonIdTag>;
 
 using StringTaxonIdMap = std::unordered_map<std::string, TaxonId>;
 using BitsetNodeIdMap = std::unordered_map<Bitset, NodeId>;
+using BitsetNodeIdVectorMap = std::unordered_map<Bitset, std::vector<NodeId>>;
 using NodeIdBitsetMap = std::unordered_map<NodeId, Bitset>;
 using EdgeIdPair = std::pair<EdgeId, EdgeId>;
 using NodeIdPair = std::pair<NodeId, NodeId>;

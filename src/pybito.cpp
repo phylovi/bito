@@ -826,8 +826,8 @@ PYBIND11_MODULE(bito, m) {
       .def("topology_to_newick_topology", &GPDAG::TopologyToNewickTopology)
       .def("generate_all_topologies", &GPDAG::GenerateAllTopologies)
       .def("to_newick_of_all_topologies", &GPDAG::ToNewickOfAllTopologies)
-      .def("generate_spanning_topologies", &GPDAG::GenerateSpanningTopologies)
-      .def("to_newick_of_spanning_topologies", &GPDAG::ToNewickOfSpanningTopologies);
+      .def("generate_covering_topologies", &GPDAG::GenerateCoveringTopologies)
+      .def("to_newick_of_covering_topologies", &GPDAG::ToNewickOfCoveringTopologies);
 
   py::class_<GraftDAG> graft_dag_class(m, "graft_dag",
                                        "Subsplit DAG for grafting nodes and edges.");

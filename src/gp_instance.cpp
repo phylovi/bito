@@ -767,9 +767,9 @@ void GPInstance::SubsplitDAGToDot(const std::string &out_path,
   out_stream.close();
 }
 
-void GPInstance::ExportSpanningTreesWithGPBranchLengths(
+void GPInstance::ExportCoveringTreesWithGPBranchLengths(
     const std::string &out_path) const {
-  const auto trees = GetDAG().GenerateSpanningTrees(GetGPEngine().GetBranchLengths());
+  const auto trees = GetDAG().GenerateCoveringTrees(GetGPEngine().GetBranchLengths());
   std::ofstream out_file;
   out_file.open(out_path);
   for (auto tree : trees) {
@@ -821,18 +821,18 @@ void GPInstance::TPEngineSetBranchLengthsByTakingFirst() {
                                               GetDAG().BuildEdgeIndexer());
 }
 
-std::vector<RootedTree> GPInstance::TPEngineGenerateSpanningTrees() {
-  return GetDAG().GenerateSpanningTrees(GetTPEngine().GetBranchLengths());
+std::vector<RootedTree> GPInstance::TPEngineGenerateCoveringTrees() {
+  return GetDAG().GenerateCoveringTrees(GetTPEngine().GetBranchLengths());
 }
 
 TPEngine::TreeIdTreeMap GPInstance::TPEngineGenerateTopRootedTrees() {
   return GetTPEngine().BuildMapOfTreeIdToTopTrees();
 }
 
-void GPInstance::TPEngineExportSpanningTrees(const std::string &out_path) {
+void GPInstance::TPEngineExportCoveringTrees(const std::string &out_path) {
   std::ofstream file_out;
   file_out.open(out_path);
-  auto trees = GetDAG().GenerateSpanningTrees(GetTPEngine().GetBranchLengths());
+  auto trees = GetDAG().GenerateCoveringTrees(GetTPEngine().GetBranchLengths());
   for (const auto &tree : trees) {
     file_out << tree.Newick() << std::endl;
   }
