@@ -570,12 +570,6 @@ class SubsplitDAGStorage {
     if (!result.has_value()) {
       return {};
     }
-    // if (std::get<0>(result.value()).value_ >= lines_.size()) {
-    //   std::cerr << "ERROR: GetLine -- parent-child vertice pair reference value "
-    //                "outside of line range."
-    //             << std::endl;
-    //   return {};
-    // }
     return lines_.at(std::get<0>(result.value()).value_);
   }
 
