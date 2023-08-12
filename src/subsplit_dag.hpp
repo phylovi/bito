@@ -703,6 +703,10 @@ class SubsplitDAG {
   // reserved for leaf subsplits. The last entries are reserved for rootsplits. The DAG
   // root node has the highest node id.
   BitsetNodeIdMap subsplit_to_id_;
+
+  BitsetNodeIdVectorMap subsplit_union_;
+  BitsetNodeIdVectorMap subsplit_clade_;
+
   // - Map of all DAG Nodes:
   //    - [ Node Subsplit (Bitset) => (begin, end) Range of Child Ids ]
   // This indexer is an expanded version of parent_to_child_range_ in sbn_instance:

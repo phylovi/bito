@@ -1109,6 +1109,23 @@ NodeId SubsplitDAG::CreateAndInsertNode(const Bitset &subsplit) {
   NodeId node_id = NodeId(NodeCount());
   storage_.AddVertex({node_id, subsplit});
   SafeInsert(subsplit_to_id_, subsplit, node_id);
+
+  const auto subsplit_union = subsplit.SubsplitCladeUnion();
+  if (subsplit_union_.find(subsplit_union) == subsplit_union_.end()) {
+    subsplit_union_[subsplit_union] = NodeIdVector();
+  }
+  subsplit_union_[subsplit_union].push_back(node_id);
+  const auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
+  if (subsplit_clade_.find(subsplit_left) == subsplit_clade_.end()) {
+    subsplit_clade_[subsplit_left] = NodeIdVector();
+  }
+  subsplit_clade_[subsplit_left].push_back(node_id);
+  const auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
+  if (subsplit_clade_.find(subsplit_right) == subsplit_clade_.end()) {
+    subsplit_clade_[subsplit_right] = NodeIdVector();
+  }
+  subsplit_clade_[subsplit_right].push_back(node_id);
+
   return node_id;
 }
 
@@ -1611,29 +1628,84 @@ RootedTree SubsplitDAG::BuildTreeFromTopology(
 // ** Build Output Indexers/Vectors
 
 NodeIdVectorPair SubsplitDAG::BuildParentIdVectors(const Bitset &subsplit) const {
-  NodeIdVector left_parents, right_parents;
   // Linear search for all parents.
+  NodeIdVector left_parents1, right_parents1;
   for (const auto &[potential_parent_subsplit, node_id] : subsplit_to_id_) {
     if (subsplit.SubsplitIsLeftChildOf(potential_parent_subsplit)) {
-      left_parents.push_back(node_id);
+      left_parents1.push_back(node_id);
     } else if (subsplit.SubsplitIsRightChildOf(potential_parent_subsplit)) {
-      right_parents.push_back(node_id);
+      right_parents1.push_back(node_id);
     }
   }
-  return {left_parents, right_parents};
+
+  // Map lookup: Find parents by looking for nodes in DAG where one of their clades
+  // match this subsplit's clade union.
+  NodeIdVector left_parents, right_parents;
+  const auto subsplit_union = subsplit.SubsplitCladeUnion();
+  if (subsplit_clade_.find(subsplit_union) == subsplit_clade_.end()) {
+    return {left_parents, right_parents};
+  }
+  const auto &parents = subsplit_clade_.find(subsplit_union)->second;
+  for (const auto parent_id : parents) {
+    const auto parent_subsplit = GetDAGNodeBitset(parent_id);
+    for (const auto clade : SubsplitCladeEnum::Iterator()) {
+      const auto parent_clade = parent_subsplit.SubsplitGetClade(clade);
+      if (parent_clade == subsplit_union) {
+        if (clade == SubsplitClade::Left) {
+          left_parents.push_back(parent_id);
+        } else {
+          right_parents.push_back(parent_id);
+        }
+      }
+    }
+  }
+
+  if (left_parents != left_parents1 and right_parents != right_parents1) {
+    std::cout << "BuildParentIdVectors [begin]" << std::endl;
+    std::cout << "LinearSearch: " << left_parents1 << " " << right_parents1
+              << std::endl;
+    std::cout << "MapSearch: " << left_parents << " " << right_parents << std::endl;
+    std::cout << "BuildParentIdVectors [end]" << std::endl;
+  }
+
+  return {left_parents1, right_parents1};
 }
 
 NodeIdVectorPair SubsplitDAG::BuildChildIdVectors(const Bitset &subsplit) const {
-  NodeIdVector left_children, right_children;
   // Linear search for all children.
+  NodeIdVector left_children1, right_children1;
   for (const auto &[potential_child_subsplit, node_id] : subsplit_to_id_) {
     if (potential_child_subsplit.SubsplitIsLeftChildOf(subsplit)) {
-      left_children.push_back(node_id);
+      left_children1.push_back(node_id);
     } else if (potential_child_subsplit.SubsplitIsRightChildOf(subsplit)) {
-      right_children.push_back(node_id);
+      right_children1.push_back(node_id);
     }
   }
-  return {left_children, right_children};
+
+  // Map lookup: Find children by looking for nodes in DAG where their clade union is
+  // equal to one of the clades of this subsplit.
+  NodeIdVector left_children, right_children;
+  auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
+  if (subsplit_union_.find(subsplit_left) != subsplit_union_.end()) {
+    const auto &left_children_input = subsplit_union_.find(subsplit_left)->second;
+    left_children.assign(left_children_input.begin(), left_children_input.end());
+  }
+  auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
+  if (subsplit_union_.find(subsplit_right) != subsplit_union_.end()) {
+    const auto &right_children_input = subsplit_union_.find(subsplit_right)->second;
+    right_children.assign(right_children_input.begin(), right_children_input.end());
+  }
+
+  if (left_children != left_children1 and right_children != right_children1) {
+    std::cout << "BuildChildIdVectors [begin]" << std::endl;
+    std::cout << "Subsplit: " << subsplit << std::endl;
+    std::cout << "LinearSearch: " << left_children1 << " " << right_children1
+              << std::endl;
+    std::cout << "MapSearch: " << left_children << " " << right_children << std::endl;
+    std::cout << "BuildChildIdVectors [end]" << std::endl;
+  }
+
+  return {left_children1, right_children1};
 }
 
 // ** Modify DAG Helpers
@@ -2047,6 +2119,20 @@ void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
   for (const auto &[subsplit, node_id] : subsplit_to_id_) {
     subsplit_to_id_.at(subsplit) =
         NodeId(node_reindexer.GetNewIndexByOldIndex(node_id.value_));
+  }
+  // Update `subsplit_clade_`.
+  for (auto &[subsplit, node_id_vector] : subsplit_clade_) {
+    for (size_t i = 0; i < node_id_vector.size(); i++) {
+      node_id_vector[i] =
+          NodeId(node_reindexer.GetNewIndexByOldIndex(node_id_vector[i].value_));
+    }
+  }
+  // Update `subsplit_clade_`.
+  for (auto &[subsplit, node_id_vector] : subsplit_union_) {
+    for (size_t i = 0; i < node_id_vector.size(); i++) {
+      node_id_vector[i] =
+          NodeId(node_reindexer.GetNewIndexByOldIndex(node_id_vector[i].value_));
+    }
   }
   // Update edges.
   for (auto i : storage_.GetLines()) {
