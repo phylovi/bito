@@ -9,6 +9,14 @@
 #include <string>
 #include <unordered_map>
 
+std::set<std::string> Alignment::GetNames() const {
+  std::set<std::string> names;
+  for (const auto &[name, aln] : data_) {
+    names.insert(name);
+  }
+  return names;
+}
+
 size_t Alignment::Length() const {
   Assert(SequenceCount() > 0,
          "Must have sequences in an alignment to ask for a Length.");

@@ -163,14 +163,20 @@ class NNIEngine {
     return scores;
   }
 
-  // Get number of runs of NNI engine.
-  size_t GetIterationCount() const { return iter_count_; };
-  // Reset number of iterations.
-  void ResetIterationCount() { iter_count_ = 0; }
+  // Get node reindexer
+  const Reindexer &GetNodeReindexer() const { return node_reindexer_; }
+  // Get edge reindexer
+  const Reindexer &GetEdgeReindexer() const { return edge_reindexer_; }
+
   // Get/set whether to re-evaluate rejected nnis.
-  bool GetReevalatuateRejectedNNIs() const { return reevaluate_rejected_nnis_; }
-  void SetReevalatuateRejectedNNIs(const bool reevaluate_rejected_nnis) {
+  bool GetReevaluateRejectedNNIs() const { return reevaluate_rejected_nnis_; }
+  void SetReevaluateRejectedNNIs(const bool reevaluate_rejected_nnis) {
     reevaluate_rejected_nnis_ = reevaluate_rejected_nnis;
+  }
+  // Get/set whether to re-score rejected nnis.
+  bool GetRescoreRejectedNNIs() const { return rescore_rejected_nnis_; }
+  void SetRescoreRejectedNNIs(const bool rescore_rejected_nnis) {
+    rescore_rejected_nnis_ = rescore_rejected_nnis;
   }
   // Get/set whether to include NNIs at containing rootsplits.
   bool GetIncludeRootsplitNNIs() const { return include_rootsplit_nnis_; }
@@ -178,10 +184,10 @@ class NNIEngine {
     include_rootsplit_nnis_ = include_rootsplit_nnis;
   }
 
-  // Get node reindexer
-  const Reindexer &GetNodeReindexer() const { return node_reindexer_; }
-  // Get edge reindexer
-  const Reindexer &GetEdgeReindexer() const { return edge_reindexer_; }
+  // Get number of runs of NNI engine.
+  size_t GetIterationCount() const { return iter_count_; };
+  // Reset number of iterations.
+  void ResetIterationCount() { iter_count_ = 0; }
 
   // ** NNI Evaluation Engine
 
@@ -464,8 +470,14 @@ class NNIEngine {
 
   // Count number of loops executed by engine.
   size_t iter_count_ = 0;
-  // Whether to re-evaluate NNIs that have been rejected in previous iterations.
+  // Count number of proposed NNIs computed.
+  size_t proposed_nnis_computed_ = 0;
+
+  // Whether to re-evaluate rejected NNIs from previous iterations.
   bool reevaluate_rejected_nnis_ = false;
+  // Whether to re-compute scores for rejected NNIs from previous iterations.
+  bool rescore_rejected_nnis_ = true;
+
   // Whether to include NNIs whose parent is a rootsplit.
   bool include_rootsplit_nnis_ = true;
 };

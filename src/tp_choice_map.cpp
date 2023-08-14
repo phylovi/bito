@@ -170,10 +170,10 @@ TPChoiceMap::ExpandedTreeMask TPChoiceMap::ExtractExpandedTreeMask(
                                 ? AdjacentNode::LeftChild
                                 : AdjacentNode::RightChild;
     Assert(tree_mask_ext[parent_id][which_node] == NoId,
-           "Invalid TreeMask: Cannot reassign adjacent node.");
+           "Invalid TreeMask: Cannot reassign adjacent child node.");
     tree_mask_ext[parent_id][which_node] = child_id;
     Assert(tree_mask_ext[child_id][AdjacentNode::Parent] == NoId,
-           "Invalid TreeMask: Cannot reassign adjacent node.");
+           "Invalid TreeMask: Cannot reassign adjacent parent node.");
     tree_mask_ext[child_id][AdjacentNode::Parent] = parent_id;
   }
   return tree_mask_ext;
@@ -491,13 +491,14 @@ std::string TPChoiceMap::EdgeChoiceToString(
 
 std::string TPChoiceMap::ToString() const {
   std::stringstream os;
-  os << "TPChoiceMap: [ ";
+  os << "[ " << std::endl;
   for (EdgeId edge_id = EdgeId(0); edge_id < size(); edge_id++) {
-    os << edge_id << ": ";
+    os << "\t" << edge_id << ": ";
     os << EdgeChoiceToString(GetEdgeChoice(edge_id));
     if (edge_id.value_ + 1 < size()) {
       os << ", ";
     }
+    os << std::endl;
   }
   os << "]";
   return os.str();

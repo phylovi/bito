@@ -22,6 +22,7 @@
 #include "dag_branch_handler.hpp"
 #include "optimization.hpp"
 #include "substitution_model.hpp"
+#include "stopwatch.hpp"
 
 class TPEngine;
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
@@ -216,9 +217,13 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   void IncrementOptimizationCount() { branch_handler_.IncrementOptimizationCount(); }
   void ResetOptimizationCount() { branch_handler_.ResetOptimizationCount(); }
 
-  bool IsOptimizeNewEdges() const { return optimize_new_edges_; }
+  size_t IsOptimizeNewEdges() const { return optimize_new_edges_; }
   void SetOptimizeNewEdges(const bool optimize_new_edges) {
     optimize_new_edges_ = optimize_new_edges;
+  }
+  size_t GetOptimizationMaxIteration() const { return optimize_max_iter_; }
+  void SetOptimizationMaxIteration(const size_t optimize_max_iter) {
+    optimize_max_iter_ = optimize_max_iter;
   }
 
   // ** Access

@@ -7,3 +7,7 @@ bito_extra(noodle EXCLUDE_FROM_ALL
 bito_extra(reps_and_likelihoods EXCLUDE_FROM_ALL
   reps_and_likelihoods.cpp
 )
+
+bito_extra(benchmark EXCLUDE_FROM_ALL
+  benchmark.cpp
+)

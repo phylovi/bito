@@ -88,6 +88,12 @@ class Node {
   size_t Hash() const { return hash_; }
   bool IsLeaf() const { return children_.empty(); }
   const NodePtrVec& Children() const { return children_; }
+  void AddChild(NodePtr child) { children_.push_back(child); }
+  void AddChildren(NodePtr left_child, NodePtr right_child) {
+    children_.resize(2);
+    children_[0] = left_child;
+    children_[1] = right_child;
+  }
 
   // Creates a subsplit bitset from given node. Requires tree must be bifurcating.
   Bitset BuildSubsplit() const;
@@ -96,9 +102,9 @@ class Node {
   Bitset BuildPCSP(const SubsplitClade clade) const;
 
   // Creates a vector of all subsplit bitsets for all nodes in topology.
-  std::vector<Bitset> BuildVectorOfSubsplits() const;
+  std::unordered_set<Bitset> BuildSetOfSubsplits() const;
   // Creates a vector of all PCSP bitsets for all edges in topology.
-  std::vector<Bitset> BuildVectorOfPCSPs() const;
+  std::unordered_set<Bitset> BuildSetOfPCSPs() const;
 
   bool operator==(const Node& other) const;
 
@@ -152,7 +158,8 @@ class Node {
   // This function prepares the id_ and leaves_ member variables as described at
   // the start of this document. It returns a map that maps the tags to their
   // indices. It's the verb, not the nationality.
-  TagSizeMap Polish();
+  TagSizeMap Polish(bool update_leaves = true,
+                    std::optional<size_t> leaf_count_opt = std::nullopt);
 
   NodePtr Deroot();
 

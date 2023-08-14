@@ -76,20 +76,20 @@ Bitset Node::BuildPCSP(const SubsplitClade clade) const {
   return Bitset::PCSP(parent_subsplit, child_subsplit);
 }
 
-std::vector<Bitset> Node::BuildVectorOfSubsplits() const {
-  std::vector<Bitset> subsplit_bitsets;
+std::unordered_set<Bitset> Node::BuildSetOfSubsplits() const {
+  std::unordered_set<Bitset> subsplit_bitsets;
   Preorder([this, &subsplit_bitsets](const Node* node) {
-    subsplit_bitsets.push_back(node->BuildSubsplit());
+    subsplit_bitsets.insert(node->BuildSubsplit());
   });
   return subsplit_bitsets;
 }
 
-std::vector<Bitset> Node::BuildVectorOfPCSPs() const {
-  std::vector<Bitset> pcsp_bitsets;
+std::unordered_set<Bitset> Node::BuildSetOfPCSPs() const {
+  std::unordered_set<Bitset> pcsp_bitsets;
   Preorder([this, &pcsp_bitsets](const Node* node) {
     if (!node->IsLeaf()) {
       for (const auto clade : {SubsplitClade::Left, SubsplitClade::Right}) {
-        pcsp_bitsets.push_back(node->BuildPCSP(clade));
+        pcsp_bitsets.insert(node->BuildPCSP(clade));
       }
     }
   });
@@ -380,14 +380,17 @@ void Node::RootedSisterAndLeafTraversal(TwoNodeFun f) const {
 // the number of nodes in the tree.
 //
 // This function returns a map that maps the tags to their ids.
-TagSizeMap Node::Polish() {
+TagSizeMap Node::Polish(bool update_leaves, std::optional<size_t> leaf_count_opt) {
   TagSizeMap tag_id_map;
-  const size_t leaf_count = MaxLeafID() + 1;
+  const size_t leaf_count =
+      leaf_count_opt.has_value() ? leaf_count_opt.value() : MaxLeafID() + 1;
   size_t next_id = leaf_count;
-  MutablePostorder([&tag_id_map, &next_id, &leaf_count](Node* node) {
+  MutablePostorder([&tag_id_map, &next_id, &leaf_count, &update_leaves](Node* node) {
     if (node->IsLeaf()) {
-      node->id_ = node->MaxLeafID();
-      node->leaves_ = Bitset::Singleton(leaf_count, node->id_);
+      if (update_leaves) {
+        node->id_ = node->MaxLeafID();
+        node->leaves_ = Bitset::Singleton(leaf_count, node->id_);
+      }
     } else {
       node->id_ = next_id;
       next_id++;

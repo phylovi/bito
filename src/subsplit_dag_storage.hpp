@@ -45,6 +45,7 @@ using TaxonId = GenericId<struct TaxonIdTag>;
 
 using StringTaxonIdMap = std::unordered_map<std::string, TaxonId>;
 using BitsetNodeIdMap = std::unordered_map<Bitset, NodeId>;
+using BitsetNodeIdVectorMap = std::unordered_map<Bitset, std::vector<NodeId>>;
 using NodeIdBitsetMap = std::unordered_map<NodeId, Bitset>;
 using EdgeIdPair = std::pair<EdgeId, EdgeId>;
 using NodeIdPair = std::pair<NodeId, NodeId>;
@@ -695,6 +696,38 @@ class SubsplitDAGStorage {
       }
     }
     return std::nullopt;
+  }
+
+  void Print() const {
+    std::cout << "== LINES ==" << std::endl;
+    for (size_t id = 0; id < lines_.size(); id++) {
+      auto& line = lines_[id];
+      std::cout << "[" << id << "]: { id::" << line.GetId()
+                << " parent::" << line.GetParent() << " child::" << line.GetChild()
+                << " }" << std::endl;
+    }
+    std::cout << "== VERTICES ==" << std::endl;
+    for (size_t id = 0; id < vertices_.size(); id++) {
+      auto& node = vertices_[id];
+      std::cout << "[" << id << " " << node.GetId() << "]: { ";
+      for (const auto dir : DirectionEnum::Iterator()) {
+        for (const auto clade : SubsplitCladeEnum::Iterator()) {
+          std::cout << "[ ";
+          for (const auto adj_node_id : node.GetNeighbors(dir, clade)) {
+            std::cout << "adj::" << adj_node_id << " ";
+            auto parent = (dir == Direction::Leafward) ? node.GetId() : adj_node_id;
+            auto child = (dir == Direction::Rootward) ? adj_node_id : node.GetId();
+            auto result = vertices_.at(parent.value_).FindNeighbor(child);
+            if (result.has_value()) {
+              auto line_id = std::get<0>(result.value()).value_;
+              std::cout << "line::" << line_id << " ";
+            }
+          }
+          std::cout << " ]";
+        }
+      }
+      std::cout << "} " << std::endl;
+    }
   }
 
  private:

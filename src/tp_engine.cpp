@@ -7,10 +7,13 @@
 #include "gp_engine.hpp"
 #include "sbn_maps.hpp"
 #include "optimization.hpp"
+#include "stopwatch.hpp"
 
 TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
                    std::optional<std::string> mmap_likelihood_path,
-                   std::optional<std::string> mmap_parsimony_path)
+                   std::optional<std::string> mmap_parsimony_path,
+                   std::optional<const RootedTreeCollection> tree_collection,
+                   std::optional<const BitsetSizeMap> edge_indexer)
     : choice_map_(dag), site_pattern_(site_pattern), dag_(&dag) {
   // Initialize site pattern-based data.
   auto weights = site_pattern_.GetWeights();
@@ -19,7 +22,13 @@ TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
   GrowNodeData(GetDAG().NodeCount(), std::nullopt, std::nullopt, true);
   // Initialize edge-based data
   GrowEdgeData(GetDAG().EdgeCountWithLeafSubsplits(), std::nullopt, std::nullopt, true);
-  // Initialize scores.
+  // Initialize Tree Source.
+  if (tree_collection.has_value() && edge_indexer.has_value()) {
+    SetTreeSourceByTakingFirst(tree_collection.value(), edge_indexer.value());
+  } else {
+    std::fill(GetTreeSource().begin(), GetTreeSource().end(), TreeId{1});
+  }
+  // Initialize Choice Map.
   InitializeChoiceMap();
   // Initialize Eval Engines
   if (mmap_likelihood_path.has_value()) {
@@ -28,42 +37,187 @@ TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
   if (mmap_parsimony_path.has_value()) {
     MakeParsimonyEvalEngine(mmap_parsimony_path.value());
   }
+  InitializeScores();
+}
+
+// ** Comparators
+
+int TPEngine::Compare(const TPEngine &lhs, const TPEngine &rhs, const bool is_quiet) {
+  std::stringstream dev_null;
+  auto &os = is_quiet ? dev_null : std::cout;
+
+  if (lhs.GetDAG() != rhs.GetDAG()) {
+    os << "TPEngine::Compare: DAGs are not equal." << std::endl;
+    return SubsplitDAG::Compare(lhs.GetDAG(), rhs.GetDAG(), is_quiet);
+  }
+  const auto node_map =
+      SubsplitDAG::BuildNodeIdMapBetweenDAGs(lhs.GetDAG(), rhs.GetDAG());
+  if (node_map.size() != lhs.GetDAG().NodeCount()) {
+    os << "TPEngine::Compare: node_maps do not cover entire node set: "
+       << node_map.size() << " " << lhs.GetDAG().NodeCount() << " "
+       << rhs.GetDAG().NodeCount() << std::endl;
+    return node_map.size() - lhs.GetDAG().NodeCount();
+  }
+  const auto edge_map =
+      SubsplitDAG::BuildEdgeIdMapBetweenDAGs(lhs.GetDAG(), rhs.GetDAG());
+  if (edge_map.size() != lhs.GetDAG().EdgeCountWithLeafSubsplits()) {
+    os << "TPEngine::Compare: edge_maps do not cover entire edge set: "
+       << edge_map.size() << " " << lhs.GetDAG().EdgeCountWithLeafSubsplits() << " "
+       << rhs.GetDAG().EdgeCountWithLeafSubsplits() << std::endl;
+    return edge_map.size() - lhs.GetDAG().EdgeCountWithLeafSubsplits();
+  }
+
+  auto TranslateEdgeChoice =
+      [&edge_map](const TPChoiceMap::EdgeChoice &pre_edge_choice) {
+        TPChoiceMap::EdgeChoice edge_choice(pre_edge_choice);
+        if (pre_edge_choice.parent_edge_id != NoId) {
+          edge_choice.parent_edge_id =
+              edge_map.find(pre_edge_choice.parent_edge_id)->second;
+        }
+        if (pre_edge_choice.sister_edge_id != NoId) {
+          edge_choice.sister_edge_id =
+              edge_map.find(pre_edge_choice.sister_edge_id)->second;
+        }
+        if (pre_edge_choice.left_child_edge_id != NoId) {
+          edge_choice.left_child_edge_id =
+              edge_map.find(pre_edge_choice.left_child_edge_id)->second;
+        }
+        if (pre_edge_choice.right_child_edge_id != NoId) {
+          edge_choice.right_child_edge_id =
+              edge_map.find(pre_edge_choice.right_child_edge_id)->second;
+        }
+
+        return edge_choice;
+      };
+
+  auto CompareEdgeChoice = [](const TPChoiceMap::EdgeChoice &lhs,
+                              const TPChoiceMap::EdgeChoice &rhs) {
+    if (lhs.parent_edge_id != rhs.parent_edge_id) {
+      return int(lhs.parent_edge_id.value_ - rhs.parent_edge_id.value_);
+    }
+    if (lhs.sister_edge_id != rhs.sister_edge_id) {
+      return int(lhs.sister_edge_id.value_ - rhs.sister_edge_id.value_);
+    }
+    if ((lhs.left_child_edge_id != rhs.left_child_edge_id) or
+        (lhs.right_child_edge_id != rhs.left_child_edge_id)) {
+      // Right and left child can be swapped due to taxon bitset ordering.
+      if ((lhs.left_child_edge_id == rhs.right_child_edge_id) and
+          (lhs.right_child_edge_id == rhs.left_child_edge_id)) {
+        return 0;
+      }
+      if (lhs.left_child_edge_id != rhs.left_child_edge_id) {
+        return int(lhs.left_child_edge_id.value_ - rhs.left_child_edge_id.value_);
+      }
+      return int(lhs.right_child_edge_id.value_ - rhs.right_child_edge_id.value_);
+    }
+    return 0;
+  };
+
+  int final_diff = 0;
+  for (const auto [lhs_edge_id, rhs_edge_id] : edge_map) {
+    const auto &lhs_choice = lhs.GetChoiceMap(lhs_edge_id);
+    const auto &rhs_choice = rhs.GetChoiceMap(rhs_edge_id);
+    auto trans_choice = TranslateEdgeChoice(lhs_choice);
+    auto choice_diff = CompareEdgeChoice(trans_choice, rhs_choice);
+    if (choice_diff != 0) {
+      os << "TPEngine::Compare: edge_choice does not match at -- " << lhs_edge_id << " "
+         << rhs_edge_id << std::endl;
+      os << "lhs_choice_map: " << lhs_edge_id << " " << lhs_choice << std::endl;
+      os << "trans_choice_map: " << lhs_edge_id << " " << trans_choice << std::endl;
+      os << "rhs_choice_map: " << rhs_edge_id << " " << rhs_choice << std::endl;
+
+      for (const auto dir : DirectionEnum::Iterator()) {
+        auto &hs = lhs;
+        auto &hs2 = rhs;
+        auto edge_id = lhs_edge_id;
+        const auto node_id = (dir == Direction::Leafward)
+                                 ? hs.GetDAG().GetDAGEdge(edge_id).GetChild()
+                                 : hs.GetDAG().GetDAGEdge(edge_id).GetParent();
+        const auto &node = hs.GetDAG().GetDAGNode(node_id);
+        for (const auto clade : SubsplitCladeEnum::Iterator()) {
+          const auto &adj_node_ids = node.GetNeighbors(dir, clade);
+          os << "hs::" << DirectionEnum::ToString(dir) << ":"
+             << SubsplitCladeEnum::ToString(clade) << ": ";
+          for (const auto adj_node_id : adj_node_ids) {
+            auto edge_id = (dir == Direction::Leafward)
+                               ? hs.GetDAG().GetEdgeIdx(node.Id(), adj_node_id)
+                               : hs.GetDAG().GetEdgeIdx(adj_node_id, node.Id());
+            os << "Edge" << edge_id << "->"
+               << "Tree" << hs.GetTreeSource(edge_id) << " => ";
+            os << "Edge" << edge_map.find(edge_id)->second << "->"
+               << "Tree" << hs2.GetTreeSource(edge_map.find(edge_id)->second) << ", ";
+          }
+          os << std::endl;
+        }
+      }
+
+      final_diff = choice_diff;
+    }
+  }
+  if (lhs.HasLikelihoodEvalEngine() && rhs.HasLikelihoodEvalEngine()) {
+    auto branch_diff =
+        DAGBranchHandler::Compare(lhs.GetLikelihoodEvalEngine().GetDAGBranchHandler(),
+                                  rhs.GetLikelihoodEvalEngine().GetDAGBranchHandler());
+    if (branch_diff != 0) {
+      os << "TPEngine::Compare: Branch lengths do not match" << std::endl;
+      final_diff = branch_diff;
+    }
+  }
+
+  return final_diff;
+}
+
+bool operator==(const TPEngine &lhs, const TPEngine &rhs) {
+  return TPEngine::Compare(lhs, rhs) == 0;
 }
 
 // ** Maintenance
 
-void TPEngine::Initialize() { InitializeChoiceMap(); }
+void TPEngine::Initialize() {
+  // Initialize node-based data
+  GrowNodeData(GetDAG().NodeCount(), std::nullopt, std::nullopt, true);
+  // Initialize edge-based data
+  GrowEdgeData(GetDAG().EdgeCountWithLeafSubsplits(), std::nullopt, std::nullopt, true);
+  // Initialize scores.
+  InitializeChoiceMap();
+}
 
 void TPEngine::UpdateAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
-    const size_t prev_edge_count, const Reindexer &edge_reindexer) {
+    const size_t prev_edge_count, const Reindexer &edge_reindexer, bool is_quiet) {
+  std::stringstream dev_null;
+  std::ostream &os = (is_quiet ? dev_null : std::cout);
+  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   UpdateChoiceMapAfterModifyingDAG(nni_to_pre_nni, prev_node_count, node_reindexer,
                                    prev_edge_count, edge_reindexer);
-  if (HasLikelihoodEvalEngine()) {
+  os << "UpdateAfterModifying::ChoiceMap: " << timer.Lap() << std::endl;
+  if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().UpdateEngineAfterModifyingDAG(
         nni_to_pre_nni, prev_node_count, node_reindexer, prev_edge_count,
         edge_reindexer);
+    os << "UpdateAfterModifying::LikelihoodEvalEngine: " << timer.Lap() << std::endl;
   }
-  if (HasParsimonyEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine)) {
     GetParsimonyEvalEngine().UpdateEngineAfterModifyingDAG(
         nni_to_pre_nni, prev_node_count, node_reindexer, prev_edge_count,
         edge_reindexer);
+    os << "UpdateAfterModifying::ParsimonyEvalEngine: " << timer.Lap() << std::endl;
   }
 }
 
 // ** Tree/Topology Builder
 
+Node::Topology TPEngine::GetTopTopologyWithEdge(const EdgeId edge_id) const {
+  auto topology = GetChoiceMap().ExtractTopology(edge_id);
+  return topology;
+}
+
 RootedTree TPEngine::GetTopTreeWithEdge(const EdgeId edge_id) const {
   Assert(HasLikelihoodEvalEngine(),
          "Must MakeLikelihoodEvalEngine before getting top tree.");
-  auto topology = GetTopTreeTopologyWithEdge(edge_id);
+  auto topology = GetTopTopologyWithEdge(edge_id);
   return BuildTreeFromTopologyInDAG(topology);
-}
-
-Node::Topology TPEngine::GetTopTreeTopologyWithEdge(const EdgeId edge_id) const {
-  auto topology = GetChoiceMap().ExtractTopology(edge_id);
-  return topology;
 }
 
 RootedTree TPEngine::BuildTreeFromTopologyInDAG(const Node::Topology &topology) const {
@@ -86,57 +240,99 @@ std::set<EdgeId> TPEngine::BuildSetOfEdgesRepresentingTopology(
   return edges;
 }
 
-TreeId TPEngine::FindTopTreeIdInTreeEdgeVector(
-    const std::vector<EdgeId> tree_edge_ids) const {
-  Assert(!tree_edge_ids.empty(), "EdgeVector representation of tree cannot be empty.");
-  TreeId tree_id = GetTreeSource(tree_edge_ids[0]);
-  for (const auto edge_id : tree_edge_ids) {
-    TreeId new_tree_id = GetTreeSource()[edge_id.value_];
-    if (new_tree_id > tree_id) {
-      tree_id = new_tree_id;
-    }
+std::set<TreeId> TPEngine::FindTreeIdsInTreeEdgeVector(
+    const std::set<EdgeId> edge_ids) const {
+  Assert(!edge_ids.empty(), "EdgeVector representation of tree cannot be empty.");
+  std::set<TreeId> tree_ids;
+  for (const auto edge_id : edge_ids) {
+    tree_ids.insert(GetTreeSource()[edge_id.value_]);
   }
-  return tree_id;
+  return tree_ids;
 }
 
-std::vector<std::pair<std::vector<EdgeId>, Node::Topology>>
-TPEngine::BuildMapOfEdgeIdToTopTreeTopologies() const {
+TPEngine::EdgeIdTopologyMap TPEngine::BuildMapOfEdgeIdToTopTopologies() const {
+  EdgeIdTopologyMap topology_map;
   BoolVector visited_edges(GetEdgeCount(), false);
-  std::vector<std::pair<std::vector<EdgeId>, Node::Topology>> topology_map;
   // Ignore rootsplit edges.
-  for (const auto edge_id : GetDAG().GetRootsplitNodeIds()) {
+  for (const auto edge_id : GetDAG().GetRootsplitEdgeIds()) {
     visited_edges[edge_id.value_] = true;
   }
   // Build trees as we encounter edges not yet assigned to a tree.
-  for (auto edge_id = EdgeId(0); edge_id < GetDAG().EdgeCountWithLeafSubsplits();
-       edge_id++) {
-    if (!visited_edges[edge_id.value_]) {
-      const auto top_topology = GetTopTreeTopologyWithEdge(edge_id);
-      const auto tree_visited_edges = BuildSetOfEdgesRepresentingTopology(top_topology);
-      std::vector<EdgeId> new_visited_edges;
-      for (const auto edge_id : tree_visited_edges) {
-        if (!visited_edges[edge_id.value_]) {
-          new_visited_edges.push_back(edge_id);
-        }
-        visited_edges[edge_id.value_] = true;
-      }
-      topology_map.push_back({new_visited_edges, top_topology});
+  for (EdgeId edge_id(0); edge_id < GetDAG().EdgeCountWithLeafSubsplits(); edge_id++) {
+    if (visited_edges[edge_id.value_]) {
+      continue;
     }
+    const auto top_topology = GetTopTopologyWithEdge(edge_id);
+    const auto tree_visited_edges = BuildSetOfEdgesRepresentingTopology(top_topology);
+    std::set<EdgeId> new_visited_edges;
+    // For edges contained in the tree, add them if edge has not already been assigned
+    // to previous tree.
+    for (const auto edge_id : tree_visited_edges) {
+      if (!visited_edges[edge_id.value_]) {
+        new_visited_edges.insert(edge_id);
+      }
+      visited_edges[edge_id.value_] = true;
+    }
+    topology_map.push_back({new_visited_edges, top_topology});
+  }
+  if (!std::all_of(visited_edges.begin(), visited_edges.end(),
+                   [](bool n) { return n; })) {
+    Failwith("Top Topologies does not cover entire DAG.");
   }
   return topology_map;
 }
 
-std::unordered_map<TreeId, Node::Topology>
-TPEngine::BuildMapOfTreeIdToTopTreeTopologies() const {
-  std::unordered_map<TreeId, Node::Topology> topology_map;
-  const auto edge_topology_map = BuildMapOfEdgeIdToTopTreeTopologies();
+TPEngine::TreeIdTopologyMap TPEngine::BuildMapOfTreeIdToTopTopologies() const {
+  TreeIdTopologyMap topology_map;
+  const auto edge_topology_map = BuildMapOfEdgeIdToTopTopologies();
   for (const auto &[edge_ids, topology] : edge_topology_map) {
-    auto tree_id = FindTopTreeIdInTreeEdgeVector(edge_ids);
-    Assert(topology_map.find(tree_id) == topology_map.end(),
-           "Two different topologies have identical tree ids.");
-    topology_map[tree_id] = topology;
+    const auto tree_ids = FindTreeIdsInTreeEdgeVector(edge_ids);
+    const auto tree_id = *std::min_element(tree_ids.begin(), tree_ids.end());
+    if (topology_map.find(tree_id) == topology_map.end()) {
+      topology_map[tree_id] = std::vector<Node::Topology>();
+    }
+    topology_map[tree_id].push_back(topology);
   }
   return topology_map;
+}
+
+TPEngine::TreeIdTreeMap TPEngine::BuildMapOfTreeIdToTopTrees() const {
+  TreeIdTreeMap tree_map;
+  const auto topology_map = BuildMapOfTreeIdToTopTopologies();
+  for (const auto &[tree_id, topology_vec] : topology_map) {
+    tree_map[tree_id] = std::vector<RootedTree>();
+    for (const auto topology : topology_vec) {
+      RootedTree tree = BuildTreeFromTopologyInDAG(topology);
+      tree_map[tree_id].push_back(tree);
+    }
+  }
+  return tree_map;
+}
+
+std::string TPEngine::ToNewickOfTopTopologies() const {
+  std::stringstream str;
+  const auto topology_map = BuildMapOfTreeIdToTopTopologies();
+  for (TreeId tree_id(0); tree_id < GetMaxTreeId(); tree_id++) {
+    if (topology_map.find(tree_id) == topology_map.end()) continue;
+    const auto &topology_vec = topology_map.find(tree_id)->second;
+    for (const auto topology : topology_vec) {
+      str << topology->Newick(std::nullopt, GetDAG().GetTagTaxonMap()) << std::endl;
+    }
+  }
+  return str.str();
+}
+
+std::string TPEngine::ToNewickOfTopTrees() const {
+  std::stringstream str;
+  const auto tree_map = BuildMapOfTreeIdToTopTrees();
+  for (TreeId tree_id(0); tree_id < GetMaxTreeId(); tree_id++) {
+    if (tree_map.find(tree_id) == tree_map.end()) continue;
+    const auto &tree_vec = tree_map.find(tree_id)->second;
+    for (const auto tree : tree_vec) {
+      str << tree.Newick(GetDAG().GetTagTaxonMap()) << std::endl;
+    }
+  }
+  return str.str();
 }
 
 TPChoiceMap::EdgeChoicePCSPs TPEngine::BuildAdjacentPCSPsToProposedNNI(
@@ -168,6 +364,9 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
+  Stopwatch full_timer(true, Stopwatch::TimeScale::SecondScale);
+  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
+
   const size_t new_edge_count = edge_reindexer.size();
   // Tree counter for assigning a unique tree id for each NNI added to the DAG.
   tree_counter_++;
@@ -202,6 +401,13 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
       BuildBestEdgeMapOverNNIs(nnis, prev_edge_count, edge_reindexer);
   std::unordered_map<EdgeId, EdgeId> best_edge_map;
   for (const auto &[pcsp, pre_edge_id] : best_pcsp_edge_map) {
+    if (!GetDAG().ContainsEdge(pcsp)) {
+      std::cerr << "PCSP not found in DAG: " << pcsp.PCSPToString() << std::endl;
+      std::cerr << "NNIs: " << std::endl;
+      for (const auto &[post_nni, pre_nni] : nni_to_pre_nni) {
+        std::cerr << post_nni.GetCentralEdgePCSP().PCSPToString() << std::endl;
+      }
+    }
     const auto post_edge_id = GetDAG().GetEdgeIdx(pcsp);
     best_edge_map[post_edge_id] = pre_edge_id;
   }
@@ -225,8 +431,7 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
         GetRemappedEdgeChoiceFromPreNNIToPostNNI(pre_nni, post_nni);
 
     // Use edge mapping to update each edge.
-    auto UpdateEdge = [this, &best_edge_map, &nni_tree_id,
-                       &new_edges](const EdgeId post_edge_id) {
+    auto UpdateEdge = [this, &nni_tree_id, &new_edges](const EdgeId post_edge_id) {
       // Update tree source.
       if (GetTreeSource(post_edge_id) > nni_tree_id) {
         GetTreeSource(post_edge_id) = nni_tree_id;
@@ -248,6 +453,11 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
   // For non-central edges, initialize their choicemap.
   for (const auto edge_id : edges_to_init_choicemap) {
     UpdateEdgeChoiceByTakingHighestPriorityTree(edge_id);
+    GetTreeSource(edge_id) = nni_tree_id;
+
+    // Increment source tree priority.
+    nni_tree_id++;
+    tree_counter_++;
   }
   // Update adjacent edge choice.
   for (const auto &[post_nni, pre_nni] : nni_to_pre_nni) {
@@ -323,40 +533,41 @@ void TPEngine::UpdateEdgeChoiceByTakingHighestPriorityTree(const EdgeId edge_id)
   const auto edge = GetDAG().GetDAGEdge(EdgeId(edge_id));
   // GetChoiceMap().ResetEdgeChoice(edge_id);
 
-  auto GetBestEdgeIdByHighestPriorityTree =
-      [this, edge_id](const NodeId node_id, const Direction direction,
-                      const SubsplitClade clade, TreeId *opt_tree_id = nullptr) {
-        auto best_tree_id = TreeId(NoId);
-        auto best_edge_id = EdgeId(NoId);
-        if (!GetDAG().ContainsNode(node_id)) {
-          std::cout << "Encountered invalid node id during edge choice update: Edge"
-                    << edge_id << " Node" << node_id << std::endl;
-        }
-        const auto &node = GetDAG().GetDAGNode(node_id);
-        bool has_first_edge = false;
-        for (const auto adj_node_id : node.GetNeighbors(direction, clade)) {
-          const auto parent_node_id =
-              (direction == Direction::Rootward) ? adj_node_id : node_id;
-          const auto child_node_id =
-              (direction == Direction::Rootward) ? node_id : adj_node_id;
-          const auto adj_edge_id = GetDAG().GetEdgeIdx(parent_node_id, child_node_id);
-          auto adj_tree_id = GetTreeSource()[adj_edge_id.value_];
-          if ((best_tree_id > adj_tree_id) || !has_first_edge) {
-            best_tree_id = adj_tree_id;
-            best_edge_id = adj_edge_id;
-            has_first_edge = true;
-          }
-        }
-        if (opt_tree_id) {
-          *opt_tree_id = best_tree_id;
-        }
-        return best_edge_id;
-      };
+  auto GetBestEdgeIdByHighestPriorityTree = [this, edge_id](
+                                                const NodeId node_id,
+                                                const Direction direction,
+                                                const SubsplitClade clade,
+                                                TreeId *opt_tree_id = nullptr) {
+    auto best_tree_id = TreeId(NoId);
+    auto best_edge_id = EdgeId(NoId);
+    if (!GetDAG().ContainsNode(node_id)) {
+      std::cerr << "ERROR: Encountered invalid node id during edge choice update: Edge"
+                << edge_id << " Node" << node_id << std::endl;
+    }
+    const auto &node = GetDAG().GetDAGNode(node_id);
+    bool has_first_edge = false;
+    for (const auto adj_node_id : node.GetNeighbors(direction, clade)) {
+      const auto parent_node_id =
+          (direction == Direction::Rootward) ? adj_node_id : node_id;
+      const auto child_node_id =
+          (direction == Direction::Rootward) ? node_id : adj_node_id;
+      const auto adj_edge_id = GetDAG().GetEdgeIdx(parent_node_id, child_node_id);
+      auto adj_tree_id = GetTreeSource()[adj_edge_id.value_];
+      if ((best_tree_id > adj_tree_id) || !has_first_edge) {
+        best_tree_id = adj_tree_id;
+        best_edge_id = adj_edge_id;
+        has_first_edge = true;
+      }
+    }
+    if (opt_tree_id) {
+      *opt_tree_id = best_tree_id;
+    }
+    return best_edge_id;
+  };
 
   auto best_edge_id = EdgeId(NoId);
   auto best_tree_id = TreeId(NoId);
   // Select parent.
-  // std::cout << "select_parent" << std::endl;
   for (const auto clade : SubsplitCladeEnum::Iterator()) {
     TreeId clade_tree_id = TreeId(NoId);
     const auto clade_edge_id = GetBestEdgeIdByHighestPriorityTree(
@@ -368,17 +579,14 @@ void TPEngine::UpdateEdgeChoiceByTakingHighestPriorityTree(const EdgeId edge_id)
   }
   GetChoiceMap().SetEdgeChoice(edge_id, AdjacentEdge::Parent, best_edge_id);
   // Select sister.
-  // std::cout << "select_sister" << std::endl;
   best_edge_id = GetBestEdgeIdByHighestPriorityTree(
       edge.GetParent(), Direction::Leafward, Bitset::Opposite(edge.GetSubsplitClade()));
   GetChoiceMap().SetEdgeChoice(edge_id, AdjacentEdge::Sister, best_edge_id);
   // Select left child.
-  // std::cout << "select_leftchild" << std::endl;
   best_edge_id = GetBestEdgeIdByHighestPriorityTree(
       edge.GetChild(), Direction::Leafward, SubsplitClade::Left);
   GetChoiceMap().SetEdgeChoice(edge_id, AdjacentEdge::LeftChild, best_edge_id);
   // Select right child.
-  // std::cout << "select_rightchild" << std::endl;
   best_edge_id = GetBestEdgeIdByHighestPriorityTree(
       edge.GetChild(), Direction::Leafward, SubsplitClade::Right);
   GetChoiceMap().SetEdgeChoice(edge_id, AdjacentEdge::RightChild, best_edge_id);
@@ -404,7 +612,6 @@ void TPEngine::SetTreeSourceByTakingFirst(const RootedTreeCollection &tree_colle
   };
   RootedSBNMaps::FunctionOverRootedTreeCollection(set_tree_source, tree_collection,
                                                   edge_indexer, NoId);
-
   // Set tree source map for rootsplit edges from the best tree.
   const auto root_node = GetDAG().GetDAGNode(GetDAG().GetDAGRootNodeId());
   for (const auto rootsplit_node_id : GetDAG().GetRootsplitNodeIds()) {
@@ -513,7 +720,7 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
         grandparent_node = parent_map[parent_node->Id()];
       }
       // Find sister node.
-      for (const auto& childx_node : parent_node->Children()) {
+      for (const auto &childx_node : parent_node->Children()) {
         if (childx_node->Id() != child_node->Id()) {
           sister_node = childx_node.get();
         }
@@ -544,7 +751,7 @@ NNIOperation TPEngine::FindHighestPriorityNeighborNNIInDAG(
       nni_found = true;
       const auto edge_id = GetDAG().GetEdgeIdx(pre_nni.value());
       const auto tree_id = GetTreeSource(edge_id);
-      if ((clade == SubsplitClade::Left) || (best_tree_id.value_ > tree_id.value_)) {
+      if ((best_tree_id == NoId) || (best_tree_id.value_ > tree_id.value_)) {
         best_tree_id = tree_id;
         best_pre_nni = pre_nni.value();
       }
@@ -740,10 +947,10 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
     const NNISet &nnis, std::optional<const size_t> prev_edge_count,
     std::optional<const Reindexer> edge_reindexer) const {
   // Stores the best pre-NNI reference edge.
-  std::unordered_map<Bitset, EdgeId> best_edge_id;
+  std::unordered_map<Bitset, EdgeId> best_edge_ids;
   // Stores the best edge's tree id.
-  std::unordered_map<Bitset, TreeId> best_tree_id;
-  // Checks if edge is a most recent addition.
+  std::unordered_map<Bitset, TreeId> best_tree_ids;
+  // Checks if edge was added by most recent iteration.
   auto IsEdgeOld = [this, &prev_edge_count, &edge_reindexer](const EdgeId edge_id) {
     if (!prev_edge_count.has_value()) {
       return true;
@@ -755,27 +962,27 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
     return false;
   };
   // Update map if better edge is found.
-  auto AssignBestEdge = [this, &best_edge_id, &best_tree_id, &IsEdgeOld](
+  auto AssignBestEdge = [this, &best_edge_ids, &best_tree_ids, &IsEdgeOld](
                             const Bitset &pcsp, const EdgeId proposed_edge_id) {
-    // If edge was not recently added, ref itself with the highest priority,
+    // If edge was not recently added, reference itself with the highest priority,
     if (GetDAG().ContainsEdge(pcsp)) {
       const auto edge_id = GetDAG().GetEdgeIdx(pcsp);
       if (IsEdgeOld(edge_id)) {
-        best_edge_id[pcsp] = edge_id;
-        best_tree_id[pcsp] = TreeId(0);
+        best_edge_ids[pcsp] = edge_id;
+        best_tree_ids[pcsp] = TreeId(0);
       }
     }
-    // If edge_id has not been seen yet or current reference edge has a higher tree_id,
-    // then update.
-    if ((best_edge_id.find(pcsp) == best_edge_id.end()) ||
-        (best_tree_id[pcsp] > GetTreeSource(proposed_edge_id))) {
-      best_edge_id[pcsp] = proposed_edge_id;
-      best_tree_id[pcsp] = GetTreeSource(proposed_edge_id);
+    // If edge_id has not been seen yet or current reference edge has a higher
+    // tree_id, then update.
+    if ((best_edge_ids.find(pcsp) == best_edge_ids.end()) ||
+        (best_tree_ids[pcsp] > GetTreeSource(proposed_edge_id))) {
+      best_edge_ids[pcsp] = proposed_edge_id;
+      best_tree_ids[pcsp] = GetTreeSource(proposed_edge_id);
     }
   };
 
   // Iterate over NNIs to find best branches.
-  for (const auto& post_nni : nnis) {
+  for (const auto &post_nni : nnis) {
     // Get pre_nni and build map between them.
     const NNIOperation pre_nni = FindHighestPriorityNeighborNNIInDAG(post_nni);
     const auto pre_edge_id = GetDAG().GetEdgeIdx(pre_nni);
@@ -787,6 +994,13 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
         RemapEdgeChoiceFromPreNNIToPostNNI(pre_choice, rev_clade_map);
     const auto adj_node_ids =
         GetChoiceMap().GetNodeIdsFromEdgeChoice(mapped_pre_choice);
+    if ((adj_node_ids.parent_node_id == NoId) &&
+        (adj_node_ids.sister_node_id == NoId) &&
+        (adj_node_ids.left_child_node_id == NoId) &&
+        (adj_node_ids.right_child_node_id == NoId)) {
+      std::cerr << "WARNING: Skipped NNI -- " << post_nni << std::endl;
+      continue;
+    }
     // Parent edge.
     const auto &parent_subsplit =
         GetDAG().GetDAGNodeBitset(adj_node_ids.parent_node_id);
@@ -811,7 +1025,7 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
     const auto rightchild_pcsp = Bitset::PCSP(post_nni.GetChild(), rightchild_subsplit);
     AssignBestEdge(rightchild_pcsp, mapped_pre_choice.right_child_edge_id);
   }
-  return best_edge_id;
+  return best_edge_ids;
 }
 
 // ** Branch Lengths

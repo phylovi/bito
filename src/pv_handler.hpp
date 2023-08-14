@@ -235,6 +235,24 @@ class PartialVectorHandler {
 
   // ** PV Operations
 
+  std::pair<double, double> ValueRange(const PVId pvid) const {
+    const auto &pv = GetPV(pvid);
+    double max_value = -INFINITY;
+    double min_value = INFINITY;
+    for (int i = 0; i < pv.rows(); i++) {
+      for (int j = 0; j < pv.cols(); j++) {
+        double value = pv(i, j);
+        if (max_value < value) {
+          max_value = value;
+        }
+        if (min_value > value) {
+          min_value = value;
+        }
+      }
+    }
+    return {min_value, max_value};
+  }
+
   // Element-wise PV unary operations.
   using UnaryFunction = std::function<double(const double)>;
   void ApplyUnaryOperation(const PVId dest_pvid, const PVId src_pvid_a,

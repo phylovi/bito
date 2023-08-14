@@ -14,6 +14,8 @@ class Alignment {
   explicit Alignment(StringStringMap data) : data_(std::move(data)) {}
   // Return map of taxon names to sequence alignments.
   StringStringMap Data() const { return data_; }
+  // Return list of names.
+  std::set<std::string> GetNames() const;
   // Number of taxon sequences in data map.
   size_t SequenceCount() const { return data_.size(); }
   // The length of the sequence alignments.

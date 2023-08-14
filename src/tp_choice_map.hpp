@@ -221,12 +221,12 @@ class TPChoiceMap {
   std::string EdgeChoiceToString(const EdgeId edge_id) const;
   // Output edge choice map to string.
   static std::string EdgeChoiceToString(const EdgeChoice &edge_choice);
-  // Output full choice map to iostream.
+  // Output full choice map to string.
   std::string ToString() const;
 
-  // Output edge choice map to iostream.
+  // Output edge choice map.
   friend std::ostream &operator<<(std::ostream &os, const EdgeChoice &edge_choice);
-  // Output full choice map to iostream.
+  // Output full choice map.
   friend std::ostream &operator<<(std::ostream &os, const TPChoiceMap &choice_map);
 
  private:

@@ -141,6 +141,9 @@ class DAGData {
     Reindexer::ReindexInPlace<VectorType, DataType>(data_vec_, reindexer, length);
   }
 
+  auto begin() { return data_vec_.begin(); }
+  auto end() { return data_vec_.end(); }
+
  protected:
   // Data vector
   VectorType data_vec_;

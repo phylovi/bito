@@ -224,6 +224,7 @@ class NNIEvalEngineViaGP : public NNIEvalEngine {
   // likelihood and last NNI's offset (number of edges adjacent to NNI).
   std::pair<double, size_t> ComputeAdjacentNNILikelihood(const NNIOperation &nni,
                                                          const size_t offset = 0);
+
   template <typename T>
   struct AdjEdges {
     std::vector<T> parents;
@@ -323,8 +324,12 @@ class NNIEvalEngineViaGP : public NNIEvalEngine {
   // Unowned reference to GPEngine.
   GPEngine *gp_engine_ = nullptr;
 
+  // Spare work space for NNI search.
   size_t spare_nodes_per_nni_ = 2;
   size_t spare_edges_per_nni_ = 5;
+
+  // Whether to use uniform SBN parameters
+  bool use_null_priors_ = false;
 };
 
 // NNIEngine helper for evaluating NNIs by using Top Pruning.  Calls TPEngine

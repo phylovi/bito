@@ -153,15 +153,13 @@ PYBIND11_MODULE(bito, m) {
           },
           "Build PCSP edge bitset of edge below node.")
       .def(
-          "build_vector_of_subsplits",
-          [](const RootedTree &self) {
-            return self.Topology()->BuildVectorOfSubsplits();
-          },
-          "Build a vector of all subsplit bitsets for all nodes in topology.")
+          "build_set_of_subsplits",
+          [](const RootedTree &self) { return self.Topology()->BuildSetOfSubsplits(); },
+          "Build set of all subsplit bitsets for all nodes in topology.")
       .def(
-          "build_vector_of_pcsps",
-          [](const RootedTree &self) { return self.Topology()->BuildVectorOfPCSPs(); },
-          "Build vector of all PCSP edge bitsets for all edges in topology.");
+          "build_set_of_pcsps",
+          [](const RootedTree &self) { return self.Topology()->BuildSetOfPCSPs(); },
+          "Build set of all PCSP edge bitsets for all edges in topology.");
 
   // CLASS
   // RootedTreeCollection
@@ -727,14 +725,22 @@ PYBIND11_MODULE(bito, m) {
       .def("make_gp_engine", &GPInstance::MakeGPEngine, "Initialize GP Engine.",
            py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_,
            py::arg("use_gradients") = false)
-      .def("get_gp_engine", &GPInstance::GetGPEngine,
-           py::return_value_policy::reference, "Get GP Engine.")
+      // .def("get_gp_engine", &GPInstance::GetGPEngine,
+      //      py::return_value_policy::reference, "Get GP Engine.")
+      .def(
+          "get_gp_engine",
+          [](GPInstance &self) -> GPEngine * { return &self.GetGPEngine(); },
+          py::return_value_policy::reference, "Get GP Engine.")
       .def("make_nni_engine", &GPInstance::MakeNNIEngine, "Initialize NNI Engine.")
-      .def("get_nni_engine", &GPInstance::GetNNIEngine,
-           py::return_value_policy::reference, "Get NNI Engine.")
+      .def(
+          "get_nni_engine",
+          [](GPInstance &self) -> NNIEngine * { return &self.GetNNIEngine(); },
+          py::return_value_policy::reference, "Get Subsplit DAG.")
       .def("make_tp_engine", &GPInstance::MakeTPEngine, "Initialize TP Engine.")
-      .def("get_tp_engine", &GPInstance::GetTPEngine,
-           py::return_value_policy::reference, "Get TP Engine.")
+      .def(
+          "get_tp_engine",
+          [](GPInstance &self) -> TPEngine * { return &self.GetTPEngine(); },
+          py::return_value_policy::reference, "Get TP Engine.")
       .def("tp_engine_set_branch_lengths_by_taking_first",
            &GPInstance::TPEngineSetBranchLengthsByTakingFirst)
       .def("tp_engine_set_choice_map_by_taking_first",
@@ -786,12 +792,10 @@ PYBIND11_MODULE(bito, m) {
                              const NNIOperation &nni) { return self.GetEdgeIdx(nni); })
       .def("get_taxon_map", &GPDAG::GetTaxonMap,
            "Get map of taxon names contained in DAG.")
-      .def("build_sorted_vector_of_node_bitsets",
-           &GPDAG::BuildSortedVectorOfNodeBitsets,
-           "Build a sorted vector of node Subsplit bitsets contained in DAG.")
-      .def("build_sorted_vector_of_edge_bitsets",
-           &GPDAG::BuildSortedVectorOfEdgeBitsets,
-           "Build a sorted vector of edge PCSP bitsets contained in DAG.")
+      .def("build_set_of_node_bitsets", &GPDAG::BuildSetOfNodeBitsets,
+           "Build a set of node Subsplit bitsets contained in DAG.")
+      .def("build_set_of_edge_bitsets", &GPDAG::BuildSetOfEdgeBitsets,
+           "Build a set of edge PCSP bitsets contained in DAG.")
       .def("contains_node",
            [](const GPDAG &self, const Bitset &bitset) {
              return self.ContainsNode(bitset);
@@ -816,10 +820,14 @@ PYBIND11_MODULE(bito, m) {
           "Add parent/child subsplit pair to DAG.")
       .def("fully_connect", &GPDAG::FullyConnect,
            "Adds all valid edges with present nodes to the DAG.")
+      // ** I/O
       .def("tree_to_newick_topology", &GPDAG::TreeToNewickTopology)
       .def("tree_to_newick_tree", &GPDAG::TreeToNewickTree)
       .def("topology_to_newick_topology", &GPDAG::TopologyToNewickTopology)
-      .def("generate_all_topologies", &GPDAG::GenerateAllTopologies);
+      .def("generate_all_topologies", &GPDAG::GenerateAllTopologies)
+      .def("to_newick_of_all_topologies", &GPDAG::ToNewickOfAllTopologies)
+      .def("generate_covering_topologies", &GPDAG::GenerateCoveringTopologies)
+      .def("to_newick_of_covering_topologies", &GPDAG::ToNewickOfCoveringTopologies);
 
   py::class_<GraftDAG> graft_dag_class(m, "graft_dag",
                                        "Subsplit DAG for grafting nodes and edges.");
@@ -864,15 +872,17 @@ PYBIND11_MODULE(bito, m) {
            "Output the top tree likelihood containing given edge.")
       .def("get_top_tree_parsimony_with_edge", &TPEngine::GetTopTreeParsimony,
            "Output the top tree parsimony containing given edge.")
-      .def("get_top_tree_topology_with_edge", &TPEngine::GetTopTreeTopologyWithEdge,
+      .def("get_top_tree_topology_with_edge", &TPEngine::GetTopTopologyWithEdge,
            "Output the top tree of tree containing given edge.")
       // ** Branch Length Optimization
       .def("get_branch_lengths", [](TPEngine &self) { self.GetBranchLengths(); })
       .def("optimize_branch_lengths", &TPEngine::OptimizeBranchLengths,
            py::arg("check_branch_convergence") = std::nullopt)
       // ** I/O
-      .def("build_map_of_tree_id_to_top_tree_topologies",
-           &TPEngine::BuildMapOfTreeIdToTopTreeTopologies);
+      .def("build_map_of_tree_id_to_top_topologies",
+           &TPEngine::BuildMapOfTreeIdToTopTopologies)
+      .def("to_newick_of_top_topologies", &TPEngine::ToNewickOfTopTopologies)
+      .def("to_newick_of_top_trees", &TPEngine::ToNewickOfTopTrees);
 
   py::class_<TPChoiceMap> tp_choice_map_class(
       m, "tp_choice_map", "An choice map for finding the top tree in TPEngine.");
@@ -984,6 +994,8 @@ PYBIND11_MODULE(bito, m) {
       // Options
       .def("set_include_rootsplits", &NNIEngine::SetIncludeRootsplitNNIs,
            "Set whether to include rootsplits in adjacent NNIs")
+      .def("set_reevaluate_rejected_nnis", &NNIEngine::SetReevaluateRejectedNNIs,
+           "Set whether to re-evaluate NNIs which were rejected in a previous pass.")
       // Scoring
       .def("get_score_by_nni", &NNIEngine::GetScoreByNNI, "Get score by NNI.")
       .def("get_score_by_edge", &NNIEngine::GetScoreByEdge, "Get score by EdgeId.");
@@ -1030,12 +1042,12 @@ PYBIND11_MODULE(bito, m) {
           },
           "Build PCSP edge bitset of edge below node.")
       .def(
-          "build_vector_of_subsplits",
-          [](const Node::Topology &self) { return self->BuildVectorOfSubsplits(); },
+          "build_set_of_subsplits",
+          [](const Node::Topology &self) { return self->BuildSetOfSubsplits(); },
           "Build a vector of all subsplit bitsets for all nodes in topology.")
       .def(
-          "build_vector_of_pcsps",
-          [](const Node::Topology &self) { return self->BuildVectorOfPCSPs(); },
+          "build_set_of_pcsps",
+          [](const Node::Topology &self) { return self->BuildSetOfPCSPs(); },
           "Build vector of all PCSP edge bitsets for all edges in topology.")
       .def(
           "to_newick", [](const Node::Topology &self) { return self->Newick(); },
