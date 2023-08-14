@@ -2841,7 +2841,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
     return (newick_1 == newick_2);
   };
 
-  // Export a spanning newick file from TPEngine, then build new DAG from that file.
+  // Export a covering newick file from TPEngine, then build new DAG from that file.
   // Compare to the input DAG.
   auto BuildCoveringNewickAndCompareNewDAG = [](GPInstance& inst_1) {
     const std::string temp_newick_path = "_ignore/temp.newick";
