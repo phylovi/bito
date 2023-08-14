@@ -1641,20 +1641,20 @@ NodeIdVectorPair SubsplitDAG::BuildParentIdVectors(const Bitset &subsplit) const
   // Map lookup: Find parents by looking for nodes in DAG where one of their clades
   // match this subsplit's clade union.
   NodeIdVector left_parents, right_parents;
+
   const auto subsplit_union = subsplit.SubsplitCladeUnion();
-  if (subsplit_clade_.find(subsplit_union) == subsplit_clade_.end()) {
-    return {left_parents, right_parents};
-  }
-  const auto &parents = subsplit_clade_.find(subsplit_union)->second;
-  for (const auto parent_id : parents) {
-    const auto parent_subsplit = GetDAGNodeBitset(parent_id);
-    for (const auto clade : SubsplitCladeEnum::Iterator()) {
-      const auto parent_clade = parent_subsplit.SubsplitGetClade(clade);
-      if (parent_clade == subsplit_union) {
-        if (clade == SubsplitClade::Left) {
-          left_parents.push_back(parent_id);
-        } else {
-          right_parents.push_back(parent_id);
+  if (subsplit_clade_.find(subsplit_union) != subsplit_clade_.end()) {
+    const auto &parents = subsplit_clade_.find(subsplit_union)->second;
+    for (const auto parent_id : parents) {
+      const auto parent_subsplit = GetDAGNodeBitset(parent_id);
+      for (const auto clade : SubsplitCladeEnum::Iterator()) {
+        const auto parent_clade = parent_subsplit.SubsplitGetClade(clade);
+        if (parent_clade == subsplit_union) {
+          if (clade == SubsplitClade::Left) {
+            left_parents.push_back(parent_id);
+          } else {
+            right_parents.push_back(parent_id);
+          }
         }
       }
     }
