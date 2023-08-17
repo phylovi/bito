@@ -3102,7 +3102,7 @@ auto TestParentNodeIds = [](const GPDAG& dag, const Bitset& subsplit) {
 
     std::cout << "FindParentNodeIds [FAIL_END]" << std::endl;
   } else {
-    // std::cout << "FindParentNodeIds [PASS]" << std::endl;
+    std::cout << "FindParentNodeIds [PASS]" << std::endl;
   }
 
   return matches;
@@ -3151,7 +3151,7 @@ auto TestChildNodeIds = [](const GPDAG& dag, const Bitset& subsplit) {
 
     std::cout << "FindChildNodeIds [FAIL_END]" << std::endl;
   } else {
-    // std::cout << "FindChildNodeIds [PASS]" << std::endl;
+    std::cout << "FindChildNodeIds [PASS]" << std::endl;
   }
 
   return matches;
