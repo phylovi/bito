@@ -492,8 +492,7 @@ class SubsplitDAG {
   virtual ModificationResult AddNodePair(const Bitset &parent_subsplit,
                                          const Bitset &child_subsplit);
   // Add multiple nodes to the DAG.
-  ModificationResult AddNodes(
-      const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs);
+  ModificationResult AddNodes(const BitsetPairVector &node_subsplit_pairs);
   // Add multiple edges to the DAG.
   ModificationResult AddEdges(const std::vector<Bitset> &edge_subsplits);
 
@@ -684,7 +683,7 @@ class SubsplitDAG {
       const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs);
   // Internal logic helper that inserts node pair without reindexing. Just appends and
   // adds nodes to modification result.
-  bool AddNodePairInternalsWithoutReindexing(
+  void AddNodePairInternalsWithoutReindexing(
       const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs,
       ModificationResult &mods);
 

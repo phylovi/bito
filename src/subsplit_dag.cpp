@@ -1110,28 +1110,30 @@ NodeId SubsplitDAG::CreateAndInsertNode(const Bitset &subsplit) {
   storage_.AddVertex({node_id, subsplit});
   SafeInsert(subsplit_to_id_, subsplit, node_id);
 
-  // Add Node to adjacency maps.
-  if (!subsplit.SubsplitIsUCA()) {
-    // Add clade union to map.
-    const auto subsplit_union = subsplit.SubsplitCladeUnion();
-    if (subsplit_union_.find(subsplit_union) == subsplit_union_.end()) {
-      subsplit_union_[subsplit_union] = NodeIdSet();
+  if (!storage_.HaveHost()) {
+    // Add Node to adjacency maps.
+    if (!subsplit.SubsplitIsUCA()) {
+      // Add clade union to map.
+      const auto subsplit_union = subsplit.SubsplitCladeUnion();
+      if (subsplit_union_.find(subsplit_union) == subsplit_union_.end()) {
+        subsplit_union_[subsplit_union] = NodeIdSet();
+      }
+      subsplit_union_[subsplit_union].insert(node_id);
     }
-    subsplit_union_[subsplit_union].insert(node_id);
-  }
-  if (!subsplit.SubsplitIsLeaf()) {
-    // Add left clade to map.
-    const auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
-    if (subsplit_clade_.find(subsplit_left) == subsplit_clade_.end()) {
-      subsplit_clade_[subsplit_left] = NodeIdSet();
+    if (!subsplit.SubsplitIsLeaf()) {
+      // Add left clade to map.
+      const auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
+      if (subsplit_clade_.find(subsplit_left) == subsplit_clade_.end()) {
+        subsplit_clade_[subsplit_left] = NodeIdSet();
+      }
+      subsplit_clade_[subsplit_left].insert(node_id);
+      // Add right clade to map.
+      const auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
+      if (subsplit_clade_.find(subsplit_right) == subsplit_clade_.end()) {
+        subsplit_clade_[subsplit_right] = NodeIdSet();
+      }
+      subsplit_clade_[subsplit_right].insert(node_id);
     }
-    subsplit_clade_[subsplit_left].insert(node_id);
-    // Add right clade to map.
-    const auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
-    if (subsplit_clade_.find(subsplit_right) == subsplit_clade_.end()) {
-      subsplit_clade_[subsplit_right] = NodeIdSet();
-    }
-    subsplit_clade_[subsplit_right].insert(node_id);
   }
 
   return node_id;
@@ -1710,13 +1712,17 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit) co
 }
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
-  const auto [left, right] = FindParentNodeIdsViaScan(subsplit);
-  return {left, right};
+  if (!storage_.HaveHost()) {
+    return FindParentNodeIdsViaMap(subsplit);
+  }
+  return FindParentNodeIdsViaScan(subsplit);
 }
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
-  const auto [left, right] = FindChildNodeIdsViaScan(subsplit);
-  return {left, right};
+  if (!storage_.HaveHost()) {
+    return FindChildNodeIdsViaMap(subsplit);
+  }
+  return FindChildNodeIdsViaScan(subsplit);
 }
 
 NodeId SubsplitDAG::FindFirstParentNodeId(const Bitset &subsplit) const {
@@ -1845,7 +1851,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
 }
 
 SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
-    const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs) {
+    const BitsetPairVector &node_subsplit_pairs) {
   return AddNodePairInternals(node_subsplit_pairs);
 }
 
@@ -1915,7 +1921,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
   return mods;
 }
 
-bool SubsplitDAG::AddNodePairInternalsWithoutReindexing(
+void SubsplitDAG::AddNodePairInternalsWithoutReindexing(
     const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs,
     ModificationResult &mods) {
   for (const auto &[parent_subsplit, child_subsplit] : node_subsplit_pairs) {
@@ -2102,7 +2108,6 @@ bool SubsplitDAG::IsValidAddNodePair(const Bitset &parent_subsplit,
   return true;
 }
 
-// Get the number of adjacent nodes in the given direction.
 SizePair SubsplitDAG::GetSubsplitNodeNeighborCounts(const Bitset &subsplit,
                                                     const Direction direction) const {
   const auto [left, right] = (direction == Direction::Rootward)

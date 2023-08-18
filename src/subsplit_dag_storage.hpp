@@ -59,6 +59,7 @@ using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 using EdgeIdBitsetMap = std::unordered_map<EdgeId, Bitset>;
 using BitsetEdgeIdPairMap = std::unordered_map<Bitset, EdgeIdPair>;
 using NodeIdVectorPair = std::pair<NodeIdVector, NodeIdVector>;
+using BitsetPairVector = std::vector<std::pair<Bitset, Bitset>>;
 
 enum class Direction { Rootward, Leafward };
 static const inline size_t DirectionCount = 2;

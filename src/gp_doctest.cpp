@@ -1083,7 +1083,6 @@ TEST_CASE("SubsplitDAG: Add Multiple Nodes") {
   NNIEngine& nni_engine = inst.GetNNIEngine();
   GPDAG dag1 = inst.GetDAG();
   GPDAG dag2 = inst.GetDAG();
-  GraftDAG& graft_dag = nni_engine.GetGraftDAG();
   nni_engine.SyncAdjacentNNIsWithDAG();
 
   // Check unaltered DAG nodes match via map and via linear scan.
@@ -1096,6 +1095,49 @@ TEST_CASE("SubsplitDAG: Add Multiple Nodes") {
                   "Parent nodes found by map lookup do not match those found by linear "
                   "scan (before adding nodes).");
   }
+
+  // Check DAG nodes match after adding nodes individually.
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    auto mods1 = dag1.AddNodePair(nni);
+    for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
+      const auto subsplit = dag1.GetDAGNodeBitset(node_id);
+      CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
+                    "Child nodes found by map lookup do not match those found by "
+                    "linear scan (after adding nodes).");
+      CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
+                    "Parent nodes found by map lookup do not match those found by "
+                    "linear scan (after adding nodes).");
+    }
+  }
+
+  CHECK_MESSAGE(
+      dag1 != dag2,
+      "DAG with nodes added individually incorrectly matches the DAG with nodes "
+      "added collectively (before adding nodes).");
+  // Check DAGs match by adding nodes individually vs all-at-once.
+  std::vector<std::pair<Bitset, Bitset>> node_subsplit_pairs;
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    node_subsplit_pairs.push_back({nni.GetParent(), nni.GetChild()});
+  }
+  dag2.AddNodes(node_subsplit_pairs);
+  CHECK_MESSAGE(dag1 == dag2,
+                "DAG with nodes added individually does not match the DAG with nodes "
+                "added collectively.");
+}
+
+// Compares adding nodes to DAG individually vs adding multiple nodes. Additionally,
+// tests that adjacent nodes from acquired via map lookup match those acquired via
+// linear scan.
+TEST_CASE("SubsplitDAG: Graft Multiple Nodes") {
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  // Instance that will be unaltered.
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  inst.MakeNNIEngine();
+  NNIEngine& nni_engine = inst.GetNNIEngine();
+  GPDAG dag1 = inst.GetDAG();
+  GraftDAG& graft_dag = nni_engine.GetGraftDAG();
+  nni_engine.SyncAdjacentNNIsWithDAG();
 
   // Check DAG nodes match after grafting nodes individually.
   for (const auto nni : nni_engine.GetAdjacentNNIs()) {
@@ -1120,36 +1162,6 @@ TEST_CASE("SubsplitDAG: Add Multiple Nodes") {
                     "linear scan (after removing graft).");
     }
   }
-
-  // Check DAG nodes match after adding nodes individually.
-  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
-    auto mods1 = dag1.AddNodePair(nni);
-    for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
-      const auto subsplit = dag1.GetDAGNodeBitset(node_id);
-      CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
-                    "Child nodes found by map lookup do not match those found by "
-                    "linear scan (after adding nodes).");
-      CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
-                    "Parent nodes found by map lookup do not match those found by "
-                    "linear scan (after adding nodes).");
-    }
-  }
-
-  CHECK_MESSAGE(
-      dag1 != dag2,
-      "DAG with nodes added individually incorrectly matches the DAG with nodes "
-      "added collectively (before adding nodes).");
-
-  // Check DAGs match by adding nodes individually vs all-at-once.
-  std::vector<std::pair<Bitset, Bitset>> node_subsplit_pairs;
-  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
-    node_subsplit_pairs.push_back({nni.GetParent(), nni.GetChild()});
-  }
-  auto mods2 = dag2.AddNodes(node_subsplit_pairs);
-
-  CHECK_MESSAGE(dag1 == dag2,
-                "DAG with nodes added individually does not match the DAG with nodes "
-                "added collectively.");
 }
 
 // Tests DAG after modifying

@@ -617,7 +617,6 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
   const size_t prev_edge_count = GetDAG().EdgeCountWithLeafSubsplits();
   node_reindexer_ = Reindexer::IdentityReindexer(GetDAG().NodeCount());
   edge_reindexer_ = Reindexer::IdentityReindexer(GetDAG().EdgeCountWithLeafSubsplits());
-  size_t nni_count = 0;
   // Build map from NNI to pre-NNI.
   std::map<NNIOperation, NNIOperation> nni_to_pre_nni;
   for (const auto &nni : GetAcceptedNNIs()) {
@@ -634,13 +633,20 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
     Assert(nni_found, "NNI not found to be adjacent to DAG.");
   }
   // Add NNI to DAG.
+  os << "AddAcceptedNNIsToDAG: " << std::endl;
+  // BitsetPairVector nodes_to_add;
+  size_t nni_count = 0;
   for (const auto &nni : GetAcceptedNNIs()) {
     os << "AddAcceptedNNIsToDAG: " << nni_count++ << " of " << GetAcceptedNNIs().size()
        << std::endl;
     auto mods = GetDAG().AddNodePair(nni);
     node_reindexer_ = node_reindexer_.ComposeWith(mods.node_reindexer);
     edge_reindexer_ = edge_reindexer_.ComposeWith(mods.edge_reindexer);
+    // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
   }
+  // auto mods = GetDAG().AddNodes(nodes_to_add);
+  // node_reindexer_ = mods.node_reindexer;
+  // edge_reindexer_ = mods.edge_reindexer;
   os << "AddAcceptedNNIsToDAG::AddAll: " << timer.Lap() << std::endl;
 
   GrowEvalEngineForDAG(node_reindexer_, edge_reindexer_);
