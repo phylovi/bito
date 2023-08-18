@@ -974,6 +974,228 @@ TEST_CASE("SubsplitDAG: Only add child node tests") {
            EdgeId(7));
 }
 
+// Checks that parent nodes found via scan match found via map.
+auto TestParentNodeIds = [](const GPDAG& dag, const Bitset& subsplit) {
+  const auto [left_via_map, right_via_map] = dag.FindParentNodeIdsViaMap(subsplit);
+  const auto [left_via_scan, right_via_scan] = dag.FindParentNodeIdsViaScan(subsplit);
+  std::unordered_set<NodeId> left_via_map_set(left_via_map.begin(), left_via_map.end());
+  std::unordered_set<NodeId> right_via_map_set(right_via_map.begin(),
+                                               right_via_map.end());
+  std::unordered_set<NodeId> left_via_scan_set(left_via_scan.begin(),
+                                               left_via_scan.end());
+  std::unordered_set<NodeId> right_via_scan_set(right_via_scan.begin(),
+                                                right_via_scan.end());
+
+  bool matches = !(left_via_map_set != left_via_scan_set or
+                   right_via_map_set != right_via_scan_set);
+  if (!matches) {
+    std::cout << "FindParentNodeIds [FAIL_BEGIN]" << std::endl;
+    std::cout << "Subsplit: " << subsplit.SubsplitToString() << std::endl;
+    std::cout << "LinearSearch: " << left_via_scan_set << " " << right_via_scan_set
+              << std::endl;
+    std::cout << "MapSearch: " << left_via_map_set << " " << right_via_map_set
+              << std::endl;
+
+    std::cout << "via_map_set: [ ";
+    for (const auto node_id : left_via_map_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] [ ";
+    for (const auto node_id : right_via_map_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] " << std::endl;
+
+    std::cout << "via_scan_set: [ ";
+    for (const auto node_id : left_via_scan_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] [ ";
+    for (const auto node_id : right_via_scan_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] " << std::endl;
+
+    std::cout << "FindParentNodeIds [FAIL_END]" << std::endl;
+  } else {
+    // std::cout << "FindParentNodeIds [PASS]" << std::endl;
+  }
+  return matches;
+};
+// Checks that child nodes found via scan match found via map.
+auto TestChildNodeIds = [](const GPDAG& dag, const Bitset& subsplit) {
+  const auto [left_via_map, right_via_map] = dag.FindChildNodeIdsViaMap(subsplit);
+  const auto [left_via_scan, right_via_scan] = dag.FindChildNodeIdsViaScan(subsplit);
+  std::unordered_set<NodeId> left_via_map_set(left_via_map.begin(), left_via_map.end());
+  std::unordered_set<NodeId> right_via_map_set(right_via_map.begin(),
+                                               right_via_map.end());
+  std::unordered_set<NodeId> left_via_scan_set(left_via_scan.begin(),
+                                               left_via_scan.end());
+  std::unordered_set<NodeId> right_via_scan_set(right_via_scan.begin(),
+                                                right_via_scan.end());
+
+  bool matches = !(left_via_map_set != left_via_scan_set or
+                   right_via_map_set != right_via_scan_set);
+  if (!matches) {
+    std::cout << "FindChildNodeIds [FAIL_BEGIN]" << std::endl;
+    std::cout << "Subsplit: " << subsplit.SubsplitToString() << std::endl;
+    std::cout << "LinearSearch: " << left_via_scan_set << " " << right_via_scan_set
+              << std::endl;
+    std::cout << "MapSearch: " << left_via_map_set << " " << right_via_map_set
+              << std::endl;
+
+    std::cout << "via_map_set: [ ";
+    for (const auto node_id : left_via_map_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] [ ";
+    for (const auto node_id : right_via_map_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] " << std::endl;
+
+    std::cout << "via_scan_set: [ ";
+    for (const auto node_id : left_via_scan_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] [ ";
+    for (const auto node_id : right_via_scan_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] " << std::endl;
+
+    std::cout << "FindChildNodeIds [FAIL_END]" << std::endl;
+  } else {
+    // std::cout << "FindChildNodeIds [PASS]" << std::endl;
+  }
+  return matches;
+};
+
+// Compares adding nodes to DAG individually vs adding multiple nodes. Additionally,
+// tests that adjacent nodes from acquired via map lookup match those acquired via
+// linear scan.
+TEST_CASE("SubsplitDAG: Add Multiple Nodes") {
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  // Instance that will be unaltered.
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  inst.MakeNNIEngine();
+  NNIEngine& nni_engine = inst.GetNNIEngine();
+  GPDAG dag1 = inst.GetDAG();
+  GPDAG dag2 = inst.GetDAG();
+  GraftDAG& graft_dag = nni_engine.GetGraftDAG();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+
+  // Check unaltered DAG nodes match via map and via linear scan.
+  for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
+    const auto subsplit = dag1.GetDAGNodeBitset(node_id);
+    CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
+                  "Child nodes found by map lookup do not match those found by linear "
+                  "scan (before adding nodes).");
+    CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
+                  "Parent nodes found by map lookup do not match those found by linear "
+                  "scan (before adding nodes).");
+  }
+
+  // Check DAG nodes match after grafting nodes individually.
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    auto mods1 = graft_dag.AddNodePair(nni);
+    for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
+      const auto subsplit = dag1.GetDAGNodeBitset(node_id);
+      CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
+                    "Child nodes found by map lookup do not match those found by "
+                    "linear scan (after adding graft).");
+      CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
+                    "Parent nodes found by map lookup do not match those found by "
+                    "linear scan (after adding graft).");
+    }
+    graft_dag.RemoveAllGrafts();
+    for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
+      const auto subsplit = dag1.GetDAGNodeBitset(node_id);
+      CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
+                    "Child nodes found by map lookup do not match those found by "
+                    "linear scan (after removing graft).");
+      CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
+                    "Parent nodes found by map lookup do not match those found by "
+                    "linear scan (after removing graft).");
+    }
+  }
+
+  // Check DAG nodes match after adding nodes individually.
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    auto mods1 = dag1.AddNodePair(nni);
+    for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
+      const auto subsplit = dag1.GetDAGNodeBitset(node_id);
+      CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
+                    "Child nodes found by map lookup do not match those found by "
+                    "linear scan (after adding nodes).");
+      CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
+                    "Parent nodes found by map lookup do not match those found by "
+                    "linear scan (after adding nodes).");
+    }
+  }
+
+  CHECK_MESSAGE(
+      dag1 != dag2,
+      "DAG with nodes added individually incorrectly matches the DAG with nodes "
+      "added collectively (before adding nodes).");
+
+  // Check DAGs match by adding nodes individually vs all-at-once.
+  std::vector<std::pair<Bitset, Bitset>> node_subsplit_pairs;
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    node_subsplit_pairs.push_back({nni.GetParent(), nni.GetChild()});
+  }
+  auto mods2 = dag2.AddNodes(node_subsplit_pairs);
+
+  CHECK_MESSAGE(dag1 == dag2,
+                "DAG with nodes added individually does not match the DAG with nodes "
+                "added collectively.");
+}
+
+// Tests DAG after modifying
+TEST_CASE("SubsplitDAG: Add Multiple Edges") {
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  // Instance that will be unaltered.
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  inst.MakeNNIEngine();
+  NNIEngine& nni_engine = inst.GetNNIEngine();
+  GPDAG dag2 = inst.GetDAG();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    GPDAG dag1 = inst.GetDAG();
+    // Get connecting nodes.
+    const auto grandparent_nodeid = dag1.FindFirstParentNodeId(nni.GetParent());
+    const auto sister_nodeid =
+        dag1.FindFirstChildNodeId(nni.GetParent(), nni.WhichCladeIsSister());
+    const auto leftchild_nodeid =
+        dag1.FindFirstChildNodeId(nni.GetChild(), SubsplitClade::Left);
+    const auto rightchild_nodeid =
+        dag1.FindFirstChildNodeId(nni.GetChild(), SubsplitClade::Right);
+    std::vector<NodeId> node_ids{
+        {grandparent_nodeid, sister_nodeid, leftchild_nodeid, rightchild_nodeid}};
+    // Get PCSP Bitsets.
+    std::vector<Bitset> pcsps;
+    pcsps.push_back(
+        Bitset::PCSP(dag1.GetDAGNodeBitset(grandparent_nodeid), nni.GetParent()));
+    pcsps.push_back(
+        Bitset::PCSP(nni.GetParent(), dag1.GetDAGNodeBitset(sister_nodeid)));
+    pcsps.push_back(nni.GetCentralEdgePCSP());
+    pcsps.push_back(
+        Bitset::PCSP(nni.GetChild(), dag1.GetDAGNodeBitset(leftchild_nodeid)));
+    pcsps.push_back(
+        Bitset::PCSP(nni.GetChild(), dag1.GetDAGNodeBitset(rightchild_nodeid)));
+    dag1.AddEdges(pcsps);
+    for (const auto pcsp : pcsps) {
+      CHECK_MESSAGE(dag1.ContainsEdge(pcsp), "DAG does not contain added edge.");
+    }
+    CHECK_MESSAGE(
+        dag1.EdgeCountWithLeafSubsplits() == dag2.EdgeCountWithLeafSubsplits() + 5,
+        "DAG does not contain proper number of edges after adding edges.");
+  }
+}
+
 // ** NNIEngine tests **
 
 using NodeMap = std::unordered_map<NodeId, NodeId>;
@@ -3057,171 +3279,4 @@ TEST_CASE("GPInstance: Taxon Sorted Tree Collection") {
       CHECK_MESSAGE(tree_1 != tree_2, "Trees incorrectly found equal.");
     }
   }
-}
-
-auto TestParentNodeIds = [](const GPDAG& dag, const Bitset& subsplit) {
-  const auto [left_via_map, right_via_map] = dag.FindParentNodeIdsViaMap(subsplit);
-  const auto [left_via_scan, right_via_scan] = dag.FindParentNodeIdsViaScan(subsplit);
-  std::unordered_set<NodeId> left_via_map_set(left_via_map.begin(), left_via_map.end());
-  std::unordered_set<NodeId> right_via_map_set(right_via_map.begin(),
-                                               right_via_map.end());
-  std::unordered_set<NodeId> left_via_scan_set(left_via_scan.begin(),
-                                               left_via_scan.end());
-  std::unordered_set<NodeId> right_via_scan_set(right_via_scan.begin(),
-                                                right_via_scan.end());
-
-  bool matches = !(left_via_map_set != left_via_scan_set or
-                   right_via_map_set != right_via_scan_set);
-  if (!matches) {
-    std::cout << "FindParentNodeIds [FAIL_BEGIN]" << std::endl;
-    std::cout << "Subsplit: " << subsplit.SubsplitToString() << std::endl;
-    std::cout << "LinearSearch: " << left_via_scan_set << " " << right_via_scan_set
-              << std::endl;
-    std::cout << "MapSearch: " << left_via_map_set << " " << right_via_scan_set
-              << std::endl;
-
-    std::cout << "via_map_set: [ ";
-    for (const auto node_id : left_via_map_set) {
-      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
-    }
-    std::cout << "] [ ";
-    for (const auto node_id : right_via_map_set) {
-      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
-    }
-    std::cout << "] " << std::endl;
-
-    std::cout << "via_scan_set: [ ";
-    for (const auto node_id : left_via_scan_set) {
-      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
-    }
-    std::cout << "] [ ";
-    for (const auto node_id : right_via_scan_set) {
-      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
-    }
-    std::cout << "] " << std::endl;
-
-    std::cout << "FindParentNodeIds [FAIL_END]" << std::endl;
-  } else {
-    std::cout << "FindParentNodeIds [PASS]" << std::endl;
-  }
-
-  return matches;
-};
-
-auto TestChildNodeIds = [](const GPDAG& dag, const Bitset& subsplit) {
-  const auto [left_via_map, right_via_map] = dag.FindChildNodeIdsViaMap(subsplit);
-  const auto [left_via_scan, right_via_scan] = dag.FindChildNodeIdsViaScan(subsplit);
-  std::unordered_set<NodeId> left_via_map_set(left_via_map.begin(), left_via_map.end());
-  std::unordered_set<NodeId> right_via_map_set(right_via_map.begin(),
-                                               right_via_map.end());
-  std::unordered_set<NodeId> left_via_scan_set(left_via_scan.begin(),
-                                               left_via_scan.end());
-  std::unordered_set<NodeId> right_via_scan_set(right_via_scan.begin(),
-                                                right_via_scan.end());
-
-  bool matches = !(left_via_map_set != left_via_scan_set or
-                   right_via_map_set != right_via_scan_set);
-  if (!matches) {
-    std::cout << "FindChildNodeIds [FAIL_BEGIN]" << std::endl;
-    std::cout << "Subsplit: " << subsplit.SubsplitToString() << std::endl;
-    std::cout << "LinearSearch: " << left_via_scan_set << " " << right_via_scan_set
-              << std::endl;
-    std::cout << "MapSearch: " << left_via_map_set << " " << right_via_map_set
-              << std::endl;
-
-    std::cout << "via_map_set: [ ";
-    for (const auto node_id : left_via_map_set) {
-      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
-    }
-    std::cout << "] [ ";
-    for (const auto node_id : right_via_map_set) {
-      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
-    }
-    std::cout << "] " << std::endl;
-
-    std::cout << "via_scan_set: [ ";
-    for (const auto node_id : left_via_scan_set) {
-      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
-    }
-    std::cout << "] [ ";
-    for (const auto node_id : right_via_scan_set) {
-      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
-    }
-    std::cout << "] " << std::endl;
-
-    std::cout << "FindChildNodeIds [FAIL_END]" << std::endl;
-  } else {
-    std::cout << "FindChildNodeIds [PASS]" << std::endl;
-  }
-
-  return matches;
-};
-
-// Compares adding nodes to DAG individually vs adding multiple nodes. Additionally,
-// tests that adjacent nodes from acquired via map lookup match those acquired via
-// linear scan.
-TEST_CASE("SubsplitDAG: Add Multiple Nodes") {
-  const std::string fasta_path = "data/six_taxon.fasta";
-  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
-  // Instance that will be unaltered.
-  auto pre_inst = GPInstanceOfFiles(fasta_path, newick_path);
-  GPDAG& pre_dag = pre_inst.GetDAG();
-
-  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
-  inst.MakeNNIEngine();
-  NNIEngine& nni_engine = inst.GetNNIEngine();
-  GPDAG dag1 = inst.GetDAG();
-  GPDAG dag2 = inst.GetDAG();
-  GraftDAG& graft_dag = nni_engine.GetGraftDAG();
-  nni_engine.SyncAdjacentNNIsWithDAG();
-
-  // Check unaltered DAG nodes match via map and via linear scan.
-  for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
-    const auto subsplit = dag1.GetDAGNodeBitset(node_id);
-    CHECK_MESSAGE(
-        TestChildNodeIds(dag1, subsplit),
-        "Child nodes do not match those found by linear scan (before adding nodes).");
-    CHECK_MESSAGE(
-        TestParentNodeIds(dag1, subsplit),
-        "Parent nodes do not match those found by linear scan (before adding nodes).");
-  }
-
-  // Check DAG nodes match after adding nodes individually.
-  std::cout << "TestNodeIds AfterAddNodePair [begin]" << std::endl;
-  Reindexer node_reindexer = Reindexer::IdentityReindexer(dag1.NodeCount());
-  Reindexer edge_reindexer =
-      Reindexer::IdentityReindexer(dag1.EdgeCountWithLeafSubsplits());
-  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
-    std::cout << "NNI [begin]: " << nni << std::endl;
-    auto mods1 = dag1.AddNodePair(nni);
-    node_reindexer.ComposeWith(mods1.node_reindexer);
-    edge_reindexer.ComposeWith(mods1.edge_reindexer);
-    for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
-      const auto subsplit = dag1.GetDAGNodeBitset(node_id);
-      CHECK_MESSAGE(
-          TestChildNodeIds(dag1, subsplit),
-          "Child nodes do not match those found by linear scan (after adding nodes).");
-      CHECK_MESSAGE(
-          TestParentNodeIds(dag1, subsplit),
-          "Parent nodes do not match those found by linear scan (after adding nodes).");
-    }
-    std::cout << "NNI [end]: " << nni << std::endl;
-  }
-  std::cout << "TestNodeIds AfterAddNodePair [end]" << std::endl;
-
-  CHECK_MESSAGE(
-      dag1 != dag2,
-      "DAG with nodes added individually incorrectly matches the DAG with nodes "
-      "added collectively (before adding nodes).");
-
-  // Check DAGs match by adding nodes individually vs all-at-once.
-  std::vector<std::pair<Bitset, Bitset>> node_subsplit_pairs;
-  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
-    node_subsplit_pairs.push_back({nni.GetParent(), nni.GetChild()});
-  }
-  auto mods2 = dag2.AddNodes(node_subsplit_pairs);
-
-  CHECK_MESSAGE(dag1 == dag2,
-                "DAG with nodes added individually does not match the DAG with nodes "
-                "added collectively.");
 }

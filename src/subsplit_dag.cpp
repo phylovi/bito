@@ -1112,6 +1112,7 @@ NodeId SubsplitDAG::CreateAndInsertNode(const Bitset &subsplit) {
 
   // Add Node to adjacency maps.
   if (!subsplit.SubsplitIsUCA()) {
+    // Add clade union to map.
     const auto subsplit_union = subsplit.SubsplitCladeUnion();
     if (subsplit_union_.find(subsplit_union) == subsplit_union_.end()) {
       subsplit_union_[subsplit_union] = NodeIdSet();
@@ -1119,11 +1120,13 @@ NodeId SubsplitDAG::CreateAndInsertNode(const Bitset &subsplit) {
     subsplit_union_[subsplit_union].insert(node_id);
   }
   if (!subsplit.SubsplitIsLeaf()) {
+    // Add left clade to map.
     const auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
     if (subsplit_clade_.find(subsplit_left) == subsplit_clade_.end()) {
       subsplit_clade_[subsplit_left] = NodeIdSet();
     }
     subsplit_clade_[subsplit_left].insert(node_id);
+    // Add right clade to map.
     const auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
     if (subsplit_clade_.find(subsplit_right) == subsplit_clade_.end()) {
       subsplit_clade_[subsplit_right] = NodeIdSet();
@@ -1667,12 +1670,12 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaMap(const Bitset &subsplit) con
   if (subsplit.SubsplitIsLeaf()) {
     return {left_children, right_children};
   }
-  auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
+  const auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
   if (subsplit_union_.find(subsplit_left) != subsplit_union_.end()) {
     const auto &left_children_input = subsplit_union_.find(subsplit_left)->second;
     left_children.assign(left_children_input.begin(), left_children_input.end());
   }
-  auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
+  const auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
   if (subsplit_union_.find(subsplit_right) != subsplit_union_.end()) {
     const auto &right_children_input = subsplit_union_.find(subsplit_right)->second;
     right_children.assign(right_children_input.begin(), right_children_input.end());
@@ -1707,15 +1710,33 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit) co
 }
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
-  // const auto [left_via_map, right_via_map] = FindParentNodeIdsViaMap(subsplit);
-  const auto [left_via_scan, right_via_scan] = FindParentNodeIdsViaScan(subsplit);
-  return {left_via_scan, right_via_scan};
+  const auto [left, right] = FindParentNodeIdsViaScan(subsplit);
+  return {left, right};
 }
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
-  // const auto [left_via_map, right_via_map] = FindChildNodeIdsViaMap(subsplit);
-  const auto [left_via_scan, right_via_scan] = FindChildNodeIdsViaScan(subsplit);
-  return {left_via_scan, right_via_scan};
+  const auto [left, right] = FindChildNodeIdsViaScan(subsplit);
+  return {left, right};
+}
+
+NodeId SubsplitDAG::FindFirstParentNodeId(const Bitset &subsplit) const {
+  const auto parents = FindParentNodeIds(subsplit);
+  for (const auto node_ids : {parents.first, parents.second}) {
+    for (const auto node_id : node_ids) {
+      return node_id;
+    }
+  }
+  Failwith("Given subsplit has no parent nodes in DAG.");
+}
+
+NodeId SubsplitDAG::FindFirstChildNodeId(const Bitset &subsplit,
+                                         const SubsplitClade clade) const {
+  const auto [left, right] = FindChildNodeIds(subsplit);
+  const auto &node_ids = (clade == SubsplitClade::Left) ? left : right;
+  for (const auto node_id : node_ids) {
+    return node_id;
+  }
+  Failwith("Given subsplit has no child nodes in DAG.");
 }
 
 // ** Modify DAG Helpers
@@ -1801,10 +1822,7 @@ void SubsplitDAG::ConnectParentToAllParents(const Bitset &parent_subsplit,
 
 // ** Modify DAG
 
-SubsplitDAG::ModificationResult SubsplitDAG::GetModficationResultWithNoChange
-
-    SubsplitDAG::ModificationResult
-    SubsplitDAG::AddNodePair(const NNIOperation &nni) {
+SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const NNIOperation &nni) {
   return AddNodePair(nni.parent_, nni.child_);
 }
 
@@ -1843,8 +1861,8 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   // Initialize output vectors.
   ModificationResult mods;
-  // Note: `prev_node_count` acts as a place marker. We know what the DAG root node id
-  // is (`prev_node_count - 1`).
+  // Note: `prev_node_count` acts as a place marker. We know what the DAG root
+  // node id is (`prev_node_count - 1`).
   mods.prv_node_count = NodeCount();
   mods.prv_edge_count = EdgeCountWithLeafSubsplits();
 
@@ -1859,10 +1877,10 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
       edge_is_new = true;
     }
   }
-  // Soft assert: This allows for parent-child pair to exist in the DAG, but no work
-  // is done. If both the parent and child already exist in DAG, return added_node_ids
-  // and added_edge_idxs as empty, and node_reindexer and edge_reindexer as identity
-  // reindexers.
+  // Soft assert: This allows for parent-child pair to exist in the DAG, but no
+  // work is done. If both the parent and child already exist in DAG, return
+  // added_node_ids and added_edge_idxs as empty, and node_reindexer and
+  // edge_reindexer as identity reindexers.
   if (!edge_is_new) {
     // Return default reindexers if both nodes already exist.
     mods.node_reindexer = Reindexer::IdentityReindexer(NodeCount());
@@ -2203,24 +2221,24 @@ void SubsplitDAG::RemapNodeIds(const Reindexer &node_reindexer) {
         NodeId(node_reindexer.GetNewIndexByOldIndex(node_id.value_));
   }
   // Update `subsplit_clade_`.
-  for (auto &[subsplit, old_node_ids] : subsplit_clade_) {
+  for (auto &[clade, old_node_ids] : subsplit_clade_) {
     NodeIdSet new_node_ids;
     for (const auto old_node_id : old_node_ids) {
       auto new_node_id =
           NodeId(node_reindexer.GetNewIndexByOldIndex(old_node_id.value_));
       new_node_ids.insert(new_node_id);
     }
-    subsplit_clade_[subsplit] = new_node_ids;
+    subsplit_clade_[clade] = new_node_ids;
   }
   // Update `subsplit_union_`.
-  for (auto &[subsplit, old_node_ids] : subsplit_union_) {
+  for (auto &[clade, old_node_ids] : subsplit_union_) {
     NodeIdSet new_node_ids;
     for (const auto old_node_id : old_node_ids) {
       auto new_node_id =
           NodeId(node_reindexer.GetNewIndexByOldIndex(old_node_id.value_));
       new_node_ids.insert(new_node_id);
     }
-    subsplit_clade_[subsplit] = new_node_ids;
+    subsplit_union_[clade] = new_node_ids;
   }
   // Update edges.
   for (auto i : storage_.GetLines()) {

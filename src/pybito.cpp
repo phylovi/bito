@@ -818,6 +818,8 @@ PYBIND11_MODULE(bito, m) {
             self.AddNodePair(parent, child);
           },
           "Add parent/child subsplit pair to DAG.")
+      .def("add_nodes", &GPDAG::AddNodes)
+      .def("add_edges", &GPDAG::AddEdges)
       .def("fully_connect", &GPDAG::FullyConnect,
            "Adds all valid edges with present nodes to the DAG.")
       // ** I/O
