@@ -38,7 +38,7 @@ class GraftDAG : public SubsplitDAG {
     return SubsplitDAG::AddNodePairInternals(parent_subsplit, child_subsplit);
   }
   virtual ModificationResult AddNodes(const BitsetPairVector &node_subsplit_pairs) {
-    return AddNodePairInternals(node_subsplit_pairs);
+    return SubsplitDAG::AddNodePairInternals(node_subsplit_pairs);
   }
 
   // Clear all nodes and edges from graft for reuse.

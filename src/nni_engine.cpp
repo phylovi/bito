@@ -651,9 +651,12 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
 }
 
 void NNIEngine::GraftAdjacentNNIsToDAG() {
+  BitsetPairVector nodes_to_add;
   for (const auto &nni : GetAdjacentNNIs()) {
-    GetGraftDAG().AddNodePair(nni);
+    // GetGraftDAG().AddNodePair(nni);
+    nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
   }
+  GetGraftDAG().AddNodes(nodes_to_add);
 }
 
 void NNIEngine::RemoveAllGraftedNNIsFromDAG() {
