@@ -1712,17 +1712,17 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit) co
 }
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
-  if (!storage_.HaveHost()) {
-    return FindParentNodeIdsViaMap(subsplit);
+  if (storage_.HaveHost()) {
+    return FindParentNodeIdsViaScan(subsplit);
   }
-  return FindParentNodeIdsViaScan(subsplit);
+  return FindParentNodeIdsViaMap(subsplit);
 }
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
-  if (!storage_.HaveHost()) {
-    return FindChildNodeIdsViaMap(subsplit);
+  if (storage_.HaveHost()) {
+    return FindChildNodeIdsViaScan(subsplit);
   }
-  return FindChildNodeIdsViaScan(subsplit);
+  return FindChildNodeIdsViaMap(subsplit);
 }
 
 NodeId SubsplitDAG::FindFirstParentNodeId(const Bitset &subsplit) const {
