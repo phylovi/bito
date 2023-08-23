@@ -187,7 +187,8 @@ void TPEngine::UpdateAfterModifyingDAG(
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer, bool is_quiet) {
   std::stringstream dev_null;
-  std::ostream &os = (is_quiet ? dev_null : std::cout);
+  bool is_quiet_ = false;
+  std::ostream &os = (is_quiet_ ? dev_null : std::cout);
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   UpdateChoiceMapAfterModifyingDAG(nni_to_pre_nni, prev_node_count, node_reindexer,
                                    prev_edge_count, edge_reindexer);

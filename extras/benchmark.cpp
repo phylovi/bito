@@ -39,83 +39,6 @@ void OutputNewickToFile(const std::string& file_path, const std::string& newick_
   file_out.close();
 }
 
-void VerifyAndOutputDAGToTrees(GPInstance& inst, bool verify = false) {
-  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
-  std::string all_newick_path = "_ignore/all_dag.nwk";
-  std::string spanning_newick_path = "_ignore/spanning_dag.nwk";
-  std::string tp_newick_path = "_ignore/tp_dag.nwk";
-
-  auto& dag = inst.GetDAG();
-  auto& tp_engine = inst.GetTPEngine();
-  OutputNewickToFile(all_newick_path, dag.ToNewickOfAllTopologies());
-  OutputNewickToFile(spanning_newick_path, dag.ToNewickOfSpanningTopologies());
-  OutputNewickToFile(tp_newick_path, tp_engine.ToNewickOfTopTopologies());
-
-  std::cout << "# building spanning topologies..." << std::endl;
-  auto spanning_topologies = dag.GenerateSpanningTopologies();
-  std::cout << timer.Lap() << std::endl;
-  std::cout << "SpanningTopologies: " << spanning_topologies.size() << std::endl;
-  std::cout << "# building all topologies..." << std::endl;
-  auto all_topologies = dag.GenerateAllTopologies();
-  std::cout << timer.Lap() << std::endl;
-  std::cout << "AllTopologies: " << all_topologies.size() << std::endl;
-  std::cout << "# building top topologies..." << std::endl;
-  auto top_topologies = tp_engine.BuildMapOfTreeIdToTopTopologies();
-  std::cout << timer.Lap() << std::endl;
-  size_t top_topologies_size = 0;
-  for (const auto& [tree_id, top_topo_vec] : top_topologies) {
-    top_topologies_size += top_topo_vec.size();
-  }
-  std::cout << "TopTopologies: " << top_topologies_size << std::endl;
-  std::cout << std::endl;
-  // std::cout << "==> DAG::AllTopologies:" << std::endl
-  //           << dag.ToNewickOfAllTopologies() << std::endl;
-  // std::cout << "==> DAG::SpanningTopologies:" << std::endl
-  //           << dag.ToNewickOfSpanningTopologies() << std::endl;
-  // std::cout << "==> TPEngine::TopTopologies:" << std::endl
-  //           << tp_engine.ToNewickOfTopTopologies() << std::endl;
-
-  if (!verify) return;
-  for (const auto& newick_path :
-       {all_newick_path, spanning_newick_path, tp_newick_path}) {
-    auto tmp_inst = MakeDAGInstanceFromFiles(inst.GetFastaSourcePath(), newick_path);
-    tmp_inst.MakeDAG();
-    auto& tmp_dag = tmp_inst.GetDAG();
-
-    bool dag_equal = (dag.Compare(tmp_dag, false) == 0);
-    std::cout << "DAG Compare " << (dag_equal ? "PASS" : "FAIL") << ": " << newick_path
-              << std::endl;
-    if (!dag_equal) {
-      std::cout << "node_counts: " << dag.NodeCount() << " " << tmp_dag.NodeCount()
-                << std::endl;
-      std::cout << "edge_counts: " << dag.EdgeCountWithLeafSubsplits() << " "
-                << tmp_dag.EdgeCountWithLeafSubsplits() << std::endl;
-      std::cout << "DAG_A Taxon Map: " << dag.GetTaxonMap() << std::endl;
-      std::cout << "DAG_B Taxon Map: " << tmp_dag.GetTaxonMap() << std::endl;
-      std::cout << "Taxon Translation Map: "
-                << SubsplitDAG::BuildTaxonTranslationMap(dag, tmp_dag) << std::endl;
-    }
-    if (!dag_equal) {
-      auto [common, not_in_rhs, not_in_lhs] =
-          SubsplitDAG::CompareSubsplits(dag, tmp_dag);
-      std::cout << "common: " << common.size() << std::endl;
-      std::cout << "lhs_not_in_rhs: " << not_in_rhs.size() << " " << not_in_rhs
-                << std::endl;
-      std::cout << "rhs_not_in_lhs: " << not_in_lhs.size() << " " << not_in_lhs
-                << std::endl;
-    }
-    if (!dag_equal) {
-      auto [common, not_in_rhs, not_in_lhs] = SubsplitDAG::ComparePCSPs(dag, tmp_dag);
-      std::cout << "common: " << common.size() << std::endl;
-      std::cout << "lhs_not_in_rhs: " << not_in_rhs.size() << " " << not_in_rhs
-                << std::endl;
-      std::cout << "rhs_not_in_lhs: " << not_in_lhs.size() << " " << not_in_lhs
-                << std::endl;
-    }
-  }
-  std::cout << std::endl;
-}
-
 namespace SubsplitSetBuilder {
 void BuildAllSubsplitsRecurse(std::vector<int>& subsplit_assign, size_t n,
                               std::set<Bitset>& results) {
@@ -164,28 +87,20 @@ std::set<Bitset> BuildAllSubsplits(size_t n) {
 
 int main(int argc, char* argv[]) {
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
+
+  // Parse commandline args.
   auto args = GetArgVec(argc, argv);
   if (args.size() < 2 or args.size() > 3) {
     std::cout << "usage: <fasta_path> <newick_path> <search_type_opt>" << std::endl;
     exit(0);
   }
-
   auto fasta_path = args[0];
   auto newick_path = args[1];
-
-  bool use_gp = false;
-  if (args.size() == 3) {
-    if (args[2] == "gp") {
-      use_gp = true;
-    }
-    if (args[2] == "tp") {
-      use_gp = false;
-    }
-  }
 
   std::cout << "Fasta: " << fasta_path << std::endl;
   std::cout << "Newick: " << newick_path << std::endl;
 
+  // Build DAG and Engines.
   auto inst = MakeDAGInstanceFromFiles(fasta_path, newick_path);
   inst.MakeDAG();
   auto& dag = inst.GetDAG();
@@ -195,103 +110,73 @@ int main(int argc, char* argv[]) {
   auto& nni_engine = inst.GetNNIEngine();
   auto& gp_engine = inst.GetGPEngine();
   auto& tp_engine = inst.GetTPEngine();
+  auto& graft_dag = nni_engine.GetGraftDAG();
 
-  // inst.TakeFirstBranchLength();
-  auto& gp_bls = gp_engine.GetBranchLengthHandler();
-  auto& tp_bls = tp_engine.GetLikelihoodEvalEngine().GetDAGBranchHandler();
-
-  std::cout << "Initial DAG: " << dag.TaxonCount() << " " << dag.NodeCount() << " "
-            << dag.EdgeCountWithLeafSubsplits() << std::endl;
-  std::cout << "[before optim]" << std::endl;
-  std::cout << "TPEngine::BranchLengths: " << tp_bls.GetBranchLengthData() << std::endl;
-  std::cout << "GPEngine::BranchLengths: " << gp_bls.GetBranchLengthData() << std::endl;
-
-  size_t optimization_count = 2;
-  inst.EstimateBranchLengths(1e-5, optimization_count, true);
-  tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(optimization_count);
-  tp_engine.GetLikelihoodEvalEngine().BranchLengthOptimization(false);
-  if (use_gp) {
-    nni_engine.SetGPLikelihoodCutoffFilteringScheme(0.0);
-  } else {
-    nni_engine.SetTPLikelihoodCutoffFilteringScheme(0.0);
-  }
+  nni_engine.SetTPLikelihoodCutoffFilteringScheme(0.0);
   nni_engine.SetTopNScoreFilteringScheme(5);
-  nni_engine.SetReevaluateRejectedNNIs(true);
-  nni_engine.RunInit(false);
 
-  std::cout << "[after optim]" << std::endl;
-  std::cout << "TPEngine::BranchLengths: " << tp_bls.GetBranchLengthData() << std::endl;
-  std::cout << "GPEngine::BranchLengths: " << gp_bls.GetBranchLengthData() << std::endl;
+  std::cout << "# Build DAG and NNIEngine: " << timer.Lap() << " sec" << std::endl;
 
-  for (EdgeId edge_id{0}; edge_id < dag.EdgeCountWithLeafSubsplits(); edge_id++) {
-    std::cout << "Edge" << edge_id << " " << dag.GetDAGEdgeBitset(edge_id) << ": "
-              << tp_bls(edge_id) << " " << gp_bls(edge_id) << " "
-              << dag.IsEdgeLeaf(edge_id) << std::endl;
-  }
+  tp_engine.OptimizeBranchLengths();
+  std::cout << "# Optimize Branch Lengths: " << timer.Lap() << " sec" << std::endl;
 
-  std::vector<NNIOperation> added_nnis;
-  size_t iter_max = 2;
-  for (size_t iter = 0; iter < iter_max; iter++) {
-    std::cout << "Iteration: " << iter << " of " << iter_max << std::endl;
+  nni_engine.RunInit();
+  std::cout << "# nni_engine.RunInit(): " << timer.Lap() << " sec" << std::endl;
 
-    std::cout << "Newick: " << tp_engine.ToNewickOfTopTrees() << std::endl;
-    std::ofstream fp;
-    fp.open("_ignore/test_dag.nwk");
-    fp << tp_engine.ToNewickOfTopTrees() << std::endl;
-    fp.close();
+  std::cout << "DAG_COUNTS: " << dag.NodeCount() << " "
+            << dag.EdgeCountWithLeafSubsplits() << std::endl;
+  std::cout << "TOPO_SORT: " << dag.LeafwardNodeTraversalTrace(true) << std::endl;
+  std::cout << "BRANCH_LENGTHS: " << tp_engine.GetBranchLengths() << std::endl;
+  std::cout << "ADJACENT_NNIs: " << nni_engine.GetAdjacentNNIs() << std::endl;
+  Stopwatch iter_timer(true, Stopwatch::TimeScale::SecondScale);
+  size_t max_iter = 5;
+  for (size_t iter = 0; iter < max_iter; iter++) {
+    std::cout << "### Iteration " << iter << " of " << max_iter << "..." << std::endl;
+    // Main Loop
+    nni_engine.GraftAdjacentNNIsToDAG();
+    std::cout << "# nni_engine.GraftAdjacentNNIsToDAG(): " << timer.Lap() << " sec"
+              << std::endl;
+    std::cout << "DAG_COUNTS: " << dag.NodeCount() << " "
+              << dag.EdgeCountWithLeafSubsplits() << std::endl;
+    std::cout << "GRAFT_COUNTS: " << graft_dag.NodeCount() << " "
+              << graft_dag.EdgeCountWithLeafSubsplits() << std::endl;
+    nni_engine.FilterPreUpdate();
+    std::cout << "# nni_engine.FilterPreUpdate(): " << timer.Lap() << " sec"
+              << std::endl;
+    nni_engine.FilterEvaluateAdjacentNNIs();
+    std::cout << "# nni_engine.FilterEvaluateAdjacentNNIs(): " << timer.Lap()
+              << std::endl;
+    nni_engine.FilterPostUpdate();
+    std::cout << "# nni_engine.FilterPostUpdate(): " << timer.Lap() << " sec"
+              << std::endl;
+    nni_engine.FilterProcessAdjacentNNIs();
+    std::cout << "# nni_engine.FilterProcessAdjacentNNIs(): " << timer.Lap() << " sec"
+              << std::endl;
+    nni_engine.RemoveAllGraftedNNIsFromDAG();
+    std::cout << "# nni_engine.RemoveAllGraftedNNIsFromDAG(): " << timer.Lap() << " sec"
+              << std::endl;
+    nni_engine.AddAcceptedNNIsToDAG(false);
+    std::cout << "# nni_engine.AddAcceptedNNIsToDAG(): " << timer.Lap() << " sec"
+              << std::endl;
 
-    std::cout << "ChoiceMap: " << tp_engine.GetChoiceMap().ToString() << std::endl;
+    // Post Loop
+    nni_engine.UpdateAdjacentNNIs();
+    std::cout << "# nni_engine.UpdateAdjacentNNIs(): " << timer.Lap() << " sec"
+              << std::endl;
+    nni_engine.UpdateAcceptedNNIs();
+    std::cout << "# nni_engine.UpdateAcceptedNNIs(): " << timer.Lap() << " sec"
+              << std::endl;
+    nni_engine.UpdateRejectedNNIs();
+    std::cout << "# nni_engine.UpdateRejectedNNIs(): " << timer.Lap() << " sec"
+              << std::endl;
+    nni_engine.UpdateScoredNNIs();
+    std::cout << "# nni_engine.UpdateScoredNNIs(): " << timer.Lap() << " sec"
+              << std::endl;
 
-    // std::cout << "DAG Counts: " << dag.NodeCount() << " "
-    //           << dag.EdgeCountWithLeafSubsplits() << std::endl;
-    // if (!use_gp) {
-    //   std::cout << "TP Engine Top Trees: " << std::endl;
-    //   std::cout << tp_engine.ToNewickOfTopTrees() << std::endl;
-    // }
-    // std::cout << "DAG Spanning Trees: " << std::endl;
-    // const auto trees = dag.GenerateSpanningTrees(gp_engine.GetBranchLengths());
-    // for (const auto tree : trees) {
-    //   std::cout << tree.Newick() << std::endl;
-    // }
-
-    // if (use_gp) {
-    //   inst.EstimateBranchLengths(1e-5, 1, false);
-    // }
-    // auto& pvs = gp_engine.GetPLVHandler();
-
-    // auto NodeData = [&dag, &pvs](NodeId node_id) {
-    //   const auto& node = dag.GetDAGNode(node_id);
-    //   std::cout << "Subsplit: " << dag.GetDAGNodeBitset(node_id).SubsplitToString()
-    //             << std::endl;
-    //   for (const auto dir : DirectionEnum::Iterator()) {
-    //     std::cout << ((dir == Direction::Rootward) ? "Parent" : "Child") << ": ";
-    //     for (const auto clade : SubsplitCladeEnum::Iterator()) {
-    //       const auto neighbors_view = node.GetNeighbors(dir, clade);
-    //       std::set<NodeId> neighbors{neighbors_view.begin(), neighbors_view.end()};
-    //       std::cout << neighbors << " ";
-    //     }
-    //   }
-    //   std::cout << std::endl;
-    //   std::cout << "Node" << node_id << std::endl;
-    //   for (const auto pv_type : PLVTypeEnum::Iterator()) {
-    //     auto range = pvs.ValueRange(pvs.GetPVIndex(pv_type, node_id));
-    //     std::cout << PLVTypeEnum::ToString(pv_type) << "_" << range << " ";
-    //   }
-    //   std::cout << std::endl;
-    // };
-
-    nni_engine.RunMainLoop(false);
-    std::cout << "Scored NNIs: " << nni_engine.GetScoredNNIs().size() << std::endl;
-    for (const auto& [nni, score] : nni_engine.GetScoredNNIs()) {
-      std::cout << "\t" << nni << ": " << score << std::endl;
-    }
-    for (const auto& nni : nni_engine.GetAcceptedNNIs()) {
-      added_nnis.push_back(nni);
-    }
-    nni_engine.RunPostLoop(false);
-    std::cout << "Added NNIs: " << added_nnis.size() << std::endl;
-    for (const auto& nni : added_nnis) {
-      std::cout << "\t" << nni << std::endl;
-    }
+    // Iteration details
+    std::cout << "SCORED_NNIS: " << std::endl
+              << nni_engine.GetScoredNNIs() << std::endl;
+    std::cout << "### iter_time " << iter << ": " << iter_timer.Lap() << " sec"
+              << std::endl;
   }
 }

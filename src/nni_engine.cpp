@@ -158,6 +158,7 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
   if (IsEvalEngineInUse(NNIEvalEngineType::GPEvalEngine)) {
+    std::cout << "UPDATE gp_eval_engine" << std::endl;
     auto node_reindexer_without_dag(node_reindexer);
     node_reindexer_without_dag =
         node_reindexer.RemoveNewIndex(GetDAG().GetDAGRootNodeId().value_);
@@ -166,11 +167,13 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
                                                     prev_edge_count, edge_reindexer);
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaLikelihood)) {
+    std::cout << "UPDATE tp_like_eval_engine" << std::endl;
     GetTPEvalEngine().UpdateEngineAfterModifyingDAG(nni_to_pre_nni, prev_node_count,
                                                     node_reindexer, prev_edge_count,
                                                     edge_reindexer);
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaParsimony)) {
+    std::cout << "UPDATE tp_pars_eval_engine" << std::endl;
     GetTPEvalEngine().UpdateEngineAfterModifyingDAG(nni_to_pre_nni, prev_node_count,
                                                     node_reindexer, prev_edge_count,
                                                     edge_reindexer);
@@ -633,7 +636,7 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
     Assert(nni_found, "NNI not found to be adjacent to DAG.");
   }
   // Add NNI to DAG.
-  os << "AddAcceptedNNIsToDAG: " << std::endl;
+  os << "AddAcceptedNNIsToDAG::" << std::endl;
   BitsetPairVector nodes_to_add;
   for (const auto &nni : GetAcceptedNNIs()) {
     nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
