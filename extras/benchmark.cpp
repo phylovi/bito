@@ -127,19 +127,23 @@ int main(int argc, char* argv[]) {
             << dag.EdgeCountWithLeafSubsplits() << std::endl;
   std::cout << "TOPO_SORT: " << dag.LeafwardNodeTraversalTrace(true) << std::endl;
   std::cout << "BRANCH_LENGTHS: " << tp_engine.GetBranchLengths() << std::endl;
-  std::cout << "ADJACENT_NNIs: " << nni_engine.GetAdjacentNNIs() << std::endl;
+
   Stopwatch iter_timer(true, Stopwatch::TimeScale::SecondScale);
   size_t max_iter = 5;
   for (size_t iter = 0; iter < max_iter; iter++) {
+    nni_engine.SyncAdjacentNNIsWithDAG();
     std::cout << "### Iteration " << iter << " of " << max_iter << "..." << std::endl;
+    std::cout << "ADJACENT_NNIs: " << nni_engine.GetAdjacentNNIs().size() << std::endl;
     // Main Loop
     nni_engine.GraftAdjacentNNIsToDAG();
     std::cout << "# nni_engine.GraftAdjacentNNIsToDAG(): " << timer.Lap() << " sec"
               << std::endl;
-    std::cout << "DAG_COUNTS: " << dag.NodeCount() << " "
+    std::cout << "DAG_COUNTS (INNER): " << dag.NodeCount() << " "
               << dag.EdgeCountWithLeafSubsplits() << std::endl;
-    std::cout << "GRAFT_COUNTS: " << graft_dag.NodeCount() << " "
-              << graft_dag.EdgeCountWithLeafSubsplits() << std::endl;
+    std::cout << "GRAFT_COUNTS (INNER): " << graft_dag.HostNodeCount() << " "
+              << graft_dag.HostEdgeCount() << std::endl;
+    std::cout << "GRAFT_COUNTS (INNER): " << graft_dag.GraftNodeCount() << " "
+              << graft_dag.GraftEdgeCount() << std::endl;
     nni_engine.FilterPreUpdate();
     std::cout << "# nni_engine.FilterPreUpdate(): " << timer.Lap() << " sec"
               << std::endl;
@@ -158,6 +162,8 @@ int main(int argc, char* argv[]) {
     nni_engine.AddAcceptedNNIsToDAG(false);
     std::cout << "# nni_engine.AddAcceptedNNIsToDAG(): " << timer.Lap() << " sec"
               << std::endl;
+    std::cout << "NNI_SCORES: " << nni_engine.GetScoredNNIs().size() << " "
+              << nni_engine.GetScoredNNIs() << std::endl;
 
     // Post Loop
     nni_engine.UpdateAdjacentNNIs();
@@ -174,8 +180,12 @@ int main(int argc, char* argv[]) {
               << std::endl;
 
     // Iteration details
-    std::cout << "SCORED_NNIS: " << std::endl
-              << nni_engine.GetScoredNNIs() << std::endl;
+    std::cout << "DAG_COUNTS (POST): " << dag.NodeCount() << " "
+              << dag.EdgeCountWithLeafSubsplits() << std::endl;
+    std::cout << "GRAFT_COUNTS (POST): " << graft_dag.HostNodeCount() << " "
+              << graft_dag.HostEdgeCount() << std::endl;
+    std::cout << "GRAFT_COUNTS (POST): " << graft_dag.GraftNodeCount() << " "
+              << graft_dag.GraftEdgeCount() << std::endl;
     std::cout << "### iter_time " << iter << ": " << iter_timer.Lap() << " sec"
               << std::endl;
   }

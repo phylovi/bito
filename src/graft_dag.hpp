@@ -29,17 +29,10 @@ class GraftDAG : public SubsplitDAG {
   // ** Modify GraftDAG
 
   // Graft node pair to DAG.
-  virtual ModificationResult AddNodePair(const NNIOperation &nni) {
-    return AddNodePair(nni.parent_, nni.child_);
-  }
+  virtual ModificationResult AddNodePair(const NNIOperation &nni);
   virtual ModificationResult AddNodePair(const Bitset &parent_subsplit,
-                                         const Bitset &child_subsplit) {
-    GetHostDAG().IsValidAddNodePair(parent_subsplit, child_subsplit);
-    return SubsplitDAG::AddNodePairInternals(parent_subsplit, child_subsplit);
-  }
-  virtual ModificationResult AddNodes(const BitsetPairVector &node_subsplit_pairs) {
-    return SubsplitDAG::AddNodePairInternals(node_subsplit_pairs);
-  }
+                                         const Bitset &child_subsplit);
+  virtual ModificationResult AddNodes(const BitsetPairVector &node_subsplit_pairs);
 
   // Clear all nodes and edges from graft for reuse.
   void RemoveAllGrafts();
@@ -80,4 +73,9 @@ class GraftDAG : public SubsplitDAG {
  protected:
   // DAG that the graft is proposed to be connected to.
   SubsplitDAG &host_dag_;
+
+  // Number of nodes grafted to the DAG.
+  size_t graft_node_count_ = 0;
+  // Number of edges grafted to the DAG.
+  size_t graft_edge_count_ = 0;
 };

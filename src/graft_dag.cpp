@@ -64,6 +64,23 @@ int GraftDAG::CompareToDAG(const GraftDAG &lhs, const SubsplitDAG &rhs) {
 
 // ** Modify GraftDAG
 
+SubsplitDAG::ModificationResult GraftDAG::AddNodePair(const NNIOperation &nni) {
+  return AddNodePair(nni.parent_, nni.child_);
+}
+
+SubsplitDAG::ModificationResult GraftDAG::AddNodePair(const Bitset &parent_subsplit,
+                                                      const Bitset &child_subsplit) {
+  GetHostDAG().IsValidAddNodePair(parent_subsplit, child_subsplit);
+  auto mods = SubsplitDAG::AddNodePairInternals(parent_subsplit, child_subsplit);
+  return mods;
+}
+
+SubsplitDAG::ModificationResult GraftDAG::AddNodes(
+    const BitsetPairVector &node_subsplit_pairs) {
+  auto mods = SubsplitDAG::AddNodePairInternals(node_subsplit_pairs);
+  return mods;
+}
+
 void GraftDAG::RemoveAllGrafts() { ResetHostDAG(host_dag_); }
 
 // ** Getters

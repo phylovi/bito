@@ -454,7 +454,6 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithEdge(const EdgeId edge_id) 
 double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     const NNIOperation &post_nni, const NNIOperation &temp_pre_nni,
     const size_t spare_offset, std::optional<BitsetEdgeIdMap> best_edge_map_opt) {
-  std::cout << "TPLikelihood::GetTopTreeWithProposedNNI: " << post_nni << std::endl;
   // Get temp locations for post-NNI PVs.
   PrimaryPVIds temp_pvids = GetTempPrimaryPVIdsForProposedNNIs(spare_offset);
   // Get temp locations for post-NNI branch lengths.
