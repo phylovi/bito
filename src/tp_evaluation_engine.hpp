@@ -408,7 +408,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Determines whether new edges are optimized.
   bool optimize_new_edges_ = true;
   // Number of optimization iterations.
-  size_t optimize_max_iter_ = 3;
+  size_t optimize_max_iter_ = 1;
   // Temporary map of optimized edge lengths.
   std::map<Bitset, double> tmp_optimized_edges;
 

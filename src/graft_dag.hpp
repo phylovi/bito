@@ -71,7 +71,7 @@ class GraftDAG : public SubsplitDAG {
   size_t GetPLVIndex(PLVType plv_type, NodeId node_id) const;
 
  protected:
-  // DAG that the graft is proposed to be connected to.
+  // DAG that the graft is connected to.
   SubsplitDAG &host_dag_;
 
   // Number of nodes grafted to the DAG.

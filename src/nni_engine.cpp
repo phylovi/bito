@@ -662,10 +662,7 @@ void NNIEngine::GraftAdjacentNNIsToDAG() {
   // GetGraftDAG().AddNodes(nodes_to_add);
 }
 
-void NNIEngine::RemoveAllGraftedNNIsFromDAG() {
-  GetGraftDAG().RemoveAllGrafts();
-  graft_dag_ = std::make_unique<GraftDAG>(GetDAG());
-}
+void NNIEngine::RemoveAllGraftedNNIsFromDAG() { GetGraftDAG().RemoveAllGrafts(); }
 
 // ** NNI Maintenance
 
