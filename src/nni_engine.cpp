@@ -310,16 +310,16 @@ void NNIEngine::SetMaxScoreCutoff(const double score_cutoff) {
 }
 
 void NNIEngine::SetScoredNNIsFromEvalEngine() {
-  // SetFilterPostUpdateFunction([](NNIEngine &this_nni_engine,
-  //                                NNIEvalEngine &this_eval_engine,
-  //                                GraftDAG &this_graft_dag) {
-  //   this_nni_engine.GetScoredNNIs().clear();
-  //   for (const auto &[nni, score] : this_eval_engine.GetScoredNNIs()) {
-  //     if (!this_graft_dag.ContainsNNI(nni)) {
-  //       this_nni_engine.GetScoredNNIs()[nni] = score;
-  //     }
-  //   }
-  // });
+  SetFilterPostUpdateFunction([](NNIEngine &this_nni_engine,
+                                 NNIEvalEngine &this_eval_engine,
+                                 GraftDAG &this_graft_dag) {
+    //   this_nni_engine.GetScoredNNIs().clear();
+    //   for (const auto &[nni, score] : this_eval_engine.GetScoredNNIs()) {
+    //     if (!this_graft_dag.ContainsNNI(nni)) {
+    //       this_nni_engine.GetScoredNNIs()[nni] = score;
+    //     }
+    //   }
+  });
 }
 
 // ** Filter Subroutines
@@ -653,7 +653,7 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
 void NNIEngine::GraftAdjacentNNIsToDAG() {
   BitsetPairVector nodes_to_add;
   for (const auto &nni : GetAdjacentNNIs()) {
-    bool is_new_nni = (GetPastScoredNNIs().find(nni) == GetPastScoredNNIs().end());
+    bool is_new_nni = (GetPastRejectedNNIs().find(nni) == GetPastRejectedNNIs().end());
     if (is_new_nni) {
       GetGraftDAG().AddNodePair(nni);
       // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});

@@ -139,12 +139,14 @@ class SubsplitDAG {
   // Get the rotated and sorted parents of the node with the given subsplit.
   NodeIdVectorPair FindParentNodeIds(const Bitset &subsplit) const;
   NodeIdVectorPair FindParentNodeIdsViaMap(const Bitset &subsplit) const;
-  NodeIdVectorPair FindParentNodeIdsViaScan(const Bitset &subsplit) const;
+  NodeIdVectorPair FindParentNodeIdsViaScan(const Bitset &subsplit,
+                                            bool graft_nodes_only = false) const;
   NodeId FindFirstParentNodeId(const Bitset &subsplit) const;
   // Get the rotated and sorted children of the node with the given subsplit.
   NodeIdVectorPair FindChildNodeIds(const Bitset &subsplit) const;
   NodeIdVectorPair FindChildNodeIdsViaMap(const Bitset &subsplit) const;
-  NodeIdVectorPair FindChildNodeIdsViaScan(const Bitset &subsplit) const;
+  NodeIdVectorPair FindChildNodeIdsViaScan(const Bitset &subsplit,
+                                           bool graft_nodes_only = false) const;
   NodeId FindFirstChildNodeId(const Bitset &subsplit, const SubsplitClade clade) const;
 
   // Output RootedIndexerRepresentation of DAG (from RootedSBNMaps).
