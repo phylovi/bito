@@ -1717,6 +1717,7 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit,
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
   return FindParentNodeIdsViaScan(subsplit);
+
   auto [left, right] = FindParentNodeIdsViaMap(subsplit);
   // If DAG contains grafted nodes, linearly scan for grafted nodes parents.
   if (storage_.HaveHost()) {
@@ -1727,6 +1728,7 @@ NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
   return FindChildNodeIdsViaScan(subsplit);
+
   auto [left, right] = FindChildNodeIdsViaMap(subsplit);
   // If DAG contains grafted nodes, linearly scan for grafted nodes children.
   if (storage_.HaveHost()) {
@@ -1945,7 +1947,8 @@ void SubsplitDAG::AddNodePairInternalsWithoutReindexing(
       // Don't reindex these edges.
       ConnectChildToAllChildren(child_subsplit, mods.added_edge_idxs);
     }
-    // If parent node is new, add node it to all its children (except )
+    // If parent node is new, add node it to all its children (except the new child
+    // node).
     if (parent_is_new) {
       CreateAndInsertNode(parent_subsplit);
       mods.added_node_ids.push_back(GetDAGNodeId(parent_subsplit));
