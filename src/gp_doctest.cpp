@@ -2838,7 +2838,7 @@ TEST_CASE("TPEngine: TPEngine Parsimony scores vs SankoffHandler Parsimony score
 // generate the same result from adding NNIs to the DAG and updating as we do from
 // using the pre-NNI computation.
 TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
-  bool print_failures = true;
+  bool print_failures = false;
   // Build NNIEngine from DAG that does not include NNIs. Compute likelihoods.
   auto CompareProposedNNIvsDAGNNIvsBEAGLE =
       [print_failures](const std::string& fasta_path, const std::string& newick_path,
@@ -2919,13 +2919,16 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
           test_passes &= matches_score_dag;
           test_passes &= matches_score_tree;
           test_passes &= matches_dag_tree;
-          if (print_failures and (!matches_score_dag or !matches_score_tree)) {
-            std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
-                      << score_proposed << std::endl;
-            std::cout << "SCORE_FAILED_SCORE: " << score_tree << " vs " << score_dag
-                      << std::endl;
-          } else {
-            std::cout << "SCORE_PASS: " << score_tree << std::endl;
+          if (print_failures) {
+            if (!matches_score_dag or !matches_score_tree) {
+              std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
+                        << score_proposed << ": " << abs(score_proposed - score_dag)
+                        << std::endl;
+              std::cout << "SCORE_FAILED_SCORE: " << score_tree << " vs " << score_dag
+                        << ": " << abs(score_dag - score_tree) << std::endl;
+            } else {
+              std::cout << "SCORE_PASS: " << score_tree << std::endl;
+            }
           }
         }
 
