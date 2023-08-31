@@ -85,7 +85,11 @@ std::set<Bitset> BuildAllSubsplits(size_t n) {
 }
 }  // namespace SubsplitSetBuilder
 
-void Test1(int argc, char* argv[]) {
+void Test1(int argc, char* argv[]) {}
+
+void Test2(int argc, char* argv[]) {}
+
+int main(int argc, char* argv[]) {
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
 
   // Parse commandline args.
@@ -197,5 +201,3 @@ void Test1(int argc, char* argv[]) {
               << std::endl;
   }
 }
-
-int main(int argc, char* argv[]) {}

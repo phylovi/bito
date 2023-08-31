@@ -225,7 +225,7 @@ class TPEngine {
   // Remove all evaluation engines from use.
   void ClearEvalEngineInUse();
   // Check if evaluation engine is currently in use.
-  bool IsEvalEngineInUse(const TPEvalEngineType eval_engine_type) {
+  bool IsEvalEngineInUse(const TPEvalEngineType eval_engine_type) const {
     return eval_engine_in_use_[eval_engine_type];
   }
   // Set evaluation engine type for use in runner.

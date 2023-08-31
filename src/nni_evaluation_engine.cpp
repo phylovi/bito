@@ -1046,10 +1046,6 @@ void NNIEvalEngineViaTP::UpdateEngineAfterModifyingDAG(
 }
 
 void NNIEvalEngineViaTP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
-  bool is_quiet = false;
-  std::stringstream dev_null;
-  std::ostream &os = (is_quiet ? dev_null : std::cout);
-  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   // Retrieve results from TPEngine and store in Scored NNIs.
   const auto best_edge_map = GetTPEngine().BuildBestEdgeMapOverNNIs(adjacent_nnis);
   NNISet prv_nnis, cur_nnis;
@@ -1067,9 +1063,6 @@ void NNIEvalEngineViaTP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
       GetScoredNNIs()[nni] = GetNNIEngine().GetPastScoredNNIs().find(nni)->second;
     }
   }
-  os << "TPLikelihood::ScoreAdjacentNNIs: " << adjacent_nnis.size() << " "
-     << prv_nnis.size() << " " << cur_nnis.size() << std::endl;
-  os << "ScoreAdjacentNNIs: " << timer.Lap() << " sec" << std::endl;
 }
 
 double NNIEvalEngineViaTP::ScoreInternalNNIByNNI(const NNIOperation &nni) const {

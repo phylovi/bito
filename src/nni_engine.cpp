@@ -636,11 +636,14 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
   os << "AddAcceptedNNIsToDAG::" << std::endl;
   BitsetPairVector nodes_to_add;
   for (const auto &nni : GetAcceptedNNIs()) {
-    nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
+    auto mods = GetDAG().AddNodePair(nni);
+    node_reindexer_.ComposeWith(mods.node_reindexer);
+    edge_reindexer_.ComposeWith(mods.edge_reindexer);
+    // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
   }
-  auto mods = GetDAG().AddNodes(nodes_to_add);
-  node_reindexer_ = mods.node_reindexer;
-  edge_reindexer_ = mods.edge_reindexer;
+  // auto mods = GetDAG().AddNodes(nodes_to_add);
+  // node_reindexer_ = mods.node_reindexer;
+  // edge_reindexer_ = mods.edge_reindexer;
   os << "AddAcceptedNNIsToDAG::AddAll: " << timer.Lap() << std::endl;
 
   GrowEvalEngineForDAG(node_reindexer_, edge_reindexer_);

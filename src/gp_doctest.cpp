@@ -2741,6 +2741,7 @@ TEST_CASE("TPEngine: ChoiceMap") {
 // DAG. Then finds all trees contained in the DAG and verifies that each top tree
 // produced is a tree from the DAG.
 TEST_CASE("TPEngine: Initialize TPEngine and ChoiceMap") {
+  std::cout << "TPEngine: Initialize TPEngine [begin]" << std::endl;
   const std::string fasta_path = "data/six_taxon.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
 
@@ -2838,11 +2839,12 @@ TEST_CASE("TPEngine: TPEngine Parsimony scores vs SankoffHandler Parsimony score
 // generate the same result from adding NNIs to the DAG and updating as we do from
 // using the pre-NNI computation.
 TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
+  bool print_failures = true;
   // Build NNIEngine from DAG that does not include NNIs. Compute likelihoods.
   auto CompareProposedNNIvsDAGNNIvsBEAGLE =
-      [](const std::string& fasta_path, const std::string& newick_path,
-         const bool optimize_branch_lengths = true,
-         const bool take_first_branch_lengths = true) {
+      [print_failures](const std::string& fasta_path, const std::string& newick_path,
+                       const bool optimize_branch_lengths = true,
+                       const bool take_first_branch_lengths = true) {
         bool test_passes = true;
         const double tol = 1e-5;
         // Instance for computing proposed scores.
@@ -2855,6 +2857,7 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
         auto& dag_2 = inst_2.GetDAG();
         auto& nni_engine_2 = inst_2.GetNNIEngine();
         auto& tpengine_2 = inst_2.GetTPEngine();
+        tpengine_2.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(10);
 
         // Add all NNIs to post-DAG.
         if (take_first_branch_lengths) {
@@ -2916,6 +2919,14 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
           test_passes &= matches_score_dag;
           test_passes &= matches_score_tree;
           test_passes &= matches_dag_tree;
+          if (print_failures and (!matches_score_dag or !matches_score_tree)) {
+            std::cout << "SCORE_FAILED: " << score_tree << " vs " << score_proposed
+                      << std::endl;
+            std::cout << "SCORE_FAILED: " << score_tree << " vs " << score_dag
+                      << std::endl;
+          } else {
+            std::cout << "SCORE_PASS: " << score_tree << std::endl;
+          }
         }
 
         return test_passes;
