@@ -637,8 +637,8 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
   BitsetPairVector nodes_to_add;
   for (const auto &nni : GetAcceptedNNIs()) {
     auto mods = GetDAG().AddNodePair(nni);
-    node_reindexer_.ComposeWith(mods.node_reindexer);
-    edge_reindexer_.ComposeWith(mods.edge_reindexer);
+    node_reindexer_ = node_reindexer_.ComposeWith(mods.node_reindexer);
+    edge_reindexer_ = edge_reindexer_.ComposeWith(mods.edge_reindexer);
     // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
   }
   // auto mods = GetDAG().AddNodes(nodes_to_add);

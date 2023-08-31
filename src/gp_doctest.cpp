@@ -2741,7 +2741,6 @@ TEST_CASE("TPEngine: ChoiceMap") {
 // DAG. Then finds all trees contained in the DAG and verifies that each top tree
 // produced is a tree from the DAG.
 TEST_CASE("TPEngine: Initialize TPEngine and ChoiceMap") {
-  std::cout << "TPEngine: Initialize TPEngine [begin]" << std::endl;
   const std::string fasta_path = "data/six_taxon.fasta";
   const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
 
@@ -2857,7 +2856,6 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
         auto& dag_2 = inst_2.GetDAG();
         auto& nni_engine_2 = inst_2.GetNNIEngine();
         auto& tpengine_2 = inst_2.GetTPEngine();
-        tpengine_2.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(10);
 
         // Add all NNIs to post-DAG.
         if (take_first_branch_lengths) {
@@ -2870,6 +2868,8 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
             optimize_branch_lengths);
         inst_2.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizeNewEdges(
             optimize_branch_lengths);
+        inst_1.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(20);
+        inst_2.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(20);
 
         nni_engine_2.SetNoFilter(true);
         nni_engine_2.RunInit(true);
@@ -2920,9 +2920,9 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
           test_passes &= matches_score_tree;
           test_passes &= matches_dag_tree;
           if (print_failures and (!matches_score_dag or !matches_score_tree)) {
-            std::cout << "SCORE_FAILED: " << score_tree << " vs " << score_proposed
-                      << std::endl;
-            std::cout << "SCORE_FAILED: " << score_tree << " vs " << score_dag
+            std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
+                      << score_proposed << std::endl;
+            std::cout << "SCORE_FAILED_SCORE: " << score_tree << " vs " << score_dag
                       << std::endl;
           } else {
             std::cout << "SCORE_PASS: " << score_tree << std::endl;
@@ -3158,8 +3158,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
                 "Top Newick Trees match trees built via brute force match TPEngine "
                 "method (before adding NNIs).");
 
-  size_t optimization_count = 2;
-  tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(optimization_count);
+  tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(5);
   tp_engine.GetLikelihoodEvalEngine().BranchLengthOptimization(false);
   nni_engine.SetTPLikelihoodCutoffFilteringScheme(0.0);
   nni_engine.SetTopNScoreFilteringScheme(1);

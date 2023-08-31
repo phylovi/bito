@@ -164,7 +164,7 @@ void TPEvalEngineViaLikelihood::GrowNodeData(
 void TPEvalEngineViaLikelihood::GrowEdgeData(
     const size_t edge_count, std::optional<const Reindexer> edge_reindexer,
     std::optional<const size_t> explicit_alloc, const bool on_init) {
-  bool is_quiet = false;
+  bool is_quiet = true;
   std::stringstream dev_null;
   std::ostream &os = (is_quiet ? dev_null : std::cout);
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
