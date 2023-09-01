@@ -1058,11 +1058,14 @@ void NNIEvalEngineViaTP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
     if (is_new_nni or (do_reeval_nni and do_rescore_nni)) {
       cur_nnis.insert(nni);
       GetScoredNNIs()[nni] = GetTPEngine().GetTopTreeScoreWithProposedNNI(nni, pre_nni);
-    } else if (do_reeval_nni) {
+    } else {
       prv_nnis.insert(nni);
       GetScoredNNIs()[nni] = GetNNIEngine().GetPastScoredNNIs().find(nni)->second;
     }
   }
+  std::cout << "score_adj_nnis: " << adjacent_nnis.size() << std::endl;
+  std::cout << "score_adj_nnis -- cur_nnis: " << cur_nnis.size() << std::endl;
+  std::cout << "score_adj_nnis -- prv_nnis: " << prv_nnis.size() << std::endl;
 }
 
 double NNIEvalEngineViaTP::ScoreInternalNNIByNNI(const NNIOperation &nni) const {

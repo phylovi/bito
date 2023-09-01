@@ -254,6 +254,8 @@ void NNIEngine::RunMainLoop(const bool is_quiet) {
 }
 
 void NNIEngine::RunPostLoop(const bool is_quiet) {
+  std::cout << "scored_nnis 5: " << GetScoredNNIs().size() << " "
+            << GetPastScoredNNIs().size() << std::endl;
   // (5a) Update Adjacent NNIs to reflect added NNI.
   UpdateAdjacentNNIs(true);
   // (5b) Reset Accepted NNIs and save results.
@@ -657,7 +659,7 @@ void NNIEngine::GraftAdjacentNNIsToDAG() {
   BitsetPairVector nodes_to_add;
   for (const auto &nni : GetAdjacentNNIs()) {
     bool is_new_nni = (GetPastRejectedNNIs().find(nni) == GetPastRejectedNNIs().end());
-    if (is_new_nni) {
+    if (is_new_nni || reevaluate_rejected_nnis_) {
       GetGraftDAG().AddNodePair(nni);
       // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
     }
@@ -828,13 +830,14 @@ void NNIEngine::UpdateRejectedNNIs(const bool save_past_nnis) {
 
 void NNIEngine::UpdateScoredNNIs(const bool save_past_nnis) {
   if (save_past_nnis) {
-    scored_past_nnis_.insert(scored_nnis_.begin(), scored_nnis_.end());
-  }
-  if (GetRescoreRejectedNNIs()) {
     if (HasTPEvalEngine()) {
+      auto &scored_nnis = GetTPEvalEngine().GetScoredNNIs();
+      scored_past_nnis_.insert(scored_nnis.begin(), scored_nnis.end());
       GetTPEvalEngine().GetScoredNNIs().clear();
     }
     if (HasGPEvalEngine()) {
+      auto &scored_nnis = GetGPEvalEngine().GetScoredNNIs();
+      scored_past_nnis_.insert(scored_nnis.begin(), scored_nnis.end());
       GetGPEvalEngine().GetScoredNNIs().clear();
     }
   }
