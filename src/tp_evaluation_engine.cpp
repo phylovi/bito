@@ -460,6 +460,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithEdge(const EdgeId edge_id) 
 double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     const NNIOperation &post_nni, const NNIOperation &temp_pre_nni,
     const size_t spare_offset, std::optional<BitsetEdgeIdMap> best_edge_map_opt) {
+  EdgeIdVector optimization_order;
   // Get temp locations for post-NNI PVs.
   PrimaryPVIds temp_pvids = GetTempPrimaryPVIdsForProposedNNIs(spare_offset);
   // Get temp locations for post-NNI branch lengths.
@@ -628,19 +629,18 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
               // changed).
               MultiplyPVs(parent_rfocal, parent_rhat, parent_phatsister);
             }
-
             // Optimize branch length.
             if (update_branch_length) {
               branch_handler_.OptimizeBranchLength(edge_id, parent_rfocal, child_p,
                                                    iter > 0);
             }
-
             if (is_not_parent_edge) {
               // Update parent_phatfocal after changing branch length.
               SetToEvolvedPV(parent_phatfocal, edge_id, child_p);
               // If not parent edge, update parent_p after changing branch length.
               MultiplyPVs(parent_p, parent_phatfocal, parent_phatsister);
             }
+            optimization_order.push_back(edge_id);
           };
       auto OptimizeLeftChild = [&](const bool do_optimize = true) {
         OptimizeEdge(temp_edge_id_map.left_child_edge_, temp_edge_id_map.central_edge_,
@@ -736,6 +736,25 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
       GetMatrix().block(temp_edge_id_map.central_edge_.value_, spare_offset, 1,
                         GetMatrix().cols()) *
       GetTPEngine().GetSitePatternWeights();
+
+  // tp_evaluation_engine.cpp
+  // std::cout << "NNIEdgeIdMap: " << post_nni << " [ ";
+  // std::cout << temp_edge_id_map.central_edge_;
+  // std::cout << ", " << temp_edge_id_map.parent_edge_;
+  // std::cout << ", " << temp_edge_id_map.sister_edge_;
+  // std::cout << ", " << temp_edge_id_map.left_child_edge_;
+  // std::cout << ", " << temp_edge_id_map.right_child_edge_;
+  // std::cout << " ] " << std::endl;
+  // std::cout << "NNIEdgeIdMap: " << post_nni << " [ ";
+  // std::cout << branch_handler_(temp_edge_id_map.central_edge_);
+  // std::cout << ", " << branch_handler_(temp_edge_id_map.parent_edge_);
+  // std::cout << ", " << branch_handler_(temp_edge_id_map.sister_edge_);
+  // std::cout << ", " << branch_handler_(temp_edge_id_map.left_child_edge_);
+  // std::cout << ", " << branch_handler_(temp_edge_id_map.right_child_edge_);
+  // std::cout << " ] " << std::endl;
+  std::cout << "Optimization_order: " << post_nni << " " << optimization_order
+            << std::endl;
+
   return top_tree_likelihood[spare_offset];
 }
 
