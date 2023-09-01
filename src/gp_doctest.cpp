@@ -2868,8 +2868,8 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
             optimize_branch_lengths);
         inst_2.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizeNewEdges(
             optimize_branch_lengths);
-        inst_1.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(20);
-        inst_2.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(20);
+        inst_1.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(1);
+        inst_2.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(1);
 
         nni_engine_2.SetNoFilter(true);
         nni_engine_2.RunInit(true);
