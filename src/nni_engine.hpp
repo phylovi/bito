@@ -474,9 +474,9 @@ class NNIEngine {
   size_t proposed_nnis_computed_ = 0;
 
   // Whether to re-evaluate rejected NNIs from previous iterations.
-  bool reevaluate_rejected_nnis_ = false;
+  bool reevaluate_rejected_nnis_ = true;
   // Whether to re-compute scores for rejected NNIs from previous iterations.
-  bool rescore_rejected_nnis_ = true;
+  bool rescore_rejected_nnis_ = false;
 
   // Whether to include NNIs whose parent is a rootsplit.
   bool include_rootsplit_nnis_ = true;

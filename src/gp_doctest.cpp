@@ -3169,6 +3169,8 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   nni_engine.RunInit(true);
 
   for (size_t iter = 0; iter < 5; iter++) {
+    std::cout << "dag [before]: " << tp_engine.GetDAG().NodeCount() << " "
+              << tp_engine.GetDAG().EdgeCountWithLeafSubsplits() << std::endl;
     nni_engine.RunMainLoop(true);
     // nni_engine.GetDAG().PrintStorage();
 
@@ -3179,6 +3181,8 @@ TEST_CASE("TPEngine: Exporting Newicks") {
     // (May be an issue with graft addition/removal process?)
 
     nni_engine.RunPostLoop(true);
+    std::cout << "dag [after]: " << tp_engine.GetDAG().NodeCount() << " "
+              << tp_engine.GetDAG().EdgeCountWithLeafSubsplits() << std::endl;
 
     CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1) == 0,
                   "DAG built from Covering Newick not equal to the DAG that build it"
@@ -3189,7 +3193,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         "(after adding NNIs).");
     CHECK_MESSAGE(BuildTopTreesTest(inst_1),
                   "Top Newick Trees match trees built via brute force match TPEngine"
-                  "method (after adding NNIs).");
+                  " method (after adding NNIs).");
   }
 }
 

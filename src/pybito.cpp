@@ -997,7 +997,9 @@ PYBIND11_MODULE(bito, m) {
       .def("set_include_rootsplits", &NNIEngine::SetIncludeRootsplitNNIs,
            "Set whether to include rootsplits in adjacent NNIs")
       .def("set_reevaluate_rejected_nnis", &NNIEngine::SetReevaluateRejectedNNIs,
-           "Set whether to re-evaluate NNIs which were rejected in a previous pass.")
+           "Set whether to re-evaluate NNIs rejected by a previous iteration.")
+      .def("set_rescore_rejected_nnis", &NNIEngine::SetRescoreRejectedNNIs,
+           "Set whether to re-score NNIs rejected by a previous iteration.")
       // Scoring
       .def("get_score_by_nni", &NNIEngine::GetScoreByNNI, "Get score by NNI.")
       .def("get_score_by_edge", &NNIEngine::GetScoreByEdge, "Get score by EdgeId.");

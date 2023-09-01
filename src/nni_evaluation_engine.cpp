@@ -1055,10 +1055,10 @@ void NNIEvalEngineViaTP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
                        GetNNIEngine().GetPastScoredNNIs().end());
     bool do_rescore_nni = GetNNIEngine().GetRescoreRejectedNNIs();
     bool do_reeval_nni = GetNNIEngine().GetReevaluateRejectedNNIs();
-    if (is_new_nni or (do_reeval_nni and do_rescore_nni)) {
+    if (is_new_nni or do_rescore_nni) {
       cur_nnis.insert(nni);
       GetScoredNNIs()[nni] = GetTPEngine().GetTopTreeScoreWithProposedNNI(nni, pre_nni);
-    } else {
+    } else if (do_reeval_nni) {
       prv_nnis.insert(nni);
       GetScoredNNIs()[nni] = GetNNIEngine().GetPastScoredNNIs().find(nni)->second;
     }
