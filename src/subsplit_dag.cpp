@@ -1716,8 +1716,6 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit,
 }
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
-  return FindParentNodeIdsViaScan(subsplit);
-
   auto [left, right] = FindParentNodeIdsViaMap(subsplit);
   // If DAG contains grafted nodes, linearly scan for grafted nodes parents.
   if (storage_.HaveHost()) {
@@ -1727,8 +1725,6 @@ NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
 }
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
-  return FindChildNodeIdsViaScan(subsplit);
-
   auto [left, right] = FindChildNodeIdsViaMap(subsplit);
   // If DAG contains grafted nodes, linearly scan for grafted nodes children.
   if (storage_.HaveHost()) {
