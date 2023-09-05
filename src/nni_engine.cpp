@@ -178,14 +178,29 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
 }
 
 void NNIEngine::ScoreAdjacentNNIs() {
+  // Split scored NNIs from ones we can just fetch previous computations and NNIs we
+  // need to freshly compute.
+  NNISet old_nnis, new_nnis;
+  for (const auto &nni : GetAdjacentNNIs()) {
+    bool is_new_nni = (GetPastScoredNNIs().find(nni) == GetPastScoredNNIs().end());
+    bool do_rescore_nni = GetRescoreRejectedNNIs();
+    bool do_reeval_nni = GetReevaluateRejectedNNIs();
+    if (is_new_nni or do_rescore_nni) {
+      new_nnis.insert(nni);
+    } else if (do_reeval_nni) {
+      old_nnis.insert(nni);
+      GetScoredNNIs()[nni] = GetPastScoredNNIs().find(nni)->second;
+    }
+  }
+
   if (IsEvalEngineInUse(NNIEvalEngineType::GPEvalEngine)) {
-    GetGPEvalEngine().ScoreAdjacentNNIs(GetAdjacentNNIs());
+    GetGPEvalEngine().ScoreAdjacentNNIs(new_nnis);
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaLikelihood)) {
-    GetTPEvalEngine().ScoreAdjacentNNIs(GetAdjacentNNIs());
+    GetTPEvalEngine().ScoreAdjacentNNIs(new_nnis);
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaParsimony)) {
-    GetTPEvalEngine().ScoreAdjacentNNIs(GetAdjacentNNIs());
+    GetTPEvalEngine().ScoreAdjacentNNIs(new_nnis);
   }
 }
 

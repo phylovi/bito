@@ -3012,9 +3012,6 @@ TEST_CASE("TPEngine: Branch Length Optimization") {
   CHECK_LT(max_diff, tol);
 }
 
-// Builds a TPEngine with DAG, adds a subset of NNIs and produces an ordered Newick of
-// the Top Trees. Then builds a new DAG from the resulting Newick and tests that it
-// matches the original DAG.
 TEST_CASE("TPEngine: Exporting Newicks") {
   const std::string fasta_path = "data/five_taxon.fasta";
   const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
@@ -3057,42 +3054,6 @@ TEST_CASE("TPEngine: Exporting Newicks") {
     return tree_map;
   };
 
-  // Build all top trees in the TPEngine using brute force.  Check that it matches the
-  // top trees from the method.
-  auto BuildTopTreesTest = [&BuildTopTreeMapViaBruteForce](GPInstance& inst) {
-    std::vector<RootedTree> tree_map_1, tree_map_2;
-    tree_map_1 = BuildTopTreeMapViaBruteForce(inst);
-    auto tree_edge_map_2 = inst.GetTPEngine().BuildMapOfTreeIdToTopTrees();
-    for (TreeId tree_id(0); tree_id < inst.GetTPEngine().GetMaxTreeId(); tree_id++) {
-      if (tree_edge_map_2.find(tree_id) == tree_edge_map_2.end()) {
-        continue;
-      }
-      const auto& trees = tree_edge_map_2.find(tree_id)->second;
-      for (auto& tree : trees) {
-        bool tree_found = false;
-        for (size_t i = 0; i < tree_map_2.size(); i++) {
-          if (tree == tree_map_2[i]) {
-            tree_found = true;
-            break;
-          }
-        }
-        if (!tree_found) {
-          tree_map_2.push_back(tree);
-        }
-      }
-    }
-
-    std::string newick_1;
-    for (auto& tree : tree_map_1) {
-      newick_1 += tree.Topology()->Newick() + "\n";
-    }
-    std::string newick_2;
-    for (auto& tree : tree_map_2) {
-      newick_2 += tree.Topology()->Newick() + "\n";
-    }
-    return (newick_1 == newick_2);
-  };
-
   // Export a covering newick file from TPEngine, then build new DAG from that file.
   // Compare to the input DAG.
   auto BuildCoveringNewickAndCompareNewDAG = [](GPInstance& inst_1) {
@@ -3104,7 +3065,9 @@ TEST_CASE("TPEngine: Exporting Newicks") {
 
     auto inst_2 = GPInstanceOfFiles(inst_1.GetFastaSourcePath(), temp_newick_path,
                                     "_ignore/mmapped_pv.data1");
-    return SubsplitDAG::Compare(inst_1.GetDAG(), inst_2.GetDAG(), false);
+    bool dags_equal =
+        (SubsplitDAG::Compare(inst_1.GetDAG(), inst_2.GetDAG(), false) == 0);
+    return dags_equal;
   };
 
   // Export a top tree newick file from TPEngine, then build new TPEngine from that
@@ -3112,23 +3075,53 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   auto BuildTopTreeNewickAndCompareNewTPEngine =
       [&BuildTopTreeMapViaBruteForce](GPInstance& inst_1) {
         std::ofstream file_out;
+        // Use internal method for building Newick string.
         const std::string temp_newick_path_1 = "_ignore/temp_1.newick";
+        std::string newick_1 = inst_1.GetTPEngine().ToNewickOfTopTopologies();
         file_out.open(temp_newick_path_1);
-        file_out << inst_1.GetTPEngine().ToNewickOfTopTrees() << std::endl;
+        file_out << newick_1 << std::endl;
         file_out.close();
-        const std::string temp_newick_path_2 = "_ignore/temp_1.newick";
+        // Use brute force method for building Newick string.
+        const std::string temp_newick_path_2 = "_ignore/temp_2.newick";
+        std::string newick_2;
         file_out.open(temp_newick_path_2);
-        const auto tree_map = BuildTopTreeMapViaBruteForce(inst_1);
-        for (const auto& tree : tree_map) {
+        const auto tree_map_2 = BuildTopTreeMapViaBruteForce(inst_1);
+        for (const auto& tree : tree_map_2) {
+          newick_2 += inst_1.GetDAG().TreeToNewickTopology(tree) + '\n';
           file_out << inst_1.GetDAG().TreeToNewickTopology(tree) << std::endl;
         }
         file_out.close();
+        bool newicks_equal = (newick_1 == newick_2);
+        if (!newicks_equal) {
+          std::cerr << "ERROR: Newicks do not match." << std::endl;
+          auto tree_map_1 = inst_1.GetTPEngine().BuildMapOfTreeIdToTopTopologies();
+          std::cerr << "TREE_MAP_1: " << std::endl;
+          for (const auto& [tree_id, topos] : tree_map_1) {
+            for (const auto& topo : topos) {
+              std::cerr << "\tTree" << tree_id << ": " << topo->Newick() << std::endl;
+            }
+          }
+          auto tree_edge_map_1 = inst_1.GetTPEngine().BuildMapOfEdgeIdToTopTopologies();
+          std::cerr << "TREE_EDGE_MAP_1: " << std::endl;
+          for (const auto& [edge_ids, topo] : tree_edge_map_1) {
+            std::cerr << "\tEdge " << edge_ids << ": " << topo->Newick() << std::endl;
+          }
+          std::cerr << "NEWICK_1: " << std::endl << newick_1 << std::endl;
 
+          std::cerr << "NEWICK_2: " << std::endl << newick_2 << std::endl;
+        }
+
+        // Build new TPEngine and check that old and new engines are equal.
         auto inst_2 = GPInstanceOfFiles(inst_1.GetFastaSourcePath(), temp_newick_path_2,
-                                        "_ignore/mmapped_pv.data1");
+                                        "_ignore/mmapped_pv.data3");
         inst_2.MakeTPEngine();
         inst_2.MakeNNIEngine();
-        return TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), false);
+        bool engines_equal =
+            (TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), false) == 0);
+        if (!engines_equal) {
+          std::cerr << "ERROR: Engines do not match." << std::endl;
+        }
+        return (newicks_equal and engines_equal);
       };
 
   auto inst_1 =
@@ -3150,16 +3143,12 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   CHECK_MESSAGE(
       TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), true) != 0,
       "TPEngines formed from shuffled Newicks are incorrectly equal.");
-  CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1) == 0,
+  CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1),
                 "DAG built from Covering Newick not equal to the DAG that build it "
                 "(before adding NNIs).");
-  CHECK_MESSAGE(
-      BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
-      "TPEngine built from Top Tree Newick not equal to the TPEngine that build it "
-      "(before adding NNIs).");
-  CHECK_MESSAGE(BuildTopTreesTest(inst_1),
-                "Top Newick Trees match trees built via brute force match TPEngine "
-                "method (before adding NNIs).");
+  CHECK_MESSAGE(BuildTopTreeNewickAndCompareNewTPEngine(inst_1),
+                "Newick and TPEngine built from Top Tree Newick not equal to the "
+                "TPEngine that build it (before adding NNIs).");
 
   tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(5);
   tp_engine.GetLikelihoodEvalEngine().BranchLengthOptimization(false);
@@ -3168,32 +3157,23 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   nni_engine.SetReevaluateRejectedNNIs(true);
   nni_engine.RunInit(true);
 
-  for (size_t iter = 0; iter < 5; iter++) {
-    std::cout << "dag [before]: " << tp_engine.GetDAG().NodeCount() << " "
-              << tp_engine.GetDAG().EdgeCountWithLeafSubsplits() << std::endl;
+  for (size_t iter = 0; iter < 10; iter++) {
     nni_engine.RunMainLoop(true);
-    // nni_engine.GetDAG().PrintStorage();
 
-    // if (iter == 7) break;
+    if (iter == 7) break;
     // Issue #479: this creates an unknown problem on iteration 7.
     // Error occurs during GetLine() in subsplit_dag_storage.hpp:564.
     // Parent-child vertice pair references a line outside range of DAG.
     // (May be an issue with graft addition/removal process?)
 
     nni_engine.RunPostLoop(true);
-    std::cout << "dag [after]: " << tp_engine.GetDAG().NodeCount() << " "
-              << tp_engine.GetDAG().EdgeCountWithLeafSubsplits() << std::endl;
 
-    CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1) == 0,
+    CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1),
                   "DAG built from Covering Newick not equal to the DAG that build it"
-                  "(after adding NNIs).");
-    CHECK_MESSAGE(
-        BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
-        "TPEngine built from Top Tree Newick not equal to the TPEngine that build it"
-        "(after adding NNIs).");
-    CHECK_MESSAGE(BuildTopTreesTest(inst_1),
-                  "Top Newick Trees match trees built via brute force match TPEngine"
-                  " method (after adding NNIs).");
+                  " (after adding NNIs).");
+    CHECK_MESSAGE(BuildTopTreeNewickAndCompareNewTPEngine(inst_1),
+                  "Newicks and TPEngine built from Top Tree Newick not equal to the "
+                  "TPEngine that build it (after adding NNIs).");
   }
 }
 
