@@ -155,9 +155,10 @@ class PartialVectorHandler {
               std::optional<size_t> new_element_spare = std::nullopt);
   // Reindex PV according to pv_reindexer.
   void Reindex(const Reindexer pv_reindexer);
+  // Reindex PVs by moving data to align with reindexer by copying.
   void ReindexViaMoveCopy(const Reindexer pv_reindexer);
+  // Reindex PVs by updating the map from pv_id to data index.
   void ReindexViaRemap(const Reindexer pv_reindexer);
-  Reindexer GetPVReindexer() const { return pv_reindexer_; }
   // Expand element_reindexer into pv_reindexer.
   Reindexer BuildPVReindexer(const Reindexer &element_reindexer,
                              const size_t old_elem_count, const size_t new_elem_count);
@@ -244,6 +245,9 @@ class PartialVectorHandler {
     }
     return pv_ids;
   }
+
+  // PV Reindexer, which serves as the data map to sort PV data.
+  const Reindexer &GetPVReindexer() const { return pv_reindexer_; }
 
   // ** PV Operations
 
@@ -495,6 +499,7 @@ class PartialVectorHandler {
   // Reindex map for finding pv locations.
   Reindexer pv_reindexer_;
   size_t reindexer_init_size_ = 0;
+  // Whether to use remapping to reindex PLVs, otherwise only use
   bool use_remapping_ = true;
 };
 
