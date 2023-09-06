@@ -1745,7 +1745,7 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
                                           GPDAG& pre_dag, GPEngine& pre_gpengine) {
     bool passes_resized = true;
     bool passes_plv_reindexed = true;
-    bool passes_gpcsp_reindexed = true;
+    bool passes_branch_reindexed = true;
     // Check resizing GPEngine properly.
     passes_resized &= (gpengine.GetNodeCount() == dag.NodeCountWithoutDAGRoot());
     passes_resized &= (gpengine.GetGPCSPCount() == dag.EdgeCountWithLeafSubsplits());
@@ -1757,7 +1757,8 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
       for (const auto plv_type : PLVTypeEnum::Iterator()) {
         const auto& plv_a = gpengine.GetPLVHandler().GetPV(plv_type, node_id);
         const auto& plv_b = pre_gpengine.GetPLVHandler().GetPV(plv_type, pre_node_id);
-        if (PLVNodeHandler::MaxDifference(plv_a, plv_b) > 1e-3) {
+        auto max_diff = PLVNodeHandler::MaxDifference(plv_a, plv_b);
+        if (max_diff > 1e-3) {
           passes_plv_reindexed = false;
         }
       }
@@ -1769,10 +1770,10 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
       const auto branch_a = branch_lengths.Get(edge_id);
       const auto branch_b = pre_branch_lengths.Get(pre_edge_id);
       if (abs(branch_a - branch_b) > 1e-3) {
-        passes_gpcsp_reindexed = false;
+        passes_branch_reindexed = false;
       }
     }
-    return passes_resized && passes_plv_reindexed && passes_gpcsp_reindexed;
+    return passes_resized && passes_plv_reindexed && passes_branch_reindexed;
   };
   // Test that adds nodes to DAG, resizes and reindexes GPEngine and checks that
   // GPEngine reindexed correctly.
@@ -1905,7 +1906,7 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
   // a single node pair to DAG.
   auto test_2 = ResizeAndReindexGPEngineTest(10, 1, true, false);
   CHECK_FALSE_MESSAGE(test_2,
-                      "TEST_2: Resize and reindex GPEngine is not incorrect when not "
+                      "TEST_2: Resize and reindex GPEngine is not incorrect when NOT "
                       "reindexing after single AddNodePair to DAG.");
   // TEST_3: Test resize and reindex GPEngine works when adding a many node pairs,
   // performing resizing and reindexing for each modification of DAG.
@@ -3094,20 +3095,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         bool newicks_equal = (newick_1 == newick_2);
         if (!newicks_equal) {
           std::cerr << "ERROR: Newicks do not match." << std::endl;
-          auto tree_map_1 = inst_1.GetTPEngine().BuildMapOfTreeIdToTopTopologies();
-          std::cerr << "TREE_MAP_1: " << std::endl;
-          for (const auto& [tree_id, topos] : tree_map_1) {
-            for (const auto& topo : topos) {
-              std::cerr << "\tTree" << tree_id << ": " << topo->Newick() << std::endl;
-            }
-          }
-          auto tree_edge_map_1 = inst_1.GetTPEngine().BuildMapOfEdgeIdToTopTopologies();
-          std::cerr << "TREE_EDGE_MAP_1: " << std::endl;
-          for (const auto& [edge_ids, topo] : tree_edge_map_1) {
-            std::cerr << "\tEdge " << edge_ids << ": " << topo->Newick() << std::endl;
-          }
           std::cerr << "NEWICK_1: " << std::endl << newick_1 << std::endl;
-
           std::cerr << "NEWICK_2: " << std::endl << newick_2 << std::endl;
         }
 
@@ -3174,6 +3162,55 @@ TEST_CASE("TPEngine: Exporting Newicks") {
     CHECK_MESSAGE(BuildTopTreeNewickAndCompareNewTPEngine(inst_1),
                   "Newicks and TPEngine built from Top Tree Newick not equal to the "
                   "TPEngine that build it (after adding NNIs).");
+  }
+}
+
+TEST_CASE("TPEngine: Resize and Reindex PV Handler") {
+  const std::string fasta_path = "data/five_taxon.fasta";
+  const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
+  auto inst_1 =
+      GPInstanceOfFiles(fasta_path, newick_path_1, "_ignore/mmapped_pv.data1");
+  auto inst_2 =
+      GPInstanceOfFiles(fasta_path, newick_path_1, "_ignore/mmapped_pv.data2");
+  // NNI Engine that uses remapping for reindexing PVs.
+  inst_1.MakeTPEngine();
+  inst_1.MakeNNIEngine();
+  auto& tpengine_1 = inst_1.GetTPEngine();
+  auto& nniengine_1 = inst_1.GetNNIEngine();
+  auto& pvs_1 = tpengine_1.GetLikelihoodEvalEngine().GetPVs();
+  pvs_1.SetUseRemapping(false);
+  nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
+  nniengine_1.SetTopNScoreFilteringScheme(1);
+  nniengine_1.RunInit();
+  // NNI Engine that does NOT use remapping for reindexing PVs.
+  inst_2.MakeTPEngine();
+  inst_2.MakeNNIEngine();
+  auto& tpengine_2 = inst_2.GetTPEngine();
+  auto& nniengine_2 = inst_2.GetNNIEngine();
+  auto& pvs_2 = tpengine_2.GetLikelihoodEvalEngine().GetPVs();
+  pvs_2.SetUseRemapping(false);
+  nniengine_2.SetTPLikelihoodCutoffFilteringScheme(0.0);
+  nniengine_2.SetTopNScoreFilteringScheme(1);
+  nniengine_2.RunInit();
+
+  CHECK_MESSAGE(nniengine_1.GetDAG() == nniengine_2.GetDAG(),
+                "DAGs do not match (before adding NNIs).");
+  auto pvs_match = pvs_1.Compare(pvs_1, pvs_2, false);
+  CHECK_MESSAGE(pvs_match, "PVs do not match (before adding NNIs).");
+
+  size_t max_iter = 5;
+  for (size_t iter = 0; iter < max_iter; iter++) {
+    bool pvs_match;
+    nniengine_1.RunMainLoop();
+    nniengine_1.RunPostLoop();
+    pvs_match = pvs_1.Compare(pvs_1, pvs_2, true);
+    CHECK_FALSE_MESSAGE(
+        pvs_match, "PVs incorrectly match (after adding NNIs to only one NNIEngine).");
+
+    nniengine_2.RunMainLoop();
+    nniengine_2.RunPostLoop();
+    pvs_match = pvs_1.Compare(pvs_1, pvs_2, false);
+    CHECK_MESSAGE(pvs_match, "PVs do not match (after adding NNIs).");
   }
 }
 

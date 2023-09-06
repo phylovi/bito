@@ -26,6 +26,14 @@ bool Reindexer::IsValid(std::optional<size_t> length) const {
 
 // ** Modification Operations
 
+void Reindexer::Resize(size_t new_size) {
+  const auto old_size = GetData().size();
+  GetData().resize(new_size);
+  for (size_t i = old_size; i < new_size; i++) {
+    GetData()[i] = i;
+  }
+}
+
 // Gets the inverse of a given reindexer.
 Reindexer Reindexer::InvertReindexer() const {
   Assert(IsValid(), "Reindexer must be valid in Reindexer::InvertedReindexer.");
