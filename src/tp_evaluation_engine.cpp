@@ -164,6 +164,10 @@ void TPEvalEngineViaLikelihood::GrowNodeData(
 void TPEvalEngineViaLikelihood::GrowEdgeData(
     const size_t edge_count, std::optional<const Reindexer> edge_reindexer,
     std::optional<const size_t> explicit_alloc, const bool on_init) {
+  bool is_quiet = true;
+  std::stringstream dev_null;
+  std::ostream &os = (is_quiet ? dev_null : std::cout);
+  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   // Build resizer for resizing data.
   Resizer resizer(GetTPEngine().GetEdgeCount(), GetTPEngine().GetSpareEdgeCount(),
                   GetTPEngine().GetAllocatedEdgeCount(), edge_count, std::nullopt,
@@ -176,11 +180,13 @@ void TPEvalEngineViaLikelihood::GrowEdgeData(
   resizer.ApplyResizeToEigenVector<EigenVectorXd, double>(GetTopTreeScores(),
                                                           DOUBLE_NEG_INF);
   GetPVs().Resize(resizer.GetNewCount(), resizer.GetNewAlloc(), resizer.GetNewSpare());
+
   // Reindex work space to realign with DAG.
   if (edge_reindexer.has_value()) {
     auto pv_reindexer = GetPVs().BuildPVReindexer(
         edge_reindexer.value(), resizer.GetOldCount(), resizer.GetNewCount());
     GetPVs().Reindex(pv_reindexer);
+    os << "TPLikelihood::ReindexEdgeData::PVs: " << timer.Lap() << std::endl;
     Reindexer::ReindexInPlace<EigenVectorXd, double>(
         GetTopTreeScores(), edge_reindexer.value(), resizer.GetNewCount());
   }
@@ -622,13 +628,11 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
               // changed).
               MultiplyPVs(parent_rfocal, parent_rhat, parent_phatsister);
             }
-
             // Optimize branch length.
             if (update_branch_length) {
               branch_handler_.OptimizeBranchLength(edge_id, parent_rfocal, child_p,
                                                    iter > 0);
             }
-
             if (is_not_parent_edge) {
               // Update parent_phatfocal after changing branch length.
               SetToEvolvedPV(parent_phatfocal, edge_id, child_p);
@@ -730,6 +734,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
       GetMatrix().block(temp_edge_id_map.central_edge_.value_, spare_offset, 1,
                         GetMatrix().cols()) *
       GetTPEngine().GetSitePatternWeights();
+
   return top_tree_likelihood[spare_offset];
 }
 

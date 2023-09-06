@@ -1050,15 +1050,7 @@ void NNIEvalEngineViaTP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
   const auto best_edge_map = GetTPEngine().BuildBestEdgeMapOverNNIs(adjacent_nnis);
   for (const auto &nni : adjacent_nnis) {
     const auto pre_nni = GetDAG().FindNNINeighborInDAG(nni);
-    bool is_new_nni = (GetNNIEngine().GetPastScoredNNIs().find(nni) ==
-                       GetNNIEngine().GetPastScoredNNIs().end());
-    bool do_rescore_nni = GetNNIEngine().GetRescoreRejectedNNIs();
-    bool do_reeval_nni = GetNNIEngine().GetReevaluateRejectedNNIs();
-    if (is_new_nni || (do_reeval_nni && do_rescore_nni)) {
-      GetScoredNNIs()[nni] = GetTPEngine().GetTopTreeScoreWithProposedNNI(nni, pre_nni);
-    } else if (do_reeval_nni) {
-      GetScoredNNIs()[nni] = GetNNIEngine().GetPastScoredNNIs().find(nni)->second;
-    }
+    GetScoredNNIs()[nni] = GetTPEngine().GetTopTreeScoreWithProposedNNI(nni, pre_nni);
   }
 }
 

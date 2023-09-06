@@ -773,7 +773,18 @@ TEST_CASE("GPInstance: test GPCSP indexes") {
   });
 }
 
-TEST_CASE("GPInstance: test rootsplits") {
+// ** SubsplitDAG tests **
+
+template <typename T>
+std::vector<T> ConvertIdVector(const SizeVector& vec_in) {
+  std::vector<T> vec_out;
+  for (const auto i : vec_in) {
+    vec_out.push_back(T(i));
+  }
+  return vec_out;
+}
+
+TEST_CASE("SubsplitDAG: test rootsplits") {
   const std::string fasta_path = "data/7-taxon-slice-of-ds1.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/simplest-hybrid-marginal.nwk");
   inst.SubsplitDAGToDot("_ignore/outtest.dot", true);
@@ -785,7 +796,7 @@ TEST_CASE("GPInstance: test rootsplits") {
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168046752.
-TEST_CASE("GPInstance: IsValidAddNodePair tests") {
+TEST_CASE("SubsplitDAG: IsValidAddNodePair tests") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
   auto& dag = inst.GetDAG();
@@ -816,17 +827,8 @@ TEST_CASE("GPInstance: IsValidAddNodePair tests") {
                                Bitset::Subsplit("11100", "00010")));
 }
 
-template <typename T>
-std::vector<T> ConvertIdVector(const SizeVector& vec_in) {
-  std::vector<T> vec_out;
-  for (const auto i : vec_in) {
-    vec_out.push_back(T(i));
-  }
-  return vec_out;
-}
-
 // See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168059272.
-TEST_CASE("GPInstance: AddNodePair tests") {
+TEST_CASE("SubsplitDAG: AddNodePair tests") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
   auto& dag = inst.GetDAG();
@@ -921,50 +923,8 @@ TEST_CASE("GPInstance: AddNodePair tests") {
   CHECK_EQ(dag.TopologyCount(), prev_topology_count + 2);
 }
 
-// Tests that reindexers match the remapped node_ids and edge_idxs after AddNodePair.
-TEST_CASE("GPInstance: Reindexers for AddNodePair") {
-  const std::string fasta_path = "data/five_taxon.fasta";
-  const std::string newick_path = "data/five_taxon_rooted_more_2.nwk";
-  auto pre_inst = GPInstanceOfFiles(fasta_path, newick_path);
-  auto& pre_dag = pre_inst.GetDAG();
-  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
-  auto& dag = inst.GetDAG();
-  inst.MakeNNIEngine();
-  auto& nni_engine = inst.GetNNIEngine();
-  nni_engine.SyncAdjacentNNIsWithDAG();
-
-  for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
-    auto mods = dag.AddNodePair(nni);
-    for (NodeId old_idx = NodeId(0); old_idx < pre_dag.NodeCount(); old_idx++) {
-      NodeId new_idx =
-          NodeId(mods.node_reindexer.GetNewIndexByOldIndex(old_idx.value_));
-      Bitset old_node = pre_dag.GetDAGNode(old_idx).GetBitset();
-      Bitset new_node = dag.GetDAGNode(new_idx).GetBitset();
-      CHECK_EQ(old_node, new_node);
-    }
-    for (size_t old_idx = 0; old_idx < pre_dag.EdgeCount(); old_idx++) {
-      size_t new_idx = mods.edge_reindexer.GetNewIndexByOldIndex(old_idx);
-      Bitset old_parent =
-          pre_dag.GetDAGNode(NodeId(pre_dag.GetDAGEdge(EdgeId(old_idx)).GetParent()))
-              .GetBitset();
-      Bitset old_child =
-          pre_dag.GetDAGNode(NodeId(pre_dag.GetDAGEdge(EdgeId(old_idx)).GetChild()))
-              .GetBitset();
-      Bitset new_parent =
-          dag.GetDAGNode(NodeId(dag.GetDAGEdge(EdgeId(new_idx)).GetParent()))
-              .GetBitset();
-      Bitset new_child =
-          dag.GetDAGNode(NodeId(dag.GetDAGEdge(EdgeId(new_idx)).GetChild()))
-              .GetBitset();
-      CHECK_EQ(old_parent, new_parent);
-      CHECK_EQ(old_child, new_child);
-    }
-    pre_dag.AddNodePair(nni);
-  }
-}
-
 // See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168061363.
-TEST_CASE("GPInstance: Only add parent node tests") {
+TEST_CASE("SubsplitDAG: Only add parent node tests") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_2.nwk");
   auto& dag = inst.GetDAG();
@@ -990,7 +950,7 @@ TEST_CASE("GPInstance: Only add parent node tests") {
 }
 
 // See diagram at https://github.com/phylovi/bito/issues/391#issuecomment-1168064347.
-TEST_CASE("GPInstance: Only add child node tests") {
+TEST_CASE("SubsplitDAG: Only add child node tests") {
   const std::string fasta_path = "data/five_taxon.fasta";
   auto inst = GPInstanceOfFiles(fasta_path, "data/five_taxon_rooted_more_3.nwk");
   auto& dag = inst.GetDAG();
@@ -1012,6 +972,240 @@ TEST_CASE("GPInstance: Only add child node tests") {
            EdgeId(5));
   CHECK_EQ(dag.GetChildEdgeRange(dag.GetDAGNode(NodeId(11)).GetBitset(), false).second,
            EdgeId(7));
+}
+
+// Checks that parent nodes found via scan match found via map.
+auto TestParentNodeIds = [](const GPDAG& dag, const Bitset& subsplit) {
+  const auto [left_via_map, right_via_map] = dag.FindParentNodeIdsViaMap(subsplit);
+  const auto [left_via_scan, right_via_scan] = dag.FindParentNodeIdsViaScan(subsplit);
+  std::unordered_set<NodeId> left_via_map_set(left_via_map.begin(), left_via_map.end());
+  std::unordered_set<NodeId> right_via_map_set(right_via_map.begin(),
+                                               right_via_map.end());
+  std::unordered_set<NodeId> left_via_scan_set(left_via_scan.begin(),
+                                               left_via_scan.end());
+  std::unordered_set<NodeId> right_via_scan_set(right_via_scan.begin(),
+                                                right_via_scan.end());
+
+  bool matches = !(left_via_map_set != left_via_scan_set or
+                   right_via_map_set != right_via_scan_set);
+  if (!matches) {
+    std::cout << "FindParentNodeIds [FAIL_BEGIN]" << std::endl;
+    std::cout << "Subsplit: " << subsplit.SubsplitToString() << std::endl;
+    std::cout << "LinearSearch: " << left_via_scan_set << " " << right_via_scan_set
+              << std::endl;
+    std::cout << "MapSearch: " << left_via_map_set << " " << right_via_map_set
+              << std::endl;
+
+    std::cout << "via_map_set: [ ";
+    for (const auto node_id : left_via_map_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] [ ";
+    for (const auto node_id : right_via_map_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] " << std::endl;
+
+    std::cout << "via_scan_set: [ ";
+    for (const auto node_id : left_via_scan_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] [ ";
+    for (const auto node_id : right_via_scan_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] " << std::endl;
+
+    std::cout << "FindParentNodeIds [FAIL_END]" << std::endl;
+  } else {
+    // std::cout << "FindParentNodeIds [PASS]" << std::endl;
+  }
+  return matches;
+};
+// Checks that child nodes found via scan match found via map.
+auto TestChildNodeIds = [](const GPDAG& dag, const Bitset& subsplit) {
+  const auto [left_via_map, right_via_map] = dag.FindChildNodeIdsViaMap(subsplit);
+  const auto [left_via_scan, right_via_scan] = dag.FindChildNodeIdsViaScan(subsplit);
+  std::unordered_set<NodeId> left_via_map_set(left_via_map.begin(), left_via_map.end());
+  std::unordered_set<NodeId> right_via_map_set(right_via_map.begin(),
+                                               right_via_map.end());
+  std::unordered_set<NodeId> left_via_scan_set(left_via_scan.begin(),
+                                               left_via_scan.end());
+  std::unordered_set<NodeId> right_via_scan_set(right_via_scan.begin(),
+                                                right_via_scan.end());
+
+  bool matches = !(left_via_map_set != left_via_scan_set or
+                   right_via_map_set != right_via_scan_set);
+  if (!matches) {
+    std::cout << "FindChildNodeIds [FAIL_BEGIN]" << std::endl;
+    std::cout << "Subsplit: " << subsplit.SubsplitToString() << std::endl;
+    std::cout << "LinearSearch: " << left_via_scan_set << " " << right_via_scan_set
+              << std::endl;
+    std::cout << "MapSearch: " << left_via_map_set << " " << right_via_map_set
+              << std::endl;
+
+    std::cout << "via_map_set: [ ";
+    for (const auto node_id : left_via_map_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] [ ";
+    for (const auto node_id : right_via_map_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] " << std::endl;
+
+    std::cout << "via_scan_set: [ ";
+    for (const auto node_id : left_via_scan_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] [ ";
+    for (const auto node_id : right_via_scan_set) {
+      std::cout << dag.GetDAGNode(node_id).GetBitset().SubsplitToString() << " ";
+    }
+    std::cout << "] " << std::endl;
+
+    std::cout << "FindChildNodeIds [FAIL_END]" << std::endl;
+  } else {
+    // std::cout << "FindChildNodeIds [PASS]" << std::endl;
+  }
+  return matches;
+};
+
+// Compares adding nodes to DAG individually vs adding multiple nodes. Additionally,
+// tests that adjacent nodes from acquired via map lookup match those acquired via
+// linear scan.
+TEST_CASE("SubsplitDAG: Add Multiple Nodes") {
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  // Instance that will be unaltered.
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  inst.MakeNNIEngine();
+  NNIEngine& nni_engine = inst.GetNNIEngine();
+  GPDAG dag1 = inst.GetDAG();
+  GPDAG dag2 = inst.GetDAG();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+
+  // Check unaltered DAG nodes match via map and via linear scan.
+  for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
+    const auto subsplit = dag1.GetDAGNodeBitset(node_id);
+    CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
+                  "Child nodes found by map lookup do not match those found by linear "
+                  "scan (before adding nodes).");
+    CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
+                  "Parent nodes found by map lookup do not match those found by linear "
+                  "scan (before adding nodes).");
+  }
+
+  // Check DAG nodes match after adding nodes individually.
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    auto mods1 = dag1.AddNodePair(nni);
+    for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
+      const auto subsplit = dag1.GetDAGNodeBitset(node_id);
+      CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
+                    "Child nodes found by map lookup do not match those found by "
+                    "linear scan (after adding nodes).");
+      CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
+                    "Parent nodes found by map lookup do not match those found by "
+                    "linear scan (after adding nodes).");
+    }
+  }
+
+  CHECK_MESSAGE(
+      dag1 != dag2,
+      "DAG with nodes added individually incorrectly matches the DAG with nodes "
+      "added collectively (before adding nodes).");
+  // Check DAGs match by adding nodes individually vs all-at-once.
+  std::vector<std::pair<Bitset, Bitset>> node_subsplit_pairs;
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    node_subsplit_pairs.push_back({nni.GetParent(), nni.GetChild()});
+  }
+  dag2.AddNodes(node_subsplit_pairs);
+  CHECK_MESSAGE(dag1 == dag2,
+                "DAG with nodes added individually does not match the DAG with nodes "
+                "added collectively.");
+}
+
+// Compares adding nodes to DAG individually vs adding multiple nodes. Additionally,
+// tests that adjacent nodes from acquired via map lookup match those acquired via
+// linear scan.
+TEST_CASE("SubsplitDAG: Graft Multiple Nodes") {
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  // Instance that will be unaltered.
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  inst.MakeNNIEngine();
+  NNIEngine& nni_engine = inst.GetNNIEngine();
+  GPDAG dag1 = inst.GetDAG();
+  GraftDAG& graft_dag = nni_engine.GetGraftDAG();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+
+  // Check DAG nodes match after grafting nodes individually.
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    auto mods1 = graft_dag.AddNodePair(nni);
+    for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
+      const auto subsplit = dag1.GetDAGNodeBitset(node_id);
+      CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
+                    "Child nodes found by map lookup do not match those found by "
+                    "linear scan (after adding graft).");
+      CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
+                    "Parent nodes found by map lookup do not match those found by "
+                    "linear scan (after adding graft).");
+    }
+    graft_dag.RemoveAllGrafts();
+    for (const auto node_id : dag1.LeafwardNodeTraversalTrace(true)) {
+      const auto subsplit = dag1.GetDAGNodeBitset(node_id);
+      CHECK_MESSAGE(TestChildNodeIds(dag1, subsplit),
+                    "Child nodes found by map lookup do not match those found by "
+                    "linear scan (after removing graft).");
+      CHECK_MESSAGE(TestParentNodeIds(dag1, subsplit),
+                    "Parent nodes found by map lookup do not match those found by "
+                    "linear scan (after removing graft).");
+    }
+  }
+}
+
+// Tests DAG after modifying
+TEST_CASE("SubsplitDAG: Add Multiple Edges") {
+  const std::string fasta_path = "data/six_taxon.fasta";
+  const std::string newick_path = "data/six_taxon_rooted_simple.nwk";
+  // Instance that will be unaltered.
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  inst.MakeNNIEngine();
+  NNIEngine& nni_engine = inst.GetNNIEngine();
+  GPDAG dag2 = inst.GetDAG();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+
+  for (const auto nni : nni_engine.GetAdjacentNNIs()) {
+    GPDAG dag1 = inst.GetDAG();
+    // Get connecting nodes.
+    const auto grandparent_nodeid = dag1.FindFirstParentNodeId(nni.GetParent());
+    const auto sister_nodeid =
+        dag1.FindFirstChildNodeId(nni.GetParent(), nni.WhichCladeIsSister());
+    const auto leftchild_nodeid =
+        dag1.FindFirstChildNodeId(nni.GetChild(), SubsplitClade::Left);
+    const auto rightchild_nodeid =
+        dag1.FindFirstChildNodeId(nni.GetChild(), SubsplitClade::Right);
+    std::vector<NodeId> node_ids{
+        {grandparent_nodeid, sister_nodeid, leftchild_nodeid, rightchild_nodeid}};
+    // Get PCSP Bitsets.
+    std::vector<Bitset> pcsps;
+    pcsps.push_back(
+        Bitset::PCSP(dag1.GetDAGNodeBitset(grandparent_nodeid), nni.GetParent()));
+    pcsps.push_back(
+        Bitset::PCSP(nni.GetParent(), dag1.GetDAGNodeBitset(sister_nodeid)));
+    pcsps.push_back(nni.GetCentralEdgePCSP());
+    pcsps.push_back(
+        Bitset::PCSP(nni.GetChild(), dag1.GetDAGNodeBitset(leftchild_nodeid)));
+    pcsps.push_back(
+        Bitset::PCSP(nni.GetChild(), dag1.GetDAGNodeBitset(rightchild_nodeid)));
+    dag1.AddEdges(pcsps);
+    for (const auto pcsp : pcsps) {
+      CHECK_MESSAGE(dag1.ContainsEdge(pcsp), "DAG does not contain added edge.");
+    }
+    CHECK_MESSAGE(
+        dag1.EdgeCountWithLeafSubsplits() == dag2.EdgeCountWithLeafSubsplits() + 5,
+        "DAG does not contain proper number of edges after adding edges.");
+  }
 }
 
 // ** NNIEngine tests **
@@ -1056,6 +1250,47 @@ std::pair<NodeMap, EdgeMap> BuildNodeAndEdgeMapsFromPreDAGToPostDAG(GPDAG& pre_d
   }
 
   return std::make_pair(node_map, edge_map);
+}
+
+// Tests that reindexers match the remapped node_ids and edge_idxs after AddNodePair.
+TEST_CASE("NNIEngine: Reindexers for AddNodePair") {
+  const std::string fasta_path = "data/five_taxon.fasta";
+  const std::string newick_path = "data/five_taxon_rooted_more_2.nwk";
+  auto pre_inst = GPInstanceOfFiles(fasta_path, newick_path);
+  auto& pre_dag = pre_inst.GetDAG();
+  auto inst = GPInstanceOfFiles(fasta_path, newick_path);
+  auto& dag = inst.GetDAG();
+  inst.MakeNNIEngine();
+  auto& nni_engine = inst.GetNNIEngine();
+  nni_engine.SyncAdjacentNNIsWithDAG();
+
+  for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
+    auto mods = dag.AddNodePair(nni);
+    for (NodeId old_idx = NodeId(0); old_idx < pre_dag.NodeCount(); old_idx++) {
+      NodeId new_idx =
+          NodeId(mods.node_reindexer.GetNewIndexByOldIndex(old_idx.value_));
+      Bitset old_node = pre_dag.GetDAGNode(old_idx).GetBitset();
+      Bitset new_node = dag.GetDAGNode(new_idx).GetBitset();
+      CHECK_EQ(old_node, new_node);
+    }
+    for (EdgeId old_idx = EdgeId(0); old_idx < pre_dag.EdgeCount(); old_idx++) {
+      EdgeId new_idx =
+          EdgeId(mods.edge_reindexer.GetNewIndexByOldIndex(old_idx.value_));
+      Bitset old_parent =
+          pre_dag.GetDAGNode(NodeId(pre_dag.GetDAGEdge(old_idx).GetParent()))
+              .GetBitset();
+      Bitset old_child =
+          pre_dag.GetDAGNode(NodeId(pre_dag.GetDAGEdge(old_idx).GetChild()))
+              .GetBitset();
+      Bitset new_parent =
+          dag.GetDAGNode(NodeId(dag.GetDAGEdge(new_idx).GetParent())).GetBitset();
+      Bitset new_child =
+          dag.GetDAGNode(NodeId(dag.GetDAGEdge(new_idx).GetChild())).GetBitset();
+      CHECK_EQ(old_parent, new_parent);
+      CHECK_EQ(old_child, new_child);
+    }
+    pre_dag.AddNodePair(nni);
+  }
 }
 
 // This test builds a DAG, tests if engine generates the same set of adjacent NNIs and
@@ -1402,6 +1637,9 @@ TEST_CASE("NNIEngine: GraftDAG") {
           }
         }
       }
+    }
+    if (neighbor_count < 6) {
+      std::cout << "Too few neighbors to NNI: " << i << " " << nni << std::endl;
     }
     CHECK_MESSAGE(neighbor_count >= 6, "There were too few neighbors to NNI.");
   }
@@ -2599,12 +2837,13 @@ TEST_CASE("TPEngine: TPEngine Parsimony scores vs SankoffHandler Parsimony score
 // likelihoods of the actual NNIs already contained in DAG_2. This verifies we
 // generate the same result from adding NNIs to the DAG and updating as we do from
 // using the pre-NNI computation.
-TEST_CASE("NNIEngine via TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
+TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
+  bool print_failures = false;
   // Build NNIEngine from DAG that does not include NNIs. Compute likelihoods.
   auto CompareProposedNNIvsDAGNNIvsBEAGLE =
-      [](const std::string& fasta_path, const std::string& newick_path,
-         const bool optimize_branch_lengths = true,
-         const bool take_first_branch_lengths = true) {
+      [print_failures](const std::string& fasta_path, const std::string& newick_path,
+                       const bool optimize_branch_lengths = true,
+                       const bool take_first_branch_lengths = true) {
         bool test_passes = true;
         const double tol = 1e-5;
         // Instance for computing proposed scores.
@@ -2629,6 +2868,8 @@ TEST_CASE("NNIEngine via TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood"
             optimize_branch_lengths);
         inst_2.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizeNewEdges(
             optimize_branch_lengths);
+        inst_1.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(1);
+        inst_2.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(1);
 
         nni_engine_2.SetNoFilter(true);
         nni_engine_2.RunInit(true);
@@ -2678,6 +2919,17 @@ TEST_CASE("NNIEngine via TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood"
           test_passes &= matches_score_dag;
           test_passes &= matches_score_tree;
           test_passes &= matches_dag_tree;
+          if (print_failures) {
+            if (!matches_score_dag or !matches_score_tree) {
+              std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
+                        << score_proposed << ": " << abs(score_proposed - score_dag)
+                        << std::endl;
+              std::cout << "SCORE_FAILED_SCORE: " << score_tree << " vs " << score_dag
+                        << ": " << abs(score_dag - score_tree) << std::endl;
+            } else {
+              std::cout << "SCORE_PASS: " << score_tree << std::endl;
+            }
+          }
         }
 
         return test_passes;
@@ -2760,9 +3012,6 @@ TEST_CASE("TPEngine: Branch Length Optimization") {
   CHECK_LT(max_diff, tol);
 }
 
-// Builds a TPEngine with DAG, adds a subset of NNIs and produces an ordered Newick of
-// the Top Trees. Then builds a new DAG from the resulting Newick and tests that it
-// matches the original DAG.
 TEST_CASE("TPEngine: Exporting Newicks") {
   const std::string fasta_path = "data/five_taxon.fasta";
   const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
@@ -2805,42 +3054,6 @@ TEST_CASE("TPEngine: Exporting Newicks") {
     return tree_map;
   };
 
-  // Build all top trees in the TPEngine using brute force.  Check that it matches the
-  // top trees from the method.
-  auto BuildTopTreesTest = [&BuildTopTreeMapViaBruteForce](GPInstance& inst) {
-    std::vector<RootedTree> tree_map_1, tree_map_2;
-    tree_map_1 = BuildTopTreeMapViaBruteForce(inst);
-    auto tree_edge_map_2 = inst.GetTPEngine().BuildMapOfTreeIdToTopTrees();
-    for (TreeId tree_id(0); tree_id < inst.GetTPEngine().GetMaxTreeId(); tree_id++) {
-      if (tree_edge_map_2.find(tree_id) == tree_edge_map_2.end()) {
-        continue;
-      }
-      const auto& trees = tree_edge_map_2.find(tree_id)->second;
-      for (auto& tree : trees) {
-        bool tree_found = false;
-        for (size_t i = 0; i < tree_map_2.size(); i++) {
-          if (tree == tree_map_2[i]) {
-            tree_found = true;
-            break;
-          }
-        }
-        if (!tree_found) {
-          tree_map_2.push_back(tree);
-        }
-      }
-    }
-
-    std::string newick_1;
-    for (auto& tree : tree_map_1) {
-      newick_1 += tree.Topology()->Newick() + "\n";
-    }
-    std::string newick_2;
-    for (auto& tree : tree_map_2) {
-      newick_2 += tree.Topology()->Newick() + "\n";
-    }
-    return (newick_1 == newick_2);
-  };
-
   // Export a covering newick file from TPEngine, then build new DAG from that file.
   // Compare to the input DAG.
   auto BuildCoveringNewickAndCompareNewDAG = [](GPInstance& inst_1) {
@@ -2852,7 +3065,9 @@ TEST_CASE("TPEngine: Exporting Newicks") {
 
     auto inst_2 = GPInstanceOfFiles(inst_1.GetFastaSourcePath(), temp_newick_path,
                                     "_ignore/mmapped_pv.data1");
-    return SubsplitDAG::Compare(inst_1.GetDAG(), inst_2.GetDAG(), false);
+    bool dags_equal =
+        (SubsplitDAG::Compare(inst_1.GetDAG(), inst_2.GetDAG(), false) == 0);
+    return dags_equal;
   };
 
   // Export a top tree newick file from TPEngine, then build new TPEngine from that
@@ -2860,23 +3075,53 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   auto BuildTopTreeNewickAndCompareNewTPEngine =
       [&BuildTopTreeMapViaBruteForce](GPInstance& inst_1) {
         std::ofstream file_out;
+        // Use internal method for building Newick string.
         const std::string temp_newick_path_1 = "_ignore/temp_1.newick";
+        std::string newick_1 = inst_1.GetTPEngine().ToNewickOfTopTopologies();
         file_out.open(temp_newick_path_1);
-        file_out << inst_1.GetTPEngine().ToNewickOfTopTrees() << std::endl;
+        file_out << newick_1 << std::endl;
         file_out.close();
-        const std::string temp_newick_path_2 = "_ignore/temp_1.newick";
+        // Use brute force method for building Newick string.
+        const std::string temp_newick_path_2 = "_ignore/temp_2.newick";
+        std::string newick_2;
         file_out.open(temp_newick_path_2);
-        const auto tree_map = BuildTopTreeMapViaBruteForce(inst_1);
-        for (const auto& tree : tree_map) {
+        const auto tree_map_2 = BuildTopTreeMapViaBruteForce(inst_1);
+        for (const auto& tree : tree_map_2) {
+          newick_2 += inst_1.GetDAG().TreeToNewickTopology(tree) + '\n';
           file_out << inst_1.GetDAG().TreeToNewickTopology(tree) << std::endl;
         }
         file_out.close();
+        bool newicks_equal = (newick_1 == newick_2);
+        if (!newicks_equal) {
+          std::cerr << "ERROR: Newicks do not match." << std::endl;
+          auto tree_map_1 = inst_1.GetTPEngine().BuildMapOfTreeIdToTopTopologies();
+          std::cerr << "TREE_MAP_1: " << std::endl;
+          for (const auto& [tree_id, topos] : tree_map_1) {
+            for (const auto& topo : topos) {
+              std::cerr << "\tTree" << tree_id << ": " << topo->Newick() << std::endl;
+            }
+          }
+          auto tree_edge_map_1 = inst_1.GetTPEngine().BuildMapOfEdgeIdToTopTopologies();
+          std::cerr << "TREE_EDGE_MAP_1: " << std::endl;
+          for (const auto& [edge_ids, topo] : tree_edge_map_1) {
+            std::cerr << "\tEdge " << edge_ids << ": " << topo->Newick() << std::endl;
+          }
+          std::cerr << "NEWICK_1: " << std::endl << newick_1 << std::endl;
 
+          std::cerr << "NEWICK_2: " << std::endl << newick_2 << std::endl;
+        }
+
+        // Build new TPEngine and check that old and new engines are equal.
         auto inst_2 = GPInstanceOfFiles(inst_1.GetFastaSourcePath(), temp_newick_path_2,
-                                        "_ignore/mmapped_pv.data1");
+                                        "_ignore/mmapped_pv.data3");
         inst_2.MakeTPEngine();
         inst_2.MakeNNIEngine();
-        return TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), false);
+        bool engines_equal =
+            (TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), false) == 0);
+        if (!engines_equal) {
+          std::cerr << "ERROR: Engines do not match." << std::endl;
+        }
+        return (newicks_equal and engines_equal);
       };
 
   auto inst_1 =
@@ -2898,30 +3143,24 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   CHECK_MESSAGE(
       TPEngine::Compare(inst_1.GetTPEngine(), inst_2.GetTPEngine(), true) != 0,
       "TPEngines formed from shuffled Newicks are incorrectly equal.");
-  CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1) == 0,
+  CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1),
                 "DAG built from Covering Newick not equal to the DAG that build it "
                 "(before adding NNIs).");
-  CHECK_MESSAGE(
-      BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
-      "TPEngine built from Top Tree Newick not equal to the TPEngine that build it "
-      "(before adding NNIs).");
-  CHECK_MESSAGE(BuildTopTreesTest(inst_1),
-                "Top Newick Trees match trees built via brute force match TPEngine "
-                "method (before adding NNIs).");
+  CHECK_MESSAGE(BuildTopTreeNewickAndCompareNewTPEngine(inst_1),
+                "Newick and TPEngine built from Top Tree Newick not equal to the "
+                "TPEngine that build it (before adding NNIs).");
 
-  size_t optimization_count = 2;
-  tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(optimization_count);
+  tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(5);
   tp_engine.GetLikelihoodEvalEngine().BranchLengthOptimization(false);
   nni_engine.SetTPLikelihoodCutoffFilteringScheme(0.0);
   nni_engine.SetTopNScoreFilteringScheme(1);
   nni_engine.SetReevaluateRejectedNNIs(true);
   nni_engine.RunInit(true);
 
-  for (size_t iter = 0; iter < 5; iter++) {
+  for (size_t iter = 0; iter < 10; iter++) {
     nni_engine.RunMainLoop(true);
-    // nni_engine.GetDAG().PrintStorage();
 
-    // if (iter == 7) break;
+    if (iter == 7) break;
     // Issue #479: this creates an unknown problem on iteration 7.
     // Error occurs during GetLine() in subsplit_dag_storage.hpp:564.
     // Parent-child vertice pair references a line outside range of DAG.
@@ -2929,16 +3168,12 @@ TEST_CASE("TPEngine: Exporting Newicks") {
 
     nni_engine.RunPostLoop(true);
 
-    CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1) == 0,
+    CHECK_MESSAGE(BuildCoveringNewickAndCompareNewDAG(inst_1),
                   "DAG built from Covering Newick not equal to the DAG that build it"
-                  "(after adding NNIs).");
-    CHECK_MESSAGE(
-        BuildTopTreeNewickAndCompareNewTPEngine(inst_1) == 0,
-        "TPEngine built from Top Tree Newick not equal to the TPEngine that build it"
-        "(after adding NNIs).");
-    CHECK_MESSAGE(BuildTopTreesTest(inst_1),
-                  "Top Newick Trees match trees built via brute force match TPEngine"
-                  "method (after adding NNIs).");
+                  " (after adding NNIs).");
+    CHECK_MESSAGE(BuildTopTreeNewickAndCompareNewTPEngine(inst_1),
+                  "Newicks and TPEngine built from Top Tree Newick not equal to the "
+                  "TPEngine that build it (after adding NNIs).");
   }
 }
 

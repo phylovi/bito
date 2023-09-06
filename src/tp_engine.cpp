@@ -15,12 +15,14 @@ TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
                    std::optional<const RootedTreeCollection> tree_collection,
                    std::optional<const BitsetSizeMap> edge_indexer)
     : choice_map_(dag), site_pattern_(site_pattern), dag_(&dag) {
+  for (const auto eval_engine : TPEvalEngineTypeEnum::Iterator()) {
+    eval_engine_in_use_[eval_engine] = false;
+  }
   // Initialize site pattern-based data.
   auto weights = site_pattern_.GetWeights();
   site_pattern_weights_ = EigenVectorXdOfStdVectorDouble(weights);
-  // Initialize node-based data
+  // Initialize node and edge data.
   GrowNodeData(GetDAG().NodeCount(), std::nullopt, std::nullopt, true);
-  // Initialize edge-based data
   GrowEdgeData(GetDAG().EdgeCountWithLeafSubsplits(), std::nullopt, std::nullopt, true);
   // Initialize Tree Source.
   if (tree_collection.has_value() && edge_indexer.has_value()) {
@@ -37,6 +39,9 @@ TPEngine::TPEngine(GPDAG &dag, SitePattern &site_pattern,
   if (mmap_parsimony_path.has_value()) {
     MakeParsimonyEvalEngine(mmap_parsimony_path.value());
   }
+  // Initialize node and edge data for eval engines.
+  GrowNodeData(GetDAG().NodeCount(), std::nullopt, std::nullopt, true);
+  GrowEdgeData(GetDAG().EdgeCountWithLeafSubsplits(), std::nullopt, std::nullopt, true);
   InitializeScores();
 }
 
@@ -154,7 +159,8 @@ int TPEngine::Compare(const TPEngine &lhs, const TPEngine &rhs, const bool is_qu
       final_diff = choice_diff;
     }
   }
-  if (lhs.HasLikelihoodEvalEngine() && rhs.HasLikelihoodEvalEngine()) {
+  if (lhs.IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine) &&
+      rhs.IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     auto branch_diff =
         DAGBranchHandler::Compare(lhs.GetLikelihoodEvalEngine().GetDAGBranchHandler(),
                                   rhs.GetLikelihoodEvalEngine().GetDAGBranchHandler());
@@ -187,7 +193,8 @@ void TPEngine::UpdateAfterModifyingDAG(
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer, bool is_quiet) {
   std::stringstream dev_null;
-  std::ostream &os = (is_quiet ? dev_null : std::cout);
+  bool is_quiet_ = true;
+  std::ostream &os = (is_quiet_ ? dev_null : std::cout);
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   UpdateChoiceMapAfterModifyingDAG(nni_to_pre_nni, prev_node_count, node_reindexer,
                                    prev_edge_count, edge_reindexer);
@@ -214,7 +221,7 @@ Node::Topology TPEngine::GetTopTopologyWithEdge(const EdgeId edge_id) const {
 }
 
 RootedTree TPEngine::GetTopTreeWithEdge(const EdgeId edge_id) const {
-  Assert(HasLikelihoodEvalEngine(),
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
          "Must MakeLikelihoodEvalEngine before getting top tree.");
   auto topology = GetTopTopologyWithEdge(edge_id);
   return BuildTreeFromTopologyInDAG(topology);
@@ -413,7 +420,7 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
   }
 
   // Update branch lengths from best reference edges.
-  if (HasLikelihoodEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     auto &branch_handler = GetLikelihoodEvalEngine().GetDAGBranchHandler();
     for (const auto &[post_edge_id, pre_edge_id] : best_edge_map) {
       branch_handler(post_edge_id) = branch_handler(pre_edge_id);
@@ -1072,12 +1079,14 @@ void TPEngine::MakeLikelihoodEvalEngine(const std::string &mmap_likelihood_path)
   likelihood_engine_ =
       std::make_unique<TPEvalEngineViaLikelihood>(*this, mmap_likelihood_path);
   eval_engine_ = likelihood_engine_.get();
+  eval_engine_in_use_[TPEvalEngineType::LikelihoodEvalEngine] = true;
 }
 
 void TPEngine::MakeParsimonyEvalEngine(const std::string &mmap_parsimony_path) {
   parsimony_engine_ =
       std::make_unique<TPEvalEngineViaParsimony>(*this, mmap_parsimony_path);
   eval_engine_ = parsimony_engine_.get();
+  eval_engine_in_use_[TPEvalEngineType::ParsimonyEvalEngine] = true;
 }
 
 void TPEngine::ClearEvalEngineInUse() {
@@ -1100,7 +1109,7 @@ void TPEngine::SelectEvalEngine(const TPEvalEngineType eval_engine_type) {
 }
 
 void TPEngine::SelectLikelihoodEvalEngine() {
-  Assert(HasLikelihoodEvalEngine(),
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
          "Must MakeLikelihoodEvalEngine before selecting it.");
   ClearEvalEngineInUse();
   eval_engine_in_use_[TPEvalEngineType::LikelihoodEvalEngine] = true;
@@ -1108,7 +1117,8 @@ void TPEngine::SelectLikelihoodEvalEngine() {
 }
 
 void TPEngine::SelectParsimonyEvalEngine() {
-  Assert(HasParsimonyEvalEngine(), "Must MakeParimonyEvalEngine before selecting it.");
+  Assert(IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine),
+         "Must MakeParimonyEvalEngine before selecting it.");
   ClearEvalEngineInUse();
   eval_engine_in_use_[TPEvalEngineType::ParsimonyEvalEngine] = true;
   eval_engine_ = parsimony_engine_.get();
@@ -1120,12 +1130,12 @@ void TPEngine::UpdateEvalEngineAfterModifyingDAG(
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
   UpdateChoiceMapAfterModifyingDAG(nni_to_pre_nni, prev_node_count, node_reindexer,
                                    prev_edge_count, edge_reindexer);
-  if (HasLikelihoodEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().UpdateEngineAfterModifyingDAG(
         nni_to_pre_nni, prev_node_count, node_reindexer, prev_edge_count,
         edge_reindexer);
   }
-  if (HasParsimonyEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine)) {
     GetParsimonyEvalEngine().UpdateEngineAfterModifyingDAG(
         nni_to_pre_nni, prev_node_count, node_reindexer, prev_edge_count,
         edge_reindexer);
@@ -1144,19 +1154,19 @@ double TPEngine::GetTopTreeScoreWithProposedNNI(const NNIOperation &post_nni,
 // ** Maintenance
 
 void TPEngine::InitializeScores() {
-  if (HasLikelihoodEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().Initialize();
   }
-  if (HasParsimonyEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine)) {
     GetParsimonyEvalEngine().Initialize();
   }
 }
 
 void TPEngine::ComputeScores() {
-  if (HasLikelihoodEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().ComputeScores();
   }
-  if (HasParsimonyEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine)) {
     GetParsimonyEvalEngine().ComputeScores();
   }
 }
@@ -1164,11 +1174,11 @@ void TPEngine::ComputeScores() {
 void TPEngine::UpdateScoresAfterDAGAddNodePair(const NNIOperation &post_nni,
                                                const NNIOperation &pre_nni,
                                                std::optional<size_t> new_tree_id) {
-  if (HasLikelihoodEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().UpdateEngineAfterDAGAddNodePair(post_nni, pre_nni,
                                                               new_tree_id);
   }
-  if (HasParsimonyEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine)) {
     GetParsimonyEvalEngine().UpdateEngineAfterDAGAddNodePair(post_nni, pre_nni,
                                                              new_tree_id);
   }
@@ -1267,11 +1277,11 @@ void TPEngine::GrowNodeData(const size_t new_node_count,
                             std::optional<const Reindexer> node_reindexer,
                             std::optional<const size_t> explicit_alloc,
                             const bool on_init) {
-  if (HasLikelihoodEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().GrowNodeData(new_node_count, node_reindexer,
                                            explicit_alloc, on_init);
   }
-  if (HasParsimonyEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine)) {
     GetParsimonyEvalEngine().GrowNodeData(new_node_count, node_reindexer,
                                           explicit_alloc, on_init);
   }
@@ -1298,11 +1308,11 @@ void TPEngine::GrowEdgeData(const size_t new_edge_count,
                             std::optional<const size_t> explicit_alloc,
                             const bool on_init) {
   GetChoiceMap().GrowEdgeData(new_edge_count, edge_reindexer, explicit_alloc, on_init);
-  if (HasLikelihoodEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().GrowEdgeData(new_edge_count, edge_reindexer,
                                            explicit_alloc, on_init);
   }
-  if (HasParsimonyEvalEngine()) {
+  if (IsEvalEngineInUse(TPEvalEngineType::ParsimonyEvalEngine)) {
     GetParsimonyEvalEngine().GrowEdgeData(new_edge_count, edge_reindexer,
                                           explicit_alloc, on_init);
   }

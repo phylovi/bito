@@ -64,7 +64,29 @@ int GraftDAG::CompareToDAG(const GraftDAG &lhs, const SubsplitDAG &rhs) {
 
 // ** Modify GraftDAG
 
-void GraftDAG::RemoveAllGrafts() { ResetHostDAG(host_dag_); }
+SubsplitDAG::ModificationResult GraftDAG::AddNodePair(const NNIOperation &nni) {
+  return AddNodePair(nni.parent_, nni.child_);
+}
+
+SubsplitDAG::ModificationResult GraftDAG::AddNodePair(const Bitset &parent_subsplit,
+                                                      const Bitset &child_subsplit) {
+  GetHostDAG().IsValidAddNodePair(parent_subsplit, child_subsplit);
+  return AddNodes({{parent_subsplit, child_subsplit}});
+}
+
+SubsplitDAG::ModificationResult GraftDAG::AddNodes(
+    const BitsetPairVector &node_subsplit_pairs) {
+  auto mods = SubsplitDAG::AddNodePairInternals(node_subsplit_pairs);
+  graft_node_count_ += mods.added_node_ids.size();
+  graft_edge_count_ += mods.added_edge_idxs.size();
+  return mods;
+}
+
+void GraftDAG::RemoveAllGrafts() {
+  ResetHostDAG(host_dag_);
+  graft_node_count_ = 0;
+  graft_edge_count_ = 0;
+}
 
 // ** Getters
 
@@ -82,7 +104,9 @@ size_t GraftDAG::GraftEdgeCount() const {
   return storage_.GetLines().size() - storage_.HostLinesCount();
 }
 
-size_t GraftDAG::HostEdgeCount() const { return storage_.HostLinesCount(); }
+size_t GraftDAG::HostEdgeCount() const {
+  return GetHostDAG().EdgeCountWithLeafSubsplits();
+}
 
 bool GraftDAG::IsNodeFromHost(NodeId node_id) const {
   return node_id < HostNodeCount();

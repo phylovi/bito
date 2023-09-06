@@ -135,10 +135,20 @@ class SubsplitDAG {
   BitsetSizeMap BuildEdgeIndexer() const;
   // Builds inverse of EdgeIndexer map: (edge index -> edge/PCSP bitset).
   SizeBitsetMap BuildInverseEdgeIndexer() const;
+
   // Get the rotated and sorted parents of the node with the given subsplit.
-  NodeIdVectorPair BuildParentIdVectors(const Bitset &subsplit) const;
+  NodeIdVectorPair FindParentNodeIds(const Bitset &subsplit) const;
+  NodeIdVectorPair FindParentNodeIdsViaMap(const Bitset &subsplit) const;
+  NodeIdVectorPair FindParentNodeIdsViaScan(const Bitset &subsplit,
+                                            bool graft_nodes_only = false) const;
+  NodeId FindFirstParentNodeId(const Bitset &subsplit) const;
   // Get the rotated and sorted children of the node with the given subsplit.
-  NodeIdVectorPair BuildChildIdVectors(const Bitset &subsplit) const;
+  NodeIdVectorPair FindChildNodeIds(const Bitset &subsplit) const;
+  NodeIdVectorPair FindChildNodeIdsViaMap(const Bitset &subsplit) const;
+  NodeIdVectorPair FindChildNodeIdsViaScan(const Bitset &subsplit,
+                                           bool graft_nodes_only = false) const;
+  NodeId FindFirstChildNodeId(const Bitset &subsplit, const SubsplitClade clade) const;
+
   // Output RootedIndexerRepresentation of DAG (from RootedSBNMaps).
   // RootedIndexerRepresentation is a vector of edge idxs in topological preorder.
   RootedIndexerRepresentation IndexerRepresentationOf(const BitsetSizeMap &indexer,
@@ -483,6 +493,10 @@ class SubsplitDAG {
   virtual ModificationResult AddNodePair(const NNIOperation &nni);
   virtual ModificationResult AddNodePair(const Bitset &parent_subsplit,
                                          const Bitset &child_subsplit);
+  // Add multiple nodes to the DAG.
+  ModificationResult AddNodes(const BitsetPairVector &node_subsplit_pairs);
+  // Add multiple edges to the DAG.
+  ModificationResult AddEdges(const std::vector<Bitset> &edge_subsplits);
 
   // Add all pontential edges to DAG. Building DAGs from a collection of trees can
   // result in a DAG that is not fully connected, in which one or more potentially
@@ -667,6 +681,13 @@ class SubsplitDAG {
   // has already been performed.
   ModificationResult AddNodePairInternals(const Bitset &parent_subsplit,
                                           const Bitset &child_subsplit);
+  ModificationResult AddNodePairInternals(
+      const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs);
+  // Internal logic helper that inserts node pair without reindexing. Just appends and
+  // adds nodes to modification result.
+  void AddNodePairInternalsWithoutReindexing(
+      const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs,
+      ModificationResult &mods);
 
   // Check if a node would have at least one valid neighboring parent exist in
   // the DAG for given subsplit.
@@ -703,6 +724,16 @@ class SubsplitDAG {
   // reserved for leaf subsplits. The last entries are reserved for rootsplits. The DAG
   // root node has the highest node id.
   BitsetNodeIdMap subsplit_to_id_;
+
+  // - These two maps facilitate a quick lookup of adjacent nodes in the DAG.
+  // The subsplit_union_ map contains a map from every clade union in the DAG to the set
+  // of all node_ids which contain that clade union.
+  BitsetNodeIdSetMap subsplit_union_;
+  // The subsplit_clade_ map ontains a map from every left and right clades of every
+  // subsplit in the DAG to the set of all node_ids which contain that clade as one of
+  // its sides.
+  BitsetNodeIdSetMap subsplit_clade_;
+
   // - Map of all DAG Nodes:
   //    - [ Node Subsplit (Bitset) => (begin, end) Range of Child Ids ]
   // This indexer is an expanded version of parent_to_child_range_ in sbn_instance:
