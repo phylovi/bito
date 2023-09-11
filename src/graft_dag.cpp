@@ -70,7 +70,7 @@ SubsplitDAG::ModificationResult GraftDAG::AddNodePair(const NNIOperation &nni) {
 
 SubsplitDAG::ModificationResult GraftDAG::AddNodePair(const Bitset &parent_subsplit,
                                                       const Bitset &child_subsplit) {
-  GetHostDAG().IsValidAddNodePair(parent_subsplit, child_subsplit);
+  // GetHostDAG().IsValidAddNodePair(parent_subsplit, child_subsplit);
   return AddNodes({{parent_subsplit, child_subsplit}});
 }
 

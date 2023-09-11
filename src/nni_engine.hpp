@@ -163,6 +163,9 @@ class NNIEngine {
     return scores;
   }
 
+  size_t GetNewNNICount() const { return new_nni_count_; }
+  size_t GetOldNNICount() const { return old_nni_count_; }
+
   // Get node reindexer
   const Reindexer &GetNodeReindexer() const { return node_reindexer_; }
   // Get edge reindexer
@@ -460,6 +463,9 @@ class NNIEngine {
   NNIDoubleMap scored_nnis_;
   // Map of previous rejected NNIs to their score.
   NNIDoubleMap scored_past_nnis_;
+  // Holds the counts of new NNIs (NNI not found in previous iterations) and old NNIs.
+  size_t new_nni_count_ = 0;
+  size_t old_nni_count_ = 0;
 
   // Steps of filtering scheme.
   StaticFilterInitFunction filter_init_fn_ = nullptr;

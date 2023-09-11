@@ -180,7 +180,8 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
 void NNIEngine::ScoreAdjacentNNIs() {
   // Split scored NNIs from ones we can just fetch previous computations and NNIs we
   // need to freshly compute.
-  NNISet old_nnis, new_nnis;
+  new_nni_count_ = old_nni_count_ = 0;
+  NNISet new_nnis;
   for (const auto &nni : GetAdjacentNNIs()) {
     bool is_new_nni = (GetPastScoredNNIs().find(nni) == GetPastScoredNNIs().end());
     bool do_rescore_nni = GetRescoreRejectedNNIs();
@@ -188,8 +189,12 @@ void NNIEngine::ScoreAdjacentNNIs() {
     if (is_new_nni or do_rescore_nni) {
       new_nnis.insert(nni);
     } else if (do_reeval_nni) {
-      old_nnis.insert(nni);
       GetScoredNNIs()[nni] = GetPastScoredNNIs().find(nni)->second;
+    }
+    if (is_new_nni) {
+      new_nni_count_++;
+    } else {
+      old_nni_count_++;
     }
   }
 
@@ -659,6 +664,7 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
   // auto mods = GetDAG().AddNodes(nodes_to_add);
   // node_reindexer_ = mods.node_reindexer;
   // edge_reindexer_ = mods.edge_reindexer;
+  RemoveAllGraftedNNIsFromDAG();
   os << "AddAcceptedNNIsToDAG::AddAll: " << timer.Lap() << std::endl;
 
   GrowEvalEngineForDAG(node_reindexer_, edge_reindexer_);
