@@ -1784,16 +1784,8 @@ NodeId SubsplitDAG::FindFirstChildNodeId(const Bitset &subsplit,
 
 void SubsplitDAG::ConnectChildToAllChildren(const Bitset &child_subsplit,
                                             EdgeIdVector &added_edge_idxs) {
-  std::stringstream dev_null;
-  bool is_quiet = true;
-  std::ostream &os = (is_quiet ? dev_null : std::cout);
-  Stopwatch timer_total(true, Stopwatch::TimeScale::SecondScale);
-  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
-
   const auto [left_leafward_of_child, right_leafward_of_child] =
       FindChildNodeIds(child_subsplit);
-  os << "ConnectChildToAllChildren::FindChildNodeIds: " << timer.Lap() << std::endl;
-
   for (const auto &[children_of_child, rotated] :
        std::vector<std::pair<NodeIdVector, bool>>{{left_leafward_of_child, true},
                                                   {right_leafward_of_child, false}}) {
@@ -1807,9 +1799,6 @@ void SubsplitDAG::ConnectChildToAllChildren(const Bitset &child_subsplit,
       added_edge_idxs.push_back(new_edge_idx);
     }
   }
-  os << "ConnectChildToAllChildren::CreateEdges: " << timer.Lap() << std::endl;
-
-  os << "ConnectChildToAllChildren::Total: " << timer_total.Lap() << std::endl;
 }
 
 void SubsplitDAG::ConnectParentToAllChildrenExcept(const Bitset &parent_subsplit,
