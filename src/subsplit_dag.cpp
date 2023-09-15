@@ -1754,35 +1754,35 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit,
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
   auto [left, right] = FindParentNodeIdsViaMap(subsplit);
-  auto [left_scan, right_scan] = FindParentNodeIdsViaScan(subsplit);
 
-  std::set<NodeId> left_set(left.begin(), left.end());
-  std::set<NodeId> left_scan_set(left_scan.begin(), left_scan.end());
-  std::set<NodeId> right_set(right.begin(), right.end());
-  std::set<NodeId> right_scan_set(right_scan.begin(), right_scan.end());
-  if (left_set != left_scan_set or right_set != right_scan_set) {
-    std::cerr << "ERROR: FIND_PARENT_NODES_FAILED: " << ContainsGraft() << " "
-              << NodeCount() << " " << subsplit_clade_.size() << std::endl;
-    std::cout << "LEFT: " << left_set << " " << left_scan_set << std::endl;
-    std::cout << "RIGHT: " << right_set << " " << right_scan_set << std::endl;
-  }
+  // auto [left_scan, right_scan] = FindParentNodeIdsViaScan(subsplit);
+  // std::set<NodeId> left_set(left.begin(), left.end());
+  // std::set<NodeId> left_scan_set(left_scan.begin(), left_scan.end());
+  // std::set<NodeId> right_set(right.begin(), right.end());
+  // std::set<NodeId> right_scan_set(right_scan.begin(), right_scan.end());
+  // if (left_set != left_scan_set or right_set != right_scan_set) {
+  //   std::cerr << "ERROR: FIND_PARENT_NODES_FAILED: " << ContainsGraft() << " "
+  //             << NodeCount() << " " << subsplit_clade_.size() << std::endl;
+  //   std::cout << "LEFT: " << left_set << " " << left_scan_set << std::endl;
+  //   std::cout << "RIGHT: " << right_set << " " << right_scan_set << std::endl;
+  // }
   return {left, right};
 }
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
   auto [left, right] = FindChildNodeIdsViaMap(subsplit);
-  auto [left_scan, right_scan] = FindChildNodeIdsViaScan(subsplit);
 
-  std::set<NodeId> left_set(left.begin(), left.end());
-  std::set<NodeId> left_scan_set(left_scan.begin(), left_scan.end());
-  std::set<NodeId> right_set(right.begin(), right.end());
-  std::set<NodeId> right_scan_set(right_scan.begin(), right_scan.end());
-  if (left_set != left_scan_set or right_set != right_scan_set) {
-    std::cerr << "ERROR: FIND_CHILD_NODES_FAILED: " << ContainsGraft() << " "
-              << NodeCount() << " " << subsplit_union_.size() << std::endl;
-    std::cerr << "LEFT: " << left_set << " " << left_scan_set << " " << std::endl;
-    std::cerr << "RIGHT: " << right_set << " " << right_scan_set << " " << std::endl;
-  }
+  // auto [left_scan, right_scan] = FindChildNodeIdsViaScan(subsplit);
+  // std::set<NodeId> left_set(left.begin(), left.end());
+  // std::set<NodeId> left_scan_set(left_scan.begin(), left_scan.end());
+  // std::set<NodeId> right_set(right.begin(), right.end());
+  // std::set<NodeId> right_scan_set(right_scan.begin(), right_scan.end());
+  // if (left_set != left_scan_set or right_set != right_scan_set) {
+  //   std::cerr << "ERROR: FIND_CHILD_NODES_FAILED: " << ContainsGraft() << " "
+  //             << NodeCount() << " " << subsplit_union_.size() << std::endl;
+  //   std::cerr << "LEFT: " << left_set << " " << left_scan_set << " " << std::endl;
+  //   std::cerr << "RIGHT: " << right_set << " " << right_scan_set << " " << std::endl;
+  // }
   return {left, right};
 }
 

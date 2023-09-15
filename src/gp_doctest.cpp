@@ -2269,8 +2269,6 @@ TEST_CASE("NNIEngine: Finding Parent and Child Nodes After Adding/Grafting Nodes
 
   size_t max_iter = 10;
   for (size_t iter = 0; iter < max_iter; iter++) {
-    std::cout << "DAG: " << dag_1.NodeCount() << " "
-              << dag_1.EdgeCountWithLeafSubsplits() << std::endl;
     nniengine_1.GraftAdjacentNNIsToDAG();
     for (NodeId node_id{0}; node_id < graftdag_1.NodeCount(); node_id++) {
       auto subsplit = graftdag_1.GetDAGNodeBitset(node_id);
