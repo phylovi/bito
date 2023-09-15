@@ -1929,7 +1929,6 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
     return mods;
   }
 
-  timer.Lap();
   // Add nodes and edges.
   AddNodePairInternalsWithoutReindexing(node_subsplit_pairs, mods);
 
