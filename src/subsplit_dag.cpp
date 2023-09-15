@@ -1753,37 +1753,11 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit,
 }
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
-  auto [left, right] = FindParentNodeIdsViaMap(subsplit);
-
-  // auto [left_scan, right_scan] = FindParentNodeIdsViaScan(subsplit);
-  // std::set<NodeId> left_set(left.begin(), left.end());
-  // std::set<NodeId> left_scan_set(left_scan.begin(), left_scan.end());
-  // std::set<NodeId> right_set(right.begin(), right.end());
-  // std::set<NodeId> right_scan_set(right_scan.begin(), right_scan.end());
-  // if (left_set != left_scan_set or right_set != right_scan_set) {
-  //   std::cerr << "ERROR: FIND_PARENT_NODES_FAILED: " << ContainsGraft() << " "
-  //             << NodeCount() << " " << subsplit_clade_.size() << std::endl;
-  //   std::cout << "LEFT: " << left_set << " " << left_scan_set << std::endl;
-  //   std::cout << "RIGHT: " << right_set << " " << right_scan_set << std::endl;
-  // }
-  return {left, right};
+  return FindParentNodeIdsViaMap(subsplit);
 }
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
-  auto [left, right] = FindChildNodeIdsViaMap(subsplit);
-
-  // auto [left_scan, right_scan] = FindChildNodeIdsViaScan(subsplit);
-  // std::set<NodeId> left_set(left.begin(), left.end());
-  // std::set<NodeId> left_scan_set(left_scan.begin(), left_scan.end());
-  // std::set<NodeId> right_set(right.begin(), right.end());
-  // std::set<NodeId> right_scan_set(right_scan.begin(), right_scan.end());
-  // if (left_set != left_scan_set or right_set != right_scan_set) {
-  //   std::cerr << "ERROR: FIND_CHILD_NODES_FAILED: " << ContainsGraft() << " "
-  //             << NodeCount() << " " << subsplit_union_.size() << std::endl;
-  //   std::cerr << "LEFT: " << left_set << " " << left_scan_set << " " << std::endl;
-  //   std::cerr << "RIGHT: " << right_set << " " << right_scan_set << " " << std::endl;
-  // }
-  return {left, right};
+  return FindChildNodeIdsViaMap(subsplit);
 }
 
 NodeId SubsplitDAG::FindFirstParentNodeId(const Bitset &subsplit) const {
@@ -1935,11 +1909,6 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
 
 SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
     const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs) {
-  std::stringstream dev_null;
-  bool is_quiet = !ContainsGraft() || true;
-  std::ostream &os = (is_quiet ? dev_null : std::cout);
-  Stopwatch timer_total(true, Stopwatch::TimeScale::SecondScale);
-  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   // Initialize output vectors.
   ModificationResult mods;
   // Note: `prev_node_count` acts as a place marker. We know what the DAG root
@@ -1974,7 +1943,6 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
   timer.Lap();
   // Add nodes and edges.
   AddNodePairInternalsWithoutReindexing(node_subsplit_pairs, mods);
-  os << "AddNodePair::AddInternalsWithoutReindexing: " << timer.Lap() << std::endl;
 
   // If GraftDAG, does not perform reindexing.
   if (!ContainsGraft()) {
@@ -1995,55 +1963,33 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
 
   mods.cur_node_count = NodeCount();
   mods.cur_edge_count = EdgeCountWithLeafSubsplits();
-  os << "AddNodePair::TotalTime: " << timer_total.Lap() << std::endl;
   return mods;
 }
 
 void SubsplitDAG::AddNodePairInternalsWithoutReindexing(
     const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs,
     ModificationResult &mods) {
-  std::stringstream dev_null;
-  bool is_quiet = !ContainsGraft() || true;
-  std::ostream &os = (is_quiet ? dev_null : std::cout);
-  Stopwatch timer_total(true, Stopwatch::TimeScale::SecondScale);
-  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
-
-  Stopwatch inner_timer(true, Stopwatch::TimeScale::SecondScale);
-  double create_node_time = 0;
-  double connect_time = 0;
-  timer.Lap();
   for (const auto &[parent_subsplit, child_subsplit] : node_subsplit_pairs) {
     const bool parent_is_new = !ContainsNode(parent_subsplit);
     const bool child_is_new = !ContainsNode(child_subsplit);
     // Add parent/child nodes and connect them to their children
     // If child node is new, add node and connect it to all its children.
     if (child_is_new) {
-      inner_timer.Lap();
       CreateAndInsertNode(child_subsplit);
-      create_node_time += inner_timer.Lap();
       mods.added_node_ids.push_back(GetDAGNodeId(child_subsplit));
       // Don't reindex these edges.
-      inner_timer.Lap();
       ConnectChildToAllChildren(child_subsplit, mods.added_edge_idxs);
-      connect_time += inner_timer.Lap();
     }
     // If parent node is new, add node it to all its children (except the new child
     // node).
     if (parent_is_new) {
-      inner_timer.Lap();
       CreateAndInsertNode(parent_subsplit);
-      create_node_time += inner_timer.Lap();
       mods.added_node_ids.push_back(GetDAGNodeId(parent_subsplit));
       // Don't reindex these edges.
-      inner_timer.Lap();
       ConnectParentToAllChildrenExcept(parent_subsplit, child_subsplit,
                                        mods.added_edge_idxs);
-      connect_time += inner_timer.Lap();
     }
   }
-  os << "AddNodePair::AddInternal_A: " << timer.Lap() << std::endl;
-  os << "AddNodePair::Create_A: " << create_node_time << std::endl;
-  os << "AddNodePair::Connect_A: " << connect_time << std::endl;
 
   // Note: `prev_edge_count` is a marker conveying where we need to start
   // reindexing edge idxs.
@@ -2052,7 +1998,6 @@ void SubsplitDAG::AddNodePairInternalsWithoutReindexing(
   // contiguous idxs).
   mods.prv_edge_count = EdgeCountWithLeafSubsplits();
 
-  timer.Lap();
   for (const auto &[parent_subsplit, child_subsplit] : node_subsplit_pairs) {
     const bool parent_is_new = (GetDAGNodeId(parent_subsplit) >= mods.prv_node_count);
     const bool child_is_new = (GetDAGNodeId(child_subsplit) >= mods.prv_node_count);
@@ -2075,7 +2020,6 @@ void SubsplitDAG::AddNodePairInternalsWithoutReindexing(
       ConnectParentToAllParents(parent_subsplit, mods.added_edge_idxs);
     }
   }
-  os << "AddNodePair::AddInternal_B: " << timer.Lap() << std::endl;
 }
 
 SubsplitDAG::ModificationResult SubsplitDAG::AddEdges(
