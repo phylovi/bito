@@ -1745,7 +1745,7 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
                                           GPDAG& pre_dag, GPEngine& pre_gpengine) {
     bool passes_resized = true;
     bool passes_plv_reindexed = true;
-    bool passes_gpcsp_reindexed = true;
+    bool passes_branch_reindexed = true;
     // Check resizing GPEngine properly.
     passes_resized &= (gpengine.GetNodeCount() == dag.NodeCountWithoutDAGRoot());
     passes_resized &= (gpengine.GetGPCSPCount() == dag.EdgeCountWithLeafSubsplits());
@@ -1757,7 +1757,8 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
       for (const auto plv_type : PLVTypeEnum::Iterator()) {
         const auto& plv_a = gpengine.GetPLVHandler().GetPV(plv_type, node_id);
         const auto& plv_b = pre_gpengine.GetPLVHandler().GetPV(plv_type, pre_node_id);
-        if (PLVNodeHandler::MaxDifference(plv_a, plv_b) > 1e-3) {
+        auto max_diff = PLVNodeHandler::MaxDifference(plv_a, plv_b);
+        if (max_diff > 1e-3) {
           passes_plv_reindexed = false;
         }
       }
@@ -1769,10 +1770,10 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
       const auto branch_a = branch_lengths.Get(edge_id);
       const auto branch_b = pre_branch_lengths.Get(pre_edge_id);
       if (abs(branch_a - branch_b) > 1e-3) {
-        passes_gpcsp_reindexed = false;
+        passes_branch_reindexed = false;
       }
     }
-    return passes_resized && passes_plv_reindexed && passes_gpcsp_reindexed;
+    return passes_resized && passes_plv_reindexed && passes_branch_reindexed;
   };
   // Test that adds nodes to DAG, resizes and reindexes GPEngine and checks that
   // GPEngine reindexed correctly.
@@ -1905,7 +1906,7 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
   // a single node pair to DAG.
   auto test_2 = ResizeAndReindexGPEngineTest(10, 1, true, false);
   CHECK_FALSE_MESSAGE(test_2,
-                      "TEST_2: Resize and reindex GPEngine is not incorrect when not "
+                      "TEST_2: Resize and reindex GPEngine is not incorrect when NOT "
                       "reindexing after single AddNodePair to DAG.");
   // TEST_3: Test resize and reindex GPEngine works when adding a many node pairs,
   // performing resizing and reindexing for each modification of DAG.
@@ -1929,7 +1930,7 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
       "TEST_5: Resized GPEngine with unmodified DAG changed results of GP Run.");
 };
 
-// This test compares NNI likelihoods computed by two different GPInstances.
+// Compares NNI likelihoods computed by two different GPInstances.
 // - The true GPInstance adds each NNI individually to the DAG, resizes the GPEngine,
 // repopulates all PLVs in DAG, then recomputes the likelihoods for each NNI.
 // - The NNIEngine version of the GPInstance adds all NNIs to the GraftDAG, then resizes
@@ -2154,6 +2155,143 @@ TEST_CASE("NNIEngine via GPEngine: Proposed NNI vs DAG NNI GPLikelihoods") {
   CHECK_MESSAGE(CompareGPLikelihoodsOfProposedNNIsVsDAGNNIs(fasta_path_1, newick_path_1,
                                                             false, false),
                 "Test_1c: Six Taxon (with optimized branch lengths) failed.");
+}
+
+// This checks that potential parent or child nodes found via subsplit map lookup match
+// those found via brute force (linear scan) after adding or grafting nodes to DAG.
+// Repeats tests after adding or grafting NNIs to DAG.
+TEST_CASE("NNIEngine: Finding Parent and Child Nodes After Adding/Grafting Nodes") {
+  bool is_quiet = false;
+  std::stringstream dev_null;
+  std::ostream& os = (is_quiet ? dev_null : std::cerr);
+
+  const std::string fasta_path = "data/five_taxon.fasta";
+  const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
+  auto inst_1 = GPInstanceOfFiles(fasta_path, newick_path_1, "_ignore/mmapped_pv.data");
+  inst_1.MakeTPEngine();
+  inst_1.MakeNNIEngine();
+  auto& dag_1 = inst_1.GetDAG();
+  auto& nniengine_1 = inst_1.GetNNIEngine();
+  auto& graftdag_1 = nniengine_1.GetGraftDAG();
+  nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
+  nniengine_1.SetTopNScoreFilteringScheme(2);
+  // nniengine_1.SetNoFilter();
+  nniengine_1.RunInit();
+
+  auto VectorToSet = [](const std::pair<NodeIdVector, NodeIdVector>& node_id_vector)
+      -> std::pair<std::set<NodeId>, std::set<NodeId>> {
+    auto [left, right] = node_id_vector;
+    std::set<NodeId> left_set(left.begin(), left.end());
+    std::set<NodeId> right_set(right.begin(), right.end());
+    return {left_set, right_set};
+  };
+
+  auto TestDAGFindNodeIdsViaMapVSViaScan = [&os, &dag_1,
+                                            &VectorToSet](const Bitset& subsplit) {
+    bool test_passed = true;
+    {
+      auto [left, right] = VectorToSet(dag_1.FindParentNodeIds(subsplit));
+      auto [left_map, right_map] = VectorToSet(dag_1.FindParentNodeIdsViaMap(subsplit));
+      auto [left_scan, right_scan] =
+          VectorToSet(dag_1.FindParentNodeIdsViaScan(subsplit));
+      bool results_match = (left == left_scan and left_map == left_scan) and
+                           (right == right_scan and right_map == right_scan);
+      if (!results_match) {
+        os << "DAG_FIND_PARENT_NODES: " << (results_match ? "PASS" : "FAIL")
+           << std::endl;
+        os << "LEFT: " << left_map << " " << left_scan << std::endl;
+        os << "RIGHT: " << right_map << " " << right_scan << std::endl;
+      }
+      test_passed &= results_match;
+    }
+    {
+      auto [left, right] = VectorToSet(dag_1.FindChildNodeIds(subsplit));
+      auto [left_map, right_map] = VectorToSet(dag_1.FindChildNodeIdsViaMap(subsplit));
+      auto [left_scan, right_scan] =
+          VectorToSet(dag_1.FindChildNodeIdsViaScan(subsplit));
+      bool results_match = (left == left_scan and left_map == left_scan) and
+                           (right == right_scan and right_map == right_scan);
+      if (!results_match) {
+        os << "DAG_FIND_CHILD_NODES: " << (results_match ? "PASS" : "FAIL")
+           << std::endl;
+        os << "LEFT: " << left_map << " " << left_scan << std::endl;
+        os << "RIGHT: " << right_map << " " << right_scan << std::endl;
+      }
+      test_passed &= results_match;
+    }
+    return test_passed;
+  };
+
+  auto TestGraftDAGFindNodeIdsViaMapVSViaScan = [&os, &graftdag_1,
+                                                 &VectorToSet](const Bitset& subsplit) {
+    bool test_passed = true;
+    {
+      auto [left, right] = VectorToSet(graftdag_1.FindParentNodeIds(subsplit));
+      auto [left_map, right_map] =
+          VectorToSet(graftdag_1.FindParentNodeIdsViaMap(subsplit));
+      auto [left_scan, right_scan] =
+          VectorToSet(graftdag_1.FindParentNodeIdsViaScan(subsplit));
+      bool results_match = (left == left_scan and left_map == left_scan) and
+                           (right == right_scan and right_map == right_scan);
+      if (!results_match) {
+        os << "GRAFTDAG_FIND_PARENT_NODES: " << (results_match ? "PASS" : "FAIL")
+           << std::endl;
+        os << "LEFT: " << left_map << " " << left_scan << std::endl;
+        os << "RIGHT: " << right_map << " " << right_scan << std::endl;
+      }
+      test_passed &= results_match;
+    }
+    {
+      auto [left, right] = VectorToSet(graftdag_1.FindChildNodeIds(subsplit));
+      auto [left_map, right_map] =
+          VectorToSet(graftdag_1.FindChildNodeIdsViaMap(subsplit));
+      auto [left_scan, right_scan] =
+          VectorToSet(graftdag_1.FindChildNodeIdsViaScan(subsplit));
+      bool results_match = (left == left_scan and left_map == left_scan) and
+                           (right == right_scan and right_map == right_scan);
+      if (!results_match) {
+        os << "GRAFTDAG_FIND_CHILD_NODES: " << (results_match ? "PASS" : "FAIL")
+           << std::endl;
+        os << "LEFT: " << left_map << " " << left_scan << std::endl;
+        os << "RIGHT: " << right_map << " " << right_scan << std::endl;
+      }
+      test_passed &= results_match;
+    }
+    return test_passed;
+  };
+
+  for (NodeId node_id{0}; node_id < dag_1.NodeCount(); node_id++) {
+    auto subsplit = dag_1.GetDAGNodeBitset(node_id);
+    CHECK_MESSAGE(TestDAGFindNodeIdsViaMapVSViaScan(subsplit),
+                  "Finding nodes via map does not match finding nodes via scan (before "
+                  "adding NNIs).");
+  }
+
+  size_t max_iter = 10;
+  for (size_t iter = 0; iter < max_iter; iter++) {
+    nniengine_1.GraftAdjacentNNIsToDAG();
+    for (NodeId node_id{0}; node_id < graftdag_1.NodeCount(); node_id++) {
+      auto subsplit = graftdag_1.GetDAGNodeBitset(node_id);
+      CHECK_MESSAGE(
+          TestGraftDAGFindNodeIdsViaMapVSViaScan(subsplit),
+          "Finding nodes via map does not match finding nodes via scan (before "
+          "adding NNIs).");
+    }
+    nniengine_1.FilterPreUpdate();
+    nniengine_1.FilterEvaluateAdjacentNNIs();
+    nniengine_1.FilterPostUpdate();
+    nniengine_1.FilterProcessAdjacentNNIs();
+    nniengine_1.RemoveAllGraftedNNIsFromDAG();
+    nniengine_1.AddAcceptedNNIsToDAG();
+    for (NodeId node_id{0}; node_id < dag_1.NodeCount(); node_id++) {
+      auto subsplit = dag_1.GetDAGNodeBitset(node_id);
+      CHECK_MESSAGE(
+          TestDAGFindNodeIdsViaMapVSViaScan(subsplit),
+          "Finding nodes via map does not match finding nodes via scan (before "
+          "adding NNIs).");
+    }
+    nniengine_1.RunPostLoop();
+  }
 }
 
 // ** TPEngine tests **
@@ -3012,6 +3150,13 @@ TEST_CASE("TPEngine: Branch Length Optimization") {
   CHECK_LT(max_diff, tol);
 }
 
+// Exports Newicks from DAG and TPEngine.  DAG exports a covering set of trees, which
+// should contain every node and edge from the DAG in a (unproven) minimum set of trees.
+// TPEngine exports an ordered vector of trees which contains a covering set of trees
+// that maintains the relative priority of edges according to the TPEngine's choice map.
+// Tests this by using the exported trees to build a new DAG and TPEngine, and checks
+// that new DAG and TPEngine match the old DAG and TPEngine. Repeats tests after adding
+// NNIs to the DAG.
 TEST_CASE("TPEngine: Exporting Newicks") {
   const std::string fasta_path = "data/five_taxon.fasta";
   const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
@@ -3094,20 +3239,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         bool newicks_equal = (newick_1 == newick_2);
         if (!newicks_equal) {
           std::cerr << "ERROR: Newicks do not match." << std::endl;
-          auto tree_map_1 = inst_1.GetTPEngine().BuildMapOfTreeIdToTopTopologies();
-          std::cerr << "TREE_MAP_1: " << std::endl;
-          for (const auto& [tree_id, topos] : tree_map_1) {
-            for (const auto& topo : topos) {
-              std::cerr << "\tTree" << tree_id << ": " << topo->Newick() << std::endl;
-            }
-          }
-          auto tree_edge_map_1 = inst_1.GetTPEngine().BuildMapOfEdgeIdToTopTopologies();
-          std::cerr << "TREE_EDGE_MAP_1: " << std::endl;
-          for (const auto& [edge_ids, topo] : tree_edge_map_1) {
-            std::cerr << "\tEdge " << edge_ids << ": " << topo->Newick() << std::endl;
-          }
           std::cerr << "NEWICK_1: " << std::endl << newick_1 << std::endl;
-
           std::cerr << "NEWICK_2: " << std::endl << newick_2 << std::endl;
         }
 
@@ -3174,6 +3306,60 @@ TEST_CASE("TPEngine: Exporting Newicks") {
     CHECK_MESSAGE(BuildTopTreeNewickAndCompareNewTPEngine(inst_1),
                   "Newicks and TPEngine built from Top Tree Newick not equal to the "
                   "TPEngine that build it (after adding NNIs).");
+  }
+}
+
+// PVHandler can be reindexed using two methods.  Either via move-copy, where PVs are
+// moved so that the PV vector is ordered according to the order of the node_ids they
+// represent in the DAG, or via remapping, where a PV map is updated to point at the
+// correct PV when given a node_id, which avoids copying.  Test checks that both
+// methods have PV with same values.  Repeats tests after adding NNIs to DAG.
+TEST_CASE("TPEngine: Resize and Reindex PV Handler") {
+  const std::string fasta_path = "data/five_taxon.fasta";
+  const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
+  auto inst_1 =
+      GPInstanceOfFiles(fasta_path, newick_path_1, "_ignore/mmapped_pv.data1");
+  auto inst_2 =
+      GPInstanceOfFiles(fasta_path, newick_path_1, "_ignore/mmapped_pv.data2");
+  // NNI Engine that uses remapping for reindexing PVs.
+  inst_1.MakeTPEngine();
+  inst_1.MakeNNIEngine();
+  auto& tpengine_1 = inst_1.GetTPEngine();
+  auto& nniengine_1 = inst_1.GetNNIEngine();
+  auto& pvs_1 = tpengine_1.GetLikelihoodEvalEngine().GetPVs();
+  pvs_1.SetUseRemapping(false);
+  nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
+  nniengine_1.SetTopNScoreFilteringScheme(1);
+  nniengine_1.RunInit();
+  // NNI Engine that does NOT use remapping for reindexing PVs.
+  inst_2.MakeTPEngine();
+  inst_2.MakeNNIEngine();
+  auto& tpengine_2 = inst_2.GetTPEngine();
+  auto& nniengine_2 = inst_2.GetNNIEngine();
+  auto& pvs_2 = tpengine_2.GetLikelihoodEvalEngine().GetPVs();
+  pvs_2.SetUseRemapping(false);
+  nniengine_2.SetTPLikelihoodCutoffFilteringScheme(0.0);
+  nniengine_2.SetTopNScoreFilteringScheme(1);
+  nniengine_2.RunInit();
+
+  CHECK_MESSAGE(nniengine_1.GetDAG() == nniengine_2.GetDAG(),
+                "DAGs do not match (before adding NNIs).");
+  auto pvs_match = pvs_1.Compare(pvs_1, pvs_2, false);
+  CHECK_MESSAGE(pvs_match, "PVs do not match (before adding NNIs).");
+
+  size_t max_iter = 10;
+  for (size_t iter = 0; iter < max_iter; iter++) {
+    bool pvs_match;
+    nniengine_1.RunMainLoop();
+    nniengine_1.RunPostLoop();
+    pvs_match = pvs_1.Compare(pvs_1, pvs_2, true);
+    CHECK_FALSE_MESSAGE(
+        pvs_match, "PVs incorrectly match (after adding NNIs to only one NNIEngine).");
+
+    nniengine_2.RunMainLoop();
+    nniengine_2.RunPostLoop();
+    pvs_match = pvs_1.Compare(pvs_1, pvs_2, false);
+    CHECK_MESSAGE(pvs_match, "PVs do not match (after adding NNIs).");
   }
 }
 

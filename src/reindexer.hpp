@@ -27,6 +27,7 @@ class Reindexer {
   Reindexer(SizeVector data) : data_(std::move(data)){};
 
   // ** Special Constructors
+
   // For each position in a identity reindexer, reindexer[`i`] = `i`.
   // E.g. for size = 5, reindexer = [0, 1, 2, 3, 4].
   static Reindexer IdentityReindexer(const size_t size);
@@ -64,6 +65,9 @@ class Reindexer {
   bool IsValid(std::optional<size_t> length = std::nullopt) const;
 
   // ** Modification Operations
+
+  // Resize reindexer. If new indices are created, pad them with identity.
+  void Resize(size_t new_size);
 
   // Builds new inverse reindexer of a given reindexer, such that input->output becomes
   // output->input.

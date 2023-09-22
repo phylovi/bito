@@ -42,6 +42,8 @@ SubsplitDAG::SubsplitDAG(SubsplitDAG &host_dag, HostDispatchTag)
     : storage_{host_dag.storage_, HostDispatchTag()},
       dag_taxa_{host_dag.dag_taxa_},
       subsplit_to_id_{host_dag.subsplit_to_id_},
+      subsplit_union_{host_dag.subsplit_union_},
+      subsplit_clade_{host_dag.subsplit_clade_},
       parent_to_child_range_{host_dag.parent_to_child_range_},
       taxon_count_{host_dag.taxon_count_},
       edge_count_without_leaf_subsplits_{host_dag.edge_count_without_leaf_subsplits_},
@@ -57,6 +59,11 @@ void SubsplitDAG::ResetHostDAG(SubsplitDAG &host_dag) {
   edge_count_without_leaf_subsplits_ = host_dag.edge_count_without_leaf_subsplits_;
   topology_count_ = host_dag.topology_count_;
   topology_count_below_ = host_dag.topology_count_below_;
+
+  subsplit_union_ = host_dag.subsplit_union_;
+  subsplit_clade_ = host_dag.subsplit_clade_;
+  subsplit_union_graft_.clear();
+  subsplit_clade_graft_.clear();
 }
 
 // ** Comparators
@@ -380,6 +387,22 @@ SizeBitsetMap SubsplitDAG::BuildInverseEdgeIndexer() const {
 
 // ** Access
 
+const BitsetNodeIdSetMap &SubsplitDAG::GetSubsplitUnionMap() const {
+  return subsplit_union_;
+}
+
+const BitsetNodeIdSetMap &SubsplitDAG::GetSubsplitUnionGraftMap() const {
+  return subsplit_union_graft_;
+}
+
+const BitsetNodeIdSetMap &SubsplitDAG::GetSubsplitCladeMap() const {
+  return subsplit_clade_;
+}
+
+const BitsetNodeIdSetMap &SubsplitDAG::GetSubsplitCladeGraftMap() const {
+  return subsplit_clade_graft_;
+}
+
 TaxonIdVector SubsplitDAG::GetTaxonIds() const {
   TaxonIdVector taxon_ids;
   for (TaxonId taxon_id = 0; taxon_id < TaxonCount(); taxon_id++) {
@@ -411,7 +434,7 @@ Bitset SubsplitDAG::GetDAGNodeBitset(const NodeId node_id) const {
 
 NodeId SubsplitDAG::GetDAGNodeId(const Bitset &subsplit) const {
   Assert(ContainsNode(subsplit), "Node with the given subsplit does not exist in DAG.");
-  if (storage_.HaveHost()) {
+  if (ContainsGraft()) {
     auto node = storage_.FindVertex(subsplit);
     return NodeId(node->get().GetId());
   }
@@ -1110,29 +1133,35 @@ NodeId SubsplitDAG::CreateAndInsertNode(const Bitset &subsplit) {
   storage_.AddVertex({node_id, subsplit});
   SafeInsert(subsplit_to_id_, subsplit, node_id);
 
-  if (!storage_.HaveHost()) {
+  for (const auto contains_graft : {false, true}) {
+    // Determine to add node to map as a real node or as a graft.
+    if (contains_graft != ContainsGraft()) continue;
+    auto &subsplit_union_map =
+        !ContainsGraft() ? subsplit_union_ : subsplit_union_graft_;
+    auto &subsplit_clade_map =
+        !ContainsGraft() ? subsplit_clade_ : subsplit_clade_graft_;
     // Add Node to adjacency maps.
     if (!subsplit.SubsplitIsUCA()) {
       // Add clade union to map.
       const auto subsplit_union = subsplit.SubsplitCladeUnion();
-      if (subsplit_union_.find(subsplit_union) == subsplit_union_.end()) {
-        subsplit_union_[subsplit_union] = NodeIdSet();
+      if (subsplit_union_map.find(subsplit_union) == subsplit_union_map.end()) {
+        subsplit_union_map[subsplit_union] = NodeIdSet();
       }
-      subsplit_union_[subsplit_union].insert(node_id);
+      subsplit_union_map[subsplit_union].insert(node_id);
     }
     if (!subsplit.SubsplitIsLeaf()) {
       // Add left clade to map.
       const auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
-      if (subsplit_clade_.find(subsplit_left) == subsplit_clade_.end()) {
-        subsplit_clade_[subsplit_left] = NodeIdSet();
+      if (subsplit_clade_map.find(subsplit_left) == subsplit_clade_map.end()) {
+        subsplit_clade_map[subsplit_left] = NodeIdSet();
       }
-      subsplit_clade_[subsplit_left].insert(node_id);
+      subsplit_clade_map[subsplit_left].insert(node_id);
       // Add right clade to map.
       const auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
-      if (subsplit_clade_.find(subsplit_right) == subsplit_clade_.end()) {
-        subsplit_clade_[subsplit_right] = NodeIdSet();
+      if (subsplit_clade_map.find(subsplit_right) == subsplit_clade_map.end()) {
+        subsplit_clade_map[subsplit_right] = NodeIdSet();
       }
-      subsplit_clade_[subsplit_right].insert(node_id);
+      subsplit_clade_map[subsplit_right].insert(node_id);
     }
   }
 
@@ -1447,12 +1476,14 @@ TagStringMap SubsplitDAG::BuildDummyTagTaxonMap(const size_t taxon_count) {
 
 // ** Query DAG
 
+bool SubsplitDAG::ContainsGraft() const { return storage_.HaveHost(); }
+
 bool SubsplitDAG::ContainsTaxon(const std::string &name) const {
   return dag_taxa_.find(name) != dag_taxa_.end();
 }
 
 bool SubsplitDAG::ContainsNode(const Bitset &subsplit) const {
-  if (storage_.HaveHost()) {
+  if (ContainsGraft()) {
     if (storage_.FindVertex(subsplit).has_value()) return true;
   }
   return subsplit_to_id_.find(subsplit) != subsplit_to_id_.end();
@@ -1645,18 +1676,20 @@ NodeIdVectorPair SubsplitDAG::FindParentNodeIdsViaMap(const Bitset &subsplit) co
     return {left_parents, right_parents};
   }
   const auto subsplit_union = subsplit.SubsplitCladeUnion();
-  if (subsplit_clade_.find(subsplit_union) != subsplit_clade_.end()) {
-    const auto &parents = subsplit_clade_.find(subsplit_union)->second;
-    for (const auto parent_id : parents) {
-      const auto parent_subsplit = GetDAGNodeBitset(parent_id);
-      // Sort results in left and right clades.
-      for (const auto clade : SubsplitCladeEnum::Iterator()) {
-        const auto parent_clade = parent_subsplit.SubsplitGetClade(clade);
-        if (parent_clade == subsplit_union) {
-          if (clade == SubsplitClade::Left) {
-            left_parents.push_back(parent_id);
-          } else {
-            right_parents.push_back(parent_id);
+  for (const auto &subsplit_map : {subsplit_clade_, subsplit_clade_graft_}) {
+    if (subsplit_map.find(subsplit_union) != subsplit_map.end()) {
+      const auto &parents = subsplit_map.find(subsplit_union)->second;
+      for (const auto parent_id : parents) {
+        const auto parent_subsplit = GetDAGNodeBitset(parent_id);
+        // Sort results in left and right clades.
+        for (const auto clade : SubsplitCladeEnum::Iterator()) {
+          const auto parent_clade = parent_subsplit.SubsplitGetClade(clade);
+          if (parent_clade == subsplit_union) {
+            if (clade == SubsplitClade::Left) {
+              left_parents.push_back(parent_id);
+            } else {
+              right_parents.push_back(parent_id);
+            }
           }
         }
       }
@@ -1672,15 +1705,19 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaMap(const Bitset &subsplit) con
   if (subsplit.SubsplitIsLeaf()) {
     return {left_children, right_children};
   }
-  const auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
-  if (subsplit_union_.find(subsplit_left) != subsplit_union_.end()) {
-    const auto &left_children_input = subsplit_union_.find(subsplit_left)->second;
-    left_children.assign(left_children_input.begin(), left_children_input.end());
-  }
-  const auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
-  if (subsplit_union_.find(subsplit_right) != subsplit_union_.end()) {
-    const auto &right_children_input = subsplit_union_.find(subsplit_right)->second;
-    right_children.assign(right_children_input.begin(), right_children_input.end());
+  for (const auto &subsplit_map : {subsplit_union_, subsplit_union_graft_}) {
+    const auto subsplit_left = subsplit.SubsplitGetClade(SubsplitClade::Left);
+    if (subsplit_map.find(subsplit_left) != subsplit_map.end()) {
+      const auto &new_left_children = subsplit_map.find(subsplit_left)->second;
+      left_children.insert(left_children.end(), new_left_children.begin(),
+                           new_left_children.end());
+    }
+    const auto subsplit_right = subsplit.SubsplitGetClade(SubsplitClade::Right);
+    if (subsplit_map.find(subsplit_right) != subsplit_map.end()) {
+      const auto &new_right_children = subsplit_map.find(subsplit_right)->second;
+      right_children.insert(right_children.end(), new_right_children.begin(),
+                            new_right_children.end());
+    }
   }
   return {left_children, right_children};
 }
@@ -1690,7 +1727,7 @@ NodeIdVectorPair SubsplitDAG::FindParentNodeIdsViaScan(const Bitset &subsplit,
   // Linear search for all parents.
   NodeIdVector left_parents, right_parents;
   for (const auto &[potential_parent_subsplit, node_id] : subsplit_to_id_) {
-    if (graft_nodes_only && (node_id >= NodeCount())) continue;
+    if (graft_nodes_only && (node_id < NodeCount())) continue;
     if (subsplit.SubsplitIsLeftChildOf(potential_parent_subsplit)) {
       left_parents.push_back(node_id);
     } else if (subsplit.SubsplitIsRightChildOf(potential_parent_subsplit)) {
@@ -1705,7 +1742,7 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit,
   // Linear search for all children.
   NodeIdVector left_children, right_children;
   for (const auto &[potential_child_subsplit, node_id] : subsplit_to_id_) {
-    if (graft_nodes_only && (node_id >= NodeCount())) continue;
+    if (graft_nodes_only && (node_id < NodeCount())) continue;
     if (potential_child_subsplit.SubsplitIsLeftChildOf(subsplit)) {
       left_children.push_back(node_id);
     } else if (potential_child_subsplit.SubsplitIsRightChildOf(subsplit)) {
@@ -1716,21 +1753,11 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit,
 }
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
-  auto [left, right] = FindParentNodeIdsViaMap(subsplit);
-  // If DAG contains grafted nodes, linearly scan for grafted nodes parents.
-  if (storage_.HaveHost()) {
-    return FindParentNodeIdsViaScan(subsplit);
-  }
-  return {left, right};
+  return FindParentNodeIdsViaMap(subsplit);
 }
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
-  auto [left, right] = FindChildNodeIdsViaMap(subsplit);
-  // If DAG contains grafted nodes, linearly scan for grafted nodes children.
-  if (storage_.HaveHost()) {
-    return FindChildNodeIdsViaScan(subsplit);
-  }
-  return {left, right};
+  return FindChildNodeIdsViaMap(subsplit);
 }
 
 NodeId SubsplitDAG::FindFirstParentNodeId(const Bitset &subsplit) const {
@@ -1759,7 +1786,6 @@ void SubsplitDAG::ConnectChildToAllChildren(const Bitset &child_subsplit,
                                             EdgeIdVector &added_edge_idxs) {
   const auto [left_leafward_of_child, right_leafward_of_child] =
       FindChildNodeIds(child_subsplit);
-
   for (const auto &[children_of_child, rotated] :
        std::vector<std::pair<NodeIdVector, bool>>{{left_leafward_of_child, true},
                                                   {right_leafward_of_child, false}}) {
@@ -1847,7 +1873,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
          "The given pair of nodes is incompatible with DAG in "
          "SubsplitDAG::AddNodePair.");
   // Perform add node pair operation.
-  auto results = AddNodePairInternals(parent_subsplit, child_subsplit);
+  auto mods = AddNodePairInternals(parent_subsplit, child_subsplit);
   // Check that node pair was added correctly.
   if (!ContainsEdge(parent_subsplit, child_subsplit)) {
     std::cerr << "contains_parent: " << ContainsNode(parent_subsplit) << std::endl;
@@ -1855,7 +1881,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const Bitset &parent_su
   }
   Assert(ContainsEdge(parent_subsplit, child_subsplit),
          "AddNodePair failed to add given node pair.");
-  return results;
+  return mods;
 }
 
 SubsplitDAG::ModificationResult SubsplitDAG::AddNodes(
@@ -1872,7 +1898,6 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
 
 SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
     const std::vector<std::pair<Bitset, Bitset>> &node_subsplit_pairs) {
-  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   // Initialize output vectors.
   ModificationResult mods;
   // Note: `prev_node_count` acts as a place marker. We know what the DAG root
@@ -1908,7 +1933,7 @@ SubsplitDAG::ModificationResult SubsplitDAG::AddNodePairInternals(
   AddNodePairInternalsWithoutReindexing(node_subsplit_pairs, mods);
 
   // If GraftDAG, does not perform reindexing.
-  if (!storage_.HaveHost()) {
+  if (!ContainsGraft()) {
     // Create reindexers.
     mods.node_reindexer = BuildNodeReindexer(mods.prv_node_count);
     mods.edge_reindexer = BuildEdgeReindexer(mods.prv_edge_count);

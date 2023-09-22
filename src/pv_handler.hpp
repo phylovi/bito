@@ -121,7 +121,10 @@ class PartialVectorHandler {
         mmapped_master_pvs_(mmap_file_path_, (elem_count + element_spare_count_) *
                                                  pv_count_per_element_ *
                                                  size_t(resizing_factor_) *
-                                                 pattern_count) {}
+                                                 pattern_count) {
+    pv_reindexer_ = Reindexer::IdentityReindexer(GetPaddedPVCount());
+    reindexer_init_size_ = pv_reindexer_.size();
+  }
 
   // ** Counts
 
@@ -152,6 +155,10 @@ class PartialVectorHandler {
               std::optional<size_t> new_element_spare = std::nullopt);
   // Reindex PV according to pv_reindexer.
   void Reindex(const Reindexer pv_reindexer);
+  // Reindex PVs by moving data to align with reindexer by copying.
+  void ReindexViaMoveCopy(const Reindexer pv_reindexer);
+  // Reindex PVs by updating the map from pv_id to data index.
+  void ReindexViaRemap(const Reindexer pv_reindexer);
   // Expand element_reindexer into pv_reindexer.
   Reindexer BuildPVReindexer(const Reindexer &element_reindexer,
                              const size_t old_elem_count, const size_t new_elem_count);
@@ -162,9 +169,15 @@ class PartialVectorHandler {
   NucleotidePLVRefVector &GetPVs() { return pvs_; }
   const NucleotidePLVRefVector &GetPVs() const { return pvs_; }
   // Get PV by absolute index from the vector of Partial Vectors.
-  NucleotidePLVRef &GetPV(const PVId pv_id) { return pvs_.at(pv_id.value_); }
+  NucleotidePLVRef &GetPV(const PVId pv_id) {
+    auto &pv = pvs_.at(pv_reindexer_.GetOldIndexByNewIndex(pv_id.value_));
+    Assert(pv_id < GetAllocatedPVCount(), "pv_id outside valid range.");
+    return pv;
+  }
   const NucleotidePLVRef &GetPV(const PVId pv_id) const {
-    return pvs_.at(pv_id.value_);
+    auto &pv = pvs_.at(pv_reindexer_.GetOldIndexByNewIndex(pv_id.value_));
+    Assert(pv_id < GetAllocatedPVCount(), "pv_id outside valid range.");
+    return pv;
   }
   NucleotidePLVRef &operator()(const PVId pv_id) { return GetPV(pv_id); }
   const NucleotidePLVRef &operator()(const PVId pv_id) const { return GetPV(pv_id); }
@@ -232,6 +245,9 @@ class PartialVectorHandler {
     }
     return pv_ids;
   }
+
+  // PV Reindexer, which serves as the data map to sort PV data.
+  const Reindexer &GetPVReindexer() const { return pv_reindexer_; }
 
   // ** PV Operations
 
@@ -309,6 +325,12 @@ class PartialVectorHandler {
       return (src_a - src_b);
     };
     return ApplyBinaryOperation(dest_pvid, src_pvid_a, src_pvid_b, SubtractFunc);
+  }
+  void AbsDiff(const PVId dest_pvid, const PVId src_pvid_a, const PVId src_pvid_b) {
+    auto AbsDiffFunc = [](const double src_a, const double src_b) {
+      return abs(src_a - src_b);
+    };
+    return ApplyBinaryOperation(dest_pvid, src_pvid_a, src_pvid_b, AbsDiffFunc);
   }
   void Multiply(const PVId dest_pvid, const PVId src_pvid_a, const PVId src_pvid_b) {
     auto MultiplyFunc = [](const double src_a, const double src_b) {
@@ -400,6 +422,34 @@ class PartialVectorHandler {
     return pvid_map;
   }
 
+  void SetUseRemapping(bool use_remapping) { use_remapping_ = use_remapping; }
+  bool GetUseRemapping() const { return use_remapping_; }
+
+  static int Compare(const PartialVectorHandler<PVTypeEnum, DAGElementId> &pv_lhs,
+                     const PartialVectorHandler<PVTypeEnum, DAGElementId> &pv_rhs,
+                     const bool is_quiet = true) {
+    std::stringstream dev_null;
+    std::ostream &os = (is_quiet ? dev_null : std::cerr);
+
+    bool pv_count_match = (pv_lhs.GetPVCount() == pv_rhs.GetPVCount());
+    if (!pv_count_match) {
+      os << "PVHandler::Compare: PV Counts do not match." << std::endl;
+      return false;
+    }
+    bool pvs_match = true;
+    for (PVId pv_id(0); pv_id < pv_lhs.GetPVCount(); pv_id++) {
+      bool pv_match = (pv_lhs.GetPV(pv_id) == pv_rhs.GetPV(pv_id));
+      pvs_match &= pv_match;
+      if (!pvs_match) {
+        os << "PVHandler::Compare: PVs do not match at PV" << pv_id << std::endl;
+        os << "PV_LHS:" << std::endl << pv_lhs.ToString(pv_id, true) << std::endl;
+        os << "PV_RHS:" << std::endl << pv_rhs.ToString(pv_id, true) << std::endl;
+        return false;
+      }
+    }
+    return true;
+  }
+
  protected:
   // Get total offset into PVs.
   static PVId GetPVIndex(const size_t pv_type_id, const DAGElementId elem_id,
@@ -445,6 +495,12 @@ class PartialVectorHandler {
   // - [4*num_nodes, 5*num_nodes): r(s_right).
   // - [5*num_nodes, 6*num_nodes): r(s_left).
   NucleotidePLVRefVector pvs_;
+
+  // Reindex map for finding pv locations.
+  Reindexer pv_reindexer_;
+  size_t reindexer_init_size_ = 0;
+  // Whether to use remapping to reindex PLVs, otherwise only use
+  bool use_remapping_ = true;
 };
 
 // PLVHandler: Partial Likelihood Vector Handler

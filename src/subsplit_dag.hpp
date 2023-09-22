@@ -221,6 +221,12 @@ class SubsplitDAG {
   // Get reference to parent_node -> child_edge_range map.
   const NodeIdEdgeIdPairMap &GetParentNodeToChildEdgeRangeMap() const;
 
+  // Maps for finding potential node neighbors.
+  const BitsetNodeIdSetMap &GetSubsplitUnionMap() const;
+  const BitsetNodeIdSetMap &GetSubsplitUnionGraftMap() const;
+  const BitsetNodeIdSetMap &GetSubsplitCladeMap() const;
+  const BitsetNodeIdSetMap &GetSubsplitCladeGraftMap() const;
+
   // ** DAG Lambda Iterators
   // These methods iterate over the nodes and take lambda functions with arguments
   // relative to current node.
@@ -384,6 +390,8 @@ class SubsplitDAG {
 
   // ** Query DAG
 
+  // Does DAG have attached graftDAG?
+  bool ContainsGraft() const;
   // Does a taxon with the given name exist in DAG?
   bool ContainsTaxon(const std::string &name) const;
   // Does a node with the given subsplit exist in DAG?
@@ -729,10 +737,12 @@ class SubsplitDAG {
   // The subsplit_union_ map contains a map from every clade union in the DAG to the set
   // of all node_ids which contain that clade union.
   BitsetNodeIdSetMap subsplit_union_;
+  BitsetNodeIdSetMap subsplit_union_graft_;
   // The subsplit_clade_ map ontains a map from every left and right clades of every
   // subsplit in the DAG to the set of all node_ids which contain that clade as one of
   // its sides.
   BitsetNodeIdSetMap subsplit_clade_;
+  BitsetNodeIdSetMap subsplit_clade_graft_;
 
   // - Map of all DAG Nodes:
   //    - [ Node Subsplit (Bitset) => (begin, end) Range of Child Ids ]
