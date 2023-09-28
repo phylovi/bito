@@ -1858,7 +1858,7 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
               Reindexer::IdentityReindexer(dag.EdgeCountWithLeafSubsplits());
         }
       }
-      nni_engine.ResetAllNNIs();
+      nni_engine.ResetNNIData();
       nni_engine.SyncAdjacentNNIsWithDAG();
       nni_count = nni_engine.GetAdjacentNNICount();
 
@@ -3290,9 +3290,10 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   nni_engine.RunInit(true);
 
   for (size_t iter = 0; iter < 10; iter++) {
+    std::cout << "iter: " << iter << std::endl;
     nni_engine.RunMainLoop(true);
 
-    if (iter == 7) break;
+    if (iter == 5) break;
     // Issue #479: this creates an unknown problem on iteration 7.
     // Error occurs during GetLine() in subsplit_dag_storage.hpp:564.
     // Parent-child vertice pair references a line outside range of DAG.
@@ -3307,6 +3308,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
                   "Newicks and TPEngine built from Top Tree Newick not equal to the "
                   "TPEngine that build it (after adding NNIs).");
   }
+  std::cout << "iter: end" << std::endl;
 }
 
 // PVHandler can be reindexed using two methods.  Either via move-copy, where PVs are

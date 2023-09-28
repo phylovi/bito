@@ -924,6 +924,8 @@ PYBIND11_MODULE(bito, m) {
       .def("rejected_nni_count", &NNIEngine::GetRejectedNNICount,
            "Get number of adjacent NNIs were rejected by the filter on current "
            "iteration.")
+      .def("new_nni_count", &NNIEngine::GetNewNNICount,
+           "Get number of adjacent NNIs not seen in previous iterations.")
       .def("past_accepted_nni_count", &NNIEngine::GetPastAcceptedNNICount,
            "Get number of adjacent NNIs were accepted by the filter on all previous "
            "iterations.")
@@ -934,6 +936,8 @@ PYBIND11_MODULE(bito, m) {
            "Get scores from NNIs from previous iterations.")
       .def("iter_count", &NNIEngine::GetIterationCount,
            "Get number of iterations of NNI search run.")
+      .def("nnis_to_rescore", &NNIEngine::GetNNIsToRescore)
+      .def("nnis_to_rescore", &NNIEngine::GetNNIsToReevaluate)
       // Search primary routines
       .def("run", &NNIEngine::Run, "Primary runner for NNI systematic search.",
            py::arg("is_quiet") = false)
@@ -945,11 +949,12 @@ PYBIND11_MODULE(bito, m) {
            py::arg("is_quiet") = false)
       // Search subroutines
       // Init
-      .def("reset_all_nnis", &NNIEngine::ResetAllNNIs)
-      .def("sync_adjacent_nnis_with_dag", &NNIEngine::SyncAdjacentNNIsWithDAG)
+      .def("reset_nni_data", &NNIEngine::ResetNNIData)
+      .def("sync_adjacent_nnis_with_dag", &NNIEngine::SyncAdjacentNNIsWithDAG,
+           py::arg("on_init") = false)
       .def("prep_eval_engine", &NNIEngine::PrepEvalEngine)
       .def("filter_init", &NNIEngine::FilterInit)
-      // Main Loop
+      // Main Loop subroutines
       .def("graft_adjacent_nnis_to_dag", &NNIEngine::GraftAdjacentNNIsToDAG)
       .def("filter_pre_update", &NNIEngine::FilterPreUpdate)
       .def("filter_eval_adjacent_nnis", &NNIEngine::FilterEvaluateAdjacentNNIs)
@@ -957,11 +962,11 @@ PYBIND11_MODULE(bito, m) {
       .def("filter_process_adjacent_nnis", &NNIEngine::FilterProcessAdjacentNNIs)
       .def("remove_all_graft_nnis_from_dag", &NNIEngine::RemoveAllGraftedNNIsFromDAG)
       .def("add_accepted_nnis_to_dag", &NNIEngine::AddAcceptedNNIsToDAG)
-      // Post Loop
-      .def("update_adjacent_nnis", &NNIEngine::UpdateAdjacentNNIs)
-      .def("update_accepted_nnis", &NNIEngine::UpdateAcceptedNNIs)
+      // Post Loop subroutines
       .def("update_rejected_nnis", &NNIEngine::UpdateRejectedNNIs)
+      .def("update_adjacent_nnis", &NNIEngine::UpdateAdjacentNNIs)
       .def("update_scored_nnis", &NNIEngine::UpdateScoredNNIs)
+      .def("update_accepted_nnis", &NNIEngine::UpdateAcceptedNNIs)
       // Filtering schemes
       .def("set_no_filter", &NNIEngine::SetNoFilter,
            "Set filter to either accept (True) or deny (False) all NNIs.",

@@ -114,45 +114,45 @@ class NNIEngine {
   double GetScoreByNNI(const NNIOperation &nni) const;
   double GetScoreByEdge(const EdgeId edge_id) const;
 
+  // TODO do we need this?
   // Freshly computes score for given NNI in or adjacent to DAG..
   double ComputeScoreByNNI(const NNIOperation &nni);
   double ComputeScoreByNNI(const EdgeId edge_id);
 
-  // Get Adjacent NNIs to DAG.
-  const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; };
-  // Get number of Adjacent NNIs.
-  size_t GetAdjacentNNICount() const { return adjacent_nnis_.size(); };
-  // Get NNIs that have been Accepted on current iteration.
-  const NNISet &GetAcceptedNNIs() const { return accepted_nnis_; };
-  // Get NNIs that have been Accepted from all iterations.
-  const NNISet &GetPastAcceptedNNIs() const { return accepted_past_nnis_; };
-  // Get number of Adjacent NNIs.
-  size_t GetRejectedNNICount() const { return GetRejectedNNIs().size(); };
-  // Get number of Past Adjacent NNIs.
-  size_t GetPastRejectedNNICount() const { return GetPastRejectedNNIs().size(); };
+  // NNIs currently adjacent to DAG.
+  const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; }
+  size_t GetAdjacentNNICount() const { return adjacent_nnis_.size(); }
+  // Adjacent NNIs that have been added on the current iteration.
+  const NNISet &GetNewNNIs() const { return new_nnis_; }
+  size_t GetNewNNICount() const { return new_nnis_.size(); }
+  size_t GetOldNNICount() const { return adjacent_nnis_.size() - new_nnis_.size(); }
+  // NNIs that have been Accepted on current iteration.
+  const NNISet &GetAcceptedNNIs() const { return accepted_nnis_; }
+  size_t GetAcceptedNNICount() const { return GetAcceptedNNIs().size(); }
+  // NNIs that have been Accepted from all iterations.
+  const NNISet &GetPastAcceptedNNIs() const { return accepted_past_nnis_; }
+  size_t GetPastAcceptedNNICount() const { return GetPastAcceptedNNIs().size(); }
   // Get NNIs that have been Rejected on current iteration.
-  const NNISet &GetRejectedNNIs() const { return rejected_nnis_; };
+  const NNISet &GetRejectedNNIs() const { return rejected_nnis_; }
+  size_t GetRejectedNNICount() const { return GetRejectedNNIs().size(); }
   // Get NNIs that have been Rejected from all iterations.
-  const NNISet &GetPastRejectedNNIs() const { return rejected_past_nnis_; };
-  // Get number of Accepted NNIs during the current iterations.
-  size_t GetAcceptedNNICount() const { return GetAcceptedNNIs().size(); };
-  // Get number of Past Accepted NNIs during the all iterations.
-  size_t GetPastAcceptedNNICount() const { return GetPastAcceptedNNIs().size(); };
+  const NNISet &GetPastRejectedNNIs() const { return rejected_past_nnis_; }
+  size_t GetPastRejectedNNICount() const { return GetPastRejectedNNIs().size(); }
   // Get Map of proposed NNIs with their score.
-  const NNIDoubleMap &GetScoredNNIs() const {
-    Assert(HasEvalEngine(), "Must assign EvalEngine to retrieve ScoredNNIs.");
-    return GetEvalEngine().GetScoredNNIs();
-  };
-  NNIDoubleMap &GetScoredNNIs() {
-    Assert(HasEvalEngine(), "Must assign EvalEngine to retrieve ScoredNNIs.");
-    return GetEvalEngine().GetScoredNNIs();
-  };
+  const NNIDoubleMap &GetScoredNNIs() const { return scored_nnis_; }
+  NNIDoubleMap &GetScoredNNIs() { return scored_nnis_; }
+  size_t GetScoredNNICount() const { return GetScoredNNIs().size(); }
   // Get Map of proposed NNIs with their score from all iterations.
-  const NNIDoubleMap &GetPastScoredNNIs() const { return scored_past_nnis_; };
-  // Get number of Accepted NNIs during the current iterations.
-  size_t GetScoredNNICount() const { return GetScoredNNIs().size(); };
-  // Get number of Past Accepted NNIs during the all iterations.
-  size_t GetPastScoredNNICount() const { return GetPastScoredNNIs().size(); };
+  const NNIDoubleMap &GetPastScoredNNIs() const { return scored_past_nnis_; }
+  size_t GetPastScoredNNICount() const { return GetPastScoredNNIs().size(); }
+  // Get NNIs to rescore or NNIs to re-evaluate.
+  const NNISet &GetNNIsToRescore() const {
+    return GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewNNIs();
+  }
+  const NNISet &GetNNIsToReevaluate() const {
+    return GetReevaluateRejectedNNIs() ? GetAdjacentNNIs() : GetNewNNIs();
+  }
+
   // Get vector of proposed NNI scores.
   DoubleVector GetNNIScores() const {
     DoubleVector scores;
@@ -162,26 +162,35 @@ class NNIEngine {
     }
     return scores;
   }
+  // Get proposed NNI score.
+  double GetNNIScore(const NNIOperation &nni) const {
+    const auto it_1 = GetScoredNNIs().find(nni);
+    if (it_1 != GetScoredNNIs().end()) {
+      return it_1->second;
+    }
+    const auto it_2 = GetPastScoredNNIs().find(nni);
+    if (it_2 != GetPastScoredNNIs().end()) {
+      return it_2->second;
+    }
+    // Failwith("ERROR: Could not find NNI in ScoredNNIs.");
+    return -INFINITY;
+  }
 
-  size_t GetNewNNICount() const { return new_nni_count_; }
-  size_t GetOldNNICount() const { return old_nni_count_; }
-
-  // Get node reindexer
+  // Reindexers for recent DAG modifications.
   const Reindexer &GetNodeReindexer() const { return node_reindexer_; }
-  // Get edge reindexer
   const Reindexer &GetEdgeReindexer() const { return edge_reindexer_; }
 
-  // Get/set whether to re-evaluate rejected nnis.
+  // Option whether to re-evaluate rejected nnis.
   bool GetReevaluateRejectedNNIs() const { return reevaluate_rejected_nnis_; }
   void SetReevaluateRejectedNNIs(const bool reevaluate_rejected_nnis) {
     reevaluate_rejected_nnis_ = reevaluate_rejected_nnis;
   }
-  // Get/set whether to re-score rejected nnis.
+  // Option whether to re-score rejected nnis.
   bool GetRescoreRejectedNNIs() const { return rescore_rejected_nnis_; }
   void SetRescoreRejectedNNIs(const bool rescore_rejected_nnis) {
     rescore_rejected_nnis_ = rescore_rejected_nnis;
   }
-  // Get/set whether to include NNIs at containing rootsplits.
+  // Option whether to include NNIs at containing rootsplits.
   bool GetIncludeRootsplitNNIs() const { return include_rootsplit_nnis_; }
   void SetIncludeRootsplitNNIs(const bool include_rootsplit_nnis) {
     include_rootsplit_nnis_ = include_rootsplit_nnis;
@@ -276,6 +285,45 @@ class NNIEngine {
   // Set cutoff filter to constant cutoff. Scores below threshold pass.
   void SetMaxScoreCutoff(const double score_cutoff);
 
+  // Get minimum score from scored NNIs.
+  double GetMinScore() const {
+    auto it = std::min_element(
+        GetScoredNNIs().begin(), GetScoredNNIs().end(),
+        [](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; });
+    return (it == GetScoredNNIs().end()) ? INFINITY : it->second;
+  }
+  // Get maximum score from scored NNIs.
+  double GetMaxScore() const {
+    auto it = std::max_element(
+        GetScoredNNIs().begin(), GetScoredNNIs().end(),
+        [](const auto &lhs, const auto &rhs) { return lhs.second < rhs.second; });
+    return (it == GetScoredNNIs().end()) ? -INFINITY : it->second;
+  }
+  // Get top kth score from scored NNIs.
+  double GetMaxKthScore(const size_t k) {
+    if (GetScoredNNIs().empty()) return INFINITY;
+    std::priority_queue<double, std::vector<double>, std::greater<double>> pq;
+    for (const auto &[nni, score] : GetScoredNNIs()) {
+      pq.push(score);
+      if (pq.size() > k) {
+        pq.pop();
+      }
+    }
+    return pq.top();
+  }
+  // Get bottom kth score from scored NNIs.
+  double GetMinKthScore(const size_t k) {
+    if (GetScoredNNIs().empty()) return INFINITY;
+    std::priority_queue<double, std::vector<double>, std::less<double>> pq;
+    for (const auto &[nni, score] : GetScoredNNIs()) {
+      pq.push(score);
+      if (pq.size() > k) {
+        pq.pop();
+      }
+    }
+    return pq.top();
+  }
+
   // ** Filter Subroutines
 
   // Initialize filter before first NNI sweep.
@@ -326,6 +374,7 @@ class NNIEngine {
   // Set filtering scheme to find the top N best-scoring NNIs.
   void SetTopNScoreFilteringScheme(const size_t n, const bool max_is_best = true);
 
+  // TODO do we need this?
   // ** Key Indexing
   using KeyIndex = NNIEngineKeyIndex;
   using KeyIndexPairArray = NNIEngineKeyIndexPairArray;
@@ -376,7 +425,7 @@ class NNIEngine {
   // Freshly synchonizes NNISet to match the current state of its DAG. Wipes old NNI
   // data and finds all all parent/child pairs adjacent to DAG by iterating over all
   // internal edges in the DAG. (For each internal edges, two NNIs are possible.)
-  void SyncAdjacentNNIsWithDAG();
+  void SyncAdjacentNNIsWithDAG(const bool on_init = false);
   // Updates NNI Set after given parent/child node pair have been added to the DAG.
   // Removes pair from NNI Set and adds adjacent pairs coming from newly created edges.
   void UpdateAdjacentNNIsAfterDAGAddNodePair(const NNIOperation &nni);
@@ -397,18 +446,15 @@ class NNIEngine {
                                        const Bitset &child_bitset,
                                        const bool is_edge_on_left);
 
-  // Update adjacent NNIs at end of current iteration. If not re-evaluating rejected
-  // NNIs, then current adjacent NNIs are removed. Then NNIs that are adjacent to last
-  // iteration's accepted NNIs are added.
-  void UpdateAdjacentNNIs(const bool reevaluate_rejected_nnis = false);
-  // Remove all accepted NNIs and optionally save to past NNIs.
-  void UpdateAcceptedNNIs(const bool save_past_nnis = true);
-  // Remove all rejected NNIs and optionally save to past NNIs.
-  void UpdateRejectedNNIs(const bool save_past_nnis = true);
-  // Remove all scored NNIs and optionally save to past NNIs.
-  void UpdateScoredNNIs(const bool save_past_nnis = false);
+  // This handles updating all NNI data: adjacent, new, accepted, rejected, and scored
+  // NNIs.
+  // void UpdateNNIData();
+  void UpdateRejectedNNIs();
+  void UpdateAdjacentNNIs();
+  void UpdateScoredNNIs();
+  void UpdateAcceptedNNIs();
   // Reset all NNIs, current and past.
-  void ResetAllNNIs();
+  void ResetNNIData();
 
  private:
   // ** Access
@@ -448,6 +494,8 @@ class NNIEngine {
 
   // Set of NNIs to be evaluated, which are a single NNI.
   NNISet adjacent_nnis_;
+  // Set of NNIs new to the current iteration.
+  NNISet new_nnis_;
   // NNIs which have passed the filtering threshold during current iteration, to be
   // added to the DAG.
   NNISet accepted_nnis_;
@@ -463,9 +511,6 @@ class NNIEngine {
   NNIDoubleMap scored_nnis_;
   // Map of previous rejected NNIs to their score.
   NNIDoubleMap scored_past_nnis_;
-  // Holds the counts of new NNIs (NNI not found in previous iterations) and old NNIs.
-  size_t new_nni_count_ = 0;
-  size_t old_nni_count_ = 0;
 
   // Steps of filtering scheme.
   StaticFilterInitFunction filter_init_fn_ = nullptr;
@@ -483,7 +528,10 @@ class NNIEngine {
   bool reevaluate_rejected_nnis_ = true;
   // Whether to re-compute scores for rejected NNIs from previous iterations.
   bool rescore_rejected_nnis_ = false;
-
   // Whether to include NNIs whose parent is a rootsplit.
   bool include_rootsplit_nnis_ = true;
+  // Whether to save past iteration data.
+  bool save_past_scored_nnis_ = true;
+  bool save_past_accepted_nnis_ = true;
+  bool save_past_rejected_nnis_ = true;
 };

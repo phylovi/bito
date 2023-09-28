@@ -1047,11 +1047,16 @@ void NNIEvalEngineViaTP::UpdateEngineAfterModifyingDAG(
 
 void NNIEvalEngineViaTP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
   // Retrieve results from TPEngine and store in Scored NNIs.
+  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   const auto best_edge_map = GetTPEngine().BuildBestEdgeMapOverNNIs(adjacent_nnis);
+  std::cout << "ScoreAdjacentNNIs::adj_nni_count: " << adjacent_nnis.size()
+            << std::endl;
+  std::cout << "ScoreAdjacentNNIs::BuildBestEdgeMap: " << timer.Lap() << std::endl;
   for (const auto &nni : adjacent_nnis) {
     const auto pre_nni = GetDAG().FindNNINeighborInDAG(nni);
     GetScoredNNIs()[nni] = GetTPEngine().GetTopTreeScoreWithProposedNNI(nni, pre_nni);
   }
+  std::cout << "ScoreAdjacentNNIs::GetTopTreeScore: " << timer.Lap() << std::endl;
 }
 
 double NNIEvalEngineViaTP::ScoreInternalNNIByNNI(const NNIOperation &nni) const {
