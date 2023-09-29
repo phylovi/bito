@@ -880,6 +880,14 @@ PYBIND11_MODULE(bito, m) {
       .def("get_branch_lengths", [](TPEngine &self) { self.GetBranchLengths(); })
       .def("optimize_branch_lengths", &TPEngine::OptimizeBranchLengths,
            py::arg("check_branch_convergence") = std::nullopt)
+      .def("set_optimization_max_iteration",
+           [](TPEngine &self, const size_t n) {
+             self.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(n);
+           })
+      .def("get_optimization_max_iteration",
+           [](const TPEngine &self) {
+             return self.GetLikelihoodEvalEngine().GetOptimizationMaxIteration();
+           })
       // ** I/O
       .def("build_map_of_tree_id_to_top_topologies",
            &TPEngine::BuildMapOfTreeIdToTopTopologies)
