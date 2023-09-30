@@ -495,6 +495,43 @@ class SubsplitDAG {
     size_t cur_node_count;
     // Current edge count after modification.
     size_t cur_edge_count;
+
+    void Reinit(const SubsplitDAG &dag) {
+      prv_node_count = dag.NodeCount();
+      prv_edge_count = dag.EdgeCountWithLeafSubsplits();
+      node_reindexer = Reindexer::IdentityReindexer(prv_node_count);
+      edge_reindexer = Reindexer::IdentityReindexer(prv_edge_count);
+      added_node_ids = NodeIdVector();
+      added_edge_idxs = EdgeIdVector();
+    }
+
+    ModificationResult ComposeWith(const ModificationResult other) {
+      ModificationResult res;
+      res.prv_node_count = prv_node_count;
+      res.prv_edge_count = prv_edge_count;
+      res.cur_node_count = other.cur_node_count;
+      res.cur_edge_count = other.cur_edge_count;
+      res.node_reindexer = node_reindexer.ComposeWith(other.node_reindexer);
+      res.edge_reindexer = edge_reindexer.ComposeWith(other.edge_reindexer);
+      res.added_node_ids = NodeIdVector();
+      res.added_edge_idxs = EdgeIdVector();
+      for (const auto &node_id : added_node_ids) {
+        auto new_node_id =
+            NodeId(other.node_reindexer.GetNewIndexByOldIndex(node_id.value_));
+        res.added_node_ids.push_back(new_node_id);
+      }
+      for (const auto &edge_id : added_edge_idxs) {
+        auto new_edge_id =
+            EdgeId(other.edge_reindexer.GetNewIndexByOldIndex(edge_id.value_));
+        res.added_edge_idxs.push_back(new_edge_id);
+      }
+      res.added_node_ids.insert(res.added_node_ids.end(), other.added_node_ids.begin(),
+                                other.added_node_ids.end());
+      res.added_edge_idxs.insert(res.added_edge_idxs.end(),
+                                 other.added_edge_idxs.begin(),
+                                 other.added_edge_idxs.end());
+      return res;
+    }
   };
 
   // Add an adjacent node pair to the DAG.

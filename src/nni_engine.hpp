@@ -177,8 +177,8 @@ class NNIEngine {
   }
 
   // Reindexers for recent DAG modifications.
-  const Reindexer &GetNodeReindexer() const { return node_reindexer_; }
-  const Reindexer &GetEdgeReindexer() const { return edge_reindexer_; }
+  const Reindexer &GetNodeReindexer() const { return mods_.node_reindexer; }
+  const Reindexer &GetEdgeReindexer() const { return mods_.edge_reindexer; }
 
   // Option whether to re-evaluate rejected nnis.
   bool GetReevaluateRejectedNNIs() const { return reevaluate_rejected_nnis_; }
@@ -475,8 +475,7 @@ class NNIEngine {
   // For adding temporary NNIs to DAG.
   std::unique_ptr<GraftDAG> graft_dag_;
   // Tracks modifications to the DAG.
-  Reindexer node_reindexer_;
-  Reindexer edge_reindexer_;
+  SubsplitDAG::ModificationResult mods_;
 
   // A map showing which Evaluation Engines are "in use".  Several engines may be
   // instatiated, but may or may not be currently used for computation, and therefore
@@ -531,7 +530,7 @@ class NNIEngine {
   // Whether to include NNIs whose parent is a rootsplit.
   bool include_rootsplit_nnis_ = true;
   // Whether to save past iteration data.
-  bool save_past_scored_nnis_ = true;
+  bool save_past_scored_nnis_ = false;
   bool save_past_accepted_nnis_ = true;
   bool save_past_rejected_nnis_ = true;
 };

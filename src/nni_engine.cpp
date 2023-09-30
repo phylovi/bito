@@ -179,8 +179,6 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
 
 void NNIEngine::ScoreAdjacentNNIs() {
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
-  std::cout << "ScoreAdjacentNNIs:scored_nnis_count [begin]: " << GetScoredNNIs().size()
-            << std::endl;
   if (IsEvalEngineInUse(NNIEvalEngineType::GPEvalEngine)) {
     GetGPEvalEngine().GetScoredNNIs().clear();
     GetGPEvalEngine().ScoreAdjacentNNIs(GetNNIsToRescore());
@@ -199,8 +197,6 @@ void NNIEngine::ScoreAdjacentNNIs() {
     GetScoredNNIs().insert(GetTPEvalEngine().GetScoredNNIs().begin(),
                            GetTPEvalEngine().GetScoredNNIs().end());
   }
-  std::cout << "ScoreAdjacentNNIs:scored_nnis_count [end]: " << GetScoredNNIs().size()
-            << std::endl;
 }
 
 // ** Runners
@@ -387,18 +383,13 @@ void NNIEngine::FilterPostUpdate() {
 
 void NNIEngine::FilterProcessAdjacentNNIs() {
   Assert(filter_process_fn_, "Must assign a filter process function.");
-  // std::cout << "ScoredNNIs: " << GetScoredNNICount() << std::endl
-  //           << GetScoredNNIs() << std::endl;
-  // std::cout << "PastScoredNNIs: " << GetPastScoredNNICount() << std::endl
-  //           << GetPastScoredNNIs() << std::endl;
   for (const auto &nni : GetNNIsToReevaluate()) {
-    // std::cout << "nni_to_evaluate: " << nni << std::endl;
     const bool accept_nni = (filter_process_fn_)(*this, GetEvalEngine(), GetGraftDAG(),
                                                  nni, GetNNIScore(nni));
     if (accept_nni) {
       accepted_nnis_.insert(nni);
     } else {
-      rejected_nnis_.insert(nni);
+      // rejected_nnis_.insert(nni);
     }
   }
 }
@@ -635,10 +626,7 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
   std::ostream &os = (is_quiet ? dev_null : std::cout);
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   // Initialize reindexers for remapping after adding nodes.
-  const size_t prev_node_count = GetDAG().NodeCount();
-  const size_t prev_edge_count = GetDAG().EdgeCountWithLeafSubsplits();
-  node_reindexer_ = Reindexer::IdentityReindexer(GetDAG().NodeCount());
-  edge_reindexer_ = Reindexer::IdentityReindexer(GetDAG().EdgeCountWithLeafSubsplits());
+  mods_.Reinit(GetDAG());
   // Build map from NNI to pre-NNI.
   std::map<NNIOperation, NNIOperation> nni_to_pre_nni;
   for (const auto &nni : GetAcceptedNNIs()) {
@@ -656,23 +644,21 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
   }
   // Add NNI to DAG.
   os << "AddAcceptedNNIsToDAG::Prep: " << timer.Lap() << std::endl;
-  BitsetPairVector nodes_to_add;
+  // BitsetPairVector nodes_to_add;
   for (const auto &nni : GetAcceptedNNIs()) {
     auto mods = GetDAG().AddNodePair(nni);
-    node_reindexer_ = node_reindexer_.ComposeWith(mods.node_reindexer);
-    edge_reindexer_ = edge_reindexer_.ComposeWith(mods.edge_reindexer);
+    mods_ = mods_.ComposeWith(mods);
     // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
   }
-  // auto mods = GetDAG().AddNodes(nodes_to_add);
-  // node_reindexer_ = mods.node_reindexer;
-  // edge_reindexer_ = mods.edge_reindexer;
+  // mods_ = GetDAG().AddNodes(nodes_to_add);
   os << "AddAcceptedNNIsToDAG::AddAll: " << timer.Lap() << std::endl;
   RemoveAllGraftedNNIsFromDAG();
   os << "AddAcceptedNNIsToDAG::Reset: " << timer.Lap() << std::endl;
-  GrowEvalEngineForDAG(node_reindexer_, edge_reindexer_);
+  GrowEvalEngineForDAG(mods_.node_reindexer, mods_.edge_reindexer);
   os << "AddAcceptedNNIsToDAG::GrowEvalEngine: " << timer.Lap() << std::endl;
-  UpdateEvalEngineAfterModifyingDAG(nni_to_pre_nni, prev_node_count, node_reindexer_,
-                                    prev_edge_count, edge_reindexer_);
+  UpdateEvalEngineAfterModifyingDAG(nni_to_pre_nni, mods_.prv_node_count,
+                                    mods_.node_reindexer, mods_.prv_edge_count,
+                                    mods_.edge_reindexer);
   os << "AddAcceptedNNIsToDAG::UpdateEvalEngine: " << timer.Lap() << std::endl;
 }
 
@@ -806,8 +792,12 @@ void NNIEngine::AddScoreForNNI(const NNIOperation &nni, const double score) {
 
 void NNIEngine::UpdateAdjacentNNIs() {
   new_nnis_.clear();
-  for (const auto &nni : GetAcceptedNNIs()) {
+  for (const auto &edge_id : mods_.added_edge_idxs) {
+    auto nni = GetDAG().GetNNI(edge_id);
     adjacent_nnis_.erase(nni);
+    scored_nnis_.erase(nni);
+  }
+  for (const auto &nni : GetAcceptedNNIs()) {
     const auto nni_edge_id = GetDAG().GetEdgeIdx(nni);
     const auto &nni_edge = GetDAG().GetDAGEdge(nni_edge_id);
     for (const auto node_id : {nni_edge.GetParent(), nni_edge.GetChild()}) {
@@ -841,9 +831,6 @@ void NNIEngine::UpdateRejectedNNIs() {
 }
 
 void NNIEngine::UpdateScoredNNIs() {
-  for (const auto &nni : accepted_nnis_) {
-    scored_nnis_.erase(nni);
-  }
   if (save_past_scored_nnis_) {
     scored_past_nnis_.insert(scored_nnis_.begin(), scored_nnis_.end());
     for (const auto &nni : accepted_nnis_) {
