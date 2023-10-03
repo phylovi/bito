@@ -1,7 +1,7 @@
 // Copyright 2019-2022 bito project contributors.
 // bito is free software under the GPLv3; see LICENSE file for details.
 //
-// This contains the meta information for the git commit that bito
+// This contains the meta information for the git commit that build bito.
 
 #pragma once
 

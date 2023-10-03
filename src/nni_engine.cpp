@@ -22,11 +22,13 @@ NNIEngine::NNIEngine(GPDAG &dag, std::optional<GPEngine *> gp_engine,
 
 double NNIEngine::GetScoreByNNI(const NNIOperation &nni) const {
   // Check if score has already been stored in NNI Engine.
-  if (GetScoredNNIs().find(nni) != GetScoredNNIs().end()) {
-    return GetScoredNNIs().at(nni);
+  const auto it_1 = GetScoredNNIs().find(nni);
+  if (it_1 != GetScoredNNIs().end()) {
+    return it_1->second;
   }
-  if (GetPastScoredNNIs().find(nni) != GetScoredNNIs().end()) {
-    return GetPastScoredNNIs().at(nni);
+  const auto it_2 = GetPastScoredNNIs().find(nni);
+  if (it_2 != GetScoredNNIs().end()) {
+    return it_2->second;
   }
   // Otherwise, check if score is in NNI Eval Engine.
   return GetEvalEngine().ScoreInternalNNIByNNI(nni);
@@ -153,6 +155,7 @@ void NNIEngine::GrowEvalEngineForAdjacentNNIs(const bool via_reference,
   }
 }
 
+// TODO can this be sped up?
 void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
@@ -178,24 +181,26 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
 }
 
 void NNIEngine::ScoreAdjacentNNIs() {
-  Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
   if (IsEvalEngineInUse(NNIEvalEngineType::GPEvalEngine)) {
-    GetGPEvalEngine().GetScoredNNIs().clear();
+    // GetGPEvalEngine().GetScoredNNIs().clear();
     GetGPEvalEngine().ScoreAdjacentNNIs(GetNNIsToRescore());
-    GetScoredNNIs().insert(GetGPEvalEngine().GetScoredNNIs().begin(),
-                           GetGPEvalEngine().GetScoredNNIs().end());
+    // GetScoredNNIs().insert(GetGPEvalEngine().GetScoredNNIs().begin(),
+    //                        GetGPEvalEngine().GetScoredNNIs().end());
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaLikelihood)) {
-    GetTPEvalEngine().GetScoredNNIs().clear();
+    // GetTPEvalEngine().GetScoredNNIs().clear();
     GetTPEvalEngine().ScoreAdjacentNNIs(GetNNIsToRescore());
-    GetScoredNNIs().insert(GetTPEvalEngine().GetScoredNNIs().begin(),
-                           GetTPEvalEngine().GetScoredNNIs().end());
+    // GetScoredNNIs().insert(GetTPEvalEngine().GetScoredNNIs().begin(),
+    //                        GetTPEvalEngine().GetScoredNNIs().end());
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaParsimony)) {
-    GetTPEvalEngine().GetScoredNNIs().clear();
+    // GetTPEvalEngine().GetScoredNNIs().clear();
     GetTPEvalEngine().ScoreAdjacentNNIs(GetNNIsToRescore());
-    GetScoredNNIs().insert(GetTPEvalEngine().GetScoredNNIs().begin(),
-                           GetTPEvalEngine().GetScoredNNIs().end());
+    // GetScoredNNIs().insert(GetTPEvalEngine().GetScoredNNIs().begin(),
+    //                        GetTPEvalEngine().GetScoredNNIs().end());
+  }
+  for (const auto nni : GetNNIsToRescore()) {
+    GetScoredNNIs()[nni] = GetEvalEngine().GetScoredNNIs().find(nni)->second;
   }
 }
 
@@ -242,7 +247,7 @@ void NNIEngine::RunMainLoop(const bool is_quiet) {
   Stopwatch timer(true, Stopwatch::TimeScale::SecondScale);
 
   // (1) Add all adjacent NNIs to the GraftDAG.
-  GraftAdjacentNNIsToDAG();
+  GraftAdjacentNNIsToDAG(is_quiet);
   os << "RunMainLoop::GraftAdjacentNNIsToDAG: " << timer.Lap() << std::endl;
   // (2) Compute each adjacent NNI score.
   FilterPreUpdate();
@@ -662,11 +667,9 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
   os << "AddAcceptedNNIsToDAG::UpdateEvalEngine: " << timer.Lap() << std::endl;
 }
 
-void NNIEngine::GraftAdjacentNNIsToDAG() {
+void NNIEngine::GraftAdjacentNNIsToDAG(const bool is_quiet) {
   BitsetPairVector nodes_to_add;
-  const NNISet &nnis_to_graft =
-      GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewNNIs();
-  for (const auto &nni : nnis_to_graft) {
+  for (const auto &nni : GetNNIsToRescore()) {
     GetGraftDAG().AddNodePair(nni);
     // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
   }
@@ -831,6 +834,9 @@ void NNIEngine::UpdateRejectedNNIs() {
 }
 
 void NNIEngine::UpdateScoredNNIs() {
+  for (const auto &nni : accepted_nnis_) {
+    scored_nnis_.erase(nni);
+  }
   if (save_past_scored_nnis_) {
     scored_past_nnis_.insert(scored_nnis_.begin(), scored_nnis_.end());
     for (const auto &nni : accepted_nnis_) {

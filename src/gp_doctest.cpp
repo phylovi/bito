@@ -2108,6 +2108,10 @@ TEST_CASE("NNIEngine via GPEngine: Proposed NNI vs DAG NNI GPLikelihoods") {
           const auto prenni_graft = prenni_graftdag_likelihoods.at(pre_nni);
           const auto diff = std::abs(prenni_truth - prenni_graft);
           const auto passes_current_test = (diff < tolerance);
+          if (!passes_current_test) {
+            std::cout << "Pre NNI: FAIL -- " << prenni_truth << " " << prenni_graft
+                      << std::endl;
+          }
           passes_test = (passes_test & passes_current_test);
           CHECK_MESSAGE(diff < tolerance,
                         "Pre-NNI Likelihood from NNI Engine does not match truth.");
@@ -2121,7 +2125,8 @@ TEST_CASE("NNIEngine via GPEngine: Proposed NNI vs DAG NNI GPLikelihoods") {
           const auto diff = std::abs(nni_truth - nni_graft);
           const auto passes_current_test = (diff < tolerance);
           if (!passes_current_test) {
-            std::cout << "FAIL " << nni_truth << " " << nni_graft << std::endl;
+            std::cout << "Added NNI: FAIL -- " << nni_truth << " " << nni_graft
+                      << std::endl;
           }
           passes_test = (passes_test & passes_current_test);
           CHECK_MESSAGE(diff < tolerance,
@@ -2976,12 +2981,12 @@ TEST_CASE("TPEngine: TPEngine Parsimony scores vs SankoffHandler Parsimony score
 // generate the same result from adding NNIs to the DAG and updating as we do from
 // using the pre-NNI computation.
 TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
-  bool print_failures = false;
+  bool do_print_failures = true;
   // Build NNIEngine from DAG that does not include NNIs. Compute likelihoods.
   auto CompareProposedNNIvsDAGNNIvsBEAGLE =
-      [print_failures](const std::string& fasta_path, const std::string& newick_path,
-                       const bool optimize_branch_lengths = true,
-                       const bool take_first_branch_lengths = true) {
+      [do_print_failures](const std::string& fasta_path, const std::string& newick_path,
+                          const bool optimize_branch_lengths = true,
+                          const bool take_first_branch_lengths = true) {
         bool test_passes = true;
         const double tol = 1e-5;
         // Instance for computing proposed scores.
@@ -3057,13 +3062,13 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
           test_passes &= matches_score_dag;
           test_passes &= matches_score_tree;
           test_passes &= matches_dag_tree;
-          if (print_failures) {
+          if (do_print_failures) {
             if (!matches_score_dag or !matches_score_tree) {
               std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
-                        << score_proposed << ": " << abs(score_proposed - score_dag)
-                        << std::endl;
-              std::cout << "SCORE_FAILED_SCORE: " << score_tree << " vs " << score_dag
-                        << ": " << abs(score_dag - score_tree) << std::endl;
+                        << score_proposed << ": "
+                        << std::abs(score_tree - score_proposed) << std::endl;
+              std::cout << "SCORE_FAILED_DAG: " << score_tree << " vs " << score_dag
+                        << ": " << std::abs(score_tree - score_dag) << std::endl;
             } else {
               std::cout << "SCORE_PASS: " << score_tree << std::endl;
             }

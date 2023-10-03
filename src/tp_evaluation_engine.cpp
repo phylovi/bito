@@ -301,23 +301,24 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     update_edges.insert(edge_id);
     update_edges.insert(choice.parent_edge_id);
   }
+  // Find topological sort of edges.
+  std::vector<EdgeId> rootward_edges(update_edges.begin(), update_edges.end());
+  std::sort(rootward_edges.begin(), rootward_edges.end(),
+            [this](const EdgeId lhs, const EdgeId rhs) {
+              return GetDAG().GetDAGEdgeBitset(lhs) > GetDAG().GetDAGEdgeBitset(rhs);
+            });
   os << "UpdateEngineAfterModifyingDAG::UpdateEdges: " << timer.Lap() << std::endl;
 
   // Initialize new PLVs.
   auto RootwardPass = [&]() {
-    const auto &edges = update_edges;
-    for (const auto edge_id : GetDAG().RootwardEdgeTraversalTrace(true)) {
-      if (edges.find(edge_id) != edges.end()) {
-        PopulateRootwardPVForEdge(edge_id);
-      }
+    for (const auto edge_id : rootward_edges) {
+      PopulateRootwardPVForEdge(edge_id);
     }
   };
   auto LeafwardPass = [&]() {
-    const auto &edges = update_edges;
-    for (const auto edge_id : GetDAG().LeafwardEdgeTraversalTrace(true)) {
-      if (edges.find(edge_id) != edges.end()) {
-        PopulateLeafwardPVForEdge(edge_id);
-      }
+    for (auto it = rootward_edges.rbegin(); it != rootward_edges.rend(); ++it) {
+      const auto edge_id = *it;
+      PopulateLeafwardPVForEdge(edge_id);
     }
   };
   std::map<EdgeId, size_t> optimize_counter;

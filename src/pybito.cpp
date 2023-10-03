@@ -963,7 +963,8 @@ PYBIND11_MODULE(bito, m) {
       .def("prep_eval_engine", &NNIEngine::PrepEvalEngine)
       .def("filter_init", &NNIEngine::FilterInit)
       // Main Loop subroutines
-      .def("graft_adjacent_nnis_to_dag", &NNIEngine::GraftAdjacentNNIsToDAG)
+      .def("graft_adjacent_nnis_to_dag", &NNIEngine::GraftAdjacentNNIsToDAG,
+           py::arg("is_quiet") = true)
       .def("filter_pre_update", &NNIEngine::FilterPreUpdate)
       .def("filter_eval_adjacent_nnis", &NNIEngine::FilterEvaluateAdjacentNNIs)
       .def("filter_post_update", &NNIEngine::FilterPostUpdate)

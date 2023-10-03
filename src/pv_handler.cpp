@@ -36,7 +36,8 @@ template <class PVTypeEnum, class DAGElementId>
 void PartialVectorHandler<PVTypeEnum, DAGElementId>::Reindex(
     const Reindexer pv_reindexer) {
   ReindexViaRemap(pv_reindexer);
-  if (!(pv_reindexer.size() < (reindexer_init_size_ * 1.5)) or !use_remapping_) {
+  if (!(pv_reindexer.size() < (reindexer_init_size_ * reindex_ratio)) or
+      !use_remapping_) {
     ReindexViaMoveCopy(pv_reindexer);
   }
 }
@@ -44,7 +45,6 @@ void PartialVectorHandler<PVTypeEnum, DAGElementId>::Reindex(
 template <class PVTypeEnum, class DAGElementId>
 void PartialVectorHandler<PVTypeEnum, DAGElementId>::ReindexViaMoveCopy(
     const Reindexer pv_reindexer) {
-  std::cout << "PVHandler::ReindexViaMoveCopy" << std::endl;
   Reindexer::ReindexInPlace(pvs_, pv_reindexer_, GetPVCount(), GetPV(GetPVCount()),
                             GetPV(GetPVCount() + 1));
   pv_reindexer_ = Reindexer::IdentityReindexer(GetPaddedPVCount());
@@ -54,7 +54,6 @@ void PartialVectorHandler<PVTypeEnum, DAGElementId>::ReindexViaMoveCopy(
 template <class PVTypeEnum, class DAGElementId>
 void PartialVectorHandler<PVTypeEnum, DAGElementId>::ReindexViaRemap(
     const Reindexer pv_reindexer) {
-  std::cout << "PVHandler::ReindexViaRemap" << std::endl;
   pv_reindexer_.Resize(pv_reindexer.size());
   pv_reindexer_ = pv_reindexer_.ComposeWith(pv_reindexer);
   pv_reindexer_.Resize(GetPaddedPVCount());

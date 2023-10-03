@@ -412,7 +412,7 @@ class NNIEngine {
   // Add all Accepted NNIs to Main DAG.
   void AddAcceptedNNIsToDAG(const bool is_quiet = true);
   // Add all Adjacent NNIs to Graft DAG.
-  void GraftAdjacentNNIsToDAG();
+  void GraftAdjacentNNIsToDAG(const bool is_quiet = true);
   // Remove all NNIs from Graft DAG.
   void RemoveAllGraftedNNIsFromDAG();
 

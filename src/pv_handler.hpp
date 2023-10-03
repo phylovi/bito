@@ -501,6 +501,7 @@ class PartialVectorHandler {
   size_t reindexer_init_size_ = 0;
   // Whether to use remapping to reindex PLVs, otherwise only use
   bool use_remapping_ = true;
+  double reindex_ratio = 10;
 };
 
 // PLVHandler: Partial Likelihood Vector Handler
