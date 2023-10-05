@@ -147,11 +147,17 @@ class NNIEngine {
   const NNISet &GetNNIsToReevaluate() const {
     return GetReevaluateRejectedNNIs() ? GetAdjacentNNIs() : GetNewNNIs();
   }
-  const DoubleNNIPairSet &GetNNIScoresToRescore() const {
-    return GetRescoreRejectedNNIs() ? scores_ : new_scores_;
+  const NNIDoubleMap &GetScoredNNIsToRescore() const {
+    return GetRescoreRejectedNNIs() ? scored_nnis_ : new_scored_nnis_;
   }
-  const DoubleNNIPairSet &GetNNIScoresToReevaluate() const {
-    return GetReevaluateRejectedNNIs() ? scores_ : new_scores_;
+  const NNIDoubleMap &GetScoredNNIsToReevaluate() const {
+    return GetReevaluateRejectedNNIs() ? scored_nnis_ : new_scored_nnis_;
+  }
+  const DoubleNNIPairSet &GetSortedScoredNNIsToRescore() const {
+    return GetRescoreRejectedNNIs() ? sorted_scored_nnis_ : new_sorted_scored_nnis_;
+  }
+  const DoubleNNIPairSet &GetSortedScoredNNIsToReevaluate() const {
+    return GetReevaluateRejectedNNIs() ? sorted_scored_nnis_ : new_sorted_scored_nnis_;
   }
   // Get vector of proposed NNI scores.
   DoubleVector GetNNIScores() const {
@@ -240,10 +246,6 @@ class NNIEngine {
   void GrowEvalEngineForAdjacentNNIs(const bool via_reference = true,
                                      const bool use_unique_temps = false);
 
-  // Performs entire scoring computation for all Adjacent NNIs.
-  // Allocates necessary extra space on Evaluation Engine.
-  void ScoreAdjacentNNIs();
-
   // ** Runners
   // These start the engine, which procedurally ranks and adds (and maybe removes) NNIs
   // to the DAG, until some termination criteria has been satisfied.
@@ -260,94 +262,18 @@ class NNIEngine {
   // ** Filter Functions
 
   // Initialization step for filter before beginning
-  using StaticFilterInitFunction =
-      std::function<void(NNIEngine &, NNIEvalEngine &, GraftDAG &)>;
+  using StaticFilterInitFunction = std::function<void(NNIEngine &)>;
   // Update step for any filter computation work to be done at start of each sweep.
-  using StaticFilterUpdateFunction =
-      std::function<void(NNIEngine &, NNIEvalEngine &, GraftDAG &)>;
+  using StaticFilterUpdateFunction = std::function<void(NNIEngine &)>;
   // Function template for computational evaluation to be performed on an adjacent NNI.
-  using StaticFilterScoreFunction = std::function<double(
-      NNIEngine &, NNIEvalEngine &, GraftDAG &, const NNIOperation &)>;
+  using StaticFilterScoreFunction =
+      std::function<double(NNIEngine &, const NNIOperation &)>;
   // Function template for processing an adjacent NNI to be accepted or rejected.
   using StaticFilterEvaluateFunction =
-      std::function<void(NNIEngine &, const DoubleNNIPairSet &, NNISet &)>;
+      std::function<void(NNIEngine &, const NNISet &, const NNIDoubleMap &,
+                         const DoubleNNIPairSet &, NNISet &)>;
   using StaticFilterEvaluateLoopFunction =
       std::function<bool(NNIEngine &, const NNIOperation &, const double)>;
-
-  // ** Filter Helper Functions
-
-  // Set to evaluate all NNIs to 0.
-  void SetNoEvaluate(const double value = -INFINITY);
-  // Set filter to accept/deny all adjacent NNIs.
-  void SetNoFilter(const bool set_nni_to_pass = true);
-  // Set filter by accepting NNIs contained in set.
-  void SetFilterBySetOfNNIs(const std::set<NNIOperation> &nnis_to_accept);
-  // Set cutoff filter to constant cutoff. Scores above threshold pass.
-  void SetMinScoreCutoff(const double score_cutoff);
-  // Set cutoff filter to constant cutoff. Scores below threshold pass.
-  void SetMaxScoreCutoff(const double score_cutoff);
-
-  // Get minimum score from scored NNIs.
-  double GetMinScore() const {
-    const auto &scores = GetNNIScoresToReevaluate();
-    return scores.empty() ? INFINITY : scores.begin()->first;
-  }
-  // Get maximum score from scored NNIs.
-  double GetMaxScore() const {
-    const auto &scores = GetNNIScoresToReevaluate();
-    return scores.empty() ? -INFINITY : scores.rbegin()->first;
-  }
-  // Get bottom kth score from scored NNIs.
-  double GetMinKScore(const size_t k) const {
-    const auto &scores = GetNNIScoresToReevaluate();
-    double score = INFINITY;
-    if (scores.empty() or k == 0) return score;
-    size_t count = 0;
-    for (auto it = scores.begin(); it != scores.end(); it++) {
-      const auto &[nni_score, nni] = *it;
-      score = nni_score;
-      if (++count >= k) break;
-    }
-    return score;
-  }
-  // Get top kth score from scored NNIs.
-  double GetMaxKScore(const size_t k) const {
-    const auto &scores = GetNNIScoresToReevaluate();
-    double score = -INFINITY;
-    if (scores.empty() or k == 0) return score;
-    size_t count = 0;
-    for (auto it = scores.rbegin(); it != scores.rend(); it++) {
-      const auto &[nni_score, nni] = *it;
-      score = nni_score;
-      if (++count >= k) break;
-    }
-    return score;
-  }
-  // Get bottom kth score from scored NNIs.
-  std::set<NNIOperation> GetMinKScoringNNIs(const size_t k) const {
-    const auto &scores = GetNNIScoresToReevaluate();
-    std::set<NNIOperation> nnis;
-    if (scores.empty() or k == 0) return nnis;
-    size_t count = 0;
-    for (auto it = scores.begin(); it != scores.end(); it++) {
-      auto &[nni_score, nni] = *it;
-      nnis.insert(nni);
-      if (++count >= k) break;
-    }
-    return nnis;
-  }
-  // Get top kth score from scored NNIs.
-  std::set<NNIOperation> GetMaxKScoringNNIs(const size_t k) const {
-    std::set<NNIOperation> nnis;
-    if (GetScoredNNIs().empty() or k == 0) return nnis;
-    size_t count = 0;
-    for (auto it = scores_.rbegin(); it != scores_.rend(); it++) {
-      auto &[nni_score, nni] = *it;
-      nnis.insert(nni);
-      if (++count >= k) break;
-    }
-    return nnis;
-  }
 
   // ** Filter Subroutines
 
@@ -384,6 +310,9 @@ class NNIEngine {
 
   // ** Filtering Schemes
 
+  // Set filtering scheme to simply accept or reject all NNIs.
+  void SetNoFilter(const bool accept_all_nnis);
+
   // Set filtering scheme to use GP likelihoods, using static cutoff.
   void SetGPLikelihoodCutoffFilteringScheme(const double score_cutoff);
   // Set filtering scheme to use TP likelihoods, using static cutoff.
@@ -398,10 +327,41 @@ class NNIEngine {
   // Set filtering scheme to use TP parsimony, using static cutoff.
   void SetTPParsimonyDropFilteringScheme(const double score_cutoff);
 
-  // Set filtering scheme to find the top N best-scoring NNIs.
+  // Set filtering scheme to find the top K best-scoring NNIs.
   void SetTopKScoreFilteringScheme(const size_t k, const bool max_is_best = true);
 
+  // ** Filtering Scheme Helper Functions
+
+  // Set filter to score to constant value.
+  void SetScoreToConstant(const double value = -INFINITY);
+  // Set filter to score using evaluation engine.
+  void SetScoreViaEvalEngine();
+  // Set filter to accept/deny all adjacent NNIs.
+  void SetNoEvaluate(const bool set_all_nni_to_pass = true);
+  // Set filter by accepting NNIs contained in explicit set.
+  void SetEvaluateViaSetOfNNIs(const std::set<NNIOperation> &nnis_to_accept);
+  // Set cutoff filter to constant cutoff. Accept scores above threshold.
+  void SetEvaluateViaMinScoreCutoff(const double score_cutoff);
+  // Set cutoff filter to constant cutoff. Accept scores below threshold.
+  void SetEvaluateViaMaxScoreCutoff(const double score_cutoff);
+
+  // Performs entire scoring computation for all Adjacent NNIs.
+  void ScoreAdjacentNNIs();
+  // Get minimum score from scored NNIs.
+  double GetMinScore() const;
+  // Get maximum score from scored NNIs.
+  double GetMaxScore() const;
+  // Get bottom kth score from scored NNIs.
+  double GetMinKScore(const size_t k) const;
+  // Get top kth score from scored NNIs.
+  double GetMaxKScore(const size_t k) const;
+  // Get bottom kth score from scored NNIs.
+  std::set<NNIOperation> GetMinKScoringNNIs(const size_t k) const;
+  // Get top kth score from scored NNIs.
+  std::set<NNIOperation> GetMaxKScoringNNIs(const size_t k) const;
+
   // ** Key Indexing
+
   using KeyIndex = NNIEngineKeyIndex;
   using KeyIndexPairArray = NNIEngineKeyIndexPairArray;
   using KeyIndexMap = NNIEngineKeyIndexMap;
@@ -536,12 +496,14 @@ class NNIEngine {
 
   // Map of adjacent NNIs to their score.
   NNIDoubleMap scored_nnis_;
+  // Map of new NNIs to their score.
+  NNIDoubleMap new_scored_nnis_;
   // Map of previous rejected NNIs to their score.
   NNIDoubleMap scored_past_nnis_;
   // Set of adjacent NNI scores, sorted by score.
-  DoubleNNIPairSet scores_;
+  DoubleNNIPairSet sorted_scored_nnis_;
   // Set of new NNI scores, sorted by score.
-  DoubleNNIPairSet new_scores_;
+  DoubleNNIPairSet new_sorted_scored_nnis_;
 
   // Steps of filtering scheme.
   StaticFilterInitFunction filter_init_fn_ = nullptr;
@@ -559,6 +521,7 @@ class NNIEngine {
   // Whether to re-evaluate rejected NNIs from previous iterations.
   bool reevaluate_rejected_nnis_ = true;
   // Whether to re-compute scores for rejected NNIs from previous iterations.
+  bool track_rejected_nnis_ = false;
   bool rescore_rejected_nnis_ = false;
   // Whether to include NNIs whose parent is a rootsplit.
   bool include_rootsplit_nnis_ = true;
