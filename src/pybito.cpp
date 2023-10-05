@@ -944,8 +944,6 @@ PYBIND11_MODULE(bito, m) {
            "Get scores from NNIs from previous iterations.")
       .def("iter_count", &NNIEngine::GetIterationCount,
            "Get number of iterations of NNI search run.")
-      .def("nnis_to_rescore", &NNIEngine::GetNNIsToRescore)
-      .def("nnis_to_rescore", &NNIEngine::GetNNIsToReevaluate)
       // Search primary routines
       .def("run", &NNIEngine::Run, "Primary runner for NNI systematic search.",
            py::arg("is_quiet") = false)
