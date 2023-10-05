@@ -2180,7 +2180,6 @@ TEST_CASE("NNIEngine: Finding Parent and Child Nodes After Adding/Grafting Nodes
   auto& graftdag_1 = nniengine_1.GetGraftDAG();
   nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
   nniengine_1.SetTopKScoreFilteringScheme(2);
-  // nniengine_1.SetNoFilter(true);
   nniengine_1.RunInit();
 
   auto VectorToSet = [](const std::pair<NodeIdVector, NodeIdVector>& node_id_vector)
@@ -2981,14 +2980,13 @@ TEST_CASE("TPEngine: TPEngine Parsimony scores vs SankoffHandler Parsimony score
 // generate the same result from adding NNIs to the DAG and updating as we do from
 // using the pre-NNI computation.
 TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
-  bool do_print_failures = true;
+  bool do_print_all = false;
   const double tol = 1e-5;
   // Build NNIEngine from DAG that does not include NNIs. Compute likelihoods.
   auto CompareProposedNNIvsDAGNNIvsBEAGLE =
-      [do_print_failures, tol](const std::string& fasta_path,
-                               const std::string& newick_path,
-                               const bool optimize_branch_lengths = true,
-                               const bool take_first_branch_lengths = true) {
+      [do_print_all, tol](const std::string& fasta_path, const std::string& newick_path,
+                          const bool optimize_branch_lengths = true,
+                          const bool take_first_branch_lengths = true) {
         bool test_passes = true;
         // Instance for computing proposed scores.
         auto inst_1 = MakeGPInstanceWithTPEngine(fasta_path, newick_path,
@@ -2997,17 +2995,14 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
         auto inst_2 = MakeGPInstanceWithTPEngine(fasta_path, newick_path,
                                                  "_ignore/mmapped_pv.2.data");
         auto& nniengine_1 = inst_1.GetNNIEngine();
-        // auto& tpengine_1 = inst_1.GetTPEngine();
         auto& dag_2 = inst_2.GetDAG();
         auto& nniengine_2 = inst_2.GetNNIEngine();
         auto& tpengine_2 = inst_2.GetTPEngine();
-
         // Set nni engine to use TP likelihoods.
         nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
         nniengine_1.SetNoFilter(true);
         nniengine_2.SetTPLikelihoodCutoffFilteringScheme(0.0);
         nniengine_2.SetNoFilter(true);
-
         // Copy branch lengths from input trees.
         if (take_first_branch_lengths) {
           inst_1.TPEngineSetBranchLengthsByTakingFirst();
@@ -3035,10 +3030,10 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
         // Report all NNIs.
         nniengine_1.SyncAdjacentNNIsWithDAG();
 
-        // Likelihoods and Parsimonies of expanded DAG with proposed NNIs.
+        // Likelihoods of expanded DAG with proposed NNIs.
         auto likelihoods_post = BuildEdgeTPScoreMapFromInstance(
             inst_2, TPEvalEngineType::LikelihoodEvalEngine);
-        // Likelihoods and Parsimonies of base DAG.
+        // Likelihoods of base DAG.
         auto likelihoods_pre = BuildEdgeTPScoreMapFromInstance(
             inst_1, TPEvalEngineType::LikelihoodEvalEngine);
 
@@ -3076,7 +3071,7 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
                       << std::endl;
             std::cout << "SCORE_FAILED_DAG: " << score_tree << " vs " << score_dag
                       << ": " << std::abs(score_tree - score_dag) << std::endl;
-          } else if (!do_print_failures) {
+          } else if (do_print_all) {
             std::cout << "SCORE_PASS: " << score_tree << std::endl;
           }
         }
