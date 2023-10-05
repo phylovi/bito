@@ -361,11 +361,6 @@ class SubsplitDAG {
   // DAG root node to the rootsplits, supplying the relevant indices to a lambda.
   void TopologicalEdgeTraversal(ParentRotationChildEdgeLambda f) const;
 
-  // ** Iterators
-
-  class LeafIterator;
-  void TestLeafIterator() const;
-
   // ** Priors
 
   // Discrete uniform distribution over each subsplit.
@@ -804,5 +799,3 @@ class SubsplitDAG {
   // count for the corresponding node_id.
   EigenVectorXd topology_count_below_;
 };
-
-#include "subsplit_dag_iterators.hpp"

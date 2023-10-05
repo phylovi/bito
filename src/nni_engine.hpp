@@ -129,7 +129,6 @@ class NNIEngine {
   size_t GetOldNNICount() const { return adjacent_nnis_.size() - new_nnis_.size(); }
   // NNIs that have been Accepted on current iteration.
   const NNISet &GetAcceptedNNIs() const { return accepted_nnis_; }
-  NNISet &GetAcceptedNNIs() { return accepted_nnis_; }
   size_t GetAcceptedNNICount() const { return GetAcceptedNNIs().size(); }
   // NNIs that have been Accepted from all iterations.
   const NNISet &GetPastAcceptedNNIs() const { return accepted_past_nnis_; }
@@ -142,7 +141,6 @@ class NNIEngine {
   size_t GetPastRejectedNNICount() const { return GetPastRejectedNNIs().size(); }
   // Get Map of proposed NNIs with their score.
   const NNIDoubleMap &GetScoredNNIs() const { return scored_nnis_; }
-  NNIDoubleMap &GetScoredNNIs() { return scored_nnis_; }
   size_t GetScoredNNICount() const { return GetScoredNNIs().size(); }
   // Get Map of proposed NNIs with their score from all iterations.
   const NNIDoubleMap &GetPastScoredNNIs() const { return scored_past_nnis_; }
@@ -277,9 +275,11 @@ class NNIEngine {
       NNIEngine &, NNIEvalEngine &, GraftDAG &, const NNIOperation &)>;
   // Function template for processing an adjacent NNI to be accepted or rejected.
   using StaticFilterEvaluateFunction =
-      std::function<void(NNIEngine &, NNIEvalEngine &, GraftDAG &)>;
-  using StaticFilterEvaluateLoopFunction = std::function<bool(
-      NNIEngine &, NNIEvalEngine &, GraftDAG &, const NNIOperation &, const double)>;
+      std::function<void(NNIEngine &, const DoubleNNIPairSet &, NNISet &)>;
+  using StaticFilterEvaluateLoopFunction =
+      std::function<bool(NNIEngine &, const NNIOperation &, const double)>;
+
+  // ** Filter Helper Functions
 
   // Set to evaluate all NNIs to 0.
   void SetNoEvaluate(const double value = -INFINITY);
