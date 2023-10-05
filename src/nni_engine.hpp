@@ -436,11 +436,11 @@ class NNIEngine {
 
   // This handles updating all NNI data: adjacent, new, accepted, rejected, and scored
   // NNIs.
-  // void UpdateNNIData();
   void UpdateRejectedNNIs();
   void UpdateAdjacentNNIs();
   void UpdateScoredNNIs();
   void UpdateAcceptedNNIs();
+
   // Reset all NNIs, current and past.
   void ResetNNIData();
 
@@ -521,7 +521,6 @@ class NNIEngine {
   // Whether to re-evaluate rejected NNIs from previous iterations.
   bool reevaluate_rejected_nnis_ = true;
   // Whether to re-compute scores for rejected NNIs from previous iterations.
-  bool track_rejected_nnis_ = false;
   bool rescore_rejected_nnis_ = false;
   // Whether to include NNIs whose parent is a rootsplit.
   bool include_rootsplit_nnis_ = true;
@@ -529,4 +528,5 @@ class NNIEngine {
   bool save_past_scored_nnis_ = false;
   bool save_past_accepted_nnis_ = true;
   bool save_past_rejected_nnis_ = true;
+  bool track_rejected_nnis_ = false;
 };
