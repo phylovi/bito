@@ -1004,9 +1004,9 @@ PYBIND11_MODULE(bito, m) {
            &NNIEngine::SetTPParsimonyDropFilteringScheme,
            "Set filtering scheme to use Top Pruning with Parsimony based on drop from "
            "best score.")
-      .def("set_top_n_score_filtering_scheme", &NNIEngine::SetTopNScoreFilteringScheme,
+      .def("set_top_k_score_filtering_scheme", &NNIEngine::SetTopKScoreFilteringScheme,
            "Set filter scheme that accepts the top N best-scoring NNIs.",
-           py::arg("top_n"), py::arg("max_is_best") = true)
+           py::arg("top_k"), py::arg("max_is_best") = true)
       // Options
       .def("set_include_rootsplits", &NNIEngine::SetIncludeRootsplitNNIs,
            "Set whether to include rootsplits in adjacent NNIs")

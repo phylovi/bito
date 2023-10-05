@@ -153,6 +153,7 @@ class NNIOperation {
   bool IsValid();
 
   std::string ToString() const;
+  std::string ToHashString() const;
   friend std::ostream &operator<<(std::ostream &os, const NNIOperation &nni);
 
   Bitset parent_;

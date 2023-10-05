@@ -182,26 +182,19 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
 
 void NNIEngine::ScoreAdjacentNNIs() {
   if (IsEvalEngineInUse(NNIEvalEngineType::GPEvalEngine)) {
-    // GetGPEvalEngine().GetScoredNNIs().clear();
     GetGPEvalEngine().ScoreAdjacentNNIs(GetNNIsToRescore());
-    // GetScoredNNIs().insert(GetGPEvalEngine().GetScoredNNIs().begin(),
-    //                        GetGPEvalEngine().GetScoredNNIs().end());
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaLikelihood)) {
-    // GetTPEvalEngine().GetScoredNNIs().clear();
     GetTPEvalEngine().ScoreAdjacentNNIs(GetNNIsToRescore());
-    // GetScoredNNIs().insert(GetTPEvalEngine().GetScoredNNIs().begin(),
-    //                        GetTPEvalEngine().GetScoredNNIs().end());
   }
   if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaParsimony)) {
-    // GetTPEvalEngine().GetScoredNNIs().clear();
     GetTPEvalEngine().ScoreAdjacentNNIs(GetNNIsToRescore());
-    // GetScoredNNIs().insert(GetTPEvalEngine().GetScoredNNIs().begin(),
-    //                        GetTPEvalEngine().GetScoredNNIs().end());
   }
   for (const auto nni : GetNNIsToRescore()) {
-    GetScoredNNIs()[nni] = GetEvalEngine().GetScoredNNIs().find(nni)->second;
+    AddNNIScore(nni, GetEvalEngine().GetScoredNNIs().find(nni)->second);
   }
+  Assert(scored_nnis_.size() == scores_.size(),
+         "scored_nnis_ and scores_ do not match sizes.");
 }
 
 // ** Runners
@@ -291,68 +284,75 @@ void NNIEngine::RunPostLoop(const bool is_quiet) {
 
 // ** Filter Functions
 
-void NNIEngine::SetNoEvaluate() {
-  SetFilterEvalFunction([](NNIEngine &this_nni_engine, NNIEvalEngine &this_eval_engine,
-                           GraftDAG &this_graft_dag,
-                           const NNIOperation &nni) -> double { return 0.0; });
+void NNIEngine::SetNoEvaluate(const double value) {
+  SetFilterEvalFunction([value](NNIEngine &this_nni_engine,
+                                NNIEvalEngine &this_eval_engine,
+                                GraftDAG &this_graft_dag,
+                                const NNIOperation &nni) -> double { return value; });
 }
 
 void NNIEngine::SetNoFilter(const bool set_nni_to_pass) {
-  SetFilterProcessFunction(
-      [set_nni_to_pass](NNIEngine &this_nni_engine, NNIEvalEngine &this_eval_engine,
-                        GraftDAG &this_graft_dag, const NNIOperation &nni,
-                        const double nni_score) -> bool { return set_nni_to_pass; });
+  SetFilterProcessFunction([set_nni_to_pass](NNIEngine &this_nni_engine,
+                                             NNIEvalEngine &this_eval_engine,
+                                             GraftDAG &this_graft_dag) {
+    if (set_nni_to_pass) {
+      this_nni_engine.GetAcceptedNNIs().insert(
+          this_nni_engine.GetNNIsToReevaluate().begin(),
+          this_nni_engine.GetNNIsToReevaluate().end());
+    }
+  });
 }
 
 void NNIEngine::SetFilterBySetOfNNIs(const std::set<NNIOperation> &nnis_to_accept) {
-  SetFilterProcessFunction(
-      [&nnis_to_accept](NNIEngine &this_nni_engine, NNIEvalEngine &this_eval_engine,
-                        GraftDAG &this_graft_dag, const NNIOperation &nni,
-                        const double nni_score) -> bool {
-        bool nni_passes = (nnis_to_accept.find(nni) != nnis_to_accept.end());
-        return nni_passes;
-      });
+  SetFilterProcessFunction([nnis_to_accept](NNIEngine &this_nni_engine,
+                                            NNIEvalEngine &this_eval_engine,
+                                            GraftDAG &this_graft_dag) {
+    this_nni_engine.GetAcceptedNNIs().insert(nnis_to_accept.begin(),
+                                             nnis_to_accept.end());
+  });
 }
 
 void NNIEngine::SetMinScoreCutoff(const double score_cutoff) {
-  SetFilterProcessFunction(
-      [score_cutoff](NNIEngine &this_nni_engine, NNIEvalEngine &this_eval_engine,
-                     GraftDAG &this_graft_dag, const NNIOperation &nni,
-                     const double nni_score) -> bool {
-        bool nni_passes = (nni_score >= score_cutoff);
-        return nni_passes;
-      });
+  // SetFilterProcessLoopFunction(
+  //     [score_cutoff](NNIEngine &this_nni_engine, NNIEvalEngine &this_eval_engine,
+  //                    GraftDAG &this_graft_dag, const NNIOperation &nni,
+  //                    const double nni_score) -> bool {
+  //       bool nni_passes = (nni_score >= score_cutoff);
+  //       return nni_passes;
+  //     });
+  SetFilterProcessFunction([score_cutoff](NNIEngine &this_nni_engine,
+                                          NNIEvalEngine &this_eval_engine,
+                                          GraftDAG &this_graft_dag) {
+    const auto &scores = this_nni_engine.GetNNIScoresToReevaluate();
+    for (auto it = scores.rbegin(); it != scores.rend(); it++) {
+      const auto &[nni_score, nni] = *it;
+      if (nni_score < score_cutoff) {
+        break;
+      }
+      this_nni_engine.GetAcceptedNNIs().insert(nni);
+    }
+  });
 }
 
 void NNIEngine::SetMaxScoreCutoff(const double score_cutoff) {
-  SetFilterProcessFunction(
-      [score_cutoff](NNIEngine &this_nni_engine, NNIEvalEngine &this_eval_engine,
-                     GraftDAG &this_graft_dag, const NNIOperation &nni,
-                     const double nni_score) -> bool {
-        bool nni_passes = (nni_score <= score_cutoff);
-        return nni_passes;
-      });
-}
-
-// TODO do we need this? Or merge into ScoreAdjacentNNIs
-void NNIEngine::SetScoredNNIsFromEvalEngine() {
-  SetFilterPostUpdateFunction([](NNIEngine &this_nni_engine,
-                                 NNIEvalEngine &this_eval_engine,
-                                 GraftDAG &this_graft_dag) {
-    // if (this_nni_engine.IsEvalEngineInUse(NNIEvalEngineType::GPEvalEngine)) {
-    //   this_nni_engine.GetScoredNNIs().insert(this_eval_engine.GetScoredNNIs().begin(),
-    //                                          this_eval_engine.GetScoredNNIs().end());
-    // }
-    // if (this_nni_engine.IsEvalEngineInUse(
-    //         NNIEvalEngineType::TPEvalEngineViaLikelihood)) {
-    //   this_nni_engine.GetScoredNNIs().insert(this_eval_engine.GetScoredNNIs().begin(),
-    //                                          this_eval_engine.GetScoredNNIs().end());
-    // }
-    // if (this_nni_engine.IsEvalEngineInUse(
-    //         NNIEvalEngineType::TPEvalEngineViaParsimony)) {
-    //   this_nni_engine.GetScoredNNIs().insert(this_eval_engine.GetScoredNNIs().begin(),
-    //                                          this_eval_engine.GetScoredNNIs().end());
-    // }
+  // SetFilterProcessLoopFunction(
+  //     [score_cutoff](NNIEngine &this_nni_engine, NNIEvalEngine &this_eval_engine,
+  //                    GraftDAG &this_graft_dag, const NNIOperation &nni,
+  //                    const double nni_score) -> bool {
+  //       bool nni_passes = (nni_score <= score_cutoff);
+  //       return nni_passes;
+  //     });
+  SetFilterProcessFunction([score_cutoff](NNIEngine &this_nni_engine,
+                                          NNIEvalEngine &this_eval_engine,
+                                          GraftDAG &this_graft_dag) {
+    const auto &scores = this_nni_engine.GetNNIScoresToReevaluate();
+    for (auto it = scores.begin(); it != scores.end(); it++) {
+      const auto &[nni_score, nni] = *it;
+      if (nni_score > score_cutoff) {
+        break;
+      }
+      this_nni_engine.GetAcceptedNNIs().insert(nni);
+    }
   });
 }
 
@@ -372,11 +372,12 @@ void NNIEngine::FilterPreUpdate() {
 
 // TODO Do we need this?
 void NNIEngine::FilterEvaluateAdjacentNNIs() {
-  if (!filter_eval_fn_) return;
-  for (const auto &nni : GetAdjacentNNIs()) {
-    const double nni_score =
-        (filter_eval_fn_)(*this, GetEvalEngine(), GetGraftDAG(), nni);
-    AddScoreForNNI(nni, nni_score);
+  if (filter_eval_fn_) {
+    for (const auto &nni : GetNNIsToRescore()) {
+      const double nni_score =
+          (filter_eval_fn_)(*this, GetEvalEngine(), GetGraftDAG(), nni);
+      AddNNIScore(nni, nni_score);
+    }
   }
 }
 
@@ -387,14 +388,20 @@ void NNIEngine::FilterPostUpdate() {
 }
 
 void NNIEngine::FilterProcessAdjacentNNIs() {
-  Assert(filter_process_fn_, "Must assign a filter process function.");
-  for (const auto &nni : GetNNIsToReevaluate()) {
-    const bool accept_nni = (filter_process_fn_)(*this, GetEvalEngine(), GetGraftDAG(),
-                                                 nni, GetNNIScore(nni));
-    if (accept_nni) {
-      accepted_nnis_.insert(nni);
-    } else {
-      // rejected_nnis_.insert(nni);
+  Assert(filter_process_fn_ or filter_process_loop_fn_,
+         "Must assign a filter process function before running NNIEngine.");
+  if (filter_process_fn_) {
+    (filter_process_fn_)(*this, GetEvalEngine(), GetGraftDAG());
+  }
+  if (filter_process_loop_fn_) {
+    for (const auto &[nni_score, nni] : GetNNIScoresToReevaluate()) {
+      const bool accept_nni = (filter_process_loop_fn_)(*this, GetEvalEngine(),
+                                                        GetGraftDAG(), nni, nni_score);
+      if (accept_nni) {
+        accepted_nnis_.insert(nni);
+      } else {
+        // rejected_nnis_.insert(nni);
+      }
     }
   }
 }
@@ -422,6 +429,11 @@ void NNIEngine::SetFilterProcessFunction(
   filter_process_fn_ = filter_process_fn;
 }
 
+void NNIEngine::SetFilterProcessLoopFunction(
+    StaticFilterProcessLoopFunction filter_process_loop_fn) {
+  filter_process_loop_fn_ = filter_process_loop_fn;
+}
+
 // ** Filtering Scheme
 
 void NNIEngine::SetGPLikelihoodCutoffFilteringScheme(const double score_cutoff) {
@@ -430,7 +442,6 @@ void NNIEngine::SetGPLikelihoodCutoffFilteringScheme(const double score_cutoff) 
   SetFilterPreUpdateFunction(
       [](NNIEngine &this_nni_engine, NNIEvalEngine &this_eval_engine,
          GraftDAG &this_graft_dag) { this_nni_engine.ScoreAdjacentNNIs(); });
-  SetScoredNNIsFromEvalEngine();
   SetMinScoreCutoff(score_cutoff);
 }
 
@@ -451,7 +462,6 @@ void NNIEngine::SetTPParsimonyCutoffFilteringScheme(const double score_cutoff) {
   SetFilterPreUpdateFunction(
       [](NNIEngine &this_nni_engine, NNIEvalEngine &this_eval_engine,
          GraftDAG &this_graft_dag) { this_nni_engine.ScoreAdjacentNNIs(); });
-  SetScoredNNIsFromEvalEngine();
   SetMaxScoreCutoff(score_cutoff);
 }
 
@@ -478,7 +488,6 @@ void NNIEngine::SetTPLikelihoodDropFilteringScheme(const double score_cutoff) {
     double max = this_nni_engine.GetMaxScore();
     this_nni_engine.SetMinScoreCutoff(max - score_cutoff);
   });
-  SetScoredNNIsFromEvalEngine();
 }
 
 void NNIEngine::SetTPParsimonyDropFilteringScheme(const double score_cutoff) {
@@ -494,13 +503,15 @@ void NNIEngine::SetTPParsimonyDropFilteringScheme(const double score_cutoff) {
   });
 }
 
-void NNIEngine::SetTopNScoreFilteringScheme(const size_t n, const bool max_is_best) {
-  SetFilterPreUpdateFunction([n, max_is_best](NNIEngine &this_nni_engine,
+void NNIEngine::SetTopKScoreFilteringScheme(const size_t k, const bool max_is_best) {
+  SetFilterPreUpdateFunction([k, max_is_best](NNIEngine &this_nni_engine,
                                               NNIEvalEngine &this_eval_engine,
                                               GraftDAG &this_graft_dag) {
     this_nni_engine.ScoreAdjacentNNIs();
-    double score_cutoff = max_is_best ? this_nni_engine.GetMaxKthScore(n)
-                                      : this_nni_engine.GetMinKthScore(n);
+    auto score_cutoff =
+        max_is_best ? this_nni_engine.GetMaxKScore(k) : this_nni_engine.GetMinKScore(k);
+    // this_nni_engine.GetAcceptedNNIs().insert(nnis_to_accept.begin(),
+    //                                          nnis_to_accept.end());
     if (max_is_best) {
       this_nni_engine.SetMinScoreCutoff(score_cutoff);
     } else {
@@ -768,8 +779,6 @@ void NNIEngine::SafeAddOutputNNIsToAdjacentNNIs(const Bitset &parent_bitset,
   if (parent_bitset.SubsplitIsUCA() || child_bitset.SubsplitIsLeaf()) {
     return;
   }
-  // Input pair is in the DAG, so remove it from the Set if it exists.
-  // adjacent_nnis_.erase({parent_bitset, child_bitset});
   // Add NNI for right clade swap and left clade swap.
   for (bool is_swap_with_left_child : {true, false}) {
     bool is_in_dag = false;
@@ -789,17 +798,38 @@ void NNIEngine::SafeAddOutputNNIsToAdjacentNNIs(const Bitset &parent_bitset,
   }
 }
 
-void NNIEngine::AddScoreForNNI(const NNIOperation &nni, const double score) {
-  SafeInsert(GetScoredNNIs(), nni, score);
+void NNIEngine::AddNNIScore(const NNIOperation &nni, const double score) {
+  RemoveNNIScore(nni);
+  scored_nnis_.insert({nni, score});
+  scores_.insert({score, nni});
+  new_scores_.insert({score, nni});
 };
+
+void NNIEngine::RemoveNNIScore(const NNIOperation &nni) {
+  double old_score = -INFINITY;
+  auto it = scored_nnis_.find(nni);
+  if (it != scored_nnis_.end()) {
+    old_score = it->second;
+    scores_.erase({old_score, nni});
+    new_scores_.erase({old_score, nni});
+    scored_nnis_.erase(nni);
+  }
+}
 
 void NNIEngine::UpdateAdjacentNNIs() {
   new_nnis_.clear();
+  for (const auto &nni : accepted_nnis_) {
+    adjacent_nnis_.erase(nni);
+    RemoveNNIScore(nni);
+  }
   for (const auto &edge_id : mods_.added_edge_idxs) {
     auto nni = GetDAG().GetNNI(edge_id);
     adjacent_nnis_.erase(nni);
-    scored_nnis_.erase(nni);
+    RemoveNNIScore(nni);
   }
+  Assert(scored_nnis_.size() == scores_.size() and
+             scored_nnis_.size() == adjacent_nnis_.size(),
+         "scored_nnis_ and scores_ and adjacent_nnis_ do not match sizes.");
   for (const auto &nni : GetAcceptedNNIs()) {
     const auto nni_edge_id = GetDAG().GetEdgeIdx(nni);
     const auto &nni_edge = GetDAG().GetDAGEdge(nni_edge_id);
@@ -834,16 +864,13 @@ void NNIEngine::UpdateRejectedNNIs() {
 }
 
 void NNIEngine::UpdateScoredNNIs() {
-  for (const auto &nni : accepted_nnis_) {
-    scored_nnis_.erase(nni);
-  }
   if (save_past_scored_nnis_) {
     scored_past_nnis_.insert(scored_nnis_.begin(), scored_nnis_.end());
     for (const auto &nni : accepted_nnis_) {
       scored_past_nnis_.erase(nni);
     }
   }
-  // scored_nnis_.clear();
+  new_scores_.clear();
 }
 
 void NNIEngine::UpdateAcceptedNNIs() {

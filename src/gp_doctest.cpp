@@ -2179,7 +2179,7 @@ TEST_CASE("NNIEngine: Finding Parent and Child Nodes After Adding/Grafting Nodes
   auto& nniengine_1 = inst_1.GetNNIEngine();
   auto& graftdag_1 = nniengine_1.GetGraftDAG();
   nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
-  nniengine_1.SetTopNScoreFilteringScheme(2);
+  nniengine_1.SetTopKScoreFilteringScheme(2);
   // nniengine_1.SetNoFilter();
   nniengine_1.RunInit();
 
@@ -3062,16 +3062,14 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
           test_passes &= matches_score_dag;
           test_passes &= matches_score_tree;
           test_passes &= matches_dag_tree;
-          if (do_print_failures) {
-            if (!matches_score_dag or !matches_score_tree) {
-              std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
-                        << score_proposed << ": "
-                        << std::abs(score_tree - score_proposed) << std::endl;
-              std::cout << "SCORE_FAILED_DAG: " << score_tree << " vs " << score_dag
-                        << ": " << std::abs(score_tree - score_dag) << std::endl;
-            } else {
-              std::cout << "SCORE_PASS: " << score_tree << std::endl;
-            }
+          if (!matches_score_dag or !matches_score_tree) {
+            std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
+                      << score_proposed << ": " << std::abs(score_tree - score_proposed)
+                      << std::endl;
+            std::cout << "SCORE_FAILED_DAG: " << score_tree << " vs " << score_dag
+                      << ": " << std::abs(score_tree - score_dag) << std::endl;
+          } else if (!do_print_failures) {
+            std::cout << "SCORE_PASS: " << score_tree << std::endl;
           }
         }
 
@@ -3290,15 +3288,14 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(5);
   tp_engine.GetLikelihoodEvalEngine().BranchLengthOptimization(false);
   nni_engine.SetTPLikelihoodCutoffFilteringScheme(0.0);
-  nni_engine.SetTopNScoreFilteringScheme(1);
+  nni_engine.SetTopKScoreFilteringScheme(1);
   nni_engine.SetReevaluateRejectedNNIs(true);
   nni_engine.RunInit(true);
 
   for (size_t iter = 0; iter < 10; iter++) {
-    std::cout << "iter: " << iter << std::endl;
     nni_engine.RunMainLoop(true);
 
-    if (iter == 5) break;
+    if (iter == 7) break;
     // Issue #479: this creates an unknown problem on iteration 7.
     // Error occurs during GetLine() in subsplit_dag_storage.hpp:564.
     // Parent-child vertice pair references a line outside range of DAG.
@@ -3313,7 +3310,6 @@ TEST_CASE("TPEngine: Exporting Newicks") {
                   "Newicks and TPEngine built from Top Tree Newick not equal to the "
                   "TPEngine that build it (after adding NNIs).");
   }
-  std::cout << "iter: end" << std::endl;
 }
 
 // PVHandler can be reindexed using two methods.  Either via move-copy, where PVs are
@@ -3336,7 +3332,7 @@ TEST_CASE("TPEngine: Resize and Reindex PV Handler") {
   auto& pvs_1 = tpengine_1.GetLikelihoodEvalEngine().GetPVs();
   pvs_1.SetUseRemapping(false);
   nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
-  nniengine_1.SetTopNScoreFilteringScheme(1);
+  nniengine_1.SetTopKScoreFilteringScheme(1);
   nniengine_1.RunInit();
   // NNI Engine that does NOT use remapping for reindexing PVs.
   inst_2.MakeTPEngine();
@@ -3346,7 +3342,7 @@ TEST_CASE("TPEngine: Resize and Reindex PV Handler") {
   auto& pvs_2 = tpengine_2.GetLikelihoodEvalEngine().GetPVs();
   pvs_2.SetUseRemapping(false);
   nniengine_2.SetTPLikelihoodCutoffFilteringScheme(0.0);
-  nniengine_2.SetTopNScoreFilteringScheme(1);
+  nniengine_2.SetTopKScoreFilteringScheme(1);
   nniengine_2.RunInit();
 
   CHECK_MESSAGE(nniengine_1.GetDAG() == nniengine_2.GetDAG(),

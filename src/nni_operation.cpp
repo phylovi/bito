@@ -6,6 +6,8 @@
 #include "bitset.hpp"
 #include "subsplit_dag.hpp"
 
+#include <iomanip>
+
 // ** NNIOperation
 
 int NNIOperation::Compare(const NNIOperation &nni_a, const NNIOperation &nni_b) {
@@ -140,6 +142,12 @@ std::string NNIOperation::ToString() const {
   std::stringstream os;
   os << "{ P:" << parent_.SubsplitToString() << ", C:" << child_.SubsplitToString()
      << " }";
+  return os.str();
+}
+
+std::string NNIOperation::ToHashString() const {
+  std::stringstream os;
+  os << "0x" << std::hex << std::setw(16) << std::setfill('0') << Hash();
   return os.str();
 }
 

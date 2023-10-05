@@ -20,7 +20,9 @@ TPEvalEngine::TPEvalEngine(TPEngine &tp_engine)
 
 void TPEvalEngine::Initialize() { Failwith("Pure virtual function call."); }
 
-void TPEvalEngine::ComputeScores() { Failwith("Pure virtual function call."); }
+void TPEvalEngine::ComputeScores(std::optional<EdgeIdVector> opt_edge_ids) {
+  Failwith("Pure virtual function call.");
+}
 
 void TPEvalEngine::GrowNodeData(const size_t new_node_count,
                                 std::optional<const Reindexer> node_reindexer,
@@ -305,7 +307,14 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
   std::vector<EdgeId> rootward_edges(update_edges.begin(), update_edges.end());
   std::sort(rootward_edges.begin(), rootward_edges.end(),
             [this](const EdgeId lhs, const EdgeId rhs) {
-              return GetDAG().GetDAGEdgeBitset(lhs) > GetDAG().GetDAGEdgeBitset(rhs);
+              return GetDAG().GetDAGEdge(lhs).GetParent() <
+                     GetDAG().GetDAGEdge(rhs).GetParent();
+            });
+  std::vector<EdgeId> leafward_edges(update_edges.begin(), update_edges.end());
+  std::sort(leafward_edges.begin(), leafward_edges.end(),
+            [this](const EdgeId lhs, const EdgeId rhs) {
+              return GetDAG().GetDAGEdge(lhs).GetChild() >
+                     GetDAG().GetDAGEdge(rhs).GetChild();
             });
   os << "UpdateEngineAfterModifyingDAG::UpdateEdges: " << timer.Lap() << std::endl;
 
@@ -316,8 +325,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     }
   };
   auto LeafwardPass = [&]() {
-    for (auto it = rootward_edges.rbegin(); it != rootward_edges.rend(); ++it) {
-      const auto edge_id = *it;
+    for (const auto edge_id : leafward_edges) {
       PopulateLeafwardPVForEdge(edge_id);
     }
   };
@@ -428,7 +436,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
           OptimizeEdge(choice.parent_edge_id, choice_2.parent_edge_id, edge_id, true,
                        false, true, true);
         }
-        os << "UpdateEngineAfterModifyingDAG::OptimizeCentralEdge: " << opt_timer.Lap()
+        os << "UpdateEngineAfterModifyingDAG::OptimizeCentralEdges: " << opt_timer.Lap()
            << std::endl;
       }
       // Optimize incidental new edges.
@@ -438,19 +446,21 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
         if (!GetDAG().IsEdgeRoot(choice.parent_edge_id)) {
           OptimizeEdge(edge_id, choice.parent_edge_id, edge_id);
         }
-        os << "UpdateEngineAfterModifyingDAG::OptimizeAdjEdge: " << opt_timer.Lap()
+        os << "UpdateEngineAfterModifyingDAG::OptimizeAdjEdges: " << opt_timer.Lap()
            << std::endl;
       }
-
       // Update new NNI PVs.
       NNIUpdatePVs();
+      os << "UpdateEngineAfterModifyingDAG::NNIUpdatePVs: " << opt_timer.Lap()
+         << std::endl;
     }
     os << "UpdateEngineAfterModifyingDAG::OptimizeNewEdges: " << timer.Lap()
        << std::endl;
   }
 
   // Update scores.
-  ComputeScores();
+  EdgeIdVector update_edges_vec(update_edges.begin(), update_edges.end());
+  ComputeScores(update_edges_vec);
   os << "UpdateEngineAfterModifyingDAG::ComputeScores: " << timer.Lap() << std::endl;
 }
 
@@ -920,8 +930,12 @@ void TPEvalEngineViaLikelihood::PopulateRootPVsWithStationaryDistribution() {
   }
 }
 
-void TPEvalEngineViaLikelihood::ComputeScores() {
-  for (EdgeId edge_id = 0; edge_id < GetDAG().EdgeCountWithLeafSubsplits(); edge_id++) {
+void TPEvalEngineViaLikelihood::ComputeScores(
+    std::optional<EdgeIdVector> opt_edge_ids) {
+  EdgeIdVector edge_ids = opt_edge_ids.has_value()
+                              ? opt_edge_ids.value()
+                              : GetDAG().LeafwardEdgeTraversalTrace(true);
+  for (const auto edge_id : edge_ids) {
     const auto choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
     if (choices.parent_edge_id != NoId) {
       const auto &[parent_pvid, child_pvid] = GetPrimaryPVIdsOfEdge(edge_id);
@@ -1545,7 +1559,7 @@ void TPEvalEngineViaParsimony::PopulateLeafwardParsimonyPVForEdge(
   }
 }
 
-void TPEvalEngineViaParsimony::ComputeScores() {
+void TPEvalEngineViaParsimony::ComputeScores(std::optional<EdgeIdVector> opt_edge_ids) {
   for (EdgeId edge_id = 0; edge_id < GetDAG().EdgeCountWithLeafSubsplits(); edge_id++) {
     GetTopTreeScores()[edge_id.value_] = ParsimonyScore(edge_id);
   }

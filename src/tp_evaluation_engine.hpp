@@ -48,7 +48,8 @@ class TPEvalEngine {
       const size_t prev_edge_count, const Reindexer &edge_reindexer) = 0;
   // Computes scores. Call after Initialize or any Update steps, and before
   // GetTopTreeScores.
-  virtual void ComputeScores() = 0;
+  virtual void ComputeScores(
+      std::optional<EdgeIdVector> opt_edge_ids = std::nullopt) = 0;
 
   // ** Scoring
 
@@ -144,7 +145,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
       const size_t prev_edge_count, const Reindexer &edge_reindexer) override;
   // Computes scores. Call after Initialize or any Update steps, and before
   // GetTopTreeScores.
-  void ComputeScores() override;
+  void ComputeScores(std::optional<EdgeIdVector> opt_edge_ids = std::nullopt) override;
 
   // ** Scoring
 
@@ -408,7 +409,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Determines whether new edges are optimized.
   bool optimize_new_edges_ = true;
   // Number of optimization iterations.
-  size_t optimize_max_iter_ = 1;
+  size_t optimize_max_iter_ = 5;
   // Temporary map of optimized edge lengths.
   std::map<Bitset, double> tmp_optimized_edges;
 
@@ -465,7 +466,7 @@ class TPEvalEngineViaParsimony : public TPEvalEngine {
       const size_t prev_edge_count, const Reindexer &edge_reindexer) override;
   // Computes scores. Call after Initialize or any Update steps, and before
   // GetTopTreeScores.
-  void ComputeScores() override;
+  void ComputeScores(std::optional<EdgeIdVector> opt_edge_ids = std::nullopt) override;
 
   // ** Scoring
 
