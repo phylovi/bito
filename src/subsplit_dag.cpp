@@ -2310,3 +2310,9 @@ void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
         EdgeId(edge_reindexer.GetNewIndexByOldIndex(idx_range.second.value_))};
   }
 }
+
+void SubsplitDAG::TestLeafIterator() const {
+  for (const auto &leaf : LeafIterator(*this)) {
+    std::cout << "Leaf: " << leaf.Id() << std::endl;
+  }
+}

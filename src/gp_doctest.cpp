@@ -2283,9 +2283,9 @@ TEST_CASE("NNIEngine: Finding Parent and Child Nodes After Adding/Grafting Nodes
           "adding NNIs).");
     }
     nniengine_1.FilterPreUpdate();
-    nniengine_1.FilterEvaluateAdjacentNNIs();
+    nniengine_1.FilterScoreAdjacentNNIs();
     nniengine_1.FilterPostUpdate();
-    nniengine_1.FilterProcessAdjacentNNIs();
+    nniengine_1.FilterEvaluateAdjacentNNIs();
     nniengine_1.RemoveAllGraftedNNIsFromDAG();
     nniengine_1.AddAcceptedNNIsToDAG();
     for (NodeId node_id{0}; node_id < dag_1.NodeCount(); node_id++) {

@@ -273,12 +273,12 @@ class NNIEngine {
   using StaticFilterUpdateFunction =
       std::function<void(NNIEngine &, NNIEvalEngine &, GraftDAG &)>;
   // Function template for computational evaluation to be performed on an adjacent NNI.
-  using StaticFilterEvaluateFunction = std::function<double(
+  using StaticFilterScoreFunction = std::function<double(
       NNIEngine &, NNIEvalEngine &, GraftDAG &, const NNIOperation &)>;
   // Function template for processing an adjacent NNI to be accepted or rejected.
-  using StaticFilterProcessFunction =
+  using StaticFilterEvaluateFunction =
       std::function<void(NNIEngine &, NNIEvalEngine &, GraftDAG &)>;
-  using StaticFilterProcessLoopFunction = std::function<bool(
+  using StaticFilterEvaluateLoopFunction = std::function<bool(
       NNIEngine &, NNIEvalEngine &, GraftDAG &, const NNIOperation &, const double)>;
 
   // Set to evaluate all NNIs to 0.
@@ -361,12 +361,12 @@ class NNIEngine {
   // Update filter parameters for each NNI sweep (before evaluation).
   void FilterPreUpdate();
   // Perform computation on each Adjacent NNI.
-  void FilterEvaluateAdjacentNNIs();
+  void FilterScoreAdjacentNNIs();
   // Update filter parameters for each NNI sweep (after evaluation).
   void FilterPostUpdate();
   // Apply the filtering method to determine whether each Adjacent NNI will be added to
   // Accepted NNI or Rejected NNI.
-  void FilterProcessAdjacentNNIs();
+  void FilterEvaluateAdjacentNNIs();
 
   // Set filter initialization function. Called at the beginning of NNI engine run,
   // before main loop.
@@ -376,16 +376,16 @@ class NNIEngine {
   void SetFilterPreUpdateFunction(StaticFilterUpdateFunction filter_pre_update_fn);
   // Set filter evaluation step.  Evaluation step is performed on each proposed adjacent
   // NNI individually, and returns a score for that NNI.
-  void SetFilterEvalFunction(StaticFilterEvaluateFunction filter_eval_fn);
+  void SetFilterScoreFunction(StaticFilterScoreFunction filter_score_fn);
   // Set filter post-eval update step. Performed once each loop after the filter
   // evaluvation step.
   void SetFilterPostUpdateFunction(StaticFilterUpdateFunction filter_post_update_fn);
   // Set filter processing step.  Processing step is performed on each proposed adjacent
   // NNI individually, taking in its NNI score and outputting a boolean whether to
   // accept or reject the NNI.
-  void SetFilterProcessFunction(StaticFilterProcessFunction filter_process_fn);
-  void SetFilterProcessLoopFunction(
-      StaticFilterProcessLoopFunction filter_process_loop_fn);
+  void SetFilterEvaluateFunction(StaticFilterEvaluateFunction filter_evaluate_fn);
+  void SetFilterEvaluateLoopFunction(
+      StaticFilterEvaluateLoopFunction filter_evaluate_loop_fn);
 
   // ** Filtering Schemes
 
@@ -552,10 +552,10 @@ class NNIEngine {
   // Steps of filtering scheme.
   StaticFilterInitFunction filter_init_fn_ = nullptr;
   StaticFilterUpdateFunction filter_pre_update_fn_ = nullptr;
-  StaticFilterEvaluateFunction filter_eval_fn_ = nullptr;
+  StaticFilterScoreFunction filter_score_fn_ = nullptr;
   StaticFilterUpdateFunction filter_post_update_fn_ = nullptr;
-  StaticFilterProcessFunction filter_process_fn_ = nullptr;
-  StaticFilterProcessLoopFunction filter_process_loop_fn_ = nullptr;
+  StaticFilterEvaluateFunction filter_evaluate_fn_ = nullptr;
+  StaticFilterEvaluateLoopFunction filter_evaluate_loop_fn_ = nullptr;
 
   // Count number of loops executed by engine.
   size_t iter_count_ = 0;
