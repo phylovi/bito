@@ -155,7 +155,6 @@ void NNIEngine::GrowEvalEngineForAdjacentNNIs(const bool via_reference,
   }
 }
 
-// TODO can this be sped up?
 void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,

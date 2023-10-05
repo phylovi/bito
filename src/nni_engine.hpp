@@ -115,11 +115,6 @@ class NNIEngine {
   double GetScoreByNNI(const NNIOperation &nni) const;
   double GetScoreByEdge(const EdgeId edge_id) const;
 
-  // TODO do we need this?
-  // Freshly computes score for given NNI in or adjacent to DAG..
-  double ComputeScoreByNNI(const NNIOperation &nni);
-  double ComputeScoreByNNI(const EdgeId edge_id);
-
   // NNIs currently adjacent to DAG.
   const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; }
   size_t GetAdjacentNNICount() const { return adjacent_nnis_.size(); }
@@ -406,7 +401,6 @@ class NNIEngine {
   // Set filtering scheme to find the top N best-scoring NNIs.
   void SetTopKScoreFilteringScheme(const size_t k, const bool max_is_best = true);
 
-  // TODO do we need this?
   // ** Key Indexing
   using KeyIndex = NNIEngineKeyIndex;
   using KeyIndexPairArray = NNIEngineKeyIndexPairArray;
