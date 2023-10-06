@@ -739,7 +739,7 @@ void NNIEngine::RemoveAllGraftedNNIsFromDAG() { GetGraftDAG().RemoveAllGrafts();
 
 void NNIEngine::SyncAdjacentNNIsWithDAG(const bool on_init) {
   adjacent_nnis_.clear();
-  new_nnis_.clear();
+  new_adjacent_nnis_.clear();
   // Only real node pairs are viable NNIs.
   dag_.IterateOverRealNodes([this](SubsplitDAGNode node) {
     dag_.IterateOverParentAndChildAndLeafwardEdges(
@@ -759,7 +759,7 @@ void NNIEngine::SyncAdjacentNNIsWithDAG(const bool on_init) {
   // If not on initial run, remove new NNIs that have already been seen.
   if (!on_init) {
     for (const auto &nni : GetPastAcceptedNNIs()) {
-      new_nnis_.erase(nni);
+      new_adjacent_nnis_.erase(nni);
     }
   }
 }
@@ -839,7 +839,7 @@ void NNIEngine::SafeAddOutputNNIsToAdjacentNNIs(const Bitset &parent_bitset,
     }
     if (!is_in_dag) {
       adjacent_nnis_.insert(new_nni);
-      new_nnis_.insert(new_nni);
+      new_adjacent_nnis_.insert(new_nni);
     }
   }
 }
@@ -865,7 +865,7 @@ void NNIEngine::RemoveNNIScore(const NNIOperation &nni) {
 }
 
 void NNIEngine::UpdateAdjacentNNIs() {
-  new_nnis_.clear();
+  new_adjacent_nnis_.clear();
   for (const auto &nni : accepted_nnis_) {
     adjacent_nnis_.erase(nni);
     RemoveNNIScore(nni);
@@ -900,7 +900,7 @@ void NNIEngine::UpdateAdjacentNNIs() {
 
 void NNIEngine::UpdateRejectedNNIs() {
   if (save_past_rejected_nnis_) {
-    rejected_past_nnis_.insert(new_nnis_.begin(), new_nnis_.end());
+    rejected_past_nnis_.insert(new_adjacent_nnis_.begin(), new_adjacent_nnis_.end());
     for (const auto &nni : accepted_nnis_) {
       rejected_past_nnis_.erase(nni);
     }
@@ -927,7 +927,7 @@ void NNIEngine::UpdateAcceptedNNIs() {
 }
 
 void NNIEngine::ResetNNIData() {
-  new_nnis_.clear();
+  new_adjacent_nnis_.clear();
   adjacent_nnis_.clear();
   accepted_nnis_.clear();
   accepted_past_nnis_.clear();

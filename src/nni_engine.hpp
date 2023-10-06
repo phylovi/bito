@@ -119,9 +119,11 @@ class NNIEngine {
   const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; }
   size_t GetAdjacentNNICount() const { return adjacent_nnis_.size(); }
   // Adjacent NNIs that have been added on the current iteration.
-  const NNISet &GetNewNNIs() const { return new_nnis_; }
-  size_t GetNewNNICount() const { return new_nnis_.size(); }
-  size_t GetOldNNICount() const { return adjacent_nnis_.size() - new_nnis_.size(); }
+  const NNISet &GetNewAdjacentNNIs() const { return new_adjacent_nnis_; }
+  size_t GetNewAdjacentNNICount() const { return new_adjacent_nnis_.size(); }
+  size_t GetOldNNICount() const {
+    return adjacent_nnis_.size() - new_adjacent_nnis_.size();
+  }
   // NNIs that have been Accepted on current iteration.
   const NNISet &GetAcceptedNNIs() const { return accepted_nnis_; }
   size_t GetAcceptedNNICount() const { return GetAcceptedNNIs().size(); }
@@ -142,10 +144,10 @@ class NNIEngine {
   size_t GetPastScoredNNICount() const { return GetPastScoredNNIs().size(); }
   // Get NNIs to rescore or NNIs to re-evaluate.
   const NNISet &GetNNIsToRescore() const {
-    return GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewNNIs();
+    return GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
   }
   const NNISet &GetNNIsToReevaluate() const {
-    return GetReevaluateRejectedNNIs() ? GetAdjacentNNIs() : GetNewNNIs();
+    return GetReevaluateRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
   }
   const NNIDoubleMap &GetScoredNNIsToRescore() const {
     return GetRescoreRejectedNNIs() ? scored_nnis_ : new_scored_nnis_;
@@ -482,7 +484,7 @@ class NNIEngine {
   // Set of NNIs to be evaluated, which are a single NNI.
   NNISet adjacent_nnis_;
   // Set of NNIs new to the current iteration.
-  NNISet new_nnis_;
+  NNISet new_adjacent_nnis_;
   // NNIs which have passed the filtering threshold during current iteration, to be
   // added to the DAG.
   NNISet accepted_nnis_;

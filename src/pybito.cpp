@@ -911,29 +911,24 @@ PYBIND11_MODULE(bito, m) {
       .def(
           "get_graft_dag", [](NNIEngine &self) { return self.GetGraftDAG(); },
           py::return_value_policy::reference, "Get the Graft DAG.")
-      .def(
-          "adjacent_nnis", [](NNIEngine &self) { return self.GetAdjacentNNIs(); },
-          "Get NNIs adjacent to DAG.")
-      .def(
-          "accepted_nnis", [](NNIEngine &self) { return self.GetAcceptedNNIs(); },
-          "Get NNIs accepted into DAG.")
-      .def(
-          "rejected_nnis", [](NNIEngine &self) { return self.GetRejectedNNIs(); },
-          "Get NNIs rejected from DAG.")
-      .def(
-          "scored_nnis", [](const NNIEngine &self) { return self.GetScoredNNIs(); },
-          "Get Scored NNIs of current iteration.")
+      .def("adjacent_nnis", &NNIEngine::GetAdjacentNNIs, "Get NNIs adjacent to DAG.")
+      .def("new_adjacent_nnis", &NNIEngine::GetNewAdjacentNNIs,
+           "Get new NNIs adjacent to DAG.")
+      .def("accepted_nnis", &NNIEngine::GetAcceptedNNIs, "Get NNIs accepted into DAG.")
+      .def("rejected_nnis", &NNIEngine::GetRejectedNNIs, "Get NNIs rejected from DAG.")
+      .def("scored_nnis", &NNIEngine::GetScoredNNIs,
+           "Get Scored NNIs of current iteration.")
       // Counts
       .def("adjacent_nni_count", &NNIEngine::GetAdjacentNNICount,
            "Get number of NNIs adjacent to DAG.")
+      .def("new_adjacent_nni_count", &NNIEngine::GetNewAdjacentNNICount,
+           "Get number of adjacent NNIs not seen in previous iterations.")
       .def("accepted_nni_count", &NNIEngine::GetAcceptedNNICount,
            "Get number of adjacent NNIs were accepted by the filter on current "
            "iteration.")
       .def("rejected_nni_count", &NNIEngine::GetRejectedNNICount,
            "Get number of adjacent NNIs were rejected by the filter on current "
            "iteration.")
-      .def("new_nni_count", &NNIEngine::GetNewNNICount,
-           "Get number of adjacent NNIs not seen in previous iterations.")
       .def("past_accepted_nni_count", &NNIEngine::GetPastAcceptedNNICount,
            "Get number of adjacent NNIs were accepted by the filter on all previous "
            "iterations.")
@@ -944,6 +939,8 @@ PYBIND11_MODULE(bito, m) {
            "Get scores from NNIs from previous iterations.")
       .def("iter_count", &NNIEngine::GetIterationCount,
            "Get number of iterations of NNI search run.")
+      .def("nnis_to_rescore", &NNIEngine::GetNNIsToRescore,
+           "Get NNIs to be scored in current iteration.")
       // Search primary routines
       .def("run", &NNIEngine::Run, "Primary runner for NNI systematic search.",
            py::arg("is_quiet") = false)

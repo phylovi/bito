@@ -179,7 +179,7 @@ class NNIEvalEngine {
 };
 
 // NNIEngine helper for evaluating NNIs by using Generalized Pruning.  Calls GPEngine
-// for functionality.  See GPEngine header for more details.
+// for functionality.  See gp_engine.hpp for more details.
 class NNIEvalEngineViaGP : public NNIEvalEngine {
  public:
   NNIEvalEngineViaGP(NNIEngine &nni_engine, GPEngine &gp_engine);
@@ -333,7 +333,7 @@ class NNIEvalEngineViaGP : public NNIEvalEngine {
 };
 
 // NNIEngine helper for evaluating NNIs by using Top Pruning.  Calls TPEngine
-// for functionality.  See TPEngine header for more details.
+// for functionality.  See tp_engine.hpp for more details.
 class NNIEvalEngineViaTP : public NNIEvalEngine {
  public:
   NNIEvalEngineViaTP(NNIEngine &nni_engine, TPEngine &tp_engine)
