@@ -81,7 +81,6 @@ class GenericSubsplitDAGNode {
               : AddRightRootward(adjacent_node_id, edge_id);
     }
   }
-
   void AddEdge(NodeId adjacent_node_id, Direction which_direction,
                SubsplitClade which_clade, EdgeId edge_id) {
     bool is_leafward = (which_direction == Direction::Leafward);

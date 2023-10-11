@@ -144,9 +144,7 @@ class NNIEngine {
   size_t GetPastScoredNNICount() const { return GetPastScoredNNIs().size(); }
   // Get NNIs to rescore or NNIs to re-evaluate.
   const NNISet &GetNNIsToRescore() const {
-    // TODO: fix me!
-    // return GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
-    return GetAdjacentNNIs();
+    return GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
   }
   const NNISet &GetNNIsToReevaluate() const {
     return GetReevaluateRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
@@ -445,6 +443,8 @@ class NNIEngine {
   void UpdateScoredNNIs();
   void UpdateAcceptedNNIs();
 
+  void UpdateOutOfDateAdjacentNNIs();
+
   // Reset all NNIs, current and past.
   void ResetNNIData();
 
@@ -526,11 +526,15 @@ class NNIEngine {
   bool reevaluate_rejected_nnis_ = true;
   // Whether to re-compute scores for rejected NNIs from previous iterations.
   bool rescore_rejected_nnis_ = false;
+  // Whether to re-compute scores adjacent to newly added NNIs from previous iterations.
+  bool rescore_old_nnis_adjacent_to_new_nnis_ = true;
+
   // Whether to include NNIs whose parent is a rootsplit.
   bool include_rootsplit_nnis_ = true;
   // Whether to save past iteration data.
   bool save_past_scored_nnis_ = false;
   bool save_past_accepted_nnis_ = true;
   bool save_past_rejected_nnis_ = true;
+
   bool track_rejected_nnis_ = false;
 };

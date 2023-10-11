@@ -428,7 +428,23 @@ void NNIEngine::SetScoreViaEvalEngine() {
   SetFilterPreUpdateFunction(
       [](NNIEngine &this_nni_engine) { this_nni_engine.ScoreAdjacentNNIs(); });
   SetFilterScoreFunction([](NNIEngine &this_nni_engine, const NNIOperation &nni) {
-    return this_nni_engine.GetEvalEngine().GetScoredNNIs().find(nni)->second;
+    auto new_score = this_nni_engine.GetEvalEngine().GetScoredNNIs().find(nni)->second;
+    if (this_nni_engine.GetScoredNNIsToReevaluate().find(nni) !=
+        this_nni_engine.GetScoredNNIsToReevaluate().end()) {
+      auto old_score = this_nni_engine.GetScoredNNIsToReevaluate().find(nni)->second;
+      if (std::abs(new_score - old_score) > 1e-5) {
+        std::cerr << "FAIL: score_mismatch -- " << nni.ToHashString() << " "
+                  << old_score << " " << new_score << " -> " << new_score - old_score
+                  << std::endl;
+        // std::cerr << "FAIL: data -- "
+        //           << this_nni_engine.GetDAG().ContainsNode(nni.GetParent()) << " "
+        //           << this_nni_engine.GetDAG().ContainsNode(nni.GetChild()) <<
+        //           std::endl;
+      } else {
+        // std::cerr << "SUCCESS: score_match -- " << nni.ToHashString() << std::endl;
+      }
+    }
+    return new_score;
   });
 }
 
@@ -882,15 +898,72 @@ void NNIEngine::UpdateAdjacentNNIs() {
       const auto &node = GetDAG().GetDAGNode(node_id);
       for (const auto dir : DirectionEnum::Iterator()) {
         for (const auto clade : SubsplitCladeEnum::Iterator()) {
-          for (const auto adj_node_id : node.GetNeighbors(dir, clade)) {
-            const auto parent_id = (dir == Direction::Rootward) ? adj_node_id : node_id;
-            const auto child_id = (dir == Direction::Rootward) ? node_id : adj_node_id;
-            const auto edge_id = GetDAG().GetEdgeIdx(parent_id, child_id);
-            const auto &edge = GetDAG().GetDAGEdge(edge_id);
+          auto view = node.GetNeighbors(dir, clade);
+          for (auto it = view.begin(); it != view.end(); ++it) {
+            const auto &edge = GetDAG().GetDAGEdge(it.GetEdge());
             SafeAddOutputNNIsToAdjacentNNIs(
-                GetDAG().GetDAGNodeBitset(parent_id),
-                GetDAG().GetDAGNodeBitset(child_id),
+                GetDAG().GetDAGNodeBitset(edge.GetParent()),
+                GetDAG().GetDAGNodeBitset(edge.GetChild()),
                 (edge.GetSubsplitClade() == SubsplitClade::Left));
+          }
+        }
+      }
+    }
+  }
+
+  // std::cout << "NewAdjacentNNICount [before]: " << new_adjacent_nnis_.size()
+  //           << std::endl;
+  if (rescore_old_nnis_adjacent_to_new_nnis_) {
+    UpdateOutOfDateAdjacentNNIs();
+  }
+  // std::cout << "NewAdjacentNNICount [after]: " << new_adjacent_nnis_.size()
+  //           << std::endl;
+}
+
+void NNIEngine::UpdateOutOfDateAdjacentNNIs() {
+  // If there have been modifications surrounding current adjacent NNIs, re-label them
+  // as new.
+  auto &new_node_ids = mods_.added_node_ids;
+  auto &new_edge_ids = mods_.added_edge_idxs;
+  std::set<NodeId> updated_node_ids(new_node_ids.begin(), new_node_ids.end());
+  for (const auto edge_id : new_edge_ids) {
+    const auto edge = GetDAG().GetDAGEdge(edge_id);
+    updated_node_ids.insert(edge.GetParent());
+    updated_node_ids.insert(edge.GetChild());
+  }
+
+  for (const auto &nni : GetNNIsToReevaluate()) {
+    // If NNI is already new, skip.
+    if (new_adjacent_nnis_.find(nni) != new_adjacent_nnis_.end()) {
+      continue;
+    }
+    bool nni_found = false;
+    for (const auto &nni_subsplit : {nni.GetParent(), nni.GetChild()}) {
+      if (nni_found) {
+        continue;
+      }
+      // First, if one of the nodes in the NNI are newly added, re-label as new.
+      if (GetDAG().ContainsNode(nni_subsplit)) {
+        const auto node_id = GetDAG().GetDAGNodeId(nni_subsplit);
+        if (updated_node_ids.find(node_id) != updated_node_ids.end()) {
+          new_adjacent_nnis_.insert(nni);
+          continue;
+        }
+      }
+      // Second, if any edges connecting to grandparent or grandchild nodes are new,
+      // re-label as new.
+      const auto [left_parent_ids, right_parent_ids] =
+          GetDAG().FindParentNodeIdsViaMap(nni_subsplit);
+      const auto [left_child_ids, right_child_ids] =
+          GetDAG().FindChildNodeIdsViaMap(nni_subsplit);
+      for (const auto &node_ids :
+           {left_parent_ids, right_parent_ids, left_child_ids, right_child_ids}) {
+        if (nni_found) break;
+        for (const auto node_id : node_ids) {
+          if (updated_node_ids.find(node_id) != updated_node_ids.end()) {
+            new_adjacent_nnis_.insert(nni);
+            nni_found = true;
+            break;
           }
         }
       }

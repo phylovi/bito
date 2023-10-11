@@ -943,13 +943,13 @@ PYBIND11_MODULE(bito, m) {
            "Get NNIs to be scored in current iteration.")
       // Search primary routines
       .def("run", &NNIEngine::Run, "Primary runner for NNI systematic search.",
-           py::arg("is_quiet") = false)
+           py::arg("is_quiet") = true)
       .def("run_init", &NNIEngine::RunInit, "Run initialization step of NNI search.",
-           py::arg("is_quiet") = false)
+           py::arg("is_quiet") = true)
       .def("run_main_loop", &NNIEngine::RunMainLoop, "Run main loop of NNI search.",
-           py::arg("is_quiet") = false)
+           py::arg("is_quiet") = true)
       .def("run_post_loop", &NNIEngine::RunPostLoop, "Run post loop of NNI search.",
-           py::arg("is_quiet") = false)
+           py::arg("is_quiet") = true)
       // Search subroutines
       // Init
       .def("reset_nni_data", &NNIEngine::ResetNNIData)
