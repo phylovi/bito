@@ -144,7 +144,9 @@ class NNIEngine {
   size_t GetPastScoredNNICount() const { return GetPastScoredNNIs().size(); }
   // Get NNIs to rescore or NNIs to re-evaluate.
   const NNISet &GetNNIsToRescore() const {
-    return GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
+    // TODO: fix me!
+    // return GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
+    return GetAdjacentNNIs();
   }
   const NNISet &GetNNIsToReevaluate() const {
     return GetReevaluateRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();

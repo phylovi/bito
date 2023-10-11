@@ -1753,11 +1753,15 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit,
 }
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
-  return FindParentNodeIdsViaMap(subsplit);
+  // TODO fix me!
+  // return FindParentNodeIdsViaMap(subsplit);
+  return FindParentNodeIdsViaScan(subsplit);
 }
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
-  return FindChildNodeIdsViaMap(subsplit);
+  // TODO fix me!
+  // return FindChildNodeIdsViaMap(subsplit);
+  return FindChildNodeIdsViaScan(subsplit);
 }
 
 NodeId SubsplitDAG::FindFirstParentNodeId(const Bitset &subsplit) const {
@@ -2310,4 +2314,3 @@ void SubsplitDAG::RemapEdgeIdxs(const Reindexer &edge_reindexer) {
         EdgeId(edge_reindexer.GetNewIndexByOldIndex(idx_range.second.value_))};
   }
 }
-
