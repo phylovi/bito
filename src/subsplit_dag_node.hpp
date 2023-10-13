@@ -31,7 +31,7 @@ static inline void RemapNeighbors(NeighborsView neighbors,
                                   const SizeVector& node_reindexer) {
   std::map<NodeId, EdgeId> remapped;
   for (auto id = neighbors.begin(); id != neighbors.end(); ++id) {
-    remapped[NodeId(node_reindexer[(*id).value_])] = EdgeId(id.GetEdge());
+    remapped[NodeId(node_reindexer[(*id).value_])] = EdgeId(id.GetEdgeId());
   }
   neighbors.SetNeighbors(remapped);
 }
@@ -71,23 +71,10 @@ class GenericSubsplitDAGNode {
 
   // ** Edges
 
-  void AddEdge(NodeId adjacent_node_id, bool is_leafward, bool is_left,
-               EdgeId edge_id) {
-    if (is_leafward) {
-      is_left ? AddLeftLeafward(adjacent_node_id, edge_id)
-              : AddRightLeafward(adjacent_node_id, edge_id);
-    } else {
-      is_left ? AddLeftRootward(adjacent_node_id, edge_id)
-              : AddRightRootward(adjacent_node_id, edge_id);
-    }
+  void AddEdge(NodeId adjacent_node_id, EdgeId edge_id, Direction which_direction,
+               SubsplitClade which_clade) {
+    node_.AddNeighbor(which_direction, which_clade, adjacent_node_id, edge_id);
   }
-  void AddEdge(NodeId adjacent_node_id, Direction which_direction,
-               SubsplitClade which_clade, EdgeId edge_id) {
-    bool is_leafward = (which_direction == Direction::Leafward);
-    bool is_left = (which_clade == SubsplitClade::Left);
-    AddEdge(adjacent_node_id, is_leafward, is_left, edge_id);
-  }
-
   void AddLeftLeafward(NodeId node_id, EdgeId edge_id) {
     node_.AddNeighbor(Direction::Leafward, SubsplitClade::Left, node_id, edge_id);
   }
@@ -101,24 +88,124 @@ class GenericSubsplitDAGNode {
     node_.AddNeighbor(Direction::Rootward, SubsplitClade::Right, node_id, edge_id);
   }
 
-  // Get a view into all adjacent node vectors along the specified direction.
-  ConstNeighborsView GetEdge(bool is_leafward, bool is_left) const {
-    if (is_leafward) {
-      return is_left ? GetLeftLeafward() : GetRightLeafward();
-    } else {
-      return is_left ? GetLeftRootward() : GetRightRootward();
+  // ** Neighbors
+
+  // This is a super-iterator that iterates over all ConstNeighborView iterators of all
+  // given directions/clade combinations.
+  class MultiConstNeighborsView {
+   public:
+    MultiConstNeighborsView(
+        const SubsplitDAGNode& node,
+        std::vector<std::pair<Direction, SubsplitClade>> dir_clade_pairs)
+        : node_id_(node.Id()), dir_clade_pairs_(dir_clade_pairs) {
+      for (const auto [dir, clade] : dir_clade_pairs_) {
+        views_.push_back(node.GetNeighbors(dir, clade));
+      }
+    }
+
+    class Iterator {
+     public:
+      Iterator(size_t view_idx, const NodeId node_id,
+               const std::vector<std::pair<Direction, SubsplitClade>>& dir_clade_pairs,
+               const std::vector<ConstNeighborsView>& views)
+          : node_id_(node_id),
+            dir_clade_pairs_(dir_clade_pairs),
+            views_(views),
+            view_idx_(view_idx) {
+        AssignIterator();
+        if (it_ != nullptr) {
+          MaybeGetNextIterator();
+        }
+      }
+
+      bool operator!=(const Iterator& other) { return view_idx_ != other.GetViewIdx(); }
+
+      Iterator& operator++() {
+        ++(*it_);
+        MaybeGetNextIterator();
+        return *this;
+      }
+
+      NodeId operator*() { return *(*it_); }
+
+      NodeId GetNodeId() const { return (*it_).GetNodeId(); }
+      EdgeId GetEdgeId() const { return (*it_).GetEdgeId(); }
+      Direction GetDirection() const { return dir_clade_pairs_[view_idx_].first; }
+      SubsplitClade GetSubsplitClade() const {
+        return dir_clade_pairs_[view_idx_].second;
+      }
+      const ConstNeighborsView GetCurrentView() const { return views_[view_idx_]; }
+      size_t GetViewIdx() const { return view_idx_; }
+
+      NodeId GetParentId() const {
+        return (GetDirection() == Direction::Leafward) ? node_id_ : GetNodeId();
+      };
+      NodeId GetChildId() const {
+        return (GetDirection() == Direction::Leafward) ? GetNodeId() : node_id_;
+      };
+
+     private:
+      ConstNeighborsView::Iterator GetIterator() { return *it_; }
+      void MaybeGetNextIterator() {
+        while ((*it_) == (*end_) and view_idx_ < views_.size()) {
+          view_idx_++;
+          AssignIterator();
+        }
+      }
+      void AssignIterator() {
+        if (view_idx_ >= views_.size()) return;
+        it_ = std::make_unique<ConstNeighborsView::Iterator>(GetCurrentView().begin());
+        end_ = std::make_unique<ConstNeighborsView::Iterator>(GetCurrentView().end());
+      }
+
+      const NodeId node_id_;
+      const std::vector<std::pair<Direction, SubsplitClade>>& dir_clade_pairs_;
+      const std::vector<ConstNeighborsView>& views_;
+      std::unique_ptr<ConstNeighborsView::Iterator> it_ = nullptr;
+      std::unique_ptr<ConstNeighborsView::Iterator> end_ = nullptr;
+      size_t view_idx_;
+    };
+
+    auto begin() const { return Iterator(0, node_id_, dir_clade_pairs_, views_); }
+    auto end() const {
+      return Iterator(dir_clade_pairs_.size(), node_id_, dir_clade_pairs_, views_);
+    }
+    size_t size() const {
+      size_t size = 0;
+      std::for_each(views_.begin(), views_.end(),
+                    [&size](const auto view) { size += view.size(); });
+      return size;
+    }
+    bool empty() const { return size() == 0; }
+
+   private:
+    const NodeId node_id_;
+    const std::vector<std::pair<Direction, SubsplitClade>> dir_clade_pairs_;
+    std::vector<ConstNeighborsView> views_;
+  };
+
+  // Get all neighbors.
+  MultiConstNeighborsView GetNeighbors() const {
+    std::vector<std::pair<Direction, SubsplitClade>> dir_clade_pairs;
+    for (auto dir : DirectionEnum::Iterator()) {
+      for (auto clade : SubsplitCladeEnum::Iterator()) {
+        dir_clade_pairs.push_back({dir, clade});
+      }
+    }
+    return {node_, dir_clade_pairs};
+  }
+  // Get all leafward/rootward neighbors.
+  MultiConstNeighborsView GetNeighbors(Direction dir) const {
+    std::vector<std::pair<Direction, SubsplitClade>> dir_clade_pairs;
+    for (auto clade : SubsplitCladeEnum::Iterator()) {
+      dir_clade_pairs.push_back({dir, clade});
     }
   }
 
+  // Get neighbors in specified direction.
   ConstNeighborsView GetNeighbors(Direction direction, SubsplitClade clade) const {
     return node_.GetNeighbors(direction, clade);
   }
-
-  void AddEdge(NodeId adjacent_node_id, EdgeId edge_id, Direction which_direction,
-               SubsplitClade which_clade) {
-    node_.AddNeighbor(which_direction, which_clade, adjacent_node_id, edge_id);
-  }
-
   ConstNeighborsView GetLeafwardOrRootward(bool leafward, bool rotated) const {
     return leafward ? GetLeafward(rotated) : GetRootward(rotated);
   };
@@ -147,7 +234,7 @@ class GenericSubsplitDAGNode {
     return (clade == SubsplitClade::Left) ? GetLeftRootward() : GetRightRootward();
   }
 
-  // Remap node ids modifying parent DAG.
+  // Remap node ids after modifying DAG.
   void RemapNodeIds(const Reindexer& node_reindexer) {
     Assert(node_reindexer.IsValid(),
            "Reindexer must be valid in GenericSubsplitDAGNode::RemapNodeIds.");
@@ -161,7 +248,7 @@ class GenericSubsplitDAGNode {
     node_.GetNeighbors(Direction::Rootward, SubsplitClade::Right)
         .RemapNodeIds(node_reindexer);
   }
-  // Remap edge ids after modifying parent DAG.
+  // Remap edge ids after modifying DAG.
   void RemapEdgeIdxs(const Reindexer& edge_reindexer) {
     Assert(edge_reindexer.IsValid(),
            "Reindexer must be valid in GenericSubsplitDAGNode::RemapNodeIds.");
@@ -344,7 +431,7 @@ TEST_CASE("SubsplitDAGStorage: Neighbors iterator") {
   CHECK_EQ(GetStorage(storage.GetVertices()[1])
                .GetNeighbors(Direction::Leafward, SubsplitClade::Left)
                .begin()
-               .GetEdge(),
+               .GetEdgeId(),
            2);
 }
 

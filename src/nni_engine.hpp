@@ -423,7 +423,7 @@ class NNIEngine {
                                              const Bitset &child_bitset);
   // Adds all NNIs from all (node_id, other_id) pairs, where other_id's are elements of
   // the adjacent_node_ids vector. is_edge_leafward tells whether node_id is the child
-  // or parent. is_edge_edgeclade determines which side of parent the child descends
+  // or parent. is_edge_on_left determines which side of parent the child descends
   // from.
   void AddAllNNIsFromNodeVectorToAdjacentNNIs(const NodeId node_id,
                                               const SizeVector &adjacent_node_ids,

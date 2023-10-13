@@ -66,9 +66,9 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParentNodeAndEd
   weights.resize(left.size() + right.size());
   size_t i = 0;
   for (auto parent = left.begin(); parent != left.end(); ++parent)
-    weights[i++] = session.inverted_probabilities_[parent.GetEdge().value_];
+    weights[i++] = session.inverted_probabilities_[parent.GetEdgeId().value_];
   for (auto parent = right.begin(); parent != right.end(); ++parent)
-    weights[i++] = session.inverted_probabilities_[parent.GetEdge().value_];
+    weights[i++] = session.inverted_probabilities_[parent.GetEdgeId().value_];
   std::discrete_distribution<> distribution(weights.begin(), weights.end());
   auto sampled_index =
       static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
@@ -76,12 +76,12 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleParentNodeAndEd
     auto parent = left.begin();
     std::advance(parent, sampled_index);
     return {session.dag_.GetDAGNode(NodeId(parent.GetNodeId())),
-            session.dag_.GetDAGEdge(EdgeId(parent.GetEdge()))};
+            session.dag_.GetDAGEdge(EdgeId(parent.GetEdgeId()))};
   }  // else
   auto parent = right.begin();
   std::advance(parent, sampled_index - left.size());
   return {session.dag_.GetDAGNode(NodeId(parent.GetNodeId())),
-          session.dag_.GetDAGEdge(EdgeId(parent.GetEdge()))};
+          session.dag_.GetDAGEdge(EdgeId(parent.GetEdgeId()))};
 }
 
 std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChildNodeAndEdge(
@@ -90,14 +90,14 @@ std::pair<SubsplitDAGNode, ConstLineView> TopologySampler::SampleChildNodeAndEdg
   weights.resize(neighbors.size());
   size_t i = 0;
   for (auto child = neighbors.begin(); child != neighbors.end(); ++child) {
-    weights[i++] = session.normalized_sbn_parameters_[child.GetEdge().value_];
+    weights[i++] = session.normalized_sbn_parameters_[child.GetEdgeId().value_];
   }
   std::discrete_distribution<> distribution(weights.begin(), weights.end());
   i = static_cast<size_t>(distribution(mersenne_twister_.GetGenerator()));
   auto child = neighbors.begin();
   std::advance(child, i);
   return {session.dag_.GetDAGNode(NodeId(child.GetNodeId())),
-          session.dag_.GetDAGEdge(EdgeId(child.GetEdge()))};
+          session.dag_.GetDAGEdge(EdgeId(child.GetEdgeId()))};
 }
 
 Node::NodePtr TopologySampler::BuildTree(SamplingSession& session,

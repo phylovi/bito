@@ -1619,23 +1619,14 @@ TEST_CASE("NNIEngine: GraftDAG") {
       continue;
     }
     size_t neighbor_count = 0;
-    for (const auto is_parent : {true, false}) {
-      const auto& subsplit = (is_parent ? nni.parent_ : nni.child_);
-      const auto node_id = graft_dag.GetDAGNodeId(subsplit);
+    for (const auto subsplit : {nni.GetParent(), nni.GetChild()}) {
+      const auto& node_id = graft_dag.GetDAGNodeId(subsplit);
       const auto& node = graft_dag.GetDAGNode(node_id);
-      for (const auto direction : {true, false}) {
-        for (const auto clade : {true, false}) {
-          const auto neighbors = node.GetEdge(direction, clade);
-          for (const auto neighbor_id : neighbors) {
-            const auto parent_id = NodeId(is_parent ? node_id : neighbor_id);
-            const auto child_id = NodeId(is_parent ? neighbor_id : node_id);
-            CHECK_MESSAGE(graft_dag.ContainsEdge(parent_id, child_id),
-                          "Cannot find edge in GraftDAG.");
-            CHECK_MESSAGE(graft_dag.ContainsEdge(child_id, parent_id),
-                          "Cannot find edge in GraftDAG.");
-            neighbor_count++;
-          }
-        }
+      const auto& node_view = node.GetNeighbors();
+      for (auto it = node_view.begin(); it != node_view.end(); ++it) {
+        CHECK_MESSAGE(graft_dag.ContainsEdge(it.GetParentId(), it.GetChildId()),
+                      "Cannot find edge in GraftDAG.");
+        neighbor_count++;
       }
     }
     if (neighbor_count < 6) {

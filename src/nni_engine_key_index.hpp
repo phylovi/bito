@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include "wrapper_sugar.hpp"
+#include "sugar.hpp"
 #include "subsplit_dag_storage.hpp"
 
 // ** Key Indexing

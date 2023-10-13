@@ -898,9 +898,9 @@ void NNIEngine::UpdateAdjacentNNIs() {
       const auto &node = GetDAG().GetDAGNode(node_id);
       for (const auto dir : DirectionEnum::Iterator()) {
         for (const auto clade : SubsplitCladeEnum::Iterator()) {
-          auto view = node.GetNeighbors(dir, clade);
-          for (auto it = view.begin(); it != view.end(); ++it) {
-            const auto &edge = GetDAG().GetDAGEdge(it.GetEdge());
+          const auto node_view = node.GetNeighbors(dir, clade);
+          for (auto it = node_view.begin(); it != node_view.end(); ++it) {
+            const auto &edge = GetDAG().GetDAGEdge(it.GetEdgeId());
             SafeAddOutputNNIsToAdjacentNNIs(
                 GetDAG().GetDAGNodeBitset(edge.GetParent()),
                 GetDAG().GetDAGNodeBitset(edge.GetChild()),
@@ -911,13 +911,13 @@ void NNIEngine::UpdateAdjacentNNIs() {
     }
   }
 
-  // std::cout << "NewAdjacentNNICount [before]: " << new_adjacent_nnis_.size()
-  //           << std::endl;
   if (rescore_old_nnis_adjacent_to_new_nnis_) {
+    std::cout << "new_adjacent_nnis [before]: " << new_adjacent_nnis_.size()
+              << std::endl;
     UpdateOutOfDateAdjacentNNIs();
+    std::cout << "new_adjacent_nnis [after]: " << new_adjacent_nnis_.size()
+              << std::endl;
   }
-  // std::cout << "NewAdjacentNNICount [after]: " << new_adjacent_nnis_.size()
-  //           << std::endl;
 }
 
 void NNIEngine::UpdateOutOfDateAdjacentNNIs() {

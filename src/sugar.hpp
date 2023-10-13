@@ -15,7 +15,8 @@
 
 #include "intpack.hpp"
 #include "prettyprint.hpp"
-#include "wrapper_sugar.hpp"
+#include "sugar_wrappers.hpp"
+#include "sugar_iterators.hpp"
 
 // Put typedefs that are built of STL types here.
 using Tag = uint64_t;
