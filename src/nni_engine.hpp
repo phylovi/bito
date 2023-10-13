@@ -118,7 +118,7 @@ class NNIEngine {
   // NNIs currently adjacent to DAG.
   const NNISet &GetAdjacentNNIs() const { return adjacent_nnis_; }
   size_t GetAdjacentNNICount() const { return adjacent_nnis_.size(); }
-  // Adjacent NNIs that have been added on the current iteration.
+  // Adjacent NNIs that have been added in the current iteration.
   const NNISet &GetNewAdjacentNNIs() const { return new_adjacent_nnis_; }
   size_t GetNewAdjacentNNICount() const { return new_adjacent_nnis_.size(); }
   size_t GetOldNNICount() const {
@@ -142,10 +142,16 @@ class NNIEngine {
   // Get Map of proposed NNIs with their score from all iterations.
   const NNIDoubleMap &GetPastScoredNNIs() const { return scored_past_nnis_; }
   size_t GetPastScoredNNICount() const { return GetPastScoredNNIs().size(); }
-  // Get NNIs to rescore or NNIs to re-evaluate.
+  // Get NNIs to rescore: marks adjacent NNIs which we want to recompute the
+  // likelihood. This should just be new NNIs for TP (since future modifications
+  // don't affect previous scores), but we want to rescore all adjacent NNIs for
+  // GP (since old NNIs are affected by the state of the DAG).
   const NNISet &GetNNIsToRescore() const {
     return GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
   }
+  // Returns NNIs we want to consider adding to the DAG. Depending on the option
+  // chosen, this will either be strictly new adjacent NNIs or all adjacent NNIs
+  // (including previously rejected NNIs)
   const NNISet &GetNNIsToReevaluate() const {
     return GetReevaluateRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
   }
