@@ -2272,9 +2272,9 @@ TEST_CASE("NNIEngine: Finding Parent and Child Nodes After Adding/Grafting Nodes
           "Finding nodes via map does not match finding nodes via scan (before "
           "adding NNIs).");
     }
-    nniengine_1.FilterPreUpdate();
+    nniengine_1.FilterPreScore();
     nniengine_1.FilterScoreAdjacentNNIs();
-    nniengine_1.FilterPostUpdate();
+    nniengine_1.FilterPostScore();
     nniengine_1.FilterEvaluateAdjacentNNIs();
     nniengine_1.RemoveAllGraftedNNIsFromDAG();
     nniengine_1.AddAcceptedNNIsToDAG();

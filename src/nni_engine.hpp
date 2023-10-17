@@ -269,12 +269,12 @@ class NNIEngine {
 
   // ** Filter Functions
 
-  // Initialization step for filter before beginning
+  // Initialization step for filter before first iteration.
   using StaticFilterInitFunction = std::function<void(NNIEngine &)>;
-  // Update step for any filter computation work to be done at start of each sweep.
+  // Function template for
   using StaticFilterUpdateFunction = std::function<void(NNIEngine &)>;
-  // Function template for computational evaluation to be performed on an adjacent NNI.
-  using StaticFilterScoreFunction =
+  // Function template for scoring to be performed on each adjacent NNI.
+  using StaticFilterScoreLoopFunction =
       std::function<double(NNIEngine &, const NNIOperation &)>;
   // Function template for processing an adjacent NNI to be accepted or rejected.
   using StaticFilterEvaluateFunction =
@@ -282,44 +282,61 @@ class NNIEngine {
                          const DoubleNNIPairSet &, NNISet &)>;
   using StaticFilterEvaluateLoopFunction =
       std::function<bool(NNIEngine &, const NNIOperation &, const double)>;
+  // Function template
+  using StaticFilterModificationFunction =
+      std::function<void(NNIEngine &, const SubsplitDAG::ModificationResult &,
+                         const std::map<NNIOperation, NNIOperation> &)>;
 
   // ** Filter Subroutines
 
-  // Initialize filter before first NNI sweep.
+  // Initialize filter before first iteration.
   void FilterInit();
-  // Update filter parameters for each NNI sweep (before evaluation).
-  void FilterPreUpdate();
-  // Perform computation on each Adjacent NNI.
+  // Update step before scoring NNIs
+  void FilterPreScore();
+  // Scoring step assigns a score for each NNI.
   void FilterScoreAdjacentNNIs();
-  // Update filter parameters for each NNI sweep (after evaluation).
-  void FilterPostUpdate();
-  // Apply the filtering method to determine whether each Adjacent NNI will be added to
-  // Accepted NNI or Rejected NNI.
+  // Update step after scoring NNIs.
+  void FilterPostScore();
+  // Filtering step which determines whether each NNI will accepted or rejected.
   void FilterEvaluateAdjacentNNIs();
+  // Update at end of each iteration (after modifying DAG by adding accepted NNIs).
+  void FilterPostModification(
+      const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni);
 
   // Set filter initialization function. Called at the beginning of NNI engine run,
   // before main loop.
   void SetFilterInitFunction(StaticFilterInitFunction filter_init_fn);
-  // Set filter pre-eval update step.  Performed once each loop before the filter
-  // evaluvation step.
-  void SetFilterPreUpdateFunction(StaticFilterUpdateFunction filter_pre_update_fn);
-  // Set filter evaluation step.  Evaluation step is performed on each proposed adjacent
+  // Set filter pre-score update step.  Performed once each iteration before scoring
+  // NNIs.
+  void SetFilterPreScoreFunction(StaticFilterUpdateFunction filter_pre_score_fn);
+  // Set filter score step.  Scoring step is performed on each proposed adjacent
   // NNI individually, and returns a score for that NNI.
-  void SetFilterScoreFunction(StaticFilterScoreFunction filter_score_fn);
-  // Set filter post-eval update step. Performed once each loop after the filter
-  // evaluvation step.
-  void SetFilterPostUpdateFunction(StaticFilterUpdateFunction filter_post_update_fn);
+  void SetFilterScoreLoopFunction(StaticFilterScoreLoopFunction filter_score_loop_fn);
+  // Set filter post-score update step. Performed once each iteration after scoring
+  // NNIs.
+  void SetFilterPostScoreFunction(StaticFilterUpdateFunction filter_post_score_fn);
   // Set filter processing step.  Processing step is performed on each proposed adjacent
   // NNI individually, taking in its NNI score and outputting a boolean whether to
   // accept or reject the NNI.
   void SetFilterEvaluateFunction(StaticFilterEvaluateFunction filter_evaluate_fn);
   void SetFilterEvaluateLoopFunction(
       StaticFilterEvaluateLoopFunction filter_evaluate_loop_fn);
+  // Set filter post-iteration step.  Performed once at the end of each iteration, after
+  // adding accepted NNIs to DAG.
+  void SetFilterPostModificationFunction(
+      StaticFilterModificationFunction filter_post_modification_fn);
 
   // ** Filtering Schemes
 
   // Set filtering scheme to simply accept or reject all NNIs.
   void SetNoFilter(const bool accept_all_nnis);
+
+  // Set filtering scheme to use GP likelihoods.
+  void SetGPLikelihoodFilteringScheme();
+  // Set filtering scheme to use TP likelihoods.
+  void SetTPLikelihoodFilteringScheme();
+  // Set filtering scheme to use TP parsimonies.
+  void SetTPParsimonyFilteringScheme();
 
   // Set filtering scheme to use GP likelihoods, using static cutoff.
   void SetGPLikelihoodCutoffFilteringScheme(const double score_cutoff);
@@ -517,17 +534,20 @@ class NNIEngine {
 
   // Steps of filtering scheme.
   StaticFilterInitFunction filter_init_fn_ = nullptr;
-  StaticFilterUpdateFunction filter_pre_update_fn_ = nullptr;
-  StaticFilterScoreFunction filter_score_fn_ = nullptr;
-  StaticFilterUpdateFunction filter_post_update_fn_ = nullptr;
+  StaticFilterUpdateFunction filter_pre_score_fn_ = nullptr;
+  StaticFilterScoreLoopFunction filter_score_loop_fn_ = nullptr;
+  StaticFilterUpdateFunction filter_post_score_fn_ = nullptr;
   StaticFilterEvaluateFunction filter_evaluate_fn_ = nullptr;
   StaticFilterEvaluateLoopFunction filter_evaluate_loop_fn_ = nullptr;
+  StaticFilterModificationFunction filter_post_modification_fn_ = nullptr;
 
   // Count number of loops executed by engine.
   size_t iter_count_ = 0;
   // Count number of proposed NNIs computed.
   size_t proposed_nnis_computed_ = 0;
 
+  // Whether to consider max or minimum scores as best.
+  bool max_is_best = true;
   // Whether to re-evaluate rejected NNIs from previous iterations.
   bool reevaluate_rejected_nnis_ = true;
   // Whether to re-compute scores for rejected NNIs from previous iterations.
@@ -541,6 +561,5 @@ class NNIEngine {
   bool save_past_scored_nnis_ = false;
   bool save_past_accepted_nnis_ = true;
   bool save_past_rejected_nnis_ = true;
-
   bool track_rejected_nnis_ = false;
 };

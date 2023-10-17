@@ -270,7 +270,7 @@ class TPEngine {
       const size_t prev_node_count, const Reindexer &node_reindexer,
       const size_t prev_edge_count, const Reindexer &edge_reindexer);
 
-  // ** Parameter Data
+  // ** Maintenance
 
   // Resize GPEngine to accomodate DAG with given number of nodes and edges.  Option
   // to remap data according to DAG reindexers.  Option to give explicit number of

@@ -20,8 +20,47 @@ class TPChoiceMap {
  public:
   // Types of Adjacent Nodes
   enum class AdjacentNode { Parent, LeftChild, RightChild };
+  static const inline size_t AdjacentNodeCount = 3;
+  class AdjacentNodeEnum
+      : public EnumWrapper<AdjacentNode, size_t, AdjacentNodeCount,
+                           AdjacentNode::Parent, AdjacentNode::RightChild> {
+   public:
+    static inline const std::string Prefix = "AdjacentNode";
+    static inline const Array<std::string> Labels = {
+        {"Parent", "LeftChild", "RightChild"}};
+
+    static std::string ToString(const AdjacentNode e) {
+      std::stringstream ss;
+      ss << Prefix << "::" << Labels[e];
+      return ss.str();
+    }
+    friend std::ostream &operator<<(std::ostream &os, const AdjacentNode e) {
+      os << ToString(e);
+      return os;
+    }
+  };
+
   // Types of Adjacent Edges
   enum class AdjacentEdge { Parent, Sister, LeftChild, RightChild };
+  static const inline size_t AdjacentEdgeCount = 4;
+  class AdjacentEdgeEnum
+      : public EnumWrapper<AdjacentEdge, size_t, AdjacentEdgeCount,
+                           AdjacentEdge::Parent, AdjacentEdge::RightChild> {
+   public:
+    static inline const std::string Prefix = "AdjacentEdge";
+    static inline const Array<std::string> Labels = {
+        {"Parent", "Sister", "LeftChild", "RightChild"}};
+
+    static std::string ToString(const AdjacentEdge e) {
+      std::stringstream ss;
+      ss << Prefix << "::" << Labels[e];
+      return ss.str();
+    }
+    friend std::ostream &operator<<(std::ostream &os, const AdjacentEdge e) {
+      os << ToString(e);
+      return os;
+    }
+  };
 
   // Per-edge choices of best adjacent edges.
   struct EdgeChoice {

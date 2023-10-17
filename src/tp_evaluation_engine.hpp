@@ -27,6 +27,57 @@
 class TPEngine;
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 
+struct NNIEdgeIdMap {
+  EdgeId central_edge_;
+  EdgeId parent_edge_;
+  EdgeId sister_edge_;
+  EdgeId left_child_edge_;
+  EdgeId right_child_edge_;
+};
+struct PrimaryPVIds {
+  // For central likelihood.
+  PVId parent_rfocal_;
+  PVId child_p_;
+  // For custom branch lengths.
+  PVId child_phatleft_;
+  PVId child_phatright_;
+  PVId parent_phatsister_;
+  PVId parent_rhat_;
+  PVId grandparent_rfocal_;
+  // For branch length optimization.
+  PVId child_rhat_;
+  PVId child_rleft_;
+  PVId child_rright_;
+  PVId parent_phatfocal_;
+  PVId parent_rsister_;
+  PVId parent_p_;
+  PVId grandparent_phatfocal_;
+  PVId grandparent_p_;
+};
+struct SecondaryPVIds {
+  PVId grandparent_rhat_;
+  PVId grandparent_rfocal_;
+  PVId grandparent_rsister_;
+
+  PVId parent_rfocal_;
+  PVId parent_rsister_;
+  PVId child_rleft_;
+  PVId child_rright_;
+
+  PVId parent_p_;
+  PVId sister_p_;
+  PVId leftchild_p_;
+  PVId rightchild_p_;
+
+  PVId parent_phatfocal_;
+  PVId parent_phatsister_;
+  PVId parent_rhat_;
+  PVId child_p_;
+  PVId child_phatleft_;
+  PVId child_phatright_;
+  PVId child_rhat_;
+};
+
 // TPEngine helper for evaluating Top Trees.
 class TPEvalEngine {
  public:
@@ -156,6 +207,10 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
       const size_t spare_offset = 0,
       std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt) override;
+  double GetTopTreeScoreWithProposedNNI_ALTERNATE(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      const size_t spare_offset = 0,
+      std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt);
 
   // ** Resize
 
@@ -237,57 +292,6 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   const DAGBranchHandler &GetDAGBranchHandler() const { return branch_handler_; }
 
   // ** PV Operations
-
-  struct NNIEdgeIdMap {
-    EdgeId central_edge_;
-    EdgeId parent_edge_;
-    EdgeId sister_edge_;
-    EdgeId left_child_edge_;
-    EdgeId right_child_edge_;
-  };
-  struct PrimaryPVIds {
-    // For central likelihood.
-    PVId parent_rfocal_;
-    PVId child_p_;
-    // For custom branch lengths.
-    PVId child_phatleft_;
-    PVId child_phatright_;
-    PVId parent_phatsister_;
-    PVId parent_rhat_;
-    PVId grandparent_rfocal_;
-    // For branch length optimization.
-    PVId child_rhat_;
-    PVId child_rleft_;
-    PVId child_rright_;
-    PVId parent_phatfocal_;
-    PVId parent_rsister_;
-    PVId parent_p_;
-    PVId grandparent_phatfocal_;
-    PVId grandparent_p_;
-  };
-  struct SecondaryPVIds {
-    PVId grandparent_rhat_;
-    PVId grandparent_rfocal_;
-    PVId grandparent_rsister_;
-
-    PVId parent_rfocal_;
-    PVId parent_rsister_;
-    PVId child_rleft_;
-    PVId child_rright_;
-
-    PVId parent_p_;
-    PVId sister_p_;
-    PVId leftchild_p_;
-    PVId rightchild_p_;
-
-    PVId parent_phatfocal_;
-    PVId parent_phatsister_;
-    PVId parent_rhat_;
-    PVId child_p_;
-    PVId child_phatleft_;
-    PVId child_phatright_;
-    PVId child_rhat_;
-  };
 
   // Get primary PV Ids for corresponding parent/child pair.
   // Gets the P-PV of the child, and the RFocal-PV of the parent.

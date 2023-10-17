@@ -749,8 +749,15 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
   return top_tree_likelihood[spare_offset];
 }
 
-TPEvalEngineViaLikelihood::PrimaryPVIds
-TPEvalEngineViaLikelihood::GetTempPrimaryPVIdsForProposedNNIs(
+double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI_ALTERNATE(
+    const NNIOperation &post_nni, const NNIOperation &temp_pre_nni,
+    const size_t spare_offset, std::optional<BitsetEdgeIdMap> best_edge_map_opt) {
+  double score = 0.0;
+
+  return score;
+}
+
+PrimaryPVIds TPEvalEngineViaLikelihood::GetTempPrimaryPVIdsForProposedNNIs(
     const size_t spare_offset) const {
   PrimaryPVIds temp_pvids;
   size_t spare_count = 0;
@@ -781,8 +788,7 @@ TPEvalEngineViaLikelihood::GetTempPrimaryPVIdsForProposedNNIs(
   return temp_pvids;
 }
 
-TPEvalEngineViaLikelihood::NNIEdgeIdMap
-TPEvalEngineViaLikelihood::GetTempEdgeIdsForProposedNNIs(
+NNIEdgeIdMap TPEvalEngineViaLikelihood::GetTempEdgeIdsForProposedNNIs(
     const size_t spare_offset) const {
   NNIEdgeIdMap temp_edge_ids;
   size_t spare_count = 0;
@@ -1065,8 +1071,8 @@ std::pair<PVId, PVId> TPEvalEngineViaLikelihood::GetPrimaryPVIdsOfEdge(
   return std::make_pair(parent_rfocal_pvid, child_p_pvid);
 }
 
-TPEvalEngineViaLikelihood::SecondaryPVIds
-TPEvalEngineViaLikelihood::GetSecondaryPVIdsOfEdge(const EdgeId edge_id) const {
+SecondaryPVIds TPEvalEngineViaLikelihood::GetSecondaryPVIdsOfEdge(
+    const EdgeId edge_id) const {
   SecondaryPVIds pv_ids;
   const auto &choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
   // Get P-PLVs.
@@ -1106,8 +1112,7 @@ TPEvalEngineViaLikelihood::GetSecondaryPVIdsOfEdge(const EdgeId edge_id) const {
   return pv_ids;
 }
 
-TPEvalEngineViaLikelihood::SecondaryPVIds
-TPEvalEngineViaLikelihood::RemapSecondaryPVIdsForPostNNI(
+SecondaryPVIds TPEvalEngineViaLikelihood::RemapSecondaryPVIdsForPostNNI(
     const SecondaryPVIds &pre_pvids,
     const NNIOperation::NNICladeArray &clade_map) const {
   using NNIClade = NNIOperation::NNIClade;

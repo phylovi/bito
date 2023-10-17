@@ -210,8 +210,6 @@ void NNIEngine::RunInit(const bool is_quiet) {
   os << "RunInit::ResetNNIData: " << timer.Lap() << std::endl;
   SyncAdjacentNNIsWithDAG(true);
   os << "RunInit::SyncAdjacentNNIsWithDAG: " << timer.Lap() << std::endl;
-  PrepEvalEngine();
-  os << "RunInit::PrepEvalEngine: " << timer.Lap() << std::endl;
   FilterInit();
   os << "RunInit::FilterInit: " << timer.Lap() << std::endl;
 }
@@ -225,13 +223,13 @@ void NNIEngine::RunMainLoop(const bool is_quiet) {
   GraftAdjacentNNIsToDAG(is_quiet);
   os << "RunMainLoop::GraftAdjacentNNIsToDAG: " << timer.Lap() << std::endl;
   // (2) Compute each adjacent NNI score.
-  FilterPreUpdate();
-  os << "RunMainLoop::FilterPreUpdate: " << timer.Lap() << std::endl;
+  FilterPreScore();
+  os << "RunMainLoop::FilterPreScore: " << timer.Lap() << std::endl;
   // (2b) Optional per-NNI function.
   FilterScoreAdjacentNNIs();
   os << "RunMainLoop::FilterScoreAdjacentNNIs: " << timer.Lap() << std::endl;
-  FilterPostUpdate();
-  os << "RunMainLoop::FilterPostUpdate: " << timer.Lap() << std::endl;
+  FilterPostScore();
+  os << "RunMainLoop::FilterScoreUpdate: " << timer.Lap() << std::endl;
   // (3) Select whether to accept or reject adjacent NNIs via filter.
   FilterEvaluateAdjacentNNIs();
   os << "RunMainLoop::FilterEvaluate: " << timer.Lap() << std::endl;
@@ -272,24 +270,24 @@ void NNIEngine::FilterInit() {
   }
 }
 
-void NNIEngine::FilterPreUpdate() {
-  if (filter_pre_update_fn_) {
-    (filter_pre_update_fn_)(*this);
+void NNIEngine::FilterPreScore() {
+  if (filter_pre_score_fn_) {
+    (filter_pre_score_fn_)(*this);
   }
 }
 
 void NNIEngine::FilterScoreAdjacentNNIs() {
-  if (filter_score_fn_) {
+  if (filter_score_loop_fn_) {
     for (const auto &nni : GetNNIsToRescore()) {
-      const double nni_score = (filter_score_fn_)(*this, nni);
+      const double nni_score = (filter_score_loop_fn_)(*this, nni);
       AddNNIScore(nni, nni_score);
     }
   }
 }
 
-void NNIEngine::FilterPostUpdate() {
-  if (filter_post_update_fn_) {
-    (filter_post_update_fn_)(*this);
+void NNIEngine::FilterPostScore() {
+  if (filter_post_score_fn_) {
+    (filter_post_score_fn_)(*this);
   }
   Assert(new_sorted_scored_nnis_.size() == GetNNIsToRescore().size(),
          "After scoring NNIs, not all NNIs have been assigned scores.");
@@ -314,24 +312,32 @@ void NNIEngine::FilterEvaluateAdjacentNNIs() {
   }
 }
 
+void NNIEngine::FilterPostModification(
+    const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni) {
+  if (filter_post_modification_fn_) {
+    (filter_post_modification_fn_)(*this, mods_, nni_to_pre_nni);
+  }
+}
+
 // ** Filter Setters
 
 void NNIEngine::SetFilterInitFunction(StaticFilterInitFunction filter_init_fn) {
   filter_init_fn_ = filter_init_fn;
 }
 
-void NNIEngine::SetFilterPreUpdateFunction(
+void NNIEngine::SetFilterPreScoreFunction(
     StaticFilterUpdateFunction filter_pre_update_fn) {
-  filter_pre_update_fn_ = filter_pre_update_fn;
+  filter_pre_score_fn_ = filter_pre_update_fn;
 }
 
-void NNIEngine::SetFilterScoreFunction(StaticFilterScoreFunction filter_score_fn) {
-  filter_score_fn_ = filter_score_fn;
+void NNIEngine::SetFilterScoreLoopFunction(
+    StaticFilterScoreLoopFunction filter_score_loop_fn) {
+  filter_score_loop_fn_ = filter_score_loop_fn;
 }
 
-void NNIEngine::SetFilterPostUpdateFunction(
-    StaticFilterUpdateFunction filter_post_update_fn) {
-  filter_post_update_fn_ = filter_post_update_fn;
+void NNIEngine::SetFilterPostScoreFunction(
+    StaticFilterUpdateFunction filter_post_score_fn) {
+  filter_post_score_fn_ = filter_post_score_fn;
 }
 
 void NNIEngine::SetFilterEvaluateFunction(
@@ -342,6 +348,11 @@ void NNIEngine::SetFilterEvaluateFunction(
 void NNIEngine::SetFilterEvaluateLoopFunction(
     StaticFilterEvaluateLoopFunction filter_evaluate_loop_fn) {
   filter_evaluate_loop_fn_ = filter_evaluate_loop_fn;
+}
+
+void NNIEngine::SetFilterPostModificationFunction(
+    StaticFilterModificationFunction filter_post_modification_fn) {
+  filter_post_modification_fn_ = filter_post_modification_fn;
 }
 
 // ** Filtering Schemes
@@ -377,7 +388,7 @@ void NNIEngine::SetGPLikelihoodDropFilteringScheme(const double score_cutoff) {
   Assert(HasGPEvalEngine(), "Must MakeGPEvalEngine before using the filtering scheme.");
   SelectGPEvalEngine();
   SetScoreViaEvalEngine();
-  SetFilterPostUpdateFunction([score_cutoff](NNIEngine &this_nni_engine) {
+  SetFilterPostScoreFunction([score_cutoff](NNIEngine &this_nni_engine) {
     double max = this_nni_engine.GetMaxScore();
     this_nni_engine.SetEvaluateViaMinScoreCutoff(max - score_cutoff);
   });
@@ -388,7 +399,7 @@ void NNIEngine::SetTPLikelihoodDropFilteringScheme(const double score_cutoff) {
          "Must MakeTPEvalEngine before using the filtering scheme.");
   SelectTPLikelihoodEvalEngine();
   SetScoreViaEvalEngine();
-  SetFilterPostUpdateFunction([score_cutoff](NNIEngine &this_nni_engine) {
+  SetFilterPostScoreFunction([score_cutoff](NNIEngine &this_nni_engine) {
     double max = this_nni_engine.GetMaxScore();
     this_nni_engine.SetEvaluateViaMinScoreCutoff(max - score_cutoff);
   });
@@ -399,14 +410,14 @@ void NNIEngine::SetTPParsimonyDropFilteringScheme(const double score_cutoff) {
          "Must MakeTPEvalEngine before using the filtering scheme.");
   SelectTPParsimonyEvalEngine();
   SetScoreViaEvalEngine();
-  SetFilterPostUpdateFunction([score_cutoff](NNIEngine &this_nni_engine) {
+  SetFilterPostScoreFunction([score_cutoff](NNIEngine &this_nni_engine) {
     double min = this_nni_engine.GetMinScore();
     this_nni_engine.SetEvaluateViaMaxScoreCutoff(min + score_cutoff);
   });
 }
 
 void NNIEngine::SetTopKScoreFilteringScheme(const size_t k, const bool max_is_best) {
-  SetFilterPostUpdateFunction([k, max_is_best](NNIEngine &this_nni_engine) {
+  SetFilterPostScoreFunction([k, max_is_best](NNIEngine &this_nni_engine) {
     auto score_cutoff =
         max_is_best ? this_nni_engine.GetMaxKScore(k) : this_nni_engine.GetMinKScore(k);
     if (max_is_best) {
@@ -420,32 +431,26 @@ void NNIEngine::SetTopKScoreFilteringScheme(const size_t k, const bool max_is_be
 // ** Filtering Scheme Helper Functions
 
 void NNIEngine::SetScoreToConstant(const double value) {
-  SetFilterScoreFunction(
+  SetFilterScoreLoopFunction(
       [value](NNIEngine &this_nni_engine, const NNIOperation &nni) { return value; });
 }
 
 void NNIEngine::SetScoreViaEvalEngine() {
-  SetFilterPreUpdateFunction(
+  SetFilterInitFunction(
+      [](NNIEngine &this_nni_engine) { this_nni_engine.PrepEvalEngine(); });
+  SetFilterPreScoreFunction(
       [](NNIEngine &this_nni_engine) { this_nni_engine.ScoreAdjacentNNIs(); });
-  SetFilterScoreFunction([](NNIEngine &this_nni_engine, const NNIOperation &nni) {
-    auto new_score = this_nni_engine.GetEvalEngine().GetScoredNNIs().find(nni)->second;
-    if (this_nni_engine.GetScoredNNIsToReevaluate().find(nni) !=
-        this_nni_engine.GetScoredNNIsToReevaluate().end()) {
-      auto old_score = this_nni_engine.GetScoredNNIsToReevaluate().find(nni)->second;
-      if (std::abs(new_score - old_score) > 1e-5) {
-        std::cerr << "FAIL: score_mismatch -- " << nni.ToHashString() << " "
-                  << old_score << " " << new_score << " -> " << new_score - old_score
-                  << std::endl;
-        // std::cerr << "FAIL: data -- "
-        //           << this_nni_engine.GetDAG().ContainsNode(nni.GetParent()) << " "
-        //           << this_nni_engine.GetDAG().ContainsNode(nni.GetChild()) <<
-        //           std::endl;
-      } else {
-        // std::cerr << "SUCCESS: score_match -- " << nni.ToHashString() << std::endl;
-      }
-    }
-    return new_score;
+  SetFilterScoreLoopFunction([](NNIEngine &this_nni_engine, const NNIOperation &nni) {
+    return this_nni_engine.GetEvalEngine().GetScoredNNIs().find(nni)->second;
   });
+  SetFilterPostModificationFunction(
+      [](NNIEngine &this_nni_engine, const SubsplitDAG::ModificationResult &mods,
+         const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni) {
+        this_nni_engine.GrowEvalEngineForDAG(mods.node_reindexer, mods.edge_reindexer);
+        this_nni_engine.UpdateEvalEngineAfterModifyingDAG(
+            nni_to_pre_nni, mods.prv_node_count, mods.node_reindexer,
+            mods.prv_edge_count, mods.edge_reindexer);
+      });
 }
 
 void NNIEngine::SetNoEvaluate(const bool set_all_nni_to_pass) {
@@ -729,15 +734,11 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
     // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
   }
   // mods_ = GetDAG().AddNodes(nodes_to_add);
-  os << "AddAcceptedNNIsToDAG::AddAll: " << timer.Lap() << std::endl;
+  os << "AddAcceptedNNIsToDAG::AddAllAcceptedNNIs: " << timer.Lap() << std::endl;
   RemoveAllGraftedNNIsFromDAG();
-  os << "AddAcceptedNNIsToDAG::Reset: " << timer.Lap() << std::endl;
-  GrowEvalEngineForDAG(mods_.node_reindexer, mods_.edge_reindexer);
-  os << "AddAcceptedNNIsToDAG::GrowEvalEngine: " << timer.Lap() << std::endl;
-  UpdateEvalEngineAfterModifyingDAG(nni_to_pre_nni, mods_.prv_node_count,
-                                    mods_.node_reindexer, mods_.prv_edge_count,
-                                    mods_.edge_reindexer);
-  os << "AddAcceptedNNIsToDAG::UpdateEvalEngine: " << timer.Lap() << std::endl;
+  os << "AddAcceptedNNIsToDAG::RemoveGraftedNNIs: " << timer.Lap() << std::endl;
+  FilterPostModification(nni_to_pre_nni);
+  os << "AddAcceptedNNIsToDAG::FilterPostModification: " << timer.Lap() << std::endl;
 }
 
 void NNIEngine::GraftAdjacentNNIsToDAG(const bool is_quiet) {

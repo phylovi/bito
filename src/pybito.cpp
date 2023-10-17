@@ -10,6 +10,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
+#include <pybind11/functional.h>
 #pragma GCC diagnostic pop
 
 #include <string>
@@ -102,6 +103,10 @@ PYBIND11_MODULE(bito, m) {
                                {v.size()},         // Buffer dimensions
                                {sizeof(double)});  // Stride
       });
+
+  m.def("git_commit", &Version::GetGitCommit, "Get git commit of version build.");
+  m.def("git_branch", &Version::GetGitBranch, "Get git branch of version build.");
+  m.def("git_tags", &Version::GetGitTags, "Get git tag(s) of version build.");
 
   // CLASS
   // RootedTree
@@ -960,9 +965,9 @@ PYBIND11_MODULE(bito, m) {
       // Main Loop subroutines
       .def("graft_adjacent_nnis_to_dag", &NNIEngine::GraftAdjacentNNIsToDAG,
            py::arg("is_quiet") = true)
-      .def("filter_pre_update", &NNIEngine::FilterPreUpdate)
+      .def("filter_pre_score", &NNIEngine::FilterPreScore)
       .def("filter_score_adjacent_nnis", &NNIEngine::FilterScoreAdjacentNNIs)
-      .def("filter_post_update", &NNIEngine::FilterPostUpdate)
+      .def("filter_post_score", &NNIEngine::FilterPostScore)
       .def("filter_evaluate_adjacent_nnis", &NNIEngine::FilterEvaluateAdjacentNNIs)
       .def("remove_all_graft_nnis_from_dag", &NNIEngine::RemoveAllGraftedNNIsFromDAG)
       .def("add_accepted_nnis_to_dag", &NNIEngine::AddAcceptedNNIsToDAG)
@@ -1002,6 +1007,14 @@ PYBIND11_MODULE(bito, m) {
       .def("set_top_k_score_filtering_scheme", &NNIEngine::SetTopKScoreFilteringScheme,
            "Set filter scheme that accepts the top N best-scoring NNIs.",
            py::arg("top_k"), py::arg("max_is_best") = true)
+      // Custom filters
+      .def("set_filter_init_function", &NNIEngine::SetFilterInitFunction)
+      .def("set_filter_pre_score_function", &NNIEngine::SetFilterPreScoreFunction)
+      .def("set_filter_score_loop_function", &NNIEngine::SetFilterScoreLoopFunction)
+      .def("set_filter_post_score_function", &NNIEngine::SetFilterPostScoreFunction)
+      .def("set_filter_evaluate_function", &NNIEngine::SetFilterEvaluateFunction)
+      .def("set_filter_evaluate_loop_function",
+           &NNIEngine::SetFilterEvaluateLoopFunction)
       // Options
       .def("set_include_rootsplits", &NNIEngine::SetIncludeRootsplitNNIs,
            "Set whether to include rootsplits in adjacent NNIs")

@@ -1271,7 +1271,7 @@ void TPEngine::CopyOverEdgeDataFromPreNNIToPostNNI(const NNIOperation &post_nni,
                                           Direction::Leafward, SubsplitClade::Right);
 }
 
-// ** Parameter Data
+// ** Maintenance
 
 void TPEngine::GrowNodeData(const size_t new_node_count,
                             std::optional<const Reindexer> node_reindexer,
