@@ -39,8 +39,6 @@ if(GIT_FOUND)
   )
 endif()
 
-message("GIT_HASH is ${GIT_HASH}")
-
 set(CMAKE_SKIP_RPATH ON)
 execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/get_rpath.py
   OUTPUT_VARIABLE BITO_RPATH
