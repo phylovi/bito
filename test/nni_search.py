@@ -15,30 +15,31 @@ import pprint
 import bito
 
 
-verbose = True
+verbose = 1
 sort_taxa = False
-# rounding digits
+# rounding digits in printed output
 digits = 5
 # number of optimization iterations
-max_opt_count = 5
-do_rescore_rejected_nnis = False
-do_reeval_rejected_nnis = True
+max_opt = 1
+# whether to rescore or reevaluate rejected nnis -- use None for default
+do_rescore_all_nnis = False
+do_reeval_all_nnis = None
 # terminate search when all credible edges found
 do_end_when_all_creds_found = True
 # print data
-do_print_scored_nnis = True
-do_print_accepted_nnis = True
+do_print_setup_data = False
+do_print_iter_data = False
+do_print_times = False
+do_print_dag_stats = False
+do_print_scored_nnis = False
+do_print_accepted_nnis = False
+do_print_summary = False
 # track if individual nni scores have changed between iterations.
 do_track_nni_score_changes = True
 
 
-def print(*args):
-    __builtins__.print(
-        *("%.5f" % a if isinstance(a, float) else a for a in args))
-
-
-def print_v(*args):
-    if verbose:
+def print_v(*args, v=1):
+    if verbose >= v:
         print(*args)
 
 
@@ -62,24 +63,24 @@ class Timer:
     def elapsed(self, timer_name="__default__"):
         return round((time.time() - self.times_prv[timer_name]), digits)
 
-    def lap(self, timer_name="__default__", timer_prv_name="__default__", do_print=default_print):
+    def lap(self, timer_name="__default__", timer_prv_name="__default__"):
         time_elapsed = self.elapsed(timer_prv_name)
         if (timer_name not in self.times):
             self.times[timer_name] = []
         self.times[timer_name].append(time_elapsed)
         self.times_prv[timer_prv_name] = time.time()
-        if (do_print):
+        if do_print_times:
             print_v(f'  #TIME {timer_name}: {time_elapsed}')
         return time_elapsed
 
-    def lap_next(self, timer_name="__default__", do_print=default_print):
-        return self.lap(timer_name, "__default__", do_print)
+    def lap_next(self, timer_name="__default__"):
+        return self.lap(timer_name, "__default__")
 
-    def lap_name(self, timer_name="__default__", do_print=default_print):
-        return self.lap(timer_name, timer_name, do_print)
+    def lap_name(self, timer_name="__default__"):
+        return self.lap(timer_name, timer_name)
 
     def lap_last(self, timer_name="__default__"):
-        return self.times[timer_name][len(self.times[timer_name])-1]
+        return self.times[timer_name][len(self.times[timer_name]) - 1]
 
     def get_lap(self, timer_name="__default__", lap_count=0):
         return self.times[timer_name][lap_count]
@@ -122,7 +123,7 @@ class Utils:
 
     @staticmethod
     def average_over_ranges(data, buckets):
-        step = int(len(data)/buckets)
+        step = int(len(data) / buckets)
         averages = []
         for i in range(0, len(data), step):
             start = i
@@ -293,8 +294,8 @@ class Loader:
             fields = line.strip().split()
             if not fields[0].startswith("#"):
                 nni_list.append(fields[0])
-            elif fields[1] == "git_commit:":
-                git_commit = fields[2]
+            elif fields[0].startswith("#GIT_COMMIT"):
+                git_commit = fields[1]
         nni_list_fp.close()
         return git_commit, nni_list
 
@@ -375,7 +376,7 @@ class Results:
         cred_adj_nni_count = pp_maps.get_credible_adj_nni_count(
             nni_engine.adjacent_nnis())
         self.pre_data_['cred_adj_nni_count'] = cred_adj_nni_count
-        if args.pcsp:
+        if self.args_.pcsp:
             self.pre_data_['acc_nni_count'] = 1
             self.pre_data_['score'] = -np.inf
         else:
@@ -426,7 +427,7 @@ class Results:
 
     def found_all_credible_edges(self):
         found_all = self.data_['cred_edge_count'][len(
-            self.data_['cred_edge_count'])-2] == self.pre_data_['cred_edge_total']
+            self.data_['cred_edge_count']) - 2] == self.pre_data_['cred_edge_total']
         return found_all
 
     def to_dataframe(self):
@@ -438,8 +439,7 @@ class Results:
         df.to_csv(file_path)
         return df
 
-    def to_summary(self, timer, file_path):
-        fp = open(file_path, 'w')
+    def to_summary(self, timer):
         df = self.to_dataframe()
         prv_iter = -1
         total_time = 0
@@ -463,17 +463,15 @@ class Results:
                 pcsp_rank = "X"
             if (prv_iter != iter):
                 total_time += curr_time
-            tree_pp = tree_pp/self.pre_data_['tree_pp_total']
+            tree_pp = tree_pp / self.pre_data_['tree_pp_total']
             print_v(
                 f'{loop_iter+1:<3} {iter:<3} | {acc_count:<3} {score:.{digits}f} {hash:<16} {nni_new:<2} | {tree_pp:.{digits}f} {pcsp_pp:.{digits}f} {pcsp_rank}/{cred_adj_nni_count} | {node_count:<4} {edge_count:<4} {adj_nni_count:<4} {cred_edge_count}/{cred_edge_total} | {curr_time:.4f}s {int(total_time/60)}m{(total_time%60):.4f}s')
-            fp.write(
-                f'{tree_pp:.{digits}f},{score:.{digits}f},{hash},{adj_nni_count}\n')
             prv_iter = iter
-        fp.close()
+        pass
 
     def write_nni_list(self, file_path):
         fp = open(file_path, 'w')
-        fp.write(f"# git_commit: {bito.git_commit()}\n")
+        fp.write(f"#GIT_COMMIT: {bito.git_commit()}\n")
         for i in range(len(self.data_['nni_hash'])):
             nni_hash = self.data_['nni_hash'][i]
             nni_parent = self.data_['parent'][i]
@@ -592,7 +590,7 @@ class NNISearchInstance:
         if self.args_.pcsp:
             self.init_engine_for_pcsp_search()
         self.nni_engine_ = self.dag_inst_.get_nni_engine()
-        self.nni_engine_.run_init(False)
+        self.nni_engine_.run_init()
         pass
 
     def init_engine_for_eval_search(self):
@@ -605,6 +603,11 @@ class NNISearchInstance:
         nni_engine = self.dag_inst_.get_nni_engine()
         nni_engine.set_include_rootsplits(args.include_rootsplits)
         nni_engine.set_gp_likelihood_cutoff_filtering_scheme(0.0)
+        # !CHANGE
+        if (do_rescore_all_nnis != None):
+            nni_engine.set_rescore_rejected_nnis(do_rescore_all_nnis)
+        if (do_reeval_all_nnis != None):
+            nni_engine.set_reevaluate_rejected_nnis(do_reeval_all_nnis)
         # !CHANGE
         # nni_engine.set_top_n_score_filtering_scheme(1)
         nni_engine.set_top_k_score_filtering_scheme(1)
@@ -630,13 +633,15 @@ class NNISearchInstance:
         nni_engine.set_include_rootsplits(self.args_.include_rootsplits)
         nni_engine.set_tp_likelihood_cutoff_filtering_scheme(0.0)
         # !CHANGE
-        nni_engine.set_rescore_rejected_nnis(do_rescore_rejected_nnis)
-        nni_engine.set_reevaluate_rejected_nnis(do_reeval_rejected_nnis)
+        if (do_rescore_all_nnis != None):
+            nni_engine.set_rescore_rejected_nnis(do_rescore_all_nnis)
+        if (do_reeval_all_nnis != None):
+            nni_engine.set_reevaluate_rejected_nnis(do_reeval_all_nnis)
         # !CHANGE
         # nni_engine.set_top_n_score_filtering_scheme(1)
         nni_engine.set_top_k_score_filtering_scheme(1)
         # !CHANGE
-        self.dag_inst_.get_tp_engine().set_optimization_max_iteration(max_opt_count)
+        self.dag_inst_.get_tp_engine().set_optimization_max_iteration(self.args_.max_opt)
         if self.args_.use_cutoff:
             nni_engine.set_tp_likelihood_cutoff_filtering_scheme(
                 args.threshold)
@@ -678,7 +683,7 @@ class NNISearchInstance:
         for i, (nni, score) in enumerate(sorted_scored_nnis):
             sys.stdout.write(
                 f'    [{Utils.to_hash_string(nni)}:  {score:.5f}]')
-            if (i+1) % entries_per_line == 0 or i == len(sorted_scored_nnis)-1:
+            if (i + 1) % entries_per_line == 0 or i == len(sorted_scored_nnis) - 1:
                 sys.stdout.write('\n')
         pass
 
@@ -698,7 +703,7 @@ class Program:
         parser = argparse.ArgumentParser(
             description='Tools for performing NNI systematic search.')
         parser.add_argument('-v', '--verbose',
-                            help='verbose', type=int, default=1)
+                            help='verbose', type=int, default=verbose)
         parser.add_argument('-p', '--profiler',
                             action='store_true', help='profile program')
         parser.add_argument('--output-basename',
@@ -731,7 +736,6 @@ class Program:
         # search scheme group
         group = subparser1.add_mutually_exclusive_group(
             required=False)
-        # positional arguments
         group.add_argument('--use-top-k', action='store_true',
                            help='Selects the top N scoring NNIs.')
         group.add_argument('--use-cutoff', action='store_true',
@@ -745,6 +749,8 @@ class Program:
             '--threshold', help='cutoff/dropoff threshold', type=float, default=0.0)
         subparser1.add_argument('--init-optimize', action='store_true',
                                 help='optimize branch lengths when initializing DAG')
+        subparser1.add_argument('--max-opt', help='Maximum number of iterations of branch length optimization.',
+                                type=int, default=max_opt)
         # options
         subparser1.add_argument('-o', '--output', help='output file', type=str,
                                 default='results.nni_search.csv')
@@ -754,8 +760,6 @@ class Program:
             '--test', help='Compare NNI results to a golden run.', type=str)
         subparser1.add_argument(
             '--save-test', help='Save NNI results as golden run.', type=str)
-        subparser1.add_argument(
-            '--nni-info', help='Give additional NNI info per iteration', type=str)
         subparser1.add_argument("--include-rootsplits", action='store_true',
                                 help='Whether to include rootsplits in NNI search')
 
@@ -812,50 +816,57 @@ class Program:
 
     @staticmethod
     def run_program(args):
-        verbose = (args.verbose > 0)
+        verbose = args.verbose
         if (args.program == 'nni-search'):
-            Program.nni_search(args)
+            return Program.nni_search(args)
         if (args.program == 'build-pcsp-map'):
-            Program.build_and_save_pcsp_pp_map(args)
+            return Program.build_and_save_pcsp_pp_map(args)
         if (args.program == 'build-credible'):
-            Program.build_credible_set(args)
+            return Program.build_credible_set(args)
         if (args.program == 'fix-results'):
-            Program.fix_results(args)
+            return Program.fix_results(args)
 
     @staticmethod
     def nni_search(args):
         timer = Timer()
         results = Results(args)
 
-        print_v("# load nni_search_instance...")
+        if do_print_setup_data:
+            print_v("# load nni_search_instance...")
         nni_inst = NNISearchInstance(args)
-        print_v("# load pp_maps...")
+        if do_print_setup_data:
+            print_v("# load pp_maps...")
         pp_maps = PosteriorProbabilityMaps(args)
-        print_v("# all data loaded.")
+        if do_print_setup_data:
+            print_v("# all data loaded.")
         nni_inst.set_pp_maps(pp_maps)
 
-        print_v("# initialize nni engine...")
+        if do_print_setup_data:
+            print_v("# initialize nni engine...")
         nni_inst.init_engine_for_search()
 
         dag = nni_inst.dag_
         nni_engine = nni_inst.nni_engine_
-        print_v(f"# init_dag: {dag.node_count()} {dag.edge_count()}")
+        if do_print_dag_stats:
+            print_v(f"# init_dag: {dag.node_count()} {dag.edge_count()}")
 
-        print_v("# initialize results...")
         results.data_init()
         results.predata_init(dag, nni_engine, pp_maps)
 
         iter_count = 0
         while iter_count < args.iter_max:
-            print_v("--- ---")
+            if do_print_iter_data:
+                print_v("--- ---")
+                print_v(f"# iter_count: {iter_count + 1} of {args.iter_max}...")
             # run iteration of search
             results.predata_begin_iter(
                 iter_count, dag, nni_engine, pp_maps)
-            print_v(f"# iter_count: {iter_count + 1} of {args.iter_max}...")
-            print_v("# dag:", dag.node_count(), dag.edge_count())
+            if do_print_dag_stats:
+                print_v("# dag:", dag.node_count(), dag.edge_count())
             tree_pp = results.pre_data_['tree_pp']
             tree_pp_total = results.pre_data_['tree_pp_total']
-            print_v(f"# dag_tree_pp: {tree_pp} {tree_pp/tree_pp_total}")
+            if do_print_dag_stats:
+                print_v(f"# dag_tree_pp: {tree_pp} {tree_pp/tree_pp_total}")
 
             timer.start()
             timer.start("full_iter")
@@ -863,7 +874,8 @@ class Program:
 
             ### NNI_SEARCH MAIN_LOOP ###
             # nni_engine.sync_adjacent_nnis_with_dag()
-            print_v("# adjacent_nnis:", nni_engine.adjacent_nni_count())
+            if do_print_dag_stats:
+                print_v("# adjacent_nnis:", nni_engine.adjacent_nni_count())
             timer.start()
 
             nni_engine.graft_adjacent_nnis_to_dag()
@@ -903,7 +915,7 @@ class Program:
             nni_engine.remove_all_graft_nnis_from_dag()
             timer.lap_next("remove_all_graft_nnis_from_dag")
 
-            nni_engine.add_accepted_nnis_to_dag(False)
+            nni_engine.add_accepted_nnis_to_dag()
             timer.lap_next("add_accepted_nnis_to_dag")
 
             timer.lap_name("inner_iter")
@@ -930,16 +942,18 @@ class Program:
             if do_end_when_all_creds_found and results.found_all_credible_edges():
                 break
 
-        print_v("\n=== FINAL DATAFRAME ===")
+        # write final results to file
         df = results.write_dataframe_to_file(args.output)
-        pd.set_option('display.max_colwidth', None)
-        print_v(df)
 
         ### SUMMARY OUTPUT ###
-        print_v("\n=== TIMES_SUMMARY ===")
-        timer.to_summary()
-        print_v("\n=== RESULTS_SUMMARY ===")
-        results.to_summary(timer, "result.csv")
+        if do_print_summary:
+            print_v("\n=== FINAL DATAFRAME ===")
+            pd.set_option('display.max_colwidth', None)
+            print_v(df)
+            print_v("\n=== TIMES_SUMMARY ===")
+            timer.to_summary()
+            print_v("\n=== RESULTS_SUMMARY ===")
+            results.to_summary(timer)
 
         # compare results to golden run.
         if args.test:
@@ -972,7 +986,6 @@ class Program:
         if args.save_test:
             print_v(f"# NNI list written to: {args.save_test}")
             results.write_nni_list(args.save_test)
-
         return nni_inst, results, timer
 
     @staticmethod

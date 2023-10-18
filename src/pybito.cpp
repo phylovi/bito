@@ -970,7 +970,8 @@ PYBIND11_MODULE(bito, m) {
       .def("filter_post_score", &NNIEngine::FilterPostScore)
       .def("filter_evaluate_adjacent_nnis", &NNIEngine::FilterEvaluateAdjacentNNIs)
       .def("remove_all_graft_nnis_from_dag", &NNIEngine::RemoveAllGraftedNNIsFromDAG)
-      .def("add_accepted_nnis_to_dag", &NNIEngine::AddAcceptedNNIsToDAG)
+      .def("add_accepted_nnis_to_dag", &NNIEngine::AddAcceptedNNIsToDAG,
+           py::arg("is_quiet") = true)
       // Post Loop subroutines
       .def("update_rejected_nnis", &NNIEngine::UpdateRejectedNNIs)
       .def("update_adjacent_nnis", &NNIEngine::UpdateAdjacentNNIs)

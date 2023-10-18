@@ -913,11 +913,7 @@ void NNIEngine::UpdateAdjacentNNIs() {
   }
 
   if (rescore_old_nnis_adjacent_to_new_nnis_) {
-    std::cout << "new_adjacent_nnis [before]: " << new_adjacent_nnis_.size()
-              << std::endl;
     UpdateOutOfDateAdjacentNNIs();
-    std::cout << "new_adjacent_nnis [after]: " << new_adjacent_nnis_.size()
-              << std::endl;
   }
 }
 
