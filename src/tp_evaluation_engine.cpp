@@ -490,8 +490,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
   const auto mapped_pre_choice =
       GetTPEngine().RemapEdgeChoiceFromPreNNIToPostNNI(pre_choice, rev_clade_map);
   const auto &choice = mapped_pre_choice;
-  const auto adj_node_ids =
-      GetTPEngine().GetChoiceMap().GetNodeIdsFromEdgeChoice(choice);
+  const auto adj_node_ids = GetTPEngine().GetChoiceMap().GetEdgeChoiceNodeIds(choice);
   // Get PLV ids from pre-NNI in DAG, then remap according to post-NNI.
   const auto pre_pvids = GetSecondaryPVIdsOfEdge(pre_edge_id);
   const auto post_pvids = RemapSecondaryPVIdsForPostNNI(pre_pvids, clade_map);

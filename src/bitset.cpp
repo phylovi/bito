@@ -156,6 +156,8 @@ std::string Bitset::ToString() const {
   return str;
 }
 
+std::string Bitset::ToHashString() const { return HashToString(Hash()); }
+
 std::vector<size_t> Bitset::ToVectorOfSetBits() const {
   std::vector<size_t> vec;
   for (size_t i = 0; i < size(); i++) {

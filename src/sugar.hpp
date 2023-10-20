@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <vector>
 #include <queue>
+#include <iomanip>
 
 #include "intpack.hpp"
 #include "prettyprint.hpp"
@@ -76,6 +77,12 @@ inline std::string TagTaxonMapToString(const TagStringMap &tag_taxon_map) {
   }
   str << "} ";
   return str.str();
+}
+
+inline std::string HashToString(const size_t hash) {
+  std::stringstream ss;
+  ss << "0x" << std::hex << std::setw(16) << std::setfill('0') << hash;
+  return ss.str();
 }
 
 // We implement problems in terms of exceptions. That means that they work great

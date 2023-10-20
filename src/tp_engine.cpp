@@ -359,7 +359,7 @@ TPChoiceMap::EdgeChoicePCSPs TPEngine::BuildAdjacentPCSPsToProposedNNI(
   return adj_pcsps;
 }
 
-// ** Choice Map / Tree Source
+// ** Choice Map - Maintenance
 
 void TPEngine::InitializeChoiceMap() {
   for (EdgeId edge_id = EdgeId(0); edge_id < GetEdgeCount(); edge_id++) {
@@ -745,6 +745,8 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
   }
 }
 
+// ** Choice Map - Find
+
 NNIOperation TPEngine::FindHighestPriorityNeighborNNIInDAG(
     const NNIOperation &nni) const {
   // Select pre-NNI by taking one with the highest priority in ChoiceMap.
@@ -865,7 +867,7 @@ TPChoiceMap::EdgeChoice TPEngine::GetRemappedEdgeChoiceFromPreNNIToPostNNI(
   const auto clade_map =
       NNIOperation::BuildNNICladeMapFromPreNNIToNNI(post_nni, pre_nni);
   const auto post_choice = RemapEdgeChoiceFromPreNNIToPostNNI(pre_choice, clade_map);
-  const auto node_choice = GetChoiceMap().GetNodeIdsFromEdgeChoice(post_choice);
+  const auto node_choice = GetChoiceMap().GetEdgeChoiceNodeIds(post_choice);
 
   // Find common nodes between pre-NNI and post-NNI.  Then use them to
   // find edges that go to the common nodes in post-NNI.
@@ -913,8 +915,8 @@ double TPEngine::GetAvgLengthOfAdjEdges(
       return GetLikelihoodEvalEngine().GetDAGBranchHandler()(edge_id);
     }
   }
-  // Iterate over alternate edges from parent and child and take average of all
-  // neighboring branches.
+  // Otherwise, iterate over alternate edges from parent and child and take average of
+  // all neighboring branches.
   for (const auto node_dir : {Direction::Rootward, Direction::Leafward}) {
     const auto node_id =
         (node_dir == Direction::Rootward) ? parent_node_id : child_node_id;
@@ -999,8 +1001,7 @@ BitsetEdgeIdMap TPEngine::BuildBestEdgeMapOverNNIs(
     const auto pre_choice = GetChoiceMap(pre_edge_id);
     const auto mapped_pre_choice =
         RemapEdgeChoiceFromPreNNIToPostNNI(pre_choice, rev_clade_map);
-    const auto adj_node_ids =
-        GetChoiceMap().GetNodeIdsFromEdgeChoice(mapped_pre_choice);
+    const auto adj_node_ids = GetChoiceMap().GetEdgeChoiceNodeIds(mapped_pre_choice);
     if ((adj_node_ids.parent_node_id == NoId) &&
         (adj_node_ids.sister_node_id == NoId) &&
         (adj_node_ids.left_child_node_id == NoId) &&
@@ -1151,8 +1152,6 @@ double TPEngine::GetTopTreeScoreWithProposedNNI(const NNIOperation &post_nni,
                                                         spare_offset);
 }
 
-// ** Maintenance
-
 void TPEngine::InitializeScores() {
   if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().Initialize();
@@ -1216,61 +1215,6 @@ EdgeId TPEngine::FindHighestPriorityEdgeAdjacentToNode(
   return best_edge_id;
 }
 
-void TPEngine::CopyOverEdgeDataFromPreNNIToPostNNI(const NNIOperation &post_nni,
-                                                   const NNIOperation &pre_nni,
-                                                   CopyEdgeDataFunc copy_data_func,
-                                                   std::optional<size_t> new_tree_id) {
-  new_tree_id =
-      (new_tree_id.has_value()) ? new_tree_id.value() : GetNextTreeId().value_;
-  input_tree_count_ = new_tree_id.value() + 1;
-  // Copy over all adjacent branch lengths from those
-  auto CopyBranchLengthFromCommonAdjacentNodes =
-      [this, &copy_data_func, new_tree_id](
-          const NodeId pre_node_id, const NodeId post_node_id,
-          const Direction direction, const SubsplitClade clade) {
-        const auto pre_node = GetDAG().GetDAGNode(pre_node_id);
-        for (const auto parent_id : pre_node.GetNeighbors(direction, clade)) {
-          const auto pre_edge_id = GetDAG().GetEdgeIdx(parent_id, pre_node_id);
-          const auto post_edge_id = GetDAG().GetEdgeIdx(parent_id, post_node_id);
-          copy_data_func(pre_edge_id, post_edge_id);
-          // GetTreeSource(post_edge_id) = TreeId(new_tree_id.value());
-        }
-      };
-  const auto pre_parent_id = GetDAG().GetDAGNodeId(pre_nni.GetParent());
-  const auto pre_child_id = GetDAG().GetDAGNodeId(pre_nni.GetChild());
-  const auto pre_edge_id = GetDAG().GetEdgeIdx(pre_parent_id, pre_child_id);
-  const auto pre_edge = GetDAG().GetDAGEdge(pre_edge_id);
-  const auto post_parent_id = GetDAG().GetDAGNodeId(post_nni.GetParent());
-  const auto post_child_id = GetDAG().GetDAGNodeId(post_nni.GetChild());
-  const auto post_edge_id = GetDAG().GetEdgeIdx(post_parent_id, post_child_id);
-  // Copy over central edge.
-  copy_data_func(pre_edge_id, post_edge_id);
-  // Copy over parent and sister edges.
-  CopyBranchLengthFromCommonAdjacentNodes(pre_parent_id, post_parent_id,
-                                          Direction::Rootward, SubsplitClade::Left);
-  CopyBranchLengthFromCommonAdjacentNodes(pre_parent_id, post_parent_id,
-                                          Direction::Rootward, SubsplitClade::Right);
-  CopyBranchLengthFromCommonAdjacentNodes(
-      pre_parent_id, post_child_id, Direction::Leafward,
-      Bitset::Opposite(pre_edge.GetSubsplitClade()));
-  // Copy over left and right edges.
-  NodeId post_leftchild_id;
-  NodeId post_rightchild_id;
-  if (pre_nni.GetSisterClade() == post_nni.GetLeftChildClade()) {
-    // If post_nni swapped pre_nni sister with pre_nni left child.
-    post_leftchild_id = post_parent_id;
-    post_rightchild_id = post_child_id;
-  } else {
-    // If post_nni swapped pre_nni sister swapped with pre_nni right child.
-    post_leftchild_id = post_child_id;
-    post_rightchild_id = post_parent_id;
-  }
-  CopyBranchLengthFromCommonAdjacentNodes(pre_child_id, post_leftchild_id,
-                                          Direction::Leafward, SubsplitClade::Left);
-  CopyBranchLengthFromCommonAdjacentNodes(pre_child_id, post_rightchild_id,
-                                          Direction::Leafward, SubsplitClade::Right);
-}
-
 // ** Maintenance
 
 void TPEngine::GrowNodeData(const size_t new_node_count,
@@ -1307,7 +1251,9 @@ void TPEngine::GrowEdgeData(const size_t new_edge_count,
                             std::optional<const Reindexer> edge_reindexer,
                             std::optional<const size_t> explicit_alloc,
                             const bool on_init) {
+  // Update edge in choice map.
   GetChoiceMap().GrowEdgeData(new_edge_count, edge_reindexer, explicit_alloc, on_init);
+  // Update edges in eval engine.
   if (IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine)) {
     GetLikelihoodEvalEngine().GrowEdgeData(new_edge_count, edge_reindexer,
                                            explicit_alloc, on_init);
@@ -1370,6 +1316,61 @@ void TPEngine::GrowSpareEdgeData(const size_t new_edge_spare_count) {
     SetSpareEdgeCount(new_edge_spare_count);
     GrowEdgeData(GetEdgeCount());
   }
+}
+
+void TPEngine::CopyOverEdgeDataFromPreNNIToPostNNI(const NNIOperation &post_nni,
+                                                   const NNIOperation &pre_nni,
+                                                   CopyEdgeDataFunc copy_data_func,
+                                                   std::optional<size_t> new_tree_id) {
+  new_tree_id =
+      (new_tree_id.has_value()) ? new_tree_id.value() : GetNextTreeId().value_;
+  input_tree_count_ = new_tree_id.value() + 1;
+  // Copy over all adjacent branch lengths from those
+  auto CopyBranchLengthFromCommonAdjacentNodes =
+      [this, &copy_data_func, new_tree_id](
+          const NodeId pre_node_id, const NodeId post_node_id,
+          const Direction direction, const SubsplitClade clade) {
+        const auto pre_node = GetDAG().GetDAGNode(pre_node_id);
+        for (const auto parent_id : pre_node.GetNeighbors(direction, clade)) {
+          const auto pre_edge_id = GetDAG().GetEdgeIdx(parent_id, pre_node_id);
+          const auto post_edge_id = GetDAG().GetEdgeIdx(parent_id, post_node_id);
+          copy_data_func(pre_edge_id, post_edge_id);
+          // GetTreeSource(post_edge_id) = TreeId(new_tree_id.value());
+        }
+      };
+  const auto pre_parent_id = GetDAG().GetDAGNodeId(pre_nni.GetParent());
+  const auto pre_child_id = GetDAG().GetDAGNodeId(pre_nni.GetChild());
+  const auto pre_edge_id = GetDAG().GetEdgeIdx(pre_parent_id, pre_child_id);
+  const auto pre_edge = GetDAG().GetDAGEdge(pre_edge_id);
+  const auto post_parent_id = GetDAG().GetDAGNodeId(post_nni.GetParent());
+  const auto post_child_id = GetDAG().GetDAGNodeId(post_nni.GetChild());
+  const auto post_edge_id = GetDAG().GetEdgeIdx(post_parent_id, post_child_id);
+  // Copy over central edge.
+  copy_data_func(pre_edge_id, post_edge_id);
+  // Copy over parent and sister edges.
+  CopyBranchLengthFromCommonAdjacentNodes(pre_parent_id, post_parent_id,
+                                          Direction::Rootward, SubsplitClade::Left);
+  CopyBranchLengthFromCommonAdjacentNodes(pre_parent_id, post_parent_id,
+                                          Direction::Rootward, SubsplitClade::Right);
+  CopyBranchLengthFromCommonAdjacentNodes(
+      pre_parent_id, post_child_id, Direction::Leafward,
+      Bitset::Opposite(pre_edge.GetSubsplitClade()));
+  // Copy over left and right edges.
+  NodeId post_leftchild_id;
+  NodeId post_rightchild_id;
+  if (pre_nni.GetSisterClade() == post_nni.GetLeftChildClade()) {
+    // If post_nni swapped pre_nni sister with pre_nni left child.
+    post_leftchild_id = post_parent_id;
+    post_rightchild_id = post_child_id;
+  } else {
+    // If post_nni swapped pre_nni sister swapped with pre_nni right child.
+    post_leftchild_id = post_child_id;
+    post_rightchild_id = post_parent_id;
+  }
+  CopyBranchLengthFromCommonAdjacentNodes(pre_child_id, post_leftchild_id,
+                                          Direction::Leafward, SubsplitClade::Left);
+  CopyBranchLengthFromCommonAdjacentNodes(pre_child_id, post_rightchild_id,
+                                          Direction::Leafward, SubsplitClade::Right);
 }
 
 // ** I/O

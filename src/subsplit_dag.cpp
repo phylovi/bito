@@ -535,9 +535,7 @@ NNIOperation SubsplitDAG::GetNNI(const EdgeId edge_id) const {
 
 NNIOperation SubsplitDAG::FindNNINeighborInDAG(const NNIOperation &nni) const {
   for (const auto child_clade_swapped_with_sister : SubsplitCladeEnum::Iterator()) {
-    const bool which_swap =
-        (child_clade_swapped_with_sister == SubsplitClade::Left) ? false : true;
-    const auto &swapped_nni = nni.NNIOperationFromNeighboringSubsplits(which_swap);
+    const auto &swapped_nni = nni.GetNeighboringNNI(child_clade_swapped_with_sister);
     if (ContainsNNI(swapped_nni)) {
       const auto parent_id = GetDAGNodeId(swapped_nni.GetParent());
       const auto child_id = GetDAGNodeId(swapped_nni.GetChild());
@@ -554,16 +552,14 @@ SubsplitCladeEnum::Array<std::optional<NNIOperation>>
 SubsplitDAG::FindAllNNINeighborsInDAG(const NNIOperation &nni) const {
   SubsplitCladeEnum::Array<std::optional<NNIOperation>> neighbor_nnis;
   for (const auto child_clade_swapped_with_sister : SubsplitCladeEnum::Iterator()) {
-    const bool which_swap =
-        (child_clade_swapped_with_sister == SubsplitClade::Left) ? false : true;
-    const auto &swapped_nni = nni.NNIOperationFromNeighboringSubsplits(which_swap);
-    if (ContainsNNI(swapped_nni)) {
-      auto parent_id = GetDAGNodeId(swapped_nni.GetParent());
-      auto child_id = GetDAGNodeId(swapped_nni.GetChild());
+    const auto &neighbor_nni = nni.GetNeighboringNNI(child_clade_swapped_with_sister);
+    if (ContainsNNI(neighbor_nni)) {
+      auto parent_id = GetDAGNodeId(neighbor_nni.GetParent());
+      auto child_id = GetDAGNodeId(neighbor_nni.GetChild());
       if (parent_id > NodeCount() || child_id > NodeCount()) {
         neighbor_nnis[child_clade_swapped_with_sister] = std::nullopt;
       } else {
-        neighbor_nnis[child_clade_swapped_with_sister] = swapped_nni;
+        neighbor_nnis[child_clade_swapped_with_sister] = neighbor_nni;
       }
     } else {
       neighbor_nnis[child_clade_swapped_with_sister] = std::nullopt;

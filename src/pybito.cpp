@@ -894,6 +894,7 @@ PYBIND11_MODULE(bito, m) {
              return self.GetLikelihoodEvalEngine().GetOptimizationMaxIteration();
            })
       // ** I/O
+      .def("build_pcsp_map_from_choice_map", &TPEngine::BuildPCSPMapFromChoiceMap)
       .def("build_map_of_tree_id_to_top_topologies",
            &TPEngine::BuildMapOfTreeIdToTopTopologies)
       .def("to_newick_of_top_topologies", &TPEngine::ToNewickOfTopTopologies)
@@ -1086,10 +1087,12 @@ PYBIND11_MODULE(bito, m) {
       m, "bitset", "A bitset representing the taxon membership of a Subsplit or PCSP.");
   bitset_class.def(py::init<const std::string &>())
       .def("__str__", &Bitset::ToString)
+      .def("__repr__", &Bitset::ToHashString)
       .def("__eq__",
            [](const Bitset &self, const Bitset &other) { return self == other; })
       .def("__hash__", &Bitset::Hash)
-      .def("to_string", &Bitset::ToString, "Output to bitset string.")
+      .def("to_string", &Bitset::ToString)
+      .def("to_hash_string", &Bitset::ToHashString)
       .def("clade_get_count", &Bitset::Count)
       .def("subsplit_get_clade",
            [](const Bitset &self, const size_t i) {
@@ -1149,10 +1152,12 @@ PYBIND11_MODULE(bito, m) {
       "A proposed NNI Operation for the DAG. Repesents the PCSP to be added.");
   nni_op_class.def(py::init<const std::string &, const std::string &>())
       .def("__str__", &NNIOperation::ToString)
+      .def("__repr__", &NNIOperation::ToHashString)
       .def("__eq__",
            [](const NNIOperation &lhs, const NNIOperation &rhs) { return lhs == rhs; })
       .def("__hash__", &NNIOperation::Hash)
-      .def("to_string", &NNIOperation::ToString, "Output to string")
+      .def("to_hash_string", &NNIOperation::ToHashString)
+      .def("to_string", &NNIOperation::ToString)
       .def("get_parent", &NNIOperation::GetParent, "Get parent Subsplit of PCSP.")
       .def("get_child", &NNIOperation::GetChild, "Get child Subsplit of PCSP.")
       .def("get_central_edge_pcsp", &NNIOperation::GetCentralEdgePCSP,

@@ -441,7 +441,8 @@ void NNIEngine::SetScoreViaEvalEngine() {
   SetFilterPreScoreFunction(
       [](NNIEngine &this_nni_engine) { this_nni_engine.ScoreAdjacentNNIs(); });
   SetFilterScoreLoopFunction([](NNIEngine &this_nni_engine, const NNIOperation &nni) {
-    return this_nni_engine.GetEvalEngine().GetScoredNNIs().find(nni)->second;
+    const auto &eval_engine = this_nni_engine.GetEvalEngine();
+    return eval_engine.GetScoredNNIs().find(nni)->second;
   });
   SetFilterPostModificationFunction(
       [](NNIEngine &this_nni_engine, const SubsplitDAG::ModificationResult &mods,
@@ -638,7 +639,7 @@ NNIEngine::KeyIndexMap NNIEngine::BuildKeyIndexMapForNNI(const NNIOperation &nni
   // Find NNI nodes.
   const auto parent_id = dag.GetDAGNodeId(nni.GetParent());
   const auto child_id = dag.GetDAGNodeId(nni.GetChild());
-  const bool is_left_clade_sister = nni.WhichParentCladeIsFocalClade();
+  const bool is_left_clade_sister = (nni.WhichCladeIsFocal() == SubsplitClade::Left);
   // Find key indices for NNI.
   KeyIndexMap key_idx_map;
   key_idx_map.fill(NoId);
@@ -843,10 +844,12 @@ void NNIEngine::SafeAddOutputNNIsToAdjacentNNIs(const Bitset &parent_bitset,
     return;
   }
   // Add NNI for right clade swap and left clade swap.
-  for (bool is_swap_with_left_child : {true, false}) {
+  const auto focal_clade =
+      (is_edge_on_left) ? SubsplitClade::Left : SubsplitClade::Right;
+  for (auto child_clade_swapped_with_sister : SubsplitCladeEnum::Iterator()) {
     bool is_in_dag = false;
-    const auto new_nni = NNIOperation::NNIOperationFromNeighboringSubsplits(
-        parent_bitset, child_bitset, is_swap_with_left_child, !is_edge_on_left);
+    const auto new_nni = NNIOperation::GetNeighboringNNI(
+        parent_bitset, child_bitset, child_clade_swapped_with_sister, focal_clade);
     // If DAG already contains output parent and child nodes, and an edge between
     // them, then don't add it to the adjacent_nnis.
     if (dag_.ContainsNode(new_nni.parent_) && dag_.ContainsNode(new_nni.child_)) {
@@ -855,8 +858,10 @@ void NNIEngine::SafeAddOutputNNIsToAdjacentNNIs(const Bitset &parent_bitset,
       is_in_dag = dag_.ContainsEdge(parent_id, child_id);
     }
     if (!is_in_dag) {
-      adjacent_nnis_.insert(new_nni);
-      new_adjacent_nnis_.insert(new_nni);
+      if (adjacent_nnis_.find(new_nni) == adjacent_nnis_.end()) {
+        adjacent_nnis_.insert(new_nni);
+        new_adjacent_nnis_.insert(new_nni);
+      }
     }
   }
 }

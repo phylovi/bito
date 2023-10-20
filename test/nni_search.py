@@ -20,22 +20,25 @@ sort_taxa = False
 # rounding digits in printed output
 digits = 5
 # number of optimization iterations
-max_opt = 1
+opt_max = 1
 # whether to rescore or reevaluate rejected nnis -- use None for default
-do_rescore_all_nnis = False
+do_rescore_all_nnis = True
 do_reeval_all_nnis = None
 # terminate search when all credible edges found
-do_end_when_all_creds_found = True
+do_end_when_all_creds_found = False
 # print data
 do_print_setup_data = False
-do_print_iter_data = False
-do_print_times = False
-do_print_dag_stats = False
+do_print_iter_data = True
+do_print_times = True
+do_print_dag_stats = True
 do_print_scored_nnis = False
-do_print_accepted_nnis = False
-do_print_summary = False
+do_print_accepted_nnis = True
+do_print_summary = True
 # track if individual nni scores have changed between iterations.
 do_track_nni_score_changes = True
+# check if scores for NNIs have changed
+do_check_for_nni_score_changes = True
+do_check_for_choice_map_changes = False
 
 
 def print_v(*args, v=1):
@@ -94,8 +97,9 @@ class Timer:
 
         print_v("=== TIMES_REAL ===")
         for key in self.times:
+            bin_len = min(len(self.times[key]), 10)
             print_v(
-                f'{key}:\n    {Utils.average_over_ranges(self.times[key], 10)}')
+                f'{key}:\n    {Utils.average_over_ranges(self.times[key], bin_len)}')
             x_s = range(len(self.times[key]))
             fit = np.polyfit(y=self.times[key], x=x_s, deg=2)
             print_v(
@@ -105,8 +109,9 @@ class Timer:
 
         print_v("\n=== TIMES_PERC ===")
         for key in times_perc:
+            bin_len = min(len(self.times[key]), 10)
             print_v(
-                f'{key}:\n    {Utils.average_over_ranges(times_perc[key], 10)}')
+                f'{key}:\n    {Utils.average_over_ranges(times_perc[key], bin_len)}')
             x_s = range(len(times_perc[key]))
             fit = np.polyfit(y=times_perc[key], x=x_s, deg=2)
             print_v(
@@ -327,10 +332,10 @@ class Results:
             'new_adj_nni_count': [],
             "cred_adj_nni_count": [],
             'llhs_computed': [],
-            'nni_hash': [],
             'parent': [],
             'child': [],
-            'pcsp': []
+            'pcsp': [],
+            'nni_hash': []
         }
         pass
 
@@ -641,7 +646,7 @@ class NNISearchInstance:
         # nni_engine.set_top_n_score_filtering_scheme(1)
         nni_engine.set_top_k_score_filtering_scheme(1)
         # !CHANGE
-        self.dag_inst_.get_tp_engine().set_optimization_max_iteration(self.args_.max_opt)
+        self.dag_inst_.get_tp_engine().set_optimization_max_iteration(self.args_.opt_max)
         if self.args_.use_cutoff:
             nni_engine.set_tp_likelihood_cutoff_filtering_scheme(
                 args.threshold)
@@ -697,6 +702,37 @@ class NNISearchInstance:
         pass
 
 
+class Tests:
+    @staticmethod
+    def check_for_choice_map_changes(current_choice_map, new_choice_map):
+        if current_choice_map != None:
+            for pcsp in current_choice_map:
+                if pcsp in new_choice_map:
+                    # print(f"#current: {current_choice_map[pcsp]}")
+                    # print(f"#    new: {new_choice_map[pcsp]}")
+                    if current_choice_map[pcsp] != new_choice_map[pcsp]:
+                        print(f"#CHOICE_MAP_MISMATCH: {pcsp.to_hash_string()}")
+                else:
+                    print(f"#CHOICE_MAP: PCSP not found!")
+        pass
+
+    @staticmethod
+    def check_for_score_changes(current_scored_nnis, scored_nnis, new_nnis, rescored_nnis):
+        for nni in rescored_nnis:
+            if nni in scored_nnis:
+                if nni in current_scored_nnis:
+                    score_diff = abs(
+                        current_scored_nnis[nni] - scored_nnis[nni])
+                    has_changed = (score_diff > 1e-3)
+                    result = "SCORE_CHANGED" if has_changed else "SCORE_SAME"
+                    is_new_nni = nni in new_nnis
+                    if has_changed:
+                        print(
+                            f"  #{result}: {nni.to_hash_string()} {round(scored_nnis[nni], 3)} {round(current_scored_nnis[nni], 3)} {round(score_diff, 3)} {is_new_nni}")
+                current_scored_nnis[nni] = scored_nnis[nni]
+        pass
+
+
 class Program:
     @staticmethod
     def parse_args(args):
@@ -747,10 +783,10 @@ class Program:
             '--top-n', help='number of NNIs to accept per iteration', type=int, default=1)
         subparser1.add_argument(
             '--threshold', help='cutoff/dropoff threshold', type=float, default=0.0)
-        subparser1.add_argument('--init-optimize', action='store_true',
+        subparser1.add_argument('--opt-init', action='store_true',
                                 help='optimize branch lengths when initializing DAG')
-        subparser1.add_argument('--max-opt', help='Maximum number of iterations of branch length optimization.',
-                                type=int, default=max_opt)
+        subparser1.add_argument('--opt-max', help='Maximum number of iterations of branch length optimization.',
+                                type=int, default=opt_max)
         # options
         subparser1.add_argument('-o', '--output', help='output file', type=str,
                                 default='results.nni_search.csv')
@@ -853,10 +889,13 @@ class Program:
         results.data_init()
         results.predata_init(dag, nni_engine, pp_maps)
 
+        current_scored_nnis = {}
+        current_choice_map = None
+
         iter_count = 0
         while iter_count < args.iter_max:
             if do_print_iter_data:
-                print_v("--- ---")
+                print_v("--- + ---")
                 print_v(f"# iter_count: {iter_count + 1} of {args.iter_max}...")
             # run iteration of search
             results.predata_begin_iter(
@@ -866,7 +905,8 @@ class Program:
             tree_pp = results.pre_data_['tree_pp']
             tree_pp_total = results.pre_data_['tree_pp_total']
             if do_print_dag_stats:
-                print_v(f"# dag_tree_pp: {tree_pp} {tree_pp/tree_pp_total}")
+                print_v(
+                    f"# dag_tree_pp: {round(tree_pp, digits)} {round((tree_pp/tree_pp_total)*100, 2)}%")
 
             timer.start()
             timer.start("full_iter")
@@ -875,7 +915,8 @@ class Program:
             ### NNI_SEARCH MAIN_LOOP ###
             # nni_engine.sync_adjacent_nnis_with_dag()
             if do_print_dag_stats:
-                print_v("# adjacent_nnis:", nni_engine.adjacent_nni_count())
+                print_v("# adjacent_nnis:", len(nni_engine.adjacent_nnis()))
+                print_v("# new_adjacent_nnis:", len(nni_engine.new_adjacent_nnis()))
             timer.start()
 
             nni_engine.graft_adjacent_nnis_to_dag()
@@ -935,12 +976,30 @@ class Program:
             nni_engine.run_post_loop()
             timer.lap_next("run_post_loop")
 
+            # check for score changes.
+            if do_check_for_nni_score_changes:
+                scored_nnis = nni_engine.scored_nnis()
+                new_nnis = nni_engine.new_adjacent_nnis()
+                rescored_nnis = nni_engine.nnis_to_rescore()
+                Tests.check_for_score_changes(
+                    current_scored_nnis, scored_nnis, new_nnis, rescored_nnis)
+
+            # check for changes to choice_map.
+            if do_check_for_choice_map_changes:
+                tp_engine = nni_inst.dag_inst_.get_tp_engine()
+                new_choice_map = tp_engine.build_pcsp_map_from_choice_map()
+                Tests.check_for_choice_map_changes(current_choice_map, new_choice_map)
+                current_choice_map = new_choice_map
+
             # bookmark by outputting top trees
             iter_count += 1
             timer.lap_name("full_iter")
             # end search if all credible edges have been found
             if do_end_when_all_creds_found and results.found_all_credible_edges():
                 break
+
+        if do_print_iter_data:
+            print_v("--- + ---")
 
         # write final results to file
         df = results.write_dataframe_to_file(args.output)

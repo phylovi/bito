@@ -388,7 +388,21 @@ class PartialVectorHandler {
     out << ToString(GetPV(pv_type, elem_id));
     return out.str();
   }
-  std::string ToString(const NucleotidePLVRef &pv) const {
+  std::string AllPVsToString(const bool show_labels = false) const {
+    std::stringstream out;
+    for (const auto pv_type : typename PVTypeEnum::Iterator()) {
+      for (DAGElementId elem_id = 0; elem_id < GetCount(); elem_id++) {
+        out << ToString(pv_type, elem_id, show_labels);
+      }
+    }
+    return out.str();
+  }
+  size_t ToHash(const PVId pv_id) const { return ToHash(GetPV(pv_id)); }
+  std::string ToHashString(const PVId pv_id) const {
+    return HashToString(ToHash(GetPV(pv_id)));
+  }
+
+  static std::string ToString(const NucleotidePLVRef &pv) {
     std::stringstream out;
     for (int i = 0; i < pv.rows(); i++) {
       out << "[";
@@ -399,14 +413,17 @@ class PartialVectorHandler {
     }
     return out.str();
   }
-  std::string AllPVsToString(const bool show_labels = false) const {
-    std::stringstream out;
-    for (const auto pv_type : typename PVTypeEnum::Iterator()) {
-      for (DAGElementId elem_id = 0; elem_id < GetCount(); elem_id++) {
-        out << ToString(pv_type, elem_id, show_labels);
+  static size_t ToHash(const NucleotidePLVRef &pv) {
+    size_t seed = pv.rows() * pv.cols();
+    for (int i = 0; i < pv.rows(); i++) {
+      for (int j = 0; j < pv.cols(); j++) {
+        seed ^= std::hash<double>()(pv(i, j)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
       }
     }
-    return out.str();
+    return seed;
+  }
+  static std::string ToHashString(const NucleotidePLVRef &pv) {
+    return HashToString(ToHash(pv));
   }
 
   // ** Miscellaneous

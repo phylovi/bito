@@ -88,6 +88,8 @@ class Bitset {
   size_t Hash() const;
   // Outputs bitset as a string of "1" and "0"s.
   std::string ToString() const;
+  // Outputs hash as hex string.
+  std::string ToHashString() const;
   // Outputs vector of all bit indices set to true.
   SizeVector ToVectorOfSetBits() const;
   // Are all of the bits 1?
@@ -162,6 +164,17 @@ class Bitset {
     static inline const std::string Prefix = "SubsplitClade";
     static inline const Array<std::string> Labels = {{"Left", "Right"}};
 
+    static SubsplitClade Opposite(const SubsplitClade clade) {
+      switch (clade) {
+        case SubsplitClade::Left:
+          return SubsplitClade::Right;
+        case SubsplitClade::Right:
+          return SubsplitClade::Left;
+        default:
+          Failwith("Cannot get Opposite of Unspecified Clade");
+      }
+    }
+
     static std::string ToString(const SubsplitClade e) {
       std::stringstream ss;
       ss << Prefix << "::" << Labels[e];
@@ -177,14 +190,7 @@ class Bitset {
       EnumIterator<SubsplitClade, SubsplitClade::Left, SubsplitClade::Right>;
 
   static SubsplitClade Opposite(const SubsplitClade clade) {
-    switch (clade) {
-      case SubsplitClade::Left:
-        return SubsplitClade::Right;
-      case SubsplitClade::Right:
-        return SubsplitClade::Left;
-      default:
-        Failwith("Cannot get Opposite of Unspecified Clade");
-    }
+    return SubsplitCladeEnum::Opposite(clade);
   }
 
   // Constructors:

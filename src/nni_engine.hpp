@@ -191,6 +191,7 @@ class NNIEngine {
   }
 
   // Reindexers for recent DAG modifications.
+  const SubsplitDAG::ModificationResult &GetMods() const { return mods_; }
   const Reindexer &GetNodeReindexer() const { return mods_.node_reindexer; }
   const Reindexer &GetEdgeReindexer() const { return mods_.edge_reindexer; }
 
@@ -546,6 +547,8 @@ class NNIEngine {
   // Count number of proposed NNIs computed.
   size_t proposed_nnis_computed_ = 0;
 
+  // Whether to optimize branch lengths during optimization.
+  bool optimize_on_init = true;
   // Whether to consider max or minimum scores as best.
   bool max_is_best = true;
   // Whether to re-evaluate rejected NNIs from previous iterations.
@@ -553,7 +556,7 @@ class NNIEngine {
   // Whether to re-compute scores for rejected NNIs from previous iterations.
   bool rescore_rejected_nnis_ = false;
   // Whether to re-compute scores adjacent to newly added NNIs from previous iterations.
-  bool rescore_old_nnis_adjacent_to_new_nnis_ = true;
+  bool rescore_old_nnis_adjacent_to_new_nnis_ = false;
 
   // Whether to include NNIs whose parent is a rootsplit.
   bool include_rootsplit_nnis_ = true;

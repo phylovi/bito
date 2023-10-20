@@ -124,89 +124,17 @@ class TPChoiceMap {
   }
 
   // Get adjacent edge id in given edge's choice map for adjacent edge direction.
-  EdgeId GetEdgeChoice(const EdgeId edge_id, AdjacentEdge edge_choice_type) {
-    switch (edge_choice_type) {
-      case AdjacentEdge::Parent:
-        return edge_choice_vector_[edge_id.value_].parent_edge_id;
-      case AdjacentEdge::Sister:
-        return edge_choice_vector_[edge_id.value_].sister_edge_id;
-      case AdjacentEdge::LeftChild:
-        return edge_choice_vector_[edge_id.value_].left_child_edge_id;
-      case AdjacentEdge::RightChild:
-        return edge_choice_vector_[edge_id.value_].right_child_edge_id;
-      default:
-        Failwith("Invalid edge choice type.");
-    }
-  }
-
+  EdgeId GetEdgeChoice(const EdgeId edge_id, AdjacentEdge edge_choice_type) const;
   // Set given edge choice map's given adjacent edge to the given new_edge_choice.
   void SetEdgeChoice(const EdgeId edge_id, const AdjacentEdge edge_choice_type,
-                     const EdgeId new_edge_choice) {
-    switch (edge_choice_type) {
-      case AdjacentEdge::Parent:
-        edge_choice_vector_[edge_id.value_].parent_edge_id = new_edge_choice;
-        break;
-      case AdjacentEdge::Sister:
-        edge_choice_vector_[edge_id.value_].sister_edge_id = new_edge_choice;
-        break;
-      case AdjacentEdge::LeftChild:
-        edge_choice_vector_[edge_id.value_].left_child_edge_id = new_edge_choice;
-        break;
-      case AdjacentEdge::RightChild:
-        edge_choice_vector_[edge_id.value_].right_child_edge_id = new_edge_choice;
-        break;
-      default:
-        Failwith("Invalid edge choice type.");
-    }
-  }
+                     const EdgeId new_edge_choice);
   // Re-initialize edge choices to NoId.
-  void ResetEdgeChoice(const EdgeId edge_id) {
-    edge_choice_vector_[edge_id.value_] = {EdgeId(NoId), EdgeId(NoId), EdgeId(NoId),
-                                           EdgeId(NoId)};
-  }
+  void ResetEdgeChoice(const EdgeId edge_id);
 
   // Get the node ids corresponding to a given edge_id's choice map.
-  EdgeChoiceNodeIds GetEdgeChoiceNodeIds(const EdgeId edge_id) const {
-    const auto &edge_choice = GetEdgeChoice(edge_id);
-    return GetNodeIdsFromEdgeChoice(edge_choice);
-  }
-  EdgeChoiceNodeIds GetNodeIdsFromEdgeChoice(const EdgeChoice &edge_choice) const {
-    auto GetNodeFromEdge = [this](const EdgeId edge_id, const Direction direction) {
-      if (edge_id == NoId) {
-        return NodeId(NoId);
-      }
-      const auto &edge = GetDAG().GetDAGEdge(edge_id);
-      return (direction == Direction::Rootward) ? edge.GetParent() : edge.GetChild();
-    };
-
-    EdgeChoiceNodeIds node_choice;
-    node_choice.parent_node_id =
-        GetNodeFromEdge(edge_choice.parent_edge_id, Direction::Rootward);
-    node_choice.sister_node_id =
-        GetNodeFromEdge(edge_choice.sister_edge_id, Direction::Leafward);
-    node_choice.left_child_node_id =
-        GetNodeFromEdge(edge_choice.left_child_edge_id, Direction::Leafward);
-    node_choice.right_child_node_id =
-        GetNodeFromEdge(edge_choice.right_child_edge_id, Direction::Leafward);
-    return node_choice;
-  }
-
-  EdgeChoicePCSPs GetEdgeChoicePCSPs(const EdgeId edge_id) const {
-    EdgeChoicePCSPs adj_pcsps;
-    const auto &edge_choice = GetEdgeChoice(edge_id);
-    auto SetPCSPIfExists = [this](Bitset &adj_edge_bitset, const EdgeId adj_edge_id) {
-      if (adj_edge_id != NoId) {
-        adj_edge_bitset = GetDAG().GetDAGEdgeBitset(adj_edge_id);
-      }
-    };
-    SetPCSPIfExists(adj_pcsps.parent_pcsp, edge_choice.parent_edge_id);
-    SetPCSPIfExists(adj_pcsps.focal_pcsp, edge_id);
-    SetPCSPIfExists(adj_pcsps.sister_pcsp, edge_choice.sister_edge_id);
-    SetPCSPIfExists(adj_pcsps.left_child_pcsp, edge_choice.left_child_edge_id);
-    SetPCSPIfExists(adj_pcsps.right_child_pcsp, edge_choice.right_child_edge_id);
-
-    return adj_pcsps;
-  }
+  EdgeChoiceNodeIds GetEdgeChoiceNodeIds(const EdgeId edge_id) const;
+  EdgeChoiceNodeIds GetEdgeChoiceNodeIds(const EdgeChoice &edge_choice) const;
+  EdgeChoicePCSPs GetEdgeChoicePCSPs(const EdgeId edge_id) const;
 
   // ** Maintenance
 
@@ -262,6 +190,8 @@ class TPChoiceMap {
   static std::string EdgeChoiceToString(const EdgeChoice &edge_choice);
   // Output full choice map to string.
   std::string ToString() const;
+  // Output choice map as a PCSP Map from the central edge to vector of adjacent edges.
+  std::map<Bitset, std::vector<Bitset>> BuildPCSPMap() const;
 
   // Output edge choice map.
   friend std::ostream &operator<<(std::ostream &os, const EdgeChoice &edge_choice);
