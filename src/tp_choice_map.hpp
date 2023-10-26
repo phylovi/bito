@@ -18,45 +18,43 @@ using TreeId = GenericId<struct TreeIdTag>;
 
 class TPChoiceMap {
  public:
-  // Types of Adjacent Nodes
-  enum class AdjacentNode { Parent, LeftChild, RightChild };
-  static const inline size_t AdjacentNodeCount = 3;
-  class AdjacentNodeEnum
-      : public EnumWrapper<AdjacentNode, size_t, AdjacentNodeCount,
-                           AdjacentNode::Parent, AdjacentNode::RightChild> {
+  enum class NodeAdjacent { Parent, LeftChild, RightChild };
+  static const inline size_t NodeAdjacentCount = 3;
+  class NodeAdjacentEnum
+      : public EnumWrapper<NodeAdjacent, size_t, NodeAdjacentCount,
+                           NodeAdjacent::Parent, NodeAdjacent::RightChild> {
    public:
-    static inline const std::string Prefix = "AdjacentNode";
+    static inline const std::string Prefix = "NodeAdjacent";
     static inline const Array<std::string> Labels = {
         {"Parent", "LeftChild", "RightChild"}};
 
-    static std::string ToString(const AdjacentNode e) {
+    static std::string ToString(const NodeAdjacent e) {
       std::stringstream ss;
       ss << Prefix << "::" << Labels[e];
       return ss.str();
     }
-    friend std::ostream &operator<<(std::ostream &os, const AdjacentNode e) {
+    friend std::ostream &operator<<(std::ostream &os, const NodeAdjacent e) {
       os << ToString(e);
       return os;
     }
   };
 
-  // Types of Adjacent Edges
-  enum class AdjacentEdge { Parent, Sister, LeftChild, RightChild };
-  static const inline size_t AdjacentEdgeCount = 4;
-  class AdjacentEdgeEnum
-      : public EnumWrapper<AdjacentEdge, size_t, AdjacentEdgeCount,
-                           AdjacentEdge::Parent, AdjacentEdge::RightChild> {
+  enum class EdgeAdjacent { Parent, Sister, LeftChild, RightChild };
+  static const inline size_t EdgeAdjacentCount = 4;
+  class EdgeAdjacentEnum
+      : public EnumWrapper<EdgeAdjacent, size_t, EdgeAdjacentCount,
+                           EdgeAdjacent::Parent, EdgeAdjacent::RightChild> {
    public:
-    static inline const std::string Prefix = "AdjacentEdge";
+    static inline const std::string Prefix = "EdgeAdjacent";
     static inline const Array<std::string> Labels = {
         {"Parent", "Sister", "LeftChild", "RightChild"}};
 
-    static std::string ToString(const AdjacentEdge e) {
+    static std::string ToString(const EdgeAdjacent e) {
       std::stringstream ss;
       ss << Prefix << "::" << Labels[e];
       return ss.str();
     }
-    friend std::ostream &operator<<(std::ostream &os, const AdjacentEdge e) {
+    friend std::ostream &operator<<(std::ostream &os, const EdgeAdjacent e) {
       os << ToString(e);
       return os;
     }
@@ -88,7 +86,6 @@ class TPChoiceMap {
     NodeId left_child_node_id = NodeId(NoId);
     NodeId right_child_node_id = NodeId(NoId);
   };
-
   // Per-edge choices associated tree_ids.
   struct EdgeChoiceTreeIds {
     TreeId parent_tree_id = TreeId(NoId);
@@ -96,7 +93,7 @@ class TPChoiceMap {
     TreeId left_child_tree_id = TreeId(NoId);
     TreeId right_child_tree_id = TreeId(NoId);
   };
-
+  // Per-edge choices associated pcsps.
   struct EdgeChoicePCSPs {
     Bitset parent_pcsp = Bitset(0);
     Bitset focal_pcsp = Bitset(0);
@@ -104,6 +101,8 @@ class TPChoiceMap {
     Bitset left_child_pcsp = Bitset(0);
     Bitset right_child_pcsp = Bitset(0);
   };
+
+  // ** Constructors
 
   TPChoiceMap(GPDAG &dag)
       : dag_(dag), edge_choice_vector_(dag.EdgeCountWithLeafSubsplits()){};
@@ -124,9 +123,9 @@ class TPChoiceMap {
   }
 
   // Get adjacent edge id in given edge's choice map for adjacent edge direction.
-  EdgeId GetEdgeChoice(const EdgeId edge_id, AdjacentEdge edge_choice_type) const;
+  EdgeId GetEdgeChoice(const EdgeId edge_id, EdgeAdjacent edge_choice_type) const;
   // Set given edge choice map's given adjacent edge to the given new_edge_choice.
-  void SetEdgeChoice(const EdgeId edge_id, const AdjacentEdge edge_choice_type,
+  void SetEdgeChoice(const EdgeId edge_id, const EdgeAdjacent edge_choice_type,
                      const EdgeId new_edge_choice);
   // Re-initialize edge choices to NoId.
   void ResetEdgeChoice(const EdgeId edge_id);
@@ -203,8 +202,8 @@ class TPChoiceMap {
   // The ExpandedTreeMask contains a map from all the nodes of a TreeMask to their
   // associated parent, left and right child.
   template <typename T>
-  using AdjacentNodeArray = EnumArray<AdjacentNode, 3, T>;
-  using ExpandedTreeMask = std::map<NodeId, AdjacentNodeArray<NodeId>>;
+  using NodeAdjacentArray = EnumArray<NodeAdjacent, 3, T>;
+  using ExpandedTreeMask = std::map<NodeId, NodeAdjacentArray<NodeId>>;
 
   // Extract an ExpandedTreeMask from DAG based on a central edge or previous TreeMask.
   ExpandedTreeMask ExtractExpandedTreeMask(const EdgeId central_edge_id) const;

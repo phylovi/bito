@@ -2429,8 +2429,8 @@ EdgeScoreMap BuildProposedEdgeTPScoreMapFromInstance(
     auto& llh_engine = tpengine.GetLikelihoodEvalEngine();
     llh_engine.Initialize();
     llh_engine.ComputeScores();
-    auto best_edge_map =
-        tpengine.BuildBestEdgeMapOverNNIs(nni_engine.GetAdjacentNNIs());
+    auto best_edge_map = tpengine.BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(
+        nni_engine.GetAdjacentNNIs());
     for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
       const auto pre_nni = tpengine.FindHighestPriorityNeighborNNIInDAG(nni);
       const auto post_edge_id = post_dag.GetEdgeIdx(nni);

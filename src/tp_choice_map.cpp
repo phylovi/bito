@@ -6,15 +6,15 @@
 // ** Access
 
 EdgeId TPChoiceMap::GetEdgeChoice(const EdgeId edge_id,
-                                  AdjacentEdge edge_choice_type) const {
+                                  EdgeAdjacent edge_choice_type) const {
   switch (edge_choice_type) {
-    case AdjacentEdge::Parent:
+    case EdgeAdjacent::Parent:
       return edge_choice_vector_[edge_id.value_].parent_edge_id;
-    case AdjacentEdge::Sister:
+    case EdgeAdjacent::Sister:
       return edge_choice_vector_[edge_id.value_].sister_edge_id;
-    case AdjacentEdge::LeftChild:
+    case EdgeAdjacent::LeftChild:
       return edge_choice_vector_[edge_id.value_].left_child_edge_id;
-    case AdjacentEdge::RightChild:
+    case EdgeAdjacent::RightChild:
       return edge_choice_vector_[edge_id.value_].right_child_edge_id;
     default:
       Failwith("Invalid edge choice type.");
@@ -22,19 +22,19 @@ EdgeId TPChoiceMap::GetEdgeChoice(const EdgeId edge_id,
 }
 
 void TPChoiceMap::SetEdgeChoice(const EdgeId edge_id,
-                                const AdjacentEdge edge_choice_type,
+                                const EdgeAdjacent edge_choice_type,
                                 const EdgeId new_edge_choice) {
   switch (edge_choice_type) {
-    case AdjacentEdge::Parent:
+    case EdgeAdjacent::Parent:
       edge_choice_vector_[edge_id.value_].parent_edge_id = new_edge_choice;
       break;
-    case AdjacentEdge::Sister:
+    case EdgeAdjacent::Sister:
       edge_choice_vector_[edge_id.value_].sister_edge_id = new_edge_choice;
       break;
-    case AdjacentEdge::LeftChild:
+    case EdgeAdjacent::LeftChild:
       edge_choice_vector_[edge_id.value_].left_child_edge_id = new_edge_choice;
       break;
-    case AdjacentEdge::RightChild:
+    case EdgeAdjacent::RightChild:
       edge_choice_vector_[edge_id.value_].right_child_edge_id = new_edge_choice;
       break;
     default:
@@ -105,7 +105,7 @@ void TPChoiceMap::GrowEdgeData(const size_t new_edge_count,
     auto &reindexer = edge_reindexer.value();
     // Remap edge choices.
     for (EdgeId edge_id(0); edge_id < new_edge_count; edge_id++) {
-      for (const auto edge_choice_type : AdjacentEdgeEnum::Iterator()) {
+      for (const auto edge_choice_type : EdgeAdjacentEnum::Iterator()) {
         if (GetEdgeChoice(edge_id, edge_choice_type) != NoId) {
           SetEdgeChoice(edge_id, edge_choice_type,
                         EdgeId(reindexer.GetNewIndexByOldIndex(
@@ -248,21 +248,21 @@ TPChoiceMap::ExpandedTreeMask TPChoiceMap::ExtractExpandedTreeMask(
     // Add nodes to map if they don't already exist.
     for (const auto &node_id : {parent_id, child_id}) {
       if (tree_mask_ext.find(node_id) == tree_mask_ext.end()) {
-        AdjacentNodeArray<NodeId> adj_nodes;
+        NodeAdjacentArray<NodeId> adj_nodes;
         adj_nodes.fill(NodeId(NoId));
         tree_mask_ext.insert({node_id, adj_nodes});
       }
     }
     // Add adjacent nodes to map.
     const auto which_node = (focal_clade == SubsplitClade::Left)
-                                ? AdjacentNode::LeftChild
-                                : AdjacentNode::RightChild;
+                                ? NodeAdjacent::LeftChild
+                                : NodeAdjacent::RightChild;
     Assert(tree_mask_ext[parent_id][which_node] == NoId,
            "Invalid TreeMask: Cannot reassign adjacent child node.");
     tree_mask_ext[parent_id][which_node] = child_id;
-    Assert(tree_mask_ext[child_id][AdjacentNode::Parent] == NoId,
+    Assert(tree_mask_ext[child_id][NodeAdjacent::Parent] == NoId,
            "Invalid TreeMask: Cannot reassign adjacent parent node.");
-    tree_mask_ext[child_id][AdjacentNode::Parent] = parent_id;
+    tree_mask_ext[child_id][NodeAdjacent::Parent] = parent_id;
   }
   return tree_mask_ext;
 }
@@ -347,7 +347,7 @@ bool TPChoiceMap::TreeMaskIsValid(const TreeMask &tree_mask,
   bool root_check = false;
   BoolVector leaf_check(GetDAG().TaxonCount(), false);
   // Node map for checking node connectivity.
-  using NodeMap = std::map<NodeId, AdjacentNodeArray<bool>>;
+  using NodeMap = std::map<NodeId, NodeAdjacentArray<bool>>;
   NodeMap nodemap_check;
   // Check each edge in tree mask.
   for (const auto edge_id : tree_mask) {
@@ -379,27 +379,27 @@ bool TPChoiceMap::TreeMaskIsValid(const TreeMask &tree_mask,
       }
     }
     const auto which_child = (edge.GetSubsplitClade() == SubsplitClade::Left)
-                                 ? AdjacentNode::LeftChild
-                                 : AdjacentNode::RightChild;
+                                 ? NodeAdjacent::LeftChild
+                                 : NodeAdjacent::RightChild;
     if (nodemap_check[parent_node.Id()][which_child] == true) {
       os << "Invalid TreeMask: Node has muliple parents." << std::endl;
       return false;
     }
     nodemap_check[parent_node.Id()][which_child] = true;
-    if (nodemap_check[child_node.Id()][AdjacentNode::Parent] == true) {
+    if (nodemap_check[child_node.Id()][NodeAdjacent::Parent] == true) {
       os << "Invalid TreeMask: Node has multiple children." << std::endl;
       return false;
     }
-    nodemap_check[child_node.Id()][AdjacentNode::Parent] = true;
+    nodemap_check[child_node.Id()][NodeAdjacent::Parent] = true;
   }
   // Check if all nodes are fully connected.
   for (const auto &[node_id, connections] : nodemap_check) {
     // Check children.
-    if (!(connections[AdjacentNode::LeftChild] ||
-          connections[AdjacentNode::RightChild])) {
+    if (!(connections[NodeAdjacent::LeftChild] ||
+          connections[NodeAdjacent::RightChild])) {
       // If one child is not connected, neither should be.
-      if (connections[AdjacentNode::LeftChild] ^
-          connections[AdjacentNode::RightChild]) {
+      if (connections[NodeAdjacent::LeftChild] ^
+          connections[NodeAdjacent::RightChild]) {
         os << "Invalid TreeMask: Node has only one child." << std::endl;
         return false;
       }
@@ -409,7 +409,7 @@ bool TPChoiceMap::TreeMaskIsValid(const TreeMask &tree_mask,
       }
     }
     // Check parent.
-    if (!connections[AdjacentNode::Parent]) {
+    if (!connections[NodeAdjacent::Parent]) {
       if (!GetDAG().IsNodeRoot(node_id)) {
         os << "Invalid TreeMask: Non-root node has no parent." << std::endl;
         return false;
@@ -449,9 +449,9 @@ std::string TPChoiceMap::ExpandedTreeMaskToString(
   std::stringstream os;
   os << "[ " << std::endl;
   for (const auto [node_id, adj_node_ids] : tree_mask) {
-    os << "\t" << node_id << ":(" << adj_node_ids[AdjacentNode::Parent] << ", "
-       << adj_node_ids[AdjacentNode::LeftChild] << ", "
-       << adj_node_ids[AdjacentNode::RightChild] << "), " << std::endl;
+    os << "\t" << node_id << ":(" << adj_node_ids[NodeAdjacent::Parent] << ", "
+       << adj_node_ids[NodeAdjacent::LeftChild] << ", "
+       << adj_node_ids[NodeAdjacent::RightChild] << "), " << std::endl;
   }
   os << "]";
   return os.str();
@@ -478,9 +478,9 @@ Node::Topology TPChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) con
   const auto dag_root_id = GetDAG().GetDAGRootNodeId();
   Assert(tree_mask_ext.find(dag_root_id) != tree_mask_ext.end(),
          "DAG Root Id does not exist in ExpandedTreeMask map.");
-  Assert(tree_mask_ext[dag_root_id][AdjacentNode::LeftChild] != NoId,
+  Assert(tree_mask_ext[dag_root_id][NodeAdjacent::LeftChild] != NoId,
          "DAG Root Id has no children in ExpandedTreeMask map.");
-  const auto dag_rootsplit_id = tree_mask_ext[dag_root_id][AdjacentNode::LeftChild];
+  const auto dag_rootsplit_id = tree_mask_ext[dag_root_id][NodeAdjacent::LeftChild];
 
   std::unordered_map<NodeId, bool> visited_left;
   std::unordered_map<NodeId, bool> visited_right;
@@ -503,29 +503,29 @@ Node::Topology TPChoiceMap::ExtractTopology(ExpandedTreeMask &tree_mask_ext) con
     // up the tree.
     if (visited_right[current_node_id]) {
       const auto left_child_id =
-          tree_mask_ext[current_node_id][AdjacentNode::LeftChild];
+          tree_mask_ext[current_node_id][NodeAdjacent::LeftChild];
       const auto right_child_id =
-          tree_mask_ext[current_node_id][AdjacentNode::RightChild];
+          tree_mask_ext[current_node_id][NodeAdjacent::RightChild];
       nodes[current_node_id] = Node::Join(nodes.at(left_child_id),
                                           nodes.at(right_child_id), node_id_counter);
       node_id_counter++;
-      next_node_id = tree_mask_ext[current_node_id][AdjacentNode::Parent];
+      next_node_id = tree_mask_ext[current_node_id][NodeAdjacent::Parent];
     }
     // If left branch already visited, go down the right branch.
     else if (visited_left[current_node_id]) {
       visited_right[current_node_id] = true;
-      next_node_id = tree_mask_ext[current_node_id][AdjacentNode::RightChild];
+      next_node_id = tree_mask_ext[current_node_id][NodeAdjacent::RightChild];
     }
     // If node is a leaf, create leaf node and return up the the tree
     else if (GetDAG().IsNodeLeaf(current_node_id)) {
       nodes[current_node_id] =
           Node::Leaf(current_node_id.value_, GetDAG().TaxonCount());
-      next_node_id = tree_mask_ext[current_node_id][AdjacentNode::Parent];
+      next_node_id = tree_mask_ext[current_node_id][NodeAdjacent::Parent];
     }
     // If neither left or right child has been visited, go down the left branch.
     else {
       visited_left[current_node_id] = true;
-      next_node_id = tree_mask_ext[current_node_id][AdjacentNode::LeftChild];
+      next_node_id = tree_mask_ext[current_node_id][NodeAdjacent::LeftChild];
     }
     Assert(next_node_id != current_node_id, "Node cannot be adjacent to itself.");
     current_node_id = NodeId(next_node_id);

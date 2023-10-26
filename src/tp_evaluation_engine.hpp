@@ -27,6 +27,17 @@
 class TPEngine;
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 
+template <typename PVTypeEnum>
+struct LocalPVIds {
+  using ArrayType = typename PVTypeEnum::template Array<PVId>;
+  ArrayType grandparent_;
+  ArrayType parent_;
+  ArrayType child_;
+  ArrayType sister_;
+  ArrayType left_grandchild_;
+  ArrayType right_grandchild_;
+};
+
 struct NNIEdgeIdMap {
   EdgeId central_edge_;
   EdgeId parent_edge_;
@@ -35,16 +46,16 @@ struct NNIEdgeIdMap {
   EdgeId right_child_edge_;
 };
 struct PrimaryPVIds {
-  // For central likelihood.
+  // Needed for central likelihood.
   PVId parent_rfocal_;
   PVId child_p_;
-  // For custom branch lengths.
+  // Needed for custom branch lengths.
   PVId child_phatleft_;
   PVId child_phatright_;
   PVId parent_phatsister_;
   PVId parent_rhat_;
   PVId grandparent_rfocal_;
-  // For branch length optimization.
+  // Needed for branch length optimization.
   PVId child_rhat_;
   PVId child_rleft_;
   PVId child_rright_;
@@ -77,6 +88,8 @@ struct SecondaryPVIds {
   PVId child_phatright_;
   PVId child_rhat_;
 };
+
+inline LocalPVIds<PLVTypeEnum> local_pvids_;
 
 // TPEngine helper for evaluating Top Trees.
 class TPEvalEngine {
@@ -200,7 +213,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
 
   // ** Scoring
 
-  // Get the Top Tree from the DAG with the given edge.
+  // Get the Top Tree from the DAG with the given edge (NNI in DAG).
   double GetTopTreeScoreWithEdge(const EdgeId edge_id) const override;
   // Get the Top Tree from the DAG containing the proposed NNI.
   double GetTopTreeScoreWithProposedNNI(
@@ -302,10 +315,13 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // parent.
   // The expected PVs for computing temp intermediate PVs for proposed NNIs.
   SecondaryPVIds GetSecondaryPVIdsOfEdge(const EdgeId edge_id) const;
+  SecondaryPVIds GetSecondaryPVIdsOfEdge_ALTERNATE(const EdgeId edge_id) const;
   // Remaps secondary PV Ids according to the clade map.
   SecondaryPVIds RemapSecondaryPVIdsForPostNNI(
       const SecondaryPVIds &pre_pvids,
       const NNIOperation::NNICladeArray &clade_map) const;
+  // Find PV Ids by choosing the edges which come from the best tree source.
+  SecondaryPVIds FindBestSecondaryPVIdsForPostNNI(const NNIOperation post_nni) const;
 
   // Get temporary PV Ids for intermediate proposed NNI computations.
   PrimaryPVIds GetTempPrimaryPVIdsForProposedNNIs(const size_t spare_offset) const;

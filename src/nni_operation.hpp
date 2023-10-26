@@ -27,21 +27,25 @@
 // NNIOperation stores output parent/child pair which are the product of an NNI.
 class NNIOperation {
  public:
-  NNIOperation() : parent_(0), child_(0), is_focal_clade_on_right_(){};
+  NNIOperation() : parent_(0), child_(0){};
 
   NNIOperation(Bitset parent, Bitset child) : parent_(parent), child_(child) {
     focal_clade_ = Bitset::SubsplitIsChildOfWhichParentClade(parent_, child_);
-    is_focal_clade_on_right_ = (focal_clade_ == SubsplitClade::Right);
   };
 
   NNIOperation(const std::string &parent, const std::string child)
       : NNIOperation(Bitset(parent), Bitset(child)) {}
 
+  enum class NNIClade { ParentFocal, ParentSister, ChildLeft, ChildRight };
   static const inline size_t NNICladeCount = 4;
-  enum class NNIClade : size_t { ParentFocal, ParentSister, ChildLeft, ChildRight };
-  using NNICladeEnum = EnumWrapper<NNIClade, size_t, NNICladeCount,
-                                   NNIClade::ParentFocal, NNIClade::ChildRight>;
-  using NNICladeArray = EnumArray<NNIClade, NNICladeCount, NNIClade>;
+  class NNICladeEnum : public EnumWrapper<NNIClade, size_t, NNICladeCount,
+                                          NNIClade::ParentFocal, NNIClade::ChildRight> {
+  };
+  enum class NNIEdge { Parent, Sister, Focal, LeftChild, RightChild };
+  static const inline size_t NNIEdgeCount = 5;
+  class NNIEdgeEnum : public EnumWrapper<NNIEdge, size_t, NNIEdgeCount, NNIEdge::Parent,
+                                         NNIEdge::RightChild> {};
+  using NNICladeArray = NNICladeEnum::Array<NNIClade>;
 
   // ** Comparator
   // NNIOperations are ordered according to the std::bitset ordering of their parent
@@ -153,7 +157,6 @@ class NNIOperation {
 
   Bitset parent_;
   Bitset child_;
-  bool is_focal_clade_on_right_;
   SubsplitClade focal_clade_;
 };
 

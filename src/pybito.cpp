@@ -873,6 +873,12 @@ PYBIND11_MODULE(bito, m) {
                                        "An engine for computing Top Pruning.");
   tp_engine_class.def("node_count", &TPEngine::GetNodeCount, "Get number of nodes.")
       .def("edge_count", &TPEngine::GetEdgeCount, "Get number of edges.")
+      .def(
+          "get_tree_source",
+          [](const TPEngine &self, const EdgeId edge_id) {
+            return self.GetTreeSource(edge_id);
+          },
+          "Get tree source of given edge")
       .def("get_top_tree_with_edge", &TPEngine::GetTopTreeWithEdge,
            "Output the top tree of tree containing given edge.")
       .def("get_top_tree_likelihood_with_edge", &TPEngine::GetTopTreeLikelihood,
@@ -895,6 +901,12 @@ PYBIND11_MODULE(bito, m) {
            })
       // ** I/O
       .def("build_pcsp_map_from_choice_map", &TPEngine::BuildPCSPMapFromChoiceMap)
+      .def("build_map_of_proposed_nnis_to_best_pre_nnis",
+           &TPEngine::BuildMapOfProposedNNIsToBestPreNNIs, py::arg("post_nnis"))
+      .def("build_map_of_proposed_nni_pcsps_to_best_pre_nni_pcsps",
+           &TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIPCSPs, py::arg("post_nnis"),
+           py::arg("prev_edge_count") = std::nullopt,
+           py::arg("edge_reindexer") = std::nullopt)
       .def("build_map_of_tree_id_to_top_topologies",
            &TPEngine::BuildMapOfTreeIdToTopTopologies)
       .def("to_newick_of_top_topologies", &TPEngine::ToNewickOfTopTopologies)

@@ -111,6 +111,7 @@ class PartialVectorHandler {
  public:
   using TypeEnum = PVTypeEnum;
   using PVType = typename TypeEnum::Type;
+  using PVIdArray = typename TypeEnum::template Array<PVId>;
 
   PartialVectorHandler(const std::string &mmap_file_path, const size_t elem_count,
                        const size_t pattern_count, const double resizing_factor = 2.0)
@@ -236,18 +237,16 @@ class PartialVectorHandler {
     return GetSparePVIndex(spare_pv_id);
   }
 
-  // Get vector of all node ids for given node.
-  static PVIdVector GetPVIndexVectorForElementId(const DAGElementId elem_id,
-                                                 const size_t elem_count) {
-    PVIdVector pv_ids;
-    for (const auto pv_type : typename TypeEnum::Iterator()) {
-      pv_ids.push_back(GetPVIndex(pv_type, elem_id, elem_count));
-    }
-    return pv_ids;
-  }
-
   // PV Reindexer, which serves as the data map to sort PV data.
   const Reindexer &GetPVReindexer() const { return pv_reindexer_; }
+  // Get array of all pv_ids for given node.
+  PVIdArray GetPVIdArray(const DAGElementId elem_id) const {
+    PVIdArray pv_array;
+    for (auto pv_type : typename PVTypeEnum::Iterator()) {
+      pv_array[pv_type] = GetPVIndex(pv_type, elem_id);
+    }
+    return pv_array;
+  }
 
   // ** PV Operations
 
