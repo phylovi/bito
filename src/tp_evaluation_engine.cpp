@@ -1095,7 +1095,7 @@ SecondaryPVIds TPEvalEngineViaLikelihood::GetSecondaryPVIdsOfEdge(
   if (!GetDAG().IsEdgeRoot(choices.parent_edge_id)) {
     const auto &choices_2 =
         GetTPEngine().GetChoiceMap().GetEdgeChoice(choices.parent_edge_id);
-    const auto grandparent_focal = GetDAG().GetFocalClade(choices_2.parent_edge_id);
+    const auto grandparent_focal = GetDAG().GetFocalClade(choices.parent_edge_id);
     const auto grandparent_sister = Bitset::Opposite(grandparent_focal);
     pv_ids.grandparent_rfocal_ = GetPVs().GetPVIndex(
         PLVTypeEnum::RPLVType(grandparent_focal), choices_2.parent_edge_id);

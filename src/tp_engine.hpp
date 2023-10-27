@@ -42,7 +42,6 @@ class TPEvalEngineTypeEnum
   }
 };
 
-using TreeId = GenericId<struct TreeIdTag>;
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 using BitsetBitsetMap = std::unordered_map<Bitset, Bitset>;
 using NNINNIMap = std::unordered_map<NNIOperation, NNIOperation>;
@@ -242,6 +241,9 @@ class TPEngine {
       const NNISet &post_nnis,
       std::optional<const size_t> prev_edge_count = std::nullopt,
       std::optional<const Reindexer> edge_reindexer = std::nullopt) const;
+
+  std::vector<std::pair<Bitset, EdgeId>> BuildAdjacentPCSPsFromPreNNIToPostNNI(
+      const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
 
   // ** TP Evaluation Engine
 

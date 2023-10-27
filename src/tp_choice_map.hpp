@@ -15,6 +15,14 @@
 #include "dag_data.hpp"
 
 using TreeId = GenericId<struct TreeIdTag>;
+// class TreeId : public GenericId<struct TreeIdTag> {
+//   static GetBest(const TreeId lhs, const TreeId rhs) {
+//     return (lhs.value_ < rhs.value_) ? lhs : rhs;
+//   }
+//   static GetWorst(const TreeId lhs, const TreeId rhs) {
+//     return (lhs.value_ > rhs.value_) ? lhs : rhs;
+//   }
+// };
 
 class TPChoiceMap {
  public:
