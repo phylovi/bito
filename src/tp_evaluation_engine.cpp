@@ -496,8 +496,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
   const auto post_pvids = RemapSecondaryPVIdsForPostNNI(pre_pvids, clade_map);
 
   // If we have already established a best_edge_map by traversing all new NNIs to be
-  // added, use this branch length.  Otherwise, use the edge_map from current
-  // pre-NNI.
+  // added, use this branch length.  Otherwise, use the edge_map from current pre-NNI.
   if (best_edge_map_opt.has_value()) {
     auto &best_edge_map = best_edge_map_opt.value();
     auto AssignBestBranchLength = [this, &best_edge_map](const EdgeId post_edge_id,
@@ -1067,26 +1066,24 @@ SecondaryPVIds TPEvalEngineViaLikelihood::GetSecondaryPVIdsOfEdge(
     const EdgeId edge_id) const {
   SecondaryPVIds pv_ids;
   const auto &choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
-  const auto parent_focal = GetDAG().GetFocalClade(choices.parent_edge_id);
-  const auto parent_sister = Bitset::Opposite(parent_focal);
-  // Get P-PVs.
+  // Get P-PLVs.
   pv_ids.parent_p_ = GetPVs().GetPVIndex(PLVType::P, choices.parent_edge_id);
-  pv_ids.parent_phatfocal_ =
-      GetPVs().GetPVIndex(PLVTypeEnum::PPLVType(parent_focal), choices.parent_edge_id);
-  pv_ids.parent_phatsister_ =
-      GetPVs().GetPVIndex(PLVTypeEnum::PPLVType(parent_sister), choices.parent_edge_id);
+  pv_ids.parent_phatfocal_ = GetPVs().GetPVIndex(
+      PLVTypeEnum::PPLVType(GetDAG().GetFocalClade(edge_id)), choices.parent_edge_id);
+  pv_ids.parent_phatsister_ = GetPVs().GetPVIndex(
+      PLVTypeEnum::PPLVType(GetDAG().GetSisterClade(edge_id)), choices.parent_edge_id);
   pv_ids.child_p_ = GetPVs().GetPVIndex(PLVType::P, edge_id);
   pv_ids.child_phatleft_ = GetPVs().GetPVIndex(PLVType::PHatLeft, edge_id);
   pv_ids.child_phatright_ = GetPVs().GetPVIndex(PLVType::PHatRight, edge_id);
   pv_ids.sister_p_ = GetPVs().GetPVIndex(PLVType::P, choices.sister_edge_id);
   pv_ids.leftchild_p_ = GetPVs().GetPVIndex(PLVType::P, choices.left_child_edge_id);
   pv_ids.rightchild_p_ = GetPVs().GetPVIndex(PLVType::P, choices.right_child_edge_id);
-  // Get R-PVs.
+  // Get R-PLVs.
   pv_ids.parent_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, choices.parent_edge_id);
-  pv_ids.parent_rfocal_ =
-      GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(parent_focal), choices.parent_edge_id);
-  pv_ids.parent_rsister_ =
-      GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(parent_sister), choices.parent_edge_id);
+  pv_ids.parent_rfocal_ = GetPVs().GetPVIndex(
+      PLVTypeEnum::RPLVType(GetDAG().GetFocalClade(edge_id)), choices.parent_edge_id);
+  pv_ids.parent_rsister_ = GetPVs().GetPVIndex(
+      PLVTypeEnum::RPLVType(GetDAG().GetSisterClade(edge_id)), choices.parent_edge_id);
   pv_ids.child_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, edge_id);
   pv_ids.child_rleft_ = GetPVs().GetPVIndex(PLVType::RLeft, edge_id);
   pv_ids.child_rright_ = GetPVs().GetPVIndex(PLVType::RRight, edge_id);
@@ -1095,68 +1092,12 @@ SecondaryPVIds TPEvalEngineViaLikelihood::GetSecondaryPVIdsOfEdge(
   if (!GetDAG().IsEdgeRoot(choices.parent_edge_id)) {
     const auto &choices_2 =
         GetTPEngine().GetChoiceMap().GetEdgeChoice(choices.parent_edge_id);
-    const auto grandparent_focal = GetDAG().GetFocalClade(choices.parent_edge_id);
-    const auto grandparent_sister = Bitset::Opposite(grandparent_focal);
-    pv_ids.grandparent_rfocal_ = GetPVs().GetPVIndex(
-        PLVTypeEnum::RPLVType(grandparent_focal), choices_2.parent_edge_id);
-    pv_ids.grandparent_rsister_ = GetPVs().GetPVIndex(
-        PLVTypeEnum::RPLVType(grandparent_sister), choices_2.parent_edge_id);
-  }
-
-  return pv_ids;
-}
-
-SecondaryPVIds TPEvalEngineViaLikelihood::GetSecondaryPVIdsOfEdge_ALTERNATE(
-    const EdgeId edge_id) const {
-  SecondaryPVIds pv_ids;
-  // const auto &choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
-  const auto central_edge = GetDAG().GetDAGEdge(edge_id);
-  const auto parent_node = GetDAG().GetDAGNode(central_edge.GetParent());
-  const auto child_node = GetDAG().GetDAGNode(central_edge.GetChild());
-  // Find parent and child using priority of adjacent edges.
-  auto [p_parent_edgeid, p_leftchild_edgeid, p_rightchild_edgeid] =
-      GetTPEngine().FindHighestPriorityAdjacentNodeId(parent_node.Id());
-  auto [c_parent_edgeid, c_leftchild_edgeid, c_rightchild_edgeid] =
-      GetTPEngine().FindHighestPriorityAdjacentNodeId(child_node.Id());
-  auto parent_edge_id = p_parent_edgeid;
-  auto focal_clade = GetDAG().GetFocalClade(parent_edge_id);
-  auto sister_clade = Bitset::Opposite(focal_clade);
-  auto sister_edge_id =
-      (sister_clade == SubsplitClade::Left) ? p_leftchild_edgeid : p_rightchild_edgeid;
-  auto left_child_edge_id = c_leftchild_edgeid;
-  auto right_child_edge_id = c_rightchild_edgeid;
-  // Get P-PVs.
-  pv_ids.parent_p_ = GetPVs().GetPVIndex(PLVType::P, parent_edge_id);
-  pv_ids.parent_phatfocal_ =
-      GetPVs().GetPVIndex(PLVTypeEnum::PPLVType(focal_clade), parent_edge_id);
-  pv_ids.parent_phatsister_ =
-      GetPVs().GetPVIndex(PLVTypeEnum::PPLVType(sister_clade), parent_edge_id);
-  pv_ids.child_p_ = GetPVs().GetPVIndex(PLVType::P, edge_id);
-  pv_ids.child_phatleft_ = GetPVs().GetPVIndex(PLVType::PHatLeft, edge_id);
-  pv_ids.child_phatright_ = GetPVs().GetPVIndex(PLVType::PHatRight, edge_id);
-  pv_ids.sister_p_ = GetPVs().GetPVIndex(PLVType::P, sister_edge_id);
-  pv_ids.leftchild_p_ = GetPVs().GetPVIndex(PLVType::P, left_child_edge_id);
-  pv_ids.rightchild_p_ = GetPVs().GetPVIndex(PLVType::P, right_child_edge_id);
-  // Get R-PVs.
-  pv_ids.parent_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, parent_edge_id);
-  pv_ids.parent_rfocal_ =
-      GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(focal_clade), parent_edge_id);
-  pv_ids.parent_rsister_ =
-      GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(sister_clade), parent_edge_id);
-  pv_ids.child_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, edge_id);
-  pv_ids.child_rleft_ = GetPVs().GetPVIndex(PLVType::RLeft, edge_id);
-  pv_ids.child_rright_ = GetPVs().GetPVIndex(PLVType::RRight, edge_id);
-  // Get grandparent R-PVs if parent edge is not a rootsplit.
-  pv_ids.grandparent_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, parent_edge_id);
-  if (!GetDAG().IsEdgeRoot(parent_edge_id)) {
-    auto [g_parent_edgeid, g_leftchild_edgeid, g_rightchild_edgeid] =
-        GetTPEngine().FindHighestPriorityAdjacentNodeId(parent_node.Id());
-    const auto grandparent_focal_clade = GetDAG().GetFocalClade(parent_edge_id);
-    const auto grandparent_sister_clade = Bitset::Opposite(grandparent_focal_clade);
-    pv_ids.grandparent_rfocal_ = GetPVs().GetPVIndex(
-        PLVTypeEnum::RPLVType(grandparent_focal_clade), g_parent_edgeid);
-    pv_ids.grandparent_rsister_ = GetPVs().GetPVIndex(
-        PLVTypeEnum::RPLVType(grandparent_sister_clade), g_parent_edgeid);
+    const auto focal = GetDAG().GetFocalClade(choices.parent_edge_id);
+    const auto sister = Bitset::Opposite(focal);
+    pv_ids.grandparent_rfocal_ =
+        GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(focal), choices_2.parent_edge_id);
+    pv_ids.grandparent_rsister_ =
+        GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(sister), choices_2.parent_edge_id);
   }
 
   return pv_ids;

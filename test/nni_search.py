@@ -37,12 +37,11 @@ do_print_scored_nnis = False
 do_print_accepted_nnis = True
 do_print_summary = True
 # track changes to the DAG
-do_track_nni_score_changes = True
 do_check_for_dag_changes = True
 do_check_for_nni_score_changes = True
 do_check_for_choice_map_changes = True
 do_check_for_pcsp_map_changes = True
-do_check_for_nni_map_changes = False
+do_check_for_nni_map_changes = True
 
 
 def print_v(*args, v=1):
@@ -797,9 +796,9 @@ class Tracker:
             f"#SCORE_CHANGES: match::{match_cnt} mismatch::{mismatch_cnt} new:{new_cnt}")
         return self.current_scored_nnis
 
-    def check_for_nni_map_changes(self, new_nni_map):
+    def check_for_nni_map_changes(self):
         nni_engine = self.dag_inst.get_nni_engine()
-        tp_engine = self.dag_inst_.get_tp_engine()
+        tp_engine = self.dag_inst.get_tp_engine()
         new_nni_map = tp_engine.build_map_of_proposed_nnis_to_best_pre_nnis(
             nni_engine.new_adjacent_nnis())
         for post_nni in new_nni_map:

@@ -27,17 +27,6 @@
 class TPEngine;
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 
-template <typename PVTypeEnum>
-struct LocalPVIds {
-  using ArrayType = typename PVTypeEnum::template Array<PVId>;
-  ArrayType grandparent_;
-  ArrayType parent_;
-  ArrayType child_;
-  ArrayType sister_;
-  ArrayType left_grandchild_;
-  ArrayType right_grandchild_;
-};
-
 struct NNIEdgeIdMap {
   EdgeId central_edge_;
   EdgeId parent_edge_;
@@ -46,16 +35,16 @@ struct NNIEdgeIdMap {
   EdgeId right_child_edge_;
 };
 struct PrimaryPVIds {
-  // Needed for central likelihood.
+  // For central likelihood.
   PVId parent_rfocal_;
   PVId child_p_;
-  // Needed for custom branch lengths.
+  // For custom branch lengths.
   PVId child_phatleft_;
   PVId child_phatright_;
   PVId parent_phatsister_;
   PVId parent_rhat_;
   PVId grandparent_rfocal_;
-  // Needed for branch length optimization.
+  // For branch length optimization.
   PVId child_rhat_;
   PVId child_rleft_;
   PVId child_rright_;
@@ -88,8 +77,6 @@ struct SecondaryPVIds {
   PVId child_phatright_;
   PVId child_rhat_;
 };
-
-inline LocalPVIds<PLVTypeEnum> local_pvids_;
 
 // TPEngine helper for evaluating Top Trees.
 class TPEvalEngine {
@@ -213,17 +200,13 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
 
   // ** Scoring
 
-  // Get the Top Tree from the DAG with the given edge (NNI in DAG).
+  // Get the Top Tree from the DAG with the given edge.
   double GetTopTreeScoreWithEdge(const EdgeId edge_id) const override;
   // Get the Top Tree from the DAG containing the proposed NNI.
   double GetTopTreeScoreWithProposedNNI(
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
       const size_t spare_offset = 0,
       std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt) override;
-  double GetTopTreeScoreWithProposedNNI_ALTERNATE(
-      const NNIOperation &post_nni, const NNIOperation &pre_nni,
-      const size_t spare_offset = 0,
-      std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt);
 
   // ** Resize
 
@@ -315,13 +298,10 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // parent.
   // The expected PVs for computing temp intermediate PVs for proposed NNIs.
   SecondaryPVIds GetSecondaryPVIdsOfEdge(const EdgeId edge_id) const;
-  SecondaryPVIds GetSecondaryPVIdsOfEdge_ALTERNATE(const EdgeId edge_id) const;
   // Remaps secondary PV Ids according to the clade map.
   SecondaryPVIds RemapSecondaryPVIdsForPostNNI(
       const SecondaryPVIds &pre_pvids,
       const NNIOperation::NNICladeArray &clade_map) const;
-  // Find PV Ids by choosing the edges which come from the best tree source.
-  SecondaryPVIds FindBestSecondaryPVIdsForPostNNI(const NNIOperation post_nni) const;
 
   // Get temporary PV Ids for intermediate proposed NNI computations.
   PrimaryPVIds GetTempPrimaryPVIdsForProposedNNIs(const size_t spare_offset) const;

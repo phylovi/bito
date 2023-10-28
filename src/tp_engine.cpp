@@ -1062,8 +1062,8 @@ BitsetEdgeIdMap TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(
     }
     // Otherwise, if edge_id has not been seen yet or current reference edge has a
     // higher tree_id, then update.
-    else if ((best_edge_ids.find(pcsp) == best_edge_ids.end()) ||
-             (best_tree_ids[pcsp] > GetTreeSource(proposed_reference_edge_id))) {
+    if ((best_edge_ids.find(pcsp) == best_edge_ids.end()) ||
+        (best_tree_ids[pcsp] > GetTreeSource(proposed_reference_edge_id))) {
       // std::cerr << "WARNING: overriding post-PCSP in best pre-PCSP map." <<
       // std::endl;
       best_edge_ids[pcsp] = proposed_reference_edge_id;
@@ -1074,33 +1074,29 @@ BitsetEdgeIdMap TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(
   // Iterate over NNIs to find best branches.
   for (const auto &post_nni : post_nnis) {
     // Get pre_nni and build map between them.
-    // const auto pre_nni = FindHighestPriorityNeighborNNIInDAG(post_nni);
-    const auto pre_nnis = GetDAG().FindAllNNINeighborsInDAG(post_nni);
-    for (const auto clade : SubsplitCladeEnum::Iterator()) {
-      if (!pre_nnis[clade].has_value()) continue;
-      const auto &pre_nni = pre_nnis[clade].value();
-      // For each edge, build post-PCSP by taking the pre-NNIs choicemap PCSPs, then
-      // join them with the post-NNI parent or child PCSPs. Finally, assigns the best
-      // edge. Because the same post-PCSP can possibly come from multiple post-NNIs, we
-      // take the edge with the highest tree priority.
-      const auto adj_pcsps = BuildAdjacentPCSPsFromPreNNIToPostNNI(pre_nni, post_nni);
+    const auto pre_nni = FindHighestPriorityNeighborNNIInDAG(post_nni);
+    // const auto pre_nnis = GetDAG().FindAllNNINeighborsInDAG(post_nni);
+    // For each edge, build post-PCSP by taking the pre-NNIs choicemap PCSPs, then
+    // join them with the post-NNI parent or child PCSPs. Finally, assigns the best
+    // edge. Because the same post-PCSP can possibly come from multiple post-NNIs, we
+    // take the edge with the highest tree priority.
+    const auto adj_pcsps = BuildAdjacentPCSPsFromPreNNIToPostNNI(pre_nni, post_nni);
 
-      // Parent edge.
-      const auto &[parent_pcsp, parent_edgeid] = adj_pcsps[0];
-      AssignBestReferenceEdge(parent_pcsp, parent_edgeid);
-      // Sister edge.
-      const auto &[sister_pcsp, sister_edgeid] = adj_pcsps[1];
-      AssignBestReferenceEdge(sister_pcsp, sister_edgeid);
-      // Central edge.
-      const auto &[central_pcsp, central_edgeid] = adj_pcsps[2];
-      AssignBestReferenceEdge(central_pcsp, central_edgeid);
-      // LeftChild edge.
-      const auto &[leftchild_pcsp, leftchild_edgeid] = adj_pcsps[3];
-      AssignBestReferenceEdge(leftchild_pcsp, leftchild_edgeid);
-      // RightChild edge.
-      const auto &[rightchild_pcsp, rightchild_edgeid] = adj_pcsps[4];
-      AssignBestReferenceEdge(rightchild_pcsp, rightchild_edgeid);
-    }
+    // Parent edge.
+    const auto &[parent_pcsp, parent_edgeid] = adj_pcsps[0];
+    AssignBestReferenceEdge(parent_pcsp, parent_edgeid);
+    // Sister edge.
+    const auto &[sister_pcsp, sister_edgeid] = adj_pcsps[1];
+    AssignBestReferenceEdge(sister_pcsp, sister_edgeid);
+    // Central edge.
+    const auto &[central_pcsp, central_edgeid] = adj_pcsps[2];
+    AssignBestReferenceEdge(central_pcsp, central_edgeid);
+    // LeftChild edge.
+    const auto &[leftchild_pcsp, leftchild_edgeid] = adj_pcsps[3];
+    AssignBestReferenceEdge(leftchild_pcsp, leftchild_edgeid);
+    // RightChild edge.
+    const auto &[rightchild_pcsp, rightchild_edgeid] = adj_pcsps[4];
+    AssignBestReferenceEdge(rightchild_pcsp, rightchild_edgeid);
   }
   return best_edge_ids;
 }

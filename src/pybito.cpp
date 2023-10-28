@@ -15,6 +15,7 @@
 
 #include <string>
 
+#include "sugar_version.hpp"
 #include "gp_instance.hpp"
 #include "phylo_flags.hpp"
 #include "rooted_gradient_transforms.hpp"
