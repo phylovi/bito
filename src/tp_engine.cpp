@@ -1068,9 +1068,9 @@ BitsetEdgeIdMap TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(
     // Sister edge.
     const auto &[sister_pcsp, sister_edgeid] = pcsps.sister;
     AssignBestReferenceEdge(sister_pcsp, sister_edgeid);
-    // // Central edge.
-    // const auto &[central_pcsp, central_edgeid] = pcsps.focal;
-    // AssignBestReferenceEdge(central_pcsp, central_edgeid);
+    // Central edge.
+    const auto &[central_pcsp, central_edgeid] = pcsps.focal;
+    AssignBestReferenceEdge(central_pcsp, central_edgeid);
     // LeftChild edge.
     const auto &[leftchild_pcsp, leftchild_edgeid] = pcsps.left_child;
     AssignBestReferenceEdge(leftchild_pcsp, leftchild_edgeid);
