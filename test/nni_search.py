@@ -22,12 +22,12 @@ sort_taxa = False
 # rounding digits in printed output
 digits = 5
 # number of optimization iterations
-opt_max = 1
+opt_max = 5
 # whether to rescore or reevaluate rejected nnis -- use None for default
-do_rescore_all_nnis = True
+do_rescore_all_nnis = None
 do_reeval_all_nnis = None
 # terminate search when all credible edges found
-do_end_when_all_creds_found = False
+do_end_when_all_creds_found = True
 # print data
 do_print_setup_data = False
 do_print_iter_data = True

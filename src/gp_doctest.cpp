@@ -3234,10 +3234,10 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         }
         file_out.close();
         bool newicks_equal = (newick_1 == newick_2);
-        if (!newicks_equal) {
+        if (!newicks_equal or true) {
           std::cerr << "ERROR: Newicks do not match." << std::endl;
-          std::cerr << "NEWICK_1: " << std::endl << newick_1 << std::endl;
-          std::cerr << "NEWICK_2: " << std::endl << newick_2 << std::endl;
+          std::cerr << "NEWICK_TEST: " << std::endl << newick_1 << std::endl;
+          std::cerr << "NEWICK_TRUTH: " << std::endl << newick_2 << std::endl;
         }
 
         // Build new TPEngine and check that old and new engines are equal.

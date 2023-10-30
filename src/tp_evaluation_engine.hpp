@@ -27,13 +27,6 @@
 class TPEngine;
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 
-struct NNIEdgeIdMap {
-  EdgeId central_edge_;
-  EdgeId parent_edge_;
-  EdgeId sister_edge_;
-  EdgeId left_child_edge_;
-  EdgeId right_child_edge_;
-};
 struct PrimaryPVIds {
   // For central likelihood.
   PVId parent_rfocal_;
@@ -306,7 +299,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Get temporary PV Ids for intermediate proposed NNI computations.
   PrimaryPVIds GetTempPrimaryPVIdsForProposedNNIs(const size_t spare_offset) const;
   // Get temporary PV Ids for intermediate proposed NNI computations.
-  NNIEdgeIdMap GetTempEdgeIdsForProposedNNIs(const size_t spare_offset) const;
+  NNIAdjEdgeIds GetTempEdgeIdsForProposedNNIs(const size_t spare_offset) const;
 
   // ** Scoring Helpers
 

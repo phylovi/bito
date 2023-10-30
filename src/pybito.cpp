@@ -731,8 +731,6 @@ PYBIND11_MODULE(bito, m) {
       .def("make_gp_engine", &GPInstance::MakeGPEngine, "Initialize GP Engine.",
            py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_,
            py::arg("use_gradients") = false)
-      // .def("get_gp_engine", &GPInstance::GetGPEngine,
-      //      py::return_value_policy::reference, "Get GP Engine.")
       .def(
           "get_gp_engine",
           [](GPInstance &self) -> GPEngine * { return &self.GetGPEngine(); },
@@ -926,7 +924,7 @@ PYBIND11_MODULE(bito, m) {
   py::class_<NNIEngine> nni_engine_class(
       m, "nni_engine", "An engine for computing NNI Systematic Search.");
   nni_engine_class
-      // Getters
+      // Access
       .def(
           "get_graft_dag", [](NNIEngine &self) { return self.GetGraftDAG(); },
           py::return_value_policy::reference, "Get the Graft DAG.")
@@ -1105,7 +1103,7 @@ PYBIND11_MODULE(bito, m) {
            [](const Bitset &self, const Bitset &other) { return self == other; })
       .def("__hash__", &Bitset::Hash)
       .def("to_string", &Bitset::ToString)
-      .def("to_hash_string", &Bitset::ToHashString)
+      .def("to_hash_string", &Bitset::ToHashString, py::arg("length") = 16)
       .def("clade_get_count", &Bitset::Count)
       .def("subsplit_get_clade",
            [](const Bitset &self, const size_t i) {
@@ -1169,7 +1167,7 @@ PYBIND11_MODULE(bito, m) {
       .def("__eq__",
            [](const NNIOperation &lhs, const NNIOperation &rhs) { return lhs == rhs; })
       .def("__hash__", &NNIOperation::Hash)
-      .def("to_hash_string", &NNIOperation::ToHashString)
+      .def("to_hash_string", &NNIOperation::ToHashString, py::arg("length") = 16)
       .def("to_string", &NNIOperation::ToString)
       .def("get_parent", &NNIOperation::GetParent, "Get parent Subsplit of PCSP.")
       .def("get_child", &NNIOperation::GetChild, "Get child Subsplit of PCSP.")

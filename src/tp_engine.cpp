@@ -75,21 +75,17 @@ int TPEngine::Compare(const TPEngine &lhs, const TPEngine &rhs, const bool is_qu
   auto TranslateEdgeChoice =
       [&edge_map](const TPChoiceMap::EdgeChoice &pre_edge_choice) {
         TPChoiceMap::EdgeChoice edge_choice(pre_edge_choice);
-        if (pre_edge_choice.parent_edge_id != NoId) {
-          edge_choice.parent_edge_id =
-              edge_map.find(pre_edge_choice.parent_edge_id)->second;
+        if (pre_edge_choice.parent != NoId) {
+          edge_choice.parent = edge_map.find(pre_edge_choice.parent)->second;
         }
-        if (pre_edge_choice.sister_edge_id != NoId) {
-          edge_choice.sister_edge_id =
-              edge_map.find(pre_edge_choice.sister_edge_id)->second;
+        if (pre_edge_choice.sister != NoId) {
+          edge_choice.sister = edge_map.find(pre_edge_choice.sister)->second;
         }
-        if (pre_edge_choice.left_child_edge_id != NoId) {
-          edge_choice.left_child_edge_id =
-              edge_map.find(pre_edge_choice.left_child_edge_id)->second;
+        if (pre_edge_choice.left_child != NoId) {
+          edge_choice.left_child = edge_map.find(pre_edge_choice.left_child)->second;
         }
-        if (pre_edge_choice.right_child_edge_id != NoId) {
-          edge_choice.right_child_edge_id =
-              edge_map.find(pre_edge_choice.right_child_edge_id)->second;
+        if (pre_edge_choice.right_child != NoId) {
+          edge_choice.right_child = edge_map.find(pre_edge_choice.right_child)->second;
         }
 
         return edge_choice;
@@ -97,23 +93,21 @@ int TPEngine::Compare(const TPEngine &lhs, const TPEngine &rhs, const bool is_qu
 
   auto CompareEdgeChoice = [](const TPChoiceMap::EdgeChoice &lhs,
                               const TPChoiceMap::EdgeChoice &rhs) {
-    if (lhs.parent_edge_id != rhs.parent_edge_id) {
-      return int(lhs.parent_edge_id.value_ - rhs.parent_edge_id.value_);
+    if (lhs.parent != rhs.parent) {
+      return int(lhs.parent.value_ - rhs.parent.value_);
     }
-    if (lhs.sister_edge_id != rhs.sister_edge_id) {
-      return int(lhs.sister_edge_id.value_ - rhs.sister_edge_id.value_);
+    if (lhs.sister != rhs.sister) {
+      return int(lhs.sister.value_ - rhs.sister.value_);
     }
-    if ((lhs.left_child_edge_id != rhs.left_child_edge_id) or
-        (lhs.right_child_edge_id != rhs.left_child_edge_id)) {
+    if ((lhs.left_child != rhs.left_child) or (lhs.right_child != rhs.left_child)) {
       // Right and left child can be swapped due to taxon bitset ordering.
-      if ((lhs.left_child_edge_id == rhs.right_child_edge_id) and
-          (lhs.right_child_edge_id == rhs.left_child_edge_id)) {
+      if ((lhs.left_child == rhs.right_child) and (lhs.right_child == rhs.left_child)) {
         return 0;
       }
-      if (lhs.left_child_edge_id != rhs.left_child_edge_id) {
-        return int(lhs.left_child_edge_id.value_ - rhs.left_child_edge_id.value_);
+      if (lhs.left_child != rhs.left_child) {
+        return int(lhs.left_child.value_ - rhs.left_child.value_);
       }
-      return int(lhs.right_child_edge_id.value_ - rhs.right_child_edge_id.value_);
+      return int(lhs.right_child.value_ - rhs.right_child.value_);
     }
     return 0;
   };
@@ -455,10 +449,10 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
       }
     };
     UpdateEdge(post_edge_id);
-    UpdateEdge(mapped_post_choice.parent_edge_id);
-    UpdateEdge(mapped_post_choice.sister_edge_id);
-    UpdateEdge(mapped_post_choice.left_child_edge_id);
-    UpdateEdge(mapped_post_choice.right_child_edge_id);
+    UpdateEdge(mapped_post_choice.parent);
+    UpdateEdge(mapped_post_choice.sister);
+    UpdateEdge(mapped_post_choice.left_child);
+    UpdateEdge(mapped_post_choice.right_child);
     // Use edge mapping to update each choice map.
     GetChoiceMap(post_edge_id) = mapped_post_choice;
 
@@ -492,13 +486,13 @@ void TPEngine::UpdateChoiceMapAfterModifyingDAG(
     const auto &choice = GetChoiceMap(post_edge_id);
     const auto focal_clade = GetDAG().GetFocalClade(post_edge_id);
     if (focal_clade == SubsplitClade::Left) {
-      UpdateChoice(choice.parent_edge_id, EdgeAdjacent::LeftChild, post_edge_id);
+      UpdateChoice(choice.parent, EdgeAdjacent::LeftChild, post_edge_id);
     } else {
-      UpdateChoice(choice.parent_edge_id, EdgeAdjacent::RightChild, post_edge_id);
+      UpdateChoice(choice.parent, EdgeAdjacent::RightChild, post_edge_id);
     }
-    UpdateChoice(choice.sister_edge_id, EdgeAdjacent::Sister, post_edge_id);
-    UpdateChoice(choice.left_child_edge_id, EdgeAdjacent::Parent, post_edge_id);
-    UpdateChoice(choice.right_child_edge_id, EdgeAdjacent::Parent, post_edge_id);
+    UpdateChoice(choice.sister, EdgeAdjacent::Sister, post_edge_id);
+    UpdateChoice(choice.left_child, EdgeAdjacent::Parent, post_edge_id);
+    UpdateChoice(choice.right_child, EdgeAdjacent::Parent, post_edge_id);
   }
 }
 
@@ -684,14 +678,14 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
       // Assign sister edge.
       const auto sister_node_id = GetDAG().GetDAGNodeId(sister->BuildSubsplit());
       const auto sister_edge_id = GetDAG().GetEdgeIdx(parent_node_id, sister_node_id);
-      edge_choice.sister_edge_id = sister_edge_id;
+      edge_choice.sister = sister_edge_id;
       // Assign parent edge if parent node is not root.
       if (grandparent) {
         const auto grandparent_node_id =
             GetDAG().GetDAGNodeId(grandparent->BuildSubsplit());
         const auto parent_edge_id =
             GetDAG().GetEdgeIdx(grandparent_node_id, parent_node_id);
-        edge_choice.parent_edge_id = parent_edge_id;
+        edge_choice.parent = parent_edge_id;
       }
       // Assign child edges if child node is not leaf.
       if (grandchild0) {
@@ -704,9 +698,9 @@ void TPEngine::SetChoiceMapByTakingFirst(const RootedTreeCollection &tree_collec
         const auto child1_edge_id =
             GetDAG().GetEdgeIdx(child_node_id, grandchild1_node_id);
         const auto clade0 = GetDAG().GetFocalClade(child0_edge_id);
-        edge_choice.left_child_edge_id =
+        edge_choice.left_child =
             (clade0 == SubsplitClade::Left) ? child0_edge_id : child1_edge_id;
-        edge_choice.right_child_edge_id =
+        edge_choice.right_child =
             (clade0 == SubsplitClade::Left) ? child1_edge_id : child0_edge_id;
       }
     };
@@ -805,15 +799,10 @@ std::tuple<EdgeId, EdgeId, EdgeId> TPEngine::FindHighestPriorityAdjacentNodeId(
         best_tree_id = adj_tree_id;
         best_edge_id = adj_edge_id;
       }
-      // std::cout << "{ Edge" << adj_edge_id << " Tree" << adj_tree_id << " } ";
     }
-    // std::cout << " => BEST{ Edge" << best_edge_id << " Tree" << best_tree_id << " }"
-    //           << std::endl;
     return {best_tree_id, best_edge_id};
   };
 
-  // std::cout << "TPEngine::FindHighestPriorityAdjacentNodeIds [begin] " << node_id
-  //           << std::endl;
   const auto node = GetDAG().GetDAGNode(node_id);
   // Find parent.
   EdgeId parent_edge_id;
@@ -832,8 +821,6 @@ std::tuple<EdgeId, EdgeId, EdgeId> TPEngine::FindHighestPriorityAdjacentNodeId(
   // Find right child.
   auto [right_child_tree_id, right_child_edge_id] =
       GetHighestPriorityAdjacentNodeId(node, Direction::Leafward, SubsplitClade::Right);
-  // std::cout << "TPEngine::FindHighestPriorityAdjacentNodeIds [end] " << node_id
-  //           << std::endl;
 
   return {parent_edge_id, left_child_edge_id, right_child_edge_id};
 }
@@ -910,17 +897,17 @@ TPChoiceMap::EdgeChoice TPEngine::RemapEdgeChoiceFromPreNNIToPostNNI(
   using NNICladeEnum = NNIOperation::NNICladeEnum;
   TPChoiceMap::EdgeChoice choice_out;
   NNICladeEnum::Array<EdgeId> pre_clade_map, post_clade_map;
-  pre_clade_map[NNIClade::ParentFocal] = choice_in.parent_edge_id;
-  pre_clade_map[NNIClade::ParentSister] = choice_in.sister_edge_id;
-  pre_clade_map[NNIClade::ChildLeft] = choice_in.left_child_edge_id;
-  pre_clade_map[NNIClade::ChildRight] = choice_in.right_child_edge_id;
+  pre_clade_map[NNIClade::ParentFocal] = choice_in.parent;
+  pre_clade_map[NNIClade::ParentSister] = choice_in.sister;
+  pre_clade_map[NNIClade::ChildLeft] = choice_in.left_child;
+  pre_clade_map[NNIClade::ChildRight] = choice_in.right_child;
   for (const auto clade : NNICladeEnum::Iterator()) {
     post_clade_map[clade] = pre_clade_map[clade_map[clade]];
   }
-  choice_out.parent_edge_id = post_clade_map[NNIClade::ParentFocal];
-  choice_out.sister_edge_id = post_clade_map[NNIClade::ParentSister];
-  choice_out.left_child_edge_id = post_clade_map[NNIClade::ChildLeft];
-  choice_out.right_child_edge_id = post_clade_map[NNIClade::ChildRight];
+  choice_out.parent = post_clade_map[NNIClade::ParentFocal];
+  choice_out.sister = post_clade_map[NNIClade::ParentSister];
+  choice_out.left_child = post_clade_map[NNIClade::ChildLeft];
+  choice_out.right_child = post_clade_map[NNIClade::ChildRight];
   return choice_out;
 }
 
@@ -945,14 +932,10 @@ TPChoiceMap::EdgeChoice TPEngine::GetRemappedEdgeChoiceFromPreNNIToPostNNI(
     }
     return GetDAG().GetEdgeIdx(parent_node_id, child_node_id);
   };
-  mapped_choice.parent_edge_id =
-      GetEdgeId(node_choice.parent_node_id, post_edge.GetParent());
-  mapped_choice.sister_edge_id =
-      GetEdgeId(post_edge.GetParent(), node_choice.sister_node_id);
-  mapped_choice.left_child_edge_id =
-      GetEdgeId(post_edge.GetChild(), node_choice.left_child_node_id);
-  mapped_choice.right_child_edge_id =
-      GetEdgeId(post_edge.GetChild(), node_choice.right_child_node_id);
+  mapped_choice.parent = GetEdgeId(node_choice.parent, post_edge.GetParent());
+  mapped_choice.sister = GetEdgeId(post_edge.GetParent(), node_choice.sister);
+  mapped_choice.left_child = GetEdgeId(post_edge.GetChild(), node_choice.left_child);
+  mapped_choice.right_child = GetEdgeId(post_edge.GetChild(), node_choice.right_child);
   return mapped_choice;
 }
 
@@ -1083,19 +1066,19 @@ BitsetEdgeIdMap TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(
     const auto adj_pcsps = BuildAdjacentPCSPsFromPreNNIToPostNNI(pre_nni, post_nni);
 
     // Parent edge.
-    const auto &[parent_pcsp, parent_edgeid] = adj_pcsps[0];
+    const auto &[parent_pcsp, parent_edgeid] = adj_pcsps.parent;
     AssignBestReferenceEdge(parent_pcsp, parent_edgeid);
     // Sister edge.
-    const auto &[sister_pcsp, sister_edgeid] = adj_pcsps[1];
+    const auto &[sister_pcsp, sister_edgeid] = adj_pcsps.sister;
     AssignBestReferenceEdge(sister_pcsp, sister_edgeid);
     // Central edge.
-    const auto &[central_pcsp, central_edgeid] = adj_pcsps[2];
+    const auto &[central_pcsp, central_edgeid] = adj_pcsps.focal;
     AssignBestReferenceEdge(central_pcsp, central_edgeid);
     // LeftChild edge.
-    const auto &[leftchild_pcsp, leftchild_edgeid] = adj_pcsps[3];
+    const auto &[leftchild_pcsp, leftchild_edgeid] = adj_pcsps.left_child;
     AssignBestReferenceEdge(leftchild_pcsp, leftchild_edgeid);
     // RightChild edge.
-    const auto &[rightchild_pcsp, rightchild_edgeid] = adj_pcsps[4];
+    const auto &[rightchild_pcsp, rightchild_edgeid] = adj_pcsps.right_child;
     AssignBestReferenceEdge(rightchild_pcsp, rightchild_edgeid);
   }
   return best_edge_ids;
@@ -1114,9 +1097,9 @@ BitsetBitsetMap TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIPCSPs(
   return postpcsp_prepcsp_map;
 }
 
-std::vector<std::pair<Bitset, EdgeId>> TPEngine::BuildAdjacentPCSPsFromPreNNIToPostNNI(
+NNIAdjBitsetEdgeIds TPEngine::BuildAdjacentPCSPsFromPreNNIToPostNNI(
     const NNIOperation &pre_nni, const NNIOperation &post_nni) const {
-  std::vector<std::pair<Bitset, EdgeId>> adj_pcsps;
+  NNIAdjBitsetEdgeIds adj_pcsps;
   const auto pre_edge_id = GetDAG().GetEdgeIdx(pre_nni);
   const auto rev_clade_map =
       NNIOperation::BuildNNICladeMapFromPreNNIToNNI(post_nni, pre_nni);
@@ -1126,37 +1109,62 @@ std::vector<std::pair<Bitset, EdgeId>> TPEngine::BuildAdjacentPCSPsFromPreNNIToP
       RemapEdgeChoiceFromPreNNIToPostNNI(pre_choice, rev_clade_map);
   const auto adj_node_ids = GetChoiceMap().GetEdgeChoiceNodeIds(mapped_pre_choice);
   // We should not reach this state.
-  if ((adj_node_ids.parent_node_id == NoId) and
-      (adj_node_ids.sister_node_id == NoId) and
-      (adj_node_ids.left_child_node_id == NoId) and
-      (adj_node_ids.right_child_node_id == NoId)) {
+  if ((adj_node_ids.parent == NoId) and (adj_node_ids.sister == NoId) and
+      (adj_node_ids.left_child == NoId) and (adj_node_ids.right_child == NoId)) {
     std::cerr << "WARNING: Pre-NNI has an invalid choice map -- " << post_nni
               << std::endl;
   }
 
   // Parent pcsp.
-  const auto &parent_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.parent_node_id);
+  const auto &parent_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.parent);
   const auto parent_pcsp = Bitset::PCSP(parent_subsplit, post_nni.GetParent());
-  adj_pcsps.push_back({parent_pcsp, mapped_pre_choice.parent_edge_id});
+  adj_pcsps.parent = {parent_pcsp, mapped_pre_choice.parent};
   // Sister pcsp.
-  const auto &sister_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.sister_node_id);
+  const auto &sister_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.sister);
   const auto sister_pcsp = Bitset::PCSP(post_nni.GetParent(), sister_subsplit);
-  adj_pcsps.push_back({sister_pcsp, mapped_pre_choice.sister_edge_id});
+  adj_pcsps.sister = {sister_pcsp, mapped_pre_choice.sister};
   // Central pcsp.
   const auto central_pcsp = Bitset::PCSP(post_nni.GetParent(), post_nni.GetChild());
-  adj_pcsps.push_back({central_pcsp, pre_edge_id});
+  adj_pcsps.focal = {central_pcsp, pre_edge_id};
   // Left Child pcsp.
-  const auto &leftchild_subsplit =
-      GetDAG().GetDAGNodeBitset(adj_node_ids.left_child_node_id);
+  const auto &leftchild_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.left_child);
   const auto leftchild_pcsp = Bitset::PCSP(post_nni.GetChild(), leftchild_subsplit);
-  adj_pcsps.push_back({leftchild_pcsp, mapped_pre_choice.left_child_edge_id});
+  adj_pcsps.left_child = {leftchild_pcsp, mapped_pre_choice.left_child};
   // Right Child pcsp.
-  const auto &rightchild_subsplit =
-      GetDAG().GetDAGNodeBitset(adj_node_ids.right_child_node_id);
+  const auto &rightchild_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.right_child);
   const auto rightchild_pcsp = Bitset::PCSP(post_nni.GetChild(), rightchild_subsplit);
-  adj_pcsps.push_back({rightchild_pcsp, mapped_pre_choice.right_child_edge_id});
+  adj_pcsps.right_child = {rightchild_pcsp, mapped_pre_choice.right_child};
   return adj_pcsps;
 }
+
+NNIAdjNodeIdMap TPEngine::BuildAdjacentNodeIdMapFromPreNNIToPostNNI(
+    const NNIOperation &pre_nni, const NNIOperation &post_nni) const {
+  NNIAdjNodeIdMap node_id_map;
+
+  const auto pre_edge_id = GetDAG().GetEdgeIdx(pre_nni);
+  // const auto clade_map =
+  //     NNIOperation::BuildNNICladeMapFromPreNNIToNNI(pre_nni, post_nni);
+  const auto rev_clade_map =
+      NNIOperation::BuildNNICladeMapFromPreNNIToNNI(post_nni, pre_nni);
+  const auto pre_choice = GetChoiceMap(pre_edge_id);
+  const auto mapped_pre_choice =
+      RemapEdgeChoiceFromPreNNIToPostNNI(pre_choice, rev_clade_map);
+  const auto &choice = mapped_pre_choice;
+  const auto adj_node_ids = GetChoiceMap().GetEdgeChoiceNodeIds(choice);
+
+  node_id_map.parent = {adj_node_ids.parent, NodeId(NoId)};
+  node_id_map.sister = {adj_node_ids.sister, NodeId(NoId)};
+  node_id_map.focal = {NodeId(NoId), NodeId(NoId)};
+  node_id_map.left_child = {adj_node_ids.left_child, NodeId(NoId)};
+  node_id_map.right_child = {adj_node_ids.right_child, NodeId(NoId)};
+  return node_id_map;
+}
+
+// NNIAdjBitsetMap TPEngine::BuildPCSPMapFromPreNNIToPostNNI(
+//     const NNIOperation &pre_nni, const NNIOperation &post_nni) const {
+//   NNIAdjBitsetMap pcsp_map;
+//   return pcsp_map;
+// }
 
 // ** TP Evaluation Engine
 
@@ -1472,17 +1480,15 @@ std::string TPEngine::ToNewickOfTopTrees() const {
 TPChoiceMap::EdgeChoicePCSPs TPEngine::BuildAdjacentPCSPsToProposedNNI(
     const NNIOperation &nni, const TPChoiceMap::EdgeChoiceNodeIds &adj_node_ids) const {
   TPChoiceMap::EdgeChoicePCSPs adj_pcsps;
-  const auto &parent_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.parent_node_id);
-  adj_pcsps.parent_pcsp = Bitset::PCSP(parent_subsplit, nni.GetParent());
-  adj_pcsps.focal_pcsp = Bitset::PCSP(nni.GetParent(), nni.GetChild());
-  const auto &sister_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.sister_node_id);
-  adj_pcsps.sister_pcsp = Bitset::PCSP(nni.GetParent(), sister_subsplit);
-  const auto &leftchild_subsplit =
-      GetDAG().GetDAGNodeBitset(adj_node_ids.left_child_node_id);
-  adj_pcsps.left_child_pcsp = Bitset::PCSP(nni.GetChild(), leftchild_subsplit);
-  const auto &rightchild_subsplit =
-      GetDAG().GetDAGNodeBitset(adj_node_ids.right_child_node_id);
-  adj_pcsps.right_child_pcsp = Bitset::PCSP(nni.GetChild(), rightchild_subsplit);
+  const auto &parent_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.parent);
+  adj_pcsps.parent = Bitset::PCSP(parent_subsplit, nni.GetParent());
+  adj_pcsps.focal = Bitset::PCSP(nni.GetParent(), nni.GetChild());
+  const auto &sister_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.sister);
+  adj_pcsps.sister = Bitset::PCSP(nni.GetParent(), sister_subsplit);
+  const auto &leftchild_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.left_child);
+  adj_pcsps.left_child = Bitset::PCSP(nni.GetChild(), leftchild_subsplit);
+  const auto &rightchild_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.right_child);
+  adj_pcsps.right_child = Bitset::PCSP(nni.GetChild(), rightchild_subsplit);
   return adj_pcsps;
 }
 

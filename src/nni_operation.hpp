@@ -23,6 +23,20 @@
 #include "bitset.hpp"
 #include "subsplit_dag_storage.hpp"
 
+template <typename T>
+struct NNIAdjacentIds {
+  T parent;
+  T sister;
+  T focal;
+  T left_child;
+  T right_child;
+};
+using NNIAdjEdgeIds = NNIAdjacentIds<EdgeId>;
+using NNIAdjNodeIds = NNIAdjacentIds<NodeId>;
+using NNIAdjBools = NNIAdjacentIds<bool>;
+using NNIAdjEdgeIdMap = NNIAdjacentIds<std::pair<EdgeId, EdgeId>>;
+using NNIAdjNodeIdMap = NNIAdjacentIds<std::pair<NodeId, NodeId>>;
+
 // * Nearest Neighbor Interchange Operation
 // NNIOperation stores output parent/child pair which are the product of an NNI.
 class NNIOperation {
@@ -152,7 +166,8 @@ class NNIOperation {
   bool IsValid();
 
   std::string ToString() const;
-  std::string ToHashString() const;
+  std::string ToHashString(const size_t length = 16) const;
+  std::string ToSplitHashString(const size_t length = 5) const;
   friend std::ostream &operator<<(std::ostream &os, const NNIOperation &nni);
 
   Bitset parent_;

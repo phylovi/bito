@@ -15,14 +15,6 @@
 #include "dag_data.hpp"
 
 using TreeId = GenericId<struct TreeIdTag>;
-// class TreeId : public GenericId<struct TreeIdTag> {
-//   static GetBest(const TreeId lhs, const TreeId rhs) {
-//     return (lhs.value_ < rhs.value_) ? lhs : rhs;
-//   }
-//   static GetWorst(const TreeId lhs, const TreeId rhs) {
-//     return (lhs.value_ > rhs.value_) ? lhs : rhs;
-//   }
-// };
 
 class TPChoiceMap {
  public:
@@ -68,47 +60,19 @@ class TPChoiceMap {
     }
   };
 
-  // Per-edge choices of best adjacent edges.
-  struct EdgeChoice {
-    EdgeId parent_edge_id = EdgeId(NoId);
-    EdgeId sister_edge_id = EdgeId(NoId);
-    EdgeId left_child_edge_id = EdgeId(NoId);
-    EdgeId right_child_edge_id = EdgeId(NoId);
+  // Per-edge adjacent choices for given edge.
+  template <typename T>
+  struct EdgeChoiceIds {
+    T parent;
+    T sister;
+    T left_child;
+    T right_child;
   };
+  using EdgeChoice = EdgeChoiceIds<EdgeId>;
+  using EdgeChoiceNodeIds = EdgeChoiceIds<NodeId>;
+  using EdgeChoiceTreeIds = EdgeChoiceIds<TreeId>;
+  using EdgeChoicePCSPs = NNIAdjacentIds<Bitset>;
   using EdgeChoiceVector = std::vector<EdgeChoice>;
-
-  friend bool operator==(const TPChoiceMap::EdgeChoice &lhs,
-                         const TPChoiceMap::EdgeChoice &rhs) {
-    if (lhs.parent_edge_id != rhs.parent_edge_id) return false;
-    if (lhs.sister_edge_id != rhs.sister_edge_id) return false;
-    if (lhs.left_child_edge_id != rhs.left_child_edge_id) return false;
-    if (lhs.left_child_edge_id != rhs.left_child_edge_id) return false;
-    return true;
-  }
-
-  // Per-edge choices of best adjacent nodes. Note: these are the nearest common nodes
-  // of an NNI Operation.
-  struct EdgeChoiceNodeIds {
-    NodeId parent_node_id = NodeId(NoId);
-    NodeId sister_node_id = NodeId(NoId);
-    NodeId left_child_node_id = NodeId(NoId);
-    NodeId right_child_node_id = NodeId(NoId);
-  };
-  // Per-edge choices associated tree_ids.
-  struct EdgeChoiceTreeIds {
-    TreeId parent_tree_id = TreeId(NoId);
-    TreeId sister_tree_id = TreeId(NoId);
-    TreeId left_child_tree_id = TreeId(NoId);
-    TreeId right_child_tree_id = TreeId(NoId);
-  };
-  // Per-edge choices associated pcsps.
-  struct EdgeChoicePCSPs {
-    Bitset parent_pcsp = Bitset(0);
-    Bitset focal_pcsp = Bitset(0);
-    Bitset sister_pcsp = Bitset(0);
-    Bitset left_child_pcsp = Bitset(0);
-    Bitset right_child_pcsp = Bitset(0);
-  };
 
   // ** Constructors
 
@@ -116,6 +80,15 @@ class TPChoiceMap {
       : dag_(dag), edge_choice_vector_(dag.EdgeCountWithLeafSubsplits()){};
 
   // ** Access
+
+  friend bool operator==(const TPChoiceMap::EdgeChoice &lhs,
+                         const TPChoiceMap::EdgeChoice &rhs) {
+    if (lhs.parent != rhs.parent) return false;
+    if (lhs.sister != rhs.sister) return false;
+    if (lhs.left_child != rhs.left_child) return false;
+    if (lhs.left_child != rhs.left_child) return false;
+    return true;
+  }
 
   // Size of edge choice map.
   size_t size() const { return edge_choice_vector_.size(); }
@@ -170,8 +143,8 @@ class TPChoiceMap {
   // the DAG, from the selected subset of DAG edges.
   using TreeMask = std::set<EdgeId>;
   // Extract TreeMask from DAG based on edge choices to find best tree with given
-  // central edge.
-  TreeMask ExtractTreeMask(const EdgeId central_edge_id) const;
+  // focal edge.
+  TreeMask ExtractTreeMask(const EdgeId initial_edge_id) const;
   // Checks that TreeMask represents a valid, complete tree in the DAG.
   // Specifically, checks that:
   // - There is a single edge that goes to the root.
@@ -185,8 +158,8 @@ class TPChoiceMap {
   // ** Topology
   // Extract tree topology from DAG based on edges choices to find best tree.
 
-  // Extract Topology from DAG with given central edge.
-  Node::Topology ExtractTopology(const EdgeId central_edge_id) const;
+  // Extract Topology from DAG with given focal edge.
+  Node::Topology ExtractTopology(const EdgeId initial_edge_id) const;
   Node::Topology ExtractTopology(const TreeMask &tree_mask) const;
 
   // ** I/O
@@ -197,7 +170,7 @@ class TPChoiceMap {
   static std::string EdgeChoiceToString(const EdgeChoice &edge_choice);
   // Output full choice map to string.
   std::string ToString() const;
-  // Output choice map as a PCSP Map from the central edge to vector of adjacent edges.
+  // Output choice map as a PCSP Map from the focal edge to vector of adjacent edges.
   std::map<Bitset, std::vector<Bitset>> BuildPCSPMap() const;
 
   // Output edge choice map.
@@ -213,8 +186,8 @@ class TPChoiceMap {
   using NodeAdjacentArray = EnumArray<NodeAdjacent, 3, T>;
   using ExpandedTreeMask = std::map<NodeId, NodeAdjacentArray<NodeId>>;
 
-  // Extract an ExpandedTreeMask from DAG based on a central edge or previous TreeMask.
-  ExpandedTreeMask ExtractExpandedTreeMask(const EdgeId central_edge_id) const;
+  // Extract an ExpandedTreeMask from DAG based on a focal edge or previous TreeMask.
+  ExpandedTreeMask ExtractExpandedTreeMask(const EdgeId focal_edge_id) const;
   ExpandedTreeMask ExtractExpandedTreeMask(const TreeMask &tree_mask) const;
   // Extract Tree based on given ExpandedTreeMask.
   Node::Topology ExtractTopology(ExpandedTreeMask &tree_mask_ext) const;

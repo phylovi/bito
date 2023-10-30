@@ -242,12 +242,11 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterDAGAddNodePair(
       [this](const EdgeId src, const EdgeId dest) { CopyEdgeData(src, dest); },
       new_tree_id);
 
-  const EdgeId central_edge_id = GetDAG().GetEdgeIdx(post_nni);
-  const auto &choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(central_edge_id);
+  const EdgeId focal_edge_id = GetDAG().GetEdgeIdx(post_nni);
+  const auto &choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(focal_edge_id);
   // Center and adjacent edges, arranged rootward.
-  const EdgeIdVector adj_edge_ids = {{choices.left_child_edge_id,
-                                      choices.right_child_edge_id, central_edge_id,
-                                      choices.sister_edge_id, choices.parent_edge_id}};
+  const EdgeIdVector adj_edge_ids = {{choices.left_child, choices.right_child,
+                                      focal_edge_id, choices.sister, choices.parent}};
   // Update PVs.
   for (const EdgeId edge_id : adj_edge_ids) {
     PopulateRootwardPVForEdge(edge_id);
@@ -256,7 +255,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterDAGAddNodePair(
     const EdgeId edge_id = *it;
     PopulateLeafwardPVForEdge(edge_id);
   }
-  // Optimize central branch and all adjacent branches.
+  // Optimize focal branch and all adjacent branches.
   if (optimize_new_edges_) {
     for (const EdgeId edge_id : adj_edge_ids) {
       BranchLengthOptimization(edge_id, false);
@@ -292,16 +291,16 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     const auto edge_id = GetDAG().GetEdgeIdx(post_nni);
     const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
     nni_edges.insert(edge_id);
-    extra_edges.erase(choice.right_child_edge_id);
-    extra_edges.erase(choice.left_child_edge_id);
-    extra_edges.erase(choice.sister_edge_id);
+    extra_edges.erase(choice.right_child);
+    extra_edges.erase(choice.left_child);
+    extra_edges.erase(choice.sister);
     extra_edges.erase(edge_id);
-    extra_edges.erase(choice.parent_edge_id);
-    update_edges.insert(choice.right_child_edge_id);
-    update_edges.insert(choice.left_child_edge_id);
-    update_edges.insert(choice.sister_edge_id);
+    extra_edges.erase(choice.parent);
+    update_edges.insert(choice.right_child);
+    update_edges.insert(choice.left_child);
+    update_edges.insert(choice.sister);
     update_edges.insert(edge_id);
-    update_edges.insert(choice.parent_edge_id);
+    update_edges.insert(choice.parent);
   }
   // Find topological sort of edges.
   std::vector<EdgeId> rootward_edges(update_edges.begin(), update_edges.end());
@@ -331,7 +330,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
   };
   std::map<EdgeId, size_t> optimize_counter;
   auto OptimizeEdge = [&](const EdgeId edge_id, const EdgeId parent_edge_id,
-                          const EdgeId central_edge_id,
+                          const EdgeId focal_edge_id,
                           const bool is_not_child_edge = true,
                           const bool is_not_parent_edge = true,
                           const bool do_optimize = true,
@@ -341,7 +340,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     } else {
       optimize_counter[edge_id] = optimize_counter[edge_id] + 1;
     }
-    // const auto parent_edge_id = GetTPEngine().GetChoiceMap(edge_id).parent_edge_id;
+    // const auto parent_edge_id = GetTPEngine().GetChoiceMap(edge_id).parent;
     const auto focal = GetDAG().GetFocalClade(edge_id);
     const auto sister = GetDAG().GetSisterClade(edge_id);
     if (is_not_child_edge) {
@@ -382,13 +381,11 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
     const auto pvids = GetSecondaryPVIdsOfEdge(edge_id);
     // Evolve up child P-PLVs.
-    SetToEvolvedPV(pvids.child_phatleft_, choice.left_child_edge_id,
-                   pvids.leftchild_p_);
-    SetToEvolvedPV(pvids.child_phatright_, choice.right_child_edge_id,
-                   pvids.rightchild_p_);
+    SetToEvolvedPV(pvids.child_phatleft_, choice.left_child, pvids.leftchild_p_);
+    SetToEvolvedPV(pvids.child_phatright_, choice.right_child, pvids.rightchild_p_);
     MultiplyPVs(pvids.child_p_, pvids.child_phatleft_, pvids.child_phatright_);
     // Evolve up parent P-PLVs
-    SetToEvolvedPV(pvids.parent_phatsister_, choice.sister_edge_id, pvids.sister_p_);
+    SetToEvolvedPV(pvids.parent_phatsister_, choice.sister, pvids.sister_p_);
     SetToEvolvedPV(pvids.parent_phatfocal_, edge_id, pvids.child_p_);
     MultiplyPVs(pvids.parent_p_, pvids.parent_phatfocal_, pvids.parent_phatsister_);
   };
@@ -397,8 +394,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     const auto pvids = GetSecondaryPVIdsOfEdge(edge_id);
     // If the parent is not the DAG root, then evolve grandparent down to parent.
     if (pvids.grandparent_rfocal_ != NoId) {
-      SetToEvolvedPV(pvids.parent_rhat_, choice.parent_edge_id,
-                     pvids.grandparent_rfocal_);
+      SetToEvolvedPV(pvids.parent_rhat_, choice.parent, pvids.grandparent_rfocal_);
     }
     // Evolve down parent R-PLVs.
     MultiplyPVs(pvids.parent_rfocal_, pvids.parent_rhat_, pvids.parent_phatsister_);
@@ -426,15 +422,14 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
       // Optimize each NNI.
       for (const auto edge_id : nni_edges) {
         const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
-        OptimizeEdge(choice.left_child_edge_id, edge_id, edge_id, false, true, true);
-        OptimizeEdge(choice.right_child_edge_id, edge_id, edge_id, false, true, true);
-        OptimizeEdge(choice.sister_edge_id, choice.parent_edge_id, edge_id, false, true,
-                     true);
-        OptimizeEdge(edge_id, choice.parent_edge_id, edge_id, true, true, true);
-        if (!GetDAG().IsEdgeRoot(choice.parent_edge_id)) {
-          const auto &choice_2 = GetTPEngine().GetChoiceMap(choice.parent_edge_id);
-          OptimizeEdge(choice.parent_edge_id, choice_2.parent_edge_id, edge_id, true,
-                       false, true, true);
+        OptimizeEdge(choice.left_child, edge_id, edge_id, false, true, true);
+        OptimizeEdge(choice.right_child, edge_id, edge_id, false, true, true);
+        OptimizeEdge(choice.sister, choice.parent, edge_id, false, true, true);
+        OptimizeEdge(edge_id, choice.parent, edge_id, true, true, true);
+        if (!GetDAG().IsEdgeRoot(choice.parent)) {
+          const auto &choice_2 = GetTPEngine().GetChoiceMap(choice.parent);
+          OptimizeEdge(choice.parent, choice_2.parent, edge_id, true, false, true,
+                       true);
         }
         os << "UpdateEngineAfterModifyingDAG::OptimizeCentralEdges: " << opt_timer.Lap()
            << std::endl;
@@ -443,8 +438,8 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
       for (const auto edge_id : extra_edges) {
         Stopwatch opt_timer(true, Stopwatch::TimeScale::SecondScale);
         const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
-        if (!GetDAG().IsEdgeRoot(choice.parent_edge_id)) {
-          OptimizeEdge(edge_id, choice.parent_edge_id, edge_id);
+        if (!GetDAG().IsEdgeRoot(choice.parent)) {
+          OptimizeEdge(edge_id, choice.parent, edge_id);
         }
         os << "UpdateEngineAfterModifyingDAG::OptimizeAdjEdges: " << opt_timer.Lap()
            << std::endl;
@@ -474,7 +469,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
   // Get temp locations for post-NNI PVs.
   PrimaryPVIds temp_pvids = GetTempPrimaryPVIdsForProposedNNIs(spare_offset);
   // Get temp locations for post-NNI branch lengths.
-  NNIEdgeIdMap temp_edge_id_map = GetTempEdgeIdsForProposedNNIs(spare_offset);
+  NNIAdjEdgeIds temp_edge_id_map = GetTempEdgeIdsForProposedNNIs(spare_offset);
 
   // Get the best pre-NNI candidate.
   const NNIOperation pre_nni =
@@ -507,35 +502,33 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     // Copy branch lengths over from best_edge_map.
     const auto adj_pcsps =
         GetTPEngine().BuildAdjacentPCSPsToProposedNNI(post_nni, adj_node_ids);
-    AssignBestBranchLength(temp_edge_id_map.parent_edge_, adj_pcsps.parent_pcsp);
-    AssignBestBranchLength(temp_edge_id_map.central_edge_, adj_pcsps.focal_pcsp);
-    AssignBestBranchLength(temp_edge_id_map.sister_edge_, adj_pcsps.sister_pcsp);
-    AssignBestBranchLength(temp_edge_id_map.left_child_edge_,
-                           adj_pcsps.left_child_pcsp);
-    AssignBestBranchLength(temp_edge_id_map.right_child_edge_,
-                           adj_pcsps.right_child_pcsp);
+    AssignBestBranchLength(temp_edge_id_map.parent, adj_pcsps.parent);
+    AssignBestBranchLength(temp_edge_id_map.focal, adj_pcsps.focal);
+    AssignBestBranchLength(temp_edge_id_map.sister, adj_pcsps.sister);
+    AssignBestBranchLength(temp_edge_id_map.left_child, adj_pcsps.left_child);
+    AssignBestBranchLength(temp_edge_id_map.right_child, adj_pcsps.right_child);
   } else {
     // Copy branch lengths over from pre-edge to post-edge.
-    branch_handler_(temp_edge_id_map.parent_edge_) =
-        branch_handler_(choice.parent_edge_id);
-    branch_handler_(temp_edge_id_map.central_edge_) = branch_handler_(pre_edge_id);
-    branch_handler_(temp_edge_id_map.sister_edge_) =
-        branch_handler_(choice.sister_edge_id);
-    branch_handler_(temp_edge_id_map.left_child_edge_) =
-        branch_handler_(choice.left_child_edge_id);
-    branch_handler_(temp_edge_id_map.right_child_edge_) =
-        branch_handler_(choice.right_child_edge_id);
+    // branch_handler_(temp_edge_id_map.parent) =
+    //     branch_handler_(choice.parent);
+    // branch_handler_(temp_edge_id_map.focal) = branch_handler_(pre_edge_id);
+    // branch_handler_(temp_edge_id_map.sister) =
+    //     branch_handler_(choice.sister);
+    // branch_handler_(temp_edge_id_map.left_child) =
+    //     branch_handler_(choice.left_child);
+    // branch_handler_(temp_edge_id_map.right_child) =
+    //     branch_handler_(choice.right_child);
+
+    double default_length = 0.1;
+    branch_handler_(temp_edge_id_map.parent) = default_length;
+    branch_handler_(temp_edge_id_map.focal) = default_length;
+    branch_handler_(temp_edge_id_map.sister) = default_length;
+    branch_handler_(temp_edge_id_map.left_child) = default_length;
+    branch_handler_(temp_edge_id_map.right_child) = default_length;
   }
 
   // Track whether edges already exist in DAG.
-  struct EdgeIdBools {
-    bool parent_edge_ = true;
-    bool central_edge_ = true;
-    bool sister_edge_ = true;
-    bool left_child_edge_ = true;
-    bool right_child_edge_ = true;
-  };
-  EdgeIdBools opt_edges;
+  NNIAdjBools opt_edges{true, true, true, true, true};
   // Update branch lengths if edge already exists in DAG.
   auto FindBranchLengthIfExists = [&](const Bitset &parent_subsplit,
                                       const Bitset &child_subsplit,
@@ -558,33 +551,33 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
       return;
     }
   };
-  FindBranchLengthIfExists(GetDAG().GetDAGNodeBitset(adj_node_ids.parent_node_id),
-                           post_nni.GetParent(), temp_edge_id_map.parent_edge_,
-                           opt_edges.parent_edge_);
+  FindBranchLengthIfExists(GetDAG().GetDAGNodeBitset(adj_node_ids.parent),
+                           post_nni.GetParent(), temp_edge_id_map.parent,
+                           opt_edges.parent);
   FindBranchLengthIfExists(post_nni.GetParent(),
-                           GetDAG().GetDAGNodeBitset(adj_node_ids.sister_node_id),
-                           temp_edge_id_map.sister_edge_, opt_edges.sister_edge_);
+                           GetDAG().GetDAGNodeBitset(adj_node_ids.sister),
+                           temp_edge_id_map.sister, opt_edges.sister);
   FindBranchLengthIfExists(post_nni.GetParent(), post_nni.GetChild(),
-                           temp_edge_id_map.central_edge_, opt_edges.central_edge_);
-  FindBranchLengthIfExists(
-      post_nni.GetChild(), GetDAG().GetDAGNodeBitset(adj_node_ids.left_child_node_id),
-      temp_edge_id_map.left_child_edge_, opt_edges.left_child_edge_);
-  FindBranchLengthIfExists(
-      post_nni.GetChild(), GetDAG().GetDAGNodeBitset(adj_node_ids.right_child_node_id),
-      temp_edge_id_map.right_child_edge_, opt_edges.right_child_edge_);
+                           temp_edge_id_map.focal, opt_edges.focal);
+  FindBranchLengthIfExists(post_nni.GetChild(),
+                           GetDAG().GetDAGNodeBitset(adj_node_ids.left_child),
+                           temp_edge_id_map.left_child, opt_edges.left_child);
+  FindBranchLengthIfExists(post_nni.GetChild(),
+                           GetDAG().GetDAGNodeBitset(adj_node_ids.right_child),
+                           temp_edge_id_map.right_child, opt_edges.right_child);
 
   auto RootwardPass = [&]() {
     // Evolve up child P-PLVs.
-    SetToEvolvedPV(temp_pvids.child_phatleft_, temp_edge_id_map.left_child_edge_,
+    SetToEvolvedPV(temp_pvids.child_phatleft_, temp_edge_id_map.left_child,
                    post_pvids.leftchild_p_);
-    SetToEvolvedPV(temp_pvids.child_phatright_, temp_edge_id_map.right_child_edge_,
+    SetToEvolvedPV(temp_pvids.child_phatright_, temp_edge_id_map.right_child,
                    post_pvids.rightchild_p_);
     MultiplyPVs(temp_pvids.child_p_, temp_pvids.child_phatleft_,
                 temp_pvids.child_phatright_);
     // Evolve up parent P-PLVs
-    SetToEvolvedPV(temp_pvids.parent_phatsister_, temp_edge_id_map.sister_edge_,
+    SetToEvolvedPV(temp_pvids.parent_phatsister_, temp_edge_id_map.sister,
                    post_pvids.sister_p_);
-    SetToEvolvedPV(temp_pvids.parent_phatfocal_, temp_edge_id_map.central_edge_,
+    SetToEvolvedPV(temp_pvids.parent_phatfocal_, temp_edge_id_map.focal,
                    temp_pvids.child_p_);
     MultiplyPVs(temp_pvids.parent_p_, temp_pvids.parent_phatfocal_,
                 temp_pvids.parent_phatsister_);
@@ -592,7 +585,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
   auto LeafwardPass = [&]() {
     // If the parent is not the DAG root, then evolve grandparent down to parent.
     if ((post_pvids.grandparent_rfocal_ != NoId)) {
-      SetToEvolvedPV(temp_pvids.parent_rhat_, temp_edge_id_map.parent_edge_,
+      SetToEvolvedPV(temp_pvids.parent_rhat_, temp_edge_id_map.parent,
                      post_pvids.grandparent_rfocal_);
     } else {
       TakePVValue(temp_pvids.parent_rhat_, post_pvids.parent_rhat_);
@@ -604,7 +597,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     MultiplyPVs(temp_pvids.parent_rsister_, temp_pvids.parent_rhat_,
                 temp_pvids.parent_phatfocal_);
     // Evolve down child R-PLVs.
-    SetToEvolvedPV(temp_pvids.child_rhat_, temp_edge_id_map.central_edge_,
+    SetToEvolvedPV(temp_pvids.child_rhat_, temp_edge_id_map.focal,
                    temp_pvids.parent_rfocal_);
     MultiplyPVs(temp_pvids.child_rleft_, temp_pvids.child_rhat_,
                 temp_pvids.child_phatright_);
@@ -621,7 +614,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     for (size_t iter = 0; iter < optimize_max_iter_; iter++) {
       // Optimize branch lengths.
       auto OptimizeEdge =
-          [&](const EdgeId edge_id, const EdgeId central_edge_id, const PVId parent_p,
+          [&](const EdgeId edge_id, const EdgeId focal_edge_id, const PVId parent_p,
               const PVId parent_phatfocal, const PVId parent_phatsister,
               const PVId parent_rhat, const PVId parent_rfocal,
               const PVId parent_rsister, const PVId child_p, const PVId child_phatleft,
@@ -651,46 +644,45 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
             }
           };
       auto OptimizeLeftChild = [&](const bool do_optimize = true) {
-        OptimizeEdge(temp_edge_id_map.left_child_edge_, temp_edge_id_map.central_edge_,
+        OptimizeEdge(temp_edge_id_map.left_child, temp_edge_id_map.focal,
                      temp_pvids.child_p_, temp_pvids.child_phatleft_,
                      temp_pvids.child_phatright_, temp_pvids.child_rhat_,
                      temp_pvids.child_rleft_, temp_pvids.child_rright_,
                      post_pvids.leftchild_p_, PVId(NoId), PVId(NoId),
-                     (opt_edges.left_child_edge_ && do_optimize), false, true);
+                     (opt_edges.left_child && do_optimize), false, true);
       };
       auto OptimizeRightChild = [&](const bool do_optimize = true) {
-        OptimizeEdge(temp_edge_id_map.right_child_edge_, temp_edge_id_map.central_edge_,
+        OptimizeEdge(temp_edge_id_map.right_child, temp_edge_id_map.focal,
                      temp_pvids.child_p_, temp_pvids.child_phatright_,
                      temp_pvids.child_phatleft_, temp_pvids.child_rhat_,
                      temp_pvids.child_rright_, temp_pvids.child_rleft_,
                      post_pvids.rightchild_p_, PVId(NoId), PVId(NoId),
-                     (opt_edges.right_child_edge_ && do_optimize), false, true);
+                     (opt_edges.right_child && do_optimize), false, true);
       };
       auto OptimizeSister = [&](const bool do_optimize = true) {
-        OptimizeEdge(temp_edge_id_map.sister_edge_, temp_edge_id_map.central_edge_,
+        OptimizeEdge(temp_edge_id_map.sister, temp_edge_id_map.focal,
                      temp_pvids.parent_p_, temp_pvids.parent_phatsister_,
                      temp_pvids.parent_phatfocal_, temp_pvids.parent_rhat_,
                      temp_pvids.parent_rsister_, temp_pvids.parent_rfocal_,
                      post_pvids.sister_p_, PVId(NoId), PVId(NoId),
-                     (opt_edges.sister_edge_ && do_optimize), false, true);
+                     (opt_edges.sister && do_optimize), false, true);
       };
       auto OptimizeCentral = [&](const bool do_optimize = true) {
-        OptimizeEdge(temp_edge_id_map.central_edge_, temp_edge_id_map.central_edge_,
-                     temp_pvids.parent_p_, temp_pvids.parent_phatfocal_,
-                     temp_pvids.parent_phatsister_, temp_pvids.parent_rhat_,
-                     temp_pvids.parent_rfocal_, temp_pvids.parent_rsister_,
-                     temp_pvids.child_p_, temp_pvids.child_phatleft_,
-                     temp_pvids.child_phatright_,
-                     (opt_edges.central_edge_ && do_optimize), true, true);
+        OptimizeEdge(
+            temp_edge_id_map.focal, temp_edge_id_map.focal, temp_pvids.parent_p_,
+            temp_pvids.parent_phatfocal_, temp_pvids.parent_phatsister_,
+            temp_pvids.parent_rhat_, temp_pvids.parent_rfocal_,
+            temp_pvids.parent_rsister_, temp_pvids.child_p_, temp_pvids.child_phatleft_,
+            temp_pvids.child_phatright_, (opt_edges.focal && do_optimize), true, true);
       };
       auto OptimizeParent = [&](const bool do_optimize = true) {
-        if (temp_edge_id_map.parent_edge_ != NoId) {
-          OptimizeEdge(temp_edge_id_map.parent_edge_, temp_edge_id_map.central_edge_,
-                       PVId(NoId), PVId(NoId), PVId(NoId), post_pvids.grandparent_rhat_,
+        if (temp_edge_id_map.parent != NoId) {
+          OptimizeEdge(temp_edge_id_map.parent, temp_edge_id_map.focal, PVId(NoId),
+                       PVId(NoId), PVId(NoId), post_pvids.grandparent_rhat_,
                        post_pvids.grandparent_rfocal_, post_pvids.grandparent_rsister_,
                        temp_pvids.parent_p_, temp_pvids.parent_phatfocal_,
-                       temp_pvids.parent_phatsister_,
-                       (opt_edges.parent_edge_ && do_optimize), true, false, true);
+                       temp_pvids.parent_phatsister_, (opt_edges.parent && do_optimize),
+                       true, false, true);
         }
       };
 
@@ -722,26 +714,24 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
       tmp_optimized_edges[edge_pcsp] = branch_handler_(tmp_edge_id);
     }
   };
-  UpdateTempEdges(GetDAG().GetDAGNodeBitset(adj_node_ids.parent_node_id),
-                  post_nni.GetParent(), temp_edge_id_map.parent_edge_,
-                  opt_edges.parent_edge_);
-  UpdateTempEdges(post_nni.GetParent(),
-                  GetDAG().GetDAGNodeBitset(adj_node_ids.sister_node_id),
-                  temp_edge_id_map.sister_edge_, opt_edges.sister_edge_);
-  UpdateTempEdges(post_nni.GetParent(), post_nni.GetChild(),
-                  temp_edge_id_map.central_edge_, opt_edges.central_edge_);
+  UpdateTempEdges(GetDAG().GetDAGNodeBitset(adj_node_ids.parent), post_nni.GetParent(),
+                  temp_edge_id_map.parent, opt_edges.parent);
+  UpdateTempEdges(post_nni.GetParent(), GetDAG().GetDAGNodeBitset(adj_node_ids.sister),
+                  temp_edge_id_map.sister, opt_edges.sister);
+  UpdateTempEdges(post_nni.GetParent(), post_nni.GetChild(), temp_edge_id_map.focal,
+                  opt_edges.focal);
   UpdateTempEdges(post_nni.GetChild(),
-                  GetDAG().GetDAGNodeBitset(adj_node_ids.left_child_node_id),
-                  temp_edge_id_map.left_child_edge_, opt_edges.left_child_edge_);
+                  GetDAG().GetDAGNodeBitset(adj_node_ids.left_child),
+                  temp_edge_id_map.left_child, opt_edges.left_child);
   UpdateTempEdges(post_nni.GetChild(),
-                  GetDAG().GetDAGNodeBitset(adj_node_ids.right_child_node_id),
-                  temp_edge_id_map.right_child_edge_, opt_edges.right_child_edge_);
+                  GetDAG().GetDAGNodeBitset(adj_node_ids.right_child),
+                  temp_edge_id_map.right_child, opt_edges.right_child);
 
-  // Compute likelihood of central edge by evolving up from child to parent.
-  ComputeLikelihood(temp_edge_id_map.central_edge_, temp_pvids.child_p_,
+  // Compute likelihood of focal edge by evolving up from child to parent.
+  ComputeLikelihood(temp_edge_id_map.focal, temp_pvids.child_p_,
                     temp_pvids.parent_rfocal_);
   EigenVectorXd top_tree_likelihood =
-      GetMatrix().block(temp_edge_id_map.central_edge_.value_, spare_offset, 1,
+      GetMatrix().block(temp_edge_id_map.focal.value_, spare_offset, 1,
                         GetMatrix().cols()) *
       GetTPEngine().GetSitePatternWeights();
 
@@ -779,9 +769,9 @@ PrimaryPVIds TPEvalEngineViaLikelihood::GetTempPrimaryPVIdsForProposedNNIs(
   return temp_pvids;
 }
 
-NNIEdgeIdMap TPEvalEngineViaLikelihood::GetTempEdgeIdsForProposedNNIs(
+NNIAdjEdgeIds TPEvalEngineViaLikelihood::GetTempEdgeIdsForProposedNNIs(
     const size_t spare_offset) const {
-  NNIEdgeIdMap temp_edge_ids;
+  NNIAdjEdgeIds temp_edge_ids;
   size_t spare_count = 0;
   auto GetNextSpareEdgeId = [this, spare_offset, &spare_count]() {
     EdgeId next_edge_id = EdgeId(GetTPEngine().GetEdgeCount() +
@@ -789,11 +779,11 @@ NNIEdgeIdMap TPEvalEngineViaLikelihood::GetTempEdgeIdsForProposedNNIs(
     spare_count++;
     return next_edge_id;
   };
-  temp_edge_ids.central_edge_ = GetNextSpareEdgeId();
-  temp_edge_ids.parent_edge_ = GetNextSpareEdgeId();
-  temp_edge_ids.sister_edge_ = GetNextSpareEdgeId();
-  temp_edge_ids.left_child_edge_ = GetNextSpareEdgeId();
-  temp_edge_ids.right_child_edge_ = GetNextSpareEdgeId();
+  temp_edge_ids.focal = GetNextSpareEdgeId();
+  temp_edge_ids.parent = GetNextSpareEdgeId();
+  temp_edge_ids.sister = GetNextSpareEdgeId();
+  temp_edge_ids.left_child = GetNextSpareEdgeId();
+  temp_edge_ids.right_child = GetNextSpareEdgeId();
   return temp_edge_ids;
 }
 
@@ -819,22 +809,22 @@ void TPEvalEngineViaLikelihood::PopulateRootwardPVForEdge(const EdgeId edge_id) 
   // Populate edge PLV by evolving up given edge.
   const auto choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
   // Update parent's PLeftHat PLV, evolved up from left child's P PLV.
-  if (choices.left_child_edge_id != NoId) {
-    EvolvePPVUpEdge(edge_id, choices.left_child_edge_id);
+  if (choices.left_child != NoId) {
+    EvolvePPVUpEdge(edge_id, choices.left_child);
   }
   // Update parent's PRightHat PLV, evolved up from right child's P PLV.
-  if (choices.right_child_edge_id != NoId) {
-    EvolvePPVUpEdge(edge_id, choices.right_child_edge_id);
+  if (choices.right_child != NoId) {
+    EvolvePPVUpEdge(edge_id, choices.right_child);
   }
   // Update P-PLV from PHatLeft and PHatRight by taking product.
   const PVId p_pvid = GetPVs().GetPVIndex(PLVType::P, edge_id);
   const PVId phatleft_pvid = GetPVs().GetPVIndex(PLVType::PHatLeft, edge_id);
   const PVId phatright_pvid = GetPVs().GetPVIndex(PLVType::PHatRight, edge_id);
-  if ((choices.left_child_edge_id != NoId) && (choices.right_child_edge_id != NoId)) {
+  if ((choices.left_child != NoId) && (choices.right_child != NoId)) {
     MultiplyPVs(p_pvid, phatleft_pvid, phatright_pvid);
-  } else if (choices.left_child_edge_id != NoId) {
+  } else if (choices.left_child != NoId) {
     TakePVValue(p_pvid, phatleft_pvid);
-  } else if (choices.right_child_edge_id != NoId) {
+  } else if (choices.right_child != NoId) {
     TakePVValue(p_pvid, phatright_pvid);
   }
 }
@@ -856,8 +846,8 @@ void TPEvalEngineViaLikelihood::PopulateLeafwardPVForEdge(const EdgeId edge_id) 
   const auto choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
   // Evolve down parent.
   // Updates child's R-PLV by evolving down from parent's RFocalHat-PLV.
-  if (choices.parent_edge_id != NoId) {
-    EvolveRPVDownEdge(choices.parent_edge_id, edge_id);
+  if (choices.parent != NoId) {
+    EvolveRPVDownEdge(choices.parent, edge_id);
   }
   // Updates child's RFocalHat-PLV and RSisterHat-PLV by taking (RHat o PHatOpposite).
   const PVId rhat_pvid = GetPVs().GetPVIndex(PLVType::RHat, edge_id);
@@ -934,7 +924,7 @@ void TPEvalEngineViaLikelihood::ComputeScores(
                               : GetDAG().LeafwardEdgeTraversalTrace(true);
   for (const auto edge_id : edge_ids) {
     const auto choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
-    if (choices.parent_edge_id != NoId) {
+    if (choices.parent != NoId) {
       const auto &[parent_pvid, child_pvid] = GetPrimaryPVIdsOfEdge(edge_id);
       ComputeLikelihood(edge_id, child_pvid, parent_pvid);
     }
@@ -1014,11 +1004,11 @@ void TPEvalEngineViaLikelihood::BranchLengthOptimization(
 void TPEvalEngineViaLikelihood::BranchLengthOptimization(
     const EdgeId edge_id, const bool check_branch_convergence, const bool update_only) {
   const auto &choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
-  if (choices.parent_edge_id != NoId) {
+  if (choices.parent != NoId) {
     // Update parent's RFocal PLV from previous branch length changes.
     PopulateRootwardPVForEdge(edge_id);
-    PopulateRootwardPVForEdge(choices.parent_edge_id);
-    PopulateLeafwardPVForEdge(choices.parent_edge_id);
+    PopulateRootwardPVForEdge(choices.parent);
+    PopulateLeafwardPVForEdge(choices.parent);
     // Optimize branch length.
     if (!update_only) {
       const auto &[parent_rfocal_pvid, child_p_pvid] = GetPrimaryPVIdsOfEdge(edge_id);
@@ -1053,11 +1043,11 @@ void TPEvalEngineViaLikelihood::EvolveRPVDownEdge(const EdgeId rootward_edge_id,
 std::pair<PVId, PVId> TPEvalEngineViaLikelihood::GetPrimaryPVIdsOfEdge(
     const EdgeId edge_id) const {
   const auto &choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
-  if (choices.parent_edge_id == NoId) {
+  if (choices.parent == NoId) {
     return std::make_pair(PVId(NoId), PVId(NoId));
   }
   PVId parent_rfocal_pvid = GetPVs().GetPVIndex(
-      PLVTypeEnum::RPLVType(GetDAG().GetFocalClade(edge_id)), choices.parent_edge_id);
+      PLVTypeEnum::RPLVType(GetDAG().GetFocalClade(edge_id)), choices.parent);
   PVId child_p_pvid = GetPVs().GetPVIndex(PLVType::P, edge_id);
   return std::make_pair(parent_rfocal_pvid, child_p_pvid);
 }
@@ -1067,37 +1057,36 @@ SecondaryPVIds TPEvalEngineViaLikelihood::GetSecondaryPVIdsOfEdge(
   SecondaryPVIds pv_ids;
   const auto &choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
   // Get P-PLVs.
-  pv_ids.parent_p_ = GetPVs().GetPVIndex(PLVType::P, choices.parent_edge_id);
+  pv_ids.parent_p_ = GetPVs().GetPVIndex(PLVType::P, choices.parent);
   pv_ids.parent_phatfocal_ = GetPVs().GetPVIndex(
-      PLVTypeEnum::PPLVType(GetDAG().GetFocalClade(edge_id)), choices.parent_edge_id);
+      PLVTypeEnum::PPLVType(GetDAG().GetFocalClade(edge_id)), choices.parent);
   pv_ids.parent_phatsister_ = GetPVs().GetPVIndex(
-      PLVTypeEnum::PPLVType(GetDAG().GetSisterClade(edge_id)), choices.parent_edge_id);
+      PLVTypeEnum::PPLVType(GetDAG().GetSisterClade(edge_id)), choices.parent);
   pv_ids.child_p_ = GetPVs().GetPVIndex(PLVType::P, edge_id);
   pv_ids.child_phatleft_ = GetPVs().GetPVIndex(PLVType::PHatLeft, edge_id);
   pv_ids.child_phatright_ = GetPVs().GetPVIndex(PLVType::PHatRight, edge_id);
-  pv_ids.sister_p_ = GetPVs().GetPVIndex(PLVType::P, choices.sister_edge_id);
-  pv_ids.leftchild_p_ = GetPVs().GetPVIndex(PLVType::P, choices.left_child_edge_id);
-  pv_ids.rightchild_p_ = GetPVs().GetPVIndex(PLVType::P, choices.right_child_edge_id);
+  pv_ids.sister_p_ = GetPVs().GetPVIndex(PLVType::P, choices.sister);
+  pv_ids.leftchild_p_ = GetPVs().GetPVIndex(PLVType::P, choices.left_child);
+  pv_ids.rightchild_p_ = GetPVs().GetPVIndex(PLVType::P, choices.right_child);
   // Get R-PLVs.
-  pv_ids.parent_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, choices.parent_edge_id);
+  pv_ids.parent_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, choices.parent);
   pv_ids.parent_rfocal_ = GetPVs().GetPVIndex(
-      PLVTypeEnum::RPLVType(GetDAG().GetFocalClade(edge_id)), choices.parent_edge_id);
+      PLVTypeEnum::RPLVType(GetDAG().GetFocalClade(edge_id)), choices.parent);
   pv_ids.parent_rsister_ = GetPVs().GetPVIndex(
-      PLVTypeEnum::RPLVType(GetDAG().GetSisterClade(edge_id)), choices.parent_edge_id);
+      PLVTypeEnum::RPLVType(GetDAG().GetSisterClade(edge_id)), choices.parent);
   pv_ids.child_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, edge_id);
   pv_ids.child_rleft_ = GetPVs().GetPVIndex(PLVType::RLeft, edge_id);
   pv_ids.child_rright_ = GetPVs().GetPVIndex(PLVType::RRight, edge_id);
   // Get grandparent R-PVs if parent edge is not a rootsplit.
-  pv_ids.grandparent_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, choices.parent_edge_id);
-  if (!GetDAG().IsEdgeRoot(choices.parent_edge_id)) {
-    const auto &choices_2 =
-        GetTPEngine().GetChoiceMap().GetEdgeChoice(choices.parent_edge_id);
-    const auto focal = GetDAG().GetFocalClade(choices.parent_edge_id);
+  pv_ids.grandparent_rhat_ = GetPVs().GetPVIndex(PLVType::RHat, choices.parent);
+  if (!GetDAG().IsEdgeRoot(choices.parent)) {
+    const auto &choices_2 = GetTPEngine().GetChoiceMap().GetEdgeChoice(choices.parent);
+    const auto focal = GetDAG().GetFocalClade(choices.parent);
     const auto sister = Bitset::Opposite(focal);
     pv_ids.grandparent_rfocal_ =
-        GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(focal), choices_2.parent_edge_id);
+        GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(focal), choices_2.parent);
     pv_ids.grandparent_rsister_ =
-        GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(sister), choices_2.parent_edge_id);
+        GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(sister), choices_2.parent);
   }
 
   return pv_ids;
@@ -1413,10 +1402,10 @@ double TPEvalEngineViaParsimony::GetTopTreeScoreWithProposedNNI(
       NNIOperation::BuildNNICladeMapFromPreNNIToNNI(pre_nni, post_nni);
   // PLV ids from pre-NNI in DAG.
   auto choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(pre_edge_id);
-  pre_id_map[NNIClade::ParentFocal] = choices.parent_edge_id;
-  pre_id_map[NNIClade::ParentSister] = choices.sister_edge_id;
-  pre_id_map[NNIClade::ChildLeft] = choices.left_child_edge_id;
-  pre_id_map[NNIClade::ChildRight] = choices.right_child_edge_id;
+  pre_id_map[NNIClade::ParentFocal] = choices.parent;
+  pre_id_map[NNIClade::ParentSister] = choices.sister;
+  pre_id_map[NNIClade::ChildLeft] = choices.left_child;
+  pre_id_map[NNIClade::ChildRight] = choices.right_child;
   // Use clade mapping to reference pre-NNI PVs for post-NNI PVs.
   for (const auto nni_clade : NNICladeEnum::Iterator()) {
     post_id_map[nni_clade] = pre_id_map[clade_map[nni_clade]];
@@ -1516,10 +1505,10 @@ void TPEvalEngineViaParsimony::PopulateRootwardParsimonyPVForNode(
 void TPEvalEngineViaParsimony::PopulateRootwardParsimonyPVForEdge(
     const EdgeId edge_id) {
   const auto choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
-  if (choices.left_child_edge_id != NoId && choices.right_child_edge_id != NoId) {
+  if (choices.left_child != NoId && choices.right_child != NoId) {
     // Accumulate parsimony from left and right child.
-    const EdgeId left_child_edge_id = choices.left_child_edge_id;
-    const EdgeId right_child_edge_id = choices.right_child_edge_id;
+    const EdgeId left_child_edge_id = choices.left_child;
+    const EdgeId right_child_edge_id = choices.right_child;
     PopulateRootwardParsimonyPVForEdge(edge_id, left_child_edge_id,
                                        right_child_edge_id);
   }
@@ -1540,11 +1529,11 @@ void TPEvalEngineViaParsimony::PopulateLeafwardParsimonyPVForNode(
 void TPEvalEngineViaParsimony::PopulateLeafwardParsimonyPVForEdge(
     const EdgeId edge_id) {
   const auto choices = GetTPEngine().GetChoiceMap().GetEdgeChoice(edge_id);
-  if (choices.parent_edge_id != NoId && choices.sister_edge_id != NoId) {
+  if (choices.parent != NoId && choices.sister != NoId) {
     // Evolve down parent.
     const auto edge = GetDAG().GetDAGEdge(edge_id);
-    const EdgeId parent_edge_id = choices.parent_edge_id;
-    const EdgeId sister_edge_id = choices.sister_edge_id;
+    const EdgeId parent_edge_id = choices.parent;
+    const EdgeId sister_edge_id = choices.sister;
     const EdgeId left_child_edge_id =
         (edge.GetSubsplitClade() == SubsplitClade::Left) ? edge_id : sister_edge_id;
     const EdgeId right_child_edge_id =

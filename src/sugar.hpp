@@ -78,10 +78,10 @@ inline std::string TagTaxonMapToString(const TagStringMap &tag_taxon_map) {
   return str.str();
 }
 
-inline std::string HashToString(const size_t hash) {
+inline std::string HashToString(const size_t hash, const size_t length = 16) {
   std::stringstream ss;
   ss << "0x" << std::hex << std::setw(16) << std::setfill('0') << hash;
-  return ss.str();
+  return ss.str().substr(0, length + 2);
 }
 
 // We implement problems in terms of exceptions. That means that they work great

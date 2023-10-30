@@ -10,6 +10,8 @@
 
 #include "sugar.hpp"
 
+Bitset::Bitset() : value_(0, false) {}
+
 Bitset::Bitset(std::vector<bool> value) : value_(std::move(value)) {}
 
 Bitset::Bitset(const size_t n, const bool initial_value) : value_(n, initial_value) {}
@@ -156,7 +158,9 @@ std::string Bitset::ToString() const {
   return str;
 }
 
-std::string Bitset::ToHashString() const { return HashToString(Hash()); }
+std::string Bitset::ToHashString(const size_t length) const {
+  return HashToString(Hash(), length);
+}
 
 std::vector<size_t> Bitset::ToVectorOfSetBits() const {
   std::vector<size_t> vec;

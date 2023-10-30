@@ -24,6 +24,7 @@
 class Bitset {
  public:
   using BitsetPair = std::pair<Bitset, Bitset>;
+  explicit Bitset();
   // Builds Bitset from boolean vector.
   explicit Bitset(std::vector<bool> value);
   // Fills entire Bitset of size `n` with `initial_value`.
@@ -89,7 +90,7 @@ class Bitset {
   // Outputs bitset as a string of "1" and "0"s.
   std::string ToString() const;
   // Outputs hash as hex string.
-  std::string ToHashString() const;
+  std::string ToHashString(const size_t length = 16) const;
   // Outputs vector of all bit indices set to true.
   SizeVector ToVectorOfSetBits() const;
   // Are all of the bits 1?

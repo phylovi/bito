@@ -146,7 +146,16 @@ std::string NNIOperation::ToString() const {
   return os.str();
 }
 
-std::string NNIOperation::ToHashString() const { return HashToString(Hash()); }
+std::string NNIOperation::ToHashString(const size_t length) const {
+  return HashToString(Hash(), length);
+}
+
+std::string NNIOperation::ToSplitHashString(const size_t length) const {
+  std::stringstream ss;
+  ss << "[" << HashToString(GetParent().Hash(), length) << "||"
+     << HashToString(GetChild().Hash(), length) << "]";
+  return ss.str();
+}
 
 std::ostream &operator<<(std::ostream &os, const NNIOperation &nni) {
   return os << nni.ToString();

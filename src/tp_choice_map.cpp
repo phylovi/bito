@@ -9,13 +9,13 @@ EdgeId TPChoiceMap::GetEdgeChoice(const EdgeId edge_id,
                                   EdgeAdjacent edge_choice_type) const {
   switch (edge_choice_type) {
     case EdgeAdjacent::Parent:
-      return edge_choice_vector_[edge_id.value_].parent_edge_id;
+      return edge_choice_vector_[edge_id.value_].parent;
     case EdgeAdjacent::Sister:
-      return edge_choice_vector_[edge_id.value_].sister_edge_id;
+      return edge_choice_vector_[edge_id.value_].sister;
     case EdgeAdjacent::LeftChild:
-      return edge_choice_vector_[edge_id.value_].left_child_edge_id;
+      return edge_choice_vector_[edge_id.value_].left_child;
     case EdgeAdjacent::RightChild:
-      return edge_choice_vector_[edge_id.value_].right_child_edge_id;
+      return edge_choice_vector_[edge_id.value_].right_child;
     default:
       Failwith("Invalid edge choice type.");
   }
@@ -26,16 +26,16 @@ void TPChoiceMap::SetEdgeChoice(const EdgeId edge_id,
                                 const EdgeId new_edge_choice) {
   switch (edge_choice_type) {
     case EdgeAdjacent::Parent:
-      edge_choice_vector_[edge_id.value_].parent_edge_id = new_edge_choice;
+      edge_choice_vector_[edge_id.value_].parent = new_edge_choice;
       break;
     case EdgeAdjacent::Sister:
-      edge_choice_vector_[edge_id.value_].sister_edge_id = new_edge_choice;
+      edge_choice_vector_[edge_id.value_].sister = new_edge_choice;
       break;
     case EdgeAdjacent::LeftChild:
-      edge_choice_vector_[edge_id.value_].left_child_edge_id = new_edge_choice;
+      edge_choice_vector_[edge_id.value_].left_child = new_edge_choice;
       break;
     case EdgeAdjacent::RightChild:
-      edge_choice_vector_[edge_id.value_].right_child_edge_id = new_edge_choice;
+      edge_choice_vector_[edge_id.value_].right_child = new_edge_choice;
       break;
     default:
       Failwith("Invalid edge choice type.");
@@ -64,14 +64,11 @@ TPChoiceMap::EdgeChoiceNodeIds TPChoiceMap::GetEdgeChoiceNodeIds(
   };
 
   EdgeChoiceNodeIds node_choice;
-  node_choice.parent_node_id =
-      GetNodeFromEdge(edge_choice.parent_edge_id, Direction::Rootward);
-  node_choice.sister_node_id =
-      GetNodeFromEdge(edge_choice.sister_edge_id, Direction::Leafward);
-  node_choice.left_child_node_id =
-      GetNodeFromEdge(edge_choice.left_child_edge_id, Direction::Leafward);
-  node_choice.right_child_node_id =
-      GetNodeFromEdge(edge_choice.right_child_edge_id, Direction::Leafward);
+  node_choice.parent = GetNodeFromEdge(edge_choice.parent, Direction::Rootward);
+  node_choice.sister = GetNodeFromEdge(edge_choice.sister, Direction::Leafward);
+  node_choice.left_child = GetNodeFromEdge(edge_choice.left_child, Direction::Leafward);
+  node_choice.right_child =
+      GetNodeFromEdge(edge_choice.right_child, Direction::Leafward);
   return node_choice;
 }
 
@@ -84,11 +81,11 @@ TPChoiceMap::EdgeChoicePCSPs TPChoiceMap::GetEdgeChoicePCSPs(
       adj_edge_bitset = GetDAG().GetDAGEdgeBitset(adj_edge_id);
     }
   };
-  SetPCSPIfExists(adj_pcsps.parent_pcsp, edge_choice.parent_edge_id);
-  SetPCSPIfExists(adj_pcsps.focal_pcsp, edge_id);
-  SetPCSPIfExists(adj_pcsps.sister_pcsp, edge_choice.sister_edge_id);
-  SetPCSPIfExists(adj_pcsps.left_child_pcsp, edge_choice.left_child_edge_id);
-  SetPCSPIfExists(adj_pcsps.right_child_pcsp, edge_choice.right_child_edge_id);
+  SetPCSPIfExists(adj_pcsps.parent, edge_choice.parent);
+  SetPCSPIfExists(adj_pcsps.focal, edge_id);
+  SetPCSPIfExists(adj_pcsps.sister, edge_choice.sister);
+  SetPCSPIfExists(adj_pcsps.left_child, edge_choice.left_child);
+  SetPCSPIfExists(adj_pcsps.right_child, edge_choice.right_child);
 
   return adj_pcsps;
 }
@@ -150,23 +147,21 @@ void TPChoiceMap::SelectFirstEdge(const EdgeId edge_id) {
 
   // If neighbor lists are non-empty, get first edge from list.
   if (!left_parents.empty()) {
-    edge_choice.parent_edge_id =
-        GetDAG().GetEdgeIdx(NodeId(left_parents[0]), parent_node.Id());
+    edge_choice.parent = GetDAG().GetEdgeIdx(NodeId(left_parents[0]), parent_node.Id());
   }
   if (!right_parents.empty()) {
-    edge_choice.parent_edge_id =
+    edge_choice.parent =
         GetDAG().GetEdgeIdx(NodeId(right_parents[0]), parent_node.Id());
   }
   if (!sisters.empty()) {
-    edge_choice.sister_edge_id =
-        GetDAG().GetEdgeIdx(parent_node.Id(), NodeId(sisters[0]));
+    edge_choice.sister = GetDAG().GetEdgeIdx(parent_node.Id(), NodeId(sisters[0]));
   }
   if (!left_children.empty()) {
-    edge_choice.left_child_edge_id =
+    edge_choice.left_child =
         GetDAG().GetEdgeIdx(child_node.Id(), NodeId(left_children[0]));
   }
   if (!right_children.empty()) {
-    edge_choice.right_child_edge_id =
+    edge_choice.right_child =
         GetDAG().GetEdgeIdx(child_node.Id(), NodeId(right_children[0]));
   }
 }
@@ -179,18 +174,15 @@ bool TPChoiceMap::SelectionIsValid(const bool is_quiet) const {
   EdgeId edge_max_id = GetDAG().EdgeIdxRange().second;
   for (EdgeId edge_id = EdgeId(0); edge_id < edge_choice_vector_.size(); edge_id++) {
     const auto &edge_choice = edge_choice_vector_[edge_id.value_];
-    if ((edge_choice.parent_edge_id == NoId) && (edge_choice.sister_edge_id == NoId) &&
-        (edge_choice.left_child_edge_id == NoId) &&
-        (edge_choice.right_child_edge_id == NoId)) {
+    if ((edge_choice.parent == NoId) && (edge_choice.sister == NoId) &&
+        (edge_choice.left_child == NoId) && (edge_choice.right_child == NoId)) {
       os << "Invalid Selection: Edge Choice is empty." << std::endl;
       is_valid = false;
     }
     // If edge id is outside valid range.
-    if ((edge_choice.parent_edge_id > edge_max_id) ||
-        (edge_choice.sister_edge_id > edge_max_id)) {
+    if ((edge_choice.parent > edge_max_id) || (edge_choice.sister > edge_max_id)) {
       // If they are not NoId, then it is an invalid edge_id.
-      if ((edge_choice.parent_edge_id != NoId) ||
-          (edge_choice.sister_edge_id != NoId)) {
+      if ((edge_choice.parent != NoId) || (edge_choice.sister != NoId)) {
         os << "Invalid Selection: Parent or Sister has invalid edge_id." << std::endl;
         is_valid = false;
       }
@@ -201,8 +193,8 @@ bool TPChoiceMap::SelectionIsValid(const bool is_quiet) const {
         is_valid = false;
       }
     }
-    for (const auto &child_edge_id : EdgeIdVector(
-             {edge_choice.left_child_edge_id, edge_choice.right_child_edge_id})) {
+    for (const auto &child_edge_id :
+         EdgeIdVector({edge_choice.left_child, edge_choice.right_child})) {
       // If edge id is outside valid range.
       if (child_edge_id > edge_max_id) {
         // If they are not NoId, then it is an invalid edge_id.
@@ -236,7 +228,7 @@ bool TPChoiceMap::SelectionIsValid(const bool is_quiet) const {
 //   each edge it encounters.
 //   - The second pass goes leafward, descending along the chosen edges to the leaf
 //   edges from the sister of each edge in the rootward pass and the child edges from
-//   the central edge.
+//   the focal edge.
 TPChoiceMap::ExpandedTreeMask TPChoiceMap::ExtractExpandedTreeMask(
     const TreeMask &tree_mask) const {
   ExpandedTreeMask tree_mask_ext;
@@ -284,17 +276,17 @@ static void StackPushIfValidId(std::stack<T> &stack, IdType id) {
   }
 }
 
-TPChoiceMap::TreeMask TPChoiceMap::ExtractTreeMask(const EdgeId central_edge_id) const {
+TPChoiceMap::TreeMask TPChoiceMap::ExtractTreeMask(const EdgeId initial_edge_id) const {
   TreeMask tree_mask;
   std::stack<EdgeId> rootward_stack, leafward_stack;
   const auto edge_max_id = GetDAG().EdgeIdxRange().second;
 
   // Rootward Pass: Capture parent and sister edges above focal edge.
-  // For central edge, add children to stack for leafward pass.
-  auto focal_edge_id = central_edge_id;
+  // For focal edge, add children to stack for leafward pass.
+  auto focal_edge_id = initial_edge_id;
   const auto &focal_choices = edge_choice_vector_.at(focal_edge_id.value_);
-  StackPushIfValidId(rootward_stack, focal_choices.left_child_edge_id);
-  StackPushIfValidId(rootward_stack, focal_choices.right_child_edge_id);
+  StackPushIfValidId(rootward_stack, focal_choices.left_child);
+  StackPushIfValidId(rootward_stack, focal_choices.right_child);
   // Follow parentage upward until root.
   bool at_root = false;
   while (!at_root) {
@@ -310,8 +302,8 @@ TPChoiceMap::TreeMask TPChoiceMap::ExtractTreeMask(const EdgeId central_edge_id)
       at_root = true;
     } else {
       // If not at root, add sister for leafward pass.
-      focal_edge_id = focal_choices.parent_edge_id;
-      rootward_stack.push(focal_choices.sister_edge_id);
+      focal_edge_id = focal_choices.parent;
+      rootward_stack.push(focal_choices.sister);
     }
   }
 
@@ -326,16 +318,16 @@ TPChoiceMap::TreeMask TPChoiceMap::ExtractTreeMask(const EdgeId central_edge_id)
     leafward_stack.pop();
     tree_mask.insert(edge_id);
     const auto edge_choice = edge_choice_vector_.at(edge_id.value_);
-    StackPushIfValidId(leafward_stack, edge_choice.left_child_edge_id);
-    StackPushIfValidId(leafward_stack, edge_choice.right_child_edge_id);
+    StackPushIfValidId(leafward_stack, edge_choice.left_child);
+    StackPushIfValidId(leafward_stack, edge_choice.right_child);
   }
 
   return tree_mask;
 }
 
 TPChoiceMap::ExpandedTreeMask TPChoiceMap::ExtractExpandedTreeMask(
-    const EdgeId central_edge_id) const {
-  return ExtractExpandedTreeMask(ExtractTreeMask(central_edge_id));
+    const EdgeId initial_edge_id) const {
+  return ExtractExpandedTreeMask(ExtractTreeMask(initial_edge_id));
 }
 
 bool TPChoiceMap::TreeMaskIsValid(const TreeMask &tree_mask,
@@ -464,9 +456,9 @@ std::string TPChoiceMap::ExpandedTreeMaskToString(
 //   each edge it encounters.
 //   - The second pass goes leafward, descending along the chosen edges to the leaf
 //   edges from the sister of each edge in the rootward pass and the child edges from
-//   the central edge.
-Node::Topology TPChoiceMap::ExtractTopology(const EdgeId central_edge_id) const {
-  return ExtractTopology(ExtractTreeMask(central_edge_id));
+//   the focal edge.
+Node::Topology TPChoiceMap::ExtractTopology(const EdgeId focal_edge_id) const {
+  return ExtractTopology(ExtractTreeMask(focal_edge_id));
 }
 
 Node::Topology TPChoiceMap::ExtractTopology(const TreeMask &tree_mask) const {
@@ -556,11 +548,11 @@ std::string TPChoiceMap::EdgeChoiceToString(const EdgeId edge_id) const {
   };
 
   os << "{ ";
-  PrintEdge("central", edge_id);
-  PrintEdge("parent", edge_choice.parent_edge_id);
-  PrintEdge("sister", edge_choice.sister_edge_id);
-  PrintEdge("left_child", edge_choice.left_child_edge_id);
-  PrintEdge("right_child", edge_choice.right_child_edge_id);
+  PrintEdge("focal", edge_id);
+  PrintEdge("parent", edge_choice.parent);
+  PrintEdge("sister", edge_choice.sister);
+  PrintEdge("left_child", edge_choice.left_child);
+  PrintEdge("right_child", edge_choice.right_child);
   os << " }";
   return os.str();
 }
@@ -569,10 +561,10 @@ std::string TPChoiceMap::EdgeChoiceToString(
     const TPChoiceMap::EdgeChoice &edge_choice) {
   std::stringstream os;
   os << "{ ";
-  os << "parent: " << edge_choice.parent_edge_id << ", ";
-  os << "sister: " << edge_choice.sister_edge_id << ", ";
-  os << "left_child: " << edge_choice.left_child_edge_id << ", ";
-  os << "right_child: " << edge_choice.right_child_edge_id;
+  os << "parent: " << edge_choice.parent << ", ";
+  os << "sister: " << edge_choice.sister << ", ";
+  os << "left_child: " << edge_choice.left_child << ", ";
+  os << "right_child: " << edge_choice.right_child;
   os << " }";
   return os.str();
 }
@@ -596,8 +588,8 @@ std::map<Bitset, std::vector<Bitset>> TPChoiceMap::BuildPCSPMap() const {
   std::map<Bitset, std::vector<Bitset>> pcsp_map;
   for (EdgeId edge_id(0); edge_id < GetDAG().EdgeCountWithLeafSubsplits(); edge_id++) {
     const auto pcsps = GetEdgeChoicePCSPs(edge_id);
-    pcsp_map[pcsps.focal_pcsp] = {{pcsps.parent_pcsp, pcsps.sister_pcsp,
-                                   pcsps.left_child_pcsp, pcsps.right_child_pcsp}};
+    pcsp_map[pcsps.focal] = {
+        {pcsps.parent, pcsps.sister, pcsps.left_child, pcsps.right_child}};
   }
   return pcsp_map;
 }
