@@ -23,20 +23,6 @@
 #include "bitset.hpp"
 #include "subsplit_dag_storage.hpp"
 
-template <typename T>
-struct NNIAdjacentIds {
-  T parent;
-  T sister;
-  T focal;
-  T left_child;
-  T right_child;
-};
-using NNIAdjEdgeIds = NNIAdjacentIds<EdgeId>;
-using NNIAdjNodeIds = NNIAdjacentIds<NodeId>;
-using NNIAdjBools = NNIAdjacentIds<bool>;
-using NNIAdjEdgeIdMap = NNIAdjacentIds<std::pair<EdgeId, EdgeId>>;
-using NNIAdjNodeIdMap = NNIAdjacentIds<std::pair<NodeId, NodeId>>;
-
 // * Nearest Neighbor Interchange Operation
 // NNIOperation stores output parent/child pair which are the product of an NNI.
 class NNIOperation {
@@ -50,15 +36,19 @@ class NNIOperation {
   NNIOperation(const std::string &parent, const std::string child)
       : NNIOperation(Bitset(parent), Bitset(child)) {}
 
+  // Types of clades in the NNI (two from parent subsplit and two from the child
+  // subsplit).
   enum class NNIClade { ParentFocal, ParentSister, ChildLeft, ChildRight };
   static const inline size_t NNICladeCount = 4;
   class NNICladeEnum : public EnumWrapper<NNIClade, size_t, NNICladeCount,
                                           NNIClade::ParentFocal, NNIClade::ChildRight> {
   };
-  enum class NNIEdge { Parent, Sister, Focal, LeftChild, RightChild };
-  static const inline size_t NNIEdgeCount = 5;
-  class NNIEdgeEnum : public EnumWrapper<NNIEdge, size_t, NNIEdgeCount, NNIEdge::Parent,
-                                         NNIEdge::RightChild> {};
+  // Types of NNI adjacencies (includes the central/focal edge).
+  enum class NNIAdjacent { Parent, Sister, Focal, LeftChild, RightChild };
+  static const inline size_t NNIAdjacentCount = 5;
+  class NNIAdjacentEnum
+      : public EnumWrapper<NNIAdjacent, size_t, NNIAdjacentCount, NNIAdjacent::Parent,
+                           NNIAdjacent::RightChild> {};
   using NNICladeArray = NNICladeEnum::Array<NNIClade>;
 
   // ** Comparator
@@ -179,6 +169,36 @@ using NNISet = std::set<NNIOperation>;
 using NNIVector = std::vector<NNIOperation>;
 using NNIClade = NNIOperation::NNIClade;
 using NNICladeEnum = NNIOperation::NNICladeEnum;
+using NNIAdjacent = NNIOperation::NNIAdjacent;
+
+template <typename T>
+struct NNIAdjacentMap {
+  T parent;
+  T sister;
+  T focal;
+  T left_child;
+  T right_child;
+
+  T &operator[](NNIAdjacent nni_edge) {
+    switch (nni_edge) {
+      case NNIAdjacent::Parent:
+        return parent;
+      case NNIAdjacent::Sister:
+        return sister;
+      case NNIAdjacent::Focal:
+        return focal;
+      case NNIAdjacent::LeftChild:
+        return left_child;
+      case NNIAdjacent::RightChild:
+        return right_child;
+    }
+    Failwith("ERROR: Invalid enum given.");
+  }
+};
+using NNIAdjEdgeIds = NNIAdjacentMap<EdgeId>;
+using NNIAdjNodeIds = NNIAdjacentMap<NodeId>;
+using NNIAdjBools = NNIAdjacentMap<bool>;
+using NNIAdjEdgeIdMap = NNIAdjacentMap<std::pair<EdgeId, EdgeId>>;
 
 // This is how we inject a hash routine and a custom comparator into the std
 // namespace so that we can use unordered_map and unordered_set.
@@ -195,7 +215,6 @@ struct equal_to<NNIOperation> {
   }
 };
 }  // namespace std
-
 #ifdef DOCTEST_LIBRARY_INCLUDED
 
 // See tree diagram at:
@@ -264,7 +283,8 @@ TEST_CASE("NNIOperation: NNISet") {
 TEST_CASE("NNIOperation: NNI Clade Mapping") {
   // Clades for NNI.
   std::vector<Bitset> clades = {Bitset("100"), Bitset("010"), Bitset("001")};
-  // Iterate over all possible assignments of {X,Y,Z} clades to {sister, left, right}.
+  // Iterate over all possible assignments of {X,Y,Z} clades to {sister, left,
+  // right}.
   std::vector<std::array<size_t, 3>> assignments;
   for (size_t x = 0; x < 3; x++) {
     for (size_t y = 0; y < 3; y++) {

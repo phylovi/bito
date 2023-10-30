@@ -18,61 +18,79 @@ using TreeId = GenericId<struct TreeIdTag>;
 
 class TPChoiceMap {
  public:
-  enum class NodeAdjacent { Parent, LeftChild, RightChild };
-  static const inline size_t NodeAdjacentCount = 3;
-  class NodeAdjacentEnum
-      : public EnumWrapper<NodeAdjacent, size_t, NodeAdjacentCount,
-                           NodeAdjacent::Parent, NodeAdjacent::RightChild> {
-   public:
-    static inline const std::string Prefix = "NodeAdjacent";
-    static inline const Array<std::string> Labels = {
-        {"Parent", "LeftChild", "RightChild"}};
-
-    static std::string ToString(const NodeAdjacent e) {
-      std::stringstream ss;
-      ss << Prefix << "::" << Labels[e];
-      return ss.str();
-    }
-    friend std::ostream &operator<<(std::ostream &os, const NodeAdjacent e) {
-      os << ToString(e);
-      return os;
-    }
-  };
-
-  enum class EdgeAdjacent { Parent, Sister, LeftChild, RightChild };
-  static const inline size_t EdgeAdjacentCount = 4;
-  class EdgeAdjacentEnum
-      : public EnumWrapper<EdgeAdjacent, size_t, EdgeAdjacentCount,
-                           EdgeAdjacent::Parent, EdgeAdjacent::RightChild> {
-   public:
-    static inline const std::string Prefix = "EdgeAdjacent";
-    static inline const Array<std::string> Labels = {
-        {"Parent", "Sister", "LeftChild", "RightChild"}};
-
-    static std::string ToString(const EdgeAdjacent e) {
-      std::stringstream ss;
-      ss << Prefix << "::" << Labels[e];
-      return ss.str();
-    }
-    friend std::ostream &operator<<(std::ostream &os, const EdgeAdjacent e) {
-      os << ToString(e);
-      return os;
-    }
-  };
-
   // Per-edge adjacent choices for given edge.
   template <typename T>
-  struct EdgeChoiceIds {
+  struct EdgeAdjacentMap {
     T parent;
     T sister;
     T left_child;
     T right_child;
+
+    T &operator[](EdgeAdjacent edge_adj) {
+      switch (edge_adj) {
+        case EdgeAdjacent::Parent:
+          return parent;
+        case EdgeAdjacent::Sister:
+          return sister;
+        case EdgeAdjacent::LeftChild:
+          return left_child;
+        case EdgeAdjacent::RightChild:
+          return right_child;
+      };
+      Failwith("ERROR: Invalid enum given.");
+    }
+    const T &operator[](EdgeAdjacent edge_adj) const {
+      switch (edge_adj) {
+        case EdgeAdjacent::Parent:
+          return parent;
+        case EdgeAdjacent::Sister:
+          return sister;
+        case EdgeAdjacent::LeftChild:
+          return left_child;
+        case EdgeAdjacent::RightChild:
+          return right_child;
+      };
+      Failwith("ERROR: Invalid enum given.");
+    }
+
+    T &operator[](NNIClade clade) {
+      switch (clade) {
+        case NNIClade::ParentFocal:
+          return parent;
+        case NNIClade::ParentSister:
+          return sister;
+        case NNIClade::ChildLeft:
+          return left_child;
+        case NNIClade::ChildRight:
+          return right_child;
+      }
+      Failwith("ERROR: Invalid enum given.");
+    }
+
+    const T &operator[](NNIClade clade) const {
+      switch (clade) {
+        case NNIClade::ParentFocal:
+          return parent;
+        case NNIClade::ParentSister:
+          return sister;
+        case NNIClade::ChildLeft:
+          return left_child;
+        case NNIClade::ChildRight:
+          return right_child;
+      }
+      Failwith("ERROR: Invalid enum given.");
+    }
   };
-  using EdgeChoice = EdgeChoiceIds<EdgeId>;
-  using EdgeChoiceNodeIds = EdgeChoiceIds<NodeId>;
-  using EdgeChoiceTreeIds = EdgeChoiceIds<TreeId>;
-  using EdgeChoicePCSPs = NNIAdjacentIds<Bitset>;
+
+  using EdgeChoice = EdgeAdjacentMap<EdgeId>;
+  using EdgeChoiceNodeIds = EdgeAdjacentMap<NodeId>;
+  using EdgeChoiceTreeIds = EdgeAdjacentMap<TreeId>;
+  using EdgeChoicePCSPs = NNIAdjacentMap<Bitset>;
+  using EdgeChoiceNodeIdMap = EdgeAdjacentMap<std::pair<NodeId, NodeId>>;
+  using EdgeChoicePCSPMap = EdgeAdjacentMap<std::pair<Bitset, Bitset>>;
   using EdgeChoiceVector = std::vector<EdgeChoice>;
+  // using TreeIdData = DAGEdgeData<std::vector<TreeId>, TreeId>;
+  using TreeIdData = std::vector<TreeId>;
 
   // ** Constructors
 
@@ -104,9 +122,9 @@ class TPChoiceMap {
   }
 
   // Get adjacent edge id in given edge's choice map for adjacent edge direction.
-  EdgeId GetEdgeChoice(const EdgeId edge_id, EdgeAdjacent edge_choice_type) const;
+  EdgeId GetEdgeChoice(const EdgeId edge_id, EdgeAdjacent edge_adj) const;
   // Set given edge choice map's given adjacent edge to the given new_edge_choice.
-  void SetEdgeChoice(const EdgeId edge_id, const EdgeAdjacent edge_choice_type,
+  void SetEdgeChoice(const EdgeId edge_id, const EdgeAdjacent edge_adj,
                      const EdgeId new_edge_choice);
   // Re-initialize edge choices to NoId.
   void ResetEdgeChoice(const EdgeId edge_id);
@@ -198,6 +216,6 @@ class TPChoiceMap {
   GPDAG &dag_;
   // A vector that stores a map of each edge's best adjacent edges.
   EdgeChoiceVector edge_choice_vector_;
-  // A vector that sets the priority of each tree in the choice map.
-  DAGEdgeIntData tree_priority_;
+  // A vector that sets each edge's highest priority tree in the choice map.
+  TreeIdData tree_priority_;
 };

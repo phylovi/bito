@@ -5,41 +5,12 @@
 
 // ** Access
 
-EdgeId TPChoiceMap::GetEdgeChoice(const EdgeId edge_id,
-                                  EdgeAdjacent edge_choice_type) const {
-  switch (edge_choice_type) {
-    case EdgeAdjacent::Parent:
-      return edge_choice_vector_[edge_id.value_].parent;
-    case EdgeAdjacent::Sister:
-      return edge_choice_vector_[edge_id.value_].sister;
-    case EdgeAdjacent::LeftChild:
-      return edge_choice_vector_[edge_id.value_].left_child;
-    case EdgeAdjacent::RightChild:
-      return edge_choice_vector_[edge_id.value_].right_child;
-    default:
-      Failwith("Invalid edge choice type.");
-  }
+EdgeId TPChoiceMap::GetEdgeChoice(const EdgeId edge_id, EdgeAdjacent edge_adj) const {
+  return edge_choice_vector_[edge_id.value_][edge_adj];
 }
-
-void TPChoiceMap::SetEdgeChoice(const EdgeId edge_id,
-                                const EdgeAdjacent edge_choice_type,
+void TPChoiceMap::SetEdgeChoice(const EdgeId edge_id, const EdgeAdjacent edge_adj,
                                 const EdgeId new_edge_choice) {
-  switch (edge_choice_type) {
-    case EdgeAdjacent::Parent:
-      edge_choice_vector_[edge_id.value_].parent = new_edge_choice;
-      break;
-    case EdgeAdjacent::Sister:
-      edge_choice_vector_[edge_id.value_].sister = new_edge_choice;
-      break;
-    case EdgeAdjacent::LeftChild:
-      edge_choice_vector_[edge_id.value_].left_child = new_edge_choice;
-      break;
-    case EdgeAdjacent::RightChild:
-      edge_choice_vector_[edge_id.value_].right_child = new_edge_choice;
-      break;
-    default:
-      Failwith("Invalid edge choice type.");
-  }
+  edge_choice_vector_[edge_id.value_][edge_adj] = new_edge_choice;
 }
 
 void TPChoiceMap::ResetEdgeChoice(const EdgeId edge_id) {

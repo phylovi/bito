@@ -527,8 +527,8 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     branch_handler_(temp_edge_id_map.right_child) = default_length;
   }
 
-  // Track whether edges already exist in DAG.
-  NNIAdjBools opt_edges{true, true, true, true, true};
+  // Track whether edges should be optimized (if they don't already exist in the DAG).
+  NNIAdjBools do_optimize_edge{true, true, true, true, true};
   // Update branch lengths if edge already exists in DAG.
   auto FindBranchLengthIfExists = [&](const Bitset &parent_subsplit,
                                       const Bitset &child_subsplit,
@@ -553,18 +553,18 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
   };
   FindBranchLengthIfExists(GetDAG().GetDAGNodeBitset(adj_node_ids.parent),
                            post_nni.GetParent(), temp_edge_id_map.parent,
-                           opt_edges.parent);
+                           do_optimize_edge.parent);
   FindBranchLengthIfExists(post_nni.GetParent(),
                            GetDAG().GetDAGNodeBitset(adj_node_ids.sister),
-                           temp_edge_id_map.sister, opt_edges.sister);
+                           temp_edge_id_map.sister, do_optimize_edge.sister);
   FindBranchLengthIfExists(post_nni.GetParent(), post_nni.GetChild(),
-                           temp_edge_id_map.focal, opt_edges.focal);
+                           temp_edge_id_map.focal, do_optimize_edge.focal);
   FindBranchLengthIfExists(post_nni.GetChild(),
                            GetDAG().GetDAGNodeBitset(adj_node_ids.left_child),
-                           temp_edge_id_map.left_child, opt_edges.left_child);
+                           temp_edge_id_map.left_child, do_optimize_edge.left_child);
   FindBranchLengthIfExists(post_nni.GetChild(),
                            GetDAG().GetDAGNodeBitset(adj_node_ids.right_child),
-                           temp_edge_id_map.right_child, opt_edges.right_child);
+                           temp_edge_id_map.right_child, do_optimize_edge.right_child);
 
   auto RootwardPass = [&]() {
     // Evolve up child P-PLVs.
@@ -649,7 +649,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
                      temp_pvids.child_phatright_, temp_pvids.child_rhat_,
                      temp_pvids.child_rleft_, temp_pvids.child_rright_,
                      post_pvids.leftchild_p_, PVId(NoId), PVId(NoId),
-                     (opt_edges.left_child && do_optimize), false, true);
+                     (do_optimize_edge.left_child && do_optimize), false, true);
       };
       auto OptimizeRightChild = [&](const bool do_optimize = true) {
         OptimizeEdge(temp_edge_id_map.right_child, temp_edge_id_map.focal,
@@ -657,7 +657,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
                      temp_pvids.child_phatleft_, temp_pvids.child_rhat_,
                      temp_pvids.child_rright_, temp_pvids.child_rleft_,
                      post_pvids.rightchild_p_, PVId(NoId), PVId(NoId),
-                     (opt_edges.right_child && do_optimize), false, true);
+                     (do_optimize_edge.right_child && do_optimize), false, true);
       };
       auto OptimizeSister = [&](const bool do_optimize = true) {
         OptimizeEdge(temp_edge_id_map.sister, temp_edge_id_map.focal,
@@ -665,15 +665,16 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
                      temp_pvids.parent_phatfocal_, temp_pvids.parent_rhat_,
                      temp_pvids.parent_rsister_, temp_pvids.parent_rfocal_,
                      post_pvids.sister_p_, PVId(NoId), PVId(NoId),
-                     (opt_edges.sister && do_optimize), false, true);
+                     (do_optimize_edge.sister && do_optimize), false, true);
       };
       auto OptimizeCentral = [&](const bool do_optimize = true) {
-        OptimizeEdge(
-            temp_edge_id_map.focal, temp_edge_id_map.focal, temp_pvids.parent_p_,
-            temp_pvids.parent_phatfocal_, temp_pvids.parent_phatsister_,
-            temp_pvids.parent_rhat_, temp_pvids.parent_rfocal_,
-            temp_pvids.parent_rsister_, temp_pvids.child_p_, temp_pvids.child_phatleft_,
-            temp_pvids.child_phatright_, (opt_edges.focal && do_optimize), true, true);
+        OptimizeEdge(temp_edge_id_map.focal, temp_edge_id_map.focal,
+                     temp_pvids.parent_p_, temp_pvids.parent_phatfocal_,
+                     temp_pvids.parent_phatsister_, temp_pvids.parent_rhat_,
+                     temp_pvids.parent_rfocal_, temp_pvids.parent_rsister_,
+                     temp_pvids.child_p_, temp_pvids.child_phatleft_,
+                     temp_pvids.child_phatright_,
+                     (do_optimize_edge.focal && do_optimize), true, true);
       };
       auto OptimizeParent = [&](const bool do_optimize = true) {
         if (temp_edge_id_map.parent != NoId) {
@@ -681,8 +682,8 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
                        PVId(NoId), PVId(NoId), post_pvids.grandparent_rhat_,
                        post_pvids.grandparent_rfocal_, post_pvids.grandparent_rsister_,
                        temp_pvids.parent_p_, temp_pvids.parent_phatfocal_,
-                       temp_pvids.parent_phatsister_, (opt_edges.parent && do_optimize),
-                       true, false, true);
+                       temp_pvids.parent_phatsister_,
+                       (do_optimize_edge.parent && do_optimize), true, false, true);
         }
       };
 
@@ -715,17 +716,17 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     }
   };
   UpdateTempEdges(GetDAG().GetDAGNodeBitset(adj_node_ids.parent), post_nni.GetParent(),
-                  temp_edge_id_map.parent, opt_edges.parent);
+                  temp_edge_id_map.parent, do_optimize_edge.parent);
   UpdateTempEdges(post_nni.GetParent(), GetDAG().GetDAGNodeBitset(adj_node_ids.sister),
-                  temp_edge_id_map.sister, opt_edges.sister);
+                  temp_edge_id_map.sister, do_optimize_edge.sister);
   UpdateTempEdges(post_nni.GetParent(), post_nni.GetChild(), temp_edge_id_map.focal,
-                  opt_edges.focal);
+                  do_optimize_edge.focal);
   UpdateTempEdges(post_nni.GetChild(),
                   GetDAG().GetDAGNodeBitset(adj_node_ids.left_child),
-                  temp_edge_id_map.left_child, opt_edges.left_child);
+                  temp_edge_id_map.left_child, do_optimize_edge.left_child);
   UpdateTempEdges(post_nni.GetChild(),
                   GetDAG().GetDAGNodeBitset(adj_node_ids.right_child),
-                  temp_edge_id_map.right_child, opt_edges.right_child);
+                  temp_edge_id_map.right_child, do_optimize_edge.right_child);
 
   // Compute likelihood of focal edge by evolving up from child to parent.
   ComputeLikelihood(temp_edge_id_map.focal, temp_pvids.child_p_,

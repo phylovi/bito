@@ -44,6 +44,50 @@
 #include "node.hpp"
 #include "stopwatch.hpp"
 
+// Types of node neighbors/adjacencies.
+enum class NodeAdjacent { Parent, LeftChild, RightChild };
+static const inline size_t NodeAdjacentCount = 3;
+class NodeAdjacentEnum
+    : public EnumWrapper<NodeAdjacent, size_t, NodeAdjacentCount, NodeAdjacent::Parent,
+                         NodeAdjacent::RightChild> {
+ public:
+  static inline const std::string Prefix = "NodeAdjacent";
+  static inline const Array<std::string> Labels = {
+      {"Parent", "LeftChild", "RightChild"}};
+
+  static std::string ToString(const NodeAdjacent e) {
+    std::stringstream ss;
+    ss << Prefix << "::" << Labels[e];
+    return ss.str();
+  }
+  friend std::ostream &operator<<(std::ostream &os, const NodeAdjacent e) {
+    os << ToString(e);
+    return os;
+  }
+};
+
+// Types of edge neighbors/adjacencies.
+enum class EdgeAdjacent { Parent, Sister, LeftChild, RightChild };
+static const inline size_t EdgeAdjacentCount = 4;
+class EdgeAdjacentEnum
+    : public EnumWrapper<EdgeAdjacent, size_t, EdgeAdjacentCount, EdgeAdjacent::Parent,
+                         EdgeAdjacent::RightChild> {
+ public:
+  static inline const std::string Prefix = "EdgeAdjacent";
+  static inline const Array<std::string> Labels = {
+      {"Parent", "Sister", "LeftChild", "RightChild"}};
+
+  static std::string ToString(const EdgeAdjacent e) {
+    std::stringstream ss;
+    ss << Prefix << "::" << Labels[e];
+    return ss.str();
+  }
+  friend std::ostream &operator<<(std::ostream &os, const EdgeAdjacent e) {
+    os << ToString(e);
+    return os;
+  }
+};
+
 class SubsplitDAG {
  public:
   // ** Constructor

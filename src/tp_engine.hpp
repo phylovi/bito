@@ -45,7 +45,8 @@ class TPEvalEngineTypeEnum
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 using BitsetBitsetMap = std::unordered_map<Bitset, Bitset>;
 using NNINNIMap = std::unordered_map<NNIOperation, NNIOperation>;
-using NNIAdjBitsetEdgeIds = NNIAdjacentIds<std::pair<Bitset, EdgeId>>;
+using NNIAdjNodeIdMap = NNIAdjacentMap<std::pair<NodeId, NodeId>>;
+using NNIAdjBitsetEdgeIdMap = NNIAdjacentMap<std::pair<Bitset, EdgeId>>;
 
 class TPEngine {
  public:
@@ -243,11 +244,13 @@ class TPEngine {
       std::optional<const size_t> prev_edge_count = std::nullopt,
       std::optional<const Reindexer> edge_reindexer = std::nullopt) const;
 
-  //
-  NNIAdjBitsetEdgeIds BuildAdjacentPCSPsFromPreNNIToPostNNI(
+  NNIAdjBitsetEdgeIdMap BuildAdjacentPCSPsFromPreNNIToPostNNI(
       const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
   //
-  NNIAdjNodeIdMap BuildAdjacentNodeIdMapFromPreNNIToPostNNI(
+  TPChoiceMap::EdgeChoiceNodeIdMap BuildAdjacentNodeIdMapFromPreNNIToPostNNI(
+      const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
+  //
+  TPChoiceMap::EdgeChoicePCSPMap BuildAdjacentPCSPMapFromPreNNIToPostNNI(
       const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
 
   // ** TP Evaluation Engine
