@@ -364,6 +364,34 @@ class PartialVectorHandler {
     return MaxDifference(pv_a, pv_b);
   }
 
+  double Min(const PVId pvid_a) const {
+    auto &pv_a = GetPV(pvid_a);
+    double min_val = INFINITY;
+    for (int i = 0; i < pv_a.rows(); i++) {
+      for (int j = 0; j < pv_a.cols(); j++) {
+        double val = pv_a(i, j);
+        if (val < min_val) {
+          min_val = val;
+        }
+      }
+    }
+    return min_val;
+  }
+
+  double Max(const PVId pvid_a) const {
+    auto &pv_a = GetPV(pvid_a);
+    double max_val = -INFINITY;
+    for (int i = 0; i < pv_a.rows(); i++) {
+      for (int j = 0; j < pv_a.cols(); j++) {
+        double val = pv_a(i, j);
+        if (val > max_val) {
+          max_val = val;
+        }
+      }
+    }
+    return max_val;
+  }
+
   // ** I/O
 
   // Output data to string.
@@ -397,8 +425,11 @@ class PartialVectorHandler {
     return out.str();
   }
   size_t ToHash(const PVId pv_id) const { return ToHash(GetPV(pv_id)); }
-  std::string ToHashString(const PVId pv_id) const {
-    return HashToString(ToHash(GetPV(pv_id)));
+  std::string ToHashString(const PVId pv_id, const size_t length = 16) const {
+    return ToHashString(GetPV(pv_id), length);
+  }
+  DoubleVector ToDoubleVector(const PVId pv_id) const {
+    return ToDoubleVector(GetPV(pv_id));
   }
 
   static std::string ToString(const NucleotidePLVRef &pv) {
@@ -421,8 +452,18 @@ class PartialVectorHandler {
     }
     return seed;
   }
-  static std::string ToHashString(const NucleotidePLVRef &pv) {
-    return HashToString(ToHash(pv));
+  static std::string ToHashString(const NucleotidePLVRef &pv,
+                                  const size_t length = 16) {
+    return HashToString(ToHash(pv), length);
+  }
+  static DoubleVector ToDoubleVector(const NucleotidePLVRef &pv) {
+    DoubleVector values;
+    for (int i = 0; i < pv.rows(); i++) {
+      for (int j = 0; j < pv.cols(); j++) {
+        values.push_back(pv(i, j));
+      }
+    }
+    return values;
   }
 
   // ** Miscellaneous

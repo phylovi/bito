@@ -162,6 +162,13 @@ std::string Bitset::ToHashString(const size_t length) const {
   return HashToString(Hash(), length);
 }
 
+std::string Bitset::SubsplitToSplitHashString(const size_t length) const {
+  std::stringstream ss;
+  ss << "[" << SubsplitGetClade(SubsplitClade::Left).ToHashString(length) << "||"
+     << SubsplitGetClade(SubsplitClade::Right).ToHashString(length) << "]";
+  return ss.str();
+}
+
 std::vector<size_t> Bitset::ToVectorOfSetBits() const {
   std::vector<size_t> vec;
   for (size_t i = 0; i < size(); i++) {

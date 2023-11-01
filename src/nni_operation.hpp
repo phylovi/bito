@@ -151,6 +151,7 @@ class NNIOperation {
         Failwith("Invalid NNIClade given.");
     }
   }
+
   // Checks that NNI Operation is in valid state.
   // - Parent and Child are adjacent Subsplits.
   bool IsValid();

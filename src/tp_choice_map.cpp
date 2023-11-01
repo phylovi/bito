@@ -20,45 +20,71 @@ void TPChoiceMap::ResetEdgeChoice(const EdgeId edge_id) {
 
 TPChoiceMap::EdgeChoiceNodeIds TPChoiceMap::GetEdgeChoiceNodeIds(
     const EdgeId edge_id) const {
-  const auto &edge_choice = GetEdgeChoice(edge_id);
-  return GetEdgeChoiceNodeIds(edge_choice);
+  return GetEdgeChoiceNodeIds(GetEdgeChoice(edge_id));
+}
+
+TPChoiceMap::EdgeChoiceSubsplits TPChoiceMap::GetEdgeChoiceSubsplits(
+    const EdgeId edge_id) const {
+  return GetEdgeChoiceSubsplits(GetEdgeChoice(edge_id));
 }
 
 TPChoiceMap::EdgeChoiceNodeIds TPChoiceMap::GetEdgeChoiceNodeIds(
     const EdgeChoice &edge_choice) const {
-  auto GetNodeFromEdge = [this](const EdgeId edge_id, const Direction direction) {
+  auto GetNodeFromEdge = [this](const EdgeId edge_id, const Direction dir) {
     if (edge_id == NoId) {
       return NodeId(NoId);
     }
     const auto &edge = GetDAG().GetDAGEdge(edge_id);
-    return (direction == Direction::Rootward) ? edge.GetParent() : edge.GetChild();
+    return (dir == Direction::Rootward) ? edge.GetParent() : edge.GetChild();
   };
 
-  EdgeChoiceNodeIds node_choice;
-  node_choice.parent = GetNodeFromEdge(edge_choice.parent, Direction::Rootward);
-  node_choice.sister = GetNodeFromEdge(edge_choice.sister, Direction::Leafward);
-  node_choice.left_child = GetNodeFromEdge(edge_choice.left_child, Direction::Leafward);
-  node_choice.right_child =
+  EdgeChoiceNodeIds choice_data;
+  choice_data.parent = GetNodeFromEdge(edge_choice.parent, Direction::Rootward);
+  choice_data.sister = GetNodeFromEdge(edge_choice.sister, Direction::Leafward);
+  choice_data.left_child = GetNodeFromEdge(edge_choice.left_child, Direction::Leafward);
+  choice_data.right_child =
       GetNodeFromEdge(edge_choice.right_child, Direction::Leafward);
-  return node_choice;
+  return choice_data;
+}
+
+TPChoiceMap::EdgeChoiceSubsplits TPChoiceMap::GetEdgeChoiceSubsplits(
+    const EdgeChoice &edge_choice) const {
+  auto GetSubsplitFromEdge = [this](const EdgeId edge_id, const Direction dir) {
+    if (edge_id == NoId) {
+      return Bitset();
+    }
+    const auto &edge = GetDAG().GetDAGEdge(edge_id);
+    const auto node_id =
+        (dir == Direction::Rootward) ? edge.GetParent() : edge.GetChild();
+    return GetDAG().GetDAGNodeBitset(node_id);
+  };
+
+  EdgeChoiceSubsplits choice_data;
+  choice_data.parent = GetSubsplitFromEdge(edge_choice.parent, Direction::Rootward);
+  choice_data.sister = GetSubsplitFromEdge(edge_choice.sister, Direction::Leafward);
+  choice_data.left_child =
+      GetSubsplitFromEdge(edge_choice.left_child, Direction::Leafward);
+  choice_data.right_child =
+      GetSubsplitFromEdge(edge_choice.right_child, Direction::Leafward);
+  return choice_data;
 }
 
 TPChoiceMap::EdgeChoicePCSPs TPChoiceMap::GetEdgeChoicePCSPs(
     const EdgeId edge_id) const {
-  EdgeChoicePCSPs adj_pcsps;
-  const auto &edge_choice = GetEdgeChoice(edge_id);
-  auto SetPCSPIfExists = [this](Bitset &adj_edge_bitset, const EdgeId adj_edge_id) {
-    if (adj_edge_id != NoId) {
-      adj_edge_bitset = GetDAG().GetDAGEdgeBitset(adj_edge_id);
+  auto GetPCSPFromEdge = [this](const EdgeId edge_id) -> Bitset {
+    if (edge_id == NoId) {
+      return Bitset();
     }
+    return GetDAG().GetDAGEdgeBitset(edge_id);
   };
-  SetPCSPIfExists(adj_pcsps.parent, edge_choice.parent);
-  SetPCSPIfExists(adj_pcsps.focal, edge_id);
-  SetPCSPIfExists(adj_pcsps.sister, edge_choice.sister);
-  SetPCSPIfExists(adj_pcsps.left_child, edge_choice.left_child);
-  SetPCSPIfExists(adj_pcsps.right_child, edge_choice.right_child);
-
-  return adj_pcsps;
+  EdgeChoicePCSPs choice_data;
+  const auto &edge_choice = GetEdgeChoice(edge_id);
+  choice_data.parent = GetPCSPFromEdge(edge_choice.parent);
+  choice_data.sister = GetPCSPFromEdge(edge_choice.sister);
+  choice_data.focal = GetPCSPFromEdge(edge_id);
+  choice_data.left_child = GetPCSPFromEdge(edge_choice.left_child);
+  choice_data.right_child = GetPCSPFromEdge(edge_choice.right_child);
+  return choice_data;
 }
 
 // ** Maintenance
@@ -555,8 +581,8 @@ std::string TPChoiceMap::ToString() const {
   return os.str();
 }
 
-std::map<Bitset, std::vector<Bitset>> TPChoiceMap::BuildPCSPMap() const {
-  std::map<Bitset, std::vector<Bitset>> pcsp_map;
+TPChoiceMap::PCSPToPCSPVectorMap TPChoiceMap::BuildPCSPMap() const {
+  PCSPToPCSPVectorMap pcsp_map;
   for (EdgeId edge_id(0); edge_id < GetDAG().EdgeCountWithLeafSubsplits(); edge_id++) {
     const auto pcsps = GetEdgeChoicePCSPs(edge_id);
     pcsp_map[pcsps.focal] = {

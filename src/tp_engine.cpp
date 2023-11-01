@@ -1131,6 +1131,7 @@ NNIAdjBitsetEdgeIdMap TPEngine::BuildAdjacentPCSPsFromPreNNIToPostNNI(
   const auto &rightchild_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.right_child);
   const auto rightchild_pcsp = Bitset::PCSP(post_nni.GetChild(), rightchild_subsplit);
   adj_pcsps.right_child = {rightchild_pcsp, mapped_pre_choice.right_child};
+
   return adj_pcsps;
 }
 
@@ -1187,6 +1188,54 @@ TPChoiceMap::EdgeChoicePCSPMap TPEngine::BuildAdjacentPCSPMapFromPreNNIToPostNNI
   pcsps.right_child.first = Bitset::PCSP(pre_child, pre_right_grandchild);
 
   return pcsps;
+}
+
+TPEngine::PCSPToPCSPsMap TPEngine::BuildMapFromPCSPToEdgeChoicePCSPs() const {
+  return GetChoiceMap().BuildPCSPMap();
+}
+
+TPEngine::PCSPToPVHashesMap TPEngine::BuildMapFromPCSPToPVHashes() const {
+  if (!eval_engine_in_use_[TPEvalEngineType::LikelihoodEvalEngine]) {
+    Failwith("ERROR: must use likelihood_eval_engine.");
+  }
+  PCSPToPVHashesMap pcsp_pvhash_map;
+  auto get_all_pv_hashes = [this](const EdgeId edge_id) {
+    auto &pvs = GetLikelihoodEvalEngine().GetPVs();
+    std::vector<std::string> pv_hashes;
+    for (auto pv_type : PLVTypeEnum::Iterator()) {
+      auto pv_hash = pvs.ToHashString(pvs.GetPVIndex(pv_type, edge_id), 5);
+      pv_hashes.push_back(pv_hash);
+    }
+    return pv_hashes;
+  };
+
+  for (EdgeId edge_id{0}; edge_id < GetDAG().EdgeCount(); edge_id++) {
+    auto pcsp = GetDAG().GetDAGEdgeBitset(edge_id);
+    pcsp_pvhash_map[pcsp] = get_all_pv_hashes(edge_id);
+  }
+  return pcsp_pvhash_map;
+}
+
+TPEngine::PCSPToPVValuesMap TPEngine::BuildMapFromPCSPToPVValues() const {
+  if (!eval_engine_in_use_[TPEvalEngineType::LikelihoodEvalEngine]) {
+    Failwith("ERROR: must use likelihood_eval_engine.");
+  }
+  PCSPToPVValuesMap pcsp_pvval_map;
+  auto get_all_pv_values = [this](const EdgeId edge_id) {
+    auto &pvs = GetLikelihoodEvalEngine().GetPVs();
+    std::vector<DoubleVector> pv_values;
+    for (auto pv_type : PLVTypeEnum::Iterator()) {
+      auto pv_value = pvs.ToDoubleVector(pvs.GetPVIndex(pv_type, edge_id));
+      pv_values.push_back(pv_value);
+    }
+    return pv_values;
+  };
+
+  for (EdgeId edge_id{0}; edge_id < GetDAG().EdgeCount(); edge_id++) {
+    auto pcsp = GetDAG().GetDAGEdgeBitset(edge_id);
+    pcsp_pvval_map[pcsp] = get_all_pv_values(edge_id);
+  }
+  return pcsp_pvval_map;
 }
 
 // ** TP Evaluation Engine

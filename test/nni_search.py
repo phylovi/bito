@@ -24,7 +24,7 @@ digits = 5
 # number of optimization iterations
 opt_max = 5
 # whether to rescore or reevaluate rejected nnis -- use None for default
-do_rescore_all_nnis = None
+do_rescore_all_nnis = True
 do_reeval_all_nnis = None
 # terminate search when all credible edges found
 do_end_when_all_creds_found = True
@@ -42,6 +42,7 @@ do_check_for_nni_score_changes = True
 do_check_for_choice_map_changes = True
 do_check_for_pcsp_map_changes = True
 do_check_for_nni_map_changes = True
+do_check_for_pv_map_changes = True
 
 
 def print_v(*args, v=1):
@@ -726,6 +727,8 @@ class Tracker:
         self.current_scored_nnis = {}
         self.current_nni_map = {}
         self.current_pcsp_map = {}
+        self.current_pv_hash_map = {}
+        self.current_pv_value_map = {}
         # tracks what iter pcsp/subsplit was added to the DAG.
         self.timedag_pcsps = {}
         self.timedag_subsplits = {}
@@ -745,7 +748,7 @@ class Tracker:
 
     def check_for_choice_map_changes(self):
         tp_engine = self.dag_inst.get_tp_engine()
-        new_choice_map = tp_engine.build_pcsp_map_from_choice_map()
+        new_choice_map = tp_engine.build_map_from_pcsp_to_edge_choice_pcsps()
         for pcsp in new_choice_map:
             if pcsp in self.current_choice_map:
                 new_result = new_choice_map[pcsp]
@@ -820,27 +823,62 @@ class Tracker:
     def check_for_pcsp_map_changes(self):
         nni_engine = self.dag_inst.get_nni_engine()
         tp_engine = self.dag_inst.get_tp_engine()
-        new_pcsp_map = tp_engine.build_map_of_proposed_nni_pcsps_to_best_pre_nni_pcsps(
-            nni_engine.new_adjacent_nnis())
-        for post_pcsp in new_pcsp_map:
-            if post_pcsp in self.current_pcsp_map:
-                new_pre_pcsp = new_pcsp_map[post_pcsp]
-                current_pre_pcsp = self.current_pcsp_map[post_pcsp]
-                matches = (current_pre_pcsp == new_pre_pcsp)
+        new_pcsp_map = tp_engine.build_map_from_pcsp_to_edge_choice_pcsps()
+        for focal_pcsp in new_pcsp_map:
+            if focal_pcsp in self.current_pcsp_map:
+                new_pcsps = new_pcsp_map[focal_pcsp]
+                current_pcsps = self.current_pcsp_map[focal_pcsp]
+                matches = (current_pcsps == new_pcsps)
                 result = "MATCH" if matches else "MISMATCH"
                 if not matches:
-                    current_edge_id = self.dag_inst.get_dag().get_edge_id(current_pre_pcsp)
-                    current_tree_id = self.dag_inst.get_tp_engine().get_tree_source(current_edge_id)
-                    new_edge_id = self.dag_inst.get_dag().get_edge_id(new_pre_pcsp)
-                    new_tree_id = self.dag_inst.get_tp_engine().get_tree_source(new_edge_id)
-                    post_pcsp = Utils.pcsp_to_hash(post_pcsp, abbr)
-                    new_pre_pcsp = Utils.pcsp_to_hash(new_pre_pcsp, abbr)
-                    current_pre_pcsp = Utils.pcsp_to_hash(current_pre_pcsp, abbr)
+                    focal_pcsp = Utils.pcsp_to_hash(focal_pcsp, abbr)
+                    new_pcsps = [Utils.pcsp_to_hash(x, abbr) for x in new_pcsps]
+                    current_pcsps = [Utils.pcsp_to_hash(x, abbr) for x in current_pcsps]
                     print(
-                        f"  #PCSP_MAP_{result}: {post_pcsp} => new::{new_pre_pcsp} {new_tree_id}, old::{current_pre_pcsp} {current_tree_id}")
-        for post_pcsp in new_pcsp_map:
-            self.current_pcsp_map[post_pcsp] = new_pcsp_map[post_pcsp]
+                        f"  #PCSP_MAP2_{result}: {focal_pcsp} \n{new_pcsps} \n{current_pcsps}")
+        for focal_pcsp in new_pcsp_map:
+            self.current_pcsp_map[focal_pcsp] = new_pcsp_map[focal_pcsp]
         return self.current_pcsp_map
+
+    def check_for_pv_hash_map_changes(self):
+        nni_engine = self.dag_inst.get_nni_engine()
+        tp_engine = self.dag_inst.get_tp_engine()
+        new_pv_map = tp_engine.build_map_from_pcsp_to_pv_hashes()
+        for pcsp in new_pv_map:
+            if pcsp in self.current_pv_map:
+                new_pv = new_pv_map[pcsp]
+                current_pv = self.current_pv_hash_map[pcsp]
+                matches = (current_pv == new_pv)
+                result = "MATCH" if matches else "MISMATCH"
+                if not matches:
+                    pcsp = Utils.pcsp_to_hash(pcsp, abbr)
+                    print(f"  #PV_HASH_MAP_{result}: {pcsp} => {new_pv} {current_pv}")
+        for pcsp in new_pv_map:
+            self.current_pv_hash_map[pcsp] = new_pv_map[pcsp]
+        return self.current_pv_hash_map
+
+    def check_for_pv_value_map_changes(self):
+        nni_engine = self.dag_inst.get_nni_engine()
+        tp_engine = self.dag_inst.get_tp_engine()
+        new_pv_map = tp_engine.build_map_from_pcsp_to_pv_values()
+        for pcsp in new_pv_map:
+            if pcsp in self.current_pv_value_map:
+                new_pv = new_pv_map[pcsp]
+                current_pv = self.current_pv_value_map[pcsp]
+                max_diffs = []
+                for i in range(len(new_pv)):
+                    new_pv_i = np.array(new_pv[i])
+                    current_pv_i = np.array(current_pv[i])
+                    max_diff = np.max(np.abs(np.subtract(new_pv_i, current_pv_i)))
+                    max_diffs.append(max_diff)
+                matches = (max(max_diffs) < 1e5)
+                result = "MATCH" if matches else "MISMATCH"
+                if not matches:
+                    pcsp = Utils.pcsp_to_hash(pcsp, abbr)
+                    print(f"  #PV_VALUE_MAP_{result}: {pcsp} => {max_diffs}")
+        for pcsp in new_pv_map:
+            self.current_pv_value_map[pcsp] = new_pv_map[pcsp]
+        return self.current_pv_value_map
 
 
 class Program:
@@ -1080,25 +1118,27 @@ class Program:
             # check for NNI score changes.
             if do_check_for_nni_score_changes:
                 current_scored_nnis = tracker.check_for_score_changes()
-                # print(f"updated_nni_scores:\n{current_scored_nnis}")
                 pass
 
             # check for changes to choice_map.
             if do_check_for_choice_map_changes:
                 current_choice_map = tracker.check_for_choice_map_changes()
-                # print(f"updated_choice_map:\n{current_choice_map}")
                 pass
 
             # check for changes to the map from proposed-NNI PCSPs to best pre-NNI PCSPs.
             if do_check_for_pcsp_map_changes:
                 current_pcsp_map = tracker.check_for_pcsp_map_changes()
-                # print(f"updated_pcsp_map:\n{current_pcsp_map}")
                 pass
 
             # check for changes to the map from proposed-NNI to best pre-NNI.
             if do_check_for_nni_map_changes:
                 current_nni_map = tracker.check_for_nni_map_changes()
-                # print(f"updated_nni_map:\n{current_nni_map}")
+                pass
+
+            # check for changes to the map from proposed-NNI to PVs.
+            if do_check_for_pv_map_changes:
+                # current_pv_map = tracker.check_for_pv_hash_map_changes()
+                current_pv_map = tracker.check_for_pv_value_map_changes()
                 pass
 
             if len(nni_engine.accepted_nnis()) == 0:

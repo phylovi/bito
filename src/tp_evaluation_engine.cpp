@@ -485,10 +485,53 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
   const auto mapped_pre_choice =
       GetTPEngine().RemapEdgeChoiceFromPreNNIToPostNNI(pre_choice, rev_clade_map);
   const auto &choice = mapped_pre_choice;
-  const auto adj_node_ids = GetTPEngine().GetChoiceMap().GetEdgeChoiceNodeIds(choice);
+  auto adj_node_ids = GetTPEngine().GetChoiceMap().GetEdgeChoiceNodeIds(choice);
+
+  const auto mapped_pre_choice_2 =
+      GetTPEngine().GetChoiceMap().RemapEdgeChoiceDataViaNNICladeMap(pre_choice,
+                                                                     clade_map);
+  const auto adj_node_ids_2 =
+      GetTPEngine().GetChoiceMap().GetEdgeChoiceNodeIds(mapped_pre_choice_2);
+  const auto adj_subsplits =
+      GetTPEngine().GetChoiceMap().GetEdgeChoiceSubsplits(mapped_pre_choice_2);
+  std::ignore = adj_node_ids_2;
+  std::ignore = adj_subsplits;
+
+  auto GetSubsplitHash = [this](const Bitset subsplit) {
+    return subsplit.ToHashString(5);
+    // return subsplit.SubsplitToString();
+  };
+  std::ignore = GetSubsplitHash;
+
+  std::cout << "PostNNIs::Node_:: " << post_nni.ToSplitHashString(5) << ": ["
+            << GetSubsplitHash(adj_subsplits.sister) << " "
+            << GetSubsplitHash(adj_subsplits.left_child) << " "
+            << GetSubsplitHash(adj_subsplits.right_child) << " || "
+            << GetSubsplitHash(adj_subsplits.parent) << "]" << std::endl;
+  // std::cout << "compare_mapped_pre_choice: "
+  //           << ((mapped_pre_choice == mapped_pre_choice_2) ? "PASS" : "FAIL")
+  //           << std::endl
+
   // Get PLV ids from pre-NNI in DAG, then remap according to post-NNI.
   const auto pre_pvids = GetSecondaryPVIdsOfEdge(pre_edge_id);
   const auto post_pvids = RemapSecondaryPVIdsForPostNNI(pre_pvids, clade_map);
+
+  auto GetPVHash = [this](const PVId pv_id) -> std::string {
+    std::stringstream ss;
+    if (pv_id == NoId) {
+      return "PVHash::NoId";
+    }
+    ss << GetPVs().ToHashString(pv_id, 5);
+    return ss.str();
+  };
+  std::ignore = GetPVHash;
+
+  std::cout << "PostNNIs::PV_H_:: " << post_nni.ToSplitHashString(5) << ": ["
+            << GetPVHash(post_pvids.sister_p_) << " "
+            << GetPVHash(post_pvids.leftchild_p_) << " "
+            << GetPVHash(post_pvids.rightchild_p_) << " || "
+            << GetPVHash(post_pvids.grandparent_rfocal_) << " "
+            << GetPVHash(post_pvids.parent_rhat_) << "]" << std::endl;
 
   // If we have already established a best_edge_map by traversing all new NNIs to be
   // added, use this branch length.  Otherwise, use the edge_map from current pre-NNI.

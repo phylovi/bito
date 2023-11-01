@@ -91,6 +91,7 @@ class Bitset {
   std::string ToString() const;
   // Outputs hash as hex string.
   std::string ToHashString(const size_t length = 16) const;
+  std::string SubsplitToSplitHashString(const size_t length = 16) const;
   // Outputs vector of all bit indices set to true.
   SizeVector ToVectorOfSetBits() const;
   // Are all of the bits 1?

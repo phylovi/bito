@@ -899,7 +899,10 @@ PYBIND11_MODULE(bito, m) {
              return self.GetLikelihoodEvalEngine().GetOptimizationMaxIteration();
            })
       // ** I/O
-      .def("build_pcsp_map_from_choice_map", &TPEngine::BuildPCSPMapFromChoiceMap)
+      .def("build_map_from_pcsp_to_edge_choice_pcsps",
+           &TPEngine::BuildMapFromPCSPToEdgeChoicePCSPs)
+      .def("build_map_from_pcsp_to_pv_hashes", &TPEngine::BuildMapFromPCSPToPVHashes)
+      .def("build_map_from_pcsp_to_pv_values", &TPEngine::BuildMapFromPCSPToPVValues)
       .def("build_map_of_proposed_nnis_to_best_pre_nnis",
            &TPEngine::BuildMapOfProposedNNIsToBestPreNNIs, py::arg("post_nnis"))
       .def("build_map_of_proposed_nni_pcsps_to_best_pre_nni_pcsps",
@@ -1104,6 +1107,8 @@ PYBIND11_MODULE(bito, m) {
       .def("__hash__", &Bitset::Hash)
       .def("to_string", &Bitset::ToString)
       .def("to_hash_string", &Bitset::ToHashString, py::arg("length") = 16)
+      .def("subsplit_to_split_hash_string", &Bitset::SubsplitToSplitHashString,
+           py::arg("length") = 16)
       .def("clade_get_count", &Bitset::Count)
       .def("subsplit_get_clade",
            [](const Bitset &self, const size_t i) {

@@ -66,7 +66,6 @@ class TPChoiceMap {
       }
       Failwith("ERROR: Invalid enum given.");
     }
-
     const T &operator[](NNIClade clade) const {
       switch (clade) {
         case NNIClade::ParentFocal:
@@ -86,6 +85,7 @@ class TPChoiceMap {
   using EdgeChoiceNodeIds = EdgeAdjacentMap<NodeId>;
   using EdgeChoiceTreeIds = EdgeAdjacentMap<TreeId>;
   using EdgeChoicePCSPs = NNIAdjacentMap<Bitset>;
+  using EdgeChoiceSubsplits = EdgeAdjacentMap<Bitset>;
   using EdgeChoiceNodeIdMap = EdgeAdjacentMap<std::pair<NodeId, NodeId>>;
   using EdgeChoicePCSPMap = EdgeAdjacentMap<std::pair<Bitset, Bitset>>;
   using EdgeChoiceVector = std::vector<EdgeChoice>;
@@ -129,10 +129,31 @@ class TPChoiceMap {
   // Re-initialize edge choices to NoId.
   void ResetEdgeChoice(const EdgeId edge_id);
 
-  // Get the node ids corresponding to a given edge_id's choice map.
+  // Get data from edge_choice in choice map, according tp edge_id.
   EdgeChoiceNodeIds GetEdgeChoiceNodeIds(const EdgeId edge_id) const;
-  EdgeChoiceNodeIds GetEdgeChoiceNodeIds(const EdgeChoice &edge_choice) const;
   EdgeChoicePCSPs GetEdgeChoicePCSPs(const EdgeId edge_id) const;
+  EdgeChoiceSubsplits GetEdgeChoiceSubsplits(const EdgeId edge_id) const;
+
+  // Get data from given edge_choice.
+  EdgeChoiceNodeIds GetEdgeChoiceNodeIds(const EdgeChoice &edge_choice) const;
+  EdgeChoicePCSPs GetEdgeChoicePCSPs(const EdgeChoice &edge_choice) const;
+  EdgeChoiceSubsplits GetEdgeChoiceSubsplits(const EdgeChoice &edge_choice) const;
+
+  // Apply NNI clade map transform from pre-NNI to post-NNI.
+  template <typename T>
+  EdgeAdjacentMap<T> RemapEdgeChoiceDataViaNNICladeMap(
+      const EdgeAdjacentMap<T> &old_data,
+      const NNIOperation::NNICladeArray &clade_map) const {
+    EdgeAdjacentMap<T> new_data;
+    auto SetNewDataFromOldData = [&old_data, &new_data,
+                                  &clade_map](const NNIClade nni_clade) {
+      new_data[clade_map[nni_clade]] = old_data[nni_clade];
+    };
+    for (const auto nni_clade : NNICladeEnum::Iterator()) {
+      SetNewDataFromOldData(nni_clade);
+    }
+    return new_data;
+  }
 
   // ** Maintenance
 
@@ -189,7 +210,8 @@ class TPChoiceMap {
   // Output full choice map to string.
   std::string ToString() const;
   // Output choice map as a PCSP Map from the focal edge to vector of adjacent edges.
-  std::map<Bitset, std::vector<Bitset>> BuildPCSPMap() const;
+  using PCSPToPCSPVectorMap = std::map<Bitset, std::vector<Bitset>>;
+  PCSPToPCSPVectorMap BuildPCSPMap() const;
 
   // Output edge choice map.
   friend std::ostream &operator<<(std::ostream &os, const EdgeChoice &edge_choice);

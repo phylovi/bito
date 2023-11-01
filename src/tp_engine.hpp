@@ -84,9 +84,6 @@ class TPEngine {
   const TPChoiceMap::EdgeChoice &GetChoiceMap(const EdgeId edge_id) const {
     return GetChoiceMap().GetEdgeChoice(edge_id);
   }
-  std::map<Bitset, std::vector<Bitset>> BuildPCSPMapFromChoiceMap() const {
-    return GetChoiceMap().BuildPCSPMap();
-  }
 
   std::vector<TreeId> &GetTreeSource() { return tree_source_; }
   const std::vector<TreeId> &GetTreeSource() const { return tree_source_; }
@@ -244,14 +241,25 @@ class TPEngine {
       std::optional<const size_t> prev_edge_count = std::nullopt,
       std::optional<const Reindexer> edge_reindexer = std::nullopt) const;
 
+  // Build map from post-NNI PCSP to pre-NNI edge_id.
   NNIAdjBitsetEdgeIdMap BuildAdjacentPCSPsFromPreNNIToPostNNI(
       const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
-  //
+  // Build node_id map from pre-NNI to post-NNI.
   TPChoiceMap::EdgeChoiceNodeIdMap BuildAdjacentNodeIdMapFromPreNNIToPostNNI(
       const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
-  //
+  // Build PCSP map from pre-NNI to post-NNI.
   TPChoiceMap::EdgeChoicePCSPMap BuildAdjacentPCSPMapFromPreNNIToPostNNI(
       const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
+
+  // Build map from NNI PCSP to vector of adjacent PCSPs.
+  using PCSPToPCSPsMap = std::map<Bitset, std::vector<Bitset>>;
+  PCSPToPCSPsMap BuildMapFromPCSPToEdgeChoicePCSPs() const;
+  // Build map from edge PCSPs to all PV Hashes.
+  using PCSPToPVHashesMap = std::map<Bitset, std::vector<std::string>>;
+  PCSPToPVHashesMap BuildMapFromPCSPToPVHashes() const;
+  // Build map from NNI PCSP to vector of adjacent PV Values.
+  using PCSPToPVValuesMap = std::map<Bitset, std::vector<DoubleVector>>;
+  PCSPToPVValuesMap BuildMapFromPCSPToPVValues() const;
 
   // ** TP Evaluation Engine
 
