@@ -251,15 +251,21 @@ class TPEngine {
   TPChoiceMap::EdgeChoicePCSPMap BuildAdjacentPCSPMapFromPreNNIToPostNNI(
       const NNIOperation &pre_nni, const NNIOperation &post_nni) const;
 
-  // Build map from NNI PCSP to vector of adjacent PCSPs.
+  // Build map from edge PCSPs to vector of edge choice PCSPs.
   using PCSPToPCSPsMap = std::map<Bitset, std::vector<Bitset>>;
   PCSPToPCSPsMap BuildMapFromPCSPToEdgeChoicePCSPs() const;
-  // Build map from edge PCSPs to all PV Hashes.
+  // Build map from edge PCSPs to their PV Hashes.
   using PCSPToPVHashesMap = std::map<Bitset, std::vector<std::string>>;
   PCSPToPVHashesMap BuildMapFromPCSPToPVHashes() const;
-  // Build map from NNI PCSP to vector of adjacent PV Values.
+  // Build map from edge PCSPs to their PV Values.
   using PCSPToPVValuesMap = std::map<Bitset, std::vector<DoubleVector>>;
   PCSPToPVValuesMap BuildMapFromPCSPToPVValues() const;
+  // Build map from edge PCSPs to their branch length.
+  using PCSPToBranchLengthMap = std::map<Bitset, double>;
+  PCSPToBranchLengthMap BuildMapFromPCSPToBranchLength() const;
+  // Build map from edge PCSPs to their top tree score.
+  using PCSPToScoreMap = std::map<Bitset, double>;
+  PCSPToScoreMap BuildMapFromPCSPToScore(const bool recompute_scores);
 
   // ** TP Evaluation Engine
 

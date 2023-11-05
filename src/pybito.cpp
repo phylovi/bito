@@ -872,6 +872,7 @@ PYBIND11_MODULE(bito, m) {
                                        "An engine for computing Top Pruning.");
   tp_engine_class.def("node_count", &TPEngine::GetNodeCount, "Get number of nodes.")
       .def("edge_count", &TPEngine::GetEdgeCount, "Get number of edges.")
+      .def("get_top_tree_score", &TPEngine::GetTopTreeScore)
       .def(
           "get_tree_source",
           [](const TPEngine &self, const EdgeId edge_id) {
@@ -903,6 +904,9 @@ PYBIND11_MODULE(bito, m) {
            &TPEngine::BuildMapFromPCSPToEdgeChoicePCSPs)
       .def("build_map_from_pcsp_to_pv_hashes", &TPEngine::BuildMapFromPCSPToPVHashes)
       .def("build_map_from_pcsp_to_pv_values", &TPEngine::BuildMapFromPCSPToPVValues)
+      .def("build_map_from_pcsp_to_branch_length",
+           &TPEngine::BuildMapFromPCSPToBranchLength)
+      .def("build_map_from_pcsp_to_score", &TPEngine::BuildMapFromPCSPToScore)
       .def("build_map_of_proposed_nnis_to_best_pre_nnis",
            &TPEngine::BuildMapOfProposedNNIsToBestPreNNIs, py::arg("post_nnis"))
       .def("build_map_of_proposed_nni_pcsps_to_best_pre_nni_pcsps",
@@ -928,6 +932,10 @@ PYBIND11_MODULE(bito, m) {
       m, "nni_engine", "An engine for computing NNI Systematic Search.");
   nni_engine_class
       // Access
+      .def(
+          "get_tp_engine",
+          [](const NNIEngine &self) -> const TPEngine * { return &self.GetTPEngine(); },
+          py::return_value_policy::reference, "Get TP Engine.")
       .def(
           "get_graft_dag", [](NNIEngine &self) { return self.GetGraftDAG(); },
           py::return_value_policy::reference, "Get the Graft DAG.")
@@ -1107,8 +1115,9 @@ PYBIND11_MODULE(bito, m) {
       .def("__hash__", &Bitset::Hash)
       .def("to_string", &Bitset::ToString)
       .def("to_hash_string", &Bitset::ToHashString, py::arg("length") = 16)
-      .def("subsplit_to_split_hash_string", &Bitset::SubsplitToSplitHashString,
+      .def("subsplit_to_hash_string", &Bitset::SubsplitToHashString,
            py::arg("length") = 16)
+      .def("pcsp_to_hash_string", &Bitset::PCSPToHashString, py::arg("length") = 16)
       .def("clade_get_count", &Bitset::Count)
       .def("subsplit_get_clade",
            [](const Bitset &self, const size_t i) {
@@ -1116,6 +1125,9 @@ PYBIND11_MODULE(bito, m) {
                  (i == 0) ? SubsplitClade::Left : SubsplitClade::Right;
              return self.SubsplitGetClade(clade);
            })
+      .def("subsplit_is_uca", &Bitset::SubsplitIsUCA)
+      .def("subsplit_is_rootsplit", &Bitset::SubsplitIsRootsplit)
+      .def("subsplit_is_leaf", &Bitset::SubsplitIsLeaf)
       .def("subsplit_to_string", &Bitset::SubsplitToString,
            "Output as Subsplit-style string.")
       .def("pcsp_to_string", &Bitset::PCSPToString, "Output as PCSP-style string.")

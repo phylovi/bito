@@ -162,13 +162,6 @@ std::string Bitset::ToHashString(const size_t length) const {
   return HashToString(Hash(), length);
 }
 
-std::string Bitset::SubsplitToSplitHashString(const size_t length) const {
-  std::stringstream ss;
-  ss << "[" << SubsplitGetClade(SubsplitClade::Left).ToHashString(length) << "||"
-     << SubsplitGetClade(SubsplitClade::Right).ToHashString(length) << "]";
-  return ss.str();
-}
-
 std::vector<size_t> Bitset::ToVectorOfSetBits() const {
   std::vector<size_t> vec;
   for (size_t i = 0; i < size(); i++) {
@@ -385,6 +378,14 @@ std::string Bitset::SubsplitToVectorOfSetBitsAsString() const {
   return str;
 }
 
+std::string Bitset::SubsplitToHashString(const size_t length) const {
+  std::stringstream ss;
+  ss << "[" << ToHashString(length) << "::" << SubsplitCladeUnion().ToHashString(length)
+     << "::" << SubsplitGetClade(SubsplitClade::Left).ToHashString(length) << "||"
+     << SubsplitGetClade(SubsplitClade::Right).ToHashString(length) << "]";
+  return ss.str();
+}
+
 size_t Bitset::SubsplitGetCladeSize() const {
   return MultiCladeGetCladeSize(SubsplitCladeCount);
 }
@@ -548,6 +549,13 @@ Bitset Bitset::PCSPGetChildSubsplit() const {
 }
 
 std::string Bitset::PCSPToString() const { return MultiCladeToString(PCSPCladeCount); }
+
+std::string Bitset::PCSPToHashString(const size_t length) const {
+  std::stringstream ss;
+  ss << PCSPGetParentSubsplit().SubsplitToHashString(length) << "_"
+     << PCSPGetChildSubsplit().SubsplitToHashString(length);
+  return ss.str();
+}
 
 bool Bitset::PCSPIsValid() const {
   if (size() % PCSPCladeCount != 0) {

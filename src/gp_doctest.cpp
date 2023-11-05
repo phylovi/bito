@@ -3057,6 +3057,7 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
           test_passes &= matches_score_tree;
           test_passes &= matches_dag_tree;
           if (!matches_score_dag or !matches_score_tree) {
+            std::cout << "SCORE_FAILED_NNI: " << nni << std::endl;
             std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
                       << score_proposed << ": " << std::abs(score_tree - score_proposed)
                       << std::endl;
@@ -3234,7 +3235,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         }
         file_out.close();
         bool newicks_equal = (newick_1 == newick_2);
-        if (!newicks_equal or true) {
+        if (!newicks_equal) {
           std::cerr << "ERROR: Newicks do not match." << std::endl;
           std::cerr << "NEWICK_TEST: " << std::endl << newick_1 << std::endl;
           std::cerr << "NEWICK_TRUTH: " << std::endl << newick_2 << std::endl;

@@ -1209,7 +1209,7 @@ TPEngine::PCSPToPVHashesMap TPEngine::BuildMapFromPCSPToPVHashes() const {
     return pv_hashes;
   };
 
-  for (EdgeId edge_id{0}; edge_id < GetDAG().EdgeCount(); edge_id++) {
+  for (EdgeId edge_id{0}; edge_id < GetDAG().EdgeCountWithLeafSubsplits(); edge_id++) {
     auto pcsp = GetDAG().GetDAGEdgeBitset(edge_id);
     pcsp_pvhash_map[pcsp] = get_all_pv_hashes(edge_id);
   }
@@ -1222,7 +1222,7 @@ TPEngine::PCSPToPVValuesMap TPEngine::BuildMapFromPCSPToPVValues() const {
   }
   PCSPToPVValuesMap pcsp_pvval_map;
   auto get_all_pv_values = [this](const EdgeId edge_id) {
-    auto &pvs = GetLikelihoodEvalEngine().GetPVs();
+    const auto &pvs = GetLikelihoodEvalEngine().GetPVs();
     std::vector<DoubleVector> pv_values;
     for (auto pv_type : PLVTypeEnum::Iterator()) {
       auto pv_value = pvs.ToDoubleVector(pvs.GetPVIndex(pv_type, edge_id));
@@ -1231,11 +1231,41 @@ TPEngine::PCSPToPVValuesMap TPEngine::BuildMapFromPCSPToPVValues() const {
     return pv_values;
   };
 
-  for (EdgeId edge_id{0}; edge_id < GetDAG().EdgeCount(); edge_id++) {
+  for (EdgeId edge_id{0}; edge_id < GetDAG().EdgeCountWithLeafSubsplits(); edge_id++) {
     auto pcsp = GetDAG().GetDAGEdgeBitset(edge_id);
     pcsp_pvval_map[pcsp] = get_all_pv_values(edge_id);
   }
   return pcsp_pvval_map;
+}
+
+TPEngine::PCSPToBranchLengthMap TPEngine::BuildMapFromPCSPToBranchLength() const {
+  if (!eval_engine_in_use_[TPEvalEngineType::LikelihoodEvalEngine]) {
+    Failwith("ERROR: must use likelihood_eval_engine.");
+  }
+  PCSPToBranchLengthMap pcsp_bl_map;
+  const auto &bl_handler = GetLikelihoodEvalEngine().GetDAGBranchHandler();
+  for (EdgeId edge_id{0}; edge_id < GetDAG().EdgeCountWithLeafSubsplits(); edge_id++) {
+    auto pcsp = GetDAG().GetDAGEdgeBitset(edge_id);
+    pcsp_bl_map[pcsp] = bl_handler.Get(edge_id);
+  }
+  return pcsp_bl_map;
+}
+
+TPEngine::PCSPToScoreMap TPEngine::BuildMapFromPCSPToScore(
+    const bool recompute_scores) {
+  if (!eval_engine_in_use_[TPEvalEngineType::LikelihoodEvalEngine]) {
+    Failwith("ERROR: must use likelihood_eval_engine.");
+  }
+  if (recompute_scores) {
+    GetLikelihoodEvalEngine().Initialize();
+    GetLikelihoodEvalEngine().ComputeScores();
+  }
+  PCSPToScoreMap pcsp_score_map;
+  for (EdgeId edge_id{0}; edge_id < GetDAG().EdgeCountWithLeafSubsplits(); edge_id++) {
+    auto pcsp = GetDAG().GetDAGEdgeBitset(edge_id);
+    pcsp_score_map[pcsp] = GetTopTreeScore(edge_id);
+  }
+  return pcsp_score_map;
 }
 
 // ** TP Evaluation Engine

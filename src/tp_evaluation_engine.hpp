@@ -306,7 +306,8 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Set the P-PVs to match the observed site patterns at the leaves.
   void PopulateLeafPVsWithSitePatterns();
   // Set the R-PVs to the stationary distribution at the root and rootsplits.
-  void PopulateRootPVsWithStationaryDistribution();
+  void PopulateRootPVsWithStationaryDistribution(
+      std::optional<EdgeIdVector> opt_edge_ids = std::nullopt);
   // Updates the rootward P-PVs for given node or edge.
   void PopulateRootwardPVForNode(const NodeId node_id);
   void PopulateRootwardPVForEdge(const EdgeId edge_id);
