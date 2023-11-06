@@ -749,6 +749,7 @@ class Tracker:
         # tracks what iter pcsp/subsplit was added to the DAG.
         self.timedag_pcsps = {}
         self.timedag_subsplits = {}
+        self.run_tracker = False
         return
 
     def is_pcsp_in_watchlist(self, pcsp):
@@ -761,6 +762,8 @@ class Tracker:
         return in_watchlist, parent_hash, child_hash
 
     def update_timedag_pcsps(self, iter_count):
+        if (not self.run_tracker):
+            return
         for pcsp in self.dag_inst.get_dag().build_set_of_edge_bitsets():
             if pcsp not in self.timedag_pcsps:
                 self.timedag_pcsps[pcsp] = iter_count
@@ -773,6 +776,8 @@ class Tracker:
         return
 
     def check_for_choice_map_changes(self):
+        if (not self.run_tracker):
+            return
         tp_engine = self.dag_inst.get_tp_engine()
         new_choice_map = tp_engine.build_map_from_pcsp_to_edge_choice_pcsps()
         for pcsp in new_choice_map:
@@ -793,6 +798,8 @@ class Tracker:
         return self.old_choice_map
 
     def check_for_proposed_score_changes(self):
+        if (not self.run_tracker):
+            return
         nni_engine = self.dag_inst.get_nni_engine()
         new_proposed_scores = nni_engine.scored_nnis()
         new_nnis = nni_engine.new_adjacent_nnis()
@@ -814,7 +821,7 @@ class Tracker:
                         mismatch_cnt += 1
                         pcsp = Utils.pcsp_to_hash(pcsp, abbr)
                         print(
-                            f"  #SCORE_{result}: {pcsp} new::{round(new_score, 3)} old::{round(old_score, 3)} change::{round(score_diff, 3)} is_improved::{score_improved}")
+                            f"  #PROP_SCORE_{result}: {pcsp} new::{round(new_score, 3)} old::{round(old_score, 3)} change::{round(score_diff, 3)} is_improved::{score_improved}")
                     else:
                         match_cnt += 1
                 else:
@@ -828,6 +835,8 @@ class Tracker:
         return self.old_proposed_scores
 
     def check_for_nni_map_changes(self):
+        if (not self.run_tracker):
+            return
         nni_engine = self.dag_inst.get_nni_engine()
         tp_engine = self.dag_inst.get_tp_engine()
         new_nni_map = tp_engine.build_map_of_proposed_nnis_to_best_pre_nnis(
@@ -849,6 +858,8 @@ class Tracker:
         return self.old_nni_map
 
     def check_for_pcsp_map_changes(self):
+        if (not self.run_tracker):
+            return
         nni_engine = self.dag_inst.get_nni_engine()
         tp_engine = self.dag_inst.get_tp_engine()
         new_pcsp_map = tp_engine.build_map_from_pcsp_to_edge_choice_pcsps()
@@ -869,11 +880,15 @@ class Tracker:
             self.old_pcsp_map[focal_pcsp] = new_pcsp_map[focal_pcsp]
         return self.old_pcsp_map
 
-    def check_for_pv_hash_map_changes(self):
+    def check_for_pv_hash_map_changes(self, pcsps=None):
+        if (not self.run_tracker):
+            return
         nni_engine = self.dag_inst.get_nni_engine()
         tp_engine = self.dag_inst.get_tp_engine()
         new_pv_map = tp_engine.build_map_from_pcsp_to_pv_hashes()
-        for pcsp in new_pv_map:
+        if pcsps == None:
+            pcsps = new_pv_map.keys()
+        for pcsp in pcsps:
             if pcsp in self.old_pv_hash_map:
                 new_pv = new_pv_map[pcsp]
                 old_pv = self.old_pv_hash_map[pcsp]
@@ -887,17 +902,21 @@ class Tracker:
                     child_is_leaf = pcsp.pcsp_get_child_subsplit().subsplit_is_leaf()
                     child_is_leaf = "IS_LEAF" if child_is_leaf else "IS_NOT_LEAF"
                     print(
-                        f"  #PV_HASH_MAP_{result}: {pcsp_hash} ({parent_hash} {parent_is_root} {child_hash} {child_is_leaf}) =>")
+                        f"  #PV_HASH_MAP_{result}: {pcsp_hash} ({parent_hash} {parent_is_root} {child_hash} {child_is_leaf}) => {pcsp.pcsp_to_string()}")
                     print(f"    NEW::{new_pv}")
                     print(f"    OLD::{old_pv}")
-        for pcsp in new_pv_map:
+        for pcsp in pcsps:
             self.old_pv_hash_map[pcsp] = new_pv_map[pcsp]
         return self.old_pv_hash_map
 
-    def check_for_pv_value_map_changes(self):
+    def check_for_pv_value_map_changes(self, pcsps=None):
+        if (not self.run_tracker):
+            return
         tp_engine = self.dag_inst.get_tp_engine()
         new_pv_map = tp_engine.build_map_from_pcsp_to_pv_values()
-        for pcsp in new_pv_map:
+        if pcsps == None:
+            pcsps = new_pv_map.keys()
+        for pcsp in pcsps:
             if pcsp in self.old_pv_value_map:
                 new_pv = new_pv_map[pcsp]
                 old_pv = self.old_pv_value_map[pcsp]
@@ -916,11 +935,13 @@ class Tracker:
                     #     print(f"### PV_[{i}]")
                     #     print("NEW:", new_pv[i])
                     #     print("OLD:", old_pv[i])
-        for pcsp in new_pv_map:
+        for pcsp in pcsps:
             self.old_pv_value_map[pcsp] = new_pv_map[pcsp]
         return self.old_pv_value_map
 
     def check_for_branch_length_map_changes(self):
+        if (not self.run_tracker):
+            return
         tp_engine = self.dag_inst.get_tp_engine()
         new_bl_map = tp_engine.build_map_from_pcsp_to_branch_length()
         for pcsp in new_bl_map:
@@ -939,6 +960,8 @@ class Tracker:
         return self.old_bl_map
 
     def check_for_dag_score_changes(self):
+        if (not self.run_tracker):
+            return
         tp_engine = self.dag_inst.get_tp_engine()
         new_dag_scores = tp_engine.build_map_from_pcsp_to_score(True)
         for pcsp in new_dag_scores:
@@ -952,8 +975,8 @@ class Tracker:
                     pcsp_hash = Utils.pcsp_to_hash(pcsp, abbr)
                     print(
                         f"  #DAG_SCORE_{result}: {pcsp_hash} => {round(new_score, digits)} {round(old_score, digits)} | {round(score_diff, digits)}")
-                    print(
-                        f"    {pcsp_hash} {pcsp.pcsp_get_parent_subsplit().subsplit_to_string()} {pcsp.pcsp_get_child_subsplit().subsplit_to_string()}")
+                    # print(
+                    #     f"    {pcsp_hash} {pcsp.pcsp_get_parent_subsplit().subsplit_to_string()} {pcsp.pcsp_get_child_subsplit().subsplit_to_string()}")
         for pcsp in new_dag_scores:
             self.old_dag_scores[pcsp] = new_dag_scores[pcsp]
         # compare proposed_scores and dag_scores
@@ -965,9 +988,10 @@ class Tracker:
                 matches = (score_diff < 1e-3)
                 result = "MATCH" if matches else "MISMATCH"
                 if (not matches):
-                    pcsp = Utils.pcsp_to_hash(pcsp, abbr)
+                    pcsp_hash = Utils.pcsp_to_hash(pcsp, abbr)
                     print(
-                        f"  DAG_VS_PROP_SCORE_{result}: {pcsp} => {round(dag_score, digits)} {round(proposed_score, digits)} | {round(score_diff, digits)}")
+                        f"  DAG_VS_PROP_SCORE_{result}: {pcsp_hash} => {round(dag_score, digits)} {round(proposed_score, digits)} | {round(score_diff, digits)}")
+        # remove proposed score if it has been added to the DAG
         for pcsp in self.old_dag_scores:
             if pcsp in self.old_proposed_scores:
                 del self.old_proposed_scores[pcsp]
@@ -1146,6 +1170,8 @@ class Program:
                 print_v("--- + ---")
                 print_v(f"# iter_count: {iter_count} of {args.iter_max}...")
 
+            pcsps = dag.build_set_of_edge_bitsets()
+
             # run iteration of search
             results.predata_begin_iter(
                 iter_count, dag, nni_engine, pp_maps)
@@ -1179,6 +1205,13 @@ class Program:
             nni_engine.filter_score_adjacent_nnis()
             timer.lap_next("filter_score_adjacent_nnis")
 
+            # check for changes to the PVs.
+            if do_check_for_pv_map_changes:
+                print("#PV_CHECK_AFTER_SCORE_PROPOSED_NNIS")
+                current_pv_map = tracker.check_for_pv_hash_map_changes(pcsps)
+                current_pv_map = tracker.check_for_pv_value_map_changes(pcsps)
+                pass
+
             nni_engine.filter_post_score()
             timer.lap_next("filter_post_score")
 
@@ -1205,19 +1238,21 @@ class Program:
             nni_engine.remove_all_graft_nnis_from_dag()
             timer.lap_next("remove_all_graft_nnis_from_dag")
 
-            # check for changes to the PVs.
-            if do_check_for_pv_map_changes:
-                print("#PV_CHECK_AFTER_SCORE_PROPOSED_NNIS")
-                current_pv_map = tracker.check_for_pv_hash_map_changes()
-                current_pv_map = tracker.check_for_pv_value_map_changes()
-                pass
-
             # if iter_count == 8:
             #     print("=== DISABLED BRANCH LENGTH OPTIMIZATION ===")
             #     nni_engine.get_tp_engine().set_optimization_max_iteration(0)
 
             nni_engine.add_accepted_nnis_to_dag()
             timer.lap_next("add_accepted_nnis_to_dag")
+
+            pcsps = dag.build_set_of_edge_bitsets()
+
+            # check for changes to the PVs.
+            if do_check_for_pv_map_changes:
+                print("#PV_CHECK_AFTER_ADD_ACCEPTED_NNIS")
+                current_pv_map = tracker.check_for_pv_hash_map_changes(pcsps)
+                current_pv_map = tracker.check_for_pv_value_map_changes(pcsps)
+                pass
 
             timer.lap_name("inner_iter")
             timer.stop("full_iter")
@@ -1246,13 +1281,6 @@ class Program:
             # check for changes to the map from proposed-NNI PCSPs to best pre-NNI PCSPs.
             if do_check_for_pcsp_map_changes:
                 current_pcsp_map = tracker.check_for_pcsp_map_changes()
-                pass
-
-            # check for changes to the PVs.
-            if do_check_for_pv_map_changes:
-                print("#PV_CHECK_AFTER_ADD_ACCEPTED_NNIS")
-                current_pv_map = tracker.check_for_pv_hash_map_changes()
-                current_pv_map = tracker.check_for_pv_value_map_changes()
                 pass
 
             # check for changes to the branch lengths.

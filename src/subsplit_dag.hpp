@@ -218,11 +218,14 @@ class SubsplitDAG {
   ConstNeighborsView GetRootsplitNodeIds() const;
   // Get the edge ids corresponding to the rootsplits.
   EdgeIdVector GetRootsplitEdgeIds() const;
+  // Get first edge id corresponding to the rootsplits.
+  EdgeId GetFirstRootsplitEdgeId() const;
   // Get the node ids corresponding to the leaves for all taxa.
   NodeIdVector GetLeafNodeIds() const;
   // Get the node id corresponding to the given taxon.
   NodeId GetLeafNodeId(const TaxonId taxon_id) const;
   // Get leaf edge ids for given taxon.
+  EdgeIdVector GetLeafEdgeIds() const;
   EdgeIdVector GetLeafEdgeIds(const TaxonId taxon_id) const;
   // Get edge based on edge id.
   ConstLineView GetDAGEdge(const EdgeId edge_id) const;

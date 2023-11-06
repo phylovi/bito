@@ -457,6 +457,15 @@ EdgeIdVector SubsplitDAG::GetRootsplitEdgeIds() const {
   return edge_ids;
 }
 
+EdgeId SubsplitDAG::GetFirstRootsplitEdgeId() const {
+  const auto node_id = GetDAGRootNodeId();
+  for (const auto adj_node_id : GetRootsplitNodeIds()) {
+    const auto edge_id = GetEdgeIdx(node_id, adj_node_id);
+    return edge_id;
+  }
+  Failwith("ERROR: No found rootsplit nodes.");
+}
+
 NodeIdVector SubsplitDAG::GetLeafNodeIds() const {
   NodeIdVector node_ids;
   for (TaxonId taxon_id(0); taxon_id < TaxonCount(); taxon_id++) {
@@ -468,6 +477,20 @@ NodeIdVector SubsplitDAG::GetLeafNodeIds() const {
 
 NodeId SubsplitDAG::GetLeafNodeId(const TaxonId taxon_id) const {
   return NodeId(taxon_id.value_);
+}
+
+EdgeIdVector SubsplitDAG::GetLeafEdgeIds() const {
+  EdgeIdVector edge_ids;
+  for (const auto node_id : GetLeafNodeIds()) {
+    const auto node = GetDAGNode(node_id);
+    for (const auto clade : SubsplitCladeEnum::Iterator()) {
+      for (const auto adj_node_id : node.GetNeighbors(Direction::Rootward, clade)) {
+        const auto edge_id = GetEdgeIdx(adj_node_id, node.Id());
+        edge_ids.push_back(edge_id);
+      }
+    }
+  }
+  return edge_ids;
 }
 
 EdgeIdVector SubsplitDAG::GetLeafEdgeIds(const TaxonId taxon_id) const {

@@ -248,6 +248,9 @@ class PartialVectorHandler {
     return pv_array;
   }
 
+  void SetUseRemapping(bool use_remapping) { use_remapping_ = use_remapping; }
+  bool GetUseRemapping() const { return use_remapping_; }
+
   // ** PV Operations
 
   std::pair<double, double> ValueRange(const PVId pvid) const {
@@ -478,9 +481,6 @@ class PartialVectorHandler {
     }
     return pvid_map;
   }
-
-  void SetUseRemapping(bool use_remapping) { use_remapping_ = use_remapping; }
-  bool GetUseRemapping() const { return use_remapping_; }
 
   static int Compare(const PartialVectorHandler<PVTypeEnum, DAGElementId> &pv_lhs,
                      const PartialVectorHandler<PVTypeEnum, DAGElementId> &pv_rhs,

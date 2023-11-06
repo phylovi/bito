@@ -304,7 +304,8 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // ** Scoring Helpers
 
   // Set the P-PVs to match the observed site patterns at the leaves.
-  void PopulateLeafPVsWithSitePatterns();
+  void PopulateLeafPVsWithSitePatterns(
+      std::optional<EdgeIdVector> opt_edge_ids = std::nullopt);
   // Set the R-PVs to the stationary distribution at the root and rootsplits.
   void PopulateRootPVsWithStationaryDistribution(
       std::optional<EdgeIdVector> opt_edge_ids = std::nullopt);
@@ -405,7 +406,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Number of optimization iterations.
   size_t optimize_max_iter_ = 5;
   // Temporary map of optimized edge lengths.
-  std::map<Bitset, double> tmp_optimized_edges;
+  std::map<Bitset, double> tmp_branch_lengths_;
 
   // Number of pvs to allocate per node in DAG.
   static constexpr size_t pv_count_per_node_ = PLVTypeEnum::Count;

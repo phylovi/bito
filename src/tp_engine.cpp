@@ -1257,7 +1257,6 @@ TPEngine::PCSPToScoreMap TPEngine::BuildMapFromPCSPToScore(
     Failwith("ERROR: must use likelihood_eval_engine.");
   }
   if (recompute_scores) {
-    GetLikelihoodEvalEngine().Initialize();
     GetLikelihoodEvalEngine().ComputeScores();
   }
   PCSPToScoreMap pcsp_score_map;
