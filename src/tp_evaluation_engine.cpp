@@ -309,6 +309,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
       map[edge_id] = map[edge_id] + 1;
     }
   };
+  std::ignore = CounterMapIncrement;
   auto CounterMapToString = [&](const std::string &name, const CounterMap &map) {
     std::stringstream ss;
     ss << name << ": { ";
@@ -318,6 +319,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     ss << "}";
     return ss.str();
   };
+  std::ignore = CounterMapToString;
 
   // Find edges to optimize. New edges were added to the DAG during current iteration.
   // NNI edges are are the central edge in NNIs. Extra edges are the new edges that are
@@ -349,6 +351,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
       const auto &choice_2 = GetTPEngine().GetChoiceMap(choice.parent);
       update_edges.insert(choice_2.parent);
     }
+    update_edges.erase(EdgeId(NoId));
   }
 
   auto PrintEdges = [this](const std::string &name, const std::set<EdgeId> &edges) {
@@ -359,10 +362,21 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     std::cout << "]" << std::endl;
   };
   std::ignore = PrintEdges;
-  PrintEdges("new_edges", new_edges);
-  PrintEdges("nni_edges", nni_edges);
-  PrintEdges("extra_edges", extra_edges);
-  PrintEdges("update_edges", update_edges);
+  // PrintEdges("new_edges", new_edges);
+  // PrintEdges("nni_edges", nni_edges);
+  // PrintEdges("extra_edges", extra_edges);
+  // PrintEdges("update_edges", update_edges);
+
+  auto EdgeIdSetToNodeIdSet = [this](const std::set<EdgeId> &edge_ids) {
+    std::set<NodeId> node_ids;
+    for (const auto edge_id : edge_ids) {
+      auto edge = GetDAG().GetDAGEdge(edge_id);
+      node_ids.insert(edge.GetParent());
+      node_ids.insert(edge.GetChild());
+    }
+    return node_ids;
+  };
+  std::ignore = EdgeIdSetToNodeIdSet;
 
   // Find topological sort of edges.
   EdgeIdVector rootward_edges(update_edges.begin(), update_edges.end());
@@ -547,11 +561,11 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
        << std::endl;
   }
 
-  std::cout << CounterMapToString("optimize_counter", optimize_counter) << std::endl;
-  std::cout << CounterMapToString("update_counter_1", update_counter_1) << std::endl;
-  std::cout << CounterMapToString("update_counter_2", update_counter_2) << std::endl;
-  std::cout << CounterMapToString("update_counter_3", update_counter_3) << std::endl;
-  std::cout << CounterMapToString("update_counter_4", update_counter_4) << std::endl;
+  // std::cout << CounterMapToString("optimize_counter", optimize_counter) << std::endl;
+  // std::cout << CounterMapToString("update_counter_1", update_counter_1) << std::endl;
+  // std::cout << CounterMapToString("update_counter_2", update_counter_2) << std::endl;
+  // std::cout << CounterMapToString("update_counter_3", update_counter_3) << std::endl;
+  // std::cout << CounterMapToString("update_counter_4", update_counter_4) << std::endl;
 
   // Update scores.
   // ComputeScores({{update_edges.begin(), update_edges.end()}});
@@ -566,8 +580,6 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithEdge(const EdgeId edge_id) 
 double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     const NNIOperation &post_nni, const NNIOperation &temp_pre_nni,
     const size_t spare_offset, std::optional<BitsetEdgeIdMap> best_edge_map_opt) {
-  // Wipe memory of old branch lengths.
-  tmp_branch_lengths_.clear();
   // Get temp locations for post-NNI PVs.
   PrimaryPVIds temp_pvids = GetTempPrimaryPVIdsForProposedNNIs(spare_offset);
   // Get temp locations for post-NNI branch lengths.
@@ -591,43 +603,13 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
   // Get PLV ids from pre-NNI in DAG, then remap according to post-NNI.
   const auto pre_pvids = GetSecondaryPVIdsOfEdge(pre_edge_id);
   const auto post_pvids = RemapSecondaryPVIdsForPostNNI(pre_pvids, clade_map);
-
-  auto GetNNIHash = [this](const NNIOperation &nni) {
-    auto nni_hash = nni.ToHashString(5);
-    return nni_hash;
-  };
-  std::ignore = GetNNIHash;
-  auto GetSubsplitHash = [this](const Bitset &subsplit) {
-    std::stringstream ss;
-    auto edge_id = GetDAG().GetEdgeIdx(subsplit);
-    auto subsplit_hash = subsplit.ToHashString(5);
-    auto is_edge_graft = GetTPEngine().GetGraftDAG().IsEdgeFromHost(edge_id);
-    ss << subsplit_hash << " " << (is_edge_graft ? "IS_GRAFT" : "IS_HOST") << " ";
-    return ss.str();
-  };
-  std::ignore = GetSubsplitHash;
-  auto GetPVHash = [this](const PVId pv_id) -> std::string {
-    if (pv_id == NoId) {
-      return "PVHash::NoId";
-    }
-    return GetPVs().ToHashString(pv_id, 5);
-  };
-  std::ignore = GetPVHash;
-
-  // std::cout << "PostNNIs::nodes:: " << GetNNIHash(post_nni) << ": ["
-  //           << GetSubsplitHash(adj_subsplits.sister) << " "
-  //           << GetSubsplitHash(adj_subsplits.left_child) << " "
-  //           << GetSubsplitHash(adj_subsplits.right_child) << " || "
-  //           << GetSubsplitHash(adj_subsplits.parent) << "]" << std::endl;
-  // std::cout << "PostNNIs::post_pvids:: " << GetNNIHash(post_nni) << ": ["
-  //           << GetPVHash(post_pvids.sister_p_) << " "
-  //           << GetPVHash(post_pvids.leftchild_p_) << " "
-  //           << GetPVHash(post_pvids.rightchild_p_) << " || "
-  //           << GetPVHash(post_pvids.grandparent_rfocal_) << " "
-  //           << GetPVHash(post_pvids.parent_rhat_) << "]" << std::endl;
+  // Get adjacent PCSPs from edges.
+  const auto adj_pcsps =
+      GetTPEngine().BuildAdjacentPCSPsToProposedNNI(post_nni, adj_node_ids);
 
   // If we have already established a best_edge_map by traversing all new NNIs to be
-  // added, use this branch length.  Otherwise, use the edge_map from current pre-NNI.
+  // added, use this branch length.  Otherwise, use the edge_map from current
+  // pre-NNI.
   if (best_edge_map_opt.has_value()) {
     auto &best_edge_map = best_edge_map_opt.value();
     auto AssignBestBranchLength = [this, &best_edge_map](const EdgeId post_edge_id,
@@ -636,8 +618,6 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
       branch_handler_(post_edge_id) = branch_handler_(pre_edge_id);
     };
     // Copy branch lengths over from best_edge_map.
-    const auto adj_pcsps =
-        GetTPEngine().BuildAdjacentPCSPsToProposedNNI(post_nni, adj_node_ids);
     AssignBestBranchLength(temp_edge_id_map.parent, adj_pcsps.parent);
     AssignBestBranchLength(temp_edge_id_map.focal, adj_pcsps.focal);
     AssignBestBranchLength(temp_edge_id_map.sister, adj_pcsps.sister);
@@ -652,44 +632,92 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     branch_handler_(temp_edge_id_map.right_child) = branch_handler_(choice.right_child);
   }
 
+  auto BLToString = [&](EdgeId edge_id) {
+    // double digits = 5;
+    // return std::round(branch_handler_(edge_id) * std::pow(10.0, digits)) /
+    //        std::pow(10.0, digits);
+    return branch_handler_(edge_id);
+  };
+  std::ignore = BLToString;
+
+  // std::cout.precision(5);
+  // std::cout << std::scientific;
+  // std::cout << post_nni.ToHashString(5) << ": PRE_BLS [ "
+  //           << BLToString(temp_edge_id_map.parent) << " "
+  //           << BLToString(temp_edge_id_map.focal) << " "
+  //           << BLToString(temp_edge_id_map.sister) << " "
+  //           << BLToString(temp_edge_id_map.left_child) << " "
+  //           << BLToString(temp_edge_id_map.right_child) << " ]" << std::endl;
+  // std::cout << std::resetiosflags(std::ios::showbase);
+
   // Track whether edges should be optimized (if they don't already exist in the DAG).
   NNIAdjBools do_optimize_edge{true, true, true, true, true};
   // Update branch lengths if edge already exists in DAG.
   auto FindBranchLengthIfExists = [&](const Bitset &parent_subsplit,
                                       const Bitset &child_subsplit,
                                       const EdgeId tmp_edge_id, bool &optimize_edge) {
-    if (GetDAG().ContainsNode(parent_subsplit) &&
-        GetDAG().ContainsNode(child_subsplit)) {
-      const auto parent_node_id = GetDAG().GetDAGNodeId(parent_subsplit);
-      const auto child_node_id = GetDAG().GetDAGNodeId(child_subsplit);
-      if (GetDAG().ContainsEdge(parent_node_id, child_node_id)) {
-        const auto edge_id = GetDAG().GetEdgeIdx(parent_node_id, child_node_id);
-        branch_handler_(tmp_edge_id) = branch_handler_(edge_id);
-        optimize_edge = false;
-        return;
-      }
-    }
+    // if (GetDAG().ContainsNode(parent_subsplit) &&
+    //     GetDAG().ContainsNode(child_subsplit)) {
+    //   const auto parent_node_id = GetDAG().GetDAGNodeId(parent_subsplit);
+    //   const auto child_node_id = GetDAG().GetDAGNodeId(child_subsplit);
+    //   if (GetDAG().ContainsEdge(parent_node_id, child_node_id)) {
+    //     const auto edge_id = GetDAG().GetEdgeIdx(parent_node_id, child_node_id);
+    //     branch_handler_(tmp_edge_id) = branch_handler_(edge_id);
+    //     // optimize_edge = false;
+    //     return;
+    //   }
+    // }
     const Bitset edge_pcsp = Bitset::PCSP(parent_subsplit, child_subsplit);
     if (tmp_branch_lengths_.find(edge_pcsp) != tmp_branch_lengths_.end()) {
       branch_handler_(tmp_edge_id) = tmp_branch_lengths_[edge_pcsp];
-      optimize_edge = false;
+      // optimize_edge = false;
       return;
     }
   };
-  FindBranchLengthIfExists(GetDAG().GetDAGNodeBitset(adj_node_ids.parent),
-                           post_nni.GetParent(), temp_edge_id_map.parent,
-                           do_optimize_edge.parent);
-  FindBranchLengthIfExists(post_nni.GetParent(),
-                           GetDAG().GetDAGNodeBitset(adj_node_ids.sister),
-                           temp_edge_id_map.sister, do_optimize_edge.sister);
-  FindBranchLengthIfExists(post_nni.GetParent(), post_nni.GetChild(),
-                           temp_edge_id_map.focal, do_optimize_edge.focal);
-  FindBranchLengthIfExists(post_nni.GetChild(),
-                           GetDAG().GetDAGNodeBitset(adj_node_ids.left_child),
-                           temp_edge_id_map.left_child, do_optimize_edge.left_child);
-  FindBranchLengthIfExists(post_nni.GetChild(),
-                           GetDAG().GetDAGNodeBitset(adj_node_ids.right_child),
-                           temp_edge_id_map.right_child, do_optimize_edge.right_child);
+  std::ignore = FindBranchLengthIfExists;
+
+  // FindBranchLengthIfExists(GetDAG().GetDAGNodeBitset(adj_node_ids.parent),
+  //                          post_nni.GetParent(), temp_edge_id_map.parent,
+  //                          do_optimize_edge.parent);
+  // FindBranchLengthIfExists(post_nni.GetParent(),
+  //                          GetDAG().GetDAGNodeBitset(adj_node_ids.sister),
+  //                          temp_edge_id_map.sister, do_optimize_edge.sister);
+  // FindBranchLengthIfExists(post_nni.GetParent(), post_nni.GetChild(),
+  //                          temp_edge_id_map.focal, do_optimize_edge.focal);
+  // FindBranchLengthIfExists(post_nni.GetChild(),
+  //                          GetDAG().GetDAGNodeBitset(adj_node_ids.left_child),
+  //                          temp_edge_id_map.left_child, do_optimize_edge.left_child);
+  // FindBranchLengthIfExists(post_nni.GetChild(),
+  //                          GetDAG().GetDAGNodeBitset(adj_node_ids.right_child),
+  //                          temp_edge_id_map.right_child,
+  //                          do_optimize_edge.right_child);
+
+  // std::cout.precision(5);
+  // std::cout << std::scientific;
+  // std::cout << post_nni.ToHashString(5) << ": MID_BLS [ "
+  //           << BLToString(temp_edge_id_map.parent) << " "
+  //           << BLToString(temp_edge_id_map.focal) << " "
+  //           << BLToString(temp_edge_id_map.sister) << " "
+  //           << BLToString(temp_edge_id_map.left_child) << " "
+  //           << BLToString(temp_edge_id_map.right_child) << " ]" << std::endl;
+  // std::cout << std::resetiosflags(std::ios::showbase);
+
+  // std::cout << post_nni.ToHashString(5) << ": DO_OPT [ " << do_optimize_edge.parent
+  //           << " " << do_optimize_edge.sister << " " << do_optimize_edge.focal << " "
+  //           << do_optimize_edge.left_child << " " << do_optimize_edge.right_child
+  //           << " ]" << std::endl;
+
+  // std::cout << post_nni.ToHashString(5) << ": P_PVs [ "
+  //           << GetPVs().ToHashString(post_pvids.parent_p_, 5) << " "
+  //           << GetPVs().ToHashString(post_pvids.sister_p_, 5) << " "
+  //           << GetPVs().ToHashString(post_pvids.leftchild_p_, 5) << " "
+  //           << GetPVs().ToHashString(post_pvids.rightchild_p_, 5) << " ]" <<
+  //           std::endl;
+
+  // std::cout << post_nni.ToHashString(5) << ": R_PVs [ "
+  //           << GetPVs().ToHashString(post_pvids.grandparent_rfocal_, 5) << " "
+  //           << GetPVs().ToHashString(post_pvids.parent_rhat_, 5) << " ]" <<
+  //           std::endl;
 
   auto RootwardPass = [&]() {
     // Evolve up child P-PLVs.
@@ -750,19 +778,12 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
             if (is_not_child_edge) {
               // If child does not go to a leaf, update child_p (in case leftchild
               // or rightchild branch length were changed).
-              pre_hash = GetPVs().ToHashString(child_p, 5);
               MultiplyPVs(child_p, child_phatleft, child_phatright);
-              post_hash = GetPVs().ToHashString(child_p, 5);
-              // std::cout << "child_p: " << pre_hash << " " << post_hash << std::endl;
             }
             if (is_not_parent_edge) {
               // Update parent_rfocal (in case that sister branch length was
               // changed).
-              pre_hash = GetPVs().ToHashString(parent_rfocal, 5);
               MultiplyPVs(parent_rfocal, parent_rhat, parent_phatsister);
-              post_hash = GetPVs().ToHashString(parent_rfocal, 5);
-              // std::cout << "parent_rfocal: " << pre_hash << " " << post_hash
-              //           << std::endl;
             }
             if (update_branch_length) {
               // Optimize branch length.
@@ -771,16 +792,9 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
             }
             if (is_not_parent_edge) {
               // Update parent_phatfocal after changing branch length.
-              pre_hash = GetPVs().ToHashString(parent_phatfocal, 5);
               SetToEvolvedPV(parent_phatfocal, edge_id, child_p);
-              post_hash = GetPVs().ToHashString(parent_phatfocal, 5);
-              // std::cout << "parent_phatfocal: " << pre_hash << " " << post_hash
-              //           << std::endl;
               // If not parent edge, update parent_p after changing branch length.
-              pre_hash = GetPVs().ToHashString(parent_p, 5);
               MultiplyPVs(parent_p, parent_phatfocal, parent_phatsister);
-              post_hash = GetPVs().ToHashString(parent_p, 5);
-              // std::cout << "parent_p: " << pre_hash << " " << post_hash << std::endl;
             }
           };
       auto OptimizeLeftChild = [&](const bool do_optimize = true) {
@@ -842,18 +856,25 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     }
   }
 
+  // std::cout << post_nni.ToHashString(5) << ": POST_BLS [ "
+  //           << BLToString(temp_edge_id_map.parent) << " "
+  //           << BLToString(temp_edge_id_map.focal) << " "
+  //           << BLToString(temp_edge_id_map.sister) << " "
+  //           << BLToString(temp_edge_id_map.left_child) << " "
+  //           << BLToString(temp_edge_id_map.right_child) << " ]" << std::endl;
+
   // Update temporary optimized edges.  Will now include edges that have been optimized
   // during this proposed NNI.
   auto UpdateTempEdges = [this](const Bitset &parent_subsplit,
                                 const Bitset &child_subsplit, const EdgeId tmp_edge_id,
                                 const bool do_optimize) {
-    if (!do_optimize) {
-      return;
-    }
+    // if (!do_optimize) {
+    //   return;
+    // }
     const Bitset edge_pcsp = Bitset::PCSP(parent_subsplit, child_subsplit);
-    if (tmp_branch_lengths_.find(edge_pcsp) == tmp_branch_lengths_.end()) {
-      tmp_branch_lengths_[edge_pcsp] = branch_handler_(tmp_edge_id);
-    }
+    // if (tmp_branch_lengths_.find(edge_pcsp) == tmp_branch_lengths_.end()) {
+    tmp_branch_lengths_[edge_pcsp] = branch_handler_(tmp_edge_id);
+    // }
   };
   UpdateTempEdges(GetDAG().GetDAGNodeBitset(adj_node_ids.parent), post_nni.GetParent(),
                   temp_edge_id_map.parent, do_optimize_edge.parent);

@@ -130,7 +130,7 @@ class NNIOperation {
 
   // ** Miscellaneous
 
-  size_t Hash() const { return GetParent().Hash() & GetChild().Hash(); }
+  size_t Hash() const { return GetCentralEdgePCSP().Hash(); }
 
   // Finds mappings of sister, left child, and right child clades from Pre-NNI to NNI.
   static NNICladeArray BuildNNICladeMapFromPreNNIToNNI(const NNIOperation &pre_nni,

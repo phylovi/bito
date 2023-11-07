@@ -22,7 +22,7 @@ sort_taxa = False
 # rounding digits in printed output
 digits = 5
 # number of optimization iterations
-opt_max = 5
+opt_max = 1
 # whether to rescore or reevaluate rejected nnis -- use None for default
 do_rescore_all_nnis = True
 do_reeval_all_nnis = None
@@ -152,7 +152,7 @@ class Utils:
 
     @staticmethod
     def to_hash(obj, abbr=None):
-        hash = f'0x{obj.__hash__():016X}'.lower()
+        hash = f'0x{obj.__hash__():016X}'
         if (abbr != None):
             hash = hash[:abbr + 2]
         return hash
@@ -749,7 +749,17 @@ class Tracker:
         # tracks what iter pcsp/subsplit was added to the DAG.
         self.timedag_pcsps = {}
         self.timedag_subsplits = {}
-        self.run_tracker = False
+        self.run_tracker = True
+        self.tolerance = 1e-3
+
+        # track mismatches
+        self.choice_map_mismatches = 0
+        self.prop_score_mismatches = 0
+        self.dag_score_mismatches = 0
+        self.compare_score_mismatches = 0
+        self.pv_hash_mismatches = 0
+        self.pv_value_mismatches = 0
+        self.bl_mismatches = 0
         return
 
     def is_pcsp_in_watchlist(self, pcsp):
@@ -814,14 +824,14 @@ class Tracker:
                     old_score = self.old_proposed_scores[pcsp]
                     new_score = new_proposed_scores[nni]
                     score_diff = old_score - new_score
-                    score_improved = old_score < new_score
-                    matches = (abs(score_diff) < 1e-3)
+                    score_improved = old_score <= new_score
+                    matches = (abs(score_diff) < self.tolerance)
                     result = "MATCH" if matches else "MISMATCH"
                     if not matches:
                         mismatch_cnt += 1
                         pcsp = Utils.pcsp_to_hash(pcsp, abbr)
                         print(
-                            f"  #PROP_SCORE_{result}: {pcsp} new::{round(new_score, 3)} old::{round(old_score, 3)} change::{round(score_diff, 3)} is_improved::{score_improved}")
+                            f"  #PROP_SCORE_{result}: {pcsp} new::{round(new_score, digits)} old::{round(old_score, digits)} change::{round(score_diff, digits)} is_improved::{score_improved}")
                     else:
                         match_cnt += 1
                 else:
@@ -926,7 +936,7 @@ class Tracker:
                 for i in range(len(new_pv)):
                     max_diff = np.max(np.abs(np.subtract(new_pv[i], old_pv[i])))
                     max_diffs.append(round(max_diff, 5))
-                matches = (max(max_diffs) < 1e-5)
+                matches = (max(max_diffs) < self.tolerance)
                 result = "MATCH" if matches else "MISMATCH"
                 if not matches:
                     pcsp = Utils.pcsp_to_hash(pcsp, abbr)
@@ -948,7 +958,7 @@ class Tracker:
             if pcsp in self.old_bl_map:
                 new_bl = new_bl_map[pcsp]
                 old_bl = self.old_bl_map[pcsp]
-                matches = (abs(new_bl - old_bl) < 1e-5)
+                matches = (abs(new_bl - old_bl) < self.tolerance)
                 result = "MATCH" if matches else "MISMATCH"
                 in_watchlist, parent_hash, child_hash = self.is_pcsp_in_watchlist(pcsp)
                 if (not matches):
@@ -969,7 +979,7 @@ class Tracker:
                 new_score = new_dag_scores[pcsp]
                 old_score = self.old_dag_scores[pcsp]
                 score_diff = abs(new_score - old_score)
-                matches = (score_diff < 1e-3)
+                matches = (score_diff < self.tolerance)
                 result = "MATCH" if matches else "MISMATCH"
                 if (not matches):
                     pcsp_hash = Utils.pcsp_to_hash(pcsp, abbr)
@@ -985,7 +995,7 @@ class Tracker:
                 dag_score = self.old_dag_scores[pcsp]
                 proposed_score = self.old_proposed_scores[pcsp]
                 score_diff = abs(dag_score - proposed_score)
-                matches = (score_diff < 1e-3)
+                matches = (score_diff < self.tolerance)
                 result = "MATCH" if matches else "MISMATCH"
                 if (not matches):
                     pcsp_hash = Utils.pcsp_to_hash(pcsp, abbr)
