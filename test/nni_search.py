@@ -37,6 +37,7 @@ do_print_scored_nnis = False
 do_print_accepted_nnis = True
 do_print_summary = True
 # diagnostics: track changes to the DAG
+do_print_tracker_summary = True
 do_check_for_dag_changes = True
 do_check_for_nni_score_changes = True
 do_check_for_choice_map_changes = True
@@ -754,7 +755,7 @@ class Tracker:
 
         # track mismatches
         self.choice_map_mismatches = 0
-        self.prop_score_mismatches = 0
+        self.proposed_score_mismatches = 0
         self.dag_score_mismatches = 0
         self.compare_score_mismatches = 0
         self.pv_hash_mismatches = 0
@@ -836,12 +837,12 @@ class Tracker:
                         match_cnt += 1
                 else:
                     new_cnt += 1
-
+        self.proposed_score_mismatches += mismatch_cnt
         for nni in new_proposed_scores:
             pcsp = nni.get_central_edge_pcsp()
             self.old_proposed_scores[pcsp] = new_proposed_scores[nni]
-        print(
-            f"#PROPOSED_SCORE_CHANGES: match::{match_cnt} mismatch::{mismatch_cnt} new:{new_cnt}")
+        # print(
+        #     f"#PROPOSED_SCORE_CHANGES: match::{match_cnt} mismatch::{mismatch_cnt} new:{new_cnt}")
         return self.old_proposed_scores
 
     def check_for_nni_map_changes(self):
@@ -974,6 +975,9 @@ class Tracker:
             return
         tp_engine = self.dag_inst.get_tp_engine()
         new_dag_scores = tp_engine.build_map_from_pcsp_to_score(True)
+        # compare old dag_scores to new dag_scores
+        match_cnt = 0
+        mismatch_cnt = 0
         for pcsp in new_dag_scores:
             if pcsp in self.old_dag_scores:
                 new_score = new_dag_scores[pcsp]
@@ -982,14 +986,21 @@ class Tracker:
                 matches = (score_diff < self.tolerance)
                 result = "MATCH" if matches else "MISMATCH"
                 if (not matches):
+                    mismatch_cnt += 1
                     pcsp_hash = Utils.pcsp_to_hash(pcsp, abbr)
                     print(
                         f"  #DAG_SCORE_{result}: {pcsp_hash} => {round(new_score, digits)} {round(old_score, digits)} | {round(score_diff, digits)}")
                     # print(
                     #     f"    {pcsp_hash} {pcsp.pcsp_get_parent_subsplit().subsplit_to_string()} {pcsp.pcsp_get_child_subsplit().subsplit_to_string()}")
+                else:
+                    match_cnt += 1
+        self.dag_score_mismatches += mismatch_cnt
+        # update old dag_scores
         for pcsp in new_dag_scores:
             self.old_dag_scores[pcsp] = new_dag_scores[pcsp]
         # compare proposed_scores and dag_scores
+        match_cnt = 0
+        mismatch_cnt = 0
         for pcsp in self.old_dag_scores:
             if pcsp in self.old_proposed_scores:
                 dag_score = self.old_dag_scores[pcsp]
@@ -998,10 +1009,14 @@ class Tracker:
                 matches = (score_diff < self.tolerance)
                 result = "MATCH" if matches else "MISMATCH"
                 if (not matches):
+                    mismatch_cnt += 1
                     pcsp_hash = Utils.pcsp_to_hash(pcsp, abbr)
                     print(
                         f"  DAG_VS_PROP_SCORE_{result}: {pcsp_hash} => {round(dag_score, digits)} {round(proposed_score, digits)} | {round(score_diff, digits)}")
-        # remove proposed score if it has been added to the DAG
+                else:
+                    match_cnt += 1
+        self.compare_score_mismatches += mismatch_cnt
+        # remove proposed_score if it has been added to the dag_scores
         for pcsp in self.old_dag_scores:
             if pcsp in self.old_proposed_scores:
                 del self.old_proposed_scores[pcsp]
@@ -1330,6 +1345,13 @@ class Program:
         df = results.write_dataframe_to_file(args.output)
 
         ### SUMMARY OUTPUT ###
+        if do_print_tracker_summary:
+            print_v("\n=== TRACKER SUMMARY ===")
+            print_v(
+                f"  proposed_score_mismatches: {tracker.proposed_score_mismatches}")
+            print_v(f"  dag_score_mismatches: {tracker.dag_score_mismatches}")
+            print_v(f"  compare_score_mismatches: {tracker.compare_score_mismatches}")
+
         if do_print_summary:
             print_v("\n=== FINAL DATAFRAME ===")
             pd.set_option('display.max_colwidth', None)

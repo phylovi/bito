@@ -27,48 +27,48 @@
 class TPEngine;
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 
-struct PrimaryPVIds {
-  // For central likelihood.
-  PVId parent_rfocal_;
-  PVId child_p_;
-  // For custom branch lengths.
-  PVId child_phatleft_;
-  PVId child_phatright_;
-  PVId parent_phatsister_;
-  PVId parent_rhat_;
-  PVId grandparent_rfocal_;
-  // For branch length optimization.
-  PVId child_rhat_;
-  PVId child_rleft_;
-  PVId child_rright_;
-  PVId parent_phatfocal_;
-  PVId parent_rsister_;
-  PVId parent_p_;
-  PVId grandparent_phatfocal_;
+struct LocalPVIds {
   PVId grandparent_p_;
-};
-struct SecondaryPVIds {
+  PVId grandparent_phatfocal_;
+  PVId grandparent_phatsister_;
   PVId grandparent_rhat_;
   PVId grandparent_rfocal_;
   PVId grandparent_rsister_;
 
-  PVId parent_rfocal_;
-  PVId parent_rsister_;
-  PVId child_rleft_;
-  PVId child_rright_;
-
   PVId parent_p_;
-  PVId sister_p_;
-  PVId leftchild_p_;
-  PVId rightchild_p_;
-
   PVId parent_phatfocal_;
   PVId parent_phatsister_;
   PVId parent_rhat_;
+  PVId parent_rfocal_;
+  PVId parent_rsister_;
+
   PVId child_p_;
   PVId child_phatleft_;
   PVId child_phatright_;
   PVId child_rhat_;
+  PVId child_rleft_;
+  PVId child_rright_;
+
+  PVId sister_p_;
+  PVId leftchild_p_;
+  PVId rightchild_p_;
+};
+
+// Compiles all info about proposed NNI needed for computing score.
+// "refs" contain the data derived from the pre-NNI remapped to be referenced (not
+// modified) for computations. "temps" contain temporary data locations for performing
+// computations. "adjs" contains data actually adjacent to proposed NNI.
+struct ProposedNNIInfo {
+  LocalPVIds temp_pv_ids;
+  NNIAdjEdgeIds temp_edge_ids;
+
+  LocalPVIds ref_pv_ids;
+  NNIAdjEdgeIds ref_edge_ids;
+  NNIAdjNodeIds ref_node_ids;
+
+  NNIAdjEdgeIds adj_edge_ids;
+
+  NNIAdjBools do_optimize_edge;
 };
 
 // TPEngine helper for evaluating Top Trees.
@@ -201,6 +201,12 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
       const size_t spare_offset = 0,
       std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt) override;
 
+  //
+  ProposedNNIInfo GetProposedNNIInfo(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      const size_t spare_offset = 0,
+      std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt);
+
   // ** Resize
 
   // Resize Engine for modified DAG.
@@ -230,7 +236,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   void GrowSpareEdgeData(const size_t new_edge_spare_count) override;
 
   // Copy all edge data from its pre_edge_id to post_edge_id.
-  void CopyEdgeData(const EdgeId src_edge_id, const EdgeId dest_edge_id) override;
+  void CopyEdgeData(const EdgeId src_edge_id, const EdgeId dest_edge_0id) override;
 
   // ** Populate PVs
 
@@ -256,7 +262,8 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
                                 const bool check_branch_convergence,
                                 const bool update_only = false);
 
-  // Optimization count.
+  // ** Access
+
   size_t GetOptimizationCount() { return branch_handler_.GetOptimizationCount(); }
   bool IsFirstOptimization() { return branch_handler_.IsFirstOptimization(); }
   void IncrementOptimizationCount() { branch_handler_.IncrementOptimizationCount(); }
@@ -271,8 +278,6 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
     optimize_max_iter_ = optimize_max_iter;
   }
 
-  // ** Access
-
   PLVEdgeHandler &GetPVs() { return likelihood_pvs_; }
   const PLVEdgeHandler &GetPVs() const { return likelihood_pvs_; }
   EigenMatrixXd &GetMatrix() { return log_likelihoods_; }
@@ -286,18 +291,17 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Gets the P-PV of the child, and the RFocal-PV of the parent.
   // The expected PVs for computing likelihoods.
   std::pair<PVId, PVId> GetPrimaryPVIdsOfEdge(const EdgeId edge_id) const;
-  // Get secondary PV Ids for corresponding parent/child pair.
+  // Get PV Ids for corresponding parent/child pair.
   // Gets the PHatLeft-PV and PHatRight-PV of child, and the the PSister-PV and R-PVs of
   // parent.
   // The expected PVs for computing temp intermediate PVs for proposed NNIs.
-  SecondaryPVIds GetSecondaryPVIdsOfEdge(const EdgeId edge_id) const;
+  LocalPVIds GetLocalPVIdsOfEdge(const EdgeId edge_id) const;
   // Remaps secondary PV Ids according to the clade map.
-  SecondaryPVIds RemapSecondaryPVIdsForPostNNI(
-      const SecondaryPVIds &pre_pvids,
-      const NNIOperation::NNICladeArray &clade_map) const;
+  LocalPVIds RemapLocalPVIdsForPostNNI(
+      const LocalPVIds &pre_pvids, const NNIOperation::NNICladeArray &clade_map) const;
 
   // Get temporary PV Ids for intermediate proposed NNI computations.
-  PrimaryPVIds GetTempPrimaryPVIdsForProposedNNIs(const size_t spare_offset) const;
+  LocalPVIds GetTempLocalPVIdsForProposedNNIs(const size_t spare_offset) const;
   // Get temporary PV Ids for intermediate proposed NNI computations.
   NNIAdjEdgeIds GetTempEdgeIdsForProposedNNIs(const size_t spare_offset) const;
 
@@ -403,8 +407,11 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
 
   // Determines whether new edges are optimized.
   bool optimize_new_edges_ = true;
+  // Determines whether to use DAG branch lengths or optimize all proposed edges.
+  bool use_dag_branch_lengths_for_proposed_nnis_ = false;
   // Number of optimization iterations.
   size_t optimize_max_iter_ = 5;
+
   // Temporary map of optimized edge lengths.
   std::map<Bitset, double> tmp_branch_lengths_;
 
